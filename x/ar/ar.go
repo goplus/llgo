@@ -53,7 +53,7 @@ func Create(arfile string, objs []string) error {
 // given as a parameter. It is equivalent to the following command:
 //
 //	ar -rcs <archivePath> <objs...>
-func Make(arfile *os.File, objs []string) error {
+func Make(arfile io.WriteSeeker, objs []string) error {
 	// Open the archive file.
 	arwriter := ar.NewWriter(arfile)
 	err := arwriter.WriteGlobalHeader()
@@ -200,7 +200,7 @@ func Make(arfile *os.File, objs []string) error {
 			return err
 		}
 		if int64(int32(offset)) != offset {
-			return errors.New("large archives (4GB+) not supported: " + arfile.Name())
+			return errors.New("large archives (4GB+) not supported")
 		}
 		archiveOffsets[i] = int32(offset)
 
@@ -231,7 +231,7 @@ func Make(arfile *os.File, objs []string) error {
 			return fmt.Errorf("could not copy object file into ar file: %w", err)
 		}
 		if n != st.Size() {
-			return errors.New("file modified during ar creation: " + arfile.Name())
+			return errors.New("file modified during ar creation")
 		}
 		_, err = arwriter.Write(copyBuf.Bytes())
 		if err != nil {
@@ -252,6 +252,8 @@ func Make(arfile *os.File, objs []string) error {
 	}
 
 	// Overwrite placeholder indices.
-	_, err = arfile.WriteAt(indicesBuf.Bytes(), symbolTableStart+4)
+	if _, err = arfile.Seek(symbolTableStart+4, io.SeekStart); err == nil {
+		_, err = arfile.Write(indicesBuf.Bytes())
+	}
 	return err
 }
