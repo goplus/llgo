@@ -1,0 +1,4 @@
+golang.org/x/tools v0.16.0 h1:GO788SKMRunPIBCXiQyo2AaexLstOrVhuAL5YwsckQM=
+golang.org/x/tools v0.16.0/go.mod h1:kYVVN6I1mBNoB1OX+noeBjbRk4IUEPa7JJ+TJMEooJ0=
+tinygo.org/x/go-llvm v0.0.0-20231014233752-75a8a9fe6f74 h1:tW8XhLI9gUZLL+2pG0HYb5dc6bpMj1aqtESpizXPnMY=
+tinygo.org/x/go-llvm v0.0.0-20231014233752-75a8a9fe6f74/go.mod h1:GFbusT2VTA4I+l4j80b17KFK+6whv69Wtny5U+T8RR0=
