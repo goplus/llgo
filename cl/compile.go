@@ -17,6 +17,9 @@
 package cl
 
 import (
+	"go/types"
+	"sort"
+
 	"github.com/goplus/llgo/loader"
 	"github.com/qiniu/x/errors"
 	"golang.org/x/tools/go/ssa"
@@ -30,8 +33,11 @@ type Config struct {
 }
 
 type context struct {
-	mod  llvm.Module
-	ctx  llvm.Context
+	mod llvm.Module
+	ctx llvm.Context
+
+	embedGlobals map[string][]*loader.EmbedFile
+
 	errs errors.List
 }
 
@@ -49,13 +55,137 @@ func (c *context) dispose() {
 	panic("todo")
 }
 
-func (c *context) loadASTComments(loader.Package) {
-	panic("todo")
-}
-
 // createPackage builds the LLVM IR for all types, methods, and global variables
 // in the given package.
 func (c *context) createPackage(irbuilder llvm.Builder, pkg *ssa.Package) {
+	type namedMember struct {
+		name string
+		val  ssa.Member
+	}
+
+	// Sort by position, so that the order of the functions in the IR matches
+	// the order of functions in the source file. This is useful for testing,
+	// for example.
+	var members []*namedMember
+	for name, v := range pkg.Members {
+		members = append(members, &namedMember{name, v})
+	}
+	sort.Slice(members, func(i, j int) bool {
+		iPos := members[i].val.Pos()
+		jPos := members[j].val.Pos()
+		return iPos < jPos
+	})
+
+	// Define all functions.
+	for _, m := range members {
+		member := m.val
+		switch member := member.(type) {
+		case *ssa.Function:
+			if member.TypeParams() != nil {
+				// Do not try to build generic (non-instantiated) functions.
+				continue
+			}
+			// Create the function definition.
+			b := newBuilder(c, irbuilder, member)
+			if _, ok := mathToLLVMMapping[member.RelString(nil)]; ok {
+				// The body of this function (if there is one) is ignored and
+				// replaced with a LLVM intrinsic call.
+				b.defineMathOp()
+				continue
+			}
+			if ok := b.defineMathBitsIntrinsic(); ok {
+				// Like a math intrinsic, the body of this function was replaced
+				// with a LLVM intrinsic.
+				continue
+			}
+			if member.Blocks == nil {
+				// Try to define this as an intrinsic function.
+				b.defineIntrinsicFunction()
+				// It might not be an intrinsic function but simply an external
+				// function (defined via //go:linkname). Leave it undefined in
+				// that case.
+				continue
+			}
+			b.createFunction()
+		case *ssa.Type:
+			if types.IsInterface(member.Type()) {
+				// Interfaces don't have concrete methods.
+				continue
+			}
+
+			// Named type. We should make sure all methods are created.
+			// This includes both functions with pointer receivers and those
+			// without.
+			methods := getAllMethods(pkg.Prog, member.Type())
+			methods = append(methods, getAllMethods(pkg.Prog, types.NewPointer(member.Type()))...)
+			for _, method := range methods {
+				// Parse this method.
+				fn := pkg.Prog.MethodValue(method)
+				if fn == nil {
+					continue // probably a generic method
+				}
+				if member.Type().String() != member.String() {
+					// This is a member on a type alias. Do not build such a
+					// function.
+					continue
+				}
+				if fn.Blocks == nil {
+					continue // external function
+				}
+				if fn.Synthetic != "" && fn.Synthetic != "package initializer" {
+					// This function is a kind of wrapper function (created by
+					// the ssa package, not appearing in the source code) that
+					// is created by the getFunction method as needed.
+					// Therefore, don't build it here to avoid "function
+					// redeclared" errors.
+					continue
+				}
+				// Create the function definition.
+				b := newBuilder(c, irbuilder, fn)
+				b.createFunction()
+			}
+		case *ssa.Global:
+			// Global variable.
+			info := c.getGlobalInfo(member)
+			global := c.getGlobal(member)
+			if files, ok := c.embedGlobals[member.Name()]; ok {
+				c.createEmbedGlobal(member, global, files)
+			} else if !info.extern {
+				global.SetInitializer(llvm.ConstNull(global.GlobalValueType()))
+				global.SetVisibility(llvm.HiddenVisibility)
+				if info.section != "" {
+					global.SetSection(info.section)
+				}
+			}
+		}
+	}
+
+	// Add forwarding functions for functions that would otherwise be
+	// implemented in assembly.
+	for _, m := range members {
+		member := m.val
+		switch member := member.(type) {
+		case *ssa.Function:
+			if member.Blocks != nil {
+				continue // external function
+			}
+			info := c.getFunctionInfo(member)
+			if aliasName, ok := stdlibAliases[info.linkName]; ok {
+				alias := c.mod.NamedFunction(aliasName)
+				if alias.IsNil() {
+					// Shouldn't happen, but perhaps best to just ignore.
+					// The error will be a link error, if there is an error.
+					continue
+				}
+				b := newBuilder(c, irbuilder, member)
+				b.createAlias(alias)
+			}
+		}
+	}
+}
+
+// createEmbedGlobal creates an initializer for a //go:embed global variable.
+func (c *context) createEmbedGlobal(member *ssa.Global, global llvm.Value, files []*loader.EmbedFile) {
 	panic("todo")
 }
 

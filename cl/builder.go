@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package loader
+package cl
 
 import (
 	"golang.org/x/tools/go/ssa"
+	llvm "tinygo.org/x/go-llvm"
 )
 
-type Package struct {
-	SSA          *ssa.Package
-	EmbedGlobals map[string][]*EmbedFile
+// builder contains all information relevant to build a single function.
+type builder struct {
 }
 
-type EmbedFile struct {
-	/*
-	   Name      string
-	   Size      uint64
-	   Hash      string // hash of the file (as a hex string)
-	   NeedsData bool   // true if this file is embedded as a byte slice
-	   Data      []byte // contents of this file (only if NeedsData is set)
-	*/
+func newBuilder(c *context, irbuilder llvm.Builder, f *ssa.Function) *builder {
+	panic("todo")
+}
+
+// createFunction builds the LLVM IR implementation for this function. The
+// function must not yet be defined, otherwise this function will create a
+// diagnostic.
+func (b *builder) createFunction() {
+	panic("todo")
 }
