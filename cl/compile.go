@@ -18,6 +18,8 @@ package cl
 
 import (
 	"go/types"
+	"os"
+	"runtime"
 	"sort"
 
 	"github.com/goplus/llgo/loader"
@@ -189,7 +191,11 @@ func (c *context) createEmbedGlobal(member *ssa.Global, global llvm.Value, files
 	panic("todo")
 }
 
-func NewPackage(moduleName string, pkg loader.Package, conf *Config) (ret llvm.Module, err error) {
+type Package struct {
+	llvm.Module
+}
+
+func NewPackage(moduleName string, pkg loader.Package, conf *Config) (ret Package, err error) {
 	ssaPkg := pkg.SSA
 	ssaPkg.Build()
 
@@ -227,5 +233,41 @@ func NewPackage(moduleName string, pkg loader.Package, conf *Config) (ret llvm.M
 		)
 	}
 	*/
-	return c.mod, c.errs.ToError()
+	ret.Module = c.mod
+	err = c.errs.ToError()
+	return
+}
+
+func (p Package) Dispose() {
+	p.Module.Dispose()
+}
+
+func (p Package) WriteFile(file string) (err error) {
+	f, err := os.Create(file)
+	if err != nil {
+		return
+	}
+	err = p.WriteTo(f)
+	f.Close()
+	if err != nil {
+		os.Remove(file)
+	}
+	return
+}
+
+func (p Package) WriteTo(f *os.File) (err error) {
+	if runtime.GOOS == "windows" {
+		// Work around a problem on Windows.
+		// For some reason, WriteBitcodeToFile causes TinyGo to
+		// exit with the following message:
+		//   LLVM ERROR: IO failure on output stream: Bad file descriptor
+		buf := llvm.WriteBitcodeToMemoryBuffer(p.Module)
+		defer buf.Dispose()
+		_, err = f.Write(buf.Bytes())
+	} else {
+		// Otherwise, write bitcode directly to the file (probably
+		// faster).
+		err = llvm.WriteBitcodeToFile(p.Module, f)
+	}
+	return
 }

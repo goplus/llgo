@@ -30,17 +30,21 @@ import (
 // The linkName value contains a valid link name, even if //go:linkname is not
 // present.
 type functionInfo struct {
-	wasmModule string     // go:wasm-module
-	wasmName   string     // wasm-export-name or wasm-import-name in the IR
-	linkName   string     // go:linkname, go:export - the IR function name
-	section    string     // go:section - object file section name
-	exported   bool       // go:export, CGo
-	interrupt  bool       // go:interrupt
-	nobounds   bool       // go:nobounds
-	variadic   bool       // go:variadic (CGo only)
-	inline     inlineType // go:inline
+	/*
+	   wasmModule string     // go:wasm-module
+	   wasmName   string     // wasm-export-name or wasm-import-name in the IR
+	   linkName   string     // go:linkname, go:export - the IR function name
+	   section    string     // go:section - object file section name
+	   exported   bool       // go:export, CGo
+	   interrupt  bool       // go:interrupt
+	   nobounds   bool       // go:nobounds
+	   variadic   bool       // go:variadic (CGo only)
+	   inline     inlineType // go:inline
+	*/
+	linkName string // go:linkname, go:export - the IR function name
 }
 
+/*
 type inlineType int
 
 // How much to inline.
@@ -59,6 +63,7 @@ const (
 	// //go:noinline.
 	inlineNone
 )
+*/
 
 // getFunctionInfo returns information about a function that is not directly
 // present in *ssa.Function, such as the link name and whether it should be
@@ -71,10 +76,12 @@ func (c *context) getFunctionInfo(f *ssa.Function) functionInfo {
 // linkName is equal to .RelString(nil) on a global and extern is false, but for
 // some symbols this is different (due to //go:extern for example).
 type globalInfo struct {
-	linkName string // go:extern
-	extern   bool   // go:extern
-	align    int    // go:align
-	section  string // go:section
+	/*
+	   linkName string // go:extern
+	   align    int    // go:align
+	*/
+	section string // go:section
+	extern  bool   // go:extern
 }
 
 func (c *context) loadASTComments(loader.Package) {
