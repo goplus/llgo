@@ -1,3 +1,7 @@
+github.com/aykevl/go-wasm v0.0.1 h1:lPxy8l48P39W7I0tLrtCrLfZBOUq9IWZ7odGdyJP2AM=
+github.com/aykevl/go-wasm v0.0.1/go.mod h1:b4nggwg3lEkNKOU4wzhtLKz2q2sLxSHFnc98aGt6z/Y=
+github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb h1:m935MPodAbYS46DG4pJSv7WO+VECIWUQ7OJYSoTrMh4=
+github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb/go.mod h1:PkYb9DJNAwrSvRx5DYA+gUcOIgTGVMNkfSCbZM8cWpI=
 github.com/qiniu/x v1.13.1 h1:hi7tkXFq6BWGbBpMoLV7kvA2elop69j6Kl7TlxnFAiU=
 github.com/qiniu/x v1.13.1/go.mod h1:INZ2TSWSJVWO/RuELQROERcslBwVgFG7MkTfEdaQz9E=
 golang.org/x/tools v0.16.0 h1:GO788SKMRunPIBCXiQyo2AaexLstOrVhuAL5YwsckQM=
