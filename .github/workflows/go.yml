@@ -1,0 +1,57 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  test-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        llvm: [14, 15, 16, 17]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Update Homebrew
+        if: matrix.llvm == 17 # needed as long as LLVM 17 is still fresh
+        run: brew update
+      - name: Install LLVM
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }}
+        
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Build
+        run: go build -v ./...
+
+  test-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        llvm: [14, 15, 16, 17]
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install LLVM
+      run: |
+        echo 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.llvm }} main' | sudo tee /etc/apt/sources.list.d/llvm.list
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends llvm-${{ matrix.llvm }}-dev
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Build
+      run: go build -v ./...
