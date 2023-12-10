@@ -15,14 +15,14 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        llvm: [14, 15, 16, 17]
+        llvm: [15, 16, 17]
     steps:
       - uses: actions/checkout@v3
 
       - name: Update Homebrew
         if: matrix.llvm == 17 # needed as long as LLVM 17 is still fresh
         run: brew update
-      - name: Install LLVM
+      - name: Install LLVM {{ matrix.llvm }}
         run: HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }}
         
       - name: Set up Go
@@ -34,14 +34,14 @@ jobs:
         run: go build -v ./...
 
   test-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        llvm: [14, 15, 16, 17]
+        llvm: [15, 16, 17]
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install LLVM
+    - name: Install LLVM {{ matrix.llvm }}
       run: |
         echo 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.llvm }} main' | sudo tee /etc/apt/sources.list.d/llvm.list
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
