@@ -17,25 +17,26 @@
 package gossa
 
 import (
+	"go/types"
+	"testing"
+
 	"github.com/goplus/llvm"
 )
 
-// A NamedConst is a Member of a Package representing a package-level
-// named constant.
-//
-// Pos() returns the position of the declaring ast.ValueSpec.Names[*]
-// identifier.
-//
-// NB: a NamedConst is not a Value; it contains a constant Value, which
-// it augments with the name and position of its 'const' declaration.
-type NamedConst struct {
+func assertPkg(t *testing.T, p *Package) {
+	ctx := llvm.NewContext()
+	buf := llvm.WriteBitcodeToMemoryBuffer(p.mod)
+	mod, err := ctx.ParseIR(buf)
+	// buf.Dispose()
+	if err != nil {
+		t.Fatal("ctx.ParseIR:", err)
+	}
+	_ = mod
 }
 
-// A Global is a named Value holding the address of a package-level
-// variable.
-//
-// Pos() returns the position of the ast.ValueSpec.Names[*]
-// identifier.
-type Global struct {
-	impl llvm.Value
+func TestVar(t *testing.T) {
+	prog := NewProgram("")
+	pkg := prog.NewPackage("foo", "foo")
+	pkg.NewVar("a", types.Typ[types.Int])
+	assertPkg(t, pkg)
 }

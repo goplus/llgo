@@ -19,7 +19,7 @@ package gossa
 import (
 	"go/types"
 
-	llvm "tinygo.org/x/go-llvm"
+	"github.com/goplus/llvm"
 )
 
 // A Type is a Member of a Package representing a package-level named type.

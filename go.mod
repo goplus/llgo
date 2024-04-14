@@ -6,9 +6,9 @@ require (
 	github.com/aykevl/go-wasm v0.0.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/goplus/gop v1.2.6
+	github.com/goplus/llvm v0.7.0
 	github.com/qiniu/x v1.13.10
 	golang.org/x/tools v0.19.0
-	tinygo.org/x/go-llvm v0.0.0-20240106122909-c2c543540318
 )
 
 require (

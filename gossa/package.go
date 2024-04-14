@@ -21,10 +21,9 @@ import (
 	"go/types"
 	"io"
 	"os"
-	"runtime"
 
+	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
-	llvm "tinygo.org/x/go-llvm"
 )
 
 // A Program is a partial or complete Go program converted to SSA form.
@@ -42,16 +41,15 @@ type Program struct {
 
 func NewProgram(targetRep string) *Program {
 	ctx := llvm.NewContext()
-	runtime.SetFinalizer(ctx.C, (llvm.Context).Dispose)
+	ctx.Finalize()
 	td := llvm.NewTargetData(targetRep)
 	return &Program{ctx: ctx, td: td}
 }
 
-func (p *Program) NewPackage(pkg *types.Package) *Package {
-	name := pkg.Path()
-	mod := p.ctx.NewModule(name)
-	runtime.SetFinalizer(mod.C, (llvm.Module).Dispose)
-	return &Package{mod, pkg, p}
+func (p *Program) NewPackage(name, pkgPath string) *Package {
+	mod := p.ctx.NewModule(pkgPath)
+	mod.Finalize()
+	return &Package{mod, p}
 }
 
 // A Package is a single analyzed Go package containing Members for
@@ -64,7 +62,6 @@ func (p *Program) NewPackage(pkg *types.Package) *Package {
 // and unspecified other things too.
 type Package struct {
 	mod  llvm.Module
-	pkg  *types.Package
 	prog *Program
 }
 
@@ -85,9 +82,15 @@ func (p *Package) NewFunc(name string, sig *types.Signature) *Function {
 	return &Function{}
 }
 
-func (p *Package) WriteTo(w io.Writer) (int64, error) {
+func (p *Package) Bytes() []byte {
 	buf := llvm.WriteBitcodeToMemoryBuffer(p.mod)
-	n, err := w.Write(buf.Bytes()) // TODO(xsw): reduce copy of bytes
+	ret := buf.Bytes()
+	buf.Dispose()
+	return ret
+}
+
+func (p *Package) WriteTo(w io.Writer) (int64, error) {
+	n, err := w.Write(p.Bytes())
 	return int64(n), err
 }
 
