@@ -16,18 +16,21 @@
 
 package build
 
+import (
+	"go/build"
+)
+
 // An ImportMode controls the behavior of the Import method.
-type ImportMode uint
+type ImportMode = build.ImportMode
 
 // A Package describes the Go package found in a directory.
 type Package struct {
-	Dir        string // directory containing package sources
-	Name       string // package name
-	ImportPath string // import path of package ("" if unknown)
+	*build.Package
 }
 
 // A Context specifies the supporting context for a build.
 type Context struct {
+	*build.Context
 }
 
 // Import returns details about the Go package named by the import path,
@@ -38,12 +41,17 @@ type Context struct {
 //
 // If an error occurs, Import returns a non-nil error and a non-nil
 // *Package containing partial information.
-func (ctxt *Context) Import(path string, srcDir string, mode ImportMode) (*Package, error) {
-	panic("todo")
+func (ctxt Context) Import(path string, srcDir string, mode ImportMode) (ret Package, err error) {
+	pkg, err := build.Import(path, srcDir, mode)
+	if err != nil {
+		return
+	}
+	ret = Package{pkg}
+	return
 }
 
 // ImportDir is like Import but processes the Go package found in
 // the named directory.
-func (ctxt *Context) ImportDir(dir string, mode ImportMode) (*Package, error) {
+func (ctxt *Context) ImportDir(dir string, mode ImportMode) (Package, error) {
 	return ctxt.Import(".", dir, mode)
 }

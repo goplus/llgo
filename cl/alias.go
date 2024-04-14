@@ -16,6 +16,7 @@
 
 package cl
 
+/*
 import (
 	llvm "tinygo.org/x/go-llvm"
 )
@@ -42,3 +43,4 @@ var stdlibAliases = map[string]string{
 func (b *builder) createAlias(alias llvm.Value) {
 	panic("todo")
 }
+*/

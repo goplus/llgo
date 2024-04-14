@@ -16,6 +16,7 @@
 
 package cl
 
+/*
 // Define unimplemented intrinsic functions.
 //
 // Some functions are either normally implemented in Go assembly (like
@@ -58,3 +59,4 @@ func (b *builder) defineMathOp() {
 func (b *builder) defineMathBitsIntrinsic() bool {
 	panic("todo")
 }
+*/

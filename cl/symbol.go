@@ -16,6 +16,7 @@
 
 package cl
 
+/*
 import (
 	"go/types"
 
@@ -40,7 +41,8 @@ type functionInfo struct {
 	   nobounds   bool       // go:nobounds
 	   variadic   bool       // go:variadic (CGo only)
 	   inline     inlineType // go:inline
-	*/
+*/
+/*
 	linkName string // go:linkname, go:export - the IR function name
 }
 
@@ -64,7 +66,7 @@ const (
 	inlineNone
 )
 */
-
+/*
 // getFunctionInfo returns information about a function that is not directly
 // present in *ssa.Function, such as the link name and whether it should be
 // exported.
@@ -79,7 +81,8 @@ type globalInfo struct {
 	/*
 	   linkName string // go:extern
 	   align    int    // go:align
-	*/
+*/
+/*
 	section string // go:section
 	extern  bool   // go:extern
 }
@@ -103,3 +106,4 @@ func (c *context) getGlobalInfo(g *ssa.Global) globalInfo {
 func getAllMethods(prog *ssa.Program, typ types.Type) []*types.Selection {
 	panic("todo")
 }
+*/

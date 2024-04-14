@@ -33,7 +33,7 @@ import (
 
 // llgo build
 var Cmd = &base.Command{
-	UsageLine: "llog build [flags] [packages]",
+	UsageLine: "llgo build [flags] [packages]",
 	Short:     "Build Go files",
 }
 
@@ -87,7 +87,7 @@ func build(proj gopprojs.Proj, conf *llgo.Config, build *gocmd.BuildConfig) {
 		err = llgo.BuildDir(obj, conf, build)
 	case *gopprojs.PkgPathProj:
 		obj = v.Path
-		err = llgo.BuildPkgPath("", v.Path, conf, build)
+		err = llgo.BuildPkgPath("", obj, conf, build)
 	case *gopprojs.FilesProj:
 		err = llgo.BuildFiles(v.Files, conf, build)
 	default:

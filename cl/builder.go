@@ -16,6 +16,7 @@
 
 package cl
 
+/*
 import (
 	"golang.org/x/tools/go/ssa"
 	llvm "tinygo.org/x/go-llvm"
@@ -35,3 +36,4 @@ func newBuilder(c *context, irbuilder llvm.Builder, f *ssa.Function) *builder {
 func (b *builder) createFunction() {
 	panic("todo")
 }
+*/

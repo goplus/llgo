@@ -16,6 +16,7 @@
 
 package cl
 
+/*
 import (
 	"go/types"
 	"os"
@@ -213,8 +214,8 @@ func NewPackage(moduleName string, pkg loader.Package, conf *Config) (ret Packag
 		// Predeclare trackPointer, which is used everywhere we use runtime.alloc.
 		c.getFunction(c.program.ImportedPackage("runtime").Members["trackPointer"].(*ssa.Function))
 	}
-	*/
-
+*/
+/*
 	// Compile all functions, methods, and global variables in this package.
 	irbuilder := c.ctx.NewBuilder()
 	defer irbuilder.Dispose()
@@ -232,7 +233,8 @@ func NewPackage(moduleName string, pkg loader.Package, conf *Config) (ret Packag
 			}),
 		)
 	}
-	*/
+*/
+/*
 	ret.Module = c.mod
 	err = c.errs.ToError()
 	return
@@ -271,3 +273,4 @@ func (p Package) WriteTo(f *os.File) (err error) {
 	}
 	return
 }
+*/
