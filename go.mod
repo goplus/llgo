@@ -7,11 +7,12 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/goplus/gop v1.2.6
 	github.com/qiniu/x v1.13.10
+	golang.org/x/tools v0.19.0
+	tinygo.org/x/go-llvm v0.0.0-20240106122909-c2c543540318
 )
 
 require (
 	github.com/goplus/gogen v1.15.2 // indirect
 	github.com/goplus/mod v0.13.10 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/tools v0.19.0 // indirect
 )
