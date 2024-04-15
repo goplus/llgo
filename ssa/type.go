@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package gossa
+package ssa
 
 import (
 	"go/types"

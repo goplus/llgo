@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package gossa
+package ssa
 
 // Function represents the parameters, results, and code of a function
 // or method.

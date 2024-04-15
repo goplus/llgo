@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package gossa
+package ssa
 
 import (
 	"go/constant"
@@ -30,7 +30,10 @@ import (
 type Program struct {
 	ctx  llvm.Context
 	typs typeutil.Map
-	td   llvm.TargetData
+
+	target *Target
+	td     llvm.TargetData
+	tm     llvm.TargetMachine
 
 	intType   llvm.Type
 	int8Type  llvm.Type
@@ -39,11 +42,14 @@ type Program struct {
 	int64Type llvm.Type
 }
 
-func NewProgram(targetRep string) *Program {
+func NewProgram(target *Target) *Program {
+	if target == nil {
+		target = &Target{}
+	}
 	ctx := llvm.NewContext()
 	ctx.Finalize()
-	td := llvm.NewTargetData(targetRep)
-	return &Program{ctx: ctx, td: td}
+	td := llvm.NewTargetData("") // TODO(xsw): target config
+	return &Program{ctx: ctx, target: target, td: td}
 }
 
 func (p *Program) NewPackage(name, pkgPath string) *Package {
@@ -82,7 +88,24 @@ func (p *Package) NewFunc(name string, sig *types.Signature) *Function {
 	return &Function{}
 }
 
-func (p *Package) Bytes() []byte {
+type CodeGenFileType = llvm.CodeGenFileType
+
+const (
+	AssemblyFile = llvm.AssemblyFile
+	ObjectFile   = llvm.ObjectFile
+)
+
+func (p *Package) CodeGen(ft CodeGenFileType) (ret []byte, err error) {
+	buf, err := p.prog.targetMachine().EmitToMemoryBuffer(p.mod, ft)
+	if err != nil {
+		return
+	}
+	ret = buf.Bytes()
+	buf.Dispose()
+	return
+}
+
+func (p *Package) Bitcode() []byte {
 	buf := llvm.WriteBitcodeToMemoryBuffer(p.mod)
 	ret := buf.Bytes()
 	buf.Dispose()
@@ -90,7 +113,7 @@ func (p *Package) Bytes() []byte {
 }
 
 func (p *Package) WriteTo(w io.Writer) (int64, error) {
-	n, err := w.Write(p.Bytes())
+	n, err := w.Write(p.Bitcode())
 	return int64(n), err
 }
 
