@@ -38,6 +38,8 @@ type Program struct {
 	int16Type llvm.Type
 	int32Type llvm.Type
 	int64Type llvm.Type
+	voidType  llvm.Type
+	voidPtrTy llvm.Type
 }
 
 func NewProgram(target *Target) *Program {
@@ -71,10 +73,6 @@ type Package struct {
 
 func (p *Package) NewConst(name string, val constant.Value) *NamedConst {
 	return &NamedConst{}
-}
-
-func (p *Package) NewType(name string, typ types.Type) *Type {
-	return &Type{}
 }
 
 func (p *Package) NewVar(name string, typ types.Type) *Global {

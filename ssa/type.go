@@ -22,17 +22,34 @@ import (
 	"github.com/goplus/llvm"
 )
 
+/*
 // A Type is a Member of a Package representing a package-level named type.
 type Type struct {
+	impl llvm.Type
 }
+*/
 
 func (p *Program) llvmType(typ types.Type) llvm.Type {
 	if v := p.typs.At(typ); v != nil {
 		return v.(llvm.Type)
 	}
-	ret := p.toLLVMType(p.ctx, typ)
+	ret := p.toLLVMType(typ)
 	p.typs.Set(typ, ret)
 	return ret
+}
+
+func (p *Program) tyVoidPtr() llvm.Type {
+	if p.voidPtrTy.IsNil() {
+		p.voidPtrTy = llvm.PointerType(p.tyVoid(), 0)
+	}
+	return p.voidPtrTy
+}
+
+func (p *Program) tyVoid() llvm.Type {
+	if p.voidType.IsNil() {
+		p.voidType = p.ctx.VoidType()
+	}
+	return p.voidType
 }
 
 func (p *Program) tyInt() llvm.Type {
@@ -70,7 +87,7 @@ func (p *Program) tyInt64() llvm.Type {
 	return p.int64Type
 }
 
-func (p *Program) toLLVMType(ctx llvm.Context, typ types.Type) llvm.Type {
+func (p *Program) toLLVMType(typ types.Type) llvm.Type {
 	switch t := typ.(type) {
 	case *types.Basic:
 		switch t.Kind() {
@@ -85,15 +102,30 @@ func (p *Program) toLLVMType(ctx llvm.Context, typ types.Type) llvm.Type {
 		case types.Int64, types.Uint64:
 			return p.tyInt64()
 		case types.Float32:
-			return ctx.FloatType()
+			return p.ctx.FloatType()
 		case types.Float64:
-			return ctx.DoubleType()
+			return p.ctx.DoubleType()
 		case types.Complex64:
 		case types.Complex128:
 		case types.String:
 		case types.UnsafePointer:
-			return llvm.PointerType(ctx.VoidType(), 0)
+			return p.tyVoidPtr()
 		}
+	case *types.Pointer:
+		elem := p.llvmType(t.Elem())
+		return llvm.PointerType(elem, 0)
+	case *types.Slice:
+	case *types.Map:
+	case *types.Struct:
+		return p.toLLVMStruct(t)
+	case *types.Named:
+		return p.toLLVMNamed(t)
+	case *types.Signature:
+		return p.toLLVMFunc(t)
+	case *types.Array:
+		elem := p.llvmType(t.Elem())
+		return llvm.ArrayType(elem, int(t.Len()))
+	case *types.Chan:
 	}
 	panic("todo")
 }
@@ -103,4 +135,62 @@ func llvmIntType(ctx llvm.Context, size int) llvm.Type {
 		return ctx.Int32Type()
 	}
 	return ctx.Int64Type()
+}
+
+func (p *Program) toLLVMNamedStruct(name string, typ *types.Struct) llvm.Type {
+	t := p.ctx.StructCreateNamed(name)
+	fields := p.toLLVMFields(typ)
+	t.StructSetBody(fields, false)
+	return t
+}
+
+func (p *Program) toLLVMStruct(typ *types.Struct) llvm.Type {
+	fields := p.toLLVMFields(typ)
+	return p.ctx.StructType(fields, false)
+}
+
+func (p *Program) toLLVMFields(typ *types.Struct) []llvm.Type {
+	n := typ.NumFields()
+	fields := make([]llvm.Type, n)
+	for i := 0; i < n; i++ {
+		fields[i] = p.llvmType(typ.Field(i).Type())
+	}
+	return fields
+}
+
+func (p *Program) toLLVMTuple(t *types.Tuple) llvm.Type {
+	return p.ctx.StructType(p.toLLVMTypes(t), false)
+}
+
+func (p *Program) toLLVMTypes(t *types.Tuple) []llvm.Type {
+	n := t.Len()
+	ret := make([]llvm.Type, n)
+	for i := 0; i < n; i++ {
+		ret[i] = p.llvmType(t.At(i).Type())
+	}
+	return ret
+}
+
+func (p *Program) toLLVMFunc(sig *types.Signature) llvm.Type {
+	params := p.toLLVMTypes(sig.Params())
+	results := sig.Results()
+	var ret llvm.Type
+	switch nret := results.Len(); nret {
+	case 0:
+		ret = p.tyVoid()
+	case 1:
+		ret = p.llvmType(results.At(0).Type())
+	default:
+		ret = p.toLLVMTuple(results)
+	}
+	return llvm.FunctionType(ret, params, sig.Variadic())
+}
+
+func (p *Program) toLLVMNamed(typ *types.Named) llvm.Type {
+	name := typ.Obj().Name()
+	switch typ := typ.Underlying().(type) {
+	case *types.Struct:
+		return p.toLLVMNamedStruct(name, typ)
+	}
+	panic("todo")
 }
