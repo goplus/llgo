@@ -19,8 +19,6 @@ package ssa
 import (
 	"go/constant"
 	"go/types"
-	"io"
-	"os"
 
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -33,7 +31,7 @@ type Program struct {
 
 	target *Target
 	td     llvm.TargetData
-	tm     llvm.TargetMachine
+	// tm  llvm.TargetMachine
 
 	intType   llvm.Type
 	int8Type  llvm.Type
@@ -88,6 +86,11 @@ func (p *Package) NewFunc(name string, sig *types.Signature) *Function {
 	return &Function{}
 }
 
+func (p *Package) String() string {
+	return p.mod.String()
+}
+
+/*
 type CodeGenFileType = llvm.CodeGenFileType
 
 const (
@@ -125,3 +128,4 @@ func (p *Package) WriteFile(file string) (err error) {
 	defer f.Close()
 	return llvm.WriteBitcodeToFile(p.mod, f)
 }
+*/

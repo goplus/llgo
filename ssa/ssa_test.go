@@ -21,7 +21,8 @@ import (
 	"testing"
 )
 
-func assertPkg(t *testing.T, p *Package) {
+/*
+func asmPkg(t *testing.T, p *Package) {
 	b, err := p.CodeGen(AssemblyFile)
 	if err != nil {
 		t.Fatal("ctx.ParseIR:", err)
@@ -30,10 +31,21 @@ func assertPkg(t *testing.T, p *Package) {
 		t.Log(v)
 	}
 }
+*/
+
+func assertPkg(t *testing.T, p *Package, expected string) {
+	if v := p.String(); v != expected {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+	}
+}
 
 func TestVar(t *testing.T) {
 	prog := NewProgram(nil)
-	pkg := prog.NewPackage("foo", "foo")
+	pkg := prog.NewPackage("bar", "foo/bar")
 	pkg.NewVar("a", types.Typ[types.Int])
-	assertPkg(t, pkg)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+@a = external global i64
+`)
 }
