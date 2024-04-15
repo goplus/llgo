@@ -17,8 +17,6 @@
 package ssa
 
 import (
-	"runtime"
-
 	"github.com/goplus/llvm"
 )
 
@@ -36,6 +34,7 @@ type Target struct {
 	GOARM  string // "5", "6", "7" (default)
 }
 
+/*
 func (p *Program) targetMachine() llvm.TargetMachine {
 	if p.tm.C == nil {
 		spec := p.target.toSpec()
@@ -150,3 +149,4 @@ func (p *Target) toSpec() (spec targetSpec) {
 	}
 	return
 }
+*/
