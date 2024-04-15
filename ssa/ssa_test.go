@@ -50,7 +50,20 @@ source_filename = "foo/bar"
 `)
 }
 
-func TestEmptyStruct(t *testing.T) {
+func TestStruct(t *testing.T) {
+	empty := types.NewStruct(nil, nil)
+
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	pkg.NewVar("a", empty)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+@a = external global {}
+`)
+}
+
+func TestNamedStruct(t *testing.T) {
 	src := types.NewPackage("bar", "foo/bar")
 	empty := types.NewNamed(types.NewTypeName(0, src, "Empty", nil), types.NewStruct(nil, nil), nil)
 
