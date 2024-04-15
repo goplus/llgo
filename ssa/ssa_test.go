@@ -49,3 +49,19 @@ source_filename = "foo/bar"
 @a = external global i64
 `)
 }
+
+func TestEmptyStruct(t *testing.T) {
+	src := types.NewPackage("bar", "foo/bar")
+	empty := types.NewNamed(types.NewTypeName(0, src, "Empty", nil), types.NewStruct(nil, nil), nil)
+
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	pkg.NewVar("a", empty)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+%Empty = type {}
+
+@a = external global %Empty
+`)
+}
