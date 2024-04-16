@@ -38,6 +38,15 @@ func (p *Program) llvmType(typ types.Type) llvm.Type {
 	return ret
 }
 
+func (p *Program) llvmSignature(sig *types.Signature) llvm.Type {
+	if v := p.typs.At(sig); v != nil {
+		return v.(llvm.Type)
+	}
+	ret := p.toLLVMFunc(sig)
+	p.typs.Set(sig, ret)
+	return ret
+}
+
 func (p *Program) tyVoidPtr() llvm.Type {
 	if p.voidPtrTy.IsNil() {
 		p.voidPtrTy = llvm.PointerType(p.tyVoid(), 0)

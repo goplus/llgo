@@ -16,6 +16,10 @@
 
 package ssa
 
+import (
+	"github.com/goplus/llvm"
+)
+
 // Function represents the parameters, results, and code of a function
 // or method.
 //
@@ -66,4 +70,5 @@ package ssa
 // the generic method. TypeArgs() refers to [string,U] or [string,int],
 // respectively, and is nil in the generic method.
 type Function struct {
+	impl llvm.Value
 }
