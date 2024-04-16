@@ -78,3 +78,16 @@ source_filename = "foo/bar"
 @a = external global %Empty
 `)
 }
+
+func TestFunc(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	pkg.NewFunc("fn", sig)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+declare void @fn(i64)
+`)
+}
