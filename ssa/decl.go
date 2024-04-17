@@ -28,21 +28,21 @@ import (
 //
 // NB: a NamedConst is not a Value; it contains a constant Value, which
 // it augments with the name and position of its 'const' declaration.
-type TyNamedConst struct {
+type aNamedConst struct {
 }
 
-type NamedConst = *TyNamedConst
+type NamedConst = *aNamedConst
 
 // A Global is a named Value holding the address of a package-level
 // variable.
 //
 // Pos() returns the position of the ast.ValueSpec.Names[*]
 // identifier.
-type TyGlobal struct {
+type aGlobal struct {
 	impl llvm.Value
 }
 
-type Global = *TyGlobal
+type Global = *aGlobal
 
 // Function represents the parameters, results, and code of a function
 // or method.
@@ -93,14 +93,14 @@ type Global = *TyGlobal
 // method, (*Map[K,V]).Get, TypeParams() refers to the parameters [K,V] of
 // the generic method. TypeArgs() refers to [string,U] or [string,int],
 // respectively, and is nil in the generic method.
-type TyFunction struct {
+type aFunction struct {
 	impl llvm.Value
 	prog Program
 }
 
-type Function = *TyFunction
+type Function = *aFunction
 
-func (p *TyFunction) BodyStart() *BasicBlock {
+func (p *aFunction) BodyStart() *BasicBlock {
 	body := llvm.AddBasicBlock(p.impl, "entry")
 	return &BasicBlock{body}
 }
