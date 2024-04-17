@@ -29,7 +29,7 @@ type Type struct {
 }
 */
 
-func (p *Program) llvmType(typ types.Type) llvm.Type {
+func (p *aProgram) llvmType(typ types.Type) llvm.Type {
 	if v := p.typs.At(typ); v != nil {
 		return v.(llvm.Type)
 	}
@@ -38,7 +38,7 @@ func (p *Program) llvmType(typ types.Type) llvm.Type {
 	return ret
 }
 
-func (p *Program) llvmSignature(sig *types.Signature) llvm.Type {
+func (p *aProgram) llvmSignature(sig *types.Signature) llvm.Type {
 	if v := p.typs.At(sig); v != nil {
 		return v.(llvm.Type)
 	}
@@ -47,56 +47,56 @@ func (p *Program) llvmSignature(sig *types.Signature) llvm.Type {
 	return ret
 }
 
-func (p *Program) tyVoidPtr() llvm.Type {
+func (p *aProgram) tyVoidPtr() llvm.Type {
 	if p.voidPtrTy.IsNil() {
 		p.voidPtrTy = llvm.PointerType(p.tyVoid(), 0)
 	}
 	return p.voidPtrTy
 }
 
-func (p *Program) tyVoid() llvm.Type {
+func (p *aProgram) tyVoid() llvm.Type {
 	if p.voidType.IsNil() {
 		p.voidType = p.ctx.VoidType()
 	}
 	return p.voidType
 }
 
-func (p *Program) tyInt() llvm.Type {
+func (p *aProgram) tyInt() llvm.Type {
 	if p.intType.IsNil() {
 		p.intType = llvmIntType(p.ctx, p.td.PointerSize())
 	}
 	return p.intType
 }
 
-func (p *Program) tyInt8() llvm.Type {
+func (p *aProgram) tyInt8() llvm.Type {
 	if p.int8Type.IsNil() {
 		p.int8Type = p.ctx.Int8Type()
 	}
 	return p.int8Type
 }
 
-func (p *Program) tyInt16() llvm.Type {
+func (p *aProgram) tyInt16() llvm.Type {
 	if p.int16Type.IsNil() {
 		p.int16Type = p.ctx.Int16Type()
 	}
 	return p.int16Type
 }
 
-func (p *Program) tyInt32() llvm.Type {
+func (p *aProgram) tyInt32() llvm.Type {
 	if p.int32Type.IsNil() {
 		p.int32Type = p.ctx.Int32Type()
 	}
 	return p.int32Type
 }
 
-func (p *Program) tyInt64() llvm.Type {
+func (p *aProgram) tyInt64() llvm.Type {
 	if p.int64Type.IsNil() {
 		p.int64Type = p.ctx.Int64Type()
 	}
 	return p.int64Type
 }
 
-func (p *Program) toLLVMType(typ types.Type) llvm.Type {
+func (p *aProgram) toLLVMType(typ types.Type) llvm.Type {
 	switch t := typ.(type) {
 	case *types.Basic:
 		switch t.Kind() {
@@ -146,19 +146,19 @@ func llvmIntType(ctx llvm.Context, size int) llvm.Type {
 	return ctx.Int64Type()
 }
 
-func (p *Program) toLLVMNamedStruct(name string, typ *types.Struct) llvm.Type {
+func (p *aProgram) toLLVMNamedStruct(name string, typ *types.Struct) llvm.Type {
 	t := p.ctx.StructCreateNamed(name)
 	fields := p.toLLVMFields(typ)
 	t.StructSetBody(fields, false)
 	return t
 }
 
-func (p *Program) toLLVMStruct(typ *types.Struct) llvm.Type {
+func (p *aProgram) toLLVMStruct(typ *types.Struct) llvm.Type {
 	fields := p.toLLVMFields(typ)
 	return p.ctx.StructType(fields, false)
 }
 
-func (p *Program) toLLVMFields(typ *types.Struct) []llvm.Type {
+func (p *aProgram) toLLVMFields(typ *types.Struct) []llvm.Type {
 	n := typ.NumFields()
 	fields := make([]llvm.Type, n)
 	for i := 0; i < n; i++ {
@@ -167,11 +167,11 @@ func (p *Program) toLLVMFields(typ *types.Struct) []llvm.Type {
 	return fields
 }
 
-func (p *Program) toLLVMTuple(t *types.Tuple) llvm.Type {
+func (p *aProgram) toLLVMTuple(t *types.Tuple) llvm.Type {
 	return p.ctx.StructType(p.toLLVMTypes(t), false)
 }
 
-func (p *Program) toLLVMTypes(t *types.Tuple) []llvm.Type {
+func (p *aProgram) toLLVMTypes(t *types.Tuple) []llvm.Type {
 	n := t.Len()
 	ret := make([]llvm.Type, n)
 	for i := 0; i < n; i++ {
@@ -180,7 +180,7 @@ func (p *Program) toLLVMTypes(t *types.Tuple) []llvm.Type {
 	return ret
 }
 
-func (p *Program) toLLVMFunc(sig *types.Signature) llvm.Type {
+func (p *aProgram) toLLVMFunc(sig *types.Signature) llvm.Type {
 	params := p.toLLVMTypes(sig.Params())
 	results := sig.Results()
 	var ret llvm.Type
@@ -195,7 +195,7 @@ func (p *Program) toLLVMFunc(sig *types.Signature) llvm.Type {
 	return llvm.FunctionType(ret, params, sig.Variadic())
 }
 
-func (p *Program) toLLVMNamed(typ *types.Named) llvm.Type {
+func (p *aProgram) toLLVMNamed(typ *types.Named) llvm.Type {
 	name := typ.Obj().Name()
 	switch typ := typ.Underlying().(type) {
 	case *types.Struct:

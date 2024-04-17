@@ -25,8 +25,9 @@ import (
 )
 
 // A Program is a partial or complete Go program converted to SSA form.
-type Program struct {
+type aProgram struct {
 	ctx  llvm.Context
+	b    Builder
 	typs typeutil.Map
 
 	target *Target
@@ -42,20 +43,28 @@ type Program struct {
 	voidPtrTy llvm.Type
 }
 
-func NewProgram(target *Target) *Program {
+type Program = *aProgram
+
+func NewProgram(target *Target) Program {
 	if target == nil {
 		target = &Target{}
 	}
 	ctx := llvm.NewContext()
 	ctx.Finalize()
+	b := ctx.NewBuilder()
+	b.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
-	return &Program{ctx: ctx, target: target, td: td}
+	return &aProgram{ctx: ctx, b: Builder{b}, target: target, td: td}
 }
 
-func (p *Program) NewPackage(name, pkgPath string) *Package {
+func (p *aProgram) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
 	mod.Finalize()
-	return &Package{mod, p}
+	return &aPackage{mod, p}
+}
+
+func (p *aProgram) Builder() Builder {
+	return p.b
 }
 
 // A Package is a single analyzed Go package containing Members for
@@ -66,26 +75,28 @@ func (p *Program) NewPackage(name, pkgPath string) *Package {
 // Members also contains entries for "init" (the synthetic package
 // initializer) and "init#%d", the nth declared init function,
 // and unspecified other things too.
-type Package struct {
+type aPackage struct {
 	mod  llvm.Module
-	prog *Program
+	prog Program
 }
 
-func (p *Package) NewConst(name string, val constant.Value) *NamedConst {
-	return &NamedConst{}
+type Package = *aPackage
+
+func (p *aPackage) NewConst(name string, val constant.Value) NamedConst {
+	return &aNamedConst{}
 }
 
-func (p *Package) NewVar(name string, typ types.Type) *Global {
+func (p *aPackage) NewVar(name string, typ types.Type) Global {
 	gbl := llvm.AddGlobal(p.mod, p.prog.llvmType(typ), name)
-	return &Global{gbl}
+	return &aGlobal{gbl}
 }
 
-func (p *Package) NewFunc(name string, sig *types.Signature) *Function {
+func (p *aPackage) NewFunc(name string, sig *types.Signature) Function {
 	fn := llvm.AddFunction(p.mod, name, p.prog.llvmSignature(sig))
-	return &Function{fn}
+	return &aFunction{fn, p.prog}
 }
 
-func (p *Package) String() string {
+func (p *aPackage) String() string {
 	return p.mod.String()
 }
 

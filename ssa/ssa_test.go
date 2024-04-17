@@ -33,7 +33,7 @@ func asmPkg(t *testing.T, p *Package) {
 }
 */
 
-func assertPkg(t *testing.T, p *Package, expected string) {
+func assertPkg(t *testing.T, p Package, expected string) {
 	if v := p.String(); v != expected {
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
