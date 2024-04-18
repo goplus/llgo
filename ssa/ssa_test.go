@@ -22,6 +22,10 @@ import (
 	"testing"
 )
 
+func init() {
+	Initialize(InitAll)
+}
+
 /*
 func asmPkg(t *testing.T, p *Package) {
 	b, err := p.CodeGen(AssemblyFile)
@@ -127,6 +131,38 @@ source_filename = "foo/bar"
 
 define i64 @fn(i64 %0, double %1) {
   ret i64 %0
+}
+`)
+}
+
+func TestFuncCall(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig)
+	fn.MakeBody("").
+		Return(prog.Val(1))
+
+	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	b := pkg.NewFunc("main", sigMain).MakeBody("")
+	b.Call(fn.Expr, prog.Val(1), prog.Val(1.2))
+	b.Return()
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0, double %1) {
+  ret i64 1
+}
+
+define void @main() {
+  %1 = call i64 @fn(i64 1, double 1.200000e+00)
+  ret void
 }
 `)
 }

@@ -18,36 +18,50 @@ package ssa
 
 import (
 	"go/token"
+	"go/types"
 
 	"github.com/goplus/llvm"
 )
 
 // -----------------------------------------------------------------------------
 
-type valueKind = int
-
 type Expr struct {
 	impl llvm.Value
 	Type
 }
 
+// -----------------------------------------------------------------------------
+
+func llvmValues(vals []Expr) []llvm.Value {
+	ret := make([]llvm.Value, len(vals))
+	for i, v := range vals {
+		ret[i] = v.impl
+	}
+	return ret
+}
+
+// -----------------------------------------------------------------------------
+
+func (p Program) Val(v interface{}) Expr {
+	switch v := v.(type) {
+	case int:
+		t := p.Int()
+		ret := llvm.ConstInt(t.ll, uint64(v), false)
+		return Expr{ret, t}
+	case float64:
+		t := p.Float64()
+		ret := llvm.ConstFloat(t.ll, v)
+		return Expr{ret, t}
+	}
+	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
+
 const (
 	mathOpBase = token.ADD
 	mathOpLast = token.REM
 )
-
-const (
-	vkInvalid valueKind = iota
-	vkSigned
-	vkUnsigned
-	vkFloat
-	vkComplex
-	vkString
-	vkBool
-	vkFunc
-)
-
-// -----------------------------------------------------------------------------
 
 var mathOpToLLVM = []llvm.Opcode{
 	int(token.ADD-mathOpBase)<<2 | vkSigned:   llvm.Add,
@@ -183,18 +197,15 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 
 // -----------------------------------------------------------------------------
 
-func (p Program) Val(v interface{}) Expr {
-	switch v := v.(type) {
-	case int:
-		t := p.Int()
-		ret := llvm.ConstInt(t.ll, uint64(v), false)
-		return Expr{ret, t}
-	case float64:
-		t := p.Float64()
-		ret := llvm.ConstFloat(t.ll, v)
-		return Expr{ret, t}
+func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
+	switch t := fn.t.(type) {
+	case *types.Signature:
+		ret.Type = b.prog.retType(t)
+	default:
+		panic("todo")
 	}
-	panic("todo")
+	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args))
+	return
 }
 
 // -----------------------------------------------------------------------------

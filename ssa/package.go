@@ -24,6 +24,51 @@ import (
 	"golang.org/x/tools/go/types/typeutil"
 )
 
+// -----------------------------------------------------------------------------
+
+type InitFlags int
+
+const (
+	InitNativeTarget InitFlags = 1 << iota
+	InitAllTargets
+	InitAllTargetInfos
+	InitAllTargetMCs
+
+	InitNativeAsmPrinter
+	InitAllAsmPrinters
+
+	InitAllAsmParsers
+
+	InitNative = InitNativeTarget | InitNativeAsmPrinter
+	InitAll    = InitAllTargets | InitAllAsmParsers | InitAllAsmPrinters | InitAllTargetInfos | InitAllTargetMCs
+)
+
+func Initialize(flags InitFlags) {
+	if flags&InitAllTargetInfos != 0 {
+		llvm.InitializeAllTargetInfos()
+	}
+	if flags&InitAllTargets != 0 {
+		llvm.InitializeAllTargets()
+	}
+	if flags&InitAllTargetMCs != 0 {
+		llvm.InitializeAllTargetMCs()
+	}
+	if flags&InitAllAsmParsers != 0 {
+		llvm.InitializeAllAsmParsers()
+	}
+	if flags&InitAllAsmPrinters != 0 {
+		llvm.InitializeAllAsmPrinters()
+	}
+	if flags&InitNativeTarget != 0 {
+		llvm.InitializeNativeTarget()
+	}
+	if flags&InitNativeAsmPrinter != 0 {
+		llvm.InitializeNativeAsmPrinter()
+	}
+}
+
+// -----------------------------------------------------------------------------
+
 // A Program is a partial or complete Go program converted to SSA form.
 type aProgram struct {
 	ctx  llvm.Context
@@ -42,6 +87,7 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
+	voidTy Type
 	boolTy Type
 	intTy  Type
 	f64Ty  Type
@@ -65,6 +111,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	return &aPackage{mod, p}
 }
 
+func (p Program) Void() Type {
+	if p.voidTy == nil {
+		p.voidTy = &aType{p.tyVoid(), types.Typ[types.Invalid], vkInvalid}
+	}
+	return p.voidTy
+}
+
 func (p Program) Bool() Type {
 	if p.boolTy == nil {
 		p.boolTy = p.llvmType(types.Typ[types.Bool])
@@ -85,6 +138,8 @@ func (p Program) Float64() Type {
 	}
 	return p.f64Ty
 }
+
+// -----------------------------------------------------------------------------
 
 // A Package is a single analyzed Go package containing Members for
 // all package-level functions, variables, constants and types it
@@ -160,3 +215,5 @@ func (p *Package) WriteFile(file string) (err error) {
 	return llvm.WriteBitcodeToFile(p.mod, f)
 }
 */
+
+// -----------------------------------------------------------------------------

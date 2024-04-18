@@ -103,9 +103,7 @@ type Global = *aGlobal
 // the generic method. TypeArgs() refers to [string,U] or [string,int],
 // respectively, and is nil in the generic method.
 type aFunction struct {
-	impl llvm.Value
-	Type
-
+	Expr
 	prog Program
 
 	params []Type
@@ -114,18 +112,19 @@ type aFunction struct {
 type Function = *aFunction
 
 func newFunction(fn llvm.Value, t Type, prog Program) Function {
-	ret := &aFunction{fn, t, prog, newParams(t, prog)}
-	return ret
+	return &aFunction{Expr{fn, t}, prog, newParams(t, prog)}
 }
 
-func newParams(fn Type, prog Program) []Type {
-	in := fn.t.(*types.Signature).Params()
-	n := in.Len()
-	ret := make([]Type, n)
-	for i := 0; i < n; i++ {
-		ret[i] = prog.llvmType(in.At(i).Type())
+func newParams(fn Type, prog Program) (params []Type) {
+	sig := fn.t.(*types.Signature)
+	in := sig.Params()
+	if n := in.Len(); n > 0 {
+		params = make([]Type, n)
+		for i := 0; i < n; i++ {
+			params[i] = prog.llvmType(in.At(i).Type())
+		}
 	}
-	return ret
+	return
 }
 
 func (p Function) Param(i int) Expr {
