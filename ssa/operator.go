@@ -24,9 +24,9 @@ import (
 
 type valueKind = int
 
-type Value struct {
+type Expr struct {
 	impl llvm.Value
-	kind valueKind
+	Type
 }
 
 const (
@@ -42,6 +42,7 @@ const (
 	vkComplex
 	vkString
 	vkBool
+	vkFunc
 )
 
 var mathOpToLLVM = []llvm.Opcode{
@@ -134,45 +135,44 @@ func isPredOp(op token.Token) bool {
 // ADD SUB MUL QUO REM          + - * / %
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
-func (b Builder) BinOp(op token.Token, x, y Value) (v Value) {
+func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	switch {
 	case isMathOp(op): // op: + - * / %
-		switch x.kind {
+		kind := x.kind
+		switch kind {
 		case vkString, vkComplex:
 			panic("todo")
 		}
-		idx := mathOpIdx(op, x.kind)
+		idx := mathOpIdx(op, kind)
 		if llop := mathOpToLLVM[idx]; llop != 0 {
-			v.impl = llvm.CreateBinOp(b.impl, llop, x.impl, y.impl)
-			return
+			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
 		if op == token.AND_NOT {
 			panic("todo")
 		}
+		kind := x.kind
 		llop := logicOpToLLVM[op-logicOpBase]
-		if op == token.SHR && x.kind == vkUnsigned {
+		if op == token.SHR && kind == vkUnsigned {
 			llop = llvm.AShr
 		}
-		v.impl = llvm.CreateBinOp(b.impl, llop, x.impl, y.impl)
-		return
+		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
-		switch x.kind {
+		tret := b.prog.Bool()
+		kind := x.kind
+		switch kind {
 		case vkSigned:
 			pred := intPredOpToLLVM[op-predOpBase]
-			v.impl = llvm.CreateICmp(b.impl, pred, x.impl, y.impl)
-			return
+			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkUnsigned:
 			pred := uintPredOpToLLVM[op-predOpBase]
-			v.impl = llvm.CreateICmp(b.impl, pred, x.impl, y.impl)
-			return
+			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
-			v.impl = llvm.ConstFCmp(pred, x.impl, y.impl)
-			return
+			return Expr{llvm.ConstFCmp(pred, x.impl, y.impl), tret}
 		case vkString, vkComplex, vkBool:
 			panic("todo")
 		}
 	}
-	return
+	panic("todo")
 }

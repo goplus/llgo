@@ -27,7 +27,6 @@ import (
 // A Program is a partial or complete Go program converted to SSA form.
 type aProgram struct {
 	ctx  llvm.Context
-	b    Builder
 	typs typeutil.Map
 
 	target *Target
@@ -35,12 +34,17 @@ type aProgram struct {
 	// tm  llvm.TargetMachine
 
 	intType   llvm.Type
+	int1Type  llvm.Type
 	int8Type  llvm.Type
 	int16Type llvm.Type
 	int32Type llvm.Type
 	int64Type llvm.Type
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
+
+	boolTy Type
+	intTy  Type
+	f64Ty  Type
 }
 
 type Program = *aProgram
@@ -51,20 +55,35 @@ func NewProgram(target *Target) Program {
 	}
 	ctx := llvm.NewContext()
 	ctx.Finalize()
-	b := ctx.NewBuilder()
-	b.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
-	return &aProgram{ctx: ctx, b: Builder{b}, target: target, td: td}
+	return &aProgram{ctx: ctx, target: target, td: td}
 }
 
-func (p *aProgram) NewPackage(name, pkgPath string) Package {
+func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
 	mod.Finalize()
 	return &aPackage{mod, p}
 }
 
-func (p *aProgram) Builder() Builder {
-	return p.b
+func (p Program) Bool() Type {
+	if p.boolTy == nil {
+		p.boolTy = p.llvmType(types.Typ[types.Bool])
+	}
+	return p.boolTy
+}
+
+func (p Program) Int() Type {
+	if p.intTy == nil {
+		p.intTy = p.llvmType(types.Typ[types.Int])
+	}
+	return p.intTy
+}
+
+func (p Program) Float64() Type {
+	if p.f64Ty == nil {
+		p.f64Ty = p.llvmType(types.Typ[types.Float64])
+	}
+	return p.f64Ty
 }
 
 // A Package is a single analyzed Go package containing Members for
@@ -82,21 +101,23 @@ type aPackage struct {
 
 type Package = *aPackage
 
-func (p *aPackage) NewConst(name string, val constant.Value) NamedConst {
+func (p Package) NewConst(name string, val constant.Value) NamedConst {
 	return &aNamedConst{}
 }
 
-func (p *aPackage) NewVar(name string, typ types.Type) Global {
-	gbl := llvm.AddGlobal(p.mod, p.prog.llvmType(typ), name)
-	return &aGlobal{gbl}
+func (p Package) NewVar(name string, typ types.Type) Global {
+	t := p.prog.llvmType(typ)
+	gbl := llvm.AddGlobal(p.mod, t.ll, name)
+	return &aGlobal{gbl, t}
 }
 
-func (p *aPackage) NewFunc(name string, sig *types.Signature) Function {
-	fn := llvm.AddFunction(p.mod, name, p.prog.llvmSignature(sig))
-	return &aFunction{fn, p.prog}
+func (p Package) NewFunc(name string, sig *types.Signature) Function {
+	t := p.prog.llvmSignature(sig)
+	fn := llvm.AddFunction(p.mod, name, t.ll)
+	return &aFunction{fn, t, p.prog}
 }
 
-func (p *aPackage) String() string {
+func (p Package) String() string {
 	return p.mod.String()
 }
 
