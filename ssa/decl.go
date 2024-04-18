@@ -107,17 +107,15 @@ type aFunction struct {
 	prog Program
 
 	params []Type
-	ret    Type
 }
 
 type Function = *aFunction
 
 func newFunction(fn llvm.Value, t Type, prog Program) Function {
-	params, ret := newParamsAndRet(t, prog)
-	return &aFunction{Expr{fn, t}, prog, params, ret}
+	return &aFunction{Expr{fn, t}, prog, newParams(t, prog)}
 }
 
-func newParamsAndRet(fn Type, prog Program) (params []Type, ret Type) {
+func newParams(fn Type, prog Program) (params []Type) {
 	sig := fn.t.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
@@ -125,15 +123,6 @@ func newParamsAndRet(fn Type, prog Program) (params []Type, ret Type) {
 		for i := 0; i < n; i++ {
 			params[i] = prog.llvmType(in.At(i).Type())
 		}
-	}
-	out := sig.Results()
-	switch n := out.Len(); n {
-	case 0:
-		ret = prog.Void()
-	case 1:
-		ret = prog.llvmType(out.At(0).Type())
-	default:
-		ret = &aType{prog.toLLVMTuple(out), out, vkTuple}
 	}
 	return
 }
