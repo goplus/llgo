@@ -20,13 +20,35 @@ import (
 	"github.com/goplus/llvm"
 )
 
-type Builder struct {
-	impl llvm.Builder
-}
-
+// -----------------------------------------------------------------------------
+/*
 type BasicBlock struct {
 	impl llvm.BasicBlock
 }
+*/
+// -----------------------------------------------------------------------------
 
-func (p BasicBlock) End() {
+type aBuilder struct {
+	impl llvm.Builder
+	prog Program
 }
+
+type Builder = *aBuilder
+
+func (b Builder) Return(results ...Expr) Builder {
+	switch n := len(results); n {
+	case 0:
+		b.impl.CreateRetVoid()
+	case 1:
+		b.impl.CreateRet(results[0].impl)
+	default:
+		rets := make([]llvm.Value, n)
+		for i, v := range results {
+			rets[i] = v.impl
+		}
+		b.impl.CreateAggregateRet(rets)
+	}
+	return b
+}
+
+// -----------------------------------------------------------------------------

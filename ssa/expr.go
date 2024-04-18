@@ -15,3 +15,21 @@
  */
 
 package ssa
+
+import (
+	"github.com/goplus/llvm"
+)
+
+func (p Program) Val(v interface{}) Expr {
+	switch v := v.(type) {
+	case int:
+		t := p.Int()
+		ret := llvm.ConstInt(t.ll, uint64(v), false)
+		return Expr{ret, t}
+	case float64:
+		t := p.Float64()
+		ret := llvm.ConstFloat(t.ll, v)
+		return Expr{ret, t}
+	}
+	panic("todo")
+}

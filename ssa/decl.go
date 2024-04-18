@@ -20,6 +20,8 @@ import (
 	"github.com/goplus/llvm"
 )
 
+// -----------------------------------------------------------------------------
+
 // A NamedConst is a Member of a Package representing a package-level
 // named constant.
 //
@@ -33,6 +35,8 @@ type aNamedConst struct {
 
 type NamedConst = *aNamedConst
 
+// -----------------------------------------------------------------------------
+
 // A Global is a named Value holding the address of a package-level
 // variable.
 //
@@ -40,9 +44,12 @@ type NamedConst = *aNamedConst
 // identifier.
 type aGlobal struct {
 	impl llvm.Value
+	Type
 }
 
 type Global = *aGlobal
+
+// -----------------------------------------------------------------------------
 
 // Function represents the parameters, results, and code of a function
 // or method.
@@ -95,12 +102,20 @@ type Global = *aGlobal
 // respectively, and is nil in the generic method.
 type aFunction struct {
 	impl llvm.Value
+	Type
+
 	prog Program
 }
 
 type Function = *aFunction
 
-func (p *aFunction) BodyStart() *BasicBlock {
-	body := llvm.AddBasicBlock(p.impl, "entry")
-	return &BasicBlock{body}
+func (p *aFunction) MakeBody(label string) Builder {
+	body := llvm.AddBasicBlock(p.impl, label)
+	prog := p.prog
+	b := prog.ctx.NewBuilder()
+	b.Finalize()
+	b.SetInsertPointAtEnd(body)
+	return &aBuilder{b, prog}
 }
+
+// -----------------------------------------------------------------------------

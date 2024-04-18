@@ -79,7 +79,7 @@ source_filename = "foo/bar"
 `)
 }
 
-func TestFunc(t *testing.T) {
+func TestDeclFunc(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
@@ -89,5 +89,21 @@ func TestFunc(t *testing.T) {
 source_filename = "foo/bar"
 
 declare void @fn(i64)
+`)
+}
+
+func TestBasicFunc(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	rets := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, nil, rets, false)
+	b := pkg.NewFunc("fn", sig).MakeBody("")
+	b.Return(prog.Val(1))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn() {
+  ret i64 1
+}
 `)
 }
