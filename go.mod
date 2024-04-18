@@ -6,7 +6,7 @@ require (
 	github.com/aykevl/go-wasm v0.0.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/goplus/gop v1.2.6
-	github.com/goplus/llvm v0.7.1-0.20240418094455-718cc880283b
+	github.com/goplus/llvm v0.7.1-0.20240418160956-6233231cbcc9
 	github.com/qiniu/x v1.13.10
 	golang.org/x/tools v0.19.0
 )
