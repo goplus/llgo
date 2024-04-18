@@ -16,17 +16,7 @@
 
 package ssa
 
-import (
-	"github.com/goplus/llvm"
-)
-
-func init() {
-	llvm.InitializeAllTargetInfos()
-	llvm.InitializeAllTargets()
-	llvm.InitializeAllTargetMCs()
-	llvm.InitializeAllAsmParsers()
-	llvm.InitializeAllAsmPrinters()
-}
+// -----------------------------------------------------------------------------
 
 type Target struct {
 	GOOS   string
@@ -150,3 +140,5 @@ func (p *Target) toSpec() (spec targetSpec) {
 	return
 }
 */
+
+// -----------------------------------------------------------------------------

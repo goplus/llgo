@@ -42,11 +42,7 @@ func (b Builder) Return(results ...Expr) Builder {
 	case 1:
 		b.impl.CreateRet(results[0].impl)
 	default:
-		rets := make([]llvm.Value, n)
-		for i, v := range results {
-			rets[i] = v.impl
-		}
-		b.impl.CreateAggregateRet(rets)
+		b.impl.CreateAggregateRet(llvmValues(results))
 	}
 	return b
 }

@@ -24,6 +24,22 @@ import (
 
 // -----------------------------------------------------------------------------
 
+type valueKind = int
+
+const (
+	vkInvalid valueKind = iota
+	vkSigned
+	vkUnsigned
+	vkFloat
+	vkComplex
+	vkString
+	vkBool
+	vkFunc
+	vkTuple
+)
+
+// -----------------------------------------------------------------------------
+
 type aType struct {
 	ll   llvm.Type
 	t    types.Type
@@ -204,18 +220,30 @@ func (p Program) toLLVMTypes(t *types.Tuple) []llvm.Type {
 
 func (p Program) toLLVMFunc(sig *types.Signature) Type {
 	params := p.toLLVMTypes(sig.Params())
-	results := sig.Results()
+	out := sig.Results()
 	var ret llvm.Type
-	switch nret := results.Len(); nret {
+	switch nret := out.Len(); nret {
 	case 0:
 		ret = p.tyVoid()
 	case 1:
-		ret = p.llvmType(results.At(0).Type()).ll
+		ret = p.llvmType(out.At(0).Type()).ll
 	default:
-		ret = p.toLLVMTuple(results)
+		ret = p.toLLVMTuple(out)
 	}
 	ft := llvm.FunctionType(ret, params, sig.Variadic())
 	return &aType{ft, sig, vkFunc}
+}
+
+func (p Program) retType(sig *types.Signature) Type {
+	out := sig.Results()
+	switch n := out.Len(); n {
+	case 0:
+		return p.Void()
+	case 1:
+		return p.llvmType(out.At(0).Type())
+	default:
+		return &aType{p.toLLVMTuple(out), out, vkTuple}
+	}
 }
 
 func (p Program) toLLVMNamed(typ *types.Named) Type {
