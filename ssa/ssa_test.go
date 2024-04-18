@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/token"
 	"go/types"
 	"testing"
 )
@@ -120,12 +121,34 @@ func TestFuncParam(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	fn := pkg.NewFunc("fn", sig)
-	fn.MakeBody("").Return(fn.Param(1))
+	fn.MakeBody("").Return(fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0, double %1) {
-  ret double %1
+  ret i64 %0
+}
+`)
+}
+
+func TestBinOp(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig)
+	b := fn.MakeBody("")
+	ret := b.BinOp(token.ADD, fn.Param(0), prog.Val(1))
+	b.Return(ret)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0, double %1) {
+  %3 = add i64 %0, 1
+  ret i64 %3
 }
 `)
 }
