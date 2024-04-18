@@ -167,6 +167,31 @@ define void @main() {
 `)
 }
 
+func TestFuncMultiRet(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
+	rets := types.NewTuple(
+		types.NewVar(0, nil, "c", types.Typ[types.Int]),
+		types.NewVar(0, nil, "d", types.Typ[types.Float64]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	a := pkg.NewVar("a", types.Typ[types.Int])
+	fn := pkg.NewFunc("fn", sig)
+	b := fn.MakeBody("")
+	b.Return(a.Expr, fn.Param(0))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+@a = external global i64
+
+define { i64, double } @fn(double %0) {
+  %mrv = insertvalue { i64, double } { ptr @a, double poison }, double %0, 1
+  ret { i64, double } %mrv
+}
+`)
+}
+
 func TestBinOp(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
