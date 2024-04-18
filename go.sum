@@ -12,6 +12,8 @@ github.com/goplus/llvm v0.7.1-0.20240417171659-4fb15c5dc82a h1:pKOqI/f4lyPAlto2M
 github.com/goplus/llvm v0.7.1-0.20240417171659-4fb15c5dc82a/go.mod h1:PeVK8GgzxwAYCiMiUAJb5wJR6xbhj989tu9oulKLLT4=
 github.com/goplus/llvm v0.7.1-0.20240418070213-5013f6a4299b h1:sRVmYXGgKjqgaoVQ1bshnw9Ar77stDtjHC4A/PDJ0fk=
 github.com/goplus/llvm v0.7.1-0.20240418070213-5013f6a4299b/go.mod h1:PeVK8GgzxwAYCiMiUAJb5wJR6xbhj989tu9oulKLLT4=
+github.com/goplus/llvm v0.7.1-0.20240418094455-718cc880283b h1:vSEAK8m49NUX0YKyF+7m/wAkrRe8pf94PfFmJ/5+xKo=
+github.com/goplus/llvm v0.7.1-0.20240418094455-718cc880283b/go.mod h1:PeVK8GgzxwAYCiMiUAJb5wJR6xbhj989tu9oulKLLT4=
 github.com/goplus/mod v0.13.10 h1:5Om6KOvo31daN7N30kWU1vC5zhsJPM+uPbcEN/FnlzE=
 github.com/goplus/mod v0.13.10/go.mod h1:HDuPZgpWiaTp3PUolFgsiX+Q77cbUWB/mikVHfYND3c=
 github.com/qiniu/x v1.13.10 h1:J4Z3XugYzAq85SlyAfqlKVrbf05glMbAOh+QncsDQpE=
