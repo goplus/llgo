@@ -95,15 +95,37 @@ declare void @fn(i64)
 func TestBasicFunc(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	rets := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
-	sig := types.NewSignatureType(nil, nil, nil, nil, rets, false)
-	b := pkg.NewFunc("fn", sig).MakeBody("")
-	b.Return(prog.Val(1))
+	params := types.NewTuple(
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	pkg.NewFunc("fn", sig).MakeBody("").
+		Return(prog.Val(1))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn() {
+define i64 @fn(i64 %0, double %1) {
   ret i64 1
+}
+`)
+}
+
+func TestFuncParam(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig)
+	fn.MakeBody("").Return(fn.Param(1))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0, double %1) {
+  ret double %1
 }
 `)
 }

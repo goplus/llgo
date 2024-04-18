@@ -17,6 +17,8 @@
 package ssa
 
 import (
+	"go/types"
+
 	"github.com/goplus/llvm"
 )
 
@@ -105,11 +107,32 @@ type aFunction struct {
 	Type
 
 	prog Program
+
+	params []Type
 }
 
 type Function = *aFunction
 
-func (p *aFunction) MakeBody(label string) Builder {
+func newFunction(fn llvm.Value, t Type, prog Program) Function {
+	ret := &aFunction{fn, t, prog, newParams(t, prog)}
+	return ret
+}
+
+func newParams(fn Type, prog Program) []Type {
+	in := fn.t.(*types.Signature).Params()
+	n := in.Len()
+	ret := make([]Type, n)
+	for i := 0; i < n; i++ {
+		ret[i] = prog.llvmType(in.At(i).Type())
+	}
+	return ret
+}
+
+func (p Function) Param(i int) Expr {
+	return Expr{p.impl.Param(i), p.params[i]}
+}
+
+func (p Function) MakeBody(label string) Builder {
 	body := llvm.AddBasicBlock(p.impl, label)
 	prog := p.prog
 	b := prog.ctx.NewBuilder()

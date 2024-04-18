@@ -114,7 +114,7 @@ func (p Package) NewVar(name string, typ types.Type) Global {
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	return &aFunction{fn, t, p.prog}
+	return newFunction(fn, t, p.prog)
 }
 
 func (p Package) String() string {
