@@ -45,8 +45,7 @@ type NamedConst = *aNamedConst
 // Pos() returns the position of the ast.ValueSpec.Names[*]
 // identifier.
 type aGlobal struct {
-	impl llvm.Value
-	Type
+	Expr
 }
 
 type Global = *aGlobal

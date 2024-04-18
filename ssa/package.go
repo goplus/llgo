@@ -163,7 +163,7 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 func (p Package) NewVar(name string, typ types.Type) Global {
 	t := p.prog.llvmType(typ)
 	gbl := llvm.AddGlobal(p.mod, t.ll, name)
-	return &aGlobal{gbl, t}
+	return &aGlobal{Expr{gbl, t}}
 }
 
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
