@@ -33,7 +33,9 @@ func main() {
 	items, err := nm.List(os.Args[1])
 	check(err)
 	for _, item := range items {
-		fmt.Printf("\n%s:\n", item.File)
+		if item.File != "" {
+			fmt.Printf("\n%s:\n", item.File)
+		}
 		for _, sym := range item.Symbols {
 			if sym.FAddr {
 				fmt.Printf("%016x %c %s\n", sym.Addr, sym.Type, sym.Name)
