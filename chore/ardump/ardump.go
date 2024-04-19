@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -34,14 +35,17 @@ func main() {
 	check(err)
 	defer f.Close()
 
-	r := ar.NewReader(f)
+	r, err := ar.NewReader(f)
+	check(err)
 	for {
 		hdr, err := r.Next()
 		if err != nil {
-			log.Println(err)
+			if err != io.EOF {
+				log.Println(err)
+			}
 			break
 		}
-		fmt.Println("==>", hdr.Name)
+		fmt.Println(hdr.Name)
 	}
 }
 

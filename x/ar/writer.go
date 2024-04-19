@@ -17,13 +17,8 @@
 package ar
 
 import (
-	"errors"
 	"io"
 	"strconv"
-)
-
-var (
-	errWriteTooLong = errors.New("ar: write too long")
 )
 
 // Writer provides sequential writing of an ar archive.

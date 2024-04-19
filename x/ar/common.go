@@ -17,13 +17,30 @@
 package ar
 
 import (
+	"errors"
 	"time"
 )
 
-const (
-	headerByteSize = 60
-	globalHeader   = "!<arch>\n"
+var (
+	errInvalidHeader = errors.New("ar: invalid header")
+	errWriteTooLong  = errors.New("ar: write too long")
 )
+
+const (
+	globalHeader    = "!<arch>\n"
+	globalHeaderLen = len(globalHeader)
+	headerByteSize  = 60
+)
+
+type recHeader struct {
+	name    [16]byte
+	modTime [12]byte
+	uid     [6]byte
+	gid     [6]byte
+	mode    [8]byte
+	size    [10]byte
+	eol     [2]byte
+}
 
 type Header struct {
 	Name    string

@@ -19,7 +19,8 @@ package ar
 import (
 	"io"
 	"strconv"
-	"time"
+	"strings"
+	"unsafe"
 )
 
 // Provides read access to an ar archive.
@@ -46,41 +47,24 @@ type Reader struct {
 }
 
 // Copies read data to r. Strips the global ar header.
-func NewReader(r io.Reader) *Reader {
-	io.CopyN(io.Discard, r, 8) // Discard global header
-
-	return &Reader{r: r}
-}
-
-func (rd *Reader) string(b []byte) string {
-	i := len(b) - 1
-	for i > 0 && b[i] == 32 {
-		i--
+func NewReader(r io.Reader) (*Reader, error) {
+	buf := make([]byte, globalHeaderLen)
+	if _, err := io.ReadFull(r, buf); err != nil {
+		return nil, err
+	}
+	if string(buf) != globalHeader {
+		return nil, errInvalidHeader
 	}
 
-	return string(b[0 : i+1])
+	return &Reader{r: r}, nil
 }
 
-func (rd *Reader) numeric(b []byte) int64 {
-	i := len(b) - 1
-	for i > 0 && b[i] == 32 {
-		i--
-	}
-
-	n, _ := strconv.ParseInt(string(b[0:i+1]), 10, 64)
-
-	return n
+func stringVal(b []byte) string {
+	return strings.TrimRight(string(b), " ")
 }
 
-func (rd *Reader) octal(b []byte) int64 {
-	i := len(b) - 1
-	for i > 0 && b[i] == 32 {
-		i--
-	}
-
-	n, _ := strconv.ParseInt(string(b[3:i+1]), 8, 64)
-
-	return n
+func intVal(b []byte) (int64, error) {
+	return strconv.ParseInt(stringVal(b), 10, 64)
 }
 
 func (rd *Reader) skipUnread() error {
@@ -95,30 +79,38 @@ func (rd *Reader) skipUnread() error {
 	return err
 }
 
-func (rd *Reader) readHeader() (*Header, error) {
-	headerBuf := make([]byte, headerByteSize)
-	if _, err := io.ReadFull(rd.r, headerBuf); err != nil {
-		return nil, err
+func (rd *Reader) readHeader() (header *Header, err error) {
+	var rec recHeader
+	var buf = (*[headerByteSize]byte)(unsafe.Pointer(&rec))[:]
+	if _, err = io.ReadFull(rd.r, buf); err != nil {
+		return
 	}
 
-	header := new(Header)
-	s := slicer(headerBuf)
+	header = new(Header)
+	header.Name = stringVal(rec.name[:])
+	if header.Size, err = intVal(rec.size[:]); err != nil {
+		return
+	}
 
-	header.Name = rd.string(s.next(16))
-	header.ModTime = time.Unix(rd.numeric(s.next(12)), 0)
-	header.Uid = int(rd.numeric(s.next(6)))
-	header.Gid = int(rd.numeric(s.next(6)))
-	header.Mode = rd.octal(s.next(8))
-	header.Size = rd.numeric(s.next(10))
-
-	rd.nb = int64(header.Size)
 	if header.Size%2 == 1 {
 		rd.pad = 1
 	} else {
 		rd.pad = 0
 	}
 
-	return header, nil
+	if rec.name[0] == '#' {
+		if n, e := strconv.ParseInt(strings.TrimPrefix(header.Name[3:], "#1/"), 10, 64); e == nil {
+			name := make([]byte, n)
+			if _, err = io.ReadFull(rd.r, name); err != nil {
+				return
+			}
+			header.Name = string(name)
+			header.Size -= n
+		}
+	}
+
+	rd.nb = int64(header.Size)
+	return
 }
 
 // Call Next() to skip to the next file in the archive file.
