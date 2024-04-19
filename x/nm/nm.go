@@ -87,10 +87,14 @@ func (p *Cmd) List(arfile string) (items []*ObjectFile, err error) {
 }
 
 func listOutput(data []byte) (items []*ObjectFile, err error) {
-	var item *ObjectFile
-	var sep = []byte{'\n'}
-	for _, line := range bytes.Split(data, sep) {
+	sep := []byte{'\n'}
+	item := &ObjectFile{}
+	lines := bytes.Split(data, sep)
+	for _, line := range lines {
 		if len(line) == 0 {
+			if item.File == "" && len(item.Symbols) > 0 {
+				items = append(items, item)
+			}
 			item = nil
 			continue
 		}
