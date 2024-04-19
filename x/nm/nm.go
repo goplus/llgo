@@ -58,6 +58,7 @@ const (
 	LocalText = SymbolType('t') // Local text (code) section symbol
 	LocalData = SymbolType('d') // Local data (local var) section symbol
 	LocalBSS  = SymbolType('b') // Local BSS (uninitialized local var) section symbol
+	LocalASym = SymbolType('s') // Local symbol in an assembler source file
 )
 
 // Symbol represents a symbol in an object file.
