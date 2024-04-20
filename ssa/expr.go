@@ -53,12 +53,16 @@ func (p Program) BoolVal(v bool) Expr {
 	return Expr{ret, t}
 }
 
+func (p Program) IntVal(v int) Expr {
+	t := p.Int()
+	ret := llvm.ConstInt(t.ll, uint64(v), false)
+	return Expr{ret, t}
+}
+
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
 	case int:
-		t := p.Int()
-		ret := llvm.ConstInt(t.ll, uint64(v), false)
-		return Expr{ret, t}
+		return p.IntVal(v)
 	case bool:
 		return p.BoolVal(v)
 	case float64:
@@ -75,6 +79,10 @@ func (b Builder) Const(v constant.Value, t types.Type) Expr {
 		switch t.Kind() {
 		case types.Bool:
 			return b.prog.BoolVal(constant.BoolVal(v))
+		case types.Int:
+			if v, exact := constant.Int64Val(v); exact {
+				return b.prog.IntVal(int(v))
+			}
 		}
 	}
 	panic("todo")
