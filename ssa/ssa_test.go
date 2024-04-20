@@ -26,18 +26,6 @@ func init() {
 	Initialize(InitAll)
 }
 
-/*
-func asmPkg(t *testing.T, p *Package) {
-	b, err := p.CodeGen(AssemblyFile)
-	if err != nil {
-		t.Fatal("ctx.ParseIR:", err)
-	}
-	if v := string(b); v != "" {
-		t.Log(v)
-	}
-}
-*/
-
 func assertPkg(t *testing.T, p Package, expected string) {
 	if v := p.String(); v != expected {
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
@@ -105,7 +93,7 @@ func TestBasicFunc(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	pkg.NewFunc("fn", sig).MakeBody("").
+	pkg.NewFunc("fn", sig).MakeBody(1).
 		Return(prog.Val(1))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -125,7 +113,7 @@ func TestFuncParam(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	fn := pkg.NewFunc("fn", sig)
-	fn.MakeBody("").Return(fn.Param(0))
+	fn.MakeBody(1).Return(fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -145,11 +133,11 @@ func TestFuncCall(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	fn := pkg.NewFunc("fn", sig)
-	fn.MakeBody("").
+	fn.MakeBody(1).
 		Return(prog.Val(1))
 
 	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	b := pkg.NewFunc("main", sigMain).MakeBody("")
+	b := pkg.NewFunc("main", sigMain).MakeBody(1)
 	b.Call(fn.Expr, prog.Val(1), prog.Val(1.2))
 	b.Return()
 
@@ -178,7 +166,7 @@ func TestFuncMultiRet(t *testing.T) {
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	a := pkg.NewVar("a", types.Typ[types.Int])
 	fn := pkg.NewFunc("fn", sig)
-	b := fn.MakeBody("")
+	b := fn.MakeBody(1)
 	b.Return(a.Expr, fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -188,6 +176,39 @@ source_filename = "foo/bar"
 define { i64, double } @fn(double %0) {
   %mrv = insertvalue { i64, double } { ptr @a, double poison }, double %0, 1
   ret { i64, double } %mrv
+}
+`)
+}
+
+func TestIf(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig)
+	b := fn.MakeBody(3)
+	iftrue := fn.Block(1)
+	iffalse := fn.Block(2)
+	if iftrue.Index() != 1 || iftrue.Parent() != fn {
+		t.Fatal("iftrue")
+	}
+	cond := b.BinOp(token.GTR, fn.Param(0), prog.Val(0))
+	b.If(cond, iftrue, iffalse)
+	b.SetBlock(iftrue).Return(prog.Val(1))
+	b.SetBlock(iffalse).Return(prog.Val(0))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0) {
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %1
+  ret i64 1
+
+4:                                                ; preds = %1
+  ret i64 0
 }
 `)
 }
@@ -216,7 +237,7 @@ func TestBinOp(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	fn := pkg.NewFunc("fn", sig)
-	b := fn.MakeBody("")
+	b := fn.MakeBody(1)
 	ret := b.BinOp(token.ADD, fn.Param(0), prog.Val(1))
 	b.Return(ret)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
@@ -238,7 +259,7 @@ func TestUnOp(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	fn := pkg.NewFunc("fn", sig)
-	b := fn.MakeBody("")
+	b := fn.MakeBody(1)
 	ret := b.UnOp(token.MUL, fn.Param(0))
 	b.Return(ret)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'

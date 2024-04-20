@@ -21,21 +21,48 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-/*
-type BasicBlock struct {
+
+type aBasicBlock struct {
 	impl llvm.BasicBlock
+	fn   Function
+	idx  int
 }
-*/
+
+// BasicBlock represents a basic block in a function.
+type BasicBlock = *aBasicBlock
+
+// Parent returns the function to which the basic block belongs.
+func (p BasicBlock) Parent() Function {
+	return p.fn
+}
+
+// Index returns the index of the basic block in the parent function.
+func (p BasicBlock) Index() int {
+	return p.idx
+}
+
 // -----------------------------------------------------------------------------
 
 type aBuilder struct {
 	impl llvm.Builder
+	fn   Function
 	prog Program
 }
 
+// Builder represents a builder for creating instructions in a function.
 type Builder = *aBuilder
 
-func (b Builder) Return(results ...Expr) Builder {
+// SetBlock sets the current block to the specified basic block.
+func (b Builder) SetBlock(blk BasicBlock) Builder {
+	if b.fn != blk.fn {
+		panic("mismatched function")
+	}
+	b.impl.SetInsertPointAtEnd(blk.impl)
+	return b
+}
+
+// Return emits a return instruction.
+func (b Builder) Return(results ...Expr) {
 	switch n := len(results); n {
 	case 0:
 		b.impl.CreateRetVoid()
@@ -44,7 +71,14 @@ func (b Builder) Return(results ...Expr) Builder {
 	default:
 		b.impl.CreateAggregateRet(llvmValues(results))
 	}
-	return b
+}
+
+// If emits an if instruction.
+func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
+	if b.fn != thenb.fn || b.fn != elseb.fn {
+		panic("mismatched function")
+	}
+	b.impl.CreateCondBr(cond.impl, thenb.impl, elseb.impl)
 }
 
 // -----------------------------------------------------------------------------
