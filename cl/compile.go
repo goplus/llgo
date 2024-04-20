@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 The GoPlus Authors (goplus.org). All rights reserved.
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,135 @@
  */
 
 package cl
+
+import (
+	"sort"
+
+	llssa "github.com/goplus/llgo/ssa"
+	"golang.org/x/tools/go/ssa"
+)
+
+type Config struct {
+}
+
+type context struct {
+}
+
+// Global variable.
+func (p *context) compileGlobal(ret llssa.Package, member *ssa.Global) {
+	ret.NewVar(member.Name(), member.Type())
+}
+
+func (p *context) compileType(ret llssa.Package, member *ssa.Type) {
+	panic("todo")
+	/*
+		if types.IsInterface(member.Type()) {
+			// Interfaces don't have concrete methods.
+			continue
+		}
+
+		// Named type. We should make sure all methods are created.
+		// This includes both functions with pointer receivers and those
+		// without.
+		methods := getAllMethods(pkg.Prog, member.Type())
+		methods = append(methods, getAllMethods(pkg.Prog, types.NewPointer(member.Type()))...)
+		for _, method := range methods {
+			// Parse this method.
+			fn := pkg.Prog.MethodValue(method)
+			if fn == nil {
+				continue // probably a generic method
+			}
+			if member.Type().String() != member.String() {
+				// This is a member on a type alias. Do not build such a
+				// function.
+				continue
+			}
+			if fn.Blocks == nil {
+				continue // external function
+			}
+			if fn.Synthetic != "" && fn.Synthetic != "package initializer" {
+				// This function is a kind of wrapper function (created by
+				// the ssa package, not appearing in the source code) that
+				// is created by the getFunction method as needed.
+				// Therefore, don't build it here to avoid "function
+				// redeclared" errors.
+				continue
+			}
+			// Create the function definition.
+			b := newBuilder(c, irbuilder, fn)
+			b.createFunction()
+		}
+	*/
+}
+
+func (p *context) compileFunc(ret llssa.Package, member *ssa.Function) {
+	// panic("todo")
+	/*
+		// Create the function definition.
+		b := newBuilder(c, irbuilder, member)
+		if _, ok := mathToLLVMMapping[member.RelString(nil)]; ok {
+			// The body of this function (if there is one) is ignored and
+			// replaced with a LLVM intrinsic call.
+			b.defineMathOp()
+			continue
+		}
+		if ok := b.defineMathBitsIntrinsic(); ok {
+			// Like a math intrinsic, the body of this function was replaced
+			// with a LLVM intrinsic.
+			continue
+		}
+		if member.Blocks == nil {
+			// Try to define this as an intrinsic function.
+			b.defineIntrinsicFunction()
+			// It might not be an intrinsic function but simply an external
+			// function (defined via //go:linkname). Leave it undefined in
+			// that case.
+			continue
+		}
+		b.createFunction()
+	*/
+}
+
+func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.Package, err error) {
+	type namedMember struct {
+		name string
+		val  ssa.Member
+	}
+
+	// Sort by position, so that the order of the functions in the IR matches
+	// the order of functions in the source file. This is useful for testing,
+	// for example.
+	var members []*namedMember
+	for name, v := range pkg.Members {
+		members = append(members, &namedMember{name, v})
+	}
+	sort.Slice(members, func(i, j int) bool {
+		iPos := members[i].val.Pos()
+		jPos := members[j].val.Pos()
+		return iPos < jPos
+	})
+
+	pkgTypes := pkg.Pkg
+	ret = prog.NewPackage(pkgTypes.Name(), pkgTypes.Path())
+
+	ctx := &context{}
+	for _, m := range members {
+		member := m.val
+		switch member := member.(type) {
+		case *ssa.Function:
+			if member.TypeParams() != nil {
+				// Do not try to build generic (non-instantiated) functions.
+				continue
+			}
+			ctx.compileFunc(ret, member)
+		case *ssa.Type:
+			ctx.compileType(ret, member)
+		case *ssa.Global:
+			ctx.compileGlobal(ret, member)
+		}
+	}
+	return
+}
 
 /*
 import (
