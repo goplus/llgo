@@ -115,8 +115,8 @@ var a int
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"init$guard" = external global ptr
-@a = external global ptr
+@"init$guard" = global ptr null
+@a = global ptr null
 
 define void @init() {
 _llgo_0:
@@ -142,7 +142,7 @@ func fn(a int, b float64) int {
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"init$guard" = external global ptr
+@"init$guard" = global ptr null
 
 define void @init() {
 _llgo_0:

@@ -1,7 +1,7 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@"init$guard" = external global ptr
+@"init$guard" = global ptr null
 
 define void @init() {
 _llgo_0:
