@@ -83,13 +83,19 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) llssa.Bas
 	return ret
 }
 
-func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) llssa.Expr {
+func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret llssa.Expr) {
+	if v, ok := p.vals[iv]; ok {
+		return v
+	}
 	switch v := iv.(type) {
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
-		return b.UnOp(v.Op, x)
+		ret = b.UnOp(v.Op, x)
+	default:
+		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
-	panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
+	p.vals[iv] = ret
+	return ret
 }
 
 func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
@@ -128,25 +134,19 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
-func (p *context) compileValue(b llssa.Builder, v ssa.Value) (ret llssa.Expr) {
-	if e, ok := p.vals[v]; ok {
-		return e
-	}
+func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if iv, ok := v.(instrAndValue); ok {
-		ret = p.compileInstrAndValue(b, iv)
-	} else {
-		switch v := v.(type) {
-		case *ssa.Global:
-			g := p.compileGlobal(p.pkg, v)
-			ret = g.Expr
-		case *ssa.Const:
-			ret = b.Const(v.Value, v.Type())
-		default:
-			panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
-		}
+		return p.compileInstrAndValue(b, iv)
 	}
-	p.vals[v] = ret
-	return ret
+	switch v := v.(type) {
+	case *ssa.Global:
+		g := p.compileGlobal(p.pkg, v)
+		return g.Expr
+	case *ssa.Const:
+		return b.Const(v.Value, v.Type())
+	default:
+		panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
+	}
 }
 
 // -----------------------------------------------------------------------------
