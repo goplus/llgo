@@ -105,19 +105,24 @@ type aFunction struct {
 	Expr
 	prog Program
 
-	params []Type
+	params  []Type
+	hasVArg bool
 }
 
 type Function = *aFunction
 
 func newFunction(fn llvm.Value, t Type, prog Program) Function {
-	return &aFunction{Expr{fn, t}, prog, newParams(t, prog)}
+	params, hasVArg := newParams(t, prog)
+	return &aFunction{Expr{fn, t}, prog, params, hasVArg}
 }
 
-func newParams(fn Type, prog Program) (params []Type) {
+func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	sig := fn.t.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
+		if hasVArg = HasVArg(in, n); hasVArg {
+			n--
+		}
 		params = make([]Type, n)
 		for i := 0; i < n; i++ {
 			params[i] = prog.llvmType(in.At(i).Type())

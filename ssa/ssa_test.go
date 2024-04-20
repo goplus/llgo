@@ -192,6 +192,21 @@ define { i64, double } @fn(double %0) {
 `)
 }
 
+func TestPrintf(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	pchar := types.NewPointer(types.Typ[types.Int8])
+	params := types.NewTuple(types.NewVar(0, nil, "format", pchar), VArg())
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	pkg.NewFunc("printf", sig)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+declare i32 @printf(ptr, ...)
+`)
+}
+
 func TestBinOp(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
