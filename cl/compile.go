@@ -35,11 +35,16 @@ type instrAndValue interface {
 }
 
 type context struct {
-	prog llssa.Program
-	pkg  llssa.Package
-	fn   llssa.Function
-	glbs map[*ssa.Global]llssa.Global
-	vals map[ssa.Value]llssa.Expr
+	prog  llssa.Program
+	pkg   llssa.Package
+	fn    llssa.Function
+	fns   map[*ssa.Function]llssa.Function
+	glbs  map[*ssa.Global]llssa.Global
+	bvals map[ssa.Value]llssa.Expr // block values
+}
+
+func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
+	panic("todo")
 }
 
 // Global variable.
@@ -52,12 +57,17 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) llssa.Global
 	return g
 }
 
-func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
-	panic("todo")
+func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) llssa.Function {
+	if fn, ok := p.fns[f]; ok {
+		return fn
+	}
+	fn := p.doCompileFunc(pkg, f)
+	p.fns[f] = fn
+	return fn
 }
 
-func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
-	fn := pkg.NewFunc(f.Name(), f.Signature)
+func (p *context) doCompileFunc(pkg llssa.Package, f *ssa.Function) (fn llssa.Function) {
+	fn = pkg.NewFunc(f.Name(), f.Signature)
 	p.fn = fn
 	defer func() {
 		p.fn = nil
@@ -71,12 +81,13 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 	for _, block := range f.Blocks {
 		p.compileBlock(b, block)
 	}
+	return
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) llssa.BasicBlock {
 	ret := p.fn.Block(block.Index)
 	b.SetBlock(ret)
-	p.vals = make(map[ssa.Value]llssa.Expr)
+	p.bvals = make(map[ssa.Value]llssa.Expr)
 	for _, instr := range block.Instrs {
 		p.compileInstr(b, instr)
 	}
@@ -84,17 +95,26 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) llssa.Bas
 }
 
 func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret llssa.Expr) {
-	if v, ok := p.vals[iv]; ok {
+	if v, ok := p.bvals[iv]; ok {
 		return v
 	}
 	switch v := iv.(type) {
+	case *ssa.Call:
+		call := v.Call
+		fn := p.compileValue(b, call.Value)
+		args := p.compileValues(b, call.Args)
+		ret = b.Call(fn, args...)
+	case *ssa.BinOp:
+		x := p.compileValue(b, v.X)
+		y := p.compileValue(b, v.Y)
+		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
 		ret = b.UnOp(v.Op, x)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
-	p.vals[iv] = ret
+	p.bvals[iv] = ret
 	return ret
 }
 
@@ -139,14 +159,31 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		return p.compileInstrAndValue(b, iv)
 	}
 	switch v := v.(type) {
+	case *ssa.Parameter:
+		fn := v.Parent()
+		for idx, param := range fn.Params {
+			if param == v {
+				return p.fn.Param(idx)
+			}
+		}
+	case *ssa.Function:
+		fn := p.compileFunc(p.pkg, v)
+		return fn.Expr
 	case *ssa.Global:
 		g := p.compileGlobal(p.pkg, v)
 		return g.Expr
 	case *ssa.Const:
 		return b.Const(v.Value, v.Type())
-	default:
-		panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 	}
+	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
+}
+
+func (p *context) compileValues(b llssa.Builder, vals []ssa.Value) []llssa.Expr {
+	ret := make([]llssa.Expr, len(vals))
+	for i, v := range vals {
+		ret[i] = p.compileValue(b, v)
+	}
+	return ret
 }
 
 // -----------------------------------------------------------------------------
@@ -177,6 +214,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.P
 	ctx := &context{
 		prog: prog,
 		pkg:  ret,
+		fns:  make(map[*ssa.Function]llssa.Function),
 		glbs: make(map[*ssa.Global]llssa.Global),
 	}
 	for _, m := range members {
