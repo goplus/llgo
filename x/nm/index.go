@@ -81,11 +81,16 @@ func (p *IndexBuilder) IndexFile(arFile, outFile string) (err error) {
 		return
 	}
 	var b bytes.Buffer
-	b.WriteString("file ")
+	b.WriteString("nm ")
 	b.WriteString(arFile)
 	b.WriteByte('\n')
 	nbase := b.Len()
 	for _, item := range items {
+		if item.File != "" {
+			b.WriteString("file ")
+			b.WriteString(item.File)
+			b.WriteByte('\n')
+		}
 		for _, sym := range item.Symbols {
 			switch sym.Type {
 			case Text, Data, BSS, Rodata, 'S', 'C', 'W', 'A':
