@@ -19,6 +19,7 @@ package nm
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -109,28 +110,64 @@ func listOutput(data []byte) (items []*ObjectFile, err error) {
 			err = errInvalidOutput
 			return
 		}
-		if len(line) < 19 {
+		if len(line) < 10 {
 			err = errInvalidOutput
 			return
 		}
-		sym := &Symbol{
-			Name: string(line[19:]),
-			Type: SymbolType(line[17]),
-		}
-		if sym.FAddr = line[0] != ' '; sym.FAddr {
-			sym.Addr = hexUint64(line)
+		var sym *Symbol
+		if is64bits(line) {
+			sym = &Symbol{
+				Name: string(line[19:]),
+				Type: SymbolType(line[17]),
+			}
+			if sym.FAddr = line[0] != ' '; sym.FAddr {
+				sym.Addr = hexUint64(line)
+			}
+		} else {
+			sym = &Symbol{
+				Name: string(line[11:]),
+				Type: SymbolType(line[9]),
+			}
+			if sym.FAddr = line[0] != ' '; sym.FAddr {
+				sym.Addr = uint64(hexUint32(line))
+			}
 		}
 		item.Symbols = append(item.Symbols, sym)
 	}
 	return
 }
 
+func is64bits(line []byte) bool {
+	if line[0] != ' ' {
+		return line[8] != ' '
+	}
+	return line[9] == ' '
+}
+
 func hexUint64(b []byte) uint64 {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Fprintln(os.Stderr, "-->", string(b))
+			panic(e)
+		}
+	}()
 	_ = b[15] // bounds check hint to compiler; see golang.org/issue/14808
 	return hex(b[15]) | hex(b[14])<<4 | hex(b[13])<<8 | hex(b[12])<<12 |
 		hex(b[11])<<16 | hex(b[10])<<20 | hex(b[9])<<24 | hex(b[8])<<28 |
 		hex(b[7])<<32 | hex(b[6])<<36 | hex(b[5])<<40 | hex(b[4])<<44 |
 		hex(b[3])<<48 | hex(b[2])<<52 | hex(b[1])<<56 | hex(b[0])<<60
+}
+
+func hexUint32(b []byte) uint64 {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Fprintln(os.Stderr, "-->", string(b))
+			panic(e)
+		}
+	}()
+	_ = b[7] // bounds check hint to compiler; see golang.org/issue/14808
+	return hex(b[7]) | hex(b[6])<<4 | hex(b[5])<<8 | hex(b[4])<<12 |
+		hex(b[3])<<16 | hex(b[2])<<20 | hex(b[1])<<24 | hex(b[0])<<28
 }
 
 func hex(b byte) uint64 {

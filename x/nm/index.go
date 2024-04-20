@@ -18,6 +18,8 @@ package nm
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/base64"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,7 +34,24 @@ func NewIndexBuilder(nm *Cmd) *IndexBuilder {
 	return &IndexBuilder{nm}
 }
 
-func (p *IndexBuilder) Index(fromDir, toDir string, progress func(path string)) (err error) {
+func (p *IndexBuilder) Index(fromDir []string, toDir string, progress func(path string)) error {
+	for _, dir := range fromDir {
+		if dir == "" {
+			continue
+		}
+		if e := p.IndexDir(dir, toDir, progress); e != nil {
+			if !os.IsNotExist(e) {
+				log.Println(e)
+			}
+		}
+	}
+	return nil
+}
+
+func (p *IndexBuilder) IndexDir(fromDir, toDir string, progress func(path string)) error {
+	if abs, e := filepath.Abs(fromDir); e == nil {
+		fromDir = abs
+	}
 	return filepath.WalkDir(fromDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -44,7 +63,9 @@ func (p *IndexBuilder) Index(fromDir, toDir string, progress func(path string)) 
 		switch filepath.Ext(fname) {
 		case ".a", ".dylib", ".so", ".dll", ".lib":
 			progress(path)
-			outFile := filepath.Join(toDir, strings.TrimPrefix(fname, "lib")+".pub")
+			hash := md5.Sum([]byte(path))
+			hashStr := base64.RawURLEncoding.EncodeToString(hash[:])
+			outFile := filepath.Join(toDir, strings.TrimPrefix(fname, "lib")+hashStr+".pub")
 			e := p.IndexFile(path, outFile)
 			if e != nil {
 				log.Println(e)
@@ -67,12 +88,17 @@ func (p *IndexBuilder) IndexFile(arFile, outFile string) (err error) {
 	for _, item := range items {
 		for _, sym := range item.Symbols {
 			switch sym.Type {
-			case Text, Data, BSS, Rodata, 'S':
+			case Text, Data, BSS, Rodata, 'S', 'C', 'W', 'A':
 				b.WriteByte(byte(sym.Type))
 				b.WriteByte(' ')
 				b.WriteString(sym.Name)
 				b.WriteByte('\n')
-			case Undefined, LocalText, LocalData, LocalBSS, LocalASym, 'I', 'i', 'a':
+			case Undefined, LocalText, LocalData, LocalBSS, LocalASym, 'I', 'i', 'a', 'w':
+				/*
+					if sym.Type != Undefined && strings.Contains(sym.Name, "fprintf") {
+						log.Printf("skip symbol type %c: %s\n", sym.Type, sym.Name)
+					}
+				*/
 			default:
 				log.Printf("unknown symbol type %c: %s\n", sym.Type, sym.Name)
 			}
