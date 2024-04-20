@@ -51,10 +51,6 @@ The commands are:
 
 func makeIndex() {
 	env := llvm.New()
-	if env.Root() == "" {
-		fmt.Fprintln(os.Stderr, "Please set LLGO_LLVM_ROOT first.")
-		return
-	}
 
 	home, err := os.UserHomeDir()
 	check(err)
@@ -62,7 +58,13 @@ func makeIndex() {
 	os.MkdirAll(idxDir, 0755)
 
 	b := nm.NewIndexBuilder(env.Nm())
-	err = b.Index(env.Root()+"/lib", idxDir, func(path string) {
+	libDirs := []string{
+		usrLib(false),
+		usrLib(true),
+		stdLib("LLGO_STDROOT"),
+		stdLib("LLGO_USRROOT"),
+	}
+	err = b.Index(libDirs, idxDir, func(path string) {
 		fmt.Println("==>", path)
 	})
 	check(err)
@@ -70,6 +72,21 @@ func makeIndex() {
 
 func query() {
 	panic("todo")
+}
+
+func stdLib(where string) string {
+	dir := os.Getenv(where)
+	if dir != "" {
+		dir += "/lib"
+	}
+	return dir
+}
+
+func usrLib(local bool) string {
+	if local {
+		return "/usr/local/lib"
+	}
+	return "/usr/lib"
 }
 
 func check(err error) {
