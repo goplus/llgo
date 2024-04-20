@@ -228,3 +228,25 @@ define i64 @fn(i64 %0, double %1) {
 }
 `)
 }
+
+func TestUnOp(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "p", types.NewPointer(types.Typ[types.Int])),
+	)
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig)
+	b := fn.MakeBody("")
+	ret := b.UnOp(token.MUL, fn.Param(0))
+	b.Return(ret)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(ptr %0) {
+  %2 = load i64, ptr %0, align 4
+  ret i64 %2
+}
+`)
+}
