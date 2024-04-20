@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"go/types"
+	"log"
 
 	"github.com/goplus/llvm"
 )
@@ -37,6 +38,24 @@ const (
 	vkFunc
 	vkTuple
 )
+
+// -----------------------------------------------------------------------------
+
+const (
+	nameValist = "__llgo_va_list"
+)
+
+func VArg() *types.Var {
+	return types.NewParam(0, nil, nameValist, types.Typ[types.Invalid])
+}
+
+func IsVArg(arg *types.Var) bool {
+	return arg.Name() == nameValist
+}
+
+func HasVArg(t *types.Tuple, n int) bool {
+	return n > 0 && IsVArg(t.At(n-1))
+}
 
 // -----------------------------------------------------------------------------
 
@@ -181,6 +200,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
 	case *types.Chan:
 	}
+	log.Println("toLLVMType: todo -", typ)
 	panic("todo")
 }
 
@@ -196,30 +216,39 @@ func (p Program) toLLVMStruct(typ *types.Struct) Type {
 	return &aType{p.ctx.StructType(fields, false), typ, vkInvalid}
 }
 
-func (p Program) toLLVMFields(typ *types.Struct) []llvm.Type {
+func (p Program) toLLVMFields(typ *types.Struct) (fields []llvm.Type) {
 	n := typ.NumFields()
-	fields := make([]llvm.Type, n)
-	for i := 0; i < n; i++ {
-		fields[i] = p.llvmType(typ.Field(i).Type()).ll
+	if n > 0 {
+		fields = make([]llvm.Type, n)
+		for i := 0; i < n; i++ {
+			fields[i] = p.llvmType(typ.Field(i).Type()).ll
+		}
 	}
-	return fields
+	return
 }
 
 func (p Program) toLLVMTuple(t *types.Tuple) llvm.Type {
-	return p.ctx.StructType(p.toLLVMTypes(t), false)
+	return p.ctx.StructType(p.toLLVMTypes(t, t.Len()), false)
 }
 
-func (p Program) toLLVMTypes(t *types.Tuple) []llvm.Type {
-	n := t.Len()
-	ret := make([]llvm.Type, n)
-	for i := 0; i < n; i++ {
-		ret[i] = p.llvmType(t.At(i).Type()).ll
+func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
+	if n > 0 {
+		ret = make([]llvm.Type, n)
+		for i := 0; i < n; i++ {
+			ret[i] = p.llvmType(t.At(i).Type()).ll
+		}
 	}
-	return ret
+	return
 }
 
 func (p Program) toLLVMFunc(sig *types.Signature) Type {
-	params := p.toLLVMTypes(sig.Params())
+	tParams := sig.Params()
+	n := tParams.Len()
+	hasVArg := HasVArg(tParams, n)
+	if hasVArg {
+		n--
+	}
+	params := p.toLLVMTypes(tParams, n)
 	out := sig.Results()
 	var ret llvm.Type
 	switch nret := out.Len(); nret {
@@ -230,7 +259,7 @@ func (p Program) toLLVMFunc(sig *types.Signature) Type {
 	default:
 		ret = p.toLLVMTuple(out)
 	}
-	ft := llvm.FunctionType(ret, params, sig.Variadic())
+	ft := llvm.FunctionType(ret, params, hasVArg)
 	return &aType{ft, sig, vkFunc}
 }
 
