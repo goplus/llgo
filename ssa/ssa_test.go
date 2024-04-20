@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/constant"
 	"go/token"
 	"go/types"
 	"testing"
@@ -27,6 +28,7 @@ func init() {
 }
 
 func assertPkg(t *testing.T, p Package, expected string) {
+	t.Helper()
 	if v := p.String(); v != expected {
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
@@ -40,6 +42,23 @@ func TestVar(t *testing.T) {
 source_filename = "foo/bar"
 
 @a = external global i64
+`)
+}
+
+func TestConst(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool]))
+	sig := types.NewSignatureType(nil, nil, nil, nil, rets, false)
+	b := pkg.NewFunc("fn", sig).MakeBody(1)
+	b.Return(b.Const(constant.MakeBool(true), types.Typ[types.Bool]))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i1 @fn() {
+_llgo_0:
+  ret i1 true
+}
 `)
 }
 
@@ -99,6 +118,7 @@ func TestBasicFunc(t *testing.T) {
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0, double %1) {
+_llgo_0:
   ret i64 1
 }
 `)
@@ -118,6 +138,7 @@ func TestFuncParam(t *testing.T) {
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0, double %1) {
+_llgo_0:
   ret i64 %0
 }
 `)
@@ -145,11 +166,13 @@ func TestFuncCall(t *testing.T) {
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0, double %1) {
+_llgo_0:
   ret i64 1
 }
 
 define void @main() {
-  %1 = call i64 @fn(i64 1, double 1.200000e+00)
+_llgo_0:
+  %0 = call i64 @fn(i64 1, double 1.200000e+00)
   ret void
 }
 `)
@@ -174,8 +197,26 @@ source_filename = "foo/bar"
 @a = external global i64
 
 define { i64, double } @fn(double %0) {
+_llgo_0:
   %mrv = insertvalue { i64, double } { ptr @a, double poison }, double %0, 1
   ret { i64, double } %mrv
+}
+`)
+}
+
+func TestJump(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("loop", sig)
+	b := fn.MakeBody(1)
+	b.Jump(fn.Block(0))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @loop() {
+_llgo_0:
+  br label %_llgo_0
 }
 `)
 }
@@ -201,13 +242,14 @@ func TestIf(t *testing.T) {
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0) {
-  %2 = icmp sgt i64 %0, 0
-  br i1 %2, label %3, label %4
+_llgo_0:
+  %1 = icmp sgt i64 %0, 0
+  br i1 %1, label %_llgo_1, label %_llgo_2
 
-3:                                                ; preds = %1
+_llgo_1:                                          ; preds = %_llgo_0
   ret i64 1
 
-4:                                                ; preds = %1
+_llgo_2:                                          ; preds = %_llgo_0
   ret i64 0
 }
 `)
@@ -244,8 +286,9 @@ func TestBinOp(t *testing.T) {
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0, double %1) {
-  %3 = add i64 %0, 1
-  ret i64 %3
+_llgo_0:
+  %2 = add i64 %0, 1
+  ret i64 %2
 }
 `)
 }
@@ -260,13 +303,19 @@ func TestUnOp(t *testing.T) {
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 	fn := pkg.NewFunc("fn", sig)
 	b := fn.MakeBody(1)
-	ret := b.UnOp(token.MUL, fn.Param(0))
-	b.Return(ret)
+	ptr := fn.Param(0)
+	val := b.UnOp(token.MUL, ptr)
+	val2 := b.BinOp(token.SHR, val, prog.Val(1))
+	b.Store(ptr, val2)
+	b.Return(val2)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @fn(ptr %0) {
-  %2 = load i64, ptr %0, align 4
+_llgo_0:
+  %1 = load i64, ptr %0, align 4
+  %2 = ashr i64 %1, 1
+  store i64 %2, ptr %0, align 4
   ret i64 %2
 }
 `)
