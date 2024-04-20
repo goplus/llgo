@@ -22,6 +22,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"os"
 	"testing"
 
 	llssa "github.com/goplus/llgo/ssa"
@@ -41,6 +42,12 @@ func testCompile(t *testing.T, src, expected string) {
 		&types.Config{Importer: importer.Default()}, fset, pkg, files, ssa.SanityCheckFunctions)
 	if err != nil {
 		t.Fatal("BuildPackage failed:", err)
+	}
+	foo.WriteTo(os.Stderr)
+	for _, m := range foo.Members {
+		if f, ok := m.(*ssa.Function); ok {
+			f.WriteTo(os.Stderr)
+		}
 	}
 	prog := llssa.NewProgram(nil)
 	ret, err := NewPackage(prog, foo, nil)

@@ -149,7 +149,8 @@ func isPredOp(op token.Token) bool {
 	return op >= predOpBase && op <= predOpLast
 }
 
-// op:
+// The BinOp instruction yields the result of binary operation (x op y).
+// op can be:
 // ADD SUB MUL QUO REM          + - * / %
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
@@ -193,6 +194,27 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		}
 	}
 	panic("todo")
+}
+
+// The UnOp instruction yields the result of (op x).
+// ARROW is channel receive.
+// MUL is pointer indirection (load).
+// XOR is bitwise complement.
+// SUB is negation.
+// NOT is logical negation.
+func (b Builder) UnOp(op token.Token, x Expr) Expr {
+	switch op {
+	case token.MUL:
+		return b.Load(x)
+	}
+	panic("todo")
+}
+
+// Load returns the value at the pointer ptr.
+func (b Builder) Load(ptr Expr) Expr {
+	elem := ptr.t.(*types.Pointer).Elem()
+	telem := b.prog.llvmType(elem)
+	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
 }
 
 // -----------------------------------------------------------------------------
