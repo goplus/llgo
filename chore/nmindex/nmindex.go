@@ -43,7 +43,11 @@ The commands are:
 	case "mk":
 		makeIndex()
 	case "q":
-		query()
+		if len(os.Args) < 3 {
+			fmt.Fprint(os.Stderr, "Usage: nmindex q <symbol>\n")
+			return
+		}
+		query(os.Args[2])
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", cmd)
 	}
@@ -51,10 +55,7 @@ The commands are:
 
 func makeIndex() {
 	env := llvm.New()
-
-	home, err := os.UserHomeDir()
-	check(err)
-	idxDir := home + "/.llgo/nmindex"
+	idxDir := indexDir()
 	os.MkdirAll(idxDir, 0755)
 
 	b := nm.NewIndexBuilder(env.Nm())
@@ -64,14 +65,27 @@ func makeIndex() {
 		stdLib("LLGO_STDROOT"),
 		stdLib("LLGO_USRROOT"),
 	}
-	err = b.Index(libDirs, idxDir, func(path string) {
+	err := b.Index(libDirs, idxDir, func(path string) {
 		fmt.Println("==>", path)
 	})
 	check(err)
 }
 
-func query() {
-	panic("todo")
+func query(q string) {
+	files, err := nm.Query(indexDir(), q)
+	check(err)
+	for _, f := range files {
+		fmt.Printf("%s:\n", f.ArFile)
+		for _, item := range f.Items {
+			fmt.Printf("  %c %s %s\n", item.Type, item.Symbol, item.ObjFile)
+		}
+	}
+}
+
+func indexDir() string {
+	home, err := os.UserHomeDir()
+	check(err)
+	return home + "/.llgo/nmindex"
 }
 
 func stdLib(where string) string {
