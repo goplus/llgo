@@ -22,7 +22,10 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"log"
 	"os"
+	"path"
+	"strings"
 	"testing"
 
 	llssa "github.com/goplus/llgo/ssa"
@@ -30,14 +33,55 @@ import (
 	"golang.org/x/tools/go/ssa/ssautil"
 )
 
-func testCompile(t *testing.T, src, expected string) {
+func TestFromTestdata(t *testing.T) {
+	testFromDir(t, "", "./_testdata")
+}
+
+func testFromDir(t *testing.T, sel, relDir string) {
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	dir = path.Join(dir, relDir)
+	fis, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal("ReadDir failed:", err)
+	}
+	for _, fi := range fis {
+		name := fi.Name()
+		if !fi.IsDir() || strings.HasPrefix(name, "_") {
+			continue
+		}
+		t.Run(name, func(t *testing.T) {
+			testFrom(t, dir+"/"+name, sel)
+		})
+	}
+}
+
+func testFrom(t *testing.T, pkgDir, sel string) {
+	if sel != "" && !strings.Contains(pkgDir, sel) {
+		return
+	}
+	log.Println("Parsing", pkgDir)
+	in := pkgDir + "/in.go"
+	out := pkgDir + "/out.ll"
+	expected, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal("ReadFile failed:", err)
+	}
+	testCompileEx(t, nil, in, string(expected))
+}
+
+func testCompileEx(t *testing.T, src any, fname, expected string) {
+	t.Helper()
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "foo.go", src, parser.ParseComments)
+	f, err := parser.ParseFile(fset, fname, src, parser.ParseComments)
 	if err != nil {
 		t.Fatal("ParseFile failed:", err)
 	}
 	files := []*ast.File{f}
-	pkg := types.NewPackage("foo", "foo")
+	name := f.Name.Name
+	pkg := types.NewPackage(name, name)
 	foo, _, err := ssautil.BuildPackage(
 		&types.Config{Importer: importer.Default()}, fset, pkg, files, ssa.SanityCheckFunctions)
 	if err != nil {
@@ -57,6 +101,11 @@ func testCompile(t *testing.T, src, expected string) {
 	if v := ret.String(); v != expected {
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
+}
+
+func testCompile(t *testing.T, src, expected string) {
+	t.Helper()
+	testCompileEx(t, src, "foo.go", expected)
 }
 
 func TestVar(t *testing.T) {
