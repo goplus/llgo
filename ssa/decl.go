@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"go/types"
+	"strconv"
 
 	"github.com/goplus/llvm"
 )
@@ -138,15 +139,21 @@ func (p Function) Param(i int) Expr {
 	return Expr{p.impl.Param(i), p.params[i]}
 }
 
+// NewBuilder creates a new Builder for the function.
+func (p Function) NewBuilder() Builder {
+	prog := p.prog
+	b := prog.ctx.NewBuilder()
+	b.Finalize()
+	return &aBuilder{b, p, prog}
+}
+
 // MakeBody creates nblk basic blocks for the function, and creates
 // a new Builder associated to #0 block.
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
-	prog := p.prog
-	b := prog.ctx.NewBuilder()
-	b.Finalize()
-	b.SetInsertPointAtEnd(p.blks[0].impl)
-	return &aBuilder{b, p, prog}
+	b := p.NewBuilder()
+	b.impl.SetInsertPointAtEnd(p.blks[0].impl)
+	return b
 }
 
 // MakeBlocks creates nblk basic blocks for the function.
@@ -157,7 +164,7 @@ func (p Function) MakeBlocks(nblk int) []BasicBlock {
 	n := len(p.blks)
 	f := p.impl
 	for i := 0; i < nblk; i++ {
-		label := ""
+		label := "_llgo_" + strconv.Itoa(i)
 		blk := llvm.AddBasicBlock(f, label)
 		p.blks = append(p.blks, &aBasicBlock{blk, p, n + i})
 	}

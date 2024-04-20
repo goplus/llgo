@@ -39,6 +39,7 @@ type context struct {
 	pkg  llssa.Package
 	fn   llssa.Function
 	glbs map[*ssa.Global]llssa.Global
+	vals map[ssa.Value]llssa.Expr
 }
 
 // Global variable.
@@ -65,14 +66,21 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 	if nblk == 0 { // external function
 		return
 	}
-	b := fn.MakeBody(nblk)
-	p.compileBlock(b, f.Blocks[0])
+	fn.MakeBlocks(nblk)
+	b := fn.NewBuilder()
+	for _, block := range f.Blocks {
+		p.compileBlock(b, block)
+	}
 }
 
-func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) {
+func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) llssa.BasicBlock {
+	ret := p.fn.Block(block.Index)
+	b.SetBlock(ret)
+	p.vals = make(map[ssa.Value]llssa.Expr)
 	for _, instr := range block.Instrs {
 		p.compileInstr(b, instr)
 	}
+	return ret
 }
 
 func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) llssa.Expr {
@@ -90,23 +98,55 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		return
 	}
 	switch v := instr.(type) {
+	case *ssa.Store:
+		ptr := p.compileValue(b, v.Addr)
+		val := p.compileValue(b, v.Val)
+		b.Store(ptr, val)
+	case *ssa.Jump:
+		fn := p.fn
+		succs := v.Block().Succs
+		jmpb := fn.Block(succs[0].Index)
+		b.Jump(jmpb)
+	case *ssa.Return:
+		var results []llssa.Expr
+		if n := len(v.Results); n > 0 {
+			results = make([]llssa.Expr, n)
+			for i, r := range v.Results {
+				results[i] = p.compileValue(b, r)
+			}
+		}
+		b.Return(results...)
 	case *ssa.If:
-		p.compileValue(b, v.Cond)
-		return
+		fn := p.fn
+		cond := p.compileValue(b, v.Cond)
+		succs := v.Block().Succs
+		thenb := fn.Block(succs[0].Index)
+		elseb := fn.Block(succs[1].Index)
+		b.If(cond, thenb, elseb)
+	default:
+		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
-	panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 }
 
-func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+func (p *context) compileValue(b llssa.Builder, v ssa.Value) (ret llssa.Expr) {
+	if e, ok := p.vals[v]; ok {
+		return e
+	}
 	if iv, ok := v.(instrAndValue); ok {
-		return p.compileInstrAndValue(b, iv)
+		ret = p.compileInstrAndValue(b, iv)
+	} else {
+		switch v := v.(type) {
+		case *ssa.Global:
+			g := p.compileGlobal(p.pkg, v)
+			ret = g.Expr
+		case *ssa.Const:
+			ret = b.Const(v.Value, v.Type())
+		default:
+			panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
+		}
 	}
-	switch v := v.(type) {
-	case *ssa.Global:
-		g := p.compileGlobal(p.pkg, v)
-		return g.Expr
-	}
-	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
+	p.vals[v] = ret
+	return ret
 }
 
 // -----------------------------------------------------------------------------
@@ -147,9 +187,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.P
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			if false {
-				ctx.compileFunc(ret, member)
-			}
+			ctx.compileFunc(ret, member)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:

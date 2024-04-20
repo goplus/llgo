@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/constant"
 	"go/token"
 	"go/types"
 
@@ -42,16 +43,39 @@ func llvmValues(vals []Expr) []llvm.Value {
 
 // -----------------------------------------------------------------------------
 
+func (p Program) BoolVal(v bool) Expr {
+	t := p.Bool()
+	var bv uint64
+	if v {
+		bv = 1
+	}
+	ret := llvm.ConstInt(t.ll, bv, v)
+	return Expr{ret, t}
+}
+
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
 	case int:
 		t := p.Int()
 		ret := llvm.ConstInt(t.ll, uint64(v), false)
 		return Expr{ret, t}
+	case bool:
+		return p.BoolVal(v)
 	case float64:
 		t := p.Float64()
 		ret := llvm.ConstFloat(t.ll, v)
 		return Expr{ret, t}
+	}
+	panic("todo")
+}
+
+func (b Builder) Const(v constant.Value, t types.Type) Expr {
+	switch t := t.(type) {
+	case *types.Basic:
+		switch t.Kind() {
+		case types.Bool:
+			return b.prog.BoolVal(constant.BoolVal(v))
+		}
 	}
 	panic("todo")
 }
@@ -104,7 +128,7 @@ var logicOpToLLVM = []llvm.Opcode{
 	token.OR - logicOpBase:  llvm.Or,
 	token.XOR - logicOpBase: llvm.Xor,
 	token.SHL - logicOpBase: llvm.Shl,
-	token.SHR - logicOpBase: llvm.LShr,
+	token.SHR - logicOpBase: llvm.AShr, // Arithmetic Shift Right
 }
 
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
@@ -173,7 +197,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		kind := x.kind
 		llop := logicOpToLLVM[op-logicOpBase]
 		if op == token.SHR && kind == vkUnsigned {
-			llop = llvm.AShr
+			llop = llvm.LShr // Logical Shift Right
 		}
 		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
@@ -215,6 +239,12 @@ func (b Builder) Load(ptr Expr) Expr {
 	elem := ptr.t.(*types.Pointer).Elem()
 	telem := b.prog.llvmType(elem)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
+}
+
+// Store stores val at the pointer ptr.
+func (b Builder) Store(ptr, val Expr) Builder {
+	b.impl.CreateStore(val.impl, ptr.impl)
+	return b
 }
 
 // -----------------------------------------------------------------------------

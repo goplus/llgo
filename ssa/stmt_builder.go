@@ -73,6 +73,14 @@ func (b Builder) Return(results ...Expr) {
 	}
 }
 
+// Jump emits a jump instruction.
+func (b Builder) Jump(jmpb BasicBlock) {
+	if b.fn != jmpb.fn {
+		panic("mismatched function")
+	}
+	b.impl.CreateBr(jmpb.impl)
+}
+
 // If emits an if instruction.
 func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 	if b.fn != thenb.fn || b.fn != elseb.fn {
