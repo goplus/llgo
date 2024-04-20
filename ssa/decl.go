@@ -46,10 +46,12 @@ type aGlobal struct {
 
 // A Global is a named Value holding the address of a package-level
 // variable.
-//
-// Pos() returns the position of the ast.ValueSpec.Names[*]
-// identifier.
 type Global = *aGlobal
+
+// Init initializes the global variable with the given value.
+func (g Global) Init(v Expr) {
+	g.impl.SetInitializer(v.impl)
+}
 
 // -----------------------------------------------------------------------------
 

@@ -43,6 +43,10 @@ func llvmValues(vals []Expr) []llvm.Value {
 
 // -----------------------------------------------------------------------------
 
+func (p Program) Null(t Type) Expr {
+	return Expr{llvm.ConstNull(t.ll), t}
+}
+
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
 	var bv uint64

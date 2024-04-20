@@ -53,6 +53,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) llssa.Global
 		return g
 	}
 	g := pkg.NewVar(gbl.Name(), gbl.Type())
+	g.Init(p.prog.Null(g.Type))
 	p.glbs[gbl] = g
 	return g
 }

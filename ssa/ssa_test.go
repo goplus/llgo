@@ -37,11 +37,15 @@ func assertPkg(t *testing.T, p Package, expected string) {
 func TestVar(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", types.Typ[types.Int])
+	a := pkg.NewVar("a", types.Typ[types.Int])
+	a.Init(prog.Val(100))
+	b := pkg.NewVar("b", types.Typ[types.Int])
+	b.Init(a.Expr)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-@a = external global i64
+@a = global i64 100
+@b = global i64 @a
 `)
 }
 

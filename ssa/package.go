@@ -26,6 +26,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// InitFlags is a set of flags for initializing the LLVM library.
 type InitFlags int
 
 const (
@@ -43,6 +44,7 @@ const (
 	InitAll    = InitAllTargets | InitAllAsmParsers | InitAllAsmPrinters | InitAllTargetInfos | InitAllTargetMCs
 )
 
+// Initialize initializes the LLVM library.
 func Initialize(flags InitFlags) {
 	if flags&InitAllTargetInfos != 0 {
 		llvm.InitializeAllTargetInfos()
@@ -69,7 +71,6 @@ func Initialize(flags InitFlags) {
 
 // -----------------------------------------------------------------------------
 
-// A Program is a partial or complete Go program converted to SSA form.
 type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
@@ -93,8 +94,10 @@ type aProgram struct {
 	f64Ty  Type
 }
 
+// A Program presents a program.
 type Program = *aProgram
 
+// NewProgram creates a new program.
 func NewProgram(target *Target) Program {
 	if target == nil {
 		target = &Target{}
@@ -105,12 +108,14 @@ func NewProgram(target *Target) Program {
 	return &aProgram{ctx: ctx, target: target, td: td}
 }
 
+// NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
 	mod.Finalize()
 	return &aPackage{mod, p}
 }
 
+// Void returns void type.
 func (p Program) Void() Type {
 	if p.voidTy == nil {
 		p.voidTy = &aType{p.tyVoid(), types.Typ[types.Invalid], vkInvalid}
@@ -118,6 +123,7 @@ func (p Program) Void() Type {
 	return p.voidTy
 }
 
+// Bool returns bool type.
 func (p Program) Bool() Type {
 	if p.boolTy == nil {
 		p.boolTy = p.llvmType(types.Typ[types.Bool])
@@ -125,6 +131,7 @@ func (p Program) Bool() Type {
 	return p.boolTy
 }
 
+// Int returns int type.
 func (p Program) Int() Type {
 	if p.intTy == nil {
 		p.intTy = p.llvmType(types.Typ[types.Int])
@@ -132,6 +139,7 @@ func (p Program) Int() Type {
 	return p.intTy
 }
 
+// Float64 returns float64 type.
 func (p Program) Float64() Type {
 	if p.f64Ty == nil {
 		p.f64Ty = p.llvmType(types.Typ[types.Float64])
@@ -160,18 +168,21 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 	return &aNamedConst{}
 }
 
+// NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type) Global {
 	t := p.prog.llvmType(typ)
 	gbl := llvm.AddGlobal(p.mod, t.ll, name)
 	return &aGlobal{Expr{gbl, t}}
 }
 
+// NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	return newFunction(fn, t, p.prog)
 }
 
+// String returns a string representation of the package.
 func (p Package) String() string {
 	return p.mod.String()
 }
