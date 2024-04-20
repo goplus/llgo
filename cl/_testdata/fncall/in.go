@@ -1,4 +1,4 @@
-package fncall
+package main
 
 func max(a, b int) int {
 	if a > b {
@@ -7,6 +7,6 @@ func max(a, b int) int {
 	return b
 }
 
-func Foo() int {
-	return max(1, 2)
+func main() {
+	_ = max(1, 2)
 }

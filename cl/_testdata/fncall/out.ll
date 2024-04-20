@@ -1,5 +1,5 @@
-; ModuleID = 'fncall'
-source_filename = "fncall"
+; ModuleID = 'main'
+source_filename = "main"
 
 @"init$guard" = external global ptr
 
@@ -28,8 +28,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret i64 %1
 }
 
-define i64 @Foo() {
+define void @main() {
 _llgo_0:
   %0 = call i64 @max(i64 1, i64 2)
-  ret i64 %0
+  ret void
 }
