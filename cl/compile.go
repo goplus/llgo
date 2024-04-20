@@ -61,17 +61,15 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 	defer func() {
 		p.fn = nil
 	}()
-	if f.Blocks == nil { // external function
+	nblk := len(f.Blocks)
+	if nblk == 0 { // external function
 		return
 	}
-	b := fn.MakeBody("")
-	for _, block := range f.Blocks {
-		p.compileBlock(b, block)
-	}
+	b := fn.MakeBody(nblk)
+	p.compileBlock(b, f.Blocks[0])
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) {
-	_ = block.Index
 	for _, instr := range block.Instrs {
 		p.compileInstr(b, instr)
 	}

@@ -24,6 +24,9 @@ import (
 
 // -----------------------------------------------------------------------------
 
+type aNamedConst struct {
+}
+
 // A NamedConst is a Member of a Package representing a package-level
 // named constant.
 //
@@ -32,22 +35,19 @@ import (
 //
 // NB: a NamedConst is not a Value; it contains a constant Value, which
 // it augments with the name and position of its 'const' declaration.
-type aNamedConst struct {
-}
-
 type NamedConst = *aNamedConst
 
 // -----------------------------------------------------------------------------
+
+type aGlobal struct {
+	Expr
+}
 
 // A Global is a named Value holding the address of a package-level
 // variable.
 //
 // Pos() returns the position of the ast.ValueSpec.Names[*]
 // identifier.
-type aGlobal struct {
-	Expr
-}
-
 type Global = *aGlobal
 
 // -----------------------------------------------------------------------------
@@ -104,16 +104,18 @@ type Global = *aGlobal
 type aFunction struct {
 	Expr
 	prog Program
+	blks []BasicBlock
 
 	params  []Type
 	hasVArg bool
 }
 
+// Function represents a function or method.
 type Function = *aFunction
 
 func newFunction(fn llvm.Value, t Type, prog Program) Function {
 	params, hasVArg := newParams(t, prog)
-	return &aFunction{Expr{fn, t}, prog, params, hasVArg}
+	return &aFunction{Expr{fn, t}, prog, nil, params, hasVArg}
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
@@ -131,17 +133,40 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	return
 }
 
+// Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
 	return Expr{p.impl.Param(i), p.params[i]}
 }
 
-func (p Function) MakeBody(label string) Builder {
-	body := llvm.AddBasicBlock(p.impl, label)
+// MakeBody creates nblk basic blocks for the function, and creates
+// a new Builder associated to #0 block.
+func (p Function) MakeBody(nblk int) Builder {
+	p.MakeBlocks(nblk)
 	prog := p.prog
 	b := prog.ctx.NewBuilder()
 	b.Finalize()
-	b.SetInsertPointAtEnd(body)
-	return &aBuilder{b, prog}
+	b.SetInsertPointAtEnd(p.blks[0].impl)
+	return &aBuilder{b, p, prog}
+}
+
+// MakeBlocks creates nblk basic blocks for the function.
+func (p Function) MakeBlocks(nblk int) []BasicBlock {
+	if p.blks == nil {
+		p.blks = make([]BasicBlock, 0, nblk)
+	}
+	n := len(p.blks)
+	f := p.impl
+	for i := 0; i < nblk; i++ {
+		label := ""
+		blk := llvm.AddBasicBlock(f, label)
+		p.blks = append(p.blks, &aBasicBlock{blk, p, n + i})
+	}
+	return p.blks[n:]
+}
+
+// Block returns the ith basic block of the function.
+func (p Function) Block(idx int) BasicBlock {
+	return p.blks[idx]
 }
 
 // -----------------------------------------------------------------------------
