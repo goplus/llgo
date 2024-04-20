@@ -61,7 +61,7 @@ func (p *IndexBuilder) IndexDir(fromDir, toDir string, progress func(path string
 		}
 		fname := d.Name()
 		switch filepath.Ext(fname) {
-		case ".a", ".dylib", ".so", ".dll", ".lib":
+		case ".a", ".dylib", ".tbd", ".so", ".dll", ".lib":
 			progress(path)
 			hash := md5.Sum([]byte(path))
 			hashStr := base64.RawURLEncoding.EncodeToString(hash[:])

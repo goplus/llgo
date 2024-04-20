@@ -79,13 +79,31 @@ type ObjectFile struct {
 // List lists symbols in an archive file.
 func (p *Cmd) List(arfile string) (items []*ObjectFile, err error) {
 	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 	cmd := exec.Command(p.app, arfile)
 	cmd.Stdout = &stdout
-	cmd.Stderr = os.Stderr
-	if err = cmd.Run(); err != nil {
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if stderr.Len() > 0 {
+		listError(stderr.Bytes())
+	}
+	if err != nil {
 		return
 	}
 	return listOutput(stdout.Bytes())
+}
+
+func listError(data []byte) {
+	sep := []byte{'\n'}
+	nosym := []byte(": no symbols")
+	lines := bytes.Split(data, sep)
+	for _, line := range lines {
+		if len(line) == 0 || bytes.HasSuffix(line, nosym) {
+			continue
+		}
+		os.Stderr.Write(line)
+		os.Stderr.Write(sep)
+	}
 }
 
 func listOutput(data []byte) (items []*ObjectFile, err error) {
