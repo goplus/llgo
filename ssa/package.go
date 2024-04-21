@@ -19,10 +19,28 @@ package ssa
 import (
 	"go/constant"
 	"go/types"
+	"log"
 
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
 )
+
+type dbgFlags = int
+
+const (
+	DbgFlagInstruction dbgFlags = 1 << iota
+
+	DbgFlagAll = DbgFlagInstruction
+)
+
+var (
+	debugInstr bool
+)
+
+// SetDebug sets debug flags.
+func SetDebug(dbgFlags dbgFlags) {
+	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
+}
 
 // -----------------------------------------------------------------------------
 
@@ -112,7 +130,9 @@ func NewProgram(target *Target) Program {
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
 	mod.Finalize()
-	return &aPackage{mod, p}
+	fns := make(map[string]Function)
+	gbls := make(map[string]Global)
+	return &aPackage{mod, fns, gbls, p}
 }
 
 // Void returns void type.
@@ -126,7 +146,7 @@ func (p Program) Void() Type {
 // Bool returns bool type.
 func (p Program) Bool() Type {
 	if p.boolTy == nil {
-		p.boolTy = p.llvmType(types.Typ[types.Bool])
+		p.boolTy = p.Type(types.Typ[types.Bool])
 	}
 	return p.boolTy
 }
@@ -134,7 +154,7 @@ func (p Program) Bool() Type {
 // Int returns int type.
 func (p Program) Int() Type {
 	if p.intTy == nil {
-		p.intTy = p.llvmType(types.Typ[types.Int])
+		p.intTy = p.Type(types.Typ[types.Int])
 	}
 	return p.intTy
 }
@@ -142,7 +162,7 @@ func (p Program) Int() Type {
 // Float64 returns float64 type.
 func (p Program) Float64() Type {
 	if p.f64Ty == nil {
-		p.f64Ty = p.llvmType(types.Typ[types.Float64])
+		p.f64Ty = p.Type(types.Typ[types.Float64])
 	}
 	return p.f64Ty
 }
@@ -159,6 +179,8 @@ func (p Program) Float64() Type {
 // and unspecified other things too.
 type aPackage struct {
 	mod  llvm.Module
+	fns  map[string]Function
+	vars map[string]Global
 	prog Program
 }
 
@@ -170,17 +192,39 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type) Global {
-	t := p.prog.llvmType(typ)
+	if debugInstr {
+		log.Println("==> NewVar", name, typ)
+	}
+	t := p.prog.Type(typ)
 	gbl := llvm.AddGlobal(p.mod, t.ll, name)
-	return &aGlobal{Expr{gbl, t}}
+	ret := &aGlobal{Expr{gbl, t}}
+	p.vars[name] = ret
+	return ret
 }
 
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
+	if debugInstr {
+		log.Println("==> NewFunc", name)
+	}
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	return newFunction(fn, t, p.prog)
+	ret := newFunction(fn, t, p.prog)
+	p.fns[name] = ret
+	return ret
 }
+
+// FuncOf returns a function by name.
+func (p Package) FuncOf(name string) Function {
+	return p.fns[name]
+}
+
+// VarOf returns a global variable by name.
+func (p Package) VarOf(name string) Global {
+	return p.vars[name]
+}
+
+// -----------------------------------------------------------------------------
 
 // String returns a string representation of the package.
 func (p Package) String() string {

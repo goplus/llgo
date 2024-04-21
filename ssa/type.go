@@ -57,6 +57,21 @@ func HasVArg(t *types.Tuple, n int) bool {
 	return n > 0 && IsVArg(t.At(n-1))
 }
 
+func indexType(t types.Type) types.Type {
+	switch t := t.(type) {
+	case *types.Slice:
+		return t.Elem()
+	case *types.Pointer:
+		switch t := t.Elem().(type) {
+		case *types.Array:
+			return t.Elem()
+		}
+	case *types.Array:
+		return t.Elem()
+	}
+	panic("index: type doesn't support index - " + t.String())
+}
+
 // -----------------------------------------------------------------------------
 
 type aType struct {
@@ -67,7 +82,20 @@ type aType struct {
 
 type Type = *aType
 
-func (p Program) llvmType(typ types.Type) Type {
+func (p Program) Pointer(typ Type) Type {
+	return p.Type(types.NewPointer(typ.t))
+}
+
+func (p Program) Elem(typ Type) Type {
+	elem := typ.t.(*types.Pointer).Elem()
+	return p.Type(elem)
+}
+
+func (p Program) Index(typ Type) Type {
+	return p.Type(indexType(typ.t))
+}
+
+func (p Program) Type(typ types.Type) Type {
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
 	}
@@ -185,7 +213,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 			return &aType{p.tyVoidPtr(), typ, vkInvalid}
 		}
 	case *types.Pointer:
-		elem := p.llvmType(t.Elem())
+		elem := p.Type(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkInvalid}
 	case *types.Slice:
 	case *types.Map:
@@ -196,7 +224,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 	case *types.Signature:
 		return p.toLLVMFunc(t)
 	case *types.Array:
-		elem := p.llvmType(t.Elem())
+		elem := p.Type(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
 	case *types.Chan:
 	}
@@ -221,7 +249,7 @@ func (p Program) toLLVMFields(typ *types.Struct) (fields []llvm.Type) {
 	if n > 0 {
 		fields = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			fields[i] = p.llvmType(typ.Field(i).Type()).ll
+			fields[i] = p.Type(typ.Field(i).Type()).ll
 		}
 	}
 	return
@@ -235,7 +263,7 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 	if n > 0 {
 		ret = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			ret[i] = p.llvmType(t.At(i).Type()).ll
+			ret[i] = p.Type(t.At(i).Type()).ll
 		}
 	}
 	return
@@ -255,7 +283,7 @@ func (p Program) toLLVMFunc(sig *types.Signature) Type {
 	case 0:
 		ret = p.tyVoid()
 	case 1:
-		ret = p.llvmType(out.At(0).Type()).ll
+		ret = p.Type(out.At(0).Type()).ll
 	default:
 		ret = p.toLLVMTuple(out)
 	}
@@ -269,7 +297,7 @@ func (p Program) retType(sig *types.Signature) Type {
 	case 0:
 		return p.Void()
 	case 1:
-		return p.llvmType(out.At(0).Type())
+		return p.Type(out.At(0).Type())
 	default:
 		return &aType{p.toLLVMTuple(out), out, vkTuple}
 	}

@@ -34,7 +34,12 @@ import (
 )
 
 func TestFromTestdata(t *testing.T) {
-	testFromDir(t, "", "./_testdata")
+	testFromDir(t, "printf", "./_testdata")
+}
+
+func init() {
+	llssa.Initialize(llssa.InitAll)
+	llssa.SetDebug(llssa.DbgFlagAll)
 }
 
 func testFromDir(t *testing.T, sel, relDir string) {
