@@ -42,15 +42,15 @@ const (
 // -----------------------------------------------------------------------------
 
 const (
-	nameValist = "__llgo_va_list"
+	NameValist = "__llgo_va_list"
 )
 
 func VArg() *types.Var {
-	return types.NewParam(0, nil, nameValist, types.Typ[types.Invalid])
+	return types.NewParam(0, nil, NameValist, types.Typ[types.Invalid])
 }
 
 func IsVArg(arg *types.Var) bool {
-	return arg.Name() == nameValist
+	return arg.Name() == NameValist
 }
 
 func HasVArg(t *types.Tuple, n int) bool {

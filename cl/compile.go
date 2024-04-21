@@ -19,6 +19,7 @@ package cl
 import (
 	"fmt"
 	"log"
+	"os"
 	"sort"
 
 	llssa "github.com/goplus/llgo/ssa"
@@ -31,17 +32,45 @@ type dbgFlags = int
 
 const (
 	DbgFlagInstruction dbgFlags = 1 << iota
+	DbgFlagGoSSA
 
-	DbgFlagAll = DbgFlagInstruction
+	DbgFlagAll = DbgFlagInstruction | DbgFlagGoSSA
 )
 
 var (
 	debugInstr bool
+	debugGoSSA bool
 )
 
 // SetDebug sets debug flags.
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
+	debugGoSSA = (dbgFlags & DbgFlagGoSSA) != 0
+}
+
+// -----------------------------------------------------------------------------
+
+const (
+	fnNormal = iota
+	fnHasVArg
+	fnUnsafeInit
+)
+
+func funcKind(vfn ssa.Value) int {
+	if fn, ok := vfn.(*ssa.Function); ok {
+		n := len(fn.Params)
+		if n == 0 {
+			if fn.Name() == "init" && fn.Pkg.Pkg.Path() == "unsafe" {
+				return fnUnsafeInit
+			}
+		} else {
+			last := fn.Params[n-1]
+			if last.Name() == llssa.NameValist {
+				return fnHasVArg
+			}
+		}
+	}
+	return fnNormal
 }
 
 // -----------------------------------------------------------------------------
@@ -55,6 +84,7 @@ type context struct {
 	prog  llssa.Program
 	pkg   llssa.Package
 	fn    llssa.Function
+	goPkg *ssa.Package
 	bvals map[ssa.Value]llssa.Expr // block values
 	inits []func()
 }
@@ -88,6 +118,9 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 		if nblk == 0 { // external function
 			return
 		}
+		if debugGoSSA {
+			f.WriteTo(os.Stderr)
+		}
 		if debugInstr {
 			log.Println("==> FuncBody", name)
 		}
@@ -116,8 +149,15 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 	switch v := iv.(type) {
 	case *ssa.Call:
 		call := v.Call
+		kind := funcKind(call.Value)
+		if kind == fnUnsafeInit {
+			return
+		}
+		if debugGoSSA {
+			log.Println(">>> Call", call.Value, call.Args)
+		}
 		fn := p.compileValue(b, call.Value)
-		args := p.compileValues(b, call.Args)
+		args := p.compileValues(b, call.Args, kind)
 		ret = b.Call(fn, args...)
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
@@ -189,9 +229,15 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
+		if v.Pkg != p.goPkg {
+			panic("todo")
+		}
 		fn := p.pkg.FuncOf(v.Name())
 		return fn.Expr
 	case *ssa.Global:
+		if v.Pkg != p.goPkg {
+			panic("todo")
+		}
 		g := p.pkg.VarOf(v.Name())
 		return g.Expr
 	case *ssa.Const:
@@ -201,10 +247,25 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 }
 
-func (p *context) compileValues(b llssa.Builder, vals []ssa.Value) []llssa.Expr {
-	ret := make([]llssa.Expr, len(vals))
-	for i, v := range vals {
-		ret[i] = p.compileValue(b, v)
+func (p *context) compileVArg(ret []llssa.Expr, b llssa.Builder, v ssa.Value) []llssa.Expr {
+	_ = b
+	switch v := v.(type) {
+	case *ssa.Const:
+		if v.Value == nil {
+			return ret
+		}
+	}
+	panic("todo")
+}
+
+func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) []llssa.Expr {
+	n := len(vals) - hasVArg
+	ret := make([]llssa.Expr, n)
+	for i := 0; i < n; i++ {
+		ret[i] = p.compileValue(b, vals[i])
+	}
+	if hasVArg > 0 {
+		ret = p.compileVArg(ret, b, vals[n])
 	}
 	return ret
 }
@@ -238,8 +299,9 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.P
 	ret = prog.NewPackage(pkgTypes.Name(), pkgTypes.Path())
 
 	ctx := &context{
-		prog: prog,
-		pkg:  ret,
+		prog:  prog,
+		pkg:   ret,
+		goPkg: pkg,
 	}
 	for _, m := range members {
 		member := m.val
