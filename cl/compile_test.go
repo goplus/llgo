@@ -38,6 +38,7 @@ func TestFromTestdata(t *testing.T) {
 }
 
 func init() {
+	SetDebug(DbgFlagAll)
 	llssa.Initialize(llssa.InitAll)
 	llssa.SetDebug(llssa.DbgFlagAll)
 }

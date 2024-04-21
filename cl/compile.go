@@ -18,13 +18,30 @@ package cl
 
 import (
 	"fmt"
+	"log"
 	"sort"
 
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
 
-type Config struct {
+// -----------------------------------------------------------------------------
+
+type dbgFlags = int
+
+const (
+	DbgFlagInstruction dbgFlags = 1 << iota
+
+	DbgFlagAll = DbgFlagInstruction
+)
+
+var (
+	debugInstr bool
+)
+
+// SetDebug sets debug flags.
+func SetDebug(dbgFlags dbgFlags) {
+	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
 }
 
 // -----------------------------------------------------------------------------
@@ -48,12 +65,20 @@ func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
 
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
-	g := pkg.NewVar(gbl.Name(), gbl.Type())
+	name, typ := gbl.Name(), gbl.Type()
+	if debugInstr {
+		log.Println("==> NewVar", name, typ)
+	}
+	g := pkg.NewVar(name, typ)
 	g.Init(p.prog.Null(g.Type))
 }
 
 func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
-	fn := pkg.NewFunc(f.Name(), f.Signature)
+	name := f.Name()
+	if debugInstr {
+		log.Println("==> NewFunc", name)
+	}
+	fn := pkg.NewFunc(name, f.Signature)
 	p.inits = append(p.inits, func() {
 		p.fn = fn
 		defer func() {
@@ -62,6 +87,9 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 		nblk := len(f.Blocks)
 		if nblk == 0 { // external function
 			return
+		}
+		if debugInstr {
+			log.Println("==> FuncBody", name)
 		}
 		fn.MakeBlocks(nblk)
 		b := fn.NewBuilder()
@@ -87,12 +115,10 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
-		if false {
-			call := v.Call
-			fn := p.compileValue(b, call.Value)
-			args := p.compileValues(b, call.Args)
-			ret = b.Call(fn, args...)
-		}
+		call := v.Call
+		fn := p.compileValue(b, call.Value)
+		args := p.compileValues(b, call.Args)
+		ret = b.Call(fn, args...)
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
@@ -184,6 +210,9 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value) []llssa.Expr 
 }
 
 // -----------------------------------------------------------------------------
+
+type Config struct {
+}
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.Package, err error) {
