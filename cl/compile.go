@@ -73,6 +73,10 @@ func funcKind(vfn ssa.Value) int {
 	return fnNormal
 }
 
+func isMainFunc(fn *ssa.Function) bool {
+	return fn.Name() == "main" && fn.Pkg.Pkg.Path() == "main"
+}
+
 // -----------------------------------------------------------------------------
 
 type instrAndValue interface {
@@ -126,16 +130,21 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 		}
 		fn.MakeBlocks(nblk)
 		b := fn.NewBuilder()
-		for _, block := range f.Blocks {
-			p.compileBlock(b, block)
+		isMain := isMainFunc(f)
+		for i, block := range f.Blocks {
+			p.compileBlock(b, block, isMain && i == 0)
 		}
 	})
 }
 
-func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock) llssa.BasicBlock {
+func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bool) llssa.BasicBlock {
 	ret := p.fn.Block(block.Index)
 	b.SetBlock(ret)
 	p.bvals = make(map[ssa.Value]llssa.Expr)
+	if doInit {
+		fn := p.pkg.FuncOf("init")
+		b.Call(fn.Expr)
+	}
 	for _, instr := range block.Instrs {
 		p.compileInstr(b, instr)
 	}
