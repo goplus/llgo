@@ -26,7 +26,7 @@ jobs:
         run: HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }}
         
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.20'
 
@@ -52,7 +52,7 @@ jobs:
         sudo apt-get install --no-install-recommends llvm-${{ matrix.llvm }}-dev
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: '1.20'
 
