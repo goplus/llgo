@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/goplus/llgo/x/llgen"
+	"github.com/goplus/llgo/internal/llgen"
 )
 
 func main() {
