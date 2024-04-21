@@ -17,6 +17,10 @@
 package ssa
 
 import (
+	"bytes"
+	"fmt"
+	"log"
+
 	"github.com/goplus/llvm"
 )
 
@@ -57,12 +61,26 @@ func (b Builder) SetBlock(blk BasicBlock) Builder {
 	if b.fn != blk.fn {
 		panic("mismatched function")
 	}
+	if debugInstr {
+		log.Printf("Block _llgo_%v:\n", blk.idx)
+	}
 	b.impl.SetInsertPointAtEnd(blk.impl)
 	return b
 }
 
 // Return emits a return instruction.
 func (b Builder) Return(results ...Expr) {
+	if debugInstr {
+		var b bytes.Buffer
+		fmt.Fprint(&b, "Return ")
+		for i, arg := range results {
+			if i > 0 {
+				fmt.Fprint(&b, ", ")
+			}
+			fmt.Fprint(&b, arg.impl)
+		}
+		log.Println(b.String())
+	}
 	switch n := len(results); n {
 	case 0:
 		b.impl.CreateRetVoid()
@@ -78,6 +96,9 @@ func (b Builder) Jump(jmpb BasicBlock) {
 	if b.fn != jmpb.fn {
 		panic("mismatched function")
 	}
+	if debugInstr {
+		log.Printf("Jump _llgo_%v\n", jmpb.idx)
+	}
 	b.impl.CreateBr(jmpb.impl)
 }
 
@@ -85,6 +106,9 @@ func (b Builder) Jump(jmpb BasicBlock) {
 func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 	if b.fn != thenb.fn || b.fn != elseb.fn {
 		panic("mismatched function")
+	}
+	if debugInstr {
+		log.Printf("If %v, _llgo_%v, _llgo_%v\n", cond.impl, thenb.idx, elseb.idx)
 	}
 	b.impl.CreateCondBr(cond.impl, thenb.impl, elseb.impl)
 }

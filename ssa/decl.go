@@ -130,7 +130,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 		}
 		params = make([]Type, n)
 		for i := 0; i < n; i++ {
-			params[i] = prog.llvmType(in.At(i).Type())
+			params[i] = prog.Type(in.At(i).Type())
 		}
 	}
 	return

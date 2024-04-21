@@ -25,6 +25,7 @@ import (
 
 func init() {
 	Initialize(InitAll)
+	SetDebug(DbgFlagAll)
 }
 
 func assertPkg(t *testing.T, p Package, expected string) {
@@ -55,7 +56,7 @@ func TestConst(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool]))
 	sig := types.NewSignatureType(nil, nil, nil, nil, rets, false)
 	b := pkg.NewFunc("fn", sig).MakeBody(1)
-	b.Return(b.Const(constant.MakeBool(true), types.Typ[types.Bool]))
+	b.Return(b.Const(constant.MakeBool(true), prog.Bool()))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 

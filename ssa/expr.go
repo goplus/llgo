@@ -17,9 +17,12 @@
 package ssa
 
 import (
+	"bytes"
+	"fmt"
 	"go/constant"
 	"go/token"
 	"go/types"
+	"log"
 
 	"github.com/goplus/llvm"
 )
@@ -57,16 +60,15 @@ func (p Program) BoolVal(v bool) Expr {
 	return Expr{ret, t}
 }
 
-func (p Program) IntVal(v int) Expr {
-	t := p.Int()
-	ret := llvm.ConstInt(t.ll, uint64(v), false)
+func (p Program) IntVal(v uint64, t Type) Expr {
+	ret := llvm.ConstInt(t.ll, v, false)
 	return Expr{ret, t}
 }
 
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
 	case int:
-		return p.IntVal(v)
+		return p.IntVal(uint64(v), p.Int())
 	case bool:
 		return p.BoolVal(v)
 	case float64:
@@ -77,15 +79,16 @@ func (p Program) Val(v interface{}) Expr {
 	panic("todo")
 }
 
-func (b Builder) Const(v constant.Value, t types.Type) Expr {
-	switch t := t.(type) {
+func (b Builder) Const(v constant.Value, typ Type) Expr {
+	switch t := typ.t.(type) {
 	case *types.Basic:
-		switch t.Kind() {
-		case types.Bool:
+		kind := t.Kind()
+		switch {
+		case kind == types.Bool:
 			return b.prog.BoolVal(constant.BoolVal(v))
-		case types.Int:
-			if v, exact := constant.Int64Val(v); exact {
-				return b.prog.IntVal(int(v))
+		case kind >= types.Int && kind <= types.Uintptr:
+			if v, exact := constant.Uint64Val(v); exact {
+				return b.prog.IntVal(v, typ)
 			}
 		}
 	}
@@ -191,6 +194,9 @@ func isPredOp(op token.Token) bool {
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
 func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
+	if debugInstr {
+		log.Printf("BinOp %d, %v, %v\n", op, x.impl, y.impl)
+	}
 	switch {
 	case isMathOp(op): // op: + - * / %
 		kind := x.kind
@@ -243,25 +249,109 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 	case token.MUL:
 		return b.Load(x)
 	}
+	if debugInstr {
+		log.Printf("UnOp %v, %v\n", op, x.impl)
+	}
 	panic("todo")
 }
 
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
-	elem := ptr.t.(*types.Pointer).Elem()
-	telem := b.prog.llvmType(elem)
+	if debugInstr {
+		log.Printf("Load @%v\n", ptr.impl.Name())
+	}
+	telem := b.prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
 }
 
 // Store stores val at the pointer ptr.
 func (b Builder) Store(ptr, val Expr) Builder {
+	if debugInstr {
+		log.Printf("Store @%v, %v\n", ptr.impl.Name(), val.impl)
+	}
 	b.impl.CreateStore(val.impl, ptr.impl)
 	return b
 }
 
+// The IndexAddr instruction yields the address of the element at
+// index `idx` of collection `x`.  `idx` is an integer expression.
+//
+// The elements of maps and strings are not addressable; use Lookup (map),
+// Index (string), or MapUpdate instead.
+//
+// Dynamically, this instruction panics if `x` evaluates to a nil *array
+// pointer.
+//
+// Example printed form:
+//
+//	t2 = &t0[t1]
+func (b Builder) IndexAddr(x, idx Expr) Expr {
+	if debugInstr {
+		log.Printf("IndexAddr %v, %v\n", x.impl, idx.impl)
+	}
+	prog := b.prog
+	telem := prog.Index(x.Type)
+	pt := prog.Pointer(telem)
+	indices := []llvm.Value{idx.impl}
+	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
+}
+
+// The Alloc instruction reserves space for a variable of the given type,
+// zero-initializes it, and yields its address.
+//
+// If heap is false, Alloc zero-initializes the same local variable in
+// the call frame and returns its address; in this case the Alloc must
+// be present in Function.Locals. We call this a "local" alloc.
+//
+// If heap is true, Alloc allocates a new zero-initialized variable
+// each time the instruction is executed. We call this a "new" alloc.
+//
+// When Alloc is applied to a channel, map or slice type, it returns
+// the address of an uninitialized (nil) reference of that kind; store
+// the result of MakeSlice, MakeMap or MakeChan in that location to
+// instantiate these types.
+//
+// Example printed form:
+//
+//	t0 = local int
+//	t1 = new int
+func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
+	if debugInstr {
+		log.Printf("Alloc %v, %v\n", t.ll, heap)
+	}
+	telem := b.prog.Elem(t)
+	if heap {
+		ret.impl = llvm.CreateAlloca(b.impl, telem.ll)
+	} else {
+		panic("todo")
+	}
+	// TODO: zero-initialize
+	ret.Type = t
+	return
+}
+
 // -----------------------------------------------------------------------------
 
+// The Call instruction represents a function or method call.
+//
+// The Call instruction yields the function result if there is exactly
+// one.  Otherwise it returns a tuple, the components of which are
+// accessed via Extract.
+//
+// Example printed form:
+//
+//	t2 = println(t0, t1)
+//	t4 = t3()
+//	t7 = invoke t5.Println(...t6)
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
+	if debugInstr {
+		var b bytes.Buffer
+		fmt.Fprint(&b, "Call @", fn.impl.Name())
+		for _, arg := range args {
+			fmt.Fprint(&b, ", ", arg.impl)
+		}
+		log.Println(b.String())
+	}
 	switch t := fn.t.(type) {
 	case *types.Signature:
 		ret.Type = b.prog.retType(t)
