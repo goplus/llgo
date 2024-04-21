@@ -20,6 +20,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @init()
   %0 = load i64, ptr @a, align 4
   %1 = add i64 %0, 1
   store i64 %1, ptr @a, align 4

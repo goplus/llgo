@@ -30,6 +30,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @init()
   %0 = call i64 @max(i64 1, i64 2)
   ret void
 }

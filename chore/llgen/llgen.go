@@ -18,19 +18,10 @@ package main
 
 import (
 	"fmt"
-	"go/ast"
-	"go/importer"
-	"go/parser"
-	"go/token"
-	"go/types"
 	"os"
 	"path/filepath"
 
-	"github.com/goplus/llgo/cl"
-	"golang.org/x/tools/go/ssa"
-	"golang.org/x/tools/go/ssa/ssautil"
-
-	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/x/llgen"
 )
 
 func main() {
@@ -40,40 +31,10 @@ func main() {
 	}
 
 	inFile := os.Args[1]
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, inFile, nil, parser.ParseComments)
-	check(err)
-
-	files := []*ast.File{f}
-	name := f.Name.Name
-	pkg := types.NewPackage(name, name)
-	foo, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: importer.Default()}, fset, pkg, files, ssa.SanityCheckFunctions)
-	check(err)
-
-	foo.WriteTo(os.Stderr)
-	for _, m := range foo.Members {
-		if f, ok := m.(*ssa.Function); ok {
-			f.WriteTo(os.Stderr)
-		}
-	}
-
-	llssa.Initialize(llssa.InitAll)
-	llssa.SetDebug(llssa.DbgFlagAll)
-	cl.SetDebug(cl.DbgFlagAll)
-
-	prog := llssa.NewProgram(nil)
-	ret, err := cl.NewPackage(prog, foo, nil)
-	check(err)
 
 	dir, _ := filepath.Split(inFile)
 	outFile := dir + "out.ll"
-	err = os.WriteFile(outFile, []byte(ret.String()), 0644)
-	check(err)
-}
 
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
+	llgen.Init()
+	llgen.Do(inFile, outFile)
 }
