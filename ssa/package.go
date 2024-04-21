@@ -19,11 +19,12 @@ package ssa
 import (
 	"go/constant"
 	"go/types"
-	"log"
 
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
 )
+
+// -----------------------------------------------------------------------------
 
 type dbgFlags = int
 
@@ -192,9 +193,6 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type) Global {
-	if debugInstr {
-		log.Println("==> NewVar", name, typ)
-	}
 	t := p.prog.Type(typ)
 	gbl := llvm.AddGlobal(p.mod, t.ll, name)
 	ret := &aGlobal{Expr{gbl, t}}
@@ -204,9 +202,6 @@ func (p Package) NewVar(name string, typ types.Type) Global {
 
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
-	if debugInstr {
-		log.Println("==> NewFunc", name)
-	}
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p.prog)

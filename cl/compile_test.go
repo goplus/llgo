@@ -34,10 +34,11 @@ import (
 )
 
 func TestFromTestdata(t *testing.T) {
-	testFromDir(t, "printf", "./_testdata")
+	testFromDir(t, "", "./_testdata")
 }
 
 func init() {
+	SetDebug(DbgFlagAll)
 	llssa.Initialize(llssa.InitAll)
 	llssa.SetDebug(llssa.DbgFlagAll)
 }
@@ -93,11 +94,6 @@ func testCompileEx(t *testing.T, src any, fname, expected string) {
 		t.Fatal("BuildPackage failed:", err)
 	}
 	foo.WriteTo(os.Stderr)
-	for _, m := range foo.Members {
-		if f, ok := m.(*ssa.Function); ok {
-			f.WriteTo(os.Stderr)
-		}
-	}
 	prog := llssa.NewProgram(nil)
 	ret, err := NewPackage(prog, foo, nil)
 	if err != nil {

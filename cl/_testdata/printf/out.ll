@@ -28,5 +28,6 @@ declare void @printf(ptr, ...)
 
 define void @main() {
 _llgo_0:
+  call void (ptr, ...) @printf(ptr @hello)
   ret void
 }
