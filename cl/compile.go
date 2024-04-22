@@ -91,6 +91,7 @@ type context struct {
 	pkg    llssa.Package
 	fn     llssa.Function
 	fset   *token.FileSet
+	goTyps *types.Package
 	goPkg  *ssa.Package
 	link   map[string]string        // pkgPath.nameInPkg => linkname
 	loaded map[*types.Package]none  // loaded packages
@@ -104,7 +105,8 @@ func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
 
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
-	name, typ := gbl.Name(), gbl.Type()
+	typ := gbl.Type()
+	name := fullName(gbl.Pkg.Pkg, gbl.Name())
 	if debugInstr {
 		log.Println("==> NewVar", name, typ)
 	}
@@ -245,10 +247,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		fn := p.funcOf(v)
 		return fn.Expr
 	case *ssa.Global:
-		if v.Pkg != p.goPkg {
-			panic("todo")
-		}
-		g := p.pkg.VarOf(v.Name())
+		g := p.varOf(v)
 		return g.Expr
 	case *ssa.Const:
 		t := v.Type()
@@ -309,6 +308,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		prog:   prog,
 		pkg:    ret,
 		fset:   pkg.Prog.Fset,
+		goTyps: pkgTypes,
 		goPkg:  pkg,
 		link:   make(map[string]string),
 		loaded: make(map[*types.Package]none),

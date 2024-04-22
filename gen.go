@@ -14,34 +14,21 @@
  * limitations under the License.
  */
 
-package main
+package llgo
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
+type GenFlags int
 
-	"github.com/goplus/llgo/internal/llgen"
-)
+// Gen generates llgo_autogen.ll for a Go package directory.
+func Gen(dir string, conf *Config, genTestPkg bool, flags GenFlags) (string, bool, error) {
+	panic("todo")
+}
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: llgen xxx.go [pkgPath]")
-		return
-	}
+// GenPkgPath generates llgo_autogen.ll for a Go package.
+func GenPkgPath(workDir, pkgPath string, conf *Config, allowExtern bool, flags GenFlags) (localDir string, recursively bool, err error) {
+	panic("todo")
+}
 
-	inFile := os.Args[1]
-
-	dir, _ := filepath.Split(inFile)
-	outFile := dir + "out.ll"
-
-	pkgPath := ""
-	if len(os.Args) == 3 {
-		pkgPath = os.Args[2]
-	} else {
-		pkgPath = llgen.PkgPath(dir)
-	}
-
-	llgen.Init()
-	llgen.Do(pkgPath, inFile, outFile)
+// GenFiles generates llgo_autogen.ll for specified Go files.
+func GenFiles(autogen string, files []string, conf *Config) (outFiles []string, err error) {
+	panic("todo")
 }

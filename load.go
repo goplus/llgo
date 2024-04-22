@@ -16,9 +16,18 @@
 
 package llgo
 
+import (
+	"github.com/goplus/llgo/ssa"
+)
+
 // -----------------------------------------------------------------------------
 
 type Config struct {
+}
+
+// LoadDir loads Go packages from a specified directory.
+func LoadDir(dir string, conf *Config, genTestPkg, promptGen bool) (out, test *ssa.Package, err error) {
+	panic("todo")
 }
 
 // -----------------------------------------------------------------------------

@@ -26,6 +26,7 @@ import (
 
 	"github.com/goplus/llgo/cmd/internal/base"
 	"github.com/goplus/llgo/cmd/internal/build"
+	"github.com/goplus/llgo/cmd/internal/gen"
 	"github.com/goplus/llgo/cmd/internal/help"
 )
 
@@ -38,6 +39,7 @@ func init() {
 	flag.Usage = mainUsage
 	base.Llgo.Commands = []*base.Command{
 		build.Cmd,
+		gen.Cmd,
 	}
 }
 
