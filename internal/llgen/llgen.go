@@ -18,12 +18,12 @@ package llgen
 
 import (
 	"go/ast"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"os"
 
+	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -51,14 +51,15 @@ func Gen(inFile string, src any) string {
 	files := []*ast.File{f}
 	name := f.Name.Name
 	pkg := types.NewPackage(name, name)
+	imp := packages.NewImporter(fset)
 	ssaPkg, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: importer.Default()}, fset, pkg, files, ssa.SanityCheckFunctions)
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions)
 	check(err)
 
 	ssaPkg.WriteTo(os.Stderr)
 
 	prog := llssa.NewProgram(nil)
-	ret, err := cl.NewPackage(prog, &cl.GoPackage{SSA: ssaPkg, Files: files})
+	ret, err := cl.NewPackage(prog, fset, ssaPkg, files)
 	check(err)
 
 	return ret.String()

@@ -87,6 +87,9 @@ func TestNamedStruct(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	pkg.NewVar("a", empty)
+	if pkg.VarOf("a") == nil {
+		t.Fatal("VarOf failed")
+	}
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -102,6 +105,12 @@ func TestDeclFunc(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
 	pkg.NewFunc("fn", sig)
+	if pkg.FuncOf("fn") == nil {
+		t.Fatal("FuncOf failed")
+	}
+	if prog.retType(sig) != prog.Void() {
+		t.Fatal("retType failed")
+	}
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 

@@ -19,11 +19,12 @@ package cl
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 	"log"
 	"os"
 	"sort"
-	"strings"
 
+	"github.com/goplus/gop/token"
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
@@ -59,14 +60,15 @@ const (
 )
 
 func funcKind(vfn ssa.Value) int {
-	if fn, ok := vfn.(*ssa.Function); ok {
-		n := len(fn.Params)
+	if fn, ok := vfn.(*ssa.Function); ok && fn.Signature.Recv() == nil {
+		params := fn.Signature.Params()
+		n := params.Len()
 		if n == 0 {
 			if fn.Name() == "init" && fn.Pkg.Pkg.Path() == "unsafe" {
 				return fnUnsafeInit
 			}
 		} else {
-			last := fn.Params[n-1]
+			last := params.At(n - 1)
 			if last.Name() == llssa.NameValist {
 				return fnHasVArg
 			}
@@ -75,15 +77,9 @@ func funcKind(vfn ssa.Value) int {
 	return fnNormal
 }
 
-func funcName(fn *ssa.Function) string {
-	ret := fn.Pkg.Pkg.Path() + "." + fn.Name()
-	if ret == "main.main" {
-		ret = "main"
-	}
-	return ret
-}
-
 // -----------------------------------------------------------------------------
+
+type none = struct{}
 
 type instrAndValue interface {
 	ssa.Instruction
@@ -91,48 +87,15 @@ type instrAndValue interface {
 }
 
 type context struct {
-	prog  llssa.Program
-	pkg   llssa.Package
-	fn    llssa.Function
-	goPkg *ssa.Package
-	link  map[string]string
-	bvals map[ssa.Value]llssa.Expr // block values
-	inits []func()
-}
-
-func (p *context) initFiles(pkgPath string, files []*ast.File) {
-	for _, file := range files {
-		for _, decl := range file.Decls {
-			if decl, ok := decl.(*ast.FuncDecl); ok {
-				if decl.Recv == nil && decl.Doc != nil {
-					p.initLinkname(pkgPath, decl.Doc)
-				}
-			}
-		}
-	}
-}
-
-func (p *context) initLinkname(pkgPath string, doc *ast.CommentGroup) {
-	const (
-		linkname = "//go:linkname "
-	)
-	for _, c := range doc.List {
-		if strings.HasPrefix(c.Text, linkname) {
-			text := strings.TrimSpace(c.Text[len(linkname):])
-			if idx := strings.IndexByte(text, ' '); idx > 0 {
-				name := pkgPath + "." + text[:idx]
-				p.link[name] = strings.TrimLeft(text[idx+1:], " ")
-			}
-		}
-	}
-}
-
-func (p *context) funcName(fn *ssa.Function) string {
-	name := funcName(fn)
-	if v, ok := p.link[name]; ok {
-		return v
-	}
-	return name
+	prog   llssa.Program
+	pkg    llssa.Package
+	fn     llssa.Function
+	fset   *token.FileSet
+	goPkg  *ssa.Package
+	link   map[string]string        // pkgPath.nameInPkg => linkname
+	loaded map[*types.Package]none  // loaded packages
+	bvals  map[ssa.Value]llssa.Expr // block values
+	inits  []func()
 }
 
 func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
@@ -150,7 +113,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 }
 
 func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
-	name := p.funcName(f)
+	name := p.funcName(f.Pkg.Pkg, f)
 	if debugInstr {
 		log.Println("==> NewFunc", name)
 	}
@@ -279,10 +242,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		if v.Pkg != p.goPkg {
-			panic("todo")
-		}
-		fn := p.pkg.FuncOf(p.funcName(v))
+		fn := p.funcOf(v)
 		return fn.Expr
 	case *ssa.Global:
 		if v.Pkg != p.goPkg {
@@ -322,19 +282,15 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // -----------------------------------------------------------------------------
 
-type GoPackage struct {
-	SSA   *ssa.Package
-	Files []*ast.File
-}
-
 // NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, in *GoPackage) (ret llssa.Package, err error) {
+func NewPackage(
+	prog llssa.Program,
+	fset *token.FileSet, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+
 	type namedMember struct {
 		name string
 		val  ssa.Member
 	}
-
-	pkg := in.SSA
 
 	// Sort by position, so that the order of the functions in the IR matches
 	// the order of functions in the source file. This is useful for testing,
@@ -353,12 +309,14 @@ func NewPackage(prog llssa.Program, in *GoPackage) (ret llssa.Package, err error
 	ret = prog.NewPackage(pkgTypes.Name(), pkgTypes.Path())
 
 	ctx := &context{
-		prog:  prog,
-		pkg:   ret,
-		goPkg: pkg,
-		link:  make(map[string]string),
+		prog:   prog,
+		pkg:    ret,
+		fset:   fset,
+		goPkg:  pkg,
+		link:   make(map[string]string),
+		loaded: make(map[*types.Package]none),
 	}
-	ctx.initFiles(pkgTypes.Path(), in.Files)
+	ctx.initFiles(pkgTypes.Path(), files)
 	for _, m := range members {
 		member := m.val
 		switch member := member.(type) {
