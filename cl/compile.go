@@ -283,10 +283,7 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 // -----------------------------------------------------------------------------
 
 // NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(
-	prog llssa.Program,
-	fset *token.FileSet, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-
+func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	type namedMember struct {
 		name string
 		val  ssa.Member
@@ -311,7 +308,7 @@ func NewPackage(
 	ctx := &context{
 		prog:   prog,
 		pkg:    ret,
-		fset:   fset,
+		fset:   pkg.Prog.Fset,
 		goPkg:  pkg,
 		link:   make(map[string]string),
 		loaded: make(map[*types.Package]none),

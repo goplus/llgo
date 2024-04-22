@@ -35,7 +35,7 @@ import (
 )
 
 func TestFromTestdata(t *testing.T) {
-	testFromDir(t, "importpkg", "./_testdata")
+	testFromDir(t, "", "./_testdata")
 }
 
 func init() {
@@ -97,7 +97,7 @@ func testCompileEx(t *testing.T, src any, fname, expected string) {
 	}
 	foo.WriteTo(os.Stderr)
 	prog := llssa.NewProgram(nil)
-	ret, err := NewPackage(prog, fset, foo, files)
+	ret, err := NewPackage(prog, foo, files)
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
