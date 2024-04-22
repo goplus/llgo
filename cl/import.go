@@ -58,7 +58,7 @@ func (p *context) importPkg(pkg *types.Package) {
 			if obj, ok := obj.(*types.Func); ok {
 				if pos := obj.Pos(); pos != token.NoPos {
 					f := fset.File(pos)
-					if fp := f.PositionFor(pos, false); fp.Line > 2 {
+					if fp := f.Position(pos); fp.Line > 2 {
 						lines, err := contentOf(contents, fp.Filename)
 						if err != nil {
 							panic(err)
