@@ -18,7 +18,15 @@ package llgo
 
 import (
 	"github.com/goplus/llgo/x/gocmd"
+	"github.com/goplus/mod/gopmod"
 )
+
+// -----------------------------------------------------------------------------
+
+// NotFound returns if cause err is ErrNotFound or not
+func NotFound(err error) bool {
+	return gopmod.IsNotFound(err)
+}
 
 // -----------------------------------------------------------------------------
 

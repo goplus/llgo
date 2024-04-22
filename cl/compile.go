@@ -19,12 +19,12 @@ package cl
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"log"
 	"os"
 	"sort"
 
-	"github.com/goplus/gop/token"
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
