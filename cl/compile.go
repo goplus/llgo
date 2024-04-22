@@ -59,14 +59,15 @@ const (
 )
 
 func funcKind(vfn ssa.Value) int {
-	if fn, ok := vfn.(*ssa.Function); ok {
-		n := len(fn.Params)
+	if fn, ok := vfn.(*ssa.Function); ok && fn.Signature.Recv() == nil {
+		params := fn.Signature.Params()
+		n := params.Len()
 		if n == 0 {
 			if fn.Name() == "init" && fn.Pkg.Pkg.Path() == "unsafe" {
 				return fnUnsafeInit
 			}
 		} else {
-			last := fn.Params[n-1]
+			last := params.At(n - 1)
 			if last.Name() == llssa.NameValist {
 				return fnHasVArg
 			}
@@ -133,6 +134,15 @@ func (p *context) funcName(fn *ssa.Function) string {
 		return v
 	}
 	return name
+}
+
+func (p *context) funcOf(fn *ssa.Function) llssa.Function {
+	pkg := p.pkg
+	name := p.funcName(fn)
+	if ret := pkg.FuncOf(name); ret != nil {
+		return ret
+	}
+	return pkg.NewFunc(name, fn.Signature) // TODO: support linkname
 }
 
 func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
@@ -279,10 +289,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		if v.Pkg != p.goPkg {
-			panic("todo")
-		}
-		fn := p.pkg.FuncOf(p.funcName(v))
+		fn := p.funcOf(v)
 		return fn.Expr
 	case *ssa.Global:
 		if v.Pkg != p.goPkg {

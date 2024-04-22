@@ -18,7 +18,6 @@ package cl
 
 import (
 	"go/ast"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -28,9 +27,11 @@ import (
 	"strings"
 	"testing"
 
-	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/gogen/packages"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
+
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 func TestFromTestdata(t *testing.T) {
@@ -88,8 +89,9 @@ func testCompileEx(t *testing.T, src any, fname, expected string) {
 	files := []*ast.File{f}
 	name := f.Name.Name
 	pkg := types.NewPackage(name, name)
+	imp := packages.NewImporter(fset)
 	foo, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: importer.Default()}, fset, pkg, files, ssa.SanityCheckFunctions)
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions)
 	if err != nil {
 		t.Fatal("BuildPackage failed:", err)
 	}
