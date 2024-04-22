@@ -18,9 +18,11 @@ package cl
 
 import (
 	"fmt"
+	"go/ast"
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
@@ -73,8 +75,12 @@ func funcKind(vfn ssa.Value) int {
 	return fnNormal
 }
 
-func isMainFunc(fn *ssa.Function) bool {
-	return fn.Name() == "main" && fn.Pkg.Pkg.Path() == "main"
+func funcName(fn *ssa.Function) string {
+	ret := fn.Pkg.Pkg.Path() + "." + fn.Name()
+	if ret == "main.main" {
+		ret = "main"
+	}
+	return ret
 }
 
 // -----------------------------------------------------------------------------
@@ -89,8 +95,44 @@ type context struct {
 	pkg   llssa.Package
 	fn    llssa.Function
 	goPkg *ssa.Package
+	link  map[string]string
 	bvals map[ssa.Value]llssa.Expr // block values
 	inits []func()
+}
+
+func (p *context) initFiles(pkgPath string, files []*ast.File) {
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			if decl, ok := decl.(*ast.FuncDecl); ok {
+				if decl.Recv == nil && decl.Doc != nil {
+					p.initLinkname(pkgPath, decl.Doc)
+				}
+			}
+		}
+	}
+}
+
+func (p *context) initLinkname(pkgPath string, doc *ast.CommentGroup) {
+	const (
+		linkname = "//go:linkname "
+	)
+	for _, c := range doc.List {
+		if strings.HasPrefix(c.Text, linkname) {
+			text := strings.TrimSpace(c.Text[len(linkname):])
+			if idx := strings.IndexByte(text, ' '); idx > 0 {
+				name := pkgPath + "." + text[:idx]
+				p.link[name] = strings.TrimLeft(text[idx+1:], " ")
+			}
+		}
+	}
+}
+
+func (p *context) funcName(fn *ssa.Function) string {
+	name := funcName(fn)
+	if v, ok := p.link[name]; ok {
+		return v
+	}
+	return name
 }
 
 func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
@@ -108,7 +150,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 }
 
 func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
-	name := f.Name()
+	name := p.funcName(f)
 	if debugInstr {
 		log.Println("==> NewFunc", name)
 	}
@@ -130,9 +172,8 @@ func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 		}
 		fn.MakeBlocks(nblk)
 		b := fn.NewBuilder()
-		isMain := isMainFunc(f)
 		for i, block := range f.Blocks {
-			p.compileBlock(b, block, isMain && i == 0)
+			p.compileBlock(b, block, i == 0 && name == "main")
 		}
 	})
 }
@@ -142,7 +183,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bo
 	b.SetBlock(ret)
 	p.bvals = make(map[ssa.Value]llssa.Expr)
 	if doInit {
-		fn := p.pkg.FuncOf("init")
+		fn := p.pkg.FuncOf("main.init")
 		b.Call(fn.Expr)
 	}
 	for _, instr := range block.Instrs {
@@ -241,7 +282,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		if v.Pkg != p.goPkg {
 			panic("todo")
 		}
-		fn := p.pkg.FuncOf(v.Name())
+		fn := p.pkg.FuncOf(p.funcName(v))
 		return fn.Expr
 	case *ssa.Global:
 		if v.Pkg != p.goPkg {
@@ -281,15 +322,19 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // -----------------------------------------------------------------------------
 
-type Config struct {
+type GoPackage struct {
+	SSA   *ssa.Package
+	Files []*ast.File
 }
 
 // NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.Package, err error) {
+func NewPackage(prog llssa.Program, in *GoPackage) (ret llssa.Package, err error) {
 	type namedMember struct {
 		name string
 		val  ssa.Member
 	}
+
+	pkg := in.SSA
 
 	// Sort by position, so that the order of the functions in the IR matches
 	// the order of functions in the source file. This is useful for testing,
@@ -311,7 +356,9 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, conf *Config) (ret llssa.P
 		prog:  prog,
 		pkg:   ret,
 		goPkg: pkg,
+		link:  make(map[string]string),
 	}
+	ctx.initFiles(pkgTypes.Path(), in.Files)
 	for _, m := range members {
 		member := m.val
 		switch member := member.(type) {

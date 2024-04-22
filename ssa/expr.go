@@ -230,7 +230,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
-			return Expr{llvm.ConstFCmp(pred, x.impl, y.impl), tret}
+			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkString, vkComplex, vkBool:
 			panic("todo")
 		}

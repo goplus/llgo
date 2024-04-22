@@ -4,7 +4,7 @@ source_filename = "main"
 @"init$guard" = global ptr null
 @hello = global ptr null
 
-define void @init() {
+define void @main.init() {
 _llgo_0:
   %0 = load i1, ptr @"init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -28,7 +28,7 @@ declare void @printf(ptr, ...)
 
 define void @main() {
 _llgo_0:
-  call void @init()
+  call void @main.init()
   call void (ptr, ...) @printf(ptr @hello)
   ret void
 }

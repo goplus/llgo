@@ -58,7 +58,7 @@ func Gen(inFile string, src any) string {
 	ssaPkg.WriteTo(os.Stderr)
 
 	prog := llssa.NewProgram(nil)
-	ret, err := cl.NewPackage(prog, ssaPkg, nil)
+	ret, err := cl.NewPackage(prog, &cl.GoPackage{SSA: ssaPkg, Files: files})
 	check(err)
 
 	return ret.String()

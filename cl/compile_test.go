@@ -95,7 +95,7 @@ func testCompileEx(t *testing.T, src any, fname, expected string) {
 	}
 	foo.WriteTo(os.Stderr)
 	prog := llssa.NewProgram(nil)
-	ret, err := NewPackage(prog, foo, nil)
+	ret, err := NewPackage(prog, &GoPackage{SSA: foo, Files: files})
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
@@ -119,7 +119,7 @@ source_filename = "foo"
 @"init$guard" = global ptr null
 @a = global ptr null
 
-define void @init() {
+define void @foo.init() {
 _llgo_0:
   %0 = load i1, ptr @"init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -145,7 +145,7 @@ source_filename = "foo"
 
 @"init$guard" = global ptr null
 
-define void @init() {
+define void @foo.init() {
 _llgo_0:
   %0 = load i1, ptr @"init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -158,7 +158,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i64 @fn(i64 %0, double %1) {
+define i64 @foo.fn(i64 %0, double %1) {
 _llgo_0:
   ret i64 1
 }
