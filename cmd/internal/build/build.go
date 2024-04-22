@@ -24,10 +24,9 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/goplus/gop"
-	"github.com/goplus/gop/x/gopprojs"
 	"github.com/goplus/llgo"
 	"github.com/goplus/llgo/cmd/internal/base"
+	"github.com/goplus/llgo/internal/projs"
 	"github.com/goplus/llgo/x/gocmd"
 )
 
@@ -58,7 +57,7 @@ func runCmd(cmd *base.Command, args []string) {
 		args = []string{"."}
 	}
 
-	proj, args, err := gopprojs.ParseOne(args...)
+	proj, args, err := projs.ParseOne(args...)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -78,22 +77,22 @@ func runCmd(cmd *base.Command, args []string) {
 	build(proj, conf, confCmd)
 }
 
-func build(proj gopprojs.Proj, conf *llgo.Config, build *gocmd.BuildConfig) {
+func build(proj projs.Proj, conf *llgo.Config, build *gocmd.BuildConfig) {
 	var obj string
 	var err error
 	switch v := proj.(type) {
-	case *gopprojs.DirProj:
+	case *projs.DirProj:
 		obj = v.Dir
 		err = llgo.BuildDir(obj, conf, build)
-	case *gopprojs.PkgPathProj:
+	case *projs.PkgPathProj:
 		obj = v.Path
 		err = llgo.BuildPkgPath("", obj, conf, build)
-	case *gopprojs.FilesProj:
+	case *projs.FilesProj:
 		err = llgo.BuildFiles(v.Files, conf, build)
 	default:
 		log.Panicln("`llgo build` doesn't support", reflect.TypeOf(v))
 	}
-	if gop.NotFound(err) {
+	if llgo.NotFound(err) {
 		fmt.Fprintf(os.Stderr, "llgo build %v: not found\n", obj)
 	} else if err != nil {
 		fmt.Fprintln(os.Stderr, err)
