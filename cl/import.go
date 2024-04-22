@@ -126,15 +126,31 @@ func (p *context) funcName(pkg *types.Package, fn *ssa.Function) string {
 }
 
 func (p *context) funcOf(fn *ssa.Function) llssa.Function {
-	pkgTypes := fn.Pkg.Pkg
-	if _, ok := p.loaded[pkgTypes]; !ok {
-		p.loaded[pkgTypes] = none{}
-		p.importPkg(pkgTypes)
-	}
+	pkgTypes := p.ensureLoaded(fn.Pkg.Pkg)
 	pkg := p.pkg
 	name := p.funcName(pkgTypes, fn)
 	if ret := pkg.FuncOf(name); ret != nil {
 		return ret
 	}
 	return pkg.NewFunc(name, fn.Signature)
+}
+
+func (p *context) varOf(v *ssa.Global) llssa.Global {
+	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
+	pkg := p.pkg
+	name := fullName(pkgTypes, v.Name())
+	if ret := pkg.VarOf(name); ret != nil {
+		return ret
+	}
+	return pkg.NewVar(name, v.Type())
+}
+
+func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
+	if p.goTyps != pkgTypes {
+		if _, ok := p.loaded[pkgTypes]; !ok {
+			p.loaded[pkgTypes] = none{}
+			p.importPkg(pkgTypes)
+		}
+	}
+	return pkgTypes
 }

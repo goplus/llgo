@@ -118,16 +118,16 @@ var a int
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"init$guard" = global ptr null
-@a = global ptr null
+@"foo.init$guard" = global ptr null
+@foo.a = global ptr null
 
 define void @foo.init() {
 _llgo_0:
-  %0 = load i1, ptr @"init$guard", align 1
+  %0 = load i1, ptr @"foo.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"init$guard", align 1
+  store i1 true, ptr @"foo.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -145,15 +145,15 @@ func fn(a int, b float64) int {
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"init$guard" = global ptr null
+@"foo.init$guard" = global ptr null
 
 define void @foo.init() {
 _llgo_0:
-  %0 = load i1, ptr @"init$guard", align 1
+  %0 = load i1, ptr @"foo.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"init$guard", align 1
+  store i1 true, ptr @"foo.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
