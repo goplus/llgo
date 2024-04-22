@@ -14,27 +14,35 @@
  * limitations under the License.
  */
 
-package main
+package mod
 
 import (
-	"fmt"
-	"os"
+	"path"
 	"path/filepath"
 
-	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/mod"
+	"github.com/goplus/mod/gopmod"
 )
 
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: llgen xxx.go")
+// Module represents a Go module.
+type Module = gopmod.Module
+
+// Load loads a Go module from a directory.
+func Load(dir string) (ret *Module, pkgPath string, err error) {
+	if dir, err = filepath.Abs(dir); err != nil {
 		return
 	}
-
-	inFile := os.Args[1]
-
-	dir, _ := filepath.Split(inFile)
-	outFile := dir + "out.ll"
-
-	llgen.Init()
-	llgen.Do(llgen.PkgPath(dir), inFile, outFile)
+	_, gomod, err := mod.FindGoMod(dir)
+	if err != nil {
+		return
+	}
+	if ret, err = gopmod.LoadFrom(gomod, ""); err != nil {
+		return
+	}
+	relPath, err := filepath.Rel(ret.Root(), dir)
+	if err != nil {
+		return
+	}
+	pkgPath = path.Join(ret.Path(), filepath.ToSlash(relPath))
+	return
 }
