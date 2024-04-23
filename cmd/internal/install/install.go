@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 The GoPlus Authors (goplus.org). All rights reserved.
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-package llgo
+// Package install implements the “llgo install command.
+package install
 
 import (
-	"github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/cmd/internal/base"
+	"github.com/goplus/llgo/internal/build"
 )
 
-// -----------------------------------------------------------------------------
-
-type Config struct {
+// llgo install
+var Cmd = &base.Command{
+	UsageLine: "llgo install [build flags] [packages]",
+	Short:     "Compile and install packages and dependencies",
 }
 
-// LoadDir loads Go packages from a specified directory.
-func LoadDir(dir string, conf *Config, genTestPkg, promptGen bool) (out, test *ssa.Package, err error) {
-	panic("todo")
+func init() {
+	Cmd.Run = runCmd
 }
 
-// -----------------------------------------------------------------------------
+func runCmd(cmd *base.Command, args []string) {
+	build.Do(args, build.ModeInstall)
+}
