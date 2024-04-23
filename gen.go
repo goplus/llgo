@@ -16,11 +16,74 @@
 
 package llgo
 
+/*
+import (
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/qiniu/x/errors"
+)
+
 type GenFlags int
+
+const (
+	GenFlagCheckOnly GenFlags = 1 << iota
+	GenFlagPrintError
+	GenFlagPrompt
+)
 
 // Gen generates llgo_autogen.ll for a Go package directory.
 func Gen(dir string, conf *Config, genTestPkg bool, flags GenFlags) (string, bool, error) {
-	panic("todo")
+	recursively := strings.HasSuffix(dir, "/...")
+	if recursively {
+		dir = dir[:len(dir)-4]
+	}
+	return dir, recursively, genDir(dir, conf, genTestPkg, recursively, flags)
+}
+
+func genDir(dir string, conf *Config, genTestPkg, recursively bool, flags GenFlags) (err error) {
+	if conf == nil {
+		conf = new(Config)
+	}
+	if recursively {
+		var (
+			list errors.List
+		)
+		fn := func(path string, d fs.DirEntry, err error) error {
+			if err == nil && d.IsDir() {
+				if strings.HasPrefix(d.Name(), "_") || (path != dir && hasMod(path)) { // skip _
+					return filepath.SkipDir
+				}
+				if e := genGoIn(path, conf, genTestPkg, flags); e != nil && notIgnNotated(e, conf) {
+					if flags&GenFlagPrintError != 0 {
+						fmt.Fprintln(os.Stderr, e)
+					}
+					list.Add(e)
+				}
+			}
+			return err
+		}
+		err = filepath.WalkDir(dir, fn)
+		if err != nil {
+			return errors.NewWith(err, `filepath.WalkDir(dir, fn)`, -2, "filepath.WalkDir", dir, fn)
+		}
+		return list.ToError()
+	}
+	if e := genGoIn(dir, conf, genTestPkg, flags); e != nil && notIgnNotated(e, conf) {
+		if (flags & GenFlagPrintError) != 0 {
+			fmt.Fprintln(os.Stderr, e)
+		}
+		err = e
+	}
+	return
+}
+
+func hasMod(dir string) bool {
+	_, err := os.Lstat(dir + "/go.mod")
+	return err == nil
 }
 
 // GenPkgPath generates llgo_autogen.ll for a Go package.
@@ -32,3 +95,4 @@ func GenPkgPath(workDir, pkgPath string, conf *Config, allowExtern bool, flags G
 func GenFiles(autogen string, files []string, conf *Config) (outFiles []string, err error) {
 	panic("todo")
 }
+*/
