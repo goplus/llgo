@@ -106,7 +106,11 @@ func (p *context) initLinkname(pkgPath, line string) {
 }
 
 func fullName(pkg *types.Package, name string) string {
-	return pkg.Path() + "." + name
+	pkgPath := pkg.Name()
+	if pkgPath != "main" {
+		pkgPath = pkg.Path()
+	}
+	return pkgPath + "." + name
 }
 
 func funcName(pkg *types.Package, fn *ssa.Function) string {

@@ -28,10 +28,13 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @main() {
 _llgo_0:
   call void @main.init()
+  %0 = call i64 @"github.com/goplus/llgo/cl/internal/stdio.Max"(i64 2, i64 100)
   call void (ptr, ...) @printf(ptr @main.hello)
   ret void
 }
 
 declare void @"github.com/goplus/llgo/cl/internal/stdio.init"()
+
+declare i64 @"github.com/goplus/llgo/cl/internal/stdio.Max"(i64, i64)
 
 declare void @printf(ptr, ...)

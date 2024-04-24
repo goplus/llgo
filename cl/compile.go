@@ -305,7 +305,8 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	})
 
 	pkgTypes := pkg.Pkg
-	ret = prog.NewPackage(pkgTypes.Name(), pkgTypes.Path())
+	pkgName, pkgPath := pkgTypes.Name(), pkgTypes.Path()
+	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
 		prog:   prog,
@@ -316,7 +317,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		link:   make(map[string]string),
 		loaded: make(map[*types.Package]none),
 	}
-	ctx.initFiles(pkgTypes.Path(), files)
+	ctx.initFiles(pkgPath, files)
 	for _, m := range members {
 		member := m.val
 		switch member := member.(type) {

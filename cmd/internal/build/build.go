@@ -33,5 +33,7 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	build.Do(args, build.ModeBuild)
+	build.Do(args, &build.Config{
+		Mode: build.ModeBuild,
+	})
 }

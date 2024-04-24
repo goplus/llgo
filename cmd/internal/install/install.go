@@ -33,5 +33,6 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	build.Do(args, build.ModeInstall)
+	conf := build.NewDefaultConf(build.ModeInstall)
+	build.Do(args, conf)
 }
