@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package build implements the “llgo build” command.
+// Package build implements the "llgo build" command.
 package build
 
 import (
@@ -34,6 +34,7 @@ func init() {
 
 func runCmd(cmd *base.Command, args []string) {
 	build.Do(args, &build.Config{
-		Mode: build.ModeBuild,
+		Mode:   build.ModeBuild,
+		AppExt: build.DefaultAppExt(),
 	})
 }

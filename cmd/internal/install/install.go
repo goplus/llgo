@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package install implements the “llgo install command.
+// Package install implements the "llgo install" command.
 package install
 
 import (

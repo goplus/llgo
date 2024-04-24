@@ -21,6 +21,7 @@ import (
 	"go/token"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -40,12 +41,18 @@ type Mode int
 const (
 	ModeBuild Mode = iota
 	ModeInstall
+	ModeRun
 )
 
+func needLLFile(mode Mode) bool {
+	return mode != ModeBuild
+}
+
 type Config struct {
-	BinPath   string
-	AppSuffix string // ".exe" on Windows, empty on Unix
-	Mode      Mode
+	BinPath string
+	AppExt  string // ".exe" on Windows, empty on Unix
+	RunArgs []string
+	Mode    Mode
 }
 
 func NewDefaultConf(mode Mode) *Config {
@@ -56,11 +63,16 @@ func NewDefaultConf(mode Mode) *Config {
 	conf := &Config{
 		BinPath: bin,
 		Mode:    mode,
-	}
-	if runtime.GOOS == "windows" {
-		conf.AppSuffix = ".exe"
+		AppExt:  DefaultAppExt(),
 	}
 	return conf
+}
+
+func DefaultAppExt() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
 }
 
 // -----------------------------------------------------------------------------
@@ -104,20 +116,22 @@ func Do(args []string, conf *Config) {
 		buildPkg(prog, pkg, mode)
 	}
 
-	if mode == ModeInstall {
+	if mode != ModeBuild || len(initial) == 1 {
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				linkMainPkg(pkg, conf)
+				linkMainPkg(pkg, conf, mode)
 			}
 		}
 	}
 }
 
-func linkMainPkg(pkg *packages.Package, conf *Config) {
-	name := path.Base(pkg.PkgPath)
+func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode) {
+	pkgPath := pkg.PkgPath
+	name := path.Base(pkgPath)
+	app := filepath.Join(conf.BinPath, name+conf.AppExt)
 	args := make([]string, 2, len(pkg.Imports)+3)
 	args[0] = "-o"
-	args[1] = filepath.Join(conf.BinPath, name+conf.AppSuffix)
+	args[1] = app
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.PkgPath != "unsafe" { // TODO(xsw): remove this special case
 			args = append(args, p.ExportFile+".ll")
@@ -126,21 +140,31 @@ func linkMainPkg(pkg *packages.Package, conf *Config) {
 
 	// TODO(xsw): show work
 	// fmt.Fprintln(os.Stderr, "clang", args)
-	fmt.Fprintln(os.Stderr, args[1])
+	fmt.Fprintln(os.Stderr, "#", pkgPath)
 	err := clang.New("").Exec(args...)
 	check(err)
+
+	if mode == ModeRun {
+		cmd := exec.Command(app, conf.RunArgs...)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+	}
 }
 
 func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
-	fmt.Fprintln(os.Stderr, pkgPath)
+	if mode != ModeRun {
+		fmt.Fprintln(os.Stderr, pkgPath)
+	}
 	if pkgPath == "unsafe" { // TODO(xsw): remove this special case
 		return
 	}
 	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
 	check(err)
-	if mode == ModeInstall {
+	if needLLFile(mode) {
 		file := pkg.ExportFile + ".ll"
 		os.WriteFile(file, []byte(ret.String()), 0644)
 	}
