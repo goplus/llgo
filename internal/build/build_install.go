@@ -50,7 +50,7 @@ const (
 func Do(args []string, mode Mode) {
 	flags, patterns, verbose := parseArgs(args)
 	cfg := &packages.Config{
-		Mode:       loadSyntax | packages.NeedExportFile,
+		Mode:       loadSyntax | packages.NeedDeps | packages.NeedExportFile,
 		BuildFlags: flags,
 	}
 
@@ -61,7 +61,8 @@ func Do(args []string, mode Mode) {
 	check(err)
 
 	// Create SSA-form program representation.
-	_, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
+	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
+	ssaProg.Build()
 	for _, errPkg := range errPkgs {
 		log.Println("cannot build SSA for package", errPkg)
 	}
@@ -75,11 +76,11 @@ func Do(args []string, mode Mode) {
 	prog := llssa.NewProgram(nil)
 	llFiles := make([]string, 0, len(pkgs))
 	for _, pkg := range pkgs {
-		pkg.SSA.Build()
 		llFiles = buildPkg(llFiles, prog, pkg, mode)
 	}
 	if mode == ModeInstall {
-		fmt.Fprintln(os.Stderr, "clang", llFiles)
+		// TODO(xsw): show work
+		// fmt.Fprintln(os.Stderr, "clang", llFiles)
 		err = clang.New("").Exec(llFiles...)
 		check(err)
 	}
