@@ -14,32 +14,33 @@
  * limitations under the License.
  */
 
-package llgo
+package clang
 
 import (
-	"github.com/goplus/llgo/x/gocmd"
-	"github.com/goplus/mod/gopmod"
+	"os"
+	"os/exec"
 )
 
 // -----------------------------------------------------------------------------
 
-// NotFound returns if cause err is ErrNotFound or not
-func NotFound(err error) bool {
-	return gopmod.IsNotFound(err)
+// Cmd represents a nm command.
+type Cmd struct {
+	app string
 }
 
-// -----------------------------------------------------------------------------
-
-func BuildDir(dir string, conf *Config, build *gocmd.BuildConfig) (err error) {
-	panic("todo")
+// New creates a new nm command.
+func New(app string) *Cmd {
+	if app == "" {
+		app = "clang"
+	}
+	return &Cmd{app}
 }
 
-func BuildPkgPath(workDir, pkgPath string, conf *Config, build *gocmd.BuildConfig) (err error) {
-	panic("todo")
-}
-
-func BuildFiles(files []string, conf *Config, build *gocmd.BuildConfig) (err error) {
-	panic("todo")
+func (p *Cmd) Exec(args ...string) error {
+	cmd := exec.Command(p.app, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // -----------------------------------------------------------------------------
