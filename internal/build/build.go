@@ -21,14 +21,18 @@ import (
 	"go/token"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
-	llssa "github.com/goplus/llgo/ssa"
 	"github.com/goplus/llgo/x/clang"
+
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 type Mode int
@@ -37,6 +41,27 @@ const (
 	ModeBuild Mode = iota
 	ModeInstall
 )
+
+type Config struct {
+	BinPath   string
+	AppSuffix string // ".exe" on Windows, empty on Unix
+	Mode      Mode
+}
+
+func NewDefaultConf(mode Mode) *Config {
+	bin := os.Getenv("GOBIN")
+	if bin == "" {
+		bin = filepath.Join(runtime.GOROOT(), "bin")
+	}
+	conf := &Config{
+		BinPath: bin,
+		Mode:    mode,
+	}
+	if runtime.GOOS == "windows" {
+		conf.AppSuffix = ".exe"
+	}
+	return conf
+}
 
 // -----------------------------------------------------------------------------
 
@@ -47,7 +72,7 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
-func Do(args []string, mode Mode) {
+func Do(args []string, conf *Config) {
 	flags, patterns, verbose := parseArgs(args)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedExportFile,
@@ -74,32 +99,51 @@ func Do(args []string, mode Mode) {
 	}
 
 	prog := llssa.NewProgram(nil)
-	llFiles := make([]string, 0, len(pkgs))
+	mode := conf.Mode
 	for _, pkg := range pkgs {
-		llFiles = buildPkg(llFiles, prog, pkg, mode)
+		buildPkg(prog, pkg, mode)
 	}
+
 	if mode == ModeInstall {
-		// TODO(xsw): show work
-		// fmt.Fprintln(os.Stderr, "clang", llFiles)
-		err = clang.New("").Exec(llFiles...)
-		check(err)
+		for _, pkg := range initial {
+			if pkg.Name == "main" {
+				linkMainPkg(pkg, conf)
+			}
+		}
 	}
 }
 
-func buildPkg(llFiles []string, prog llssa.Program, pkg aPackage, mode Mode) []string {
+func linkMainPkg(pkg *packages.Package, conf *Config) {
+	name := path.Base(pkg.PkgPath)
+	args := make([]string, 2, len(pkg.Imports)+3)
+	args[0] = "-o"
+	args[1] = filepath.Join(conf.BinPath, name+conf.AppSuffix)
+	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
+		if p.PkgPath != "unsafe" { // TODO(xsw): remove this special case
+			args = append(args, p.ExportFile+".ll")
+		}
+	})
+
+	// TODO(xsw): show work
+	// fmt.Fprintln(os.Stderr, "clang", args)
+	fmt.Fprintln(os.Stderr, args[1])
+	err := clang.New("").Exec(args...)
+	check(err)
+}
+
+func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode) {
+	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
 	fmt.Fprintln(os.Stderr, pkgPath)
 	if pkgPath == "unsafe" { // TODO(xsw): remove this special case
-		return llFiles
+		return
 	}
-	ret, err := cl.NewPackage(prog, pkg.SSA, pkg.Syntax)
+	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
 	check(err)
 	if mode == ModeInstall {
 		file := pkg.ExportFile + ".ll"
 		os.WriteFile(file, []byte(ret.String()), 0644)
-		llFiles = append(llFiles, file)
 	}
-	return llFiles
 }
 
 type aPackage struct {
