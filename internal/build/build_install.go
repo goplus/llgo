@@ -28,6 +28,7 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/x/clang"
 )
 
 type Mode int
@@ -60,8 +61,7 @@ func Do(args []string, mode Mode) {
 	check(err)
 
 	// Create SSA-form program representation.
-	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
-	ssaProg.Build()
+	_, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	for _, errPkg := range errPkgs {
 		log.Println("cannot build SSA for package", errPkg)
 	}
@@ -71,22 +71,32 @@ func Do(args []string, mode Mode) {
 	// cl.SetDebug(cl.DbgFlagAll)
 
 	prog := llssa.NewProgram(nil)
+	llFiles := make([]string, 0, len(pkgs))
 	for _, pkg := range pkgs {
-		buildPkg(prog, pkg, mode)
+		pkg.SSA.Build()
+		llFiles = buildPkg(llFiles, prog, pkg, mode)
+	}
+	if mode == ModeInstall {
+		fmt.Fprintln(os.Stderr, "clang", llFiles)
+		err = clang.New("").Exec(llFiles...)
+		check(err)
 	}
 }
 
-func buildPkg(prog llssa.Program, pkg aPackage, mode Mode) {
+func buildPkg(llFiles []string, prog llssa.Program, pkg aPackage, mode Mode) []string {
 	pkgPath := pkg.PkgPath
 	fmt.Fprintln(os.Stderr, pkgPath)
 	if pkgPath == "unsafe" { // TODO(xsw): remove this special case
-		return
+		return llFiles
 	}
 	ret, err := cl.NewPackage(prog, pkg.SSA, pkg.Syntax)
 	check(err)
 	if mode == ModeInstall {
-		os.WriteFile(pkg.ExportFile+".ll", []byte(ret.String()), 0644)
+		file := pkg.ExportFile + ".ll"
+		os.WriteFile(file, []byte(ret.String()), 0644)
+		llFiles = append(llFiles, file)
 	}
+	return llFiles
 }
 
 type aPackage struct {
