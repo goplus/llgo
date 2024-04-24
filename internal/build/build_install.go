@@ -48,7 +48,7 @@ const (
 )
 
 func Do(args []string, mode Mode) {
-	flags, patterns := parseArgs(args)
+	flags, patterns, verbose := parseArgs(args)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedExportFile,
 		BuildFlags: flags,
@@ -67,8 +67,10 @@ func Do(args []string, mode Mode) {
 	}
 
 	llssa.Initialize(llssa.InitAll)
-	// llssa.SetDebug(llssa.DbgFlagAll)
-	// cl.SetDebug(cl.DbgFlagAll)
+	if verbose {
+		llssa.SetDebug(llssa.DbgFlagAll)
+		cl.SetDebug(cl.DbgFlagAll)
+	}
 
 	prog := llssa.NewProgram(nil)
 	llFiles := make([]string, 0, len(pkgs))
@@ -122,13 +124,18 @@ func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Progr
 	return
 }
 
-func parseArgs(args []string) (flags, patterns []string) {
+func parseArgs(args []string) (flags, patterns []string, verbose bool) {
 	for i, arg := range args {
 		if !strings.HasPrefix(arg, "-") {
-			return args[:i], args[i:]
+			flags, patterns = args[:i], args[i:]
+			return
+		}
+		if arg == "-v" {
+			verbose = true
 		}
 	}
-	return args, nil
+	flags = args
+	return
 }
 
 func check(err error) {
