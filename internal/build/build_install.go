@@ -67,8 +67,8 @@ func Do(args []string, mode Mode) {
 	}
 
 	llssa.Initialize(llssa.InitAll)
-	llssa.SetDebug(llssa.DbgFlagAll)
-	cl.SetDebug(cl.DbgFlagAll)
+	// llssa.SetDebug(llssa.DbgFlagAll)
+	// cl.SetDebug(cl.DbgFlagAll)
 
 	prog := llssa.NewProgram(nil)
 	for _, pkg := range pkgs {
