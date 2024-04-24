@@ -23,11 +23,6 @@ import (
 	"testing"
 )
 
-func init() {
-	Initialize(InitAll)
-	SetDebug(DbgFlagAll)
-}
-
 func assertPkg(t *testing.T, p Package, expected string) {
 	t.Helper()
 	if v := p.String(); v != expected {
