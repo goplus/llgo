@@ -116,6 +116,9 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 
 func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 	name := p.funcName(f.Pkg.Pkg, f)
+	if name == "unsafe.init" {
+		return
+	}
 	if debugInstr {
 		log.Println("==> NewFunc", name)
 	}

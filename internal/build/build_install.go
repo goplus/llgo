@@ -17,13 +17,14 @@
 package build
 
 import (
+	"fmt"
+	"go/token"
 	"log"
 	"os"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/ssa"
-	"golang.org/x/tools/go/ssa/ssautil"
 
 	"github.com/goplus/llgo/cl"
 	llssa "github.com/goplus/llgo/ssa"
@@ -59,22 +60,56 @@ func Do(args []string, mode Mode) {
 	check(err)
 
 	// Create SSA-form program representation.
-	_, ssaPkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions)
+	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
+	ssaProg.Build()
+	for _, errPkg := range errPkgs {
+		log.Println("cannot build SSA for package", errPkg)
+	}
 
 	llssa.Initialize(llssa.InitAll)
+	llssa.SetDebug(llssa.DbgFlagAll)
+	cl.SetDebug(cl.DbgFlagAll)
+
 	prog := llssa.NewProgram(nil)
-	for i, ssaPkg := range ssaPkgs {
-		pkg := initial[i]
-		if ssaPkg == nil { // TODO(xsw): error handling
-			log.Panicf("cannot build SSA for package %s", pkg)
-		}
-		ssaPkg.Build()
-		ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
-		check(err)
-		if mode == ModeInstall {
-			os.WriteFile(pkg.ExportFile+".ll", []byte(ret.String()), 0644)
-		}
+	for _, pkg := range pkgs {
+		buildPkg(prog, pkg, mode)
 	}
+}
+
+func buildPkg(prog llssa.Program, pkg aPackage, mode Mode) {
+	pkgPath := pkg.PkgPath
+	fmt.Fprintln(os.Stderr, pkgPath)
+	if pkgPath == "unsafe" { // TODO(xsw): remove this special case
+		return
+	}
+	ret, err := cl.NewPackage(prog, pkg.SSA, pkg.Syntax)
+	check(err)
+	if mode == ModeInstall {
+		os.WriteFile(pkg.ExportFile+".ll", []byte(ret.String()), 0644)
+	}
+}
+
+type aPackage struct {
+	*packages.Package
+	SSA *ssa.Package
+}
+
+func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []aPackage, errs []*packages.Package) {
+	var fset *token.FileSet
+	if len(initial) > 0 {
+		fset = initial[0].Fset
+	}
+
+	prog = ssa.NewProgram(fset, mode)
+	packages.Visit(initial, nil, func(p *packages.Package) {
+		if p.Types != nil && !p.IllTyped {
+			ssaPkg := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+			all = append(all, aPackage{p, ssaPkg})
+		} else {
+			errs = append(errs, p)
+		}
+	})
+	return
 }
 
 func parseArgs(args []string) (flags, patterns []string) {
