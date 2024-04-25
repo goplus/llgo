@@ -182,7 +182,7 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		return
 	}
 	if debugInstr {
-		log.Println("==> NewFunc", f.Name(), name, "type:", sig.Recv(), sig)
+		log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
 	}
 	fn := pkg.NewFunc(name, sig)
 	p.inits = append(p.inits, func() {
