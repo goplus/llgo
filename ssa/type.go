@@ -72,6 +72,22 @@ func indexType(t types.Type) types.Type {
 	panic("index: type doesn't support index - " + t.String())
 }
 
+// convert method to func
+func methodToFunc(sig *types.Signature) *types.Signature {
+	if recv := sig.Recv(); recv != nil {
+		tParams := sig.Params()
+		nParams := tParams.Len()
+		params := make([]*types.Var, nParams+1)
+		params[0] = recv
+		for i := 0; i < nParams; i++ {
+			params[i+1] = tParams.At(i)
+		}
+		return types.NewSignatureType(
+			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
+	}
+	return sig
+}
+
 // -----------------------------------------------------------------------------
 
 type aType struct {
@@ -105,24 +121,12 @@ func (p Program) Type(typ types.Type) Type {
 }
 
 func (p Program) llvmSignature(sig *types.Signature) Type {
+	sig = methodToFunc(sig)
 	if v := p.typs.At(sig); v != nil {
 		return v.(Type)
 	}
-	sigOrg := sig
-	if recv := sig.Recv(); recv != nil {
-		// convert method to func
-		tParams := sig.Params()
-		nParams := tParams.Len()
-		params := make([]*types.Var, nParams+1)
-		params[0] = recv
-		for i := 0; i < nParams; i++ {
-			params[i+1] = tParams.At(i)
-		}
-		sig = types.NewSignatureType(
-			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
-	}
 	ret := p.toLLVMFunc(sig)
-	p.typs.Set(sigOrg, ret)
+	p.typs.Set(sig, ret)
 	return ret
 }
 
