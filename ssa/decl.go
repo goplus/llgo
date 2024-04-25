@@ -145,7 +145,8 @@ func (p Function) Param(i int) Expr {
 func (p Function) NewBuilder() Builder {
 	prog := p.prog
 	b := prog.ctx.NewBuilder()
-	b.Finalize()
+	// TODO(xsw): Finalize may cause panic, so comment it.
+	// b.Finalize()
 	return &aBuilder{b, p, prog}
 }
 

@@ -28,7 +28,7 @@ func testCompile(t *testing.T, src, expected string) {
 }
 
 func TestFromTestcgo(t *testing.T) {
-	cltest.FromDir(t, "strlen", "./_testcgo", true)
+	cltest.FromDir(t, "", "./_testcgo", true)
 }
 
 func TestFromTestdata(t *testing.T) {
@@ -42,8 +42,8 @@ var a int
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"foo.init$guard" = global ptr null
 @foo.a = global ptr null
+@"foo.init$guard" = global ptr null
 
 define void @foo.init() {
 _llgo_0:
@@ -71,6 +71,11 @@ source_filename = "foo"
 
 @"foo.init$guard" = global ptr null
 
+define i64 @foo.fn(i64 %0, double %1) {
+_llgo_0:
+  ret i64 1
+}
+
 define void @foo.init() {
 _llgo_0:
   %0 = load i1, ptr @"foo.init$guard", align 1
@@ -82,11 +87,6 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
-}
-
-define i64 @foo.fn(i64 %0, double %1) {
-_llgo_0:
-  ret i64 1
 }
 `)
 }

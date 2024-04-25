@@ -117,12 +117,18 @@ func fullName(pkg *types.Package, name string) string {
 }
 
 // func: pkg.name
-// method: (pkg.T).name
+// method: (pkg.T).name, (*pkg.T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
 	sig := fn.Signature
 	name := fn.Name()
 	if recv := sig.Recv(); recv != nil {
-		return "(" + recv.Type().String() + ")." + name
+		var tName string
+		t := recv.Type()
+		if tp, ok := t.(*types.Pointer); ok {
+			t, tName = tp.Elem(), "*"
+		}
+		tName += t.(*types.Named).Obj().Name()
+		return "(" + tName + ")." + name
 	}
 	ret := fullName(pkg, name)
 	if ret == "main.main" {

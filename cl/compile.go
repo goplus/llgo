@@ -428,17 +428,12 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		val  ssa.Member
 	}
 
-	// Sort by position, so that the order of the functions in the IR matches
-	// the order of functions in the source file. This is useful for testing,
-	// for example.
-	var members []*namedMember
+	members := make([]*namedMember, 0, len(pkg.Members))
 	for name, v := range pkg.Members {
 		members = append(members, &namedMember{name, v})
 	}
 	sort.Slice(members, func(i, j int) bool {
-		iPos := members[i].val.Pos()
-		jPos := members[j].val.Pos()
-		return iPos < jPos
+		return members[i].name < members[j].name
 	})
 
 	pkgProg := pkg.Prog

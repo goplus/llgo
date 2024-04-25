@@ -1,8 +1,14 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@"main.init$guard" = global ptr null
 @main.format = global ptr null
+@"main.init$guard" = global ptr null
+
+define void @"(*T).Print"(ptr %0, i64 %1) {
+_llgo_0:
+  call void (ptr, ...) @printf(ptr %0, i64 %1)
+  ret void
+}
 
 define void @main.init() {
 _llgo_0:
@@ -27,17 +33,11 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-declare void @printf(ptr, ...)
-
-define void @"(*main.T).Print"(ptr %0, i64 %1) {
-_llgo_0:
-  call void (ptr, ...) @printf(ptr %0, i64 %1)
-  ret void
-}
-
 define void @main() {
 _llgo_0:
   call void @main.init()
-  call void @"(*main.T).Print"(ptr @main.format, i64 100)
+  call void @"(*T).Print"(ptr @main.format, i64 100)
   ret void
 }
+
+declare void @printf(ptr, ...)

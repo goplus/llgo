@@ -26,7 +26,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: llgen xxx.go")
+		fmt.Fprintln(os.Stderr, "Usage: llgen xxx.go [pkgPath]")
 		return
 	}
 
@@ -36,5 +36,9 @@ func main() {
 	outFile := dir + "out.ll"
 
 	llgen.Init()
-	llgen.DoFile(inFile, outFile)
+	if len(os.Args) >= 3 {
+		llgen.Do(os.Args[2], inFile, outFile)
+	} else {
+		llgen.DoFile(inFile, outFile)
+	}
 }
