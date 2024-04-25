@@ -92,6 +92,7 @@ type context struct {
 	pkg    llssa.Package
 	fn     llssa.Function
 	fset   *token.FileSet
+	goProg *ssa.Program
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	link   map[string]string           // pkgPath.nameInPkg => linkname
@@ -101,8 +102,20 @@ type context struct {
 	inits  []func()
 }
 
-func (p *context) compileType(pkg llssa.Package, member *ssa.Type) {
-	panic("todo")
+func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
+	tn := t.Object().(*types.TypeName)
+	typ := tn.Type()
+	name := fullName(tn.Pkg(), tn.Name())
+	if debugInstr {
+		log.Println("==> NewType", name, typ)
+	}
+	prog := p.goProg
+	mthds := prog.MethodSets.MethodSet(typ)
+	for i, n := 0, mthds.Len(); i < n; i++ {
+		mthd := mthds.At(i)
+		ssaMthd := prog.MethodValue(mthd)
+		p.compileFunc(pkg, ssaMthd)
+	}
 }
 
 // Global variable.
@@ -118,11 +131,13 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 
 func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
 	name := p.funcName(f.Pkg.Pkg, f)
+	/* TODO(xsw): confirm this is not needed more
 	if name == "unsafe.init" {
 		return
 	}
+	*/
 	if debugInstr {
-		log.Println("==> NewFunc", name)
+		log.Println("==> NewFunc", name, f.Signature)
 	}
 	fn := pkg.NewFunc(name, f.Signature)
 	p.inits = append(p.inits, func() {
@@ -378,6 +393,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		return iPos < jPos
 	})
 
+	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), pathOf(pkgTypes)
 	ret = prog.NewPackage(pkgName, pkgPath)
@@ -385,7 +401,8 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	ctx := &context{
 		prog:   prog,
 		pkg:    ret,
-		fset:   pkg.Prog.Fset,
+		fset:   pkgProg.Fset,
+		goProg: pkgProg,
 		goTyps: pkgTypes,
 		goPkg:  pkg,
 		link:   make(map[string]string),

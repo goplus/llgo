@@ -17,8 +17,8 @@
 package ssa
 
 import (
+	"fmt"
 	"go/types"
-	"log"
 
 	"github.com/goplus/llvm"
 )
@@ -108,8 +108,21 @@ func (p Program) llvmSignature(sig *types.Signature) Type {
 	if v := p.typs.At(sig); v != nil {
 		return v.(Type)
 	}
+	sigOrg := sig
+	if recv := sig.Recv(); recv != nil {
+		// convert method to func
+		tParams := sig.Params()
+		nParams := tParams.Len()
+		params := make([]*types.Var, nParams+1)
+		params[0] = recv
+		for i := 0; i < nParams; i++ {
+			params[i+1] = tParams.At(i)
+		}
+		sig = types.NewSignatureType(
+			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
+	}
 	ret := p.toLLVMFunc(sig)
-	p.typs.Set(sig, ret)
+	p.typs.Set(sigOrg, ret)
 	return ret
 }
 
@@ -228,8 +241,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
 	case *types.Chan:
 	}
-	log.Println("toLLVMType: todo -", typ)
-	panic("todo")
+	panic(fmt.Sprintf("toLLVMType: todo - %T\n", typ))
 }
 
 func (p Program) toLLVMNamedStruct(name string, typ *types.Struct) llvm.Type {
@@ -304,12 +316,13 @@ func (p Program) retType(sig *types.Signature) Type {
 }
 
 func (p Program) toLLVMNamed(typ *types.Named) Type {
-	name := typ.Obj().Name()
-	switch typ := typ.Underlying().(type) {
+	switch t := typ.Underlying().(type) {
 	case *types.Struct:
-		return &aType{p.toLLVMNamedStruct(name, typ), typ, vkInvalid}
+		name := typ.Obj().Name()
+		return &aType{p.toLLVMNamedStruct(name, t), typ, vkInvalid}
+	default:
+		return p.Type(t)
 	}
-	panic("todo")
 }
 
 // -----------------------------------------------------------------------------
