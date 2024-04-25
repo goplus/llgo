@@ -129,9 +129,11 @@ func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := filepath.Join(conf.BinPath, name+conf.AppExt)
-	args := make([]string, 2, len(pkg.Imports)+3)
+	const N = 3
+	args := make([]string, N, len(pkg.Imports)+(N+1))
 	args[0] = "-o"
 	args[1] = app
+	args[2] = "-Wno-override-module"
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.PkgPath != "unsafe" { // TODO(xsw): maybe can remove this special case
 			args = append(args, p.ExportFile+".ll")
