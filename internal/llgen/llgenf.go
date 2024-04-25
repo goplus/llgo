@@ -22,6 +22,7 @@ import (
 	"github.com/goplus/llgo/cl"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
@@ -40,10 +41,11 @@ func GenFromFile(inFile string) string {
 	initial, err := packages.Load(cfg, inFile)
 	check(err)
 
+	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions)
+
 	pkg := initial[0]
-	fset := pkg.Fset
-	ssaProg := ssa.NewProgram(fset, ssa.SanityCheckFunctions)
-	ssaPkg := ssaProg.CreatePackage(pkg.Types, pkg.Syntax, pkg.TypesInfo, true)
+	ssaPkg := pkgs[0]
+	ssaPkg.Build()
 
 	prog := llssa.NewProgram(nil)
 	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)

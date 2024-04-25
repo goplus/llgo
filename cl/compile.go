@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
@@ -57,7 +58,7 @@ func SetDebug(dbgFlags dbgFlags) {
 const (
 	fnNormal = iota
 	fnHasVArg
-	fnUnsafeInit
+	fnIgnore
 )
 
 func funcKind(vfn ssa.Value) int {
@@ -65,8 +66,8 @@ func funcKind(vfn ssa.Value) int {
 		params := fn.Signature.Params()
 		n := params.Len()
 		if n == 0 {
-			if fn.Name() == "init" && fn.Pkg.Pkg.Path() == "unsafe" {
-				return fnUnsafeInit
+			if fn.Name() == "init" && ignorePkgInit(fn.Pkg.Pkg.Path()) {
+				return fnIgnore
 			}
 		} else {
 			last := params.At(n - 1)
@@ -76,6 +77,32 @@ func funcKind(vfn ssa.Value) int {
 		}
 	}
 	return fnNormal
+}
+
+func ignorePkgInit(pkgPath string) bool {
+	switch pkgPath {
+	case "unsafe", "syscall", "runtime/cgo":
+		return true
+	}
+	return false
+}
+
+func ignoreFunc(name string, fn *ssa.Function) bool {
+	/* TODO(xsw): confirm this is not needed more
+	if name == "unsafe.init" {
+		return true
+	}
+	*/
+	fnName := fn.Name()
+	if strings.HasPrefix(fnName, "_Cgo_") {
+		return true
+	}
+	const runtime = "runtime"
+	if strings.HasPrefix(name, runtime) {
+		left := name[len(runtime):]
+		return strings.HasPrefix(left, ".cgo") || strings.HasPrefix(left, "/cgo")
+	}
+	return false
 }
 
 // -----------------------------------------------------------------------------
@@ -137,13 +164,11 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) {
 	sig := f.Signature
 	name := p.funcName(pkgTypes, f)
-	/* TODO(xsw): confirm this is not needed more
-	if name == "unsafe.init" {
-		return
-	}
-	*/
 	if debugInstr {
 		log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
+	}
+	if ignoreFunc(name, f) {
+		return
 	}
 	fn := pkg.NewFunc(name, sig)
 	p.inits = append(p.inits, func() {
@@ -229,7 +254,7 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		call := v.Call
 		cv := call.Value
 		kind := funcKind(cv)
-		if kind == fnUnsafeInit {
+		if kind == fnIgnore {
 			return
 		}
 		if debugGoSSA {

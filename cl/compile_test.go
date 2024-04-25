@@ -27,8 +27,12 @@ func testCompile(t *testing.T, src, expected string) {
 	cltest.TestCompileEx(t, src, "foo.go", expected)
 }
 
+func TestFromTestcgo(t *testing.T) {
+	cltest.FromDir(t, "strlen", "./_testcgo", true)
+}
+
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "apkg", "./_testdata", false)
+	cltest.FromDir(t, "", "./_testdata", false)
 }
 
 func TestVar(t *testing.T) {
