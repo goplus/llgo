@@ -87,20 +87,26 @@ func ignorePkgInit(pkgPath string) bool {
 	return false
 }
 
-func ignoreFunc(name string, fn *ssa.Function) bool {
+func ignoreName(name string) bool {
 	/* TODO(xsw): confirm this is not needed more
 	if name == "unsafe.init" {
 		return true
 	}
 	*/
-	fnName := fn.Name()
-	if strings.HasPrefix(fnName, "_Cgo_") {
-		return true
+	if strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
+		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
+		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
+		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
+		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") {
+		return true // TODO(xsw)
 	}
-	const runtime = "runtime"
-	if strings.HasPrefix(name, runtime) {
-		left := name[len(runtime):]
-		return strings.HasPrefix(left, ".cgo") || strings.HasPrefix(left, "/cgo")
+	return inPkg(name, "runtime") || inPkg(name, "sync")
+}
+
+func inPkg(name, pkg string) bool {
+	if len(name) > len(pkg) && strings.HasPrefix(name, pkg) {
+		c := name[len(pkg)]
+		return c == '.' || c == '/'
 	}
 	return false
 }
@@ -131,8 +137,12 @@ type context struct {
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
+	tnName := tn.Name()
 	typ := tn.Type()
-	name := fullName(tn.Pkg(), tn.Name())
+	name := fullName(tn.Pkg(), tnName)
+	if ignoreName(name) {
+		return
+	}
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
@@ -145,8 +155,9 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	mthds := prog.MethodSets.MethodSet(typ)
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
-		ssaMthd := prog.MethodValue(mthd)
-		p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd)
+		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
+			p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd)
+		}
 	}
 }
 
@@ -154,6 +165,9 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
 	name := fullName(gbl.Pkg.Pkg, gbl.Name())
+	if ignoreName(name) || checkCgo(gbl.Name()) {
+		return
+	}
 	if debugInstr {
 		log.Println("==> NewVar", name, typ)
 	}
@@ -163,12 +177,12 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 
 func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) {
 	sig := f.Signature
-	name := p.funcName(pkgTypes, f)
-	if debugInstr {
-		log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
-	}
-	if ignoreFunc(name, f) {
+	name, ok := p.funcName(pkgTypes, f, true)
+	if !ok { // ignored
 		return
+	}
+	if debugInstr {
+		log.Println("==> NewFunc", f.Name(), name, "type:", sig.Recv(), sig)
 	}
 	fn := pkg.NewFunc(name, sig)
 	p.inits = append(p.inits, func() {

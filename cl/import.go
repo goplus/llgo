@@ -137,18 +137,27 @@ func funcName(pkg *types.Package, fn *ssa.Function) string {
 	return ret
 }
 
-func (p *context) funcName(pkg *types.Package, fn *ssa.Function) string {
+func checkCgo(fnName string) bool {
+	return len(fnName) > 4 && fnName[0] == '_' && fnName[2] == 'g' && fnName[3] == 'o' &&
+		(fnName[1] == 'C' || fnName[1] == 'c') &&
+		(fnName[4] == '_' || strings.HasPrefix(fnName[4:], "Check"))
+}
+
+func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (string, bool) {
 	name := funcName(pkg, fn)
-	if v, ok := p.link[name]; ok {
-		return v
+	if ignore && ignoreName(name) || checkCgo(fn.Name()) {
+		return name, false
 	}
-	return name
+	if v, ok := p.link[name]; ok {
+		return v, true
+	}
+	return name, true
 }
 
 func (p *context) funcOf(fn *ssa.Function) llssa.Function {
 	pkgTypes := p.ensureLoaded(fn.Pkg.Pkg)
 	pkg := p.pkg
-	name := p.funcName(pkgTypes, fn)
+	name, _ := p.funcName(pkgTypes, fn, false)
 	if ret := pkg.FuncOf(name); ret != nil {
 		return ret
 	}
