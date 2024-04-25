@@ -379,7 +379,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	})
 
 	pkgTypes := pkg.Pkg
-	pkgName, pkgPath := pkgTypes.Name(), pkgTypes.Path()
+	pkgName, pkgPath := pkgTypes.Name(), pathOf(pkgTypes)
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{

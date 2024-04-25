@@ -51,7 +51,7 @@ func (p *context) importPkg(pkg *types.Package) {
 	fset := p.fset
 	names := scope.Names()
 	contents := make(contentMap)
-	pkgPath := pkg.Path()
+	pkgPath := pathOf(pkg)
 	for _, name := range names {
 		if token.IsExported(name) {
 			obj := scope.Lookup(name)
@@ -105,12 +105,15 @@ func (p *context) initLinkname(pkgPath, line string) {
 	}
 }
 
-func fullName(pkg *types.Package, name string) string {
-	pkgPath := pkg.Name()
-	if pkgPath != "main" {
-		pkgPath = pkg.Path()
+func pathOf(pkg *types.Package) string {
+	if pkg.Name() == "main" {
+		return "main"
 	}
-	return pkgPath + "." + name
+	return pkg.Path()
+}
+
+func fullName(pkg *types.Package, name string) string {
+	return pathOf(pkg) + "." + name
 }
 
 func funcName(pkg *types.Package, fn *ssa.Function) string {
