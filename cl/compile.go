@@ -19,6 +19,7 @@ package cl
 import (
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"log"
@@ -93,9 +94,10 @@ type context struct {
 	fset   *token.FileSet
 	goTyps *types.Package
 	goPkg  *ssa.Package
-	link   map[string]string        // pkgPath.nameInPkg => linkname
-	loaded map[*types.Package]none  // loaded packages
-	bvals  map[ssa.Value]llssa.Expr // block values
+	link   map[string]string           // pkgPath.nameInPkg => linkname
+	loaded map[*types.Package]none     // loaded packages
+	bvals  map[ssa.Value]llssa.Expr    // block values
+	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 	inits  []func()
 }
 
@@ -160,6 +162,43 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bo
 	return ret
 }
 
+func isAny(t types.Type) bool {
+	if t, ok := t.(*types.Interface); ok {
+		return t.Empty()
+	}
+	return false
+}
+
+func intVal(v ssa.Value) int64 {
+	if c, ok := v.(*ssa.Const); ok {
+		if iv, exact := constant.Int64Val(c.Value); exact {
+			return iv
+		}
+	}
+	panic("intVal: ssa.Value is not a const int")
+}
+
+func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
+	if va, vok := vx.(*ssa.Alloc); vok {
+		ret, ok = p.vargs[va] // varargs: this is a varargs index
+	}
+	return
+}
+
+func (p *context) checkVArgs(v *ssa.Alloc, t types.Type) bool {
+	if v.Comment == "varargs" { // this is a varargs allocation
+		if t, ok := t.(*types.Pointer); ok {
+			if arr, ok := t.Elem().(*types.Array); ok {
+				if isAny(arr.Elem()) {
+					p.vargs[v] = make([]llssa.Expr, arr.Len())
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret llssa.Expr) {
 	if v, ok := p.bvals[iv]; ok {
 		return v
@@ -185,12 +224,31 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		x := p.compileValue(b, v.X)
 		ret = b.UnOp(v.Op, x)
 	case *ssa.IndexAddr:
-		x := p.compileValue(b, v.X)
+		vx := v.X
+		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index
+			return
+		}
+		x := p.compileValue(b, vx)
 		idx := p.compileValue(b, v.Index)
 		ret = b.IndexAddr(x, idx)
+	case *ssa.Slice:
+		vx := v.X
+		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
+			return
+		}
+		panic("todo")
 	case *ssa.Alloc:
 		t := v.Type()
+		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
+			return
+		}
 		ret = b.Alloc(p.prog.Type(t), v.Heap)
+	case *ssa.MakeInterface:
+		t := v.Type()
+		if isAny(t) { // varargs: don't need to convert an expr to any
+			return
+		}
+		panic("todo")
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
@@ -205,7 +263,19 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 	switch v := instr.(type) {
 	case *ssa.Store:
-		ptr := p.compileValue(b, v.Addr)
+		va := v.Addr
+		if va, ok := va.(*ssa.IndexAddr); ok {
+			if args, ok := p.isVArgs(va.X); ok { // varargs: this is a varargs store
+				idx := intVal(va.Index)
+				val := v.Val
+				if vi, ok := val.(*ssa.MakeInterface); ok {
+					val = vi.X
+				}
+				args[idx] = p.compileValue(b, val)
+				return
+			}
+		}
+		ptr := p.compileValue(b, va)
 		val := p.compileValue(b, v.Val)
 		b.Store(ptr, val)
 	case *ssa.Jump:
@@ -262,12 +332,16 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 func (p *context) compileVArg(ret []llssa.Expr, b llssa.Builder, v ssa.Value) []llssa.Expr {
 	_ = b
 	switch v := v.(type) {
+	case *ssa.Slice: // varargs: this is a varargs slice
+		if args, ok := p.isVArgs(v.X); ok {
+			return append(ret, args...)
+		}
 	case *ssa.Const:
 		if v.Value == nil {
 			return ret
 		}
 	}
-	panic("todo")
+	panic(fmt.Sprintf("compileVArg: unknown value - %T\n", v))
 }
 
 func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) []llssa.Expr {
@@ -305,7 +379,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	})
 
 	pkgTypes := pkg.Pkg
-	pkgName, pkgPath := pkgTypes.Name(), pkgTypes.Path()
+	pkgName, pkgPath := pkgTypes.Name(), pathOf(pkgTypes)
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
@@ -316,6 +390,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		goPkg:  pkg,
 		link:   make(map[string]string),
 		loaded: make(map[*types.Package]none),
+		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
 	}
 	ctx.initFiles(pkgPath, files)
 	for _, m := range members {

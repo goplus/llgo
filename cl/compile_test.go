@@ -22,13 +22,13 @@ import (
 	"github.com/goplus/llgo/cl/cltest"
 )
 
-func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata")
-}
-
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
 	cltest.TestCompileEx(t, src, "foo.go", expected)
+}
+
+func TestFromTestdata(t *testing.T) {
+	cltest.FromDir(t, "", "./_testdata")
 }
 
 func TestVar(t *testing.T) {
