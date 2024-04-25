@@ -122,7 +122,8 @@ func NewProgram(target *Target) Program {
 		target = &Target{}
 	}
 	ctx := llvm.NewContext()
-	ctx.Finalize()
+	// TODO(xsw): Finalize may cause panic, so comment it.
+	// ctx.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
 	return &aProgram{ctx: ctx, target: target, td: td}
 }
@@ -130,7 +131,8 @@ func NewProgram(target *Target) Program {
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
-	mod.Finalize()
+	// TODO(xsw): Finalize may cause panic, so comment it.
+	// mod.Finalize()
 	fns := make(map[string]Function)
 	gbls := make(map[string]Global)
 	return &aPackage{mod, fns, gbls, p}

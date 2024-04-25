@@ -1,8 +1,8 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@"main.init$guard" = global ptr null
 @main.hello = global ptr null
+@"main.init$guard" = global ptr null
 
 define void @main.init() {
 _llgo_0:
@@ -24,11 +24,11 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-declare void @printf(ptr, ...)
-
 define void @main() {
 _llgo_0:
   call void @main.init()
   call void (ptr, ...) @printf(ptr @main.hello)
   ret void
 }
+
+declare void @printf(ptr, ...)

@@ -35,13 +35,10 @@ func main() {
 	dir, _ := filepath.Split(inFile)
 	outFile := dir + "out.ll"
 
-	pkgPath := ""
-	if len(os.Args) == 3 {
-		pkgPath = os.Args[2]
-	} else {
-		pkgPath = llgen.PkgPath(dir)
-	}
-
 	llgen.Init()
-	llgen.Do(pkgPath, inFile, outFile)
+	if len(os.Args) >= 3 {
+		llgen.Do(os.Args[2], inFile, outFile)
+	} else {
+		llgen.DoFile(inFile, outFile)
+	}
 }
