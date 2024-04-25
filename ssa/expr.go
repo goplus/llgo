@@ -258,7 +258,7 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
-		log.Printf("Load %v\n", ptr.impl.Name())
+		log.Printf("Load %v\n", ptr.impl)
 	}
 	telem := b.prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
@@ -267,7 +267,7 @@ func (b Builder) Load(ptr Expr) Expr {
 // Store stores val at the pointer ptr.
 func (b Builder) Store(ptr, val Expr) Builder {
 	if debugInstr {
-		log.Printf("Store %v, %v\n", ptr.impl.Name(), val.impl)
+		log.Printf("Store %v, %v\n", ptr.impl, val.impl)
 	}
 	b.impl.CreateStore(val.impl, ptr.impl)
 	return b
@@ -346,7 +346,7 @@ func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
 		var b bytes.Buffer
-		fmt.Fprint(&b, "Call @", fn.impl.Name())
+		fmt.Fprint(&b, "Call ", fn.impl.Name())
 		for _, arg := range args {
 			fmt.Fprint(&b, ", ", arg.impl)
 		}

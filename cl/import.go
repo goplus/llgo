@@ -116,7 +116,13 @@ func fullName(pkg *types.Package, name string) string {
 	return pathOf(pkg) + "." + name
 }
 
+// func: pkg.name
+// method: (pkg.T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
+	sig := fn.Signature
+	if recv := sig.Recv(); recv != nil {
+		return "(" + recv.Type().String() + ")." + fn.Name()
+	}
 	ret := fullName(pkg, fn.Name())
 	if ret == "main.main" {
 		ret = "main"

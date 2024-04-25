@@ -187,6 +187,7 @@ type aPackage struct {
 
 type Package = *aPackage
 
+// NewConst creates a new named constant.
 func (p Package) NewConst(name string, val constant.Value) NamedConst {
 	return &aNamedConst{}
 }
