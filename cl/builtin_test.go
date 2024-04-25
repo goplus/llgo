@@ -17,11 +17,39 @@
 package cl
 
 import (
+	"go/types"
 	"testing"
+
+	llssa "github.com/goplus/llgo/ssa"
+	"golang.org/x/tools/go/ssa"
 )
 
 func TestIgnoreName(t *testing.T) {
 	if !ignoreName("runtime.foo") || !ignoreName("runtime/foo") || !ignoreName("internal/abi") {
 		t.Fatal("ignoreName failed")
 	}
+}
+
+func TestImport(t *testing.T) {
+	var ctx context
+	pkg := types.NewPackage("foo", "foo")
+	ctx.importPkg(pkg)
+}
+
+func TestVarOf(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("varOf: no error?")
+		}
+	}()
+	prog := llssa.NewProgram(nil)
+	pkg := prog.NewPackage("foo", "foo")
+	pkgTypes := types.NewPackage("foo", "foo")
+	ctx := &context{
+		pkg:    pkg,
+		goTyps: pkgTypes,
+	}
+	ssaPkg := &ssa.Package{Pkg: pkgTypes}
+	g := &ssa.Global{Pkg: ssaPkg}
+	ctx.varOf(g)
 }
