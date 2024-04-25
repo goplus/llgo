@@ -23,5 +23,5 @@ import (
 )
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testdata")
+	cltest.FromDir(t, "", "../cl/_testdata", false)
 }

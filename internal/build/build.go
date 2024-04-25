@@ -133,7 +133,7 @@ func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode) {
 	args[0] = "-o"
 	args[1] = app
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
-		if p.PkgPath != "unsafe" { // TODO(xsw): remove this special case
+		if p.PkgPath != "unsafe" { // TODO(xsw): maybe can remove this special case
 			args = append(args, p.ExportFile+".ll")
 		}
 	})
@@ -159,7 +159,7 @@ func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode) {
 	if mode != ModeRun {
 		fmt.Fprintln(os.Stderr, pkgPath)
 	}
-	if pkgPath == "unsafe" { // TODO(xsw): remove this special case
+	if pkgPath == "unsafe" { // TODO(xsw): maybe can remove this special case
 		return
 	}
 	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)

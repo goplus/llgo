@@ -28,7 +28,7 @@ func testCompile(t *testing.T, src, expected string) {
 }
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata")
+	cltest.FromDir(t, "apkg", "./_testdata", false)
 }
 
 func TestVar(t *testing.T) {

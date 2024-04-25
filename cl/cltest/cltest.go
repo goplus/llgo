@@ -29,6 +29,7 @@ import (
 
 	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/llgen"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
@@ -41,7 +42,7 @@ func init() {
 	llssa.SetDebug(llssa.DbgFlagAll)
 }
 
-func FromDir(t *testing.T, sel, relDir string) {
+func FromDir(t *testing.T, sel, relDir string, byLLGen bool) {
 	dir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -57,23 +58,30 @@ func FromDir(t *testing.T, sel, relDir string) {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
-			testFrom(t, dir+"/"+name, sel)
+			testFrom(t, dir+"/"+name, sel, byLLGen)
 		})
 	}
 }
 
-func testFrom(t *testing.T, pkgDir, sel string) {
+func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
 	log.Println("Parsing", pkgDir)
 	in := pkgDir + "/in.go"
 	out := pkgDir + "/out.ll"
-	expected, err := os.ReadFile(out)
+	b, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatal("ReadFile failed:", err)
 	}
-	TestCompileEx(t, nil, in, string(expected))
+	expected := string(b)
+	if byLLGen {
+		if v := llgen.GenFromFile(in); v != expected {
+			t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+		}
+	} else {
+		TestCompileEx(t, nil, in, expected)
+	}
 }
 
 func TestCompileEx(t *testing.T, src any, fname, expected string) {
