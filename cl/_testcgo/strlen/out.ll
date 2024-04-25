@@ -1,7 +1,6 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@main._Cgo_always_false = global ptr null
 @main.format = global ptr null
 @"main.init$guard" = global ptr null
 
