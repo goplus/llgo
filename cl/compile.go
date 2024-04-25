@@ -109,12 +109,17 @@ func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
+	p.compileMethods(pkg, typ)
+	p.compileMethods(pkg, types.NewPointer(typ))
+}
+
+func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	prog := p.goProg
 	mthds := prog.MethodSets.MethodSet(typ)
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		ssaMthd := prog.MethodValue(mthd)
-		p.compileFunc(pkg, ssaMthd)
+		p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd)
 	}
 }
 
@@ -129,17 +134,18 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	g.Init(p.prog.Null(g.Type))
 }
 
-func (p *context) compileFunc(pkg llssa.Package, f *ssa.Function) {
-	name := p.funcName(f.Pkg.Pkg, f)
+func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) {
+	sig := f.Signature
+	name := p.funcName(pkgTypes, f)
 	/* TODO(xsw): confirm this is not needed more
 	if name == "unsafe.init" {
 		return
 	}
 	*/
 	if debugInstr {
-		log.Println("==> NewFunc", name, f.Signature)
+		log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
 	}
-	fn := pkg.NewFunc(name, f.Signature)
+	fn := pkg.NewFunc(name, sig)
 	p.inits = append(p.inits, func() {
 		p.fn = fn
 		defer func() {
@@ -221,16 +227,29 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 	switch v := iv.(type) {
 	case *ssa.Call:
 		call := v.Call
-		kind := funcKind(call.Value)
+		cv := call.Value
+		kind := funcKind(cv)
 		if kind == fnUnsafeInit {
 			return
 		}
 		if debugGoSSA {
-			log.Println(">>> Call", call.Value, call.Args)
+			log.Println(">>> Call", cv, call.Args)
 		}
-		fn := p.compileValue(b, call.Value)
-		args := p.compileValues(b, call.Args, kind)
-		ret = b.Call(fn, args...)
+		if builtin, ok := cv.(*ssa.Builtin); ok {
+			fn := builtin.Name()
+			if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
+				arg := call.Args[0]
+				ret = p.compileValue(b, arg)
+				// log.Println("wrapnilchk:", ret.TypeOf())
+			} else {
+				args := p.compileValues(b, call.Args, kind)
+				ret = b.BuiltinCall(fn, args...)
+			}
+		} else {
+			fn := p.compileValue(b, cv)
+			args := p.compileValues(b, call.Args, kind)
+			ret = b.Call(fn, args...)
+		}
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
@@ -238,6 +257,10 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
 		ret = b.UnOp(v.Op, x)
+	case *ssa.ChangeType:
+		t := v.Type()
+		x := p.compileValue(b, v.X)
+		ret = b.ChangeType(p.prog.Type(t), x)
 	case *ssa.IndexAddr:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index
@@ -418,7 +441,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFunc(ret, member)
+			ctx.compileFunc(ret, member.Pkg.Pkg, member)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:

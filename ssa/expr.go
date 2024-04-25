@@ -34,6 +34,13 @@ type Expr struct {
 	Type
 }
 
+/*
+// TypeOf returns the type of the expression.
+func (v Expr) TypeOf() types.Type {
+	return v.t
+}
+*/
+
 // -----------------------------------------------------------------------------
 
 func llvmValues(vals []Expr) []llvm.Value {
@@ -330,6 +337,46 @@ func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
 	return
 }
 
+// The ChangeType instruction applies to X a value-preserving type
+// change to Type().
+//
+// Type changes are permitted:
+//   - between a named type and its underlying type.
+//   - between two named types of the same underlying type.
+//   - between (possibly named) pointers to identical base types.
+//   - from a bidirectional channel to a read- or write-channel,
+//     optionally adding/removing a name.
+//   - between a type (t) and an instance of the type (tσ), i.e.
+//     Type() == σ(X.Type()) (or X.Type()== σ(Type())) where
+//     σ is the type substitution of Parent().TypeParams by
+//     Parent().TypeArgs.
+//
+// This operation cannot fail dynamically.
+//
+// Type changes may to be to or from a type parameter (or both). All
+// types in the type set of X.Type() have a value-preserving type
+// change to all types in the type set of Type().
+//
+// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
+// from an explicit conversion in the source.
+//
+// Example printed form:
+//
+//	t1 = changetype *int <- IntPtr (t0)
+func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("ChangeType %v, %v\n", t.t, x.impl)
+	}
+	typ := t.t
+	switch typ.(type) {
+	case *types.Pointer:
+		ret.impl = b.impl.CreatePointerCast(x.impl, t.ll, "castPtr")
+		ret.Type = b.prog.Type(typ)
+		return
+	}
+	panic("todo")
+}
+
 // -----------------------------------------------------------------------------
 
 // The Call instruction represents a function or method call.
@@ -360,6 +407,16 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	}
 	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args))
 	return
+}
+
+// A Builtin represents a specific use of a built-in function, e.g. len.
+//
+// Builtins are immutable values.  Builtins do not have addresses.
+//
+// `fn` indicates the function: one of the built-in functions from the
+// Go spec (excluding "make" and "new").
+func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
+	panic("todo")
 }
 
 // -----------------------------------------------------------------------------
