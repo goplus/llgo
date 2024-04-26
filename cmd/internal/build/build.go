@@ -33,8 +33,13 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	build.Do(args, &build.Config{
+	conf := &build.Config{
 		Mode:   build.ModeBuild,
 		AppExt: build.DefaultAppExt(),
-	})
+	}
+	if len(args) >= 2 && args[0] == "-o" {
+		conf.OutFile = args[1]
+		args = args[2:]
+	}
+	build.Do(args, conf)
 }

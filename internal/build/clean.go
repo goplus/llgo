@@ -25,8 +25,15 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var (
+	// TODO(xsw): complete clean flags
+	cleanFlags = map[string]bool{
+		"-v": false, // -v: print the paths of packages as they are clean
+	}
+)
+
 func Clean(args []string, conf *Config) {
-	flags, patterns, verbose := parseArgs(args)
+	flags, patterns, verbose := ParseArgs(args, cleanFlags)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedExportFile,
 		BuildFlags: flags,
