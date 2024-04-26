@@ -26,6 +26,7 @@ import (
 
 	"github.com/goplus/llgo/cmd/internal/base"
 	"github.com/goplus/llgo/cmd/internal/build"
+	"github.com/goplus/llgo/cmd/internal/clean"
 	"github.com/goplus/llgo/cmd/internal/help"
 	"github.com/goplus/llgo/cmd/internal/install"
 	"github.com/goplus/llgo/cmd/internal/run"
@@ -42,6 +43,7 @@ func init() {
 		build.Cmd,
 		install.Cmd,
 		run.Cmd,
+		clean.Cmd,
 	}
 }
 
