@@ -98,9 +98,13 @@ func (p *context) initLinkname(pkgPath, line string) {
 	if strings.HasPrefix(line, linkname) {
 		text := strings.TrimSpace(line[len(linkname):])
 		if idx := strings.IndexByte(text, ' '); idx > 0 {
-			name := pkgPath + "." + text[:idx]
 			link := strings.TrimLeft(text[idx+1:], " ")
-			p.link[name] = link
+			if strings.Contains(link, ".") { // eg. C.printf, C.strlen
+				name := pkgPath + "." + text[:idx]
+				p.link[name] = link[2:]
+			} else {
+				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
+			}
 		}
 	}
 }

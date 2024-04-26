@@ -30,13 +30,23 @@ func TestIgnoreName(t *testing.T) {
 	}
 }
 
-func TestImport(t *testing.T) {
+func TestErrImport(t *testing.T) {
 	var ctx context
 	pkg := types.NewPackage("foo", "foo")
 	ctx.importPkg(pkg)
 }
 
-func TestVarOf(t *testing.T) {
+func TestErrInitLinkname(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("initLinkname: no error?")
+		}
+	}()
+	var ctx context
+	ctx.initLinkname("foo", "//go:linkname Printf printf")
+}
+
+func TestErrVarOf(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("varOf: no error?")

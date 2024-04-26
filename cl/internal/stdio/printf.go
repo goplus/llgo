@@ -6,7 +6,7 @@ const (
 	LLGoPackage = true
 )
 
-//go:linkname Printf printf
+//go:linkname Printf C.printf
 func Printf(format *int8, __llgo_va_list ...any)
 
 func Max(a, b int) int {
