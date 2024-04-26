@@ -112,11 +112,14 @@ func Do(args []string, conf *Config) {
 
 	prog := llssa.NewProgram(nil)
 	mode := conf.Mode
+	if mode == ModeBuild && len(initial) == 1 {
+		mode = ModeInstall
+	}
 	for _, pkg := range pkgs {
 		buildPkg(prog, pkg, mode)
 	}
 
-	if mode != ModeBuild || len(initial) == 1 {
+	if mode != ModeBuild {
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
 				linkMainPkg(pkg, conf, mode)
