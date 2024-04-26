@@ -237,7 +237,7 @@ func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string
 	return
 }
 
-func SkipArgs(args []string) int {
+func SkipFlagArgs(args []string) int {
 	n := len(args)
 	for i := 0; i < n; i++ {
 		arg := args[i]

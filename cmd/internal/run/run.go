@@ -48,7 +48,7 @@ func runCmd(cmd *base.Command, args []string) {
 }
 
 func parseRunArgs(args []string) ([]string, []string, error) {
-	n := build.SkipArgs(args)
+	n := build.SkipFlagArgs(args)
 	if n < 0 {
 		return nil, nil, errNoProj
 	}
