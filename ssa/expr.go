@@ -280,6 +280,36 @@ func (b Builder) Store(ptr, val Expr) Builder {
 	return b
 }
 
+// The FieldAddr instruction yields the address of Field of *struct X.
+//
+// The field is identified by its index within the field list of the
+// struct type of X.
+//
+// Dynamically, this instruction panics if X evaluates to a nil
+// pointer.
+//
+// Type() returns a (possibly named) *types.Pointer.
+//
+// Pos() returns the position of the ast.SelectorExpr.Sel for the
+// field, if explicit in the source. For implicit selections, returns
+// the position of the inducing explicit selection. If produced for a
+// struct literal S{f: e}, it returns the position of the colon; for
+// S{e} it returns the start of expression e.
+//
+// Example printed form:
+//
+//	t1 = &t0.name [#1]
+func (b Builder) FieldAddr(x Expr, idx int) Expr {
+	if debugInstr {
+		log.Printf("FieldAddr %v, %d\n", x.impl, idx)
+	}
+	prog := b.prog
+	tstruc := prog.Elem(x.Type)
+	telem := prog.Field(tstruc, idx)
+	pt := prog.Pointer(telem)
+	return Expr{llvm.CreateStructGEP(b.impl, telem.ll, x.impl, idx), pt}
+}
+
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
 //
@@ -324,7 +354,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 //	t1 = new int
 func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
 	if debugInstr {
-		log.Printf("Alloc %v, %v\n", t.ll, heap)
+		log.Printf("Alloc %v, %v\n", t.t, heap)
 	}
 	telem := b.prog.Elem(t)
 	if heap {

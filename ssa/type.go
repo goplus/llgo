@@ -111,6 +111,11 @@ func (p Program) Index(typ Type) Type {
 	return p.Type(indexType(typ.t))
 }
 
+func (p Program) Field(typ Type, i int) Type {
+	tunder := typ.t.Underlying()
+	return p.Type(tunder.(*types.Struct).Field(i).Type())
+}
+
 func (p Program) Type(typ types.Type) Type {
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
@@ -322,11 +327,27 @@ func (p Program) retType(sig *types.Signature) Type {
 func (p Program) toLLVMNamed(typ *types.Named) Type {
 	switch t := typ.Underlying().(type) {
 	case *types.Struct:
-		name := typ.Obj().Name()
+		name := NameOf(typ)
 		return &aType{p.toLLVMNamedStruct(name, t), typ, vkInvalid}
 	default:
 		return p.Type(t)
 	}
+}
+
+func NameOf(typ *types.Named) string {
+	obj := typ.Obj()
+	return FullName(obj.Pkg(), obj.Name())
+}
+
+func FullName(pkg *types.Package, name string) string {
+	return PathOf(pkg) + "." + name
+}
+
+func PathOf(pkg *types.Package) string {
+	if pkg.Name() == "main" {
+		return "main"
+	}
+	return pkg.Path()
 }
 
 // -----------------------------------------------------------------------------
