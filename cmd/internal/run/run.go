@@ -20,7 +20,6 @@ package run
 import (
 	"errors"
 	"path/filepath"
-	"strings"
 
 	"github.com/goplus/llgo/cmd/internal/base"
 	"github.com/goplus/llgo/internal/build"
@@ -49,7 +48,7 @@ func runCmd(cmd *base.Command, args []string) {
 }
 
 func parseRunArgs(args []string) ([]string, []string, error) {
-	n := parseArgs(args)
+	n := build.SkipArgs(args)
 	if n < 0 {
 		return nil, nil, errNoProj
 	}
@@ -63,15 +62,6 @@ func parseRunArgs(args []string) ([]string, []string, error) {
 		return args[:n], args[n:], nil
 	}
 	return args[:n+1], args[n+1:], nil
-}
-
-func parseArgs(args []string) int {
-	for i, arg := range args {
-		if !strings.HasPrefix(arg, "-") {
-			return i
-		}
-	}
-	return -1
 }
 
 func isGoFile(fname string) bool {

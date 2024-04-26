@@ -50,8 +50,9 @@ func needLLFile(mode Mode) bool {
 
 type Config struct {
 	BinPath string
-	AppExt  string // ".exe" on Windows, empty on Unix
-	RunArgs []string
+	AppExt  string   // ".exe" on Windows, empty on Unix
+	OutFile string   // only valid for ModeBuild when len(pkgs) == 1
+	RunArgs []string // only valid for ModeRun
 	Mode    Mode
 }
 
@@ -85,7 +86,7 @@ const (
 )
 
 func Do(args []string, conf *Config) {
-	flags, patterns, verbose := parseArgs(args)
+	flags, patterns, verbose := ParseArgs(args, buildFlags)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedExportFile,
 		BuildFlags: flags,
@@ -116,22 +117,25 @@ func Do(args []string, conf *Config) {
 		mode = ModeInstall
 	}
 	for _, pkg := range pkgs {
-		buildPkg(prog, pkg, mode)
+		buildPkg(prog, pkg, mode, verbose)
 	}
 
 	if mode != ModeBuild {
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				linkMainPkg(pkg, conf, mode)
+				linkMainPkg(pkg, conf, mode, verbose)
 			}
 		}
 	}
 }
 
-func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode) {
+func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode, verbose bool) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
-	app := filepath.Join(conf.BinPath, name+conf.AppExt)
+	app := conf.OutFile
+	if app == "" {
+		app = filepath.Join(conf.BinPath, name+conf.AppExt)
+	}
 	const N = 3
 	args := make([]string, N, len(pkg.Imports)+(N+1))
 	args[0] = "-o"
@@ -145,7 +149,9 @@ func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode) {
 
 	// TODO(xsw): show work
 	// fmt.Fprintln(os.Stderr, "clang", args)
-	fmt.Fprintln(os.Stderr, "#", pkgPath)
+	if verbose {
+		fmt.Fprintln(os.Stderr, "#", pkgPath)
+	}
 	err := clang.New("").Exec(args...)
 	check(err)
 
@@ -158,10 +164,10 @@ func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode) {
 	}
 }
 
-func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode) {
+func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode, verbose bool) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
-	if mode != ModeRun {
+	if verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
 	}
 	if pkgPath == "unsafe" { // TODO(xsw): maybe can remove this special case
@@ -198,18 +204,62 @@ func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Progr
 	return
 }
 
-func parseArgs(args []string) (flags, patterns []string, verbose bool) {
-	for i, arg := range args {
-		if !strings.HasPrefix(arg, "-") {
+var (
+	// TODO(xsw): complete build flags
+	buildFlags = map[string]bool{
+		"-C":         true,  // -C dir: Change to dir before running the command
+		"-a":         false, // -a: force rebuilding of packages that are already up-to-date
+		"-n":         false, // -n: print the commands but do not run them
+		"-p":         true,  // -p n: the number of programs to run in parallel
+		"-race":      false, // -race: enable data race detection
+		"-cover":     false, // -cover: enable coverage analysis
+		"-covermode": true,  // -covermode mode: set the mode for coverage analysis
+		"-v":         false, // -v: print the names of packages as they are compiled
+		"-work":      false, // -work: print the name of the temporary work directory and do not delete it when exiting
+		"-x":         false, // -x: print the commands
+		"-tags":      true,  // -tags 'tag,list': a space-separated list of build tags to consider satisfied during the build
+		"-pkgdir":    true,  // -pkgdir dir: install and load all packages from dir instead of the usual locations
+	}
+)
+
+func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
+	n := len(args)
+	for i := 0; i < n; i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			checkFlag(arg, &i, &verbose, swflags)
+		} else {
 			flags, patterns = args[:i], args[i:]
 			return
-		}
-		if arg == "-v" {
-			verbose = true
 		}
 	}
 	flags = args
 	return
+}
+
+func SkipArgs(args []string) int {
+	n := len(args)
+	for i := 0; i < n; i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			checkFlag(arg, &i, nil, buildFlags)
+		} else {
+			return i
+		}
+	}
+	return -1
+}
+
+func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
+	if hasarg, ok := swflags[arg]; ok {
+		if hasarg {
+			*i++
+		} else if verbose != nil && arg == "-v" {
+			*verbose = true
+		}
+	} else {
+		panic("unknown flag: " + arg)
+	}
 }
 
 func check(err error) {
