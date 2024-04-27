@@ -99,43 +99,54 @@ func Do(args []string, conf *Config) {
 	initial, err := packages.Load(cfg, patterns...)
 	check(err)
 
-	// Create SSA-form program representation.
-	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
-	ssaProg.Build()
-	for _, errPkg := range errPkgs {
-		log.Println("cannot build SSA for package", errPkg)
-	}
-
 	llssa.Initialize(llssa.InitAll)
 	if verbose {
 		llssa.SetDebug(llssa.DbgFlagAll)
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
+	var rt []*packages.Package
 	prog := llssa.NewProgram(nil)
 	prog.SetRuntime(func() *types.Package {
-		rt, err := packages.Load(cfg, "github.com/goplus/llgo/internal/runtime")
+		rt, err = packages.Load(cfg, "github.com/goplus/llgo/internal/runtime")
 		check(err)
 		return rt[0].Types
 	})
+
 	mode := conf.Mode
 	if mode == ModeBuild && len(initial) == 1 {
 		mode = ModeInstall
 	}
-	for _, pkg := range pkgs {
-		buildPkg(prog, pkg, mode, verbose)
+	buildAllPkgs(prog, initial, mode, verbose)
+
+	var runtime *packages.Package
+	if rt != nil {
+		buildAllPkgs(prog, rt, mode, verbose)
+		runtime = rt[0]
 	}
 
 	if mode != ModeBuild {
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				linkMainPkg(pkg, conf, mode, verbose)
+				linkMainPkg(pkg, runtime, conf, mode, verbose)
 			}
 		}
 	}
 }
 
-func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode, verbose bool) {
+func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) {
+	// Create SSA-form program representation.
+	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
+	ssaProg.Build()
+	for _, errPkg := range errPkgs {
+		log.Println("cannot build SSA for package", errPkg)
+	}
+	for _, pkg := range pkgs {
+		buildPkg(prog, pkg, mode, verbose)
+	}
+}
+
+func linkMainPkg(pkg, runtime *packages.Package, conf *Config, mode Mode, verbose bool) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -143,10 +154,13 @@ func linkMainPkg(pkg *packages.Package, conf *Config, mode Mode, verbose bool) {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
 	const N = 3
-	args := make([]string, N, len(pkg.Imports)+(N+1))
+	args := make([]string, N, len(pkg.Imports)+(N+2))
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
+	if runtime != nil {
+		args = append(args, runtime.ExportFile+".ll")
+	}
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.PkgPath != "unsafe" { // TODO(xsw): maybe can remove this special case
 			args = append(args, p.ExportFile+".ll")
