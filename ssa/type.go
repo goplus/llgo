@@ -23,6 +23,10 @@ import (
 	"github.com/goplus/llvm"
 )
 
+var (
+	tyAny = types.NewInterfaceType(nil, nil)
+)
+
 // -----------------------------------------------------------------------------
 
 type valueKind = int
@@ -237,6 +241,9 @@ func (p Program) toLLVMType(typ types.Type) Type {
 	case *types.Pointer:
 		elem := p.Type(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkInvalid}
+	case *types.Interface:
+		tyIface := p.runtime().Lookup("Interface").(*types.TypeName).Type().(*types.Named)
+		return p.toLLVMNamed(tyIface)
 	case *types.Slice:
 	case *types.Map:
 	case *types.Struct:

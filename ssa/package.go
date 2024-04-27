@@ -90,9 +90,16 @@ func Initialize(flags InitFlags) {
 
 // -----------------------------------------------------------------------------
 
+type Runtime interface {
+	Runtime() *types.Package
+}
+
 type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
+
+	rt    *types.Scope
+	rtget Runtime
 
 	target *Target
 	td     llvm.TargetData
@@ -107,6 +114,7 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
+	anyTy  Type
 	voidTy Type
 	boolTy Type
 	intTy  Type
@@ -126,6 +134,18 @@ func NewProgram(target *Target) Program {
 	// ctx.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
 	return &aProgram{ctx: ctx, target: target, td: td}
+}
+
+// SetRuntime sets the runtime package.
+func (p Program) SetRuntime(runtime Runtime) {
+	p.rtget = runtime
+}
+
+func (p Program) runtime() *types.Scope {
+	if p.rt == nil {
+		p.rt = p.rtget.Runtime().Scope()
+	}
+	return p.rt
 }
 
 // NewPackage creates a new package.
@@ -152,6 +172,13 @@ func (p Program) Bool() Type {
 		p.boolTy = p.Type(types.Typ[types.Bool])
 	}
 	return p.boolTy
+}
+
+func (p Program) Any() Type {
+	if p.anyTy == nil {
+		p.anyTy = p.Type(tyAny)
+	}
+	return p.anyTy
 }
 
 // Int returns int type.
