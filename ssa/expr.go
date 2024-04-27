@@ -41,6 +41,37 @@ func (v Expr) TypeOf() types.Type {
 }
 */
 
+// Do evaluates the delay expression and returns the result.
+func (v Expr) Do(isVArg bool) Expr {
+	if vt := v.Type; vt.kind == vkDelayExpr {
+		delay := vt.t.(*delayExprTy)
+		if f := delay.f; f != nil {
+			delay.f = nil
+			delay.val = f(isVArg)
+		}
+		return delay.val
+	}
+	return v
+}
+
+// DelayExpr returns a delay expression.
+func DelayExpr(f func(isVArg bool) Expr) Expr {
+	return Expr{Type: &aType{t: &delayExprTy{f: f}, kind: vkDelayExpr}}
+}
+
+type delayExprTy struct {
+	f   func(isVArg bool) Expr
+	val Expr
+}
+
+func (p *delayExprTy) Underlying() types.Type {
+	panic("don't call")
+}
+
+func (p *delayExprTy) String() string {
+	return "delayExpr"
+}
+
 // -----------------------------------------------------------------------------
 
 func llvmValues(vals []Expr) []llvm.Value {
@@ -407,6 +438,47 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	panic("todo")
 }
 
+// MakeInterface constructs an instance of an interface type from a
+// value of a concrete type.
+//
+// Use Program.MethodSets.MethodSet(X.Type()) to find the method-set
+// of X, and Program.MethodValue(m) to find the implementation of a method.
+//
+// To construct the zero value of an interface type T, use:
+//
+//	NewConst(constant.MakeNil(), T, pos)
+//
+// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
+// from an explicit conversion in the source.
+//
+// Example printed form:
+//
+//	t1 = make interface{} <- int (42:int)
+//	t2 = make Stringer <- t0
+func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeInterface %v, %v\n", inter, x.impl)
+	}
+	t := inter.Underlying().(*types.Interface)
+	isAny := t.Empty()
+	fnDo := func(isVArg bool) Expr {
+		if isVArg { // don't need make interface
+			return x
+		}
+		pkg := b.fn.pkg
+		switch x.kind {
+		case vkSigned, vkUnsigned, vkFloat:
+			fn := pkg.rtFunc("MakeAnyInt")
+			return b.InlineCall(fn, x)
+		}
+		panic("todo")
+	}
+	if mayDelay && isAny {
+		return DelayExpr(fnDo)
+	}
+	return fnDo(false)
+}
+
 // The TypeAssert instruction tests whether interface value X has type
 // AssertedType.
 //
@@ -451,7 +523,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.t, commaOk)
 	}
 	switch assertedTyp.kind {
-	case vkSigned, vkUnsigned:
+	case vkSigned, vkUnsigned, vkFloat:
 		pkg := b.fn.pkg
 		fnName := "I2Int"
 		if commaOk {

@@ -25,20 +25,6 @@ import (
 
 type Type = abi.Type
 
-func I2Int(v Interface, t *Type) int64 {
-	if v.tab._type == t {
-		return int64(uintptr(v.data))
-	}
-	panic("I2Int: type mismatch")
-}
-
-func CheckI2Int(v Interface, t *Type) (int64, bool) {
-	if v.tab._type == t {
-		return int64(uintptr(v.data)), true
-	}
-	return 0, false
-}
-
 func Basic(kind types.BasicKind) *Type {
 	return basicTypes[kind]
 }
