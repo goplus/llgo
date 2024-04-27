@@ -300,6 +300,10 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.ChangeType(p.prog.Type(t), x)
+	case *ssa.Convert:
+		t := v.Type()
+		x := p.compileValue(b, v.X)
+		ret = b.Convert(p.prog.Type(t), x)
 	case *ssa.FieldAddr:
 		x := p.compileValue(b, v.X)
 		ret = b.FieldAddr(x, v.Field)
