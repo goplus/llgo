@@ -8,6 +8,8 @@
 *.so
 *.dylib
 
+_go/
+_runtime/
 _tinygo/
 
 # Test binary, built with `go test -c`
