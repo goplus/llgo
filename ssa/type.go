@@ -39,6 +39,7 @@ const (
 	vkComplex
 	vkString
 	vkBool
+	vkPtr
 	vkFunc
 	vkTuple
 	vkDelayExpr = -1
@@ -237,11 +238,11 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		case types.Complex128:
 		case types.String:
 		case types.UnsafePointer:
-			return &aType{p.tyVoidPtr(), typ, vkInvalid}
+			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
 		elem := p.Type(t.Elem())
-		return &aType{llvm.PointerType(elem.ll, 0), typ, vkInvalid}
+		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
 		return &aType{p.rtIface(), typ, vkInvalid}
 	case *types.Slice:

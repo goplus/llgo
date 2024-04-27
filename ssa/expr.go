@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -76,10 +77,12 @@ func llvmValues(vals []Expr) []llvm.Value {
 
 // -----------------------------------------------------------------------------
 
+// Null returns a null constant expression.
 func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
+// BoolVal returns a boolean constant expression.
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
 	var bv uint64
@@ -90,15 +93,19 @@ func (p Program) BoolVal(v bool) Expr {
 	return Expr{ret, t}
 }
 
+// IntVal returns an integer constant expression.
 func (p Program) IntVal(v uint64, t Type) Expr {
 	ret := llvm.ConstInt(t.ll, v, false)
 	return Expr{ret, t}
 }
 
+// Val returns a constant expression.
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
 	case int:
 		return p.IntVal(uint64(v), p.Int())
+	case uintptr:
+		return p.IntVal(uint64(v), p.Uintptr())
 	case bool:
 		return p.BoolVal(v)
 	case float64:
@@ -109,6 +116,7 @@ func (p Program) Val(v interface{}) Expr {
 	panic("todo")
 }
 
+// Const returns a constant expression.
 func (b Builder) Const(v constant.Value, typ Type) Expr {
 	if v == nil {
 		return b.prog.Null(typ)
@@ -258,7 +266,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkSigned:
 			pred := intPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
-		case vkUnsigned:
+		case vkUnsigned, vkPtr:
 			pred := uintPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkFloat:
@@ -386,9 +394,11 @@ func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
 	if heap {
 		ret.impl = llvm.CreateAlloca(b.impl, telem.ll)
 	} else {
-		panic("todo")
+		pkg := b.fn.pkg
+		size := unsafe.Sizeof(t.t)
+		ret = b.Call(pkg.rtFunc("Alloc"), b.prog.Val(size))
 	}
-	// TODO: zero-initialize
+	// TODO(xsw): zero-initialize
 	ret.Type = t
 	return
 }

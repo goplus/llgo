@@ -17,15 +17,15 @@
 package runtime
 
 import (
-	"go/types"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
 )
 
+type Kind = abi.Kind
 type Type = abi.Type
 
-func Basic(kind types.BasicKind) *Type {
+func Basic(kind Kind) *Type {
 	return basicTypes[kind]
 }
 

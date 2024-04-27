@@ -113,11 +113,12 @@ type aProgram struct {
 	rtIfaceTy llvm.Type
 	rtSliceTy llvm.Type
 
-	anyTy  Type
-	voidTy Type
-	boolTy Type
-	intTy  Type
-	f64Ty  Type
+	anyTy     Type
+	voidTy    Type
+	boolTy    Type
+	uintptrTy Type
+	intTy     Type
+	f64Ty     Type
 }
 
 // A Program presents a program.
@@ -209,6 +210,14 @@ func (p Program) Int() Type {
 		p.intTy = p.Type(types.Typ[types.Int])
 	}
 	return p.intTy
+}
+
+// Uintptr returns uintptr type.
+func (p Program) Uintptr() Type {
+	if p.uintptrTy == nil {
+		p.uintptrTy = p.Type(types.Typ[types.Uintptr])
+	}
+	return p.uintptrTy
 }
 
 // Float64 returns float64 type.
