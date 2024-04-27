@@ -110,6 +110,9 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
+	rtIfaceTy llvm.Type
+	rtSliceTy llvm.Type
+
 	anyTy  Type
 	voidTy Type
 	boolTy Type
@@ -144,8 +147,26 @@ func (p Program) runtime() *types.Scope {
 	return p.rt
 }
 
-func (p Program) rtType(name string) *types.Named {
+func (p Program) rtNamed(name string) *types.Named {
 	return p.runtime().Lookup(name).Type().(*types.Named)
+}
+
+func (p Program) rtType(name string) Type {
+	return p.Type(p.rtNamed(name))
+}
+
+func (p Program) rtIface() llvm.Type {
+	if p.rtIfaceTy.IsNil() {
+		p.rtIfaceTy = p.rtType("Interface").ll
+	}
+	return p.rtIfaceTy
+}
+
+func (p Program) rtSlice() llvm.Type {
+	if p.rtSliceTy.IsNil() {
+		p.rtSliceTy = p.rtType("Slice").ll
+	}
+	return p.rtSliceTy
 }
 
 // NewPackage creates a new package.
