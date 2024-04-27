@@ -23,6 +23,37 @@ import (
 	"testing"
 )
 
+/*
+func TestMakeInterface(t *testing.T) {
+	var b Builder
+	b.MakeInterface(types.NewInterfaceType(nil, nil), Expr{}, true).Do(true)
+}
+*/
+
+func TestDelayExpr(t *testing.T) {
+	a := delayExprTy(nil)
+	_ = a.String()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("TestDelayExpr: no error?")
+		}
+	}()
+	a.Underlying()
+}
+
+func TestAny(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		ret := types.NewPackage("runtime", "runtime")
+		scope := ret.Scope()
+		name := types.NewTypeName(0, ret, "Interface", nil)
+		types.NewNamed(name, types.NewStruct(nil, nil), nil)
+		scope.Insert(name)
+		return ret
+	})
+	prog.Any()
+}
+
 func assertPkg(t *testing.T, p Package, expected string) {
 	t.Helper()
 	if v := p.String(); v != expected {

@@ -23,6 +23,10 @@ import (
 	"github.com/goplus/llvm"
 )
 
+var (
+	tyAny = types.NewInterfaceType(nil, nil)
+)
+
 // -----------------------------------------------------------------------------
 
 type valueKind = int
@@ -37,6 +41,7 @@ const (
 	vkBool
 	vkFunc
 	vkTuple
+	vkDelayExpr = -1
 )
 
 // -----------------------------------------------------------------------------
@@ -237,7 +242,10 @@ func (p Program) toLLVMType(typ types.Type) Type {
 	case *types.Pointer:
 		elem := p.Type(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkInvalid}
+	case *types.Interface:
+		return &aType{p.rtIface(), typ, vkInvalid}
 	case *types.Slice:
+		return &aType{p.rtSlice(), typ, vkInvalid}
 	case *types.Map:
 	case *types.Struct:
 		return p.toLLVMStruct(t)

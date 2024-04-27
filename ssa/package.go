@@ -94,6 +94,9 @@ type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
 
+	rt    *types.Scope
+	rtget func() *types.Package
+
 	target *Target
 	td     llvm.TargetData
 	// tm  llvm.TargetMachine
@@ -107,6 +110,10 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
+	rtIfaceTy llvm.Type
+	rtSliceTy llvm.Type
+
+	anyTy  Type
 	voidTy Type
 	boolTy Type
 	intTy  Type
@@ -126,6 +133,40 @@ func NewProgram(target *Target) Program {
 	// ctx.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
 	return &aProgram{ctx: ctx, target: target, td: td}
+}
+
+// SetRuntime sets the runtime.
+func (p Program) SetRuntime(runtime func() *types.Package) {
+	p.rtget = runtime
+}
+
+func (p Program) runtime() *types.Scope {
+	if p.rt == nil {
+		p.rt = p.rtget().Scope()
+	}
+	return p.rt
+}
+
+func (p Program) rtNamed(name string) *types.Named {
+	return p.runtime().Lookup(name).Type().(*types.Named)
+}
+
+func (p Program) rtType(name string) Type {
+	return p.Type(p.rtNamed(name))
+}
+
+func (p Program) rtIface() llvm.Type {
+	if p.rtIfaceTy.IsNil() {
+		p.rtIfaceTy = p.rtType("Interface").ll
+	}
+	return p.rtIfaceTy
+}
+
+func (p Program) rtSlice() llvm.Type {
+	if p.rtSliceTy.IsNil() {
+		p.rtSliceTy = p.rtType("Slice").ll
+	}
+	return p.rtSliceTy
 }
 
 // NewPackage creates a new package.
@@ -152,6 +193,14 @@ func (p Program) Bool() Type {
 		p.boolTy = p.Type(types.Typ[types.Bool])
 	}
 	return p.boolTy
+}
+
+// Any returns any type.
+func (p Program) Any() Type {
+	if p.anyTy == nil {
+		p.anyTy = p.Type(tyAny)
+	}
+	return p.anyTy
 }
 
 // Int returns int type.
@@ -203,11 +252,16 @@ func (p Package) NewVar(name string, typ types.Type) Global {
 	return ret
 }
 
+// VarOf returns a global variable by name.
+func (p Package) VarOf(name string) Global {
+	return p.vars[name]
+}
+
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p.prog)
+	ret := newFunction(fn, t, p, p.prog)
 	p.fns[name] = ret
 	return ret
 }
@@ -217,9 +271,14 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
-// VarOf returns a global variable by name.
-func (p Package) VarOf(name string) Global {
-	return p.vars[name]
+func (p Package) rtFunc(fnName string) Expr {
+	fn := p.prog.runtime().Lookup(fnName).(*types.Func)
+	name := FullName(fn.Pkg(), fnName)
+	v, ok := p.fns[name]
+	if !ok {
+		v = p.NewFunc(name, fn.Type().(*types.Signature))
+	}
+	return v.Expr
 }
 
 // -----------------------------------------------------------------------------

@@ -324,11 +324,15 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		}
 		ret = b.Alloc(p.prog.Type(t), v.Heap)
 	case *ssa.MakeInterface:
+		const (
+			delayExpr = true // varargs: don't need to convert an expr to any
+		)
 		t := v.Type()
-		if isAny(t) { // varargs: don't need to convert an expr to any
-			return
-		}
-		panic("todo")
+		x := p.compileValue(b, v.X)
+		ret = b.MakeInterface(t, x, delayExpr)
+	case *ssa.TypeAssert:
+		x := p.compileValue(b, v.X)
+		ret = b.TypeAssert(x, p.prog.Type(v.AssertedType), v.CommaOk)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
@@ -428,7 +432,7 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 	n := len(vals) - hasVArg
 	ret := make([]llssa.Expr, n)
 	for i := 0; i < n; i++ {
-		ret[i] = p.compileValue(b, vals[i])
+		ret[i] = p.compileValue(b, vals[i]).Do()
 	}
 	if hasVArg > 0 {
 		ret = p.compileVArg(ret, b, vals[n])

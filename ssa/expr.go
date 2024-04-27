@@ -41,6 +41,29 @@ func (v Expr) TypeOf() types.Type {
 }
 */
 
+// Do evaluates the delay expression and returns the result.
+func (v Expr) Do() Expr {
+	if vt := v.Type; vt.kind == vkDelayExpr {
+		return vt.t.(delayExprTy)()
+	}
+	return v
+}
+
+// DelayExpr returns a delay expression.
+func DelayExpr(f func() Expr) Expr {
+	return Expr{Type: &aType{t: delayExprTy(f), kind: vkDelayExpr}}
+}
+
+type delayExprTy func() Expr
+
+func (p delayExprTy) Underlying() types.Type {
+	panic("don't call")
+}
+
+func (p delayExprTy) String() string {
+	return "delayExpr"
+}
+
 // -----------------------------------------------------------------------------
 
 func llvmValues(vals []Expr) []llvm.Value {
@@ -407,7 +430,113 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	panic("todo")
 }
 
+// MakeInterface constructs an instance of an interface type from a
+// value of a concrete type.
+//
+// Use Program.MethodSets.MethodSet(X.Type()) to find the method-set
+// of X, and Program.MethodValue(m) to find the implementation of a method.
+//
+// To construct the zero value of an interface type T, use:
+//
+//	NewConst(constant.MakeNil(), T, pos)
+//
+// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
+// from an explicit conversion in the source.
+//
+// Example printed form:
+//
+//	t1 = make interface{} <- int (42:int)
+//	t2 = make Stringer <- t0
+func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeInterface %v, %v\n", inter, x.impl)
+	}
+	t := inter.Underlying().(*types.Interface)
+	isAny := t.Empty()
+	fnDo := func() Expr {
+		pkg := b.fn.pkg
+		switch x.kind {
+		case vkSigned, vkUnsigned, vkFloat:
+			fn := pkg.rtFunc("MakeAnyInt")
+			return b.InlineCall(fn, x)
+		}
+		panic("todo")
+	}
+	if mayDelay && isAny {
+		return DelayExpr(fnDo)
+	}
+	return fnDo()
+}
+
+// The TypeAssert instruction tests whether interface value X has type
+// AssertedType.
+//
+// If !CommaOk, on success it returns v, the result of the conversion
+// (defined below); on failure it panics.
+//
+// If CommaOk: on success it returns a pair (v, true) where v is the
+// result of the conversion; on failure it returns (z, false) where z
+// is AssertedType's zero value.  The components of the pair must be
+// accessed using the Extract instruction.
+//
+// If Underlying: tests whether interface value X has the underlying
+// type AssertedType.
+//
+// If AssertedType is a concrete type, TypeAssert checks whether the
+// dynamic type in interface X is equal to it, and if so, the result
+// of the conversion is a copy of the value in the interface.
+//
+// If AssertedType is an interface, TypeAssert checks whether the
+// dynamic type of the interface is assignable to it, and if so, the
+// result of the conversion is a copy of the interface value X.
+// If AssertedType is a superinterface of X.Type(), the operation will
+// fail iff the operand is nil.  (Contrast with ChangeInterface, which
+// performs no nil-check.)
+//
+// Type() reflects the actual type of the result, possibly a
+// 2-types.Tuple; AssertedType is the asserted type.
+//
+// Depending on the TypeAssert's purpose, Pos may return:
+//   - the ast.CallExpr.Lparen of an explicit T(e) conversion;
+//   - the ast.TypeAssertExpr.Lparen of an explicit e.(T) operation;
+//   - the ast.CaseClause.Case of a case of a type-switch statement;
+//   - the Ident(m).NamePos of an interface method value i.m
+//     (for which TypeAssert may be used to effect the nil check).
+//
+// Example printed form:
+//
+//	t1 = typeassert t0.(int)
+//	t3 = typeassert,ok t2.(T)
+func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
+	if debugInstr {
+		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.t, commaOk)
+	}
+	switch assertedTyp.kind {
+	case vkSigned, vkUnsigned, vkFloat:
+		pkg := b.fn.pkg
+		fnName := "I2Int"
+		if commaOk {
+			fnName = "CheckI2Int"
+		}
+		fn := pkg.rtFunc(fnName)
+		var kind types.BasicKind
+		switch t := assertedTyp.t.(type) {
+		case *types.Basic:
+			kind = t.Kind()
+		default:
+			panic("todo")
+		}
+		typ := b.InlineCall(pkg.rtFunc("Basic"), b.prog.Val(int(kind)))
+		return b.InlineCall(fn, x, typ)
+	}
+	panic("todo")
+}
+
 // -----------------------------------------------------------------------------
+
+func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
+	return b.Call(fn, args...)
+}
 
 // The Call instruction represents a function or method call.
 //

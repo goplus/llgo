@@ -106,6 +106,7 @@ func (g Global) Init(v Expr) {
 // respectively, and is nil in the generic method.
 type aFunction struct {
 	Expr
+	pkg  Package
 	prog Program
 	blks []BasicBlock
 
@@ -116,9 +117,9 @@ type aFunction struct {
 // Function represents a function or method.
 type Function = *aFunction
 
-func newFunction(fn llvm.Value, t Type, prog Program) Function {
+func newFunction(fn llvm.Value, t Type, pkg Package, prog Program) Function {
 	params, hasVArg := newParams(t, prog)
-	return &aFunction{Expr{fn, t}, prog, nil, params, hasVArg}
+	return &aFunction{Expr{fn, t}, pkg, prog, nil, params, hasVArg}
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
