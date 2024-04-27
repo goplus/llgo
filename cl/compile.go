@@ -329,6 +329,9 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 			return
 		}
 		panic("todo")
+	case *ssa.TypeAssert:
+		x := p.compileValue(b, v.X)
+		ret = b.TypeAssert(x, p.prog.Type(v.AssertedType), v.CommaOk)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}

@@ -17,6 +17,7 @@
 package llgen
 
 import (
+	"go/types"
 	"os"
 
 	"github.com/goplus/llgo/cl"
@@ -48,6 +49,12 @@ func GenFromFile(inFile string) string {
 	ssaPkg.Build()
 
 	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := packages.Load(cfg, "github.com/goplus/llgo/internal/runtime")
+		check(err)
+		return rt[0].Types
+	})
+
 	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
 	check(err)
 

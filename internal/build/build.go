@@ -19,6 +19,7 @@ package build
 import (
 	"fmt"
 	"go/token"
+	"go/types"
 	"log"
 	"os"
 	"os/exec"
@@ -112,6 +113,11 @@ func Do(args []string, conf *Config) {
 	}
 
 	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := packages.Load(cfg, "github.com/goplus/llgo/internal/runtime")
+		check(err)
+		return rt[0].Types
+	})
 	mode := conf.Mode
 	if mode == ModeBuild && len(initial) == 1 {
 		mode = ModeInstall

@@ -1,0 +1,93 @@
+/*
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package runtime
+
+import (
+	"go/types"
+	"unsafe"
+
+	"github.com/goplus/llgo/internal/abi"
+)
+
+type Type = abi.Type
+
+func I2Int(v Interface, t *Type) int64 {
+	if v.tab._type == t {
+		return int64(uintptr(v.data))
+	}
+	panic("I2Int: type mismatch")
+}
+
+func CheckI2Int(v Interface, t *Type) (int64, bool) {
+	if v.tab._type == t {
+		return int64(uintptr(v.data)), true
+	}
+	return 0, false
+}
+
+func Basic(kind types.BasicKind) *Type {
+	return basicTypes[kind]
+}
+
+var (
+	basicTypes = [...]*Type{
+		abi.Bool:       basicType(abi.Bool),
+		abi.Int:        basicType(abi.Int),
+		abi.Int8:       basicType(abi.Int8),
+		abi.Int16:      basicType(abi.Int16),
+		abi.Int32:      basicType(abi.Int32),
+		abi.Int64:      basicType(abi.Int64),
+		abi.Uint:       basicType(abi.Uint),
+		abi.Uint8:      basicType(abi.Uint8),
+		abi.Uint16:     basicType(abi.Uint16),
+		abi.Uint32:     basicType(abi.Uint32),
+		abi.Uint64:     basicType(abi.Uint64),
+		abi.Uintptr:    basicType(abi.Uintptr),
+		abi.Float32:    basicType(abi.Float32),
+		abi.Float64:    basicType(abi.Float64),
+		abi.Complex64:  basicType(abi.Complex64),
+		abi.Complex128: basicType(abi.Complex128),
+	}
+)
+
+var (
+	sizeBasicTypes = [...]uintptr{
+		abi.Bool:       unsafe.Sizeof(false),
+		abi.Int:        unsafe.Sizeof(0),
+		abi.Int8:       1,
+		abi.Int16:      2,
+		abi.Int32:      4,
+		abi.Int64:      8,
+		abi.Uint:       unsafe.Sizeof(uint(0)),
+		abi.Uint8:      1,
+		abi.Uint16:     2,
+		abi.Uint32:     4,
+		abi.Uint64:     8,
+		abi.Uintptr:    unsafe.Sizeof(uintptr(0)),
+		abi.Float32:    4,
+		abi.Float64:    8,
+		abi.Complex64:  8,
+		abi.Complex128: 16,
+	}
+)
+
+func basicType(kind abi.Kind) *Type {
+	return &abi.Type{
+		Size_: sizeBasicTypes[kind],
+		Kind_: uint8(kind),
+	}
+}

@@ -242,9 +242,9 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		elem := p.Type(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkInvalid}
 	case *types.Interface:
-		tyIface := p.runtime().Lookup("Interface").(*types.TypeName).Type().(*types.Named)
-		return p.toLLVMNamed(tyIface)
+		return p.toLLVMNamed(p.rtType("Interface"))
 	case *types.Slice:
+		return p.toLLVMNamed(p.rtType("Slice"))
 	case *types.Map:
 	case *types.Struct:
 		return p.toLLVMStruct(t)

@@ -16,23 +16,8 @@
 
 package runtime
 
-import (
-	"unsafe"
+type Slice = slice
 
-	"github.com/goplus/llgo/internal/abi"
-)
-
-type Interface = iface
-
-type InterfaceType = abi.InterfaceType
-
-var (
-	TyAny = &InterfaceType{}
-)
-
-func MakeAny(typ *Type, data unsafe.Pointer) Interface {
-	return Interface{
-		tab:  &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}},
-		data: data,
-	}
+func MakeEmptySlice() Slice {
+	return Slice{nil, 0, 0}
 }

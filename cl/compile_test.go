@@ -28,7 +28,7 @@ func testCompile(t *testing.T, src, expected string) {
 }
 
 func TestFromTestcgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testcgo", true)
+	cltest.FromDir(t, "any", "./_testcgo", true)
 }
 
 func TestFromTestdata(t *testing.T) {

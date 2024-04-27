@@ -90,16 +90,12 @@ func Initialize(flags InitFlags) {
 
 // -----------------------------------------------------------------------------
 
-type Runtime interface {
-	Runtime() *types.Package
-}
-
 type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
 
 	rt    *types.Scope
-	rtget Runtime
+	rtget func() *types.Package
 
 	target *Target
 	td     llvm.TargetData
@@ -136,16 +132,20 @@ func NewProgram(target *Target) Program {
 	return &aProgram{ctx: ctx, target: target, td: td}
 }
 
-// SetRuntime sets the runtime package.
-func (p Program) SetRuntime(runtime Runtime) {
+// SetRuntime sets the runtime.
+func (p Program) SetRuntime(runtime func() *types.Package) {
 	p.rtget = runtime
 }
 
 func (p Program) runtime() *types.Scope {
 	if p.rt == nil {
-		p.rt = p.rtget.Runtime().Scope()
+		p.rt = p.rtget().Scope()
 	}
 	return p.rt
+}
+
+func (p Program) rtType(name string) *types.Named {
+	return p.runtime().Lookup(name).Type().(*types.Named)
 }
 
 // NewPackage creates a new package.
@@ -230,11 +230,16 @@ func (p Package) NewVar(name string, typ types.Type) Global {
 	return ret
 }
 
+// VarOf returns a global variable by name.
+func (p Package) VarOf(name string) Global {
+	return p.vars[name]
+}
+
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p.prog)
+	ret := newFunction(fn, t, p, p.prog)
 	p.fns[name] = ret
 	return ret
 }
@@ -244,9 +249,14 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
-// VarOf returns a global variable by name.
-func (p Package) VarOf(name string) Global {
-	return p.vars[name]
+func (p Package) rtFunc(fnName string) Expr {
+	fn := p.prog.runtime().Lookup(fnName).(*types.Func)
+	name := FullName(fn.Pkg(), fnName)
+	v, ok := p.fns[name]
+	if !ok {
+		v = p.NewFunc(name, fn.Type().(*types.Signature))
+	}
+	return v.Expr
 }
 
 // -----------------------------------------------------------------------------
