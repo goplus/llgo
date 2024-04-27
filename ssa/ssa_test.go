@@ -88,9 +88,9 @@ func TestNamedStruct(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-%Empty = type {}
+%bar.Empty = type {}
 
-@a = external global %Empty
+@a = external global %bar.Empty
 `)
 }
 

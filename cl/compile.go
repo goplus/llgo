@@ -139,7 +139,7 @@ func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
 	tnName := tn.Name()
 	typ := tn.Type()
-	name := fullName(tn.Pkg(), tnName)
+	name := llssa.FullName(tn.Pkg(), tnName)
 	if ignoreName(name) {
 		return
 	}
@@ -164,7 +164,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
-	name := fullName(gbl.Pkg.Pkg, gbl.Name())
+	name := llssa.FullName(gbl.Pkg.Pkg, gbl.Name())
 	if ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}
@@ -300,6 +300,9 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.ChangeType(p.prog.Type(t), x)
+	case *ssa.FieldAddr:
+		x := p.compileValue(b, v.X)
+		ret = b.FieldAddr(x, v.Field)
 	case *ssa.IndexAddr:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index
@@ -452,7 +455,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
-	pkgName, pkgPath := pkgTypes.Name(), pathOf(pkgTypes)
+	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{

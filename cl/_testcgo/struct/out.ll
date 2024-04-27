@@ -1,12 +1,24 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
+%main.Foo = type { i32, i1 }
+
 @main.format = global ptr null
 @"main.init$guard" = global ptr null
 
-define void @"(*main.T).Print"(ptr %0, i64 %1) {
+define void @"(*main.Foo).Print"(ptr %0) {
 _llgo_0:
-  call void (ptr, ...) @printf(ptr %0, i64 %1)
+  %1 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 1
+  %2 = load i1, ptr %1, align 1
+  br i1 %2, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %3 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 0
+  %4 = load i32, ptr %3, align 4
+  call void (ptr, ...) @printf(ptr @main.format, i32 %4)
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
@@ -36,7 +48,12 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @main() {
 _llgo_0:
   call void @main.init()
-  call void @"(*main.T).Print"(ptr @main.format, i64 100)
+  %0 = alloca %main.Foo, align 8
+  %1 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 1
+  store i32 100, ptr %1, align 4
+  store i1 true, ptr %2, align 1
+  call void @"(*main.Foo).Print"(ptr %0)
   ret void
 }
 

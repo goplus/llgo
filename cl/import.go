@@ -51,7 +51,7 @@ func (p *context) importPkg(pkg *types.Package) {
 	fset := p.fset
 	names := scope.Names()
 	contents := make(contentMap)
-	pkgPath := pathOf(pkg)
+	pkgPath := llssa.PathOf(pkg)
 	for _, name := range names {
 		if token.IsExported(name) {
 			obj := scope.Lookup(name)
@@ -109,17 +109,6 @@ func (p *context) initLinkname(pkgPath, line string) {
 	}
 }
 
-func pathOf(pkg *types.Package) string {
-	if pkg.Name() == "main" {
-		return "main"
-	}
-	return pkg.Path()
-}
-
-func fullName(pkg *types.Package, name string) string {
-	return pathOf(pkg) + "." + name
-}
-
 // func: pkg.name
 // method: (pkg.T).name, (*pkg.T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
@@ -131,10 +120,10 @@ func funcName(pkg *types.Package, fn *ssa.Function) string {
 		if tp, ok := t.(*types.Pointer); ok {
 			t, tName = tp.Elem(), "*"
 		}
-		tName += t.(*types.Named).Obj().Name()
+		tName += llssa.NameOf(t.(*types.Named))
 		return "(" + tName + ")." + name
 	}
-	ret := fullName(pkg, name)
+	ret := llssa.FullName(pkg, name)
 	if ret == "main.main" {
 		ret = "main"
 	}
@@ -171,7 +160,7 @@ func (p *context) funcOf(fn *ssa.Function) llssa.Function {
 func (p *context) varOf(v *ssa.Global) llssa.Global {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
-	name := fullName(pkgTypes, v.Name())
+	name := llssa.FullName(pkgTypes, v.Name())
 	if ret := pkg.VarOf(name); ret != nil {
 		return ret
 	}
