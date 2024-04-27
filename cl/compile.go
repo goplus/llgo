@@ -418,9 +418,6 @@ func (p *context) compileVArg(ret []llssa.Expr, b llssa.Builder, v ssa.Value) []
 	switch v := v.(type) {
 	case *ssa.Slice: // varargs: this is a varargs slice
 		if args, ok := p.isVArgs(v.X); ok {
-			for i, arg := range args {
-				args[i] = arg.Do(true)
-			}
 			return append(ret, args...)
 		}
 	case *ssa.Const:
@@ -435,7 +432,7 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 	n := len(vals) - hasVArg
 	ret := make([]llssa.Expr, n)
 	for i := 0; i < n; i++ {
-		ret[i] = p.compileValue(b, vals[i]).Do(false)
+		ret[i] = p.compileValue(b, vals[i]).Do()
 	}
 	if hasVArg > 0 {
 		ret = p.compileVArg(ret, b, vals[n])

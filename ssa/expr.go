@@ -42,33 +42,25 @@ func (v Expr) TypeOf() types.Type {
 */
 
 // Do evaluates the delay expression and returns the result.
-func (v Expr) Do(isVArg bool) Expr {
+func (v Expr) Do() Expr {
 	if vt := v.Type; vt.kind == vkDelayExpr {
-		delay := vt.t.(*delayExprTy)
-		if f := delay.f; f != nil {
-			delay.f = nil
-			delay.val = f(isVArg)
-		}
-		return delay.val
+		return vt.t.(delayExprTy)()
 	}
 	return v
 }
 
 // DelayExpr returns a delay expression.
-func DelayExpr(f func(isVArg bool) Expr) Expr {
-	return Expr{Type: &aType{t: &delayExprTy{f: f}, kind: vkDelayExpr}}
+func DelayExpr(f func() Expr) Expr {
+	return Expr{Type: &aType{t: delayExprTy(f), kind: vkDelayExpr}}
 }
 
-type delayExprTy struct {
-	f   func(isVArg bool) Expr
-	val Expr
-}
+type delayExprTy func() Expr
 
-func (p *delayExprTy) Underlying() types.Type {
+func (p delayExprTy) Underlying() types.Type {
 	panic("don't call")
 }
 
-func (p *delayExprTy) String() string {
+func (p delayExprTy) String() string {
 	return "delayExpr"
 }
 
@@ -461,10 +453,7 @@ func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Exp
 	}
 	t := inter.Underlying().(*types.Interface)
 	isAny := t.Empty()
-	fnDo := func(isVArg bool) Expr {
-		if isVArg { // don't need make interface
-			return x
-		}
+	fnDo := func() Expr {
 		pkg := b.fn.pkg
 		switch x.kind {
 		case vkSigned, vkUnsigned, vkFloat:
@@ -476,7 +465,7 @@ func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Exp
 	if mayDelay && isAny {
 		return DelayExpr(fnDo)
 	}
-	return fnDo(false)
+	return fnDo()
 }
 
 // The TypeAssert instruction tests whether interface value X has type

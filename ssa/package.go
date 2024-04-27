@@ -195,6 +195,7 @@ func (p Program) Bool() Type {
 	return p.boolTy
 }
 
+// Any returns any type.
 func (p Program) Any() Type {
 	if p.anyTy == nil {
 		p.anyTy = p.Type(tyAny)
