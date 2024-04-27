@@ -307,7 +307,7 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 	tstruc := prog.Elem(x.Type)
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)
-	return Expr{llvm.CreateStructGEP(b.impl, telem.ll, x.impl, idx), pt}
+	return Expr{llvm.CreateStructGEP(b.impl, tstruc.ll, x.impl, idx), pt}
 }
 
 // The IndexAddr instruction yields the address of the element at

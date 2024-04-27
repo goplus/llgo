@@ -8,12 +8,12 @@ source_filename = "main"
 
 define void @"(*main.Foo).Print"(ptr %0) {
 _llgo_0:
-  %1 = getelementptr inbounds i1, ptr %0, i32 0, i32 1
+  %1 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 1
   %2 = load i1, ptr %1, align 1
   br i1 %2, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %3 = getelementptr inbounds i32, ptr %0, i32 0, i32 0
+  %3 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 0
   %4 = load i32, ptr %3, align 4
   call void (ptr, ...) @printf(ptr @main.format, i32 %4)
   br label %_llgo_2
@@ -49,8 +49,8 @@ define void @main() {
 _llgo_0:
   call void @main.init()
   %0 = alloca %main.Foo, align 8
-  %1 = getelementptr inbounds i32, ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds i1, ptr %0, i32 0, i32 1
+  %1 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 1
   store i32 100, ptr %1, align 4
   store i1 true, ptr %2, align 1
   call void @"(*main.Foo).Print"(ptr %0)

@@ -4,7 +4,7 @@ source_filename = "main"
 @main.format = global ptr null
 @"main.init$guard" = global ptr null
 
-define void @"(*T).Print"(ptr %0, i64 %1) {
+define void @"(*main.T).Print"(ptr %0, i64 %1) {
 _llgo_0:
   call void (ptr, ...) @printf(ptr %0, i64 %1)
   ret void
@@ -36,7 +36,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @main() {
 _llgo_0:
   call void @main.init()
-  call void @"(*T).Print"(ptr @main.format, i64 100)
+  call void @"(*main.T).Print"(ptr @main.format, i64 100)
   ret void
 }
 
