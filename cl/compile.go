@@ -387,6 +387,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		thenb := fn.Block(succs[0].Index)
 		elseb := fn.Block(succs[1].Index)
 		b.If(cond, thenb, elseb)
+	case *ssa.Panic:
+		arg := p.compileValue(b, v.X).Do()
+		b.Panic(arg)
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}

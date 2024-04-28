@@ -237,6 +237,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		case types.Complex64:
 		case types.Complex128:
 		case types.String:
+			return &aType{p.rtString(), typ, vkString}
 		case types.UnsafePointer:
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}

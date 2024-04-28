@@ -110,12 +110,15 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
-	rtIfaceTy llvm.Type
-	rtSliceTy llvm.Type
+	rtStringTy llvm.Type
+	rtIfaceTy  llvm.Type
+	rtSliceTy  llvm.Type
 
 	anyTy     Type
 	voidTy    Type
 	boolTy    Type
+	cstrTy    Type
+	stringTy  Type
 	uintptrTy Type
 	intTy     Type
 	f64Ty     Type
@@ -170,6 +173,13 @@ func (p Program) rtSlice() llvm.Type {
 	return p.rtSliceTy
 }
 
+func (p Program) rtString() llvm.Type {
+	if p.rtStringTy.IsNil() {
+		p.rtStringTy = p.rtType("String").ll
+	}
+	return p.rtStringTy
+}
+
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
@@ -177,7 +187,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// mod.Finalize()
 	fns := make(map[string]Function)
 	gbls := make(map[string]Global)
-	return &aPackage{mod, fns, gbls, p}
+	return &aPackage{mod, fns, gbls, p, nil}
 }
 
 // Void returns void type.
@@ -194,6 +204,20 @@ func (p Program) Bool() Type {
 		p.boolTy = p.Type(types.Typ[types.Bool])
 	}
 	return p.boolTy
+}
+
+func (p Program) CString() Type {
+	if p.cstrTy == nil { // *int8
+		p.cstrTy = p.Type(types.NewPointer(types.Typ[types.Int8]))
+	}
+	return p.cstrTy
+}
+
+func (p Program) String() Type {
+	if p.stringTy == nil {
+		p.stringTy = p.Type(types.Typ[types.String])
+	}
+	return p.stringTy
 }
 
 // Any returns any type.
@@ -243,6 +267,8 @@ type aPackage struct {
 	fns  map[string]Function
 	vars map[string]Global
 	prog Program
+
+	abort Function
 }
 
 type Package = *aPackage
@@ -278,6 +304,13 @@ func (p Package) NewFunc(name string, sig *types.Signature) Function {
 // FuncOf returns a function by name.
 func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
+}
+
+func (p Package) rtAbort() Function {
+	if p.abort == nil {
+		p.abort = p.NewFunc("abort", types.NewSignatureType(nil, nil, nil, nil, nil, false))
+	}
+	return p.abort
 }
 
 func (p Package) rtFunc(fnName string) Expr {

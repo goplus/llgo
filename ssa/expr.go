@@ -82,6 +82,20 @@ func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
+// CStringVal returns a c-style string constant expression.
+func (p Program) CStringVal(v string) Expr {
+	t := p.CString()
+	return Expr{llvm.ConstString(v, true), t}
+}
+
+// StringVal returns string constant expression.
+func (p Program) StringVal(v string) Expr {
+	t := p.String()
+	cstr := llvm.ConstString(v, true)
+	// TODO(xsw): cstr => gostring
+	return Expr{cstr, t}
+}
+
 // BoolVal returns a boolean constant expression.
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
@@ -118,19 +132,22 @@ func (p Program) Val(v interface{}) Expr {
 
 // Const returns a constant expression.
 func (b Builder) Const(v constant.Value, typ Type) Expr {
+	prog := b.prog
 	if v == nil {
-		return b.prog.Null(typ)
+		return prog.Null(typ)
 	}
 	switch t := typ.t.(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
 		case kind == types.Bool:
-			return b.prog.BoolVal(constant.BoolVal(v))
+			return prog.BoolVal(constant.BoolVal(v))
 		case kind >= types.Int && kind <= types.Uintptr:
 			if v, exact := constant.Uint64Val(v); exact {
-				return b.prog.IntVal(v, typ)
+				return prog.IntVal(v, typ)
 			}
+		case kind == types.String:
+			return prog.StringVal(constant.StringVal(v))
 		}
 	}
 	panic("todo")
