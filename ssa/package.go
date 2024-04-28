@@ -126,6 +126,8 @@ type aProgram struct {
 	uintptrTy Type
 	intTy     Type
 	f64Ty     Type
+
+	needRuntime bool
 }
 
 // A Program presents a program.
@@ -154,10 +156,16 @@ func (p Program) SetRuntime(runtime any) {
 	}
 }
 
+// NeedRuntime returns if the current package needs runtime.
+func (p Program) NeedRuntime() bool {
+	return p.needRuntime
+}
+
 func (p Program) runtime() *types.Package {
 	if p.rt == nil {
 		p.rt = p.rtget()
 	}
+	p.needRuntime = true
 	return p.rt
 }
 
@@ -197,6 +205,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// mod.Finalize()
 	fns := make(map[string]Function)
 	gbls := make(map[string]Global)
+	p.needRuntime = false
 	return &aPackage{mod, fns, gbls, p}
 }
 
@@ -305,7 +314,7 @@ func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
-	t := p.prog.llvmSignature(sig)
+	t := p.prog.llvmSignature(sig, false)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p, p.prog)
 	p.fns[name] = ret

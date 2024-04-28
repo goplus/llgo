@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
-	"github.com/goplus/llgo/ssa"
 )
 
 func TestFromTestcgo(t *testing.T) {
@@ -32,5 +31,6 @@ func TestFromTestdata(t *testing.T) {
 }
 
 func TestRuntime(t *testing.T) {
-	cltest.Pkg(t, ssa.PkgRuntime, "../internal/runtime/llgo_autogen.ll")
+	cltest.Pkg(t, "github.com/goplus/llgo/internal/runtime", "../internal/runtime/llgo_autogen.ll")
+	cltest.Pkg(t, "github.com/goplus/llgo/internal/abi", "../internal/abi/llgo_autogen.ll")
 }

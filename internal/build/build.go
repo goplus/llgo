@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -89,7 +88,7 @@ const (
 func Do(args []string, conf *Config) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
 	cfg := &packages.Config{
-		Mode:       loadSyntax | packages.NeedDeps | packages.NeedExportFile,
+		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
 	}
 
@@ -98,6 +97,20 @@ func Do(args []string, conf *Config) {
 	}
 	initial, err := packages.Load(cfg, patterns...)
 	check(err)
+
+	mode := conf.Mode
+	if len(initial) == 1 && len(initial[0].CompiledGoFiles) > 0 {
+		if mode == ModeBuild {
+			mode = ModeInstall
+		}
+	} else if mode == ModeRun {
+		if len(initial) > 1 {
+			fmt.Fprintln(os.Stderr, "cannot run multiple packages")
+		} else {
+			fmt.Fprintln(os.Stderr, "no Go files in matched packages")
+		}
+		return
+	}
 
 	llssa.Initialize(llssa.InitAll)
 	if verbose {
@@ -113,25 +126,32 @@ func Do(args []string, conf *Config) {
 		return rt[0].Types
 	})
 
-	mode := conf.Mode
-	if mode == ModeBuild && len(initial) == 1 {
-		mode = ModeInstall
-	}
 	buildAllPkgs(prog, initial, mode, verbose)
 
-	var runtime *packages.Package
+	var runtimeFiles []string
 	if rt != nil {
-		buildAllPkgs(prog, rt, mode, verbose)
-		runtime = rt[0]
+		runtimeFiles = allLinkFiles(rt)
 	}
-
 	if mode != ModeBuild {
+		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				linkMainPkg(pkg, runtime, conf, mode, verbose)
+				nErr += linkMainPkg(pkg, runtimeFiles, conf, mode, verbose)
 			}
 		}
+		if nErr > 0 {
+			fmt.Fprintf(os.Stderr, "%d errors occurred\n", nErr)
+			os.Exit(1)
+		}
 	}
+}
+
+func setNeedRuntime(pkg *packages.Package) {
+	pkg.ID = "" // just use pkg.Module to mark it needs runtime
+}
+
+func isNeedRuntime(pkg *packages.Package) bool {
+	return pkg.ID == ""
 }
 
 func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) {
@@ -139,14 +159,17 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
 	for _, errPkg := range errPkgs {
-		log.Println("cannot build SSA for package", errPkg)
+		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	for _, pkg := range pkgs {
 		buildPkg(prog, pkg, mode, verbose)
+		if prog.NeedRuntime() {
+			setNeedRuntime(pkg.Package)
+		}
 	}
 }
 
-func linkMainPkg(pkg, runtime *packages.Package, conf *Config, mode Mode, verbose bool) {
+func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -154,24 +177,34 @@ func linkMainPkg(pkg, runtime *packages.Package, conf *Config, mode Mode, verbos
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
 	const N = 3
-	args := make([]string, N, len(pkg.Imports)+(N+2))
+	args := make([]string, N, len(pkg.Imports)+len(runtimeFiles)+(N+1))
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
-	if runtime != nil {
-		args = append(args, runtime.ExportFile+".ll")
-	}
+	needRuntime := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.PkgPath != "unsafe" { // TODO(xsw): maybe can remove this special case
 			args = append(args, p.ExportFile+".ll")
+			if !needRuntime {
+				needRuntime = isNeedRuntime(p)
+			}
 		}
 	})
+	if needRuntime && runtimeFiles != nil {
+		args = append(args, runtimeFiles...)
+	}
+
+	if verbose || mode != ModeRun {
+		fmt.Fprintln(os.Stderr, "#", pkgPath)
+	}
+	defer func() {
+		if e := recover(); e != nil {
+			nErr = 1
+		}
+	}()
 
 	// TODO(xsw): show work
 	// fmt.Fprintln(os.Stderr, "clang", args)
-	if verbose {
-		fmt.Fprintln(os.Stderr, "#", pkgPath)
-	}
 	err := clang.New("").Exec(args...)
 	check(err)
 
@@ -182,6 +215,7 @@ func linkMainPkg(pkg, runtime *packages.Package, conf *Config, mode Mode, verbos
 		cmd.Stderr = os.Stderr
 		cmd.Run()
 	}
+	return
 }
 
 func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode, verbose bool) {
@@ -280,6 +314,39 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 	} else {
 		panic("unknown flag: " + arg)
 	}
+}
+
+func allLinkFiles(rt []*packages.Package) (outFiles []string) {
+	outFiles = make([]string, 0, len(rt))
+	root := rootLLGo(rt[0])
+	packages.Visit(rt, nil, func(p *packages.Package) {
+		if isPkgInLLGo(p.PkgPath) {
+			outFile := filepath.Join(root+p.PkgPath[len(llgoModPath):], "llgo_autogen.ll")
+			outFiles = append(outFiles, outFile)
+		}
+	})
+	return
+}
+
+// TODO(xsw): llgo root dir
+func rootLLGo(runtime *packages.Package) string {
+	return runtime.Module.Dir
+}
+
+const (
+	llgoModPath = "github.com/goplus/llgo"
+)
+
+func isPkgInLLGo(pkgPath string) bool {
+	return isPkgInMod(pkgPath, llgoModPath)
+}
+
+func isPkgInMod(pkgPath, modPath string) bool {
+	if strings.HasPrefix(pkgPath, modPath) {
+		suffix := pkgPath[len(modPath):]
+		return suffix == "" || suffix[0] == '/'
+	}
+	return false
 }
 
 func check(err error) {

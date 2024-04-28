@@ -5,7 +5,7 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 %"github.com/goplus/llgo/internal/runtime.itab" = type { ptr, ptr, i32, [4 x i8], [1 x i64] }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/abi.InterfaceType" = type { %"github.com/goplus/llgo/internal/abi.Type", %"github.com/goplus/llgo/internal/abi.Name", %"github.com/goplus/llgo/internal/runtime.Slice" }
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, i1 (ptr, ptr), ptr, i32, i32 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
 %"github.com/goplus/llgo/internal/abi.Name" = type { ptr }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
@@ -41,8 +41,8 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i32 0, i32 1
   %9 = load ptr, ptr %8, align 8
-  %castInt = sext ptr %9 to i64
-  %mrv = insertvalue { i64, i1 } poison, i64 %castInt, 0
+  %ptr2int = ptrtoint ptr %9 to i64
+  %mrv = insertvalue { i64, i1 } poison, i64 %ptr2int, 0
   %mrv1 = insertvalue { i64, i1 } %mrv, i1 true, 1
   ret { i64, i1 } %mrv1
 
@@ -75,8 +75,8 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i32 0, i32 1
   %9 = load ptr, ptr %8, align 8
-  %castInt = sext ptr %9 to i64
-  ret i64 %castInt
+  %ptr2int = ptrtoint ptr %9 to i64
+  ret i64 %ptr2int
 
 _llgo_2:                                          ; preds = %_llgo_0
   %10 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"([21 x i8] c"I2Int: type mismatch\00")
@@ -229,9 +229,9 @@ _llgo_0:
   store i32 0, ptr %8, align 4
   store i64 0, ptr %10, align 4
   %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i32 0, i32 1
-  %castPtr = addrspacecast i64 %1 to ptr
+  %int2ptr = inttoptr i64 %1 to ptr
   store ptr %4, ptr %3, align 8
-  store ptr %castPtr, ptr %11, align 8
+  store ptr %int2ptr, ptr %11, align 8
   %12 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, align 8
   ret %"github.com/goplus/llgo/internal/runtime.iface" %12
 }
@@ -322,9 +322,9 @@ _llgo_0:
   %3 = getelementptr inbounds i64, ptr @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes", i64 %0
   %4 = load i64, ptr %3, align 4
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 6
-  %castInt = trunc i64 %0 to i8
+  %truncInt = trunc i64 %0 to i8
   store i64 %4, ptr %2, align 4
-  store i8 %castInt, ptr %5, align 1
+  store i8 %truncInt, ptr %5, align 1
   ret ptr %1
 }
 

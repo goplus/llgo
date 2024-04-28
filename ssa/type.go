@@ -124,7 +124,7 @@ func (p Program) Field(typ Type, i int) Type {
 
 func (p Program) Type(typ types.Type) Type {
 	if sig, ok := typ.(*types.Signature); ok { // should methodToFunc
-		return p.llvmSignature(sig)
+		return p.llvmSignature(sig, true)
 	}
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
@@ -134,12 +134,12 @@ func (p Program) Type(typ types.Type) Type {
 	return ret
 }
 
-func (p Program) llvmSignature(sig *types.Signature) Type {
+func (p Program) llvmSignature(sig *types.Signature, isPtr bool) Type {
 	sig = methodToFunc(sig)
 	if v := p.typs.At(sig); v != nil {
 		return v.(Type)
 	}
-	ret := p.toLLVMFunc(sig)
+	ret := p.toLLVMFunc(sig, isPtr)
 	p.typs.Set(sig, ret)
 	return ret
 }
@@ -301,7 +301,7 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 	return
 }
 
-func (p Program) toLLVMFunc(sig *types.Signature) Type {
+func (p Program) toLLVMFunc(sig *types.Signature, isPtr bool) Type {
 	tParams := sig.Params()
 	n := tParams.Len()
 	hasVArg := HasVArg(tParams, n)
@@ -320,6 +320,9 @@ func (p Program) toLLVMFunc(sig *types.Signature) Type {
 		ret = p.toLLVMTuple(out)
 	}
 	ft := llvm.FunctionType(ret, params, hasVArg)
+	if isPtr {
+		ft = llvm.PointerType(ft, 0)
+	}
 	return &aType{ft, sig, vkFunc}
 }
 
