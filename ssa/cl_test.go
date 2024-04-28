@@ -29,3 +29,7 @@ func TestFromTestcgo(t *testing.T) {
 func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testdata", false)
 }
+
+func TestRuntime(t *testing.T) {
+	cltest.Pkg(t, "github.com/goplus/llgo/internal/runtime", "../internal/runtime/llgo_autogen.ll")
+}
