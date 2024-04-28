@@ -115,7 +115,7 @@ func inPkg(name, pkg string) bool {
 
 type none = struct{}
 
-type instrAndValue interface {
+type instrOrValue interface {
 	ssa.Instruction
 	ssa.Value
 }
@@ -202,6 +202,7 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		}
 		fn.MakeBlocks(nblk)
 		b := fn.NewBuilder()
+		p.bvals = make(map[ssa.Value]llssa.Expr)
 		for i, block := range f.Blocks {
 			p.compileBlock(b, block, i == 0 && name == "main")
 		}
@@ -211,7 +212,6 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bool) llssa.BasicBlock {
 	ret := p.fn.Block(block.Index)
 	b.SetBlock(ret)
-	p.bvals = make(map[ssa.Value]llssa.Expr)
 	if doInit {
 		fn := p.pkg.FuncOf("main.init")
 		b.Call(fn.Expr)
@@ -257,9 +257,12 @@ func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	return false
 }
 
-func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret llssa.Expr) {
-	if v, ok := p.bvals[iv]; ok {
-		return v
+func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
+	if asValue {
+		if v, ok := p.bvals[iv]; ok {
+			return v
+		}
+		log.Panicln("unreachable:", iv)
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -343,8 +346,8 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 }
 
 func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
-	if iv, ok := instr.(instrAndValue); ok {
-		p.compileInstrAndValue(b, iv)
+	if iv, ok := instr.(instrOrValue); ok {
+		p.compileInstrOrValue(b, iv, false)
 		return
 	}
 	switch v := instr.(type) {
@@ -394,8 +397,8 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 }
 
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
-	if iv, ok := v.(instrAndValue); ok {
-		return p.compileInstrAndValue(b, iv)
+	if iv, ok := v.(instrOrValue); ok {
+		return p.compileInstrOrValue(b, iv, true)
 	}
 	switch v := v.(type) {
 	case *ssa.Parameter:
