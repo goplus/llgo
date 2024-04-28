@@ -510,19 +510,19 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 func castInt(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 	xt := x.Type()
 	if xt.TypeKind() == llvm.PointerTypeKind {
-		return b.CreatePtrToInt(x, t, "ptr2int")
+		return llvm.CreatePtrToInt(b, x, t)
 	}
 	if xt.IntTypeWidth() <= t.IntTypeWidth() {
-		return b.CreateIntCast(x, t, "castInt")
+		return llvm.CreateIntCast(b, x, t)
 	}
-	return b.CreateTrunc(x, t, "truncInt")
+	return llvm.CreateTrunc(b, x, t)
 }
 
 func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 	if x.Type().TypeKind() == llvm.PointerTypeKind {
-		return b.CreatePointerCast(x, t, "castPtr")
+		return llvm.CreatePointerCast(b, x, t)
 	}
-	return b.CreateIntToPtr(x, t, "int2ptr")
+	return llvm.CreateIntToPtr(b, x, t)
 }
 
 // MakeInterface constructs an instance of an interface type from a
