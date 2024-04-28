@@ -4,10 +4,8 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.itab" = type { ptr, ptr, i32, [4 x i8], [1 x i64] }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
-%"github.com/goplus/llgo/internal/abi.InterfaceType" = type { %"github.com/goplus/llgo/internal/abi.Type", %"github.com/goplus/llgo/internal/abi.Name", %"github.com/goplus/llgo/internal/runtime.Slice" }
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
-%"github.com/goplus/llgo/internal/abi.Name" = type { ptr }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
 
 @"github.com/goplus/llgo/internal/runtime.TyAny" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.basicTypes" = global ptr null
@@ -81,114 +79,6 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %10 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"([21 x i8] c"I2Int: type mismatch\00")
   call void @abort()
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).ArrayType"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).ArrayType"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).ArrayType"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).Common"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).Common"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).Common"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).Elem"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).Elem"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).Elem"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).FuncType"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).FuncType"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).FuncType"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).InterfaceType"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).InterfaceType"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).InterfaceType"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define i64 @"(*github.com/goplus/llgo/internal/abi.InterfaceType).Kind"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call i64 @"(*github.com/goplus/llgo/internal/abi.Type).Kind"(ptr %1)
-  ret i64 %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call i64 @"(*github.com/goplus/llgo/internal/abi.Type).Kind"(ptr %3)
-  ret i64 %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define i64 @"(*github.com/goplus/llgo/internal/abi.InterfaceType).Len"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call i64 @"(*github.com/goplus/llgo/internal/abi.Type).Len"(ptr %1)
-  ret i64 %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call i64 @"(*github.com/goplus/llgo/internal/abi.Type).Len"(ptr %3)
-  ret i64 %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).MapType"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).MapType"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).MapType"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
-}
-
-define ptr @"(*github.com/goplus/llgo/internal/abi.InterfaceType).StructType"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %2 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).StructType"(ptr %1)
-  ret ptr %2
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.InterfaceType", ptr %0, i32 0, i32 0
-  %4 = call ptr @"(*github.com/goplus/llgo/internal/abi.Type).StructType"(ptr %3)
-  ret ptr %4
-
-_llgo_01:                                         ; No predecessors!
 }
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %0, ptr %1) {
@@ -296,24 +186,6 @@ _llgo_0:
   %4 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %0, align 8
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %4
 }
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).ArrayType"(ptr)
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).Common"(ptr)
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).Elem"(ptr)
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).FuncType"(ptr)
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).InterfaceType"(ptr)
-
-declare i64 @"(*github.com/goplus/llgo/internal/abi.Type).Kind"(ptr)
-
-declare i64 @"(*github.com/goplus/llgo/internal/abi.Type).Len"(ptr)
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).MapType"(ptr)
-
-declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).StructType"(ptr)
 
 define ptr @"github.com/goplus/llgo/internal/runtime.basicType"(i64 %0) {
 _llgo_0:

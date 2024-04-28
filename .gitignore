@@ -8,6 +8,8 @@
 *.so
 *.dylib
 
+err.log
+
 _go/
 _runtime/
 _tinygo/

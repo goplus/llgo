@@ -137,6 +137,9 @@ type context struct {
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
+	if tn.IsAlias() { // don't need to compile alias type
+		return
+	}
 	tnName := tn.Name()
 	typ := tn.Type()
 	name := llssa.FullName(tn.Pkg(), tnName)
