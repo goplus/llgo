@@ -104,6 +104,9 @@ source_filename = "foo/bar"
 
 @a = external global {}
 `)
+	if prog.NeedRuntime() {
+		t.Fatal("NeedRuntime?")
+	}
 }
 
 func TestNamedStruct(t *testing.T) {
