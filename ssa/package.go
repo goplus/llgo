@@ -326,10 +326,6 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
-func (p Package) rtAbort() Expr {
-	return p.NewFunc("abort", types.NewSignatureType(nil, nil, nil, nil, nil, false)).Expr
-}
-
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
