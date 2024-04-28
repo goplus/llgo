@@ -8,8 +8,6 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 %"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, i1 (ptr, ptr), ptr, i32, i32 }
 %"github.com/goplus/llgo/internal/abi.Name" = type { ptr }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
-%"github.com/goplus/llgo/internal/runtime.String.0" = type { ptr, i64 }
-%"github.com/goplus/llgo/internal/runtime.Slice.1" = type { ptr, i64, i64 }
 
 @"github.com/goplus/llgo/internal/runtime.TyAny" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.basicTypes" = global ptr null
@@ -240,10 +238,10 @@ _llgo_0:
   ret %"github.com/goplus/llgo/internal/runtime.iface" %12
 }
 
-define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String.0" %0) {
+define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.String.0" %0, ptr %1, align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %0, ptr %1, align 8
   %2 = alloca %"github.com/goplus/llgo/internal/runtime.iface", align 8
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i32 0, i32 0
   %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
@@ -288,17 +286,17 @@ _llgo_0:
 
 declare ptr @malloc(i64)
 
-define %"github.com/goplus/llgo/internal/runtime.Slice.1" @"github.com/goplus/llgo/internal/runtime.NilSlice"() {
+define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NilSlice"() {
 _llgo_0:
-  %0 = alloca %"github.com/goplus/llgo/internal/runtime.Slice.1", align 8
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice.1", ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice.1", ptr %0, i32 0, i32 1
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice.1", ptr %0, i32 0, i32 2
+  %0 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %0, i32 0, i32 1
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %0, i32 0, i32 2
   store ptr null, ptr %1, align 8
   store i64 0, ptr %2, align 4
   store i64 0, ptr %3, align 4
-  %4 = load %"github.com/goplus/llgo/internal/runtime.Slice.1", ptr %0, align 8
-  ret %"github.com/goplus/llgo/internal/runtime.Slice.1" %4
+  %4 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %0, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.Slice" %4
 }
 
 declare ptr @"(*github.com/goplus/llgo/internal/abi.Type).ArrayType"(ptr)

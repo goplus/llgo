@@ -50,7 +50,7 @@ func GenFrom(fileOrPkg string) string {
 
 	prog := llssa.NewProgram(nil)
 	prog.SetRuntime(func() *types.Package {
-		rt, err := packages.Load(cfg, "github.com/goplus/llgo/internal/runtime")
+		rt, err := packages.Load(cfg, llssa.PkgRuntime)
 		check(err)
 		return rt[0].Types
 	})

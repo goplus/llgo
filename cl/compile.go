@@ -465,6 +465,9 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
+	if pkgPath == llssa.PkgRuntime {
+		prog.SetRuntime(pkgTypes)
+	}
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{

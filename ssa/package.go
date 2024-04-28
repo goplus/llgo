@@ -24,6 +24,10 @@ import (
 	"golang.org/x/tools/go/types/typeutil"
 )
 
+const (
+	PkgRuntime = "github.com/goplus/llgo/internal/runtime"
+)
+
 // -----------------------------------------------------------------------------
 
 type dbgFlags = int
@@ -94,7 +98,7 @@ type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
 
-	rt    *types.Scope
+	rt    *types.Package
 	rtget func() *types.Package
 
 	target *Target
@@ -140,19 +144,25 @@ func NewProgram(target *Target) Program {
 }
 
 // SetRuntime sets the runtime.
-func (p Program) SetRuntime(runtime func() *types.Package) {
-	p.rtget = runtime
+// Its type can be *types.Package or func() *types.Package.
+func (p Program) SetRuntime(runtime any) {
+	switch v := runtime.(type) {
+	case *types.Package:
+		p.rt = v
+	case func() *types.Package:
+		p.rtget = v
+	}
 }
 
-func (p Program) runtime() *types.Scope {
+func (p Program) runtime() *types.Package {
 	if p.rt == nil {
-		p.rt = p.rtget().Scope()
+		p.rt = p.rtget()
 	}
 	return p.rt
 }
 
 func (p Program) rtNamed(name string) *types.Named {
-	return p.runtime().Lookup(name).Type().(*types.Named)
+	return p.runtime().Scope().Lookup(name).Type().(*types.Named)
 }
 
 func (p Program) rtType(name string) Type {
@@ -312,7 +322,7 @@ func (p Package) rtAbort() Expr {
 }
 
 func (p Package) rtFunc(fnName string) Expr {
-	fn := p.prog.runtime().Lookup(fnName).(*types.Func)
+	fn := p.prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
 	return p.NewFunc(name, fn.Type().(*types.Signature)).Expr
 }
