@@ -16,8 +16,16 @@
 
 package runtime
 
+import (
+	"unsafe"
+)
+
 // Slice is the runtime representation of a slice.
-type Slice = slice
+type Slice struct {
+	array unsafe.Pointer
+	len   int
+	cap   int
+}
 
 // NilSlice returns a nil slice.
 func NilSlice() Slice {

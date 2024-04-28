@@ -13,7 +13,7 @@ type Foo struct {
 
 var format = [...]int8{'H', 'e', 'l', 'l', 'o', ' ', '%', 'd', '\n', 0}
 
-func (p *Foo) Print() {
+func (p Foo) Print() {
 	if p.ok {
 		printf(&format[0], p.A)
 	}

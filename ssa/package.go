@@ -187,7 +187,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// mod.Finalize()
 	fns := make(map[string]Function)
 	gbls := make(map[string]Global)
-	return &aPackage{mod, fns, gbls, p, nil}
+	return &aPackage{mod, fns, gbls, p}
 }
 
 // Void returns void type.
@@ -267,8 +267,6 @@ type aPackage struct {
 	fns  map[string]Function
 	vars map[string]Global
 	prog Program
-
-	abort Function
 }
 
 type Package = *aPackage
@@ -294,6 +292,9 @@ func (p Package) VarOf(name string) Global {
 
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
+	if v, ok := p.fns[name]; ok {
+		return v
+	}
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p, p.prog)
@@ -306,21 +307,14 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
-func (p Package) rtAbort() Function {
-	if p.abort == nil {
-		p.abort = p.NewFunc("abort", types.NewSignatureType(nil, nil, nil, nil, nil, false))
-	}
-	return p.abort
+func (p Package) rtAbort() Expr {
+	return p.NewFunc("abort", types.NewSignatureType(nil, nil, nil, nil, nil, false)).Expr
 }
 
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.prog.runtime().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
-	v, ok := p.fns[name]
-	if !ok {
-		v = p.NewFunc(name, fn.Type().(*types.Signature))
-	}
-	return v.Expr
+	return p.NewFunc(name, fn.Type().(*types.Signature)).Expr
 }
 
 // -----------------------------------------------------------------------------

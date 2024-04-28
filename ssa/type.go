@@ -123,6 +123,9 @@ func (p Program) Field(typ Type, i int) Type {
 }
 
 func (p Program) Type(typ types.Type) Type {
+	if sig, ok := typ.(*types.Signature); ok { // should methodToFunc
+		return p.llvmSignature(sig)
+	}
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
 	}
@@ -253,8 +256,6 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		return p.toLLVMStruct(t)
 	case *types.Named:
 		return p.toLLVMNamed(t)
-	case *types.Signature:
-		return p.toLLVMFunc(t)
 	case *types.Array:
 		elem := p.Type(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}

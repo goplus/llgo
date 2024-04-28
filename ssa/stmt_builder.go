@@ -74,7 +74,7 @@ func (b Builder) Panic(v Expr) {
 		log.Printf("Panic %v\n", v.impl)
 	}
 	pkg := b.fn.pkg
-	b.Call(pkg.rtAbort().Expr)
+	b.Call(pkg.rtAbort()) // TODO(xsw): pass v
 }
 
 // Return emits a return instruction.
