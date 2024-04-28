@@ -494,17 +494,35 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 		kind := und.Kind()
 		switch {
 		case kind >= types.Int && kind <= types.Uintptr:
-			ret.impl = b.impl.CreateIntCast(x.impl, t.ll, "castInt")
+			ret.impl = castInt(b.impl, x.impl, t.ll)
 			return
 		case kind == types.UnsafePointer:
-			ret.impl = b.impl.CreatePointerCast(x.impl, t.ll, "castPtr")
+			ret.impl = castPtr(b.impl, x.impl, t.ll)
 			return
 		}
 	case *types.Pointer:
-		ret.impl = b.impl.CreatePointerCast(x.impl, t.ll, "castPtr")
+		ret.impl = castPtr(b.impl, x.impl, t.ll)
 		return
 	}
 	panic("todo")
+}
+
+func castInt(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
+	xt := x.Type()
+	if xt.TypeKind() == llvm.PointerTypeKind {
+		return b.CreatePtrToInt(x, t, "ptr2int")
+	}
+	if xt.IntTypeWidth() <= t.IntTypeWidth() {
+		return b.CreateIntCast(x, t, "castInt")
+	}
+	return b.CreateTrunc(x, t, "truncInt")
+}
+
+func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
+	if x.Type().TypeKind() == llvm.PointerTypeKind {
+		return b.CreatePointerCast(x, t, "castPtr")
+	}
+	return b.CreateIntToPtr(x, t, "int2ptr")
 }
 
 // MakeInterface constructs an instance of an interface type from a

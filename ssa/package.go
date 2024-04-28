@@ -305,7 +305,7 @@ func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
-	t := p.prog.llvmSignature(sig)
+	t := p.prog.llvmSignature(sig, false)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p, p.prog)
 	p.fns[name] = ret
