@@ -410,11 +410,11 @@ func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 	prog := b.prog
 	telem := t.Elem()
 	if heap {
-		ret.impl = llvm.CreateAlloca(b.impl, prog.Type(telem).ll)
-	} else {
 		pkg := b.fn.pkg
 		size := unsafe.Sizeof(telem)
 		ret = b.Call(pkg.rtFunc("Alloc"), prog.Val(size))
+	} else {
+		ret.impl = llvm.CreateAlloca(b.impl, prog.Type(telem).ll)
 	}
 	// TODO(xsw): zero-initialize
 	ret.Type = prog.Type(t)
