@@ -20,20 +20,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/goplus/llgo/internal/llgen"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: llgen xxx.go [pkgPath]")
+		fmt.Fprintln(os.Stderr, "Usage: llgen <pkg> [pkgPath]")
 		return
 	}
 
 	inFile := os.Args[1]
 
 	dir, _ := filepath.Split(inFile)
-	outFile := dir + "out.ll"
+	fname := "llgo_autogen.ll"
+	if inCompilerDir(dir) {
+		fname = "out.ll"
+	}
+	outFile := dir + fname
 
 	llgen.Init()
 	if len(os.Args) >= 3 {
@@ -41,4 +46,9 @@ func main() {
 	} else {
 		llgen.DoFile(inFile, outFile)
 	}
+}
+
+func inCompilerDir(dir string) bool {
+	dir, _ = filepath.Abs(dir)
+	return strings.Contains(filepath.ToSlash(dir), "/llgo/cl/")
 }
