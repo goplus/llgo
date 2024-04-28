@@ -403,20 +403,21 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 //
 //	t0 = local int
 //	t1 = new int
-func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
+func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 	if debugInstr {
-		log.Printf("Alloc %v, %v\n", t.t, heap)
+		log.Printf("Alloc %v, %v\n", t, heap)
 	}
-	telem := b.prog.Elem(t)
+	prog := b.prog
+	telem := t.Elem()
 	if heap {
-		ret.impl = llvm.CreateAlloca(b.impl, telem.ll)
+		ret.impl = llvm.CreateAlloca(b.impl, prog.Type(telem).ll)
 	} else {
 		pkg := b.fn.pkg
-		size := unsafe.Sizeof(t.t)
-		ret = b.Call(pkg.rtFunc("Alloc"), b.prog.Val(size))
+		size := unsafe.Sizeof(telem)
+		ret = b.Call(pkg.rtFunc("Alloc"), prog.Val(size))
 	}
 	// TODO(xsw): zero-initialize
-	ret.Type = t
+	ret.Type = prog.Type(t)
 	return
 }
 
@@ -534,6 +535,9 @@ func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Exp
 		switch x.kind {
 		case vkSigned, vkUnsigned, vkFloat:
 			fn := pkg.rtFunc("MakeAnyInt")
+			return b.InlineCall(fn, x)
+		case vkString:
+			fn := pkg.rtFunc("MakeAnyString")
 			return b.InlineCall(fn, x)
 		}
 		panic("todo")

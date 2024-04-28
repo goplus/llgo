@@ -245,14 +245,12 @@ func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
 	return
 }
 
-func (p *context) checkVArgs(v *ssa.Alloc, t types.Type) bool {
+func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	if v.Comment == "varargs" { // this is a varargs allocation
-		if t, ok := t.(*types.Pointer); ok {
-			if arr, ok := t.Elem().(*types.Array); ok {
-				if isAny(arr.Elem()) {
-					p.vargs[v] = make([]llssa.Expr, arr.Len())
-					return true
-				}
+		if arr, ok := t.Elem().(*types.Array); ok {
+			if isAny(arr.Elem()) {
+				p.vargs[v] = make([]llssa.Expr, arr.Len())
+				return true
 			}
 		}
 	}
@@ -322,11 +320,11 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		}
 		panic("todo")
 	case *ssa.Alloc:
-		t := v.Type()
+		t := v.Type().(*types.Pointer)
 		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
 			return
 		}
-		ret = b.Alloc(p.prog.Type(t), v.Heap)
+		ret = b.Alloc(t, v.Heap)
 	case *ssa.MakeInterface:
 		const (
 			delayExpr = true // varargs: don't need to convert an expr to any

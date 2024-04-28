@@ -47,6 +47,7 @@ var (
 		abi.Float64:    basicType(abi.Float64),
 		abi.Complex64:  basicType(abi.Complex64),
 		abi.Complex128: basicType(abi.Complex128),
+		abi.String:     basicType(abi.String),
 	}
 )
 
@@ -68,6 +69,7 @@ var (
 		abi.Float64:    8,
 		abi.Complex64:  8,
 		abi.Complex128: 16,
+		abi.String:     unsafe.Sizeof(String{}),
 	}
 )
 
