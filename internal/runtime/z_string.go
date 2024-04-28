@@ -20,14 +20,18 @@ import (
 	"unsafe"
 )
 
-// Slice is the runtime representation of a slice.
-type Slice struct {
-	array unsafe.Pointer
-	len   int
-	cap   int
+// String is the runtime representation of a string.
+// It cannot be used safely or portably and its representation may
+// change in a later release.
+//
+// Unlike reflect.StringHeader, its Data field is sufficient to guarantee the
+// data it references will not be garbage collected.
+type String struct {
+	data unsafe.Pointer
+	len  int
 }
 
-// NilSlice returns a nil slice.
-func NilSlice() Slice {
-	return Slice{nil, 0, 0}
+// EmptyString returns an empty string.
+func EmptyString() String {
+	return String{nil, 0}
 }

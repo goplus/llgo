@@ -16,18 +16,16 @@
 
 package runtime
 
-import (
-	"unsafe"
+import "unsafe"
+
+const (
+	LLGoPackage = true
 )
 
-// Slice is the runtime representation of a slice.
-type Slice struct {
-	array unsafe.Pointer
-	len   int
-	cap   int
-}
+//go:linkname Malloc C.malloc
+func Malloc(size uintptr) unsafe.Pointer
 
-// NilSlice returns a nil slice.
-func NilSlice() Slice {
-	return Slice{nil, 0, 0}
+// Alloc allocates memory.
+func Alloc(size uintptr) unsafe.Pointer {
+	return Malloc(size)
 }

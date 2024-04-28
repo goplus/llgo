@@ -39,6 +39,7 @@ const (
 	vkComplex
 	vkString
 	vkBool
+	vkPtr
 	vkFunc
 	vkTuple
 	vkDelayExpr = -1
@@ -122,6 +123,9 @@ func (p Program) Field(typ Type, i int) Type {
 }
 
 func (p Program) Type(typ types.Type) Type {
+	if sig, ok := typ.(*types.Signature); ok { // should methodToFunc
+		return p.llvmSignature(sig)
+	}
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
 	}
@@ -236,12 +240,13 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		case types.Complex64:
 		case types.Complex128:
 		case types.String:
+			return &aType{p.rtString(), typ, vkString}
 		case types.UnsafePointer:
-			return &aType{p.tyVoidPtr(), typ, vkInvalid}
+			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
 		elem := p.Type(t.Elem())
-		return &aType{llvm.PointerType(elem.ll, 0), typ, vkInvalid}
+		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
 		return &aType{p.rtIface(), typ, vkInvalid}
 	case *types.Slice:
@@ -251,8 +256,6 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		return p.toLLVMStruct(t)
 	case *types.Named:
 		return p.toLLVMNamed(t)
-	case *types.Signature:
-		return p.toLLVMFunc(t)
 	case *types.Array:
 		elem := p.Type(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}

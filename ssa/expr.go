@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -76,10 +77,26 @@ func llvmValues(vals []Expr) []llvm.Value {
 
 // -----------------------------------------------------------------------------
 
+// Null returns a null constant expression.
 func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
+// CStringVal returns a c-style string constant expression.
+func (p Program) CStringVal(v string) Expr {
+	t := p.CString()
+	return Expr{llvm.ConstString(v, true), t}
+}
+
+// StringVal returns string constant expression.
+func (p Program) StringVal(v string) Expr {
+	t := p.String()
+	cstr := llvm.ConstString(v, true)
+	// TODO(xsw): cstr => gostring
+	return Expr{cstr, t}
+}
+
+// BoolVal returns a boolean constant expression.
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
 	var bv uint64
@@ -90,15 +107,19 @@ func (p Program) BoolVal(v bool) Expr {
 	return Expr{ret, t}
 }
 
+// IntVal returns an integer constant expression.
 func (p Program) IntVal(v uint64, t Type) Expr {
 	ret := llvm.ConstInt(t.ll, v, false)
 	return Expr{ret, t}
 }
 
+// Val returns a constant expression.
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
 	case int:
 		return p.IntVal(uint64(v), p.Int())
+	case uintptr:
+		return p.IntVal(uint64(v), p.Uintptr())
 	case bool:
 		return p.BoolVal(v)
 	case float64:
@@ -109,17 +130,24 @@ func (p Program) Val(v interface{}) Expr {
 	panic("todo")
 }
 
+// Const returns a constant expression.
 func (b Builder) Const(v constant.Value, typ Type) Expr {
+	prog := b.prog
+	if v == nil {
+		return prog.Null(typ)
+	}
 	switch t := typ.t.(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
 		case kind == types.Bool:
-			return b.prog.BoolVal(constant.BoolVal(v))
+			return prog.BoolVal(constant.BoolVal(v))
 		case kind >= types.Int && kind <= types.Uintptr:
 			if v, exact := constant.Uint64Val(v); exact {
-				return b.prog.IntVal(v, typ)
+				return prog.IntVal(v, typ)
 			}
+		case kind == types.String:
+			return prog.StringVal(constant.StringVal(v))
 		}
 	}
 	panic("todo")
@@ -255,7 +283,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkSigned:
 			pred := intPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
-		case vkUnsigned:
+		case vkUnsigned, vkPtr:
 			pred := uintPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkFloat:
@@ -375,18 +403,21 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 //
 //	t0 = local int
 //	t1 = new int
-func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
+func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 	if debugInstr {
-		log.Printf("Alloc %v, %v\n", t.t, heap)
+		log.Printf("Alloc %v, %v\n", t, heap)
 	}
-	telem := b.prog.Elem(t)
+	prog := b.prog
+	telem := t.Elem()
 	if heap {
-		ret.impl = llvm.CreateAlloca(b.impl, telem.ll)
+		pkg := b.fn.pkg
+		size := unsafe.Sizeof(telem)
+		ret = b.Call(pkg.rtFunc("Alloc"), prog.Val(size))
 	} else {
-		panic("todo")
+		ret.impl = llvm.CreateAlloca(b.impl, prog.Type(telem).ll)
 	}
-	// TODO: zero-initialize
-	ret.Type = t
+	// TODO(xsw): zero-initialize
+	ret.Type = prog.Type(t)
 	return
 }
 
@@ -410,9 +441,6 @@ func (b Builder) Alloc(t Type, heap bool) (ret Expr) {
 // types in the type set of X.Type() have a value-preserving type
 // change to all types in the type set of Type().
 //
-// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
-// from an explicit conversion in the source.
-//
 // Example printed form:
 //
 //	t1 = changetype *int <- IntPtr (t0)
@@ -422,9 +450,58 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	}
 	typ := t.t
 	switch typ.(type) {
+	default:
+		ret.impl = b.impl.CreateBitCast(x.impl, t.ll, "bitCast")
+		ret.Type = b.prog.Type(typ)
+		return
+	}
+}
+
+// The Convert instruction yields the conversion of value X to type
+// Type().  One or both of those types is basic (but possibly named).
+//
+// A conversion may change the value and representation of its operand.
+// Conversions are permitted:
+//   - between real numeric types.
+//   - between complex numeric types.
+//   - between string and []byte or []rune.
+//   - between pointers and unsafe.Pointer.
+//   - between unsafe.Pointer and uintptr.
+//   - from (Unicode) integer to (UTF-8) string.
+//
+// A conversion may imply a type name change also.
+//
+// Conversions may to be to or from a type parameter. All types in
+// the type set of X.Type() can be converted to all types in the type
+// set of Type().
+//
+// This operation cannot fail dynamically.
+//
+// Conversions of untyped string/number/bool constants to a specific
+// representation are eliminated during SSA construction.
+//
+// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
+// from an explicit conversion in the source.
+//
+// Example printed form:
+//
+//	t1 = convert []byte <- string (t0)
+func (b Builder) Convert(t Type, x Expr) (ret Expr) {
+	typ := t.t
+	ret.Type = b.prog.Type(typ)
+	switch und := typ.Underlying().(type) {
+	case *types.Basic:
+		kind := und.Kind()
+		switch {
+		case kind >= types.Int && kind <= types.Uintptr:
+			ret.impl = b.impl.CreateIntCast(x.impl, t.ll, "castInt")
+			return
+		case kind == types.UnsafePointer:
+			ret.impl = b.impl.CreatePointerCast(x.impl, t.ll, "castPtr")
+			return
+		}
 	case *types.Pointer:
 		ret.impl = b.impl.CreatePointerCast(x.impl, t.ll, "castPtr")
-		ret.Type = b.prog.Type(typ)
 		return
 	}
 	panic("todo")
@@ -458,6 +535,9 @@ func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Exp
 		switch x.kind {
 		case vkSigned, vkUnsigned, vkFloat:
 			fn := pkg.rtFunc("MakeAnyInt")
+			return b.InlineCall(fn, x)
+		case vkString:
+			fn := pkg.rtFunc("MakeAnyString")
 			return b.InlineCall(fn, x)
 		}
 		panic("todo")
@@ -534,6 +614,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 
 // -----------------------------------------------------------------------------
 
+// TODO(xsw): make inline call
 func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
 }

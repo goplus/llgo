@@ -35,11 +35,11 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
-func GenFromFile(inFile string) string {
+func GenFrom(fileOrPkg string) string {
 	cfg := &packages.Config{
 		Mode: loadSyntax,
 	}
-	initial, err := packages.Load(cfg, inFile)
+	initial, err := packages.Load(cfg, fileOrPkg)
 	check(err)
 
 	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions)
@@ -61,8 +61,8 @@ func GenFromFile(inFile string) string {
 	return ret.String()
 }
 
-func DoFile(inFile, outFile string) {
-	ret := GenFromFile(inFile)
+func DoFile(fileOrPkg, outFile string) {
+	ret := GenFrom(fileOrPkg)
 	err := os.WriteFile(outFile, []byte(ret), 0644)
 	check(err)
 }

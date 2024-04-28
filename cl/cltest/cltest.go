@@ -63,6 +63,17 @@ func FromDir(t *testing.T, sel, relDir string, byLLGen bool) {
 	}
 }
 
+func Pkg(t *testing.T, pkgPath, outFile string) {
+	b, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatal("ReadFile failed:", err)
+	}
+	expected := string(b)
+	if v := llgen.GenFrom(pkgPath); v != expected {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+	}
+}
+
 func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
@@ -76,7 +87,7 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	}
 	expected := string(b)
 	if byLLGen {
-		if v := llgen.GenFromFile(in); v != expected {
+		if v := llgen.GenFrom(in); v != expected {
 			t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 		}
 	} else {

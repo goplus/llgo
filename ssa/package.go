@@ -110,14 +110,18 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
-	rtIfaceTy llvm.Type
-	rtSliceTy llvm.Type
+	rtStringTy llvm.Type
+	rtIfaceTy  llvm.Type
+	rtSliceTy  llvm.Type
 
-	anyTy  Type
-	voidTy Type
-	boolTy Type
-	intTy  Type
-	f64Ty  Type
+	anyTy     Type
+	voidTy    Type
+	boolTy    Type
+	cstrTy    Type
+	stringTy  Type
+	uintptrTy Type
+	intTy     Type
+	f64Ty     Type
 }
 
 // A Program presents a program.
@@ -169,6 +173,13 @@ func (p Program) rtSlice() llvm.Type {
 	return p.rtSliceTy
 }
 
+func (p Program) rtString() llvm.Type {
+	if p.rtStringTy.IsNil() {
+		p.rtStringTy = p.rtType("String").ll
+	}
+	return p.rtStringTy
+}
+
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
@@ -195,6 +206,20 @@ func (p Program) Bool() Type {
 	return p.boolTy
 }
 
+func (p Program) CString() Type {
+	if p.cstrTy == nil { // *int8
+		p.cstrTy = p.Type(types.NewPointer(types.Typ[types.Int8]))
+	}
+	return p.cstrTy
+}
+
+func (p Program) String() Type {
+	if p.stringTy == nil {
+		p.stringTy = p.Type(types.Typ[types.String])
+	}
+	return p.stringTy
+}
+
 // Any returns any type.
 func (p Program) Any() Type {
 	if p.anyTy == nil {
@@ -209,6 +234,14 @@ func (p Program) Int() Type {
 		p.intTy = p.Type(types.Typ[types.Int])
 	}
 	return p.intTy
+}
+
+// Uintptr returns uintptr type.
+func (p Program) Uintptr() Type {
+	if p.uintptrTy == nil {
+		p.uintptrTy = p.Type(types.Typ[types.Uintptr])
+	}
+	return p.uintptrTy
 }
 
 // Float64 returns float64 type.
@@ -259,6 +292,9 @@ func (p Package) VarOf(name string) Global {
 
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature) Function {
+	if v, ok := p.fns[name]; ok {
+		return v
+	}
 	t := p.prog.llvmSignature(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p, p.prog)
@@ -271,14 +307,14 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
+func (p Package) rtAbort() Expr {
+	return p.NewFunc("abort", types.NewSignatureType(nil, nil, nil, nil, nil, false)).Expr
+}
+
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.prog.runtime().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
-	v, ok := p.fns[name]
-	if !ok {
-		v = p.NewFunc(name, fn.Type().(*types.Signature))
-	}
-	return v.Expr
+	return p.NewFunc(name, fn.Type().(*types.Signature)).Expr
 }
 
 // -----------------------------------------------------------------------------

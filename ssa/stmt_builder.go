@@ -68,6 +68,15 @@ func (b Builder) SetBlock(blk BasicBlock) Builder {
 	return b
 }
 
+// Panic emits a panic instruction.
+func (b Builder) Panic(v Expr) {
+	if debugInstr {
+		log.Printf("Panic %v\n", v.impl)
+	}
+	pkg := b.fn.pkg
+	b.Call(pkg.rtAbort()) // TODO(xsw): pass v
+}
+
 // Return emits a return instruction.
 func (b Builder) Return(results ...Expr) {
 	if debugInstr {

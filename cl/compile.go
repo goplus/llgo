@@ -245,14 +245,12 @@ func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
 	return
 }
 
-func (p *context) checkVArgs(v *ssa.Alloc, t types.Type) bool {
+func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	if v.Comment == "varargs" { // this is a varargs allocation
-		if t, ok := t.(*types.Pointer); ok {
-			if arr, ok := t.Elem().(*types.Array); ok {
-				if isAny(arr.Elem()) {
-					p.vargs[v] = make([]llssa.Expr, arr.Len())
-					return true
-				}
+		if arr, ok := t.Elem().(*types.Array); ok {
+			if isAny(arr.Elem()) {
+				p.vargs[v] = make([]llssa.Expr, arr.Len())
+				return true
 			}
 		}
 	}
@@ -300,6 +298,10 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.ChangeType(p.prog.Type(t), x)
+	case *ssa.Convert:
+		t := v.Type()
+		x := p.compileValue(b, v.X)
+		ret = b.Convert(p.prog.Type(t), x)
 	case *ssa.FieldAddr:
 		x := p.compileValue(b, v.X)
 		ret = b.FieldAddr(x, v.Field)
@@ -318,11 +320,11 @@ func (p *context) compileInstrAndValue(b llssa.Builder, iv instrAndValue) (ret l
 		}
 		panic("todo")
 	case *ssa.Alloc:
-		t := v.Type()
+		t := v.Type().(*types.Pointer)
 		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
 			return
 		}
-		ret = b.Alloc(p.prog.Type(t), v.Heap)
+		ret = b.Alloc(t, v.Heap)
 	case *ssa.MakeInterface:
 		const (
 			delayExpr = true // varargs: don't need to convert an expr to any
@@ -383,6 +385,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		thenb := fn.Block(succs[0].Index)
 		elseb := fn.Block(succs[1].Index)
 		b.If(cond, thenb, elseb)
+	case *ssa.Panic:
+		arg := p.compileValue(b, v.X).Do()
+		b.Panic(arg)
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
