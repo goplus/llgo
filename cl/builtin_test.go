@@ -24,6 +24,21 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestIsAny(t *testing.T) {
+	if isAny(types.Typ[types.UntypedInt]) {
+		t.Fatal("isAny?")
+	}
+}
+
+func TestIntVal(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("intVal: no error?")
+		}
+	}()
+	intVal(&ssa.Parameter{})
+}
+
 func TestIgnoreName(t *testing.T) {
 	if !ignoreName("runtime.foo") || !ignoreName("runtime/foo") || !ignoreName("internal/abi") {
 		t.Fatal("ignoreName failed")
