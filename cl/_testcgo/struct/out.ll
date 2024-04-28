@@ -15,10 +15,9 @@ _llgo_0:
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = alloca %main.Foo, align 8
-  %5 = getelementptr inbounds %main.Foo, ptr %4, i32 0, i32 0
-  %6 = load i32, ptr %5, align 4
-  call void (ptr, ...) @printf(ptr @main.format, i32 %6)
+  %4 = getelementptr inbounds %main.Foo, ptr %1, i32 0, i32 0
+  %5 = load i32, ptr %4, align 4
+  call void (ptr, ...) @printf(ptr @main.format, i32 %5)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
