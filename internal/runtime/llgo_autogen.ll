@@ -78,7 +78,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   %10 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"([21 x i8] c"I2Int: type mismatch\00")
-  call void @abort()
+  unreachable
 }
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %0, ptr %1) {
@@ -266,7 +266,5 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
-
-declare void @abort()
 
 declare void @"github.com/goplus/llgo/internal/abi.init"()

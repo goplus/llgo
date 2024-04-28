@@ -73,8 +73,7 @@ func (b Builder) Panic(v Expr) {
 	if debugInstr {
 		log.Printf("Panic %v\n", v.impl)
 	}
-	pkg := b.fn.pkg
-	b.Call(pkg.rtAbort()) // TODO(xsw): pass v
+	b.impl.CreateUnreachable() // TODO(xsw): pass v
 }
 
 // Return emits a return instruction.
