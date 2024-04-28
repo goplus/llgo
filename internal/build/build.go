@@ -132,6 +132,14 @@ func Do(args []string, conf *Config) {
 	}
 }
 
+func setNeedRuntime(pkg *packages.Package) {
+	pkg.Module = nil // just use pkg.Module to mark it needs runtime
+}
+
+func isNeedRuntime(pkg *packages.Package) bool {
+	return pkg.Module == nil
+}
+
 func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) {
 	// Create SSA-form program representation.
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
@@ -141,6 +149,9 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	}
 	for _, pkg := range pkgs {
 		buildPkg(prog, pkg, mode, verbose)
+		if prog.NeedRuntime() {
+			setNeedRuntime(pkg.Package)
+		}
 	}
 }
 
@@ -156,14 +167,18 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
-	if runtimeFiles != nil {
-		args = append(args, runtimeFiles...)
-	}
+	needRuntime := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.PkgPath != "unsafe" { // TODO(xsw): maybe can remove this special case
 			args = append(args, p.ExportFile+".ll")
+			if !needRuntime {
+				needRuntime = isNeedRuntime(p)
+			}
 		}
 	})
+	if needRuntime && runtimeFiles != nil {
+		args = append(args, runtimeFiles...)
+	}
 
 	// TODO(xsw): show work
 	// fmt.Fprintln(os.Stderr, "clang", args)
