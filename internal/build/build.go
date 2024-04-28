@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -99,6 +98,20 @@ func Do(args []string, conf *Config) {
 	initial, err := packages.Load(cfg, patterns...)
 	check(err)
 
+	mode := conf.Mode
+	if len(initial) == 1 && len(initial[0].CompiledGoFiles) > 0 {
+		if mode == ModeBuild {
+			mode = ModeInstall
+		}
+	} else if mode == ModeRun {
+		if len(initial) > 1 {
+			fmt.Fprintln(os.Stderr, "cannot run multiple packages")
+		} else {
+			fmt.Fprintln(os.Stderr, "no Go files in matched packages")
+		}
+		return
+	}
+
 	llssa.Initialize(llssa.InitAll)
 	if verbose {
 		llssa.SetDebug(llssa.DbgFlagAll)
@@ -113,10 +126,6 @@ func Do(args []string, conf *Config) {
 		return rt[0].Types
 	})
 
-	mode := conf.Mode
-	if mode == ModeBuild && len(initial) == 1 {
-		mode = ModeInstall
-	}
 	buildAllPkgs(prog, initial, mode, verbose)
 
 	var runtimeFiles []string
@@ -124,20 +133,25 @@ func Do(args []string, conf *Config) {
 		runtimeFiles = allLinkFiles(rt)
 	}
 	if mode != ModeBuild {
+		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				linkMainPkg(pkg, runtimeFiles, conf, mode, verbose)
+				nErr += linkMainPkg(pkg, runtimeFiles, conf, mode, verbose)
 			}
+		}
+		if nErr > 0 {
+			fmt.Fprintf(os.Stderr, "%d errors occurred\n", nErr)
+			os.Exit(1)
 		}
 	}
 }
 
 func setNeedRuntime(pkg *packages.Package) {
-	pkg.Module = nil // just use pkg.Module to mark it needs runtime
+	pkg.ID = "" // just use pkg.Module to mark it needs runtime
 }
 
 func isNeedRuntime(pkg *packages.Package) bool {
-	return pkg.Module == nil
+	return pkg.ID == ""
 }
 
 func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) {
@@ -145,7 +159,7 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
 	for _, errPkg := range errPkgs {
-		log.Println("cannot build SSA for package", errPkg)
+		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	for _, pkg := range pkgs {
 		buildPkg(prog, pkg, mode, verbose)
@@ -155,7 +169,7 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	}
 }
 
-func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mode Mode, verbose bool) {
+func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -180,11 +194,17 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 		args = append(args, runtimeFiles...)
 	}
 
-	// TODO(xsw): show work
-	// fmt.Fprintln(os.Stderr, "clang", args)
-	if verbose {
+	if verbose || mode != ModeRun {
 		fmt.Fprintln(os.Stderr, "#", pkgPath)
 	}
+	defer func() {
+		if e := recover(); e != nil {
+			nErr = 1
+		}
+	}()
+
+	// TODO(xsw): show work
+	// fmt.Fprintln(os.Stderr, "clang", args)
 	err := clang.New("").Exec(args...)
 	check(err)
 
@@ -195,6 +215,7 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 		cmd.Stderr = os.Stderr
 		cmd.Run()
 	}
+	return
 }
 
 func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode, verbose bool) {
