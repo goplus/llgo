@@ -577,8 +577,8 @@ _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %0, i32 0, i32 6
   %2 = load i8, ptr %1, align 1
   %3 = and i8 %2, 31
-  %castInt = sext i8 %3 to i64
-  ret i64 %castInt
+  %4 = sext i8 %3 to i64
+  ret i64 %4
 }
 
 define i64 @"(*github.com/goplus/llgo/internal/abi.Type).Len"(ptr %0) {
