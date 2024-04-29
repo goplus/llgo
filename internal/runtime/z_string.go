@@ -20,6 +20,8 @@ import (
 	"unsafe"
 )
 
+// -----------------------------------------------------------------------------
+
 // String is the runtime representation of a string.
 // It cannot be used safely or portably and its representation may
 // change in a later release.
@@ -35,3 +37,5 @@ type String struct {
 func EmptyString() String {
 	return String{nil, 0}
 }
+
+// -----------------------------------------------------------------------------

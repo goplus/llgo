@@ -22,13 +22,17 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
-type Interface = iface
+// -----------------------------------------------------------------------------
 
 type InterfaceType = abi.InterfaceType
 
 var (
 	TyAny = &InterfaceType{}
 )
+
+// -----------------------------------------------------------------------------
+
+type Interface = iface
 
 func MakeAnyInt(typ *Type, data uintptr) Interface {
 	return Interface{
@@ -71,3 +75,5 @@ func CheckI2Int(v Interface, t *Type) (uintptr, bool) {
 	}
 	return 0, false
 }
+
+// -----------------------------------------------------------------------------

@@ -22,6 +22,8 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
+// -----------------------------------------------------------------------------
+
 type Kind = abi.Kind
 type Type = abi.Type
 
@@ -79,3 +81,5 @@ func basicType(kind abi.Kind) *Type {
 		Kind_: uint8(kind),
 	}
 }
+
+// -----------------------------------------------------------------------------

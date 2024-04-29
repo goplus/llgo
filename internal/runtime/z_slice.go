@@ -20,6 +20,8 @@ import (
 	"unsafe"
 )
 
+// -----------------------------------------------------------------------------
+
 // Slice is the runtime representation of a slice.
 type Slice struct {
 	array unsafe.Pointer
@@ -31,3 +33,5 @@ type Slice struct {
 func NilSlice() Slice {
 	return Slice{nil, 0, 0}
 }
+
+// -----------------------------------------------------------------------------

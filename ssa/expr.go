@@ -569,17 +569,24 @@ func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Exp
 	if debugInstr {
 		log.Printf("MakeInterface %v, %v\n", inter, x.impl)
 	}
-	t := inter.Underlying().(*types.Interface)
-	isAny := t.Empty()
+	tiund := inter.Underlying().(*types.Interface)
+	isAny := tiund.Empty()
 	fnDo := func() Expr {
+		prog := b.Prog
 		pkg := b.fn.pkg
-		switch x.kind {
-		case vkSigned, vkUnsigned, vkFloat:
-			fn := pkg.rtFunc("MakeAnyInt")
-			return b.InlineCall(fn, x)
-		case vkString:
-			fn := pkg.rtFunc("MakeAnyString")
-			return b.InlineCall(fn, x)
+		tinter := prog.Type(inter)
+		switch tx := x.t.Underlying().(type) {
+		case *types.Basic:
+			kind := tx.Kind()
+			switch {
+			case kind >= types.Int && kind <= types.Uintptr:
+				t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+				tptr := prog.Uintptr()
+				vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
+				return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+			case kind == types.String:
+				return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
+			}
 		}
 		panic("todo")
 	}
