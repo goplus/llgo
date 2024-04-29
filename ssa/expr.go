@@ -420,6 +420,28 @@ func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 	return
 }
 
+// Alloca allocates space for n bytes.
+func (b Builder) Alloca(n Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("Alloca %v\n", n.impl)
+	}
+	prog := b.Prog
+	telem := prog.tyInt8()
+	ret.impl = llvm.CreateArrayAlloca(b.impl, telem, n.impl)
+	ret.Type = &aType{prog.tyVoidPtr(), types.Typ[types.UnsafePointer], vkPtr}
+	return
+}
+
+// ArrayAlloca reserves space for an array of n elements of type telem.
+func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("ArrayAlloca %v, %v\n", telem.t, n.impl)
+	}
+	ret.impl = llvm.CreateArrayAlloca(b.impl, telem.ll, n.impl)
+	ret.Type = b.Prog.Pointer(telem)
+	return
+}
+
 // The ChangeType instruction applies to X a value-preserving type
 // change to Type().
 //

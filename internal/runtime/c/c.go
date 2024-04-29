@@ -16,6 +16,7 @@
 
 package c
 
+import "C"
 import "unsafe"
 
 const (
@@ -38,4 +39,4 @@ func Malloc(size uintptr) unsafe.Pointer
 func Memcpy(dst, src unsafe.Pointer, n uintptr) unsafe.Pointer
 
 //go:linkname Printf C.printf
-func Printf(format *int8, __llgo_va_list ...any)
+func Printf(format *int8, __llgo_va_list ...any) C.int

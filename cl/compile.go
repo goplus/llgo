@@ -282,6 +282,14 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+func (p *context) alloca(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		n := p.compileValue(b, args[0])
+		return b.Alloca(n)
+	}
+	panic("alloca(size uintptr): invalid arguments")
+}
+
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	if asValue {
 		if v, ok := p.bvals[iv]; ok {
@@ -319,6 +327,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = b.Call(fn.Expr, args...)
 			case llgoCstr:
 				ret = cstr(b, call.Args)
+			case llgoAlloca:
+				ret = p.alloca(b, call.Args)
 			default:
 				panic("todo")
 			}
