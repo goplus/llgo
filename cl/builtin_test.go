@@ -17,6 +17,7 @@
 package cl
 
 import (
+	"go/constant"
 	"go/types"
 	"testing"
 
@@ -41,6 +42,21 @@ func TestPkgKind(t *testing.T) {
 	}
 	if v := pkgKind(""); v != PkgLLGo {
 		t.Fatal("pkgKind:", v)
+	}
+}
+
+func TestPkgKindOf(t *testing.T) {
+	if v := PkgKindOf(types.Unsafe); v != PkgDeclOnly {
+		t.Fatal("PkgKindOf unsafe:", v)
+	}
+	pkg := types.NewPackage("foo", "foo")
+	pkg.Scope().Insert(
+		types.NewConst(
+			0, pkg, "LLGoPackage", types.Typ[types.String],
+			constant.MakeString("noinit")),
+	)
+	if v := PkgKindOf(pkg); v != PkgNoInit {
+		t.Fatal("PkgKindOf foo:", v)
 	}
 }
 
