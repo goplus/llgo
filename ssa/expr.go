@@ -107,6 +107,11 @@ func (p Program) IntVal(v uint64, t Type) Expr {
 	return Expr{ret, t}
 }
 
+func (p Program) FloatVal(v float64, t Type) Expr {
+	ret := llvm.ConstFloat(t.ll, v)
+	return Expr{ret, t}
+}
+
 // Val returns a constant expression.
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
@@ -130,7 +135,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	if v == nil {
 		return prog.Null(typ)
 	}
-	switch t := typ.t.(type) {
+	switch t := types.Default(typ.t).(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
@@ -139,6 +144,10 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		case kind >= types.Int && kind <= types.Uintptr:
 			if v, exact := constant.Uint64Val(v); exact {
 				return prog.IntVal(v, typ)
+			}
+		case kind == types.Float32 || kind == types.Float64:
+			if v, exact := constant.Float64Val(v); exact {
+				return prog.FloatVal(v, typ)
 			}
 		case kind == types.String:
 			return prog.StringVal(constant.StringVal(v))
