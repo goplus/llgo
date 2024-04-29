@@ -335,9 +335,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				panic("todo")
 			}
 		default:
-			fn := p.compileValue(b, cv)
-			args := p.compileValues(b, call.Args, kind)
-			ret = b.Call(fn, args...)
+			panic("todo")
+			/*
+				fn := p.compileValue(b, cv)
+				args := p.compileValues(b, call.Args, kind)
+				ret = b.Call(fn, args...)
+			*/
 		}
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
@@ -458,11 +461,14 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		fn, ftype := p.funcOf(v)
-		if ftype >= llgoInstrBase {
-			panic("can't use llgo instruction as a value")
-		}
-		return fn.Expr
+		panic("unreachable")
+		/*
+			fn, ftype := p.funcOf(v)
+			if ftype >= llgoInstrBase {
+				panic("can't use llgo instruction as a value")
+			}
+			return fn.Expr
+		*/
 	case *ssa.Global:
 		g := p.varOf(v)
 		return g.Expr
