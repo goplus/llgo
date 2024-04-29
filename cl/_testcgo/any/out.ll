@@ -30,9 +30,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @main() {
 _llgo_0:
   call void @main.init()
-  %0 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(i64 100)
-  %1 = call i64 @main.incVal(%"github.com/goplus/llgo/internal/runtime.iface" %0)
-  %2 = call i32 (ptr, ...) @printf(ptr @0, i64 %1)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %1 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %0, i64 100)
+  %2 = call i64 @main.incVal(%"github.com/goplus/llgo/internal/runtime.iface" %1)
+  %3 = call i32 (ptr, ...) @printf(ptr @0, i64 %2)
   ret void
 }
 
