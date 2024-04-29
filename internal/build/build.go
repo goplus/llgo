@@ -183,7 +183,7 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 	args[2] = "-Wno-override-module"
 	needRuntime := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
-		if p.PkgPath != "unsafe" { // TODO(xsw): maybe can remove this special case
+		if p.ExportFile != "" { // skip packages that only contain declarations
 			args = append(args, p.ExportFile+".ll")
 			if !needRuntime {
 				needRuntime = isNeedRuntime(p)
@@ -220,6 +220,12 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 
 func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode, verbose bool) {
 	pkg := aPkg.Package
+	if cl.PkgKindOf(pkg.Types) == cl.PkgDeclOnly {
+		// skip packages that only contain declarations
+		// and set no export file
+		pkg.ExportFile = ""
+		return
+	}
 	pkgPath := pkg.PkgPath
 	if verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
@@ -320,12 +326,19 @@ func allLinkFiles(rt []*packages.Package) (outFiles []string) {
 	outFiles = make([]string, 0, len(rt))
 	root := rootLLGo(rt[0])
 	packages.Visit(rt, nil, func(p *packages.Package) {
-		if isPkgInLLGo(p.PkgPath) {
+		if hasLinkFile(p) {
 			outFile := filepath.Join(root+p.PkgPath[len(llgoModPath):], "llgo_autogen.ll")
 			outFiles = append(outFiles, outFile)
 		}
 	})
 	return
+}
+
+func hasLinkFile(pkg *packages.Package) bool {
+	if isPkgInLLGo(pkg.PkgPath) {
+		return cl.PkgKindOf(pkg.Types) != cl.PkgDeclOnly
+	}
+	return false
 }
 
 // TODO(xsw): llgo root dir

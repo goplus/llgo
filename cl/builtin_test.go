@@ -36,10 +36,10 @@ func TestPkgNoInit(t *testing.T) {
 }
 
 func TestPkgKind(t *testing.T) {
-	if v := pkgKind("noinit"); v != pkgNoInit {
+	if v := pkgKind("noinit"); v != PkgNoInit {
 		t.Fatal("pkgKind:", v)
 	}
-	if v := pkgKind(""); v != pkgNormal {
+	if v := pkgKind(""); v != PkgLLGo {
 		t.Fatal("pkgKind:", v)
 	}
 }

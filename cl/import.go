@@ -44,27 +44,45 @@ func contentOf(m contentMap, file string) (lines contentLines, err error) {
 	return
 }
 
+// PkgKindOf returns the kind of a package.
+func PkgKindOf(pkg *types.Package) int {
+	scope := pkg.Scope()
+	kind := pkgKindByScope(scope)
+	if kind == PkgNormal {
+		kind = pkgKindByPath(pkg.Path())
+	}
+	return kind
+}
+
 // decl: a package that only contains declarations
 // noinit: a package that does not need to be initialized
 func pkgKind(v string) int {
 	switch v {
 	case "decl":
-		return pkgDeclOnly
+		return PkgDeclOnly
 	case "noinit":
-		return pkgNoInit
+		return PkgNoInit
 	}
-	return pkgNormal
+	return PkgLLGo
+}
+
+func pkgKindByScope(scope *types.Scope) int {
+	if v, ok := scope.Lookup("LLGoPackage").(*types.Const); ok {
+		if v := v.Val(); v.Kind() == constant.String {
+			return pkgKind(constant.StringVal(v))
+		}
+		return PkgLLGo
+	}
+	return PkgNormal
 }
 
 func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	scope := pkg.Scope()
-	llpkg, ok := scope.Lookup("LLGoPackage").(*types.Const)
-	if !ok {
+	kind := pkgKindByScope(scope)
+	if kind == PkgNormal {
 		return
 	}
-	if v := llpkg.Val(); v.Kind() == constant.String {
-		i.kind = pkgKind(constant.StringVal(v))
-	}
+	i.kind = kind
 	fset := p.fset
 	names := scope.Names()
 	contents := make(contentMap)
@@ -199,8 +217,8 @@ func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
 
 func pkgKindByPath(pkgPath string) int {
 	switch pkgPath {
-	case "syscall", "runtime/cgo":
-		return pkgNoInit
+	case "syscall", "runtime/cgo", "unsafe":
+		return PkgDeclOnly
 	}
-	return pkgNormal
+	return PkgNormal
 }

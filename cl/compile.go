@@ -82,7 +82,7 @@ func (p *context) funcKind(vfn ssa.Value) int {
 func (p *context) pkgNoInit(pkg *types.Package) bool {
 	p.ensureLoaded(pkg)
 	if i, ok := p.loaded[pkg]; ok {
-		return i.kind != pkgNormal
+		return i.kind >= PkgNoInit
 	}
 	return false
 }
@@ -119,9 +119,10 @@ type instrOrValue interface {
 }
 
 const (
-	pkgNormal   = iota
-	pkgNoInit   // noinit: a package that don't need to be initialized
-	pkgDeclOnly // decl: a package that only have declarations
+	PkgNormal = iota
+	PkgLLGo
+	PkgNoInit   // noinit: a package that don't need to be initialized
+	PkgDeclOnly // decl: a package that only have declarations
 )
 
 type pkgInfo struct {
@@ -494,7 +495,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		link:   make(map[string]string),
 		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
-			types.Unsafe: {kind: pkgNoInit}, // TODO(xsw): pkgNoInit or pkgDeclOnly?
+			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 	}
 	ctx.initFiles(pkgPath, files)
