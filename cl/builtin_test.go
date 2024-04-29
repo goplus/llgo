@@ -24,6 +24,26 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestPkgNoInit(t *testing.T) {
+	pkg := types.NewPackage("foo", "foo")
+	ctx := &context{
+		goTyps: pkg,
+		loaded: make(map[*types.Package]*pkgInfo),
+	}
+	if ctx.pkgNoInit(pkg) {
+		t.Fatal("pkgNoInit?")
+	}
+}
+
+func TestPkgKind(t *testing.T) {
+	if v := pkgKind("noinit"); v != pkgNoInit {
+		t.Fatal("pkgKind:", v)
+	}
+	if v := pkgKind(""); v != pkgNormal {
+		t.Fatal("pkgKind:", v)
+	}
+}
+
 func TestIsAny(t *testing.T) {
 	if isAny(types.Typ[types.UntypedInt]) {
 		t.Fatal("isAny?")
