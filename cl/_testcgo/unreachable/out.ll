@@ -1,9 +1,8 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
-
 @"main.init$guard" = global ptr null
+@0 = private unnamed_addr constant [7 x i8] c"Hello\0A\00", align 1
 
 define void @main.foo() {
 _llgo_0:
@@ -28,11 +27,8 @@ define void @main() {
 _llgo_0:
   call void @main.init()
   call void @main.foo()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime/c.String"([7 x i8] c"Hello\0A\00")
-  %1 = call i32 (ptr, ...) @printf(ptr %0)
+  %0 = call i32 (ptr, ...) @printf(ptr @0)
   ret void
 }
-
-declare ptr @"github.com/goplus/llgo/internal/runtime/c.String"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare i32 @printf(ptr, ...)

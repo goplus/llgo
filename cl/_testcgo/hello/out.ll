@@ -31,10 +31,10 @@ define void @main() {
 _llgo_0:
   call void @main.init()
   %0 = call i32 @strlen(ptr @main.format)
-  call void (ptr, ...) @"github.com/goplus/llgo/cl/internal/libc.Printf"(ptr @main.format, i32 %0)
+  call void (ptr, ...) @printf(ptr @main.format, i32 %0)
   ret void
 }
 
 declare i32 @strlen(ptr)
 
-declare void @"github.com/goplus/llgo/cl/internal/libc.Printf"(ptr, ...)
+declare void @printf(ptr, ...)
