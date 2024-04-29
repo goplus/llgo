@@ -275,7 +275,7 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		if c, ok := args[0].(*ssa.Const); ok {
 			if v := c.Value; v.Kind() == constant.String {
 				sv := constant.StringVal(v)
-				return b.Prog.CStringVal(sv)
+				return b.CString(sv)
 			}
 		}
 	}

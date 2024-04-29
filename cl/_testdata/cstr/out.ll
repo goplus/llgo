@@ -2,6 +2,7 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
+@0 = private unnamed_addr constant [14 x i8] c"Hello, world\0A\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -19,7 +20,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @main() {
 _llgo_0:
   call void @main.init()
-  call void (ptr, ...) @printf([14 x i8] c"Hello, world\0A\00")
+  call void (ptr, ...) @printf(ptr @0)
   ret void
 }
 

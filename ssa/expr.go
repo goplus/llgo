@@ -82,12 +82,6 @@ func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
-// CStringVal returns a c-style string constant expression.
-func (p Program) CStringVal(v string) Expr {
-	t := p.CString()
-	return Expr{llvm.ConstString(v, true), t}
-}
-
 // StringVal returns string constant expression.
 func (p Program) StringVal(v string) Expr {
 	t := p.String()
@@ -151,6 +145,11 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		}
 	}
 	panic("todo")
+}
+
+// CString returns a c-style string constant expression.
+func (b Builder) CString(v string) Expr {
+	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CString()}
 }
 
 // -----------------------------------------------------------------------------
