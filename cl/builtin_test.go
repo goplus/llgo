@@ -25,6 +25,34 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestErrAlloca(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("alloca: no error?")
+		}
+	}()
+	var ctz context
+	ctz.alloca(nil, nil)
+}
+
+func TestCStrNoArgs(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("cstr: no error?")
+		}
+	}()
+	cstr(nil, nil)
+}
+
+func TestCStrNonconst(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("cstr: no error?")
+		}
+	}()
+	cstr(nil, []ssa.Value{&ssa.Parameter{}})
+}
+
 func TestPkgNoInit(t *testing.T) {
 	pkg := types.NewPackage("foo", "foo")
 	ctx := &context{

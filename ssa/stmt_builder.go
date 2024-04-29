@@ -50,7 +50,7 @@ func (p BasicBlock) Index() int {
 type aBuilder struct {
 	impl llvm.Builder
 	fn   Function
-	prog Program
+	Prog Program
 }
 
 // Builder represents a builder for creating instructions in a function.
@@ -74,6 +74,11 @@ func (b Builder) Panic(v Expr) {
 		log.Printf("Panic %v\n", v.impl)
 	}
 	b.impl.CreateUnreachable() // TODO(xsw): pass v
+}
+
+// Unreachable emits an unreachable instruction.
+func (b Builder) Unreachable() {
+	b.impl.CreateUnreachable()
 }
 
 // Return emits a return instruction.

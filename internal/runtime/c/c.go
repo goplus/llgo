@@ -16,19 +16,20 @@
 
 package c
 
+import "C"
 import "unsafe"
 
 const (
 	LLGoPackage = "decl"
 )
 
-//go:linkname String llgo.CString
+//go:linkname String llgo.cstr
 func String(string) *int8
 
-//go:linkname Alloca llgo.Alloca
+//go:linkname Alloca llgo.alloca
 func Alloca(size uintptr) unsafe.Pointer
 
-//go:linkname Unreachable llgo.Unreachable
+//go:linkname Unreachable llgo.unreachable
 func Unreachable()
 
 //go:linkname Malloc C.malloc
@@ -38,4 +39,4 @@ func Malloc(size uintptr) unsafe.Pointer
 func Memcpy(dst, src unsafe.Pointer, n uintptr) unsafe.Pointer
 
 //go:linkname Printf C.printf
-func Printf(format *int8, __llgo_va_list ...any)
+func Printf(format *int8, __llgo_va_list ...any) C.int
