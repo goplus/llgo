@@ -17,12 +17,48 @@
 package cl
 
 import (
+	"go/constant"
 	"go/types"
 	"testing"
 
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
+
+func TestPkgNoInit(t *testing.T) {
+	pkg := types.NewPackage("foo", "foo")
+	ctx := &context{
+		goTyps: pkg,
+		loaded: make(map[*types.Package]*pkgInfo),
+	}
+	if ctx.pkgNoInit(pkg) {
+		t.Fatal("pkgNoInit?")
+	}
+}
+
+func TestPkgKind(t *testing.T) {
+	if v := pkgKind("noinit"); v != PkgNoInit {
+		t.Fatal("pkgKind:", v)
+	}
+	if v := pkgKind(""); v != PkgLLGo {
+		t.Fatal("pkgKind:", v)
+	}
+}
+
+func TestPkgKindOf(t *testing.T) {
+	if v := PkgKindOf(types.Unsafe); v != PkgDeclOnly {
+		t.Fatal("PkgKindOf unsafe:", v)
+	}
+	pkg := types.NewPackage("foo", "foo")
+	pkg.Scope().Insert(
+		types.NewConst(
+			0, pkg, "LLGoPackage", types.Typ[types.String],
+			constant.MakeString("noinit")),
+	)
+	if v := PkgKindOf(pkg); v != PkgNoInit {
+		t.Fatal("PkgKindOf foo:", v)
+	}
+}
 
 func TestIsAny(t *testing.T) {
 	if isAny(types.Typ[types.UntypedInt]) {
@@ -48,7 +84,7 @@ func TestIgnoreName(t *testing.T) {
 func TestErrImport(t *testing.T) {
 	var ctx context
 	pkg := types.NewPackage("foo", "foo")
-	ctx.importPkg(pkg)
+	ctx.importPkg(pkg, nil)
 }
 
 func TestErrInitLinkname(t *testing.T) {

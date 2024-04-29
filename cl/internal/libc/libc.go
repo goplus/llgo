@@ -4,7 +4,7 @@ import "C"
 import _ "unsafe"
 
 const (
-	LLGoPackage = true
+	LLGoPackage = "decl"
 )
 
 //go:linkname Printf C.printf

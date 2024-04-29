@@ -19,6 +19,7 @@ package cl
 import (
 	"bytes"
 	"go/ast"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"os"
@@ -43,11 +44,45 @@ func contentOf(m contentMap, file string) (lines contentLines, err error) {
 	return
 }
 
-func (p *context) importPkg(pkg *types.Package) {
+// PkgKindOf returns the kind of a package.
+func PkgKindOf(pkg *types.Package) int {
 	scope := pkg.Scope()
-	if scope.Lookup("LLGoPackage") == nil {
+	kind := pkgKindByScope(scope)
+	if kind == PkgNormal {
+		kind = pkgKindByPath(pkg.Path())
+	}
+	return kind
+}
+
+// decl: a package that only contains declarations
+// noinit: a package that does not need to be initialized
+func pkgKind(v string) int {
+	switch v {
+	case "decl":
+		return PkgDeclOnly
+	case "noinit":
+		return PkgNoInit
+	}
+	return PkgLLGo
+}
+
+func pkgKindByScope(scope *types.Scope) int {
+	if v, ok := scope.Lookup("LLGoPackage").(*types.Const); ok {
+		if v := v.Val(); v.Kind() == constant.String {
+			return pkgKind(constant.StringVal(v))
+		}
+		return PkgLLGo
+	}
+	return PkgNormal
+}
+
+func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
+	scope := pkg.Scope()
+	kind := pkgKindByScope(scope)
+	if kind == PkgNormal {
 		return
 	}
+	i.kind = kind
 	fset := p.fset
 	names := scope.Names()
 	contents := make(contentMap)
@@ -170,9 +205,20 @@ func (p *context) varOf(v *ssa.Global) llssa.Global {
 func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
 	if p.goTyps != pkgTypes {
 		if _, ok := p.loaded[pkgTypes]; !ok {
-			p.loaded[pkgTypes] = none{}
-			p.importPkg(pkgTypes)
+			i := &pkgInfo{
+				kind: pkgKindByPath(pkgTypes.Path()),
+			}
+			p.loaded[pkgTypes] = i
+			p.importPkg(pkgTypes, i)
 		}
 	}
 	return pkgTypes
+}
+
+func pkgKindByPath(pkgPath string) int {
+	switch pkgPath {
+	case "syscall", "runtime/cgo", "unsafe":
+		return PkgDeclOnly
+	}
+	return PkgNormal
 }

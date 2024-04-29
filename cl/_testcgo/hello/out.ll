@@ -11,7 +11,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/internal/libc.init"()
   store i8 72, ptr @main.format, align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @main.format, i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @main.format, i64 2), align 1
@@ -35,8 +34,6 @@ _llgo_0:
   call void (ptr, ...) @"github.com/goplus/llgo/cl/internal/libc.Printf"(ptr @main.format, i32 %0)
   ret void
 }
-
-declare void @"github.com/goplus/llgo/cl/internal/libc.init"()
 
 declare i32 @strlen(ptr)
 
