@@ -22,13 +22,13 @@ const (
 	LLGoPackage = "decl"
 )
 
-//go:linkname String llgo.CString
+//go:linkname String llgo.cstr
 func String(string) *int8
 
-//go:linkname Alloca llgo.Alloca
+//go:linkname Alloca llgo.alloca
 func Alloca(size uintptr) unsafe.Pointer
 
-//go:linkname Unreachable llgo.Unreachable
+//go:linkname Unreachable llgo.unreachable
 func Unreachable()
 
 //go:linkname Malloc C.malloc

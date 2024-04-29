@@ -50,7 +50,7 @@ func (p BasicBlock) Index() int {
 type aBuilder struct {
 	impl llvm.Builder
 	fn   Function
-	prog Program
+	Prog Program
 }
 
 // Builder represents a builder for creating instructions in a function.

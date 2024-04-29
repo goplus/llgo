@@ -189,8 +189,9 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 
 func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) {
 	sig := f.Signature
-	name, ok := p.funcName(pkgTypes, f, true)
-	if !ok { // ignored
+	name, ftype := p.funcName(pkgTypes, f, true)
+	switch ftype {
+	case ignoredFunc, llgoInstr: // llgo extended instructions
 		return
 	}
 	if debugInstr {
@@ -269,6 +270,18 @@ func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	return false
 }
 
+func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		if c, ok := args[0].(*ssa.Const); ok {
+			if v := c.Value; v.Kind() == constant.String {
+				sv := constant.StringVal(v)
+				return b.Prog.CStringVal(sv)
+			}
+		}
+	}
+	panic("cstr(<string-literal>): invalid arguments")
+}
+
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	if asValue {
 		if v, ok := p.bvals[iv]; ok {
@@ -287,8 +300,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if debugGoSSA {
 			log.Println(">>> Call", cv, call.Args)
 		}
-		if builtin, ok := cv.(*ssa.Builtin); ok {
-			fn := builtin.Name()
+		switch cv := cv.(type) {
+		case *ssa.Builtin:
+			fn := cv.Name()
 			if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
 				arg := call.Args[0]
 				ret = p.compileValue(b, arg)
@@ -297,7 +311,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				args := p.compileValues(b, call.Args, kind)
 				ret = b.BuiltinCall(fn, args...)
 			}
-		} else {
+		case *ssa.Function:
+			fn, ftype := p.funcOf(cv)
+			switch ftype {
+			case goFunc, cFunc:
+				args := p.compileValues(b, call.Args, kind)
+				ret = b.Call(fn.Expr, args...)
+			case llgoCstr:
+				ret = cstr(b, call.Args)
+			default:
+				panic("todo")
+			}
+		default:
 			fn := p.compileValue(b, cv)
 			args := p.compileValues(b, call.Args, kind)
 			ret = b.Call(fn, args...)
@@ -421,7 +446,10 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		fn := p.funcOf(v)
+		fn, ftype := p.funcOf(v)
+		if ftype >= llgoInstrBase {
+			panic("can't use llgo instruction as a value")
+		}
 		return fn.Expr
 	case *ssa.Global:
 		g := p.varOf(v)

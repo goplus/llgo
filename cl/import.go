@@ -134,9 +134,9 @@ func (p *context) initLinkname(pkgPath, line string) {
 		text := strings.TrimSpace(line[len(linkname):])
 		if idx := strings.IndexByte(text, ' '); idx > 0 {
 			link := strings.TrimLeft(text[idx+1:], " ")
-			if strings.Contains(link, ".") { // eg. C.printf, C.strlen
+			if strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
 				name := pkgPath + "." + text[:idx]
-				p.link[name] = link[2:]
+				p.link[name] = link
 			} else {
 				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
 			}
@@ -171,25 +171,56 @@ func checkCgo(fnName string) bool {
 		(fnName[4] == '_' || strings.HasPrefix(fnName[4:], "Check"))
 }
 
-func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (string, bool) {
+const (
+	ignoredFunc = iota
+	goFunc
+	cFunc
+	llgoInstr = -1
+
+	llgoInstrBase   = 0x80
+	llgoCstr        = llgoInstrBase + 1
+	llgoAlloca      = llgoInstrBase + 2
+	llgoUnreachable = llgoInstrBase + 3
+)
+
+func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (string, int) {
 	name := funcName(pkg, fn)
 	if ignore && ignoreName(name) || checkCgo(fn.Name()) {
-		return name, false
+		return name, ignoredFunc
 	}
 	if v, ok := p.link[name]; ok {
-		return v, true
+		if strings.HasPrefix(v, "C.") {
+			return v[2:], cFunc
+		}
+		if strings.HasPrefix(v, "llgo.") {
+			return v[5:], llgoInstr
+		}
+		return v, goFunc
 	}
-	return name, true
+	return name, goFunc
 }
 
-func (p *context) funcOf(fn *ssa.Function) llssa.Function {
+// funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
+// or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
+func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 	pkgTypes := p.ensureLoaded(fn.Pkg.Pkg)
 	pkg := p.pkg
-	name, _ := p.funcName(pkgTypes, fn, false)
-	if ret := pkg.FuncOf(name); ret != nil {
-		return ret
+	name, ftype := p.funcName(pkgTypes, fn, false)
+	if ftype == llgoInstr {
+		switch name {
+		case "cstr":
+			ftype = llgoCstr
+		case "alloca":
+			ftype = llgoAlloca
+		case "unreachable":
+			ftype = llgoUnreachable
+		default:
+			panic("unknown llgo instruction: " + name)
+		}
+	} else if ret = pkg.FuncOf(name); ret == nil {
+		ret = pkg.NewFunc(name, fn.Signature)
 	}
-	return pkg.NewFunc(name, fn.Signature)
+	return
 }
 
 func (p *context) varOf(v *ssa.Global) llssa.Global {

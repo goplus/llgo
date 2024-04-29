@@ -132,7 +132,7 @@ func (p Program) Val(v interface{}) Expr {
 
 // Const returns a constant expression.
 func (b Builder) Const(v constant.Value, typ Type) Expr {
-	prog := b.prog
+	prog := b.Prog
 	if v == nil {
 		return prog.Null(typ)
 	}
@@ -277,7 +277,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		}
 		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
-		tret := b.prog.Bool()
+		tret := b.Prog.Bool()
 		kind := x.kind
 		switch kind {
 		case vkSigned:
@@ -318,7 +318,7 @@ func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
 		log.Printf("Load %v\n", ptr.impl)
 	}
-	telem := b.prog.Elem(ptr.Type)
+	telem := b.Prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
 }
 
@@ -354,7 +354,7 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 	if debugInstr {
 		log.Printf("FieldAddr %v, %d\n", x.impl, idx)
 	}
-	prog := b.prog
+	prog := b.Prog
 	tstruc := prog.Elem(x.Type)
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)
@@ -377,7 +377,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	if debugInstr {
 		log.Printf("IndexAddr %v, %v\n", x.impl, idx.impl)
 	}
-	prog := b.prog
+	prog := b.Prog
 	telem := prog.Index(x.Type)
 	pt := prog.Pointer(telem)
 	indices := []llvm.Value{idx.impl}
@@ -407,7 +407,7 @@ func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("Alloc %v, %v\n", t, heap)
 	}
-	prog := b.prog
+	prog := b.Prog
 	telem := t.Elem()
 	if heap {
 		pkg := b.fn.pkg
@@ -452,7 +452,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	switch typ.(type) {
 	default:
 		ret.impl = b.impl.CreateBitCast(x.impl, t.ll, "bitCast")
-		ret.Type = b.prog.Type(typ)
+		ret.Type = b.Prog.Type(typ)
 		return
 	}
 }
@@ -488,7 +488,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 //	t1 = convert []byte <- string (t0)
 func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	typ := t.t
-	ret.Type = b.prog.Type(typ)
+	ret.Type = b.Prog.Type(typ)
 	switch und := typ.Underlying().(type) {
 	case *types.Basic:
 		kind := und.Kind()
@@ -624,7 +624,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		default:
 			panic("todo")
 		}
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.prog.Val(int(kind)))
+		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
 		return b.InlineCall(fn, x, typ)
 	}
 	panic("todo")
@@ -659,7 +659,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	}
 	switch t := fn.t.(type) {
 	case *types.Signature:
-		ret.Type = b.prog.retType(t)
+		ret.Type = b.Prog.retType(t)
 	default:
 		panic("todo")
 	}
