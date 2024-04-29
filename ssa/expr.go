@@ -432,6 +432,7 @@ func (b Builder) Alloca(n Expr) (ret Expr) {
 	return
 }
 
+/*
 // ArrayAlloca reserves space for an array of n elements of type telem.
 func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	if debugInstr {
@@ -441,6 +442,7 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	ret.Type = b.Prog.Pointer(telem)
 	return
 }
+*/
 
 // The ChangeType instruction applies to X a value-preserving type
 // change to Type().
