@@ -329,6 +329,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = cstr(b, call.Args)
 			case llgoAlloca:
 				ret = p.alloca(b, call.Args)
+			case llgoUnreachable:
+				b.Unreachable()
 			default:
 				panic("todo")
 			}

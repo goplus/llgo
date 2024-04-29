@@ -76,6 +76,11 @@ func (b Builder) Panic(v Expr) {
 	b.impl.CreateUnreachable() // TODO(xsw): pass v
 }
 
+// Unreachable emits an unreachable instruction.
+func (b Builder) Unreachable() {
+	b.impl.CreateUnreachable()
+}
+
 // Return emits a return instruction.
 func (b Builder) Return(results ...Expr) {
 	if debugInstr {
