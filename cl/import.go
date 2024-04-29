@@ -19,6 +19,7 @@ package cl
 import (
 	"bytes"
 	"go/ast"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"os"
@@ -43,10 +44,26 @@ func contentOf(m contentMap, file string) (lines contentLines, err error) {
 	return
 }
 
-func (p *context) importPkg(pkg *types.Package) {
+// decl: a package that only contains declarations
+// noinit: a package that does not need to be initialized
+func pkgKind(v string) int {
+	switch v {
+	case "decl":
+		return pkgDeclOnly
+	case "noinit":
+		return pkgNoInit
+	}
+	return pkgNormal
+}
+
+func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	scope := pkg.Scope()
-	if scope.Lookup("LLGoPackage") == nil {
+	llpkg, ok := scope.Lookup("LLGoPackage").(*types.Const)
+	if !ok {
 		return
+	}
+	if v := llpkg.Val(); v.Kind() == constant.String {
+		i.kind = pkgKind(constant.StringVal(v))
 	}
 	fset := p.fset
 	names := scope.Names()
@@ -170,9 +187,20 @@ func (p *context) varOf(v *ssa.Global) llssa.Global {
 func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
 	if p.goTyps != pkgTypes {
 		if _, ok := p.loaded[pkgTypes]; !ok {
-			p.loaded[pkgTypes] = none{}
-			p.importPkg(pkgTypes)
+			i := &pkgInfo{
+				kind: pkgKindByPath(pkgTypes.Path()),
+			}
+			p.loaded[pkgTypes] = i
+			p.importPkg(pkgTypes, i)
 		}
 	}
 	return pkgTypes
+}
+
+func pkgKindByPath(pkgPath string) int {
+	switch pkgPath {
+	case "syscall", "runtime/cgo":
+		return pkgNoInit
+	}
+	return pkgNormal
 }

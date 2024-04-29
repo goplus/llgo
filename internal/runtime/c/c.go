@@ -14,18 +14,28 @@
  * limitations under the License.
  */
 
-package runtime
+package c
 
 import "unsafe"
 
 const (
-	LLGoPackage = true
+	LLGoPackage = "decl"
 )
+
+//go:linkname String llgo.CString
+func String(string) *int8
+
+//go:linkname Alloca llgo.Alloca
+func Alloca(size uintptr) unsafe.Pointer
+
+//go:linkname Unreachable llgo.Unreachable
+func Unreachable()
 
 //go:linkname Malloc C.malloc
 func Malloc(size uintptr) unsafe.Pointer
 
-// Alloc allocates memory.
-func Alloc(size uintptr) unsafe.Pointer {
-	return Malloc(size)
-}
+//go:linkname Memcpy C.memcpy
+func Memcpy(dst, src unsafe.Pointer, n uintptr) unsafe.Pointer
+
+//go:linkname Printf C.printf
+func Printf(format *int8, __llgo_va_list ...any)

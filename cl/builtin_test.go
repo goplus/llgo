@@ -48,7 +48,7 @@ func TestIgnoreName(t *testing.T) {
 func TestErrImport(t *testing.T) {
 	var ctx context
 	pkg := types.NewPackage("foo", "foo")
-	ctx.importPkg(pkg)
+	ctx.importPkg(pkg, nil)
 }
 
 func TestErrInitLinkname(t *testing.T) {

@@ -61,12 +61,12 @@ const (
 	fnIgnore
 )
 
-func funcKind(vfn ssa.Value) int {
+func (p *context) funcKind(vfn ssa.Value) int {
 	if fn, ok := vfn.(*ssa.Function); ok && fn.Signature.Recv() == nil {
 		params := fn.Signature.Params()
 		n := params.Len()
 		if n == 0 {
-			if fn.Name() == "init" && ignorePkgInit(fn.Pkg.Pkg.Path()) {
+			if fn.Name() == "init" && p.pkgNoInit(fn.Pkg.Pkg) {
 				return fnIgnore
 			}
 		} else {
@@ -79,10 +79,10 @@ func funcKind(vfn ssa.Value) int {
 	return fnNormal
 }
 
-func ignorePkgInit(pkgPath string) bool {
-	switch pkgPath {
-	case "unsafe", "syscall", "runtime/cgo":
-		return true
+func (p *context) pkgNoInit(pkg *types.Package) bool {
+	p.ensureLoaded(pkg)
+	if i, ok := p.loaded[pkg]; ok {
+		return i.kind != pkgNormal
 	}
 	return false
 }
@@ -113,11 +113,19 @@ func inPkg(name, pkg string) bool {
 
 // -----------------------------------------------------------------------------
 
-type none = struct{}
-
 type instrOrValue interface {
 	ssa.Instruction
 	ssa.Value
+}
+
+const (
+	pkgNormal   = iota
+	pkgNoInit   // noinit: a package that don't need to be initialized
+	pkgDeclOnly // decl: a package that only have declarations
+)
+
+type pkgInfo struct {
+	kind int
 }
 
 type context struct {
@@ -129,7 +137,7 @@ type context struct {
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	link   map[string]string           // pkgPath.nameInPkg => linkname
-	loaded map[*types.Package]none     // loaded packages
+	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 	inits  []func()
@@ -271,7 +279,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Call:
 		call := v.Call
 		cv := call.Value
-		kind := funcKind(cv)
+		kind := p.funcKind(cv)
 		if kind == fnIgnore {
 			return
 		}
@@ -484,8 +492,10 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		goTyps: pkgTypes,
 		goPkg:  pkg,
 		link:   make(map[string]string),
-		loaded: make(map[*types.Package]none),
 		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
+		loaded: map[*types.Package]*pkgInfo{
+			types.Unsafe: {kind: pkgNoInit}, // TODO(xsw): pkgNoInit or pkgDeclOnly?
+		},
 	}
 	ctx.initFiles(pkgPath, files)
 	for _, m := range members {
