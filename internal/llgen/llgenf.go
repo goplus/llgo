@@ -37,7 +37,7 @@ const (
 
 func GenFrom(fileOrPkg string) string {
 	cfg := &packages.Config{
-		Mode: loadSyntax,
+		Mode: loadSyntax | packages.NeedDeps,
 	}
 	initial, err := packages.Load(cfg, fileOrPkg)
 	check(err)
