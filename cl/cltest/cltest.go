@@ -113,6 +113,14 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	}
 	foo.WriteTo(os.Stderr)
 	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := imp.Import(llssa.PkgRuntime)
+		if err != nil {
+			t.Fatal("load runtime failed:", err)
+		}
+		return rt
+	})
+
 	ret, err := cl.NewPackage(prog, foo, files)
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
