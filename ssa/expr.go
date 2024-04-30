@@ -77,14 +77,6 @@ func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
-// StringVal returns string constant expression.
-func (p Program) StringVal(v string) Expr {
-	t := p.String()
-	cstr := llvm.ConstString(v, true)
-	// TODO(xsw): cstr => gostring
-	return Expr{cstr, t}
-}
-
 // BoolVal returns a boolean constant expression.
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
@@ -149,7 +141,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 				return prog.FloatVal(v, typ)
 			}
 		case kind == types.String:
-			return prog.StringVal(constant.StringVal(v))
+			return b.Str(constant.StringVal(v))
 		}
 	}
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, typ.t))
@@ -158,6 +150,12 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 // CStr returns a c-style string constant expression.
 func (b Builder) CStr(v string) Expr {
 	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
+}
+
+// Str returns a Go string constant expression.
+func (b Builder) Str(v string) Expr {
+	cstr := b.CStr(v)
+	return b.InlineCall(b.fn.pkg.rtFunc("NewString"), cstr, b.Prog.Val(len(v)))
 }
 
 // -----------------------------------------------------------------------------

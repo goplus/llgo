@@ -40,6 +40,11 @@ func EmptyString() String {
 	return String{nil, 0}
 }
 
+// NewString creates a new string.
+func NewString(data unsafe.Pointer, len int) String {
+	return String{data, len}
+}
+
 // StringLen returns the length of a string.
 func StringLen(s Slice) int {
 	return s.len
@@ -49,6 +54,8 @@ func StringLen(s Slice) int {
 func StringData(s String) unsafe.Pointer {
 	return s.data
 }
+
+// -----------------------------------------------------------------------------
 
 // CStrCopy copies a Go string to a C string buffer and returns it.
 func CStrCopy(dest unsafe.Pointer, s String) *int8 {
