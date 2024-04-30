@@ -256,6 +256,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 	case *types.Slice:
 		return &aType{p.rtSlice(), typ, vkInvalid}
 	case *types.Map:
+		return &aType{p.rtMap(), typ, vkInvalid}
 	case *types.Struct:
 		return p.toLLVMStruct(t)
 	case *types.Named:

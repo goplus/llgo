@@ -35,6 +35,8 @@ type Expr struct {
 	Type
 }
 
+var Nil Expr // Zero value is a nil Expr
+
 // IsNil checks if the expression is nil or not.
 func (v Expr) IsNil() bool {
 	return v.Type == nil
@@ -473,6 +475,31 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		}
 	}
 	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
+
+// The MakeMap instruction creates a new hash-table-based map object
+// and yields a value of kind map.
+//
+// t is a (possibly named) *types.Map.
+//
+// Pos() returns the ast.CallExpr.Lparen, if created by make(map), or
+// the ast.CompositeLit.Lbrack if created by a literal.
+//
+// Example printed form:
+//
+//	t1 = make map[string]int t0
+//	t1 = make StringIntMap t0
+func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeMap %v, %v\n", t, nReserve.impl)
+	}
+	pkg := b.fn.pkg
+	ret.Type = t
+	ret.impl = b.InlineCall(pkg.rtFunc("MakeSmallMap")).impl
+	// TODO(xsw): nReserve
+	return
 }
 
 // -----------------------------------------------------------------------------

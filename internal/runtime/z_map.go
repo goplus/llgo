@@ -14,35 +14,12 @@
  * limitations under the License.
  */
 
-package c
+package runtime
 
-import "C"
-import "unsafe"
+// Map represents a Go map.
+type Map = hmap
 
-const (
-	LLGoPackage = "decl"
-)
-
-//go:linkname Str llgo.cstr
-func Str(string) *int8
-
-//go:linkname Alloca llgo.alloca
-func Alloca(size uintptr) unsafe.Pointer
-
-//go:linkname AllocaCStr llgo.allocaCStr
-func AllocaCStr(s string) *int8
-
-//go:linkname Unreachable llgo.unreachable
-func Unreachable()
-
-//go:linkname Rand C.rand
-func Rand() C.int
-
-//go:linkname Malloc C.malloc
-func Malloc(size uintptr) unsafe.Pointer
-
-//go:linkname Memcpy C.memcpy
-func Memcpy(dst, src unsafe.Pointer, n uintptr) unsafe.Pointer
-
-//go:linkname Printf C.printf
-func Printf(format *int8, __llgo_va_list ...any) C.int
+// MakeSmallMap creates a new small map.
+func MakeSmallMap() *Map {
+	return makemap_small()
+}
