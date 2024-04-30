@@ -172,6 +172,19 @@ _llgo_0:
   ret %"github.com/goplus/llgo/internal/runtime.iface" %12
 }
 
+define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %3, i32 0, i32 0
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %3, i32 0, i32 1
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %3, i32 0, i32 2
+  store ptr %0, ptr %4, align 8
+  store i64 %1, ptr %5, align 4
+  store i64 %2, ptr %6, align 4
+  %7 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %3, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.Slice" %7
+}
+
 define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NilSlice"() {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
@@ -183,6 +196,15 @@ _llgo_0:
   store i64 0, ptr %3, align 4
   %4 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %0, align 8
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %4
+}
+
+define i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/internal/runtime.Slice" %0, ptr %1, align 8
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %1, i32 0, i32 1
+  %3 = load i64, ptr %2, align 4
+  ret i64 %3
 }
 
 define ptr @"github.com/goplus/llgo/internal/runtime.basicType"(i64 %0) {
