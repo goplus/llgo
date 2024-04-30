@@ -135,7 +135,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	if v == nil {
 		return prog.Null(typ)
 	}
-	switch t := types.Default(typ.t).(type) {
+	switch t := typ.t.(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
