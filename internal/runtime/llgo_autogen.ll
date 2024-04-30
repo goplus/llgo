@@ -11,6 +11,7 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 @"github.com/goplus/llgo/internal/runtime.basicTypes" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.init$guard" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes" = global ptr null
+@0 = private unnamed_addr constant [21 x i8] c"I2Int: type mismatch\00", align 1
 
 define ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %0) {
 _llgo_0:
@@ -104,7 +105,8 @@ _llgo_1:                                          ; preds = %_llgo_0
   ret i64 %10
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %11 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"([21 x i8] c"I2Int: type mismatch\00")
+  %11 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 20)
+  %12 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %11)
   unreachable
 }
 
@@ -210,6 +212,17 @@ _llgo_0:
   store i64 %2, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %3, align 8
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %7
+}
+
+define %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
+  store ptr %0, ptr %3, align 8
+  store i64 %1, ptr %4, align 4
+  %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.String" %5
 }
 
 define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NilSlice"() {

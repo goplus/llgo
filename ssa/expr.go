@@ -153,9 +153,12 @@ func (b Builder) CStr(v string) Expr {
 }
 
 // Str returns a Go string constant expression.
-func (b Builder) Str(v string) Expr {
+func (b Builder) Str(v string) (ret Expr) {
+	prog := b.Prog
 	cstr := b.CStr(v)
-	return b.InlineCall(b.fn.pkg.rtFunc("NewString"), cstr, b.Prog.Val(len(v)))
+	ret = b.InlineCall(b.fn.pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
+	ret.Type = prog.String()
+	return
 }
 
 // -----------------------------------------------------------------------------
