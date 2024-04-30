@@ -275,7 +275,7 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		if c, ok := args[0].(*ssa.Const); ok {
 			if v := c.Value; v.Kind() == constant.String {
 				sv := constant.StringVal(v)
-				return b.CString(sv)
+				return b.CStr(sv)
 			}
 		}
 	}
@@ -373,7 +373,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
 			return
 		}
-		panic("todo")
+		var low, high, max llssa.Expr
+		x := p.compileValue(b, vx)
+		if v.Low != nil {
+			low = p.compileValue(b, v.Low)
+		}
+		if v.High != nil {
+			high = p.compileValue(b, v.High)
+		}
+		if v.Max != nil {
+			max = p.compileValue(b, v.Max)
+		}
+		ret = b.Slice(x, low, high, max)
 	case *ssa.Alloc:
 		t := v.Type().(*types.Pointer)
 		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation

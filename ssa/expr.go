@@ -35,6 +35,11 @@ type Expr struct {
 	Type
 }
 
+// IsNil checks if the expression is nil or not.
+func (v Expr) IsNil() bool {
+	return v.Type == nil
+}
+
 /*
 // TypeOf returns the type of the expression.
 func (v Expr) TypeOf() types.Type {
@@ -156,9 +161,9 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	panic("todo")
 }
 
-// CString returns a c-style string constant expression.
-func (b Builder) CString(v string) Expr {
-	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CString()}
+// CStr returns a c-style string constant expression.
+func (b Builder) CStr(v string) Expr {
+	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
 }
 
 // -----------------------------------------------------------------------------
@@ -390,6 +395,43 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	pt := prog.Pointer(telem)
 	indices := []llvm.Value{idx.impl}
 	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
+}
+
+// The Slice instruction yields a slice of an existing string, slice
+// or *array X between optional integer bounds Low and High.
+//
+// Dynamically, this instruction panics if X evaluates to a nil *array
+// pointer.
+//
+// Type() returns string if the type of X was string, otherwise a
+// *types.Slice with the same element type as X.
+//
+// Pos() returns the ast.SliceExpr.Lbrack if created by a x[:] slice
+// operation, the ast.CompositeLit.Lbrace if created by a literal, or
+// NoPos if not explicit in the source (e.g. a variadic argument slice).
+//
+// Example printed form:
+//
+//	t1 = slice t0[1:]
+func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("Slice %v, %v, %v\n", x.impl, low.impl, high.impl)
+	}
+	prog := b.Prog
+	pkg := b.fn.pkg
+	switch t := x.t.Underlying().(type) {
+	case *types.Pointer:
+		telem := t.Elem()
+		switch te := telem.Underlying().(type) {
+		case *types.Array:
+			ret.Type = prog.Type(types.NewSlice(te.Elem()))
+			if low.IsNil() && high.IsNil() && max.IsNil() {
+				n := prog.Val(int(te.Len()))
+				return b.InlineCall(pkg.rtFunc("NewSlice"), n, n)
+			}
+		}
+	}
+	panic("todo")
 }
 
 // The Alloc instruction reserves space for a variable of the given type,
@@ -713,6 +755,16 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 // `fn` indicates the function: one of the built-in functions from the
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
+	switch fn {
+	case "len":
+		if len(args) == 1 {
+			arg := args[0]
+			switch arg.t.Underlying().(type) {
+			case *types.Slice:
+				return b.InlineCall(b.fn.pkg.rtFunc("SliceLen"), arg)
+			}
+		}
+	}
 	panic("todo")
 }
 

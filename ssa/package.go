@@ -225,7 +225,7 @@ func (p Program) Bool() Type {
 	return p.boolTy
 }
 
-func (p Program) CString() Type {
+func (p Program) CStr() Type {
 	if p.cstrTy == nil { // *int8
 		p.cstrTy = p.Type(types.NewPointer(types.Typ[types.Int8]))
 	}
