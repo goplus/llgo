@@ -425,16 +425,15 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	telem := prog.Index(x.Type)
 	pt := prog.Pointer(telem)
 	switch x.t.Underlying().(type) {
-	case *types.Pointer:
-		indices := []llvm.Value{idx.impl}
-		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
 	case *types.Slice:
 		pkg := b.fn.pkg
 		ptr := b.InlineCall(pkg.rtFunc("SliceData"), x)
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	}
-	panic("todo")
+	// case *types.Pointer:
+	indices := []llvm.Value{idx.impl}
+	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
 }
 
 // The Slice instruction yields a slice of an existing string, slice
