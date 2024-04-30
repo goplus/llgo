@@ -159,6 +159,9 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
 	for _, errPkg := range errPkgs {
+		for _, err := range errPkg.Errors {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	for _, pkg := range pkgs {
