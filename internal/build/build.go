@@ -140,8 +140,7 @@ func Do(args []string, conf *Config) {
 			}
 		}
 		if nErr > 0 {
-			fmt.Fprintf(os.Stderr, "%d errors occurred\n", nErr)
-			os.Exit(1)
+			os.Exit(nErr)
 		}
 	}
 }

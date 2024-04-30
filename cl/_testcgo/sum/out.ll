@@ -31,7 +31,7 @@ _llgo_0:
   store i64 3, ptr %3, align 4
   %4 = getelementptr inbounds i64, ptr %0, i64 3
   store i64 4, ptr %4, align 4
-  %5 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(i64 4, i64 4)
+  %5 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr %0, i64 4, i64 4)
   %6 = call i64 @main.sum(%"github.com/goplus/llgo/internal/runtime.Slice" %5)
   %7 = call i32 (ptr, ...) @printf(ptr @0, i64 %6)
   ret void
@@ -43,16 +43,17 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %2 = phi i64 [ 0, %_llgo_0 ], [ %8, %_llgo_2 ]
+  %2 = phi i64 [ 0, %_llgo_0 ], [ %9, %_llgo_2 ]
   %3 = phi i64 [ -1, %_llgo_0 ], [ %4, %_llgo_2 ]
   %4 = add i64 %3, 1
   %5 = icmp slt i64 %4, %1
   br i1 %5, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %6 = getelementptr inbounds i64, %"github.com/goplus/llgo/internal/runtime.Slice" %0, i64 %4
-  %7 = load i64, %"github.com/goplus/llgo/internal/runtime.Slice" %6, align 4
-  %8 = add i64 %2, %7
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %7 = getelementptr inbounds i64, ptr %6, i64 %4
+  %8 = load i64, ptr %7, align 4
+  %9 = add i64 %2, %8
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -66,3 +67,5 @@ declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llg
 declare i32 @printf(ptr, ...)
 
 declare i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice")
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice")

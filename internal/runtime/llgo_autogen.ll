@@ -198,6 +198,15 @@ _llgo_0:
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %4
 }
 
+define ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/internal/runtime.Slice" %0, ptr %1, align 8
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %1, i32 0, i32 0
+  %3 = load ptr, ptr %2, align 8
+  ret ptr %3
+}
+
 define i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8

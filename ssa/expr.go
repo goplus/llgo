@@ -424,6 +424,14 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	prog := b.Prog
 	telem := prog.Index(x.Type)
 	pt := prog.Pointer(telem)
+	switch x.t.Underlying().(type) {
+	case *types.Slice:
+		pkg := b.fn.pkg
+		ptr := b.InlineCall(pkg.rtFunc("SliceData"), x)
+		indices := []llvm.Value{idx.impl}
+		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
+	}
+	// case *types.Pointer:
 	indices := []llvm.Value{idx.impl}
 	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
 }
@@ -458,7 +466,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			ret.Type = prog.Type(types.NewSlice(te.Elem()))
 			if low.IsNil() && high.IsNil() && max.IsNil() {
 				n := prog.Val(int(te.Len()))
-				ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), n, n).impl
+				ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), x, n, n).impl
 				return ret
 			}
 		}
