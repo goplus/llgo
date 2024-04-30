@@ -137,9 +137,15 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		case kind == types.Bool:
 			return prog.BoolVal(constant.BoolVal(v))
 		case kind >= types.Int && kind <= types.Uintptr:
-			if v, exact := constant.Uint64Val(v); exact {
-				return prog.IntVal(v, typ)
+			if v, exact := constant.Int64Val(v); exact {
+				return prog.IntVal(uint64(v), typ)
 			}
+			panic("todo")
+			/*
+				if v, exact := constant.Uint64Val(v); exact {
+					return prog.IntVal(v, typ)
+				}
+			*/
 		case kind == types.Float32 || kind == types.Float64:
 			if v, exact := constant.Float64Val(v); exact {
 				return prog.FloatVal(v, typ)
@@ -148,7 +154,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 			return prog.StringVal(constant.StringVal(v))
 		}
 	}
-	panic("todo")
+	panic(fmt.Sprintf("unsupported Const: %v, %v", v, typ.t))
 }
 
 // CStr returns a c-style string constant expression.
