@@ -22,8 +22,8 @@ import (
 	"github.com/goplus/llgo/cl/cltest"
 )
 
-func TestFromTestcgo(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testcgo", true)
+func TestFromTestrt(t *testing.T) {
+	cltest.FromDir(t, "", "../cl/_testrt", true)
 }
 
 func TestFromTestdata(t *testing.T) {

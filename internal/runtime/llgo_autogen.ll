@@ -1,9 +1,9 @@
 ; ModuleID = 'github.com/goplus/llgo/internal/runtime'
 source_filename = "github.com/goplus/llgo/internal/runtime"
 
+%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.itab" = type { ptr, ptr, i32, [4 x i8], [1 x i64] }
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
 
@@ -11,6 +11,7 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 @"github.com/goplus/llgo/internal/runtime.basicTypes" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.init$guard" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes" = global ptr null
+@0 = private unnamed_addr constant [21 x i8] c"I2Int: type mismatch\00", align 1
 
 define ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %0) {
 _llgo_0:
@@ -23,6 +24,33 @@ _llgo_0:
   %1 = getelementptr inbounds ptr, ptr @"github.com/goplus/llgo/internal/runtime.basicTypes", i64 %0
   %2 = load ptr, ptr %1, align 8
   ret ptr %2
+}
+
+define ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1) {
+_llgo_0:
+  %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %1, ptr %2, align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
+  %4 = load i64, ptr %3, align 4
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
+  %6 = load ptr, ptr %5, align 8
+  %7 = call ptr @memcpy(ptr %0, ptr %6, i64 %4)
+  %8 = getelementptr inbounds i8, ptr %0, i64 %4
+  store i8 0, ptr %8, align 1
+  ret ptr %0
+}
+
+define ptr @"github.com/goplus/llgo/internal/runtime.CStrDup"(%"github.com/goplus/llgo/internal/runtime.String" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %0, ptr %1, align 8
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %1, i32 0, i32 1
+  %3 = load i64, ptr %2, align 4
+  %4 = add i64 %3, 1
+  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %4)
+  %6 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %1, align 8
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %5, %"github.com/goplus/llgo/internal/runtime.String" %6)
+  ret ptr %7
 }
 
 define { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %1) {
@@ -77,7 +105,8 @@ _llgo_1:                                          ; preds = %_llgo_0
   ret i64 %10
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %11 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"([21 x i8] c"I2Int: type mismatch\00")
+  %11 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 20)
+  %12 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %11)
   unreachable
 }
 
@@ -185,6 +214,17 @@ _llgo_0:
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %7
 }
 
+define %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
+  store ptr %0, ptr %3, align 8
+  store i64 %1, ptr %4, align 4
+  %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.String" %5
+}
+
 define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NilSlice"() {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
@@ -208,6 +248,24 @@ _llgo_0:
 }
 
 define i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/internal/runtime.Slice" %0, ptr %1, align 8
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %1, i32 0, i32 1
+  %3 = load i64, ptr %2, align 4
+  ret i64 %3
+}
+
+define ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %0, ptr %1, align 8
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %1, i32 0, i32 0
+  %3 = load ptr, ptr %2, align 8
+  ret ptr %3
+}
+
+define i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
   store %"github.com/goplus/llgo/internal/runtime.Slice" %0, ptr %1, align 8
@@ -297,5 +355,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @malloc(i64)
+
+declare ptr @memcpy(ptr, ptr, i64)
 
 declare void @"github.com/goplus/llgo/internal/abi.init"()

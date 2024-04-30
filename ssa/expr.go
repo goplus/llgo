@@ -77,14 +77,6 @@ func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
-// StringVal returns string constant expression.
-func (p Program) StringVal(v string) Expr {
-	t := p.String()
-	cstr := llvm.ConstString(v, true)
-	// TODO(xsw): cstr => gostring
-	return Expr{cstr, t}
-}
-
 // BoolVal returns a boolean constant expression.
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
@@ -149,7 +141,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 				return prog.FloatVal(v, typ)
 			}
 		case kind == types.String:
-			return prog.StringVal(constant.StringVal(v))
+			return b.Str(constant.StringVal(v))
 		}
 	}
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, typ.t))
@@ -158,6 +150,15 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 // CStr returns a c-style string constant expression.
 func (b Builder) CStr(v string) Expr {
 	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
+}
+
+// Str returns a Go string constant expression.
+func (b Builder) Str(v string) (ret Expr) {
+	prog := b.Prog
+	cstr := b.CStr(v)
+	ret = b.InlineCall(b.fn.pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
+	ret.Type = prog.String()
+	return
 }
 
 // -----------------------------------------------------------------------------
@@ -536,6 +537,18 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	return
 }
 */
+
+// AllocaCStr allocates space for copy it from a Go string.
+func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocaCStr %v\n", gostr.impl)
+	}
+	pkg := b.fn.pkg
+	n := b.InlineCall(pkg.rtFunc("StringLen"), gostr)
+	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
+	cstr := b.Alloca(n1)
+	return b.InlineCall(pkg.rtFunc("CStrCopy"), cstr, gostr)
+}
 
 // -----------------------------------------------------------------------------
 

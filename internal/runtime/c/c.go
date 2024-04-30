@@ -29,6 +29,9 @@ func Str(string) *int8
 //go:linkname Alloca llgo.alloca
 func Alloca(size uintptr) unsafe.Pointer
 
+//go:linkname AllocaCStr llgo.allocaCStr
+func AllocaCStr(s string) *int8
+
 //go:linkname Unreachable llgo.unreachable
 func Unreachable()
 

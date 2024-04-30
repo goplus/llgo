@@ -28,8 +28,8 @@ func testCompile(t *testing.T, src, expected string) {
 	cltest.TestCompileEx(t, src, "foo.go", expected)
 }
 
-func TestFromTestcgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testcgo", true)
+func TestFromTestrt(t *testing.T) {
+	cltest.FromDir(t, "", "./_testrt", true)
 }
 
 func TestFromTestdata(t *testing.T) {
