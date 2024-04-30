@@ -139,7 +139,8 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	if debugInstr {
 		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
 	}
-	panic("todo")
+	// TODO(xsw)
+	// panic("todo")
 }
 
 // -----------------------------------------------------------------------------

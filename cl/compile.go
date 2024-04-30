@@ -489,6 +489,10 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		elseb := fn.Block(succs[1].Index)
 		b.If(cond, thenb, elseb)
 	case *ssa.MapUpdate:
+		m := p.compileValue(b, v.Map)
+		key := p.compileValue(b, v.Key)
+		val := p.compileValue(b, v.Value)
+		b.MapUpdate(m, key, val)
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X).Do()
 		b.Panic(arg)

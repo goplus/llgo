@@ -6,6 +6,7 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 %"github.com/goplus/llgo/internal/runtime.itab" = type { ptr, ptr, i32, [4 x i8], [1 x i64] }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
+%"github.com/goplus/llgo/internal/runtime.hmap" = type { i64, i8, i8, i16, i32, ptr, ptr, i64, ptr }
 
 @"github.com/goplus/llgo/internal/runtime.TyAny" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.basicTypes" = global ptr null
@@ -201,6 +202,12 @@ _llgo_0:
   ret %"github.com/goplus/llgo/internal/runtime.iface" %12
 }
 
+define ptr @"github.com/goplus/llgo/internal/runtime.MakeSmallMap"() {
+_llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.makemap_small"()
+  ret ptr %0
+}
+
 define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
   %3 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
@@ -287,6 +294,12 @@ _llgo_0:
   ret ptr %1
 }
 
+define i32 @"github.com/goplus/llgo/internal/runtime.fastrand"() {
+_llgo_0:
+  %0 = call i32 @rand()
+  ret i32 %0
+}
+
 define void @"github.com/goplus/llgo/internal/runtime.init"() {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/internal/runtime.init$guard", align 1
@@ -354,8 +367,25 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
+define i1 @"github.com/goplus/llgo/internal/runtime.isEmpty"(i8 %0) {
+_llgo_0:
+  %1 = icmp ule i8 %0, 1
+  ret i1 %1
+}
+
+define ptr @"github.com/goplus/llgo/internal/runtime.makemap_small"() {
+_llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %1 = call i32 @"github.com/goplus/llgo/internal/runtime.fastrand"()
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.hmap", ptr %0, i32 0, i32 4
+  store i32 %1, ptr %2, align 4
+  ret ptr %0
+}
+
 declare ptr @malloc(i64)
 
 declare ptr @memcpy(ptr, ptr, i64)
+
+declare i32 @rand()
 
 declare void @"github.com/goplus/llgo/internal/abi.init"()
