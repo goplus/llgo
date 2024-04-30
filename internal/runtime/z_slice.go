@@ -24,14 +24,24 @@ import (
 
 // Slice is the runtime representation of a slice.
 type Slice struct {
-	array unsafe.Pointer
-	len   int
-	cap   int
+	data unsafe.Pointer
+	len  int
+	cap  int
 }
 
 // NilSlice returns a nil slice.
 func NilSlice() Slice {
 	return Slice{nil, 0, 0}
+}
+
+// NewSlice creates a new slice.
+func NewSlice(data unsafe.Pointer, len, cap int) Slice {
+	return Slice{data, len, cap}
+}
+
+// SliceLen returns the length of a slice.
+func SliceLen(s Slice) int {
+	return s.len
 }
 
 // -----------------------------------------------------------------------------

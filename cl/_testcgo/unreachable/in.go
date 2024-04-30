@@ -10,5 +10,5 @@ func foo() {
 
 func main() {
 	foo()
-	c.Printf(c.String("Hello\n"))
+	c.Printf(c.Str("Hello\n"))
 }

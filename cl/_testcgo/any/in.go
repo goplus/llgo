@@ -9,5 +9,5 @@ func incVal(a any) int {
 }
 
 func main() {
-	c.Printf(c.String("Hello %d\n"), incVal(100))
+	c.Printf(c.Str("Hello %d\n"), incVal(100))
 }

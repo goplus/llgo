@@ -142,6 +142,7 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 	inits  []func()
+	phis   []func()
 }
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
@@ -203,6 +204,7 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		defer func() {
 			p.fn = nil
 		}()
+		p.phis = nil
 		nblk := len(f.Blocks)
 		if nblk == 0 { // external function
 			return
@@ -218,6 +220,9 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		p.bvals = make(map[ssa.Value]llssa.Expr)
 		for i, block := range f.Blocks {
 			p.compileBlock(b, block, i == 0 && name == "main")
+		}
+		for _, phi := range p.phis {
+			phi()
 		}
 	})
 }
@@ -275,7 +280,7 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		if c, ok := args[0].(*ssa.Const); ok {
 			if v := c.Value; v.Kind() == constant.String {
 				sv := constant.StringVal(v)
-				return b.CString(sv)
+				return b.CStr(sv)
 			}
 		}
 	}
@@ -349,6 +354,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
 		ret = b.UnOp(v.Op, x)
+	case *ssa.Phi:
+		phi := b.Phi(p.prog.Type(v.Type()))
+		ret = phi.Expr
+		p.phis = append(p.phis, func() {
+			vals := p.compileValues(b, v.Edges, 0)
+			preds := v.Block().Preds
+			bblks := make([]llssa.BasicBlock, len(preds))
+			for i, pred := range preds {
+				bblks[i] = p.fn.Block(pred.Index)
+			}
+			phi.AddIncoming(vals, bblks)
+		})
 	case *ssa.ChangeType:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
@@ -373,7 +390,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
 			return
 		}
-		panic("todo")
+		var low, high, max llssa.Expr
+		x := p.compileValue(b, vx)
+		if v.Low != nil {
+			low = p.compileValue(b, v.Low)
+		}
+		if v.High != nil {
+			high = p.compileValue(b, v.High)
+		}
+		if v.Max != nil {
+			max = p.compileValue(b, v.Max)
+		}
+		ret = b.Slice(x, low, high, max)
 	case *ssa.Alloc:
 		t := v.Type().(*types.Pointer)
 		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation

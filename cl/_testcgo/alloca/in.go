@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	s := c.String("Hi\n")
+	s := c.Str("Hi\n")
 	s2 := c.Alloca(4)
 	c.Memcpy(s2, unsafe.Pointer(s), 4)
-	c.Printf(c.String("%s"), s2)
+	c.Printf(c.Str("%s"), s2)
 }

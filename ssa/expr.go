@@ -35,6 +35,11 @@ type Expr struct {
 	Type
 }
 
+// IsNil checks if the expression is nil or not.
+func (v Expr) IsNil() bool {
+	return v.Type == nil
+}
+
 /*
 // TypeOf returns the type of the expression.
 func (v Expr) TypeOf() types.Type {
@@ -63,16 +68,6 @@ func (p delayExprTy) Underlying() types.Type {
 
 func (p delayExprTy) String() string {
 	return "delayExpr"
-}
-
-// -----------------------------------------------------------------------------
-
-func llvmValues(vals []Expr) []llvm.Value {
-	ret := make([]llvm.Value, len(vals))
-	for i, v := range vals {
-		ret[i] = v.impl
-	}
-	return ret
 }
 
 // -----------------------------------------------------------------------------
@@ -142,9 +137,15 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		case kind == types.Bool:
 			return prog.BoolVal(constant.BoolVal(v))
 		case kind >= types.Int && kind <= types.Uintptr:
-			if v, exact := constant.Uint64Val(v); exact {
-				return prog.IntVal(v, typ)
+			if v, exact := constant.Int64Val(v); exact {
+				return prog.IntVal(uint64(v), typ)
 			}
+			panic("todo")
+			/*
+				if v, exact := constant.Uint64Val(v); exact {
+					return prog.IntVal(v, typ)
+				}
+			*/
 		case kind == types.Float32 || kind == types.Float64:
 			if v, exact := constant.Float64Val(v); exact {
 				return prog.FloatVal(v, typ)
@@ -153,12 +154,12 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 			return prog.StringVal(constant.StringVal(v))
 		}
 	}
-	panic("todo")
+	panic(fmt.Sprintf("unsupported Const: %v, %v", v, typ.t))
 }
 
-// CString returns a c-style string constant expression.
-func (b Builder) CString(v string) Expr {
-	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CString()}
+// CStr returns a c-style string constant expression.
+func (b Builder) CStr(v string) Expr {
+	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
 }
 
 // -----------------------------------------------------------------------------
@@ -321,6 +322,43 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 	panic("todo")
 }
 
+// -----------------------------------------------------------------------------
+
+func llvmValues(vals []Expr) []llvm.Value {
+	ret := make([]llvm.Value, len(vals))
+	for i, v := range vals {
+		ret[i] = v.impl
+	}
+	return ret
+}
+
+func llvmBlocks(bblks []BasicBlock) []llvm.BasicBlock {
+	ret := make([]llvm.BasicBlock, len(bblks))
+	for i, v := range bblks {
+		ret[i] = v.impl
+	}
+	return ret
+}
+
+// Phi represents a phi node.
+type Phi struct {
+	Expr
+}
+
+// AddIncoming adds incoming values to a phi node.
+func (p Phi) AddIncoming(vals []Expr, bblks []BasicBlock) {
+	v := llvmValues(vals)
+	b := llvmBlocks(bblks)
+	p.impl.AddIncoming(v, b)
+}
+
+// Phi returns a phi node.
+func (b Builder) Phi(t Type) Phi {
+	return Phi{Expr{llvm.CreatePHI(b.impl, t.ll), t}}
+}
+
+// -----------------------------------------------------------------------------
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
@@ -392,6 +430,45 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
 }
 
+// The Slice instruction yields a slice of an existing string, slice
+// or *array X between optional integer bounds Low and High.
+//
+// Dynamically, this instruction panics if X evaluates to a nil *array
+// pointer.
+//
+// Type() returns string if the type of X was string, otherwise a
+// *types.Slice with the same element type as X.
+//
+// Pos() returns the ast.SliceExpr.Lbrack if created by a x[:] slice
+// operation, the ast.CompositeLit.Lbrace if created by a literal, or
+// NoPos if not explicit in the source (e.g. a variadic argument slice).
+//
+// Example printed form:
+//
+//	t1 = slice t0[1:]
+func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("Slice %v, %v, %v\n", x.impl, low.impl, high.impl)
+	}
+	prog := b.Prog
+	pkg := b.fn.pkg
+	switch t := x.t.Underlying().(type) {
+	case *types.Pointer:
+		telem := t.Elem()
+		switch te := telem.Underlying().(type) {
+		case *types.Array:
+			ret.Type = prog.Type(types.NewSlice(te.Elem()))
+			if low.IsNil() && high.IsNil() && max.IsNil() {
+				n := prog.Val(int(te.Len()))
+				return b.InlineCall(pkg.rtFunc("NewSlice"), n, n)
+			}
+		}
+	}
+	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
+
 // The Alloc instruction reserves space for a variable of the given type,
 // zero-initializes it, and yields its address.
 //
@@ -452,6 +529,8 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	return
 }
 */
+
+// -----------------------------------------------------------------------------
 
 // The ChangeType instruction applies to X a value-preserving type
 // change to Type().
@@ -713,6 +792,16 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 // `fn` indicates the function: one of the built-in functions from the
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
+	switch fn {
+	case "len":
+		if len(args) == 1 {
+			arg := args[0]
+			switch arg.t.Underlying().(type) {
+			case *types.Slice:
+				return b.InlineCall(b.fn.pkg.rtFunc("SliceLen"), arg)
+			}
+		}
+	}
 	panic("todo")
 }
 
