@@ -390,6 +390,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.FieldAddr:
 		x := p.compileValue(b, v.X)
 		ret = b.FieldAddr(x, v.Field)
+	case *ssa.Alloc:
+		t := v.Type().(*types.Pointer)
+		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
+			return
+		}
+		ret = b.Alloc(t, v.Heap)
 	case *ssa.IndexAddr:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index
@@ -415,12 +421,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			max = p.compileValue(b, v.Max)
 		}
 		ret = b.Slice(x, low, high, max)
-	case *ssa.Alloc:
-		t := v.Type().(*types.Pointer)
-		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
-			return
+	case *ssa.MakeMap:
+		var nReserve llssa.Expr
+		t := v.Type()
+		if v.Reserve != nil {
+			nReserve = p.compileValue(b, v.Reserve)
 		}
-		ret = b.Alloc(t, v.Heap)
+		ret = b.MakeMap(p.prog.Type(t), nReserve)
 	case *ssa.MakeInterface:
 		const (
 			delayExpr = true // varargs: don't need to convert an expr to any
@@ -481,6 +488,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		thenb := fn.Block(succs[0].Index)
 		elseb := fn.Block(succs[1].Index)
 		b.If(cond, thenb, elseb)
+	case *ssa.MapUpdate:
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X).Do()
 		b.Panic(arg)

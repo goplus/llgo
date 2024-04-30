@@ -117,6 +117,7 @@ type aProgram struct {
 	rtStringTy llvm.Type
 	rtIfaceTy  llvm.Type
 	rtSliceTy  llvm.Type
+	rtMapTy    llvm.Type
 
 	anyTy     Type
 	voidTy    Type
@@ -182,6 +183,13 @@ func (p Program) rtIface() llvm.Type {
 		p.rtIfaceTy = p.rtType("Interface").ll
 	}
 	return p.rtIfaceTy
+}
+
+func (p Program) rtMap() llvm.Type {
+	if p.rtMapTy.IsNil() {
+		p.rtMapTy = p.rtType("Map").ll
+	}
+	return p.rtMapTy
 }
 
 func (p Program) rtSlice() llvm.Type {

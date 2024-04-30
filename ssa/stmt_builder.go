@@ -126,4 +126,20 @@ func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 	b.impl.CreateCondBr(cond.impl, thenb.impl, elseb.impl)
 }
 
+// The MapUpdate instruction updates the association of Map[Key] to
+// Value.
+//
+// Pos() returns the ast.KeyValueExpr.Colon or ast.IndexExpr.Lbrack,
+// if explicit in the source.
+//
+// Example printed form:
+//
+//	t0[t1] = t2
+func (b Builder) MapUpdate(m, k, v Expr) {
+	if debugInstr {
+		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
+	}
+	panic("todo")
+}
+
 // -----------------------------------------------------------------------------
