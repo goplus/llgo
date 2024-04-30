@@ -537,6 +537,18 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 }
 */
 
+// AllocaCStr allocates space for copy it from a Go string.
+func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocaCStr %v\n", gostr.impl)
+	}
+	pkg := b.fn.pkg
+	n := b.InlineCall(pkg.rtFunc("StringLen"), gostr)
+	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
+	cstr := b.Alloca(n1)
+	return b.InlineCall(pkg.rtFunc("CStrCopy"), cstr, gostr)
+}
+
 // -----------------------------------------------------------------------------
 
 // The ChangeType instruction applies to X a value-preserving type

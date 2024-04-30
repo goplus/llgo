@@ -178,9 +178,10 @@ const (
 	llgoInstr = -1
 
 	llgoInstrBase   = 0x80
+	llgoUnreachable = llgoInstrBase + 0
 	llgoCstr        = llgoInstrBase + 1
 	llgoAlloca      = llgoInstrBase + 2
-	llgoUnreachable = llgoInstrBase + 3
+	llgoAllocaCStr  = llgoInstrBase + 3
 )
 
 func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (string, int) {
@@ -212,6 +213,8 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 			ftype = llgoCstr
 		case "alloca":
 			ftype = llgoAlloca
+		case "allocaCStr":
+			ftype = llgoAllocaCStr
 		case "unreachable":
 			ftype = llgoUnreachable
 		default:

@@ -275,6 +275,7 @@ func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	return false
 }
 
+// func cstr(string) *int8
 func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
 		if c, ok := args[0].(*ssa.Const); ok {
@@ -287,12 +288,22 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+// func alloca(size uintptr) unsafe.Pointer
 func (p *context) alloca(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
 		n := p.compileValue(b, args[0])
 		return b.Alloca(n)
 	}
 	panic("alloca(size uintptr): invalid arguments")
+}
+
+// func allocaCStr(s string) *int8
+func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		s := p.compileValue(b, args[0])
+		return b.AllocaCStr(s)
+	}
+	panic("allocaCStr(s string): invalid arguments")
 }
 
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
@@ -334,7 +345,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = cstr(b, call.Args)
 			case llgoAlloca:
 				ret = p.alloca(b, call.Args)
-			case llgoUnreachable:
+			case llgoAllocaCStr:
+				ret = p.allocaCStr(b, call.Args)
+			case llgoUnreachable: // func unreachable()
 				b.Unreachable()
 			default:
 				panic("todo")
