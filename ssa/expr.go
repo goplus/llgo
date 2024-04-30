@@ -136,16 +136,14 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		switch {
 		case kind == types.Bool:
 			return prog.BoolVal(constant.BoolVal(v))
-		case kind >= types.Int && kind <= types.Uintptr:
+		case kind >= types.Int && kind <= types.Int64:
 			if v, exact := constant.Int64Val(v); exact {
 				return prog.IntVal(uint64(v), typ)
 			}
-			panic("todo")
-			/*
-				if v, exact := constant.Uint64Val(v); exact {
-					return prog.IntVal(v, typ)
-				}
-			*/
+		case kind >= types.Uint && kind <= types.Uintptr:
+			if v, exact := constant.Uint64Val(v); exact {
+				return prog.IntVal(v, typ)
+			}
 		case kind == types.Float32 || kind == types.Float64:
 			if v, exact := constant.Float64Val(v); exact {
 				return prog.FloatVal(v, typ)
@@ -460,7 +458,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			ret.Type = prog.Type(types.NewSlice(te.Elem()))
 			if low.IsNil() && high.IsNil() && max.IsNil() {
 				n := prog.Val(int(te.Len()))
-				return b.InlineCall(pkg.rtFunc("NewSlice"), n, n)
+				ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), n, n).impl
+				return ret
 			}
 		}
 	}
