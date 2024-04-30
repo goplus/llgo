@@ -473,7 +473,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		g := p.varOf(v)
 		return g.Expr
 	case *ssa.Const:
-		t := v.Type()
+		t := types.Default(v.Type())
 		return b.Const(v.Value, p.prog.Type(t))
 	}
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
