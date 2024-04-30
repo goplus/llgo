@@ -142,6 +142,7 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 	inits  []func()
+	phis   []func()
 }
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
@@ -203,6 +204,7 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		defer func() {
 			p.fn = nil
 		}()
+		p.phis = nil
 		nblk := len(f.Blocks)
 		if nblk == 0 { // external function
 			return
@@ -218,6 +220,9 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		p.bvals = make(map[ssa.Value]llssa.Expr)
 		for i, block := range f.Blocks {
 			p.compileBlock(b, block, i == 0 && name == "main")
+		}
+		for _, phi := range p.phis {
+			phi()
 		}
 	})
 }
@@ -349,6 +354,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
 		ret = b.UnOp(v.Op, x)
+	case *ssa.Phi:
+		phi := b.Phi(p.prog.Type(v.Type()))
+		ret = phi.Expr
+		p.phis = append(p.phis, func() {
+			vals := p.compileValues(b, v.Edges, 0)
+			preds := v.Block().Preds
+			bblks := make([]llssa.BasicBlock, len(preds))
+			for i, pred := range preds {
+				bblks[i] = p.fn.Block(pred.Index)
+			}
+			phi.AddIncoming(vals, bblks)
+		})
 	case *ssa.ChangeType:
 		t := v.Type()
 		x := p.compileValue(b, v.X)

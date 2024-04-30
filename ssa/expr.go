@@ -72,16 +72,6 @@ func (p delayExprTy) String() string {
 
 // -----------------------------------------------------------------------------
 
-func llvmValues(vals []Expr) []llvm.Value {
-	ret := make([]llvm.Value, len(vals))
-	for i, v := range vals {
-		ret[i] = v.impl
-	}
-	return ret
-}
-
-// -----------------------------------------------------------------------------
-
 // Null returns a null constant expression.
 func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
@@ -326,6 +316,43 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 	panic("todo")
 }
 
+// -----------------------------------------------------------------------------
+
+func llvmValues(vals []Expr) []llvm.Value {
+	ret := make([]llvm.Value, len(vals))
+	for i, v := range vals {
+		ret[i] = v.impl
+	}
+	return ret
+}
+
+func llvmBlocks(bblks []BasicBlock) []llvm.BasicBlock {
+	ret := make([]llvm.BasicBlock, len(bblks))
+	for i, v := range bblks {
+		ret[i] = v.impl
+	}
+	return ret
+}
+
+// Phi represents a phi node.
+type Phi struct {
+	Expr
+}
+
+// AddIncoming adds incoming values to a phi node.
+func (p Phi) AddIncoming(vals []Expr, bblks []BasicBlock) {
+	v := llvmValues(vals)
+	b := llvmBlocks(bblks)
+	p.impl.AddIncoming(v, b)
+}
+
+// Phi returns a phi node.
+func (b Builder) Phi(t Type) Phi {
+	return Phi{Expr{llvm.CreatePHI(b.impl, t.ll), t}}
+}
+
+// -----------------------------------------------------------------------------
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
@@ -434,6 +461,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	panic("todo")
 }
 
+// -----------------------------------------------------------------------------
+
 // The Alloc instruction reserves space for a variable of the given type,
 // zero-initializes it, and yields its address.
 //
@@ -494,6 +523,8 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	return
 }
 */
+
+// -----------------------------------------------------------------------------
 
 // The ChangeType instruction applies to X a value-preserving type
 // change to Type().
