@@ -212,7 +212,7 @@ func (p Program) tyInt64() llvm.Type {
 }
 
 func (p Program) toLLVMType(typ types.Type) Type {
-	switch t := types.Default(typ).(type) {
+	switch t := typ.(type) {
 	case *types.Basic:
 		switch t.Kind() {
 		case types.Int:
