@@ -90,19 +90,14 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	for _, name := range names {
 		if token.IsExported(name) {
 			obj := scope.Lookup(name)
-			if obj, ok := obj.(*types.Func); ok {
+			switch obj := obj.(type) {
+			case *types.Func:
 				if pos := obj.Pos(); pos != token.NoPos {
-					f := fset.File(pos)
-					if fp := f.Position(pos); fp.Line > 2 {
-						lines, err := contentOf(contents, fp.Filename)
-						if err != nil {
-							panic(err)
-						}
-						if i := fp.Line - 2; i < len(lines) {
-							line := string(lines[i])
-							p.initLinkname(pkgPath, line)
-						}
-					}
+					p.initLinknameByPos(fset, pos, pkgPath, contents, false)
+				}
+			case *types.Var:
+				if pos := obj.Pos(); pos != token.NoPos {
+					p.initLinknameByPos(fset, pos, pkgPath, contents, true)
 				}
 			}
 		}
@@ -117,7 +112,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 					if doc := decl.Doc; doc != nil {
 						if n := len(doc.List); n > 0 {
 							line := doc.List[n-1].Text
-							p.initLinkname(pkgPath, line)
+							p.initLinkname(pkgPath, line, false)
 						}
 					}
 				}
@@ -126,7 +121,21 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
-func (p *context) initLinkname(pkgPath, line string) {
+func (p *context) initLinknameByPos(fset *token.FileSet, pos token.Pos, pkgPath string, contents contentMap, isVar bool) {
+	f := fset.File(pos)
+	if fp := f.Position(pos); fp.Line > 2 {
+		lines, err := contentOf(contents, fp.Filename)
+		if err != nil {
+			panic(err)
+		}
+		if i := fp.Line - 2; i < len(lines) {
+			line := string(lines[i])
+			p.initLinkname(pkgPath, line, isVar)
+		}
+	}
+}
+
+func (p *context) initLinkname(pkgPath, line string, isVar bool) {
 	const (
 		linkname = "//go:linkname "
 	)
@@ -134,7 +143,7 @@ func (p *context) initLinkname(pkgPath, line string) {
 		text := strings.TrimSpace(line[len(linkname):])
 		if idx := strings.IndexByte(text, ' '); idx > 0 {
 			link := strings.TrimLeft(text[idx+1:], " ")
-			if strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
+			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
 				name := pkgPath + "." + text[:idx]
 				p.link[name] = link
 			} else {
