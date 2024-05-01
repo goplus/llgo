@@ -28,7 +28,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
   store i64 1, ptr %1, align 4
   %2 = getelementptr inbounds i64, ptr %0, i64 1
@@ -39,7 +39,7 @@ _llgo_0:
   store i64 4, ptr %4, align 4
   %5 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr %0, i64 4, i64 4)
   %6 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %5)
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %8 = getelementptr inbounds i64, ptr %7, i64 0
   store i64 1, ptr %8, align 4
   %9 = getelementptr inbounds i64, ptr %7, i64 1

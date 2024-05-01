@@ -23,7 +23,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
   store i64 1, ptr %1, align 4
   %2 = getelementptr inbounds i64, ptr %0, i64 1
