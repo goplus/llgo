@@ -122,7 +122,7 @@ func TestErrInitLinkname(t *testing.T) {
 		}
 	}()
 	var ctx context
-	ctx.initLinkname("foo", "//go:linkname Printf printf")
+	ctx.initLinkname("foo", "//go:linkname Printf printf", false)
 }
 
 func TestErrVarOf(t *testing.T) {
