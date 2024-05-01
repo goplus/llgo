@@ -25,14 +25,24 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestErrAdvance(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("advance: no error?")
+		}
+	}()
+	var ctx context
+	ctx.advance(nil, nil)
+}
+
 func TestErrAlloca(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("alloca: no error?")
 		}
 	}()
-	var ctz context
-	ctz.alloca(nil, nil)
+	var ctx context
+	ctx.alloca(nil, nil)
 }
 
 func TestCStrNoArgs(t *testing.T) {
