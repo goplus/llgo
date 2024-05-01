@@ -20,6 +20,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %0 = load i64, ptr @main.a, align 4
   %1 = add i64 %0, 1
@@ -27,3 +28,5 @@ _llgo_0:
   %2 = load i64, ptr @main.a, align 4
   ret void
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()

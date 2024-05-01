@@ -56,6 +56,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %0 = alloca %main.Foo, align 8
   %1 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 0
@@ -68,3 +69,5 @@ _llgo_0:
 }
 
 declare void @printf(ptr, ...)
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()

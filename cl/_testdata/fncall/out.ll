@@ -18,6 +18,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %0 = call i64 @main.max(i64 1, i64 2)
   ret void
@@ -34,3 +35,5 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   ret i64 %1
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()

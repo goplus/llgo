@@ -66,7 +66,9 @@ func Gen(pkgPath, inFile string, src any) string {
 		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions)
 	check(err)
 
-	ssaPkg.WriteTo(os.Stderr)
+	if Verbose {
+		ssaPkg.WriteTo(os.Stderr)
+	}
 
 	prog := llssa.NewProgram(nil)
 	ret, err := cl.NewPackage(prog, ssaPkg, files)
@@ -80,3 +82,7 @@ func check(err error) {
 		panic(err)
 	}
 }
+
+var (
+	Verbose = true
+)

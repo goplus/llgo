@@ -29,9 +29,12 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   call void (ptr, ...) @printf(ptr @main.format, i64 100)
   ret void
 }
 
 declare void @printf(ptr, ...)
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()

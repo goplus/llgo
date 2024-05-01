@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 // -----------------------------------------------------------------------------
@@ -35,29 +36,35 @@ var (
 type Interface = iface
 
 func MakeAnyInt(typ *Type, data uintptr) Interface {
+	tab := &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}}
 	return Interface{
-		tab:  &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}},
+		tab:  tab,
 		data: unsafe.Pointer(data),
 	}
 }
 
 func MakeAnyString(data string) Interface {
+	typ := Basic(abi.String)
+	tab := &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}}
+	c.Printf(c.Str("MakeAnyString(%p)\n"), typ)
 	return Interface{
-		tab:  &itab{inter: TyAny, _type: Basic(abi.String), hash: 0, fun: [1]uintptr{0}},
+		tab:  tab,
 		data: unsafe.Pointer(&data),
 	}
 }
 
 func MakeAny(typ *Type, data unsafe.Pointer) Interface {
+	tab := &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}}
 	return Interface{
-		tab:  &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}},
+		tab:  tab,
 		data: data,
 	}
 }
 
 func MakeInterface(inter *InterfaceType, typ *Type, data unsafe.Pointer) Interface {
+	tab := &itab{inter: inter, _type: typ, hash: 0, fun: [1]uintptr{0}}
 	return Interface{
-		tab:  &itab{inter: inter, _type: typ, hash: 0, fun: [1]uintptr{0}},
+		tab:  tab,
 		data: data,
 	}
 }

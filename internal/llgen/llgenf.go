@@ -19,6 +19,8 @@ package llgen
 import (
 	"go/types"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/goplus/llgo/cl"
 	"golang.org/x/tools/go/packages"
@@ -65,4 +67,24 @@ func DoFile(fileOrPkg, outFile string) {
 	ret := GenFrom(fileOrPkg)
 	err := os.WriteFile(outFile, []byte(ret), 0644)
 	check(err)
+}
+
+func SmartDoFile(inFile string, pkgPath ...string) {
+	dir, _ := filepath.Split(inFile)
+	fname := "llgo_autogen.ll"
+	if inCompilerDir(dir) {
+		fname = "out.ll"
+	}
+	outFile := dir + fname
+
+	if len(pkgPath) > 0 {
+		Do(pkgPath[0], inFile, outFile)
+	} else {
+		DoFile(inFile, outFile)
+	}
+}
+
+func inCompilerDir(dir string) bool {
+	dir, _ = filepath.Abs(dir)
+	return strings.Contains(filepath.ToSlash(dir), "/llgo/cl/")
 }

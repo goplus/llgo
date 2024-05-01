@@ -19,8 +19,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/goplus/llgo/internal/llgen"
 )
@@ -31,24 +29,6 @@ func main() {
 		return
 	}
 
-	inFile := os.Args[1]
-
-	dir, _ := filepath.Split(inFile)
-	fname := "llgo_autogen.ll"
-	if inCompilerDir(dir) {
-		fname = "out.ll"
-	}
-	outFile := dir + fname
-
 	llgen.Init()
-	if len(os.Args) >= 3 {
-		llgen.Do(os.Args[2], inFile, outFile)
-	} else {
-		llgen.DoFile(inFile, outFile)
-	}
-}
-
-func inCompilerDir(dir string) bool {
-	dir, _ = filepath.Abs(dir)
-	return strings.Contains(filepath.ToSlash(dir), "/llgo/cl/")
+	llgen.SmartDoFile(os.Args[1], os.Args[2:]...)
 }

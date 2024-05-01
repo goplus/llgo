@@ -14,29 +14,44 @@
  * limitations under the License.
  */
 
-package runtime
+package main
 
 import (
-	"unsafe"
+	"fmt"
+	"os"
+	"strings"
 
-	"github.com/goplus/llgo/internal/abi"
-	"github.com/goplus/llgo/internal/runtime/c"
+	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/mod"
 )
 
-// Alloc allocates memory.
-func Alloc(size uintptr) unsafe.Pointer {
-	return c.Malloc(size)
+func main() {
+	dir, _, err := mod.FindGoMod(".")
+	check(err)
+
+	llgen.Verbose = false
+
+	llgenDir(dir + "/cl/_testrt")
+	llgenDir(dir+"/cl/_testdata", "")
 }
 
-// TracePanic prints panic message.
-func TracePanic(v Interface) {
-	c.Printf(c.Str("Panic(%p)\n"), v.tab._type)
-	kind := abi.Kind(v.tab._type.Kind_)
-	switch {
-	case kind == abi.String:
-		s := (*String)(v.data)
-		cs := c.Alloca(uintptr(s.len) + 1)
-		c.Printf(c.Str("panic: %s\n"), CStrCopy(cs, *s))
+func llgenDir(dir string, pkgPath ...string) {
+	fis, err := os.ReadDir(dir)
+	check(err)
+	for _, fi := range fis {
+		name := fi.Name()
+		if !fi.IsDir() || strings.HasPrefix(name, "_") {
+			continue
+		}
+		testDir := dir + "/" + name
+		fmt.Fprintln(os.Stderr, "llgen", testDir)
+		os.Chdir(testDir)
+		llgen.SmartDoFile("in.go", pkgPath...)
 	}
-	// TODO(xsw): other message type
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
