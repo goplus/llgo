@@ -177,7 +177,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
-	name := p.varName(gbl.Pkg.Pkg, gbl)
+	name, isDef := p.varName(gbl.Pkg.Pkg, gbl)
 	if ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}
@@ -185,7 +185,9 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ)
-	g.Init(p.prog.Null(g.Type))
+	if isDef {
+		g.Init(p.prog.Null(g.Type))
+	}
 }
 
 func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) {

@@ -107,16 +107,25 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	for _, file := range files {
 		for _, decl := range file.Decls {
-			if decl, ok := decl.(*ast.FuncDecl); ok {
+			switch decl := decl.(type) {
+			case *ast.FuncDecl:
 				if decl.Recv == nil {
-					if doc := decl.Doc; doc != nil {
-						if n := len(doc.List); n > 0 {
-							line := doc.List[n-1].Text
-							p.initLinkname(pkgPath, line, false)
-						}
-					}
+					p.initLinknameByDoc(decl.Doc, pkgPath, false)
+				}
+			case *ast.GenDecl:
+				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
+					p.initLinknameByDoc(decl.Doc, pkgPath, true)
 				}
 			}
+		}
+	}
+}
+
+func (p *context) initLinknameByDoc(doc *ast.CommentGroup, pkgPath string, isVar bool) {
+	if doc != nil {
+		if n := len(doc.List); n > 0 {
+			line := doc.List[n-1].Text
+			p.initLinkname(pkgPath, line, isVar)
 		}
 	}
 }
@@ -210,12 +219,12 @@ func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (s
 	return name, goFunc
 }
 
-func (p *context) varName(pkg *types.Package, v *ssa.Global) string {
+func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, isDef bool) {
 	name := llssa.FullName(pkg, v.Name())
 	if v, ok := p.link[name]; ok {
-		return v
+		return v, false
 	}
-	return name
+	return name, true
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -246,7 +255,7 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 func (p *context) varOf(v *ssa.Global) (ret llssa.Global) {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
-	name := p.varName(pkgTypes, v)
+	name, _ := p.varName(pkgTypes, v)
 	if ret = pkg.VarOf(name); ret == nil {
 		ret = pkg.NewVar(name, v.Type())
 	}
