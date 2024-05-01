@@ -268,12 +268,17 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	case isMathOp(op): // op: + - * / %
 		kind := x.kind
 		switch kind {
-		case vkString, vkComplex:
-			panic("todo")
-		}
-		idx := mathOpIdx(op, kind)
-		if llop := mathOpToLLVM[idx]; llop != 0 {
-			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
+		case vkString:
+			if op == token.ADD {
+				pkg := b.fn.pkg
+				return b.InlineCall(pkg.rtFunc("StringCat"), x, y)
+			}
+		case vkComplex:
+		default:
+			idx := mathOpIdx(op, kind)
+			if llop := mathOpToLLVM[idx]; llop != 0 {
+				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
+			}
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
 		if op == token.AND_NOT {
@@ -358,6 +363,15 @@ func (b Builder) Phi(t Type) Phi {
 }
 
 // -----------------------------------------------------------------------------
+
+// Advance returns the pointer ptr advanced by offset bytes.
+func (b Builder) Advance(ptr Expr, offset Expr) Expr {
+	if debugInstr {
+		log.Printf("Advance %v, %v\n", ptr.impl, offset.impl)
+	}
+	ret := llvm.CreateGEP(b.impl, b.Prog.tyInt8(), ptr.impl, []llvm.Value{offset.impl})
+	return Expr{ret, ptr.Type}
+}
 
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
