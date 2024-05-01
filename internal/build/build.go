@@ -126,7 +126,7 @@ func Do(args []string, conf *Config) {
 		return rt[0].Types
 	})
 
-	buildAllPkgs(prog, initial, mode, verbose)
+	pkgs := buildAllPkgs(prog, initial, mode, verbose)
 
 	var runtimeFiles []string
 	if rt != nil {
@@ -136,7 +136,7 @@ func Do(args []string, conf *Config) {
 		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				nErr += linkMainPkg(pkg, runtimeFiles, conf, mode, verbose)
+				nErr += linkMainPkg(pkg, pkgs, runtimeFiles, conf, mode, verbose)
 			}
 		}
 		if nErr > 0 {
@@ -153,7 +153,7 @@ func isNeedRuntime(pkg *packages.Package) bool {
 	return pkg.ID == ""
 }
 
-func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) {
+func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
@@ -169,9 +169,10 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			setNeedRuntime(pkg.Package)
 		}
 	}
+	return
 }
 
-func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
+func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -194,6 +195,17 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 	})
 	if needRuntime && runtimeFiles != nil {
 		args = append(args, runtimeFiles...)
+	} else {
+		for _, aPkg := range pkgs {
+			if aPkg.Package == pkg { // make empty runtime.init if no runtime needed
+				lpkg := aPkg.LPkg
+				lpkg.FuncOf(cl.RuntimeInit).MakeBody(1).Return()
+				if needLLFile(mode) {
+					file := pkg.ExportFile + ".ll"
+					os.WriteFile(file, []byte(lpkg.String()), 0644)
+				}
+			}
+		}
 	}
 
 	if verbose || mode != ModeRun {
@@ -222,7 +234,7 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 	return
 }
 
-func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode, verbose bool) {
+func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 	pkg := aPkg.Package
 	if cl.PkgKindOf(pkg.Types) == cl.PkgDeclOnly {
 		// skip packages that only contain declarations
@@ -243,14 +255,16 @@ func buildPkg(prog llssa.Program, aPkg aPackage, mode Mode, verbose bool) {
 		file := pkg.ExportFile + ".ll"
 		os.WriteFile(file, []byte(ret.String()), 0644)
 	}
+	aPkg.LPkg = ret
 }
 
 type aPackage struct {
 	*packages.Package
-	SSA *ssa.Package
+	SSA  *ssa.Package
+	LPkg llssa.Package
 }
 
-func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []aPackage, errs []*packages.Package) {
+func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []*aPackage, errs []*packages.Package) {
 	var fset *token.FileSet
 	if len(initial) > 0 {
 		fset = initial[0].Fset
@@ -260,7 +274,7 @@ func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Progr
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			ssaPkg := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
-			all = append(all, aPackage{p, ssaPkg})
+			all = append(all, &aPackage{p, ssaPkg, nil})
 		} else {
 			errs = append(errs, p)
 		}
