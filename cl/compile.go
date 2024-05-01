@@ -400,7 +400,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			for i, pred := range preds {
 				bblks[i] = p.fn.Block(pred.Index)
 			}
-			phi.AddIncoming(vals, bblks)
+			phi.AddIncoming(b, vals, bblks)
 		})
 	case *ssa.ChangeType:
 		t := v.Type()
