@@ -57,6 +57,10 @@ func GenFrom(fileOrPkg string) string {
 		return rt[0].Types
 	})
 
+	if Verbose {
+		ssaPkg.WriteTo(os.Stderr)
+	}
+
 	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
 	check(err)
 

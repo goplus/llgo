@@ -46,7 +46,7 @@ func MakeAnyInt(typ *Type, data uintptr) Interface {
 func MakeAnyString(data string) Interface {
 	typ := Basic(abi.String)
 	tab := &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}}
-	c.Printf(c.Str("MakeAnyString(%p)\n"), typ)
+	c.Printf(c.Str("MakeAnyString(%p): %d, %d\n"), typ, int(typ.Kind_), abi.String)
 	return Interface{
 		tab:  tab,
 		data: unsafe.Pointer(&data),

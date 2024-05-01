@@ -23,26 +23,32 @@ const (
 	LLGoPackage = "decl"
 )
 
+type (
+	Char    = int8
+	Int     = C.int
+	Pointer = unsafe.Pointer
+)
+
 //go:linkname Str llgo.cstr
-func Str(string) *int8
+func Str(string) *Char
 
 //go:linkname Alloca llgo.alloca
-func Alloca(size uintptr) unsafe.Pointer
+func Alloca(size uintptr) Pointer
 
 //go:linkname AllocaCStr llgo.allocaCStr
-func AllocaCStr(s string) *int8
+func AllocaCStr(s string) *Char
 
 //go:linkname Unreachable llgo.unreachable
 func Unreachable()
 
 //go:linkname Rand C.rand
-func Rand() C.int
+func Rand() Int
 
 //go:linkname Malloc C.malloc
-func Malloc(size uintptr) unsafe.Pointer
+func Malloc(size uintptr) Pointer
 
 //go:linkname Memcpy C.memcpy
-func Memcpy(dst, src unsafe.Pointer, n uintptr) unsafe.Pointer
+func Memcpy(dst, src Pointer, n uintptr) Pointer
 
 //go:linkname Printf C.printf
-func Printf(format *int8, __llgo_va_list ...any) C.int
+func Printf(format *Char, __llgo_va_list ...any) Int
