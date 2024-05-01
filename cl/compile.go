@@ -517,7 +517,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Panic:
-		arg := p.compileValue(b, v.X).Do()
+		arg := p.compileValue(b, v.X).Do(b)
 		b.Panic(arg)
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
@@ -574,7 +574,7 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 	n := len(vals) - hasVArg
 	ret := make([]llssa.Expr, n)
 	for i := 0; i < n; i++ {
-		ret[i] = p.compileValue(b, vals[i]).Do()
+		ret[i] = p.compileValue(b, vals[i]).Do(b)
 	}
 	if hasVArg > 0 {
 		ret = p.compileVArg(ret, b, vals[n])

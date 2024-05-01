@@ -49,12 +49,13 @@ func (v Expr) TypeOf() types.Type {
 */
 
 // Do evaluates the delay expression and returns the result.
-func (v Expr) Do() Expr {
+func (v Expr) Do(b Builder) Expr {
 	switch vt := v.Type; vt.kind {
 	case vkDelayExpr:
 		return vt.t.(delayExprTy)()
 	case vkPhisExpr:
-		panic("unreachable")
+		e := vt.t.(*phisExprTy)
+		return Expr{b.impl.CreateAggregateRet(e.phis), e.Type}
 	}
 	return v
 }
@@ -80,6 +81,7 @@ func (p delayExprTy) String() string {
 
 type phisExprTy struct {
 	phis []llvm.Value
+	Type
 }
 
 func (p phisExprTy) Underlying() types.Type {
@@ -90,8 +92,8 @@ func (p phisExprTy) String() string {
 	return "phisExpr"
 }
 
-func phisExpr(phis []llvm.Value) Expr {
-	return Expr{Type: &aType{t: &phisExprTy{phis}, kind: vkPhisExpr}}
+func phisExpr(t Type, phis []llvm.Value) Expr {
+	return Expr{Type: &aType{t: &phisExprTy{phis, t}, kind: vkPhisExpr}}
 }
 
 // -----------------------------------------------------------------------------
@@ -389,8 +391,8 @@ func (p Phi) AddIncoming(b Builder, vals []Expr, bblks []BasicBlock) {
 		p.impl.AddIncoming(vs, bs)
 		return
 	}
-	phis := p.t.(*phisExprTy).phis
-	for i, phi := range phis {
+	e := p.t.(*phisExprTy)
+	for i, phi := range e.phis {
 		flds := fieldValues(b.impl, vals, i)
 		phi.AddIncoming(flds, bs)
 	}
@@ -408,7 +410,7 @@ func (b Builder) Phi(t Type) Phi {
 			phis := make([]llvm.Value, 2)
 			phis[0] = llvm.CreatePHI(impl, prog.tyVoidPtr())
 			phis[1] = llvm.CreatePHI(impl, prog.tyInt())
-			return Phi{phisExpr(phis)}
+			return Phi{phisExpr(t, phis)}
 		}
 	}
 	phi := llvm.CreatePHI(impl, t.ll)
