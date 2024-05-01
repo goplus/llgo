@@ -416,6 +416,17 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, vx)
 		idx := p.compileValue(b, v.Index)
 		ret = b.IndexAddr(x, idx)
+	case *ssa.Index:
+		x := p.compileValue(b, v.X)
+		idx := p.compileValue(b, v.Index)
+		ret = b.Index(x, idx, func(e llssa.Expr) (ret llssa.Expr) {
+			if e == x {
+				if n, ok := v.X.(*ssa.UnOp); ok {
+					return p.compileValue(b, n.X)
+				}
+			}
+			panic(fmt.Errorf("todo addr of %v", e))
+		})
 	case *ssa.Slice:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
