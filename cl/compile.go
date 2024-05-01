@@ -177,7 +177,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
-	name := llssa.FullName(gbl.Pkg.Pkg, gbl.Name())
+	name := p.varName(gbl.Pkg.Pkg, gbl)
 	if ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}

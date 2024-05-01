@@ -2,7 +2,7 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
-@"github.com/goplus/llgo/internal/runtime/c.Stderr" = external global ptr
+@__stderrp = external global ptr
 @0 = private unnamed_addr constant [10 x i8] c"Hello %d\0A\00", align 1
 
 define void @main.init() {
@@ -22,7 +22,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = load ptr, ptr @"github.com/goplus/llgo/internal/runtime/c.Stderr", align 8
+  %0 = load ptr, ptr @__stderrp, align 8
   %1 = call i32 (ptr, ptr, ...) @fprintf(ptr %0, ptr @0, i64 100)
   ret void
 }
