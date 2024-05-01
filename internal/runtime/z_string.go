@@ -55,6 +55,17 @@ func StringData(s String) unsafe.Pointer {
 	return s.data
 }
 
+// StringCat concatenates strings.
+func StringCat(args ...String) String {
+	n := 0
+	for _, v := range args {
+		n += v.len
+	}
+	ret := Alloc(uintptr(n))
+	_ = ret
+	panic("todo")
+}
+
 // -----------------------------------------------------------------------------
 
 // CStrCopy copies a Go string to a C string buffer and returns it.

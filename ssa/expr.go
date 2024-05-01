@@ -268,12 +268,17 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	case isMathOp(op): // op: + - * / %
 		kind := x.kind
 		switch kind {
-		case vkString, vkComplex:
-			panic("todo")
-		}
-		idx := mathOpIdx(op, kind)
-		if llop := mathOpToLLVM[idx]; llop != 0 {
-			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
+		case vkString:
+			if op == token.ADD {
+				pkg := b.fn.pkg
+				return b.InlineCall(pkg.rtFunc("StringCat"), x, y)
+			}
+		case vkComplex:
+		default:
+			idx := mathOpIdx(op, kind)
+			if llop := mathOpToLLVM[idx]; llop != 0 {
+				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
+			}
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
 		if op == token.AND_NOT {
