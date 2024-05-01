@@ -185,7 +185,7 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 	args[2] = "-Wno-override-module"
 	needRuntime := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
-		if p.ExportFile != "" { // skip packages that only contain declarations
+		if p.ExportFile != "" && !isRuntimePkg(p.PkgPath) { // skip packages that only contain declarations
 			args = append(args, p.ExportFile+".ll")
 			if !needRuntime {
 				needRuntime = isNeedRuntime(p)
@@ -206,7 +206,9 @@ func linkMainPkg(pkg *packages.Package, runtimeFiles []string, conf *Config, mod
 	}()
 
 	// TODO(xsw): show work
-	// fmt.Fprintln(os.Stderr, "clang", args)
+	if verbose {
+		fmt.Fprintln(os.Stderr, "clang", args)
+	}
 	err := clang.New("").Exec(args...)
 	check(err)
 
@@ -328,17 +330,24 @@ func allLinkFiles(rt []*packages.Package) (outFiles []string) {
 	outFiles = make([]string, 0, len(rt))
 	root := rootLLGo(rt[0])
 	packages.Visit(rt, nil, func(p *packages.Package) {
-		if hasLinkFile(p) {
-			outFile := filepath.Join(root+p.PkgPath[len(llgoModPath):], "llgo_autogen.ll")
+		pkgPath := p.PkgPath
+		if isRuntimePkg(pkgPath) {
+			outFile := filepath.Join(root+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
 			outFiles = append(outFiles, outFile)
 		}
 	})
 	return
 }
 
-func hasLinkFile(pkg *packages.Package) bool {
-	if isPkgInLLGo(pkg.PkgPath) {
-		return cl.PkgKindOf(pkg.Types) != cl.PkgDeclOnly
+const (
+	pkgAbi     = llgoModPath + "/internal/abi"
+	pkgRuntime = llgoModPath + "/internal/runtime"
+)
+
+func isRuntimePkg(pkgPath string) bool {
+	switch pkgPath {
+	case pkgRuntime, pkgAbi:
+		return true
 	}
 	return false
 }
@@ -352,6 +361,7 @@ const (
 	llgoModPath = "github.com/goplus/llgo"
 )
 
+/*
 func isPkgInLLGo(pkgPath string) bool {
 	return isPkgInMod(pkgPath, llgoModPath)
 }
@@ -363,6 +373,7 @@ func isPkgInMod(pkgPath, modPath string) bool {
 	}
 	return false
 }
+*/
 
 func check(err error) {
 	if err != nil {
