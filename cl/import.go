@@ -200,6 +200,7 @@ const (
 	llgoCstr        = llgoInstrBase + 1
 	llgoAlloca      = llgoInstrBase + 2
 	llgoAllocaCStr  = llgoInstrBase + 3
+	llgoAdvance     = llgoInstrBase + 4
 )
 
 func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (string, int) {
@@ -237,6 +238,8 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 		switch name {
 		case "cstr":
 			ftype = llgoCstr
+		case "advance":
+			ftype = llgoAdvance
 		case "alloca":
 			ftype = llgoAlloca
 		case "allocaCStr":

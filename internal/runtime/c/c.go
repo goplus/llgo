@@ -42,6 +42,9 @@ var Stderr FilePtr
 //go:linkname Str llgo.cstr
 func Str(string) *Char
 
+//go:linkname Advance llgo.advance
+func Advance(ptr Pointer, offset int) Pointer
+
 //go:linkname Alloca llgo.alloca
 func Alloca(size uintptr) Pointer
 

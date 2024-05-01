@@ -300,6 +300,15 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+func (p *context) advance(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		ptr := p.compileValue(b, args[0])
+		offset := p.compileValue(b, args[1])
+		return b.Advance(ptr, offset)
+	}
+	panic("advance(p ptr, offset int): invalid arguments")
+}
+
 // func alloca(size uintptr) unsafe.Pointer
 func (p *context) alloca(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
@@ -355,6 +364,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = b.Call(fn.Expr, args...)
 			case llgoCstr:
 				ret = cstr(b, call.Args)
+			case llgoAdvance:
+				ret = p.advance(b, call.Args)
 			case llgoAlloca:
 				ret = p.alloca(b, call.Args)
 			case llgoAllocaCStr:

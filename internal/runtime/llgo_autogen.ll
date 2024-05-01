@@ -13,8 +13,7 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 @"github.com/goplus/llgo/internal/runtime.init$guard" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes" = global ptr null
 @0 = private unnamed_addr constant [21 x i8] c"I2Int: type mismatch\00", align 1
-@1 = private unnamed_addr constant [5 x i8] c"todo\00", align 1
-@2 = private unnamed_addr constant [11 x i8] c"panic: %s\0A\00", align 1
+@1 = private unnamed_addr constant [11 x i8] c"panic: %s\0A\00", align 1
 
 define ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %0) {
 _llgo_0:
@@ -269,32 +268,62 @@ _llgo_0:
 define %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %2 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %3 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %3 = phi i64 [ 0, %_llgo_0 ], [ %12, %_llgo_2 ]
-  %4 = phi i64 [ -1, %_llgo_0 ], [ %5, %_llgo_2 ]
-  %5 = add i64 %4, 1
-  %6 = icmp slt i64 %5, %2
-  br i1 %6, label %_llgo_2, label %_llgo_3
+  %4 = phi i64 [ 0, %_llgo_0 ], [ %13, %_llgo_2 ]
+  %5 = phi i64 [ -1, %_llgo_0 ], [ %6, %_llgo_2 ]
+  %6 = add i64 %5, 1
+  %7 = icmp slt i64 %6, %3
+  br i1 %7, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %7, i64 %5
-  %9 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %8, align 8
-  store %"github.com/goplus/llgo/internal/runtime.String" %9, ptr %1, align 8
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %1, i32 0, i32 1
-  %11 = load i64, ptr %10, align 4
-  %12 = add i64 %3, %11
+  %8 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %8, i64 %6
+  %10 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %9, align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %10, ptr %2, align 8
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
+  %12 = load i64, ptr %11, align 4
+  %13 = add i64 %4, %12
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %13 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %3)
-  %14 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 4)
-  %15 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %14)
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.iface" %15)
-  unreachable
+  %14 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %4)
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %1, i32 0, i32 0
+  store ptr %14, ptr %15, align 8
+  %16 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %1, i32 0, i32 1
+  store i64 %4, ptr %16, align 4
+  %17 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %18 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_5, %_llgo_3
+  %19 = phi ptr [ %14, %_llgo_3 ], [ %33, %_llgo_5 ]
+  %20 = phi i64 [ -1, %_llgo_3 ], [ %21, %_llgo_5 ]
+  %21 = add i64 %20, 1
+  %22 = icmp slt i64 %21, %18
+  br i1 %22, label %_llgo_5, label %_llgo_6
+
+_llgo_5:                                          ; preds = %_llgo_4
+  %23 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %23, i64 %21
+  %25 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %24, align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %25, ptr %17, align 8
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %17, i32 0, i32 0
+  %27 = load ptr, ptr %26, align 8
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %17, i32 0, i32 1
+  %29 = load i64, ptr %28, align 4
+  %30 = call ptr @memcpy(ptr %19, ptr %27, i64 %29)
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %17, i32 0, i32 1
+  %32 = load i64, ptr %31, align 4
+  %33 = getelementptr i8, ptr %19, i64 %32
+  br label %_llgo_4
+
+_llgo_6:                                          ; preds = %_llgo_4
+  %34 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %1, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.String" %34
 }
 
 define ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %0) {
@@ -341,7 +370,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %15 = alloca i8, i64 %14, align 1
   %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
   %17 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %15, %"github.com/goplus/llgo/internal/runtime.String" %16)
-  %18 = call i32 (ptr, ...) @printf(ptr @2, ptr %17)
+  %18 = call i32 (ptr, ...) @printf(ptr @1, ptr %17)
   br label %_llgo_1
 }
 

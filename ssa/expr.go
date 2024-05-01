@@ -364,6 +364,15 @@ func (b Builder) Phi(t Type) Phi {
 
 // -----------------------------------------------------------------------------
 
+// Advance returns the pointer ptr advanced by offset bytes.
+func (b Builder) Advance(ptr Expr, offset Expr) Expr {
+	if debugInstr {
+		log.Printf("Advance %v, %v\n", ptr.impl, offset.impl)
+	}
+	ret := llvm.CreateGEP(b.impl, b.Prog.tyInt8(), ptr.impl, []llvm.Value{offset.impl})
+	return Expr{ret, ptr.Type}
+}
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
