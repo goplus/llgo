@@ -31,7 +31,6 @@ func Alloc(size uintptr) unsafe.Pointer {
 // TracePanic prints panic message.
 func TracePanic(v Interface) {
 	kind := abi.Kind(v.tab._type.Kind_)
-	c.Printf(c.Str("Panic(%d)\n"), kind)
 	switch {
 	case kind == abi.String:
 		s := (*String)(v.data)

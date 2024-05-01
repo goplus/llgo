@@ -20,7 +20,6 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
-	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 // -----------------------------------------------------------------------------
@@ -29,10 +28,7 @@ type Kind = abi.Kind
 type Type = abi.Type
 
 func Basic(kind Kind) *Type {
-	ret := basicTypes[kind]
-	c.Printf(c.Str("Basic: %p, %d, %d, %d, %d\n"),
-		ret, c.Int(ret.Hash), c.Int(ret.Kind_), c.Int(kind), c.Int(ret.Size_))
-	return ret
+	return basicTypes[kind]
 }
 
 var (
@@ -80,14 +76,11 @@ var (
 )
 
 func basicType(kind abi.Kind) *Type {
-	ret := &Type{
+	return &Type{
 		Size_: sizeBasicTypes[kind],
 		Hash:  uint32(kind),
 		Kind_: uint8(kind),
 	}
-	c.Printf(c.Str("basicType: %p, %d, %d, %d, %d\n"),
-		ret, c.Int(ret.Hash), c.Int(ret.Kind_), c.Int(kind), c.Int(ret.Size_))
-	return ret
 }
 
 // -----------------------------------------------------------------------------

@@ -1,23 +1,19 @@
 ; ModuleID = 'github.com/goplus/llgo/internal/runtime'
 source_filename = "github.com/goplus/llgo/internal/runtime"
 
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.itab" = type { ptr, ptr, i32, [4 x i8], [1 x i64] }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
 %"github.com/goplus/llgo/internal/runtime.hmap" = type { i64, i8, i8, i16, i32, ptr, ptr, i64, ptr }
 
 @"github.com/goplus/llgo/internal/runtime.TyAny" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.basicTypes" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.init$guard" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes" = global ptr null
-@0 = private unnamed_addr constant [27 x i8] c"Basic: %p, %d, %d, %d, %d\0A\00", align 1
-@1 = private unnamed_addr constant [21 x i8] c"I2Int: type mismatch\00", align 1
-@2 = private unnamed_addr constant [27 x i8] c"MakeAnyString(%p): %d, %d\0A\00", align 1
-@3 = private unnamed_addr constant [11 x i8] c"Panic(%d)\0A\00", align 1
-@4 = private unnamed_addr constant [11 x i8] c"panic: %s\0A\00", align 1
-@5 = private unnamed_addr constant [31 x i8] c"basicType: %p, %d, %d, %d, %d\0A\00", align 1
+@0 = private unnamed_addr constant [21 x i8] c"I2Int: type mismatch\00", align 1
+@1 = private unnamed_addr constant [11 x i8] c"panic: %s\0A\00", align 1
 
 define ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %0) {
 _llgo_0:
@@ -29,16 +25,6 @@ define ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 %0) {
 _llgo_0:
   %1 = getelementptr inbounds ptr, ptr @"github.com/goplus/llgo/internal/runtime.basicTypes", i64 %0
   %2 = load ptr, ptr %1, align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 2
-  %4 = load i32, ptr %3, align 4
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 6
-  %6 = load i8, ptr %5, align 1
-  %7 = sext i8 %6 to i32
-  %8 = trunc i64 %0 to i32
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 0
-  %10 = load i64, ptr %9, align 4
-  %11 = trunc i64 %10 to i32
-  %12 = call i32 (ptr, ...) @printf(ptr @0, ptr %2, i32 %4, i32 %7, i32 %8, i32 %11)
   ret ptr %2
 }
 
@@ -121,7 +107,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   ret i64 %10
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %11 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 20)
+  %11 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 20)
   %12 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %11)
   call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.iface" %12)
   unreachable
@@ -129,7 +115,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %2, i32 0, i32 0
   %4 = load ptr, ptr @"github.com/goplus/llgo/internal/runtime.TyAny", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %2, i32 0, i32 1
@@ -151,7 +137,7 @@ _llgo_0:
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %2, i32 0, i32 0
   %4 = load ptr, ptr @"github.com/goplus/llgo/internal/runtime.TyAny", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %2, i32 0, i32 1
@@ -176,8 +162,8 @@ define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
   store %"github.com/goplus/llgo/internal/runtime.String" %0, ptr %1, align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %2 = load ptr, ptr getelementptr inbounds (ptr, ptr @"github.com/goplus/llgo/internal/runtime.basicTypes", i64 24), align 8
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %3, i32 0, i32 0
   %5 = load ptr, ptr @"github.com/goplus/llgo/internal/runtime.TyAny", align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %3, i32 0, i32 1
@@ -188,22 +174,18 @@ _llgo_0:
   store ptr %2, ptr %6, align 8
   store i32 0, ptr %7, align 4
   store i64 0, ptr %9, align 4
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 6
-  %11 = load i8, ptr %10, align 1
-  %12 = sext i8 %11 to i64
-  %13 = call i32 (ptr, ...) @printf(ptr @2, ptr %2, i64 %12, i64 24)
-  %14 = alloca %"github.com/goplus/llgo/internal/runtime.iface", align 8
-  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %14, i32 0, i32 0
-  %16 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %14, i32 0, i32 1
-  store ptr %3, ptr %15, align 8
-  store ptr %1, ptr %16, align 8
-  %17 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %14, align 8
-  ret %"github.com/goplus/llgo/internal/runtime.iface" %17
+  %10 = alloca %"github.com/goplus/llgo/internal/runtime.iface", align 8
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %10, i32 0, i32 0
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %10, i32 0, i32 1
+  store ptr %3, ptr %11, align 8
+  store ptr %1, ptr %12, align 8
+  %13 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %10, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.iface" %13
 }
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeInterface"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
   %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %3, i32 0, i32 0
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %3, i32 0, i32 1
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.itab", ptr %3, i32 0, i32 2
@@ -312,29 +294,28 @@ _llgo_0:
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %5, i32 0, i32 6
   %7 = load i8, ptr %6, align 1
   %8 = sext i8 %7 to i64
-  %9 = call i32 (ptr, ...) @printf(ptr @3, i64 %8)
-  %10 = icmp eq i64 %8, 24
-  br i1 %10, label %_llgo_2, label %_llgo_1
+  %9 = icmp eq i64 %8, 24
+  br i1 %9, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %1, i32 0, i32 1
-  %12 = load ptr, ptr %11, align 8
-  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %12, i32 0, i32 1
-  %14 = load i64, ptr %13, align 4
-  %15 = add i64 %14, 1
-  %16 = alloca i8, i64 %15, align 1
-  %17 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %12, align 8
-  %18 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %16, %"github.com/goplus/llgo/internal/runtime.String" %17)
-  %19 = call i32 (ptr, ...) @printf(ptr @4, ptr %18)
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %1, i32 0, i32 1
+  %11 = load ptr, ptr %10, align 8
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 1
+  %13 = load i64, ptr %12, align 4
+  %14 = add i64 %13, 1
+  %15 = alloca i8, i64 %14, align 1
+  %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
+  %17 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %15, %"github.com/goplus/llgo/internal/runtime.String" %16)
+  %18 = call i32 (ptr, ...) @printf(ptr @1, ptr %17)
   br label %_llgo_1
 }
 
 define ptr @"github.com/goplus/llgo/internal/runtime.basicType"(i64 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 48)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 0
   %3 = getelementptr inbounds i64, ptr @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes", i64 %0
   %4 = load i64, ptr %3, align 4
@@ -345,16 +326,6 @@ _llgo_0:
   store i64 %4, ptr %2, align 4
   store i32 %6, ptr %5, align 4
   store i8 %8, ptr %7, align 1
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 2
-  %10 = load i32, ptr %9, align 4
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 6
-  %12 = load i8, ptr %11, align 1
-  %13 = sext i8 %12 to i32
-  %14 = trunc i64 %0 to i32
-  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 0
-  %16 = load i64, ptr %15, align 4
-  %17 = trunc i64 %16 to i32
-  %18 = call i32 (ptr, ...) @printf(ptr @5, ptr %1, i32 %10, i32 %13, i32 %14, i32 %17)
   ret ptr %1
 }
 
@@ -368,7 +339,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/internal/runtime.init$guard", align 1
   call void @"github.com/goplus/llgo/internal/abi.init"()
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 80)
   store ptr %1, ptr @"github.com/goplus/llgo/internal/runtime.TyAny", align 8
   store i64 1, ptr getelementptr inbounds (i64, ptr @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes", i64 1), align 4
   store i64 8, ptr getelementptr inbounds (i64, ptr @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes", i64 2), align 4
@@ -435,7 +406,7 @@ _llgo_0:
 
 define ptr @"github.com/goplus/llgo/internal/runtime.makemap_small"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 48)
   %1 = call i32 @rand()
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.hmap", ptr %0, i32 0, i32 4
   store i32 %1, ptr %2, align 4
@@ -444,8 +415,8 @@ _llgo_0:
 
 declare ptr @malloc(i64)
 
-declare i32 @printf(ptr, ...)
-
 declare ptr @memcpy(ptr, ptr, i64)
+
+declare i32 @printf(ptr, ...)
 
 declare void @"github.com/goplus/llgo/internal/abi.init"()

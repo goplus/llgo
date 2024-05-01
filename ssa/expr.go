@@ -23,7 +23,6 @@ import (
 	"go/token"
 	"go/types"
 	"log"
-	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -531,8 +530,8 @@ func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 	telem := t.Elem()
 	if heap {
 		pkg := b.fn.pkg
-		size := unsafe.Sizeof(telem)
-		ret = b.Call(pkg.rtFunc("Alloc"), prog.Val(size))
+		size := prog.sizs.Sizeof(telem)
+		ret = b.Call(pkg.rtFunc("Alloc"), prog.Val(uintptr(size)))
 	} else {
 		ret.impl = llvm.CreateAlloca(b.impl, prog.Type(telem).ll)
 	}
