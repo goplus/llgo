@@ -27,7 +27,17 @@ type (
 	Char    = int8
 	Int     = C.int
 	Pointer = unsafe.Pointer
+	FilePtr = unsafe.Pointer
 )
+
+//go:linkname Stdin __stdinp
+var Stdin FilePtr
+
+//go:linkname Stdout __stdoutp
+var Stdout FilePtr
+
+//go:linkname Stderr __stderrp
+var Stderr FilePtr
 
 //go:linkname Str llgo.cstr
 func Str(string) *Char
@@ -52,3 +62,6 @@ func Memcpy(dst, src Pointer, n uintptr) Pointer
 
 //go:linkname Printf C.printf
 func Printf(format *Char, __llgo_va_list ...any) Int
+
+//go:linkname Fprintf C.fprintf
+func Fprintf(fp FilePtr, format *Char, __llgo_va_list ...any) Int
