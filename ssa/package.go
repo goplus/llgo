@@ -19,6 +19,7 @@ package ssa
 import (
 	"go/constant"
 	"go/types"
+	"runtime"
 
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -97,6 +98,7 @@ func Initialize(flags InitFlags) {
 type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
+	sizs types.Sizes
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -139,11 +141,16 @@ func NewProgram(target *Target) Program {
 	if target == nil {
 		target = &Target{}
 	}
+	arch := target.GOARCH
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
 	ctx := llvm.NewContext()
+	sizes := types.SizesFor("gc", arch)
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// ctx.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
-	return &aProgram{ctx: ctx, target: target, td: td}
+	return &aProgram{ctx: ctx, sizs: sizes, target: target, td: td}
 }
 
 // SetRuntime sets the runtime.
