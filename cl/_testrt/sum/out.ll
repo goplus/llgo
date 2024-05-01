@@ -21,6 +21,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 16)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -59,6 +60,8 @@ _llgo_2:                                          ; preds = %_llgo_1
 _llgo_3:                                          ; preds = %_llgo_1
   ret i64 %2
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
 

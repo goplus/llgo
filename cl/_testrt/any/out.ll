@@ -29,6 +29,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
   %1 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %0, i64 100)
@@ -40,6 +41,8 @@ _llgo_0:
 declare i64 @"github.com/goplus/llgo/internal/runtime.I2Int"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
 

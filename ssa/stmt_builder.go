@@ -73,7 +73,9 @@ func (b Builder) Panic(v Expr) {
 	if debugInstr {
 		log.Printf("Panic %v\n", v.impl)
 	}
-	b.impl.CreateUnreachable() // TODO(xsw): pass v
+	pkg := b.fn.pkg
+	b.Call(pkg.rtFunc("TracePanic"), v)
+	b.impl.CreateUnreachable()
 }
 
 // Unreachable emits an unreachable instruction.

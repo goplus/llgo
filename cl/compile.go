@@ -231,13 +231,23 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bo
 	ret := p.fn.Block(block.Index)
 	b.SetBlock(ret)
 	if doInit {
-		fn := p.pkg.FuncOf("main.init")
-		b.Call(fn.Expr)
+		pkg := p.pkg
+		callRuntimeInit(b, pkg)
+		b.Call(pkg.FuncOf("main.init").Expr)
 	}
 	for _, instr := range block.Instrs {
 		p.compileInstr(b, instr)
 	}
 	return ret
+}
+
+const (
+	RuntimeInit = llssa.PkgRuntime + ".init"
+)
+
+func callRuntimeInit(b llssa.Builder, pkg llssa.Package) {
+	fn := pkg.NewFunc(RuntimeInit, types.NewSignatureType(nil, nil, nil, nil, nil, false))
+	b.Call(fn.Expr)
 }
 
 func isAny(t types.Type) bool {

@@ -4,14 +4,13 @@
 
 package runtime
 
-import (
-	"github.com/goplus/llgo/internal/runtime/c"
-)
+import _ "unsafe"
 
+//go:linkname fastrand C.rand
+func fastrand() uint32
+
+/* TODO(xsw):
 func fastrand() uint32 {
-	return uint32(c.Rand())
-	/* TODO(xsw):
-
 	mp := getg().m
 	// Implement wyrand: https://github.com/wangyi-fudan/wyhash
 	// Only the platform that math.Mul64 can be lowered
@@ -35,5 +34,5 @@ func fastrand() uint32 {
 	s1 = s1 ^ s0 ^ s1>>7 ^ s0>>16
 	t[0], t[1] = s0, s1
 	return s0 + s1
-	*/
 }
+*/
