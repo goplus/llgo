@@ -55,6 +55,7 @@ func (v Expr) Do(b Builder) Expr {
 		return vt.t.(delayExprTy)()
 	case vkPhisExpr:
 		e := vt.t.(*phisExprTy)
+		// TODO(xsw): to check CreateAggregateRet is correct or not
 		return Expr{b.impl.CreateAggregateRet(e.phis), e.Type}
 	}
 	return v
@@ -362,10 +363,10 @@ func llvmValues(vals []Expr) []llvm.Value {
 	return ret
 }
 
-func fieldValues(b llvm.Builder, vals []Expr, fldIdx int) []llvm.Value {
-	ret := make([]llvm.Value, len(vals))
-	for i, v := range vals {
-		ret[i] = llvm.CreateExtractValue(b, v.impl, fldIdx)
+func llvmDelayValues(f func(i int) Expr, n int) []llvm.Value {
+	ret := make([]llvm.Value, n)
+	for i := 0; i < n; i++ {
+		ret[i] = f(i).impl
 	}
 	return ret
 }
@@ -384,17 +385,30 @@ type Phi struct {
 }
 
 // AddIncoming adds incoming values to a phi node.
-func (p Phi) AddIncoming(b Builder, vals []Expr, bblks []BasicBlock) {
+func (p Phi) AddIncoming(b Builder, bblks []BasicBlock, f func(i int) Expr) {
 	bs := llvmBlocks(bblks)
 	if p.kind != vkPhisExpr { // normal phi node
-		vs := llvmValues(vals)
+		vs := llvmDelayValues(f, len(bblks))
 		p.impl.AddIncoming(vs, bs)
 		return
 	}
 	e := p.t.(*phisExprTy)
-	for i, phi := range e.phis {
-		flds := fieldValues(b.impl, vals, i)
-		phi.AddIncoming(flds, bs)
+	phis := e.phis
+	vals := make([][]llvm.Value, len(phis))
+	for iblk, blk := range bblks {
+		last := blk.impl.LastInstruction()
+		b.impl.SetInsertPointBefore(last)
+		impl := b.impl
+		val := f(iblk).impl
+		for i := range phis {
+			if iblk == 0 {
+				vals[i] = make([]llvm.Value, len(bblks))
+			}
+			vals[i][iblk] = llvm.CreateExtractValue(impl, val, i)
+		}
+	}
+	for i, phi := range phis {
+		phi.AddIncoming(vals[i], bs)
 	}
 }
 

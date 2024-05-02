@@ -237,7 +237,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bo
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
-	for _, instr := range block.Instrs {
+	instrs := p.compilePhis(b, block.Instrs)
+	for _, instr := range instrs {
 		p.compileInstr(b, instr)
 	}
 	return ret
@@ -327,6 +328,50 @@ func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("allocaCStr(s string): invalid arguments")
 }
 
+func isPhi(i ssa.Instruction) bool {
+	_, ok := i.(*ssa.Phi)
+	return ok
+}
+
+func (p *context) compilePhis(b llssa.Builder, instrs []ssa.Instruction) []ssa.Instruction {
+	if ninstr := len(instrs); ninstr > 0 {
+		if isPhi(instrs[0]) {
+			n := 1
+			for n < ninstr && isPhi(instrs[n]) {
+				n++
+			}
+			rets := make([]llssa.Expr, n)
+			for i := 0; i < n; i++ {
+				iv := instrs[i].(*ssa.Phi)
+				rets[i] = p.compilePhi(b, iv)
+			}
+			for i := 0; i < n; i++ {
+				iv := instrs[i].(*ssa.Phi)
+				p.bvals[iv] = rets[i].Do(b)
+			}
+			return instrs[n:]
+		}
+	}
+	return instrs
+}
+
+func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
+	phi := b.Phi(p.prog.Type(v.Type()))
+	ret = phi.Expr
+	p.phis = append(p.phis, func() {
+		preds := v.Block().Preds
+		bblks := make([]llssa.BasicBlock, len(preds))
+		for i, pred := range preds {
+			bblks[i] = p.fn.Block(pred.Index)
+		}
+		edges := v.Edges
+		phi.AddIncoming(b, bblks, func(i int) llssa.Expr {
+			return p.compileValue(b, edges[i])
+		})
+	})
+	return
+}
+
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	if asValue {
 		if v, ok := p.bvals[iv]; ok {
@@ -390,18 +435,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
 		ret = b.UnOp(v.Op, x)
-	case *ssa.Phi:
-		phi := b.Phi(p.prog.Type(v.Type()))
-		ret = phi.Expr
-		p.phis = append(p.phis, func() {
-			vals := p.compileValues(b, v.Edges, 0)
-			preds := v.Block().Preds
-			bblks := make([]llssa.BasicBlock, len(preds))
-			for i, pred := range preds {
-				bblks[i] = p.fn.Block(pred.Index)
-			}
-			phi.AddIncoming(b, vals, bblks)
-		})
 	case *ssa.ChangeType:
 		t := v.Type()
 		x := p.compileValue(b, v.X)

@@ -10,30 +10,38 @@ source_filename = "main"
 @2 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @3 = private unnamed_addr constant [6 x i8] c"World\00", align 1
 @__stderrp = external global ptr
-@4 = private unnamed_addr constant [10 x i8] c"Hello %s\0A\00", align 1
+@4 = private unnamed_addr constant [8 x i8] c"Hi, %s\0A\00", align 1
 
 define %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 0)
+  %3 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %2, 0
+  %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %2, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %2 = phi %"github.com/goplus/llgo/internal/runtime.String" [ %10, %_llgo_0 ], [ %9, %_llgo_2 ]
-  %3 = phi i64 [ -1, %_llgo_0 ], [ %4, %_llgo_2 ]
-  %4 = add i64 %3, 1
-  %5 = icmp slt i64 %4, %1
-  br i1 %5, label %_llgo_2, label %_llgo_3
+  %5 = phi ptr [ %3, %_llgo_0 ], [ %14, %_llgo_2 ]
+  %6 = phi i64 [ %4, %_llgo_0 ], [ %15, %_llgo_2 ]
+  %7 = phi i64 [ -1, %_llgo_0 ], [ %8, %_llgo_2 ]
+  %mrv = insertvalue %"github.com/goplus/llgo/internal/runtime.String" poison, ptr %5, 0
+  %mrv1 = insertvalue %"github.com/goplus/llgo/internal/runtime.String" %mrv, i64 %6, 1
+  ret %"github.com/goplus/llgo/internal/runtime.String" %mrv1
+  %8 = add i64 %7, 1
+  %9 = icmp slt i64 %8, %1
+  br i1 %9, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %6, i64 %4
-  %8 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %7, align 8
-  %9 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String" %2, %"github.com/goplus/llgo/internal/runtime.String" %8)
+  %10 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %10, i64 %8
+  %12 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
+  %13 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(void <badref>, %"github.com/goplus/llgo/internal/runtime.String" %12)
+  %14 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %13, 0
+  %15 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %13, 1
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  ret %"github.com/goplus/llgo/internal/runtime.String" %2
-  %10 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 0)
+  ret void <badref>
 }
 
 define void @main.init() {
