@@ -55,8 +55,7 @@ func (v Expr) Do(b Builder) Expr {
 		return vt.t.(delayExprTy)()
 	case vkPhisExpr:
 		e := vt.t.(*phisExprTy)
-		// TODO(xsw): to check CreateAggregateRet is correct or not
-		return Expr{b.impl.CreateAggregateRet(e.phis), e.Type}
+		return b.aggregateValue(e.Type, e.phis...)
 	}
 	return v
 }
@@ -458,6 +457,20 @@ func (b Builder) Store(ptr, val Expr) Builder {
 	}
 	b.impl.CreateStore(val.impl, ptr.impl)
 	return b
+}
+
+// aggregateValue yields the value of the aggregate X with the fields
+func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
+	if debugInstr {
+		log.Printf("AggregateValue %v, %v\n", t, flds)
+	}
+	impl := b.impl
+	tll := t.ll
+	ptr := llvm.CreateAlloca(impl, tll)
+	for i, fld := range flds {
+		impl.CreateStore(fld, llvm.CreateStructGEP(impl, tll, ptr, i))
+	}
+	return Expr{llvm.CreateLoad(b.impl, tll, ptr), t}
 }
 
 // The FieldAddr instruction yields the address of Field of *struct X.

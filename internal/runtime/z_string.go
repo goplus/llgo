@@ -55,20 +55,13 @@ func StringData(s String) unsafe.Pointer {
 	return s.data
 }
 
-// StringCat concatenates strings.
-func StringCat(args ...String) (ret String) {
-	n := 0
-	for _, v := range args {
-		n += v.len
-	}
+// StringCat concatenates two strings.
+func StringCat(a, b String) String {
+	n := a.len + b.len
 	dest := Alloc(uintptr(n))
-	ret.data = dest
-	ret.len = n
-	for _, v := range args {
-		c.Memcpy(dest, v.data, uintptr(v.len))
-		dest = c.Advance(dest, v.len)
-	}
-	return
+	c.Memcpy(dest, a.data, uintptr(a.len))
+	c.Memcpy(c.Advance(dest, a.len), b.data, uintptr(b.len))
+	return String{dest, n}
 }
 
 // -----------------------------------------------------------------------------
