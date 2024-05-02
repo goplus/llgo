@@ -46,7 +46,7 @@ func NewString(data unsafe.Pointer, len int) String {
 }
 
 // StringLen returns the length of a string.
-func StringLen(s Slice) int {
+func StringLen(s String) int {
 	return s.len
 }
 

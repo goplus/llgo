@@ -975,9 +975,21 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.t.Underlying().(type) {
+			switch t := arg.t.Underlying().(type) {
 			case *types.Slice:
 				return b.InlineCall(b.fn.pkg.rtFunc("SliceLen"), arg)
+			case *types.Basic:
+				if t.Info()&types.IsString != 0 {
+					return b.InlineCall(b.fn.pkg.rtFunc("StringLen"), arg)
+				}
+			}
+		}
+	case "cap":
+		if len(args) == 1 {
+			arg := args[0]
+			switch arg.t.Underlying().(type) {
+			case *types.Slice:
+				return b.InlineCall(b.fn.pkg.rtFunc("SliceCap"), arg)
 			}
 		}
 	}

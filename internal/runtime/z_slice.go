@@ -44,6 +44,11 @@ func SliceLen(s Slice) int {
 	return s.len
 }
 
+// SliceCap returns the capacity of a slice.
+func SliceCap(s Slice) int {
+	return s.cap
+}
+
 // SliceData returns the data pointer of a slice.
 func SliceData(s Slice) unsafe.Pointer {
 	return s.data
