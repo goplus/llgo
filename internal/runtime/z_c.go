@@ -33,9 +33,12 @@ func TracePanic(v Interface) {
 	kind := abi.Kind(v.tab._type.Kind_)
 	switch {
 	case kind == abi.String:
-		s := (*String)(v.data)
-		cs := c.Alloca(uintptr(s.len) + 1)
-		c.Printf(c.Str("panic: %s\n"), CStrCopy(cs, *s))
+		stringTracef(c.Stderr, c.Str("panic: %s\n"), *(*String)(v.data))
 	}
 	// TODO(xsw): other message type
+}
+
+func stringTracef(fp c.FilePtr, format *c.Char, s String) {
+	cs := c.Alloca(uintptr(s.len) + 1)
+	c.Fprintf(fp, format, CStrCopy(cs, s))
 }
