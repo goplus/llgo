@@ -30,15 +30,21 @@ func TestMakeInterface(t *testing.T) {
 }
 */
 
-func TestDelayExpr(t *testing.T) {
+func TestUserdefExpr(t *testing.T) {
 	a := delayExprTy(nil)
+	b := &phisExprTy{}
 	_ = a.String()
-	defer func() {
-		if r := recover(); r == nil {
-			t.Log("TestDelayExpr: no error?")
-		}
-	}()
-	a.Underlying()
+	_ = b.String()
+	test := func(a types.Type) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Log("TestUserdefExpr: no error?")
+			}
+		}()
+		a.Underlying()
+	}
+	test(a)
+	test(b)
 }
 
 func TestAny(t *testing.T) {
