@@ -452,6 +452,43 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
 }
 
+// The Index instruction yields element Index of collection X, an array,
+// string or type parameter containing an array, a string, a pointer to an,
+// array or a slice.
+//
+// Example printed form:
+//
+//	t2 = t0[t1]
+func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
+	if debugInstr {
+		log.Printf("Index %v, %v\n", x.impl, idx.impl)
+	}
+	prog := b.Prog
+	var telem Type
+	var ptr Expr
+	switch t := x.t.Underlying().(type) {
+	case *types.Basic:
+		if t.Info()&types.IsString == 0 {
+			panic(fmt.Errorf("invalid operation: cannot index %v", t))
+		}
+		telem = prog.Type(types.Typ[types.Byte])
+		pkg := b.fn.pkg
+		ptr = b.InlineCall(pkg.rtFunc("StringData"), x)
+	case *types.Array:
+		telem = prog.Index(x.Type)
+		if addr != nil {
+			ptr = addr(x)
+		} else {
+			ptr = b.Alloca(prog.IntVal(uint64(t.Len()*b.Prog.sizs.Sizeof(t.Elem())), prog.Index(x.Type)))
+			b.Store(ptr, x)
+		}
+	}
+	pt := prog.Pointer(telem)
+	indices := []llvm.Value{idx.impl}
+	buf := Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
+	return b.Load(buf)
+}
+
 // The Slice instruction yields a slice of an existing string, slice
 // or *array X between optional integer bounds Low and High.
 //
