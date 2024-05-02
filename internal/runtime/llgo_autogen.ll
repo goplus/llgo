@@ -13,6 +13,7 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 @"github.com/goplus/llgo/internal/runtime.init$guard" = global ptr null
 @"github.com/goplus/llgo/internal/runtime.sizeBasicTypes" = global ptr null
 @0 = private unnamed_addr constant [21 x i8] c"I2Int: type mismatch\00", align 1
+@__stderrp = external global ptr
 @1 = private unnamed_addr constant [11 x i8] c"panic: %s\0A\00", align 1
 
 define ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 %0) {
@@ -335,15 +336,11 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %1, i32 0, i32 1
-  %11 = load ptr, ptr %10, align 8
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 1
-  %13 = load i64, ptr %12, align 4
-  %14 = add i64 %13, 1
-  %15 = alloca i8, i64 %14, align 1
-  %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
-  %17 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %15, %"github.com/goplus/llgo/internal/runtime.String" %16)
-  %18 = call i32 (ptr, ...) @printf(ptr @1, ptr %17)
+  %10 = load ptr, ptr @__stderrp, align 8
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %1, i32 0, i32 1
+  %12 = load ptr, ptr %11, align 8
+  %13 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %12, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.stringTracef"(ptr %10, ptr @1, %"github.com/goplus/llgo/internal/runtime.String" %13)
   br label %_llgo_1
 }
 
@@ -447,10 +444,24 @@ _llgo_0:
   ret ptr %0
 }
 
+define void @"github.com/goplus/llgo/internal/runtime.stringTracef"(ptr %0, ptr %1, %"github.com/goplus/llgo/internal/runtime.String" %2) {
+_llgo_0:
+  %3 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" %2, ptr %3, align 8
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %3, i32 0, i32 1
+  %5 = load i64, ptr %4, align 4
+  %6 = add i64 %5, 1
+  %7 = alloca i8, i64 %6, align 1
+  %8 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %3, align 8
+  %9 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %7, %"github.com/goplus/llgo/internal/runtime.String" %8)
+  %10 = call i32 (ptr, ptr, ...) @fprintf(ptr %0, ptr %1, ptr %9)
+  ret void
+}
+
 declare ptr @malloc(i64)
 
 declare ptr @memcpy(ptr, ptr, i64)
 
-declare i32 @printf(ptr, ...)
-
 declare void @"github.com/goplus/llgo/internal/abi.init"()
+
+declare i32 @fprintf(ptr, ptr, ...)
