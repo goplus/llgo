@@ -2,7 +2,6 @@
 source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
-%"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"main.init$guard" = global ptr null
 @0 = private unnamed_addr constant [13 x i8] c"Hello world\0A\00", align 1
@@ -43,7 +42,7 @@ declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/ll
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.Slice")
+declare i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/internal/runtime.String")
 
