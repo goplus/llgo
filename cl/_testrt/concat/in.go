@@ -13,5 +13,5 @@ func concat(args ...string) (ret string) {
 
 func main() {
 	result := concat("Hello", " ", "World")
-	c.Fprintf(c.Stderr, c.Str("Hello %s\n"), c.AllocaCStr(result))
+	c.Fprintf(c.Stderr, c.Str("Hi, %s\n"), c.AllocaCStr(result))
 }

@@ -49,12 +49,19 @@ func (v Expr) TypeOf() types.Type {
 */
 
 // Do evaluates the delay expression and returns the result.
-func (v Expr) Do() Expr {
-	if vt := v.Type; vt.kind == vkDelayExpr {
+func (v Expr) Do(b Builder) Expr {
+	switch vt := v.Type; vt.kind {
+	case vkDelayExpr:
 		return vt.t.(delayExprTy)()
+	case vkPhisExpr:
+		e := vt.t.(*phisExprTy)
+		// TODO(xsw): to check CreateAggregateRet is correct or not
+		return Expr{b.impl.CreateAggregateRet(e.phis), e.Type}
 	}
 	return v
 }
+
+// -----------------------------------------------------------------------------
 
 // DelayExpr returns a delay expression.
 func DelayExpr(f func() Expr) Expr {
@@ -69,6 +76,25 @@ func (p delayExprTy) Underlying() types.Type {
 
 func (p delayExprTy) String() string {
 	return "delayExpr"
+}
+
+// -----------------------------------------------------------------------------
+
+type phisExprTy struct {
+	phis []llvm.Value
+	Type
+}
+
+func (p phisExprTy) Underlying() types.Type {
+	panic("don't call")
+}
+
+func (p phisExprTy) String() string {
+	return "phisExpr"
+}
+
+func phisExpr(t Type, phis []llvm.Value) Expr {
+	return Expr{Type: &aType{t: &phisExprTy{phis, t}, kind: vkPhisExpr}}
 }
 
 // -----------------------------------------------------------------------------
@@ -337,6 +363,14 @@ func llvmValues(vals []Expr) []llvm.Value {
 	return ret
 }
 
+func llvmDelayValues(f func(i int) Expr, n int) []llvm.Value {
+	ret := make([]llvm.Value, n)
+	for i := 0; i < n; i++ {
+		ret[i] = f(i).impl
+	}
+	return ret
+}
+
 func llvmBlocks(bblks []BasicBlock) []llvm.BasicBlock {
 	ret := make([]llvm.BasicBlock, len(bblks))
 	for i, v := range bblks {
@@ -351,15 +385,50 @@ type Phi struct {
 }
 
 // AddIncoming adds incoming values to a phi node.
-func (p Phi) AddIncoming(vals []Expr, bblks []BasicBlock) {
-	v := llvmValues(vals)
-	b := llvmBlocks(bblks)
-	p.impl.AddIncoming(v, b)
+func (p Phi) AddIncoming(b Builder, bblks []BasicBlock, f func(i int) Expr) {
+	bs := llvmBlocks(bblks)
+	if p.kind != vkPhisExpr { // normal phi node
+		vs := llvmDelayValues(f, len(bblks))
+		p.impl.AddIncoming(vs, bs)
+		return
+	}
+	e := p.t.(*phisExprTy)
+	phis := e.phis
+	vals := make([][]llvm.Value, len(phis))
+	for iblk, blk := range bblks {
+		last := blk.impl.LastInstruction()
+		b.impl.SetInsertPointBefore(last)
+		impl := b.impl
+		val := f(iblk).impl
+		for i := range phis {
+			if iblk == 0 {
+				vals[i] = make([]llvm.Value, len(bblks))
+			}
+			vals[i][iblk] = llvm.CreateExtractValue(impl, val, i)
+		}
+	}
+	for i, phi := range phis {
+		phi.AddIncoming(vals[i], bs)
+	}
 }
 
 // Phi returns a phi node.
 func (b Builder) Phi(t Type) Phi {
-	return Phi{Expr{llvm.CreatePHI(b.impl, t.ll), t}}
+	impl := b.impl
+	switch tund := t.t.Underlying().(type) {
+	case *types.Basic:
+		kind := tund.Kind()
+		switch kind {
+		case types.String:
+			prog := b.Prog
+			phis := make([]llvm.Value, 2)
+			phis[0] = llvm.CreatePHI(impl, prog.tyVoidPtr())
+			phis[1] = llvm.CreatePHI(impl, prog.tyInt())
+			return Phi{phisExpr(t, phis)}
+		}
+	}
+	phi := llvm.CreatePHI(impl, t.ll)
+	return Phi{Expr{phi, t}}
 }
 
 // -----------------------------------------------------------------------------
