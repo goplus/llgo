@@ -41,6 +41,20 @@ func NewSlice(data unsafe.Pointer, len, cap int) Slice {
 	return Slice{data, len, cap}
 }
 
+func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
+	if i < 0 || j < i || k < j || k > cap {
+		panic("slice index out of bounds")
+	}
+	s.len = j - i
+	s.cap = k - i
+	if k-i > 0 {
+		s.data = c.Advance(base, i*eltSize)
+	} else {
+		s.data = base
+	}
+	return
+}
+
 // SliceLen returns the length of a slice.
 func SliceLen(s Slice) int {
 	return s.len
@@ -54,20 +68,6 @@ func SliceCap(s Slice) int {
 // SliceData returns the data pointer of a slice.
 func SliceData(s Slice) unsafe.Pointer {
 	return s.data
-}
-
-func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
-	if i < 0 || j < i || k < j || k > cap {
-		panic("slice index out of bounds")
-	}
-	s.len = j - i
-	s.cap = k - i
-	if k-i > 0 {
-		s.data = c.Advance(base, i*eltSize)
-	} else {
-		s.data = base
-	}
-	return
 }
 
 // -----------------------------------------------------------------------------

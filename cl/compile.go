@@ -437,12 +437,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				panic("todo")
 			}
 		default:
-			panic("todo")
-			/*
-				fn := p.compileValue(b, cv)
-				args := p.compileValues(b, call.Args, kind)
-				ret = b.Call(fn, args...)
-			*/
+			fn := p.compileValue(b, cv)
+			args := p.compileValues(b, call.Args, kind)
+			ret = b.Call(fn, args...)
 		}
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
@@ -504,13 +501,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			max = p.compileValue(b, v.Max)
 		}
 		ret = b.Slice(x, low, high, max)
-	case *ssa.MakeMap:
-		var nReserve llssa.Expr
-		t := v.Type()
-		if v.Reserve != nil {
-			nReserve = p.compileValue(b, v.Reserve)
-		}
-		ret = b.MakeMap(p.prog.Type(t), nReserve)
 	case *ssa.MakeInterface:
 		const (
 			delayExpr = true // varargs: don't need to convert an expr to any
@@ -518,6 +508,21 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x, delayExpr)
+	case *ssa.MakeSlice:
+		var nCap llssa.Expr
+		t := v.Type()
+		nLen := p.compileValue(b, v.Len)
+		if v.Cap != nil {
+			nCap = p.compileValue(b, v.Cap)
+		}
+		ret = b.MakeSlice(p.prog.Type(t), nLen, nCap)
+	case *ssa.MakeMap:
+		var nReserve llssa.Expr
+		t := v.Type()
+		if v.Reserve != nil {
+			nReserve = p.compileValue(b, v.Reserve)
+		}
+		ret = b.MakeMap(p.prog.Type(t), nReserve)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
 		ret = b.TypeAssert(x, p.prog.Type(v.AssertedType), v.CommaOk)

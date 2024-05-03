@@ -21,7 +21,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 40)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
   %2 = getelementptr inbounds i64, ptr %0, i64 1
   %3 = getelementptr inbounds i64, ptr %0, i64 2
@@ -57,7 +57,7 @@ declare void @qsort(ptr, i64, i64, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 define i32 @"main.main$1"(ptr %0, ptr %1) {
 _llgo_0:

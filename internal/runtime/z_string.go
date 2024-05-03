@@ -58,7 +58,7 @@ func StringData(s String) unsafe.Pointer {
 // StringCat concatenates two strings.
 func StringCat(a, b String) String {
 	n := a.len + b.len
-	dest := Alloc(uintptr(n))
+	dest := AllocU(uintptr(n))
 	c.Memcpy(dest, a.data, uintptr(a.len))
 	c.Memcpy(c.Advance(dest, a.len), b.data, uintptr(b.len))
 	return String{dest, n}
@@ -76,7 +76,7 @@ func CStrCopy(dest unsafe.Pointer, s String) *int8 {
 }
 
 func CStrDup(s String) *int8 {
-	dest := Alloc(uintptr(s.len + 1))
+	dest := AllocU(uintptr(s.len + 1))
 	return CStrCopy(dest, s)
 }
 

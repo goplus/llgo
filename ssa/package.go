@@ -18,7 +18,6 @@ package ssa
 
 import (
 	"go/types"
-	"runtime"
 
 	"github.com/goplus/llgo/internal/typeutil"
 	"github.com/goplus/llvm"
@@ -97,7 +96,7 @@ func Initialize(flags InitFlags) {
 type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
-	sizs types.Sizes
+	// sizs types.Sizes
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -115,14 +114,14 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
-	rtClosureTy llvm.Type
-	rtStringTy  llvm.Type
-	rtIfaceTy   llvm.Type
-	rtSliceTy   llvm.Type
-	rtMapTy     llvm.Type
+	rtStringTy llvm.Type
+	rtIfaceTy  llvm.Type
+	rtSliceTy  llvm.Type
+	rtMapTy    llvm.Type
 
 	anyTy     Type
 	voidTy    Type
+	voidPtr   Type
 	boolTy    Type
 	cstrTy    Type
 	stringTy  Type
@@ -141,16 +140,19 @@ func NewProgram(target *Target) Program {
 	if target == nil {
 		target = &Target{}
 	}
-	arch := target.GOARCH
-	if arch == "" {
-		arch = runtime.GOARCH
-	}
 	ctx := llvm.NewContext()
-	sizes := types.SizesFor("gc", arch)
-	// TODO(xsw): Finalize may cause panic, so comment it.
-	// ctx.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
-	return &aProgram{ctx: ctx, sizs: sizes, target: target, td: td}
+	/*
+		arch := target.GOARCH
+		if arch == "" {
+			arch = runtime.GOARCH
+		}
+		sizes := types.SizesFor("gc", arch)
+
+		// TODO(xsw): Finalize may cause panic, so comment it.
+		ctx.Finalize()
+	*/
+	return &aProgram{ctx: ctx, target: target, td: td}
 }
 
 // SetRuntime sets the runtime.
@@ -183,13 +185,6 @@ func (p Program) rtNamed(name string) *types.Named {
 
 func (p Program) rtType(name string) Type {
 	return p.Type(p.rtNamed(name))
-}
-
-func (p Program) rtClosure() llvm.Type {
-	if p.rtClosureTy.IsNil() {
-		p.rtClosureTy = p.rtType("Closure").ll
-	}
-	return p.rtClosureTy
 }
 
 func (p Program) rtIface() llvm.Type {
@@ -237,6 +232,13 @@ func (p Program) Void() Type {
 		p.voidTy = &aType{p.tyVoid(), types.Typ[types.Invalid], vkInvalid}
 	}
 	return p.voidTy
+}
+
+func (p Program) VoidPtr() Type {
+	if p.voidPtr == nil {
+		p.voidPtr = p.Type(types.Typ[types.UnsafePointer])
+	}
+	return p.voidPtr
 }
 
 // Bool returns bool type.

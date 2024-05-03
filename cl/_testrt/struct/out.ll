@@ -9,15 +9,16 @@ source_filename = "main"
 define void @"(main.Foo).Print"(%main.Foo %0) {
 _llgo_0:
   %1 = alloca %main.Foo, align 8
-  store %main.Foo %0, ptr %1, align 4
-  %2 = getelementptr inbounds %main.Foo, ptr %1, i32 0, i32 1
-  %3 = load i1, ptr %2, align 1
-  br i1 %3, label %_llgo_1, label %_llgo_2
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 8)
+  store %main.Foo %0, ptr %2, align 4
+  %3 = getelementptr inbounds %main.Foo, ptr %2, i32 0, i32 1
+  %4 = load i1, ptr %3, align 1
+  br i1 %4, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = getelementptr inbounds %main.Foo, ptr %1, i32 0, i32 0
-  %5 = load i32, ptr %4, align 4
-  call void (ptr, ...) @printf(ptr @main.format, i32 %5)
+  %5 = getelementptr inbounds %main.Foo, ptr %2, i32 0, i32 0
+  %6 = load i32, ptr %5, align 4
+  call void (ptr, ...) @printf(ptr @main.format, i32 %6)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -59,15 +60,18 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %0 = alloca %main.Foo, align 8
-  %1 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds %main.Foo, ptr %0, i32 0, i32 1
-  store i32 100, ptr %1, align 4
-  store i1 true, ptr %2, align 1
-  %3 = load %main.Foo, ptr %0, align 4
-  call void @"(main.Foo).Print"(%main.Foo %3)
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %0, i64 8)
+  %2 = getelementptr inbounds %main.Foo, ptr %1, i32 0, i32 0
+  %3 = getelementptr inbounds %main.Foo, ptr %1, i32 0, i32 1
+  store i32 100, ptr %2, align 4
+  store i1 true, ptr %3, align 1
+  %4 = load %main.Foo, ptr %1, align 4
+  call void @"(main.Foo).Print"(%main.Foo %4)
   ret void
 }
 
 declare void @printf(ptr, ...)
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()

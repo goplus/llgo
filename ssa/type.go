@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 
 	"github.com/goplus/llvm"
@@ -91,11 +92,19 @@ type aType struct {
 
 type Type = *aType
 
-/*
+// TODO(xsw):
+// how to generate platform independent code?
+func (p Program) SizeOf(typ Type, n ...int64) uint64 {
+	size := p.td.TypeAllocSize(typ.ll)
+	if len(n) != 0 {
+		size *= uint64(n[0])
+	}
+	return size
+}
+
 func (p Program) Slice(typ Type) Type {
 	return p.Type(types.NewSlice(typ.t))
 }
-*/
 
 func (p Program) Pointer(typ Type) Type {
 	return p.Type(types.NewPointer(typ.t))
@@ -112,15 +121,11 @@ func (p Program) Index(typ Type) Type {
 
 func (p Program) Field(typ Type, i int) Type {
 	tunder := typ.t.Underlying()
-	return p.Type(tunder.(*types.Struct).Field(i).Type())
+	tfld := tunder.(*types.Struct).Field(i).Type()
+	return p.Type(tfld)
 }
 
 func (p Program) Type(typ types.Type) Type {
-	/* TODO(xsw): no need?
-	if sig, ok := typ.(*types.Signature); ok { // should methodToFunc
-		return p.llvmSignature(sig, true)
-	}
-	*/
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
 	}
@@ -297,8 +302,6 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 }
 
 func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
-	var kind valueKind
-	var ft llvm.Type
 	if isDecl || inC {
 		tParams := sig.Params()
 		n := tParams.Len()
@@ -309,6 +312,7 @@ func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
 		params := p.toLLVMTypes(tParams, n)
 		out := sig.Results()
 		var ret llvm.Type
+		var kind valueKind
 		switch nret := out.Len(); nret {
 		case 0:
 			ret = p.tyVoid()
@@ -317,18 +321,22 @@ func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
 		default:
 			ret = p.toLLVMTuple(out)
 		}
-		ft = llvm.FunctionType(ret, params, hasVArg)
+		ft := llvm.FunctionType(ret, params, hasVArg)
 		if isDecl {
 			kind = vkFuncDecl
 		} else {
 			ft = llvm.PointerType(ft, 0)
 			kind = vkFuncPtr
 		}
-	} else {
-		ft = p.rtClosure()
-		kind = vkClosure
+		return &aType{ft, sig, kind}
 	}
-	return &aType{ft, sig, kind}
+	flds := []*types.Var{
+		types.NewField(token.NoPos, nil, "f", (*CFuncPtr)(sig), false),
+		types.NewField(token.NoPos, nil, "data", types.Typ[types.UnsafePointer], false),
+	}
+	t := types.NewStruct(flds, nil)
+	ll := p.ctx.StructType(p.toLLVMFields(t), false)
+	return &aType{ll, t, vkClosure}
 }
 
 func (p Program) retType(sig *types.Signature) Type {

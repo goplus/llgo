@@ -173,6 +173,13 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, typ.t))
 }
 
+// SizeOf returns the size of a type.
+func (b Builder) SizeOf(t Type, n ...int64) Expr {
+	prog := b.Prog
+	size := prog.SizeOf(t, n...)
+	return prog.IntVal(size, prog.Uintptr())
+}
+
 // CStr returns a c-style string constant expression.
 func (b Builder) CStr(v string) Expr {
 	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
@@ -483,12 +490,6 @@ func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 //
 // Type() returns a (possibly named) *types.Pointer.
 //
-// Pos() returns the position of the ast.SelectorExpr.Sel for the
-// field, if explicit in the source. For implicit selections, returns
-// the position of the inducing explicit selection. If produced for a
-// struct literal S{f: e}, it returns the position of the colon; for
-// S{e} it returns the start of expression e.
-//
 // Example printed form:
 //
 //	t1 = &t0.name [#1]
@@ -501,6 +502,15 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)
 	return Expr{llvm.CreateStructGEP(b.impl, tstruc.ll, x.impl, idx), pt}
+}
+
+// The Field instruction yields the value of Field of struct X.
+func (b Builder) Field(x Expr, idx int) Expr {
+	if debugInstr {
+		log.Printf("Field %v, %d\n", x.impl, idx)
+	}
+	telem := b.Prog.Field(x.Type, idx)
+	return Expr{llvm.CreateExtractValue(b.impl, x.impl, idx), telem}
 }
 
 // The IndexAddr instruction yields the address of the element at
@@ -561,7 +571,8 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 		if addr != nil {
 			ptr = addr(x)
 		} else {
-			ptr = b.Alloca(prog.IntVal(uint64(t.Len()*b.Prog.sizs.Sizeof(t.Elem())), prog.Index(x.Type)))
+			size := b.SizeOf(telem, t.Len())
+			ptr = b.Alloca(size)
 			b.Store(ptr, x)
 		}
 	}
@@ -580,10 +591,6 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 // Type() returns string if the type of X was string, otherwise a
 // *types.Slice with the same element type as X.
 //
-// Pos() returns the ast.SliceExpr.Lbrack if created by a x[:] slice
-// operation, the ast.CompositeLit.Lbrace if created by a literal, or
-// NoPos if not explicit in the source (e.g. a variadic argument slice).
-//
 // Example printed form:
 //
 //	t1 = slice t0[1:]
@@ -601,11 +608,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	}
 	switch t := x.t.Underlying().(type) {
 	case *types.Basic:
-		if t.Info()&types.IsString == 0 {
+		if t.Kind() != types.String {
 			panic(fmt.Errorf("invalid operation: cannot slice %v", t))
-		}
-		if !max.IsNil() {
-			panic("invalid operation: 3-index slice of string")
 		}
 		if high.IsNil() {
 			high = b.InlineCall(pkg.rtFunc("StringLen"), x)
@@ -614,8 +618,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		ret.impl = b.InlineCall(pkg.rtFunc("NewStringSlice"), x, low, high).impl
 		return
 	case *types.Slice:
+		nEltSize = b.SizeOf(prog.Index(x.Type))
 		nCap = b.InlineCall(pkg.rtFunc("SliceCap"), x)
-		nEltSize = prog.IntVal(uint64(prog.sizs.Sizeof(t.Elem())), prog.Int())
 		if high.IsNil() {
 			high = b.InlineCall(pkg.rtFunc("SliceLen"), x)
 		}
@@ -625,9 +629,10 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		telem := t.Elem()
 		switch te := telem.Underlying().(type) {
 		case *types.Array:
-			ret.Type = prog.Type(types.NewSlice(te.Elem()))
+			elem := prog.Type(te.Elem())
+			ret.Type = prog.Slice(elem)
+			nEltSize = b.SizeOf(elem)
 			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
-			nEltSize = prog.IntVal(uint64(prog.sizs.Sizeof(te.Elem())), prog.Int())
 			if high.IsNil() {
 				high = nCap
 			}
@@ -648,9 +653,6 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 //
 // t is a (possibly named) *types.Map.
 //
-// Pos() returns the ast.CallExpr.Lparen, if created by make(map), or
-// the ast.CompositeLit.Lbrack if created by a literal.
-//
 // Example printed form:
 //
 //	t1 = make map[string]int t0
@@ -663,6 +665,36 @@ func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 	ret.Type = t
 	ret.impl = b.InlineCall(pkg.rtFunc("MakeSmallMap")).impl
 	// TODO(xsw): nReserve
+	return
+}
+
+// The MakeSlice instruction yields a slice of length Len backed by a
+// newly allocated array of length Cap.
+//
+// Both Len and Cap must be non-nil Values of integer type.
+//
+// (Alloc(types.Array) followed by Slice will not suffice because
+// Alloc can only create arrays of constant length.)
+//
+// Type() returns a (possibly named) *types.Slice.
+//
+// Example printed form:
+//
+//	t1 = make []string 1:int t0
+//	t1 = make StringSlice 1:int t0
+func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeSlice %v, %v, %v\n", t, len.impl, cap.impl)
+	}
+	pkg := b.fn.pkg
+	if cap.IsNil() {
+		cap = len
+	}
+	elemSize := b.SizeOf(b.Prog.Index(t))
+	size := b.BinOp(token.MUL, cap, elemSize)
+	ptr := b.InlineCall(pkg.rtFunc("AllocZ"), size)
+	ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), ptr, len, cap).impl
+	ret.Type = t
 	return
 }
 
@@ -692,15 +724,15 @@ func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 		log.Printf("Alloc %v, %v\n", t, heap)
 	}
 	prog := b.Prog
-	telem := t.Elem()
+	pkg := b.fn.pkg
+	elem := prog.Type(t.Elem())
+	size := b.SizeOf(elem)
 	if heap {
-		pkg := b.fn.pkg
-		size := prog.sizs.Sizeof(telem)
-		ret = b.Call(pkg.rtFunc("Alloc"), prog.Val(uintptr(size)))
+		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
-		ret.impl = llvm.CreateAlloca(b.impl, prog.Type(telem).ll)
+		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
+		ret.impl = b.InlineCall(pkg.rtFunc("Zeroinit"), ret, size).impl
 	}
-	// TODO(xsw): zero-initialize
 	ret.Type = prog.Type(t)
 	return
 }
@@ -802,9 +834,6 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 // Conversions of untyped string/number/bool constants to a specific
 // representation are eliminated during SSA construction.
 //
-// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
-// from an explicit conversion in the source.
-//
 // Example printed form:
 //
 //	t1 = convert []byte <- string (t0)
@@ -856,9 +885,6 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 // To construct the zero value of an interface type T, use:
 //
 //	NewConst(constant.MakeNil(), T, pos)
-//
-// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
-// from an explicit conversion in the source.
 //
 // Example printed form:
 //
@@ -978,19 +1004,32 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t4 = t3()
 //	t7 = invoke t5.Println(...t6)
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
+	prog := b.Prog
 	if debugInstr {
 		var b bytes.Buffer
-		fmt.Fprint(&b, "Call ", fn.impl.Name())
+		name := fn.impl.Name()
+		if name == "" {
+			name = "closure"
+		}
+		fmt.Fprint(&b, "Call ", fn.t, " ", name)
+		sep := ": "
 		for _, arg := range args {
-			fmt.Fprint(&b, ", ", arg.impl)
+			fmt.Fprint(&b, sep, arg.impl)
+			sep = ", "
 		}
 		log.Println(b.String())
 	}
-	switch t := fn.t.(type) {
-	case *types.Signature:
-		ret.Type = b.Prog.retType(t)
+	t := fn.t
+	switch fn.kind {
+	case vkClosure:
+		fn = b.Field(fn, 0)
+		t = fn.t
+		fallthrough
+	case vkFuncDecl, vkFuncPtr:
+		sig := t.(*types.Signature)
+		ret.Type = prog.retType(sig)
 	default:
-		panic("todo")
+		panic("unreachable")
 	}
 	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args))
 	return
