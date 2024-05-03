@@ -437,12 +437,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				panic("todo")
 			}
 		default:
-			panic("todo")
-			/*
-				fn := p.compileValue(b, cv)
-				args := p.compileValues(b, call.Args, kind)
-				ret = b.Call(fn, args...)
-			*/
+			fn := p.compileValue(b, cv)
+			args := p.compileValues(b, call.Args, kind)
+			ret = b.Call(fn, args...)
 		}
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)

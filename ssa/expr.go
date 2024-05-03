@@ -681,7 +681,7 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 	if cap.IsNil() {
 		cap = len
 	}
-	elemSize := b.SizeOf(b.Prog.Elem(t))
+	elemSize := b.SizeOf(b.Prog.Index(t))
 	size := b.BinOp(token.MUL, cap, elemSize)
 	ptr := b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), ptr, len, cap).impl
@@ -1003,9 +1003,13 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		}
 		log.Println(b.String())
 	}
-	switch t := fn.t.(type) {
-	case *types.Signature:
-		ret.Type = b.Prog.retType(t)
+	t := fn.t
+	switch fn.kind {
+	case vkClosure:
+		panic("todo")
+	case vkFuncDecl, vkFuncPtr:
+		sig := t.(*types.Signature)
+		ret.Type = b.Prog.retType(sig)
 	default:
 		panic("todo")
 	}

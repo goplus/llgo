@@ -30,3 +30,13 @@ type Closure struct {
 func NewClosure(f, data unsafe.Pointer) Closure {
 	return Closure{f, data}
 }
+
+// ClosureF returns the function of a closure.
+func ClosureF(c Closure) unsafe.Pointer {
+	return c.f
+}
+
+// ClosureData returns the data of a closure.
+func ClosureData(c Closure) unsafe.Pointer {
+	return c.data
+}
