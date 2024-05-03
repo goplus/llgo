@@ -48,26 +48,7 @@ const (
 	vkPhisExpr  = -2
 )
 
-// CFuncPtr represents a C function pointer.
-type CFuncPtr types.Signature
-
 // -----------------------------------------------------------------------------
-
-const (
-	NameValist = "__llgo_va_list"
-)
-
-func VArg() *types.Var {
-	return types.NewParam(0, nil, NameValist, types.Typ[types.Invalid])
-}
-
-func IsVArg(arg *types.Var) bool {
-	return arg.Name() == NameValist
-}
-
-func HasVArg(t *types.Tuple, n int) bool {
-	return n > 0 && IsVArg(t.At(n-1))
-}
 
 func indexType(t types.Type) types.Type {
 	switch t := t.(type) {
@@ -98,18 +79,6 @@ func methodToFunc(sig *types.Signature) *types.Signature {
 			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
 	}
 	return sig
-}
-
-// -----------------------------------------------------------------------------
-
-// CType convert a C type into Go.
-func CType(typ types.Type) types.Type {
-	panic("todo")
-}
-
-// CFuncDecl convert a C function decl into Go signature.
-func CFuncDecl(sig *types.Signature) *types.Signature {
-	panic("todo")
 }
 
 // -----------------------------------------------------------------------------
@@ -278,6 +247,8 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		return p.toLLVMNamed(t)
 	case *types.Signature:
 		return p.toLLVMFunc(t, false, false)
+	case *CFuncPtr:
+		return p.toLLVMFunc((*types.Signature)(t), true, false)
 	case *types.Array:
 		elem := p.Type(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
@@ -327,14 +298,11 @@ func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
 	var kind valueKind
 	var ft llvm.Type
 	if isDecl || inC {
-		var tParams = sig.Params()
-		var n = tParams.Len()
-		var hasVArg bool
-		if inC {
-			hasVArg = HasVArg(tParams, n)
-			if hasVArg {
-				n--
-			}
+		tParams := sig.Params()
+		n := tParams.Len()
+		hasVArg := HasVArg(tParams, n)
+		if hasVArg {
+			n--
 		}
 		params := p.toLLVMTypes(tParams, n)
 		out := sig.Results()
@@ -378,9 +346,6 @@ func (p Program) toLLVMNamed(typ *types.Named) Type {
 	case *types.Struct:
 		name := NameOf(typ)
 		return &aType{p.toLLVMNamedStruct(name, t), typ, vkInvalid}
-	case *types.Signature:
-		inC := true // TODO(xsw): how to check in C
-		return p.toLLVMFunc(t, inC, false)
 	default:
 		return p.Type(t)
 	}
