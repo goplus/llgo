@@ -593,20 +593,52 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	pkg := b.fn.pkg
+	var nCap Expr
+	var nEltSize Expr
+	var base Expr
+	if low.IsNil() {
+		low = prog.IntVal(0, prog.Int())
+	}
 	switch t := x.t.Underlying().(type) {
+	case *types.Basic:
+		if t.Info()&types.IsString == 0 {
+			panic(fmt.Errorf("invalid operation: cannot slice %v", t))
+		}
+		if !max.IsNil() {
+			panic("invalid operation: 3-index slice of string")
+		}
+		if high.IsNil() {
+			high = b.InlineCall(pkg.rtFunc("StringLen"), x)
+		}
+		ret.Type = x.Type
+		ret.impl = b.InlineCall(pkg.rtFunc("NewStringSlice"), x, low, high).impl
+		return
+	case *types.Slice:
+		nCap = b.InlineCall(pkg.rtFunc("SliceCap"), x)
+		nEltSize = prog.IntVal(uint64(prog.sizs.Sizeof(t.Elem())), prog.Int())
+		if high.IsNil() {
+			high = b.InlineCall(pkg.rtFunc("SliceLen"), x)
+		}
+		ret.Type = x.Type
+		base = b.InlineCall(pkg.rtFunc("SliceData"), x)
 	case *types.Pointer:
 		telem := t.Elem()
 		switch te := telem.Underlying().(type) {
 		case *types.Array:
 			ret.Type = prog.Type(types.NewSlice(te.Elem()))
-			if low.IsNil() && high.IsNil() && max.IsNil() {
-				n := prog.Val(int(te.Len()))
-				ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), x, n, n).impl
-				return ret
+			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
+			nEltSize = prog.IntVal(uint64(prog.sizs.Sizeof(te.Elem())), prog.Int())
+			if high.IsNil() {
+				high = nCap
 			}
+			base = x
 		}
 	}
-	panic("todo")
+	if max.IsNil() {
+		max = nCap
+	}
+	ret.impl = b.InlineCall(pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
+	return
 }
 
 // -----------------------------------------------------------------------------

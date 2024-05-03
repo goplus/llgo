@@ -17,11 +17,29 @@ func main() {
 	out(len(a))
 	out(len(&a))
 	out(len([4]int{1, 2, 3, 4}))
-	string_len("hello")
 
 	out(cap(s))
 	out(cap(a))
 	out(cap(&a))
+
+	out(len(s[1:]))
+	out(cap(s[1:]))
+	out(len(s[1:2]))
+	out(cap(s[1:2]))
+	out(len(s[1:2:2]))
+	out(cap(s[1:2:2]))
+
+	out(len(a[1:]))
+	out(cap(a[1:]))
+	out(len(a[1:2]))
+	out(cap(a[1:2]))
+	out(len(a[1:2:2]))
+	out(cap(a[1:2:2]))
+
+	string_len("hello")
+	string_len("hello"[1:])
+	string_len("hello"[1:2])
+	string_len("hello"[5:])
 }
 
 func string_len(s string) {

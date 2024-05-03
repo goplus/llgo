@@ -80,4 +80,14 @@ func CStrDup(s String) *int8 {
 	return CStrCopy(dest, s)
 }
 
+func NewStringSlice(base String, i, j int) String {
+	if i < 0 || j < i || j > base.len {
+		panic("string slice index out of bounds")
+	}
+	if i < base.len {
+		return String{c.Advance(base.data, i), j - i}
+	}
+	return String{nil, 0}
+}
+
 // -----------------------------------------------------------------------------
