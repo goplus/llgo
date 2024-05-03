@@ -30,6 +30,15 @@ func TestMakeInterface(t *testing.T) {
 }
 */
 
+func TestCFuncPtr(t *testing.T) {
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	csig := (*CFuncPtr)(sig)
+	_ = csig.String()
+	if csig.Underlying() != sig {
+		t.Fatal("TestCFuncPtr failed")
+	}
+}
+
 func TestUserdefExpr(t *testing.T) {
 	a := delayExprTy(nil)
 	b := &phisExprTy{}
