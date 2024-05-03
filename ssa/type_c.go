@@ -16,7 +16,9 @@
 
 package ssa
 
-import "go/types"
+import (
+	"go/types"
+)
 
 // -----------------------------------------------------------------------------
 
@@ -72,6 +74,10 @@ func cvtCType(typ types.Type) (types.Type, bool) {
 		}
 	case *types.Struct:
 		return cvtCStruct(t)
+	case *types.Named:
+		if _, cvt := cvtCType(t.Underlying()); cvt {
+			panic("todo: named type")
+		}
 	case *types.Signature:
 		t = CFuncDecl(t)
 		return (*CFuncPtr)(t), true
