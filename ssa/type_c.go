@@ -18,6 +18,8 @@ package ssa
 
 import (
 	"go/types"
+
+	"github.com/goplus/llgo/internal/typeutil"
 )
 
 // -----------------------------------------------------------------------------
@@ -45,6 +47,10 @@ type CFuncPtr types.Signature
 
 func (t *CFuncPtr) String() string         { return (*types.Signature)(t).String() }
 func (t *CFuncPtr) Underlying() types.Type { return (*types.Signature)(t) }
+
+func (t *CFuncPtr) Hash(h typeutil.Hasher) uint32 {
+	return typeutil.HashSig(h, (*types.Signature)(t))*13 + 97
+}
 
 // -----------------------------------------------------------------------------
 

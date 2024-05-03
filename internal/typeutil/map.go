@@ -4,7 +4,7 @@
 
 // Package typeutil defines various utilities for types, such as Map,
 // a mapping from types.Type to interface{} values.
-package typeutil // import "golang.org/x/tools/go/types/typeutil"
+package typeutil
 
 import (
 	"bytes"
@@ -253,6 +253,44 @@ func hashString(s string) uint32 {
 	return h
 }
 
+func HashSig(h Hasher, t *types.Signature) uint32 {
+	var hash uint32 = 9091
+	if t.Variadic() {
+		hash *= 8863
+	}
+
+	// Use a separate hasher for types inside of the signature, where type
+	// parameter identity is modified to be (index, constraint). We must use a
+	// new memo for this hasher as type identity may be affected by this
+	// masking. For example, in func[T any](*T), the identity of *T depends on
+	// whether we are mapping the argument in isolation, or recursively as part
+	// of hashing the signature.
+	//
+	// We should never encounter a generic signature while hashing another
+	// generic signature, but defensively set sigTParams only if h.mask is
+	// unset.
+	tparams := t.TypeParams()
+	if h.sigTParams == nil && tparams.Len() != 0 {
+		h = Hasher{
+			// There may be something more efficient than discarding the existing
+			// memo, but it would require detecting whether types are 'tainted' by
+			// references to type parameters.
+			memo: make(map[types.Type]uint32),
+			// Re-using ptrMap ensures that pointer identity is preserved in this
+			// hasher.
+			ptrMap:     h.ptrMap,
+			sigTParams: tparams,
+		}
+	}
+
+	for i := 0; i < tparams.Len(); i++ {
+		tparam := tparams.At(i)
+		hash += 7 * h.Hash(tparam.Constraint())
+	}
+
+	return hash + 3*h.hashTuple(t.Params()) + 5*h.hashTuple(t.Results())
+}
+
 // hashFor computes the hash of t.
 func (h Hasher) hashFor(t types.Type) uint32 {
 	// See Identical for rationale.
@@ -286,41 +324,7 @@ func (h Hasher) hashFor(t types.Type) uint32 {
 		return 9067 + 2*h.Hash(t.Elem())
 
 	case *types.Signature:
-		var hash uint32 = 9091
-		if t.Variadic() {
-			hash *= 8863
-		}
-
-		// Use a separate hasher for types inside of the signature, where type
-		// parameter identity is modified to be (index, constraint). We must use a
-		// new memo for this hasher as type identity may be affected by this
-		// masking. For example, in func[T any](*T), the identity of *T depends on
-		// whether we are mapping the argument in isolation, or recursively as part
-		// of hashing the signature.
-		//
-		// We should never encounter a generic signature while hashing another
-		// generic signature, but defensively set sigTParams only if h.mask is
-		// unset.
-		tparams := t.TypeParams()
-		if h.sigTParams == nil && tparams.Len() != 0 {
-			h = Hasher{
-				// There may be something more efficient than discarding the existing
-				// memo, but it would require detecting whether types are 'tainted' by
-				// references to type parameters.
-				memo: make(map[types.Type]uint32),
-				// Re-using ptrMap ensures that pointer identity is preserved in this
-				// hasher.
-				ptrMap:     h.ptrMap,
-				sigTParams: tparams,
-			}
-		}
-
-		for i := 0; i < tparams.Len(); i++ {
-			tparam := tparams.At(i)
-			hash += 7 * h.Hash(tparam.Constraint())
-		}
-
-		return hash + 3*h.hashTuple(t.Params()) + 5*h.hashTuple(t.Results())
+		return HashSig(h, t)
 
 	case *types.Union:
 		return h.hashUnion(t)
@@ -370,6 +374,9 @@ func (h Hasher) hashFor(t types.Type) uint32 {
 
 	case *types.Tuple:
 		return h.hashTuple(t)
+
+	case interface{ Hash(h Hasher) uint32 }:
+		return t.Hash(h)
 	}
 
 	panic(fmt.Sprintf("%T: %v", t, t))
