@@ -91,11 +91,19 @@ type aType struct {
 
 type Type = *aType
 
-/*
+// TODO(xsw):
+// how to generate platform independent code?
+func (p Program) SizeOf(typ Type, n ...int64) uint64 {
+	size := p.td.TypeStoreSize(typ.ll)
+	if len(n) != 0 {
+		size *= uint64(n[0])
+	}
+	return size
+}
+
 func (p Program) Slice(typ Type) Type {
 	return p.Type(types.NewSlice(typ.t))
 }
-*/
 
 func (p Program) Pointer(typ Type) Type {
 	return p.Type(types.NewPointer(typ.t))

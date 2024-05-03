@@ -18,7 +18,6 @@ package ssa
 
 import (
 	"go/types"
-	"runtime"
 
 	"github.com/goplus/llgo/internal/typeutil"
 	"github.com/goplus/llvm"
@@ -97,7 +96,7 @@ func Initialize(flags InitFlags) {
 type aProgram struct {
 	ctx  llvm.Context
 	typs typeutil.Map
-	sizs types.Sizes
+	// sizs types.Sizes
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -123,6 +122,7 @@ type aProgram struct {
 
 	anyTy     Type
 	voidTy    Type
+	voidPtr   Type
 	boolTy    Type
 	cstrTy    Type
 	stringTy  Type
@@ -141,16 +141,19 @@ func NewProgram(target *Target) Program {
 	if target == nil {
 		target = &Target{}
 	}
-	arch := target.GOARCH
-	if arch == "" {
-		arch = runtime.GOARCH
-	}
 	ctx := llvm.NewContext()
-	sizes := types.SizesFor("gc", arch)
-	// TODO(xsw): Finalize may cause panic, so comment it.
-	// ctx.Finalize()
 	td := llvm.NewTargetData("") // TODO(xsw): target config
-	return &aProgram{ctx: ctx, sizs: sizes, target: target, td: td}
+	/*
+		arch := target.GOARCH
+		if arch == "" {
+			arch = runtime.GOARCH
+		}
+		sizes := types.SizesFor("gc", arch)
+
+		// TODO(xsw): Finalize may cause panic, so comment it.
+		ctx.Finalize()
+	*/
+	return &aProgram{ctx: ctx, target: target, td: td}
 }
 
 // SetRuntime sets the runtime.
@@ -237,6 +240,13 @@ func (p Program) Void() Type {
 		p.voidTy = &aType{p.tyVoid(), types.Typ[types.Invalid], vkInvalid}
 	}
 	return p.voidTy
+}
+
+func (p Program) VoidPtr() Type {
+	if p.voidPtr == nil {
+		p.voidPtr = p.Type(types.Typ[types.UnsafePointer])
+	}
+	return p.voidPtr
 }
 
 // Bool returns bool type.

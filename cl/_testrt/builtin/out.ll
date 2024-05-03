@@ -34,7 +34,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
   store i64 1, ptr %1, align 4
   %2 = getelementptr inbounds i64, ptr %0, i64 1
@@ -44,7 +44,7 @@ _llgo_0:
   %4 = getelementptr inbounds i64, ptr %0, i64 3
   store i64 4, ptr %4, align 4
   %5 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %0, i64 8, i64 4, i64 0, i64 4, i64 4)
-  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
   %7 = getelementptr inbounds i64, ptr %6, i64 0
   %8 = getelementptr inbounds i64, ptr %6, i64 1
   %9 = getelementptr inbounds i64, ptr %6, i64 2
@@ -55,7 +55,7 @@ _llgo_0:
   store i64 4, ptr %10, align 4
   %11 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %5)
   call void @main.out(i64 %11)
-  %12 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 32)
+  %12 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
   %13 = getelementptr inbounds i64, ptr %12, i64 0
   store i64 1, ptr %13, align 4
   %14 = getelementptr inbounds i64, ptr %12, i64 1
@@ -155,7 +155,7 @@ _llgo_0:
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 

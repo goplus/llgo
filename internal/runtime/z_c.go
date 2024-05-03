@@ -23,9 +23,20 @@ import (
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
-// Alloc allocates memory.
-func Alloc(size uintptr) unsafe.Pointer {
+// AllocU allocates uninitialized memory.
+func AllocU(size uintptr) unsafe.Pointer {
 	return c.Malloc(size)
+}
+
+// AllocZ allocates zero-initialized memory.
+func AllocZ(size uintptr) unsafe.Pointer {
+	ret := c.Malloc(size)
+	return c.Memset(ret, 0, size)
+}
+
+// Zeroinit initializes memory to zero.
+func Zeroinit(p c.Pointer, size uintptr) c.Pointer {
+	return c.Memset(p, 0, size)
 }
 
 // TracePanic prints panic message.

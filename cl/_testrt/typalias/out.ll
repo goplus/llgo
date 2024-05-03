@@ -47,7 +47,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 5)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
   %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
   %2 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
   store i32 100, ptr %1, align 4
@@ -60,4 +60,4 @@ declare void @printf(ptr, ...)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)

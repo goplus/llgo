@@ -64,7 +64,7 @@ define void @main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 48)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i64 0
   %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 5)
   store %"github.com/goplus/llgo/internal/runtime.String" %2, ptr %1, align 8
@@ -95,7 +95,7 @@ declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/ll
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 

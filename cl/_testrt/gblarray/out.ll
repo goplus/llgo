@@ -18,7 +18,7 @@ _llgo_0:
 
 define ptr @main.basicType(i64 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64 48)
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 56)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 0
   %3 = getelementptr inbounds i64, ptr @main.sizeBasicTypes, i64 %0
   %4 = load i64, ptr %3, align 4
@@ -63,7 +63,7 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare void @"github.com/goplus/llgo/internal/abi.init"()
 
