@@ -169,7 +169,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
-			p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd)
+			p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd, false)
 		}
 	}
 }
@@ -193,18 +193,24 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 }
 
-func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) {
-	sig := f.Signature
-	name, ftype := p.funcName(pkgTypes, f, true)
-	switch ftype {
-	case ignoredFunc, llgoInstr: // llgo extended instructions
-		return
-	}
-	if debugInstr {
-		log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
-	}
-	if ftype == cFunc {
-		sig = llssa.CFuncDecl(sig)
+func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function, closure bool) llssa.Function {
+	var sig = f.Signature
+	var name string
+	if closure {
+		name = funcName(pkgTypes, f)
+	} else {
+		var ftype int
+		name, ftype = p.funcName(pkgTypes, f, true)
+		switch ftype {
+		case ignoredFunc, llgoInstr: // llgo extended instructions
+			return nil
+		}
+		if debugInstr {
+			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
+		}
+		if ftype == cFunc {
+			sig = llssa.CFuncDecl(sig)
+		}
 	}
 	fn := pkg.NewFunc(name, sig)
 	p.inits = append(p.inits, func() {
@@ -233,6 +239,7 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 			phi()
 		}
 	})
+	return fn
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bool) llssa.BasicBlock {
@@ -587,11 +594,15 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		fn, ftype := p.funcOf(v)
-		if ftype >= llgoInstrBase {
-			panic("can't use llgo instruction as a value")
-		}
+		fn := p.compileFunc(p.pkg, p.goTyps, v, true)
 		return fn.Expr
+		/*
+			fn, ftype := p.funcOf(v)
+			if ftype >= llgoInstrBase {
+				panic("can't use llgo instruction as a value")
+			}
+			return fn.Expr
+		*/
 	case *ssa.Global:
 		g := p.varOf(v)
 		return g.Expr
@@ -676,15 +687,19 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFunc(ret, member.Pkg.Pkg, member)
+			ctx.compileFunc(ret, member.Pkg.Pkg, member, false)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
 			ctx.compileGlobal(ret, member)
 		}
 	}
-	for _, ini := range ctx.inits {
-		ini()
+	for len(ctx.inits) > 0 {
+		inits := ctx.inits
+		ctx.inits = nil
+		for _, ini := range inits {
+			ini()
+		}
 	}
 	return
 }

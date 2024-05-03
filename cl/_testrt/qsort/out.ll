@@ -59,6 +59,13 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
 
-declare i32 @"main.main$1"(ptr, ptr)
+define i32 @"main.main$1"(ptr %0, ptr %1) {
+_llgo_0:
+  %2 = load i64, ptr %0, align 4
+  %3 = load i64, ptr %1, align 4
+  %4 = sub i64 %2, %3
+  %5 = trunc i64 %4 to i32
+  ret i32 %5
+}
 
 declare i32 @printf(ptr, ...)
