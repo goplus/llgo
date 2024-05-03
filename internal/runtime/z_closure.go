@@ -16,6 +16,7 @@
 
 package runtime
 
+/*
 import (
 	"unsafe"
 )
@@ -40,3 +41,4 @@ func ClosureF(c Closure) unsafe.Pointer {
 func ClosureData(c Closure) unsafe.Pointer {
 	return c.data
 }
+*/

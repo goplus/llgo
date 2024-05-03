@@ -1029,7 +1029,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		sig := t.(*types.Signature)
 		ret.Type = prog.retType(sig)
 	default:
-		panic("todo")
+		panic("unreachable")
 	}
 	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args))
 	return

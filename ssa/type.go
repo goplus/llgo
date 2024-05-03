@@ -126,11 +126,6 @@ func (p Program) Field(typ Type, i int) Type {
 }
 
 func (p Program) Type(typ types.Type) Type {
-	/* TODO(xsw): no need?
-	if sig, ok := typ.(*types.Signature); ok { // should methodToFunc
-		return p.llvmSignature(sig, true)
-	}
-	*/
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
 	}
@@ -339,7 +334,9 @@ func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
 		types.NewField(token.NoPos, nil, "f", (*CFuncPtr)(sig), false),
 		types.NewField(token.NoPos, nil, "data", types.Typ[types.UnsafePointer], false),
 	}
-	return &aType{p.rtClosure(), types.NewStruct(flds, nil), vkClosure}
+	t := types.NewStruct(flds, nil)
+	ll := p.ctx.StructType(p.toLLVMFields(t), false)
+	return &aType{ll, t, vkClosure}
 }
 
 func (p Program) retType(sig *types.Signature) Type {

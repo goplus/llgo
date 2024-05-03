@@ -114,11 +114,10 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
-	rtClosureTy llvm.Type
-	rtStringTy  llvm.Type
-	rtIfaceTy   llvm.Type
-	rtSliceTy   llvm.Type
-	rtMapTy     llvm.Type
+	rtStringTy llvm.Type
+	rtIfaceTy  llvm.Type
+	rtSliceTy  llvm.Type
+	rtMapTy    llvm.Type
 
 	anyTy     Type
 	voidTy    Type
@@ -186,13 +185,6 @@ func (p Program) rtNamed(name string) *types.Named {
 
 func (p Program) rtType(name string) Type {
 	return p.Type(p.rtNamed(name))
-}
-
-func (p Program) rtClosure() llvm.Type {
-	if p.rtClosureTy.IsNil() {
-		p.rtClosureTy = p.rtType("Closure").ll
-	}
-	return p.rtClosureTy
 }
 
 func (p Program) rtIface() llvm.Type {
