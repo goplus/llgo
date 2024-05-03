@@ -21,6 +21,8 @@ import (
 	"go/token"
 	"go/types"
 	"testing"
+
+	"github.com/goplus/llvm"
 )
 
 /*
@@ -29,6 +31,26 @@ func TestMakeInterface(t *testing.T) {
 	b.MakeInterface(types.NewInterfaceType(nil, nil), Expr{}, true).Do(true)
 }
 */
+
+func TestTypes(t *testing.T) {
+	ctx := llvm.NewContext()
+	llvmIntType(ctx, 4)
+
+	intT := types.NewVar(0, nil, "", types.Typ[types.Int])
+	ret := types.NewTuple(intT, intT)
+	sig := types.NewSignatureType(nil, nil, nil, nil, ret, false)
+	prog := NewProgram(nil)
+	prog.retType(sig)
+}
+
+func TestIndexType(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("indexType: no error?")
+		}
+	}()
+	indexType(types.Typ[types.Int])
+}
 
 func TestCvtCType(t *testing.T) {
 	test := func(typ types.Type) {
