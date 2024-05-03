@@ -91,9 +91,11 @@ type aType struct {
 
 type Type = *aType
 
+/*
 func (p Program) Slice(typ Type) Type {
 	return p.Type(types.NewSlice(typ.t))
 }
+*/
 
 func (p Program) Pointer(typ Type) Type {
 	return p.Type(types.NewPointer(typ.t))
