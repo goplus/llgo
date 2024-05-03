@@ -92,6 +92,26 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret { i64, i1 } zeroinitializer
 }
 
+define ptr @"github.com/goplus/llgo/internal/runtime.ClosureData"(%"github.com/goplus/llgo/internal/runtime.Closure" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Closure", align 8
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.Closure" %0, ptr %2, align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Closure", ptr %2, i32 0, i32 1
+  %4 = load ptr, ptr %3, align 8
+  ret ptr %4
+}
+
+define ptr @"github.com/goplus/llgo/internal/runtime.ClosureF"(%"github.com/goplus/llgo/internal/runtime.Closure" %0) {
+_llgo_0:
+  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Closure", align 8
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.Closure" %0, ptr %2, align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Closure", ptr %2, i32 0, i32 0
+  %4 = load ptr, ptr %3, align 8
+  ret ptr %4
+}
+
 define %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.EmptyString"() {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
