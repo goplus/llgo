@@ -17,7 +17,6 @@
 package ssa
 
 import (
-	"go/constant"
 	"go/types"
 	"runtime"
 
@@ -116,10 +115,11 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
-	rtStringTy llvm.Type
-	rtIfaceTy  llvm.Type
-	rtSliceTy  llvm.Type
-	rtMapTy    llvm.Type
+	rtClosureTy llvm.Type
+	rtStringTy  llvm.Type
+	rtIfaceTy   llvm.Type
+	rtSliceTy   llvm.Type
+	rtMapTy     llvm.Type
 
 	anyTy     Type
 	voidTy    Type
@@ -183,6 +183,13 @@ func (p Program) rtNamed(name string) *types.Named {
 
 func (p Program) rtType(name string) Type {
 	return p.Type(p.rtNamed(name))
+}
+
+func (p Program) rtClosure() llvm.Type {
+	if p.rtClosureTy.IsNil() {
+		p.rtClosureTy = p.rtType("Closure").ll
+	}
+	return p.rtClosureTy
 }
 
 func (p Program) rtIface() llvm.Type {
@@ -305,10 +312,12 @@ type aPackage struct {
 
 type Package = *aPackage
 
+/*
 // NewConst creates a new named constant.
 func (p Package) NewConst(name string, val constant.Value) NamedConst {
 	return &aNamedConst{}
 }
+*/
 
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type) Global {
@@ -329,7 +338,7 @@ func (p Package) NewFunc(name string, sig *types.Signature) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
-	t := p.prog.llvmSignature(sig, false)
+	t := p.prog.llvmFuncDecl(sig)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p, p.prog)
 	p.fns[name] = ret
