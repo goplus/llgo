@@ -102,8 +102,13 @@ func methodToFunc(sig *types.Signature) *types.Signature {
 
 // -----------------------------------------------------------------------------
 
-// CType convert a cdecl type into Go type.
+// CType convert a C type into Go.
 func CType(typ types.Type) types.Type {
+	panic("todo")
+}
+
+// CFuncDecl convert a C function decl into Go signature.
+func CFuncDecl(sig *types.Signature) *types.Signature {
 	panic("todo")
 }
 
@@ -319,29 +324,29 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 }
 
 func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
-	var hasVArg bool
 	var kind valueKind
 	var ft llvm.Type
-	tParams := sig.Params()
-	n := tParams.Len()
-	if inC {
-		hasVArg = HasVArg(tParams, n)
-		if hasVArg {
-			n--
+	if isDecl || inC {
+		var tParams = sig.Params()
+		var n = tParams.Len()
+		var hasVArg bool
+		if inC {
+			hasVArg = HasVArg(tParams, n)
+			if hasVArg {
+				n--
+			}
 		}
-	}
-	params := p.toLLVMTypes(tParams, n)
-	out := sig.Results()
-	var ret llvm.Type
-	switch nret := out.Len(); nret {
-	case 0:
-		ret = p.tyVoid()
-	case 1:
-		ret = p.Type(out.At(0).Type()).ll
-	default:
-		ret = p.toLLVMTuple(out)
-	}
-	if inC || isDecl {
+		params := p.toLLVMTypes(tParams, n)
+		out := sig.Results()
+		var ret llvm.Type
+		switch nret := out.Len(); nret {
+		case 0:
+			ret = p.tyVoid()
+		case 1:
+			ret = p.Type(out.At(0).Type()).ll
+		default:
+			ret = p.toLLVMTuple(out)
+		}
 		ft = llvm.FunctionType(ret, params, hasVArg)
 		if isDecl {
 			kind = vkFuncDecl
