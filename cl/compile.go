@@ -198,6 +198,9 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 	var name string
 	if closure {
 		name = funcName(pkgTypes, f)
+		if debugInstr {
+			log.Println("==> NewClosure", name, "type:", sig)
+		}
 	} else {
 		var ftype int
 		name, ftype = p.funcName(pkgTypes, f, true)
