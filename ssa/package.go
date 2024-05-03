@@ -20,8 +20,8 @@ import (
 	"go/types"
 	"runtime"
 
+	"github.com/goplus/llgo/internal/typeutil"
 	"github.com/goplus/llvm"
-	"golang.org/x/tools/go/types/typeutil"
 )
 
 const (
