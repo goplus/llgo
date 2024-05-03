@@ -74,7 +74,7 @@ _llgo_0:
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i64 2
   %6 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 5)
   store %"github.com/goplus/llgo/internal/runtime.String" %6, ptr %5, align 8
-  %7 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr %0, i64 3, i64 3)
+  %7 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %0, i64 16, i64 3, i64 0, i64 3, i64 3)
   %8 = call %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %7)
   %9 = load ptr, ptr @__stderrp, align 8
   %10 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %8)
@@ -97,7 +97,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Alloc"(i64)
 
-declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr, i64, i64)
+declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
 declare i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String")
 
