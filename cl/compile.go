@@ -587,14 +587,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		panic("unreachable")
-		/*
-			fn, ftype := p.funcOf(v)
-			if ftype >= llgoInstrBase {
-				panic("can't use llgo instruction as a value")
-			}
-			return fn.Expr
-		*/
+		fn, ftype := p.funcOf(v)
+		if ftype >= llgoInstrBase {
+			panic("can't use llgo instruction as a value")
+		}
+		return fn.Expr
 	case *ssa.Global:
 		g := p.varOf(v)
 		return g.Expr
