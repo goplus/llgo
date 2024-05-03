@@ -30,6 +30,23 @@ func TestMakeInterface(t *testing.T) {
 }
 */
 
+func TestCvtCType(t *testing.T) {
+	test := func(typ types.Type) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Log("cvtCType: no error?")
+			}
+		}()
+		cvtCType(typ)
+	}
+	test(types.NewInterfaceType(nil, nil))
+
+	a := types.NewTypeName(0, nil, "a", nil)
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	named := types.NewNamed(a, sig, nil)
+	test(named)
+}
+
 func TestCFuncPtr(t *testing.T) {
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	csig := (*CFuncPtr)(sig)

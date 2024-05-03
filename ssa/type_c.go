@@ -82,7 +82,7 @@ func cvtCType(typ types.Type) (types.Type, bool) {
 		return cvtCStruct(t)
 	case *types.Named:
 		if _, cvt := cvtCType(t.Underlying()); cvt {
-			panic("todo: named type")
+			panic("don't define named type")
 		}
 	case *types.Signature:
 		t = CFuncDecl(t)
