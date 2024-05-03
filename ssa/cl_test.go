@@ -26,7 +26,7 @@ import (
 )
 
 func TestFromTestrt(t *testing.T) {
-	cltest.FromDir(t, "intgen", "../cl/_testrt", true)
+	cltest.FromDir(t, "", "../cl/_testrt", true)
 }
 
 func TestFromTestdata(t *testing.T) {
