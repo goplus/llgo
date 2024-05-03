@@ -177,15 +177,18 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
-	name, isDef := p.varName(gbl.Pkg.Pkg, gbl)
+	name, vtype := p.varName(gbl.Pkg.Pkg, gbl)
 	if ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}
 	if debugInstr {
 		log.Println("==> NewVar", name, typ)
 	}
+	if vtype == cVar {
+		typ = llssa.CType(typ)
+	}
 	g := pkg.NewVar(name, typ)
-	if isDef {
+	if vtype == goVar {
 		g.Init(p.prog.Null(g.Type))
 	}
 }
@@ -199,6 +202,9 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 	}
 	if debugInstr {
 		log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
+	}
+	if ftype == cFunc {
+		sig = llssa.CFuncDecl(sig)
 	}
 	fn := pkg.NewFunc(name, sig)
 	p.inits = append(p.inits, func() {
@@ -581,14 +587,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		panic("unreachable")
-		/*
-			fn, ftype := p.funcOf(v)
-			if ftype >= llgoInstrBase {
-				panic("can't use llgo instruction as a value")
-			}
-			return fn.Expr
-		*/
+		fn, ftype := p.funcOf(v)
+		if ftype >= llgoInstrBase {
+			panic("can't use llgo instruction as a value")
+		}
+		return fn.Expr
 	case *ssa.Global:
 		g := p.varOf(v)
 		return g.Expr

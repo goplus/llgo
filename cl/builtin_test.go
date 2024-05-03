@@ -25,6 +25,18 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestErrCompileInstrOrValue(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("compileInstrOrValue: no error?")
+		}
+	}()
+	ctx := &context{
+		bvals: make(map[ssa.Value]llssa.Expr),
+	}
+	ctx.compileInstrOrValue(nil, &ssa.Call{}, true)
+}
+
 func TestErrAdvance(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {

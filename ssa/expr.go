@@ -979,7 +979,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			case *types.Slice:
 				return b.InlineCall(b.fn.pkg.rtFunc("SliceLen"), arg)
 			case *types.Basic:
-				if t.Info()&types.IsString != 0 {
+				if t.Kind() == types.String {
 					return b.InlineCall(b.fn.pkg.rtFunc("StringLen"), arg)
 				}
 			}

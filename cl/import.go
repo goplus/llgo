@@ -220,12 +220,18 @@ func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (s
 	return name, goFunc
 }
 
-func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, isDef bool) {
+const (
+	ignoredVar = iota
+	goVar
+	cVar
+)
+
+func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int) {
 	name := llssa.FullName(pkg, v.Name())
 	if v, ok := p.link[name]; ok {
-		return v, false
+		return v, cVar
 	}
-	return name, true
+	return name, goVar
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.

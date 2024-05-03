@@ -40,29 +40,15 @@ const (
 	vkString
 	vkBool
 	vkPtr
-	vkFunc
+	vkFuncDecl // func decl
+	vkFuncPtr  // func ptr in C
+	vkClosure  // func ptr in Go
 	vkTuple
 	vkDelayExpr = -1
 	vkPhisExpr  = -2
 )
 
 // -----------------------------------------------------------------------------
-
-const (
-	NameValist = "__llgo_va_list"
-)
-
-func VArg() *types.Var {
-	return types.NewParam(0, nil, NameValist, types.Typ[types.Invalid])
-}
-
-func IsVArg(arg *types.Var) bool {
-	return arg.Name() == NameValist
-}
-
-func HasVArg(t *types.Tuple, n int) bool {
-	return n > 0 && IsVArg(t.At(n-1))
-}
 
 func indexType(t types.Type) types.Type {
 	switch t := t.(type) {
@@ -100,7 +86,7 @@ func methodToFunc(sig *types.Signature) *types.Signature {
 type aType struct {
 	ll   llvm.Type
 	t    types.Type
-	kind valueKind
+	kind valueKind // value kind of llvm.Type
 }
 
 type Type = *aType
@@ -128,9 +114,11 @@ func (p Program) Field(typ Type, i int) Type {
 }
 
 func (p Program) Type(typ types.Type) Type {
+	/* TODO(xsw): no need?
 	if sig, ok := typ.(*types.Signature); ok { // should methodToFunc
 		return p.llvmSignature(sig, true)
 	}
+	*/
 	if v := p.typs.At(typ); v != nil {
 		return v.(Type)
 	}
@@ -139,14 +127,9 @@ func (p Program) Type(typ types.Type) Type {
 	return ret
 }
 
-func (p Program) llvmSignature(sig *types.Signature, isPtr bool) Type {
+func (p Program) llvmFuncDecl(sig *types.Signature) Type {
 	sig = methodToFunc(sig)
-	if v := p.typs.At(sig); v != nil {
-		return v.(Type)
-	}
-	ret := p.toLLVMFunc(sig, isPtr)
-	p.typs.Set(sig, ret)
-	return ret
+	return p.toLLVMFunc(sig, false, true) // don't save func decl to cache
 }
 
 func (p Program) tyVoidPtr() llvm.Type {
@@ -262,6 +245,10 @@ func (p Program) toLLVMType(typ types.Type) Type {
 		return p.toLLVMStruct(t)
 	case *types.Named:
 		return p.toLLVMNamed(t)
+	case *types.Signature:
+		return p.toLLVMFunc(t, false, false)
+	case *CFuncPtr:
+		return p.toLLVMFunc((*types.Signature)(t), true, false)
 	case *types.Array:
 		elem := p.Type(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
@@ -307,29 +294,39 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 	return
 }
 
-func (p Program) toLLVMFunc(sig *types.Signature, isPtr bool) Type {
-	tParams := sig.Params()
-	n := tParams.Len()
-	hasVArg := HasVArg(tParams, n)
-	if hasVArg {
-		n--
+func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
+	var kind valueKind
+	var ft llvm.Type
+	if isDecl || inC {
+		tParams := sig.Params()
+		n := tParams.Len()
+		hasVArg := HasVArg(tParams, n)
+		if hasVArg {
+			n--
+		}
+		params := p.toLLVMTypes(tParams, n)
+		out := sig.Results()
+		var ret llvm.Type
+		switch nret := out.Len(); nret {
+		case 0:
+			ret = p.tyVoid()
+		case 1:
+			ret = p.Type(out.At(0).Type()).ll
+		default:
+			ret = p.toLLVMTuple(out)
+		}
+		ft = llvm.FunctionType(ret, params, hasVArg)
+		if isDecl {
+			kind = vkFuncDecl
+		} else {
+			ft = llvm.PointerType(ft, 0)
+			kind = vkFuncPtr
+		}
+	} else {
+		ft = p.rtClosure()
+		kind = vkClosure
 	}
-	params := p.toLLVMTypes(tParams, n)
-	out := sig.Results()
-	var ret llvm.Type
-	switch nret := out.Len(); nret {
-	case 0:
-		ret = p.tyVoid()
-	case 1:
-		ret = p.Type(out.At(0).Type()).ll
-	default:
-		ret = p.toLLVMTuple(out)
-	}
-	ft := llvm.FunctionType(ret, params, hasVArg)
-	if isPtr {
-		ft = llvm.PointerType(ft, 0)
-	}
-	return &aType{ft, sig, vkFunc}
+	return &aType{ft, sig, kind}
 }
 
 func (p Program) retType(sig *types.Signature) Type {

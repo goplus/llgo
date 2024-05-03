@@ -1,7 +1,8 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, i32, i32 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, %"github.com/goplus/llgo/internal/runtime.Closure", ptr, i32, i32 }
+%"github.com/goplus/llgo/internal/runtime.Closure" = type { ptr, ptr }
 
 @main.basicTypes = global ptr null
 @"main.init$guard" = global ptr null
