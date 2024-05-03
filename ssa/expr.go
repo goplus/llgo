@@ -504,6 +504,15 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 	return Expr{llvm.CreateStructGEP(b.impl, tstruc.ll, x.impl, idx), pt}
 }
 
+// The Field instruction yields the value of Field of struct X.
+func (b Builder) Field(x Expr, idx int) Expr {
+	if debugInstr {
+		log.Printf("Field %v, %d\n", x.impl, idx)
+	}
+	telem := b.Prog.Field(x.Type, idx)
+	return Expr{llvm.CreateExtractValue(b.impl, x.impl, idx), telem}
+}
+
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
 //
@@ -995,21 +1004,30 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t4 = t3()
 //	t7 = invoke t5.Println(...t6)
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
+	prog := b.Prog
 	if debugInstr {
 		var b bytes.Buffer
-		fmt.Fprint(&b, "Call ", fn.impl.Name())
+		name := fn.impl.Name()
+		if name == "" {
+			name = "closure"
+		}
+		fmt.Fprint(&b, "Call ", fn.t, " ", name)
+		sep := ": "
 		for _, arg := range args {
-			fmt.Fprint(&b, ", ", arg.impl)
+			fmt.Fprint(&b, sep, arg.impl)
+			sep = ", "
 		}
 		log.Println(b.String())
 	}
 	t := fn.t
 	switch fn.kind {
 	case vkClosure:
-		panic("todo")
+		fn = b.Field(fn, 0)
+		t = fn.t
+		fallthrough
 	case vkFuncDecl, vkFuncPtr:
 		sig := t.(*types.Signature)
-		ret.Type = b.Prog.retType(sig)
+		ret.Type = prog.retType(sig)
 	default:
 		panic("todo")
 	}

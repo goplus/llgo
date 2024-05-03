@@ -17,9 +17,12 @@
 package ssa_test
 
 import (
+	"go/types"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/internal/typeutil"
+	"github.com/goplus/llgo/ssa"
 )
 
 func TestFromTestrt(t *testing.T) {
@@ -33,4 +36,18 @@ func TestFromTestdata(t *testing.T) {
 func TestRuntime(t *testing.T) {
 	cltest.Pkg(t, "github.com/goplus/llgo/internal/runtime", "../internal/runtime/llgo_autogen.ll")
 	cltest.Pkg(t, "github.com/goplus/llgo/internal/abi", "../internal/abi/llgo_autogen.ll")
+}
+
+func TestMap(t *testing.T) {
+	var m typeutil.Map
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	m.Set(sig, 1)
+	csig := (*ssa.CFuncPtr)(sig)
+	m.Set(csig, 2)
+	if v := m.At(sig); v.(int) != 1 {
+		t.Fatal("At(sig):", v)
+	}
+	if v := m.At(csig); v.(int) != 2 {
+		t.Fatal("At(csig):", v)
+	}
 }
