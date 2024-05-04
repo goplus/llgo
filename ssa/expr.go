@@ -484,7 +484,7 @@ func (b Builder) Store(ptr, val Expr) Builder {
 // aggregateValue yields the value of the aggregate X with the fields
 func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 	if debugInstr {
-		log.Printf("AggregateValue %v, %v\n", t, flds)
+		log.Printf("AggregateValue %v, %v\n", t.t, flds)
 	}
 	impl := b.impl
 	tll := t.ll
@@ -494,6 +494,24 @@ func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 	}
 	return Expr{llvm.CreateLoad(b.impl, tll, ptr), t}
 }
+
+/*
+// The MakeClosure instruction yields a closure value whose code is
+// Fn and whose free variables' values are supplied by Bindings.
+//
+// Type() returns a (possibly named) *types.Signature.
+//
+// Example printed form:
+//
+//	t0 = make closure anon@1.2 [x y z]
+//	t1 = make closure bound$(main.I).add [i]
+func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
+	if debugInstr {
+		log.Printf("MakeClosure %v, %v\n", fn, bindings)
+	}
+	panic("todo")
+}
+*/
 
 // The FieldAddr instruction yields the address of Field of *struct X.
 //

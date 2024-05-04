@@ -523,6 +523,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			nReserve = p.compileValue(b, v.Reserve)
 		}
 		ret = b.MakeMap(p.prog.Type(t), nReserve)
+	/*
+		case *ssa.MakeClosure:
+				fn := p.compileValue(b, v.Fn)
+				bindings := p.compileValues(b, v.Bindings, 0)
+				ret = b.MakeClosure(fn, bindings)
+	*/
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
 		ret = b.TypeAssert(x, p.prog.Type(v.AssertedType), v.CommaOk)
