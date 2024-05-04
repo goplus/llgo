@@ -50,7 +50,7 @@ _llgo_0:
   call void @main.init()
   %0 = alloca { ptr, ptr }, align 8
   %1 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 0
-  store ptr @main.Rand, ptr %1, align 8
+  store ptr @rand, ptr %1, align 8
   %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
   store ptr null, ptr %2, align 8
   %3 = load { ptr, ptr }, ptr %0, align 8
@@ -85,6 +85,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/go
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare i32 @main.Rand()
+declare i32 @rand()
 
 declare i32 @printf(ptr, ...)
