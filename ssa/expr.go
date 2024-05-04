@@ -361,9 +361,24 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 
 // -----------------------------------------------------------------------------
 
-func llvmValues(vals []Expr) []llvm.Value {
+func checkExpr(v Expr, t types.Type, b Builder) Expr {
+	if _, ok := t.(*types.Signature); ok {
+		if v.kind != vkClosure {
+			prog := b.Prog
+			nilVal := prog.Null(prog.VoidPtr()).impl
+			return b.aggregateValue(prog.Type(t), v.impl, nilVal)
+		}
+	}
+	return v
+}
+
+func llvmValues(vals []Expr, params *types.Tuple, b Builder) []llvm.Value {
+	n := params.Len()
 	ret := make([]llvm.Value, len(vals))
 	for i, v := range vals {
+		if i < n {
+			v = checkExpr(v, params.At(i).Type(), b)
+		}
 		ret[i] = v.impl
 	}
 	return ret
@@ -1019,19 +1034,26 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		}
 		log.Println(b.String())
 	}
-	t := fn.t
+	var sig *types.Signature
+	var t = fn.t
+	normal := true
 	switch fn.kind {
 	case vkClosure:
 		fn = b.Field(fn, 0)
 		t = fn.t
+		normal = false
 		fallthrough
 	case vkFuncDecl, vkFuncPtr:
-		sig := t.(*types.Signature)
+		sig = t.(*types.Signature)
 		ret.Type = prog.retType(sig)
 	default:
 		panic("unreachable")
 	}
-	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args))
+	if normal {
+		ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args, sig.Params(), b))
+	} else {
+		ret = prog.IntVal(0, prog.Type(types.Typ[types.Int32]))
+	}
 	return
 }
 
