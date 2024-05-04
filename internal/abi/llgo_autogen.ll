@@ -2,14 +2,13 @@
 source_filename = "github.com/goplus/llgo/internal/abi"
 
 %"github.com/goplus/llgo/internal/abi.ArrayType" = type { %"github.com/goplus/llgo/internal/abi.Type", ptr, ptr, i64 }
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, %"github.com/goplus/llgo/internal/runtime.Closure", ptr, i32, i32 }
-%"github.com/goplus/llgo/internal/runtime.Closure" = type { ptr, ptr }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, i32, i32 }
 %"github.com/goplus/llgo/internal/abi.ChanType" = type { %"github.com/goplus/llgo/internal/abi.Type", ptr, i64 }
 %"github.com/goplus/llgo/internal/abi.FuncType" = type { %"github.com/goplus/llgo/internal/abi.Type", i16, i16 }
 %"github.com/goplus/llgo/internal/abi.InterfaceType" = type { %"github.com/goplus/llgo/internal/abi.Type", %"github.com/goplus/llgo/internal/abi.Name", %"github.com/goplus/llgo/internal/runtime.Slice" }
 %"github.com/goplus/llgo/internal/abi.Name" = type { ptr }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
-%"github.com/goplus/llgo/internal/abi.MapType" = type { %"github.com/goplus/llgo/internal/abi.Type", ptr, ptr, ptr, %"github.com/goplus/llgo/internal/runtime.Closure", i8, i8, i16, i32 }
+%"github.com/goplus/llgo/internal/abi.MapType" = type { %"github.com/goplus/llgo/internal/abi.Type", ptr, ptr, ptr, { ptr, ptr }, i8, i8, i16, i32 }
 %"github.com/goplus/llgo/internal/abi.PtrType" = type { %"github.com/goplus/llgo/internal/abi.Type", ptr }
 %"github.com/goplus/llgo/internal/abi.SliceType" = type { %"github.com/goplus/llgo/internal/abi.Type", ptr }
 %"github.com/goplus/llgo/internal/abi.StructType" = type { %"github.com/goplus/llgo/internal/abi.Type", %"github.com/goplus/llgo/internal/abi.Name", %"github.com/goplus/llgo/internal/runtime.Slice" }

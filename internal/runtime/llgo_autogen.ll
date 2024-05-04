@@ -4,9 +4,8 @@ source_filename = "github.com/goplus/llgo/internal/runtime"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.itab" = type { ptr, ptr, i32, [4 x i8], [1 x i64] }
-%"github.com/goplus/llgo/internal/runtime.Closure" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, %"github.com/goplus/llgo/internal/runtime.Closure", ptr, i32, i32 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, i32, i32 }
 %"github.com/goplus/llgo/internal/runtime.hmap" = type { i64, i8, i8, i16, i32, ptr, ptr, i64, ptr }
 
 @"github.com/goplus/llgo/internal/runtime.TyAny" = global ptr null
@@ -90,26 +89,6 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret { i64, i1 } zeroinitializer
-}
-
-define ptr @"github.com/goplus/llgo/internal/runtime.ClosureData"(%"github.com/goplus/llgo/internal/runtime.Closure" %0) {
-_llgo_0:
-  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Closure", align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.Closure" %0, ptr %2, align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Closure", ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  ret ptr %4
-}
-
-define ptr @"github.com/goplus/llgo/internal/runtime.ClosureF"(%"github.com/goplus/llgo/internal/runtime.Closure" %0) {
-_llgo_0:
-  %1 = alloca %"github.com/goplus/llgo/internal/runtime.Closure", align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.Closure" %0, ptr %2, align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Closure", ptr %2, i32 0, i32 0
-  %4 = load ptr, ptr %3, align 8
-  ret ptr %4
 }
 
 define %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.EmptyString"() {
@@ -248,18 +227,6 @@ define ptr @"github.com/goplus/llgo/internal/runtime.MakeSmallMap"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/internal/runtime.makemap_small"()
   ret ptr %0
-}
-
-define %"github.com/goplus/llgo/internal/runtime.Closure" @"github.com/goplus/llgo/internal/runtime.NewClosure"(ptr %0, ptr %1) {
-_llgo_0:
-  %2 = alloca %"github.com/goplus/llgo/internal/runtime.Closure", align 8
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %2, i64 16)
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Closure", ptr %3, i32 0, i32 0
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Closure", ptr %3, i32 0, i32 1
-  store ptr %0, ptr %4, align 8
-  store ptr %1, ptr %5, align 8
-  %6 = load %"github.com/goplus/llgo/internal/runtime.Closure", ptr %3, align 8
-  ret %"github.com/goplus/llgo/internal/runtime.Closure" %6
 }
 
 define %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice"(ptr %0, i64 %1, i64 %2) {

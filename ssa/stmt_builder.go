@@ -19,6 +19,7 @@ package ssa
 import (
 	"bytes"
 	"fmt"
+	"go/types"
 	"log"
 
 	"github.com/goplus/llvm"
@@ -102,7 +103,8 @@ func (b Builder) Return(results ...Expr) {
 	case 1:
 		b.impl.CreateRet(results[0].impl)
 	default:
-		b.impl.CreateAggregateRet(llvmValues(results))
+		tret := b.fn.t.(*types.Signature).Results()
+		b.impl.CreateAggregateRet(llvmValues(results, tret, b))
 	}
 }
 
