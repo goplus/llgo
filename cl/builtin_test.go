@@ -25,6 +25,25 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestErrCompileValue(t *testing.T) {
+	defer func() {
+		if r := recover(); r != "can't use llgo instruction as a value" {
+			t.Fatal("TestErrCompileValue:", r)
+		}
+	}()
+	pkg := types.NewPackage("foo", "foo")
+	ctx := &context{
+		goTyps: pkg,
+		link: map[string]string{
+			"foo.": "llgo.unreachable",
+		},
+	}
+	ctx.compileValue(nil, &ssa.Function{
+		Pkg:       &ssa.Package{Pkg: pkg},
+		Signature: types.NewSignatureType(nil, nil, nil, nil, nil, false),
+	})
+}
+
 func TestErrCompileInstrOrValue(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
