@@ -54,9 +54,16 @@ func (p Program) Type(typ types.Type, bg Background) Type {
 // FuncDecl converts a Go/C function declaration into raw type.
 func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
 	if bg == InGo {
-		sig = p.gocvt.cvtFunc(sig, true)
+		sig = p.gocvt.cvtFunc(sig, sig.Recv())
 	}
 	return &aType{p.toLLVMFunc(sig), rawType{sig}, vkFuncDecl}
+}
+
+// Closure creates a closture type for a function.
+func (p Program) Closure(fn Type) Type {
+	sig := fn.raw.Type.(*types.Signature)
+	closure := p.gocvt.cvtClosure(sig)
+	return p.rawType(closure)
 }
 
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
@@ -116,7 +123,8 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 }
 
 func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
-	raw := p.cvtFunc(sig, false)
+	ctx := types.NewParam(token.NoPos, nil, ClosureCtx, types.Typ[types.UnsafePointer])
+	raw := p.cvtFunc(sig, ctx)
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "f", raw, false),
 		types.NewField(token.NoPos, nil, "data", types.Typ[types.UnsafePointer], false),
@@ -124,15 +132,9 @@ func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
 	return types.NewStruct(flds, nil)
 }
 
-func (p goTypes) cvtFunc(sig *types.Signature, hasRecv bool) (raw *types.Signature) {
-	if v, ok := p.typs[unsafe.Pointer(sig)]; ok {
-		return (*types.Signature)(v)
-	}
-	defer func() {
-		p.typs[unsafe.Pointer(sig)] = unsafe.Pointer(raw)
-	}()
-	if hasRecv {
-		sig = methodToFunc(sig)
+func (p goTypes) cvtFunc(sig *types.Signature, recv *types.Var) (raw *types.Signature) {
+	if recv != nil {
+		sig = FuncAddCtx(recv, sig)
 	}
 	params, cvt1 := p.cvtTuple(sig.Params())
 	results, cvt2 := p.cvtTuple(sig.Results())
@@ -167,7 +169,7 @@ func (p goTypes) cvtExplicitMethods(typ *types.Interface) ([]*types.Func, bool) 
 	for i := 0; i < n; i++ {
 		m := typ.ExplicitMethod(i)
 		sig := m.Type().(*types.Signature)
-		if raw := p.cvtFunc(sig, false); sig != raw {
+		if raw := p.cvtFunc(sig, nil); sig != raw {
 			m = types.NewFunc(m.Pos(), m.Pkg(), m.Name(), raw)
 			needcvt = true
 		}
@@ -236,20 +238,17 @@ func (p goTypes) cvtStruct(typ *types.Struct) (raw *types.Struct, cvt bool) {
 
 // -----------------------------------------------------------------------------
 
-// convert method to func
-func methodToFunc(sig *types.Signature) *types.Signature {
-	if recv := sig.Recv(); recv != nil {
-		tParams := sig.Params()
-		nParams := tParams.Len()
-		params := make([]*types.Var, nParams+1)
-		params[0] = recv
-		for i := 0; i < nParams; i++ {
-			params[i+1] = tParams.At(i)
-		}
-		return types.NewSignatureType(
-			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
+// FuncAddCtx adds a ctx to a function signature.
+func FuncAddCtx(ctx *types.Var, sig *types.Signature) *types.Signature {
+	tParams := sig.Params()
+	nParams := tParams.Len()
+	params := make([]*types.Var, nParams+1)
+	params[0] = ctx
+	for i := 0; i < nParams; i++ {
+		params[i+1] = tParams.At(i)
 	}
-	return sig
+	return types.NewSignatureType(
+		nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
 }
 
 // -----------------------------------------------------------------------------

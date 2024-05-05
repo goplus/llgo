@@ -169,7 +169,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
-			p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd, false)
+			p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd)
 		}
 	}
 }
@@ -190,53 +190,95 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 }
 
-func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function, closure bool) llssa.Function {
+func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
+	n := len(vars)
+	flds := make([]*types.Var, n)
+	for i, v := range vars {
+		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), v.Type(), false)
+	}
+	t := types.NewStruct(flds, nil)
+	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
+}
+
+func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) llssa.Function {
+	name, ftype := p.funcName(pkgTypes, f, true)
+	if ftype != goFunc {
+		return nil
+	}
+	fn := pkg.FuncOf(name)
+	if fn != nil && fn.HasBody() {
+		return fn
+	}
+
 	var sig = f.Signature
-	var name string
-	var ftype int
-	if closure {
-		name, ftype = funcName(pkgTypes, f), goFunc
+	var hasCtx = len(f.FreeVars) > 0
+	if hasCtx {
 		if debugInstr {
 			log.Println("==> NewClosure", name, "type:", sig)
 		}
+		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
+		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
-		name, ftype = p.funcName(pkgTypes, f, true)
-		switch ftype {
-		case ignoredFunc, llgoInstr: // llgo extended instructions
-			return nil
-		}
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
 		}
 	}
-	fn := pkg.NewFunc(name, sig, llssa.Background(ftype))
-	p.inits = append(p.inits, func() {
-		p.fn = fn
-		defer func() {
-			p.fn = nil
-		}()
-		p.phis = nil
-		nblk := len(f.Blocks)
-		if nblk == 0 { // external function
-			return
-		}
-		if debugGoSSA {
-			f.WriteTo(os.Stderr)
-		}
-		if debugInstr {
-			log.Println("==> FuncBody", name)
-		}
-		fn.MakeBlocks(nblk)
-		b := fn.NewBuilder()
-		p.bvals = make(map[ssa.Value]llssa.Expr)
-		for i, block := range f.Blocks {
-			p.compileBlock(b, block, i == 0 && name == "main")
-		}
-		for _, phi := range p.phis {
-			phi()
-		}
-	})
+	if fn == nil {
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
+	}
+	if nblk := len(f.Blocks); nblk > 0 {
+		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+		p.inits = append(p.inits, func() {
+			p.fn = fn
+			defer func() {
+				p.fn = nil
+			}()
+			p.phis = nil
+			if debugGoSSA {
+				f.WriteTo(os.Stderr)
+			}
+			if debugInstr {
+				log.Println("==> FuncBody", name)
+			}
+			b := fn.NewBuilder()
+			p.bvals = make(map[ssa.Value]llssa.Expr)
+			for i, block := range f.Blocks {
+				p.compileBlock(b, block, i == 0 && name == "main")
+			}
+			for _, phi := range p.phis {
+				phi()
+			}
+		})
+	}
 	return fn
+}
+
+// funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
+// or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
+func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
+	pkgTypes := p.ensureLoaded(fn.Pkg.Pkg)
+	pkg := p.pkg
+	name, ftype := p.funcName(pkgTypes, fn, false)
+	if ftype == llgoInstr {
+		switch name {
+		case "cstr":
+			ftype = llgoCstr
+		case "advance":
+			ftype = llgoAdvance
+		case "alloca":
+			ftype = llgoAlloca
+		case "allocaCStr":
+			ftype = llgoAllocaCStr
+		case "unreachable":
+			ftype = llgoUnreachable
+		default:
+			panic("unknown llgo instruction: " + name)
+		}
+	} else if ret = pkg.FuncOf(name); ret == nil && len(fn.FreeVars) == 0 {
+		sig := fn.Signature
+		ret = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
+	}
+	return
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bool) llssa.BasicBlock {
@@ -519,12 +561,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			nReserve = p.compileValue(b, v.Reserve)
 		}
 		ret = b.MakeMap(t, nReserve)
-	/*
-		case *ssa.MakeClosure:
-				fn := p.compileValue(b, v.Fn)
-				bindings := p.compileValues(b, v.Bindings, 0)
-				ret = b.MakeClosure(fn, bindings)
-	*/
+	case *ssa.MakeClosure:
+		fn := p.compileValue(b, v.Fn)
+		bindings := p.compileValues(b, v.Bindings, 0)
+		ret = b.MakeClosure(fn, bindings)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
 		t := p.prog.Type(v.AssertedType, llssa.InGo)
@@ -605,14 +645,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		if v.Blocks != nil {
-			fn := p.compileFunc(p.pkg, p.goTyps, v, true)
+		if v.Pkg == p.goPkg { // function in this package
+			fn := p.compileFunc(p.pkg, p.goTyps, v)
 			return fn.Expr
 		}
-		fn, ftype := p.funcOf(v)
-		if ftype >= llgoInstrBase {
-			panic("can't use llgo instruction as a value")
-		}
+		fn, _ := p.funcOf(v)
 		return fn.Expr
 	case *ssa.Global:
 		g := p.varOf(v)
@@ -620,6 +657,13 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	case *ssa.Const:
 		t := types.Default(v.Type())
 		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
+	case *ssa.FreeVar:
+		fn := v.Parent()
+		for idx, freeVar := range fn.FreeVars {
+			if freeVar == v {
+				return p.fn.FreeVar(b, idx)
+			}
+		}
 	}
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 }
@@ -698,7 +742,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFunc(ret, member.Pkg.Pkg, member, false)
+			ctx.compileFunc(ret, member.Pkg.Pkg, member)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:

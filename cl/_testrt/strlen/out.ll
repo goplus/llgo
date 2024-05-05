@@ -36,8 +36,8 @@ _llgo_0:
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare i32 @strlen(ptr)
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @printf(ptr, ...)

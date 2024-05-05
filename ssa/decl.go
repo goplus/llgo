@@ -26,7 +26,9 @@ import (
 // -----------------------------------------------------------------------------
 
 const (
-	NameValist = "__llgo_va_list"
+	ClosureCtx  = "__llgo_ctx"
+	ClosureStub = "__llgo_stub."
+	NameValist  = "__llgo_va_list"
 )
 
 func VArg() *types.Var {
@@ -130,15 +132,20 @@ type aFunction struct {
 	blks []BasicBlock
 
 	params  []Type
+	base    int // base = 1 if hasFreeVars; base = 0 otherwise
 	hasVArg bool
 }
 
 // Function represents a function or method.
 type Function = *aFunction
 
-func newFunction(fn llvm.Value, t Type, pkg Package, prog Program) Function {
+func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool) Function {
 	params, hasVArg := newParams(t, prog)
-	return &aFunction{Expr{fn, t}, pkg, prog, nil, params, hasVArg}
+	base := 0
+	if hasFreeVars {
+		base = 1
+	}
+	return &aFunction{Expr{fn, t}, pkg, prog, nil, params, base, hasVArg}
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
@@ -158,7 +165,14 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 
 // Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
+	i += p.base // skip if hasFreeVars
 	return Expr{p.impl.Param(i), p.params[i]}
+}
+
+// FreeVar returns the function's ith free variable.
+func (p Function) FreeVar(b Builder, i int) Expr {
+	ctx := Expr{p.impl.Param(0), p.params[0]}
+	return b.Field(ctx, i)
 }
 
 // NewBuilder creates a new Builder for the function.
@@ -168,6 +182,11 @@ func (p Function) NewBuilder() Builder {
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
 	return &aBuilder{b, p, prog}
+}
+
+// HasBody reports whether the function has a body.
+func (p Function) HasBody() bool {
+	return len(p.blks) > 0
 }
 
 // MakeBody creates nblk basic blocks for the function, and creates

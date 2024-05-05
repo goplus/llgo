@@ -71,6 +71,11 @@ func Gen(pkgPath, inFile string, src any) string {
 	}
 
 	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := imp.Import(llssa.PkgRuntime)
+		check(err)
+		return rt
+	})
 	ret, err := cl.NewPackage(prog, ssaPkg, files)
 	check(err)
 

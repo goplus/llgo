@@ -4,12 +4,15 @@ import (
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
-func callback(f func()) {
-	f()
+func callback(msg *c.Char, f func(*c.Char)) {
+	f(msg)
+}
+
+func print(msg *c.Char) {
+	c.Printf(msg)
 }
 
 func main() {
-	callback(func() {
-		c.Printf(c.Str("Hello, callback\n"))
-	})
+	callback(c.Str("Hello\n"), print)
+	callback(c.Str("callback\n"), print)
 }

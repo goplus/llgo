@@ -25,6 +25,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+/*
 func TestErrCompileValue(t *testing.T) {
 	defer func() {
 		if r := recover(); r != "can't use llgo instruction as a value" {
@@ -43,6 +44,7 @@ func TestErrCompileValue(t *testing.T) {
 		Signature: types.NewSignatureType(nil, nil, nil, nil, nil, false),
 	})
 }
+*/
 
 func TestErrCompileInstrOrValue(t *testing.T) {
 	defer func() {

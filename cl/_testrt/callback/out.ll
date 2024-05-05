@@ -2,12 +2,14 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
-@0 = private unnamed_addr constant [17 x i8] c"Hello, callback\0A\00", align 1
+@0 = private unnamed_addr constant [7 x i8] c"Hello\0A\00", align 1
+@1 = private unnamed_addr constant [10 x i8] c"callback\0A\00", align 1
 
-define void @main.callback({ ptr, ptr } %0) {
+define void @main.callback(ptr %0, { ptr, ptr } %1) {
 _llgo_0:
-  %1 = extractvalue { ptr, ptr } %0, 0
-  call void %1()
+  %2 = extractvalue { ptr, ptr } %1, 1
+  %3 = extractvalue { ptr, ptr } %1, 0
+  call void %3(ptr %2, ptr %0)
   ret void
 }
 
@@ -30,19 +32,32 @@ _llgo_0:
   call void @main.init()
   %0 = alloca { ptr, ptr }, align 8
   %1 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 0
-  store ptr @"main.main$1", ptr %1, align 8
+  store ptr @__llgo_stub.main.print, ptr %1, align 8
   %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
   store ptr null, ptr %2, align 8
   %3 = load { ptr, ptr }, ptr %0, align 8
-  call void @main.callback({ ptr, ptr } %3)
+  call void @main.callback(ptr @0, { ptr, ptr } %3)
+  %4 = alloca { ptr, ptr }, align 8
+  %5 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 0
+  store ptr @__llgo_stub.main.print, ptr %5, align 8
+  %6 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 1
+  store ptr null, ptr %6, align 8
+  %7 = load { ptr, ptr }, ptr %4, align 8
+  call void @main.callback(ptr @1, { ptr, ptr } %7)
+  ret void
+}
+
+define void @main.print(ptr %0) {
+_llgo_0:
+  %1 = call i32 (ptr, ...) @printf(ptr %0)
   ret void
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-define void @"main.main$1"() {
+define void @__llgo_stub.main.print(ptr %0, ptr %1) {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @0)
+  call void @main.print(ptr %1)
   ret void
 }
 
