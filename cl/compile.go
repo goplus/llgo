@@ -196,7 +196,7 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	for i, v := range vars {
 		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), v.Type(), false)
 	}
-	t := types.NewStruct(flds, nil)
+	t := types.NewPointer(types.NewStruct(flds, nil))
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
 }
 
@@ -645,7 +645,8 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		if v.Pkg == p.goPkg { // function in this package
+		// v.Pkg == nil: means auto generated function?
+		if v.Pkg == p.goPkg || v.Pkg == nil { // function in this package
 			fn := p.compileFunc(p.pkg, p.goTyps, v)
 			return fn.Expr
 		}

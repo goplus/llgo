@@ -541,7 +541,7 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	prog := b.Prog
 	tfn := fn.Type
 	sig := tfn.raw.Type.(*types.Signature)
-	tctx := sig.Params().At(0).Type().Underlying().(*types.Struct)
+	tctx := sig.Params().At(0).Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
 	flds := llvmFields(bindings, tctx, b)
 	data := b.aggregateAlloc(prog.rawType(tctx), flds...)
 	return b.aggregateValue(prog.Closure(tfn), fn.impl, data)
@@ -576,6 +576,10 @@ func (b Builder) Field(x Expr, idx int) Expr {
 	if debugInstr {
 		log.Printf("Field %v, %d\n", x.impl, idx)
 	}
+	return b.getField(x, idx)
+}
+
+func (b Builder) getField(x Expr, idx int) Expr {
 	tfld := b.Prog.Field(x.Type, idx)
 	fld := llvm.CreateExtractValue(b.impl, x.impl, idx)
 	return Expr{fld, tfld}
