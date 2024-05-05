@@ -18,7 +18,6 @@ package ssa
 
 import (
 	"fmt"
-	"go/token"
 	"go/types"
 
 	"github.com/goplus/llvm"
@@ -41,9 +40,8 @@ const (
 	vkString
 	vkBool
 	vkPtr
-	vkFuncDecl // func decl
-	vkFuncPtr  // func ptr in C
-	vkClosure  // func ptr in Go
+	vkFunc
+	vkClosure
 	vkTuple
 	vkDelayExpr = -1
 	vkPhisExpr  = -2
@@ -66,31 +64,24 @@ func indexType(t types.Type) types.Type {
 	panic("index: type doesn't support index - " + t.String())
 }
 
-// convert method to func
-func methodToFunc(sig *types.Signature) *types.Signature {
-	if recv := sig.Recv(); recv != nil {
-		tParams := sig.Params()
-		nParams := tParams.Len()
-		params := make([]*types.Var, nParams+1)
-		params[0] = recv
-		for i := 0; i < nParams; i++ {
-			params[i+1] = tParams.At(i)
-		}
-		return types.NewSignatureType(
-			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
-	}
-	return sig
-}
-
 // -----------------------------------------------------------------------------
+
+type rawType struct {
+	types.Type
+}
 
 type aType struct {
 	ll   llvm.Type
-	t    types.Type
+	raw  rawType
 	kind valueKind // value kind of llvm.Type
 }
 
 type Type = *aType
+
+// RawType returns the raw type.
+func (t Type) RawType() types.Type {
+	return t.raw.Type
+}
 
 // TODO(xsw):
 // how to generate platform independent code?
@@ -103,40 +94,35 @@ func (p Program) SizeOf(typ Type, n ...int64) uint64 {
 }
 
 func (p Program) Slice(typ Type) Type {
-	return p.Type(types.NewSlice(typ.t))
+	return p.rawType(types.NewSlice(typ.raw.Type))
 }
 
 func (p Program) Pointer(typ Type) Type {
-	return p.Type(types.NewPointer(typ.t))
+	return p.rawType(types.NewPointer(typ.raw.Type))
 }
 
 func (p Program) Elem(typ Type) Type {
-	elem := typ.t.(*types.Pointer).Elem()
-	return p.Type(elem)
+	elem := typ.raw.Type.(*types.Pointer).Elem()
+	return p.rawType(elem)
 }
 
 func (p Program) Index(typ Type) Type {
-	return p.Type(indexType(typ.t))
+	return p.rawType(indexType(typ.raw.Type))
 }
 
 func (p Program) Field(typ Type, i int) Type {
-	tunder := typ.t.Underlying()
+	tunder := typ.raw.Type.Underlying()
 	tfld := tunder.(*types.Struct).Field(i).Type()
-	return p.Type(tfld)
+	return p.rawType(tfld)
 }
 
-func (p Program) Type(typ types.Type) Type {
-	if v := p.typs.At(typ); v != nil {
+func (p Program) rawType(raw types.Type) Type {
+	if v := p.typs.At(raw); v != nil {
 		return v.(Type)
 	}
-	ret := p.toLLVMType(typ)
-	p.typs.Set(typ, ret)
+	ret := p.toType(raw)
+	p.typs.Set(raw, ret)
 	return ret
-}
-
-func (p Program) llvmFuncDecl(sig *types.Signature) Type {
-	sig = methodToFunc(sig)
-	return p.toLLVMFunc(sig, false, true) // don't save func decl to cache
 }
 
 func (p Program) tyVoidPtr() llvm.Type {
@@ -202,8 +188,9 @@ func (p Program) tyInt64() llvm.Type {
 	return p.int64Type
 }
 
-func (p Program) toLLVMType(typ types.Type) Type {
-	switch t := typ.(type) {
+func (p Program) toType(raw types.Type) Type {
+	typ := rawType{raw}
+	switch t := raw.(type) {
 	case *types.Basic:
 		switch t.Kind() {
 		case types.Int:
@@ -240,7 +227,7 @@ func (p Program) toLLVMType(typ types.Type) Type {
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
-		elem := p.Type(t.Elem())
+		elem := p.rawType(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
 		return &aType{p.rtIface(), typ, vkInvalid}
@@ -249,39 +236,52 @@ func (p Program) toLLVMType(typ types.Type) Type {
 	case *types.Map:
 		return &aType{p.rtMap(), typ, vkInvalid}
 	case *types.Struct:
-		return p.toLLVMStruct(t)
+		ll, kind := p.toLLVMStruct(t)
+		return &aType{ll, typ, kind}
 	case *types.Named:
-		return p.toLLVMNamed(t)
-	case *types.Signature:
-		return p.toLLVMFunc(t, false, false)
-	case *CFuncPtr:
-		return p.toLLVMFunc((*types.Signature)(t), true, false)
+		return p.toNamed(t)
+	case *types.Signature: // represents a C function pointer in raw type
+		return &aType{p.toLLVMFuncPtr(t), typ, vkFunc}
 	case *types.Array:
-		elem := p.Type(t.Elem())
+		elem := p.rawType(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
 	case *types.Chan:
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", typ))
 }
 
-func (p Program) toLLVMNamedStruct(name string, typ *types.Struct) llvm.Type {
+func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {
 	t := p.ctx.StructCreateNamed(name)
-	fields := p.toLLVMFields(typ)
+	fields := p.toLLVMFields(raw)
 	t.StructSetBody(fields, false)
 	return t
 }
 
-func (p Program) toLLVMStruct(typ *types.Struct) Type {
-	fields := p.toLLVMFields(typ)
-	return &aType{p.ctx.StructType(fields, false), typ, vkInvalid}
+func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind) {
+	fields := p.toLLVMFields(raw)
+	ret = p.ctx.StructType(fields, false)
+	if isClosure(raw) {
+		kind = vkClosure
+	}
+	return
 }
 
-func (p Program) toLLVMFields(typ *types.Struct) (fields []llvm.Type) {
-	n := typ.NumFields()
+func isClosure(raw *types.Struct) bool {
+	n := raw.NumFields()
+	if n == 2 {
+		if _, ok := raw.Field(0).Type().(*types.Signature); ok {
+			return raw.Field(1).Type() == types.Typ[types.UnsafePointer]
+		}
+	}
+	return false
+}
+
+func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {
+	n := raw.NumFields()
 	if n > 0 {
 		fields = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			fields[i] = p.Type(typ.Field(i).Type()).ll
+			fields[i] = p.rawType(raw.Field(i).Type()).ll
 		}
 	}
 	return
@@ -295,69 +295,57 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 	if n > 0 {
 		ret = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			ret[i] = p.Type(t.At(i).Type()).ll
+			ret[i] = p.rawType(t.At(i).Type()).ll
 		}
 	}
 	return
 }
 
-func (p Program) toLLVMFunc(sig *types.Signature, inC, isDecl bool) Type {
-	if isDecl || inC {
-		tParams := sig.Params()
-		n := tParams.Len()
-		hasVArg := HasVArg(tParams, n)
-		if hasVArg {
-			n--
-		}
-		params := p.toLLVMTypes(tParams, n)
-		out := sig.Results()
-		var ret llvm.Type
-		var kind valueKind
-		switch nret := out.Len(); nret {
-		case 0:
-			ret = p.tyVoid()
-		case 1:
-			ret = p.Type(out.At(0).Type()).ll
-		default:
-			ret = p.toLLVMTuple(out)
-		}
-		ft := llvm.FunctionType(ret, params, hasVArg)
-		if isDecl {
-			kind = vkFuncDecl
-		} else {
-			ft = llvm.PointerType(ft, 0)
-			kind = vkFuncPtr
-		}
-		return &aType{ft, sig, kind}
+func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
+	tParams := sig.Params()
+	n := tParams.Len()
+	hasVArg := HasVArg(tParams, n)
+	if hasVArg {
+		n--
 	}
-	flds := []*types.Var{
-		types.NewField(token.NoPos, nil, "f", (*CFuncPtr)(sig), false),
-		types.NewField(token.NoPos, nil, "data", types.Typ[types.UnsafePointer], false),
+	params := p.toLLVMTypes(tParams, n)
+	out := sig.Results()
+	var ret llvm.Type
+	switch nret := out.Len(); nret {
+	case 0:
+		ret = p.tyVoid()
+	case 1:
+		ret = p.rawType(out.At(0).Type()).ll
+	default:
+		ret = p.toLLVMTuple(out)
 	}
-	t := types.NewStruct(flds, nil)
-	ll := p.ctx.StructType(p.toLLVMFields(t), false)
-	return &aType{ll, t, vkClosure}
+	return llvm.FunctionType(ret, params, hasVArg)
 }
 
-func (p Program) retType(sig *types.Signature) Type {
-	out := sig.Results()
+func (p Program) toLLVMFuncPtr(sig *types.Signature) llvm.Type {
+	ft := p.toLLVMFunc(sig)
+	return llvm.PointerType(ft, 0)
+}
+
+func (p Program) retType(raw *types.Signature) Type {
+	out := raw.Results()
 	switch n := out.Len(); n {
 	case 0:
 		return p.Void()
 	case 1:
-		return p.Type(out.At(0).Type())
+		return p.rawType(out.At(0).Type())
 	default:
-		return &aType{p.toLLVMTuple(out), out, vkTuple}
+		return &aType{p.toLLVMTuple(out), rawType{out}, vkTuple}
 	}
 }
 
-func (p Program) toLLVMNamed(typ *types.Named) Type {
-	switch t := typ.Underlying().(type) {
+func (p Program) toNamed(raw *types.Named) Type {
+	switch t := raw.Underlying().(type) {
 	case *types.Struct:
-		name := NameOf(typ)
-		return &aType{p.toLLVMNamedStruct(name, t), typ, vkInvalid}
+		name := NameOf(raw)
+		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkInvalid}
 	default:
-		return p.Type(t)
+		return p.rawType(t)
 	}
 }
 

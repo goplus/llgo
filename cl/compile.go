@@ -184,10 +184,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	if debugInstr {
 		log.Println("==> NewVar", name, typ)
 	}
-	if vtype == cVar {
-		typ = llssa.CType(typ)
-	}
-	g := pkg.NewVar(name, typ)
+	g := pkg.NewVar(name, typ, llssa.Background(vtype))
 	if vtype == goVar {
 		g.Init(p.prog.Null(g.Type))
 	}
@@ -196,13 +193,13 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function, closure bool) llssa.Function {
 	var sig = f.Signature
 	var name string
+	var ftype int
 	if closure {
-		name = funcName(pkgTypes, f)
+		name, ftype = funcName(pkgTypes, f), goFunc
 		if debugInstr {
 			log.Println("==> NewClosure", name, "type:", sig)
 		}
 	} else {
-		var ftype int
 		name, ftype = p.funcName(pkgTypes, f, true)
 		switch ftype {
 		case ignoredFunc, llgoInstr: // llgo extended instructions
@@ -211,11 +208,8 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
 		}
-		if ftype == cFunc {
-			sig = llssa.CFuncDecl(sig)
-		}
 	}
-	fn := pkg.NewFunc(name, sig)
+	fn := pkg.NewFunc(name, sig, llssa.Background(ftype))
 	p.inits = append(p.inits, func() {
 		p.fn = fn
 		defer func() {
@@ -265,7 +259,8 @@ const (
 )
 
 func callRuntimeInit(b llssa.Builder, pkg llssa.Package) {
-	fn := pkg.NewFunc(RuntimeInit, types.NewSignatureType(nil, nil, nil, nil, nil, false))
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc(RuntimeInit, sig, llssa.InC) // don't need to convert runtime.init
 	b.Call(fn.Expr)
 }
 
@@ -372,7 +367,7 @@ func (p *context) compilePhis(b llssa.Builder, instrs []ssa.Instruction) []ssa.I
 }
 
 func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
-	phi := b.Phi(p.prog.Type(v.Type()))
+	phi := b.Phi(p.prog.Type(v.Type(), llssa.InGo))
 	ret = phi.Expr
 	p.phis = append(p.phis, func() {
 		preds := v.Block().Preds
@@ -451,11 +446,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.ChangeType:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
-		ret = b.ChangeType(p.prog.Type(t), x)
+		ret = b.ChangeType(p.prog.Type(t, llssa.InGo), x)
 	case *ssa.Convert:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
-		ret = b.Convert(p.prog.Type(t), x)
+		ret = b.Convert(p.prog.Type(t, llssa.InGo), x)
 	case *ssa.FieldAddr:
 		x := p.compileValue(b, v.X)
 		ret = b.FieldAddr(x, v.Field)
@@ -464,7 +459,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
 			return
 		}
-		ret = b.Alloc(t, v.Heap)
+		elem := p.prog.Type(t.Elem(), llssa.InGo)
+		ret = b.Alloc(elem, v.Heap)
 	case *ssa.IndexAddr:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index
@@ -505,27 +501,34 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		const (
 			delayExpr = true // varargs: don't need to convert an expr to any
 		)
-		t := v.Type()
+		t := p.prog.Type(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x, delayExpr)
 	case *ssa.MakeSlice:
 		var nCap llssa.Expr
-		t := v.Type()
+		t := p.prog.Type(v.Type(), llssa.InGo)
 		nLen := p.compileValue(b, v.Len)
 		if v.Cap != nil {
 			nCap = p.compileValue(b, v.Cap)
 		}
-		ret = b.MakeSlice(p.prog.Type(t), nLen, nCap)
+		ret = b.MakeSlice(t, nLen, nCap)
 	case *ssa.MakeMap:
 		var nReserve llssa.Expr
-		t := v.Type()
+		t := p.prog.Type(v.Type(), llssa.InGo)
 		if v.Reserve != nil {
 			nReserve = p.compileValue(b, v.Reserve)
 		}
-		ret = b.MakeMap(p.prog.Type(t), nReserve)
+		ret = b.MakeMap(t, nReserve)
+	/*
+		case *ssa.MakeClosure:
+				fn := p.compileValue(b, v.Fn)
+				bindings := p.compileValues(b, v.Bindings, 0)
+				ret = b.MakeClosure(fn, bindings)
+	*/
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
-		ret = b.TypeAssert(x, p.prog.Type(v.AssertedType), v.CommaOk)
+		t := p.prog.Type(v.AssertedType, llssa.InGo)
+		ret = b.TypeAssert(x, t, v.CommaOk)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
@@ -616,7 +619,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		return g.Expr
 	case *ssa.Const:
 		t := types.Default(v.Type())
-		return b.Const(v.Value, p.prog.Type(t))
+		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
 	}
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 }

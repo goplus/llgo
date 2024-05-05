@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"go/types"
+	"log"
 
 	"github.com/goplus/llgo/internal/typeutil"
 	"github.com/goplus/llvm"
@@ -94,9 +95,9 @@ func Initialize(flags InitFlags) {
 // -----------------------------------------------------------------------------
 
 type aProgram struct {
-	ctx  llvm.Context
-	typs typeutil.Map
-	// sizs types.Sizes
+	ctx   llvm.Context
+	typs  typeutil.Map // rawType -> Type
+	gocvt goTypes
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -152,7 +153,7 @@ func NewProgram(target *Target) Program {
 		// TODO(xsw): Finalize may cause panic, so comment it.
 		ctx.Finalize()
 	*/
-	return &aProgram{ctx: ctx, target: target, td: td}
+	return &aProgram{ctx: ctx, gocvt: newGoTypes(), target: target, td: td}
 }
 
 // SetRuntime sets the runtime.
@@ -180,11 +181,13 @@ func (p Program) runtime() *types.Package {
 }
 
 func (p Program) rtNamed(name string) *types.Named {
-	return p.runtime().Scope().Lookup(name).Type().(*types.Named)
+	t := p.runtime().Scope().Lookup(name).Type().(*types.Named)
+	t, _ = p.gocvt.cvtNamed(t)
+	return t
 }
 
 func (p Program) rtType(name string) Type {
-	return p.Type(p.rtNamed(name))
+	return p.rawType(p.rtNamed(name))
 }
 
 func (p Program) rtIface() llvm.Type {
@@ -229,14 +232,14 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 // Void returns void type.
 func (p Program) Void() Type {
 	if p.voidTy == nil {
-		p.voidTy = &aType{p.tyVoid(), types.Typ[types.Invalid], vkInvalid}
+		p.voidTy = &aType{p.tyVoid(), rawType{types.Typ[types.Invalid]}, vkInvalid}
 	}
 	return p.voidTy
 }
 
 func (p Program) VoidPtr() Type {
 	if p.voidPtr == nil {
-		p.voidPtr = p.Type(types.Typ[types.UnsafePointer])
+		p.voidPtr = p.rawType(types.Typ[types.UnsafePointer])
 	}
 	return p.voidPtr
 }
@@ -244,21 +247,21 @@ func (p Program) VoidPtr() Type {
 // Bool returns bool type.
 func (p Program) Bool() Type {
 	if p.boolTy == nil {
-		p.boolTy = p.Type(types.Typ[types.Bool])
+		p.boolTy = p.rawType(types.Typ[types.Bool])
 	}
 	return p.boolTy
 }
 
 func (p Program) CStr() Type {
 	if p.cstrTy == nil { // *int8
-		p.cstrTy = p.Type(types.NewPointer(types.Typ[types.Int8]))
+		p.cstrTy = p.rawType(types.NewPointer(types.Typ[types.Int8]))
 	}
 	return p.cstrTy
 }
 
 func (p Program) String() Type {
 	if p.stringTy == nil {
-		p.stringTy = p.Type(types.Typ[types.String])
+		p.stringTy = p.rawType(types.Typ[types.String])
 	}
 	return p.stringTy
 }
@@ -266,7 +269,7 @@ func (p Program) String() Type {
 // Any returns any type.
 func (p Program) Any() Type {
 	if p.anyTy == nil {
-		p.anyTy = p.Type(tyAny)
+		p.anyTy = p.rawType(tyAny)
 	}
 	return p.anyTy
 }
@@ -274,7 +277,7 @@ func (p Program) Any() Type {
 // Int returns int type.
 func (p Program) Int() Type {
 	if p.intTy == nil {
-		p.intTy = p.Type(types.Typ[types.Int])
+		p.intTy = p.rawType(types.Typ[types.Int])
 	}
 	return p.intTy
 }
@@ -282,7 +285,7 @@ func (p Program) Int() Type {
 // Uintptr returns uintptr type.
 func (p Program) Uintptr() Type {
 	if p.uintptrTy == nil {
-		p.uintptrTy = p.Type(types.Typ[types.Uintptr])
+		p.uintptrTy = p.rawType(types.Typ[types.Uintptr])
 	}
 	return p.uintptrTy
 }
@@ -290,7 +293,7 @@ func (p Program) Uintptr() Type {
 // Float64 returns float64 type.
 func (p Program) Float64() Type {
 	if p.f64Ty == nil {
-		p.f64Ty = p.Type(types.Typ[types.Float64])
+		p.f64Ty = p.rawType(types.Typ[types.Float64])
 	}
 	return p.f64Ty
 }
@@ -322,8 +325,8 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 */
 
 // NewVar creates a new global variable.
-func (p Package) NewVar(name string, typ types.Type) Global {
-	t := p.prog.Type(typ)
+func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
+	t := p.prog.Type(typ, bg)
 	gbl := llvm.AddGlobal(p.mod, t.ll, name)
 	ret := &aGlobal{Expr{gbl, t}}
 	p.vars[name] = ret
@@ -336,26 +339,30 @@ func (p Package) VarOf(name string) Global {
 }
 
 // NewFunc creates a new function.
-func (p Package) NewFunc(name string, sig *types.Signature) Function {
+func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
-	t := p.prog.llvmFuncDecl(sig)
+	t := p.prog.FuncDecl(sig, bg)
+	if debugInstr {
+		log.Println("NewFunc", name, t.raw.Type)
+	}
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	ret := newFunction(fn, t, p, p.prog)
 	p.fns[name] = ret
 	return ret
 }
 
-// FuncOf returns a function by name.
-func (p Package) FuncOf(name string) Function {
-	return p.fns[name]
-}
-
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
-	return p.NewFunc(name, fn.Type().(*types.Signature)).Expr
+	sig := fn.Type().(*types.Signature)
+	return p.NewFunc(name, sig, InGo).Expr
+}
+
+// FuncOf returns a function by name.
+func (p Package) FuncOf(name string) Function {
+	return p.fns[name]
 }
 
 // -----------------------------------------------------------------------------

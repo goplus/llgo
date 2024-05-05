@@ -191,9 +191,9 @@ func checkCgo(fnName string) bool {
 
 const (
 	ignoredFunc = iota
-	goFunc
-	cFunc
-	llgoInstr = -1
+	goFunc      = int(llssa.InGo)
+	cFunc       = int(llssa.InC)
+	llgoInstr   = -1
 
 	llgoInstrBase   = 0x80
 	llgoUnreachable = llgoInstrBase + 0
@@ -222,8 +222,8 @@ func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (s
 
 const (
 	ignoredVar = iota
-	goVar
-	cVar
+	goVar      = int(llssa.InGo)
+	cVar       = int(llssa.InC)
 )
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int) {
@@ -256,7 +256,8 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 			panic("unknown llgo instruction: " + name)
 		}
 	} else if ret = pkg.FuncOf(name); ret == nil {
-		ret = pkg.NewFunc(name, fn.Signature)
+		sig := fn.Signature
+		ret = pkg.NewFunc(name, sig, llssa.Background(ftype))
 	}
 	return
 }
@@ -264,9 +265,9 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 func (p *context) varOf(v *ssa.Global) (ret llssa.Global) {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
-	name, _ := p.varName(pkgTypes, v)
+	name, vtype := p.varName(pkgTypes, v)
 	if ret = pkg.VarOf(name); ret == nil {
-		ret = pkg.NewVar(name, v.Type())
+		ret = pkg.NewVar(name, v.Type(), llssa.Background(vtype))
 	}
 	return
 }

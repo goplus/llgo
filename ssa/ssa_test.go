@@ -52,30 +52,21 @@ func TestIndexType(t *testing.T) {
 	indexType(types.Typ[types.Int])
 }
 
-func TestCvtCType(t *testing.T) {
-	test := func(typ types.Type) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Log("cvtCType: no error?")
-			}
-		}()
-		cvtCType(typ)
+func TestCvtType(t *testing.T) {
+	gt := newGoTypes()
+	callback := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	params := types.NewTuple(types.NewParam(0, nil, "", callback))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	ret1 := gt.cvtFunc(sig, false)
+	if ret1 == sig || gt.cvtFunc(sig, false) != ret1 {
+		t.Fatal("cvtFunc failed")
 	}
-	test(types.NewInterfaceType(nil, nil))
-
-	a := types.NewTypeName(0, nil, "a", nil)
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	named := types.NewNamed(a, sig, nil)
-	test(named)
-}
-
-func TestCFuncPtr(t *testing.T) {
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	csig := (*CFuncPtr)(sig)
-	_ = csig.String()
-	if csig.Underlying() != sig {
-		t.Fatal("TestCFuncPtr failed")
-	}
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("cvtType: no error?")
+		}
+	}()
+	gt.cvtType(nil)
 }
 
 func TestUserdefExpr(t *testing.T) {
@@ -118,9 +109,9 @@ func assertPkg(t *testing.T, p Package, expected string) {
 func TestVar(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	a := pkg.NewVar("a", types.Typ[types.Int])
+	a := pkg.NewVar("a", types.Typ[types.Int], InGo)
 	a.Init(prog.Val(100))
-	b := pkg.NewVar("b", types.Typ[types.Int])
+	b := pkg.NewVar("b", types.Typ[types.Int], InGo)
 	b.Init(a.Expr)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -135,7 +126,7 @@ func TestConst(t *testing.T) {
 	pkg := prog.NewPackage("bar", "foo/bar")
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool]))
 	sig := types.NewSignatureType(nil, nil, nil, nil, rets, false)
-	b := pkg.NewFunc("fn", sig).MakeBody(1)
+	b := pkg.NewFunc("fn", sig, InGo).MakeBody(1)
 	b.Return(b.Const(constant.MakeBool(true), prog.Bool()))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -152,7 +143,7 @@ func TestStruct(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", empty)
+	pkg.NewVar("a", empty, InGo)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -169,7 +160,7 @@ func TestNamedStruct(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", empty)
+	pkg.NewVar("a", empty, InGo)
 	if pkg.VarOf("a") == nil {
 		t.Fatal("VarOf failed")
 	}
@@ -187,7 +178,7 @@ func TestDeclFunc(t *testing.T) {
 	pkg := prog.NewPackage("bar", "foo/bar")
 	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
-	pkg.NewFunc("fn", sig)
+	pkg.NewFunc("fn", sig, InGo)
 	if pkg.FuncOf("fn") == nil {
 		t.Fatal("FuncOf failed")
 	}
@@ -209,7 +200,7 @@ func TestBasicFunc(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	pkg.NewFunc("fn", sig).MakeBody(1).
+	pkg.NewFunc("fn", sig, InGo).MakeBody(1).
 		Return(prog.Val(1))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -229,7 +220,7 @@ func TestFuncParam(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig)
+	fn := pkg.NewFunc("fn", sig, InGo)
 	fn.MakeBody(1).Return(fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -250,12 +241,12 @@ func TestFuncCall(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig)
+	fn := pkg.NewFunc("fn", sig, InGo)
 	fn.MakeBody(1).
 		Return(prog.Val(1))
 
 	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	b := pkg.NewFunc("main", sigMain).MakeBody(1)
+	b := pkg.NewFunc("main", sigMain, InGo).MakeBody(1)
 	b.Call(fn.Expr, prog.Val(1), prog.Val(1.2))
 	b.Return()
 
@@ -284,8 +275,8 @@ func TestFuncMultiRet(t *testing.T) {
 		types.NewVar(0, nil, "c", types.Typ[types.Int]),
 		types.NewVar(0, nil, "d", types.Typ[types.Float64]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	a := pkg.NewVar("a", types.Typ[types.Int])
-	fn := pkg.NewFunc("fn", sig)
+	a := pkg.NewVar("a", types.Typ[types.Int], InGo)
+	fn := pkg.NewFunc("fn", sig, InGo)
 	b := fn.MakeBody(1)
 	b.Return(a.Expr, fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
@@ -305,7 +296,7 @@ func TestJump(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("loop", sig)
+	fn := pkg.NewFunc("loop", sig, InGo)
 	b := fn.MakeBody(1)
 	b.Jump(fn.Block(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
@@ -324,7 +315,7 @@ func TestIf(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig)
+	fn := pkg.NewFunc("fn", sig, InGo)
 	b := fn.MakeBody(3)
 	iftrue := fn.Block(1)
 	iffalse := fn.Block(2)
@@ -359,7 +350,7 @@ func TestPrintf(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "format", pchar), VArg())
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	pkg.NewFunc("printf", sig)
+	pkg.NewFunc("printf", sig, InGo)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -375,7 +366,7 @@ func TestBinOp(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig)
+	fn := pkg.NewFunc("fn", sig, InGo)
 	b := fn.MakeBody(1)
 	ret := b.BinOp(token.ADD, fn.Param(0), prog.Val(1))
 	b.Return(ret)
@@ -398,7 +389,7 @@ func TestUnOp(t *testing.T) {
 	)
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig)
+	fn := pkg.NewFunc("fn", sig, InGo)
 	b := fn.MakeBody(1)
 	ptr := fn.Param(0)
 	val := b.UnOp(token.MUL, ptr)
