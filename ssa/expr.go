@@ -1041,7 +1041,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		if name == "" {
 			name = "closure"
 		}
-		fmt.Fprint(&b, "Call ", fn.raw.Type, " ", name)
+		fmt.Fprint(&b, "Call ", fn.kind, " ", fn.raw.Type, " ", name)
 		sep := ": "
 		for _, arg := range args {
 			fmt.Fprint(&b, sep, arg.impl)

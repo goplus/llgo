@@ -21,8 +21,8 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %8, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %9 = extractvalue { i32 ()*, ptr } %1, 0
-  %10 = call i32 ()* %9()
+  %9 = extractvalue { ptr, ptr } %1, 0
+  %10 = call addrspace(37) { ptr, ptr } %1()
   %11 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %4)
   %12 = getelementptr inbounds i32, ptr %11, i64 %7
   store ptr %10, ptr %12, align 8

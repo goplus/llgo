@@ -236,7 +236,8 @@ func (p Program) toType(raw types.Type) Type {
 	case *types.Map:
 		return &aType{p.rtMap(), typ, vkInvalid}
 	case *types.Struct:
-		return &aType{p.toLLVMStruct(t), typ, vkInvalid}
+		ll, kind := p.toLLVMStruct(t)
+		return &aType{ll, typ, kind}
 	case *types.Named:
 		return p.toNamed(t)
 	case *types.Signature: // represents a C function pointer in raw type
@@ -256,9 +257,23 @@ func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {
 	return t
 }
 
-func (p Program) toLLVMStruct(raw *types.Struct) llvm.Type {
+func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind) {
 	fields := p.toLLVMFields(raw)
-	return p.ctx.StructType(fields, false)
+	ret = p.ctx.StructType(fields, false)
+	if isClosure(raw) {
+		kind = vkClosure
+	}
+	return
+}
+
+func isClosure(raw *types.Struct) bool {
+	n := raw.NumFields()
+	if n == 2 {
+		if _, ok := raw.Field(0).Type().(*types.Signature); ok {
+			return raw.Field(1).Type() == types.Typ[types.UnsafePointer]
+		}
+	}
+	return false
 }
 
 func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {
