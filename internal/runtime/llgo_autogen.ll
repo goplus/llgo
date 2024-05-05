@@ -513,8 +513,6 @@ _llgo_0:
   ret ptr %1
 }
 
-declare i32 @rand()
-
 define void @"github.com/goplus/llgo/internal/runtime.init"() {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/internal/runtime.init$guard", align 1
@@ -619,5 +617,7 @@ declare ptr @memset(ptr, i32, i64)
 declare ptr @memcpy(ptr, ptr, i64)
 
 declare void @"github.com/goplus/llgo/internal/abi.init"()
+
+declare i32 @rand()
 
 declare i32 @fprintf(ptr, ptr, ...)
