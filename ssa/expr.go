@@ -183,7 +183,7 @@ func (b Builder) CStr(v string) Expr {
 func (b Builder) Str(v string) (ret Expr) {
 	prog := b.Prog
 	cstr := b.CStr(v)
-	ret = b.InlineCall(b.fn.pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
+	ret = b.InlineCall(b.Func.Pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
 	ret.Type = prog.String()
 	return
 }
@@ -296,7 +296,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		switch kind {
 		case vkString:
 			if op == token.ADD {
-				pkg := b.fn.pkg
+				pkg := b.Func.Pkg
 				return b.InlineCall(pkg.rtFunc("StringCat"), x, y)
 			}
 		case vkComplex:
@@ -366,16 +366,18 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	return v
 }
 
-func llvmValues(vals []Expr, params *types.Tuple, b Builder) []llvm.Value {
+func llvmValues(vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
 	n := params.Len()
-	ret := make([]llvm.Value, len(vals))
-	for i, v := range vals {
-		if i < n {
-			v = checkExpr(v, params.At(i).Type(), b)
+	if n > 0 {
+		ret = make([]llvm.Value, len(vals))
+		for i, v := range vals {
+			if i < n {
+				v = checkExpr(v, params.At(i).Type(), b)
+			}
+			ret[i] = v.impl
 		}
-		ret[i] = v.impl
 	}
-	return ret
+	return
 }
 
 func llvmDelayValues(f func(i int) Expr, n int) []llvm.Value {
@@ -564,7 +566,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	pt := prog.Pointer(telem)
 	switch x.raw.Type.Underlying().(type) {
 	case *types.Slice:
-		pkg := b.fn.pkg
+		pkg := b.Func.Pkg
 		ptr := b.InlineCall(pkg.rtFunc("SliceData"), x)
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
@@ -590,11 +592,11 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 	var ptr Expr
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
-		if t.Info()&types.IsString == 0 {
+		if t.Kind() != types.String {
 			panic(fmt.Errorf("invalid operation: cannot index %v", t))
 		}
 		telem = prog.rawType(types.Typ[types.Byte])
-		pkg := b.fn.pkg
+		pkg := b.Func.Pkg
 		ptr = b.InlineCall(pkg.rtFunc("StringData"), x)
 	case *types.Array:
 		telem = prog.Index(x.Type)
@@ -629,7 +631,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		log.Printf("Slice %v, %v, %v\n", x.impl, low.impl, high.impl)
 	}
 	prog := b.Prog
-	pkg := b.fn.pkg
+	pkg := b.Func.Pkg
 	var nCap Expr
 	var nEltSize Expr
 	var base Expr
@@ -691,7 +693,7 @@ func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeMap %v, %v\n", t.RawType(), nReserve.impl)
 	}
-	pkg := b.fn.pkg
+	pkg := b.Func.Pkg
 	ret.Type = t
 	ret.impl = b.InlineCall(pkg.rtFunc("MakeSmallMap")).impl
 	// TODO(xsw): nReserve
@@ -716,7 +718,7 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
 	}
-	pkg := b.fn.pkg
+	pkg := b.Func.Pkg
 	if cap.IsNil() {
 		cap = len
 	}
@@ -754,7 +756,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 		log.Printf("Alloc %v, %v\n", elem.RawType(), heap)
 	}
 	prog := b.Prog
-	pkg := b.fn.pkg
+	pkg := b.Func.Pkg
 	size := b.SizeOf(elem)
 	if heap {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
@@ -795,7 +797,7 @@ func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("AllocaCStr %v\n", gostr.impl)
 	}
-	pkg := b.fn.pkg
+	pkg := b.Func.Pkg
 	n := b.InlineCall(pkg.rtFunc("StringLen"), gostr)
 	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
 	cstr := b.Alloca(n1)
@@ -929,7 +931,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr, mayDelay bool) (ret Expr) {
 	isAny := tiund.Empty()
 	fnDo := func() Expr {
 		prog := b.Prog
-		pkg := b.fn.pkg
+		pkg := b.Func.Pkg
 		switch tx := x.raw.Type.Underlying().(type) {
 		case *types.Basic:
 			kind := tx.Kind()
@@ -996,7 +998,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	}
 	switch assertedTyp.kind {
 	case vkSigned, vkUnsigned, vkFloat:
-		pkg := b.fn.pkg
+		pkg := b.Func.Pkg
 		fnName := "I2Int"
 		if commaOk {
 			fnName = "CheckI2Int"
@@ -1049,20 +1051,25 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		}
 		log.Println(b.String())
 	}
+	var ll llvm.Type
 	var sig *types.Signature
 	var raw = fn.raw.Type
 	switch fn.kind {
 	case vkClosure:
-		fn := b.Field(fn, 0)
+		fn = b.Field(fn, 0)
 		raw = fn.raw.Type
 		fallthrough
-	case vkFunc:
+	case vkFuncPtr:
 		sig = raw.(*types.Signature)
-		ret.Type = prog.retType(sig)
+		ll = prog.FuncDecl(sig, InC).ll
+	case vkFuncDecl:
+		sig = raw.(*types.Signature)
+		ll = fn.ll
 	default:
 		panic("unreachable")
 	}
-	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args, sig.Params(), b))
+	ret.Type = prog.retType(sig)
+	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmValues(args, sig.Params(), b))
 	return
 }
 
@@ -1079,10 +1086,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			arg := args[0]
 			switch t := arg.raw.Type.Underlying().(type) {
 			case *types.Slice:
-				return b.InlineCall(b.fn.pkg.rtFunc("SliceLen"), arg)
+				return b.InlineCall(b.Func.Pkg.rtFunc("SliceLen"), arg)
 			case *types.Basic:
 				if t.Kind() == types.String {
-					return b.InlineCall(b.fn.pkg.rtFunc("StringLen"), arg)
+					return b.InlineCall(b.Func.Pkg.rtFunc("StringLen"), arg)
 				}
 			}
 		}
@@ -1091,7 +1098,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			arg := args[0]
 			switch arg.raw.Type.Underlying().(type) {
 			case *types.Slice:
-				return b.InlineCall(b.fn.pkg.rtFunc("SliceCap"), arg)
+				return b.InlineCall(b.Func.Pkg.rtFunc("SliceCap"), arg)
 			}
 		}
 	}

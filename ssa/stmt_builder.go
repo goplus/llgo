@@ -50,7 +50,7 @@ func (p BasicBlock) Index() int {
 
 type aBuilder struct {
 	impl llvm.Builder
-	fn   Function
+	Func Function
 	Prog Program
 }
 
@@ -59,7 +59,7 @@ type Builder = *aBuilder
 
 // SetBlock sets the current block to the specified basic block.
 func (b Builder) SetBlock(blk BasicBlock) Builder {
-	if b.fn != blk.fn {
+	if b.Func != blk.fn {
 		panic("mismatched function")
 	}
 	if debugInstr {
@@ -74,7 +74,7 @@ func (b Builder) Panic(v Expr) {
 	if debugInstr {
 		log.Printf("Panic %v\n", v.impl)
 	}
-	pkg := b.fn.pkg
+	pkg := b.Func.Pkg
 	b.Call(pkg.rtFunc("TracePanic"), v)
 	b.impl.CreateUnreachable()
 }
@@ -103,14 +103,14 @@ func (b Builder) Return(results ...Expr) {
 	case 1:
 		b.impl.CreateRet(results[0].impl)
 	default:
-		tret := b.fn.raw.Type.(*types.Signature).Results()
+		tret := b.Func.raw.Type.(*types.Signature).Results()
 		b.impl.CreateAggregateRet(llvmValues(results, tret, b))
 	}
 }
 
 // Jump emits a jump instruction.
 func (b Builder) Jump(jmpb BasicBlock) {
-	if b.fn != jmpb.fn {
+	if b.Func != jmpb.fn {
 		panic("mismatched function")
 	}
 	if debugInstr {
@@ -121,7 +121,7 @@ func (b Builder) Jump(jmpb BasicBlock) {
 
 // If emits an if instruction.
 func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
-	if b.fn != thenb.fn || b.fn != elseb.fn {
+	if b.Func != thenb.fn || b.Func != elseb.fn {
 		panic("mismatched function")
 	}
 	if debugInstr {

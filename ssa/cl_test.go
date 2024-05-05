@@ -36,6 +36,33 @@ func TestRuntime(t *testing.T) {
 }
 
 /*
+func TestCallback(t *testing.T) {
+	ctx := llvm.NewContext()
+	mod := ctx.NewModule("foo/bar")
+
+	tc := llvm.FunctionType(ctx.VoidType(), nil, false)
+	callback := llvm.PointerType(tc, 0)
+	params := []llvm.Type{callback}
+
+	tfn := llvm.FunctionType(ctx.VoidType(), params, false)
+	f := llvm.AddFunction(mod, "fn", tfn)
+	b := ctx.NewBuilder()
+	blk := llvm.AddBasicBlock(f, "")
+	b.SetInsertPointAtEnd(blk)
+
+	arg := f.Param(0)
+	// arg = b.CreateLoad(tc, arg, "")
+	b.CreateCall(tc, arg, nil, "")
+	b.CreateRetVoid()
+
+	expected := `; ModuleID = 'foo/bar'
+`
+	if v := mod.String(); v != expected {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+	}
+}
+
+/*
 func TestMap(t *testing.T) {
 	var m typeutil.Map
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
