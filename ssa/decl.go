@@ -124,8 +124,9 @@ func (g Global) Init(v Expr) {
 // respectively, and is nil in the generic method.
 type aFunction struct {
 	Expr
-	pkg  Package
-	prog Program
+	Pkg  Package
+	Prog Program
+
 	blks []BasicBlock
 
 	params  []Type
@@ -162,7 +163,7 @@ func (p Function) Param(i int) Expr {
 
 // NewBuilder creates a new Builder for the function.
 func (p Function) NewBuilder() Builder {
-	prog := p.prog
+	prog := p.Prog
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()

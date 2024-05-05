@@ -312,7 +312,7 @@ type aPackage struct {
 	mod  llvm.Module
 	fns  map[string]Function
 	vars map[string]Global
-	prog Program
+	Prog Program
 }
 
 type Package = *aPackage
@@ -326,7 +326,7 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
-	t := p.prog.Type(typ, bg)
+	t := p.Prog.Type(typ, bg)
 	gbl := llvm.AddGlobal(p.mod, t.ll, name)
 	ret := &aGlobal{Expr{gbl, t}}
 	p.vars[name] = ret
@@ -343,18 +343,18 @@ func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Funct
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
-	t := p.prog.FuncDecl(sig, bg)
+	t := p.Prog.FuncDecl(sig, bg)
 	if debugInstr {
 		log.Println("NewFunc", name, t.raw.Type)
 	}
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p, p.prog)
+	ret := newFunction(fn, t, p, p.Prog)
 	p.fns[name] = ret
 	return ret
 }
 
 func (p Package) rtFunc(fnName string) Expr {
-	fn := p.prog.runtime().Scope().Lookup(fnName).(*types.Func)
+	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr

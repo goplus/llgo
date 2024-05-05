@@ -56,7 +56,7 @@ func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
 	if bg == InGo {
 		sig = p.gocvt.cvtFunc(sig, true)
 	}
-	return &aType{p.toLLVMFunc(sig), rawType{sig}, vkFunc}
+	return &aType{p.toLLVMFunc(sig), rawType{sig}, vkFuncDecl}
 }
 
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {

@@ -40,7 +40,8 @@ const (
 	vkString
 	vkBool
 	vkPtr
-	vkFunc
+	vkFuncDecl
+	vkFuncPtr
 	vkClosure
 	vkTuple
 	vkDelayExpr = -1
@@ -241,7 +242,7 @@ func (p Program) toType(raw types.Type) Type {
 	case *types.Named:
 		return p.toNamed(t)
 	case *types.Signature: // represents a C function pointer in raw type
-		return &aType{p.toLLVMFuncPtr(t), typ, vkFunc}
+		return &aType{p.toLLVMFuncPtr(t), typ, vkFuncPtr}
 	case *types.Array:
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
