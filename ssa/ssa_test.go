@@ -25,12 +25,15 @@ import (
 	"github.com/goplus/llvm"
 )
 
-/*
-func TestMakeInterface(t *testing.T) {
-	var b Builder
-	b.MakeInterface(types.NewInterfaceType(nil, nil), Expr{}, true).Do(true)
+func TestClosureCtx(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("closureCtx: no error?")
+		}
+	}()
+	var f aFunction
+	f.closureCtx(nil)
 }
-*/
 
 func TestTypes(t *testing.T) {
 	ctx := llvm.NewContext()
