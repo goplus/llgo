@@ -52,33 +52,22 @@ func TestIndexType(t *testing.T) {
 	indexType(types.Typ[types.Int])
 }
 
-/*
-func TestCvtCType(t *testing.T) {
-	test := func(typ types.Type) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Log("cvtCType: no error?")
-			}
-		}()
-		cvtGoType(typ)
+func TestCvtType(t *testing.T) {
+	gt := newGoTypes()
+	callback := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	params := types.NewTuple(types.NewParam(0, nil, "", callback))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	ret1 := gt.cvtFunc(sig, false)
+	if ret1 == sig || gt.cvtFunc(sig, false) != ret1 {
+		t.Fatal("cvtFunc failed")
 	}
-	test(types.NewInterfaceType(nil, nil))
-
-	a := types.NewTypeName(0, nil, "a", nil)
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	named := types.NewNamed(a, sig, nil)
-	test(named)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("cvtType: no error?")
+		}
+	}()
+	gt.cvtType(nil)
 }
-
-func TestCFuncPtr(t *testing.T) {
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	csig := (*CFuncPtr)(sig)
-	_ = csig.String()
-	if csig.Underlying() != sig {
-		t.Fatal("TestCFuncPtr failed")
-	}
-}
-*/
 
 func TestUserdefExpr(t *testing.T) {
 	a := delayExprTy(nil)
