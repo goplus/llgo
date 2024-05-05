@@ -103,7 +103,7 @@ func (b Builder) Return(results ...Expr) {
 	case 1:
 		b.impl.CreateRet(results[0].impl)
 	default:
-		tret := b.fn.t.(*types.Signature).Results()
+		tret := b.fn.raw.Type.(*types.Signature).Results()
 		b.impl.CreateAggregateRet(llvmValues(results, tret, b))
 	}
 }

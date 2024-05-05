@@ -41,20 +41,13 @@ func (v Expr) IsNil() bool {
 	return v.Type == nil
 }
 
-/*
-// TypeOf returns the type of the expression.
-func (v Expr) TypeOf() types.Type {
-	return v.t
-}
-*/
-
 // Do evaluates the delay expression and returns the result.
 func (v Expr) Do(b Builder) Expr {
 	switch vt := v.Type; vt.kind {
 	case vkDelayExpr:
-		return vt.t.(delayExprTy)()
+		return vt.raw.Type.(delayExprTy)()
 	case vkPhisExpr:
-		e := vt.t.(*phisExprTy)
+		e := vt.raw.Type.(*phisExprTy)
 		return b.aggregateValue(e.Type, e.phis...)
 	}
 	return v
@@ -64,7 +57,7 @@ func (v Expr) Do(b Builder) Expr {
 
 // DelayExpr returns a delay expression.
 func DelayExpr(f func() Expr) Expr {
-	return Expr{Type: &aType{t: delayExprTy(f), kind: vkDelayExpr}}
+	return Expr{Type: &aType{raw: rawType{delayExprTy(f)}, kind: vkDelayExpr}}
 }
 
 type delayExprTy func() Expr
@@ -93,7 +86,7 @@ func (p phisExprTy) String() string {
 }
 
 func phisExpr(t Type, phis []llvm.Value) Expr {
-	return Expr{Type: &aType{t: &phisExprTy{phis, t}, kind: vkPhisExpr}}
+	return Expr{Type: &aType{raw: rawType{&phisExprTy{phis, t}}, kind: vkPhisExpr}}
 }
 
 // -----------------------------------------------------------------------------
@@ -148,7 +141,8 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	if v == nil {
 		return prog.Null(typ)
 	}
-	switch t := typ.t.(type) {
+	raw := typ.raw.Type
+	switch t := raw.(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
@@ -170,7 +164,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 			return b.Str(constant.StringVal(v))
 		}
 	}
-	panic(fmt.Sprintf("unsupported Const: %v, %v", v, typ.t))
+	panic(fmt.Sprintf("unsupported Const: %v, %v", v, raw))
 }
 
 // SizeOf returns the size of a type.
@@ -362,11 +356,11 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 // -----------------------------------------------------------------------------
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
-	if _, ok := t.(*types.Signature); ok {
+	if _, ok := t.(*types.Struct); ok {
 		if v.kind != vkClosure {
 			prog := b.Prog
 			nilVal := prog.Null(prog.VoidPtr()).impl
-			return b.aggregateValue(prog.Type(t), v.impl, nilVal)
+			return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
 		}
 	}
 	return v
@@ -413,7 +407,7 @@ func (p Phi) AddIncoming(b Builder, bblks []BasicBlock, f func(i int) Expr) {
 		p.impl.AddIncoming(vs, bs)
 		return
 	}
-	e := p.t.(*phisExprTy)
+	e := p.raw.Type.(*phisExprTy)
 	phis := e.phis
 	vals := make([][]llvm.Value, len(phis))
 	for iblk, blk := range bblks {
@@ -436,7 +430,7 @@ func (p Phi) AddIncoming(b Builder, bblks []BasicBlock, f func(i int) Expr) {
 // Phi returns a phi node.
 func (b Builder) Phi(t Type) Phi {
 	impl := b.impl
-	switch tund := t.t.Underlying().(type) {
+	switch tund := t.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		kind := tund.Kind()
 		switch kind {
@@ -447,6 +441,8 @@ func (b Builder) Phi(t Type) Phi {
 			phis[1] = llvm.CreatePHI(impl, prog.tyInt())
 			return Phi{phisExpr(t, phis)}
 		}
+	case *types.Struct:
+		panic("todo")
 	}
 	phi := llvm.CreatePHI(impl, t.ll)
 	return Phi{Expr{phi, t}}
@@ -484,7 +480,7 @@ func (b Builder) Store(ptr, val Expr) Builder {
 // aggregateValue yields the value of the aggregate X with the fields
 func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 	if debugInstr {
-		log.Printf("AggregateValue %v, %v\n", t.t, flds)
+		log.Printf("AggregateValue %v, %v\n", t.RawType(), flds)
 	}
 	impl := b.impl
 	tll := t.ll
@@ -542,8 +538,9 @@ func (b Builder) Field(x Expr, idx int) Expr {
 	if debugInstr {
 		log.Printf("Field %v, %d\n", x.impl, idx)
 	}
-	telem := b.Prog.Field(x.Type, idx)
-	return Expr{llvm.CreateExtractValue(b.impl, x.impl, idx), telem}
+	tfld := b.Prog.Field(x.Type, idx)
+	fld := llvm.CreateExtractValue(b.impl, x.impl, idx)
+	return Expr{fld, tfld}
 }
 
 // The IndexAddr instruction yields the address of the element at
@@ -565,7 +562,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	prog := b.Prog
 	telem := prog.Index(x.Type)
 	pt := prog.Pointer(telem)
-	switch x.t.Underlying().(type) {
+	switch x.raw.Type.Underlying().(type) {
 	case *types.Slice:
 		pkg := b.fn.pkg
 		ptr := b.InlineCall(pkg.rtFunc("SliceData"), x)
@@ -591,12 +588,12 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 	prog := b.Prog
 	var telem Type
 	var ptr Expr
-	switch t := x.t.Underlying().(type) {
+	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		if t.Info()&types.IsString == 0 {
 			panic(fmt.Errorf("invalid operation: cannot index %v", t))
 		}
-		telem = prog.Type(types.Typ[types.Byte])
+		telem = prog.rawType(types.Typ[types.Byte])
 		pkg := b.fn.pkg
 		ptr = b.InlineCall(pkg.rtFunc("StringData"), x)
 	case *types.Array:
@@ -639,7 +636,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	if low.IsNil() {
 		low = prog.IntVal(0, prog.Int())
 	}
-	switch t := x.t.Underlying().(type) {
+	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		if t.Kind() != types.String {
 			panic(fmt.Errorf("invalid operation: cannot slice %v", t))
@@ -662,7 +659,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		telem := t.Elem()
 		switch te := telem.Underlying().(type) {
 		case *types.Array:
-			elem := prog.Type(te.Elem())
+			elem := prog.rawType(te.Elem())
 			ret.Type = prog.Slice(elem)
 			nEltSize = b.SizeOf(elem)
 			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
@@ -692,7 +689,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 //	t1 = make StringIntMap t0
 func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 	if debugInstr {
-		log.Printf("MakeMap %v, %v\n", t, nReserve.impl)
+		log.Printf("MakeMap %v, %v\n", t.RawType(), nReserve.impl)
 	}
 	pkg := b.fn.pkg
 	ret.Type = t
@@ -717,7 +714,7 @@ func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 //	t1 = make StringSlice 1:int t0
 func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 	if debugInstr {
-		log.Printf("MakeSlice %v, %v, %v\n", t, len.impl, cap.impl)
+		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
 	}
 	pkg := b.fn.pkg
 	if cap.IsNil() {
@@ -752,13 +749,12 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 //
 //	t0 = local int
 //	t1 = new int
-func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
+func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	if debugInstr {
-		log.Printf("Alloc %v, %v\n", t, heap)
+		log.Printf("Alloc %v, %v\n", elem.RawType(), heap)
 	}
 	prog := b.Prog
 	pkg := b.fn.pkg
-	elem := prog.Type(t.Elem())
 	size := b.SizeOf(elem)
 	if heap {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
@@ -766,7 +762,7 @@ func (b Builder) Alloc(t *types.Pointer, heap bool) (ret Expr) {
 		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
 		ret.impl = b.InlineCall(pkg.rtFunc("Zeroinit"), ret, size).impl
 	}
-	ret.Type = prog.Type(t)
+	ret.Type = prog.Pointer(elem)
 	return
 }
 
@@ -778,7 +774,7 @@ func (b Builder) Alloca(n Expr) (ret Expr) {
 	prog := b.Prog
 	telem := prog.tyInt8()
 	ret.impl = llvm.CreateArrayAlloca(b.impl, telem, n.impl)
-	ret.Type = &aType{prog.tyVoidPtr(), types.Typ[types.UnsafePointer], vkPtr}
+	ret.Type = prog.VoidPtr()
 	return
 }
 
@@ -833,13 +829,14 @@ func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 //	t1 = changetype *int <- IntPtr (t0)
 func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	if debugInstr {
-		log.Printf("ChangeType %v, %v\n", t.t, x.impl)
+		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
-	typ := t.t
+	typ := t.raw.Type
 	switch typ.(type) {
 	default:
+		// TODO(xsw): remove instr name
 		ret.impl = b.impl.CreateBitCast(x.impl, t.ll, "bitCast")
-		ret.Type = b.Prog.Type(typ)
+		ret.Type = b.Prog.rawType(typ)
 		return
 	}
 }
@@ -871,8 +868,8 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 //
 //	t1 = convert []byte <- string (t0)
 func (b Builder) Convert(t Type, x Expr) (ret Expr) {
-	typ := t.t
-	ret.Type = b.Prog.Type(typ)
+	typ := t.raw.Type
+	ret.Type = b.Prog.rawType(typ)
 	switch und := typ.Underlying().(type) {
 	case *types.Basic:
 		kind := und.Kind()
@@ -923,17 +920,17 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 //
 //	t1 = make interface{} <- int (42:int)
 //	t2 = make Stringer <- t0
-func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Expr) {
+func (b Builder) MakeInterface(tinter Type, x Expr, mayDelay bool) (ret Expr) {
+	raw := tinter.raw.Type
 	if debugInstr {
-		log.Printf("MakeInterface %v, %v\n", inter, x.impl)
+		log.Printf("MakeInterface %v, %v\n", raw, x.impl)
 	}
-	tiund := inter.Underlying().(*types.Interface)
+	tiund := raw.Underlying().(*types.Interface)
 	isAny := tiund.Empty()
 	fnDo := func() Expr {
 		prog := b.Prog
 		pkg := b.fn.pkg
-		tinter := prog.Type(inter)
-		switch tx := x.t.Underlying().(type) {
+		switch tx := x.raw.Type.Underlying().(type) {
 		case *types.Basic:
 			kind := tx.Kind()
 			switch {
@@ -995,7 +992,7 @@ func (b Builder) MakeInterface(inter types.Type, x Expr, mayDelay bool) (ret Exp
 //	t3 = typeassert,ok t2.(T)
 func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	if debugInstr {
-		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.t, commaOk)
+		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	}
 	switch assertedTyp.kind {
 	case vkSigned, vkUnsigned, vkFloat:
@@ -1006,7 +1003,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		}
 		fn := pkg.rtFunc(fnName)
 		var kind types.BasicKind
-		switch t := assertedTyp.t.(type) {
+		switch t := assertedTyp.raw.Type.(type) {
 		case *types.Basic:
 			kind = t.Kind()
 		default:
@@ -1044,7 +1041,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		if name == "" {
 			name = "closure"
 		}
-		fmt.Fprint(&b, "Call ", fn.t, " ", name)
+		fmt.Fprint(&b, "Call ", fn.raw.Type, " ", name)
 		sep := ": "
 		for _, arg := range args {
 			fmt.Fprint(&b, sep, arg.impl)
@@ -1053,25 +1050,19 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		log.Println(b.String())
 	}
 	var sig *types.Signature
-	var t = fn.t
-	normal := true
+	var raw = fn.raw.Type
 	switch fn.kind {
 	case vkClosure:
-		fn = b.Field(fn, 0)
-		t = fn.t
-		normal = false
+		fn := b.Field(fn, 0)
+		raw = fn.raw.Type
 		fallthrough
-	case vkFuncDecl, vkFuncPtr:
-		sig = t.(*types.Signature)
+	case vkFunc:
+		sig = raw.(*types.Signature)
 		ret.Type = prog.retType(sig)
 	default:
 		panic("unreachable")
 	}
-	if normal {
-		ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args, sig.Params(), b))
-	} else {
-		ret = prog.IntVal(0, prog.Type(types.Typ[types.Int32]))
-	}
+	ret.impl = llvm.CreateCall(b.impl, fn.ll, fn.impl, llvmValues(args, sig.Params(), b))
 	return
 }
 
@@ -1086,7 +1077,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
-			switch t := arg.t.Underlying().(type) {
+			switch t := arg.raw.Type.Underlying().(type) {
 			case *types.Slice:
 				return b.InlineCall(b.fn.pkg.rtFunc("SliceLen"), arg)
 			case *types.Basic:
@@ -1098,7 +1089,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "cap":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.t.Underlying().(type) {
+			switch arg.raw.Type.Underlying().(type) {
 			case *types.Slice:
 				return b.InlineCall(b.fn.pkg.rtFunc("SliceCap"), arg)
 			}

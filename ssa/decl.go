@@ -25,6 +25,24 @@ import (
 
 // -----------------------------------------------------------------------------
 
+const (
+	NameValist = "__llgo_va_list"
+)
+
+func VArg() *types.Var {
+	return types.NewParam(0, nil, NameValist, types.Typ[types.Invalid])
+}
+
+func IsVArg(arg *types.Var) bool {
+	return arg.Name() == NameValist
+}
+
+func HasVArg(t *types.Tuple, n int) bool {
+	return n > 0 && IsVArg(t.At(n-1))
+}
+
+// -----------------------------------------------------------------------------
+
 type aNamedConst struct {
 }
 
@@ -123,7 +141,7 @@ func newFunction(fn llvm.Value, t Type, pkg Package, prog Program) Function {
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
-	sig := fn.t.(*types.Signature)
+	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
 		if hasVArg = HasVArg(in, n); hasVArg {
@@ -131,7 +149,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 		}
 		params = make([]Type, n)
 		for i := 0; i < n; i++ {
-			params[i] = prog.Type(in.At(i).Type())
+			params[i] = prog.rawType(in.At(i).Type())
 		}
 	}
 	return
