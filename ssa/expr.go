@@ -366,16 +366,18 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	return v
 }
 
-func llvmValues(vals []Expr, params *types.Tuple, b Builder) []llvm.Value {
+func llvmValues(vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
 	n := params.Len()
-	ret := make([]llvm.Value, len(vals))
-	for i, v := range vals {
-		if i < n {
-			v = checkExpr(v, params.At(i).Type(), b)
+	if n > 0 {
+		ret = make([]llvm.Value, len(vals))
+		for i, v := range vals {
+			if i < n {
+				v = checkExpr(v, params.At(i).Type(), b)
+			}
+			ret[i] = v.impl
 		}
-		ret[i] = v.impl
 	}
-	return ret
+	return
 }
 
 func llvmDelayValues(f func(i int) Expr, n int) []llvm.Value {
@@ -590,7 +592,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 	var ptr Expr
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
-		if t.Info()&types.IsString == 0 {
+		if t.Kind() != types.String {
 			panic(fmt.Errorf("invalid operation: cannot index %v", t))
 		}
 		telem = prog.rawType(types.Typ[types.Byte])
