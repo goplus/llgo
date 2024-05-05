@@ -520,8 +520,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 					return p.compileValue(b, n.X)
 				}
 			}
-			panic(fmt.Errorf("todo addr of %v", e))
+			panic(fmt.Errorf("todo: addr of %v", e))
 		})
+	case *ssa.Lookup:
+		x := p.compileValue(b, v.X)
+		idx := p.compileValue(b, v.Index)
+		ret = b.Lookup(x, idx, v.CommaOk)
 	case *ssa.Slice:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
