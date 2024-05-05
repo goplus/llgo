@@ -190,14 +190,29 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 }
 
+func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
+	n := len(vars)
+	flds := make([]*types.Var, n)
+	for i, v := range vars {
+		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), v.Type(), false)
+	}
+	t := types.NewStruct(flds, nil)
+	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
+}
+
 func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function, closure bool) llssa.Function {
 	var sig = f.Signature
 	var name string
 	var ftype int
+	var hasCtx bool
 	if closure {
 		name, ftype = funcName(pkgTypes, f), goFunc
 		if debugInstr {
 			log.Println("==> NewClosure", name, "type:", sig)
+		}
+		if vars := f.FreeVars; len(vars) > 0 {
+			ctx := makeClosureCtx(pkgTypes, vars)
+			sig, hasCtx = llssa.FuncAddCtx(ctx, sig), true
 		}
 	} else {
 		name, ftype = p.funcName(pkgTypes, f, true)
@@ -209,7 +224,7 @@ func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
 		}
 	}
-	fn := pkg.NewFunc(name, sig, llssa.Background(ftype))
+	fn := pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
 	p.inits = append(p.inits, func() {
 		p.fn = fn
 		defer func() {
@@ -519,12 +534,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			nReserve = p.compileValue(b, v.Reserve)
 		}
 		ret = b.MakeMap(t, nReserve)
-	/*
-		case *ssa.MakeClosure:
-				fn := p.compileValue(b, v.Fn)
-				bindings := p.compileValues(b, v.Bindings, 0)
-				ret = b.MakeClosure(fn, bindings)
-	*/
+	case *ssa.MakeClosure:
+		fn := p.compileValue(b, v.Fn)
+		bindings := p.compileValues(b, v.Bindings, 0)
+		ret = b.MakeClosure(fn, bindings)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
 		t := p.prog.Type(v.AssertedType, llssa.InGo)
@@ -620,6 +633,13 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	case *ssa.Const:
 		t := types.Default(v.Type())
 		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
+	case *ssa.FreeVar:
+		fn := v.Parent()
+		for idx, freeVar := range fn.FreeVars {
+			if freeVar == v {
+				return p.fn.FreeVar(b, idx)
+			}
+		}
 	}
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 }

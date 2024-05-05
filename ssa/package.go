@@ -340,6 +340,11 @@ func (p Package) VarOf(name string) Global {
 
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
+	return p.NewFuncEx(name, sig, bg, false)
+}
+
+// NewFuncEx creates a new function.
+func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasCtx bool) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
@@ -348,7 +353,7 @@ func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Funct
 		log.Println("NewFunc", name, t.raw.Type)
 	}
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p, p.Prog)
+	ret := newFunction(fn, t, p, p.Prog, hasCtx)
 	p.fns[name] = ret
 	return ret
 }

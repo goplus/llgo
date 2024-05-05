@@ -59,6 +59,13 @@ func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
 	return &aType{p.toLLVMFunc(sig), rawType{sig}, vkFuncDecl}
 }
 
+// Closure creates a closture type for a function.
+func (p Program) Closure(fn Type) Type {
+	sig := fn.raw.Type.(*types.Signature)
+	closure := p.gocvt.cvtClosure(sig)
+	return p.rawType(closure)
+}
+
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 	switch t := typ.(type) {
 	case *types.Basic:
@@ -239,17 +246,22 @@ func (p goTypes) cvtStruct(typ *types.Struct) (raw *types.Struct, cvt bool) {
 // convert method to func
 func methodToFunc(sig *types.Signature) *types.Signature {
 	if recv := sig.Recv(); recv != nil {
-		tParams := sig.Params()
-		nParams := tParams.Len()
-		params := make([]*types.Var, nParams+1)
-		params[0] = recv
-		for i := 0; i < nParams; i++ {
-			params[i+1] = tParams.At(i)
-		}
-		return types.NewSignatureType(
-			nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
+		return FuncAddCtx(recv, sig)
 	}
 	return sig
+}
+
+// FuncAddCtx adds a ctx to a function signature.
+func FuncAddCtx(ctx *types.Var, sig *types.Signature) *types.Signature {
+	tParams := sig.Params()
+	nParams := tParams.Len()
+	params := make([]*types.Var, nParams+1)
+	params[0] = ctx
+	for i := 0; i < nParams; i++ {
+		params[i+1] = tParams.At(i)
+	}
+	return types.NewSignatureType(
+		nil, nil, nil, types.NewTuple(params...), sig.Results(), sig.Variadic())
 }
 
 // -----------------------------------------------------------------------------

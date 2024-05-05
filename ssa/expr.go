@@ -366,13 +366,27 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	return v
 }
 
-func llvmValues(vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+func llvmParams(vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
 	n := params.Len()
 	if n > 0 {
 		ret = make([]llvm.Value, len(vals))
 		for i, v := range vals {
 			if i < n {
 				v = checkExpr(v, params.At(i).Type(), b)
+			}
+			ret[i] = v.impl
+		}
+	}
+	return
+}
+
+func llvmFields(vals []Expr, t *types.Struct, b Builder) (ret []llvm.Value) {
+	n := t.NumFields()
+	if n > 0 {
+		ret = make([]llvm.Value, len(vals))
+		for i, v := range vals {
+			if i < n {
+				v = checkExpr(v, t.Field(i).Type(), b)
 			}
 			ret[i] = v.impl
 		}
@@ -479,13 +493,23 @@ func (b Builder) Store(ptr, val Expr) Builder {
 	return b
 }
 
+func (b Builder) aggregateAlloc(t Type, flds ...llvm.Value) llvm.Value {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	size := prog.SizeOf(t)
+	ptr := b.InlineCall(pkg.rtFunc("AllocU"), prog.IntVal(size, prog.Uintptr())).impl
+	tll := t.ll
+	impl := b.impl
+	for i, fld := range flds {
+		impl.CreateStore(fld, llvm.CreateStructGEP(impl, tll, ptr, i))
+	}
+	return ptr
+}
+
 // aggregateValue yields the value of the aggregate X with the fields
 func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
-	if debugInstr {
-		log.Printf("AggregateValue %v, %v\n", t.RawType(), flds)
-	}
-	impl := b.impl
 	tll := t.ll
+	impl := b.impl
 	ptr := llvm.CreateAlloca(impl, tll)
 	for i, fld := range flds {
 		impl.CreateStore(fld, llvm.CreateStructGEP(impl, tll, ptr, i))
@@ -493,7 +517,6 @@ func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 	return Expr{llvm.CreateLoad(b.impl, tll, ptr), t}
 }
 
-/*
 // The MakeClosure instruction yields a closure value whose code is
 // Fn and whose free variables' values are supplied by Bindings.
 //
@@ -507,9 +530,14 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	if debugInstr {
 		log.Printf("MakeClosure %v, %v\n", fn, bindings)
 	}
-	panic("todo")
+	prog := b.Prog
+	tfn := fn.Type
+	sig := tfn.raw.Type.(*types.Signature)
+	tctx := sig.Params().At(0).Type().Underlying().(*types.Struct)
+	flds := llvmFields(bindings, tctx, b)
+	data := b.aggregateAlloc(prog.rawType(tctx), flds...)
+	return b.aggregateValue(prog.Closure(tfn), fn.impl, data)
 }
-*/
 
 // The FieldAddr instruction yields the address of Field of *struct X.
 //
@@ -1069,7 +1097,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		panic("unreachable")
 	}
 	ret.Type = prog.retType(sig)
-	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmValues(args, sig.Params(), b))
+	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParams(args, sig.Params(), b))
 	return
 }
 
