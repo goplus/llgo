@@ -38,7 +38,7 @@ import (
 
 func init() {
 	cl.SetDebug(cl.DbgFlagAll)
-	llssa.Initialize(llssa.InitAll)
+	llssa.Initialize(llssa.InitAll | llssa.InitNative)
 	llssa.SetDebug(llssa.DbgFlagAll)
 }
 

@@ -55,7 +55,7 @@ _llgo_0:
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-define void @__llgo_stub.main.print(ptr %0, ptr %1) {
+define linkonce void @__llgo_stub.main.print(ptr %0, ptr %1) {
 _llgo_0:
   call void @main.print(ptr %1)
   ret void
