@@ -163,7 +163,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare i32 @rand()
 
-define i32 @__llgo_stub.rand(ptr %0) {
+define linkonce i32 @__llgo_stub.rand(ptr %0) {
 _llgo_0:
   %1 = call i32 @rand()
   ret i32 %1

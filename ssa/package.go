@@ -21,8 +21,8 @@ import (
 	"go/types"
 	"log"
 
-	"github.com/goplus/llgo/internal/typeutil"
 	"github.com/goplus/llvm"
+	"golang.org/x/tools/go/types/typeutil"
 )
 
 const (
@@ -381,6 +381,7 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 		ctx := types.NewParam(token.NoPos, nil, ClosureCtx, types.Typ[types.UnsafePointer])
 		sig = FuncAddCtx(ctx, sig)
 		fn := p.NewFunc(ClosureStub+name, sig, InC)
+		fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		args := make([]Expr, n)
 		for i := 0; i < n; i++ {
 			args[i] = fn.Param(i + 1)
