@@ -26,8 +26,9 @@ import (
 // -----------------------------------------------------------------------------
 
 const (
-	ClosureCtx = "__llgo_ctx"
-	NameValist = "__llgo_va_list"
+	ClosureCtx  = "__llgo_ctx"
+	ClosureStub = "__llgo_stub."
+	NameValist  = "__llgo_va_list"
 )
 
 func VArg() *types.Var {

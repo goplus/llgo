@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/token"
 	"go/types"
 	"log"
 
@@ -223,10 +224,11 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// mod.Finalize()
-	fns := make(map[string]Function)
 	gbls := make(map[string]Global)
+	fns := make(map[string]Function)
+	stubs := make(map[string]Function)
 	p.needRuntime = false
-	return &aPackage{mod, fns, gbls, p}
+	return &aPackage{mod, gbls, fns, stubs, p}
 }
 
 // Void returns void type.
@@ -309,10 +311,11 @@ func (p Program) Float64() Type {
 // initializer) and "init#%d", the nth declared init function,
 // and unspecified other things too.
 type aPackage struct {
-	mod  llvm.Module
-	fns  map[string]Function
-	vars map[string]Global
-	Prog Program
+	mod   llvm.Module
+	vars  map[string]Global
+	fns   map[string]Function
+	stubs map[string]Function
+	Prog  Program
 }
 
 type Package = *aPackage
@@ -363,6 +366,30 @@ func (p Package) rtFunc(fnName string) Expr {
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr
+}
+
+func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
+	name := v.impl.Name()
+	prog := b.Prog
+	nilVal := prog.Null(prog.VoidPtr()).impl
+	if fn, ok := p.stubs[name]; ok {
+		v = fn.Expr
+	} else {
+		sig := v.raw.Type.(*types.Signature)
+		n := sig.Params().Len()
+		ctx := types.NewParam(token.NoPos, nil, ClosureCtx, types.Typ[types.UnsafePointer])
+		sig = FuncAddCtx(ctx, sig)
+		fn := p.NewFunc(ClosureStub+name, sig, InC)
+		args := make([]Expr, n)
+		for i := 0; i < n; i++ {
+			args[i] = fn.Param(i + 1)
+		}
+		b := fn.MakeBody(1)
+		b.Return(b.Call(v, args...))
+		p.stubs[name] = fn
+		v = fn.Expr
+	}
+	return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
 }
 
 // FuncOf returns a function by name.

@@ -22,11 +22,12 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %8, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %9 = extractvalue { ptr, ptr } %1, 0
-  %10 = call i32 %9()
-  %11 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %4)
-  %12 = getelementptr inbounds i32, ptr %11, i64 %7
-  store i32 %10, ptr %12, align 4
+  %9 = extractvalue { ptr, ptr } %1, 1
+  %10 = extractvalue { ptr, ptr } %1, 0
+  %11 = call i32 %10(ptr %9)
+  %12 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %4)
+  %13 = getelementptr inbounds i32, ptr %12, i64 %7
+  store i32 %11, ptr %13, align 4
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -54,7 +55,7 @@ _llgo_0:
   store i32 1, ptr %0, align 4
   %1 = alloca { ptr, ptr }, align 8
   %2 = getelementptr inbounds { ptr, ptr }, ptr %1, i32 0, i32 0
-  store ptr @rand, ptr %2, align 8
+  store ptr @__llgo_stub.rand, ptr %2, align 8
   %3 = getelementptr inbounds { ptr, ptr }, ptr %1, i32 0, i32 1
   store ptr null, ptr %3, align 8
   %4 = load { ptr, ptr }, ptr %1, align 8
@@ -117,6 +118,12 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/go
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare i32 @rand()
+
+define i32 @__llgo_stub.rand(ptr %0) {
+_llgo_0:
+  %1 = call i32 @rand()
+  ret i32 %1
+}
 
 declare i32 @printf(ptr, ...)
 

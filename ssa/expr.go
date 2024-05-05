@@ -358,10 +358,7 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if t, ok := t.(*types.Struct); ok && isClosure(t) {
 		if v.kind != vkClosure {
-			log.Panicln("checkExpr:", v.impl.Name())
-			prog := b.Prog
-			nilVal := prog.Null(prog.VoidPtr()).impl
-			return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
+			return b.Func.Pkg.closureStub(b, t, v)
 		}
 	}
 	return v
