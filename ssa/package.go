@@ -377,6 +377,7 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 	} else {
 		sig := v.raw.Type.(*types.Signature)
 		n := sig.Params().Len()
+		nret := sig.Results().Len()
 		ctx := types.NewParam(token.NoPos, nil, ClosureCtx, types.Typ[types.UnsafePointer])
 		sig = FuncAddCtx(ctx, sig)
 		fn := p.NewFunc(ClosureStub+name, sig, InC)
@@ -385,7 +386,13 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 			args[i] = fn.Param(i + 1)
 		}
 		b := fn.MakeBody(1)
-		b.Return(b.Call(v, args...))
+		call := b.Call(v, args...)
+		switch nret {
+		case 0:
+			b.impl.CreateRetVoid()
+		default: // TODO(xsw): support multiple return values
+			b.impl.CreateRet(call.impl)
+		}
 		p.stubs[name] = fn
 		v = fn.Expr
 	}
