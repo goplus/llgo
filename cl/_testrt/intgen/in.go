@@ -4,6 +4,15 @@ import (
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
+type generator struct {
+	val c.Int
+}
+
+func (g *generator) next() c.Int {
+	g.val++
+	return g.val
+}
+
 func genInts(n int, gen func() c.Int) []c.Int {
 	a := make([]c.Int, n)
 	for i := range a {
@@ -23,6 +32,10 @@ func main() {
 		return initVal
 	})
 	for _, v := range b {
+		c.Printf(c.Str("%d\n"), v)
+	}
+	g := &generator{val: 1}
+	for _, v := range genInts(5, g.next) {
 		c.Printf(c.Str("%d\n"), v)
 	}
 }

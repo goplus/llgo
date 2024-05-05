@@ -645,7 +645,8 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		if v.Pkg == p.goPkg { // function in this package
+		// v.Pkg == nil: means auto generated function?
+		if v.Pkg == p.goPkg || v.Pkg == nil { // function in this package
 			fn := p.compileFunc(p.pkg, p.goTyps, v)
 			return fn.Expr
 		}
