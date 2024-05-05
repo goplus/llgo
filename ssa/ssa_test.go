@@ -57,8 +57,8 @@ func TestCvtType(t *testing.T) {
 	callback := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	params := types.NewTuple(types.NewParam(0, nil, "", callback))
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
-	ret1 := gt.cvtFunc(sig, false)
-	if ret1 == sig || gt.cvtFunc(sig, false) != ret1 {
+	ret1 := gt.cvtFunc(sig, nil)
+	if ret1 == sig {
 		t.Fatal("cvtFunc failed")
 	}
 	defer func() {

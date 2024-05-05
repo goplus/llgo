@@ -344,16 +344,16 @@ func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Funct
 }
 
 // NewFuncEx creates a new function.
-func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasCtx bool) Function {
+func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
 	t := p.Prog.FuncDecl(sig, bg)
 	if debugInstr {
-		log.Println("NewFunc", name, t.raw.Type)
+		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
 	}
 	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p, p.Prog, hasCtx)
+	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
 	p.fns[name] = ret
 	return ret
 }

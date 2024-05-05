@@ -26,6 +26,7 @@ import (
 // -----------------------------------------------------------------------------
 
 const (
+	ClosureCtx = "__llgo_ctx"
 	NameValist = "__llgo_va_list"
 )
 

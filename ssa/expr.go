@@ -356,8 +356,9 @@ func (b Builder) UnOp(op token.Token, x Expr) Expr {
 // -----------------------------------------------------------------------------
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
-	if _, ok := t.(*types.Struct); ok {
+	if t, ok := t.(*types.Struct); ok && isClosure(t) {
 		if v.kind != vkClosure {
+			log.Panicln("checkExpr:", v.impl.Name())
 			prog := b.Prog
 			nilVal := prog.Null(prog.VoidPtr()).impl
 			return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
@@ -366,11 +367,21 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	return v
 }
 
-func llvmParams(vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+func llvmParamsEx(data Expr, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+	if data.IsNil() {
+		return llvmParams(0, vals, params, b)
+	}
+	ret = llvmParams(1, vals, params, b)
+	ret[0] = data.impl
+	return
+}
+
+func llvmParams(base int, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
 	n := params.Len()
 	if n > 0 {
-		ret = make([]llvm.Value, len(vals))
-		for i, v := range vals {
+		ret = make([]llvm.Value, len(vals)+base)
+		for idx, v := range vals {
+			i := base + idx
 			if i < n {
 				v = checkExpr(v, params.At(i).Type(), b)
 			}
@@ -1080,10 +1091,12 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		log.Println(b.String())
 	}
 	var ll llvm.Type
+	var data Expr
 	var sig *types.Signature
 	var raw = fn.raw.Type
 	switch fn.kind {
 	case vkClosure:
+		data = b.Field(fn, 1)
 		fn = b.Field(fn, 0)
 		raw = fn.raw.Type
 		fallthrough
@@ -1097,7 +1110,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		panic("unreachable")
 	}
 	ret.Type = prog.retType(sig)
-	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParams(args, sig.Params(), b))
+	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
 }
 
