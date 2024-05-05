@@ -184,6 +184,11 @@ func (p Function) NewBuilder() Builder {
 	return &aBuilder{b, p, prog}
 }
 
+// HasBody reports whether the function has a body.
+func (p Function) HasBody() bool {
+	return len(p.blks) > 0
+}
+
 // MakeBody creates nblk basic blocks for the function, and creates
 // a new Builder associated to #0 block.
 func (p Function) MakeBody(nblk int) Builder {

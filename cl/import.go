@@ -234,34 +234,6 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 	return name, goVar
 }
 
-// funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
-// or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
-func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
-	pkgTypes := p.ensureLoaded(fn.Pkg.Pkg)
-	pkg := p.pkg
-	name, ftype := p.funcName(pkgTypes, fn, false)
-	if ftype == llgoInstr {
-		switch name {
-		case "cstr":
-			ftype = llgoCstr
-		case "advance":
-			ftype = llgoAdvance
-		case "alloca":
-			ftype = llgoAlloca
-		case "allocaCStr":
-			ftype = llgoAllocaCStr
-		case "unreachable":
-			ftype = llgoUnreachable
-		default:
-			panic("unknown llgo instruction: " + name)
-		}
-	} else if ret = pkg.FuncOf(name); ret == nil {
-		sig := fn.Signature
-		ret = pkg.NewFunc(name, sig, llssa.Background(ftype))
-	}
-	return
-}
-
 func (p *context) varOf(v *ssa.Global) (ret llssa.Global) {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
