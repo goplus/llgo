@@ -5,8 +5,6 @@ source_filename = "main"
 @__stderrp = external global ptr
 @0 = private unnamed_addr constant [10 x i8] c"Hello %d\0A\00", align 1
 
-declare void @fprintf(ptr, ptr, ...)
-
 define void @main.init() {
 _llgo_0:
   %0 = load i1, ptr @"main.init$guard", align 1
@@ -30,3 +28,5 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare void @fprintf(ptr, ptr, ...)

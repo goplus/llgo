@@ -51,14 +51,6 @@ define void @main.print(ptr %0) {
 _llgo_0:
   %1 = call i32 (ptr, ...) @printf(ptr %0)
   ret void
-  %2 = call i32 (ptr, ...) @printf(ptr %0)
-  ret void
-  %3 = call i32 (ptr, ...) @printf(ptr %0)
-  ret void
-
-_llgo_01:                                         ; No predecessors!
-
-_llgo_02:                                         ; No predecessors!
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()

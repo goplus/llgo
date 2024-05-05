@@ -70,8 +70,8 @@ _llgo_0:
   ret void
 }
 
-declare void @printf(ptr, ...)
-
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+
+declare void @printf(ptr, ...)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
