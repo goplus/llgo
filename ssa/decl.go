@@ -131,9 +131,10 @@ type aFunction struct {
 
 	blks []BasicBlock
 
-	params  []Type
-	base    int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg bool
+	params   []Type
+	freeVars Expr
+	base     int // base = 1 if hasFreeVars; base = 0 otherwise
+	hasVArg  bool
 }
 
 // Function represents a function or method.
@@ -145,7 +146,7 @@ func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars b
 	if hasFreeVars {
 		base = 1
 	}
-	return &aFunction{Expr{fn, t}, pkg, prog, nil, params, base, hasVArg}
+	return &aFunction{Expr{fn, t}, pkg, prog, nil, params, Expr{}, base, hasVArg}
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
@@ -169,10 +170,21 @@ func (p Function) Param(i int) Expr {
 	return Expr{p.impl.Param(i), p.params[i]}
 }
 
+func (p Function) closureCtx(b Builder) Expr {
+	if p.freeVars.IsNil() {
+		if p.base == 0 {
+			panic("ssa: function has no free variables")
+		}
+		ptr := Expr{p.impl.Param(0), p.params[0]}
+		p.freeVars = b.Load(ptr)
+	}
+	return p.freeVars
+}
+
 // FreeVar returns the function's ith free variable.
 func (p Function) FreeVar(b Builder, i int) Expr {
-	ctx := Expr{p.impl.Param(0), p.params[0]}
-	return b.Field(ctx, i)
+	ctx := p.closureCtx(b)
+	return b.getField(ctx, i)
 }
 
 // NewBuilder creates a new Builder for the function.

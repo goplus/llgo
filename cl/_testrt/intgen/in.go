@@ -22,18 +22,19 @@ func genInts(n int, gen func() c.Int) []c.Int {
 }
 
 func main() {
-	initVal := c.Int(1)
-	a := genInts(5, c.Rand)
-	for _, v := range a {
+	for _, v := range genInts(5, c.Rand) {
 		c.Printf(c.Str("%d\n"), v)
 	}
-	b := genInts(5, func() c.Int {
+
+	initVal := c.Int(1)
+	ints := genInts(5, func() c.Int {
 		initVal *= 2
 		return initVal
 	})
-	for _, v := range b {
+	for _, v := range ints {
 		c.Printf(c.Str("%d\n"), v)
 	}
+
 	g := &generator{val: 1}
 	for _, v := range genInts(5, g.next) {
 		c.Printf(c.Str("%d\n"), v)
