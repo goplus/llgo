@@ -16,6 +16,7 @@
 
 package c
 
+// typedef unsigned int uint;
 import "C"
 import "unsafe"
 
@@ -26,6 +27,7 @@ const (
 type (
 	Char    = int8
 	Int     = C.int
+	Uint    = C.uint
 	Pointer = unsafe.Pointer
 	FilePtr = unsafe.Pointer
 )
