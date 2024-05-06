@@ -15,3 +15,11 @@ func main() {
 		c.Printf(c.Str("%d\n"), v)
 	}
 }
+
+/* Expected output:
+2
+7
+8
+23
+100
+*/
