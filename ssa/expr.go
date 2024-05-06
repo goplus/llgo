@@ -1137,6 +1137,21 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	return
 }
 
+// The Extract instruction yields component Index of Tuple.
+//
+// This is used to access the results of instructions with multiple
+// return values, such as Call, TypeAssert, Next, UnOp(ARROW) and
+// IndexExpr(Map).
+//
+// Example printed form:
+//
+//	t1 = extract t0 #1
+func (b Builder) Extract(x Expr, index int) (ret Expr) {
+	ret.Type = b.Prog.toType(x.Type.raw.Type.(*types.Tuple).At(index).Type())
+	ret.impl = b.impl.CreateExtractValue(x.impl, index, "")
+	return
+}
+
 // A Builtin represents a specific use of a built-in function, e.g. len.
 //
 // Builtins are immutable values.  Builtins do not have addresses.

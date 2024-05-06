@@ -101,7 +101,9 @@ func (b Builder) Return(results ...Expr) {
 	case 0:
 		b.impl.CreateRetVoid()
 	case 1:
-		b.impl.CreateRet(results[0].impl)
+		raw := b.Func.raw.Type.(*types.Signature).Results().At(0).Type()
+		ret := checkExpr(results[0], raw, b)
+		b.impl.CreateRet(ret.impl)
 	default:
 		tret := b.Func.raw.Type.(*types.Signature).Results()
 		b.impl.CreateAggregateRet(llvmParams(0, results, tret, b))
