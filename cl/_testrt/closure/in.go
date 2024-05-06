@@ -5,6 +5,9 @@ import (
 )
 
 func main() {
+	func(n1, n2 int) {
+		c.Printf(c.Str("%d %d\n"), n1, n2)
+	}(100, 200)
 	fn1 := func(n1, n2 int) {
 		c.Printf(c.Str("%d %d\n"), n1, n2)
 	}
