@@ -494,9 +494,11 @@ func (b Builder) Load(ptr Expr) Expr {
 
 // Store stores val at the pointer ptr.
 func (b Builder) Store(ptr, val Expr) Builder {
+	raw := ptr.raw.Type
 	if debugInstr {
-		log.Printf("Store %v, %v\n", ptr.impl, val.impl)
+		log.Printf("Store %v, %v, %v\n", raw, ptr.impl, val.impl)
 	}
+	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
 	b.impl.CreateStore(val.impl, ptr.impl)
 	return b
 }
