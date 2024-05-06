@@ -169,7 +169,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
-			p.compileFunc(pkg, mthd.Obj().Pkg(), ssaMthd)
+			p.compileFuncDecl(pkg, mthd.Obj().Pkg(), ssaMthd)
 		}
 	}
 }
@@ -200,7 +200,7 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
 }
 
-func (p *context) compileFunc(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) llssa.Function {
+func (p *context) compileFuncDecl(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) llssa.Function {
 	name, ftype := p.funcName(pkgTypes, f, true)
 	if ftype != goFunc {
 		return nil
@@ -455,7 +455,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = b.BuiltinCall(fn, args...)
 			}
 		case *ssa.Function:
-			fn, ftype := p.funcOf(cv)
+			fn, ftype := p.compileFunction(cv)
 			switch ftype {
 			case goFunc, cFunc:
 				args := p.compileValues(b, call.Args, kind)
@@ -636,6 +636,15 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
+func (p *context) compileFunction(v *ssa.Function) (llssa.Function, int) {
+	// v.Pkg == nil: means auto generated function?
+	if v.Pkg == p.goPkg || v.Pkg == nil {
+		// function in this package
+		return p.compileFuncDecl(p.pkg, p.goTyps, v), goFunc
+	}
+	return p.funcOf(v)
+}
+
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if iv, ok := v.(instrOrValue); ok {
 		return p.compileInstrOrValue(b, iv, true)
@@ -649,12 +658,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		// v.Pkg == nil: means auto generated function?
-		if v.Pkg == p.goPkg || v.Pkg == nil { // function in this package
-			fn := p.compileFunc(p.pkg, p.goTyps, v)
-			return fn.Expr
-		}
-		fn, _ := p.funcOf(v)
+		fn, _ := p.compileFunction(v)
 		return fn.Expr
 	case *ssa.Global:
 		g := p.varOf(v)
@@ -747,7 +751,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFunc(ret, member.Pkg.Pkg, member)
+			ctx.compileFuncDecl(ret, member.Pkg.Pkg, member)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
