@@ -573,6 +573,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		t := p.prog.Type(v.AssertedType, llssa.InGo)
 		ret = b.TypeAssert(x, t, v.CommaOk)
+	case *ssa.Extract:
+		x := p.compileValue(b, v.Tuple)
+		ret = b.Extract(x, v.Index)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
