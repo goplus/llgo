@@ -36,7 +36,8 @@ go install -v ./...
 
 The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
 
-* genints: closure usage in llgo
+* [qsort](_demo/qsort): call C function with callback
+* [genints](_demo/genints): closure usage in llgo
 
 ### How to run demos
 

@@ -71,3 +71,6 @@ func Printf(format *Char, __llgo_va_list ...any) Int
 
 //go:linkname Fprintf C.fprintf
 func Fprintf(fp FilePtr, format *Char, __llgo_va_list ...any) Int
+
+//go:linkname Qsort C.qsort
+func Qsort(base Pointer, count, elem uintptr, compar func(a, b Pointer) Int)
