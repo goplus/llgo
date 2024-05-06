@@ -640,7 +640,9 @@ func (p *context) compileFunction(v *ssa.Function) (llssa.Function, int) {
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package
-		return p.compileFuncDecl(p.pkg, p.goTyps, v), goFunc
+		if fn := p.compileFuncDecl(p.pkg, p.goTyps, v); fn != nil {
+			return fn, goFunc
+		}
 	}
 	return p.funcOf(v)
 }
