@@ -165,7 +165,7 @@ declare i32 @rand()
 
 define linkonce i32 @__llgo_stub.rand(ptr %0) {
 _llgo_0:
-  %1 = call i32 @rand()
+  %1 = tail call i32 @rand()
   ret i32 %1
 }
 

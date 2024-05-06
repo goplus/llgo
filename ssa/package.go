@@ -388,6 +388,7 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 		}
 		b := fn.MakeBody(1)
 		call := b.Call(v, args...)
+		call.impl.SetTailCall(true)
 		switch nret {
 		case 0:
 			b.impl.CreateRetVoid()

@@ -56,7 +56,7 @@ _llgo_0:
 
 define linkonce void @"__llgo_stub.main.main$1"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
-  call void @"main.main$1"(i64 %1, i64 %2)
+  tail call void @"main.main$1"(i64 %1, i64 %2)
   ret void
 }
 
