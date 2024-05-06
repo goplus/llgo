@@ -290,7 +290,17 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bo
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
 	instrs := p.compilePhis(b, block.Instrs)
+	var buf [32]*ssa.Value
 	for _, instr := range instrs {
+		ops := instr.Operands(buf[:0])
+		for _, op := range ops {
+			switch v := (*op).(type) {
+			case *ssa.Function:
+				if v.Parent() != nil {
+					p.compileValue(b, v)
+				}
+			}
+		}
 		p.compileInstr(b, instr)
 	}
 	return ret
