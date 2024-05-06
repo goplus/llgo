@@ -27,14 +27,11 @@ const (
 )
 
 type (
-	Char  = int8
+	Char  = c.Char
 	Int   = c.Int
 	Uint  = c.Uint
-	Float = float32
+	Float = c.Float
 )
-
-//go:linkname Time C.time
-func Time(*int32) int32
 
 // -----------------------------------------------------------------------------
 

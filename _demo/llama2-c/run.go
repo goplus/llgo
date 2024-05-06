@@ -25,9 +25,9 @@ func main() {
 	var prompt *c.Char = c.Str("Once upon a time")
 	var checkpointPath *c.Char = c.Str("stories15M.bin")
 	var tokenizerPath *c.Char = c.Str("tokenizer.bin")
-	var temperature, topp llama2.Float = 1.0, 0.9
+	var temperature, topp c.Float = 1.0, 0.9
 	var steps c.Int = 256
-	var rngSeed uint64 = uint64(llama2.Time(nil))
+	var rngSeed uint64 = uint64(c.Time(nil))
 
 	// build the Transformer via the model .bin file
 	var transformer llama2.Transformer

@@ -28,6 +28,7 @@ type (
 	Char    = int8
 	Int     = C.int
 	Uint    = C.uint
+	Float   = float32
 	Pointer = unsafe.Pointer
 	FilePtr = unsafe.Pointer
 )
@@ -76,3 +77,6 @@ func Fprintf(fp FilePtr, format *Char, __llgo_va_list ...any) Int
 
 //go:linkname Qsort C.qsort
 func Qsort(base Pointer, count, elem uintptr, compar func(a, b Pointer) Int)
+
+//go:linkname Time C.time
+func Time(*int32) int32
