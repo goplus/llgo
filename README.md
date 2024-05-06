@@ -34,7 +34,7 @@ go install -v ./...
 
 ## Demo
 
-The examples of `llgo` are all in the `_demo` directory (it start with `_` to prevent the `go` command from compiling it):
+The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
 
 * _demo/genints: closure usage in llgo
 
