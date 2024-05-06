@@ -24,7 +24,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// Cmd represents a nm command.
+// Cmd represents a clang command.
 type Cmd struct {
 	app string
 
@@ -32,7 +32,7 @@ type Cmd struct {
 	Stderr io.Writer
 }
 
-// New creates a new nm command.
+// New creates a new clang command.
 func New(app string) *Cmd {
 	if app == "" {
 		app = "clang"

@@ -654,6 +654,26 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 	return b.Load(buf)
 }
 
+// The Lookup instruction yields element Index of collection map X.
+// Index is the appropriate key type.
+//
+// If CommaOk, the result is a 2-tuple of the value above and a
+// boolean indicating the result of a map membership test for the key.
+// The components of the tuple are accessed using Extract.
+//
+// Example printed form:
+//
+//	t2 = t0[t1]
+//	t5 = t3[t4],ok
+func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
+	if debugInstr {
+		log.Printf("Lookup %v, %v, %v\n", x.impl, key.impl, commaOk)
+	}
+	// TODO(xsw)
+	// panic("todo")
+	return
+}
+
 // The Slice instruction yields a slice of an existing string, slice
 // or *array X between optional integer bounds Low and High.
 //
