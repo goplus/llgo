@@ -12,10 +12,6 @@ stories*.bin
 .DS_Store
 err.log
 
-_go/
-_runtime/
-_tinygo/
-
 # Test binary, built with `go test -c`
 *.test
 
