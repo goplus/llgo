@@ -189,6 +189,7 @@ func (p *parser) newError(errMsg string) *ParseTypeError {
 	return &ParseTypeError{QualType: p.s.Source(), ErrMsg: errMsg}
 }
 
+// TODO(xsw): check expect results
 func (p *parser) expect(tokExp token.Token) error {
 	p.next()
 	if p.tok != tokExp {
@@ -330,6 +331,7 @@ func (p *parser) parseFunc(pkg *types.Package, t types.Type, inFlags int) (ret t
 	if err != nil {
 		return
 	}
+	_ = inFlags
 	return ctypes.NewFunc(types.NewTuple(args...), results, variadic), nil
 }
 

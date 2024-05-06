@@ -55,11 +55,17 @@ func main() {
 		if e == nil {
 			enc := json.NewEncoder(os.Stdout)
 			enc.SetIndent("", "  ")
-			enc.Encode(doc)
+			check(enc.Encode(doc))
 			return
 		}
 		err = e
 	}
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

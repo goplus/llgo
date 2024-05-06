@@ -74,7 +74,7 @@ func NewPointer(typ types.Type) types.Type {
 		}
 	case *types.Signature:
 		if gogen.IsCSignature(t) {
-			return types.NewSignature(nil, t.Params(), t.Results(), t.Variadic())
+			return types.NewSignatureType(nil, nil, nil, t.Params(), t.Results(), t.Variadic())
 		}
 	case *types.Named:
 		if typ == ValistTag {
