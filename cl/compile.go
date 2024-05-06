@@ -242,8 +242,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, pkgTypes *types.Package, f 
 			}
 			b := fn.NewBuilder()
 			p.bvals = make(map[ssa.Value]llssa.Expr)
+			off := make([]int, len(f.Blocks))
 			for i, block := range f.Blocks {
-				p.compileBlock(b, block, i == 0 && name == "main")
+				off[i] = p.compilePhis(b, block)
+			}
+			for i, block := range f.Blocks {
+				p.compileBlock(b, block, off[i], i == 0 && name == "main")
 			}
 			for _, phi := range p.phis {
 				phi()
@@ -281,7 +285,7 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 	return
 }
 
-func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bool) llssa.BasicBlock {
+func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doInit bool) llssa.BasicBlock {
 	ret := p.fn.Block(block.Index)
 	b.SetBlock(ret)
 	if doInit {
@@ -289,8 +293,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, doInit bo
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
-	instrs := p.compilePhis(b, block.Instrs)
-	for _, instr := range instrs {
+	for _, instr := range block.Instrs[n:] {
 		p.compileInstr(b, instr)
 	}
 	return ret
@@ -386,26 +389,28 @@ func isPhi(i ssa.Instruction) bool {
 	return ok
 }
 
-func (p *context) compilePhis(b llssa.Builder, instrs []ssa.Instruction) []ssa.Instruction {
-	if ninstr := len(instrs); ninstr > 0 {
-		if isPhi(instrs[0]) {
+func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
+	ret := p.fn.Block(block.Index)
+	b.SetBlock(ret)
+	if ninstr := len(block.Instrs); ninstr > 0 {
+		if isPhi(block.Instrs[0]) {
 			n := 1
-			for n < ninstr && isPhi(instrs[n]) {
+			for n < ninstr && isPhi(block.Instrs[n]) {
 				n++
 			}
 			rets := make([]llssa.Expr, n)
 			for i := 0; i < n; i++ {
-				iv := instrs[i].(*ssa.Phi)
+				iv := block.Instrs[i].(*ssa.Phi)
 				rets[i] = p.compilePhi(b, iv)
 			}
 			for i := 0; i < n; i++ {
-				iv := instrs[i].(*ssa.Phi)
+				iv := block.Instrs[i].(*ssa.Phi)
 				p.bvals[iv] = rets[i].Do(b)
 			}
-			return instrs[n:]
+			return n
 		}
 	}
-	return instrs
+	return 0
 }
 
 func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
