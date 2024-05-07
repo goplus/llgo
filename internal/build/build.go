@@ -17,9 +17,11 @@
 package build
 
 import (
+	"archive/zip"
 	"fmt"
 	"go/token"
 	"go/types"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -220,6 +222,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 					file := pkg.ExportFile + ".ll"
 					os.WriteFile(file, []byte(lpkg.String()), 0644)
 				}
+				break
 			}
 		}
 	}
@@ -391,7 +394,11 @@ func llgoRoot() string {
 }
 
 func llgoPkgLinkFile(pkgPath string) string {
-	return filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
+	llFile := filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
+	if _, err := os.Stat(llFile); os.IsNotExist(err) {
+		decodeLinkFile(llFile)
+	}
+	return llFile
 }
 
 const (
@@ -408,6 +415,25 @@ func isPkgInMod(pkgPath, modPath string) bool {
 		return suffix == "" || suffix[0] == '/'
 	}
 	return false
+}
+
+// *.ll => *.lla
+func decodeLinkFile(llFile string) {
+	zipFile := llFile + "a"
+	zipf, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return
+	}
+	defer zipf.Close()
+	f, err := zipf.Open("llgo_autogen.ll")
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	data, err := io.ReadAll(f)
+	if err == nil {
+		os.WriteFile(llFile, data, 0644)
+	}
 }
 
 func check(err error) {

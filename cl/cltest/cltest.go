@@ -17,10 +17,12 @@
 package cltest
 
 import (
+	"archive/zip"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -63,10 +65,35 @@ func FromDir(t *testing.T, sel, relDir string, byLLGen bool) {
 	}
 }
 
+// *.ll => *.lla
+func decodeLinkFile(llFile string) (data []byte, err error) {
+	zipFile := llFile + "a"
+	zipf, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return
+	}
+	defer zipf.Close()
+	f, err := zipf.Open("llgo_autogen.ll")
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	data, err = io.ReadAll(f)
+	if err == nil {
+		os.WriteFile(llFile, data, 0644)
+	}
+	return
+}
+
 func Pkg(t *testing.T, pkgPath, outFile string) {
 	b, err := os.ReadFile(outFile)
 	if err != nil {
-		t.Fatal("ReadFile failed:", err)
+		if !os.IsNotExist(err) {
+			t.Fatal("ReadFile failed:", err)
+		}
+		if b, err = decodeLinkFile(outFile); err != nil {
+			t.Fatal("decodeLinkFile failed:", err)
+		}
 	}
 	expected := string(b)
 	if v := llgen.GenFrom(pkgPath); v != expected {
