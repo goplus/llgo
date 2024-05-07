@@ -163,10 +163,26 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 		}
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
-	for _, pkg := range pkgs {
-		buildPkg(prog, pkg, mode, verbose)
-		if prog.NeedRuntime() {
-			setNeedRuntime(pkg.Package)
+	for _, aPkg := range pkgs {
+		pkg := aPkg.Package
+		switch cl.PkgKindOf(pkg.Types) {
+		case cl.PkgDeclOnly:
+			// skip packages that only contain declarations
+			// and set no export file
+			pkg.ExportFile = ""
+		case cl.PkgLinkOnly:
+			// skip packages that don't need to be compiled but need to be linked
+			pkgPath := pkg.PkgPath
+			if isPkgInLLGo(pkgPath) {
+				pkg.ExportFile = strings.TrimSuffix(llgoPkgLinkFile(pkgPath), ".ll")
+			} else {
+				panic("todo")
+			}
+		default:
+			buildPkg(prog, aPkg, mode, verbose)
+			if prog.NeedRuntime() {
+				setNeedRuntime(pkg)
+			}
 		}
 	}
 	return
@@ -236,12 +252,6 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 
 func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 	pkg := aPkg.Package
-	if cl.PkgKindOf(pkg.Types) == cl.PkgDeclOnly {
-		// skip packages that only contain declarations
-		// and set no export file
-		pkg.ExportFile = ""
-		return
-	}
 	pkgPath := pkg.PkgPath
 	if verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
@@ -342,11 +352,10 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 
 func allLinkFiles(rt []*packages.Package) (outFiles []string) {
 	outFiles = make([]string, 0, len(rt))
-	root := rootLLGo(rt[0])
 	packages.Visit(rt, nil, func(p *packages.Package) {
 		pkgPath := p.PkgPath
 		if isRuntimePkg(pkgPath) {
-			outFile := filepath.Join(root+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
+			outFile := llgoPkgLinkFile(pkgPath)
 			outFiles = append(outFiles, outFile)
 		}
 	})
@@ -366,16 +375,29 @@ func isRuntimePkg(pkgPath string) bool {
 	return false
 }
 
-// TODO(xsw): llgo root dir
-func rootLLGo(runtime *packages.Package) string {
-	return runtime.Module.Dir
+var (
+	rootDir string
+)
+
+func llgoRoot() string {
+	if rootDir == "" {
+		root := os.Getenv("LLGOROOT")
+		if root == "" {
+			panic("todo: LLGOROOT not set")
+		}
+		rootDir, _ = filepath.Abs(root)
+	}
+	return rootDir
+}
+
+func llgoPkgLinkFile(pkgPath string) string {
+	return filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
 }
 
 const (
 	llgoModPath = "github.com/goplus/llgo"
 )
 
-/*
 func isPkgInLLGo(pkgPath string) bool {
 	return isPkgInMod(pkgPath, llgoModPath)
 }
@@ -387,7 +409,6 @@ func isPkgInMod(pkgPath, modPath string) bool {
 	}
 	return false
 }
-*/
 
 func check(err error) {
 	if err != nil {

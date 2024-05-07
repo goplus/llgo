@@ -123,6 +123,7 @@ const (
 	PkgLLGo
 	PkgNoInit   // noinit: a package that don't need to be initialized
 	PkgDeclOnly // decl: a package that only have declarations
+	PkgLinkOnly // link: a package that don't need to be compiled but need to be linked
 )
 
 type pkgInfo struct {
