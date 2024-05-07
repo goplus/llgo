@@ -15,6 +15,7 @@ err.log
 _go/
 _runtime/
 _tinygo/
+build.dir/
 
 # Test binary, built with `go test -c`
 *.test
