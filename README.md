@@ -40,6 +40,7 @@ The `_demo` directory contains our demos (it start with `_` to prevent the `go` 
 * [concat](_demo/concat/concat.go): call C fprintf with stderr, and Go variadic function
 * [qsort](_demo/qsort/qsort.go): call C function with a callback (eg. qsort)
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
+* [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
 
 ### How to run demos
 
