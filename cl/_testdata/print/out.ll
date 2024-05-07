@@ -13,8 +13,9 @@ source_filename = "main"
 @__llgo_argv = global ptr null
 @1 = private unnamed_addr constant [5 x i8] c"llgo\00", align 1
 @2 = private unnamed_addr constant [17 x i8] c"0123456789abcdef\00", align 1
-@3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@4 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@3 = private unnamed_addr constant [2 x i8] c"-\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@5 = private unnamed_addr constant [2 x i8] c" \00", align 1
 
 define %"github.com/goplus/llgo/internal/runtime.Slice" @main.bytes(%"github.com/goplus/llgo/internal/runtime.String" %0) {
 _llgo_0:
@@ -95,6 +96,26 @@ _llgo_0:
   call void @main.printnl()
   call void @main.printhex(i64 305441743)
   call void @main.printnl()
+  call void @main.prinxor(i64 1)
+  call void @main.printnl()
+  call void @main.prinsub(i64 100)
+  call void @main.printnl()
+  call void @main.prinusub(i64 -1)
+  call void @main.printnl()
+  call void @main.prinfsub(double 1.001000e+02)
+  ret void
+}
+
+define void @main.prinfsub(double %0) {
+_llgo_0:
+  %1 = fneg double %0
+  ret void
+}
+
+define void @main.prinsub(i64 %0) {
+_llgo_0:
+  %1 = sub i64 0, %0
+  call void @main.printint(i64 %1)
   ret void
 }
 
@@ -143,16 +164,33 @@ _llgo_5:                                          ; preds = %_llgo_1
   br i1 %21, label %_llgo_2, label %_llgo_4
 }
 
+define void @main.printint(i64 %0) {
+_llgo_0:
+  %1 = icmp slt i64 %0, 0
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 1)
+  call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %2)
+  %3 = sub i64 0, %0
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %4 = phi i64 [ %0, %_llgo_0 ], [ %3, %_llgo_1 ]
+  call void @main.printuint(i64 %4)
+  ret void
+}
+
 define void @main.printnl() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 1)
+  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @4, i64 1)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %0)
   ret void
 }
 
 define void @main.printsp() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @4, i64 1)
+  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @5, i64 1)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %0)
   ret void
 }
@@ -193,6 +231,20 @@ _llgo_4:                                          ; preds = %_llgo_1
   %11 = udiv i64 %8, 10
   %12 = sub i64 %9, 1
   br label %_llgo_3
+}
+
+define void @main.prinusub(i64 %0) {
+_llgo_0:
+  %1 = sub i64 0, %0
+  call void @main.printuint(i64 %1)
+  ret void
+}
+
+define void @main.prinxor(i64 %0) {
+_llgo_0:
+  %1 = xor i64 %0, -1
+  call void @main.printint(i64 %1)
+  ret void
 }
 
 define ptr @main.stringStructOf(ptr %0) {
