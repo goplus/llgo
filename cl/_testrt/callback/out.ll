@@ -2,6 +2,8 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [7 x i8] c"Hello\0A\00", align 1
 @1 = private unnamed_addr constant [10 x i8] c"callback\0A\00", align 1
 
@@ -26,24 +28,26 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = alloca { ptr, ptr }, align 8
-  %1 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 0
-  store ptr @__llgo_stub.main.print, ptr %1, align 8
-  %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load { ptr, ptr }, ptr %0, align 8
-  call void @main.callback(ptr @0, { ptr, ptr } %3)
-  %4 = alloca { ptr, ptr }, align 8
-  %5 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 0
-  store ptr @__llgo_stub.main.print, ptr %5, align 8
-  %6 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 1
-  store ptr null, ptr %6, align 8
-  %7 = load { ptr, ptr }, ptr %4, align 8
-  call void @main.callback(ptr @1, { ptr, ptr } %7)
+  %2 = alloca { ptr, ptr }, align 8
+  %3 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 0
+  store ptr @__llgo_stub.main.print, ptr %3, align 8
+  %4 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 1
+  store ptr null, ptr %4, align 8
+  %5 = load { ptr, ptr }, ptr %2, align 8
+  call void @main.callback(ptr @0, { ptr, ptr } %5)
+  %6 = alloca { ptr, ptr }, align 8
+  %7 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 0
+  store ptr @__llgo_stub.main.print, ptr %7, align 8
+  %8 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 1
+  store ptr null, ptr %8, align 8
+  %9 = load { ptr, ptr }, ptr %6, align 8
+  call void @main.callback(ptr @1, { ptr, ptr } %9)
   ret void
 }
 

@@ -4,6 +4,8 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [10 x i8] c"Hello %d\0A\00", align 1
 
 define void @main.init() {
@@ -19,22 +21,24 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
-  %1 = getelementptr inbounds i64, ptr %0, i64 0
-  store i64 1, ptr %1, align 4
-  %2 = getelementptr inbounds i64, ptr %0, i64 1
-  store i64 2, ptr %2, align 4
-  %3 = getelementptr inbounds i64, ptr %0, i64 2
-  store i64 3, ptr %3, align 4
-  %4 = getelementptr inbounds i64, ptr %0, i64 3
-  store i64 4, ptr %4, align 4
-  %5 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %0, i64 8, i64 4, i64 0, i64 4, i64 4)
-  %6 = call i64 @main.sum(%"github.com/goplus/llgo/internal/runtime.Slice" %5)
-  %7 = call i32 (ptr, ...) @printf(ptr @0, i64 %6)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
+  %3 = getelementptr inbounds i64, ptr %2, i64 0
+  store i64 1, ptr %3, align 4
+  %4 = getelementptr inbounds i64, ptr %2, i64 1
+  store i64 2, ptr %4, align 4
+  %5 = getelementptr inbounds i64, ptr %2, i64 2
+  store i64 3, ptr %5, align 4
+  %6 = getelementptr inbounds i64, ptr %2, i64 3
+  store i64 4, ptr %6, align 4
+  %7 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %2, i64 8, i64 4, i64 0, i64 4, i64 4)
+  %8 = call i64 @main.sum(%"github.com/goplus/llgo/internal/runtime.Slice" %7)
+  %9 = call i32 (ptr, ...) @printf(ptr @0, i64 %8)
   ret void
 }
 

@@ -2,6 +2,8 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [2 x i8] c"a\00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"b\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -24,8 +26,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   call void @"github.com/goplus/llgo/cl/internal/linktarget.F"(ptr @0, ptr @1, ptr @2, ptr @3)

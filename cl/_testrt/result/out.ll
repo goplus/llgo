@@ -2,6 +2,8 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @2 = private unnamed_addr constant [7 x i8] c"%d %d\0A\00", align 1
@@ -43,28 +45,30 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call { ptr, ptr } @"main.main$1"()
-  %1 = extractvalue { ptr, ptr } %0, 1
-  %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call i64 %2(ptr %1, i64 100, i64 200)
-  %4 = call i32 (ptr, ...) @printf(ptr @0, i64 %3)
-  %5 = call { ptr, ptr } @main.add()
-  %6 = extractvalue { ptr, ptr } %5, 1
-  %7 = extractvalue { ptr, ptr } %5, 0
-  %8 = call i64 %7(ptr %6, i64 100, i64 200)
-  %9 = call i32 (ptr, ...) @printf(ptr @1, i64 %8)
-  %10 = call { { ptr, ptr }, i64 } @main.add2()
-  %11 = extractvalue { { ptr, ptr }, i64 } %10, 0
-  %12 = extractvalue { { ptr, ptr }, i64 } %10, 1
-  %13 = call { ptr, ptr } @main.add()
-  %14 = extractvalue { ptr, ptr } %13, 1
-  %15 = extractvalue { ptr, ptr } %13, 0
-  %16 = call i64 %15(ptr %14, i64 100, i64 200)
-  %17 = call i32 (ptr, ...) @printf(ptr @2, i64 %16, i64 %12)
+  %2 = call { ptr, ptr } @"main.main$1"()
+  %3 = extractvalue { ptr, ptr } %2, 1
+  %4 = extractvalue { ptr, ptr } %2, 0
+  %5 = call i64 %4(ptr %3, i64 100, i64 200)
+  %6 = call i32 (ptr, ...) @printf(ptr @0, i64 %5)
+  %7 = call { ptr, ptr } @main.add()
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  %10 = call i64 %9(ptr %8, i64 100, i64 200)
+  %11 = call i32 (ptr, ...) @printf(ptr @1, i64 %10)
+  %12 = call { { ptr, ptr }, i64 } @main.add2()
+  %13 = extractvalue { { ptr, ptr }, i64 } %12, 0
+  %14 = extractvalue { { ptr, ptr }, i64 } %12, 1
+  %15 = call { ptr, ptr } @main.add()
+  %16 = extractvalue { ptr, ptr } %15, 1
+  %17 = extractvalue { ptr, ptr } %15, 0
+  %18 = call i64 %17(ptr %16, i64 100, i64 200)
+  %19 = call i32 (ptr, ...) @printf(ptr @2, i64 %18, i64 %14)
   ret void
 }
 

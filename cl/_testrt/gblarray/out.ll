@@ -6,6 +6,8 @@ source_filename = "main"
 @main.basicTypes = global ptr null
 @"main.init$guard" = global ptr null
 @main.sizeBasicTypes = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [20 x i8] c"Kind: %d, Size: %d\0A\00", align 1
 
 define ptr @main.Basic(i64 %0) {
@@ -48,17 +50,19 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @main.Basic(i64 24)
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %0, i32 0, i32 6
-  %2 = load i8, ptr %1, align 1
-  %3 = sext i8 %2 to i64
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %0, i32 0, i32 0
-  %5 = load i64, ptr %4, align 4
-  %6 = call i32 (ptr, ...) @printf(ptr @0, i64 %3, i64 %5)
+  %2 = call ptr @main.Basic(i64 24)
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 6
+  %4 = load i8, ptr %3, align 1
+  %5 = sext i8 %4 to i64
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 0
+  %7 = load i64, ptr %6, align 4
+  %8 = call i32 (ptr, ...) @printf(ptr @0, i64 %5, i64 %7)
   ret void
 }
 

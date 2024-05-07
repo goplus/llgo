@@ -6,6 +6,8 @@ source_filename = "main"
 
 @"main.init$guard" = global ptr null
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @1 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @3 = private unnamed_addr constant [6 x i8] c"World\00", align 1
@@ -60,28 +62,30 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i64 0
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 5)
-  store %"github.com/goplus/llgo/internal/runtime.String" %2, ptr %1, align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i64 1
-  %4 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @2, i64 1)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i64 0
+  %4 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 5)
   store %"github.com/goplus/llgo/internal/runtime.String" %4, ptr %3, align 8
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i64 2
-  %6 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 5)
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i64 1
+  %6 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @2, i64 1)
   store %"github.com/goplus/llgo/internal/runtime.String" %6, ptr %5, align 8
-  %7 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %0, i64 16, i64 3, i64 0, i64 3, i64 3)
-  %8 = call %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %7)
-  %9 = load ptr, ptr @__stderrp, align 8
-  %10 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %8)
-  %11 = add i64 %10, 1
-  %12 = alloca i8, i64 %11, align 1
-  %13 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %12, %"github.com/goplus/llgo/internal/runtime.String" %8)
-  %14 = call i32 (ptr, ptr, ...) @fprintf(ptr %9, ptr @4, ptr %13)
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i64 2
+  %8 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 5)
+  store %"github.com/goplus/llgo/internal/runtime.String" %8, ptr %7, align 8
+  %9 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %2, i64 16, i64 3, i64 0, i64 3, i64 3)
+  %10 = call %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %9)
+  %11 = load ptr, ptr @__stderrp, align 8
+  %12 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %10)
+  %13 = add i64 %12, 1
+  %14 = alloca i8, i64 %13, align 1
+  %15 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %14, %"github.com/goplus/llgo/internal/runtime.String" %10)
+  %16 = call i32 (ptr, ptr, ...) @fprintf(ptr %11, ptr @4, ptr %15)
   ret void
 }
 

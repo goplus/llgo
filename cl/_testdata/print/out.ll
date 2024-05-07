@@ -9,6 +9,8 @@ source_filename = "main"
 @"main.init$guard" = global ptr null
 @main.minhexdigits = global ptr null
 @0 = private unnamed_addr constant [3 x i8] c"%c\00", align 1
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @1 = private unnamed_addr constant [5 x i8] c"llgo\00", align 1
 @2 = private unnamed_addr constant [17 x i8] c"0123456789abcdef\00", align 1
 @3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -80,12 +82,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 4)
-  call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %0)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 4)
+  call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %2)
   call void @main.printnl()
   call void @main.printuint(i64 1024)
   call void @main.printnl()

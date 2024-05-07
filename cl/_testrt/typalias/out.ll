@@ -3,6 +3,8 @@ source_filename = "main"
 
 @main.format = global ptr null
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 
 define void @main.Print(ptr %0) {
 _llgo_0:
@@ -43,16 +45,18 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
-  store i32 100, ptr %1, align 4
-  store i1 true, ptr %2, align 1
-  call void @main.Print(ptr %0)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
+  %3 = getelementptr inbounds { i32, i1 }, ptr %2, i32 0, i32 0
+  %4 = getelementptr inbounds { i32, i1 }, ptr %2, i32 0, i32 1
+  store i32 100, ptr %3, align 4
+  store i1 true, ptr %4, align 1
+  call void @main.Print(ptr %2)
   ret void
 }
 

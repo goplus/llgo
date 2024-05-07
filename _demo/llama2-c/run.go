@@ -29,6 +29,23 @@ func main() {
 	var steps c.Int = 256
 	var rngSeed uint64 = uint64(c.Time(nil))
 
+loop: // parse command line arguments
+	for {
+		switch c.Getopt(c.Argc, c.Argv, c.Str("m:")) {
+		case 'm':
+			checkpointPath = c.Optarg
+			c.Fprintf(c.Stderr, c.Str("use model: %s\n"), checkpointPath)
+		case -1:
+			break loop
+		}
+	}
+	/*
+		if c.Optind < c.Argc {
+			prompt = c.Index(c.Argv, c.Optind)
+			c.Fprintf(c.Stderr, c.Str("prompt: %s\n"), prompt)
+		}
+	*/
+
 	// build the Transformer via the model .bin file
 	var transformer llama2.Transformer
 	llama2.BuildTransformer(&transformer, checkpointPath)

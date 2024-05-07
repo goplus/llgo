@@ -225,7 +225,7 @@ type Transformer struct {
 }
 
 //go:linkname BuildTransformer C.build_transformer
-func BuildTransformer(t *Transformer, checkpoint_path *Char)
+func BuildTransformer(t *Transformer, checkpointPath *Char)
 
 //go:linkname FreeTransformer C.free_transformer
 func FreeTransformer(t *Transformer)
