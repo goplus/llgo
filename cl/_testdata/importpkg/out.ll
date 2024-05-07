@@ -3,6 +3,8 @@ source_filename = "main"
 
 @main.hello = global ptr null
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 
 define void @main.init() {
 _llgo_0:
@@ -25,11 +27,13 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call i64 @"github.com/goplus/llgo/cl/internal/stdio.Max"(i64 2, i64 100)
+  %2 = call i64 @"github.com/goplus/llgo/cl/internal/stdio.Max"(i64 2, i64 100)
   call void (ptr, ...) @printf(ptr @main.hello)
   ret void
 }

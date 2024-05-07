@@ -5,6 +5,8 @@ source_filename = "main"
 
 @"main.init$guard" = global ptr null
 @0 = private unnamed_addr constant [13 x i8] c"Hello world\0A\00", align 1
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 
 define %"github.com/goplus/llgo/internal/runtime.String" @main.hello() {
 _llgo_0:
@@ -25,16 +27,18 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @main.hello()
-  %1 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %0)
-  %2 = add i64 %1, 1
-  %3 = alloca i8, i64 %2, align 1
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %3, %"github.com/goplus/llgo/internal/runtime.String" %0)
-  %5 = call i32 (ptr, ...) @printf(ptr %4)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @main.hello()
+  %3 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %2)
+  %4 = add i64 %3, 1
+  %5 = alloca i8, i64 %4, align 1
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %5, %"github.com/goplus/llgo/internal/runtime.String" %2)
+  %7 = call i32 (ptr, ...) @printf(ptr %6)
   ret void
 }
 

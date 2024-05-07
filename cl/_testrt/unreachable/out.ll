@@ -2,6 +2,8 @@
 source_filename = "main"
 
 @"main.init$guard" = global ptr null
+@__llgo_argc = global ptr null
+@__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [7 x i8] c"Hello\0A\00", align 1
 
 define void @main.foo() {
@@ -23,12 +25,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main() {
+define void @main(i32 %0, ptr %1) {
 _llgo_0:
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   call void @main.foo()
-  %0 = call i32 (ptr, ...) @printf(ptr @0)
+  %2 = call i32 (ptr, ...) @printf(ptr @0)
   ret void
 }
 

@@ -27,14 +27,11 @@ const (
 )
 
 type (
-	Char  = int8
+	Char  = c.Char
 	Int   = c.Int
 	Uint  = c.Uint
-	Float = float32
+	Float = c.Float
 )
-
-//go:linkname Time C.time
-func Time(*int32) int32
 
 // -----------------------------------------------------------------------------
 
@@ -228,7 +225,7 @@ type Transformer struct {
 }
 
 //go:linkname BuildTransformer C.build_transformer
-func BuildTransformer(t *Transformer, checkpoint_path *Char)
+func BuildTransformer(t *Transformer, checkpointPath *Char)
 
 //go:linkname FreeTransformer C.free_transformer
 func FreeTransformer(t *Transformer)

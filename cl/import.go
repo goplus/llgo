@@ -58,6 +58,8 @@ func PkgKindOf(pkg *types.Package) int {
 // noinit: a package that does not need to be initialized
 func pkgKind(v string) int {
 	switch v {
+	case "link":
+		return PkgLinkOnly
 	case "decl":
 		return PkgDeclOnly
 	case "noinit":

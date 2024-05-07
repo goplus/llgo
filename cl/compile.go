@@ -123,6 +123,7 @@ const (
 	PkgLLGo
 	PkgNoInit   // noinit: a package that don't need to be initialized
 	PkgDeclOnly // decl: a package that only have declarations
+	PkgLinkOnly // link: a package that don't need to be compiled but need to be linked
 )
 
 type pkgInfo struct {
@@ -200,6 +201,10 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
 }
 
+var (
+	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
+)
+
 func (p *context) compileFuncDecl(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) llssa.Function {
 	name, ftype := p.funcName(pkgTypes, f, true)
 	if ftype != goFunc {
@@ -224,6 +229,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, pkgTypes *types.Package, f 
 		}
 	}
 	if fn == nil {
+		if name == "main" {
+			argc := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int32])
+			argv := types.NewParam(token.NoPos, pkgTypes, "", argvTy)
+			params := types.NewTuple(argc, argv)
+			sig = types.NewSignatureType(nil, nil, nil, params, nil, false)
+		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
 	}
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -289,7 +300,15 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	ret := p.fn.Block(block.Index)
 	b.SetBlock(ret)
 	if doInit {
+		prog := p.prog
 		pkg := p.pkg
+		fn := p.fn
+		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
+		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
+		argc.Init(prog.Null(argc.Type))
+		argv.Init(prog.Null(argv.Type))
+		b.Store(argc.Expr, fn.Param(0))
+		b.Store(argv.Expr, fn.Param(1))
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
