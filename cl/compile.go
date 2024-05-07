@@ -278,6 +278,8 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 			ftype = llgoCstr
 		case "advance":
 			ftype = llgoAdvance
+		case "index":
+			ftype = llgoIndex
 		case "alloca":
 			ftype = llgoAlloca
 		case "allocaCStr":
@@ -377,6 +379,12 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+// func index(arr *T, idx int) T
+func (p *context) index(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	return b.Load(p.advance(b, args))
+}
+
+// func advance(ptr *T, offset int) *T
 func (p *context) advance(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 2 {
 		ptr := p.compileValue(b, args[0])
@@ -489,6 +497,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = cstr(b, call.Args)
 			case llgoAdvance:
 				ret = p.advance(b, call.Args)
+			case llgoIndex:
+				ret = p.index(b, call.Args)
 			case llgoAlloca:
 				ret = p.alloca(b, call.Args)
 			case llgoAllocaCStr:

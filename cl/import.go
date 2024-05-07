@@ -213,6 +213,7 @@ const (
 	llgoAlloca      = llgoInstrBase + 2
 	llgoAllocaCStr  = llgoInstrBase + 3
 	llgoAdvance     = llgoInstrBase + 4
+	llgoIndex       = llgoInstrBase + 5
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
