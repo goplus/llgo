@@ -1,8 +1,6 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
-
 @"main.init$guard" = global ptr null
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
@@ -33,17 +31,11 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 10)
-  %3 = call ptr @"github.com/goplus/llgo/c.Str"(%"github.com/goplus/llgo/internal/runtime.String" %2)
-  %4 = call i32 @main.f(i32 100)
-  %5 = call i32 (ptr, ...) @printf(ptr %3, i32 %4)
+  %2 = call i32 @main.f(i32 100)
+  %3 = call i32 (ptr, ...) @printf(ptr @0, i32 %2)
   ret void
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare ptr @"github.com/goplus/llgo/c.Str"(%"github.com/goplus/llgo/internal/runtime.String")
-
-declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr, i64)
 
 declare i32 @printf(ptr, ...)

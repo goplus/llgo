@@ -29,19 +29,49 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-type contentLines = [][]byte
-type contentMap = map[string]contentLines
+type symInfo struct {
+	file  string
+	isVar bool
+}
 
-func contentOf(m contentMap, file string) (lines contentLines, err error) {
-	if v, ok := m[file]; ok {
-		return v, nil
+type pkgSymInfo struct {
+	files map[string][]byte  // file => content
+	syms  map[string]symInfo // name => isVar
+}
+
+func newPkgSymInfo() *pkgSymInfo {
+	return &pkgSymInfo{
+		files: make(map[string][]byte),
+		syms:  make(map[string]symInfo),
 	}
-	b, err := os.ReadFile(file)
-	if err == nil {
-		lines = bytes.Split(b, []byte{'\n'})
-		m[file] = lines
+}
+
+func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, name string, isVar bool) {
+	f := fset.File(pos)
+	if fp := f.Position(pos); fp.Line > 2 {
+		file := fp.Filename
+		if _, ok := p.files[file]; !ok {
+			b, err := os.ReadFile(file)
+			if err == nil {
+				p.files[file] = b
+			}
+		}
+		p.syms[name] = symInfo{file, isVar}
 	}
-	return
+}
+
+func (p *pkgSymInfo) initLinknames(ctx *context, pkgPath string) {
+	for file, b := range p.files {
+		lines := bytes.Split(b, []byte{'\n'})
+		for _, line := range lines {
+			ctx.initLinkname(pkgPath, string(line), func(name string) (isVar bool, ok bool) {
+				if sym, ok := p.syms[name]; ok && file == sym.file {
+					return sym.isVar, true
+				}
+				return
+			})
+		}
+	}
 }
 
 // PkgKindOf returns the kind of a package.
@@ -87,23 +117,23 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	i.kind = kind
 	fset := p.fset
 	names := scope.Names()
-	contents := make(contentMap)
-	pkgPath := llssa.PathOf(pkg)
+	syms := newPkgSymInfo()
 	for _, name := range names {
 		if token.IsExported(name) {
 			obj := scope.Lookup(name)
 			switch obj := obj.(type) {
 			case *types.Func:
 				if pos := obj.Pos(); pos != token.NoPos {
-					p.initLinknameByPos(fset, pos, pkgPath, contents, false)
+					syms.addSym(fset, pos, name, false)
 				}
 			case *types.Var:
 				if pos := obj.Pos(); pos != token.NoPos {
-					p.initLinknameByPos(fset, pos, pkgPath, contents, true)
+					syms.addSym(fset, pos, name, true)
 				}
 			}
 		}
 	}
+	syms.initLinknames(p, llssa.PathOf(pkg))
 }
 
 func (p *context) initFiles(pkgPath string, files []*ast.File) {
@@ -112,64 +142,57 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				if decl.Recv == nil {
-					p.initLinknameByDoc(decl.Doc, pkgPath, false)
+					p.initLinknameByDoc(decl.Doc, pkgPath, decl.Name.Name, false)
 				}
 			case *ast.GenDecl:
 				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
-					p.initLinknameByDoc(decl.Doc, pkgPath, true)
+					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+						p.initLinknameByDoc(decl.Doc, pkgPath, names[0].Name, true)
+					}
 				}
 			}
 		}
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, pkgPath string, isVar bool) {
+func (p *context) initLinknameByDoc(doc *ast.CommentGroup, pkgPath, expName string, isVar bool) {
 	if doc != nil {
 		if n := len(doc.List); n > 0 {
 			line := doc.List[n-1].Text
-			p.initLinkname(pkgPath, line, isVar)
+			p.initLinkname(pkgPath, line, func(name string) (bool, bool) {
+				return isVar, name == expName
+			})
 		}
 	}
 }
 
-func (p *context) initLinknameByPos(fset *token.FileSet, pos token.Pos, pkgPath string, contents contentMap, isVar bool) {
-	f := fset.File(pos)
-	if fp := f.Position(pos); fp.Line > 2 {
-		lines, err := contentOf(contents, fp.Filename)
-		if err != nil {
-			panic(err)
-		}
-		if i := fp.Line - 2; i < len(lines) {
-			line := string(lines[i])
-			p.initLinkname(pkgPath, line, isVar)
-		}
-	}
-}
-
-func (p *context) initLinkname(pkgPath, line string, isVar bool) {
+func (p *context) initLinkname(pkgPath, line string, f func(name string) (isVar bool, ok bool)) {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
 		llgolink2 = "// llgo:link "
 	)
 	if strings.HasPrefix(line, linkname) {
-		p.initLink(pkgPath, line, len(linkname), isVar)
+		p.initLink(pkgPath, line, len(linkname), f)
 	} else if strings.HasPrefix(line, llgolink2) {
-		p.initLink(pkgPath, line, len(llgolink2), isVar)
+		p.initLink(pkgPath, line, len(llgolink2), f)
 	} else if strings.HasPrefix(line, llgolink) {
-		p.initLink(pkgPath, line, len(llgolink), isVar)
+		p.initLink(pkgPath, line, len(llgolink), f)
 	}
 }
 
-func (p *context) initLink(pkgPath string, line string, prefix int, isVar bool) {
+func (p *context) initLink(pkgPath string, line string, prefix int, f func(name string) (isVar bool, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
-		link := strings.TrimLeft(text[idx+1:], " ")
-		if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
-			name := pkgPath + "." + text[:idx]
-			p.link[name] = link
-		} else {
-			panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
+		name := text[:idx]
+		if isVar, ok := f(name); ok {
+			link := strings.TrimLeft(text[idx+1:], " ")
+			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
+				name := pkgPath + "." + name
+				p.link[name] = link
+			} else {
+				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
+			}
 		}
 	}
 }

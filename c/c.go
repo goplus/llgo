@@ -40,7 +40,7 @@ type integer interface {
 //go:linkname Str llgo.cstr
 func Str(string) *Char
 
-//go:linkname Advance llgo.advance
+// llgo:link Advance llgo.advance
 func Advance[PtrT any](ptr PtrT, offset int) PtrT { return ptr }
 
 // llgo:link Index llgo.index

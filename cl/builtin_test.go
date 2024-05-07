@@ -165,7 +165,9 @@ func TestErrInitLinkname(t *testing.T) {
 		}
 	}()
 	var ctx context
-	ctx.initLinkname("foo", "//go:linkname Printf printf", false)
+	ctx.initLinkname("foo", "//go:linkname Printf printf", func(name string) (isVar bool, ok bool) {
+		return false, name == "Printf"
+	})
 }
 
 func TestErrVarOf(t *testing.T) {
