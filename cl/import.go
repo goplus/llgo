@@ -223,7 +223,11 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, origin)
 	} else {
-		pkg = fn.Pkg.Pkg
+		if fnPkg := fn.Pkg; fnPkg != nil {
+			pkg = fnPkg.Pkg
+		} else {
+			pkg = p.goTyps
+		}
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn)
 		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
