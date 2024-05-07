@@ -9,7 +9,7 @@ require (
 	github.com/goplus/mod v0.13.10
 	github.com/json-iterator/go v1.1.12
 	github.com/qiniu/x v1.13.10
-	golang.org/x/tools v0.20.0
+	golang.org/x/tools v0.21.0
 )
 
 require (
