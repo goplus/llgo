@@ -148,18 +148,28 @@ func (p *context) initLinknameByPos(fset *token.FileSet, pos token.Pos, pkgPath 
 
 func (p *context) initLinkname(pkgPath, line string, isVar bool) {
 	const (
-		linkname = "//go:linkname "
+		linkname  = "//go:linkname "
+		llgolink  = "//llgo:link "
+		llgolink2 = "// llgo:link "
 	)
 	if strings.HasPrefix(line, linkname) {
-		text := strings.TrimSpace(line[len(linkname):])
-		if idx := strings.IndexByte(text, ' '); idx > 0 {
-			link := strings.TrimLeft(text[idx+1:], " ")
-			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
-				name := pkgPath + "." + text[:idx]
-				p.link[name] = link
-			} else {
-				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
-			}
+		p.initLink(pkgPath, line, len(linkname), isVar)
+	} else if strings.HasPrefix(line, llgolink2) {
+		p.initLink(pkgPath, line, len(llgolink2), isVar)
+	} else if strings.HasPrefix(line, llgolink) {
+		p.initLink(pkgPath, line, len(llgolink), isVar)
+	}
+}
+
+func (p *context) initLink(pkgPath string, line string, prefix int, isVar bool) {
+	text := strings.TrimSpace(line[prefix:])
+	if idx := strings.IndexByte(text, ' '); idx > 0 {
+		link := strings.TrimLeft(text[idx+1:], " ")
+		if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
+			name := pkgPath + "." + text[:idx]
+			p.link[name] = link
+		} else {
+			panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
 		}
 	}
 }
@@ -205,21 +215,31 @@ const (
 	llgoAdvance     = llgoInstrBase + 4
 )
 
-func (p *context) funcName(pkg *types.Package, fn *ssa.Function, ignore bool) (string, int) {
-	name := funcName(pkg, fn)
-	if ignore && ignoreName(name) || checkCgo(fn.Name()) {
-		return name, ignoredFunc
+func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
+	var pkg *types.Package
+	var orgName string
+	if origin := fn.Origin(); origin != nil {
+		pkg = origin.Pkg.Pkg
+		p.ensureLoaded(pkg)
+		orgName = funcName(pkg, origin)
+	} else {
+		pkg = fn.Pkg.Pkg
+		p.ensureLoaded(pkg)
+		orgName = funcName(pkg, fn)
+		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
+			return nil, orgName, ignoredFunc
+		}
 	}
-	if v, ok := p.link[name]; ok {
+	if v, ok := p.link[orgName]; ok {
 		if strings.HasPrefix(v, "C.") {
-			return v[2:], cFunc
+			return nil, v[2:], cFunc
 		}
 		if strings.HasPrefix(v, "llgo.") {
-			return v[5:], llgoInstr
+			return nil, v[5:], llgoInstr
 		}
-		return v, goFunc
+		return pkg, v, goFunc
 	}
-	return name, goFunc
+	return pkg, funcName(pkg, fn), goFunc
 }
 
 const (

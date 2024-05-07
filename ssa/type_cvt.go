@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"unsafe"
@@ -100,7 +101,7 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 			return types.NewChan(t.Dir(), elem), true
 		}
 	default:
-		panic("unreachable")
+		panic(fmt.Sprintf("cvtType: unexpected type - %T", typ))
 	}
 	return typ, false
 }

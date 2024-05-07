@@ -44,7 +44,7 @@ func Str(string) *Char
 func Advance(ptr Pointer, offset int) Pointer
 
 // llgo:link Index llgo.index
-// func Index[T any, I integer](ptr *T, offset I) T { return *ptr }
+func Index[T any, I integer](ptr *T, offset I) T { return *ptr }
 
 //go:linkname Alloca llgo.alloca
 func Alloca(size uintptr) Pointer
