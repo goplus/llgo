@@ -100,13 +100,13 @@ func printuint(v uint64) {
 	gwrite(buf[i:])
 }
 
-// func printint(v int64) {
-// 	if v < 0 {
-// 		printstring("-")
-// 		v = -v
-// 	}
-// 	printuint(uint64(v))
-// }
+func printint(v int64) {
+	if v < 0 {
+		printstring("-")
+		v = -v
+	}
+	printuint(uint64(v))
+}
 
 var minhexdigits = 0
 
@@ -171,4 +171,27 @@ func main() {
 	printnl()
 	printhex(0x1234abcf)
 	printnl()
+	prinxor(1)
+	printnl()
+	prinsub(100)
+	printnl()
+	prinusub(1<<64 - 1)
+	printnl()
+	prinfsub(100.1)
+}
+
+func prinxor(n int64) {
+	printint(^n)
+}
+
+func prinsub(n int64) {
+	printint(-n)
+}
+
+func prinusub(n uint64) {
+	printuint(-n)
+}
+
+func prinfsub(n float64) {
+	_ = -n
 }

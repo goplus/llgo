@@ -342,15 +342,37 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 // XOR is bitwise complement.
 // SUB is negation.
 // NOT is logical negation.
-func (b Builder) UnOp(op token.Token, x Expr) Expr {
-	switch op {
-	case token.MUL:
-		return b.Load(x)
-	}
+func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("UnOp %v, %v\n", op, x.impl)
 	}
-	panic("todo")
+	switch op {
+	case token.MUL:
+		return b.Load(x)
+	case token.SUB:
+		switch t := x.Type.raw.Underlying().(type) {
+		case *types.Basic:
+			ret.Type = x.Type
+			if t.Info()&types.IsInteger != 0 {
+				ret.impl = b.impl.CreateNeg(x.impl, "")
+			} else if t.Info()&types.IsFloat != 0 {
+				ret.impl = b.impl.CreateFNeg(x.impl, "")
+			} else {
+				panic("todo")
+			}
+		default:
+			panic("unreachable")
+		}
+	case token.NOT:
+		ret.Type = x.Type
+		ret.impl = b.impl.CreateNot(x.impl, "")
+	case token.XOR:
+		ret.Type = x.Type
+		ret.impl = b.impl.CreateXor(x.impl, llvm.ConstInt(x.Type.ll, ^uint64(0), false), "")
+	case token.ARROW:
+		panic("todo")
+	}
+	return
 }
 
 // -----------------------------------------------------------------------------
