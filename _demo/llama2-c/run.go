@@ -34,17 +34,15 @@ loop: // parse command line arguments
 		switch c.Getopt(c.Argc, c.Argv, c.Str("m:")) {
 		case 'm':
 			checkpointPath = c.Optarg
-			c.Fprintf(c.Stderr, c.Str("use model: %s\n"), checkpointPath)
+			c.Fprintf(c.Stderr, c.Str("==> use model: %s\n"), checkpointPath)
 		case -1:
 			break loop
 		}
 	}
-	/*
-		if c.Optind < c.Argc {
-			prompt = c.Index(c.Argv, c.Optind)
-			c.Fprintf(c.Stderr, c.Str("prompt: %s\n"), prompt)
-		}
-	*/
+	if c.Optind < c.Argc {
+		prompt = c.Index(c.Argv, c.Optind)
+		c.Fprintf(c.Stderr, c.Str("==> prompt: %s\n"), prompt)
+	}
 
 	// build the Transformer via the model .bin file
 	var transformer llama2.Transformer
