@@ -8,6 +8,7 @@
 *.so
 *.dylib
 
+llgo_autogen.ll
 stories*.bin
 .DS_Store
 err.log
