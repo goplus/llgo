@@ -170,7 +170,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
-			p.compileFuncDecl(pkg, mthd.Obj().Pkg(), ssaMthd)
+			p.compileFuncDecl(pkg, ssaMthd)
 		}
 	}
 }
@@ -205,8 +205,8 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func (p *context) compileFuncDecl(pkg llssa.Package, pkgTypes *types.Package, f *ssa.Function) llssa.Function {
-	name, ftype := p.funcName(pkgTypes, f, true)
+func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) llssa.Function {
+	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		return nil
 	}
@@ -271,15 +271,15 @@ func (p *context) compileFuncDecl(pkg llssa.Package, pkgTypes *types.Package, f 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
 func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
-	pkgTypes := p.ensureLoaded(fn.Pkg.Pkg)
-	pkg := p.pkg
-	name, ftype := p.funcName(pkgTypes, fn, false)
+	_, name, ftype := p.funcName(fn, false)
 	if ftype == llgoInstr {
 		switch name {
 		case "cstr":
 			ftype = llgoCstr
 		case "advance":
 			ftype = llgoAdvance
+		case "index":
+			ftype = llgoIndex
 		case "alloca":
 			ftype = llgoAlloca
 		case "allocaCStr":
@@ -289,9 +289,12 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 		default:
 			panic("unknown llgo instruction: " + name)
 		}
-	} else if ret = pkg.FuncOf(name); ret == nil && len(fn.FreeVars) == 0 {
-		sig := fn.Signature
-		ret = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
+	} else {
+		pkg := p.pkg
+		if ret = pkg.FuncOf(name); ret == nil && len(fn.FreeVars) == 0 {
+			sig := fn.Signature
+			ret = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
+		}
 	}
 	return
 }
@@ -376,6 +379,12 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+// func index(arr *T, idx int) T
+func (p *context) index(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	return b.Load(p.advance(b, args))
+}
+
+// func advance(ptr *T, offset int) *T
 func (p *context) advance(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 2 {
 		ptr := p.compileValue(b, args[0])
@@ -488,6 +497,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = cstr(b, call.Args)
 			case llgoAdvance:
 				ret = p.advance(b, call.Args)
+			case llgoIndex:
+				ret = p.index(b, call.Args)
 			case llgoAlloca:
 				ret = p.alloca(b, call.Args)
 			case llgoAllocaCStr:
@@ -667,7 +678,7 @@ func (p *context) compileFunction(v *ssa.Function) (llssa.Function, int) {
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package
-		if fn := p.compileFuncDecl(p.pkg, p.goTyps, v); fn != nil {
+		if fn := p.compileFuncDecl(p.pkg, v); fn != nil {
 			return fn, goFunc
 		}
 	}
@@ -776,11 +787,12 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		member := m.val
 		switch member := member.(type) {
 		case *ssa.Function:
-			if member.TypeParams() != nil {
+			if member.TypeParams() != nil || member.TypeArgs() != nil {
+				// TODO(xsw): don't compile generic functions
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFuncDecl(ret, member.Pkg.Pkg, member)
+			ctx.compileFuncDecl(ret, member)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
