@@ -503,11 +503,11 @@ func (b Builder) Advance(ptr Expr, offset Expr) Expr {
 	}
 	var elem llvm.Type
 	var prog = b.Prog
-	var telem = ptr.raw.Type.(*types.Pointer).Elem()
-	if telem == types.Typ[types.Invalid] { // void
+	switch t := ptr.raw.Type.(type) {
+	case *types.Basic: // void
 		elem = prog.tyInt8()
-	} else {
-		elem = prog.rawType(telem).ll
+	default:
+		elem = prog.rawType(t.(*types.Pointer).Elem()).ll
 	}
 	ret := llvm.CreateGEP(b.impl, elem, ptr.impl, []llvm.Value{offset.impl})
 	return Expr{ret, ptr.Type}
