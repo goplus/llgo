@@ -66,6 +66,11 @@ func Memset(s Pointer, c Int, n uintptr) Pointer
 
 // -----------------------------------------------------------------------------
 
+//go:linkname GoStringData llgo.stringData
+func GoStringData(string) *Char
+
+// -----------------------------------------------------------------------------
+
 //go:linkname Rand C.rand
 func Rand() Int
 
