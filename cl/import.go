@@ -91,7 +91,9 @@ func PkgKindOf(pkg *types.Package) int {
 func pkgKind(v string) int {
 	switch v {
 	case "link":
-		return PkgLinkOnly
+		return PkgLinkIR
+	// case "link:bc":
+	//	return PkgLinkBitCode
 	case "decl":
 		return PkgDeclOnly
 	case "noinit":

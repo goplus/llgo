@@ -19,6 +19,7 @@ package llgen
 import (
 	"go/types"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -74,10 +75,11 @@ func DoFile(fileOrPkg, outFile string) {
 }
 
 func SmartDoFile(inFile string, pkgPath ...string) {
+	const autgenFile = "llgo_autogen.ll"
 	dir, _ := filepath.Split(inFile)
 	absDir, _ := filepath.Abs(dir)
 	absDir = filepath.ToSlash(absDir)
-	fname := "llgo_autogen.ll"
+	fname := autgenFile
 	if inCompilerDir(absDir) {
 		fname = "out.ll"
 	} else if inSqlite(absDir) {
@@ -90,6 +92,17 @@ func SmartDoFile(inFile string, pkgPath ...string) {
 	} else {
 		DoFile(inFile, outFile)
 	}
+	if false && fname == autgenFile {
+		genZip(absDir, "llgo_autogen.lla", autgenFile)
+	}
+}
+
+func genZip(dir string, outFile, inFile string) {
+	cmd := exec.Command("zip", outFile, inFile)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
 }
 
 func inCompilerDir(dir string) bool {

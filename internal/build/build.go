@@ -167,16 +167,16 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	}
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
-		switch cl.PkgKindOf(pkg.Types) {
+		switch kind := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
 			// and set no export file
 			pkg.ExportFile = ""
-		case cl.PkgLinkOnly:
+		case cl.PkgLinkIR: // cl.PkgLinkBitCode:
 			// skip packages that don't need to be compiled but need to be linked
 			pkgPath := pkg.PkgPath
 			if isPkgInLLGo(pkgPath) {
-				pkg.ExportFile = strings.TrimSuffix(llgoPkgLinkFile(pkgPath), ".ll")
+				pkg.ExportFile = concatPkgLinkFiles(pkgPath)
 			} else {
 				panic("todo")
 			}
@@ -205,7 +205,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	needRuntime := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.ExportFile != "" && !isRuntimePkg(p.PkgPath) { // skip packages that only contain declarations
-			args = append(args, p.ExportFile+".ll")
+			args = appendLinkFiles(args, p.ExportFile)
 			if !needRuntime {
 				needRuntime = isNeedRuntime(p)
 			}
@@ -219,8 +219,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 				lpkg := aPkg.LPkg
 				lpkg.FuncOf(cl.RuntimeInit).MakeBody(1).Return()
 				if needLLFile(mode) {
-					file := pkg.ExportFile + ".ll"
-					os.WriteFile(file, []byte(lpkg.String()), 0644)
+					os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
 				}
 				break
 			}
@@ -265,8 +264,8 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
 	check(err)
 	if needLLFile(mode) {
-		file := pkg.ExportFile + ".ll"
-		os.WriteFile(file, []byte(ret.String()), 0644)
+		pkg.ExportFile += ".ll"
+		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
 	}
 	aPkg.LPkg = ret
 }
@@ -358,8 +357,9 @@ func allLinkFiles(rt []*packages.Package) (outFiles []string) {
 	packages.Visit(rt, nil, func(p *packages.Package) {
 		pkgPath := p.PkgPath
 		if isRuntimePkg(pkgPath) {
-			outFile := llgoPkgLinkFile(pkgPath)
-			outFiles = append(outFiles, outFile)
+			llgoPkgLinkFiles(pkgPath, func(linkFile string) {
+				outFiles = append(outFiles, linkFile)
+			})
 		}
 	})
 	return
@@ -393,12 +393,57 @@ func llgoRoot() string {
 	return rootDir
 }
 
-func llgoPkgLinkFile(pkgPath string) string {
-	llFile := filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
-	if _, err := os.Stat(llFile); os.IsNotExist(err) {
-		decodeLinkFile(llFile)
+func appendLinkFiles(args []string, file string) []string {
+	if isMultiLinkFiles(file) {
+		return append(args, strings.Split(file[1:], " ")...)
 	}
-	return llFile
+	return append(args, file)
+}
+
+func isMultiLinkFiles(ret string) bool {
+	return len(ret) > 0 && ret[0] == ' '
+}
+
+func concatPkgLinkFiles(pkgPath string) string {
+	var b strings.Builder
+	var ret string
+	var n int
+	llgoPkgLinkFiles(pkgPath, func(linkFile string) {
+		if n == 0 {
+			ret = linkFile
+		} else {
+			b.WriteByte(' ')
+			b.WriteString(linkFile)
+		}
+		n++
+	})
+	if n > 1 {
+		b.WriteByte(' ')
+		b.WriteString(ret)
+		return b.String()
+	}
+	return ret
+}
+
+func llgoPkgLinkFiles(pkgPath string, procFile func(linkFile string)) {
+	dir := llgoRoot() + pkgPath[len(llgoModPath):] + "/"
+	llFile := dir + "llgo_autogen.ll"
+	llaFile := llFile + "a"
+	zipf, err := zip.OpenReader(llaFile)
+	if err != nil {
+		procFile(llFile)
+		return
+	}
+	defer zipf.Close()
+
+	for _, f := range zipf.File {
+		procFile(dir + f.Name)
+	}
+	if _, err := os.Stat(llFile); os.IsNotExist(err) {
+		for _, f := range zipf.File {
+			decodeFile(dir+f.Name, f)
+		}
+	}
 }
 
 const (
@@ -415,6 +460,18 @@ func isPkgInMod(pkgPath, modPath string) bool {
 		return suffix == "" || suffix[0] == '/'
 	}
 	return false
+}
+
+/*
+func llgoPkgLinkFile(pkgPath string) string {
+	// if kind == cl.PkgLinkBitCode {
+	//	return filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.bc")
+	// }
+	llFile := filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
+	if _, err := os.Stat(llFile); os.IsNotExist(err) {
+		decodeLinkFile(llFile)
+	}
+	return llFile
 }
 
 // *.ll => *.lla
@@ -434,6 +491,20 @@ func decodeLinkFile(llFile string) {
 	if err == nil {
 		os.WriteFile(llFile, data, 0644)
 	}
+}
+*/
+
+func decodeFile(outFile string, zipf *zip.File) (err error) {
+	f, err := zipf.Open()
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	data, err := io.ReadAll(f)
+	if err == nil {
+		err = os.WriteFile(outFile, data, 0644)
+	}
+	return
 }
 
 func check(err error) {

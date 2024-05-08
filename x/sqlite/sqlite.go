@@ -209,13 +209,15 @@ func (*Stmt) BindInt(idx Int, val Int) Errno { return 0 }
 // llgo:link (*Stmt).BindInt64 C.sqlite3_bind_int64
 func (*Stmt) BindInt64(idx Int, val int64) Errno { return 0 }
 
+/*
 const (
-	Static    Int = 0  // val is a static string
-	Transient Int = -1 // val is a transient (temporary) string
+	Static    = (func(Pointer))(nil) // val is a static string
+	Transient = (func(Pointer))(-1)  // val is a transient (temporary) string
 )
+*/
 
 // llgo:link (*Stmt).BindText C.sqlite3_bind_text
-func (*Stmt) BindText(idx Int, val *Char, lenOrKind Int, destructor func(Pointer)) Errno { return 0 }
+func (*Stmt) BindText(idx Int, val *Char, nByte Int, destructor func(Pointer)) Errno { return 0 }
 
 // -----------------------------------------------------------------------------
 

@@ -71,6 +71,11 @@ func GoStringData(string) *Char
 
 // -----------------------------------------------------------------------------
 
+//go:linkname Remove C.remove
+func Remove(path *Char) Int
+
+// -----------------------------------------------------------------------------
+
 //go:linkname Exit C.exit
 func Exit(Int)
 
