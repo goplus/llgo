@@ -10,82 +10,80 @@ func gwrite(b []byte) {
 	if len(b) == 0 {
 		return
 	}
-	for _, v := range b {
-		c.Printf(c.Str("%c"), v)
-	}
+	c.Printf(c.Str("%s"), b)
 }
 
-// func printfloat(v float64) {
-// 	switch {
-// 	case v != v:
-// 		printstring("NaN")
-// 		return
-// 	case v+v == v && v > 0:
-// 		printstring("+Inf")
-// 		return
-// 	case v+v == v && v < 0:
-// 		printstring("-Inf")
-// 		return
-// 	}
+func printfloat(v float64) {
+	switch {
+	case v != v:
+		printstring("NaN")
+		return
+	case v+v == v && v > 0:
+		printstring("+Inf")
+		return
+	case v+v == v && v < 0:
+		printstring("-Inf")
+		return
+	}
 
-// 	const n = 7 // digits printed
-// 	var buf [n + 7]byte
-// 	buf[0] = '+'
-// 	e := 0 // exp
-// 	if v == 0 {
-// 		if 1/v < 0 {
-// 			buf[0] = '-'
-// 		}
-// 	} else {
-// 		if v < 0 {
-// 			v = -v
-// 			buf[0] = '-'
-// 		}
+	const n = 7 // digits printed
+	var buf [n + 7]byte
+	buf[0] = '+'
+	e := 0 // exp
+	if v == 0 {
+		if 1/v < 0 {
+			buf[0] = '-'
+		}
+	} else {
+		if v < 0 {
+			v = -v
+			buf[0] = '-'
+		}
 
-// 		// normalize
-// 		for v >= 10 {
-// 			e++
-// 			v /= 10
-// 		}
-// 		for v < 1 {
-// 			e--
-// 			v *= 10
-// 		}
+		// normalize
+		for v >= 10 {
+			e++
+			v /= 10
+		}
+		for v < 1 {
+			e--
+			v *= 10
+		}
 
-// 		// round
-// 		h := 5.0
-// 		for i := 0; i < n; i++ {
-// 			h /= 10
-// 		}
-// 		v += h
-// 		if v >= 10 {
-// 			e++
-// 			v /= 10
-// 		}
-// 	}
+		// round
+		h := 5.0
+		for i := 0; i < n; i++ {
+			h /= 10
+		}
+		v += h
+		if v >= 10 {
+			e++
+			v /= 10
+		}
+	}
 
-// 	// format +d.dddd+edd
-// 	for i := 0; i < n; i++ {
-// 		s := int(v)
-// 		buf[i+2] = byte(s + '0')
-// 		v -= float64(s)
-// 		v *= 10
-// 	}
-// 	buf[1] = buf[2]
-// 	buf[2] = '.'
+	// format +d.dddd+edd
+	for i := 0; i < n; i++ {
+		s := int(v)
+		buf[i+2] = byte(s + '0')
+		v -= float64(s)
+		v *= 10
+	}
+	buf[1] = buf[2]
+	buf[2] = '.'
 
-// 	buf[n+2] = 'e'
-// 	buf[n+3] = '+'
-// 	if e < 0 {
-// 		e = -e
-// 		buf[n+3] = '-'
-// 	}
+	buf[n+2] = 'e'
+	buf[n+3] = '+'
+	if e < 0 {
+		e = -e
+		buf[n+3] = '-'
+	}
 
-// 	buf[n+4] = byte(e/100) + '0'
-// 	buf[n+5] = byte(e/10)%10 + '0'
-// 	buf[n+6] = byte(e%10) + '0'
-// 	gwrite(buf[:])
-// }
+	buf[n+4] = byte(e/100) + '0'
+	buf[n+5] = byte(e/10)%10 + '0'
+	buf[n+6] = byte(e%10) + '0'
+	gwrite(buf[:])
+}
 
 func printuint(v uint64) {
 	var buf [100]byte
@@ -178,6 +176,7 @@ func main() {
 	prinusub(1<<64 - 1)
 	printnl()
 	prinfsub(100.1)
+	printnl()
 }
 
 func prinxor(n int64) {
@@ -193,5 +192,5 @@ func prinusub(n uint64) {
 }
 
 func prinfsub(n float64) {
-	_ = -n
+	printfloat(-n)
 }

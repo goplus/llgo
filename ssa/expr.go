@@ -962,18 +962,63 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 //
 //	t1 = convert []byte <- string (t0)
 func (b Builder) Convert(t Type, x Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("Convert %v <- %v\n", t.RawType(), x.RawType())
+	}
 	typ := t.raw.Type
 	ret.Type = b.Prog.rawType(typ)
-	switch und := typ.Underlying().(type) {
+	switch typ := typ.Underlying().(type) {
 	case *types.Basic:
-		kind := und.Kind()
-		switch {
-		case kind >= types.Int && kind <= types.Uintptr:
+		switch typ.Kind() {
+		case types.Uintptr:
 			ret.impl = castInt(b.impl, x.impl, t.ll)
 			return
-		case kind == types.UnsafePointer:
+		case types.UnsafePointer:
 			ret.impl = castPtr(b.impl, x.impl, t.ll)
 			return
+		}
+		switch xtyp := x.RawType().Underlying().(type) {
+		case *types.Basic:
+			size := b.Prog.SizeOf(t)
+			xsize := b.Prog.SizeOf(x.Type)
+			if typ.Info()&types.IsInteger != 0 {
+				// int <- int/float
+				if xtyp.Info()&types.IsInteger != 0 {
+					// if xsize > size {
+					// 	ret.impl = b.impl.CreateTrunc(x.impl, t.ll, "")
+					// } else if typ.Info()&types.IsUnsigned != 0 {
+					// 	ret.impl = b.impl.CreateZExt(x.impl, t.ll, "")
+					// } else {
+					// 	ret.impl = b.impl.CreateSExt(x.impl, t.ll, "")
+					// }
+					ret.impl = castInt(b.impl, x.impl, t.ll)
+					return
+				} else if xtyp.Info()&types.IsFloat != 0 {
+					if typ.Info()&types.IsUnsigned != 0 {
+						ret.impl = b.impl.CreateFPToUI(x.impl, t.ll, "")
+					} else {
+						ret.impl = b.impl.CreateFPToSI(x.impl, t.ll, "")
+					}
+					return
+				}
+			} else if typ.Info()&types.IsFloat != 0 {
+				// float <- int/float
+				if xtyp.Info()&types.IsInteger != 0 {
+					if xtyp.Info()&types.IsUnsigned != 0 {
+						ret.impl = b.impl.CreateUIToFP(x.impl, t.ll, "")
+					} else {
+						ret.impl = b.impl.CreateSIToFP(x.impl, t.ll, "")
+					}
+					return
+				} else if xtyp.Info()&types.IsFloat != 0 {
+					if xsize > size {
+						ret.impl = b.impl.CreateFPTrunc(x.impl, t.ll, "")
+					} else {
+						ret.impl = b.impl.CreateFPExt(x.impl, t.ll, "")
+					}
+					return
+				}
+			}
 		}
 	case *types.Pointer:
 		ret.impl = castPtr(b.impl, x.impl, t.ll)
