@@ -71,6 +71,11 @@ func GoStringData(string) *Char
 
 // -----------------------------------------------------------------------------
 
+//go:linkname Exit C.exit
+func Exit(Int)
+
+// -----------------------------------------------------------------------------
+
 //go:linkname Rand C.rand
 func Rand() Int
 
