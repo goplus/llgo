@@ -206,6 +206,24 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 	}
 }
 
+func recvTypeName(t ast.Expr) string {
+	switch t := t.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.IndexExpr:
+		return trecvTypeName(t.X, t.Index)
+	case *ast.IndexListExpr:
+		return trecvTypeName(t.X, t.Indices...)
+	}
+	panic("unreachable")
+}
+
+// TODO(xsw): support generic type
+func trecvTypeName(t ast.Expr, indices ...ast.Expr) string {
+	_ = indices
+	return t.(*ast.Ident).Name
+}
+
 // inPkgName:
 // - func: name
 // - method: (T).name, (*T).name
@@ -220,7 +238,7 @@ func astFuncName(pkgPath string, fn *ast.FuncDecl) (fullName, inPkgName string) 
 		if tp, ok := t.(*ast.StarExpr); ok {
 			t, tPrefix = tp.X, "(*"
 		}
-		tSuffix := t.(*ast.Ident).Name + ")." + name
+		tSuffix := recvTypeName(t) + ")." + name
 		return tPrefix + pkgPath + "." + tSuffix, tPrefix + tSuffix
 	}
 	return pkgPath + "." + name, name
