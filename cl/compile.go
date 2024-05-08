@@ -596,12 +596,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		ret = b.Slice(x, low, high, max)
 	case *ssa.MakeInterface:
-		const (
-			delayExpr = true // varargs: don't need to convert an expr to any
-		)
+		if refs := *v.Referrers(); len(refs) == 1 {
+			if ref, ok := refs[0].(*ssa.Store); ok {
+				if va, ok := ref.Addr.(*ssa.IndexAddr); ok {
+					if _, ok = p.isVArgs(va.X); ok { // varargs: this is a varargs store
+						return
+					}
+				}
+			}
+		}
 		t := p.prog.Type(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
-		ret = b.MakeInterface(t, x, delayExpr)
+		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
 		var nCap llssa.Expr
 		t := p.prog.Type(v.Type(), llssa.InGo)

@@ -44,8 +44,7 @@ const (
 	vkFuncPtr
 	vkClosure
 	vkTuple
-	vkDelayExpr = -1
-	vkPhisExpr  = -2
+	vkPhisExpr = -1
 )
 
 // -----------------------------------------------------------------------------
