@@ -122,18 +122,26 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	names := scope.Names()
 	syms := newPkgSymInfo()
 	for _, name := range names {
-		if token.IsExported(name) {
-			obj := scope.Lookup(name)
-			switch obj := obj.(type) {
-			case *types.Func:
-				if pos := obj.Pos(); pos != token.NoPos {
-					fullName, inPkgName := typesFuncName(pkgPath, obj)
-					syms.addSym(fset, pos, fullName, inPkgName, false)
+		obj := scope.Lookup(name)
+		switch obj := obj.(type) {
+		case *types.Func:
+			if pos := obj.Pos(); pos != token.NoPos {
+				fullName, inPkgName := typesFuncName(pkgPath, obj)
+				syms.addSym(fset, pos, fullName, inPkgName, false)
+			}
+		case *types.TypeName:
+			if !obj.IsAlias() {
+				if t, ok := obj.Type().(*types.Named); ok {
+					for i, n := 0, t.NumMethods(); i < n; i++ {
+						fn := t.Method(i)
+						fullName, inPkgName := typesFuncName(pkgPath, fn)
+						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
+					}
 				}
-			case *types.Var:
-				if pos := obj.Pos(); pos != token.NoPos {
-					syms.addSym(fset, pos, pkgPath+"."+name, name, true)
-				}
+			}
+		case *types.Var:
+			if pos := obj.Pos(); pos != token.NoPos {
+				syms.addSym(fset, pos, pkgPath+"."+name, name, true)
 			}
 		}
 	}
@@ -201,7 +209,7 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "==>", line)
-			fmt.Fprintf(os.Stderr, "linkname %s not found and ignored\n", inPkgName)
+			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
 		}
 	}
 }
