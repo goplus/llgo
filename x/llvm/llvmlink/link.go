@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 The GoPlus Authors (goplus.org). All rights reserved.
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,37 @@
  * limitations under the License.
  */
 
-package gocmd
+package llvmlink
+
+import (
+	"io"
+	"os"
+	"os/exec"
+)
 
 // -----------------------------------------------------------------------------
 
-type BuildConfig struct {
-	Output string
+// Cmd represents a llvm-link command.
+type Cmd struct {
+	app string
+
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+// New creates a new llvm-link command.
+func New(app string) *Cmd {
+	if app == "" {
+		app = os.Getenv("LLGO_LLVM_ROOT") + "/bin/llvm-link"
+	}
+	return &Cmd{app, os.Stdout, os.Stderr}
+}
+
+func (p *Cmd) Exec(args ...string) error {
+	cmd := exec.Command(p.app, args...)
+	cmd.Stdout = p.Stdout
+	cmd.Stderr = p.Stderr
+	return cmd.Run()
 }
 
 // -----------------------------------------------------------------------------

@@ -66,8 +66,18 @@ func Memset(s Pointer, c Int, n uintptr) Pointer
 
 // -----------------------------------------------------------------------------
 
-//go:linkname GoStringData llgo.stringData
+//go:linkname GoStringData github.com/goplus/llgo/internal/runtime.StringData
 func GoStringData(string) *Char
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Remove C.remove
+func Remove(path *Char) Int
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Exit C.exit
+func Exit(Int)
 
 // -----------------------------------------------------------------------------
 

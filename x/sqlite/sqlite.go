@@ -29,48 +29,8 @@ type (
 )
 
 const (
-	LLGoPackage = "noinit,link"
+	LLGoPackage = "link"
 )
-
-// -----------------------------------------------------------------------------
-
-type Errno Int
-
-const (
-	OK            Errno = 0   // Successful result
-	Error         Errno = 1   // Generic error
-	ErrInternal   Errno = 2   // Internal logic error in SQLite
-	ErrPerm       Errno = 3   // Access permission denied
-	ErrAbort      Errno = 4   // Callback routine requested an abort
-	ErrBusy       Errno = 5   // The database file is locked
-	ErrLocked     Errno = 6   // A table in the database is locked
-	ErrNomem      Errno = 7   // A malloc() failed
-	ErrReadOnly   Errno = 8   // Attempt to write a readonly database
-	ErrInterrupt  Errno = 9   // Operation terminated by sqlite3_interrupt()
-	ErrIo         Errno = 10  // Some kind of disk I/O error occurred
-	ErrCorrupt    Errno = 11  // The database disk image is malformed
-	ErrNotfound   Errno = 12  // Unknown opcode in sqlite3_file_control()
-	ErrFull       Errno = 13  // Insertion failed because database is full
-	ErrCantopen   Errno = 14  // Unable to open the database file
-	ErrProtocol   Errno = 15  // Database lock protocol error
-	_ErrEmpty     Errno = 16  // Internal use only
-	ErrSchema     Errno = 17  // The database schema changed
-	ErrToobig     Errno = 18  // String or BLOB exceeds size limit
-	ErrConstraint Errno = 19  // Abort due to constraint violation
-	ErrMismatch   Errno = 20  // Data type mismatch
-	ErrMisuse     Errno = 21  // Library used incorrectly
-	ErrNolfs      Errno = 22  // Uses OS features not supported on host
-	ErrAuth       Errno = 23  // Authorization denied
-	_ErrFormat    Errno = 24  // Not used
-	ErrRange      Errno = 25  // 2nd parameter to sqlite3_bind out of range
-	ErrNotadb     Errno = 26  // File opened that is not a database file
-	ErrNotice     Errno = 27  // Notifications from sqlite3_log()
-	ErrWarning    Errno = 28  // Warnings from sqlite3_log()
-	ErrRow        Errno = 100 // sqlite3_step() has another row ready
-	ErrDone       Errno = 101 // sqlite3_step() has finished executing
-)
-
-// -----------------------------------------------------------------------------
 
 // llgo:type C
 type Sqlite3 struct {
@@ -79,6 +39,58 @@ type Sqlite3 struct {
 // llgo:type C
 type Stmt struct {
 }
+
+// -----------------------------------------------------------------------------
+
+type Errno Int
+
+const (
+	OK Errno = 0 // Successful result
+
+	Error         Errno = 1  // Generic error
+	ErrInternal   Errno = 2  // Internal logic error in SQLite
+	ErrPerm       Errno = 3  // Access permission denied
+	ErrAbort      Errno = 4  // Callback routine requested an abort
+	ErrBusy       Errno = 5  // The database file is locked
+	ErrLocked     Errno = 6  // A table in the database is locked
+	ErrNomem      Errno = 7  // A malloc() failed
+	ErrReadOnly   Errno = 8  // Attempt to write a readonly database
+	ErrInterrupt  Errno = 9  // Operation terminated by sqlite3_interrupt()
+	ErrIo         Errno = 10 // Some kind of disk I/O error occurred
+	ErrCorrupt    Errno = 11 // The database disk image is malformed
+	ErrNotfound   Errno = 12 // Unknown opcode in sqlite3_file_control()
+	ErrFull       Errno = 13 // Insertion failed because database is full
+	ErrCantopen   Errno = 14 // Unable to open the database file
+	ErrProtocol   Errno = 15 // Database lock protocol error
+	_ErrEmpty     Errno = 16 // Internal use only
+	ErrSchema     Errno = 17 // The database schema changed
+	ErrToobig     Errno = 18 // String or BLOB exceeds size limit
+	ErrConstraint Errno = 19 // Abort due to constraint violation
+	ErrMismatch   Errno = 20 // Data type mismatch
+	ErrMisuse     Errno = 21 // Library used incorrectly
+	ErrNolfs      Errno = 22 // Uses OS features not supported on host
+	ErrAuth       Errno = 23 // Authorization denied
+	_ErrFormat    Errno = 24 // Not used
+	ErrRange      Errno = 25 // 2nd parameter to sqlite3_bind out of range
+	ErrNotadb     Errno = 26 // File opened that is not a database file
+	ErrNotice     Errno = 27 // Notifications from sqlite3_log()
+	ErrWarning    Errno = 28 // Warnings from sqlite3_log()
+
+	HasRow Errno = 100 // sqlite3_step() has another row ready
+	Done   Errno = 101 // sqlite3_step() has finished executing
+)
+
+// llgo:link (Errno).Errstr C.sqlite3_errstr
+func (err Errno) Errstr() *Char { return nil }
+
+// llgo:link (*Sqlite3).Errmsg C.sqlite3_errmsg
+func (db *Sqlite3) Errmsg() *Char { return nil }
+
+// llgo:link (*Sqlite3).Errcode C.sqlite3_errcode
+func (db *Sqlite3) Errcode() Errno { return 0 }
+
+// llgo:link (*Sqlite3).ExtendedErrcode C.sqlite3_extended_errcode
+func (db *Sqlite3) ExtendedErrcode() Errno { return 0 }
 
 // -----------------------------------------------------------------------------
 
@@ -134,12 +146,12 @@ func OpenV2(filename *Char, flags OpenFlags, zVfs *Char) (db *Sqlite3, err Errno
 // Closing A Database Connection
 //
 // llgo:link (*Sqlite3).Close C.sqlite3_close
-func (*Sqlite3) Close() Errno { return 0 }
+func (db *Sqlite3) Close() Errno { return 0 }
 
 // Closing A Database Connection
 //
 // llgo:link (*Sqlite3).CloseV2 C.sqlite3_close_v2
-func (*Sqlite3) CloseV2() Errno { return 0 }
+func (db *Sqlite3) CloseV2() Errno { return 0 }
 
 // -----------------------------------------------------------------------------
 
@@ -168,21 +180,26 @@ const (
 )
 
 // Compiling An SQL Statement
-// tail: Pointer to unused portion of zSql
-func (db *Sqlite3) Prepare(sql string) (stmt *Stmt, tail *Char, err Errno) {
-	err = db.doPrepare(c.GoStringData(sql), c.Int(len(sql)), &stmt, &tail)
+// tail: Pointer to unused portion of sql
+func (db *Sqlite3) Prepare(sql string, tail **Char) (stmt *Stmt, err Errno) {
+	err = db.doPrepare(c.GoStringData(sql), c.Int(len(sql)), &stmt, tail)
 	return
 }
 
-func (db *Sqlite3) PrepareV2(sql string) (stmt *Stmt, tail *Char, err Errno) {
-	err = db.doPrepareV2(c.GoStringData(sql), c.Int(len(sql)), &stmt, &tail)
+func (db *Sqlite3) PrepareV2(sql string, tail **Char) (stmt *Stmt, err Errno) {
+	err = db.doPrepareV2(c.GoStringData(sql), c.Int(len(sql)), &stmt, tail)
 	return
 }
 
-func (db *Sqlite3) PrepareV3(sql string, flags PrepareFlags) (stmt *Stmt, tail *Char, err Errno) {
-	err = db.doPrepareV3(c.GoStringData(sql), c.Int(len(sql)), flags, &stmt, &tail)
+func (db *Sqlite3) PrepareV3(sql string, flags PrepareFlags, tail **Char) (stmt *Stmt, err Errno) {
+	err = db.doPrepareV3(c.GoStringData(sql), c.Int(len(sql)), flags, &stmt, tail)
 	return
 }
+
+// Destroy A Prepared Statement Object
+//
+// llgo:link (*Stmt).Close C.sqlite3_finalize
+func (stmt *Stmt) Close() Errno { return 0 }
 
 // -----------------------------------------------------------------------------
 
@@ -192,14 +209,24 @@ func (*Stmt) BindInt(idx Int, val Int) Errno { return 0 }
 // llgo:link (*Stmt).BindInt64 C.sqlite3_bind_int64
 func (*Stmt) BindInt64(idx Int, val int64) Errno { return 0 }
 
-// llgo:link (*Stmt).doBindText C.sqlite3_bind_text
-func (*Stmt) doBindText(Int, *Char, Int, func(Pointer)) Errno { return 0 }
+/*
+const (
+	Static    = (func(Pointer))(nil) // val is a static string
+	Transient = (func(Pointer))(-1)  // val is a transient (temporary) string
+)
+*/
 
-func (stmt *Stmt) BindText(idx Int, val string, xDel func(Pointer)) Errno {
-	return stmt.doBindText(idx, c.GoStringData(val), c.Int(len(val)), xDel)
-}
+// llgo:link (*Stmt).BindText C.sqlite3_bind_text
+func (*Stmt) BindText(idx Int, val *Char, nByte Int, destructor func(Pointer)) Errno { return 0 }
 
 // -----------------------------------------------------------------------------
+
+// Reset A Prepared Statement Object
+//
+// llgo:link (*Stmt).Reset C.sqlite3_reset
+func (stmt *Stmt) Reset() Errno {
+	return 0
+}
 
 // Evaluate An SQL Statement
 //
@@ -208,12 +235,29 @@ func (*Stmt) Step() Errno { return 0 }
 
 // -----------------------------------------------------------------------------
 
+// llgo:link (*Stmt).ColumnCount C.sqlite3_column_count
+func (stmt *Stmt) ColumnCount() Int { return 0 }
+
+// llgo:link (*Stmt).ColumnName C.sqlite3_column_name
+func (stmt *Stmt) ColumnName(idx Int) *Char { return nil }
+
+// llgo:link (*Stmt).ColumnInt C.sqlite3_column_int
+func (stmt *Stmt) ColumnInt(idx Int) Int { return 0 }
+
+// llgo:link (*Stmt).ColumnInt64 C.sqlite3_column_int64
+func (stmt *Stmt) ColumnInt64(idx Int) int64 { return 0 }
+
+// llgo:link (*Stmt).ColumnText C.sqlite3_column_text
+func (stmt *Stmt) ColumnText(idx Int) *Char { return nil }
+
+// -----------------------------------------------------------------------------
+
 // One-Step Query Execution Interface
 //
 // llgo:link (*Sqlite3).Exec C.sqlite3_exec
 func (*Sqlite3) Exec(
 	sql *Char, callback func(arg Pointer, resultCols Int, colVals, colNames **Char) Int,
-	arg Pointer, errmsg *Char) Errno {
+	arg Pointer, errmsg **Char) Errno {
 	return 0
 }
 

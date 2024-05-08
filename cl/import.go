@@ -18,6 +18,7 @@ package cl
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/constant"
 	"go/token"
@@ -30,8 +31,9 @@ import (
 )
 
 type symInfo struct {
-	file  string
-	isVar bool
+	file     string
+	fullName string
+	isVar    bool
 }
 
 type pkgSymInfo struct {
@@ -46,7 +48,7 @@ func newPkgSymInfo() *pkgSymInfo {
 	}
 }
 
-func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, name string, isVar bool) {
+func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, fullName, inPkgName string, isVar bool) {
 	f := fset.File(pos)
 	if fp := f.Position(pos); fp.Line > 2 {
 		file := fp.Filename
@@ -56,17 +58,17 @@ func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, name string, isV
 				p.files[file] = b
 			}
 		}
-		p.syms[name] = symInfo{file, isVar}
+		p.syms[inPkgName] = symInfo{file, fullName, isVar}
 	}
 }
 
-func (p *pkgSymInfo) initLinknames(ctx *context, pkgPath string) {
+func (p *pkgSymInfo) initLinknames(ctx *context) {
 	for file, b := range p.files {
 		lines := bytes.Split(b, []byte{'\n'})
 		for _, line := range lines {
-			ctx.initLinkname(pkgPath, string(line), func(name string) (isVar bool, ok bool) {
-				if sym, ok := p.syms[name]; ok && file == sym.file {
-					return sym.isVar, true
+			ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
+				if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
+					return sym.fullName, sym.isVar, true
 				}
 				return
 			})
@@ -89,7 +91,9 @@ func PkgKindOf(pkg *types.Package) int {
 func pkgKind(v string) int {
 	switch v {
 	case "link":
-		return PkgLinkOnly
+		return PkgLinkIR
+	// case "link:bc":
+	//	return PkgLinkBitCode
 	case "decl":
 		return PkgDeclOnly
 	case "noinit":
@@ -116,24 +120,34 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	}
 	i.kind = kind
 	fset := p.fset
+	pkgPath := llssa.PathOf(pkg)
 	names := scope.Names()
 	syms := newPkgSymInfo()
 	for _, name := range names {
-		if token.IsExported(name) {
-			obj := scope.Lookup(name)
-			switch obj := obj.(type) {
-			case *types.Func:
-				if pos := obj.Pos(); pos != token.NoPos {
-					syms.addSym(fset, pos, name, false)
+		obj := scope.Lookup(name)
+		switch obj := obj.(type) {
+		case *types.Func:
+			if pos := obj.Pos(); pos != token.NoPos {
+				fullName, inPkgName := typesFuncName(pkgPath, obj)
+				syms.addSym(fset, pos, fullName, inPkgName, false)
+			}
+		case *types.TypeName:
+			if !obj.IsAlias() {
+				if t, ok := obj.Type().(*types.Named); ok {
+					for i, n := 0, t.NumMethods(); i < n; i++ {
+						fn := t.Method(i)
+						fullName, inPkgName := typesFuncName(pkgPath, fn)
+						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
+					}
 				}
-			case *types.Var:
-				if pos := obj.Pos(); pos != token.NoPos {
-					syms.addSym(fset, pos, name, true)
-				}
+			}
+		case *types.Var:
+			if pos := obj.Pos(); pos != token.NoPos {
+				syms.addSym(fset, pos, pkgPath+"."+name, name, true)
 			}
 		}
 	}
-	syms.initLinknames(p, llssa.PathOf(pkg))
+	syms.initLinknames(p)
 }
 
 func (p *context) initFiles(pkgPath string, files []*ast.File) {
@@ -141,13 +155,13 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
-				if decl.Recv == nil {
-					p.initLinknameByDoc(decl.Doc, pkgPath, decl.Name.Name, false)
-				}
+				fullName, inPkgName := astFuncName(pkgPath, decl)
+				p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
 				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
 					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-						p.initLinknameByDoc(decl.Doc, pkgPath, names[0].Name, true)
+						inPkgName := names[0].Name
+						p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 					}
 				}
 			}
@@ -155,50 +169,107 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, pkgPath, expName string, isVar bool) {
+func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
 	if doc != nil {
 		if n := len(doc.List); n > 0 {
 			line := doc.List[n-1].Text
-			p.initLinkname(pkgPath, line, func(name string) (bool, bool) {
-				return isVar, name == expName
+			p.initLinkname(line, func(name string) (_ string, _, ok bool) {
+				return fullName, isVar, name == inPkgName
 			})
 		}
 	}
 }
 
-func (p *context) initLinkname(pkgPath, line string, f func(name string) (isVar bool, ok bool)) {
+func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
 		llgolink2 = "// llgo:link "
 	)
 	if strings.HasPrefix(line, linkname) {
-		p.initLink(pkgPath, line, len(linkname), f)
+		p.initLink(line, len(linkname), f)
 	} else if strings.HasPrefix(line, llgolink2) {
-		p.initLink(pkgPath, line, len(llgolink2), f)
+		p.initLink(line, len(llgolink2), f)
 	} else if strings.HasPrefix(line, llgolink) {
-		p.initLink(pkgPath, line, len(llgolink), f)
+		p.initLink(line, len(llgolink), f)
 	}
 }
 
-func (p *context) initLink(pkgPath string, line string, prefix int, f func(name string) (isVar bool, ok bool)) {
+func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
-		name := text[:idx]
-		if isVar, ok := f(name); ok {
+		inPkgName := text[:idx]
+		if fullName, isVar, ok := f(inPkgName); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
 			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
-				name := pkgPath + "." + name
-				p.link[name] = link
+				p.link[fullName] = link
 			} else {
 				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
 			}
+		} else {
+			fmt.Fprintln(os.Stderr, "==>", line)
+			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
 		}
 	}
 }
 
-// func: pkg.name
-// method: (pkg.T).name, (*pkg.T).name
+func recvTypeName(t ast.Expr) string {
+	switch t := t.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.IndexExpr:
+		return trecvTypeName(t.X, t.Index)
+	case *ast.IndexListExpr:
+		return trecvTypeName(t.X, t.Indices...)
+	}
+	panic("unreachable")
+}
+
+// TODO(xsw): support generic type
+func trecvTypeName(t ast.Expr, indices ...ast.Expr) string {
+	_ = indices
+	return t.(*ast.Ident).Name
+}
+
+// inPkgName:
+// - func: name
+// - method: (T).name, (*T).name
+// fullName:
+// - func: pkg.name
+// - method: (pkg.T).name, (*pkg.T).name
+func astFuncName(pkgPath string, fn *ast.FuncDecl) (fullName, inPkgName string) {
+	name := fn.Name.Name
+	if recv := fn.Recv; recv != nil && len(recv.List) == 1 {
+		tPrefix := "("
+		t := recv.List[0].Type
+		if tp, ok := t.(*ast.StarExpr); ok {
+			t, tPrefix = tp.X, "(*"
+		}
+		tSuffix := recvTypeName(t) + ")." + name
+		return tPrefix + pkgPath + "." + tSuffix, tPrefix + tSuffix
+	}
+	return pkgPath + "." + name, name
+}
+
+func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) {
+	sig := fn.Type().(*types.Signature)
+	name := fn.Name()
+	if recv := sig.Recv(); recv != nil {
+		tPrefix := "("
+		t := recv.Type()
+		if tp, ok := t.(*types.Pointer); ok {
+			t, tPrefix = tp.Elem(), "(*"
+		}
+		tSuffix := t.(*types.Named).Obj().Name() + ")." + name
+		return tPrefix + pkgPath + "." + tSuffix, tPrefix + tSuffix
+	}
+	return pkgPath + "." + name, name
+}
+
+// TODO(xsw): may can use typesFuncName
+// fullName:
+// - func: pkg.name
+// - method: (pkg.T).name, (*pkg.T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
 	sig := fn.Signature
 	name := fn.Name()
