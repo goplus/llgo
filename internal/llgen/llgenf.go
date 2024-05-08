@@ -75,9 +75,13 @@ func DoFile(fileOrPkg, outFile string) {
 
 func SmartDoFile(inFile string, pkgPath ...string) {
 	dir, _ := filepath.Split(inFile)
+	absDir, _ := filepath.Abs(dir)
+	absDir = filepath.ToSlash(absDir)
 	fname := "llgo_autogen.ll"
-	if inCompilerDir(dir) {
+	if inCompilerDir(absDir) {
 		fname = "out.ll"
+	} else if inSqlite(absDir) {
+		fname = "sqlite.ll"
 	}
 	outFile := dir + fname
 
@@ -89,6 +93,9 @@ func SmartDoFile(inFile string, pkgPath ...string) {
 }
 
 func inCompilerDir(dir string) bool {
-	dir, _ = filepath.Abs(dir)
-	return strings.Contains(filepath.ToSlash(dir), "/llgo/cl/")
+	return strings.Contains(dir, "/llgo/cl/")
+}
+
+func inSqlite(dir string) bool {
+	return strings.HasSuffix(dir, "/llgo/x/sqlite")
 }

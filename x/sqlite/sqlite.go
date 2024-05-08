@@ -29,7 +29,7 @@ type (
 )
 
 const (
-	LLGoPackage = "noinit,link"
+	LLGoPackage = "link"
 )
 
 // llgo:type C
