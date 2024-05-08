@@ -32,6 +32,11 @@ sudo apt-get install --no-install-recommends llvm-17-dev
 go install -v ./...
 ```
 
+### on Windows
+
+TODO
+
+
 ## Demo
 
 The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
