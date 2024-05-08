@@ -73,9 +73,7 @@ func TestCvtType(t *testing.T) {
 }
 
 func TestUserdefExpr(t *testing.T) {
-	a := delayExprTy(nil)
 	b := &phisExprTy{}
-	_ = a.String()
 	_ = b.String()
 	test := func(a types.Type) {
 		defer func() {
@@ -85,7 +83,6 @@ func TestUserdefExpr(t *testing.T) {
 		}()
 		a.Underlying()
 	}
-	test(a)
 	test(b)
 }
 

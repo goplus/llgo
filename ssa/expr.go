@@ -44,30 +44,11 @@ func (v Expr) IsNil() bool {
 // Do evaluates the delay expression and returns the result.
 func (v Expr) Do(b Builder) Expr {
 	switch vt := v.Type; vt.kind {
-	case vkDelayExpr:
-		return vt.raw.Type.(delayExprTy)()
 	case vkPhisExpr:
 		e := vt.raw.Type.(*phisExprTy)
 		return b.aggregateValue(e.Type, e.phis...)
 	}
 	return v
-}
-
-// -----------------------------------------------------------------------------
-
-// DelayExpr returns a delay expression.
-func DelayExpr(f func() Expr) Expr {
-	return Expr{Type: &aType{raw: rawType{delayExprTy(f)}, kind: vkDelayExpr}}
-}
-
-type delayExprTy func() Expr
-
-func (p delayExprTy) Underlying() types.Type {
-	panic("don't call")
-}
-
-func (p delayExprTy) String() string {
-	return "delayExpr"
 }
 
 // -----------------------------------------------------------------------------
@@ -1059,35 +1040,27 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 //
 //	t1 = make interface{} <- int (42:int)
 //	t2 = make Stringer <- t0
-func (b Builder) MakeInterface(tinter Type, x Expr, mayDelay bool) (ret Expr) {
+func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	raw := tinter.raw.Type
 	if debugInstr {
 		log.Printf("MakeInterface %v, %v\n", raw, x.impl)
 	}
-	tiund := raw.Underlying().(*types.Interface)
-	isAny := tiund.Empty()
-	fnDo := func() Expr {
-		prog := b.Prog
-		pkg := b.Func.Pkg
-		switch tx := x.raw.Type.Underlying().(type) {
-		case *types.Basic:
-			kind := tx.Kind()
-			switch {
-			case kind >= types.Int && kind <= types.Uintptr:
-				t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
-				tptr := prog.Uintptr()
-				vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
-				return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
-			case kind == types.String:
-				return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
-			}
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	switch tx := x.raw.Type.Underlying().(type) {
+	case *types.Basic:
+		kind := tx.Kind()
+		switch {
+		case kind >= types.Int && kind <= types.Uintptr:
+			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+			tptr := prog.Uintptr()
+			vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
+			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+		case kind == types.String:
+			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
 		}
-		panic("todo")
 	}
-	if mayDelay && isAny {
-		return DelayExpr(fnDo)
-	}
-	return fnDo()
+	panic("todo")
 }
 
 // The TypeAssert instruction tests whether interface value X has type
