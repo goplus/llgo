@@ -172,10 +172,7 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 		if n := len(doc.List); n > 0 {
 			line := doc.List[n-1].Text
 			p.initLinkname(line, func(name string) (_ string, _, ok bool) {
-				if name == inPkgName {
-					return fullName, isVar, true
-				}
-				return
+				return fullName, isVar, name == inPkgName
 			})
 		}
 	}

@@ -17,6 +17,7 @@
 package cl
 
 import (
+	"go/ast"
 	"go/constant"
 	"go/types"
 	"testing"
@@ -24,6 +25,27 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
+
+func TestRecvTypeName(t *testing.T) {
+	if ret := recvTypeName(&ast.IndexExpr{
+		X:     &ast.Ident{Name: "Pointer"},
+		Index: &ast.Ident{Name: "T"},
+	}); ret != "Pointer" {
+		t.Fatal("recvTypeName IndexExpr:", ret)
+	}
+	if ret := recvTypeName(&ast.IndexListExpr{
+		X:       &ast.Ident{Name: "Pointer"},
+		Indices: []ast.Expr{&ast.Ident{Name: "T"}},
+	}); ret != "Pointer" {
+		t.Fatal("recvTypeName IndexListExpr:", ret)
+	}
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("recvTypeName: no error?")
+		}
+	}()
+	recvTypeName(&ast.BadExpr{})
+}
 
 /*
 func TestErrCompileValue(t *testing.T) {
