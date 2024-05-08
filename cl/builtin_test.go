@@ -160,16 +160,19 @@ func TestErrImport(t *testing.T) {
 
 func TestErrInitLinkname(t *testing.T) {
 	var ctx context
-	ctx.initLinkname("foo", "//llgo:link abc", func(name string) (bool, bool) {
-		return false, false
+	ctx.initLinkname("//llgo:link abc", func(name string) (string, bool, bool) {
+		return "", false, false
+	})
+	ctx.initLinkname("//go:linkname Printf printf", func(name string) (string, bool, bool) {
+		return "", false, false
 	})
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("initLinkname: no error?")
 		}
 	}()
-	ctx.initLinkname("foo", "//go:linkname Printf printf", func(name string) (isVar bool, ok bool) {
-		return false, name == "Printf"
+	ctx.initLinkname("//go:linkname Printf printf", func(name string) (string, bool, bool) {
+		return "foo.Printf", false, name == "Printf"
 	})
 }
 

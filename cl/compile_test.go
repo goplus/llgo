@@ -40,6 +40,10 @@ func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "./_testdata", false)
 }
 
+func TestSqlite(t *testing.T) {
+	cltest.Pkg(t, "github.com/goplus/llgo/x/sqlite", "../x/sqlite/sqlite.ll")
+}
+
 func TestRuntime(t *testing.T) {
 	cltest.Pkg(t, ssa.PkgRuntime, "../internal/runtime/llgo_autogen.ll")
 }
