@@ -62,12 +62,14 @@ const (
 )
 
 func (p *context) funcKind(vfn ssa.Value) int {
-	if fn, ok := vfn.(*ssa.Function); ok && fn.Signature.Recv() == nil {
+	if fn, ok := vfn.(*ssa.Function); ok {
 		params := fn.Signature.Params()
 		n := params.Len()
 		if n == 0 {
-			if fn.Name() == "init" && p.pkgNoInit(fn.Pkg.Pkg) {
-				return fnIgnore
+			if fn.Signature.Recv() == nil {
+				if fn.Name() == "init" && p.pkgNoInit(fn.Pkg.Pkg) {
+					return fnIgnore
+				}
 			}
 		} else {
 			last := params.At(n - 1)
@@ -356,11 +358,25 @@ func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
 }
 
 func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
-	if v.Comment == "varargs" { // this is a varargs allocation
+	if v.Comment == "varargs" { // this maybe a varargs allocation
 		if arr, ok := t.Elem().(*types.Array); ok {
-			if isAny(arr.Elem()) {
+			if isAny(arr.Elem()) && isVargs(p, v) {
 				p.vargs[v] = make([]llssa.Expr, arr.Len())
 				return true
+			}
+		}
+	}
+	return false
+}
+
+func isVargs(ctx *context, v *ssa.Alloc) bool {
+	refs := *v.Referrers()
+	n := len(refs)
+	lastref := refs[n-1]
+	if i, ok := lastref.(*ssa.Slice); ok {
+		if refs = *i.Referrers(); len(refs) == 1 {
+			if call, ok := refs[0].(*ssa.Call); ok {
+				return ctx.funcKind(call.Call.Value) == fnHasVArg
 			}
 		}
 	}
@@ -468,42 +484,42 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
-		call := v.Call
-		cv := call.Value
+		cv := v.Call.Value
 		kind := p.funcKind(cv)
 		if kind == fnIgnore {
 			return
 		}
+		args := v.Call.Args
 		if debugGoSSA {
-			log.Println(">>> Call", cv, call.Args)
+			log.Println(">>> Call", cv, args)
 		}
 		switch cv := cv.(type) {
 		case *ssa.Builtin:
 			fn := cv.Name()
 			if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-				arg := call.Args[0]
+				arg := args[0]
 				ret = p.compileValue(b, arg)
 				// log.Println("wrapnilchk:", ret.TypeOf())
 			} else {
-				args := p.compileValues(b, call.Args, kind)
+				args := p.compileValues(b, args, kind)
 				ret = b.BuiltinCall(fn, args...)
 			}
 		case *ssa.Function:
 			fn, ftype := p.compileFunction(cv)
 			switch ftype {
 			case goFunc, cFunc:
-				args := p.compileValues(b, call.Args, kind)
+				args := p.compileValues(b, args, kind)
 				ret = b.Call(fn.Expr, args...)
 			case llgoCstr:
-				ret = cstr(b, call.Args)
+				ret = cstr(b, args)
 			case llgoAdvance:
-				ret = p.advance(b, call.Args)
+				ret = p.advance(b, args)
 			case llgoIndex:
-				ret = p.index(b, call.Args)
+				ret = p.index(b, args)
 			case llgoAlloca:
-				ret = p.alloca(b, call.Args)
+				ret = p.alloca(b, args)
 			case llgoAllocaCStr:
-				ret = p.allocaCStr(b, call.Args)
+				ret = p.allocaCStr(b, args)
 			case llgoUnreachable: // func unreachable()
 				b.Unreachable()
 			default:
@@ -511,7 +527,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		default:
 			fn := p.compileValue(b, cv)
-			args := p.compileValues(b, call.Args, kind)
+			args := p.compileValues(b, args, kind)
 			ret = b.Call(fn, args...)
 		}
 	case *ssa.BinOp:
@@ -534,7 +550,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.FieldAddr(x, v.Field)
 	case *ssa.Alloc:
 		t := v.Type().(*types.Pointer)
-		if p.checkVArgs(v, t) { // varargs: this is a varargs allocation
+		if p.checkVArgs(v, t) { // varargs: this maybe a varargs allocation
 			return
 		}
 		elem := p.prog.Type(t.Elem(), llssa.InGo)

@@ -37,7 +37,7 @@ func TestFromTestrt(t *testing.T) {
 }
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata", false)
+	cltest.FromDir(t, "vargs", "./_testdata", false)
 }
 
 func TestSqlite(t *testing.T) {
