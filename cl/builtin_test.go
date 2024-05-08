@@ -100,6 +100,16 @@ func TestErrAlloca(t *testing.T) {
 	ctx.alloca(nil, nil)
 }
 
+func TestErrAllocaCStr(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("allocaCStr: no error?")
+		}
+	}()
+	var ctx context
+	ctx.allocaCStr(nil, nil)
+}
+
 func TestCStrNoArgs(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
