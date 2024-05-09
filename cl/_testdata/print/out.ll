@@ -5,6 +5,7 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %main.stringStruct = type { ptr, i64 }
 %main.slice = type { ptr, i64, i64 }
+%"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 
 @"main.init$guard" = global ptr null
 @main.minhexdigits = global ptr null
@@ -90,6 +91,14 @@ _llgo_0:
   call void @main.prinusub(i64 -1)
   call void @main.printnl()
   call void @main.prinfsub(double 1.001000e+02)
+  call void @main.printnl()
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 13)
+  %4 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %3, i64 1315859240)
+  call void @main.printnum(%"github.com/goplus/llgo/internal/runtime.iface" %4)
+  call void @main.printnl()
+  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 14)
+  %6 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %5, i64 4746175415993761792)
+  call void @main.printnum(%"github.com/goplus/llgo/internal/runtime.iface" %6)
   call void @main.printnl()
   ret void
 }
@@ -363,6 +372,155 @@ _llgo_0:
   ret void
 }
 
+define void @main.printnum(%"github.com/goplus/llgo/internal/runtime.iface" %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %2 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %1)
+  %3 = extractvalue { i64, i1 } %2, 0
+  %4 = extractvalue { i64, i1 } %2, 1
+  br i1 %4, label %_llgo_2, label %_llgo_3
+
+_llgo_1:                                          ; preds = %_llgo_26, %_llgo_25, %_llgo_24, %_llgo_22, %_llgo_20, %_llgo_18, %_llgo_16, %_llgo_14, %_llgo_12, %_llgo_10, %_llgo_8, %_llgo_6, %_llgo_4, %_llgo_2
+  ret void
+
+_llgo_2:                                          ; preds = %_llgo_0
+  call void @main.printint(i64 %3)
+  br label %_llgo_1
+
+_llgo_3:                                          ; preds = %_llgo_0
+  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 3)
+  %6 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %5)
+  %7 = extractvalue { i64, i1 } %6, 0
+  %8 = extractvalue { i64, i1 } %6, 1
+  br i1 %8, label %_llgo_4, label %_llgo_5
+
+_llgo_4:                                          ; preds = %_llgo_3
+  call void @main.printint(i64 %7)
+  br label %_llgo_1
+
+_llgo_5:                                          ; preds = %_llgo_3
+  %9 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 4)
+  %10 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %9)
+  %11 = extractvalue { i64, i1 } %10, 0
+  %12 = extractvalue { i64, i1 } %10, 1
+  br i1 %12, label %_llgo_6, label %_llgo_7
+
+_llgo_6:                                          ; preds = %_llgo_5
+  call void @main.printint(i64 %11)
+  br label %_llgo_1
+
+_llgo_7:                                          ; preds = %_llgo_5
+  %13 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
+  %14 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %13)
+  %15 = extractvalue { i64, i1 } %14, 0
+  %16 = extractvalue { i64, i1 } %14, 1
+  br i1 %16, label %_llgo_8, label %_llgo_9
+
+_llgo_8:                                          ; preds = %_llgo_7
+  call void @main.printint(i64 %15)
+  br label %_llgo_1
+
+_llgo_9:                                          ; preds = %_llgo_7
+  %17 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
+  %18 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %17)
+  %19 = extractvalue { i64, i1 } %18, 0
+  %20 = extractvalue { i64, i1 } %18, 1
+  br i1 %20, label %_llgo_10, label %_llgo_11
+
+_llgo_10:                                         ; preds = %_llgo_9
+  call void @main.printint(i64 %19)
+  br label %_llgo_1
+
+_llgo_11:                                         ; preds = %_llgo_9
+  %21 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 7)
+  %22 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %21)
+  %23 = extractvalue { i64, i1 } %22, 0
+  %24 = extractvalue { i64, i1 } %22, 1
+  br i1 %24, label %_llgo_12, label %_llgo_13
+
+_llgo_12:                                         ; preds = %_llgo_11
+  call void @main.printuint(i64 %23)
+  br label %_llgo_1
+
+_llgo_13:                                         ; preds = %_llgo_11
+  %25 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 8)
+  %26 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %25)
+  %27 = extractvalue { i64, i1 } %26, 0
+  %28 = extractvalue { i64, i1 } %26, 1
+  br i1 %28, label %_llgo_14, label %_llgo_15
+
+_llgo_14:                                         ; preds = %_llgo_13
+  call void @main.printuint(i64 %27)
+  br label %_llgo_1
+
+_llgo_15:                                         ; preds = %_llgo_13
+  %29 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 9)
+  %30 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %29)
+  %31 = extractvalue { i64, i1 } %30, 0
+  %32 = extractvalue { i64, i1 } %30, 1
+  br i1 %32, label %_llgo_16, label %_llgo_17
+
+_llgo_16:                                         ; preds = %_llgo_15
+  call void @main.printuint(i64 %31)
+  br label %_llgo_1
+
+_llgo_17:                                         ; preds = %_llgo_15
+  %33 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 10)
+  %34 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %33)
+  %35 = extractvalue { i64, i1 } %34, 0
+  %36 = extractvalue { i64, i1 } %34, 1
+  br i1 %36, label %_llgo_18, label %_llgo_19
+
+_llgo_18:                                         ; preds = %_llgo_17
+  call void @main.printuint(i64 %35)
+  br label %_llgo_1
+
+_llgo_19:                                         ; preds = %_llgo_17
+  %37 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 11)
+  %38 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %37)
+  %39 = extractvalue { i64, i1 } %38, 0
+  %40 = extractvalue { i64, i1 } %38, 1
+  br i1 %40, label %_llgo_20, label %_llgo_21
+
+_llgo_20:                                         ; preds = %_llgo_19
+  call void @main.printuint(i64 %39)
+  br label %_llgo_1
+
+_llgo_21:                                         ; preds = %_llgo_19
+  %41 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 12)
+  %42 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %41)
+  %43 = extractvalue { i64, i1 } %42, 0
+  %44 = extractvalue { i64, i1 } %42, 1
+  br i1 %44, label %_llgo_22, label %_llgo_23
+
+_llgo_22:                                         ; preds = %_llgo_21
+  call void @main.printuint(i64 %43)
+  br label %_llgo_1
+
+_llgo_23:                                         ; preds = %_llgo_21
+  %45 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 13)
+  %46 = call { float, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Float32"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %45)
+  %47 = extractvalue { float, i1 } %46, 0
+  %48 = extractvalue { float, i1 } %46, 1
+  br i1 %48, label %_llgo_24, label %_llgo_25
+
+_llgo_24:                                         ; preds = %_llgo_23
+  %49 = fpext float %47 to double
+  call void @main.printfloat(double %49)
+  br label %_llgo_1
+
+_llgo_25:                                         ; preds = %_llgo_23
+  %50 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 14)
+  %51 = call { double, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Float64"(%"github.com/goplus/llgo/internal/runtime.iface" %0, ptr %50)
+  %52 = extractvalue { double, i1 } %51, 0
+  %53 = extractvalue { double, i1 } %51, 1
+  br i1 %53, label %_llgo_26, label %_llgo_1
+
+_llgo_26:                                         ; preds = %_llgo_25
+  call void @main.printfloat(double %52)
+  br label %_llgo_1
+}
+
 define void @main.printsp() {
 _llgo_0:
   %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @8, i64 1)
@@ -437,6 +595,16 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr, i64)
 
+declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+
+declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
+
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String")
+
+declare { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
+
+declare { float, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Float32"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
+
+declare { double, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Float64"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)

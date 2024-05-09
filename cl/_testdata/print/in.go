@@ -177,6 +177,41 @@ func main() {
 	printnl()
 	prinfsub(100.1)
 	printnl()
+	printnum(float32(1e9))
+	printnl()
+	printnum(float64(2e9))
+	printnl()
+}
+
+func printnum(v any) {
+	switch v := v.(type) {
+	case int:
+		printint(int64(v))
+	case int8:
+		printint(int64(v))
+	case int16:
+		printint(int64(v))
+	case int32:
+		printint(int64(v))
+	case int64:
+		printint(int64(v))
+	case uint:
+		printuint(uint64(v))
+	case uint8:
+		printuint(uint64(v))
+	case uint16:
+		printuint(uint64(v))
+	case uint32:
+		printuint(uint64(v))
+	case uint64:
+		printuint(uint64(v))
+	case uintptr:
+		printuint(uint64(v))
+	case float32:
+		printfloat(float64(v))
+	case float64:
+		printfloat(float64(v))
+	}
 }
 
 func prinxor(n int64) {

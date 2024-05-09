@@ -1056,6 +1056,17 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 			tptr := prog.Uintptr()
 			vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+		case kind == types.Float32:
+			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+			tptr := prog.Uintptr()
+			i32 := b.impl.CreateBitCast(x.impl, prog.tyInt32(), "")
+			vptr := Expr{llvm.CreateIntCast(b.impl, i32, tptr.ll), tptr}
+			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+		case kind == types.Float64:
+			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+			tptr := prog.Uintptr()
+			vptr := Expr{b.impl.CreateBitCast(x.impl, tptr.ll, ""), tptr}
+			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
 		case kind == types.String:
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
 		}
@@ -1107,7 +1118,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	}
 	switch assertedTyp.kind {
-	case vkSigned, vkUnsigned, vkFloat:
+	case vkSigned, vkUnsigned:
 		pkg := b.Func.Pkg
 		fnName := "I2Int"
 		if commaOk {
@@ -1121,6 +1132,25 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		default:
 			panic("todo")
 		}
+		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
+		return b.InlineCall(fn, x, typ)
+	case vkFloat:
+		var fnName string
+		kind := assertedTyp.raw.Underlying().(*types.Basic).Kind()
+		switch kind {
+		case types.Float32:
+			fnName = "I2Float32"
+			if commaOk {
+				fnName = "CheckI2Float32"
+			}
+		case types.Float64:
+			fnName = "I2Float64"
+			if commaOk {
+				fnName = "CheckI2Float64"
+			}
+		}
+		pkg := b.Func.Pkg
+		fn := pkg.rtFunc(fnName)
 		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
 		return b.InlineCall(fn, x, typ)
 	}
@@ -1230,6 +1260,13 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	}
 	panic("todo")
+}
+
+// BitCast bit cast expr to type
+func (b Builder) BitCast(val Expr, typ Type) (ret Expr) {
+	ret.Type = typ
+	ret.impl = b.impl.CreateBitCast(val.impl, typ.ll, "")
+	return
 }
 
 // -----------------------------------------------------------------------------

@@ -77,4 +77,38 @@ func CheckI2Int(v Interface, t *Type) (uintptr, bool) {
 	return 0, false
 }
 
+func I2Float64(v Interface, t *Type) float64 {
+	if v.tab._type == t {
+		return bitCastTo64F(uint64(uintptr(v.data)))
+	}
+	panic("I2Float64: type mismatch")
+}
+
+func CheckI2Float64(v Interface, t *Type) (float64, bool) {
+	if v.tab._type == t {
+		return bitCastTo64F(uint64(uintptr(v.data))), true
+	}
+	return 0, false
+}
+
+func I2Float32(v Interface, t *Type) float32 {
+	if v.tab._type == t {
+		return bitCastTo32F(uint32(uintptr(v.data)))
+	}
+	panic("I2Float32: type mismatch")
+}
+
+func CheckI2Float32(v Interface, t *Type) (float32, bool) {
+	if v.tab._type == t {
+		return bitCastTo32F(uint32(uintptr(v.data))), true
+	}
+	return 0, false
+}
+
+//go:linkname bitCastTo64F llgo.bitCastTo64F
+func bitCastTo64F(uint64) float64
+
+//go:linkname bitCastTo32F llgo.bitCastTo32F
+func bitCastTo32F(uint32) float32
+
 // -----------------------------------------------------------------------------
