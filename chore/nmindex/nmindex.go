@@ -64,6 +64,7 @@ func makeIndex() {
 		usrLib(true),
 		stdLib("LLGO_STDROOT"),
 		stdLib("LLGO_USRROOT"),
+		pythonLib(),
 	}
 	err := b.Index(libDirs, idxDir, func(path string) {
 		fmt.Println("==>", path)
@@ -101,6 +102,10 @@ func usrLib(local bool) string {
 		return "/usr/local/lib"
 	}
 	return "/usr/lib"
+}
+
+func pythonLib() string {
+	return os.Getenv("LLGO_PYTHON_ROOT")
 }
 
 func check(err error) {
