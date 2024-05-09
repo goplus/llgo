@@ -258,7 +258,8 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 	if verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
 	}
-	if pkgPath == "unsafe" { // TODO(xsw): maybe can remove this special case
+	if canSkipToBuild(pkgPath) {
+		pkg.ExportFile = ""
 		return
 	}
 	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
@@ -268,6 +269,16 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
 	}
 	aPkg.LPkg = ret
+}
+
+func canSkipToBuild(pkgPath string) bool {
+	switch pkgPath {
+	case "unsafe", "runtime", "errors", "sync", "sync/atomic":
+		return true
+	default:
+		return strings.HasPrefix(pkgPath, "internal/") ||
+			strings.HasPrefix(pkgPath, "runtime/internal/")
+	}
 }
 
 type aPackage struct {
