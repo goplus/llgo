@@ -123,9 +123,10 @@ type instrOrValue interface {
 const (
 	PkgNormal = iota
 	PkgLLGo
-	PkgNoInit   // noinit: a package that don't need to be initialized
-	PkgDeclOnly // decl: a package that only have declarations
-	PkgLinkIR   // link llvm ir (.ll)
+	PkgNoInit     // noinit: a package that don't need to be initialized
+	PkgDeclOnly   // decl: a package that only have declarations
+	PkgLinkIR     // link llvm ir (.ll)
+	PkgLinkExtern // link external object (.a/.so/.dll/.dylib/etc.)
 	// PkgLinkBitCode // link bitcode (.bc)
 )
 
