@@ -83,14 +83,15 @@ func (p *Cmd) List(arfile string) (items []*ObjectFile, err error) {
 	cmd := exec.Command(p.app, arfile)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+	e := cmd.Run()
 	if stderr.Len() > 0 {
 		listError(stderr.Bytes())
 	}
-	if err != nil {
-		return
+	items, err = listOutput(stdout.Bytes())
+	if err == nil {
+		err = e
 	}
-	return listOutput(stdout.Bytes())
+	return
 }
 
 func listError(data []byte) {
@@ -138,7 +139,7 @@ func listOutput(data []byte) (items []*ObjectFile, err error) {
 				Name: string(line[19:]),
 				Type: SymbolType(line[17]),
 			}
-			if sym.FAddr = line[0] != ' '; sym.FAddr {
+			if sym.FAddr = hasAddr(line); sym.FAddr {
 				sym.Addr = hexUint64(line)
 			}
 		} else {
@@ -146,13 +147,18 @@ func listOutput(data []byte) (items []*ObjectFile, err error) {
 				Name: string(line[11:]),
 				Type: SymbolType(line[9]),
 			}
-			if sym.FAddr = line[0] != ' '; sym.FAddr {
+			if sym.FAddr = hasAddr(line); sym.FAddr {
 				sym.Addr = uint64(hexUint32(line))
 			}
 		}
 		item.Symbols = append(item.Symbols, sym)
 	}
 	return
+}
+
+func hasAddr(line []byte) bool {
+	c := line[0]
+	return c != ' ' && c != '-'
 }
 
 func is64bits(line []byte) bool {

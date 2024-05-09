@@ -18,9 +18,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/goplus/llgo/x/nm"
+	"github.com/goplus/llgo/x/env/llvm"
 )
 
 func main() {
@@ -29,9 +30,8 @@ func main() {
 		return
 	}
 
-	nm := nm.New("nm")
+	nm := llvm.New().Nm()
 	items, err := nm.List(os.Args[1])
-	check(err)
 	for _, item := range items {
 		if item.File != "" {
 			fmt.Printf("\n%s:\n", item.File)
@@ -44,10 +44,7 @@ func main() {
 			}
 		}
 	}
-}
-
-func check(err error) {
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }

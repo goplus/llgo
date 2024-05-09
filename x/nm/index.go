@@ -78,7 +78,9 @@ func (p *IndexBuilder) IndexDir(fromDir, toDir string, progress func(path string
 func (p *IndexBuilder) IndexFile(arFile, outFile string) (err error) {
 	items, err := p.nm.List(arFile)
 	if err != nil {
-		return
+		if len(items) == 0 {
+			return
+		}
 	}
 	var b bytes.Buffer
 	b.WriteString("nm ")
