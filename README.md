@@ -46,6 +46,7 @@ The `_demo` directory contains our demos (it start with `_` to prevent the `go` 
 * [qsort](_demo/qsort/qsort.go): call C function with a callback (eg. qsort)
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
+* [hellopy](https://github.com/goplus/cpython/blob/main/_demo/hellopy/hello.go): link Python to Go and say `Hello world`
 
 ### How to run demos
 
