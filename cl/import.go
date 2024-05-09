@@ -77,44 +77,48 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 }
 
 // PkgKindOf returns the kind of a package.
-func PkgKindOf(pkg *types.Package) int {
+func PkgKindOf(pkg *types.Package) (int, string) {
 	scope := pkg.Scope()
-	kind := pkgKindByScope(scope)
+	kind, param := pkgKindByScope(scope)
 	if kind == PkgNormal {
 		kind = pkgKindByPath(pkg.Path())
 	}
-	return kind
+	return kind, param
 }
 
 // decl: a package that only contains declarations
 // noinit: a package that does not need to be initialized
-func pkgKind(v string) int {
+func pkgKind(v string) (int, string) {
 	switch v {
 	case "link":
-		return PkgLinkIR
-	// case "link:bc":
-	//	return PkgLinkBitCode
+		return PkgLinkIR, ""
 	case "decl":
-		return PkgDeclOnly
+		return PkgDeclOnly, ""
 	case "noinit":
-		return PkgNoInit
+		return PkgNoInit, ""
+	default:
+		// case "link:bc":
+		//	return PkgLinkBitCode
+		if strings.HasPrefix(v, "link:") { // "link: <libpath>"
+			return PkgLinkExtern, v[5:]
+		}
 	}
-	return PkgLLGo
+	return PkgLLGo, ""
 }
 
-func pkgKindByScope(scope *types.Scope) int {
+func pkgKindByScope(scope *types.Scope) (int, string) {
 	if v, ok := scope.Lookup("LLGoPackage").(*types.Const); ok {
 		if v := v.Val(); v.Kind() == constant.String {
 			return pkgKind(constant.StringVal(v))
 		}
-		return PkgLLGo
+		return PkgLLGo, ""
 	}
-	return PkgNormal
+	return PkgNormal, ""
 }
 
 func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	scope := pkg.Scope()
-	kind := pkgKindByScope(scope)
+	kind, _ := pkgKindByScope(scope)
 	if kind == PkgNormal {
 		return
 	}

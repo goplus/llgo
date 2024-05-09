@@ -140,16 +140,19 @@ func TestPkgNoInit(t *testing.T) {
 }
 
 func TestPkgKind(t *testing.T) {
-	if v := pkgKind("noinit"); v != PkgNoInit {
+	if v, _ := pkgKind("link: hello.a"); v != PkgLinkExtern {
 		t.Fatal("pkgKind:", v)
 	}
-	if v := pkgKind(""); v != PkgLLGo {
+	if v, _ := pkgKind("noinit"); v != PkgNoInit {
+		t.Fatal("pkgKind:", v)
+	}
+	if v, _ := pkgKind(""); v != PkgLLGo {
 		t.Fatal("pkgKind:", v)
 	}
 }
 
 func TestPkgKindOf(t *testing.T) {
-	if v := PkgKindOf(types.Unsafe); v != PkgDeclOnly {
+	if v, _ := PkgKindOf(types.Unsafe); v != PkgDeclOnly {
 		t.Fatal("PkgKindOf unsafe:", v)
 	}
 	pkg := types.NewPackage("foo", "foo")
@@ -158,7 +161,7 @@ func TestPkgKindOf(t *testing.T) {
 			0, pkg, "LLGoPackage", types.Typ[types.String],
 			constant.MakeString("noinit")),
 	)
-	if v := PkgKindOf(pkg); v != PkgNoInit {
+	if v, _ := PkgKindOf(pkg); v != PkgNoInit {
 		t.Fatal("PkgKindOf foo:", v)
 	}
 }

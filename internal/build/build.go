@@ -167,12 +167,12 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	}
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
-		switch kind := cl.PkgKindOf(pkg.Types); kind {
+		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
 			// and set no export file
 			pkg.ExportFile = ""
-		case cl.PkgLinkIR: // cl.PkgLinkBitCode:
+		case cl.PkgLinkIR:
 			// skip packages that don't need to be compiled but need to be linked
 			pkgPath := pkg.PkgPath
 			if isPkgInLLGo(pkgPath) {
@@ -180,6 +180,15 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			} else {
 				panic("todo")
 			}
+		case cl.PkgLinkExtern:
+			// skip packages that don't need to be compiled but need to be linked with external library
+			linkFile := os.ExpandEnv(strings.TrimSpace(param))
+			dir, lib := filepath.Split(linkFile)
+			command := " -l " + lib
+			if dir != "" {
+				command += " -L " + dir
+			}
+			pkg.ExportFile = command
 		default:
 			buildPkg(prog, aPkg, mode, verbose)
 			if prog.NeedRuntime() {
@@ -258,7 +267,8 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 	if verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
 	}
-	if pkgPath == "unsafe" { // TODO(xsw): maybe can remove this special case
+	if canSkipToBuild(pkgPath) {
+		pkg.ExportFile = ""
 		return
 	}
 	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
@@ -268,6 +278,16 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
 	}
 	aPkg.LPkg = ret
+}
+
+func canSkipToBuild(pkgPath string) bool {
+	switch pkgPath {
+	case "unsafe", "runtime", "errors", "sync", "sync/atomic":
+		return true
+	default:
+		return strings.HasPrefix(pkgPath, "internal/") ||
+			strings.HasPrefix(pkgPath, "runtime/internal/")
+	}
 }
 
 type aPackage struct {
