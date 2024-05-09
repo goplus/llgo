@@ -290,6 +290,10 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 			ftype = llgoAllocaCStr
 		case "unreachable":
 			ftype = llgoUnreachable
+		case "bitCastTo64F":
+			ftype = llgoBitCastTo64F
+		case "bitCastTo32F":
+			ftype = llgoBitCastTo32F
 		default:
 			panic("unknown llgo instruction: " + name)
 		}
@@ -523,6 +527,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = p.allocaCStr(b, args)
 			case llgoUnreachable: // func unreachable()
 				b.Unreachable()
+			case llgoBitCastTo32F:
+				ret = b.BitCast(p.compileValue(b, args[0]), b.Prog.Type(types.Typ[types.Float32], llssa.InGo))
+			case llgoBitCastTo64F:
+				ret = b.BitCast(p.compileValue(b, args[0]), b.Prog.Float64())
 			default:
 				panic("todo")
 			}
