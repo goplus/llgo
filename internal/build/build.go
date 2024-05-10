@@ -33,7 +33,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
-	"github.com/goplus/llgo/x/clang"
+	"github.com/goplus/llgo/xtool/clang"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
