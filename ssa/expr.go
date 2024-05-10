@@ -258,6 +258,11 @@ var floatPredOpToLLVM = []llvm.FloatPredicate{
 	token.GEQ - predOpBase: llvm.FloatOGE,
 }
 
+var boolPredOpToLLVM = []llvm.IntPredicate{
+	token.EQL - predOpBase: llvm.IntEQ,
+	token.NEQ - predOpBase: llvm.IntNE,
+}
+
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
 func isPredOp(op token.Token) bool {
 	return op >= predOpBase && op <= predOpLast
@@ -311,7 +316,10 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
-		case vkString, vkComplex, vkBool:
+		case vkBool:
+			pred := boolPredOpToLLVM[op-predOpBase]
+			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
+		case vkString, vkComplex:
 			panic("todo")
 		}
 	}

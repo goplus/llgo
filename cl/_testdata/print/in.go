@@ -189,6 +189,10 @@ func main() {
 	printnl()
 	printany(float64(2e9))
 	printnl()
+	var b bool = true
+	if b == true && b != false {
+		println("check bool", b)
+	}
 	println(true, false, 'a', 'A', rune('中'),
 		int8(1), int16(2), int32(3), int64(4), 5,
 		uint8(1), uint16(2), uint32(3), uint64(4), uintptr(5),
