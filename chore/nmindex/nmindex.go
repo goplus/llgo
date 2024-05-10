@@ -73,6 +73,11 @@ func makeIndex() {
 }
 
 func query(q string) {
+	if len(q) > 0 {
+		if c := q[0]; c != '*' && c != '_' {
+			q = "_" + q
+		}
+	}
 	files, err := nm.Query(indexDir(), q)
 	check(err)
 	for _, f := range files {
