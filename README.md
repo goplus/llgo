@@ -10,6 +10,21 @@ llgo - A Go compiler based on LLVM
 
 This is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem. It's a subproject of [the Go+ project](https://github.com/goplus/gop).
 
+## C standard libary support
+
+See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c).
+
+
+## Python support
+
+TODO
+
+
+## Other frequently used libraries
+
+TODO
+
+
 ## How to install
 
 Follow these steps to generate the `llgo` command (its usage is the same as the `go` command):
@@ -37,11 +52,6 @@ go install -v ./...
 TODO
 
 
-## Python support
-
-TODO
-
-
 ## Demo
 
 The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
@@ -52,11 +62,11 @@ The `_demo` directory contains our demos (it start with `_` to prevent the `go` 
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
 
-And the `_pydemo` directory contains python related demos:
+And the `py/_demo` directory contains python related demos:
 
-* [hellopy](_demo/hellopy/hello.go): link Python to Go and say `Hello world`
-* [clpy](_demo/clpy/cleval.go): compile Python code and eval.
-* [callpy](_demo/callpy/call.go): call Python standard library function `math.sqrt`.
+* [hellopy](py/_demo/hellopy/hello.go): link Python to Go and say `Hello world`
+* [clpy](py/_demo/clpy/cleval.go): compile Python code and eval.
+* [callpy](py/_demo/callpy/call.go): call Python standard library function `math.sqrt`.
 
 ### How to run demos
 
@@ -67,7 +77,7 @@ cd <demo-directory>  # eg. cd _demo/genints
 llgo run .
 ```
 
-To run the demos in directory `_pydemo`, you need to set the `LLGO_LIB_PYTHON` environment variable first. Assuming you use Python 3.12, and the `libpython3.12.so` (or `libpython3.12.dylib` or `python3.12.lib`) file is in the /foo/bar directory, then you need to set `LLGO_LIB_PYTHON` to:
+To run the demos in directory `py/_demo`, you need to set the `LLGO_LIB_PYTHON` environment variable first. Assuming you use Python 3.12, and the `libpython3.12.so` (or `libpython3.12.dylib` or `python3.12.lib`) file is in the /foo/bar directory, then you need to set `LLGO_LIB_PYTHON` to:
 
 ```sh
 export LLGO_LIB_PYTHON=/foo/bar/python3.12
@@ -79,9 +89,9 @@ For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/libpython3
 export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/python3.12
 ```
 
-Then you can run the demos in directory `_pydemo`:
+Then you can run the demos in directory `py/_demo`:
 
 ```sh
-cd <demo-directory>  # eg. cd _pydemo/hellopy
+cd <demo-directory>  # eg. cd py/_demo/hellopy
 llgo run .
 ```
