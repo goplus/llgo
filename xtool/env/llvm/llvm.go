@@ -19,7 +19,7 @@ package llvm
 import (
 	"os"
 
-	"github.com/goplus/llgo/x/nm"
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 type Env struct {

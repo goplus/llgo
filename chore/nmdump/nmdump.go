@@ -21,7 +21,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/goplus/llgo/x/env/llvm"
+	"github.com/goplus/llgo/xtool/env/llvm"
 )
 
 func main() {

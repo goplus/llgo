@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goplus/llgo/x/env/llvm"
-	"github.com/goplus/llgo/x/nm"
+	"github.com/goplus/llgo/xtool/env/llvm"
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 func main() {
