@@ -101,6 +101,8 @@ func pkgKind(v string) (int, string) {
 		//	return PkgLinkBitCode
 		if strings.HasPrefix(v, "link:") { // "link: <libpath>"
 			return PkgLinkExtern, v[5:]
+		} else if strings.HasPrefix(v, "py.") { // "py.<module>"
+			return PkgPyModule, v[3:]
 		}
 	}
 	return PkgLLGo, ""
