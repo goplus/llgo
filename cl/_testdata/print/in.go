@@ -13,6 +13,14 @@ func gwrite(b []byte) {
 	c.Printf(c.Str("%s"), b)
 }
 
+func printbool(v bool) {
+	if v {
+		printstring("true")
+	} else {
+		printstring("false")
+	}
+}
+
 func printfloat(v float64) {
 	switch {
 	case v != v:
@@ -177,14 +185,30 @@ func main() {
 	printnl()
 	prinfsub(100.1)
 	printnl()
-	printnum(float32(1e9))
+	printany(float32(1e9))
 	printnl()
-	printnum(float64(2e9))
+	printany(float64(2e9))
+	printnl()
+	println(true, false, 'a', 'A', rune('中'),
+		int8(1), int16(2), int32(3), int64(4), 5,
+		uint8(1), uint16(2), uint32(3), uint64(4), uintptr(5),
+		"llgo")
+}
+
+func println(args ...any) {
+	for i, v := range args {
+		if i != 0 {
+			printstring(" ")
+		}
+		printany(v)
+	}
 	printnl()
 }
 
-func printnum(v any) {
+func printany(v any) {
 	switch v := v.(type) {
+	case bool:
+		printbool(v)
 	case int:
 		printint(int64(v))
 	case int8:
@@ -211,6 +235,8 @@ func printnum(v any) {
 		printfloat(float64(v))
 	case float64:
 		printfloat(float64(v))
+	case string:
+		printstring(v)
 	}
 }
 
