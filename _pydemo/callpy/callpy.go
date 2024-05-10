@@ -8,5 +8,5 @@ import (
 
 func main() {
 	x := math.Sqrt(py.Float(2))
-	c.Printf(c.Str("sqrt(2) = %f\n"), x.FloatAsDouble())
+	c.Printf(c.Str("sqrt(2) = %f\n"), x.Float64())
 }

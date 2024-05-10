@@ -28,5 +28,5 @@ func Float(v float64) *Object
 //go:linkname FloatFromSring C.PyFloat_FromString
 func FloatFromSring(v *Object) *Object
 
-// llgo:link (*Object).FloatAsDouble C.PyFloat_AsDouble
-func (o *Object) FloatAsDouble() float64 { panic("unreachable") }
+// llgo:link (*Object).Float64 C.PyFloat_AsDouble
+func (o *Object) Float64() float64 { panic("unreachable") }
