@@ -295,7 +295,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
 		if op == token.AND_NOT {
-			panic("todo")
+			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
 		}
 		kind := x.kind
 		llop := logicOpToLLVM[op-logicOpBase]

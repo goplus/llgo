@@ -14,17 +14,18 @@ source_filename = "main"
 @__llgo_argv = global ptr null
 @1 = private unnamed_addr constant [5 x i8] c"llgo\00", align 1
 @2 = private unnamed_addr constant [11 x i8] c"check bool\00", align 1
-@3 = private unnamed_addr constant [5 x i8] c"llgo\00", align 1
-@4 = private unnamed_addr constant [5 x i8] c"true\00", align 1
-@5 = private unnamed_addr constant [6 x i8] c"false\00", align 1
-@6 = private unnamed_addr constant [4 x i8] c"NaN\00", align 1
-@7 = private unnamed_addr constant [5 x i8] c"+Inf\00", align 1
-@8 = private unnamed_addr constant [5 x i8] c"-Inf\00", align 1
-@9 = private unnamed_addr constant [17 x i8] c"0123456789abcdef\00", align 1
-@10 = private unnamed_addr constant [2 x i8] c"-\00", align 1
-@11 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@13 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@3 = private unnamed_addr constant [9 x i8] c"check &^\00", align 1
+@4 = private unnamed_addr constant [5 x i8] c"llgo\00", align 1
+@5 = private unnamed_addr constant [5 x i8] c"true\00", align 1
+@6 = private unnamed_addr constant [6 x i8] c"false\00", align 1
+@7 = private unnamed_addr constant [4 x i8] c"NaN\00", align 1
+@8 = private unnamed_addr constant [5 x i8] c"+Inf\00", align 1
+@9 = private unnamed_addr constant [5 x i8] c"-Inf\00", align 1
+@10 = private unnamed_addr constant [17 x i8] c"0123456789abcdef\00", align 1
+@11 = private unnamed_addr constant [2 x i8] c"-\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c" \00", align 1
 
 define %"github.com/goplus/llgo/internal/runtime.Slice" @main.bytes(%"github.com/goplus/llgo/internal/runtime.String" %0) {
 _llgo_0:
@@ -122,73 +123,88 @@ _llgo_1:                                          ; preds = %_llgo_3
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1, %_llgo_0
-  %15 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 256)
+  %15 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
   %16 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 0
-  %17 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 1)
-  %18 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %17, i64 -1)
+  %17 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 8)
+  %18 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %17)
   store %"github.com/goplus/llgo/internal/runtime.iface" %18, ptr %16, align 8
   %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 1
   %20 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 1)
-  %21 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %20, i64 0)
+  %21 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %20, i64 -1)
   store %"github.com/goplus/llgo/internal/runtime.iface" %21, ptr %19, align 8
   %22 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 2
-  %23 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
-  %24 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %23, i64 97)
+  %23 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 1)
+  %24 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %23, i64 -1)
   store %"github.com/goplus/llgo/internal/runtime.iface" %24, ptr %22, align 8
-  %25 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 3
-  %26 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
-  %27 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %26, i64 65)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %27, ptr %25, align 8
-  %28 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 4
-  %29 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
-  %30 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %29, i64 20013)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %30, ptr %28, align 8
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 5
-  %32 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 3)
-  %33 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %32, i64 1)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %33, ptr %31, align 8
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 6
-  %35 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 4)
-  %36 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %35, i64 2)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %36, ptr %34, align 8
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 7
-  %38 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
-  %39 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %38, i64 3)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %39, ptr %37, align 8
-  %40 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 8
-  %41 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
-  %42 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %41, i64 4)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %42, ptr %40, align 8
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 9
-  %44 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %45 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %44, i64 5)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %45, ptr %43, align 8
-  %46 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 10
-  %47 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 8)
-  %48 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %47, i64 1)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %48, ptr %46, align 8
-  %49 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 11
-  %50 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 9)
-  %51 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %50, i64 2)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %51, ptr %49, align 8
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 12
-  %53 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 10)
-  %54 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %53, i64 3)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %54, ptr %52, align 8
-  %55 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 13
-  %56 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 11)
-  %57 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %56, i64 4)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %57, ptr %55, align 8
-  %58 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 14
-  %59 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 12)
-  %60 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %59, i64 5)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %60, ptr %58, align 8
-  %61 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %15, i64 15
-  %62 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 4)
-  %63 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %62)
-  store %"github.com/goplus/llgo/internal/runtime.iface" %63, ptr %61, align 8
-  %64 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %15, i64 16, i64 16, i64 0, i64 16, i64 16)
-  call void @main.println(%"github.com/goplus/llgo/internal/runtime.Slice" %64)
+  %25 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %15, i64 16, i64 3, i64 0, i64 3, i64 3)
+  call void @main.println(%"github.com/goplus/llgo/internal/runtime.Slice" %25)
+  %26 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 256)
+  %27 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 0
+  %28 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 1)
+  %29 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %28, i64 -1)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %29, ptr %27, align 8
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 1
+  %31 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 1)
+  %32 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %31, i64 0)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %32, ptr %30, align 8
+  %33 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 2
+  %34 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
+  %35 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %34, i64 97)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %35, ptr %33, align 8
+  %36 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 3
+  %37 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
+  %38 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %37, i64 65)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %38, ptr %36, align 8
+  %39 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 4
+  %40 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
+  %41 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %40, i64 20013)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %41, ptr %39, align 8
+  %42 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 5
+  %43 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 3)
+  %44 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %43, i64 1)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %44, ptr %42, align 8
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 6
+  %46 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 4)
+  %47 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %46, i64 2)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %47, ptr %45, align 8
+  %48 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 7
+  %49 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 5)
+  %50 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %49, i64 3)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %50, ptr %48, align 8
+  %51 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 8
+  %52 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
+  %53 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %52, i64 4)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %53, ptr %51, align 8
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 9
+  %55 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %56 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %55, i64 5)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %56, ptr %54, align 8
+  %57 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 10
+  %58 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 8)
+  %59 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %58, i64 1)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %59, ptr %57, align 8
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 11
+  %61 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 9)
+  %62 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %61, i64 2)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %62, ptr %60, align 8
+  %63 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 12
+  %64 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 10)
+  %65 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %64, i64 3)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %65, ptr %63, align 8
+  %66 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 13
+  %67 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 11)
+  %68 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %67, i64 4)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %68, ptr %66, align 8
+  %69 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 14
+  %70 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 12)
+  %71 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %70, i64 5)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %71, ptr %69, align 8
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %26, i64 15
+  %73 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @4, i64 4)
+  %74 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %73)
+  store %"github.com/goplus/llgo/internal/runtime.iface" %74, ptr %72, align 8
+  %75 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %26, i64 16, i64 16, i64 0, i64 16, i64 16)
+  call void @main.println(%"github.com/goplus/llgo/internal/runtime.Slice" %75)
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
@@ -401,7 +417,7 @@ _llgo_0:
   br i1 %0, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %1 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @4, i64 4)
+  %1 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @5, i64 4)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %1)
   br label %_llgo_2
 
@@ -409,7 +425,7 @@ _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @5, i64 5)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @6, i64 5)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %2)
   br label %_llgo_2
 }
@@ -420,12 +436,12 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @6, i64 3)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @7, i64 3)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %2)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_7
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @7, i64 4)
+  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @8, i64 4)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %3)
   ret void
 
@@ -435,7 +451,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %5, label %_llgo_6, label %_llgo_7
 
 _llgo_4:                                          ; preds = %_llgo_10
-  %6 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @8, i64 4)
+  %6 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @9, i64 4)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %6)
   ret void
 
@@ -607,7 +623,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_3
   %2 = urem i64 %14, 16
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @9, i64 16)
+  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @10, i64 16)
   %4 = call ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %3)
   %5 = getelementptr inbounds i8, ptr %4, i64 %2
   %6 = load i8, ptr %5, align 1
@@ -651,7 +667,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @10, i64 1)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @11, i64 1)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %2)
   %3 = sub i64 0, %0
   br label %_llgo_2
@@ -685,7 +701,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_2
-  %9 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @11, i64 1)
+  %9 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @12, i64 1)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %9)
   br label %_llgo_5
 
@@ -696,14 +712,14 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_2
 
 define void @main.printnl() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @12, i64 1)
+  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @13, i64 1)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %0)
   ret void
 }
 
 define void @main.printsp() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @13, i64 1)
+  %0 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @14, i64 1)
   call void @main.printstring(%"github.com/goplus/llgo/internal/runtime.String" %0)
   ret void
 }
