@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	LLGoPackage = "link: $LLGO_PYTHON_ROOT/python3.12"
+	LLGoPackage = "link: $LLGO_LIB_PYTHON"
 )
 
 // -----------------------------------------------------------------------------
