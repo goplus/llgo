@@ -40,6 +40,17 @@ func (o *Object) DecRef() { panic("unreachable") }
 
 // -----------------------------------------------------------------------------
 
+// Retrieve an attribute named attrName from object o. Returns the attribute value on success,
+// or nil on failure. This is the equivalent of the Python expression o.attrName.
+//
+// llgo:link (*Object).GetAttr C.PyObject_GetAttr
+func (o *Object) GetAttr(attrName *Object) *Object { panic("unreachable") }
+
+// llgo:link (*Object).GetAttrString C.PyObject_GetAttrString
+func (o *Object) GetAttrString(attrName *c.Char) *Object { panic("unreachable") }
+
+// -----------------------------------------------------------------------------
+
 // Determine if the object o is callable. Return 1 if the object is callable and
 // 0 otherwise. This function always succeeds.
 //
