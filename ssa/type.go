@@ -188,6 +188,10 @@ func (p Program) tyInt64() llvm.Type {
 	return p.int64Type
 }
 
+func (p Program) toTuple(typ *types.Tuple) Type {
+	return &aType{p.toLLVMTuple(typ), rawType{typ}, vkTuple}
+}
+
 func (p Program) toType(raw types.Type) Type {
 	typ := rawType{raw}
 	switch t := raw.(type) {

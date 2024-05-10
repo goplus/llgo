@@ -24,6 +24,7 @@ import (
 	"go/types"
 	"log"
 
+	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llvm"
 )
 
@@ -257,6 +258,11 @@ var floatPredOpToLLVM = []llvm.FloatPredicate{
 	token.GEQ - predOpBase: llvm.FloatOGE,
 }
 
+var boolPredOpToLLVM = []llvm.IntPredicate{
+	token.EQL - predOpBase: llvm.IntEQ,
+	token.NEQ - predOpBase: llvm.IntNE,
+}
+
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
 func isPredOp(op token.Token) bool {
 	return op >= predOpBase && op <= predOpLast
@@ -289,7 +295,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
 		if op == token.AND_NOT {
-			panic("todo")
+			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
 		}
 		kind := x.kind
 		llop := logicOpToLLVM[op-logicOpBase]
@@ -310,7 +316,10 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
-		case vkString, vkComplex, vkBool:
+		case vkBool:
+			pred := boolPredOpToLLVM[op-predOpBase]
+			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
+		case vkString, vkComplex:
 			panic("todo")
 		}
 	}
@@ -1051,7 +1060,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	case *types.Basic:
 		kind := tx.Kind()
 		switch {
-		case kind >= types.Int && kind <= types.Uintptr:
+		case kind >= types.Bool && kind <= types.Uintptr:
 			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
 			tptr := prog.Uintptr()
 			vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
@@ -1118,7 +1127,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	}
 	switch assertedTyp.kind {
-	case vkSigned, vkUnsigned:
+	case vkSigned, vkUnsigned, vkFloat, vkBool:
 		pkg := b.Func.Pkg
 		fnName := "I2Int"
 		if commaOk {
@@ -1133,25 +1142,44 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 			panic("todo")
 		}
 		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
-		return b.InlineCall(fn, x, typ)
-	case vkFloat:
-		var fnName string
-		kind := assertedTyp.raw.Underlying().(*types.Basic).Kind()
-		switch kind {
-		case types.Float32:
-			fnName = "I2Float32"
-			if commaOk {
-				fnName = "CheckI2Float32"
+		ret = b.InlineCall(fn, x, typ)
+		if kind != types.Uintptr {
+			conv := func(v llvm.Value) llvm.Value {
+				switch kind {
+				case types.Float32:
+					v = castInt(b.impl, v, b.Prog.tyInt32())
+					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
+				case types.Float64:
+					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
+				default:
+					v = castInt(b.impl, v, assertedTyp.ll)
+				}
+				return v
 			}
-		case types.Float64:
-			fnName = "I2Float64"
-			if commaOk {
-				fnName = "CheckI2Float64"
+			if !commaOk {
+				ret.Type = assertedTyp
+				ret.impl = conv(ret.impl)
+			} else {
+				ret.Type = b.Prog.toTuple(
+					types.NewTuple(
+						types.NewVar(token.NoPos, nil, "", assertedTyp.RawType()),
+						ret.Type.RawType().(*types.Tuple).At(1),
+					),
+				)
+				val0 := conv(b.impl.CreateExtractValue(ret.impl, 0, ""))
+				val1 := b.impl.CreateExtractValue(ret.impl, 1, "")
+				ret.impl = llvm.ConstStruct([]llvm.Value{val0, val1}, false)
 			}
 		}
+		return
+	case vkString:
 		pkg := b.Func.Pkg
+		fnName := "I2String"
+		if commaOk {
+			fnName = "CheckI2String"
+		}
 		fn := pkg.rtFunc(fnName)
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
+		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(abi.String)))
 		return b.InlineCall(fn, x, typ)
 	}
 	panic("todo")
@@ -1260,13 +1288,6 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	}
 	panic("todo")
-}
-
-// BitCast bit cast expr to type
-func (b Builder) BitCast(val Expr, typ Type) (ret Expr) {
-	ret.Type = typ
-	ret.impl = b.impl.CreateBitCast(val.impl, typ.ll, "")
-	return
 }
 
 // -----------------------------------------------------------------------------
