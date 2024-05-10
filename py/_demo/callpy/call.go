@@ -10,7 +10,10 @@ func main() {
 	py.SetProgramName(*c.Argv)
 	math := py.ImportModule(c.Str("math"))
 	sqrt := math.GetAttrString(c.Str("sqrt"))
-	sqrt2 := sqrt.CallOneArg(py.Float(2)).FloatAsDouble()
-	c.Printf(c.Str("sqrt(2) = %f\n"), sqrt2)
+	sqrt2 := sqrt.CallOneArg(py.Float(2))
+	c.Printf(c.Str("sqrt(2) = %f\n"), sqrt2.FloatAsDouble())
+	sqrt2.DecRef()
+	sqrt.DecRef()
+	math.DecRef()
 	py.Finalize()
 }

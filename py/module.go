@@ -55,13 +55,4 @@ func Import(name *Object) *Module
 // llgo:link (*Module).GetDict C.PyModule_GetDict
 func (m *Module) GetDict() *Object { panic("unreachable") }
 
-// Retrieve an attribute named attrName from object o. Returns the attribute value on success,
-// or nil on failure. This is the equivalent of the Python expression o.attrName.
-//
-// llgo:link (*Object).GetAttr C.PyObject_GetAttr
-func (o *Object) GetAttr(attrName *Object) *Object { panic("unreachable") }
-
-// llgo:link (*Object).GetAttrString C.PyObject_GetAttrString
-func (o *Object) GetAttrString(attrName *c.Char) *Object { panic("unreachable") }
-
 // -----------------------------------------------------------------------------
