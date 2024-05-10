@@ -123,6 +123,7 @@ type instrOrValue interface {
 const (
 	PkgNormal = iota
 	PkgLLGo
+	PkgPyModule   // py.<module>
 	PkgNoInit     // noinit: a package that don't need to be initialized
 	PkgDeclOnly   // decl: a package that only have declarations
 	PkgLinkIR     // link llvm ir (.ll)

@@ -172,7 +172,7 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			// skip packages that only contain declarations
 			// and set no export file
 			pkg.ExportFile = ""
-		case cl.PkgLinkIR:
+		case cl.PkgLinkIR, cl.PkgPyModule:
 			// skip packages that don't need to be compiled but need to be linked
 			pkgPath := pkg.PkgPath
 			if isPkgInLLGo(pkgPath) {
