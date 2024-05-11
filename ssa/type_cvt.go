@@ -42,6 +42,7 @@ const (
 	inUnknown Background = iota
 	InGo
 	InC
+	InPython
 )
 
 // Type convert a Go/C type into raw type.

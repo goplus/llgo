@@ -147,6 +147,13 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 		}
 		return rt
 	})
+	prog.SetPython(func() *types.Package {
+		rt, err := imp.Import(llssa.PkgPython)
+		if err != nil {
+			t.Fatal("load python failed:", err)
+		}
+		return rt
+	})
 
 	ret, err := cl.NewPackage(prog, foo, files)
 	if err != nil {

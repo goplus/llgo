@@ -65,8 +65,8 @@ The `_demo` directory contains our demos (it start with `_` to prevent the `go` 
 And the `py/_demo` directory contains python related demos:
 
 * [hellopy](py/_demo/hellopy/hello.go): link Python to Go and say `Hello world`
-* [clpy](py/_demo/clpy/cleval.go): compile Python code and eval.
-* [callpy](py/_demo/callpy/call.go): call Python standard library function `math.sqrt`.
+* [clpy](py/_demo/clpy/cleval.go): compile Python code and eval
+* [callpy](py/_demo/callpy/call.go): call Python standard library function `math.sqrt`
 
 ### How to run demos
 

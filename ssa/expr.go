@@ -1204,7 +1204,6 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t4 = t3()
 //	t7 = invoke t5.Println(...t6)
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
-	prog := b.Prog
 	if debugInstr {
 		var b bytes.Buffer
 		name := fn.impl.Name()
@@ -1219,11 +1218,16 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		}
 		log.Println(b.String())
 	}
+	var kind = fn.kind
+	if kind == vkPyFunc {
+		return b.pyCall(fn, args)
+	}
 	var ll llvm.Type
 	var data Expr
 	var sig *types.Signature
+	var prog = b.Prog
 	var raw = fn.raw.Type
-	switch fn.kind {
+	switch kind {
 	case vkClosure:
 		data = b.Field(fn, 1)
 		fn = b.Field(fn, 0)

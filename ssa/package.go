@@ -19,13 +19,13 @@ package ssa
 import (
 	"go/token"
 	"go/types"
-	"log"
 
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
 )
 
 const (
+	PkgPython  = "github.com/goplus/llgo/py"
 	PkgRuntime = "github.com/goplus/llgo/internal/runtime"
 )
 
@@ -103,6 +103,9 @@ type aProgram struct {
 	rt    *types.Package
 	rtget func() *types.Package
 
+	py    *types.Package
+	pyget func() *types.Package
+
 	target *Target
 	td     llvm.TargetData
 	// tm  llvm.TargetMachine
@@ -131,8 +134,15 @@ type aProgram struct {
 	uintptrTy Type
 	intTy     Type
 	f64Ty     Type
+	pyObjPtr  Type
+	pyObjPPtr Type
+
+	pyImpTy    *types.Signature
+	callNoArg  *types.Signature
+	callOneArg *types.Signature
 
 	needRuntime bool
+	needPyInit  bool
 }
 
 // A Program presents a program.
@@ -156,6 +166,17 @@ func NewProgram(target *Target) Program {
 		ctx.Finalize()
 	*/
 	return &aProgram{ctx: ctx, gocvt: newGoTypes(), target: target, td: td, named: make(map[string]llvm.Type)}
+}
+
+// SetPython sets the Python package.
+// Its type can be *types.Package or func() *types.Package.
+func (p Program) SetPython(py any) {
+	switch v := py.(type) {
+	case *types.Package:
+		p.py = v
+	case func() *types.Package:
+		p.pyget = v
+	}
 }
 
 // SetRuntime sets the runtime.
@@ -182,9 +203,22 @@ func (p Program) runtime() *types.Package {
 	return p.rt
 }
 
+func (p Program) python() *types.Package {
+	if p.py == nil {
+		p.py = p.pyget()
+	}
+	return p.py
+}
+
 func (p Program) rtNamed(name string) *types.Named {
 	t := p.runtime().Scope().Lookup(name).Type().(*types.Named)
 	t, _ = p.gocvt.cvtNamed(t)
+	return t
+}
+
+func (p Program) pyNamed(name string) *types.Named {
+	// TODO(xsw): does python type need to convert?
+	t := p.python().Scope().Lookup(name).Type().(*types.Named)
 	return t
 }
 
@@ -228,8 +262,26 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	gbls := make(map[string]Global)
 	fns := make(map[string]Function)
 	stubs := make(map[string]Function)
+	pyfns := make(map[string]PyFunction)
 	p.needRuntime = false
-	return &aPackage{mod, gbls, fns, stubs, p}
+	return &aPackage{mod, gbls, fns, stubs, pyfns, p}
+}
+
+// PyObjectPtrPtr returns the **py.Object type.
+func (p Program) PyObjectPtrPtr() Type {
+	if p.pyObjPPtr == nil {
+		p.pyObjPPtr = p.Pointer(p.PyObjectPtr())
+	}
+	return p.pyObjPPtr
+}
+
+// PyObjectPtr returns the *py.Object type.
+func (p Program) PyObjectPtr() Type {
+	if p.pyObjPtr == nil {
+		objPtr := types.NewPointer(p.pyNamed("Object"))
+		p.pyObjPtr = p.rawType(objPtr)
+	}
+	return p.pyObjPtr
 }
 
 // Void returns void type.
@@ -316,6 +368,7 @@ type aPackage struct {
 	vars  map[string]Global
 	fns   map[string]Function
 	stubs map[string]Function
+	pyfns map[string]PyFunction
 	Prog  Program
 }
 
@@ -328,45 +381,16 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 }
 */
 
-// NewVar creates a new global variable.
-func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
-	t := p.Prog.Type(typ, bg)
-	gbl := llvm.AddGlobal(p.mod, t.ll, name)
-	ret := &aGlobal{Expr{gbl, t}}
-	p.vars[name] = ret
-	return ret
-}
-
-// VarOf returns a global variable by name.
-func (p Package) VarOf(name string) Global {
-	return p.vars[name]
-}
-
-// NewFunc creates a new function.
-func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
-	return p.NewFuncEx(name, sig, bg, false)
-}
-
-// NewFuncEx creates a new function.
-func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool) Function {
-	if v, ok := p.fns[name]; ok {
-		return v
-	}
-	t := p.Prog.FuncDecl(sig, bg)
-	if debugInstr {
-		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
-	}
-	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
-	p.fns[name] = ret
-	return ret
-}
-
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr
+}
+
+func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {
+	p.Prog.needPyInit = true
+	return p.NewFunc(fullName, sig, InC).Expr
 }
 
 func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
@@ -400,11 +424,6 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 		v = fn.Expr
 	}
 	return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
-}
-
-// FuncOf returns a function by name.
-func (p Package) FuncOf(name string) Function {
-	return p.fns[name]
 }
 
 // -----------------------------------------------------------------------------
@@ -453,5 +472,75 @@ func (p *Package) WriteFile(file string) (err error) {
 	return llvm.WriteBitcodeToFile(p.mod, f)
 }
 */
+
+// -----------------------------------------------------------------------------
+
+func (p Program) tyImportPyModule() *types.Signature {
+	if p.pyImpTy == nil {
+		charPtr := types.NewPointer(types.Typ[types.Int8])
+		objPtr := p.PyObjectPtr().raw.Type
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", charPtr))
+		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", objPtr))
+		p.pyImpTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyImpTy
+}
+
+func (p Program) tyCallNoArg() *types.Signature {
+	if p.callNoArg == nil {
+		objPtr := p.PyObjectPtr().raw.Type
+		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
+		params := types.NewTuple(paramObjPtr)
+		p.callNoArg = types.NewSignatureType(nil, nil, nil, params, params, false)
+	}
+	return p.callNoArg
+}
+
+func (p Program) tyCallOneArg() *types.Signature {
+	if p.callOneArg == nil {
+		objPtr := p.PyObjectPtr().raw.Type
+		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
+		params := types.NewTuple(paramObjPtr, paramObjPtr)
+		results := types.NewTuple(paramObjPtr)
+		p.callOneArg = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.callOneArg
+}
+
+// ImportPyMod imports a Python module.
+func (b Builder) ImportPyMod(path string) Expr {
+	pkg := b.Func.Pkg
+	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
+	return b.Call(fnImp, b.CStr(path))
+}
+
+// NewPyModVar creates a new global variable for a Python module.
+func (p Package) NewPyModVar(name string) Global {
+	prog := p.Prog
+	objPtr := prog.PyObjectPtrPtr().raw.Type
+	g := p.NewVar(name, objPtr, InC)
+	g.Init(prog.Null(g.Type))
+	g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	return g
+}
+
+func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	sig := fn.raw.Type.(*types.Signature)
+	params := sig.Params()
+	n := params.Len()
+	switch n {
+	case 0:
+		call := pkg.pyFunc("PyObject_CallNoArg", prog.tyCallNoArg())
+		ret = b.Call(call, fn)
+	case 1:
+		call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
+		ret = b.Call(call, fn, args[0])
+	default:
+		panic("todo")
+	}
+	return
+}
 
 // -----------------------------------------------------------------------------

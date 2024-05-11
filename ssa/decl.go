@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"go/types"
+	"log"
 	"strconv"
 
 	"github.com/goplus/llvm"
@@ -67,6 +68,23 @@ type aGlobal struct {
 // A Global is a named Value holding the address of a package-level
 // variable.
 type Global = *aGlobal
+
+// NewVar creates a new global variable.
+func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
+	if v, ok := p.vars[name]; ok {
+		return v
+	}
+	t := p.Prog.Type(typ, bg)
+	gbl := llvm.AddGlobal(p.mod, t.ll, name)
+	ret := &aGlobal{Expr{gbl, t}}
+	p.vars[name] = ret
+	return ret
+}
+
+// VarOf returns a global variable by name.
+func (p Package) VarOf(name string) Global {
+	return p.vars[name]
+}
 
 // Init initializes the global variable with the given value.
 func (g Global) Init(v Expr) {
@@ -140,6 +158,31 @@ type aFunction struct {
 // Function represents a function or method.
 type Function = *aFunction
 
+// NewFunc creates a new function.
+func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
+	return p.NewFuncEx(name, sig, bg, false)
+}
+
+// NewFuncEx creates a new function.
+func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool) Function {
+	if v, ok := p.fns[name]; ok {
+		return v
+	}
+	t := p.Prog.FuncDecl(sig, bg)
+	if debugInstr {
+		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
+	}
+	fn := llvm.AddFunction(p.mod, name, t.ll)
+	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
+	p.fns[name] = ret
+	return ret
+}
+
+// FuncOf returns a function by name.
+func (p Package) FuncOf(name string) Function {
+	return p.fns[name]
+}
+
 func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool) Function {
 	params, hasVArg := newParams(t, prog)
 	base := 0
@@ -212,22 +255,60 @@ func (p Function) MakeBody(nblk int) Builder {
 
 // MakeBlocks creates nblk basic blocks for the function.
 func (p Function) MakeBlocks(nblk int) []BasicBlock {
-	if p.blks == nil {
+	n := len(p.blks)
+	if n == 0 {
 		p.blks = make([]BasicBlock, 0, nblk)
 	}
-	n := len(p.blks)
-	f := p.impl
 	for i := 0; i < nblk; i++ {
-		label := "_llgo_" + strconv.Itoa(i)
-		blk := llvm.AddBasicBlock(f, label)
-		p.blks = append(p.blks, &aBasicBlock{blk, p, n + i})
+		p.addBlock(n + i)
 	}
 	return p.blks[n:]
+}
+
+func (p Function) addBlock(idx int) BasicBlock {
+	label := "_llgo_" + strconv.Itoa(idx)
+	blk := llvm.AddBasicBlock(p.impl, label)
+	ret := &aBasicBlock{blk, p, idx}
+	p.blks = append(p.blks, ret)
+	return ret
+}
+
+// MakeBlock creates a new basic block for the function.
+func (p Function) MakeBlock() BasicBlock {
+	return p.addBlock(len(p.blks))
 }
 
 // Block returns the ith basic block of the function.
 func (p Function) Block(idx int) BasicBlock {
 	return p.blks[idx]
+}
+
+// -----------------------------------------------------------------------------
+
+type aPyFunction struct {
+	Expr
+	Obj Global
+}
+
+// PyFunction represents a python function.
+type PyFunction = *aPyFunction
+
+// NewPyFunc creates a new python function.
+func (p Package) NewPyFunc(name string, sig *types.Signature) PyFunction {
+	if v, ok := p.pyfns[name]; ok {
+		return v
+	}
+	obj := p.NewVar(name, p.Prog.PyObjectPtrPtr().RawType(), InC)
+	ty := &aType{obj.ll, rawType{sig}, vkPyFunc}
+	expr := Expr{obj.impl, ty}
+	ret := &aPyFunction{expr, obj}
+	p.pyfns[name] = ret
+	return ret
+}
+
+// PyFuncOf returns a function by name.
+func (p Package) PyFuncOf(name string) PyFunction {
+	return p.pyfns[name]
 }
 
 // -----------------------------------------------------------------------------

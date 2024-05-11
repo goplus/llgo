@@ -53,6 +53,6 @@ func Import(name *Object) *Module
 // manipulate a module’s __dict__.
 //
 // llgo:link (*Module).GetDict C.PyModule_GetDict
-func (m *Module) GetDict() *Object { panic("unreachable") }
+func (m *Module) GetDict() *Object { return nil }
 
 // -----------------------------------------------------------------------------

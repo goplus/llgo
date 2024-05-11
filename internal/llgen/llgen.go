@@ -30,6 +30,7 @@ import (
 	"golang.org/x/tools/go/ssa/ssautil"
 
 	llssa "github.com/goplus/llgo/ssa"
+	cpackages "golang.org/x/tools/go/packages"
 )
 
 func Init() {
@@ -71,11 +72,10 @@ func Gen(pkgPath, inFile string, src any) string {
 	}
 
 	prog := llssa.NewProgram(nil)
-	prog.SetRuntime(func() *types.Package {
-		rt, err := imp.Import(llssa.PkgRuntime)
-		check(err)
-		return rt
+	initRtAndPy(prog, &cpackages.Config{
+		Mode: loadSyntax | cpackages.NeedDeps,
 	})
+
 	ret, err := cl.NewPackage(prog, ssaPkg, files)
 	check(err)
 

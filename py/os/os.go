@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package py
+package os
 
 import (
 	_ "unsafe"
+
+	"github.com/goplus/llgo/py"
 )
 
-// https://docs.python.org/3/c-api/float.html
+const (
+	LLGoPackage = "py.os"
+)
 
-//go:linkname Float C.PyFloat_FromDouble
-func Float(v float64) *Object
-
-//go:linkname FloatFromSring C.PyFloat_FromString
-func FloatFromSring(v *Object) *Object
-
-// llgo:link (*Object).Float64 C.PyFloat_AsDouble
-func (o *Object) Float64() float64 { return 0 }
+//go:linkname Getcwd py.getcwd
+func Getcwd() *py.Object
