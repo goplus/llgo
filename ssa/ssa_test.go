@@ -25,6 +25,12 @@ import (
 	"github.com/goplus/llvm"
 )
 
+func TestSetPython(t *testing.T) {
+	prog := NewProgram(nil)
+	typ := types.NewPackage("foo", "foo")
+	prog.SetPython(typ)
+}
+
 func TestClosureCtx(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
@@ -106,10 +112,28 @@ func assertPkg(t *testing.T, p Package, expected string) {
 	}
 }
 
+func TestPyFunc(t *testing.T) {
+	prog := NewProgram(nil)
+	py := types.NewPackage("foo", "foo")
+	o := types.NewTypeName(0, py, "Object", nil)
+	types.NewNamed(o, types.Typ[types.Int], nil)
+	py.Scope().Insert(o)
+	prog.SetPython(py)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	a := pkg.NewPyFunc("a", sig)
+	if pkg.NewPyFunc("a", sig) != a {
+		t.Fatal("NewPyFunc(a) failed")
+	}
+}
+
 func TestVar(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	a := pkg.NewVar("a", types.Typ[types.Int], InGo)
+	if pkg.NewVar("a", types.Typ[types.Int], InGo) != a {
+		t.Fatal("NewVar(a) failed")
+	}
 	a.Init(prog.Val(100))
 	b := pkg.NewVar("b", types.Typ[types.Int], InGo)
 	b.Init(a.Expr)
