@@ -347,14 +347,15 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	if pyModInit {
 		jump := block.Instrs[last].(*ssa.Jump)
 		jumpTo := p.jumpTo(jump)
-		modName := pysymPrefix + p.pyMod
+		modPath := p.pyMod
+		modName := pysymPrefix + modPath
 		modPtr := p.pkg.NewPyModVar(modName).Expr
 		mod := b.Load(modPtr)
 		cond := b.BinOp(token.NEQ, mod, b.Prog.Null(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlock(newBlk)
-		// TODO(xsw): pyModInit
+		b.Store(modPtr, b.ImportPyMod(modPath))
 		b.Jump(jumpTo)
 	}
 	return ret

@@ -38,6 +38,27 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
+func initRtAndPy(prog llssa.Program, cfg *packages.Config) {
+	var pkgRtAndPy []*packages.Package
+	load := func() []*packages.Package {
+		if pkgRtAndPy == nil {
+			var err error
+			pkgRtAndPy, err = packages.Load(cfg, llssa.PkgRuntime, llssa.PkgPython)
+			check(err)
+		}
+		return pkgRtAndPy
+	}
+
+	prog.SetRuntime(func() *types.Package {
+		rt := load()
+		return rt[0].Types
+	})
+	prog.SetPython(func() *types.Package {
+		rt := load()
+		return rt[1].Types
+	})
+}
+
 func GenFrom(fileOrPkg string) string {
 	cfg := &packages.Config{
 		Mode: loadSyntax | packages.NeedDeps,
@@ -52,11 +73,7 @@ func GenFrom(fileOrPkg string) string {
 	ssaPkg.Build()
 
 	prog := llssa.NewProgram(nil)
-	prog.SetRuntime(func() *types.Package {
-		rt, err := packages.Load(cfg, llssa.PkgRuntime)
-		check(err)
-		return rt[0].Types
-	})
+	initRtAndPy(prog, cfg)
 
 	if Verbose {
 		ssaPkg.WriteTo(os.Stderr)

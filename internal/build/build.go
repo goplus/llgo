@@ -120,18 +120,31 @@ func Do(args []string, conf *Config) {
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
+	var needRt bool
 	var rt []*packages.Package
 	prog := llssa.NewProgram(nil)
+	load := func() []*packages.Package {
+		if rt == nil {
+			var err error
+			rt, err = packages.Load(cfg, llssa.PkgRuntime, llssa.PkgPython)
+			check(err)
+		}
+		return rt
+	}
 	prog.SetRuntime(func() *types.Package {
-		rt, err = packages.Load(cfg, llssa.PkgRuntime)
-		check(err)
+		needRt = true
+		rt := load()
 		return rt[0].Types
+	})
+	prog.SetPython(func() *types.Package {
+		rt := load()
+		return rt[1].Types
 	})
 
 	pkgs := buildAllPkgs(prog, initial, mode, verbose)
 
 	var runtimeFiles []string
-	if rt != nil {
+	if needRt {
 		runtimeFiles = allLinkFiles(rt)
 	}
 	if mode != ModeBuild {

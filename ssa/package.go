@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	PkgPython  = "github.com/goplus/llgo/py"
 	PkgRuntime = "github.com/goplus/llgo/internal/runtime"
 )
 
@@ -103,6 +104,9 @@ type aProgram struct {
 	rt    *types.Package
 	rtget func() *types.Package
 
+	py    *types.Package
+	pyget func() *types.Package
+
 	target *Target
 	td     llvm.TargetData
 	// tm  llvm.TargetMachine
@@ -130,8 +134,13 @@ type aProgram struct {
 	uintptrTy Type
 	intTy     Type
 	f64Ty     Type
+	pyObjPtr  Type
+	pyObjPPtr Type
+
+	pyImpTy *types.Signature
 
 	needRuntime bool
+	needPyInit  bool
 }
 
 // A Program presents a program.
@@ -155,6 +164,17 @@ func NewProgram(target *Target) Program {
 		ctx.Finalize()
 	*/
 	return &aProgram{ctx: ctx, gocvt: newGoTypes(), target: target, td: td}
+}
+
+// SetPython sets the Python package.
+// Its type can be *types.Package or func() *types.Package.
+func (p Program) SetPython(py any) {
+	switch v := py.(type) {
+	case *types.Package:
+		p.py = v
+	case func() *types.Package:
+		p.pyget = v
+	}
 }
 
 // SetRuntime sets the runtime.
@@ -181,9 +201,22 @@ func (p Program) runtime() *types.Package {
 	return p.rt
 }
 
+func (p Program) python() *types.Package {
+	if p.py == nil {
+		p.py = p.pyget()
+	}
+	return p.py
+}
+
 func (p Program) rtNamed(name string) *types.Named {
 	t := p.runtime().Scope().Lookup(name).Type().(*types.Named)
 	t, _ = p.gocvt.cvtNamed(t)
+	return t
+}
+
+func (p Program) pyNamed(name string) *types.Named {
+	// TODO(xsw): does python type need to convert?
+	t := p.python().Scope().Lookup(name).Type().(*types.Named)
 	return t
 }
 
@@ -229,6 +262,23 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	stubs := make(map[string]Function)
 	p.needRuntime = false
 	return &aPackage{mod, gbls, fns, stubs, p}
+}
+
+// PyObjectPtrPtr returns the **py.Object type.
+func (p Program) PyObjectPtrPtr() Type {
+	if p.pyObjPPtr == nil {
+		p.pyObjPPtr = p.Pointer(p.PyObjectPtr())
+	}
+	return p.pyObjPPtr
+}
+
+// PyObjectPtr returns the *py.Object type.
+func (p Program) PyObjectPtr() Type {
+	if p.pyObjPtr == nil {
+		objPtr := types.NewPointer(p.pyNamed("Object"))
+		p.pyObjPtr = p.rawType(objPtr)
+	}
+	return p.pyObjPtr
 }
 
 // Void returns void type.
@@ -327,13 +377,6 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 }
 */
 
-// NewPyModVar creates a new global variable for a Python module.
-func (p Package) NewPyModVar(name string) Global {
-	ret := p.NewVar(name, types.NewPointer(types.Typ[types.Int]), InC)
-	ret.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-	return ret
-}
-
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 	t := p.Prog.Type(typ, bg)
@@ -373,6 +416,11 @@ func (p Package) rtFunc(fnName string) Expr {
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr
+}
+
+func (p Package) cpyFunc(fullName string, sig *types.Signature) Expr {
+	p.Prog.needPyInit = true
+	return p.NewFunc(fullName, sig, InC).Expr
 }
 
 func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
@@ -459,5 +507,35 @@ func (p *Package) WriteFile(file string) (err error) {
 	return llvm.WriteBitcodeToFile(p.mod, f)
 }
 */
+
+// -----------------------------------------------------------------------------
+
+func (p Program) tyImportPyModule() *types.Signature {
+	if p.pyImpTy == nil {
+		charPtr := types.NewPointer(types.Typ[types.Int8])
+		objPtr := p.PyObjectPtr().raw.Type
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", charPtr))
+		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", objPtr))
+		p.pyImpTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyImpTy
+}
+
+// NewPyModVar creates a new global variable for a Python module.
+func (p Package) NewPyModVar(name string) Global {
+	prog := p.Prog
+	objPtr := prog.PyObjectPtrPtr().raw.Type
+	g := p.NewVar(name, objPtr, InC)
+	g.Init(prog.Null(g.Type))
+	g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	return g
+}
+
+// ImportPyMod imports a Python module.
+func (b Builder) ImportPyMod(path string) Expr {
+	pkg := b.Func.Pkg
+	fnImp := pkg.cpyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
+	return b.Call(fnImp, b.CStr(path))
+}
 
 // -----------------------------------------------------------------------------
