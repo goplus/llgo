@@ -557,7 +557,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				args := p.compileValues(b, args, kind)
 				ret = b.Call(aFn.Expr, args...)
 			case pyFunc:
-				log.Panicln("pyFunc:", pyFn)
+				args := p.compileValues(b, args, kind)
+				ret = b.Call(pyFn.Expr, args...)
 			case llgoCstr:
 				ret = cstr(b, args)
 			case llgoAdvance:

@@ -136,7 +136,9 @@ type aProgram struct {
 	pyObjPtr  Type
 	pyObjPPtr Type
 
-	pyImpTy *types.Signature
+	pyImpTy    *types.Signature
+	callNoArg  *types.Signature
+	callOneArg *types.Signature
 
 	needRuntime bool
 	needPyInit  bool
@@ -385,7 +387,7 @@ func (p Package) rtFunc(fnName string) Expr {
 	return p.NewFunc(name, sig, InGo).Expr
 }
 
-func (p Package) cpyFunc(fullName string, sig *types.Signature) Expr {
+func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {
 	p.Prog.needPyInit = true
 	return p.NewFunc(fullName, sig, InC).Expr
 }
@@ -483,10 +485,31 @@ func (p Program) tyImportPyModule() *types.Signature {
 	return p.pyImpTy
 }
 
+func (p Program) tyCallNoArg() *types.Signature {
+	if p.callNoArg == nil {
+		objPtr := p.PyObjectPtr().raw.Type
+		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
+		params := types.NewTuple(paramObjPtr)
+		p.callNoArg = types.NewSignatureType(nil, nil, nil, params, params, false)
+	}
+	return p.callNoArg
+}
+
+func (p Program) tyCallOneArg() *types.Signature {
+	if p.callOneArg == nil {
+		objPtr := p.PyObjectPtr().raw.Type
+		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
+		params := types.NewTuple(paramObjPtr, paramObjPtr)
+		results := types.NewTuple(paramObjPtr)
+		p.callOneArg = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.callOneArg
+}
+
 // ImportPyMod imports a Python module.
 func (b Builder) ImportPyMod(path string) Expr {
 	pkg := b.Func.Pkg
-	fnImp := pkg.cpyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
+	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
 	return b.Call(fnImp, b.CStr(path))
 }
 
@@ -498,6 +521,25 @@ func (p Package) NewPyModVar(name string) Global {
 	g.Init(prog.Null(g.Type))
 	g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	return g
+}
+
+func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	sig := fn.raw.Type.(*types.Signature)
+	params := sig.Params()
+	n := params.Len()
+	switch n {
+	case 0:
+		call := pkg.pyFunc("PyObject_CallNoArg", prog.tyCallNoArg())
+		ret = b.Call(call, fn)
+	case 1:
+		call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
+		ret = b.Call(call, fn, args[0])
+	default:
+		panic("todo")
+	}
+	return
 }
 
 // -----------------------------------------------------------------------------
