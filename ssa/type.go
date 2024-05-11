@@ -255,7 +255,11 @@ func (p Program) toType(raw types.Type) Type {
 }
 
 func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {
+	if typ, ok := p.named[name]; ok {
+		return typ
+	}
 	t := p.ctx.StructCreateNamed(name)
+	p.named[name] = t
 	fields := p.toLLVMFields(raw)
 	t.StructSetBody(fields, false)
 	return t
