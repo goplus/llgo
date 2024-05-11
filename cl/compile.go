@@ -217,7 +217,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) llssa.Func
 		if ftype == pyFunc {
 			// TODO(xsw): pyMod == ""
 			fn := pysymPrefix + p.pyMod + "." + name
-			pkg.NewVar(fn, types.Typ[types.Int], llssa.InC)
+			pkg.NewVar(fn, pkg.Prog.PyObjectPtrPtr().RawType(), llssa.InC)
 		}
 		return nil
 	}
