@@ -23,10 +23,16 @@ import (
 	"github.com/goplus/llgo/py"
 )
 
+const (
+	LLGoPackage = "decl"
+)
+
+/*
 func init() {
 	py.Initialize()
 	py.SetProgramName(*c.Argv)
 }
+*/
 
 //go:linkname Module C.PyImport_ImportModule
 func Module(name *c.Char) *py.Module

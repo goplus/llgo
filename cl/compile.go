@@ -143,6 +143,7 @@ type context struct {
 	goProg *ssa.Program
 	goTyps *types.Package
 	goPkg  *ssa.Package
+	pyMod  string
 	link   map[string]string           // pkgPath.nameInPkg => linkname
 	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
@@ -213,6 +214,11 @@ var (
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) llssa.Function {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
+		if ftype == pyFunc {
+			// TODO(xsw): pyMod == ""
+			fn := "__llgo_py." + p.pyMod + "." + name
+			pkg.NewVar(fn, types.Typ[types.Int], llssa.InC)
+		}
 		return nil
 	}
 	fn := pkg.FuncOf(name)
@@ -815,6 +821,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 	}
+	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
 	for _, m := range members {
 		member := m.val

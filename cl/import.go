@@ -30,6 +30,8 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+// -----------------------------------------------------------------------------
+
 type symInfo struct {
 	file     string
 	fullName string
@@ -305,6 +307,7 @@ const (
 	ignoredFunc = iota
 	goFunc      = int(llssa.InGo)
 	cFunc       = int(llssa.InC)
+	pyFunc      = int(llssa.InPython)
 	llgoInstr   = -1
 
 	llgoInstrBase    = 0x80
@@ -340,6 +343,9 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 	if v, ok := p.link[orgName]; ok {
 		if strings.HasPrefix(v, "C.") {
 			return nil, v[2:], cFunc
+		}
+		if strings.HasPrefix(v, "py.") {
+			return nil, v[3:], pyFunc
 		}
 		if strings.HasPrefix(v, "llgo.") {
 			return nil, v[5:], llgoInstr
@@ -393,3 +399,13 @@ func pkgKindByPath(pkgPath string) int {
 	}
 	return PkgNormal
 }
+
+// -----------------------------------------------------------------------------
+
+func (p *context) initPyModule() {
+	if kind, mod := pkgKindByScope(p.goTyps.Scope()); kind == PkgPyModule {
+		p.pyMod = mod
+	}
+}
+
+// -----------------------------------------------------------------------------
