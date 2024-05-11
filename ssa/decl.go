@@ -298,7 +298,10 @@ func (p Package) NewPyFunc(name string, sig *types.Signature) PyFunction {
 	if v, ok := p.pyfns[name]; ok {
 		return v
 	}
-	obj := p.NewVar(name, p.Prog.PyObjectPtrPtr().RawType(), InC)
+	prog := p.Prog
+	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
+	obj.Init(prog.Null(obj.Type))
+	obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	ty := &aType{obj.ll, rawType{sig}, vkPyFunc}
 	expr := Expr{obj.impl, ty}
 	ret := &aPyFunction{expr, obj}

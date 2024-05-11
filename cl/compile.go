@@ -285,13 +285,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
 func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyFunction, ftype int) {
-	_, name, ftype := p.funcName(fn, false)
+	pkgTypes, name, ftype := p.funcName(fn, false)
 	switch ftype {
 	case pyFunc:
-		pkg := p.pkg
-		if pyFn = pkg.PyFuncOf(name); pyFn == nil {
-			pyFn = pkg.NewPyFunc(name, fn.Signature)
+		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
+			pkg := p.pkg
+			fnName := pysymPrefix + mod + "." + name
+			if pyFn = pkg.PyFuncOf(fnName); pyFn == nil {
+				pyFn = pkg.NewPyFunc(fnName, fn.Signature)
+				return
+			}
 		}
+		ftype = ignoredFunc
 	case llgoInstr:
 		switch name {
 		case "cstr":

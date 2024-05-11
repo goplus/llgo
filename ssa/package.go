@@ -137,7 +137,7 @@ type aProgram struct {
 	pyObjPPtr Type
 
 	pyImpTy    *types.Signature
-	callNoArg  *types.Signature
+	callNoArgs *types.Signature
 	callOneArg *types.Signature
 
 	needRuntime bool
@@ -485,14 +485,14 @@ func (p Program) tyImportPyModule() *types.Signature {
 	return p.pyImpTy
 }
 
-func (p Program) tyCallNoArg() *types.Signature {
-	if p.callNoArg == nil {
+func (p Program) tyCallNoArgs() *types.Signature {
+	if p.callNoArgs == nil {
 		objPtr := p.PyObjectPtr().raw.Type
 		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
 		params := types.NewTuple(paramObjPtr)
-		p.callNoArg = types.NewSignatureType(nil, nil, nil, params, params, false)
+		p.callNoArgs = types.NewSignatureType(nil, nil, nil, params, params, false)
 	}
-	return p.callNoArg
+	return p.callNoArgs
 }
 
 func (p Program) tyCallOneArg() *types.Signature {
@@ -531,7 +531,7 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	n := params.Len()
 	switch n {
 	case 0:
-		call := pkg.pyFunc("PyObject_CallNoArg", prog.tyCallNoArg())
+		call := pkg.pyFunc("PyObject_CallNoArgs", prog.tyCallNoArgs())
 		ret = b.Call(call, fn)
 	case 1:
 		call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())

@@ -4,8 +4,8 @@ source_filename = "main"
 @"main.init$guard" = global ptr null
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
-@sqrt = external global ptr
-@getcwd = external global ptr
+@__llgo_py.math.sqrt = linkonce global ptr null
+@__llgo_py.os.getcwd = linkonce global ptr null
 @0 = private unnamed_addr constant [14 x i8] c"sqrt(2) = %f\0A\00", align 1
 @1 = private unnamed_addr constant [10 x i8] c"cwd = %s\0A\00", align 1
 
@@ -31,8 +31,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
-  %3 = call ptr @PyObject_CallOneArg(ptr @sqrt, ptr %2)
-  %4 = call ptr @PyObject_CallNoArg(ptr @getcwd)
+  %3 = call ptr @PyObject_CallOneArg(ptr @__llgo_py.math.sqrt, ptr %2)
+  %4 = call ptr @PyObject_CallNoArgs(ptr @__llgo_py.os.getcwd)
   %5 = call double @PyFloat_AsDouble()
   %6 = call i32 (ptr, ...) @printf(ptr @0, double %5)
   %7 = call ptr @PyBytes_AsString()
@@ -50,7 +50,7 @@ declare ptr @PyFloat_FromDouble(double)
 
 declare ptr @PyObject_CallOneArg(ptr, ptr)
 
-declare ptr @PyObject_CallNoArg(ptr)
+declare ptr @PyObject_CallNoArgs(ptr)
 
 declare double @PyFloat_AsDouble()
 
