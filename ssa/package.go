@@ -19,7 +19,6 @@ package ssa
 import (
 	"go/token"
 	"go/types"
-	"log"
 
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -260,8 +259,9 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	gbls := make(map[string]Global)
 	fns := make(map[string]Function)
 	stubs := make(map[string]Function)
+	pyfns := make(map[string]PyFunction)
 	p.needRuntime = false
-	return &aPackage{mod, gbls, fns, stubs, p}
+	return &aPackage{mod, gbls, fns, stubs, pyfns, p}
 }
 
 // PyObjectPtrPtr returns the **py.Object type.
@@ -365,6 +365,7 @@ type aPackage struct {
 	vars  map[string]Global
 	fns   map[string]Function
 	stubs map[string]Function
+	pyfns map[string]PyFunction
 	Prog  Program
 }
 
@@ -376,40 +377,6 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 	return &aNamedConst{}
 }
 */
-
-// NewVar creates a new global variable.
-func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
-	t := p.Prog.Type(typ, bg)
-	gbl := llvm.AddGlobal(p.mod, t.ll, name)
-	ret := &aGlobal{Expr{gbl, t}}
-	p.vars[name] = ret
-	return ret
-}
-
-// VarOf returns a global variable by name.
-func (p Package) VarOf(name string) Global {
-	return p.vars[name]
-}
-
-// NewFunc creates a new function.
-func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
-	return p.NewFuncEx(name, sig, bg, false)
-}
-
-// NewFuncEx creates a new function.
-func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool) Function {
-	if v, ok := p.fns[name]; ok {
-		return v
-	}
-	t := p.Prog.FuncDecl(sig, bg)
-	if debugInstr {
-		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
-	}
-	fn := llvm.AddFunction(p.mod, name, t.ll)
-	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
-	p.fns[name] = ret
-	return ret
-}
 
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
@@ -454,11 +421,6 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 		v = fn.Expr
 	}
 	return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
-}
-
-// FuncOf returns a function by name.
-func (p Package) FuncOf(name string) Function {
-	return p.fns[name]
 }
 
 // -----------------------------------------------------------------------------
@@ -521,6 +483,13 @@ func (p Program) tyImportPyModule() *types.Signature {
 	return p.pyImpTy
 }
 
+// ImportPyMod imports a Python module.
+func (b Builder) ImportPyMod(path string) Expr {
+	pkg := b.Func.Pkg
+	fnImp := pkg.cpyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
+	return b.Call(fnImp, b.CStr(path))
+}
+
 // NewPyModVar creates a new global variable for a Python module.
 func (p Package) NewPyModVar(name string) Global {
 	prog := p.Prog
@@ -529,13 +498,6 @@ func (p Package) NewPyModVar(name string) Global {
 	g.Init(prog.Null(g.Type))
 	g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	return g
-}
-
-// ImportPyMod imports a Python module.
-func (b Builder) ImportPyMod(path string) Expr {
-	pkg := b.Func.Pkg
-	fnImp := pkg.cpyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
-	return b.Call(fnImp, b.CStr(path))
 }
 
 // -----------------------------------------------------------------------------

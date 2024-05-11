@@ -211,19 +211,19 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) llssa.Function {
+func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyFunction, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		if ftype == pyFunc {
 			// TODO(xsw): pyMod == ""
-			fn := pysymPrefix + p.pyMod + "." + name
-			pkg.NewVar(fn, pkg.Prog.PyObjectPtrPtr().RawType(), llssa.InC)
+			fnName := pysymPrefix + p.pyMod + "." + name
+			return nil, pkg.NewPyFunc(fnName, f.Signature), pyFunc
 		}
-		return nil
+		return nil, nil, ignoredFunc
 	}
 	fn := pkg.FuncOf(name)
 	if fn != nil && fn.HasBody() {
-		return fn
+		return fn, nil, goFunc
 	}
 
 	var sig = f.Signature
@@ -279,14 +279,20 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) llssa.Func
 			}
 		})
 	}
-	return fn
+	return fn, nil, goFunc
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
-func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
+func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyFunction, ftype int) {
 	_, name, ftype := p.funcName(fn, false)
-	if ftype == llgoInstr {
+	switch ftype {
+	case pyFunc:
+		pkg := p.pkg
+		if pyFn = pkg.PyFuncOf(name); pyFn == nil {
+			pyFn = pkg.NewPyFunc(name, fn.Signature)
+		}
+	case llgoInstr:
 		switch name {
 		case "cstr":
 			ftype = llgoCstr
@@ -307,11 +313,14 @@ func (p *context) funcOf(fn *ssa.Function) (ret llssa.Function, ftype int) {
 		default:
 			panic("unknown llgo instruction: " + name)
 		}
-	} else {
+	default:
 		pkg := p.pkg
-		if ret = pkg.FuncOf(name); ret == nil && len(fn.FreeVars) == 0 {
+		if aFn = pkg.FuncOf(name); aFn == nil {
+			if len(fn.FreeVars) > 0 {
+				return nil, nil, ignoredFunc
+			}
 			sig := fn.Signature
-			ret = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
+			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
 		}
 	}
 	return
@@ -542,11 +551,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = b.BuiltinCall(fn, args...)
 			}
 		case *ssa.Function:
-			fn, ftype := p.compileFunction(cv)
+			aFn, pyFn, ftype := p.compileFunction(cv)
 			switch ftype {
 			case goFunc, cFunc:
 				args := p.compileValues(b, args, kind)
-				ret = b.Call(fn.Expr, args...)
+				ret = b.Call(aFn.Expr, args...)
+			case pyFunc:
+				log.Panicln("pyFunc:", pyFn)
 			case llgoCstr:
 				ret = cstr(b, args)
 			case llgoAdvance:
@@ -742,12 +753,13 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
-func (p *context) compileFunction(v *ssa.Function) (llssa.Function, int) {
+func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyFunction, kind int) {
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package
-		if fn := p.compileFuncDecl(p.pkg, v); fn != nil {
-			return fn, goFunc
+		goFn, pyFn, kind = p.compileFuncDecl(p.pkg, v)
+		if kind != ignoredFunc {
+			return
 		}
 	}
 	return p.funcOf(v)
@@ -766,8 +778,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		fn, _ := p.compileFunction(v)
-		return fn.Expr
+		aFn, pyFn, _ := p.compileFunction(v)
+		if aFn != nil {
+			return aFn.Expr
+		}
+		return pyFn.Expr
 	case *ssa.Global:
 		g := p.varOf(v)
 		return g.Expr

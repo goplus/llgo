@@ -345,7 +345,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 			return nil, v[2:], cFunc
 		}
 		if strings.HasPrefix(v, "py.") {
-			return nil, v[3:], pyFunc
+			return pkg, v[3:], pyFunc
 		}
 		if strings.HasPrefix(v, "llgo.") {
 			return nil, v[5:], llgoInstr
