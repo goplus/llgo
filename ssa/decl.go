@@ -212,17 +212,27 @@ func (p Function) MakeBody(nblk int) Builder {
 
 // MakeBlocks creates nblk basic blocks for the function.
 func (p Function) MakeBlocks(nblk int) []BasicBlock {
-	if p.blks == nil {
+	n := len(p.blks)
+	if n == 0 {
 		p.blks = make([]BasicBlock, 0, nblk)
 	}
-	n := len(p.blks)
-	f := p.impl
 	for i := 0; i < nblk; i++ {
-		label := "_llgo_" + strconv.Itoa(i)
-		blk := llvm.AddBasicBlock(f, label)
-		p.blks = append(p.blks, &aBasicBlock{blk, p, n + i})
+		p.addBlock(n + i)
 	}
 	return p.blks[n:]
+}
+
+func (p Function) addBlock(idx int) BasicBlock {
+	label := "_llgo_" + strconv.Itoa(idx)
+	blk := llvm.AddBasicBlock(p.impl, label)
+	ret := &aBasicBlock{blk, p, idx}
+	p.blks = append(p.blks, ret)
+	return ret
+}
+
+// MakeBlock creates a new basic block for the function.
+func (p Function) MakeBlock() BasicBlock {
+	return p.addBlock(len(p.blks))
 }
 
 // Block returns the ith basic block of the function.

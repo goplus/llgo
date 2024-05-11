@@ -402,6 +402,10 @@ func pkgKindByPath(pkgPath string) int {
 
 // -----------------------------------------------------------------------------
 
+const (
+	pysymPrefix = "__llgo_py."
+)
+
 func (p *context) initPyModule() {
 	if kind, mod := pkgKindByScope(p.goTyps.Scope()); kind == PkgPyModule {
 		p.pyMod = mod

@@ -327,6 +327,13 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 }
 */
 
+// NewPyModVar creates a new global variable for a Python module.
+func (p Package) NewPyModVar(name string) Global {
+	ret := p.NewVar(name, types.NewPointer(types.Typ[types.Int]), InC)
+	ret.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	return ret
+}
+
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 	t := p.Prog.Type(typ, bg)
