@@ -46,7 +46,9 @@ func main() {
 }
 ```
 
-Here, We call `py.Float(2)` to create a Python floating point number 2, and pass it to Python’s `math.sqrt` to get `x`. Then use `x.Float64()` to convert the Python object to Go's `float64` type, and finally we print the value through C `printf`.
+Here, We call `py.Float(2)` to create a Python number 2, and pass it to Python’s `math.sqrt` to get `x`. Then use `x.Float64()` to convert x to Go's `float64` type, and print the value through the C `printf` function.
+
+See [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py) for more detials.
 
 
 ## Other frequently used libraries
