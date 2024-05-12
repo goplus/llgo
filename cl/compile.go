@@ -347,20 +347,31 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
 			instrs = instrs[:last]
+		} else {
+			// TODO(xsw): confirm pyMod don't need to call LoadPyModSyms
+			p.inits = append(p.inits, func() {
+				if objs := pkg.PyObjs(); len(objs) > 0 {
+					mods := make(map[string][]llssa.PyObjRef)
+					for name, obj := range objs {
+						modName := modOf(name)
+						mods[modName] = append(mods[modName], obj)
+					}
+
+					// sort by module name
+					modNames := make([]string, 0, len(mods))
+					for modName := range mods {
+						modNames = append(modNames, modName)
+					}
+					sort.Strings(modNames)
+
+					b.SetBlockEx(ret, llssa.AfterInit)
+					for _, modName := range modNames {
+						objs := mods[modName]
+						b.LoadPyModSyms(modName, objs...)
+					}
+				}
+			})
 		}
-		p.inits = append(p.inits, func() {
-			if objs := pkg.PyObjs(); len(objs) > 0 {
-				mods := make(map[string][]llssa.PyObjRef)
-				for name, obj := range objs {
-					modName := modOf(name)
-					mods[modName] = append(mods[modName], obj)
-				}
-				b.SetBlockEx(ret, llssa.AfterInit)
-				for modName, objs := range mods {
-					b.LoadPyModSyms(modName, objs...)
-				}
-			}
-		})
 	} else if doMainInit {
 		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
