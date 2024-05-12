@@ -250,7 +250,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 	}
 	if nblk := len(f.Blocks); nblk > 0 {
 		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
-		isPyMod := p.pyMod != ""
 		p.inits = append(p.inits, func() {
 			p.fn = fn
 			defer func() {
@@ -270,9 +269,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 				off[i] = p.compilePhis(b, block)
 			}
 			for i, block := range f.Blocks {
-				doInit := (i == 0 && name == "main")
-				doPyModInit := (isPyMod && i == 1 && f.Name() == "init" && sig.Recv() == nil)
-				p.compileBlock(b, block, off[i], doInit, doPyModInit)
+				doMainInit := (i == 0 && name == "main")
+				doModInit := (i == 1 && f.Name() == "init" && sig.Recv() == nil)
+				p.compileBlock(b, block, off[i], doMainInit, doModInit)
 			}
 			for _, phi := range p.phis {
 				phi()
@@ -329,35 +328,35 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 	return
 }
 
-func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doInit, pyModInit bool) llssa.BasicBlock {
+func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
 	var last int
-	var instrs []ssa.Instruction
+	var pyModInit bool
+	var instrs = block.Instrs[n:]
 	var ret = p.fn.Block(block.Index)
 	b.SetBlock(ret)
-	if pyModInit {
-		last = len(block.Instrs) - 1
-		instrs = block.Instrs[n:last]
-	} else {
-		instrs = block.Instrs[n:]
-		if doInit {
-			prog := p.prog
-			pkg := p.pkg
-			fn := p.fn
-			argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
-			argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-			argc.Init(prog.Null(argc.Type))
-			argv.Init(prog.Null(argv.Type))
-			b.Store(argc.Expr, fn.Param(0))
-			b.Store(argv.Expr, fn.Param(1))
-			callRuntimeInit(b, pkg)
-			b.Call(pkg.FuncOf("main.init").Expr)
+	if doModInit {
+		if pyModInit = p.pyMod != ""; pyModInit {
+			last = len(instrs) - 1
+			instrs = instrs[:last]
 		}
+	} else if doMainInit {
+		prog := p.prog
+		pkg := p.pkg
+		fn := p.fn
+		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
+		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
+		argc.Init(prog.Null(argc.Type))
+		argv.Init(prog.Null(argv.Type))
+		b.Store(argc.Expr, fn.Param(0))
+		b.Store(argv.Expr, fn.Param(1))
+		callRuntimeInit(b, pkg)
+		b.Call(pkg.FuncOf("main.init").Expr)
 	}
 	for _, instr := range instrs {
 		p.compileInstr(b, instr)
 	}
 	if pyModInit {
-		jump := block.Instrs[last].(*ssa.Jump)
+		jump := block.Instrs[n+last].(*ssa.Jump)
 		jumpTo := p.jumpTo(jump)
 		modPath := p.pyMod
 		modName := pysymPrefix + modPath

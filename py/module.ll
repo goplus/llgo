@@ -1,7 +1,5 @@
 ; ModuleID = '_pyg/module.c'
 source_filename = "_pyg/module.c"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
-target triple = "arm64-apple-macosx13.0.0"
 
 %struct.PyObject = type opaque
 
