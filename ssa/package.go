@@ -557,12 +557,17 @@ func (b Builder) LoadPyModSyms(modName string, objs ...PyObject) Expr {
 	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
 	modPtr := pkg.NewPyModVar(modName, false).Expr
 	mod := b.Load(modPtr)
-	args := make([]Expr, 1, len(objs)*2+1)
+	args := make([]Expr, 1, len(objs)*2+2)
 	args[0] = mod
+	nbase := len(modName) + 1
 	for _, o := range objs {
-		args = append(args, b.CStr(o.impl.Name()))
+		fullName := o.impl.Name()
+		name := fullName[nbase:]
+		args = append(args, b.CStr(name))
 		args = append(args, o.Expr)
 	}
+	prog := b.Prog
+	args = append(args, prog.Null(prog.CStr()))
 	return b.Call(fnLoad, args...)
 }
 

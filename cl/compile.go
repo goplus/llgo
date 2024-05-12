@@ -328,9 +328,18 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 	return
 }
 
+func modOf(name string) string {
+	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
+		return name[:pos]
+	}
+	return ""
+}
+
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
 	var last int
 	var pyModInit bool
+	var prog = p.prog
+	var pkg = p.pkg
 	var instrs = block.Instrs[n:]
 	var ret = p.fn.Block(block.Index)
 	b.SetBlock(ret)
@@ -339,9 +348,20 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			last = len(instrs) - 1
 			instrs = instrs[:last]
 		}
+		p.inits = append(p.inits, func() {
+			if objs := pkg.PyObjs(); len(objs) > 0 {
+				mods := make(map[string][]llssa.PyObject)
+				for name, obj := range objs {
+					modName := modOf(name)
+					mods[modName] = append(mods[modName], obj)
+				}
+				b.SetBlockEx(ret, llssa.AtStart)
+				for modName, objs := range mods {
+					b.LoadPyModSyms(modName, objs...)
+				}
+			}
+		})
 	} else if doMainInit {
-		prog := p.prog
-		pkg := p.pkg
 		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
 		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
@@ -360,9 +380,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		jumpTo := p.jumpTo(jump)
 		modPath := p.pyMod
 		modName := pysymPrefix + modPath
-		modPtr := p.pkg.NewPyModVar(modName, true).Expr
+		modPtr := pkg.NewPyModVar(modName, true).Expr
 		mod := b.Load(modPtr)
-		cond := b.BinOp(token.NEQ, mod, b.Prog.Null(mod.Type))
+		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlock(newBlk)
