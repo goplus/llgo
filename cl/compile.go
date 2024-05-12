@@ -486,7 +486,7 @@ func isPhi(i ssa.Instruction) bool {
 
 func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 	ret := p.fn.Block(block.Index)
-	b.SetBlock(ret)
+	b.SetBlockEx(ret, llssa.AtEnd)
 	if ninstr := len(block.Instrs); ninstr > 0 {
 		if isPhi(block.Instrs[0]) {
 			n := 1
