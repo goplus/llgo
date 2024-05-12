@@ -356,8 +356,17 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 						modName := modOf(name)
 						mods[modName] = append(mods[modName], obj)
 					}
+
+					// sort by module name
+					modNames := make([]string, 0, len(mods))
+					for modName := range mods {
+						modNames = append(modNames, modName)
+					}
+					sort.Strings(modNames)
+
 					b.SetBlockEx(ret, llssa.AfterInit)
-					for modName, objs := range mods {
+					for _, modName := range modNames {
+						objs := mods[modName]
 						b.LoadPyModSyms(modName, objs...)
 					}
 				}
