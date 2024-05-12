@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/x/sqlite"
 define ptr @"(*github.com/goplus/llgo/x/sqlite.Errno).Errstr"(ptr %0) {
 _llgo_0:
   %1 = load i32, ptr %0, align 4
-  %2 = call ptr @sqlite3_errstr()
+  %2 = call ptr @sqlite3_errstr(i32 %1)
   ret ptr %2
 }
 
@@ -84,7 +84,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-declare ptr @sqlite3_errstr()
+declare ptr @sqlite3_errstr(i32)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
@@ -92,8 +92,8 @@ declare i32 @sqlite3_open(ptr, ptr)
 
 declare i32 @sqlite3_open_v2(ptr, ptr, i32, ptr)
 
-declare i32 @sqlite3_prepare(ptr, i32, ptr, ptr)
+declare i32 @sqlite3_prepare(ptr, ptr, i32, ptr, ptr)
 
-declare i32 @sqlite3_prepare_v2(ptr, i32, ptr, ptr)
+declare i32 @sqlite3_prepare_v2(ptr, ptr, i32, ptr, ptr)
 
-declare i32 @sqlite3_prepare_v3(ptr, i32, i32, ptr, ptr)
+declare i32 @sqlite3_prepare_v3(ptr, ptr, i32, i32, ptr, ptr)
