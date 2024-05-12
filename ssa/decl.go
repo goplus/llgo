@@ -294,15 +294,17 @@ type aPyFunction struct {
 type PyFunction = *aPyFunction
 
 // NewPyFunc creates a new python function.
-func (p Package) NewPyFunc(name string, sig *types.Signature) PyFunction {
+func (p Package) NewPyFunc(name string, sig *types.Signature, doInit bool) PyFunction {
 	if v, ok := p.pyfns[name]; ok {
 		return v
 	}
 	prog := p.Prog
 	prog.needPyInit = true
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
-	obj.Init(prog.Null(obj.Type))
-	obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	if doInit {
+		obj.Init(prog.Null(obj.Type))
+		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	}
 	ty := &aType{obj.ll, rawType{sig}, vkPyFunc}
 	expr := Expr{obj.impl, ty}
 	ret := &aPyFunction{expr, obj}
