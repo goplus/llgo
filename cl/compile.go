@@ -355,7 +355,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 					modName := modOf(name)
 					mods[modName] = append(mods[modName], obj)
 				}
-				b.SetBlockEx(ret, llssa.AtStart)
+				b.SetBlockEx(ret, llssa.AfterInit)
 				for modName, objs := range mods {
 					b.LoadPyModSyms(modName, objs...)
 				}
