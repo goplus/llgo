@@ -211,7 +211,7 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyFunction, int) {
+func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyObject, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		if ftype == pyFunc {
@@ -284,14 +284,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
-func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyFunction, ftype int) {
+func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObject, ftype int) {
 	pkgTypes, name, ftype := p.funcName(fn, false)
 	switch ftype {
 	case pyFunc:
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
 			pkg := p.pkg
 			fnName := pysymPrefix + mod + "." + name
-			if pyFn = pkg.PyFuncOf(fnName); pyFn == nil {
+			if pyFn = pkg.PyObjOf(fnName); pyFn == nil {
 				pyFn = pkg.NewPyFunc(fnName, fn.Signature, true)
 				return
 			}
@@ -361,7 +361,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		jumpTo := p.jumpTo(jump)
 		modPath := p.pyMod
 		modName := pysymPrefix + modPath
-		modPtr := p.pkg.NewPyModVar(modName).Expr
+		modPtr := p.pkg.NewPyModVar(modName, true).Expr
 		mod := b.Load(modPtr)
 		cond := b.BinOp(token.NEQ, mod, b.Prog.Null(mod.Type))
 		newBlk := p.fn.MakeBlock()
@@ -763,7 +763,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
-func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyFunction, kind int) {
+func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObject, kind int) {
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package

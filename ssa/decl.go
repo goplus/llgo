@@ -285,36 +285,41 @@ func (p Function) Block(idx int) BasicBlock {
 
 // -----------------------------------------------------------------------------
 
-type aPyFunction struct {
+type aPyObject struct {
 	Expr
 	Obj Global
 }
 
-// PyFunction represents a python function.
-type PyFunction = *aPyFunction
+// PyObject represents a python object.
+type PyObject = *aPyObject
 
 // NewPyFunc creates a new python function.
-func (p Package) NewPyFunc(name string, sig *types.Signature, doInit bool) PyFunction {
-	if v, ok := p.pyfns[name]; ok {
+func (p Package) NewPyFunc(name string, sig *types.Signature, doInit bool) PyObject {
+	if v, ok := p.pyobjs[name]; ok {
 		return v
 	}
 	prog := p.Prog
-	prog.NeedPyInit = true
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
 	if doInit {
+		prog.NeedPyInit = true
 		obj.Init(prog.Null(obj.Type))
 		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
 	ty := &aType{obj.ll, rawType{sig}, vkPyFunc}
 	expr := Expr{obj.impl, ty}
-	ret := &aPyFunction{expr, obj}
-	p.pyfns[name] = ret
+	ret := &aPyObject{expr, obj}
+	p.pyobjs[name] = ret
 	return ret
 }
 
-// PyFuncOf returns a function by name.
-func (p Package) PyFuncOf(name string) PyFunction {
-	return p.pyfns[name]
+// PyObjOf returns a python object by name.
+func (p Package) PyObjOf(name string) PyObject {
+	return p.pyobjs[name]
+}
+
+// PyObjs returns all used python objects in this project.
+func (p Package) PyObjs() map[string]PyObject {
+	return p.pyobjs
 }
 
 // -----------------------------------------------------------------------------
