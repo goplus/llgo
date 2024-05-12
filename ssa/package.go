@@ -109,6 +109,7 @@ type aProgram struct {
 	target *Target
 	td     llvm.TargetData
 	// tm  llvm.TargetMachine
+	named map[string]llvm.Type
 
 	intType   llvm.Type
 	int1Type  llvm.Type
@@ -164,7 +165,7 @@ func NewProgram(target *Target) Program {
 		// TODO(xsw): Finalize may cause panic, so comment it.
 		ctx.Finalize()
 	*/
-	return &aProgram{ctx: ctx, gocvt: newGoTypes(), target: target, td: td}
+	return &aProgram{ctx: ctx, gocvt: newGoTypes(), target: target, td: td, named: make(map[string]llvm.Type)}
 }
 
 // SetPython sets the Python package.

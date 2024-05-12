@@ -310,16 +310,14 @@ const (
 	pyFunc      = int(llssa.InPython)
 	llgoInstr   = -1
 
-	llgoInstrBase    = 0x80
-	llgoUnreachable  = llgoInstrBase + 0
-	llgoCstr         = llgoInstrBase + 1
-	llgoAlloca       = llgoInstrBase + 2
-	llgoAllocaCStr   = llgoInstrBase + 3
-	llgoAdvance      = llgoInstrBase + 4
-	llgoIndex        = llgoInstrBase + 5
-	llgoBitCastTo32F = llgoInstrBase + 6
-	llgoBitCastTo64F = llgoInstrBase + 7
-	llgoStringData   = llgoInstrBase + 8
+	llgoInstrBase   = 0x80
+	llgoUnreachable = llgoInstrBase + 0
+	llgoCstr        = llgoInstrBase + 1
+	llgoAlloca      = llgoInstrBase + 2
+	llgoAllocaCStr  = llgoInstrBase + 3
+	llgoAdvance     = llgoInstrBase + 4
+	llgoIndex       = llgoInstrBase + 5
+	llgoStringData  = llgoInstrBase + 6
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
