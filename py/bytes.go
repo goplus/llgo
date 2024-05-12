@@ -26,16 +26,16 @@ import (
 
 // String returns a new bytes object from a C string.
 //
-//go:linkname StringFrom C.PyBytes_FromString
-func StringFrom(s *c.Char) *Object
+//go:linkname FromCStr C.PyBytes_FromString
+func FromCStr(s *c.Char) *Object
+
+// FromString returns a new bytes object from a Go string.
+func FromString(s string) *Object {
+	return stringFromStringAndSize(c.GoStringData(s), uintptr(len(s)))
+}
 
 //go:linkname stringFromStringAndSize C.PyBytes_FromStringAndSize
 func stringFromStringAndSize(s *c.Char, size uintptr) *Object
-
-// String returns a new bytes object from a Go string.
-func String(s string) *Object {
-	return stringFromStringAndSize(c.GoStringData(s), uintptr(len(s)))
-}
 
 // CStr returns the content of a bytes object as a C string.
 //

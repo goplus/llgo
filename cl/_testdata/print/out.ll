@@ -311,7 +311,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_3
   %2 = urem i64 %14, 16
   %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @5, i64 16)
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %3)
+  %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %3, 0
   %5 = getelementptr inbounds i8, ptr %4, i64 %2
   %6 = load i8, ptr %5, align 1
   %7 = getelementptr inbounds i8, ptr %1, i64 %15
@@ -600,8 +600,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
 

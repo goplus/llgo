@@ -299,7 +299,7 @@ func (p Package) NewPyFunc(name string, sig *types.Signature, doInit bool) PyFun
 		return v
 	}
 	prog := p.Prog
-	prog.needPyInit = true
+	prog.NeedPyInit = true
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
 	if doInit {
 		obj.Init(prog.Null(obj.Type))

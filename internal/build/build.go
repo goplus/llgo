@@ -217,7 +217,7 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			}
 		default:
 			buildPkg(prog, aPkg, mode, verbose)
-			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime(), prog.NeedPyInit())
+			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
 	return

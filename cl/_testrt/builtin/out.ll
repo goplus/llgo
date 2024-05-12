@@ -131,14 +131,14 @@ _llgo_0:
   %60 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 5)
   call void @main.string_len(%"github.com/goplus/llgo/internal/runtime.String" %60)
   %61 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 5)
-  %62 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %61)
+  %62 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %61, 1
   %63 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %61, i64 1, i64 %62)
   call void @main.string_len(%"github.com/goplus/llgo/internal/runtime.String" %63)
   %64 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @2, i64 5)
   %65 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %64, i64 1, i64 2)
   call void @main.string_len(%"github.com/goplus/llgo/internal/runtime.String" %65)
   %66 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 5)
-  %67 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %66)
+  %67 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %66, 1
   %68 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %66, i64 5, i64 %67)
   call void @main.string_len(%"github.com/goplus/llgo/internal/runtime.String" %68)
   ret void
@@ -152,7 +152,7 @@ _llgo_0:
 
 define void @main.string_len(%"github.com/goplus/llgo/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %0)
+  %1 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %0, 1
   call void @main.out(i64 %1)
   ret void
 }
@@ -170,8 +170,6 @@ declare i64 @"github.com/goplus/llgo/internal/runtime.SliceCap"(%"github.com/gop
 declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr, i64)
-
-declare i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
 

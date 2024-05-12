@@ -309,6 +309,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyFun
 			ftype = llgoAlloca
 		case "allocaCStr":
 			ftype = llgoAllocaCStr
+		case "stringData":
+			ftype = llgoStringData
 		case "unreachable":
 			ftype = llgoUnreachable
 		case "bitCastTo64F":
@@ -479,6 +481,15 @@ func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("allocaCStr(s string): invalid arguments")
 }
 
+// func stringData(s string) *int8
+func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		s := p.compileValue(b, args[0])
+		return b.StringData(s)
+	}
+	panic("stringData(s string): invalid arguments")
+}
+
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -573,6 +584,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = p.alloca(b, args)
 			case llgoAllocaCStr:
 				ret = p.allocaCStr(b, args)
+			case llgoStringData:
+				ret = p.stringData(b, args)
 			case llgoUnreachable: // func unreachable()
 				b.Unreachable()
 			case llgoBitCastTo32F:

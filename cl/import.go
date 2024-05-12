@@ -319,6 +319,7 @@ const (
 	llgoIndex        = llgoInstrBase + 5
 	llgoBitCastTo32F = llgoInstrBase + 6
 	llgoBitCastTo64F = llgoInstrBase + 7
+	llgoStringData   = llgoInstrBase + 8
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {

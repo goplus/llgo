@@ -82,7 +82,7 @@ func GenFrom(fileOrPkg string) string {
 	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
 	check(err)
 
-	if prog.NeedPyInit() { // call PyInit if needed
+	if prog.NeedPyInit { // call PyInit if needed
 		ret.PyInit()
 	}
 
