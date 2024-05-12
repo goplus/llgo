@@ -159,6 +159,11 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
+
+	if prog.NeedPyInit() { // call PyInit if needed
+		ret.PyInit()
+	}
+
 	if v := ret.String(); v != expected {
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}

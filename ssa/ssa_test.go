@@ -25,6 +25,28 @@ import (
 	"github.com/goplus/llvm"
 )
 
+func TestSetBlock(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("SetBlock: no error?")
+		}
+	}()
+	fn := &aFunction{}
+	b := &aBuilder{Func: fn}
+	b.SetBlock(&aBasicBlock{})
+}
+
+func TestSetBlockEx(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Log("SetBlockEx: no error?")
+		}
+	}()
+	fn := &aFunction{}
+	b := &aBuilder{Func: fn}
+	b.SetBlockEx(&aBasicBlock{fn: fn}, -1)
+}
+
 func TestSetPython(t *testing.T) {
 	prog := NewProgram(nil)
 	typ := types.NewPackage("foo", "foo")
@@ -124,6 +146,10 @@ func TestPyFunc(t *testing.T) {
 	a := pkg.NewPyFunc("a", sig)
 	if pkg.NewPyFunc("a", sig) != a {
 		t.Fatal("NewPyFunc(a) failed")
+	}
+	foo := pkg.NewPyModVar("foo")
+	if pkg.NewPyModVar("foo") != foo {
+		t.Fatal("NewPyModVar(foo) failed")
 	}
 }
 
