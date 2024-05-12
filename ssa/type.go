@@ -43,7 +43,7 @@ const (
 	vkFuncDecl
 	vkFuncPtr
 	vkClosure
-	vkPyFunc
+	vkPyFuncRef
 	vkTuple
 	vkPhisExpr = -1
 )

@@ -40,12 +40,14 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
-  %3 = call ptr @PyObject_CallOneArg(ptr @__llgo_py.math.sqrt, ptr %2)
-  %4 = call ptr @PyObject_CallNoArgs(ptr @__llgo_py.os.getcwd)
-  %5 = call double @PyFloat_AsDouble()
-  %6 = call i32 (ptr, ...) @printf(ptr @0, double %5)
-  %7 = call ptr @PyBytes_AsString()
-  %8 = call i32 (ptr, ...) @printf(ptr @1, ptr %7)
+  %3 = load ptr, ptr @__llgo_py.math.sqrt, align 8
+  %4 = call ptr @PyObject_CallOneArg(ptr %3, ptr %2)
+  %5 = load ptr, ptr @__llgo_py.os.getcwd, align 8
+  %6 = call ptr @PyObject_CallNoArgs(ptr %5)
+  %7 = call double @PyFloat_AsDouble()
+  %8 = call i32 (ptr, ...) @printf(ptr @0, double %7)
+  %9 = call ptr @PyBytes_AsString()
+  %10 = call i32 (ptr, ...) @printf(ptr @1, ptr %9)
   ret void
 }
 

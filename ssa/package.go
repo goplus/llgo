@@ -258,7 +258,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	gbls := make(map[string]Global)
 	fns := make(map[string]Function)
 	stubs := make(map[string]Function)
-	pyobjs := make(map[string]PyObject)
+	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
@@ -367,7 +367,7 @@ type aPackage struct {
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
-	pyobjs map[string]PyObject
+	pyobjs map[string]PyObjRef
 	pymods map[string]Global
 	Prog   Program
 }
@@ -552,7 +552,7 @@ func (b Builder) ImportPyMod(path string) Expr {
 }
 
 // LoadPyModSyms loads python objects from specified module.
-func (b Builder) LoadPyModSyms(modName string, objs ...PyObject) Expr {
+func (b Builder) LoadPyModSyms(modName string, objs ...PyObjRef) Expr {
 	pkg := b.Func.Pkg
 	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
 	modPtr := pkg.NewPyModVar(modName, false).Expr
@@ -574,6 +574,7 @@ func (b Builder) LoadPyModSyms(modName string, objs ...PyObject) Expr {
 func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	prog := b.Prog
 	pkg := b.Func.Pkg
+	fn = b.Load(fn)
 	sig := fn.raw.Type.(*types.Signature)
 	params := sig.Params()
 	n := params.Len()

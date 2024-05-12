@@ -1238,7 +1238,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		log.Println(b.String())
 	}
 	var kind = fn.kind
-	if kind == vkPyFunc {
+	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
 	}
 	var ll llvm.Type

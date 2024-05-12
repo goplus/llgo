@@ -33,6 +33,7 @@ func main() {
 
 	llgenDir(dir + "/cl/_testlibc")
 	llgenDir(dir + "/cl/_testrt")
+	llgenDir(dir + "/cl/_testpy")
 	llgenDir(dir+"/cl/_testdata", "")
 }
 

@@ -211,7 +211,7 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyObject, int) {
+func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		if ftype == pyFunc {
@@ -283,7 +283,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
-func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObject, ftype int) {
+func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObjRef, ftype int) {
 	pkgTypes, name, ftype := p.funcName(fn, false)
 	switch ftype {
 	case pyFunc:
@@ -350,7 +350,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 		p.inits = append(p.inits, func() {
 			if objs := pkg.PyObjs(); len(objs) > 0 {
-				mods := make(map[string][]llssa.PyObject)
+				mods := make(map[string][]llssa.PyObjRef)
 				for name, obj := range objs {
 					modName := modOf(name)
 					mods[modName] = append(mods[modName], obj)
@@ -782,7 +782,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
-func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObject, kind int) {
+func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObjRef, kind int) {
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package
