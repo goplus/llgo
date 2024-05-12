@@ -57,8 +57,11 @@ func (p Program) Type(typ types.Type, bg Background) Type {
 
 // FuncDecl converts a Go/C function declaration into raw type.
 func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
+	recv := sig.Recv()
 	if bg == InGo {
-		sig = p.gocvt.cvtFunc(sig, sig.Recv())
+		sig = p.gocvt.cvtFunc(sig, recv)
+	} else if recv != nil { // even in C, we need to add ctx for method
+		sig = FuncAddCtx(recv, sig)
 	}
 	return &aType{p.toLLVMFunc(sig), rawType{sig}, vkFuncDecl}
 }
