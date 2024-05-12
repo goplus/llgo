@@ -29,7 +29,7 @@ See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for 
 
 ## Python support
 
-You can load a Python library in llgo! For example:
+You can import a Python library in llgo! For example:
 
 ```go
 package main
