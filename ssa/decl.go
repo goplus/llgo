@@ -299,6 +299,7 @@ func (p Package) NewPyFunc(name string, sig *types.Signature) PyFunction {
 		return v
 	}
 	prog := p.Prog
+	prog.needPyInit = true
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
 	obj.Init(prog.Null(obj.Type))
 	obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)

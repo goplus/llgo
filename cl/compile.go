@@ -380,8 +380,7 @@ const (
 )
 
 func callRuntimeInit(b llssa.Builder, pkg llssa.Package) {
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc(RuntimeInit, sig, llssa.InC) // don't need to convert runtime.init
+	fn := pkg.NewFunc(RuntimeInit, llssa.NoArgsNoRet, llssa.InC) // don't need to convert runtime.init
 	b.Call(fn.Expr)
 }
 

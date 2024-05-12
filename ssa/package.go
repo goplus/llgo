@@ -194,6 +194,11 @@ func (p Program) NeedRuntime() bool {
 	return p.needRuntime
 }
 
+// NeedPyInit returns if the current package needs Python initialization.
+func (p Program) NeedPyInit() bool {
+	return p.needPyInit
+}
+
 func (p Program) runtime() *types.Package {
 	if p.rt == nil {
 		p.rt = p.rtget()
@@ -262,8 +267,11 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	fns := make(map[string]Function)
 	stubs := make(map[string]Function)
 	pyfns := make(map[string]PyFunction)
+	pymods := make(map[string]Global)
 	p.needRuntime = false
-	return &aPackage{mod, gbls, fns, stubs, pyfns, p}
+	// Don't need reset p.needPyInit here
+	// p.needPyInit = false
+	return &aPackage{mod, gbls, fns, stubs, pyfns, pymods, p}
 }
 
 // PyObjectPtrPtr returns the **py.Object type.
@@ -363,12 +371,13 @@ func (p Program) Float64() Type {
 // initializer) and "init#%d", the nth declared init function,
 // and unspecified other things too.
 type aPackage struct {
-	mod   llvm.Module
-	vars  map[string]Global
-	fns   map[string]Function
-	stubs map[string]Function
-	pyfns map[string]PyFunction
-	Prog  Program
+	mod    llvm.Module
+	vars   map[string]Global
+	fns    map[string]Function
+	stubs  map[string]Function
+	pyfns  map[string]PyFunction
+	pymods map[string]Global
+	Prog   Program
 }
 
 type Package = *aPackage
@@ -506,21 +515,36 @@ func (p Program) tyCallOneArg() *types.Signature {
 	return p.callOneArg
 }
 
-// ImportPyMod imports a Python module.
-func (b Builder) ImportPyMod(path string) Expr {
-	pkg := b.Func.Pkg
-	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
-	return b.Call(fnImp, b.CStr(path))
+// PyInit initializes Python for a main package.
+func (p Package) PyInit() bool {
+	if fn := p.FuncOf("main"); fn != nil {
+		b := fn.NewBuilder()
+		b.SetBlockEx(fn.Block(0), AtStart).CallPyInit()
+		b.Dispose()
+		return true
+	}
+	return false
 }
 
 // NewPyModVar creates a new global variable for a Python module.
 func (p Package) NewPyModVar(name string) Global {
+	if v, ok := p.pymods[name]; ok {
+		return v
+	}
 	prog := p.Prog
 	objPtr := prog.PyObjectPtrPtr().raw.Type
 	g := p.NewVar(name, objPtr, InC)
 	g.Init(prog.Null(g.Type))
 	g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	p.pymods[name] = g
 	return g
+}
+
+// ImportPyMod imports a Python module.
+func (b Builder) ImportPyMod(path string) Expr {
+	pkg := b.Func.Pkg
+	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
+	return b.Call(fnImp, b.CStr(path))
 }
 
 func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
@@ -541,5 +565,15 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	}
 	return
 }
+
+// CallPyInit calls Py_Initialize.
+func (b Builder) CallPyInit() (ret Expr) {
+	fn := b.Func.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
+	return b.Call(fn)
+}
+
+var (
+	NoArgsNoRet = types.NewSignatureType(nil, nil, nil, nil, nil, false)
+)
 
 // -----------------------------------------------------------------------------

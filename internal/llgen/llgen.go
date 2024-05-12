@@ -79,6 +79,10 @@ func Gen(pkgPath, inFile string, src any) string {
 	ret, err := cl.NewPackage(prog, ssaPkg, files)
 	check(err)
 
+	if prog.NeedPyInit() { // call PyInit if needed
+		ret.PyInit()
+	}
+
 	return ret.String()
 }
 

@@ -23,7 +23,7 @@ import (
 )
 
 func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testpy", false)
+	cltest.FromDir(t, "", "../cl/_testpy", true)
 }
 
 func TestFromTestrt(t *testing.T) {

@@ -33,7 +33,7 @@ func TestFromTestpy(t *testing.T) {
 }
 
 func TestFromTestlibc(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibc", false)
+	cltest.FromDir(t, "", "./_testlibc", true)
 }
 
 func TestFromTestrt(t *testing.T) {

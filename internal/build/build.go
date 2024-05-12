@@ -160,12 +160,22 @@ func Do(args []string, conf *Config) {
 	}
 }
 
-func setNeedRuntime(pkg *packages.Package) {
-	pkg.ID = "" // just use pkg.Module to mark it needs runtime
+func setNeedRuntimeOrPyInit(pkg *packages.Package, needRuntime, needPyInit bool) {
+	v := []byte{'0', '0'}
+	if needRuntime {
+		v[0] = '1'
+	}
+	if needPyInit {
+		v[1] = '1'
+	}
+	pkg.ID = string(v) // just use pkg.ID to mark it needs runtime
 }
 
-func isNeedRuntime(pkg *packages.Package) bool {
-	return pkg.ID == ""
+func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool) {
+	if len(pkg.ID) == 2 {
+		return pkg.ID[0] == '1', pkg.ID[1] == '1'
+	}
+	return
 }
 
 func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) (pkgs []*aPackage) {
@@ -204,9 +214,7 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			pkg.ExportFile = command
 		default:
 			buildPkg(prog, aPkg, mode, verbose)
-			if prog.NeedRuntime() {
-				setNeedRuntime(pkg)
-			}
+			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime(), prog.NeedPyInit())
 		}
 	}
 	return
@@ -225,27 +233,43 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	args[1] = app
 	args[2] = "-Wno-override-module"
 	needRuntime := false
+	needPyInit := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.ExportFile != "" && !isRuntimePkg(p.PkgPath) { // skip packages that only contain declarations
 			args = appendLinkFiles(args, p.ExportFile)
+			need1, need2 := isNeedRuntimeOrPyInit(p)
 			if !needRuntime {
-				needRuntime = isNeedRuntime(p)
+				needRuntime = need1
+			}
+			if !needPyInit {
+				needPyInit = need2
 			}
 		}
 	})
+
+	var aPkg *aPackage
+	for _, v := range pkgs {
+		if v.Package == pkg { // found this package
+			aPkg = v
+			break
+		}
+	}
+
+	dirty := false
 	if needRuntime && runtimeFiles != nil {
 		args = append(args, runtimeFiles...)
 	} else {
-		for _, aPkg := range pkgs {
-			if aPkg.Package == pkg { // make empty runtime.init if no runtime needed
-				lpkg := aPkg.LPkg
-				lpkg.FuncOf(cl.RuntimeInit).MakeBody(1).Return()
-				if needLLFile(mode) {
-					os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
-				}
-				break
-			}
-		}
+		dirty = true
+		fn := aPkg.LPkg.FuncOf(cl.RuntimeInit)
+		fn.MakeBody(1).Return()
+	}
+	if needPyInit {
+		dirty = aPkg.LPkg.PyInit()
+	}
+
+	if dirty && needLLFile(mode) {
+		lpkg := aPkg.LPkg
+		os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
 	}
 
 	if verbose || mode != ModeRun {

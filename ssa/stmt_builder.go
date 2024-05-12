@@ -57,15 +57,40 @@ type aBuilder struct {
 // Builder represents a builder for creating instructions in a function.
 type Builder = *aBuilder
 
-// SetBlock sets the current block to the specified basic block.
+// Dispose disposes of the builder.
+func (b Builder) Dispose() {
+	b.impl.Dispose()
+}
+
+// SetBlock means SetBlockEx(blk, AtEnd).
 func (b Builder) SetBlock(blk BasicBlock) Builder {
-	if b.Func != blk.fn {
-		panic("mismatched function")
-	}
 	if debugInstr {
 		log.Printf("Block _llgo_%v:\n", blk.idx)
 	}
-	b.impl.SetInsertPointAtEnd(blk.impl)
+	b.SetBlockEx(blk, AtEnd)
+	return b
+}
+
+type InsertPoint int
+
+const (
+	AtEnd InsertPoint = iota
+	AtStart
+)
+
+// SetBlockEx sets blk as current basic block and pos as its insert point.
+func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint) Builder {
+	if b.Func != blk.fn {
+		panic("mismatched function")
+	}
+	switch pos {
+	case AtEnd:
+		b.impl.SetInsertPointAtEnd(blk.impl)
+	case AtStart:
+		b.impl.SetInsertPointBefore(blk.impl.FirstInstruction())
+	default:
+		panic("SetBlockEx: invalid pos")
+	}
 	return b
 }
 
