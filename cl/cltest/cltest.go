@@ -160,7 +160,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
 
-	if prog.NeedPyInit() { // call PyInit if needed
+	if prog.NeedPyInit { // call PyInit if needed
 		ret.PyInit()
 	}
 

@@ -22,18 +22,13 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
-// Module represents a Python module object.
-type Module struct {
-	Object
-}
-
 // -----------------------------------------------------------------------------
 
 // This is a wrapper around py.Import which takes a const char* as an argument
 // instead of an Object.
 //
 //go:linkname ImportModule C.PyImport_ImportModule
-func ImportModule(name *c.Char) *Module
+func ImportModule(name *c.Char) *Object
 
 // This is a higher-level interface that calls the current “import hook function” (with
 // an explicit level of 0, meaning absolute import). It invokes the __import__() function
@@ -43,7 +38,7 @@ func ImportModule(name *c.Char) *Module
 // This function always uses absolute imports.
 //
 //go:linkname Import C.PyImport_Import
-func Import(name *Object) *Module
+func Import(name *Object) *Object
 
 // Return the dictionary object that implements module’s namespace; this object is the same
 // as the __dict__ attribute of the module object. If module is not a module object (or a
@@ -52,7 +47,7 @@ func Import(name *Object) *Module
 // It is recommended extensions use other Module and Object functions rather than directly
 // manipulate a module’s __dict__.
 //
-// llgo:link (*Module).GetDict C.PyModule_GetDict
-func (m *Module) GetDict() *Object { return nil }
+// llgo:link (*Object).ModuleGetDict C.PyModule_GetDict
+func (m *Object) ModuleGetDict() *Object { return nil }
 
 // -----------------------------------------------------------------------------

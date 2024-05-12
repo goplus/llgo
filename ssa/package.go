@@ -141,8 +141,8 @@ type aProgram struct {
 	callNoArgs *types.Signature
 	callOneArg *types.Signature
 
-	needRuntime bool
-	needPyInit  bool
+	NeedRuntime bool
+	NeedPyInit  bool
 }
 
 // A Program presents a program.
@@ -190,21 +190,11 @@ func (p Program) SetRuntime(runtime any) {
 	}
 }
 
-// NeedRuntime returns if the current package needs runtime.
-func (p Program) NeedRuntime() bool {
-	return p.needRuntime
-}
-
-// NeedPyInit returns if the current package needs Python initialization.
-func (p Program) NeedPyInit() bool {
-	return p.needPyInit
-}
-
 func (p Program) runtime() *types.Package {
 	if p.rt == nil {
 		p.rt = p.rtget()
 	}
-	p.needRuntime = true
+	p.NeedRuntime = true
 	return p.rt
 }
 
@@ -269,7 +259,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	stubs := make(map[string]Function)
 	pyfns := make(map[string]PyFunction)
 	pymods := make(map[string]Global)
-	p.needRuntime = false
+	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	return &aPackage{mod, gbls, fns, stubs, pyfns, pymods, p}
@@ -398,7 +388,7 @@ func (p Package) rtFunc(fnName string) Expr {
 }
 
 func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {
-	p.Prog.needPyInit = true
+	p.Prog.NeedPyInit = true
 	return p.NewFunc(fullName, sig, InC).Expr
 }
 

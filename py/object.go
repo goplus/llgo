@@ -128,7 +128,7 @@ func (o *Object) CallFunctionObjArgs(__llgo_va_list ...any) *Object { return nil
 
 // llgo:link (*Object).CallMethod C.PyObject_CallMethod
 func (o *Object) CallMethod(name *c.Char, format *c.Char, __llgo_va_list ...any) *Object {
-	panic("unreachable")
+	return nil
 }
 
 // llgo:link (*Object).CallMethodObjArgs C.PyObject_CallMethodObjArgs

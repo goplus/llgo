@@ -199,7 +199,7 @@ source_filename = "foo/bar"
 
 @a = external global {}
 `)
-	if prog.NeedRuntime() {
+	if prog.NeedRuntime {
 		t.Fatal("NeedRuntime?")
 	}
 }

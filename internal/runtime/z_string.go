@@ -45,16 +45,6 @@ func NewString(data unsafe.Pointer, len int) String {
 	return String{data, len}
 }
 
-// StringLen returns the length of a string.
-func StringLen(s String) int {
-	return s.len
-}
-
-// StringData returns the data pointer of a string.
-func StringData(s String) unsafe.Pointer {
-	return s.data
-}
-
 // StringCat concatenates two strings.
 func StringCat(a, b String) String {
 	n := a.len + b.len

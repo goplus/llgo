@@ -195,26 +195,29 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			// skip packages that only contain declarations
 			// and set no export file
 			pkg.ExportFile = ""
-		case cl.PkgLinkIR, cl.PkgPyModule:
-			// skip packages that don't need to be compiled but need to be linked
+		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			pkgPath := pkg.PkgPath
 			if isPkgInLLGo(pkgPath) {
 				pkg.ExportFile = concatPkgLinkFiles(pkgPath)
 			} else {
 				panic("todo")
 			}
-		case cl.PkgLinkExtern:
-			// skip packages that don't need to be compiled but need to be linked with external library
-			linkFile := os.ExpandEnv(strings.TrimSpace(param))
-			dir, lib := filepath.Split(linkFile)
-			command := " -l " + lib
-			if dir != "" {
-				command += " -L " + dir
+			if kind == cl.PkgLinkExtern { // need to be linked with external library
+				linkFile := os.ExpandEnv(strings.TrimSpace(param))
+				dir, lib := filepath.Split(linkFile)
+				command := " -l " + lib
+				if dir != "" {
+					command += " -L " + dir
+				}
+				if isMultiLinkFiles(pkg.ExportFile) {
+					pkg.ExportFile = command + pkg.ExportFile
+				} else {
+					pkg.ExportFile = command + " " + pkg.ExportFile
+				}
 			}
-			pkg.ExportFile = command
 		default:
 			buildPkg(prog, aPkg, mode, verbose)
-			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime(), prog.NeedPyInit())
+			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
 	return

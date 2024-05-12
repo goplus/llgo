@@ -34,7 +34,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call %"github.com/goplus/llgo/internal/runtime.String" @main.hello()
-  %3 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %2)
+  %3 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %2, 1
   %4 = add i64 %3, 1
   %5 = alloca i8, i64 %4, align 1
   %6 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %5, %"github.com/goplus/llgo/internal/runtime.String" %2)
@@ -45,8 +45,6 @@ _llgo_0:
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr, i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/internal/runtime.String")
 

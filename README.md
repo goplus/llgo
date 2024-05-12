@@ -8,11 +8,23 @@ llgo - A Go compiler based on LLVM
 [![GoDoc](https://pkg.go.dev/badge/github.com/goplus/llgo.svg)](https://pkg.go.dev/github.com/goplus/llgo)
 [![Language](https://img.shields.io/badge/language-Go+-blue.svg)](https://github.com/goplus/gop)
 
-This is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem. It's a subproject of [the Go+ project](https://github.com/goplus/gop).
+This is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a subproject of [the Go+ project](https://github.com/goplus/gop).
 
 ## C standard libary support
 
-See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c).
+```go
+package main
+
+import "github.com/goplus/llgo/c"
+
+func main() {
+	c.Printf(c.Str("Hello world\n"))
+}
+```
+
+This is a simple example of calling the C `printf` function to print `Hello world`. Here, `c.Str` is not a function for converting a Go string to a C string, but a built-in instruction supported by llgo for generating a C string constant.
+
+See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for more detials.
 
 
 ## Python support

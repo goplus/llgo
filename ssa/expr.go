@@ -607,6 +607,26 @@ func (b Builder) getField(x Expr, idx int) Expr {
 	return Expr{fld, tfld}
 }
 
+// StringData returns the data pointer of a string.
+func (b Builder) StringData(x Expr) Expr {
+	if debugInstr {
+		log.Printf("StringData %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 0)
+	return Expr{ptr, prog.CStr()}
+}
+
+// StringLen returns the length of a string.
+func (b Builder) StringLen(x Expr) Expr {
+	if debugInstr {
+		log.Printf("StringLen %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
+	return Expr{ptr, prog.Int()}
+}
+
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
 //
@@ -658,8 +678,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 			panic(fmt.Errorf("invalid operation: cannot index %v", t))
 		}
 		telem = prog.rawType(types.Typ[types.Byte])
-		pkg := b.Func.Pkg
-		ptr = b.InlineCall(pkg.rtFunc("StringData"), x)
+		ptr = b.StringData(x)
 	case *types.Array:
 		telem = prog.Index(x.Type)
 		if addr != nil {
@@ -726,7 +745,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			panic(fmt.Errorf("invalid operation: cannot slice %v", t))
 		}
 		if high.IsNil() {
-			high = b.InlineCall(pkg.rtFunc("StringLen"), x)
+			high = b.StringLen(x)
 		}
 		ret.Type = x.Type
 		ret.impl = b.InlineCall(pkg.rtFunc("NewStringSlice"), x, low, high).impl
@@ -880,7 +899,7 @@ func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 		log.Printf("AllocaCStr %v\n", gostr.impl)
 	}
 	pkg := b.Func.Pkg
-	n := b.InlineCall(pkg.rtFunc("StringLen"), gostr)
+	n := b.StringLen(gostr)
 	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
 	cstr := b.Alloca(n1)
 	return b.InlineCall(pkg.rtFunc("CStrCopy"), cstr, gostr)
@@ -1278,7 +1297,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				return b.InlineCall(b.Func.Pkg.rtFunc("SliceLen"), arg)
 			case *types.Basic:
 				if t.Kind() == types.String {
-					return b.InlineCall(b.Func.Pkg.rtFunc("StringLen"), arg)
+					return b.StringLen(arg)
 				}
 			}
 		}

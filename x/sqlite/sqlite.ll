@@ -35,8 +35,8 @@ _llgo_0:
 define { ptr, i32 } @"(*github.com/goplus/llgo/x/sqlite.Sqlite3).Prepare"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1, ptr %2) {
 _llgo_0:
   %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %1)
-  %5 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %1)
+  %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %1, 0
+  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %1, 1
   %6 = trunc i64 %5 to i32
   %7 = call i32 @sqlite3_prepare(ptr %0, ptr %4, i32 %6, ptr %3, ptr %2)
   %8 = load ptr, ptr %3, align 8
@@ -48,8 +48,8 @@ _llgo_0:
 define { ptr, i32 } @"(*github.com/goplus/llgo/x/sqlite.Sqlite3).PrepareV2"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1, ptr %2) {
 _llgo_0:
   %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %1)
-  %5 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %1)
+  %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %1, 0
+  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %1, 1
   %6 = trunc i64 %5 to i32
   %7 = call i32 @sqlite3_prepare_v2(ptr %0, ptr %4, i32 %6, ptr %3, ptr %2)
   %8 = load ptr, ptr %3, align 8
@@ -61,8 +61,8 @@ _llgo_0:
 define { ptr, i32 } @"(*github.com/goplus/llgo/x/sqlite.Sqlite3).PrepareV3"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1, i32 %2, ptr %3) {
 _llgo_0:
   %4 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String" %1)
-  %6 = call i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String" %1)
+  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %1, 0
+  %6 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %1, 1
   %7 = trunc i64 %6 to i32
   %8 = call i32 @sqlite3_prepare_v3(ptr %0, ptr %5, i32 %7, i32 %2, ptr %4, ptr %3)
   %9 = load ptr, ptr %4, align 8
@@ -91,10 +91,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 declare i32 @sqlite3_open(ptr, ptr)
 
 declare i32 @sqlite3_open_v2(ptr, ptr, i32, ptr)
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.StringData"(%"github.com/goplus/llgo/internal/runtime.String")
-
-declare i64 @"github.com/goplus/llgo/internal/runtime.StringLen"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare i32 @sqlite3_prepare(ptr, i32, ptr, ptr)
 
