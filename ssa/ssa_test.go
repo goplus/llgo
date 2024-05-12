@@ -147,8 +147,8 @@ func TestPyFunc(t *testing.T) {
 	if pkg.NewPyFunc("a", sig, false) != a {
 		t.Fatal("NewPyFunc(a) failed")
 	}
-	foo := pkg.NewPyModVar("foo")
-	if pkg.NewPyModVar("foo") != foo {
+	foo := pkg.NewPyModVar("foo", false)
+	if pkg.NewPyModVar("foo", false) != foo {
 		t.Fatal("NewPyModVar(foo) failed")
 	}
 }

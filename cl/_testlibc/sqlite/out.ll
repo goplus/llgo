@@ -13,7 +13,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @sqlite3_errstr()
+  %2 = call ptr @sqlite3_errstr(i32 %0)
   %3 = call i32 (ptr, ...) @printf(ptr @0, i32 %0, ptr %2)
   call void @exit(i32 1)
   br label %_llgo_2
@@ -45,11 +45,11 @@ _llgo_0:
   %3 = extractvalue { ptr, i32 } %2, 0
   %4 = extractvalue { ptr, i32 } %2, 1
   call void @main.check(i32 %4)
-  %5 = call i32 @sqlite3_close()
+  %5 = call i32 @sqlite3_close(ptr %3)
   ret void
 }
 
-declare ptr @sqlite3_errstr()
+declare ptr @sqlite3_errstr(i32)
 
 declare i32 @printf(ptr, ...)
 
@@ -59,4 +59,4 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare { ptr, i32 } @"github.com/goplus/llgo/x/sqlite.OpenV2"(ptr, i32, ptr)
 
-declare i32 @sqlite3_close()
+declare i32 @sqlite3_close(ptr)

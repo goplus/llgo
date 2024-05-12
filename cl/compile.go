@@ -211,7 +211,7 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyFunction, int) {
+func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		if ftype == pyFunc {
@@ -250,7 +250,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 	}
 	if nblk := len(f.Blocks); nblk > 0 {
 		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
-		isPyMod := p.pyMod != ""
 		p.inits = append(p.inits, func() {
 			p.fn = fn
 			defer func() {
@@ -270,9 +269,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 				off[i] = p.compilePhis(b, block)
 			}
 			for i, block := range f.Blocks {
-				doInit := (i == 0 && name == "main")
-				doPyModInit := (isPyMod && i == 1 && f.Name() == "init" && sig.Recv() == nil)
-				p.compileBlock(b, block, off[i], doInit, doPyModInit)
+				doMainInit := (i == 0 && name == "main")
+				doModInit := (i == 1 && f.Name() == "init" && sig.Recv() == nil)
+				p.compileBlock(b, block, off[i], doMainInit, doModInit)
 			}
 			for _, phi := range p.phis {
 				phi()
@@ -284,14 +283,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
-func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyFunction, ftype int) {
+func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObjRef, ftype int) {
 	pkgTypes, name, ftype := p.funcName(fn, false)
 	switch ftype {
 	case pyFunc:
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
 			pkg := p.pkg
 			fnName := pysymPrefix + mod + "." + name
-			if pyFn = pkg.PyFuncOf(fnName); pyFn == nil {
+			if pyFn = pkg.PyObjOf(fnName); pyFn == nil {
 				pyFn = pkg.NewPyFunc(fnName, fn.Signature, true)
 				return
 			}
@@ -329,41 +328,61 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyFun
 	return
 }
 
-func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doInit, pyModInit bool) llssa.BasicBlock {
+func modOf(name string) string {
+	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
+		return name[:pos]
+	}
+	return ""
+}
+
+func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
 	var last int
-	var instrs []ssa.Instruction
+	var pyModInit bool
+	var prog = p.prog
+	var pkg = p.pkg
+	var instrs = block.Instrs[n:]
 	var ret = p.fn.Block(block.Index)
 	b.SetBlock(ret)
-	if pyModInit {
-		last = len(block.Instrs) - 1
-		instrs = block.Instrs[n:last]
-	} else {
-		instrs = block.Instrs[n:]
-		if doInit {
-			prog := p.prog
-			pkg := p.pkg
-			fn := p.fn
-			argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
-			argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-			argc.Init(prog.Null(argc.Type))
-			argv.Init(prog.Null(argv.Type))
-			b.Store(argc.Expr, fn.Param(0))
-			b.Store(argv.Expr, fn.Param(1))
-			callRuntimeInit(b, pkg)
-			b.Call(pkg.FuncOf("main.init").Expr)
+	if doModInit {
+		if pyModInit = p.pyMod != ""; pyModInit {
+			last = len(instrs) - 1
+			instrs = instrs[:last]
 		}
+		p.inits = append(p.inits, func() {
+			if objs := pkg.PyObjs(); len(objs) > 0 {
+				mods := make(map[string][]llssa.PyObjRef)
+				for name, obj := range objs {
+					modName := modOf(name)
+					mods[modName] = append(mods[modName], obj)
+				}
+				b.SetBlockEx(ret, llssa.AfterInit)
+				for modName, objs := range mods {
+					b.LoadPyModSyms(modName, objs...)
+				}
+			}
+		})
+	} else if doMainInit {
+		fn := p.fn
+		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
+		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
+		argc.Init(prog.Null(argc.Type))
+		argv.Init(prog.Null(argv.Type))
+		b.Store(argc.Expr, fn.Param(0))
+		b.Store(argv.Expr, fn.Param(1))
+		callRuntimeInit(b, pkg)
+		b.Call(pkg.FuncOf("main.init").Expr)
 	}
 	for _, instr := range instrs {
 		p.compileInstr(b, instr)
 	}
 	if pyModInit {
-		jump := block.Instrs[last].(*ssa.Jump)
+		jump := block.Instrs[n+last].(*ssa.Jump)
 		jumpTo := p.jumpTo(jump)
 		modPath := p.pyMod
 		modName := pysymPrefix + modPath
-		modPtr := p.pkg.NewPyModVar(modName).Expr
+		modPtr := pkg.NewPyModVar(modName, true).Expr
 		mod := b.Load(modPtr)
-		cond := b.BinOp(token.NEQ, mod, b.Prog.Null(mod.Type))
+		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlock(newBlk)
@@ -763,7 +782,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
-func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyFunction, kind int) {
+func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObjRef, kind int) {
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package

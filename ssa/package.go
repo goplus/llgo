@@ -140,6 +140,7 @@ type aProgram struct {
 	pyImpTy    *types.Signature
 	callNoArgs *types.Signature
 	callOneArg *types.Signature
+	loadPyModS *types.Signature
 
 	NeedRuntime bool
 	NeedPyInit  bool
@@ -257,12 +258,12 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	gbls := make(map[string]Global)
 	fns := make(map[string]Function)
 	stubs := make(map[string]Function)
-	pyfns := make(map[string]PyFunction)
+	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
-	return &aPackage{mod, gbls, fns, stubs, pyfns, pymods, p}
+	return &aPackage{mod, gbls, fns, stubs, pyobjs, pymods, p}
 }
 
 // PyObjectPtrPtr returns the **py.Object type.
@@ -366,7 +367,7 @@ type aPackage struct {
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
-	pyfns  map[string]PyFunction
+	pyobjs map[string]PyObjRef
 	pymods map[string]Global
 	Prog   Program
 }
@@ -506,6 +507,16 @@ func (p Program) tyCallOneArg() *types.Signature {
 	return p.callOneArg
 }
 
+func (p Program) tyLoadPyModSyms() *types.Signature {
+	if p.loadPyModS == nil {
+		objPtr := p.PyObjectPtr().raw.Type
+		paramObjPtr := types.NewParam(token.NoPos, nil, "mod", objPtr)
+		params := types.NewTuple(paramObjPtr, VArg())
+		p.loadPyModS = types.NewSignatureType(nil, nil, nil, params, nil, false)
+	}
+	return p.loadPyModS
+}
+
 // PyInit initializes Python for a main package.
 func (p Package) PyInit() bool {
 	if fn := p.FuncOf("main"); fn != nil {
@@ -518,15 +529,17 @@ func (p Package) PyInit() bool {
 }
 
 // NewPyModVar creates a new global variable for a Python module.
-func (p Package) NewPyModVar(name string) Global {
+func (p Package) NewPyModVar(name string, doInit bool) Global {
 	if v, ok := p.pymods[name]; ok {
 		return v
 	}
 	prog := p.Prog
 	objPtr := prog.PyObjectPtrPtr().raw.Type
 	g := p.NewVar(name, objPtr, InC)
-	g.Init(prog.Null(g.Type))
-	g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	if doInit {
+		g.Init(prog.Null(g.Type))
+		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	}
 	p.pymods[name] = g
 	return g
 }
@@ -538,9 +551,30 @@ func (b Builder) ImportPyMod(path string) Expr {
 	return b.Call(fnImp, b.CStr(path))
 }
 
+// LoadPyModSyms loads python objects from specified module.
+func (b Builder) LoadPyModSyms(modName string, objs ...PyObjRef) Expr {
+	pkg := b.Func.Pkg
+	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
+	modPtr := pkg.NewPyModVar(modName, false).Expr
+	mod := b.Load(modPtr)
+	args := make([]Expr, 1, len(objs)*2+2)
+	args[0] = mod
+	nbase := len(modName) + 1
+	for _, o := range objs {
+		fullName := o.impl.Name()
+		name := fullName[nbase:]
+		args = append(args, b.CStr(name))
+		args = append(args, o.Expr)
+	}
+	prog := b.Prog
+	args = append(args, prog.Null(prog.CStr()))
+	return b.Call(fnLoad, args...)
+}
+
 func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	prog := b.Prog
 	pkg := b.Func.Pkg
+	fn = b.Load(fn)
 	sig := fn.raw.Type.(*types.Signature)
 	params := sig.Params()
 	n := params.Len()

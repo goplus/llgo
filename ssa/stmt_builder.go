@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -76,6 +77,7 @@ type InsertPoint int
 const (
 	AtEnd InsertPoint = iota
 	AtStart
+	AfterInit
 )
 
 // SetBlockEx sets blk as current basic block and pos as its insert point.
@@ -88,10 +90,33 @@ func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint) Builder {
 		b.impl.SetInsertPointAtEnd(blk.impl)
 	case AtStart:
 		b.impl.SetInsertPointBefore(blk.impl.FirstInstruction())
+	case AfterInit:
+		b.impl.SetInsertPointBefore(instrAfterInit(blk.impl))
 	default:
 		panic("SetBlockEx: invalid pos")
 	}
 	return b
+}
+
+func instrAfterInit(blk llvm.BasicBlock) llvm.Value {
+	instr := blk.FirstInstruction()
+	for {
+		instr = llvm.NextInstruction(instr)
+		if notInit(instr) {
+			return instr
+		}
+	}
+}
+
+func notInit(instr llvm.Value) bool {
+	switch op := instr.InstructionOpcode(); op {
+	case llvm.Call:
+		if n := instr.OperandsCount(); n == 1 {
+			fn := instr.Operand(0)
+			return !strings.HasSuffix(fn.Name(), ".init")
+		}
+	}
+	return true
 }
 
 // Panic emits a panic instruction.
