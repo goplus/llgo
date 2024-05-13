@@ -39,9 +39,9 @@ import (
 // to it become invalid when the Unicode object is garbage collected.
 //
 // llgo:link (*Object).CStrAndLen C.PyUnicode_AsUTF8AndSize
-func (o *Object) CStrAndLen() (*c.Char, uintptr) { return nil, 0 }
+func (u *Object) CStrAndLen() (*c.Char, uintptr) { return nil, 0 }
 
 // As CStrAndLen, but does not store the len.
 //
 // llgo:link (*Object).CStr C.PyUnicode_AsUTF8
-func (o *Object) CStr() *c.Char { return nil }
+func (u *Object) CStr() *c.Char { return nil }
