@@ -46,7 +46,7 @@ _llgo_0:
   %6 = call ptr @PyObject_CallNoArgs(ptr %5)
   %7 = call double @PyFloat_AsDouble(ptr %4)
   %8 = call i32 (ptr, ...) @printf(ptr @0, double %7)
-  %9 = call ptr @PyBytes_AsString(ptr %6)
+  %9 = call ptr @PyUnicode_AsUTF8(ptr %6)
   %10 = call i32 (ptr, ...) @printf(ptr @1, ptr %9)
   ret void
 }
@@ -67,7 +67,7 @@ declare double @PyFloat_AsDouble(ptr)
 
 declare i32 @printf(ptr, ...)
 
-declare ptr @PyBytes_AsString(ptr)
+declare ptr @PyUnicode_AsUTF8(ptr)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
 
