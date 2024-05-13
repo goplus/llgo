@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package math
+package py
 
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/py"
 )
 
-const (
-	LLGoPackage = "py.math"
-)
+// https://docs.python.org/3/c-api/exceptions.html
 
-//go:linkname Sqrt py.sqrt
-func Sqrt(x *py.Object) *py.Object
+// Clear the error indicator. If the error indicator is not set, there is
+// no effect.
+//
+//go:linkname ErrClear C.PyErr_Clear
+func ErrClear()
 
-//go:linkname Pi py.pi
-var Pi *py.Object
+//go:linkname ErrPrint C.PyErr_Print
+func ErrPrint()
