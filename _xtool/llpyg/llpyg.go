@@ -20,6 +20,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/py/inspect"
+	// "github.com/goplus/llgo/py/builtins"
 )
 
 func main() {
@@ -49,6 +50,8 @@ func main() {
 			c.Fprintf(c.Stderr, c.Str("-----------------------------------\n"))
 			c.Fprintf(c.Stderr, c.Str("%s: %s\n"), key.CStr(), sig.Str().CStr())
 			c.Fprintf(c.Stderr, c.Str("%s\n"), doc.CStr())
+			// c.Fprintf(c.Stderr, c.Str("-----------------------------------\n"))
+			// builtins.Help(val)
 		}
 	}
 }
