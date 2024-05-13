@@ -16,6 +16,8 @@
 
 package py
 
+/*
+
 import (
 	_ "unsafe"
 
@@ -44,3 +46,5 @@ func (o *Object) CStr() *c.Char { return nil }
 
 // llgo:link (*Object).Strlen C.PyBytes_Size
 func (o *Object) Strlen() uintptr { return 0 }
+
+*/
