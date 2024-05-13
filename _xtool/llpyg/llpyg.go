@@ -19,6 +19,7 @@ package main
 import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/py/inspect"
 )
 
 func main() {
@@ -42,7 +43,9 @@ func main() {
 		item := items.ListItem(i)
 		key := item.TupleItem(0)
 		val := item.TupleItem(1)
-		_ = val
-		c.Fprintf(c.Stderr, c.Str("%s\n"), key.CStr())
+		if val.Callable() != 0 {
+			sig := inspect.Signature(val)
+			c.Fprintf(c.Stderr, c.Str("%s: %s\n"), key.CStr(), sig.Str().CStr())
+		}
 	}
 }
