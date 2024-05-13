@@ -44,8 +44,11 @@ func main() {
 		key := item.TupleItem(0)
 		val := item.TupleItem(1)
 		if val.Callable() != 0 {
+			doc := val.GetAttrString(c.Str("__doc__"))
 			sig := inspect.Signature(val)
+			c.Fprintf(c.Stderr, c.Str("-----------------------------------\n"))
 			c.Fprintf(c.Stderr, c.Str("%s: %s\n"), key.CStr(), sig.Str().CStr())
+			c.Fprintf(c.Stderr, c.Str("%s\n"), doc.CStr())
 		}
 	}
 }
