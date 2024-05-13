@@ -22,7 +22,7 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
-// -----------------------------------------------------------------------------
+// https://docs.python.org/3/c-api/module.html
 
 // This is a wrapper around py.Import which takes a const char* as an argument
 // instead of an Object.
