@@ -284,7 +284,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkString:
 			if op == token.ADD {
 				pkg := b.Func.Pkg
-				return b.InlineCall(pkg.rtFunc("StringCat"), x, y)
+				return Expr{b.InlineCall(pkg.rtFunc("StringCat"), x, y).impl, x.Type}
 			}
 		case vkComplex:
 		default:
