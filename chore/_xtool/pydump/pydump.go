@@ -20,35 +20,38 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/py/inspect"
+	"github.com/goplus/llgo/x/cjson"
 )
 
 func main() {
 	if c.Argc < 2 {
-		c.Fprintf(c.Stderr, c.Str("Usage: llpyg <pythonLibPath> [<destDir>]\n"))
+		c.Fprintf(c.Stderr, c.Str("Usage: pydump <pythonLibPath>\n"))
 		return
 	}
-
 	pyLib := c.Index(c.Argv, 1)
-	destDir := c.Str(".")
-	if c.Argc > 2 {
-		destDir = c.Index(c.Argv, 2)
-	}
-	c.Fprintf(c.Stderr, c.Str("pyLib: %s, destDir: %s\n"), pyLib, destDir)
 
 	py.Initialize()
+
+	root := cjson.Object()
+	root.SetItem(c.Str("name"), cjson.String(pyLib))
+
+	items := cjson.Array()
 	mod := py.ImportModule(pyLib)
 	keys := mod.ModuleGetDict().DictKeys()
 	for i, n := uintptr(0), keys.ListLen(); i < n; i++ {
 		key := keys.ListItem(i)
 		val := mod.GetAttr(key)
 		doc := val.GetAttrString(c.Str("__doc__"))
-		c.Fprintf(c.Stderr, c.Str("-----------------------------------\n"))
-		if val.Callable() != 0 {
+		sym := cjson.Object()
+		sym.SetItem(c.Str("name"), cjson.String(key.CStr()))
+		sym.SetItem(c.Str("doc"), cjson.String(doc.CStr()))
+		if val.Callable() != 0 && false {
 			sig := inspect.Signature(val)
-			c.Fprintf(c.Stderr, c.Str("%s: %s\n"), key.CStr(), sig.Str().CStr())
-		} else {
-			c.Fprintf(c.Stderr, c.Str("var: %s\n"), key.CStr())
+			sym.SetItem(c.Str("sig"), cjson.String(sig.Str().CStr()))
 		}
-		c.Fprintf(c.Stderr, c.Str("%s\n"), doc.CStr())
+		items.AddItem(sym)
 	}
+	root.SetItem(c.Str("items"), items)
+
+	c.Printf(c.Str("%s\n"), root.CStr())
 }
