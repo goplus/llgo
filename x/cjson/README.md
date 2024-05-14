@@ -9,10 +9,14 @@ LLGo wrapper of DaveGamble/cJSON
 ## How to install
 
 ```sh
+git clone https://github.com/goplus/cjson.git
+cd cjson
+git submodule init
+git submodule update
 mkdir build.dir
 cd build.dir
 cmake ../cJSON
-make install
+sudo make install
 ```
 
 ## Demos
