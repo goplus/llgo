@@ -25,6 +25,17 @@ import (
 // https://docs.python.org/3/c-api/import.html
 // https://docs.python.org/3/c-api/module.html
 
+// llgo:type C
+type ModuleDefBase struct {
+	Unused [8]byte // TODO(xsw)
+}
+
+// llgo:type C
+type ModuleDef struct {
+	Base ModuleDefBase
+	// TODO(xsw)
+}
+
 // Return the module object corresponding to a module name. The name argument
 // may be of the form package.module. First check the modules dictionary if
 // there’s one there, and if not, create a new one and insert it in the modules
