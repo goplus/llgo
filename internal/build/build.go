@@ -200,7 +200,9 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 			if isPkgInLLGo(pkgPath) {
 				pkg.ExportFile = concatPkgLinkFiles(pkgPath)
 			} else {
-				panic("todo")
+				// panic("todo")
+				// TODO(xsw): support packages out of llgo
+				pkg.ExportFile = ""
 			}
 			if kind == cl.PkgLinkExtern { // need to be linked with external library
 				linkFile := os.ExpandEnv(strings.TrimSpace(param))
@@ -209,10 +211,10 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 				if dir != "" {
 					command += " -L " + dir
 				}
-				if isMultiLinkFiles(pkg.ExportFile) {
-					pkg.ExportFile = command + pkg.ExportFile
-				} else {
+				if isSingleLinkFile(pkg.ExportFile) {
 					pkg.ExportFile = command + " " + pkg.ExportFile
+				} else {
+					pkg.ExportFile = command + pkg.ExportFile
 				}
 			}
 		default:
@@ -454,14 +456,14 @@ func llgoRoot() string {
 }
 
 func appendLinkFiles(args []string, file string) []string {
-	if isMultiLinkFiles(file) {
-		return append(args, strings.Split(file[1:], " ")...)
+	if isSingleLinkFile(file) {
+		return append(args, file)
 	}
-	return append(args, file)
+	return append(args, strings.Split(file[1:], " ")...)
 }
 
-func isMultiLinkFiles(ret string) bool {
-	return len(ret) > 0 && ret[0] == ' '
+func isSingleLinkFile(ret string) bool {
+	return len(ret) > 0 && ret[0] != ' '
 }
 
 func concatPkgLinkFiles(pkgPath string) string {
