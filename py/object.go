@@ -33,7 +33,7 @@ type Object struct {
 func (o *Object) DecRef() {}
 
 // llgo:link (*Object).Type C.PyObject_Type
-func (o *Object) Type() *TypeObject { return nil }
+func (o *Object) Type() *Object { return nil }
 
 // Compute a string representation of object o. Returns the string representation on
 // success, nil on failure. This is the equivalent of the Python expression str(o).
@@ -45,13 +45,13 @@ func (o *Object) Str() *Object { return nil }
 // Returns 1 if the object o is considered to be true, and 0 otherwise. This is equivalent
 // to the Python expression not not o. On failure, return -1.
 //
-// llgo:link (*Object) IsTrue() C.PyObject_IsTrue
+// llgo:link (*Object).IsTrue C.PyObject_IsTrue
 func (o *Object) IsTrue() c.Int { return -1 }
 
 // Returns 0 if the object o is considered to be true, and 1 otherwise. This is equivalent
 // to the Python expression not o. On failure, return -1.
 //
-// llgo:link (*Object) NotTrue() C.PyObject_Not
+// llgo:link (*Object).NotTrue C.PyObject_Not
 func (o *Object) NotTrue() c.Int { return -1 }
 
 // -----------------------------------------------------------------------------

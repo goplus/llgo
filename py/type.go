@@ -22,20 +22,17 @@ import (
 
 // https://docs.python.org/3/c-api/type.html
 
-// TypeObject represents the Python type object.
-type TypeObject = Object
-
 // Return the type’s name. Equivalent to getting the type’s __name__ attribute.
 //
-// llgo:link (*TypeObject).Name C.PyType_GetName
-func (t *TypeObject) Name() *Object { return nil }
+// llgo:link (*Object).TypeName C.PyType_GetName
+func (t *Object) TypeName() *Object { return nil }
 
 // Return the tp_flags member of type. This function is primarily meant for use
 // with Py_LIMITED_API; the individual flag bits are guaranteed to be stable across
 // Python releases, but access to tp_flags itself is not part of the limited API.
 //
-// llgo:link (*TypeObject).Flags C.PyType_GetFlags
-func (t *TypeObject) Flags() uint32 { return 0 }
+// llgo:link (*Object).TypeFlags C.PyType_GetFlags
+func (t *Object) TypeFlags() uint32 { return 0 }
 
 // Return the module object associated with the given type when the type was created
 // using PyType_FromModuleAndSpec().
@@ -49,8 +46,8 @@ func (t *TypeObject) Flags() uint32 { return 0 }
 // the class that defines the method. See ModuleByDef() for cases when PyCMethod
 // cannot be used.
 //
-// llgo:link (*TypeObject).Module C.PyType_GetModule
-func (t *TypeObject) Module() *Object { return nil }
+// llgo:link (*Object).TypeModule C.PyType_GetModule
+func (t *Object) TypeModule() *Object { return nil }
 
-// llgo:link (*TypeObject).ModuleByDef C.PyType_GetModuleByDef
-// func (t *TypeObject) ModuleByDef(def *ModuleDef) *Object { return nil }
+// llgo:link (*Object).TypeModuleByDef C.PyType_GetModuleByDef
+// func (t *Object) TypeModuleByDef(def *ModuleDef) *Object { return nil }
