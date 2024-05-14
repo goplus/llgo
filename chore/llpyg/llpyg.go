@@ -58,9 +58,17 @@ func main() {
 	var mod module
 	json.Unmarshal(out.Bytes(), &mod)
 
-	pkg := gogen.NewPackage("", mod.Name, nil)
+	modName := mod.Name
+	pkg := gogen.NewPackage("", modName, nil)
 	pkg.Import("unsafe").MarkForceUsed(pkg)       // import _ "unsafe"
 	py := pkg.Import("github.com/goplus/llgo/py") // import "github.com/goplus/llgo/py"
+
+	f := func(cb *gogen.CodeBuilder) int {
+		cb.Val("py." + modName)
+		return 1
+	}
+	defs := pkg.NewConstDefs(pkg.Types.Scope())
+	defs.New(f, 0, 0, nil, "LLGoPackage")
 
 	obj := py.Ref("Object").(*types.TypeName).Type().(*types.Named)
 	objPtr := types.NewPointer(obj)
@@ -101,9 +109,7 @@ func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
 		log.Println("skip func:", name, sym.Sig)
 		return
 	}
-	if c := name[0]; c >= 'a' && c <= 'z' {
-		name = string(c+'A'-'a') + name[1:]
-	}
+	name = genName(name, -1)
 	sig := types.NewSignatureType(nil, nil, nil, params, ctx.ret, variadic)
 	fn := pkg.NewFuncDecl(token.NoPos, name, sig)
 	list := ctx.genDoc(sym.Doc)
@@ -118,25 +124,53 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 		return nil, false, true
 	}
 	sig = strings.TrimSuffix(strings.TrimPrefix(sig, "("), ")")
+	if sig == "" { // empty params
+		return nil, false, false
+	}
 	parts := strings.Split(sig, ",")
 	n := len(parts)
 	if last := strings.TrimSpace(parts[n-1]); last == "/" {
 		n--
 	}
 	objPtr := ctx.objPtr
-	list := make([]*types.Var, n)
+	list := make([]*types.Var, 0, n)
 	for i := 0; i < n; i++ {
 		part := strings.TrimSpace(parts[i])
+		if part == "*" {
+			break
+		}
 		if strings.HasPrefix(part, "*") {
 			if len(part) > 1 && part[1] == '*' || i != n-1 {
 				return nil, false, true
 			}
-			list[i] = pkg.NewParam(0, part[1:], types.NewSlice(objPtr))
+			list = append(list, pkg.NewParam(0, genName(part[1:], 0), types.NewSlice(objPtr)))
 			return types.NewTuple(list...), true, false
 		}
-		list[i] = pkg.NewParam(0, part, objPtr)
+		pos := strings.IndexByte(part, '=')
+		if pos >= 0 {
+			part = part[:pos]
+		}
+		list = append(list, pkg.NewParam(0, genName(part, 0), objPtr))
 	}
 	return types.NewTuple(list...), false, false
+}
+
+func genName(name string, idxDontTitle int) string {
+	parts := strings.Split(name, "_")
+	for i, part := range parts {
+		if i != idxDontTitle && part != "" {
+			if c := part[0]; c >= 'a' && c <= 'z' {
+				part = string(c+'A'-'a') + part[1:]
+			}
+			parts[i] = part
+		}
+	}
+	name = strings.Join(parts, "")
+	switch name {
+	case "default", "":
+		name += "_"
+	}
+	return name
 }
 
 func (ctx *context) genLinkname(name string, sym *symbol) *ast.Comment {

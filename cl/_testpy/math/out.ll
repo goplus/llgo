@@ -1,7 +1,6 @@
 ; ModuleID = 'math'
 source_filename = "math"
 
-@__llgo_py.math.sqrt = external global ptr
 @"math.init$guard" = global ptr null
 @__llgo_py.math = linkonce global ptr null
 @0 = private unnamed_addr constant [5 x i8] c"math\00", align 1

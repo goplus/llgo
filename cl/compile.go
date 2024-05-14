@@ -214,11 +214,14 @@ var (
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
-		if ftype == pyFunc {
-			// TODO(xsw): pyMod == ""
-			fnName := pysymPrefix + p.pyMod + "." + name
-			return nil, pkg.NewPyFunc(fnName, f.Signature, call), pyFunc
-		}
+		/*
+			if ftype == pyFunc {
+				// TODO(xsw): pyMod == ""
+				fnName := pysymPrefix + p.pyMod + "." + name
+				return nil, pkg.NewPyFunc(fnName, f.Signature, call), pyFunc
+			}
+		*/
+		_ = call
 		return nil, nil, ignoredFunc
 	}
 	fn := pkg.FuncOf(name)
