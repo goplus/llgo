@@ -59,6 +59,10 @@ func main() {
 	json.Unmarshal(out.Bytes(), &mod)
 
 	modName := mod.Name
+	if modName == "" {
+		log.Printf("import module %s failed\n", pyLib)
+		os.Exit(1)
+	}
 	pkg := gogen.NewPackage("", modName, nil)
 	pkg.Import("unsafe").MarkForceUsed(pkg)       // import _ "unsafe"
 	py := pkg.Import("github.com/goplus/llgo/py") // import "github.com/goplus/llgo/py"
@@ -79,10 +83,11 @@ func main() {
 		switch sym.Type {
 		case "builtin_function_or_method", "function":
 			ctx.genFunc(pkg, sym)
-		case "str", "float", "bool", "type", "dict", "list", "module", "int", "set": // skip
+		case "str", "float", "bool", "type", "dict", "tuple", "list",
+			"module", "int", "set", "frozenset", "flags": // skip
 		default:
 			t := sym.Type
-			if len(t) > 0 && (t[0] >= 'a' && t[0] <= 'z') {
+			if len(t) > 0 && (t[0] >= 'a' && t[0] <= 'z') && !strings.HasSuffix(t, "_info") {
 				log.Panicln("unsupport type:", sym.Type)
 			}
 		}
@@ -167,7 +172,7 @@ func genName(name string, idxDontTitle int) string {
 	}
 	name = strings.Join(parts, "")
 	switch name {
-	case "default", "":
+	case "default", "func", "":
 		name += "_"
 	}
 	return name
