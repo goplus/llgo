@@ -81,10 +81,10 @@ func main() {
 	ctx := &context{pkg, obj, objPtr, ret, py}
 	for _, sym := range mod.Items {
 		switch sym.Type {
-		case "builtin_function_or_method", "function":
+		case "builtin_function_or_method", "function", "ufunc":
 			ctx.genFunc(pkg, sym)
 		case "str", "float", "bool", "type", "dict", "tuple", "list",
-			"module", "int", "set", "frozenset", "flags": // skip
+			"module", "int", "set", "frozenset", "flags", "bool_": // skip
 		default:
 			t := sym.Type
 			if len(t) > 0 && (t[0] >= 'a' && t[0] <= 'z') && !strings.HasSuffix(t, "_info") {
@@ -104,14 +104,14 @@ type context struct {
 }
 
 func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
-	name := sym.Name
+	name, symSig := sym.Name, sym.Sig
 	if len(name) == 0 || name[0] == '_' {
 		return
 	}
-	params, variadic, skip := ctx.genParams(pkg, sym.Sig)
+	params, variadic, skip := ctx.genParams(pkg, symSig)
 	if skip {
 		// TODO(xsw): don't skip any func
-		log.Println("skip func:", name, sym.Sig)
+		log.Println("skip func:", name, symSig)
 		return
 	}
 	name = genName(name, -1)
@@ -145,14 +145,17 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 			break
 		}
 		if strings.HasPrefix(part, "*") {
-			if len(part) > 1 && part[1] == '*' || i != n-1 {
-				return nil, false, true
+			if part[1] != '*' {
+				list = append(list, pkg.NewParam(0, genName(part[1:], 0), types.NewSlice(objPtr)))
+				return types.NewTuple(list...), true, false
 			}
-			list = append(list, pkg.NewParam(0, genName(part[1:], 0), types.NewSlice(objPtr)))
-			return types.NewTuple(list...), true, false
+			return types.NewTuple(list...), false, false
 		}
 		pos := strings.IndexByte(part, '=')
 		if pos >= 0 {
+			if strings.HasPrefix(part[pos+1:], "<") { // skip complex default value
+				return nil, false, true
+			}
 			part = part[:pos]
 		}
 		list = append(list, pkg.NewParam(0, genName(part, 0), objPtr))

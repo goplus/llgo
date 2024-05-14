@@ -25,7 +25,7 @@ int main() {
     Py_Initialize();
     PyObject* inspect = PyImport_ImportModule("inspect");
     PyObject* signature = PyObject_GetAttrString(inspect, "signature");
-	PyObject* mod = PyImport_ImportModule("math");
+	PyObject* mod = PyImport_ImportModule("numpy");
 	PyObject* dict = PyModule_GetDict(mod);
 	PyObject* keys = PyDict_Keys(dict);
     size_t i, n;
@@ -39,7 +39,10 @@ int main() {
 			printf("-----------------------------------\n");
 			printf("sig: %p\n", sig);
 			printf("%s: %s\n", PyUnicode_AsUTF8(key), PyUnicode_AsUTF8(PyObject_Str(sig)));
-			printf("%s\n", PyUnicode_AsUTF8(doc));
+			printf("%s\n", PyUnicode_AsUTF8(key));
+			if (doc != NULL) {
+				printf("%s\n", PyUnicode_AsUTF8(doc));
+			}
 		}
 	}
     return 0;
