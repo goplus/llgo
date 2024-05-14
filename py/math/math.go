@@ -22,12 +22,13 @@ import (
 	"github.com/goplus/llgo/py"
 )
 
-const (
-	LLGoPackage = "py.math"
-)
-
-//go:linkname Sqrt py.sqrt
-func Sqrt(x *py.Object) *py.Object
+// https://docs.python.org/3/library/math.html
 
 //go:linkname Pi py.pi
 var Pi *py.Object
+
+// Unlike the built-in ** operator, math.pow() converts both its arguments to type
+// float. Use ** or the built-in pow() function for computing exact integer powers.
+//
+//go:linkname Pow py.pow
+func Pow(x, y *py.Object) *py.Object

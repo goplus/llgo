@@ -129,13 +129,13 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 	}
 	parts := strings.Split(sig, ",")
 	n := len(parts)
-	if last := strings.TrimSpace(parts[n-1]); last == "/" {
-		n--
-	}
 	objPtr := ctx.objPtr
 	list := make([]*types.Var, 0, n)
 	for i := 0; i < n; i++ {
 		part := strings.TrimSpace(parts[i])
+		if part == "/" {
+			continue
+		}
 		if part == "*" {
 			break
 		}
