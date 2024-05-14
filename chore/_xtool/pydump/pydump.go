@@ -43,9 +43,11 @@ func main() {
 		val := mod.GetAttr(key)
 		doc := val.GetAttrString(c.Str("__doc__"))
 		sym := cjson.Object()
-		sym.SetItem(c.Str("type"), cjson.String(val.Type().Name().CStr()))
+		sym.SetItem(c.Str("type"), cjson.String(val.Type().TypeName().CStr()))
 		sym.SetItem(c.Str("name"), cjson.String(key.CStr()))
-		sym.SetItem(c.Str("doc"), cjson.String(doc.CStr()))
+		if doc != nil {
+			sym.SetItem(c.Str("doc"), cjson.String(doc.CStr()))
+		}
 		if val.Callable() != 0 {
 			sig := inspect.Signature(val)
 			sym.SetItem(c.Str("sig"), cjson.String(sig.Str().CStr()))
