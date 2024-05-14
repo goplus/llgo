@@ -58,16 +58,17 @@ source_filename = "foo"
 
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 
+@runtime.type.int64 = linkonce_odr constant { i64, i64, i32, i8, i8, i8, i8, ptr, i64, i32, i32 } { i64 8, i64 0, i32 0, i8 0, i8 0, i8 0, i8 6, ptr @"github.com/goplus/llgo/internal/runtime.EqualBasic", i64 0, i32 0, i32 0 }
+@runtime.type.float64 = linkonce_odr constant { i64, i64, i32, i8, i8, i8, i8, ptr, i64, i32, i32 } { i64 8, i64 0, i32 0, i8 0, i8 0, i8 0, i8 14, ptr @"github.com/goplus/llgo/internal/runtime.EqualBasic", i64 0, i32 0, i32 0 }
+
 define void @main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   store i64 100, ptr %0, align 4
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
-  %2 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %1, ptr %0)
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  store double 1.000000e+02, ptr %3, align 8
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 14)
-  %5 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %4, ptr %3)
+  %1 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr @runtime.type.int64, ptr %0)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store double 1.000000e+02, ptr %2, align 8
+  %3 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr @runtime.type.float64, ptr %2)
   ret void
 }
 
@@ -75,7 +76,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr, ptr)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+declare i1 @"github.com/goplus/llgo/internal/runtime.EqualBasic"(ptr, ptr)
 `)
 }
 

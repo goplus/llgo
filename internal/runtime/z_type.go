@@ -83,6 +83,12 @@ func basicType(kind abi.Kind) *Type {
 	}
 }
 
+// function for comparing objects of type kind
+// (ptr to object A, ptr to object B) -> ==?
+func EqualBasic(a unsafe.Pointer, b unsafe.Pointer) bool {
+	return a == b
+}
+
 // -----------------------------------------------------------------------------
 
 // StructField returns a struct field.

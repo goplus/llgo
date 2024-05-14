@@ -21,7 +21,6 @@ import (
 	"go/types"
 	"log"
 
-	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llvm"
 )
 
@@ -41,13 +40,14 @@ func (b Builder) abiStruct(t *types.Struct) Expr {
 
 // AbiType returns the abi type of the specified type.
 func (b Builder) AbiType(t Type) Expr {
-	switch tx := t.raw.Type.(type) {
-	case *types.Basic:
-		return b.abiBasic(tx.Kind())
-		//case *types.Struct:
-		//	return b.abiStruct(tx)
-	}
-	panic("todo")
+	return b.runtimeType(t.raw.Type)
+	// switch tx := t.raw.Type.(type) {
+	// case *types.Basic:
+	// 	return b.abiBasic(tx.Kind())
+	// 	//case *types.Struct:
+	// 	//	return b.abiStruct(tx)
+	// }
+	// panic("todo")
 }
 
 // -----------------------------------------------------------------------------
@@ -92,7 +92,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 			i64 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt64())
 			return b.makeIntfByIntptr(tinter, rawIntf, typ, i64)
 		case kind == types.String:
-			return Expr{b.InlineCall(b.Pkg.rtFunc("MakeAnyString"), x).impl, tinter}
+			return Expr{b.InlineCall(b.Pkg.rtFunc("MakeAnyString"), b.AbiType(typ), x).impl, tinter}
 		}
 		/* case *types.Struct:
 		size := int(prog.SizeOf(typ))
@@ -189,8 +189,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		default:
 			panic("todo")
 		}
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
-		ret = b.InlineCall(fn, x, typ)
+		ret = b.InlineCall(fn, x, b.AbiType(assertedTyp))
 		if kind != types.Uintptr {
 			conv := func(v llvm.Value) llvm.Value {
 				switch kind {
@@ -227,8 +226,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 			fnName = "CheckI2String"
 		}
 		fn := pkg.rtFunc(fnName)
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(abi.String)))
-		return b.InlineCall(fn, x, typ)
+		return b.InlineCall(fn, x, b.AbiType(assertedTyp))
 	}
 	panic("todo")
 }

@@ -41,8 +41,7 @@ func MakeAnyIntptr(typ *Type, data uintptr) Interface {
 	}
 }
 
-func MakeAnyString(data string) Interface {
-	typ := basicTypes[abi.String]
+func MakeAnyString(typ *Type, data string) Interface {
 	tab := &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}}
 	return Interface{
 		tab: tab, data: unsafe.Pointer(&data),

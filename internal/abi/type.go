@@ -135,7 +135,30 @@ type NameOff int32
 // TypeOff is the offset to a type from moduledata.types.  See resolveTypeOff in runtime.
 type TypeOff int32
 
+// TextOff is an offset from the top of a text section.  See (rtype).textOff in runtime.
+type TextOff int32
+
 // -----------------------------------------------------------------------------
+
+// Method on non-interface type
+type Method struct {
+	Name NameOff // name of method
+	Mtyp TypeOff // method type (without receiver)
+	Ifn  TextOff // fn used in interface call (one-word receiver)
+	Tfn  TextOff // fn used for normal method call
+}
+
+// UncommonType is present only for defined types or types with methods
+// (if T is a defined type, the uncommonTypes for T and *T have methods).
+// Using a pointer to this struct reduces the overall size required
+// to describe a non-defined type with no methods.
+type UncommonType struct {
+	PkgPath NameOff // import path; empty for built-in types like int, string
+	Mcount  uint16  // number of methods
+	Xcount  uint16  // number of exported methods
+	Moff    uint32  // offset from this uncommontype to [mcount]Method
+	_       uint32  // unused
+}
 
 // ArrayType represents a fixed array type.
 type ArrayType struct {
@@ -249,6 +272,70 @@ func (t *Type) Len() int {
 		return int((*ArrayType)(unsafe.Pointer(t)).Len)
 	}
 	return 0
+}
+
+type structTypeUncommon struct {
+	StructType
+	u UncommonType
+}
+
+// Uncommon returns a pointer to T's "uncommon" data if there is any, otherwise nil
+func (t *Type) Uncommon() *UncommonType {
+	if t.TFlag&TFlagUncommon == 0 {
+		return nil
+	}
+	switch t.Kind() {
+	case Struct:
+		return &(*structTypeUncommon)(unsafe.Pointer(t)).u
+	case Pointer:
+		type u struct {
+			PtrType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Func:
+		type u struct {
+			FuncType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Slice:
+		type u struct {
+			SliceType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Array:
+		type u struct {
+			ArrayType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Chan:
+		type u struct {
+			ChanType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Map:
+		type u struct {
+			MapType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Interface:
+		type u struct {
+			InterfaceType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	default:
+		type u struct {
+			Type
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	}
 }
 
 // Elem returns the element type for t if t is an array, channel, map, pointer, or slice, otherwise nil.

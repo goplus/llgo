@@ -111,6 +111,7 @@ type aProgram struct {
 	td     llvm.TargetData
 	// tm  llvm.TargetMachine
 	named map[string]llvm.Type
+	rtyps map[types.Type]Expr // runtime type =>  *abi.Type
 
 	intType   llvm.Type
 	int1Type  llvm.Type
@@ -186,7 +187,7 @@ func NewProgram(target *Target) Program {
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(), // abi: abi.New(),
 		target: target, td: td, is32Bits: is32Bits,
-		named: make(map[string]llvm.Type),
+		named: make(map[string]llvm.Type), rtyps: make(map[types.Type]Expr),
 	}
 }
 
