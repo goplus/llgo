@@ -124,6 +124,9 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 		return nil, false, true
 	}
 	sig = strings.TrimSuffix(strings.TrimPrefix(sig, "("), ")")
+	if sig == "" { // empty params
+		return nil, false, false
+	}
 	parts := strings.Split(sig, ",")
 	n := len(parts)
 	if last := strings.TrimSpace(parts[n-1]); last == "/" {

@@ -220,17 +220,17 @@ func Chroot(path *py.Object) *py.Object
 // Return the name of the controlling terminal for this process.
 //
 //go:linkname Ctermid py.ctermid
-func Ctermid(_ *py.Object) *py.Object
+func Ctermid() *py.Object
 
 // Return a unicode string representing the current working directory.
 //
 //go:linkname Getcwd py.getcwd
-func Getcwd(_ *py.Object) *py.Object
+func Getcwd() *py.Object
 
 // Return a bytes string representing the current working directory.
 //
 //go:linkname Getcwdb py.getcwdb
-func Getcwdb(_ *py.Object) *py.Object
+func Getcwdb() *py.Object
 
 // Create a hard link to a file.
 //
@@ -373,7 +373,7 @@ func Umask(mask *py.Object) *py.Object
 //	(sysname, nodename, release, version, machine)
 //
 //go:linkname Uname py.uname
-func Uname(_ *py.Object) *py.Object
+func Uname() *py.Object
 
 // Remove a file (same as remove()).
 //
@@ -410,7 +410,7 @@ func Remove(path *py.Object) *py.Object
 // All fields are floating point numbers.
 //
 //go:linkname Times py.times
-func Times(_ *py.Object) *py.Object
+func Times() *py.Object
 
 // Execute an executable path with arguments, replacing current process.
 //
@@ -439,7 +439,7 @@ func Execve(path *py.Object, argv *py.Object, env *py.Object) *py.Object
 // Return 0 to child process and PID of child to parent process.
 //
 //go:linkname Fork py.fork
-func Fork(_ *py.Object) *py.Object
+func Fork() *py.Object
 
 // Get the maximum scheduling priority for policy.
 //
@@ -454,7 +454,7 @@ func SchedGetPriorityMin(policy *py.Object) *py.Object
 // Voluntarily relinquish the CPU.
 //
 //go:linkname SchedYield py.sched_yield
-func SchedYield(_ *py.Object) *py.Object
+func SchedYield() *py.Object
 
 // Open a pseudo-terminal.
 //
@@ -462,7 +462,7 @@ func SchedYield(_ *py.Object) *py.Object
 // for both the master and slave ends.
 //
 //go:linkname Openpty py.openpty
-func Openpty(_ *py.Object) *py.Object
+func Openpty() *py.Object
 
 // Prepare the tty of which fd is a file descriptor for a new login session.
 //
@@ -481,22 +481,22 @@ func LoginTty(fd *py.Object) *py.Object
 // To both, return fd of newly opened pseudo-terminal.
 //
 //go:linkname Forkpty py.forkpty
-func Forkpty(_ *py.Object) *py.Object
+func Forkpty() *py.Object
 
 // Return the current process's effective group id.
 //
 //go:linkname Getegid py.getegid
-func Getegid(_ *py.Object) *py.Object
+func Getegid() *py.Object
 
 // Return the current process's effective user id.
 //
 //go:linkname Geteuid py.geteuid
-func Geteuid(_ *py.Object) *py.Object
+func Geteuid() *py.Object
 
 // Return the current process's group id.
 //
 //go:linkname Getgid py.getgid
-func Getgid(_ *py.Object) *py.Object
+func Getgid() *py.Object
 
 // Returns a list of groups to which a user belongs.
 //
@@ -511,17 +511,17 @@ func Getgrouplist(user *py.Object, group *py.Object) *py.Object
 // Return list of supplemental group IDs for the process.
 //
 //go:linkname Getgroups py.getgroups
-func Getgroups(_ *py.Object) *py.Object
+func Getgroups() *py.Object
 
 // Return the current process id.
 //
 //go:linkname Getpid py.getpid
-func Getpid(_ *py.Object) *py.Object
+func Getpid() *py.Object
 
 // Return the current process group id.
 //
 //go:linkname Getpgrp py.getpgrp
-func Getpgrp(_ *py.Object) *py.Object
+func Getpgrp() *py.Object
 
 // Return the parent's process id.
 //
@@ -529,17 +529,17 @@ func Getpgrp(_ *py.Object) *py.Object
 // return its id; others systems will return the id of the 'init' process (1).
 //
 //go:linkname Getppid py.getppid
-func Getppid(_ *py.Object) *py.Object
+func Getppid() *py.Object
 
 // Return the current process's user id.
 //
 //go:linkname Getuid py.getuid
-func Getuid(_ *py.Object) *py.Object
+func Getuid() *py.Object
 
 // Return the actual login name.
 //
 //go:linkname Getlogin py.getlogin
-func Getlogin(_ *py.Object) *py.Object
+func Getlogin() *py.Object
 
 // Kill a process with a signal.
 //
@@ -603,7 +603,7 @@ func Getpgid(pid *py.Object) *py.Object
 // Make the current process the leader of its process group.
 //
 //go:linkname Setpgrp py.setpgrp
-func Setpgrp(_ *py.Object) *py.Object
+func Setpgrp() *py.Object
 
 // Wait for completion of a child process.
 //
@@ -612,7 +612,7 @@ func Setpgrp(_ *py.Object) *py.Object
 //	(pid, status)
 //
 //go:linkname Wait py.wait
-func Wait(_ *py.Object) *py.Object
+func Wait() *py.Object
 
 // Wait for completion of a child process.
 //
@@ -651,7 +651,7 @@ func Getsid(pid *py.Object) *py.Object
 // Call the system call setsid().
 //
 //go:linkname Setsid py.setsid
-func Setsid(_ *py.Object) *py.Object
+func Setsid() *py.Object
 
 // Call the system call setpgid(pid, pgrp).
 //
@@ -853,7 +853,7 @@ func Isatty(fd *py.Object) *py.Object
 //	(read_fd, write_fd)
 //
 //go:linkname Pipe py.pipe
-func Pipe(_ *py.Object) *py.Object
+func Pipe() *py.Object
 
 // Create a "fifo" (a POSIX named pipe).
 //
@@ -948,7 +948,7 @@ func Fsync(fd *py.Object) *py.Object
 // Force write of everything to disk.
 //
 //go:linkname Sync py.sync
-func Sync(_ *py.Object) *py.Object
+func Sync() *py.Object
 
 // Return True if the process returning status was dumped to a core file.
 //
@@ -1043,7 +1043,7 @@ func Pathconf(path *py.Object, name *py.Object) *py.Object
 // on the hosting operating system.  This function never returns.
 //
 //go:linkname Abort py.abort
-func Abort(_ *py.Object) *py.Object
+func Abort() *py.Object
 
 // Return average recent system load information.
 //
@@ -1052,7 +1052,7 @@ func Abort(_ *py.Object) *py.Object
 // Raises OSError if the load average was unobtainable.
 //
 //go:linkname Getloadavg py.getloadavg
-func Getloadavg(_ *py.Object) *py.Object
+func Getloadavg() *py.Object
 
 // Return a bytes object containing random bytes suitable for cryptographic use.
 //
@@ -1066,7 +1066,7 @@ func Urandom(size *py.Object) *py.Object
 // “len(os.sched_getaffinity(0))“
 //
 //go:linkname CpuCount py.cpu_count
-func CpuCount(_ *py.Object) *py.Object
+func CpuCount() *py.Object
 
 // Get the close-on-exe flag of the specified file descriptor.
 //
