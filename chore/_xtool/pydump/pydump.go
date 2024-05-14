@@ -46,7 +46,7 @@ func main() {
 		sym.SetItem(c.Str("type"), cjson.String(val.Type().Name().CStr()))
 		sym.SetItem(c.Str("name"), cjson.String(key.CStr()))
 		sym.SetItem(c.Str("doc"), cjson.String(doc.CStr()))
-		if val.Callable() != 0 && false {
+		if val.Callable() != 0 {
 			sig := inspect.Signature(val)
 			sym.SetItem(c.Str("sig"), cjson.String(sig.Str().CStr()))
 		}
