@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"log"
 	"os"
@@ -103,9 +104,13 @@ func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
 	if c := name[0]; c >= 'a' && c <= 'z' {
 		name = string(c+'A'-'a') + name[1:]
 	}
-	fn := pkg.NewFunc(nil, name, params, ctx.ret, variadic)
-	fn.SetComments(pkg, ctx.genComment(sym.Doc))
-	fn.BodyStart(pkg).End()
+	sig := types.NewSignatureType(nil, nil, nil, params, ctx.ret, variadic)
+	fn := pkg.NewFuncDecl(token.NoPos, name, sig)
+	list := ctx.genDoc(sym.Doc)
+	list = append(list, emptyCommentLine)
+	list = append(list, ctx.genLinkname(name, sym))
+	fn.SetComments(pkg, &ast.CommentGroup{List: list})
+	// fn.BodyStart(pkg).End()
 }
 
 func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, bool, bool) {
@@ -134,11 +139,19 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 	return types.NewTuple(list...), false, false
 }
 
-func (ctx *context) genComment(doc string) *ast.CommentGroup {
+func (ctx *context) genLinkname(name string, sym *symbol) *ast.Comment {
+	return &ast.Comment{Text: "//go:linkname " + name + " py." + sym.Name}
+}
+
+func (ctx *context) genDoc(doc string) []*ast.Comment {
 	lines := strings.Split(doc, "\n")
-	list := make([]*ast.Comment, len(lines))
+	list := make([]*ast.Comment, len(lines), len(lines)+2)
 	for i, line := range lines {
 		list[i] = &ast.Comment{Text: "// " + line}
 	}
-	return &ast.CommentGroup{List: list}
+	return list
 }
+
+var (
+	emptyCommentLine = &ast.Comment{Text: "//"}
+)

@@ -22,9 +22,8 @@ import (
 
 // https://docs.python.org/3/c-api/type.html
 
-type TypeObject struct {
-	Object
-}
+// TypeObject represents the Python type object.
+type TypeObject = Object
 
 // Return the type’s name. Equivalent to getting the type’s __name__ attribute.
 //
@@ -54,4 +53,4 @@ func (t *TypeObject) Flags() uint32 { return 0 }
 func (t *TypeObject) Module() *Object { return nil }
 
 // llgo:link (*TypeObject).ModuleByDef C.PyType_GetModuleByDef
-func (t *TypeObject) ModuleByDef(def *ModuleDef) *Object { return nil }
+// func (t *TypeObject) ModuleByDef(def *ModuleDef) *Object { return nil }
