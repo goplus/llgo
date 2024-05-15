@@ -359,24 +359,32 @@ const (
 	ignoredVar = iota
 	goVar      = int(llssa.InGo)
 	cVar       = int(llssa.InC)
+	pyVar      = int(llssa.InPython)
 )
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int) {
 	name := llssa.FullName(pkg, v.Name())
 	if v, ok := p.link[name]; ok {
+		if strings.HasPrefix(v, "py.") {
+			return v[3:], pyVar
+		}
 		return v, cVar
 	}
 	return name, goVar
 }
 
-func (p *context) varOf(v *ssa.Global) (ret llssa.Global) {
+func (p *context) varOf(v *ssa.Global) llssa.Expr {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
 	name, vtype := p.varName(pkgTypes, v)
-	if ret = pkg.VarOf(name); ret == nil {
+	if vtype == pyVar {
+		panic("todo")
+	}
+	ret := pkg.VarOf(name)
+	if ret == nil {
 		ret = pkg.NewVar(name, v.Type(), llssa.Background(vtype))
 	}
-	return
+	return ret.Expr
 }
 
 func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {

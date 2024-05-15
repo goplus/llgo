@@ -185,7 +185,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
 	name, vtype := p.varName(gbl.Pkg.Pkg, gbl)
-	if ignoreName(name) || checkCgo(gbl.Name()) {
+	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}
 	if debugInstr {
@@ -831,8 +831,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return pyFn.Expr
 	case *ssa.Global:
-		g := p.varOf(v)
-		return g.Expr
+		return p.varOf(v)
 	case *ssa.Const:
 		t := types.Default(v.Type())
 		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
