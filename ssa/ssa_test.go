@@ -102,7 +102,9 @@ func TestCvtType(t *testing.T) {
 
 func TestUserdefExpr(t *testing.T) {
 	b := &phisExprTy{}
+	c := &pyVarTy{}
 	_ = b.String()
+	_ = c.String()
 	test := func(a types.Type) {
 		defer func() {
 			if r := recover(); r == nil {
@@ -112,6 +114,7 @@ func TestUserdefExpr(t *testing.T) {
 		a.Underlying()
 	}
 	test(b)
+	test(c)
 }
 
 func TestAny(t *testing.T) {
