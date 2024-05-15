@@ -18,7 +18,7 @@ source_filename = "main"
 
 define %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
-  %1 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %1 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
   %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 0)
   %3 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %2, 0
   %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %2, 1
@@ -39,7 +39,7 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %13, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %14 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %14 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
   %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %14, i64 %12
   %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %15, align 8
   %17 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String" %11, %"github.com/goplus/llgo/internal/runtime.String" %16)
@@ -99,10 +99,6 @@ _llgo_0:
   %16 = call i32 (ptr, ptr, ...) @fprintf(ptr %11, ptr @6, ptr %15)
   ret void
 }
-
-declare i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice")
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String")
 

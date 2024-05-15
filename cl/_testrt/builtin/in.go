@@ -40,6 +40,12 @@ func main() {
 	string_len("hello"[1:])
 	string_len("hello"[1:2])
 	string_len("hello"[5:])
+
+	s = append(s, 5, 6, 7, 8)
+	out(len(s))
+	data := []byte{'a', 'b', 'c'}
+	data = append(data, "def"...)
+	out(len(data))
 }
 
 func string_len(s string) {
