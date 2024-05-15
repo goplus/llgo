@@ -310,20 +310,6 @@ func Getpriority(which *py.Object, who *py.Object) *py.Object
 //go:linkname Setpriority py.setpriority
 func Setpriority(which *py.Object, who *py.Object, priority *py.Object) *py.Object
 
-// Rename a file or directory, overwriting the destination.
-//
-// If either src_dir_fd or dst_dir_fd is not None, it should be a file
-//
-//	descriptor open to a directory, and the respective path string (src or dst)
-//	should be relative; the path will then be relative to that directory.
-//
-// src_dir_fd and dst_dir_fd, may not be implemented on your platform.
-//
-//	If they are unavailable, using them will raise a NotImplementedError.
-//
-//go:linkname Replace py.replace
-func Replace(src *py.Object, dst *py.Object) *py.Object
-
 // Remove a directory.
 //
 // If dir_fd is not None, it should be a file descriptor open to a directory,
@@ -440,11 +426,6 @@ func Execve(path *py.Object, argv *py.Object, env *py.Object) *py.Object
 //
 //go:linkname Fork py.fork
 func Fork() *py.Object
-
-// Get the maximum scheduling priority for policy.
-//
-//go:linkname SchedGetPriorityMax py.sched_get_priority_max
-func SchedGetPriorityMax(policy *py.Object) *py.Object
 
 // Get the minimum scheduling priority for policy.
 //
@@ -1271,7 +1252,7 @@ func Fwalk(top *py.Object, topdown *py.Object, onerror *py.Object) *py.Object
 //	current process.
 //
 //go:linkname Execl py.execl
-func Execl(file *py.Object, args ...*py.Object) *py.Object
+func Execl(file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // execle(file, *args, env)
 //
@@ -1279,7 +1260,7 @@ func Execl(file *py.Object, args ...*py.Object) *py.Object
 //	environment env, replacing the current process.
 //
 //go:linkname Execle py.execle
-func Execle(file *py.Object, args ...*py.Object) *py.Object
+func Execle(file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // execlp(file, *args)
 //
@@ -1287,7 +1268,7 @@ func Execle(file *py.Object, args ...*py.Object) *py.Object
 //	with argument list args, replacing the current process.
 //
 //go:linkname Execlp py.execlp
-func Execlp(file *py.Object, args ...*py.Object) *py.Object
+func Execlp(file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // execlpe(file, *args, env)
 //
@@ -1296,7 +1277,7 @@ func Execlp(file *py.Object, args ...*py.Object) *py.Object
 //	process.
 //
 //go:linkname Execlpe py.execlpe
-func Execlpe(file *py.Object, args ...*py.Object) *py.Object
+func Execlpe(file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // execvp(file, args)
 //
@@ -1412,7 +1393,7 @@ func Spawnvpe(mode *py.Object, file *py.Object, args *py.Object, env *py.Object)
 // otherwise return -SIG, where SIG is the signal that killed it.
 //
 //go:linkname Spawnl py.spawnl
-func Spawnl(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
+func Spawnl(mode *py.Object, file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // spawnle(mode, file, *args, env) -> integer
 //
@@ -1423,7 +1404,7 @@ func Spawnl(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
 // otherwise return -SIG, where SIG is the signal that killed it.
 //
 //go:linkname Spawnle py.spawnle
-func Spawnle(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
+func Spawnle(mode *py.Object, file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // spawnlp(mode, file, *args) -> integer
 //
@@ -1434,7 +1415,7 @@ func Spawnle(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
 // otherwise return -SIG, where SIG is the signal that killed it.
 //
 //go:linkname Spawnlp py.spawnlp
-func Spawnlp(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
+func Spawnlp(mode *py.Object, file *py.Object, __llgo_va_list ...interface{}) *py.Object
 
 // spawnlpe(mode, file, *args, env) -> integer
 //
@@ -1445,4 +1426,4 @@ func Spawnlp(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
 // otherwise return -SIG, where SIG is the signal that killed it.
 //
 //go:linkname Spawnlpe py.spawnlpe
-func Spawnlpe(mode *py.Object, file *py.Object, args ...*py.Object) *py.Object
+func Spawnlpe(mode *py.Object, file *py.Object, __llgo_va_list ...interface{}) *py.Object

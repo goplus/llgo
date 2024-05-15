@@ -606,7 +606,7 @@ func Identity(n *py.Object, dtype *py.Object) *py.Object
 // array([False,  True])
 //
 //go:linkname BitwiseNot py.bitwise_not
-func BitwiseNot(args ...*py.Object) *py.Object
+func BitwiseNot(__llgo_va_list ...interface{}) *py.Object
 
 // Return a new array of given shape and type, filled with `fill_value`.
 //
@@ -814,7 +814,7 @@ func Full(shape *py.Object, fillValue *py.Object, dtype *py.Object, order *py.Ob
 // .. versionadded:: 1.10.0
 //
 //go:linkname Matmul py.matmul
-func Matmul(args ...*py.Object) *py.Object
+func Matmul(__llgo_va_list ...interface{}) *py.Object
 
 // absolute(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -888,7 +888,7 @@ func Matmul(args ...*py.Object) *py.Object
 // array([1.2, 1.2])
 //
 //go:linkname Absolute py.absolute
-func Absolute(args ...*py.Object) *py.Object
+func Absolute(__llgo_va_list ...interface{}) *py.Object
 
 // add(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -957,7 +957,7 @@ func Absolute(args ...*py.Object) *py.Object
 //	[ 6.,  8., 10.]])
 //
 //go:linkname Add py.add
-func Add(args ...*py.Object) *py.Object
+func Add(__llgo_va_list ...interface{}) *py.Object
 
 // arccos(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1043,7 +1043,7 @@ func Add(args ...*py.Object) *py.Object
 // >>> plt.show()
 //
 //go:linkname Arccos py.arccos
-func Arccos(args ...*py.Object) *py.Object
+func Arccos(__llgo_va_list ...interface{}) *py.Object
 
 // arccosh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1121,7 +1121,7 @@ func Arccos(args ...*py.Object) *py.Object
 // 0.0
 //
 //go:linkname Arccosh py.arccosh
-func Arccosh(args ...*py.Object) *py.Object
+func Arccosh(__llgo_va_list ...interface{}) *py.Object
 
 // arcsin(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1198,7 +1198,7 @@ func Arccosh(args ...*py.Object) *py.Object
 // 0.0
 //
 //go:linkname Arcsin py.arcsin
-func Arcsin(args ...*py.Object) *py.Object
+func Arcsin(__llgo_va_list ...interface{}) *py.Object
 
 // arcsinh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1271,7 +1271,7 @@ func Arcsin(args ...*py.Object) *py.Object
 // array([ 1.72538256,  2.99822295])
 //
 //go:linkname Arcsinh py.arcsinh
-func Arcsinh(args ...*py.Object) *py.Object
+func Arcsinh(__llgo_va_list ...interface{}) *py.Object
 
 // arctan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1360,7 +1360,7 @@ func Arcsinh(args ...*py.Object) *py.Object
 // >>> plt.show()
 //
 //go:linkname Arctan py.arctan
-func Arctan(args ...*py.Object) *py.Object
+func Arctan(__llgo_va_list ...interface{}) *py.Object
 
 // arctan2(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1467,7 +1467,7 @@ func Arctan(args ...*py.Object) *py.Object
 // array([0.        , 3.14159265, 0.78539816])
 //
 //go:linkname Arctan2 py.arctan2
-func Arctan2(args ...*py.Object) *py.Object
+func Arctan2(__llgo_va_list ...interface{}) *py.Object
 
 // arctanh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1544,7 +1544,7 @@ func Arctan2(args ...*py.Object) *py.Object
 // array([ 0.        , -0.54930614])
 //
 //go:linkname Arctanh py.arctanh
-func Arctanh(args ...*py.Object) *py.Object
+func Arctanh(__llgo_va_list ...interface{}) *py.Object
 
 // bitwise_and(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1631,7 +1631,7 @@ func Arctanh(args ...*py.Object) *py.Object
 // array([ 2,  4, 16])
 //
 //go:linkname BitwiseAnd py.bitwise_and
-func BitwiseAnd(args ...*py.Object) *py.Object
+func BitwiseAnd(__llgo_va_list ...interface{}) *py.Object
 
 // bitwise_or(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1723,7 +1723,7 @@ func BitwiseAnd(args ...*py.Object) *py.Object
 // array([  6,   5, 255])
 //
 //go:linkname BitwiseOr py.bitwise_or
-func BitwiseOr(args ...*py.Object) *py.Object
+func BitwiseOr(__llgo_va_list ...interface{}) *py.Object
 
 // bitwise_xor(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1808,7 +1808,7 @@ func BitwiseOr(args ...*py.Object) *py.Object
 // array([ True, False])
 //
 //go:linkname BitwiseXor py.bitwise_xor
-func BitwiseXor(args ...*py.Object) *py.Object
+func BitwiseXor(__llgo_va_list ...interface{}) *py.Object
 
 // cbrt(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1858,7 +1858,7 @@ func BitwiseXor(args ...*py.Object) *py.Object
 // array([ 1.,  2.,  3.])
 //
 //go:linkname Cbrt py.cbrt
-func Cbrt(args ...*py.Object) *py.Object
+func Cbrt(__llgo_va_list ...interface{}) *py.Object
 
 // ceil(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1912,7 +1912,7 @@ func Cbrt(args ...*py.Object) *py.Object
 // array([-1., -1., -0.,  1.,  2.,  2.,  2.])
 //
 //go:linkname Ceil py.ceil
-func Ceil(args ...*py.Object) *py.Object
+func Ceil(__llgo_va_list ...interface{}) *py.Object
 
 // conjugate(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -1974,7 +1974,7 @@ func Ceil(args ...*py.Object) *py.Object
 //	[ 0.-0.j,  1.-1.j]])
 //
 //go:linkname Conj py.conj
-func Conj(args ...*py.Object) *py.Object
+func Conj(__llgo_va_list ...interface{}) *py.Object
 
 // conjugate(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2036,7 +2036,7 @@ func Conj(args ...*py.Object) *py.Object
 //	[ 0.-0.j,  1.-1.j]])
 //
 //go:linkname Conjugate py.conjugate
-func Conjugate(args ...*py.Object) *py.Object
+func Conjugate(__llgo_va_list ...interface{}) *py.Object
 
 // copysign(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2099,7 +2099,7 @@ func Conjugate(args ...*py.Object) *py.Object
 // array([-1.,  0.,  1.])
 //
 //go:linkname Copysign py.copysign
-func Copysign(args ...*py.Object) *py.Object
+func Copysign(__llgo_va_list ...interface{}) *py.Object
 
 // cos(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2169,7 +2169,7 @@ func Copysign(args ...*py.Object) *py.Object
 // ValueError: operands could not be broadcast together with shapes (3,3) (2,2)
 //
 //go:linkname Cos py.cos
-func Cos(args ...*py.Object) *py.Object
+func Cos(__llgo_va_list ...interface{}) *py.Object
 
 // cosh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2224,7 +2224,7 @@ func Cos(args ...*py.Object) *py.Object
 // >>> plt.show()
 //
 //go:linkname Cosh py.cosh
-func Cosh(args ...*py.Object) *py.Object
+func Cosh(__llgo_va_list ...interface{}) *py.Object
 
 // deg2rad(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2281,7 +2281,7 @@ func Cosh(args ...*py.Object) *py.Object
 // 3.1415926535897931
 //
 //go:linkname Deg2rad py.deg2rad
-func Deg2rad(args ...*py.Object) *py.Object
+func Deg2rad(__llgo_va_list ...interface{}) *py.Object
 
 // degrees(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2342,7 +2342,7 @@ func Deg2rad(args ...*py.Object) *py.Object
 // True
 //
 //go:linkname Degrees py.degrees
-func Degrees(args ...*py.Object) *py.Object
+func Degrees(__llgo_va_list ...interface{}) *py.Object
 
 // divide(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2425,7 +2425,7 @@ func Degrees(args ...*py.Object) *py.Object
 //	[3. , 3.5, 4. ]])
 //
 //go:linkname Divide py.divide
-func Divide(args ...*py.Object) *py.Object
+func Divide(__llgo_va_list ...interface{}) *py.Object
 
 // divmod(x1, x2[, out1, out2], / [, out=(None, None)], *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2503,7 +2503,7 @@ func Divide(args ...*py.Object) *py.Object
 // (array([0, 0, 0, 1, 1]), array([0, 1, 2, 0, 1]))
 //
 //go:linkname Divmod py.divmod
-func Divmod(args ...*py.Object) *py.Object
+func Divmod(__llgo_va_list ...interface{}) *py.Object
 
 // equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2570,7 +2570,7 @@ func Divmod(args ...*py.Object) *py.Object
 // array([ True,  True, False])
 //
 //go:linkname Equal py.equal
-func Equal(args ...*py.Object) *py.Object
+func Equal(__llgo_va_list ...interface{}) *py.Object
 
 // exp(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2661,7 +2661,7 @@ func Equal(args ...*py.Object) *py.Object
 // >>> plt.show()
 //
 //go:linkname Exp py.exp
-func Exp(args ...*py.Object) *py.Object
+func Exp(__llgo_va_list ...interface{}) *py.Object
 
 // exp2(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2715,7 +2715,7 @@ func Exp(args ...*py.Object) *py.Object
 // array([ 4.,  8.])
 //
 //go:linkname Exp2 py.exp2
-func Exp2(args ...*py.Object) *py.Object
+func Exp2(__llgo_va_list ...interface{}) *py.Object
 
 // expm1(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2776,7 +2776,7 @@ func Exp2(args ...*py.Object) *py.Object
 // 1.000000082740371e-10
 //
 //go:linkname Expm1 py.expm1
-func Expm1(args ...*py.Object) *py.Object
+func Expm1(__llgo_va_list ...interface{}) *py.Object
 
 // fabs(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2833,7 +2833,7 @@ func Expm1(args ...*py.Object) *py.Object
 // array([ 1.2,  1.2])
 //
 //go:linkname Fabs py.fabs
-func Fabs(args ...*py.Object) *py.Object
+func Fabs(__llgo_va_list ...interface{}) *py.Object
 
 // floor(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2894,7 +2894,7 @@ func Fabs(args ...*py.Object) *py.Object
 // array([-2., -2., -1.,  0.,  1.,  1.,  2.])
 //
 //go:linkname Floor py.floor
-func Floor(args ...*py.Object) *py.Object
+func Floor(__llgo_va_list ...interface{}) *py.Object
 
 // floor_divide(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -2966,7 +2966,7 @@ func Floor(args ...*py.Object) *py.Object
 // array([0., 0., 1., 1.])
 //
 //go:linkname FloorDivide py.floor_divide
-func FloorDivide(args ...*py.Object) *py.Object
+func FloorDivide(__llgo_va_list ...interface{}) *py.Object
 
 // float_power(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3074,7 +3074,7 @@ func FloorDivide(args ...*py.Object) *py.Object
 // array([-1.83697020e-16-1.j, -1.46957616e-15-8.j])
 //
 //go:linkname FloatPower py.float_power
-func FloatPower(args ...*py.Object) *py.Object
+func FloatPower(__llgo_va_list ...interface{}) *py.Object
 
 // fmax(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3164,7 +3164,7 @@ func FloatPower(args ...*py.Object) *py.Object
 // array([ 0.,  0., nan])
 //
 //go:linkname Fmax py.fmax
-func Fmax(args ...*py.Object) *py.Object
+func Fmax(__llgo_va_list ...interface{}) *py.Object
 
 // fmin(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3254,7 +3254,7 @@ func Fmax(args ...*py.Object) *py.Object
 // array([ 0.,  0., nan])
 //
 //go:linkname Fmin py.fmin
-func Fmin(args ...*py.Object) *py.Object
+func Fmin(__llgo_va_list ...interface{}) *py.Object
 
 // fmod(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3341,7 +3341,7 @@ func Fmin(args ...*py.Object) *py.Object
 //	[ 1,  0]])
 //
 //go:linkname Fmod py.fmod
-func Fmod(args ...*py.Object) *py.Object
+func Fmod(__llgo_va_list ...interface{}) *py.Object
 
 // frexp(x[, out1, out2], / [, out=(None, None)], *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3421,7 +3421,7 @@ func Fmod(args ...*py.Object) *py.Object
 // array([ 0.,  1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.])
 //
 //go:linkname Frexp py.frexp
-func Frexp(args ...*py.Object) *py.Object
+func Frexp(__llgo_va_list ...interface{}) *py.Object
 
 // gcd(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3456,7 +3456,7 @@ func Frexp(args ...*py.Object) *py.Object
 // array([20,  1,  2,  1,  4,  5])
 //
 //go:linkname Gcd py.gcd
-func Gcd(args ...*py.Object) *py.Object
+func Gcd(__llgo_va_list ...interface{}) *py.Object
 
 // greater_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3517,7 +3517,7 @@ func Gcd(args ...*py.Object) *py.Object
 // array([ True,  True, False])
 //
 //go:linkname GreaterEqual py.greater_equal
-func GreaterEqual(args ...*py.Object) *py.Object
+func GreaterEqual(__llgo_va_list ...interface{}) *py.Object
 
 // heaviside(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3589,7 +3589,7 @@ func GreaterEqual(args ...*py.Object) *py.Object
 // array([ 0.,  1.,  1.])
 //
 //go:linkname Heaviside py.heaviside
-func Heaviside(args ...*py.Object) *py.Object
+func Heaviside(__llgo_va_list ...interface{}) *py.Object
 
 // hypot(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3653,7 +3653,7 @@ func Heaviside(args ...*py.Object) *py.Object
 //	[ 5.,  5.,  5.]])
 //
 //go:linkname Hypot py.hypot
-func Hypot(args ...*py.Object) *py.Object
+func Hypot(__llgo_va_list ...interface{}) *py.Object
 
 // invert(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3765,7 +3765,7 @@ func Hypot(args ...*py.Object) *py.Object
 // array([False,  True])
 //
 //go:linkname Invert py.invert
-func Invert(args ...*py.Object) *py.Object
+func Invert(__llgo_va_list ...interface{}) *py.Object
 
 // isfinite(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3847,7 +3847,7 @@ func Invert(args ...*py.Object) *py.Object
 // array([0, 1, 0])
 //
 //go:linkname Isfinite py.isfinite
-func Isfinite(args ...*py.Object) *py.Object
+func Isfinite(__llgo_va_list ...interface{}) *py.Object
 
 // isinf(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3922,7 +3922,7 @@ func Isfinite(args ...*py.Object) *py.Object
 // array([1, 0, 1])
 //
 //go:linkname Isinf py.isinf
-func Isinf(args ...*py.Object) *py.Object
+func Isinf(__llgo_va_list ...interface{}) *py.Object
 
 // isnan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -3981,7 +3981,7 @@ func Isinf(args ...*py.Object) *py.Object
 // array([ True, False, False])
 //
 //go:linkname Isnan py.isnan
-func Isnan(args ...*py.Object) *py.Object
+func Isnan(__llgo_va_list ...interface{}) *py.Object
 
 // isnat(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4037,7 +4037,7 @@ func Isnan(args ...*py.Object) *py.Object
 // array([ True, False])
 //
 //go:linkname Isnat py.isnat
-func Isnat(args ...*py.Object) *py.Object
+func Isnat(__llgo_va_list ...interface{}) *py.Object
 
 // lcm(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4074,7 +4074,7 @@ func Isnat(args ...*py.Object) *py.Object
 // array([ 0, 20, 20, 60, 20, 20])
 //
 //go:linkname Lcm py.lcm
-func Lcm(args ...*py.Object) *py.Object
+func Lcm(__llgo_va_list ...interface{}) *py.Object
 
 // ldexp(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4144,7 +4144,7 @@ func Lcm(args ...*py.Object) *py.Object
 // array([ 0.,  1.,  2.,  3.,  4.,  5.])
 //
 //go:linkname Ldexp py.ldexp
-func Ldexp(args ...*py.Object) *py.Object
+func Ldexp(__llgo_va_list ...interface{}) *py.Object
 
 // left_shift(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4233,7 +4233,7 @@ func Ldexp(args ...*py.Object) *py.Object
 // array([10, 20, 40])
 //
 //go:linkname LeftShift py.left_shift
-func LeftShift(args ...*py.Object) *py.Object
+func LeftShift(__llgo_va_list ...interface{}) *py.Object
 
 // less(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4293,7 +4293,7 @@ func LeftShift(args ...*py.Object) *py.Object
 // array([ True, False])
 //
 //go:linkname Less py.less
-func Less(args ...*py.Object) *py.Object
+func Less(__llgo_va_list ...interface{}) *py.Object
 
 // less_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4354,7 +4354,7 @@ func Less(args ...*py.Object) *py.Object
 // array([False,  True,  True])
 //
 //go:linkname LessEqual py.less_equal
-func LessEqual(args ...*py.Object) *py.Object
+func LessEqual(__llgo_va_list ...interface{}) *py.Object
 
 // log(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4436,7 +4436,7 @@ func LessEqual(args ...*py.Object) *py.Object
 // array([  0.,   1.,   2., -Inf])
 //
 //go:linkname Log py.log
-func Log(args ...*py.Object) *py.Object
+func Log(__llgo_va_list ...interface{}) *py.Object
 
 // log10(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4515,7 +4515,7 @@ func Log(args ...*py.Object) *py.Object
 // array([-15.,  nan])
 //
 //go:linkname Log10 py.log10
-func Log10(args ...*py.Object) *py.Object
+func Log10(__llgo_va_list ...interface{}) *py.Object
 
 // log1p(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4596,7 +4596,7 @@ func Log10(args ...*py.Object) *py.Object
 // 0.0
 //
 //go:linkname Log1p py.log1p
-func Log1p(args ...*py.Object) *py.Object
+func Log1p(__llgo_va_list ...interface{}) *py.Object
 
 // log2(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4672,7 +4672,7 @@ func Log1p(args ...*py.Object) *py.Object
 // array([ 0.+2.26618007j,  0.+0.j        ,  1.+0.j        ,  2.+2.26618007j])
 //
 //go:linkname Log2 py.log2
-func Log2(args ...*py.Object) *py.Object
+func Log2(__llgo_va_list ...interface{}) *py.Object
 
 // logaddexp(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4739,7 +4739,7 @@ func Log2(args ...*py.Object) *py.Object
 // 3.5000000000000057e-50
 //
 //go:linkname Logaddexp py.logaddexp
-func Logaddexp(args ...*py.Object) *py.Object
+func Logaddexp(__llgo_va_list ...interface{}) *py.Object
 
 // logaddexp2(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4806,7 +4806,7 @@ func Logaddexp(args ...*py.Object) *py.Object
 // 3.4999999999999914e-50
 //
 //go:linkname Logaddexp2 py.logaddexp2
-func Logaddexp2(args ...*py.Object) *py.Object
+func Logaddexp2(__llgo_va_list ...interface{}) *py.Object
 
 // logical_and(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4874,7 +4874,7 @@ func Logaddexp2(args ...*py.Object) *py.Object
 // array([False, False])
 //
 //go:linkname LogicalAnd py.logical_and
-func LogicalAnd(args ...*py.Object) *py.Object
+func LogicalAnd(__llgo_va_list ...interface{}) *py.Object
 
 // logical_not(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4931,7 +4931,7 @@ func LogicalAnd(args ...*py.Object) *py.Object
 // array([False, False, False,  True,  True])
 //
 //go:linkname LogicalNot py.logical_not
-func LogicalNot(args ...*py.Object) *py.Object
+func LogicalNot(__llgo_va_list ...interface{}) *py.Object
 
 // logical_or(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -4999,7 +4999,7 @@ func LogicalNot(args ...*py.Object) *py.Object
 // array([ True, False])
 //
 //go:linkname LogicalOr py.logical_or
-func LogicalOr(args ...*py.Object) *py.Object
+func LogicalOr(__llgo_va_list ...interface{}) *py.Object
 
 // logical_xor(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5065,7 +5065,7 @@ func LogicalOr(args ...*py.Object) *py.Object
 //	[False,  True]])
 //
 //go:linkname LogicalXor py.logical_xor
-func LogicalXor(args ...*py.Object) *py.Object
+func LogicalXor(__llgo_va_list ...interface{}) *py.Object
 
 // maximum(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5156,7 +5156,7 @@ func LogicalXor(args ...*py.Object) *py.Object
 // inf
 //
 //go:linkname Maximum py.maximum
-func Maximum(args ...*py.Object) *py.Object
+func Maximum(__llgo_va_list ...interface{}) *py.Object
 
 // minimum(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5247,7 +5247,7 @@ func Maximum(args ...*py.Object) *py.Object
 // -inf
 //
 //go:linkname Minimum py.minimum
-func Minimum(args ...*py.Object) *py.Object
+func Minimum(__llgo_va_list ...interface{}) *py.Object
 
 // remainder(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5336,7 +5336,7 @@ func Minimum(args ...*py.Object) *py.Object
 // array([0, 1, 2, 3, 4, 0, 1])
 //
 //go:linkname Mod py.mod
-func Mod(args ...*py.Object) *py.Object
+func Mod(__llgo_va_list ...interface{}) *py.Object
 
 // modf(x[, out1, out2], / [, out=(None, None)], *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5402,7 +5402,7 @@ func Mod(args ...*py.Object) *py.Object
 // (-0.5, -0)
 //
 //go:linkname Modf py.modf
-func Modf(args ...*py.Object) *py.Object
+func Modf(__llgo_va_list ...interface{}) *py.Object
 
 // multiply(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5473,7 +5473,7 @@ func Modf(args ...*py.Object) *py.Object
 //	[  0.,   7.,  16.]])
 //
 //go:linkname Multiply py.multiply
-func Multiply(args ...*py.Object) *py.Object
+func Multiply(__llgo_va_list ...interface{}) *py.Object
 
 // negative(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5526,7 +5526,7 @@ func Multiply(args ...*py.Object) *py.Object
 // array([-1.,  1.])
 //
 //go:linkname Negative py.negative
-func Negative(args ...*py.Object) *py.Object
+func Negative(__llgo_va_list ...interface{}) *py.Object
 
 // nextafter(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5581,7 +5581,7 @@ func Negative(args ...*py.Object) *py.Object
 // array([ True,  True])
 //
 //go:linkname Nextafter py.nextafter
-func Nextafter(args ...*py.Object) *py.Object
+func Nextafter(__llgo_va_list ...interface{}) *py.Object
 
 // not_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5646,7 +5646,7 @@ func Nextafter(args ...*py.Object) *py.Object
 // array([False,  True])
 //
 //go:linkname NotEqual py.not_equal
-func NotEqual(args ...*py.Object) *py.Object
+func NotEqual(__llgo_va_list ...interface{}) *py.Object
 
 // positive(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5687,7 +5687,7 @@ func NotEqual(args ...*py.Object) *py.Object
 // array([ 1., -1.])
 //
 //go:linkname Positive py.positive
-func Positive(args ...*py.Object) *py.Object
+func Positive(__llgo_va_list ...interface{}) *py.Object
 
 // power(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5800,7 +5800,7 @@ func Positive(args ...*py.Object) *py.Object
 // array([-1.83697020e-16-1.j, -1.46957616e-15-8.j])
 //
 //go:linkname Power py.power
-func Power(args ...*py.Object) *py.Object
+func Power(__llgo_va_list ...interface{}) *py.Object
 
 // rad2deg(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5857,7 +5857,7 @@ func Power(args ...*py.Object) *py.Object
 // 90.0
 //
 //go:linkname Rad2deg py.rad2deg
-func Rad2deg(args ...*py.Object) *py.Object
+func Rad2deg(__llgo_va_list ...interface{}) *py.Object
 
 // radians(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5918,7 +5918,7 @@ func Rad2deg(args ...*py.Object) *py.Object
 // True
 //
 //go:linkname Radians py.radians
-func Radians(args ...*py.Object) *py.Object
+func Radians(__llgo_va_list ...interface{}) *py.Object
 
 // reciprocal(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -5978,7 +5978,7 @@ func Radians(args ...*py.Object) *py.Object
 // array([ 1.       ,  0.5      ,  0.3003003])
 //
 //go:linkname Reciprocal py.reciprocal
-func Reciprocal(args ...*py.Object) *py.Object
+func Reciprocal(__llgo_va_list ...interface{}) *py.Object
 
 // remainder(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6067,7 +6067,7 @@ func Reciprocal(args ...*py.Object) *py.Object
 // array([0, 1, 2, 3, 4, 0, 1])
 //
 //go:linkname Remainder py.remainder
-func Remainder(args ...*py.Object) *py.Object
+func Remainder(__llgo_va_list ...interface{}) *py.Object
 
 // right_shift(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6145,7 +6145,7 @@ func Remainder(args ...*py.Object) *py.Object
 // array([5, 2, 1])
 //
 //go:linkname RightShift py.right_shift
-func RightShift(args ...*py.Object) *py.Object
+func RightShift(__llgo_va_list ...interface{}) *py.Object
 
 // rint(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6202,7 +6202,7 @@ func RightShift(args ...*py.Object) *py.Object
 // array([-2., -2., -0.,  0.,  2.,  2.,  2.])
 //
 //go:linkname Rint py.rint
-func Rint(args ...*py.Object) *py.Object
+func Rint(__llgo_va_list ...interface{}) *py.Object
 
 // signbit(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6250,7 +6250,7 @@ func Rint(args ...*py.Object) *py.Object
 // array([False,  True, False])
 //
 //go:linkname Signbit py.signbit
-func Signbit(args ...*py.Object) *py.Object
+func Signbit(__llgo_va_list ...interface{}) *py.Object
 
 // sin(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6331,7 +6331,7 @@ func Signbit(args ...*py.Object) *py.Object
 // >>> plt.show()
 //
 //go:linkname Sin py.sin
-func Sin(args ...*py.Object) *py.Object
+func Sin(__llgo_va_list ...interface{}) *py.Object
 
 // sinh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6409,7 +6409,7 @@ func Sin(args ...*py.Object) *py.Object
 // ValueError: operands could not be broadcast together with shapes (3,3) (2,2)
 //
 //go:linkname Sinh py.sinh
-func Sinh(args ...*py.Object) *py.Object
+func Sinh(__llgo_va_list ...interface{}) *py.Object
 
 // spacing(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6464,7 +6464,7 @@ func Sinh(args ...*py.Object) *py.Object
 // True
 //
 //go:linkname Spacing py.spacing
-func Spacing(args ...*py.Object) *py.Object
+func Spacing(__llgo_va_list ...interface{}) *py.Object
 
 // sqrt(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6535,7 +6535,7 @@ func Spacing(args ...*py.Object) *py.Object
 // array([ 2., nan, inf])
 //
 //go:linkname Sqrt py.sqrt
-func Sqrt(args ...*py.Object) *py.Object
+func Sqrt(__llgo_va_list ...interface{}) *py.Object
 
 // square(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6587,7 +6587,7 @@ func Sqrt(args ...*py.Object) *py.Object
 // array([-1.-0.j,  1.+0.j])
 //
 //go:linkname Square py.square
-func Square(args ...*py.Object) *py.Object
+func Square(__llgo_va_list ...interface{}) *py.Object
 
 // subtract(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6658,7 +6658,7 @@ func Square(args ...*py.Object) *py.Object
 //	[6., 6., 6.]])
 //
 //go:linkname Subtract py.subtract
-func Subtract(args ...*py.Object) *py.Object
+func Subtract(__llgo_va_list ...interface{}) *py.Object
 
 // tan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6732,7 +6732,7 @@ func Subtract(args ...*py.Object) *py.Object
 // ValueError: operands could not be broadcast together with shapes (3,3) (2,2)
 //
 //go:linkname Tan py.tan
-func Tan(args ...*py.Object) *py.Object
+func Tan(__llgo_va_list ...interface{}) *py.Object
 
 // tanh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6811,7 +6811,7 @@ func Tan(args ...*py.Object) *py.Object
 // ValueError: operands could not be broadcast together with shapes (3,3) (2,2)
 //
 //go:linkname Tanh py.tanh
-func Tanh(args ...*py.Object) *py.Object
+func Tanh(__llgo_va_list ...interface{}) *py.Object
 
 // divide(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6894,7 +6894,7 @@ func Tanh(args ...*py.Object) *py.Object
 //	[3. , 3.5, 4. ]])
 //
 //go:linkname TrueDivide py.true_divide
-func TrueDivide(args ...*py.Object) *py.Object
+func TrueDivide(__llgo_va_list ...interface{}) *py.Object
 
 // trunc(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -6953,7 +6953,7 @@ func TrueDivide(args ...*py.Object) *py.Object
 // array([-1., -1., -0.,  0.,  1.,  1.,  2.])
 //
 //go:linkname Trunc py.trunc
-func Trunc(args ...*py.Object) *py.Object
+func Trunc(__llgo_va_list ...interface{}) *py.Object
 
 // Return the scalar dtype or NumPy equivalent of Python type of an object.
 //
@@ -7526,7 +7526,7 @@ func GetPrintoptions() *py.Object
 //	set_printoptions, get_printoptions
 //
 //go:linkname Printoptions py.printoptions
-func Printoptions(args ...*py.Object) *py.Object
+func Printoptions(__llgo_va_list ...interface{}) *py.Object
 
 // Format a floating-point scalar as a decimal string in positional notation.
 //
@@ -8973,7 +8973,7 @@ func AddNewdoc(place *py.Object, obj *py.Object, doc *py.Object, warnOnPython *p
 //	In case of ties, leftmost wins. If no wrapper is found, return None
 //
 //go:linkname GetArrayWrap py.get_array_wrap
-func GetArrayWrap(args ...*py.Object) *py.Object
+func GetArrayWrap(__llgo_va_list ...interface{}) *py.Object
 
 // Broadcast the input shapes into a single shape.
 //
@@ -9015,7 +9015,7 @@ func GetArrayWrap(args ...*py.Object) *py.Object
 // (5, 6, 7)
 //
 //go:linkname BroadcastShapes py.broadcast_shapes
-func BroadcastShapes(args ...*py.Object) *py.Object
+func BroadcastShapes(__llgo_va_list ...interface{}) *py.Object
 
 // Return the indices to access (n, n) arrays, given a masking function.
 //
@@ -9377,7 +9377,7 @@ func Issubsctype(arg1 *py.Object, arg2 *py.Object) *py.Object
 // 6
 //
 //go:linkname Deprecate py.deprecate
-func Deprecate(args ...*py.Object) *py.Object
+func Deprecate(__llgo_va_list ...interface{}) *py.Object
 
 // Deprecates a function and includes the deprecation in its docstring.
 //
@@ -10192,4 +10192,4 @@ func Asmatrix(data *py.Object, dtype *py.Object) *py.Object
 // array([1.2, 1.2])
 //
 //go:linkname Abs py.abs
-func Abs(args ...*py.Object) *py.Object
+func Abs(__llgo_va_list ...interface{}) *py.Object
