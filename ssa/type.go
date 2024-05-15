@@ -44,6 +44,7 @@ const (
 	vkFuncPtr
 	vkClosure
 	vkPyFuncRef
+	vkPyVarRef
 	vkTuple
 	vkSlice
 	vkPhisExpr = -1

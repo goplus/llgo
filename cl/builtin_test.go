@@ -226,5 +226,5 @@ func TestErrVarOf(t *testing.T) {
 	}
 	ssaPkg := &ssa.Package{Pkg: pkgTypes}
 	g := &ssa.Global{Pkg: ssaPkg}
-	ctx.varOf(g)
+	ctx.varOf(nil, g)
 }

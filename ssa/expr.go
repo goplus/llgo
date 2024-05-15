@@ -54,6 +54,26 @@ func (v Expr) Do(b Builder) Expr {
 
 // -----------------------------------------------------------------------------
 
+type pyVarTy struct {
+	mod  Expr
+	name string
+}
+
+func (p pyVarTy) Underlying() types.Type {
+	panic("don't call")
+}
+
+func (p pyVarTy) String() string {
+	return "pyVar"
+}
+
+func pyVarExpr(mod Expr, name string) Expr {
+	tvar := &aType{raw: rawType{&pyVarTy{mod, name}}, kind: vkPyVarRef}
+	return Expr{Type: tvar}
+}
+
+// -----------------------------------------------------------------------------
+
 type phisExprTy struct {
 	phis []llvm.Value
 	Type
@@ -68,7 +88,8 @@ func (p phisExprTy) String() string {
 }
 
 func phisExpr(t Type, phis []llvm.Value) Expr {
-	return Expr{Type: &aType{raw: rawType{&phisExprTy{phis, t}}, kind: vkPhisExpr}}
+	tphi := &aType{raw: rawType{&phisExprTy{phis, t}}, kind: vkPhisExpr}
+	return Expr{Type: tphi}
 }
 
 // -----------------------------------------------------------------------------
@@ -512,6 +533,9 @@ func (b Builder) Advance(ptr Expr, offset Expr) Expr {
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
 		log.Printf("Load %v\n", ptr.impl)
+	}
+	if ptr.kind == vkPyVarRef {
+		return b.pyLoad(ptr)
 	}
 	telem := b.Prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
