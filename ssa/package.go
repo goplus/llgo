@@ -125,12 +125,12 @@ type aProgram struct {
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
-	anyTy     Type
-	voidTy    Type
-	voidPtr   Type
-	boolTy    Type
-	cstrTy    Type
-	cintTy    Type
+	anyTy   Type
+	voidTy  Type
+	voidPtr Type
+	boolTy  Type
+	cstrTy  Type
+	//cintTy  Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -335,12 +335,14 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
+/*
 func (p Program) CInt() Type {
 	if p.cintTy == nil { // C.int
 		p.cintTy = p.rawType(types.Typ[types.Int32]) // TODO(xsw): support 64-bit
 	}
 	return p.cintTy
 }
+*/
 
 // Int returns int type.
 func (p Program) Int() Type {
