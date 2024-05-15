@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	c.Printf(c.Str("pi = %f\n"), math.Pi)
+	c.Printf(c.Str("pi = %f\n"), math.Pi.Float64())
 }

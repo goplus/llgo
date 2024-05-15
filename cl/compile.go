@@ -293,7 +293,7 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			pkg := p.pkg
 			fnName := pysymPrefix + mod + "." + name
 			if pyFn = pkg.PyObjOf(fnName); pyFn == nil {
-				pyFn = pkg.NewPyFunc(fnName, fn.Signature, true)
+				pyFn = pkg.PyNewFunc(fnName, fn.Signature, true)
 				return
 			}
 		}

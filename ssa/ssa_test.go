@@ -143,8 +143,8 @@ func TestPyFunc(t *testing.T) {
 	prog.SetPython(py)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	a := pkg.NewPyFunc("a", sig, false)
-	if pkg.NewPyFunc("a", sig, false) != a {
+	a := pkg.PyNewFunc("a", sig, false)
+	if pkg.PyNewFunc("a", sig, false) != a {
 		t.Fatal("NewPyFunc(a) failed")
 	}
 	foo := pkg.PyNewModVar("foo", false)

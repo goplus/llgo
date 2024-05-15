@@ -379,7 +379,7 @@ func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	name, vtype := p.varName(pkgTypes, v)
 	if vtype == pyVar {
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
-			return b.PyLoadVar(pysymPrefix+mod, name)
+			return b.PyNewVar(pysymPrefix+mod, name).Expr
 		}
 		panic("unreachable")
 	}

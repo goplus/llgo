@@ -29,7 +29,7 @@ func testCompile(t *testing.T, src, expected string) {
 }
 
 func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "pi", "./_testpy", false)
+	cltest.FromDir(t, "", "./_testpy", false)
 }
 
 func TestFromTestlibc(t *testing.T) {

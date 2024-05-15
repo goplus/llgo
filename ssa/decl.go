@@ -282,6 +282,29 @@ func (p Function) Block(idx int) BasicBlock {
 
 // -----------------------------------------------------------------------------
 
+type aPyGlobal struct {
+	Expr
+}
+
+type PyGlobal = *aPyGlobal
+
+// PyNewVar creates a Python variable.
+func (b Builder) PyNewVar(modName, name string) PyGlobal {
+	pkg := b.Func.Pkg
+	modPtr := pkg.PyNewModVar(modName, false).Expr
+	mod := b.Load(modPtr)
+	return &aPyGlobal{pyVarExpr(mod, name)}
+}
+
+func (b Builder) pyLoad(ptr Expr) Expr {
+	pkg := b.Func.Pkg
+	t := ptr.raw.Type.(*pyVarTy)
+	fn := pkg.pyFunc("PyObject_GetAttrString", b.Prog.tyGetAttrString())
+	return b.Call(fn, t.mod, b.CStr(t.name))
+}
+
+// -----------------------------------------------------------------------------
+
 type aPyObjRef struct {
 	Expr
 	Obj Global
@@ -290,8 +313,8 @@ type aPyObjRef struct {
 // PyObjRef represents a python object reference.
 type PyObjRef = *aPyObjRef
 
-// NewPyFunc creates a new python function.
-func (p Package) NewPyFunc(name string, sig *types.Signature, doInit bool) PyObjRef {
+// PyNewFunc creates a new python function.
+func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObjRef {
 	if v, ok := p.pyobjs[name]; ok {
 		return v
 	}
