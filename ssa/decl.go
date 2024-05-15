@@ -29,23 +29,16 @@ import (
 const (
 	ClosureCtx  = "__llgo_ctx"
 	ClosureStub = "__llgo_stub."
-	NameValist  = "__llgo_va_list"
+)
+
+// -----------------------------------------------------------------------------
+
+const (
+	NameValist = "__llgo_va_list"
 )
 
 func VArg() *types.Var {
 	return types.NewParam(0, nil, NameValist, types.NewSlice(tyAny))
-}
-
-func IsVArg(arg *types.Var) bool {
-	return arg.Name() == NameValist
-}
-
-func HasVArg(t *types.Tuple, n int, sig *types.Signature) bool {
-	has := n > 0 && IsVArg(t.At(n-1))
-	if has && !sig.Variadic() { // TODO(xsw): remove this check
-		panic("HasVArg: varg must mark as variadic in signature")
-	}
-	return has
 }
 
 // -----------------------------------------------------------------------------
@@ -200,7 +193,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
-		if hasVArg = HasVArg(in, n, sig); hasVArg {
+		if hasVArg = sig.Variadic(); hasVArg {
 			n--
 		}
 		params = make([]Type, n)

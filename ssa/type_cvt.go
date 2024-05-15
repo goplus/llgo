@@ -173,6 +173,7 @@ func (p goTypes) cvtFunc(sig *types.Signature, recv *types.Var) (raw *types.Sign
 	params, cvt1 := p.cvtTuple(sig.Params())
 	results, cvt2 := p.cvtTuple(sig.Results())
 	if cvt1 || cvt2 {
+		// variadic always is false in raw type for Go function
 		return types.NewSignatureType(nil, nil, nil, params, results, false)
 	}
 	return sig
