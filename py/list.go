@@ -24,6 +24,9 @@ import (
 
 // https://docs.python.org/3/c-api/list.html
 
+//go:linkname List llgo.pyList
+func List(__llgo_va_list ...any) *Object
+
 // Return a new list of length len on success, or nil on failure.
 //
 //go:linkname NewList C.PyList_New

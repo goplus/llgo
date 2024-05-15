@@ -313,6 +313,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			ftype = llgoAllocaCStr
 		case "stringData":
 			ftype = llgoStringData
+		case "pyList":
+			ftype = llgoPyList
 		case "unreachable":
 			ftype = llgoUnreachable
 		default:
@@ -603,6 +605,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			case pyFunc:
 				args := p.compileValues(b, args, kind)
 				ret = b.Call(pyFn.Expr, args...)
+			case llgoPyList:
+				args := p.compileValues(b, args, fnHasVArg)
+				ret = b.PyList(args...)
 			case llgoCstr:
 				ret = cstr(b, args)
 			case llgoAdvance:

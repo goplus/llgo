@@ -125,12 +125,12 @@ type aProgram struct {
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
-	anyTy   Type
-	voidTy  Type
-	voidPtr Type
-	boolTy  Type
-	cstrTy  Type
-	//cintTy  Type
+	anyTy     Type
+	voidTy    Type
+	voidPtr   Type
+	boolTy    Type
+	cstrTy    Type
+	cintTy    Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -138,10 +138,10 @@ type aProgram struct {
 	pyObjPtr  Type
 	pyObjPPtr Type
 
-	pyImpTy *types.Signature
-	//pyNewList  *types.Signature
-	//pyListSetI *types.Signature
-	//callArgs   *types.Signature
+	pyImpTy    *types.Signature
+	pyNewList  *types.Signature
+	pyListSetI *types.Signature
+	callArgs   *types.Signature
 	callNoArgs *types.Signature
 	callOneArg *types.Signature
 	callFOArgs *types.Signature
@@ -335,14 +335,12 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
-/*
 func (p Program) CInt() Type {
 	if p.cintTy == nil { // C.int
 		p.cintTy = p.rawType(types.Typ[types.Int32]) // TODO(xsw): support 64-bit
 	}
 	return p.cintTy
 }
-*/
 
 // Int returns int type.
 func (p Program) Int() Type {
@@ -547,6 +545,7 @@ func (p Program) tyCall() *types.Signature {
 	}
 	return p.callArgs
 }
+*/
 
 func (p Program) tyListSetItem() *types.Signature {
 	if p.pyListSetI == nil {
@@ -569,7 +568,17 @@ func (p Program) tyNewList() *types.Signature {
 	}
 	return p.pyNewList
 }
-*/
+
+func (p Program) tyFloatFromDouble() *types.Signature {
+	if p.callArgs == nil {
+		paramObjPtr := p.paramObjPtr()
+		paramFloat := types.NewParam(token.NoPos, nil, "", p.Float64().raw.Type)
+		params := types.NewTuple(paramFloat)
+		results := types.NewTuple(paramObjPtr)
+		p.callArgs = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.callArgs
+}
 
 func (p Program) tyLoadPyModSyms() *types.Signature {
 	if p.loadPyModS == nil {
@@ -664,7 +673,6 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	return
 }
 
-/*
 // PyNewList(n uintptr) *Object
 func (b Builder) PyNewList(n Expr) (ret Expr) {
 	prog := b.Prog
@@ -681,18 +689,40 @@ func (b Builder) PyListSetItem(list, index, item Expr) (ret Expr) {
 	return b.Call(fn, list, index, item)
 }
 
-// PyList(items ...*Object) *Object
+// PyList(args ...Expr) *Object
 func (b Builder) PyList(args ...Expr) (ret Expr) {
 	prog := b.Prog
 	n := len(args)
 	uintPtr := prog.Uintptr()
 	list := b.PyNewList(prog.IntVal(uint64(n), uintPtr))
 	for i, arg := range args {
-		b.PyListSetItem(list, prog.IntVal(uint64(i), uintPtr), arg)
+		b.PyListSetItem(list, prog.IntVal(uint64(i), uintPtr), b.PyVal(arg))
 	}
 	return list
 }
-*/
+
+// PyVal(v any) *Object
+func (b Builder) PyVal(v Expr) (ret Expr) {
+	switch t := v.raw.Type.(type) {
+	case *types.Basic:
+		switch t.Kind() {
+		case types.Float64:
+			return b.PyFloat(v)
+		default:
+			panic("PyVal: todo")
+		}
+	default:
+		return v
+	}
+}
+
+// PyFloat(fltVal float64) *Object
+func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	fn := pkg.pyFunc("PyFloat_FromDouble", prog.tyFloatFromDouble())
+	return b.Call(fn, fltVal)
+}
 
 // CallPyInit calls Py_Initialize.
 func (b Builder) CallPyInit() (ret Expr) {
