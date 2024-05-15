@@ -35,7 +35,7 @@ To run these demos (If you haven't installed `llgo` yet, please refer to [How to
 
 ```sh
 export LLGOROOT=`pwd`
-cd <demo-directory>  # eg. cd _demo/genints
+cd <demo-directory>  # eg. cd _demo/hello
 llgo run .
 ```
 
@@ -158,7 +158,7 @@ Here are some examples related to them:
 
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
 * [mkjson](x/cjson/_demo/mkjson/mkjson.go): create a json object and print it
-* [sqlite](x/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
+* [sqlitedemo](x/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
 
 
 ## Go syntax support
