@@ -521,14 +521,6 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("stringData(s string): invalid arguments")
 }
 
-func (p *context) pyList(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	vals := make([]llssa.Expr, len(args))
-	for i, arg := range args {
-		vals[i] = p.compileValue(b, arg)
-	}
-	return b.PyList(vals...)
-}
-
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -613,6 +605,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			case pyFunc:
 				args := p.compileValues(b, args, kind)
 				ret = b.Call(pyFn.Expr, args...)
+			case llgoPyList:
+				args := p.compileValues(b, args, fnHasVArg)
+				ret = b.PyList(args...)
 			case llgoCstr:
 				ret = cstr(b, args)
 			case llgoAdvance:
@@ -625,8 +620,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				ret = p.allocaCStr(b, args)
 			case llgoStringData:
 				ret = p.stringData(b, args)
-			case llgoPyList:
-				ret = p.pyList(b, args)
 			case llgoUnreachable: // func unreachable()
 				b.Unreachable()
 			default:
