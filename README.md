@@ -29,7 +29,19 @@ See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for 
 
 ## Python support
 
-You can import a Python library in llgo! For example:
+You can import a Python library in `llgo`!
+
+And `llgo` can import any Python library into `llgo` through a program called `llpyg`. The currently imported packages include:
+
+* [sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
+* [os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
+* [math](https://pkg.go.dev/github.com/goplus/llgo/py/math)
+* [json](https://pkg.go.dev/github.com/goplus/llgo/py/json)
+* [inspect](https://pkg.go.dev/github.com/goplus/llgo/py/inspect)
+* [statistics](https://pkg.go.dev/github.com/goplus/llgo/py/statistics)
+* [numpy](https://pkg.go.dev/github.com/goplus/llgo/py/numpy)
+
+Here is an example using the Python `math` library:
 
 ```go
 package main
@@ -47,6 +59,35 @@ func main() {
 ```
 
 Here, We call `py.Float(2)` to create a Python number 2, and pass it to Python’s `math.sqrt` to get `x`. Then use `x.Float64()` to convert x to Go's `float64` type, and print the value through the C `printf` function.
+
+Let's look at a slightly more complex example. For example, we use `numpy` to calculate:
+
+```go
+package main
+
+import (
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/py/numpy"
+)
+
+func main() {
+	a := py.List(
+		py.List(1.0, 2.0, 3.0),
+		py.List(4.0, 5.0, 6.0),
+		py.List(7.0, 8.0, 9.0),
+	)
+	b := py.List(
+		py.List(9.0, 8.0, 7.0),
+		py.List(6.0, 5.0, 4.0),
+		py.List(3.0, 2.0, 1.0),
+	)
+	x := numpy.Add(a, b)
+	c.Printf(c.Str("a+b = %s\n"), x.Str().CStr())
+}
+```
+
+Here we define two 3x3 matrices a and b, add them to get x, and then print the result.
 
 See [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py) for more detials.
 
