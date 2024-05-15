@@ -46,7 +46,7 @@ See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for 
 
 You can import a Python library in LLGo!
 
-And you can import any Python library into `llgo` through a program called `llpyg`. The currently imported libraries include:
+And you can import any Python library into `llgo` through a program called `llpyg` (See [Development tools](#development-tools)). The currently imported libraries include:
 
 * [sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
 * [os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
@@ -229,3 +229,11 @@ go install -v ./...  # compile all tools except pydump
 cd chore/_xtool
 llgo install ./...   # compile pydump
 ```
+
+## Key modules
+
+Below are the key modules for understanding the implementation principles of `llgo`:
+
+* [llgo/ssa](https://pkg.go.dev/github.com/goplus/llgo/ssa): It generates LLVM IR files (LLVM SSA) using the semantics (interfaces) of Go SSA. Although `LLVM SSA` and `Go SSA` are both IR languages, they work at completely different levels. `LLVM SSA` is closer to machine code, which abstracts different instruction sets. While `Go SSA` is closer to a high-level language. We can think of it as the instruction set of the `Go computer`. `llgo/ssa` is not just limited to the `llgo` compiler. If we view it as the high-level expressive power of `LLVM`, you'll find it very useful. Prior to `llgo/ssa`, you had to operate `LLVM` using machine code semantics. But now, with the advanced SSA form (in the semantics of Go SSA), you can conveniently utilize `LLVM`.
+* [llgo/cl](https://pkg.go.dev/github.com/goplus/llgo/cl): It is the core of the llgo compiler. It converts a Go package into LLVM IR files. It depends on `llgo/ssa`.
+* [llgo/internal/build](https://pkg.go.dev/github.com/goplus/llgo/internal/build): It strings together the entire compilation process of `llgo`. It depends on `llgo/ssa` and `llgo/cl`.
