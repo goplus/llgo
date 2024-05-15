@@ -18,7 +18,5 @@ func main() {
 		py.List(3.0, 2.0, 1.0),
 	)
 	x := numpy.Add(a, b)
-	c.Printf(c.Str("a = %s\n"), a.Str().CStr())
-	c.Printf(c.Str("a = %s\n"), b.Str().CStr())
 	c.Printf(c.Str("a+b = %s\n"), x.Str().CStr())
 }

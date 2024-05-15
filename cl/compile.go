@@ -176,7 +176,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
-			p.compileFuncDecl(pkg, ssaMthd, false)
+			p.compileFuncDecl(pkg, ssaMthd)
 		}
 	}
 }
@@ -211,7 +211,7 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool) (llssa.Function, llssa.PyObjRef, int) {
+func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		/*
@@ -221,7 +221,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 				return nil, pkg.NewPyFunc(fnName, f.Signature, call), pyFunc
 			}
 		*/
-		_ = call
 		return nil, nil, ignoredFunc
 	}
 	fn := pkg.FuncOf(name)
@@ -805,7 +804,7 @@ func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn ll
 	// v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package
-		goFn, pyFn, kind = p.compileFuncDecl(p.pkg, v, true)
+		goFn, pyFn, kind = p.compileFuncDecl(p.pkg, v)
 		if kind != ignoredFunc {
 			return
 		}
@@ -924,7 +923,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFuncDecl(ret, member, false)
+			ctx.compileFuncDecl(ret, member)
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
