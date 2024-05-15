@@ -103,8 +103,6 @@ func SmartDoFile(inFile string, pkgPath ...string) {
 	fname := autgenFile
 	if inCompilerDir(absDir) {
 		fname = "out.ll"
-	} else if inSqlite(absDir) {
-		fname = "sqlite.ll"
 	}
 	outFile := dir + fname
 
@@ -128,8 +126,4 @@ func genZip(dir string, outFile, inFile string) {
 
 func inCompilerDir(dir string) bool {
 	return strings.Contains(dir, "/llgo/cl/")
-}
-
-func inSqlite(dir string) bool {
-	return strings.HasSuffix(dir, "/llgo/x/sqlite")
 }

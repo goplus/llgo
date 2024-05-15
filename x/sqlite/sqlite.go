@@ -29,15 +29,17 @@ type (
 )
 
 const (
-	LLGoPackage = "link"
+	LLGoPackage = "link: sqlite3"
 )
 
 // llgo:type C
 type Sqlite3 struct {
+	Unused [8]byte
 }
 
 // llgo:type C
 type Stmt struct {
+	Unused [8]byte
 }
 
 // -----------------------------------------------------------------------------
