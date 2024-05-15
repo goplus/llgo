@@ -45,6 +45,7 @@ const (
 	vkClosure
 	vkPyFuncRef
 	vkTuple
+	vkSlice
 	vkPhisExpr = -1
 )
 
@@ -103,7 +104,10 @@ func (p Program) Pointer(typ Type) Type {
 }
 
 func (p Program) Elem(typ Type) Type {
-	elem := typ.raw.Type.(*types.Pointer).Elem()
+	elem := typ.raw.Type.(interface {
+		types.Type
+		Elem() types.Type
+	}).Elem()
 	return p.rawType(elem)
 }
 
@@ -237,7 +241,7 @@ func (p Program) toType(raw types.Type) Type {
 	case *types.Interface:
 		return &aType{p.rtIface(), typ, vkInvalid}
 	case *types.Slice:
-		return &aType{p.rtSlice(), typ, vkInvalid}
+		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:
 		return &aType{p.rtMap(), typ, vkInvalid}
 	case *types.Struct:
