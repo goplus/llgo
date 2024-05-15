@@ -1,0 +1,14 @@
+// https://docs.python.org/3/library/inspect.html
+
+// Return a signature object for the given callable.
+//
+//go:linkname Signature py.signature
+func Signature(callable *py.Object) *py.Object
+
+// Get the names and default values of a Python function’s parameters. A named
+// tuple is returned:
+//
+// FullArgSpec(args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations)
+//
+//go:linkname Getfullargspec py.getfullargspec
+func Getfullargspec(f *py.Object) *py.Object

@@ -82,9 +82,9 @@ func main() {
 	ctx := &context{pkg, obj, objPtr, ret, py}
 	for _, sym := range mod.Items {
 		switch sym.Type {
-		case "builtin_function_or_method", "function", "ufunc":
+		case "builtin_function_or_method", "function", "ufunc", "method-wrapper":
 			ctx.genFunc(pkg, sym)
-		case "str", "float", "bool", "type", "dict", "tuple", "list",
+		case "str", "float", "bool", "type", "dict", "tuple", "list", "object",
 			"module", "int", "set", "frozenset", "flags", "bool_": // skip
 		default:
 			t := sym.Type
