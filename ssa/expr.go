@@ -1103,6 +1103,8 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		case kind == types.String:
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
 		}
+	case *types.Pointer:
+		panic("todo: pointer")
 	}
 	panic("todo")
 }
