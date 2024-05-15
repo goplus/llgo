@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/ssa"
 )
 
 type symbol struct {
@@ -146,7 +147,7 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 		}
 		if strings.HasPrefix(part, "*") {
 			if part[1] != '*' {
-				list = append(list, pkg.NewParam(0, genName(part[1:], 0), types.NewSlice(objPtr)))
+				list = append(list, ssa.VArg())
 				return types.NewTuple(list...), true, false
 			}
 			return types.NewTuple(list...), false, false

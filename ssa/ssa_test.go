@@ -399,8 +399,8 @@ func TestPrintf(t *testing.T) {
 	pchar := types.NewPointer(types.Typ[types.Int8])
 	params := types.NewTuple(types.NewVar(0, nil, "format", pchar), VArg())
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
-	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	pkg.NewFunc("printf", sig, InGo)
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, true)
+	pkg.NewFunc("printf", sig, InC)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 

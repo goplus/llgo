@@ -532,7 +532,7 @@ func (p Program) tyCallFunctionObjArgs() *types.Signature {
 		paramObjPtr := p.paramObjPtr()
 		params := types.NewTuple(paramObjPtr, VArg())
 		results := types.NewTuple(paramObjPtr)
-		p.callFOArgs = types.NewSignatureType(nil, nil, nil, params, results, false)
+		p.callFOArgs = types.NewSignatureType(nil, nil, nil, params, results, true)
 	}
 	return p.callFOArgs
 }
@@ -576,7 +576,7 @@ func (p Program) tyLoadPyModSyms() *types.Signature {
 		objPtr := p.PyObjectPtr().raw.Type
 		paramObjPtr := types.NewParam(token.NoPos, nil, "mod", objPtr)
 		params := types.NewTuple(paramObjPtr, VArg())
-		p.loadPyModS = types.NewSignatureType(nil, nil, nil, params, nil, false)
+		p.loadPyModS = types.NewSignatureType(nil, nil, nil, params, nil, true)
 	}
 	return p.loadPyModS
 }
@@ -647,8 +647,11 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 		call := pkg.pyFunc("PyObject_CallNoArgs", prog.tyCallNoArgs())
 		ret = b.Call(call, fn)
 	case 1:
-		call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
-		ret = b.Call(call, fn, args[0])
+		if !sig.Variadic() {
+			call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
+			return b.Call(call, fn, args[0])
+		}
+		fallthrough
 	default:
 		call := pkg.pyFunc("PyObject_CallFunctionObjArgs", prog.tyCallFunctionObjArgs())
 		n = len(args)

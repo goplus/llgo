@@ -27,22 +27,6 @@ import (
 //go:linkname Pi py.pi
 var Pi *py.Object
 
-// Unlike the built-in ** operator, math.pow() converts both its arguments to type
-// float. Use ** or the built-in pow() function for computing exact integer powers.
-//
-//go:linkname Pow py.pow
-func Pow(x, y *py.Object) *py.Object
-
-// Return the sine of x radians.
-//
-//go:linkname Sin py.sin
-func Sin(x *py.Object) *py.Object
-
-// Return the hyperbolic sine of x.
-//
-//go:linkname Sinh py.sinh
-func Sinh(x *py.Object) *py.Object
-
 // With one argument, return the natural logarithm of x (to base e).
 //
 //go:linkname Log py.log
@@ -59,22 +43,6 @@ func LogOf(x, base *py.Object) *py.Object
 //
 //go:linkname Log1p py.log1p
 func Log1p(x *py.Object) *py.Object
-
-// Return the base-2 logarithm of x. This is usually more accurate than log(x, 2).
-//
-//go:linkname Log2 py.log2
-func Log2(x *py.Object) *py.Object
-
-// Return the base-10 logarithm of x. This is usually more accurate than log(x, 10).
-//
-//go:linkname Log10 py.log10
-func Log10(x *py.Object) *py.Object
-
-// Return the fractional and integer parts of x. Both results carry the sign of
-// x and are floats.
-//
-//go:linkname Modf py.modf
-func Modf(x *py.Object) *py.Object
 
 // Return the Euclidean norm, sqrt(sum(x**2 for x in coordinates)). This is the
 // length of the vector from the origin to the point given by the coordinates.

@@ -239,7 +239,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
 		if debugInstr {
-			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
+			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
 	}
 	if fn == nil {

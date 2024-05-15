@@ -29,19 +29,16 @@ import (
 const (
 	ClosureCtx  = "__llgo_ctx"
 	ClosureStub = "__llgo_stub."
-	NameValist  = "__llgo_va_list"
+)
+
+// -----------------------------------------------------------------------------
+
+const (
+	NameValist = "__llgo_va_list"
 )
 
 func VArg() *types.Var {
-	return types.NewParam(0, nil, NameValist, types.Typ[types.Invalid])
-}
-
-func IsVArg(arg *types.Var) bool {
-	return arg.Name() == NameValist
-}
-
-func HasVArg(t *types.Tuple, n int) bool {
-	return n > 0 && IsVArg(t.At(n-1))
+	return types.NewParam(0, nil, NameValist, types.NewSlice(tyAny))
 }
 
 // -----------------------------------------------------------------------------
@@ -196,7 +193,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
-		if hasVArg = HasVArg(in, n); hasVArg {
+		if hasVArg = sig.Variadic(); hasVArg {
 			n--
 		}
 		params = make([]Type, n)
