@@ -174,7 +174,90 @@ func Gamma(x *py.Object) *py.Object
 // Greatest Common Divisor.
 //
 //go:linkname Gcd py.gcd
-func Gcd(integers ...*py.Object) *py.Object
+func Gcd(__llgo_va_list ...interface{}) *py.Object
+
+// Return True if x is neither an infinity nor a NaN, and False otherwise.
+//
+//go:linkname Isfinite py.isfinite
+func Isfinite(x *py.Object) *py.Object
+
+// Return True if x is a positive or negative infinity, and False otherwise.
+//
+//go:linkname Isinf py.isinf
+func Isinf(x *py.Object) *py.Object
+
+// Return True if x is a NaN (not a number), and False otherwise.
+//
+//go:linkname Isnan py.isnan
+func Isnan(x *py.Object) *py.Object
+
+// Return the integer part of the square root of the input.
+//
+//go:linkname Isqrt py.isqrt
+func Isqrt(n *py.Object) *py.Object
+
+// Least Common Multiple.
+//
+//go:linkname Lcm py.lcm
+func Lcm(__llgo_va_list ...interface{}) *py.Object
+
+// Return x * (2**i).
+//
+// This is essentially the inverse of frexp().
+//
+//go:linkname Ldexp py.ldexp
+func Ldexp(x *py.Object, i *py.Object) *py.Object
+
+// Natural logarithm of absolute value of Gamma function at x.
+//
+//go:linkname Lgamma py.lgamma
+func Lgamma(x *py.Object) *py.Object
+
+// Return the base 10 logarithm of x.
+//
+//go:linkname Log10 py.log10
+func Log10(x *py.Object) *py.Object
+
+// Return the base 2 logarithm of x.
+//
+//go:linkname Log2 py.log2
+func Log2(x *py.Object) *py.Object
+
+// Return the fractional and integer parts of x.
+//
+// Both results carry the sign of x and are floats.
+//
+//go:linkname Modf py.modf
+func Modf(x *py.Object) *py.Object
+
+// Return x**y (x to the power of y).
+//
+//go:linkname Pow py.pow
+func Pow(x *py.Object, y *py.Object) *py.Object
+
+// Convert angle x from degrees to radians.
+//
+//go:linkname Radians py.radians
+func Radians(x *py.Object) *py.Object
+
+// Difference between x and the closest integer multiple of y.
+//
+// Return x - n*y where n*y is the closest integer multiple of y.
+// In the case where x is exactly halfway between two multiples of
+// y, the nearest even value of n is used. The result is always exact.
+//
+//go:linkname Remainder py.remainder
+func Remainder(x *py.Object, y *py.Object) *py.Object
+
+// Return the sine of x (measured in radians).
+//
+//go:linkname Sin py.sin
+func Sin(x *py.Object) *py.Object
+
+// Return the hyperbolic sine of x.
+//
+//go:linkname Sinh py.sinh
+func Sinh(x *py.Object) *py.Object
 
 // Return the square root of x.
 //

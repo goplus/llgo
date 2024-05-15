@@ -6,6 +6,7 @@ source_filename = "main"
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 
+
 define void @main.init() {
 _llgo_0:
   %0 = load i1, ptr @"main.init$guard", align 1
