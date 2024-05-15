@@ -373,12 +373,15 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 	return name, goVar
 }
 
-func (p *context) varOf(v *ssa.Global) llssa.Expr {
+func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
 	name, vtype := p.varName(pkgTypes, v)
 	if vtype == pyVar {
-		panic("todo")
+		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
+			return b.PyLoadVar(pysymPrefix+mod, name)
+		}
+		panic("unreachable")
 	}
 	ret := pkg.VarOf(name)
 	if ret == nil {

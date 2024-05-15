@@ -594,15 +594,15 @@ func (p Program) tyLoadPyModSyms() *types.Signature {
 func (p Package) PyInit() bool {
 	if fn := p.FuncOf("main"); fn != nil {
 		b := fn.NewBuilder()
-		b.SetBlockEx(fn.Block(0), AtStart).CallPyInit()
+		b.SetBlockEx(fn.Block(0), AtStart).callPyInit()
 		b.Dispose()
 		return true
 	}
 	return false
 }
 
-// NewPyModVar creates a new global variable for a Python module.
-func (p Package) NewPyModVar(name string, doInit bool) Global {
+// PyNewModVar creates a new global variable for a Python module.
+func (p Package) PyNewModVar(name string, doInit bool) Global {
 	if v, ok := p.pymods[name]; ok {
 		return v
 	}
@@ -617,18 +617,18 @@ func (p Package) NewPyModVar(name string, doInit bool) Global {
 	return g
 }
 
-// ImportPyMod imports a Python module.
-func (b Builder) ImportPyMod(path string) Expr {
+// PyImportMod imports a Python module.
+func (b Builder) PyImportMod(path string) Expr {
 	pkg := b.Func.Pkg
 	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
 	return b.Call(fnImp, b.CStr(path))
 }
 
-// LoadPyModSyms loads python objects from specified module.
-func (b Builder) LoadPyModSyms(modName string, objs ...PyObjRef) Expr {
+// PyLoadModSyms loads python objects from specified module.
+func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) Expr {
 	pkg := b.Func.Pkg
 	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
-	modPtr := pkg.NewPyModVar(modName, false).Expr
+	modPtr := pkg.PyNewModVar(modName, false).Expr
 	mod := b.Load(modPtr)
 	args := make([]Expr, 1, len(objs)*2+2)
 	args[0] = mod
@@ -642,6 +642,10 @@ func (b Builder) LoadPyModSyms(modName string, objs ...PyObjRef) Expr {
 	prog := b.Prog
 	args = append(args, prog.Null(prog.CStr()))
 	return b.Call(fnLoad, args...)
+}
+
+func (b Builder) PyLoadVar(modName, name string) Expr {
+	panic("todo")
 }
 
 func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
@@ -724,8 +728,8 @@ func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
 	return b.Call(fn, fltVal)
 }
 
-// CallPyInit calls Py_Initialize.
-func (b Builder) CallPyInit() (ret Expr) {
+// callPyInit calls Py_Initialize.
+func (b Builder) callPyInit() (ret Expr) {
 	fn := b.Func.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
 	return b.Call(fn)
 }

@@ -371,7 +371,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 					b.SetBlockEx(ret, llssa.AfterInit)
 					for _, modName := range modNames {
 						objs := mods[modName]
-						b.LoadPyModSyms(modName, objs...)
+						b.PyLoadModSyms(modName, objs...)
 					}
 				}
 			})
@@ -395,13 +395,13 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		jumpTo := p.jumpTo(jump)
 		modPath := p.pyMod
 		modName := pysymPrefix + modPath
-		modPtr := pkg.NewPyModVar(modName, true).Expr
+		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
 		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlock(newBlk)
-		b.Store(modPtr, b.ImportPyMod(modPath))
+		b.Store(modPtr, b.PyImportMod(modPath))
 		b.Jump(jumpTo)
 	}
 	return ret
@@ -831,7 +831,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return pyFn.Expr
 	case *ssa.Global:
-		return p.varOf(v)
+		return p.varOf(b, v)
 	case *ssa.Const:
 		t := types.Default(v.Type())
 		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
