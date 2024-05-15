@@ -13,6 +13,7 @@ llgo_autogen.ll
 stories*.bin
 .DS_Store
 err.log
+numpy.txt
 
 _go/
 _runtime/
