@@ -51,7 +51,7 @@ _llgo_0:
 
 define void @main.gwrite(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
-  %1 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %1 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
   %2 = icmp eq i64 %1, 0
   br i1 %2, label %_llgo_1, label %_llgo_2
 
@@ -680,7 +680,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @main.println(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
-  %1 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %1 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_5, %_llgo_0
@@ -690,7 +690,7 @@ _llgo_1:                                          ; preds = %_llgo_5, %_llgo_0
   br i1 %4, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %5, i64 %3
   %7 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %6, align 8
   %8 = icmp ne i64 %3, 0
@@ -783,8 +783,6 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
-declare i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice")
-
 declare i32 @printf(ptr, ...)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
@@ -802,5 +800,3 @@ declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llg
 declare { i64, i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2Int"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
 
 declare { %"github.com/goplus/llgo/internal/runtime.String", i1 } @"github.com/goplus/llgo/internal/runtime.CheckI2String"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice")

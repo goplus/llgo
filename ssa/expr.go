@@ -632,6 +632,36 @@ func (b Builder) StringLen(x Expr) Expr {
 	return Expr{ptr, prog.Int()}
 }
 
+// SliceData returns the data pointer of a slice.
+func (b Builder) SliceData(x Expr) Expr {
+	if debugInstr {
+		log.Printf("SliceData %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 0)
+	return Expr{ptr, prog.CStr()}
+}
+
+// SliceLen returns the length of a slice.
+func (b Builder) SliceLen(x Expr) Expr {
+	if debugInstr {
+		log.Printf("SliceLen %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
+	return Expr{ptr, prog.Int()}
+}
+
+// SliceCap returns the length of a slice cap.
+func (b Builder) SliceCap(x Expr) Expr {
+	if debugInstr {
+		log.Printf("SliceCap %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 2)
+	return Expr{ptr, prog.Int()}
+}
+
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
 //
@@ -653,8 +683,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	pt := prog.Pointer(telem)
 	switch x.raw.Type.Underlying().(type) {
 	case *types.Slice:
-		pkg := b.Func.Pkg
-		ptr := b.InlineCall(pkg.rtFunc("SliceData"), x)
+		ptr := b.SliceData(x)
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	}
@@ -757,12 +786,12 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		return
 	case *types.Slice:
 		nEltSize = b.SizeOf(prog.Index(x.Type))
-		nCap = b.InlineCall(pkg.rtFunc("SliceCap"), x)
+		nCap = b.SliceCap(x)
 		if high.IsNil() {
-			high = b.InlineCall(pkg.rtFunc("SliceLen"), x)
+			high = b.SliceCap(x)
 		}
 		ret.Type = x.Type
-		base = b.InlineCall(pkg.rtFunc("SliceData"), x)
+		base = b.SliceData(x)
 	case *types.Pointer:
 		telem := t.Elem()
 		switch te := telem.Underlying().(type) {
@@ -1297,21 +1326,40 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
-			switch t := arg.raw.Type.Underlying().(type) {
-			case *types.Slice:
-				return b.InlineCall(b.Func.Pkg.rtFunc("SliceLen"), arg)
-			case *types.Basic:
-				if t.Kind() == types.String {
-					return b.StringLen(arg)
-				}
+			switch arg.kind {
+			case vkSlice:
+				return b.SliceLen(arg)
+			case vkString:
+				return b.StringLen(arg)
 			}
 		}
 	case "cap":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.raw.Type.Underlying().(type) {
-			case *types.Slice:
-				return b.InlineCall(b.Func.Pkg.rtFunc("SliceCap"), arg)
+			switch arg.kind {
+			case vkSlice:
+				return b.SliceCap(arg)
+			}
+		}
+	case "append":
+		if len(args) == 2 {
+			src := args[0]
+			if src.kind == vkSlice {
+				elem := args[1]
+				switch elem.kind {
+				case vkSlice:
+					etSize := b.Prog.SizeOf(b.Prog.Elem(elem.Type))
+					ret.Type = src.Type
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
+						src, b.SliceData(elem), b.SliceLen(elem), b.Prog.Val(int(etSize))).impl
+					return
+				case vkString:
+					etSize := b.Prog.SizeOf(b.Prog.Type(types.Typ[types.Byte], InGo))
+					ret.Type = src.Type
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
+						src, b.StringData(elem), b.StringLen(elem), b.Prog.Val(int(etSize))).impl
+					return
+				}
 			}
 		}
 	}
