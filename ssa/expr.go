@@ -78,6 +78,11 @@ func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
 }
 
+// PyNull returns a null *PyObject constant expression.
+func (p Program) PyNull() Expr {
+	return p.Null(p.PyObjectPtr())
+}
+
 // BoolVal returns a boolean constant expression.
 func (p Program) BoolVal(v bool) Expr {
 	t := p.Bool()
