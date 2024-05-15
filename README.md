@@ -8,7 +8,8 @@ llgo - A Go compiler based on LLVM
 [![GoDoc](https://pkg.go.dev/badge/github.com/goplus/llgo.svg)](https://pkg.go.dev/github.com/goplus/llgo)
 [![Language](https://img.shields.io/badge/language-Go+-blue.svg)](https://github.com/goplus/gop)
 
-This is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a subproject of [the Go+ project](https://github.com/goplus/gop).
+LLGo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a subproject of [the Go+ project](https://github.com/goplus/gop).
+
 
 ## C standard libary support
 
@@ -22,16 +23,30 @@ func main() {
 }
 ```
 
-This is a simple example of calling the C `printf` function to print `Hello world`. Here, `c.Str` is not a function for converting a Go string to a C string, but a built-in instruction supported by llgo for generating a C string constant.
+This is a simple example of calling the C `printf` function to print `Hello world`. Here, `c.Str` is not a function for converting a Go string to a C string, but a built-in instruction supported by `llgo` for generating a C string constant.
+
+The `_demo` directory contains some C standard libary related demos (it start with `_` to prevent the `go` command from compiling it):
+
+* [hello](_demo/hello/hello.go): call C `printf` to print `Hello world`
+* [concat](_demo/concat/concat.go): call C `fprintf` with `stderr`
+* [qsort](_demo/qsort/qsort.go): call C function with a callback (eg. `qsort`)
+
+To run these demos (If you haven't installed `llgo` yet, please refer to [How to install](#how-to-install)):
+
+```sh
+export LLGOROOT=`pwd`
+cd <demo-directory>  # eg. cd _demo/genints
+llgo run .
+```
 
 See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for more detials.
 
 
 ## Python support
 
-You can import a Python library in `llgo`!
+You can import a Python library in LLGo!
 
-And you can import any Python library into `llgo` through a program called `llpyg`. The currently imported packages include:
+And you can import any Python library into `llgo` through a program called `llpyg`. The currently imported libraries include:
 
 * [sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
 * [os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
@@ -89,12 +104,88 @@ func main() {
 
 Here we define two 3x3 matrices a and b, add them to get x, and then print the result.
 
+The `_pydemo` directory contains some python related demos:
+
+* [callpy](_pydemo/callpy/callpy.go): call Python standard library function `math.sqrt`
+* [pi](_pydemo/pi/pi.go): print python constants `math.pi`
+* [statistics](_pydemo/statistics/statistics.go): define a python list and call `statistics.mean` to get the mean
+* [matrix](_pydemo/matrix/matrix.go): a basic `numpy` demo
+
+To run these demos, you need to set the `LLGO_LIB_PYTHON` environment variable first.
+
+If Python is in the search path for `clang` linking, then `LLGO_LIB_PYTHON` only needs to be set to the name of the Python library. For example:
+
+```sh
+export LLGO_LIB_PYTHON=python3.12
+```
+
+You can also specify the path to tell `llgo` where the Python library is located:
+
+```sh
+export LLGO_LIB_PYTHON=/foo/bar/python3.12
+```
+
+For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/libpython3.12.dylib` is a typical python library location under macOS. So we should set it like this:
+
+```sh
+export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/python3.12
+```
+
+Note that the file name must be written in a platform-independent format, using `python3.12` instead of `libpython3.12.dylib`.
+
+Then you can run the demos:
+
+```sh
+export LLGOROOT=`pwd`
+cd <demo-directory>  # eg. cd _pydemo/callpy
+llgo run .
+```
+
 See [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py) for more detials.
 
 
 ## Other frequently used libraries
 
-TODO
+LLGo can easily import any libraries from the C ecosystem. Currently, this import process is still manual, but in the future, it will be automated similar to Python library imports.
+
+The currently imported libraries include:
+
+* [llama2.c](https://pkg.go.dev/github.com/goplus/llgo/x/llama2)
+* [cjson](https://pkg.go.dev/github.com/goplus/llgo/x/cjson)
+* [sqlite](https://pkg.go.dev/github.com/goplus/llgo/x/sqlite)
+
+Here are some examples related to them:
+
+* [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
+* [mkjson](x/cjson/_demo/mkjson/mkjson.go): create a json object and print it
+* [sqlite](x/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
+
+
+## Go syntax support
+
+The priority of `llgo` feature iteration is:
+
+* Popular C/Python libraries
+* Full Go syntax
+* Go standard libraries
+* Popular Go packages
+
+Common Go syntax is already supported. Except for the following, which needs to be improved:
+
+* interface (Limited support)
+* map (Very limited support)
+* panic (Limited support)
+* recover (Not supported yet)
+* defer (Not supported yet)
+* gc (Not supported yet)
+* chan (Not supported yet)
+* goroutine (Not supported yet)
+* generics (Not supported yet)
+
+Here are some examples related to Go syntax:
+
+* [concat](_demo/concat/concat.go): define a variadic function
+* [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
 
 
 ## How to install
@@ -122,47 +213,3 @@ go install -v ./...
 ### on Windows
 
 TODO
-
-
-## Demo
-
-The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
-
-* [hello](_demo/hello/hello.go): call C printf to print `Hello world`
-* [concat](_demo/concat/concat.go): call C fprintf with stderr, and Go variadic function
-* [qsort](_demo/qsort/qsort.go): call C function with a callback (eg. qsort)
-* [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
-* [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
-
-And the `_pydemo` directory contains python related demos:
-
-* [callpy](_pydemo/callpy/callpy.go): call Python standard library function `math.sqrt`
-
-
-### How to run demos
-
-To run the demos in directory `_demo`:
-
-```sh
-cd <demo-directory>  # eg. cd _demo/genints
-llgo run .
-```
-
-To run the demos in directory `_pydemo`, you need to set the `LLGO_LIB_PYTHON` environment variable first. Assuming you use Python 3.12, and the `libpython3.12.so` (or `libpython3.12.dylib` or `python3.12.lib`) file is in the /foo/bar directory, then you need to set `LLGO_LIB_PYTHON` to:
-
-```sh
-export LLGO_LIB_PYTHON=/foo/bar/python3.12
-```
-
-For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/libpython3.12.dylib` is a typical python lib location under macOS. So we should set it like this:
-
-```sh
-export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/python3.12
-```
-
-Then you can run the demos in directory `_pydemo`:
-
-```sh
-cd <demo-directory>  # eg. cd _pydemo/callpy
-llgo run .
-```
