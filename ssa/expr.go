@@ -328,6 +328,11 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		if op == token.SHR && kind == vkUnsigned {
 			llop = llvm.LShr // Logical Shift Right
 		}
+		if op == token.SHL || op == token.SHR {
+			if b.Prog.SizeOf(x.Type) != b.Prog.SizeOf(y.Type) {
+				y = b.Convert(x.Type, y)
+			}
+		}
 		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
 		tret := b.Prog.Bool()
