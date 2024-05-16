@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/llgo/internal/runtime/c"
+	"unsafe"
 )
 
 var a int64 = 1<<63 - 1
@@ -11,41 +11,19 @@ var n uint64 = 1<<64 - 1
 func main() {
 	var s = []int{1, 2, 3, 4}
 	var a = [...]int{1, 2, 3, 4}
+	d := make([]byte, 4, 10)
+	println(s, len(s), cap(s))
+	println(d, len(d), cap(d))
+	println(len(a), cap(a), cap(&a), len(&a))
+	println(len([]int{1, 2, 3, 4}), len([4]int{1, 2, 3, 4}))
+	println(len(s[1:]), cap(s[1:]), len(s[1:2]), cap(s[1:2]), len(s[1:2:2]), cap(s[1:2:2]))
+	println(len(a[1:]), cap(a[1:]), len(a[1:2]), cap(a[1:2]), len(a[1:2:2]), cap(a[1:2:2]))
 
-	out(len(s))
-	out(len([]int{1, 2, 3, 4}))
-	out(len(a))
-	out(len(&a))
-	out(len([4]int{1, 2, 3, 4}))
-
-	out(cap(s))
-	out(cap(a))
-	out(cap(&a))
-
-	out(len(s[1:]))
-	out(cap(s[1:]))
-	out(len(s[1:2]))
-	out(cap(s[1:2]))
-	out(len(s[1:2:2]))
-	out(cap(s[1:2:2]))
-
-	out(len(a[1:]))
-	out(cap(a[1:]))
-	out(len(a[1:2]))
-	out(cap(a[1:2]))
-	out(len(a[1:2:2]))
-	out(cap(a[1:2:2]))
-
-	string_len("hello")
-	string_len("hello"[1:])
-	string_len("hello"[1:2])
-	string_len("hello"[5:])
-}
-
-func string_len(s string) {
-	out(len(s))
-}
-
-func out(n int) {
-	c.Printf(c.Str("%d\n"), n)
+	println("hello", "hello"[1:], "hello"[1:2], len("hello"[5:]))
+	println(append(s, 5, 6, 7, 8))
+	data := []byte{'a', 'b', 'c'}
+	data = append(data, "def"...)
+	println(data)
+	var i any = 100
+	println(true, 100, -100, uint(100), int32(-100), 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
 }

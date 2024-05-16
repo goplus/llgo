@@ -102,7 +102,9 @@ func TestCvtType(t *testing.T) {
 
 func TestUserdefExpr(t *testing.T) {
 	b := &phisExprTy{}
+	c := &pyVarTy{}
 	_ = b.String()
+	_ = c.String()
 	test := func(a types.Type) {
 		defer func() {
 			if r := recover(); r == nil {
@@ -112,6 +114,7 @@ func TestUserdefExpr(t *testing.T) {
 		a.Underlying()
 	}
 	test(b)
+	test(c)
 }
 
 func TestAny(t *testing.T) {
@@ -143,12 +146,12 @@ func TestPyFunc(t *testing.T) {
 	prog.SetPython(py)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	a := pkg.NewPyFunc("a", sig, false)
-	if pkg.NewPyFunc("a", sig, false) != a {
+	a := pkg.PyNewFunc("a", sig, false)
+	if pkg.PyNewFunc("a", sig, false) != a {
 		t.Fatal("NewPyFunc(a) failed")
 	}
-	foo := pkg.NewPyModVar("foo", false)
-	if pkg.NewPyModVar("foo", false) != foo {
+	foo := pkg.PyNewModVar("foo", false)
+	if pkg.PyNewModVar("foo", false) != foo {
 		t.Fatal("NewPyModVar(foo) failed")
 	}
 }
@@ -399,8 +402,8 @@ func TestPrintf(t *testing.T) {
 	pchar := types.NewPointer(types.Typ[types.Int8])
 	params := types.NewTuple(types.NewVar(0, nil, "format", pchar), VArg())
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
-	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	pkg.NewFunc("printf", sig, InGo)
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, true)
+	pkg.NewFunc("printf", sig, InC)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 

@@ -70,4 +70,25 @@ func SliceData(s Slice) unsafe.Pointer {
 	return s.data
 }
 
+// SliceAppend append elem data and returns a slice.
+func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
+	if etSize == 0 {
+		return src
+	}
+	oldLen := src.len
+	newLen := src.len + num
+	if newLen > src.cap {
+		newCap := nextslicecap(newLen, src.cap)
+		p := AllocZ(uintptr(newCap * etSize))
+		if oldLen != 0 {
+			c.Memcpy(p, src.data, uintptr(oldLen*etSize))
+		}
+		src.data = p
+		src.cap = newCap
+	}
+	src.len = newLen
+	c.Memcpy(c.Advance(src.data, oldLen*etSize), data, uintptr(num*etSize))
+	return src
+}
+
 // -----------------------------------------------------------------------------

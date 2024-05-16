@@ -44,7 +44,12 @@ const (
 	vkFuncPtr
 	vkClosure
 	vkPyFuncRef
+	vkPyVarRef
 	vkTuple
+	vkSlice
+	vkArray
+	vkMap
+	vkInterface
 	vkPhisExpr = -1
 )
 
@@ -103,7 +108,10 @@ func (p Program) Pointer(typ Type) Type {
 }
 
 func (p Program) Elem(typ Type) Type {
-	elem := typ.raw.Type.(*types.Pointer).Elem()
+	elem := typ.raw.Type.(interface {
+		types.Type
+		Elem() types.Type
+	}).Elem()
 	return p.rawType(elem)
 }
 
@@ -235,11 +243,11 @@ func (p Program) toType(raw types.Type) Type {
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
-		return &aType{p.rtIface(), typ, vkInvalid}
+		return &aType{p.rtIface(), typ, vkInterface}
 	case *types.Slice:
-		return &aType{p.rtSlice(), typ, vkInvalid}
+		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:
-		return &aType{p.rtMap(), typ, vkInvalid}
+		return &aType{p.rtMap(), typ, vkMap}
 	case *types.Struct:
 		ll, kind := p.toLLVMStruct(t)
 		return &aType{ll, typ, kind}
@@ -249,7 +257,7 @@ func (p Program) toType(raw types.Type) Type {
 		return &aType{p.toLLVMFuncPtr(t), typ, vkFuncPtr}
 	case *types.Array:
 		elem := p.rawType(t.Elem())
-		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
+		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkArray}
 	case *types.Chan:
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", typ))
@@ -313,7 +321,7 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
 	tParams := sig.Params()
 	n := tParams.Len()
-	hasVArg := HasVArg(tParams, n)
+	hasVArg := sig.Variadic()
 	if hasVArg {
 		n--
 	}

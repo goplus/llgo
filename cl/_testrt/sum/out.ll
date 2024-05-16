@@ -44,7 +44,7 @@ _llgo_0:
 
 define i64 @main.sum(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
 _llgo_0:
-  %1 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %1 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -55,7 +55,7 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %5, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice" %0)
+  %6 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
   %7 = getelementptr inbounds i64, ptr %6, i64 %4
   %8 = load i64, ptr %7, align 4
   %9 = add i64 %2, %8
@@ -72,7 +72,3 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
 declare i32 @printf(ptr, ...)
-
-declare i64 @"github.com/goplus/llgo/internal/runtime.SliceLen"(%"github.com/goplus/llgo/internal/runtime.Slice")
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.SliceData"(%"github.com/goplus/llgo/internal/runtime.Slice")

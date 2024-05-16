@@ -71,7 +71,7 @@ func (o *Object) CallOneArg(arg *Object) *Object { return nil }
 // This is the equivalent of the Python expression: o(*args).
 //
 // llgo:link (*Object).CallObject C.PyObject_CallObject
-func (o *Object) CallObject(callable, args *Object) *Object { return nil }
+func (o *Object) CallObject(args *Object) *Object { return nil }
 
 // Call a callable Python object o, with a variable number of C arguments. The C
 // arguments are described using a py.BuildValue style format string. The format

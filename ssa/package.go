@@ -130,6 +130,7 @@ type aProgram struct {
 	voidPtr   Type
 	boolTy    Type
 	cstrTy    Type
+	cintTy    Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -138,9 +139,16 @@ type aProgram struct {
 	pyObjPPtr Type
 
 	pyImpTy    *types.Signature
+	pyNewList  *types.Signature
+	pyListSetI *types.Signature
+	callArgs   *types.Signature
 	callNoArgs *types.Signature
 	callOneArg *types.Signature
+	callFOArgs *types.Signature
 	loadPyModS *types.Signature
+	getAttrStr *types.Signature
+
+	paramObjPtr_ *types.Var
 
 	NeedRuntime bool
 	NeedPyInit  bool
@@ -328,6 +336,13 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
+func (p Program) CInt() Type {
+	if p.cintTy == nil { // C.int
+		p.cintTy = p.rawType(types.Typ[types.Int32]) // TODO(xsw): support 64-bit
+	}
+	return p.cintTy
+}
+
 // Int returns int type.
 func (p Program) Int() Type {
 	if p.intTy == nil {
@@ -475,31 +490,38 @@ func (p *Package) WriteFile(file string) (err error) {
 
 // -----------------------------------------------------------------------------
 
+func (p Program) paramObjPtr() *types.Var {
+	if p.paramObjPtr_ == nil {
+		objPtr := p.PyObjectPtr().raw.Type
+		p.paramObjPtr_ = types.NewParam(token.NoPos, nil, "", objPtr)
+	}
+	return p.paramObjPtr_
+}
+
+// func(*char) *Object
 func (p Program) tyImportPyModule() *types.Signature {
 	if p.pyImpTy == nil {
 		charPtr := types.NewPointer(types.Typ[types.Int8])
-		objPtr := p.PyObjectPtr().raw.Type
 		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", charPtr))
-		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", objPtr))
+		results := types.NewTuple(p.paramObjPtr())
 		p.pyImpTy = types.NewSignatureType(nil, nil, nil, params, results, false)
 	}
 	return p.pyImpTy
 }
 
+// func(*Object) *Object
 func (p Program) tyCallNoArgs() *types.Signature {
 	if p.callNoArgs == nil {
-		objPtr := p.PyObjectPtr().raw.Type
-		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
-		params := types.NewTuple(paramObjPtr)
+		params := types.NewTuple(p.paramObjPtr())
 		p.callNoArgs = types.NewSignatureType(nil, nil, nil, params, params, false)
 	}
 	return p.callNoArgs
 }
 
+// func(*Object, *Object) *Object
 func (p Program) tyCallOneArg() *types.Signature {
 	if p.callOneArg == nil {
-		objPtr := p.PyObjectPtr().raw.Type
-		paramObjPtr := types.NewParam(token.NoPos, nil, "", objPtr)
+		paramObjPtr := p.paramObjPtr()
 		params := types.NewTuple(paramObjPtr, paramObjPtr)
 		results := types.NewTuple(paramObjPtr)
 		p.callOneArg = types.NewSignatureType(nil, nil, nil, params, results, false)
@@ -507,29 +529,101 @@ func (p Program) tyCallOneArg() *types.Signature {
 	return p.callOneArg
 }
 
+// func(*Object, ...) *Object
+func (p Program) tyCallFunctionObjArgs() *types.Signature {
+	if p.callFOArgs == nil {
+		paramObjPtr := p.paramObjPtr()
+		params := types.NewTuple(paramObjPtr, VArg())
+		results := types.NewTuple(paramObjPtr)
+		p.callFOArgs = types.NewSignatureType(nil, nil, nil, params, results, true)
+	}
+	return p.callFOArgs
+}
+
+/*
+// func(*Object, *Object, *Object) *Object
+func (p Program) tyCall() *types.Signature {
+	if p.callArgs == nil {
+		paramObjPtr := p.paramObjPtr()
+		params := types.NewTuple(paramObjPtr, paramObjPtr, paramObjPtr)
+		results := types.NewTuple(paramObjPtr)
+		p.callArgs = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.callArgs
+}
+*/
+
+// func(*Object, uintptr, *Object) cint
+func (p Program) tyListSetItem() *types.Signature {
+	if p.pyListSetI == nil {
+		paramUintptr := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		paramObjPtr := p.paramObjPtr()
+		params := types.NewTuple(paramObjPtr, paramUintptr, paramObjPtr)
+		results := types.NewTuple(paramCInt)
+		p.pyListSetI = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyListSetI
+}
+
+// func(uintptr) *Object
+func (p Program) tyNewList() *types.Signature {
+	if p.pyNewList == nil {
+		paramUintptr := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
+		params := types.NewTuple(paramUintptr)
+		results := types.NewTuple(p.paramObjPtr())
+		p.pyNewList = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyNewList
+}
+
+// func(float64) *Object
+func (p Program) tyFloatFromDouble() *types.Signature {
+	if p.callArgs == nil {
+		paramObjPtr := p.paramObjPtr()
+		paramFloat := types.NewParam(token.NoPos, nil, "", p.Float64().raw.Type)
+		params := types.NewTuple(paramFloat)
+		results := types.NewTuple(paramObjPtr)
+		p.callArgs = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.callArgs
+}
+
+// func(*Object, ...)
 func (p Program) tyLoadPyModSyms() *types.Signature {
 	if p.loadPyModS == nil {
-		objPtr := p.PyObjectPtr().raw.Type
-		paramObjPtr := types.NewParam(token.NoPos, nil, "mod", objPtr)
+		paramObjPtr := p.paramObjPtr()
 		params := types.NewTuple(paramObjPtr, VArg())
-		p.loadPyModS = types.NewSignatureType(nil, nil, nil, params, nil, false)
+		p.loadPyModS = types.NewSignatureType(nil, nil, nil, params, nil, true)
 	}
 	return p.loadPyModS
+}
+
+// func(*Objecg, *char) *Object
+func (p Program) tyGetAttrString() *types.Signature {
+	if p.getAttrStr == nil {
+		charPtr := types.NewPointer(types.Typ[types.Int8])
+		paramObjPtr := p.paramObjPtr()
+		params := types.NewTuple(paramObjPtr, types.NewParam(token.NoPos, nil, "", charPtr))
+		results := types.NewTuple(paramObjPtr)
+		p.getAttrStr = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.getAttrStr
 }
 
 // PyInit initializes Python for a main package.
 func (p Package) PyInit() bool {
 	if fn := p.FuncOf("main"); fn != nil {
 		b := fn.NewBuilder()
-		b.SetBlockEx(fn.Block(0), AtStart).CallPyInit()
+		b.SetBlockEx(fn.Block(0), AtStart).callPyInit()
 		b.Dispose()
 		return true
 	}
 	return false
 }
 
-// NewPyModVar creates a new global variable for a Python module.
-func (p Package) NewPyModVar(name string, doInit bool) Global {
+// PyNewModVar creates a new global variable for a Python module.
+func (p Package) PyNewModVar(name string, doInit bool) Global {
 	if v, ok := p.pymods[name]; ok {
 		return v
 	}
@@ -544,18 +638,18 @@ func (p Package) NewPyModVar(name string, doInit bool) Global {
 	return g
 }
 
-// ImportPyMod imports a Python module.
-func (b Builder) ImportPyMod(path string) Expr {
+// PyImportMod imports a Python module.
+func (b Builder) PyImportMod(path string) Expr {
 	pkg := b.Func.Pkg
 	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
 	return b.Call(fnImp, b.CStr(path))
 }
 
-// LoadPyModSyms loads python objects from specified module.
-func (b Builder) LoadPyModSyms(modName string, objs ...PyObjRef) Expr {
+// PyLoadModSyms loads python objects from specified module.
+func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) Expr {
 	pkg := b.Func.Pkg
 	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
-	modPtr := pkg.NewPyModVar(modName, false).Expr
+	modPtr := pkg.PyNewModVar(modName, false).Expr
 	mod := b.Load(modPtr)
 	args := make([]Expr, 1, len(objs)*2+2)
 	args[0] = mod
@@ -583,16 +677,76 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 		call := pkg.pyFunc("PyObject_CallNoArgs", prog.tyCallNoArgs())
 		ret = b.Call(call, fn)
 	case 1:
-		call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
-		ret = b.Call(call, fn, args[0])
+		if !sig.Variadic() {
+			call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
+			return b.Call(call, fn, args[0])
+		}
+		fallthrough
 	default:
-		panic("todo")
+		call := pkg.pyFunc("PyObject_CallFunctionObjArgs", prog.tyCallFunctionObjArgs())
+		n = len(args)
+		callargs := make([]Expr, n+2)
+		callargs[0] = fn
+		copy(callargs[1:], args)
+		callargs[n+1] = prog.PyNull()
+		ret = b.Call(call, callargs...)
 	}
 	return
 }
 
-// CallPyInit calls Py_Initialize.
-func (b Builder) CallPyInit() (ret Expr) {
+// PyNewList(n uintptr) *Object
+func (b Builder) PyNewList(n Expr) (ret Expr) {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	fn := pkg.pyFunc("PyList_New", prog.tyNewList())
+	return b.Call(fn, n)
+}
+
+// PyListSetItem(list *Object, index uintptr, item *Object) c.Int
+func (b Builder) PyListSetItem(list, index, item Expr) (ret Expr) {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	fn := pkg.pyFunc("PyList_SetItem", prog.tyListSetItem())
+	return b.Call(fn, list, index, item)
+}
+
+// PyList(args ...Expr) *Object
+func (b Builder) PyList(args ...Expr) (ret Expr) {
+	prog := b.Prog
+	n := len(args)
+	uintPtr := prog.Uintptr()
+	list := b.PyNewList(prog.IntVal(uint64(n), uintPtr))
+	for i, arg := range args {
+		b.PyListSetItem(list, prog.IntVal(uint64(i), uintPtr), b.PyVal(arg))
+	}
+	return list
+}
+
+// PyVal(v any) *Object
+func (b Builder) PyVal(v Expr) (ret Expr) {
+	switch t := v.raw.Type.(type) {
+	case *types.Basic:
+		switch t.Kind() {
+		case types.Float64:
+			return b.PyFloat(v)
+		default:
+			panic("PyVal: todo")
+		}
+	default:
+		return v
+	}
+}
+
+// PyFloat(fltVal float64) *Object
+func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
+	prog := b.Prog
+	pkg := b.Func.Pkg
+	fn := pkg.pyFunc("PyFloat_FromDouble", prog.tyFloatFromDouble())
+	return b.Call(fn, fltVal)
+}
+
+// callPyInit calls Py_Initialize.
+func (b Builder) callPyInit() (ret Expr) {
 	fn := b.Func.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
 	return b.Call(fn)
 }

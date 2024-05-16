@@ -11,6 +11,10 @@ func concat(args ...string) (ret string) {
 	return
 }
 
+func info(s string) string {
+	return "" + s + "..."
+}
+
 func main() {
 	result := concat("Hello", " ", "World")
 	c.Fprintf(c.Stderr, c.Str("Hi, %s\n"), c.AllocaCStr(result))

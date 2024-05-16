@@ -29,19 +29,16 @@ import (
 const (
 	ClosureCtx  = "__llgo_ctx"
 	ClosureStub = "__llgo_stub."
-	NameValist  = "__llgo_va_list"
+)
+
+// -----------------------------------------------------------------------------
+
+const (
+	NameValist = "__llgo_va_list"
 )
 
 func VArg() *types.Var {
-	return types.NewParam(0, nil, NameValist, types.Typ[types.Invalid])
-}
-
-func IsVArg(arg *types.Var) bool {
-	return arg.Name() == NameValist
-}
-
-func HasVArg(t *types.Tuple, n int) bool {
-	return n > 0 && IsVArg(t.At(n-1))
+	return types.NewParam(0, nil, NameValist, types.NewSlice(tyAny))
 }
 
 // -----------------------------------------------------------------------------
@@ -196,7 +193,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
-		if hasVArg = HasVArg(in, n); hasVArg {
+		if hasVArg = sig.Variadic(); hasVArg {
 			n--
 		}
 		params = make([]Type, n)
@@ -285,6 +282,29 @@ func (p Function) Block(idx int) BasicBlock {
 
 // -----------------------------------------------------------------------------
 
+type aPyGlobal struct {
+	Expr
+}
+
+type PyGlobal = *aPyGlobal
+
+// PyNewVar creates a Python variable.
+func (b Builder) PyNewVar(modName, name string) PyGlobal {
+	pkg := b.Func.Pkg
+	modPtr := pkg.PyNewModVar(modName, false).Expr
+	mod := b.Load(modPtr)
+	return &aPyGlobal{pyVarExpr(mod, name)}
+}
+
+func (b Builder) pyLoad(ptr Expr) Expr {
+	pkg := b.Func.Pkg
+	t := ptr.raw.Type.(*pyVarTy)
+	fn := pkg.pyFunc("PyObject_GetAttrString", b.Prog.tyGetAttrString())
+	return b.Call(fn, t.mod, b.CStr(t.name))
+}
+
+// -----------------------------------------------------------------------------
+
 type aPyObjRef struct {
 	Expr
 	Obj Global
@@ -293,8 +313,8 @@ type aPyObjRef struct {
 // PyObjRef represents a python object reference.
 type PyObjRef = *aPyObjRef
 
-// NewPyFunc creates a new python function.
-func (p Package) NewPyFunc(name string, sig *types.Signature, doInit bool) PyObjRef {
+// PyNewFunc creates a new python function.
+func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObjRef {
 	if v, ok := p.pyobjs[name]; ok {
 		return v
 	}

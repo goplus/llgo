@@ -14,29 +14,19 @@
  * limitations under the License.
  */
 
-package inspect
+package py
 
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/py"
 )
 
-const (
-	LLGoPackage = "py.inspect"
-)
+// https://docs.python.org/3/c-api/exceptions.html
 
-// https://docs.python.org/3/library/inspect.html
+// Clear the error indicator. If the error indicator is not set, there is
+// no effect.
+//
+//go:linkname ErrClear C.PyErr_Clear
+func ErrClear()
 
-// Return a signature object for the given callable.
-//
-//go:linkname Signature py.signature
-func Signature(callable *py.Object) *py.Object
-
-// Get the names and default values of a Python function’s parameters. A named
-// tuple is returned:
-//
-// FullArgSpec(args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations)
-//
-//go:linkname Getfullargspec py.getfullargspec
-func Getfullargspec(f *py.Object) *py.Object
+//go:linkname ErrPrint C.PyErr_Print
+func ErrPrint()

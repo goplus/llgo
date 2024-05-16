@@ -25,12 +25,16 @@ const (
 )
 
 type (
-	Char    = int8
-	Int     = C.int
-	Uint    = C.uint
-	Float   = float32
-	Pointer = unsafe.Pointer
-	FilePtr = unsafe.Pointer
+	Char      = int8
+	Int       = C.int
+	Uint      = C.uint
+	Long      = int32
+	Ulong     = uint32
+	LongLong  = int64
+	UlongLong = uint64
+	Float     = float32
+	Pointer   = unsafe.Pointer
+	FilePtr   = unsafe.Pointer
 )
 
 type integer interface {

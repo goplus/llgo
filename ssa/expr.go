@@ -54,6 +54,26 @@ func (v Expr) Do(b Builder) Expr {
 
 // -----------------------------------------------------------------------------
 
+type pyVarTy struct {
+	mod  Expr
+	name string
+}
+
+func (p pyVarTy) Underlying() types.Type {
+	panic("don't call")
+}
+
+func (p pyVarTy) String() string {
+	return "pyVar"
+}
+
+func pyVarExpr(mod Expr, name string) Expr {
+	tvar := &aType{raw: rawType{&pyVarTy{mod, name}}, kind: vkPyVarRef}
+	return Expr{Type: tvar}
+}
+
+// -----------------------------------------------------------------------------
+
 type phisExprTy struct {
 	phis []llvm.Value
 	Type
@@ -68,7 +88,8 @@ func (p phisExprTy) String() string {
 }
 
 func phisExpr(t Type, phis []llvm.Value) Expr {
-	return Expr{Type: &aType{raw: rawType{&phisExprTy{phis, t}}, kind: vkPhisExpr}}
+	tphi := &aType{raw: rawType{&phisExprTy{phis, t}}, kind: vkPhisExpr}
+	return Expr{Type: tphi}
 }
 
 // -----------------------------------------------------------------------------
@@ -76,6 +97,11 @@ func phisExpr(t Type, phis []llvm.Value) Expr {
 // Null returns a null constant expression.
 func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
+}
+
+// PyNull returns a null *PyObject constant expression.
+func (p Program) PyNull() Expr {
+	return p.Null(p.PyObjectPtr())
 }
 
 // BoolVal returns a boolean constant expression.
@@ -284,7 +310,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkString:
 			if op == token.ADD {
 				pkg := b.Func.Pkg
-				return b.InlineCall(pkg.rtFunc("StringCat"), x, y)
+				return Expr{b.InlineCall(pkg.rtFunc("StringCat"), x, y).impl, x.Type}
 			}
 		case vkComplex:
 		default:
@@ -301,6 +327,11 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		llop := logicOpToLLVM[op-logicOpBase]
 		if op == token.SHR && kind == vkUnsigned {
 			llop = llvm.LShr // Logical Shift Right
+		}
+		if op == token.SHL || op == token.SHR {
+			if b.Prog.SizeOf(x.Type) != b.Prog.SizeOf(y.Type) {
+				y = b.Convert(x.Type, y)
+			}
 		}
 		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
@@ -508,6 +539,9 @@ func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
 		log.Printf("Load %v\n", ptr.impl)
 	}
+	if ptr.kind == vkPyVarRef {
+		return b.pyLoad(ptr)
+	}
 	telem := b.Prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
 }
@@ -627,6 +661,36 @@ func (b Builder) StringLen(x Expr) Expr {
 	return Expr{ptr, prog.Int()}
 }
 
+// SliceData returns the data pointer of a slice.
+func (b Builder) SliceData(x Expr) Expr {
+	if debugInstr {
+		log.Printf("SliceData %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 0)
+	return Expr{ptr, prog.CStr()}
+}
+
+// SliceLen returns the length of a slice.
+func (b Builder) SliceLen(x Expr) Expr {
+	if debugInstr {
+		log.Printf("SliceLen %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
+	return Expr{ptr, prog.Int()}
+}
+
+// SliceCap returns the length of a slice cap.
+func (b Builder) SliceCap(x Expr) Expr {
+	if debugInstr {
+		log.Printf("SliceCap %v\n", x.impl)
+	}
+	prog := b.Prog
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 2)
+	return Expr{ptr, prog.Int()}
+}
+
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
 //
@@ -648,8 +712,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	pt := prog.Pointer(telem)
 	switch x.raw.Type.Underlying().(type) {
 	case *types.Slice:
-		pkg := b.Func.Pkg
-		ptr := b.InlineCall(pkg.rtFunc("SliceData"), x)
+		ptr := b.SliceData(x)
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	}
@@ -752,12 +815,12 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		return
 	case *types.Slice:
 		nEltSize = b.SizeOf(prog.Index(x.Type))
-		nCap = b.InlineCall(pkg.rtFunc("SliceCap"), x)
+		nCap = b.SliceCap(x)
 		if high.IsNil() {
-			high = b.InlineCall(pkg.rtFunc("SliceLen"), x)
+			high = b.SliceCap(x)
 		}
 		ret.Type = x.Type
-		base = b.InlineCall(pkg.rtFunc("SliceData"), x)
+		base = b.SliceData(x)
 	case *types.Pointer:
 		telem := t.Elem()
 		switch te := telem.Underlying().(type) {
@@ -1292,23 +1355,86 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
-			switch t := arg.raw.Type.Underlying().(type) {
-			case *types.Slice:
-				return b.InlineCall(b.Func.Pkg.rtFunc("SliceLen"), arg)
-			case *types.Basic:
-				if t.Kind() == types.String {
-					return b.StringLen(arg)
-				}
+			switch arg.kind {
+			case vkSlice:
+				return b.SliceLen(arg)
+			case vkString:
+				return b.StringLen(arg)
 			}
 		}
 	case "cap":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.raw.Type.Underlying().(type) {
-			case *types.Slice:
-				return b.InlineCall(b.Func.Pkg.rtFunc("SliceCap"), arg)
+			switch arg.kind {
+			case vkSlice:
+				return b.SliceCap(arg)
 			}
 		}
+	case "append":
+		if len(args) == 2 {
+			src := args[0]
+			if src.kind == vkSlice {
+				elem := args[1]
+				switch elem.kind {
+				case vkSlice:
+					etSize := b.Prog.SizeOf(b.Prog.Elem(elem.Type))
+					ret.Type = src.Type
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
+						src, b.SliceData(elem), b.SliceLen(elem), b.Prog.Val(int(etSize))).impl
+					return
+				case vkString:
+					etSize := b.Prog.SizeOf(b.Prog.Type(types.Typ[types.Byte], InGo))
+					ret.Type = src.Type
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
+						src, b.StringData(elem), b.StringLen(elem), b.Prog.Val(int(etSize))).impl
+					return
+				}
+			}
+		}
+	case "print", "println":
+		ln := fn == "println"
+		ret.Type = b.Prog.Void()
+		for i, arg := range args {
+			if ln && i > 0 {
+				b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str(" "))
+			}
+			var fn string
+			var typ types.Type
+			switch arg.kind {
+			case vkBool:
+				fn = "PrintBool"
+			case vkSigned:
+				fn = "PrintInt"
+				typ = types.Typ[types.Int64]
+			case vkUnsigned:
+				fn = "PrintUint"
+				typ = types.Typ[types.Uint64]
+			case vkFloat:
+				fn = "PrintFloat"
+				typ = types.Typ[types.Float64]
+			case vkSlice:
+				fn = "PrintSlice"
+			case vkPtr, vkFuncPtr, vkFuncDecl, vkClosure, vkPyVarRef, vkPyFuncRef:
+				fn = "PrintPointer"
+				typ = types.Typ[types.UnsafePointer]
+			case vkString:
+				fn = "PrintString"
+			case vkInterface:
+				fn = "PrintIface"
+			// case vkComplex:
+			// 	fn = "PrintComplex"
+			default:
+				panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
+			}
+			if typ != nil && typ != arg.raw.Type {
+				arg = b.Convert(b.Prog.Type(typ, InGo), arg)
+			}
+			b.InlineCall(b.Func.Pkg.rtFunc(fn), arg)
+		}
+		if ln {
+			b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str("\n"))
+		}
+		return
 	}
 	panic("todo")
 }

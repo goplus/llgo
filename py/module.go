@@ -22,7 +22,29 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
+// https://docs.python.org/3/c-api/import.html
 // https://docs.python.org/3/c-api/module.html
+
+/*
+// llgo:type C
+type ModuleDefBase struct {
+	Unused [8]byte // TODO(xsw)
+}
+
+// llgo:type C
+type ModuleDef struct {
+	Base ModuleDefBase
+	// TODO(xsw)
+}
+*/
+
+// Return the module object corresponding to a module name. The name argument
+// may be of the form package.module. First check the modules dictionary if
+// there’s one there, and if not, create a new one and insert it in the modules
+// dictionary. Return nil with an exception set on failure.
+//
+//go:linkname AddModule C.PyImport_AddModule
+func AddModule(name *c.Char) *Object
 
 // This is a wrapper around py.Import which takes a const char* as an argument
 // instead of an Object.

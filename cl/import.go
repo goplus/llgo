@@ -318,6 +318,7 @@ const (
 	llgoAdvance     = llgoInstrBase + 4
 	llgoIndex       = llgoInstrBase + 5
 	llgoStringData  = llgoInstrBase + 6
+	llgoPyList      = llgoInstrBase + 7
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
@@ -358,24 +359,35 @@ const (
 	ignoredVar = iota
 	goVar      = int(llssa.InGo)
 	cVar       = int(llssa.InC)
+	pyVar      = int(llssa.InPython)
 )
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int) {
 	name := llssa.FullName(pkg, v.Name())
 	if v, ok := p.link[name]; ok {
+		if strings.HasPrefix(v, "py.") {
+			return v[3:], pyVar
+		}
 		return v, cVar
 	}
 	return name, goVar
 }
 
-func (p *context) varOf(v *ssa.Global) (ret llssa.Global) {
+func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
 	name, vtype := p.varName(pkgTypes, v)
-	if ret = pkg.VarOf(name); ret == nil {
+	if vtype == pyVar {
+		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
+			return b.PyNewVar(pysymPrefix+mod, name).Expr
+		}
+		panic("unreachable")
+	}
+	ret := pkg.VarOf(name)
+	if ret == nil {
 		ret = pkg.NewVar(name, v.Type(), llssa.Background(vtype))
 	}
-	return
+	return ret.Expr
 }
 
 func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
