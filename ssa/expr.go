@@ -1059,7 +1059,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	case *types.Basic:
 		switch typ.Kind() {
 		case types.Uintptr:
-			ret.impl = castInt(b.impl, x.impl, t.ll)
+			ret.impl = castUintptr(b, x.impl, t)
 			return
 		case types.UnsafePointer:
 			ret.impl = castPtr(b.impl, x.impl, t.ll)
@@ -1067,19 +1067,10 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 		}
 		switch xtyp := x.RawType().Underlying().(type) {
 		case *types.Basic:
-			size := b.Prog.SizeOf(t)
-			xsize := b.Prog.SizeOf(x.Type)
 			if typ.Info()&types.IsInteger != 0 {
 				// int <- int/float
 				if xtyp.Info()&types.IsInteger != 0 {
-					// if xsize > size {
-					// 	ret.impl = b.impl.CreateTrunc(x.impl, t.ll, "")
-					// } else if typ.Info()&types.IsUnsigned != 0 {
-					// 	ret.impl = b.impl.CreateZExt(x.impl, t.ll, "")
-					// } else {
-					// 	ret.impl = b.impl.CreateSExt(x.impl, t.ll, "")
-					// }
-					ret.impl = castInt(b.impl, x.impl, t.ll)
+					ret.impl = castInt(b, x.impl, t)
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
 					if typ.Info()&types.IsUnsigned != 0 {
@@ -1099,11 +1090,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
-					if xsize > size {
-						ret.impl = b.impl.CreateFPTrunc(x.impl, t.ll, "")
-					} else {
-						ret.impl = b.impl.CreateFPExt(x.impl, t.ll, "")
-					}
+					ret.impl = castFloat(b, x.impl, t)
 					return
 				}
 			}
@@ -1115,15 +1102,33 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	panic("todo")
 }
 
-func castInt(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
-	xt := x.Type()
-	if xt.TypeKind() == llvm.PointerTypeKind {
-		return llvm.CreatePtrToInt(b, x, t)
+func castUintptr(b Builder, x llvm.Value, typ Type) llvm.Value {
+	if x.Type().TypeKind() == llvm.PointerTypeKind {
+		return llvm.CreatePtrToInt(b.impl, x, typ.ll)
 	}
-	if xt.IntTypeWidth() <= t.IntTypeWidth() {
-		return llvm.CreateIntCast(b, x, t)
+	return castInt(b, x, typ)
+}
+
+func castInt(b Builder, x llvm.Value, typ Type) llvm.Value {
+	xsize := b.Prog.td.TypeAllocSize(x.Type())
+	size := b.Prog.td.TypeAllocSize(typ.ll)
+	if xsize > size {
+		return b.impl.CreateTrunc(x, typ.ll, "")
+	} else if typ.kind == vkUnsigned {
+		return b.impl.CreateZExt(x, typ.ll, "")
+	} else {
+		return b.impl.CreateSExt(x, typ.ll, "")
 	}
-	return llvm.CreateTrunc(b, x, t)
+}
+
+func castFloat(b Builder, x llvm.Value, typ Type) llvm.Value {
+	xsize := b.Prog.td.TypeAllocSize(x.Type())
+	size := b.Prog.td.TypeAllocSize(typ.ll)
+	if xsize > size {
+		return b.impl.CreateFPTrunc(x, typ.ll, "")
+	} else {
+		return b.impl.CreateFPExt(x, typ.ll, "")
+	}
 }
 
 func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
@@ -1245,12 +1250,12 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 			conv := func(v llvm.Value) llvm.Value {
 				switch kind {
 				case types.Float32:
-					v = castInt(b.impl, v, b.Prog.tyInt32())
+					v = castInt(b, v, b.Prog.Type(types.Typ[types.Int32], InC))
 					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
 				case types.Float64:
 					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
 				default:
-					v = castInt(b.impl, v, assertedTyp.ll)
+					v = castInt(b, v, assertedTyp)
 				}
 				return v
 			}

@@ -57,7 +57,7 @@ _llgo_0:
   %9 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @2, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %9)
   %10 = call i8 @main.mask_shl8u(i8 127, i64 5)
-  %11 = sext i8 %10 to i64
+  %11 = zext i8 %10 to i64
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %11)
   %12 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %12)
@@ -67,7 +67,7 @@ _llgo_0:
   %15 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @4, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %15)
   %16 = call i8 @main.mask_shl8u(i8 127, i64 16)
-  %17 = sext i8 %16 to i64
+  %17 = zext i8 %16 to i64
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %17)
   %18 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @5, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %18)
@@ -81,7 +81,7 @@ _llgo_0:
   %23 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @7, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %23)
   %24 = call i8 @main.mask_shr8u(i8 127, i64 5)
-  %25 = sext i8 %24 to i64
+  %25 = zext i8 %24 to i64
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %25)
   %26 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @8, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %26)
