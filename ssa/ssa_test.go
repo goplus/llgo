@@ -446,7 +446,7 @@ func TestUnOp(t *testing.T) {
 	b := fn.MakeBody(1)
 	ptr := fn.Param(0)
 	val := b.UnOp(token.MUL, ptr)
-	val2 := b.BinOp(token.SHR, val, prog.Val(1))
+	val2 := b.BinOp(token.XOR, val, prog.Val(1))
 	b.Store(ptr, val2)
 	b.Return(val2)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
@@ -455,7 +455,7 @@ source_filename = "foo/bar"
 define i64 @fn(ptr %0) {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
-  %2 = ashr i64 %1, 1
+  %2 = xor i64 %1, 1
   store i64 %2, ptr %0, align 4
   ret i64 %2
 }

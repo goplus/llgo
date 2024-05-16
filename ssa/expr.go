@@ -320,20 +320,36 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			}
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
-		if op == token.AND_NOT {
+		switch op {
+		case token.AND_NOT:
 			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
-		}
-		kind := x.kind
-		llop := logicOpToLLVM[op-logicOpBase]
-		if op == token.SHR && kind == vkUnsigned {
-			llop = llvm.LShr // Logical Shift Right
-		}
-		if op == token.SHL || op == token.SHR {
-			if b.Prog.SizeOf(x.Type) != b.Prog.SizeOf(y.Type) {
+		case token.SHL, token.SHR:
+			if y.kind == vkSigned {
+				check := Expr{b.impl.CreateICmp(llvm.IntSLT, y.impl, llvm.ConstInt(y.ll, 0, false), ""), b.Prog.Bool()}
+				b.InlineCall(b.Func.Pkg.rtFunc("CheckRuntimeError"), check, b.Str("negative shift amount"))
+			}
+			xsize, ysize := b.Prog.SizeOf(x.Type), b.Prog.SizeOf(y.Type)
+			if xsize != ysize {
 				y = b.Convert(x.Type, y)
 			}
+			overflows := b.impl.CreateICmp(llvm.IntUGE, y.impl, llvm.ConstInt(y.ll, xsize*8, false), "")
+			xzero := llvm.ConstInt(x.ll, 0, false)
+			if op == token.SHL {
+				rhs := b.impl.CreateShl(x.impl, y.impl, "")
+				return Expr{b.impl.CreateSelect(overflows, xzero, rhs, ""), x.Type}
+			} else {
+				if x.kind == vkSigned {
+					rhs := b.impl.CreateSelect(overflows, llvm.ConstInt(y.ll, 8*xsize-1, false), y.impl, "")
+					return Expr{b.impl.CreateAShr(x.impl, rhs, ""), x.Type}
+				} else {
+					rsh := b.impl.CreateLShr(x.impl, y.impl, "")
+					return Expr{b.impl.CreateSelect(overflows, xzero, rsh, ""), x.Type}
+				}
+			}
+		default:
+			llop := logicOpToLLVM[op-logicOpBase]
+			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 		}
-		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
 		tret := b.Prog.Bool()
 		kind := x.kind
