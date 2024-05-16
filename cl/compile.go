@@ -152,6 +152,10 @@ type context struct {
 	phis   []func()
 }
 
+func (p *context) inMain(instr ssa.Instruction) bool {
+	return instr.Parent().Name() == "main"
+}
+
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
 	if tn.IsAlias() { // don't need to compile alias type
@@ -235,7 +239,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
 		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
-		if debugInstr {
+		if debugInstr && sig != nil && sig.Recv() != nil {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig)
 		}
 	}
@@ -244,10 +248,13 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function, call bool)
 			argc := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int32])
 			argv := types.NewParam(token.NoPos, pkgTypes, "", argvTy)
 			params := types.NewTuple(argc, argv)
-			sig = types.NewSignatureType(nil, nil, nil, params, nil, false)
+			ret := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int])
+			results := types.NewTuple(ret)
+			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
 	}
+
 	if nblk := len(f.Blocks); nblk > 0 {
 		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
 		p.inits = append(p.inits, func() {
@@ -771,6 +778,10 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 			for i, r := range v.Results {
 				results[i] = p.compileValue(b, r)
 			}
+		}
+		if p.inMain(instr) {
+			results = make([]llssa.Expr, 1)
+			results[0] = p.prog.IntVal(0, p.prog.Int())
 		}
 		b.Return(results...)
 	case *ssa.If:
