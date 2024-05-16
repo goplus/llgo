@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/chore/llpyg/pysig"
 	"github.com/goplus/llgo/ssa"
 )
 
@@ -109,12 +110,12 @@ func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
 	if len(name) == 0 || name[0] == '_' {
 		return
 	}
-	params, variadic, skip := ctx.genParams(pkg, symSig)
-	if skip {
+	if symSig == "<NULL>" {
 		// TODO(xsw): don't skip any func
 		log.Println("skip func:", name, symSig)
 		return
 	}
+	params, variadic := ctx.genParams(pkg, symSig)
 	name = genName(name, -1)
 	sig := types.NewSignatureType(nil, nil, nil, params, ctx.ret, variadic)
 	fn := pkg.NewFuncDecl(token.NoPos, name, sig)
@@ -125,43 +126,32 @@ func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
 	// fn.BodyStart(pkg).End()
 }
 
-func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, bool, bool) {
-	if sig == "<NULL>" {
-		return nil, false, true
+func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, bool) {
+	args := pysig.Parse(sig)
+	if len(args) == 0 {
+		return nil, false
 	}
-	sig = strings.TrimSuffix(strings.TrimPrefix(sig, "("), ")")
-	if sig == "" { // empty params
-		return nil, false, false
-	}
-	parts := strings.Split(sig, ",")
-	n := len(parts)
+	n := len(args)
 	objPtr := ctx.objPtr
 	list := make([]*types.Var, 0, n)
 	for i := 0; i < n; i++ {
-		part := strings.TrimSpace(parts[i])
-		if part == "/" {
+		name := args[i].Name
+		if name == "/" {
 			continue
 		}
-		if part == "*" {
+		if name == "*" {
 			break
 		}
-		if strings.HasPrefix(part, "*") {
-			if part[1] != '*' {
+		if strings.HasPrefix(name, "*") {
+			if name[1] != '*' {
 				list = append(list, ssa.VArg())
-				return types.NewTuple(list...), true, false
+				return types.NewTuple(list...), true
 			}
-			return types.NewTuple(list...), false, false
+			return types.NewTuple(list...), false
 		}
-		pos := strings.IndexByte(part, '=')
-		if pos >= 0 {
-			if strings.HasPrefix(part[pos+1:], "<") { // skip complex default value
-				return nil, false, true
-			}
-			part = part[:pos]
-		}
-		list = append(list, pkg.NewParam(0, genName(part, 0), objPtr))
+		list = append(list, pkg.NewParam(0, genName(name, 0), objPtr))
 	}
-	return types.NewTuple(list...), false, false
+	return types.NewTuple(list...), false
 }
 
 func genName(name string, idxDontTitle int) string {
