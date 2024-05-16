@@ -1386,6 +1386,50 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
+	case "print", "println":
+		ln := fn == "println"
+		ret.Type = b.Prog.Void()
+		for i, arg := range args {
+			if ln && i > 0 {
+				b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str(" "))
+			}
+			var fn string
+			var typ types.Type
+			switch arg.kind {
+			case vkBool:
+				fn = "PrintBool"
+			case vkSigned:
+				fn = "PrintInt"
+				typ = types.Typ[types.Int64]
+			case vkUnsigned:
+				fn = "PrintUint"
+				typ = types.Typ[types.Uint64]
+			case vkFloat:
+				fn = "PrintFloat"
+				typ = types.Typ[types.Float64]
+			case vkSlice:
+				fn = "PrintSlice"
+			case vkPtr, vkFuncPtr, vkFuncDecl, vkClosure, vkPyVarRef, vkPyFuncRef:
+				fn = "PrintPointer"
+				typ = types.Typ[types.UnsafePointer]
+			case vkString:
+				fn = "PrintString"
+			case vkInterface:
+				fn = "PrintIface"
+			// case vkComplex:
+			// 	fn = "PrintComplex"
+			default:
+				panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
+			}
+			if typ != nil && typ != arg.raw.Type {
+				arg = b.Convert(b.Prog.Type(typ, InGo), arg)
+			}
+			b.InlineCall(b.Func.Pkg.rtFunc(fn), arg)
+		}
+		if ln {
+			b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str("\n"))
+		}
+		return
 	}
 	panic("todo")
 }

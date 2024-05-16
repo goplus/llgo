@@ -47,6 +47,9 @@ const (
 	vkPyVarRef
 	vkTuple
 	vkSlice
+	vkArray
+	vkMap
+	vkInterface
 	vkPhisExpr = -1
 )
 
@@ -240,11 +243,11 @@ func (p Program) toType(raw types.Type) Type {
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
-		return &aType{p.rtIface(), typ, vkInvalid}
+		return &aType{p.rtIface(), typ, vkInterface}
 	case *types.Slice:
 		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:
-		return &aType{p.rtMap(), typ, vkInvalid}
+		return &aType{p.rtMap(), typ, vkMap}
 	case *types.Struct:
 		ll, kind := p.toLLVMStruct(t)
 		return &aType{ll, typ, kind}
@@ -254,7 +257,7 @@ func (p Program) toType(raw types.Type) Type {
 		return &aType{p.toLLVMFuncPtr(t), typ, vkFuncPtr}
 	case *types.Array:
 		elem := p.rawType(t.Elem())
-		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkInvalid}
+		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkArray}
 	case *types.Chan:
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", typ))
