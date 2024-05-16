@@ -25,5 +25,5 @@ func main() {
 	data = append(data, "def"...)
 	println(data)
 	var i any = 100
-	println(true, 100, -100, uint(100), int32(-100), 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
+	println(true, 100, -100, uint(255), int32(-100), 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
 }
