@@ -209,7 +209,7 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 				dir, lib := filepath.Split(linkFile)
 				command := " -l " + lib
 				if dir != "" {
-					command += " -L " + dir
+					command += " -L " + dir[:len(dir)-1]
 				}
 				if isSingleLinkFile(pkg.ExportFile) {
 					pkg.ExportFile = command + " " + pkg.ExportFile

@@ -46,7 +46,7 @@ See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for 
 
 You can import a Python library in LLGo!
 
-And you can import any Python library into `llgo` through a program called `llpyg` (See [Development tools](#development-tools)). The currently imported libraries include:
+And you can import any Python library into `llgo` through a program called `llpyg` (see [Development tools](#development-tools)). The currently imported libraries include:
 
 * [sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
 * [os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
