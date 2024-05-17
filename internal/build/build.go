@@ -371,6 +371,7 @@ var (
 		"-x":         false, // -x: print the commands
 		"-tags":      true,  // -tags 'tag,list': a space-separated list of build tags to consider satisfied during the build
 		"-pkgdir":    true,  // -pkgdir dir: install and load all packages from dir instead of the usual locations
+		"-ldflags":   true,  // --ldflags 'flag list': arguments to pass on each go tool link invocation
 	}
 )
 
@@ -403,7 +404,11 @@ func SkipFlagArgs(args []string) int {
 }
 
 func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
-	if hasarg, ok := swflags[arg]; ok {
+	if pos := strings.IndexByte(arg, '='); pos > 0 {
+		if verbose != nil && arg == "-v=true" {
+			*verbose = true
+		}
+	} else if hasarg, ok := swflags[arg]; ok {
 		if hasarg {
 			*i++
 		} else if verbose != nil && arg == "-v" {
