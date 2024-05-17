@@ -35,7 +35,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -46,7 +46,7 @@ _llgo_0:
   %4 = extractvalue { ptr, i32 } %2, 1
   call void @main.check(i32 %4)
   %5 = call i32 @sqlite3_close(ptr %3)
-  ret void
+  ret i32 0
 }
 
 declare ptr @sqlite3_errstr(i32)

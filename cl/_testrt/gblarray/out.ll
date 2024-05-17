@@ -50,7 +50,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -63,7 +63,7 @@ _llgo_0:
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 0
   %7 = load i64, ptr %6, align 4
   %8 = call i32 (ptr, ...) @printf(ptr @0, i64 %5, i64 %7)
-  ret void
+  ret i32 0
 }
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)

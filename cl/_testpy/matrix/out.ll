@@ -27,7 +27,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   call void @Py_Initialize()
   store i32 %0, ptr @__llgo_argc, align 4
@@ -95,7 +95,7 @@ _llgo_0:
   %60 = call ptr @PyObject_Str(ptr %53)
   %61 = call ptr @PyUnicode_AsUTF8(ptr %60)
   %62 = call i32 (ptr, ...) @printf(ptr @2, ptr %61)
-  ret void
+  ret i32 0
 }
 
 declare void @"github.com/goplus/llgo/py/numpy.init"()

@@ -28,7 +28,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -48,7 +48,7 @@ _llgo_0:
   store ptr null, ptr %8, align 8
   %9 = load { ptr, ptr }, ptr %6, align 8
   call void @main.callback(ptr @1, { ptr, ptr } %9)
-  ret void
+  ret i32 0
 }
 
 define void @main.print(ptr %0) {
