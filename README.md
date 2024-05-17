@@ -150,15 +150,15 @@ LLGo can easily import any libraries from the C ecosystem. Currently, this impor
 
 The currently imported libraries include:
 
-* [llama2.c](https://pkg.go.dev/github.com/goplus/llgo/x/llama2)
-* [cjson](https://pkg.go.dev/github.com/goplus/llgo/x/cjson)
-* [sqlite](https://pkg.go.dev/github.com/goplus/llgo/x/sqlite)
+* [llama2.c](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
+* [cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
+* [sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
 
 Here are some examples related to them:
 
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
-* [mkjson](x/cjson/_demo/mkjson/mkjson.go): create a json object and print it
-* [sqlitedemo](x/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
+* [mkjson](c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
+* [sqlitedemo](c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
 
 
 ## Go syntax support

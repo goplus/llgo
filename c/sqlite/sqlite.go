@@ -22,12 +22,6 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
-type (
-	Char    = c.Char
-	Int     = c.Int
-	Pointer = c.Pointer
-)
-
 const (
 	LLGoPackage = "link: sqlite3"
 )
@@ -44,7 +38,7 @@ type Stmt struct {
 
 // -----------------------------------------------------------------------------
 
-type Errno Int
+type Errno c.Int
 
 const (
 	OK Errno = 0 // Successful result
@@ -83,10 +77,10 @@ const (
 )
 
 // llgo:link (Errno).Errstr C.sqlite3_errstr
-func (err Errno) Errstr() *Char { return nil }
+func (err Errno) Errstr() *c.Char { return nil }
 
 // llgo:link (*Sqlite3).Errmsg C.sqlite3_errmsg
-func (db *Sqlite3) Errmsg() *Char { return nil }
+func (db *Sqlite3) Errmsg() *c.Char { return nil }
 
 // llgo:link (*Sqlite3).Errcode C.sqlite3_errcode
 func (db *Sqlite3) Errcode() Errno { return 0 }
@@ -97,13 +91,13 @@ func (db *Sqlite3) ExtendedErrcode() Errno { return 0 }
 // -----------------------------------------------------------------------------
 
 //go:linkname doOpen C.sqlite3_open
-func doOpen(filename *Char, ppDb **Sqlite3) Errno
+func doOpen(filename *c.Char, ppDb **Sqlite3) Errno
 
 //go:linkname doOpenV2 C.sqlite3_open_v2
-func doOpenV2(filename *Char, ppDb **Sqlite3, flags OpenFlags, zVfs *Char) Errno
+func doOpenV2(filename *c.Char, ppDb **Sqlite3, flags OpenFlags, zVfs *c.Char) Errno
 
 // OpenFlags represents SQLite open flags.
-type OpenFlags Int
+type OpenFlags c.Int
 
 const (
 	OpenReadOnly      OpenFlags = 0x00000001
@@ -132,7 +126,7 @@ const (
 
 // Opening A New Database Connection
 // filename: Database filename (UTF-8)
-func Open(filename *Char) (db *Sqlite3, err Errno) {
+func Open(filename *c.Char) (db *Sqlite3, err Errno) {
 	err = doOpen(filename, &db)
 	return
 }
@@ -140,7 +134,7 @@ func Open(filename *Char) (db *Sqlite3, err Errno) {
 // Opening A New Database Connection
 // filename: Database filename (UTF-8)
 // zVfs: Name of VFS module to use
-func OpenV2(filename *Char, flags OpenFlags, zVfs *Char) (db *Sqlite3, err Errno) {
+func OpenV2(filename *c.Char, flags OpenFlags, zVfs *c.Char) (db *Sqlite3, err Errno) {
 	err = doOpenV2(filename, &db, flags, zVfs)
 	return
 }
@@ -158,22 +152,22 @@ func (db *Sqlite3) CloseV2() Errno { return 0 }
 // -----------------------------------------------------------------------------
 
 // llgo:link (*Sqlite3).doPrepare C.sqlite3_prepare
-func (*Sqlite3) doPrepare(*Char, Int, **Stmt, **Char) Errno {
+func (*Sqlite3) doPrepare(*c.Char, c.Int, **Stmt, **c.Char) Errno {
 	return 0
 }
 
 // llgo:link (*Sqlite3).doPrepareV2 C.sqlite3_prepare_v2
-func (*Sqlite3) doPrepareV2(*Char, Int, **Stmt, **Char) Errno {
+func (*Sqlite3) doPrepareV2(*c.Char, c.Int, **Stmt, **c.Char) Errno {
 	return 0
 }
 
 // llgo:link (*Sqlite3).doPrepareV3 C.sqlite3_prepare_v3
-func (*Sqlite3) doPrepareV3(*Char, Int, PrepareFlags, **Stmt, **Char) Errno {
+func (*Sqlite3) doPrepareV3(*c.Char, c.Int, PrepareFlags, **Stmt, **c.Char) Errno {
 	return 0
 }
 
 // PrepareFlags represents SQLite prepare flags.
-type PrepareFlags Int
+type PrepareFlags c.Int
 
 const (
 	PreparePersistent PrepareFlags = 0x01
@@ -183,17 +177,17 @@ const (
 
 // Compiling An SQL Statement
 // tail: Pointer to unused portion of sql
-func (db *Sqlite3) Prepare(sql string, tail **Char) (stmt *Stmt, err Errno) {
+func (db *Sqlite3) Prepare(sql string, tail **c.Char) (stmt *Stmt, err Errno) {
 	err = db.doPrepare(c.GoStringData(sql), c.Int(len(sql)), &stmt, tail)
 	return
 }
 
-func (db *Sqlite3) PrepareV2(sql string, tail **Char) (stmt *Stmt, err Errno) {
+func (db *Sqlite3) PrepareV2(sql string, tail **c.Char) (stmt *Stmt, err Errno) {
 	err = db.doPrepareV2(c.GoStringData(sql), c.Int(len(sql)), &stmt, tail)
 	return
 }
 
-func (db *Sqlite3) PrepareV3(sql string, flags PrepareFlags, tail **Char) (stmt *Stmt, err Errno) {
+func (db *Sqlite3) PrepareV3(sql string, flags PrepareFlags, tail **c.Char) (stmt *Stmt, err Errno) {
 	err = db.doPrepareV3(c.GoStringData(sql), c.Int(len(sql)), flags, &stmt, tail)
 	return
 }
@@ -206,10 +200,10 @@ func (stmt *Stmt) Close() Errno { return 0 }
 // -----------------------------------------------------------------------------
 
 // llgo:link (*Stmt).BindInt C.sqlite3_bind_int
-func (*Stmt) BindInt(idx Int, val Int) Errno { return 0 }
+func (*Stmt) BindInt(idx c.Int, val c.Int) Errno { return 0 }
 
 // llgo:link (*Stmt).BindInt64 C.sqlite3_bind_int64
-func (*Stmt) BindInt64(idx Int, val int64) Errno { return 0 }
+func (*Stmt) BindInt64(idx c.Int, val int64) Errno { return 0 }
 
 /*
 const (
@@ -219,7 +213,9 @@ const (
 */
 
 // llgo:link (*Stmt).BindText C.sqlite3_bind_text
-func (*Stmt) BindText(idx Int, val *Char, nByte Int, destructor func(Pointer)) Errno { return 0 }
+func (*Stmt) BindText(idx c.Int, val *c.Char, nByte c.Int, destructor func(c.Pointer)) Errno {
+	return 0
+}
 
 // -----------------------------------------------------------------------------
 
@@ -238,19 +234,19 @@ func (*Stmt) Step() Errno { return 0 }
 // -----------------------------------------------------------------------------
 
 // llgo:link (*Stmt).ColumnCount C.sqlite3_column_count
-func (stmt *Stmt) ColumnCount() Int { return 0 }
+func (stmt *Stmt) ColumnCount() c.Int { return 0 }
 
 // llgo:link (*Stmt).ColumnName C.sqlite3_column_name
-func (stmt *Stmt) ColumnName(idx Int) *Char { return nil }
+func (stmt *Stmt) ColumnName(idx c.Int) *c.Char { return nil }
 
 // llgo:link (*Stmt).ColumnInt C.sqlite3_column_int
-func (stmt *Stmt) ColumnInt(idx Int) Int { return 0 }
+func (stmt *Stmt) ColumnInt(idx c.Int) c.Int { return 0 }
 
 // llgo:link (*Stmt).ColumnInt64 C.sqlite3_column_int64
-func (stmt *Stmt) ColumnInt64(idx Int) int64 { return 0 }
+func (stmt *Stmt) ColumnInt64(idx c.Int) int64 { return 0 }
 
 // llgo:link (*Stmt).ColumnText C.sqlite3_column_text
-func (stmt *Stmt) ColumnText(idx Int) *Char { return nil }
+func (stmt *Stmt) ColumnText(idx c.Int) *c.Char { return nil }
 
 // -----------------------------------------------------------------------------
 
@@ -258,8 +254,8 @@ func (stmt *Stmt) ColumnText(idx Int) *Char { return nil }
 //
 // llgo:link (*Sqlite3).Exec C.sqlite3_exec
 func (*Sqlite3) Exec(
-	sql *Char, callback func(arg Pointer, resultCols Int, colVals, colNames **Char) Int,
-	arg Pointer, errmsg **Char) Errno {
+	sql *c.Char, callback func(arg c.Pointer, resultCols c.Int, colVals, colNames **c.Char) c.Int,
+	arg c.Pointer, errmsg **c.Char) Errno {
 	return 0
 }
 
