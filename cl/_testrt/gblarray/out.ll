@@ -3,9 +3,9 @@ source_filename = "main"
 
 %"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, i32, i32 }
 
-@main.basicTypes = global ptr null
+@main.basicTypes = global [25 x ptr] undef
 @"main.init$guard" = global ptr null
-@main.sizeBasicTypes = global ptr null
+@main.sizeBasicTypes = global [25 x i64] undef
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [20 x i8] c"Kind: %d, Size: %d\0A\00", align 1

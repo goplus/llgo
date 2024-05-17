@@ -60,6 +60,7 @@ type NamedConst = *aNamedConst
 
 type aGlobal struct {
 	Expr
+	array bool
 }
 
 // A Global is a named Value holding the address of a package-level
@@ -72,8 +73,17 @@ func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 		return v
 	}
 	t := p.Prog.Type(typ, bg)
-	gbl := llvm.AddGlobal(p.mod, t.ll, name)
-	ret := &aGlobal{Expr{gbl, t}}
+	var gbl llvm.Value
+	var array bool
+	if t.kind == vkPtr && p.Prog.Elem(t).kind == vkArray {
+		typ := p.Prog.Elem(t).ll
+		gbl = llvm.AddGlobal(p.mod, typ, name)
+		gbl.SetInitializer(llvm.Undef(typ))
+		array = true
+	} else {
+		gbl = llvm.AddGlobal(p.mod, t.ll, name)
+	}
+	ret := &aGlobal{Expr{gbl, t}, array}
 	p.vars[name] = ret
 	return ret
 }
@@ -85,6 +95,9 @@ func (p Package) VarOf(name string) Global {
 
 // Init initializes the global variable with the given value.
 func (g Global) Init(v Expr) {
+	if g.array && v.kind == vkPtr {
+		return
+	}
 	g.impl.SetInitializer(v.impl)
 }
 

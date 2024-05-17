@@ -1,7 +1,7 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@main.format = global ptr null
+@main.format = global [10 x i8] undef
 @"main.init$guard" = global ptr null
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
