@@ -85,8 +85,9 @@ func main() {
 		switch sym.Type {
 		case "builtin_function_or_method", "function", "ufunc", "method-wrapper":
 			ctx.genFunc(pkg, sym)
-		case "str", "float", "bool", "type", "dict", "tuple", "list", "object",
-			"module", "int", "set", "frozenset", "flags", "bool_": // skip
+		case "str", "float", "bool", "type", "dict", "tuple", "list", "object", "module",
+			"int", "set", "frozenset", "flags", "bool_", "pybind11_type", "layout",
+			"memory_format", "qscheme", "dtype", "tensortype": // skip
 		default:
 			t := sym.Type
 			if len(t) > 0 && (t[0] >= 'a' && t[0] <= 'z') && !strings.HasSuffix(t, "_info") {
