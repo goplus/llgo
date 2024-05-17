@@ -45,3 +45,8 @@ func (u *Object) CStrAndLen() (*c.Char, uintptr) { return nil, 0 }
 //
 // llgo:link (*Object).CStr C.PyUnicode_AsUTF8
 func (u *Object) CStr() *c.Char { return nil }
+
+// Same as CStr. Provided for Go+.
+//
+// llgo:link (*Object).Cstr C.PyUnicode_AsUTF8
+func (u *Object) Cstr() *c.Char { return nil }
