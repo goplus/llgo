@@ -63,7 +63,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -152,7 +152,7 @@ _llgo_8:                                          ; preds = %_llgo_7
   br label %_llgo_7
 
 _llgo_9:                                          ; preds = %_llgo_7
-  ret void
+  ret i32 0
 }
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)

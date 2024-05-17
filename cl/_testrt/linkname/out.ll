@@ -26,7 +26,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -34,7 +34,7 @@ _llgo_0:
   call void @main.init()
   call void @"github.com/goplus/llgo/cl/internal/linktarget.F"(ptr @0, ptr @1, ptr @2, ptr @3)
   call void @"github.com/goplus/llgo/cl/internal/linktarget.F"(ptr @4, ptr @5, ptr @6, ptr @7)
-  ret void
+  ret i32 0
 }
 
 declare void @"github.com/goplus/llgo/cl/internal/linktarget.F"(ptr, ptr, ptr, ptr)

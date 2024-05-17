@@ -237,7 +237,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -298,7 +298,7 @@ _llgo_0:
   call void @main.cvt32to64(i32 0, i64 0)
   call void @main.cvt32to64(i32 2147483647, i64 2147483647)
   call void @main.cvtUinptr(i32 1024, i64 1024)
-  ret void
+  ret i32 0
 }
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr, i64)

@@ -20,7 +20,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -47,7 +47,7 @@ _llgo_0:
   %13 = extractvalue { ptr, ptr } %12, 1
   %14 = extractvalue { ptr, ptr } %12, 0
   call void %14(ptr %13)
-  ret void
+  ret i32 0
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()

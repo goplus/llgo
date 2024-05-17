@@ -32,7 +32,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   call void @Py_Initialize()
   store i32 %0, ptr @__llgo_argc, align 4
@@ -48,7 +48,7 @@ _llgo_0:
   %8 = call i32 (ptr, ...) @printf(ptr @0, double %7)
   %9 = call ptr @PyUnicode_AsUTF8(ptr %6)
   %10 = call i32 (ptr, ...) @printf(ptr @1, ptr %9)
-  ret void
+  ret i32 0
 }
 
 declare void @"github.com/goplus/llgo/py/math.init"()

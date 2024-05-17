@@ -22,7 +22,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -43,7 +43,7 @@ _llgo_0:
   store %"github.com/goplus/llgo/internal/runtime.iface" %11, ptr %9, align 8
   %12 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %2, i64 16, i64 3, i64 0, i64 3, i64 3)
   call void @main.test(%"github.com/goplus/llgo/internal/runtime.Slice" %12)
-  ret void
+  ret i32 0
 }
 
 define void @main.test(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {

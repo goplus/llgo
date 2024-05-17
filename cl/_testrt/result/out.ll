@@ -45,7 +45,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
@@ -69,7 +69,7 @@ _llgo_0:
   %17 = extractvalue { ptr, ptr } %15, 0
   %18 = call i64 %17(ptr %16, i64 100, i64 200)
   %19 = call i32 (ptr, ...) @printf(ptr @2, i64 %18, i64 %14)
-  ret void
+  ret i32 0
 }
 
 define i64 @"main.add$1"(i64 %0, i64 %1) {
