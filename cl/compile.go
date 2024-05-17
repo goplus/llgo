@@ -241,7 +241,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
 		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
-		if debugInstr {
+		if debugInstr && sig != nil && sig.Recv() != nil {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
 	}
@@ -788,7 +788,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		}
 		if p.inMain(instr) {
 			results = make([]llssa.Expr, 1)
-			results[0] = p.prog.IntVal(0, p.prog.Int())
+			results[0] = p.prog.IntVal(0, p.prog.CInt())
 		}
 		b.Return(results...)
 	case *ssa.If:
