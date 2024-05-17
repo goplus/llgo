@@ -292,7 +292,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 -100)
   %129 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @37, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %129)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 100)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 255)
   %130 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @38, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %130)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 -100)

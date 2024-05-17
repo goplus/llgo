@@ -322,7 +322,7 @@ _llgo_15:                                         ; preds = %_llgo_13
   br i1 %40, label %_llgo_16, label %_llgo_17
 
 _llgo_16:                                         ; preds = %_llgo_15
-  %41 = sext i8 %39 to i64
+  %41 = zext i8 %39 to i64
   call void @main.printuint(i64 %41)
   br label %_llgo_1
 
@@ -335,7 +335,7 @@ _llgo_17:                                         ; preds = %_llgo_15
   br i1 %46, label %_llgo_18, label %_llgo_19
 
 _llgo_18:                                         ; preds = %_llgo_17
-  %47 = sext i16 %45 to i64
+  %47 = zext i16 %45 to i64
   call void @main.printuint(i64 %47)
   br label %_llgo_1
 
@@ -348,7 +348,7 @@ _llgo_19:                                         ; preds = %_llgo_17
   br i1 %52, label %_llgo_20, label %_llgo_21
 
 _llgo_20:                                         ; preds = %_llgo_19
-  %53 = sext i32 %51 to i64
+  %53 = zext i32 %51 to i64
   call void @main.printuint(i64 %53)
   br label %_llgo_1
 

@@ -320,20 +320,36 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			}
 		}
 	case isLogicOp(op): // op: & | ^ << >> &^
-		if op == token.AND_NOT {
+		switch op {
+		case token.AND_NOT:
 			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
-		}
-		kind := x.kind
-		llop := logicOpToLLVM[op-logicOpBase]
-		if op == token.SHR && kind == vkUnsigned {
-			llop = llvm.LShr // Logical Shift Right
-		}
-		if op == token.SHL || op == token.SHR {
-			if b.Prog.SizeOf(x.Type) != b.Prog.SizeOf(y.Type) {
+		case token.SHL, token.SHR:
+			if y.kind == vkSigned {
+				check := Expr{b.impl.CreateICmp(llvm.IntSLT, y.impl, llvm.ConstInt(y.ll, 0, false), ""), b.Prog.Bool()}
+				b.InlineCall(b.Func.Pkg.rtFunc("CheckRuntimeError"), check, b.Str("negative shift amount"))
+			}
+			xsize, ysize := b.Prog.SizeOf(x.Type), b.Prog.SizeOf(y.Type)
+			if xsize != ysize {
 				y = b.Convert(x.Type, y)
 			}
+			overflows := b.impl.CreateICmp(llvm.IntUGE, y.impl, llvm.ConstInt(y.ll, xsize*8, false), "")
+			xzero := llvm.ConstInt(x.ll, 0, false)
+			if op == token.SHL {
+				rhs := b.impl.CreateShl(x.impl, y.impl, "")
+				return Expr{b.impl.CreateSelect(overflows, xzero, rhs, ""), x.Type}
+			} else {
+				if x.kind == vkSigned {
+					rhs := b.impl.CreateSelect(overflows, llvm.ConstInt(y.ll, 8*xsize-1, false), y.impl, "")
+					return Expr{b.impl.CreateAShr(x.impl, rhs, ""), x.Type}
+				} else {
+					rsh := b.impl.CreateLShr(x.impl, y.impl, "")
+					return Expr{b.impl.CreateSelect(overflows, xzero, rsh, ""), x.Type}
+				}
+			}
+		default:
+			llop := logicOpToLLVM[op-logicOpBase]
+			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 		}
-		return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 	case isPredOp(op): // op: == != < <= < >=
 		tret := b.Prog.Bool()
 		kind := x.kind
@@ -1043,7 +1059,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	case *types.Basic:
 		switch typ.Kind() {
 		case types.Uintptr:
-			ret.impl = castInt(b.impl, x.impl, t.ll)
+			ret.impl = castUintptr(b, x.impl, t)
 			return
 		case types.UnsafePointer:
 			ret.impl = castPtr(b.impl, x.impl, t.ll)
@@ -1051,19 +1067,10 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 		}
 		switch xtyp := x.RawType().Underlying().(type) {
 		case *types.Basic:
-			size := b.Prog.SizeOf(t)
-			xsize := b.Prog.SizeOf(x.Type)
 			if typ.Info()&types.IsInteger != 0 {
 				// int <- int/float
 				if xtyp.Info()&types.IsInteger != 0 {
-					// if xsize > size {
-					// 	ret.impl = b.impl.CreateTrunc(x.impl, t.ll, "")
-					// } else if typ.Info()&types.IsUnsigned != 0 {
-					// 	ret.impl = b.impl.CreateZExt(x.impl, t.ll, "")
-					// } else {
-					// 	ret.impl = b.impl.CreateSExt(x.impl, t.ll, "")
-					// }
-					ret.impl = castInt(b.impl, x.impl, t.ll)
+					ret.impl = castInt(b, x.impl, t)
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
 					if typ.Info()&types.IsUnsigned != 0 {
@@ -1083,11 +1090,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
-					if xsize > size {
-						ret.impl = b.impl.CreateFPTrunc(x.impl, t.ll, "")
-					} else {
-						ret.impl = b.impl.CreateFPExt(x.impl, t.ll, "")
-					}
+					ret.impl = castFloat(b, x.impl, t)
 					return
 				}
 			}
@@ -1099,15 +1102,33 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	panic("todo")
 }
 
-func castInt(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
-	xt := x.Type()
-	if xt.TypeKind() == llvm.PointerTypeKind {
-		return llvm.CreatePtrToInt(b, x, t)
+func castUintptr(b Builder, x llvm.Value, typ Type) llvm.Value {
+	if x.Type().TypeKind() == llvm.PointerTypeKind {
+		return llvm.CreatePtrToInt(b.impl, x, typ.ll)
 	}
-	if xt.IntTypeWidth() <= t.IntTypeWidth() {
-		return llvm.CreateIntCast(b, x, t)
+	return castInt(b, x, typ)
+}
+
+func castInt(b Builder, x llvm.Value, typ Type) llvm.Value {
+	xsize := b.Prog.td.TypeAllocSize(x.Type())
+	size := b.Prog.td.TypeAllocSize(typ.ll)
+	if xsize > size {
+		return b.impl.CreateTrunc(x, typ.ll, "")
+	} else if typ.kind == vkUnsigned {
+		return b.impl.CreateZExt(x, typ.ll, "")
+	} else {
+		return b.impl.CreateSExt(x, typ.ll, "")
 	}
-	return llvm.CreateTrunc(b, x, t)
+}
+
+func castFloat(b Builder, x llvm.Value, typ Type) llvm.Value {
+	xsize := b.Prog.td.TypeAllocSize(x.Type())
+	size := b.Prog.td.TypeAllocSize(typ.ll)
+	if xsize > size {
+		return b.impl.CreateFPTrunc(x, typ.ll, "")
+	} else {
+		return b.impl.CreateFPExt(x, typ.ll, "")
+	}
 }
 
 func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
@@ -1229,12 +1250,12 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 			conv := func(v llvm.Value) llvm.Value {
 				switch kind {
 				case types.Float32:
-					v = castInt(b.impl, v, b.Prog.tyInt32())
+					v = castInt(b, v, b.Prog.Int32())
 					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
 				case types.Float64:
 					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
 				default:
-					v = castInt(b.impl, v, assertedTyp.ll)
+					v = castInt(b, v, assertedTyp)
 				}
 				return v
 			}
@@ -1383,7 +1404,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 						src, b.SliceData(elem), b.SliceLen(elem), b.Prog.Val(int(etSize))).impl
 					return
 				case vkString:
-					etSize := b.Prog.SizeOf(b.Prog.Type(types.Typ[types.Byte], InGo))
+					etSize := b.Prog.SizeOf(b.Prog.Byte())
 					ret.Type = src.Type
 					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
 						src, b.StringData(elem), b.StringLen(elem), b.Prog.Val(int(etSize))).impl
@@ -1399,24 +1420,24 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str(" "))
 			}
 			var fn string
-			var typ types.Type
+			var typ Type
 			switch arg.kind {
 			case vkBool:
 				fn = "PrintBool"
 			case vkSigned:
 				fn = "PrintInt"
-				typ = types.Typ[types.Int64]
+				typ = b.Prog.Int64()
 			case vkUnsigned:
 				fn = "PrintUint"
-				typ = types.Typ[types.Uint64]
+				typ = b.Prog.Uint64()
 			case vkFloat:
 				fn = "PrintFloat"
-				typ = types.Typ[types.Float64]
+				typ = b.Prog.Float64()
 			case vkSlice:
 				fn = "PrintSlice"
 			case vkPtr, vkFuncPtr, vkFuncDecl, vkClosure, vkPyVarRef, vkPyFuncRef:
 				fn = "PrintPointer"
-				typ = types.Typ[types.UnsafePointer]
+				typ = b.Prog.VoidPtr()
 			case vkString:
 				fn = "PrintString"
 			case vkInterface:
@@ -1426,8 +1447,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			default:
 				panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
 			}
-			if typ != nil && typ != arg.raw.Type {
-				arg = b.Convert(b.Prog.Type(typ, InGo), arg)
+			if typ != nil && typ != arg.Type {
+				arg = b.Convert(typ, arg)
 			}
 			b.InlineCall(b.Func.Pkg.rtFunc(fn), arg)
 		}

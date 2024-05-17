@@ -446,7 +446,7 @@ func TestUnOp(t *testing.T) {
 	b := fn.MakeBody(1)
 	ptr := fn.Param(0)
 	val := b.UnOp(token.MUL, ptr)
-	val2 := b.BinOp(token.SHR, val, prog.Val(1))
+	val2 := b.BinOp(token.XOR, val, prog.Val(1))
 	b.Store(ptr, val2)
 	b.Return(val2)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
@@ -455,9 +455,34 @@ source_filename = "foo/bar"
 define i64 @fn(ptr %0) {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
-  %2 = ashr i64 %1, 1
+  %2 = xor i64 %1, 1
   store i64 %2, ptr %0, align 4
   ret i64 %2
 }
 `)
+}
+
+func TestBasicType(t *testing.T) {
+	type typeInfo struct {
+		typ  Type
+		kind types.BasicKind
+	}
+	prog := NewProgram(nil)
+	infos := []*typeInfo{
+		{prog.Bool(), types.Bool},
+		{prog.Byte(), types.Byte},
+		{prog.Int(), types.Int},
+		{prog.Uint(), types.Uint},
+		{prog.Int32(), types.Int32},
+		{prog.Int64(), types.Int64},
+		{prog.Uint32(), types.Uint32},
+		{prog.Uint64(), types.Uint64},
+		{prog.Uintptr(), types.Uintptr},
+		{prog.VoidPtr(), types.UnsafePointer},
+	}
+	for _, info := range infos {
+		if info.typ.RawType() != types.Typ[info.kind] {
+			t.Fatal("bad type", info)
+		}
+	}
 }

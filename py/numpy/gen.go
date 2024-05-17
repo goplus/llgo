@@ -111,6 +111,102 @@ func ShowConfig(mode *py.Object) *py.Object
 //go:linkname Isfortran py.isfortran
 func Isfortran(a *py.Object) *py.Object
 
+// Return an array representing the indices of a grid.
+//
+// Compute an array where the subarrays contain index values 0, 1, ...
+// varying only along the corresponding axis.
+//
+// Parameters
+// ----------
+// dimensions : sequence of ints
+//
+//	The shape of the grid.
+//
+// dtype : dtype, optional
+//
+//	Data type of the result.
+//
+// sparse : boolean, optional
+//
+//	Return a sparse representation of the grid instead of a dense
+//	representation. Default is False.
+//
+//	.. versionadded:: 1.17
+//
+// Returns
+// -------
+// grid : one ndarray or tuple of ndarrays
+//
+//	If sparse is False:
+//	    Returns one array of grid indices,
+//	    ``grid.shape = (len(dimensions),) + tuple(dimensions)``.
+//	If sparse is True:
+//	    Returns a tuple of arrays, with
+//	    ``grid[i].shape = (1, ..., 1, dimensions[i], 1, ..., 1)`` with
+//	    dimensions[i] in the ith place
+//
+// See Also
+// --------
+// mgrid, ogrid, meshgrid
+//
+// Notes
+// -----
+// The output shape in the dense case is obtained by prepending the number
+// of dimensions in front of the tuple of dimensions, i.e. if `dimensions`
+// is a tuple “(r0, ..., rN-1)“ of length “N“, the output shape is
+// “(N, r0, ..., rN-1)“.
+//
+// The subarrays “grid[k]“ contains the N-D array of indices along the
+// “k-th“ axis. Explicitly::
+//
+//	grid[k, i0, i1, ..., iN-1] = ik
+//
+// Examples
+// --------
+// >>> grid = np.indices((2, 3))
+// >>> grid.shape
+// (2, 2, 3)
+// >>> grid[0]        # row indices
+// array([[0, 0, 0],
+//
+//	[1, 1, 1]])
+//
+// >>> grid[1]        # column indices
+// array([[0, 1, 2],
+//
+//	[0, 1, 2]])
+//
+// The indices can be used as an index into an array.
+//
+// >>> x = np.arange(20).reshape(5, 4)
+// >>> row, col = np.indices((2, 3))
+// >>> x[row, col]
+// array([[0, 1, 2],
+//
+//	[4, 5, 6]])
+//
+// Note that it would be more straightforward in the above example to
+// extract the required elements directly with “x[:2, :3]“.
+//
+// If sparse is set to true, the grid will be returned in a sparse
+// representation.
+//
+// >>> i, j = np.indices((2, 3), sparse=True)
+// >>> i.shape
+// (2, 1)
+// >>> j.shape
+// (1, 3)
+// >>> i        # row indices
+// array([[0],
+//
+//	[1]])
+//
+// >>> j        # column indices
+// array([[0, 1, 2]])
+//
+//go:linkname Indices py.indices
+func Indices(dimensions *py.Object, dtype *py.Object, sparse *py.Object) *py.Object
+
 // Construct an array by executing a function over each coordinate.
 //
 // The resulting array therefore has a value “fn(x, y, z)“ at
@@ -3458,67 +3554,6 @@ func Frexp(__llgo_va_list ...interface{}) *py.Object
 //go:linkname Gcd py.gcd
 func Gcd(__llgo_va_list ...interface{}) *py.Object
 
-// greater_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
-//
-// Return the truth value of (x1 >= x2) element-wise.
-//
-// Parameters
-// ----------
-// x1, x2 : array_like
-//
-//	Input arrays.
-//	If ``x1.shape != x2.shape``, they must be broadcastable to a common
-//	shape (which becomes the shape of the output).
-//
-// out : ndarray, None, or tuple of ndarray and None, optional
-//
-//	A location into which the result is stored. If provided, it must have
-//	a shape that the inputs broadcast to. If not provided or None,
-//	a freshly-allocated array is returned. A tuple (possible only as a
-//	keyword argument) must have length equal to the number of outputs.
-//
-// where : array_like, optional
-//
-//	This condition is broadcast over the input. At locations where the
-//	condition is True, the `out` array will be set to the ufunc result.
-//	Elsewhere, the `out` array will retain its original value.
-//	Note that if an uninitialized `out` array is created via the default
-//	``out=None``, locations within it where the condition is False will
-//	remain uninitialized.
-//
-// **kwargs
-//
-//	For other keyword-only arguments, see the
-//	:ref:`ufunc docs <ufuncs.kwargs>`.
-//
-// Returns
-// -------
-// out : bool or ndarray of bool
-//
-//	Output array, element-wise comparison of `x1` and `x2`.
-//	Typically of type bool, unless ``dtype=object`` is passed.
-//	This is a scalar if both `x1` and `x2` are scalars.
-//
-// See Also
-// --------
-// greater, less, less_equal, equal, not_equal
-//
-// Examples
-// --------
-// >>> np.greater_equal([4, 2, 1], [2, 2, 2])
-// array([ True, True, False])
-//
-// The “>=“ operator can be used as a shorthand for “np.greater_equal“
-// on ndarrays.
-//
-// >>> a = np.array([4, 2, 1])
-// >>> b = np.array([2, 2, 2])
-// >>> a >= b
-// array([ True,  True, False])
-//
-//go:linkname GreaterEqual py.greater_equal
-func GreaterEqual(__llgo_va_list ...interface{}) *py.Object
-
 // heaviside(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
 // Compute the Heaviside step function.
@@ -6203,6 +6238,70 @@ func RightShift(__llgo_va_list ...interface{}) *py.Object
 //
 //go:linkname Rint py.rint
 func Rint(__llgo_va_list ...interface{}) *py.Object
+
+// sign(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
+//
+// Returns an element-wise indication of the sign of a number.
+//
+// The `sign` function returns “-1 if x < 0, 0 if x==0, 1 if x > 0“.  nan
+// is returned for nan inputs.
+//
+// For complex inputs, the `sign` function returns
+// “sign(x.real) + 0j if x.real != 0 else sign(x.imag) + 0j“.
+//
+// complex(nan, 0) is returned for complex nan inputs.
+//
+// Parameters
+// ----------
+// x : array_like
+//
+//	Input values.
+//
+// out : ndarray, None, or tuple of ndarray and None, optional
+//
+//	A location into which the result is stored. If provided, it must have
+//	a shape that the inputs broadcast to. If not provided or None,
+//	a freshly-allocated array is returned. A tuple (possible only as a
+//	keyword argument) must have length equal to the number of outputs.
+//
+// where : array_like, optional
+//
+//	This condition is broadcast over the input. At locations where the
+//	condition is True, the `out` array will be set to the ufunc result.
+//	Elsewhere, the `out` array will retain its original value.
+//	Note that if an uninitialized `out` array is created via the default
+//	``out=None``, locations within it where the condition is False will
+//	remain uninitialized.
+//
+// **kwargs
+//
+//	For other keyword-only arguments, see the
+//	:ref:`ufunc docs <ufuncs.kwargs>`.
+//
+// Returns
+// -------
+// y : ndarray
+//
+//	The sign of `x`.
+//	This is a scalar if `x` is a scalar.
+//
+// Notes
+// -----
+// There is more than one definition of sign in common use for complex
+// numbers.  The definition used here is equivalent to :math:`x/\sqrt{x*x}`
+// which is different from a common alternative, :math:`x/|x|`.
+//
+// Examples
+// --------
+// >>> np.sign([-5., 4.5])
+// array([-1.,  1.])
+// >>> np.sign(0)
+// 0
+// >>> np.sign(5-2j)
+// (1+0j)
+//
+//go:linkname Sign py.sign
+func Sign(__llgo_va_list ...interface{}) *py.Object
 
 // signbit(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature, extobj])
 //
@@ -9017,6 +9116,130 @@ func GetArrayWrap(__llgo_va_list ...interface{}) *py.Object
 //go:linkname BroadcastShapes py.broadcast_shapes
 func BroadcastShapes(__llgo_va_list ...interface{}) *py.Object
 
+// Return a 2-D array with ones on the diagonal and zeros elsewhere.
+//
+// Parameters
+// ----------
+// N : int
+//
+//	Number of rows in the output.
+//
+// M : int, optional
+//
+//	Number of columns in the output. If None, defaults to `N`.
+//
+// k : int, optional
+//
+//	Index of the diagonal: 0 (the default) refers to the main diagonal,
+//	a positive value refers to an upper diagonal, and a negative value
+//	to a lower diagonal.
+//
+// dtype : data-type, optional
+//
+//	Data-type of the returned array.
+//
+// order : {'C', 'F'}, optional
+//
+//	Whether the output should be stored in row-major (C-style) or
+//	column-major (Fortran-style) order in memory.
+//
+//	.. versionadded:: 1.14.0
+//
+// like : array_like, optional
+//
+//	Reference object to allow the creation of arrays which are not
+//	NumPy arrays. If an array-like passed in as ``like`` supports
+//	the ``__array_function__`` protocol, the result will be defined
+//	by it. In this case, it ensures the creation of an array object
+//	compatible with that passed in via this argument.
+//
+//	.. versionadded:: 1.20.0
+//
+// Returns
+// -------
+// I : ndarray of shape (N,M)
+//
+//	An array where all elements are equal to zero, except for the `k`-th
+//	diagonal, whose values are equal to one.
+//
+// See Also
+// --------
+// identity : (almost) equivalent function
+// diag : diagonal 2-D array from a 1-D array specified by the user.
+//
+// Examples
+// --------
+// >>> np.eye(2, dtype=int)
+// array([[1, 0],
+//
+//	[0, 1]])
+//
+// >>> np.eye(3, k=1)
+// array([[0.,  1.,  0.],
+//
+//	[0.,  0.,  1.],
+//	[0.,  0.,  0.]])
+//
+//go:linkname Eye py.eye
+func Eye(N *py.Object, M *py.Object, k *py.Object, dtype *py.Object, order *py.Object) *py.Object
+
+// An array with ones at and below the given diagonal and zeros elsewhere.
+//
+// Parameters
+// ----------
+// N : int
+//
+//	Number of rows in the array.
+//
+// M : int, optional
+//
+//	Number of columns in the array.
+//	By default, `M` is taken equal to `N`.
+//
+// k : int, optional
+//
+//	The sub-diagonal at and below which the array is filled.
+//	`k` = 0 is the main diagonal, while `k` < 0 is below it,
+//	and `k` > 0 is above.  The default is 0.
+//
+// dtype : dtype, optional
+//
+//	Data type of the returned array.  The default is float.
+//
+// like : array_like, optional
+//
+//	Reference object to allow the creation of arrays which are not
+//	NumPy arrays. If an array-like passed in as ``like`` supports
+//	the ``__array_function__`` protocol, the result will be defined
+//	by it. In this case, it ensures the creation of an array object
+//	compatible with that passed in via this argument.
+//
+//	.. versionadded:: 1.20.0
+//
+// Returns
+// -------
+// tri : ndarray of shape (N, M)
+//
+//	Array with its lower triangle filled with ones and zero elsewhere;
+//	in other words ``T[i,j] == 1`` for ``j <= i + k``, 0 otherwise.
+//
+// Examples
+// --------
+// >>> np.tri(3, 5, 2, dtype=int)
+// array([[1, 1, 1, 0, 0],
+//
+//	[1, 1, 1, 1, 0],
+//	[1, 1, 1, 1, 1]])
+//
+// >>> np.tri(3, 5, -1)
+// array([[0.,  0.,  0.,  0.,  0.],
+//
+//	[1.,  0.,  0.,  0.,  0.],
+//	[1.,  1.,  0.,  0.,  0.]])
+//
+//go:linkname Tri py.tri
+func Tri(N *py.Object, M *py.Object, k *py.Object, dtype *py.Object) *py.Object
+
 // Return the indices to access (n, n) arrays, given a masking function.
 //
 // Assume `mask_func` is a function that, for a square array a of size
@@ -9502,6 +9725,49 @@ func GetInclude() *py.Object
 //go:linkname Info py.info
 func Info(object *py.Object, maxwidth *py.Object, output *py.Object, toplevel *py.Object) *py.Object
 
+// Print or write to a file the source code for a NumPy object.
+//
+// The source code is only returned for objects written in Python. Many
+// functions and classes are defined in C and will therefore not return
+// useful information.
+//
+// Parameters
+// ----------
+// object : numpy object
+//
+//	Input object. This can be any object (function, class, module,
+//	...).
+//
+// output : file object, optional
+//
+//	If `output` not supplied then source code is printed to screen
+//	(sys.stdout).  File object must be created with either write 'w' or
+//	append 'a' modes.
+//
+// See Also
+// --------
+// lookfor, info
+//
+// Examples
+// --------
+// >>> np.source(np.interp)                        #doctest: +SKIP
+// In file: /usr/lib/python2.6/dist-packages/numpy/lib/function_base.py
+// def interp(x, xp, fp, left=None, right=None):
+//
+//	""".... (full docstring printed)"""
+//	if isinstance(x, (float, int, number)):
+//	    return compiled_interp([x], xp, fp, left, right).item()
+//	else:
+//	    return compiled_interp(x, xp, fp, left, right)
+//
+// The source code is only returned for objects written in Python.
+//
+// >>> np.source(np.array)                         #doctest: +SKIP
+// Not available for this object.
+//
+//go:linkname Source py.source
+func Source(object *py.Object, output *py.Object) *py.Object
+
 // Print the NumPy arrays in the given dictionary.
 //
 // If there is no dictionary passed in or `vardict` is None then returns
@@ -9717,6 +9983,538 @@ func SafeEval(source *py.Object) *py.Object
 //
 //go:linkname ShowRuntime py.show_runtime
 func ShowRuntime() *py.Object
+
+// Load data from a text file.
+//
+// Parameters
+// ----------
+// fname : file, str, pathlib.Path, list of str, generator
+//
+//	File, filename, list, or generator to read.  If the filename
+//	extension is ``.gz`` or ``.bz2``, the file is first decompressed. Note
+//	that generators must return bytes or strings. The strings
+//	in a list or produced by a generator are treated as lines.
+//
+// dtype : data-type, optional
+//
+//	Data-type of the resulting array; default: float.  If this is a
+//	structured data-type, the resulting array will be 1-dimensional, and
+//	each row will be interpreted as an element of the array.  In this
+//	case, the number of columns used must match the number of fields in
+//	the data-type.
+//
+// comments : str or sequence of str or None, optional
+//
+//	The characters or list of characters used to indicate the start of a
+//	comment. None implies no comments. For backwards compatibility, byte
+//	strings will be decoded as 'latin1'. The default is '#'.
+//
+// delimiter : str, optional
+//
+//	The character used to separate the values. For backwards compatibility,
+//	byte strings will be decoded as 'latin1'. The default is whitespace.
+//
+//	.. versionchanged:: 1.23.0
+//	   Only single character delimiters are supported. Newline characters
+//	   cannot be used as the delimiter.
+//
+// converters : dict or callable, optional
+//
+//	Converter functions to customize value parsing. If `converters` is
+//	callable, the function is applied to all columns, else it must be a
+//	dict that maps column number to a parser function.
+//	See examples for further details.
+//	Default: None.
+//
+//	.. versionchanged:: 1.23.0
+//	   The ability to pass a single callable to be applied to all columns
+//	   was added.
+//
+// skiprows : int, optional
+//
+//	Skip the first `skiprows` lines, including comments; default: 0.
+//
+// usecols : int or sequence, optional
+//
+//	Which columns to read, with 0 being the first. For example,
+//	``usecols = (1,4,5)`` will extract the 2nd, 5th and 6th columns.
+//	The default, None, results in all columns being read.
+//
+//	.. versionchanged:: 1.11.0
+//	    When a single column has to be read it is possible to use
+//	    an integer instead of a tuple. E.g ``usecols = 3`` reads the
+//	    fourth column the same way as ``usecols = (3,)`` would.
+//
+// unpack : bool, optional
+//
+//	If True, the returned array is transposed, so that arguments may be
+//	unpacked using ``x, y, z = loadtxt(...)``.  When used with a
+//	structured data-type, arrays are returned for each field.
+//	Default is False.
+//
+// ndmin : int, optional
+//
+//	The returned array will have at least `ndmin` dimensions.
+//	Otherwise mono-dimensional axes will be squeezed.
+//	Legal values: 0 (default), 1 or 2.
+//
+//	.. versionadded:: 1.6.0
+//
+// encoding : str, optional
+//
+//	Encoding used to decode the inputfile. Does not apply to input streams.
+//	The special value 'bytes' enables backward compatibility workarounds
+//	that ensures you receive byte arrays as results if possible and passes
+//	'latin1' encoded strings to converters. Override this value to receive
+//	unicode arrays and pass strings as input to converters.  If set to None
+//	the system default is used. The default value is 'bytes'.
+//
+//	.. versionadded:: 1.14.0
+//
+// max_rows : int, optional
+//
+//	Read `max_rows` rows of content after `skiprows` lines. The default is
+//	to read all the rows. Note that empty rows containing no data such as
+//	empty lines and comment lines are not counted towards `max_rows`,
+//	while such lines are counted in `skiprows`.
+//
+//	.. versionadded:: 1.16.0
+//
+//	.. versionchanged:: 1.23.0
+//	    Lines containing no data, including comment lines (e.g., lines
+//	    starting with '#' or as specified via `comments`) are not counted
+//	    towards `max_rows`.
+//
+// quotechar : unicode character or None, optional
+//
+//	The character used to denote the start and end of a quoted item.
+//	Occurrences of the delimiter or comment characters are ignored within
+//	a quoted item. The default value is ``quotechar=None``, which means
+//	quoting support is disabled.
+//
+//	If two consecutive instances of `quotechar` are found within a quoted
+//	field, the first is treated as an escape character. See examples.
+//
+//	.. versionadded:: 1.23.0
+//
+// like : array_like, optional
+//
+//	Reference object to allow the creation of arrays which are not
+//	NumPy arrays. If an array-like passed in as ``like`` supports
+//	the ``__array_function__`` protocol, the result will be defined
+//	by it. In this case, it ensures the creation of an array object
+//	compatible with that passed in via this argument.
+//
+//	.. versionadded:: 1.20.0
+//
+// Returns
+// -------
+// out : ndarray
+//
+//	Data read from the text file.
+//
+// See Also
+// --------
+// load, fromstring, fromregex
+// genfromtxt : Load data with missing values handled as specified.
+// scipy.io.loadmat : reads MATLAB data files
+//
+// Notes
+// -----
+// This function aims to be a fast reader for simply formatted files.  The
+// `genfromtxt` function provides more sophisticated handling of, e.g.,
+// lines with missing values.
+//
+// Each row in the input text file must have the same number of values to be
+// able to read all values. If all rows do not have same number of values, a
+// subset of up to n columns (where n is the least number of values present
+// in all rows) can be read by specifying the columns via `usecols`.
+//
+// .. versionadded:: 1.10.0
+//
+// The strings produced by the Python float.hex method can be used as
+// input for floats.
+//
+// Examples
+// --------
+// >>> from io import StringIO   # StringIO behaves like a file object
+// >>> c = StringIO("0 1\n2 3")
+// >>> np.loadtxt(c)
+// array([[0., 1.],
+//
+//	[2., 3.]])
+//
+// >>> d = StringIO("M 21 72\nF 35 58")
+// >>> np.loadtxt(d, dtype={'names': ('gender', 'age', 'weight'),
+// ...                      'formats': ('S1', 'i4', 'f4')})
+// array([(b'M', 21, 72.), (b'F', 35, 58.)],
+//
+//	dtype=[('gender', 'S1'), ('age', '<i4'), ('weight', '<f4')])
+//
+// >>> c = StringIO("1,0,2\n3,0,4")
+// >>> x, y = np.loadtxt(c, delimiter=',', usecols=(0, 2), unpack=True)
+// >>> x
+// array([1., 3.])
+// >>> y
+// array([2., 4.])
+//
+// The `converters` argument is used to specify functions to preprocess the
+// text prior to parsing. `converters` can be a dictionary that maps
+// preprocessing functions to each column:
+//
+// >>> s = StringIO("1.618, 2.296\n3.141, 4.669\n")
+// >>> conv = {
+// ...     0: lambda x: np.floor(float(x)),  # conversion fn for column 0
+// ...     1: lambda x: np.ceil(float(x)),  # conversion fn for column 1
+// ... }
+// >>> np.loadtxt(s, delimiter=",", converters=conv)
+// array([[1., 3.],
+//
+//	[3., 5.]])
+//
+// `converters` can be a callable instead of a dictionary, in which case it
+// is applied to all columns:
+//
+// >>> s = StringIO("0xDE 0xAD\n0xC0 0xDE")
+// >>> import functools
+// >>> conv = functools.partial(int, base=16)
+// >>> np.loadtxt(s, converters=conv)
+// array([[222., 173.],
+//
+//	[192., 222.]])
+//
+// This example shows how `converters` can be used to convert a field
+// with a trailing minus sign into a negative number.
+//
+// >>> s = StringIO('10.01 31.25-\n19.22 64.31\n17.57- 63.94')
+// >>> def conv(fld):
+// ...     return -float(fld[:-1]) if fld.endswith(b'-') else float(fld)
+// ...
+// >>> np.loadtxt(s, converters=conv)
+// array([[ 10.01, -31.25],
+//
+//	[ 19.22,  64.31],
+//	[-17.57,  63.94]])
+//
+// Using a callable as the converter can be particularly useful for handling
+// values with different formatting, e.g. floats with underscores:
+//
+// >>> s = StringIO("1 2.7 100_000")
+// >>> np.loadtxt(s, converters=float)
+// array([1.e+00, 2.7e+00, 1.e+05])
+//
+// This idea can be extended to automatically handle values specified in
+// many different formats:
+//
+// >>> def conv(val):
+// ...     try:
+// ...         return float(val)
+// ...     except ValueError:
+// ...         return float.fromhex(val)
+// >>> s = StringIO("1, 2.5, 3_000, 0b4, 0x1.4000000000000p+2")
+// >>> np.loadtxt(s, delimiter=",", converters=conv, encoding=None)
+// array([1.0e+00, 2.5e+00, 3.0e+03, 1.8e+02, 5.0e+00])
+//
+// Note that with the default “encoding="bytes"“, the inputs to the
+// converter function are latin-1 encoded byte strings. To deactivate the
+// implicit encoding prior to conversion, use “encoding=None“
+//
+// >>> s = StringIO('10.01 31.25-\n19.22 64.31\n17.57- 63.94')
+// >>> conv = lambda x: -float(x[:-1]) if x.endswith('-') else float(x)
+// >>> np.loadtxt(s, converters=conv, encoding=None)
+// array([[ 10.01, -31.25],
+//
+//	[ 19.22,  64.31],
+//	[-17.57,  63.94]])
+//
+// Support for quoted fields is enabled with the `quotechar` parameter.
+// Comment and delimiter characters are ignored when they appear within a
+// quoted item delineated by `quotechar`:
+//
+// >>> s = StringIO('"alpha, #42", 10.0\n"beta, #64", 2.0\n')
+// >>> dtype = np.dtype([("label", "U12"), ("value", float)])
+// >>> np.loadtxt(s, dtype=dtype, delimiter=",", quotechar='"')
+// array([('alpha, #42', 10.), ('beta, #64',  2.)],
+//
+//	dtype=[('label', '<U12'), ('value', '<f8')])
+//
+// Quoted fields can be separated by multiple whitespace characters:
+//
+// >>> s = StringIO('"alpha, #42"       10.0\n"beta, #64" 2.0\n')
+// >>> dtype = np.dtype([("label", "U12"), ("value", float)])
+// >>> np.loadtxt(s, dtype=dtype, delimiter=None, quotechar='"')
+// array([('alpha, #42', 10.), ('beta, #64',  2.)],
+//
+//	dtype=[('label', '<U12'), ('value', '<f8')])
+//
+// Two consecutive quote characters within a quoted field are treated as a
+// single escaped character:
+//
+// >>> s = StringIO('"Hello, my name is ""Monty""!"')
+// >>> np.loadtxt(s, dtype="U", delimiter=",", quotechar='"')
+// array('Hello, my name is "Monty"!', dtype='<U26')
+//
+// Read subset of columns when all rows do not contain equal number of values:
+//
+// >>> d = StringIO("1 2\n2 4\n3 9 12\n4 16 20")
+// >>> np.loadtxt(d, usecols=(0, 1))
+// array([[ 1.,  2.],
+//
+//	[ 2.,  4.],
+//	[ 3.,  9.],
+//	[ 4., 16.]])
+//
+//go:linkname Loadtxt py.loadtxt
+func Loadtxt(fname *py.Object, dtype *py.Object, comments *py.Object, delimiter *py.Object, converters *py.Object, skiprows *py.Object, usecols *py.Object, unpack *py.Object, ndmin *py.Object, encoding *py.Object, maxRows *py.Object) *py.Object
+
+// Load data from a text file, with missing values handled as specified.
+//
+// Each line past the first `skip_header` lines is split at the `delimiter`
+// character, and characters following the `comments` character are discarded.
+//
+// Parameters
+// ----------
+// fname : file, str, pathlib.Path, list of str, generator
+//
+//	File, filename, list, or generator to read.  If the filename
+//	extension is ``.gz`` or ``.bz2``, the file is first decompressed. Note
+//	that generators must return bytes or strings. The strings
+//	in a list or produced by a generator are treated as lines.
+//
+// dtype : dtype, optional
+//
+//	Data type of the resulting array.
+//	If None, the dtypes will be determined by the contents of each
+//	column, individually.
+//
+// comments : str, optional
+//
+//	The character used to indicate the start of a comment.
+//	All the characters occurring on a line after a comment are discarded.
+//
+// delimiter : str, int, or sequence, optional
+//
+//	The string used to separate values.  By default, any consecutive
+//	whitespaces act as delimiter.  An integer or sequence of integers
+//	can also be provided as width(s) of each field.
+//
+// skiprows : int, optional
+//
+//	`skiprows` was removed in numpy 1.10. Please use `skip_header` instead.
+//
+// skip_header : int, optional
+//
+//	The number of lines to skip at the beginning of the file.
+//
+// skip_footer : int, optional
+//
+//	The number of lines to skip at the end of the file.
+//
+// converters : variable, optional
+//
+//	The set of functions that convert the data of a column to a value.
+//	The converters can also be used to provide a default value
+//	for missing data: ``converters = {3: lambda s: float(s or 0)}``.
+//
+// missing : variable, optional
+//
+//	`missing` was removed in numpy 1.10. Please use `missing_values`
+//	instead.
+//
+// missing_values : variable, optional
+//
+//	The set of strings corresponding to missing data.
+//
+// filling_values : variable, optional
+//
+//	The set of values to be used as default when the data are missing.
+//
+// usecols : sequence, optional
+//
+//	Which columns to read, with 0 being the first.  For example,
+//	``usecols = (1, 4, 5)`` will extract the 2nd, 5th and 6th columns.
+//
+// names : {None, True, str, sequence}, optional
+//
+//	If `names` is True, the field names are read from the first line after
+//	the first `skip_header` lines. This line can optionally be preceded
+//	by a comment delimiter. If `names` is a sequence or a single-string of
+//	comma-separated names, the names will be used to define the field names
+//	in a structured dtype. If `names` is None, the names of the dtype
+//	fields will be used, if any.
+//
+// excludelist : sequence, optional
+//
+//	A list of names to exclude. This list is appended to the default list
+//	['return','file','print']. Excluded names are appended with an
+//	underscore: for example, `file` would become `file_`.
+//
+// deletechars : str, optional
+//
+//	A string combining invalid characters that must be deleted from the
+//	names.
+//
+// defaultfmt : str, optional
+//
+//	A format used to define default field names, such as "f%i" or "f_%02i".
+//
+// autostrip : bool, optional
+//
+//	Whether to automatically strip white spaces from the variables.
+//
+// replace_space : char, optional
+//
+//	Character(s) used in replacement of white spaces in the variable
+//	names. By default, use a '_'.
+//
+// case_sensitive : {True, False, 'upper', 'lower'}, optional
+//
+//	If True, field names are case sensitive.
+//	If False or 'upper', field names are converted to upper case.
+//	If 'lower', field names are converted to lower case.
+//
+// unpack : bool, optional
+//
+//	If True, the returned array is transposed, so that arguments may be
+//	unpacked using ``x, y, z = genfromtxt(...)``.  When used with a
+//	structured data-type, arrays are returned for each field.
+//	Default is False.
+//
+// usemask : bool, optional
+//
+//	If True, return a masked array.
+//	If False, return a regular array.
+//
+// loose : bool, optional
+//
+//	If True, do not raise errors for invalid values.
+//
+// invalid_raise : bool, optional
+//
+//	If True, an exception is raised if an inconsistency is detected in the
+//	number of columns.
+//	If False, a warning is emitted and the offending lines are skipped.
+//
+// max_rows : int,  optional
+//
+//	The maximum number of rows to read. Must not be used with skip_footer
+//	at the same time.  If given, the value must be at least 1. Default is
+//	to read the entire file.
+//
+//	.. versionadded:: 1.10.0
+//
+// encoding : str, optional
+//
+//	Encoding used to decode the inputfile. Does not apply when `fname` is
+//	a file object.  The special value 'bytes' enables backward compatibility
+//	workarounds that ensure that you receive byte arrays when possible
+//	and passes latin1 encoded strings to converters. Override this value to
+//	receive unicode arrays and pass strings as input to converters.  If set
+//	to None the system default is used. The default value is 'bytes'.
+//
+//	.. versionadded:: 1.14.0
+//
+// ndmin : int, optional
+//
+//	Same parameter as `loadtxt`
+//
+//	.. versionadded:: 1.23.0
+//
+// like : array_like, optional
+//
+//	Reference object to allow the creation of arrays which are not
+//	NumPy arrays. If an array-like passed in as ``like`` supports
+//	the ``__array_function__`` protocol, the result will be defined
+//	by it. In this case, it ensures the creation of an array object
+//	compatible with that passed in via this argument.
+//
+//	.. versionadded:: 1.20.0
+//
+// Returns
+// -------
+// out : ndarray
+//
+//	Data read from the text file. If `usemask` is True, this is a
+//	masked array.
+//
+// See Also
+// --------
+// numpy.loadtxt : equivalent function when no data is missing.
+//
+// Notes
+// -----
+//   - When spaces are used as delimiters, or when no delimiter has been given
+//     as input, there should not be any missing data between two fields.
+//   - When the variables are named (either by a flexible dtype or with `names`),
+//     there must not be any header in the file (else a ValueError
+//     exception is raised).
+//   - Individual values are not stripped of spaces by default.
+//     When using a custom converter, make sure the function does remove spaces.
+//
+// References
+// ----------
+// .. [1] NumPy User Guide, section `I/O with NumPy
+//
+//	<https://docs.scipy.org/doc/numpy/user/basics.io.genfromtxt.html>`_.
+//
+// Examples
+// --------
+// >>> from io import StringIO
+// >>> import numpy as np
+//
+// # Comma delimited file with mixed dtype
+//
+// >>> s = StringIO(u"1,1.3,abcde")
+// >>> data = np.genfromtxt(s, dtype=[('myint','i8'),('myfloat','f8'),
+// ... ('mystring','S5')], delimiter=",")
+// >>> data
+// array((1, 1.3, b'abcde'),
+//
+//	dtype=[('myint', '<i8'), ('myfloat', '<f8'), ('mystring', 'S5')])
+//
+// Using dtype = None
+//
+// >>> _ = s.seek(0) # needed for StringIO example only
+// >>> data = np.genfromtxt(s, dtype=None,
+// ... names = ['myint','myfloat','mystring'], delimiter=",")
+// >>> data
+// array((1, 1.3, b'abcde'),
+//
+//	dtype=[('myint', '<i8'), ('myfloat', '<f8'), ('mystring', 'S5')])
+//
+// # Specifying dtype and names
+//
+// >>> _ = s.seek(0)
+// >>> data = np.genfromtxt(s, dtype="i8,f8,S5",
+// ... names=['myint','myfloat','mystring'], delimiter=",")
+// >>> data
+// array((1, 1.3, b'abcde'),
+//
+//	dtype=[('myint', '<i8'), ('myfloat', '<f8'), ('mystring', 'S5')])
+//
+// # An example with fixed-width columns
+//
+// >>> s = StringIO(u"11.3abcde")
+// >>> data = np.genfromtxt(s, dtype=None, names=['intvar','fltvar','strvar'],
+// ...     delimiter=[1,3,5])
+// >>> data
+// array((1, 1.3, b'abcde'),
+//
+//	dtype=[('intvar', '<i8'), ('fltvar', '<f8'), ('strvar', 'S5')])
+//
+// # An example to show comments
+//
+// >>> f = StringIO(”'
+// ... text,# of chars
+// ... hello world,11
+// ... numpy,5”')
+// >>> np.genfromtxt(f, dtype='S12,S12', delimiter=',')
+// array([(b'text', b”), (b'hello world', b'11'), (b'numpy', b'5')],
+//
+//	dtype=[('f0', 'S12'), ('f1', 'S12')])
+//
+//go:linkname Genfromtxt py.genfromtxt
+func Genfromtxt(fname *py.Object, dtype *py.Object, comments *py.Object, delimiter *py.Object, skipHeader *py.Object, skipFooter *py.Object, converters *py.Object, missingValues *py.Object, fillingValues *py.Object, usecols *py.Object, names *py.Object, excludelist *py.Object, deletechars *py.Object, replaceSpace *py.Object, autostrip *py.Object, caseSensitive *py.Object, defaultfmt *py.Object, unpack *py.Object, usemask *py.Object, loose *py.Object, invalidRaise *py.Object, maxRows *py.Object, encoding *py.Object) *py.Object
 
 // Load ASCII data from a file and return it in a record array.
 //

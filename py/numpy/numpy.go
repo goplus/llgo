@@ -42,15 +42,6 @@ func Arange(start, stop, step, dtype *py.Object) *py.Object
 //go:linkname Empty py.empty
 func Empty(shape, dtype, order *py.Object) *py.Object
 
-// Return a 2-D array with ones on the diagonal and zeros elsewhere.
-//
-//	numpy.eye(N, M=None, k=0, dtype=<class 'float'>, order='C', *, like=None)
-//
-// See https://numpy.org/doc/stable/reference/generated/numpy.eye.html#numpy-eye
-//
-//go:linkname Eye py.eye
-func Eye(N, M, k, dtype, order *py.Object) *py.Object
-
 // Return a new array of given shape and type, filled with zeros.
 //
 //	numpy.zeros(shape, dtype=float, order='C', *, like=None)
