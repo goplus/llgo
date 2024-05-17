@@ -488,10 +488,10 @@ _llgo_11:                                         ; preds = %_llgo_8
   %17 = fcmp olt double %16, 0.000000e+00
   br i1 %17, label %_llgo_14, label %_llgo_12
 
-_llgo_12:                                         ; preds = %_llgo_24, %_llgo_23, %_llgo_14, %_llgo_11
-  %18 = phi double [ %0, %_llgo_11 ], [ %39, %_llgo_23 ], [ %0, %_llgo_14 ], [ %42, %_llgo_24 ]
-  %19 = phi i64 [ 0, %_llgo_11 ], [ %32, %_llgo_23 ], [ 0, %_llgo_14 ], [ %41, %_llgo_24 ]
-  br label %_llgo_25
+_llgo_12:                                         ; preds = %_llgo_24, %_llgo_22, %_llgo_14, %_llgo_11
+  %18 = phi double [ %0, %_llgo_11 ], [ %36, %_llgo_22 ], [ %0, %_llgo_14 ], [ %42, %_llgo_24 ]
+  %19 = phi i64 [ 0, %_llgo_11 ], [ %32, %_llgo_22 ], [ 0, %_llgo_14 ], [ %41, %_llgo_24 ]
+  br label %_llgo_27
 
 _llgo_13:                                         ; preds = %_llgo_8
   %20 = fcmp olt double %0, 0.000000e+00
@@ -525,7 +525,7 @@ _llgo_18:                                         ; preds = %_llgo_20
   br label %_llgo_20
 
 _llgo_19:                                         ; preds = %_llgo_20
-  br label %_llgo_21
+  br label %_llgo_23
 
 _llgo_20:                                         ; preds = %_llgo_18, %_llgo_17
   %31 = phi double [ %26, %_llgo_17 ], [ %30, %_llgo_18 ]
@@ -533,68 +533,68 @@ _llgo_20:                                         ; preds = %_llgo_18, %_llgo_17
   %33 = fcmp olt double %31, 1.000000e+00
   br i1 %33, label %_llgo_18, label %_llgo_19
 
-_llgo_21:                                         ; preds = %_llgo_22, %_llgo_19
-  %34 = phi double [ 5.000000e+00, %_llgo_19 ], [ %37, %_llgo_22 ]
-  %35 = phi i64 [ 0, %_llgo_19 ], [ %38, %_llgo_22 ]
-  %36 = icmp slt i64 %35, 7
-  br i1 %36, label %_llgo_22, label %_llgo_23
+_llgo_21:                                         ; preds = %_llgo_23
+  %34 = fdiv double %38, 1.000000e+01
+  %35 = add i64 %39, 1
+  br label %_llgo_23
 
-_llgo_22:                                         ; preds = %_llgo_21
-  %37 = fdiv double %34, 1.000000e+01
-  %38 = add i64 %35, 1
-  br label %_llgo_21
+_llgo_22:                                         ; preds = %_llgo_23
+  %36 = fadd double %31, %38
+  %37 = fcmp oge double %36, 1.000000e+01
+  br i1 %37, label %_llgo_24, label %_llgo_12
 
-_llgo_23:                                         ; preds = %_llgo_21
-  %39 = fadd double %31, %34
-  %40 = fcmp oge double %39, 1.000000e+01
-  br i1 %40, label %_llgo_24, label %_llgo_12
+_llgo_23:                                         ; preds = %_llgo_21, %_llgo_19
+  %38 = phi double [ 5.000000e+00, %_llgo_19 ], [ %34, %_llgo_21 ]
+  %39 = phi i64 [ 0, %_llgo_19 ], [ %35, %_llgo_21 ]
+  %40 = icmp slt i64 %39, 7
+  br i1 %40, label %_llgo_21, label %_llgo_22
 
-_llgo_24:                                         ; preds = %_llgo_23
+_llgo_24:                                         ; preds = %_llgo_22
   %41 = add i64 %32, 1
-  %42 = fdiv double %39, 1.000000e+01
+  %42 = fdiv double %36, 1.000000e+01
   br label %_llgo_12
 
-_llgo_25:                                         ; preds = %_llgo_26, %_llgo_12
-  %43 = phi double [ %18, %_llgo_12 ], [ %53, %_llgo_26 ]
-  %44 = phi i64 [ 0, %_llgo_12 ], [ %54, %_llgo_26 ]
-  %45 = icmp slt i64 %44, 7
-  br i1 %45, label %_llgo_26, label %_llgo_27
+_llgo_25:                                         ; preds = %_llgo_27
+  %43 = fptosi double %59 to i64
+  %44 = add i64 %60, 2
+  %45 = add i64 %43, 48
+  %46 = trunc i64 %45 to i8
+  %47 = getelementptr inbounds i8, ptr %11, i64 %44
+  store i8 %46, ptr %47, align 1
+  %48 = sitofp i64 %43 to double
+  %49 = fsub double %59, %48
+  %50 = fmul double %49, 1.000000e+01
+  %51 = add i64 %60, 1
+  br label %_llgo_27
 
-_llgo_26:                                         ; preds = %_llgo_25
-  %46 = fptosi double %43 to i64
-  %47 = add i64 %44, 2
-  %48 = add i64 %46, 48
-  %49 = trunc i64 %48 to i8
-  %50 = getelementptr inbounds i8, ptr %11, i64 %47
-  store i8 %49, ptr %50, align 1
-  %51 = sitofp i64 %46 to double
-  %52 = fsub double %43, %51
-  %53 = fmul double %52, 1.000000e+01
-  %54 = add i64 %44, 1
-  br label %_llgo_25
-
-_llgo_27:                                         ; preds = %_llgo_25
+_llgo_26:                                         ; preds = %_llgo_27
+  %52 = getelementptr inbounds i8, ptr %11, i64 2
+  %53 = load i8, ptr %52, align 1
+  %54 = getelementptr inbounds i8, ptr %11, i64 1
+  store i8 %53, ptr %54, align 1
   %55 = getelementptr inbounds i8, ptr %11, i64 2
-  %56 = load i8, ptr %55, align 1
-  %57 = getelementptr inbounds i8, ptr %11, i64 1
-  store i8 %56, ptr %57, align 1
-  %58 = getelementptr inbounds i8, ptr %11, i64 2
-  store i8 46, ptr %58, align 1
-  %59 = getelementptr inbounds i8, ptr %11, i64 9
-  store i8 101, ptr %59, align 1
-  %60 = getelementptr inbounds i8, ptr %11, i64 10
-  store i8 43, ptr %60, align 1
-  %61 = icmp slt i64 %19, 0
-  br i1 %61, label %_llgo_28, label %_llgo_29
+  store i8 46, ptr %55, align 1
+  %56 = getelementptr inbounds i8, ptr %11, i64 9
+  store i8 101, ptr %56, align 1
+  %57 = getelementptr inbounds i8, ptr %11, i64 10
+  store i8 43, ptr %57, align 1
+  %58 = icmp slt i64 %19, 0
+  br i1 %58, label %_llgo_28, label %_llgo_29
 
-_llgo_28:                                         ; preds = %_llgo_27
+_llgo_27:                                         ; preds = %_llgo_25, %_llgo_12
+  %59 = phi double [ %18, %_llgo_12 ], [ %50, %_llgo_25 ]
+  %60 = phi i64 [ 0, %_llgo_12 ], [ %51, %_llgo_25 ]
+  %61 = icmp slt i64 %60, 7
+  br i1 %61, label %_llgo_25, label %_llgo_26
+
+_llgo_28:                                         ; preds = %_llgo_26
   %62 = sub i64 0, %19
   %63 = getelementptr inbounds i8, ptr %11, i64 10
   store i8 45, ptr %63, align 1
   br label %_llgo_29
 
-_llgo_29:                                         ; preds = %_llgo_28, %_llgo_27
-  %64 = phi i64 [ %19, %_llgo_27 ], [ %62, %_llgo_28 ]
+_llgo_29:                                         ; preds = %_llgo_28, %_llgo_26
+  %64 = phi i64 [ %19, %_llgo_26 ], [ %62, %_llgo_28 ]
   %65 = sdiv i64 %64, 100
   %66 = trunc i64 %65 to i8
   %67 = add i8 %66, 48
