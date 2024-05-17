@@ -31,7 +31,7 @@ _llgo_0:
   call void @main.init()
   %2 = load ptr, ptr @__llgo_py.math, align 8
   %3 = call ptr @PyObject_GetAttrString(ptr %2, ptr @1)
-  %4 = call double @"(*github.com/goplus/llgo/py.Object).Float64"(ptr %3)
+  %4 = call double @PyFloat_AsDouble(ptr %3)
   %5 = call i32 (ptr, ...) @printf(ptr @0, double %4)
   ret i32 0
 }
@@ -42,7 +42,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @PyObject_GetAttrString(ptr, ptr)
 
-declare double @"(*github.com/goplus/llgo/py.Object).Float64"(ptr)
+declare double @PyFloat_AsDouble(ptr)
 
 declare i32 @printf(ptr, ...)
 
