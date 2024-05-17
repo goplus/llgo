@@ -96,6 +96,11 @@ func (o *JSON) SetItem(key *c.Char, item *JSON) c.Int { return 0 }
 // llgo:link (*JSON).CStr C.cJSON_PrintUnformatted
 func (o *JSON) CStr() *c.Char { return nil }
 
+// Same as CStr. Provided for Go+.
+//
+// llgo:link (*JSON).Cstr C.cJSON_PrintUnformatted
+func (o *JSON) Cstr() *c.Char { return nil }
+
 // Render a JSON entity to text for transfer/storage.
 //
 // llgo:link (*JSON).Print C.cJSON_Print
