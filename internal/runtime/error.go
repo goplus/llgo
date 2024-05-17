@@ -8,8 +8,20 @@ func (e errorString) Error() string {
 	return "runtime error: " + string(e)
 }
 
-func CheckRuntimeError(b bool, s string) {
+func AssertRuntimeError(b bool, msg string) {
 	if b {
-		panic(errorString(s).Error())
+		panic(errorString(msg).Error())
+	}
+}
+
+func AssertNegativeShift(b bool) {
+	if b {
+		panic(errorString("negative shift amount").Error())
+	}
+}
+
+func AssertIndexRange(b bool) {
+	if b {
+		panic(errorString("index out of range").Error())
 	}
 }
