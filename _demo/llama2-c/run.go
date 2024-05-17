@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/x/llama2"
+	"github.com/goplus/llgo/c/llama2"
 )
 
 func main() {

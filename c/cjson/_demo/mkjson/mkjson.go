@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/x/cjson"
+	"github.com/goplus/llgo/c/cjson"
 )
 
 func main() {
