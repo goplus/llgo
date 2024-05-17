@@ -134,7 +134,13 @@ type aProgram struct {
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
+	uintTy    Type
 	f64Ty     Type
+	byteTy    Type
+	i32Ty     Type
+	u32Ty     Type
+	i64Ty     Type
+	u64Ty     Type
 	pyObjPtr  Type
 	pyObjPPtr Type
 
@@ -351,6 +357,14 @@ func (p Program) Int() Type {
 	return p.intTy
 }
 
+// Uint returns uint type.
+func (p Program) Uint() Type {
+	if p.uintTy == nil {
+		p.uintTy = p.rawType(types.Typ[types.Uint])
+	}
+	return p.uintTy
+}
+
 // Uintptr returns uintptr type.
 func (p Program) Uintptr() Type {
 	if p.uintptrTy == nil {
@@ -365,6 +379,46 @@ func (p Program) Float64() Type {
 		p.f64Ty = p.rawType(types.Typ[types.Float64])
 	}
 	return p.f64Ty
+}
+
+// Byte returns byte type.
+func (p Program) Byte() Type {
+	if p.byteTy == nil {
+		p.byteTy = p.rawType(types.Typ[types.Byte])
+	}
+	return p.byteTy
+}
+
+// Int32 returns int32 type.
+func (p Program) Int32() Type {
+	if p.i32Ty == nil {
+		p.i32Ty = p.rawType(types.Typ[types.Int32])
+	}
+	return p.i32Ty
+}
+
+// Uint32 returns uint32 type.
+func (p Program) Uint32() Type {
+	if p.u32Ty == nil {
+		p.u32Ty = p.rawType(types.Typ[types.Uint32])
+	}
+	return p.u32Ty
+}
+
+// Int64 returns int64 type.
+func (p Program) Int64() Type {
+	if p.i64Ty == nil {
+		p.i64Ty = p.rawType(types.Typ[types.Int64])
+	}
+	return p.i64Ty
+}
+
+// Uint64 returns uint64 type.
+func (p Program) Uint64() Type {
+	if p.u64Ty == nil {
+		p.u64Ty = p.rawType(types.Typ[types.Uint64])
+	}
+	return p.u64Ty
 }
 
 // -----------------------------------------------------------------------------

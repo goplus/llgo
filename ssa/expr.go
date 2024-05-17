@@ -1250,7 +1250,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 			conv := func(v llvm.Value) llvm.Value {
 				switch kind {
 				case types.Float32:
-					v = castInt(b, v, b.Prog.Type(types.Typ[types.Int32], InC))
+					v = castInt(b, v, b.Prog.Int32())
 					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
 				case types.Float64:
 					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
@@ -1404,7 +1404,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 						src, b.SliceData(elem), b.SliceLen(elem), b.Prog.Val(int(etSize))).impl
 					return
 				case vkString:
-					etSize := b.Prog.SizeOf(b.Prog.Type(types.Typ[types.Byte], InGo))
+					etSize := b.Prog.SizeOf(b.Prog.Byte())
 					ret.Type = src.Type
 					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
 						src, b.StringData(elem), b.StringLen(elem), b.Prog.Val(int(etSize))).impl
@@ -1420,24 +1420,24 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str(" "))
 			}
 			var fn string
-			var typ types.Type
+			var typ Type
 			switch arg.kind {
 			case vkBool:
 				fn = "PrintBool"
 			case vkSigned:
 				fn = "PrintInt"
-				typ = types.Typ[types.Int64]
+				typ = b.Prog.Int64()
 			case vkUnsigned:
 				fn = "PrintUint"
-				typ = types.Typ[types.Uint64]
+				typ = b.Prog.Uint64()
 			case vkFloat:
 				fn = "PrintFloat"
-				typ = types.Typ[types.Float64]
+				typ = b.Prog.Float64()
 			case vkSlice:
 				fn = "PrintSlice"
 			case vkPtr, vkFuncPtr, vkFuncDecl, vkClosure, vkPyVarRef, vkPyFuncRef:
 				fn = "PrintPointer"
-				typ = types.Typ[types.UnsafePointer]
+				typ = b.Prog.VoidPtr()
 			case vkString:
 				fn = "PrintString"
 			case vkInterface:
@@ -1447,8 +1447,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			default:
 				panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
 			}
-			if typ != nil && typ != arg.raw.Type {
-				arg = b.Convert(b.Prog.Type(typ, InGo), arg)
+			if typ != nil && typ != arg.Type {
+				arg = b.Convert(typ, arg)
 			}
 			b.InlineCall(b.Func.Pkg.rtFunc(fn), arg)
 		}

@@ -461,3 +461,28 @@ _llgo_0:
 }
 `)
 }
+
+func TestBasicType(t *testing.T) {
+	type typeInfo struct {
+		typ  Type
+		kind types.BasicKind
+	}
+	prog := NewProgram(nil)
+	infos := []*typeInfo{
+		{prog.Bool(), types.Bool},
+		{prog.Byte(), types.Byte},
+		{prog.Int(), types.Int},
+		{prog.Uint(), types.Uint},
+		{prog.Int32(), types.Int32},
+		{prog.Int64(), types.Int64},
+		{prog.Uint32(), types.Uint32},
+		{prog.Uint64(), types.Uint64},
+		{prog.Uintptr(), types.Uintptr},
+		{prog.VoidPtr(), types.UnsafePointer},
+	}
+	for _, info := range infos {
+		if info.typ.RawType() != types.Typ[info.kind] {
+			t.Fatal("bad type", info)
+		}
+	}
+}
