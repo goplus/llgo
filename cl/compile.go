@@ -241,7 +241,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
 		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
-		if debugInstr && sig != nil && sig.Recv() != nil {
+		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
 	}
@@ -250,7 +250,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			argc := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int32])
 			argv := types.NewParam(token.NoPos, pkgTypes, "", argvTy)
 			params := types.NewTuple(argc, argv)
-			ret := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int])
+			ret := types.NewParam(token.NoPos, pkgTypes, "", p.prog.CInt().RawType())
 			results := types.NewTuple(ret)
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
