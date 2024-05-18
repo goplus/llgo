@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package builtins
+package std
 
 import (
 	_ "unsafe"
@@ -22,29 +22,8 @@ import (
 	"github.com/goplus/llgo/py"
 )
 
-const (
-	LLGoPackage = "py.inspect"
-)
-
 // https://docs.python.org/3/library/functions.html
 // https://docs.python.org/3/library/constants.html
-
-// print(*objects, sep=' ', end='\n', file=None, flush=False)
-//
-// Print objects to the text stream file, separated by sep and followed by
-// end. sep, end, file, and flush, if present, must be given as keyword
-// arguments.
-//
-// All non-keyword arguments are converted to strings like str() does and
-// written to the stream, separated by sep and followed by end. Both sep
-// and end must be strings; they can also be None, which means to use the
-// default values. If no objects are given, print() will just write end.
-//
-//go:linkname Print py.print
-func Print(objects ...*py.Object)
-
-//go:linkname PrintEx py.print
-func PrintEx(__llgo_kwargs *py.Object, objects ...*py.Object)
 
 // Invoke the built-in help system. (This function is intended for interactive
 // use.) If no argument is given, the interactive help system starts on the
