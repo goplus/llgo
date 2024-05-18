@@ -63,9 +63,14 @@ func init() {
 // -----------------------------------------------------------------------------
 
 func NewFunc(params, results *types.Tuple, variadic bool) *types.Signature {
-	return gogen.NewCSignature(params, results, variadic)
+	panic("todo")
 }
 
+func NewPointer(typ types.Type) types.Type {
+	panic("todo")
+}
+
+/*
 func NewPointer(typ types.Type) types.Type {
 	switch t := typ.(type) {
 	case *types.Basic:
@@ -95,5 +100,6 @@ func IsFunc(typ types.Type) bool {
 func Identical(typ1, typ2 types.Type) bool {
 	return types.Identical(typ1, typ2)
 }
+*/
 
 // -----------------------------------------------------------------------------

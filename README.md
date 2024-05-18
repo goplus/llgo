@@ -55,6 +55,8 @@ And you can import any Python library into `llgo` through a program called `llpy
 * [inspect](https://pkg.go.dev/github.com/goplus/llgo/py/inspect)
 * [statistics](https://pkg.go.dev/github.com/goplus/llgo/py/statistics)
 * [numpy](https://pkg.go.dev/github.com/goplus/llgo/py/numpy)
+* [pandas](https://pkg.go.dev/github.com/goplus/llgo/py/pandas)
+* [pytorch](https://pkg.go.dev/github.com/goplus/llgo/py/torch)
 
 Here is an example using the Python `math` library:
 
