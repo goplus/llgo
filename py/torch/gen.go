@@ -2172,6 +2172,89 @@ func Lobpcg(A *py.Object, k *py.Object, B *py.Object, X *py.Object, n *py.Object
 //go:linkname FromDlpack py.from_dlpack
 func FromDlpack(extTensor *py.Object) *py.Object
 
+// Optimizes given model/function using TorchDynamo and specified backend.
+//
+// Concretely, for every frame executed within the compiled region, we will attempt
+// to compile it and cache the compiled result on the code object for future
+// use.  A single frame may be compiled multiple times if previous compiled
+// results are not applicable for subsequent calls (this is called a "guard
+// failure), you can use TORCH_LOGS=guards to debug these situations.
+// Multiple compiled results can be associated with a frame up to
+// “torch._dynamo.config.cache_size_limit“, which defaults to 64; at which
+// point we will fall back to eager.  Note that compile caches are per
+// *code object*, not frame; if you dynamically create multiple copies of a
+// function, they will all share the same code cache.
+//
+// Args:
+//
+//	model (Callable): Module/function to optimize
+//	fullgraph (bool): If False (default), torch.compile attempts to discover compileable regions
+//	 in the function that it will optimize. If True, then we require that the entire function be
+//	 capturable into a single graph. If this is not possible (that is, if there are graph breaks),
+//	 then this will raise an error.
+//	dynamic (bool or None): Use dynamic shape tracing.  When this is True, we will up-front attempt
+//	 to generate a kernel that is as dynamic as possible to avoid recompilations when
+//	 sizes change.  This may not always work as some operations/optimizations will
+//	 force specialization; use TORCH_LOGS=dynamic to debug overspecialization.
+//	 When this is False, we will NEVER generate dynamic kernels, we will always specialize.
+//	 By default (None), we automatically detect if dynamism has occurred and compile a more
+//	 dynamic kernel upon recompile.
+//	backend (str or Callable): backend to be used
+//
+//	 - "inductor" is the default backend, which is a good balance between performance and overhead
+//
+//	 - Non experimental in-tree backends can be seen with `torch._dynamo.list_backends()`
+//
+//	 - Experimental or debug in-tree backends can be seen with `torch._dynamo.list_backends(None)`
+//
+//	 - To register an out-of-tree custom backend: https://pytorch.org/docs/main/compile/custom-backends.html
+//	mode (str): Can be either "default", "reduce-overhead", "max-autotune" or "max-autotune-no-cudagraphs"
+//
+//	 - "default" is the default mode, which is a good balance between performance and overhead
+//
+//	 - "reduce-overhead" is a mode that reduces the overhead of python with CUDA graphs,
+//	   useful for small batches.  Reduction of overhead can come at the cost of more memory
+//	   usage, as we will cache the workspace memory required for the invocation so that we
+//	   do not have to reallocate it on subsequent runs.  Reduction of overhead is not guaranteed
+//	   to work; today, we only reduce overhead for CUDA only graphs which do not mutate inputs.
+//	   There are other circumstances where CUDA graphs are not applicable; use TORCH_LOG=perf_hints
+//	   to debug.
+//
+//	 - "max-autotune" is a mode that leverages Triton based matrix multiplications and convolutions
+//	   It enables CUDA graphs by default.
+//
+//	 - "max-autotune-no-cudagraphs" is a mode similar to "max-autotune" but without CUDA graphs
+//
+//	 - To see the exact configs that each mode sets you can call `torch._inductor.list_mode_options()`
+//
+//	options (dict): A dictionary of options to pass to the backend. Some notable ones to try out are
+//
+//	 - `epilogue_fusion` which fuses pointwise ops into templates. Requires `max_autotune` to also be set
+//
+//	 - `max_autotune` which will profile to pick the best matmul configuration
+//
+//	 - `fallback_random` which is useful when debugging accuracy issues
+//
+//	 - `shape_padding` which pads matrix shapes to better align loads on GPUs especially for tensor cores
+//
+//	 - `triton.cudagraphs` which will reduce the overhead of python with CUDA graphs
+//
+//	 - `trace.enabled` which is the most useful debugging flag to turn on
+//
+//	 - `trace.graph_diagram` which will show you a picture of your graph after fusion
+//
+//	 - For inductor you can see the full list of configs that it supports by calling `torch._inductor.list_options()`
+//	disable (bool): Turn torch.compile() into a no-op for testing
+//
+// Example::
+//
+//	@torch.compile(options={"triton.cudagraphs": True}, fullgraph=True)
+//	def foo(x):
+//	    return torch.sin(x) + torch.cos(x)
+//
+//go:linkname Compile py.compile
+func Compile(model *py.Object) *py.Object
+
 // Conditionally applies `true_fn` or `false_fn`.
 //
 // .. warning::
@@ -2244,3 +2327,1818 @@ func FromDlpack(extTensor *py.Object) *py.Object
 //
 //go:linkname Cond py.cond
 func Cond(pred *py.Object, trueFn *py.Object, falseFn *py.Object, operands *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.get_num_threads.html
+//
+//go:linkname GetNumThreads py.get_num_threads
+func GetNumThreads() *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.set_num_threads.html
+//
+//go:linkname SetNumThreads py.set_num_threads
+func SetNumThreads(int *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.get_num_interop_threads.html
+//
+//go:linkname GetNumInteropThreads py.get_num_interop_threads
+func GetNumInteropThreads() *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.set_num_interop_threads.html
+//
+//go:linkname SetNumInteropThreads py.set_num_interop_threads
+func SetNumInteropThreads(int *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.set_flush_denormal.html
+//
+//go:linkname SetFlushDenormal py.set_flush_denormal
+func SetFlushDenormal(mode *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.get_default_dtype.html
+//
+//go:linkname GetDefaultDtype py.get_default_dtype
+func GetDefaultDtype() *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.is_grad_enabled.html
+//
+//go:linkname IsGradEnabled py.is_grad_enabled
+func IsGradEnabled() *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.is_inference_mode_enabled.html
+//
+//go:linkname IsInferenceModeEnabled py.is_inference_mode_enabled
+func IsInferenceModeEnabled() *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sym_ite.html
+//
+//go:linkname SymIte py.sym_ite
+func SymIte(b *py.Object, t *py.Object, f *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.abs.html
+//
+//go:linkname Abs py.abs
+func Abs(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.absolute.html
+//
+//go:linkname Absolute py.absolute
+func Absolute(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.acos.html
+//
+//go:linkname Acos py.acos
+func Acos(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.acosh.html
+//
+//go:linkname Acosh py.acosh
+func Acosh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.add.html
+//
+//go:linkname Add py.add
+func Add(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.addbmm.html
+//
+//go:linkname Addbmm py.addbmm
+func Addbmm(input *py.Object, batch1 *py.Object, batch2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.addcdiv.html
+//
+//go:linkname Addcdiv py.addcdiv
+func Addcdiv(input *py.Object, tensor1 *py.Object, tensor2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.addcmul.html
+//
+//go:linkname Addcmul py.addcmul
+func Addcmul(input *py.Object, tensor1 *py.Object, tensor2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.addmm.html
+//
+//go:linkname Addmm py.addmm
+func Addmm(input *py.Object, mat1 *py.Object, mat2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.addmv.html
+//
+//go:linkname Addmv py.addmv
+func Addmv(input *py.Object, mat *py.Object, vec *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.addr.html
+//
+//go:linkname Addr py.addr
+func Addr(input *py.Object, vec1 *py.Object, vec2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.adjoint.html
+//
+//go:linkname Adjoint py.adjoint
+func Adjoint(Tensor *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.all.html
+//
+//go:linkname All py.all
+func All(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.allclose.html
+//
+//go:linkname Allclose py.allclose
+func Allclose(input *py.Object, other *py.Object, rtol *py.Object, atol *py.Object, equalNan *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.amax.html
+//
+//go:linkname Amax py.amax
+func Amax(input *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.amin.html
+//
+//go:linkname Amin py.amin
+func Amin(input *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.aminmax.html
+//
+//go:linkname Aminmax py.aminmax
+func Aminmax(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.angle.html
+//
+//go:linkname Angle py.angle
+func Angle(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.any.html
+//
+//go:linkname Any py.any
+func Any(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arange.html
+//
+//go:linkname Arange py.arange
+func Arange(start *py.Object, end *py.Object, step *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arccos.html
+//
+//go:linkname Arccos py.arccos
+func Arccos(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arccosh.html
+//
+//go:linkname Arccosh py.arccosh
+func Arccosh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arcsin.html
+//
+//go:linkname Arcsin py.arcsin
+func Arcsin(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arcsinh.html
+//
+//go:linkname Arcsinh py.arcsinh
+func Arcsinh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arctan.html
+//
+//go:linkname Arctan py.arctan
+func Arctan(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arctan2.html
+//
+//go:linkname Arctan2 py.arctan2
+func Arctan2(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.arctanh.html
+//
+//go:linkname Arctanh py.arctanh
+func Arctanh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.argmax.html
+//
+//go:linkname Argmax py.argmax
+func Argmax(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.argmin.html
+//
+//go:linkname Argmin py.argmin
+func Argmin(input *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.argsort.html
+//
+//go:linkname Argsort py.argsort
+func Argsort(input *py.Object, dim *py.Object, descending *py.Object, stable *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.argwhere.html
+//
+//go:linkname Argwhere py.argwhere
+func Argwhere(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.as_strided.html
+//
+//go:linkname AsStrided py.as_strided
+func AsStrided(input *py.Object, size *py.Object, stride *py.Object, storageOffset *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.as_tensor.html
+//
+//go:linkname AsTensor py.as_tensor
+func AsTensor(data *py.Object, dtype *py.Object, device *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.asarray.html
+//
+//go:linkname Asarray py.asarray
+func Asarray(obj *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.asin.html
+//
+//go:linkname Asin py.asin
+func Asin(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.asinh.html
+//
+//go:linkname Asinh py.asinh
+func Asinh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.atan.html
+//
+//go:linkname Atan py.atan
+func Atan(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.atan2.html
+//
+//go:linkname Atan2 py.atan2
+func Atan2(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.atanh.html
+//
+//go:linkname Atanh py.atanh
+func Atanh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.baddbmm.html
+//
+//go:linkname Baddbmm py.baddbmm
+func Baddbmm(input *py.Object, batch1 *py.Object, batch2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bartlett_window.html
+//
+//go:linkname BartlettWindow py.bartlett_window
+func BartlettWindow(windowLength *py.Object, periodic *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bernoulli.html
+//
+//go:linkname Bernoulli py.bernoulli
+func Bernoulli(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bincount.html
+//
+//go:linkname Bincount py.bincount
+func Bincount(input *py.Object, weights *py.Object, minlength *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bitwise_and.html
+//
+//go:linkname BitwiseAnd py.bitwise_and
+func BitwiseAnd(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bitwise_left_shift.html
+//
+//go:linkname BitwiseLeftShift py.bitwise_left_shift
+func BitwiseLeftShift(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bitwise_not.html
+//
+//go:linkname BitwiseNot py.bitwise_not
+func BitwiseNot(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bitwise_or.html
+//
+//go:linkname BitwiseOr py.bitwise_or
+func BitwiseOr(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bitwise_right_shift.html
+//
+//go:linkname BitwiseRightShift py.bitwise_right_shift
+func BitwiseRightShift(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bitwise_xor.html
+//
+//go:linkname BitwiseXor py.bitwise_xor
+func BitwiseXor(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.blackman_window.html
+//
+//go:linkname BlackmanWindow py.blackman_window
+func BlackmanWindow(windowLength *py.Object, periodic *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bmm.html
+//
+//go:linkname Bmm py.bmm
+func Bmm(input *py.Object, mat2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.broadcast_to.html
+//
+//go:linkname BroadcastTo py.broadcast_to
+func BroadcastTo(input *py.Object, shape *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.bucketize.html
+//
+//go:linkname Bucketize py.bucketize
+func Bucketize(input *py.Object, boundaries *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.can_cast.html
+//
+//go:linkname CanCast py.can_cast
+func CanCast(from *py.Object, to *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cat.html
+//
+//go:linkname Cat py.cat
+func Cat(tensors *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ceil.html
+//
+//go:linkname Ceil py.ceil
+func Ceil(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cholesky.html
+//
+//go:linkname Cholesky py.cholesky
+func Cholesky(input *py.Object, upper *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cholesky_inverse.html
+//
+//go:linkname CholeskyInverse py.cholesky_inverse
+func CholeskyInverse(L *py.Object, upper *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cholesky_solve.html
+//
+//go:linkname CholeskySolve py.cholesky_solve
+func CholeskySolve(B *py.Object, L *py.Object, upper *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.chunk.html
+//
+//go:linkname Chunk py.chunk
+func Chunk(input *py.Object, chunks *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.clamp.html
+//
+//go:linkname Clamp py.clamp
+func Clamp(input *py.Object, min *py.Object, max *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.clip.html
+//
+//go:linkname Clip py.clip
+func Clip(input *py.Object, min *py.Object, max *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.clone.html
+//
+//go:linkname Clone py.clone
+func Clone(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.column_stack.html
+//
+//go:linkname ColumnStack py.column_stack
+func ColumnStack(tensors *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.combinations.html
+//
+//go:linkname Combinations py.combinations
+func Combinations(input *py.Object, r *py.Object, withReplacement *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.complex.html
+//
+//go:linkname Complex py.complex
+func Complex(real *py.Object, imag *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.concat.html
+//
+//go:linkname Concat py.concat
+func Concat(tensors *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.concatenate.html
+//
+//go:linkname Concatenate py.concatenate
+func Concatenate(tensors *py.Object, axis *py.Object, out *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.conj.html
+//
+//go:linkname Conj py.conj
+func Conj(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.conj_physical.html
+//
+//go:linkname ConjPhysical py.conj_physical
+func ConjPhysical(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.copysign.html
+//
+//go:linkname Copysign py.copysign
+func Copysign(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.corrcoef.html
+//
+//go:linkname Corrcoef py.corrcoef
+func Corrcoef(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cos.html
+//
+//go:linkname Cos py.cos
+func Cos(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cosh.html
+//
+//go:linkname Cosh py.cosh
+func Cosh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.count_nonzero.html
+//
+//go:linkname CountNonzero py.count_nonzero
+func CountNonzero(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cov.html
+//
+//go:linkname Cov py.cov
+func Cov(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cross.html
+//
+//go:linkname Cross py.cross
+func Cross(input *py.Object, other *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cummax.html
+//
+//go:linkname Cummax py.cummax
+func Cummax(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cummin.html
+//
+//go:linkname Cummin py.cummin
+func Cummin(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cumprod.html
+//
+//go:linkname Cumprod py.cumprod
+func Cumprod(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cumsum.html
+//
+//go:linkname Cumsum py.cumsum
+func Cumsum(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.cumulative_trapezoid.html
+//
+//go:linkname CumulativeTrapezoid py.cumulative_trapezoid
+func CumulativeTrapezoid(y *py.Object, x *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.deg2rad.html
+//
+//go:linkname Deg2rad py.deg2rad
+func Deg2rad(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.dequantize.html
+//
+//go:linkname Dequantize py.dequantize
+func Dequantize(tensor *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.det.html
+//
+//go:linkname Det py.det
+func Det(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.diag.html
+//
+//go:linkname Diag py.diag
+func Diag(input *py.Object, diagonal *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.diag_embed.html
+//
+//go:linkname DiagEmbed py.diag_embed
+func DiagEmbed(input *py.Object, offset *py.Object, dim1 *py.Object, dim2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.diagflat.html
+//
+//go:linkname Diagflat py.diagflat
+func Diagflat(input *py.Object, offset *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.diagonal.html
+//
+//go:linkname Diagonal py.diagonal
+func Diagonal(input *py.Object, offset *py.Object, dim1 *py.Object, dim2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.diagonal_scatter.html
+//
+//go:linkname DiagonalScatter py.diagonal_scatter
+func DiagonalScatter(input *py.Object, src *py.Object, offset *py.Object, dim1 *py.Object, dim2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.diff.html
+//
+//go:linkname Diff py.diff
+func Diff(input *py.Object, n *py.Object, dim *py.Object, prepend *py.Object, append *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.digamma.html
+//
+//go:linkname Digamma py.digamma
+func Digamma(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.dist.html
+//
+//go:linkname Dist py.dist
+func Dist(input *py.Object, other *py.Object, p *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.div.html
+//
+//go:linkname Div py.div
+func Div(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.divide.html
+//
+//go:linkname Divide py.divide
+func Divide(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.dot.html
+//
+//go:linkname Dot py.dot
+func Dot(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.dsplit.html
+//
+//go:linkname Dsplit py.dsplit
+func Dsplit(input *py.Object, indicesOrSections *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.dstack.html
+//
+//go:linkname Dstack py.dstack
+func Dstack(tensors *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.empty.html
+//
+//go:linkname Empty py.empty
+func Empty(__llgo_va_list ...interface{}) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.empty_like.html
+//
+//go:linkname EmptyLike py.empty_like
+func EmptyLike(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.empty_strided.html
+//
+//go:linkname EmptyStrided py.empty_strided
+func EmptyStrided(size *py.Object, stride *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.eq.html
+//
+//go:linkname Eq py.eq
+func Eq(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.equal.html
+//
+//go:linkname Equal py.equal
+func Equal(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.erf.html
+//
+//go:linkname Erf py.erf
+func Erf(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.erfc.html
+//
+//go:linkname Erfc py.erfc
+func Erfc(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.erfinv.html
+//
+//go:linkname Erfinv py.erfinv
+func Erfinv(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.exp.html
+//
+//go:linkname Exp py.exp
+func Exp(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.exp2.html
+//
+//go:linkname Exp2 py.exp2
+func Exp2(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.expm1.html
+//
+//go:linkname Expm1 py.expm1
+func Expm1(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.eye.html
+//
+//go:linkname Eye py.eye
+func Eye(n *py.Object, m *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fake_quantize_per_channel_affine.html
+//
+//go:linkname FakeQuantizePerChannelAffine py.fake_quantize_per_channel_affine
+func FakeQuantizePerChannelAffine(input *py.Object, scale *py.Object, zeroPoint *py.Object, axis *py.Object, quantMin *py.Object, quantMax *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fake_quantize_per_tensor_affine.html
+//
+//go:linkname FakeQuantizePerTensorAffine py.fake_quantize_per_tensor_affine
+func FakeQuantizePerTensorAffine(input *py.Object, scale *py.Object, zeroPoint *py.Object, quantMin *py.Object, quantMax *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fix.html
+//
+//go:linkname Fix py.fix
+func Fix(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.flatten.html
+//
+//go:linkname Flatten py.flatten
+func Flatten(input *py.Object, startDim *py.Object, endDim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.flip.html
+//
+//go:linkname Flip py.flip
+func Flip(input *py.Object, dims *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fliplr.html
+//
+//go:linkname Fliplr py.fliplr
+func Fliplr(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.flipud.html
+//
+//go:linkname Flipud py.flipud
+func Flipud(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.float_power.html
+//
+//go:linkname FloatPower py.float_power
+func FloatPower(input *py.Object, exponent *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.floor.html
+//
+//go:linkname Floor py.floor
+func Floor(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.floor_divide.html
+//
+//go:linkname FloorDivide py.floor_divide
+func FloorDivide(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fmax.html
+//
+//go:linkname Fmax py.fmax
+func Fmax(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fmin.html
+//
+//go:linkname Fmin py.fmin
+func Fmin(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.fmod.html
+//
+//go:linkname Fmod py.fmod
+func Fmod(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.frac.html
+//
+//go:linkname Frac py.frac
+func Frac(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.frexp.html
+//
+//go:linkname Frexp py.frexp
+func Frexp(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.from_file.html
+//
+//go:linkname FromFile py.from_file
+func FromFile(filename *py.Object, shared *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.from_numpy.html
+//
+//go:linkname FromNumpy py.from_numpy
+func FromNumpy(ndarray *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.frombuffer.html
+//
+//go:linkname Frombuffer py.frombuffer
+func Frombuffer(buffer *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.full.html
+//
+//go:linkname Full py.full
+func Full(size *py.Object, fillValue *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.full_like.html
+//
+//go:linkname FullLike py.full_like
+func FullLike(input *py.Object, fillValue *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.gather.html
+//
+//go:linkname Gather py.gather
+func Gather(input *py.Object, dim *py.Object, index *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.gcd.html
+//
+//go:linkname Gcd py.gcd
+func Gcd(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ge.html
+//
+//go:linkname Ge py.ge
+func Ge(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.geqrf.html
+//
+//go:linkname Geqrf py.geqrf
+func Geqrf(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ger.html
+//
+//go:linkname Ger py.ger
+func Ger(input *py.Object, vec2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.gradient.html
+//
+//go:linkname Gradient py.gradient
+func Gradient(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.greater.html
+//
+//go:linkname Greater py.greater
+func Greater(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.greater_equal.html
+//
+//go:linkname GreaterEqual py.greater_equal
+func GreaterEqual(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.gt.html
+//
+//go:linkname Gt py.gt
+func Gt(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.hamming_window.html
+//
+//go:linkname HammingWindow py.hamming_window
+func HammingWindow(windowLength *py.Object, periodic *py.Object, alpha *py.Object, beta *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.hann_window.html
+//
+//go:linkname HannWindow py.hann_window
+func HannWindow(windowLength *py.Object, periodic *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.heaviside.html
+//
+//go:linkname Heaviside py.heaviside
+func Heaviside(input *py.Object, values *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.histc.html
+//
+//go:linkname Histc py.histc
+func Histc(input *py.Object, bins *py.Object, min *py.Object, max *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.histogram.html
+//
+//go:linkname Histogram py.histogram
+func Histogram(input *py.Object, bins *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.histogramdd.html
+//
+//go:linkname Histogramdd py.histogramdd
+func Histogramdd(input *py.Object, bins *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.hsplit.html
+//
+//go:linkname Hsplit py.hsplit
+func Hsplit(input *py.Object, indicesOrSections *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.hspmm.html
+//
+//go:linkname Hspmm py.hspmm
+func Hspmm(mat1 *py.Object, mat2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.hstack.html
+//
+//go:linkname Hstack py.hstack
+func Hstack(tensors *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.hypot.html
+//
+//go:linkname Hypot py.hypot
+func Hypot(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.i0.html
+//
+//go:linkname I0 py.i0
+func I0(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.igamma.html
+//
+//go:linkname Igamma py.igamma
+func Igamma(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.igammac.html
+//
+//go:linkname Igammac py.igammac
+func Igammac(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.imag.html
+//
+//go:linkname Imag py.imag
+func Imag(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.index_add.html
+//
+//go:linkname IndexAdd py.index_add
+func IndexAdd(input *py.Object, dim *py.Object, index *py.Object, source *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.index_copy.html
+//
+//go:linkname IndexCopy py.index_copy
+func IndexCopy(input *py.Object, dim *py.Object, index *py.Object, source *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.index_reduce.html
+//
+//go:linkname IndexReduce py.index_reduce
+func IndexReduce(input *py.Object, dim *py.Object, index *py.Object, source *py.Object, reduce *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.index_select.html
+//
+//go:linkname IndexSelect py.index_select
+func IndexSelect(input *py.Object, dim *py.Object, index *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.inner.html
+//
+//go:linkname Inner py.inner
+func Inner(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.inverse.html
+//
+//go:linkname Inverse py.inverse
+func Inverse(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.is_complex.html
+//
+//go:linkname IsComplex py.is_complex
+func IsComplex(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.is_conj.html
+//
+//go:linkname IsConj py.is_conj
+func IsConj(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.is_floating_point.html
+//
+//go:linkname IsFloatingPoint py.is_floating_point
+func IsFloatingPoint(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.is_nonzero.html
+//
+//go:linkname IsNonzero py.is_nonzero
+func IsNonzero(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isclose.html
+//
+//go:linkname Isclose py.isclose
+func Isclose(input *py.Object, other *py.Object, rtol *py.Object, atol *py.Object, equalNan *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isfinite.html
+//
+//go:linkname Isfinite py.isfinite
+func Isfinite(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isin.html
+//
+//go:linkname Isin py.isin
+func Isin(elements *py.Object, testElements *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isinf.html
+//
+//go:linkname Isinf py.isinf
+func Isinf(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isnan.html
+//
+//go:linkname Isnan py.isnan
+func Isnan(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isneginf.html
+//
+//go:linkname Isneginf py.isneginf
+func Isneginf(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isposinf.html
+//
+//go:linkname Isposinf py.isposinf
+func Isposinf(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.isreal.html
+//
+//go:linkname Isreal py.isreal
+func Isreal(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.istft.html
+//
+//go:linkname Istft py.istft
+func Istft(input *py.Object, nFft *py.Object, hopLength *py.Object, winLength *py.Object, window *py.Object, center *py.Object, normalized *py.Object, onesided *py.Object, length *py.Object, returnComplex *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.kaiser_window.html
+//
+//go:linkname KaiserWindow py.kaiser_window
+func KaiserWindow(windowLength *py.Object, periodic *py.Object, beta *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.kron.html
+//
+//go:linkname Kron py.kron
+func Kron(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.kthvalue.html
+//
+//go:linkname Kthvalue py.kthvalue
+func Kthvalue(input *py.Object, k *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.lcm.html
+//
+//go:linkname Lcm py.lcm
+func Lcm(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ldexp.html
+//
+//go:linkname Ldexp py.ldexp
+func Ldexp(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.le.html
+//
+//go:linkname Le py.le
+func Le(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.lerp.html
+//
+//go:linkname Lerp py.lerp
+func Lerp(input *py.Object, end *py.Object, weight *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.less.html
+//
+//go:linkname Less py.less
+func Less(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.less_equal.html
+//
+//go:linkname LessEqual py.less_equal
+func LessEqual(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.lgamma.html
+//
+//go:linkname Lgamma py.lgamma
+func Lgamma(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.linspace.html
+//
+//go:linkname Linspace py.linspace
+func Linspace(start *py.Object, end *py.Object, steps *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.log.html
+//
+//go:linkname Log py.log
+func Log(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.log10.html
+//
+//go:linkname Log10 py.log10
+func Log10(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.log1p.html
+//
+//go:linkname Log1p py.log1p
+func Log1p(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.log2.html
+//
+//go:linkname Log2 py.log2
+func Log2(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logaddexp.html
+//
+//go:linkname Logaddexp py.logaddexp
+func Logaddexp(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logaddexp2.html
+//
+//go:linkname Logaddexp2 py.logaddexp2
+func Logaddexp2(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logcumsumexp.html
+//
+//go:linkname Logcumsumexp py.logcumsumexp
+func Logcumsumexp(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logdet.html
+//
+//go:linkname Logdet py.logdet
+func Logdet(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logical_and.html
+//
+//go:linkname LogicalAnd py.logical_and
+func LogicalAnd(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logical_not.html
+//
+//go:linkname LogicalNot py.logical_not
+func LogicalNot(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logical_or.html
+//
+//go:linkname LogicalOr py.logical_or
+func LogicalOr(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logical_xor.html
+//
+//go:linkname LogicalXor py.logical_xor
+func LogicalXor(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logit.html
+//
+//go:linkname Logit py.logit
+func Logit(input *py.Object, eps *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logspace.html
+//
+//go:linkname Logspace py.logspace
+func Logspace(start *py.Object, end *py.Object, steps *py.Object, base *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.logsumexp.html
+//
+//go:linkname Logsumexp py.logsumexp
+func Logsumexp(input *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.lt.html
+//
+//go:linkname Lt py.lt
+func Lt(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.lu_solve.html
+//
+//go:linkname LuSolve py.lu_solve
+func LuSolve(b *py.Object, LUData *py.Object, LUPivots *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.lu_unpack.html
+//
+//go:linkname LuUnpack py.lu_unpack
+func LuUnpack(LUData *py.Object, LUPivots *py.Object, unpackData *py.Object, unpackPivots *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.masked_select.html
+//
+//go:linkname MaskedSelect py.masked_select
+func MaskedSelect(input *py.Object, mask *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.matmul.html
+//
+//go:linkname Matmul py.matmul
+func Matmul(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.matrix_exp.html
+//
+//go:linkname MatrixExp py.matrix_exp
+func MatrixExp(A *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.matrix_power.html
+//
+//go:linkname MatrixPower py.matrix_power
+func MatrixPower(input *py.Object, n *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.max.html
+//
+//go:linkname Max py.max
+func Max(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.maximum.html
+//
+//go:linkname Maximum py.maximum
+func Maximum(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.mean.html
+//
+//go:linkname Mean py.mean
+func Mean(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.median.html
+//
+//go:linkname Median py.median
+func Median(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.min.html
+//
+//go:linkname Min py.min
+func Min(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.minimum.html
+//
+//go:linkname Minimum py.minimum
+func Minimum(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.mm.html
+//
+//go:linkname Mm py.mm
+func Mm(input *py.Object, mat2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.mode.html
+//
+//go:linkname Mode py.mode
+func Mode(input *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.moveaxis.html
+//
+//go:linkname Moveaxis py.moveaxis
+func Moveaxis(input *py.Object, source *py.Object, destination *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.movedim.html
+//
+//go:linkname Movedim py.movedim
+func Movedim(input *py.Object, source *py.Object, destination *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.msort.html
+//
+//go:linkname Msort py.msort
+func Msort(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.mul.html
+//
+//go:linkname Mul py.mul
+func Mul(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.multinomial.html
+//
+//go:linkname Multinomial py.multinomial
+func Multinomial(input *py.Object, numSamples *py.Object, replacement *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.multiply.html
+//
+//go:linkname Multiply py.multiply
+func Multiply(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.mv.html
+//
+//go:linkname Mv py.mv
+func Mv(input *py.Object, vec *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.mvlgamma.html
+//
+//go:linkname Mvlgamma py.mvlgamma
+func Mvlgamma(input *py.Object, p *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nan_to_num.html
+//
+//go:linkname NanToNum py.nan_to_num
+func NanToNum(input *py.Object, nan *py.Object, posinf *py.Object, neginf *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nanmean.html
+//
+//go:linkname Nanmean py.nanmean
+func Nanmean(input *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nanmedian.html
+//
+//go:linkname Nanmedian py.nanmedian
+func Nanmedian(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nanquantile.html
+//
+//go:linkname Nanquantile py.nanquantile
+func Nanquantile(input *py.Object, q *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nansum.html
+//
+//go:linkname Nansum py.nansum
+func Nansum(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.narrow.html
+//
+//go:linkname Narrow py.narrow
+func Narrow(input *py.Object, dim *py.Object, start *py.Object, length *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.narrow_copy.html
+//
+//go:linkname NarrowCopy py.narrow_copy
+func NarrowCopy(input *py.Object, dim *py.Object, start *py.Object, length *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ne.html
+//
+//go:linkname Ne py.ne
+func Ne(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.neg.html
+//
+//go:linkname Neg py.neg
+func Neg(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.negative.html
+//
+//go:linkname Negative py.negative
+func Negative(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nextafter.html
+//
+//go:linkname Nextafter py.nextafter
+func Nextafter(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.nonzero.html
+//
+//go:linkname Nonzero py.nonzero
+func Nonzero(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.normal.html
+//
+//go:linkname Normal py.normal
+func Normal(mean *py.Object, std *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.not_equal.html
+//
+//go:linkname NotEqual py.not_equal
+func NotEqual(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.numel.html
+//
+//go:linkname Numel py.numel
+func Numel(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ones.html
+//
+//go:linkname Ones py.ones
+func Ones(__llgo_va_list ...interface{}) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ones_like.html
+//
+//go:linkname OnesLike py.ones_like
+func OnesLike(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.orgqr.html
+//
+//go:linkname Orgqr py.orgqr
+func Orgqr(input *py.Object, tau *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ormqr.html
+//
+//go:linkname Ormqr py.ormqr
+func Ormqr(input *py.Object, tau *py.Object, other *py.Object, left *py.Object, transpose *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.outer.html
+//
+//go:linkname Outer py.outer
+func Outer(input *py.Object, vec2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.permute.html
+//
+//go:linkname Permute py.permute
+func Permute(input *py.Object, dims *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.pinverse.html
+//
+//go:linkname Pinverse py.pinverse
+func Pinverse(input *py.Object, rcond *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.poisson.html
+//
+//go:linkname Poisson py.poisson
+func Poisson(input *py.Object, generator *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.polar.html
+//
+//go:linkname Polar py.polar
+func Polar(abs *py.Object, angle *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.polygamma.html
+//
+//go:linkname Polygamma py.polygamma
+func Polygamma(n *py.Object, input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.positive.html
+//
+//go:linkname Positive py.positive
+func Positive(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.pow.html
+//
+//go:linkname Pow py.pow
+func Pow(input *py.Object, exponent *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.prod.html
+//
+//go:linkname Prod py.prod
+func Prod(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.promote_types.html
+//
+//go:linkname PromoteTypes py.promote_types
+func PromoteTypes(type1 *py.Object, type2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.qr.html
+//
+//go:linkname Qr py.qr
+func Qr(input *py.Object, some *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.quantile.html
+//
+//go:linkname Quantile py.quantile
+func Quantile(input *py.Object, q *py.Object, dim *py.Object, keepdim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.quantize_per_channel.html
+//
+//go:linkname QuantizePerChannel py.quantize_per_channel
+func QuantizePerChannel(input *py.Object, scales *py.Object, zeroPoints *py.Object, axis *py.Object, dtype *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.quantize_per_tensor.html
+//
+//go:linkname QuantizePerTensor py.quantize_per_tensor
+func QuantizePerTensor(input *py.Object, scale *py.Object, zeroPoint *py.Object, dtype *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.quantized_batch_norm.html
+//
+//go:linkname QuantizedBatchNorm py.quantized_batch_norm
+func QuantizedBatchNorm(input *py.Object, weight *py.Object, bias *py.Object, mean *py.Object, var_ *py.Object, eps *py.Object, outputScale *py.Object, outputZeroPoint *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.quantized_max_pool1d.html
+//
+//go:linkname QuantizedMaxPool1d py.quantized_max_pool1d
+func QuantizedMaxPool1d(input *py.Object, kernelSize *py.Object, stride *py.Object, padding *py.Object, dilation *py.Object, ceilMode *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.quantized_max_pool2d.html
+//
+//go:linkname QuantizedMaxPool2d py.quantized_max_pool2d
+func QuantizedMaxPool2d(input *py.Object, kernelSize *py.Object, stride *py.Object, padding *py.Object, dilation *py.Object, ceilMode *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.rad2deg.html
+//
+//go:linkname Rad2deg py.rad2deg
+func Rad2deg(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.rand.html
+//
+//go:linkname Rand py.rand
+func Rand(__llgo_va_list ...interface{}) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.rand_like.html
+//
+//go:linkname RandLike py.rand_like
+func RandLike(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.randint.html
+//
+//go:linkname Randint py.randint
+func Randint(low *py.Object, high *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.randint_like.html
+//
+//go:linkname RandintLike py.randint_like
+func RandintLike(input *py.Object, low *py.Object, high *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.randn.html
+//
+//go:linkname Randn py.randn
+func Randn(__llgo_va_list ...interface{}) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.randn_like.html
+//
+//go:linkname RandnLike py.randn_like
+func RandnLike(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.randperm.html
+//
+//go:linkname Randperm py.randperm
+func Randperm(n *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.range.html
+//
+//go:linkname Range py.range
+func Range(start *py.Object, end *py.Object, step *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.ravel.html
+//
+//go:linkname Ravel py.ravel
+func Ravel(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.real.html
+//
+//go:linkname Real py.real
+func Real(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.reciprocal.html
+//
+//go:linkname Reciprocal py.reciprocal
+func Reciprocal(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.remainder.html
+//
+//go:linkname Remainder py.remainder
+func Remainder(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.renorm.html
+//
+//go:linkname Renorm py.renorm
+func Renorm(input *py.Object, p *py.Object, dim *py.Object, maxnorm *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.repeat_interleave.html
+//
+//go:linkname RepeatInterleave py.repeat_interleave
+func RepeatInterleave(input *py.Object, repeats *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.reshape.html
+//
+//go:linkname Reshape py.reshape
+func Reshape(input *py.Object, shape *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.resolve_conj.html
+//
+//go:linkname ResolveConj py.resolve_conj
+func ResolveConj(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.resolve_neg.html
+//
+//go:linkname ResolveNeg py.resolve_neg
+func ResolveNeg(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.result_type.html
+//
+//go:linkname ResultType py.result_type
+func ResultType(tensor1 *py.Object, tensor2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.roll.html
+//
+//go:linkname Roll py.roll
+func Roll(input *py.Object, shifts *py.Object, dims *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.rot90.html
+//
+//go:linkname Rot90 py.rot90
+func Rot90(input *py.Object, k *py.Object, dims *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.round.html
+//
+//go:linkname Round py.round
+func Round(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.row_stack.html
+//
+//go:linkname RowStack py.row_stack
+func RowStack(tensors *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.rsqrt.html
+//
+//go:linkname Rsqrt py.rsqrt
+func Rsqrt(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.scatter.html
+//
+//go:linkname Scatter py.scatter
+func Scatter(input *py.Object, dim *py.Object, index *py.Object, src *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.scatter_add.html
+//
+//go:linkname ScatterAdd py.scatter_add
+func ScatterAdd(input *py.Object, dim *py.Object, index *py.Object, src *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.scatter_reduce.html
+//
+//go:linkname ScatterReduce py.scatter_reduce
+func ScatterReduce(input *py.Object, dim *py.Object, index *py.Object, src *py.Object, reduce *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.searchsorted.html
+//
+//go:linkname Searchsorted py.searchsorted
+func Searchsorted(sortedSequence *py.Object, values *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.select.html
+//
+//go:linkname Select py.select
+func Select(input *py.Object, dim *py.Object, index *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.select_scatter.html
+//
+//go:linkname SelectScatter py.select_scatter
+func SelectScatter(input *py.Object, src *py.Object, dim *py.Object, index *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sgn.html
+//
+//go:linkname Sgn py.sgn
+func Sgn(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sigmoid.html
+//
+//go:linkname Sigmoid py.sigmoid
+func Sigmoid(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sign.html
+//
+//go:linkname Sign py.sign
+func Sign(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.signbit.html
+//
+//go:linkname Signbit py.signbit
+func Signbit(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sin.html
+//
+//go:linkname Sin py.sin
+func Sin(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sinc.html
+//
+//go:linkname Sinc py.sinc
+func Sinc(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sinh.html
+//
+//go:linkname Sinh py.sinh
+func Sinh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.slice_scatter.html
+//
+//go:linkname SliceScatter py.slice_scatter
+func SliceScatter(input *py.Object, src *py.Object, dim *py.Object, start *py.Object, end *py.Object, step *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.slogdet.html
+//
+//go:linkname Slogdet py.slogdet
+func Slogdet(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.smm.html
+//
+//go:linkname Smm py.smm
+func Smm(input *py.Object, mat *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.softmax.html
+//
+//go:linkname Softmax py.softmax
+func Softmax(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sort.html
+//
+//go:linkname Sort py.sort
+func Sort(input *py.Object, dim *py.Object, descending *py.Object, stable *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sparse_bsc_tensor.html
+//
+//go:linkname SparseBscTensor py.sparse_bsc_tensor
+func SparseBscTensor(ccolIndices *py.Object, rowIndices *py.Object, values *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sparse_bsr_tensor.html
+//
+//go:linkname SparseBsrTensor py.sparse_bsr_tensor
+func SparseBsrTensor(crowIndices *py.Object, colIndices *py.Object, values *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sparse_compressed_tensor.html
+//
+//go:linkname SparseCompressedTensor py.sparse_compressed_tensor
+func SparseCompressedTensor(compressedIndices *py.Object, plainIndices *py.Object, values *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sparse_coo_tensor.html
+//
+//go:linkname SparseCooTensor py.sparse_coo_tensor
+func SparseCooTensor(indices *py.Object, values *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sparse_csc_tensor.html
+//
+//go:linkname SparseCscTensor py.sparse_csc_tensor
+func SparseCscTensor(ccolIndices *py.Object, rowIndices *py.Object, values *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sparse_csr_tensor.html
+//
+//go:linkname SparseCsrTensor py.sparse_csr_tensor
+func SparseCsrTensor(crowIndices *py.Object, colIndices *py.Object, values *py.Object, size *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sqrt.html
+//
+//go:linkname Sqrt py.sqrt
+func Sqrt(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.square.html
+//
+//go:linkname Square py.square
+func Square(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.squeeze.html
+//
+//go:linkname Squeeze py.squeeze
+func Squeeze(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sspaddmm.html
+//
+//go:linkname Sspaddmm py.sspaddmm
+func Sspaddmm(input *py.Object, mat1 *py.Object, mat2 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.stack.html
+//
+//go:linkname Stack py.stack
+func Stack(tensors *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.std.html
+//
+//go:linkname Std py.std
+func Std(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.std_mean.html
+//
+//go:linkname StdMean py.std_mean
+func StdMean(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sub.html
+//
+//go:linkname Sub py.sub
+func Sub(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.subtract.html
+//
+//go:linkname Subtract py.subtract
+func Subtract(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.sum.html
+//
+//go:linkname Sum py.sum
+func Sum(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.svd.html
+//
+//go:linkname Svd py.svd
+func Svd(input *py.Object, some *py.Object, computeUv *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.swapaxes.html
+//
+//go:linkname Swapaxes py.swapaxes
+func Swapaxes(input *py.Object, axis0 *py.Object, axis1 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.swapdims.html
+//
+//go:linkname Swapdims py.swapdims
+func Swapdims(input *py.Object, dim0 *py.Object, dim1 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.t.html
+//
+//go:linkname T py.t
+func T(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.take.html
+//
+//go:linkname Take py.take
+func Take(input *py.Object, index *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.take_along_dim.html
+//
+//go:linkname TakeAlongDim py.take_along_dim
+func TakeAlongDim(input *py.Object, indices *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tan.html
+//
+//go:linkname Tan py.tan
+func Tan(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tanh.html
+//
+//go:linkname Tanh py.tanh
+func Tanh(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tensor.html
+//
+//go:linkname Tensor py.tensor
+func Tensor(data *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tensor_split.html
+//
+//go:linkname TensorSplit py.tensor_split
+func TensorSplit(input *py.Object, indicesOrSections *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tile.html
+//
+//go:linkname Tile py.tile
+func Tile(input *py.Object, dims *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.topk.html
+//
+//go:linkname Topk py.topk
+func Topk(input *py.Object, k *py.Object, dim *py.Object, largest *py.Object, sorted *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.trace.html
+//
+//go:linkname Trace py.trace
+func Trace(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.transpose.html
+//
+//go:linkname Transpose py.transpose
+func Transpose(input *py.Object, dim0 *py.Object, dim1 *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.trapezoid.html
+//
+//go:linkname Trapezoid py.trapezoid
+func Trapezoid(y *py.Object, x *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.trapz.html
+//
+//go:linkname Trapz py.trapz
+func Trapz(y *py.Object, x *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.triangular_solve.html
+//
+//go:linkname TriangularSolve py.triangular_solve
+func TriangularSolve(b *py.Object, A *py.Object, upper *py.Object, transpose *py.Object, unitriangular *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tril.html
+//
+//go:linkname Tril py.tril
+func Tril(input *py.Object, diagonal *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.tril_indices.html
+//
+//go:linkname TrilIndices py.tril_indices
+func TrilIndices(row *py.Object, col *py.Object, offset *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.triu.html
+//
+//go:linkname Triu py.triu
+func Triu(input *py.Object, diagonal *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.triu_indices.html
+//
+//go:linkname TriuIndices py.triu_indices
+func TriuIndices(row *py.Object, col *py.Object, offset *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.true_divide.html
+//
+//go:linkname TrueDivide py.true_divide
+func TrueDivide(dividend *py.Object, divisor *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.trunc.html
+//
+//go:linkname Trunc py.trunc
+func Trunc(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.unbind.html
+//
+//go:linkname Unbind py.unbind
+func Unbind(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.unflatten.html
+//
+//go:linkname Unflatten py.unflatten
+func Unflatten(input *py.Object, dim *py.Object, sizes *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.unsqueeze.html
+//
+//go:linkname Unsqueeze py.unsqueeze
+func Unsqueeze(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.vander.html
+//
+//go:linkname Vander py.vander
+func Vander(x *py.Object, N *py.Object, increasing *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.var.html
+//
+//go:linkname Var py.var
+func Var(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.var_mean.html
+//
+//go:linkname VarMean py.var_mean
+func VarMean(input *py.Object, dim *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.vdot.html
+//
+//go:linkname Vdot py.vdot
+func Vdot(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.view_as_complex.html
+//
+//go:linkname ViewAsComplex py.view_as_complex
+func ViewAsComplex(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.view_as_real.html
+//
+//go:linkname ViewAsReal py.view_as_real
+func ViewAsReal(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.vsplit.html
+//
+//go:linkname Vsplit py.vsplit
+func Vsplit(input *py.Object, indicesOrSections *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.vstack.html
+//
+//go:linkname Vstack py.vstack
+func Vstack(tensors *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.where.html
+//
+//go:linkname Where py.where
+func Where(condition *py.Object, input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.xlogy.html
+//
+//go:linkname Xlogy py.xlogy
+func Xlogy(input *py.Object, other *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.zeros.html
+//
+//go:linkname Zeros py.zeros
+func Zeros(__llgo_va_list ...interface{}) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.zeros_like.html
+//
+//go:linkname ZerosLike py.zeros_like
+func ZerosLike(input *py.Object) *py.Object
+
+// See https://pytorch.org/docs/stable/generated/torch.vmap.html
+//
+//go:linkname Vmap py.vmap
+func Vmap(func_ *py.Object, inDims *py.Object, outDims *py.Object, randomness *py.Object) *py.Object

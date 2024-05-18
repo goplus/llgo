@@ -38,11 +38,35 @@ type symbol struct {
 	Type string `json:"type"`
 	Doc  string `json:"doc"`
 	Sig  string `json:"sig"`
+	URL  string `json:"url"`
 }
 
 type module struct {
 	Name  string    `json:"name"`
 	Items []*symbol `json:"items"`
+}
+
+func pydump(pyLib string) (mod module) {
+	var out bytes.Buffer
+	cmd := exec.Command("pydump", pyLib)
+	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+
+	json.Unmarshal(out.Bytes(), &mod)
+	return
+}
+
+func pysigfetch(pyLib string, names []string) (mod module) {
+	var out bytes.Buffer
+	cmd := exec.Command("pysigfetch", pyLib, "-")
+	cmd.Stdin = strings.NewReader(strings.Join(names, " "))
+	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+
+	json.Unmarshal(out.Bytes(), &mod)
+	return
 }
 
 func main() {
@@ -52,25 +76,17 @@ func main() {
 	}
 	pyLib := os.Args[1]
 
-	var out bytes.Buffer
-	pydump := exec.Command("pydump", pyLib)
-	pydump.Stdout = &out
-	pydump.Run()
-
-	var mod module
-	json.Unmarshal(out.Bytes(), &mod)
-
-	modName := mod.Name
-	if modName == "" {
+	mod := pydump(pyLib)
+	if mod.Name != pyLib {
 		log.Printf("import module %s failed\n", pyLib)
 		os.Exit(1)
 	}
-	pkg := gogen.NewPackage("", modName, nil)
+	pkg := gogen.NewPackage("", pyLib, nil)
 	pkg.Import("unsafe").MarkForceUsed(pkg)       // import _ "unsafe"
 	py := pkg.Import("github.com/goplus/llgo/py") // import "github.com/goplus/llgo/py"
 
 	f := func(cb *gogen.CodeBuilder) int {
-		cb.Val("py." + modName)
+		cb.Val("py." + mod.Name)
 		return 1
 	}
 	defs := pkg.NewConstDefs(pkg.Types.Scope())
@@ -80,21 +96,22 @@ func main() {
 	objPtr := types.NewPointer(obj)
 	ret := types.NewTuple(pkg.NewParam(0, "", objPtr))
 
-	ctx := &context{pkg, obj, objPtr, ret, py}
-	for _, sym := range mod.Items {
-		switch sym.Type {
-		case "builtin_function_or_method", "function", "ufunc", "method-wrapper":
-			ctx.genFunc(pkg, sym)
-		case "str", "float", "bool", "type", "dict", "tuple", "list", "object", "module",
-			"int", "set", "frozenset", "flags", "bool_", "pybind11_type", "layout",
-			"memory_format", "qscheme", "dtype", "tensortype": // skip
-		default:
-			t := sym.Type
-			if len(t) > 0 && (t[0] >= 'a' && t[0] <= 'z') && !strings.HasSuffix(t, "_info") {
-				log.Panicln("unsupport type:", sym.Type)
-			}
+	ctx := &context{pkg, obj, objPtr, ret, nil, py}
+	ctx.genMod(pkg, &mod)
+	skips := ctx.skips
+	if n := len(skips); n > 0 {
+		log.Printf("==> There are %d signatures not found, fetch from doc site\n", n)
+		mod = pysigfetch(pyLib, skips)
+		ctx.skips = skips[:0]
+		ctx.genMod(pkg, &mod)
+		if len(mod.Items) > 0 {
+			skips = ctx.skips
+		}
+		if n := len(skips); n > 0 {
+			log.Printf("==> Skip %d symbols:\n%v\n", n, skips)
 		}
 	}
+
 	pkg.WriteTo(os.Stdout)
 }
 
@@ -103,7 +120,27 @@ type context struct {
 	obj    *types.Named
 	objPtr *types.Pointer
 	ret    *types.Tuple
+	skips  []string
 	py     gogen.PkgRef
+}
+
+func (ctx *context) genMod(pkg *gogen.Package, mod *module) {
+	for _, sym := range mod.Items {
+		switch sym.Type {
+		case "builtin_function_or_method", "function", "ufunc", "method-wrapper":
+			ctx.genFunc(pkg, sym)
+		case "str", "float", "bool", "type", "dict", "tuple", "list", "object", "module",
+			"int", "set", "frozenset", "flags", "bool_", "pybind11_type", "layout",
+			"memory_format", "qscheme", "dtype", "tensortype": // skip
+		case "": // pysigfetch: page not found
+			ctx.skips = append(ctx.skips, sym.Name)
+		default:
+			t := sym.Type
+			if len(t) > 0 && (t[0] >= 'a' && t[0] <= 'z') && !strings.HasSuffix(t, "_info") {
+				log.Panicln("unsupport type:", sym.Type)
+			}
+		}
+	}
 }
 
 func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
@@ -112,8 +149,7 @@ func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
 		return
 	}
 	if symSig == "<NULL>" {
-		// TODO(xsw): don't skip any func
-		log.Println("skip func:", name, symSig)
+		ctx.skips = append(ctx.skips, name)
 		return
 	}
 	params, variadic := ctx.genParams(pkg, symSig)
@@ -121,7 +157,15 @@ func (ctx *context) genFunc(pkg *gogen.Package, sym *symbol) {
 	sig := types.NewSignatureType(nil, nil, nil, params, ctx.ret, variadic)
 	fn := pkg.NewFuncDecl(token.NoPos, name, sig)
 	list := ctx.genDoc(sym.Doc)
-	list = append(list, emptyCommentLine)
+	if sym.URL != "" {
+		if len(list) > 0 {
+			list = append(list, emptyCommentLine)
+		}
+		list = append(list, genSee(sym.URL))
+	}
+	if len(list) > 0 {
+		list = append(list, emptyCommentLine)
+	}
 	list = append(list, ctx.genLinkname(name, sym))
 	fn.SetComments(pkg, &ast.CommentGroup{List: list})
 	// fn.BodyStart(pkg).End()
@@ -140,7 +184,7 @@ func (ctx *context) genParams(pkg *gogen.Package, sig string) (*types.Tuple, boo
 		if name == "/" {
 			continue
 		}
-		if name == "*" {
+		if name == "*" || name == "\\*" {
 			break
 		}
 		if strings.HasPrefix(name, "*") {
@@ -167,7 +211,7 @@ func genName(name string, idxDontTitle int) string {
 	}
 	name = strings.Join(parts, "")
 	switch name {
-	case "default", "func", "":
+	case "default", "func", "var", "":
 		name += "_"
 	}
 	return name
@@ -178,12 +222,19 @@ func (ctx *context) genLinkname(name string, sym *symbol) *ast.Comment {
 }
 
 func (ctx *context) genDoc(doc string) []*ast.Comment {
+	if doc == "" {
+		return make([]*ast.Comment, 0, 4)
+	}
 	lines := strings.Split(doc, "\n")
-	list := make([]*ast.Comment, len(lines), len(lines)+2)
+	list := make([]*ast.Comment, len(lines), len(lines)+4)
 	for i, line := range lines {
 		list[i] = &ast.Comment{Text: "// " + line}
 	}
 	return list
+}
+
+func genSee(url string) *ast.Comment {
+	return &ast.Comment{Text: "// See " + url}
 }
 
 var (

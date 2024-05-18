@@ -18,9 +18,9 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/py/inspect"
-	"github.com/goplus/llgo/x/cjson"
 )
 
 func main() {

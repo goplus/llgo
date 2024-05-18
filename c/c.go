@@ -33,6 +33,7 @@ type (
 	LongLong  = int64
 	UlongLong = uint64
 	Float     = float32
+	Double    = float64
 	Pointer   = unsafe.Pointer
 	FilePtr   = unsafe.Pointer
 )
