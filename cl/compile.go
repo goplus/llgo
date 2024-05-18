@@ -301,8 +301,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			fnName := pysymPrefix + mod + "." + name
 			if pyFn = pkg.PyObjOf(fnName); pyFn == nil {
 				pyFn = pkg.PyNewFunc(fnName, fn.Signature, true)
-				return
 			}
+			return
 		}
 		ftype = ignoredFunc
 	case llgoInstr:
@@ -629,7 +629,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			case llgoUnreachable: // func unreachable()
 				b.Unreachable()
 			default:
-				panic("todo")
+				log.Panicln("unknown ftype:", ftype)
 			}
 		default:
 			fn := p.compileValue(b, cv)
@@ -812,7 +812,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 }
 
 func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObjRef, kind int) {
-	// v.Pkg == nil: means auto generated function?
+	// TODO(xsw) v.Pkg == nil: means auto generated function?
 	if v.Pkg == p.goPkg || v.Pkg == nil {
 		// function in this package
 		goFn, pyFn, kind = p.compileFuncDecl(p.pkg, v)

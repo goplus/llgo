@@ -48,6 +48,7 @@ You can import a Python library in LLGo!
 
 And you can import any Python library into `llgo` through a program called `llpyg` (see [Development tools](#development-tools)). The currently imported libraries include:
 
+* [builtins](https://pkg.go.dev/github.com/goplus/llgo/py/std)
 * [sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
 * [os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
 * [math](https://pkg.go.dev/github.com/goplus/llgo/py/math)
@@ -165,13 +166,6 @@ Here are some examples related to them:
 
 ## Go syntax support
 
-The priority of `llgo` feature iteration is:
-
-* Popular C/Python libraries
-* Full Go syntax
-* Go standard libraries
-* Popular Go packages
-
 Common Go syntax is already supported. Except for the following, which needs to be improved:
 
 * interface (Limited support)
@@ -188,6 +182,14 @@ Here are some examples related to Go syntax:
 
 * [concat](_demo/concat/concat.go): define a variadic function
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
+
+
+## Go packages support
+
+Here are the Go packages that can be imported correctly:
+
+* [unsafe](https://pkg.go.dev/unsafe)
+* [unicode/utf8](https://pkg.go.dev/unicode/utf8)
 
 
 ## How to install
