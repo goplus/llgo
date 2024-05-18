@@ -51,10 +51,7 @@ func pydump(pyLib string) (mod module) {
 	cmd := exec.Command("pydump", pyLib)
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		panic(err)
-	}
+	cmd.Run()
 
 	json.Unmarshal(out.Bytes(), &mod)
 	return
@@ -66,10 +63,7 @@ func pysigfetch(pyLib string, names []string) (mod module) {
 	cmd.Stdin = strings.NewReader(strings.Join(names, " "))
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		panic(err)
-	}
+	cmd.Run()
 
 	json.Unmarshal(out.Bytes(), &mod)
 	return
@@ -104,13 +98,17 @@ func main() {
 
 	ctx := &context{pkg, obj, objPtr, ret, nil, py}
 	ctx.genMod(pkg, &mod)
-	if n := len(ctx.skips); n > 0 {
+	skips := ctx.skips
+	if n := len(skips); n > 0 {
 		log.Printf("==> There are %d signatures not found, fetch from doc site\n", n)
-		mod = pysigfetch(pyLib, ctx.skips)
-		ctx.skips = ctx.skips[:0]
+		mod = pysigfetch(pyLib, skips)
+		ctx.skips = skips[:0]
 		ctx.genMod(pkg, &mod)
-		if n := len(ctx.skips); n > 0 {
-			log.Printf("==> Skip %d symbols:\n%v\n", n, ctx.skips)
+		if len(mod.Items) > 0 {
+			skips = ctx.skips
+		}
+		if n := len(skips); n > 0 {
+			log.Printf("==> Skip %d symbols:\n%v\n", n, skips)
 		}
 	}
 
