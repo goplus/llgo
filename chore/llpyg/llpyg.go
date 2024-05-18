@@ -131,7 +131,7 @@ func (ctx *context) genMod(pkg *gogen.Package, mod *module) {
 			ctx.genFunc(pkg, sym)
 		case "str", "float", "bool", "type", "dict", "tuple", "list", "object", "module",
 			"int", "set", "frozenset", "flags", "bool_", "pybind11_type", "layout",
-			"memory_format", "qscheme", "dtype", "tensortype": // skip
+			"memory_format", "qscheme", "dtype", "tensortype", "ellipsis": // skip
 		case "": // pysigfetch: page not found
 			ctx.skips = append(ctx.skips, sym.Name)
 		default:
