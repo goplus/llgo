@@ -48,9 +48,11 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %12, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %13 = getelementptr inbounds i64, ptr %2, i64 %11
-  %14 = load i64, ptr %13, align 4
-  %15 = call i32 (ptr, ...) @printf(ptr @0, i64 %14)
+  %13 = icmp slt i64 %11, 0
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %13)
+  %14 = getelementptr inbounds i64, ptr %2, i64 %11
+  %15 = load i64, ptr %14, align 4
+  %16 = call i32 (ptr, ...) @printf(ptr @0, i64 %15)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -71,5 +73,7 @@ _llgo_0:
   %5 = trunc i64 %4 to i32
   ret i32 %5
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 
 declare i32 @printf(ptr, ...)

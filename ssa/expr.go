@@ -324,9 +324,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case token.AND_NOT:
 			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
 		case token.SHL, token.SHR:
-			if y.kind == vkSigned {
+			if needsNegativeCheck(y) {
 				check := Expr{b.impl.CreateICmp(llvm.IntSLT, y.impl, llvm.ConstInt(y.ll, 0, false), ""), b.Prog.Bool()}
-				b.InlineCall(b.Func.Pkg.rtFunc("CheckRuntimeError"), check, b.Str("negative shift amount"))
+				b.InlineCall(b.Func.Pkg.rtFunc("AssertNegativeShift"), check)
 			}
 			xsize, ysize := b.Prog.SizeOf(x.Type), b.Prog.SizeOf(y.Type)
 			if xsize != ysize {
@@ -723,6 +723,7 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	if debugInstr {
 		log.Printf("IndexAddr %v, %v\n", x.impl, idx.impl)
 	}
+	idx = b.checkIndex(idx)
 	prog := b.Prog
 	telem := prog.Index(x.Type)
 	pt := prog.Pointer(telem)
@@ -735,6 +736,30 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	// case *types.Pointer:
 	indices := []llvm.Value{idx.impl}
 	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
+}
+
+func needsNegativeCheck(x Expr) bool {
+	if x.kind == vkSigned {
+		if rv := x.impl.IsAConstantInt(); !rv.IsNil() && rv.SExtValue() >= 0 {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+// check index >= 0 and size to uint
+func (b Builder) checkIndex(idx Expr) Expr {
+	if needsNegativeCheck(idx) {
+		check := Expr{b.impl.CreateICmp(llvm.IntSLT, idx.impl, llvm.ConstInt(idx.ll, 0, false), ""), b.Prog.Bool()}
+		b.InlineCall(b.Func.Pkg.rtFunc("AssertIndexRange"), check)
+	}
+	typ := b.Prog.Uint()
+	if b.Prog.SizeOf(idx.Type) < b.Prog.SizeOf(typ) {
+		idx.Type = typ
+		idx.impl = castUintptr(b, idx.impl, typ)
+	}
+	return idx
 }
 
 // The Index instruction yields element Index of collection X, an array,
@@ -768,6 +793,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 			b.Store(ptr, x)
 		}
 	}
+	idx = b.checkIndex(idx)
 	pt := prog.Pointer(telem)
 	indices := []llvm.Value{idx.impl}
 	buf := Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}

@@ -16,12 +16,6 @@ source_filename = "main"
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@10 = private unnamed_addr constant [22 x i8] c"negative shift amount\00", align 1
-@11 = private unnamed_addr constant [22 x i8] c"negative shift amount\00", align 1
-@12 = private unnamed_addr constant [22 x i8] c"negative shift amount\00", align 1
-@13 = private unnamed_addr constant [22 x i8] c"negative shift amount\00", align 1
-@14 = private unnamed_addr constant [22 x i8] c"negative shift amount\00", align 1
-@15 = private unnamed_addr constant [22 x i8] c"negative shift amount\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -105,71 +99,65 @@ _llgo_0:
 define i64 @main.mask_shl(i64 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @10, i64 21)
-  call void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1 %2, %"github.com/goplus/llgo/internal/runtime.String" %3)
-  %4 = icmp uge i64 %1, 64
-  %5 = shl i64 %0, %1
-  %6 = select i1 %4, i64 0, i64 %5
-  ret i64 %6
+  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  %3 = icmp uge i64 %1, 64
+  %4 = shl i64 %0, %1
+  %5 = select i1 %3, i64 0, i64 %4
+  ret i64 %5
 }
 
 define i8 @main.mask_shl8(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @11, i64 21)
-  call void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1 %2, %"github.com/goplus/llgo/internal/runtime.String" %3)
-  %4 = trunc i64 %1 to i8
-  %5 = icmp uge i8 %4, 8
-  %6 = shl i8 %0, %4
-  %7 = select i1 %5, i8 0, i8 %6
-  ret i8 %7
+  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  %3 = trunc i64 %1 to i8
+  %4 = icmp uge i8 %3, 8
+  %5 = shl i8 %0, %3
+  %6 = select i1 %4, i8 0, i8 %5
+  ret i8 %6
 }
 
 define i8 @main.mask_shl8u(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @12, i64 21)
-  call void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1 %2, %"github.com/goplus/llgo/internal/runtime.String" %3)
-  %4 = trunc i64 %1 to i8
-  %5 = icmp uge i8 %4, 8
-  %6 = shl i8 %0, %4
-  %7 = select i1 %5, i8 0, i8 %6
-  ret i8 %7
+  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  %3 = trunc i64 %1 to i8
+  %4 = icmp uge i8 %3, 8
+  %5 = shl i8 %0, %3
+  %6 = select i1 %4, i8 0, i8 %5
+  ret i8 %6
 }
 
 define i64 @main.mask_shr(i64 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @13, i64 21)
-  call void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1 %2, %"github.com/goplus/llgo/internal/runtime.String" %3)
-  %4 = icmp uge i64 %1, 64
-  %5 = select i1 %4, i64 63, i64 %1
-  %6 = ashr i64 %0, %5
-  ret i64 %6
+  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  %3 = icmp uge i64 %1, 64
+  %4 = select i1 %3, i64 63, i64 %1
+  %5 = ashr i64 %0, %4
+  ret i64 %5
 }
 
 define i8 @main.mask_shr8(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @14, i64 21)
-  call void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1 %2, %"github.com/goplus/llgo/internal/runtime.String" %3)
-  %4 = trunc i64 %1 to i8
-  %5 = icmp uge i8 %4, 8
-  %6 = select i1 %5, i8 7, i8 %4
-  %7 = ashr i8 %0, %6
-  ret i8 %7
+  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  %3 = trunc i64 %1 to i8
+  %4 = icmp uge i8 %3, 8
+  %5 = select i1 %4, i8 7, i8 %3
+  %6 = ashr i8 %0, %5
+  ret i8 %6
 }
 
 define i8 @main.mask_shr8u(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  %3 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @15, i64 21)
-  call void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1 %2, %"github.com/goplus/llgo/internal/runtime.String" %3)
-  %4 = trunc i64 %1 to i8
-  %5 = icmp uge i8 %4, 8
-  %6 = lshr i8 %0, %4
-  %7 = select i1 %5, i8 0, i8 %6
-  ret i8 %7
+  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  %3 = trunc i64 %1 to i8
+  %4 = icmp uge i8 %3, 8
+  %5 = lshr i8 %0, %3
+  %6 = select i1 %4, i8 0, i8 %5
+  ret i8 %6
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
@@ -182,4 +170,4 @@ declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/ll
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.CheckRuntimeError"(i1, %"github.com/goplus/llgo/internal/runtime.String")
+declare void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1)

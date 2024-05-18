@@ -25,8 +25,8 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %5 = phi ptr [ %3, %_llgo_0 ], [ %18, %_llgo_2 ]
-  %6 = phi i64 [ %4, %_llgo_0 ], [ %19, %_llgo_2 ]
+  %5 = phi ptr [ %3, %_llgo_0 ], [ %19, %_llgo_2 ]
+  %6 = phi i64 [ %4, %_llgo_0 ], [ %20, %_llgo_2 ]
   %7 = phi i64 [ -1, %_llgo_0 ], [ %12, %_llgo_2 ]
   %8 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %8, i32 0, i32 0
@@ -39,12 +39,14 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %13, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %14 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
-  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %14, i64 %12
-  %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %15, align 8
-  %17 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String" %11, %"github.com/goplus/llgo/internal/runtime.String" %16)
-  %18 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %17, 0
-  %19 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %17, 1
+  %14 = icmp slt i64 %12, 0
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
+  %16 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %15, i64 %12
+  %17 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %16, align 8
+  %18 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String" %11, %"github.com/goplus/llgo/internal/runtime.String" %17)
+  %19 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %18, 0
+  %20 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %18, 1
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -99,6 +101,8 @@ _llgo_0:
   %16 = call i32 (ptr, ptr, ...) @fprintf(ptr %11, ptr @6, ptr %15)
   ret i32 0
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String")
 
