@@ -8,9 +8,9 @@ source_filename = "main"
 @__llgo_py.builtins.print = linkonce global ptr null
 @__llgo_py.builtins.iter = linkonce global ptr null
 @__llgo_py.builtins = external global ptr
-@0 = private unnamed_addr constant [4 x i8] c"max\00", align 1
-@1 = private unnamed_addr constant [6 x i8] c"print\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"iter\00", align 1
+@0 = private unnamed_addr constant [5 x i8] c"iter\00", align 1
+@1 = private unnamed_addr constant [4 x i8] c"max\00", align 1
+@2 = private unnamed_addr constant [6 x i8] c"print\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -21,7 +21,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
   call void @"github.com/goplus/llgo/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @0, ptr @__llgo_py.builtins.max, ptr @1, ptr @__llgo_py.builtins.print, ptr @2, ptr @__llgo_py.builtins.iter, ptr null)
+  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @0, ptr @__llgo_py.builtins.iter, ptr @1, ptr @__llgo_py.builtins.max, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0

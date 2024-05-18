@@ -339,13 +339,6 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 	return
 }
 
-func modOf(name string) string {
-	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
-		return name[:pos]
-	}
-	return ""
-}
-
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
 	var last int
 	var pyModInit bool
@@ -361,26 +354,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		} else {
 			// TODO(xsw): confirm pyMod don't need to call LoadPyModSyms
 			p.inits = append(p.inits, func() {
-				if objs := pkg.PyObjs(); len(objs) > 0 {
-					mods := make(map[string][]llssa.PyObjRef)
-					for name, obj := range objs {
-						modName := modOf(name)
-						mods[modName] = append(mods[modName], obj)
-					}
-
-					// sort by module name
-					modNames := make([]string, 0, len(mods))
-					for modName := range mods {
-						modNames = append(modNames, modName)
-					}
-					sort.Strings(modNames)
-
-					b.SetBlockEx(ret, llssa.AfterInit)
-					for _, modName := range modNames {
-						objs := mods[modName]
-						b.PyLoadModSyms(modName, objs...)
-					}
-				}
+				pkg.PyLoadModSyms(b, ret)
 			})
 		}
 	} else if doMainInit {

@@ -19,7 +19,9 @@ package ssa
 import (
 	"go/types"
 	"log"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -350,9 +352,44 @@ func (p Package) PyObjOf(name string) PyObjRef {
 	return p.pyobjs[name]
 }
 
-// PyObjs returns all used python objects in this project.
-func (p Package) PyObjs() map[string]PyObjRef {
-	return p.pyobjs
+// PyLoadModSyms loads module symbols used in this package.
+func (p Package) PyLoadModSyms(b Builder, ret BasicBlock) {
+	objs := p.pyobjs
+	n := len(objs)
+	if n == 0 {
+		return
+	}
+
+	names := make([]string, 0, n)
+	for name := range objs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	mods := make(map[string][]PyObjRef)
+	modNames := make([]string, 0, 8)
+	lastMod := ""
+	for _, name := range names {
+		modName := modOf(name)
+		mods[modName] = append(mods[modName], objs[name])
+		if modName != lastMod {
+			modNames = append(modNames, modName)
+			lastMod = modName
+		}
+	}
+
+	b.SetBlockEx(ret, afterInit)
+	for _, modName := range modNames {
+		objs := mods[modName]
+		b.PyLoadModSyms(modName, objs...)
+	}
+}
+
+func modOf(name string) string {
+	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
+		return name[:pos]
+	}
+	panic("unreachable")
 }
 
 // -----------------------------------------------------------------------------
