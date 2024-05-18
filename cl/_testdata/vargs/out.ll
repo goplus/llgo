@@ -58,12 +58,14 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %4, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %5, i64 %3
-  %7 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %6, align 8
-  %8 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %9 = call i64 @"github.com/goplus/llgo/internal/runtime.I2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %7, ptr %8)
-  %10 = call i32 (ptr, ...) @printf(ptr @0, i64 %9)
+  %5 = icmp slt i64 %3, 0
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %5)
+  %6 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %6, i64 %3
+  %8 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %7, align 8
+  %9 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %10 = call i64 @"github.com/goplus/llgo/internal/runtime.I2Int"(%"github.com/goplus/llgo/internal/runtime.iface" %8, ptr %9)
+  %11 = call i32 (ptr, ...) @printf(ptr @0, i64 %10)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -79,6 +81,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
+
+declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 
 declare i64 @"github.com/goplus/llgo/internal/runtime.I2Int"(%"github.com/goplus/llgo/internal/runtime.iface", ptr)
 
