@@ -81,7 +81,7 @@ func main() {
 		log.Printf("import module %s failed\n", pyLib)
 		os.Exit(1)
 	}
-	pkg := gogen.NewPackage("", pyLib, nil)
+	pkg := gogen.NewPackage("", pkgName(pyLib), nil)
 	pkg.Import("unsafe").MarkForceUsed(pkg)       // import _ "unsafe"
 	py := pkg.Import("github.com/goplus/llgo/py") // import "github.com/goplus/llgo/py"
 
@@ -115,6 +115,13 @@ func main() {
 	pkg.WriteTo(os.Stdout)
 }
 
+func pkgName(pyLib string) string {
+	if pos := strings.LastIndexByte(pyLib, '.'); pos >= 0 {
+		return pyLib[pos+1:]
+	}
+	return pyLib
+}
+
 type context struct {
 	pkg    *gogen.Package
 	obj    *types.Named
@@ -127,7 +134,7 @@ type context struct {
 func (ctx *context) genMod(pkg *gogen.Package, mod *module) {
 	for _, sym := range mod.Items {
 		switch sym.Type {
-		case "builtin_function_or_method", "function", "ufunc", "method-wrapper":
+		case "builtin_function_or_method", "function", "method", "ufunc", "method-wrapper":
 			ctx.genFunc(pkg, sym)
 		case "str", "float", "bool", "type", "dict", "tuple", "list", "object", "module",
 			"int", "set", "frozenset", "flags", "bool_", "pybind11_type", "layout",
@@ -211,7 +218,7 @@ func genName(name string, idxDontTitle int) string {
 	}
 	name = strings.Join(parts, "")
 	switch name {
-	case "default", "func", "var", "":
+	case "default", "func", "var", "range", "":
 		name += "_"
 	}
 	return name
