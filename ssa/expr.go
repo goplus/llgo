@@ -320,29 +320,29 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	case isLogicOp(op): // op: & | ^ << >> &^
 		switch op {
 		case token.AND_NOT:
-			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
+			return Expr{llvm.CreateAnd(b.impl, x.impl, llvm.CreateNot(b.impl, y.impl)), x.Type}
 		case token.SHL, token.SHR:
 			if needsNegativeCheck(y) {
 				zero := llvm.ConstInt(y.ll, 0, false)
-				check := Expr{b.impl.CreateICmp(llvm.IntSLT, y.impl, zero, ""), b.Prog.Bool()}
+				check := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, y.impl, zero), b.Prog.Bool()}
 				b.InlineCall(b.Pkg.rtFunc("AssertNegativeShift"), check)
 			}
 			xsize, ysize := b.Prog.SizeOf(x.Type), b.Prog.SizeOf(y.Type)
 			if xsize != ysize {
 				y = b.Convert(x.Type, y)
 			}
-			overflows := b.impl.CreateICmp(llvm.IntUGE, y.impl, llvm.ConstInt(y.ll, xsize*8, false), "")
+			overflows := llvm.CreateICmp(b.impl, llvm.IntUGE, y.impl, llvm.ConstInt(y.ll, xsize*8, false))
 			xzero := llvm.ConstInt(x.ll, 0, false)
 			if op == token.SHL {
-				rhs := b.impl.CreateShl(x.impl, y.impl, "")
-				return Expr{b.impl.CreateSelect(overflows, xzero, rhs, ""), x.Type}
+				rhs := llvm.CreateShl(b.impl, x.impl, y.impl)
+				return Expr{llvm.CreateSelect(b.impl, overflows, xzero, rhs), x.Type}
 			} else {
 				if x.kind == vkSigned {
-					rhs := b.impl.CreateSelect(overflows, llvm.ConstInt(y.ll, 8*xsize-1, false), y.impl, "")
-					return Expr{b.impl.CreateAShr(x.impl, rhs, ""), x.Type}
+					rhs := llvm.CreateSelect(b.impl, overflows, llvm.ConstInt(y.ll, 8*xsize-1, false), y.impl)
+					return Expr{llvm.CreateAShr(b.impl, x.impl, rhs), x.Type}
 				} else {
-					rsh := b.impl.CreateLShr(x.impl, y.impl, "")
-					return Expr{b.impl.CreateSelect(overflows, xzero, rsh, ""), x.Type}
+					rsh := llvm.CreateLShr(b.impl, x.impl, y.impl)
+					return Expr{llvm.CreateSelect(b.impl, overflows, xzero, rsh), x.Type}
 				}
 			}
 		default:
@@ -390,9 +390,9 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 		case *types.Basic:
 			ret.Type = x.Type
 			if t.Info()&types.IsInteger != 0 {
-				ret.impl = b.impl.CreateNeg(x.impl, "")
+				ret.impl = llvm.CreateNeg(b.impl, x.impl)
 			} else if t.Info()&types.IsFloat != 0 {
-				ret.impl = b.impl.CreateFNeg(x.impl, "")
+				ret.impl = llvm.CreateFNeg(b.impl, x.impl)
 			} else {
 				panic("todo")
 			}
@@ -401,10 +401,10 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 		}
 	case token.NOT:
 		ret.Type = x.Type
-		ret.impl = b.impl.CreateNot(x.impl, "")
+		ret.impl = llvm.CreateNot(b.impl, x.impl)
 	case token.XOR:
 		ret.Type = x.Type
-		ret.impl = b.impl.CreateXor(x.impl, llvm.ConstInt(x.Type.ll, ^uint64(0), false), "")
+		ret.impl = llvm.CreateXor(b.impl, x.impl, llvm.ConstInt(x.Type.ll, ^uint64(0), false))
 	case token.ARROW:
 		panic("todo")
 	}
@@ -733,7 +733,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	switch typ.(type) {
 	default:
 		// TODO(xsw): remove instr name
-		ret.impl = b.impl.CreateBitCast(x.impl, t.ll, "bitCast")
+		ret.impl = llvm.CreateBitCast(b.impl, x.impl, t.ll)
 		ret.Type = b.Prog.rawType(typ)
 		return
 	}
@@ -790,9 +790,9 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
 					if typ.Info()&types.IsUnsigned != 0 {
-						ret.impl = b.impl.CreateFPToUI(x.impl, t.ll, "")
+						ret.impl = llvm.CreateFPToUI(b.impl, x.impl, t.ll)
 					} else {
-						ret.impl = b.impl.CreateFPToSI(x.impl, t.ll, "")
+						ret.impl = llvm.CreateFPToSI(b.impl, x.impl, t.ll)
 					}
 					return
 				}
@@ -800,9 +800,9 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 				// float <- int/float
 				if xtyp.Info()&types.IsInteger != 0 {
 					if xtyp.Info()&types.IsUnsigned != 0 {
-						ret.impl = b.impl.CreateUIToFP(x.impl, t.ll, "")
+						ret.impl = llvm.CreateUIToFP(b.impl, x.impl, t.ll)
 					} else {
-						ret.impl = b.impl.CreateSIToFP(x.impl, t.ll, "")
+						ret.impl = llvm.CreateSIToFP(b.impl, x.impl, t.ll)
 					}
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
@@ -829,11 +829,11 @@ func castInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	xsize := b.Prog.td.TypeAllocSize(x.Type())
 	size := b.Prog.td.TypeAllocSize(typ.ll)
 	if xsize > size {
-		return b.impl.CreateTrunc(x, typ.ll, "")
+		return llvm.CreateTrunc(b.impl, x, typ.ll)
 	} else if typ.kind == vkUnsigned {
-		return b.impl.CreateZExt(x, typ.ll, "")
+		return llvm.CreateZExt(b.impl, x, typ.ll)
 	} else {
-		return b.impl.CreateSExt(x, typ.ll, "")
+		return llvm.CreateSExt(b.impl, x, typ.ll)
 	}
 }
 
@@ -841,9 +841,9 @@ func castFloat(b Builder, x llvm.Value, typ Type) llvm.Value {
 	xsize := b.Prog.td.TypeAllocSize(x.Type())
 	size := b.Prog.td.TypeAllocSize(typ.ll)
 	if xsize > size {
-		return b.impl.CreateFPTrunc(x, typ.ll, "")
+		return llvm.CreateFPTrunc(b.impl, x, typ.ll)
 	} else {
-		return b.impl.CreateFPExt(x, typ.ll, "")
+		return llvm.CreateFPExt(b.impl, x, typ.ll)
 	}
 }
 
@@ -927,7 +927,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 //	t1 = extract t0 #1
 func (b Builder) Extract(x Expr, index int) (ret Expr) {
 	ret.Type = b.Prog.toType(x.Type.raw.Type.(*types.Tuple).At(index).Type())
-	ret.impl = b.impl.CreateExtractValue(x.impl, index, "")
+	ret.impl = llvm.CreateExtractValue(b.impl, x.impl, index)
 	return
 }
 
