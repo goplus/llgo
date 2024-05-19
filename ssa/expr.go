@@ -190,7 +190,7 @@ func (b Builder) CStr(v string) Expr {
 func (b Builder) Str(v string) (ret Expr) {
 	prog := b.Prog
 	cstr := b.CStr(v)
-	ret = b.InlineCall(b.Func.Pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
+	ret = b.InlineCall(b.Pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
 	ret.Type = prog.String()
 	return
 }
@@ -308,8 +308,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		switch kind {
 		case vkString:
 			if op == token.ADD {
-				pkg := b.Func.Pkg
-				return Expr{b.InlineCall(pkg.rtFunc("StringCat"), x, y).impl, x.Type}
+				return Expr{b.InlineCall(b.Pkg.rtFunc("StringCat"), x, y).impl, x.Type}
 			}
 		case vkComplex:
 		default:
@@ -324,8 +323,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			return Expr{b.impl.CreateAnd(x.impl, b.impl.CreateNot(y.impl, ""), ""), x.Type}
 		case token.SHL, token.SHR:
 			if needsNegativeCheck(y) {
-				check := Expr{b.impl.CreateICmp(llvm.IntSLT, y.impl, llvm.ConstInt(y.ll, 0, false), ""), b.Prog.Bool()}
-				b.InlineCall(b.Func.Pkg.rtFunc("AssertNegativeShift"), check)
+				zero := llvm.ConstInt(y.ll, 0, false)
+				check := Expr{b.impl.CreateICmp(llvm.IntSLT, y.impl, zero, ""), b.Prog.Bool()}
+				b.InlineCall(b.Pkg.rtFunc("AssertNegativeShift"), check)
 			}
 			xsize, ysize := b.Prog.SizeOf(x.Type), b.Prog.SizeOf(y.Type)
 			if xsize != ysize {
@@ -416,7 +416,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if t, ok := t.(*types.Struct); ok && isClosure(t) {
 		if v.kind != vkClosure {
-			return b.Func.Pkg.closureStub(b, t, v)
+			return b.Pkg.closureStub(b, t, v)
 		}
 	}
 	return v
@@ -584,9 +584,8 @@ func (b Builder) Store(ptr, val Expr) Builder {
 
 func (b Builder) aggregateAlloc(t Type, flds ...llvm.Value) llvm.Value {
 	prog := b.Prog
-	pkg := b.Func.Pkg
 	size := prog.SizeOf(t)
-	ptr := b.InlineCall(pkg.rtFunc("AllocU"), prog.IntVal(size, prog.Uintptr())).impl
+	ptr := b.InlineCall(b.Pkg.rtFunc("AllocU"), prog.IntVal(size, prog.Uintptr())).impl
 	tll := t.ll
 	impl := b.impl
 	for i, fld := range flds {
@@ -654,7 +653,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 		log.Printf("Alloc %v, %v\n", elem.RawType(), heap)
 	}
 	prog := b.Prog
-	pkg := b.Func.Pkg
+	pkg := b.Pkg
 	size := b.SizeOf(elem)
 	if heap {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
@@ -695,11 +694,10 @@ func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("AllocaCStr %v\n", gostr.impl)
 	}
-	pkg := b.Func.Pkg
 	n := b.StringLen(gostr)
 	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
 	cstr := b.Alloca(n1)
-	return b.InlineCall(pkg.rtFunc("CStrCopy"), cstr, gostr)
+	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
 }
 
 // -----------------------------------------------------------------------------
@@ -968,13 +966,13 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				case vkSlice:
 					etSize := b.Prog.SizeOf(b.Prog.Elem(elem.Type))
 					ret.Type = src.Type
-					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("SliceAppend"),
 						src, b.SliceData(elem), b.SliceLen(elem), b.Prog.Val(int(etSize))).impl
 					return
 				case vkString:
 					etSize := b.Prog.SizeOf(b.Prog.Byte())
 					ret.Type = src.Type
-					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("SliceAppend"),
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("SliceAppend"),
 						src, b.StringData(elem), b.StringLen(elem), b.Prog.Val(int(etSize))).impl
 					return
 				}
@@ -985,7 +983,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		ret.Type = b.Prog.Void()
 		for i, arg := range args {
 			if ln && i > 0 {
-				b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str(" "))
+				b.InlineCall(b.Pkg.rtFunc("PrintString"), b.Str(" "))
 			}
 			var fn string
 			var typ Type
@@ -1018,10 +1016,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			if typ != nil && typ != arg.Type {
 				arg = b.Convert(typ, arg)
 			}
-			b.InlineCall(b.Func.Pkg.rtFunc(fn), arg)
+			b.InlineCall(b.Pkg.rtFunc(fn), arg)
 		}
 		if ln {
-			b.InlineCall(b.Func.Pkg.rtFunc("PrintString"), b.Str("\n"))
+			b.InlineCall(b.Pkg.rtFunc("PrintString"), b.Str("\n"))
 		}
 		return
 	}

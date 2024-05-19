@@ -52,6 +52,7 @@ func (p BasicBlock) Index() int {
 type aBuilder struct {
 	impl llvm.Builder
 	Func Function
+	Pkg  Package
 	Prog Program
 }
 
@@ -124,8 +125,7 @@ func (b Builder) Panic(v Expr) {
 	if debugInstr {
 		log.Printf("Panic %v\n", v.impl)
 	}
-	pkg := b.Func.Pkg
-	b.Call(pkg.rtFunc("TracePanic"), v)
+	b.Call(b.Pkg.rtFunc("TracePanic"), v)
 	b.impl.CreateUnreachable()
 }
 
