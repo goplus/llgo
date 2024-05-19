@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aykevl/go-wasm v0.0.1
 	github.com/goplus/gogen v1.16.0
-	github.com/goplus/llvm v0.7.6-0.20240519084034-a108b65b00c7
+	github.com/goplus/llvm v0.7.6
 	github.com/goplus/mod v0.13.10
 	github.com/json-iterator/go v1.1.12
 	github.com/qiniu/x v1.13.10
