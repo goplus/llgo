@@ -26,4 +26,9 @@ func main() {
 	println(data)
 	var i any = 100
 	println(true, 100, -100, uint(255), int32(-100), 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
+	var dst [3]byte
+	n := copy(dst[:], data)
+	println(n, dst[0], dst[1], dst[2])
+	n = copy(dst[1:], "ABCD")
+	println(n, dst[0], dst[1], dst[2])
 }

@@ -1022,6 +1022,21 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			b.InlineCall(b.Pkg.rtFunc("PrintString"), b.Str("\n"))
 		}
 		return
+	case "copy":
+		if len(args) == 2 {
+			dst := args[0]
+			if dst.kind == vkSlice {
+				src := args[1]
+				prog := b.Prog
+				etSize := prog.Val(int(prog.SizeOf(prog.Elem(dst.Type))))
+				switch src.kind {
+				case vkSlice:
+					return b.InlineCall(b.Pkg.rtFunc("SliceCopy"), dst, b.SliceData(src), b.SliceLen(src), etSize)
+				case vkString:
+					return b.InlineCall(b.Pkg.rtFunc("SliceCopy"), dst, b.StringData(src), b.StringLen(src), etSize)
+				}
+			}
+		}
 	}
 	panic("todo")
 }
