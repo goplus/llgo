@@ -32,6 +32,14 @@ func (b Builder) AbiBasic(kind types.BasicKind) Expr {
 	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
 }
 
+/*
+// AbiStruct returns the abi type of the specified struct type.
+func (b Builder) AbiStruct(t *types.Struct) Expr {
+	panic("todo")
+	// return b.InlineCall(b.Pkg.rtFunc("Struct"), b.Prog.Val(t.NumFields()))
+}
+*/
+
 // -----------------------------------------------------------------------------
 
 // MakeInterface constructs an instance of an interface type from a
@@ -67,19 +75,19 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		case kind == types.Float32:
 			t := b.AbiBasic(kind)
 			tptr := prog.Uintptr()
-			i32 := b.impl.CreateBitCast(x.impl, prog.tyInt32(), "")
+			i32 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt32()) // TODO(xsw): more effective
 			vptr := Expr{llvm.CreateIntCast(b.impl, i32, tptr.ll), tptr}
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
 		case kind == types.Float64:
 			t := b.AbiBasic(kind)
 			tptr := prog.Uintptr()
-			vptr := Expr{b.impl.CreateBitCast(x.impl, tptr.ll, ""), tptr}
+			vptr := Expr{llvm.CreateBitCast(b.impl, x.impl, tptr.ll), tptr}
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
 		case kind == types.String:
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
 		}
 		// case *types.Struct:
-		//	panic("todo: struct")
+		//	t := b.AbiStruct(tx)
 	}
 	panic("todo")
 }
@@ -149,9 +157,9 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 				switch kind {
 				case types.Float32:
 					v = castInt(b, v, b.Prog.Int32())
-					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
+					v = llvm.CreateBitCast(b.impl, v, assertedTyp.ll)
 				case types.Float64:
-					v = b.impl.CreateBitCast(v, assertedTyp.ll, "")
+					v = llvm.CreateBitCast(b.impl, v, assertedTyp.ll)
 				default:
 					v = castInt(b, v, assertedTyp)
 				}
@@ -167,8 +175,8 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 						ret.Type.RawType().(*types.Tuple).At(1),
 					),
 				)
-				val0 := conv(b.impl.CreateExtractValue(ret.impl, 0, ""))
-				val1 := b.impl.CreateExtractValue(ret.impl, 1, "")
+				val0 := conv(llvm.CreateExtractValue(b.impl, ret.impl, 0))
+				val1 := llvm.CreateExtractValue(b.impl, ret.impl, 1)
 				ret.impl = llvm.ConstStruct([]llvm.Value{val0, val1}, false)
 			}
 		}

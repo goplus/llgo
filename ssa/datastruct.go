@@ -151,7 +151,7 @@ func (b Builder) checkIndex(idx Expr) Expr {
 	prog := b.Prog
 	if needsNegativeCheck(idx) {
 		zero := llvm.ConstInt(idx.ll, 0, false)
-		check := Expr{b.impl.CreateICmp(llvm.IntSLT, idx.impl, zero, ""), prog.Bool()}
+		check := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
 		b.InlineCall(b.Pkg.rtFunc("AssertIndexRange"), check)
 	}
 	typ := prog.Uint()
