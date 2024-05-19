@@ -694,14 +694,13 @@ func (p Package) PyNewModVar(name string, doInit bool) Global {
 
 // PyImportMod imports a Python module.
 func (b Builder) PyImportMod(path string) Expr {
-	pkg := b.Func.Pkg
-	fnImp := pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
+	fnImp := b.Pkg.pyFunc("PyImport_ImportModule", b.Prog.tyImportPyModule())
 	return b.Call(fnImp, b.CStr(path))
 }
 
 // PyLoadModSyms loads python objects from specified module.
 func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) Expr {
-	pkg := b.Func.Pkg
+	pkg := b.Pkg
 	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
 	modPtr := pkg.PyNewModVar(modName, false).Expr
 	mod := b.Load(modPtr)
@@ -721,7 +720,7 @@ func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) Expr {
 
 func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	prog := b.Prog
-	pkg := b.Func.Pkg
+	pkg := b.Pkg
 	fn = b.Load(fn)
 	sig := fn.raw.Type.(*types.Signature)
 	params := sig.Params()
@@ -751,16 +750,14 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 // PyNewList(n uintptr) *Object
 func (b Builder) PyNewList(n Expr) (ret Expr) {
 	prog := b.Prog
-	pkg := b.Func.Pkg
-	fn := pkg.pyFunc("PyList_New", prog.tyNewList())
+	fn := b.Pkg.pyFunc("PyList_New", prog.tyNewList())
 	return b.Call(fn, n)
 }
 
 // PyListSetItem(list *Object, index uintptr, item *Object) c.Int
 func (b Builder) PyListSetItem(list, index, item Expr) (ret Expr) {
 	prog := b.Prog
-	pkg := b.Func.Pkg
-	fn := pkg.pyFunc("PyList_SetItem", prog.tyListSetItem())
+	fn := b.Pkg.pyFunc("PyList_SetItem", prog.tyListSetItem())
 	return b.Call(fn, list, index, item)
 }
 
@@ -793,15 +790,13 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 
 // PyFloat(fltVal float64) *Object
 func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
-	prog := b.Prog
-	pkg := b.Func.Pkg
-	fn := pkg.pyFunc("PyFloat_FromDouble", prog.tyFloatFromDouble())
+	fn := b.Pkg.pyFunc("PyFloat_FromDouble", b.Prog.tyFloatFromDouble())
 	return b.Call(fn, fltVal)
 }
 
 // callPyInit calls Py_Initialize.
 func (b Builder) callPyInit() (ret Expr) {
-	fn := b.Func.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
+	fn := b.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
 	return b.Call(fn)
 }
 

@@ -27,6 +27,13 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// AbiBasic returns the abi type of the specified basic kind.
+func (b Builder) AbiBasic(kind types.BasicKind) Expr {
+	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
+}
+
+// -----------------------------------------------------------------------------
+
 // MakeInterface constructs an instance of an interface type from a
 // value of a concrete type.
 //
@@ -47,24 +54,24 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		log.Printf("MakeInterface %v, %v\n", raw, x.impl)
 	}
 	prog := b.Prog
-	pkg := b.Func.Pkg
+	pkg := b.Pkg
 	switch tx := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		kind := tx.Kind()
 		switch {
 		case kind >= types.Bool && kind <= types.Uintptr:
-			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+			t := b.AbiBasic(kind)
 			tptr := prog.Uintptr()
 			vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
 		case kind == types.Float32:
-			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+			t := b.AbiBasic(kind)
 			tptr := prog.Uintptr()
 			i32 := b.impl.CreateBitCast(x.impl, prog.tyInt32(), "")
 			vptr := Expr{llvm.CreateIntCast(b.impl, i32, tptr.ll), tptr}
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
 		case kind == types.Float64:
-			t := b.InlineCall(pkg.rtFunc("Basic"), prog.Val(int(kind)))
+			t := b.AbiBasic(kind)
 			tptr := prog.Uintptr()
 			vptr := Expr{b.impl.CreateBitCast(x.impl, tptr.ll, ""), tptr}
 			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
@@ -122,7 +129,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	}
 	switch assertedTyp.kind {
 	case vkSigned, vkUnsigned, vkFloat, vkBool:
-		pkg := b.Func.Pkg
+		pkg := b.Pkg
 		fnName := "I2Int"
 		if commaOk {
 			fnName = "CheckI2Int"
@@ -167,7 +174,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		}
 		return
 	case vkString:
-		pkg := b.Func.Pkg
+		pkg := b.Pkg
 		fnName := "I2String"
 		if commaOk {
 			fnName = "CheckI2String"

@@ -148,12 +148,14 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 
 // check index >= 0 and size to uint
 func (b Builder) checkIndex(idx Expr) Expr {
+	prog := b.Prog
 	if needsNegativeCheck(idx) {
-		check := Expr{b.impl.CreateICmp(llvm.IntSLT, idx.impl, llvm.ConstInt(idx.ll, 0, false), ""), b.Prog.Bool()}
-		b.InlineCall(b.Func.Pkg.rtFunc("AssertIndexRange"), check)
+		zero := llvm.ConstInt(idx.ll, 0, false)
+		check := Expr{b.impl.CreateICmp(llvm.IntSLT, idx.impl, zero, ""), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertIndexRange"), check)
 	}
-	typ := b.Prog.Uint()
-	if b.Prog.SizeOf(idx.Type) < b.Prog.SizeOf(typ) {
+	typ := prog.Uint()
+	if prog.SizeOf(idx.Type) < prog.SizeOf(typ) {
 		idx.Type = typ
 		idx.impl = castUintptr(b, idx.impl, typ)
 	}
@@ -235,7 +237,6 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		log.Printf("Slice %v, %v, %v\n", x.impl, low.impl, high.impl)
 	}
 	prog := b.Prog
-	pkg := b.Func.Pkg
 	var nCap Expr
 	var nEltSize Expr
 	var base Expr
@@ -251,7 +252,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			high = b.StringLen(x)
 		}
 		ret.Type = x.Type
-		ret.impl = b.InlineCall(pkg.rtFunc("NewStringSlice"), x, low, high).impl
+		ret.impl = b.InlineCall(b.Pkg.rtFunc("NewStringSlice"), x, low, high).impl
 		return
 	case *types.Slice:
 		nEltSize = b.SizeOf(prog.Index(x.Type))
@@ -278,7 +279,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	if max.IsNil() {
 		max = nCap
 	}
-	ret.impl = b.InlineCall(pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
+	ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
 	return
 }
 
@@ -297,9 +298,8 @@ func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeMap %v, %v\n", t.RawType(), nReserve.impl)
 	}
-	pkg := b.Func.Pkg
 	ret.Type = t
-	ret.impl = b.InlineCall(pkg.rtFunc("MakeSmallMap")).impl
+	ret.impl = b.InlineCall(b.Pkg.rtFunc("MakeSmallMap")).impl
 	// TODO(xsw): nReserve
 	return
 }
@@ -322,7 +322,7 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
 	}
-	pkg := b.Func.Pkg
+	pkg := b.Pkg
 	if cap.IsNil() {
 		cap = len
 	}

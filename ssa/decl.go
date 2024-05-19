@@ -248,7 +248,7 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, p, prog}
+	return &aBuilder{b, p, p.Pkg, prog}
 }
 
 // HasBody reports whether the function has a body.
@@ -305,16 +305,14 @@ type PyGlobal = *aPyGlobal
 
 // PyNewVar creates a Python variable.
 func (b Builder) PyNewVar(modName, name string) PyGlobal {
-	pkg := b.Func.Pkg
-	modPtr := pkg.PyNewModVar(modName, false).Expr
+	modPtr := b.Pkg.PyNewModVar(modName, false).Expr
 	mod := b.Load(modPtr)
 	return &aPyGlobal{pyVarExpr(mod, name)}
 }
 
 func (b Builder) pyLoad(ptr Expr) Expr {
-	pkg := b.Func.Pkg
 	t := ptr.raw.Type.(*pyVarTy)
-	fn := pkg.pyFunc("PyObject_GetAttrString", b.Prog.tyGetAttrString())
+	fn := b.Pkg.pyFunc("PyObject_GetAttrString", b.Prog.tyGetAttrString())
 	return b.Call(fn, t.mod, b.CStr(t.name))
 }
 
