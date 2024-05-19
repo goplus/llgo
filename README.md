@@ -190,7 +190,9 @@ Here are some examples related to Go syntax:
 Here are the Go packages that can be imported correctly:
 
 * [unsafe](https://pkg.go.dev/unsafe)
+* [unicode](https://pkg.go.dev/unicode)
 * [unicode/utf8](https://pkg.go.dev/unicode/utf8)
+* [unicode/utf16](https://pkg.go.dev/unicode/utf16)
 
 
 ## How to install
