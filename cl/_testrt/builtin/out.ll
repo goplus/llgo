@@ -55,6 +55,15 @@ source_filename = "main"
 @41 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @42 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @43 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@44 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@45 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@46 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@47 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@48 = private unnamed_addr constant [5 x i8] c"ABCD\00", align 1
+@49 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@50 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@51 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@52 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -310,6 +319,58 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %126)
   %135 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @43, i64 1)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %135)
+  %136 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 3)
+  %137 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %136, i64 1, i64 3, i64 0, i64 3, i64 3)
+  %138 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %120, 0
+  %139 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %120, 1
+  %140 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice" %137, ptr %138, i64 %139, i64 1)
+  %141 = getelementptr inbounds i8, ptr %136, i64 0
+  %142 = load i8, ptr %141, align 1
+  %143 = getelementptr inbounds i8, ptr %136, i64 1
+  %144 = load i8, ptr %143, align 1
+  %145 = getelementptr inbounds i8, ptr %136, i64 2
+  %146 = load i8, ptr %145, align 1
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %140)
+  %147 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @44, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %147)
+  %148 = zext i8 %142 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %148)
+  %149 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @45, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %149)
+  %150 = zext i8 %144 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %150)
+  %151 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @46, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %151)
+  %152 = zext i8 %146 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %152)
+  %153 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @47, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %153)
+  %154 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %136, i64 1, i64 3, i64 1, i64 3, i64 3)
+  %155 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @48, i64 4)
+  %156 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %155, 0
+  %157 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %155, 1
+  %158 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice" %154, ptr %156, i64 %157, i64 1)
+  %159 = getelementptr inbounds i8, ptr %136, i64 0
+  %160 = load i8, ptr %159, align 1
+  %161 = getelementptr inbounds i8, ptr %136, i64 1
+  %162 = load i8, ptr %161, align 1
+  %163 = getelementptr inbounds i8, ptr %136, i64 2
+  %164 = load i8, ptr %163, align 1
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %158)
+  %165 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @49, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %165)
+  %166 = zext i8 %160 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %166)
+  %167 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @50, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %167)
+  %168 = zext i8 %162 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %168)
+  %169 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @51, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %169)
+  %170 = zext i8 %164 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %170)
+  %171 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @52, i64 1)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %171)
   ret i32 0
 }
 
@@ -344,3 +405,5 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double)
 declare void @"github.com/goplus/llgo/internal/runtime.PrintIface"(%"github.com/goplus/llgo/internal/runtime.iface")
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr)
+
+declare i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice", ptr, i64, i64)

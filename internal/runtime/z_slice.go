@@ -91,4 +91,16 @@ func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 	return src
 }
 
+// SliceCopy copy data to slice and returns a slice.
+func SliceCopy(dst Slice, data unsafe.Pointer, num int, etSize int) int {
+	n := dst.len
+	if n > num {
+		n = num
+	}
+	if n > 0 {
+		c.Memmove(dst.data, data, uintptr(n*etSize))
+	}
+	return n
+}
+
 // -----------------------------------------------------------------------------
