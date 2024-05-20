@@ -288,7 +288,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %121)
   %122 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %123 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %124 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %123, i64 100)
+  %124 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr %123, i64 100)
   store %"github.com/goplus/llgo/internal/runtime.iface" %124, ptr %122, align 8
   %125 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %122, align 8
   %126 = ptrtoint ptr %122 to i64
@@ -392,9 +392,9 @@ declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/ll
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/internal/runtime.Slice", ptr, i64, i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr, i64)
 
-declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
 

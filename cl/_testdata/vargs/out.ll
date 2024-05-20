@@ -31,15 +31,15 @@ _llgo_0:
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i64 0
   %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %5 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %4, i64 1)
+  %5 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr %4, i64 1)
   store %"github.com/goplus/llgo/internal/runtime.iface" %5, ptr %3, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i64 1
   %7 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %8 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %7, i64 2)
+  %8 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr %7, i64 2)
   store %"github.com/goplus/llgo/internal/runtime.iface" %8, ptr %6, align 8
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, i64 2
   %10 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %11 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %10, i64 3)
+  %11 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr %10, i64 3)
   store %"github.com/goplus/llgo/internal/runtime.iface" %11, ptr %9, align 8
   %12 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %2, i64 16, i64 3, i64 0, i64 3, i64 3)
   call void @main.test(%"github.com/goplus/llgo/internal/runtime.Slice" %12)
@@ -76,9 +76,9 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr, i64)
 
-declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
