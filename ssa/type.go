@@ -99,6 +99,10 @@ func (p Program) SizeOf(typ Type, n ...int64) uint64 {
 	return size
 }
 
+func (p Program) PointerSize() int {
+	return p.td.PointerSize()
+}
+
 func (p Program) Slice(typ Type) Type {
 	return p.rawType(types.NewSlice(typ.raw.Type))
 }

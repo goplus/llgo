@@ -27,18 +27,28 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// AbiBasic returns the abi type of the specified basic kind.
-func (b Builder) AbiBasic(kind types.BasicKind) Expr {
+// abiBasic returns the abi type of the specified basic kind.
+func (b Builder) abiBasic(kind types.BasicKind) Expr {
 	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
 }
 
 /*
-// AbiStruct returns the abi type of the specified struct type.
-func (b Builder) AbiStruct(t *types.Struct) Expr {
-	panic("todo")
-	// return b.InlineCall(b.Pkg.rtFunc("Struct"), b.Prog.Val(t.NumFields()))
+// abiStruct returns the abi type of the specified struct type.
+func (b Builder) abiStruct(t *types.Struct) Expr {
+	// name := "__llgo_" + b.Prog.abi.StructName(t)
 }
 */
+
+// AbiType returns the abi type of the specified type.
+func (b Builder) AbiType(t Type) Expr {
+	switch tx := t.raw.Type.(type) {
+	case *types.Basic:
+		return b.abiBasic(tx.Kind())
+		//case *types.Struct:
+		//	return b.abiStruct(tx)
+	}
+	panic("todo")
+}
 
 // -----------------------------------------------------------------------------
 
@@ -57,37 +67,66 @@ func (b Builder) AbiStruct(t *types.Struct) Expr {
 //	t1 = make interface{} <- int (42:int)
 //	t2 = make Stringer <- t0
 func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
-	raw := tinter.raw.Type
+	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
 	if debugInstr {
-		log.Printf("MakeInterface %v, %v\n", raw, x.impl)
+		log.Printf("MakeInterface %v, %v\n", rawIntf, x.impl)
 	}
 	prog := b.Prog
-	pkg := b.Pkg
-	switch tx := x.raw.Type.Underlying().(type) {
+	typ := x.Type
+	switch tx := typ.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		kind := tx.Kind()
 		switch {
 		case kind >= types.Bool && kind <= types.Uintptr:
-			t := b.AbiBasic(kind)
-			tptr := prog.Uintptr()
-			vptr := Expr{llvm.CreateIntCast(b.impl, x.impl, tptr.ll), tptr}
-			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+			if prog.is32Bits && (kind == types.Int64 || kind == types.Uint64) {
+				return b.makeIntfAlloc(tinter, rawIntf, typ, x)
+			}
+			return b.makeIntfByIntptr(tinter, rawIntf, typ, x.impl)
 		case kind == types.Float32:
-			t := b.AbiBasic(kind)
-			tptr := prog.Uintptr()
-			i32 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt32()) // TODO(xsw): more effective
-			vptr := Expr{llvm.CreateIntCast(b.impl, i32, tptr.ll), tptr}
-			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+			i32 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt32())
+			return b.makeIntfByIntptr(tinter, rawIntf, typ, i32)
 		case kind == types.Float64:
-			t := b.AbiBasic(kind)
-			tptr := prog.Uintptr()
-			vptr := Expr{llvm.CreateBitCast(b.impl, x.impl, tptr.ll), tptr}
-			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyInt"), t, vptr).impl, tinter}
+			if prog.is32Bits {
+				return b.makeIntfAlloc(tinter, rawIntf, typ, x)
+			}
+			i64 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt64())
+			return b.makeIntfByIntptr(tinter, rawIntf, typ, i64)
 		case kind == types.String:
-			return Expr{b.InlineCall(pkg.rtFunc("MakeAnyString"), x).impl, tinter}
+			return Expr{b.InlineCall(b.Pkg.rtFunc("MakeAnyString"), x).impl, tinter}
 		}
-		// case *types.Struct:
-		//	t := b.AbiStruct(tx)
+		/* case *types.Struct:
+		size := int(prog.SizeOf(typ))
+		if size > prog.PointerSize() {
+			return b.makeIntfAlloc(tinter, rawIntf, typ, x)
+		}
+		tv := prog.ctx.IntType(size * 8)
+		iv := llvm.CreateBitCast(b.impl, x.impl, tv)
+		return b.makeIntfByIntptr(tinter, rawIntf, typ, iv) */
+	}
+	panic("todo")
+}
+
+func (b Builder) makeIntfAlloc(tinter Type, rawIntf *types.Interface, typ Type, x Expr) (ret Expr) {
+	vptr := b.AllocU(typ)
+	b.Store(vptr, x)
+	return b.makeIntfByPtr(tinter, rawIntf, typ, vptr)
+}
+
+func (b Builder) makeIntfByPtr(tinter Type, rawIntf *types.Interface, typ Type, vptr Expr) (ret Expr) {
+	if rawIntf.Empty() {
+		ret = b.InlineCall(b.Pkg.rtFunc("MakeAny"), b.AbiType(typ), vptr)
+		ret.Type = tinter
+		return
+	}
+	panic("todo")
+}
+
+func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Type, x llvm.Value) (ret Expr) {
+	if rawIntf.Empty() {
+		tptr := b.Prog.Uintptr()
+		x = llvm.CreateIntCast(b.impl, x, tptr.ll)
+		impl := b.InlineCall(b.Pkg.rtFunc("MakeAnyIntptr"), b.AbiType(typ), Expr{x, tptr}).impl
+		return Expr{impl, tinter}
 	}
 	panic("todo")
 }

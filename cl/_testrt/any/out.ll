@@ -36,7 +36,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %3 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr %2, i64 100)
+  %3 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr %2, i64 100)
   %4 = call i64 @main.incVal(%"github.com/goplus/llgo/internal/runtime.iface" %3)
   %5 = call i32 (ptr, ...) @printf(ptr @0, i64 %4)
   ret i32 0
@@ -48,6 +48,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyInt"(ptr, i64)
+declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyIntptr"(ptr, i64)
 
 declare i32 @printf(ptr, ...)

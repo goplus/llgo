@@ -32,6 +32,7 @@ import (
 	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/ssa/ssatest"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
@@ -139,21 +140,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 		t.Fatal("BuildPackage failed:", err)
 	}
 	foo.WriteTo(os.Stderr)
-	prog := llssa.NewProgram(nil)
-	prog.SetRuntime(func() *types.Package {
-		rt, err := imp.Import(llssa.PkgRuntime)
-		if err != nil {
-			t.Fatal("load runtime failed:", err)
-		}
-		return rt
-	})
-	prog.SetPython(func() *types.Package {
-		rt, err := imp.Import(llssa.PkgPython)
-		if err != nil {
-			t.Fatal("load python failed:", err)
-		}
-		return rt
-	})
+	prog := ssatest.NewProgramEx(t, nil, imp)
 
 	ret, err := cl.NewPackage(prog, foo, files)
 	if err != nil {

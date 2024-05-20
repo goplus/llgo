@@ -34,7 +34,7 @@ var (
 
 type Interface = iface
 
-func MakeAnyInt(typ *Type, data uintptr) Interface {
+func MakeAnyIntptr(typ *Type, data uintptr) Interface {
 	tab := &itab{inter: TyAny, _type: typ, hash: 0, fun: [1]uintptr{0}}
 	return Interface{
 		tab: tab, data: unsafe.Pointer(data),

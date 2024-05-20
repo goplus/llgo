@@ -1,6 +1,6 @@
 module github.com/goplus/llgo
 
-go 1.18
+go 1.20
 
 require (
 	github.com/aykevl/go-wasm v0.0.1
