@@ -35,17 +35,6 @@ type String struct {
 	len  int
 }
 
-// EmptyString returns an empty string.
-func EmptyString() String {
-	return String{nil, 0}
-}
-
-// TODO(xsw): unsafe.String
-// NewString creates a new string.
-func NewString(data unsafe.Pointer, len int) String {
-	return String{data, len}
-}
-
 // StringCat concatenates two strings.
 func StringCat(a, b String) String {
 	n := a.len + b.len

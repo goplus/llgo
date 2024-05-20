@@ -31,11 +31,6 @@ type Slice struct {
 	cap  int
 }
 
-// NilSlice returns a nil slice.
-func NilSlice() Slice {
-	return Slice{nil, 0, 0}
-}
-
 // NewSlice creates a new slice.
 func NewSlice(data unsafe.Pointer, len, cap int) Slice {
 	return Slice{data, len, cap}
@@ -53,21 +48,6 @@ func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
 		s.data = base
 	}
 	return
-}
-
-// SliceLen returns the length of a slice.
-func SliceLen(s Slice) int {
-	return s.len
-}
-
-// SliceCap returns the capacity of a slice.
-func SliceCap(s Slice) int {
-	return s.cap
-}
-
-// SliceData returns the data pointer of a slice.
-func SliceData(s Slice) unsafe.Pointer {
-	return s.data
 }
 
 // SliceAppend append elem data and returns a slice.

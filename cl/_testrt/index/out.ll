@@ -118,16 +118,26 @@ _llgo_0:
   %60 = getelementptr inbounds i64, ptr %53, i64 2
   %61 = load i64, ptr %60, align 4
   %62 = call i32 (ptr, ...) @printf(ptr @3, i64 %61)
-  %63 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @5, i64 6)
-  %64 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %63, 0
-  %65 = getelementptr inbounds i8, ptr %64, i64 2
-  %66 = load i8, ptr %65, align 1
-  %67 = call i32 (ptr, ...) @printf(ptr @4, i8 %66)
-  %68 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @7, i64 6)
-  %69 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %68, 0
-  %70 = getelementptr inbounds i8, ptr %69, i64 1
-  %71 = load i8, ptr %70, align 1
-  %72 = call i32 (ptr, ...) @printf(ptr @6, i8 %71)
+  %63 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %64 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %63, i32 0, i32 0
+  store ptr @5, ptr %64, align 8
+  %65 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %63, i32 0, i32 1
+  store i64 6, ptr %65, align 4
+  %66 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %63, align 8
+  %67 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %66, 0
+  %68 = getelementptr inbounds i8, ptr %67, i64 2
+  %69 = load i8, ptr %68, align 1
+  %70 = call i32 (ptr, ...) @printf(ptr @4, i8 %69)
+  %71 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %71, i32 0, i32 0
+  store ptr @7, ptr %72, align 8
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %71, i32 0, i32 1
+  store i64 6, ptr %73, align 4
+  %74 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %71, align 8
+  %75 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %74, 0
+  %76 = getelementptr inbounds i8, ptr %75, i64 1
+  %77 = load i8, ptr %76, align 1
+  %78 = call i32 (ptr, ...) @printf(ptr @6, i8 %77)
   ret i32 0
 }
 
@@ -136,5 +146,3 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
 declare i32 @printf(ptr, ...)
-
-declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr, i64)
