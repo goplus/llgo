@@ -50,8 +50,6 @@ type Type struct {
 	PtrToThis TypeOff // type for pointer to this type, may be zero
 }
 
-func (t *Type) Kind() Kind { return Kind(t.Kind_ & KindMask) }
-
 // A Kind represents the specific kind of type that a Type represents.
 // The zero Kind is not a valid kind.
 type Kind uint
@@ -86,12 +84,14 @@ const (
 	UnsafePointer
 )
 
+/*
 const (
 	// TODO (khr, drchase) why aren't these in TFlag?  Investigate, fix if possible.
 	KindDirectIface = 1 << 5
 	KindGCProg      = 1 << 6 // Type.gc points to GC program
 	KindMask        = (1 << 5) - 1
 )
+*/
 
 // TFlag is used by a Type to signal what extra type information is
 // available in the memory directly following the Type value.
@@ -207,6 +207,10 @@ type StructField struct {
 	Offset uintptr // byte offset of field
 }
 
+func (f *StructField) Embedded() bool {
+	return f.Name.IsEmbedded()
+}
+
 type StructType struct {
 	Type
 	PkgPath Name
@@ -224,6 +228,16 @@ type Imethod struct {
 	Name NameOff // name of method
 	Typ  TypeOff // .(*FuncType) underneath
 }
+
+func (t *Type) Kind() Kind { return Kind(t.Kind_) }
+
+// Size returns the size of data with type t.
+func (t *Type) Size() uintptr { return t.Size_ }
+
+// Align returns the alignment of data with type t.
+func (t *Type) Align() int { return int(t.Align_) }
+
+func (t *Type) FieldAlign() int { return int(t.FieldAlign_) }
 
 func (t *Type) Common() *Type {
 	return t
