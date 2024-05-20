@@ -78,9 +78,36 @@ var (
 func basicType(kind abi.Kind) *Type {
 	return &Type{
 		Size_: sizeBasicTypes[kind],
-		Hash:  uint32(kind),
+		Hash:  uint32(kind), // TODO(xsw): hash
 		Kind_: uint8(kind),
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+// StructField returns a struct field.
+func StructField(name string, typ *Type, off uintptr, tag string, exported, embedded bool) abi.StructField {
+	n := abi.NewName(name, tag, exported, embedded)
+	return abi.StructField{
+		Name:   n,
+		Typ:    typ,
+		Offset: off,
+	}
+}
+
+// Struct returns a struct type.
+func Struct(size uintptr, pkgPath string, fields ...abi.StructField) *Type {
+	npkg := abi.NewName(pkgPath, "", false, false)
+	ret := &abi.StructType{
+		Type: Type{
+			Size_: size,
+			Hash:  uint32(abi.Struct), // TODO(xsw): hash
+			Kind_: uint8(abi.Struct),
+		},
+		PkgPath: npkg,
+		Fields:  fields,
+	}
+	return &ret.Type
 }
 
 // -----------------------------------------------------------------------------
