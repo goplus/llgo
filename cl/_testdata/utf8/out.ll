@@ -8,9 +8,7 @@ source_filename = "main"
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
-@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@3 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
+@1 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
 
 define i8 @main.index(i8 %0) {
 _llgo_0:
@@ -55,31 +53,29 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_3
   %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @0, i64 7)
   %3 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %2, 1
-  %4 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %2, i64 %14, i64 %3)
+  %4 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %2, i64 %12, i64 %3)
   %5 = call { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String" %4)
   %6 = extractvalue { i32, i64 } %5, 0
   %7 = extractvalue { i32, i64 } %5, 1
-  %8 = add i64 %14, %7
+  %8 = add i64 %12, %7
   %9 = sext i32 %6 to i64
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %9)
-  %10 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 1)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %10)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
-  %11 = call i8 @main.index(i8 2)
-  %12 = icmp eq i8 %11, 3
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %12)
-  %13 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @2, i64 1)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %13)
+  %10 = call i8 @main.index(i8 2)
+  %11 = icmp eq i8 %10, 3
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %11)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %14 = phi i64 [ 0, %_llgo_0 ], [ %8, %_llgo_1 ]
-  %15 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @3, i64 7)
-  %16 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %15, 1
-  %17 = icmp slt i64 %14, %16
-  br i1 %17, label %_llgo_1, label %_llgo_2
+  %12 = phi i64 [ 0, %_llgo_0 ], [ %8, %_llgo_1 ]
+  %13 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewString"(ptr @1, i64 7)
+  %14 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %13, 1
+  %15 = icmp slt i64 %12, %14
+  br i1 %15, label %_llgo_1, label %_llgo_2
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
@@ -96,6 +92,6 @@ declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
+declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
