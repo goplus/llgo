@@ -42,7 +42,7 @@ func (v Expr) IsNil() bool {
 }
 
 // Do evaluates the delay expression and returns the result.
-func (v Expr) Do(b Builder) Expr {
+func (v Expr) Do(b Builder) Expr { // TODO(xsw): can we remove this method?
 	switch vt := v.Type; vt.kind {
 	case vkPhisExpr:
 		e := vt.raw.Type.(*phisExprTy)
@@ -195,10 +195,15 @@ func (b Builder) CStr(v string) Expr {
 // Str returns a Go string constant expression.
 func (b Builder) Str(v string) (ret Expr) {
 	prog := b.Prog
-	cstr := b.CStr(v)
-	ret = b.InlineCall(b.Pkg.rtFunc("NewString"), cstr, prog.Val(len(v)))
-	ret.Type = prog.String()
-	return
+	data := llvm.CreateGlobalStringPtr(b.impl, v)
+	size := llvm.ConstInt(prog.tyInt(), uint64(len(v)), false)
+	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
+}
+
+// unsafe.String(data *byte, size int) string
+func (b Builder) String(data, size Expr) Expr {
+	prog := b.Prog
+	return Expr{aggregateValue(b.impl, prog.rtString(), data.impl, size.impl), prog.String()}
 }
 
 // -----------------------------------------------------------------------------
@@ -602,13 +607,15 @@ func (b Builder) aggregateAlloc(t Type, flds ...llvm.Value) llvm.Value {
 
 // aggregateValue yields the value of the aggregate X with the fields
 func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
-	tll := t.ll
-	impl := b.impl
-	ptr := llvm.CreateAlloca(impl, tll)
+	return Expr{aggregateValue(b.impl, t.ll, flds...), t}
+}
+
+func aggregateValue(b llvm.Builder, tll llvm.Type, flds ...llvm.Value) llvm.Value {
+	ptr := llvm.CreateAlloca(b, tll)
 	for i, fld := range flds {
-		impl.CreateStore(fld, llvm.CreateStructGEP(impl, tll, ptr, i))
+		b.CreateStore(fld, llvm.CreateStructGEP(b, tll, ptr, i))
 	}
-	return Expr{llvm.CreateLoad(b.impl, tll, ptr), t}
+	return llvm.CreateLoad(b, tll, ptr)
 }
 
 // The MakeClosure instruction yields a closure value whose code is
@@ -1060,8 +1067,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 	case "String": // unsafe.String
-		// TODO(xsw): make this a builtin
-		return b.InlineCall(b.Pkg.rtFunc("NewString"), args[0], args[1])
+		return b.String(args[0], args[1])
 	}
 	panic("todo: " + fn)
 }
