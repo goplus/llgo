@@ -109,6 +109,12 @@ func Printf(format *Char, __llgo_va_list ...any) Int
 //go:linkname Fprintf C.fprintf
 func Fprintf(fp FilePtr, format *Char, __llgo_va_list ...any) Int
 
+//go:linkname Fwrite C.fwrite
+func Fwrite(data Pointer, size, count uintptr, fp FilePtr) uintptr
+
+//go:linkname Fputc C.fputc
+func Fputc(c Int, fp FilePtr) Int
+
 // -----------------------------------------------------------------------------
 
 //go:linkname Time C.time
