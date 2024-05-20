@@ -31,4 +31,16 @@ func main() {
 	println(n, dst[0], dst[1], dst[2])
 	n = copy(dst[1:], "ABCD")
 	println(n, dst[0], dst[1], dst[2])
+
+	fn1 := demo
+	fn2 := func() {
+		println("fn")
+	}
+	fn3 := func() {
+		println(n)
+	}
+	println(demo, fn1, fn2, fn3)
+}
+
+func demo() {
 }
