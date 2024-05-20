@@ -23,19 +23,19 @@ func PrintBool(v bool) {
 }
 
 func PrintFloat(v float64) {
-	switch { // TODO(xsw): does c.Fprintf support these special cases?
+	switch {
 	case v != v:
 		c.Fprintf(c.Stderr, c.Str("NaN"))
 		return
-	case v+v == v:
+	case v+v == v && v != 0:
 		if v > 0 {
 			c.Fprintf(c.Stderr, c.Str("+Inf"))
-		} else if v < 0 {
+		} else {
 			c.Fprintf(c.Stderr, c.Str("-Inf"))
 		}
 		return
 	}
-	c.Fprintf(c.Stderr, c.Str("%g"), v)
+	c.Fprintf(c.Stderr, c.Str("%e"), v)
 }
 
 // func PrintComplex(c complex128) {

@@ -25,7 +25,7 @@ func main() {
 	data = append(data, "def"...)
 	println(data)
 	var i any = 100
-	println(true, 100, -100, uint(255), int32(-100), 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
+	println(true, 0, 100, -100, uint(255), int32(-100), 0.0, 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
 	var dst [3]byte
 	n := copy(dst[:], data)
 	println(n, dst[0], dst[1], dst[2])

@@ -223,6 +223,8 @@ _llgo_0:
   %96 = ptrtoint ptr %92 to i64
   call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 true)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 0)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 100)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 -100)
@@ -230,6 +232,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 255)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 -100)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double 0.000000e+00)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double 1.005000e+02)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
