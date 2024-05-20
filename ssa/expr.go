@@ -125,6 +125,12 @@ func (p Program) FloatVal(v float64, t Type) Expr {
 	return Expr{ret, t}
 }
 
+func (p Program) ByteVal(v byte) Expr {
+	t := p.Byte()
+	ret := llvm.ConstInt(t.ll, uint64(v), false)
+	return Expr{ret, t}
+}
+
 // Val returns a constant expression.
 func (p Program) Val(v interface{}) Expr {
 	switch v := v.(type) {
@@ -991,33 +997,35 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	case "print", "println":
 		ln := fn == "println"
-		ret.Type = b.Prog.Void()
+		prog := b.Prog
+		ret.Type = prog.Void()
 		for i, arg := range args {
 			if ln && i > 0 {
-				b.InlineCall(b.Pkg.rtFunc("PrintString"), b.Str(" "))
-				// TODO(visualfc): maybe use PrintCStr is more efficient
+				b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.ByteVal(' '))
 			}
 			var fn string
-			var typ Type // TODO(visualfc): typ uninitialized in some cases
+			typ := arg.Type
 			switch arg.kind {
 			case vkBool:
 				fn = "PrintBool"
 			case vkSigned:
 				fn = "PrintInt"
-				typ = b.Prog.Int64()
+				typ = prog.Int64()
 			case vkUnsigned:
 				fn = "PrintUint"
-				typ = b.Prog.Uint64()
+				typ = prog.Uint64()
 			case vkFloat:
 				fn = "PrintFloat"
-				typ = b.Prog.Float64()
+				typ = prog.Float64()
 			case vkSlice:
 				fn = "PrintSlice"
-			case vkPtr, vkFuncPtr, vkFuncDecl, vkClosure, vkPyVarRef, vkPyFuncRef:
-				// TODO(visualfc): vkClosure is not a pointer
-				// TODO(visualfc): vkPyVarRef, vkPyFuncRef is pointer of pointer
+			case vkPtr, vkFuncPtr, vkFuncDecl:
 				fn = "PrintPointer"
-				typ = b.Prog.VoidPtr()
+				typ = prog.VoidPtr()
+			case vkClosure:
+				arg = b.Field(arg, 0)
+				fn = "PrintPointer"
+				typ = prog.VoidPtr()
 			case vkString:
 				fn = "PrintString"
 			case vkInterface:
@@ -1027,13 +1035,13 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			default:
 				panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
 			}
-			if typ != nil && typ != arg.Type {
+			if typ != arg.Type {
 				arg = b.Convert(typ, arg)
 			}
 			b.InlineCall(b.Pkg.rtFunc(fn), arg)
 		}
 		if ln {
-			b.InlineCall(b.Pkg.rtFunc("PrintString"), b.Str("\n"))
+			b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.ByteVal('\n'))
 		}
 		return
 	case "copy":

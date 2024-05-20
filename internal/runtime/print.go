@@ -30,6 +30,10 @@ func gwrite(b []byte) {
 	}
 }
 
+func PrintByte(v byte) {
+	c.Fprintf(c.Stderr, c.Str("%c"), v)
+}
+
 func PrintBool(v bool) {
 	if v {
 		PrintString("true")
