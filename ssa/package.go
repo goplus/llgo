@@ -99,6 +99,7 @@ type aProgram struct {
 	ctx   llvm.Context
 	typs  typeutil.Map // rawType -> Type
 	gocvt goTypes
+	//abi *abi.Builder
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -158,6 +159,7 @@ type aProgram struct {
 
 	NeedRuntime bool
 	NeedPyInit  bool
+	is32Bits    bool
 }
 
 // A Program presents a program.
@@ -180,7 +182,12 @@ func NewProgram(target *Target) Program {
 		// TODO(xsw): Finalize may cause panic, so comment it.
 		ctx.Finalize()
 	*/
-	return &aProgram{ctx: ctx, gocvt: newGoTypes(), target: target, td: td, named: make(map[string]llvm.Type)}
+	is32Bits := (td.PointerSize() == 4)
+	return &aProgram{
+		ctx: ctx, gocvt: newGoTypes(), // abi: abi.New(),
+		target: target, td: td, is32Bits: is32Bits,
+		named: make(map[string]llvm.Type),
+	}
 }
 
 // SetPython sets the Python package.

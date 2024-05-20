@@ -152,7 +152,7 @@ See [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py) fo
 
 LLGo can easily import any libraries from the C ecosystem. Currently, this import process is still manual, but in the future, it will be automated similar to Python library imports.
 
-The currently imported libraries include:
+The currently supported libraries include:
 
 * [llama2.c](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
 * [cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)

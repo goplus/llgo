@@ -665,7 +665,18 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	return
 }
 
-// Alloca allocates space for n bytes.
+// AllocU allocates uninitialized space for n*sizeof(elem) bytes.
+func (b Builder) AllocU(elem Type, n ...int64) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocU %v, %v\n", elem.raw.Type, n)
+	}
+	size := b.SizeOf(elem, n...)
+	ret = b.InlineCall(b.Pkg.rtFunc("AllocU"), size)
+	ret.Type = b.Prog.Pointer(elem)
+	return
+}
+
+// Alloca allocates uninitialized space for n bytes.
 func (b Builder) Alloca(n Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("Alloca %v\n", n.impl)
@@ -984,9 +995,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		for i, arg := range args {
 			if ln && i > 0 {
 				b.InlineCall(b.Pkg.rtFunc("PrintString"), b.Str(" "))
+				// TODO(visualfc): maybe use PrintCStr is more efficient
 			}
 			var fn string
-			var typ Type
+			var typ Type // TODO(visualfc): typ uninitialized in some cases
 			switch arg.kind {
 			case vkBool:
 				fn = "PrintBool"
@@ -1002,6 +1014,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			case vkSlice:
 				fn = "PrintSlice"
 			case vkPtr, vkFuncPtr, vkFuncDecl, vkClosure, vkPyVarRef, vkPyFuncRef:
+				// TODO(visualfc): vkClosure is not a pointer
+				// TODO(visualfc): vkPyVarRef, vkPyFuncRef is pointer of pointer
 				fn = "PrintPointer"
 				typ = b.Prog.VoidPtr()
 			case vkString:
@@ -1037,8 +1051,11 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
+	case "String": // unsafe.String
+		// TODO(xsw): make this a builtin
+		return b.InlineCall(b.Pkg.rtFunc("NewString"), args[0], args[1])
 	}
-	panic("todo")
+	panic("todo: " + fn)
 }
 
 // -----------------------------------------------------------------------------

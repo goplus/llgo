@@ -36,6 +36,9 @@ func TestFromTestdata(t *testing.T) {
 
 func TestRuntime(t *testing.T) {
 	cltest.Pkg(t, "github.com/goplus/llgo/internal/runtime", "../internal/runtime/llgo_autogen.ll")
+}
+
+func TestAbi(t *testing.T) {
 	cltest.Pkg(t, "github.com/goplus/llgo/internal/abi", "../internal/abi/llgo_autogen.ll")
 }
 
