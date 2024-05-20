@@ -182,7 +182,7 @@ func NewProgram(target *Target) Program {
 		// TODO(xsw): Finalize may cause panic, so comment it.
 		ctx.Finalize()
 	*/
-	is32Bits := (td.PointerSize() == 4)
+	is32Bits := (td.PointerSize() == 4 || target.GOARCH == "x86") // TODO(xsw): remove temp code
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(), // abi: abi.New(),
 		target: target, td: td, is32Bits: is32Bits,

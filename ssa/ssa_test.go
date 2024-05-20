@@ -21,9 +21,17 @@ import (
 	"go/token"
 	"go/types"
 	"testing"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
+
+func TestPointerSize(t *testing.T) {
+	expected := unsafe.Sizeof(uintptr(0))
+	if size := NewProgram(nil).PointerSize(); size != int(expected) {
+		t.Fatal("bad PointerSize:", size)
+	}
+}
 
 func TestSetBlock(t *testing.T) {
 	defer func() {

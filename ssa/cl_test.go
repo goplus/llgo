@@ -17,9 +17,12 @@
 package ssa_test
 
 import (
+	"go/types"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/ssa/ssatest"
 )
 
 func TestFromTestpy(t *testing.T) {
@@ -40,6 +43,40 @@ func TestRuntime(t *testing.T) {
 
 func TestAbi(t *testing.T) {
 	cltest.Pkg(t, "github.com/goplus/llgo/internal/abi", "../internal/abi/llgo_autogen.ll")
+}
+
+func TestMakeInterface(t *testing.T) {
+	prog := ssatest.NewProgram(t, &ssa.Target{GOARCH: "x86"})
+	pkg := prog.NewPackage("foo", "foo")
+	fn := pkg.NewFunc("main", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.InC)
+	b := fn.MakeBody(1)
+	b.MakeInterface(prog.Any(), prog.IntVal(100, prog.Int64()))
+	b.MakeInterface(prog.Any(), prog.FloatVal(100, prog.Float64()))
+	b.Return()
+	ssatest.Assert(t, pkg, `; ModuleID = 'foo'
+source_filename = "foo"
+
+%"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
+
+define void @main() {
+_llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store i64 100, ptr %0, align 4
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %1, ptr %0)
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store double 1.000000e+02, ptr %3, align 8
+  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 14)
+  %5 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %4, ptr %3)
+  ret void
+}
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+
+declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr, ptr)
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+`)
 }
 
 /*
