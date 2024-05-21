@@ -287,7 +287,7 @@ var uintPredOpToLLVM = []llvm.IntPredicate{
 
 var floatPredOpToLLVM = []llvm.FloatPredicate{
 	token.EQL - predOpBase: llvm.FloatOEQ,
-	token.NEQ - predOpBase: llvm.FloatONE,
+	token.NEQ - predOpBase: llvm.FloatUNE,
 	token.LSS - predOpBase: llvm.FloatOLT,
 	token.LEQ - predOpBase: llvm.FloatOLE,
 	token.GTR - predOpBase: llvm.FloatOGT,

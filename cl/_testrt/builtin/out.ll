@@ -20,6 +20,43 @@ source_filename = "main"
 @6 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
 @7 = private unnamed_addr constant [3 x i8] c"fn\00", align 1
 
+define double @main.Float64frombits(i64 %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
+  store i64 %0, ptr %1, align 4
+  %2 = load double, ptr %1, align 8
+  ret double %2
+}
+
+define double @main.Inf(i64 %0) {
+_llgo_0:
+  %1 = icmp sge i64 %0, 0
+  br i1 %1, label %_llgo_1, label %_llgo_3
+
+_llgo_1:                                          ; preds = %_llgo_0
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
+  %2 = phi i64 [ 9218868437227405312, %_llgo_1 ], [ -4503599627370496, %_llgo_3 ]
+  %3 = call double @main.Float64frombits(i64 %2)
+  ret double %3
+
+_llgo_3:                                          ; preds = %_llgo_0
+  br label %_llgo_2
+}
+
+define i1 @main.IsNaN(double %0) {
+_llgo_0:
+  %1 = fcmp une double %0, %0
+  ret i1 %1
+}
+
+define double @main.NaN() {
+_llgo_0:
+  %0 = call double @main.Float64frombits(i64 9221120237041090561)
+  ret double %0
+}
+
 define void @main.demo() {
 _llgo_0:
   ret void
@@ -363,12 +400,28 @@ _llgo_2:                                          ; preds = %_llgo_1
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
+  %162 = call double @main.Inf(i64 1)
+  %163 = call double @main.Inf(i64 -1)
+  %164 = call double @main.NaN()
+  %165 = call double @main.NaN()
+  %166 = call i1 @main.IsNaN(double %165)
+  %167 = call i1 @main.IsNaN(double 1.000000e+00)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %162)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %163)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %164)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %166)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %167)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
