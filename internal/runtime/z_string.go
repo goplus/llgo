@@ -70,4 +70,119 @@ func NewStringSlice(base String, i, j int) String {
 	return String{nil, 0}
 }
 
+type StringIter struct {
+	s   string
+	pos int
+}
+
+func NewStringIter(s string) *StringIter {
+	return &StringIter{s, 0}
+}
+
+func StringIterNext(it *StringIter) (ok bool, k int, v rune) {
+	if it.pos >= len(it.s) {
+		return false, 0, 0
+	}
+	k = it.pos
+	if c := it.s[it.pos]; c < runeSelf {
+		it.pos++
+		v = rune(c)
+	} else {
+		v, it.pos = decoderune(it.s, it.pos)
+	}
+	ok = true
+	return
+}
+
+func StringToBytes(s String) []byte {
+	if s.len == 0 {
+		return nil
+	}
+	data := make([]byte, s.len)
+	c.Memcpy(unsafe.Pointer(&data[0]), s.data, uintptr(s.len))
+	return data
+}
+
+func StringToRunes(s string) []rune {
+	if len(s) == 0 {
+		return nil
+	}
+	data := make([]rune, len(s))
+	var index uint
+	for i := 0; i < len(s); {
+		if c := s[i]; c < runeSelf {
+			data[index] = rune(c)
+			i++
+		} else {
+			data[index], i = decoderune(s, i)
+		}
+		index++
+	}
+	return data[:index:index]
+}
+
+func StringFromBytes(b Slice) (s String) {
+	if b.len == 0 {
+		return
+	}
+	s.len = b.len
+	s.data = AllocU(uintptr(s.len))
+	c.Memcpy(s.data, b.data, uintptr(b.len))
+	return
+}
+
+func StringFromRunes(rs []rune) (s String) {
+	if len(rs) == 0 {
+		return
+	}
+	data := make([]byte, len(rs)*4)
+	var index int
+	for _, r := range rs {
+		n := encoderune(data[index:], r)
+		index += n
+	}
+	s.len = index
+	s.data = unsafe.Pointer(&data[0])
+	return
+}
+
+func StringFromRune(r rune) (s String) {
+	var buf [4]byte
+	n := encoderune(buf[:], r)
+	s.len = n
+	s.data = unsafe.Pointer(&buf[0])
+	return
+}
+
+func StringEqual(x, y String) bool {
+	if x.len != y.len {
+		return false
+	}
+	if x.data != y.data {
+		for i := 0; i < x.len; i++ {
+			if *(*byte)(c.Advance(x.data, i)) != *(*byte)(c.Advance(y.data, i)) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func StringLess(x, y String) bool {
+	n := x.len
+	if n > y.len {
+		n = y.len
+	}
+	for i := 0; i < n; i++ {
+		ix := *(*byte)(c.Advance(x.data, i))
+		iy := *(*byte)(c.Advance(y.data, i))
+		if ix < iy {
+			return true
+		} else if ix > iy {
+			return false
+		}
+	}
+	return x.len < y.len
+}
+
 // -----------------------------------------------------------------------------

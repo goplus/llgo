@@ -714,6 +714,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Extract:
 		x := p.compileValue(b, v.Tuple)
 		ret = b.Extract(x, v.Index)
+	case *ssa.Range:
+		x := p.compileValue(b, v.X)
+		ret = b.Range(x)
+	case *ssa.Next:
+		iter := p.compileValue(b, v.Iter)
+		ret = b.Next(iter, v.IsString)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}

@@ -82,7 +82,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 define void @main.cvt32Fto64F(float %0, double %1) {
 _llgo_0:
   %2 = fpext float %0 to double
-  %3 = fcmp one double %2, %1
+  %3 = fcmp une double %2, %1
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
@@ -198,7 +198,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 define void @main.cvt64Fto32F(double %0, float %1) {
 _llgo_0:
   %2 = fptrunc double %0 to float
-  %3 = fcmp one float %2, %1
+  %3 = fcmp une float %2, %1
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
@@ -227,7 +227,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 define void @main.cvt64Uto64F(i64 %0, double %1) {
 _llgo_0:
   %2 = uitofp i64 %0 to double
-  %3 = fcmp one double %2, %1
+  %3 = fcmp une double %2, %1
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
@@ -256,7 +256,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 define void @main.cvt64to64F(i64 %0, double %1) {
 _llgo_0:
   %2 = sitofp i64 %0 to double
-  %3 = fcmp one double %2, %1
+  %3 = fcmp une double %2, %1
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
