@@ -17,7 +17,8 @@ source_filename = "main"
 @3 = private unnamed_addr constant [6 x i8] c"hello\00", align 1
 @4 = private unnamed_addr constant [4 x i8] c"def\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"ABCD\00", align 1
-@6 = private unnamed_addr constant [3 x i8] c"fn\00", align 1
+@6 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
+@7 = private unnamed_addr constant [3 x i8] c"fn\00", align 1
 
 define void @main.demo() {
 _llgo_0:
@@ -340,6 +341,28 @@ _llgo_0:
   %152 = extractvalue { ptr, ptr } %151, 0
   call void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr %152)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %153 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %154 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %153, i32 0, i32 0
+  store ptr @6, ptr %154, align 8
+  %155 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %153, i32 0, i32 1
+  store i64 7, ptr %155, align 4
+  %156 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %153, align 8
+  %157 = call ptr @"github.com/goplus/llgo/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/internal/runtime.String" %156)
+  br label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
+  %158 = call { i1, i64, i32 } @"github.com/goplus/llgo/internal/runtime.StringIterNext"(ptr %157)
+  %159 = extractvalue { i1, i64, i32 } %158, 0
+  br i1 %159, label %_llgo_2, label %_llgo_3
+
+_llgo_2:                                          ; preds = %_llgo_1
+  %160 = extractvalue { i1, i64, i32 } %158, 2
+  %161 = sext i32 %160 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %161)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  br label %_llgo_1
+
+_llgo_3:                                          ; preds = %_llgo_1
   ret i32 0
 }
 
@@ -393,7 +416,7 @@ define void @"main.main$1"() {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 0
-  store ptr @6, ptr %1, align 8
+  store ptr @7, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 1
   store i64 2, ptr %2, align 4
   %3 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %0, align 8
@@ -401,3 +424,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/internal/runtime.String")
+
+declare { i1, i64, i32 } @"github.com/goplus/llgo/internal/runtime.StringIterNext"(ptr)

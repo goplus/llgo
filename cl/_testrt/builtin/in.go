@@ -40,6 +40,10 @@ func main() {
 		println(n)
 	}
 	println(demo, fn1, fn2, fn3)
+
+	for _, v := range "中abcd" {
+		println(v)
+	}
 }
 
 func demo() {

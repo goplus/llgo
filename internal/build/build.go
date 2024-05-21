@@ -146,6 +146,16 @@ func Do(args []string, conf *Config) {
 	var runtimeFiles []string
 	if needRt {
 		runtimeFiles = allLinkFiles(rt)
+		// build runtime deps
+		deps := runtimeDeps(rt, pkgs)
+		if len(deps) > 0 {
+			deps, err := packages.Load(cfg, deps...)
+			check(err)
+			dpkgs := buildAllPkgs(prog, deps, mode, verbose)
+			for _, pkg := range dpkgs {
+				runtimeFiles = append(runtimeFiles, pkg.ExportFile)
+			}
+		}
 	}
 	if mode != ModeBuild {
 		nErr := 0
@@ -158,6 +168,24 @@ func Do(args []string, conf *Config) {
 			os.Exit(nErr)
 		}
 	}
+}
+
+func runtimeDeps(rt []*packages.Package, pkgs []*aPackage) (deps []string) {
+	m := make(map[string]bool)
+	for _, pkg := range pkgs {
+		m[pkg.PkgPath] = true
+	}
+	m["unsafe"] = true
+	for _, r := range rt {
+		for dep, _ := range r.Imports {
+			if m[dep] || strings.HasPrefix(dep, llgoModPath) {
+				continue
+			}
+			m[dep] = true
+			deps = append(deps, dep)
+		}
+	}
+	return
 }
 
 func setNeedRuntimeOrPyInit(pkg *packages.Package, needRuntime, needPyInit bool) {

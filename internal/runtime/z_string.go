@@ -17,6 +17,7 @@
 package runtime
 
 import (
+	"unicode/utf8"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/runtime/c"
@@ -68,6 +69,28 @@ func NewStringSlice(base String, i, j int) String {
 		return String{c.Advance(base.data, i), j - i}
 	}
 	return String{nil, 0}
+}
+
+type StringIter struct {
+	s string
+	i int
+}
+
+func NewStringIter(s string) *StringIter {
+	return &StringIter{s, 0}
+}
+
+func StringIterNext(it *StringIter) (bool, int, rune) {
+	if it.i >= len(it.s) {
+		return false, 0, 0
+	}
+	if c := it.s[it.i]; c < utf8.RuneSelf {
+		it.i++
+		return true, 1, rune(c)
+	}
+	r, size := utf8.DecodeRuneInString(it.s[it.i:])
+	it.i += size
+	return true, size, r
 }
 
 // -----------------------------------------------------------------------------
