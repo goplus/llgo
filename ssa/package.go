@@ -122,7 +122,7 @@ type aProgram struct {
 	voidPtrTy llvm.Type
 
 	rtStringTy llvm.Type
-	rtIfaceTy  llvm.Type
+	rtEfaceTy  llvm.Type
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
@@ -145,6 +145,8 @@ type aProgram struct {
 	pyObjPtr  Type
 	pyObjPPtr Type
 	abiTyptr  Type
+	abiTypptr Type
+	efaceTy   Type
 
 	pyImpTy    *types.Signature
 	pyNewList  *types.Signature
@@ -245,10 +247,10 @@ func (p Program) rtType(name string) Type {
 }
 
 func (p Program) rtEface() llvm.Type {
-	if p.rtIfaceTy.IsNil() {
-		p.rtIfaceTy = p.rtType("Eface").ll
+	if p.rtEfaceTy.IsNil() {
+		p.rtEfaceTy = p.rtType("Eface").ll
 	}
-	return p.rtIfaceTy
+	return p.rtEfaceTy
 }
 
 func (p Program) rtMap() llvm.Type {
@@ -291,6 +293,14 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	return ret
 }
 
+// Eface returns the empty interface type.
+func (p Program) Eface() Type {
+	if p.efaceTy == nil {
+		p.efaceTy = p.rawType(tyAny)
+	}
+	return p.efaceTy
+}
+
 // AbiTypePtr returns *abi.Type.
 func (p Program) AbiTypePtr() Type {
 	if p.abiTyptr == nil {
@@ -299,9 +309,12 @@ func (p Program) AbiTypePtr() Type {
 	return p.abiTyptr
 }
 
-// AbiTypePtr returns **abi.Type.
+// AbiTypePtrPtr returns **abi.Type.
 func (p Program) AbiTypePtrPtr() Type {
-	return p.Pointer(p.AbiTypePtr())
+	if p.abiTypptr == nil {
+		p.abiTypptr = p.Pointer(p.AbiTypePtr())
+	}
+	return p.abiTypptr
 }
 
 // PyObjectPtrPtr returns the **py.Object type.

@@ -31,23 +31,24 @@ import (
 func (b Builder) abiBasic(t *types.Basic) Expr {
 	name := abi.BasicName(t)
 	g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
-	return g.Expr
+	return b.Load(g.Expr)
 }
 
 // abiStruct returns the abi type of the specified struct type.
 func (b Builder) abiStruct(t *types.Struct) Expr {
 	pkg := b.Pkg
 	name, _ := pkg.abi.StructName(t)
-	if v := pkg.VarOf(name); v != nil {
-		return v.Expr
+	g := pkg.VarOf(name)
+	if g == nil {
+		prog := b.Prog
+		g := pkg.doNewVar(name, prog.AbiTypePtrPtr())
+		g.Init(prog.Null(g.Type))
 	}
-	prog := b.Prog
-	g := pkg.doNewVar(name, prog.AbiTypePtrPtr())
-	g.Init(prog.Null(g.Type))
 	pkg.abitys = append(pkg.abitys, func() {
-		b.structOf(t)
+		tabi := b.structOf(t)
+		b.Store(g.Expr, tabi)
 	})
-	return g.Expr
+	return b.Load(g.Expr)
 }
 
 // func Struct(size uintptr, pkgPath string, fields []abi.StructField) *abi.Type
@@ -89,6 +90,11 @@ func (b Builder) abiType(raw types.Type) Expr {
 		return b.abiStruct(tx)
 	}
 	panic("todo")
+}
+
+// unsafeEface(t *abi.Type, data unsafe.Pointer) Eface
+func (b Builder) unsafeEface(t, data llvm.Value) llvm.Value {
+	return aggregateValue(b.impl, b.Prog.rtEface(), t, data)
 }
 
 // -----------------------------------------------------------------------------
@@ -155,9 +161,7 @@ func (b Builder) makeIntfAlloc(tinter Type, rawIntf *types.Interface, typ Type, 
 
 func (b Builder) makeIntfByPtr(tinter Type, rawIntf *types.Interface, typ Type, vptr Expr) (ret Expr) {
 	if rawIntf.Empty() {
-		ret = b.InlineCall(b.Pkg.rtFunc("MakeAny"), b.abiType(typ.raw.Type), vptr)
-		ret.Type = tinter
-		return
+		return Expr{b.unsafeEface(b.abiType(typ.raw.Type).impl, vptr.impl), tinter}
 	}
 	panic("todo")
 }
@@ -215,6 +219,10 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	}
+	// TODO(xsw)
+	// if x.kind != vkEface {
+	//	 panic("todo: non empty interface")
+	// }
 	switch assertedTyp.kind {
 	case vkSigned, vkUnsigned, vkFloat, vkBool:
 		pkg := b.Pkg

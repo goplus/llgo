@@ -39,12 +39,6 @@ func MakeAnyString(data string) Eface {
 	}
 }
 
-func MakeAny(typ *Type, data unsafe.Pointer) Eface {
-	return eface{
-		_type: typ, data: data,
-	}
-}
-
 func I2Int(v Eface, t *Type) uintptr {
 	if v._type == t {
 		return uintptr(v.data)
