@@ -49,7 +49,9 @@ const (
 	vkSlice
 	vkArray
 	vkMap
-	vkInterface
+	vkEface
+	vkIface
+	vkStruct
 	vkPhisExpr = -1
 )
 
@@ -99,6 +101,22 @@ func (p Program) SizeOf(typ Type, n ...int64) uint64 {
 	return size
 }
 
+// OffsetOf returns the offset of a field in a struct.
+func (p Program) OffsetOf(typ Type, i int) uint64 {
+	return p.td.ElementOffset(typ.ll, i)
+}
+
+// SizeOf returns the size of a type.
+func SizeOf(prog Program, t Type, n ...int64) Expr {
+	size := prog.SizeOf(t, n...)
+	return prog.IntVal(size, prog.Uintptr())
+}
+
+func OffsetOf(prog Program, t Type, i int) Expr {
+	offset := prog.OffsetOf(t, i)
+	return prog.IntVal(offset, prog.Uintptr())
+}
+
 func (p Program) PointerSize() int {
 	return p.td.PointerSize()
 }
@@ -113,7 +131,6 @@ func (p Program) Pointer(typ Type) Type {
 
 func (p Program) Elem(typ Type) Type {
 	elem := typ.raw.Type.(interface {
-		types.Type
 		Elem() types.Type
 	}).Elem()
 	return p.rawType(elem)
@@ -247,7 +264,9 @@ func (p Program) toType(raw types.Type) Type {
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
-		return &aType{p.rtIface(), typ, vkInterface}
+		if t.Empty() {
+			return &aType{p.rtEface(), typ, vkEface}
+		}
 	case *types.Slice:
 		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:
@@ -283,6 +302,8 @@ func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind)
 	ret = p.ctx.StructType(fields, false)
 	if isClosure(raw) {
 		kind = vkClosure
+	} else {
+		kind = vkStruct
 	}
 	return
 }

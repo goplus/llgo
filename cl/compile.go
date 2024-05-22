@@ -352,9 +352,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			last = len(instrs) - 1
 			instrs = instrs[:last]
 		} else {
-			// TODO(xsw): confirm pyMod don't need to call LoadPyModSyms
+			// TODO(xsw): confirm pyMod don't need to call AfterInit
 			p.inits = append(p.inits, func() {
-				pkg.PyLoadModSyms(b, ret)
+				pkg.AfterInit(b, ret)
 			})
 		}
 	} else if doMainInit {

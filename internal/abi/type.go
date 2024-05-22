@@ -84,14 +84,12 @@ const (
 	UnsafePointer
 )
 
-/*
 const (
 	// TODO (khr, drchase) why aren't these in TFlag?  Investigate, fix if possible.
 	KindDirectIface = 1 << 5
 	KindGCProg      = 1 << 6 // Type.gc points to GC program
 	KindMask        = (1 << 5) - 1
 )
-*/
 
 // TFlag is used by a Type to signal what extra type information is
 // available in the memory directly following the Type value.
@@ -229,7 +227,7 @@ type Imethod struct {
 	Typ  TypeOff // .(*FuncType) underneath
 }
 
-func (t *Type) Kind() Kind { return Kind(t.Kind_) }
+func (t *Type) Kind() Kind { return Kind(t.Kind_ & KindMask) }
 
 // Size returns the size of data with type t.
 func (t *Type) Size() uintptr { return t.Size_ }

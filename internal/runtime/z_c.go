@@ -40,8 +40,8 @@ func Zeroinit(p c.Pointer, size uintptr) c.Pointer {
 }
 
 // TracePanic prints panic message.
-func TracePanic(v Interface) {
-	kind := abi.Kind(v.tab._type.Kind_)
+func TracePanic(v Eface) {
+	kind := abi.Kind(v._type.Kind_)
 	switch {
 	case kind == abi.String:
 		stringTracef(c.Stderr, c.Str("panic: %s\n"), *(*String)(v.data))

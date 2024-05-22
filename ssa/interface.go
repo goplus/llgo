@@ -21,31 +21,72 @@ import (
 	"go/types"
 	"log"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
 
 // -----------------------------------------------------------------------------
 
 // abiBasic returns the abi type of the specified basic kind.
-func (b Builder) abiBasic(kind types.BasicKind) Expr {
-	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
+func (b Builder) abiBasic(t *types.Basic) Expr {
+	name := abi.BasicName(t)
+	g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
+	return g.Expr
 }
 
-/*
 // abiStruct returns the abi type of the specified struct type.
 func (b Builder) abiStruct(t *types.Struct) Expr {
-	// name := "__llgo_" + b.Prog.abi.StructName(t)
+	pkg := b.Pkg
+	name, _ := pkg.abi.StructName(t)
+	if v := pkg.VarOf(name); v != nil {
+		return v.Expr
+	}
+	prog := b.Prog
+	g := pkg.doNewVar(name, prog.AbiTypePtrPtr())
+	g.Init(prog.Null(g.Type))
+	pkg.abitys = append(pkg.abitys, func() {
+		b.structOf(t)
+	})
+	return g.Expr
 }
-*/
 
-// AbiType returns the abi type of the specified type.
-func (b Builder) AbiType(t Type) Expr {
-	switch tx := t.raw.Type.(type) {
+// func Struct(size uintptr, pkgPath string, fields []abi.StructField) *abi.Type
+func (b Builder) structOf(t *types.Struct) Expr {
+	pkg := b.Pkg
+	prog := b.Prog
+	n := t.NumFields()
+	flds := make([]Expr, n)
+	strucAbi := pkg.rtFunc("Struct")
+	sfAbi := pkg.rtFunc("StructField")
+	typ := prog.rawType(t)
+	for i := 0; i < n; i++ {
+		f := t.Field(i)
+		off := uintptr(prog.OffsetOf(typ, i))
+		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
+	}
+	pkgPath := prog.Val(pkg.abi.Pkg)
+	params := strucAbi.raw.Type.(*types.Signature).Params()
+	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
+	fldSlice := b.SliceLit(tSlice, flds...)
+	return b.Call(strucAbi, pkgPath, fldSlice)
+}
+
+// func StructField(name string, typ *abi.Type, off uintptr, tag string, exported, embedded bool) abi.StructField
+func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uintptr, tag string) Expr {
+	name := prog.Val(f.Name())
+	typ := b.abiType(f.Type())
+	exported := prog.Val(f.Exported())
+	embedded := prog.Val(f.Embedded())
+	return b.Call(sfAbi, name, typ, prog.Val(offset), prog.Val(tag), exported, embedded)
+}
+
+// abiType returns the abi type of the specified type.
+func (b Builder) abiType(raw types.Type) Expr {
+	switch tx := raw.(type) {
 	case *types.Basic:
-		return b.abiBasic(tx.Kind())
-		//case *types.Struct:
-		//	return b.abiStruct(tx)
+		return b.abiBasic(tx)
+	case *types.Struct:
+		return b.abiStruct(tx)
 	}
 	panic("todo")
 }
@@ -94,14 +135,14 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		case kind == types.String:
 			return Expr{b.InlineCall(b.Pkg.rtFunc("MakeAnyString"), x).impl, tinter}
 		}
-		/* case *types.Struct:
+	case *types.Struct:
 		size := int(prog.SizeOf(typ))
 		if size > prog.PointerSize() {
 			return b.makeIntfAlloc(tinter, rawIntf, typ, x)
 		}
 		tv := prog.ctx.IntType(size * 8)
 		iv := llvm.CreateBitCast(b.impl, x.impl, tv)
-		return b.makeIntfByIntptr(tinter, rawIntf, typ, iv) */
+		return b.makeIntfByIntptr(tinter, rawIntf, typ, iv)
 	}
 	panic("todo")
 }
@@ -114,7 +155,7 @@ func (b Builder) makeIntfAlloc(tinter Type, rawIntf *types.Interface, typ Type, 
 
 func (b Builder) makeIntfByPtr(tinter Type, rawIntf *types.Interface, typ Type, vptr Expr) (ret Expr) {
 	if rawIntf.Empty() {
-		ret = b.InlineCall(b.Pkg.rtFunc("MakeAny"), b.AbiType(typ), vptr)
+		ret = b.InlineCall(b.Pkg.rtFunc("MakeAny"), b.abiType(typ.raw.Type), vptr)
 		ret.Type = tinter
 		return
 	}
@@ -125,7 +166,7 @@ func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Typ
 	if rawIntf.Empty() {
 		tptr := b.Prog.Uintptr()
 		x = llvm.CreateIntCast(b.impl, x, tptr.ll)
-		impl := b.InlineCall(b.Pkg.rtFunc("MakeAnyIntptr"), b.AbiType(typ), Expr{x, tptr}).impl
+		impl := b.InlineCall(b.Pkg.rtFunc("MakeAnyIntptr"), b.abiType(typ.raw.Type), Expr{x, tptr}).impl
 		return Expr{impl, tinter}
 	}
 	panic("todo")
@@ -183,13 +224,14 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		}
 		fn := pkg.rtFunc(fnName)
 		var kind types.BasicKind
+		var typ Expr
 		switch t := assertedTyp.raw.Type.(type) {
 		case *types.Basic:
 			kind = t.Kind()
+			typ = b.abiBasic(t)
 		default:
 			panic("todo")
 		}
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
 		ret = b.InlineCall(fn, x, typ)
 		if kind != types.Uintptr {
 			conv := func(v llvm.Value) llvm.Value {
@@ -226,11 +268,21 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		if commaOk {
 			fnName = "CheckI2String"
 		}
-		fn := pkg.rtFunc(fnName)
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(abi.String)))
-		return b.InlineCall(fn, x, typ)
+		return b.InlineCall(pkg.rtFunc(fnName), x)
+	case vkStruct:
 	}
 	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
+
+// InterfaceData returns the data pointer of an interface.
+func (b Builder) InterfaceData(x Expr) Expr {
+	if debugInstr {
+		log.Printf("InterfaceData %v\n", x.impl)
+	}
+	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
+	return Expr{ptr, b.Prog.VoidPtr()}
 }
 
 // -----------------------------------------------------------------------------

@@ -28,46 +28,70 @@ import (
 type Builder struct {
 	h   hash.Hash
 	buf []byte
+	Pkg string
 }
 
 // New creates a new ABI type Builder.
-func New() *Builder {
-	h := sha256.New()
-	buf := make([]byte, sha256.Size)
-	return &Builder{h, buf}
+func New(pkg string) *Builder {
+	ret := new(Builder)
+	ret.Init(pkg)
+	return ret
+}
+
+func (b *Builder) Init(pkg string) {
+	b.Pkg = pkg
+	b.h = sha256.New()
+	b.buf = make([]byte, sha256.Size)
 }
 
 // TypeName returns the ABI type name for the specified type.
-func (b *Builder) TypeName(t types.Type) string {
+func (b *Builder) TypeName(t types.Type) (ret string, private bool) {
 	switch t := t.(type) {
 	case *types.Basic:
-		return t.Name()
+		return BasicName(t), false
 	case *types.Pointer:
-		return "*" + b.TypeName(t.Elem())
+		ret, private = b.TypeName(t.Elem())
+		return "*" + ret, private
 	case *types.Struct:
 		return b.StructName(t)
 	}
 	panic("todo")
 }
 
-// StructName returns the ABI type name for the specified struct type.
-func (b *Builder) StructName(t *types.Struct) string {
-	hash := b.structHash(t)
-	return "struct$" + base64.RawURLEncoding.EncodeToString(hash)
+func BasicName(t *types.Basic) string {
+	return "_llgo_" + t.Name()
 }
 
-func (b *Builder) structHash(t *types.Struct) []byte {
+// StructName returns the ABI type name for the specified struct type.
+func (b *Builder) StructName(t *types.Struct) (ret string, private bool) {
+	hash, private := b.structHash(t)
+	hashStr := base64.RawURLEncoding.EncodeToString(hash)
+	if private {
+		return b.Pkg + ".struct$" + hashStr, true
+	}
+	return "_llgo_struct$" + hashStr, false
+}
+
+func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 	h := b.h
 	h.Reset()
 	n := t.NumFields()
 	fmt.Fprintln(h, "struct", n)
 	for i := 0; i < n; i++ {
 		f := t.Field(i)
+		if !f.Exported() {
+			private = true
+		}
 		name := f.Name()
 		if f.Embedded() {
 			name = "-"
 		}
-		fmt.Fprintln(h, name, b.TypeName(f.Type()))
+		ft, fpriv := b.TypeName(f.Type())
+		if fpriv {
+			private = true
+		}
+		fmt.Fprintln(h, name, ft)
 	}
-	return h.Sum(b.buf[:0])
+	ret = h.Sum(b.buf[:0])
+	return
 }

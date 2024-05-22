@@ -58,6 +58,13 @@ type aNamedConst struct {
 // it augments with the name and position of its 'const' declaration.
 type NamedConst = *aNamedConst
 
+/*
+// NewConst creates a new named constant.
+func (p Package) NewConst(name string, val constant.Value) NamedConst {
+	return &aNamedConst{}
+}
+*/
+
 // -----------------------------------------------------------------------------
 
 type aGlobal struct {
@@ -75,9 +82,21 @@ func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 		return v
 	}
 	t := p.Prog.Type(typ, bg)
+	return p.doNewVar(name, t)
+}
+
+// NewVarFrom creates a new global variable.
+func (p Package) NewVarFrom(name string, t Type) Global {
+	if v, ok := p.vars[name]; ok {
+		return v
+	}
+	return p.doNewVar(name, t)
+}
+
+func (p Package) doNewVar(name string, t Type) Global {
 	var gbl llvm.Value
 	var array bool
-	if t.kind == vkPtr && p.Prog.Elem(t).kind == vkArray {
+	if t.kind == vkPtr && p.Prog.Elem(t).kind == vkArray { // TODO(xsw): check this code
 		typ := p.Prog.Elem(t).ll
 		gbl = llvm.AddGlobal(p.mod, typ, name)
 		gbl.SetInitializer(llvm.Undef(typ))
@@ -97,7 +116,7 @@ func (p Package) VarOf(name string) Global {
 
 // Init initializes the global variable with the given value.
 func (g Global) Init(v Expr) {
-	if g.array && v.kind == vkPtr {
+	if g.array && v.kind == vkPtr { // TODO(xsw): check this code
 		return
 	}
 	g.impl.SetInitializer(v.impl)
@@ -350,15 +369,14 @@ func (p Package) PyObjOf(name string) PyObjRef {
 	return p.pyobjs[name]
 }
 
-// PyLoadModSyms loads module symbols used in this package.
-func (p Package) PyLoadModSyms(b Builder, ret BasicBlock) {
-	objs := p.pyobjs
-	n := len(objs)
-	if n == 0 {
-		return
-	}
+func (p Package) pyHasModSyms() bool {
+	return len(p.pyobjs) > 0
+}
 
-	names := make([]string, 0, n)
+// pyLoadModSyms loads module symbols used in this package.
+func (p Package) pyLoadModSyms(b Builder) {
+	objs := p.pyobjs
+	names := make([]string, 0, len(objs))
 	for name := range objs {
 		names = append(names, name)
 	}
@@ -376,7 +394,6 @@ func (p Package) PyLoadModSyms(b Builder, ret BasicBlock) {
 		}
 	}
 
-	b.SetBlockEx(ret, afterInit)
 	for _, modName := range modNames {
 		objs := mods[modName]
 		b.PyLoadModSyms(modName, objs...)

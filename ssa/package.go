@@ -20,6 +20,7 @@ import (
 	"go/token"
 	"go/types"
 
+	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
 )
@@ -99,7 +100,6 @@ type aProgram struct {
 	ctx   llvm.Context
 	typs  typeutil.Map // rawType -> Type
 	gocvt goTypes
-	//abi *abi.Builder
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -144,6 +144,7 @@ type aProgram struct {
 	u64Ty     Type
 	pyObjPtr  Type
 	pyObjPPtr Type
+	abiTyptr  Type
 
 	pyImpTy    *types.Signature
 	pyNewList  *types.Signature
@@ -184,7 +185,7 @@ func NewProgram(target *Target) Program {
 	*/
 	is32Bits := (td.PointerSize() == 4 || target.GOARCH == "x86") // TODO(xsw): remove temp code
 	return &aProgram{
-		ctx: ctx, gocvt: newGoTypes(), // abi: abi.New(),
+		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		named: make(map[string]llvm.Type),
 	}
@@ -243,9 +244,9 @@ func (p Program) rtType(name string) Type {
 	return p.rawType(p.rtNamed(name))
 }
 
-func (p Program) rtIface() llvm.Type {
+func (p Program) rtEface() llvm.Type {
 	if p.rtIfaceTy.IsNil() {
-		p.rtIfaceTy = p.rtType("Interface").ll
+		p.rtIfaceTy = p.rtType("Eface").ll
 	}
 	return p.rtIfaceTy
 }
@@ -284,7 +285,23 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
-	return &aPackage{mod, gbls, fns, stubs, pyobjs, pymods, p}
+	ret := &aPackage{
+		mod: mod, vars: gbls, fns: fns, stubs: stubs,
+		pyobjs: pyobjs, pymods: pymods, Prog: p}
+	return ret
+}
+
+// AbiTypePtr returns *abi.Type.
+func (p Program) AbiTypePtr() Type {
+	if p.abiTyptr == nil {
+		p.abiTyptr = p.rawType(types.NewPointer(p.rtNamed("Type")))
+	}
+	return p.abiTyptr
+}
+
+// AbiTypePtr returns **abi.Type.
+func (p Program) AbiTypePtrPtr() Type {
+	return p.Pointer(p.AbiTypePtr())
 }
 
 // PyObjectPtrPtr returns the **py.Object type.
@@ -440,6 +457,8 @@ func (p Program) Uint64() Type {
 // and unspecified other things too.
 type aPackage struct {
 	mod    llvm.Module
+	abi    abi.Builder
+	abitys []func()
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
@@ -449,13 +468,6 @@ type aPackage struct {
 }
 
 type Package = *aPackage
-
-/*
-// NewConst creates a new named constant.
-func (p Package) NewConst(name string, val constant.Value) NamedConst {
-	return &aNamedConst{}
-}
-*/
 
 func (p Package) rtFunc(fnName string) Expr {
 	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
@@ -507,6 +519,15 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 // String returns a string representation of the package.
 func (p Package) String() string {
 	return p.mod.String()
+}
+
+// AfterInit is called after the package is initialized (init all packages that depends on).
+func (p Package) AfterInit(b Builder, ret BasicBlock) {
+	doAfterInit := p.pyHasModSyms()
+	if doAfterInit {
+		b.SetBlockEx(ret, afterInit)
+		p.pyLoadModSyms(b)
+	}
 }
 
 /*

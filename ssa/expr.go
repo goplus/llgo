@@ -180,13 +180,6 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, raw))
 }
 
-// SizeOf returns the size of a type.
-func (b Builder) SizeOf(t Type, n ...int64) Expr {
-	prog := b.Prog
-	size := prog.SizeOf(t, n...)
-	return prog.IntVal(size, prog.Uintptr())
-}
-
 // CStr returns a c-style string constant expression.
 func (b Builder) CStr(v string) Expr {
 	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
@@ -200,10 +193,17 @@ func (b Builder) Str(v string) (ret Expr) {
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
 }
 
-// unsafe.String(data *byte, size int) string
-func (b Builder) String(data, size Expr) Expr {
+// unsafeString(data *byte, size int) string
+func (b Builder) unsafeString(data, size llvm.Value) Expr {
 	prog := b.Prog
-	return Expr{aggregateValue(b.impl, prog.rtString(), data.impl, size.impl), prog.String()}
+	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
+}
+
+// unsafeSlice(data *T, size, cap int) []T
+func (b Builder) unsafeSlice(data Expr, size, cap llvm.Value) Expr {
+	prog := b.Prog
+	tslice := prog.Slice(prog.Elem(data.Type))
+	return Expr{aggregateValue(b.impl, prog.rtSlice(), data.impl, size, cap), tslice}
 }
 
 // -----------------------------------------------------------------------------
@@ -667,7 +667,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	}
 	prog := b.Prog
 	pkg := b.Pkg
-	size := b.SizeOf(elem)
+	size := SizeOf(prog, elem)
 	if heap {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
@@ -683,9 +683,10 @@ func (b Builder) AllocU(elem Type, n ...int64) (ret Expr) {
 	if debugInstr {
 		log.Printf("AllocU %v, %v\n", elem.raw.Type, n)
 	}
-	size := b.SizeOf(elem, n...)
+	prog := b.Prog
+	size := SizeOf(prog, elem, n...)
 	ret = b.InlineCall(b.Pkg.rtFunc("AllocU"), size)
-	ret.Type = b.Prog.Pointer(elem)
+	ret.Type = prog.Pointer(elem)
 	return
 }
 
@@ -1035,8 +1036,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				typ = prog.VoidPtr()
 			case vkString:
 				fn = "PrintString"
-			case vkInterface:
-				fn = "PrintIface"
+			case vkEface:
+				fn = "PrintEface"
 			// case vkComplex:
 			// 	fn = "PrintComplex"
 			default:
@@ -1067,7 +1068,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 	case "String": // unsafe.String
-		return b.String(args[0], args[1])
+		return b.unsafeString(args[0].impl, args[1].impl)
+	case "Slice": // unsafe.Slice
+		size := args[1].impl
+		return b.unsafeSlice(args[0], size, size)
 	}
 	panic("todo: " + fn)
 }
