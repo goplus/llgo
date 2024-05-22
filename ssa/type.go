@@ -75,7 +75,7 @@ func indexType(t types.Type) types.Type {
 // -----------------------------------------------------------------------------
 
 type rawType struct {
-	types.Type
+	Type types.Type
 }
 
 type aType struct {
@@ -285,12 +285,14 @@ func (p Program) toType(raw types.Type) Type {
 		return p.toNamed(t)
 	case *types.Signature: // represents a C function pointer in raw type
 		return &aType{p.toLLVMFuncPtr(t), typ, vkFuncPtr}
+	case *types.Tuple:
+		return &aType{p.toLLVMTuple(t), typ, vkTuple}
 	case *types.Array:
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkArray}
 	case *types.Chan:
 	}
-	panic(fmt.Sprintf("toLLVMType: todo - %T\n", typ))
+	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
 
 func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {

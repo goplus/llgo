@@ -425,7 +425,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 	case token.MUL:
 		return b.Load(x)
 	case token.SUB:
-		switch t := x.Type.raw.Underlying().(type) {
+		switch t := x.raw.Type.Underlying().(type) {
 		case *types.Basic:
 			ret.Type = x.Type
 			if t.Info()&types.IsInteger != 0 {

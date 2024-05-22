@@ -41,7 +41,7 @@ func (b Builder) abiStruct(t *types.Struct) Expr {
 	g := pkg.VarOf(name)
 	if g == nil {
 		prog := b.Prog
-		g := pkg.doNewVar(name, prog.AbiTypePtrPtr())
+		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.Init(prog.Null(g.Type))
 	}
 	pkg.abitys = append(pkg.abitys, func() {
@@ -293,16 +293,13 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	tabi := b.abiType(assertedTyp.raw.Type)
 	eq := b.BinOp(token.EQL, tx, tabi)
 	if commaOk {
-		/*
-			prog := b.Prog
-			t := prog.Tuple(assertedTyp, prog.Bool())
-			val := b.valFromData(assertedTyp, b.InterfaceData(x))
-			zero := prog.Zero(assertedTyp)
-			valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
-			valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
-			return Expr{llvm.CreateSelect(b.impl, eq.impl, valTrue, valFalse), t}
-		*/
-		panic("todo")
+		prog := b.Prog
+		t := prog.Tuple(assertedTyp, prog.Bool())
+		val := b.valFromData(assertedTyp, b.InterfaceData(x))
+		zero := prog.Zero(assertedTyp)
+		valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
+		valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
+		return Expr{llvm.CreateSelect(b.impl, eq.impl, valTrue, valFalse), t}
 	}
 	blks := b.Func.MakeBlocks(2)
 	b.If(eq, blks[0], blks[1])

@@ -291,13 +291,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
 		pyobjs: pyobjs, pymods: pymods, Prog: p}
+	ret.abi.Init(pkgPath)
 	return ret
 }
 
 // Tuple returns a tuple type.
 func (p Program) Tuple(typs ...Type) Type {
-	n := len(typs)
-	els := make([]*types.Var, n)
+	els := make([]*types.Var, len(typs))
 	for i, t := range typs {
 		els[i] = types.NewParam(token.NoPos, nil, "", t.raw.Type)
 	}
