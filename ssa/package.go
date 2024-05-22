@@ -137,6 +137,7 @@ type aProgram struct {
 	intTy     Type
 	uintTy    Type
 	f64Ty     Type
+	f32Ty     Type
 	byteTy    Type
 	i32Ty     Type
 	u32Ty     Type
@@ -293,6 +294,16 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	return ret
 }
 
+// Tuple returns a tuple type.
+func (p Program) Tuple(typs ...Type) Type {
+	n := len(typs)
+	els := make([]*types.Var, n)
+	for i, t := range typs {
+		els[i] = types.NewParam(token.NoPos, nil, "", t.raw.Type)
+	}
+	return p.rawType(types.NewTuple(els...))
+}
+
 // Eface returns the empty interface type.
 func (p Program) Eface() Type {
 	if p.efaceTy == nil {
@@ -416,6 +427,14 @@ func (p Program) Float64() Type {
 		p.f64Ty = p.rawType(types.Typ[types.Float64])
 	}
 	return p.f64Ty
+}
+
+// Float32 returns float32 type.
+func (p Program) Float32() Type {
+	if p.f32Ty == nil {
+		p.f32Ty = p.rawType(types.Typ[types.Float32])
+	}
+	return p.f32Ty
 }
 
 // Byte returns byte type.

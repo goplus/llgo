@@ -160,6 +160,22 @@ func (b Builder) Return(results ...Expr) {
 	}
 }
 
+// The Extract instruction yields component Index of Tuple.
+//
+// This is used to access the results of instructions with multiple
+// return values, such as Call, TypeAssert, Next, UnOp(ARROW) and
+// IndexExpr(Map).
+//
+// Example printed form:
+//
+//	t1 = extract t0 #1
+func (b Builder) Extract(x Expr, i int) (ret Expr) {
+	if debugInstr {
+		log.Printf("Extract %v, %d\n", x.impl, i)
+	}
+	return b.getField(x, i)
+}
+
 // Jump emits a jump instruction.
 func (b Builder) Jump(jmpb BasicBlock) {
 	if b.Func != jmpb.fn {

@@ -141,9 +141,14 @@ func (p Program) Index(typ Type) Type {
 }
 
 func (p Program) Field(typ Type, i int) Type {
-	tunder := typ.raw.Type.Underlying()
-	tfld := tunder.(*types.Struct).Field(i).Type()
-	return p.rawType(tfld)
+	var fld *types.Var
+	switch t := typ.raw.Type.(type) {
+	case *types.Tuple:
+		fld = t.At(i)
+	default:
+		fld = t.Underlying().(*types.Struct).Field(i)
+	}
+	return p.rawType(fld.Type())
 }
 
 func (p Program) rawType(raw types.Type) Type {
@@ -218,9 +223,11 @@ func (p Program) tyInt64() llvm.Type {
 	return p.int64Type
 }
 
+/*
 func (p Program) toTuple(typ *types.Tuple) Type {
 	return &aType{p.toLLVMTuple(typ), rawType{typ}, vkTuple}
 }
+*/
 
 func (p Program) toType(raw types.Type) Type {
 	typ := rawType{raw}
@@ -385,7 +392,7 @@ func (p Program) toNamed(raw *types.Named) Type {
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
 		name := NameOf(raw)
-		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkInvalid}
+		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkStruct}
 	default:
 		return p.rawType(t)
 	}
