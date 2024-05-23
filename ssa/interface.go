@@ -43,11 +43,12 @@ func (b Builder) abiStruct(t *types.Struct) Expr {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.Init(prog.Null(g.Type))
+		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+		pkg.ainits = append(pkg.ainits, func() {
+			tabi := b.structOf(t)
+			b.Store(g.Expr, tabi)
+		})
 	}
-	pkg.abitys = append(pkg.abitys, func() {
-		tabi := b.structOf(t)
-		b.Store(g.Expr, tabi)
-	})
 	return b.Load(g.Expr)
 }
 
@@ -65,7 +66,7 @@ func (b Builder) structOf(t *types.Struct) Expr {
 		off := uintptr(prog.OffsetOf(typ, i))
 		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
 	}
-	pkgPath := prog.Val(pkg.abi.Pkg)
+	pkgPath := b.Str(pkg.abi.Pkg)
 	params := strucAbi.raw.Type.(*types.Signature).Params()
 	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
 	fldSlice := b.SliceLit(tSlice, flds...)
@@ -74,11 +75,11 @@ func (b Builder) structOf(t *types.Struct) Expr {
 
 // func StructField(name string, typ *abi.Type, off uintptr, tag string, exported, embedded bool) abi.StructField
 func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uintptr, tag string) Expr {
-	name := prog.Val(f.Name())
+	name := b.Str(f.Name())
 	typ := b.abiType(f.Type())
 	exported := prog.Val(f.Exported())
 	embedded := prog.Val(f.Embedded())
-	return b.Call(sfAbi, name, typ, prog.Val(offset), prog.Val(tag), exported, embedded)
+	return b.Call(sfAbi, name, typ, prog.Val(offset), b.Str(tag), exported, embedded)
 }
 
 // abiType returns the abi type of the specified type.

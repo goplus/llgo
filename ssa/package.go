@@ -490,7 +490,7 @@ func (p Program) Uint64() Type {
 type aPackage struct {
 	mod    llvm.Module
 	abi    abi.Builder
-	abitys []func()
+	ainits []func()
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
@@ -555,9 +555,12 @@ func (p Package) String() string {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doAfterInit := p.pyHasModSyms()
+	doAfterInit := len(p.ainits) > 0 || p.pyHasModSyms()
 	if doAfterInit {
 		b.SetBlockEx(ret, afterInit)
+		for _, afterInit := range p.ainits {
+			afterInit()
+		}
 		p.pyLoadModSyms(b)
 	}
 }
