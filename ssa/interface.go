@@ -120,62 +120,33 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	typ := x.Type
-	switch tx := typ.raw.Type.Underlying().(type) {
-	case *types.Basic:
-		kind := tx.Kind()
-		switch {
-		case kind >= types.Bool && kind <= types.Uintptr:
-			if prog.is32Bits && (kind == types.Int64 || kind == types.Uint64) {
-				return b.makeIntfAlloc(tinter, rawIntf, typ, x)
-			}
-			return b.makeIntfByIntptr(tinter, rawIntf, typ, x.impl)
-		case kind == types.Float32:
-			i32 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt32())
-			return b.makeIntfByIntptr(tinter, rawIntf, typ, i32)
-		case kind == types.Float64:
-			if prog.is32Bits {
-				return b.makeIntfAlloc(tinter, rawIntf, typ, x)
-			}
-			i64 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt64())
-			return b.makeIntfByIntptr(tinter, rawIntf, typ, i64)
-		case kind == types.String:
-			return Expr{b.InlineCall(b.Pkg.rtFunc("MakeAnyString"), x).impl, tinter}
-		}
-	case *types.Struct:
-		size := int(prog.SizeOf(typ))
-		if size > prog.PointerSize() {
-			return b.makeIntfAlloc(tinter, rawIntf, typ, x)
-		}
-		tv := prog.ctx.IntType(size * 8)
-		iv := llvm.CreateBitCast(b.impl, x.impl, tv)
-		return b.makeIntfByIntptr(tinter, rawIntf, typ, iv)
-	}
-	panic("todo")
-}
-
-func (b Builder) makeIntfAlloc(tinter Type, rawIntf *types.Interface, typ Type, x Expr) (ret Expr) {
-	vptr := b.AllocU(typ)
-	b.Store(vptr, x)
-	return b.makeIntfByPtr(tinter, rawIntf, typ, vptr)
-}
-
-func (b Builder) makeIntfByPtr(tinter Type, rawIntf *types.Interface, typ Type, vptr Expr) (ret Expr) {
-	if rawIntf.Empty() {
-		tabi := b.abiType(typ.raw.Type)
+	tabi := b.abiType(typ.raw.Type)
+	kind, _, lvl := abi.KindOf(typ.raw.Type, 0, prog.is32Bits)
+	switch kind {
+	case abi.Indirect:
+		vptr := b.AllocU(typ)
+		b.Store(vptr, x)
 		return Expr{b.unsafeEface(tabi.impl, vptr.impl), tinter}
 	}
-	panic("todo")
-}
-
-// TODO(xsw): remove MakeAnyIntptr, MakeAnyString
-func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Type, x llvm.Value) (ret Expr) {
-	if rawIntf.Empty() {
-		tptr := b.Prog.Uintptr()
-		x = llvm.CreateIntCast(b.impl, x, tptr.ll)
-		impl := b.InlineCall(b.Pkg.rtFunc("MakeAnyIntptr"), b.abiType(typ.raw.Type), Expr{x, tptr}).impl
-		return Expr{impl, tinter}
+	ximpl := x.impl
+	if lvl > 0 {
+		ximpl = extractVal(b.impl, ximpl, lvl)
 	}
-	panic("todo")
+	var u llvm.Value
+	switch kind {
+	case abi.Pointer:
+		return Expr{b.unsafeEface(tabi.impl, ximpl), tinter}
+	case abi.Integer:
+		tu := prog.Uintptr()
+		u = llvm.CreateIntCast(b.impl, ximpl, tu.ll)
+	case abi.BitCast:
+		tu := prog.Uintptr()
+		u = llvm.CreateBitCast(b.impl, ximpl, tu.ll)
+	default:
+		panic("todo")
+	}
+	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
+	return Expr{b.unsafeEface(tabi.impl, data), tinter}
 }
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
@@ -188,14 +159,14 @@ func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 		tptr := llvm.PointerType(tll, 0)
 		ptr := llvm.CreatePointerCast(impl, data, tptr)
 		return Expr{llvm.CreateLoad(impl, tll, ptr), typ}
-	case abi.Pointer:
-		return Expr{data, typ}
 	}
 	t := typ
 	if lvl > 0 {
 		t = prog.rawType(real)
 	}
 	switch kind {
+	case abi.Pointer:
+		return b.buildVal(typ, data, lvl)
 	case abi.Integer:
 		x := castUintptr(b, data, prog.Uintptr())
 		return b.buildVal(typ, castInt(b, x, t), lvl)
@@ -204,6 +175,15 @@ func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 		return b.buildVal(typ, llvm.CreateBitCast(b.impl, x, t.ll), lvl)
 	}
 	panic("todo")
+}
+
+func extractVal(b llvm.Builder, val llvm.Value, lvl int) llvm.Value {
+	for lvl > 0 {
+		// TODO(xsw): check array support
+		val = llvm.CreateExtractValue(b, val, 0)
+		lvl--
+	}
+	return val
 }
 
 func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
