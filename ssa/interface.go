@@ -36,7 +36,8 @@ func (b Builder) abiBasic(t *types.Basic) Expr {
 		g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
 		return b.Load(g.Expr)
 	*/
-	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(t.Kind())))
+	kind := int(abi.BasicKind(t))
+	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
 }
 
 // abiStruct returns the abi type of the specified struct type.

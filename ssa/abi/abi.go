@@ -22,7 +22,22 @@ import (
 	"fmt"
 	"go/types"
 	"hash"
+
+	"github.com/goplus/llgo/internal/abi"
 )
+
+// -----------------------------------------------------------------------------
+
+func BasicKind(t *types.Basic) abi.Kind {
+	kind := t.Kind()
+	switch kind {
+	case types.String:
+		return abi.String
+	case types.UnsafePointer:
+		return abi.UnsafePointer
+	}
+	return abi.Kind(kind)
+}
 
 // -----------------------------------------------------------------------------
 
