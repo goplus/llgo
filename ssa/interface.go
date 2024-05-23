@@ -178,6 +178,90 @@ func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Typ
 	panic("todo")
 }
 
+func (b Builder) valFromData(t Type, data Expr) Expr {
+	kind := abi.KindOf(t.raw.Type, b.Prog.is32Bits)
+	switch kind {
+	case abi.Indirect:
+		impl := b.impl
+		tll := t.ll
+		tptr := llvm.PointerType(tll, 0)
+		ptr := llvm.CreatePointerCast(impl, data.impl, tptr)
+		return Expr{llvm.CreateLoad(impl, tll, ptr), t}
+	case abi.Pointer:
+		return Expr{data.impl, t}
+	case abi.Integer:
+		x := castUintptr(b, data.impl, b.Prog.Uintptr())
+		return Expr{castInt(b, x, t), t}
+	case abi.BitCast:
+		x := castUintptr(b, data.impl, b.Prog.Uintptr())
+		return Expr{llvm.CreateBitCast(b.impl, x, t.ll), t}
+	}
+	panic("todo")
+}
+
+// The TypeAssert instruction tests whether interface value X has type
+// AssertedType.
+//
+// If !CommaOk, on success it returns v, the result of the conversion
+// (defined below); on failure it panics.
+//
+// If CommaOk: on success it returns a pair (v, true) where v is the
+// result of the conversion; on failure it returns (z, false) where z
+// is AssertedType's zero value.  The components of the pair must be
+// accessed using the Extract instruction.
+//
+// If Underlying: tests whether interface value X has the underlying
+// type AssertedType.
+//
+// If AssertedType is a concrete type, TypeAssert checks whether the
+// dynamic type in interface X is equal to it, and if so, the result
+// of the conversion is a copy of the value in the interface.
+//
+// If AssertedType is an interface, TypeAssert checks whether the
+// dynamic type of the interface is assignable to it, and if so, the
+// result of the conversion is a copy of the interface value X.
+// If AssertedType is a superinterface of X.Type(), the operation will
+// fail iff the operand is nil.  (Contrast with ChangeInterface, which
+// performs no nil-check.)
+//
+// Type() reflects the actual type of the result, possibly a
+// 2-types.Tuple; AssertedType is the asserted type.
+//
+// Depending on the TypeAssert's purpose, Pos may return:
+//   - the ast.CallExpr.Lparen of an explicit T(e) conversion;
+//   - the ast.TypeAssertExpr.Lparen of an explicit e.(T) operation;
+//   - the ast.CaseClause.Case of a case of a type-switch statement;
+//   - the Ident(m).NamePos of an interface method value i.m
+//     (for which TypeAssert may be used to effect the nil check).
+//
+// Example printed form:
+//
+//	t1 = typeassert t0.(int)
+//	t3 = typeassert,ok t2.(T)
+func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
+	if debugInstr {
+		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
+	}
+	tx := b.faceAbiType(x)
+	tabi := b.abiType(assertedTyp.raw.Type)
+	eq := b.BinOp(token.EQL, tx, tabi)
+	if commaOk {
+		prog := b.Prog
+		t := prog.Tuple(assertedTyp, prog.Bool())
+		val := b.valFromData(assertedTyp, b.InterfaceData(x))
+		zero := prog.Zero(assertedTyp)
+		valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
+		valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
+		return Expr{llvm.CreateSelect(b.impl, eq.impl, valTrue, valFalse), t}
+	}
+	blks := b.Func.MakeBlocks(2)
+	b.If(eq, blks[0], blks[1])
+	b.SetBlock(blks[1])
+	b.Panic(b.Str("type assertion failed"))
+	b.SetBlock(blks[0])
+	return b.valFromData(assertedTyp, b.InterfaceData(x))
+}
+
 /*
 func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	if debugInstr {
@@ -245,82 +329,6 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	panic("todo")
 }
 */
-
-// The TypeAssert instruction tests whether interface value X has type
-// AssertedType.
-//
-// If !CommaOk, on success it returns v, the result of the conversion
-// (defined below); on failure it panics.
-//
-// If CommaOk: on success it returns a pair (v, true) where v is the
-// result of the conversion; on failure it returns (z, false) where z
-// is AssertedType's zero value.  The components of the pair must be
-// accessed using the Extract instruction.
-//
-// If Underlying: tests whether interface value X has the underlying
-// type AssertedType.
-//
-// If AssertedType is a concrete type, TypeAssert checks whether the
-// dynamic type in interface X is equal to it, and if so, the result
-// of the conversion is a copy of the value in the interface.
-//
-// If AssertedType is an interface, TypeAssert checks whether the
-// dynamic type of the interface is assignable to it, and if so, the
-// result of the conversion is a copy of the interface value X.
-// If AssertedType is a superinterface of X.Type(), the operation will
-// fail iff the operand is nil.  (Contrast with ChangeInterface, which
-// performs no nil-check.)
-//
-// Type() reflects the actual type of the result, possibly a
-// 2-types.Tuple; AssertedType is the asserted type.
-//
-// Depending on the TypeAssert's purpose, Pos may return:
-//   - the ast.CallExpr.Lparen of an explicit T(e) conversion;
-//   - the ast.TypeAssertExpr.Lparen of an explicit e.(T) operation;
-//   - the ast.CaseClause.Case of a case of a type-switch statement;
-//   - the Ident(m).NamePos of an interface method value i.m
-//     (for which TypeAssert may be used to effect the nil check).
-//
-// Example printed form:
-//
-//	t1 = typeassert t0.(int)
-//	t3 = typeassert,ok t2.(T)
-func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
-	if debugInstr {
-		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
-	}
-	tx := b.faceAbiType(x)
-	tabi := b.abiType(assertedTyp.raw.Type)
-	eq := b.BinOp(token.EQL, tx, tabi)
-	if commaOk {
-		prog := b.Prog
-		t := prog.Tuple(assertedTyp, prog.Bool())
-		val := b.valFromData(assertedTyp, b.InterfaceData(x))
-		zero := prog.Zero(assertedTyp)
-		valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
-		valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
-		return Expr{llvm.CreateSelect(b.impl, eq.impl, valTrue, valFalse), t}
-	}
-	blks := b.Func.MakeBlocks(2)
-	b.If(eq, blks[0], blks[1])
-	b.SetBlock(blks[1])
-	b.Panic(b.Str("type assertion failed"))
-	b.SetBlock(blks[0])
-	return b.valFromData(assertedTyp, b.InterfaceData(x))
-}
-
-func (b Builder) valFromData(t Type, data Expr) Expr {
-	switch u := t.raw.Type.Underlying().(type) {
-	case *types.Basic:
-		kind := u.Kind()
-		switch {
-		case kind >= types.Bool && kind <= types.Uintptr:
-			panic("todo")
-		}
-	}
-	_ = data
-	panic("todo")
-}
 
 // -----------------------------------------------------------------------------
 

@@ -24,6 +24,57 @@ import (
 	"hash"
 )
 
+// -----------------------------------------------------------------------------
+
+type Kind int
+
+const (
+	Invalid  Kind = iota
+	Indirect      // allocate memory for the value
+	Pointer       // store a pointer value directly in the interface value
+	Integer       // store a integer value directly in the interface value
+	BitCast       // store other value (need bitcast) directly in the interface value
+)
+
+func KindOf(raw types.Type, is32Bits bool) (ret Kind) {
+	switch t := raw.Underlying().(type) {
+	case *types.Basic:
+		kind := t.Kind()
+		switch {
+		case types.Bool <= kind && kind <= types.Uintptr:
+			if is32Bits && (kind == types.Int64 || kind == types.Uint64) {
+				return Indirect
+			}
+			return Integer
+		case kind == types.Float32:
+			return BitCast
+		case kind == types.Float64 || kind == types.Complex64:
+			if is32Bits {
+				return Indirect
+			}
+			return BitCast
+		case kind == types.UnsafePointer:
+			return Pointer
+		}
+	case *types.Pointer, *types.Signature, *types.Map, *types.Chan:
+		return Pointer
+	case *types.Struct:
+		if t.NumFields() == 1 {
+			return KindOf(t.Field(0).Type(), is32Bits)
+		}
+	case *types.Interface, *types.Slice:
+	case *types.Array:
+		if t.Len() == 1 {
+			return KindOf(t.Elem(), is32Bits)
+		}
+	default:
+		panic("unkown type")
+	}
+	return Indirect
+}
+
+// -----------------------------------------------------------------------------
+
 // Builder is a helper for constructing ABI types.
 type Builder struct {
 	h   hash.Hash
@@ -95,3 +146,5 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 	ret = h.Sum(b.buf[:0])
 	return
 }
+
+// -----------------------------------------------------------------------------
