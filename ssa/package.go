@@ -491,7 +491,7 @@ func (p Program) Uint64() Type {
 type aPackage struct {
 	mod    llvm.Module
 	abi    abi.Builder
-	ainits []func(b unsafe.Pointer) // b Builder
+	abiini []func(b unsafe.Pointer) // b Builder
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
@@ -556,13 +556,23 @@ func (p Package) String() string {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doAfterInit := len(p.ainits) > 0 || p.pyHasModSyms()
-	if doAfterInit {
+	doAbiInit := len(p.abiini) > 0
+	doPyLoadModSyms := p.pyHasModSyms()
+	if doAbiInit || doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit)
-		for _, fnAfterInit := range p.ainits {
-			fnAfterInit(unsafe.Pointer(b))
+		if doAbiInit {
+			sigAbiInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+			fn := p.NewFunc(p.abi.Pkg+".init$abi", sigAbiInit, InC)
+			fnb := fn.MakeBody(1)
+			for _, abiInit := range p.abiini {
+				abiInit(unsafe.Pointer(fnb))
+			}
+			fnb.Return()
+			b.Call(fn.Expr)
 		}
-		p.pyLoadModSyms(b)
+		if doPyLoadModSyms {
+			p.pyLoadModSyms(b)
+		}
 	}
 }
 

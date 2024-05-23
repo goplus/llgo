@@ -30,25 +30,44 @@ import (
 
 // abiBasic returns the abi type of the specified basic kind.
 func (b Builder) abiBasic(t *types.Basic) Expr {
-	name := abi.BasicName(t)
-	g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
-	return b.Load(g.Expr)
+	/*
+		TODO(xsw):
+		name := abi.BasicName(t)
+		g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
+		return b.Load(g.Expr)
+	*/
+	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(t.Kind())))
 }
 
 // abiStruct returns the abi type of the specified struct type.
 func (b Builder) abiStruct(t *types.Struct) Expr {
 	pkg := b.Pkg
-	name, _ := pkg.abi.StructName(t)
+	name, private := pkg.abi.StructName(t)
 	g := pkg.VarOf(name)
 	if g == nil {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.Init(prog.Null(g.Type))
-		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		pkg.ainits = append(pkg.ainits, func(param unsafe.Pointer) {
+		pub := !private
+		if pub {
+			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+		}
+		pkg.abiini = append(pkg.abiini, func(param unsafe.Pointer) {
 			b := Builder(param)
+			expr := g.Expr
+			var blks []BasicBlock
+			if pub {
+				eq := b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
+				blks = b.Func.MakeBlocks(2)
+				b.If(eq, blks[0], blks[1])
+				b.SetBlock(blks[0])
+			}
 			tabi := b.structOf(t)
-			b.Store(g.Expr, tabi)
+			b.Store(expr, tabi)
+			if pub {
+				b.Jump(blks[1])
+				b.SetBlock(blks[1])
+			}
 		})
 	}
 	return b.Load(g.Expr)

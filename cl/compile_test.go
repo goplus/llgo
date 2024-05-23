@@ -29,7 +29,7 @@ func testCompile(t *testing.T, src, expected string) {
 }
 
 func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "strucintf", "./_testgo", false)
+	cltest.FromDir(t, "", "./_testgo", false)
 }
 
 func TestFromTestpy(t *testing.T) {
