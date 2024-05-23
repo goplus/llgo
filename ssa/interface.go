@@ -178,23 +178,43 @@ func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Typ
 	panic("todo")
 }
 
-func (b Builder) valFromData(t Type, data Expr) Expr {
-	kind := abi.KindOf(t.raw.Type, b.Prog.is32Bits)
+func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
+	prog := b.Prog
+	kind, real, lvl := abi.KindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
 		impl := b.impl
-		tll := t.ll
+		tll := typ.ll
 		tptr := llvm.PointerType(tll, 0)
-		ptr := llvm.CreatePointerCast(impl, data.impl, tptr)
-		return Expr{llvm.CreateLoad(impl, tll, ptr), t}
+		ptr := llvm.CreatePointerCast(impl, data, tptr)
+		return Expr{llvm.CreateLoad(impl, tll, ptr), typ}
 	case abi.Pointer:
-		return Expr{data.impl, t}
+		return Expr{data, typ}
+	}
+	t := typ
+	if lvl > 0 {
+		t = prog.rawType(real)
+	}
+	switch kind {
 	case abi.Integer:
-		x := castUintptr(b, data.impl, b.Prog.Uintptr())
-		return Expr{castInt(b, x, t), t}
+		x := castUintptr(b, data, prog.Uintptr())
+		return b.buildVal(typ, castInt(b, x, t), lvl)
 	case abi.BitCast:
-		x := castUintptr(b, data.impl, b.Prog.Uintptr())
-		return Expr{llvm.CreateBitCast(b.impl, x, t.ll), t}
+		x := castUintptr(b, data, prog.Uintptr())
+		return b.buildVal(typ, llvm.CreateBitCast(b.impl, x, t.ll), lvl)
+	}
+	panic("todo")
+}
+
+func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
+	if lvl == 0 {
+		return Expr{val, typ}
+	}
+	switch t := typ.raw.Type.Underlying().(type) {
+	case *types.Struct:
+		telem := b.Prog.rawType(t.Field(0).Type())
+		elem := b.buildVal(telem, val, lvl-1)
+		return Expr{aggregateValue(b.impl, typ.ll, elem.impl), typ}
 	}
 	panic("todo")
 }
@@ -248,7 +268,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	if commaOk {
 		prog := b.Prog
 		t := prog.Tuple(assertedTyp, prog.Bool())
-		val := b.valFromData(assertedTyp, b.InterfaceData(x))
+		val := b.valFromData(assertedTyp, b.faceData(x.impl))
 		zero := prog.Zero(assertedTyp)
 		valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
 		valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
@@ -259,7 +279,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	b.SetBlock(blks[1])
 	b.Panic(b.Str("type assertion failed"))
 	b.SetBlock(blks[0])
-	return b.valFromData(assertedTyp, b.InterfaceData(x))
+	return b.valFromData(assertedTyp, b.faceData(x.impl))
 }
 
 /*
@@ -337,8 +357,11 @@ func (b Builder) InterfaceData(x Expr) Expr {
 	if debugInstr {
 		log.Printf("InterfaceData %v\n", x.impl)
 	}
-	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
-	return Expr{ptr, b.Prog.VoidPtr()}
+	return Expr{b.faceData(x.impl), b.Prog.VoidPtr()}
+}
+
+func (b Builder) faceData(x llvm.Value) llvm.Value {
+	return llvm.CreateExtractValue(b.impl, x, 1)
 }
 
 func (b Builder) faceAbiType(x Expr) Expr {

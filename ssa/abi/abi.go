@@ -36,41 +36,41 @@ const (
 	BitCast       // store other value (need bitcast) directly in the interface value
 )
 
-func KindOf(raw types.Type, is32Bits bool) (ret Kind) {
+func KindOf(raw types.Type, lvl int, is32Bits bool) (Kind, types.Type, int) {
 	switch t := raw.Underlying().(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
 		case types.Bool <= kind && kind <= types.Uintptr:
 			if is32Bits && (kind == types.Int64 || kind == types.Uint64) {
-				return Indirect
+				return Indirect, raw, lvl
 			}
-			return Integer
+			return Integer, raw, lvl
 		case kind == types.Float32:
-			return BitCast
+			return BitCast, raw, lvl
 		case kind == types.Float64 || kind == types.Complex64:
 			if is32Bits {
-				return Indirect
+				return Indirect, raw, lvl
 			}
-			return BitCast
+			return BitCast, raw, lvl
 		case kind == types.UnsafePointer:
-			return Pointer
+			return Pointer, raw, lvl
 		}
 	case *types.Pointer, *types.Signature, *types.Map, *types.Chan:
-		return Pointer
+		return Pointer, raw, lvl
 	case *types.Struct:
 		if t.NumFields() == 1 {
-			return KindOf(t.Field(0).Type(), is32Bits)
+			return KindOf(t.Field(0).Type(), lvl+1, is32Bits)
 		}
 	case *types.Interface, *types.Slice:
 	case *types.Array:
 		if t.Len() == 1 {
-			return KindOf(t.Elem(), is32Bits)
+			return KindOf(t.Elem(), lvl+1, is32Bits)
 		}
 	default:
 		panic("unkown type")
 	}
-	return Indirect
+	return Indirect, raw, lvl
 }
 
 // -----------------------------------------------------------------------------
