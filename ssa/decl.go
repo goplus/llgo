@@ -238,6 +238,13 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	return
 }
 
+/*
+// Name returns the function's name.
+func (p Function) Name() string {
+	return p.impl.Name()
+}
+*/
+
 // Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
 	i += p.base // skip if hasFreeVars

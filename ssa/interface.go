@@ -20,6 +20,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -44,7 +45,8 @@ func (b Builder) abiStruct(t *types.Struct) Expr {
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.Init(prog.Null(g.Type))
 		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		pkg.ainits = append(pkg.ainits, func() {
+		pkg.ainits = append(pkg.ainits, func(param unsafe.Pointer) {
+			b := Builder(param)
 			tabi := b.structOf(t)
 			b.Store(g.Expr, tabi)
 		})

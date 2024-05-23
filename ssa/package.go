@@ -19,6 +19,7 @@ package ssa
 import (
 	"go/token"
 	"go/types"
+	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -490,7 +491,7 @@ func (p Program) Uint64() Type {
 type aPackage struct {
 	mod    llvm.Module
 	abi    abi.Builder
-	ainits []func()
+	ainits []func(b unsafe.Pointer) // b Builder
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
@@ -558,8 +559,8 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 	doAfterInit := len(p.ainits) > 0 || p.pyHasModSyms()
 	if doAfterInit {
 		b.SetBlockEx(ret, afterInit)
-		for _, afterInit := range p.ainits {
-			afterInit()
+		for _, fnAfterInit := range p.ainits {
+			fnAfterInit(unsafe.Pointer(b))
 		}
 		p.pyLoadModSyms(b)
 	}
