@@ -287,7 +287,8 @@ func (p Function) HasBody() bool {
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()
-	b.impl.SetInsertPointAtEnd(p.blks[0].last)
+	b.blk = p.blks[0]
+	b.impl.SetInsertPointAtEnd(b.blk.last)
 	return b
 }
 
