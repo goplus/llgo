@@ -1,10 +1,18 @@
 package main
 
-import (
-	"github.com/goplus/llgo/cl/internal/foo"
-)
+import "github.com/goplus/llgo/cl/internal/foo"
+
+func Foo() any {
+	return struct{ v int }{1}
+}
 
 func main() {
+	v := Foo()
+	if x, ok := v.(struct{ v int }); ok {
+		println(x.v)
+	} else {
+		println("Foo: not ok")
+	}
 	bar := foo.Bar()
 	if x, ok := bar.(struct{ V int }); ok {
 		println(x.V)

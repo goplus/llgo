@@ -369,6 +369,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 
 // -----------------------------------------------------------------------------
 
+/*
 // InterfaceData returns the data pointer of an interface.
 func (b Builder) InterfaceData(x Expr) Expr {
 	if debugInstr {
@@ -376,6 +377,7 @@ func (b Builder) InterfaceData(x Expr) Expr {
 	}
 	return Expr{b.faceData(x.impl), b.Prog.VoidPtr()}
 }
+*/
 
 func (b Builder) faceData(x llvm.Value) llvm.Value {
 	return llvm.CreateExtractValue(b.impl, x, 1)

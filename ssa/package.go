@@ -148,7 +148,7 @@ type aProgram struct {
 	pyObjPPtr Type
 	abiTyptr  Type
 	abiTypptr Type
-	efaceTy   Type
+	//efaceTy Type
 
 	pyImpTy    *types.Signature
 	pyNewList  *types.Signature
@@ -305,6 +305,7 @@ func (p Program) Tuple(typs ...Type) Type {
 	return p.rawType(types.NewTuple(els...))
 }
 
+/*
 // Eface returns the empty interface type.
 func (p Program) Eface() Type {
 	if p.efaceTy == nil {
@@ -312,6 +313,7 @@ func (p Program) Eface() Type {
 	}
 	return p.efaceTy
 }
+*/
 
 // AbiTypePtr returns *abi.Type.
 func (p Program) AbiTypePtr() Type {
