@@ -315,7 +315,7 @@ var uintPredOpToLLVM = []llvm.IntPredicate{
 
 var floatPredOpToLLVM = []llvm.FloatPredicate{
 	token.EQL - predOpBase: llvm.FloatOEQ,
-	token.NEQ - predOpBase: llvm.FloatONE,
+	token.NEQ - predOpBase: llvm.FloatUNE,
 	token.LSS - predOpBase: llvm.FloatOLT,
 	token.LEQ - predOpBase: llvm.FloatOLE,
 	token.GTR - predOpBase: llvm.FloatOGT,
@@ -405,7 +405,26 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			pred := boolPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkString, vkComplex:
-			panic("todo")
+			switch op {
+			case token.EQL:
+				return b.InlineCall(b.Pkg.rtFunc("StringEqual"), x, y)
+			case token.NEQ:
+				ret := b.InlineCall(b.Pkg.rtFunc("StringEqual"), x, y)
+				ret.impl = llvm.CreateNot(b.impl, ret.impl)
+				return ret
+			case token.LSS:
+				return b.InlineCall(b.Pkg.rtFunc("StringLess"), x, y)
+			case token.LEQ:
+				ret := b.InlineCall(b.Pkg.rtFunc("StringLess"), y, x)
+				ret.impl = llvm.CreateNot(b.impl, ret.impl)
+				return ret
+			case token.GTR:
+				return b.InlineCall(b.Pkg.rtFunc("StringLess"), y, x)
+			case token.GEQ:
+				ret := b.InlineCall(b.Pkg.rtFunc("StringLess"), x, y)
+				ret.impl = llvm.CreateNot(b.impl, ret.impl)
+				return ret
+			}
 		}
 	}
 	panic("todo")
@@ -833,6 +852,27 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 		case types.UnsafePointer:
 			ret.impl = castPtr(b.impl, x.impl, t.ll)
 			return
+		case types.String:
+			switch xtyp := x.RawType().Underlying().(type) {
+			case *types.Slice:
+				if etyp, ok := xtyp.Elem().Underlying().(*types.Basic); ok {
+					switch etyp.Kind() {
+					case types.Byte:
+						ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromBytes"), x).impl
+						return
+					case types.Rune:
+						ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRunes"), x).impl
+						return
+					}
+				}
+			case *types.Basic:
+				if x.Type != b.Prog.Int32() {
+					x.Type = b.Prog.Int32()
+					x.impl = castInt(b, x.impl, b.Prog.Int32())
+				}
+				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
+				return
+			}
 		}
 		switch xtyp := x.RawType().Underlying().(type) {
 		case *types.Basic:
@@ -867,6 +907,19 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	case *types.Pointer:
 		ret.impl = castPtr(b.impl, x.impl, t.ll)
 		return
+	case *types.Slice:
+		if x.kind == vkString {
+			if etyp, ok := typ.Elem().Underlying().(*types.Basic); ok {
+				switch etyp.Kind() {
+				case types.Byte:
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringToBytes"), x).impl
+					return
+				case types.Rune:
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringToRunes"), x).impl
+					return
+				}
+			}
+		}
 	}
 	panic("todo")
 }
@@ -967,6 +1020,51 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	ret.Type = prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
+}
+
+// The Range instruction yields an iterator over the domain and range
+// of X, which must be a string or map.
+//
+// Elements are accessed via Next.
+//
+// Type() returns an opaque and degenerate "rangeIter" type.
+//
+// Pos() returns the ast.RangeStmt.For.
+//
+// Example printed form:
+//
+//	t0 = range "hello":string
+func (b Builder) Range(x Expr) Expr {
+	switch x.kind {
+	case vkString:
+		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
+	}
+	panic("todo")
+}
+
+// The Next instruction reads and advances the (map or string)
+// iterator Iter and returns a 3-tuple value (ok, k, v).  If the
+// iterator is not exhausted, ok is true and k and v are the next
+// elements of the domain and range, respectively.  Otherwise ok is
+// false and k and v are undefined.
+//
+// Components of the tuple are accessed using Extract.
+//
+// The IsString field distinguishes iterators over strings from those
+// over maps, as the Type() alone is insufficient: consider
+// map[int]rune.
+//
+// Type() returns a *types.Tuple for the triple (ok, k, v).
+// The types of k and/or v may be types.Invalid.
+//
+// Example printed form:
+//
+//	t1 = next t0
+func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
+	if isString {
+		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
+	}
+	panic("todo")
 }
 
 // A Builtin represents a specific use of a built-in function, e.g. len.

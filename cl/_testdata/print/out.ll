@@ -847,7 +847,7 @@ _llgo_3:                                          ; preds = %_llgo_0
 
 define void @main.printfloat(double %0) {
 _llgo_0:
-  %1 = fcmp one double %0, %0
+  %1 = fcmp une double %0, %0
   br i1 %1, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
