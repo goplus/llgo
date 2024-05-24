@@ -196,6 +196,9 @@ func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 		return b.buildVal(typ, castInt(b, x, t), lvl)
 	case abi.BitCast:
 		x := castUintptr(b, data, prog.Uintptr())
+		if int(prog.SizeOf(t)) != prog.PointerSize() {
+			x = castInt(b, x, prog.Int32())
+		}
 		return b.buildVal(typ, llvm.CreateBitCast(b.impl, x, t.ll), lvl)
 	}
 	panic("todo")
