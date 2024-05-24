@@ -183,12 +183,12 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		return prog.Null(typ)
 	}
 	raw := typ.raw.Type
-	switch t := raw.(type) {
+	switch t := raw.Underlying().(type) {
 	case *types.Basic:
 		kind := t.Kind()
 		switch {
 		case kind == types.Bool:
-			return prog.BoolVal(constant.BoolVal(v))
+			return Expr{prog.BoolVal(constant.BoolVal(v)).impl, typ}
 		case kind >= types.Int && kind <= types.Int64:
 			if v, exact := constant.Int64Val(v); exact {
 				return prog.IntVal(uint64(v), typ)
@@ -202,7 +202,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 				return prog.FloatVal(v, typ)
 			}
 		case kind == types.String:
-			return b.Str(constant.StringVal(v))
+			return Expr{b.Str(constant.StringVal(v)).impl, typ}
 		}
 	}
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, raw))
