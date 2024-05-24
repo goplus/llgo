@@ -396,7 +396,8 @@ func (p Program) toNamed(raw *types.Named) Type {
 		name := NameOf(raw)
 		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkStruct}
 	default:
-		return p.rawType(t)
+		typ := p.rawType(t)
+		return &aType{typ.ll, rawType{raw}, typ.kind}
 	}
 }
 

@@ -40,7 +40,53 @@ func main() {
 		println(n)
 	}
 	println(demo, fn1, fn2, fn3)
+
+	for i, v := range "中abcd" {
+		println(i, v)
+	}
+
+	println(Inf(1), Inf(-1), NaN(), IsNaN(NaN()), IsNaN(1.0))
+
+	data1 := []byte("中abcd")
+	data2 := []rune("中abcd")
+	println(data1, data2)
+	println(string(data1), string(data2), string(data1[3]), string(data2[0]))
+	s1 := "abc"
+	s2 := "abd"
+	println(s1 == "abc", s1 == s2, s1 != s2, s1 < s2, s1 <= s2, s1 > s2, s1 >= s2)
 }
 
 func demo() {
 }
+
+const (
+	uvnan    = 0x7FF8000000000001
+	uvinf    = 0x7FF0000000000000
+	uvneginf = 0xFFF0000000000000
+	uvone    = 0x3FF0000000000000
+	mask     = 0x7FF
+	shift    = 64 - 11 - 1
+	bias     = 1023
+	signMask = 1 << 63
+	fracMask = 1<<shift - 1
+)
+
+// Inf returns positive infinity if sign >= 0, negative infinity if sign < 0.
+func Inf(sign int) float64 {
+	var v uint64
+	if sign >= 0 {
+		v = uvinf
+	} else {
+		v = uvneginf
+	}
+	return Float64frombits(v)
+}
+
+// NaN returns an IEEE 754 “not-a-number” value.
+func NaN() float64 { return Float64frombits(uvnan) }
+
+func IsNaN(f float64) (is bool) {
+	return f != f
+}
+
+func Float64frombits(b uint64) float64 { return *(*float64)(unsafe.Pointer(&b)) }
