@@ -44,13 +44,13 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca { i64 }, align 8
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %2, i64 8)
-  %4 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.Bar"()
-  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %4, 0
+  %2 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.Bar"()
+  %3 = alloca { i64 }, align 8
+  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %3, i64 8)
+  %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %2, 0
   %6 = load ptr, ptr @"_llgo_struct$K-dZ9QotZfVPz2a0YdRa9vmZUuDXPTqZOlMShKEDJtk", align 8
   %7 = icmp eq ptr %5, %6
-  %8 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %4, 1
+  %8 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %2, 1
   %9 = ptrtoint ptr %8 to i64
   %10 = alloca { i64 }, align 8
   %11 = getelementptr inbounds { i64 }, ptr %10, i32 0, i32 0
@@ -70,12 +70,12 @@ _llgo_0:
   %20 = load { { i64 }, i1 }, ptr %17, align 4
   %21 = select i1 %7, { { i64 }, i1 } %16, { { i64 }, i1 } %20
   %22 = extractvalue { { i64 }, i1 } %21, 0
-  store { i64 } %22, ptr %3, align 4
+  store { i64 } %22, ptr %4, align 4
   %23 = extractvalue { { i64 }, i1 } %21, 1
   br i1 %23, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %24 = getelementptr inbounds { i64 }, ptr %3, i32 0, i32 0
+  %24 = getelementptr inbounds { i64 }, ptr %4, i32 0, i32 0
   %25 = load i64, ptr %24, align 4
   %26 = call i32 (ptr, ...) @printf(ptr @0, i64 %25)
   br label %_llgo_2
@@ -133,9 +133,9 @@ declare void @"github.com/goplus/llgo/cl/internal/foo.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
-
 declare %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.Bar"()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
 declare i32 @printf(ptr, ...)
 

@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	if x, ok := foo.Bar().(struct{ V int }); ok {
+	bar := foo.Bar()
+	if x, ok := bar.(struct{ V int }); ok {
 		c.Printf(c.Str("%d\n"), x.V)
 	} else {
 		c.Printf(c.Str("Bar: not ok\n"))

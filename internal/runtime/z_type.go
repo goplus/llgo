@@ -97,15 +97,16 @@ func StructField(name string, typ *Type, off uintptr, tag string, exported, embe
 
 // Struct returns a struct type.
 func Struct(size uintptr, pkgPath string, fields ...abi.StructField) *Type {
-	npkg := abi.NewName(pkgPath, "", false, false)
+	// TODO(xsw): pkgPath
+	// npkg := abi.NewName(pkgPath, "", false, false)
 	ret := &abi.StructType{
 		Type: Type{
 			Size_: size,
 			Hash:  uint32(abi.Struct), // TODO(xsw): hash
 			Kind_: uint8(abi.Struct),
 		},
-		PkgPath: npkg,
-		Fields:  fields,
+		// PkgPath: npkg,
+		Fields: fields,
 	}
 	return &ret.Type
 }
