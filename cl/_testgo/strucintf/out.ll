@@ -30,7 +30,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"github.com/goplus/llgo/_demo/interf/foo.init"()
+  call void @"github.com/goplus/llgo/cl/internal/foo.init"()
   call void @"main.init$abi"()
   br label %_llgo_2
 
@@ -46,7 +46,7 @@ _llgo_0:
   call void @main.init()
   %2 = alloca { i64 }, align 8
   %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %2, i64 8)
-  %4 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/_demo/interf/foo.Bar"()
+  %4 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.Bar"()
   %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %4, 0
   %6 = load ptr, ptr @"_llgo_struct$K-dZ9QotZfVPz2a0YdRa9vmZUuDXPTqZOlMShKEDJtk", align 8
   %7 = icmp eq ptr %5, %6
@@ -83,7 +83,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
   %27 = alloca { i64 }, align 8
   %28 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %27, i64 8)
-  %29 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/_demo/interf/foo.F"()
+  %29 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.F"()
   %30 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %29, 0
   %31 = load ptr, ptr @"main.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88", align 8
   %32 = icmp eq ptr %30, %31
@@ -129,17 +129,17 @@ _llgo_6:                                          ; preds = %_llgo_2
   br label %_llgo_5
 }
 
-declare void @"github.com/goplus/llgo/_demo/interf/foo.init"()
+declare void @"github.com/goplus/llgo/cl/internal/foo.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
-declare %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/_demo/interf/foo.Bar"()
+declare %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.Bar"()
 
 declare i32 @printf(ptr, ...)
 
-declare %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/_demo/interf/foo.F"()
+declare %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/cl/internal/foo.F"()
 
 define void @"main.init$abi"() {
 _llgo_0:

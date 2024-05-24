@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/_demo/interf/foo"
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/cl/internal/foo"
 )
 
 func main() {

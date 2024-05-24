@@ -130,7 +130,7 @@ func TestAny(t *testing.T) {
 	prog.SetRuntime(func() *types.Package {
 		ret := types.NewPackage("runtime", "runtime")
 		scope := ret.Scope()
-		name := types.NewTypeName(0, ret, "Interface", nil)
+		name := types.NewTypeName(0, ret, "Eface", nil)
 		types.NewNamed(name, types.NewStruct(nil, nil), nil)
 		scope.Insert(name)
 		return ret
