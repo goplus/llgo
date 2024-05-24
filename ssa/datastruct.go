@@ -235,7 +235,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	var nCap Expr
 	var nEltSize Expr
 	var base Expr
-	if low.IsNil() {
+	var lowIsNil = low.IsNil()
+	if lowIsNil {
 		low = prog.IntVal(0, prog.Int())
 	}
 	switch t := x.raw.Type.Underlying().(type) {
@@ -266,6 +267,9 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			nEltSize = SizeOf(prog, elem)
 			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
 			if high.IsNil() {
+				if lowIsNil && max.IsNil() {
+					return b.unsafeSlice(x, nCap.impl, nCap.impl)
+				}
 				high = nCap
 			}
 			base = x
