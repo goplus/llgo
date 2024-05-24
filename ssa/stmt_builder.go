@@ -29,7 +29,7 @@ import (
 // -----------------------------------------------------------------------------
 
 type aBasicBlock struct {
-	first llvm.BasicBlock
+	first llvm.BasicBlock // a Go SSA basic block may have multiple LLVM basic blocks
 	last  llvm.BasicBlock
 	fn    Function
 	idx   int

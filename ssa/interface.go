@@ -40,43 +40,25 @@ func (b Builder) abiBasic(t *types.Basic) Expr {
 	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
 }
 
-// abiStruct returns the abi type of the specified struct type.
-func (b Builder) abiStruct(t *types.Struct) Expr {
-	pkg := b.Pkg
-	name, private := pkg.abi.StructName(t)
-	g := pkg.VarOf(name)
-	if g == nil {
-		prog := b.Prog
-		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
-		g.Init(prog.Null(g.Type))
-		pub := !private
-		if pub {
-			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		}
-		pkg.abiini = append(pkg.abiini, func(param unsafe.Pointer) {
-			b := Builder(param)
-			expr := g.Expr
-			var blks []BasicBlock
-			if pub {
-				eq := b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
-				blks = b.Func.MakeBlocks(2)
-				b.If(eq, blks[0], blks[1])
-				b.SetBlockEx(blks[0], AtEnd, false)
-			}
-			tabi := b.structOf(t)
-			b.Store(expr, tabi)
-			if pub {
-				b.Jump(blks[1])
-				b.SetBlockEx(blks[1], AtEnd, false)
-				b.blk.last = blks[1].last
-			}
-		})
+func (b Builder) abiTypeOf(t types.Type) Expr {
+	switch t := t.(type) {
+	case *types.Basic:
+		return b.abiBasic(t)
+	case *types.Pointer:
+		return b.abiPointerOf(t)
+	case *types.Struct:
+		return b.abiStructOf(t)
 	}
-	return b.Load(g.Expr)
+	panic("todo")
+}
+
+func (b Builder) abiPointerOf(t *types.Pointer) Expr {
+	elem := b.abiTypeOf(t.Elem())
+	return b.Call(b.Pkg.rtFunc("Pointer"), elem)
 }
 
 // func Struct(size uintptr, pkgPath string, fields []abi.StructField) *abi.Type
-func (b Builder) structOf(t *types.Struct) Expr {
+func (b Builder) abiStructOf(t *types.Struct) Expr {
 	pkg := b.Pkg
 	prog := b.Prog
 	n := t.NumFields()
@@ -106,14 +88,41 @@ func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uint
 }
 
 // abiType returns the abi type of the specified type.
-func (b Builder) abiType(raw types.Type) Expr {
-	switch tx := raw.(type) {
-	case *types.Basic:
+func (b Builder) abiType(t types.Type) Expr {
+	if tx, ok := t.(*types.Basic); ok {
 		return b.abiBasic(tx)
-	case *types.Struct:
-		return b.abiStruct(tx)
 	}
-	panic("todo")
+	pkg := b.Pkg
+	name, private := pkg.abi.TypeName(t)
+	g := pkg.VarOf(name)
+	if g == nil {
+		prog := b.Prog
+		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
+		g.Init(prog.Null(g.Type))
+		pub := !private
+		if pub {
+			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+		}
+		pkg.abiini = append(pkg.abiini, func(param unsafe.Pointer) {
+			b := Builder(param)
+			expr := g.Expr
+			var blks []BasicBlock
+			if pub {
+				eq := b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
+				blks = b.Func.MakeBlocks(2)
+				b.If(eq, blks[0], blks[1])
+				b.SetBlockEx(blks[0], AtEnd, false)
+			}
+			tabi := b.abiTypeOf(t)
+			b.Store(expr, tabi)
+			if pub {
+				b.Jump(blks[1])
+				b.SetBlockEx(blks[1], AtEnd, false)
+				b.blk.last = blks[1].last
+			}
+		})
+	}
+	return b.Load(g.Expr)
 }
 
 // unsafeEface(t *abi.Type, data unsafe.Pointer) Eface
