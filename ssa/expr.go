@@ -517,10 +517,10 @@ func llvmDelayValues(f func(i int) Expr, n int) []llvm.Value {
 	return ret
 }
 
-func llvmBlocks(bblks []BasicBlock) []llvm.BasicBlock {
-	ret := make([]llvm.BasicBlock, len(bblks))
-	for i, v := range bblks {
-		ret[i] = v.impl
+func llvmPredBlocks(preds []BasicBlock) []llvm.BasicBlock {
+	ret := make([]llvm.BasicBlock, len(preds))
+	for i, v := range preds {
+		ret[i] = v.last
 	}
 	return ret
 }
@@ -531,24 +531,24 @@ type Phi struct {
 }
 
 // AddIncoming adds incoming values to a phi node.
-func (p Phi) AddIncoming(b Builder, bblks []BasicBlock, f func(i int) Expr) {
-	bs := llvmBlocks(bblks)
+func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int) Expr) {
+	bs := llvmPredBlocks(preds)
 	if p.kind != vkPhisExpr { // normal phi node
-		vs := llvmDelayValues(f, len(bblks))
+		vs := llvmDelayValues(f, len(preds))
 		p.impl.AddIncoming(vs, bs)
 		return
 	}
 	e := p.raw.Type.(*phisExprTy)
 	phis := e.phis
 	vals := make([][]llvm.Value, len(phis))
-	for iblk, blk := range bblks {
-		last := blk.impl.LastInstruction()
+	for iblk, blk := range preds {
+		last := blk.last.LastInstruction()
 		b.impl.SetInsertPointBefore(last)
 		impl := b.impl
 		val := f(iblk).impl
 		for i := range phis {
 			if iblk == 0 {
-				vals[i] = make([]llvm.Value, len(bblks))
+				vals[i] = make([]llvm.Value, len(preds))
 			}
 			vals[i][iblk] = llvm.CreateExtractValue(impl, val, i)
 		}

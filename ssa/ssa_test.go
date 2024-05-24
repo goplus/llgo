@@ -52,7 +52,7 @@ func TestSetBlockEx(t *testing.T) {
 	}()
 	fn := &aFunction{}
 	b := &aBuilder{Func: fn}
-	b.SetBlockEx(&aBasicBlock{fn: fn}, -1)
+	b.SetBlockEx(&aBasicBlock{fn: fn}, -1, false)
 }
 
 func TestSetPython(t *testing.T) {

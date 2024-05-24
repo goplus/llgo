@@ -29,9 +29,10 @@ import (
 // -----------------------------------------------------------------------------
 
 type aBasicBlock struct {
-	impl llvm.BasicBlock
-	fn   Function
-	idx  int
+	first llvm.BasicBlock
+	last  llvm.BasicBlock
+	fn    Function
+	idx   int
 }
 
 // BasicBlock represents a basic block in a function.
@@ -51,6 +52,7 @@ func (p BasicBlock) Index() int {
 
 type aBuilder struct {
 	impl llvm.Builder
+	blk  BasicBlock
 	Func Function
 	Pkg  Package
 	Prog Program
@@ -64,12 +66,12 @@ func (b Builder) Dispose() {
 	b.impl.Dispose()
 }
 
-// SetBlock means SetBlockEx(blk, AtEnd).
+// SetBlock means SetBlockEx(blk, AtEnd, true).
 func (b Builder) SetBlock(blk BasicBlock) Builder {
 	if debugInstr {
 		log.Printf("Block _llgo_%v:\n", blk.idx)
 	}
-	b.SetBlockEx(blk, AtEnd)
+	b.SetBlockEx(blk, AtEnd, true)
 	return b
 }
 
@@ -82,19 +84,22 @@ const (
 )
 
 // SetBlockEx sets blk as current basic block and pos as its insert point.
-func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint) Builder {
+func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint, setBlk bool) Builder {
 	if b.Func != blk.fn {
 		panic("mismatched function")
 	}
 	switch pos {
 	case AtEnd:
-		b.impl.SetInsertPointAtEnd(blk.impl)
+		b.impl.SetInsertPointAtEnd(blk.last)
 	case AtStart:
-		b.impl.SetInsertPointBefore(blk.impl.FirstInstruction())
+		b.impl.SetInsertPointBefore(blk.first.FirstInstruction())
 	case afterInit:
-		b.impl.SetInsertPointBefore(instrAfterInit(blk.impl))
+		b.impl.SetInsertPointBefore(instrAfterInit(blk.first))
 	default:
 		panic("SetBlockEx: invalid pos")
+	}
+	if setBlk {
+		b.blk = blk
 	}
 	return b
 }
@@ -184,7 +189,7 @@ func (b Builder) Jump(jmpb BasicBlock) {
 	if debugInstr {
 		log.Printf("Jump _llgo_%v\n", jmpb.idx)
 	}
-	b.impl.CreateBr(jmpb.impl)
+	b.impl.CreateBr(jmpb.first)
 }
 
 // If emits an if instruction.
@@ -195,7 +200,7 @@ func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 	if debugInstr {
 		log.Printf("If %v, _llgo_%v, _llgo_%v\n", cond.impl, thenb.idx, elseb.idx)
 	}
-	b.impl.CreateCondBr(cond.impl, thenb.impl, elseb.impl)
+	b.impl.CreateCondBr(cond.impl, thenb.first, elseb.first)
 }
 
 // The MapUpdate instruction updates the association of Map[Key] to

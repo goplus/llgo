@@ -274,7 +274,7 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, p, p.Pkg, prog}
+	return &aBuilder{b, nil, p, p.Pkg, prog}
 }
 
 // HasBody reports whether the function has a body.
@@ -287,7 +287,7 @@ func (p Function) HasBody() bool {
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()
-	b.impl.SetInsertPointAtEnd(p.blks[0].impl)
+	b.impl.SetInsertPointAtEnd(p.blks[0].last)
 	return b
 }
 
@@ -306,7 +306,7 @@ func (p Function) MakeBlocks(nblk int) []BasicBlock {
 func (p Function) addBlock(idx int) BasicBlock {
 	label := "_llgo_" + strconv.Itoa(idx)
 	blk := llvm.AddBasicBlock(p.impl, label)
-	ret := &aBasicBlock{blk, p, idx}
+	ret := &aBasicBlock{blk, blk, p, idx}
 	p.blks = append(p.blks, ret)
 	return ret
 }

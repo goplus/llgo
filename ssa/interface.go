@@ -61,13 +61,14 @@ func (b Builder) abiStruct(t *types.Struct) Expr {
 				eq := b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
 				blks = b.Func.MakeBlocks(2)
 				b.If(eq, blks[0], blks[1])
-				b.SetBlock(blks[0])
+				b.SetBlockEx(blks[0], AtEnd, false)
 			}
 			tabi := b.structOf(t)
 			b.Store(expr, tabi)
 			if pub {
 				b.Jump(blks[1])
-				b.SetBlock(blks[1])
+				b.SetBlockEx(blks[1], AtEnd, false)
+				b.blk.last = blks[1].last
 			}
 		})
 	}
@@ -279,9 +280,10 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	}
 	blks := b.Func.MakeBlocks(2)
 	b.If(eq, blks[0], blks[1])
-	b.SetBlock(blks[1])
+	b.SetBlockEx(blks[1], AtEnd, false)
 	b.Panic(b.Str("type assertion failed"))
-	b.SetBlock(blks[0])
+	b.SetBlockEx(blks[0], AtEnd, false)
+	b.blk.last = blks[0].last
 	return b.valFromData(assertedTyp, b.faceData(x.impl))
 }
 

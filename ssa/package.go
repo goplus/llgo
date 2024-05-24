@@ -559,7 +559,7 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 	doAbiInit := len(p.abiini) > 0
 	doPyLoadModSyms := p.pyHasModSyms()
 	if doAbiInit || doPyLoadModSyms {
-		b.SetBlockEx(ret, afterInit)
+		b.SetBlockEx(ret, afterInit, false)
 		if doAbiInit {
 			sigAbiInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 			fn := p.NewFunc(p.abi.Pkg+".init$abi", sigAbiInit, InC)
@@ -743,7 +743,7 @@ func (p Program) tyGetAttrString() *types.Signature {
 func (p Package) PyInit() bool {
 	if fn := p.FuncOf("main"); fn != nil {
 		b := fn.NewBuilder()
-		b.SetBlockEx(fn.Block(0), AtStart).callPyInit()
+		b.SetBlockEx(fn.Block(0), AtStart, false).callPyInit()
 		b.Dispose()
 		return true
 	}

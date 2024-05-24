@@ -58,8 +58,15 @@ _llgo_0:
   store ptr inttoptr (i64 3 to ptr), ptr %19, align 8
   %20 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %17, align 8
   store %"github.com/goplus/llgo/internal/runtime.eface" %20, ptr %15, align 8
-  %21 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %2, i64 16, i64 3, i64 0, i64 3, i64 3)
-  call void @main.test(%"github.com/goplus/llgo/internal/runtime.Slice" %21)
+  %21 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %21, i32 0, i32 0
+  store ptr %2, ptr %22, align 8
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %21, i32 0, i32 1
+  store i64 3, ptr %23, align 4
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %21, i32 0, i32 2
+  store i64 3, ptr %24, align 4
+  %25 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %21, align 8
+  call void @main.test(%"github.com/goplus/llgo/internal/runtime.Slice" %25)
   ret i32 0
 }
 
@@ -69,7 +76,7 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_4, %_llgo_0
-  %2 = phi i64 [ -1, %_llgo_0 ], [ %3, %_llgo_2 ]
+  %2 = phi i64 [ -1, %_llgo_0 ], [ %3, %_llgo_4 ]
   %3 = add i64 %2, 1
   %4 = icmp slt i64 %3, %1
   br i1 %4, label %_llgo_2, label %_llgo_3
@@ -110,8 +117,6 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
-
-declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 

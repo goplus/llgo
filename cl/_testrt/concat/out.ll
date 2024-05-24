@@ -121,14 +121,21 @@ _llgo_0:
   store i64 5, ptr %16, align 4
   %17 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %14, align 8
   store %"github.com/goplus/llgo/internal/runtime.String" %17, ptr %13, align 8
-  %18 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %2, i64 16, i64 3, i64 0, i64 3, i64 3)
-  %19 = call %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %18)
-  %20 = load ptr, ptr @__stderrp, align 8
-  %21 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %19, 1
-  %22 = add i64 %21, 1
-  %23 = alloca i8, i64 %22, align 1
-  %24 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %23, %"github.com/goplus/llgo/internal/runtime.String" %19)
-  %25 = call i32 (ptr, ptr, ...) @fprintf(ptr %20, ptr @6, ptr %24)
+  %18 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
+  %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %18, i32 0, i32 0
+  store ptr %2, ptr %19, align 8
+  %20 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %18, i32 0, i32 1
+  store i64 3, ptr %20, align 4
+  %21 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %18, i32 0, i32 2
+  store i64 3, ptr %21, align 4
+  %22 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %18, align 8
+  %23 = call %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %22)
+  %24 = load ptr, ptr @__stderrp, align 8
+  %25 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %23, 1
+  %26 = add i64 %25, 1
+  %27 = alloca i8, i64 %26, align 1
+  %28 = call ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr %27, %"github.com/goplus/llgo/internal/runtime.String" %23)
+  %29 = call i32 (ptr, ptr, ...) @fprintf(ptr %24, ptr @6, ptr %28)
   ret i32 0
 }
 
@@ -139,8 +146,6 @@ declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/ll
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
-declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/internal/runtime.String")
 
