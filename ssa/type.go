@@ -49,7 +49,9 @@ const (
 	vkSlice
 	vkArray
 	vkMap
-	vkInterface
+	vkEface
+	vkIface
+	vkStruct
 	vkPhisExpr = -1
 )
 
@@ -73,7 +75,7 @@ func indexType(t types.Type) types.Type {
 // -----------------------------------------------------------------------------
 
 type rawType struct {
-	types.Type
+	Type types.Type
 }
 
 type aType struct {
@@ -99,6 +101,22 @@ func (p Program) SizeOf(typ Type, n ...int64) uint64 {
 	return size
 }
 
+// OffsetOf returns the offset of a field in a struct.
+func (p Program) OffsetOf(typ Type, i int) uint64 {
+	return p.td.ElementOffset(typ.ll, i)
+}
+
+// SizeOf returns the size of a type.
+func SizeOf(prog Program, t Type, n ...int64) Expr {
+	size := prog.SizeOf(t, n...)
+	return prog.IntVal(size, prog.Uintptr())
+}
+
+func OffsetOf(prog Program, t Type, i int) Expr {
+	offset := prog.OffsetOf(t, i)
+	return prog.IntVal(offset, prog.Uintptr())
+}
+
 func (p Program) PointerSize() int {
 	return p.td.PointerSize()
 }
@@ -113,7 +131,6 @@ func (p Program) Pointer(typ Type) Type {
 
 func (p Program) Elem(typ Type) Type {
 	elem := typ.raw.Type.(interface {
-		types.Type
 		Elem() types.Type
 	}).Elem()
 	return p.rawType(elem)
@@ -124,9 +141,14 @@ func (p Program) Index(typ Type) Type {
 }
 
 func (p Program) Field(typ Type, i int) Type {
-	tunder := typ.raw.Type.Underlying()
-	tfld := tunder.(*types.Struct).Field(i).Type()
-	return p.rawType(tfld)
+	var fld *types.Var
+	switch t := typ.raw.Type.(type) {
+	case *types.Tuple:
+		fld = t.At(i)
+	default:
+		fld = t.Underlying().(*types.Struct).Field(i)
+	}
+	return p.rawType(fld.Type())
 }
 
 func (p Program) rawType(raw types.Type) Type {
@@ -201,9 +223,11 @@ func (p Program) tyInt64() llvm.Type {
 	return p.int64Type
 }
 
+/*
 func (p Program) toTuple(typ *types.Tuple) Type {
 	return &aType{p.toLLVMTuple(typ), rawType{typ}, vkTuple}
 }
+*/
 
 func (p Program) toType(raw types.Type) Type {
 	typ := rawType{raw}
@@ -247,7 +271,9 @@ func (p Program) toType(raw types.Type) Type {
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
 	case *types.Interface:
-		return &aType{p.rtIface(), typ, vkInterface}
+		if t.Empty() {
+			return &aType{p.rtEface(), typ, vkEface}
+		}
 	case *types.Slice:
 		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:
@@ -259,12 +285,14 @@ func (p Program) toType(raw types.Type) Type {
 		return p.toNamed(t)
 	case *types.Signature: // represents a C function pointer in raw type
 		return &aType{p.toLLVMFuncPtr(t), typ, vkFuncPtr}
+	case *types.Tuple:
+		return &aType{p.toLLVMTuple(t), typ, vkTuple}
 	case *types.Array:
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkArray}
 	case *types.Chan:
 	}
-	panic(fmt.Sprintf("toLLVMType: todo - %T\n", typ))
+	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
 
 func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {
@@ -283,6 +311,8 @@ func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind)
 	ret = p.ctx.StructType(fields, false)
 	if isClosure(raw) {
 		kind = vkClosure
+	} else {
+		kind = vkStruct
 	}
 	return
 }
@@ -364,7 +394,7 @@ func (p Program) toNamed(raw *types.Named) Type {
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
 		name := NameOf(raw)
-		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkInvalid}
+		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkStruct}
 	default:
 		return p.rawType(t)
 	}

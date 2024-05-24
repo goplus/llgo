@@ -352,9 +352,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			last = len(instrs) - 1
 			instrs = instrs[:last]
 		} else {
-			// TODO(xsw): confirm pyMod don't need to call LoadPyModSyms
+			// TODO(xsw): confirm pyMod don't need to call AfterInit
 			p.inits = append(p.inits, func() {
-				pkg.PyLoadModSyms(b, ret)
+				pkg.AfterInit(b, ret)
 			})
 		}
 	} else if doMainInit {
@@ -381,7 +381,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
-		b.SetBlock(newBlk)
+		b.SetBlockEx(newBlk, llssa.AtEnd, false)
 		b.Store(modPtr, b.PyImportMod(modPath))
 		b.Jump(jumpTo)
 	}
@@ -508,7 +508,7 @@ func isPhi(i ssa.Instruction) bool {
 
 func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 	ret := p.fn.Block(block.Index)
-	b.SetBlockEx(ret, llssa.AtEnd)
+	b.SetBlockEx(ret, llssa.AtEnd, false)
 	if ninstr := len(block.Instrs); ninstr > 0 {
 		if isPhi(block.Instrs[0]) {
 			n := 1

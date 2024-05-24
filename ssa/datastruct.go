@@ -70,9 +70,8 @@ func (b Builder) StringData(x Expr) Expr {
 	if debugInstr {
 		log.Printf("StringData %v\n", x.impl)
 	}
-	prog := b.Prog
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 0)
-	return Expr{ptr, prog.CStr()}
+	return Expr{ptr, b.Prog.CStr()}
 }
 
 // StringLen returns the length of a string.
@@ -80,9 +79,8 @@ func (b Builder) StringLen(x Expr) Expr {
 	if debugInstr {
 		log.Printf("StringLen %v\n", x.impl)
 	}
-	prog := b.Prog
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
-	return Expr{ptr, prog.Int()}
+	return Expr{ptr, b.Prog.Int()}
 }
 
 // SliceData returns the data pointer of a slice.
@@ -90,9 +88,8 @@ func (b Builder) SliceData(x Expr) Expr {
 	if debugInstr {
 		log.Printf("SliceData %v\n", x.impl)
 	}
-	prog := b.Prog
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 0)
-	return Expr{ptr, prog.CStr()}
+	return Expr{ptr, b.Prog.VoidPtr()}
 }
 
 // SliceLen returns the length of a slice.
@@ -100,9 +97,8 @@ func (b Builder) SliceLen(x Expr) Expr {
 	if debugInstr {
 		log.Printf("SliceLen %v\n", x.impl)
 	}
-	prog := b.Prog
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
-	return Expr{ptr, prog.Int()}
+	return Expr{ptr, b.Prog.Int()}
 }
 
 // SliceCap returns the length of a slice cap.
@@ -110,9 +106,8 @@ func (b Builder) SliceCap(x Expr) Expr {
 	if debugInstr {
 		log.Printf("SliceCap %v\n", x.impl)
 	}
-	prog := b.Prog
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 2)
-	return Expr{ptr, prog.Int()}
+	return Expr{ptr, b.Prog.Int()}
 }
 
 // The IndexAddr instruction yields the address of the element at
@@ -188,7 +183,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 		if addr != nil {
 			ptr = addr(x)
 		} else {
-			size := b.SizeOf(telem, t.Len())
+			size := SizeOf(prog, telem, t.Len())
 			ptr = b.Alloca(size)
 			b.Store(ptr, x)
 		}
@@ -240,7 +235,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	var nCap Expr
 	var nEltSize Expr
 	var base Expr
-	if low.IsNil() {
+	var lowIsNil = low.IsNil()
+	if lowIsNil {
 		low = prog.IntVal(0, prog.Int())
 	}
 	switch t := x.raw.Type.Underlying().(type) {
@@ -255,7 +251,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		ret.impl = b.InlineCall(b.Pkg.rtFunc("NewStringSlice"), x, low, high).impl
 		return
 	case *types.Slice:
-		nEltSize = b.SizeOf(prog.Index(x.Type))
+		nEltSize = SizeOf(prog, prog.Index(x.Type))
 		nCap = b.SliceCap(x)
 		if high.IsNil() {
 			high = b.SliceCap(x)
@@ -268,9 +264,12 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		case *types.Array:
 			elem := prog.rawType(te.Elem())
 			ret.Type = prog.Slice(elem)
-			nEltSize = b.SizeOf(elem)
+			nEltSize = SizeOf(prog, elem)
 			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
 			if high.IsNil() {
+				if lowIsNil && max.IsNil() {
+					return b.unsafeSlice(x, nCap.impl, nCap.impl)
+				}
 				high = nCap
 			}
 			base = x
@@ -281,6 +280,18 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	}
 	ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
 	return
+}
+
+// SliceLit creates a new slice with the specified elements.
+func (b Builder) SliceLit(t Type, elts ...Expr) Expr {
+	prog := b.Prog
+	telem := prog.Index(t)
+	ptr := b.AllocU(telem, int64(len(elts)))
+	for i, elt := range elts {
+		b.Store(b.Advance(ptr, prog.Val(i)), elt)
+	}
+	size := llvm.ConstInt(prog.tyInt(), uint64(len(elts)), false)
+	return b.unsafeSlice(ptr, size, size)
 }
 
 // -----------------------------------------------------------------------------
@@ -323,10 +334,11 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
 	}
 	pkg := b.Pkg
+	prog := b.Prog
 	if cap.IsNil() {
 		cap = len
 	}
-	elemSize := b.SizeOf(b.Prog.Index(t))
+	elemSize := SizeOf(prog, prog.Index(t))
 	size := b.BinOp(token.MUL, cap, elemSize)
 	ptr := b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), ptr, len, cap).impl

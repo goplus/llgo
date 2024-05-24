@@ -93,6 +93,40 @@ func phisExpr(t Type, phis []llvm.Value) Expr {
 
 // -----------------------------------------------------------------------------
 
+func (p Program) Zero(t Type) Expr {
+	var ret llvm.Value
+	switch u := t.raw.Type.Underlying().(type) {
+	case *types.Basic:
+		kind := u.Kind()
+		switch {
+		case kind >= types.Bool && kind <= types.Uintptr:
+			ret = llvm.ConstInt(p.rawType(u).ll, 0, false)
+		case kind == types.String:
+			ret = p.Zero(p.rtType("String")).impl
+		case kind == types.UnsafePointer:
+			ret = llvm.ConstPointerNull(p.tyVoidPtr())
+		case kind <= types.Float64:
+			ret = llvm.ConstFloat(p.Float64().ll, 0)
+		case kind == types.Float32:
+			ret = llvm.ConstFloat(p.Float32().ll, 0)
+		default:
+			panic("todo")
+		}
+	case *types.Pointer:
+		return Expr{llvm.ConstNull(t.ll), t}
+	case *types.Struct:
+		n := u.NumFields()
+		flds := make([]llvm.Value, n)
+		for i := 0; i < n; i++ {
+			flds[i] = p.Zero(p.rawType(u.Field(i).Type())).impl
+		}
+		ret = llvm.ConstStruct(flds, false)
+	default:
+		log.Panicln("todo:", u)
+	}
+	return Expr{ret, t}
+}
+
 // Null returns a null constant expression.
 func (p Program) Null(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
@@ -122,12 +156,6 @@ func (p Program) IntVal(v uint64, t Type) Expr {
 
 func (p Program) FloatVal(v float64, t Type) Expr {
 	ret := llvm.ConstFloat(t.ll, v)
-	return Expr{ret, t}
-}
-
-func (p Program) ByteVal(v byte) Expr {
-	t := p.Byte()
-	ret := llvm.ConstInt(t.ll, uint64(v), false)
 	return Expr{ret, t}
 }
 
@@ -180,13 +208,6 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, raw))
 }
 
-// SizeOf returns the size of a type.
-func (b Builder) SizeOf(t Type, n ...int64) Expr {
-	prog := b.Prog
-	size := prog.SizeOf(t, n...)
-	return prog.IntVal(size, prog.Uintptr())
-}
-
 // CStr returns a c-style string constant expression.
 func (b Builder) CStr(v string) Expr {
 	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
@@ -200,10 +221,17 @@ func (b Builder) Str(v string) (ret Expr) {
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
 }
 
-// unsafe.String(data *byte, size int) string
-func (b Builder) String(data, size Expr) Expr {
+// unsafeString(data *byte, size int) string
+func (b Builder) unsafeString(data, size llvm.Value) Expr {
 	prog := b.Prog
-	return Expr{aggregateValue(b.impl, prog.rtString(), data.impl, size.impl), prog.String()}
+	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
+}
+
+// unsafeSlice(data *T, size, cap int) []T
+func (b Builder) unsafeSlice(data Expr, size, cap llvm.Value) Expr {
+	prog := b.Prog
+	tslice := prog.Slice(prog.Elem(data.Type))
+	return Expr{aggregateValue(b.impl, prog.rtSlice(), data.impl, size, cap), tslice}
 }
 
 // -----------------------------------------------------------------------------
@@ -397,7 +425,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 	case token.MUL:
 		return b.Load(x)
 	case token.SUB:
-		switch t := x.Type.raw.Underlying().(type) {
+		switch t := x.raw.Type.Underlying().(type) {
 		case *types.Basic:
 			ret.Type = x.Type
 			if t.Info()&types.IsInteger != 0 {
@@ -489,10 +517,10 @@ func llvmDelayValues(f func(i int) Expr, n int) []llvm.Value {
 	return ret
 }
 
-func llvmBlocks(bblks []BasicBlock) []llvm.BasicBlock {
-	ret := make([]llvm.BasicBlock, len(bblks))
-	for i, v := range bblks {
-		ret[i] = v.impl
+func llvmPredBlocks(preds []BasicBlock) []llvm.BasicBlock {
+	ret := make([]llvm.BasicBlock, len(preds))
+	for i, v := range preds {
+		ret[i] = v.last
 	}
 	return ret
 }
@@ -503,24 +531,24 @@ type Phi struct {
 }
 
 // AddIncoming adds incoming values to a phi node.
-func (p Phi) AddIncoming(b Builder, bblks []BasicBlock, f func(i int) Expr) {
-	bs := llvmBlocks(bblks)
+func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int) Expr) {
+	bs := llvmPredBlocks(preds)
 	if p.kind != vkPhisExpr { // normal phi node
-		vs := llvmDelayValues(f, len(bblks))
+		vs := llvmDelayValues(f, len(preds))
 		p.impl.AddIncoming(vs, bs)
 		return
 	}
 	e := p.raw.Type.(*phisExprTy)
 	phis := e.phis
 	vals := make([][]llvm.Value, len(phis))
-	for iblk, blk := range bblks {
-		last := blk.impl.LastInstruction()
+	for iblk, blk := range preds {
+		last := blk.last.LastInstruction()
 		b.impl.SetInsertPointBefore(last)
 		impl := b.impl
 		val := f(iblk).impl
 		for i := range phis {
 			if iblk == 0 {
-				vals[i] = make([]llvm.Value, len(bblks))
+				vals[i] = make([]llvm.Value, len(preds))
 			}
 			vals[i][iblk] = llvm.CreateExtractValue(impl, val, i)
 		}
@@ -667,7 +695,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	}
 	prog := b.Prog
 	pkg := b.Pkg
-	size := b.SizeOf(elem)
+	size := SizeOf(prog, elem)
 	if heap {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
@@ -683,9 +711,10 @@ func (b Builder) AllocU(elem Type, n ...int64) (ret Expr) {
 	if debugInstr {
 		log.Printf("AllocU %v, %v\n", elem.raw.Type, n)
 	}
-	size := b.SizeOf(elem, n...)
+	prog := b.Prog
+	size := SizeOf(prog, elem, n...)
 	ret = b.InlineCall(b.Pkg.rtFunc("AllocU"), size)
-	ret.Type = b.Prog.Pointer(elem)
+	ret.Type = prog.Pointer(elem)
 	return
 }
 
@@ -940,21 +969,6 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	return
 }
 
-// The Extract instruction yields component Index of Tuple.
-//
-// This is used to access the results of instructions with multiple
-// return values, such as Call, TypeAssert, Next, UnOp(ARROW) and
-// IndexExpr(Map).
-//
-// Example printed form:
-//
-//	t1 = extract t0 #1
-func (b Builder) Extract(x Expr, index int) (ret Expr) {
-	ret.Type = b.Prog.toType(x.Type.raw.Type.(*types.Tuple).At(index).Type())
-	ret.impl = llvm.CreateExtractValue(b.impl, x.impl, index)
-	return
-}
-
 // A Builtin represents a specific use of a built-in function, e.g. len.
 //
 // Builtins are immutable values.  Builtins do not have addresses.
@@ -1008,7 +1022,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		ret.Type = prog.Void()
 		for i, arg := range args {
 			if ln && i > 0 {
-				b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.ByteVal(' '))
+				b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal(' ', prog.Byte()))
 			}
 			var fn string
 			typ := arg.Type
@@ -1035,8 +1049,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				typ = prog.VoidPtr()
 			case vkString:
 				fn = "PrintString"
-			case vkInterface:
-				fn = "PrintIface"
+			case vkEface:
+				fn = "PrintEface"
 			// case vkComplex:
 			// 	fn = "PrintComplex"
 			default:
@@ -1048,7 +1062,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			b.InlineCall(b.Pkg.rtFunc(fn), arg)
 		}
 		if ln {
-			b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.ByteVal('\n'))
+			b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal('\n', prog.Byte()))
 		}
 		return
 	case "copy":
@@ -1067,7 +1081,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 	case "String": // unsafe.String
-		return b.String(args[0], args[1])
+		return b.unsafeString(args[0].impl, args[1].impl)
+	case "Slice": // unsafe.Slice
+		size := args[1].impl
+		return b.unsafeSlice(args[0], size, size)
 	}
 	panic("todo: " + fn)
 }

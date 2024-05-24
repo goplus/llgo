@@ -25,6 +25,10 @@ import (
 	"github.com/goplus/llgo/ssa/ssatest"
 )
 
+func TestFromTestgo(t *testing.T) {
+	cltest.FromDir(t, "", "../cl/_testgo", false)
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testpy", false)
 }
@@ -56,26 +60,34 @@ func TestMakeInterface(t *testing.T) {
 	ssatest.Assert(t, pkg, `; ModuleID = 'foo'
 source_filename = "foo"
 
-%"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
 define void @main() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  store i64 100, ptr %0, align 4
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
-  %2 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %1, ptr %0)
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  store double 1.000000e+02, ptr %3, align 8
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 14)
-  %5 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr %4, ptr %3)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 6)
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store i64 100, ptr %1, align 4
+  %2 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %2, i32 0, i32 0
+  store ptr %0, ptr %3, align 8
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %2, i32 0, i32 1
+  store ptr %1, ptr %4, align 8
+  %5 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %2, align 8
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 14)
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store double 1.000000e+02, ptr %7, align 8
+  %8 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %8, i32 0, i32 0
+  store ptr %6, ptr %9, align 8
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %8, i32 0, i32 1
+  store ptr %7, ptr %10, align 8
+  %11 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %8, align 8
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
-
-declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAny"(ptr, ptr)
-
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 `)
 }
 

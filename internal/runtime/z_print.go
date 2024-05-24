@@ -66,6 +66,6 @@ func PrintSlice(s Slice) {
 	print("[", s.len, "/", s.cap, "]", s.data)
 }
 
-func PrintIface(i Interface) {
-	print("(", i.tab, ",", i.data, ")")
+func PrintEface(e Eface) {
+	print("(", e._type, ",", e.data, ")")
 }

@@ -2,7 +2,7 @@
 source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
-%"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
 @"main.init$guard" = global ptr null
 @__llgo_argc = global ptr null
@@ -34,13 +34,23 @@ _llgo_0:
   %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
   store i64 13, ptr %4, align 4
   %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
-  %6 = call %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String" %5)
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.iface" %6)
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" %5, ptr %7, align 8
+  %8 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %8, i32 0, i32 0
+  store ptr %6, ptr %9, align 8
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %8, i32 0, i32 1
+  store ptr %7, ptr %10, align 8
+  %11 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %8, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %11)
   unreachable
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare %"github.com/goplus/llgo/internal/runtime.iface" @"github.com/goplus/llgo/internal/runtime.MakeAnyString"(%"github.com/goplus/llgo/internal/runtime.String")
+declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.iface")
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+
+declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")

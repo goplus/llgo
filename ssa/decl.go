@@ -58,6 +58,13 @@ type aNamedConst struct {
 // it augments with the name and position of its 'const' declaration.
 type NamedConst = *aNamedConst
 
+/*
+// NewConst creates a new named constant.
+func (p Package) NewConst(name string, val constant.Value) NamedConst {
+	return &aNamedConst{}
+}
+*/
+
 // -----------------------------------------------------------------------------
 
 type aGlobal struct {
@@ -75,9 +82,21 @@ func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 		return v
 	}
 	t := p.Prog.Type(typ, bg)
+	return p.doNewVar(name, t)
+}
+
+// NewVarFrom creates a new global variable.
+func (p Package) NewVarFrom(name string, t Type) Global {
+	if v, ok := p.vars[name]; ok {
+		return v
+	}
+	return p.doNewVar(name, t)
+}
+
+func (p Package) doNewVar(name string, t Type) Global {
 	var gbl llvm.Value
 	var array bool
-	if t.kind == vkPtr && p.Prog.Elem(t).kind == vkArray {
+	if t.kind == vkPtr && p.Prog.Elem(t).kind == vkArray { // TODO(xsw): check this code
 		typ := p.Prog.Elem(t).ll
 		gbl = llvm.AddGlobal(p.mod, typ, name)
 		gbl.SetInitializer(llvm.Undef(typ))
@@ -97,7 +116,7 @@ func (p Package) VarOf(name string) Global {
 
 // Init initializes the global variable with the given value.
 func (g Global) Init(v Expr) {
-	if g.array && v.kind == vkPtr {
+	if g.array && v.kind == vkPtr { // TODO(xsw): check this code
 		return
 	}
 	g.impl.SetInitializer(v.impl)
@@ -219,6 +238,13 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	return
 }
 
+/*
+// Name returns the function's name.
+func (p Function) Name() string {
+	return p.impl.Name()
+}
+*/
+
 // Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
 	i += p.base // skip if hasFreeVars
@@ -248,7 +274,7 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, p, p.Pkg, prog}
+	return &aBuilder{b, nil, p, p.Pkg, prog}
 }
 
 // HasBody reports whether the function has a body.
@@ -261,7 +287,8 @@ func (p Function) HasBody() bool {
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()
-	b.impl.SetInsertPointAtEnd(p.blks[0].impl)
+	b.blk = p.blks[0]
+	b.impl.SetInsertPointAtEnd(b.blk.last)
 	return b
 }
 
@@ -280,7 +307,7 @@ func (p Function) MakeBlocks(nblk int) []BasicBlock {
 func (p Function) addBlock(idx int) BasicBlock {
 	label := "_llgo_" + strconv.Itoa(idx)
 	blk := llvm.AddBasicBlock(p.impl, label)
-	ret := &aBasicBlock{blk, p, idx}
+	ret := &aBasicBlock{blk, blk, p, idx}
 	p.blks = append(p.blks, ret)
 	return ret
 }
@@ -350,15 +377,14 @@ func (p Package) PyObjOf(name string) PyObjRef {
 	return p.pyobjs[name]
 }
 
-// PyLoadModSyms loads module symbols used in this package.
-func (p Package) PyLoadModSyms(b Builder, ret BasicBlock) {
-	objs := p.pyobjs
-	n := len(objs)
-	if n == 0 {
-		return
-	}
+func (p Package) pyHasModSyms() bool {
+	return len(p.pyobjs) > 0
+}
 
-	names := make([]string, 0, n)
+// pyLoadModSyms loads module symbols used in this package.
+func (p Package) pyLoadModSyms(b Builder) {
+	objs := p.pyobjs
+	names := make([]string, 0, len(objs))
 	for name := range objs {
 		names = append(names, name)
 	}
@@ -376,7 +402,6 @@ func (p Package) PyLoadModSyms(b Builder, ret BasicBlock) {
 		}
 	}
 
-	b.SetBlockEx(ret, afterInit)
 	for _, modName := range modNames {
 		objs := mods[modName]
 		b.PyLoadModSyms(modName, objs...)

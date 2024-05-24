@@ -52,7 +52,7 @@ func TestSetBlockEx(t *testing.T) {
 	}()
 	fn := &aFunction{}
 	b := &aBuilder{Func: fn}
-	b.SetBlockEx(&aBasicBlock{fn: fn}, -1)
+	b.SetBlockEx(&aBasicBlock{fn: fn}, -1, false)
 }
 
 func TestSetPython(t *testing.T) {
@@ -130,7 +130,7 @@ func TestAny(t *testing.T) {
 	prog.SetRuntime(func() *types.Package {
 		ret := types.NewPackage("runtime", "runtime")
 		scope := ret.Scope()
-		name := types.NewTypeName(0, ret, "Interface", nil)
+		name := types.NewTypeName(0, ret, "Eface", nil)
 		types.NewNamed(name, types.NewStruct(nil, nil), nil)
 		scope.Insert(name)
 		return ret

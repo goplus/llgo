@@ -20,34 +20,105 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
 
 // -----------------------------------------------------------------------------
 
 // abiBasic returns the abi type of the specified basic kind.
-func (b Builder) abiBasic(kind types.BasicKind) Expr {
-	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
+func (b Builder) abiBasic(t *types.Basic) Expr {
+	/*
+		TODO(xsw):
+		name := abi.BasicName(t)
+		g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
+		return b.Load(g.Expr)
+	*/
+	kind := int(abi.BasicKind(t))
+	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
 }
 
-/*
 // abiStruct returns the abi type of the specified struct type.
 func (b Builder) abiStruct(t *types.Struct) Expr {
-	// name := "__llgo_" + b.Prog.abi.StructName(t)
+	pkg := b.Pkg
+	name, private := pkg.abi.StructName(t)
+	g := pkg.VarOf(name)
+	if g == nil {
+		prog := b.Prog
+		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
+		g.Init(prog.Null(g.Type))
+		pub := !private
+		if pub {
+			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+		}
+		pkg.abiini = append(pkg.abiini, func(param unsafe.Pointer) {
+			b := Builder(param)
+			expr := g.Expr
+			var blks []BasicBlock
+			if pub {
+				eq := b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
+				blks = b.Func.MakeBlocks(2)
+				b.If(eq, blks[0], blks[1])
+				b.SetBlockEx(blks[0], AtEnd, false)
+			}
+			tabi := b.structOf(t)
+			b.Store(expr, tabi)
+			if pub {
+				b.Jump(blks[1])
+				b.SetBlockEx(blks[1], AtEnd, false)
+				b.blk.last = blks[1].last
+			}
+		})
+	}
+	return b.Load(g.Expr)
 }
-*/
 
-// AbiType returns the abi type of the specified type.
-func (b Builder) AbiType(t Type) Expr {
-	switch tx := t.raw.Type.(type) {
+// func Struct(size uintptr, pkgPath string, fields []abi.StructField) *abi.Type
+func (b Builder) structOf(t *types.Struct) Expr {
+	pkg := b.Pkg
+	prog := b.Prog
+	n := t.NumFields()
+	flds := make([]Expr, n)
+	strucAbi := pkg.rtFunc("Struct")
+	sfAbi := pkg.rtFunc("StructField")
+	typ := prog.rawType(t)
+	for i := 0; i < n; i++ {
+		f := t.Field(i)
+		off := uintptr(prog.OffsetOf(typ, i))
+		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
+	}
+	pkgPath := b.Str(pkg.abi.Pkg)
+	params := strucAbi.raw.Type.(*types.Signature).Params()
+	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
+	fldSlice := b.SliceLit(tSlice, flds...)
+	return b.Call(strucAbi, pkgPath, fldSlice)
+}
+
+// func StructField(name string, typ *abi.Type, off uintptr, tag string, exported, embedded bool) abi.StructField
+func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uintptr, tag string) Expr {
+	name := b.Str(f.Name())
+	typ := b.abiType(f.Type())
+	exported := prog.Val(f.Exported())
+	embedded := prog.Val(f.Embedded())
+	return b.Call(sfAbi, name, typ, prog.Val(offset), b.Str(tag), exported, embedded)
+}
+
+// abiType returns the abi type of the specified type.
+func (b Builder) abiType(raw types.Type) Expr {
+	switch tx := raw.(type) {
 	case *types.Basic:
-		return b.abiBasic(tx.Kind())
-		//case *types.Struct:
-		//	return b.abiStruct(tx)
+		return b.abiBasic(tx)
+	case *types.Struct:
+		return b.abiStruct(tx)
 	}
 	panic("todo")
+}
+
+// unsafeEface(t *abi.Type, data unsafe.Pointer) Eface
+func (b Builder) unsafeEface(t, data llvm.Value) llvm.Value {
+	return aggregateValue(b.impl, b.Prog.rtEface(), t, data)
 }
 
 // -----------------------------------------------------------------------------
@@ -73,60 +144,84 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	typ := x.Type
-	switch tx := typ.raw.Type.Underlying().(type) {
-	case *types.Basic:
-		kind := tx.Kind()
-		switch {
-		case kind >= types.Bool && kind <= types.Uintptr:
-			if prog.is32Bits && (kind == types.Int64 || kind == types.Uint64) {
-				return b.makeIntfAlloc(tinter, rawIntf, typ, x)
-			}
-			return b.makeIntfByIntptr(tinter, rawIntf, typ, x.impl)
-		case kind == types.Float32:
-			i32 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt32())
-			return b.makeIntfByIntptr(tinter, rawIntf, typ, i32)
-		case kind == types.Float64:
-			if prog.is32Bits {
-				return b.makeIntfAlloc(tinter, rawIntf, typ, x)
-			}
-			i64 := llvm.CreateBitCast(b.impl, x.impl, prog.tyInt64())
-			return b.makeIntfByIntptr(tinter, rawIntf, typ, i64)
-		case kind == types.String:
-			return Expr{b.InlineCall(b.Pkg.rtFunc("MakeAnyString"), x).impl, tinter}
+	tabi := b.abiType(typ.raw.Type)
+	kind, _, lvl := abi.KindOf(typ.raw.Type, 0, prog.is32Bits)
+	switch kind {
+	case abi.Indirect:
+		vptr := b.AllocU(typ)
+		b.Store(vptr, x)
+		return Expr{b.unsafeEface(tabi.impl, vptr.impl), tinter}
+	}
+	ximpl := x.impl
+	if lvl > 0 {
+		ximpl = extractVal(b.impl, ximpl, lvl)
+	}
+	var u llvm.Value
+	switch kind {
+	case abi.Pointer:
+		return Expr{b.unsafeEface(tabi.impl, ximpl), tinter}
+	case abi.Integer:
+		tu := prog.Uintptr()
+		u = llvm.CreateIntCast(b.impl, ximpl, tu.ll)
+	case abi.BitCast:
+		tu := prog.Uintptr()
+		u = llvm.CreateBitCast(b.impl, ximpl, tu.ll)
+	default:
+		panic("todo")
+	}
+	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
+	return Expr{b.unsafeEface(tabi.impl, data), tinter}
+}
+
+func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
+	prog := b.Prog
+	kind, real, lvl := abi.KindOf(typ.raw.Type, 0, prog.is32Bits)
+	switch kind {
+	case abi.Indirect:
+		impl := b.impl
+		tll := typ.ll
+		tptr := llvm.PointerType(tll, 0)
+		ptr := llvm.CreatePointerCast(impl, data, tptr)
+		return Expr{llvm.CreateLoad(impl, tll, ptr), typ}
+	}
+	t := typ
+	if lvl > 0 {
+		t = prog.rawType(real)
+	}
+	switch kind {
+	case abi.Pointer:
+		return b.buildVal(typ, data, lvl)
+	case abi.Integer:
+		x := castUintptr(b, data, prog.Uintptr())
+		return b.buildVal(typ, castInt(b, x, t), lvl)
+	case abi.BitCast:
+		x := castUintptr(b, data, prog.Uintptr())
+		if int(prog.SizeOf(t)) != prog.PointerSize() {
+			x = castInt(b, x, prog.Int32())
 		}
-		/* case *types.Struct:
-		size := int(prog.SizeOf(typ))
-		if size > prog.PointerSize() {
-			return b.makeIntfAlloc(tinter, rawIntf, typ, x)
-		}
-		tv := prog.ctx.IntType(size * 8)
-		iv := llvm.CreateBitCast(b.impl, x.impl, tv)
-		return b.makeIntfByIntptr(tinter, rawIntf, typ, iv) */
+		return b.buildVal(typ, llvm.CreateBitCast(b.impl, x, t.ll), lvl)
 	}
 	panic("todo")
 }
 
-func (b Builder) makeIntfAlloc(tinter Type, rawIntf *types.Interface, typ Type, x Expr) (ret Expr) {
-	vptr := b.AllocU(typ)
-	b.Store(vptr, x)
-	return b.makeIntfByPtr(tinter, rawIntf, typ, vptr)
-}
-
-func (b Builder) makeIntfByPtr(tinter Type, rawIntf *types.Interface, typ Type, vptr Expr) (ret Expr) {
-	if rawIntf.Empty() {
-		ret = b.InlineCall(b.Pkg.rtFunc("MakeAny"), b.AbiType(typ), vptr)
-		ret.Type = tinter
-		return
+func extractVal(b llvm.Builder, val llvm.Value, lvl int) llvm.Value {
+	for lvl > 0 {
+		// TODO(xsw): check array support
+		val = llvm.CreateExtractValue(b, val, 0)
+		lvl--
 	}
-	panic("todo")
+	return val
 }
 
-func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Type, x llvm.Value) (ret Expr) {
-	if rawIntf.Empty() {
-		tptr := b.Prog.Uintptr()
-		x = llvm.CreateIntCast(b.impl, x, tptr.ll)
-		impl := b.InlineCall(b.Pkg.rtFunc("MakeAnyIntptr"), b.AbiType(typ), Expr{x, tptr}).impl
-		return Expr{impl, tinter}
+func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
+	if lvl == 0 {
+		return Expr{val, typ}
+	}
+	switch t := typ.raw.Type.Underlying().(type) {
+	case *types.Struct:
+		telem := b.Prog.rawType(t.Field(0).Type())
+		elem := b.buildVal(telem, val, lvl-1)
+		return Expr{aggregateValue(b.impl, typ.ll, elem.impl), typ}
 	}
 	panic("todo")
 }
@@ -170,10 +265,40 @@ func (b Builder) makeIntfByIntptr(tinter Type, rawIntf *types.Interface, typ Typ
 //
 //	t1 = typeassert t0.(int)
 //	t3 = typeassert,ok t2.(T)
+func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
+	if debugInstr {
+		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
+	}
+	tx := b.faceAbiType(x)
+	tabi := b.abiType(assertedTyp.raw.Type)
+	eq := b.BinOp(token.EQL, tx, tabi)
+	if commaOk {
+		prog := b.Prog
+		t := prog.Tuple(assertedTyp, prog.Bool())
+		val := b.valFromData(assertedTyp, b.faceData(x.impl))
+		zero := prog.Zero(assertedTyp)
+		valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
+		valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
+		return Expr{llvm.CreateSelect(b.impl, eq.impl, valTrue, valFalse), t}
+	}
+	blks := b.Func.MakeBlocks(2)
+	b.If(eq, blks[0], blks[1])
+	b.SetBlockEx(blks[1], AtEnd, false)
+	b.Panic(b.Str("type assertion failed"))
+	b.SetBlockEx(blks[0], AtEnd, false)
+	b.blk.last = blks[0].last
+	return b.valFromData(assertedTyp, b.faceData(x.impl))
+}
+
+/*
 func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	}
+	// TODO(xsw)
+	// if x.kind != vkEface {
+	//	 panic("todo: non empty interface")
+	// }
 	switch assertedTyp.kind {
 	case vkSigned, vkUnsigned, vkFloat, vkBool:
 		pkg := b.Pkg
@@ -183,13 +308,14 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		}
 		fn := pkg.rtFunc(fnName)
 		var kind types.BasicKind
+		var typ Expr
 		switch t := assertedTyp.raw.Type.(type) {
 		case *types.Basic:
 			kind = t.Kind()
+			typ = b.abiBasic(t)
 		default:
 			panic("todo")
 		}
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(kind)))
 		ret = b.InlineCall(fn, x, typ)
 		if kind != types.Uintptr {
 			conv := func(v llvm.Value) llvm.Value {
@@ -226,11 +352,32 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
 		if commaOk {
 			fnName = "CheckI2String"
 		}
-		fn := pkg.rtFunc(fnName)
-		typ := b.InlineCall(pkg.rtFunc("Basic"), b.Prog.Val(int(abi.String)))
-		return b.InlineCall(fn, x, typ)
+		return b.InlineCall(pkg.rtFunc(fnName), x)
 	}
 	panic("todo")
+}
+*/
+
+// -----------------------------------------------------------------------------
+
+// InterfaceData returns the data pointer of an interface.
+func (b Builder) InterfaceData(x Expr) Expr {
+	if debugInstr {
+		log.Printf("InterfaceData %v\n", x.impl)
+	}
+	return Expr{b.faceData(x.impl), b.Prog.VoidPtr()}
+}
+
+func (b Builder) faceData(x llvm.Value) llvm.Value {
+	return llvm.CreateExtractValue(b.impl, x, 1)
+}
+
+func (b Builder) faceAbiType(x Expr) Expr {
+	if x.kind == vkIface {
+		panic("todo")
+	}
+	typ := llvm.CreateExtractValue(b.impl, x.impl, 0)
+	return Expr{typ, b.Prog.AbiTypePtr()}
 }
 
 // -----------------------------------------------------------------------------
