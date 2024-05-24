@@ -305,11 +305,28 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	if commaOk {
 		prog := b.Prog
 		t := prog.Tuple(assertedTyp, prog.Bool())
-		val := b.valFromData(assertedTyp, b.faceData(x.impl))
-		zero := prog.Zero(assertedTyp)
-		valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
-		valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
-		return Expr{llvm.CreateSelect(b.impl, eq.impl, valTrue, valFalse), t}
+		blks := b.Func.MakeBlocks(3)
+		b.If(eq, blks[0], blks[1])
+
+		b.SetBlockEx(blks[2], AtEnd, false)
+		phi := b.Phi(t)
+		phi.AddIncoming(b, blks[:2], func(i int) Expr {
+			if i == 0 {
+				b.SetBlockEx(blks[0], AtEnd, false)
+				val := b.valFromData(assertedTyp, b.faceData(x.impl))
+				valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
+				b.Jump(blks[2])
+				return Expr{valTrue, t}
+			}
+			b.SetBlockEx(blks[1], AtEnd, false)
+			zero := prog.Zero(assertedTyp)
+			valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
+			b.Jump(blks[2])
+			return Expr{valFalse, t}
+		})
+		b.SetBlockEx(blks[2], AtEnd, false)
+		b.blk.last = blks[2].last
+		return phi.Expr
 	}
 	blks := b.Func.MakeBlocks(2)
 	b.If(eq, blks[0], blks[1])
@@ -319,74 +336,6 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	b.blk.last = blks[0].last
 	return b.valFromData(assertedTyp, b.faceData(x.impl))
 }
-
-/*
-func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) (ret Expr) {
-	if debugInstr {
-		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
-	}
-	// TODO(xsw)
-	// if x.kind != vkEface {
-	//	 panic("todo: non empty interface")
-	// }
-	switch assertedTyp.kind {
-	case vkSigned, vkUnsigned, vkFloat, vkBool:
-		pkg := b.Pkg
-		fnName := "I2Int"
-		if commaOk {
-			fnName = "CheckI2Int"
-		}
-		fn := pkg.rtFunc(fnName)
-		var kind types.BasicKind
-		var typ Expr
-		switch t := assertedTyp.raw.Type.(type) {
-		case *types.Basic:
-			kind = t.Kind()
-			typ = b.abiBasic(t)
-		default:
-			panic("todo")
-		}
-		ret = b.InlineCall(fn, x, typ)
-		if kind != types.Uintptr {
-			conv := func(v llvm.Value) llvm.Value {
-				switch kind {
-				case types.Float32:
-					v = castInt(b, v, b.Prog.Int32())
-					v = llvm.CreateBitCast(b.impl, v, assertedTyp.ll)
-				case types.Float64:
-					v = llvm.CreateBitCast(b.impl, v, assertedTyp.ll)
-				default:
-					v = castInt(b, v, assertedTyp)
-				}
-				return v
-			}
-			if !commaOk {
-				ret.Type = assertedTyp
-				ret.impl = conv(ret.impl)
-			} else {
-				ret.Type = b.Prog.toTuple(
-					types.NewTuple(
-						types.NewVar(token.NoPos, nil, "", assertedTyp.RawType()),
-						ret.Type.RawType().(*types.Tuple).At(1),
-					),
-				)
-				val0 := conv(llvm.CreateExtractValue(b.impl, ret.impl, 0))
-				val1 := llvm.CreateExtractValue(b.impl, ret.impl, 1)
-				ret.impl = llvm.ConstStruct([]llvm.Value{val0, val1}, false)
-			}
-		}
-		return
-	case vkString:
-		pkg := b.Pkg
-		fnName := "I2String"
-		if commaOk {
-			fnName = "CheckI2String"
-		}
-		return b.InlineCall(pkg.rtFunc(fnName), x)
-	}
-	panic("todo")
-}
-*/
 
 // -----------------------------------------------------------------------------
 

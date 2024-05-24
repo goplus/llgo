@@ -12,6 +12,5 @@ func Foo(v any) (ret bar, ok bool) {
 
 func main() {
 	ret, ok := Foo(nil)
-	println("Hi")
 	println(ret.pb, ret.f, ok)
 }
