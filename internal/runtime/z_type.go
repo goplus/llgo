@@ -111,4 +111,17 @@ func Struct(size uintptr, pkgPath string, fields ...abi.StructField) *Type {
 	return &ret.Type
 }
 
+// Pointer returns a pointer type.
+func Pointer(elem *Type) *Type {
+	ret := &abi.PtrType{
+		Type: Type{
+			Size_: unsafe.Sizeof(uintptr(0)),
+			Hash:  uint32(abi.Pointer), // TODO(xsw): hash
+			Kind_: uint8(abi.Pointer),
+		},
+		Elem: elem,
+	}
+	return &ret.Type
+}
+
 // -----------------------------------------------------------------------------
