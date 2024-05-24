@@ -551,6 +551,11 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 
 // -----------------------------------------------------------------------------
 
+// Path returns the package path.
+func (p Package) Path() string {
+	return p.abi.Pkg
+}
+
 // String returns a string representation of the package.
 func (p Package) String() string {
 	return p.mod.String()
@@ -564,7 +569,7 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 		b.SetBlockEx(ret, afterInit, false)
 		if doAbiInit {
 			sigAbiInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-			fn := p.NewFunc(p.abi.Pkg+".init$abi", sigAbiInit, InC)
+			fn := p.NewFunc(p.Path()+".init$abi", sigAbiInit, InC)
 			fnb := fn.MakeBody(1)
 			for _, abiInit := range p.abiini {
 				abiInit(unsafe.Pointer(fnb))

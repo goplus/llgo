@@ -32,12 +32,15 @@ import (
 func (b Builder) abiBasic(t *types.Basic) Expr {
 	/*
 		TODO(xsw):
-		name := abi.BasicName(t)
-		g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
-		return b.Load(g.Expr)
+		return b.abiExtern(abi.BasicName(t))
 	*/
 	kind := int(abi.BasicKind(t))
 	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
+}
+
+func (b Builder) abiExtern(name string) Expr {
+	g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
+	return b.Load(g.Expr)
 }
 
 func (b Builder) abiTypeOf(t types.Type) Expr {
@@ -48,8 +51,16 @@ func (b Builder) abiTypeOf(t types.Type) Expr {
 		return b.abiPointerOf(t)
 	case *types.Struct:
 		return b.abiStructOf(t)
+	case *types.Named:
+		return b.abiNamedOf(t)
 	}
 	panic("todo")
+}
+
+func (b Builder) abiNamedOf(t *types.Named) Expr {
+	under := b.abiTypeOf(t.Underlying())
+	name := abi.NamedName(t)
+	return b.Call(b.Pkg.rtFunc("Named"), b.Str(name), under)
 }
 
 func (b Builder) abiPointerOf(t *types.Pointer) Expr {
@@ -71,7 +82,7 @@ func (b Builder) abiStructOf(t *types.Struct) Expr {
 		off := uintptr(prog.OffsetOf(typ, i))
 		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
 	}
-	pkgPath := b.Str(pkg.abi.Pkg)
+	pkgPath := b.Str(pkg.Path())
 	params := strucAbi.raw.Type.(*types.Signature).Params()
 	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
 	fldSlice := b.SliceLit(tSlice, flds...)
@@ -89,17 +100,27 @@ func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uint
 
 // abiType returns the abi type of the specified type.
 func (b Builder) abiType(t types.Type) Expr {
-	if tx, ok := t.(*types.Basic); ok {
+	var name string
+	var pub bool
+	var pkg = b.Pkg
+	switch tx := t.(type) {
+	case *types.Basic:
 		return b.abiBasic(tx)
+	case *types.Named:
+		o := tx.Obj()
+		oPkgPath := abi.PathOf(o.Pkg())
+		name = oPkgPath + "." + o.Name()
+		if oPkgPath != pkg.Path() {
+			return b.abiExtern(name)
+		}
+	default:
+		name, pub = pkg.abi.TypeName(t)
 	}
-	pkg := b.Pkg
-	name, private := pkg.abi.TypeName(t)
 	g := pkg.VarOf(name)
 	if g == nil {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.Init(prog.Null(g.Type))
-		pub := !private
 		if pub {
 			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		}

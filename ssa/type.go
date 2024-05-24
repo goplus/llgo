@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"go/types"
 
+	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
 
@@ -401,20 +402,19 @@ func (p Program) toNamed(raw *types.Named) Type {
 	}
 }
 
+// NameOf returns the full name of a named type.
 func NameOf(typ *types.Named) string {
-	obj := typ.Obj()
-	return FullName(obj.Pkg(), obj.Name())
+	return abi.NamedName(typ)
 }
 
+// FullName returns the full name of a package member.
 func FullName(pkg *types.Package, name string) string {
-	return PathOf(pkg) + "." + name
+	return abi.FullName(pkg, name)
 }
 
+// PathOf returns the package path of the specified package.
 func PathOf(pkg *types.Package) string {
-	if pkg.Name() == "main" {
-		return "main"
-	}
-	return pkg.Path()
+	return abi.PathOf(pkg)
 }
 
 // -----------------------------------------------------------------------------
