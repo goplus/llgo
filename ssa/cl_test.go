@@ -25,6 +25,10 @@ import (
 	"github.com/goplus/llgo/ssa/ssatest"
 )
 
+func TestFromTestgo(t *testing.T) {
+	cltest.FromDir(t, "", "../cl/_testgo", false)
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testpy", false)
 }
