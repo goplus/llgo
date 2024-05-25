@@ -35,6 +35,12 @@ type InterfaceType = abi.InterfaceType
 
 // -----------------------------------------------------------------------------
 
+// Named returns a named type.
+func Named(name string, typ *Type) *Type {
+	ret := *typ // TODO(xsw): named type
+	return &ret
+}
+
 // Interface returns an interface type.
 func Interface(pkgPath string) *Type {
 	// TODO(xsw): pkgPath
@@ -158,12 +164,6 @@ func Pointer(elem *Type) *Type {
 		Elem: elem,
 	}
 	return &ret.Type
-}
-
-// Named returns a named type.
-func Named(name string, typ *Type) *Type {
-	ret := *typ // TODO(xsw): named type
-	return &ret
 }
 
 // -----------------------------------------------------------------------------
