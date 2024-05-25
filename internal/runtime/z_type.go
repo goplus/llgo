@@ -124,4 +124,10 @@ func Pointer(elem *Type) *Type {
 	return &ret.Type
 }
 
+// Named returns a named type.
+func Named(name string, typ *Type) *Type {
+	ret := *typ // TODO(xsw): named type
+	return &ret
+}
+
 // -----------------------------------------------------------------------------

@@ -111,31 +111,53 @@ func (b *Builder) Init(pkg string) {
 }
 
 // TypeName returns the ABI type name for the specified type.
-func (b *Builder) TypeName(t types.Type) (ret string, private bool) {
+func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	switch t := t.(type) {
 	case *types.Basic:
-		return BasicName(t), false
+		return BasicName(t), true
 	case *types.Pointer:
-		ret, private = b.TypeName(t.Elem())
-		return "*" + ret, private
+		ret, pub = b.TypeName(t.Elem())
+		return "*" + ret, pub
 	case *types.Struct:
 		return b.StructName(t)
+	case *types.Named:
+		o := t.Obj()
+		return TypeName(o), o.Exported()
 	}
 	panic("todo")
 }
 
+// PathOf returns the package path of the specified package.
+func PathOf(pkg *types.Package) string {
+	if pkg.Name() == "main" {
+		return "main"
+	}
+	return pkg.Path()
+}
+
+// FullName returns the full name of a package member.
+func FullName(pkg *types.Package, name string) string {
+	return PathOf(pkg) + "." + name
+}
+
+// TypeName returns the ABI type name for the specified named type.
+func TypeName(o *types.TypeName) string {
+	return FullName(o.Pkg(), o.Name())
+}
+
+// BasicName returns the ABI type name for the specified basic type.
 func BasicName(t *types.Basic) string {
 	return "_llgo_" + t.Name()
 }
 
 // StructName returns the ABI type name for the specified struct type.
-func (b *Builder) StructName(t *types.Struct) (ret string, private bool) {
+func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 	hash, private := b.structHash(t)
 	hashStr := base64.RawURLEncoding.EncodeToString(hash)
 	if private {
-		return b.Pkg + ".struct$" + hashStr, true
+		return b.Pkg + ".struct$" + hashStr, false
 	}
-	return "_llgo_struct$" + hashStr, false
+	return "_llgo_struct$" + hashStr, true
 }
 
 func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
@@ -152,8 +174,8 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 		if f.Embedded() {
 			name = "-"
 		}
-		ft, fpriv := b.TypeName(f.Type())
-		if fpriv {
+		ft, pub := b.TypeName(f.Type())
+		if !pub {
 			private = true
 		}
 		fmt.Fprintln(h, name, ft)
