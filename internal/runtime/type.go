@@ -10,9 +10,6 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
-// type nameOff = abi.NameOff
-// type typeOff = abi.TypeOff
-
 type _type = abi.Type
 
 type interfacetype = abi.InterfaceType
