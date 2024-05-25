@@ -38,10 +38,12 @@ func (b Builder) abiBasic(t *types.Basic) Expr {
 	return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
 }
 
+/*
 func (b Builder) abiExtern(name string) Expr {
 	g := b.Pkg.NewVarFrom(name, b.Prog.AbiTypePtrPtr())
 	return b.Load(g.Expr)
 }
+*/
 
 func (b Builder) abiTypeOf(t types.Type) Expr {
 	switch t := t.(type) {
@@ -59,7 +61,7 @@ func (b Builder) abiTypeOf(t types.Type) Expr {
 
 func (b Builder) abiNamedOf(t *types.Named) Expr {
 	under := b.abiTypeOf(t.Underlying())
-	name := abi.NamedName(t)
+	name := NameOf(t)
 	return b.Call(b.Pkg.rtFunc("Named"), b.Str(name), under)
 }
 
@@ -100,22 +102,12 @@ func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uint
 
 // abiType returns the abi type of the specified type.
 func (b Builder) abiType(t types.Type) Expr {
-	var name string
-	var pub bool
-	var pkg = b.Pkg
 	switch tx := t.(type) {
 	case *types.Basic:
 		return b.abiBasic(tx)
-	case *types.Named:
-		o := tx.Obj()
-		oPkgPath := abi.PathOf(o.Pkg())
-		name = oPkgPath + "." + o.Name()
-		if oPkgPath != pkg.Path() {
-			return b.abiExtern(name)
-		}
-	default:
-		name, pub = pkg.abi.TypeName(t)
 	}
+	pkg := b.Pkg
+	name, pub := pkg.abi.TypeName(t)
 	g := pkg.VarOf(name)
 	if g == nil {
 		prog := b.Prog

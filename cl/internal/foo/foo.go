@@ -7,3 +7,12 @@ func Bar() any {
 func F() any {
 	return struct{ v int }{1}
 }
+
+type Foo struct {
+	pb *byte
+	F  float32
+}
+
+func (v Foo) Pb() *byte {
+	return v.pb
+}

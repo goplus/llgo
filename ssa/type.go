@@ -404,7 +404,7 @@ func (p Program) toNamed(raw *types.Named) Type {
 
 // NameOf returns the full name of a named type.
 func NameOf(typ *types.Named) string {
-	return abi.NamedName(typ)
+	return abi.TypeName(typ.Obj())
 }
 
 // FullName returns the full name of a package member.

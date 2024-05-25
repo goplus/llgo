@@ -121,7 +121,8 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	case *types.Struct:
 		return b.StructName(t)
 	case *types.Named:
-		return NamedName(t), false // all named types are private
+		o := t.Obj()
+		return TypeName(o), o.Exported()
 	}
 	panic("todo")
 }
@@ -139,9 +140,8 @@ func FullName(pkg *types.Package, name string) string {
 	return PathOf(pkg) + "." + name
 }
 
-// NamedName returns the ABI type name for the specified named type.
-func NamedName(t *types.Named) string {
-	o := t.Obj()
+// TypeName returns the ABI type name for the specified named type.
+func TypeName(o *types.TypeName) string {
 	return FullName(o.Pkg(), o.Name())
 }
 
