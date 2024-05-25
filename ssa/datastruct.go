@@ -183,9 +183,12 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 		if addr != nil {
 			ptr = addr(x)
 		} else {
-			size := SizeOf(prog, telem, t.Len())
-			ptr = b.Alloca(size)
-			b.Store(ptr, x)
+			/*
+				size := SizeOf(prog, telem, t.Len())
+				ptr = b.Alloca(size)
+				b.Store(ptr, x)
+			*/
+			panic("unreachable")
 		}
 	}
 	idx = b.checkIndex(idx)

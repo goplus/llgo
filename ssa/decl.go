@@ -85,6 +85,7 @@ func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 	return p.doNewVar(name, t)
 }
 
+/*
 // NewVarFrom creates a new global variable.
 func (p Package) NewVarFrom(name string, t Type) Global {
 	if v, ok := p.vars[name]; ok {
@@ -92,6 +93,7 @@ func (p Package) NewVarFrom(name string, t Type) Global {
 	}
 	return p.doNewVar(name, t)
 }
+*/
 
 func (p Package) doNewVar(name string, t Type) Global {
 	var gbl llvm.Value
