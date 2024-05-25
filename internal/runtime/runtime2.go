@@ -13,11 +13,6 @@ type eface struct {
 	data  unsafe.Pointer
 }
 
-/*
-func efaceOf(ep *any) *eface {
-	return (*eface)(unsafe.Pointer(ep))
-}
-
 type iface struct {
 	tab  *itab
 	data unsafe.Pointer
@@ -33,6 +28,11 @@ type itab struct {
 	hash  uint32 // copy of _type.hash. Used for type switches.
 	_     [4]byte
 	fun   [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
+}
+
+/*
+func efaceOf(ep *any) *eface {
+	return (*eface)(unsafe.Pointer(ep))
 }
 
 func MakeInterface(inter *InterfaceType, typ *Type, data unsafe.Pointer) Interface {
