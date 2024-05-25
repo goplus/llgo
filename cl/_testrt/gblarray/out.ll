@@ -1,7 +1,8 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, i32, i32 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/abi.Name", ptr }
+%"github.com/goplus/llgo/internal/abi.Name" = type { ptr }
 
 @main.basicTypes = global [25 x ptr] undef
 @"main.init$guard" = global ptr null
@@ -19,7 +20,7 @@ _llgo_0:
 
 define ptr @main.basicType(i64 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 56)
+  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 64)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 0
   %3 = getelementptr inbounds i64, ptr @main.sizeBasicTypes, i64 %0
   %4 = load i64, ptr %3, align 4
