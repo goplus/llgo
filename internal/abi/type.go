@@ -193,6 +193,21 @@ type FuncType struct {
 	OutCount uint16 // top bit is set if last input parameter is ...
 }
 
+// In returns the number of input parameters of a function type.
+func (p *FuncType) In() int {
+	return int(p.InCount)
+}
+
+// Out returns the number of output results of a function type.
+func (p *FuncType) Out() int {
+	return int(p.OutCount &^ (1 << 15))
+}
+
+// Variadic reports whether the function type is variadic.
+func (p *FuncType) Variadic() bool {
+	return p.OutCount&(1<<15) != 0
+}
+
 type StructField struct {
 	Name   Name    // name is always non-empty
 	Typ    *Type   // type of field
@@ -219,10 +234,10 @@ type Text = unsafe.Pointer // TODO(xsw): to be confirmed
 
 // Method on non-interface type
 type Method struct {
-	Name_ Name  // name of method
-	Mtyp_ *Type // method type (without receiver)
-	Ifn_  Text  // fn used in interface call (one-word receiver)
-	Tfn_  Text  // fn used for normal method call
+	Name_ Name      // name of method
+	Mtyp_ *FuncType // method type (without receiver)
+	Ifn_  Text      // fn used in interface call (one-word receiver)
+	Tfn_  Text      // fn used for normal method call
 }
 
 // UncommonType is present only for defined types or types with methods

@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 type (
@@ -31,7 +32,58 @@ type (
 type Kind = abi.Kind
 type Type = abi.Type
 
+type FuncType = abi.FuncType
 type InterfaceType = abi.InterfaceType
+
+// -----------------------------------------------------------------------------
+
+// Func returns a function type.
+func Func(in, out []*Type, variadic bool) *FuncType {
+	const (
+		funcTypeHdrSize = unsafe.Sizeof(abi.FuncType{})
+		pointerSize     = unsafe.Sizeof(uintptr(0))
+	)
+
+	n := len(in) + len(out)
+	ptr := AllocU(funcTypeHdrSize + uintptr(n)*pointerSize)
+	c.Memset(ptr, 0, funcTypeHdrSize)
+
+	ret := (*abi.FuncType)(ptr)
+	ret.Size_ = pointerSize
+	ret.Hash = uint32(abi.Func) // TODO(xsw): hash
+	ret.Kind_ = uint8(abi.Func)
+	ret.InCount = uint16(len(in))
+	ret.OutCount = uint16(len(out))
+	if variadic {
+		ret.OutCount |= 1 << 15
+	}
+
+	data := (**Type)(c.Advance(ptr, int(funcTypeHdrSize)))
+	params := unsafe.Slice(data, n)
+	copy(params, in)
+	copy(params[len(in):], out)
+	return ret
+}
+
+// Imethod returns an interface method.
+func Imethod(name string, typ *FuncType, exported bool) abi.Imethod {
+	n := abi.NewName(name, "", exported, false)
+	return abi.Imethod{
+		Name_: n,
+		Typ_:  typ,
+	}
+}
+
+// Method returns a method.
+func Method(name string, typ *FuncType, fn abi.Text, exported bool) abi.Method {
+	n := abi.NewName(name, "", exported, false)
+	return abi.Method{
+		Name_: n,
+		Mtyp_: typ,
+		Ifn_:  fn,
+		Tfn_:  fn,
+	}
+}
 
 // -----------------------------------------------------------------------------
 
