@@ -45,9 +45,9 @@ type Type struct {
 	// GCData stores the GC type data for the garbage collector.
 	// If the KindGCProg bit is set in kind, GCData is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
-	GCData    *byte
-	Str       NameOff // string form
-	PtrToThis TypeOff // type for pointer to this type, may be zero
+	GCData     *byte
+	Str_       Name  // string form
+	PtrToThis_ *Type // type for pointer to this type, may be nil
 }
 
 // A Kind represents the specific kind of type that a Type represents.
@@ -126,12 +126,6 @@ const (
 	// this type as a single region of t.size bytes.
 	TFlagRegularMemory TFlag = 1 << 3
 )
-
-// NameOff is the offset to a name from moduledata.types.  See resolveNameOff in runtime.
-type NameOff int32
-
-// TypeOff is the offset to a type from moduledata.types.  See resolveTypeOff in runtime.
-type TypeOff int32
 
 // -----------------------------------------------------------------------------
 
@@ -221,10 +215,45 @@ type InterfaceType struct {
 	Methods []Imethod // sorted by hash
 }
 
+type Text = unsafe.Pointer // TODO(xsw): to be confirmed
+
+// Method on non-interface type
+type Method struct {
+	Name_ Name  // name of method
+	Mtyp_ *Type // method type (without receiver)
+	Ifn_  Text  // fn used in interface call (one-word receiver)
+	Tfn_  Text  // fn used for normal method call
+}
+
+// UncommonType is present only for defined types or types with methods
+// (if T is a defined type, the uncommonTypes for T and *T have methods).
+// Using a pointer to this struct reduces the overall size required
+// to describe a non-defined type with no methods.
+type UncommonType struct {
+	PkgPath_ Name   // import path; empty for built-in types like int, string
+	Mcount   uint16 // number of methods
+	Xcount   uint16 // number of exported methods
+	Moff     uint32 // offset from this uncommontype to [mcount]Method
+}
+
+func (t *UncommonType) Methods() []Method {
+	if t.Mcount == 0 {
+		return nil
+	}
+	return (*[1 << 16]Method)(addChecked(unsafe.Pointer(t), uintptr(t.Moff), "t.mcount > 0"))[:t.Mcount:t.Mcount]
+}
+
+func (t *UncommonType) ExportedMethods() []Method {
+	if t.Xcount == 0 {
+		return nil
+	}
+	return (*[1 << 16]Method)(addChecked(unsafe.Pointer(t), uintptr(t.Moff), "t.xcount > 0"))[:t.Xcount:t.Xcount]
+}
+
 // Imethod represents a method on an interface type
 type Imethod struct {
-	Name NameOff // name of method
-	Typ  TypeOff // .(*FuncType) underneath
+	Name_ Name      // name of method
+	Typ_  *FuncType // .(*FuncType) underneath
 }
 
 func (t *Type) Kind() Kind { return Kind(t.Kind_ & KindMask) }
