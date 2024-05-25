@@ -7,7 +7,7 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 func PrintByte(v byte) {

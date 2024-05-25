@@ -22,10 +22,46 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
-// -----------------------------------------------------------------------------
+type (
+	Eface = eface
+	Iface = iface
+	Itab  = itab
+)
 
 type Kind = abi.Kind
 type Type = abi.Type
+
+type InterfaceType = abi.InterfaceType
+
+// -----------------------------------------------------------------------------
+
+// Interface returns an interface type.
+func Interface(pkgPath string) *Type {
+	// TODO(xsw): pkgPath
+	// npkg := abi.NewName(pkgPath, "", false, false)
+	ret := &abi.InterfaceType{
+		Type: Type{
+			Size_: unsafe.Sizeof(eface{}),
+			Hash:  uint32(abi.Interface), // TODO(xsw): hash
+			Kind_: uint8(abi.Interface),
+		},
+		//PkgPath: npkg,
+		Methods: nil,
+	}
+	return &ret.Type
+}
+
+// NewItab returns a new itab.
+func NewItab(inter *InterfaceType, typ *Type) *Itab {
+	return &itab{
+		inter: inter,
+		_type: typ,
+		hash:  typ.Hash,
+		//fun: nil, TODO(xsw)
+	}
+}
+
+// -----------------------------------------------------------------------------
 
 func Basic(kind Kind) *Type {
 	return basicTypes[kind]
