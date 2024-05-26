@@ -121,6 +121,12 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 		return b.StructName(t)
 	case *types.Signature:
 		return b.FuncName(t), true
+	case *types.Slice:
+		ret, pub = b.TypeName(t.Elem())
+		return "[]" + ret, pub
+	case *types.Array:
+		ret, pub = b.TypeName(t.Elem())
+		return fmt.Sprintf("[%v]%s", t.Len(), ret), pub
 	case *types.Named:
 		o := t.Obj()
 		return "_llgo_" + TypeName(o), o.Exported()

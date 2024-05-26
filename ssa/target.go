@@ -16,12 +16,29 @@
 
 package ssa
 
+import (
+	"github.com/goplus/llvm"
+)
+
 // -----------------------------------------------------------------------------
 
 type Target struct {
 	GOOS   string
 	GOARCH string
 	GOARM  string // "5", "6", "7" (default)
+}
+
+func (p *Target) targetData() llvm.TargetData {
+	spec := p.toSpec()
+	if spec.triple == "" {
+		spec.triple = llvm.DefaultTargetTriple()
+	}
+	t, err := llvm.GetTargetFromTriple(spec.triple)
+	if err != nil {
+		panic(err)
+	}
+	machine := t.CreateTargetMachine(spec.triple, spec.cpu, spec.features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
+	return machine.CreateTargetData()
 }
 
 /*
@@ -43,6 +60,7 @@ func (p *Program) targetMachine() llvm.TargetMachine {
 	}
 	return p.tm
 }
+*/
 
 type targetSpec struct {
 	triple   string
@@ -50,6 +68,12 @@ type targetSpec struct {
 	features string
 }
 
+// TODO config
+func (p *Target) toSpec() (spec targetSpec) {
+	return
+}
+
+/*
 func (p *Target) toSpec() (spec targetSpec) {
 	// Configure based on GOOS/GOARCH environment variables (falling back to
 	// runtime.GOOS/runtime.GOARCH), and generate a LLVM target based on it.

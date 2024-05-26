@@ -178,7 +178,7 @@ func NewProgram(target *Target) Program {
 		target = &Target{}
 	}
 	ctx := llvm.NewContext()
-	td := llvm.NewTargetData("") // TODO(xsw): target config
+	td := target.targetData() // TODO(xsw): target config
 	/*
 		arch := target.GOARCH
 		if arch == "" {
