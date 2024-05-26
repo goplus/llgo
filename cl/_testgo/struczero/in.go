@@ -20,6 +20,7 @@ func Bar(v any) (ret foo.Foo, ok bool) {
 func main() {
 	ret, ok := Foo(nil)
 	println(ret.pb, ret.f, "notOk:", !ok)
+
 	ret2, ok2 := Bar(foo.Foo{})
 	println(ret2.Pb(), ret2.F, ok2)
 }

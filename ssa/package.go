@@ -19,6 +19,7 @@ package ssa
 import (
 	"go/token"
 	"go/types"
+	"strconv"
 	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
@@ -296,13 +297,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	return ret
 }
 
-// Tuple returns a tuple type.
-func (p Program) Tuple(typs ...Type) Type {
+// Struct returns a struct type.
+func (p Program) Struct(typs ...Type) Type {
 	els := make([]*types.Var, len(typs))
 	for i, t := range typs {
-		els[i] = types.NewParam(token.NoPos, nil, "", t.raw.Type)
+		els[i] = types.NewParam(token.NoPos, nil, "_llgo_f"+strconv.Itoa(i), t.raw.Type)
 	}
-	return p.rawType(types.NewTuple(els...))
+	return p.rawType(types.NewStruct(els, nil))
 }
 
 /*

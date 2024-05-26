@@ -12,11 +12,9 @@ import (
 
 type _type = abi.Type
 
-type interfacetype = abi.InterfaceType
-
+/*
 type maptype = abi.MapType
 
-/*
 type arraytype = abi.ArrayType
 
 type chantype = abi.ChanType

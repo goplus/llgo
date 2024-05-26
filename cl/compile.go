@@ -522,7 +522,7 @@ func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 			}
 			for i := 0; i < n; i++ {
 				iv := block.Instrs[i].(*ssa.Phi)
-				p.bvals[iv] = rets[i].Do(b)
+				p.bvals[iv] = rets[i]
 			}
 			return n
 		}
@@ -540,7 +540,8 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 			bblks[i] = p.fn.Block(pred.Index)
 		}
 		edges := v.Edges
-		phi.AddIncoming(b, bblks, func(i int) llssa.Expr {
+		phi.AddIncoming(b, bblks, func(i int, blk llssa.BasicBlock) llssa.Expr {
+			b.SetBlockEx(blk, llssa.BeforeLast, false)
 			return p.compileValue(b, edges[i])
 		})
 	})
@@ -784,7 +785,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Panic:
-		arg := p.compileValue(b, v.X).Do(b)
+		arg := p.compileValue(b, v.X)
 		b.Panic(arg)
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
@@ -856,7 +857,7 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 	n := len(vals) - hasVArg
 	ret := make([]llssa.Expr, n)
 	for i := 0; i < n; i++ {
-		ret[i] = p.compileValue(b, vals[i]).Do(b)
+		ret[i] = p.compileValue(b, vals[i])
 	}
 	if hasVArg > 0 {
 		ret = p.compileVArg(ret, b, vals[n])
