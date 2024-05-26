@@ -27,25 +27,6 @@ type Type = abi.Type
 
 // -----------------------------------------------------------------------------
 
-/*
-type Name = abi.Name
-
-// NewName creates a new name.
-func NewName(name string, exported bool) Name {
-	return abi.NewName(name, "", exported, false)
-}
-
-// NewPkgName creates a package name.
-func NewPkgName(pkgPath string) (ret Name) {
-	if len(pkgPath) > 0 {
-		ret = abi.NewName(pkgPath, "", false, false)
-	}
-	return
-}
-*/
-
-// -----------------------------------------------------------------------------
-
 func Basic(kind Kind) *Type {
 	return basicTypes[kind]
 }
