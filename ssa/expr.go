@@ -514,114 +514,28 @@ func llvmPredBlocks(preds []BasicBlock) []llvm.BasicBlock {
 	return ret
 }
 
-type aPhi struct {
-	Expr
-	// phis []llvm.Value
-}
+// -----------------------------------------------------------------------------
 
 // Phi represents a phi node.
-type Phi = *aPhi
-
-/*
-func (b Builder) newPhi(t Type, phis []llvm.Value) Phi {
-	ret := b.aggregateValue(t, phis...)
-	return &aPhi{ret, phis}
+type Phi struct {
+	Expr
 }
-*/
 
 // AddIncoming adds incoming values to a phi node.
 func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int, blk BasicBlock) Expr) {
 	bs := llvmPredBlocks(preds)
-	/*
-		phis := p.phis
-		if phis != nil {
-			vals := make([][]llvm.Value, len(phis))
-			for iblk, blk := range preds {
-				val := f(iblk, blk).impl
-				impl := b.impl
-				b.SetBlockEx(blk, BeforeLast, false)
-				for i := range phis {
-					if iblk == 0 {
-						vals[i] = make([]llvm.Value, len(preds))
-					}
-					vals[i][iblk] = llvm.CreateExtractValue(impl, val, i)
-				}
-			}
-			for i, phi := range phis {
-				phi.AddIncoming(vals[i], bs)
-			}
-		} else */
-	{
-		vals := make([]llvm.Value, len(preds))
-		for iblk, blk := range preds {
-			vals[iblk] = f(iblk, blk).impl
-		}
-		p.impl.AddIncoming(vals, bs)
+	vals := make([]llvm.Value, len(preds))
+	for iblk, blk := range preds {
+		vals[iblk] = f(iblk, blk).impl
 	}
+	p.impl.AddIncoming(vals, bs)
 }
 
 // Phi returns a phi node.
 func (b Builder) Phi(t Type) Phi {
-	impl := b.impl
-	/*
-		switch tund := t.raw.Type.Underlying().(type) {
-		case *types.Basic:
-			kind := tund.Kind()
-			switch kind {
-			case types.String:
-				phis := createStringPhis(impl, make([]llvm.Value, 0, 2), b.Prog)
-				return b.newPhi(t, phis)
-			}
-		case *types.Struct:
-			phis := createStrucPhis(impl, nil, tund, b.Prog)
-			return b.newPhi(t, phis)
-		default:
-			log.Panicf("todo: %T\n", tund)
-		}
-	*/
-	phi := llvm.CreatePHI(impl, t.ll)
-	return &aPhi{Expr{phi, t}} //, nil}
+	phi := llvm.CreatePHI(b.impl, t.ll)
+	return Phi{Expr{phi, t}}
 }
-
-/*
-func createStringPhis(b llvm.Builder, phis []llvm.Value, prog Program) []llvm.Value {
-	phis = append(phis, llvm.CreatePHI(b, prog.tyVoidPtr()))
-	return append(phis, llvm.CreatePHI(b, prog.tyInt()))
-}
-
-func createStrucPhis(b llvm.Builder, phis []llvm.Value, t *types.Struct, prog Program) []llvm.Value {
-	n := t.NumFields()
-	if phis == nil {
-		phis = make([]llvm.Value, 0, n)
-	}
-	for i := 0; i < n; i++ {
-		fld := t.Field(i)
-		switch tfld := fld.Type().Underlying().(type) {
-		case *types.Basic:
-			kind := tfld.Kind()
-			switch kind {
-			case types.String:
-				phis = createStringPhis(b, phis, prog)
-			default:
-				phis = createBasicPhi(b, phis, tfld, prog)
-			}
-		case *types.Pointer:
-			phis = createBasicPhi(b, phis, tfld, prog)
-		case *types.Struct:
-			phis = createStrucPhis(b, phis, tfld, prog)
-		default:
-			panic("todo")
-		}
-	}
-	return phis
-}
-
-func createBasicPhi(b llvm.Builder, phis []llvm.Value, t types.Type, prog Program) []llvm.Value {
-	tll := prog.rawType(t).ll
-	phi := llvm.CreatePHI(b, tll)
-	return append(phis, phi)
-}
-*/
 
 // -----------------------------------------------------------------------------
 
