@@ -88,7 +88,7 @@ func (b Builder) abiStructOf(t *types.Struct) Expr {
 	params := strucAbi.raw.Type.(*types.Signature).Params()
 	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
 	fldSlice := b.SliceLit(tSlice, flds...)
-	return b.Call(strucAbi, pkgPath, fldSlice)
+	return b.Call(pkgPath, strucAbi, fldSlice)
 }
 
 // func StructField(name string, typ *abi.Type, off uintptr, tag string, exported, embedded bool) abi.StructField

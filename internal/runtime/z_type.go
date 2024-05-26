@@ -20,103 +20,25 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
-	"github.com/goplus/llgo/internal/runtime/c"
-)
-
-type (
-	Eface = eface
-	Iface = iface
-	Itab  = itab
 )
 
 type Kind = abi.Kind
+type Name = abi.Name
 type Type = abi.Type
 
-type FuncType = abi.FuncType
-type InterfaceType = abi.InterfaceType
-
 // -----------------------------------------------------------------------------
 
-// Func returns a function type.
-func Func(in, out []*Type, variadic bool) *FuncType {
-	const (
-		funcTypeHdrSize = unsafe.Sizeof(abi.FuncType{})
-		pointerSize     = unsafe.Sizeof(uintptr(0))
-	)
-
-	n := len(in) + len(out)
-	ptr := AllocU(funcTypeHdrSize + uintptr(n)*pointerSize)
-	c.Memset(ptr, 0, funcTypeHdrSize)
-
-	ret := (*abi.FuncType)(ptr)
-	ret.Size_ = pointerSize
-	ret.Hash = uint32(abi.Func) // TODO(xsw): hash
-	ret.Kind_ = uint8(abi.Func)
-	ret.InCount = uint16(len(in))
-	ret.OutCount = uint16(len(out))
-	if variadic {
-		ret.OutCount |= 1 << 15
-	}
-
-	data := (**Type)(c.Advance(ptr, int(funcTypeHdrSize)))
-	params := unsafe.Slice(data, n)
-	copy(params, in)
-	copy(params[len(in):], out)
-	return ret
+// NewName creates a new name.
+func NewName(name string, exported bool) Name {
+	return abi.NewName(name, "", exported, false)
 }
 
-// Imethod returns an interface method.
-func Imethod(name string, typ *FuncType, exported bool) abi.Imethod {
-	n := abi.NewName(name, "", exported, false)
-	return abi.Imethod{
-		Name_: n,
-		Typ_:  typ,
+// NewPkgName creates a package name.
+func NewPkgName(pkgPath string) (ret Name) {
+	if len(pkgPath) > 0 {
+		ret = abi.NewName(pkgPath, "", false, false)
 	}
-}
-
-// Method returns a method.
-func Method(name string, typ *FuncType, fn abi.Text, exported bool) abi.Method {
-	n := abi.NewName(name, "", exported, false)
-	return abi.Method{
-		Name_: n,
-		Mtyp_: typ,
-		Ifn_:  fn,
-		Tfn_:  fn,
-	}
-}
-
-// -----------------------------------------------------------------------------
-
-// Named returns a named type.
-func Named(name string, typ *Type) *Type {
-	ret := *typ // TODO(xsw): named type
-	return &ret
-}
-
-// Interface returns an interface type.
-func Interface(pkgPath string) *Type {
-	// TODO(xsw): pkgPath
-	// npkg := abi.NewName(pkgPath, "", false, false)
-	ret := &abi.InterfaceType{
-		Type: Type{
-			Size_: unsafe.Sizeof(eface{}),
-			Hash:  uint32(abi.Interface), // TODO(xsw): hash
-			Kind_: uint8(abi.Interface),
-		},
-		//PkgPath: npkg,
-		Methods: nil,
-	}
-	return &ret.Type
-}
-
-// NewItab returns a new itab.
-func NewItab(inter *InterfaceType, typ *Type) *Itab {
-	return &itab{
-		inter: inter,
-		_type: typ,
-		hash:  typ.Hash,
-		//fun: nil, TODO(xsw)
-	}
+	return
 }
 
 // -----------------------------------------------------------------------------
@@ -190,20 +112,20 @@ func StructField(name string, typ *Type, off uintptr, tag string, exported, embe
 }
 
 // Struct returns a struct type.
-func Struct(size uintptr, pkgPath string, fields ...abi.StructField) *Type {
-	// TODO(xsw): pkgPath
-	// npkg := abi.NewName(pkgPath, "", false, false)
+func Struct(pkgPath Name, size uintptr, fields ...abi.StructField) *Type {
 	ret := &abi.StructType{
 		Type: Type{
 			Size_: size,
 			Hash:  uint32(abi.Struct), // TODO(xsw): hash
 			Kind_: uint8(abi.Struct),
 		},
-		// PkgPath: npkg,
-		Fields: fields,
+		PkgPath: pkgPath,
+		Fields:  fields,
 	}
 	return &ret.Type
 }
+
+// -----------------------------------------------------------------------------
 
 // Pointer returns a pointer type.
 func Pointer(elem *Type) *Type {

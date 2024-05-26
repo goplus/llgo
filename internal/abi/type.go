@@ -240,6 +240,11 @@ type Method struct {
 	Tfn_  Text      // fn used for normal method call
 }
 
+// Exported reports whether the method is exported.
+func (p *Method) Exported() bool {
+	return p.Name_.IsExported()
+}
+
 // UncommonType is present only for defined types or types with methods
 // (if T is a defined type, the uncommonTypes for T and *T have methods).
 // Using a pointer to this struct reduces the overall size required
@@ -283,6 +288,70 @@ func (t *Type) FieldAlign() int { return int(t.FieldAlign_) }
 
 func (t *Type) Common() *Type {
 	return t
+}
+
+type structTypeUncommon struct {
+	StructType
+	u UncommonType
+}
+
+// Uncommon returns a pointer to T's "uncommon" data if there is any, otherwise nil
+func (t *Type) Uncommon() *UncommonType {
+	if t.TFlag&TFlagUncommon == 0 {
+		return nil
+	}
+	switch t.Kind() {
+	case Struct:
+		return &(*structTypeUncommon)(unsafe.Pointer(t)).u
+	case Pointer:
+		type u struct {
+			PtrType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Func:
+		type u struct {
+			FuncType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Slice:
+		type u struct {
+			SliceType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Array:
+		type u struct {
+			ArrayType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Chan:
+		type u struct {
+			ChanType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Map:
+		type u struct {
+			MapType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	case Interface:
+		type u struct {
+			InterfaceType
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	default:
+		type u struct {
+			Type
+			u UncommonType
+		}
+		return &(*u)(unsafe.Pointer(t)).u
+	}
 }
 
 // Len returns the length of t if t is an array type, otherwise 0
