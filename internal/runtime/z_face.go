@@ -21,6 +21,8 @@ type iface struct {
 	data unsafe.Pointer
 }
 
+type interfacetype = abi.InterfaceType
+
 // layout of Itab known to compilers
 // allocated in non-garbage-collected memory
 // Needs to be in sync with
@@ -126,12 +128,10 @@ func Named(pkgPath, name Name, underlying *Type, methods []abi.Method) *Type {
 	}
 
 	uncommon := (*abi.UncommonType)(c.Advance(ptr, int(typeHdrSize)))
-	*uncommon = abi.UncommonType{
-		PkgPath_: pkgPath,
-		Mcount:   uint16(n),
-		Xcount:   uint16(xcount),
-		Moff:     uint32(uncommonTypeHdrSize),
-	}
+	uncommon.PkgPath_ = pkgPath
+	uncommon.Mcount = uint16(n)
+	uncommon.Xcount = uint16(xcount)
+	uncommon.Moff = uint32(uncommonTypeHdrSize)
 
 	data := (*abi.Method)(c.Advance(ptr, int(typeHdrSize+uncommonTypeHdrSize)))
 	copy(unsafe.Slice(data, n), methods)
@@ -139,18 +139,14 @@ func Named(pkgPath, name Name, underlying *Type, methods []abi.Method) *Type {
 }
 
 // Interface returns an interface type.
-func Interface(pkgPath string, methods []abi.Imethod) *Type {
-	var npkg abi.Name
-	if len(pkgPath) > 0 {
-		npkg = abi.NewName(pkgPath, "", false, false)
-	}
+func Interface(pkgPath Name, methods []abi.Imethod) *Type {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_: unsafe.Sizeof(eface{}),
 			Hash:  uint32(abi.Interface), // TODO(xsw): hash
 			Kind_: uint8(abi.Interface),
 		},
-		PkgPath: npkg,
+		PkgPath: pkgPath,
 		Methods: methods,
 	}
 	return &ret.Type

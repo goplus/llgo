@@ -221,6 +221,11 @@ func (b Builder) Str(v string) (ret Expr) {
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
 }
 
+func (b Builder) pkgName(pkgPath string) Expr {
+	// TODO(xsw): use a global cache
+	return b.Call(b.Pkg.rtFunc("NewPkgName"), b.Str(pkgPath))
+}
+
 // unsafeString(data *byte, size int) string
 func (b Builder) unsafeString(data, size llvm.Value) Expr {
 	prog := b.Prog

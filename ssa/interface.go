@@ -84,7 +84,7 @@ func (b Builder) abiStructOf(t *types.Struct) Expr {
 		off := uintptr(prog.OffsetOf(typ, i))
 		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
 	}
-	pkgPath := b.Str(pkg.Path())
+	pkgPath := b.pkgName(pkg.Path())
 	params := strucAbi.raw.Type.(*types.Signature).Params()
 	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
 	fldSlice := b.SliceLit(tSlice, flds...)
