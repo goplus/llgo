@@ -80,6 +80,7 @@ type InsertPoint int
 const (
 	AtEnd InsertPoint = iota
 	AtStart
+	BeforeLast
 	afterInit
 )
 
@@ -93,6 +94,8 @@ func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint, setBlk bool) Builde
 		b.impl.SetInsertPointAtEnd(blk.last)
 	case AtStart:
 		b.impl.SetInsertPointBefore(blk.first.FirstInstruction())
+	case BeforeLast:
+		b.impl.SetInsertPointBefore(blk.last.LastInstruction())
 	case afterInit:
 		b.impl.SetInsertPointBefore(instrAfterInit(blk.first))
 	default:

@@ -525,16 +525,15 @@ func (b Builder) newPhi(t Type, phis []llvm.Value) Phi {
 }
 
 // AddIncoming adds incoming values to a phi node.
-func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int) Expr) {
+func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int, blk BasicBlock) Expr) {
 	bs := llvmPredBlocks(preds)
 	phis := p.phis
 	if phis != nil {
 		vals := make([][]llvm.Value, len(phis))
 		for iblk, blk := range preds {
-			last := blk.last.LastInstruction()
-			b.impl.SetInsertPointBefore(last)
+			val := f(iblk, blk).impl
 			impl := b.impl
-			val := f(iblk).impl
+			b.SetBlockEx(blk, BeforeLast, false)
 			for i := range phis {
 				if iblk == 0 {
 					vals[i] = make([]llvm.Value, len(preds))
@@ -548,9 +547,7 @@ func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int) Expr) {
 	} else {
 		vals := make([]llvm.Value, len(preds))
 		for iblk, blk := range preds {
-			last := blk.last.LastInstruction()
-			b.impl.SetInsertPointBefore(last)
-			vals[iblk] = f(iblk).impl
+			vals[iblk] = f(iblk, blk).impl
 		}
 		p.impl.AddIncoming(vals, bs)
 	}
@@ -571,7 +568,7 @@ func (b Builder) Phi(t Type) Phi {
 		phis := createStrucPhis(impl, nil, tund, b.Prog)
 		return b.newPhi(t, phis)
 	default:
-		panic("todo")
+		log.Panicf("todo: %T\n", tund)
 	}
 	phi := llvm.CreatePHI(impl, t.ll)
 	return &aPhi{Expr{phi, t}, nil}

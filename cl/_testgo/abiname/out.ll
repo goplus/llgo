@@ -24,11 +24,16 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i64 0, ptr %5, align 4
   %6 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %3, align 8
   %7 = call %"github.com/goplus/llgo/internal/abi.Name" @"github.com/goplus/llgo/internal/abi.NewName"(%"github.com/goplus/llgo/internal/runtime.String" %0, %"github.com/goplus/llgo/internal/runtime.String" %6, i1 false, i1 false)
+  %8 = extractvalue %"github.com/goplus/llgo/internal/abi.Name" %7, 0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %8 = phi ptr [ zeroinitializer, %_llgo_0 ], [ %7, %_llgo_1 ]
-  ret ptr %8
+  %9 = phi ptr [ null, %_llgo_0 ], [ %8, %_llgo_1 ]
+  %10 = alloca %"github.com/goplus/llgo/internal/abi.Name", align 8
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Name", ptr %10, i32 0, i32 0
+  store ptr %9, ptr %11, align 8
+  %12 = load %"github.com/goplus/llgo/internal/abi.Name", ptr %10, align 8
+  ret %"github.com/goplus/llgo/internal/abi.Name" %12
 }
 
 define void @main.init() {

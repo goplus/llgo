@@ -88,7 +88,8 @@ func (b Builder) abiStructOf(t *types.Struct) Expr {
 	params := strucAbi.raw.Type.(*types.Signature).Params()
 	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
 	fldSlice := b.SliceLit(tSlice, flds...)
-	return b.Call(pkgPath, strucAbi, fldSlice)
+	size := prog.IntVal(prog.SizeOf(typ), prog.Uintptr())
+	return b.Call(strucAbi, pkgPath, size, fldSlice)
 }
 
 // func StructField(name string, typ *abi.Type, off uintptr, tag string, exported, embedded bool) abi.StructField
@@ -296,21 +297,20 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	eq := b.BinOp(token.EQL, tx, tabi)
 	if commaOk {
 		prog := b.Prog
-		t := prog.Tuple(assertedTyp, prog.Bool())
+		t := prog.Struct(assertedTyp, prog.Bool())
 		blks := b.Func.MakeBlocks(3)
 		b.If(eq, blks[0], blks[1])
 
 		b.SetBlockEx(blks[2], AtEnd, false)
 		phi := b.Phi(t)
-		phi.AddIncoming(b, blks[:2], func(i int) Expr {
+		phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
+			b.SetBlockEx(blk, AtEnd, false)
 			if i == 0 {
-				b.SetBlockEx(blks[0], AtEnd, false)
 				val := b.valFromData(assertedTyp, b.faceData(x.impl))
 				valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
 				b.Jump(blks[2])
 				return Expr{valTrue, t}
 			}
-			b.SetBlockEx(blks[1], AtEnd, false)
 			zero := prog.Zero(assertedTyp)
 			valFalse := aggregateValue(b.impl, t.ll, zero.impl, prog.BoolVal(false).impl)
 			b.Jump(blks[2])

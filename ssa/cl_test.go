@@ -26,7 +26,7 @@ import (
 )
 
 func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "abiname", "../cl/_testgo", false)
+	cltest.FromDir(t, "strucintf", "../cl/_testgo", false)
 }
 
 func TestFromTestpy(t *testing.T) {
