@@ -20,6 +20,15 @@ import (
 	"unsafe"
 )
 
+// IsExported reports whether name starts with an upper-case letter.
+func IsExported(name string) bool {
+	if len(name) > 0 {
+		c := name[0]
+		return 'A' <= c && c <= 'Z'
+	}
+	return false
+}
+
 // -----------------------------------------------------------------------------
 
 // Type is the runtime representation of a Go type.
@@ -46,8 +55,8 @@ type Type struct {
 	// If the KindGCProg bit is set in kind, GCData is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
 	GCData     *byte
-	Str_       Name  // string form
-	PtrToThis_ *Type // type for pointer to this type, may be nil
+	Str_       string // string form
+	PtrToThis_ *Type  // type for pointer to this type, may be nil
 }
 
 // A Kind represents the specific kind of type that a Type represents.
@@ -209,32 +218,41 @@ func (p *FuncType) Variadic() bool {
 }
 
 type StructField struct {
-	Name   Name    // name is always non-empty
+	Name_  string  // name is always non-empty
 	Typ    *Type   // type of field
 	Offset uintptr // byte offset of field
+
+	Tag_      string
+	Embedded_ bool
 }
 
+// Embedded reports whether the field is embedded.
 func (f *StructField) Embedded() bool {
-	return f.Name.IsEmbedded()
+	return f.Embedded_
+}
+
+// Exported reports whether the field is exported.
+func (f *StructField) Exported() bool {
+	return IsExported(f.Name_)
 }
 
 type StructType struct {
 	Type
-	PkgPath Name
-	Fields  []StructField
+	PkgPath_ string
+	Fields   []StructField
 }
 
 type InterfaceType struct {
 	Type
-	PkgPath Name      // import path
-	Methods []Imethod // sorted by hash
+	PkgPath_ string    // import path
+	Methods  []Imethod // sorted by hash
 }
 
 type Text = unsafe.Pointer // TODO(xsw): to be confirmed
 
 // Method on non-interface type
 type Method struct {
-	Name_ Name      // name of method
+	Name_ string    // name of method
 	Mtyp_ *FuncType // method type (without receiver)
 	Ifn_  Text      // fn used in interface call (one-word receiver)
 	Tfn_  Text      // fn used for normal method call
@@ -242,7 +260,7 @@ type Method struct {
 
 // Exported reports whether the method is exported.
 func (p *Method) Exported() bool {
-	return p.Name_.IsExported()
+	return IsExported(p.Name_)
 }
 
 // UncommonType is present only for defined types or types with methods
@@ -250,7 +268,7 @@ func (p *Method) Exported() bool {
 // Using a pointer to this struct reduces the overall size required
 // to describe a non-defined type with no methods.
 type UncommonType struct {
-	PkgPath_ Name   // import path; empty for built-in types like int, string
+	PkgPath_ string // import path; empty for built-in types like int, string
 	Mcount   uint16 // number of methods
 	Xcount   uint16 // number of exported methods
 	Moff     uint32 // offset from this uncommontype to [mcount]Method
@@ -272,7 +290,7 @@ func (t *UncommonType) ExportedMethods() []Method {
 
 // Imethod represents a method on an interface type
 type Imethod struct {
-	Name_ Name      // name of method
+	Name_ string    // name of method
 	Typ_  *FuncType // .(*FuncType) underneath
 }
 
@@ -438,6 +456,7 @@ func addChecked(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(p) + x)
 }
 
+/*
 // Name is an encoded type Name with optional extra data.
 //
 // The first byte is a bit field containing:
@@ -588,5 +607,6 @@ func NewName(n, tag string, exported, embedded bool) Name {
 
 	return Name{Bytes: &b[0]}
 }
+*/
 
 // -----------------------------------------------------------------------------

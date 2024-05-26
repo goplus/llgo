@@ -86,7 +86,7 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 }
 
 // Imethod returns an interface method.
-func Imethod(name Name, typ *FuncType) abi.Imethod {
+func Imethod(name string, typ *FuncType) abi.Imethod {
 	return abi.Imethod{
 		Name_: name,
 		Typ_:  typ,
@@ -94,7 +94,7 @@ func Imethod(name Name, typ *FuncType) abi.Imethod {
 }
 
 // Method returns a method.
-func Method(name Name, typ *FuncType, ifn, tfn abi.Text) abi.Method {
+func Method(name string, typ *FuncType, ifn, tfn abi.Text) abi.Method {
 	return abi.Method{
 		Name_: name,
 		Mtyp_: typ,
@@ -104,11 +104,11 @@ func Method(name Name, typ *FuncType, ifn, tfn abi.Text) abi.Method {
 }
 
 // Named returns a named type.
-func Named(pkgPath, name Name, underlying *Type, methods []abi.Method) *Type {
+func Named(pkgPath, name string, underlying *Type, methods []abi.Method) *Type {
 	tflag := underlying.TFlag
 	size := typeHdrSize
 	n := len(methods)
-	if n > 0 || pkgPath.Bytes != nil {
+	if n > 0 || pkgPath != "" {
 		size += uncommonTypeHdrSize + uintptr(n)*methodSize
 		tflag |= abi.TFlagUncommon
 	}
@@ -139,15 +139,15 @@ func Named(pkgPath, name Name, underlying *Type, methods []abi.Method) *Type {
 }
 
 // Interface returns an interface type.
-func Interface(pkgPath Name, methods []abi.Imethod) *Type {
+func Interface(pkgPath string, methods []abi.Imethod) *Type {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_: unsafe.Sizeof(eface{}),
 			Hash:  uint32(abi.Interface), // TODO(xsw): hash
 			Kind_: uint8(abi.Interface),
 		},
-		PkgPath: pkgPath,
-		Methods: methods,
+		PkgPath_: pkgPath,
+		Methods:  methods,
 	}
 	return &ret.Type
 }
@@ -168,7 +168,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 		ret.fun[0] = 0
 	} else {
 		data := (*uintptr)(c.Advance(ptr, int(itabHdrSize)))
-		mthds := methods(u, inter.PkgPath)
+		mthds := methods(u, inter.PkgPath_)
 		for i, m := range inter.Methods {
 			fn := findMethod(mthds, m)
 			if fn == nil {
@@ -182,9 +182,9 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 }
 
 func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
-	imName := im.Name_.Name()
+	imName := im.Name_
 	for _, m := range mthds {
-		mName := m.Name_.Name()
+		mName := m.Name_
 		if mName >= imName {
 			if mName == imName && m.Mtyp_ == im.Typ_ {
 				return m.Ifn_
@@ -195,8 +195,8 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 	return nil
 }
 
-func methods(u *abi.UncommonType, from abi.Name) []abi.Method {
-	if u.PkgPath_.Name() == from.Name() {
+func methods(u *abi.UncommonType, from string) []abi.Method {
+	if u.PkgPath_ == from {
 		return u.Methods()
 	}
 	return u.ExportedMethods()

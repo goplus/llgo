@@ -59,10 +59,19 @@ func (b Builder) abiTypeOf(t types.Type) Expr {
 	panic("todo")
 }
 
+// func Named(pkgPath, name string, underlying *Type, methods []abi.Method)
 func (b Builder) abiNamedOf(t *types.Named) Expr {
 	under := b.abiTypeOf(t.Underlying())
 	name := NameOf(t)
-	return b.Call(b.Pkg.rtFunc("Named"), b.Str(name), under)
+
+	prog := b.Prog
+	pkg := b.Pkg
+	pkgPath := b.pkgName(pkg.Path())
+	fn := pkg.rtFunc("Named")
+	tSlice := lastParamType(prog, fn)
+	// TODO(xsw): methods
+	methods := prog.Zero(tSlice)
+	return b.Call(fn, pkgPath, b.Str(name), under, methods)
 }
 
 func (b Builder) abiPointerOf(t *types.Pointer) Expr {
@@ -70,7 +79,7 @@ func (b Builder) abiPointerOf(t *types.Pointer) Expr {
 	return b.Call(b.Pkg.rtFunc("Pointer"), elem)
 }
 
-// func Struct(size uintptr, pkgPath string, fields []abi.StructField) *abi.Type
+// func Struct(pkgPath string, size uintptr, fields []abi.StructField)
 func (b Builder) abiStructOf(t *types.Struct) Expr {
 	pkg := b.Pkg
 	prog := b.Prog
@@ -85,20 +94,23 @@ func (b Builder) abiStructOf(t *types.Struct) Expr {
 		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
 	}
 	pkgPath := b.pkgName(pkg.Path())
-	params := strucAbi.raw.Type.(*types.Signature).Params()
-	tSlice := prog.rawType(params.At(params.Len() - 1).Type().(*types.Slice))
+	tSlice := lastParamType(prog, strucAbi)
 	fldSlice := b.SliceLit(tSlice, flds...)
 	size := prog.IntVal(prog.SizeOf(typ), prog.Uintptr())
 	return b.Call(strucAbi, pkgPath, size, fldSlice)
 }
 
-// func StructField(name string, typ *abi.Type, off uintptr, tag string, exported, embedded bool) abi.StructField
+func lastParamType(prog Program, fn Expr) Type {
+	params := fn.raw.Type.(*types.Signature).Params()
+	return prog.rawType(params.At(params.Len() - 1).Type())
+}
+
+// func StructField(name string, typ *abi.Type, off uintptr, tag string, embedded bool) abi.StructField
 func (b Builder) structField(sfAbi Expr, prog Program, f *types.Var, offset uintptr, tag string) Expr {
 	name := b.Str(f.Name())
 	typ := b.abiType(f.Type())
-	exported := prog.Val(f.Exported())
 	embedded := prog.Val(f.Embedded())
-	return b.Call(sfAbi, name, typ, prog.Val(offset), b.Str(tag), exported, embedded)
+	return b.Call(sfAbi, name, typ, prog.Val(offset), b.Str(tag), embedded)
 }
 
 // abiType returns the abi type of the specified type.

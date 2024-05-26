@@ -23,10 +23,12 @@ import (
 )
 
 type Kind = abi.Kind
-type Name = abi.Name
 type Type = abi.Type
 
 // -----------------------------------------------------------------------------
+
+/*
+type Name = abi.Name
 
 // NewName creates a new name.
 func NewName(name string, exported bool) Name {
@@ -40,6 +42,7 @@ func NewPkgName(pkgPath string) (ret Name) {
 	}
 	return
 }
+*/
 
 // -----------------------------------------------------------------------------
 
@@ -102,25 +105,26 @@ func basicType(kind abi.Kind) *Type {
 // -----------------------------------------------------------------------------
 
 // StructField returns a struct field.
-func StructField(name string, typ *Type, off uintptr, tag string, exported, embedded bool) abi.StructField {
-	n := abi.NewName(name, tag, exported, embedded)
+func StructField(name string, typ *Type, off uintptr, tag string, embedded bool) abi.StructField {
 	return abi.StructField{
-		Name:   n,
-		Typ:    typ,
-		Offset: off,
+		Name_:     name,
+		Typ:       typ,
+		Offset:    off,
+		Tag_:      tag,
+		Embedded_: embedded,
 	}
 }
 
 // Struct returns a struct type.
-func Struct(pkgPath Name, size uintptr, fields ...abi.StructField) *Type {
+func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	ret := &abi.StructType{
 		Type: Type{
 			Size_: size,
 			Hash:  uint32(abi.Struct), // TODO(xsw): hash
 			Kind_: uint8(abi.Struct),
 		},
-		PkgPath: pkgPath,
-		Fields:  fields,
+		PkgPath_: pkgPath,
+		Fields:   fields,
 	}
 	return &ret.Type
 }
