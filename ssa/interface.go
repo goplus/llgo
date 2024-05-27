@@ -59,6 +59,10 @@ func (b Builder) abiTypeOf(t types.Type) Expr {
 		return b.abiInterfaceOf(t)
 	case *types.Signature:
 		return b.abiFuncOf(t)
+	case *types.Slice:
+		return b.abiSliceOf(t)
+	case *types.Array:
+		return b.abiArrayOf(t)
 	}
 	panic("todo")
 }
@@ -154,6 +158,16 @@ func (b Builder) abiNamedOf(t *types.Named) Expr {
 func (b Builder) abiPointerOf(t *types.Pointer) Expr {
 	elem := b.abiType(t.Elem())
 	return b.Call(b.Pkg.rtFunc("PointerTo"), elem)
+}
+
+func (b Builder) abiSliceOf(t *types.Slice) Expr {
+	elem := b.abiTypeOf(t.Elem())
+	return b.Call(b.Pkg.rtFunc("SliceOf"), elem)
+}
+
+func (b Builder) abiArrayOf(t *types.Array) Expr {
+	elem := b.abiTypeOf(t.Elem())
+	return b.Call(b.Pkg.rtFunc("ArrayOf"), b.Prog.IntVal(uint64(t.Len()), b.Prog.Uintptr()), elem)
 }
 
 // func Struct(pkgPath string, size uintptr, fields []abi.StructField)

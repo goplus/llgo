@@ -130,4 +130,30 @@ func PointerTo(elem *Type) *Type {
 	return ret
 }
 
+func SliceOf(elem *Type) *Type {
+	ret := &abi.SliceType{
+		Type: Type{
+			Size_: unsafe.Sizeof([]int{}),
+			Hash:  uint32(abi.Slice),
+			Kind_: uint8(abi.Slice),
+		},
+		Elem: elem,
+	}
+	return &ret.Type
+}
+
+func ArrayOf(length uintptr, elem *Type) *Type {
+	ret := &abi.ArrayType{
+		Type: Type{
+			Size_: length * elem.Size_,
+			Hash:  uint32(abi.Array),
+			Kind_: uint8(abi.Array),
+		},
+		Elem:  elem,
+		Slice: SliceOf(elem),
+		Len:   length,
+	}
+	return &ret.Type
+}
+
 // -----------------------------------------------------------------------------

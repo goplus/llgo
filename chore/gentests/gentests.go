@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/ssa"
 	"github.com/goplus/mod"
 )
 
@@ -29,6 +30,7 @@ func main() {
 	dir, _, err := mod.FindGoMod(".")
 	check(err)
 
+	ssa.Initialize(ssa.InitAll | ssa.InitNative)
 	llgen.Verbose = false
 
 	llgenDir(dir + "/cl/_testlibc")
