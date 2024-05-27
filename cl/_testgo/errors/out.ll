@@ -9,7 +9,7 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/abi.Imethod" = type { %"github.com/goplus/llgo/internal/runtime.String", ptr }
 
 @"main.init$guard" = global ptr null
-@"*main.errorString" = global ptr null
+@"*_llgo_main.errorString" = global ptr null
 @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = linkonce global ptr null
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
@@ -28,7 +28,7 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %2 = getelementptr inbounds %main.errorString, ptr %1, i32 0, i32 0
   store %"github.com/goplus/llgo/internal/runtime.String" %0, ptr %2, align 8
-  %3 = load ptr, ptr @"*main.errorString", align 8
+  %3 = load ptr, ptr @"*_llgo_main.errorString", align 8
   %4 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
   %5 = call ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr %4, ptr %3)
   %6 = alloca %"github.com/goplus/llgo/internal/runtime.iface", align 8
@@ -154,7 +154,7 @@ _llgo_0:
   %29 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %26, align 8
   %30 = call ptr @"github.com/goplus/llgo/internal/runtime.Named"(%"github.com/goplus/llgo/internal/runtime.String" %25, %"github.com/goplus/llgo/internal/runtime.String" %29, ptr %21, { ptr, i64, i64 } zeroinitializer)
   %31 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %30)
-  store ptr %31, ptr @"*main.errorString", align 8
+  store ptr %31, ptr @"*_llgo_main.errorString", align 8
   %32 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
   %33 = icmp eq ptr %32, null
   br i1 %33, label %_llgo_1, label %_llgo_2

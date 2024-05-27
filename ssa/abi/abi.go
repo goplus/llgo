@@ -123,7 +123,7 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 		return b.FuncName(t), true
 	case *types.Named:
 		o := t.Obj()
-		return TypeName(o), o.Exported()
+		return "_llgo_" + TypeName(o), o.Exported()
 	case *types.Interface:
 		if t.Empty() {
 			return "_llgo_any", true
