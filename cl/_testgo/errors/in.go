@@ -16,6 +16,8 @@ func (e *errorString) Error() string {
 }
 
 func main() {
+	println("main")
 	err := New("an error")
+	println("err")
 	println(err, err.Error())
 }

@@ -280,21 +280,7 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 // - method: (pkg.T).name, (*pkg.T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
 	sig := fn.Signature
-	name := fn.Name()
-	if recv := sig.Recv(); recv != nil {
-		var tName string
-		t := recv.Type()
-		if tp, ok := t.(*types.Pointer); ok {
-			t, tName = tp.Elem(), "*"
-		}
-		tName += llssa.NameOf(t.(*types.Named))
-		return "(" + tName + ")." + name
-	}
-	ret := llssa.FullName(pkg, name)
-	if ret == "main.main" {
-		ret = "main"
-	}
-	return ret
+	return llssa.FuncName(pkg, fn.Name(), sig.Recv())
 }
 
 func checkCgo(fnName string) bool {

@@ -417,4 +417,24 @@ func PathOf(pkg *types.Package) string {
 	return abi.PathOf(pkg)
 }
 
+// FuncName:
+// - func: pkg.name
+// - method: (pkg.T).name, (*pkg.T).name
+func FuncName(pkg *types.Package, name string, recv *types.Var) string {
+	if recv != nil {
+		var tName string
+		t := recv.Type()
+		if tp, ok := t.(*types.Pointer); ok {
+			t, tName = tp.Elem(), "*"
+		}
+		tName += NameOf(t.(*types.Named))
+		return "(" + tName + ")." + name
+	}
+	ret := FullName(pkg, name)
+	if ret == "main.main" {
+		ret = "main"
+	}
+	return ret
+}
+
 // -----------------------------------------------------------------------------

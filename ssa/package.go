@@ -585,17 +585,37 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 		b.SetBlockEx(ret, afterInit, false)
 		if doAbiInit {
 			sigAbiInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-			fn := p.NewFunc(p.Path()+".init$abi", sigAbiInit, InC)
-			fnb := fn.MakeBody(1)
-			for _, abiInit := range p.abiini {
-				abiInit(unsafe.Pointer(fnb))
+			baseName := p.Path() + ".init$abi"
+			name := baseName
+			idx := 1
+			fn := p.NewFunc(name, sigAbiInit, InC)
+			for {
+				fnb := fn.MakeBody(1)
+				first := fnb.blk
+				p.callAbiInit(fnb)
+				fnb.Return()
+				if len(p.abiini) == 0 {
+					break
+				}
+				idx++
+				name = baseName + strconv.Itoa(idx)
+				fn = p.NewFunc(name, sigAbiInit, InC)
+				fnb.SetBlockEx(first, AtStart, false)
+				fnb.Call(fn.Expr)
 			}
-			fnb.Return()
 			b.Call(fn.Expr)
 		}
 		if doPyLoadModSyms {
 			p.pyLoadModSyms(b)
 		}
+	}
+}
+
+func (p Package) callAbiInit(fnb Builder) {
+	abiini := p.abiini
+	p.abiini = nil
+	for _, abiInit := range abiini {
+		abiInit(unsafe.Pointer(fnb))
 	}
 }
 

@@ -125,7 +125,14 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 	if named, ok := p.named[id]; ok {
 		return named, false
 	}
-	named := types.NewNamed(t.Obj(), types.Typ[types.Int], nil)
+
+	n := t.NumMethods()
+	methods := make([]*types.Func, n)
+	for i := 0; i < n; i++ {
+		m := t.Method(i) // don't need to convert method signature
+		methods[i] = m
+	}
+	named := types.NewNamed(t.Obj(), types.Typ[types.Int], methods)
 	p.named[id] = named
 	defer delete(p.named, id)
 	if tund, cvt := p.cvtType(t.Underlying()); cvt {
