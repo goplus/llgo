@@ -66,27 +66,6 @@ func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
 	return &aType{p.toLLVMFunc(sig), rawType{sig}, vkFuncDecl}
 }
 
-/*
-// cvtCxFunc converts a C extended function type into raw type.
-func cvtCxFunc(sig *types.Signature, recv *types.Var) *types.Signature {
-	if sig.Variadic() {
-			// convert printf-like function type
-			tParams := sig.Params()
-			n := tParams.Len()
-			params := make([]*types.Var, n)
-			n--
-			for i := 0; i < n; i++ {
-				params[i] = tParams.At(i)
-			}
-			params[n] = VArg()
-			sig = types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), sig.Results(), true)
-		panic("todo")
-	}
-	sig = FuncAddCtx(recv, sig)
-	return sig
-}
-*/
-
 // Closure creates a closture type for a function.
 func (p Program) Closure(fn Type) Type {
 	sig := fn.raw.Type.(*types.Signature)

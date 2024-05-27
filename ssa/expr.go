@@ -900,15 +900,6 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
 }
 
-// The Icall instruction represents a interface method call.
-//
-// Example printed form:
-//
-//	t7 = invoke t5.Println(...t6)
-func (b Builder) Icall(o Expr, method *types.Func, args ...Expr) (ret Expr) {
-	panic("todo")
-}
-
 // The Call instruction represents a function call.
 //
 // The Call instruction yields the function result if there is exactly
@@ -1079,11 +1070,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				typ = prog.Float64()
 			case vkSlice:
 				fn = "PrintSlice"
-			case vkPtr, vkFuncPtr, vkFuncDecl:
-				fn = "PrintPointer"
-				typ = prog.VoidPtr()
 			case vkClosure:
 				arg = b.Field(arg, 0)
+				fallthrough
+			case vkPtr, vkFuncPtr, vkFuncDecl:
 				fn = "PrintPointer"
 				typ = prog.VoidPtr()
 			case vkString:

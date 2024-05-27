@@ -226,6 +226,31 @@ func (b Builder) unsafeInterface(rawIntf *types.Interface, t Expr, data llvm.Val
 	return b.unsafeIface(itab.impl, data)
 }
 
+func iMethodOf(rawIntf *types.Interface, method *types.Func) int {
+	name := method.Name()
+	n := rawIntf.NumMethods()
+	for i := 0; i < n; i++ {
+		m := rawIntf.Method(i)
+		if m.Name() == name {
+			// TODO(xsw): check signature
+			return i
+		}
+	}
+	return -1
+}
+
+// Imethod returns closure of an interface method.
+func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
+	prog := b.Prog
+	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
+	i := iMethodOf(rawIntf, method)
+	impl := intf.impl
+	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
+	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
+	tclosure := prog.Type(method.Type(), InGo)
+	return b.aggregateValue(tclosure, b.Load(pfn).impl, b.faceData(impl))
+}
+
 // -----------------------------------------------------------------------------
 
 // MakeInterface constructs an instance of an interface type from a
@@ -425,6 +450,10 @@ func (b Builder) InterfaceData(x Expr) Expr {
 
 func (b Builder) faceData(x llvm.Value) llvm.Value {
 	return llvm.CreateExtractValue(b.impl, x, 1)
+}
+
+func (b Builder) faceItab(x llvm.Value) llvm.Value {
+	return llvm.CreateExtractValue(b.impl, x, 0)
 }
 
 func (b Builder) faceAbiType(x Expr) Expr {

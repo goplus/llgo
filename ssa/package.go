@@ -132,6 +132,7 @@ type aProgram struct {
 	anyTy     Type
 	voidTy    Type
 	voidPtr   Type
+	voidPPtr  Type
 	boolTy    Type
 	cstrTy    Type
 	cintTy    Type
@@ -369,6 +370,13 @@ func (p Program) VoidPtr() Type {
 		p.voidPtr = p.rawType(types.Typ[types.UnsafePointer])
 	}
 	return p.voidPtr
+}
+
+func (p Program) VoidPtrPtr() Type {
+	if p.voidPPtr == nil {
+		p.voidPPtr = p.rawType(types.NewPointer(types.Typ[types.UnsafePointer]))
+	}
+	return p.voidPPtr
 }
 
 // Bool returns bool type.
