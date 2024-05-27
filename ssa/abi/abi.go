@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"go/types"
 	"hash"
+	"log"
 
 	"github.com/goplus/llgo/internal/abi"
 )
@@ -92,7 +93,6 @@ func KindOf(raw types.Type, lvl int, is32Bits bool) (Kind, types.Type, int) {
 
 // Builder is a helper for constructing ABI types.
 type Builder struct {
-	h   hash.Hash
 	buf []byte
 	Pkg string
 }
@@ -106,7 +106,6 @@ func New(pkg string) *Builder {
 
 func (b *Builder) Init(pkg string) {
 	b.Pkg = pkg
-	b.h = sha256.New()
 	b.buf = make([]byte, sha256.Size)
 }
 
@@ -120,11 +119,19 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 		return "*" + ret, pub
 	case *types.Struct:
 		return b.StructName(t)
+	case *types.Signature:
+		return b.FuncName(t), true
 	case *types.Named:
 		o := t.Obj()
 		return TypeName(o), o.Exported()
+	case *types.Interface:
+		if t.Empty() {
+			return "_llgo_any", true
+		}
+		return b.InterfaceName(t)
 	}
-	panic("todo")
+	log.Panicf("todo: %T\n", t)
+	return
 }
 
 // PathOf returns the package path of the specified package.
@@ -150,6 +157,57 @@ func BasicName(t *types.Basic) string {
 	return "_llgo_" + t.Name()
 }
 
+// FuncName returns the ABI type name for the specified function type.
+func (b *Builder) FuncName(t *types.Signature) string {
+	hash := b.funcHash(t)
+	hashStr := base64.RawURLEncoding.EncodeToString(hash)
+	return "_llgo_func$" + hashStr
+}
+
+func (b *Builder) funcHash(t *types.Signature) []byte {
+	h := sha256.New()
+	params, results := t.Params(), t.Results()
+	fmt.Fprintln(h, "func", params.Len(), results.Len(), t.Variadic())
+	b.tuple(h, params)
+	b.tuple(h, results)
+	return h.Sum(b.buf[:0])
+}
+
+func (b *Builder) tuple(h hash.Hash, t *types.Tuple) {
+	n := t.Len()
+	for i := 0; i < n; i++ {
+		v := t.At(i)
+		ft, _ := b.TypeName(v.Type())
+		fmt.Fprintln(h, ft)
+	}
+}
+
+// InterfaceName returns the ABI type name for the specified interface type.
+func (b *Builder) InterfaceName(t *types.Interface) (ret string, pub bool) {
+	hash, private := b.interfaceHash(t)
+	hashStr := base64.RawURLEncoding.EncodeToString(hash)
+	if private {
+		return b.Pkg + ".iface$" + hashStr, false
+	}
+	return "_llgo_iface$" + hashStr, true
+}
+
+func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, private bool) {
+	h := sha256.New()
+	n := t.NumMethods()
+	fmt.Fprintln(h, "interface", n)
+	for i := 0; i < n; i++ {
+		m := t.Method(i)
+		if !m.Exported() {
+			private = true
+		}
+		ft := b.FuncName(m.Type().(*types.Signature))
+		fmt.Fprintln(h, m.Name(), ft)
+	}
+	ret = h.Sum(b.buf[:0])
+	return
+}
+
 // StructName returns the ABI type name for the specified struct type.
 func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 	hash, private := b.structHash(t)
@@ -161,8 +219,7 @@ func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 }
 
 func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
-	h := b.h
-	h.Reset()
+	h := sha256.New()
 	n := t.NumFields()
 	fmt.Fprintln(h, "struct", n)
 	for i := 0; i < n; i++ {
@@ -174,10 +231,7 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 		if f.Embedded() {
 			name = "-"
 		}
-		ft, pub := b.TypeName(f.Type())
-		if !pub {
-			private = true
-		}
+		ft, _ := b.TypeName(f.Type())
 		fmt.Fprintln(h, name, ft)
 	}
 	ret = h.Sum(b.buf[:0])
