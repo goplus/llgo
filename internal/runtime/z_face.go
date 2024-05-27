@@ -1,6 +1,18 @@
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+/*
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package runtime
 
@@ -91,7 +103,7 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 }
 
 // Named returns a named type.
-func Named(pkgPath, name string, underlying *Type, methods []abi.Method) *Type {
+func Named(pkgPath, name string, underlying *Type, methods []Method) *Type {
 	tflag := underlying.TFlag
 	if tflag&abi.TFlagUncommon != 0 {
 		panic("runtime: underlying type is already named")
@@ -179,7 +191,7 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 }
 
 // Interface returns an interface type.
-func Interface(pkgPath string, methods []abi.Imethod) *InterfaceType {
+func Interface(pkgPath string, methods []Imethod) *InterfaceType {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_: unsafe.Sizeof(eface{}),
@@ -227,6 +239,7 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 		mName := m.Name_
 		if mName >= imName {
 			if mName == imName && m.Mtyp_ == im.Typ_ {
+				println("==> findMethod", mName, m.Ifn_)
 				return m.Ifn_
 			}
 			break

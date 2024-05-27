@@ -206,21 +206,35 @@ func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 	b.impl.CreateCondBr(cond.impl, thenb.first, elseb.first)
 }
 
-// The MapUpdate instruction updates the association of Map[Key] to
-// Value.
-//
-// Pos() returns the ast.KeyValueExpr.Colon or ast.IndexExpr.Lbrack,
-// if explicit in the source.
-//
-// Example printed form:
-//
-//	t0[t1] = t2
-func (b Builder) MapUpdate(m, k, v Expr) {
-	if debugInstr {
-		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
+// -----------------------------------------------------------------------------
+
+// Phi represents a phi node.
+type Phi struct {
+	Expr
+}
+
+// AddIncoming adds incoming values to a phi node.
+func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int, blk BasicBlock) Expr) {
+	bs := llvmPredBlocks(preds)
+	vals := make([]llvm.Value, len(preds))
+	for iblk, blk := range preds {
+		vals[iblk] = f(iblk, blk).impl
 	}
-	// TODO(xsw)
-	// panic("todo")
+	p.impl.AddIncoming(vals, bs)
+}
+
+func llvmPredBlocks(preds []BasicBlock) []llvm.BasicBlock {
+	ret := make([]llvm.BasicBlock, len(preds))
+	for i, v := range preds {
+		ret[i] = v.last
+	}
+	return ret
+}
+
+// Phi returns a phi node.
+func (b Builder) Phi(t Type) Phi {
+	phi := llvm.CreatePHI(b.impl, t.ll)
+	return Phi{Expr{phi, t}}
 }
 
 // -----------------------------------------------------------------------------

@@ -18,7 +18,6 @@ package ssa
 
 import (
 	"fmt"
-	"go/token"
 	"go/types"
 	"log"
 
@@ -198,26 +197,6 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 	return b.Load(buf)
 }
 
-// The Lookup instruction yields element Index of collection map X.
-// Index is the appropriate key type.
-//
-// If CommaOk, the result is a 2-tuple of the value above and a
-// boolean indicating the result of a map membership test for the key.
-// The components of the tuple are accessed using Extract.
-//
-// Example printed form:
-//
-//	t2 = t0[t1]
-//	t5 = t3[t4],ok
-func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
-	if debugInstr {
-		log.Printf("Lookup %v, %v, %v\n", x.impl, key.impl, commaOk)
-	}
-	// TODO(xsw)
-	// panic("todo")
-	return
-}
-
 // The Slice instruction yields a slice of an existing string, slice
 // or *array X between optional integer bounds Low and High.
 //
@@ -297,6 +276,35 @@ func (b Builder) SliceLit(t Type, elts ...Expr) Expr {
 	return b.unsafeSlice(ptr, size, size)
 }
 
+// The MakeSlice instruction yields a slice of length Len backed by a
+// newly allocated array of length Cap.
+//
+// Both Len and Cap must be non-nil Values of integer type.
+//
+// (Alloc(types.Array) followed by Slice will not suffice because
+// Alloc can only create arrays of constant length.)
+//
+// Type() returns a (possibly named) *types.Slice.
+//
+// Example printed form:
+//
+//	t1 = make []string 1:int t0
+//	t1 = make StringSlice 1:int t0
+func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
+	}
+	prog := b.Prog
+	if cap.IsNil() {
+		cap = len
+	}
+	telem := prog.Index(t)
+	ptr := b.ArrayAlloc(telem, cap)
+	ret.impl = b.unsafeSlice(ptr, len.impl, cap.impl).impl
+	ret.Type = t
+	return
+}
+
 // -----------------------------------------------------------------------------
 
 // The MakeMap instruction creates a new hash-table-based map object
@@ -318,35 +326,41 @@ func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 	return
 }
 
-// The MakeSlice instruction yields a slice of length Len backed by a
-// newly allocated array of length Cap.
+// The Lookup instruction yields element Index of collection map X.
+// Index is the appropriate key type.
 //
-// Both Len and Cap must be non-nil Values of integer type.
-//
-// (Alloc(types.Array) followed by Slice will not suffice because
-// Alloc can only create arrays of constant length.)
-//
-// Type() returns a (possibly named) *types.Slice.
+// If CommaOk, the result is a 2-tuple of the value above and a
+// boolean indicating the result of a map membership test for the key.
+// The components of the tuple are accessed using Extract.
 //
 // Example printed form:
 //
-//	t1 = make []string 1:int t0
-//	t1 = make StringSlice 1:int t0
-func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
+//	t2 = t0[t1]
+//	t5 = t3[t4],ok
+func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 	if debugInstr {
-		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
+		log.Printf("Lookup %v, %v, %v\n", x.impl, key.impl, commaOk)
 	}
-	pkg := b.Pkg
-	prog := b.Prog
-	if cap.IsNil() {
-		cap = len
-	}
-	elemSize := SizeOf(prog, prog.Index(t))
-	size := b.BinOp(token.MUL, cap, elemSize)
-	ptr := b.InlineCall(pkg.rtFunc("AllocZ"), size)
-	ret.impl = b.InlineCall(pkg.rtFunc("NewSlice"), ptr, len, cap).impl
-	ret.Type = t
+	// TODO(xsw)
+	// panic("todo")
 	return
+}
+
+// The MapUpdate instruction updates the association of Map[Key] to
+// Value.
+//
+// Pos() returns the ast.KeyValueExpr.Colon or ast.IndexExpr.Lbrack,
+// if explicit in the source.
+//
+// Example printed form:
+//
+//	t0[t1] = t2
+func (b Builder) MapUpdate(m, k, v Expr) {
+	if debugInstr {
+		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
+	}
+	// TODO(xsw)
+	// panic("todo")
 }
 
 // -----------------------------------------------------------------------------

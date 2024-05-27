@@ -500,37 +500,6 @@ func llvmFields(vals []Expr, t *types.Struct, b Builder) (ret []llvm.Value) {
 	return
 }
 
-func llvmPredBlocks(preds []BasicBlock) []llvm.BasicBlock {
-	ret := make([]llvm.BasicBlock, len(preds))
-	for i, v := range preds {
-		ret[i] = v.last
-	}
-	return ret
-}
-
-// -----------------------------------------------------------------------------
-
-// Phi represents a phi node.
-type Phi struct {
-	Expr
-}
-
-// AddIncoming adds incoming values to a phi node.
-func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int, blk BasicBlock) Expr) {
-	bs := llvmPredBlocks(preds)
-	vals := make([]llvm.Value, len(preds))
-	for iblk, blk := range preds {
-		vals[iblk] = f(iblk, blk).impl
-	}
-	p.impl.AddIncoming(vals, bs)
-}
-
-// Phi returns a phi node.
-func (b Builder) Phi(t Type) Phi {
-	phi := llvm.CreatePHI(b.impl, t.ll)
-	return Phi{Expr{phi, t}}
-}
-
 // -----------------------------------------------------------------------------
 
 // Advance returns the pointer ptr advanced by offset.
@@ -660,14 +629,16 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 
 // AllocU allocates uninitialized space for n*sizeof(elem) bytes.
 func (b Builder) AllocU(elem Type, n ...int64) (ret Expr) {
-	if debugInstr {
-		log.Printf("AllocU %v, %v\n", elem.raw.Type, n)
-	}
 	prog := b.Prog
 	size := SizeOf(prog, elem, n...)
 	ret = b.InlineCall(b.Pkg.rtFunc("AllocU"), size)
 	ret.Type = prog.Pointer(elem)
 	return
+}
+
+// AllocZ allocates zero initialized space for n bytes.
+func (b Builder) AllocZ(n Expr) (ret Expr) {
+	return b.InlineCall(b.Pkg.rtFunc("AllocZ"), n)
 }
 
 // Alloca allocates uninitialized space for n bytes.
@@ -682,6 +653,17 @@ func (b Builder) Alloca(n Expr) (ret Expr) {
 	return
 }
 
+// AllocaCStr allocates space for copy it from a Go string.
+func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocaCStr %v\n", gostr.impl)
+	}
+	n := b.StringLen(gostr)
+	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
+	cstr := b.Alloca(n1)
+	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
+}
+
 /*
 // ArrayAlloca reserves space for an array of n elements of type telem.
 func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
@@ -694,15 +676,14 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 }
 */
 
-// AllocaCStr allocates space for copy it from a Go string.
-func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("AllocaCStr %v\n", gostr.impl)
-	}
-	n := b.StringLen(gostr)
-	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
-	cstr := b.Alloca(n1)
-	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
+// ArrayAlloc allocates zero initialized space for an array of n elements of type telem.
+func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
+	prog := b.Prog
+	elemSize := SizeOf(prog, telem)
+	size := b.BinOp(token.MUL, n, elemSize)
+	ret.impl = b.AllocZ(size).impl
+	ret.Type = prog.Pointer(telem)
+	return
 }
 
 // -----------------------------------------------------------------------------
@@ -1047,55 +1028,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 	case "print", "println":
-		ln := fn == "println"
-		prog := b.Prog
-		ret.Type = prog.Void()
-		for i, arg := range args {
-			if ln && i > 0 {
-				b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal(' ', prog.Byte()))
-			}
-			var fn string
-			typ := arg.Type
-			switch arg.kind {
-			case vkBool:
-				fn = "PrintBool"
-			case vkSigned:
-				fn = "PrintInt"
-				typ = prog.Int64()
-			case vkUnsigned:
-				fn = "PrintUint"
-				typ = prog.Uint64()
-			case vkFloat:
-				fn = "PrintFloat"
-				typ = prog.Float64()
-			case vkSlice:
-				fn = "PrintSlice"
-			case vkClosure:
-				arg = b.Field(arg, 0)
-				fallthrough
-			case vkPtr, vkFuncPtr, vkFuncDecl:
-				fn = "PrintPointer"
-				typ = prog.VoidPtr()
-			case vkString:
-				fn = "PrintString"
-			case vkEface:
-				fn = "PrintEface"
-			case vkIface:
-				fn = "PrintIface"
-			// case vkComplex:
-			// 	fn = "PrintComplex"
-			default:
-				panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
-			}
-			if typ != arg.Type {
-				arg = b.Convert(typ, arg)
-			}
-			b.InlineCall(b.Pkg.rtFunc(fn), arg)
-		}
-		if ln {
-			b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal('\n', prog.Byte()))
-		}
-		return
+		return b.PrintEx(fn == "println", args...)
 	case "copy":
 		if len(args) == 2 {
 			dst := args[0]
@@ -1118,6 +1051,63 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		return b.unsafeSlice(args[0], size, size)
 	}
 	panic("todo: " + fn)
+}
+
+// Println prints the arguments to stderr, followed by a newline.
+func (b Builder) Println(args ...Expr) (ret Expr) {
+	return b.PrintEx(true, args...)
+}
+
+// PrintEx prints the arguments to stderr.
+func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
+	prog := b.Prog
+	ret.Type = prog.Void()
+	for i, arg := range args {
+		if ln && i > 0 {
+			b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal(' ', prog.Byte()))
+		}
+		var fn string
+		typ := arg.Type
+		switch arg.kind {
+		case vkBool:
+			fn = "PrintBool"
+		case vkSigned:
+			fn = "PrintInt"
+			typ = prog.Int64()
+		case vkUnsigned:
+			fn = "PrintUint"
+			typ = prog.Uint64()
+		case vkFloat:
+			fn = "PrintFloat"
+			typ = prog.Float64()
+		case vkSlice:
+			fn = "PrintSlice"
+		case vkClosure:
+			arg = b.Field(arg, 0)
+			fallthrough
+		case vkPtr, vkFuncPtr, vkFuncDecl:
+			fn = "PrintPointer"
+			typ = prog.VoidPtr()
+		case vkString:
+			fn = "PrintString"
+		case vkEface:
+			fn = "PrintEface"
+		case vkIface:
+			fn = "PrintIface"
+		// case vkComplex:
+		// 	fn = "PrintComplex"
+		default:
+			panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
+		}
+		if typ != arg.Type {
+			arg = b.Convert(typ, arg)
+		}
+		b.InlineCall(b.Pkg.rtFunc(fn), arg)
+	}
+	if ln {
+		b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal('\n', prog.Byte()))
+	}
+	return
 }
 
 // -----------------------------------------------------------------------------
