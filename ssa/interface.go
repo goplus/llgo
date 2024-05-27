@@ -55,28 +55,79 @@ func (b Builder) abiTypeOf(t types.Type) Expr {
 		return b.abiStructOf(t)
 	case *types.Named:
 		return b.abiNamedOf(t)
+	case *types.Interface:
+		return b.abiInterfaceOf(t)
+	case *types.Signature:
+		return b.abiFuncOf(t)
 	}
 	panic("todo")
+}
+
+func (b Builder) abiTupleOf(t *types.Tuple) Expr {
+	n := t.Len()
+	prog := b.Prog
+	tSlice := prog.Slice(prog.AbiTypePtr())
+	tuple := make([]Expr, n)
+	for i := 0; i < n; i++ {
+		tuple[i] = b.abiType(t.At(i).Type())
+	}
+	return b.SliceLit(tSlice, tuple...)
+}
+
+// func Func(in, out []*Type, variadic bool)
+func (b Builder) abiFuncOf(sig *types.Signature) Expr {
+	prog := b.Prog
+	pkg := b.Pkg
+	fn := pkg.rtFunc("Func")
+	params := b.abiTupleOf(sig.Params())
+	results := b.abiTupleOf(sig.Results())
+	variadic := prog.Val(sig.Variadic())
+	return b.Call(fn, params, results, variadic)
+}
+
+// Imethod{name string, typ *FuncType}
+func (b Builder) abiImethodOf(m *types.Func) Expr {
+	prog := b.Prog
+	name := b.Str(m.Name())
+	typ := b.abiType(m.Type())
+	return b.aggregateValue(prog.rtType("Imethod"), name.impl, typ.impl)
+}
+
+// func Interface(pkgPath string, methods []abi.Imethod)
+func (b Builder) abiInterfaceOf(t *types.Interface) Expr {
+	prog := b.Prog
+	n := t.NumMethods()
+	methods := make([]Expr, n)
+	for i := 0; i < n; i++ {
+		m := t.Method(i)
+		methods[i] = b.abiImethodOf(m)
+	}
+	pkg := b.Pkg
+	fn := pkg.rtFunc("Interface")
+	pkgPath := pkg.Path()
+	tSlice := lastParamType(prog, fn)
+	methodSlice := b.SliceLit(tSlice, methods...)
+	return b.Call(fn, b.Str(pkgPath), methodSlice)
 }
 
 // func Named(pkgPath, name string, underlying *Type, methods []abi.Method)
 func (b Builder) abiNamedOf(t *types.Named) Expr {
 	under := b.abiTypeOf(t.Underlying())
+	path := abi.PathOf(t.Obj().Pkg())
 	name := NameOf(t)
 
 	prog := b.Prog
 	pkg := b.Pkg
-	pkgPath := b.pkgName(pkg.Path())
 	fn := pkg.rtFunc("Named")
 	tSlice := lastParamType(prog, fn)
 	// TODO(xsw): methods
 	methods := prog.Zero(tSlice)
-	return b.Call(fn, pkgPath, b.Str(name), under, methods)
+	return b.Call(fn, b.Str(path), b.Str(name), under, methods)
 }
 
 func (b Builder) abiPointerOf(t *types.Pointer) Expr {
 	elem := b.abiTypeOf(t.Elem())
-	return b.Call(b.Pkg.rtFunc("Pointer"), elem)
+	return b.Call(b.Pkg.rtFunc("PointerTo"), elem)
 }
 
 // func Struct(pkgPath string, size uintptr, fields []abi.StructField)
@@ -93,7 +144,7 @@ func (b Builder) abiStructOf(t *types.Struct) Expr {
 		off := uintptr(prog.OffsetOf(typ, i))
 		flds[i] = b.structField(sfAbi, prog, f, off, t.Tag(i))
 	}
-	pkgPath := b.pkgName(pkg.Path())
+	pkgPath := b.Str(pkg.Path())
 	tSlice := lastParamType(prog, strucAbi)
 	fldSlice := b.SliceLit(tSlice, flds...)
 	size := prog.IntVal(prog.SizeOf(typ), prog.Uintptr())
@@ -156,6 +207,50 @@ func (b Builder) unsafeEface(t, data llvm.Value) llvm.Value {
 	return aggregateValue(b.impl, b.Prog.rtEface(), t, data)
 }
 
+// unsafeIface(itab *runtime.Itab, data unsafe.Pointer) Eface
+func (b Builder) unsafeIface(itab, data llvm.Value) llvm.Value {
+	return aggregateValue(b.impl, b.Prog.rtIface(), itab, data)
+}
+
+// func NewItab(tintf *InterfaceType, typ *Type) *runtime.Itab
+func (b Builder) newItab(tintf, typ Expr) Expr {
+	return b.Call(b.Pkg.rtFunc("NewItab"), tintf, typ)
+}
+
+func (b Builder) unsafeInterface(rawIntf *types.Interface, t Expr, data llvm.Value) llvm.Value {
+	if rawIntf.Empty() {
+		return b.unsafeEface(t.impl, data)
+	}
+	tintf := b.abiType(rawIntf)
+	itab := b.newItab(tintf, t)
+	return b.unsafeIface(itab.impl, data)
+}
+
+func iMethodOf(rawIntf *types.Interface, method *types.Func) int {
+	name := method.Name()
+	n := rawIntf.NumMethods()
+	for i := 0; i < n; i++ {
+		m := rawIntf.Method(i)
+		if m.Name() == name {
+			// TODO(xsw): check signature
+			return i
+		}
+	}
+	return -1
+}
+
+// Imethod returns closure of an interface method.
+func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
+	prog := b.Prog
+	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
+	i := iMethodOf(rawIntf, method)
+	impl := intf.impl
+	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
+	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
+	tclosure := prog.Type(method.Type(), InGo)
+	return b.aggregateValue(tclosure, b.Load(pfn).impl, b.faceData(impl))
+}
+
 // -----------------------------------------------------------------------------
 
 // MakeInterface constructs an instance of an interface type from a
@@ -185,7 +280,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	case abi.Indirect:
 		vptr := b.AllocU(typ)
 		b.Store(vptr, x)
-		return Expr{b.unsafeEface(tabi.impl, vptr.impl), tinter}
+		return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
 	}
 	ximpl := x.impl
 	if lvl > 0 {
@@ -194,7 +289,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	var u llvm.Value
 	switch kind {
 	case abi.Pointer:
-		return Expr{b.unsafeEface(tabi.impl, ximpl), tinter}
+		return Expr{b.unsafeInterface(rawIntf, tabi, ximpl), tinter}
 	case abi.Integer:
 		tu := prog.Uintptr()
 		u = llvm.CreateIntCast(b.impl, ximpl, tu.ll)
@@ -205,7 +300,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		panic("todo")
 	}
 	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
-	return Expr{b.unsafeEface(tabi.impl, data), tinter}
+	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
@@ -355,6 +450,10 @@ func (b Builder) InterfaceData(x Expr) Expr {
 
 func (b Builder) faceData(x llvm.Value) llvm.Value {
 	return llvm.CreateExtractValue(b.impl, x, 1)
+}
+
+func (b Builder) faceItab(x llvm.Value) llvm.Value {
+	return llvm.CreateExtractValue(b.impl, x, 0)
 }
 
 func (b Builder) faceAbiType(x Expr) Expr {

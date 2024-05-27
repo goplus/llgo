@@ -112,17 +112,22 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 
 // -----------------------------------------------------------------------------
 
-// Pointer returns a pointer type.
-func Pointer(elem *Type) *Type {
-	ret := &abi.PtrType{
-		Type: Type{
-			Size_: unsafe.Sizeof(uintptr(0)),
-			Hash:  uint32(abi.Pointer), // TODO(xsw): hash
-			Kind_: uint8(abi.Pointer),
-		},
-		Elem: elem,
+// PointerTo returns the pointer type with element elem.
+func PointerTo(elem *Type) *Type {
+	ret := elem.PtrToThis_
+	if ret == nil {
+		ptr := &abi.PtrType{
+			Type: Type{
+				Size_: unsafe.Sizeof(uintptr(0)),
+				Hash:  uint32(abi.Pointer), // TODO(xsw): hash
+				Kind_: uint8(abi.Pointer),
+			},
+			Elem: elem,
+		}
+		ret = &ptr.Type
+		elem.PtrToThis_ = ret
 	}
-	return &ret.Type
+	return ret
 }
 
 // -----------------------------------------------------------------------------

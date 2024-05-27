@@ -558,6 +558,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	switch v := iv.(type) {
 	case *ssa.Call:
 		cv := v.Call.Value
+		if mthd := v.Call.Method; mthd != nil {
+			o := p.compileValue(b, cv)
+			fn := b.Imethod(o, v.Call.Method)
+			args := p.compileValues(b, v.Call.Args, fnNormal)
+			ret = b.Call(fn, args...)
+			break
+		}
 		kind := p.funcKind(cv)
 		if kind == fnIgnore {
 			return

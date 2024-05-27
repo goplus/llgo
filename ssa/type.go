@@ -274,6 +274,7 @@ func (p Program) toType(raw types.Type) Type {
 		if t.Empty() {
 			return &aType{p.rtEface(), typ, vkEface}
 		}
+		return &aType{p.rtIface(), typ, vkIface}
 	case *types.Slice:
 		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:

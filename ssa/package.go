@@ -125,12 +125,14 @@ type aProgram struct {
 
 	rtStringTy llvm.Type
 	rtEfaceTy  llvm.Type
+	rtIfaceTy  llvm.Type
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
 	anyTy     Type
 	voidTy    Type
 	voidPtr   Type
+	voidPPtr  Type
 	boolTy    Type
 	cstrTy    Type
 	cintTy    Type
@@ -149,7 +151,6 @@ type aProgram struct {
 	pyObjPPtr Type
 	abiTyptr  Type
 	abiTypptr Type
-	//efaceTy Type
 
 	pyImpTy    *types.Signature
 	pyNewList  *types.Signature
@@ -254,6 +255,13 @@ func (p Program) rtEface() llvm.Type {
 		p.rtEfaceTy = p.rtType("Eface").ll
 	}
 	return p.rtEfaceTy
+}
+
+func (p Program) rtIface() llvm.Type {
+	if p.rtIfaceTy.IsNil() {
+		p.rtIfaceTy = p.rtType("Iface").ll
+	}
+	return p.rtIfaceTy
 }
 
 func (p Program) rtMap() llvm.Type {
@@ -362,6 +370,13 @@ func (p Program) VoidPtr() Type {
 		p.voidPtr = p.rawType(types.Typ[types.UnsafePointer])
 	}
 	return p.voidPtr
+}
+
+func (p Program) VoidPtrPtr() Type {
+	if p.voidPPtr == nil {
+		p.voidPPtr = p.rawType(types.NewPointer(types.Typ[types.UnsafePointer]))
+	}
+	return p.voidPPtr
 }
 
 // Bool returns bool type.

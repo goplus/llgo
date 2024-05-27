@@ -69,3 +69,7 @@ func PrintSlice(s Slice) {
 func PrintEface(e Eface) {
 	print("(", e._type, ",", e.data, ")")
 }
+
+func PrintIface(i Iface) {
+	print("(", i.tab, ",", i.data, ")")
+}
