@@ -562,7 +562,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			o := p.compileValue(b, cv)
 			fn := b.Imethod(o, v.Call.Method)
 			args := p.compileValues(b, v.Call.Args, fnNormal)
-			b.Call(fn, args...)
+			ret = b.Call(fn, args...)
 			break
 		}
 		kind := p.funcKind(cv)

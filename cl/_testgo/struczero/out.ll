@@ -20,7 +20,7 @@ source_filename = "main"
 @3 = private unnamed_addr constant [2 x i8] c"F\00", align 1
 @4 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @5 = private unnamed_addr constant [5 x i8] c"main\00", align 1
-@6 = private unnamed_addr constant [5 x i8] c"main\00", align 1
+@6 = private unnamed_addr constant [39 x i8] c"github.com/goplus/llgo/cl/internal/foo\00", align 1
 @7 = private unnamed_addr constant [43 x i8] c"github.com/goplus/llgo/cl/internal/foo.Foo\00", align 1
 @8 = private unnamed_addr constant [3 x i8] c"pb\00", align 1
 @9 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
@@ -257,7 +257,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %36 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %35, i32 0, i32 0
   store ptr @6, ptr %36, align 8
   %37 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %35, i32 0, i32 1
-  store i64 4, ptr %37, align 4
+  store i64 38, ptr %37, align 4
   %38 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %35, align 8
   %39 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %40 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %39, i32 0, i32 0
