@@ -115,7 +115,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
   call void @"github.com/goplus/llgo/cl/internal/foo.init"()
-  call void @"main.init$abi3"()
+  call void @"main.init$abi"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
