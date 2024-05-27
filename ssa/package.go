@@ -125,6 +125,7 @@ type aProgram struct {
 
 	rtStringTy llvm.Type
 	rtEfaceTy  llvm.Type
+	rtIfaceTy  llvm.Type
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
@@ -149,7 +150,6 @@ type aProgram struct {
 	pyObjPPtr Type
 	abiTyptr  Type
 	abiTypptr Type
-	//efaceTy Type
 
 	pyImpTy    *types.Signature
 	pyNewList  *types.Signature
@@ -254,6 +254,13 @@ func (p Program) rtEface() llvm.Type {
 		p.rtEfaceTy = p.rtType("Eface").ll
 	}
 	return p.rtEfaceTy
+}
+
+func (p Program) rtIface() llvm.Type {
+	if p.rtIfaceTy.IsNil() {
+		p.rtIfaceTy = p.rtType("Iface").ll
+	}
+	return p.rtIfaceTy
 }
 
 func (p Program) rtMap() llvm.Type {

@@ -43,6 +43,8 @@ type (
 	Itab  = itab
 )
 
+type Imethod = abi.Imethod
+type Method = abi.Method
 type FuncType = abi.FuncType
 type InterfaceType = abi.InterfaceType
 
@@ -54,13 +56,104 @@ func ToEface(i Iface) Eface {
 // -----------------------------------------------------------------------------
 
 const (
-	typeHdrSize         = unsafe.Sizeof(abi.Type{})
-	funcTypeHdrSize     = unsafe.Sizeof(abi.FuncType{})
-	uncommonTypeHdrSize = unsafe.Sizeof(abi.UncommonType{})
-	methodSize          = unsafe.Sizeof(abi.Method{})
-	pointerSize         = unsafe.Sizeof(uintptr(0))
-	itabHdrSize         = unsafe.Sizeof(itab{}) - pointerSize
+	typeHdrSize          = unsafe.Sizeof(abi.Type{})
+	arrayTypeHdrSize     = unsafe.Sizeof(abi.ArrayType{})
+	chanTypeHdrSize      = unsafe.Sizeof(abi.ChanType{})
+	funcTypeHdrSize      = unsafe.Sizeof(abi.FuncType{})
+	interfaceTypeHdrSize = unsafe.Sizeof(abi.InterfaceType{})
+	mapTypeHdrSize       = unsafe.Sizeof(abi.MapType{})
+	ptrTypeHdrSize       = unsafe.Sizeof(abi.PtrType{})
+	sliceTypeHdrSize     = unsafe.Sizeof(abi.SliceType{})
+	structTypeHdrSize    = unsafe.Sizeof(abi.StructType{})
+	uncommonTypeHdrSize  = unsafe.Sizeof(abi.UncommonType{})
+	methodSize           = unsafe.Sizeof(abi.Method{})
+	pointerSize          = unsafe.Sizeof(uintptr(0))
+	itabHdrSize          = unsafe.Sizeof(itab{}) - pointerSize
 )
+
+var hdrSizes = [...]uintptr{
+	arrayTypeHdrSize,
+	chanTypeHdrSize,
+	funcTypeHdrSize,
+	interfaceTypeHdrSize,
+	mapTypeHdrSize,
+	ptrTypeHdrSize,
+	sliceTypeHdrSize,
+	typeHdrSize,
+	structTypeHdrSize,
+}
+
+func hdrSizeOf(kind abi.Kind) uintptr {
+	if kind >= abi.Array && kind <= abi.Struct {
+		return hdrSizes[kind-abi.Array]
+	}
+	return typeHdrSize
+}
+
+// Named returns a named type.
+func Named(pkgPath, name string, underlying *Type, methods []abi.Method) *Type {
+	tflag := underlying.TFlag
+	if tflag&abi.TFlagUncommon != 0 {
+		panic("runtime: underlying type is already named")
+	}
+
+	kind := underlying.Kind()
+	n := len(methods)
+	if kind == abi.Interface {
+		if n > 0 {
+			panic("runtime: interface type cannot have methods")
+		}
+		ret := *underlying.InterfaceType()
+		ret.PkgPath_ = pkgPath
+		ret.Str_ = name
+		return &ret.Type
+	}
+
+	baseSize := hdrSizeOf(kind)
+	extraSize := uintptr(0)
+	if kind == abi.Func {
+		f := underlying.FuncType()
+		extraSize = uintptr(f.In()+f.Out()) * pointerSize
+	}
+
+	size := baseSize + extraSize
+	if n > 0 || pkgPath != "" {
+		size += uncommonTypeHdrSize + uintptr(n)*methodSize
+		tflag |= abi.TFlagUncommon
+	}
+
+	ptr := AllocU(size)
+	c.Memcpy(ptr, unsafe.Pointer(underlying), baseSize)
+
+	ret := (*Type)(ptr)
+	ret.TFlag = tflag | abi.TFlagNamed
+	ret.Str_ = name
+
+	xcount := 0
+	for _, m := range methods {
+		if !m.Exported() {
+			break
+		}
+		xcount++
+	}
+	uncommon := (*abi.UncommonType)(c.Advance(ptr, int(baseSize)))
+	uncommon.PkgPath_ = pkgPath
+	uncommon.Mcount = uint16(n)
+	uncommon.Xcount = uint16(xcount)
+	uncommon.Moff = uint32(uncommonTypeHdrSize + extraSize)
+
+	extraOff := int(baseSize + uncommonTypeHdrSize)
+	if extraSize > 0 {
+		src := c.Advance(unsafe.Pointer(underlying), int(baseSize))
+		dest := c.Advance(unsafe.Pointer(ptr), extraOff)
+		c.Memcpy(dest, src, extraSize)
+		extraOff += int(extraSize)
+	}
+
+	data := (*abi.Method)(c.Advance(ptr, extraOff))
+	copy(unsafe.Slice(data, n), methods)
+	return ret
+}
 
 // Func returns a function type.
 func Func(in, out []*Type, variadic bool) *FuncType {
@@ -85,61 +178,8 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 	return ret
 }
 
-// Imethod returns an interface method.
-func Imethod(name string, typ *FuncType) abi.Imethod {
-	return abi.Imethod{
-		Name_: name,
-		Typ_:  typ,
-	}
-}
-
-// Method returns a method.
-func Method(name string, typ *FuncType, ifn, tfn abi.Text) abi.Method {
-	return abi.Method{
-		Name_: name,
-		Mtyp_: typ,
-		Ifn_:  ifn,
-		Tfn_:  tfn,
-	}
-}
-
-// Named returns a named type.
-func Named(pkgPath, name string, underlying *Type, methods []abi.Method) *Type {
-	tflag := underlying.TFlag
-	size := typeHdrSize
-	n := len(methods)
-	if n > 0 || pkgPath != "" {
-		size += uncommonTypeHdrSize + uintptr(n)*methodSize
-		tflag |= abi.TFlagUncommon
-	}
-	ptr := AllocU(size)
-
-	ret := (*Type)(ptr)
-	*ret = *underlying
-	ret.TFlag = tflag | abi.TFlagNamed
-	ret.Str_ = name
-
-	xcount := 0
-	for _, m := range methods {
-		if !m.Exported() {
-			break
-		}
-		xcount++
-	}
-
-	uncommon := (*abi.UncommonType)(c.Advance(ptr, int(typeHdrSize)))
-	uncommon.PkgPath_ = pkgPath
-	uncommon.Mcount = uint16(n)
-	uncommon.Xcount = uint16(xcount)
-	uncommon.Moff = uint32(uncommonTypeHdrSize)
-
-	data := (*abi.Method)(c.Advance(ptr, int(typeHdrSize+uncommonTypeHdrSize)))
-	copy(unsafe.Slice(data, n), methods)
-	return ret
-}
-
 // Interface returns an interface type.
-func Interface(pkgPath string, methods []abi.Imethod) *Type {
+func Interface(pkgPath string, methods []abi.Imethod) *InterfaceType {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_: unsafe.Sizeof(eface{}),
@@ -149,7 +189,7 @@ func Interface(pkgPath string, methods []abi.Imethod) *Type {
 		PkgPath_: pkgPath,
 		Methods:  methods,
 	}
-	return &ret.Type
+	return ret
 }
 
 // NewItab returns a new itab.
@@ -158,7 +198,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	size := itabHdrSize + uintptr(n)*pointerSize
 	ptr := AllocU(size)
 
-	ret := (*Itab)(ptr)
+	ret := (*itab)(ptr)
 	ret.inter = inter
 	ret._type = typ
 	ret.hash = typ.Hash

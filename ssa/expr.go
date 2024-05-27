@@ -193,12 +193,6 @@ func (b Builder) Str(v string) (ret Expr) {
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
 }
 
-func (b Builder) pkgName(pkgPath string) Expr {
-	// TODO(xsw): use a global cache
-	// return b.Call(b.Pkg.rtFunc("NewPkgName"), b.Str(pkgPath))
-	return b.Str(pkgPath)
-}
-
 // unsafeString(data *byte, size int) string
 func (b Builder) unsafeString(data, size llvm.Value) Expr {
 	prog := b.Prog
@@ -906,7 +900,16 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
 }
 
-// The Call instruction represents a function or method call.
+// The Icall instruction represents a interface method call.
+//
+// Example printed form:
+//
+//	t7 = invoke t5.Println(...t6)
+func (b Builder) Icall(o Expr, method *types.Func, args ...Expr) (ret Expr) {
+	panic("todo")
+}
+
+// The Call instruction represents a function call.
 //
 // The Call instruction yields the function result if there is exactly
 // one.  Otherwise it returns a tuple, the components of which are
@@ -916,7 +919,6 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //
 //	t2 = println(t0, t1)
 //	t4 = t3()
-//	t7 = invoke t5.Println(...t6)
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
 		var b bytes.Buffer
@@ -954,7 +956,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		sig = raw.(*types.Signature)
 		ll = fn.ll
 	default:
-		panic("unreachable")
+		log.Panicf("unreachable: %d(%T)\n", kind, raw)
 	}
 	ret.Type = prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
