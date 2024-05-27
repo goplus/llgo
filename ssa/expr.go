@@ -1080,6 +1080,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				fn = "PrintString"
 			case vkEface:
 				fn = "PrintEface"
+			case vkIface:
+				fn = "PrintIface"
 			// case vkComplex:
 			// 	fn = "PrintComplex"
 			default:

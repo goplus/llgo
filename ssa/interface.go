@@ -127,7 +127,7 @@ func (b Builder) abiNamedOf(t *types.Named) Expr {
 
 func (b Builder) abiPointerOf(t *types.Pointer) Expr {
 	elem := b.abiTypeOf(t.Elem())
-	return b.Call(b.Pkg.rtFunc("Pointer"), elem)
+	return b.Call(b.Pkg.rtFunc("PointerTo"), elem)
 }
 
 // func Struct(pkgPath string, size uintptr, fields []abi.StructField)
