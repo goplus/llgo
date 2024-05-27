@@ -589,6 +589,7 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 			name := baseName
 			idx := 1
 			fn := p.NewFunc(name, sigAbiInit, InC)
+			b.Call(fn.Expr)
 			for {
 				fnb := fn.MakeBody(1)
 				first := fnb.blk
@@ -603,7 +604,6 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 				fnb.SetBlockEx(first, AtStart, false)
 				fnb.Call(fn.Expr)
 			}
-			b.Call(fn.Expr)
 		}
 		if doPyLoadModSyms {
 			p.pyLoadModSyms(b)
