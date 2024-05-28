@@ -336,9 +336,45 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		if strings.HasPrefix(v, "llgo.") {
 			return nil, v[5:], llgoInstr
 		}
-		return pkg, v, goFunc
+		return pkg, checkLinkName(pkg, v), goFunc
 	}
 	return pkg, funcName(pkg, fn), goFunc
+}
+
+// likname:
+// - func: pkg.name => pkg.name
+// - method: pkg.(T).name => (pkg.T).name
+// - method: pkg.(*T).name => (*pkg.T).name
+func checkLinkName(pkg *types.Package, link string) string {
+	for _, dep := range pkg.Imports() {
+		if strings.HasPrefix(link, dep.Path()+".") {
+			sym := link[len(dep.Path())+1:]
+			if pos := strings.LastIndex(sym, "."); pos != -1 {
+				typ := sym[:pos]
+				name := sym[pos+1:]
+				var ptr bool
+				if strings.HasPrefix(typ, "(*") && strings.HasSuffix(typ, ")") {
+					ptr = true
+					typ = typ[2 : len(typ)-1]
+				}
+				if obj := dep.Scope().Lookup(typ); obj != nil {
+					if named, ok := obj.Type().(*types.Named); ok {
+						for i := 0; i < named.NumMethods(); i++ {
+							if m := named.Method(i); m.Name() == name {
+								recv := m.Type().(*types.Signature).Recv()
+								if _, ok := recv.Type().(*types.Pointer); ok == ptr {
+									return llssa.FuncName(dep, sym[pos+1:], recv)
+								}
+							}
+						}
+					}
+				}
+			} else if dep.Scope().Lookup(sym) != nil {
+				return link
+			}
+		}
+	}
+	return link
 }
 
 const (
