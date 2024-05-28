@@ -165,6 +165,8 @@ type aProgram struct {
 
 	paramObjPtr_ *types.Var
 
+	ptrSize int
+
 	NeedRuntime bool
 	NeedPyInit  bool
 	is32Bits    bool
@@ -194,7 +196,7 @@ func NewProgram(target *Target) Program {
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
-		named: make(map[string]llvm.Type),
+		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type),
 	}
 }
 
