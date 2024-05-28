@@ -22,7 +22,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"golang.org/x/tools/go/packages"
+	"github.com/goplus/llgo/internal/packages"
 )
 
 var (
@@ -42,7 +42,7 @@ func Clean(args []string, conf *Config) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	initial, err := packages.Load(cfg, patterns...)
+	initial, err := packages.LoadEx(nil, cfg, patterns...)
 	check(err)
 
 	cleanPkgs(initial, verbose)
