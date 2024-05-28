@@ -43,7 +43,7 @@ func initRtAndPy(prog llssa.Program, cfg *packages.Config) {
 	load := func() []*packages.Package {
 		if pkgRtAndPy == nil {
 			var err error
-			pkgRtAndPy, err = packages.LoadEx(prog.TypeSizes(), cfg, llssa.PkgRuntime, llssa.PkgPython)
+			pkgRtAndPy, err = packages.LoadEx(prog.TypeSizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
 			check(err)
 		}
 		return pkgRtAndPy
@@ -65,7 +65,7 @@ func GenFrom(fileOrPkg string) string {
 	cfg := &packages.Config{
 		Mode: loadSyntax | packages.NeedDeps,
 	}
-	initial, err := packages.LoadEx(prog.TypeSizes(), cfg, fileOrPkg)
+	initial, err := packages.LoadEx(prog.TypeSizes, cfg, fileOrPkg)
 	check(err)
 
 	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions)

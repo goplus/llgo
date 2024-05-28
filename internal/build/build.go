@@ -88,14 +88,20 @@ const (
 )
 
 func Do(args []string, conf *Config) {
-	prog := llssa.NewProgram(nil)
-	sizes := prog.TypeSizes()
-
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
 	}
+
+	llssa.Initialize(llssa.InitAll)
+	if verbose {
+		llssa.SetDebug(llssa.DbgFlagAll)
+		cl.SetDebug(cl.DbgFlagAll)
+	}
+
+	prog := llssa.NewProgram(nil)
+	sizes := prog.TypeSizes
 
 	if patterns == nil {
 		patterns = []string{"."}
@@ -115,12 +121,6 @@ func Do(args []string, conf *Config) {
 			fmt.Fprintln(os.Stderr, "no Go files in matched packages")
 		}
 		return
-	}
-
-	llssa.Initialize(llssa.InitAll)
-	if verbose {
-		llssa.SetDebug(llssa.DbgFlagAll)
-		cl.SetDebug(cl.DbgFlagAll)
 	}
 
 	var needRt bool

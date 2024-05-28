@@ -101,17 +101,14 @@ func refine(ld *loader, response *packages.DriverResponse) ([]*Package, error)
 // return an error. Clients may need to handle such errors before
 // proceeding with further analysis. The PrintErrors function is
 // provided for convenient display of all errors.
-func LoadEx(sizes types.Sizes, cfg *Config, patterns ...string) ([]*Package, error) {
+func LoadEx(sizes func(types.Sizes) types.Sizes, cfg *Config, patterns ...string) ([]*Package, error) {
 	ld := newLoader(cfg)
 	response, external, err := defaultDriver(&ld.Config, patterns...)
 	if err != nil {
 		return nil, err
 	}
 
-	if sizes == nil {
-		sizes = types.SizesFor(response.Compiler, response.Arch)
-	}
-	ld.sizes = sizes
+	ld.sizes = types.SizesFor(response.Compiler, response.Arch)
 	if ld.sizes == nil && ld.Config.Mode&(NeedTypes|NeedTypesSizes|NeedTypesInfo) != 0 {
 		// Type size information is needed but unavailable.
 		if external {
@@ -130,6 +127,9 @@ func LoadEx(sizes types.Sizes, cfg *Config, patterns ...string) ([]*Package, err
 		}
 	}
 
+	if sizes != nil {
+		ld.sizes = sizes(ld.sizes)
+	}
 	return refine(ld, response)
 }
 

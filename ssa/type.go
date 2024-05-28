@@ -74,6 +74,58 @@ func indexType(t types.Type) types.Type {
 
 // -----------------------------------------------------------------------------
 
+type goProgram aProgram
+
+// Alignof returns the alignment of a variable of type T.
+// Alignof must implement the alignment guarantees required by the spec.
+// The result must be >= 1.
+func (p *goProgram) Alignof(T types.Type) int64 {
+	return p.sizes.Alignof(T)
+}
+
+// Offsetsof returns the offsets of the given struct fields, in bytes.
+// Offsetsof must implement the offset guarantees required by the spec.
+// A negative entry in the result indicates that the struct is too large.
+func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
+	prog := Program(p)
+	ptrSize := int64(prog.PointerSize())
+	extra := int64(0)
+	ret = p.sizes.Offsetsof(fields)
+	for i, f := range fields {
+		ret[i] += extra
+		extra += extraSize(f.Type(), ptrSize)
+	}
+	return
+}
+
+// Sizeof returns the size of a variable of type T.
+// Sizeof must implement the size guarantees required by the spec.
+// A negative result indicates that T is too large.
+func (p *goProgram) Sizeof(T types.Type) int64 {
+	prog := Program(p)
+	ptrSize := int64(prog.PointerSize())
+	return prog.sizes.Sizeof(T) + extraSize(T, ptrSize)
+}
+
+func extraSize(t types.Type, ptrSize int64) (ret int64) {
+	switch t := t.Underlying().(type) {
+	case *types.Signature:
+		return ptrSize
+	case *types.Struct:
+		n := t.NumFields()
+		for i := 0; i < n; i++ {
+			f := t.Field(i)
+			ret += extraSize(f.Type(), ptrSize)
+		}
+		return
+	case *types.Array:
+		return extraSize(t.Elem(), ptrSize) * t.Len()
+	}
+	return 0
+}
+
+// -----------------------------------------------------------------------------
+
 type rawType struct {
 	Type types.Type
 }
@@ -92,8 +144,9 @@ func (t Type) RawType() types.Type {
 }
 
 // TypeSizes returns the sizes of the types.
-func (p Program) TypeSizes() types.Sizes {
-	return nil // TODO(xsw)
+func (p Program) TypeSizes(sizes types.Sizes) types.Sizes {
+	p.sizes = sizes
+	return (*goProgram)(p)
 }
 
 // TODO(xsw):
@@ -117,10 +170,12 @@ func SizeOf(prog Program, t Type, n ...int64) Expr {
 	return prog.IntVal(size, prog.Uintptr())
 }
 
+/*
 func OffsetOf(prog Program, t Type, i int) Expr {
 	offset := prog.OffsetOf(t, i)
 	return prog.IntVal(offset, prog.Uintptr())
 }
+*/
 
 func (p Program) PointerSize() int {
 	return p.td.PointerSize()

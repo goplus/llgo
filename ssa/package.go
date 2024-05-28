@@ -101,6 +101,7 @@ func Initialize(flags InitFlags) {
 type aProgram struct {
 	ctx   llvm.Context
 	typs  typeutil.Map // rawType -> Type
+	sizes types.Sizes  // provided by Go compiler
 	gocvt goTypes
 
 	rt    *types.Package
