@@ -170,10 +170,12 @@ func SizeOf(prog Program, t Type, n ...int64) Expr {
 	return prog.IntVal(size, prog.Uintptr())
 }
 
+/*
 func OffsetOf(prog Program, t Type, i int) Expr {
 	offset := prog.OffsetOf(t, i)
 	return prog.IntVal(offset, prog.Uintptr())
 }
+*/
 
 func (p Program) PointerSize() int {
 	return p.td.PointerSize()
