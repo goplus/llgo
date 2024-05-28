@@ -23,8 +23,24 @@ import (
 	"testing"
 	"unsafe"
 
+	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llvm"
 )
+
+func TestUnsafeString(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("foo", "foo")
+	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	b := pkg.NewFunc("main", sigMain, InC).MakeBody(1)
+	b.Println(b.BuiltinCall("String", b.CStr("hello"), prog.Val(5)))
+	b.Return()
+}
 
 func TestPointerSize(t *testing.T) {
 	expected := unsafe.Sizeof(uintptr(0))
