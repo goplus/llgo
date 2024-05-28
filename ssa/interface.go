@@ -287,7 +287,8 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
-	return b.aggregateValue(tclosure, b.Load(pfn).impl, b.faceData(impl))
+	fn := b.Load(pfn)
+	return b.aggregateValue(tclosure, fn.impl, b.faceData(impl))
 }
 
 // -----------------------------------------------------------------------------
