@@ -116,20 +116,25 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 func PointerTo(elem *Type) *Type {
 	ret := elem.PtrToThis_
 	if ret == nil {
-		ptr := &abi.PtrType{
-			Type: Type{
-				Size_: unsafe.Sizeof(uintptr(0)),
-				Hash:  uint32(abi.Pointer), // TODO(xsw): hash
-				Kind_: uint8(abi.Pointer),
-			},
-			Elem: elem,
-		}
-		ret = &ptr.Type
+		ret = newPointer(elem)
 		elem.PtrToThis_ = ret
 	}
 	return ret
 }
 
+func newPointer(elem *Type) *Type {
+	ptr := &abi.PtrType{
+		Type: Type{
+			Size_: unsafe.Sizeof(uintptr(0)),
+			Hash:  uint32(abi.Pointer), // TODO(xsw): hash
+			Kind_: uint8(abi.Pointer),
+		},
+		Elem: elem,
+	}
+	return &ptr.Type
+}
+
+// SliceOf returns the slice type with element elem.
 func SliceOf(elem *Type) *Type {
 	ret := &abi.SliceType{
 		Type: Type{
@@ -142,6 +147,7 @@ func SliceOf(elem *Type) *Type {
 	return &ret.Type
 }
 
+// ArrayOf returns the array type with element elem and length.
 func ArrayOf(length uintptr, elem *Type) *Type {
 	ret := &abi.ArrayType{
 		Type: Type{

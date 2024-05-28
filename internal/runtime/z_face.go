@@ -103,7 +103,7 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 }
 
 // Named returns a named type.
-func Named(pkgPath, name string, underlying *Type, methods []Method) *Type {
+func Named(pkgPath, name string, underlying *Type, methods, ptrMethods []Method) *Type {
 	tflag := underlying.TFlag
 	if tflag&abi.TFlagUncommon != 0 {
 		panic("runtime: underlying type is already named")
@@ -120,6 +120,16 @@ func Named(pkgPath, name string, underlying *Type, methods []Method) *Type {
 		ret.Str_ = name
 		return &ret.Type
 	}
+
+	ret := newNamed(pkgPath, name, underlying, methods)
+	ret.PtrToThis_ = newNamed(pkgPath, "*"+name, newPointer(ret), ptrMethods)
+	return ret
+}
+
+func newNamed(pkgPath, name string, underlying *Type, methods []Method) *Type {
+	tflag := underlying.TFlag
+	kind := underlying.Kind()
+	n := len(methods)
 
 	baseSize := hdrSizeOf(kind)
 	extraSize := uintptr(0)
@@ -164,6 +174,8 @@ func Named(pkgPath, name string, underlying *Type, methods []Method) *Type {
 
 	data := (*abi.Method)(c.Advance(ptr, extraOff))
 	copy(unsafe.Slice(data, n), methods)
+
+	println("==> Named:", pkgPath, name, ret, ret.Uncommon())
 	return ret
 }
 
@@ -216,6 +228,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	ret.hash = typ.Hash
 
 	u := typ.Uncommon()
+	println("==> NewItab Uncommon:", typ, u)
 	if u == nil {
 		ret.fun[0] = 0
 	} else {
@@ -228,6 +241,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 				break
 			}
 			*c.Advance(data, i) = uintptr(fn)
+			println("==> NewItab:", ret, i, fn)
 		}
 	}
 	return ret
@@ -238,6 +252,7 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 	for _, m := range mthds {
 		mName := m.Name_
 		if mName >= imName {
+			println("==> findMethod:", mName, imName, m.Mtyp_, im.Typ_, m.Ifn_)
 			if mName == imName && m.Mtyp_ == im.Typ_ {
 				println("==> findMethod", mName, m.Ifn_)
 				return m.Ifn_

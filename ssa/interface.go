@@ -94,22 +94,48 @@ func (b Builder) abiImethodOf(m *types.Func) Expr {
 	prog := b.Prog
 	name := b.Str(m.Name())
 	typ := b.abiType(m.Type())
+	tname, _ := b.Pkg.abi.TypeName(m.Type())
+	log.Println("==> abiImethodOf:", m.Name(), m.Type(), tname)
+	b.Println(b.Str("==> abiImethodOf:"), typ)
 	return b.aggregateValue(prog.rtType("Imethod"), name.impl, typ.impl)
 }
 
 // Method{name string, typ *FuncType, ifn, tfn abi.Text}
-func (b Builder) abiMethodOf(m *types.Func) Expr {
+func (b Builder) abiMethodOf(m *types.Func /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
 	prog := b.Prog
-	mName := m.Name()
+	mPkg, mName := m.Pkg(), m.Name()
 	mSig := m.Type().(*types.Signature)
-	fullName := FuncName(m.Pkg(), mName, mSig.Recv())
-	name := b.Str(mName)
-	fn := b.Pkg.NewFunc(fullName, mSig, InGo)
-	sig := fn.raw.Type.(*types.Signature)
-	sig = types.NewSignatureType(nil, nil, nil, sig.Params(), sig.Results(), sig.Variadic())
-	typ := b.abiType(sig)
-	// TODO(xsw): ifn, tfn
-	return b.aggregateValue(prog.rtType("Method"), name.impl, typ.impl, fn.impl, fn.impl)
+
+	name := b.Str(mName).impl
+	abiSigGo := types.NewSignatureType(nil, nil, nil, mSig.Params(), mSig.Results(), mSig.Variadic())
+	abiSig := prog.FuncDecl(abiSigGo, InGo).raw.Type
+	abiTyp := b.abiType(abiSig)
+	tname, _ := b.Pkg.abi.TypeName(abiSig)
+	log.Println("==> abiMethodOf:", mName, abiSigGo, tname)
+	b.Println(b.Str("==> abiMethodOf:"), abiTyp)
+	abiTypImpl := abiTyp.impl
+
+	recv := mSig.Recv()
+	recvType := recv.Type()
+	if _, ok := recvType.(*types.Pointer); ok {
+		ptrMthd, _ = b.abiMthd(mPkg, mName, mSig, name, abiTypImpl, llvm.Value{})
+		return
+	}
+	ptrRecv := types.NewVar(0, nil, "", types.NewPointer(recvType))
+	ptrSig := types.NewSignatureType(ptrRecv, nil, nil, mSig.Params(), mSig.Results(), mSig.Variadic())
+	ptrMthd, ifn := b.abiMthd(mPkg, mName, ptrSig, name, abiTypImpl, llvm.Value{})
+	mthd, _ = b.abiMthd(mPkg, mName, mSig, name, abiTypImpl, ifn)
+	return
+}
+
+func (b Builder) abiMthd(mPkg *types.Package, mName string, mSig *types.Signature, name, abiTyp, ifn llvm.Value) (ret Expr, tfn llvm.Value) {
+	fullName := FuncName(mPkg, mName, mSig.Recv())
+	tfn = b.Pkg.NewFunc(fullName, mSig, InGo).impl // TODO(xsw): use rawType to speed up
+	if ifn.IsNil() {
+		ifn = tfn
+	}
+	ret = b.aggregateValue(b.Prog.rtType("Method"), name, abiTyp, ifn, tfn)
+	return
 }
 
 // func Interface(pkgPath string, methods []abi.Imethod)
@@ -129,10 +155,9 @@ func (b Builder) abiInterfaceOf(t *types.Interface) Expr {
 	return b.Call(fn, b.Str(pkgPath), methodSlice)
 }
 
-// func Named(pkgPath, name string, underlying *Type, methods []abi.Method)
+// func Named(pkgPath, name string, underlying *Type, methods, ptrMethods []abi.Method)
 func (b Builder) abiNamedOf(t *types.Named) Expr {
-	tunder := t.Underlying()
-	under := b.abiType(tunder)
+	under := b.abiType(t.Underlying())
 	path := abi.PathOf(t.Obj().Pkg())
 	name := NameOf(t)
 	prog := b.Prog
@@ -140,19 +165,30 @@ func (b Builder) abiNamedOf(t *types.Named) Expr {
 
 	var fn = pkg.rtFunc("Named")
 	var tSlice = lastParamType(prog, fn)
-	var methods Expr
-	if _, ok := tunder.(*types.Interface); ok {
+	var n = t.NumMethods()
+	var methods, ptrMethods Expr
+	if n == 0 {
 		methods = prog.Zero(tSlice)
+		ptrMethods = methods
 	} else {
-		n := t.NumMethods()
-		mths := make([]Expr, n)
+		var mthds []Expr
+		var ptrMthds = make([]Expr, 0, n)
 		for i := 0; i < n; i++ {
 			m := t.Method(i)
-			mths[i] = b.abiMethodOf(m)
+			mthd, ptrMthd := b.abiMethodOf(m)
+			if !mthd.IsNil() {
+				mthds = append(mthds, mthd)
+			}
+			ptrMthds = append(ptrMthds, ptrMthd)
 		}
-		methods = b.SliceLit(tSlice, mths...)
+		if len(mthds) > 0 {
+			methods = b.SliceLit(tSlice, mthds...)
+		} else {
+			methods = prog.Zero(tSlice)
+		}
+		ptrMethods = b.SliceLit(tSlice, ptrMthds...)
 	}
-	return b.Call(fn, b.Str(path), b.Str(name), under, methods)
+	return b.Call(fn, b.Str(path), b.Str(name), under, methods, ptrMethods)
 }
 
 func (b Builder) abiPointerOf(t *types.Pointer) Expr {
@@ -288,7 +324,9 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
-	return b.aggregateValue(tclosure, fn.impl, b.faceData(impl))
+	ret := b.aggregateValue(tclosure, fn.impl, b.faceData(impl))
+	b.Println(b.Str("Imethod:"), itab, ret, prog.Val(ret.kind), prog.Val(i))
+	return ret
 }
 
 // -----------------------------------------------------------------------------
