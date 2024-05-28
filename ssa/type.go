@@ -86,15 +86,42 @@ func (p *goProgram) Alignof(T types.Type) int64 {
 // Offsetsof returns the offsets of the given struct fields, in bytes.
 // Offsetsof must implement the offset guarantees required by the spec.
 // A negative entry in the result indicates that the struct is too large.
-func (p *goProgram) Offsetsof(fields []*types.Var) []int64 {
-	return p.sizes.Offsetsof(fields)
+func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
+	prog := Program(p)
+	ptrSize := int64(prog.PointerSize())
+	extra := int64(0)
+	ret = p.sizes.Offsetsof(fields)
+	for i, f := range fields {
+		ret[i] += extra
+		extra += extraSize(f.Type(), ptrSize)
+	}
+	return
 }
 
 // Sizeof returns the size of a variable of type T.
 // Sizeof must implement the size guarantees required by the spec.
 // A negative result indicates that T is too large.
 func (p *goProgram) Sizeof(T types.Type) int64 {
-	return p.sizes.Sizeof(T)
+	prog := Program(p)
+	ptrSize := int64(prog.PointerSize())
+	return prog.sizes.Sizeof(T) + extraSize(T, ptrSize)
+}
+
+func extraSize(t types.Type, ptrSize int64) (ret int64) {
+	switch t := t.Underlying().(type) {
+	case *types.Signature:
+		return ptrSize
+	case *types.Struct:
+		n := t.NumFields()
+		for i := 0; i < n; i++ {
+			f := t.Field(i)
+			ret += extraSize(f.Type(), ptrSize)
+		}
+		return
+	case *types.Array:
+		return extraSize(t.Elem(), ptrSize) * t.Len()
+	}
+	return 0
 }
 
 // -----------------------------------------------------------------------------
