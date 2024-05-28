@@ -29,10 +29,10 @@ import (
 	"runtime"
 	"strings"
 
-	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/xtool/clang"
 
 	llssa "github.com/goplus/llgo/ssa"
@@ -88,6 +88,9 @@ const (
 )
 
 func Do(args []string, conf *Config) {
+	prog := llssa.NewProgram(nil)
+	sizes := prog.TypeSizes()
+
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -97,7 +100,7 @@ func Do(args []string, conf *Config) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	initial, err := packages.Load(cfg, patterns...)
+	initial, err := packages.LoadEx(sizes, cfg, patterns...)
 	check(err)
 
 	mode := conf.Mode
@@ -122,11 +125,10 @@ func Do(args []string, conf *Config) {
 
 	var needRt bool
 	var rt []*packages.Package
-	prog := llssa.NewProgram(nil)
 	load := func() []*packages.Package {
 		if rt == nil {
 			var err error
-			rt, err = packages.Load(cfg, llssa.PkgRuntime, llssa.PkgPython)
+			rt, err = packages.LoadEx(sizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
 			check(err)
 		}
 		return rt

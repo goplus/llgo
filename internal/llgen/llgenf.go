@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl"
-	"golang.org/x/tools/go/packages"
+	"github.com/goplus/llgo/internal/packages"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
@@ -43,7 +43,7 @@ func initRtAndPy(prog llssa.Program, cfg *packages.Config) {
 	load := func() []*packages.Package {
 		if pkgRtAndPy == nil {
 			var err error
-			pkgRtAndPy, err = packages.Load(cfg, llssa.PkgRuntime, llssa.PkgPython)
+			pkgRtAndPy, err = packages.LoadEx(prog.TypeSizes(), cfg, llssa.PkgRuntime, llssa.PkgPython)
 			check(err)
 		}
 		return pkgRtAndPy
@@ -60,10 +60,12 @@ func initRtAndPy(prog llssa.Program, cfg *packages.Config) {
 }
 
 func GenFrom(fileOrPkg string) string {
+	prog := llssa.NewProgram(nil)
+
 	cfg := &packages.Config{
 		Mode: loadSyntax | packages.NeedDeps,
 	}
-	initial, err := packages.Load(cfg, fileOrPkg)
+	initial, err := packages.LoadEx(prog.TypeSizes(), cfg, fileOrPkg)
 	check(err)
 
 	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions)
@@ -72,7 +74,6 @@ func GenFrom(fileOrPkg string) string {
 	ssaPkg := pkgs[0]
 	ssaPkg.Build()
 
-	prog := llssa.NewProgram(nil)
 	initRtAndPy(prog, cfg)
 
 	if Verbose {

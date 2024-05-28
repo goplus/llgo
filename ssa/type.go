@@ -91,6 +91,11 @@ func (t Type) RawType() types.Type {
 	return t.raw.Type
 }
 
+// TypeSizes returns the sizes of the types.
+func (p Program) TypeSizes() types.Sizes {
+	return nil // TODO(xsw)
+}
+
 // TODO(xsw):
 // how to generate platform independent code?
 func (p Program) SizeOf(typ Type, n ...int64) uint64 {
