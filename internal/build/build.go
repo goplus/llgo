@@ -89,7 +89,7 @@ const (
 
 func Do(args []string, conf *Config) {
 	prog := llssa.NewProgram(nil)
-	sizes := prog.TypeSizes()
+	sizes := prog.TypeSizes
 
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
 	cfg := &packages.Config{

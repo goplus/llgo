@@ -74,6 +74,31 @@ func indexType(t types.Type) types.Type {
 
 // -----------------------------------------------------------------------------
 
+type goProgram aProgram
+
+// Alignof returns the alignment of a variable of type T.
+// Alignof must implement the alignment guarantees required by the spec.
+// The result must be >= 1.
+func (p *goProgram) Alignof(T types.Type) int64 {
+	return p.sizes.Alignof(T)
+}
+
+// Offsetsof returns the offsets of the given struct fields, in bytes.
+// Offsetsof must implement the offset guarantees required by the spec.
+// A negative entry in the result indicates that the struct is too large.
+func (p *goProgram) Offsetsof(fields []*types.Var) []int64 {
+	return p.sizes.Offsetsof(fields)
+}
+
+// Sizeof returns the size of a variable of type T.
+// Sizeof must implement the size guarantees required by the spec.
+// A negative result indicates that T is too large.
+func (p *goProgram) Sizeof(T types.Type) int64 {
+	return p.sizes.Sizeof(T)
+}
+
+// -----------------------------------------------------------------------------
+
 type rawType struct {
 	Type types.Type
 }
@@ -92,8 +117,9 @@ func (t Type) RawType() types.Type {
 }
 
 // TypeSizes returns the sizes of the types.
-func (p Program) TypeSizes() types.Sizes {
-	return nil // TODO(xsw)
+func (p Program) TypeSizes(sizes types.Sizes) types.Sizes {
+	p.sizes = sizes
+	return (*goProgram)(p)
 }
 
 // TODO(xsw):
