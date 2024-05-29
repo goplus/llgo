@@ -60,7 +60,7 @@ _llgo_0:
 define void @main.dumpTyp(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1) {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %1)
-  %2 = call i64 @"(*github.com/goplus/llgo/internal/abi.Type).Kind"(ptr %0)
+  %2 = call i64 @"github.com/goplus/llgo/internal/abi.(*Type).Kind"(ptr %0)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %0, i32 0, i32 0
   %4 = load i64, ptr %3, align 4
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %0, i32 0, i32 1
@@ -300,7 +300,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 
-declare i64 @"(*github.com/goplus/llgo/internal/abi.Type).Kind"(ptr)
+declare i64 @"github.com/goplus/llgo/internal/abi.(*Type).Kind"(ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64)
 

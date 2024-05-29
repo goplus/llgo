@@ -6,16 +6,16 @@ source_filename = "main"
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 
-define i64 @"(main.T).Add"(i64 %0, i64 %1) {
+define i64 @main.T.Add(i64 %0, i64 %1) {
 _llgo_0:
   %2 = add i64 %0, %1
   ret i64 %2
 }
 
-define i64 @"(*main.T).Add"(ptr %0, i64 %1) {
+define i64 @"main.(*T).Add"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
-  %3 = call i64 @"(main.T).Add"(i64 %2, i64 %1)
+  %3 = call i64 @main.T.Add(i64 %2, i64 %1)
   ret i64 %3
 }
 
@@ -48,7 +48,7 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = call i64 @"(main.T).Add"(i64 1, i64 2)
+  %2 = call i64 @main.T.Add(i64 1, i64 2)
   call void (ptr, ...) @printf(ptr @main.format, i64 %2)
   ret i32 0
 }

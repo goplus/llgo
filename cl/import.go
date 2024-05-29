@@ -241,20 +241,21 @@ func trecvTypeName(t ast.Expr, indices ...ast.Expr) string {
 
 // inPkgName:
 // - func: name
-// - method: (T).name, (*T).name
+// - method: T.name, (*T).name
 // fullName:
 // - func: pkg.name
-// - method: (pkg.T).name, (*pkg.T).name
+// - method: pkg.(T).name, pkg.(*T).name
 func astFuncName(pkgPath string, fn *ast.FuncDecl) (fullName, inPkgName string) {
 	name := fn.Name.Name
 	if recv := fn.Recv; recv != nil && len(recv.List) == 1 {
-		tPrefix := "("
+		var method string
 		t := recv.List[0].Type
 		if tp, ok := t.(*ast.StarExpr); ok {
-			t, tPrefix = tp.X, "(*"
+			method = "(*" + recvTypeName(tp.X) + ")." + name
+		} else {
+			method = recvTypeName(t) + "." + name
 		}
-		tSuffix := recvTypeName(t) + ")." + name
-		return tPrefix + pkgPath + "." + tSuffix, tPrefix + tSuffix
+		return pkgPath + "." + method, method
 	}
 	return pkgPath + "." + name, name
 }
@@ -263,13 +264,14 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 	sig := fn.Type().(*types.Signature)
 	name := fn.Name()
 	if recv := sig.Recv(); recv != nil {
-		tPrefix := "("
+		var method string
 		t := recv.Type()
 		if tp, ok := t.(*types.Pointer); ok {
-			t, tPrefix = tp.Elem(), "(*"
+			method = "(*" + tp.Elem().(*types.Named).Obj().Name() + ")." + name
+		} else {
+			method = t.(*types.Named).Obj().Name() + "." + name
 		}
-		tSuffix := t.(*types.Named).Obj().Name() + ")." + name
-		return tPrefix + pkgPath + "." + tSuffix, tPrefix + tSuffix
+		return pkgPath + "." + method, method
 	}
 	return pkgPath + "." + name, name
 }
@@ -277,7 +279,7 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 // TODO(xsw): may can use typesFuncName
 // fullName:
 // - func: pkg.name
-// - method: (pkg.T).name, (*pkg.T).name
+// - method: pkg.(T).name, pkg.(*T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
 	sig := fn.Signature
 	return llssa.FuncName(pkg, fn.Name(), sig.Recv())

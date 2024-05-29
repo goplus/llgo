@@ -172,7 +172,7 @@ _llgo_0:
   store %"github.com/goplus/llgo/cl/internal/foo.Foo" %26, ptr %18, align 8
   %27 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %25, 1
   %28 = load %"github.com/goplus/llgo/cl/internal/foo.Foo", ptr %18, align 8
-  %29 = call ptr @"(github.com/goplus/llgo/cl/internal/foo.Foo).Pb"(%"github.com/goplus/llgo/cl/internal/foo.Foo" %28)
+  %29 = call ptr @"github.com/goplus/llgo/cl/internal/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/internal/foo.Foo" %28)
   %30 = getelementptr inbounds %"github.com/goplus/llgo/cl/internal/foo.Foo", ptr %18, i32 0, i32 1
   %31 = load float, ptr %30, align 4
   call void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr %29)
@@ -393,9 +393,9 @@ _llgo_12:                                         ; preds = %_llgo_11, %_llgo_9
   %114 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %112, i32 0, i32 1
   store ptr %111, ptr %114, align 8
   %115 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %112, i32 0, i32 2
-  store ptr @"(*github.com/goplus/llgo/cl/internal/foo.Foo).Pb", ptr %115, align 8
+  store ptr @"github.com/goplus/llgo/cl/internal/foo.(*Foo).Pb", ptr %115, align 8
   %116 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %112, i32 0, i32 3
-  store ptr @"(*github.com/goplus/llgo/cl/internal/foo.Foo).Pb", ptr %116, align 8
+  store ptr @"github.com/goplus/llgo/cl/internal/foo.(*Foo).Pb", ptr %116, align 8
   %117 = load %"github.com/goplus/llgo/internal/abi.Method", ptr %112, align 8
   %118 = alloca %"github.com/goplus/llgo/internal/abi.Method", align 8
   %119 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %118, i32 0, i32 0
@@ -403,9 +403,9 @@ _llgo_12:                                         ; preds = %_llgo_11, %_llgo_9
   %120 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %118, i32 0, i32 1
   store ptr %111, ptr %120, align 8
   %121 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %118, i32 0, i32 2
-  store ptr @"(*github.com/goplus/llgo/cl/internal/foo.Foo).Pb", ptr %121, align 8
+  store ptr @"github.com/goplus/llgo/cl/internal/foo.(*Foo).Pb", ptr %121, align 8
   %122 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %118, i32 0, i32 3
-  store ptr @"(github.com/goplus/llgo/cl/internal/foo.Foo).Pb", ptr %122, align 8
+  store ptr @"github.com/goplus/llgo/cl/internal/foo.Foo.Pb", ptr %122, align 8
   %123 = load %"github.com/goplus/llgo/internal/abi.Method", ptr %118, align 8
   %124 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 40)
   %125 = getelementptr %"github.com/goplus/llgo/internal/abi.Method", ptr %124, i64 0
@@ -461,9 +461,9 @@ declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice", i1)
 
-declare ptr @"(*github.com/goplus/llgo/cl/internal/foo.Foo).Pb"(ptr)
+declare ptr @"github.com/goplus/llgo/cl/internal/foo.(*Foo).Pb"(ptr)
 
-declare ptr @"(github.com/goplus/llgo/cl/internal/foo.Foo).Pb"(%"github.com/goplus/llgo/cl/internal/foo.Foo")
+declare ptr @"github.com/goplus/llgo/cl/internal/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/internal/foo.Foo")
 
 declare void @"github.com/goplus/llgo/cl/internal/foo.init"()
 

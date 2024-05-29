@@ -8,7 +8,7 @@ source_filename = "main"
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 
-define void @"(main.Foo).Print"(%main.Foo %0) {
+define void @main.Foo.Print(%main.Foo %0) {
 _llgo_0:
   %1 = alloca %main.Foo, align 8
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 8)
@@ -27,10 +27,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"(*main.Foo).Print"(ptr %0) {
+define void @"main.(*Foo).Print"(ptr %0) {
 _llgo_0:
   %1 = load %main.Foo, ptr %0, align 4
-  call void @"(main.Foo).Print"(%main.Foo %1)
+  call void @main.Foo.Print(%main.Foo %1)
   ret void
 }
 
@@ -70,7 +70,7 @@ _llgo_0:
   store i32 100, ptr %4, align 4
   store i1 true, ptr %5, align 1
   %6 = load %main.Foo, ptr %3, align 4
-  call void @"(main.Foo).Print"(%main.Foo %6)
+  call void @main.Foo.Print(%main.Foo %6)
   ret i32 0
 }
 

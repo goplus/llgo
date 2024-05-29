@@ -46,7 +46,7 @@ _llgo_0:
   ret %"github.com/goplus/llgo/internal/runtime.iface" %9
 }
 
-define %"github.com/goplus/llgo/internal/runtime.String" @"(*main.errorString).Error"(ptr %0) {
+define %"github.com/goplus/llgo/internal/runtime.String" @"main.(*errorString).Error"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %main.errorString, ptr %0, i32 0, i32 0
   %2 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %1, align 8
@@ -194,9 +194,9 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %51 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %49, i32 0, i32 1
   store ptr %48, ptr %51, align 8
   %52 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %49, i32 0, i32 2
-  store ptr @"(*main.errorString).Error", ptr %52, align 8
+  store ptr @"main.(*errorString).Error", ptr %52, align 8
   %53 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Method", ptr %49, i32 0, i32 3
-  store ptr @"(*main.errorString).Error", ptr %53, align 8
+  store ptr @"main.(*errorString).Error", ptr %53, align 8
   %54 = load %"github.com/goplus/llgo/internal/abi.Method", ptr %49, align 8
   %55 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 40)
   %56 = getelementptr %"github.com/goplus/llgo/internal/abi.Method", ptr %55, i64 0
