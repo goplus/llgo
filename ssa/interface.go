@@ -102,7 +102,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	prog := b.Prog
 	typ := x.Type
 	tabi := b.abiType(typ.raw.Type)
-	kind, _, lvl := abi.KindOf(typ.raw.Type, 0, prog.is32Bits)
+	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
 		vptr := b.AllocU(typ)
@@ -132,7 +132,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog
-	kind, real, lvl := abi.KindOf(typ.raw.Type, 0, prog.is32Bits)
+	kind, real, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
 		impl := b.impl

@@ -20,7 +20,6 @@ import (
 	"go/token"
 	"go/types"
 	"strconv"
-	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -510,15 +509,17 @@ func (p Program) Uint64() Type {
 // initializer) and "init#%d", the nth declared init function,
 // and unspecified other things too.
 type aPackage struct {
-	mod    llvm.Module
-	abi    abi.Builder
-	abiini []func(b unsafe.Pointer) // b Builder
+	mod llvm.Module
+
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
 	pyobjs map[string]PyObjRef
 	pymods map[string]Global
 	Prog   Program
+
+	abi abi.Builder
+	abiTypes
 }
 
 type Package = *aPackage
@@ -582,43 +583,16 @@ func (p Package) String() string {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doAbiInit := len(p.abiini) > 0
+	doAbiInit := p.hasAbiInit()
 	doPyLoadModSyms := p.pyHasModSyms()
 	if doAbiInit || doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
 		if doAbiInit {
-			sigAbiInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-			baseName := p.Path() + ".init$abi"
-			name := baseName
-			idx := 1
-			fn := p.NewFunc(name, sigAbiInit, InC)
-			b.Call(fn.Expr)
-			for {
-				fnb := fn.MakeBody(1)
-				first := fnb.blk
-				p.callAbiInit(fnb)
-				fnb.Return()
-				if len(p.abiini) == 0 {
-					break
-				}
-				idx++
-				name = baseName + strconv.Itoa(idx)
-				fn = p.NewFunc(name, sigAbiInit, InC)
-				fnb.SetBlockEx(first, AtStart, false)
-				fnb.Call(fn.Expr)
-			}
+			p.abiInit(b)
 		}
 		if doPyLoadModSyms {
 			p.pyLoadModSyms(b)
 		}
-	}
-}
-
-func (p Package) callAbiInit(fnb Builder) {
-	abiini := p.abiini
-	p.abiini = nil
-	for _, abiInit := range abiini {
-		abiInit(unsafe.Pointer(fnb))
 	}
 }
 
