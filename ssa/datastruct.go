@@ -250,7 +250,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
 			if high.IsNil() {
 				if lowIsNil && max.IsNil() {
-					return b.unsafeSlice(x, nCap.impl, nCap.impl)
+					ret.impl = b.unsafeSlice(x, nCap.impl, nCap.impl).impl
+					return
 				}
 				high = nCap
 			}
