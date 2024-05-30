@@ -40,5 +40,13 @@ func main() {
 
 func dump(v any) {
 	e := (*eface)(unsafe.Pointer(&v))
-	println(e._type.Size(), e._type.Kind(), e._type, e._type.Elem())
+	dumpTyp(e._type, "")
+}
+
+func dumpTyp(t *abi.Type, sep string) {
+	print(sep)
+	println(t.Kind(), t.Size_, t.PtrBytes, t.Hash, t.TFlag, t.Align_, t.Str_, t.PtrToThis_)
+	if t.Elem() != nil {
+		dumpTyp(t.Elem(), sep+"\t")
+	}
 }
