@@ -892,32 +892,8 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t2 = println(t0, t1)
 //	t4 = t3()
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
-	return b.Do(Call, fn, args...)
-}
-
-type DoAction int
-
-const (
-	Call DoAction = iota
-	Go
-	Defer
-)
-
-// Do call a function with an action.
-func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
-		var b bytes.Buffer
-		name := fn.impl.Name()
-		if name == "" {
-			name = "closure"
-		}
-		fmt.Fprint(&b, "Do ", da, " ", fn.kind, " ", fn.raw.Type, " ", name)
-		sep := ": "
-		for _, arg := range args {
-			fmt.Fprint(&b, sep, arg.impl)
-			sep = ", "
-		}
-		log.Println(b.String())
+		logCall("Call", fn, args)
 	}
 	var kind = fn.kind
 	if kind == vkPyFuncRef {
@@ -945,6 +921,40 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	}
 	ret.Type = prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
+	return
+}
+
+func logCall(da string, fn Expr, args []Expr) {
+	var b bytes.Buffer
+	name := fn.impl.Name()
+	if name == "" {
+		name = "closure"
+	}
+	fmt.Fprint(&b, da, " ", fn.kind, " ", fn.raw.Type, " ", name)
+	sep := ": "
+	for _, arg := range args {
+		fmt.Fprint(&b, sep, arg.impl)
+		sep = ", "
+	}
+	log.Println(b.String())
+}
+
+type DoAction int
+
+const (
+	Call DoAction = iota
+	Go
+	Defer
+)
+
+// Do call a function with an action.
+func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
+	switch da {
+	case Call:
+		return b.Call(fn, args...)
+	case Go:
+		b.Go(fn, args...)
+	}
 	return
 }
 
