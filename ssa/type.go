@@ -451,10 +451,20 @@ func (p Program) retType(raw *types.Signature) Type {
 	}
 }
 
+func (p Program) llvmNameOf(named *types.Named) (name string) {
+	name = NameOf(named)
+	if obj := named.Obj(); obj != nil && obj.Parent() != nil && obj.Parent() != obj.Pkg().Scope() {
+		index := p.fnnamed[name]
+		p.fnnamed[name] = index + 1
+		name += fmt.Sprintf("#%v", index)
+	}
+	return name
+}
+
 func (p Program) toNamed(raw *types.Named) Type {
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
-		name := NameOf(raw)
+		name := p.llvmNameOf(raw)
 		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkStruct}
 	default:
 		typ := p.rawType(t)
