@@ -45,8 +45,5 @@ func dump(v any) {
 
 func dumpTyp(t *abi.Type, sep string) {
 	print(sep)
-	println(t.Kind(), t.Size_, t.PtrBytes, t.Hash, t.TFlag, t.Align_, t.Str_, t.PtrToThis_)
-	if t.Elem() != nil {
-		dumpTyp(t.Elem(), sep+"\t")
-	}
+	println(t.Kind(), t.Size_, t.PtrBytes, t.Hash, t.TFlag, t.Align_)
 }

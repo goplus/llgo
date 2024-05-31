@@ -102,46 +102,50 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 	return typeHdrSize
 }
 
-// Named returns a named type.
-func Named(pkgPath, name string, underlying *Type, methods []Method) *Type {
+// NewNamed returns an uninitialized named type.
+func NewNamed(kind abi.Kind, methods, ptrMethods int) *Type {
+	ret := newUninitedNamed(kind, methods)
+	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, ptrMethods)
+	return ret
+}
+
+// InitNamed initializes an uninitialized named type.
+func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method) {
+	ptr := ret.PtrToThis_
+	doInitNamed(ret, pkgPath, name, underlying, methods)
+	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
+	ret.PtrToThis_ = ptr
+	ptr.TFlag |= abi.TFlagExtraStar
+}
+
+func newUninitedNamed(kind abi.Kind, methods int) *Type {
+	size := hdrSizeOf(kind) + uncommonTypeHdrSize + uintptr(methods)*methodSize
+	ret := (*Type)(AllocU(size))
+	ret.Kind_ = uint8(kind)
+	ret.TFlag = abi.TFlagUninited
+	return ret
+}
+
+func doInitNamed(ret *Type, pkgPath, name string, underlying *Type, methods []Method) {
 	tflag := underlying.TFlag
 	if tflag&abi.TFlagUncommon != 0 {
 		panic("runtime: underlying type is already named")
 	}
 
-	kind := underlying.Kind()
-	n := len(methods)
-	if kind == abi.Interface {
-		if n > 0 {
-			panic("runtime: interface type cannot have methods")
-		}
-		ret := *underlying.InterfaceType()
-		ret.PkgPath_ = pkgPath
-		ret.Str_ = name
-		return &ret.Type
+	kind := abi.Kind(ret.Kind_)
+	if ret.TFlag != abi.TFlagUninited || kind != underlying.Kind() {
+		panic("initNamed: unexpected named type")
 	}
 
+	ptr := unsafe.Pointer(ret)
 	baseSize := hdrSizeOf(kind)
-	extraSize := uintptr(0)
-	if kind == abi.Func {
-		f := underlying.FuncType()
-		extraSize = uintptr(f.In()+f.Out()) * pointerSize
-	}
-
-	size := baseSize + extraSize
-	if n > 0 || pkgPath != "" {
-		size += uncommonTypeHdrSize + uintptr(n)*methodSize
-		tflag |= abi.TFlagUncommon
-	}
-
-	ptr := AllocU(size)
 	c.Memcpy(ptr, unsafe.Pointer(underlying), baseSize)
 
-	ret := (*Type)(ptr)
-	ret.TFlag = tflag | abi.TFlagNamed
+	ret.TFlag = tflag | abi.TFlagNamed | abi.TFlagUncommon
 	ret.Str_ = name
 
-	xcount := 0
+	n := len(methods)
+	xcount := uint16(0)
 	for _, m := range methods {
 		if !m.Exported() {
 			break
@@ -151,52 +155,40 @@ func Named(pkgPath, name string, underlying *Type, methods []Method) *Type {
 	uncommon := (*abi.UncommonType)(c.Advance(ptr, int(baseSize)))
 	uncommon.PkgPath_ = pkgPath
 	uncommon.Mcount = uint16(n)
-	uncommon.Xcount = uint16(xcount)
-	uncommon.Moff = uint32(uncommonTypeHdrSize + extraSize)
+	uncommon.Xcount = xcount
+	uncommon.Moff = uint32(uncommonTypeHdrSize)
 
 	extraOff := int(baseSize + uncommonTypeHdrSize)
-	if extraSize > 0 {
-		src := c.Advance(unsafe.Pointer(underlying), int(baseSize))
-		dest := c.Advance(unsafe.Pointer(ptr), extraOff)
-		c.Memcpy(dest, src, extraSize)
-		extraOff += int(extraSize)
-	}
-
 	data := (*abi.Method)(c.Advance(ptr, extraOff))
 	copy(unsafe.Slice(data, n), methods)
-	return ret
 }
 
 // Func returns a function type.
 func Func(in, out []*Type, variadic bool) *FuncType {
-	n := len(in) + len(out)
-	ptr := AllocU(funcTypeHdrSize + uintptr(n)*pointerSize)
-	c.Memset(ptr, 0, funcTypeHdrSize)
-
-	ret := (*abi.FuncType)(ptr)
-	ret.Size_ = pointerSize
-	ret.Hash = uint32(abi.Func) // TODO(xsw): hash
-	ret.Kind_ = uint8(abi.Func)
-	ret.InCount = uint16(len(in))
-	ret.OutCount = uint16(len(out))
-	if variadic {
-		ret.OutCount |= 1 << 15
+	ret := &FuncType{
+		Type: Type{
+			Size_: unsafe.Sizeof(uintptr(0)),
+			Hash:  uint32(abi.Func), // TODO(xsw): hash
+			Kind_: uint8(abi.Func),
+		},
+		In:  in,
+		Out: out,
 	}
-
-	data := (**Type)(c.Advance(ptr, int(funcTypeHdrSize)))
-	params := unsafe.Slice(data, n)
-	copy(params, in)
-	copy(params[len(in):], out)
+	if variadic {
+		ret.TFlag |= abi.TFlagVariadic
+	}
 	return ret
 }
 
 // Interface returns an interface type.
-func Interface(pkgPath string, methods []Imethod) *InterfaceType {
+// Don't call NewNamed for named interface type.
+func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_: unsafe.Sizeof(eface{}),
 			Hash:  uint32(abi.Interface), // TODO(xsw): hash
 			Kind_: uint8(abi.Interface),
+			Str_:  name,
 		},
 		PkgPath_: pkgPath,
 		Methods:  methods,
@@ -239,7 +231,6 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 		mName := m.Name_
 		if mName >= imName {
 			if mName == imName && m.Mtyp_ == im.Typ_ {
-				println("==> findMethod", mName, m.Ifn_)
 				return m.Ifn_
 			}
 			break

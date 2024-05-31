@@ -16,6 +16,7 @@ source_filename = "main"
 @2 = private unnamed_addr constant [6 x i8] c"hello\00", align 1
 @3 = private unnamed_addr constant [6 x i8] c"hello\00", align 1
 @4 = private unnamed_addr constant [4 x i8] c"def\00", align 1
+@_llgo_int = linkonce global ptr null
 @5 = private unnamed_addr constant [5 x i8] c"ABCD\00", align 1
 @6 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
 @7 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
@@ -85,6 +86,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$abi"()
   store i64 9223372036854775807, ptr @main.a, align 4
   store i64 -9223372036854775808, ptr @main.b, align 4
   store i64 -1, ptr @main.n, align 4
@@ -323,7 +325,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/internal/runtime.Slice" %122)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   %123 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
-  %124 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %124 = load ptr, ptr @_llgo_int, align 8
   %125 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
   %126 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %125, i32 0, i32 0
   store ptr %124, ptr %126, align 8
@@ -640,6 +642,21 @@ declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/ll
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/internal/runtime.Slice", ptr, i64, i64)
+
+define void @"main.init$abi"() {
+_llgo_0:
+  %0 = load ptr, ptr @_llgo_int, align 8
+  %1 = icmp eq ptr %0, null
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  store ptr %2, ptr @_llgo_int, align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 

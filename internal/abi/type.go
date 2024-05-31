@@ -134,6 +134,12 @@ const (
 	// TFlagRegularMemory means that equal and hash functions can treat
 	// this type as a single region of t.size bytes.
 	TFlagRegularMemory TFlag = 1 << 3
+
+	// TFlagVariadic means a funcType with variadic parameters
+	TFlagVariadic TFlag = 1 << 4
+
+	// TFlagUninited means this type is not fully initialized.
+	TFlagUninited TFlag = 1 << 7
 )
 
 // -----------------------------------------------------------------------------
@@ -186,35 +192,15 @@ type ChanType struct {
 }
 
 // funcType represents a function type.
-//
-// A *Type for each in and out parameter is stored in an array that
-// directly follows the funcType (and possibly its uncommonType). So
-// a function type with one method, one input, and one output is:
-//
-//	struct {
-//		funcType
-//		uncommonType
-//		[2]*rtype    // [0] is in, [1] is out
-//	}
 type FuncType struct {
 	Type
-	InCount  uint16
-	OutCount uint16 // top bit is set if last input parameter is ...
-}
-
-// In returns the number of input parameters of a function type.
-func (p *FuncType) In() int {
-	return int(p.InCount)
-}
-
-// Out returns the number of output results of a function type.
-func (p *FuncType) Out() int {
-	return int(p.OutCount &^ (1 << 15))
+	In  []*Type
+	Out []*Type
 }
 
 // Variadic reports whether the function type is variadic.
 func (p *FuncType) Variadic() bool {
-	return p.OutCount&(1<<15) != 0
+	return p.TFlag&TFlagVariadic != 0
 }
 
 type StructField struct {
@@ -303,6 +289,14 @@ func (t *Type) Size() uintptr { return t.Size_ }
 func (t *Type) Align() int { return int(t.Align_) }
 
 func (t *Type) FieldAlign() int { return int(t.FieldAlign_) }
+
+// Name returns the name of type t.
+func (t *Type) Name() string {
+	if t.TFlag&TFlagExtraStar != 0 {
+		return "*" + t.Str_
+	}
+	return t.Str_
+}
 
 func (t *Type) Common() *Type {
 	return t

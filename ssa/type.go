@@ -178,7 +178,7 @@ func OffsetOf(prog Program, t Type, i int) Expr {
 */
 
 func (p Program) PointerSize() int {
-	return p.td.PointerSize()
+	return p.ptrSize
 }
 
 func (p Program) Slice(typ Type) Type {

@@ -8,6 +8,7 @@ source_filename = "main"
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 @0 = private unnamed_addr constant [14 x i8] c"panic message\00", align 1
+@_llgo_string = linkonce global ptr null
 
 define void @main.init() {
 _llgo_0:
@@ -16,6 +17,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$abi"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -34,7 +36,7 @@ _llgo_0:
   %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
   store i64 13, ptr %4, align 4
   %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
-  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
+  %6 = load ptr, ptr @_llgo_string, align 8
   %7 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/internal/runtime.String" %5, ptr %7, align 8
   %8 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
@@ -48,6 +50,21 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+define void @"main.init$abi"() {
+_llgo_0:
+  %0 = load ptr, ptr @_llgo_string, align 8
+  %1 = icmp eq ptr %0, null
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
+  store ptr %2, ptr @_llgo_string, align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 

@@ -40,19 +40,43 @@ func BasicKind(t *types.Basic) abi.Kind {
 	return abi.Kind(kind)
 }
 
+func UnderlyingKind(t types.Type) abi.Kind {
+	switch t := t.(type) {
+	case *types.Basic:
+		return BasicKind(t)
+	case *types.Pointer:
+		return abi.Pointer
+	case *types.Slice:
+		return abi.Slice
+	case *types.Signature:
+		return abi.Func
+	case *types.Interface:
+		return abi.Interface
+	case *types.Struct:
+		return abi.Struct
+	case *types.Map:
+		return abi.Map
+	case *types.Array:
+		return abi.Array
+	case *types.Chan:
+		return abi.Chan
+	}
+	panic("todo")
+}
+
 // -----------------------------------------------------------------------------
 
-type Kind int
+type DataKind int
 
 const (
-	Invalid  Kind = iota
-	Indirect      // allocate memory for the value
-	Pointer       // store a pointer value directly in the interface value
-	Integer       // store a integer value directly in the interface value
-	BitCast       // store other value (need bitcast) directly in the interface value
+	Invalid  DataKind = iota
+	Indirect          // allocate memory for the value
+	Pointer           // store a pointer value directly in the interface value
+	Integer           // store a integer value directly in the interface value
+	BitCast           // store other value (need bitcast) directly in the interface value
 )
 
-func KindOf(raw types.Type, lvl int, is32Bits bool) (Kind, types.Type, int) {
+func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, int) {
 	switch t := raw.Underlying().(type) {
 	case *types.Basic:
 		kind := t.Kind()
@@ -76,12 +100,12 @@ func KindOf(raw types.Type, lvl int, is32Bits bool) (Kind, types.Type, int) {
 		return Pointer, raw, lvl
 	case *types.Struct:
 		if t.NumFields() == 1 {
-			return KindOf(t.Field(0).Type(), lvl+1, is32Bits)
+			return DataKindOf(t.Field(0).Type(), lvl+1, is32Bits)
 		}
 	case *types.Interface, *types.Slice:
 	case *types.Array:
 		if t.Len() == 1 {
-			return KindOf(t.Elem(), lvl+1, is32Bits)
+			return DataKindOf(t.Elem(), lvl+1, is32Bits)
 		}
 	default:
 		panic("unkown type")
