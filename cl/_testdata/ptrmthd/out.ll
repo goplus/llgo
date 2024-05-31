@@ -6,7 +6,7 @@ source_filename = "main"
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
 
-define void @"(*main.T).Print"(ptr %0, i64 %1) {
+define void @"main.(*T).Print"(ptr %0, i64 %1) {
 _llgo_0:
   call void (ptr, ...) @printf(ptr %0, i64 %1)
   ret void
@@ -41,7 +41,7 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  call void @"(*main.T).Print"(ptr @main.format, i64 100)
+  call void @"main.(*T).Print"(ptr @main.format, i64 100)
   ret i32 0
 }
 

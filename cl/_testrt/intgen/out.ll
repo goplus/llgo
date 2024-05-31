@@ -47,7 +47,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %8
 }
 
-define i32 @"(*main.generator).next"(ptr %0) {
+define i32 @"main.(*generator).next"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %main.generator, ptr %0, i32 0, i32 0
   %2 = load i32, ptr %1, align 4
@@ -205,6 +205,6 @@ define i32 @"main.next$bound"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
-  %3 = call i32 @"(*main.generator).next"(ptr %2)
+  %3 = call i32 @"main.(*generator).next"(ptr %2)
   ret i32 %3
 }

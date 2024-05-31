@@ -76,7 +76,7 @@ const (
 	Done   Errno = 101 // sqlite3_step() has finished executing
 )
 
-// llgo:link (Errno).Errstr C.sqlite3_errstr
+// llgo:link Errno.Errstr C.sqlite3_errstr
 func (err Errno) Errstr() *c.Char { return nil }
 
 // llgo:link (*Sqlite3).Errmsg C.sqlite3_errmsg
