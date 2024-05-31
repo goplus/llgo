@@ -6,6 +6,12 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
+type T string
+
+func (t *T) Invoke() {
+	println("invoke")
+}
+
 type eface struct {
 	_type *abi.Type
 	data  unsafe.Pointer
@@ -36,6 +42,8 @@ func main() {
 		y int
 		z int
 	}{})
+	var t T
+	dump(t)
 }
 
 func dump(v any) {
@@ -45,5 +53,19 @@ func dump(v any) {
 
 func dumpTyp(t *abi.Type, sep string) {
 	print(sep)
-	println(t.Kind(), t.Size_, t.PtrBytes, t.Hash, t.TFlag, t.Align_)
+	println(t.Kind(), t.Size_, t.PtrBytes, t.Hash, t.TFlag, t.Align_, t.PtrToThis_, t.Uncommon())
+	if t.Elem() != nil {
+		dumpTyp(t.Elem(), sep+"\telem: ")
+	}
+	if t.Uncommon() != nil {
+		dumpUncommon(t.Uncommon(), sep+"\tuncomm: ")
+		if t.PtrToThis_ != nil {
+			dumpUncommon(t.PtrToThis_.Uncommon(), sep+"\tuncomm: ")
+		}
+	}
+}
+
+func dumpUncommon(u *abi.UncommonType, sep string) {
+	print(sep)
+	println(u.PkgPath_, u.Mcount, u.Xcount)
 }

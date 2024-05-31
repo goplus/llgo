@@ -26,14 +26,12 @@ import (
 // -----------------------------------------------------------------------------
 
 type goTypes struct {
-	typs  map[unsafe.Pointer]unsafe.Pointer
-	named map[string]*types.Named
+	typs map[unsafe.Pointer]unsafe.Pointer
 }
 
 func newGoTypes() goTypes {
 	typs := make(map[unsafe.Pointer]unsafe.Pointer)
-	named := make(map[string]*types.Named)
-	return goTypes{typs, named}
+	return goTypes{typs}
 }
 
 type Background int
@@ -118,14 +116,6 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 		cvt = t != raw
 		return
 	}
-	defer func() {
-		p.typs[unsafe.Pointer(t)] = unsafe.Pointer(raw)
-	}()
-	id := t.String()
-	if named, ok := p.named[id]; ok {
-		return named, false
-	}
-
 	n := t.NumMethods()
 	methods := make([]*types.Func, n)
 	for i := 0; i < n; i++ {
@@ -133,8 +123,7 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 		methods[i] = m
 	}
 	named := types.NewNamed(t.Obj(), types.Typ[types.Int], methods)
-	p.named[id] = named
-	defer delete(p.named, id)
+	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
 	if tund, cvt := p.cvtType(t.Underlying()); cvt {
 		named.SetUnderlying(tund)
 		return named, true
