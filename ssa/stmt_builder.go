@@ -142,6 +142,21 @@ func (b Builder) Unreachable() {
 	b.impl.CreateUnreachable()
 }
 
+// The Go instruction creates a new goroutine and calls the specified
+// function within it.
+//
+// Example printed form:
+//
+//	go println(t0, t1)
+//	go t3()
+//	go invoke t5.Println(...t6)
+func (b Builder) Go(fn Expr, args ...Expr) {
+	if debugInstr {
+		logCall("Go", fn, args)
+	}
+	b.Call(fn, args...)
+}
+
 // Return emits a return instruction.
 func (b Builder) Return(results ...Expr) {
 	if debugInstr {
