@@ -169,7 +169,6 @@ Here are some examples related to them:
 
 Common Go syntax is already supported. Except for the following, which needs to be improved:
 
-* interface (Limited support)
 * map (Very limited support)
 * panic (Limited support)
 * recover (Not supported yet)
@@ -183,6 +182,7 @@ Here are some examples related to Go syntax:
 
 * [concat](_demo/concat/concat.go): define a variadic function
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
+* [errors](_demo/errors/errors.go): demo to implement error interface
 
 
 ## Go packages support
