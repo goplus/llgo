@@ -548,6 +548,72 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 	return
 }
 
+func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
+	cv := call.Value
+	if mthd := call.Method; mthd != nil {
+		o := p.compileValue(b, cv)
+		fn := b.Imethod(o, mthd)
+		args := p.compileValues(b, call.Args, fnNormal)
+		ret = b.Do(act, fn, args...)
+		return
+	}
+	kind := p.funcKind(cv)
+	if kind == fnIgnore {
+		return
+	}
+	args := call.Args
+	if debugGoSSA {
+		log.Println(">>> Do", act, cv, args)
+	}
+	switch cv := cv.(type) {
+	case *ssa.Builtin:
+		fn := cv.Name()
+		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
+			arg := args[0]
+			ret = p.compileValue(b, arg)
+			// log.Println("wrapnilchk:", ret.TypeOf())
+		} else {
+			args := p.compileValues(b, args, kind)
+			ret = b.BuiltinDo(act, fn, args...)
+		}
+	case *ssa.Function:
+		aFn, pyFn, ftype := p.compileFunction(cv)
+		// TODO(xsw): check ca != llssa.Call
+		switch ftype {
+		case goFunc, cFunc:
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, aFn.Expr, args...)
+		case pyFunc:
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, pyFn.Expr, args...)
+		case llgoPyList:
+			args := p.compileValues(b, args, fnHasVArg)
+			ret = b.PyList(args...)
+		case llgoCstr:
+			ret = cstr(b, args)
+		case llgoAdvance:
+			ret = p.advance(b, args)
+		case llgoIndex:
+			ret = p.index(b, args)
+		case llgoAlloca:
+			ret = p.alloca(b, args)
+		case llgoAllocaCStr:
+			ret = p.allocaCStr(b, args)
+		case llgoStringData:
+			ret = p.stringData(b, args)
+		case llgoUnreachable: // func unreachable()
+			b.Unreachable()
+		default:
+			log.Panicln("unknown ftype:", ftype)
+		}
+	default:
+		fn := p.compileValue(b, cv)
+		args := p.compileValues(b, args, kind)
+		ret = b.Do(act, fn, args...)
+	}
+	return
+}
+
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	if asValue {
 		if v, ok := p.bvals[iv]; ok {
@@ -557,67 +623,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
-		cv := v.Call.Value
-		if mthd := v.Call.Method; mthd != nil {
-			o := p.compileValue(b, cv)
-			fn := b.Imethod(o, v.Call.Method)
-			args := p.compileValues(b, v.Call.Args, fnNormal)
-			ret = b.Call(fn, args...)
-			break
-		}
-		kind := p.funcKind(cv)
-		if kind == fnIgnore {
-			return
-		}
-		args := v.Call.Args
-		if debugGoSSA {
-			log.Println(">>> Call", cv, args)
-		}
-		switch cv := cv.(type) {
-		case *ssa.Builtin:
-			fn := cv.Name()
-			if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-				arg := args[0]
-				ret = p.compileValue(b, arg)
-				// log.Println("wrapnilchk:", ret.TypeOf())
-			} else {
-				args := p.compileValues(b, args, kind)
-				ret = b.BuiltinCall(fn, args...)
-			}
-		case *ssa.Function:
-			aFn, pyFn, ftype := p.compileFunction(cv)
-			switch ftype {
-			case goFunc, cFunc:
-				args := p.compileValues(b, args, kind)
-				ret = b.Call(aFn.Expr, args...)
-			case pyFunc:
-				args := p.compileValues(b, args, kind)
-				ret = b.Call(pyFn.Expr, args...)
-			case llgoPyList:
-				args := p.compileValues(b, args, fnHasVArg)
-				ret = b.PyList(args...)
-			case llgoCstr:
-				ret = cstr(b, args)
-			case llgoAdvance:
-				ret = p.advance(b, args)
-			case llgoIndex:
-				ret = p.index(b, args)
-			case llgoAlloca:
-				ret = p.alloca(b, args)
-			case llgoAllocaCStr:
-				ret = p.allocaCStr(b, args)
-			case llgoStringData:
-				ret = p.stringData(b, args)
-			case llgoUnreachable: // func unreachable()
-				b.Unreachable()
-			default:
-				log.Panicln("unknown ftype:", ftype)
-			}
-		default:
-			fn := p.compileValue(b, cv)
-			args := p.compileValues(b, args, kind)
-			ret = b.Call(fn, args...)
-		}
+		ret = p.call(b, llssa.Call, &v.Call)
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
@@ -791,6 +797,8 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		key := p.compileValue(b, v.Key)
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
+	case *ssa.Go:
+		p.call(b, llssa.Go, &v.Call)
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X)
 		b.Panic(arg)

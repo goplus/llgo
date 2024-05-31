@@ -892,13 +892,26 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t2 = println(t0, t1)
 //	t4 = t3()
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
+	return b.Do(Call, fn, args...)
+}
+
+type DoAction int
+
+const (
+	Call DoAction = iota
+	Go
+	Defer
+)
+
+// Do call a function with an action.
+func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
 		var b bytes.Buffer
 		name := fn.impl.Name()
 		if name == "" {
 			name = "closure"
 		}
-		fmt.Fprint(&b, "Call ", fn.kind, " ", fn.raw.Type, " ", name)
+		fmt.Fprint(&b, "Do ", da, " ", fn.kind, " ", fn.raw.Type, " ", name)
 		sep := ": "
 		for _, arg := range args {
 			fmt.Fprint(&b, sep, arg.impl)
@@ -987,6 +1000,11 @@ func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
 // `fn` indicates the function: one of the built-in functions from the
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
+	return b.BuiltinDo(Call, fn, args...)
+}
+
+// BuiltinDo call a builtin function with an action.
+func (b Builder) BuiltinDo(da DoAction, fn string, args ...Expr) (ret Expr) {
 	switch fn {
 	case "len":
 		if len(args) == 1 {
