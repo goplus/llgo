@@ -161,8 +161,6 @@ func doInitNamed(ret *Type, pkgPath, name string, underlying *Type, methods []Me
 	extraOff := int(baseSize + uncommonTypeHdrSize)
 	data := (*abi.Method)(c.Advance(ptr, extraOff))
 	copy(unsafe.Slice(data, n), methods)
-
-	println("==> InitNamed:", pkgPath, name, ret, ret.Uncommon())
 }
 
 // Func returns a function type.
@@ -210,7 +208,6 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	ret.hash = typ.Hash
 
 	u := typ.Uncommon()
-	println("==> NewItab Uncommon:", typ, u)
 	if u == nil {
 		ret.fun[0] = 0
 	} else {
@@ -223,7 +220,6 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 				break
 			}
 			*c.Advance(data, i) = uintptr(fn)
-			println("==> NewItab:", ret, i, fn)
 		}
 	}
 	return ret
@@ -234,9 +230,7 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 	for _, m := range mthds {
 		mName := m.Name_
 		if mName >= imName {
-			println("==> findMethod:", mName, imName, m.Mtyp_, im.Typ_, m.Ifn_)
 			if mName == imName && m.Mtyp_ == im.Typ_ {
-				println("==> findMethod", mName, m.Ifn_)
 				return m.Ifn_
 			}
 			break

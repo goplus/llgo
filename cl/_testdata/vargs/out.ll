@@ -8,6 +8,7 @@ source_filename = "main"
 @"main.init$guard" = global ptr null
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
+@_llgo_int = linkonce global ptr null
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @1 = private unnamed_addr constant [22 x i8] c"type assertion failed\00", align 1
 
@@ -18,6 +19,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$abi"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -32,7 +34,7 @@ _llgo_0:
   call void @main.init()
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %2, i64 0
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %4 = load ptr, ptr @_llgo_int, align 8
   %5 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %5, i32 0, i32 0
   store ptr %4, ptr %6, align 8
@@ -41,7 +43,7 @@ _llgo_0:
   %8 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %5, align 8
   store %"github.com/goplus/llgo/internal/runtime.eface" %8, ptr %3, align 8
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %2, i64 1
-  %10 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %10 = load ptr, ptr @_llgo_int, align 8
   %11 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %11, i32 0, i32 0
   store ptr %10, ptr %12, align 8
@@ -50,7 +52,7 @@ _llgo_0:
   %14 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %11, align 8
   store %"github.com/goplus/llgo/internal/runtime.eface" %14, ptr %9, align 8
   %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %2, i64 2
-  %16 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %16 = load ptr, ptr @_llgo_int, align 8
   %17 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
   %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %17, i32 0, i32 0
   store ptr %16, ptr %18, align 8
@@ -88,7 +90,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %6, i64 %3
   %8 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %7, align 8
   %9 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %8, 0
-  %10 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %10 = load ptr, ptr @_llgo_int, align 8
   %11 = icmp eq ptr %9, %10
   br i1 %11, label %_llgo_4, label %_llgo_5
 
@@ -115,6 +117,21 @@ _llgo_5:                                          ; preds = %_llgo_2
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+define void @"main.init$abi"() {
+_llgo_0:
+  %0 = load ptr, ptr @_llgo_int, align 8
+  %1 = icmp eq ptr %0, null
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  store ptr %2, ptr @_llgo_int, align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 

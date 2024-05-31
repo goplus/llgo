@@ -6,7 +6,9 @@ source_filename = "main"
 
 @"main.init$guard" = global ptr null
 @"*_llgo_int8" = linkonce global ptr null
+@_llgo_int8 = linkonce global ptr null
 @0 = private unnamed_addr constant [22 x i8] c"type assertion failed\00", align 1
+@_llgo_int = linkonce global ptr null
 @1 = private unnamed_addr constant [22 x i8] c"type assertion failed\00", align 1
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
@@ -38,7 +40,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 define i64 @main.incVal(%"github.com/goplus/llgo/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %0, 0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %2 = load ptr, ptr @_llgo_int, align 8
   %3 = icmp eq ptr %1, %2
   br i1 %3, label %_llgo_1, label %_llgo_2
 
@@ -87,7 +89,7 @@ _llgo_0:
   store ptr @3, ptr %5, align 8
   %6 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %3, align 8
   %7 = call ptr @main.hi(%"github.com/goplus/llgo/internal/runtime.eface" %6)
-  %8 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %8 = load ptr, ptr @_llgo_int, align 8
   %9 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
   %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, i32 0, i32 0
   store ptr %8, ptr %10, align 8
@@ -99,28 +101,48 @@ _llgo_0:
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
-
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare i32 @printf(ptr, ...)
-
 define void @"main.init$abi"() {
 _llgo_0:
-  %0 = load ptr, ptr @"*_llgo_int8", align 8
+  %0 = load ptr, ptr @_llgo_int8, align 8
   %1 = icmp eq ptr %0, null
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 3)
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %2)
-  store ptr %3, ptr @"*_llgo_int8", align 8
+  store ptr %2, ptr @_llgo_int8, align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %3 = load ptr, ptr @_llgo_int8, align 8
+  %4 = load ptr, ptr @"*_llgo_int8", align 8
+  %5 = icmp eq ptr %4, null
+  br i1 %5, label %_llgo_3, label %_llgo_4
+
+_llgo_3:                                          ; preds = %_llgo_2
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %3)
+  store ptr %6, ptr @"*_llgo_int8", align 8
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
+  %7 = load ptr, ptr @_llgo_int, align 8
+  %8 = icmp eq ptr %7, null
+  br i1 %8, label %_llgo_5, label %_llgo_6
+
+_llgo_5:                                          ; preds = %_llgo_4
+  %9 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  store ptr %9, ptr @_llgo_int, align 8
+  br label %_llgo_6
+
+_llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
   ret void
 }
 
+declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
+
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
+
+declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare i32 @printf(ptr, ...)

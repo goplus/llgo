@@ -74,7 +74,6 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
 	ret := b.aggregateValue(tclosure, fn.impl, b.faceData(impl))
-	b.Println(b.Str("Imethod:"), itab, ret, prog.Val(ret.kind), prog.Val(i))
 	return ret
 }
 

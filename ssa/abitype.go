@@ -19,7 +19,6 @@ package ssa
 import (
 	"go/token"
 	"go/types"
-	"log"
 	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
@@ -96,12 +95,9 @@ func (b Builder) abiFuncOf(sig *types.Signature) func() Expr {
 }
 
 // Imethod{name string, typ *FuncType}
-func (b Builder) abiImethodOf(m *types.Func, typ Expr) Expr {
+func (b Builder) abiImethodOf(mName string, typ Expr) Expr {
 	prog := b.Prog
-	name := b.Str(m.Name())
-	tname, _ := b.Pkg.abi.TypeName(m.Type())
-	log.Println("==> abiImethodOf:", m.Name(), m.Type(), tname)
-	b.Println(b.Str("==> abiImethodOf:"), typ)
+	name := b.Str(mName)
 	return b.aggregateValue(prog.rtType("Imethod"), name.impl, typ.impl)
 }
 
@@ -128,9 +124,6 @@ func (b Builder) abiMethodOf(m *types.Func /*, bg Background = InGo */) (mthd, p
 	abiSigGo := types.NewSignatureType(nil, nil, nil, mSig.Params(), mSig.Results(), mSig.Variadic())
 	abiSig := prog.FuncDecl(abiSigGo, InGo).raw.Type
 	abiTyp := b.abiType(abiSig)
-	tname, _ := b.Pkg.abi.TypeName(abiSig)
-	log.Println("==> abiMethodOf:", mName, abiSigGo, tname)
-	b.Println(b.Str("==> abiMethodOf:"), abiTyp)
 	abiTypImpl := abiTyp.impl
 
 	recv := mSig.Recv()
@@ -169,7 +162,7 @@ func (b Builder) abiInterfaceOf(name string, t *types.Interface) func() Expr {
 		methods := make([]Expr, n)
 		for i := 0; i < n; i++ {
 			m := t.Method(i)
-			methods[i] = b.abiImethodOf(m, typs[i])
+			methods[i] = b.abiImethodOf(m.Name(), typs[i])
 		}
 		pkg := b.Pkg
 		fn := pkg.rtFunc("Interface")
@@ -328,14 +321,15 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.If(eq, blks[0], blks[1])
 		b.SetBlockEx(blks[0], AtEnd, false)
 	}
-	b.Store(expr, tabi())
+	vexpr := tabi()
+	b.Store(expr, vexpr)
 	if pub {
 		b.Jump(blks[1])
 		b.SetBlockEx(blks[1], AtEnd, false)
 		b.blk.last = blks[1].last
 	}
 	if t, ok := t.(*types.Named); ok {
-		tabi = b.abiInitNamed(expr, t)
+		tabi = b.abiInitNamed(vexpr, t)
 		if pub {
 			blks = b.Func.MakeBlocks(2)
 			b.If(eq, blks[0], blks[1])
