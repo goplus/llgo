@@ -774,6 +774,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 }
 
 func logCall(da string, fn Expr, args []Expr) {
+	if fn.kind == vkBuiltin {
+		return
+	}
 	var b bytes.Buffer
 	name := fn.impl.Name()
 	if name == "" {
