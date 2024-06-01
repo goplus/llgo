@@ -126,7 +126,9 @@ func TestCvtType(t *testing.T) {
 
 func TestUserdefExpr(t *testing.T) {
 	c := &pyVarTy{}
+	b := &builtinTy{}
 	_ = c.String()
+	_ = b.String()
 	test := func(a types.Type) {
 		defer func() {
 			if r := recover(); r == nil {
@@ -136,6 +138,7 @@ func TestUserdefExpr(t *testing.T) {
 		a.Underlying()
 	}
 	test(c)
+	test(b)
 }
 
 func TestAny(t *testing.T) {
