@@ -175,7 +175,6 @@ Common Go syntax is already supported. Except for the following, which needs to 
 * defer (Not supported yet)
 * gc (Not supported yet)
 * chan (Not supported yet)
-* goroutine (Not supported yet)
 * generics (Not supported yet)
 
 Here are some examples related to Go syntax:
@@ -183,6 +182,7 @@ Here are some examples related to Go syntax:
 * [concat](_demo/concat/concat.go): define a variadic function
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
 * [errors](_demo/errors/errors.go): demo to implement error interface
+* [goroutine](_demo/goroutine/goroutine.go): goroutine demo
 
 
 ## Go packages support
