@@ -571,10 +571,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
 			arg := args[0]
 			ret = p.compileValue(b, arg)
-			// log.Println("wrapnilchk:", ret.TypeOf())
 		} else {
 			args := p.compileValues(b, args, kind)
-			ret = b.BuiltinDo(act, fn, args...)
+			ret = b.Do(act, llssa.Builtin(fn), args...)
 		}
 	case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)

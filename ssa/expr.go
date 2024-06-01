@@ -43,6 +43,26 @@ func (v Expr) IsNil() bool {
 
 // -----------------------------------------------------------------------------
 
+type builtinTy struct {
+	name string
+}
+
+func (p builtinTy) Underlying() types.Type {
+	panic("don't call")
+}
+
+func (p builtinTy) String() string {
+	return "builtinTy"
+}
+
+// Builtin returns a builtin function expression.
+func Builtin(name string) Expr {
+	tbi := &aType{raw: rawType{&builtinTy{name}}, kind: vkBuiltin}
+	return Expr{Type: tbi}
+}
+
+// -----------------------------------------------------------------------------
+
 type pyVarTy struct {
 	mod  Expr
 	name string
@@ -742,6 +762,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
 		ll = fn.ll
+	case vkBuiltin:
+		bi := raw.(*builtinTy)
+		return b.BuiltinCall(bi.name, args...)
 	default:
 		log.Panicf("unreachable: %d(%T)\n", kind, raw)
 	}
@@ -751,6 +774,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 }
 
 func logCall(da string, fn Expr, args []Expr) {
+	if fn.kind == vkBuiltin {
+		return
+	}
 	var b bytes.Buffer
 	name := fn.impl.Name()
 	if name == "" {
@@ -791,11 +817,6 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 // `fn` indicates the function: one of the built-in functions from the
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
-	return b.BuiltinDo(Call, fn, args...)
-}
-
-// BuiltinDo call a builtin function with an action.
-func (b Builder) BuiltinDo(da DoAction, fn string, args ...Expr) (ret Expr) {
 	switch fn {
 	case "len":
 		if len(args) == 1 {

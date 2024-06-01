@@ -44,6 +44,7 @@ const (
 	vkFuncDecl
 	vkFuncPtr
 	vkClosure
+	vkBuiltin
 	vkPyFuncRef
 	vkPyVarRef
 	vkTuple
