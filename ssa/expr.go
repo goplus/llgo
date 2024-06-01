@@ -443,251 +443,6 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 
 // -----------------------------------------------------------------------------
 
-func checkExpr(v Expr, t types.Type, b Builder) Expr {
-	if t, ok := t.(*types.Struct); ok && isClosure(t) {
-		if v.kind != vkClosure {
-			return b.Pkg.closureStub(b, t, v)
-		}
-	}
-	return v
-}
-
-func needsNegativeCheck(x Expr) bool {
-	if x.kind == vkSigned {
-		if rv := x.impl.IsAConstantInt(); !rv.IsNil() && rv.SExtValue() >= 0 {
-			return false
-		}
-		return true
-	}
-	return false
-}
-
-func llvmParamsEx(data Expr, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
-	if data.IsNil() {
-		return llvmParams(0, vals, params, b)
-	}
-	ret = llvmParams(1, vals, params, b)
-	ret[0] = data.impl
-	return
-}
-
-func llvmParams(base int, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
-	n := params.Len()
-	if n > 0 {
-		ret = make([]llvm.Value, len(vals)+base)
-		for idx, v := range vals {
-			i := base + idx
-			if i < n {
-				v = checkExpr(v, params.At(i).Type(), b)
-			}
-			ret[i] = v.impl
-		}
-	}
-	return
-}
-
-func llvmFields(vals []Expr, t *types.Struct, b Builder) (ret []llvm.Value) {
-	n := t.NumFields()
-	if n > 0 {
-		ret = make([]llvm.Value, len(vals))
-		for i, v := range vals {
-			if i < n {
-				v = checkExpr(v, t.Field(i).Type(), b)
-			}
-			ret[i] = v.impl
-		}
-	}
-	return
-}
-
-// -----------------------------------------------------------------------------
-
-// Advance returns the pointer ptr advanced by offset.
-func (b Builder) Advance(ptr Expr, offset Expr) Expr {
-	if debugInstr {
-		log.Printf("Advance %v, %v\n", ptr.impl, offset.impl)
-	}
-	var elem llvm.Type
-	var prog = b.Prog
-	switch t := ptr.raw.Type.(type) {
-	case *types.Basic: // void
-		elem = prog.tyInt8()
-	default:
-		elem = prog.rawType(t.(*types.Pointer).Elem()).ll
-	}
-	ret := llvm.CreateGEP(b.impl, elem, ptr.impl, []llvm.Value{offset.impl})
-	return Expr{ret, ptr.Type}
-}
-
-// Load returns the value at the pointer ptr.
-func (b Builder) Load(ptr Expr) Expr {
-	if debugInstr {
-		log.Printf("Load %v\n", ptr.impl)
-	}
-	if ptr.kind == vkPyVarRef {
-		return b.pyLoad(ptr)
-	}
-	telem := b.Prog.Elem(ptr.Type)
-	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
-}
-
-// Store stores val at the pointer ptr.
-func (b Builder) Store(ptr, val Expr) Builder {
-	raw := ptr.raw.Type
-	if debugInstr {
-		log.Printf("Store %v, %v, %v\n", raw, ptr.impl, val.impl)
-	}
-	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
-	b.impl.CreateStore(val.impl, ptr.impl)
-	return b
-}
-
-func (b Builder) aggregateAlloc(t Type, flds ...llvm.Value) llvm.Value {
-	prog := b.Prog
-	size := prog.SizeOf(t)
-	ptr := b.InlineCall(b.Pkg.rtFunc("AllocU"), prog.IntVal(size, prog.Uintptr())).impl
-	tll := t.ll
-	impl := b.impl
-	for i, fld := range flds {
-		impl.CreateStore(fld, llvm.CreateStructGEP(impl, tll, ptr, i))
-	}
-	return ptr
-}
-
-// aggregateValue yields the value of the aggregate X with the fields
-func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
-	return Expr{aggregateValue(b.impl, t.ll, flds...), t}
-}
-
-func aggregateValue(b llvm.Builder, tll llvm.Type, flds ...llvm.Value) llvm.Value {
-	ptr := llvm.CreateAlloca(b, tll)
-	for i, fld := range flds {
-		b.CreateStore(fld, llvm.CreateStructGEP(b, tll, ptr, i))
-	}
-	return llvm.CreateLoad(b, tll, ptr)
-}
-
-// The MakeClosure instruction yields a closure value whose code is
-// Fn and whose free variables' values are supplied by Bindings.
-//
-// Type() returns a (possibly named) *types.Signature.
-//
-// Example printed form:
-//
-//	t0 = make closure anon@1.2 [x y z]
-//	t1 = make closure bound$(main.I).add [i]
-func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
-	if debugInstr {
-		log.Printf("MakeClosure %v, %v\n", fn, bindings)
-	}
-	prog := b.Prog
-	tfn := fn.Type
-	sig := tfn.raw.Type.(*types.Signature)
-	tctx := sig.Params().At(0).Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
-	flds := llvmFields(bindings, tctx, b)
-	data := b.aggregateAlloc(prog.rawType(tctx), flds...)
-	return b.aggregateValue(prog.Closure(tfn), fn.impl, data)
-}
-
-// -----------------------------------------------------------------------------
-
-// The Alloc instruction reserves space for a variable of the given type,
-// zero-initializes it, and yields its address.
-//
-// If heap is false, Alloc zero-initializes the same local variable in
-// the call frame and returns its address; in this case the Alloc must
-// be present in Function.Locals. We call this a "local" alloc.
-//
-// If heap is true, Alloc allocates a new zero-initialized variable
-// each time the instruction is executed. We call this a "new" alloc.
-//
-// When Alloc is applied to a channel, map or slice type, it returns
-// the address of an uninitialized (nil) reference of that kind; store
-// the result of MakeSlice, MakeMap or MakeChan in that location to
-// instantiate these types.
-//
-// Example printed form:
-//
-//	t0 = local int
-//	t1 = new int
-func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
-	if debugInstr {
-		log.Printf("Alloc %v, %v\n", elem.RawType(), heap)
-	}
-	prog := b.Prog
-	pkg := b.Pkg
-	size := SizeOf(prog, elem)
-	if heap {
-		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
-	} else {
-		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
-		ret.impl = b.InlineCall(pkg.rtFunc("Zeroinit"), ret, size).impl
-	}
-	ret.Type = prog.Pointer(elem)
-	return
-}
-
-// AllocU allocates uninitialized space for n*sizeof(elem) bytes.
-func (b Builder) AllocU(elem Type, n ...int64) (ret Expr) {
-	prog := b.Prog
-	size := SizeOf(prog, elem, n...)
-	ret = b.InlineCall(b.Pkg.rtFunc("AllocU"), size)
-	ret.Type = prog.Pointer(elem)
-	return
-}
-
-// AllocZ allocates zero initialized space for n bytes.
-func (b Builder) AllocZ(n Expr) (ret Expr) {
-	return b.InlineCall(b.Pkg.rtFunc("AllocZ"), n)
-}
-
-// Alloca allocates uninitialized space for n bytes.
-func (b Builder) Alloca(n Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("Alloca %v\n", n.impl)
-	}
-	prog := b.Prog
-	telem := prog.tyInt8()
-	ret.impl = llvm.CreateArrayAlloca(b.impl, telem, n.impl)
-	ret.Type = prog.VoidPtr()
-	return
-}
-
-// AllocaCStr allocates space for copy it from a Go string.
-func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("AllocaCStr %v\n", gostr.impl)
-	}
-	n := b.StringLen(gostr)
-	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
-	cstr := b.Alloca(n1)
-	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
-}
-
-/*
-// ArrayAlloca reserves space for an array of n elements of type telem.
-func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("ArrayAlloca %v, %v\n", telem.t, n.impl)
-	}
-	ret.impl = llvm.CreateArrayAlloca(b.impl, telem.ll, n.impl)
-	ret.Type = b.Prog.Pointer(telem)
-	return
-}
-*/
-
-// ArrayAlloc allocates zero initialized space for an array of n elements of type telem.
-func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
-	prog := b.Prog
-	elemSize := SizeOf(prog, telem)
-	size := b.BinOp(token.MUL, n, elemSize)
-	ret.impl = b.AllocZ(size).impl
-	ret.Type = prog.Pointer(telem)
-	return
-}
-
-// -----------------------------------------------------------------------------
-
 // The ChangeType instruction applies to X a value-preserving type
 // change to Type().
 //
@@ -876,6 +631,77 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 
 // -----------------------------------------------------------------------------
 
+// The Range instruction yields an iterator over the domain and range
+// of X, which must be a string or map.
+//
+// Elements are accessed via Next.
+//
+// Type() returns an opaque and degenerate "rangeIter" type.
+//
+// Pos() returns the ast.RangeStmt.For.
+//
+// Example printed form:
+//
+//	t0 = range "hello":string
+func (b Builder) Range(x Expr) Expr {
+	switch x.kind {
+	case vkString:
+		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
+	}
+	panic("todo")
+}
+
+// The Next instruction reads and advances the (map or string)
+// iterator Iter and returns a 3-tuple value (ok, k, v).  If the
+// iterator is not exhausted, ok is true and k and v are the next
+// elements of the domain and range, respectively.  Otherwise ok is
+// false and k and v are undefined.
+//
+// Components of the tuple are accessed using Extract.
+//
+// The IsString field distinguishes iterators over strings from those
+// over maps, as the Type() alone is insufficient: consider
+// map[int]rune.
+//
+// Type() returns a *types.Tuple for the triple (ok, k, v).
+// The types of k and/or v may be types.Invalid.
+//
+// Example printed form:
+//
+//	t1 = next t0
+func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
+	if isString {
+		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
+	}
+	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
+
+// The MakeClosure instruction yields a closure value whose code is
+// Fn and whose free variables' values are supplied by Bindings.
+//
+// Type() returns a (possibly named) *types.Signature.
+//
+// Example printed form:
+//
+//	t0 = make closure anon@1.2 [x y z]
+//	t1 = make closure bound$(main.I).add [i]
+func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
+	if debugInstr {
+		log.Printf("MakeClosure %v, %v\n", fn, bindings)
+	}
+	prog := b.Prog
+	tfn := fn.Type
+	sig := tfn.raw.Type.(*types.Signature)
+	tctx := sig.Params().At(0).Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
+	flds := llvmFields(bindings, tctx, b)
+	data := b.aggregateAllocU(prog.rawType(tctx), flds...)
+	return b.aggregateValue(prog.Closure(tfn), fn.impl, data)
+}
+
+// -----------------------------------------------------------------------------
+
 // TODO(xsw): make inline call
 func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
@@ -956,51 +782,6 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 		b.Go(fn, args...)
 	}
 	return
-}
-
-// The Range instruction yields an iterator over the domain and range
-// of X, which must be a string or map.
-//
-// Elements are accessed via Next.
-//
-// Type() returns an opaque and degenerate "rangeIter" type.
-//
-// Pos() returns the ast.RangeStmt.For.
-//
-// Example printed form:
-//
-//	t0 = range "hello":string
-func (b Builder) Range(x Expr) Expr {
-	switch x.kind {
-	case vkString:
-		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
-	}
-	panic("todo")
-}
-
-// The Next instruction reads and advances the (map or string)
-// iterator Iter and returns a 3-tuple value (ok, k, v).  If the
-// iterator is not exhausted, ok is true and k and v are the next
-// elements of the domain and range, respectively.  Otherwise ok is
-// false and k and v are undefined.
-//
-// Components of the tuple are accessed using Extract.
-//
-// The IsString field distinguishes iterators over strings from those
-// over maps, as the Type() alone is insufficient: consider
-// map[int]rune.
-//
-// Type() returns a *types.Tuple for the triple (ok, k, v).
-// The types of k and/or v may be types.Invalid.
-//
-// Example printed form:
-//
-//	t1 = next t0
-func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
-	if isString {
-		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
-	}
-	panic("todo")
 }
 
 // A Builtin represents a specific use of a built-in function, e.g. len.
@@ -1134,6 +915,65 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 	}
 	if ln {
 		b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal('\n', prog.Byte()))
+	}
+	return
+}
+
+// -----------------------------------------------------------------------------
+
+func checkExpr(v Expr, t types.Type, b Builder) Expr {
+	if t, ok := t.(*types.Struct); ok && isClosure(t) {
+		if v.kind != vkClosure {
+			return b.Pkg.closureStub(b, t, v)
+		}
+	}
+	return v
+}
+
+func needsNegativeCheck(x Expr) bool {
+	if x.kind == vkSigned {
+		if rv := x.impl.IsAConstantInt(); !rv.IsNil() && rv.SExtValue() >= 0 {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func llvmParamsEx(data Expr, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+	if data.IsNil() {
+		return llvmParams(0, vals, params, b)
+	}
+	ret = llvmParams(1, vals, params, b)
+	ret[0] = data.impl
+	return
+}
+
+func llvmParams(base int, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+	n := params.Len()
+	if n > 0 {
+		ret = make([]llvm.Value, len(vals)+base)
+		for idx, v := range vals {
+			i := base + idx
+			if i < n {
+				v = checkExpr(v, params.At(i).Type(), b)
+			}
+			ret[i] = v.impl
+		}
+	}
+	return
+}
+
+func llvmFields(vals []Expr, t *types.Struct, b Builder) (ret []llvm.Value) {
+	n := t.NumFields()
+	if n > 0 {
+		ret = make([]llvm.Value, len(vals))
+		for i, v := range vals {
+			if i < n {
+				v = checkExpr(v, t.Field(i).Type(), b)
+			}
+			ret[i] = v.impl
+		}
 	}
 	return
 }

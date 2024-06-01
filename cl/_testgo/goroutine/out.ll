@@ -39,27 +39,29 @@ _llgo_0:
   %7 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 1
   store ptr %3, ptr %7, align 8
   %8 = load { ptr, ptr }, ptr %5, align 8
-  %9 = extractvalue { ptr, ptr } %8, 1
-  %10 = extractvalue { ptr, ptr } %8, 0
-  call void %10(ptr %9)
+  %9 = call ptr @malloc(i64 16)
+  %10 = getelementptr inbounds { { ptr, ptr } }, ptr %9, i32 0, i32 0
+  store { ptr, ptr } %8, ptr %10, align 8
+  %11 = alloca i8, i64 8, align 1
+  %12 = call i32 @pthread_create(ptr %11, ptr null, ptr @"main._llgo_routine$1", ptr %9)
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %11 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 0
-  store ptr @0, ptr %12, align 8
-  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 1
-  store i64 1, ptr %13, align 4
-  %14 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %14)
+  %13 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %14 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %13, i32 0, i32 0
+  store ptr @0, ptr %14, align 8
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %13, i32 0, i32 1
+  store i64 1, ptr %15, align 4
+  %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %13, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %16)
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret i32 0
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %15 = load i1, ptr %2, align 1
-  br i1 %15, label %_llgo_2, label %_llgo_1
+  %17 = load i1, ptr %2, align 1
+  br i1 %17, label %_llgo_2, label %_llgo_1
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
@@ -83,6 +85,23 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+
+declare ptr @malloc(i64)
+
+define ptr @"main._llgo_routine$1"(ptr %0) {
+_llgo_0:
+  %1 = load { { ptr, ptr } }, ptr %0, align 8
+  %2 = extractvalue { { ptr, ptr } } %1, 0
+  %3 = extractvalue { ptr, ptr } %2, 1
+  %4 = extractvalue { ptr, ptr } %2, 0
+  call void %4(ptr %3)
+  call void @free({ { ptr, ptr } } %1)
+  ret ptr null
+}
+
+declare void @free(ptr)
+
+declare i32 @pthread_create(ptr, ptr, ptr, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 

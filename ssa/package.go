@@ -163,6 +163,12 @@ type aProgram struct {
 	loadPyModS *types.Signature
 	getAttrStr *types.Signature
 
+	mallocTy *types.Signature
+	freeTy   *types.Signature
+
+	createThdTy *types.Signature
+	routineTy   *types.Signature
+
 	paramObjPtr_ *types.Var
 
 	ptrSize int
@@ -511,6 +517,8 @@ func (p Program) Uint64() Type {
 // and unspecified other things too.
 type aPackage struct {
 	mod llvm.Module
+	abi abi.Builder
+	abiTypes
 
 	vars   map[string]Global
 	fns    map[string]Function
@@ -519,8 +527,7 @@ type aPackage struct {
 	pymods map[string]Global
 	Prog   Program
 
-	abi abi.Builder
-	abiTypes
+	iRoutine int
 }
 
 type Package = *aPackage
@@ -530,6 +537,10 @@ func (p Package) rtFunc(fnName string) Expr {
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr
+}
+
+func (p Package) cFunc(fullName string, sig *types.Signature) Expr {
+	return p.NewFunc(fullName, sig, InC).Expr
 }
 
 func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {

@@ -63,6 +63,9 @@ func Unreachable()
 //go:linkname Malloc C.malloc
 func Malloc(size uintptr) Pointer
 
+//go:linkname Free C.free
+func Free(ptr Pointer)
+
 //go:linkname Memcpy C.memcpy
 func Memcpy(dst, src Pointer, n uintptr) Pointer
 
@@ -115,10 +118,19 @@ func Fwrite(data Pointer, size, count uintptr, fp FilePtr) uintptr
 //go:linkname Fputc C.fputc
 func Fputc(c Int, fp FilePtr) Int
 
+//go:linkname Fputs C.fputs
+func Fputs(s *Char, fp FilePtr) Int
+
+//go:linkname Fflush C.fflush
+func Fflush(fp FilePtr) Int
+
 // -----------------------------------------------------------------------------
 
 //go:linkname Time C.time
 func Time(*int32) int32
+
+//go:linkname Usleep C.usleep
+func Usleep(useconds Uint) Int
 
 // -----------------------------------------------------------------------------
 
