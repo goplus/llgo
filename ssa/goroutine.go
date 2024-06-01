@@ -106,7 +106,7 @@ func (p Package) routine(t Type, n int) Expr {
 		args[i] = b.getField(data, i+1)
 	}
 	b.Call(fn, args...)
-	b.free(data)
+	b.free(param)
 	b.Return(prog.Null(prog.VoidPtr()))
 	return routine.Expr
 }
