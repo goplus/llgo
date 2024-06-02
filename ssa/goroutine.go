@@ -50,7 +50,7 @@ func (p Program) tyPthreadCreate() *types.Signature {
 	return p.createThdTy
 }
 
-func (b Builder) createThread(pp, attr, routine, arg Expr) Expr {
+func (b Builder) pthreadCreate(pp, attr, routine, arg Expr) Expr {
 	fn := b.Pkg.cFunc("pthread_create", b.Prog.tyPthreadCreate())
 	return b.Call(fn, pp, attr, routine, arg)
 }
@@ -86,7 +86,7 @@ func (b Builder) Go(fn Expr, args ...Expr) {
 	data := Expr{b.aggregateMalloc(t, flds...), voidPtr}
 	size := prog.SizeOf(voidPtr)
 	pthd := b.Alloca(prog.IntVal(uint64(size), prog.Uintptr()))
-	b.createThread(pthd, prog.Null(voidPtr), pkg.routine(t, len(args)), data)
+	b.pthreadCreate(pthd, prog.Null(voidPtr), pkg.routine(t, len(args)), data)
 }
 
 func (p Package) routineName() string {
@@ -109,6 +109,74 @@ func (p Package) routine(t Type, n int) Expr {
 	b.free(param)
 	b.Return(prog.Null(prog.VoidPtr()))
 	return routine.Expr
+}
+
+// -----------------------------------------------------------------------------
+
+// func(c.Pointer)
+func (p Program) tyDestruct() *types.Signature {
+	if p.destructTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		params := types.NewTuple(paramPtr)
+		p.destructTy = types.NewSignatureType(nil, nil, nil, params, nil, false)
+	}
+	return p.destructTy
+}
+
+// func(*c.Int, func(c.Pointer)) c.Int
+func (p Program) tyPthreadKeyCreate() *types.Signature {
+	if p.createKeyTy == nil {
+		cint := p.CInt()
+		cintPtr := p.Pointer(cint)
+		paramCintPtr := types.NewParam(token.NoPos, nil, "", cintPtr.raw.Type)
+		paramDestruct := types.NewParam(token.NoPos, nil, "", p.tyDestruct())
+		paramCInt := types.NewParam(token.NoPos, nil, "", cint.raw.Type)
+		params := types.NewTuple(paramCintPtr, paramDestruct)
+		results := types.NewTuple(paramCInt)
+		p.createKeyTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.createKeyTy
+}
+
+func (b Builder) pthreadKeyCreate(key, destruct Expr) Expr {
+	fn := b.Pkg.cFunc("pthread_key_create", b.Prog.tyPthreadKeyCreate())
+	return b.Call(fn, key, destruct)
+}
+
+// -----------------------------------------------------------------------------
+
+// func(c.Int) c.Pointer
+func (p Program) tyPthreadGetspecific() *types.Signature {
+	if p.getSpecTy == nil {
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		params := types.NewTuple(paramCInt)
+		results := types.NewTuple(paramPtr)
+		p.getSpecTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.getSpecTy
+}
+
+// func(c.Int, c.Pointer) c.Int
+func (p Program) tyPthreadSetspecific() *types.Signature {
+	if p.setSpecTy == nil {
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		params := types.NewTuple(paramCInt, paramPtr)
+		results := types.NewTuple(paramCInt)
+		p.setSpecTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.setSpecTy
+}
+
+func (b Builder) pthreadGetspecific(key Expr) Expr {
+	fn := b.Pkg.cFunc("pthread_getspecific", b.Prog.tyPthreadGetspecific())
+	return b.Call(fn, key)
+}
+
+func (b Builder) pthreadSetspecific(key, val Expr) Expr {
+	fn := b.Pkg.cFunc("pthread_setspecific", b.Prog.tyPthreadSetspecific())
+	return b.Call(fn, key, val)
 }
 
 // -----------------------------------------------------------------------------

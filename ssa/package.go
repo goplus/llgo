@@ -137,6 +137,7 @@ type aProgram struct {
 	boolTy    Type
 	cstrTy    Type
 	cintTy    Type
+	cintPtr   Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -148,26 +149,35 @@ type aProgram struct {
 	u32Ty     Type
 	i64Ty     Type
 	u64Ty     Type
+
 	pyObjPtr  Type
 	pyObjPPtr Type
-	abiTyptr  Type
-	abiTypptr Type
 
-	pyImpTy    *types.Signature
-	pyNewList  *types.Signature
-	pyListSetI *types.Signature
-	callArgs   *types.Signature
-	callNoArgs *types.Signature
-	callOneArg *types.Signature
-	callFOArgs *types.Signature
-	loadPyModS *types.Signature
-	getAttrStr *types.Signature
+	abiTyPtr  Type
+	abiTyPPtr Type
+	deferTy   Type
+	deferPtr  Type
+
+	pyImpTy      *types.Signature
+	pyNewList    *types.Signature
+	pyListSetI   *types.Signature
+	floatFromDbl *types.Signature
+	callNoArgs   *types.Signature
+	callOneArg   *types.Signature
+	callFOArgs   *types.Signature
+	loadPyModS   *types.Signature
+	getAttrStr   *types.Signature
 
 	mallocTy *types.Signature
 	freeTy   *types.Signature
 
+	createKeyTy *types.Signature
 	createThdTy *types.Signature
+	getSpecTy   *types.Signature
+	setSpecTy   *types.Signature
 	routineTy   *types.Signature
+	destructTy  *types.Signature
+	deferFnTy   *types.Signature
 
 	paramObjPtr_ *types.Var
 
@@ -333,20 +343,36 @@ func (p Program) Eface() Type {
 }
 */
 
+// DeferPtr returns *runtime.Defer.
+func (p Program) DeferPtr() Type {
+	if p.deferPtr == nil {
+		p.deferPtr = p.Pointer(p.Defer())
+	}
+	return p.deferPtr
+}
+
+// Defer returns runtime.Defer type.
+func (p Program) Defer() Type {
+	if p.deferTy == nil {
+		p.deferTy = p.rtType("Defer")
+	}
+	return p.deferTy
+}
+
 // AbiTypePtr returns *abi.Type.
 func (p Program) AbiTypePtr() Type {
-	if p.abiTyptr == nil {
-		p.abiTyptr = p.rawType(types.NewPointer(p.rtNamed("Type")))
+	if p.abiTyPtr == nil {
+		p.abiTyPtr = p.rawType(types.NewPointer(p.rtNamed("Type")))
 	}
-	return p.abiTyptr
+	return p.abiTyPtr
 }
 
 // AbiTypePtrPtr returns **abi.Type.
 func (p Program) AbiTypePtrPtr() Type {
-	if p.abiTypptr == nil {
-		p.abiTypptr = p.Pointer(p.AbiTypePtr())
+	if p.abiTyPPtr == nil {
+		p.abiTyPPtr = p.Pointer(p.AbiTypePtr())
 	}
-	return p.abiTypptr
+	return p.abiTyPPtr
 }
 
 // PyObjectPtrPtr returns the **py.Object type.
@@ -418,6 +444,15 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
+// CIntPtr returns *c.Int type.
+func (p Program) CIntPtr() Type {
+	if p.cintPtr == nil {
+		p.cintPtr = p.Pointer(p.CInt())
+	}
+	return p.cintPtr
+}
+
+// CInt returns c.Int type.
 func (p Program) CInt() Type {
 	if p.cintTy == nil { // C.int
 		p.cintTy = p.rawType(types.Typ[types.Int32]) // TODO(xsw): support 64-bit
@@ -528,6 +563,8 @@ type aPackage struct {
 	Prog   Program
 
 	iRoutine int
+
+	deferMgr
 }
 
 type Package = *aPackage
@@ -595,10 +632,14 @@ func (p Package) String() string {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
+	doDeferInit := p.hasDefer()
 	doAbiInit := p.hasAbiInit()
 	doPyLoadModSyms := p.pyHasModSyms()
-	if doAbiInit || doPyLoadModSyms {
+	if doDeferInit || doAbiInit || doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
+		if doDeferInit {
+			p.deferInit(b)
+		}
 		if doAbiInit {
 			p.abiInit(b)
 		}
@@ -739,14 +780,14 @@ func (p Program) tyNewList() *types.Signature {
 
 // func(float64) *Object
 func (p Program) tyFloatFromDouble() *types.Signature {
-	if p.callArgs == nil {
+	if p.floatFromDbl == nil {
 		paramObjPtr := p.paramObjPtr()
 		paramFloat := types.NewParam(token.NoPos, nil, "", p.Float64().raw.Type)
 		params := types.NewTuple(paramFloat)
 		results := types.NewTuple(paramObjPtr)
-		p.callArgs = types.NewSignatureType(nil, nil, nil, params, results, false)
+		p.floatFromDbl = types.NewSignatureType(nil, nil, nil, params, results, false)
 	}
-	return p.callArgs
+	return p.floatFromDbl
 }
 
 // func(*Object, ...)

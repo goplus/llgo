@@ -493,7 +493,6 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	typ := t.raw.Type
 	switch typ.(type) {
 	default:
-		// TODO(xsw): remove instr name
 		ret.impl = llvm.CreateBitCast(b.impl, x.impl, t.ll)
 		ret.Type = b.Prog.rawType(typ)
 		return
@@ -748,7 +747,6 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	var ll llvm.Type
 	var data Expr
 	var sig *types.Signature
-	var prog = b.Prog
 	var raw = fn.raw.Type
 	switch kind {
 	case vkClosure:
@@ -758,7 +756,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		fallthrough
 	case vkFuncPtr:
 		sig = raw.(*types.Signature)
-		ll = prog.FuncDecl(sig, InC).ll
+		ll = b.Prog.FuncDecl(sig, InC).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
 		ll = fn.ll
@@ -768,7 +766,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	default:
 		log.Panicf("unreachable: %d(%T)\n", kind, raw)
 	}
-	ret.Type = prog.retType(sig)
+	ret.Type = b.Prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
 }
@@ -795,8 +793,8 @@ type DoAction int
 
 const (
 	Call DoAction = iota
-	Go
 	Defer
+	Go
 )
 
 // Do call a function with an action.
@@ -804,6 +802,8 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	switch da {
 	case Call:
 		return b.Call(fn, args...)
+	case Defer:
+		b.Defer(fn, args...)
 	case Go:
 		b.Go(fn, args...)
 	}

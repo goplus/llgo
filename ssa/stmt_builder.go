@@ -19,9 +19,11 @@ package ssa
 import (
 	"bytes"
 	"fmt"
+	"go/token"
 	"go/types"
 	"log"
 	"strings"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -128,6 +130,96 @@ func notInit(instr llvm.Value) bool {
 	return true
 }
 
+// -----------------------------------------------------------------------------
+
+const (
+	deferKey = "__llgo_defer"
+)
+
+type deferMgr struct {
+	deferb     unsafe.Pointer
+	deferparam Expr
+}
+
+// func(uintptr)
+func (p Program) tyDeferFunc() *types.Signature {
+	if p.deferFnTy == nil {
+		paramUintptr := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
+		params := types.NewTuple(paramUintptr)
+		p.deferFnTy = types.NewSignatureType(nil, nil, nil, params, nil, false)
+	}
+	return p.deferFnTy
+}
+
+func (p Package) hasDefer() bool {
+	return p.deferb != nil
+}
+
+func (p Package) deferInit(b Builder) {
+	prog := p.Prog
+	keyVar := p.newDeferKey()
+	keyNil := prog.Null(prog.CIntPtr())
+	keyVar.Init(keyNil)
+	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+
+	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), keyNil)
+	b.IfThen(eq, func() {
+		b.pthreadKeyCreate(keyVar.Expr, prog.Null(prog.VoidPtr()))
+	})
+
+	b = Builder(p.deferb)
+	b.Return()
+}
+
+func (p Package) newDeferKey() Global {
+	return p.NewVarEx(deferKey, p.Prog.CIntPtr())
+}
+
+func (b Builder) deferKey() Expr {
+	return b.Load(b.Pkg.newDeferKey().Expr)
+}
+
+// Defer emits a defer instruction.
+func (b Builder) Defer(fn Expr, args ...Expr) {
+	if debugInstr {
+		logCall("Defer", fn, args)
+	}
+	prog := b.Prog
+	pkg := b.Pkg
+	self := b.Func
+	next := self.deferNextBit
+	self.deferNextBit++
+	zero := prog.Val(uintptr(0))
+	key := b.deferKey()
+	if next == 0 {
+		name := self.DeferFuncName()
+		deferfn := pkg.NewFunc(name, b.Prog.tyDeferFunc(), InC)
+		deferb := deferfn.MakeBody(1)
+		pkg.deferb = unsafe.Pointer(deferb)
+		pkg.deferparam = deferfn.Param(0)
+
+		// TODO(xsw): move to funtion start
+		// proc func(uintptr)
+		// bits uintptr
+		// link *Defer
+		link := b.pthreadGetspecific(key)
+		ptr := b.aggregateAlloca(prog.Defer(), deferfn.impl, zero.impl, link.impl)
+		self.deferData = Expr{ptr, prog.DeferPtr()}
+		b.pthreadSetspecific(key, self.deferData)
+	}
+	bitsPtr := b.FieldAddr(self.deferData, 1)
+	nextbit := prog.Val(uintptr(1 << next))
+	b.Store(bitsPtr, b.BinOp(token.OR, b.Load(bitsPtr), nextbit))
+
+	b = Builder(pkg.deferb)
+	has := b.BinOp(token.NEQ, b.BinOp(token.AND, pkg.deferparam, nextbit), zero)
+	b.IfThen(has, func() {
+		b.Call(fn, args...)
+	})
+}
+
+// -----------------------------------------------------------------------------
+
 // Panic emits a panic instruction.
 func (b Builder) Panic(v Expr) {
 	if debugInstr {
@@ -204,6 +296,17 @@ func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 		log.Printf("If %v, _llgo_%v, _llgo_%v\n", cond.impl, thenb.idx, elseb.idx)
 	}
 	b.impl.CreateCondBr(cond.impl, thenb.first, elseb.first)
+}
+
+// IfThen emits an if-then instruction.
+func (b Builder) IfThen(cond Expr, then func()) {
+	blks := b.Func.MakeBlocks(2)
+	b.If(cond, blks[0], blks[1])
+	b.SetBlockEx(blks[0], AtEnd, false)
+	then()
+	b.Jump(blks[1])
+	b.SetBlockEx(blks[1], AtEnd, false)
+	b.blk.last = blks[1].last
 }
 
 // -----------------------------------------------------------------------------

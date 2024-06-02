@@ -35,7 +35,7 @@ func AllocZ(size uintptr) unsafe.Pointer {
 }
 
 // Zeroinit initializes memory to zero.
-func Zeroinit(p c.Pointer, size uintptr) c.Pointer {
+func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
 	return c.Memset(p, 0, size)
 }
 

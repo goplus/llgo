@@ -85,15 +85,13 @@ func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 	return p.doNewVar(name, t)
 }
 
-/*
-// NewVarFrom creates a new global variable.
-func (p Package) NewVarFrom(name string, t Type) Global {
+// NewVarEx creates a new global variable.
+func (p Package) NewVarEx(name string, t Type) Global {
 	if v, ok := p.vars[name]; ok {
 		return v
 	}
 	return p.doNewVar(name, t)
 }
-*/
 
 func (p Package) doNewVar(name string, t Type) Global {
 	var gbl llvm.Value
@@ -185,7 +183,11 @@ type aFunction struct {
 	params   []Type
 	freeVars Expr
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+
+	deferNextBit int // next defer bit
+	deferData    Expr
+
+	hasVArg bool
 }
 
 // Function represents a function or method.
@@ -222,7 +224,14 @@ func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars b
 	if hasFreeVars {
 		base = 1
 	}
-	return &aFunction{Expr{fn, t}, pkg, prog, nil, params, Expr{}, base, hasVArg}
+	return &aFunction{
+		Expr:    Expr{fn, t},
+		Pkg:     pkg,
+		Prog:    prog,
+		params:  params,
+		base:    base,
+		hasVArg: hasVArg,
+	}
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
@@ -240,12 +249,15 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	return
 }
 
-/*
 // Name returns the function's name.
 func (p Function) Name() string {
 	return p.impl.Name()
 }
-*/
+
+// DeferFuncName returns the name of the defer procedure.
+func (p Function) DeferFuncName() string {
+	return p.Name() + "._llgo_defer"
+}
 
 // Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {

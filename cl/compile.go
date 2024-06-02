@@ -796,6 +796,8 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		key := p.compileValue(b, v.Key)
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
+	case *ssa.Defer:
+		p.call(b, llssa.Defer, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
 	case *ssa.Panic:
