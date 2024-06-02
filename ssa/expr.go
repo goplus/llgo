@@ -113,6 +113,16 @@ func (p Program) Zero(t Type) Expr {
 		ret = llvm.ConstStruct(flds, false)
 	case *types.Slice:
 		ret = p.Zero(p.rtType("Slice")).impl
+	/* TODO(xsw):
+	case *types.Interface:
+		var name string
+		if u.Empty() {
+			name = "Eface"
+		} else {
+			name = "Iface"
+		}
+		ret = p.Zero(p.rtType(name)).impl
+	*/
 	default:
 		log.Panicln("todo:", u)
 	}
@@ -818,6 +828,11 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	switch fn {
+	case "String": // unsafe.String
+		return b.unsafeString(args[0].impl, args[1].impl)
+	case "Slice": // unsafe.Slice
+		size := args[1].impl
+		return b.unsafeSlice(args[0], size, size)
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
@@ -857,8 +872,6 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
-	case "print", "println":
-		return b.PrintEx(fn == "println", args...)
 	case "copy":
 		if len(args) == 2 {
 			dst := args[0]
@@ -874,11 +887,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
-	case "String": // unsafe.String
-		return b.unsafeString(args[0].impl, args[1].impl)
-	case "Slice": // unsafe.Slice
-		size := args[1].impl
-		return b.unsafeSlice(args[0], size, size)
+	//case "recover":
+	//	return b.Recover()
+	case "print", "println":
+		return b.PrintEx(fn == "println", args...)
 	}
 	panic("todo: " + fn)
 }

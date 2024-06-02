@@ -800,6 +800,8 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		p.call(b, llssa.Defer, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
+	case *ssa.RunDefers:
+		b.RunDefers()
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X)
 		b.Panic(arg)

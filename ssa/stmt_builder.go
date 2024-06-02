@@ -175,6 +175,17 @@ func (p Package) newDeferKey() Global {
 	return p.NewVarEx(deferKey, p.Prog.CIntPtr())
 }
 
+// DeferFuncName returns the name of the defer procedure.
+func (p Function) DeferFuncName() string {
+	return p.Name() + "._llgo_defer"
+}
+
+// DeferFunc returns the defer procedure of this function.
+func (p Function) DeferFunc() Function {
+	name := p.DeferFuncName()
+	return p.Pkg.NewFunc(name, p.Prog.tyDeferFunc(), InC)
+}
+
 func (b Builder) deferKey() Expr {
 	return b.Load(b.Pkg.newDeferKey().Expr)
 }
@@ -192,8 +203,7 @@ func (b Builder) Defer(fn Expr, args ...Expr) {
 	zero := prog.Val(uintptr(0))
 	key := b.deferKey()
 	if next == 0 {
-		name := self.DeferFuncName()
-		deferfn := pkg.NewFunc(name, b.Prog.tyDeferFunc(), InC)
+		deferfn := self.DeferFunc()
 		deferb := deferfn.MakeBody(1)
 		pkg.deferb = unsafe.Pointer(deferb)
 		pkg.deferparam = deferfn.Param(0)
@@ -218,7 +228,26 @@ func (b Builder) Defer(fn Expr, args ...Expr) {
 	})
 }
 
+// RunDefers emits instructions to run deferred instructions.
+func (b Builder) RunDefers() {
+	self := b.Func
+	deferfn := self.DeferFunc()
+	bitsPtr := b.FieldAddr(self.deferData, 1)
+	b.Call(deferfn.Expr, b.Load(bitsPtr))
+}
+
 // -----------------------------------------------------------------------------
+
+/*
+// Recover emits a recover instruction.
+func (b Builder) Recover() (v Expr) {
+	if debugInstr {
+		log.Println("Recover")
+	}
+	prog := b.Prog
+	return prog.Zero(prog.Eface())
+}
+*/
 
 // Panic emits a panic instruction.
 func (b Builder) Panic(v Expr) {

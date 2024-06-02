@@ -254,11 +254,6 @@ func (p Function) Name() string {
 	return p.impl.Name()
 }
 
-// DeferFuncName returns the name of the defer procedure.
-func (p Function) DeferFuncName() string {
-	return p.Name() + "._llgo_defer"
-}
-
 // Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
 	i += p.base // skip if hasFreeVars

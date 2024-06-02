@@ -1,7 +1,7 @@
 package main
 
 func f(s string) bool {
-	return len(s) > 5
+	return len(s) > 2
 }
 
 func fail() {
@@ -11,9 +11,11 @@ func fail() {
 func main() {
 	defer func() {
 		println("hi")
-		if e := recover(); e != nil {
-			println(e.(string))
-		}
+		/*
+			if e := recover(); e != nil {
+				println(e.(string))
+			}
+		*/
 	}()
 	if s := "hello"; f(s) {
 		defer println(s)

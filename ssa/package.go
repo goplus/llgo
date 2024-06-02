@@ -333,16 +333,6 @@ func (p Program) Struct(typs ...Type) Type {
 	return p.rawType(types.NewStruct(els, nil))
 }
 
-/*
-// Eface returns the empty interface type.
-func (p Program) Eface() Type {
-	if p.efaceTy == nil {
-		p.efaceTy = p.rawType(tyAny)
-	}
-	return p.efaceTy
-}
-*/
-
 // DeferPtr returns *runtime.Defer.
 func (p Program) DeferPtr() Type {
 	if p.deferPtr == nil {
@@ -436,12 +426,18 @@ func (p Program) String() Type {
 	return p.stringTy
 }
 
-// Any returns any type.
+// Any returns the any (empty interface) type.
 func (p Program) Any() Type {
 	if p.anyTy == nil {
 		p.anyTy = p.rawType(tyAny)
 	}
 	return p.anyTy
+}
+
+// Eface returns the empty interface type.
+// It is equivalent to Any.
+func (p Program) Eface() Type {
+	return p.Any()
 }
 
 // CIntPtr returns *c.Int type.
