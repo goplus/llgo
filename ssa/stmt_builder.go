@@ -63,6 +63,11 @@ type aBuilder struct {
 // Builder represents a builder for creating instructions in a function.
 type Builder = *aBuilder
 
+// EndBuild ends the build process of a function.
+func (b Builder) EndBuild() {
+	b.endDeferFunc()
+}
+
 // Dispose disposes of the builder.
 func (b Builder) Dispose() {
 	b.impl.Dispose()
@@ -136,11 +141,6 @@ const (
 	deferKey = "__llgo_defer"
 )
 
-type deferMgr struct {
-	deferb     unsafe.Pointer
-	deferparam Expr
-}
-
 // func(uintptr)
 func (p Program) tyDeferFunc() *types.Signature {
 	if p.deferFnTy == nil {
@@ -151,14 +151,13 @@ func (p Program) tyDeferFunc() *types.Signature {
 	return p.deferFnTy
 }
 
-func (p Package) hasDefer() bool {
-	return p.deferb != nil
-}
-
 func (p Package) deferInit(b Builder) {
+	keyVar := p.VarOf(deferKey)
+	if keyVar == nil {
+		return
+	}
 	prog := p.Prog
-	keyVar := p.newDeferKey()
-	keyNil := prog.Null(prog.CIntPtr())
+	keyNil := prog.Null(prog.DeferPtrPtr())
 	keyVar.Init(keyNil)
 	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 
@@ -166,18 +165,19 @@ func (p Package) deferInit(b Builder) {
 	b.IfThen(eq, func() {
 		b.pthreadKeyCreate(keyVar.Expr, prog.Null(prog.VoidPtr()))
 	})
-
-	b = Builder(p.deferb)
-	b.Return()
 }
 
 func (p Package) newDeferKey() Global {
-	return p.NewVarEx(deferKey, p.Prog.CIntPtr())
+	return p.NewVarEx(deferKey, p.Prog.DeferPtrPtr())
+}
+
+func (b Builder) deferKey() Expr {
+	return b.Load(b.Pkg.newDeferKey().Expr)
 }
 
 // DeferFuncName returns the name of the defer procedure.
 func (p Function) DeferFuncName() string {
-	return p.Name() + "._llgo_defer"
+	return p.Name() + "$_llgo_defer"
 }
 
 // DeferFunc returns the defer procedure of this function.
@@ -186,8 +186,12 @@ func (p Function) DeferFunc() Function {
 	return p.Pkg.NewFunc(name, p.Prog.tyDeferFunc(), InC)
 }
 
-func (b Builder) deferKey() Expr {
-	return b.Load(b.Pkg.newDeferKey().Expr)
+func (b Builder) endDeferFunc() {
+	self := b.Func
+	if self.deferb != nil {
+		b = Builder(self.deferb)
+		b.Return()
+	}
 }
 
 // Defer emits a defer instruction.
@@ -196,7 +200,6 @@ func (b Builder) Defer(fn Expr, args ...Expr) {
 		logCall("Defer", fn, args)
 	}
 	prog := b.Prog
-	pkg := b.Pkg
 	self := b.Func
 	next := self.deferNextBit
 	self.deferNextBit++
@@ -205,8 +208,8 @@ func (b Builder) Defer(fn Expr, args ...Expr) {
 	if next == 0 {
 		deferfn := self.DeferFunc()
 		deferb := deferfn.MakeBody(1)
-		pkg.deferb = unsafe.Pointer(deferb)
-		pkg.deferparam = deferfn.Param(0)
+		self.deferb = unsafe.Pointer(deferb)
+		self.deferParam = deferfn.Param(0)
 
 		// TODO(xsw): move to funtion start
 		// proc func(uintptr)
@@ -221,8 +224,8 @@ func (b Builder) Defer(fn Expr, args ...Expr) {
 	nextbit := prog.Val(uintptr(1 << next))
 	b.Store(bitsPtr, b.BinOp(token.OR, b.Load(bitsPtr), nextbit))
 
-	b = Builder(pkg.deferb)
-	has := b.BinOp(token.NEQ, b.BinOp(token.AND, pkg.deferparam, nextbit), zero)
+	b = Builder(self.deferb)
+	has := b.BinOp(token.NEQ, b.BinOp(token.AND, self.deferParam, nextbit), zero)
 	b.IfThen(has, func() {
 		b.Call(fn, args...)
 	})

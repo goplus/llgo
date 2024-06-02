@@ -285,6 +285,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for _, phi := range p.phis {
 				phi()
 			}
+			b.EndBuild()
 		})
 	}
 	return fn, nil, goFunc

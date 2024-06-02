@@ -20,6 +20,7 @@ import (
 	"go/token"
 	"go/types"
 	"strconv"
+	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -157,6 +158,7 @@ type aProgram struct {
 	abiTyPPtr Type
 	deferTy   Type
 	deferPtr  Type
+	deferPPtr Type
 
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
@@ -333,14 +335,6 @@ func (p Program) Struct(typs ...Type) Type {
 	return p.rawType(types.NewStruct(els, nil))
 }
 
-// DeferPtr returns *runtime.Defer.
-func (p Program) DeferPtr() Type {
-	if p.deferPtr == nil {
-		p.deferPtr = p.Pointer(p.Defer())
-	}
-	return p.deferPtr
-}
-
 // Defer returns runtime.Defer type.
 func (p Program) Defer() Type {
 	if p.deferTy == nil {
@@ -349,7 +343,23 @@ func (p Program) Defer() Type {
 	return p.deferTy
 }
 
-// AbiTypePtr returns *abi.Type.
+// DeferPtr returns *runtime.Defer type.
+func (p Program) DeferPtr() Type {
+	if p.deferPtr == nil {
+		p.deferPtr = p.Pointer(p.Defer())
+	}
+	return p.deferPtr
+}
+
+// DeferPtrPtr returns **runtime.Defer type.
+func (p Program) DeferPtrPtr() Type {
+	if p.deferPPtr == nil {
+		p.deferPPtr = p.Pointer(p.DeferPtr())
+	}
+	return p.deferPPtr
+}
+
+// AbiTypePtr returns *abi.Type type.
 func (p Program) AbiTypePtr() Type {
 	if p.abiTyPtr == nil {
 		p.abiTyPtr = p.rawType(types.NewPointer(p.rtNamed("Type")))
@@ -357,7 +367,7 @@ func (p Program) AbiTypePtr() Type {
 	return p.abiTyPtr
 }
 
-// AbiTypePtrPtr returns **abi.Type.
+// AbiTypePtrPtr returns **abi.Type type.
 func (p Program) AbiTypePtrPtr() Type {
 	if p.abiTyPPtr == nil {
 		p.abiTyPPtr = p.Pointer(p.AbiTypePtr())
@@ -549,18 +559,17 @@ func (p Program) Uint64() Type {
 type aPackage struct {
 	mod llvm.Module
 	abi abi.Builder
-	abiTypes
+
+	Prog Program
 
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
 	pyobjs map[string]PyObjRef
 	pymods map[string]Global
-	Prog   Program
+	afterb unsafe.Pointer
 
 	iRoutine int
-
-	deferMgr
 }
 
 type Package = *aPackage
@@ -626,24 +635,37 @@ func (p Package) String() string {
 	return p.mod.String()
 }
 
+// -----------------------------------------------------------------------------
+
+func (p Package) afterBuilder() Builder {
+	if p.afterb == nil {
+		sigAfterInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+		fn := p.NewFunc(p.Path()+".init$after", sigAfterInit, InC)
+		fnb := fn.MakeBody(1)
+		p.afterb = unsafe.Pointer(fnb)
+	}
+	return Builder(p.afterb)
+}
+
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doDeferInit := p.hasDefer()
-	doAbiInit := p.hasAbiInit()
+	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
-	if doDeferInit || doAbiInit || doPyLoadModSyms {
+	if doAfterb || doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
-		if doDeferInit {
-			p.deferInit(b)
-		}
-		if doAbiInit {
-			p.abiInit(b)
+		if doAfterb {
+			afterb := Builder(p.afterb)
+			p.deferInit(afterb)
+			afterb.Return()
+			b.Call(afterb.Func.Expr)
 		}
 		if doPyLoadModSyms {
 			p.pyLoadModSyms(b)
 		}
 	}
 }
+
+// -----------------------------------------------------------------------------
 
 /*
 type CodeGenFileType = llvm.CodeGenFileType

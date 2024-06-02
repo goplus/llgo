@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -186,6 +187,8 @@ type aFunction struct {
 
 	deferNextBit int // next defer bit
 	deferData    Expr
+	deferParam   Expr
+	deferb       unsafe.Pointer
 
 	hasVArg bool
 }

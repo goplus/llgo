@@ -52,20 +52,11 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  %1 = load i32, ptr @__llgo_defer, align 4
-  %2 = icmp eq i32 %1, ptr null
-  br i1 %2, label %_llgo_3, label %_llgo_4
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
-
-_llgo_3:                                          ; preds = %_llgo_1
-  %3 = call i32 @pthread_key_create(ptr @__llgo_defer, ptr null)
-  br label %_llgo_4
-
-_llgo_4:                                          ; preds = %_llgo_3, %_llgo_1
-  call void @"main.init$abi"()
 }
 
 define i32 @main(i32 %0, ptr %1) {
@@ -74,16 +65,16 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = load i32, ptr @__llgo_defer, align 4
-  %3 = call ptr @pthread_getspecific(i32 %2)
+  %2 = load ptr, ptr @__llgo_defer, align 8
+  %3 = call ptr @pthread_getspecific(ptr %2)
   %4 = alloca i8, i64 32, align 1
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 0
-  store ptr @main._llgo_defer, ptr %5, align 8
+  store ptr @"main$_llgo_defer", ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   store i64 0, ptr %6, align 4
   %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 2
   store ptr %3, ptr %7, align 8
-  %8 = call i32 @pthread_setspecific(i32 %2, ptr %4)
+  %8 = call i32 @pthread_setspecific(ptr %2, ptr %4)
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %10 = load i64, ptr %9, align 4
   %11 = or i64 %10, 1
@@ -107,7 +98,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %17, i32 0, i32 1
   store i64 5, ptr %19, align 4
   %20 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %17, align 8
-  %21 = load i32, ptr @__llgo_defer, align 4
+  %21 = load ptr, ptr @__llgo_defer, align 8
   %22 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %23 = load i64, ptr %22, align 4
   %24 = or i64 %23, 2
@@ -121,14 +112,14 @@ _llgo_3:                                          ; preds = %_llgo_4, %_llgo_2
   %27 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %25, i32 0, i32 1
   store i64 3, ptr %27, align 4
   %28 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %25, align 8
-  %29 = load i32, ptr @__llgo_defer, align 4
+  %29 = load ptr, ptr @__llgo_defer, align 8
   %30 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %31 = load i64, ptr %30, align 4
   %32 = or i64 %31, 4
   store i64 %32, ptr %30, align 4
   %33 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %34 = load i64, ptr %33, align 4
-  call void @main._llgo_defer(i64 %34)
+  call void @"main$_llgo_defer"(i64 %34)
   ret i32 0
 
 _llgo_4:                                          ; preds = %_llgo_0
@@ -138,7 +129,7 @@ _llgo_4:                                          ; preds = %_llgo_0
   %37 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %35, i32 0, i32 1
   store i64 5, ptr %37, align 4
   %38 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %35, align 8
-  %39 = load i32, ptr @__llgo_defer, align 4
+  %39 = load ptr, ptr @__llgo_defer, align 8
   %40 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %41 = load i64, ptr %40, align 4
   %42 = or i64 %41, 8
@@ -147,7 +138,7 @@ _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_3
 }
 
-define void @"main.init$abi"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null
@@ -159,6 +150,15 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %3 = load ptr, ptr @__llgo_defer, align 8
+  %4 = icmp eq ptr %3, null
+  br i1 %4, label %_llgo_3, label %_llgo_4
+
+_llgo_3:                                          ; preds = %_llgo_2
+  %5 = call i32 @pthread_key_create(ptr @__llgo_defer, ptr null)
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   ret void
 }
 
@@ -183,7 +183,7 @@ _llgo_0:
   ret void
 }
 
-define void @main._llgo_defer(i64 %0) {
+define void @"main$_llgo_defer"(i64 %0) {
 _llgo_0:
   %1 = and i64 %0, 1
   %2 = icmp ne i64 %1, 0
