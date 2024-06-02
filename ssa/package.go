@@ -20,6 +20,7 @@ import (
 	"go/token"
 	"go/types"
 	"strconv"
+	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -130,13 +131,14 @@ type aProgram struct {
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
-	anyTy     Type
-	voidTy    Type
-	voidPtr   Type
-	voidPPtr  Type
-	boolTy    Type
-	cstrTy    Type
-	cintTy    Type
+	anyTy    Type
+	voidTy   Type
+	voidPtr  Type
+	voidPPtr Type
+	boolTy   Type
+	cstrTy   Type
+	cintTy   Type
+	//cintPtr Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -148,26 +150,36 @@ type aProgram struct {
 	u32Ty     Type
 	i64Ty     Type
 	u64Ty     Type
+
 	pyObjPtr  Type
 	pyObjPPtr Type
-	abiTyptr  Type
-	abiTypptr Type
 
-	pyImpTy    *types.Signature
-	pyNewList  *types.Signature
-	pyListSetI *types.Signature
-	callArgs   *types.Signature
-	callNoArgs *types.Signature
-	callOneArg *types.Signature
-	callFOArgs *types.Signature
-	loadPyModS *types.Signature
-	getAttrStr *types.Signature
+	abiTyPtr  Type
+	abiTyPPtr Type
+	deferTy   Type
+	deferPtr  Type
+	deferPPtr Type
+
+	pyImpTy      *types.Signature
+	pyNewList    *types.Signature
+	pyListSetI   *types.Signature
+	floatFromDbl *types.Signature
+	callNoArgs   *types.Signature
+	callOneArg   *types.Signature
+	callFOArgs   *types.Signature
+	loadPyModS   *types.Signature
+	getAttrStr   *types.Signature
 
 	mallocTy *types.Signature
 	freeTy   *types.Signature
 
+	createKeyTy *types.Signature
 	createThdTy *types.Signature
+	getSpecTy   *types.Signature
+	setSpecTy   *types.Signature
 	routineTy   *types.Signature
+	destructTy  *types.Signature
+	//deferFnTy *types.Signature
 
 	paramObjPtr_ *types.Var
 
@@ -323,30 +335,44 @@ func (p Program) Struct(typs ...Type) Type {
 	return p.rawType(types.NewStruct(els, nil))
 }
 
-/*
-// Eface returns the empty interface type.
-func (p Program) Eface() Type {
-	if p.efaceTy == nil {
-		p.efaceTy = p.rawType(tyAny)
+// Defer returns runtime.Defer type.
+func (p Program) Defer() Type {
+	if p.deferTy == nil {
+		p.deferTy = p.rtType("Defer")
 	}
-	return p.efaceTy
+	return p.deferTy
 }
-*/
 
-// AbiTypePtr returns *abi.Type.
+// DeferPtr returns *runtime.Defer type.
+func (p Program) DeferPtr() Type {
+	if p.deferPtr == nil {
+		p.deferPtr = p.Pointer(p.Defer())
+	}
+	return p.deferPtr
+}
+
+// DeferPtrPtr returns **runtime.Defer type.
+func (p Program) DeferPtrPtr() Type {
+	if p.deferPPtr == nil {
+		p.deferPPtr = p.Pointer(p.DeferPtr())
+	}
+	return p.deferPPtr
+}
+
+// AbiTypePtr returns *abi.Type type.
 func (p Program) AbiTypePtr() Type {
-	if p.abiTyptr == nil {
-		p.abiTyptr = p.rawType(types.NewPointer(p.rtNamed("Type")))
+	if p.abiTyPtr == nil {
+		p.abiTyPtr = p.rawType(types.NewPointer(p.rtNamed("Type")))
 	}
-	return p.abiTyptr
+	return p.abiTyPtr
 }
 
-// AbiTypePtrPtr returns **abi.Type.
+// AbiTypePtrPtr returns **abi.Type type.
 func (p Program) AbiTypePtrPtr() Type {
-	if p.abiTypptr == nil {
-		p.abiTypptr = p.Pointer(p.AbiTypePtr())
+	if p.abiTyPPtr == nil {
+		p.abiTyPPtr = p.Pointer(p.AbiTypePtr())
 	}
-	return p.abiTypptr
+	return p.abiTyPPtr
 }
 
 // PyObjectPtrPtr returns the **py.Object type.
@@ -410,7 +436,7 @@ func (p Program) String() Type {
 	return p.stringTy
 }
 
-// Any returns any type.
+// Any returns the any (empty interface) type.
 func (p Program) Any() Type {
 	if p.anyTy == nil {
 		p.anyTy = p.rawType(tyAny)
@@ -418,6 +444,23 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
+/*
+// Eface returns the empty interface type.
+// It is equivalent to Any.
+func (p Program) Eface() Type {
+	return p.Any()
+}
+
+// CIntPtr returns *c.Int type.
+func (p Program) CIntPtr() Type {
+	if p.cintPtr == nil {
+		p.cintPtr = p.Pointer(p.CInt())
+	}
+	return p.cintPtr
+}
+*/
+
+// CInt returns c.Int type.
 func (p Program) CInt() Type {
 	if p.cintTy == nil { // C.int
 		p.cintTy = p.rawType(types.Typ[types.Int32]) // TODO(xsw): support 64-bit
@@ -518,14 +561,15 @@ func (p Program) Uint64() Type {
 type aPackage struct {
 	mod llvm.Module
 	abi abi.Builder
-	abiTypes
+
+	Prog Program
 
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
 	pyobjs map[string]PyObjRef
 	pymods map[string]Global
-	Prog   Program
+	afterb unsafe.Pointer
 
 	iRoutine int
 }
@@ -593,20 +637,37 @@ func (p Package) String() string {
 	return p.mod.String()
 }
 
+// -----------------------------------------------------------------------------
+
+func (p Package) afterBuilder() Builder {
+	if p.afterb == nil {
+		sigAfterInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+		fn := p.NewFunc(p.Path()+".init$after", sigAfterInit, InC)
+		fnb := fn.MakeBody(1)
+		p.afterb = unsafe.Pointer(fnb)
+	}
+	return Builder(p.afterb)
+}
+
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doAbiInit := p.hasAbiInit()
+	p.deferInit()
+	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
-	if doAbiInit || doPyLoadModSyms {
+	if doAfterb || doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
-		if doAbiInit {
-			p.abiInit(b)
+		if doAfterb {
+			afterb := Builder(p.afterb)
+			afterb.Return()
+			b.Call(afterb.Func.Expr)
 		}
 		if doPyLoadModSyms {
 			p.pyLoadModSyms(b)
 		}
 	}
 }
+
+// -----------------------------------------------------------------------------
 
 /*
 type CodeGenFileType = llvm.CodeGenFileType
@@ -739,14 +800,14 @@ func (p Program) tyNewList() *types.Signature {
 
 // func(float64) *Object
 func (p Program) tyFloatFromDouble() *types.Signature {
-	if p.callArgs == nil {
+	if p.floatFromDbl == nil {
 		paramObjPtr := p.paramObjPtr()
 		paramFloat := types.NewParam(token.NoPos, nil, "", p.Float64().raw.Type)
 		params := types.NewTuple(paramFloat)
 		results := types.NewTuple(paramObjPtr)
-		p.callArgs = types.NewSignatureType(nil, nil, nil, params, results, false)
+		p.floatFromDbl = types.NewSignatureType(nil, nil, nil, params, results, false)
 	}
-	return p.callArgs
+	return p.floatFromDbl
 }
 
 // func(*Object, ...)

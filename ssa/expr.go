@@ -113,6 +113,16 @@ func (p Program) Zero(t Type) Expr {
 		ret = llvm.ConstStruct(flds, false)
 	case *types.Slice:
 		ret = p.Zero(p.rtType("Slice")).impl
+	/* TODO(xsw):
+	case *types.Interface:
+		var name string
+		if u.Empty() {
+			name = "Eface"
+		} else {
+			name = "Iface"
+		}
+		ret = p.Zero(p.rtType(name)).impl
+	*/
 	default:
 		log.Panicln("todo:", u)
 	}
@@ -493,7 +503,6 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	typ := t.raw.Type
 	switch typ.(type) {
 	default:
-		// TODO(xsw): remove instr name
 		ret.impl = llvm.CreateBitCast(b.impl, x.impl, t.ll)
 		ret.Type = b.Prog.rawType(typ)
 		return
@@ -748,7 +757,6 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	var ll llvm.Type
 	var data Expr
 	var sig *types.Signature
-	var prog = b.Prog
 	var raw = fn.raw.Type
 	switch kind {
 	case vkClosure:
@@ -758,7 +766,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		fallthrough
 	case vkFuncPtr:
 		sig = raw.(*types.Signature)
-		ll = prog.FuncDecl(sig, InC).ll
+		ll = b.Prog.FuncDecl(sig, InC).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
 		ll = fn.ll
@@ -768,7 +776,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	default:
 		log.Panicf("unreachable: %d(%T)\n", kind, raw)
 	}
-	ret.Type = prog.retType(sig)
+	ret.Type = b.Prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
 }
@@ -795,8 +803,8 @@ type DoAction int
 
 const (
 	Call DoAction = iota
-	Go
 	Defer
+	Go
 )
 
 // Do call a function with an action.
@@ -804,6 +812,8 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	switch da {
 	case Call:
 		return b.Call(fn, args...)
+	case Defer:
+		b.Defer(fn, args...)
 	case Go:
 		b.Go(fn, args...)
 	}
@@ -818,6 +828,11 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	switch fn {
+	case "String": // unsafe.String
+		return b.unsafeString(args[0].impl, args[1].impl)
+	case "Slice": // unsafe.Slice
+		size := args[1].impl
+		return b.unsafeSlice(args[0], size, size)
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
@@ -857,8 +872,6 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
-	case "print", "println":
-		return b.PrintEx(fn == "println", args...)
 	case "copy":
 		if len(args) == 2 {
 			dst := args[0]
@@ -874,11 +887,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
-	case "String": // unsafe.String
-		return b.unsafeString(args[0].impl, args[1].impl)
-	case "Slice": // unsafe.Slice
-		size := args[1].impl
-		return b.unsafeSlice(args[0], size, size)
+	//case "recover":
+	//	return b.Recover()
+	case "print", "println":
+		return b.PrintEx(fn == "println", args...)
 	}
 	panic("todo: " + fn)
 }

@@ -74,6 +74,14 @@ func (b Builder) aggregateAllocU(t Type, flds ...llvm.Value) llvm.Value {
 	return ptr
 }
 
+func (b Builder) aggregateAlloca(t Type, flds ...llvm.Value) llvm.Value {
+	prog := b.Prog
+	size := prog.SizeOf(t)
+	ptr := b.Alloca(prog.IntVal(size, prog.Uintptr())).impl
+	aggregateInit(b.impl, ptr, t.ll, flds...)
+	return ptr
+}
+
 func (b Builder) aggregateMalloc(t Type, flds ...llvm.Value) llvm.Value {
 	prog := b.Prog
 	size := prog.SizeOf(t)

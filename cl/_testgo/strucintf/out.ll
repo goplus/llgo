@@ -49,7 +49,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
   call void @"github.com/goplus/llgo/cl/internal/foo.init"()
-  call void @"main.init$abi"()
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -241,7 +241,7 @@ _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
-define void @"main.init$abi"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int, align 8
   %1 = icmp eq ptr %0, null

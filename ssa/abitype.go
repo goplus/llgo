@@ -19,7 +19,6 @@ package ssa
 import (
 	"go/token"
 	"go/types"
-	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -285,32 +284,8 @@ func lastParamType(prog Program, fn Expr) Type {
 
 // -----------------------------------------------------------------------------
 
-type abiTypes struct {
-	iniabi unsafe.Pointer
-}
-
-func (p Package) hasAbiInit() bool {
-	return p.iniabi != nil
-}
-
-func (p Package) abiInit(b Builder) {
-	inib := Builder(p.iniabi)
-	inib.Return()
-	b.Call(inib.Func.Expr)
-}
-
-func (p Package) abiBuilder() Builder {
-	if p.iniabi == nil {
-		sigAbiInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-		fn := p.NewFunc(p.Path()+".init$abi", sigAbiInit, InC)
-		fnb := fn.MakeBody(1)
-		p.iniabi = unsafe.Pointer(fnb)
-	}
-	return Builder(p.iniabi)
-}
-
 func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
-	b := p.abiBuilder()
+	b := p.afterBuilder()
 	tabi := b.abiTypeOf(t)
 	expr := g.Expr
 	var eq Expr

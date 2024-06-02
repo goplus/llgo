@@ -285,6 +285,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for _, phi := range p.phis {
 				phi()
 			}
+			b.EndBuild()
 		})
 	}
 	return fn, nil, goFunc
@@ -796,8 +797,12 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		key := p.compileValue(b, v.Key)
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
+	case *ssa.Defer:
+		p.call(b, llssa.Defer, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
+	case *ssa.RunDefers:
+		b.RunDefers()
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X)
 		b.Panic(arg)
