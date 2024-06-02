@@ -21,6 +21,7 @@ type Defer struct {
 	proc func(uintptr)
 	bits uintptr
 	link *Defer
+	rund int // index of RunDefers
 }
 
 // DeferProc calls deferred statements.
@@ -28,5 +29,6 @@ func DeferProc(d *Defer) {
 	for d != nil {
 		d.proc(d.bits)
 		d = d.link
+		_ = d.rund
 	}
 }

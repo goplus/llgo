@@ -86,7 +86,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"main.init$abi"()
+  call void @"main.init$after"()
   store i64 9223372036854775807, ptr @main.a, align 4
   store i64 -9223372036854775808, ptr @main.b, align 4
   store i64 -1, ptr @main.n, align 4
@@ -643,7 +643,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com
 
 declare %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/internal/runtime.Slice", ptr, i64, i64)
 
-define void @"main.init$abi"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int, align 8
   %1 = icmp eq ptr %0, null

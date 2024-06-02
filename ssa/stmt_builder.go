@@ -23,7 +23,6 @@ import (
 	"go/types"
 	"log"
 	"strings"
-	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -65,7 +64,7 @@ type Builder = *aBuilder
 
 // EndBuild ends the build process of a function.
 func (b Builder) EndBuild() {
-	b.endDeferFunc()
+	b.Func.endDefer(b)
 }
 
 // Dispose disposes of the builder.
@@ -141,6 +140,18 @@ const (
 	deferKey = "__llgo_defer"
 )
 
+type aDefer struct {
+	nextBit  int        // next defer bit
+	key      Expr       // pthread TLS key
+	data     Expr       // pointer to runtime.Defer
+	bitsPtr  Expr       // pointer to defer bits
+	rundPtr  Expr       // pointer to RunDefers index
+	procBlk  BasicBlock // deferProc block
+	stmts    []func(bits Expr)
+	runsNext []BasicBlock // next blocks of RunDefers
+}
+
+/*
 // func(uintptr)
 func (p Program) tyDeferFunc() *types.Signature {
 	if p.deferFnTy == nil {
@@ -150,6 +161,7 @@ func (p Program) tyDeferFunc() *types.Signature {
 	}
 	return p.deferFnTy
 }
+*/
 
 func (p Package) deferInit(b Builder) {
 	keyVar := p.VarOf(deferKey)
@@ -175,23 +187,31 @@ func (b Builder) deferKey() Expr {
 	return b.Load(b.Pkg.newDeferKey().Expr)
 }
 
-// DeferFuncName returns the name of the defer procedure.
-func (p Function) DeferFuncName() string {
-	return p.Name() + "$_llgo_defer"
-}
-
-// DeferFunc returns the defer procedure of this function.
-func (p Function) DeferFunc() Function {
-	name := p.DeferFuncName()
-	return p.Pkg.NewFunc(name, p.Prog.tyDeferFunc(), InC)
-}
-
-func (b Builder) endDeferFunc() {
+func (b Builder) getDefer() *aDefer {
 	self := b.Func
-	if self.deferb != nil {
-		b = Builder(self.deferb)
-		b.Return()
+	if self.defer_ == nil {
+		// TODO(xsw): move to funtion start
+		// 0: proc func(uintptr)
+		// 1: bits uintptr
+		// 2: link *Defer
+		// 3: rund int
+		prog := b.Prog
+		key := b.deferKey()
+		deferfn := prog.Null(prog.VoidPtr())
+		zero := prog.Val(uintptr(0))
+		link := b.pthreadGetspecific(key)
+		ptr := b.aggregateAlloca(prog.Defer(), deferfn.impl, zero.impl, link.impl)
+		deferData := Expr{ptr, prog.DeferPtr()}
+		b.pthreadSetspecific(key, deferData)
+		self.defer_ = &aDefer{
+			key:     key,
+			data:    deferData,
+			bitsPtr: b.FieldAddr(deferData, 1),
+			rundPtr: b.FieldAddr(deferData, 3),
+			procBlk: self.MakeBlock(),
+		}
 	}
+	return self.defer_
 }
 
 // Defer emits a defer instruction.
@@ -200,43 +220,62 @@ func (b Builder) Defer(fn Expr, args ...Expr) {
 		logCall("Defer", fn, args)
 	}
 	prog := b.Prog
-	self := b.Func
-	next := self.deferNextBit
-	self.deferNextBit++
-	zero := prog.Val(uintptr(0))
-	key := b.deferKey()
-	if next == 0 {
-		deferfn := self.DeferFunc()
-		deferb := deferfn.MakeBody(1)
-		self.deferb = unsafe.Pointer(deferb)
-		self.deferParam = deferfn.Param(0)
-
-		// TODO(xsw): move to funtion start
-		// proc func(uintptr)
-		// bits uintptr
-		// link *Defer
-		link := b.pthreadGetspecific(key)
-		ptr := b.aggregateAlloca(prog.Defer(), deferfn.impl, zero.impl, link.impl)
-		self.deferData = Expr{ptr, prog.DeferPtr()}
-		b.pthreadSetspecific(key, self.deferData)
-	}
-	bitsPtr := b.FieldAddr(self.deferData, 1)
+	self := b.getDefer()
+	next := self.nextBit
+	self.nextBit++
+	bits := b.Load(self.bitsPtr)
 	nextbit := prog.Val(uintptr(1 << next))
-	b.Store(bitsPtr, b.BinOp(token.OR, b.Load(bitsPtr), nextbit))
+	b.Store(self.bitsPtr, b.BinOp(token.OR, bits, nextbit))
 
-	b = Builder(self.deferb)
-	has := b.BinOp(token.NEQ, b.BinOp(token.AND, self.deferParam, nextbit), zero)
-	b.IfThen(has, func() {
-		b.Call(fn, args...)
+	self.stmts = append(self.stmts, func(bits Expr) {
+		zero := prog.Val(uintptr(0))
+		has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
+		b.IfThen(has, func() {
+			b.Call(fn, args...)
+		})
 	})
 }
 
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
-	self := b.Func
-	deferfn := self.DeferFunc()
-	bitsPtr := b.FieldAddr(self.deferData, 1)
-	b.Call(deferfn.Expr, b.Load(bitsPtr))
+	prog := b.Prog
+	self := b.getDefer()
+	b.Store(self.rundPtr, prog.Val(len(self.runsNext)))
+	b.Jump(self.procBlk)
+
+	blk := b.Func.MakeBlock()
+	self.runsNext = append(self.runsNext, blk)
+
+	b.SetBlockEx(blk, AtEnd, false)
+	b.blk.last = blk.last
+}
+
+func (p Function) endDefer(b Builder) {
+	self := p.defer_
+	if self == nil {
+		return
+	}
+	nexts := self.runsNext
+	n := len(nexts)
+	if n == 0 {
+		return
+	}
+	b.SetBlockEx(self.procBlk, AtEnd, true)
+	bits := b.Load(self.bitsPtr)
+	stmts := self.stmts
+	for i := len(stmts) - 1; i >= 0; i-- {
+		stmts[i](bits)
+	}
+
+	link := b.getField(b.Load(self.data), 2)
+	b.pthreadSetspecific(self.key, link)
+
+	prog := b.Prog
+	rund := b.Load(self.rundPtr)
+	sw := b.impl.CreateSwitch(rund.impl, nexts[0].first, n-1)
+	for i := 1; i < n; i++ {
+		sw.AddCase(prog.Val(i).impl, nexts[i].first)
+	}
 }
 
 // -----------------------------------------------------------------------------

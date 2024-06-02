@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -181,16 +180,12 @@ type aFunction struct {
 
 	blks []BasicBlock
 
+	defer_ *aDefer
+
 	params   []Type
 	freeVars Expr
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-
-	deferNextBit int // next defer bit
-	deferData    Expr
-	deferParam   Expr
-	deferb       unsafe.Pointer
-
-	hasVArg bool
+	hasVArg  bool
 }
 
 // Function represents a function or method.
