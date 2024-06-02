@@ -3,6 +3,7 @@ source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/runtime.String", ptr }
 
 @"main.init$guard" = global ptr null
 @"*_llgo_int8" = linkonce global ptr null
@@ -90,14 +91,18 @@ _llgo_0:
   %6 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %3, align 8
   %7 = call ptr @main.hi(%"github.com/goplus/llgo/internal/runtime.eface" %6)
   %8 = load ptr, ptr @_llgo_int, align 8
-  %9 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, i32 0, i32 0
-  store ptr %8, ptr %10, align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, i32 0, i32 1
-  store ptr inttoptr (i64 100 to ptr), ptr %11, align 8
-  %12 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, align 8
-  %13 = call i64 @main.incVal(%"github.com/goplus/llgo/internal/runtime.eface" %12)
-  %14 = call i32 (ptr, ...) @printf(ptr @2, ptr %7, i64 %13)
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %8, i32 0, i32 6
+  %10 = load i8, ptr %9, align 1
+  %11 = or i8 %10, 32
+  store i8 %11, ptr %9, align 1
+  %12 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %12, i32 0, i32 0
+  store ptr %8, ptr %13, align 8
+  %14 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %12, i32 0, i32 1
+  store ptr inttoptr (i64 100 to ptr), ptr %14, align 8
+  %15 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %12, align 8
+  %16 = call i64 @main.incVal(%"github.com/goplus/llgo/internal/runtime.eface" %15)
+  %17 = call i32 (ptr, ...) @printf(ptr @2, ptr %7, i64 %16)
   ret i32 0
 }
 

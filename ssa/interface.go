@@ -73,7 +73,8 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
-	ret := b.aggregateValue(tclosure, fn.impl, b.faceData(impl))
+	data := b.InlineCall(b.Pkg.rtFunc("IfaceData"), intf)
+	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
 	return ret
 }
 
@@ -125,9 +126,15 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	default:
 		panic("todo")
 	}
+	// abi.Type.Kind_ |= abi.KindDirectIface
+	pkind := b.FieldAddr(tabi, 6)
+	b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
 	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
+
+// abi.KindDirectIface
+const kindDirectIface = 1 << 5
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog

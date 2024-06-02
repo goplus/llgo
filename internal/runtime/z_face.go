@@ -132,7 +132,7 @@ func doInitNamed(ret *Type, pkgPath, name string, underlying *Type, methods []Me
 		panic("runtime: underlying type is already named")
 	}
 
-	kind := abi.Kind(ret.Kind_)
+	kind := ret.Kind()
 	if ret.TFlag != abi.TFlagUninited || kind != underlying.Kind() {
 		panic("initNamed: unexpected named type")
 	}
@@ -244,6 +244,13 @@ func methods(u *abi.UncommonType, from string) []abi.Method {
 		return u.Methods()
 	}
 	return u.ExportedMethods()
+}
+
+func IfaceData(i iface) unsafe.Pointer {
+	if i.tab._type.Kind_&abi.KindDirectIface != 0 {
+		return unsafe.Pointer(&i.data)
+	}
+	return i.data
 }
 
 // -----------------------------------------------------------------------------
