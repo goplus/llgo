@@ -27,6 +27,16 @@ import (
 	"github.com/goplus/llvm"
 )
 
+func TestEndDefer(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("foo", "foo")
+	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("main", sigMain, InC)
+	b := fn.MakeBody(1)
+	fn.defer_ = &aDefer{}
+	fn.endDefer(b)
+}
+
 func TestUnsafeString(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.SetRuntime(func() *types.Package {
@@ -187,6 +197,7 @@ func TestVar(t *testing.T) {
 	if pkg.NewVar("a", types.Typ[types.Int], InGo) != a {
 		t.Fatal("NewVar(a) failed")
 	}
+	pkg.NewVarEx("a", prog.Type(types.Typ[types.Int], InGo))
 	a.Init(prog.Val(100))
 	b := pkg.NewVar("b", types.Typ[types.Int], InGo)
 	b.Init(a.Expr)

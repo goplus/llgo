@@ -163,7 +163,7 @@ func (p Program) tyDeferFunc() *types.Signature {
 }
 */
 
-func (p Package) deferInit(b Builder) {
+func (p Package) deferInit() {
 	keyVar := p.VarOf(deferKey)
 	if keyVar == nil {
 		return
@@ -173,6 +173,7 @@ func (p Package) deferInit(b Builder) {
 	keyVar.Init(keyNil)
 	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 
+	b := p.afterBuilder()
 	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), keyNil)
 	b.IfThen(eq, func() {
 		b.pthreadKeyCreate(keyVar.Expr, prog.Null(prog.VoidPtr()))

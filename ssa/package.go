@@ -131,14 +131,14 @@ type aProgram struct {
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
-	anyTy     Type
-	voidTy    Type
-	voidPtr   Type
-	voidPPtr  Type
-	boolTy    Type
-	cstrTy    Type
-	cintTy    Type
-	cintPtr   Type
+	anyTy    Type
+	voidTy   Type
+	voidPtr  Type
+	voidPPtr Type
+	boolTy   Type
+	cstrTy   Type
+	cintTy   Type
+	//cintPtr Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -444,6 +444,7 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
+/*
 // Eface returns the empty interface type.
 // It is equivalent to Any.
 func (p Program) Eface() Type {
@@ -457,6 +458,7 @@ func (p Program) CIntPtr() Type {
 	}
 	return p.cintPtr
 }
+*/
 
 // CInt returns c.Int type.
 func (p Program) CInt() Type {
@@ -649,13 +651,13 @@ func (p Package) afterBuilder() Builder {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
+	p.deferInit()
 	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
 	if doAfterb || doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
 		if doAfterb {
 			afterb := Builder(p.afterb)
-			p.deferInit(afterb)
 			afterb.Return()
 			b.Call(afterb.Func.Expr)
 		}
