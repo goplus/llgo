@@ -1069,10 +1069,10 @@ _llgo_11:                                         ; preds = %_llgo_8
   %26 = fcmp olt double %25, 0.000000e+00
   br i1 %26, label %_llgo_14, label %_llgo_12
 
-_llgo_12:                                         ; preds = %_llgo_24, %_llgo_22, %_llgo_14, %_llgo_11
-  %27 = phi double [ %0, %_llgo_11 ], [ %45, %_llgo_22 ], [ %0, %_llgo_14 ], [ %51, %_llgo_24 ]
-  %28 = phi i64 [ 0, %_llgo_11 ], [ %41, %_llgo_22 ], [ 0, %_llgo_14 ], [ %50, %_llgo_24 ]
-  br label %_llgo_27
+_llgo_12:                                         ; preds = %_llgo_24, %_llgo_23, %_llgo_14, %_llgo_11
+  %27 = phi double [ %0, %_llgo_11 ], [ %48, %_llgo_23 ], [ %0, %_llgo_14 ], [ %51, %_llgo_24 ]
+  %28 = phi i64 [ 0, %_llgo_11 ], [ %41, %_llgo_23 ], [ 0, %_llgo_14 ], [ %50, %_llgo_24 ]
+  br label %_llgo_25
 
 _llgo_13:                                         ; preds = %_llgo_8
   %29 = fcmp olt double %0, 0.000000e+00
@@ -1106,7 +1106,7 @@ _llgo_18:                                         ; preds = %_llgo_20
   br label %_llgo_20
 
 _llgo_19:                                         ; preds = %_llgo_20
-  br label %_llgo_23
+  br label %_llgo_21
 
 _llgo_20:                                         ; preds = %_llgo_18, %_llgo_17
   %40 = phi double [ %35, %_llgo_17 ], [ %39, %_llgo_18 ]
@@ -1114,70 +1114,70 @@ _llgo_20:                                         ; preds = %_llgo_18, %_llgo_17
   %42 = fcmp olt double %40, 1.000000e+00
   br i1 %42, label %_llgo_18, label %_llgo_19
 
-_llgo_21:                                         ; preds = %_llgo_23
-  %43 = fdiv double %47, 1.000000e+01
-  %44 = add i64 %48, 1
-  br label %_llgo_23
+_llgo_21:                                         ; preds = %_llgo_22, %_llgo_19
+  %43 = phi double [ 5.000000e+00, %_llgo_19 ], [ %46, %_llgo_22 ]
+  %44 = phi i64 [ 0, %_llgo_19 ], [ %47, %_llgo_22 ]
+  %45 = icmp slt i64 %44, 7
+  br i1 %45, label %_llgo_22, label %_llgo_23
 
-_llgo_22:                                         ; preds = %_llgo_23
-  %45 = fadd double %40, %47
-  %46 = fcmp oge double %45, 1.000000e+01
-  br i1 %46, label %_llgo_24, label %_llgo_12
+_llgo_22:                                         ; preds = %_llgo_21
+  %46 = fdiv double %43, 1.000000e+01
+  %47 = add i64 %44, 1
+  br label %_llgo_21
 
-_llgo_23:                                         ; preds = %_llgo_21, %_llgo_19
-  %47 = phi double [ 5.000000e+00, %_llgo_19 ], [ %43, %_llgo_21 ]
-  %48 = phi i64 [ 0, %_llgo_19 ], [ %44, %_llgo_21 ]
-  %49 = icmp slt i64 %48, 7
-  br i1 %49, label %_llgo_21, label %_llgo_22
+_llgo_23:                                         ; preds = %_llgo_21
+  %48 = fadd double %40, %43
+  %49 = fcmp oge double %48, 1.000000e+01
+  br i1 %49, label %_llgo_24, label %_llgo_12
 
-_llgo_24:                                         ; preds = %_llgo_22
+_llgo_24:                                         ; preds = %_llgo_23
   %50 = add i64 %41, 1
-  %51 = fdiv double %45, 1.000000e+01
+  %51 = fdiv double %48, 1.000000e+01
   br label %_llgo_12
 
-_llgo_25:                                         ; preds = %_llgo_27
-  %52 = fptosi double %69 to i64
-  %53 = add i64 %70, 2
-  %54 = add i64 %52, 48
-  %55 = trunc i64 %54 to i8
-  %56 = icmp slt i64 %53, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %56)
-  %57 = getelementptr inbounds i8, ptr %20, i64 %53
-  store i8 %55, ptr %57, align 1
-  %58 = sitofp i64 %52 to double
-  %59 = fsub double %69, %58
-  %60 = fmul double %59, 1.000000e+01
-  %61 = add i64 %70, 1
-  br label %_llgo_27
+_llgo_25:                                         ; preds = %_llgo_26, %_llgo_12
+  %52 = phi double [ %27, %_llgo_12 ], [ %63, %_llgo_26 ]
+  %53 = phi i64 [ 0, %_llgo_12 ], [ %64, %_llgo_26 ]
+  %54 = icmp slt i64 %53, 7
+  br i1 %54, label %_llgo_26, label %_llgo_27
 
-_llgo_26:                                         ; preds = %_llgo_27
-  %62 = getelementptr inbounds i8, ptr %20, i64 2
-  %63 = load i8, ptr %62, align 1
-  %64 = getelementptr inbounds i8, ptr %20, i64 1
-  store i8 %63, ptr %64, align 1
+_llgo_26:                                         ; preds = %_llgo_25
+  %55 = fptosi double %52 to i64
+  %56 = add i64 %53, 2
+  %57 = add i64 %55, 48
+  %58 = trunc i64 %57 to i8
+  %59 = icmp slt i64 %56, 0
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %59)
+  %60 = getelementptr inbounds i8, ptr %20, i64 %56
+  store i8 %58, ptr %60, align 1
+  %61 = sitofp i64 %55 to double
+  %62 = fsub double %52, %61
+  %63 = fmul double %62, 1.000000e+01
+  %64 = add i64 %53, 1
+  br label %_llgo_25
+
+_llgo_27:                                         ; preds = %_llgo_25
   %65 = getelementptr inbounds i8, ptr %20, i64 2
-  store i8 46, ptr %65, align 1
-  %66 = getelementptr inbounds i8, ptr %20, i64 9
-  store i8 101, ptr %66, align 1
-  %67 = getelementptr inbounds i8, ptr %20, i64 10
-  store i8 43, ptr %67, align 1
-  %68 = icmp slt i64 %28, 0
-  br i1 %68, label %_llgo_28, label %_llgo_29
+  %66 = load i8, ptr %65, align 1
+  %67 = getelementptr inbounds i8, ptr %20, i64 1
+  store i8 %66, ptr %67, align 1
+  %68 = getelementptr inbounds i8, ptr %20, i64 2
+  store i8 46, ptr %68, align 1
+  %69 = getelementptr inbounds i8, ptr %20, i64 9
+  store i8 101, ptr %69, align 1
+  %70 = getelementptr inbounds i8, ptr %20, i64 10
+  store i8 43, ptr %70, align 1
+  %71 = icmp slt i64 %28, 0
+  br i1 %71, label %_llgo_28, label %_llgo_29
 
-_llgo_27:                                         ; preds = %_llgo_25, %_llgo_12
-  %69 = phi double [ %27, %_llgo_12 ], [ %60, %_llgo_25 ]
-  %70 = phi i64 [ 0, %_llgo_12 ], [ %61, %_llgo_25 ]
-  %71 = icmp slt i64 %70, 7
-  br i1 %71, label %_llgo_25, label %_llgo_26
-
-_llgo_28:                                         ; preds = %_llgo_26
+_llgo_28:                                         ; preds = %_llgo_27
   %72 = sub i64 0, %28
   %73 = getelementptr inbounds i8, ptr %20, i64 10
   store i8 45, ptr %73, align 1
   br label %_llgo_29
 
-_llgo_29:                                         ; preds = %_llgo_28, %_llgo_26
-  %74 = phi i64 [ %28, %_llgo_26 ], [ %72, %_llgo_28 ]
+_llgo_29:                                         ; preds = %_llgo_28, %_llgo_27
+  %74 = phi i64 [ %28, %_llgo_27 ], [ %72, %_llgo_28 ]
   %75 = sdiv i64 %74, 100
   %76 = trunc i64 %75 to i8
   %77 = add i8 %76, 48
