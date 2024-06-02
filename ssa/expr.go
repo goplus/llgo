@@ -803,8 +803,10 @@ type DoAction int
 
 const (
 	Call DoAction = iota
-	Defer
 	Go
+	DeferAlways // defer statement executes always
+	DeferInCond // defer statement executes in a conditional block
+	DeferInLoop // defer statement executes in a loop block
 )
 
 // Do call a function with an action.
@@ -812,10 +814,10 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	switch da {
 	case Call:
 		return b.Call(fn, args...)
-	case Defer:
-		b.Defer(fn, args...)
 	case Go:
 		b.Go(fn, args...)
+	default:
+		b.Defer(da, fn, args...)
 	}
 	return
 }
