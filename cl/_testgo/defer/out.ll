@@ -37,10 +37,6 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
-  store i32 %0, ptr @__llgo_argc, align 4
-  store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
-  call void @main.init()
   %2 = load ptr, ptr @__llgo_defer, align 8
   %3 = call ptr @pthread_getspecific(ptr %2)
   %4 = alloca i8, i64 40, align 1
@@ -51,6 +47,10 @@ _llgo_0:
   %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 2
   store ptr %3, ptr %7, align 8
   %8 = call i32 @pthread_setspecific(ptr %2, ptr %4)
+  store i32 %0, ptr @__llgo_argc, align 4
+  store ptr %1, ptr @__llgo_argv, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @main.init()
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 3
   %11 = load i64, ptr %9, align 4
