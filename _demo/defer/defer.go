@@ -12,7 +12,6 @@ func main() {
 		defer println(s)
 	} else {
 		defer println("world")
-		return
 	}
 	defer println("bye")
 }

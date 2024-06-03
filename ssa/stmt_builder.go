@@ -216,24 +216,37 @@ func (b Builder) getDefer() *aDefer {
 }
 
 // Defer emits a defer instruction.
-func (b Builder) Defer(fn Expr, args ...Expr) {
+func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	if debugInstr {
 		logCall("Defer", fn, args)
 	}
-	prog := b.Prog
-	self := b.getDefer()
-	next := self.nextBit
-	self.nextBit++
-	bits := b.Load(self.bitsPtr)
-	nextbit := prog.Val(uintptr(1 << next))
-	b.Store(self.bitsPtr, b.BinOp(token.OR, bits, nextbit))
-
+	var prog Program
+	var nextbit Expr
+	var self = b.getDefer()
+	switch kind {
+	case DeferInCond:
+		prog = b.Prog
+		next := self.nextBit
+		self.nextBit++
+		bits := b.Load(self.bitsPtr)
+		nextbit = prog.Val(uintptr(1 << next))
+		b.Store(self.bitsPtr, b.BinOp(token.OR, bits, nextbit))
+	case DeferAlways:
+		// nothing to do
+	default:
+		panic("todo: DeferInLoop is not supported")
+	}
 	self.stmts = append(self.stmts, func(bits Expr) {
-		zero := prog.Val(uintptr(0))
-		has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
-		b.IfThen(has, func() {
+		switch kind {
+		case DeferInCond:
+			zero := prog.Val(uintptr(0))
+			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
+			b.IfThen(has, func() {
+				b.Call(fn, args...)
+			})
+		case DeferAlways:
 			b.Call(fn, args...)
-		})
+		}
 	})
 }
 
