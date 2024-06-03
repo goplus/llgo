@@ -9,6 +9,8 @@ func (t T) Invoke() int {
 	return 0
 }
 
+func (t *T) Method() {}
+
 type T1 int
 
 func (t T1) Invoke() int {
@@ -46,8 +48,20 @@ func main() {
 	invoke(t2)
 	invoke(&t2)
 	invoke(&t3)
+	var m M
+	var i I = m
+	println(i, m)
+	m = &t
+	invoke(m)
+	// panic
+	invoke(nil)
 }
 
 func invoke(i I) {
 	println(i.Invoke())
+}
+
+type M interface {
+	Invoke() int
+	Method()
 }

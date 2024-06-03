@@ -761,6 +761,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Next:
 		iter := p.compileValue(b, v.Iter)
 		ret = b.Next(iter, v.IsString)
+	case *ssa.ChangeInterface:
+		t := v.Type()
+		x := p.compileValue(b, v.X)
+		ret = b.ChangeInterface(p.prog.Type(t, llssa.InGo), x)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}

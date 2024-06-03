@@ -82,15 +82,15 @@ _llgo_0:
   %6 = call %"github.com/goplus/llgo/internal/runtime.iface" @main.New(%"github.com/goplus/llgo/internal/runtime.String" %5)
   call void @"github.com/goplus/llgo/internal/runtime.PrintIface"(%"github.com/goplus/llgo/internal/runtime.iface" %6)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %7 = extractvalue %"github.com/goplus/llgo/internal/runtime.iface" %6, 0
-  %8 = getelementptr ptr, ptr %7, i64 3
-  %9 = load ptr, ptr %8, align 8
-  %10 = call ptr @"github.com/goplus/llgo/internal/runtime.IfaceData"(%"github.com/goplus/llgo/internal/runtime.iface" %6)
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/internal/runtime.iface" %6)
+  %8 = extractvalue %"github.com/goplus/llgo/internal/runtime.iface" %6, 0
+  %9 = getelementptr ptr, ptr %8, i64 3
+  %10 = load ptr, ptr %9, align 8
   %11 = alloca { ptr, ptr }, align 8
   %12 = getelementptr inbounds { ptr, ptr }, ptr %11, i32 0, i32 0
-  store ptr %9, ptr %12, align 8
+  store ptr %10, ptr %12, align 8
   %13 = getelementptr inbounds { ptr, ptr }, ptr %11, i32 0, i32 1
-  store ptr %10, ptr %13, align 8
+  store ptr %7, ptr %13, align 8
   %14 = load { ptr, ptr }, ptr %11, align 8
   %15 = extractvalue { ptr, ptr } %14, 1
   %16 = extractvalue { ptr, ptr } %14, 0
@@ -300,6 +300,6 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintIface"(%"github.com/
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.IfaceData"(%"github.com/goplus/llgo/internal/runtime.iface")
+declare ptr @"github.com/goplus/llgo/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/internal/runtime.iface")
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
