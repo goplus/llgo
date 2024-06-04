@@ -34,6 +34,8 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/xtool/clang"
+	clangCheck "github.com/goplus/llgo/xtool/clang/check"
+	"github.com/goplus/llgo/xtool/env"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
@@ -207,11 +209,33 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 				pkg.ExportFile = ""
 			}
 			if kind == cl.PkgLinkExtern { // need to be linked with external library
-				linkFile := os.ExpandEnv(strings.TrimSpace(param))
-				dir, lib := filepath.Split(linkFile)
-				command := " -l " + lib
-				if dir != "" {
-					command += " -L " + dir[:len(dir)-1]
+				// format: ';' separated alternative link methods. e.g.
+				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
+				expd := ""
+				altParts := strings.Split(param, ";")
+				for _, param := range altParts {
+					expd = strings.TrimSpace(env.ExpandEnv(strings.TrimSpace(param)))
+					if len(expd) > 0 {
+						break
+					}
+				}
+				if expd == "" {
+					panic(fmt.Sprintf("'%s' cannot locate the external library", param))
+				}
+
+				command := ""
+				if expd[0] == '-' {
+					command += " " + expd
+				} else {
+					linkFile := expd
+					dir, lib := filepath.Split(linkFile)
+					command = " -l " + lib
+					if dir != "" {
+						command += " -L " + dir[:len(dir)-1]
+					}
+				}
+				if err := clangCheck.CheckLinkArgs(command); err != nil {
+					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %s\n\tresolved to: %v\n\terror: %v", param, expd, command, err))
 				}
 				if isSingleLinkFile(pkg.ExportFile) {
 					pkg.ExportFile = command + " " + pkg.ExportFile
