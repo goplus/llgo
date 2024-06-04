@@ -30,8 +30,7 @@ import (
 func TestEndDefer(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("foo", "foo")
-	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("main", sigMain, InC)
+	fn := pkg.NewFunc("main", NoArgsNoRet, InC)
 	b := fn.MakeBody(1)
 	fn.defer_ = &aDefer{}
 	fn.endDefer(b)
@@ -46,8 +45,7 @@ func TestUnsafeString(t *testing.T) {
 		return pkg
 	})
 	pkg := prog.NewPackage("foo", "foo")
-	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	b := pkg.NewFunc("main", sigMain, InC).MakeBody(1)
+	b := pkg.NewFunc("main", NoArgsNoRet, InC).MakeBody(1)
 	b.Println(b.BuiltinCall("String", b.CStr("hello"), prog.Val(5)))
 	b.Return()
 }
@@ -119,8 +117,7 @@ func TestIndexType(t *testing.T) {
 
 func TestCvtType(t *testing.T) {
 	gt := newGoTypes()
-	callback := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	params := types.NewTuple(types.NewParam(0, nil, "", callback))
+	params := types.NewTuple(types.NewParam(0, nil, "", NoArgsNoRet))
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
 	ret1 := gt.cvtFunc(sig, nil)
 	if ret1 == sig {
@@ -179,9 +176,8 @@ func TestPyFunc(t *testing.T) {
 	py.Scope().Insert(o)
 	prog.SetPython(py)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	a := pkg.PyNewFunc("a", sig, false)
-	if pkg.PyNewFunc("a", sig, false) != a {
+	a := pkg.PyNewFunc("a", NoArgsNoRet, false)
+	if pkg.PyNewFunc("a", NoArgsNoRet, false) != a {
 		t.Fatal("NewPyFunc(a) failed")
 	}
 	foo := pkg.PyNewModVar("foo", false)
@@ -333,8 +329,7 @@ func TestFuncCall(t *testing.T) {
 	fn.MakeBody(1).
 		Return(prog.Val(1))
 
-	sigMain := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	b := pkg.NewFunc("main", sigMain, InGo).MakeBody(1)
+	b := pkg.NewFunc("main", NoArgsNoRet, InGo).MakeBody(1)
 	b.Call(fn.Expr, prog.Val(1), prog.Val(1.2))
 	b.Return()
 
@@ -383,8 +378,7 @@ _llgo_0:
 func TestJump(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("loop", sig, InGo)
+	fn := pkg.NewFunc("loop", NoArgsNoRet, InGo)
 	b := fn.MakeBody(1)
 	b.Jump(fn.Block(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'

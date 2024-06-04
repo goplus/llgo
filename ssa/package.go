@@ -641,8 +641,7 @@ func (p Package) String() string {
 
 func (p Package) afterBuilder() Builder {
 	if p.afterb == nil {
-		sigAfterInit := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-		fn := p.NewFunc(p.Path()+".init$after", sigAfterInit, InC)
+		fn := p.NewFunc(p.Path()+".init$after", NoArgsNoRet, InC)
 		fnb := fn.MakeBody(1)
 		p.afterb = unsafe.Pointer(fnb)
 	}
