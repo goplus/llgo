@@ -41,7 +41,7 @@ func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
 
 // TracePanic prints panic message.
 func TracePanic(v Eface) {
-	kind := abi.Kind(v._type.Kind_)
+	kind := v._type.Kind()
 	switch {
 	case kind == abi.String:
 		stringTracef(c.Stderr, c.Str("panic: %s\n"), *(*String)(v.data))

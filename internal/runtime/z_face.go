@@ -132,7 +132,7 @@ func doInitNamed(ret *Type, pkgPath, name string, underlying *Type, methods []Me
 		panic("runtime: underlying type is already named")
 	}
 
-	kind := abi.Kind(ret.Kind_)
+	kind := ret.Kind()
 	if ret.TFlag != abi.TFlagUninited || kind != underlying.Kind() {
 		panic("initNamed: unexpected named type")
 	}
@@ -198,6 +198,9 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 
 // NewItab returns a new itab.
 func NewItab(inter *InterfaceType, typ *Type) *Itab {
+	if typ == nil {
+		return nil
+	}
 	n := len(inter.Methods)
 	size := itabHdrSize + uintptr(n)*pointerSize
 	ptr := AllocU(size)
@@ -244,6 +247,23 @@ func methods(u *abi.UncommonType, from string) []abi.Method {
 		return u.Methods()
 	}
 	return u.ExportedMethods()
+}
+
+func IfaceType(i iface) *abi.Type {
+	if i.tab == nil {
+		return nil
+	}
+	return i.tab._type
+}
+
+func IfacePtrData(i iface) unsafe.Pointer {
+	if i.tab == nil {
+		panic(errorString("invalid memory address or nil pointer dereference").Error())
+	}
+	if i.tab._type.Kind_&abi.KindDirectIface != 0 {
+		return unsafe.Pointer(&i.data)
+	}
+	return i.data
 }
 
 // -----------------------------------------------------------------------------

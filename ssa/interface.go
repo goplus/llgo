@@ -69,11 +69,12 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
 	tclosure := prog.Type(method.Type(), InGo)
 	i := iMethodOf(rawIntf, method.Name())
+	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
-	ret := b.aggregateValue(tclosure, fn.impl, b.faceData(impl))
+	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
 	return ret
 }
 
@@ -125,9 +126,15 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	default:
 		panic("todo")
 	}
+	// abi.Type.Kind_ |= abi.KindDirectIface
+	pkind := b.FieldAddr(tabi, 6)
+	b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
 	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
+
+// abi.KindDirectIface
+const kindDirectIface = 1 << 5
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog
@@ -262,6 +269,25 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	return b.valFromData(assertedTyp, b.faceData(x.impl))
 }
 
+// ChangeInterface constructs a value of one interface type from a
+// value of another interface type known to be assignable to it.
+// This operation cannot fail.
+//
+// Pos() returns the ast.CallExpr.Lparen if the instruction arose from
+// an explicit T(e) conversion; the ast.TypeAssertExpr.Lparen if the
+// instruction arose from an explicit e.(T) operation; or token.NoPos
+// otherwise.
+//
+// Example printed form:
+//
+//	t1 = change interface interface{} <- I (t0)
+func (b Builder) ChangeInterface(typ Type, x Expr) (ret Expr) {
+	rawIntf := typ.raw.Type.Underlying().(*types.Interface)
+	tabi := b.faceAbiType(x)
+	data := b.faceData(x.impl)
+	return Expr{b.unsafeInterface(rawIntf, tabi, data), typ}
+}
+
 // -----------------------------------------------------------------------------
 
 /*
@@ -284,7 +310,7 @@ func (b Builder) faceItab(x llvm.Value) llvm.Value {
 
 func (b Builder) faceAbiType(x Expr) Expr {
 	if x.kind == vkIface {
-		panic("todo")
+		return b.InlineCall(b.Pkg.rtFunc("IfaceType"), x)
 	}
 	typ := llvm.CreateExtractValue(b.impl, x.impl, 0)
 	return Expr{typ, b.Prog.AbiTypePtr()}
