@@ -24,6 +24,9 @@ jobs:
         run: brew update
       - name: Install LLVM ${{ matrix.llvm }}
         run: HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }}
+      
+      - name: Show clang version
+        run: clang --version
         
       - name: Set up Go
         uses: actions/setup-go@v5
