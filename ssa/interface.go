@@ -234,7 +234,21 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	}
 	tx := b.faceAbiType(x)
 	tabi := b.abiType(assertedTyp.raw.Type)
-	eq := b.BinOp(token.EQL, tx, tabi)
+
+	var eq Expr
+	var val func() Expr
+	if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
+		if rawIntf.Empty() {
+			eq = b.Prog.BoolVal(true)
+		} else {
+			eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
+		}
+		val = func() Expr { return Expr{b.unsafeInterface(rawIntf, tx, b.faceData(x.impl)), assertedTyp} }
+	} else {
+		eq = b.BinOp(token.EQL, tx, tabi)
+		val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
+	}
+
 	if commaOk {
 		prog := b.Prog
 		t := prog.Struct(assertedTyp, prog.Bool())
@@ -246,8 +260,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 		phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
 			b.SetBlockEx(blk, AtEnd, false)
 			if i == 0 {
-				val := b.valFromData(assertedTyp, b.faceData(x.impl))
-				valTrue := aggregateValue(b.impl, t.ll, val.impl, prog.BoolVal(true).impl)
+				valTrue := aggregateValue(b.impl, t.ll, val().impl, prog.BoolVal(true).impl)
 				b.Jump(blks[2])
 				return Expr{valTrue, t}
 			}
@@ -263,10 +276,10 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	blks := b.Func.MakeBlocks(2)
 	b.If(eq, blks[0], blks[1])
 	b.SetBlockEx(blks[1], AtEnd, false)
-	b.Panic(b.Str("type assertion failed"))
+	b.Panic(b.MakeInterface(b.Prog.Any(), b.Str("type assertion failed")))
 	b.SetBlockEx(blks[0], AtEnd, false)
 	b.blk.last = blks[0].last
-	return b.valFromData(assertedTyp, b.faceData(x.impl))
+	return val()
 }
 
 // ChangeInterface constructs a value of one interface type from a

@@ -246,7 +246,19 @@ type Method struct {
 
 // Exported reports whether the method is exported.
 func (p *Method) Exported() bool {
-	return IsExported(p.Name_)
+	return lastDot(p.Name_) == -1
+}
+
+// Name returns the tag string for method.
+func (p *Method) Name() string {
+	_, name := splitName(p.Name_)
+	return name
+}
+
+// PkgPath returns the pkgpath string for method, or empty if there is none.
+func (p *Method) PkgPath() string {
+	pkg, _ := splitName(p.Name_)
+	return pkg
 }
 
 // UncommonType is present only for defined types or types with methods
@@ -278,6 +290,23 @@ func (t *UncommonType) ExportedMethods() []Method {
 type Imethod struct {
 	Name_ string    // name of method
 	Typ_  *FuncType // .(*FuncType) underneath
+}
+
+// Exported reports whether the imethod is exported.
+func (p *Imethod) Exported() bool {
+	return lastDot(p.Name_) == -1
+}
+
+// Name returns the tag string for imethod.
+func (p *Imethod) Name() string {
+	_, name := splitName(p.Name_)
+	return name
+}
+
+// PkgPath returns the pkgpath string for imethod, or empty if there is none.
+func (p *Imethod) PkgPath() string {
+	pkg, _ := splitName(p.Name_)
+	return pkg
 }
 
 func (t *Type) Kind() Kind { return Kind(t.Kind_ & KindMask) }
@@ -448,6 +477,22 @@ func (t *Type) InterfaceType() *InterfaceType {
 func addChecked(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 	_ = whySafe
 	return unsafe.Pointer(uintptr(p) + x)
+}
+
+func splitName(s string) (pkg string, name string) {
+	i := lastDot(s)
+	if i == -1 {
+		return s, ""
+	}
+	return s[:i], s[i+1:]
+}
+
+func lastDot(s string) int {
+	i := len(s) - 1
+	for i >= 0 && s[i] != '.' {
+		i--
+	}
+	return i
 }
 
 // -----------------------------------------------------------------------------

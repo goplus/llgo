@@ -266,4 +266,60 @@ func IfacePtrData(i iface) unsafe.Pointer {
 	return i.data
 }
 
+// Implements reports whether the type V implements the interface type T.
+func Implements(T, V *abi.Type) bool {
+	if T.Kind() != abi.Interface {
+		return false
+	}
+	t := (*abi.InterfaceType)(unsafe.Pointer(T))
+
+	if len(t.Methods) == 0 {
+		return true
+	}
+
+	// The same algorithm applies in both cases, but the
+	// method tables for an interface type and a concrete type
+	// are different, so the code is duplicated.
+	// In both cases the algorithm is a linear scan over the two
+	// lists - T's methods and V's methods - simultaneously.
+	// Since method tables are stored in a unique sorted order
+	// (alphabetical, with no duplicate method names), the scan
+	// through V's methods must hit a match for each of T's
+	// methods along the way, or else V does not implement T.
+	// This lets us run the scan in overall linear time instead of
+	// the quadratic time  a naive search would require.
+	// See also ../runtime/iface.go.
+	if V.Kind() == abi.Interface {
+		v := (*abi.InterfaceType)(unsafe.Pointer(V))
+		i := 0
+		for j := 0; j < len(v.Methods); j++ {
+			tm := &t.Methods[i]
+			vm := &v.Methods[j]
+			if vm.Name_ == tm.Name_ && vm.Typ_ == tm.Typ_ {
+				if i++; i >= len(t.Methods) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	v := V.Uncommon()
+	if v == nil {
+		return false
+	}
+	i := 0
+	vmethods := v.Methods()
+	for j := 0; j < int(v.Mcount); j++ {
+		tm := &t.Methods[i]
+		vm := vmethods[j]
+		if vm.Name_ == tm.Name_ && vm.Mtyp_ == tm.Typ_ {
+			if i++; i >= len(t.Methods) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // -----------------------------------------------------------------------------

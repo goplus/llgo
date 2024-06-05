@@ -113,7 +113,6 @@ func (p Program) Zero(t Type) Expr {
 		ret = llvm.ConstStruct(flds, false)
 	case *types.Slice:
 		ret = p.Zero(p.rtType("Slice")).impl
-	/* TODO(xsw):
 	case *types.Interface:
 		var name string
 		if u.Empty() {
@@ -122,7 +121,6 @@ func (p Program) Zero(t Type) Expr {
 			name = "Iface"
 		}
 		ret = p.Zero(p.rtType(name)).impl
-	*/
 	default:
 		log.Panicln("todo:", u)
 	}

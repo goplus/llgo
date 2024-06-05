@@ -22,6 +22,7 @@ import (
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
+	"golang.org/x/tools/go/types/typeutil"
 )
 
 // -----------------------------------------------------------------------------
@@ -54,9 +55,13 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 	case *types.Struct:
 		return b.abiStructOf(t)
 	case *types.Named:
+		if iface, ok := t.Underlying().(*types.Interface); ok {
+			obj := t.Obj()
+			return b.abiInterfaceOf(abi.PathOf(obj.Pkg()), abi.TypeName(obj), iface)
+		}
 		return b.abiNamedOf(t)
 	case *types.Interface:
-		return b.abiInterfaceOf("", t)
+		return b.abiInterfaceOf("", "", t)
 	case *types.Signature:
 		return b.abiFuncOf(t)
 	case *types.Slice:
@@ -100,15 +105,14 @@ func (b Builder) abiImethodOf(mName string, typ Expr) Expr {
 	return b.aggregateValue(prog.rtType("Imethod"), name.impl, typ.impl)
 }
 
-func (b Builder) abiMethods(t *types.Named) (ret int) {
-	n := t.NumMethods()
-	for i := 0; i < n; i++ {
-		m := t.Method(i)
-		mSig := m.Type().(*types.Signature)
-		recvType := mSig.Recv().Type()
-		if _, ok := recvType.(*types.Pointer); !ok {
-			ret++
+func (b Builder) abiMethods(t *types.Named) (ret, pret int) {
+	methods := typeutil.IntuitiveMethodSet(t, nil)
+	pret = len(methods)
+	for _, m := range methods {
+		if _, ok := m.Recv().(*types.Pointer); ok {
+			continue
 		}
+		ret++
 	}
 	return
 }
@@ -120,6 +124,9 @@ func (b Builder) abiMethodOf(m *types.Func /*, bg Background = InGo */) (mthd, p
 	mSig := m.Type().(*types.Signature)
 
 	name := b.Str(mName).impl
+	if !token.IsExported(mName) {
+		name = b.Str(abi.FullName(mPkg, m.Name())).impl
+	}
 	abiSigGo := types.NewSignatureType(nil, nil, nil, mSig.Params(), mSig.Results(), mSig.Variadic())
 	abiSig := prog.FuncDecl(abiSigGo, InGo).raw.Type
 	abiTyp := b.abiType(abiSig)
@@ -149,7 +156,7 @@ func (b Builder) abiMthd(mPkg *types.Package, mName string, mSig *types.Signatur
 }
 
 // func Interface(pkgPath, name string, methods []abi.Imethod)
-func (b Builder) abiInterfaceOf(name string, t *types.Interface) func() Expr {
+func (b Builder) abiInterfaceOf(pkgPath string, name string, t *types.Interface) func() Expr {
 	n := t.NumMethods()
 	typs := make([]Expr, n)
 	for i := 0; i < n; i++ {
@@ -161,11 +168,17 @@ func (b Builder) abiInterfaceOf(name string, t *types.Interface) func() Expr {
 		methods := make([]Expr, n)
 		for i := 0; i < n; i++ {
 			m := t.Method(i)
-			methods[i] = b.abiImethodOf(m.Name(), typs[i])
+			mName := m.Name()
+			if !token.IsExported(mName) {
+				mName = abi.FullName(m.Pkg(), mName)
+			}
+			methods[i] = b.abiImethodOf(mName, typs[i])
 		}
 		pkg := b.Pkg
 		fn := pkg.rtFunc("Interface")
-		pkgPath := pkg.Path()
+		if pkgPath == "" {
+			pkgPath = pkg.Path()
+		}
 		tSlice := lastParamType(prog, fn)
 		methodSlice := b.SliceLit(tSlice, methods...)
 		return b.Call(fn, b.Str(pkgPath), b.Str(name), methodSlice)
@@ -178,8 +191,7 @@ func (b Builder) abiNamedOf(t *types.Named) func() Expr {
 		pkg := b.Pkg
 		tunder := t.Underlying()
 		kind := int(abi.UnderlyingKind(tunder))
-		numMethods := b.abiMethods(t)
-		numPtrMethods := t.NumMethods()
+		numMethods, numPtrMethods := b.abiMethods(t)
 		newNamed := pkg.rtFunc("NewNamed")
 		return b.Call(newNamed, b.Prog.Val(kind), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
 	}
@@ -193,10 +205,10 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 		prog := b.Prog
 		path := abi.PathOf(t.Obj().Pkg())
 		name := NameOf(t)
-
 		var initNamed = pkg.rtFunc("InitNamed")
 		var tSlice = lastParamType(prog, initNamed)
-		var n = t.NumMethods()
+		mset := typeutil.IntuitiveMethodSet(t, nil)
+		n := len(mset)
 		var methods, ptrMethods Expr
 		if n == 0 {
 			methods = prog.Zero(tSlice)
@@ -205,7 +217,7 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 			var mthds []Expr
 			var ptrMthds = make([]Expr, 0, n)
 			for i := 0; i < n; i++ {
-				m := t.Method(i)
+				m := mset[i].Obj().(*types.Func)
 				mthd, ptrMthd := b.abiMethodOf(m)
 				if !mthd.IsNil() {
 					mthds = append(mthds, mthd)
@@ -304,6 +316,10 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.blk.last = blks[1].last
 	}
 	if t, ok := t.(*types.Named); ok {
+		// skip interface
+		if _, ok := t.Underlying().(*types.Interface); ok {
+			return
+		}
 		tabi = b.abiInitNamed(vexpr, t)
 		if pub {
 			blks = b.Func.MakeBlocks(2)

@@ -53,7 +53,10 @@ func main() {
 	println(i, m)
 	m = &t
 	invoke(m)
-	// panic
+	var a any = T{"world"}
+	invoke(a.(I))
+	invoke(a.(interface{}).(interface{ Invoke() int }))
+	//panic
 	invoke(nil)
 }
 
