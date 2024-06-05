@@ -26,6 +26,8 @@ type Info struct {
 	Next int
 }
 
+// var debug = false
+
 // -----------------------------------------------------------------------------
 
 type blockState struct {
@@ -62,9 +64,12 @@ func findLoop(states []*blockState, path []int, from, iblk int) []int {
 		if states[succ].fdel {
 			continue
 		}
-		if succ == from {
+		if pos := find(path, succ); pos >= 0 {
+			path = path[pos:]
 			for _, i := range path {
-				states[i].loop = true
+				s := states[i]
+				s.loop = true
+				s.fdel = true
 			}
 			return path
 		}
@@ -151,6 +156,15 @@ retry:
 func isEnd(blk *ssa.BasicBlock) bool {
 	// Note: skip recover block
 	return len(blk.Succs) == 0 && (len(blk.Preds) > 0 || blk.Index == 0)
+}
+
+func find(path []int, fv int) int {
+	for i, v := range path {
+		if v == fv {
+			return i
+		}
+	}
+	return -1
 }
 
 // -----------------------------------------------------------------------------
