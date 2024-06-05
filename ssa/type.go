@@ -26,6 +26,8 @@ import (
 
 var (
 	tyAny = types.NewInterfaceType(nil, nil)
+
+	NoArgsNoRet = types.NewSignatureType(nil, nil, nil, nil, nil, false)
 )
 
 // -----------------------------------------------------------------------------

@@ -19,9 +19,7 @@ package ssa
 import (
 	"go/types"
 	"log"
-	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -329,99 +327,6 @@ func (p Function) MakeBlock() BasicBlock {
 // Block returns the ith basic block of the function.
 func (p Function) Block(idx int) BasicBlock {
 	return p.blks[idx]
-}
-
-// -----------------------------------------------------------------------------
-
-type aPyGlobal struct {
-	Expr
-}
-
-type PyGlobal = *aPyGlobal
-
-// PyNewVar creates a Python variable.
-func (b Builder) PyNewVar(modName, name string) PyGlobal {
-	modPtr := b.Pkg.PyNewModVar(modName, false).Expr
-	mod := b.Load(modPtr)
-	return &aPyGlobal{pyVarExpr(mod, name)}
-}
-
-func (b Builder) pyLoad(ptr Expr) Expr {
-	t := ptr.raw.Type.(*pyVarTy)
-	fn := b.Pkg.pyFunc("PyObject_GetAttrString", b.Prog.tyGetAttrString())
-	return b.Call(fn, t.mod, b.CStr(t.name))
-}
-
-// -----------------------------------------------------------------------------
-
-type aPyObjRef struct {
-	Expr
-	Obj Global
-}
-
-// PyObjRef represents a python object reference.
-type PyObjRef = *aPyObjRef
-
-// PyNewFunc creates a new python function.
-func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObjRef {
-	if v, ok := p.pyobjs[name]; ok {
-		return v
-	}
-	prog := p.Prog
-	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
-	if doInit {
-		prog.NeedPyInit = true
-		obj.Init(prog.Null(obj.Type))
-		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-	}
-	ty := &aType{obj.ll, rawType{types.NewPointer(sig)}, vkPyFuncRef}
-	expr := Expr{obj.impl, ty}
-	ret := &aPyObjRef{expr, obj}
-	p.pyobjs[name] = ret
-	return ret
-}
-
-// PyObjOf returns a python object by name.
-func (p Package) PyObjOf(name string) PyObjRef {
-	return p.pyobjs[name]
-}
-
-func (p Package) pyHasModSyms() bool {
-	return len(p.pyobjs) > 0
-}
-
-// pyLoadModSyms loads module symbols used in this package.
-func (p Package) pyLoadModSyms(b Builder) {
-	objs := p.pyobjs
-	names := make([]string, 0, len(objs))
-	for name := range objs {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	mods := make(map[string][]PyObjRef)
-	modNames := make([]string, 0, 8)
-	lastMod := ""
-	for _, name := range names {
-		modName := modOf(name)
-		mods[modName] = append(mods[modName], objs[name])
-		if modName != lastMod {
-			modNames = append(modNames, modName)
-			lastMod = modName
-		}
-	}
-
-	for _, modName := range modNames {
-		objs := mods[modName]
-		b.PyLoadModSyms(modName, objs...)
-	}
-}
-
-func modOf(name string) string {
-	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
-		return name[:pos]
-	}
-	panic("unreachable")
 }
 
 // -----------------------------------------------------------------------------
