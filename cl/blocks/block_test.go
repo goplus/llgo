@@ -41,6 +41,17 @@ func TestTestdefer(t *testing.T) {
 	fromDir(t, "", "../_testdefer")
 }
 
+func TestFirstLoop(t *testing.T) {
+	blk := &ssa.BasicBlock{}
+	blk.Index = 0
+	blk.Preds = []*ssa.BasicBlock{blk}
+	blk.Succs = []*ssa.BasicBlock{blk}
+	infos := Infos([]*ssa.BasicBlock{blk})
+	if infos[0].Kind != llssa.DeferInLoop {
+		t.Fatal("TestFirstLoop")
+	}
+}
+
 func fromDir(t *testing.T, sel, relDir string) {
 	dir, err := os.Getwd()
 	if err != nil {
