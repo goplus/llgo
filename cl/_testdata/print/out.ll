@@ -191,7 +191,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   call void @main.println(%"github.com/goplus/llgo/internal/runtime.Slice" %47)
   br label %_llgo_2
 
-_llgo_2:                                          ; preds = %_llgo_3, %_llgo_1, %_llgo_0
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_3, %_llgo_0
   %48 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 48)
   %49 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %48, i64 0
   %50 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -1451,7 +1451,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   %7 = icmp ult i64 %9, 10
   br i1 %7, label %_llgo_2, label %_llgo_4
 
-_llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_3
   %8 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %1, i64 1, i64 100, i64 %10, i64 100, i64 100)
   call void @main.gwrite(%"github.com/goplus/llgo/internal/runtime.Slice" %8)
   ret void
