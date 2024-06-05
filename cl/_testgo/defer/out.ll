@@ -53,108 +53,97 @@ _llgo_0:
   call void @main.init()
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 1
   %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, i32 0, i32 3
-  %11 = load i64, ptr %9, align 4
-  %12 = or i64 %11, 1
-  store i64 %12, ptr %9, align 4
-  %13 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %14 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %13, i32 0, i32 0
-  store ptr @0, ptr %14, align 8
-  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %13, i32 0, i32 1
-  store i64 5, ptr %15, align 4
-  %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %13, align 8
-  %17 = call i1 @main.f(%"github.com/goplus/llgo/internal/runtime.String" %16)
-  br i1 %17, label %_llgo_2, label %_llgo_3
+  %11 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 0
+  store ptr @0, ptr %12, align 8
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 1
+  store i64 5, ptr %13, align 4
+  %14 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
+  %15 = call i1 @main.f(%"github.com/goplus/llgo/internal/runtime.String" %14)
+  br i1 %15, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; No predecessors!
   ret i32 0
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %18 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %18, i32 0, i32 0
-  store ptr @1, ptr %19, align 8
-  %20 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %18, i32 0, i32 1
-  store i64 5, ptr %20, align 4
-  %21 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %18, align 8
-  %22 = load i64, ptr %9, align 4
-  %23 = or i64 %22, 2
-  store i64 %23, ptr %9, align 4
-  %24 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %25 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %24, i32 0, i32 0
-  store ptr @2, ptr %25, align 8
-  %26 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %24, i32 0, i32 1
-  store i64 3, ptr %26, align 4
-  %27 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %24, align 8
-  %28 = load i64, ptr %9, align 4
-  %29 = or i64 %28, 4
-  store i64 %29, ptr %9, align 4
+  %16 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 0
+  store ptr @1, ptr %17, align 8
+  %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 1
+  store i64 5, ptr %18, align 4
+  %19 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %16, align 8
+  %20 = load i64, ptr %9, align 4
+  %21 = or i64 %20, 1
+  store i64 %21, ptr %9, align 4
+  %22 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %22, i32 0, i32 0
+  store ptr @2, ptr %23, align 8
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %22, i32 0, i32 1
+  store i64 3, ptr %24, align 4
+  %25 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %22, align 8
+  %26 = load i64, ptr %9, align 4
+  %27 = or i64 %26, 2
+  store i64 %27, ptr %9, align 4
   store i64 0, ptr %10, align 4
   br label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %30 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %30, i32 0, i32 0
-  store ptr @3, ptr %31, align 8
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %30, i32 0, i32 1
-  store i64 5, ptr %32, align 4
-  %33 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %30, align 8
-  %34 = load i64, ptr %9, align 4
-  %35 = or i64 %34, 8
-  store i64 %35, ptr %9, align 4
+  %28 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %29 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %28, i32 0, i32 0
+  store ptr @3, ptr %29, align 8
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %28, i32 0, i32 1
+  store i64 5, ptr %30, align 4
+  %31 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %28, align 8
+  %32 = load i64, ptr %9, align 4
+  %33 = or i64 %32, 4
+  store i64 %33, ptr %9, align 4
   store i64 1, ptr %10, align 4
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
-  %36 = load i64, ptr %9, align 4
-  %37 = and i64 %36, 8
-  %38 = icmp ne i64 %37, 0
-  br i1 %38, label %_llgo_7, label %_llgo_8
+  %34 = load i64, ptr %9, align 4
+  %35 = and i64 %34, 4
+  %36 = icmp ne i64 %35, 0
+  br i1 %36, label %_llgo_7, label %_llgo_8
 
-_llgo_5:                                          ; preds = %_llgo_14
+_llgo_5:                                          ; preds = %_llgo_12
   ret i32 0
 
-_llgo_6:                                          ; preds = %_llgo_14
+_llgo_6:                                          ; preds = %_llgo_12
   ret i32 0
 
 _llgo_7:                                          ; preds = %_llgo_4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %33)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %31)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_4
-  %39 = and i64 %36, 4
-  %40 = icmp ne i64 %39, 0
-  br i1 %40, label %_llgo_9, label %_llgo_10
+  %37 = and i64 %34, 2
+  %38 = icmp ne i64 %37, 0
+  br i1 %38, label %_llgo_9, label %_llgo_10
 
 _llgo_9:                                          ; preds = %_llgo_8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %27)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %25)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
-  %41 = and i64 %36, 2
-  %42 = icmp ne i64 %41, 0
-  br i1 %42, label %_llgo_11, label %_llgo_12
+  %39 = and i64 %34, 1
+  %40 = icmp ne i64 %39, 0
+  br i1 %40, label %_llgo_11, label %_llgo_12
 
 _llgo_11:                                         ; preds = %_llgo_10
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %21)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %19)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_12
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
-  %43 = and i64 %36, 1
-  %44 = icmp ne i64 %43, 0
-  br i1 %44, label %_llgo_13, label %_llgo_14
-
-_llgo_13:                                         ; preds = %_llgo_12
   call void @"main.main$1"()
-  br label %_llgo_14
-
-_llgo_14:                                         ; preds = %_llgo_13, %_llgo_12
-  %45 = load %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, align 8
-  %46 = extractvalue %"github.com/goplus/llgo/internal/runtime.Defer" %45, 2
-  %47 = call i32 @pthread_setspecific(ptr %2, ptr %46)
-  %48 = load i64, ptr %10, align 4
-  switch i64 %48, label %_llgo_5 [
+  %41 = load %"github.com/goplus/llgo/internal/runtime.Defer", ptr %4, align 8
+  %42 = extractvalue %"github.com/goplus/llgo/internal/runtime.Defer" %41, 2
+  %43 = call i32 @pthread_setspecific(ptr %2, ptr %42)
+  %44 = load i64, ptr %10, align 4
+  switch i64 %44, label %_llgo_5 [
     i64 1, label %_llgo_6
   ]
 }

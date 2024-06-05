@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/goplus/llgo/cl/blocks"
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
@@ -149,7 +150,7 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
-	blkInfos []blockInfo
+	blkInfos []blocks.Info
 
 	inits []func()
 	phis  []func()
@@ -280,14 +281,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for i, block := range f.Blocks {
 				off[i] = p.compilePhis(b, block)
 			}
-			p.blkInfos = blockInfos(f.Blocks)
+			p.blkInfos = blocks.Infos(f.Blocks)
 			i := 0
 			for {
 				block := f.Blocks[i]
 				doMainInit := (i == 0 && name == "main")
 				doModInit := (i == 1 && f.Name() == "init" && sig.Recv() == nil)
 				p.compileBlock(b, block, off[i], doMainInit, doModInit)
-				if i = p.blkInfos[i].next; i < 0 {
+				if i = p.blkInfos[i].Next; i < 0 {
 					break
 				}
 			}
@@ -298,24 +299,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		})
 	}
 	return fn, nil, goFunc
-}
-
-type blockInfo struct {
-	kind llssa.DoAction
-	next int
-}
-
-func blockInfos(blks []*ssa.BasicBlock) []blockInfo {
-	n := len(blks)
-	infos := make([]blockInfo, n)
-	for i := range blks {
-		next := i + 1
-		if next >= n {
-			next = -1
-		}
-		infos[i] = blockInfo{kind: llssa.DeferInCond, next: next}
-	}
-	return infos
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -829,7 +812,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Defer:
-		p.call(b, p.blkInfos[v.Block().Index].kind, &v.Call)
+		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
 	case *ssa.RunDefers:

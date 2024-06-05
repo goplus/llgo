@@ -53,7 +53,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_3
   %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
-  store ptr @0, ptr %3, align 8
+  store ptr @1, ptr %3, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
   store i64 7, ptr %4, align 4
   %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
@@ -79,7 +79,7 @@ _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
   %15 = phi i64 [ 0, %_llgo_0 ], [ %11, %_llgo_1 ]
   %16 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 0
-  store ptr @1, ptr %17, align 8
+  store ptr @0, ptr %17, align 8
   %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 1
   store i64 7, ptr %18, align 4
   %19 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %16, align 8
