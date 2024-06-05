@@ -38,7 +38,7 @@ import (
 
 func TestTestdefer(t *testing.T) {
 	// debug = true
-	fromDir(t, "print", "../_testdefer")
+	fromDir(t, "", "../_testdefer")
 }
 
 func fromDir(t *testing.T, sel, relDir string) {

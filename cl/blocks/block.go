@@ -26,8 +26,6 @@ type Info struct {
 	Next int
 }
 
-// var debug = false
-
 // -----------------------------------------------------------------------------
 
 type blockState struct {
@@ -36,6 +34,7 @@ type blockState struct {
 	succs  []int
 	loop   bool
 	always bool
+	reach  bool
 	fdel   bool
 }
 
@@ -65,7 +64,9 @@ func findLoop(states []*blockState, path []int, from, iblk int) []int {
 			continue
 		}
 		if pos := find(path, succ); pos >= 0 {
-			path = path[pos:]
+			if pos > 0 {
+				continue
+			}
 			for _, i := range path {
 				s := states[i]
 				s.loop = true
@@ -129,12 +130,14 @@ retry:
 			}
 			if s.preds--; s.preds == 0 {
 				order = append(order, succ)
+			} else {
+				s.reach = true
 			}
 		}
 	}
 	if pos < n {
 		for iblk, state := range states {
-			if state.fdel {
+			if state.fdel || !state.reach {
 				continue
 			}
 			if loop := findLoop(states, path, iblk, iblk); len(loop) > 0 {
