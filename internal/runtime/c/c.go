@@ -19,10 +19,6 @@ package c
 import "C"
 import "unsafe"
 
-const (
-	LLGoPackage = "decl"
-)
-
 type (
 	Char    = int8
 	Int     = C.int
@@ -30,13 +26,13 @@ type (
 	FilePtr = unsafe.Pointer
 )
 
-//go:linkname Stdin __stdinp
+//go:linkname Stdin llgo_stdin
 var Stdin FilePtr
 
-//go:linkname Stdout __stdoutp
+//go:linkname Stdout llgo_stdout
 var Stdout FilePtr
 
-//go:linkname Stderr __stderrp
+//go:linkname Stderr llgo_stderr
 var Stderr FilePtr
 
 //go:linkname Str llgo.cstr
