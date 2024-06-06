@@ -20,17 +20,18 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/internal/runtime/bdwgc"
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
-	return c.Malloc(size)
+	return bdwgc.Malloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
-	ret := c.Malloc(size)
+	ret := bdwgc.Malloc(size)
 	return c.Memset(ret, 0, size)
 }
 
