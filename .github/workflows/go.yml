@@ -22,8 +22,8 @@ jobs:
       - name: Update Homebrew
         if: matrix.llvm == 17 # needed as long as LLVM 17 is still fresh
         run: brew update
-      - name: Install LLVM ${{ matrix.llvm }}
-        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }}
+      - name: Install LLVM ${{ matrix.llvm }} and bdw-gc
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }} bdw-gc
         
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -35,6 +35,14 @@ jobs:
 
       - name: Test
         run: go test -v ./...
+      
+      - name: Install
+        run: go install ./...
+      
+      - name: LLGO tests
+        run: |
+          export LLGOROOT=$PWD
+          bash _test/run.sh
 
   test-linux:
     runs-on: ubuntu-20.04
@@ -44,12 +52,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install LLVM ${{ matrix.llvm }}
+    - name: Install LLVM ${{ matrix.llvm }} and libgc-dev
       run: |
         echo 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.llvm }} main' | sudo tee /etc/apt/sources.list.d/llvm.list
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo apt-get update
-        sudo apt-get install --no-install-recommends llvm-${{ matrix.llvm }}-dev
+        sudo apt-get install --no-install-recommends clang-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev libgc-dev
+        echo /usr/lib/llvm-${{ matrix.llvm }}/bin >> $GITHUB_PATH
+    
+    - name: Clang information
+      run: |
+        echo $PATH
+        which clang
+        clang --version
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -61,6 +76,14 @@ jobs:
 
     - name: Test
       run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
+    
+    - name: Install
+      run: go install ./...
+      
+    - name: LLGO tests
+      run: |
+        export LLGOROOT=$PWD
+        bash _test/run.sh
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
