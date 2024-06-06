@@ -26,13 +26,13 @@ type (
 	FilePtr = unsafe.Pointer
 )
 
-//go:linkname Stdin llgo_stdin
+//go:linkname Stdin stdin
 var Stdin FilePtr
 
-//go:linkname Stdout llgo_stdout
+//go:linkname Stdout stdout
 var Stdout FilePtr
 
-//go:linkname Stderr llgo_stderr
+//go:linkname Stderr stderr
 var Stderr FilePtr
 
 //go:linkname Str llgo.cstr

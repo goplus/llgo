@@ -13,7 +13,7 @@ source_filename = "main"
 @3 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @5 = private unnamed_addr constant [6 x i8] c"World\00", align 1
-@llgo_stderr = external global ptr
+@stderr = external global ptr
 @6 = private unnamed_addr constant [8 x i8] c"Hi, %s\0A\00", align 1
 
 define %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %0) {
@@ -119,7 +119,7 @@ _llgo_0:
   store i64 3, ptr %21, align 4
   %22 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %18, align 8
   %23 = call %"github.com/goplus/llgo/internal/runtime.String" @main.concat(%"github.com/goplus/llgo/internal/runtime.Slice" %22)
-  %24 = load ptr, ptr @llgo_stderr, align 8
+  %24 = load ptr, ptr @stderr, align 8
   %25 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %23, 1
   %26 = add i64 %25, 1
   %27 = alloca i8, i64 %26, align 1

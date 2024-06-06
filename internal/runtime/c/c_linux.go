@@ -4,5 +4,5 @@
 package c
 
 const (
-	LLGoPackage = "decl: stdio_linux.ll"
+	LLGoPackage = "decl: c_linux.ll"
 )
