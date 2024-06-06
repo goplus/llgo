@@ -449,8 +449,13 @@ func allLinkFiles(rt []*packages.Package) (outFiles []string) {
 	outFiles = make([]string, 0, len(rt))
 	packages.Visit(rt, nil, func(p *packages.Package) {
 		pkgPath := p.PkgPath
+		kind, param := cl.PkgKindOf(p.Types)
 		if isRuntimePkg(pkgPath) {
-			llgoPkgLinkFiles(pkgPath, func(linkFile string) {
+			exptFile := ""
+			if kind == cl.PkgLinkIR || kind == cl.PkgDeclOnly {
+				exptFile = strings.TrimSpace(param)
+			}
+			llgoPkgLinkFiles(pkgPath, exptFile, func(linkFile string) {
 				outFiles = append(outFiles, linkFile)
 			})
 		}
@@ -459,13 +464,14 @@ func allLinkFiles(rt []*packages.Package) (outFiles []string) {
 }
 
 const (
-	pkgAbi     = llgoModPath + "/internal/abi"
-	pkgRuntime = llgoModPath + "/internal/runtime"
+	pkgAbi      = llgoModPath + "/internal/abi"
+	pkgRuntime  = llgoModPath + "/internal/runtime"
+	pkgRuntimeC = llgoModPath + "/internal/runtime/c"
 )
 
 func isRuntimePkg(pkgPath string) bool {
 	switch pkgPath {
-	case pkgRuntime, pkgAbi:
+	case pkgRuntime, pkgAbi, pkgRuntimeC:
 		return true
 	}
 	return false
@@ -501,7 +507,7 @@ func concatPkgLinkFiles(pkgPath string) string {
 	var b strings.Builder
 	var ret string
 	var n int
-	llgoPkgLinkFiles(pkgPath, func(linkFile string) {
+	llgoPkgLinkFiles(pkgPath, "", func(linkFile string) {
 		if n == 0 {
 			ret = linkFile
 		} else {
@@ -518,13 +524,16 @@ func concatPkgLinkFiles(pkgPath string) string {
 	return ret
 }
 
-func llgoPkgLinkFiles(pkgPath string, procFile func(linkFile string)) {
+func llgoPkgLinkFiles(pkgPath string, llFile string, procFile func(linkFile string)) {
 	dir := llgoRoot() + pkgPath[len(llgoModPath):] + "/"
-	llFile := dir + "llgo_autogen.ll"
-	llaFile := llFile + "a"
-	zipf, err := zip.OpenReader(llaFile)
+	if llFile == "" {
+		llFile = "llgo_autogen.ll"
+	}
+	llPath := dir + llFile
+	llaPath := llPath + "a"
+	zipf, err := zip.OpenReader(llaPath)
 	if err != nil {
-		procFile(llFile)
+		procFile(llPath)
 		return
 	}
 	defer zipf.Close()
@@ -532,7 +541,7 @@ func llgoPkgLinkFiles(pkgPath string, procFile func(linkFile string)) {
 	for _, f := range zipf.File {
 		procFile(dir + f.Name)
 	}
-	if _, err := os.Stat(llFile); os.IsNotExist(err) {
+	if _, err := os.Stat(llPath); os.IsNotExist(err) {
 		for _, f := range zipf.File {
 			decodeFile(dir+f.Name, f)
 		}

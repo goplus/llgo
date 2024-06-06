@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -74,7 +75,7 @@ func decodeLinkFile(llFile string) (data []byte, err error) {
 		return
 	}
 	defer zipf.Close()
-	f, err := zipf.Open("llgo_autogen.ll")
+	f, err := zipf.Open(filepath.Base(llFile))
 	if err != nil {
 		return
 	}
