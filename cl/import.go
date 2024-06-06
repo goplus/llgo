@@ -105,6 +105,8 @@ func pkgKind(v string) (int, string) {
 			return PkgLinkExtern, v[5:]
 		} else if strings.HasPrefix(v, "py.") { // "py.<module>"
 			return PkgPyModule, v[3:]
+		} else if strings.HasPrefix(v, "decl:") { // "decl: <param>"
+			return PkgDeclOnly, v[5:]
 		}
 	}
 	return PkgLLGo, ""

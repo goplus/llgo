@@ -9,7 +9,7 @@
 *.dylib
 
 test.db
-llgo_autogen.ll
+llgo_autogen*.ll
 stories*.bin
 .DS_Store
 err.log
