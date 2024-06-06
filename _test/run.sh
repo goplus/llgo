@@ -2,12 +2,16 @@
 set -e
 testcmd=/tmp/test
 llgo build -o $testcmd ./_test
-total=$($testcmd)
+cases=$($testcmd)
+total=$(echo "$cases" | wc -l | tr -d ' ')
 succ=0
-for idx in $(seq 0 $((total-1))); do
-  echo "=== Running test: $idx"
+for idx in $(seq 1 $((total))); do
+  case=$(echo "$cases" | sed -n "${idx}p")
+  case_id=$(echo "$case" | cut -d',' -f1)
+  case_name=$(echo "$case" | cut -d',' -f2)
+  echo "=== Test case: $case_name"
   set +e
-  out=$("$testcmd" "$idx" 2>&1)
+  out=$("$testcmd" "$((idx-1))" 2>&1)
   exit_code=$?
   set -e
   if [ "${exit_code:-0}" -ne 0 ]; then

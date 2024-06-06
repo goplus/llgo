@@ -5,13 +5,20 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
+type TestCase struct {
+	Name string
+	F    func(*testing.T)
+}
+
 func main() {
-	tests := []func(*testing.T){
-		TestMalloc,
-		TestFinalizer,
+	tests := []TestCase{
+		{"TestMalloc", TestMalloc},
+		{"TestFinalizer", TestFinalizer},
 	}
 	if c.Argc == 1 {
-		c.Printf(c.Str("%d"), len(tests))
+		for _, test := range tests {
+			c.Printf(c.Str("%s\n"), c.AllocaCStr(test.Name))
+		}
 		return
 	}
 	idx := int(c.Atoi(c.Index(c.Argv, 1)))
@@ -19,5 +26,5 @@ func main() {
 		c.Printf(c.Str("invalid test index %d"), idx)
 		panic("invalid test index")
 	}
-	tests[idx](nil)
+	tests[idx].F(nil)
 }
