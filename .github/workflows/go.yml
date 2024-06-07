@@ -12,10 +12,11 @@ on:
 jobs:
 
   test-macos:
-    runs-on: macos-latest
     strategy:
       matrix:
+        os: [macos-latest, macos-13]
         llvm: [17]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
