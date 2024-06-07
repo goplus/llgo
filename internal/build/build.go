@@ -294,7 +294,9 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 
 	dirty := false
 	if needRuntime && runtimeFiles != nil {
-		args = append(args, runtimeFiles...)
+		for _, file := range runtimeFiles {
+			args = appendLinkFiles(args, file)
+		}
 	} else {
 		dirty = true
 		fn := aPkg.LPkg.FuncOf(cl.RuntimeInit)
