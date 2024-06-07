@@ -145,11 +145,15 @@ func Do(args []string, conf *Config) {
 		return rt[1].Types
 	})
 
-	pkgs := buildAllPkgs(prog, initial, mode, verbose)
+	pkgs := buildAllPkgs(prog, initial, nil, mode, verbose)
 
 	var runtimeFiles []string
 	if needRt {
-		dpkg := buildAllPkgs(prog, rt[:1], mode, verbose)
+		skip := make(map[string]bool)
+		for _, v := range pkgs {
+			skip[v.PkgPath] = true
+		}
+		dpkg := buildAllPkgs(prog, rt[:1], skip, mode, verbose)
 		for _, pkg := range dpkg {
 			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
 				continue
@@ -188,7 +192,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 	return
 }
 
-func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) (pkgs []*aPackage) {
+func buildAllPkgs(prog llssa.Program, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
@@ -200,6 +204,10 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	}
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
+		if skip[pkg.PkgPath] {
+			pkg.ExportFile = ""
+			continue
+		}
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
