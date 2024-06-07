@@ -149,7 +149,13 @@ func Do(args []string, conf *Config) {
 
 	var runtimeFiles []string
 	if needRt {
-		runtimeFiles = allLinkFiles(rt)
+		dpkg := buildAllPkgs(prog, rt[:1], mode, verbose)
+		for _, pkg := range dpkg {
+			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
+				continue
+			}
+			runtimeFiles = append(runtimeFiles, pkg.ExportFile)
+		}
 	}
 	if mode != ModeBuild {
 		nErr := 0
@@ -266,7 +272,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	needRuntime := false
 	needPyInit := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
-		if p.ExportFile != "" && !isRuntimePkg(p.PkgPath) { // skip packages that only contain declarations
+		if p.ExportFile != "" { // skip packages that only contain declarations
 			args = appendLinkFiles(args, p.ExportFile)
 			need1, need2 := isNeedRuntimeOrPyInit(p)
 			if !needRuntime {
@@ -443,38 +449,6 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 	} else {
 		panic("unknown flag: " + arg)
 	}
-}
-
-func allLinkFiles(rt []*packages.Package) (outFiles []string) {
-	outFiles = make([]string, 0, len(rt))
-	packages.Visit(rt, nil, func(p *packages.Package) {
-		pkgPath := p.PkgPath
-		kind, param := cl.PkgKindOf(p.Types)
-		if isRuntimePkg(pkgPath) {
-			exptFile := ""
-			if kind == cl.PkgLinkIR || kind == cl.PkgDeclOnly {
-				exptFile = strings.TrimSpace(param)
-			}
-			llgoPkgLinkFiles(pkgPath, exptFile, func(linkFile string) {
-				outFiles = append(outFiles, linkFile)
-			})
-		}
-	})
-	return
-}
-
-const (
-	pkgAbi      = llgoModPath + "/internal/abi"
-	pkgRuntime  = llgoModPath + "/internal/runtime"
-	pkgRuntimeC = llgoModPath + "/internal/runtime/c"
-)
-
-func isRuntimePkg(pkgPath string) bool {
-	switch pkgPath {
-	case pkgRuntime, pkgAbi, pkgRuntimeC:
-		return true
-	}
-	return false
 }
 
 var (

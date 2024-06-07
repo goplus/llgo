@@ -60,10 +60,6 @@ func TestPython(t *testing.T) {
 	cltest.Pkg(t, ssa.PkgPython, "../py/llgo_autogen.ll")
 }
 
-func TestRuntime(t *testing.T) {
-	cltest.Pkg(t, ssa.PkgRuntime, "../internal/runtime/llgo_autogen.ll")
-}
-
 func TestVar(t *testing.T) {
 	testCompile(t, `package foo
 

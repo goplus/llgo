@@ -19,21 +19,16 @@ package c
 import "C"
 import "unsafe"
 
+const (
+	LLGoPackage = "decl"
+)
+
 type (
 	Char    = int8
 	Int     = C.int
 	Pointer = unsafe.Pointer
 	FilePtr = unsafe.Pointer
 )
-
-//go:linkname Stdin stdin
-var Stdin FilePtr
-
-//go:linkname Stdout stdout
-var Stdout FilePtr
-
-//go:linkname Stderr stderr
-var Stderr FilePtr
 
 //go:linkname Str llgo.cstr
 func Str(string) *Char
