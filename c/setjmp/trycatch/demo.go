@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package demo
+package trycatch
 
 import (
 	_ "unsafe"
