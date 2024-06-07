@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/goplus/llgo/c/setjmp"
-	"github.com/goplus/llgo/c/setjmp/demo"
+	"github.com/goplus/llgo/c/setjmp/trycatch"
 )
 
 func main() {
@@ -10,7 +10,7 @@ func main() {
 	switch ret := setjmp.Sigsetjmp(&jb, 0); ret {
 	case 0:
 		println("Hello, setjmp!")
-		demo.ThrowCppException()
+		trycatch.ThrowCppException()
 		setjmp.Siglongjmp(&jb, 1)
 	default:
 		println("exception:", ret)
