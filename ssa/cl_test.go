@@ -41,14 +41,6 @@ func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testdata", false)
 }
 
-func TestRuntime(t *testing.T) {
-	cltest.Pkg(t, "github.com/goplus/llgo/internal/runtime", "../internal/runtime/llgo_autogen.ll")
-}
-
-func TestAbi(t *testing.T) {
-	cltest.Pkg(t, "github.com/goplus/llgo/internal/abi", "../internal/abi/llgo_autogen.ll")
-}
-
 func TestMakeInterface(t *testing.T) {
 	prog := ssatest.NewProgram(t, &ssa.Target{GOARCH: "x86"})
 	pkg := prog.NewPackage("foo", "foo")

@@ -3,6 +3,13 @@
 
 package c
 
-const (
-	LLGoPackage = "decl: c_linux.ll"
-)
+import _ "unsafe"
+
+//go:linkname Stdin stdin
+var Stdin FilePtr
+
+//go:linkname Stdout stdout
+var Stdout FilePtr
+
+//go:linkname Stderr stderr
+var Stderr FilePtr
