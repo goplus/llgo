@@ -74,7 +74,7 @@ func findLoop(states []*blockState, path []int, from, iblk int) []int {
 			}
 			return path
 		}
-		if ret := findLoop(states, path, from, succ); ret != nil {
+		if ret := findLoop(states, path, from, succ); len(ret) > 0 {
 			return ret
 		}
 	}
