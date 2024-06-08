@@ -116,7 +116,7 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	}
 	expected := string(b)
 	if byLLGen {
-		if v := llgen.GenFrom(in); v != expected {
+		if v := llgen.GenFrom(in); v != expected && expected != ";" { // expected == ";" means skipping out.ll
 			t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 		}
 	} else {
