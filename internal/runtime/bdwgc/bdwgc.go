@@ -1,6 +1,5 @@
 package bdwgc
 
-import "C"
 import (
 	_ "unsafe"
 
@@ -28,16 +27,28 @@ func Free(ptr c.Pointer)
 // -----------------------------------------------------------------------------
 
 //go:linkname RegisterFinalizer C.GC_register_finalizer
-func RegisterFinalizer(obj c.Pointer, fn func(c.Pointer, c.Pointer), cd c.Pointer, old_fn *func(c.Pointer, c.Pointer), old_cd *c.Pointer) int
+func RegisterFinalizer(
+	obj c.Pointer,
+	fn func(c.Pointer, c.Pointer), cd c.Pointer,
+	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
 
 //go:linkname RegisterFinalizerNoOrder C.GC_register_finalizer_no_order
-func RegisterFinalizerNoOrder(obj c.Pointer, fn func(c.Pointer, c.Pointer), cd c.Pointer, old_fn *func(c.Pointer, c.Pointer), old_cd *c.Pointer) int
+func RegisterFinalizerNoOrder(
+	obj c.Pointer,
+	fn func(c.Pointer, c.Pointer), cd c.Pointer,
+	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
 
 //go:linkname RegisterFinalizerIgnoreSelf C.GC_register_finalizer_ignore_self
-func RegisterFinalizerIgnoreSelf(obj c.Pointer, fn func(c.Pointer, c.Pointer), cd c.Pointer, old_fn *func(c.Pointer, c.Pointer), old_cd *c.Pointer) int
+func RegisterFinalizerIgnoreSelf(
+	obj c.Pointer,
+	fn func(c.Pointer, c.Pointer), cd c.Pointer,
+	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
 
 //go:linkname RegisterFinalizerUnreachable C.GC_register_finalizer_unreachable
-func RegisterFinalizerUnreachable(obj c.Pointer, fn func(c.Pointer, c.Pointer), cd c.Pointer, old_fn *func(c.Pointer, c.Pointer), old_cd *c.Pointer) int
+func RegisterFinalizerUnreachable(
+	obj c.Pointer,
+	fn func(c.Pointer, c.Pointer), cd c.Pointer,
+	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
 
 // -----------------------------------------------------------------------------
 
@@ -48,7 +59,7 @@ func Enable()
 func Disable()
 
 //go:linkname IsDisabled C.GC_is_disabled
-func IsDisabled() int
+func IsDisabled() c.Int
 
 //go:linkname Gcollect C.GC_gcollect
 func Gcollect()
@@ -62,10 +73,10 @@ func GetMemoryUse() uintptr
 func EnableIncremental()
 
 //go:linkname IsIncrementalMode C.GC_is_incremental_mode
-func IsIncrementalMode() int
+func IsIncrementalMode() c.Int
 
 //go:linkname IncrementalProtectionNeeds C.GC_incremental_protection_needs
-func IncrementalProtectionNeeds() int
+func IncrementalProtectionNeeds() c.Int
 
 //go:linkname StartIncrementalCollection C.GC_start_incremental_collection
 func StartIncrementalCollection()
