@@ -173,7 +173,6 @@ Common Go syntax is already supported. Except for the following, which needs to 
 * panic (Limited support)
 * recover (Not supported yet)
 * defer (Limited: defer in loops is not supported)
-* gc (Not supported yet)
 * chan (Not supported yet)
 * generics (Not supported yet)
 
@@ -204,6 +203,7 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 
 ```sh
 brew update  # execute if needed
+brew install bdw-gc
 brew install llvm@17
 go install -v ./...
 ```
@@ -214,6 +214,7 @@ go install -v ./...
 echo 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-17 main' | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update  # execute if needed
+sudo apt-get install libgc-dev
 sudo apt-get install --no-install-recommends llvm-17-dev
 go install -v ./...
 ```
