@@ -7,7 +7,6 @@ total=$(echo "$cases" | wc -l | tr -d ' ')
 succ=0
 for idx in $(seq 1 $((total))); do
   case=$(echo "$cases" | sed -n "${idx}p")
-  case_id=$(echo "$case" | cut -d',' -f1)
   case_name=$(echo "$case" | cut -d',' -f2)
   echo "=== Test case: $case_name"
   set +e
