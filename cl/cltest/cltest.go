@@ -152,7 +152,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 		ret.PyInit()
 	}
 
-	if v := ret.String(); v != expected {
+	if v := ret.String(); v != expected && expected != ";" { // expected == ";" means skipping out.ll
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }
