@@ -76,11 +76,6 @@ func GoStringData(string) *Char
 
 // -----------------------------------------------------------------------------
 
-//go:linkname Remove C.remove
-func Remove(path *Char) Int
-
-// -----------------------------------------------------------------------------
-
 //go:linkname AllocaSigjmpBuf llgo.sigjmpbuf
 func AllocaSigjmpBuf() Pointer
 
@@ -125,6 +120,11 @@ func Fputs(s *Char, fp FilePtr) Int
 
 //go:linkname Fflush C.fflush
 func Fflush(fp FilePtr) Int
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Remove C.remove
+func Remove(path *Char) Int
 
 // -----------------------------------------------------------------------------
 

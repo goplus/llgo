@@ -130,25 +130,23 @@ func (b Builder) getDefer() *aDefer {
 	self := b.Func
 	if self.defer_ == nil {
 		// TODO(xsw): if in pkg.init?
-		// 0: proc func(uintptr)
-		// 1: bits uintptr
-		// 2: link *Defer
-		// 3: rund int
+		// 0: bits uintptr
+		// 1: link *Defer
+		// 2: rund int
 		b.SetBlockEx(b.blk, AtStart, false)
 		prog := b.Prog
 		key := b.deferKey()
-		deferfn := prog.Null(prog.VoidPtr())
 		zero := prog.Val(uintptr(0))
 		link := b.pthreadGetspecific(key)
-		ptr := b.aggregateAlloca(prog.Defer(), deferfn.impl, zero.impl, link.impl)
+		ptr := b.aggregateAlloca(prog.Defer(), zero.impl, link.impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
 		b.SetBlockEx(b.blk, AtEnd, false)
 		self.defer_ = &aDefer{
 			key:     key,
 			data:    deferData,
-			bitsPtr: b.FieldAddr(deferData, 1),
-			rundPtr: b.FieldAddr(deferData, 3),
+			bitsPtr: b.FieldAddr(deferData, 0),
+			rundPtr: b.FieldAddr(deferData, 2),
 			procBlk: self.MakeBlock(),
 		}
 	}
