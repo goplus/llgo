@@ -80,52 +80,24 @@ func TestErrCompileInstrOrValue(t *testing.T) {
 	ctx.compileInstrOrValue(nil, &ssa.Call{}, true)
 }
 
-func TestErrAdvance(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("advance: no error?")
-		}
-	}()
-	var ctx context
-	ctx.advance(nil, nil)
-}
-
-func TestErrAlloca(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("alloca: no error?")
-		}
-	}()
-	var ctx context
-	ctx.alloca(nil, nil)
-}
-
-func TestErrAllocaCStr(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("allocaCStr: no error?")
-		}
-	}()
-	var ctx context
-	ctx.allocaCStr(nil, nil)
-}
-
-func TestCStrNoArgs(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("cstr: no error?")
-		}
-	}()
-	cstr(nil, nil)
-}
-
-func TestCStrNonconst(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("cstr: no error?")
-		}
-	}()
-	cstr(nil, []ssa.Value{&ssa.Parameter{}})
+func TestErrBuiltin(t *testing.T) {
+	test := func(builtin string, fn func(ctx *context)) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Fatal(builtin, ": no error?")
+			}
+		}()
+		var ctx context
+		fn(&ctx)
+	}
+	test("advance", func(ctx *context) { ctx.advance(nil, nil) })
+	test("alloca", func(ctx *context) { ctx.alloca(nil, nil) })
+	test("allocaCStr", func(ctx *context) { ctx.allocaCStr(nil, nil) })
+	test("stringData", func(ctx *context) { ctx.stringData(nil, nil) })
+	test("sigsetjmp", func(ctx *context) { ctx.sigsetjmp(nil, nil) })
+	test("siglongjmp", func(ctx *context) { ctx.siglongjmp(nil, nil) })
+	test("cstr(NoArgs)", func(ctx *context) { cstr(nil, nil) })
+	test("cstr(Nonconst)", func(ctx *context) { cstr(nil, []ssa.Value{&ssa.Parameter{}}) })
 }
 
 func TestPkgNoInit(t *testing.T) {

@@ -309,6 +309,9 @@ const (
 	llgoIndex       = llgoInstrBase + 5
 	llgoStringData  = llgoInstrBase + 6
 	llgoPyList      = llgoInstrBase + 7
+	llgoSigjmpbuf   = llgoInstrBase + 10
+	llgoSigsetjmp   = llgoInstrBase + 11
+	llgoSiglongjmp  = llgoInstrBase + 12
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
