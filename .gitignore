@@ -9,6 +9,7 @@
 *.dylib
 
 test.db
+demo.ll
 llgo_autogen*.ll
 stories*.bin
 .DS_Store
