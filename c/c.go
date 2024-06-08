@@ -97,15 +97,6 @@ func Qsort(base Pointer, count, elem uintptr, compar func(a, b Pointer) Int)
 
 // -----------------------------------------------------------------------------
 
-//go:linkname Stdin stdin
-var Stdin FilePtr
-
-//go:linkname Stdout stdout
-var Stdout FilePtr
-
-//go:linkname Stderr stderr
-var Stderr FilePtr
-
 //go:linkname Printf C.printf
 func Printf(format *Char, __llgo_va_list ...any) Int
 

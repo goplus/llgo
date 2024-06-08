@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/goplus/llgo/internal/runtime/c"
-)
-
 func concat(args ...string) (ret string) {
 	for _, v := range args {
 		ret += v
@@ -17,5 +13,5 @@ func info(s string) string {
 
 func main() {
 	result := concat("Hello", " ", "World")
-	c.Fprintf(c.Stderr, c.Str("Hi, %s\n"), c.AllocaCStr(result))
+	println(result)
 }

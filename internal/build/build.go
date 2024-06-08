@@ -145,11 +145,21 @@ func Do(args []string, conf *Config) {
 		return rt[1].Types
 	})
 
-	pkgs := buildAllPkgs(prog, initial, mode, verbose)
+	pkgs := buildAllPkgs(prog, initial, nil, mode, verbose)
 
 	var runtimeFiles []string
 	if needRt {
-		runtimeFiles = allLinkFiles(rt)
+		skip := make(map[string]bool)
+		for _, v := range pkgs {
+			skip[v.PkgPath] = true
+		}
+		dpkg := buildAllPkgs(prog, rt[:1], skip, mode, verbose)
+		for _, pkg := range dpkg {
+			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
+				continue
+			}
+			runtimeFiles = append(runtimeFiles, pkg.ExportFile)
+		}
 	}
 	if mode != ModeBuild {
 		nErr := 0
@@ -182,7 +192,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 	return
 }
 
-func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, verbose bool) (pkgs []*aPackage) {
+func buildAllPkgs(prog llssa.Program, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
@@ -194,6 +204,10 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, mode Mode, ve
 	}
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
+		if skip[pkg.PkgPath] {
+			pkg.ExportFile = ""
+			continue
+		}
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
@@ -266,7 +280,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	needRuntime := false
 	needPyInit := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
-		if p.ExportFile != "" && !isRuntimePkg(p.PkgPath) { // skip packages that only contain declarations
+		if p.ExportFile != "" { // skip packages that only contain declarations
 			args = appendLinkFiles(args, p.ExportFile)
 			need1, need2 := isNeedRuntimeOrPyInit(p)
 			if !needRuntime {
@@ -288,7 +302,9 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 
 	dirty := false
 	if needRuntime && runtimeFiles != nil {
-		args = append(args, runtimeFiles...)
+		for _, file := range runtimeFiles {
+			args = appendLinkFiles(args, file)
+		}
 	} else {
 		dirty = true
 		fn := aPkg.LPkg.FuncOf(cl.RuntimeInit)
@@ -443,38 +459,6 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 	} else {
 		panic("unknown flag: " + arg)
 	}
-}
-
-func allLinkFiles(rt []*packages.Package) (outFiles []string) {
-	outFiles = make([]string, 0, len(rt))
-	packages.Visit(rt, nil, func(p *packages.Package) {
-		pkgPath := p.PkgPath
-		kind, param := cl.PkgKindOf(p.Types)
-		if isRuntimePkg(pkgPath) {
-			exptFile := ""
-			if kind == cl.PkgLinkIR || kind == cl.PkgDeclOnly {
-				exptFile = strings.TrimSpace(param)
-			}
-			llgoPkgLinkFiles(pkgPath, exptFile, func(linkFile string) {
-				outFiles = append(outFiles, linkFile)
-			})
-		}
-	})
-	return
-}
-
-const (
-	pkgAbi      = llgoModPath + "/internal/abi"
-	pkgRuntime  = llgoModPath + "/internal/runtime"
-	pkgRuntimeC = llgoModPath + "/internal/runtime/c"
-)
-
-func isRuntimePkg(pkgPath string) bool {
-	switch pkgPath {
-	case pkgRuntime, pkgAbi, pkgRuntimeC:
-		return true
-	}
-	return false
 }
 
 var (
