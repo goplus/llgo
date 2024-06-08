@@ -1,3 +1,6 @@
+//go:build nogc
+// +build nogc
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -19,38 +22,16 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
-	"github.com/goplus/llgo/internal/runtime/bdwgc"
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
-	return bdwgc.Malloc(size)
+	return c.Malloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
-	ret := bdwgc.Malloc(size)
+	ret := c.Malloc(size)
 	return c.Memset(ret, 0, size)
-}
-
-// Zeroinit initializes memory to zero.
-func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
-	return c.Memset(p, 0, size)
-}
-
-// TracePanic prints panic message.
-func TracePanic(v Eface) {
-	kind := v._type.Kind()
-	switch {
-	case kind == abi.String:
-		stringTracef(c.Stderr, c.Str("panic: %s\n"), *(*String)(v.data))
-	}
-	// TODO(xsw): other message type
-}
-
-func stringTracef(fp c.FilePtr, format *c.Char, s String) {
-	cs := c.Alloca(uintptr(s.len) + 1)
-	c.Fprintf(fp, format, CStrCopy(cs, s))
 }

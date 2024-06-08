@@ -1,6 +1,3 @@
-//go:build !linux
-// +build !linux
-
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -17,15 +14,30 @@
  * limitations under the License.
  */
 
-package c
+package runtime
 
-import _ "unsafe"
+type errorString string
 
-//go:linkname Stdin __stdinp
-var Stdin FilePtr
+func (e errorString) RuntimeError() {}
 
-//go:linkname Stdout __stdoutp
-var Stdout FilePtr
+func (e errorString) Error() string {
+	return "runtime error: " + string(e)
+}
 
-//go:linkname Stderr __stderrp
-var Stderr FilePtr
+func AssertRuntimeError(b bool, msg string) {
+	if b {
+		panic(errorString(msg).Error())
+	}
+}
+
+func AssertNegativeShift(b bool) {
+	if b {
+		panic(errorString("negative shift amount").Error())
+	}
+}
+
+func AssertIndexRange(b bool) {
+	if b {
+		panic(errorString("index out of range").Error())
+	}
+}
