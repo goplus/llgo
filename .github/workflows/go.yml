@@ -64,7 +64,7 @@ jobs:
       
       - name: LLGO tests
         run: |
-          echo "Test result on ${{ matrix.os }} with LLVM ${{ matrix.llvm }}" > result.txt
+          echo "Test result on ${{ matrix.os }} with LLVM ${{ matrix.llvm }}" > result.md
           LLGOROOT=$PWD bash .github/workflows/test_llgo.sh
       
       - name: Test _demo and _pydemo
