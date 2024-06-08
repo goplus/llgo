@@ -18,17 +18,7 @@ package runtime
 
 // Defer presents defer statements in a function.
 type Defer struct {
-	proc func(uintptr)
-	bits uintptr
-	link *Defer
-	rund int // index of RunDefers
-}
-
-// DeferProc calls deferred statements.
-func DeferProc(d *Defer) {
-	for d != nil {
-		d.proc(d.bits)
-		d = d.link
-		_ = d.rund
-	}
+	Bits uintptr
+	Link *Defer
+	Rund int // index of RunDefers
 }

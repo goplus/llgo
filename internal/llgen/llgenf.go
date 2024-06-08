@@ -107,6 +107,11 @@ func SmartDoFile(inFile string, pkgPath ...string) {
 	}
 	outFile := dir + fname
 
+	b, err := os.ReadFile(outFile)
+	if err == nil && len(b) == 1 && b[0] == ';' {
+		return // skip to gen
+	}
+
 	if len(pkgPath) > 0 {
 		Do(pkgPath[0], inFile, outFile)
 	} else {
