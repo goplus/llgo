@@ -78,6 +78,12 @@ const (
 	deferKey = "__llgo_defer"
 )
 
+func (p Function) deferInitBuilder() Builder {
+	b := p.NewBuilder()
+	b.SetBlockEx(p.blks[0], BeforeLast, true)
+	return b
+}
+
 type aDefer struct {
 	nextBit  int        // next defer bit
 	key      Expr       // pthread TLS key
@@ -88,18 +94,6 @@ type aDefer struct {
 	stmts    []func(bits Expr)
 	runsNext []BasicBlock // next blocks of RunDefers
 }
-
-/*
-// func(uintptr)
-func (p Program) tyDeferFunc() *types.Signature {
-	if p.deferFnTy == nil {
-		paramUintptr := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
-		params := types.NewTuple(paramUintptr)
-		p.deferFnTy = types.NewSignatureType(nil, nil, nil, params, nil, false)
-	}
-	return p.deferFnTy
-}
-*/
 
 func (p Package) deferInit() {
 	keyVar := p.VarOf(deferKey)
@@ -126,14 +120,15 @@ func (b Builder) deferKey() Expr {
 	return b.Load(b.Pkg.newDeferKey().Expr)
 }
 
-func (b Builder) getDefer() *aDefer {
+func (b Builder) getDefer(kind DoAction) *aDefer {
 	self := b.Func
 	if self.defer_ == nil {
-		// TODO(xsw): if in pkg.init?
 		// 0: bits uintptr
 		// 1: link *Defer
 		// 2: rund int
-		b.SetBlockEx(b.blk, AtStart, false)
+		if kind != DeferAlways {
+			b = self.deferInitBuilder()
+		}
 		prog := b.Prog
 		key := b.deferKey()
 		zero := prog.Val(uintptr(0))
@@ -148,7 +143,6 @@ func (b Builder) getDefer() *aDefer {
 			rundPtr: b.FieldAddr(deferData, 2),
 			procBlk: self.MakeBlock(),
 		}
-		b.SetBlockEx(b.blk, AtEnd, false)
 	}
 	return self.defer_
 }
@@ -160,7 +154,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	}
 	var prog Program
 	var nextbit Expr
-	var self = b.getDefer()
+	var self = b.getDefer(kind)
 	switch kind {
 	case DeferInCond:
 		prog = b.Prog
@@ -191,7 +185,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
 	prog := b.Prog
-	self := b.getDefer()
+	self := b.getDefer(DeferInCond)
 	b.Store(self.rundPtr, prog.Val(len(self.runsNext)))
 	b.Jump(self.procBlk)
 
