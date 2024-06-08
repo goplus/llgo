@@ -57,9 +57,6 @@ func Alloca(size uintptr) Pointer
 //go:linkname AllocaCStr llgo.allocaCStr
 func AllocaCStr(s string) *Char
 
-//go:linkname Unreachable llgo.unreachable
-func Unreachable()
-
 //go:linkname Malloc C.malloc
 func Malloc(size uintptr) Pointer
 
@@ -81,6 +78,20 @@ func GoStringData(string) *Char
 
 //go:linkname Remove C.remove
 func Remove(path *Char) Int
+
+// -----------------------------------------------------------------------------
+
+//go:linkname AllocaSigjmpBuf llgo.sigjmpbuf
+func AllocaSigjmpBuf() Pointer
+
+//go:linkname Sigsetjmp llgo.sigsetjmp
+func Sigsetjmp(jb Pointer, savemask Int) Int
+
+//go:linkname Siglongjmp llgo.siglongjmp
+func Siglongjmp(jb Pointer, retval Int)
+
+//go:linkname Unreachable llgo.unreachable
+func Unreachable()
 
 // -----------------------------------------------------------------------------
 

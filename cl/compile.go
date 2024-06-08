@@ -332,6 +332,12 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			ftype = llgoStringData
 		case "pyList":
 			ftype = llgoPyList
+		case "sigjmpbuf":
+			ftype = llgoSigjmpbuf
+		case "sigsetjmp":
+			ftype = llgoSigsetjmp
+		case "siglongjmp":
+			ftype = llgoSiglongjmp
 		case "unreachable":
 			ftype = llgoUnreachable
 		default:
@@ -512,6 +518,25 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("stringData(s string): invalid arguments")
 }
 
+func (p *context) sigsetjmp(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		jb := p.compileValue(b, args[0])
+		savemask := p.compileValue(b, args[1])
+		return b.Sigsetjmp(jb, savemask)
+	}
+	panic("sigsetjmp(jb c.SigjmpBuf, savemask c.Int): invalid arguments")
+}
+
+func (p *context) siglongjmp(b llssa.Builder, args []ssa.Value) {
+	if len(args) == 2 {
+		jb := p.compileValue(b, args[0])
+		retval := p.compileValue(b, args[1])
+		b.Siglongjmp(jb, retval)
+		return
+	}
+	panic("siglongjmp(jb c.SigjmpBuf, retval c.Int): invalid arguments")
+}
+
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -611,6 +636,12 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.allocaCStr(b, args)
 		case llgoStringData:
 			ret = p.stringData(b, args)
+		case llgoSigsetjmp:
+			ret = p.sigsetjmp(b, args)
+		case llgoSiglongjmp:
+			p.siglongjmp(b, args)
+		case llgoSigjmpbuf: // func sigjmpbuf()
+			ret = b.AllocaSigjmpBuf()
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:

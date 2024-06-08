@@ -16,12 +16,61 @@
 
 package ssa
 
+// #include <setjmp.h>
+import "C"
+
 import (
 	"go/token"
+	"go/types"
 	"log"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
+
+// -----------------------------------------------------------------------------
+
+type sigjmpbuf = C.sigjmp_buf
+
+// func(env unsafe.Pointer, savemask c.Int) c.Int
+func (p Program) tySigsetjmp() *types.Signature {
+	if p.sigsetjmpTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		params := types.NewTuple(paramPtr, paramCInt)
+		results := types.NewTuple(paramCInt)
+		p.sigsetjmpTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.sigsetjmpTy
+}
+
+// func(env unsafe.Pointer, retval c.Int)
+func (p Program) tySiglongjmp() *types.Signature {
+	if p.sigljmpTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		params := types.NewTuple(paramPtr, paramCInt)
+		p.sigljmpTy = types.NewSignatureType(nil, nil, nil, params, nil, false)
+	}
+	return p.sigljmpTy
+}
+
+func (b Builder) AllocaSigjmpBuf() Expr {
+	prog := b.Prog
+	n := unsafe.Sizeof(sigjmpbuf{})
+	size := prog.IntVal(uint64(n), prog.Uintptr())
+	return b.Alloca(size)
+}
+
+func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
+	fn := b.Pkg.cFunc("sigsetjmp", b.Prog.tySigsetjmp())
+	return b.Call(fn, jb, savemask)
+}
+
+func (b Builder) Siglongjmp(jb, retval Expr) {
+	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp())
+	b.Call(fn, jb, retval)
+}
 
 // -----------------------------------------------------------------------------
 

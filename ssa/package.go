@@ -179,7 +179,8 @@ type aProgram struct {
 	setSpecTy   *types.Signature
 	routineTy   *types.Signature
 	destructTy  *types.Signature
-	//deferFnTy *types.Signature
+	sigsetjmpTy *types.Signature
+	sigljmpTy   *types.Signature
 
 	paramObjPtr_ *types.Var
 
