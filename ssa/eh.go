@@ -141,7 +141,6 @@ func (b Builder) getDefer() *aDefer {
 		ptr := b.aggregateAlloca(prog.Defer(), zero.impl, link.impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
-		b.SetBlockEx(b.blk, AtEnd, false)
 		self.defer_ = &aDefer{
 			key:     key,
 			data:    deferData,
@@ -149,6 +148,7 @@ func (b Builder) getDefer() *aDefer {
 			rundPtr: b.FieldAddr(deferData, 2),
 			procBlk: self.MakeBlock(),
 		}
+		b.SetBlockEx(b.blk, AtEnd, false)
 	}
 	return self.defer_
 }
