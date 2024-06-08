@@ -37,8 +37,12 @@ import (
 )
 
 func TestTestdefer(t *testing.T) {
-	// debug = true
-	fromDir(t, "", "../_testdefer")
+	fromDir(t, "", "../_testdefer", func(name string) string {
+		if strings.HasPrefix(name, "firstloop") {
+			return "Loop"
+		}
+		return "main"
+	})
 }
 
 func TestFirstLoop(t *testing.T) {
@@ -52,7 +56,7 @@ func TestFirstLoop(t *testing.T) {
 	}
 }
 
-func fromDir(t *testing.T, sel, relDir string) {
+func fromDir(t *testing.T, sel, relDir string, fn func(string) string) {
 	dir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -68,12 +72,12 @@ func fromDir(t *testing.T, sel, relDir string) {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
-			testFrom(t, dir+"/"+name, sel)
+			testFrom(t, dir+"/"+name, sel, fn(name))
 		})
 	}
 }
 
-func testFrom(t *testing.T, pkgDir, sel string) {
+func testFrom(t *testing.T, pkgDir, sel, fn string) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
@@ -85,10 +89,10 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 		t.Fatal("ReadFile failed:", err)
 	}
 	expected := string(b)
-	testBlockInfo(t, nil, in, expected)
+	testBlockInfo(t, nil, in, expected, fn)
 }
 
-func testBlockInfo(t *testing.T, src any, fname, expected string) {
+func testBlockInfo(t *testing.T, src any, fname, expected, fn string) {
 	t.Helper()
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fname, src, parser.ParseComments)
@@ -109,7 +113,7 @@ func testBlockInfo(t *testing.T, src any, fname, expected string) {
 	for _, member := range foo.Members {
 		switch f := member.(type) {
 		case *ssa.Function:
-			if f.Name() == "main" {
+			if f.Name() == fn {
 				f.WriteTo(os.Stderr)
 				infos := Infos(f.Blocks)
 				if v := resultOf(infos); v != expected {
