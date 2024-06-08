@@ -1,3 +1,6 @@
+//go:build !nogc
+// +build !nogc
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -16,9 +19,20 @@
 
 package runtime
 
-// Defer presents defer statements in a function.
-type Defer struct {
-	Bits uintptr
-	Link *Defer
-	Rund int // index of RunDefers
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/internal/runtime/bdwgc"
+	"github.com/goplus/llgo/internal/runtime/c"
+)
+
+// AllocU allocates uninitialized memory.
+func AllocU(size uintptr) unsafe.Pointer {
+	return bdwgc.Malloc(size)
+}
+
+// AllocZ allocates zero-initialized memory.
+func AllocZ(size uintptr) unsafe.Pointer {
+	ret := bdwgc.Malloc(size)
+	return c.Memset(ret, 0, size)
 }

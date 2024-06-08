@@ -185,6 +185,17 @@ Here are some examples related to Go syntax:
 * [goroutine](_demo/goroutine/goroutine.go): goroutine demo
 
 
+### Garbage Collection (GC)
+
+By default, LLGo implements `gc` based on [bdwgc](https://www.hboehm.info/gc/).
+
+However, you can disable gc by specifying the `nogc` tag. For example:
+
+```sh
+llgo run -tags nogc .
+```
+
+
 ## Go packages support
 
 Here are the Go packages that can be imported correctly:
