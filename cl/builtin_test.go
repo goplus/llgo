@@ -226,6 +226,24 @@ func TestErrInitLinkname(t *testing.T) {
 	})
 }
 
+func TestErrInitScopeExit(t *testing.T) {
+	var ctx context
+	ctx.initDirective("//llgo:scopeexit (*Obj).Destroy", func(name string) (string, bool, bool) {
+		return "foo.(*Obj).Destroy", false, false
+	})
+	ctx.initDirective("// llgo:scopeexit (*Obj).Destroy", func(name string) (string, bool, bool) {
+		return "foo.(*Obj).Destroy", false, false
+	})
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("initScopeExit: no error?")
+		}
+	}()
+	ctx.initDirective("//llgo:scopeexit (*Obj).Destroy", func(name string) (string, bool, bool) {
+		return "foo.(*Obj).Destroy", false, true
+	})
+}
+
 func TestErrVarOf(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {

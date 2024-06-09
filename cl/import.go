@@ -193,9 +193,11 @@ func (p *context) initDirectivesByDoc(doc *ast.CommentGroup, fullName, inPkgName
 
 func (p *context) initDirective(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
 	const (
-		linkname  = "//go:linkname "
-		llgolink  = "//llgo:link "
-		llgolink2 = "// llgo:link "
+		linkname       = "//go:linkname "
+		llgolink       = "//llgo:link "
+		llgolink2      = "// llgo:link "
+		llgoScopeExit  = "//llgo:scopeexit"
+		llgoScopeExit2 = "// llgo:scopeexit"
 	)
 	if strings.HasPrefix(line, linkname) {
 		p.initLink(line, len(linkname), f)
@@ -203,10 +205,24 @@ func (p *context) initDirective(line string, f func(inPkgName string) (fullName 
 		p.initLink(line, len(llgolink2), f)
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
+	} else if strings.HasPrefix(line, llgoScopeExit) {
+		p.initScopeExit(line, len(llgoScopeExit), f)
+	} else if strings.HasPrefix(line, llgoScopeExit2) {
+		p.initScopeExit(line, len(llgoScopeExit2), f)
 	} else {
 		return false
 	}
 	return true
+}
+
+func (p *context) initScopeExit(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+	inPkgName := strings.TrimSpace(line[prefix:])
+	if fullName, _, ok := f(inPkgName); ok {
+		p.scopeExit[fullName] = true
+	} else {
+		fmt.Fprintln(os.Stderr, "==>", line)
+		fmt.Fprintf(os.Stderr, "llgo: scopeexit %s not found and ignored\n", inPkgName)
+	}
 }
 
 func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
@@ -319,9 +335,7 @@ const (
 	llgoDeferData   = llgoInstrBase + 13
 )
 
-func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
-	var pkg *types.Package
-	var orgName string
+func (p *context) funcName(fn *ssa.Function, ignore bool) (pkg *types.Package, orgName, fname string, ftype int) {
 	if origin := fn.Origin(); origin != nil {
 		pkg = origin.Pkg.Pkg
 		p.ensureLoaded(pkg)
@@ -335,22 +349,22 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn)
 		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
-			return nil, orgName, ignoredFunc
+			return nil, orgName, orgName, ignoredFunc
 		}
 	}
 	if v, ok := p.link[orgName]; ok {
 		if strings.HasPrefix(v, "C.") {
-			return nil, v[2:], cFunc
+			return nil, orgName, v[2:], cFunc
 		}
 		if strings.HasPrefix(v, "py.") {
-			return pkg, v[3:], pyFunc
+			return pkg, orgName, v[3:], pyFunc
 		}
 		if strings.HasPrefix(v, "llgo.") {
-			return nil, v[5:], llgoInstr
+			return nil, orgName, v[5:], llgoInstr
 		}
-		return pkg, v, goFunc
+		return pkg, orgName, v, goFunc
 	}
-	return pkg, funcName(pkg, fn), goFunc
+	return pkg, orgName, funcName(pkg, fn), goFunc
 }
 
 const (
