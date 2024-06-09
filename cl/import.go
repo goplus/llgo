@@ -68,7 +68,7 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 	for file, b := range p.files {
 		lines := bytes.Split(b, []byte{'\n'})
 		for _, line := range lines {
-			ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
+			ctx.initDirective(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
 				if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
 					return sym.fullName, sym.isVar, true
 				}
@@ -166,12 +166,12 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false)
+				p.initDirectivesByDoc(decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
 				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
 					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
 						inPkgName := names[0].Name
-						p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						p.initDirectivesByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 					}
 				}
 			}
@@ -179,18 +179,19 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
+func (p *context) initDirectivesByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
 	if doc != nil {
-		if n := len(doc.List); n > 0 {
-			line := doc.List[n-1].Text
-			p.initLinkname(line, func(name string) (_ string, _, ok bool) {
+		isDirective := true
+		for n := len(doc.List) - 1; n >= 0 && isDirective; n-- {
+			line := doc.List[n].Text
+			isDirective = p.initDirective(line, func(name string) (_ string, _, ok bool) {
 				return fullName, isVar, name == inPkgName
 			})
 		}
 	}
 }
 
-func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *context) initDirective(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
@@ -202,7 +203,10 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 		p.initLink(line, len(llgolink2), f)
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
+	} else {
+		return false
 	}
+	return true
 }
 
 func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {

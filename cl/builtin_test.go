@@ -210,10 +210,10 @@ func TestErrImport(t *testing.T) {
 
 func TestErrInitLinkname(t *testing.T) {
 	var ctx context
-	ctx.initLinkname("//llgo:link abc", func(name string) (string, bool, bool) {
+	ctx.initDirective("//llgo:link abc", func(name string) (string, bool, bool) {
 		return "", false, false
 	})
-	ctx.initLinkname("//go:linkname Printf printf", func(name string) (string, bool, bool) {
+	ctx.initDirective("//go:linkname Printf printf", func(name string) (string, bool, bool) {
 		return "", false, false
 	})
 	defer func() {
@@ -221,7 +221,7 @@ func TestErrInitLinkname(t *testing.T) {
 			t.Fatal("initLinkname: no error?")
 		}
 	}()
-	ctx.initLinkname("//go:linkname Printf printf", func(name string) (string, bool, bool) {
+	ctx.initDirective("//go:linkname Printf printf", func(name string) (string, bool, bool) {
 		return "foo.Printf", false, name == "Printf"
 	})
 }
