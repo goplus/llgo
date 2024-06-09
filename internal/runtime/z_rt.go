@@ -27,6 +27,7 @@ import (
 
 // Defer presents defer statements in a function.
 type Defer struct {
+	Addr unsafe.Pointer
 	Bits uintptr
 	Link *Defer
 	Rund int // index of RunDefers

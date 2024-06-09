@@ -68,8 +68,9 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 }
 
 func (b Builder) Siglongjmp(jb, retval Expr) {
-	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp())
+	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
 	b.Call(fn, jb, retval)
+	b.Unreachable()
 }
 
 // -----------------------------------------------------------------------------
@@ -78,21 +79,21 @@ const (
 	deferKey = "__llgo_defer"
 )
 
-func (p Function) deferInitBuilder() Builder {
-	b := p.NewBuilder()
-	b.SetBlockEx(p.blks[0], BeforeLast, true)
-	return b
+func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
+	b = p.NewBuilder()
+	next = b.setBlockMoveLast(p.blks[0])
+	return
 }
 
 type aDefer struct {
-	nextBit  int        // next defer bit
-	key      Expr       // pthread TLS key
-	data     Expr       // pointer to runtime.Defer
-	bitsPtr  Expr       // pointer to defer bits
-	rundPtr  Expr       // pointer to RunDefers index
-	procBlk  BasicBlock // deferProc block
-	stmts    []func(bits Expr)
+	nextBit  int          // next defer bit
+	key      Expr         // pthread TLS key
+	data     Expr         // pointer to runtime.Defer
+	bitsPtr  Expr         // pointer to defer bits
+	rundPtr  Expr         // pointer to RunDefers index
+	procBlk  BasicBlock   // deferProc block
 	runsNext []BasicBlock // next blocks of RunDefers
+	stmts    []func(bits Expr)
 }
 
 func (p Package) deferInit() {
@@ -123,25 +124,59 @@ func (b Builder) deferKey() Expr {
 func (b Builder) getDefer(kind DoAction) *aDefer {
 	self := b.Func
 	if self.defer_ == nil {
-		// 0: bits uintptr
-		// 1: link *Defer
-		// 2: rund int
+		// TODO(xsw): check if in pkg.init
+		// 0: addr sigjmpbuf
+		// 1: bits uintptr
+		// 2: link *Defer
+		// 3: rund int
+		const (
+			deferSigjmpbuf = iota
+			deferBits
+			deferLink
+			deferRund
+		)
+		var next, rundBlk BasicBlock
 		if kind != DeferAlways {
-			b = self.deferInitBuilder()
+			b, next = self.deferInitBuilder()
 		}
 		prog := b.Prog
 		key := b.deferKey()
 		zero := prog.Val(uintptr(0))
-		link := b.pthreadGetspecific(key)
-		ptr := b.aggregateAlloca(prog.Defer(), zero.impl, link.impl)
+		link := Expr{b.pthreadGetspecific(key).impl, prog.DeferPtr()}
+		jb := b.AllocaSigjmpBuf()
+		ptr := b.aggregateAlloca(prog.Defer(), jb.impl, zero.impl, link.impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
+		blks := self.MakeBlocks(2)
+		procBlk, throwBlk := blks[0], blks[1]
+		bitsPtr := b.FieldAddr(deferData, deferBits)
+		rundPtr := b.FieldAddr(deferData, deferRund)
 		self.defer_ = &aDefer{
-			key:     key,
-			data:    deferData,
-			bitsPtr: b.FieldAddr(deferData, 0),
-			rundPtr: b.FieldAddr(deferData, 2),
-			procBlk: self.MakeBlock(),
+			key:      key,
+			data:     deferData,
+			bitsPtr:  bitsPtr,
+			rundPtr:  rundPtr,
+			procBlk:  procBlk,
+			runsNext: []BasicBlock{throwBlk},
+		}
+		czero := prog.IntVal(0, prog.CInt())
+		retval := b.Sigsetjmp(jb, czero)
+		if kind != DeferAlways {
+			rundBlk = self.MakeBlock()
+		} else {
+			blks = self.MakeBlocks(2)
+			next, rundBlk = blks[0], blks[1]
+		}
+		b.If(b.BinOp(token.EQL, retval, czero), next, rundBlk)
+		b.SetBlockEx(rundBlk, AtEnd, false) // exec runDefers and throw
+		b.Store(rundPtr, prog.Val(0))
+		b.Jump(procBlk)
+		b.SetBlockEx(throwBlk, AtEnd, false) // throw
+		linkJBPtr := b.FieldAddr(link, deferSigjmpbuf)
+		b.Siglongjmp(b.Load(linkJBPtr), prog.IntVal(1, prog.CInt()))
+		if kind == DeferAlways {
+			b.SetBlockEx(next, AtEnd, false)
+			b.blk.last = next.last
 		}
 	}
 	return self.defer_
@@ -202,8 +237,7 @@ func (p Function) endDefer(b Builder) {
 		return
 	}
 	nexts := self.runsNext
-	n := len(nexts)
-	if n == 0 {
+	if len(nexts) == 0 {
 		return
 	}
 	b.SetBlockEx(self.procBlk, AtEnd, true)
@@ -216,12 +250,8 @@ func (p Function) endDefer(b Builder) {
 	link := b.getField(b.Load(self.data), 2)
 	b.pthreadSetspecific(self.key, link)
 
-	prog := b.Prog
-	rund := b.Load(self.rundPtr)
-	sw := b.impl.CreateSwitch(rund.impl, nexts[0].first, n-1)
-	for i := 1; i < n; i++ {
-		sw.AddCase(prog.Val(i).impl, nexts[i].first)
-	}
+	// rund := b.Load(self.rundPtr)
+	b.IndirectJump(self.rundPtr, nexts)
 }
 
 // -----------------------------------------------------------------------------

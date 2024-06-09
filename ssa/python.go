@@ -200,7 +200,8 @@ func (p Program) tyGetAttrString() *types.Signature {
 func (p Package) PyInit() bool {
 	if fn := p.FuncOf("main"); fn != nil {
 		b := fn.NewBuilder()
-		b.SetBlockEx(fn.Block(0), AtStart, false).callPyInit()
+		b.SetBlockEx(fn.Block(0), AtStart, false)
+		b.callPyInit()
 		b.Dispose()
 		return true
 	}

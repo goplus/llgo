@@ -80,6 +80,21 @@ func (b Builder) SetBlock(blk BasicBlock) Builder {
 	return b
 }
 
+func (b Builder) setBlockMoveLast(blk BasicBlock) (next BasicBlock) {
+	blkLast := blk.last
+	last := blkLast.LastInstruction()
+	last.RemoveFromParentAsInstruction()
+
+	impl := b.impl
+
+	next = b.Func.MakeBlock()
+	impl.SetInsertPointAtEnd(next.last)
+	impl.Insert(last)
+
+	impl.SetInsertPointAtEnd(blkLast)
+	return
+}
+
 type InsertPoint int
 
 const (
@@ -90,7 +105,7 @@ const (
 )
 
 // SetBlockEx sets blk as current basic block and pos as its insert point.
-func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint, setBlk bool) Builder {
+func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint, setBlk bool) {
 	if b.Func != blk.fn {
 		panic("mismatched function")
 	}
@@ -109,7 +124,6 @@ func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint, setBlk bool) Builde
 	if setBlk {
 		b.blk = blk
 	}
-	return b
 }
 
 func instrAfterInit(blk llvm.BasicBlock) llvm.Value {
@@ -188,6 +202,17 @@ func (b Builder) Jump(jmpb BasicBlock) {
 	b.impl.CreateBr(jmpb.first)
 }
 
+// IndirectJump emits an indirect jump instruction.
+func (b Builder) IndirectJump(addr Expr, dests []BasicBlock) {
+	if debugInstr {
+		log.Printf("IndirectJump %v\n", addr.impl)
+	}
+	ibr := b.impl.CreateIndirectBr(addr.impl, len(dests))
+	for _, dest := range dests {
+		ibr.AddDest(dest.first)
+	}
+}
+
 // If emits an if instruction.
 func (b Builder) If(cond Expr, thenb, elseb BasicBlock) {
 	if b.Func != thenb.fn || b.Func != elseb.fn {
@@ -210,6 +235,46 @@ func (b Builder) IfThen(cond Expr, then func()) {
 	b.blk.last = blks[1].last
 }
 
+// -----------------------------------------------------------------------------
+/*
+type caseStmt struct {
+	v   llvm.Value
+	blk llvm.BasicBlock
+}
+
+type aSwitch struct {
+	v     llvm.Value
+	def   llvm.BasicBlock
+	cases []caseStmt
+}
+
+// Switch represents a switch statement.
+type Switch = *aSwitch
+
+// Case emits a case instruction.
+func (p Switch) Case(v Expr, blk BasicBlock) {
+	if debugInstr {
+		log.Printf("Case %v, _llgo_%v\n", v.impl, blk.idx)
+	}
+	p.cases = append(p.cases, caseStmt{v.impl, blk.first})
+}
+
+// End ends a switch statement.
+func (p Switch) End(b Builder) {
+	sw := b.impl.CreateSwitch(p.v, p.def, len(p.cases))
+	for _, c := range p.cases {
+		sw.AddCase(c.v, c.blk)
+	}
+}
+
+// Switch starts a switch statement.
+func (b Builder) Switch(v Expr, defb BasicBlock) Switch {
+	if debugInstr {
+		log.Printf("Switch %v, _llgo_%v\n", v.impl, defb.idx)
+	}
+	return &aSwitch{v.impl, defb.first, nil}
+}
+*/
 // -----------------------------------------------------------------------------
 
 // Phi represents a phi node.
