@@ -14,6 +14,7 @@ func main() {
 	tests := []TestCase{
 		{"TestMalloc", TestMalloc},
 		{"TestFinalizer", TestFinalizer},
+		{"TestRefCnt", TestRefCnt},
 	}
 	if c.Argc == 1 {
 		for _, test := range tests {

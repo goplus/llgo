@@ -42,6 +42,7 @@ func (l *Object) ListLen() uintptr { return 0 }
 // must be non-negative; indexing from the end of the list is not supported. If index
 // is out of bounds (<0 or >=len(list)), return nil and set an IndexError exception.
 //
+// llgo:borrowed (*Object).ListItem
 // llgo:link (*Object).ListItem C.PyList_GetItem
 func (l *Object) ListItem(index uintptr) *Object { return nil }
 

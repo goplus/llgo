@@ -17,6 +17,7 @@
 package py
 
 import (
+	"unsafe"
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -29,8 +30,16 @@ type Object struct {
 	Unused [8]byte
 }
 
+// llgo:scopeexit (*Object).DecRef
 // llgo:link (*Object).DecRef C.Py_DecRef
 func (o *Object) DecRef() {}
+
+// llgo:link (*Object).IncRef C.Py_IncRef
+func (o *Object) IncRef() {}
+
+func (o *Object) RefCnt() c.Int {
+	return *(*c.Int)(unsafe.Pointer(o))
+}
 
 // llgo:link (*Object).Type C.PyObject_Type
 func (o *Object) Type() *Object { return nil }
