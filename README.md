@@ -187,7 +187,7 @@ Here are some examples related to Go syntax:
 
 ### Garbage Collection (GC)
 
-By default, LLGo implements `gc` based on [bdwgc](https://www.hboehm.info/gc/).
+By default, LLGo implements `gc` based on [bdwgc](https://www.hboehm.info/gc/) (also known as [libgc](https://www.hboehm.info/gc/)).
 
 However, you can disable gc by specifying the `nogc` tag. For example:
 
@@ -214,7 +214,7 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 
 ```sh
 brew update  # execute if needed
-brew install bdw-gc
+brew install libgc
 brew install llvm@17
 go install -v ./...
 ```

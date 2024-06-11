@@ -430,9 +430,10 @@ func intVal(v ssa.Value) int64 {
 	panic("intVal: ssa.Value is not a const int")
 }
 
-func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
-	if va, vok := vx.(*ssa.Alloc); vok {
-		ret, ok = p.vargs[va] // varargs: this is a varargs index
+func (p *context) isVArgs(v ssa.Value) (ret []llssa.Expr, ok bool) {
+	switch v := v.(type) {
+	case *ssa.Alloc:
+		ret, ok = p.vargs[v] // varargs: this is a varargs index
 	}
 	return
 }
@@ -455,9 +456,18 @@ func isVargs(ctx *context, v *ssa.Alloc) bool {
 	lastref := refs[n-1]
 	if i, ok := lastref.(*ssa.Slice); ok {
 		if refs = *i.Referrers(); len(refs) == 1 {
-			if call, ok := refs[0].(*ssa.Call); ok {
-				return ctx.funcKind(call.Call.Value) == fnHasVArg
+			var call *ssa.CallCommon
+			switch ref := refs[0].(type) {
+			case *ssa.Call:
+				call = &ref.Call
+			case *ssa.Defer:
+				call = &ref.Call
+			case *ssa.Go:
+				call = &ref.Call
+			default:
+				return false
 			}
+			return ctx.funcKind(call.Value) == fnHasVArg
 		}
 	}
 	return false

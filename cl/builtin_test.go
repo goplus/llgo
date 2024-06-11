@@ -21,10 +21,41 @@ import (
 	"go/constant"
 	"go/types"
 	"testing"
+	"unsafe"
 
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
+
+func TestIsVargs(t *testing.T) {
+	if isVargs(nil, ssaAlloc(&ssa.Return{})) {
+		t.Fatal("isVargs?")
+	}
+	if isVargs(nil, ssaAlloc(ssaSlice(&ssa.Go{}))) {
+		t.Fatal("isVargs?")
+	}
+	if isVargs(nil, ssaAlloc(ssaSlice(&ssa.Return{}))) {
+		t.Fatal("isVargs?")
+	}
+}
+
+func ssaSlice(refs ...ssa.Instruction) *ssa.Slice {
+	a := &ssa.Slice{}
+	setRefs(unsafe.Pointer(a), refs...)
+	return a
+}
+
+func ssaAlloc(refs ...ssa.Instruction) *ssa.Alloc {
+	a := &ssa.Alloc{}
+	setRefs(unsafe.Pointer(a), refs...)
+	return a
+}
+
+func setRefs(v unsafe.Pointer, refs ...ssa.Instruction) {
+	off := unsafe.Offsetof(ssa.Alloc{}.Comment) - unsafe.Sizeof([]int(nil))
+	ptr := uintptr(v) + off
+	*(*[]ssa.Instruction)(unsafe.Pointer(ptr)) = refs
+}
 
 func TestRecvTypeName(t *testing.T) {
 	if ret := recvTypeName(&ast.IndexExpr{
