@@ -128,6 +128,7 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 		named.SetUnderlying(tund)
 		return named, true
 	}
+	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(t)
 	return t, false
 }
 
