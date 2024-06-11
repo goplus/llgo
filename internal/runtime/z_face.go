@@ -268,6 +268,9 @@ func IfacePtrData(i iface) unsafe.Pointer {
 
 // Implements reports whether the type V implements the interface type T.
 func Implements(T, V *abi.Type) bool {
+	if V == nil {
+		return false
+	}
 	if T.Kind() != abi.Interface {
 		return false
 	}
