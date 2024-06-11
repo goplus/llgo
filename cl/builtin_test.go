@@ -121,6 +121,12 @@ func TestPkgKind(t *testing.T) {
 	if v, _ := pkgKind(""); v != PkgLLGo {
 		t.Fatal("pkgKind:", v)
 	}
+	if v, _ := pkgKind("decl"); v != PkgDeclOnly {
+		t.Fatal("pkgKind:", v)
+	}
+	if v, _ := pkgKind("decl: test.ll"); v != PkgDeclOnly {
+		t.Fatal("pkgKind:", v)
+	}
 }
 
 func TestPkgKindOf(t *testing.T) {
