@@ -425,6 +425,16 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
+		case vkIface, vkEface:
+			prog := b.Prog
+			switch op {
+			case token.EQL:
+				return b.InlineCall(b.Pkg.rtFunc("InterfaceEqual"), x, y, prog.BoolVal(x.kind == vkEface), prog.BoolVal(y.kind == vkEface))
+			case token.NEQ:
+				ret := b.InlineCall(b.Pkg.rtFunc("InterfaceEqual"), x, y, prog.BoolVal(x.kind == vkEface), prog.BoolVal(y.kind == vkEface))
+				ret.impl = llvm.CreateNot(b.impl, ret.impl)
+				return ret
+			}
 		}
 	}
 	panic("todo")

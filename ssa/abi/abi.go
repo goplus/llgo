@@ -166,6 +166,9 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 
 // PathOf returns the package path of the specified package.
 func PathOf(pkg *types.Package) string {
+	if pkg == nil {
+		return ""
+	}
 	if pkg.Name() == "main" {
 		return "main"
 	}
@@ -174,6 +177,9 @@ func PathOf(pkg *types.Package) string {
 
 // FullName returns the full name of a package member.
 func FullName(pkg *types.Package, name string) string {
+	if pkg == nil {
+		return name
+	}
 	return PathOf(pkg) + "." + name
 }
 
