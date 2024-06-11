@@ -325,4 +325,95 @@ func Implements(T, V *abi.Type) bool {
 	return false
 }
 
+func EfaceEqual(v, u eface) bool {
+	if v.Kind() == abi.Interface {
+		v = v.Elem()
+	}
+	if u.Kind() == abi.Interface {
+		u = u.Elem()
+	}
+	if v._type == nil || u._type == nil {
+		return v._type == u._type
+	}
+	if v._type != u._type {
+		return false
+	}
+	if v._type.Kind_&abi.KindDirectIface != 0 {
+		return v.data == u.data
+	}
+	switch v.Kind() {
+	case abi.Bool,
+		abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64:
+		return *(*uintptr)(v.data) == *(*uintptr)(u.data)
+	case abi.Complex64, abi.Complex128:
+		panic("TODO complex")
+	case abi.String:
+		return *(*string)(v.data) == *(*string)(u.data)
+	case abi.Pointer, abi.UnsafePointer:
+		return v.data == u.data
+	case abi.Array:
+		n := v._type.Len()
+		tt := v._type.ArrayType()
+		index := func(data unsafe.Pointer, i int) eface {
+			offset := i * int(tt.Elem.Size_)
+			return eface{tt.Elem, c.Advance(data, offset)}
+		}
+		for i := 0; i < n; i++ {
+			if !EfaceEqual(index(v.data, i), index(u.data, i)) {
+				return false
+			}
+		}
+		return true
+	case abi.Struct:
+		st := v._type.StructType()
+		field := func(data unsafe.Pointer, ft *abi.StructField) eface {
+			return eface{ft.Typ, c.Advance(data, int(ft.Offset))}
+		}
+		for _, ft := range st.Fields {
+			if !EfaceEqual(field(v.data, &ft), field(u.data, &ft)) {
+				return false
+			}
+		}
+		return true
+	case abi.Func, abi.Map, abi.Slice:
+		break
+	}
+	panic("not comparable")
+}
+
+func (v eface) Kind() abi.Kind {
+	if v._type == nil {
+		return abi.Invalid
+	}
+	return v._type.Kind()
+}
+
+func (v eface) Elem() eface {
+	switch v.Kind() {
+	case abi.Interface:
+		var i any
+		tt := (*abi.InterfaceType)(unsafe.Pointer(v._type))
+		if len(tt.Methods) == 0 {
+			i = *(*any)(v.data)
+		} else {
+			i = (any)(*(*interface {
+				M()
+			})(v.data))
+		}
+		return *(*eface)(unsafe.Pointer(&i))
+	case abi.Pointer:
+		ptr := v.data
+		if v._type.Kind_&abi.KindDirectIface != 0 {
+			ptr = *(*unsafe.Pointer)(ptr)
+		}
+		if ptr == nil {
+			return eface{}
+		}
+		return eface{v._type.Elem(), ptr}
+	}
+	panic("invalid eface elem")
+}
+
 // -----------------------------------------------------------------------------

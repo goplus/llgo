@@ -427,11 +427,17 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			}
 		case vkIface, vkEface:
 			prog := b.Prog
+			toEface := func(x Expr, emtpy bool) Expr {
+				if emtpy {
+					return x
+				}
+				return Expr{b.unsafeEface(b.faceAbiType(x).impl, b.faceData(x.impl)), prog.rtType("Eface")}
+			}
 			switch op {
 			case token.EQL:
-				return b.InlineCall(b.Pkg.rtFunc("InterfaceEqual"), x, y, prog.BoolVal(x.kind == vkEface), prog.BoolVal(y.kind == vkEface))
+				return b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind == vkEface), toEface(y, y.kind == vkEface))
 			case token.NEQ:
-				ret := b.InlineCall(b.Pkg.rtFunc("InterfaceEqual"), x, y, prog.BoolVal(x.kind == vkEface), prog.BoolVal(y.kind == vkEface))
+				ret := b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind == vkEface), toEface(y, y.kind == vkEface))
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
