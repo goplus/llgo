@@ -6,4 +6,5 @@ import (
 
 func main() {
 	println(bits.Len8(20))
+	println(bits.OnesCount(20))
 }

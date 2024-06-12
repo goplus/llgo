@@ -27,6 +27,12 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestReplaceGoName(t *testing.T) {
+	if ret := replaceGoName("foo", 0); ret != "foo" {
+		t.Fatal("replaceGoName:", ret)
+	}
+}
+
 func TestIsAllocVargs(t *testing.T) {
 	if isAllocVargs(nil, ssaAlloc(&ssa.Return{})) {
 		t.Fatal("isVargs?")
