@@ -432,12 +432,10 @@ func intVal(v ssa.Value) int64 {
 	panic("intVal: ssa.Value is not a const int")
 }
 
-func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
-	switch vx := vx.(type) {
+func (p *context) isVArgs(v ssa.Value) (ret []llssa.Expr, ok bool) {
+	switch v := v.(type) {
 	case *ssa.Alloc:
-		ret, ok = p.vargs[vx] // varargs: this is a varargs index
-	case *ssa.Const:
-		ok = vx.Value == nil
+		ret, ok = p.vargs[v] // varargs: this is a varargs index
 	}
 	return
 }
@@ -445,7 +443,7 @@ func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
 func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	if v.Comment == "varargs" { // this maybe a varargs allocation
 		if arr, ok := t.Elem().(*types.Array); ok {
-			if isAny(arr.Elem()) && isVargs(p, v) {
+			if isAny(arr.Elem()) && isAllocVargs(p, v) {
 				p.vargs[v] = make([]llssa.Expr, arr.Len())
 				return true
 			}
@@ -454,15 +452,24 @@ func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	return false
 }
 
-func isVargs(ctx *context, v *ssa.Alloc) bool {
+func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 	refs := *v.Referrers()
 	n := len(refs)
 	lastref := refs[n-1]
 	if i, ok := lastref.(*ssa.Slice); ok {
 		if refs = *i.Referrers(); len(refs) == 1 {
-			if call, ok := refs[0].(*ssa.Call); ok {
-				return ctx.funcKind(call.Call.Value) == fnHasVArg
+			var call *ssa.CallCommon
+			switch ref := refs[0].(type) {
+			case *ssa.Call:
+				call = &ref.Call
+			case *ssa.Defer:
+				call = &ref.Call
+			case *ssa.Go:
+				call = &ref.Call
+			default:
+				return false
 			}
+			return ctx.funcKind(call.Value) == fnHasVArg
 		}
 	}
 	return false
@@ -786,6 +793,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.ChangeInterface(p.prog.Type(t, llssa.InGo), x)
+	case *ssa.Field:
+		x := p.compileValue(b, v.X)
+		ret = b.Field(x, v.Field)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}

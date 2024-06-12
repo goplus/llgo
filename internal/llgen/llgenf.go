@@ -131,5 +131,5 @@ func genZip(dir string, outFile, inFile string) {
 }
 
 func inCompilerDir(dir string) bool {
-	return strings.Contains(dir, "/llgo/cl/")
+	return strings.Contains(dir, "/cl/_test")
 }
