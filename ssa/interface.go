@@ -238,11 +238,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	var eq Expr
 	var val func() Expr
 	if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
-		if rawIntf.Empty() {
-			eq = b.Prog.BoolVal(true)
-		} else {
-			eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
-		}
+		eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
 		val = func() Expr { return Expr{b.unsafeInterface(rawIntf, tx, b.faceData(x.impl)), assertedTyp} }
 	} else {
 		eq = b.BinOp(token.EQL, tx, tabi)

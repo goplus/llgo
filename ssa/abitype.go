@@ -118,11 +118,9 @@ func (b Builder) abiMethods(t *types.Named) (ret, pret int) {
 }
 
 // Method{name string, typ *FuncType, ifn, tfn abi.Text}
-func (b Builder) abiMethodOf(m *types.Func /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
+func (b Builder) abiMethodOf(m types.Object, mSig *types.Signature /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
 	prog := b.Prog
 	mPkg, mName := m.Pkg(), m.Name()
-	mSig := m.Type().(*types.Signature)
-
 	name := b.Str(mName).impl
 	if !token.IsExported(mName) {
 		name = b.Str(abi.FullName(mPkg, m.Name())).impl
@@ -217,8 +215,12 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 			var mthds []Expr
 			var ptrMthds = make([]Expr, 0, n)
 			for i := 0; i < n; i++ {
-				m := mset[i].Obj().(*types.Func)
-				mthd, ptrMthd := b.abiMethodOf(m)
+				m := mset[i]
+				sig := m.Obj().(*types.Func).Type().(*types.Signature)
+				if _, ok := sig.Recv().Type().Underlying().(*types.Interface); ok {
+					sig = m.Type().(*types.Signature)
+				}
+				mthd, ptrMthd := b.abiMethodOf(m.Obj(), sig)
 				if !mthd.IsNil() {
 					mthds = append(mthds, mthd)
 				}

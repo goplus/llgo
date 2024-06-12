@@ -789,6 +789,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.ChangeInterface(p.prog.Type(t, llssa.InGo), x)
+	case *ssa.Field:
+		x := p.compileValue(b, v.X)
+		ret = b.Field(x, v.Field)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
