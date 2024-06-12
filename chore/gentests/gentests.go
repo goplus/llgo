@@ -34,6 +34,7 @@ func main() {
 	llgen.Verbose = false
 
 	llgenDir(dir + "/cl/_testlibc")
+	llgenDir(dir + "/cl/_testlibgo")
 	llgenDir(dir + "/cl/_testrt")
 	llgenDir(dir + "/cl/_testgo")
 	llgenDir(dir+"/cl/_testpy", "")

@@ -356,24 +356,24 @@ const (
 	pyVar      = int(llssa.InPython)
 )
 
-func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int) {
+func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
 	name := llssa.FullName(pkg, v.Name())
 	if v, ok := p.link[name]; ok {
 		if pos := strings.IndexByte(v, '.'); pos >= 0 {
 			if pos == 2 && v[0] == 'p' && v[1] == 'y' {
-				return v[3:], pyVar
+				return v[3:], pyVar, false
 			}
-			return replaceGoName(v, pos), goVar
+			return replaceGoName(v, pos), goVar, false
 		}
-		return v, cVar
+		return v, cVar, false
 	}
-	return name, goVar
+	return name, goVar, true
 }
 
 func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
-	name, vtype := p.varName(pkgTypes, v)
+	name, vtype, _ := p.varName(pkgTypes, v)
 	if vtype == pyVar {
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
 			return b.PyNewVar(pysymPrefix+mod, name).Expr

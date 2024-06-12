@@ -36,6 +36,10 @@ func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy", false)
 }
 
+func TestFromTestlibgo(t *testing.T) {
+	cltest.FromDir(t, "", "./_testlibgo", true)
+}
+
 func TestFromTestlibc(t *testing.T) {
 	cltest.FromDir(t, "", "./_testlibc", true)
 }
