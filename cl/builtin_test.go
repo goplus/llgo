@@ -27,14 +27,14 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-func TestIsVargs(t *testing.T) {
-	if isVargs(nil, ssaAlloc(&ssa.Return{})) {
+func TestIsAllocVargs(t *testing.T) {
+	if isAllocVargs(nil, ssaAlloc(&ssa.Return{})) {
 		t.Fatal("isVargs?")
 	}
-	if isVargs(nil, ssaAlloc(ssaSlice(&ssa.Go{}))) {
+	if isAllocVargs(nil, ssaAlloc(ssaSlice(&ssa.Go{}))) {
 		t.Fatal("isVargs?")
 	}
-	if isVargs(nil, ssaAlloc(ssaSlice(&ssa.Return{}))) {
+	if isAllocVargs(nil, ssaAlloc(ssaSlice(&ssa.Return{}))) {
 		t.Fatal("isVargs?")
 	}
 }

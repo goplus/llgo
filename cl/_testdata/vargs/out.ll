@@ -133,7 +133,7 @@ _llgo_5:                                          ; preds = %_llgo_2
   %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, i32 0, i32 1
   store ptr %20, ptr %23, align 8
   %24 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %24)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %24)
   unreachable
 }
 
@@ -172,6 +172,6 @@ declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
 declare i32 @printf(ptr, ...)

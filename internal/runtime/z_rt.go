@@ -19,6 +19,7 @@ package runtime
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/c/pthread"
 	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/runtime/c"
 )
@@ -27,17 +28,42 @@ import (
 
 // Defer presents defer statements in a function.
 type Defer struct {
+	Addr unsafe.Pointer // sigjmpbuf
 	Bits uintptr
 	Link *Defer
-	Rund int // index of RunDefers
+	Rund unsafe.Pointer // block address after RunDefers
+}
+
+// Panic panics with a value.
+func Panic(v Eface) {
+	ptr := c.Malloc(unsafe.Sizeof(v))
+	*(*Eface)(ptr) = v
+	excepKey.Set(ptr)
+
+	Rethrow((*Defer)(c.GoDeferData()))
+}
+
+// Rethrow rethrows a panic.
+func Rethrow(link *Defer) {
+	if link == nil {
+		ptr := excepKey.Get()
+		TracePanic(*(*Eface)(ptr))
+		c.Free(ptr)
+		c.Exit(2)
+	} else {
+		c.Siglongjmp(link.Addr, 1)
+	}
+}
+
+var (
+	excepKey pthread.Key
+)
+
+func init() {
+	excepKey.Create(nil)
 }
 
 // -----------------------------------------------------------------------------
-
-// Zeroinit initializes memory to zero.
-func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
-	return c.Memset(p, 0, size)
-}
 
 // TracePanic prints panic message.
 func TracePanic(v Eface) {
@@ -52,6 +78,13 @@ func TracePanic(v Eface) {
 func stringTracef(fp c.FilePtr, format *c.Char, s String) {
 	cs := c.Alloca(uintptr(s.len) + 1)
 	c.Fprintf(fp, format, CStrCopy(cs, s))
+}
+
+// -----------------------------------------------------------------------------
+
+// Zeroinit initializes memory to zero.
+func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
+	return c.Memset(p, 0, size)
 }
 
 // -----------------------------------------------------------------------------

@@ -131,14 +131,16 @@ type aProgram struct {
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
-	anyTy    Type
-	voidTy   Type
-	voidPtr  Type
-	voidPPtr Type
-	boolTy   Type
-	cstrTy   Type
-	cintTy   Type
-	//cintPtr Type
+	anyTy Type
+	//anyPtr  Type
+	//anyPPtr Type
+	voidTy    Type
+	voidPtr   Type
+	voidPPtr  Type
+	boolTy    Type
+	cstrTy    Type
+	cintTy    Type
+	cintPtr   Type
 	stringTy  Type
 	uintptrTy Type
 	intTy     Type
@@ -158,7 +160,6 @@ type aProgram struct {
 	abiTyPPtr Type
 	deferTy   Type
 	deferPtr  Type
-	deferPPtr Type
 
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
@@ -328,14 +329,6 @@ func (p Program) DeferPtr() Type {
 	return p.deferPtr
 }
 
-// DeferPtrPtr returns **runtime.Defer type.
-func (p Program) DeferPtrPtr() Type {
-	if p.deferPPtr == nil {
-		p.deferPPtr = p.Pointer(p.DeferPtr())
-	}
-	return p.deferPPtr
-}
-
 // AbiTypePtr returns *abi.Type type.
 func (p Program) AbiTypePtr() Type {
 	if p.abiTyPtr == nil {
@@ -360,6 +353,7 @@ func (p Program) Void() Type {
 	return p.voidTy
 }
 
+// VoidPtr returns *void type.
 func (p Program) VoidPtr() Type {
 	if p.voidPtr == nil {
 		p.voidPtr = p.rawType(types.Typ[types.UnsafePointer])
@@ -367,6 +361,7 @@ func (p Program) VoidPtr() Type {
 	return p.voidPtr
 }
 
+// VoidPtrPtr returns **void type.
 func (p Program) VoidPtrPtr() Type {
 	if p.voidPPtr == nil {
 		p.voidPPtr = p.rawType(types.NewPointer(types.Typ[types.UnsafePointer]))
@@ -382,6 +377,7 @@ func (p Program) Bool() Type {
 	return p.boolTy
 }
 
+// CStr returns *int8 type.
 func (p Program) CStr() Type {
 	if p.cstrTy == nil { // *int8
 		p.cstrTy = p.rawType(types.NewPointer(types.Typ[types.Int8]))
@@ -389,12 +385,31 @@ func (p Program) CStr() Type {
 	return p.cstrTy
 }
 
+// String returns string type.
 func (p Program) String() Type {
 	if p.stringTy == nil {
 		p.stringTy = p.rawType(types.Typ[types.String])
 	}
 	return p.stringTy
 }
+
+/*
+// AnyPtrPtr returns **any type.
+func (p Program) AnyPtrPtr() Type {
+	if p.anyPPtr == nil {
+		p.anyPPtr = p.Pointer(p.AnyPtr())
+	}
+	return p.anyPPtr
+}
+
+// AnyPtr returns *any type.
+func (p Program) AnyPtr() Type {
+	if p.anyPtr == nil {
+		p.anyPtr = p.Pointer(p.Any())
+	}
+	return p.anyPtr
+}
+*/
 
 // Any returns the any (empty interface) type.
 func (p Program) Any() Type {
@@ -410,6 +425,7 @@ func (p Program) Any() Type {
 func (p Program) Eface() Type {
 	return p.Any()
 }
+*/
 
 // CIntPtr returns *c.Int type.
 func (p Program) CIntPtr() Type {
@@ -418,7 +434,6 @@ func (p Program) CIntPtr() Type {
 	}
 	return p.cintPtr
 }
-*/
 
 // CInt returns c.Int type.
 func (p Program) CInt() Type {
@@ -550,7 +565,7 @@ func (p Package) cFunc(fullName string, sig *types.Signature) Expr {
 func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 	name := v.impl.Name()
 	prog := b.Prog
-	nilVal := prog.Null(prog.VoidPtr()).impl
+	nilVal := prog.Nil(prog.VoidPtr()).impl
 	if fn, ok := p.stubs[name]; ok {
 		v = fn.Expr
 	} else {
@@ -605,7 +620,7 @@ func (p Package) afterBuilder() Builder {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	p.deferInit()
+	p.keyInit(deferKey)
 	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
 	if doAfterb || doPyLoadModSyms {

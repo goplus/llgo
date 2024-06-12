@@ -201,7 +201,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
 	if vtype == goVar {
-		g.Init(p.prog.Null(g.Type))
+		g.Init(p.prog.Nil(g.Type))
 	}
 }
 
@@ -338,6 +338,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			ftype = llgoSigsetjmp
 		case "siglongjmp":
 			ftype = llgoSiglongjmp
+		case "deferData":
+			ftype = llgoDeferData
 		case "unreachable":
 			ftype = llgoUnreachable
 		default:
@@ -378,8 +380,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
 		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-		argc.Init(prog.Null(argc.Type))
-		argv.Init(prog.Null(argv.Type))
+		argc.Init(prog.Nil(argc.Type))
+		argv.Init(prog.Nil(argv.Type))
 		b.Store(argc.Expr, fn.Param(0))
 		b.Store(argv.Expr, fn.Param(1))
 		callRuntimeInit(b, pkg)
@@ -395,7 +397,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		modName := pysymPrefix + modPath
 		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
-		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
+		cond := b.BinOp(token.NEQ, mod, prog.Nil(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
@@ -441,7 +443,7 @@ func (p *context) isVArgs(v ssa.Value) (ret []llssa.Expr, ok bool) {
 func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	if v.Comment == "varargs" { // this maybe a varargs allocation
 		if arr, ok := t.Elem().(*types.Array); ok {
-			if isAny(arr.Elem()) && isVargs(p, v) {
+			if isAny(arr.Elem()) && isAllocVargs(p, v) {
 				p.vargs[v] = make([]llssa.Expr, arr.Len())
 				return true
 			}
@@ -450,7 +452,7 @@ func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	return false
 }
 
-func isVargs(ctx *context, v *ssa.Alloc) bool {
+func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 	refs := *v.Referrers()
 	n := len(refs)
 	lastref := refs[n-1]
@@ -652,6 +654,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.siglongjmp(b, args)
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
+		case llgoDeferData: // func deferData() *Defer
+			ret = b.DeferData()
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:
