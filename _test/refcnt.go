@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/goplus/llgo/_test/testing"
+	"github.com/goplus/llgo/py"
 
 	"github.com/goplus/llgo/c"
 )
@@ -15,6 +16,7 @@ func Float(value float64) *RefObj {
 	return &RefObj{1, value}
 }
 
+// llgo:incref (*RefObj).IncRef
 func (o *RefObj) IncRef() {
 	o.refcnt++
 }
@@ -32,31 +34,13 @@ func (o *RefObj) Float64() float64 {
 	return o.value
 }
 
-func returnObj(f float64) *RefObj {
-	x := Float(f)
-	refObjs.returnObj_x = x
-	return x
-}
-
-func returnObjAndError(f float64) (obj *RefObj, err error) {
-	obj, err = Float(f), nil
-	refObjs.returnObjAndError_x = obj
-	return obj, err
-}
-
-func assertEql(got, expected c.Int, msg string) {
-	if expected != got {
-		c.Printf(c.Str("assertion failed: %s, expected %d, got %d\n"), c.AllocaCStr(msg), expected, got)
-		// panic("error")
-	}
-}
-
 type RefObjs struct {
 	testEscapeFromInner_x *RefObj
 
 	testEscapeWithCond_x *RefObj
 	testEscapeWithCond_y *RefObj
 	testEscapeWithCond_z *RefObj
+	testEscapeWithCond_w *RefObj
 
 	testLoop []*RefObj
 
@@ -73,6 +57,18 @@ func init() {
 	refObjs.testEscapeWithLoop = make([]*RefObj, 0)
 }
 
+func returnObj(f float64) *RefObj {
+	x := Float(f)
+	refObjs.returnObj_x = x
+	return x
+}
+
+func returnObjAndError(f float64) (obj *RefObj, err error) {
+	obj, err = Float(f), nil
+	refObjs.returnObjAndError_x = obj
+	return obj, err
+}
+
 func testEscapeFromInner() {
 	var x *RefObj
 	func() {
@@ -86,15 +82,20 @@ func testEscapeFromInner() {
 func testEscapeWithCond() *RefObj {
 	y := Float(1000)
 	z := Float(1001)
+	u := Float(1002)
+	w := u
 	var x *RefObj
 	if y.Float64() > z.Float64() {
 		x = y
-	} else {
+	} else if y.Float64() < z.Float64()-2 {
 		x = z
+	} else {
+		x = w
 	}
 	refObjs.testEscapeWithCond_x = x
 	refObjs.testEscapeWithCond_y = y
 	refObjs.testEscapeWithCond_z = z
+	refObjs.testEscapeWithCond_w = w
 	return x
 }
 
@@ -118,6 +119,13 @@ func testEscapeWithLoop() *RefObj {
 func unused(v ...any) {
 }
 
+func assertEql(got, expected c.Int, msg string) {
+	if expected != got {
+		c.Printf(c.Str("assertion failed: %s, expected %d, got %d\n"), c.AllocaCStr(msg), expected, got)
+		// panic("error")
+	}
+}
+
 // Test escape
 func TestEscape(t *testing.T) {
 	a := returnObj(1)
@@ -135,9 +143,10 @@ func TestEscapeFromInner(t *testing.T) {
 func TestEscapeWithCond(t *testing.T) {
 	a := testEscapeWithCond()
 	assertEql(a.RefCnt(), 1, "a refcnt != 1")
-	assertEql(refObjs.testEscapeWithCond_x.RefCnt(), 1, "testEscapeWithCond_x.refcnt != 1")
+	assertEql(refObjs.testEscapeWithCond_x.RefCnt(), 0, "testEscapeWithCond_x.refcnt != 0")
 	assertEql(refObjs.testEscapeWithCond_y.RefCnt(), 0, "testEscapeWithCond_y.refcnt != 0")
-	assertEql(refObjs.testEscapeWithCond_z.RefCnt(), 0, "testEscapeWithCond_z.refcnt != 1")
+	assertEql(refObjs.testEscapeWithCond_z.RefCnt(), 0, "testEscapeWithCond_z.refcnt != 0")
+	assertEql(refObjs.testEscapeWithCond_w.RefCnt(), 1, "testEscapeWithCond_w.refcnt != 1")
 }
 
 // Test escape with multiple return values
@@ -187,15 +196,15 @@ func TestEscapeWithLoop(t *testing.T) {
 	}
 }
 
-// func TestPy(t *testing.T) {
-// 	l := py.NewList(1)
-// 	item := py.Float(3.14)
-// 	assertEql(item.RefCnt(), 1, "item refcnt != 1")
-// 	l.ListSetItem(0, item)
-// 	assertEql(item.RefCnt(), 2, "item refcnt != 1")
-// 	item1 := l.ListItem(0)
-// 	assertEql(item1.RefCnt(), 1, "item1 refcnt != 1")
-// }
+func TestPy(t *testing.T) {
+	l := py.NewList(1)
+	item := py.Float(3.14)
+	assertEql(item.RefCnt(), 1, "item refcnt != 1")
+	l.ListSetItem(0, item)
+	assertEql(item.RefCnt(), 2, "item refcnt != 1")
+	item1 := l.ListItem(0)
+	assertEql(item1.RefCnt(), 1, "item1 refcnt != 1")
+}
 
 func TestRefCnt(t *testing.T) {
 	TestEscape(t)
@@ -205,5 +214,5 @@ func TestRefCnt(t *testing.T) {
 	TestLoop(t)
 	TestEscapeWithLoop(t)
 
-	// TestPy(nil)
+	TestPy(t)
 }
