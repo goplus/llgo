@@ -28,6 +28,9 @@ _llgo_0:
   %2 = call i64 @"math/bits.Len8"(i8 20)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %2)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %3 = call i64 @"math/bits.OnesCount"(i64 20)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
@@ -40,3 +43,5 @@ declare i64 @"math/bits.Len8"(i8)
 declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+
+declare i64 @"math/bits.OnesCount"(i64)
