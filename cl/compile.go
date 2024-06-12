@@ -145,12 +145,12 @@ type context struct {
 	goTyps    *types.Package
 	goPkg     *ssa.Package
 	pyMod     string
-	link      map[string]string             // pkgPath.nameInPkg => linkname
-	scopeExit map[string]bool               // scopeexit functions
-	exitFuncs map[llssa.Type]llssa.Function // scopeexit functions
-	loaded    map[*types.Package]*pkgInfo   // loaded packages
-	bvals     map[ssa.Value]llssa.Expr      // block values
-	vargs     map[*ssa.Alloc][]llssa.Expr   // varargs
+	link      map[string]string            // pkgPath.nameInPkg => linkname
+	scopeExit map[string]bool              // scopeexit functions
+	exitFuncs map[types.Type]*ssa.Function // scopeexit functions
+	loaded    map[*types.Package]*pkgInfo  // loaded packages
+	bvals     map[ssa.Value]llssa.Expr     // block values
+	vargs     map[*ssa.Alloc][]llssa.Expr  // varargs
 
 	blkInfos []blocks.Info
 
@@ -223,6 +223,7 @@ var (
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, orgName, name, ftype := p.funcName(f, true)
+	fmt.Printf("compileFuncDecl: %s, %s\n", name, orgName)
 	if ftype != goFunc {
 		/*
 			if ftype == pyFunc {
@@ -261,7 +262,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
-		p.compileScopeExit(orgName, fn, sig)
+		p.compileScopeExit(orgName, f)
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -356,24 +357,26 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			}
 			sig := fn.Signature
 			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
-			p.compileScopeExit(orgName, aFn, sig)
+			p.compileScopeExit(orgName, fn)
 		}
 	}
 	return
 }
 
-func (p *context) compileScopeExit(name string, fn llssa.Function, sig *types.Signature) {
+func (p *context) compileScopeExit(name string, fn *ssa.Function) {
+	fmt.Printf("try compileScopeExit: %s\n", name)
 	if _, ok := p.scopeExit[name]; !ok {
 		return
 	}
-	recv := sig.Recv()
+	recv := fn.Signature.Recv()
 	if recv == nil {
 		panic(fmt.Errorf("scopeexit function %s must have a receiver", name))
 	}
-	t := p.prog.Type(recv.Type(), llssa.InGo)
+	t := recv.Type()
 	if _, ok := p.exitFuncs[t]; ok {
 		panic(fmt.Errorf("type %s has multiple scopeexit functions", name))
 	}
+	fmt.Printf("compileScopeExit: %s\n", name)
 	p.exitFuncs[t] = fn
 }
 
@@ -971,13 +974,24 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // -----------------------------------------------------------------------------
 
-// NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	type namedMember struct {
-		name string
-		val  ssa.Member
-	}
+type namedMember struct {
+	name string
+	val  ssa.Member
+}
 
+type aPackage struct {
+	ctx     *context
+	members []*namedMember
+}
+
+type Package = *aPackage
+
+func (p *aPackage) Pkg() llssa.Package {
+	return p.ctx.pkg
+}
+
+// NewPackage compiles a Go package to LLVM IR package.
+func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret *aPackage) {
 	members := make([]*namedMember, 0, len(pkg.Members))
 	for name, v := range pkg.Members {
 		members = append(members, &namedMember{name, v})
@@ -992,18 +1006,18 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	if pkgPath == llssa.PkgRuntime {
 		prog.SetRuntime(pkgTypes)
 	}
-	ret = prog.NewPackage(pkgName, pkgPath)
+	llpkg := prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
 		prog:      prog,
-		pkg:       ret,
+		pkg:       llpkg,
 		fset:      pkgProg.Fset,
 		goProg:    pkgProg,
 		goTyps:    pkgTypes,
 		goPkg:     pkg,
 		link:      make(map[string]string),
 		scopeExit: make(map[string]bool),
-		exitFuncs: make(map[llssa.Type]llssa.Function),
+		exitFuncs: make(map[types.Type]*ssa.Function),
 		vargs:     make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
@@ -1011,7 +1025,18 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
-	for _, m := range members {
+	ret = &aPackage{ctx, members}
+	return
+}
+
+func (p *aPackage) Rewrite() {
+
+}
+
+func (p *aPackage) Build() {
+	ctx := p.ctx
+	pkg := ctx.pkg
+	for _, m := range p.members {
 		member := m.val
 		switch member := member.(type) {
 		case *ssa.Function:
@@ -1020,11 +1045,11 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 				// Do not try to build generic (non-instantiated) functions.
 				continue
 			}
-			ctx.compileFuncDecl(ret, member)
+			ctx.compileFuncDecl(pkg, member)
 		case *ssa.Type:
-			ctx.compileType(ret, member)
+			ctx.compileType(pkg, member)
 		case *ssa.Global:
-			ctx.compileGlobal(ret, member)
+			ctx.compileGlobal(pkg, member)
 		}
 	}
 	for len(ctx.inits) > 0 {
@@ -1034,7 +1059,6 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 			ini()
 		}
 	}
-	return
 }
 
 // -----------------------------------------------------------------------------

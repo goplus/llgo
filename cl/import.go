@@ -219,6 +219,7 @@ func (p *context) initScopeExit(line string, prefix int, f func(inPkgName string
 	inPkgName := strings.TrimSpace(line[prefix:])
 	if fullName, _, ok := f(inPkgName); ok {
 		p.scopeExit[fullName] = true
+		fmt.Printf("register scopeexit: %s\n", fullName)
 	} else {
 		fmt.Fprintln(os.Stderr, "==>", line)
 		fmt.Fprintf(os.Stderr, "llgo: scopeexit %s not found and ignored\n", inPkgName)

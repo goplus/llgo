@@ -143,16 +143,13 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	foo.WriteTo(os.Stderr)
 	prog := ssatest.NewProgramEx(t, nil, imp)
 
-	ret, err := cl.NewPackage(prog, foo, files)
-	if err != nil {
-		t.Fatal("cl.NewPackage failed:", err)
-	}
-
+	ret := cl.NewPackage(prog, foo, files)
+	ret.Build()
 	if prog.NeedPyInit { // call PyInit if needed
-		ret.PyInit()
+		ret.Pkg().PyInit()
 	}
 
-	if v := ret.String(); v != expected && expected != ";" { // expected == ";" means skipping out.ll
+	if v := ret.Pkg().String(); v != expected && expected != ";" { // expected == ";" means skipping out.ll
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }

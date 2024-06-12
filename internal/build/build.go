@@ -125,27 +125,20 @@ func Do(args []string, conf *Config) {
 		return
 	}
 
-	var needRt bool
-	var rt []*packages.Package
-	load := func() []*packages.Package {
-		if rt == nil {
-			var err error
-			rt, err = packages.LoadEx(sizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
-			check(err)
-		}
-		return rt
-	}
+	rt, err := packages.LoadEx(sizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
+	check(err)
+
+	var needRt bool = false
 	prog.SetRuntime(func() *types.Package {
 		needRt = true
-		rt := load()
 		return rt[0].Types
 	})
 	prog.SetPython(func() *types.Package {
-		rt := load()
 		return rt[1].Types
 	})
 
-	pkgs := buildAllPkgs(prog, initial, nil, mode, verbose)
+	pkgs := scanAllPkgs(prog, initial, verbose)
+	buildAllPkgs(prog, pkgs, nil, mode, verbose)
 
 	var runtimeFiles []string
 	if needRt {
@@ -153,7 +146,8 @@ func Do(args []string, conf *Config) {
 		for _, v := range pkgs {
 			skip[v.PkgPath] = true
 		}
-		dpkg := buildAllPkgs(prog, rt[:1], skip, mode, verbose)
+		dpkg := scanAllPkgs(prog, rt[:1], verbose)
+		buildAllPkgs(prog, dpkg, skip, mode, verbose)
 		for _, pkg := range dpkg {
 			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
 				continue
@@ -192,7 +186,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 	return
 }
 
-func buildAllPkgs(prog llssa.Program, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
+func scanAllPkgs(prog llssa.Program, initial []*packages.Package, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
@@ -202,6 +196,22 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, skip map[stri
 		}
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
+	for _, aPkg := range pkgs {
+		scanPkg(prog, aPkg, verbose)
+		// for _, member := range aPkg.SSA.Members {
+		// 	if fn, ok := member.(*ssa.Function); ok {
+		// 		fmt.Printf("	%s\n", fn.Name())
+		// 	}
+		// }
+	}
+	fmt.Printf("=============== end scanAllPkgs ===============\n")
+	for _, aPkg := range pkgs {
+		aPkg.clpkg.Rewrite()
+	}
+	return pkgs
+}
+
+func buildAllPkgs(prog llssa.Program, pkgs []*aPackage, skip map[string]bool, mode Mode, verbose bool) (ret []*aPackage) {
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
 		if skip[pkg.PkgPath] {
@@ -258,11 +268,11 @@ func buildAllPkgs(prog llssa.Program, initial []*packages.Package, skip map[stri
 				}
 			}
 		default:
-			buildPkg(prog, aPkg, mode, verbose)
+			buildPkg(aPkg, mode)
 			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
-	return
+	return pkgs
 }
 
 func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
@@ -348,7 +358,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	return
 }
 
-func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
+func scanPkg(prog llssa.Program, aPkg *aPackage, verbose bool) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
 	if verbose {
@@ -358,13 +368,23 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 		pkg.ExportFile = ""
 		return
 	}
-	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
-	check(err)
+	ret := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
+	aPkg.clpkg = ret
+}
+
+func buildPkg(aPkg *aPackage, mode Mode) {
+	pkg := aPkg.Package
+	clpkg := aPkg.clpkg
+	if clpkg == nil {
+		// skiped
+		return
+	}
+	clpkg.Build()
 	if needLLFile(mode) {
 		pkg.ExportFile += ".ll"
-		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		os.WriteFile(pkg.ExportFile, []byte(clpkg.Pkg().String()), 0644)
 	}
-	aPkg.LPkg = ret
+	aPkg.LPkg = clpkg.Pkg()
 }
 
 func canSkipToBuild(pkgPath string) bool {
@@ -379,8 +399,9 @@ func canSkipToBuild(pkgPath string) bool {
 
 type aPackage struct {
 	*packages.Package
-	SSA  *ssa.Package
-	LPkg llssa.Package
+	SSA   *ssa.Package
+	LPkg  llssa.Package
+	clpkg cl.Package
 }
 
 func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []*aPackage, errs []*packages.Package) {
@@ -393,7 +414,7 @@ func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Progr
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			ssaPkg := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
-			all = append(all, &aPackage{p, ssaPkg, nil})
+			all = append(all, &aPackage{p, ssaPkg, nil, nil})
 		} else {
 			errs = append(errs, p)
 		}

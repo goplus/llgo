@@ -80,14 +80,14 @@ func GenFrom(fileOrPkg string) string {
 		ssaPkg.WriteTo(os.Stderr)
 	}
 
-	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
-	check(err)
+	ret := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
+	ret.Build()
 
 	if prog.NeedPyInit { // call PyInit if needed
-		ret.PyInit()
+		ret.Pkg().PyInit()
 	}
 
-	return ret.String()
+	return ret.Pkg().String()
 }
 
 func DoFile(fileOrPkg, outFile string) {
