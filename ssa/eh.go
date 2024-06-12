@@ -69,7 +69,7 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 func (b Builder) Siglongjmp(jb, retval Expr) {
 	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
 	b.Call(fn, jb, retval)
-	b.Unreachable()
+	// b.Unreachable()
 }
 
 // -----------------------------------------------------------------------------

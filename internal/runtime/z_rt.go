@@ -49,7 +49,8 @@ func Rethrow(link *Defer) {
 		ptr := excepKey.Get()
 		TracePanic(*(*Eface)(ptr))
 		c.Free(ptr)
-		c.Unreachable()
+		// TODO(xsw): noreturn
+		// c.Unreachable()
 	} else {
 		c.Siglongjmp(link.Addr, 1)
 	}
