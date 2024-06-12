@@ -341,6 +341,9 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Run()
+		if s := cmd.ProcessState; s != nil {
+			os.Exit(s.ExitCode())
+		}
 	}
 	return
 }
