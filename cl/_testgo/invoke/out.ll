@@ -394,7 +394,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %129 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %127, i32 0, i32 1
   store ptr %126, ptr %129, align 8
   %130 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %127, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %130)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %130)
   unreachable
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -426,7 +426,7 @@ _llgo_4:                                          ; preds = %_llgo_1
   %147 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %145, i32 0, i32 1
   store ptr %144, ptr %147, align 8
   %148 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %145, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %148)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %148)
   unreachable
 
 _llgo_5:                                          ; preds = %_llgo_3
@@ -459,7 +459,7 @@ _llgo_6:                                          ; preds = %_llgo_3
   %164 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %162, i32 0, i32 1
   store ptr %161, ptr %164, align 8
   %165 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %162, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %165)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %165)
   unreachable
 }
 
@@ -1184,4 +1184,4 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintIface"(%"github.com/
 
 declare i1 @"github.com/goplus/llgo/internal/runtime.Implements"(ptr, ptr)
 
-declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")

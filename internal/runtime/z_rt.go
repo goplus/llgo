@@ -31,7 +31,7 @@ type Defer struct {
 	Addr unsafe.Pointer // sigjmpbuf
 	Bits uintptr
 	Link *Defer
-	Rund int // index of RunDefers
+	Rund unsafe.Pointer // block address after RunDefers
 }
 
 // Panic panics with a value.
@@ -49,8 +49,7 @@ func Rethrow(link *Defer) {
 		ptr := excepKey.Get()
 		TracePanic(*(*Eface)(ptr))
 		c.Free(ptr)
-		// TODO(xsw): noreturn
-		// c.Unreachable()
+		c.Exit(2)
 	} else {
 		c.Siglongjmp(link.Addr, 1)
 	}

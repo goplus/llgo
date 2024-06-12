@@ -48,6 +48,12 @@ func (p BasicBlock) Index() int {
 	return p.idx
 }
 
+// Addr returns the address of the basic block.
+func (p BasicBlock) Addr() Expr {
+	fn := p.fn
+	return Expr{llvm.BlockAddress(fn.impl, p.first), fn.Prog.VoidPtr()}
+}
+
 // -----------------------------------------------------------------------------
 
 type aBuilder struct {

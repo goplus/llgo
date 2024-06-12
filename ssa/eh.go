@@ -125,20 +125,21 @@ func (b Builder) excepKey() Expr {
 	return b.Load(b.Pkg.newKey(excepKey).Expr)
 }
 
+const (
+	// 0: addr sigjmpbuf
+	// 1: bits uintptr
+	// 2: link *Defer
+	// 3: rund voidptr
+	deferSigjmpbuf = iota
+	deferBits
+	deferLink
+	deferRund
+)
+
 func (b Builder) getDefer(kind DoAction) *aDefer {
 	self := b.Func
 	if self.defer_ == nil {
 		// TODO(xsw): check if in pkg.init
-		// 0: addr sigjmpbuf
-		// 1: bits uintptr
-		// 2: link *Defer
-		// 3: rund int
-		const (
-			deferSigjmpbuf = iota
-			deferBits
-			deferLink
-			deferRund
-		)
 		var next, rundBlk BasicBlock
 		if kind != DeferAlways {
 			b, next = self.deferInitBuilder()
@@ -173,11 +174,11 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		}
 		b.If(b.BinOp(token.EQL, retval, czero), next, rundBlk)
 		b.SetBlockEx(rundBlk, AtEnd, false) // exec runDefers and rethrow
-		b.Store(rundPtr, prog.Val(0))
+		b.Store(rundPtr, rethrowBlk.Addr())
 		b.Jump(procBlk)
 
 		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
-		b.Call(b.Pkg.rtFunc("Rethrow"), b.Load(link))
+		b.Call(b.Pkg.rtFunc("Rethrow"), link)
 		b.Unreachable() // TODO: func supports noreturn attribute
 
 		if kind == DeferAlways {
@@ -231,13 +232,12 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
-	prog := b.Prog
 	self := b.getDefer(DeferInCond)
-	b.Store(self.rundPtr, prog.Val(len(self.runsNext)))
-	b.Jump(self.procBlk)
-
 	blk := b.Func.MakeBlock()
 	self.runsNext = append(self.runsNext, blk)
+
+	b.Store(self.rundPtr, blk.Addr())
+	b.Jump(self.procBlk)
 
 	b.SetBlockEx(blk, AtEnd, false)
 	b.blk.last = blk.last
@@ -259,9 +259,9 @@ func (p Function) endDefer(b Builder) {
 		stmts[i](bits)
 	}
 
-	link := b.getField(b.Load(self.data), 2)
+	link := b.getField(b.Load(self.data), deferLink)
 	b.pthreadSetspecific(self.key, link)
-	b.IndirectJump(self.rundPtr, nexts)
+	b.IndirectJump(b.Load(self.rundPtr), nexts)
 }
 
 // -----------------------------------------------------------------------------
@@ -287,25 +287,5 @@ func (b Builder) Panic(v Expr) {
 	b.Call(b.Pkg.rtFunc("Panic"), v)
 	b.Unreachable() // TODO: func supports noreturn attribute
 }
-
-/*
-// Panic emits a panic instruction.
-func (b Builder) Panic(v Expr) {
-	vimpl := v.impl
-	if debugInstr {
-		log.Printf("Panic %v\n", vimpl)
-	}
-	if v.kind != vkEface {
-		panic("Panic only accepts an any expression")
-	}
-	ptr := b.dupMalloc(v)
-	b.pthreadSetspecific(b.excepKey(), ptr)
-}
-
-func (b Builder) doPanic(v Expr) {
-	b.Call(b.Pkg.rtFunc("TracePanic"), v)
-	b.impl.CreateUnreachable()
-}
-*/
 
 // -----------------------------------------------------------------------------

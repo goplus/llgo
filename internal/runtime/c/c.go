@@ -48,6 +48,9 @@ func GoDeferData() Pointer
 //go:linkname Unreachable llgo.unreachable
 func Unreachable()
 
+//go:linkname Exit C.exit
+func Exit(Int)
+
 //go:linkname AllocaSigjmpBuf llgo.sigjmpbuf
 func AllocaSigjmpBuf() Pointer
 
