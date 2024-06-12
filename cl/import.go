@@ -312,6 +312,7 @@ const (
 	llgoSigjmpbuf   = llgoInstrBase + 10
 	llgoSigsetjmp   = llgoInstrBase + 11
 	llgoSiglongjmp  = llgoInstrBase + 12
+	llgoDeferData   = llgoInstrBase + 13
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {

@@ -303,7 +303,7 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	var eq Expr
 	var blks []BasicBlock
 	if pub {
-		eq = b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
+		eq = b.BinOp(token.EQL, b.Load(expr), b.Prog.Nil(expr.Type))
 		blks = b.Func.MakeBlocks(2)
 		b.If(eq, blks[0], blks[1])
 		b.SetBlockEx(blks[0], AtEnd, false)
@@ -343,7 +343,7 @@ func (b Builder) abiType(t types.Type) Expr {
 	if g == nil {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
-		g.Init(prog.Null(g.Type))
+		g.Init(prog.Nil(g.Type))
 		if pub {
 			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		}

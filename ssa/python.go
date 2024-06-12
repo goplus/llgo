@@ -217,7 +217,7 @@ func (p Package) PyNewModVar(name string, doInit bool) Global {
 	objPtr := prog.PyObjectPtrPtr().raw.Type
 	g := p.NewVar(name, objPtr, InC)
 	if doInit {
-		g.Init(prog.Null(g.Type))
+		g.Init(prog.Nil(g.Type))
 		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
 	p.pymods[name] = g
@@ -246,7 +246,7 @@ func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) Expr {
 		args = append(args, o.Expr)
 	}
 	prog := b.Prog
-	args = append(args, prog.Null(prog.CStr()))
+	args = append(args, prog.Nil(prog.CStr()))
 	return b.Call(fnLoad, args...)
 }
 
@@ -273,7 +273,7 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 		callargs := make([]Expr, n+2)
 		callargs[0] = fn
 		copy(callargs[1:], args)
-		callargs[n+1] = prog.PyNull()
+		callargs[n+1] = prog.Nil(prog.PyObjectPtr())
 		ret = b.Call(call, callargs...)
 	}
 	return
@@ -372,7 +372,7 @@ func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObj
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
 	if doInit {
 		prog.NeedPyInit = true
-		obj.Init(prog.Null(obj.Type))
+		obj.Init(prog.Nil(obj.Type))
 		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
 	ty := &aType{obj.ll, rawType{types.NewPointer(sig)}, vkPyFuncRef}

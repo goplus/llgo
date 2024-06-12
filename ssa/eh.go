@@ -22,7 +22,6 @@ import "C"
 import (
 	"go/token"
 	"go/types"
-	"log"
 	"unsafe"
 
 	"github.com/goplus/llvm"
@@ -77,6 +76,7 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 
 const (
 	deferKey = "__llgo_defer"
+	excepKey = "__llgo_ex"
 )
 
 func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
@@ -96,29 +96,33 @@ type aDefer struct {
 	stmts    []func(bits Expr)
 }
 
-func (p Package) deferInit() {
-	keyVar := p.VarOf(deferKey)
+func (p Package) keyInit(name string) {
+	keyVar := p.VarOf(name)
 	if keyVar == nil {
 		return
 	}
 	prog := p.Prog
-	keyNil := prog.Null(prog.DeferPtrPtr())
+	keyNil := prog.Nil(prog.CIntPtr())
 	keyVar.Init(keyNil)
 	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 
 	b := p.afterBuilder()
-	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), keyNil)
+	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), prog.IntVal(0, prog.CInt()))
 	b.IfThen(eq, func() {
-		b.pthreadKeyCreate(keyVar.Expr, prog.Null(prog.VoidPtr()))
+		b.pthreadKeyCreate(keyVar.Expr, prog.Nil(prog.VoidPtr()))
 	})
 }
 
-func (p Package) newDeferKey() Global {
-	return p.NewVarEx(deferKey, p.Prog.DeferPtrPtr())
+func (p Package) newKey(name string) Global {
+	return p.NewVarEx(name, p.Prog.CIntPtr())
 }
 
 func (b Builder) deferKey() Expr {
-	return b.Load(b.Pkg.newDeferKey().Expr)
+	return b.Load(b.Pkg.newKey(deferKey).Expr)
+}
+
+func (b Builder) excepKey() Expr {
+	return b.Load(b.Pkg.newKey(excepKey).Expr)
 }
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
@@ -148,7 +152,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
 		blks := self.MakeBlocks(2)
-		procBlk, throwBlk := blks[0], blks[1]
+		procBlk, rethrowBlk := blks[0], blks[1]
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rundPtr := b.FieldAddr(deferData, deferRund)
 		self.defer_ = &aDefer{
@@ -157,7 +161,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			bitsPtr:  bitsPtr,
 			rundPtr:  rundPtr,
 			procBlk:  procBlk,
-			runsNext: []BasicBlock{throwBlk},
+			runsNext: []BasicBlock{rethrowBlk},
 		}
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
@@ -168,18 +172,26 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			next, rundBlk = blks[0], blks[1]
 		}
 		b.If(b.BinOp(token.EQL, retval, czero), next, rundBlk)
-		b.SetBlockEx(rundBlk, AtEnd, false) // exec runDefers and throw
+		b.SetBlockEx(rundBlk, AtEnd, false) // exec runDefers and rethrow
 		b.Store(rundPtr, prog.Val(0))
 		b.Jump(procBlk)
-		b.SetBlockEx(throwBlk, AtEnd, false) // throw
-		linkJBPtr := b.FieldAddr(link, deferSigjmpbuf)
-		b.Siglongjmp(b.Load(linkJBPtr), prog.IntVal(1, prog.CInt()))
+
+		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
+		b.Call(b.Pkg.rtFunc("Rethrow"), b.Load(link))
+		b.Unreachable() // TODO: func supports noreturn attribute
+
 		if kind == DeferAlways {
 			b.SetBlockEx(next, AtEnd, false)
 			b.blk.last = next.last
 		}
 	}
 	return self.defer_
+}
+
+// DeferData returns the defer data (*runtime.Defer).
+func (b Builder) DeferData() Expr {
+	key := b.deferKey()
+	return Expr{b.pthreadGetspecific(key).impl, b.Prog.DeferPtr()}
 }
 
 // Defer emits a defer instruction.
@@ -249,12 +261,15 @@ func (p Function) endDefer(b Builder) {
 
 	link := b.getField(b.Load(self.data), 2)
 	b.pthreadSetspecific(self.key, link)
-
-	// rund := b.Load(self.rundPtr)
 	b.IndirectJump(self.rundPtr, nexts)
 }
 
 // -----------------------------------------------------------------------------
+
+// Unreachable emits an unreachable instruction.
+func (b Builder) Unreachable() {
+	b.impl.CreateUnreachable()
+}
 
 /*
 // Recover emits a recover instruction.
@@ -263,22 +278,34 @@ func (b Builder) Recover() (v Expr) {
 		log.Println("Recover")
 	}
 	prog := b.Prog
-	return prog.Zero(prog.Eface())
+	return prog.Zero(prog.Any())
 }
 */
 
 // Panic emits a panic instruction.
 func (b Builder) Panic(v Expr) {
+	b.Call(b.Pkg.rtFunc("Panic"), v)
+	b.Unreachable() // TODO: func supports noreturn attribute
+}
+
+/*
+// Panic emits a panic instruction.
+func (b Builder) Panic(v Expr) {
+	vimpl := v.impl
 	if debugInstr {
-		log.Printf("Panic %v\n", v.impl)
+		log.Printf("Panic %v\n", vimpl)
 	}
+	if v.kind != vkEface {
+		panic("Panic only accepts an any expression")
+	}
+	ptr := b.dupMalloc(v)
+	b.pthreadSetspecific(b.excepKey(), ptr)
+}
+
+func (b Builder) doPanic(v Expr) {
 	b.Call(b.Pkg.rtFunc("TracePanic"), v)
 	b.impl.CreateUnreachable()
 }
-
-// Unreachable emits an unreachable instruction.
-func (b Builder) Unreachable() {
-	b.impl.CreateUnreachable()
-}
+*/
 
 // -----------------------------------------------------------------------------

@@ -42,14 +42,29 @@ func Alloca(size uintptr) Pointer
 //go:linkname AllocaCStr llgo.allocaCStr
 func AllocaCStr(s string) *Char
 
+//go:linkname GoDeferData llgo.deferData
+func GoDeferData() Pointer
+
 //go:linkname Unreachable llgo.unreachable
 func Unreachable()
+
+//go:linkname AllocaSigjmpBuf llgo.sigjmpbuf
+func AllocaSigjmpBuf() Pointer
+
+//go:linkname Sigsetjmp llgo.sigsetjmp
+func Sigsetjmp(jb Pointer, savemask Int) Int
+
+//go:linkname Siglongjmp llgo.siglongjmp
+func Siglongjmp(jb Pointer, retval Int)
 
 //go:linkname Rand C.rand
 func Rand() Int
 
 //go:linkname Malloc C.malloc
 func Malloc(size uintptr) Pointer
+
+//go:linkname Free C.free
+func Free(ptr Pointer)
 
 //go:linkname Memcpy C.memcpy
 func Memcpy(dst, src Pointer, n uintptr) Pointer

@@ -83,6 +83,7 @@ func pyVarExpr(mod Expr, name string) Expr {
 
 // -----------------------------------------------------------------------------
 
+// Zero returns a zero constant expression.
 func (p Program) Zero(t Type) Expr {
 	var ret llvm.Value
 	switch u := t.raw.Type.Underlying().(type) {
@@ -127,14 +128,9 @@ func (p Program) Zero(t Type) Expr {
 	return Expr{ret, t}
 }
 
-// Null returns a null constant expression.
-func (p Program) Null(t Type) Expr {
+// Nil returns a null constant expression. t should be a pointer type.
+func (p Program) Nil(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
-}
-
-// PyNull returns a null *PyObject constant expression.
-func (p Program) PyNull() Expr {
-	return p.Null(p.PyObjectPtr())
 }
 
 // BoolVal returns a boolean constant expression.
@@ -180,7 +176,7 @@ func (p Program) Val(v interface{}) Expr {
 func (b Builder) Const(v constant.Value, typ Type) Expr {
 	prog := b.Prog
 	if v == nil {
-		return prog.Null(typ)
+		return prog.Nil(typ)
 	}
 	raw := typ.raw.Type
 	switch t := raw.Underlying().(type) {

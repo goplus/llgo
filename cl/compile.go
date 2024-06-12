@@ -201,7 +201,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
 	if vtype == goVar {
-		g.Init(p.prog.Null(g.Type))
+		g.Init(p.prog.Nil(g.Type))
 	}
 }
 
@@ -338,6 +338,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			ftype = llgoSigsetjmp
 		case "siglongjmp":
 			ftype = llgoSiglongjmp
+		case "deferData":
+			ftype = llgoDeferData
 		case "unreachable":
 			ftype = llgoUnreachable
 		default:
@@ -378,8 +380,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
 		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-		argc.Init(prog.Null(argc.Type))
-		argv.Init(prog.Null(argv.Type))
+		argc.Init(prog.Nil(argc.Type))
+		argv.Init(prog.Nil(argv.Type))
 		b.Store(argc.Expr, fn.Param(0))
 		b.Store(argv.Expr, fn.Param(1))
 		callRuntimeInit(b, pkg)
@@ -395,7 +397,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		modName := pysymPrefix + modPath
 		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
-		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
+		cond := b.BinOp(token.NEQ, mod, prog.Nil(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
@@ -431,8 +433,11 @@ func intVal(v ssa.Value) int64 {
 }
 
 func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
-	if va, vok := vx.(*ssa.Alloc); vok {
-		ret, ok = p.vargs[va] // varargs: this is a varargs index
+	switch vx := vx.(type) {
+	case *ssa.Alloc:
+		ret, ok = p.vargs[vx] // varargs: this is a varargs index
+	case *ssa.Const:
+		ok = vx.Value == nil
 	}
 	return
 }
@@ -642,6 +647,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.siglongjmp(b, args)
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
+		case llgoDeferData: // func deferData() *Defer
+			ret = b.DeferData()
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:
