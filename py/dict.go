@@ -43,3 +43,27 @@ func (d *Object) DictValues() *Object { return nil }
 func (d *Object) DictItems() *Object { return nil }
 
 // -----------------------------------------------------------------------------
+
+// Return a `borrowed reference` to the object from dictionary *p* which
+// has a key *key*.  Return nil if the key *key* is missing *without*
+// setting an exception.
+//
+// llgo:link (*Object).dictGetItem C.PyDict_GetItem
+func (d *Object) dictGetItem(key *Object) *Object { return nil }
+
+// Return an object from dictionary *p* which has a key *key*. Return nil if
+// the key *key* is missing *without* setting an exception.
+func (d *Object) DictGetItem(key *Object) *Object {
+	o := d.dictGetItem(key)
+	if o != nil {
+		o.IncRef()
+	}
+	return o
+}
+
+// Insert *val* into the dictionary *p* with a key of *key*.  *key* must be
+// `hashable`; if it isn't, `TypeError` will be raised. Return 0 on success or
+// -1 on failure.  This function *does not* steal a reference to *val*.
+//
+// llgo:link (*Object).DictSetItem C.PyDict_SetItem
+func (d *Object) DictSetItem(key, val *Object) int { return 0 }

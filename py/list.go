@@ -41,16 +41,32 @@ func (l *Object) ListLen() uintptr { return 0 }
 // Return the object at position index in the list pointed to by list. The position
 // must be non-negative; indexing from the end of the list is not supported. If index
 // is out of bounds (<0 or >=len(list)), return nil and set an IndexError exception.
+// It returns a borrowed reference.
 //
-// llgo:borrowed (*Object).ListItem
-// llgo:link (*Object).ListItem C.PyList_GetItem
-func (l *Object) ListItem(index uintptr) *Object { return nil }
+// llgo:link (*Object).listItem C.PyList_GetItem
+func (l *Object) listItem(index uintptr) *Object { return nil }
+
+// Return the object at position index in the list pointed to by list. The position
+// must be non-negative; indexing from the end of the list is not supported. If index
+// is out of bounds (<0 or >=len(list)), return nil and set an IndexError exception.
+func (l *Object) ListItem(index uintptr) *Object {
+	o := l.listItem(index)
+	o.IncRef()
+	return o
+}
 
 // Set the item at index index in list to item. Return 0 on success. If index is out
 // of bounds, return -1 and set an IndexError exception.
-//
-// llgo:link (*Object).ListSetItem C.PyList_SetItem
-func (l *Object) ListSetItem(index uintptr, item *Object) c.Int { return 0 }
+// It "steals" a reference to *item*.
+// llgo:link (*Object).listSetItem C.PyList_SetItem
+func (l *Object) listSetItem(index uintptr, item *Object) c.Int { return 0 }
+
+// Set the item at index index in list to item. Return 0 on success. If index is out
+// of bounds, return -1 and set an IndexError exception.
+func (l *Object) ListSetItem(index uintptr, item *Object) c.Int {
+	item.IncRef()
+	return l.listSetItem(index, item)
+}
 
 // Insert the item item into list list in front of index index. Return 0 if successful;
 // return -1 and set an exception if unsuccessful. Analogous to list.insert(index, item).

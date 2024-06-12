@@ -19,7 +19,7 @@ func (o *RefObj) IncRef() {
 	o.refcnt++
 }
 
-// llgo: scopeexit
+// llgo:scopeexit (*RefObj).DecRef
 func (o *RefObj) DecRef() {
 	o.refcnt--
 }
