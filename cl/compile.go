@@ -192,7 +192,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
-	name, vtype := p.varName(gbl.Pkg.Pkg, gbl)
+	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
 	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}
@@ -200,7 +200,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
-	if vtype == goVar {
+	if define {
 		g.Init(p.prog.Nil(g.Type))
 	}
 }

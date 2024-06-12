@@ -194,9 +194,8 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 				return prog.IntVal(v, typ)
 			}
 		case kind == types.Float32 || kind == types.Float64:
-			if v, exact := constant.Float64Val(v); exact {
-				return prog.FloatVal(v, typ)
-			}
+			v, _ := constant.Float64Val(v)
+			return prog.FloatVal(v, typ)
 		case kind == types.String:
 			return Expr{b.Str(constant.StringVal(v)).impl, typ}
 		}
