@@ -621,7 +621,6 @@ func (p Package) afterBuilder() Builder {
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
 	p.keyInit(deferKey)
-	p.keyInit(excepKey)
 	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
 	if doAfterb || doPyLoadModSyms {

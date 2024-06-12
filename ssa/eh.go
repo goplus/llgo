@@ -76,7 +76,6 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 
 const (
 	deferKey = "__llgo_defer"
-	excepKey = "__llgo_ex"
 )
 
 func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
@@ -119,10 +118,6 @@ func (p Package) newKey(name string) Global {
 
 func (b Builder) deferKey() Expr {
 	return b.Load(b.Pkg.newKey(deferKey).Expr)
-}
-
-func (b Builder) excepKey() Expr {
-	return b.Load(b.Pkg.newKey(excepKey).Expr)
 }
 
 const (

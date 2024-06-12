@@ -1,12 +1,13 @@
 package main
 
-import "github.com/goplus/llgo/c"
+import "github.com/goplus/llgo/internal/runtime/c"
 
 func f(s string) bool {
 	return len(s) > 2
 }
 
 func main() {
+	c.GoDeferData()
 	if s := "hello"; f(s) {
 		defer c.Printf(c.Str("%s\n"), c.AllocaCStr(s))
 	} else {
