@@ -170,9 +170,7 @@ Here are some examples related to them:
 Common Go syntax is already supported. Except for the following, which needs to be improved:
 
 * map (Very limited support)
-* panic (Limited support)
 * recover (Not supported yet)
-* defer (Limited: defer in loops is not supported)
 * chan (Not supported yet)
 * generics (Not supported yet)
 
@@ -183,6 +181,11 @@ Here are some examples related to Go syntax:
 * [errors](_demo/errors/errors.go): demo to implement error interface
 * [defer](_demo/defer/defer.go): defer demo
 * [goroutine](_demo/goroutine/goroutine.go): goroutine demo
+
+
+## Defer
+
+LLGo defer does not support usage in loops. This is not a bug but a feature, because we think that using defer in a loop is a very unrecommended practice.
 
 
 ### Garbage Collection (GC)
