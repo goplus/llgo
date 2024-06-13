@@ -129,10 +129,10 @@ You can also specify the path to tell `llgo` where the Python library is located
 export LLGO_LIB_PYTHON=/foo/bar/python3.12
 ```
 
-For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/libpython3.12.dylib` is a typical python library location under macOS. So we should set it like this:
+For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib` is a typical python library location under macOS. So we should set it like this:
 
 ```sh
-export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/python3.12
+export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/python3.12
 ```
 
 Note that the file name must be written in a platform-independent format, using `python3.12` instead of `libpython3.12.dylib`.
