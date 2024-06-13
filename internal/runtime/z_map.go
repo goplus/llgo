@@ -16,10 +16,21 @@
 
 package runtime
 
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/internal/abi"
+)
+
 // Map represents a Go map.
 type Map = hmap
 
 // MakeSmallMap creates a new small map.
 func MakeSmallMap() *Map {
 	return makemap_small()
+}
+
+// Mapassign finds a key in map m and returns the elem address to assign.
+func Mapassign(t *abi.MapType, m *Map, key unsafe.Pointer) unsafe.Pointer {
+	return mapassign(t, m, key)
 }

@@ -1052,21 +1052,14 @@ func sync_throw(s string) {
 func sync_fatal(s string) {
 	fatal(s)
 }
+*/
 
 // throw triggers a fatal error that dumps a stack trace and exits.
 //
 // throw should be used for runtime-internal fatal errors where Go itself,
 // rather than user code, may be at fault for the failure.
-//
-//go:nosplit
 func throw(s string) {
-	// Everything throw does should be recursively nosplit so it
-	// can be called even when it's unsafe to grow the stack.
-	systemstack(func() {
-		print("fatal error: ", s, "\n")
-	})
-
-	fatalthrow(throwTypeRuntime)
+	fatal(s)
 }
 
 // fatal triggers a fatal error that dumps a stack trace and exits.
@@ -1076,10 +1069,11 @@ func throw(s string) {
 //
 // fatal does not include runtime frames, system goroutines, or frame metadata
 // (fp, sp, pc) in the stack trace unless GOTRACEBACK=system or higher.
-//
-//go:nosplit
 func fatal(s string) {
-	// Everything fatal does should be recursively nosplit so it
+	panic("fatal error: " + s)
+}
+
+/*	// Everything throw does should be recursively nosplit so it
 	// can be called even when it's unsafe to grow the stack.
 	systemstack(func() {
 		print("fatal error: ", s, "\n")
@@ -1088,6 +1082,7 @@ func fatal(s string) {
 	fatalthrow(throwTypeUser)
 }
 
+/*
 // runningPanicDefers is non-zero while running deferred functions for panic.
 // This is used to try hard to get a panic stack trace out when exiting.
 var runningPanicDefers atomic.Uint32
@@ -1139,17 +1134,7 @@ func recovery(gp *g) {
 // fatalthrow implements an unrecoverable runtime throw. It freezes the
 // system, prints stack traces starting from its caller, and terminates the
 // process.
-//
-//go:nosplit
 func fatalthrow(t throwType) {
-	pc := getcallerpc()
-	sp := getcallersp()
-	gp := getg()
-
-	if gp.m.throwing == throwTypeNone {
-		gp.m.throwing = t
-	}
-
 	// Switch to the system stack to avoid any stack growth, which may make
 	// things worse if the runtime is in a bad state.
 	systemstack(func() {
@@ -1172,6 +1157,7 @@ func fatalthrow(t throwType) {
 	*(*int)(nil) = 0 // not reached
 }
 
+/*
 // fatalpanic implements an unrecoverable panic. It is like fatalthrow, except
 // that if msgs != nil, fatalpanic also prints panic messages and decrements
 // runningPanicDefers once main is blocked from exiting.

@@ -66,6 +66,9 @@ func Free(ptr Pointer)
 //go:linkname Memcpy C.memcpy
 func Memcpy(dst, src Pointer, n uintptr) Pointer
 
+//go:linkname Memmove C.memmove
+func Memmove(dst, src Pointer, n uintptr) Pointer
+
 //go:linkname Memset C.memset
 func Memset(s Pointer, c Int, n uintptr) Pointer
 

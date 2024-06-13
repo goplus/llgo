@@ -669,53 +669,6 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 
 // -----------------------------------------------------------------------------
 
-// The Range instruction yields an iterator over the domain and range
-// of X, which must be a string or map.
-//
-// Elements are accessed via Next.
-//
-// Type() returns an opaque and degenerate "rangeIter" type.
-//
-// Pos() returns the ast.RangeStmt.For.
-//
-// Example printed form:
-//
-//	t0 = range "hello":string
-func (b Builder) Range(x Expr) Expr {
-	switch x.kind {
-	case vkString:
-		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
-	}
-	panic("todo")
-}
-
-// The Next instruction reads and advances the (map or string)
-// iterator Iter and returns a 3-tuple value (ok, k, v).  If the
-// iterator is not exhausted, ok is true and k and v are the next
-// elements of the domain and range, respectively.  Otherwise ok is
-// false and k and v are undefined.
-//
-// Components of the tuple are accessed using Extract.
-//
-// The IsString field distinguishes iterators over strings from those
-// over maps, as the Type() alone is insufficient: consider
-// map[int]rune.
-//
-// Type() returns a *types.Tuple for the triple (ok, k, v).
-// The types of k and/or v may be types.Invalid.
-//
-// Example printed form:
-//
-//	t1 = next t0
-func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
-	if isString {
-		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
-	}
-	panic("todo")
-}
-
-// -----------------------------------------------------------------------------
-
 // The MakeClosure instruction yields a closure value whose code is
 // Fn and whose free variables' values are supplied by Bindings.
 //

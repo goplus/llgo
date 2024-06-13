@@ -6,13 +6,13 @@
 
 package runtime
 
+/*
 import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
 type _type = abi.Type
 
-/*
 type maptype = abi.MapType
 
 type arraytype = abi.ArrayType

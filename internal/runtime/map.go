@@ -59,6 +59,12 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 )
 
+type maptype = abi.MapType
+
+const (
+	goarchPtrSize = unsafe.Sizeof(uintptr(0))
+)
+
 const (
 	// Maximum number of key/elem pairs a bucket can hold.
 	bucketCntBits = abi.MapBucketCountBits
@@ -74,8 +80,9 @@ const (
 	// Must fit in a uint8.
 	// Fast versions cannot handle big elems - the cutoff size for
 	// fast versions in cmd/compile/internal/gc/walk.go must be at most this elem.
-	maxKeySize  = abi.MapMaxKeyBytes
-	maxElemSize = abi.MapMaxElemBytes
+	//
+	// maxKeySize  = abi.MapMaxKeyBytes
+	// maxElemSize = abi.MapMaxElemBytes
 
 	// data offset should be the size of the bmap struct, but needs to be
 	// aligned correctly. For amd64p32 this means 64-bit alignment
@@ -179,11 +186,12 @@ type hiter struct {
 	bucket      uintptr
 	checkBucket uintptr
 }
+*/
 
 // bucketShift returns 1<<b, optimized for code generation.
 func bucketShift(b uint8) uintptr {
 	// Masking the shift amount allows overflow checks to be elided.
-	return uintptr(1) << (b & (goarch.PtrSize*8 - 1))
+	return uintptr(1) << (b & uint8(goarchPtrSize*8-1))
 }
 
 // bucketMask returns 1<<b - 1, optimized for code generation.
@@ -193,7 +201,7 @@ func bucketMask(b uint8) uintptr {
 
 // tophash calculates the tophash value for hash.
 func tophash(hash uintptr) uint8 {
-	top := uint8(hash >> (goarch.PtrSize*8 - 8))
+	top := uint8(hash >> (goarchPtrSize*8 - 8))
 	if top < minTopHash {
 		top += minTopHash
 	}
@@ -206,16 +214,18 @@ func evacuated(b *bmap) bool {
 }
 
 func (b *bmap) overflow(t *maptype) *bmap {
-	return *(**bmap)(add(unsafe.Pointer(b), uintptr(t.BucketSize)-goarch.PtrSize))
+	return *(**bmap)(add(unsafe.Pointer(b), uintptr(t.BucketSize)-goarchPtrSize))
 }
 
 func (b *bmap) setoverflow(t *maptype, ovf *bmap) {
-	*(**bmap)(add(unsafe.Pointer(b), uintptr(t.BucketSize)-goarch.PtrSize)) = ovf
+	*(**bmap)(add(unsafe.Pointer(b), uintptr(t.BucketSize)-goarchPtrSize)) = ovf
 }
 
+/*
 func (b *bmap) keys() unsafe.Pointer {
 	return add(unsafe.Pointer(b), dataOffset)
 }
+*/
 
 // incrnoverflow increments h.noverflow.
 // noverflow counts the number of overflow buckets.
@@ -280,6 +290,7 @@ func (h *hmap) createOverflow() {
 	}
 }
 
+/*
 func makemap64(t *maptype, hint int64, h *hmap) *hmap {
 	if int64(int(hint)) != hint {
 		hint = 0
@@ -337,6 +348,7 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 
 	return h
 }
+*/
 
 // makeBucketArray initializes a backing array for map buckets.
 // 1<<b is the minimum number of buckets to allocate.
@@ -389,6 +401,7 @@ func makeBucketArray(t *maptype, b uint8, dirtyalloc unsafe.Pointer) (buckets un
 	return buckets, nextOverflow
 }
 
+/*
 // mapaccess1 returns a pointer to h[key].  Never returns nil, instead
 // it will return a reference to the zero object for the elem type if
 // the key is not in the map.
@@ -575,23 +588,12 @@ func mapaccess2_fat(t *maptype, h *hmap, key, zero unsafe.Pointer) (unsafe.Point
 	}
 	return e, true
 }
+*/
 
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
 func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	if h == nil {
 		panic(plainError("assignment to entry in nil map"))
-	}
-	if raceenabled {
-		callerpc := getcallerpc()
-		pc := abi.FuncPCABIInternal(mapassign)
-		racewritepc(unsafe.Pointer(h), callerpc, pc)
-		raceReadObjectPC(t.Key, key, callerpc, pc)
-	}
-	if msanenabled {
-		msanread(key, t.Key.Size_)
-	}
-	if asanenabled {
-		asanread(key, t.Key.Size_)
 	}
 	if h.flags&hashWriting != 0 {
 		fatal("concurrent map writes")
@@ -694,6 +696,7 @@ done:
 	return elem
 }
 
+/*
 func mapdelete(t *maptype, h *hmap, key unsafe.Pointer) {
 	if raceenabled && h != nil {
 		callerpc := getcallerpc()
@@ -1055,6 +1058,7 @@ func mapclear(t *maptype, h *hmap) {
 	}
 	h.flags &^= hashWriting
 }
+*/
 
 func hashGrow(t *maptype, h *hmap) {
 	// If we've hit the load factor, get bigger.
@@ -1305,6 +1309,7 @@ func advanceEvacuationMark(h *hmap, t *maptype, newbit uintptr) {
 	}
 }
 
+/*
 // Reflect stubs. Called from ../reflect/asm_*.s
 
 //go:linkname reflect_makemap reflect.makemap

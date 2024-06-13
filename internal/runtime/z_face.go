@@ -23,6 +23,8 @@ import (
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
+type _type = abi.Type
+
 type eface struct {
 	_type *_type
 	data  unsafe.Pointer
