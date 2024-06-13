@@ -15,7 +15,7 @@ source_filename = "main"
 @5 = private unnamed_addr constant [2 x i8] c"2\00", align 1
 @6 = private unnamed_addr constant [2 x i8] c"3\00", align 1
 @7 = private unnamed_addr constant [2 x i8] c"4\00", align 1
-@8 = private unnamed_addr constant [6 x i8] c"hello\00", align 1
+@8 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/cl/internal/linktarget.m.info"(%main.m)
 

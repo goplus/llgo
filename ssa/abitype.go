@@ -317,6 +317,15 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.SetBlockEx(blks[1], AtEnd, false)
 		b.blk.last = blks[1].last
 	}
+	prog := p.Prog
+	kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits)
+	if kind == abi.Integer || kind == abi.BitCast {
+		// abi.Type.Kind_ |= abi.KindDirectIface
+		const kindDirectIface = 1 << 5
+		pkind := b.FieldAddr(vexpr, 6)
+		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
+	}
+
 	if t, ok := t.(*types.Named); ok {
 		// skip interface
 		if _, ok := t.Underlying().(*types.Interface); ok {

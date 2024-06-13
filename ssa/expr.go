@@ -209,11 +209,32 @@ func (b Builder) CStr(v string) Expr {
 }
 
 // Str returns a Go string constant expression.
-func (b Builder) Str(v string) (ret Expr) {
+func (b Builder) Str(v string) Expr {
 	prog := b.Prog
-	data := llvm.CreateGlobalStringPtr(b.impl, v)
+	data := b.createGlobalStr(v)
 	size := llvm.ConstInt(prog.tyInt(), uint64(len(v)), false)
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
+}
+
+func (b Builder) createGlobalStr(v string) (ret llvm.Value) {
+	if ret, ok := b.Pkg.strs[v]; ok {
+		return ret
+	}
+	prog := b.Prog
+	if v != "" {
+		typ := llvm.ArrayType(prog.tyInt8(), len(v))
+		global := llvm.AddGlobal(b.Pkg.mod, typ, "")
+		global.SetInitializer(b.Prog.ctx.ConstString(v, false))
+		global.SetLinkage(llvm.PrivateLinkage)
+		global.SetGlobalConstant(true)
+		global.SetUnnamedAddr(true)
+		global.SetAlignment(1)
+		ret = llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
+	} else {
+		ret = llvm.ConstNull(prog.CStr().ll)
+	}
+	b.Pkg.strs[v] = ret
+	return
 }
 
 // unsafeString(data *byte, size int) string
@@ -384,7 +405,8 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 		}
 	case isPredOp(op): // op: == != < <= < >=
-		tret := b.Prog.Bool()
+		prog := b.Prog
+		tret := prog.Bool()
 		kind := x.kind
 		switch kind {
 		case vkSigned:
@@ -420,8 +442,59 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
+		case vkClosure:
+			x = b.Field(x, 0)
+			y = b.Field(y, 0)
+			fallthrough
+		case vkFuncPtr, vkFuncDecl:
+			switch op {
+			case token.EQL:
+				return Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, y.impl), tret}
+			case token.NEQ:
+				return Expr{llvm.CreateICmp(b.impl, llvm.IntNE, x.impl, y.impl), tret}
+			}
+		case vkArray:
+			typ := x.raw.Type.(*types.Array)
+			elem := b.Prog.Elem(x.Type)
+			ret := prog.BoolVal(true)
+			for i, n := 0, int(typ.Len()); i < n; i++ {
+				fx := b.impl.CreateExtractValue(x.impl, i, "")
+				fy := b.impl.CreateExtractValue(y.impl, i, "")
+				r := b.BinOp(token.EQL, Expr{fx, elem}, Expr{fy, elem})
+				ret = Expr{b.impl.CreateAnd(ret.impl, r.impl, ""), tret}
+			}
+			switch op {
+			case token.EQL:
+				return ret
+			case token.NEQ:
+				return Expr{b.impl.CreateNot(ret.impl, ""), tret}
+			}
+		case vkStruct:
+			typ := x.raw.Type.Underlying().(*types.Struct)
+			ret := prog.BoolVal(true)
+			for i, n := 0, typ.NumFields(); i < n; i++ {
+				ft := prog.Type(typ.Field(i).Type(), InGo)
+				fx := b.impl.CreateExtractValue(x.impl, i, "")
+				fy := b.impl.CreateExtractValue(y.impl, i, "")
+				r := b.BinOp(token.EQL, Expr{fx, ft}, Expr{fy, ft})
+				ret = Expr{b.impl.CreateAnd(ret.impl, r.impl, ""), tret}
+			}
+			switch op {
+			case token.EQL:
+				return ret
+			case token.NEQ:
+				return Expr{b.impl.CreateNot(ret.impl, ""), tret}
+			}
+		case vkSlice:
+			dx := b.impl.CreateExtractValue(x.impl, 0, "")
+			dy := b.impl.CreateExtractValue(y.impl, 0, "")
+			switch op {
+			case token.EQL:
+				return Expr{b.impl.CreateICmp(llvm.IntEQ, dx, dy, ""), tret}
+			case token.NEQ:
+				return Expr{b.impl.CreateICmp(llvm.IntNE, dx, dy, ""), tret}
+			}
 		case vkIface, vkEface:
-			prog := b.Prog
 			toEface := func(x Expr, emtpy bool) Expr {
 				if emtpy {
 					return x
