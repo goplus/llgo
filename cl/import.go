@@ -68,7 +68,7 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 	for file, b := range p.files {
 		lines := bytes.Split(b, []byte{'\n'})
 		for _, line := range lines {
-			ctx.initDirective(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
+			ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
 				if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
 					return sym.fullName, sym.isVar, true
 				}
@@ -184,42 +184,73 @@ func (p *context) initDirectivesByDoc(doc *ast.CommentGroup, fullName, inPkgName
 		isDirective := true
 		for n := len(doc.List) - 1; n >= 0 && isDirective; n-- {
 			line := doc.List[n].Text
-			isDirective = p.initDirective(line, func(name string) (_ string, _, ok bool) {
-				return fullName, isVar, name == inPkgName
-			})
+			dtype, offset := getDirectiveType(line)
+			if dtype == 0 {
+				isDirective = false
+			} else if dtype&dLinkname != 0 {
+				p.initLink(line, offset, func(name string) (_ string, _, ok bool) {
+					return fullName, isVar, name == inPkgName
+				})
+			} else if dtype&dAutoPtr != 0 {
+				p.initScopeExit(line, offset, func(name string) (_ string, _, ok bool) {
+					return fullName, isVar, name == inPkgName
+				})
+			}
 		}
 	}
 }
 
-func (p *context) initDirective(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
-	const (
-		linkname       = "//go:linkname "
-		llgolink       = "//llgo:link "
-		llgolink2      = "// llgo:link "
-		llgoScopeExit  = "//llgo:scopeexit"
-		llgoScopeExit2 = "// llgo:scopeexit"
-	)
-	if strings.HasPrefix(line, linkname) {
-		p.initLink(line, len(linkname), f)
-	} else if strings.HasPrefix(line, llgolink2) {
-		p.initLink(line, len(llgolink2), f)
-	} else if strings.HasPrefix(line, llgolink) {
-		p.initLink(line, len(llgolink), f)
-	} else if strings.HasPrefix(line, llgoScopeExit) {
-		p.initScopeExit(line, len(llgoScopeExit), f)
-	} else if strings.HasPrefix(line, llgoScopeExit2) {
-		p.initScopeExit(line, len(llgoScopeExit2), f)
-	} else {
-		return false
+const (
+	dLinkname = 1 << iota
+	dAutoPtr
+	dAll = ^0
+)
+const (
+	linkname       = "//go:linkname "
+	llgolink       = "//llgo:link "
+	llgolink2      = "// llgo:link "
+	llgoScopeExit  = "//llgo:scopeexit"
+	llgoScopeExit2 = "// llgo:scopeexit"
+)
+
+func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
+	dtype, offset := getDirectiveType(string(line))
+	if dtype == dLinkname {
+		p.initLink(line, offset, f)
+		return true
 	}
-	return true
+	return false
+}
+
+func getDirectiveType(line string) (dtype, offset int) {
+	if strings.HasPrefix(line, linkname) {
+		return dLinkname, len(linkname)
+	} else if strings.HasPrefix(line, llgolink) {
+		return dLinkname, len(llgolink)
+	} else if strings.HasPrefix(line, llgolink2) {
+		return dLinkname, len(llgolink2)
+	} else if strings.HasPrefix(line, llgoScopeExit) {
+		return dAutoPtr, len(llgoScopeExit)
+	} else if strings.HasPrefix(line, llgoScopeExit2) {
+		return dAutoPtr, len(llgoScopeExit2)
+	} else {
+		return 0, 0
+	}
+}
+
+func (p *context) initAutoPtr(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
+	dtype, offset := getDirectiveType(string(line))
+	if dtype&dAutoPtr != 0 {
+		p.initScopeExit(line, offset, f)
+		return true
+	}
+	return false
 }
 
 func (p *context) initScopeExit(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	inPkgName := strings.TrimSpace(line[prefix:])
 	if fullName, _, ok := f(inPkgName); ok {
 		p.scopeExit[fullName] = true
-		fmt.Printf("register scopeexit: %s\n", fullName)
 	} else {
 		fmt.Fprintln(os.Stderr, "==>", line)
 		fmt.Fprintf(os.Stderr, "llgo: scopeexit %s not found and ignored\n", inPkgName)

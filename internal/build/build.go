@@ -204,7 +204,6 @@ func scanAllPkgs(prog llssa.Program, initial []*packages.Package, verbose bool) 
 		// 	}
 		// }
 	}
-	fmt.Printf("=============== end scanAllPkgs ===============\n")
 	for _, aPkg := range pkgs {
 		aPkg.clpkg.Rewrite()
 	}
