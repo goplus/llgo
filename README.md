@@ -170,7 +170,6 @@ Here are some examples related to them:
 Common Go syntax is already supported. Except for the following, which needs to be improved:
 
 * map (Very limited support)
-* recover (Not supported yet)
 * chan (Not supported yet)
 * generics (Not supported yet)
 
@@ -185,7 +184,7 @@ Here are some examples related to Go syntax:
 
 ## Defer
 
-LLGo defer does not support usage in loops. This is not a bug but a feature, because we think that using defer in a loop is a very unrecommended practice.
+LLGo `defer` does not support usage in loops. This is not a bug but a feature, because we think that using `defer` in a loop is a very unrecommended practice.
 
 
 ### Garbage Collection (GC)
