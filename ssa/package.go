@@ -294,12 +294,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	stubs := make(map[string]Function)
 	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
+	strs := make(map[string]llvm.Value)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, Prog: p}
+		pyobjs: pyobjs, pymods: pymods, strs: strs, Prog: p}
 	ret.abi.Init(pkgPath)
 	return ret
 }
@@ -544,6 +545,7 @@ type aPackage struct {
 	stubs  map[string]Function
 	pyobjs map[string]PyObjRef
 	pymods map[string]Global
+	strs   map[string]llvm.Value
 	afterb unsafe.Pointer
 
 	iRoutine int

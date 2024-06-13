@@ -7,7 +7,7 @@ source_filename = "main"
 @"main.init$guard" = global ptr null
 @__llgo_argc = global ptr null
 @__llgo_argv = global ptr null
-@0 = private unnamed_addr constant [14 x i8] c"panic message\00", align 1
+@0 = private unnamed_addr constant [13 x i8] c"panic message", align 1
 @_llgo_string = linkonce global ptr null
 
 define void @main.init() {

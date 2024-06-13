@@ -12,9 +12,8 @@ source_filename = "main"
 @2 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @3 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @4 = private unnamed_addr constant [4 x i8] c"%c\0A\00", align 1
-@5 = private unnamed_addr constant [7 x i8] c"123456\00", align 1
+@5 = private unnamed_addr constant [6 x i8] c"123456", align 1
 @6 = private unnamed_addr constant [4 x i8] c"%c\0A\00", align 1
-@7 = private unnamed_addr constant [7 x i8] c"123456\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -130,7 +129,7 @@ _llgo_0:
   %70 = call i32 (ptr, ...) @printf(ptr @4, i8 %69)
   %71 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %72 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %71, i32 0, i32 0
-  store ptr @7, ptr %72, align 8
+  store ptr @5, ptr %72, align 8
   %73 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %71, i32 0, i32 1
   store i64 6, ptr %73, align 4
   %74 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %71, align 8
