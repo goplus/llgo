@@ -34,10 +34,21 @@ type Defer struct {
 	Rund unsafe.Pointer // block address after RunDefers
 }
 
+// Recover recovers a panic.
+func Recover() (ret any) {
+	ptr := excepKey.Get()
+	if ptr != nil {
+		excepKey.Set(nil)
+		ret = *(*any)(ptr)
+		c.Free(ptr)
+	}
+	return
+}
+
 // Panic panics with a value.
-func Panic(v Eface) {
+func Panic(v any) {
 	ptr := c.Malloc(unsafe.Sizeof(v))
-	*(*Eface)(ptr) = v
+	*(*any)(ptr) = v
 	excepKey.Set(ptr)
 
 	Rethrow((*Defer)(c.GoDeferData()))
@@ -45,13 +56,14 @@ func Panic(v Eface) {
 
 // Rethrow rethrows a panic.
 func Rethrow(link *Defer) {
-	if link == nil {
-		ptr := excepKey.Get()
-		TracePanic(*(*Eface)(ptr))
-		c.Free(ptr)
-		c.Exit(2)
-	} else {
-		c.Siglongjmp(link.Addr, 1)
+	if ptr := excepKey.Get(); ptr != nil {
+		if link == nil {
+			TracePanic(*(*Eface)(ptr))
+			c.Free(ptr)
+			c.Exit(2)
+		} else {
+			c.Siglongjmp(link.Addr, 1)
+		}
 	}
 }
 
