@@ -30,10 +30,11 @@ type Object struct {
 	Unused [8]byte
 }
 
-// llgo:scopeexit (*Object).DecRef
+// llgo:autorelease (*Object).DecRef
 // llgo:link (*Object).DecRef C.Py_DecRef
 func (o *Object) DecRef() {}
 
+// llgo:autoretain (*Object).IncRef
 // llgo:link (*Object).IncRef C.Py_IncRef
 func (o *Object) IncRef() {}
 

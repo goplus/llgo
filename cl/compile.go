@@ -26,6 +26,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"unsafe"
 
 	"github.com/goplus/llgo/cl/blocks"
 	llssa "github.com/goplus/llgo/ssa"
@@ -137,20 +138,18 @@ type pkgInfo struct {
 }
 
 type context struct {
-	prog      llssa.Program
-	pkg       llssa.Package
-	fn        llssa.Function
-	fset      *token.FileSet
-	goProg    *ssa.Program
-	goTyps    *types.Package
-	goPkg     *ssa.Package
-	pyMod     string
-	link      map[string]string            // pkgPath.nameInPkg => linkname
-	scopeExit map[string]bool              // scopeexit functions
-	exitFuncs map[types.Type]*ssa.Function // scopeexit functions
-	loaded    map[*types.Package]*pkgInfo  // loaded packages
-	bvals     map[ssa.Value]llssa.Expr     // block values
-	vargs     map[*ssa.Alloc][]llssa.Expr  // varargs
+	prog   llssa.Program
+	pkg    llssa.Package
+	fn     llssa.Function
+	fset   *token.FileSet
+	goProg *ssa.Program
+	goTyps *types.Package
+	goPkg  *ssa.Package
+	pyMod  string
+	link   map[string]string           // pkgPath.nameInPkg => linkname
+	loaded map[*types.Package]*pkgInfo // loaded packages
+	bvals  map[ssa.Value]llssa.Expr    // block values
+	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
 	blkInfos []blocks.Info
 
@@ -222,8 +221,7 @@ var (
 )
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
-	pkgTypes, orgName, name, ftype := p.funcName(f, true)
-	fmt.Printf("compileFuncDecl: %s, %s\n", name, orgName)
+	pkgTypes, _, name, ftype := p.funcName(f, true)
 	if ftype != goFunc {
 		/*
 			if ftype == pyFunc {
@@ -262,7 +260,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
-		p.compileScopeExit(orgName, f)
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -308,7 +305,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
 func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObjRef, ftype int) {
-	pkgTypes, orgName, name, ftype := p.funcName(fn, false)
+	pkgTypes, _, name, ftype := p.funcName(fn, false)
 	switch ftype {
 	case pyFunc:
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
@@ -357,27 +354,9 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			}
 			sig := fn.Signature
 			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
-			p.compileScopeExit(orgName, fn)
 		}
 	}
 	return
-}
-
-func (p *context) compileScopeExit(name string, fn *ssa.Function) {
-	fmt.Printf("try compileScopeExit: %s\n", name)
-	if _, ok := p.scopeExit[name]; !ok {
-		return
-	}
-	recv := fn.Signature.Recv()
-	if recv == nil {
-		panic(fmt.Errorf("scopeexit function %s must have a receiver", name))
-	}
-	t := recv.Type()
-	if _, ok := p.exitFuncs[t]; ok {
-		panic(fmt.Errorf("type %s has multiple scopeexit functions", name))
-	}
-	fmt.Printf("compileScopeExit: %s\n", name)
-	p.exitFuncs[t] = fn
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
@@ -991,7 +970,8 @@ func (p *aPackage) Pkg() llssa.Package {
 }
 
 // NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret *aPackage) {
+func NewPackage(aProg *aProgram, pkg *ssa.Package, files []*ast.File) (ret *aPackage) {
+	prog := aProg.prog
 	members := make([]*namedMember, 0, len(pkg.Members))
 	for name, v := range pkg.Members {
 		members = append(members, &namedMember{name, v})
@@ -1009,29 +989,183 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret *a
 	llpkg := prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
-		prog:      prog,
-		pkg:       llpkg,
-		fset:      pkgProg.Fset,
-		goProg:    pkgProg,
-		goTyps:    pkgTypes,
-		goPkg:     pkg,
-		link:      make(map[string]string),
-		scopeExit: make(map[string]bool),
-		exitFuncs: make(map[types.Type]*ssa.Function),
-		vargs:     make(map[*ssa.Alloc][]llssa.Expr),
+		prog:   prog,
+		pkg:    llpkg,
+		fset:   pkgProg.Fset,
+		goProg: pkgProg,
+		goTyps: pkgTypes,
+		goPkg:  pkg,
+		link:   make(map[string]string),
+		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files)
+	ctx.initFiles(aProg, pkgPath, files)
 	ret = &aPackage{ctx, members}
 	return
 }
 
-func (p *aPackage) Rewrite() {
+func (p *aPackage) Rewrite(prog *aProgram) {
+	// associate auto-retain/release functions with types
+	for _, m := range p.members {
+		member := m.val
+		switch t := member.(type) {
+		case *ssa.Type:
+			p.regAutoPtrType(prog, t.Package().Prog, t)
+		}
+	}
 
+	for _, m := range p.members {
+		member := m.val
+		switch fn := member.(type) {
+		case *ssa.Function:
+			if fn.TypeParams() != nil || fn.TypeArgs() != nil {
+				// Do not try to rewrite generic (non-instantiated) functions.
+				continue
+			}
+			p.rewriteFunction(prog, fn)
+		}
+	}
 }
+
+func (p *aPackage) regAutoPtrType(aProg *aProgram, prog *ssa.Program, t *ssa.Type) {
+	tn := t.Object().(*types.TypeName)
+	tnName := tn.Name()
+	typ := tn.Type()
+	name := llssa.FullName(tn.Pkg(), tnName)
+	if ignoreName(name) {
+		return
+	}
+	p.regAutoPtrMethods(aProg, prog, typ)
+	p.regAutoPtrMethods(aProg, prog, types.NewPointer(typ))
+}
+
+func (p *aPackage) regAutoPtrMethods(aProg *aProgram, prog *ssa.Program, typ types.Type) {
+	mthds := prog.MethodSets.MethodSet(typ)
+	for i, n := 0, mthds.Len(); i < n; i++ {
+		mthd := mthds.At(i)
+		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
+			_, orgName, _, _ := p.ctx.funcName(ssaMthd, false)
+			aProg.regAutoPtrMethod(orgName, ssaMthd)
+		}
+	}
+}
+
+// ------------- Hack the SSA package to add AutoRetain/AutoRelease -------------
+type register struct {
+	anInstruction
+	num       int        // "name" of virtual register, e.g. "t0".  Not guaranteed unique.
+	typ       types.Type // type of virtual register
+	pos       token.Pos  // position of source expression, or NoPos
+	referrers []ssa.Instruction
+}
+
+// anInstruction is a mix-in embedded by all Instructions.
+// It provides the implementations of the Block and setBlock methods.
+type anInstruction struct {
+	block *ssa.BasicBlock // the basic block of this instruction
+}
+
+type CallCommon struct {
+	Value  ssa.Value   // receiver (invoke mode) or func value (call mode)
+	Method *types.Func // interface method (invoke mode)
+	Args   []ssa.Value // actual parameters (in static method call, includes receiver)
+	pos    token.Pos   // position of CallExpr.Lparen, iff explicit in source
+}
+
+type Call struct {
+	register
+	Call CallCommon
+}
+
+type Defer struct {
+	anInstruction
+	Call CallCommon
+	pos  token.Pos
+}
+
+type RunDefers struct {
+	anInstruction
+}
+
+func (p *aPackage) rewriteFunction(aProg *aProgram, fn *ssa.Function) {
+	// rewrite:
+	// if prog.exitFuncs[type of x]
+	// then rewrite x := call() to:
+	// 		x := call()
+	//    defer x.AutoRelease()
+	// and if x := phi() and x returns to caller, rewrite x := phi() to:
+	//    x := phi()
+	//    x.AutoRetain()
+	returned := make(map[ssa.Value]bool)
+	runDefers := false
+	hasDefers := false
+	for _, b := range fn.Blocks {
+		for _, instr := range b.Instrs {
+			switch v := instr.(type) {
+			case *ssa.Defer:
+				hasDefers = true
+			case *ssa.Return:
+				for _, r := range v.Results {
+					returned[r] = true
+				}
+			case *ssa.RunDefers:
+				runDefers = true
+			}
+		}
+	}
+
+	for _, b := range fn.Blocks {
+		for i := 0; i < len(b.Instrs); i++ {
+			instr := b.Instrs[i]
+			switch v := instr.(type) {
+			case *ssa.Call:
+				if relFn, ok := aProg.releaseFuncs[v.Type().String()]; ok {
+					if returned[v.Value()] {
+						continue
+					}
+					hasDefers = true
+					if debugGoSSA {
+						fmt.Printf("INSERT AutoRelease for %s.%s in func: %s\n", v.Type().String(), relFn.Name(), fn.Name())
+					}
+					deferInstr := (*Defer)(unsafe.Pointer(&ssa.Defer{
+						Call: ssa.CallCommon{
+							Value: relFn,
+							Args:  []ssa.Value{v.Value()},
+						},
+					}))
+					deferInstr.block = b
+					b.Instrs = append(b.Instrs, nil)
+					copy(b.Instrs[i+2:], b.Instrs[i+1:])
+					b.Instrs[i+1] = (*ssa.Defer)(unsafe.Pointer(deferInstr))
+					i++ // skip the newly inserted defer instruction
+				}
+			}
+		}
+	}
+
+	if !runDefers && hasDefers {
+		for _, b := range fn.Blocks {
+			for i := 0; i < len(b.Instrs); i++ {
+				instr := b.Instrs[i]
+				switch instr.(type) {
+				case *ssa.Return:
+					// insert runDefers before return
+					runDefersInstr := (*RunDefers)(unsafe.Pointer(&ssa.RunDefers{}))
+					runDefersInstr.block = b
+					b.Instrs = append(b.Instrs, nil)
+					copy(b.Instrs[i+1:], b.Instrs[i:])
+					b.Instrs[i] = (*ssa.RunDefers)(unsafe.Pointer(runDefersInstr))
+					i++ // skip the newly inserted runDefers instruction
+				}
+			}
+		}
+	}
+}
+
+// -----------------------------------------------------------------------------
 
 func (p *aPackage) Build() {
 	ctx := p.ctx

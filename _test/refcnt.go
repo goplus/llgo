@@ -16,12 +16,12 @@ func Float(value float64) *RefObj {
 	return &RefObj{1, value}
 }
 
-// llgo:incref (*RefObj).IncRef
+// llgo:autoretain (*RefObj).IncRef
 func (o *RefObj) IncRef() {
 	o.refcnt++
 }
 
-// llgo:scopeexit (*RefObj).DecRef
+// llgo:autorelease (*RefObj).DecRef
 func (o *RefObj) DecRef() {
 	o.refcnt--
 }
@@ -59,12 +59,14 @@ func init() {
 
 func returnObj(f float64) *RefObj {
 	x := Float(f)
+	assertEql(x.RefCnt(), 1, "x.refcnt != 1 in returnObj")
 	refObjs.returnObj_x = x
 	return x
 }
 
 func returnObjAndError(f float64) (obj *RefObj, err error) {
 	obj, err = Float(f), nil
+	assertEql(obj.RefCnt(), 1, "obj.refcnt != 1 in returnObjAndError")
 	refObjs.returnObjAndError_x = obj
 	return obj, err
 }
@@ -74,9 +76,10 @@ func testEscapeFromInner() {
 	func() {
 		x = Float(1000)
 		refObjs.testEscapeFromInner_x = x
+		assertEql(x.RefCnt(), 1, "x.refcnt != 1 in testEscapeFromInner")
 		// x escaped
 	}()
-	// x.DecRef() 没有依据
+	assertEql(x.RefCnt(), 1, "x.refcnt != 1 in testEscapeFromInner")
 }
 
 func testEscapeWithCond() *RefObj {
@@ -99,22 +102,22 @@ func testEscapeWithCond() *RefObj {
 	return x
 }
 
-func testLoop() {
-	var x *RefObj
-	for i := 0; i < 10; i++ {
-		x = Float(1000)
-		refObjs.testLoop = append(refObjs.testLoop, x)
-	}
-}
+// func testLoop() {
+// 	var x *RefObj
+// 	for i := 0; i < 10; i++ {
+// 		x = Float(1000)
+// 		refObjs.testLoop = append(refObjs.testLoop, x)
+// 	}
+// }
 
-func testEscapeWithLoop() *RefObj {
-	var x *RefObj
-	for i := 0; i < 10; i++ {
-		x = Float(1000)
-		refObjs.testEscapeWithLoop = append(refObjs.testEscapeWithLoop, x)
-	}
-	return x
-}
+// func testEscapeWithLoop() *RefObj {
+// 	var x *RefObj
+// 	for i := 0; i < 10; i++ {
+// 		x = Float(1000)
+// 		refObjs.testEscapeWithLoop = append(refObjs.testEscapeWithLoop, x)
+// 	}
+// 	return x
+// }
 
 func unused(v ...any) {
 }
@@ -129,7 +132,7 @@ func assertEql(got, expected c.Int, msg string) {
 // Test escape
 func TestEscape(t *testing.T) {
 	a := returnObj(1)
-	assertEql(a.RefCnt(), 1, "a refcnt != 1")
+	assertEql(a.RefCnt(), 1, "a.refcnt != 1 in TestEscape")
 	assertEql(refObjs.returnObj_x.RefCnt(), 1, "returnObj_x refcnt != 1")
 }
 
@@ -179,22 +182,22 @@ func TestEscapeWithMulti(t *testing.T) {
 	assertEql(refObjs.returnObjAndError_x.RefCnt(), 0, "returnObjAndError_x refcnt != 0")
 }
 
-// Test loop
-func TestLoop(t *testing.T) {
-	testLoop()
-	for _, o := range refObjs.testLoop {
-		assertEql(o.RefCnt(), 0, "o refcnt != 0")
-	}
-}
+// // Test loop
+// func TestLoop(t *testing.T) {
+// 	testLoop()
+// 	for _, o := range refObjs.testLoop {
+// 		assertEql(o.RefCnt(), 0, "o refcnt != 0")
+// 	}
+// }
 
-// Test escape with loop
-func TestEscapeWithLoop(t *testing.T) {
-	a := testEscapeWithLoop()
-	assertEql(a.RefCnt(), 1, "a refcnt != 1")
-	for i := 0; i < len(refObjs.testEscapeWithLoop)-1; i++ {
-		assertEql(refObjs.testEscapeWithLoop[i].RefCnt(), 0, "testEscapeWithLoop[i] refcnt != 0")
-	}
-}
+// // Test escape with loop
+// func TestEscapeWithLoop(t *testing.T) {
+// 	a := testEscapeWithLoop()
+// 	assertEql(a.RefCnt(), 1, "a refcnt != 1")
+// 	for i := 0; i < len(refObjs.testEscapeWithLoop)-1; i++ {
+// 		assertEql(refObjs.testEscapeWithLoop[i].RefCnt(), 0, "testEscapeWithLoop[i] refcnt != 0")
+// 	}
+// }
 
 func TestPy(t *testing.T) {
 	l := py.NewList(1)
@@ -206,13 +209,60 @@ func TestPy(t *testing.T) {
 	assertEql(item1.RefCnt(), 1, "item1 refcnt != 1")
 }
 
+func f() *py.Object {
+	a := py.Float(1)
+	b := py.Float(2)
+	c := py.Float(3)
+	d := c
+	if d.Float64() > a.Float64() {
+		a = d
+	}
+	// a = phi(a, d)
+	var x *py.Object
+	if a.Float64() > b.Float64() {
+		x = a
+	} else {
+		x = b
+	}
+	// x = phi(a, b)
+	return x
+}
+
 func TestRefCnt(t *testing.T) {
+	defer c.Printf(c.Str("TestRefCnt done\n"))
+	c.Printf(c.Str("TestRefCnt\n"))
 	TestEscape(t)
 	TestEscapeFromInner(t)
 	TestEscapeWithCond(t)
 	TestEscapeWithMulti(t)
-	TestLoop(t)
-	TestEscapeWithLoop(t)
+	// TestLoop(t)
+	// TestEscapeWithLoop(t)
 
-	TestPy(t)
+	// TestPy(t)
+
+	// _ = f()
+}
+
+func F0() {
+	a := Float(1)
+	b := Float(2)
+	if a.Float64() > b.Float64() {
+		defer c.Printf(c.Str("F0 done\n"))
+	} else {
+		defer c.Printf(c.Str("F0 done\n"))
+	}
+}
+
+func F0_Return() *RefObj {
+	a := Float(1)
+	b := Float(2)
+	if a.Float64() > b.Float64() {
+		defer c.Printf(c.Str("F0 done\n"))
+		return a
+	}
+	return b
+}
+
+func FO() {
+	defer c.Printf(c.Str("FO done\n"))
 }

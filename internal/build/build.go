@@ -137,7 +137,8 @@ func Do(args []string, conf *Config) {
 		return rt[1].Types
 	})
 
-	pkgs := scanAllPkgs(prog, initial, verbose)
+	aProg := cl.NewProgram(prog)
+	pkgs := scanAllPkgs(aProg, initial, verbose)
 	buildAllPkgs(prog, pkgs, nil, mode, verbose)
 
 	var runtimeFiles []string
@@ -146,7 +147,7 @@ func Do(args []string, conf *Config) {
 		for _, v := range pkgs {
 			skip[v.PkgPath] = true
 		}
-		dpkg := scanAllPkgs(prog, rt[:1], verbose)
+		dpkg := scanAllPkgs(aProg, rt[:1], verbose)
 		buildAllPkgs(prog, dpkg, skip, mode, verbose)
 		for _, pkg := range dpkg {
 			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
@@ -186,7 +187,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 	return
 }
 
-func scanAllPkgs(prog llssa.Program, initial []*packages.Package, verbose bool) (pkgs []*aPackage) {
+func scanAllPkgs(aProg cl.Program, initial []*packages.Package, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
 	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
@@ -197,7 +198,7 @@ func scanAllPkgs(prog llssa.Program, initial []*packages.Package, verbose bool) 
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	for _, aPkg := range pkgs {
-		scanPkg(prog, aPkg, verbose)
+		scanPkg(aProg, aPkg, verbose)
 		// for _, member := range aPkg.SSA.Members {
 		// 	if fn, ok := member.(*ssa.Function); ok {
 		// 		fmt.Printf("	%s\n", fn.Name())
@@ -205,7 +206,9 @@ func scanAllPkgs(prog llssa.Program, initial []*packages.Package, verbose bool) 
 		// }
 	}
 	for _, aPkg := range pkgs {
-		aPkg.clpkg.Rewrite()
+		if aPkg.clpkg != nil {
+			aPkg.clpkg.Rewrite(aProg)
+		}
 	}
 	return pkgs
 }
@@ -357,17 +360,17 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	return
 }
 
-func scanPkg(prog llssa.Program, aPkg *aPackage, verbose bool) {
+func scanPkg(aProg cl.Program, aPkg *aPackage, verbose bool) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
 	if verbose {
-		fmt.Fprintln(os.Stderr, pkgPath)
+		fmt.Fprintf(os.Stderr, "scanPkg: %v\n", pkgPath)
 	}
 	if canSkipToBuild(pkgPath) {
 		pkg.ExportFile = ""
 		return
 	}
-	ret := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
+	ret := cl.NewPackage(aProg, aPkg.SSA, pkg.Syntax)
 	aPkg.clpkg = ret
 }
 

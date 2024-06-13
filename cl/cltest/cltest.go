@@ -142,8 +142,9 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	}
 	foo.WriteTo(os.Stderr)
 	prog := ssatest.NewProgramEx(t, nil, imp)
+	aProg := cl.NewProgram(prog)
 
-	ret := cl.NewPackage(prog, foo, files)
+	ret := cl.NewPackage(aProg, foo, files)
 	ret.Build()
 	if prog.NeedPyInit { // call PyInit if needed
 		ret.Pkg().PyInit()

@@ -32,6 +32,83 @@ import (
 
 // -----------------------------------------------------------------------------
 
+type Program = *aProgram
+
+type aProgram struct {
+	prog llssa.Program
+
+	autoreleases map[string]bool // autorelease functions
+	autoretains  map[string]bool // autoretain functions
+	// TODO(lijie): map[types.Type]*ssa.Function
+	releaseFuncs map[string]*ssa.Function // autorelease functions
+	retainFuncs  map[string]*ssa.Function // autoretain functions
+}
+
+func NewProgram(prog llssa.Program) *aProgram {
+	return &aProgram{
+		prog:         prog,
+		autoreleases: make(map[string]bool),
+		autoretains:  make(map[string]bool),
+		releaseFuncs: make(map[string]*ssa.Function),
+		retainFuncs:  make(map[string]*ssa.Function),
+	}
+}
+
+func (p *aProgram) initAutoRelease(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+	inPkgName := strings.TrimSpace(line[prefix:])
+	if fullName, _, ok := f(inPkgName); ok {
+		p.autoreleases[fullName] = true
+	} else {
+		fmt.Fprintln(os.Stderr, "==>", line)
+		fmt.Fprintf(os.Stderr, "llgo: autorelease %s not found and ignored\n", inPkgName)
+	}
+}
+
+func (p *aProgram) initAutoRetain(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+	inPkgName := strings.TrimSpace(line[prefix:])
+	if fullName, _, ok := f(inPkgName); ok {
+		p.autoretains[fullName] = true
+	} else {
+		fmt.Fprintln(os.Stderr, "==>", line)
+		fmt.Fprintf(os.Stderr, "llgo: autoretain %s not found and ignored\n", inPkgName)
+	}
+}
+
+func (p *aProgram) regAutoPtrMethod(orgName string, ssaMthd *ssa.Function) {
+	if _, ok := p.autoreleases[orgName]; ok {
+		p.regAutoRelease(orgName, ssaMthd)
+	}
+	if _, ok := p.autoretains[orgName]; ok {
+		p.regAutoRetain(orgName, ssaMthd)
+	}
+}
+
+func (p *aProgram) regAutoRelease(name string, fn *ssa.Function) {
+	recv := fn.Signature.Recv()
+	if recv == nil {
+		panic(fmt.Errorf("autorelease function %s must have a receiver", name))
+	}
+	t := recv.Type()
+	typStr := t.String()
+	if _, ok := p.releaseFuncs[typStr]; ok {
+		panic(fmt.Errorf("type %s has multiple autorelease functions", name))
+	}
+	p.releaseFuncs[typStr] = fn
+}
+
+func (p *aProgram) regAutoRetain(name string, fn *ssa.Function) {
+	recv := fn.Signature.Recv()
+	if recv == nil {
+		panic(fmt.Errorf("autoretain function %s must have a receiver", name))
+	}
+	t := recv.Type()
+	typStr := t.String()
+	if _, ok := p.retainFuncs[typStr]; ok {
+		panic(fmt.Errorf("type %s has multiple autoretain functions", name))
+	}
+	p.retainFuncs[typStr] = fn
+}
+
 type symInfo struct {
 	file     string
 	fullName string
@@ -160,18 +237,18 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	syms.initLinknames(p)
 }
 
-func (p *context) initFiles(pkgPath string, files []*ast.File) {
+func (p *context) initFiles(prog *aProgram, pkgPath string, files []*ast.File) {
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				p.initDirectivesByDoc(decl.Doc, fullName, inPkgName, false)
+				p.initDirectivesByDoc(prog, decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
 				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
 					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
 						inPkgName := names[0].Name
-						p.initDirectivesByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						p.initDirectivesByDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 					}
 				}
 			}
@@ -179,7 +256,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
-func (p *context) initDirectivesByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
+func (p *context) initDirectivesByDoc(prog *aProgram, doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
 	if doc != nil {
 		isDirective := true
 		for n := len(doc.List) - 1; n >= 0 && isDirective; n-- {
@@ -191,8 +268,12 @@ func (p *context) initDirectivesByDoc(doc *ast.CommentGroup, fullName, inPkgName
 				p.initLink(line, offset, func(name string) (_ string, _, ok bool) {
 					return fullName, isVar, name == inPkgName
 				})
-			} else if dtype&dAutoPtr != 0 {
-				p.initScopeExit(line, offset, func(name string) (_ string, _, ok bool) {
+			} else if dtype&dAutorelease != 0 {
+				prog.initAutoRelease(line, offset, func(name string) (_ string, _, ok bool) {
+					return fullName, isVar, name == inPkgName
+				})
+			} else if dtype&dAutoretain != 0 {
+				prog.initAutoRetain(line, offset, func(name string) (_ string, _, ok bool) {
 					return fullName, isVar, name == inPkgName
 				})
 			}
@@ -202,15 +283,18 @@ func (p *context) initDirectivesByDoc(doc *ast.CommentGroup, fullName, inPkgName
 
 const (
 	dLinkname = 1 << iota
-	dAutoPtr
+	dAutorelease
+	dAutoretain
 	dAll = ^0
 )
 const (
-	linkname       = "//go:linkname "
-	llgolink       = "//llgo:link "
-	llgolink2      = "// llgo:link "
-	llgoScopeExit  = "//llgo:scopeexit"
-	llgoScopeExit2 = "// llgo:scopeexit"
+	linkname         = "//go:linkname "
+	llgolink         = "//llgo:link "
+	llgolink2        = "// llgo:link "
+	llgoAutorelease  = "//llgo:autorelease"
+	llgoAutorelease2 = "// llgo:autorelease"
+	llgoAutoretain   = "//llgo:autoretain"
+	llgoAutoretain2  = "// llgo:autoretain"
 )
 
 func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
@@ -229,32 +313,29 @@ func getDirectiveType(line string) (dtype, offset int) {
 		return dLinkname, len(llgolink)
 	} else if strings.HasPrefix(line, llgolink2) {
 		return dLinkname, len(llgolink2)
-	} else if strings.HasPrefix(line, llgoScopeExit) {
-		return dAutoPtr, len(llgoScopeExit)
-	} else if strings.HasPrefix(line, llgoScopeExit2) {
-		return dAutoPtr, len(llgoScopeExit2)
+	} else if strings.HasPrefix(line, llgoAutorelease) {
+		return dAutorelease, len(llgoAutorelease)
+	} else if strings.HasPrefix(line, llgoAutorelease2) {
+		return dAutorelease, len(llgoAutorelease2)
+	} else if strings.HasPrefix(line, llgoAutoretain) {
+		return dAutoretain, len(llgoAutoretain)
+	} else if strings.HasPrefix(line, llgoAutoretain2) {
+		return dAutoretain, len(llgoAutoretain2)
 	} else {
 		return 0, 0
 	}
 }
 
-func (p *context) initAutoPtr(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
+func (p *context) initAutoPtr(prog *aProgram, line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
 	dtype, offset := getDirectiveType(string(line))
-	if dtype&dAutoPtr != 0 {
-		p.initScopeExit(line, offset, f)
+	if dtype&dAutorelease != 0 {
+		prog.initAutoRelease(line, offset, f)
+		return true
+	} else if dtype&dAutoretain != 0 {
+		prog.initAutoRetain(line, offset, f)
 		return true
 	}
 	return false
-}
-
-func (p *context) initScopeExit(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
-	inPkgName := strings.TrimSpace(line[prefix:])
-	if fullName, _, ok := f(inPkgName); ok {
-		p.scopeExit[fullName] = true
-	} else {
-		fmt.Fprintln(os.Stderr, "==>", line)
-		fmt.Fprintf(os.Stderr, "llgo: scopeexit %s not found and ignored\n", inPkgName)
-	}
 }
 
 func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {

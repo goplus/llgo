@@ -226,20 +226,40 @@ func TestErrInitLinkname(t *testing.T) {
 	})
 }
 
-func TestErrInitScopeExit(t *testing.T) {
+func TestErrInitAutorelease(t *testing.T) {
 	var ctx context
-	ctx.initAutoPtr("//llgo:scopeexit (*Obj).Destroy", func(name string) (string, bool, bool) {
+	var prog Program
+	ctx.initAutoPtr(prog, "//llgo:autorelease (*Obj).Destroy", func(name string) (string, bool, bool) {
 		return "foo.(*Obj).Destroy", false, false
 	})
-	ctx.initAutoPtr("// llgo:scopeexit (*Obj).Destroy", func(name string) (string, bool, bool) {
+	ctx.initAutoPtr(prog, "// llgo:autorelease (*Obj).Destroy", func(name string) (string, bool, bool) {
 		return "foo.(*Obj).Destroy", false, false
 	})
 	defer func() {
 		if r := recover(); r == nil {
-			t.Fatal("initScopeExit: no error?")
+			t.Fatal("initautorelease: no error?")
 		}
 	}()
-	ctx.initAutoPtr("//llgo:scopeexit (*Obj).Destroy", func(name string) (string, bool, bool) {
+	ctx.initAutoPtr(prog, "//llgo:autorelease (*Obj).Destroy", func(name string) (string, bool, bool) {
+		return "foo.(*Obj).Destroy", false, true
+	})
+}
+
+func TestErrInitAutoretain(t *testing.T) {
+	var ctx context
+	var prog Program
+	ctx.initAutoPtr(prog, "//llgo:autoretain (*Obj).Destroy", func(name string) (string, bool, bool) {
+		return "foo.(*Obj).Destroy", false, false
+	})
+	ctx.initAutoPtr(prog, "// llgo:autoretain (*Obj).Destroy", func(name string) (string, bool, bool) {
+		return "foo.(*Obj).Destroy", false, false
+	})
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("init autoretain: no error?")
+		}
+	}()
+	ctx.initAutoPtr(prog, "//llgo:autoretain (*Obj).Destroy", func(name string) (string, bool, bool) {
 		return "foo.(*Obj).Destroy", false, true
 	})
 }

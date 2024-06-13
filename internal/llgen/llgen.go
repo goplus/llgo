@@ -80,7 +80,8 @@ func Gen(pkgPath, inFile string, src any) string {
 		return ret
 	})
 
-	ret := cl.NewPackage(prog, ssaPkg, files)
+	aProg := cl.NewProgram(prog)
+	ret := cl.NewPackage(aProg, ssaPkg, files)
 	ret.Build()
 
 	if prog.NeedPyInit { // call PyInit if needed
