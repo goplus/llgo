@@ -103,6 +103,11 @@ func Qsort(base Pointer, count, elem uintptr, compar func(a, b Pointer) Int)
 
 // -----------------------------------------------------------------------------
 
+//go:linkname Atoi C.atoi
+func Atoi(s *Char) Int
+
+// -----------------------------------------------------------------------------
+
 //go:linkname Printf C.printf
 func Printf(format *Char, __llgo_va_list ...any) Int
 
@@ -171,6 +176,3 @@ func GetoptLong(argc Int, argv **Char, optstring *Char, longopts *Option, longin
 func GetoptLongOnly(argc Int, argv **Char, optstring *Char, longopts *Option, longindex *Int) Int
 
 // -----------------------------------------------------------------------------
-
-//go:linkname Atoi C.atoi
-func Atoi(s *Char) Int

@@ -22,6 +22,7 @@ import "C"
 import (
 	"go/token"
 	"go/types"
+	"log"
 	"unsafe"
 
 	"github.com/goplus/llvm"
@@ -174,7 +175,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 
 		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
 		b.Call(b.Pkg.rtFunc("Rethrow"), link)
-		b.Unreachable() // TODO: func supports noreturn attribute
+		b.Jump(self.recov)
 
 		if kind == DeferAlways {
 			b.SetBlockEx(next, AtEnd, false)
@@ -266,16 +267,14 @@ func (b Builder) Unreachable() {
 	b.impl.CreateUnreachable()
 }
 
-/*
 // Recover emits a recover instruction.
-func (b Builder) Recover() (v Expr) {
+func (b Builder) Recover() Expr {
 	if debugInstr {
 		log.Println("Recover")
 	}
-	prog := b.Prog
-	return prog.Zero(prog.Any())
+	// TODO(xsw): recover can't be a function call in Go
+	return b.Call(b.Pkg.rtFunc("Recover"))
 }
-*/
 
 // Panic emits a panic instruction.
 func (b Builder) Panic(v Expr) {

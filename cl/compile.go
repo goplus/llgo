@@ -555,7 +555,11 @@ func isPhi(i ssa.Instruction) bool {
 }
 
 func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
-	ret := p.fn.Block(block.Index)
+	fn := p.fn
+	ret := fn.Block(block.Index)
+	if block.Comment == "recover" { // set recover block
+		fn.SetRecover(ret)
+	}
 	b.SetBlockEx(ret, llssa.AtEnd, false)
 	if ninstr := len(block.Instrs); ninstr > 0 {
 		if isPhi(block.Instrs[0]) {

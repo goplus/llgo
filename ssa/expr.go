@@ -898,8 +898,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
-	//case "recover":
-	//	return b.Recover()
+	case "recover":
+		return b.Recover()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
 	}

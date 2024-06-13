@@ -179,6 +179,7 @@ type aFunction struct {
 	blks []BasicBlock
 
 	defer_ *aDefer
+	recov  BasicBlock
 
 	params   []Type
 	freeVars Expr
@@ -327,6 +328,11 @@ func (p Function) MakeBlock() BasicBlock {
 // Block returns the ith basic block of the function.
 func (p Function) Block(idx int) BasicBlock {
 	return p.blks[idx]
+}
+
+// SetRecover sets the recover block for the function.
+func (p Function) SetRecover(blk BasicBlock) {
+	p.recov = blk
 }
 
 // -----------------------------------------------------------------------------

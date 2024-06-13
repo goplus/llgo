@@ -6,6 +6,11 @@ func f(s string) bool {
 
 func fail() {
 	defer println("bye")
+	defer func() {
+		if e := recover(); e != nil {
+			println("recover:", e.(string))
+		}
+	}()
 	panic("panic message")
 }
 
@@ -20,5 +25,5 @@ func main() {
 		return
 	}
 	fail()
-	println("unreachable")
+	println("reachable")
 }
