@@ -66,6 +66,8 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 		return b.abiFuncOf(t)
 	case *types.Slice:
 		return b.abiSliceOf(t)
+	case *types.Map:
+		return b.abiMapOf(t)
 	case *types.Array:
 		return b.abiArrayOf(t)
 	}
@@ -241,6 +243,14 @@ func (b Builder) abiPointerOf(t *types.Pointer) func() Expr {
 	elem := b.abiType(t.Elem())
 	return func() Expr {
 		return b.Call(b.Pkg.rtFunc("PointerTo"), elem)
+	}
+}
+
+func (b Builder) abiMapOf(t *types.Map) func() Expr {
+	key := b.abiType(t.Key())
+	elem := b.abiType(t.Elem())
+	return func() Expr {
+		return b.Call(b.Pkg.rtFunc("MapOf"), key, elem)
 	}
 }
 
