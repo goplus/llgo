@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	LLGoPackage = "link: cjson"
+	LLGoPackage = "link: $(pkg-config --libs libcjson)"
 )
 
 // llgo:type C
