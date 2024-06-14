@@ -354,7 +354,7 @@ func (b Builder) abiType(t types.Type) Expr {
 	if g == nil {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
-		g.Init(prog.Nil(g.Type))
+		g.InitNil()
 		if pub {
 			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		}

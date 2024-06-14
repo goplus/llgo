@@ -10,25 +10,25 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/internal/abi.Method" = type { %"github.com/goplus/llgo/internal/runtime.String", ptr, ptr, ptr }
 
-@"main.init$guard" = global ptr null
-@"_llgo_github.com/goplus/llgo/cl/internal/foo.Foo" = linkonce global ptr null
-@"main.struct$qQwZyFy_4JRalRxVVsVD8R09X5t58tWjTrtJPtHbEjs" = global ptr null
-@"*_llgo_byte" = linkonce global ptr null
-@_llgo_byte = linkonce global ptr null
-@_llgo_float32 = linkonce global ptr null
+@"main.init$guard" = global i1 false, align 1
+@"_llgo_github.com/goplus/llgo/cl/internal/foo.Foo" = linkonce global ptr null, align 8
+@"main.struct$qQwZyFy_4JRalRxVVsVD8R09X5t58tWjTrtJPtHbEjs" = global ptr null, align 8
+@"*_llgo_byte" = linkonce global ptr null, align 8
+@_llgo_byte = linkonce global ptr null, align 8
+@_llgo_float32 = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [2 x i8] c"pb", align 1
 @1 = private unnamed_addr constant [1 x i8] c"F", align 1
 @2 = private unnamed_addr constant [4 x i8] c"main", align 1
 @3 = private unnamed_addr constant [2 x i8] c"Pb", align 1
-@"_llgo_func$NfGSLZ1QiKRoFkKeqYSXE5hUU5bpeteSJKrbMNUzYRE" = linkonce global ptr null
+@"_llgo_func$NfGSLZ1QiKRoFkKeqYSXE5hUU5bpeteSJKrbMNUzYRE" = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [38 x i8] c"github.com/goplus/llgo/cl/internal/foo", align 1
 @5 = private unnamed_addr constant [42 x i8] c"github.com/goplus/llgo/cl/internal/foo.Foo", align 1
-@_llgo_main.bar = global ptr null
-@"main.struct$Ci43nzKYkRLddRL_N4mkykxLXfJlqJGS5n04LKThPNo" = global ptr null
+@_llgo_main.bar = global ptr null, align 8
+@"main.struct$Ci43nzKYkRLddRL_N4mkykxLXfJlqJGS5n04LKThPNo" = global ptr null, align 8
 @6 = private unnamed_addr constant [1 x i8] c"f", align 1
 @7 = private unnamed_addr constant [8 x i8] c"main.bar", align 1
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 @8 = private unnamed_addr constant [6 x i8] c"notOk:", align 1
 
 define { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/internal/runtime.eface" %0) {

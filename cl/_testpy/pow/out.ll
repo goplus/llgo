@@ -1,12 +1,12 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
-@__llgo_py.math.pow = linkonce global ptr null
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+@__llgo_py.math.pow = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [16 x i8] c"pow(2, 3) = %f\0A\00", align 1
-@__llgo_py.math = external global ptr
+@__llgo_py.math = external global ptr, align 8
 @1 = private unnamed_addr constant [4 x i8] c"pow\00", align 1
 
 define void @main.init() {

@@ -102,8 +102,7 @@ func (p Package) keyInit(name string) {
 		return
 	}
 	prog := p.Prog
-	keyNil := prog.Nil(prog.CIntPtr())
-	keyVar.Init(keyNil)
+	keyVar.InitNil()
 	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 
 	b := p.afterBuilder()

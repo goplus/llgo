@@ -189,19 +189,20 @@ func TestPyFunc(t *testing.T) {
 func TestVar(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	a := pkg.NewVar("a", types.Typ[types.Int], InGo)
-	if pkg.NewVar("a", types.Typ[types.Int], InGo) != a {
+	typ := types.NewPointer(types.Typ[types.Int])
+	a := pkg.NewVar("a", typ, InGo)
+	if pkg.NewVar("a", typ, InGo) != a {
 		t.Fatal("NewVar(a) failed")
 	}
-	pkg.NewVarEx("a", prog.Type(types.Typ[types.Int], InGo))
+	pkg.NewVarEx("a", prog.Type(typ, InGo))
 	a.Init(prog.Val(100))
-	b := pkg.NewVar("b", types.Typ[types.Int], InGo)
+	b := pkg.NewVar("b", typ, InGo)
 	b.Init(a.Expr)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-@a = global i64 100
-@b = global i64 @a
+@a = global i64 100, align 8
+@b = global i64 @a, align 8
 `)
 }
 
@@ -227,11 +228,11 @@ func TestStruct(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", empty, InGo)
+	pkg.NewVar("a", types.NewPointer(empty), InGo)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-@a = external global {}
+@a = external global {}, align 1
 `)
 	if prog.NeedRuntime {
 		t.Fatal("NeedRuntime?")
@@ -244,7 +245,7 @@ func TestNamedStruct(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", empty, InGo)
+	pkg.NewVar("a", types.NewPointer(empty), InGo)
 	if pkg.VarOf("a") == nil {
 		t.Fatal("VarOf failed")
 	}
@@ -253,7 +254,7 @@ source_filename = "foo/bar"
 
 %bar.Empty = type {}
 
-@a = external global %bar.Empty
+@a = external global %bar.Empty, align 1
 `)
 }
 
@@ -358,14 +359,14 @@ func TestFuncMultiRet(t *testing.T) {
 		types.NewVar(0, nil, "c", types.Typ[types.Int]),
 		types.NewVar(0, nil, "d", types.Typ[types.Float64]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	a := pkg.NewVar("a", types.Typ[types.Int], InGo)
+	a := pkg.NewVar("a", types.NewPointer(types.Typ[types.Int]), InGo)
 	fn := pkg.NewFunc("fn", sig, InGo)
 	b := fn.MakeBody(1)
 	b.Return(a.Expr, fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-@a = external global i64
+@a = external global i64, align 8
 
 define { i64, double } @fn(double %0) {
 _llgo_0:

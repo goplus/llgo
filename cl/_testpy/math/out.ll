@@ -1,8 +1,8 @@
 ; ModuleID = 'math'
 source_filename = "math"
 
-@"math.init$guard" = global ptr null
-@__llgo_py.math = linkonce global ptr null
+@"math.init$guard" = global i1 false, align 1
+@__llgo_py.math = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [5 x i8] c"math\00", align 1
 
 define void @math.init() {

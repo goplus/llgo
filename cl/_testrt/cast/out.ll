@@ -4,11 +4,11 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
-@"main.init$guard" = global ptr null
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"error", align 1
-@_llgo_string = linkonce global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@_llgo_string = linkonce global ptr null, align 8
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define void @main.cvt32Fto32(float %0, i32 %1) {
 _llgo_0:

@@ -201,7 +201,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
 	if define {
-		g.Init(p.prog.Nil(g.Type))
+		g.InitNil()
 	}
 }
 
@@ -380,8 +380,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
 		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-		argc.Init(prog.Nil(argc.Type))
-		argv.Init(prog.Nil(argv.Type))
+		argc.InitNil()
+		argv.InitNil()
 		b.Store(argc.Expr, fn.Param(0))
 		b.Store(argv.Expr, fn.Param(1))
 		callRuntimeInit(b, pkg)

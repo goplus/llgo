@@ -67,7 +67,7 @@ func (p Package) NewConst(name string, val constant.Value) NamedConst {
 
 type aGlobal struct {
 	Expr
-	array bool
+	//array bool
 }
 
 // A Global is a named Value holding the address of a package-level
@@ -92,17 +92,11 @@ func (p Package) NewVarEx(name string, t Type) Global {
 }
 
 func (p Package) doNewVar(name string, t Type) Global {
-	var gbl llvm.Value
-	var array bool
-	if t.kind == vkPtr && p.Prog.Elem(t).kind == vkArray { // TODO(xsw): check this code
-		typ := p.Prog.Elem(t).ll
-		gbl = llvm.AddGlobal(p.mod, typ, name)
-		gbl.SetInitializer(llvm.Undef(typ))
-		array = true
-	} else {
-		gbl = llvm.AddGlobal(p.mod, t.ll, name)
-	}
-	ret := &aGlobal{Expr{gbl, t}, array}
+	typ := p.Prog.Elem(t).ll
+	gbl := llvm.AddGlobal(p.mod, typ, name)
+	alignment := p.Prog.td.ABITypeAlignment(typ)
+	gbl.SetAlignment(alignment)
+	ret := &aGlobal{Expr{gbl, t}}
 	p.vars[name] = ret
 	return ret
 }
@@ -114,10 +108,11 @@ func (p Package) VarOf(name string) Global {
 
 // Init initializes the global variable with the given value.
 func (g Global) Init(v Expr) {
-	if g.array && v.kind == vkPtr { // TODO(xsw): check this code
-		return
-	}
 	g.impl.SetInitializer(v.impl)
+}
+
+func (g Global) InitNil() {
+	g.impl.SetInitializer(llvm.ConstNull(g.impl.GlobalValueType()))
 }
 
 // -----------------------------------------------------------------------------

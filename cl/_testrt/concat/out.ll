@@ -4,10 +4,10 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
-@"main.init$guard" = global ptr null
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [3 x i8] c"...", align 1
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 @1 = private unnamed_addr constant [5 x i8] c"Hello", align 1
 @2 = private unnamed_addr constant [1 x i8] c" ", align 1
 @3 = private unnamed_addr constant [5 x i8] c"World", align 1

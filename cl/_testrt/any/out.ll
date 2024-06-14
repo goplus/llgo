@@ -5,14 +5,14 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/runtime.String", ptr }
 
-@"main.init$guard" = global ptr null
-@"*_llgo_int8" = linkonce global ptr null
-@_llgo_int8 = linkonce global ptr null
+@"main.init$guard" = global i1 false, align 1
+@"*_llgo_int8" = linkonce global ptr null, align 8
+@_llgo_int8 = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
-@_llgo_string = linkonce global ptr null
-@_llgo_int = linkonce global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@_llgo_string = linkonce global ptr null, align 8
+@_llgo_int = linkonce global ptr null, align 8
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 @1 = private unnamed_addr constant [7 x i8] c"%s %d\0A\00", align 1
 @2 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
 

@@ -9,26 +9,26 @@ source_filename = "main"
 %main.N = type {}
 %"github.com/goplus/llgo/internal/abi.StructField" = type { %"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1 }
 
-@"main.init$guard" = global ptr null
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [6 x i8] c"failed", align 1
-@_llgo_string = linkonce global ptr null
+@_llgo_string = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [5 x i8] c"hello", align 1
-@_llgo_int = linkonce global ptr null
+@_llgo_int = linkonce global ptr null, align 8
 @2 = private unnamed_addr constant [2 x i8] c"ok", align 1
-@"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw" = linkonce global ptr null
+@"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw" = linkonce global ptr null, align 8
 @3 = private unnamed_addr constant [4 x i8] c"main", align 1
-@_llgo_main.T = linkonce global ptr null
-@"_llgo_struct$5D_KhR3tDEp-wpx9caTiVZca43wS-XW6slE9Bsr8rsk" = linkonce global ptr null
-@_llgo_any = linkonce global ptr null
+@_llgo_main.T = linkonce global ptr null, align 8
+@"_llgo_struct$5D_KhR3tDEp-wpx9caTiVZca43wS-XW6slE9Bsr8rsk" = linkonce global ptr null, align 8
+@_llgo_any = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [1 x i8] c"X", align 1
 @5 = private unnamed_addr constant [1 x i8] c"Y", align 1
 @6 = private unnamed_addr constant [1 x i8] c"Z", align 1
 @7 = private unnamed_addr constant [1 x i8] c"V", align 1
 @8 = private unnamed_addr constant [6 x i8] c"main.T", align 1
-@_llgo_main.N = linkonce global ptr null
+@_llgo_main.N = linkonce global ptr null, align 8
 @9 = private unnamed_addr constant [6 x i8] c"main.N", align 1
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define void @main.assert(i1 %0) {
 _llgo_0:
