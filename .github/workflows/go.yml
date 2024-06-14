@@ -63,8 +63,7 @@ jobs:
         run: go install ./...
       
       - name: LLGO tests
-        if: false
-        #if matrix.os != 'ubuntu-latest'
+        if: matrix.os != 'ubuntu-latest'
         run: |
           echo "Test result on ${{ matrix.os }} with LLVM ${{ matrix.llvm }}" > result.md
           LLGOROOT=$PWD bash .github/workflows/test_llgo.sh

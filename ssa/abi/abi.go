@@ -159,10 +159,6 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 			return "_llgo_any", true
 		}
 		return b.InterfaceName(t)
-	case *types.Map:
-		key, pub1 := b.TypeName(t.Key())
-		elem, pub2 := b.TypeName(t.Elem())
-		return fmt.Sprintf("map[%s]%s", key, elem), pub1 && pub2
 	}
 	log.Panicf("todo: %T\n", t)
 	return

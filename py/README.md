@@ -19,10 +19,10 @@ To run the demos in directory `_demo`, you need to set the `LLGO_LIB_PYTHON` env
 export LLGO_LIB_PYTHON=/foo/bar/python3.12
 ```
 
-For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib` is a typical python lib location under macOS. So we should set it like this:
+For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/libpython3.12.dylib` is a typical python lib location under macOS. So we should set it like this:
 
 ```sh
-export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/python3.12
+export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/python3.12
 ```
 
 Then you can run the demos in directory `_demo`:
