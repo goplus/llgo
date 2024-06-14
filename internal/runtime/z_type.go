@@ -28,59 +28,51 @@ type Type = abi.Type
 // -----------------------------------------------------------------------------
 
 func Basic(kind Kind) *Type {
-	return basicTypes[kind]
-}
-
-var (
-	basicTypes = [...]*Type{
-		abi.Bool:       basicType(abi.Bool),
-		abi.Int:        basicType(abi.Int),
-		abi.Int8:       basicType(abi.Int8),
-		abi.Int16:      basicType(abi.Int16),
-		abi.Int32:      basicType(abi.Int32),
-		abi.Int64:      basicType(abi.Int64),
-		abi.Uint:       basicType(abi.Uint),
-		abi.Uint8:      basicType(abi.Uint8),
-		abi.Uint16:     basicType(abi.Uint16),
-		abi.Uint32:     basicType(abi.Uint32),
-		abi.Uint64:     basicType(abi.Uint64),
-		abi.Uintptr:    basicType(abi.Uintptr),
-		abi.Float32:    basicType(abi.Float32),
-		abi.Float64:    basicType(abi.Float64),
-		abi.Complex64:  basicType(abi.Complex64),
-		abi.Complex128: basicType(abi.Complex128),
-		abi.String:     basicType(abi.String),
-	}
-)
-
-var (
-	sizeBasicTypes = [...]uintptr{
-		abi.Bool:       unsafe.Sizeof(false),
-		abi.Int:        unsafe.Sizeof(0),
-		abi.Int8:       1,
-		abi.Int16:      2,
-		abi.Int32:      4,
-		abi.Int64:      8,
-		abi.Uint:       unsafe.Sizeof(uint(0)),
-		abi.Uint8:      1,
-		abi.Uint16:     2,
-		abi.Uint32:     4,
-		abi.Uint64:     8,
-		abi.Uintptr:    unsafe.Sizeof(uintptr(0)),
-		abi.Float32:    4,
-		abi.Float64:    8,
-		abi.Complex64:  8,
-		abi.Complex128: 16,
-		abi.String:     unsafe.Sizeof(String{}),
-	}
-)
-
-func basicType(kind abi.Kind) *Type {
 	return &Type{
-		Size_: sizeBasicTypes[kind],
+		Size_: basicTypeSize(kind),
 		Hash:  uint32(kind), // TODO(xsw): hash
 		Kind_: uint8(kind),
 	}
+}
+
+func basicTypeSize(kind abi.Kind) uintptr {
+	switch kind {
+	case abi.Bool:
+		return unsafe.Sizeof(false)
+	case abi.Int:
+		return unsafe.Sizeof(0)
+	case abi.Int8:
+		return 1
+	case abi.Int16:
+		return 2
+	case abi.Int32:
+		return 4
+	case abi.Int64:
+		return 8
+	case abi.Uint:
+		return unsafe.Sizeof(uint(0))
+	case abi.Uint8:
+		return 1
+	case abi.Uint16:
+		return 2
+	case abi.Uint32:
+		return 4
+	case abi.Uint64:
+		return 8
+	case abi.Uintptr:
+		return unsafe.Sizeof(uintptr(0))
+	case abi.Float32:
+		return 4
+	case abi.Float64:
+		return 8
+	case abi.Complex64:
+		return 8
+	case abi.Complex128:
+		return 16
+	case abi.String:
+		return unsafe.Sizeof(String{})
+	}
+	panic("unreachable")
 }
 
 // -----------------------------------------------------------------------------

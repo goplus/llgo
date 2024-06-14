@@ -221,9 +221,9 @@ func panicSliceConvert(x int, y int)
 var divideError error
 var overflowError error
 
-/* TODO(xsw):
 var shiftError = error(errorString("negative shift amount"))
 
+/*
 func Panicshift() {
 	panic(shiftError)
 }

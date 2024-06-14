@@ -83,23 +83,27 @@ const (
 	itabHdrSize          = unsafe.Sizeof(itab{}) - pointerSize
 )
 
-var hdrSizes = [...]uintptr{
-	arrayTypeHdrSize,
-	chanTypeHdrSize,
-	funcTypeHdrSize,
-	interfaceTypeHdrSize,
-	mapTypeHdrSize,
-	ptrTypeHdrSize,
-	sliceTypeHdrSize,
-	typeHdrSize,
-	structTypeHdrSize,
-}
-
 func hdrSizeOf(kind abi.Kind) uintptr {
-	if kind >= abi.Array && kind <= abi.Struct {
-		return hdrSizes[kind-abi.Array]
+	switch kind {
+	case abi.Array:
+		return arrayTypeHdrSize
+	case abi.Chan:
+		return chanTypeHdrSize
+	case abi.Func:
+		return funcTypeHdrSize
+	case abi.Interface:
+		return interfaceTypeHdrSize
+	case abi.Map:
+		return mapTypeHdrSize
+	case abi.Pointer:
+		return ptrTypeHdrSize
+	case abi.Slice:
+		return sliceTypeHdrSize
+	case abi.Struct:
+		return structTypeHdrSize
+	default:
+		return typeHdrSize
 	}
-	return typeHdrSize
 }
 
 // NewNamed returns an uninitialized named type.
