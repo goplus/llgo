@@ -46,7 +46,7 @@ type integer interface {
 func Str(string) *Char
 
 // llgo:link Advance llgo.advance
-func Advance[PtrT any](ptr PtrT, offset int) PtrT { return ptr }
+func Advance[PtrT any, I integer](ptr PtrT, offset I) PtrT { return ptr }
 
 // llgo:link Index llgo.index
 func Index[T any, I integer](ptr *T, offset I) T { return *ptr }

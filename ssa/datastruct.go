@@ -360,8 +360,13 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	if debugInstr {
 		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
 	}
-	// TODO(xsw)
-	// panic("todo")
+	t := m.Type
+	if t.kind != vkMap {
+		panic("TODO: not a map")
+	}
+	tabi := b.abiType(t.raw.Type)
+	ptr := b.InlineCall(b.Pkg.rtFunc("MapAssign"), tabi, m, k)
+	b.Store(ptr, v) // TODO(xsw): indirect store
 }
 
 // -----------------------------------------------------------------------------

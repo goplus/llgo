@@ -8,6 +8,10 @@ import (
 	"unsafe"
 )
 
+const (
+	bigAlloc = 1 << (goarchPtrSize*8 - 6)
+)
+
 // implementation of new builtin
 // compiler (both frontend and SSA backend) knows the signature
 // of this function.

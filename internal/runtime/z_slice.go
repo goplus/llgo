@@ -25,7 +25,9 @@ import (
 // -----------------------------------------------------------------------------
 
 // Slice is the runtime representation of a slice.
-type Slice struct {
+type Slice = slice
+
+type slice struct {
 	data unsafe.Pointer
 	len  int
 	cap  int

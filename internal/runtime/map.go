@@ -308,15 +308,14 @@ func makemap_small() *hmap {
 	return h
 }
 
-/*
 // makemap implements Go map creation for make(map[k]v, hint).
 // If the compiler has determined that the map or the first bucket
 // can be created on the stack, h and/or bucket may be non-nil.
 // If h != nil, the map can be created directly in h.
 // If h.buckets != nil, bucket pointed to can be used as the first bucket.
 func makemap(t *maptype, hint int, h *hmap) *hmap {
-	mem, overflow := math.MulUintptr(uintptr(hint), t.Bucket.Size_)
-	if overflow || mem > maxAlloc {
+	mem, overflow := mathMulUintptr(uintptr(hint), t.Bucket.Size_)
+	if overflow || mem > bigAlloc {
 		hint = 0
 	}
 
@@ -348,7 +347,6 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 
 	return h
 }
-*/
 
 // makeBucketArray initializes a backing array for map buckets.
 // 1<<b is the minimum number of buckets to allocate.
