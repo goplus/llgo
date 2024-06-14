@@ -107,16 +107,15 @@ func aggregateInit(b llvm.Builder, ptr llvm.Value, tll llvm.Type, flds ...llvm.V
 	}
 }
 
-/*
-func (b Builder) dupMalloc(v Expr) Expr {
+func (b Builder) dupAlloca(v Expr) Expr {
 	prog := b.Prog
 	n := prog.SizeOf(v.Type)
 	tptr := prog.Pointer(v.Type)
-	ptr := b.malloc(prog.Val(uintptr(n))).impl
-	b.Store(Expr{ptr, tptr}, v)
-	return Expr{ptr, tptr}
+	ptr := b.Alloca(prog.Val(uintptr(n))).impl
+	ret := Expr{ptr, tptr}
+	b.Store(ret, v)
+	return ret
 }
-*/
 
 // -----------------------------------------------------------------------------
 
