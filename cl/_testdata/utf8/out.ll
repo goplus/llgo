@@ -3,12 +3,11 @@ source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 
-@main.array = global [8 x i8] undef
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
-@0 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
-@1 = private unnamed_addr constant [8 x i8] c"\E4\B8\ADabcd\00", align 1
+@main.array = global [8 x i8] zeroinitializer, align 1
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+@0 = private unnamed_addr constant [7 x i8] c"\E4\B8\ADabcd", align 1
 
 define i8 @main.index(i8 %0) {
 _llgo_0:
@@ -53,7 +52,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_3
   %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
-  store ptr @1, ptr %3, align 8
+  store ptr @0, ptr %3, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
   store i64 7, ptr %4, align 4
   %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8

@@ -4,11 +4,11 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
-@0 = private unnamed_addr constant [14 x i8] c"panic message\00", align 1
-@_llgo_string = linkonce global ptr null
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+@0 = private unnamed_addr constant [13 x i8] c"panic message", align 1
+@_llgo_string = linkonce global ptr null, align 8
 
 define void @main.init() {
 _llgo_0:

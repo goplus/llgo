@@ -4,11 +4,11 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 
-@main.basicTypes = global [25 x ptr] undef
-@"main.init$guard" = global ptr null
-@main.sizeBasicTypes = global [25 x i64] undef
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@main.basicTypes = global [25 x ptr] zeroinitializer, align 8
+@"main.init$guard" = global i1 false, align 1
+@main.sizeBasicTypes = global [25 x i64] zeroinitializer, align 8
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 @0 = private unnamed_addr constant [20 x i8] c"Kind: %d, Size: %d\0A\00", align 1
 
 define ptr @main.Basic(i64 %0) {

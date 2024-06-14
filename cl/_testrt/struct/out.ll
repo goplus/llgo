@@ -3,10 +3,10 @@ source_filename = "main"
 
 %main.Foo = type { i32, i1 }
 
-@main.format = global [10 x i8] undef
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@main.format = global [10 x i8] zeroinitializer, align 1
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define void @main.Foo.Print(%main.Foo %0) {
 _llgo_0:

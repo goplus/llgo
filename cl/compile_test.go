@@ -71,8 +71,8 @@ var a int
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@foo.a = global ptr null
-@"foo.init$guard" = global ptr null
+@foo.a = global i64 0, align 8
+@"foo.init$guard" = global i1 false, align 1
 
 define void @foo.init() {
 _llgo_0:
@@ -98,7 +98,7 @@ func fn(a int, b float64) int {
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"foo.init$guard" = global ptr null
+@"foo.init$guard" = global i1 false, align 1
 
 define i64 @foo.fn(i64 %0, double %1) {
 _llgo_0:

@@ -342,7 +342,7 @@ func EfaceEqual(v, u eface) bool {
 	if v._type != u._type {
 		return false
 	}
-	if v._type.Kind_&abi.KindDirectIface != 0 {
+	if isDirectIface(v._type) {
 		return v.data == u.data
 	}
 	switch v.Kind() {
@@ -373,7 +373,11 @@ func EfaceEqual(v, u eface) bool {
 	case abi.Struct:
 		st := v._type.StructType()
 		field := func(data unsafe.Pointer, ft *abi.StructField) eface {
-			return eface{ft.Typ, c.Advance(data, int(ft.Offset))}
+			ptr := c.Advance(data, int(ft.Offset))
+			if isDirectIface(ft.Typ) {
+				ptr = *(*unsafe.Pointer)(ptr)
+			}
+			return eface{ft.Typ, ptr}
 		}
 		for _, ft := range st.Fields {
 			if !EfaceEqual(field(v.data, &ft), field(u.data, &ft)) {
@@ -409,7 +413,7 @@ func (v eface) Elem() eface {
 		return *(*eface)(unsafe.Pointer(&i))
 	case abi.Pointer:
 		ptr := v.data
-		if v._type.Kind_&abi.KindDirectIface != 0 {
+		if isDirectIface(v._type) {
 			ptr = *(*unsafe.Pointer)(ptr)
 		}
 		if ptr == nil {
@@ -418,6 +422,10 @@ func (v eface) Elem() eface {
 		return eface{v._type.Elem(), ptr}
 	}
 	panic("invalid eface elem")
+}
+
+func isDirectIface(t *_type) bool {
+	return t.Kind_&abi.KindDirectIface != 0
 }
 
 // -----------------------------------------------------------------------------

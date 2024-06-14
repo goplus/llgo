@@ -1,11 +1,11 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@_bar_x = external global ptr
-@_bar_y = external global ptr
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@_bar_x = external global { [16 x i8], [2 x ptr] }, align 8
+@_bar_y = external global { [16 x i8] }, align 1
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define void @main.init() {
 _llgo_0:

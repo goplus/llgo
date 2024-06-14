@@ -217,7 +217,7 @@ func (p Package) PyNewModVar(name string, doInit bool) Global {
 	objPtr := prog.PyObjectPtrPtr().raw.Type
 	g := p.NewVar(name, objPtr, InC)
 	if doInit {
-		g.Init(prog.Nil(g.Type))
+		g.InitNil()
 		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
 	p.pymods[name] = g
@@ -372,7 +372,7 @@ func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObj
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
 	if doInit {
 		prog.NeedPyInit = true
-		obj.Init(prog.Nil(obj.Type))
+		obj.InitNil()
 		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
 	ty := &aType{obj.ll, rawType{types.NewPointer(sig)}, vkPyFuncRef}
