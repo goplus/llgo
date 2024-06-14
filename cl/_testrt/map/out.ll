@@ -30,12 +30,16 @@ _llgo_0:
   call void @main.init()
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.MakeSmallMap"()
   %3 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %3, ptr %2, i64 23)
-  store i64 100, ptr %4, align 4
-  %5 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
-  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %5, ptr %2, i64 7)
-  store i64 29, ptr %6, align 4
-  %7 = call i32 (ptr, ...) @printf(ptr @0, <null operand!>)
+  %4 = alloca i8, i64 48, align 1
+  store ptr %2, ptr %4, align 8
+  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %3, ptr %4, i64 23)
+  store i64 100, ptr %5, align 4
+  %6 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
+  %7 = alloca i8, i64 48, align 1
+  store ptr %2, ptr %7, align 8
+  %8 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %6, ptr %7, i64 7)
+  store i64 29, ptr %8, align 4
+  %9 = call i32 (ptr, ...) @printf(ptr @0, <null operand!>)
   ret i32 0
 }
 

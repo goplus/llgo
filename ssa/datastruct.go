@@ -366,7 +366,8 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	}
 	tabi := b.abiType(t.raw.Type)
 	prog := b.Prog
-	ptrimpl := b.InlineCall(b.Pkg.rtFunc("MapAssign"), tabi, m, k).impl
+	mptr := b.dupAlloca(m)
+	ptrimpl := b.InlineCall(b.Pkg.rtFunc("MapAssign"), tabi, mptr, k).impl
 	ptr := Expr{ptrimpl, prog.Pointer(v.Type)}
 	b.Store(ptr, v) // TODO(xsw): indirect store
 }
