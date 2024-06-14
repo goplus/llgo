@@ -27,17 +27,6 @@ import (
 	"github.com/goplus/llvm"
 )
 
-func TestMapUpdate(t *testing.T) {
-	var b Builder
-	var m = Expr{Type: &aType{}}
-	defer func() {
-		if e := recover(); e == nil {
-			t.Log("MapUpdate: no error?")
-		}
-	}()
-	b.MapUpdate(m, m, m)
-}
-
 func TestEndDefer(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("foo", "foo")

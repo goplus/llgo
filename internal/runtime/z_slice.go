@@ -24,8 +24,6 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// type Slice = slice
-
 // Slice is the runtime representation of a slice.
 type Slice struct {
 	data unsafe.Pointer

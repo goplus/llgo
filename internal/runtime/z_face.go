@@ -23,13 +23,6 @@ import (
 	"github.com/goplus/llgo/internal/runtime/c"
 )
 
-type _type = abi.Type
-
-// isDirectIface reports whether t is stored directly in an interface value.
-func isDirectIface(t *_type) bool {
-	return t.Kind_&abi.KindDirectIface != 0
-}
-
 type eface struct {
 	_type *_type
 	data  unsafe.Pointer
