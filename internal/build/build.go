@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -107,11 +106,13 @@ func Do(args []string, conf *Config) {
 
 	prog := llssa.NewProgram(nil)
 	sizes := prog.TypeSizes
+	// dedup := packages.NewDeduper()
+	dedup := (*packages.Deduper)(nil)
 
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	initial, err := packages.LoadEx(sizes, cfg, patterns...)
+	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	check(err)
 
 	mode := conf.Mode
@@ -133,7 +134,7 @@ func Do(args []string, conf *Config) {
 	load := func() []*packages.Package {
 		if rt == nil {
 			var err error
-			rt, err = packages.LoadEx(sizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
+			rt, err = packages.LoadEx(dedup, sizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
 			check(err)
 		}
 		return rt
@@ -149,7 +150,7 @@ func Do(args []string, conf *Config) {
 	})
 
 	imp := func(pkgPath string) *packages.Package {
-		if ret, e := packages.LoadEx(sizes, cfg, pkgPath); e == nil {
+		if ret, e := packages.LoadEx(dedup, sizes, cfg, pkgPath); e == nil {
 			return ret[0]
 		}
 		return nil
@@ -443,17 +444,6 @@ func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (p
 	return
 }
 
-type ssaProgram struct {
-	Fset     *token.FileSet
-	imported map[string]*ssa.Package
-	packages map[*types.Package]*ssa.Package // TODO(xsw): ensure offset of packages
-}
-
-func setPkgSSA(prog *ssa.Program, pkg *types.Package, pkgSSA *ssa.Package) {
-	s := (*ssaProgram)(unsafe.Pointer(prog))
-	s.packages[pkg] = pkgSSA
-}
-
 func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
 	altPath := alt.Types.Path()
 	altSSA := prog.ImportedPackage(altPath)
@@ -461,11 +451,8 @@ func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
 		packages.Visit([]*packages.Package{alt}, nil, func(p *packages.Package) {
 			pkgTypes := p.Types
 			if pkgTypes != nil && !p.IllTyped {
-				pkgSSA := prog.ImportedPackage(pkgTypes.Path())
-				if pkgSSA == nil {
+				if prog.ImportedPackage(pkgTypes.Path()) == nil {
 					prog.CreatePackage(pkgTypes, p.Syntax, p.TypesInfo, true)
-				} else {
-					setPkgSSA(prog, pkgTypes, pkgSSA)
 				}
 			}
 		})
