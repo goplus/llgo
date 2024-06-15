@@ -22,6 +22,10 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
+const (
+	LLGoPackage = true
+)
+
 //go:linkname Acos C.acos
 func Acos(x float64) float64
 
