@@ -199,15 +199,21 @@ func scanAllPkgs(aProg cl.Program, initial []*packages.Package, verbose bool) (p
 	}
 	for _, aPkg := range pkgs {
 		scanPkg(aProg, aPkg, verbose)
-		// for _, member := range aPkg.SSA.Members {
-		// 	if fn, ok := member.(*ssa.Function); ok {
-		// 		fmt.Printf("	%s\n", fn.Name())
-		// 	}
-		// }
 	}
 	for _, aPkg := range pkgs {
 		if aPkg.clpkg != nil {
 			aPkg.clpkg.Rewrite(aProg)
+			if aPkg.PkgPath == "github.com/goplus/llgo/_test" {
+				f, err := os.Create("test.ssa")
+				if err != nil {
+					panic(err)
+				}
+				for _, fn := range aPkg.SSA.Members {
+					if fn, ok := fn.(*ssa.Function); ok {
+						fn.WriteTo(f)
+					}
+				}
+			}
 		}
 	}
 	return pkgs
