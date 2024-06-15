@@ -16,6 +16,7 @@
 
 package math
 
+// llgo:skip sin cos
 import (
 	_ "unsafe"
 
@@ -172,13 +173,6 @@ func Nextafter(x, y float64) float64
 
 //go:linkname Pow C.pow
 func Pow(x, y float64) float64
-
-//go:linkname cPow10 C.pow10
-func cPow10(x c.Int) float64
-
-func Pow10(x int) float64 {
-	return cPow10(c.Int(x))
-}
 
 //go:linkname Remainder C.remainder
 func Remainder(x, y float64) float64

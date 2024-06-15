@@ -136,6 +136,8 @@ type pkgInfo struct {
 	kind int
 }
 
+type none struct{}
+
 type context struct {
 	prog   llssa.Program
 	pkg    llssa.Package
@@ -145,7 +147,8 @@ type context struct {
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	pyMod  string
-	link   map[string]string           // pkgPath.nameInPkg => linkname
+	link   map[string]string // pkgPath.nameInPkg => linkname
+	skips  map[string]none
 	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
@@ -977,6 +980,7 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 		goTyps: pkgTypes,
 		goPkg:  pkg,
 		link:   make(map[string]string),
+		skips:  make(map[string]none),
 		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
@@ -989,6 +993,13 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 		processPkg(ctx, ret, alt)
 	}
 	processPkg(ctx, ret, pkg)
+	for len(ctx.inits) > 0 {
+		inits := ctx.inits
+		ctx.inits = nil
+		for _, ini := range inits {
+			ini()
+		}
+	}
 	return
 }
 
@@ -999,8 +1010,11 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 	}
 
 	members := make([]*namedMember, 0, len(pkg.Members))
+	skips := ctx.skips
 	for name, v := range pkg.Members {
-		members = append(members, &namedMember{name, v})
+		if _, ok := skips[name]; !ok {
+			members = append(members, &namedMember{name, v})
+		}
 	}
 	sort.Slice(members, func(i, j int) bool {
 		return members[i].name < members[j].name
@@ -1020,13 +1034,6 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			ctx.compileType(ret, member)
 		case *ssa.Global:
 			ctx.compileGlobal(ret, member)
-		}
-	}
-	for len(ctx.inits) > 0 {
-		inits := ctx.inits
-		ctx.inits = nil
-		for _, ini := range inits {
-			ini()
 		}
 	}
 }

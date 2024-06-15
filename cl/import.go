@@ -168,13 +168,44 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 				fullName, inPkgName := astFuncName(pkgPath, decl)
 				p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
-				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
-					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-						inPkgName := names[0].Name
-						p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+				switch decl.Tok {
+				case token.VAR:
+					if len(decl.Specs) == 1 {
+						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+							inPkgName := names[0].Name
+							p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						}
+					}
+				case token.IMPORT:
+					if doc := decl.Doc; doc != nil {
+						if n := len(doc.List); n > 0 {
+							line := doc.List[n-1].Text
+							p.collectSkipNames(line)
+						}
 					}
 				}
 			}
+		}
+	}
+}
+
+func (p *context) collectSkipNames(line string) {
+	const (
+		skip  = "//llgo:skip "
+		skip2 = "// llgo:skip "
+	)
+	if strings.HasPrefix(line, skip2) {
+		p.collectSkip(line, len(skip2))
+	} else if strings.HasPrefix(line, skip) {
+		p.collectSkip(line, len(skip))
+	}
+}
+
+func (p *context) collectSkip(line string, prefix int) {
+	names := strings.Split(line[prefix:], " ")
+	for _, name := range names {
+		if name != "" {
+			p.skips[name] = none{}
 		}
 	}
 }
