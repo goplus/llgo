@@ -130,7 +130,7 @@ type importerFunc func(path string) (*types.Package, error)
 
 func (f importerFunc) Import(path string) (*types.Package, error) { return f(path) }
 
-func loadPackageEx(ld *loader, lpkg *loaderPackage) {
+func loadPackageEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
 	if lpkg.PkgPath == "unsafe" {
 		// Fill in the blanks to avoid surprises.
 		lpkg.Types = types.Unsafe
@@ -404,7 +404,7 @@ func loadPackageEx(ld *loader, lpkg *loaderPackage) {
 	lpkg.IllTyped = illTyped
 }
 
-func loadRecursiveEx(ld *loader, lpkg *loaderPackage) {
+func loadRecursiveEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
 	lpkg.loadOnce.Do(func() {
 		// Load the direct dependencies, in parallel.
 		var wg sync.WaitGroup
@@ -412,16 +412,16 @@ func loadRecursiveEx(ld *loader, lpkg *loaderPackage) {
 			imp := ld.pkgs[ipkg.ID]
 			wg.Add(1)
 			go func(imp *loaderPackage) {
-				loadRecursiveEx(ld, imp)
+				loadRecursiveEx(dedup, ld, imp)
 				wg.Done()
 			}(imp)
 		}
 		wg.Wait()
-		loadPackageEx(ld, lpkg)
+		loadPackageEx(dedup, ld, lpkg)
 	})
 }
 
-func refineEx(ld *loader, response *packages.DriverResponse) ([]*Package, error) {
+func refineEx(dedup *Deduper, ld *loader, response *packages.DriverResponse) ([]*Package, error) {
 	roots := response.Roots
 	rootMap := make(map[string]int, len(roots))
 	for i, root := range roots {
@@ -561,7 +561,7 @@ func refineEx(ld *loader, response *packages.DriverResponse) ([]*Package, error)
 		for _, lpkg := range initial {
 			wg.Add(1)
 			go func(lpkg *loaderPackage) {
-				loadRecursiveEx(ld, lpkg)
+				loadRecursiveEx(dedup, ld, lpkg)
 				wg.Done()
 			}(lpkg)
 		}
@@ -670,7 +670,7 @@ func LoadEx(dedup *Deduper, sizes func(types.Sizes) types.Sizes, cfg *Config, pa
 	if sizes != nil {
 		ld.sizes = sizes(ld.sizes)
 	}
-	return refineEx(ld, response)
+	return refineEx(dedup, ld, response)
 }
 
 // Visit visits all the packages in the import graph whose roots are
