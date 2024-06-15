@@ -286,11 +286,14 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	const N = 3
+	const N = 5
 	args := make([]string, N, len(pkg.Imports)+len(runtimeFiles)+(N+1))
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
+	args[3] = "-Xlinker"
+	args[4] = "-dead_strip"
+	//args[5] = "-O2"
 	needRuntime := false
 	needPyInit := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
