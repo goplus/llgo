@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/ssa"
 )
 
@@ -62,6 +63,11 @@ func TestFromTestpymath(t *testing.T) {
 
 func TestPython(t *testing.T) {
 	cltest.Pkg(t, ssa.PkgPython, "../py/llgo_autogen.ll")
+}
+
+func TestGoLibMath(t *testing.T) {
+	conf := build.NewDefaultConf(build.ModeInstall)
+	build.Do([]string{"math"}, conf)
 }
 
 func TestVar(t *testing.T) {
