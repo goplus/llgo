@@ -33,6 +33,7 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/xtool/clang"
 	"github.com/goplus/llgo/xtool/env"
 
@@ -94,6 +95,7 @@ func Do(args []string, conf *Config) {
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
+		Fset:       token.NewFileSet(),
 	}
 
 	llssa.Initialize(llssa.InitAll)
@@ -365,11 +367,15 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 		pkg.ExportFile = ""
 		return
 	}
+	altSSA := aPkg.AltSSA
 	syntax := pkg.Syntax
 	if altPkg := aPkg.AltPkg; altPkg != nil {
 		syntax = append(syntax, altPkg.Syntax...)
+		if altSSA != nil {
+			altSSA.Pkg = typepatch.Pkg(pkg.Types, altPkg.Types)
+		}
 	}
-	ret, err := cl.NewPackageEx(prog, aPkg.SSA, aPkg.AltSSA, syntax)
+	ret, err := cl.NewPackageEx(prog, aPkg.SSA, altSSA, syntax)
 	check(err)
 	if needLLFile(mode) {
 		pkg.ExportFile += ".ll"
@@ -421,8 +427,6 @@ func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (p
 					altPkgPath := "github.com/goplus/llgo/internal/lib/" + p.PkgPath
 					if altPkg = imp(altPkgPath); altPkg != nil {
 						altSSA = createAltSSAPkg(prog, altPkg)
-						altSSA.Pkg = p.Types
-						// TODO(xsw): merge p.Types and altPkg.Types
 					}
 				}
 			}

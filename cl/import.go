@@ -65,15 +65,19 @@ func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, fullName, inPkgN
 }
 
 func (p *pkgSymInfo) initLinknames(ctx *context) {
+	sep := []byte{'\n'}
+	commentPrefix := []byte{'/', '/'}
 	for file, b := range p.files {
-		lines := bytes.Split(b, []byte{'\n'})
+		lines := bytes.Split(b, sep)
 		for _, line := range lines {
-			ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
-				if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
-					return sym.fullName, sym.isVar, true
-				}
-				return
-			})
+			if bytes.HasPrefix(line, commentPrefix) {
+				ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
+					if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
+						return sym.fullName, sym.isVar, true
+					}
+					return
+				})
+			}
 		}
 	}
 }
