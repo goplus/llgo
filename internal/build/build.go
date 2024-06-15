@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -442,6 +443,17 @@ func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (p
 	return
 }
 
+type ssaProgram struct {
+	Fset     *token.FileSet
+	imported map[string]*ssa.Package
+	packages map[*types.Package]*ssa.Package // TODO(xsw): ensure offset of packages
+}
+
+func setPkgSSA(prog *ssa.Program, pkg *types.Package, pkgSSA *ssa.Package) {
+	s := (*ssaProgram)(unsafe.Pointer(prog))
+	s.packages[pkg] = pkgSSA
+}
+
 func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
 	altPath := alt.Types.Path()
 	altSSA := prog.ImportedPackage(altPath)
@@ -449,8 +461,11 @@ func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
 		packages.Visit([]*packages.Package{alt}, nil, func(p *packages.Package) {
 			pkgTypes := p.Types
 			if pkgTypes != nil && !p.IllTyped {
-				if prog.ImportedPackage(pkgTypes.Path()) == nil {
+				pkgSSA := prog.ImportedPackage(pkgTypes.Path())
+				if pkgSSA == nil {
 					prog.CreatePackage(pkgTypes, p.Syntax, p.TypesInfo, true)
+				} else {
+					setPkgSSA(prog, pkgTypes, pkgSSA)
 				}
 			}
 		})
