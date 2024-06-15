@@ -22,6 +22,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/ssa"
@@ -49,7 +50,9 @@ func TestFromTestlibc(t *testing.T) {
 }
 
 func TestFromTestrt(t *testing.T) {
+	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt", true)
+	cl.SetDebug(0)
 }
 
 func TestFromTestdata(t *testing.T) {
