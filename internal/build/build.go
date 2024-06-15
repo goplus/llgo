@@ -145,7 +145,14 @@ func Do(args []string, conf *Config) {
 		return rt[1].Types
 	})
 
-	pkgs := buildAllPkgs(prog, initial, nil, mode, verbose)
+	imp := func(pkgPath string) *packages.Package {
+		if ret, e := packages.LoadEx(sizes, cfg, pkgPath); e == nil {
+			return ret[0]
+		}
+		return nil
+	}
+
+	pkgs := buildAllPkgs(prog, imp, initial, nil, mode, verbose)
 
 	var runtimeFiles []string
 	if needRt {
@@ -153,7 +160,7 @@ func Do(args []string, conf *Config) {
 		for _, v := range pkgs {
 			skip[v.PkgPath] = true
 		}
-		dpkg := buildAllPkgs(prog, rt[:1], skip, mode, verbose)
+		dpkg := buildAllPkgs(prog, imp, rt[:1], skip, mode, verbose)
 		for _, pkg := range dpkg {
 			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
 				continue
@@ -192,9 +199,9 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 	return
 }
 
-func buildAllPkgs(prog llssa.Program, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
+func buildAllPkgs(prog llssa.Program, imp importer, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
-	ssaProg, pkgs, errPkgs := allPkgs(initial, ssa.SanityCheckFunctions)
+	ssaProg, pkgs, errPkgs := allPkgs(imp, initial, ssa.SanityCheckFunctions)
 	ssaProg.Build()
 	for _, errPkg := range errPkgs {
 		for _, err := range errPkg.Errors {
@@ -379,11 +386,21 @@ func canSkipToBuild(pkgPath string) bool {
 
 type aPackage struct {
 	*packages.Package
-	SSA  *ssa.Package
-	LPkg llssa.Package
+	SSA    *ssa.Package
+	AltPkg *packages.Package
+	AltSSA *ssa.Package
+	LPkg   llssa.Package
 }
 
-func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []*aPackage, errs []*packages.Package) {
+type none struct{}
+
+var hasAltPkg = map[string]none{
+	"math": {},
+}
+
+type importer = func(pkgPath string) *packages.Package
+
+func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []*aPackage, errs []*packages.Package) {
 	var fset *token.FileSet
 	if len(initial) > 0 {
 		fset = initial[0].Fset
@@ -392,8 +409,18 @@ func allPkgs(initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Progr
 	prog = ssa.NewProgram(fset, mode)
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
-			ssaPkg := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
-			all = append(all, &aPackage{p, ssaPkg, nil})
+			var altPkg *packages.Package
+			var altSSA *ssa.Package
+			var ssaPkg = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+			if imp != nil {
+				if _, ok := hasAltPkg[p.PkgPath]; ok {
+					altPkgPath := "github.com/goplus/llgo/internal/lib/" + p.PkgPath
+					if altPkg = imp(altPkgPath); altPkg != nil {
+						altSSA = prog.CreatePackage(altPkg.Types, altPkg.Syntax, altPkg.TypesInfo, true)
+					}
+				}
+			}
+			all = append(all, &aPackage{p, ssaPkg, altPkg, altSSA, nil})
 		} else {
 			errs = append(errs, p)
 		}
