@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/internal/runtime/c"
+import "github.com/goplus/llgo/c"
 
 type mSpanList struct {
 	first *mspan

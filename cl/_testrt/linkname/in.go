@@ -3,8 +3,8 @@ package main
 import (
 	_ "unsafe"
 
+	"github.com/goplus/llgo/c"
 	_ "github.com/goplus/llgo/cl/internal/linktarget"
-	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 //go:linkname print github.com/goplus/llgo/cl/internal/linktarget.F

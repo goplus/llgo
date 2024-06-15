@@ -1,6 +1,6 @@
 package main
 
-//"github.com/goplus/llgo/internal/runtime/c"
+//"github.com/goplus/llgo/c"
 
 func main() {
 	cvt64to8(0, 0)

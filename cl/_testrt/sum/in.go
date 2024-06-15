@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/llgo/internal/runtime/c"
+	"github.com/goplus/llgo/c"
 )
 
 func sum(args ...int) (ret int) {
