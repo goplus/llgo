@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	LLGoPackage = "link: sqlite3"
+	LLGoPackage = "link: $(pkg-config --libs sqlite3); -lsqlite3"
 )
 
 // llgo:type C
