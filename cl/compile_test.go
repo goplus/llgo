@@ -19,7 +19,6 @@ package cl_test
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/cl"
@@ -71,13 +70,11 @@ func TestPython(t *testing.T) {
 	cltest.Pkg(t, ssa.PkgPython, "../py/llgo_autogen.ll")
 }
 
-func TestGoLibMath(t *testing.T) {
-	if runtime.GOOS == "darwin" { // TODO(xsw): support linux/windows
-		root, _ := filepath.Abs("..")
-		os.Setenv("LLGOROOT", root)
-		conf := build.NewDefaultConf(build.ModeInstall)
-		build.Do([]string{"math"}, conf)
-	}
+func TestGoPkgMath(t *testing.T) {
+	root, _ := filepath.Abs("..")
+	os.Setenv("LLGOROOT", root)
+	conf := build.NewDefaultConf(build.ModeInstall)
+	build.Do([]string{"math"}, conf)
 }
 
 func TestVar(t *testing.T) {
