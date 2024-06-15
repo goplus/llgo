@@ -106,8 +106,7 @@ func Do(args []string, conf *Config) {
 
 	prog := llssa.NewProgram(nil)
 	sizes := prog.TypeSizes
-	// dedup := packages.NewDeduper()
-	dedup := (*packages.Deduper)(nil)
+	dedup := packages.NewDeduper()
 
 	if patterns == nil {
 		patterns = []string{"."}
