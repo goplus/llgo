@@ -99,11 +99,31 @@ type loader struct {
 	requestedMode LoadMode
 }
 
-type Deduper struct {
+type cachedPackage struct {
+	Types     *types.Package
+	TypesInfo *types.Info
+	Syntax    []*ast.File
 }
 
-func NewDeduper() *Deduper {
+type aDeduper struct {
+	cache sync.Map
+}
+
+type Deduper = *aDeduper
+
+func NewDeduper() Deduper {
+	return &aDeduper{}
+}
+
+func (p Deduper) check(pkgPath string) *cachedPackage {
+	if v, ok := p.cache.Load(pkgPath); ok {
+		return v.(*cachedPackage)
+	}
 	return nil
+}
+
+func (p Deduper) set(pkgPath string, cp *cachedPackage) {
+	p.cache.Store(pkgPath, cp)
 }
 
 //go:linkname defaultDriver golang.org/x/tools/go/packages.defaultDriver
@@ -130,7 +150,7 @@ type importerFunc func(path string) (*types.Package, error)
 
 func (f importerFunc) Import(path string) (*types.Package, error) { return f(path) }
 
-func loadPackageEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
+func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	if lpkg.PkgPath == "unsafe" {
 		// Fill in the blanks to avoid surprises.
 		lpkg.Types = types.Unsafe
@@ -139,6 +159,26 @@ func loadPackageEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
 		lpkg.TypesInfo = new(types.Info)
 		lpkg.TypesSizes = ld.sizes
 		return
+	}
+
+	if dedup != nil {
+		if cp := dedup.check(lpkg.PkgPath); cp != nil {
+			lpkg.Types = cp.Types
+			lpkg.Fset = ld.Fset
+			lpkg.TypesInfo = cp.TypesInfo
+			lpkg.Syntax = cp.Syntax
+			lpkg.TypesSizes = ld.sizes
+			return
+		}
+		defer func() {
+			if !lpkg.IllTyped && lpkg.needtypes && lpkg.needsrc {
+				dedup.set(lpkg.PkgPath, &cachedPackage{
+					Types:     lpkg.Types,
+					TypesInfo: lpkg.TypesInfo,
+					Syntax:    lpkg.Syntax,
+				})
+			}
+		}()
 	}
 
 	// Call NewPackage directly with explicit name.
@@ -404,7 +444,7 @@ func loadPackageEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
 	lpkg.IllTyped = illTyped
 }
 
-func loadRecursiveEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
+func loadRecursiveEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	lpkg.loadOnce.Do(func() {
 		// Load the direct dependencies, in parallel.
 		var wg sync.WaitGroup
@@ -421,7 +461,7 @@ func loadRecursiveEx(dedup *Deduper, ld *loader, lpkg *loaderPackage) {
 	})
 }
 
-func refineEx(dedup *Deduper, ld *loader, response *packages.DriverResponse) ([]*Package, error) {
+func refineEx(dedup Deduper, ld *loader, response *packages.DriverResponse) ([]*Package, error) {
 	roots := response.Roots
 	rootMap := make(map[string]int, len(roots))
 	for i, root := range roots {
@@ -641,7 +681,7 @@ func refineEx(dedup *Deduper, ld *loader, response *packages.DriverResponse) ([]
 // return an error. Clients may need to handle such errors before
 // proceeding with further analysis. The PrintErrors function is
 // provided for convenient display of all errors.
-func LoadEx(dedup *Deduper, sizes func(types.Sizes) types.Sizes, cfg *Config, patterns ...string) ([]*Package, error) {
+func LoadEx(dedup Deduper, sizes func(types.Sizes) types.Sizes, cfg *Config, patterns ...string) ([]*Package, error) {
 	ld := newLoader(cfg)
 	response, external, err := defaultDriver(&ld.Config, patterns...)
 	if err != nil {
