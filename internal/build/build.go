@@ -365,7 +365,12 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 		pkg.ExportFile = ""
 		return
 	}
-	ret, err := cl.NewPackage(prog, aPkg.SSA, pkg.Syntax)
+	syntax := pkg.Syntax
+	if altPkg := aPkg.AltPkg; altPkg != nil {
+		// TODO: merge pkg.Types
+		syntax = append(syntax, altPkg.Syntax...)
+	}
+	ret, err := cl.NewPackage(prog, aPkg.SSA, aPkg.AltSSA, syntax)
 	check(err)
 	if needLLFile(mode) {
 		pkg.ExportFile += ".ll"

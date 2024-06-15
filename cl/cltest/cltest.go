@@ -143,7 +143,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	foo.WriteTo(os.Stderr)
 	prog := ssatest.NewProgramEx(t, nil, imp)
 
-	ret, err := cl.NewPackage(prog, foo, files)
+	ret, err := cl.NewPackage(prog, foo, nil, files)
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
