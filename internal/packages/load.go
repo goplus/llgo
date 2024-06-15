@@ -18,8 +18,13 @@ package packages
 
 import (
 	"fmt"
+	"go/ast"
+	"go/scanner"
 	"go/types"
+	"log"
+	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -52,6 +57,8 @@ const (
 	NeedTypes      = packages.NeedTypes
 	NeedTypesSizes = packages.NeedTypesSizes
 	NeedTypesInfo  = packages.NeedTypesInfo
+
+	typecheckCgo = NeedModule - 1 // TODO(xsw): how to check
 )
 
 // A Config specifies details about how packages should be loaded.
@@ -105,8 +112,297 @@ func defaultDriver(cfg *Config, patterns ...string) (*packages.DriverResponse, b
 //go:linkname newLoader golang.org/x/tools/go/packages.newLoader
 func newLoader(cfg *Config) *loader
 
-//go:linkname loadPackage golang.org/x/tools/go/packages.(*loader).loadPackage
-func loadPackage(ld *loader, lpkg *loaderPackage)
+//go:linkname loadFromExportData golang.org/x/tools/go/packages.(*loader).loadFromExportData
+func loadFromExportData(ld *loader, lpkg *loaderPackage) error
+
+//go:linkname parseFiles golang.org/x/tools/go/packages.(*loader).parseFiles
+func parseFiles(ld *loader, filenames []string) ([]*ast.File, []error)
+
+//go:linkname versionsInitFileVersions golang.org/x/tools/internal/versions.InitFileVersions
+func versionsInitFileVersions(*types.Info)
+
+//go:linkname typesinternalSetUsesCgo golang.org/x/tools/internal/typesinternal.SetUsesCgo
+func typesinternalSetUsesCgo(conf *types.Config) bool
+
+// An importFunc is an implementation of the single-method
+// types.Importer interface based on a function value.
+type importerFunc func(path string) (*types.Package, error)
+
+func (f importerFunc) Import(path string) (*types.Package, error) { return f(path) }
+
+func loadPackageEx(ld *loader, lpkg *loaderPackage) {
+	if lpkg.PkgPath == "unsafe" {
+		// Fill in the blanks to avoid surprises.
+		lpkg.Types = types.Unsafe
+		lpkg.Fset = ld.Fset
+		lpkg.Syntax = []*ast.File{}
+		lpkg.TypesInfo = new(types.Info)
+		lpkg.TypesSizes = ld.sizes
+		return
+	}
+
+	// Call NewPackage directly with explicit name.
+	// This avoids skew between golist and go/types when the files'
+	// package declarations are inconsistent.
+	lpkg.Types = types.NewPackage(lpkg.PkgPath, lpkg.Name)
+	lpkg.Fset = ld.Fset
+
+	// Start shutting down if the context is done and do not load
+	// source or export data files.
+	// Packages that import this one will have ld.Context.Err() != nil.
+	// ld.Context.Err() will be returned later by refine.
+	if ld.Context.Err() != nil {
+		return
+	}
+
+	// Subtle: we populate all Types fields with an empty Package
+	// before loading export data so that export data processing
+	// never has to create a types.Package for an indirect dependency,
+	// which would then require that such created packages be explicitly
+	// inserted back into the Import graph as a final step after export data loading.
+	// (Hence this return is after the Types assignment.)
+	// The Diamond test exercises this case.
+	if !lpkg.needtypes && !lpkg.needsrc {
+		return
+	}
+	if !lpkg.needsrc {
+		if err := loadFromExportData(ld, lpkg); err != nil {
+			lpkg.Errors = append(lpkg.Errors, packages.Error{
+				Pos:  "-",
+				Msg:  err.Error(),
+				Kind: packages.UnknownError, // e.g. can't find/open/parse export data
+			})
+		}
+		return // not a source package, don't get syntax trees
+	}
+
+	appendError := func(err error) {
+		// Convert various error types into the one true Error.
+		var errs []packages.Error
+		switch err := err.(type) {
+		case packages.Error:
+			// from driver
+			errs = append(errs, err)
+
+		case *os.PathError:
+			// from parser
+			errs = append(errs, packages.Error{
+				Pos:  err.Path + ":1",
+				Msg:  err.Err.Error(),
+				Kind: packages.ParseError,
+			})
+
+		case scanner.ErrorList:
+			// from parser
+			for _, err := range err {
+				errs = append(errs, packages.Error{
+					Pos:  err.Pos.String(),
+					Msg:  err.Msg,
+					Kind: packages.ParseError,
+				})
+			}
+
+		case types.Error:
+			// from type checker
+			lpkg.TypeErrors = append(lpkg.TypeErrors, err)
+			errs = append(errs, packages.Error{
+				Pos:  err.Fset.Position(err.Pos).String(),
+				Msg:  err.Msg,
+				Kind: packages.TypeError,
+			})
+
+		default:
+			// unexpected impoverished error from parser?
+			errs = append(errs, packages.Error{
+				Pos:  "-",
+				Msg:  err.Error(),
+				Kind: packages.UnknownError,
+			})
+
+			// If you see this error message, please file a bug.
+			log.Printf("internal error: error %q (%T) without position", err, err)
+		}
+
+		lpkg.Errors = append(lpkg.Errors, errs...)
+	}
+
+	// If the go command on the PATH is newer than the runtime,
+	// then the go/{scanner,ast,parser,types} packages from the
+	// standard library may be unable to process the files
+	// selected by go list.
+	//
+	// There is currently no way to downgrade the effective
+	// version of the go command (see issue 52078), so we proceed
+	// with the newer go command but, in case of parse or type
+	// errors, we emit an additional diagnostic.
+	//
+	// See:
+	// - golang.org/issue/52078 (flag to set release tags)
+	// - golang.org/issue/50825 (gopls legacy version support)
+	// - golang.org/issue/55883 (go/packages confusing error)
+	//
+	// Should we assert a hard minimum of (currently) go1.16 here?
+	var runtimeVersion int
+	if _, err := fmt.Sscanf(runtime.Version(), "go1.%d", &runtimeVersion); err == nil && runtimeVersion < lpkg.goVersion {
+		defer func() {
+			if len(lpkg.Errors) > 0 {
+				appendError(packages.Error{
+					Pos:  "-",
+					Msg:  fmt.Sprintf("This application uses version go1.%d of the source-processing packages but runs version go1.%d of 'go list'. It may fail to process source files that rely on newer language features. If so, rebuild the application using a newer version of Go.", runtimeVersion, lpkg.goVersion),
+					Kind: packages.UnknownError,
+				})
+			}
+		}()
+	}
+
+	if ld.Config.Mode&NeedTypes != 0 && len(lpkg.CompiledGoFiles) == 0 && lpkg.ExportFile != "" {
+		// The config requested loading sources and types, but sources are missing.
+		// Add an error to the package and fall back to loading from export data.
+		appendError(packages.Error{
+			Pos:  "-",
+			Msg:  fmt.Sprintf("sources missing for package %s", lpkg.ID),
+			Kind: packages.ParseError,
+		})
+		_ = loadFromExportData(ld, lpkg) // ignore any secondary errors
+
+		return // can't get syntax trees for this package
+	}
+
+	files, errs := parseFiles(ld, lpkg.CompiledGoFiles)
+	for _, err := range errs {
+		appendError(err)
+	}
+
+	lpkg.Syntax = files
+	if ld.Config.Mode&NeedTypes == 0 {
+		return
+	}
+
+	// Start shutting down if the context is done and do not type check.
+	// Packages that import this one will have ld.Context.Err() != nil.
+	// ld.Context.Err() will be returned later by refine.
+	if ld.Context.Err() != nil {
+		return
+	}
+
+	lpkg.TypesInfo = &types.Info{
+		Types:      make(map[ast.Expr]types.TypeAndValue),
+		Defs:       make(map[*ast.Ident]types.Object),
+		Uses:       make(map[*ast.Ident]types.Object),
+		Implicits:  make(map[ast.Node]types.Object),
+		Instances:  make(map[*ast.Ident]types.Instance),
+		Scopes:     make(map[ast.Node]*types.Scope),
+		Selections: make(map[*ast.SelectorExpr]*types.Selection),
+	}
+	versionsInitFileVersions(lpkg.TypesInfo)
+	lpkg.TypesSizes = ld.sizes
+
+	importer := importerFunc(func(path string) (*types.Package, error) {
+		if path == "unsafe" {
+			return types.Unsafe, nil
+		}
+
+		// The imports map is keyed by import path.
+		ipkg := lpkg.Imports[path]
+		if ipkg == nil {
+			if err := lpkg.importErrors[path]; err != nil {
+				return nil, err
+			}
+			// There was skew between the metadata and the
+			// import declarations, likely due to an edit
+			// race, or because the ParseFile feature was
+			// used to supply alternative file contents.
+			return nil, fmt.Errorf("no metadata for %s", path)
+		}
+
+		if ipkg.Types != nil && ipkg.Types.Complete() {
+			return ipkg.Types, nil
+		}
+		log.Fatalf("internal error: package %q without types was imported from %q", path, lpkg)
+		panic("unreachable")
+	})
+
+	// type-check
+	tc := &types.Config{
+		Importer: importer,
+
+		// Type-check bodies of functions only in initial packages.
+		// Example: for import graph A->B->C and initial packages {A,C},
+		// we can ignore function bodies in B.
+		IgnoreFuncBodies: ld.Mode&NeedDeps == 0 && !lpkg.initial,
+
+		Error: appendError,
+		Sizes: ld.sizes, // may be nil
+	}
+	if lpkg.Module != nil && lpkg.Module.GoVersion != "" {
+		tc.GoVersion = "go" + lpkg.Module.GoVersion
+	}
+	if (ld.Mode & typecheckCgo) != 0 {
+		if !typesinternalSetUsesCgo(tc) {
+			appendError(packages.Error{
+				Msg:  "typecheckCgo requires Go 1.15+",
+				Kind: packages.ListError,
+			})
+			return
+		}
+	}
+
+	typErr := types.NewChecker(tc, ld.Fset, lpkg.Types, lpkg.TypesInfo).Files(lpkg.Syntax)
+	lpkg.importErrors = nil // no longer needed
+
+	// In go/types go1.21 and go1.22, Checker.Files failed fast with a
+	// a "too new" error, without calling tc.Error and without
+	// proceeding to type-check the package (#66525).
+	// We rely on the runtimeVersion error to give the suggested remedy.
+	if typErr != nil && len(lpkg.Errors) == 0 && len(lpkg.Syntax) > 0 {
+		if msg := typErr.Error(); strings.HasPrefix(msg, "package requires newer Go version") {
+			appendError(types.Error{
+				Fset: ld.Fset,
+				Pos:  lpkg.Syntax[0].Package,
+				Msg:  msg,
+			})
+		}
+	}
+
+	// If !Cgo, the type-checker uses FakeImportC mode, so
+	// it doesn't invoke the importer for import "C",
+	// nor report an error for the import,
+	// or for any undefined C.f reference.
+	// We must detect this explicitly and correctly
+	// mark the package as IllTyped (by reporting an error).
+	// TODO(adonovan): if these errors are annoying,
+	// we could just set IllTyped quietly.
+	if tc.FakeImportC {
+	outer:
+		for _, f := range lpkg.Syntax {
+			for _, imp := range f.Imports {
+				if imp.Path.Value == `"C"` {
+					err := types.Error{Fset: ld.Fset, Pos: imp.Pos(), Msg: `import "C" ignored`}
+					appendError(err)
+					break outer
+				}
+			}
+		}
+	}
+
+	// If types.Checker.Files had an error that was unreported,
+	// make sure to report the unknown error so the package is illTyped.
+	if typErr != nil && len(lpkg.Errors) == 0 {
+		appendError(typErr)
+	}
+
+	// Record accumulated errors.
+	illTyped := len(lpkg.Errors) > 0
+	if !illTyped {
+		for _, imp := range lpkg.Imports {
+			if imp.IllTyped {
+				illTyped = true
+				break
+			}
+		}
+	}
+	lpkg.IllTyped = illTyped
+}
 
 func loadRecursiveEx(ld *loader, lpkg *loaderPackage) {
 	lpkg.loadOnce.Do(func() {
@@ -121,7 +417,7 @@ func loadRecursiveEx(ld *loader, lpkg *loaderPackage) {
 			}(imp)
 		}
 		wg.Wait()
-		loadPackage(ld, lpkg)
+		loadPackageEx(ld, lpkg)
 	})
 }
 
