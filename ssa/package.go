@@ -564,6 +564,11 @@ func (p Package) cFunc(fullName string, sig *types.Signature) Expr {
 	return p.NewFunc(fullName, sig, InC).Expr
 }
 
+const (
+	closureCtx  = "__llgo_ctx"
+	closureStub = "__llgo_stub."
+)
+
 func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 	name := v.impl.Name()
 	prog := b.Prog
@@ -574,9 +579,9 @@ func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
 		sig := v.raw.Type.(*types.Signature)
 		n := sig.Params().Len()
 		nret := sig.Results().Len()
-		ctx := types.NewParam(token.NoPos, nil, ClosureCtx, types.Typ[types.UnsafePointer])
+		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
 		sig = FuncAddCtx(ctx, sig)
-		fn := p.NewFunc(ClosureStub+name, sig, InC)
+		fn := p.NewFunc(closureStub+name, sig, InC)
 		fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		args := make([]Expr, n)
 		for i := 0; i < n; i++ {

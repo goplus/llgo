@@ -65,15 +65,19 @@ func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, fullName, inPkgN
 }
 
 func (p *pkgSymInfo) initLinknames(ctx *context) {
+	sep := []byte{'\n'}
+	commentPrefix := []byte{'/', '/'}
 	for file, b := range p.files {
-		lines := bytes.Split(b, []byte{'\n'})
+		lines := bytes.Split(b, sep)
 		for _, line := range lines {
-			ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
-				if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
-					return sym.fullName, sym.isVar, true
-				}
-				return
-			})
+			if bytes.HasPrefix(line, commentPrefix) {
+				ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
+					if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
+						return sym.fullName, sym.isVar, true
+					}
+					return
+				})
+			}
 		}
 	}
 }
@@ -168,13 +172,44 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 				fullName, inPkgName := astFuncName(pkgPath, decl)
 				p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
-				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
-					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-						inPkgName := names[0].Name
-						p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+				switch decl.Tok {
+				case token.VAR:
+					if len(decl.Specs) == 1 {
+						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+							inPkgName := names[0].Name
+							p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						}
+					}
+				case token.IMPORT:
+					if doc := decl.Doc; doc != nil {
+						if n := len(doc.List); n > 0 {
+							line := doc.List[n-1].Text
+							p.collectSkipNames(line)
+						}
 					}
 				}
 			}
+		}
+	}
+}
+
+func (p *context) collectSkipNames(line string) {
+	const (
+		skip  = "//llgo:skip "
+		skip2 = "// llgo:skip "
+	)
+	if strings.HasPrefix(line, skip2) {
+		p.collectSkip(line, len(skip2))
+	} else if strings.HasPrefix(line, skip) {
+		p.collectSkip(line, len(skip))
+	}
+}
+
+func (p *context) collectSkip(line string, prefix int) {
+	names := strings.Split(line[prefix:], " ")
+	for _, name := range names {
+		if name != "" {
+			p.skips[name] = none{}
 		}
 	}
 }

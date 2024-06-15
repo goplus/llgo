@@ -27,6 +27,11 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestCollectSkipNames(t *testing.T) {
+	ctx := &context{skips: make(map[string]none)}
+	ctx.collectSkipNames("//llgo:skip abs")
+}
+
 func TestReplaceGoName(t *testing.T) {
 	if ret := replaceGoName("foo", 0); ret != "foo" {
 		t.Fatal("replaceGoName:", ret)
@@ -153,6 +158,9 @@ func TestPkgKind(t *testing.T) {
 		t.Fatal("pkgKind:", v)
 	}
 	if v, _ := pkgKind("noinit"); v != PkgNoInit {
+		t.Fatal("pkgKind:", v)
+	}
+	if v, _ := pkgKind("link"); v != PkgLinkIR {
 		t.Fatal("pkgKind:", v)
 	}
 	if v, _ := pkgKind(""); v != PkgLLGo {

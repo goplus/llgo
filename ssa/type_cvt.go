@@ -133,7 +133,7 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 }
 
 func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
-	ctx := types.NewParam(token.NoPos, nil, ClosureCtx, types.Typ[types.UnsafePointer])
+	ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
 	raw := p.cvtFunc(sig, ctx)
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "f", raw, false),

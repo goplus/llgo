@@ -25,6 +25,10 @@ import (
 	"github.com/goplus/llgo/ssa/ssatest"
 )
 
+func init() {
+	ssa.SetDebug(ssa.DbgFlagAll)
+}
+
 func TestFromTestgo(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testgo", false)
 }

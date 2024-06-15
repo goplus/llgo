@@ -149,9 +149,6 @@ func Nextafter(x, y float64) float64
 //go:linkname Pow C.pow
 func Pow(x, y float64) float64
 
-//go:linkname Pow10 C.pow10
-func Pow10(x c.Int) float64
-
 //go:linkname Remainder C.remainder
 func Remainder(x, y float64) float64
 

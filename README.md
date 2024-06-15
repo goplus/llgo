@@ -207,6 +207,7 @@ Here are the Go packages that can be imported correctly:
 * [unicode/utf8](https://pkg.go.dev/unicode/utf8)
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
 * [math/bits](https://pkg.go.dev/math/bits)
+* [math](https://pkg.go.dev/math)
 
 
 ## How to install
