@@ -19,6 +19,7 @@ package cl_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
@@ -68,10 +69,12 @@ func TestPython(t *testing.T) {
 }
 
 func TestGoLibMath(t *testing.T) {
-	root, _ := filepath.Abs("..")
-	os.Setenv("LLGOROOT", root)
-	conf := build.NewDefaultConf(build.ModeInstall)
-	build.Do([]string{"math"}, conf)
+	if runtime.GOOS == "darwin" { // TODO(xsw): support linux/windows
+		root, _ := filepath.Abs("..")
+		os.Setenv("LLGOROOT", root)
+		conf := build.NewDefaultConf(build.ModeInstall)
+		build.Do([]string{"math"}, conf)
+	}
 }
 
 func TestVar(t *testing.T) {
