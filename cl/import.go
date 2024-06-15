@@ -344,10 +344,27 @@ const (
 	llgoIndex       = llgoInstrBase + 5
 	llgoStringData  = llgoInstrBase + 6
 	llgoPyList      = llgoInstrBase + 7
-	llgoSigjmpbuf   = llgoInstrBase + 10
-	llgoSigsetjmp   = llgoInstrBase + 11
-	llgoSiglongjmp  = llgoInstrBase + 12
-	llgoDeferData   = llgoInstrBase + 13
+	llgoSigjmpbuf   = llgoInstrBase + 0xa
+	llgoSigsetjmp   = llgoInstrBase + 0xb
+	llgoSiglongjmp  = llgoInstrBase + 0xc
+	llgoDeferData   = llgoInstrBase + 0xd
+
+	llgoAtomicCmpXchg = llgoInstrBase + 0xf
+	llgoAtomicOpBase  = llgoInstrBase + 0x10
+
+	llgoAtomicXchg = llgoAtomicOpBase + llssa.OpXchg
+	llgoAtomicAdd  = llgoAtomicOpBase + llssa.OpAdd
+	llgoAtomicSub  = llgoAtomicOpBase + llssa.OpSub
+	llgoAtomicAnd  = llgoAtomicOpBase + llssa.OpAnd
+	llgoAtomicNand = llgoAtomicOpBase + llssa.OpNand
+	llgoAtomicOr   = llgoAtomicOpBase + llssa.OpOr
+	llgoAtomicXor  = llgoAtomicOpBase + llssa.OpXor
+	llgoAtomicMax  = llgoAtomicOpBase + llssa.OpMax
+	llgoAtomicMin  = llgoAtomicOpBase + llssa.OpMin
+	llgoAtomicUMax = llgoAtomicOpBase + llssa.OpUMax
+	llgoAtomicUMin = llgoAtomicOpBase + llssa.OpUMin
+
+	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
