@@ -953,20 +953,14 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 // -----------------------------------------------------------------------------
 
 // NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	type namedMember struct {
-		name string
-		val  ssa.Member
-	}
+func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+	return NewPackageEx(prog, pkg, nil, files)
+}
 
-	members := make([]*namedMember, 0, len(pkg.Members))
-	for name, v := range pkg.Members {
-		members = append(members, &namedMember{name, v})
-	}
-	sort.Slice(members, func(i, j int) bool {
-		return members[i].name < members[j].name
-	})
-
+// NewPackageEx compiles a Go package (pkg) to LLVM IR package.
+// The Go package may have an alternative package (alt).
+// The pkg and alt have the same (Pkg *types.Package).
+func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
@@ -990,6 +984,28 @@ func NewPackage(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (r
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
+
+	if alt != nil {
+		processPkg(ctx, ret, alt)
+	}
+	processPkg(ctx, ret, pkg)
+	return
+}
+
+func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
+	type namedMember struct {
+		name string
+		val  ssa.Member
+	}
+
+	members := make([]*namedMember, 0, len(pkg.Members))
+	for name, v := range pkg.Members {
+		members = append(members, &namedMember{name, v})
+	}
+	sort.Slice(members, func(i, j int) bool {
+		return members[i].name < members[j].name
+	})
+
 	for _, m := range members {
 		member := m.val
 		switch member := member.(type) {
@@ -1013,7 +1029,6 @@ func NewPackage(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (r
 			ini()
 		}
 	}
-	return
 }
 
 // -----------------------------------------------------------------------------

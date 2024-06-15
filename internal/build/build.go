@@ -34,10 +34,10 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/xtool/clang"
-	clangCheck "github.com/goplus/llgo/xtool/clang/check"
 	"github.com/goplus/llgo/xtool/env"
 
 	llssa "github.com/goplus/llgo/ssa"
+	clangCheck "github.com/goplus/llgo/xtool/clang/check"
 )
 
 type Mode int
@@ -370,7 +370,7 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 		// TODO: merge pkg.Types
 		syntax = append(syntax, altPkg.Syntax...)
 	}
-	ret, err := cl.NewPackage(prog, aPkg.SSA, aPkg.AltSSA, syntax)
+	ret, err := cl.NewPackageEx(prog, aPkg.SSA, aPkg.AltSSA, syntax)
 	check(err)
 	if needLLFile(mode) {
 		pkg.ExportFile += ".ll"
