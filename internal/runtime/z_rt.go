@@ -19,9 +19,9 @@ package runtime
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/pthread"
 	"github.com/goplus/llgo/internal/abi"
-	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 // -----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/internal/runtime/c"
+import "github.com/goplus/llgo/c"
 
 func f(s string) bool {
 	return len(s) > 2
