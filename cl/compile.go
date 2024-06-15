@@ -990,7 +990,10 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 	ctx.initFiles(pkgPath, files)
 
 	if alt != nil {
+		skips := ctx.skips
+		ctx.skips = nil
 		processPkg(ctx, ret, alt)
+		ctx.skips = skips
 	}
 	processPkg(ctx, ret, pkg)
 	for len(ctx.inits) > 0 {
