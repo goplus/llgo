@@ -367,7 +367,6 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 	}
 	syntax := pkg.Syntax
 	if altPkg := aPkg.AltPkg; altPkg != nil {
-		// TODO: merge pkg.Types
 		syntax = append(syntax, altPkg.Syntax...)
 	}
 	ret, err := cl.NewPackageEx(prog, aPkg.SSA, aPkg.AltSSA, syntax)
@@ -421,7 +420,9 @@ func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (p
 				if _, ok := hasAltPkg[p.PkgPath]; ok {
 					altPkgPath := "github.com/goplus/llgo/internal/lib/" + p.PkgPath
 					if altPkg = imp(altPkgPath); altPkg != nil {
-						altSSA = prog.CreatePackage(altPkg.Types, altPkg.Syntax, altPkg.TypesInfo, true)
+						altSSA = createAltSSAPkg(prog, altPkg)
+						altSSA.Pkg = p.Types
+						// TODO(xsw): merge p.Types and altPkg.Types
 					}
 				}
 			}
@@ -431,6 +432,18 @@ func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (p
 		}
 	})
 	return
+}
+
+func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
+	packages.Visit([]*packages.Package{alt}, nil, func(p *packages.Package) {
+		typ := p.Types
+		if typ != nil && !p.IllTyped {
+			if prog.ImportedPackage(typ.Path()) == nil {
+				prog.CreatePackage(typ, p.Syntax, p.TypesInfo, true)
+			}
+		}
+	})
+	return prog.ImportedPackage(alt.Types.Path())
 }
 
 var (
