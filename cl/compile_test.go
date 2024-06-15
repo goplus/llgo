@@ -17,6 +17,8 @@
 package cl_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
@@ -66,6 +68,8 @@ func TestPython(t *testing.T) {
 }
 
 func TestGoLibMath(t *testing.T) {
+	root, _ := filepath.Abs("..")
+	os.Setenv("LLGOROOT", root)
 	conf := build.NewDefaultConf(build.ModeInstall)
 	build.Do([]string{"math"}, conf)
 }
