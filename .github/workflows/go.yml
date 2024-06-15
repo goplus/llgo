@@ -52,7 +52,12 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      - name: Test
+        if: matrix.os != 'macos-latest'
+        run: go test -v ./...
+
       - name: Test with coverage
+        if: matrix.os == 'macos-latest'
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Install
