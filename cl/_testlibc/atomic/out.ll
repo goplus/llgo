@@ -1,13 +1,16 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
+%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
-@0 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@1 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@3 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
+@0 = private unnamed_addr constant [6 x i8] c"store:", align 1
+@1 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@2 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@3 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@4 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -29,24 +32,41 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  store i64 100, ptr %2, align 4
-  %3 = atomicrmw add ptr %2, i64 1 seq_cst, align 8
-  %4 = load i64, ptr %2, align 4
-  %5 = call i32 (ptr, ...) @printf(ptr @0, i64 %4)
-  %6 = cmpxchg ptr %2, i64 100, i64 102 seq_cst seq_cst, align 8
-  %7 = load i64, ptr %2, align 4
-  %8 = call i32 (ptr, ...) @printf(ptr @1, i64 %7)
-  %9 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
-  %10 = load i64, ptr %2, align 4
-  %11 = call i32 (ptr, ...) @printf(ptr @2, i64 %10)
-  %12 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
-  %13 = load i64, ptr %2, align 4
-  %14 = call i32 (ptr, ...) @printf(ptr @3, i64 %13)
+  store atomic i64 100, ptr %2 seq_cst, align 4
+  %3 = load atomic i64, ptr %2 seq_cst, align 4
+  %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
+  store ptr @0, ptr %5, align 8
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
+  store i64 6, ptr %6, align 4
+  %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %7)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %8 = atomicrmw add ptr %2, i64 1 seq_cst, align 8
+  %9 = load i64, ptr %2, align 4
+  %10 = call i32 (ptr, ...) @printf(ptr @1, i64 %9)
+  %11 = cmpxchg ptr %2, i64 100, i64 102 seq_cst seq_cst, align 8
+  %12 = load i64, ptr %2, align 4
+  %13 = call i32 (ptr, ...) @printf(ptr @2, i64 %12)
+  %14 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
+  %15 = load i64, ptr %2, align 4
+  %16 = call i32 (ptr, ...) @printf(ptr @3, i64 %15)
+  %17 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
+  %18 = load i64, ptr %2, align 4
+  %19 = call i32 (ptr, ...) @printf(ptr @4, i64 %18)
   ret i32 0
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
+
+declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+
+declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
 
 declare i32 @printf(ptr, ...)
