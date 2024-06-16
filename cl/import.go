@@ -490,6 +490,20 @@ func replaceGoName(v string, pos int) string {
 	return v
 }
 
+func ignoreName(name string) bool {
+	/* TODO(xsw): confirm this is not needed more
+	if name == "unsafe.init" {
+		return true
+	}
+	*/
+	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
+		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
+		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
+		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
+		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") ||
+		strings.HasPrefix(name, "runtime/")
+}
+
 // -----------------------------------------------------------------------------
 
 const (

@@ -292,18 +292,18 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	const N = 6
+	const N = 5
 	args := make([]string, N, len(pkg.Imports)+len(runtimeFiles)+(N+1))
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
-	args[3] = "-fuse-ld=lld"
-	args[4] = "-Xlinker"
+	args[3] = "-Xlinker"
 	if runtime.GOOS == "darwin" { // ld64.lld (macOS)
-		args[5] = "-dead_strip"
+		args[4] = "-dead_strip"
 	} else { // ld.lld (Unix), lld-link (Windows), wasm-ld (WebAssembly)
-		args[5] = "--gc-sections"
+		args[4] = "--gc-sections"
 	}
+	//args[5] = "-fuse-ld=lld" // TODO(xsw): to check lld exists or not
 	//args[6] = "-O2"
 	needRuntime := false
 	needPyInit := false
@@ -399,25 +399,6 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 	aPkg.LPkg = ret
 }
 
-func canSkipToBuild(pkgPath string) bool {
-	switch pkgPath {
-	case "unsafe", "errors", "runtime", "sync": // TODO(xsw): remove it
-		return true
-	default:
-		return strings.HasPrefix(pkgPath, "internal/") ||
-			strings.HasPrefix(pkgPath, "runtime/internal/")
-	}
-}
-
-type none struct{}
-
-var hasAltPkg = map[string]none{
-	"math":        {},
-	"sync":        {},
-	"sync/atomic": {},
-	"runtime":     {},
-}
-
 const (
 	altPkgPathPrefix = "github.com/goplus/llgo/internal/lib/"
 )
@@ -468,7 +449,9 @@ func allPkgs(ctx *context, initial []*packages.Package) (all []*aPackage, errs [
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
 			if _, ok := hasAltPkg[p.PkgPath]; ok {
-				altPkg = ctx.dedup.Check(altPkgPathPrefix + p.PkgPath)
+				if altPkg = ctx.dedup.Check(altPkgPathPrefix + p.PkgPath); altPkg == nil {
+					return
+				}
 			}
 			all = append(all, &aPackage{p, ssaPkg, altPkg, nil})
 		} else {
@@ -683,6 +666,25 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 		err = os.WriteFile(outFile, data, 0644)
 	}
 	return
+}
+
+func canSkipToBuild(pkgPath string) bool {
+	switch pkgPath {
+	case "unsafe", "errors": // TODO(xsw): remove it
+		return true
+	default:
+		return strings.HasPrefix(pkgPath, "internal/") ||
+			strings.HasPrefix(pkgPath, "runtime/internal/")
+	}
+}
+
+type none struct{}
+
+var hasAltPkg = map[string]none{
+	"math":        {},
+	"sync":        {},
+	"sync/atomic": {},
+	"runtime":     {},
 }
 
 func check(err error) {
