@@ -100,10 +100,11 @@ func ignoreName(name string) bool {
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
 		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
 		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
-		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") {
+		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") ||
+		strings.HasPrefix(name, "sync.") {
 		return true // TODO(xsw)
 	}
-	return inPkg(name, "runtime") || inPkg(name, "sync")
+	return inPkg(name, "runtime")
 }
 
 func inPkg(name, pkg string) bool {
@@ -157,6 +158,8 @@ type context struct {
 
 	inits []func()
 	phis  []func()
+
+	skipall bool
 }
 
 func (p *context) inMain(instr ssa.Instruction) bool {
@@ -1048,7 +1051,9 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 		processPkg(ctx, ret, alt)
 		ctx.skips = skips
 	}
-	processPkg(ctx, ret, pkg)
+	if !ctx.skipall {
+		processPkg(ctx, ret, pkg)
+	}
 	for len(ctx.inits) > 0 {
 		inits := ctx.inits
 		ctx.inits = nil

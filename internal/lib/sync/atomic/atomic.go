@@ -16,7 +16,7 @@
 
 package atomic
 
-// llgo:skip init
+// llgo:skipall
 import (
 	_ "unsafe"
 )
