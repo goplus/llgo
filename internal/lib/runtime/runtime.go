@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package atomic
+package runtime
 
+// llgo:skipall
 import (
 	_ "unsafe"
 )
-
-const (
-	LLGoPackage = true
-)
-
-//go:linkname cAddInt64 llgo.atomicAdd
-func cAddInt64(addr *int64, delta int64) (old int64)
-
-func AddInt64(addr *int64, delta int64) (new int64) {
-	return cAddInt64(addr, delta) + delta
-}

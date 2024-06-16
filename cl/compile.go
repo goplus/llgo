@@ -96,23 +96,12 @@ func ignoreName(name string) bool {
 		return true
 	}
 	*/
-	if strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
+	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
 		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
 		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
 		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") ||
-		strings.HasPrefix(name, "sync.") {
-		return true // TODO(xsw)
-	}
-	return inPkg(name, "runtime")
-}
-
-func inPkg(name, pkg string) bool {
-	if len(name) > len(pkg) && strings.HasPrefix(name, pkg) {
-		c := name[len(pkg)]
-		return c == '.' || c == '/'
-	}
-	return false
+		strings.HasPrefix(name, "runtime/")
 }
 
 // -----------------------------------------------------------------------------

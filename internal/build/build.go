@@ -399,7 +399,7 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 
 func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
-	case "unsafe", "runtime", "errors", "sync":
+	case "unsafe", "errors":
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
@@ -419,7 +419,9 @@ type none struct{}
 
 var hasAltPkg = map[string]none{
 	"math":        {},
+	"sync":        {},
 	"sync/atomic": {},
+	"runtime":     {},
 }
 
 type importer = func(pkgPath string) *packages.Package
