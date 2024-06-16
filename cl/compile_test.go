@@ -17,9 +17,13 @@
 package cl_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/ssa"
 )
 
@@ -36,12 +40,18 @@ func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy", false)
 }
 
+func TestFromTestlibgo(t *testing.T) {
+	cltest.FromDir(t, "", "./_testlibgo", true)
+}
+
 func TestFromTestlibc(t *testing.T) {
 	cltest.FromDir(t, "", "./_testlibc", true)
 }
 
 func TestFromTestrt(t *testing.T) {
+	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt", true)
+	cl.SetDebug(0)
 }
 
 func TestFromTestdata(t *testing.T) {
@@ -60,6 +70,13 @@ func TestPython(t *testing.T) {
 	cltest.Pkg(t, ssa.PkgPython, "../py/llgo_autogen.ll")
 }
 
+func TestGoPkgMath(t *testing.T) {
+	root, _ := filepath.Abs("..")
+	os.Setenv("LLGOROOT", root)
+	conf := build.NewDefaultConf(build.ModeInstall)
+	build.Do([]string{"math"}, conf)
+}
+
 func TestVar(t *testing.T) {
 	testCompile(t, `package foo
 
@@ -67,8 +84,8 @@ var a int
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@foo.a = global ptr null
-@"foo.init$guard" = global ptr null
+@foo.a = global i64 0, align 8
+@"foo.init$guard" = global i1 false, align 1
 
 define void @foo.init() {
 _llgo_0:
@@ -94,7 +111,7 @@ func fn(a int, b float64) int {
 `, `; ModuleID = 'foo'
 source_filename = "foo"
 
-@"foo.init$guard" = global ptr null
+@"foo.init$guard" = global i1 false, align 1
 
 define i64 @foo.fn(i64 %0, double %1) {
 _llgo_0:

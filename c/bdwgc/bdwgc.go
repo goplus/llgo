@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	LLGoPackage = "link: $LLGO_LIB_BDWGC; $(pkg-config --libs bdw-gc); -lgc"
+	LLGoPackage = "link: $(pkg-config --libs bdw-gc); -lgc"
 )
 
 // -----------------------------------------------------------------------------
@@ -99,3 +99,5 @@ func StartIncrementalCollection()
 
 //go:linkname CollectALittle C.GC_collect_a_little
 func CollectALittle()
+
+// -----------------------------------------------------------------------------

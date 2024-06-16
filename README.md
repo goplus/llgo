@@ -129,10 +129,10 @@ You can also specify the path to tell `llgo` where the Python library is located
 export LLGO_LIB_PYTHON=/foo/bar/python3.12
 ```
 
-For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/libpython3.12.dylib` is a typical python library location under macOS. So we should set it like this:
+For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib` is a typical python library location under macOS. So we should set it like this:
 
 ```sh
-export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/python3.12
+export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/python3.12
 ```
 
 Note that the file name must be written in a platform-independent format, using `python3.12` instead of `libpython3.12.dylib`.
@@ -170,9 +170,6 @@ Here are some examples related to them:
 Common Go syntax is already supported. Except for the following, which needs to be improved:
 
 * map (Very limited support)
-* panic (Limited support)
-* recover (Not supported yet)
-* defer (Limited: defer in loops is not supported)
 * chan (Not supported yet)
 * generics (Not supported yet)
 
@@ -185,9 +182,14 @@ Here are some examples related to Go syntax:
 * [goroutine](_demo/goroutine/goroutine.go): goroutine demo
 
 
+## Defer
+
+LLGo `defer` does not support usage in loops. This is not a bug but a feature, because we think that using `defer` in a loop is a very unrecommended practice.
+
+
 ### Garbage Collection (GC)
 
-By default, LLGo implements `gc` based on [bdwgc](https://www.hboehm.info/gc/).
+By default, LLGo implements `gc` based on [bdwgc](https://www.hboehm.info/gc/) (also known as [libgc](https://www.hboehm.info/gc/)).
 
 However, you can disable gc by specifying the `nogc` tag. For example:
 
@@ -204,6 +206,8 @@ Here are the Go packages that can be imported correctly:
 * [unicode](https://pkg.go.dev/unicode)
 * [unicode/utf8](https://pkg.go.dev/unicode/utf8)
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
+* [math/bits](https://pkg.go.dev/math/bits)
+* [math](https://pkg.go.dev/math)
 
 
 ## How to install
@@ -214,7 +218,7 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 
 ```sh
 brew update  # execute if needed
-brew install bdw-gc
+brew install libgc
 brew install llvm@17
 go install -v ./...
 ```

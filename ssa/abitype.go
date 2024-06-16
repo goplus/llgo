@@ -118,11 +118,9 @@ func (b Builder) abiMethods(t *types.Named) (ret, pret int) {
 }
 
 // Method{name string, typ *FuncType, ifn, tfn abi.Text}
-func (b Builder) abiMethodOf(m *types.Func /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
+func (b Builder) abiMethodOf(m types.Object, mSig *types.Signature /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
 	prog := b.Prog
 	mPkg, mName := m.Pkg(), m.Name()
-	mSig := m.Type().(*types.Signature)
-
 	name := b.Str(mName).impl
 	if !token.IsExported(mName) {
 		name = b.Str(abi.FullName(mPkg, m.Name())).impl
@@ -217,8 +215,12 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 			var mthds []Expr
 			var ptrMthds = make([]Expr, 0, n)
 			for i := 0; i < n; i++ {
-				m := mset[i].Obj().(*types.Func)
-				mthd, ptrMthd := b.abiMethodOf(m)
+				m := mset[i]
+				sig := m.Obj().(*types.Func).Type().(*types.Signature)
+				if _, ok := sig.Recv().Type().Underlying().(*types.Interface); ok {
+					sig = m.Type().(*types.Signature)
+				}
+				mthd, ptrMthd := b.abiMethodOf(m.Obj(), sig)
 				if !mthd.IsNil() {
 					mthds = append(mthds, mthd)
 				}
@@ -303,7 +305,7 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	var eq Expr
 	var blks []BasicBlock
 	if pub {
-		eq = b.BinOp(token.EQL, b.Load(expr), b.Prog.Null(expr.Type))
+		eq = b.BinOp(token.EQL, b.Load(expr), b.Prog.Nil(expr.Type))
 		blks = b.Func.MakeBlocks(2)
 		b.If(eq, blks[0], blks[1])
 		b.SetBlockEx(blks[0], AtEnd, false)
@@ -315,6 +317,15 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.SetBlockEx(blks[1], AtEnd, false)
 		b.blk.last = blks[1].last
 	}
+	prog := p.Prog
+	kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits)
+	if kind == abi.Integer || kind == abi.BitCast {
+		// abi.Type.Kind_ |= abi.KindDirectIface
+		const kindDirectIface = 1 << 5
+		pkind := b.FieldAddr(vexpr, 6)
+		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
+	}
+
 	if t, ok := t.(*types.Named); ok {
 		// skip interface
 		if _, ok := t.Underlying().(*types.Interface); ok {
@@ -343,7 +354,7 @@ func (b Builder) abiType(t types.Type) Expr {
 	if g == nil {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
-		g.Init(prog.Null(g.Type))
+		g.InitNil()
 		if pub {
 			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		}

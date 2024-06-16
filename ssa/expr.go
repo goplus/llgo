@@ -83,6 +83,7 @@ func pyVarExpr(mod Expr, name string) Expr {
 
 // -----------------------------------------------------------------------------
 
+// Zero returns a zero constant expression.
 func (p Program) Zero(t Type) Expr {
 	var ret llvm.Value
 	switch u := t.raw.Type.Underlying().(type) {
@@ -127,14 +128,9 @@ func (p Program) Zero(t Type) Expr {
 	return Expr{ret, t}
 }
 
-// Null returns a null constant expression.
-func (p Program) Null(t Type) Expr {
+// Nil returns a null constant expression. t should be a pointer type.
+func (p Program) Nil(t Type) Expr {
 	return Expr{llvm.ConstNull(t.ll), t}
-}
-
-// PyNull returns a null *PyObject constant expression.
-func (p Program) PyNull() Expr {
-	return p.Null(p.PyObjectPtr())
 }
 
 // BoolVal returns a boolean constant expression.
@@ -180,7 +176,7 @@ func (p Program) Val(v interface{}) Expr {
 func (b Builder) Const(v constant.Value, typ Type) Expr {
 	prog := b.Prog
 	if v == nil {
-		return prog.Null(typ)
+		return prog.Nil(typ)
 	}
 	raw := typ.raw.Type
 	switch t := raw.Underlying().(type) {
@@ -198,9 +194,8 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 				return prog.IntVal(v, typ)
 			}
 		case kind == types.Float32 || kind == types.Float64:
-			if v, exact := constant.Float64Val(v); exact {
-				return prog.FloatVal(v, typ)
-			}
+			v, _ := constant.Float64Val(v)
+			return prog.FloatVal(v, typ)
 		case kind == types.String:
 			return Expr{b.Str(constant.StringVal(v)).impl, typ}
 		}
@@ -214,11 +209,32 @@ func (b Builder) CStr(v string) Expr {
 }
 
 // Str returns a Go string constant expression.
-func (b Builder) Str(v string) (ret Expr) {
+func (b Builder) Str(v string) Expr {
 	prog := b.Prog
-	data := llvm.CreateGlobalStringPtr(b.impl, v)
+	data := b.createGlobalStr(v)
 	size := llvm.ConstInt(prog.tyInt(), uint64(len(v)), false)
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
+}
+
+func (b Builder) createGlobalStr(v string) (ret llvm.Value) {
+	if ret, ok := b.Pkg.strs[v]; ok {
+		return ret
+	}
+	prog := b.Prog
+	if v != "" {
+		typ := llvm.ArrayType(prog.tyInt8(), len(v))
+		global := llvm.AddGlobal(b.Pkg.mod, typ, "")
+		global.SetInitializer(b.Prog.ctx.ConstString(v, false))
+		global.SetLinkage(llvm.PrivateLinkage)
+		global.SetGlobalConstant(true)
+		global.SetUnnamedAddr(true)
+		global.SetAlignment(1)
+		ret = llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
+	} else {
+		ret = llvm.ConstNull(prog.CStr().ll)
+	}
+	b.Pkg.strs[v] = ret
+	return
 }
 
 // unsafeString(data *byte, size int) string
@@ -389,7 +405,8 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 		}
 	case isPredOp(op): // op: == != < <= < >=
-		tret := b.Prog.Bool()
+		prog := b.Prog
+		tret := prog.Bool()
 		kind := x.kind
 		switch kind {
 		case vkSigned:
@@ -422,6 +439,73 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				return b.InlineCall(b.Pkg.rtFunc("StringLess"), y, x)
 			case token.GEQ:
 				ret := b.InlineCall(b.Pkg.rtFunc("StringLess"), x, y)
+				ret.impl = llvm.CreateNot(b.impl, ret.impl)
+				return ret
+			}
+		case vkClosure:
+			x = b.Field(x, 0)
+			y = b.Field(y, 0)
+			fallthrough
+		case vkFuncPtr, vkFuncDecl:
+			switch op {
+			case token.EQL:
+				return Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, y.impl), tret}
+			case token.NEQ:
+				return Expr{llvm.CreateICmp(b.impl, llvm.IntNE, x.impl, y.impl), tret}
+			}
+		case vkArray:
+			typ := x.raw.Type.(*types.Array)
+			elem := b.Prog.Elem(x.Type)
+			ret := prog.BoolVal(true)
+			for i, n := 0, int(typ.Len()); i < n; i++ {
+				fx := b.impl.CreateExtractValue(x.impl, i, "")
+				fy := b.impl.CreateExtractValue(y.impl, i, "")
+				r := b.BinOp(token.EQL, Expr{fx, elem}, Expr{fy, elem})
+				ret = Expr{b.impl.CreateAnd(ret.impl, r.impl, ""), tret}
+			}
+			switch op {
+			case token.EQL:
+				return ret
+			case token.NEQ:
+				return Expr{b.impl.CreateNot(ret.impl, ""), tret}
+			}
+		case vkStruct:
+			typ := x.raw.Type.Underlying().(*types.Struct)
+			ret := prog.BoolVal(true)
+			for i, n := 0, typ.NumFields(); i < n; i++ {
+				ft := prog.Type(typ.Field(i).Type(), InGo)
+				fx := b.impl.CreateExtractValue(x.impl, i, "")
+				fy := b.impl.CreateExtractValue(y.impl, i, "")
+				r := b.BinOp(token.EQL, Expr{fx, ft}, Expr{fy, ft})
+				ret = Expr{b.impl.CreateAnd(ret.impl, r.impl, ""), tret}
+			}
+			switch op {
+			case token.EQL:
+				return ret
+			case token.NEQ:
+				return Expr{b.impl.CreateNot(ret.impl, ""), tret}
+			}
+		case vkSlice:
+			dx := b.impl.CreateExtractValue(x.impl, 0, "")
+			dy := b.impl.CreateExtractValue(y.impl, 0, "")
+			switch op {
+			case token.EQL:
+				return Expr{b.impl.CreateICmp(llvm.IntEQ, dx, dy, ""), tret}
+			case token.NEQ:
+				return Expr{b.impl.CreateICmp(llvm.IntNE, dx, dy, ""), tret}
+			}
+		case vkIface, vkEface:
+			toEface := func(x Expr, emtpy bool) Expr {
+				if emtpy {
+					return x
+				}
+				return Expr{b.unsafeEface(b.faceAbiType(x).impl, b.faceData(x.impl)), prog.rtType("Eface")}
+			}
+			switch op {
+			case token.EQL:
+				return b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind == vkEface), toEface(y, y.kind == vkEface))
+			case token.NEQ:
+				ret := b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind == vkEface), toEface(y, y.kind == vkEface))
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
@@ -658,53 +742,6 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 
 // -----------------------------------------------------------------------------
 
-// The Range instruction yields an iterator over the domain and range
-// of X, which must be a string or map.
-//
-// Elements are accessed via Next.
-//
-// Type() returns an opaque and degenerate "rangeIter" type.
-//
-// Pos() returns the ast.RangeStmt.For.
-//
-// Example printed form:
-//
-//	t0 = range "hello":string
-func (b Builder) Range(x Expr) Expr {
-	switch x.kind {
-	case vkString:
-		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
-	}
-	panic("todo")
-}
-
-// The Next instruction reads and advances the (map or string)
-// iterator Iter and returns a 3-tuple value (ok, k, v).  If the
-// iterator is not exhausted, ok is true and k and v are the next
-// elements of the domain and range, respectively.  Otherwise ok is
-// false and k and v are undefined.
-//
-// Components of the tuple are accessed using Extract.
-//
-// The IsString field distinguishes iterators over strings from those
-// over maps, as the Type() alone is insufficient: consider
-// map[int]rune.
-//
-// Type() returns a *types.Tuple for the triple (ok, k, v).
-// The types of k and/or v may be types.Invalid.
-//
-// Example printed form:
-//
-//	t1 = next t0
-func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
-	if isString {
-		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
-	}
-	panic("todo")
-}
-
-// -----------------------------------------------------------------------------
-
 // The MakeClosure instruction yields a closure value whose code is
 // Fn and whose free variables' values are supplied by Bindings.
 //
@@ -887,8 +924,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				}
 			}
 		}
-	//case "recover":
-	//	return b.Recover()
+	case "recover":
+		return b.Recover()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
 	}

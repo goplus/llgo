@@ -3,10 +3,10 @@ source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 
-@"main.init$guard" = global ptr null
-@0 = private unnamed_addr constant [13 x i8] c"Hello world\0A\00", align 1
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@"main.init$guard" = global i1 false, align 1
+@0 = private unnamed_addr constant [12 x i8] c"Hello world\0A", align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define %"github.com/goplus/llgo/internal/runtime.String" @main.hello() {
 _llgo_0:

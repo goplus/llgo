@@ -1,16 +1,16 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
-@__llgo_py.math.sqrt = linkonce global ptr null
-@__llgo_py.os.getcwd = linkonce global ptr null
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+@__llgo_py.math.sqrt = linkonce global ptr null, align 8
+@__llgo_py.os.getcwd = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [14 x i8] c"sqrt(2) = %f\0A\00", align 1
 @1 = private unnamed_addr constant [10 x i8] c"cwd = %s\0A\00", align 1
-@__llgo_py.math = external global ptr
+@__llgo_py.math = external global ptr, align 8
 @2 = private unnamed_addr constant [5 x i8] c"sqrt\00", align 1
-@__llgo_py.os = external global ptr
+@__llgo_py.os = external global ptr, align 8
 @3 = private unnamed_addr constant [7 x i8] c"getcwd\00", align 1
 
 define void @main.init() {

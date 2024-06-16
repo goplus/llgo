@@ -1,10 +1,10 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@main.a = global ptr null
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@main.a = global double 0.000000e+00, align 8
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define void @main.init() {
 _llgo_0:

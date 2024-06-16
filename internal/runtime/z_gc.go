@@ -22,8 +22,8 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/runtime/bdwgc"
-	"github.com/goplus/llgo/internal/runtime/c"
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/bdwgc"
 )
 
 // AllocU allocates uninitialized memory.

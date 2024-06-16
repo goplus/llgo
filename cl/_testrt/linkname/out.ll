@@ -4,9 +4,9 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %main.m = type { %"github.com/goplus/llgo/internal/runtime.String" }
 
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 @0 = private unnamed_addr constant [2 x i8] c"a\00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"b\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -15,7 +15,7 @@ source_filename = "main"
 @5 = private unnamed_addr constant [2 x i8] c"2\00", align 1
 @6 = private unnamed_addr constant [2 x i8] c"3\00", align 1
 @7 = private unnamed_addr constant [2 x i8] c"4\00", align 1
-@8 = private unnamed_addr constant [6 x i8] c"hello\00", align 1
+@8 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
 declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/cl/internal/linktarget.m.info"(%main.m)
 

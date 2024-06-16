@@ -107,6 +107,17 @@ func aggregateInit(b llvm.Builder, ptr llvm.Value, tll llvm.Type, flds ...llvm.V
 	}
 }
 
+/*
+func (b Builder) dupMalloc(v Expr) Expr {
+	prog := b.Prog
+	n := prog.SizeOf(v.Type)
+	tptr := prog.Pointer(v.Type)
+	ptr := b.malloc(prog.Val(uintptr(n))).impl
+	b.Store(Expr{ptr, tptr}, v)
+	return Expr{ptr, tptr}
+}
+*/
+
 // -----------------------------------------------------------------------------
 
 // The Alloc instruction reserves space for a variable of the given type,

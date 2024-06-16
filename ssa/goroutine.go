@@ -86,7 +86,7 @@ func (b Builder) Go(fn Expr, args ...Expr) {
 	data := Expr{b.aggregateMalloc(t, flds...), voidPtr}
 	size := prog.SizeOf(voidPtr)
 	pthd := b.Alloca(prog.IntVal(uint64(size), prog.Uintptr()))
-	b.pthreadCreate(pthd, prog.Null(voidPtr), pkg.routine(t, len(args)), data)
+	b.pthreadCreate(pthd, prog.Nil(voidPtr), pkg.routine(t, len(args)), data)
 }
 
 func (p Package) routineName() string {
@@ -107,7 +107,7 @@ func (p Package) routine(t Type, n int) Expr {
 	}
 	b.Call(fn, args...)
 	b.free(param)
-	b.Return(prog.Null(prog.VoidPtr()))
+	b.Return(prog.Nil(prog.VoidPtr()))
 	return routine.Expr
 }
 

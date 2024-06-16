@@ -6,13 +6,13 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
-@"main.init$guard" = global ptr null
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
-@_llgo_int = linkonce global ptr null
+@"main.init$guard" = global i1 false, align 1
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+@_llgo_int = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
-@1 = private unnamed_addr constant [22 x i8] c"type assertion failed\00", align 1
-@_llgo_string = linkonce global ptr null
+@1 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@_llgo_string = linkonce global ptr null, align 8
 
 define void @main.init() {
 _llgo_0:
@@ -133,7 +133,7 @@ _llgo_5:                                          ; preds = %_llgo_2
   %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, i32 0, i32 1
   store ptr %20, ptr %23, align 8
   %24 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %24)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %24)
   unreachable
 }
 
@@ -153,13 +153,17 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %3 = load ptr, ptr @_llgo_string, align 8
-  %4 = icmp eq ptr %3, null
-  br i1 %4, label %_llgo_3, label %_llgo_4
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 6
+  %4 = load i8, ptr %3, align 1
+  %5 = or i8 %4, 32
+  store i8 %5, ptr %3, align 1
+  %6 = load ptr, ptr @_llgo_string, align 8
+  %7 = icmp eq ptr %6, null
+  br i1 %7, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
-  store ptr %5, ptr @_llgo_string, align 8
+  %8 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
+  store ptr %8, ptr @_llgo_string, align 8
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
@@ -172,6 +176,6 @@ declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
 declare i32 @printf(ptr, ...)

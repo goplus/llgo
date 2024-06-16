@@ -1,7 +1,7 @@
 ; ModuleID = 'apkg'
 source_filename = "apkg"
 
-@"apkg.init$guard" = global ptr null
+@"apkg.init$guard" = global i1 false, align 1
 
 define double @apkg.Max(double %0, double %1) {
 _llgo_0:

@@ -136,6 +136,8 @@ type pkgInfo struct {
 	kind int
 }
 
+type none struct{}
+
 type context struct {
 	prog   llssa.Program
 	pkg    llssa.Package
@@ -145,7 +147,8 @@ type context struct {
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	pyMod  string
-	link   map[string]string           // pkgPath.nameInPkg => linkname
+	link   map[string]string // pkgPath.nameInPkg => linkname
+	skips  map[string]none
 	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
@@ -192,7 +195,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := gbl.Type()
-	name, vtype := p.varName(gbl.Pkg.Pkg, gbl)
+	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
 	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
 		return
 	}
@@ -200,8 +203,8 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
-	if vtype == goVar {
-		g.Init(p.prog.Null(g.Type))
+	if define {
+		g.InitNil()
 	}
 }
 
@@ -338,6 +341,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			ftype = llgoSigsetjmp
 		case "siglongjmp":
 			ftype = llgoSiglongjmp
+		case "deferData":
+			ftype = llgoDeferData
 		case "unreachable":
 			ftype = llgoUnreachable
 		default:
@@ -378,8 +383,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
 		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-		argc.Init(prog.Null(argc.Type))
-		argv.Init(prog.Null(argv.Type))
+		argc.InitNil()
+		argv.InitNil()
 		b.Store(argc.Expr, fn.Param(0))
 		b.Store(argv.Expr, fn.Param(1))
 		callRuntimeInit(b, pkg)
@@ -395,7 +400,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		modName := pysymPrefix + modPath
 		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
-		cond := b.BinOp(token.NEQ, mod, prog.Null(mod.Type))
+		cond := b.BinOp(token.NEQ, mod, prog.Nil(mod.Type))
 		newBlk := p.fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
@@ -430,9 +435,10 @@ func intVal(v ssa.Value) int64 {
 	panic("intVal: ssa.Value is not a const int")
 }
 
-func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
-	if va, vok := vx.(*ssa.Alloc); vok {
-		ret, ok = p.vargs[va] // varargs: this is a varargs index
+func (p *context) isVArgs(v ssa.Value) (ret []llssa.Expr, ok bool) {
+	switch v := v.(type) {
+	case *ssa.Alloc:
+		ret, ok = p.vargs[v] // varargs: this is a varargs index
 	}
 	return
 }
@@ -440,7 +446,7 @@ func (p *context) isVArgs(vx ssa.Value) (ret []llssa.Expr, ok bool) {
 func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	if v.Comment == "varargs" { // this maybe a varargs allocation
 		if arr, ok := t.Elem().(*types.Array); ok {
-			if isAny(arr.Elem()) && isVargs(p, v) {
+			if isAny(arr.Elem()) && isAllocVargs(p, v) {
 				p.vargs[v] = make([]llssa.Expr, arr.Len())
 				return true
 			}
@@ -449,15 +455,24 @@ func (p *context) checkVArgs(v *ssa.Alloc, t *types.Pointer) bool {
 	return false
 }
 
-func isVargs(ctx *context, v *ssa.Alloc) bool {
+func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 	refs := *v.Referrers()
 	n := len(refs)
 	lastref := refs[n-1]
 	if i, ok := lastref.(*ssa.Slice); ok {
 		if refs = *i.Referrers(); len(refs) == 1 {
-			if call, ok := refs[0].(*ssa.Call); ok {
-				return ctx.funcKind(call.Call.Value) == fnHasVArg
+			var call *ssa.CallCommon
+			switch ref := refs[0].(type) {
+			case *ssa.Call:
+				call = &ref.Call
+			case *ssa.Defer:
+				call = &ref.Call
+			case *ssa.Go:
+				call = &ref.Call
+			default:
+				return false
 			}
+			return ctx.funcKind(call.Value) == fnHasVArg
 		}
 	}
 	return false
@@ -543,7 +558,11 @@ func isPhi(i ssa.Instruction) bool {
 }
 
 func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
-	ret := p.fn.Block(block.Index)
+	fn := p.fn
+	ret := fn.Block(block.Index)
+	if block.Comment == "recover" { // set recover block
+		fn.SetRecover(ret)
+	}
 	b.SetBlockEx(ret, llssa.AtEnd, false)
 	if ninstr := len(block.Instrs); ninstr > 0 {
 		if isPhi(block.Instrs[0]) {
@@ -642,6 +661,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.siglongjmp(b, args)
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
+		case llgoDeferData: // func deferData() *Defer
+			ret = b.DeferData()
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:
@@ -779,6 +800,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := v.Type()
 		x := p.compileValue(b, v.X)
 		ret = b.ChangeInterface(p.prog.Type(t, llssa.InGo), x)
+	case *ssa.Field:
+		x := p.compileValue(b, v.X)
+		ret = b.Field(x, v.Field)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
@@ -933,19 +957,13 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	type namedMember struct {
-		name string
-		val  ssa.Member
-	}
+	return NewPackageEx(prog, pkg, nil, files)
+}
 
-	members := make([]*namedMember, 0, len(pkg.Members))
-	for name, v := range pkg.Members {
-		members = append(members, &namedMember{name, v})
-	}
-	sort.Slice(members, func(i, j int) bool {
-		return members[i].name < members[j].name
-	})
-
+// NewPackageEx compiles a Go package (pkg) to LLVM IR package.
+// The Go package may have an alternative package (alt).
+// The pkg and alt have the same (Pkg *types.Package).
+func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
@@ -962,6 +980,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 		goTyps: pkgTypes,
 		goPkg:  pkg,
 		link:   make(map[string]string),
+		skips:  make(map[string]none),
 		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
@@ -969,6 +988,41 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
+
+	if alt != nil {
+		skips := ctx.skips
+		ctx.skips = nil
+		processPkg(ctx, ret, alt)
+		ctx.skips = skips
+	}
+	processPkg(ctx, ret, pkg)
+	for len(ctx.inits) > 0 {
+		inits := ctx.inits
+		ctx.inits = nil
+		for _, ini := range inits {
+			ini()
+		}
+	}
+	return
+}
+
+func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
+	type namedMember struct {
+		name string
+		val  ssa.Member
+	}
+
+	members := make([]*namedMember, 0, len(pkg.Members))
+	skips := ctx.skips
+	for name, v := range pkg.Members {
+		if _, ok := skips[name]; !ok {
+			members = append(members, &namedMember{name, v})
+		}
+	}
+	sort.Slice(members, func(i, j int) bool {
+		return members[i].name < members[j].name
+	})
+
 	for _, m := range members {
 		member := m.val
 		switch member := member.(type) {
@@ -985,14 +1039,6 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 			ctx.compileGlobal(ret, member)
 		}
 	}
-	for len(ctx.inits) > 0 {
-		inits := ctx.inits
-		ctx.inits = nil
-		for _, ini := range inits {
-			ini()
-		}
-	}
-	return
 }
 
 // -----------------------------------------------------------------------------

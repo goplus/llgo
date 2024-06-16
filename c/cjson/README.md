@@ -7,7 +7,11 @@ LLGo wrapper of DaveGamble/cJSON
 [![Language](https://img.shields.io/badge/language-Go+-blue.svg)](https://github.com/goplus/gop)
 
 ## How to install
-
+### on macOS (Homebrew)
+```sh
+brew install cjson 
+```
+### from source code
 ```sh
 git clone https://github.com/goplus/cjson.git
 cd cjson

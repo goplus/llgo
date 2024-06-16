@@ -25,6 +25,10 @@ import (
 	"github.com/goplus/llgo/ssa/ssatest"
 )
 
+func init() {
+	ssa.SetDebug(ssa.DbgFlagAll)
+}
+
 func TestFromTestgo(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testgo", false)
 }
@@ -52,6 +56,7 @@ func TestMakeInterface(t *testing.T) {
 	b := fn.MakeBody(1)
 	b.MakeInterface(prog.Any(), prog.IntVal(100, prog.Int64()))
 	b.MakeInterface(prog.Any(), prog.FloatVal(100, prog.Float64()))
+	b.DeferData()
 	b.Return()
 }
 

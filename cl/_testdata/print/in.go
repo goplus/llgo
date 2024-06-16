@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/runtime/c"
+	"github.com/goplus/llgo/c"
 )
 
 func gwrite(b []byte) {

@@ -42,7 +42,7 @@ func Clean(args []string, conf *Config) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	initial, err := packages.LoadEx(nil, cfg, patterns...)
+	initial, err := packages.LoadEx(nil, nil, cfg, patterns...)
 	check(err)
 
 	cleanPkgs(initial, verbose)

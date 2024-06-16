@@ -4,23 +4,11 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
-@"main.init$guard" = global ptr null
-@0 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@_llgo_string = linkonce global ptr null
-@1 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@2 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@3 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@4 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@5 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@6 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@7 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@8 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@9 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@10 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@11 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@12 = private unnamed_addr constant [6 x i8] c"error\00", align 1
-@__llgo_argc = global ptr null
-@__llgo_argv = global ptr null
+@"main.init$guard" = global i1 false, align 1
+@0 = private unnamed_addr constant [5 x i8] c"error", align 1
+@_llgo_string = linkonce global ptr null, align 8
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
 
 define void @main.cvt32Fto32(float %0, i32 %1) {
 _llgo_0:
@@ -44,7 +32,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -60,7 +48,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @1, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -73,7 +61,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -89,7 +77,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @2, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -102,7 +90,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -118,7 +106,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @3, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -131,7 +119,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -147,7 +135,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @4, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -160,7 +148,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -176,7 +164,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @5, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -189,7 +177,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -205,7 +193,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @6, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -218,7 +206,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -234,7 +222,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @7, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -247,7 +235,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -263,7 +251,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @8, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -276,7 +264,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -292,7 +280,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @9, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -305,7 +293,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -321,7 +309,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @10, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -334,7 +322,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -350,7 +338,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
-  store ptr @11, ptr %5, align 8
+  store ptr @0, ptr %5, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 1
   store i64 5, ptr %6, align 4
   %7 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %4, align 8
@@ -363,7 +351,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
   store ptr %9, ptr %12, align 8
   %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %13)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -374,7 +362,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2
   %16 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 0
-  store ptr @12, ptr %17, align 8
+  store ptr @0, ptr %17, align 8
   %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 1
   store i64 5, ptr %18, align 4
   %19 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %16, align 8
@@ -387,7 +375,7 @@ _llgo_3:                                          ; preds = %_llgo_2
   %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %22, i32 0, i32 1
   store ptr %21, ptr %24, align 8
   %25 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %22, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface" %25)
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %25)
   unreachable
 
 _llgo_4:                                          ; preds = %_llgo_2
@@ -488,6 +476,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.TracePanic"(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()

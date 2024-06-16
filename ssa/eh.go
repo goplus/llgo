@@ -68,8 +68,9 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 }
 
 func (b Builder) Siglongjmp(jb, retval Expr) {
-	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp())
+	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
 	b.Call(fn, jb, retval)
+	// b.Unreachable()
 }
 
 // -----------------------------------------------------------------------------
@@ -78,73 +79,115 @@ const (
 	deferKey = "__llgo_defer"
 )
 
-func (p Function) deferInitBuilder() Builder {
-	b := p.NewBuilder()
-	b.SetBlockEx(p.blks[0], BeforeLast, true)
-	return b
+func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
+	b = p.NewBuilder()
+	next = b.setBlockMoveLast(p.blks[0])
+	return
 }
 
 type aDefer struct {
-	nextBit  int        // next defer bit
-	key      Expr       // pthread TLS key
-	data     Expr       // pointer to runtime.Defer
-	bitsPtr  Expr       // pointer to defer bits
-	rundPtr  Expr       // pointer to RunDefers index
-	procBlk  BasicBlock // deferProc block
-	stmts    []func(bits Expr)
+	nextBit  int          // next defer bit
+	key      Expr         // pthread TLS key
+	data     Expr         // pointer to runtime.Defer
+	bitsPtr  Expr         // pointer to defer bits
+	rundPtr  Expr         // pointer to RunDefers index
+	procBlk  BasicBlock   // deferProc block
 	runsNext []BasicBlock // next blocks of RunDefers
+	stmts    []func(bits Expr)
 }
 
-func (p Package) deferInit() {
-	keyVar := p.VarOf(deferKey)
+func (p Package) keyInit(name string) {
+	keyVar := p.VarOf(name)
 	if keyVar == nil {
 		return
 	}
 	prog := p.Prog
-	keyNil := prog.Null(prog.DeferPtrPtr())
-	keyVar.Init(keyNil)
+	keyVar.InitNil()
 	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 
 	b := p.afterBuilder()
-	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), keyNil)
+	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), prog.IntVal(0, prog.CInt()))
 	b.IfThen(eq, func() {
-		b.pthreadKeyCreate(keyVar.Expr, prog.Null(prog.VoidPtr()))
+		b.pthreadKeyCreate(keyVar.Expr, prog.Nil(prog.VoidPtr()))
 	})
 }
 
-func (p Package) newDeferKey() Global {
-	return p.NewVarEx(deferKey, p.Prog.DeferPtrPtr())
+func (p Package) newKey(name string) Global {
+	return p.NewVarEx(name, p.Prog.CIntPtr())
 }
 
 func (b Builder) deferKey() Expr {
-	return b.Load(b.Pkg.newDeferKey().Expr)
+	return b.Load(b.Pkg.newKey(deferKey).Expr)
 }
+
+const (
+	// 0: addr sigjmpbuf
+	// 1: bits uintptr
+	// 2: link *Defer
+	// 3: rund voidptr
+	deferSigjmpbuf = iota
+	deferBits
+	deferLink
+	deferRund
+)
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
 	self := b.Func
 	if self.defer_ == nil {
-		// 0: bits uintptr
-		// 1: link *Defer
-		// 2: rund int
+		// TODO(xsw): check if in pkg.init
+		var next, rundBlk BasicBlock
 		if kind != DeferAlways {
-			b = self.deferInitBuilder()
+			b, next = self.deferInitBuilder()
 		}
 		prog := b.Prog
 		key := b.deferKey()
 		zero := prog.Val(uintptr(0))
-		link := b.pthreadGetspecific(key)
-		ptr := b.aggregateAlloca(prog.Defer(), zero.impl, link.impl)
+		link := Expr{b.pthreadGetspecific(key).impl, prog.DeferPtr()}
+		jb := b.AllocaSigjmpBuf()
+		ptr := b.aggregateAlloca(prog.Defer(), jb.impl, zero.impl, link.impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
+		blks := self.MakeBlocks(2)
+		procBlk, rethrowBlk := blks[0], blks[1]
+		bitsPtr := b.FieldAddr(deferData, deferBits)
+		rundPtr := b.FieldAddr(deferData, deferRund)
 		self.defer_ = &aDefer{
-			key:     key,
-			data:    deferData,
-			bitsPtr: b.FieldAddr(deferData, 0),
-			rundPtr: b.FieldAddr(deferData, 2),
-			procBlk: self.MakeBlock(),
+			key:      key,
+			data:     deferData,
+			bitsPtr:  bitsPtr,
+			rundPtr:  rundPtr,
+			procBlk:  procBlk,
+			runsNext: []BasicBlock{rethrowBlk},
+		}
+		czero := prog.IntVal(0, prog.CInt())
+		retval := b.Sigsetjmp(jb, czero)
+		if kind != DeferAlways {
+			rundBlk = self.MakeBlock()
+		} else {
+			blks = self.MakeBlocks(2)
+			next, rundBlk = blks[0], blks[1]
+		}
+		b.If(b.BinOp(token.EQL, retval, czero), next, rundBlk)
+		b.SetBlockEx(rundBlk, AtEnd, false) // exec runDefers and rethrow
+		b.Store(rundPtr, rethrowBlk.Addr())
+		b.Jump(procBlk)
+
+		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
+		b.Call(b.Pkg.rtFunc("Rethrow"), link)
+		b.Jump(self.recov)
+
+		if kind == DeferAlways {
+			b.SetBlockEx(next, AtEnd, false)
+			b.blk.last = next.last
 		}
 	}
 	return self.defer_
+}
+
+// DeferData returns the defer data (*runtime.Defer).
+func (b Builder) DeferData() Expr {
+	key := b.deferKey()
+	return Expr{b.pthreadGetspecific(key).impl, b.Prog.DeferPtr()}
 }
 
 // Defer emits a defer instruction.
@@ -184,13 +227,12 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
-	prog := b.Prog
 	self := b.getDefer(DeferInCond)
-	b.Store(self.rundPtr, prog.Val(len(self.runsNext)))
-	b.Jump(self.procBlk)
-
 	blk := b.Func.MakeBlock()
 	self.runsNext = append(self.runsNext, blk)
+
+	b.Store(self.rundPtr, blk.Addr())
+	b.Jump(self.procBlk)
 
 	b.SetBlockEx(blk, AtEnd, false)
 	b.blk.last = blk.last
@@ -202,8 +244,7 @@ func (p Function) endDefer(b Builder) {
 		return
 	}
 	nexts := self.runsNext
-	n := len(nexts)
-	if n == 0 {
+	if len(nexts) == 0 {
 		return
 	}
 	b.SetBlockEx(self.procBlk, AtEnd, true)
@@ -213,42 +254,31 @@ func (p Function) endDefer(b Builder) {
 		stmts[i](bits)
 	}
 
-	link := b.getField(b.Load(self.data), 2)
+	link := b.getField(b.Load(self.data), deferLink)
 	b.pthreadSetspecific(self.key, link)
-
-	prog := b.Prog
-	rund := b.Load(self.rundPtr)
-	sw := b.impl.CreateSwitch(rund.impl, nexts[0].first, n-1)
-	for i := 1; i < n; i++ {
-		sw.AddCase(prog.Val(i).impl, nexts[i].first)
-	}
+	b.IndirectJump(b.Load(self.rundPtr), nexts)
 }
 
 // -----------------------------------------------------------------------------
 
-/*
-// Recover emits a recover instruction.
-func (b Builder) Recover() (v Expr) {
-	if debugInstr {
-		log.Println("Recover")
-	}
-	prog := b.Prog
-	return prog.Zero(prog.Eface())
-}
-*/
-
-// Panic emits a panic instruction.
-func (b Builder) Panic(v Expr) {
-	if debugInstr {
-		log.Printf("Panic %v\n", v.impl)
-	}
-	b.Call(b.Pkg.rtFunc("TracePanic"), v)
-	b.impl.CreateUnreachable()
-}
-
 // Unreachable emits an unreachable instruction.
 func (b Builder) Unreachable() {
 	b.impl.CreateUnreachable()
+}
+
+// Recover emits a recover instruction.
+func (b Builder) Recover() Expr {
+	if debugInstr {
+		log.Println("Recover")
+	}
+	// TODO(xsw): recover can't be a function call in Go
+	return b.Call(b.Pkg.rtFunc("Recover"))
+}
+
+// Panic emits a panic instruction.
+func (b Builder) Panic(v Expr) {
+	b.Call(b.Pkg.rtFunc("Panic"), v)
+	b.Unreachable() // TODO: func supports noreturn attribute
 }
 
 // -----------------------------------------------------------------------------

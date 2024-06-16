@@ -159,6 +159,10 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 			return "_llgo_any", true
 		}
 		return b.InterfaceName(t)
+	case *types.Map:
+		key, pub1 := b.TypeName(t.Key())
+		elem, pub2 := b.TypeName(t.Elem())
+		return fmt.Sprintf("map[%s]%s", key, elem), pub1 && pub2
 	}
 	log.Panicf("todo: %T\n", t)
 	return
@@ -166,6 +170,9 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 
 // PathOf returns the package path of the specified package.
 func PathOf(pkg *types.Package) string {
+	if pkg == nil {
+		return ""
+	}
 	if pkg.Name() == "main" {
 		return "main"
 	}
@@ -174,6 +181,9 @@ func PathOf(pkg *types.Package) string {
 
 // FullName returns the full name of a package member.
 func FullName(pkg *types.Package, name string) string {
+	if pkg == nil {
+		return name
+	}
 	return PathOf(pkg) + "." + name
 }
 

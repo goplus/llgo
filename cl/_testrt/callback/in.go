@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/llgo/internal/runtime/c"
+	"github.com/goplus/llgo/c"
 )
 
 func callback(msg *c.Char, f func(*c.Char)) {

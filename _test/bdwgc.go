@@ -5,7 +5,7 @@ import (
 
 	"github.com/goplus/llgo/_test/testing"
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/internal/runtime/bdwgc"
+	"github.com/goplus/llgo/c/bdwgc"
 )
 
 // ------ Test malloc ------

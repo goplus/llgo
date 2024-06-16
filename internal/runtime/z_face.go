@@ -19,8 +19,8 @@ package runtime
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/internal/abi"
-	"github.com/goplus/llgo/internal/runtime/c"
 )
 
 type eface struct {
@@ -83,23 +83,27 @@ const (
 	itabHdrSize          = unsafe.Sizeof(itab{}) - pointerSize
 )
 
-var hdrSizes = [...]uintptr{
-	arrayTypeHdrSize,
-	chanTypeHdrSize,
-	funcTypeHdrSize,
-	interfaceTypeHdrSize,
-	mapTypeHdrSize,
-	ptrTypeHdrSize,
-	sliceTypeHdrSize,
-	typeHdrSize,
-	structTypeHdrSize,
-}
-
 func hdrSizeOf(kind abi.Kind) uintptr {
-	if kind >= abi.Array && kind <= abi.Struct {
-		return hdrSizes[kind-abi.Array]
+	switch kind {
+	case abi.Array:
+		return arrayTypeHdrSize
+	case abi.Chan:
+		return chanTypeHdrSize
+	case abi.Func:
+		return funcTypeHdrSize
+	case abi.Interface:
+		return interfaceTypeHdrSize
+	case abi.Map:
+		return mapTypeHdrSize
+	case abi.Pointer:
+		return ptrTypeHdrSize
+	case abi.Slice:
+		return sliceTypeHdrSize
+	case abi.Struct:
+		return structTypeHdrSize
+	default:
+		return typeHdrSize
 	}
-	return typeHdrSize
 }
 
 // NewNamed returns an uninitialized named type.
@@ -268,6 +272,9 @@ func IfacePtrData(i iface) unsafe.Pointer {
 
 // Implements reports whether the type V implements the interface type T.
 func Implements(T, V *abi.Type) bool {
+	if V == nil {
+		return false
+	}
 	if T.Kind() != abi.Interface {
 		return false
 	}
@@ -320,6 +327,105 @@ func Implements(T, V *abi.Type) bool {
 		}
 	}
 	return false
+}
+
+func EfaceEqual(v, u eface) bool {
+	if v.Kind() == abi.Interface {
+		v = v.Elem()
+	}
+	if u.Kind() == abi.Interface {
+		u = u.Elem()
+	}
+	if v._type == nil || u._type == nil {
+		return v._type == u._type
+	}
+	if v._type != u._type {
+		return false
+	}
+	if isDirectIface(v._type) {
+		return v.data == u.data
+	}
+	switch v.Kind() {
+	case abi.Bool,
+		abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64:
+		return *(*uintptr)(v.data) == *(*uintptr)(u.data)
+	case abi.Complex64, abi.Complex128:
+		panic("TODO complex")
+	case abi.String:
+		return *(*string)(v.data) == *(*string)(u.data)
+	case abi.Pointer, abi.UnsafePointer:
+		return v.data == u.data
+	case abi.Array:
+		n := v._type.Len()
+		tt := v._type.ArrayType()
+		index := func(data unsafe.Pointer, i int) eface {
+			offset := i * int(tt.Elem.Size_)
+			return eface{tt.Elem, c.Advance(data, offset)}
+		}
+		for i := 0; i < n; i++ {
+			if !EfaceEqual(index(v.data, i), index(u.data, i)) {
+				return false
+			}
+		}
+		return true
+	case abi.Struct:
+		st := v._type.StructType()
+		field := func(data unsafe.Pointer, ft *abi.StructField) eface {
+			ptr := c.Advance(data, int(ft.Offset))
+			if isDirectIface(ft.Typ) {
+				ptr = *(*unsafe.Pointer)(ptr)
+			}
+			return eface{ft.Typ, ptr}
+		}
+		for _, ft := range st.Fields {
+			if !EfaceEqual(field(v.data, &ft), field(u.data, &ft)) {
+				return false
+			}
+		}
+		return true
+	case abi.Func, abi.Map, abi.Slice:
+		break
+	}
+	panic("not comparable")
+}
+
+func (v eface) Kind() abi.Kind {
+	if v._type == nil {
+		return abi.Invalid
+	}
+	return v._type.Kind()
+}
+
+func (v eface) Elem() eface {
+	switch v.Kind() {
+	case abi.Interface:
+		var i any
+		tt := (*abi.InterfaceType)(unsafe.Pointer(v._type))
+		if len(tt.Methods) == 0 {
+			i = *(*any)(v.data)
+		} else {
+			i = (any)(*(*interface {
+				M()
+			})(v.data))
+		}
+		return *(*eface)(unsafe.Pointer(&i))
+	case abi.Pointer:
+		ptr := v.data
+		if isDirectIface(v._type) {
+			ptr = *(*unsafe.Pointer)(ptr)
+		}
+		if ptr == nil {
+			return eface{}
+		}
+		return eface{v._type.Elem(), ptr}
+	}
+	panic("invalid eface elem")
+}
+
+func isDirectIface(t *_type) bool {
+	return t.Kind_&abi.KindDirectIface != 0
 }
 
 // -----------------------------------------------------------------------------
