@@ -443,13 +443,14 @@ func allPkgs(ctx *context, initial []*packages.Package) (all []*aPackage, errs [
 	built := ctx.built
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
-			if _, ok := built[p.PkgPath]; ok {
+			pkgPath := p.PkgPath
+			if _, ok := built[pkgPath]; ok {
 				return
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
-			if _, ok := hasAltPkg[p.PkgPath]; ok {
-				if altPkg = ctx.dedup.Check(altPkgPathPrefix + p.PkgPath); altPkg == nil {
+			if _, ok := hasAltPkg[pkgPath]; ok {
+				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
 				}
 			}
