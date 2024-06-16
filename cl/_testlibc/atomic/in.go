@@ -9,7 +9,7 @@ func main() {
 	var v int64
 
 	atomic.Store(&v, 100)
-	println("store:", atomic.Load(&v))
+	c.Printf(c.Str("store: %ld\n"), atomic.Load(&v))
 
 	atomic.Add(&v, 1)
 	c.Printf(c.Str("v: %ld\n"), v)
