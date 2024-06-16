@@ -7,6 +7,7 @@ source_filename = "main"
 @0 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
+@3 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -38,6 +39,9 @@ _llgo_0:
   %9 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
   %10 = load i64, ptr %2, align 4
   %11 = call i32 (ptr, ...) @printf(ptr @2, i64 %10)
+  %12 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
+  %13 = load i64, ptr %2, align 4
+  %14 = call i32 (ptr, ...) @printf(ptr @3, i64 %13)
   ret i32 0
 }
 
