@@ -15,4 +15,7 @@ func main() {
 
 	sync.CompareAndXchg(&v, 101, 102)
 	c.Printf(c.Str("%ld\n"), v)
+
+	sync.FetchAndSub(&v, 1)
+	c.Printf(c.Str("%ld\n"), v)
 }
