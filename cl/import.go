@@ -193,10 +193,12 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
+// llgo:skip symbol1 symbol2 ...
+// llgo:skipall
 func (p *context) collectSkipNames(line string) {
 	const (
-		skip  = "//llgo:skip "
-		skip2 = "// llgo:skip "
+		skip  = "//llgo:skip"
+		skip2 = "// llgo:skip"
 	)
 	if strings.HasPrefix(line, skip2) {
 		p.collectSkip(line, len(skip2))
@@ -206,7 +208,15 @@ func (p *context) collectSkipNames(line string) {
 }
 
 func (p *context) collectSkip(line string, prefix int) {
-	names := strings.Split(line[prefix:], " ")
+	line = line[prefix:]
+	if line == "all" {
+		p.skipall = true
+		return
+	}
+	if len(line) == 0 || line[0] != ' ' {
+		return
+	}
+	names := strings.Split(line[1:], " ")
 	for _, name := range names {
 		if name != "" {
 			p.skips[name] = none{}

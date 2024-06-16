@@ -96,22 +96,12 @@ func ignoreName(name string) bool {
 		return true
 	}
 	*/
-	if strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
+	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
 		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
 		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
-		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") {
-		return true // TODO(xsw)
-	}
-	return inPkg(name, "runtime") || inPkg(name, "sync")
-}
-
-func inPkg(name, pkg string) bool {
-	if len(name) > len(pkg) && strings.HasPrefix(name, pkg) {
-		c := name[len(pkg)]
-		return c == '.' || c == '/'
-	}
-	return false
+		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") ||
+		strings.HasPrefix(name, "runtime/")
 }
 
 // -----------------------------------------------------------------------------
@@ -157,6 +147,8 @@ type context struct {
 
 	inits []func()
 	phis  []func()
+
+	skipall bool
 }
 
 func (p *context) inMain(instr ssa.Instruction) bool {
@@ -1048,7 +1040,9 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 		processPkg(ctx, ret, alt)
 		ctx.skips = skips
 	}
-	processPkg(ctx, ret, pkg)
+	if !ctx.skipall {
+		processPkg(ctx, ret, pkg)
+	}
 	for len(ctx.inits) > 0 {
 		inits := ctx.inits
 		ctx.inits = nil

@@ -209,7 +209,7 @@ func TestIntVal(t *testing.T) {
 }
 
 func TestIgnoreName(t *testing.T) {
-	if !ignoreName("runtime.foo") || !ignoreName("runtime/foo") || !ignoreName("internal/abi") {
+	if !ignoreName("runtime/foo") || !ignoreName("internal/abi") {
 		t.Fatal("ignoreName failed")
 	}
 }

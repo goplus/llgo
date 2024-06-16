@@ -22,6 +22,7 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -155,15 +156,20 @@ func Do(args []string, conf *Config) {
 		return nil
 	}
 
-	pkgs := buildAllPkgs(prog, imp, initial, nil, mode, verbose)
+	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
+	pkgs := buildAllPkgs(prog, progSSA, imp, initial, nil, mode, verbose)
 
 	var runtimeFiles []string
 	if needRt {
+		// TODO(xsw): maybe we need trace runtime sometimes
+		llssa.SetDebug(0)
+		cl.SetDebug(0)
+
 		skip := make(map[string]bool)
 		for _, v := range pkgs {
 			skip[v.PkgPath] = true
 		}
-		dpkg := buildAllPkgs(prog, imp, rt[:1], skip, mode, verbose)
+		dpkg := buildAllPkgs(prog, progSSA, imp, rt[:1], skip, mode, verbose)
 		for _, pkg := range dpkg {
 			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
 				continue
@@ -206,10 +212,9 @@ const (
 	ssaBuildMode = ssa.SanityCheckFunctions
 )
 
-func buildAllPkgs(prog llssa.Program, imp importer, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
+func buildAllPkgs(prog llssa.Program, progSSA *ssa.Program, imp importer, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
 	// Create SSA-form program representation.
-	ssaProg, pkgs, errPkgs := allPkgs(imp, initial, ssaBuildMode)
-	ssaProg.Build()
+	pkgs, errPkgs := allPkgs(progSSA, imp, initial, verbose)
 	for _, errPkg := range errPkgs {
 		for _, err := range errPkg.Errors {
 			fmt.Fprintln(os.Stderr, err)
@@ -399,7 +404,7 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 
 func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
-	case "unsafe", "runtime", "errors", "sync", "sync/atomic":
+	case "unsafe", "errors":
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
@@ -418,25 +423,25 @@ type aPackage struct {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"math": {},
+	"math":        {},
+	"sync":        {},
+	"sync/atomic": {},
+	"runtime":     {},
 }
 
 type importer = func(pkgPath string) *packages.Package
 
-func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (prog *ssa.Program, all []*aPackage, errs []*packages.Package) {
-	var fset *token.FileSet
-	if len(initial) > 0 {
-		fset = initial[0].Fset
-	}
-
-	prog = ssa.NewProgram(fset, mode)
+func allPkgs(prog *ssa.Program, imp importer, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			var altPkg *packages.Package
 			var altSSA *ssa.Package
-			var ssaPkg = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+			var ssaPkg = createSSAPkg(prog, p)
 			if imp != nil {
 				if _, ok := hasAltPkg[p.PkgPath]; ok {
+					if verbose {
+						log.Println("==> Patching", p.PkgPath)
+					}
 					altPkgPath := "github.com/goplus/llgo/internal/lib/" + p.PkgPath
 					if altPkg = imp(altPkgPath); altPkg != nil { // TODO(xsw): how to minimize import times
 						altSSA = createAltSSAPkg(prog, altPkg)
@@ -452,20 +457,25 @@ func allPkgs(imp importer, initial []*packages.Package, mode ssa.BuilderMode) (p
 }
 
 func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
-	altPath := alt.Types.Path()
-	altSSA := prog.ImportedPackage(altPath)
+	altSSA := prog.ImportedPackage(alt.PkgPath)
 	if altSSA == nil {
 		packages.Visit([]*packages.Package{alt}, nil, func(p *packages.Package) {
-			pkgTypes := p.Types
-			if pkgTypes != nil && !p.IllTyped {
-				if prog.ImportedPackage(pkgTypes.Path()) == nil {
-					prog.CreatePackage(pkgTypes, p.Syntax, p.TypesInfo, true)
-				}
+			if p.Types != nil && !p.IllTyped {
+				createSSAPkg(prog, p)
 			}
 		})
-		altSSA = prog.ImportedPackage(altPath)
+		altSSA = prog.ImportedPackage(alt.PkgPath)
 	}
 	return altSSA
+}
+
+func createSSAPkg(prog *ssa.Program, p *packages.Package) *ssa.Package {
+	pkgSSA := prog.ImportedPackage(p.PkgPath)
+	if pkgSSA == nil {
+		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+		pkgSSA.Build() // TODO(xsw): build concurrently
+	}
+	return pkgSSA
 }
 
 var (
