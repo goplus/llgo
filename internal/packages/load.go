@@ -61,6 +61,10 @@ const (
 	typecheckCgo = NeedModule - 1 // TODO(xsw): how to check
 )
 
+const (
+	DebugPackagesLoad = false
+)
+
 // A Config specifies details about how packages should be loaded.
 // The zero value is a valid configuration.
 // Calls to Load do not modify this struct.
@@ -99,7 +103,7 @@ type loader struct {
 	requestedMode LoadMode
 }
 
-type cachedPackage struct {
+type Cached struct {
 	Types     *types.Package
 	TypesInfo *types.Info
 	Syntax    []*ast.File
@@ -115,14 +119,20 @@ func NewDeduper() Deduper {
 	return &aDeduper{}
 }
 
-func (p Deduper) check(pkgPath string) *cachedPackage {
+func (p Deduper) Check(pkgPath string) *Cached {
 	if v, ok := p.cache.Load(pkgPath); ok {
-		return v.(*cachedPackage)
+		if DebugPackagesLoad {
+			log.Println("==> dedup.check:", pkgPath)
+		}
+		return v.(*Cached)
 	}
 	return nil
 }
 
-func (p Deduper) set(pkgPath string, cp *cachedPackage) {
+func (p Deduper) set(pkgPath string, cp *Cached) {
+	if DebugPackagesLoad {
+		log.Println("==> dedup.set:", pkgPath)
+	}
 	p.cache.Store(pkgPath, cp)
 }
 
@@ -162,7 +172,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	}
 
 	if dedup != nil {
-		if cp := dedup.check(lpkg.PkgPath); cp != nil {
+		if cp := dedup.Check(lpkg.PkgPath); cp != nil {
 			lpkg.Types = cp.Types
 			lpkg.Fset = ld.Fset
 			lpkg.TypesInfo = cp.TypesInfo
@@ -172,7 +182,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		}
 		defer func() {
 			if !lpkg.IllTyped && lpkg.needtypes && lpkg.needsrc {
-				dedup.set(lpkg.PkgPath, &cachedPackage{
+				dedup.set(lpkg.PkgPath, &Cached{
 					Types:     lpkg.Types,
 					TypesInfo: lpkg.TypesInfo,
 					Syntax:    lpkg.Syntax,

@@ -29,6 +29,7 @@ import (
 
 func TestCollectSkipNames(t *testing.T) {
 	ctx := &context{skips: make(map[string]none)}
+	ctx.collectSkipNames("//llgo:skip")
 	ctx.collectSkipNames("//llgo:skip abs")
 }
 

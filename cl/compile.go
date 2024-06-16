@@ -28,6 +28,8 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
+	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/typepatch"
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
@@ -143,6 +145,7 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
+	patches  Patches
 	blkInfos []blocks.Info
 
 	inits []func()
@@ -1000,33 +1003,42 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // -----------------------------------------------------------------------------
 
+// Patches is patches of some packages.
+type Patches = map[string]*ssa.Package
+
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	return NewPackageEx(prog, pkg, nil, files)
+	return NewPackageEx(prog, nil, pkg, files)
 }
 
-// NewPackageEx compiles a Go package (pkg) to LLVM IR package.
-// The Go package may have an alternative package (alt).
-// The pkg and alt have the same (Pkg *types.Package).
-func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+// NewPackageEx compiles a Go package to LLVM IR package.
+func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
+	alt, hasPatch := patches[pkgPath]
+	if hasPatch {
+		pkgTypes = typepatch.Pkg(pkgTypes, alt.Pkg)
+	}
+	if packages.DebugPackagesLoad {
+		log.Println("==> NewPackageEx", pkgPath, hasPatch)
+	}
 	if pkgPath == llssa.PkgRuntime {
 		prog.SetRuntime(pkgTypes)
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
-		prog:   prog,
-		pkg:    ret,
-		fset:   pkgProg.Fset,
-		goProg: pkgProg,
-		goTyps: pkgTypes,
-		goPkg:  pkg,
-		link:   make(map[string]string),
-		skips:  make(map[string]none),
-		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
+		prog:    prog,
+		pkg:     ret,
+		fset:    pkgProg.Fset,
+		goProg:  pkgProg,
+		goTyps:  pkgTypes,
+		goPkg:   pkg,
+		patches: patches,
+		link:    make(map[string]string),
+		skips:   make(map[string]none),
+		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
@@ -1034,7 +1046,7 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
 
-	if alt != nil {
+	if hasPatch {
 		skips := ctx.skips
 		ctx.skips = nil
 		processPkg(ctx, ret, alt)

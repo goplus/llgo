@@ -17,6 +17,7 @@
 package atomic
 
 import (
+	"unsafe"
 	_ "unsafe"
 )
 
@@ -24,48 +25,48 @@ const (
 	LLGoPackage = "decl"
 )
 
-type integer interface {
-	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64
+type valtype interface {
+	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64 | ~unsafe.Pointer
 }
 
 // llgo:link Add llgo.atomicAdd
-func Add[T integer](ptr *T, v T) T { return v }
+func Add[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link Sub llgo.atomicSub
-func Sub[T integer](ptr *T, v T) T { return v }
+func Sub[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link And llgo.atomicAnd
-func And[T integer](ptr *T, v T) T { return v }
+func And[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link NotAnd llgo.atomicNand
-func NotAnd[T integer](ptr *T, v T) T { return v }
+func NotAnd[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link Or llgo.atomicOr
-func Or[T integer](ptr *T, v T) T { return v }
+func Or[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link Xor llgo.atomicXor
-func Xor[T integer](ptr *T, v T) T { return v }
+func Xor[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link Max llgo.atomicMax
-func Max[T integer](ptr *T, v T) T { return v }
+func Max[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link Min llgo.atomicMin
-func Min[T integer](ptr *T, v T) T { return v }
+func Min[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link UMax llgo.atomicUMax
-func UMax[T integer](ptr *T, v T) T { return v }
+func UMax[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link UMin llgo.atomicUMin
-func UMin[T integer](ptr *T, v T) T { return v }
+func UMin[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link Load llgo.atomicLoad
-func Load[T integer](ptr *T) T { return *ptr }
+func Load[T valtype](ptr *T) T { return *ptr }
 
 // llgo:link Store llgo.atomicStore
-func Store[T integer](ptr *T, v T) {}
+func Store[T valtype](ptr *T, v T) {}
 
 // llgo:link Exchange llgo.atomicXchg
-func Exchange[T integer](ptr *T, v T) T { return v }
+func Exchange[T valtype](ptr *T, v T) T { return v }
 
 // llgo:link CompareAndExchange llgo.atomicCmpXchg
-func CompareAndExchange[T integer](ptr *T, old, new T) (T, bool) { return old, false }
+func CompareAndExchange[T valtype](ptr *T, old, new T) (T, bool) { return old, false }

@@ -127,14 +127,22 @@ func pkgKindByScope(scope *types.Scope) (int, string) {
 }
 
 func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
+	pkgPath := llssa.PathOf(pkg)
 	scope := pkg.Scope()
 	kind, _ := pkgKindByScope(scope)
 	if kind == PkgNormal {
+		if alt, ok := p.patches[pkgPath]; ok {
+			pkg = alt.Pkg
+			scope = pkg.Scope()
+			if kind, _ = pkgKindByScope(scope); kind != PkgNormal {
+				goto start
+			}
+		}
 		return
 	}
+start:
 	i.kind = kind
 	fset := p.fset
-	pkgPath := llssa.PathOf(pkg)
 	names := scope.Names()
 	syms := newPkgSymInfo()
 	for _, name := range names {
