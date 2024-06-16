@@ -1019,6 +1019,8 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	alt, hasPatch := patches[pkgPath]
 	if hasPatch {
 		pkgTypes = typepatch.Pkg(pkgTypes, alt.Pkg)
+		pkg.Pkg = pkgTypes
+		alt.Pkg = pkgTypes
 	}
 	if packages.DebugPackagesLoad {
 		log.Println("==> NewPackageEx", pkgPath, hasPatch)
