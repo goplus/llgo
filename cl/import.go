@@ -343,14 +343,18 @@ const (
 	llgoAdvance     = llgoInstrBase + 4
 	llgoIndex       = llgoInstrBase + 5
 	llgoStringData  = llgoInstrBase + 6
-	llgoPyList      = llgoInstrBase + 7
-	llgoSigjmpbuf   = llgoInstrBase + 0xa
-	llgoSigsetjmp   = llgoInstrBase + 0xb
-	llgoSiglongjmp  = llgoInstrBase + 0xc
-	llgoDeferData   = llgoInstrBase + 0xd
+	llgoDeferData   = llgoInstrBase + 7
 
-	llgoAtomicCmpXchg = llgoInstrBase + 0xf
-	llgoAtomicOpBase  = llgoInstrBase + 0x10
+	llgoSigjmpbuf  = llgoInstrBase + 0xa
+	llgoSigsetjmp  = llgoInstrBase + 0xb
+	llgoSiglongjmp = llgoInstrBase + 0xc
+
+	llgoPyList = llgoInstrBase + 0x10
+
+	llgoAtomicLoad    = llgoInstrBase + 0x1d
+	llgoAtomicStore   = llgoInstrBase + 0x1e
+	llgoAtomicCmpXchg = llgoInstrBase + 0x1f
+	llgoAtomicOpBase  = llgoInstrBase + 0x20
 
 	llgoAtomicXchg = llgoAtomicOpBase + llssa.OpXchg
 	llgoAtomicAdd  = llgoAtomicOpBase + llssa.OpAdd

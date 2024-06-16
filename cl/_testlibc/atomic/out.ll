@@ -4,10 +4,11 @@ source_filename = "main"
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
-@0 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@1 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@3 = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
+@0 = private unnamed_addr constant [12 x i8] c"store: %ld\0A\00", align 1
+@1 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@2 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@3 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@4 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -29,19 +30,21 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  store i64 100, ptr %2, align 4
-  %3 = atomicrmw add ptr %2, i64 1 seq_cst, align 8
-  %4 = load i64, ptr %2, align 4
-  %5 = call i32 (ptr, ...) @printf(ptr @0, i64 %4)
-  %6 = cmpxchg ptr %2, i64 100, i64 102 seq_cst seq_cst, align 8
-  %7 = load i64, ptr %2, align 4
-  %8 = call i32 (ptr, ...) @printf(ptr @1, i64 %7)
-  %9 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
-  %10 = load i64, ptr %2, align 4
-  %11 = call i32 (ptr, ...) @printf(ptr @2, i64 %10)
-  %12 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
-  %13 = load i64, ptr %2, align 4
-  %14 = call i32 (ptr, ...) @printf(ptr @3, i64 %13)
+  store atomic i64 100, ptr %2 seq_cst, align 4
+  %3 = load atomic i64, ptr %2 seq_cst, align 4
+  %4 = call i32 (ptr, ...) @printf(ptr @0, i64 %3)
+  %5 = atomicrmw add ptr %2, i64 1 seq_cst, align 8
+  %6 = load i64, ptr %2, align 4
+  %7 = call i32 (ptr, ...) @printf(ptr @1, i64 %6)
+  %8 = cmpxchg ptr %2, i64 100, i64 102 seq_cst seq_cst, align 8
+  %9 = load i64, ptr %2, align 4
+  %10 = call i32 (ptr, ...) @printf(ptr @2, i64 %9)
+  %11 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
+  %12 = load i64, ptr %2, align 4
+  %13 = call i32 (ptr, ...) @printf(ptr @3, i64 %12)
+  %14 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
+  %15 = load i64, ptr %2, align 4
+  %16 = call i32 (ptr, ...) @printf(ptr @4, i64 %15)
   ret i32 0
 }
 

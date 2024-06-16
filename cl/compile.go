@@ -318,18 +318,21 @@ var llgoInstrs = map[string]int{
 	"deferData":   llgoDeferData,
 	"unreachable": llgoUnreachable,
 
+	"atomicLoad":    llgoAtomicLoad,
+	"atomicStore":   llgoAtomicStore,
 	"atomicCmpXchg": llgoAtomicCmpXchg,
-	"atomicXchg":    int(llgoAtomicXchg),
-	"atomicAdd":     int(llgoAtomicAdd),
-	"atomicSub":     int(llgoAtomicSub),
-	"atomicAnd":     int(llgoAtomicAnd),
-	"atomicNand":    int(llgoAtomicNand),
-	"atomicOr":      int(llgoAtomicOr),
-	"atomicXor":     int(llgoAtomicXor),
-	"atomicMax":     int(llgoAtomicMax),
-	"atomicMin":     int(llgoAtomicMin),
-	"atomicUMax":    int(llgoAtomicUMax),
-	"atomicUMin":    int(llgoAtomicUMin),
+
+	"atomicXchg": int(llgoAtomicXchg),
+	"atomicAdd":  int(llgoAtomicAdd),
+	"atomicSub":  int(llgoAtomicSub),
+	"atomicAnd":  int(llgoAtomicAnd),
+	"atomicNand": int(llgoAtomicNand),
+	"atomicOr":   int(llgoAtomicOr),
+	"atomicXor":  int(llgoAtomicXor),
+	"atomicMax":  int(llgoAtomicMax),
+	"atomicMin":  int(llgoAtomicMin),
+	"atomicUMax": int(llgoAtomicUMax),
+	"atomicUMin": int(llgoAtomicUMin),
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -564,6 +567,24 @@ func (p *context) atomic(b llssa.Builder, op llssa.AtomicOp, args []ssa.Value) (
 	panic("atomicOp(addr *T, val T) T: invalid arguments")
 }
 
+func (p *context) atomicLoad(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	if len(args) == 1 {
+		addr := p.compileValue(b, args[0])
+		return b.Load(addr).SetOrdering(llssa.OrderingSeqConsistent)
+	}
+	panic("atomicLoad(addr *T) T: invalid arguments")
+}
+
+func (p *context) atomicStore(b llssa.Builder, args []ssa.Value) {
+	if len(args) == 2 {
+		addr := p.compileValue(b, args[0])
+		val := p.compileValue(b, args[1])
+		b.Store(addr, val).SetOrdering(llssa.OrderingSeqConsistent)
+		return
+	}
+	panic("atomicStore(addr *T, val T) T: invalid arguments")
+}
+
 func (p *context) atomicCmpXchg(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	if len(args) == 3 {
 		addr := p.compileValue(b, args[0])
@@ -677,6 +698,10 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.allocaCStr(b, args)
 		case llgoStringData:
 			ret = p.stringData(b, args)
+		case llgoAtomicLoad:
+			ret = p.atomicLoad(b, args)
+		case llgoAtomicStore:
+			p.atomicStore(b, args)
 		case llgoAtomicCmpXchg:
 			ret = p.atomicCmpXchg(b, args)
 		case llgoSigsetjmp:
