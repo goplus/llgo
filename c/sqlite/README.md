@@ -8,6 +8,15 @@ LLGo wrapper of sqlite
 
 ## How to install
 
+### on macOS (Homebrew)
+```sh
+brew install sqlite3
+```
+### on linux
+```sh
+apt-get install -y libsqlite3-dev
+```
+### from source code
 ```sh
 git clone https://github.com/goplus/sqlite.git
 cd sqlite
