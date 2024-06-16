@@ -11,15 +11,15 @@ func main() {
 	atomic.Store(&v, 100)
 	c.Printf(c.Str("store: %ld\n"), atomic.Load(&v))
 
-	atomic.Add(&v, 1)
-	c.Printf(c.Str("v: %ld\n"), v)
+	ret := atomic.Add(&v, 1)
+	c.Printf(c.Str("ret: %ld, v: %ld\n"), ret, v)
 
-	atomic.CompareAndExchange(&v, 100, 102)
-	c.Printf(c.Str("v: %ld\n"), v)
+	ret, _ = atomic.CompareAndExchange(&v, 100, 102)
+	c.Printf(c.Str("ret: %ld vs 100, v: %ld\n"), ret, v)
 
-	atomic.CompareAndExchange(&v, 101, 102)
-	c.Printf(c.Str("v: %ld\n"), v)
+	ret, _ = atomic.CompareAndExchange(&v, 101, 102)
+	c.Printf(c.Str("ret: %ld vs 101, v: %ld\n"), ret, v)
 
-	atomic.Sub(&v, 1)
-	c.Printf(c.Str("v: %ld\n"), v)
+	ret = atomic.Sub(&v, 1)
+	c.Printf(c.Str("ret: %ld, v: %ld\n"), ret, v)
 }
