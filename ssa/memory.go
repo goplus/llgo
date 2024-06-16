@@ -252,3 +252,47 @@ func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
 }
 
 // -----------------------------------------------------------------------------
+
+// AtomicOp is an atomic operation.
+type AtomicOp = llvm.AtomicRMWBinOp
+
+const (
+	OpXchg = llvm.AtomicRMWBinOpXchg
+	OpAdd  = llvm.AtomicRMWBinOpAdd
+	OpSub  = llvm.AtomicRMWBinOpSub
+	OpAnd  = llvm.AtomicRMWBinOpAnd
+	OpNand = llvm.AtomicRMWBinOpNand
+	OpOr   = llvm.AtomicRMWBinOpOr
+	OpXor  = llvm.AtomicRMWBinOpXor
+	OpMax  = llvm.AtomicRMWBinOpMax
+	OpMin  = llvm.AtomicRMWBinOpMin
+	OpUMax = llvm.AtomicRMWBinOpUMax
+	OpUMin = llvm.AtomicRMWBinOpUMin
+)
+
+// Atomic performs an atomic operation on the memory location pointed to by ptr.
+func (b Builder) Atomic(op AtomicOp, ptr, val Expr) Expr {
+	if debugInstr {
+		log.Printf("Atomic %v, %v, %v\n", op, ptr.impl, val.impl)
+	}
+	t := b.Prog.Elem(ptr.Type)
+	val = b.ChangeType(t, val)
+	ret := b.impl.CreateAtomicRMW(op, ptr.impl, val.impl, llvm.AtomicOrderingSequentiallyConsistent, false)
+	return Expr{ret, t}
+}
+
+// AtomicCmpXchg performs an atomic compare-and-swap operation on the memory location pointed to by ptr.
+func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
+	if debugInstr {
+		log.Printf("AtomicCmpXchg %v, %v, %v\n", ptr.impl, old.impl, new.impl)
+	}
+	t := b.Prog.Elem(ptr.Type)
+	old = b.ChangeType(t, old)
+	new = b.ChangeType(t, new)
+	ret := b.impl.CreateAtomicCmpXchg(
+		ptr.impl, old.impl, new.impl,
+		llvm.AtomicOrderingSequentiallyConsistent, llvm.AtomicOrderingSequentiallyConsistent, false)
+	return Expr{ret, t}
+}
+
+// -----------------------------------------------------------------------------

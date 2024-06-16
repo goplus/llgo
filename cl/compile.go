@@ -304,6 +304,34 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	return fn, nil, goFunc
 }
 
+var llgoInstrs = map[string]int{
+	"cstr":        llgoCstr,
+	"advance":     llgoAdvance,
+	"index":       llgoIndex,
+	"alloca":      llgoAlloca,
+	"allocaCStr":  llgoAllocaCStr,
+	"stringData":  llgoStringData,
+	"pyList":      llgoPyList,
+	"sigjmpbuf":   llgoSigjmpbuf,
+	"sigsetjmp":   llgoSigsetjmp,
+	"siglongjmp":  llgoSiglongjmp,
+	"deferData":   llgoDeferData,
+	"unreachable": llgoUnreachable,
+
+	"atomicCmpXchg": llgoAtomicCmpXchg,
+	"atomicXchg":    int(llgoAtomicXchg),
+	"atomicAdd":     int(llgoAtomicAdd),
+	"atomicSub":     int(llgoAtomicSub),
+	"atomicAnd":     int(llgoAtomicAnd),
+	"atomicNand":    int(llgoAtomicNand),
+	"atomicOr":      int(llgoAtomicOr),
+	"atomicXor":     int(llgoAtomicXor),
+	"atomicMax":     int(llgoAtomicMax),
+	"atomicMin":     int(llgoAtomicMin),
+	"atomicUMax":    int(llgoAtomicUMax),
+	"atomicUMin":    int(llgoAtomicUMin),
+}
+
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
 // or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
 func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObjRef, ftype int) {
@@ -320,32 +348,7 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 		}
 		ftype = ignoredFunc
 	case llgoInstr:
-		switch name {
-		case "cstr":
-			ftype = llgoCstr
-		case "advance":
-			ftype = llgoAdvance
-		case "index":
-			ftype = llgoIndex
-		case "alloca":
-			ftype = llgoAlloca
-		case "allocaCStr":
-			ftype = llgoAllocaCStr
-		case "stringData":
-			ftype = llgoStringData
-		case "pyList":
-			ftype = llgoPyList
-		case "sigjmpbuf":
-			ftype = llgoSigjmpbuf
-		case "sigsetjmp":
-			ftype = llgoSigsetjmp
-		case "siglongjmp":
-			ftype = llgoSiglongjmp
-		case "deferData":
-			ftype = llgoDeferData
-		case "unreachable":
-			ftype = llgoUnreachable
-		default:
+		if ftype = llgoInstrs[name]; ftype == 0 {
 			panic("unknown llgo instruction: " + name)
 		}
 	default:
@@ -552,6 +555,25 @@ func (p *context) siglongjmp(b llssa.Builder, args []ssa.Value) {
 	panic("siglongjmp(jb c.SigjmpBuf, retval c.Int): invalid arguments")
 }
 
+func (p *context) atomic(b llssa.Builder, op llssa.AtomicOp, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		addr := p.compileValue(b, args[0])
+		val := p.compileValue(b, args[1])
+		return b.Atomic(op, addr, val)
+	}
+	panic("atomicOp(addr *T, val T) T: invalid arguments")
+}
+
+func (p *context) atomicCmpXchg(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	if len(args) == 3 {
+		addr := p.compileValue(b, args[0])
+		old := p.compileValue(b, args[1])
+		new := p.compileValue(b, args[2])
+		return b.AtomicCmpXchg(addr, old, new)
+	}
+	panic("atomicCmpXchg(addr *T, old, new T) T: invalid arguments")
+}
+
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -655,6 +677,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.allocaCStr(b, args)
 		case llgoStringData:
 			ret = p.stringData(b, args)
+		case llgoAtomicCmpXchg:
+			ret = p.atomicCmpXchg(b, args)
 		case llgoSigsetjmp:
 			ret = p.sigsetjmp(b, args)
 		case llgoSiglongjmp:
@@ -666,7 +690,11 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:
-			log.Panicln("unknown ftype:", ftype)
+			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
+				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
+			} else {
+				log.Panicln("unknown ftype:", ftype)
+			}
 		}
 	default:
 		fn := p.compileValue(b, cv)
