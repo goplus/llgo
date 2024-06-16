@@ -29,6 +29,8 @@ import (
 
 func TestCollectSkipNames(t *testing.T) {
 	ctx := &context{skips: make(map[string]none)}
+	ctx.collectSkipNames("//llgo:skipall")
+	ctx.collectSkipNames("//llgo:skip")
 	ctx.collectSkipNames("//llgo:skip abs")
 }
 
@@ -218,6 +220,13 @@ func TestErrImport(t *testing.T) {
 	var ctx context
 	pkg := types.NewPackage("foo", "foo")
 	ctx.importPkg(pkg, nil)
+
+	alt := types.NewPackage("bar", "bar")
+	alt.Scope().Insert(
+		types.NewConst(0, alt, "LLGoPackage", types.Typ[types.String], constant.MakeString("noinit")),
+	)
+	ctx.patches = Patches{"foo": &ssa.Package{Pkg: alt}}
+	ctx.importPkg(pkg, &pkgInfo{})
 }
 
 func TestErrInitLinkname(t *testing.T) {

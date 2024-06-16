@@ -34,7 +34,6 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
-	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/xtool/clang"
 	"github.com/goplus/llgo/xtool/env"
 
@@ -48,6 +47,10 @@ const (
 	ModeBuild Mode = iota
 	ModeInstall
 	ModeRun
+)
+
+const (
+	debugBuild = packages.DebugPackagesLoad
 )
 
 func needLLFile(mode Mode) bool {
@@ -129,35 +132,25 @@ func Do(args []string, conf *Config) {
 		return
 	}
 
+	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
+	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+	check(err)
+
 	var needRt bool
-	var rt []*packages.Package
-	load := func() []*packages.Package {
-		if rt == nil {
-			var err error
-			rt, err = packages.LoadEx(dedup, sizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
-			check(err)
-		}
-		return rt
-	}
 	prog.SetRuntime(func() *types.Package {
 		needRt = true
-		rt := load()
-		return rt[0].Types
+		return altPkgs[0].Types
 	})
 	prog.SetPython(func() *types.Package {
-		rt := load()
-		return rt[1].Types
+		return dedup.Check(llssa.PkgPython).Types
 	})
 
-	imp := func(pkgPath string) *packages.Package {
-		if ret, e := packages.LoadEx(dedup, sizes, cfg, pkgPath); e == nil {
-			return ret[0]
-		}
-		return nil
-	}
-
 	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
-	pkgs := buildAllPkgs(prog, progSSA, imp, initial, nil, mode, verbose)
+	patches := make(cl.Patches, len(altPkgPaths))
+	altSSAPkgs(progSSA, patches, altPkgs[1:])
+
+	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode, verbose}
+	pkgs := buildAllPkgs(ctx, initial)
 
 	var runtimeFiles []string
 	if needRt {
@@ -165,11 +158,7 @@ func Do(args []string, conf *Config) {
 		llssa.SetDebug(0)
 		cl.SetDebug(0)
 
-		skip := make(map[string]bool)
-		for _, v := range pkgs {
-			skip[v.PkgPath] = true
-		}
-		dpkg := buildAllPkgs(prog, progSSA, imp, rt[:1], skip, mode, verbose)
+		dpkg := buildAllPkgs(ctx, altPkgs[:1])
 		for _, pkg := range dpkg {
 			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
 				continue
@@ -212,21 +201,33 @@ const (
 	ssaBuildMode = ssa.SanityCheckFunctions
 )
 
-func buildAllPkgs(prog llssa.Program, progSSA *ssa.Program, imp importer, initial []*packages.Package, skip map[string]bool, mode Mode, verbose bool) (pkgs []*aPackage) {
-	// Create SSA-form program representation.
-	pkgs, errPkgs := allPkgs(progSSA, imp, initial, verbose)
+type context struct {
+	progSSA *ssa.Program
+	prog    llssa.Program
+	dedup   packages.Deduper
+	patches cl.Patches
+	built   map[string]none
+	mode    Mode
+	verbose bool
+}
+
+func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) {
+	prog := ctx.prog
+	pkgs, errPkgs := allPkgs(ctx, initial)
 	for _, errPkg := range errPkgs {
 		for _, err := range errPkg.Errors {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
+	built := ctx.built
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
-		if skip[pkg.PkgPath] {
+		if _, ok := built[pkg.PkgPath]; ok {
 			pkg.ExportFile = ""
 			continue
 		}
+		built[pkg.PkgPath] = none{}
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
@@ -277,7 +278,7 @@ func buildAllPkgs(prog llssa.Program, progSSA *ssa.Program, imp importer, initia
 				}
 			}
 		default:
-			buildPkg(prog, aPkg, mode, verbose)
+			buildPkg(ctx, aPkg)
 			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
@@ -375,27 +376,23 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	return
 }
 
-func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
+func buildPkg(ctx *context, aPkg *aPackage) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
-	if verbose {
+	if debugBuild || ctx.verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
 	}
 	if canSkipToBuild(pkgPath) {
 		pkg.ExportFile = ""
 		return
 	}
-	altSSA := aPkg.AltSSA
-	syntax := pkg.Syntax
+	var syntax = pkg.Syntax
 	if altPkg := aPkg.AltPkg; altPkg != nil {
 		syntax = append(syntax, altPkg.Syntax...)
-		if altSSA != nil {
-			altSSA.Pkg = typepatch.Pkg(pkg.Types, altPkg.Types)
-		}
 	}
-	ret, err := cl.NewPackageEx(prog, aPkg.SSA, altSSA, syntax)
+	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
 	check(err)
-	if needLLFile(mode) {
+	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
 	}
@@ -404,20 +401,12 @@ func buildPkg(prog llssa.Program, aPkg *aPackage, mode Mode, verbose bool) {
 
 func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
-	case "unsafe", "errors":
+	case "unsafe", "errors", "runtime", "sync": // TODO(xsw): remove it
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
 			strings.HasPrefix(pkgPath, "runtime/internal/")
 	}
-}
-
-type aPackage struct {
-	*packages.Package
-	SSA    *ssa.Package
-	AltPkg *packages.Package
-	AltSSA *ssa.Package
-	LPkg   llssa.Package
 }
 
 type none struct{}
@@ -429,26 +418,59 @@ var hasAltPkg = map[string]none{
 	"runtime":     {},
 }
 
-type importer = func(pkgPath string) *packages.Package
+const (
+	altPkgPathPrefix = "github.com/goplus/llgo/internal/lib/"
+)
 
-func allPkgs(prog *ssa.Program, imp importer, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
+func altPkgs(initial []*packages.Package, alts ...string) []string {
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
-			var altPkg *packages.Package
-			var altSSA *ssa.Package
-			var ssaPkg = createSSAPkg(prog, p)
-			if imp != nil {
-				if _, ok := hasAltPkg[p.PkgPath]; ok {
-					if verbose {
-						log.Println("==> Patching", p.PkgPath)
-					}
-					altPkgPath := "github.com/goplus/llgo/internal/lib/" + p.PkgPath
-					if altPkg = imp(altPkgPath); altPkg != nil { // TODO(xsw): how to minimize import times
-						altSSA = createAltSSAPkg(prog, altPkg)
-					}
+			if _, ok := hasAltPkg[p.PkgPath]; ok {
+				alts = append(alts, altPkgPathPrefix+p.PkgPath)
+			}
+		}
+	})
+	return alts
+}
+
+func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package) {
+	packages.Visit(alts, nil, func(p *packages.Package) {
+		if p.Types != nil && !p.IllTyped {
+			pkgSSA := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+			if strings.HasPrefix(p.PkgPath, altPkgPathPrefix) {
+				path := p.PkgPath[len(altPkgPathPrefix):]
+				patches[path] = pkgSSA
+				if debugBuild {
+					log.Println("==> Patching", path)
 				}
 			}
-			all = append(all, &aPackage{p, ssaPkg, altPkg, altSSA, nil})
+		}
+	})
+	prog.Build()
+}
+
+type aPackage struct {
+	*packages.Package
+	SSA    *ssa.Package
+	AltPkg *packages.Cached
+	LPkg   llssa.Package
+}
+
+func allPkgs(ctx *context, initial []*packages.Package) (all []*aPackage, errs []*packages.Package) {
+	prog := ctx.progSSA
+	verbose := ctx.verbose
+	built := ctx.built
+	packages.Visit(initial, nil, func(p *packages.Package) {
+		if p.Types != nil && !p.IllTyped {
+			if _, ok := built[p.PkgPath]; ok {
+				return
+			}
+			var altPkg *packages.Cached
+			var ssaPkg = createSSAPkg(prog, p, verbose)
+			if _, ok := hasAltPkg[p.PkgPath]; ok {
+				altPkg = ctx.dedup.Check(altPkgPathPrefix + p.PkgPath)
+			}
+			all = append(all, &aPackage{p, ssaPkg, altPkg, nil})
 		} else {
 			errs = append(errs, p)
 		}
@@ -456,22 +478,12 @@ func allPkgs(prog *ssa.Program, imp importer, initial []*packages.Package, verbo
 	return
 }
 
-func createAltSSAPkg(prog *ssa.Program, alt *packages.Package) *ssa.Package {
-	altSSA := prog.ImportedPackage(alt.PkgPath)
-	if altSSA == nil {
-		packages.Visit([]*packages.Package{alt}, nil, func(p *packages.Package) {
-			if p.Types != nil && !p.IllTyped {
-				createSSAPkg(prog, p)
-			}
-		})
-		altSSA = prog.ImportedPackage(alt.PkgPath)
-	}
-	return altSSA
-}
-
-func createSSAPkg(prog *ssa.Program, p *packages.Package) *ssa.Package {
+func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
 	pkgSSA := prog.ImportedPackage(p.PkgPath)
 	if pkgSSA == nil {
+		if debugBuild || verbose {
+			log.Println("==> BuildSSA", p.PkgPath)
+		}
 		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 		pkgSSA.Build() // TODO(xsw): build concurrently
 	}
