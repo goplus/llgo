@@ -68,4 +68,4 @@ func Store[T integer](ptr *T, v T) {}
 func Exchange[T integer](ptr *T, v T) T { return v }
 
 // llgo:link CompareAndExchange llgo.atomicCmpXchg
-func CompareAndExchange[T integer](ptr *T, old, new T) T { return old }
+func CompareAndExchange[T integer](ptr *T, old, new T) (T, bool) { return old, false }

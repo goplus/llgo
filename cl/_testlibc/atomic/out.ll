@@ -5,10 +5,10 @@ source_filename = "main"
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
 @0 = private unnamed_addr constant [12 x i8] c"store: %ld\0A\00", align 1
-@1 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
-@2 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
-@3 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
-@4 = private unnamed_addr constant [8 x i8] c"v: %ld\0A\00", align 1
+@1 = private unnamed_addr constant [18 x i8] c"ret: %ld, v: %ld\0A\00", align 1
+@2 = private unnamed_addr constant [25 x i8] c"ret: %ld vs 100, v: %ld\0A\00", align 1
+@3 = private unnamed_addr constant [25 x i8] c"ret: %ld vs 101, v: %ld\0A\00", align 1
+@4 = private unnamed_addr constant [18 x i8] c"ret: %ld, v: %ld\0A\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -35,16 +35,20 @@ _llgo_0:
   %4 = call i32 (ptr, ...) @printf(ptr @0, i64 %3)
   %5 = atomicrmw add ptr %2, i64 1 seq_cst, align 8
   %6 = load i64, ptr %2, align 4
-  %7 = call i32 (ptr, ...) @printf(ptr @1, i64 %6)
+  %7 = call i32 (ptr, ...) @printf(ptr @1, i64 %5, i64 %6)
   %8 = cmpxchg ptr %2, i64 100, i64 102 seq_cst seq_cst, align 8
-  %9 = load i64, ptr %2, align 4
-  %10 = call i32 (ptr, ...) @printf(ptr @2, i64 %9)
-  %11 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
-  %12 = load i64, ptr %2, align 4
-  %13 = call i32 (ptr, ...) @printf(ptr @3, i64 %12)
-  %14 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
-  %15 = load i64, ptr %2, align 4
-  %16 = call i32 (ptr, ...) @printf(ptr @4, i64 %15)
+  %9 = extractvalue { i64, i1 } %8, 0
+  %10 = extractvalue { i64, i1 } %8, 1
+  %11 = load i64, ptr %2, align 4
+  %12 = call i32 (ptr, ...) @printf(ptr @2, i64 %9, i64 %11)
+  %13 = cmpxchg ptr %2, i64 101, i64 102 seq_cst seq_cst, align 8
+  %14 = extractvalue { i64, i1 } %13, 0
+  %15 = extractvalue { i64, i1 } %13, 1
+  %16 = load i64, ptr %2, align 4
+  %17 = call i32 (ptr, ...) @printf(ptr @3, i64 %14, i64 %16)
+  %18 = atomicrmw sub ptr %2, i64 1 seq_cst, align 8
+  %19 = load i64, ptr %2, align 4
+  %20 = call i32 (ptr, ...) @printf(ptr @4, i64 %18, i64 %19)
   ret i32 0
 }
 

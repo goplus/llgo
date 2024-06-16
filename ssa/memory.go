@@ -246,13 +246,14 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 	if debugInstr {
 		log.Printf("AtomicCmpXchg %v, %v, %v\n", ptr.impl, old.impl, new.impl)
 	}
-	t := b.Prog.Elem(ptr.Type)
+	prog := b.Prog
+	t := prog.Elem(ptr.Type)
 	old = b.ChangeType(t, old)
 	new = b.ChangeType(t, new)
 	ret := b.impl.CreateAtomicCmpXchg(
 		ptr.impl, old.impl, new.impl,
 		llvm.AtomicOrderingSequentiallyConsistent, llvm.AtomicOrderingSequentiallyConsistent, false)
-	return Expr{ret, t}
+	return Expr{ret, prog.Struct(t, prog.Bool())}
 }
 
 // Load returns the value at the pointer ptr.
