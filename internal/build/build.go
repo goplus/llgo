@@ -413,7 +413,8 @@ type aPackage struct {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"math": {},
+	"math":        {},
+	"sync/atomic": {},
 }
 
 type importer = func(pkgPath string) *packages.Package
