@@ -28,7 +28,6 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
-	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
@@ -1021,9 +1020,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		pkgTypes = typepatch.Pkg(pkgTypes, alt.Pkg)
 		pkg.Pkg = pkgTypes
 		alt.Pkg = pkgTypes
-	}
-	if packages.DebugPackagesLoad {
-		log.Println("==> NewPackageEx", pkgPath, hasPatch)
 	}
 	if pkgPath == llssa.PkgRuntime {
 		prog.SetRuntime(pkgTypes)
