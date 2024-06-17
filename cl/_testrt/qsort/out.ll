@@ -59,12 +59,6 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
-declare void @qsort(ptr, i64, i64, ptr)
-
 define i32 @"main.main$1"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
@@ -73,6 +67,12 @@ _llgo_0:
   %5 = trunc i64 %4 to i32
   ret i32 %5
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+declare void @qsort(ptr, i64, i64, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 

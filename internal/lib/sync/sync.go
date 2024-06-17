@@ -46,11 +46,14 @@ func (o *Once) Do(f func()) {
 	if *(*c.Long)(unsafe.Pointer(o)) == 0 { // try init
 		*(*sync.Once)(o) = sync.OnceInit
 	}
-	(*sync.Once)(o).Do(func() {
+	onceDo(o, func() {
 		ptr := onceParam.Get()
 		(*(*func())(ptr))()
 		c.Free(ptr)
 	})
 }
+
+//go:linkname onceDo C.pthread_once
+func onceDo(o *Once, f func()) c.Int
 
 // -----------------------------------------------------------------------------

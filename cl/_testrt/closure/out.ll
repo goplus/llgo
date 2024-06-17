@@ -50,25 +50,15 @@ _llgo_0:
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
 define void @"main.main$1"(i64 %0, i64 %1) {
 _llgo_0:
   %2 = call i32 (ptr, ...) @printf(ptr @0, i64 %0, i64 %1)
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
 define void @"main.main$2"(i64 %0, i64 %1) {
 _llgo_0:
   %2 = call i32 (ptr, ...) @printf(ptr @1, i64 %0, i64 %1)
-  ret void
-}
-
-define linkonce void @"__llgo_stub.main.main$2"(ptr %0, i64 %1, i64 %2) {
-_llgo_0:
-  tail call void @"main.main$2"(i64 %1, i64 %2)
   ret void
 }
 
@@ -80,6 +70,16 @@ _llgo_0:
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
   call void %5(ptr %4, i64 100, i64 200)
+  ret void
+}
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+define linkonce void @"__llgo_stub.main.main$2"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  tail call void @"main.main$2"(i64 %1, i64 %2)
   ret void
 }
 

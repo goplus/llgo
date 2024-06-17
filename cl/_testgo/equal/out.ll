@@ -98,6 +98,22 @@ _llgo_0:
   ret void
 }
 
+define i64 @"main.init#1$1"(i64 %0, i64 %1) {
+_llgo_0:
+  %2 = add i64 %0, %1
+  ret i64 %2
+}
+
+define void @"main.init#1$2"(ptr %0) {
+_llgo_0:
+  %1 = load { ptr }, ptr %0, align 8
+  %2 = extractvalue { ptr } %1, 0
+  %3 = load i64, ptr %2, align 4
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  ret void
+}
+
 define void @"main.init#2"() {
 _llgo_0:
   call void @main.assert(i1 true)
@@ -780,21 +796,9 @@ declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplu
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
-define void @"main.init#1$2"(ptr %0) {
-_llgo_0:
-  %1 = load { ptr }, ptr %0, align 8
-  %2 = extractvalue { ptr } %1, 0
-  %3 = load i64, ptr %2, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  ret void
-}
+declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
 
-define i64 @"main.init#1$1"(i64 %0, i64 %1) {
-_llgo_0:
-  %2 = add i64 %0, %1
-  ret i64 %2
-}
+declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
@@ -815,7 +819,3 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/go
 declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
-
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)

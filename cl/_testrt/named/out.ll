@@ -123,10 +123,6 @@ _llgo_0:
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
 define i64 @"main.main$1"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
@@ -137,6 +133,10 @@ _llgo_0:
   %7 = mul i64 %6, %1
   ret i64 %7
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
