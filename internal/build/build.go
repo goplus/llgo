@@ -19,6 +19,7 @@ package build
 import (
 	"archive/zip"
 	"fmt"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"io"
@@ -147,7 +148,7 @@ func Do(args []string, conf *Config) {
 
 	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
-	altSSAPkgs(progSSA, patches, altPkgs[1:])
+	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
 	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode, verbose}
 	pkgs := buildAllPkgs(ctx, initial)
@@ -234,9 +235,8 @@ func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) 
 			// and set no export file
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
-			pkgPath := pkg.PkgPath
-			if isPkgInLLGo(pkgPath) {
-				pkg.ExportFile = concatPkgLinkFiles(pkgPath)
+			if isPkgInLLGo(pkg.PkgPath) {
+				pkg.ExportFile = concatPkgLinkFiles(pkg, ctx.verbose)
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
@@ -414,14 +414,14 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 	return alts
 }
 
-func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package) {
+func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgSSA := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.PkgPath, altPkgPathPrefix) {
 				path := p.PkgPath[len(altPkgPathPrefix):]
 				patches[path] = pkgSSA
-				if debugBuild {
+				if debugBuild || verbose {
 					log.Println("==> Patching", path)
 				}
 			}
@@ -563,11 +563,11 @@ func isSingleLinkFile(ret string) bool {
 	return len(ret) > 0 && ret[0] != ' '
 }
 
-func concatPkgLinkFiles(pkgPath string) string {
+func concatPkgLinkFiles(pkg *packages.Package, verbose bool) string {
 	var b strings.Builder
 	var ret string
 	var n int
-	llgoPkgLinkFiles(pkgPath, "", func(linkFile string) {
+	llgoPkgLinkFiles(pkg, "", func(linkFile string) {
 		if n == 0 {
 			ret = linkFile
 		} else {
@@ -575,7 +575,7 @@ func concatPkgLinkFiles(pkgPath string) string {
 			b.WriteString(linkFile)
 		}
 		n++
-	})
+	}, verbose)
 	if n > 1 {
 		b.WriteByte(' ')
 		b.WriteString(ret)
@@ -584,7 +584,39 @@ func concatPkgLinkFiles(pkgPath string) string {
 	return ret
 }
 
-func llgoPkgLinkFiles(pkgPath string, llFile string, procFile func(linkFile string)) {
+// const LLGoFiles = "file1; file2; ..."
+func llgoPkgLinkFiles(pkg *packages.Package, llFile string, procFile func(linkFile string), verbose bool) {
+	if o := pkg.Types.Scope().Lookup("LLGoFiles"); o != nil {
+		val := o.(*types.Const).Val()
+		if val.Kind() == constant.String {
+			clFiles(constant.StringVal(val), pkg, procFile, verbose)
+		}
+	}
+	unzipPkgLinkFiles(pkg.PkgPath, llFile, procFile)
+}
+
+// files = "file1; file2; ..."
+func clFiles(files string, pkg *packages.Package, procFile func(linkFile string), verbose bool) {
+	dir := filepath.Dir(pkg.CompiledGoFiles[0])
+	expFile := pkg.ExportFile
+	for _, file := range strings.Split(files, ";") {
+		cFile := filepath.Join(dir, strings.TrimSpace(file))
+		clFile(cFile, expFile, procFile, verbose)
+	}
+}
+
+func clFile(cFile, expFile string, procFile func(linkFile string), verbose bool) {
+	llFile := expFile + filepath.Base(cFile) + ".ll"
+	args := []string{"-emit-llvm", "-S", "-o", llFile, "-c", cFile}
+	if verbose {
+		fmt.Fprintln(os.Stderr, "clang", args)
+	}
+	err := clang.New("").Exec(args...)
+	check(err)
+	procFile(llFile)
+}
+
+func unzipPkgLinkFiles(pkgPath string, llFile string, procFile func(linkFile string)) {
 	dir := llgoRoot() + pkgPath[len(llgoModPath):] + "/"
 	if llFile == "" {
 		llFile = "llgo_autogen.ll"
