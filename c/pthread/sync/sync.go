@@ -42,3 +42,46 @@ var OnceInit Once
 func (o *Once) Do(f func()) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
+
+type MutexType c.Int
+
+const (
+	MutexNormal     MutexType = C.PTHREAD_MUTEX_NORMAL
+	MutexErrorCheck MutexType = C.PTHREAD_MUTEX_ERRORCHECK
+	MutexRecursive  MutexType = C.PTHREAD_MUTEX_RECURSIVE
+	MutexDefault    MutexType = C.PTHREAD_MUTEX_DEFAULT
+)
+
+// MutexAttr is a mutex attribute object.
+type MutexAttr C.pthread_mutexattr_t
+
+// llgo:link (*MutexAttr).Init C.pthread_mutexattr_init
+func (a *MutexAttr) Init(attr *MutexAttr) c.Int { return 0 }
+
+// llgo:link (*MutexAttr).Destroy C.pthread_mutexattr_destroy
+func (a *MutexAttr) Destroy() {}
+
+// llgo:link (*MutexAttr).SetType C.pthread_mutexattr_settype
+func (a *MutexAttr) SetType(typ MutexType) c.Int { return 0 }
+
+// -----------------------------------------------------------------------------
+
+// Mutex is a mutual exclusion lock.
+type Mutex C.pthread_mutex_t
+
+// llgo:link (*Mutex).Init C.pthread_mutex_init
+func (m *Mutex) Init(attr *MutexAttr) c.Int { return 0 }
+
+// llgo:link (*Mutex).Destroy C.pthread_mutex_destroy
+func (m *Mutex) Destroy() {}
+
+// llgo:link (*Mutex).Lock C.pthread_mutex_lock
+func (m *Mutex) Lock() {}
+
+// llgo:link (*Mutex).TryLock C.pthread_mutex_trylock
+func (m *Mutex) TryLock() c.Int { return 0 }
+
+// llgo:link (*Mutex).Unlock C.pthread_mutex_unlock
+func (m *Mutex) Unlock() {}
+
+// -----------------------------------------------------------------------------

@@ -21,7 +21,6 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/pthread"
 	"github.com/goplus/llgo/c/pthread/sync"
 )
 
@@ -31,29 +30,42 @@ const (
 
 // -----------------------------------------------------------------------------
 
-var onceParam pthread.Key
+type Mutex sync.Mutex
 
-func init() {
-	onceParam.Create(nil)
+func (m *Mutex) Lock() {
+	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
+		(*sync.Mutex)(m).Init(nil)
+	}
+	(*sync.Mutex)(m).Lock()
 }
 
-type Once sync.Once
+func (m *Mutex) TryLock() bool {
+	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
+		(*sync.Mutex)(m).Init(nil)
+	}
+	return (*sync.Mutex)(m).TryLock() == 0
+}
+
+func (m *Mutex) Unlock() {
+	(*sync.Mutex)(m).Unlock()
+}
+
+// -----------------------------------------------------------------------------
+
+type Once struct {
+	m    Mutex
+	done bool
+}
 
 func (o *Once) Do(f func()) {
-	ptr := c.Malloc(unsafe.Sizeof(f))
-	*(*func())(ptr) = f
-	onceParam.Set(ptr)
-	if *(*c.Long)(unsafe.Pointer(o)) == 0 { // try init
-		*(*sync.Once)(o) = sync.OnceInit
+	if !o.done {
+		o.m.Lock()
+		defer o.m.Unlock()
+		if !o.done {
+			o.done = true
+			f()
+		}
 	}
-	onceDo(o, func() {
-		ptr := onceParam.Get()
-		(*(*func())(ptr))()
-		c.Free(ptr)
-	})
 }
-
-//go:linkname onceDo C.pthread_once
-func onceDo(o *Once, f func()) c.Int
 
 // -----------------------------------------------------------------------------

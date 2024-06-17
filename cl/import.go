@@ -26,8 +26,9 @@ import (
 	"os"
 	"strings"
 
-	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
+
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 // -----------------------------------------------------------------------------
@@ -462,7 +463,7 @@ func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	}
 	ret := pkg.VarOf(name)
 	if ret == nil {
-		ret = pkg.NewVar(name, v.Type(), llssa.Background(vtype))
+		ret = pkg.NewVar(name, globalType(v), llssa.Background(vtype))
 	}
 	return ret.Expr
 }
