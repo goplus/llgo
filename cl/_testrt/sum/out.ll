@@ -55,19 +55,22 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %2 = phi i64 [ 0, %_llgo_0 ], [ %10, %_llgo_2 ]
+  %2 = phi i64 [ 0, %_llgo_0 ], [ %13, %_llgo_2 ]
   %3 = phi i64 [ -1, %_llgo_0 ], [ %4, %_llgo_2 ]
   %4 = add i64 %3, 1
   %5 = icmp slt i64 %4, %1
   br i1 %5, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %6 = icmp slt i64 %4, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %6)
-  %7 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
-  %8 = getelementptr inbounds i64, ptr %7, i64 %4
-  %9 = load i64, ptr %8, align 4
-  %10 = add i64 %2, %9
+  %6 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
+  %7 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
+  %8 = icmp slt i64 %4, 0
+  %9 = icmp sge i64 %4, %7
+  %10 = or i1 %9, %8
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %6, i64 %4
+  %12 = load i64, ptr %11, align 4
+  %13 = add i64 %2, %12
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
