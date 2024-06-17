@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	LLGoFiles   = "_pyg/module.c"
 	LLGoPackage = "link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed)"
 )
 

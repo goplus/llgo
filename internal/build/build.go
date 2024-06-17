@@ -19,6 +19,7 @@ package build
 import (
 	"archive/zip"
 	"fmt"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"io"
@@ -147,7 +148,7 @@ func Do(args []string, conf *Config) {
 
 	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
-	altSSAPkgs(progSSA, patches, altPkgs[1:])
+	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
 	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode, verbose}
 	pkgs := buildAllPkgs(ctx, initial)
@@ -234,9 +235,8 @@ func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) 
 			// and set no export file
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
-			pkgPath := pkg.PkgPath
-			if isPkgInLLGo(pkgPath) {
-				pkg.ExportFile = concatPkgLinkFiles(pkgPath)
+			if isPkgInLLGo(pkg.PkgPath) {
+				pkg.ExportFile = concatPkgLinkFiles(pkg, ctx.verbose)
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
@@ -292,18 +292,18 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	const N = 6
+	const N = 5
 	args := make([]string, N, len(pkg.Imports)+len(runtimeFiles)+(N+1))
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
-	args[3] = "-fuse-ld=lld"
-	args[4] = "-Xlinker"
+	args[3] = "-Xlinker"
 	if runtime.GOOS == "darwin" { // ld64.lld (macOS)
-		args[5] = "-dead_strip"
+		args[4] = "-dead_strip"
 	} else { // ld.lld (Unix), lld-link (Windows), wasm-ld (WebAssembly)
-		args[5] = "--gc-sections"
+		args[4] = "--gc-sections"
 	}
+	//args[5] = "-fuse-ld=lld" // TODO(xsw): to check lld exists or not
 	//args[6] = "-O2"
 	needRuntime := false
 	needPyInit := false
@@ -399,25 +399,6 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 	aPkg.LPkg = ret
 }
 
-func canSkipToBuild(pkgPath string) bool {
-	switch pkgPath {
-	case "unsafe", "errors", "runtime", "sync": // TODO(xsw): remove it
-		return true
-	default:
-		return strings.HasPrefix(pkgPath, "internal/") ||
-			strings.HasPrefix(pkgPath, "runtime/internal/")
-	}
-}
-
-type none struct{}
-
-var hasAltPkg = map[string]none{
-	"math":        {},
-	"sync":        {},
-	"sync/atomic": {},
-	"runtime":     {},
-}
-
 const (
 	altPkgPathPrefix = "github.com/goplus/llgo/internal/lib/"
 )
@@ -433,14 +414,14 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 	return alts
 }
 
-func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package) {
+func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgSSA := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.PkgPath, altPkgPathPrefix) {
 				path := p.PkgPath[len(altPkgPathPrefix):]
 				patches[path] = pkgSSA
-				if debugBuild {
+				if debugBuild || verbose {
 					log.Println("==> Patching", path)
 				}
 			}
@@ -462,13 +443,16 @@ func allPkgs(ctx *context, initial []*packages.Package) (all []*aPackage, errs [
 	built := ctx.built
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
-			if _, ok := built[p.PkgPath]; ok {
+			pkgPath := p.PkgPath
+			if _, ok := built[pkgPath]; ok {
 				return
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
-			if _, ok := hasAltPkg[p.PkgPath]; ok {
-				altPkg = ctx.dedup.Check(altPkgPathPrefix + p.PkgPath)
+			if _, ok := hasAltPkg[pkgPath]; ok {
+				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
+					return
+				}
 			}
 			all = append(all, &aPackage{p, ssaPkg, altPkg, nil})
 		} else {
@@ -579,11 +563,11 @@ func isSingleLinkFile(ret string) bool {
 	return len(ret) > 0 && ret[0] != ' '
 }
 
-func concatPkgLinkFiles(pkgPath string) string {
+func concatPkgLinkFiles(pkg *packages.Package, verbose bool) string {
 	var b strings.Builder
 	var ret string
 	var n int
-	llgoPkgLinkFiles(pkgPath, "", func(linkFile string) {
+	llgoPkgLinkFiles(pkg, "", func(linkFile string) {
 		if n == 0 {
 			ret = linkFile
 		} else {
@@ -591,7 +575,7 @@ func concatPkgLinkFiles(pkgPath string) string {
 			b.WriteString(linkFile)
 		}
 		n++
-	})
+	}, verbose)
 	if n > 1 {
 		b.WriteByte(' ')
 		b.WriteString(ret)
@@ -600,7 +584,39 @@ func concatPkgLinkFiles(pkgPath string) string {
 	return ret
 }
 
-func llgoPkgLinkFiles(pkgPath string, llFile string, procFile func(linkFile string)) {
+// const LLGoFiles = "file1; file2; ..."
+func llgoPkgLinkFiles(pkg *packages.Package, llFile string, procFile func(linkFile string), verbose bool) {
+	if o := pkg.Types.Scope().Lookup("LLGoFiles"); o != nil {
+		val := o.(*types.Const).Val()
+		if val.Kind() == constant.String {
+			clFiles(constant.StringVal(val), pkg, procFile, verbose)
+		}
+	}
+	unzipPkgLinkFiles(pkg.PkgPath, llFile, procFile)
+}
+
+// files = "file1; file2; ..."
+func clFiles(files string, pkg *packages.Package, procFile func(linkFile string), verbose bool) {
+	dir := filepath.Dir(pkg.CompiledGoFiles[0])
+	expFile := pkg.ExportFile
+	for _, file := range strings.Split(files, ";") {
+		cFile := filepath.Join(dir, strings.TrimSpace(file))
+		clFile(cFile, expFile, procFile, verbose)
+	}
+}
+
+func clFile(cFile, expFile string, procFile func(linkFile string), verbose bool) {
+	llFile := expFile + filepath.Base(cFile) + ".ll"
+	args := []string{"-emit-llvm", "-S", "-o", llFile, "-c", cFile}
+	if verbose {
+		fmt.Fprintln(os.Stderr, "clang", args)
+	}
+	err := clang.New("").Exec(args...)
+	check(err)
+	procFile(llFile)
+}
+
+func unzipPkgLinkFiles(pkgPath string, llFile string, procFile func(linkFile string)) {
 	dir := llgoRoot() + pkgPath[len(llgoModPath):] + "/"
 	if llFile == "" {
 		llFile = "llgo_autogen.ll"
@@ -683,6 +699,25 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 		err = os.WriteFile(outFile, data, 0644)
 	}
 	return
+}
+
+func canSkipToBuild(pkgPath string) bool {
+	switch pkgPath {
+	case "unsafe", "errors": // TODO(xsw): remove it
+		return true
+	default:
+		return strings.HasPrefix(pkgPath, "internal/") ||
+			strings.HasPrefix(pkgPath, "runtime/internal/")
+	}
+}
+
+type none struct{}
+
+var hasAltPkg = map[string]none{
+	"math":        {},
+	"sync":        {},
+	"sync/atomic": {},
+	"runtime":     {},
 }
 
 func check(err error) {
