@@ -218,20 +218,20 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 ### on macOS
 
 ```sh
-brew update  # execute if needed
-brew install libgc
-brew install llvm@17
+brew update # execute if needed
+brew install llvm@17 libgc
+export PATH=$(brew --prefix llvm@17)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
 go install -v ./...
 ```
 
-### on Linux
+### on Linux (Debian/Ubuntu)
 
 ```sh
-echo 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-17 main' | sudo tee /etc/apt/sources.list.d/llvm.list
+echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-17 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo apt-get update  # execute if needed
-sudo apt-get install libgc-dev
-sudo apt-get install --no-install-recommends llvm-17-dev
+sudo apt-get update # execute if needed
+sudo apt-get install -y --no-install-recommends llvm-17-dev clang-17 lld-17 libgc-dev
+export PATH=/usr/lib/llvm-17/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
 go install -v ./...
 ```
 
