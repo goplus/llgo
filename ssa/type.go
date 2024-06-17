@@ -61,11 +61,16 @@ const (
 // -----------------------------------------------------------------------------
 
 func indexType(t types.Type) types.Type {
-	switch t := t.(type) {
+	typ := t
+retry:
+	switch t := typ.(type) {
+	case *types.Named:
+		typ = t.Underlying()
+		goto retry
 	case *types.Slice:
 		return t.Elem()
 	case *types.Pointer:
-		switch t := t.Elem().(type) {
+		switch t := t.Elem().Underlying().(type) {
 		case *types.Array:
 			return t.Elem()
 		}
@@ -193,7 +198,7 @@ func (p Program) Pointer(typ Type) Type {
 }
 
 func (p Program) Elem(typ Type) Type {
-	elem := typ.raw.Type.(interface {
+	elem := typ.raw.Type.Underlying().(interface {
 		Elem() types.Type
 	}).Elem()
 	return p.rawType(elem)
