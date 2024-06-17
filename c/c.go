@@ -26,8 +26,6 @@ const (
 
 type (
 	Char      = int8
-	Int       = C.int
-	Uint      = C.uint
 	Long      = int32
 	Ulong     = uint32
 	LongLong  = int64
@@ -36,6 +34,11 @@ type (
 	Double    = float64
 	Pointer   = unsafe.Pointer
 	FilePtr   = unsafe.Pointer
+)
+
+type (
+	Int  C.int
+	Uint C.uint
 )
 
 type integer interface {
