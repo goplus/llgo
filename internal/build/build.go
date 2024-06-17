@@ -137,9 +137,9 @@ func Do(args []string, conf *Config) {
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
 
-	var needRt bool
+	noRt := 1
 	prog.SetRuntime(func() *types.Package {
-		needRt = true
+		noRt = 0
 		return altPkgs[0].Types
 	})
 	prog.SetPython(func() *types.Package {
@@ -153,25 +153,23 @@ func Do(args []string, conf *Config) {
 	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode, verbose}
 	pkgs := buildAllPkgs(ctx, initial)
 
-	var runtimeFiles []string
-	if needRt {
-		// TODO(xsw): maybe we need trace runtime sometimes
-		llssa.SetDebug(0)
-		cl.SetDebug(0)
+	// TODO(xsw): maybe we need trace runtime sometimes
+	llssa.SetDebug(0)
+	cl.SetDebug(0)
 
-		dpkg := buildAllPkgs(ctx, altPkgs[:1])
-		for _, pkg := range dpkg {
-			if !strings.HasSuffix(pkg.ExportFile, ".ll") {
-				continue
-			}
-			runtimeFiles = append(runtimeFiles, pkg.ExportFile)
+	var llFiles []string
+	dpkg := buildAllPkgs(ctx, altPkgs[noRt:])
+	for _, pkg := range dpkg {
+		if !strings.HasSuffix(pkg.ExportFile, ".ll") {
+			continue
 		}
+		llFiles = append(llFiles, pkg.ExportFile)
 	}
 	if mode != ModeBuild {
 		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				nErr += linkMainPkg(pkg, pkgs, runtimeFiles, conf, mode, verbose)
+				nErr += linkMainPkg(pkg, pkgs, llFiles, conf, mode, verbose)
 			}
 		}
 		if nErr > 0 {
@@ -285,7 +283,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) 
 	return
 }
 
-func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
+func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -293,7 +291,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
 	const N = 6
-	args := make([]string, N, len(pkg.Imports)+len(runtimeFiles)+(N+1))
+	args := make([]string, N, len(pkg.Imports)+len(llFiles)+(N+1))
 	args[0] = "-o"
 	args[1] = app
 	args[2] = "-Wno-override-module"
@@ -331,8 +329,8 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, runtimeFiles []string,
 	}
 
 	dirty := false
-	if needRuntime && runtimeFiles != nil {
-		for _, file := range runtimeFiles {
+	if needRuntime && llFiles != nil {
+		for _, file := range llFiles {
 			args = appendLinkFiles(args, file)
 		}
 	} else {
@@ -419,6 +417,9 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
+			if debugBuild || verbose {
+				log.Println("==> BuildSSA", p.PkgPath)
+			}
 			pkgSSA := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.PkgPath, altPkgPathPrefix) {
 				path := p.PkgPath[len(altPkgPathPrefix):]
@@ -446,7 +447,7 @@ func allPkgs(ctx *context, initial []*packages.Package) (all []*aPackage, errs [
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
-			if _, ok := built[pkgPath]; ok {
+			if _, ok := built[pkgPath]; ok || strings.HasPrefix(pkgPath, altPkgPathPrefix) {
 				return
 			}
 			var altPkg *packages.Cached

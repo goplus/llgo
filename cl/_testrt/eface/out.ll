@@ -463,6 +463,11 @@ _llgo_0:
   ret i32 0
 }
 
+define void @"main.main$1"() {
+_llgo_0:
+  ret void
+}
+
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
@@ -885,11 +890,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
-
-define void @"main.main$1"() {
-_llgo_0:
-  ret void
-}
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice", i1)
 

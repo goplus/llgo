@@ -170,6 +170,19 @@ _llgo_9:                                          ; preds = %_llgo_7
   ret i32 0
 }
 
+define i32 @"main.main$1"(ptr %0) {
+_llgo_0:
+  %1 = load { ptr }, ptr %0, align 8
+  %2 = extractvalue { ptr } %1, 0
+  %3 = load i32, ptr %2, align 4
+  %4 = mul i32 %3, 2
+  %5 = extractvalue { ptr } %1, 0
+  store i32 %4, ptr %5, align 4
+  %6 = extractvalue { ptr } %1, 0
+  %7 = load i32, ptr %6, align 4
+  ret i32 %7
+}
+
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
@@ -185,19 +198,6 @@ _llgo_0:
 }
 
 declare i32 @printf(ptr, ...)
-
-define i32 @"main.main$1"(ptr %0) {
-_llgo_0:
-  %1 = load { ptr }, ptr %0, align 8
-  %2 = extractvalue { ptr } %1, 0
-  %3 = load i32, ptr %2, align 4
-  %4 = mul i32 %3, 2
-  %5 = extractvalue { ptr } %1, 0
-  store i32 %4, ptr %5, align 4
-  %6 = extractvalue { ptr } %1, 0
-  %7 = load i32, ptr %6, align 4
-  ret i32 %7
-}
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 

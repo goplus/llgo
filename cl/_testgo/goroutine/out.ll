@@ -72,10 +72,6 @@ _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
   br i1 %22, label %_llgo_2, label %_llgo_1
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
 define void @"main.main$1"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1) {
 _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %1)
@@ -85,6 +81,10 @@ _llgo_0:
   store i1 true, ptr %3, align 1
   ret void
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 

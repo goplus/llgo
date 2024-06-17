@@ -279,6 +279,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			b.EndBuild()
 		})
+		for _, af := range f.AnonFuncs {
+			p.compileFuncDecl(pkg, af)
+		}
 	}
 	return fn, nil, goFunc
 }
