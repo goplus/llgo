@@ -336,8 +336,14 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 // - func: pkg.name
 // - method: pkg.(T).name, pkg.(*T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
-	sig := fn.Signature
-	return llssa.FuncName(pkg, fn.Name(), sig.Recv())
+	var recv *types.Var
+	parent := fn.Parent()
+	if parent != nil { // closure in method
+		recv = parent.Signature.Recv()
+	} else {
+		recv = fn.Signature.Recv()
+	}
+	return llssa.FuncName(pkg, fn.Name(), recv)
 }
 
 func checkCgo(fnName string) bool {

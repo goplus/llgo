@@ -18,5 +18,39 @@ package sync
 
 // llgo:skipall
 import (
-	_ "unsafe"
+	"unsafe"
+
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/pthread"
+	"github.com/goplus/llgo/c/pthread/sync"
 )
+
+const (
+	LLGoPackage = "link"
+)
+
+// -----------------------------------------------------------------------------
+
+var onceParam pthread.Key
+
+func init() {
+	onceParam.Create(nil)
+}
+
+type Once sync.Once
+
+func (o *Once) Do(f func()) {
+	ptr := c.Malloc(unsafe.Sizeof(f))
+	*(*func())(ptr) = f
+	onceParam.Set(ptr)
+	if *(*c.Long)(unsafe.Pointer(o)) == 0 { // try init
+		*(*sync.Once)(o) = sync.OnceInit
+	}
+	(*sync.Once)(o).Do(func() {
+		ptr := onceParam.Get()
+		(*(*func())(ptr))()
+		c.Free(ptr)
+	})
+}
+
+// -----------------------------------------------------------------------------

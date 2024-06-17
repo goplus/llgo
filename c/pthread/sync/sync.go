@@ -30,12 +30,15 @@ const (
 	LLGoPackage = "link"
 )
 
+// -----------------------------------------------------------------------------
+
+// Once is an object that will perform exactly one action.
 type Once C.pthread_once_t
 
-//go:linkname onceInitVal C.llgoSyncOnceInitVal
-func onceInitVal() Once
-
-var OnceInit = onceInitVal()
+//go:linkname OnceInit llgoSyncOnceInitVal
+var OnceInit Once
 
 // llgo:link (*Once).Do C.pthread_once
 func (o *Once) Do(f func()) c.Int { return 0 }
+
+// -----------------------------------------------------------------------------
