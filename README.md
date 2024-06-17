@@ -134,6 +134,14 @@ For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/libpyt
 export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/python3.12
 ```
 
+And in order for the dynamic linker to find Python correctly in other ways of installation (like Conda), you may need to set `DYLD_LIBRARY_PATH`.
+
+For example, Python from Conda is usually installed in `/opt/anaconda3/envs/your_env_name`. So we need to set the location of its library to `DYLD_LIBRARY_PATH` like this:
+
+```sh
+export DYLD_LIBRARY_PATH=/opt/anaconda3/envs/your_env_name/lib:$DYLD_LIBRARY_PATH
+```
+
 Note that the file name must be written in a platform-independent format, using `python3.12` instead of `libpython3.12.dylib`.
 
 Then you can run the demos:
