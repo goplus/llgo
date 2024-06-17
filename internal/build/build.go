@@ -597,7 +597,7 @@ func llgoPkgLinkFiles(pkg *packages.Package, llFile string, procFile func(linkFi
 
 // files = "file1; file2; ..."
 func clFiles(files string, pkg *packages.Package, procFile func(linkFile string), verbose bool) {
-	dir := filepath.Dir(pkg.CompiledGoFiles[0])
+	dir := filepath.Dir(pkg.GoFiles[0])
 	expFile := pkg.ExportFile
 	for _, file := range strings.Split(files, ";") {
 		cFile := filepath.Join(dir, strings.TrimSpace(file))
