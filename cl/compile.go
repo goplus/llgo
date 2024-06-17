@@ -139,7 +139,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
-	typ := gbl.Type()
+	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
 	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
 		return
@@ -801,6 +801,17 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			ctx.compileGlobal(ret, member)
 		}
 	}
+}
+
+func globalType(gbl *ssa.Global) types.Type {
+	t := gbl.Type()
+	if t, ok := t.(*types.Named); ok {
+		o := t.Obj()
+		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
+			return gbl.Pkg.Pkg.Scope().Lookup(o.Name()).Type()
+		}
+	}
+	return t
 }
 
 // -----------------------------------------------------------------------------

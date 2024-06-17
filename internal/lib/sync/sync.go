@@ -58,7 +58,6 @@ type Once struct {
 }
 
 func (o *Once) Do(f func()) {
-	println("Once.Do start", o.done)
 	if !o.done {
 		o.m.Lock()
 		defer o.m.Unlock()

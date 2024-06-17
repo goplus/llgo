@@ -60,6 +60,9 @@ const (
 )
 
 func IsPatched(pkg *types.Package) bool {
+	if pkg == nil {
+		return false
+	}
 	p := (*typesPackage)(unsafe.Pointer(pkg))
 	return *(*uint8)(unsafe.Pointer(&p.complete)) == tagPatched
 }
