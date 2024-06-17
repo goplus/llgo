@@ -232,6 +232,7 @@ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update  # execute if needed
 sudo apt-get install libgc-dev
 sudo apt-get install --no-install-recommends llvm-17-dev
+sudo apt-get install lld-17
 go install -v ./...
 ```
 
