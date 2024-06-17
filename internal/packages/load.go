@@ -121,9 +121,6 @@ func NewDeduper() Deduper {
 
 func (p Deduper) Check(pkgPath string) *Cached {
 	if v, ok := p.cache.Load(pkgPath); ok {
-		if DebugPackagesLoad {
-			log.Println("==> dedup.check:", pkgPath)
-		}
 		return v.(*Cached)
 	}
 	return nil
@@ -131,7 +128,7 @@ func (p Deduper) Check(pkgPath string) *Cached {
 
 func (p Deduper) set(pkgPath string, cp *Cached) {
 	if DebugPackagesLoad {
-		log.Println("==> dedup.set:", pkgPath)
+		log.Println("==> Import", pkgPath)
 	}
 	p.cache.Store(pkgPath, cp)
 }
