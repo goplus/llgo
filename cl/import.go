@@ -26,8 +26,9 @@ import (
 	"os"
 	"strings"
 
-	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
+
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 // -----------------------------------------------------------------------------

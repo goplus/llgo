@@ -55,14 +55,29 @@ type iface struct {
 	data unsafe.Pointer
 }
 
+const (
+	tagPatched = 0x17
+)
+
+func IsPatched(pkg *types.Package) bool {
+	p := (*typesPackage)(unsafe.Pointer(pkg))
+	return *(*uint8)(unsafe.Pointer(&p.complete)) == tagPatched
+}
+
+func setPatched(pkg *types.Package) {
+	p := (*typesPackage)(unsafe.Pointer(pkg))
+	*(*uint8)(unsafe.Pointer(&p.complete)) = tagPatched
+}
+
 func setScope(pkg *types.Package, scope *types.Scope) {
 	p := (*typesPackage)(unsafe.Pointer(pkg))
 	p.scope = scope
 }
 
-func setPkg(o types.Object, pkg *types.Package) {
+func setPkgAndParent(o types.Object, pkg *types.Package, parent *types.Scope) {
 	data := (*iface)(unsafe.Pointer(&o)).data
 	(*object)(data).pkg = pkg
+	(*object)(data).parent = parent
 }
 
 func getElems(scope *types.Scope) map[string]types.Object {
@@ -87,10 +102,11 @@ func Pkg(pkg, alt *types.Package) *types.Package {
 
 	altScope := alt.Scope()
 	for name, o := range getElems(altScope) {
-		setPkg(o, pkg)
+		setPkgAndParent(o, &ret, &scope)
 		elems[name] = o
 	}
 	setElems(&scope, elems)
 	setScope(&ret, &scope)
+	setPatched(pkg)
 	return &ret
 }
