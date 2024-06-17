@@ -135,6 +135,7 @@ type context struct {
 	inits []func()
 	phis  []func()
 
+	inCFunc bool
 	skipall bool
 }
 
@@ -659,7 +660,12 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		aFn, pyFn, ftype := p.compileFunction(cv)
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
-		case goFunc, cFunc:
+		case cFunc:
+			p.inCFunc = true
+			args := p.compileValues(b, args, kind)
+			p.inCFunc = false
+			ret = b.Do(act, aFn.Expr, args...)
+		case goFunc:
 			args := p.compileValues(b, args, kind)
 			ret = b.Do(act, aFn.Expr, args...)
 		case pyFunc:
@@ -953,7 +959,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		return p.varOf(b, v)
 	case *ssa.Const:
 		t := types.Default(v.Type())
-		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
+		bg := llssa.InGo
+		if p.inCFunc {
+			bg = llssa.InC
+		}
+		return b.Const(v.Value, p.prog.Type(t, bg))
 	case *ssa.FreeVar:
 		fn := v.Parent()
 		for idx, freeVar := range fn.FreeVars {
