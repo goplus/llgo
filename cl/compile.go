@@ -111,6 +111,8 @@ const (
 	pkgNormal pkgState = iota
 	pkgHasPatch
 	pkgInPatch
+
+	pkgFNoOldInit = 0x80 // flag if no initFnNameOld
 )
 
 func (p *context) inMain(instr ssa.Instruction) bool {
@@ -773,6 +775,9 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		skips := ctx.skips
 		ctx.skips = nil
 		ctx.state = pkgInPatch
+		if _, ok := skips["init"]; ok || ctx.skipall {
+			ctx.state |= pkgFNoOldInit
+		}
 		processPkg(ctx, ret, alt)
 		ctx.state = pkgHasPatch
 		ctx.skips = skips
