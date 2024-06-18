@@ -59,6 +59,8 @@ And you can import any Python library into `llgo` through a program called `llpy
 * [pytorch](https://pkg.go.dev/github.com/goplus/llgo/py/torch)
 * [matplotlib](https://pkg.go.dev/github.com/goplus/llgo/py/matplotlib)
 
+Note: For third-party libraries (such as pandas and pytorch), you still need to install the library files.
+
 Here is an example using the Python `math` library:
 
 ```go
@@ -234,6 +236,8 @@ brew install llvm@17 pkg-config libgc
 brew install cjson sqlite python@3.12 # optional
 export PATH=$(brew --prefix llvm@17)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
 export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
+git clone https://github.com/goplus/llgo.git
+cd llgo
 export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
 go install -v ./...
 ```
@@ -248,6 +252,8 @@ sudo apt-get install -y llvm-17-dev clang-17 lld-17 pkg-config libgc-dev
 sudo apt-get install -y libcjson-dev libsqlite3-dev python3.12-dev # optional
 export PATH=/usr/lib/llvm-17/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
 export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
+git clone https://github.com/goplus/llgo.git
+cd llgo
 export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
 go install -v ./...
 ```
