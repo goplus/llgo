@@ -34,7 +34,6 @@ The `_demo` directory contains some C standard libary related demos (it start wi
 To run these demos (If you haven't installed `llgo` yet, please refer to [How to install](#how-to-install)):
 
 ```sh
-export LLGOROOT=`pwd`
 cd <demo-directory>  # eg. cd _demo/hello
 llgo run .
 ```
@@ -140,7 +139,6 @@ Note that the file name must be written in a platform-independent format, using 
 Then you can run the demos:
 
 ```sh
-export LLGOROOT=`pwd`
 cd <demo-directory>  # eg. cd _pydemo/callpy
 llgo run .
 ```
@@ -236,6 +234,7 @@ brew install llvm@17 pkg-config libgc
 brew install cjson sqlite python@3.12 # optional
 export PATH=$(brew --prefix llvm@17)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
 export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
+export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
 go install -v ./...
 ```
 
@@ -249,6 +248,7 @@ sudo apt-get install -y llvm-17-dev clang-17 lld-17 pkg-config libgc-dev
 sudo apt-get install -y libcjson-dev libsqlite3-dev python3.12-dev # optional
 export PATH=/usr/lib/llvm-17/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
 export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
+export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
 go install -v ./...
 ```
 
