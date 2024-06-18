@@ -63,7 +63,7 @@ func Gen(pkgPath, inFile string, src any) string {
 	pkg := types.NewPackage(pkgPath, name)
 	imp := packages.NewImporter(fset)
 	ssaPkg, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions)
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
 	check(err)
 
 	if Verbose {
