@@ -734,12 +734,12 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 type Patches = map[string]*ssa.Package
 
 // NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	return NewPackageEx(prog, nil, pkg, files)
+func NewPackage(r Rewriter, prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+	return NewPackageEx(r, prog, nil, pkg, files)
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+func NewPackageEx(rwtr Rewriter, prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)

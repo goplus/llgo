@@ -150,7 +150,17 @@ func Do(args []string, conf *Config) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode, verbose}
+	ctx := &context{
+		progSSA: progSSA,
+		prog:    prog,
+		dedup:   dedup,
+		patches: patches,
+		built:   make(map[string]none),
+		mode:    mode,
+		verbose: verbose,
+
+		rewriter: cl.NewRewriter(),
+	}
 	pkgs := buildAllPkgs(ctx, initial)
 
 	// TODO(xsw): maybe we need trace runtime sometimes
@@ -208,6 +218,8 @@ type context struct {
 	built   map[string]none
 	mode    Mode
 	verbose bool
+
+	rewriter cl.Rewriter
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) {
@@ -220,6 +232,12 @@ func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) 
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	built := ctx.built
+
+	// ctx.progSSA.Build()
+	for _, aPkg := range pkgs {
+		ctx.rewriter.RegAutoPtrFuncs(aPkg.SSA)
+	}
+
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
 		if _, ok := built[pkg.PkgPath]; ok {
@@ -377,6 +395,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 }
 
 func buildPkg(ctx *context, aPkg *aPackage) {
+
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
 	if debugBuild || ctx.verbose {
@@ -390,11 +409,15 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 	if altPkg := aPkg.AltPkg; altPkg != nil {
 		syntax = append(syntax, altPkg.Syntax...)
 	}
-	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+
+	ret, err := cl.NewPackageEx(ctx.rewriter, ctx.prog, ctx.patches, aPkg.SSA, syntax)
 	check(err)
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		if debugBuild || ctx.verbose {
+			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
+		}
 	}
 	aPkg.LPkg = ret
 }

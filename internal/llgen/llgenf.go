@@ -79,8 +79,11 @@ func GenFrom(fileOrPkg string) string {
 	if Verbose {
 		ssaPkg.WriteTo(os.Stderr)
 	}
-
-	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
+	r := cl.NewRewriter()
+	for _, pkg := range pkgs {
+		r.RegAutoPtrFuncs(pkg)
+	}
+	ret, err := cl.NewPackage(r, prog, ssaPkg, pkg.Syntax)
 	check(err)
 
 	if prog.NeedPyInit { // call PyInit if needed

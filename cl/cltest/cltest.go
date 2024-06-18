@@ -145,8 +145,9 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	}
 	foo.WriteTo(os.Stderr)
 	prog := ssatest.NewProgramEx(t, nil, imp)
+	r := cl.NewRewriter()
 
-	ret, err := cl.NewPackage(prog, foo, files)
+	ret, err := cl.NewPackage(r, prog, foo, files)
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}

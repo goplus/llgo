@@ -79,8 +79,8 @@ func Gen(pkgPath, inFile string, src any) string {
 		ret, _ := imp.Import(llssa.PkgPython)
 		return ret
 	})
-
-	ret, err := cl.NewPackage(prog, ssaPkg, files)
+	r := cl.NewRewriter()
+	ret, err := cl.NewPackage(r, prog, ssaPkg, files)
 	check(err)
 
 	if prog.NeedPyInit { // call PyInit if needed
