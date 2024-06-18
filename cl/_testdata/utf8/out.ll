@@ -11,12 +11,14 @@ source_filename = "main"
 
 define i8 @main.index(i8 %0) {
 _llgo_0:
-  %1 = icmp slt i8 %0, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %1)
-  %2 = zext i8 %0 to i64
-  %3 = getelementptr inbounds i8, ptr @main.array, i64 %2
-  %4 = load i8, ptr %3, align 1
-  ret i8 %4
+  %1 = sext i8 %0 to i64
+  %2 = icmp slt i64 %1, 0
+  %3 = icmp sge i64 %1, 8
+  %4 = or i1 %3, %2
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %4)
+  %5 = getelementptr inbounds i8, ptr @main.array, i64 %1
+  %6 = load i8, ptr %5, align 1
+  ret i8 %6
 }
 
 define void @main.init() {

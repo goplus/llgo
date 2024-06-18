@@ -24,19 +24,22 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %6 = phi %"github.com/goplus/llgo/internal/runtime.String" [ %5, %_llgo_0 ], [ %14, %_llgo_2 ]
+  %6 = phi %"github.com/goplus/llgo/internal/runtime.String" [ %5, %_llgo_0 ], [ %17, %_llgo_2 ]
   %7 = phi i64 [ -1, %_llgo_0 ], [ %8, %_llgo_2 ]
   %8 = add i64 %7, 1
   %9 = icmp slt i64 %8, %1
   br i1 %9, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %10 = icmp slt i64 %8, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %10)
-  %11 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i64 %8
-  %13 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %12, align 8
-  %14 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String" %6, %"github.com/goplus/llgo/internal/runtime.String" %13)
+  %10 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 0
+  %11 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
+  %12 = icmp slt i64 %8, 0
+  %13 = icmp sge i64 %8, %11
+  %14 = or i1 %13, %12
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %10, i64 %8
+  %16 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %15, align 8
+  %17 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringCat"(%"github.com/goplus/llgo/internal/runtime.String" %6, %"github.com/goplus/llgo/internal/runtime.String" %16)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1

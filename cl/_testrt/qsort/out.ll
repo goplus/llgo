@@ -49,10 +49,12 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_1
   %13 = icmp slt i64 %11, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %13)
-  %14 = getelementptr inbounds i64, ptr %2, i64 %11
-  %15 = load i64, ptr %14, align 4
-  %16 = call i32 (ptr, ...) @printf(ptr @0, i64 %15)
+  %14 = icmp sge i64 %11, 5
+  %15 = or i1 %14, %13
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %15)
+  %16 = getelementptr inbounds i64, ptr %2, i64 %11
+  %17 = load i64, ptr %16, align 4
+  %18 = call i32 (ptr, ...) @printf(ptr @0, i64 %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
