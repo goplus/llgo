@@ -100,8 +100,9 @@ type context struct {
 	inits []func()
 	phis  []func()
 
-	inCFunc bool
-	skipall bool
+	inCFunc  bool
+	skipall  bool
+	hasPatch bool
 }
 
 func (p *context) inMain(instr ssa.Instruction) bool {
@@ -184,6 +185,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		return fn, nil, goFunc
 	}
 
+	var isInit bool
 	var sig = f.Signature
 	var hasCtx = len(f.FreeVars) > 0
 	if hasCtx {
@@ -196,6 +198,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
+		isInit = (f.Name() == "init" && sig.Recv() == nil)
 	}
 	if fn == nil {
 		if name == "main" {
@@ -210,7 +213,10 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
-		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
+		if f.Recover != nil { // set recover block
+			fn.SetRecover(fn.Block(f.Recover.Index))
+		}
 		p.inits = append(p.inits, func() {
 			p.fn = fn
 			defer func() {
@@ -234,7 +240,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for {
 				block := f.Blocks[i]
 				doMainInit := (i == 0 && name == "main")
-				doModInit := (i == 1 && f.Name() == "init" && sig.Recv() == nil)
+				doModInit := (i == 1 && isInit)
 				p.compileBlock(b, block, off[i], doMainInit, doModInit)
 				if i = p.blkInfos[i].Next; i < 0 {
 					break
@@ -377,9 +383,6 @@ func isPhi(i ssa.Instruction) bool {
 func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 	fn := p.fn
 	ret := fn.Block(block.Index)
-	if block.Comment == "recover" { // set recover block
-		fn.SetRecover(ret)
-	}
 	b.SetBlockEx(ret, llssa.AtEnd, false)
 	if ninstr := len(block.Instrs); ninstr > 0 {
 		if isPhi(block.Instrs[0]) {
@@ -756,6 +759,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		ctx.skips = skips
 	}
 	if !ctx.skipall {
+		ctx.hasPatch = hasPatch
 		processPkg(ctx, ret, pkg)
 	}
 	for len(ctx.inits) > 0 {
@@ -767,6 +771,12 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	}
 	return
 }
+
+/* TODO(xsw):
+func inPatch(ctx *context) bool {
+	return ctx.skips == nil
+}
+*/
 
 func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 	type namedMember struct {
