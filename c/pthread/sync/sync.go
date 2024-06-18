@@ -23,6 +23,7 @@ import (
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/time"
 )
 
 const (
@@ -83,5 +84,91 @@ func (m *Mutex) TryLock() c.Int { return 0 }
 
 // llgo:link (*Mutex).Unlock C.pthread_mutex_unlock
 func (m *Mutex) Unlock() {}
+
+// -----------------------------------------------------------------------------
+
+// RWLockAttr is a read-write lock attribute object.
+type RWLockAttr C.pthread_rwlockattr_t
+
+// llgo:link (*RWLockAttr).Init C.pthread_rwlockattr_init
+func (a *RWLockAttr) Init(attr *RWLockAttr) c.Int { return 0 }
+
+// llgo:link (*RWLockAttr).Destroy C.pthread_rwlockattr_destroy
+func (a *RWLockAttr) Destroy() {}
+
+// llgo:link (*RWLockAttr).SetPShared C.pthread_rwlockattr_setpshared
+func (a *RWLockAttr) SetPShared(pshared c.Int) c.Int { return 0 }
+
+// llgo:link (*RWLockAttr).GetPShared C.pthread_rwlockattr_getpshared
+func (a *RWLockAttr) GetPShared(pshared *c.Int) c.Int { return 0 }
+
+// -----------------------------------------------------------------------------
+
+// RWLock is a read-write lock.
+type RWLock C.pthread_rwlock_t
+
+// llgo:link (*RWLock).Init C.pthread_rwlock_init
+func (rw *RWLock) Init(attr *RWLockAttr) c.Int { return 0 }
+
+// llgo:link (*RWLock).Destroy C.pthread_rwlock_destroy
+func (rw *RWLock) Destroy() {}
+
+// llgo:link (*RWLock).RLock C.pthread_rwlock_rdlock
+func (rw *RWLock) RLock() {}
+
+// llgo:link (*RWLock).TryRLock C.pthread_rwlock_tryrdlock
+func (rw *RWLock) TryRLock() c.Int { return 0 }
+
+// llgo:link (*RWLock).RUnlock C.pthread_rwlock_unlock
+func (rw *RWLock) RUnlock() {}
+
+// llgo:link (*RWLock).Lock C.pthread_rwlock_wrlock
+func (rw *RWLock) Lock() {}
+
+// llgo:link (*RWLock).TryLock C.pthread_rwlock_trywrlock
+func (rw *RWLock) TryLock() c.Int { return 0 }
+
+// llgo:link (*RWLock).Unlock C.pthread_rwlock_unlock
+func (rw *RWLock) Unlock() {}
+
+// -----------------------------------------------------------------------------
+
+// CondAttr is a condition variable attribute object.
+type CondAttr C.pthread_condattr_t
+
+// llgo:link (*CondAttr).Init C.pthread_condattr_init
+func (a *CondAttr) Init(attr *CondAttr) c.Int { return 0 }
+
+// llgo:link (*CondAttr).Destroy C.pthread_condattr_destroy
+func (a *CondAttr) Destroy() {}
+
+// llgo:link (*CondAttr).SetClock C.pthread_condattr_setclock
+func (a *CondAttr) SetClock(clock time.ClockID) c.Int { return 0 }
+
+// llgo:link (*CondAttr).GetClock C.pthread_condattr_getclock
+func (a *CondAttr) GetClock(clock *time.ClockID) c.Int { return 0 }
+
+// -----------------------------------------------------------------------------
+
+// Cond is a condition variable.
+type Cond C.pthread_cond_t
+
+// llgo:link (*Cond).Init C.pthread_cond_init
+func (c *Cond) Init(attr *CondAttr) c.Int { return 0 }
+
+// llgo:link (*Cond).Destroy C.pthread_cond_destroy
+func (c *Cond) Destroy() {}
+
+// llgo:link (*Cond).Signal C.pthread_cond_signal
+func (c *Cond) Signal() c.Int { return 0 }
+
+// llgo:link (*Cond).Broadcast C.pthread_cond_broadcast
+func (c *Cond) Broadcast() c.Int { return 0 }
+
+// llgo:link (*Cond).Wait C.pthread_cond_wait
+func (c *Cond) Wait(m *Mutex) c.Int { return 0 }
+
+// llgo:link (*Cond).TimedWait C.pthread_cond_timedwait
+func (c *Cond) TimedWait(m *Mutex, abstime *time.Timespec) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------

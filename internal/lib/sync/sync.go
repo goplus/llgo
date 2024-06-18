@@ -18,6 +18,7 @@ package sync
 
 // llgo:skipall
 import (
+	gosync "sync"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -34,7 +35,7 @@ type Mutex sync.Mutex
 
 func (m *Mutex) Lock() {
 	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
-		(*sync.Mutex)(m).Init(nil)
+		(*sync.Mutex)(m).Init(nil) // TODO(xsw): finalize
 	}
 	(*sync.Mutex)(m).Lock()
 }
@@ -46,9 +47,46 @@ func (m *Mutex) TryLock() bool {
 	return (*sync.Mutex)(m).TryLock() == 0
 }
 
-func (m *Mutex) Unlock() {
-	(*sync.Mutex)(m).Unlock()
+// llgo:link (*Mutex).Unlock C.pthread_mutex_unlock
+func (m *Mutex) Unlock() {}
+
+// -----------------------------------------------------------------------------
+
+type RWMutex sync.RWLock
+
+func (rw *RWMutex) RLock() {
+	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
+		(*sync.RWLock)(rw).Init(nil)
+	}
+	(*sync.RWLock)(rw).RLock()
 }
+
+func (rw *RWMutex) TryRLock() bool {
+	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
+		(*sync.RWLock)(rw).Init(nil)
+	}
+	return (*sync.RWLock)(rw).TryRLock() == 0
+}
+
+// llgo:link (*RWMutex).RUnlock C.pthread_rwlock_unlock
+func (rw *RWMutex) RUnlock() {}
+
+func (rw *RWMutex) Lock() {
+	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
+		(*sync.RWLock)(rw).Init(nil)
+	}
+	(*sync.RWLock)(rw).Lock()
+}
+
+func (rw *RWMutex) TryLock() bool {
+	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
+		(*sync.RWLock)(rw).Init(nil)
+	}
+	return (*sync.RWLock)(rw).TryLock() == 0
+}
+
+// llgo:link (*RWMutex).Unlock C.pthread_rwlock_unlock
+func (rw *RWMutex) Unlock() {}
 
 // -----------------------------------------------------------------------------
 
@@ -66,6 +104,69 @@ func (o *Once) Do(f func()) {
 			f()
 		}
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+type Cond struct {
+	cond sync.Cond
+	m    *sync.Mutex
+}
+
+func NewCond(l gosync.Locker) *Cond {
+	ret := &Cond{m: l.(*sync.Mutex)}
+	ret.cond.Init(nil) // TODO(xsw): finalize
+	return ret
+}
+
+// llgo:link (*Cond).Signal C.pthread_cond_signal
+func (c *Cond) Signal() {}
+
+// llgo:link (*Cond).Broadcast C.pthread_cond_broadcast
+func (c *Cond) Broadcast() {}
+
+func (c *Cond) Wait() {
+	c.cond.Wait(c.m)
+}
+
+// -----------------------------------------------------------------------------
+
+type WaitGroup struct {
+	mutex sync.Mutex
+	cond  sync.Cond
+	count int
+}
+
+func (wg *WaitGroup) doInit() {
+	wg.mutex.Init(nil)
+	wg.cond.Init(nil) // TODO(xsw): finalize
+}
+
+func (wg *WaitGroup) Add(delta int) {
+	if *(*c.Long)(unsafe.Pointer(wg)) == 0 {
+		wg.doInit()
+	}
+	wg.mutex.Lock()
+	wg.count += delta
+	if wg.count <= 0 {
+		wg.cond.Broadcast()
+	}
+	wg.mutex.Unlock()
+}
+
+func (wg *WaitGroup) Done() {
+	wg.Add(-1)
+}
+
+func (wg *WaitGroup) Wait() {
+	if *(*c.Long)(unsafe.Pointer(wg)) == 0 {
+		wg.doInit()
+	}
+	wg.mutex.Lock()
+	for wg.count > 0 {
+		wg.cond.Wait(&wg.mutex)
+	}
+	wg.mutex.Unlock()
 }
 
 // -----------------------------------------------------------------------------
