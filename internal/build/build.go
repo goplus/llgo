@@ -197,7 +197,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 }
 
 const (
-	ssaBuildMode = ssa.SanityCheckFunctions
+	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics
 )
 
 type context struct {
