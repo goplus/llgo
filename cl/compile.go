@@ -100,12 +100,23 @@ type context struct {
 	inits []func()
 	phis  []func()
 
+	state   pkgState
 	inCFunc bool
 	skipall bool
 }
 
+type pkgState byte
+
+const (
+	pkgNormal pkgState = iota
+	pkgHasPatch
+	pkgInPatch
+
+	pkgFNoOldInit = 0x80 // flag if no initFnNameOld
+)
+
 func (p *context) inMain(instr ssa.Instruction) bool {
-	return instr.Parent().Name() == "main"
+	return p.fn.Name() == "main"
 }
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
@@ -184,6 +195,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		return fn, nil, goFunc
 	}
 
+	var isInit bool
+	var state = p.state
 	var sig = f.Signature
 	var hasCtx = len(f.FreeVars) > 0
 	if hasCtx {
@@ -196,6 +209,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
+		isInit = (f.Name() == "init" && sig.Recv() == nil)
 	}
 	if fn == nil {
 		if name == "main" {
@@ -205,14 +219,20 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			ret := types.NewParam(token.NoPos, pkgTypes, "", p.prog.CInt().RawType())
 			results := types.NewTuple(ret)
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
+		} else if isInit && state == pkgHasPatch {
+			name = initFnNameOfHasPatch(name)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
-		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
+		if f.Recover != nil { // set recover block
+			fn.SetRecover(fn.Block(f.Recover.Index))
+		}
 		p.inits = append(p.inits, func() {
 			p.fn = fn
+			p.state = state // restore pkgState when compiling funcBody
 			defer func() {
 				p.fn = nil
 			}()
@@ -234,7 +254,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for {
 				block := f.Blocks[i]
 				doMainInit := (i == 0 && name == "main")
-				doModInit := (i == 1 && f.Name() == "init" && sig.Recv() == nil)
+				doModInit := (i == 1 && isInit)
 				p.compileBlock(b, block, off[i], doMainInit, doModInit)
 				if i = p.blkInfos[i].Next; i < 0 {
 					break
@@ -257,8 +277,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var pyModInit bool
 	var prog = p.prog
 	var pkg = p.pkg
+	var fn = p.fn
 	var instrs = block.Instrs[n:]
-	var ret = p.fn.Block(block.Index)
+	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
 	if doModInit {
 		if pyModInit = p.pyMod != ""; pyModInit {
@@ -271,7 +292,6 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			})
 		}
 	} else if doMainInit {
-		fn := p.fn
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
 		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
 		argc.InitNil()
@@ -281,7 +301,12 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
-	for _, instr := range instrs {
+	for i, instr := range instrs {
+		if i == 1 && doModInit && p.state == pkgInPatch {
+			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
+			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
+			b.Call(fnOld.Expr)
+		}
 		p.compileInstr(b, instr)
 	}
 	if pyModInit {
@@ -292,7 +317,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
 		cond := b.BinOp(token.NEQ, mod, prog.Nil(mod.Type))
-		newBlk := p.fn.MakeBlock()
+		newBlk := fn.MakeBlock()
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
 		b.Store(modPtr, b.PyImportMod(modPath))
@@ -377,9 +402,6 @@ func isPhi(i ssa.Instruction) bool {
 func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 	fn := p.fn
 	ret := fn.Block(block.Index)
-	if block.Comment == "recover" { // set recover block
-		fn.SetRecover(ret)
-	}
 	b.SetBlockEx(ret, llssa.AtEnd, false)
 	if ninstr := len(block.Instrs); ninstr > 0 {
 		if isPhi(block.Instrs[0]) {
@@ -752,7 +774,12 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	if hasPatch {
 		skips := ctx.skips
 		ctx.skips = nil
+		ctx.state = pkgInPatch
+		if _, ok := skips["init"]; ok || ctx.skipall {
+			ctx.state |= pkgFNoOldInit
+		}
 		processPkg(ctx, ret, alt)
+		ctx.state = pkgHasPatch
 		ctx.skips = skips
 	}
 	if !ctx.skipall {
@@ -766,6 +793,10 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		}
 	}
 	return
+}
+
+func initFnNameOfHasPatch(name string) string {
+	return name + "$hasPatch"
 }
 
 func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {

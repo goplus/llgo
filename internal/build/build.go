@@ -706,7 +706,7 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 
 func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
-	case "unsafe", "errors": // TODO(xsw): remove it
+	case "unsafe":
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
@@ -717,6 +717,7 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
+	"errors":      {},
 	"math":        {},
 	"sync":        {},
 	"sync/atomic": {},
