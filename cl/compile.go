@@ -190,14 +190,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		*/
 		return nil, nil, ignoredFunc
 	}
+	sig := f.Signature
+	state := p.state
+	isInit := (f.Name() == "init" && sig.Recv() == nil)
+	if isInit && state == pkgHasPatch {
+		name = initFnNameOfHasPatch(name)
+	}
+
 	fn := pkg.FuncOf(name)
 	if fn != nil && fn.HasBody() {
 		return fn, nil, goFunc
 	}
 
-	var isInit bool
-	var state = p.state
-	var sig = f.Signature
 	var hasCtx = len(f.FreeVars) > 0
 	if hasCtx {
 		if debugInstr {
@@ -209,7 +213,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
-		isInit = (f.Name() == "init" && sig.Recv() == nil)
 	}
 	if fn == nil {
 		if name == "main" {
@@ -219,8 +222,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			ret := types.NewParam(token.NoPos, pkgTypes, "", p.prog.CInt().RawType())
 			results := types.NewTuple(ret)
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
-		} else if isInit && state == pkgHasPatch {
-			name = initFnNameOfHasPatch(name)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
 	}
