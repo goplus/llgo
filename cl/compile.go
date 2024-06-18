@@ -25,11 +25,12 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
-	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
+
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 // -----------------------------------------------------------------------------
@@ -52,66 +53,6 @@ var (
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
 	debugGoSSA = (dbgFlags & DbgFlagGoSSA) != 0
-}
-
-// -----------------------------------------------------------------------------
-
-const (
-	fnNormal = iota
-	fnHasVArg
-	fnIgnore
-)
-
-func (p *context) funcKind(vfn ssa.Value) int {
-	if fn, ok := vfn.(*ssa.Function); ok {
-		params := fn.Signature.Params()
-		n := params.Len()
-		if n == 0 {
-			if fn.Signature.Recv() == nil {
-				if fn.Name() == "init" && p.pkgNoInit(fn.Pkg.Pkg) {
-					return fnIgnore
-				}
-			}
-		} else {
-			last := params.At(n - 1)
-			if last.Name() == llssa.NameValist {
-				return fnHasVArg
-			}
-		}
-	}
-	return fnNormal
-}
-
-func (p *context) pkgNoInit(pkg *types.Package) bool {
-	p.ensureLoaded(pkg)
-	if i, ok := p.loaded[pkg]; ok {
-		return i.kind >= PkgNoInit
-	}
-	return false
-}
-
-func ignoreName(name string) bool {
-	/* TODO(xsw): confirm this is not needed more
-	if name == "unsafe.init" {
-		return true
-	}
-	*/
-	if strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
-		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
-		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
-		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
-		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") {
-		return true // TODO(xsw)
-	}
-	return inPkg(name, "runtime") || inPkg(name, "sync")
-}
-
-func inPkg(name, pkg string) bool {
-	if len(name) > len(pkg) && strings.HasPrefix(name, pkg) {
-		c := name[len(pkg)]
-		return c == '.' || c == '/'
-	}
-	return false
 }
 
 // -----------------------------------------------------------------------------
@@ -153,10 +94,14 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
+	patches  Patches
 	blkInfos []blocks.Info
 
 	inits []func()
 	phis  []func()
+
+	inCFunc bool
+	skipall bool
 }
 
 func (p *context) inMain(instr ssa.Instruction) bool {
@@ -194,7 +139,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
-	typ := gbl.Type()
+	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
 	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
 		return
@@ -300,65 +245,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			b.EndBuild()
 		})
+		for _, af := range f.AnonFuncs {
+			p.compileFuncDecl(pkg, af)
+		}
 	}
 	return fn, nil, goFunc
-}
-
-// funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
-// or returns nil and set ftype = llgoCstr, llgoAlloca, llgoUnreachable, etc.
-func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObjRef, ftype int) {
-	pkgTypes, name, ftype := p.funcName(fn, false)
-	switch ftype {
-	case pyFunc:
-		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
-			pkg := p.pkg
-			fnName := pysymPrefix + mod + "." + name
-			if pyFn = pkg.PyObjOf(fnName); pyFn == nil {
-				pyFn = pkg.PyNewFunc(fnName, fn.Signature, true)
-			}
-			return
-		}
-		ftype = ignoredFunc
-	case llgoInstr:
-		switch name {
-		case "cstr":
-			ftype = llgoCstr
-		case "advance":
-			ftype = llgoAdvance
-		case "index":
-			ftype = llgoIndex
-		case "alloca":
-			ftype = llgoAlloca
-		case "allocaCStr":
-			ftype = llgoAllocaCStr
-		case "stringData":
-			ftype = llgoStringData
-		case "pyList":
-			ftype = llgoPyList
-		case "sigjmpbuf":
-			ftype = llgoSigjmpbuf
-		case "sigsetjmp":
-			ftype = llgoSigsetjmp
-		case "siglongjmp":
-			ftype = llgoSiglongjmp
-		case "deferData":
-			ftype = llgoDeferData
-		case "unreachable":
-			ftype = llgoUnreachable
-		default:
-			panic("unknown llgo instruction: " + name)
-		}
-	default:
-		pkg := p.pkg
-		if aFn = pkg.FuncOf(name); aFn == nil {
-			if len(fn.FreeVars) > 0 {
-				return nil, nil, ignoredFunc
-			}
-			sig := fn.Signature
-			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
-		}
-	}
-	return
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
@@ -478,80 +369,6 @@ func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 	return false
 }
 
-// func cstr(string) *int8
-func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 1 {
-		if c, ok := args[0].(*ssa.Const); ok {
-			if v := c.Value; v.Kind() == constant.String {
-				sv := constant.StringVal(v)
-				return b.CStr(sv)
-			}
-		}
-	}
-	panic("cstr(<string-literal>): invalid arguments")
-}
-
-// func index(arr *T, idx int) T
-func (p *context) index(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	return b.Load(p.advance(b, args))
-}
-
-// func advance(ptr *T, offset int) *T
-func (p *context) advance(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 2 {
-		ptr := p.compileValue(b, args[0])
-		offset := p.compileValue(b, args[1])
-		return b.Advance(ptr, offset)
-	}
-	panic("advance(p ptr, offset int): invalid arguments")
-}
-
-// func alloca(size uintptr) unsafe.Pointer
-func (p *context) alloca(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 1 {
-		n := p.compileValue(b, args[0])
-		return b.Alloca(n)
-	}
-	panic("alloca(size uintptr): invalid arguments")
-}
-
-// func allocaCStr(s string) *int8
-func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 1 {
-		s := p.compileValue(b, args[0])
-		return b.AllocaCStr(s)
-	}
-	panic("allocaCStr(s string): invalid arguments")
-}
-
-// func stringData(s string) *int8
-func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 1 {
-		s := p.compileValue(b, args[0])
-		return b.StringData(s)
-	}
-	panic("stringData(s string): invalid arguments")
-}
-
-func (p *context) sigsetjmp(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 2 {
-		jb := p.compileValue(b, args[0])
-		savemask := p.compileValue(b, args[1])
-		return b.Sigsetjmp(jb, savemask)
-	}
-	panic("sigsetjmp(jb c.SigjmpBuf, savemask c.Int): invalid arguments")
-}
-
-func (p *context) siglongjmp(b llssa.Builder, args []ssa.Value) {
-	if len(args) == 2 {
-		jb := p.compileValue(b, args[0])
-		retval := p.compileValue(b, args[1])
-		b.Siglongjmp(jb, retval)
-		return
-	}
-	panic("siglongjmp(jb c.SigjmpBuf, retval c.Int): invalid arguments")
-}
-
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -603,79 +420,6 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 	return
 }
 
-func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
-	cv := call.Value
-	if mthd := call.Method; mthd != nil {
-		o := p.compileValue(b, cv)
-		fn := b.Imethod(o, mthd)
-		args := p.compileValues(b, call.Args, fnNormal)
-		ret = b.Do(act, fn, args...)
-		return
-	}
-	kind := p.funcKind(cv)
-	if kind == fnIgnore {
-		return
-	}
-	args := call.Args
-	if debugGoSSA {
-		log.Println(">>> Do", act, cv, args)
-	}
-	switch cv := cv.(type) {
-	case *ssa.Builtin:
-		fn := cv.Name()
-		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-			arg := args[0]
-			ret = p.compileValue(b, arg)
-		} else {
-			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Builtin(fn), args...)
-		}
-	case *ssa.Function:
-		aFn, pyFn, ftype := p.compileFunction(cv)
-		// TODO(xsw): check ca != llssa.Call
-		switch ftype {
-		case goFunc, cFunc:
-			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, aFn.Expr, args...)
-		case pyFunc:
-			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, pyFn.Expr, args...)
-		case llgoPyList:
-			args := p.compileValues(b, args, fnHasVArg)
-			ret = b.PyList(args...)
-		case llgoCstr:
-			ret = cstr(b, args)
-		case llgoAdvance:
-			ret = p.advance(b, args)
-		case llgoIndex:
-			ret = p.index(b, args)
-		case llgoAlloca:
-			ret = p.alloca(b, args)
-		case llgoAllocaCStr:
-			ret = p.allocaCStr(b, args)
-		case llgoStringData:
-			ret = p.stringData(b, args)
-		case llgoSigsetjmp:
-			ret = p.sigsetjmp(b, args)
-		case llgoSiglongjmp:
-			p.siglongjmp(b, args)
-		case llgoSigjmpbuf: // func sigjmpbuf()
-			ret = b.AllocaSigjmpBuf()
-		case llgoDeferData: // func deferData() *Defer
-			ret = b.DeferData()
-		case llgoUnreachable: // func unreachable()
-			b.Unreachable()
-		default:
-			log.Panicln("unknown ftype:", ftype)
-		}
-	default:
-		fn := p.compileValue(b, cv)
-		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, fn, args...)
-	}
-	return
-}
-
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	if asValue {
 		if v, ok := p.bvals[iv]; ok {
@@ -722,10 +466,14 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Index:
 		x := p.compileValue(b, v.X)
 		idx := p.compileValue(b, v.Index)
-		ret = b.Index(x, idx, func(e llssa.Expr) (ret llssa.Expr) {
+		ret = b.Index(x, idx, func(e llssa.Expr) (ret llssa.Expr, zero bool) {
 			if e == x {
-				if n, ok := v.X.(*ssa.UnOp); ok {
-					return p.compileValue(b, n.X)
+				switch n := v.X.(type) {
+				case *ssa.Const:
+					zero = true
+					return
+				case *ssa.UnOp:
+					return p.compileValue(b, n.X), false
 				}
 			}
 			panic(fmt.Errorf("todo: addr of %v", e))
@@ -914,7 +662,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		return p.varOf(b, v)
 	case *ssa.Const:
 		t := types.Default(v.Type())
-		return b.Const(v.Value, p.prog.Type(t, llssa.InGo))
+		bg := llssa.InGo
+		if p.inCFunc {
+			bg = llssa.InC
+		}
+		return b.Const(v.Value, p.prog.Type(t, bg))
 	case *ssa.FreeVar:
 		fn := v.Parent()
 		for idx, freeVar := range fn.FreeVars {
@@ -955,33 +707,41 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // -----------------------------------------------------------------------------
 
+// Patches is patches of some packages.
+type Patches = map[string]*ssa.Package
+
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	return NewPackageEx(prog, pkg, nil, files)
+	return NewPackageEx(prog, nil, pkg, files)
 }
 
-// NewPackageEx compiles a Go package (pkg) to LLVM IR package.
-// The Go package may have an alternative package (alt).
-// The pkg and alt have the same (Pkg *types.Package).
-func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+// NewPackageEx compiles a Go package to LLVM IR package.
+func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
+	alt, hasPatch := patches[pkgPath]
+	if hasPatch {
+		pkgTypes = typepatch.Pkg(pkgTypes, alt.Pkg)
+		pkg.Pkg = pkgTypes
+		alt.Pkg = pkgTypes
+	}
 	if pkgPath == llssa.PkgRuntime {
 		prog.SetRuntime(pkgTypes)
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
-		prog:   prog,
-		pkg:    ret,
-		fset:   pkgProg.Fset,
-		goProg: pkgProg,
-		goTyps: pkgTypes,
-		goPkg:  pkg,
-		link:   make(map[string]string),
-		skips:  make(map[string]none),
-		vargs:  make(map[*ssa.Alloc][]llssa.Expr),
+		prog:    prog,
+		pkg:     ret,
+		fset:    pkgProg.Fset,
+		goProg:  pkgProg,
+		goTyps:  pkgTypes,
+		goPkg:   pkg,
+		patches: patches,
+		link:    make(map[string]string),
+		skips:   make(map[string]none),
+		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
@@ -989,13 +749,15 @@ func NewPackageEx(prog llssa.Program, pkg, alt *ssa.Package, files []*ast.File) 
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
 
-	if alt != nil {
+	if hasPatch {
 		skips := ctx.skips
 		ctx.skips = nil
 		processPkg(ctx, ret, alt)
 		ctx.skips = skips
 	}
-	processPkg(ctx, ret, pkg)
+	if !ctx.skipall {
+		processPkg(ctx, ret, pkg)
+	}
 	for len(ctx.inits) > 0 {
 		inits := ctx.inits
 		ctx.inits = nil
@@ -1039,6 +801,17 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			ctx.compileGlobal(ret, member)
 		}
 	}
+}
+
+func globalType(gbl *ssa.Global) types.Type {
+	t := gbl.Type()
+	if t, ok := t.(*types.Named); ok {
+		o := t.Obj()
+		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
+			return gbl.Pkg.Pkg.Scope().Lookup(o.Name()).Type()
+		}
+	}
+	return t
 }
 
 // -----------------------------------------------------------------------------

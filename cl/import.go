@@ -26,8 +26,9 @@ import (
 	"os"
 	"strings"
 
-	llssa "github.com/goplus/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
+
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 // -----------------------------------------------------------------------------
@@ -127,14 +128,22 @@ func pkgKindByScope(scope *types.Scope) (int, string) {
 }
 
 func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
+	pkgPath := llssa.PathOf(pkg)
 	scope := pkg.Scope()
 	kind, _ := pkgKindByScope(scope)
 	if kind == PkgNormal {
+		if alt, ok := p.patches[pkgPath]; ok {
+			pkg = alt.Pkg
+			scope = pkg.Scope()
+			if kind, _ = pkgKindByScope(scope); kind != PkgNormal {
+				goto start
+			}
+		}
 		return
 	}
+start:
 	i.kind = kind
 	fset := p.fset
-	pkgPath := llssa.PathOf(pkg)
 	names := scope.Names()
 	syms := newPkgSymInfo()
 	for _, name := range names {
@@ -193,10 +202,12 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
+// llgo:skip symbol1 symbol2 ...
+// llgo:skipall
 func (p *context) collectSkipNames(line string) {
 	const (
-		skip  = "//llgo:skip "
-		skip2 = "// llgo:skip "
+		skip  = "//llgo:skip"
+		skip2 = "// llgo:skip"
 	)
 	if strings.HasPrefix(line, skip2) {
 		p.collectSkip(line, len(skip2))
@@ -206,7 +217,15 @@ func (p *context) collectSkipNames(line string) {
 }
 
 func (p *context) collectSkip(line string, prefix int) {
-	names := strings.Split(line[prefix:], " ")
+	line = line[prefix:]
+	if line == "all" {
+		p.skipall = true
+		return
+	}
+	if len(line) == 0 || line[0] != ' ' {
+		return
+	}
+	names := strings.Split(line[1:], " ")
 	for _, name := range names {
 		if name != "" {
 			p.skips[name] = none{}
@@ -318,8 +337,14 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 // - func: pkg.name
 // - method: pkg.(T).name, pkg.(*T).name
 func funcName(pkg *types.Package, fn *ssa.Function) string {
-	sig := fn.Signature
-	return llssa.FuncName(pkg, fn.Name(), sig.Recv())
+	var recv *types.Var
+	parent := fn.Parent()
+	if parent != nil { // closure in method
+		recv = parent.Signature.Recv()
+	} else {
+		recv = fn.Signature.Recv()
+	}
+	return llssa.FuncName(pkg, fn.Name(), recv)
 }
 
 func checkCgo(fnName string) bool {
@@ -343,11 +368,32 @@ const (
 	llgoAdvance     = llgoInstrBase + 4
 	llgoIndex       = llgoInstrBase + 5
 	llgoStringData  = llgoInstrBase + 6
-	llgoPyList      = llgoInstrBase + 7
-	llgoSigjmpbuf   = llgoInstrBase + 10
-	llgoSigsetjmp   = llgoInstrBase + 11
-	llgoSiglongjmp  = llgoInstrBase + 12
-	llgoDeferData   = llgoInstrBase + 13
+	llgoDeferData   = llgoInstrBase + 7
+
+	llgoSigjmpbuf  = llgoInstrBase + 0xa
+	llgoSigsetjmp  = llgoInstrBase + 0xb
+	llgoSiglongjmp = llgoInstrBase + 0xc
+
+	llgoPyList = llgoInstrBase + 0x10
+
+	llgoAtomicLoad    = llgoInstrBase + 0x1d
+	llgoAtomicStore   = llgoInstrBase + 0x1e
+	llgoAtomicCmpXchg = llgoInstrBase + 0x1f
+	llgoAtomicOpBase  = llgoInstrBase + 0x20
+
+	llgoAtomicXchg = llgoAtomicOpBase + llssa.OpXchg
+	llgoAtomicAdd  = llgoAtomicOpBase + llssa.OpAdd
+	llgoAtomicSub  = llgoAtomicOpBase + llssa.OpSub
+	llgoAtomicAnd  = llgoAtomicOpBase + llssa.OpAnd
+	llgoAtomicNand = llgoAtomicOpBase + llssa.OpNand
+	llgoAtomicOr   = llgoAtomicOpBase + llssa.OpOr
+	llgoAtomicXor  = llgoAtomicOpBase + llssa.OpXor
+	llgoAtomicMax  = llgoAtomicOpBase + llssa.OpMax
+	llgoAtomicMin  = llgoAtomicOpBase + llssa.OpMin
+	llgoAtomicUMax = llgoAtomicOpBase + llssa.OpUMax
+	llgoAtomicUMin = llgoAtomicOpBase + llssa.OpUMin
+
+	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
@@ -417,7 +463,7 @@ func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	}
 	ret := pkg.VarOf(name)
 	if ret == nil {
-		ret = pkg.NewVar(name, v.Type(), llssa.Background(vtype))
+		ret = pkg.NewVar(name, globalType(v), llssa.Background(vtype))
 	}
 	return ret.Expr
 }
@@ -449,6 +495,20 @@ func replaceGoName(v string, pos int) string {
 		return "github.com/goplus/llgo/internal/runtime" + v[pos:]
 	}
 	return v
+}
+
+func ignoreName(name string) bool {
+	/* TODO(xsw): confirm this is not needed more
+	if name == "unsafe.init" {
+		return true
+	}
+	*/
+	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
+		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
+		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
+		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
+		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") ||
+		strings.HasPrefix(name, "runtime/")
 }
 
 // -----------------------------------------------------------------------------

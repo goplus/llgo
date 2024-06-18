@@ -163,13 +163,14 @@ func (b Builder) checkIndex(idx Expr) Expr {
 // Example printed form:
 //
 //	t2 = t0[t1]
-func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
+func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 	if debugInstr {
 		log.Printf("Index %v, %v\n", x.impl, idx.impl)
 	}
 	prog := b.Prog
 	var telem Type
 	var ptr Expr
+	var zero bool
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		if t.Kind() != types.String {
@@ -180,7 +181,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 	case *types.Array:
 		telem = prog.Index(x.Type)
 		if addr != nil {
-			ptr = addr(x)
+			ptr, zero = addr(x)
 		} else {
 			/*
 				size := SizeOf(prog, telem, t.Len())
@@ -190,7 +191,11 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) Expr) Expr {
 			panic("unreachable")
 		}
 	}
+	// TODO check range
 	idx = b.checkIndex(idx)
+	if zero {
+		return Expr{llvm.ConstNull(telem.ll), telem}
+	}
 	pt := prog.Pointer(telem)
 	indices := []llvm.Value{idx.impl}
 	buf := Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}

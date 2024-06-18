@@ -613,6 +613,29 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret i32 0
 }
 
+define void @"main.main$1"() {
+_llgo_0:
+  %0 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 0
+  store ptr @6, ptr %1, align 8
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 1
+  store i64 2, ptr %2, align 4
+  %3 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %0, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  ret void
+}
+
+define void @"main.main$2"(ptr %0) {
+_llgo_0:
+  %1 = load { ptr }, ptr %0, align 8
+  %2 = extractvalue { ptr } %1, 0
+  %3 = load i64, ptr %2, align 4
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  ret void
+}
+
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
@@ -664,30 +687,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr)
 
 declare i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice", ptr, i64, i64)
 
-define void @"main.main$2"(ptr %0) {
-_llgo_0:
-  %1 = load { ptr }, ptr %0, align 8
-  %2 = extractvalue { ptr } %1, 0
-  %3 = load i64, ptr %2, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  ret void
-}
-
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
-
-define void @"main.main$1"() {
-_llgo_0:
-  %0 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 0
-  store ptr @6, ptr %1, align 8
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 1
-  store i64 2, ptr %2, align 4
-  %3 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %0, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  ret void
-}
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/internal/runtime.String")
 

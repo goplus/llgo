@@ -26,46 +26,6 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// Advance returns the pointer ptr advanced by offset.
-func (b Builder) Advance(ptr Expr, offset Expr) Expr {
-	if debugInstr {
-		log.Printf("Advance %v, %v\n", ptr.impl, offset.impl)
-	}
-	var elem llvm.Type
-	var prog = b.Prog
-	switch t := ptr.raw.Type.(type) {
-	case *types.Basic: // void
-		elem = prog.tyInt8()
-	default:
-		elem = prog.rawType(t.(*types.Pointer).Elem()).ll
-	}
-	ret := llvm.CreateGEP(b.impl, elem, ptr.impl, []llvm.Value{offset.impl})
-	return Expr{ret, ptr.Type}
-}
-
-// Load returns the value at the pointer ptr.
-func (b Builder) Load(ptr Expr) Expr {
-	if debugInstr {
-		log.Printf("Load %v\n", ptr.impl)
-	}
-	if ptr.kind == vkPyVarRef {
-		return b.pyLoad(ptr)
-	}
-	telem := b.Prog.Elem(ptr.Type)
-	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
-}
-
-// Store stores val at the pointer ptr.
-func (b Builder) Store(ptr, val Expr) Builder {
-	raw := ptr.raw.Type
-	if debugInstr {
-		log.Printf("Store %v, %v, %v\n", raw, ptr.impl, val.impl)
-	}
-	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
-	b.impl.CreateStore(val.impl, ptr.impl)
-	return b
-}
-
 func (b Builder) aggregateAllocU(t Type, flds ...llvm.Value) llvm.Value {
 	prog := b.Prog
 	size := prog.SizeOf(t)
@@ -249,6 +209,90 @@ func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
 	ret.impl = b.AllocZ(size).impl
 	ret.Type = prog.Pointer(telem)
 	return
+}
+
+// -----------------------------------------------------------------------------
+
+// AtomicOp is an atomic operation.
+type AtomicOp = llvm.AtomicRMWBinOp
+
+const (
+	OpXchg = llvm.AtomicRMWBinOpXchg
+	OpAdd  = llvm.AtomicRMWBinOpAdd
+	OpSub  = llvm.AtomicRMWBinOpSub
+	OpAnd  = llvm.AtomicRMWBinOpAnd
+	OpNand = llvm.AtomicRMWBinOpNand
+	OpOr   = llvm.AtomicRMWBinOpOr
+	OpXor  = llvm.AtomicRMWBinOpXor
+	OpMax  = llvm.AtomicRMWBinOpMax
+	OpMin  = llvm.AtomicRMWBinOpMin
+	OpUMax = llvm.AtomicRMWBinOpUMax
+	OpUMin = llvm.AtomicRMWBinOpUMin
+)
+
+// Atomic performs an atomic operation on the memory location pointed to by ptr.
+func (b Builder) Atomic(op AtomicOp, ptr, val Expr) Expr {
+	if debugInstr {
+		log.Printf("Atomic %v, %v, %v\n", op, ptr.impl, val.impl)
+	}
+	t := b.Prog.Elem(ptr.Type)
+	val = b.ChangeType(t, val)
+	ret := b.impl.CreateAtomicRMW(op, ptr.impl, val.impl, llvm.AtomicOrderingSequentiallyConsistent, false)
+	return Expr{ret, t}
+}
+
+// AtomicCmpXchg performs an atomic compare-and-swap operation on the memory location pointed to by ptr.
+func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
+	if debugInstr {
+		log.Printf("AtomicCmpXchg %v, %v, %v\n", ptr.impl, old.impl, new.impl)
+	}
+	prog := b.Prog
+	t := prog.Elem(ptr.Type)
+	old = b.ChangeType(t, old)
+	new = b.ChangeType(t, new)
+	ret := b.impl.CreateAtomicCmpXchg(
+		ptr.impl, old.impl, new.impl,
+		llvm.AtomicOrderingSequentiallyConsistent, llvm.AtomicOrderingSequentiallyConsistent, false)
+	return Expr{ret, prog.Struct(t, prog.Bool())}
+}
+
+// Load returns the value at the pointer ptr.
+func (b Builder) Load(ptr Expr) Expr {
+	if debugInstr {
+		log.Printf("Load %v\n", ptr.impl)
+	}
+	if ptr.kind == vkPyVarRef {
+		return b.pyLoad(ptr)
+	}
+	telem := b.Prog.Elem(ptr.Type)
+	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
+}
+
+// Store stores val at the pointer ptr.
+func (b Builder) Store(ptr, val Expr) Expr {
+	raw := ptr.raw.Type
+	if debugInstr {
+		log.Printf("Store %v, %v, %v\n", raw, ptr.impl, val.impl)
+	}
+	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
+	return Expr{b.impl.CreateStore(val.impl, ptr.impl), b.Prog.Void()}
+}
+
+// Advance returns the pointer ptr advanced by offset.
+func (b Builder) Advance(ptr Expr, offset Expr) Expr {
+	if debugInstr {
+		log.Printf("Advance %v, %v\n", ptr.impl, offset.impl)
+	}
+	var elem llvm.Type
+	var prog = b.Prog
+	switch t := ptr.raw.Type.(type) {
+	case *types.Basic: // void
+		elem = prog.tyInt8()
+	default:
+		elem = prog.rawType(t.(*types.Pointer).Elem()).ll
+	}
+	ret := llvm.CreateGEP(b.impl, elem, ptr.impl, []llvm.Value{offset.impl})
+	return Expr{ret, ptr.Type}
 }
 
 // -----------------------------------------------------------------------------

@@ -11,6 +11,10 @@ LLGo wrapper of DaveGamble/cJSON
 ```sh
 brew install cjson 
 ```
+### on linux
+```sh
+apt-get install -y libcjson-dev
+```
 ### from source code
 ```sh
 git clone https://github.com/goplus/cjson.git

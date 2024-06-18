@@ -29,6 +29,8 @@ import (
 
 func TestCollectSkipNames(t *testing.T) {
 	ctx := &context{skips: make(map[string]none)}
+	ctx.collectSkipNames("//llgo:skipall")
+	ctx.collectSkipNames("//llgo:skip")
 	ctx.collectSkipNames("//llgo:skip abs")
 }
 
@@ -140,6 +142,10 @@ func TestErrBuiltin(t *testing.T) {
 	test("siglongjmp", func(ctx *context) { ctx.siglongjmp(nil, nil) })
 	test("cstr(NoArgs)", func(ctx *context) { cstr(nil, nil) })
 	test("cstr(Nonconst)", func(ctx *context) { cstr(nil, []ssa.Value{&ssa.Parameter{}}) })
+	test("atomic", func(ctx *context) { ctx.atomic(nil, 0, nil) })
+	test("atomicLoad", func(ctx *context) { ctx.atomicLoad(nil, nil) })
+	test("atomicStore", func(ctx *context) { ctx.atomicStore(nil, nil) })
+	test("atomicCmpXchg", func(ctx *context) { ctx.atomicCmpXchg(nil, nil) })
 }
 
 func TestPkgNoInit(t *testing.T) {
@@ -205,7 +211,7 @@ func TestIntVal(t *testing.T) {
 }
 
 func TestIgnoreName(t *testing.T) {
-	if !ignoreName("runtime.foo") || !ignoreName("runtime/foo") || !ignoreName("internal/abi") {
+	if !ignoreName("runtime/foo") || !ignoreName("internal/abi") {
 		t.Fatal("ignoreName failed")
 	}
 }
@@ -214,6 +220,13 @@ func TestErrImport(t *testing.T) {
 	var ctx context
 	pkg := types.NewPackage("foo", "foo")
 	ctx.importPkg(pkg, nil)
+
+	alt := types.NewPackage("bar", "bar")
+	alt.Scope().Insert(
+		types.NewConst(0, alt, "LLGoPackage", types.Typ[types.String], constant.MakeString("noinit")),
+	)
+	ctx.patches = Patches{"foo": &ssa.Package{Pkg: alt}}
+	ctx.importPkg(pkg, &pkgInfo{})
 }
 
 func TestErrInitLinkname(t *testing.T) {

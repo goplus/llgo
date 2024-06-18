@@ -27,6 +27,18 @@ import (
 	"github.com/goplus/llvm"
 )
 
+type AtomicOrdering = llvm.AtomicOrdering
+
+const (
+	OrderingNotAtomic      = llvm.AtomicOrderingNotAtomic
+	OrderingUnordered      = llvm.AtomicOrderingUnordered
+	OrderingMonotonic      = llvm.AtomicOrderingMonotonic
+	OrderingAcquire        = llvm.AtomicOrderingAcquire
+	OrderingRelease        = llvm.AtomicOrderingRelease
+	OrderingAcquireRelease = llvm.AtomicOrderingAcquireRelease
+	OrderingSeqConsistent  = llvm.AtomicOrderingSequentiallyConsistent
+)
+
 // -----------------------------------------------------------------------------
 
 type Expr struct {
@@ -39,6 +51,12 @@ var Nil Expr // Zero value is a nil Expr
 // IsNil checks if the expression is nil or not.
 func (v Expr) IsNil() bool {
 	return v.Type == nil
+}
+
+// SetOrdering sets the ordering of the atomic operation.
+func (v Expr) SetOrdering(ordering AtomicOrdering) Expr {
+	v.impl.SetOrdering(ordering)
+	return v
 }
 
 // -----------------------------------------------------------------------------

@@ -19,6 +19,12 @@ _llgo_0:
   ret { ptr, ptr } %3
 }
 
+define i64 @"main.add$1"(i64 %0, i64 %1) {
+_llgo_0:
+  %2 = add i64 %0, %1
+  ret i64 %2
+}
+
 define { { ptr, ptr }, i64 } @main.add2() {
 _llgo_0:
   %0 = alloca { ptr, ptr }, align 8
@@ -30,6 +36,12 @@ _llgo_0:
   %mrv = insertvalue { { ptr, ptr }, i64 } poison, { ptr, ptr } %3, 0
   %mrv1 = insertvalue { { ptr, ptr }, i64 } %mrv, i64 1, 1
   ret { { ptr, ptr }, i64 } %mrv1
+}
+
+define i64 @"main.add2$1"(i64 %0, i64 %1) {
+_llgo_0:
+  %2 = add i64 %0, %1
+  ret i64 %2
 }
 
 define void @main.init() {
@@ -72,32 +84,6 @@ _llgo_0:
   ret i32 0
 }
 
-define i64 @"main.add$1"(i64 %0, i64 %1) {
-_llgo_0:
-  %2 = add i64 %0, %1
-  ret i64 %2
-}
-
-define linkonce i64 @"__llgo_stub.main.add$1"(ptr %0, i64 %1, i64 %2) {
-_llgo_0:
-  %3 = tail call i64 @"main.add$1"(i64 %1, i64 %2)
-  ret i64 %3
-}
-
-define i64 @"main.add2$1"(i64 %0, i64 %1) {
-_llgo_0:
-  %2 = add i64 %0, %1
-  ret i64 %2
-}
-
-define linkonce i64 @"__llgo_stub.main.add2$1"(ptr %0, i64 %1, i64 %2) {
-_llgo_0:
-  %3 = tail call i64 @"main.add2$1"(i64 %1, i64 %2)
-  ret i64 %3
-}
-
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
 define { ptr, ptr } @"main.main$1"() {
 _llgo_0:
   %0 = alloca { ptr, ptr }, align 8
@@ -109,13 +95,27 @@ _llgo_0:
   ret { ptr, ptr } %3
 }
 
-declare i32 @printf(ptr, ...)
-
 define i64 @"main.main$1$1"(i64 %0, i64 %1) {
 _llgo_0:
   %2 = add i64 %0, %1
   ret i64 %2
 }
+
+define linkonce i64 @"__llgo_stub.main.add$1"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = tail call i64 @"main.add$1"(i64 %1, i64 %2)
+  ret i64 %3
+}
+
+define linkonce i64 @"__llgo_stub.main.add2$1"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = tail call i64 @"main.add2$1"(i64 %1, i64 %2)
+  ret i64 %3
+}
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare i32 @printf(ptr, ...)
 
 define linkonce i64 @"__llgo_stub.main.main$1$1"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
