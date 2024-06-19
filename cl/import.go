@@ -498,7 +498,7 @@ func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
 
 func pkgKindByPath(pkgPath string) int {
 	switch pkgPath {
-	case "syscall", "runtime/cgo", "unsafe":
+	case "runtime/cgo", "unsafe":
 		return PkgDeclOnly
 	}
 	return PkgNormal
@@ -520,9 +520,8 @@ func ignoreName(name string) bool {
 	*/
 	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
-		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
-		strings.HasPrefix(name, "plugin.") || strings.HasPrefix(name, "reflect.") ||
-		strings.HasPrefix(name, "runtime/")
+		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "runtime/") ||
+		strings.HasPrefix(name, "plugin.") || strings.HasPrefix(name, "reflect.")
 }
 
 // -----------------------------------------------------------------------------
