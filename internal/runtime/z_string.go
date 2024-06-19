@@ -50,8 +50,7 @@ func StringCat(a, b String) String {
 func CStrCopy(dest unsafe.Pointer, s String) *int8 {
 	n := s.len
 	c.Memcpy(dest, s.data, uintptr(n))
-	arr := (*[1 << 30]int8)(dest)
-	arr[n] = 0
+	*(*int8)(c.Advance(dest, n)) = 0
 	return (*int8)(dest)
 }
 
@@ -60,7 +59,7 @@ func CStrDup(s String) *int8 {
 	return CStrCopy(dest, s)
 }
 
-func NewStringSlice(base String, i, j int) String {
+func StringSlice(base String, i, j int) String {
 	if i < 0 || j < i || j > base.len {
 		panic("string slice index out of bounds")
 	}
@@ -121,13 +120,21 @@ func StringToRunes(s string) []rune {
 	return data[:index:index]
 }
 
+func StringFromCStr(cstr *int8) (s String) {
+	return StringFrom(unsafe.Pointer(cstr), int(c.Strlen(cstr)))
+}
+
 func StringFromBytes(b Slice) (s String) {
-	if b.len == 0 {
+	return StringFrom(b.data, b.len)
+}
+
+func StringFrom(data unsafe.Pointer, n int) (s String) {
+	if n == 0 {
 		return
 	}
-	s.len = b.len
-	s.data = AllocU(uintptr(s.len))
-	c.Memcpy(s.data, b.data, uintptr(b.len))
+	s.len = n
+	s.data = AllocU(uintptr(n))
+	c.Memcpy(s.data, data, uintptr(n))
 	return
 }
 

@@ -64,6 +64,25 @@ func (b Builder) getField(x Expr, idx int) Expr {
 	return Expr{fld, tfld}
 }
 
+// -----------------------------------------------------------------------------
+
+// MakeString creates a new string from a C string pointer and length.
+func (b Builder) MakeString(cstr Expr, n ...Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeString %v\n", cstr.impl)
+	}
+	pkg := b.Pkg
+	prog := b.Prog
+	ret.Type = prog.String()
+	if len(n) == 0 {
+		ret.impl = b.Call(pkg.rtFunc("StringFromCStr"), cstr).impl
+	} else {
+		// TODO(xsw): remove Convert
+		ret.impl = b.Call(pkg.rtFunc("StringFrom"), cstr, b.Convert(prog.Int(), n[0])).impl
+	}
+	return
+}
+
 // StringData returns the data pointer of a string.
 func (b Builder) StringData(x Expr) Expr {
 	if debugInstr {
@@ -81,6 +100,8 @@ func (b Builder) StringLen(x Expr) Expr {
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
 	return Expr{ptr, b.Prog.Int()}
 }
+
+// -----------------------------------------------------------------------------
 
 // SliceData returns the data pointer of a slice.
 func (b Builder) SliceData(x Expr) Expr {
@@ -109,6 +130,8 @@ func (b Builder) SliceCap(x Expr) Expr {
 	return Expr{ptr, b.Prog.Int()}
 }
 
+// -----------------------------------------------------------------------------
+
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
 //
@@ -125,33 +148,106 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 	if debugInstr {
 		log.Printf("IndexAddr %v, %v\n", x.impl, idx.impl)
 	}
-	idx = b.checkIndex(idx)
 	prog := b.Prog
 	telem := prog.Index(x.Type)
 	pt := prog.Pointer(telem)
-	switch x.raw.Type.Underlying().(type) {
+	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Slice:
 		ptr := b.SliceData(x)
+		max := b.SliceLen(x)
+		idx = b.checkIndex(idx, max)
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
+	case *types.Pointer:
+		ar := t.Elem().Underlying().(*types.Array)
+		max := prog.IntVal(uint64(ar.Len()), prog.Int())
+		idx = b.checkIndex(idx, max)
 	}
-	// case *types.Pointer:
 	indices := []llvm.Value{idx.impl}
 	return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, x.impl, indices), pt}
 }
 
-// check index >= 0 and size to uint
-func (b Builder) checkIndex(idx Expr) Expr {
-	prog := b.Prog
-	if needsNegativeCheck(idx) {
-		zero := llvm.ConstInt(idx.ll, 0, false)
-		check := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
-		b.InlineCall(b.Pkg.rtFunc("AssertIndexRange"), check)
+func isConstantInt(x Expr) (v int64, ok bool) {
+	if rv := x.impl.IsAConstantInt(); !rv.IsNil() {
+		v = rv.SExtValue()
+		ok = true
 	}
-	typ := prog.Uint()
+	return
+}
+
+func isConstantUint(x Expr) (v uint64, ok bool) {
+	if rv := x.impl.IsAConstantInt(); !rv.IsNil() {
+		v = rv.ZExtValue()
+		ok = true
+	}
+	return
+}
+
+func checkRange(idx Expr, max Expr) (checkMin, checkMax bool) {
+	if idx.kind == vkSigned {
+		if v, ok := isConstantInt(idx); ok {
+			if v < 0 {
+				checkMin = true
+			}
+			if m, ok := isConstantInt(max); ok {
+				if v >= m {
+					checkMax = true
+				}
+			} else {
+				checkMax = true
+			}
+		} else {
+			checkMin = true
+			checkMax = true
+		}
+	} else {
+		if v, ok := isConstantUint(idx); ok {
+			if m, ok := isConstantUint(max); ok {
+				if v >= m {
+					checkMax = true
+				}
+			} else {
+				checkMax = true
+			}
+		} else {
+			checkMax = true
+		}
+	}
+	return
+}
+
+// check index >= 0 && index < max and size to uint
+func (b Builder) checkIndex(idx Expr, max Expr) Expr {
+	prog := b.Prog
+	// check range
+	checkMin, checkMax := checkRange(idx, max)
+	// fit size
+	var typ Type
+	if idx.kind == vkSigned {
+		typ = prog.Int()
+	} else {
+		typ = prog.Uint()
+	}
 	if prog.SizeOf(idx.Type) < prog.SizeOf(typ) {
 		idx.Type = typ
 		idx.impl = castUintptr(b, idx.impl, typ)
+	}
+	// check range expr
+	var check Expr
+	if checkMin {
+		zero := llvm.ConstInt(idx.ll, 0, false)
+		check = Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
+	}
+	if checkMax {
+		r := Expr{llvm.CreateICmp(b.impl, llvm.IntSGE, idx.impl, max.impl), prog.Bool()}
+		if check.IsNil() {
+			check = r
+		} else {
+			check = Expr{b.impl.CreateOr(r.impl, check.impl, ""), prog.Bool()}
+		}
+	}
+	if !check.IsNil() {
+		b.InlineCall(b.Pkg.rtFunc("AssertIndexRange"), check)
 	}
 	return idx
 }
@@ -170,6 +266,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 	prog := b.Prog
 	var telem Type
 	var ptr Expr
+	var max Expr
 	var zero bool
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
@@ -178,6 +275,7 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 		}
 		telem = prog.rawType(types.Typ[types.Byte])
 		ptr = b.StringData(x)
+		max = b.StringLen(x)
 	case *types.Array:
 		telem = prog.Index(x.Type)
 		if addr != nil {
@@ -190,9 +288,9 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 			*/
 			panic("unreachable")
 		}
+		max = prog.IntVal(uint64(t.Len()), prog.Int())
 	}
-	// TODO check range
-	idx = b.checkIndex(idx)
+	idx = b.checkIndex(idx, max)
 	if zero {
 		return Expr{llvm.ConstNull(telem.ll), telem}
 	}
@@ -201,6 +299,8 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 	buf := Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	return b.Load(buf)
 }
+
+// -----------------------------------------------------------------------------
 
 // The Slice instruction yields a slice of an existing string, slice
 // or *array X between optional integer bounds Low and High.
@@ -235,7 +335,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			high = b.StringLen(x)
 		}
 		ret.Type = x.Type
-		ret.impl = b.InlineCall(b.Pkg.rtFunc("NewStringSlice"), x, low, high).impl
+		ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSlice"), x, low, high).impl
 		return
 	case *types.Slice:
 		nEltSize = SizeOf(prog, prog.Index(x.Type))

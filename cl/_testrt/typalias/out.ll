@@ -29,6 +29,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @syscall.init()
   store i8 72, ptr @main.format, align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @main.format, i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @main.format, i64 2), align 1
@@ -61,6 +62,8 @@ _llgo_0:
 }
 
 declare void @printf(ptr, ...)
+
+declare void @syscall.init()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 

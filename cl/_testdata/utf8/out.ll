@@ -11,12 +11,14 @@ source_filename = "main"
 
 define i8 @main.index(i8 %0) {
 _llgo_0:
-  %1 = icmp slt i8 %0, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %1)
-  %2 = zext i8 %0 to i64
-  %3 = getelementptr inbounds i8, ptr @main.array, i64 %2
-  %4 = load i8, ptr %3, align 1
-  ret i8 %4
+  %1 = sext i8 %0 to i64
+  %2 = icmp slt i64 %1, 0
+  %3 = icmp sge i64 %1, 8
+  %4 = or i1 %3, %2
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %4)
+  %5 = getelementptr inbounds i8, ptr @main.array, i64 %1
+  %6 = load i8, ptr %5, align 1
+  ret i8 %6
 }
 
 define void @main.init() {
@@ -57,7 +59,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   store i64 7, ptr %4, align 4
   %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
   %6 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %5, 1
-  %7 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %5, i64 %15, i64 %6)
+  %7 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %5, i64 %15, i64 %6)
   %8 = call { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String" %7)
   %9 = extractvalue { i32, i64 } %8, 0
   %10 = extractvalue { i32, i64 } %8, 1
@@ -93,7 +95,7 @@ declare void @"unicode/utf8.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
+declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
 
 declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String")
 

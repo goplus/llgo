@@ -883,11 +883,6 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	switch fn {
-	case "String": // unsafe.String
-		return b.unsafeString(args[0].impl, args[1].impl)
-	case "Slice": // unsafe.Slice
-		size := args[1].impl
-		return b.unsafeSlice(args[0], size, size)
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
@@ -946,6 +941,13 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		return b.Recover()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
+	case "String": // unsafe.String
+		return b.unsafeString(args[0].impl, args[1].impl)
+	case "Slice": // unsafe.Slice
+		size := args[1].impl
+		return b.unsafeSlice(args[0], size, size)
+	case "SliceData":
+		return b.SliceData(args[0]) // TODO(xsw): check return type
 	}
 	panic("todo: " + fn)
 }

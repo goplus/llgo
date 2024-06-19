@@ -34,7 +34,6 @@ The `_demo` directory contains some C standard libary related demos (it start wi
 To run these demos (If you haven't installed `llgo` yet, please refer to [How to install](#how-to-install)):
 
 ```sh
-export LLGOROOT=`pwd`
 cd <demo-directory>  # eg. cd _demo/hello
 llgo run .
 ```
@@ -59,6 +58,8 @@ And you can import any Python library into `llgo` through a program called `llpy
 * [pandas](https://pkg.go.dev/github.com/goplus/llgo/py/pandas)
 * [pytorch](https://pkg.go.dev/github.com/goplus/llgo/py/torch)
 * [matplotlib](https://pkg.go.dev/github.com/goplus/llgo/py/matplotlib)
+
+Note: For third-party libraries (such as pandas and pytorch), you still need to install the library files.
 
 Here is an example using the Python `math` library:
 
@@ -140,7 +141,6 @@ Note that the file name must be written in a platform-independent format, using 
 Then you can run the demos:
 
 ```sh
-export LLGOROOT=`pwd`
 cd <demo-directory>  # eg. cd _pydemo/callpy
 llgo run .
 ```
@@ -208,6 +208,7 @@ Here are the Go packages that can be imported correctly:
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math](https://pkg.go.dev/math)
+* [syscall](https://pkg.go.dev/syscall) (partially)
 * [sync](https://pkg.go.dev/sync) (partially)
 * [sync/atomic](https://pkg.go.dev/sync/atomic) (partially)
 
@@ -236,6 +237,9 @@ brew install llvm@17 pkg-config libgc
 brew install cjson sqlite python@3.12 # optional
 export PATH=$(brew --prefix llvm@17)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
 export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
+git clone https://github.com/goplus/llgo.git
+cd llgo
+export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
 go install -v ./...
 ```
 
@@ -249,6 +253,9 @@ sudo apt-get install -y llvm-17-dev clang-17 lld-17 pkg-config libgc-dev
 sudo apt-get install -y libcjson-dev libsqlite3-dev python3.12-dev # optional
 export PATH=/usr/lib/llvm-17/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
 export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
+git clone https://github.com/goplus/llgo.git
+cd llgo
+export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
 go install -v ./...
 ```
 

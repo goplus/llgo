@@ -13,24 +13,28 @@ source_filename = "main"
 
 define ptr @main.Basic(i64 %0) {
 _llgo_0:
-  %1 = getelementptr inbounds ptr, ptr @main.basicTypes, i64 %0
-  %2 = load ptr, ptr %1, align 8
-  ret ptr %2
+  %1 = icmp sge i64 %0, 25
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %1)
+  %2 = getelementptr inbounds ptr, ptr @main.basicTypes, i64 %0
+  %3 = load ptr, ptr %2, align 8
+  ret ptr %3
 }
 
 define ptr @main.basicType(i64 %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 72)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 0
-  %3 = getelementptr inbounds i64, ptr @main.sizeBasicTypes, i64 %0
-  %4 = load i64, ptr %3, align 4
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 2
-  %6 = trunc i64 %0 to i32
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 6
-  %8 = trunc i64 %0 to i8
-  store i64 %4, ptr %2, align 4
-  store i32 %6, ptr %5, align 4
-  store i8 %8, ptr %7, align 1
+  %3 = icmp sge i64 %0, 25
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %3)
+  %4 = getelementptr inbounds i64, ptr @main.sizeBasicTypes, i64 %0
+  %5 = load i64, ptr %4, align 4
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 2
+  %7 = trunc i64 %0 to i32
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %1, i32 0, i32 6
+  %9 = trunc i64 %0 to i8
+  store i64 %5, ptr %2, align 4
+  store i32 %7, ptr %6, align 4
+  store i8 %9, ptr %8, align 1
   ret ptr %1
 }
 
@@ -66,6 +70,8 @@ _llgo_0:
   %8 = call i32 (ptr, ...) @printf(ptr @0, i64 %5, i64 %7)
   ret i32 0
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 

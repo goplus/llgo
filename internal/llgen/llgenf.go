@@ -68,7 +68,7 @@ func GenFrom(fileOrPkg string) string {
 	initial, err := packages.LoadEx(nil, prog.TypeSizes, cfg, fileOrPkg)
 	check(err)
 
-	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions)
+	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
 
 	pkg := initial[0]
 	ssaPkg := pkgs[0]

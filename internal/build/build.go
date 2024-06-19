@@ -35,6 +35,7 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llgo/xtool/clang"
 	"github.com/goplus/llgo/xtool/env"
 
@@ -197,7 +198,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 }
 
 const (
-	ssaBuildMode = ssa.SanityCheckFunctions
+	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics
 )
 
 type context struct {
@@ -400,7 +401,7 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 }
 
 const (
-	altPkgPathPrefix = "github.com/goplus/llgo/internal/lib/"
+	altPkgPathPrefix = abi.PatchPathPrefix
 )
 
 func altPkgs(initial []*packages.Package, alts ...string) []string {
@@ -706,7 +707,7 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 
 func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
-	case "unsafe", "errors": // TODO(xsw): remove it
+	case "unsafe":
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
@@ -717,9 +718,14 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
+	"errors":      {},
+	"io":          {},
+	"io/fs":       {},
 	"math":        {},
 	"sync":        {},
 	"sync/atomic": {},
+	"syscall":     {},
+	"os":          {},
 	"runtime":     {},
 }
 

@@ -19,6 +19,7 @@ package ssa
 import (
 	"fmt"
 	"go/types"
+	"strings"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -482,7 +483,16 @@ func (p Program) toNamed(raw *types.Named) Type {
 
 // NameOf returns the full name of a named type.
 func NameOf(typ *types.Named) string {
-	return abi.TypeName(typ.Obj())
+	name := abi.TypeName(typ.Obj())
+	if targs := typ.TypeArgs(); targs != nil {
+		n := targs.Len()
+		args := make([]string, n)
+		for i := 0; i < n; i++ {
+			args[i] = types.TypeString(targs.At(i), PathOf)
+		}
+		name += "[" + strings.Join(args, ", ") + "]"
+	}
+	return name
 }
 
 // FullName returns the full name of a package member.

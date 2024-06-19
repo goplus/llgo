@@ -277,14 +277,18 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 	}
 }
 
-func recvTypeName(t ast.Expr) string {
-	switch t := t.(type) {
+func recvTypeName(typ ast.Expr) string {
+retry:
+	switch t := typ.(type) {
 	case *ast.Ident:
 		return t.Name
 	case *ast.IndexExpr:
 		return trecvTypeName(t.X, t.Index)
 	case *ast.IndexListExpr:
 		return trecvTypeName(t.X, t.Indices...)
+	case *ast.ParenExpr:
+		typ = t.X
+		goto retry
 	}
 	panic("unreachable")
 }
@@ -344,7 +348,17 @@ func funcName(pkg *types.Package, fn *ssa.Function) string {
 	} else {
 		recv = fn.Signature.Recv()
 	}
-	return llssa.FuncName(pkg, fn.Name(), recv)
+	var fnName string
+	if org := fn.Origin(); org != nil {
+		targs := make([]string, len(fn.TypeArgs()))
+		for i, t := range fn.TypeArgs() {
+			targs[i] = types.TypeString(t, llssa.PathOf)
+		}
+		fnName = org.Name() + "[" + strings.Join(targs, ", ") + "]"
+	} else {
+		fnName = fn.Name()
+	}
+	return llssa.FuncName(pkg, fnName, recv)
 }
 
 func checkCgo(fnName string) bool {
@@ -367,8 +381,9 @@ const (
 	llgoAllocaCStr  = llgoInstrBase + 3
 	llgoAdvance     = llgoInstrBase + 4
 	llgoIndex       = llgoInstrBase + 5
-	llgoStringData  = llgoInstrBase + 6
-	llgoDeferData   = llgoInstrBase + 7
+	llgoDeferData   = llgoInstrBase + 6
+	llgoStringData  = llgoInstrBase + 7
+	llgoString      = llgoInstrBase + 8
 
 	llgoSigjmpbuf  = llgoInstrBase + 0xa
 	llgoSigsetjmp  = llgoInstrBase + 0xb
@@ -483,7 +498,7 @@ func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
 
 func pkgKindByPath(pkgPath string) int {
 	switch pkgPath {
-	case "syscall", "runtime/cgo", "unsafe":
+	case "runtime/cgo", "unsafe":
 		return PkgDeclOnly
 	}
 	return PkgNormal
@@ -505,10 +520,8 @@ func ignoreName(name string) bool {
 	*/
 	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
-		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
-		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
-		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "errors.") ||
-		strings.HasPrefix(name, "runtime/")
+		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "runtime/") ||
+		strings.HasPrefix(name, "plugin.") || strings.HasPrefix(name, "reflect.")
 }
 
 // -----------------------------------------------------------------------------

@@ -139,7 +139,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	pkg := types.NewPackage(name, name)
 	imp := packages.NewImporter(fset)
 	foo, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions)
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
 	if err != nil {
 		t.Fatal("BuildPackage failed:", err)
 	}
