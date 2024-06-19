@@ -196,11 +196,6 @@ func Fflush(fp FilePtr) Int
 
 // -----------------------------------------------------------------------------
 
-//go:linkname Remove C.remove
-func Remove(path *Char) Int
-
-// -----------------------------------------------------------------------------
-
 //go:linkname Time C.time
 func Time(*int32) int32
 

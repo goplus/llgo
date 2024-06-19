@@ -2,11 +2,12 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/sqlite"
 )
 
 func main() {
-	c.Remove(c.Str("test.db"))
+	os.Remove(c.Str("test.db"))
 
 	db, err := sqlite.Open(c.Str("test.db"))
 	check(err, db, "sqlite: Open")
