@@ -154,7 +154,8 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 		return fmt.Sprintf("[%v]%s", t.Len(), ret), pub
 	case *types.Named:
 		o := t.Obj()
-		return "_llgo_" + TypeName(o), o.Exported()
+		pkg := o.Pkg()
+		return "_llgo_" + FullName(pkg, o.Name()), (pkg == nil || o.Exported())
 	case *types.Interface:
 		if t.Empty() {
 			return "_llgo_any", true
