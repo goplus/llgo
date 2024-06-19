@@ -719,9 +719,12 @@ type none struct{}
 
 var hasAltPkg = map[string]none{
 	"errors":      {},
+	"io":          {},
+	"io/fs":       {},
 	"math":        {},
 	"sync":        {},
 	"sync/atomic": {},
+	"os":          {},
 	"runtime":     {},
 }
 

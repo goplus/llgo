@@ -47,10 +47,10 @@ func (o *Once) Do(f func()) c.Int { return 0 }
 type MutexType c.Int
 
 const (
-	MutexNormal     MutexType = C.PTHREAD_MUTEX_NORMAL
-	MutexErrorCheck MutexType = C.PTHREAD_MUTEX_ERRORCHECK
-	MutexRecursive  MutexType = C.PTHREAD_MUTEX_RECURSIVE
-	MutexDefault    MutexType = C.PTHREAD_MUTEX_DEFAULT
+	MUTEX_NORMAL     MutexType = C.PTHREAD_MUTEX_NORMAL
+	MUTEX_ERRORCHECK MutexType = C.PTHREAD_MUTEX_ERRORCHECK
+	MUTEX_RECURSIVE  MutexType = C.PTHREAD_MUTEX_RECURSIVE
+	MUTEX_DEFAULT    MutexType = C.PTHREAD_MUTEX_DEFAULT
 )
 
 // MutexAttr is a mutex attribute object.

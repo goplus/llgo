@@ -137,6 +137,7 @@ func TestErrBuiltin(t *testing.T) {
 	test("advance", func(ctx *context) { ctx.advance(nil, nil) })
 	test("alloca", func(ctx *context) { ctx.alloca(nil, nil) })
 	test("allocaCStr", func(ctx *context) { ctx.allocaCStr(nil, nil) })
+	test("string", func(ctx *context) { ctx.string(nil, nil) })
 	test("stringData", func(ctx *context) { ctx.stringData(nil, nil) })
 	test("sigsetjmp", func(ctx *context) { ctx.sigsetjmp(nil, nil) })
 	test("siglongjmp", func(ctx *context) { ctx.siglongjmp(nil, nil) })

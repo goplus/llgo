@@ -14,6 +14,8 @@ func f() {
 }
 
 func main() {
+	println(c.GoString(c.Str("sync.Once demo\n"), 9))
+	println(c.GoString(c.Str("sync.Once demo\n")))
 	f()
 	f()
 }

@@ -381,8 +381,9 @@ const (
 	llgoAllocaCStr  = llgoInstrBase + 3
 	llgoAdvance     = llgoInstrBase + 4
 	llgoIndex       = llgoInstrBase + 5
-	llgoStringData  = llgoInstrBase + 6
-	llgoDeferData   = llgoInstrBase + 7
+	llgoDeferData   = llgoInstrBase + 6
+	llgoStringData  = llgoInstrBase + 7
+	llgoString      = llgoInstrBase + 8
 
 	llgoSigjmpbuf  = llgoInstrBase + 0xa
 	llgoSigsetjmp  = llgoInstrBase + 0xb
@@ -520,8 +521,8 @@ func ignoreName(name string) bool {
 	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
 		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
-		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
-		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "runtime/")
+		strings.HasPrefix(name, "plugin.") || strings.HasPrefix(name, "reflect.") ||
+		strings.HasPrefix(name, "runtime/")
 }
 
 // -----------------------------------------------------------------------------

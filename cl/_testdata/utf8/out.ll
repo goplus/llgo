@@ -59,7 +59,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   store i64 7, ptr %4, align 4
   %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
   %6 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %5, 1
-  %7 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %5, i64 %15, i64 %6)
+  %7 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %5, i64 %15, i64 %6)
   %8 = call { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String" %7)
   %9 = extractvalue { i32, i64 } %8, 0
   %10 = extractvalue { i32, i64 } %8, 1
@@ -95,7 +95,7 @@ declare void @"unicode/utf8.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
+declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
 
 declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String")
 
