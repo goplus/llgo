@@ -23,6 +23,7 @@ import (
 	"go/types"
 	"hash"
 	"log"
+	"strings"
 
 	"github.com/goplus/llgo/internal/abi"
 )
@@ -168,6 +169,10 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	return
 }
 
+const (
+	PatchPathPrefix = "github.com/goplus/llgo/internal/lib/"
+)
+
 // PathOf returns the package path of the specified package.
 func PathOf(pkg *types.Package) string {
 	if pkg == nil {
@@ -176,7 +181,7 @@ func PathOf(pkg *types.Package) string {
 	if pkg.Name() == "main" {
 		return "main"
 	}
-	return pkg.Path()
+	return strings.TrimPrefix(pkg.Path(), PatchPathPrefix)
 }
 
 // FullName returns the full name of a package member.

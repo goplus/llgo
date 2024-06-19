@@ -43,6 +43,7 @@ type typesScope struct {
 	isFunc   bool
 }
 
+/*
 type object struct {
 	parent *types.Scope
 	pos    token.Pos
@@ -54,6 +55,7 @@ type iface struct {
 	tab  unsafe.Pointer
 	data unsafe.Pointer
 }
+*/
 
 const (
 	tagPatched = 0x17
@@ -77,11 +79,24 @@ func setScope(pkg *types.Package, scope *types.Scope) {
 	p.scope = scope
 }
 
+/*
+func setPath(pkg *types.Package, path string) {
+	p := (*typesPackage)(unsafe.Pointer(pkg))
+	p.path = path
+}
+
+/*
+func setPkg(o types.Object, pkg *types.Package) {
+	data := (*iface)(unsafe.Pointer(&o)).data
+	(*object)(data).pkg = pkg
+}
+
 func setPkgAndParent(o types.Object, pkg *types.Package, parent *types.Scope) {
 	data := (*iface)(unsafe.Pointer(&o)).data
 	(*object)(data).pkg = pkg
 	(*object)(data).parent = parent
 }
+*/
 
 func getElems(scope *types.Scope) map[string]types.Object {
 	s := (*typesScope)(unsafe.Pointer(scope))
@@ -105,11 +120,23 @@ func Pkg(pkg, alt *types.Package) *types.Package {
 
 	altScope := alt.Scope()
 	for name, o := range getElems(altScope) {
-		setPkgAndParent(o, &ret, &scope)
+		/*
+			switch o := o.(type) {
+			case *types.TypeName:
+				if t, ok := o.Type().(*types.Named); ok {
+					for i, n := 0, t.NumMethods(); i < n; i++ {
+						m := t.Method(i)
+						setPkg(m, &ret)
+					}
+				}
+			}
+			setPkgAndParent(o, &ret, &scope)
+		*/
 		elems[name] = o
 	}
 	setElems(&scope, elems)
 	setScope(&ret, &scope)
 	setPatched(pkg)
+	// setPath(alt, ret.Path())
 	return &ret
 }

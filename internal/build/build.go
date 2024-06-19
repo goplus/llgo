@@ -35,6 +35,7 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llgo/xtool/clang"
 	"github.com/goplus/llgo/xtool/env"
 
@@ -400,7 +401,7 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 }
 
 const (
-	altPkgPathPrefix = "github.com/goplus/llgo/internal/lib/"
+	altPkgPathPrefix = abi.PatchPathPrefix
 )
 
 func altPkgs(initial []*packages.Package, alts ...string) []string {
