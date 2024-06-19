@@ -77,6 +77,9 @@ func Memset(s Pointer, c Int, n uintptr) Pointer
 
 // -----------------------------------------------------------------------------
 
+//go:linkname GoString llgo.string
+func GoString(cstr *Char, n ...int) string
+
 //go:linkname GoStringData llgo.stringData
 func GoStringData(string) *Char
 

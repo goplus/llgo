@@ -520,8 +520,8 @@ func ignoreName(name string) bool {
 	return strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "crypto/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
 		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "syscall.") ||
-		strings.HasPrefix(name, "os.") || strings.HasPrefix(name, "plugin.") ||
-		strings.HasPrefix(name, "reflect.") || strings.HasPrefix(name, "runtime/")
+		strings.HasPrefix(name, "plugin.") || strings.HasPrefix(name, "reflect.") ||
+		strings.HasPrefix(name, "runtime/")
 }
 
 // -----------------------------------------------------------------------------
