@@ -208,6 +208,7 @@ Here are the Go packages that can be imported correctly:
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math](https://pkg.go.dev/math)
+* [syscall](https://pkg.go.dev/syscall) (partially)
 * [sync](https://pkg.go.dev/sync) (partially)
 * [sync/atomic](https://pkg.go.dev/sync/atomic) (partially)
 
