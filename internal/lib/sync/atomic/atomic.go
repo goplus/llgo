@@ -16,7 +16,6 @@
 
 package atomic
 
-// llgo:skipall
 import (
 	"unsafe"
 )
