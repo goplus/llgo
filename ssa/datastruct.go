@@ -67,16 +67,20 @@ func (b Builder) getField(x Expr, idx int) Expr {
 // -----------------------------------------------------------------------------
 
 // MakeString creates a new string from a C string pointer and length.
-func (b Builder) MakeString(cstr Expr, n ...Expr) Expr {
+func (b Builder) MakeString(cstr Expr, n ...Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeString %v\n", cstr.impl)
 	}
 	pkg := b.Pkg
+	prog := b.Prog
+	ret.Type = prog.String()
 	if len(n) == 0 {
-		return b.Call(pkg.rtFunc("StringFromCStr"), cstr)
+		ret.impl = b.Call(pkg.rtFunc("StringFromCStr"), cstr).impl
+	} else {
+		// TODO(xsw): remove Convert
+		ret.impl = b.Call(pkg.rtFunc("StringFrom"), cstr, b.Convert(prog.Int(), n[0])).impl
 	}
-	// TODO(xsw): remove Convert
-	return b.Call(pkg.rtFunc("StringFrom"), cstr, b.Convert(b.Prog.Int(), n[0]))
+	return
 }
 
 // StringData returns the data pointer of a string.
