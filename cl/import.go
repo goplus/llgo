@@ -381,8 +381,9 @@ const (
 	llgoAllocaCStr  = llgoInstrBase + 3
 	llgoAdvance     = llgoInstrBase + 4
 	llgoIndex       = llgoInstrBase + 5
-	llgoStringData  = llgoInstrBase + 6
-	llgoDeferData   = llgoInstrBase + 7
+	llgoDeferData   = llgoInstrBase + 6
+	llgoStringData  = llgoInstrBase + 7
+	llgoString      = llgoInstrBase + 8
 
 	llgoSigjmpbuf  = llgoInstrBase + 0xa
 	llgoSigsetjmp  = llgoInstrBase + 0xb

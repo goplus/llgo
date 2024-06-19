@@ -86,12 +86,12 @@ func toMode(mode FileMode) os.ModeT {
 	panic("todo")
 }
 
-func toPathErr(op, path string, errno c.Int) error {
+func toSyscallErr(errno c.Int) error {
 	panic("todo")
 }
 
-func toSyscallErr(errno c.Int) error {
-	panic("todo")
+func toPathErr(op, path string, errno c.Int) error {
+	return &PathError{Op: op, Path: path, Err: toSyscallErr(errno)}
 }
 
 func Chdir(dir string) error {
@@ -255,7 +255,7 @@ func Setenv(key, value string) error {
 	if ret == 0 {
 		return nil
 	}
-	return &SyscallError{Syscall: "setenv", Err: toSyscallErr(ret)}
+	return &SyscallError{"setenv", toSyscallErr(ret)}
 }
 
 func Symlink(oldname, newname string) error {

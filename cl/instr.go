@@ -74,6 +74,17 @@ func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("allocaCStr(s string): invalid arguments")
 }
 
+// func string(cstr *int8, n ...int) *int8
+func (p *context) string(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		cstr := p.compileValue(b, args[0])
+		n := make([]llssa.Expr, 0, 1)
+		n = p.compileVArg(n, b, args[1])
+		return b.MakeString(cstr, n...)
+	}
+	panic("string(cstr *int8, n ...int): invalid arguments")
+}
+
 // func stringData(s string) *int8
 func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
@@ -147,6 +158,7 @@ var llgoInstrs = map[string]int{
 	"index":       llgoIndex,
 	"alloca":      llgoAlloca,
 	"allocaCStr":  llgoAllocaCStr,
+	"string":      llgoString,
 	"stringData":  llgoStringData,
 	"pyList":      llgoPyList,
 	"sigjmpbuf":   llgoSigjmpbuf,
@@ -297,6 +309,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.alloca(b, args)
 		case llgoAllocaCStr:
 			ret = p.allocaCStr(b, args)
+		case llgoString:
+			ret = p.string(b, args)
 		case llgoStringData:
 			ret = p.stringData(b, args)
 		case llgoAtomicLoad:

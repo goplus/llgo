@@ -64,6 +64,21 @@ func (b Builder) getField(x Expr, idx int) Expr {
 	return Expr{fld, tfld}
 }
 
+// -----------------------------------------------------------------------------
+
+// MakeString creates a new string from a C string pointer and length.
+func (b Builder) MakeString(cstr Expr, n ...Expr) Expr {
+	if debugInstr {
+		log.Printf("MakeString %v\n", cstr.impl)
+	}
+	pkg := b.Pkg
+	if len(n) == 0 {
+		return b.Call(pkg.rtFunc("StringFromCStr"), cstr)
+	}
+	// TODO(xsw): remove Convert
+	return b.Call(pkg.rtFunc("StringFrom"), cstr, b.Convert(b.Prog.Int(), n[0]))
+}
+
 // StringData returns the data pointer of a string.
 func (b Builder) StringData(x Expr) Expr {
 	if debugInstr {
@@ -81,6 +96,8 @@ func (b Builder) StringLen(x Expr) Expr {
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 1)
 	return Expr{ptr, b.Prog.Int()}
 }
+
+// -----------------------------------------------------------------------------
 
 // SliceData returns the data pointer of a slice.
 func (b Builder) SliceData(x Expr) Expr {
@@ -108,6 +125,8 @@ func (b Builder) SliceCap(x Expr) Expr {
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 2)
 	return Expr{ptr, b.Prog.Int()}
 }
+
+// -----------------------------------------------------------------------------
 
 // The IndexAddr instruction yields the address of the element at
 // index `idx` of collection `x`.  `idx` is an integer expression.
@@ -277,6 +296,8 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 	return b.Load(buf)
 }
 
+// -----------------------------------------------------------------------------
+
 // The Slice instruction yields a slice of an existing string, slice
 // or *array X between optional integer bounds Low and High.
 //
@@ -310,7 +331,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			high = b.StringLen(x)
 		}
 		ret.Type = x.Type
-		ret.impl = b.InlineCall(b.Pkg.rtFunc("NewStringSlice"), x, low, high).impl
+		ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSlice"), x, low, high).impl
 		return
 	case *types.Slice:
 		nEltSize = SizeOf(prog, prog.Index(x.Type))

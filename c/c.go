@@ -77,8 +77,64 @@ func Memset(s Pointer, c Int, n uintptr) Pointer
 
 // -----------------------------------------------------------------------------
 
+//go:linkname Strlen C.strlen
+func Strlen(s *Char) uintptr
+
+//go:linkname Strcpy C.strcpy
+func Strcpy(dst, src *Char) *Char
+
+//go:linkname Strncpy C.strncpy
+func Strncpy(dst, src *Char, n uintptr) *Char
+
+//go:linkname Strcat C.strcat
+func Strcat(dst, src *Char) *Char
+
+//go:linkname Strncat C.strncat
+func Strncat(dst, src *Char, n uintptr) *Char
+
+//go:linkname Strcmp C.strcmp
+func Strcmp(s1, s2 *Char) Int
+
+//go:linkname Strncmp C.strncmp
+func Strncmp(s1, s2 *Char, n uintptr) Int
+
+//go:linkname Strchr C.strchr
+func Strchr(s *Char, c Int) *Char
+
+//go:linkname Strrchr C.strrchr
+func Strrchr(s *Char, c Int) *Char
+
+//go:linkname Strstr C.strstr
+func Strstr(s1, s2 *Char) *Char
+
+//go:linkname Strdup C.strdup
+func Strdup(s *Char) *Char
+
+//go:linkname Strndup C.strndup
+func Strndup(s *Char, n uintptr) *Char
+
+//go:linkname Strtok C.strtok
+func Strtok(s, delim *Char) *Char
+
+//go:linkname Strerror C.strerror
+func Strerror(errnum Int) *Char
+
+//go:linkname Sprintf C.sprintf
+func Sprintf(s *Char, format *Char, __llgo_va_list ...any) Int
+
+//go:linkname Snprintf C.snprintf
+func Snprintf(s *Char, n uintptr, format *Char, __llgo_va_list ...any) Int
+
+//go:linkname Vsnprintf C.vsnprintf
+func Vsnprintf(s *Char, n uintptr, format *Char, ap Pointer) Int
+
+// -----------------------------------------------------------------------------
+
+// GoString converts a C string to a Go string.
+// TODO(xsw): any => int
+//
 //go:linkname GoString llgo.string
-func GoString(cstr *Char, n ...int) string
+func GoString(cstr *Char, __llgo_va_list /* n */ ...any) string
 
 //go:linkname GoStringData llgo.stringData
 func GoStringData(string) *Char

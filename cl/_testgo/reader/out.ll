@@ -700,7 +700,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %12 = getelementptr inbounds %main.stringReader, ptr %0, i32 0, i32 1
   %13 = load i64, ptr %12, align 4
   %14 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %11, 1
-  %15 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %11, i64 %13, i64 %14)
+  %15 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %11, i64 %13, i64 %14)
   %16 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %15, 0
   %17 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %15, 1
   %18 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice" %1, ptr %16, i64 %17, i64 1)
@@ -746,7 +746,7 @@ _llgo_4:                                          ; preds = %_llgo_2
   %14 = getelementptr inbounds %main.stringReader, ptr %0, i32 0, i32 0
   %15 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %14, align 8
   %16 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %15, 1
-  %17 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %15, i64 %2, i64 %16)
+  %17 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %15, i64 %2, i64 %16)
   %18 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %17, 0
   %19 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %17, 1
   %20 = call i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice" %1, ptr %18, i64 %19, i64 1)
@@ -860,7 +860,7 @@ _llgo_4:                                          ; preds = %_llgo_2
   %31 = getelementptr inbounds %main.stringReader, ptr %0, i32 0, i32 1
   %32 = load i64, ptr %31, align 4
   %33 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %30, 1
-  %34 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %30, i64 %32, i64 %33)
+  %34 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %30, i64 %32, i64 %33)
   %35 = call { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String" %34)
   %36 = extractvalue { i32, i64 } %35, 0
   %37 = extractvalue { i32, i64 } %35, 1
@@ -1041,7 +1041,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %11 = getelementptr inbounds %main.stringReader, ptr %0, i32 0, i32 1
   %12 = load i64, ptr %11, align 4
   %13 = extractvalue %"github.com/goplus/llgo/internal/runtime.String" %10, 1
-  %14 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %10, i64 %12, i64 %13)
+  %14 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" %10, i64 %12, i64 %13)
   %15 = call { i64, %"github.com/goplus/llgo/internal/runtime.iface" } @main.WriteString(%"github.com/goplus/llgo/internal/runtime.iface" %1, %"github.com/goplus/llgo/internal/runtime.String" %14)
   %16 = extractvalue { i64, %"github.com/goplus/llgo/internal/runtime.iface" } %15, 0
   %17 = extractvalue { i64, %"github.com/goplus/llgo/internal/runtime.iface" } %15, 1
@@ -2724,7 +2724,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintIface"(%"github.com/
 
 declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
-declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.NewStringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
+declare %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64)
 
 declare i64 @"github.com/goplus/llgo/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/internal/runtime.Slice", ptr, i64, i64)
 
