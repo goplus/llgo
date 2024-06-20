@@ -29,6 +29,10 @@ func init() {
 	ssa.SetDebug(ssa.DbgFlagAll)
 }
 
+func TestFromTestlibgo(t *testing.T) {
+	cltest.FromDir(t, "", "../cl/_testlibgo", false)
+}
+
 func TestFromTestgo(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testgo", false)
 }
