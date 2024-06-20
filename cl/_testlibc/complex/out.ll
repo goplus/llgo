@@ -4,9 +4,52 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 
 @"main.init$guard" = global i1 false, align 1
+@0 = private unnamed_addr constant [10 x i8] c"abs(3+4i):", align 1
+@1 = private unnamed_addr constant [11 x i8] c"real(3+4i):", align 1
+@2 = private unnamed_addr constant [11 x i8] c"imag(3+4i):", align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
-@0 = private unnamed_addr constant [10 x i8] c"abs(3+4i):", align 1
+
+define void @main.f({ float, float } %0, { float, float } %1) {
+_llgo_0:
+  %2 = call float @cabsf({ float, float } %0)
+  %3 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %3, i32 0, i32 0
+  store ptr @0, ptr %4, align 8
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %3, i32 0, i32 1
+  store i64 10, ptr %5, align 4
+  %6 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %3, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %6)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  %7 = fpext float %2 to double
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %7)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %8 = extractvalue { float, float } %1, 0
+  %9 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 0
+  store ptr @1, ptr %10, align 8
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 1
+  store i64 11, ptr %11, align 4
+  %12 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %9, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %12)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  %13 = fpext float %8 to double
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %13)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %14 = extractvalue { float, float } %1, 1
+  %15 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %16 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %15, i32 0, i32 0
+  store ptr @2, ptr %16, align 8
+  %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %15, i32 0, i32 1
+  store i64 11, ptr %17, align 4
+  %18 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %15, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %18)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
+  %19 = fpext float %14 to double
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %19)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  ret void
+}
 
 define void @main.init() {
 _llgo_0:
@@ -33,22 +76,9 @@ _llgo_0:
   %4 = getelementptr inbounds { float, float }, ptr %2, i32 0, i32 1
   store float 4.000000e+00, ptr %4, align 4
   %5 = load { float, float }, ptr %2, align 4
-  %6 = call float @cabsf({ float, float } %5)
-  %7 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %7, i32 0, i32 0
-  store ptr @0, ptr %8, align 8
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %7, i32 0, i32 1
-  store i64 10, ptr %9, align 4
-  %10 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %7, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %10)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  %11 = fpext float %6 to double
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %11)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @main.f({ float, float } %5, { float, float } { float 3.000000e+00, float 4.000000e+00 })
   ret i32 0
 }
-
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare float @cabsf({ float, float })
 
@@ -57,3 +87,5 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com
 declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double)
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
