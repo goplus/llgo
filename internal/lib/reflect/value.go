@@ -101,6 +101,83 @@ func (f flag) ro() flag {
 	return 0
 }
 
+func (v Value) typ() *abi.Type {
+	// Types are either static (for compiler-created types) or
+	// heap-allocated but always reachable (for reflection-created
+	// types, held in the central map). So there is no need to
+	// escape types. noescape here help avoid unnecessary escape
+	// of v.
+	return (*abi.Type)(unsafe.Pointer(v.typ_))
+}
+
+// pointer returns the underlying pointer represented by v.
+// v.Kind() must be Pointer, Map, Chan, Func, or UnsafePointer
+// if v.Kind() == Pointer, the base type must not be not-in-heap.
+func (v Value) pointer() unsafe.Pointer {
+	/*
+		if v.typ().Size() != goarch.PtrSize || !v.typ().Pointers() {
+			panic("can't call pointer on a non-pointer Value")
+		}
+		if v.flag&flagIndir != 0 {
+			return *(*unsafe.Pointer)(v.ptr)
+		}
+		return v.ptr
+	*/
+	panic("todo")
+}
+
+// packEface converts v to the empty interface.
+func packEface(v Value) any {
+	t := v.typ()
+	var i any
+	e := (*emptyInterface)(unsafe.Pointer(&i))
+	// First, fill in the data portion of the interface.
+	switch {
+	case t.IfaceIndir():
+		if v.flag&flagIndir == 0 {
+			panic("bad indir")
+		}
+		// Value is indirect, and so is the interface we're making.
+		ptr := v.ptr
+		if v.flag&flagAddr != 0 {
+			// TODO: pass safe boolean from valueInterface so
+			// we don't need to copy if safe==true?
+			c := unsafe_New(t)
+			typedmemmove(t, c, ptr)
+			ptr = c
+		}
+		e.word = ptr
+	case v.flag&flagIndir != 0:
+		// Value is indirect, but interface is direct. We need
+		// to load the data at v.ptr into the interface data word.
+		e.word = *(*unsafe.Pointer)(v.ptr)
+	default:
+		// Value is direct, and so is the interface.
+		e.word = v.ptr
+	}
+	// Now, fill in the type portion. We're very careful here not
+	// to have any operation between the e.word and e.typ assignments
+	// that would let the garbage collector observe the partially-built
+	// interface value.
+	e.typ = t
+	return i
+}
+
+// unpackEface converts the empty interface i to a Value.
+func unpackEface(i any) Value {
+	e := (*emptyInterface)(unsafe.Pointer(&i))
+	// NOTE: don't read e.word until we know whether it is really a pointer or not.
+	t := e.typ
+	if t == nil {
+		return Value{}
+	}
+	f := flag(t.Kind())
+	if t.IfaceIndir() {
+		f |= flagIndir
+	}
+	return Value{t, e.word, f}
+}
+
 // A ValueError occurs when a Value method is invoked on
 // a Value that does not support it. Such cases are documented
 // in the description of each method.
@@ -227,14 +304,17 @@ func (v Value) Int() int64 {
 	p := v.ptr
 	switch k {
 	case Int:
-		return int64(*(*int)(p))
+		return int64(uintptr(p))
 	case Int8:
-		return int64(*(*int8)(p))
+		return int64(uintptr(p))
 	case Int16:
-		return int64(*(*int16)(p))
+		return int64(uintptr(p))
 	case Int32:
-		return int64(*(*int32)(p))
+		return int64(uintptr(p))
 	case Int64:
+		if unsafe.Sizeof(uintptr(0)) == 8 {
+			return int64(uintptr(p))
+		}
 		return *(*int64)(p)
 	}
 	panic(&ValueError{"reflect.Value.Int", v.kind()})
@@ -520,6 +600,16 @@ func unsafe_New(*abi.Type) unsafe.Pointer
 //go:linkname unsafe_NewArray github.com/goplus/llgo/internal/runtime.NewArray
 func unsafe_NewArray(*abi.Type, int) unsafe.Pointer
 
+// ValueOf returns a new Value initialized to the concrete value
+// stored in the interface i. ValueOf(nil) returns the zero Value.
+func ValueOf(i any) Value {
+	if i == nil {
+		return Value{}
+	}
+
+	return unpackEface(i)
+}
+
 // Zero returns a Value representing the zero value for the specified type.
 // The result is different from the zero value of the Value struct,
 // which represents no value at all.
@@ -546,3 +636,46 @@ func Zero(typ Type) Value {
 // TODO(xsw): check this
 // must match declarations in runtime/map.go.
 const maxZero = runtime.MaxZero
+
+// memmove copies size bytes to dst from src. No write barriers are used.
+//
+//go:linkname memmove C.memmove
+func memmove(dst, src unsafe.Pointer, size uintptr)
+
+// typedmemmove copies a value of type t to dst from src.
+//
+//go:linkname typedmemmove github.com/goplus/llgo/internal/runtime.Typedmemmove
+func typedmemmove(t *abi.Type, dst, src unsafe.Pointer)
+
+/* TODO(xsw):
+// typedmemclr zeros the value at ptr of type t.
+//
+//go:noescape
+func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
+
+// typedmemclrpartial is like typedmemclr but assumes that
+// dst points off bytes into the value and only clears size bytes.
+//
+//go:noescape
+func typedmemclrpartial(t *abi.Type, ptr unsafe.Pointer, off, size uintptr)
+
+// typedslicecopy copies a slice of elemType values from src to dst,
+// returning the number of elements copied.
+//
+//go:noescape
+func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int
+
+// typedarrayclear zeroes the value at ptr of an array of elemType,
+// only clears len elem.
+//
+//go:noescape
+func typedarrayclear(elemType *abi.Type, ptr unsafe.Pointer, len int)
+
+//go:noescape
+func typehash(t *abi.Type, p unsafe.Pointer, h uintptr) uintptr
+
+func verifyNotInHeapPtr(p uintptr) bool
+
+//go:noescape
+func growslice(t *abi.Type, old unsafeheaderSlice, num int) unsafeheaderSlice
+*/

@@ -8,4 +8,7 @@ func main() {
 
 	v := reflect.Zero(tyIntSlice)
 	println(v.Len())
+
+	v = reflect.ValueOf(100)
+	println(v.Int())
 }
