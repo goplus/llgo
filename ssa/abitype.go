@@ -311,19 +311,19 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.SetBlockEx(blks[0], AtEnd, false)
 	}
 	vexpr := tabi()
-	b.Store(expr, vexpr)
-	if pub {
-		b.Jump(blks[1])
-		b.SetBlockEx(blks[1], AtEnd, false)
-		b.blk.last = blks[1].last
-	}
 	prog := p.Prog
 	kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits)
 	if kind == abi.Integer || kind == abi.BitCast {
 		// abi.Type.Kind_ |= abi.KindDirectIface
 		const kindDirectIface = 1 << 5
-		pkind := b.FieldAddr(b.Load(expr), 6)
+		pkind := b.FieldAddr(vexpr, 6)
 		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
+	}
+	b.Store(expr, vexpr)
+	if pub {
+		b.Jump(blks[1])
+		b.SetBlockEx(blks[1], AtEnd, false)
+		b.blk.last = blks[1].last
 	}
 
 	if t, ok := t.(*types.Named); ok {
