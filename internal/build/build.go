@@ -18,6 +18,7 @@ package build
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"go/constant"
 	"go/token"
@@ -70,7 +71,11 @@ type Config struct {
 func NewDefaultConf(mode Mode) *Config {
 	bin := os.Getenv("GOBIN")
 	if bin == "" {
-		bin = filepath.Join(runtime.GOROOT(), "bin")
+		gopath, err := envGOPATH()
+		if err != nil {
+			panic(fmt.Errorf("cannot get GOPATH: %v", err))
+		}
+		bin = filepath.Join(gopath, "bin")
 	}
 	conf := &Config{
 		BinPath: bin,
@@ -78,6 +83,21 @@ func NewDefaultConf(mode Mode) *Config {
 		AppExt:  DefaultAppExt(),
 	}
 	return conf
+}
+
+func envGOPATH() (string, error) {
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		return gopath, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	gopath := filepath.Join(home, "go")
+	if filepath.Clean(gopath) == filepath.Clean(runtime.GOROOT()) {
+		return "", errors.New("cannot set GOROOT as GOPATH")
+	}
+	return gopath, nil
 }
 
 func DefaultAppExt() string {
