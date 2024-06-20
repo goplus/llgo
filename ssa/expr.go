@@ -398,6 +398,52 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				return Expr{b.InlineCall(b.Pkg.rtFunc("StringCat"), x, y).impl, x.Type}
 			}
 		case vkComplex:
+			xr, xi := b.impl.CreateExtractValue(x.impl, 0, ""), b.impl.CreateExtractValue(x.impl, 1, "")
+			yr, yi := b.impl.CreateExtractValue(y.impl, 0, ""), b.impl.CreateExtractValue(y.impl, 1, "")
+			switch op {
+			case token.ADD:
+				r := llvm.CreateBinOp(b.impl, llvm.FAdd, xr, yr)
+				i := llvm.CreateBinOp(b.impl, llvm.FAdd, xi, yi)
+				return b.aggregateValue(x.Type, r, i)
+			case token.SUB:
+				r := llvm.CreateBinOp(b.impl, llvm.FSub, xr, yr)
+				i := llvm.CreateBinOp(b.impl, llvm.FSub, xi, yi)
+				return b.aggregateValue(x.Type, r, i)
+			case token.MUL:
+				r := llvm.CreateBinOp(b.impl, llvm.FSub,
+					llvm.CreateBinOp(b.impl, llvm.FMul, xr, yr),
+					llvm.CreateBinOp(b.impl, llvm.FMul, xi, yi),
+				)
+				i := llvm.CreateBinOp(b.impl, llvm.FAdd,
+					llvm.CreateBinOp(b.impl, llvm.FMul, xr, yi),
+					llvm.CreateBinOp(b.impl, llvm.FMul, xi, yr),
+				)
+				return b.aggregateValue(x.Type, r, i)
+			case token.QUO:
+				d := llvm.CreateBinOp(b.impl, llvm.FAdd, llvm.CreateBinOp(b.impl, llvm.FMul, yr, yr), llvm.CreateBinOp(b.impl, llvm.FMul, yi, yi))
+				zero := llvm.CreateFCmp(b.impl, llvm.FloatOEQ, d, llvm.ConstNull(d.Type()))
+				r := llvm.CreateSelect(b.impl, zero,
+					llvm.CreateBinOp(b.impl, llvm.FDiv, xr, d),
+					llvm.CreateBinOp(b.impl, llvm.FDiv,
+						llvm.CreateBinOp(b.impl, llvm.FAdd,
+							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yr),
+							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yi),
+						),
+						d,
+					),
+				)
+				i := llvm.CreateSelect(b.impl, zero,
+					llvm.CreateBinOp(b.impl, llvm.FDiv, xi, d),
+					llvm.CreateBinOp(b.impl, llvm.FDiv,
+						llvm.CreateBinOp(b.impl, llvm.FSub,
+							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yi),
+							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yr),
+						),
+						d,
+					),
+				)
+				return b.aggregateValue(x.Type, r, i)
+			}
 		default:
 			idx := mathOpIdx(op, kind)
 			if llop := mathOpToLLVM[idx]; llop != 0 {
@@ -453,7 +499,25 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkBool:
 			pred := boolPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
-		case vkString, vkComplex:
+		case vkComplex:
+			switch op {
+			case token.EQL:
+				xr, xi := b.impl.CreateExtractValue(x.impl, 0, ""), b.impl.CreateExtractValue(x.impl, 1, "")
+				yr, yi := b.impl.CreateExtractValue(y.impl, 0, ""), b.impl.CreateExtractValue(y.impl, 1, "")
+				return Expr{llvm.CreateAnd(b.impl,
+					llvm.CreateFCmp(b.impl, llvm.FloatOEQ, xr, yr),
+					llvm.CreateFCmp(b.impl, llvm.FloatOEQ, xi, yi),
+				), tret}
+			case token.NEQ:
+				xr, xi := b.impl.CreateExtractValue(x.impl, 0, ""), b.impl.CreateExtractValue(x.impl, 1, "")
+				yr, yi := b.impl.CreateExtractValue(y.impl, 0, ""), b.impl.CreateExtractValue(y.impl, 1, "")
+				return Expr{b.impl.CreateOr(
+					llvm.CreateFCmp(b.impl, llvm.FloatUNE, xr, yr),
+					llvm.CreateFCmp(b.impl, llvm.FloatUNE, xi, yi),
+					"",
+				), tret}
+			}
+		case vkString:
 			switch op {
 			case token.EQL:
 				return b.InlineCall(b.Pkg.rtFunc("StringEqual"), x, y)
@@ -567,6 +631,10 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 				ret.impl = llvm.CreateNeg(b.impl, x.impl)
 			} else if t.Info()&types.IsFloat != 0 {
 				ret.impl = llvm.CreateFNeg(b.impl, x.impl)
+			} else if t.Info()&types.IsComplex != 0 {
+				r := b.impl.CreateExtractValue(x.impl, 0, "")
+				i := b.impl.CreateExtractValue(x.impl, 1, "")
+				return b.aggregateValue(x.Type, llvm.CreateFNeg(b.impl, r), llvm.CreateFNeg(b.impl, i))
 			} else {
 				panic("todo")
 			}
