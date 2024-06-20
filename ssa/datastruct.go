@@ -66,6 +66,21 @@ func (b Builder) getField(x Expr, idx int) Expr {
 
 // -----------------------------------------------------------------------------
 
+func (b Builder) Complex(r, i Expr) Expr {
+	if debugInstr {
+		log.Printf("Complex %v, %v\n", r.impl, i.impl)
+	}
+	prog := b.Prog
+	var t Type
+	switch kind := r.raw.Type.Underlying().(*types.Basic).Kind(); kind {
+	case types.Float64:
+		t = prog.Complex128()
+	case types.Float32:
+		t = prog.Complex64()
+	}
+	return b.aggregateValue(t, r.impl, i.impl)
+}
+
 // MakeString creates a new string from a C string pointer and length.
 func (b Builder) MakeString(cstr Expr, n ...Expr) (ret Expr) {
 	if debugInstr {
