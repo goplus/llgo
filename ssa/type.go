@@ -211,7 +211,7 @@ func (p Program) Index(typ Type) Type {
 
 func (p Program) Field(typ Type, i int) Type {
 	var fld *types.Var
-	switch t := typ.raw.Type.(type) {
+	switch t := typ.raw.Type.Underlying().(type) {
 	case *types.Tuple:
 		fld = t.At(i)
 	case *types.Basic:
@@ -223,7 +223,7 @@ func (p Program) Field(typ Type, i int) Type {
 		}
 		panic("Field: basic type doesn't have fields")
 	default:
-		fld = t.Underlying().(*types.Struct).Field(i)
+		fld = t.(*types.Struct).Field(i)
 	}
 	return p.rawType(fld.Type())
 }

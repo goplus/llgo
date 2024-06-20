@@ -89,7 +89,7 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 			return Integer, raw, lvl
 		case kind == types.Float32:
 			return BitCast, raw, lvl
-		case kind == types.Float64 || kind == types.Complex64:
+		case kind == types.Float64:
 			if is32Bits {
 				return Indirect, raw, lvl
 			}

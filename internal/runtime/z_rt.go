@@ -122,6 +122,10 @@ func TracePanic(v any) {
 		} else {
 			println(*(*float64)(e.data))
 		}
+	case abi.Complex64:
+		println(*(*complex64)(e.data))
+	case abi.Complex128:
+		println(*(*complex128)(e.data))
 	case abi.String:
 		println(*(*string)(e.data))
 	default:

@@ -685,6 +685,18 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
 				return
 			}
+		case types.Complex128:
+			switch xtyp := x.RawType().Underlying().(type) {
+			case *types.Basic:
+				if xtyp.Kind() == types.Complex64 {
+					r := b.impl.CreateExtractValue(x.impl, 0, "")
+					i := b.impl.CreateExtractValue(x.impl, 1, "")
+					r = castFloat(b, r, b.Prog.Float64())
+					i = castFloat(b, i, b.Prog.Float64())
+					ret.impl = b.aggregateValue(t, r, i).impl
+					return
+				}
+			}
 		}
 		switch xtyp := x.RawType().Underlying().(type) {
 		case *types.Basic:
@@ -715,6 +727,16 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					return
 				}
 			}
+		}
+		if x.kind == vkComplex && t.kind == vkComplex {
+			ft := b.Prog.Float64()
+			if t.raw.Type.Underlying().(*types.Basic).Kind() == types.Complex64 {
+				ft = b.Prog.Float32()
+			}
+			r := b.impl.CreateExtractValue(x.impl, 0, "")
+			i := b.impl.CreateExtractValue(x.impl, 1, "")
+			ret.impl = b.Complex(Expr{castFloat(b, r, ft), ft}, Expr{castFloat(b, i, ft), ft}).impl
+			return
 		}
 	case *types.Pointer:
 		ret.impl = castPtr(b.impl, x.impl, t.ll)
@@ -1015,8 +1037,9 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 			fn = "PrintEface"
 		case vkIface:
 			fn = "PrintIface"
-		// case vkComplex:
-		// 	fn = "PrintComplex"
+		case vkComplex:
+			fn = "PrintComplex"
+			typ = prog.Complex128()
 		default:
 			panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
 		}
