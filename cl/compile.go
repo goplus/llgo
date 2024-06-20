@@ -771,6 +771,7 @@ func NewPackageEx(rwtr Rewriter, prog llssa.Program, patches Patches, pkg *ssa.P
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
+	rwtr.RewriteAutoPtrCalls(pkgProg, pkg)
 
 	if hasPatch {
 		skips := ctx.skips
