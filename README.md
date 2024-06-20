@@ -213,6 +213,7 @@ Here are the Go packages that can be imported correctly:
 * [sync](https://pkg.go.dev/sync) (partially)
 * [syscall](https://pkg.go.dev/syscall) (partially)
 * [os](https://pkg.go.dev/os) (partially)
+* [reflect](https://pkg.go.dev/reflect) (partially)
 
 
 ## Dependencies
