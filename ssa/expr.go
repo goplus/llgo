@@ -168,9 +168,18 @@ func (p Program) IntVal(v uint64, t Type) Expr {
 	return Expr{ret, t}
 }
 
+// FloatVal returns a float constant expression.
 func (p Program) FloatVal(v float64, t Type) Expr {
 	ret := llvm.ConstFloat(t.ll, v)
 	return Expr{ret, t}
+}
+
+// ComplexVal returns a complex constant expression.
+func (p Program) ComplexVal(v complex128, t Type) Expr {
+	flt := p.Field(t, 0)
+	re := p.FloatVal(real(v), flt)
+	im := p.FloatVal(imag(v), flt)
+	return Expr{llvm.ConstStruct([]llvm.Value{re.impl, im.impl}, false), t}
 }
 
 // Val returns a constant expression.
@@ -211,11 +220,16 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 			if v, exact := constant.Uint64Val(v); exact {
 				return prog.IntVal(v, typ)
 			}
-		case kind == types.Float32 || kind == types.Float64:
+		case kind == types.Float64 || kind == types.Float32:
 			v, _ := constant.Float64Val(v)
 			return prog.FloatVal(v, typ)
 		case kind == types.String:
 			return Expr{b.Str(constant.StringVal(v)).impl, typ}
+		case kind == types.Complex128 || kind == types.Complex64:
+			v = constant.ToComplex(v)
+			re, _ := constant.Float64Val(constant.Real(v))
+			im, _ := constant.Float64Val(constant.Imag(v))
+			return prog.ComplexVal(complex(re, im), typ)
 		}
 	}
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, raw))
@@ -941,6 +955,12 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		return b.Recover()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
+	case "complex":
+		return b.Complex(args[0], args[1])
+	case "real":
+		return b.getField(args[0], 0)
+	case "imag":
+		return b.getField(args[0], 1)
 	case "String": // unsafe.String
 		return b.unsafeString(args[0].impl, args[1].impl)
 	case "Slice": // unsafe.Slice
