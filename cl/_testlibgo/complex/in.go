@@ -5,5 +5,8 @@ import (
 )
 
 func main() {
-	println("abs(3+4i):", cmplx.Abs(3+4i))
+	re := 3.0
+	im := 4.0
+	c := complex(re, im)
+	println("abs(3+4i):", cmplx.Abs(c))
 }

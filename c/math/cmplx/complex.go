@@ -87,3 +87,65 @@ func Tan(z complex128) complex128
 func Tanh(z complex128) complex128
 
 // -----------------------------------------------------------------------------
+
+//go:linkname Absf C.cabsf
+func Absf(z complex64) float32
+
+//go:linkname Acosf C.cacosf
+func Acosf(z complex64) complex64
+
+//go:linkname Acoshf C.cacoshf
+func Acoshf(z complex64) complex64
+
+//go:linkname Asinf C.casinf
+func Asinf(z complex64) complex64
+
+//go:linkname Asinhf C.casinhf
+func Asinhf(z complex64) complex64
+
+//go:linkname Atanf C.catanf
+func Atanf(z complex64) complex64
+
+//go:linkname Atanhf C.catanhf
+func Atanhf(z complex64) complex64
+
+//go:linkname Cosf C.ccosf
+func Cosf(z complex64) complex64
+
+//go:linkname Coshf C.ccoshf
+func Coshf(z complex64) complex64
+
+//go:linkname Expf C.cexpf
+func Expf(z complex64) complex64
+
+//go:linkname Logf C.clogf
+func Logf(z complex64) complex64
+
+//go:linkname Log10f C.clog10f
+func Log10f(z complex64) complex64
+
+//go:linkname Argf C.cargf
+func Argf(z complex64) float32
+
+//go:linkname Phasef C.cargf
+func Phasef(z complex64) float32
+
+//go:linkname Powf C.cpowf
+func Powf(x, y complex64) complex64
+
+//go:linkname Sinf C.csinf
+func Sinf(z complex64) complex64
+
+//go:linkname Sinhf C.csinhf
+func Sinhf(z complex64) complex64
+
+//go:linkname Sqrtf C.csqrtf
+func Sqrtf(z complex64) complex64
+
+//go:linkname Tanf C.ctanf
+func Tanf(z complex64) complex64
+
+//go:linkname Tanhf C.ctanhf
+func Tanhf(z complex64) complex64
+
+// -----------------------------------------------------------------------------

@@ -15,7 +15,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"math/cmplx.init"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -28,13 +27,13 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca { double, double }, align 8
-  %3 = getelementptr inbounds { double, double }, ptr %2, i32 0, i32 0
-  store double 3.000000e+00, ptr %3, align 8
-  %4 = getelementptr inbounds { double, double }, ptr %2, i32 0, i32 1
-  store double 4.000000e+00, ptr %4, align 8
-  %5 = load { double, double }, ptr %2, align 8
-  %6 = call double @"math/cmplx.Abs"({ double, double } %5)
+  %2 = alloca { float, float }, align 8
+  %3 = getelementptr inbounds { float, float }, ptr %2, i32 0, i32 0
+  store float 3.000000e+00, ptr %3, align 4
+  %4 = getelementptr inbounds { float, float }, ptr %2, i32 0, i32 1
+  store float 4.000000e+00, ptr %4, align 4
+  %5 = load { float, float }, ptr %2, align 4
+  %6 = call float @cabsf({ float, float } %5)
   %7 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %7, i32 0, i32 0
   store ptr @0, ptr %8, align 8
@@ -43,16 +42,15 @@ _llgo_0:
   %10 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %7, align 8
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %10)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %6)
+  %11 = fpext float %6 to double
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %11)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
-declare void @"math/cmplx.init"()
-
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare double @"math/cmplx.Abs"({ double, double })
+declare float @cabsf({ float, float })
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 
