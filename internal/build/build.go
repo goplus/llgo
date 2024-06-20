@@ -706,6 +706,9 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 }
 
 func canSkipToBuild(pkgPath string) bool {
+	if _, ok := hasAltPkg[pkgPath]; ok {
+		return false
+	}
 	switch pkgPath {
 	case "unsafe":
 		return true
@@ -718,16 +721,17 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"errors":      {},
-	"io":          {},
-	"io/fs":       {},
-	"math":        {},
-	"math/cmplx":  {},
-	"sync":        {},
-	"sync/atomic": {},
-	"syscall":     {},
-	"os":          {},
-	"runtime":     {},
+	"errors":           {},
+	"internal/bytealg": {},
+	"io":               {},
+	"io/fs":            {},
+	"math":             {},
+	"math/cmplx":       {},
+	"sync":             {},
+	"sync/atomic":      {},
+	"syscall":          {},
+	"os":               {},
+	"runtime":          {},
 }
 
 func check(err error) {
