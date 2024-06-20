@@ -322,7 +322,7 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	if kind == abi.Integer || kind == abi.BitCast {
 		// abi.Type.Kind_ |= abi.KindDirectIface
 		const kindDirectIface = 1 << 5
-		pkind := b.FieldAddr(vexpr, 6)
+		pkind := b.FieldAddr(b.Load(expr), 6)
 		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
 	}
 

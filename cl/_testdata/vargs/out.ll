@@ -156,17 +156,18 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 6
-  %4 = load i8, ptr %3, align 1
-  %5 = or i8 %4, 32
-  store i8 %5, ptr %3, align 1
-  %6 = load ptr, ptr @_llgo_string, align 8
-  %7 = icmp eq ptr %6, null
-  br i1 %7, label %_llgo_3, label %_llgo_4
+  %3 = load ptr, ptr @_llgo_int, align 8
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %3, i32 0, i32 6
+  %5 = load i8, ptr %4, align 1
+  %6 = or i8 %5, 32
+  store i8 %6, ptr %4, align 1
+  %7 = load ptr, ptr @_llgo_string, align 8
+  %8 = icmp eq ptr %7, null
+  br i1 %8, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %8 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
-  store ptr %8, ptr @_llgo_string, align 8
+  %9 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 24)
+  store ptr %9, ptr @_llgo_string, align 8
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
