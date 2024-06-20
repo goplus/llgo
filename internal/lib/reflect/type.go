@@ -423,14 +423,7 @@ var kindNames = []string{
 }
 
 func (t *rtype) String() string {
-	/*
-		s := t.nameOff(t.t.Str).Name()
-		if t.t.TFlag&abi.TFlagExtraStar != 0 {
-			return s[1:]
-		}
-		return s
-	*/
-	panic("todo")
+	return t.t.String()
 }
 
 func (t *rtype) Size() uintptr { return t.t.Size() }
