@@ -135,10 +135,12 @@ func TracePanic(v any) {
 	}
 }
 
+/*
 func stringTracef(fp c.FilePtr, format *c.Char, s String) {
 	cs := c.Alloca(uintptr(s.len) + 1)
 	c.Fprintf(fp, format, CStrCopy(cs, s))
 }
+*/
 
 // -----------------------------------------------------------------------------
 
@@ -146,5 +148,23 @@ func stringTracef(fp c.FilePtr, format *c.Char, s String) {
 func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
 	return c.Memset(p, 0, size)
 }
+
+// New allocates memory and initializes it to zero.
+func New(t *Type) unsafe.Pointer {
+	return AllocZ(t.Size_)
+}
+
+// NewArray allocates memory for an array and initializes it to zero.
+func NewArray(t *Type, n int) unsafe.Pointer {
+	return AllocZ(uintptr(n) * t.Size_)
+}
+
+// -----------------------------------------------------------------------------
+
+// TODO(xsw): check this
+// must match declarations in runtime/map.go.
+const MaxZero = 1024
+
+var ZeroVal [MaxZero]byte
 
 // -----------------------------------------------------------------------------

@@ -329,6 +329,22 @@ func (p *Imethod) PkgPath() string {
 
 func (t *Type) Kind() Kind { return Kind(t.Kind_ & KindMask) }
 
+func (t *Type) HasName() bool {
+	return t.TFlag&TFlagNamed != 0
+}
+
+func (t *Type) Pointers() bool { return t.PtrBytes != 0 }
+
+// IfaceIndir reports whether t is stored indirectly in an interface value.
+func (t *Type) IfaceIndir() bool {
+	return t.Kind_&KindDirectIface == 0
+}
+
+// isDirectIface reports whether t is stored directly in an interface value.
+func (t *Type) IsDirectIface() bool {
+	return t.Kind_&KindDirectIface != 0
+}
+
 // Size returns the size of data with type t.
 func (t *Type) Size() uintptr { return t.Size_ }
 
@@ -340,7 +356,7 @@ func (t *Type) FieldAlign() int { return int(t.FieldAlign_) }
 // String returns string form of type t.
 func (t *Type) String() string {
 	if t.TFlag&TFlagExtraStar != 0 {
-		return "*" + t.Str_
+		return "*" + t.Str_ // TODO(xsw): misunderstand
 	}
 	return t.Str_
 }
