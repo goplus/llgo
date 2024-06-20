@@ -51,7 +51,15 @@ func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 		return src
 	}
 	oldLen := src.len
-	newLen := src.len + num
+	src = GrowSlice(src, num, etSize)
+	c.Memcpy(c.Advance(src.data, oldLen*etSize), data, uintptr(num*etSize))
+	return src
+}
+
+// GrowSlice grows slice and returns the grown slice.
+func GrowSlice(src Slice, num, etSize int) Slice {
+	oldLen := src.len
+	newLen := oldLen + num
 	if newLen > src.cap {
 		newCap := nextslicecap(newLen, src.cap)
 		p := AllocZ(uintptr(newCap * etSize))
@@ -62,8 +70,42 @@ func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 		src.cap = newCap
 	}
 	src.len = newLen
-	c.Memcpy(c.Advance(src.data, oldLen*etSize), data, uintptr(num*etSize))
 	return src
+}
+
+// nextslicecap computes the next appropriate slice length.
+func nextslicecap(newLen, oldCap int) int {
+	newcap := oldCap
+	doublecap := newcap + newcap
+	if newLen > doublecap {
+		return newLen
+	}
+
+	const threshold = 256
+	if oldCap < threshold {
+		return doublecap
+	}
+	for {
+		// Transition from growing 2x for small slices
+		// to growing 1.25x for large slices. This formula
+		// gives a smooth-ish transition between the two.
+		newcap += (newcap + 3*threshold) >> 2
+
+		// We need to check `newcap >= newLen` and whether `newcap` overflowed.
+		// newLen is guaranteed to be larger than zero, hence
+		// when newcap overflows then `uint(newcap) > uint(newLen)`.
+		// This allows to check for both with the same comparison.
+		if uint(newcap) >= uint(newLen) {
+			break
+		}
+	}
+
+	// Set newcap to the requested cap when
+	// the newcap calculation overflowed.
+	if newcap <= 0 {
+		return newLen
+	}
+	return newcap
 }
 
 // SliceCopy copy data to slice and returns a slice.

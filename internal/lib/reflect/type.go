@@ -726,6 +726,17 @@ func (t *rtype) IsVariadic() bool {
 	panic("todo")
 }
 
+// add returns p+x.
+//
+// The whySafe string is ignored, so that the function still inlines
+// as efficiently as p+x, but all call sites should use the string to
+// record why the addition is safe, which is to say why the addition
+// does not cause x to advance to the very end of p's allocation
+// and therefore point incorrectly at the next block in memory.
+func add(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p) + x)
+}
+
 // A StructField describes a single field in a struct.
 type StructField struct {
 	// Name is the field name.
@@ -837,13 +848,13 @@ func TypeOf(i any) Type {
 	return toType((*abi.Type)(unsafe.Pointer(eface.typ)))
 }
 
-/* TODO(xsw):
 // rtypeOf directly extracts the *rtype of the provided value.
 func rtypeOf(i any) *abi.Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
 	return eface.typ
 }
 
+/* TODO(xsw):
 // ptrMap is the cache for PointerTo.
 var ptrMap sync.Map // map[*rtype]*ptrType
 */
@@ -957,6 +968,241 @@ func (t *rtype) ConvertibleTo(u Type) bool {
 
 func (t *rtype) Comparable() bool {
 	return t.t.Equal != nil
+}
+
+// implements reports whether the type V implements the interface type T.
+func implements(T, V *abi.Type) bool {
+	if T.Kind() != abi.Interface {
+		return false
+	}
+	t := (*interfaceType)(unsafe.Pointer(T))
+	if len(t.Methods) == 0 {
+		return true
+	}
+
+	/*
+		// The same algorithm applies in both cases, but the
+		// method tables for an interface type and a concrete type
+		// are different, so the code is duplicated.
+		// In both cases the algorithm is a linear scan over the two
+		// lists - T's methods and V's methods - simultaneously.
+		// Since method tables are stored in a unique sorted order
+		// (alphabetical, with no duplicate method names), the scan
+		// through V's methods must hit a match for each of T's
+		// methods along the way, or else V does not implement T.
+		// This lets us run the scan in overall linear time instead of
+		// the quadratic time  a naive search would require.
+		// See also ../runtime/iface.go.
+		if V.Kind() == abi.Interface {
+			v := (*interfaceType)(unsafe.Pointer(V))
+			i := 0
+			for j := 0; j < len(v.Methods); j++ {
+				tm := &t.Methods[i]
+				tmName := t.nameOff(tm.Name)
+				vm := &v.Methods[j]
+				vmName := nameOffFor(V, vm.Name)
+				if vmName.Name() == tmName.Name() && typeOffFor(V, vm.Typ) == t.typeOff(tm.Typ) {
+					if !tmName.IsExported() {
+						tmPkgPath := pkgPath(tmName)
+						if tmPkgPath == "" {
+							tmPkgPath = t.PkgPath.Name()
+						}
+						vmPkgPath := pkgPath(vmName)
+						if vmPkgPath == "" {
+							vmPkgPath = v.PkgPath.Name()
+						}
+						if tmPkgPath != vmPkgPath {
+							continue
+						}
+					}
+					if i++; i >= len(t.Methods) {
+						return true
+					}
+				}
+			}
+			return false
+		}
+
+		v := V.Uncommon()
+		if v == nil {
+			return false
+		}
+		i := 0
+		vmethods := v.Methods()
+		for j := 0; j < int(v.Mcount); j++ {
+			tm := &t.Methods[i]
+			tmName := t.nameOff(tm.Name)
+			vm := vmethods[j]
+			vmName := nameOffFor(V, vm.Name)
+			if vmName.Name() == tmName.Name() && typeOffFor(V, vm.Mtyp) == t.typeOff(tm.Typ) {
+				if !tmName.IsExported() {
+					tmPkgPath := pkgPath(tmName)
+					if tmPkgPath == "" {
+						tmPkgPath = t.PkgPath.Name()
+					}
+					vmPkgPath := pkgPath(vmName)
+					if vmPkgPath == "" {
+						vmPkgPath = nameOffFor(V, v.PkgPath).Name()
+					}
+					if tmPkgPath != vmPkgPath {
+						continue
+					}
+				}
+				if i++; i >= len(t.Methods) {
+					return true
+				}
+			}
+		}
+		return false
+	*/
+	panic("todo")
+}
+
+// specialChannelAssignability reports whether a value x of channel type V
+// can be directly assigned (using memmove) to another channel type T.
+// https://golang.org/doc/go_spec.html#Assignability
+// T and V must be both of Chan kind.
+func specialChannelAssignability(T, V *abi.Type) bool {
+	/*
+		// Special case:
+		// x is a bidirectional channel value, T is a channel type,
+		// x's type V and T have identical element types,
+		// and at least one of V or T is not a defined type.
+		return V.ChanDir() == abi.BothDir && (nameFor(T) == "" || nameFor(V) == "") && haveIdenticalType(T.Elem(), V.Elem(), true)
+	*/
+	panic("todo")
+}
+
+// directlyAssignable reports whether a value x of type V can be directly
+// assigned (using memmove) to a value of type T.
+// https://golang.org/doc/go_spec.html#Assignability
+// Ignoring the interface rules (implemented elsewhere)
+// and the ideal constant rules (no ideal constants at run time).
+func directlyAssignable(T, V *abi.Type) bool {
+	// x's type V is identical to T?
+	if T == V {
+		return true
+	}
+
+	// Otherwise at least one of T and V must not be defined
+	// and they must have the same kind.
+	if T.HasName() && V.HasName() || T.Kind() != V.Kind() {
+		return false
+	}
+
+	if T.Kind() == abi.Chan && specialChannelAssignability(T, V) {
+		return true
+	}
+
+	// x's type T and V must have identical underlying types.
+	return haveIdenticalUnderlyingType(T, V, true)
+}
+
+func haveIdenticalType(T, V *abi.Type, cmpTags bool) bool {
+	if cmpTags {
+		return T == V
+	}
+
+	if nameFor(T) != nameFor(V) || T.Kind() != V.Kind() || pkgPathFor(T) != pkgPathFor(V) {
+		return false
+	}
+
+	return haveIdenticalUnderlyingType(T, V, false)
+}
+
+func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
+	if T == V {
+		return true
+	}
+
+	kind := Kind(T.Kind())
+	if kind != Kind(V.Kind()) {
+		return false
+	}
+
+	// Non-composite types of equal kind have same underlying type
+	// (the predefined instance of the type).
+	if Bool <= kind && kind <= Complex128 || kind == String || kind == UnsafePointer {
+		return true
+	}
+
+	/*
+		// Composite types.
+		switch kind {
+		case Array:
+			return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+		case Chan:
+			return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+		case Func:
+			t := (*funcType)(unsafe.Pointer(T))
+			v := (*funcType)(unsafe.Pointer(V))
+			if t.OutCount != v.OutCount || t.InCount != v.InCount {
+				return false
+			}
+			for i := 0; i < t.NumIn(); i++ {
+				if !haveIdenticalType(t.In(i), v.In(i), cmpTags) {
+					return false
+				}
+			}
+			for i := 0; i < t.NumOut(); i++ {
+				if !haveIdenticalType(t.Out(i), v.Out(i), cmpTags) {
+					return false
+				}
+			}
+			return true
+
+		case Interface:
+			t := (*interfaceType)(unsafe.Pointer(T))
+			v := (*interfaceType)(unsafe.Pointer(V))
+			if len(t.Methods) == 0 && len(v.Methods) == 0 {
+				return true
+			}
+			// Might have the same methods but still
+			// need a run time conversion.
+			return false
+
+		case Map:
+			return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+		case Pointer, Slice:
+			return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+		case Struct:
+			t := (*structType)(unsafe.Pointer(T))
+			v := (*structType)(unsafe.Pointer(V))
+			if len(t.Fields) != len(v.Fields) {
+				return false
+			}
+			if t.PkgPath.Name() != v.PkgPath.Name() {
+				return false
+			}
+			for i := range t.Fields {
+				tf := &t.Fields[i]
+				vf := &v.Fields[i]
+				if tf.Name.Name() != vf.Name.Name() {
+					return false
+				}
+				if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
+					return false
+				}
+				if cmpTags && tf.Name.Tag() != vf.Name.Tag() {
+					return false
+				}
+				if tf.Offset != vf.Offset {
+					return false
+				}
+				if tf.Embedded() != vf.Embedded() {
+					return false
+				}
+			}
+			return true
+		}
+
+		return false
+	*/
+	panic("todo")
 }
 
 // SliceOf returns the slice type with element type t.

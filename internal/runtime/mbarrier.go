@@ -286,6 +286,7 @@ func reflect_typedslicecopy(elemType *_type, dst, src slice) int {
 	}
 	return typedslicecopy(elemType, dst.array, dst.len, src.array, src.len)
 }
+*/
 
 // typedmemclr clears the typed memory at ptr with type typ. The
 // memory at ptr must already be initialized (and hence in type-safe
@@ -296,20 +297,11 @@ func reflect_typedslicecopy(elemType *_type, dst, src slice) int {
 // call memclrHasPointers.
 //
 // TODO: A "go:nosplitrec" annotation would be perfect for this.
-//
-//go:nosplit
-func typedmemclr(typ *_type, ptr unsafe.Pointer) {
-	if writeBarrier.needed && typ.PtrBytes != 0 {
-		bulkBarrierPreWrite(uintptr(ptr), 0, typ.PtrBytes)
-	}
-	memclrNoHeapPointers(ptr, typ.Size_)
+func Typedmemclr(typ *Type, ptr unsafe.Pointer) {
+	c.Memset(ptr, 0, typ.Size_)
 }
 
-//go:linkname reflect_typedmemclr reflect.typedmemclr
-func reflect_typedmemclr(typ *_type, ptr unsafe.Pointer) {
-	typedmemclr(typ, ptr)
-}
-
+/*
 //go:linkname reflect_typedmemclrpartial reflect.typedmemclrpartial
 func reflect_typedmemclrpartial(typ *_type, ptr unsafe.Pointer, off, size uintptr) {
 	if writeBarrier.needed && typ.PtrBytes != 0 {
