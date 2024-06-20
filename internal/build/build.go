@@ -727,6 +727,7 @@ var hasAltPkg = map[string]none{
 	"io/fs":            {},
 	"math":             {},
 	"math/cmplx":       {},
+	"reflect":          {},
 	"sync":             {},
 	"sync/atomic":      {},
 	"syscall":          {},
