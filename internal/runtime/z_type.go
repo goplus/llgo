@@ -28,49 +28,53 @@ type Type = abi.Type
 // -----------------------------------------------------------------------------
 
 func Basic(kind Kind) *Type {
+	name, size := basicTypeInfo(kind)
 	return &Type{
-		Size_: basicTypeSize(kind),
+		Size_: size,
 		Hash:  uint32(kind), // TODO(xsw): hash
 		Kind_: uint8(kind),
+		Str_:  name,
 	}
 }
 
-func basicTypeSize(kind abi.Kind) uintptr {
+func basicTypeInfo(kind abi.Kind) (string, uintptr) {
 	switch kind {
 	case abi.Bool:
-		return unsafe.Sizeof(false)
+		return "bool", unsafe.Sizeof(false)
 	case abi.Int:
-		return unsafe.Sizeof(0)
+		return "int", unsafe.Sizeof(0)
 	case abi.Int8:
-		return 1
+		return "int8", 1
 	case abi.Int16:
-		return 2
+		return "int16", 2
 	case abi.Int32:
-		return 4
+		return "int32", 4
 	case abi.Int64:
-		return 8
+		return "int64", 8
 	case abi.Uint:
-		return unsafe.Sizeof(uint(0))
+		return "uint", unsafe.Sizeof(uint(0))
 	case abi.Uint8:
-		return 1
+		return "uint8", 1
 	case abi.Uint16:
-		return 2
+		return "uint16", 2
 	case abi.Uint32:
-		return 4
+		return "uint32", 4
 	case abi.Uint64:
-		return 8
+		return "uint64", 8
 	case abi.Uintptr:
-		return unsafe.Sizeof(uintptr(0))
+		return "uintptr", unsafe.Sizeof(uintptr(0))
 	case abi.Float32:
-		return 4
+		return "float32", 4
 	case abi.Float64:
-		return 8
+		return "float64", 8
 	case abi.Complex64:
-		return 8
+		return "complex64", 8
 	case abi.Complex128:
-		return 16
+		return "complex128", 16
 	case abi.String:
-		return unsafe.Sizeof(String{})
+		return "string", unsafe.Sizeof(String{})
+	case abi.UnsafePointer:
+		return "unsafe.Pointer", unsafe.Sizeof(unsafe.Pointer(nil))
 	}
 	panic("unreachable")
 }
@@ -95,6 +99,7 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 			Size_: size,
 			Hash:  uint32(abi.Struct), // TODO(xsw): hash
 			Kind_: uint8(abi.Struct),
+			Str_:  "struct {...}",
 		},
 		PkgPath_: pkgPath,
 		Fields:   fields,
@@ -123,6 +128,12 @@ func newPointer(elem *Type) *Type {
 		},
 		Elem: elem,
 	}
+	if (elem.TFlag & abi.TFlagExtraStar) != 0 {
+		ptr.Str_ = "**" + elem.Str_
+	} else {
+		ptr.TFlag = abi.TFlagExtraStar
+		ptr.Str_ = elem.Str_
+	}
 	return &ptr.Type
 }
 
@@ -133,6 +144,7 @@ func SliceOf(elem *Type) *Type {
 			Size_: unsafe.Sizeof([]int{}),
 			Hash:  uint32(abi.Slice),
 			Kind_: uint8(abi.Slice),
+			Str_:  "[]" + elem.String(),
 		},
 		Elem: elem,
 	}
@@ -146,6 +158,7 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 			Size_: length * elem.Size_,
 			Hash:  uint32(abi.Array),
 			Kind_: uint8(abi.Array),
+			Str_:  "[...]" + elem.String(), // TODO(xsw): itoa
 		},
 		Elem:  elem,
 		Slice: SliceOf(elem),

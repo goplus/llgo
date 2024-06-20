@@ -337,8 +337,8 @@ func (t *Type) Align() int { return int(t.Align_) }
 
 func (t *Type) FieldAlign() int { return int(t.FieldAlign_) }
 
-// Name returns the name of type t.
-func (t *Type) Name() string {
+// String returns string form of type t.
+func (t *Type) String() string {
 	if t.TFlag&TFlagExtraStar != 0 {
 		return "*" + t.Str_
 	}

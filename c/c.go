@@ -75,6 +75,12 @@ func Memmove(dst, src Pointer, n uintptr) Pointer
 //go:linkname Memset C.memset
 func Memset(s Pointer, c Int, n uintptr) Pointer
 
+//go:linkname Memchr C.memchr
+func Memchr(s Pointer, c Int, n uintptr) Pointer
+
+//go:linkname Memcmp C.memcmp
+func Memcmp(s1, s2 Pointer, n uintptr) Int
+
 // -----------------------------------------------------------------------------
 
 //go:linkname Strlen C.strlen

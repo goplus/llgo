@@ -116,6 +116,9 @@ func NewNamed(kind abi.Kind, methods, ptrMethods int) *Type {
 // InitNamed initializes an uninitialized named type.
 func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method) {
 	ptr := ret.PtrToThis_
+	if pkgPath != "" {
+		name = pkgPath + "." + name
+	}
 	doInitNamed(ret, pkgPath, name, underlying, methods)
 	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
 	ret.PtrToThis_ = ptr
@@ -130,7 +133,7 @@ func newUninitedNamed(kind abi.Kind, methods int) *Type {
 	return ret
 }
 
-func doInitNamed(ret *Type, pkgPath, name string, underlying *Type, methods []Method) {
+func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods []Method) {
 	tflag := underlying.TFlag
 	if tflag&abi.TFlagUncommon != 0 {
 		panic("runtime: underlying type is already named")
@@ -146,7 +149,7 @@ func doInitNamed(ret *Type, pkgPath, name string, underlying *Type, methods []Me
 	c.Memcpy(ptr, unsafe.Pointer(underlying), baseSize)
 
 	ret.TFlag = tflag | abi.TFlagNamed | abi.TFlagUncommon
-	ret.Str_ = name
+	ret.Str_ = fullName
 
 	n := len(methods)
 	xcount := uint16(0)
@@ -174,6 +177,7 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 			Size_: unsafe.Sizeof(uintptr(0)),
 			Hash:  uint32(abi.Func), // TODO(xsw): hash
 			Kind_: uint8(abi.Func),
+			Str_:  "func(...)",
 		},
 		In:  in,
 		Out: out,
