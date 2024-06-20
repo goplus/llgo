@@ -16,6 +16,14 @@ type register struct {
 	referrers []ssa.Instruction
 }
 
+func (r *register) SetType(t types.Type) {
+	r.typ = t
+}
+
+func (r *register) SetNum(n int) {
+	r.num = n
+}
+
 type anInstruction struct {
 	block *ssa.BasicBlock // the basic block of this instruction
 }

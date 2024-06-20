@@ -3,6 +3,7 @@ package cl
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"os"
 	"strings"
@@ -122,29 +123,29 @@ func (ctx *rewriter) getAutoRetainFunc(typ types.Type) (fn *ssa.Function, ok boo
 	return fn, ok
 }
 
-func (ctx *rewriter) RewriteAutoPtrCalls(prog *ssa.Program, pkg *ssa.Package) {
+func (ctx *rewriter) rewriteAutoPtrs(pkg *ssa.Package) {
 	for _, m := range pkg.Members {
 		if fn, ok := m.(*ssa.Function); ok {
-			ctx.rewriteAutoPtrCallsFunc(fn)
+			ctx.rewriteAutoPtrsInFunc(fn)
 		}
 	}
 }
 
-func (ctx *rewriter) rewriteAutoPtrCallsFunc(fn *ssa.Function) {
+func (ctx *rewriter) rewriteAutoPtrsInFunc(fn *ssa.Function) {
 	if fn.Blocks == nil {
 		return
 	}
 
 	for _, anonFunc := range fn.AnonFuncs {
-		ctx.rewriteAutoPtrCallsFunc(anonFunc)
+		ctx.rewriteAutoPtrsInFunc(anonFunc)
 	}
 
 	if debugGoSSA {
-		fmt.Fprintf(os.Stderr, "rewrite %s\n", fn.Name())
+		fmt.Fprintf(os.Stderr, "Rewrite func %s:\n", fn.Name())
 		_, _ = fn.WriteTo(os.Stderr)
 	}
 
-	returned := make(map[ssa.Value]bool)
+	escaped := make(map[ssa.Value]bool)
 	runDefers := false
 	hasDefers := false
 	for _, b := range fn.Blocks {
@@ -154,7 +155,7 @@ func (ctx *rewriter) rewriteAutoPtrCallsFunc(fn *ssa.Function) {
 				hasDefers = true
 			case *ssa.Return:
 				for _, r := range v.Results {
-					returned[r] = true
+					escaped[r] = true
 				}
 			case *ssa.RunDefers:
 				runDefers = true
@@ -165,6 +166,9 @@ func (ctx *rewriter) rewriteAutoPtrCallsFunc(fn *ssa.Function) {
 	for _, b := range fn.Blocks {
 		for i := 0; i < len(b.Instrs); i++ {
 			instr := b.Instrs[i]
+			if debugGoSSA {
+				fmt.Fprintf(os.Stderr, "try rewrite instr: %T, %s\n", instr, instr.String())
+			}
 			switch v := instr.(type) {
 			case *ssa.Call:
 				typ := v.Type()
@@ -174,52 +178,29 @@ func (ctx *rewriter) rewriteAutoPtrCallsFunc(fn *ssa.Function) {
 						typ := typ.At(i).Type()
 						if relFn, ok := ctx.getAutoReleaseFunc(typ); ok {
 							if debugGoSSA {
-								fmt.Printf("INSERT AutoRelease for %s.%s in func: %s\n", typ.String(), relFn.Name(), fn.Name())
+								fmt.Fprintf(os.Stderr, "INSERT AutoRelease for %s.%s in func: %s\n", typ.String(), relFn.Name(), fn.Name())
 							}
 
 							// TODO(lijie): find or insert extract instruction, add defer instruction
 						}
 					}
 				default:
-					// if return multiple values, process every value
-					if relFn, ok := ctx.getAutoReleaseFunc(v.Type()); ok {
-						if returned[v.Value()] {
-							continue
-						}
-						if debugGoSSA {
-							fmt.Printf("INSERT AutoRelease for %s.%s in func: %s\n", v.Type().String(), relFn.Name(), fn.Name())
-						}
-						deferInstr := (*ssahack.Defer)(unsafe.Pointer(&ssa.Defer{
-							Call: ssa.CallCommon{
-								Value: relFn,
-								Args:  []ssa.Value{v.Value()},
-							},
-						}))
-						deferInstr.SetBlock(b)
-						b.Instrs = append(b.Instrs, nil)
-						copy(b.Instrs[i+2:], b.Instrs[i+1:])
-						b.Instrs[i+1] = (*ssa.Defer)(unsafe.Pointer(deferInstr))
-						i++ // skip the newly inserted defer instruction
-						hasDefers = true
+					if escaped[v.Value()] {
+						continue
 					}
+					hasDefer := ctx.tryInsertAutoRelease(b, &i, v.Value(), false)
+					hasDefers = hasDefers || hasDefer
+				}
+			case *ssa.Alloc:
+				hasDefer := ctx.tryInsertAutoRelease(b, &i, v, true)
+				hasDefers = hasDefers || hasDefer
+			case *ssa.Store:
+				switch v.Addr.(type) {
+				case *ssa.FreeVar:
+					ctx.tryInsertAutoRetain(b, &i, v.Val)
 				}
 			case *ssa.Phi:
-				if relFn, ok := ctx.getAutoRetainFunc(v.Type()); ok {
-					if debugGoSSA {
-						fmt.Printf("INSERT AutoRetain for %s.%s in func: %s\n", v.Type().String(), relFn.Name(), fn.Name())
-					}
-					retainInstr := (*ssahack.Call)(unsafe.Pointer(&ssa.Call{
-						Call: ssa.CallCommon{
-							Value: relFn,
-							Args:  []ssa.Value{v},
-						},
-					}))
-					retainInstr.SetBlock(b)
-					b.Instrs = append(b.Instrs, nil)
-					copy(b.Instrs[i+2:], b.Instrs[i+1:])
-					b.Instrs[i+1] = (*ssa.Call)(unsafe.Pointer(retainInstr))
-					i++ // skip the newly inserted retain instruction
-				}
+				ctx.tryInsertAutoRetain(b, &i, v)
 			}
 		}
 	}
@@ -252,6 +233,7 @@ func (ctx *rewriter) rewriteAutoPtrCallsFunc(fn *ssa.Function) {
 			fn.Recover = b
 			fn.Blocks = append(fn.Blocks, b)
 
+			// TODO(lijie): fix return instruction insertion
 			rtInstr := &ssa.Return{}
 			results := make([]ssa.Value, len(rtn.Results))
 			copy(results, rtn.Results)
@@ -263,7 +245,95 @@ func (ctx *rewriter) rewriteAutoPtrCallsFunc(fn *ssa.Function) {
 	}
 
 	if debugGoSSA {
-		fmt.Fprintln(os.Stderr, "After rewrite:")
+		fmt.Fprintf(os.Stderr, "After rewrite func %s:\n", fn.Name())
 		_, _ = fn.WriteTo(os.Stderr)
 	}
+}
+
+func (r *rewriter) insertUnOp(b *ssa.BasicBlock, instrIdx *int, v ssa.Value) ssa.Value {
+	i := *instrIdx
+	ty := v.Type().(*types.Pointer).Elem()
+	if debugGoSSA {
+		fmt.Fprintf(os.Stderr, "addUnOp in func %s: value type %T, %s\n", b.Parent().Name(), v, ty.String())
+	}
+	unopInstr := &ssa.UnOp{
+		Op: token.MUL,
+		X:  v,
+	}
+	unop := (*ssahack.UnOp)(unsafe.Pointer(unopInstr))
+	unop.SetBlock(b)
+	unop.SetType(ty)
+	// TODO(lijie): find next available register number
+	num := b.Index*1000 + *instrIdx
+	unop.SetNum(num)
+	b.Instrs = append(b.Instrs, nil)
+	copy(b.Instrs[i+2:], b.Instrs[i+1:])
+	b.Instrs[i+1] = (*ssa.UnOp)(unsafe.Pointer(unopInstr))
+	*instrIdx++ // skip the newly inserted unop instruction
+	return unopInstr
+}
+
+func (r *rewriter) tryInsertAutoRelease(b *ssa.BasicBlock, instrIdx *int, v ssa.Value, deref bool) bool {
+	ty := v.Type()
+	if deref {
+		ty = ty.(*types.Pointer).Elem()
+	}
+	if debugGoSSA {
+		fmt.Fprintf(os.Stderr, "tryInsertAutoRelease in func %s: value type %T, %s\n", b.Parent().Name(), v, ty.String())
+	}
+	if relFn, ok := r.getAutoReleaseFunc(ty); ok {
+		if debugGoSSA {
+			fmt.Fprintf(os.Stderr, "INSERT AutoRelease for %s.%s in func: %s\n", ty.String(), relFn.Name(), b.Parent().Name())
+		}
+		if deref {
+			// TODO(lijie): generate code
+			// defer (){
+			//   v.DecRef()
+			// }()
+
+			// v = r.insertUnOp(b, instrIdx, v)
+			return false
+		}
+
+		deferInstr := (*ssahack.Defer)(unsafe.Pointer(&ssa.Defer{
+			Call: ssa.CallCommon{
+				Value: relFn,
+				Args:  []ssa.Value{v},
+			},
+		}))
+		deferInstr.SetBlock(b)
+		b.Instrs = append(b.Instrs, nil)
+		i := *instrIdx
+		copy(b.Instrs[i+2:], b.Instrs[i+1:])
+		b.Instrs[i+1] = (*ssa.Defer)(unsafe.Pointer(deferInstr))
+		*instrIdx++ // skip the newly inserted defer instruction
+		return true
+	}
+	return false
+}
+
+func (r *rewriter) tryInsertAutoRetain(b *ssa.BasicBlock, instrIdx *int, v ssa.Value) bool {
+	i := *instrIdx
+	ty := v.Type()
+	if debugGoSSA {
+		fmt.Fprintf(os.Stderr, "tryInsertAutoRetain in func %s: value type %T, %s\n", b.Parent().Name(), v, ty.String())
+	}
+	if relFn, ok := r.getAutoRetainFunc(ty); ok {
+		if debugGoSSA {
+			fmt.Fprintf(os.Stderr, "INSERT AutoRetain for %s.%s in func: %s\n", ty.String(), relFn.Name(), b.Parent().Name())
+		}
+		retainInstr := (*ssahack.Call)(unsafe.Pointer(&ssa.Call{
+			Call: ssa.CallCommon{
+				Value: relFn,
+				Args:  []ssa.Value{v},
+			},
+		}))
+		retainInstr.SetBlock(b)
+		b.Instrs = append(b.Instrs, nil)
+		copy(b.Instrs[i+2:], b.Instrs[i+1:])
+		b.Instrs[i+1] = (*ssa.Call)(unsafe.Pointer(retainInstr))
+		*instrIdx++ // skip the newly inserted retain instruction
+		return true
+	}
+	return false
 }

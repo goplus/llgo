@@ -76,11 +76,17 @@ func returnObjAndError(f float64) (obj *RefObj, err error) {
 }
 
 func testEscapeFromInner() {
-	var x *RefObj
+	c.Printf(c.Str("testEscapeFromInner\n"))
+	defer c.Printf(c.Str("testEscapeFromInner done\n"))
+
+	var x *RefObj = nil
 	func() {
+		c.Printf(c.Str("testEscapeFromInner: inner\n"))
+		defer c.Printf(c.Str("testEscapeFromInner: inner done\n"))
+
 		x = Float(1000)
 		refObjs.testEscapeFromInner_x = x
-		assertEql(x.RefCnt(), 1, "x.refcnt != 1 in testEscapeFromInner")
+		assertEql(x.RefCnt(), 2, "x.refcnt != 2 in testEscapeFromInner")
 		// x escaped
 	}()
 	assertEql(x.RefCnt(), 1, "x.refcnt != 1 in testEscapeFromInner")
@@ -135,19 +141,26 @@ func assertEql(got, expected c.Int, msg string) {
 
 // Test escape
 func TestEscape(t *testing.T) {
+	c.Printf(c.Str("TestEscape\n"))
+	defer c.Printf(c.Str("TestEscape done\n"))
 	a := returnObj(1)
+	c.Printf(c.Str("TestEscape: a.RefCnt() = %d\n"), a.RefCnt())
 	assertEql(a.RefCnt(), 1, "a.refcnt != 1 in TestEscape")
 	assertEql(refObjs.returnObj_x.RefCnt(), 1, "returnObj_x refcnt != 1")
 }
 
 // Test escape from inner function
 func TestEscapeFromInner(t *testing.T) {
+	c.Printf(c.Str("TestEscapeFromInner\n"))
+	defer c.Printf(c.Str("TestEscapeFromInner done\n"))
 	testEscapeFromInner()
 	assertEql(refObjs.testEscapeFromInner_x.RefCnt(), 0, "testEscapeFromInner_x.refcnt != 0")
 }
 
 // Test escape with conditional statement
 func TestEscapeWithCond(t *testing.T) {
+	c.Printf(c.Str("TestEscapeWithCond\n"))
+	defer c.Printf(c.Str("TestEscapeWithCond done\n"))
 	a := testEscapeWithCond()
 	assertEql(a.RefCnt(), 1, "a refcnt != 1")
 	assertEql(refObjs.testEscapeWithCond_x.RefCnt(), 1, "testEscapeWithCond_x.refcnt != 0")
@@ -158,6 +171,8 @@ func TestEscapeWithCond(t *testing.T) {
 
 // Test escape with multiple return values
 func TestEscapeWithMulti(t *testing.T) {
+	c.Printf(c.Str("TestEscapeWithMulti\n"))
+	defer c.Printf(c.Str("TestEscapeWithMulti done\n"))
 	func() {
 		o, err := returnObjAndError(1)
 		unused(o, err)
@@ -204,6 +219,8 @@ func TestEscapeWithMulti(t *testing.T) {
 // }
 
 func TestPy(t *testing.T) {
+	c.Printf(c.Str("TestPy\n"))
+	defer c.Printf(c.Str("TestPy done\n"))
 	l := py.NewList(1)
 	item := py.Float(3.14)
 	assertEql(item.RefCnt(), 1, "item refcnt != 1")
@@ -214,6 +231,9 @@ func TestPy(t *testing.T) {
 }
 
 func f() *py.Object {
+	c.Printf(c.Str("f\n"))
+	defer c.Printf(c.Str("f done\n"))
+
 	a := py.Float(1)
 	b := py.Float(2)
 	c := py.Float(3)
@@ -285,4 +305,15 @@ func F2() *RefObj {
 		return Add(a, b)
 	}
 	return a
+}
+
+func F3() {
+	var p *RefObj
+	defer func() {
+		p.DecRef()
+	}()
+
+	func() {
+		p = Float(1)
+	}()
 }
