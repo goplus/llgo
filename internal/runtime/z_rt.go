@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/bitcast"
 	"github.com/goplus/llgo/c/pthread"
 	"github.com/goplus/llgo/internal/abi"
 )
@@ -58,7 +59,7 @@ func Panic(v any) {
 func Rethrow(link *Defer) {
 	if ptr := excepKey.Get(); ptr != nil {
 		if link == nil {
-			TracePanic(*(*Eface)(ptr))
+			TracePanic(*(*any)(ptr))
 			c.Free(ptr)
 			c.Exit(2)
 		} else {
@@ -77,14 +78,57 @@ func init() {
 
 // -----------------------------------------------------------------------------
 
+func unpackEface(i any) *eface {
+	return (*eface)(unsafe.Pointer(&i))
+}
+
 // TracePanic prints panic message.
-func TracePanic(v Eface) {
-	kind := v._type.Kind()
-	switch {
-	case kind == abi.String:
-		stringTracef(c.Stderr, c.Str("panic: %s\n"), *(*String)(v.data))
+func TracePanic(v any) {
+	print("panic: ")
+	switch e := v.(type) {
+	case nil:
+		println("nil")
+		return
+	case (interface{ Error() string }):
+		println(e.Error())
+		return
+	case (interface{ String() string }):
+		println(e.String())
+		return
 	}
-	// TODO(xsw): other message type
+	e := unpackEface(v)
+	switch e.Kind() {
+	case abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64:
+		if isDirectIface(e._type) {
+			println(int64(uintptr(e.data)))
+		} else {
+			println(*(*int64)(e.data))
+		}
+	case abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr:
+		if isDirectIface(e._type) {
+			println(uint64(uintptr(e.data)))
+		} else {
+			println(*(*uint64)(e.data))
+		}
+	case abi.Float32:
+		if isDirectIface(e._type) {
+			println(bitcast.ToFloat32((uintptr(e.data))))
+		} else {
+			println(*(*float32)(e.data))
+		}
+	case abi.Float64:
+		if isDirectIface(e._type) {
+			println(bitcast.ToFloat64(uintptr(e.data)))
+		} else {
+			println(*(*float64)(e.data))
+		}
+	case abi.String:
+		println(*(*string)(e.data))
+	default:
+		// TODO kind to e._type.Str_
+		print("(", e.Kind(), ") ")
+		println(e.data)
+	}
 }
 
 func stringTracef(fp c.FilePtr, format *c.Char, s String) {

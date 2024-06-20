@@ -171,7 +171,6 @@ Common Go syntax is already supported. Except for the following, which needs to 
 
 * map (Very limited support)
 * chan (Not supported yet)
-* generics (Not supported yet)
 
 Here are some examples related to Go syntax:
 
@@ -212,7 +211,7 @@ Here are the Go packages that can be imported correctly:
 * [strconv](https://pkg.go.dev/strconv)
 * [syscall](https://pkg.go.dev/syscall) (partially)
 * [sync](https://pkg.go.dev/sync) (partially)
-* [sync/atomic](https://pkg.go.dev/sync/atomic) (partially)
+* [sync/atomic](https://pkg.go.dev/sync/atomic)
 
 
 ## Dependencies
