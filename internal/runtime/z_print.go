@@ -47,12 +47,12 @@ func PrintFloat(v float64) {
 		}
 		return
 	}
-	c.Fprintf(c.Stderr, c.Str("%e"), v)
+	c.Fprintf(c.Stderr, c.Str("%+e"), v)
 }
 
-// func PrintComplex(c complex128) {
-// 	print("(", real(c), imag(c), "i)")
-// }
+func PrintComplex(v complex128) {
+	print("(", real(v), imag(v), "i)")
+}
 
 func PrintUint(v uint64) {
 	c.Fprintf(c.Stderr, c.Str("%llu"), v)
