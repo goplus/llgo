@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -391,6 +392,10 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 		cmd.Stderr = os.Stderr
 		cmd.Run()
 		if s := cmd.ProcessState; s != nil {
+			status := s.Sys().(syscall.WaitStatus)
+			if status.Signaled() {
+				fmt.Fprintln(os.Stderr, s)
+			}
 			os.Exit(s.ExitCode())
 		}
 	}
