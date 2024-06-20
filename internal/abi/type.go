@@ -440,20 +440,20 @@ func (t *Type) Len() int {
 // Elem returns the element type for t if t is an array, channel, map, pointer, or slice, otherwise nil.
 func (t *Type) Elem() *Type {
 	switch t.Kind() {
-	case Array:
-		tt := (*ArrayType)(unsafe.Pointer(t))
-		return tt.Elem
-	case Chan:
-		tt := (*ChanType)(unsafe.Pointer(t))
-		return tt.Elem
-	case Map:
-		tt := (*MapType)(unsafe.Pointer(t))
-		return tt.Elem
 	case Pointer:
 		tt := (*PtrType)(unsafe.Pointer(t))
 		return tt.Elem
 	case Slice:
 		tt := (*SliceType)(unsafe.Pointer(t))
+		return tt.Elem
+	case Map:
+		tt := (*MapType)(unsafe.Pointer(t))
+		return tt.Elem
+	case Array:
+		tt := (*ArrayType)(unsafe.Pointer(t))
+		return tt.Elem
+	case Chan:
+		tt := (*ChanType)(unsafe.Pointer(t))
 		return tt.Elem
 	}
 	return nil

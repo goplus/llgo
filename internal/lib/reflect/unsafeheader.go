@@ -2,11 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package unsafeheader contains header declarations for the Go runtime's slice
-// and string implementations.
-//
-// This package allows packages that cannot import "reflect" to use types that
-// are tested to be equivalent to reflect.SliceHeader and reflect.StringHeader.
 package reflect
 
 import (
