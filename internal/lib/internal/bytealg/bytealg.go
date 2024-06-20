@@ -18,5 +18,25 @@ package bytealg
 
 // llgo:skip init
 import (
-	_ "unsafe"
+	"unsafe"
+
+	"github.com/goplus/llgo/c"
 )
+
+func IndexByte(b []byte, ch byte) int {
+	ptr := unsafe.Pointer(unsafe.SliceData(b))
+	ret := c.Memchr(ptr, c.Int(ch), uintptr(len(b)))
+	if ret != nil {
+		return int(uintptr(ret) - uintptr(ptr))
+	}
+	return -1
+}
+
+func IndexByteString(s string, ch byte) int {
+	ptr := unsafe.Pointer(unsafe.StringData(s))
+	ret := c.Memchr(ptr, c.Int(ch), uintptr(len(s)))
+	if ret != nil {
+		return int(uintptr(ret) - uintptr(ptr))
+	}
+	return -1
+}
