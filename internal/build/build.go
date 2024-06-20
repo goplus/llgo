@@ -18,7 +18,6 @@ package build
 
 import (
 	"archive/zip"
-	"errors"
 	"fmt"
 	"go/constant"
 	"go/token"
@@ -93,11 +92,7 @@ func envGOPATH() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	gopath := filepath.Join(home, "go")
-	if filepath.Clean(gopath) == filepath.Clean(runtime.GOROOT()) {
-		return "", errors.New("cannot set GOROOT as GOPATH")
-	}
-	return gopath, nil
+	return filepath.Join(home, "go"), nil
 }
 
 func DefaultAppExt() string {
