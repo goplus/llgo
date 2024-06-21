@@ -125,15 +125,16 @@ type aProgram struct {
 	voidType  llvm.Type
 	voidPtrTy llvm.Type
 
+	c64Type  llvm.Type
+	c128Type llvm.Type
+
 	rtStringTy llvm.Type
 	rtEfaceTy  llvm.Type
 	rtIfaceTy  llvm.Type
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 
-	anyTy Type
-	//anyPtr  Type
-	//anyPPtr Type
+	anyTy     Type
 	voidTy    Type
 	voidPtr   Type
 	voidPPtr  Type
@@ -147,6 +148,8 @@ type aProgram struct {
 	uintTy    Type
 	f64Ty     Type
 	f32Ty     Type
+	c128Ty    Type
+	c64Ty     Type
 	byteTy    Type
 	i32Ty     Type
 	u32Ty     Type
@@ -284,6 +287,24 @@ func (p Program) rtString() llvm.Type {
 	return p.rtStringTy
 }
 
+func (p Program) tyComplex64() llvm.Type {
+	if p.c64Type.IsNil() {
+		ctx := p.ctx
+		f32 := ctx.FloatType()
+		p.c64Type = ctx.StructType([]llvm.Type{f32, f32}, false)
+	}
+	return p.c64Type
+}
+
+func (p Program) tyComplex128() llvm.Type {
+	if p.c128Type.IsNil() {
+		ctx := p.ctx
+		f64 := ctx.DoubleType()
+		p.c128Type = ctx.StructType([]llvm.Type{f64, f64}, false)
+	}
+	return p.c128Type
+}
+
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
@@ -394,24 +415,6 @@ func (p Program) String() Type {
 	return p.stringTy
 }
 
-/*
-// AnyPtrPtr returns **any type.
-func (p Program) AnyPtrPtr() Type {
-	if p.anyPPtr == nil {
-		p.anyPPtr = p.Pointer(p.AnyPtr())
-	}
-	return p.anyPPtr
-}
-
-// AnyPtr returns *any type.
-func (p Program) AnyPtr() Type {
-	if p.anyPtr == nil {
-		p.anyPtr = p.Pointer(p.Any())
-	}
-	return p.anyPtr
-}
-*/
-
 // Any returns the any (empty interface) type.
 func (p Program) Any() Type {
 	if p.anyTy == nil {
@@ -482,6 +485,22 @@ func (p Program) Float32() Type {
 		p.f32Ty = p.rawType(types.Typ[types.Float32])
 	}
 	return p.f32Ty
+}
+
+// Complex128 returns complex128 type.
+func (p Program) Complex128() Type {
+	if p.c128Ty == nil {
+		p.c128Ty = p.rawType(types.Typ[types.Complex128])
+	}
+	return p.c128Ty
+}
+
+// Complex64 returns complex64 type.
+func (p Program) Complex64() Type {
+	if p.c64Ty == nil {
+		p.c64Ty = p.rawType(types.Typ[types.Complex64])
+	}
+	return p.c64Ty
 }
 
 // Byte returns byte type.

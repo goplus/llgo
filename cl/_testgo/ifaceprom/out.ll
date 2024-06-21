@@ -677,14 +677,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 _llgo_3:                                          ; preds = %_llgo_2
   %25 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  store ptr %25, ptr @_llgo_int, align 8
-  br label %_llgo_4
-
-_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %26 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %25, i32 0, i32 6
   %27 = load i8, ptr %26, align 1
   %28 = or i8 %27, 32
   store i8 %28, ptr %26, align 1
+  store ptr %25, ptr @_llgo_int, align 8
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %29 = load ptr, ptr @_llgo_int, align 8
   %30 = load ptr, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", align 8
   %31 = icmp eq ptr %30, null

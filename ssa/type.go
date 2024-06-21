@@ -211,11 +211,19 @@ func (p Program) Index(typ Type) Type {
 
 func (p Program) Field(typ Type, i int) Type {
 	var fld *types.Var
-	switch t := typ.raw.Type.(type) {
+	switch t := typ.raw.Type.Underlying().(type) {
 	case *types.Tuple:
 		fld = t.At(i)
+	case *types.Basic:
+		switch t.Kind() {
+		case types.Complex128:
+			return p.Float64()
+		case types.Complex64:
+			return p.Float32()
+		}
+		panic("Field: basic type doesn't have fields")
 	default:
-		fld = t.Underlying().(*types.Struct).Field(i)
+		fld = t.(*types.Struct).Field(i)
 	}
 	return p.rawType(fld.Type())
 }
@@ -330,7 +338,9 @@ func (p Program) toType(raw types.Type) Type {
 		case types.Float64:
 			return &aType{p.ctx.DoubleType(), typ, vkFloat}
 		case types.Complex64:
+			return &aType{p.tyComplex64(), typ, vkComplex}
 		case types.Complex128:
+			return &aType{p.tyComplex128(), typ, vkComplex}
 		case types.String:
 			return &aType{p.rtString(), typ, vkString}
 		case types.UnsafePointer:

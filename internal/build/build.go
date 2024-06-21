@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -70,7 +71,11 @@ type Config struct {
 func NewDefaultConf(mode Mode) *Config {
 	bin := os.Getenv("GOBIN")
 	if bin == "" {
-		bin = filepath.Join(runtime.GOROOT(), "bin")
+		gopath, err := envGOPATH()
+		if err != nil {
+			panic(fmt.Errorf("cannot get GOPATH: %v", err))
+		}
+		bin = filepath.Join(gopath, "bin")
 	}
 	conf := &Config{
 		BinPath: bin,
@@ -78,6 +83,17 @@ func NewDefaultConf(mode Mode) *Config {
 		AppExt:  DefaultAppExt(),
 	}
 	return conf
+}
+
+func envGOPATH() (string, error) {
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		return gopath, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, "go"), nil
 }
 
 func DefaultAppExt() string {
@@ -102,6 +118,14 @@ func Do(args []string, conf *Config) {
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
 		Fset:       token.NewFileSet(),
+	}
+
+	if len(overlayFiles) > 0 {
+		cfg.Overlay = make(map[string][]byte)
+		for file, src := range overlayFiles {
+			overlay := unsafe.Slice(unsafe.StringData(src), len(src))
+			cfg.Overlay[filepath.Join(runtime.GOROOT(), "src", file)] = overlay
+		}
 	}
 
 	llssa.Initialize(llssa.InitAll)
@@ -396,6 +420,9 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		if debugBuild || ctx.verbose {
+			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
+		}
 	}
 	aPkg.LPkg = ret
 }
@@ -706,6 +733,9 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 }
 
 func canSkipToBuild(pkgPath string) bool {
+	if _, ok := hasAltPkg[pkgPath]; ok {
+		return false
+	}
 	switch pkgPath {
 	case "unsafe":
 		return true
@@ -718,15 +748,23 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"errors":      {},
-	"io":          {},
-	"io/fs":       {},
-	"math":        {},
-	"sync":        {},
-	"sync/atomic": {},
-	"syscall":     {},
-	"os":          {},
-	"runtime":     {},
+	"errors":               {},
+	"internal/bytealg":     {},
+	"internal/reflectlite": {},
+	"io":                   {},
+	"io/fs":                {},
+	"math":                 {},
+	"math/cmplx":           {},
+	"reflect":              {},
+	"sync":                 {},
+	"sync/atomic":          {},
+	"syscall":              {},
+	"os":                   {},
+	"runtime":              {},
+}
+
+var overlayFiles = map[string]string{
+	"math/exp_amd64.go": "package math;",
 }
 
 func check(err error) {

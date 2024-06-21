@@ -100,6 +100,44 @@ const (
 	KindMask        = (1 << 5) - 1
 )
 
+// String returns the name of k.
+func (k Kind) String() string {
+	if int(k) < len(kindNames) {
+		return kindNames[k]
+	}
+	return kindNames[0]
+}
+
+var kindNames = []string{
+	Invalid:       "invalid",
+	Bool:          "bool",
+	Int:           "int",
+	Int8:          "int8",
+	Int16:         "int16",
+	Int32:         "int32",
+	Int64:         "int64",
+	Uint:          "uint",
+	Uint8:         "uint8",
+	Uint16:        "uint16",
+	Uint32:        "uint32",
+	Uint64:        "uint64",
+	Uintptr:       "uintptr",
+	Float32:       "float32",
+	Float64:       "float64",
+	Complex64:     "complex64",
+	Complex128:    "complex128",
+	Array:         "array",
+	Chan:          "chan",
+	Func:          "func",
+	Interface:     "interface",
+	Map:           "map",
+	Pointer:       "ptr",
+	Slice:         "slice",
+	String:        "string",
+	Struct:        "struct",
+	UnsafePointer: "unsafe.Pointer",
+}
+
 // TFlag is used by a Type to signal what extra type information is
 // available in the memory directly following the Type value.
 type TFlag uint8
@@ -329,6 +367,22 @@ func (p *Imethod) PkgPath() string {
 
 func (t *Type) Kind() Kind { return Kind(t.Kind_ & KindMask) }
 
+func (t *Type) HasName() bool {
+	return t.TFlag&TFlagNamed != 0
+}
+
+func (t *Type) Pointers() bool { return t.PtrBytes != 0 }
+
+// IfaceIndir reports whether t is stored indirectly in an interface value.
+func (t *Type) IfaceIndir() bool {
+	return t.Kind_&KindDirectIface == 0
+}
+
+// isDirectIface reports whether t is stored directly in an interface value.
+func (t *Type) IsDirectIface() bool {
+	return t.Kind_&KindDirectIface != 0
+}
+
 // Size returns the size of data with type t.
 func (t *Type) Size() uintptr { return t.Size_ }
 
@@ -337,10 +391,10 @@ func (t *Type) Align() int { return int(t.Align_) }
 
 func (t *Type) FieldAlign() int { return int(t.FieldAlign_) }
 
-// Name returns the name of type t.
-func (t *Type) Name() string {
+// String returns string form of type t.
+func (t *Type) String() string {
 	if t.TFlag&TFlagExtraStar != 0 {
-		return "*" + t.Str_
+		return "*" + t.Str_ // TODO(xsw): misunderstand
 	}
 	return t.Str_
 }
@@ -424,20 +478,20 @@ func (t *Type) Len() int {
 // Elem returns the element type for t if t is an array, channel, map, pointer, or slice, otherwise nil.
 func (t *Type) Elem() *Type {
 	switch t.Kind() {
-	case Array:
-		tt := (*ArrayType)(unsafe.Pointer(t))
-		return tt.Elem
-	case Chan:
-		tt := (*ChanType)(unsafe.Pointer(t))
-		return tt.Elem
-	case Map:
-		tt := (*MapType)(unsafe.Pointer(t))
-		return tt.Elem
 	case Pointer:
 		tt := (*PtrType)(unsafe.Pointer(t))
 		return tt.Elem
 	case Slice:
 		tt := (*SliceType)(unsafe.Pointer(t))
+		return tt.Elem
+	case Map:
+		tt := (*MapType)(unsafe.Pointer(t))
+		return tt.Elem
+	case Array:
+		tt := (*ArrayType)(unsafe.Pointer(t))
+		return tt.Elem
+	case Chan:
+		tt := (*ChanType)(unsafe.Pointer(t))
 		return tt.Elem
 	}
 	return nil

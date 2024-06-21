@@ -171,7 +171,6 @@ Common Go syntax is already supported. Except for the following, which needs to 
 
 * map (Very limited support)
 * chan (Not supported yet)
-* generics (Not supported yet)
 
 Here are some examples related to Go syntax:
 
@@ -206,19 +205,24 @@ Here are the Go packages that can be imported correctly:
 * [unicode](https://pkg.go.dev/unicode)
 * [unicode/utf8](https://pkg.go.dev/unicode/utf8)
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
-* [math/bits](https://pkg.go.dev/math/bits)
 * [math](https://pkg.go.dev/math)
-* [syscall](https://pkg.go.dev/syscall) (partially)
+* [math/bits](https://pkg.go.dev/math/bits)
+* [math/cmplx](https://pkg.go.dev/math/cmplx)
+* [sort](https://pkg.go.dev/sort)
+* [strconv](https://pkg.go.dev/strconv)
+* [sync/atomic](https://pkg.go.dev/sync/atomic)
 * [sync](https://pkg.go.dev/sync) (partially)
-* [sync/atomic](https://pkg.go.dev/sync/atomic) (partially)
+* [syscall](https://pkg.go.dev/syscall) (partially)
+* [os](https://pkg.go.dev/os) (partially)
+* [reflect](https://pkg.go.dev/reflect) (partially)
 
 
 ## Dependencies
 
 - [Go 1.20+](https://go.dev) (build only)
 - [LLVM 17](https://llvm.org)
-- [Clang 17](https://clang.llvm.org)
 - [LLD 17](https://lld.llvm.org)
+- [Clang 17](https://clang.llvm.org)
 - [pkg-config 0.29+](https://www.freedesktop.org/wiki/Software/pkg-config/)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
 - [cJSON 1.7+](https://github.com/DaveGamble/cJSON) (optional, for [`github.com/goplus/llgo/c/cjson`](https://pkg.go.dev/github.com/goplus/llgo/c/cjson))

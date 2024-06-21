@@ -572,14 +572,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 _llgo_3:                                          ; preds = %_llgo_2
   %5 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  store ptr %5, ptr @_llgo_int, align 8
-  br label %_llgo_4
-
-_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %5, i32 0, i32 6
   %7 = load i8, ptr %6, align 1
   %8 = or i8 %7, 32
   store i8 %8, ptr %6, align 1
+  store ptr %5, ptr @_llgo_int, align 8
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %9 = load ptr, ptr @"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw", align 8
   %10 = icmp eq ptr %9, null
   br i1 %10, label %_llgo_5, label %_llgo_6
