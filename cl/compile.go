@@ -524,9 +524,16 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.Slice(x, low, high, max)
 	case *ssa.MakeInterface:
 		if refs := *v.Referrers(); len(refs) == 1 {
-			if ref, ok := refs[0].(*ssa.Store); ok {
+			switch ref := refs[0].(type) {
+			case *ssa.Store:
 				if va, ok := ref.Addr.(*ssa.IndexAddr); ok {
 					if _, ok = p.isVArgs(va.X); ok { // varargs: this is a varargs store
+						return
+					}
+				}
+			case *ssa.Call:
+				if fn, ok := ref.Call.Value.(*ssa.Function); ok {
+					if _, _, ftype := p.funcOf(fn); ftype == llgoFuncAddr { // llgo.funcAddr
 						return
 					}
 				}
