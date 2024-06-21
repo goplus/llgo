@@ -14,8 +14,8 @@ type Callback struct {
 }
 
 type CallbackVtbl struct {
-	ValA unsafe.Pointer
-	ValB unsafe.Pointer
+	Val  unsafe.Pointer
+	Calc unsafe.Pointer
 }
 
 //go:linkname F C.f
