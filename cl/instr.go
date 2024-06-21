@@ -94,6 +94,20 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("stringData(s string): invalid arguments")
 }
 
+// func funcAddr(fn any) unsafe.Pointer
+func (p *context) funcAddr(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	if len(args) == 1 {
+		if fn, ok := args[0].(*ssa.MakeInterface); ok {
+			if fnDecl, ok := fn.X.(*ssa.Function); ok {
+				if aFn, _, _ := p.compileFunction(fnDecl); aFn != nil {
+					return aFn.Expr
+				}
+			}
+		}
+	}
+	panic("funcAddr(<func>): invalid arguments")
+}
+
 func (p *context) sigsetjmp(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 2 {
 		jb := p.compileValue(b, args[0])
@@ -160,6 +174,7 @@ var llgoInstrs = map[string]int{
 	"allocaCStr":  llgoAllocaCStr,
 	"string":      llgoString,
 	"stringData":  llgoStringData,
+	"funcAddr":    llgoFuncAddr,
 	"pyList":      llgoPyList,
 	"sigjmpbuf":   llgoSigjmpbuf,
 	"sigsetjmp":   llgoSigsetjmp,
@@ -327,6 +342,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer
 			ret = b.DeferData()
+		case llgoFuncAddr:
+			ret = p.funcAddr(b, args)
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:

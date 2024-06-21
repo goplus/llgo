@@ -384,6 +384,7 @@ const (
 	llgoDeferData   = llgoInstrBase + 6
 	llgoStringData  = llgoInstrBase + 7
 	llgoString      = llgoInstrBase + 8
+	llgoFuncAddr    = llgoInstrBase + 9
 
 	llgoSigjmpbuf  = llgoInstrBase + 0xa
 	llgoSigsetjmp  = llgoInstrBase + 0xb
