@@ -175,15 +175,15 @@ func Do(args []string, conf *Config) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode, verbose}
-	pkgs := buildAllPkgs(ctx, initial)
+	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode}
+	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	// TODO(xsw): maybe we need trace runtime sometimes
 	llssa.SetDebug(0)
 	cl.SetDebug(0)
 
 	var llFiles []string
-	dpkg := buildAllPkgs(ctx, altPkgs[noRt:])
+	dpkg := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
 	for _, pkg := range dpkg {
 		if !strings.HasSuffix(pkg.ExportFile, ".ll") {
 			continue
@@ -232,12 +232,11 @@ type context struct {
 	patches cl.Patches
 	built   map[string]none
 	mode    Mode
-	verbose bool
 }
 
-func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) {
+func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage) {
 	prog := ctx.prog
-	pkgs, errPkgs := allPkgs(ctx, initial)
+	pkgs, errPkgs := allPkgs(ctx, initial, verbose)
 	for _, errPkg := range errPkgs {
 		for _, err := range errPkg.Errors {
 			fmt.Fprintln(os.Stderr, err)
@@ -259,7 +258,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) 
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if isPkgInLLGo(pkg.PkgPath) {
-				pkg.ExportFile = concatPkgLinkFiles(pkg, ctx.verbose)
+				pkg.ExportFile = concatPkgLinkFiles(pkg, verbose)
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
@@ -301,7 +300,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package) (pkgs []*aPackage) 
 				}
 			}
 		default:
-			buildPkg(ctx, aPkg)
+			buildPkg(ctx, aPkg, verbose)
 			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
@@ -401,10 +400,10 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	return
 }
 
-func buildPkg(ctx *context, aPkg *aPackage) {
+func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
-	if debugBuild || ctx.verbose {
+	if debugBuild || verbose {
 		fmt.Fprintln(os.Stderr, pkgPath)
 	}
 	if canSkipToBuild(pkgPath) {
@@ -420,7 +419,7 @@ func buildPkg(ctx *context, aPkg *aPackage) {
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
-		if debugBuild || ctx.verbose {
+		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
 	}
@@ -468,9 +467,8 @@ type aPackage struct {
 	LPkg   llssa.Package
 }
 
-func allPkgs(ctx *context, initial []*packages.Package) (all []*aPackage, errs []*packages.Package) {
+func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA
-	verbose := ctx.verbose
 	built := ctx.built
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
