@@ -518,14 +518,15 @@ func ignoreName(name string) bool {
 		return true
 	}
 	*/
-	return (strings.HasPrefix(name, "internal/") && !supportedInternal(name)) ||
+	const internal = "internal/"
+	return (strings.HasPrefix(name, internal) && !supportedInternal(name[len(internal):])) ||
 		strings.HasPrefix(name, "crypto/") || strings.HasPrefix(name, "runtime/") ||
 		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
 		strings.HasPrefix(name, "time.") || strings.HasPrefix(name, "plugin.")
 }
 
 func supportedInternal(name string) bool {
-	return strings.HasPrefix(name, "internal/bytealg.")
+	return strings.HasPrefix(name, "bytealg.") || strings.HasPrefix(name, "reflectlite.")
 }
 
 // -----------------------------------------------------------------------------
