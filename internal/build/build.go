@@ -129,10 +129,6 @@ func Do(args []string, conf *Config) {
 	}
 
 	llssa.Initialize(llssa.InitAll)
-	if verbose {
-		llssa.SetDebug(llssa.DbgFlagAll)
-		cl.SetDebug(cl.DbgFlagAll)
-	}
 
 	prog := llssa.NewProgram(nil)
 	sizes := prog.TypeSizes
@@ -175,12 +171,8 @@ func Do(args []string, conf *Config) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), mode}
+	ctx := &context{progSSA, prog, dedup, patches, make(map[string]none), initial, mode}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
-
-	// TODO(xsw): maybe we need trace runtime sometimes
-	llssa.SetDebug(0)
-	cl.SetDebug(0)
 
 	var llFiles []string
 	dpkg := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
@@ -231,6 +223,7 @@ type context struct {
 	dedup   packages.Deduper
 	patches cl.Patches
 	built   map[string]none
+	initial []*packages.Package
 	mode    Mode
 }
 
@@ -414,7 +407,16 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 	if altPkg := aPkg.AltPkg; altPkg != nil {
 		syntax = append(syntax, altPkg.Syntax...)
 	}
+	showDetail := verbose && pkgExists(ctx.initial, pkg)
+	if showDetail {
+		llssa.SetDebug(llssa.DbgFlagAll)
+		cl.SetDebug(cl.DbgFlagAll)
+	}
 	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+	if showDetail {
+		llssa.SetDebug(0)
+		cl.SetDebug(0)
+	}
 	check(err)
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
@@ -728,6 +730,15 @@ func decodeFile(outFile string, zipf *zip.File) (err error) {
 		err = os.WriteFile(outFile, data, 0644)
 	}
 	return
+}
+
+func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
+	for _, v := range initial {
+		if v == pkg {
+			return true
+		}
+	}
+	return false
 }
 
 func canSkipToBuild(pkgPath string) bool {
