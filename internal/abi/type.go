@@ -100,6 +100,44 @@ const (
 	KindMask        = (1 << 5) - 1
 )
 
+// String returns the name of k.
+func (k Kind) String() string {
+	if int(k) < len(kindNames) {
+		return kindNames[k]
+	}
+	return kindNames[0]
+}
+
+var kindNames = []string{
+	Invalid:       "invalid",
+	Bool:          "bool",
+	Int:           "int",
+	Int8:          "int8",
+	Int16:         "int16",
+	Int32:         "int32",
+	Int64:         "int64",
+	Uint:          "uint",
+	Uint8:         "uint8",
+	Uint16:        "uint16",
+	Uint32:        "uint32",
+	Uint64:        "uint64",
+	Uintptr:       "uintptr",
+	Float32:       "float32",
+	Float64:       "float64",
+	Complex64:     "complex64",
+	Complex128:    "complex128",
+	Array:         "array",
+	Chan:          "chan",
+	Func:          "func",
+	Interface:     "interface",
+	Map:           "map",
+	Pointer:       "ptr",
+	Slice:         "slice",
+	String:        "string",
+	Struct:        "struct",
+	UnsafePointer: "unsafe.Pointer",
+}
+
 // TFlag is used by a Type to signal what extra type information is
 // available in the memory directly following the Type value.
 type TFlag uint8
