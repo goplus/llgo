@@ -111,12 +111,23 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
+var overlayFiles = map[string]string{
+	"math/exp_amd64.go": "package math;",
+}
+
 func Do(args []string, conf *Config) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
 		Fset:       token.NewFileSet(),
+	}
+
+	if len(overlayFiles) > 0 {
+		cfg.Overlay = make(map[string][]byte)
+		for file, src := range overlayFiles {
+			cfg.Overlay[filepath.Join(runtime.GOROOT(), "src", file)] = []byte(src)
+		}
 	}
 
 	llssa.Initialize(llssa.InitAll)
