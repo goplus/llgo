@@ -750,18 +750,19 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"errors":           {},
-	"internal/bytealg": {},
-	"io":               {},
-	"io/fs":            {},
-	"math":             {},
-	"math/cmplx":       {},
-	"reflect":          {},
-	"sync":             {},
-	"sync/atomic":      {},
-	"syscall":          {},
-	"os":               {},
-	"runtime":          {},
+	"errors":               {},
+	"internal/bytealg":     {},
+	"internal/reflectlite": {},
+	"io":                   {},
+	"io/fs":                {},
+	"math":                 {},
+	"math/cmplx":           {},
+	"reflect":              {},
+	"sync":                 {},
+	"sync/atomic":          {},
+	"syscall":              {},
+	"os":                   {},
+	"runtime":              {},
 }
 
 func check(err error) {

@@ -208,6 +208,7 @@ Here are the Go packages that can be imported correctly:
 * [math](https://pkg.go.dev/math)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math/cmplx](https://pkg.go.dev/math/cmplx)
+* [sort](https://pkg.go.dev/sort)
 * [strconv](https://pkg.go.dev/strconv)
 * [sync/atomic](https://pkg.go.dev/sync/atomic)
 * [sync](https://pkg.go.dev/sync) (partially)
