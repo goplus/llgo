@@ -15,21 +15,24 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        llvm: [17]
+        llvm: [17, 18]
+        exclude:
+          - os: ubuntu-latest
+            llvm: 18
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Update Homebrew
         # needed as long as LLVM 17 is still fresh
-        if: matrix.llvm == 17 && startsWith(matrix.os, 'macos')
+        if: startsWith(matrix.os, 'macos')
         run: brew update
-      - name: Install LLVM ${{ matrix.llvm }} and bdw-gc
+      - name: Install LLVM ${{ matrix.llvm }} and bdw-gc on macOS
         if: startsWith(matrix.os, 'macos')
         run: |
           HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }} bdw-gc
           echo `brew --prefix llvm@${{ matrix.llvm }}`/bin >> $GITHUB_PATH
-      - name: Install LLVM ${{ matrix.llvm }} and libgc-dev
+      - name: Install LLVM ${{ matrix.llvm }} and libgc-dev on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{ matrix.llvm }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
@@ -37,32 +40,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} lld-${{ matrix.llvm }} pkg-config libgc-dev libcjson-dev libsqlite3-dev python3.11-dev
           echo /usr/lib/llvm-${{ matrix.llvm }}/bin >> $GITHUB_PATH
-    
+
       - name: Clang information
         run: |
           echo $PATH
           which clang
           clang --version
-        
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.20'
 
       - name: Build
-        run: go build -v ./...
-
-      - name: Test
-        if: matrix.os != 'macos-latest'
-        run: go test -v ./...
+        run: go build -tags=llvm${{ matrix.llvm }} -v ./...
 
       - name: Test with coverage
-        if: matrix.os == 'macos-latest'
-        run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
+        id: test
+        if: matrix.os == 'macos-latest' && matrix.llvm == 18
+        run: |
+          go test -tags=llvm${{ matrix.llvm }} -v -coverprofile="coverage.txt" -covermode=atomic ./...
+          echo "tested=1" >> $GITHUB_OUTPUT
+
+      - name: Test
+        if: steps.test.outputs.tested != '1'
+        run: go test -tags=llvm${{ matrix.llvm }} -v ./...
 
       - name: Install
-        run: go install ./...
-      
+        run: go install -tags=llvm${{ matrix.llvm }} ./...
+
       - name: LLGO tests
         if: matrix.os != 'ubuntu-latest'
         run: |
@@ -74,7 +80,7 @@ jobs:
           set +e
           LLGOROOT=$PWD bash .github/workflows/test_demo.sh
           exit 0
-      
+
       - name: Show test result
         run: cat result.md
 
