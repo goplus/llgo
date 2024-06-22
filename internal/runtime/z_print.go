@@ -22,16 +22,19 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
-func PrintByte(v byte) {
-	c.Fputc(c.Int(v), c.Stderr)
+func boolCStr(v bool) *c.Char {
+	if v {
+		return c.Str("true")
+	}
+	return c.Str("false")
 }
 
 func PrintBool(v bool) {
-	if v {
-		c.Fprintf(c.Stderr, c.Str("true"))
-	} else {
-		c.Fprintf(c.Stderr, c.Str("false"))
-	}
+	c.Fprintf(c.Stderr, boolCStr(v))
+}
+
+func PrintByte(v byte) {
+	c.Fputc(c.Int(v), c.Stderr)
 }
 
 func PrintFloat(v float64) {

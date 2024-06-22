@@ -50,6 +50,7 @@ const (
 	ModeBuild Mode = iota
 	ModeInstall
 	ModeRun
+	ModeCmpTest
 )
 
 const (
@@ -380,7 +381,8 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	err := clang.New("").Exec(args...)
 	check(err)
 
-	if mode == ModeRun {
+	switch mode {
+	case ModeRun:
 		cmd := exec.Command(app, conf.RunArgs...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
@@ -389,6 +391,8 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 		if s := cmd.ProcessState; s != nil {
 			os.Exit(s.ExitCode())
 		}
+	case ModeCmpTest:
+		cmpTest("", pkgPath, app, conf.RunArgs)
 	}
 	return
 }
@@ -686,38 +690,6 @@ func isPkgInMod(pkgPath, modPath string) bool {
 	}
 	return false
 }
-
-/*
-func llgoPkgLinkFile(pkgPath string) string {
-	// if kind == cl.PkgLinkBitCode {
-	//	return filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.bc")
-	// }
-	llFile := filepath.Join(llgoRoot()+pkgPath[len(llgoModPath):], "llgo_autogen.ll")
-	if _, err := os.Stat(llFile); os.IsNotExist(err) {
-		decodeLinkFile(llFile)
-	}
-	return llFile
-}
-
-// *.ll => *.lla
-func decodeLinkFile(llFile string) {
-	zipFile := llFile + "a"
-	zipf, err := zip.OpenReader(zipFile)
-	if err != nil {
-		return
-	}
-	defer zipf.Close()
-	f, err := zipf.Open("llgo_autogen.ll")
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	data, err := io.ReadAll(f)
-	if err == nil {
-		os.WriteFile(llFile, data, 0644)
-	}
-}
-*/
 
 func decodeFile(outFile string, zipf *zip.File) (err error) {
 	f, err := zipf.Open()
