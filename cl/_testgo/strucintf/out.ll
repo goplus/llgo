@@ -2,8 +2,8 @@
 source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/internal/abi.StructField" = type { %"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1 }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
@@ -29,18 +29,14 @@ _llgo_0:
   %3 = load { i64 }, ptr %1, align 4
   %4 = load ptr, ptr @"main.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88", align 8
   %5 = extractvalue { i64 } %3, 0
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %4, i32 0, i32 6
-  %7 = load i8, ptr %6, align 1
-  %8 = or i8 %7, 32
-  store i8 %8, ptr %6, align 1
-  %9 = inttoptr i64 %5 to ptr
-  %10 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 0
-  store ptr %4, ptr %11, align 8
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
-  store ptr %9, ptr %12, align 8
-  %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  ret %"github.com/goplus/llgo/internal/runtime.eface" %13
+  %6 = inttoptr i64 %5 to ptr
+  %7 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %7, i32 0, i32 0
+  store ptr %4, ptr %8, align 8
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %7, i32 0, i32 1
+  store ptr %6, ptr %9, align 8
+  %10 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %7, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.eface" %10
 }
 
 define void @main.init() {

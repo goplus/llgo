@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
+	_ "github.com/goplus/llgo/internal/runtime"
 )
 
 // Value is the reflection interface to a Go value.

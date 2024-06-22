@@ -126,15 +126,9 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	default:
 		panic("todo")
 	}
-	// abi.Type.Kind_ |= abi.KindDirectIface
-	pkind := b.FieldAddr(tabi, 6)
-	b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
 	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
-
-// abi.KindDirectIface
-const kindDirectIface = 1 << 5
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog

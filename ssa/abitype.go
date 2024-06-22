@@ -118,12 +118,11 @@ func (b Builder) abiMethods(t *types.Named) (ret, pret int) {
 }
 
 // Method{name string, typ *FuncType, ifn, tfn abi.Text}
-func (b Builder) abiMethodOf(m types.Object, mSig *types.Signature /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
+func (b Builder) abiMethodOf(mPkg *types.Package, mName string, mSig *types.Signature /*, bg Background = InGo */) (mthd, ptrMthd Expr) {
 	prog := b.Prog
-	mPkg, mName := m.Pkg(), m.Name()
 	name := b.Str(mName).impl
 	if !token.IsExported(mName) {
-		name = b.Str(abi.FullName(mPkg, m.Name())).impl
+		name = b.Str(abi.FullName(mPkg, mName)).impl
 	}
 	abiSigGo := types.NewSignatureType(nil, nil, nil, mSig.Params(), mSig.Results(), mSig.Variadic())
 	abiSig := prog.FuncDecl(abiSigGo, InGo).raw.Type
@@ -215,12 +214,19 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 			var mthds []Expr
 			var ptrMthds = make([]Expr, 0, n)
 			for i := 0; i < n; i++ {
+				var mPkg *types.Package
+				var mSig *types.Signature
 				m := mset[i]
-				sig := m.Obj().(*types.Func).Type().(*types.Signature)
-				if _, ok := sig.Recv().Type().Underlying().(*types.Interface); ok {
-					sig = m.Type().(*types.Signature)
+				obj := m.Obj()
+				mName := obj.Name()
+				if token.IsExported(mName) {
+					mPkg = t.Obj().Pkg()
+					mSig = m.Type().(*types.Signature)
+				} else {
+					mPkg = obj.Pkg()
+					mSig = obj.Type().(*types.Signature)
 				}
-				mthd, ptrMthd := b.abiMethodOf(m.Obj(), sig)
+				mthd, ptrMthd := b.abiMethodOf(mPkg, mName, mSig)
 				if !mthd.IsNil() {
 					mthds = append(mthds, mthd)
 				}
@@ -238,24 +244,24 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 }
 
 func (b Builder) abiPointerOf(t *types.Pointer) func() Expr {
-	elem := b.abiType(t.Elem())
+	elem := b.abiTypeOf(t.Elem())
 	return func() Expr {
-		return b.Call(b.Pkg.rtFunc("PointerTo"), elem)
+		return b.Call(b.Pkg.rtFunc("PointerTo"), elem())
 	}
 }
 
 func (b Builder) abiSliceOf(t *types.Slice) func() Expr {
-	elem := b.abiType(t.Elem())
+	elem := b.abiTypeOf(t.Elem())
 	return func() Expr {
-		return b.Call(b.Pkg.rtFunc("SliceOf"), elem)
+		return b.Call(b.Pkg.rtFunc("SliceOf"), elem())
 	}
 }
 
 func (b Builder) abiArrayOf(t *types.Array) func() Expr {
-	elem := b.abiType(t.Elem())
+	elem := b.abiTypeOf(t.Elem())
 	return func() Expr {
 		n := b.Prog.IntVal(uint64(t.Len()), b.Prog.Uintptr())
-		return b.Call(b.Pkg.rtFunc("ArrayOf"), n, elem)
+		return b.Call(b.Pkg.rtFunc("ArrayOf"), n, elem())
 	}
 }
 
@@ -312,12 +318,17 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	}
 	vexpr := tabi()
 	prog := p.Prog
-	kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits)
-	if kind == abi.Integer || kind == abi.BitCast {
+	kind, _, lvl := abi.DataKindOf(t, 0, prog.is32Bits)
+	switch kind {
+	case abi.Integer, abi.BitCast:
 		// abi.Type.Kind_ |= abi.KindDirectIface
 		const kindDirectIface = 1 << 5
 		pkind := b.FieldAddr(vexpr, 6)
 		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
+	case abi.Pointer:
+		if lvl > 0 {
+			b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
+		}
 	}
 	b.Store(expr, vexpr)
 	if pub {
