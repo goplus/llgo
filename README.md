@@ -176,8 +176,8 @@ Here are some examples related to Go syntax:
 
 * [concat](_demo/concat/concat.go): define a variadic function
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
-* [errors](_demo/errors/errors.go): demo to implement error interface
-* [defer](_demo/defer/defer.go): defer demo
+* [errors](_cmptest/errors/errors.go): demo to implement error interface
+* [defer](_cmptest/defer/defer.go): defer demo
 * [goroutine](_demo/goroutine/goroutine.go): goroutine demo
 
 

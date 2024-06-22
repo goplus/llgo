@@ -35,14 +35,29 @@ var Cmd = &base.Command{
 	Short:     "Compile and run Go program",
 }
 
+// llgo cmptest
+var CmpTestCmd = &base.Command{
+	UsageLine: "llgo cmptest [build flags] package [arguments...]",
+	Short:     "Compile programs by llgo and go, run them and do comparative tests (stdout/stderr/exitcode)",
+}
+
 func init() {
 	Cmd.Run = runCmd
+	CmpTestCmd.Run = runCmpTest
 }
 
 func runCmd(cmd *base.Command, args []string) {
+	runCmdEx(cmd, args, build.ModeRun)
+}
+
+func runCmpTest(cmd *base.Command, args []string) {
+	runCmdEx(cmd, args, build.ModeCmpTest)
+}
+
+func runCmdEx(cmd *base.Command, args []string, mode build.Mode) {
 	args, runArgs, err := parseRunArgs(args)
 	check(err)
-	conf := build.NewDefaultConf(build.ModeRun)
+	conf := build.NewDefaultConf(mode)
 	conf.RunArgs = runArgs
 	build.Do(args, conf)
 }
