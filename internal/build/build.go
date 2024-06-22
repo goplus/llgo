@@ -307,21 +307,26 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	const N = 6
-	args := make([]string, N, len(pkg.Imports)+len(llFiles)+(N+1))
-	args[0] = "-o"
-	args[1] = app
-	args[2] = "-Wno-override-module"
-	args[3] = "-Xlinker"
+	args := make([]string, len(pkg.Imports)+len(llFiles)+10)
+	args = append(
+		args,
+		"-o", app,
+		// "-fuse-ld=lld", // TODO(xsw): to check lld exists or not
+		"-Wno-override-module",
+		"-O2", // Note that this also helps to solve the problem of TLS mismatch on Linux when using GNU ld.
+	)
 	if runtime.GOOS == "darwin" { // ld64.lld (macOS)
-		args[4] = "-dead_strip"
-		args[5] = "" // It's ok to leave it empty, as we can assume libpthread is built-in on macOS.
+		args = append(
+			args,
+			"-Xlinker", "-dead_strip",
+		)
 	} else { // ld.lld (Unix), lld-link (Windows), wasm-ld (WebAssembly)
-		args[4] = "--gc-sections"
-		args[5] = "-lpthread" // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+		args = append(
+			args,
+			"-Xlinker", "--gc-sections",
+			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+		)
 	}
-	//args[6] = "-fuse-ld=lld" // TODO(xsw): to check lld exists or not
-	//args[7] = "-O2"
 	needRuntime := false
 	needPyInit := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
