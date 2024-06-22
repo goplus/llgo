@@ -2,10 +2,10 @@
 #define interface struct
 
 interface ICallback {
-	virtual int valA() = 0;
-	virtual double valB() = 0;
+	virtual int val() = 0;
+	virtual double calc(double v) = 0;
 };
 
 extern "C" void f(ICallback* cb) {
-	printf("Hello %d, %lf!\n", cb->valA(), cb->valB());
+	printf("val: %d\ncalc(2): %lf\n", cb->val(), cb->calc(2));
 }
