@@ -9,3 +9,7 @@ interface ICallback {
 extern "C" void f(ICallback* cb) {
 	printf("val: %d\ncalc(2): %lf\n", cb->val(), cb->calc(2));
 }
+
+void g(ICallback* cb) {
+	f(cb);
+}
