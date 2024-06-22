@@ -48,6 +48,9 @@ type integer interface {
 //go:linkname Str llgo.cstr
 func Str(string) *Char
 
+//go:linkname Func llgo.funcAddr
+func Func(any) Pointer
+
 // llgo:link Advance llgo.advance
 func Advance[PtrT any, I integer](ptr PtrT, offset I) PtrT { return ptr }
 
