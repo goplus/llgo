@@ -20,3 +20,6 @@ type CallbackVtbl struct {
 
 //go:linkname F C.f
 func F(cb *Callback)
+
+//go:linkname G C._Z1gP9ICallback
+func G(cb *Callback)
