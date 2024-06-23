@@ -88,9 +88,9 @@ _llgo_0:
   %5 = getelementptr inbounds { ptr, ptr }, ptr %3, i32 0, i32 1
   store ptr %1, ptr %5, align 8
   %6 = load { ptr, ptr }, ptr %3, align 8
-  call void @main.assert(i1 true)
-  call void @main.assert(i1 true)
-  call void @main.assert(i1 true)
+  call void @main.assert(i1 icmp ne (ptr @main.test, { ptr, ptr } zeroinitializer))
+  call void @main.assert(i1 icmp ne (ptr @main.test, { ptr, ptr } zeroinitializer))
+  call void @main.assert(i1 icmp ne (ptr @"main.init#1$1", { ptr, ptr } zeroinitializer))
   %7 = extractvalue { ptr, ptr } %6, 0
   %8 = icmp ne ptr %7, null
   call void @main.assert(i1 %8)
