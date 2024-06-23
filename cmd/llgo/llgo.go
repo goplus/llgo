@@ -43,6 +43,7 @@ func init() {
 		build.Cmd,
 		install.Cmd,
 		run.Cmd,
+		run.CmpTestCmd,
 		clean.Cmd,
 	}
 }
