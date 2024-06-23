@@ -44,10 +44,10 @@ source_filename = "main"
 @9 = private unnamed_addr constant [6 x i8] c"Reader", align 1
 @10 = private unnamed_addr constant [5 x i8] c"Close", align 1
 @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w" = linkonce global ptr null, align 8
-@11 = private unnamed_addr constant [22 x i8] c"main.nopCloserWriterTo", align 1
+@11 = private unnamed_addr constant [17 x i8] c"nopCloserWriterTo", align 1
 @"_llgo_iface$L2Ik-AJcd0jsoBw5fQ07pQpfUM-kh78Wn2bOeak6M3I" = linkonce global ptr null, align 8
 @_llgo_main.nopCloser = global ptr null, align 8
-@12 = private unnamed_addr constant [14 x i8] c"main.nopCloser", align 1
+@12 = private unnamed_addr constant [9 x i8] c"nopCloser", align 1
 @_llgo_main.StringWriter = linkonce global ptr null, align 8
 @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw" = linkonce global ptr null, align 8
 @13 = private unnamed_addr constant [11 x i8] c"WriteString", align 1
@@ -79,12 +79,12 @@ source_filename = "main"
 @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug" = linkonce global ptr null, align 8
 @27 = private unnamed_addr constant [10 x i8] c"UnreadByte", align 1
 @28 = private unnamed_addr constant [10 x i8] c"UnreadRune", align 1
-@29 = private unnamed_addr constant [17 x i8] c"main.stringReader", align 1
+@29 = private unnamed_addr constant [12 x i8] c"stringReader", align 1
 @"_llgo_iface$OFO8Us9n8ajWCabGedeuoJ-Za2zAMk4Jh0FunAcUCFE" = linkonce global ptr null, align 8
 @"*_llgo_main.errorString" = global ptr null, align 8
 @_llgo_main.errorString = global ptr null, align 8
 @"main.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ" = global ptr null, align 8
-@30 = private unnamed_addr constant [16 x i8] c"main.errorString", align 1
+@30 = private unnamed_addr constant [11 x i8] c"errorString", align 1
 @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = linkonce global ptr null, align 8
 @31 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
 @32 = private unnamed_addr constant [37 x i8] c"stringsReader.ReadAt: negative offset", align 1
@@ -1706,7 +1706,7 @@ _llgo_30:                                         ; preds = %_llgo_29, %_llgo_28
   %336 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %335, i32 0, i32 0
   store ptr @11, ptr %336, align 8
   %337 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %335, i32 0, i32 1
-  store i64 22, ptr %337, align 4
+  store i64 17, ptr %337, align 4
   %338 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %335, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %192, %"github.com/goplus/llgo/internal/runtime.String" %334, %"github.com/goplus/llgo/internal/runtime.String" %338, ptr %244, %"github.com/goplus/llgo/internal/runtime.Slice" %321, %"github.com/goplus/llgo/internal/runtime.Slice" %330)
   %339 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
@@ -1863,7 +1863,7 @@ _llgo_32:                                         ; preds = %_llgo_31, %_llgo_30
   %433 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %432, i32 0, i32 0
   store ptr @12, ptr %433, align 8
   %434 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %432, i32 0, i32 1
-  store i64 14, ptr %434, align 4
+  store i64 9, ptr %434, align 4
   %435 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %432, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %376, %"github.com/goplus/llgo/internal/runtime.String" %431, %"github.com/goplus/llgo/internal/runtime.String" %435, ptr %377, %"github.com/goplus/llgo/internal/runtime.Slice" %419, %"github.com/goplus/llgo/internal/runtime.Slice" %427)
   %436 = load ptr, ptr @_llgo_string, align 8
@@ -2499,7 +2499,7 @@ _llgo_52:                                         ; preds = %_llgo_51, %_llgo_50
   %814 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %813, i32 0, i32 0
   store ptr @29, ptr %814, align 8
   %815 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %813, i32 0, i32 1
-  store i64 17, ptr %815, align 4
+  store i64 12, ptr %815, align 4
   %816 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %813, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %511, %"github.com/goplus/llgo/internal/runtime.String" %812, %"github.com/goplus/llgo/internal/runtime.String" %816, ptr %556, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %808)
   %817 = load ptr, ptr @_llgo_main.stringReader, align 8
@@ -2625,7 +2625,7 @@ _llgo_54:                                         ; preds = %_llgo_53, %_llgo_52
   %893 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %892, i32 0, i32 0
   store ptr @30, ptr %893, align 8
   %894 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %892, i32 0, i32 1
-  store i64 16, ptr %894, align 4
+  store i64 11, ptr %894, align 4
   %895 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %892, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %846, %"github.com/goplus/llgo/internal/runtime.String" %891, %"github.com/goplus/llgo/internal/runtime.String" %895, ptr %869, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %887)
   %896 = load ptr, ptr @_llgo_main.errorString, align 8

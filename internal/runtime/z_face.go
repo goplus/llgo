@@ -113,11 +113,24 @@ func NewNamed(kind abi.Kind, methods, ptrMethods int) *Type {
 	return ret
 }
 
+func lastSlash(s string) int {
+	i := len(s) - 1
+	for i >= 0 && s[i] != '/' {
+		i--
+	}
+	return i
+}
+
+func pkgName(path string) string {
+	i := lastSlash(path)
+	return path[i+1:]
+}
+
 // InitNamed initializes an uninitialized named type.
 func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method) {
 	ptr := ret.PtrToThis_
 	if pkgPath != "" {
-		name = pkgPath + "." + name
+		name = pkgName(pkgPath) + "." + name
 	}
 	doInitNamed(ret, pkgPath, name, underlying, methods)
 	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
