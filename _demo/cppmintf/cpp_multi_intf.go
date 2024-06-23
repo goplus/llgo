@@ -10,10 +10,10 @@ import (
 
 type Bar struct {
 	foo.Callback
-	a int
+	a c.Int
 }
 
-func NewBar(a int) *Bar {
+func NewBar(a c.Int) *Bar {
 	return &Bar{
 		Callback: foo.Callback{
 			ICalc: foo.ICalc{
@@ -31,11 +31,11 @@ func NewBar(a int) *Bar {
 	}
 }
 
-func (p *Bar) getA() int {
+func (p *Bar) getA() c.Int {
 	return p.a
 }
 
-func bar_IVal_getA(this c.Pointer) int {
+func bar_IVal_getA(this c.Pointer) c.Int {
 	const delta = -int(unsafe.Offsetof(foo.Callback{}.IVal))
 	return (*Bar)(c.Advance(this, delta)).getA()
 }

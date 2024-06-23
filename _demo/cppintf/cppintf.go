@@ -8,10 +8,10 @@ import (
 
 type Bar struct {
 	foo.Callback
-	a int
+	a c.Int
 }
 
-func NewBar(a int) *Bar {
+func NewBar(a c.Int) *Bar {
 	return &Bar{
 		Callback: foo.Callback{
 			Vptr: &foo.CallbackVtbl{
@@ -23,7 +23,7 @@ func NewBar(a int) *Bar {
 	}
 }
 
-func (p *Bar) getA() int {
+func (p *Bar) getA() c.Int {
 	return p.a
 }
 
