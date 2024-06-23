@@ -118,6 +118,12 @@ func (p Program) Zero(t Type) Expr {
 			ret = llvm.ConstFloat(p.Float64().ll, 0)
 		case kind == types.Float32:
 			ret = llvm.ConstFloat(p.Float32().ll, 0)
+		case kind == types.Complex64:
+			v := llvm.ConstFloat(p.Float32().ll, 0)
+			ret = llvm.ConstStruct([]llvm.Value{v, v}, false)
+		case kind == types.Complex128:
+			v := llvm.ConstFloat(p.Float64().ll, 0)
+			ret = llvm.ConstStruct([]llvm.Value{v, v}, false)
 		default:
 			panic("todo")
 		}

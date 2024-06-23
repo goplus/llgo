@@ -43,7 +43,7 @@ source_filename = "main"
 @7 = private unnamed_addr constant [4 x i8] c"main", align 1
 @_llgo_main.T = linkonce global ptr null, align 8
 @8 = private unnamed_addr constant [6 x i8] c"Invoke", align 1
-@9 = private unnamed_addr constant [6 x i8] c"main.T", align 1
+@9 = private unnamed_addr constant [1 x i8] c"T", align 1
 
 define void @"main.(*T).Invoke"(ptr %0) {
 _llgo_0:
@@ -876,7 +876,7 @@ _llgo_41:                                         ; preds = %_llgo_40
   %185 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %184, i32 0, i32 0
   store ptr @9, ptr %185, align 8
   %186 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %184, i32 0, i32 1
-  store i64 6, ptr %186, align 4
+  store i64 1, ptr %186, align 4
   %187 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %184, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %160, %"github.com/goplus/llgo/internal/runtime.String" %183, %"github.com/goplus/llgo/internal/runtime.String" %187, ptr %161, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %179)
   br label %_llgo_42
