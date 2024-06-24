@@ -26,6 +26,8 @@ const (
 	LLGoPackage = "decl"
 )
 
+// -----------------------------------------------------------------------------
+
 //go:linkname Acos C.acos
 func Acos(x float64) float64
 
@@ -175,5 +177,157 @@ func Tgamma(x float64) float64
 
 //go:linkname Trunc C.trunc
 func Trunc(x float64) float64
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Acosf C.acosf
+func Acosf(x float32) float32
+
+//go:linkname Acoshf C.acoshf
+func Acoshf(x float32) float32
+
+//go:linkname Asinf C.asinf
+func Asinf(x float32) float32
+
+//go:linkname Asinhf C.asinhf
+func Asinhf(x float32) float32
+
+//go:linkname Atanf C.atanf
+func Atanf(x float32) float32
+
+//go:linkname Atan2f C.atan2f
+func Atan2f(y, x float32) float32
+
+//go:linkname Atanhf C.atanhf
+func Atanhf(x float32) float32
+
+//go:linkname Cbrtf C.cbrtf
+func Cbrtf(x float32) float32
+
+//go:linkname Ceilf C.ceilf
+func Ceilf(x float32) float32
+
+//go:linkname Cosf C.cosf
+func Cosf(x float32) float32
+
+//go:linkname Coshf C.coshf
+func Coshf(x float32) float32
+
+//go:linkname Copysignf C.copysignf
+func Copysignf(x, y float32) float32
+
+//go:linkname Erff C.erff
+func Erff(x float32) float32
+
+//go:linkname Erfcf C.erfcf
+func Erfcf(x float32) float32
+
+//go:linkname Expf C.expf
+func Expf(x float32) float32
+
+//go:linkname Exp2f C.exp2f
+func Exp2f(x float32) float32
+
+//go:linkname Expm1f C.expm1f
+func Expm1f(x float32) float32
+
+//go:linkname Fdimf C.fdimf
+func Fdimf(x, y float32) float32
+
+//go:linkname Floorf C.floorf
+func Floorf(x float32) float32
+
+//go:linkname Fmaf C.fmaf
+func Fmaf(x, y, z float32) float32
+
+//go:linkname Fmaxf C.fmaxf
+func Fmaxf(x, y float32) float32
+
+//go:linkname Fminf C.fminf
+func Fminf(x, y float32) float32
+
+//go:linkname Fmodf C.fmodf
+func Fmodf(x, y float32) float32
+
+//go:linkname Frexpf C.frexpf
+func Frexpf(x float32, exp *c.Int) float32
+
+//go:linkname Gammaf C.gammaf
+func Gammaf(x float32) float32
+
+//go:linkname Hypotf C.hypotf
+func Hypotf(x, y float32) float32
+
+//go:linkname Ilogbf C.ilogbf
+func Ilogbf(x float32) c.Int
+
+//go:linkname J0f C.j0f
+func J0f(x float32) float32
+
+//go:linkname J1f C.j1f
+func J1f(x float32) float32
+
+//go:linkname Jnf C.jnf
+func Jnf(n c.Int, x float32) float32
+
+//go:linkname Ldexpf C.ldexpf
+func Ldexpf(x float32, exp c.Int) float32
+
+//go:linkname Lgammaf C.lgammaf
+func Lgammaf(x float32) float32
+
+//go:linkname Logf C.logf
+func Logf(x float32) float32
+
+//go:linkname Log10f C.log10f
+func Log10f(x float32) float32
+
+//go:linkname Log1pf C.log1pf
+func Log1pf(x float32) float32
+
+//go:linkname Log2f C.log2f
+func Log2f(x float32) float32
+
+//go:linkname Logbf C.logbf
+func Logbf(x float32) float32
+
+//go:linkname Modff C.modff
+func Modff(x float32, ipart *float32) float32
+
+//go:linkname Nanf C.nanf
+func Nanf(tag *c.Char) float32
+
+//go:linkname Nextafterf C.nextafterf
+func Nextafterf(x, y float32) float32
+
+//go:linkname Powf C.powf
+func Powf(x, y float32) float32
+
+//go:linkname Remainderf C.remainderf
+func Remainderf(x, y float32) float32
+
+//go:linkname Roundf C.roundf
+func Roundf(x float32) float32
+
+//go:linkname Sinf C.sinf
+func Sinf(x float32) float32
+
+//go:linkname Sinhf C.sinhf
+func Sinhf(x float32) float32
+
+//go:linkname Sqrtf C.sqrtf
+func Sqrtf(x float32) float32
+
+//go:linkname Tanf C.tanf
+func Tanf(x float32) float32
+
+//go:linkname Tanhf C.tanhf
+func Tanhf(x float32) float32
+
+//go:linkname Tgammaf C.tgammaf
+func Tgammaf(x float32) float32
+
+//go:linkname Truncf C.truncf
+func Truncf(x float32) float32
 
 // -----------------------------------------------------------------------------
