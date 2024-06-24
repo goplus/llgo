@@ -187,10 +187,12 @@ func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods 
 func Func(in, out []*Type, variadic bool) *FuncType {
 	ret := &FuncType{
 		Type: Type{
-			Size_: unsafe.Sizeof(uintptr(0)),
-			Hash:  uint32(abi.Func), // TODO(xsw): hash
-			Kind_: uint8(abi.Func),
-			Str_:  "func(...)",
+			Size_:       unsafe.Sizeof(uintptr(0)),
+			Hash:        uint32(abi.Func), // TODO(xsw): hash
+			Align_:      uint8(pointerAlign),
+			FieldAlign_: uint8(pointerAlign),
+			Kind_:       uint8(abi.Func),
+			Str_:        "func(...)",
 		},
 		In:  in,
 		Out: out,
@@ -206,10 +208,12 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 	ret := &abi.InterfaceType{
 		Type: Type{
-			Size_: unsafe.Sizeof(eface{}),
-			Hash:  uint32(abi.Interface), // TODO(xsw): hash
-			Kind_: uint8(abi.Interface),
-			Str_:  name,
+			Size_:       unsafe.Sizeof(eface{}),
+			Hash:        uint32(abi.Interface), // TODO(xsw): hash
+			Align_:      uint8(pointerAlign),
+			FieldAlign_: uint8(pointerAlign),
+			Kind_:       uint8(abi.Interface),
+			Str_:        name,
 		},
 		PkgPath_: pkgPath,
 		Methods:  methods,
@@ -368,8 +372,10 @@ func EfaceEqual(v, u eface) bool {
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
 		abi.Float32, abi.Float64:
 		return *(*uintptr)(v.data) == *(*uintptr)(u.data)
-	case abi.Complex64, abi.Complex128:
-		panic("TODO complex")
+	case abi.Complex64:
+		return *(*complex64)(v.data) == *(*complex64)(u.data)
+	case abi.Complex128:
+		return *(*complex128)(v.data) == *(*complex128)(u.data)
 	case abi.String:
 		return *(*string)(v.data) == *(*string)(u.data)
 	case abi.Pointer, abi.UnsafePointer:
