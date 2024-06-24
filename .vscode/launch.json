@@ -23,20 +23,13 @@
             "args": ["build", "-o", "../../_output/defer", "../../_demo/defer/."],
         },
         {
-            "name": "array.init",
+            "name": "rand",
             "type": "gop",
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {"LLGOROOT":"${workspaceFolder}"},
-            "args": ["build", "-o", "../../_output/array.init", "../../_demo/array/init/."],
-        },
-        {
-            "name": "go.array.init",
-            "type": "gop",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${fileDirname}"
+            "args": ["build", "-o", "../../_output/rand", "../../_demo/rand/."],
         }
     ]
 }
