@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package zlib
 
 import (
@@ -10,58 +26,67 @@ const (
 	LLGoPackage = "link: $(pkg-config --libs zlib); -lz"
 )
 
+/* errno */
 const (
-	Z_NO_FLUSH      = 0
-	Z_PARTIAL_FLUSH = 1
-	Z_SYNC_FLUSH    = 2
-	Z_FULL_FLUSH    = 3
-	Z_FINISH        = 4
-	Z_BLOCK         = 5
-	Z_TREES         = 6
-
-	Z_OK            = 0
-	Z_STREAM_END    = 1
-	Z_NEED_DICT     = 2
-	Z_ERRNO         = -1
-	Z_STREAM_ERROR  = -2
-	Z_DATA_ERROR    = -3
-	Z_MEM_ERROR     = -4
-	Z_BUF_ERROR     = -5
-	Z_VERSION_ERROR = -6
-
-	Z_NO_COMPRESSION      = 0
-	Z_BEST_SPEED          = 1
-	Z_BEST_COMPRESSION    = 9
-	Z_DEFAULT_COMPRESSION = -1
-	/* compression levels */
-
-	Z_FILTERED         = 1
-	Z_HUFFMAN_ONLY     = 2
-	Z_RLE              = 3
-	Z_FIXED            = 4
-	Z_DEFAULT_STRATEGY = 0
-
-	Z_BINARY  = 0
-	Z_TEXT    = 1
-	Z_ASCII   = Z_TEXT
-	Z_UNKNOWN = 2
-
-	Z_DEFLATED = 8
-
-	Z_NULL = 0
+	OK            = 0
+	STREAM_END    = 1
+	NEED_DICT     = 2
+	ERRNO         = -1
+	STREAM_ERROR  = -2
+	DATA_ERROR    = -3
+	MEM_ERROR     = -4
+	BUF_ERROR     = -5
+	VERSION_ERROR = -6
 )
 
-//go:linkname Compress C.compress
-func Compress(dest *uint8, destLen *uint32, source *uint8, sourceLen uint32) c.Int
+/* compression levels */
+const (
+	NO_COMPRESSION      = 0
+	BEST_SPEED          = 1
+	BEST_COMPRESSION    = 9
+	DEFAULT_COMPRESSION = -1
+)
 
-//go:linkname Compress2 C.compress2
-func Compress2(dest *uint8, destLen *uint32, source *uint8, sourceLen uint32, level c.Int) c.Int
+const (
+	NO_FLUSH      = 0
+	PARTIAL_FLUSH = 1
+	SYNC_FLUSH    = 2
+	FULL_FLUSH    = 3
+	FINISH        = 4
+	BLOCK         = 5
+	TREES         = 6
+)
 
-//go:linkname Uncompress C.uncompress
-func Uncompress(dest *uint8, destLen *uint32, source *uint8, sourceLen uint32) c.Int
+const (
+	FILTERED         = 1
+	HUFFMAN_ONLY     = 2
+	RLE              = 3
+	FIXED            = 4
+	DEFAULT_STRATEGY = 0
+)
 
-//go:linkname Uncompress2 C.uncompress2
-func Uncompress2(dest *uint8, destLen *uint32, source *uint8, sourceLen *uint32) c.Int
+const (
+	BINARY  = 0
+	TEXT    = 1
+	ASCII   = TEXT
+	UNKNOWN = 2
+)
+
+const (
+	DEFLATED = 8
+)
 
 //go:linkname CompressBound C.compressBound
-func CompressBound(sourceLen uint32) uint32
+func CompressBound(sourceLen c.Ulong) c.Ulong
+
+//go:linkname Compress C.compress
+func Compress(dest *byte, destLen *c.Ulong, source *byte, sourceLen c.Ulong) c.Int
+
+//go:linkname Compress2 C.compress2
+func Compress2(dest *byte, destLen *c.Ulong, source *byte, sourceLen c.Ulong, level c.Int) c.Int
+
+//go:linkname Uncompress C.uncompress
+func Uncompress(dest *byte, destLen *c.Ulong, source *byte, sourceLen c.Ulong) c.Int
+
+//go:linkname Uncompress2 C.uncompress2
+func Uncompress2(dest *byte, destLen *c.Ulong, source *byte, sourceLen *c.Ulong) c.Int
