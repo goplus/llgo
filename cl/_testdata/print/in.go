@@ -10,7 +10,9 @@ func gwrite(b []byte) {
 	if len(b) == 0 {
 		return
 	}
-	c.Printf(c.Str("%s"), b)
+	for _, v := range b {
+		c.Printf(c.Str("%c"), v)
+	}
 }
 
 func printbool(v bool) {
@@ -200,6 +202,7 @@ func main() {
 		int8(1), int16(2), int32(3), int64(4), 5,
 		uint8(1), uint16(2), uint32(3), uint64(4), uintptr(5),
 		"llgo")
+	println(1 + 2i)
 }
 
 func println(args ...any) {
@@ -242,6 +245,16 @@ func printany(v any) {
 		printfloat(float64(v))
 	case float64:
 		printfloat(float64(v))
+	case complex64:
+		printstring("(")
+		printfloat(float64(real(v)))
+		printfloat(float64(imag(v)))
+		printstring("i)")
+	case complex128:
+		printstring("(")
+		printfloat(real(v))
+		printfloat(imag(v))
+		printstring("i)")
 	case string:
 		printstring(v)
 	}

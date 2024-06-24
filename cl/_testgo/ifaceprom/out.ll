@@ -26,7 +26,7 @@ source_filename = "main"
 @4 = private unnamed_addr constant [8 x i8] c"main.two", align 1
 @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" = linkonce global ptr null, align 8
 @_llgo_string = linkonce global ptr null, align 8
-@5 = private unnamed_addr constant [9 x i8] c"main.impl", align 1
+@5 = private unnamed_addr constant [4 x i8] c"impl", align 1
 @"main.iface$zZ89tENb5h_KNjvpxf1TXPfaWFYn0IZrZwyVf42lRtA" = global ptr null, align 8
 @_llgo_main.I = linkonce global ptr null, align 8
 @6 = private unnamed_addr constant [6 x i8] c"main.I", align 1
@@ -847,7 +847,7 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   %121 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %120, i32 0, i32 0
   store ptr @5, ptr %121, align 8
   %122 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %120, i32 0, i32 1
-  store i64 9, ptr %122, align 4
+  store i64 4, ptr %122, align 4
   %123 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %120, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %119, %"github.com/goplus/llgo/internal/runtime.String" %123, ptr %14, %"github.com/goplus/llgo/internal/runtime.Slice" %107, %"github.com/goplus/llgo/internal/runtime.Slice" %115)
   %124 = load ptr, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", align 8

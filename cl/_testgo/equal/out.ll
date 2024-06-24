@@ -24,9 +24,9 @@ source_filename = "main"
 @5 = private unnamed_addr constant [1 x i8] c"Y", align 1
 @6 = private unnamed_addr constant [1 x i8] c"Z", align 1
 @7 = private unnamed_addr constant [1 x i8] c"V", align 1
-@8 = private unnamed_addr constant [6 x i8] c"main.T", align 1
+@8 = private unnamed_addr constant [1 x i8] c"T", align 1
 @_llgo_main.N = linkonce global ptr null, align 8
-@9 = private unnamed_addr constant [6 x i8] c"main.N", align 1
+@9 = private unnamed_addr constant [1 x i8] c"N", align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
 
@@ -749,7 +749,7 @@ _llgo_13:                                         ; preds = %_llgo_12
   %105 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %104, i32 0, i32 0
   store ptr @8, ptr %105, align 8
   %106 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %104, i32 0, i32 1
-  store i64 6, ptr %106, align 4
+  store i64 1, ptr %106, align 4
   %107 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %104, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %24, %"github.com/goplus/llgo/internal/runtime.String" %103, %"github.com/goplus/llgo/internal/runtime.String" %107, ptr %99, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   br label %_llgo_14
@@ -779,7 +779,7 @@ _llgo_17:                                         ; preds = %_llgo_16
   %117 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %116, i32 0, i32 0
   store ptr @9, ptr %117, align 8
   %118 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %116, i32 0, i32 1
-  store i64 6, ptr %118, align 4
+  store i64 1, ptr %118, align 4
   %119 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %116, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %110, %"github.com/goplus/llgo/internal/runtime.String" %115, %"github.com/goplus/llgo/internal/runtime.String" %119, ptr %111, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   br label %_llgo_18
