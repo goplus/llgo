@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	LLGoFiles   = "llama2/run.c"
 	LLGoPackage = "link"
 )
 
