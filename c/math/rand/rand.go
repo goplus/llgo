@@ -13,8 +13,8 @@ const (
 //go:linkname Rand C.rand
 func Rand() c.Int
 
-//go:linkname Rand_r C.rand_r
-func Rand_r(*c.Uint) c.Int
+//go:linkname RandR C.rand_r
+func RandR(*c.Uint) c.Int
 
 //go:linkname Srand C.srand
 func Srand(c.Uint)

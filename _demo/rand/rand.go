@@ -8,6 +8,8 @@ import (
 func main() {
 	var s c.Uint = 6
 	rand.Srand(s)
-	r := rand.Rand_r(&s)
+	rr := rand.RandR(&s)
+	r := rand.Rand()
 	println("r:", r)
+	println("rr:", rr)
 }
