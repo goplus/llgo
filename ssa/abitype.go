@@ -278,10 +278,10 @@ func (b Builder) abiArrayOf(t *types.Array) func() Expr {
 // func Struct(pkgPath string, size uintptr, fields []abi.StructField)
 func (b Builder) abiStructOf(t *types.Struct) func() Expr {
 	n := t.NumFields()
-	typs := make([]Expr, n)
+	typs := make([]func() Expr, n)
 	for i := 0; i < n; i++ {
 		f := t.Field(i)
-		typs[i] = b.abiType(f.Type())
+		typs[i] = b.abiTypeOf(f.Type())
 	}
 	return func() Expr {
 		pkg := b.Pkg
@@ -296,7 +296,7 @@ func (b Builder) abiStructOf(t *types.Struct) func() Expr {
 			name := b.Str(f.Name())
 			tag := b.Str(t.Tag(i))
 			embedded := prog.Val(f.Embedded())
-			flds[i] = b.Call(sfAbi, name, typs[i], prog.Val(off), tag, embedded)
+			flds[i] = b.Call(sfAbi, name, typs[i](), prog.Val(off), tag, embedded)
 		}
 		pkgPath := b.Str(pkg.Path())
 		tSlice := lastParamType(prog, strucAbi)
