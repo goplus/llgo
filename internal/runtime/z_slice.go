@@ -120,4 +120,46 @@ func SliceCopy(dst Slice, data unsafe.Pointer, num int, etSize int) int {
 	return n
 }
 
+const (
+	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
+	_64bit       = 1 << (^uintptr(0) >> 63) / 2
+	heapAddrBits = (_64bit)*48 + (1-_64bit)*(32)
+	maxAlloc     = (1 << heapAddrBits) - (1-_64bit)*1
+)
+
+const (
+	PtrSize    = 4 << (^uintptr(0) >> 63)
+	MaxUintptr = ^uintptr(0)
+)
+
+// MulUintptr returns a * b and whether the multiplication overflowed.
+// On supported platforms this is an intrinsic lowered by the compiler.
+func MulUintptr(a, b uintptr) (uintptr, bool) {
+	if a|b < 1<<(4*PtrSize) || a == 0 {
+		return a * b, false
+	}
+	overflow := b > MaxUintptr/a
+	return a * b, overflow
+}
+
+func MakeSlice(len, cap int, etSize int) Slice {
+	mem, overflow := MulUintptr(uintptr(etSize), uintptr(cap))
+	if overflow || mem > maxAlloc || len < 0 || len > cap {
+		mem, overflow := MulUintptr(uintptr(etSize), uintptr(len))
+		if overflow || mem > maxAlloc || len < 0 {
+			panicmakeslicelen()
+		}
+		panicmakeslicecap()
+	}
+	return Slice{AllocZ(mem), len, cap}
+}
+
+func panicmakeslicelen() {
+	panic(errorString("makeslice: len out of range"))
+}
+
+func panicmakeslicecap() {
+	panic(errorString("makeslice: cap out of range"))
+}
+
 // -----------------------------------------------------------------------------
