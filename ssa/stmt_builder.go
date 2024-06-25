@@ -290,10 +290,12 @@ type Phi struct {
 
 // AddIncoming adds incoming values to a phi node.
 func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int, blk BasicBlock) Expr) {
+	raw := p.raw.Type
 	bs := llvmPredBlocks(preds)
 	vals := make([]llvm.Value, len(preds))
 	for iblk, blk := range preds {
-		vals[iblk] = f(iblk, blk).impl
+		val := f(iblk, blk)
+		vals[iblk] = checkExpr(val, raw, b).impl
 	}
 	p.impl.AddIncoming(vals, bs)
 }
