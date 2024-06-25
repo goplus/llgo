@@ -20,6 +20,7 @@ package os
 import (
 	"errors"
 	"runtime"
+	"syscall"
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -51,12 +52,8 @@ func toMode(mode FileMode) os.ModeT {
 	panic("todo: toMode")
 }
 
-func toSyscallErr(errno c.Int) error {
-	panic("todo: toSyscallErr")
-}
-
 func toPathErr(op, path string, errno c.Int) error {
-	return &PathError{Op: op, Path: path, Err: toSyscallErr(errno)}
+	return &PathError{Op: op, Path: path, Err: syscall.Errno(errno)}
 }
 
 func Chdir(dir string) error {
@@ -179,7 +176,7 @@ func Getwd() (dir string, err error) {
 	if wd != nil {
 		return c.GoString(wd), nil
 	}
-	return "", toSyscallErr(os.Errno)
+	return "", syscall.Errno(os.Errno)
 }
 
 // TODO(xsw):
@@ -203,7 +200,7 @@ func Link(oldname, newname string) error {
 	if ret == 0 {
 		return nil
 	}
-	return &LinkError{"link", oldname, newname, toSyscallErr(ret)}
+	return &LinkError{"link", oldname, newname, syscall.Errno(ret)}
 }
 
 // TODO(xsw):
@@ -277,7 +274,7 @@ func Rename(oldpath, newpath string) error {
 	if ret == 0 {
 		return nil
 	}
-	return &LinkError{"rename", oldpath, newpath, toSyscallErr(ret)}
+	return &LinkError{"rename", oldpath, newpath, syscall.Errno(ret)}
 }
 
 /* TODO(xsw):
@@ -299,7 +296,7 @@ func Setenv(key, value string) error {
 	if ret == 0 {
 		return nil
 	}
-	return &SyscallError{"setenv", toSyscallErr(ret)}
+	return &SyscallError{"setenv", syscall.Errno(ret)}
 }
 
 func Symlink(oldname, newname string) error {
@@ -307,7 +304,7 @@ func Symlink(oldname, newname string) error {
 	if ret == 0 {
 		return nil
 	}
-	return &LinkError{"symlink", oldname, newname, toSyscallErr(ret)}
+	return &LinkError{"symlink", oldname, newname, syscall.Errno(ret)}
 }
 
 // TODO(xsw):
@@ -326,7 +323,7 @@ func Unsetenv(key string) error {
 	if ret == 0 {
 		return nil
 	}
-	return toSyscallErr(ret)
+	return syscall.Errno(ret)
 }
 
 // UserCacheDir returns the default root directory to use for user-specific

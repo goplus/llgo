@@ -40,8 +40,8 @@ func NewFile(fd uintptr, name string) *File {
 // It returns the number of bytes written and an error, if any.
 func (f *File) write(b []byte) (n int, err error) {
 	n = int(os.Write(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b))))
-	if e := os.Errno; e != 0 {
-		err = toSyscallErr(e)
+	if n != len(b) {
+		err = syscall.Errno(os.Errno)
 	}
 	return
 }
@@ -50,8 +50,8 @@ func (f *File) write(b []byte) (n int, err error) {
 // It returns the number of bytes read and an error, if any.
 func (f *File) read(b []byte) (n int, err error) {
 	n = int(os.Read(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b))))
-	if e := os.Errno; e != 0 {
-		err = toSyscallErr(e)
+	if n != len(b) {
+		err = syscall.Errno(os.Errno)
 	}
 	return
 }
