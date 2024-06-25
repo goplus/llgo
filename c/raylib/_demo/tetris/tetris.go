@@ -84,6 +84,7 @@ func rotateShape() {
 		curShape = temp
 	}
 }
+
 func clearLines() int {
 	linesCleared := 0
 	for y := BOARD_HEIGHT - 1; y >= 0; y-- {
@@ -110,9 +111,12 @@ func clearLines() int {
 	return linesCleared
 }
 
-func main() {
+func keyPressed(key c.Int) bool {
+	return raylib.IsKeyPressed(key) || raylib.IsKeyPressedRepeat(key)
+}
 
-	raylib.InitWindow(SCREENWIDTH, SCREENHEIGHT, c.Str("Raylib DEMO"))
+func main() {
+	raylib.InitWindow(SCREENWIDTH, SCREENHEIGHT, c.Str("tetris (powered by raylib + llgo)"))
 	raylib.SetTargetFPS(c.Int(60))
 	genShape()
 	for !raylib.WindowShouldClose() && !gameOver {
@@ -132,19 +136,19 @@ func main() {
 			}
 		}
 
-		if raylib.IsKeyPressed(raylib.KEY_LEFT) {
+		if keyPressed(raylib.KEY_LEFT) {
 			curPos.X -= 1
 			if checkCollision() {
 				curPos.X += 1
 			}
 		}
-		if raylib.IsKeyPressed(raylib.KEY_RIGHT) {
+		if keyPressed(raylib.KEY_RIGHT) {
 			curPos.X += 1
 			if checkCollision() {
 				curPos.X -= 1
 			}
 		}
-		if raylib.IsKeyPressed(raylib.KEY_UP) || raylib.IsKeyPressed(raylib.KEY_DOWN) {
+		if keyPressed(raylib.KEY_SPACE) || keyPressed(raylib.KEY_UP) || keyPressed(raylib.KEY_DOWN) {
 			rotateShape()
 		}
 
