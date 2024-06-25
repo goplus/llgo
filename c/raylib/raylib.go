@@ -52,70 +52,8 @@ type Vector4 struct {
 // Quaternion, 4 components (Vector4 alias)
 type Quaternion = Vector4
 
-// Color, 4 components, R8G8B8A8 (32bit)
-// R, G, B, A uint8
-type Color uint32
-
-const (
-	LIGHTGRAY = Color(200 | 200<<8 | 200<<16 | 255<<24) // Light Gray
-	GRAY      = Color(130 | 130<<8 | 130<<16 | 255<<24) // Gray
-	DARKGRAY  = Color(80 | 80<<8 | 80<<16 | 255<<24)    // Dark Gray
-	YELLOW    = Color(253 | 249<<8 | 0<<16 | 255<<24)   // Yellow
-	GOLD      = Color(255 | 203<<8 | 0<<16 | 255<<24)   // Gold
-	ORANGE    = Color(255 | 161<<8 | 0<<16 | 255<<24)   // Orange
-	PINK      = Color(255 | 109<<8 | 194<<16 | 255<<24) // Pink
-	RED       = Color(230 | 41<<8 | 55<<16 | 255<<24)   // Red
-	MAROON    = Color(190 | 33<<8 | 55<<16 | 255<<24)   // Maroon
-	GREEN     = Color(0 | 228<<8 | 48<<16 | 255<<24)    // Green
-	LIME      = Color(0 | 158<<8 | 47<<16 | 255<<24)    // Lime
-	DARKGREEN = Color(0 | 117<<8 | 44<<16 | 255<<24)    // Dark Green
-	SKYBLUE   = Color(102 | 191<<8 | 255<<16 | 255<<24) // Sky Blue
-	BLUE      = Color(0 | 121<<8 | 241<<16 | 255<<24)   // Blue
-
-	DARKBLUE   = Color(0 | 82<<8 | 172<<16 | 255<<24)    // Dark Blue
-	PURPLE     = Color(200 | 122<<8 | 255<<16 | 255<<24) // Purple
-	VIOLET     = Color(135 | 60<<8 | 190<<16 | 255<<24)  // Violet
-	DARKPURPLE = Color(112 | 31<<8 | 126<<16 | 255<<24)  // Dark Purple
-	BEIGE      = Color(211 | 176<<8 | 131<<16 | 255<<24) // Beige
-	BROWN      = Color(127 | 106<<8 | 79<<16 | 255<<24)  // Brown
-	DARKBROWN  = Color(76 | 63<<8 | 47<<16 | 255<<24)    // Dark Brown
-
-	WHITE    = Color(255 | 255<<8 | 255<<16 | 255<<24) // White
-	BLACK    = Color(0 | 0<<8 | 0<<16 | 255<<24)       // Black
-	BLANK    = Color(0 | 0<<8 | 0<<16 | 0<<24)         // Blank (Transparent)
-	MAGENTA  = Color(255 | 0<<8 | 255<<16 | 255<<24)   // Magenta
-	RAYWHITE = Color(245 | 245<<8 | 245<<16 | 255<<24) // My own White (raylib logo)
-)
-
-// Image, pixel data stored in CPU memory (RAM)
-type Image struct {
-	Data    c.Pointer // Image raw data
-	Width   c.Int     // Image base width
-	Height  c.Int     // Image base height
-	Mipmaps c.Int     // Mipmap levels, 1 by default
-	Format  c.Int     // Data format (PixelFormat type)
-}
-
-// Camera, defines position/orientation in 3d space
-type Camera3D struct {
-	Position   Vector3 // Camera position
-	Target     Vector3 // Camera target it looks-at
-	Up         Vector3 // Camera up vector (rotation over its axis)
-	Fovy       float32 // Camera field-of-view aperture in Y (degrees) in perspective, used as near plane width in orthographic
-	Projection c.Int   // Camera projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
-}
-
-type Camera = Camera3D // Camera type fallback, defaults to Camera3D
-
-// Camera2D, defines position/orientation in 2d space
-type Camera2D struct {
-	Offset   Vector2 // Camera offset (displacement from target)
-	Target   Vector2 // Camera target (rotation and zoom origin)
-	Rotation float32 // Camera rotation in degrees
-	Zoom     float32 // Camera zoom (scaling), should be 1.0f by default
-}
-
 // -----------------------------------------------------------------------------
+// Window-related functions
 
 //go:linkname InitWindow C.InitWindow
 func InitWindow(width, height c.Int, title *c.Char)
@@ -270,6 +208,7 @@ func EnableEventWaiting()
 func DisableEventWaiting()
 
 // -----------------------------------------------------------------------------
+// Cursor-related functions
 
 //go:linkname ShowCursor C.ShowCursor
 func ShowCursor()
@@ -290,47 +229,60 @@ func DisableCursor()
 func IsCursorOnScreen() bool
 
 // -----------------------------------------------------------------------------
-
-// Set background color (framebuffer clear color)
-//
-//go:linkname ClearBackground C.ClearBackground
-func ClearBackground(color Color)
-
-//go:linkname BeginDrawing C.BeginDrawing
-func BeginDrawing()
-
-//go:linkname EndDrawing C.EndDrawing
-func EndDrawing()
-
-//go:linkname BeginMode2D C.BeginMode2D
-func BeginMode2D(camera Camera2D)
-
-//go:linkname EndMode2D C.EndMode2D
-func EndMode2D()
-
-//go:linkname BeginMode3D C.BeginMode3D
-func BeginMode3D(camera Camera3D)
-
-//go:linkname EndMode3D C.EndMode3D
-func EndMode3D()
-
-//-go:linkname BeginTextureMode C.BeginTextureMode
-//func BeginTextureMode(target RenderTexture2D)
-
-//go:linkname EndTextureMode C.EndTextureMode
-func EndTextureMode()
-
-//go:linkname BeginScissorMode C.BeginScissorMode
-func BeginScissorMode(x, y, width, height c.Int)
-
-//go:linkname EndScissorMode C.EndScissorMode
-func EndScissorMode()
+// Shader management functions
 
 // -----------------------------------------------------------------------------
+// Screen-space-related functions
 
-// Draw a color-filled rectangle
+// -----------------------------------------------------------------------------
+// Timing-related functions
+
+// Set target FPS (maximum)
 //
-//go:linkname DrawRectangle C.DrawRectangle
-func DrawRectangle(posX, posY, width, height c.Int, color Color)
+//go:linkname SetTargetFPS C.SetTargetFPS
+func SetTargetFPS(fps c.Int)
+
+// Returns current FPS
+//
+//go:linkname GetFPS C.GetFPS
+func GetFPS() c.Int
+
+// Returns time in seconds for last frame drawn (delta time)
+//
+//go:linkname GetFrameTime C.GetFrameTime
+func GetFrameTime() c.Float
+
+// Returns elapsed time in seconds since InitWindow()
+//
+//go:linkname GetTime C.GetTime
+func GetTime() c.Double
+
+// -----------------------------------------------------------------------------
+// Custom frame control functions
+
+// NOTE: Those functions are intended for advance users that want full control over the frame processing
+// By default EndDrawing() does this job: draws everything + SwapScreenBuffer() + manage frame timing + PollInputEvents()
+// To avoid that behaviour and control frame processes manually, enable in config.h: SUPPORT_CUSTOM_FRAME_CONTROL
+
+// -----------------------------------------------------------------------------
+// Random values generation functions
+
+// -----------------------------------------------------------------------------
+// Misc. functions
+
+// -----------------------------------------------------------------------------
+// Input-related functions: keyboard
+
+// -----------------------------------------------------------------------------
+// Input-related functions: gamepads
+
+// -----------------------------------------------------------------------------
+// Input-related functions: mouse
+
+// -----------------------------------------------------------------------------
+// Input-related functions: touch
+
+// -----------------------------------------------------------------------------
+// Gestures and Touch Handling Functions (Module: rgestures)
 
 // -----------------------------------------------------------------------------
