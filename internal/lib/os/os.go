@@ -48,11 +48,11 @@ func (e *LinkError) Unwrap() error {
 }
 
 func toMode(mode FileMode) os.ModeT {
-	panic("todo")
+	panic("todo: toMode")
 }
 
 func toSyscallErr(errno c.Int) error {
-	panic("todo")
+	panic("todo: toSyscallErr")
 }
 
 func toPathErr(op, path string, errno c.Int) error {
