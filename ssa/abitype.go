@@ -185,13 +185,22 @@ func (b Builder) abiInterfaceOf(pkgPath string, name string, t *types.Interface)
 // func NewNamed(kind abi.Kind, methods, ptrMethods int)
 func (b Builder) abiNamedOf(t *types.Named) func() Expr {
 	return func() Expr {
-		pkg := b.Pkg
-		tunder := t.Underlying()
-		kind := int(abi.UnderlyingKind(tunder))
-		numMethods, numPtrMethods := b.abiMethods(t)
-		newNamed := pkg.rtFunc("NewNamed")
-		return b.Call(newNamed, b.Prog.Val(kind), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
+		return b.abiNamed(t)
 	}
+}
+
+func (b Builder) abiNamed(t *types.Named) Expr {
+	if expr, ok := b.Pkg.named[t]; ok {
+		return expr
+	}
+	pkg := b.Pkg
+	tunder := t.Underlying()
+	kind := int(abi.UnderlyingKind(tunder))
+	numMethods, numPtrMethods := b.abiMethods(t)
+	newNamed := pkg.rtFunc("NewNamed")
+	expr := b.Call(newNamed, b.Prog.Val(kind), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
+	b.Pkg.named[t] = expr
+	return expr
 }
 
 // func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method)
@@ -359,6 +368,15 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 
 // abiType returns the abi type of the specified type.
 func (b Builder) abiType(t types.Type) Expr {
+	switch t := t.(type) {
+	case *types.Pointer:
+		b.loadType(t.Elem())
+	}
+	g := b.loadType(t)
+	return b.Load(g.Expr)
+}
+
+func (b Builder) loadType(t types.Type) Global {
 	pkg := b.Pkg
 	name, pub := pkg.abi.TypeName(t)
 	g := pkg.VarOf(name)
@@ -371,7 +389,7 @@ func (b Builder) abiType(t types.Type) Expr {
 		}
 		pkg.abiTypeInit(g, t, pub)
 	}
-	return b.Load(g.Expr)
+	return g
 }
 
 // -----------------------------------------------------------------------------
