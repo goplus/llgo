@@ -527,7 +527,8 @@ func ignoreName(name string) bool {
 }
 
 func supportedInternal(name string) bool {
-	return strings.HasPrefix(name, "bytealg.") || strings.HasPrefix(name, "reflectlite.")
+	return strings.HasPrefix(name, "abi.") || strings.HasPrefix(name, "bytealg.") ||
+		strings.HasPrefix(name, "reflectlite.")
 }
 
 // -----------------------------------------------------------------------------

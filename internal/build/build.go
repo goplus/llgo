@@ -730,6 +730,7 @@ type none struct{}
 
 var hasAltPkg = map[string]none{
 	"errors":               {},
+	"internal/abi":         {},
 	"internal/bytealg":     {},
 	"internal/reflectlite": {},
 	"io":                   {},
