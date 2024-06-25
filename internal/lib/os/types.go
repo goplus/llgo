@@ -7,8 +7,6 @@ package os
 import (
 	"io/fs"
 	"syscall"
-
-	"github.com/goplus/llgo/c"
 )
 
 // Getpagesize returns the underlying system's memory page size.
@@ -16,8 +14,30 @@ func Getpagesize() int { return syscall.Getpagesize() }
 
 // File represents an open file descriptor.
 type File struct {
-	fd   c.Int
+	fd   uintptr
 	name string
+}
+
+// NewFile returns a new File with the given file descriptor and
+// name. The returned value will be nil if fd is not a valid file
+// descriptor. On Unix systems, if the file descriptor is in
+// non-blocking mode, NewFile will attempt to return a pollable File
+// (one for which the SetDeadline methods work).
+//
+// After passing it to NewFile, fd may become invalid under the same
+// conditions described in the comments of the Fd method, and the same
+// constraints apply.
+func NewFile(fd uintptr, name string) *File {
+	return &File{fd, name}
+}
+
+// checkValid checks whether f is valid for use.
+// If not, it returns an appropriate error, perhaps incorporating the operation name op.
+func (f *File) checkValid(op string) error {
+	if f == nil {
+		return ErrInvalid
+	}
+	return nil
 }
 
 // A FileInfo describes a file and is returned by Stat and Lstat.

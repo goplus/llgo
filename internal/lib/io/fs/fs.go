@@ -19,6 +19,16 @@ package fs
 // llgo:skipall
 import (
 	_ "unsafe"
+
+	"github.com/goplus/llgo/internal/lib/syscall"
+)
+
+var (
+	ErrInvalid    = syscall.ErrInvalid
+	ErrPermission = syscall.ErrPermission
+	ErrExist      = syscall.ErrExist
+	ErrNotExist   = syscall.ErrNotExist
+	ErrClosed     = syscall.ErrClosed
 )
 
 // -----------------------------------------------------------------------------
