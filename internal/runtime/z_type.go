@@ -26,17 +26,23 @@ type Kind = abi.Kind
 type Type = abi.Type
 
 // -----------------------------------------------------------------------------
+var (
+	tyBasic [abi.UnsafePointer + 1]*Type
+)
 
 func Basic(kind Kind) *Type {
-	name, size, align := basicTypeInfo(kind)
-	return &Type{
-		Size_:       size,
-		Hash:        uint32(kind), // TODO(xsw): hash
-		Align_:      uint8(align),
-		FieldAlign_: uint8(align),
-		Kind_:       uint8(kind),
-		Str_:        name,
+	if tyBasic[kind] == nil {
+		name, size, align := basicTypeInfo(kind)
+		tyBasic[kind] = &Type{
+			Size_:       size,
+			Hash:        uint32(kind), // TODO(xsw): hash
+			Align_:      uint8(align),
+			FieldAlign_: uint8(align),
+			Kind_:       uint8(kind),
+			Str_:        name,
+		}
 	}
+	return tyBasic[kind]
 }
 
 func basicTypeInfo(kind abi.Kind) (string, uintptr, uintptr) {
