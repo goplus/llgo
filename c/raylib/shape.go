@@ -207,4 +207,9 @@ func UpdateCameraPro(camera *Camera, movement, rotation Vector3, zoom float32)
 //go:linkname DrawRectangle C.DrawRectangle
 func DrawRectangle(posX, posY, width, height c.Int, color Color)
 
+// Draw text (using default font)
+//
+//go:linkname DrawText C.DrawText
+func DrawText(text *c.Char, posX, posY, fontSize c.Int, color Color)
+
 // -----------------------------------------------------------------------------
