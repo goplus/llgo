@@ -4,10 +4,13 @@
 
 package os
 
+import (
+	"syscall"
+)
+
 // Name returns the name of the file as presented to Open.
 func (f *File) Name() string { return f.name }
 
-/*
 // Stdin, Stdout, and Stderr are open Files pointing to the standard input,
 // standard output, and standard error file descriptors.
 //
@@ -44,6 +47,7 @@ const (
 	SEEK_END int = 2 // seek relative to the end
 )
 
+/*
 // Read reads up to len(b) bytes from the File and stores them in b.
 // It returns the number of bytes read and any error encountered.
 // At end of file, Read returns 0, io.EOF.
