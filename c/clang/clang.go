@@ -22,6 +22,10 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
+const (
+	LLGoPackage = "link: -L$(llvm-config --libdir) -lclang; -lclang"
+)
+
 /**
  * Opaque pointer representing client data that will be passed through
  * to various callbacks and visitors.
