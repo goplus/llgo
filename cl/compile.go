@@ -543,12 +543,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
-		var nCap llssa.Expr
 		t := p.prog.Type(v.Type(), llssa.InGo)
 		nLen := p.compileValue(b, v.Len)
-		if v.Cap != nil {
-			nCap = p.compileValue(b, v.Cap)
-		}
+		nCap := p.compileValue(b, v.Cap)
 		ret = b.MakeSlice(t, nLen, nCap)
 	case *ssa.MakeMap:
 		var nReserve llssa.Expr

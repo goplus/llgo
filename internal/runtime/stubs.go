@@ -36,3 +36,10 @@ func fastrand() uint32 {
 	return s0 + s1
 }
 */
+
+const (
+	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
+	_64bit       = 1 << (^uintptr(0) >> 63) / 2
+	heapAddrBits = (_64bit)*48 + (1-_64bit)*(32)
+	maxAlloc     = (1 << heapAddrBits) - (1-_64bit)*1
+)

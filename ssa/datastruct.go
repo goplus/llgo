@@ -417,11 +417,7 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	len = b.fitIntSize(len)
-	if cap.IsNil() {
-		cap = len
-	} else {
-		cap = b.fitIntSize(cap)
-	}
+	cap = b.fitIntSize(cap)
 	telem := prog.Index(t)
 	ret = b.InlineCall(b.Pkg.rtFunc("MakeSlice"), len, cap, prog.IntVal(prog.SizeOf(telem), prog.Int()))
 	ret.Type = t
