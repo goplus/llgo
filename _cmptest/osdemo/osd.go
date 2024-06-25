@@ -14,5 +14,5 @@ func main() {
 	cache, _ := os.UserCacheDir()
 	println("cachedir:", cache)
 
-	// os.Stdout.Write([]byte("Hello, World\n"))
+	os.Stdout.Write([]byte("Hello, World\n"))
 }

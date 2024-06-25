@@ -7,6 +7,10 @@ package os
 import (
 	"io/fs"
 	"syscall"
+	"unsafe"
+
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
 )
 
 // Getpagesize returns the underlying system's memory page size.
@@ -14,8 +18,9 @@ func Getpagesize() int { return syscall.Getpagesize() }
 
 // File represents an open file descriptor.
 type File struct {
-	fd   uintptr
-	name string
+	fd         uintptr
+	name       string
+	appendMode bool
 }
 
 // NewFile returns a new File with the given file descriptor and
@@ -28,7 +33,27 @@ type File struct {
 // conditions described in the comments of the Fd method, and the same
 // constraints apply.
 func NewFile(fd uintptr, name string) *File {
-	return &File{fd, name}
+	return &File{fd: fd, name: name}
+}
+
+// write writes len(b) bytes to the File.
+// It returns the number of bytes written and an error, if any.
+func (f *File) write(b []byte) (n int, err error) {
+	n = int(os.Write(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b))))
+	if n != len(b) {
+		err = syscall.Errno(os.Errno)
+	}
+	return
+}
+
+// read reads up to len(b) bytes from the File.
+// It returns the number of bytes read and an error, if any.
+func (f *File) read(b []byte) (n int, err error) {
+	n = int(os.Read(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b))))
+	if n != len(b) {
+		err = syscall.Errno(os.Errno)
+	}
+	return
 }
 
 // checkValid checks whether f is valid for use.

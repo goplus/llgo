@@ -5,6 +5,8 @@
 package os
 
 import (
+	"errors"
+	"io"
 	"syscall"
 )
 
@@ -47,7 +49,6 @@ const (
 	SEEK_END int = 2 // seek relative to the end
 )
 
-/*
 // Read reads up to len(b) bytes from the File and stores them in b.
 // It returns the number of bytes read and any error encountered.
 // At end of file, Read returns 0, io.EOF.
@@ -64,37 +65,43 @@ func (f *File) Read(b []byte) (n int, err error) {
 // ReadAt always returns a non-nil error when n < len(b).
 // At end of file, that error is io.EOF.
 func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
-	if err := f.checkValid("read"); err != nil {
-		return 0, err
-	}
-
-	if off < 0 {
-		return 0, &PathError{Op: "readat", Path: f.name, Err: errors.New("negative offset")}
-	}
-
-	for len(b) > 0 {
-		m, e := f.pread(b, off)
-		if e != nil {
-			err = f.wrapErr("read", e)
-			break
+	/*
+		if err := f.checkValid("read"); err != nil {
+			return 0, err
 		}
-		n += m
-		b = b[m:]
-		off += int64(m)
-	}
-	return
+
+		if off < 0 {
+			return 0, &PathError{Op: "readat", Path: f.name, Err: errors.New("negative offset")}
+		}
+
+		for len(b) > 0 {
+			m, e := f.pread(b, off)
+			if e != nil {
+				err = f.wrapErr("read", e)
+				break
+			}
+			n += m
+			b = b[m:]
+			off += int64(m)
+		}
+		return
+	*/
+	panic("todo")
 }
 
 // ReadFrom implements io.ReaderFrom.
 func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
-	if err := f.checkValid("write"); err != nil {
-		return 0, err
-	}
-	n, handled, e := f.readFrom(r)
-	if !handled {
-		return genericReadFrom(f, r) // without wrapping
-	}
-	return n, f.wrapErr("write", e)
+	/*
+		if err := f.checkValid("write"); err != nil {
+			return 0, err
+		}
+		n, handled, e := f.readFrom(r)
+		if !handled {
+			return genericReadFrom(f, r) // without wrapping
+		}
+		return n, f.wrapErr("write", e)
+	*/
+	panic("todo")
 }
 
 func genericReadFrom(f *File, r io.Reader) (int64, error) {
@@ -128,7 +135,8 @@ func (f *File) Write(b []byte) (n int, err error) {
 		err = io.ErrShortWrite
 	}
 
-	epipecheck(f, e)
+	// TODO(xsw):
+	// epipecheck(f, e)
 
 	if e != nil {
 		err = f.wrapErr("write", e)
@@ -145,30 +153,34 @@ var errWriteAtInAppendMode = errors.New("os: invalid use of WriteAt on file open
 //
 // If file was opened with the O_APPEND flag, WriteAt returns an error.
 func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
-	if err := f.checkValid("write"); err != nil {
-		return 0, err
-	}
-	if f.appendMode {
-		return 0, errWriteAtInAppendMode
-	}
-
-	if off < 0 {
-		return 0, &PathError{Op: "writeat", Path: f.name, Err: errors.New("negative offset")}
-	}
-
-	for len(b) > 0 {
-		m, e := f.pwrite(b, off)
-		if e != nil {
-			err = f.wrapErr("write", e)
-			break
+	/*
+		if err := f.checkValid("write"); err != nil {
+			return 0, err
 		}
-		n += m
-		b = b[m:]
-		off += int64(m)
-	}
-	return
+		if f.appendMode {
+			return 0, errWriteAtInAppendMode
+		}
+
+		if off < 0 {
+			return 0, &PathError{Op: "writeat", Path: f.name, Err: errors.New("negative offset")}
+		}
+
+		for len(b) > 0 {
+			m, e := f.pwrite(b, off)
+			if e != nil {
+				err = f.wrapErr("write", e)
+				break
+			}
+			n += m
+			b = b[m:]
+			off += int64(m)
+		}
+		return
+	*/
+	panic("todo")
 }
 
+/*
 // Seek sets the offset for the next Read or Write on file to offset, interpreted
 // according to whence: 0 means relative to the origin of the file, 1 means
 // relative to the current offset, and 2 means relative to the end.
@@ -249,10 +261,12 @@ func fixCount(n int, err error) (int, error) {
 	}
 	return n, err
 }
+*/
 
+// TODO(xsw):
 // checkWrapErr is the test hook to enable checking unexpected wrapped errors of poll.ErrFileClosing.
 // It is set to true in the export_test.go for tests (including fuzz tests).
-var checkWrapErr = false
+// var checkWrapErr = false
 
 // wrapErr wraps an error that occurred during an operation on an open file.
 // It passes io.EOF through unchanged, otherwise converts
@@ -261,14 +275,17 @@ func (f *File) wrapErr(op string, err error) error {
 	if err == nil || err == io.EOF {
 		return err
 	}
+	/* TODO(xsw):
 	if err == poll.ErrFileClosing {
 		err = ErrClosed
 	} else if checkWrapErr && errors.Is(err, poll.ErrFileClosing) {
 		panic("unexpected error wrapping poll.ErrFileClosing: " + err.Error())
 	}
+	*/
 	return &PathError{Op: op, Path: f.name, Err: err}
 }
 
+/*
 // TempDir returns the default directory to use for temporary files.
 //
 // On Unix systems, it returns $TMPDIR if non-empty, else /tmp.
