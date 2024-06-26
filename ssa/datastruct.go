@@ -333,7 +333,6 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("Slice %v, %v, %v\n", x.impl, low.impl, high.impl)
 	}
-
 	prog := b.Prog
 	var nCap Expr
 	var nEltSize Expr
