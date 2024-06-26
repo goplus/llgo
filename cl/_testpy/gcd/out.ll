@@ -32,13 +32,13 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = call ptr @PyLong_FromLong(i32 60)
-  %3 = call ptr @PyLong_FromLong(i32 20)
-  %4 = call ptr @PyLong_FromLong(i32 25)
+  %2 = call ptr @PyLong_FromLong(i64 60)
+  %3 = call ptr @PyLong_FromLong(i64 20)
+  %4 = call ptr @PyLong_FromLong(i64 25)
   %5 = load ptr, ptr @__llgo_py.math.gcd, align 8
   %6 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %5, ptr %2, ptr %3, ptr %4, ptr null)
-  %7 = call i32 @PyLong_AsLong(ptr %6)
-  %8 = call i32 (ptr, ...) @printf(ptr @0, i32 %7)
+  %7 = call i64 @PyLong_AsLong(ptr %6)
+  %8 = call i32 (ptr, ...) @printf(ptr @0, i64 %7)
   ret i32 0
 }
 
@@ -46,11 +46,11 @@ declare void @"github.com/goplus/llgo/py/math.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @PyLong_FromLong(i32)
+declare ptr @PyLong_FromLong(i64)
 
 declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 
-declare i32 @PyLong_AsLong(ptr)
+declare i64 @PyLong_AsLong(ptr)
 
 declare i32 @printf(ptr, ...)
 
