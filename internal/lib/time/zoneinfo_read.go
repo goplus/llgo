@@ -320,7 +320,7 @@ func LoadLocationFromTZData(name string, data []byte) (*Location, error) {
 
 	// Fill in the cache with information about right now,
 	// since that will be the most common lookup.
-	sec := now()
+	sec := nowSec()
 	for i := range tx {
 		if tx[i].when <= sec && (i+1 == len(tx) || sec < tx[i+1].when) {
 			l.cacheStart = tx[i].when
@@ -605,7 +605,7 @@ func gorootZoneSource(goroot string) (string, bool) {
 	return goroot + "/lib/time/zoneinfo.zip", true
 }
 
-func now() (sec int64) {
+func nowSec() (sec int64) {
 	var tv time.Timespec
 	time.ClockGettime(0, &tv)
 	return int64(tv.Sec)
