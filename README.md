@@ -213,8 +213,12 @@ Here are the Go packages that can be imported correctly:
 * [sync/atomic](https://pkg.go.dev/sync/atomic)
 * [sync](https://pkg.go.dev/sync) (partially)
 * [syscall](https://pkg.go.dev/syscall) (partially)
+* [errors](https://pkg.go.dev/errors) (partially)
+* [io](https://pkg.go.dev/io) (partially)
+* [io/fs](https://pkg.go.dev/io/fs) (partially)
 * [os](https://pkg.go.dev/os) (partially)
 * [reflect](https://pkg.go.dev/reflect) (partially)
+* [time](https://pkg.go.dev/time) (partially)
 
 
 ## Dependencies

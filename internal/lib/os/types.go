@@ -47,6 +47,16 @@ func (f *File) write(b []byte) (int, error) {
 	return 0, syscall.Errno(os.Errno)
 }
 
+/* TODO(xsw):
+// write writes len(b) bytes to the File.
+// It returns the number of bytes written and an error, if any.
+func (f *File) write(b []byte) (n int, err error) {
+	n, err = f.pfd.Write(b)
+	runtime.KeepAlive(f)
+	return n, err
+}
+*/
+
 // read reads up to len(b) bytes from the File.
 // It returns the number of bytes read and an error, if any.
 func (f *File) read(b []byte) (int, error) {
@@ -60,14 +70,15 @@ func (f *File) read(b []byte) (int, error) {
 	return 0, syscall.Errno(os.Errno)
 }
 
-// checkValid checks whether f is valid for use.
-// If not, it returns an appropriate error, perhaps incorporating the operation name op.
-func (f *File) checkValid(op string) error {
-	if f == nil {
-		return ErrInvalid
-	}
-	return nil
+/* TODO(xsw):
+// read reads up to len(b) bytes from the File.
+// It returns the number of bytes read and an error, if any.
+func (f *File) read(b []byte) (n int, err error) {
+	n, err = f.pfd.Read(b)
+	runtime.KeepAlive(f)
+	return n, err
 }
+*/
 
 // A FileInfo describes a file and is returned by Stat and Lstat.
 type FileInfo = fs.FileInfo
