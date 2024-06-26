@@ -18,7 +18,11 @@ package time
 
 // llgo:skipall
 import (
+	"unsafe"
 	_ "unsafe"
+
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/time"
 )
 
 type Time struct {
@@ -381,6 +385,45 @@ func daysSinceEpoch(year int) uint64 {
 	d += 365 * n
 
 	return d
+}
+
+// Provided by package runtime.
+func now() (sec int64, nsec int32, mono int64) {
+	tv := (*time.Timespec)(c.Alloca(unsafe.Sizeof(time.Timespec{})))
+	time.ClockGettime(time.CLOCK_REALTIME, tv)
+	sec = int64(tv.Sec)
+	nsec = int32(tv.Nsec)
+	mono = runtimeNano()
+	return
+}
+
+// runtimeNano returns the current value of the runtime clock in nanoseconds.
+func runtimeNano() int64 {
+	tv := (*time.Timespec)(c.Alloca(unsafe.Sizeof(time.Timespec{})))
+	time.ClockGettime(time.CLOCK_MONOTONIC, tv)
+	return int64(tv.Sec)<<nsecShift | int64(tv.Nsec)
+}
+
+// Monotonic times are reported as offsets from startNano.
+// We initialize startNano to runtimeNano() - 1 so that on systems where
+// monotonic time resolution is fairly low (e.g. Windows 2008
+// which appears to have a default resolution of 15ms),
+// we avoid ever reporting a monotonic time of 0.
+// (Callers may want to use 0 as "time not set".)
+var startNano int64 = runtimeNano() - 1
+
+// Now returns the current local time.
+func Now() Time {
+	sec, nsec, mono := now()
+	mono -= startNano
+	sec += unixToInternal - minWall
+	if uint64(sec)>>33 != 0 {
+		// Seconds field overflowed the 33 bits available when
+		// storing a monotonic time. This will be true after
+		// March 16, 2157.
+		return Time{uint64(nsec), sec + minWall, Local}
+	}
+	return Time{hasMonotonic | uint64(sec)<<nsecShift | uint64(nsec), mono, Local}
 }
 
 const (
