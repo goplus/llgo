@@ -144,6 +144,9 @@ func Fstatat(dirfd c.Int, path *c.Char, buf *StatT, flags c.Int) c.Int
 //go:linkname Open C.open
 func Open(path *c.Char, flags c.Int, mode ModeT) c.Int
 
+//go:linkname Openat C.openat
+func Openat(dirfd c.Int, path *c.Char, flags c.Int, mode ModeT) c.Int
+
 //go:linkname Creat C.creat
 func Creat(path *c.Char, mode ModeT) c.Int
 
@@ -200,6 +203,9 @@ func Fstat(fd c.Int, buf *StatT) c.Int
 func Isatty(fd c.Int) c.Int
 
 // -----------------------------------------------------------------------------
+
+//go:linkname Kill C.kill
+func Kill(pid c.Int, sig c.Int) c.Int
 
 //go:linkname Exit C.exit
 func Exit(c.Int)

@@ -730,6 +730,7 @@ type none struct{}
 
 var hasAltPkg = map[string]none{
 	"errors":               {},
+	"fmt":                  {},
 	"internal/abi":         {},
 	"internal/bytealg":     {},
 	"internal/reflectlite": {},
@@ -741,6 +742,7 @@ var hasAltPkg = map[string]none{
 	"sync":                 {},
 	"sync/atomic":          {},
 	"syscall":              {},
+	"time":                 {},
 	"os":                   {},
 	"runtime":              {},
 }
