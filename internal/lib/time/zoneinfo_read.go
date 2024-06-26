@@ -13,6 +13,8 @@ import (
 	"errors"
 	"runtime"
 	"syscall"
+
+	"github.com/goplus/llgo/c/time"
 )
 
 // registerLoadFromEmbeddedTZData is called by the time/tzdata package,
@@ -313,46 +315,42 @@ func LoadLocationFromTZData(name string, data []byte) (*Location, error) {
 		tx = append(tx, zoneTrans{when: alpha, index: 0})
 	}
 
-	/*
-		// Committed to succeed.
-		l := &Location{zone: zones, tx: tx, name: name, extend: extend}
+	// Committed to succeed.
+	l := &Location{zone: zones, tx: tx, name: name, extend: extend}
 
-		// Fill in the cache with information about right now,
-		// since that will be the most common lookup.
-		sec, _, _ := now()
-		for i := range tx {
-			if tx[i].when <= sec && (i+1 == len(tx) || sec < tx[i+1].when) {
-				l.cacheStart = tx[i].when
-				l.cacheEnd = omega
-				l.cacheZone = &l.zone[tx[i].index]
-				if i+1 < len(tx) {
-					l.cacheEnd = tx[i+1].when
-				} else if l.extend != "" {
-					// If we're at the end of the known zone transitions,
-					// try the extend string.
-					if name, offset, estart, eend, isDST, ok := tzset(l.extend, l.cacheStart, sec); ok {
-						l.cacheStart = estart
-						l.cacheEnd = eend
-						// Find the zone that is returned by tzset to avoid allocation if possible.
-						if zoneIdx := findZone(l.zone, name, offset, isDST); zoneIdx != -1 {
-							l.cacheZone = &l.zone[zoneIdx]
-						} else {
-							l.cacheZone = &zone{
-								name:   name,
-								offset: offset,
-								isDST:  isDST,
-							}
+	// Fill in the cache with information about right now,
+	// since that will be the most common lookup.
+	sec := now()
+	for i := range tx {
+		if tx[i].when <= sec && (i+1 == len(tx) || sec < tx[i+1].when) {
+			l.cacheStart = tx[i].when
+			l.cacheEnd = omega
+			l.cacheZone = &l.zone[tx[i].index]
+			if i+1 < len(tx) {
+				l.cacheEnd = tx[i+1].when
+			} else if l.extend != "" {
+				// If we're at the end of the known zone transitions,
+				// try the extend string.
+				if name, offset, estart, eend, isDST, ok := tzset(l.extend, l.cacheStart, sec); ok {
+					l.cacheStart = estart
+					l.cacheEnd = eend
+					// Find the zone that is returned by tzset to avoid allocation if possible.
+					if zoneIdx := findZone(l.zone, name, offset, isDST); zoneIdx != -1 {
+						l.cacheZone = &l.zone[zoneIdx]
+					} else {
+						l.cacheZone = &zone{
+							name:   name,
+							offset: offset,
+							isDST:  isDST,
 						}
 					}
 				}
-				break
 			}
+			break
 		}
+	}
 
-		return l, nil
-	*/
-	_ = extend
-	panic("todo")
+	return l, nil
 }
 
 func findZone(zones []zone, name string, offset int, isDST bool) int {
@@ -605,4 +603,10 @@ func gorootZoneSource(goroot string) (string, bool) {
 		return "", false
 	}
 	return goroot + "/lib/time/zoneinfo.zip", true
+}
+
+func now() (sec int64) {
+	var tv time.Timespec
+	time.ClockGettime(0, &tv)
+	return int64(tv.Sec)
 }

@@ -255,6 +255,80 @@ const (
 	daysPer4Years    = 365*4 + 1
 )
 
+// absDate is like date but operates on an absolute time.
+func absDate(abs uint64, full bool) (year int, month Month, day int, yday int) {
+	// Split into time and day.
+	d := abs / secondsPerDay
+
+	// Account for 400 year cycles.
+	n := d / daysPer400Years
+	y := 400 * n
+	d -= daysPer400Years * n
+
+	// Cut off 100-year cycles.
+	// The last cycle has one extra leap year, so on the last day
+	// of that year, day / daysPer100Years will be 4 instead of 3.
+	// Cut it back down to 3 by subtracting n>>2.
+	n = d / daysPer100Years
+	n -= n >> 2
+	y += 100 * n
+	d -= daysPer100Years * n
+
+	// Cut off 4-year cycles.
+	// The last cycle has a missing leap year, which does not
+	// affect the computation.
+	n = d / daysPer4Years
+	y += 4 * n
+	d -= daysPer4Years * n
+
+	// Cut off years within a 4-year cycle.
+	// The last year is a leap year, so on the last day of that year,
+	// day / 365 will be 4 instead of 3. Cut it back down to 3
+	// by subtracting n>>2.
+	n = d / 365
+	n -= n >> 2
+	y += n
+	d -= 365 * n
+
+	year = int(int64(y) + absoluteZeroYear)
+	yday = int(d)
+
+	if !full {
+		return
+	}
+
+	day = yday
+	if isLeap(year) {
+		// Leap year
+		switch {
+		case day > 31+29-1:
+			// After leap day; pretend it wasn't there.
+			day--
+		case day == 31+29-1:
+			// Leap day.
+			month = February
+			day = 29
+			return
+		}
+	}
+
+	// Estimate month on assumption that every month has 31 days.
+	// The estimate may be too low by at most one month, so adjust.
+	month = Month(day / 31)
+	end := int(daysBefore[month+1])
+	var begin int
+	if day >= end {
+		month++
+		begin = end
+	} else {
+		begin = int(daysBefore[month])
+	}
+
+	month++ // because January is 1
+	day = day - begin + 1
+	return
+}
+
 // daysBefore[m] counts the number of days in a non-leap year
 // before month m begins. There is an entry for m=12, counting
 // the number of days before January of next year (365).

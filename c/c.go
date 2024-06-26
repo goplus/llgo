@@ -17,6 +17,9 @@
 package c
 
 // typedef unsigned int uint;
+// typedef unsigned long ulong;
+// typedef unsigned long long ulonglong;
+// typedef long long longlong;
 import "C"
 import "unsafe"
 
@@ -25,20 +28,22 @@ const (
 )
 
 type (
-	Char      = int8
-	Long      = int32
-	Ulong     = uint32
-	LongLong  = int64
-	UlongLong = uint64
-	Float     = float32
-	Double    = float64
-	Pointer   = unsafe.Pointer
-	FilePtr   = unsafe.Pointer
+	Char    = int8
+	Float   = float32
+	Double  = float64
+	Pointer = unsafe.Pointer
+	FilePtr = unsafe.Pointer
 )
 
 type (
 	Int  C.int
 	Uint C.uint
+
+	Long  C.long
+	Ulong C.ulong
+
+	LongLong  C.longlong
+	UlongLong C.ulonglong
 )
 
 type integer interface {
