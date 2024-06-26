@@ -42,33 +42,40 @@ func IndexByteString(s string, ch byte) int {
 	return -1
 }
 
-func Count(b []byte, c byte) int {
-	n := 0
+func Count(b []byte, c byte) (n int) {
 	for _, x := range b {
 		if x == c {
 			n++
 		}
 	}
-	return n
+	return
 }
 
-func CountString(s string, c byte) int {
-	n := 0
+func CountString(s string, c byte) (n int) {
 	for i := 0; i < len(s); i++ {
 		if s[i] == c {
 			n++
 		}
 	}
-	return n
+	return
 }
 
+// Index returns the index of the first instance of b in a, or -1 if b is not present in a.
+// Requires 2 <= len(b) <= MaxLen.
 func Index(a, b []byte) int {
-	for i := 0; i <= len(b)-len(a); i++ {
-		if equal(a, b[i:i+len(a)]) {
+	for i := 0; i <= len(a)-len(b); i++ {
+		if equal(a[i:i+len(b)], b) {
 			return i
 		}
 	}
 	return -1
+}
+
+func equal(a, b []byte) bool {
+	if n := len(a); n == len(b) {
+		return c.Memcmp(unsafe.Pointer(unsafe.SliceData(a)), unsafe.Pointer(unsafe.SliceData(b)), uintptr(n)) == 0
+	}
+	return false
 }
 
 // IndexString returns the index of the first instance of b in a, or -1 if b is not present in a.
@@ -91,15 +98,6 @@ func MakeNoZero(n int) (r []byte) {
 	s.len = n
 	s.cap = n
 	return
-}
-
-func equal(a, b []byte) bool {
-	s1 := (*sliceHead)(unsafe.Pointer(&a))
-	s2 := (*sliceHead)(unsafe.Pointer(&b))
-	if s1.len == s2.len {
-		return c.Memcmp(s1.data, s2.data, uintptr(s1.len)) == 0
-	}
-	return false
 }
 
 type sliceHead struct {
