@@ -94,6 +94,41 @@ func (l *Location) String() string {
 	return l.get().name
 }
 
+var unnamedFixedZones []*Location
+var unnamedFixedZonesOnce sync.Once
+
+// FixedZone returns a Location that always uses
+// the given zone name and offset (seconds east of UTC).
+func FixedZone(name string, offset int) *Location {
+	// Most calls to FixedZone have an unnamed zone with an offset by the hour.
+	// Optimize for that case by returning the same *Location for a given hour.
+	const hoursBeforeUTC = 12
+	const hoursAfterUTC = 14
+	hour := offset / 60 / 60
+	if name == "" && -hoursBeforeUTC <= hour && hour <= +hoursAfterUTC && hour*60*60 == offset {
+		unnamedFixedZonesOnce.Do(func() {
+			unnamedFixedZones = make([]*Location, hoursBeforeUTC+1+hoursAfterUTC)
+			for hr := -hoursBeforeUTC; hr <= +hoursAfterUTC; hr++ {
+				unnamedFixedZones[hr+hoursBeforeUTC] = fixedZone("", hr*60*60)
+			}
+		})
+		return unnamedFixedZones[hour+hoursBeforeUTC]
+	}
+	return fixedZone(name, offset)
+}
+
+func fixedZone(name string, offset int) *Location {
+	l := &Location{
+		name:       name,
+		zone:       []zone{{name, offset, false}},
+		tx:         []zoneTrans{{alpha, 0, false, false}},
+		cacheStart: alpha,
+		cacheEnd:   omega,
+	}
+	l.cacheZone = &l.zone[0]
+	return l
+}
+
 // lookup returns information about the time zone in use at an
 // instant in time expressed as seconds since January 1, 1970 00:00:00 UTC.
 //

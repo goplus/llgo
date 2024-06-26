@@ -409,6 +409,50 @@ func (t Time) IsZero() bool {
 	return t.sec() == 0 && t.nsec() == 0
 }
 
+// abs returns the time t as an absolute time, adjusted by the zone offset.
+// It is called when computing a presentation property like Month or Hour.
+func (t Time) abs() uint64 {
+	l := t.loc
+	// Avoid function calls when possible.
+	if l == nil || l == &localLoc {
+		l = l.get()
+	}
+	sec := t.unixSec()
+	if l != &utcLoc {
+		if l.cacheZone != nil && l.cacheStart <= sec && sec < l.cacheEnd {
+			sec += int64(l.cacheZone.offset)
+		} else {
+			_, offset, _, _, _ := l.lookup(sec)
+			sec += int64(offset)
+		}
+	}
+	return uint64(sec + (unixToInternal + internalToAbsolute))
+}
+
+// locabs is a combination of the Zone and abs methods,
+// extracting both return values from a single zone lookup.
+func (t Time) locabs() (name string, offset int, abs uint64) {
+	l := t.loc
+	if l == nil || l == &localLoc {
+		l = l.get()
+	}
+	// Avoid function call if we hit the local time cache.
+	sec := t.unixSec()
+	if l != &utcLoc {
+		if l.cacheZone != nil && l.cacheStart <= sec && sec < l.cacheEnd {
+			name = l.cacheZone.name
+			offset = l.cacheZone.offset
+		} else {
+			name, offset, _, _, _ = l.lookup(sec)
+		}
+		sec += int64(offset)
+	} else {
+		name = "UTC"
+	}
+	abs = uint64(sec + (unixToInternal + internalToAbsolute))
+	return
+}
+
 // Date returns the Time corresponding to
 //
 //	yyyy-mm-dd hh:mm:ss + nsec nanoseconds
@@ -479,6 +523,111 @@ func Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) T
 	t := unixTime(unix, int32(nsec))
 	t.setLoc(loc)
 	return t
+}
+
+/* TODO(xsw):
+// Year returns the year in which t occurs.
+func (t Time) Year() int {
+	year, _, _, _ := t.date(false)
+	return year
+}
+
+// Month returns the month of the year specified by t.
+func (t Time) Month() Month {
+	_, month, _, _ := t.date(true)
+	return month
+}
+
+// Day returns the day of the month specified by t.
+func (t Time) Day() int {
+	_, _, day, _ := t.date(true)
+	return day
+}
+*/
+
+// Weekday returns the day of the week specified by t.
+func (t Time) Weekday() Weekday {
+	return absWeekday(t.abs())
+}
+
+// absWeekday is like Weekday but operates on an absolute time.
+func absWeekday(abs uint64) Weekday {
+	// January 1 of the absolute year, like January 1 of 2001, was a Monday.
+	sec := (abs + uint64(Monday)*secondsPerDay) % secondsPerWeek
+	return Weekday(int(sec) / secondsPerDay)
+}
+
+// ISOWeek returns the ISO 8601 year and week number in which t occurs.
+// Week ranges from 1 to 53. Jan 01 to Jan 03 of year n might belong to
+// week 52 or 53 of year n-1, and Dec 29 to Dec 31 might belong to week 1
+// of year n+1.
+func (t Time) ISOWeek() (year, week int) {
+	// According to the rule that the first calendar week of a calendar year is
+	// the week including the first Thursday of that year, and that the last one is
+	// the week immediately preceding the first calendar week of the next calendar year.
+	// See https://www.iso.org/obp/ui#iso:std:iso:8601:-1:ed-1:v1:en:term:3.1.1.23 for details.
+
+	// weeks start with Monday
+	// Monday Tuesday Wednesday Thursday Friday Saturday Sunday
+	// 1      2       3         4        5      6        7
+	// +3     +2      +1        0        -1     -2       -3
+	// the offset to Thursday
+	abs := t.abs()
+	d := Thursday - absWeekday(abs)
+	// handle Sunday
+	if d == 4 {
+		d = -3
+	}
+	// find the Thursday of the calendar week
+	abs += uint64(d) * secondsPerDay
+	year, _, _, yday := absDate(abs, false)
+	return year, yday/7 + 1
+}
+
+// Clock returns the hour, minute, and second within the day specified by t.
+func (t Time) Clock() (hour, min, sec int) {
+	return absClock(t.abs())
+}
+
+// absClock is like clock but operates on an absolute time.
+func absClock(abs uint64) (hour, min, sec int) {
+	sec = int(abs % secondsPerDay)
+	hour = sec / secondsPerHour
+	sec -= hour * secondsPerHour
+	min = sec / secondsPerMinute
+	sec -= min * secondsPerMinute
+	return
+}
+
+// Hour returns the hour within the day specified by t, in the range [0, 23].
+func (t Time) Hour() int {
+	return int(t.abs()%secondsPerDay) / secondsPerHour
+}
+
+// Minute returns the minute offset within the hour specified by t, in the range [0, 59].
+func (t Time) Minute() int {
+	return int(t.abs()%secondsPerHour) / secondsPerMinute
+}
+
+// Second returns the second offset within the minute specified by t, in the range [0, 59].
+func (t Time) Second() int {
+	return int(t.abs() % secondsPerMinute)
+}
+
+// Nanosecond returns the nanosecond offset within the second specified by t,
+// in the range [0, 999999999].
+func (t Time) Nanosecond() int {
+	return int(t.nsec())
+}
+
+// YearDay returns the day of the year specified by t, in the range [1,365] for non-leap years,
+// and [1,366] in leap years.
+func (t Time) YearDay() int {
+	/*
+		_, _, _, yday := t.date(false)
+		return yday + 1
+	*/
+	panic("todo: Time.YearDay")
 }
 
 func unixTime(sec int64, nsec int32) Time {

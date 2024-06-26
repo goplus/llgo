@@ -611,7 +611,7 @@ func (t Time) GoString() string {
 		buf = append(buf, ')')
 		return string(buf)
 	*/
-	panic("todo")
+	panic("todo: time.GoString")
 }
 
 // Format returns a textual representation of the time value formatted according
@@ -637,189 +637,183 @@ func (t Time) Format(layout string) string {
 // AppendFormat is like Format but appends the textual
 // representation to b and returns the extended buffer.
 func (t Time) AppendFormat(b []byte, layout string) []byte {
-	/*
-		// Optimize for RFC3339 as it accounts for over half of all representations.
-		switch layout {
-		case RFC3339:
-			return t.appendFormatRFC3339(b, false)
-		case RFC3339Nano:
-			return t.appendFormatRFC3339(b, true)
-		default:
-			return t.appendFormat(b, layout)
-		}
-	*/
-	panic("todo")
+	// Optimize for RFC3339 as it accounts for over half of all representations.
+	switch layout {
+	case RFC3339:
+		return t.appendFormatRFC3339(b, false)
+	case RFC3339Nano:
+		return t.appendFormatRFC3339(b, true)
+	default:
+		return t.appendFormat(b, layout)
+	}
 }
 
 func (t Time) appendFormat(b []byte, layout string) []byte {
-	/*
-		var (
-			name, offset, abs = t.locabs()
+	var (
+		name, offset, abs = t.locabs()
 
-			year  int = -1
-			month Month
-			day   int
-			yday  int
-			hour  int = -1
-			min   int
-			sec   int
-		)
+		year  int = -1
+		month Month
+		day   int
+		yday  int
+		hour  int = -1
+		min   int
+		sec   int
+	)
 
-		// Each iteration generates one std value.
-		for layout != "" {
-			prefix, std, suffix := nextStdChunk(layout)
-			if prefix != "" {
-				b = append(b, prefix...)
+	// Each iteration generates one std value.
+	for layout != "" {
+		prefix, std, suffix := nextStdChunk(layout)
+		if prefix != "" {
+			b = append(b, prefix...)
+		}
+		if std == 0 {
+			break
+		}
+		layout = suffix
+
+		// Compute year, month, day if needed.
+		if year < 0 && std&stdNeedDate != 0 {
+			year, month, day, yday = absDate(abs, true)
+			yday++
+		}
+
+		// Compute hour, minute, second if needed.
+		if hour < 0 && std&stdNeedClock != 0 {
+			hour, min, sec = absClock(abs)
+		}
+
+		switch std & stdMask {
+		case stdYear:
+			y := year
+			if y < 0 {
+				y = -y
 			}
-			if std == 0 {
+			b = appendInt(b, y%100, 2)
+		case stdLongYear:
+			b = appendInt(b, year, 4)
+		case stdMonth:
+			b = append(b, month.String()[:3]...)
+		case stdLongMonth:
+			m := month.String()
+			b = append(b, m...)
+		case stdNumMonth:
+			b = appendInt(b, int(month), 0)
+		case stdZeroMonth:
+			b = appendInt(b, int(month), 2)
+		case stdWeekDay:
+			b = append(b, absWeekday(abs).String()[:3]...)
+		case stdLongWeekDay:
+			s := absWeekday(abs).String()
+			b = append(b, s...)
+		case stdDay:
+			b = appendInt(b, day, 0)
+		case stdUnderDay:
+			if day < 10 {
+				b = append(b, ' ')
+			}
+			b = appendInt(b, day, 0)
+		case stdZeroDay:
+			b = appendInt(b, day, 2)
+		case stdUnderYearDay:
+			if yday < 100 {
+				b = append(b, ' ')
+				if yday < 10 {
+					b = append(b, ' ')
+				}
+			}
+			b = appendInt(b, yday, 0)
+		case stdZeroYearDay:
+			b = appendInt(b, yday, 3)
+		case stdHour:
+			b = appendInt(b, hour, 2)
+		case stdHour12:
+			// Noon is 12PM, midnight is 12AM.
+			hr := hour % 12
+			if hr == 0 {
+				hr = 12
+			}
+			b = appendInt(b, hr, 0)
+		case stdZeroHour12:
+			// Noon is 12PM, midnight is 12AM.
+			hr := hour % 12
+			if hr == 0 {
+				hr = 12
+			}
+			b = appendInt(b, hr, 2)
+		case stdMinute:
+			b = appendInt(b, min, 0)
+		case stdZeroMinute:
+			b = appendInt(b, min, 2)
+		case stdSecond:
+			b = appendInt(b, sec, 0)
+		case stdZeroSecond:
+			b = appendInt(b, sec, 2)
+		case stdPM:
+			if hour >= 12 {
+				b = append(b, "PM"...)
+			} else {
+				b = append(b, "AM"...)
+			}
+		case stdpm:
+			if hour >= 12 {
+				b = append(b, "pm"...)
+			} else {
+				b = append(b, "am"...)
+			}
+		case stdISO8601TZ, stdISO8601ColonTZ, stdISO8601SecondsTZ, stdISO8601ShortTZ, stdISO8601ColonSecondsTZ, stdNumTZ, stdNumColonTZ, stdNumSecondsTz, stdNumShortTZ, stdNumColonSecondsTZ:
+			// Ugly special case. We cheat and take the "Z" variants
+			// to mean "the time zone as formatted for ISO 8601".
+			if offset == 0 && (std == stdISO8601TZ || std == stdISO8601ColonTZ || std == stdISO8601SecondsTZ || std == stdISO8601ShortTZ || std == stdISO8601ColonSecondsTZ) {
+				b = append(b, 'Z')
 				break
 			}
-			layout = suffix
-
-			// Compute year, month, day if needed.
-			if year < 0 && std&stdNeedDate != 0 {
-				year, month, day, yday = absDate(abs, true)
-				yday++
+			zone := offset / 60 // convert to minutes
+			absoffset := offset
+			if zone < 0 {
+				b = append(b, '-')
+				zone = -zone
+				absoffset = -absoffset
+			} else {
+				b = append(b, '+')
+			}
+			b = appendInt(b, zone/60, 2)
+			if std == stdISO8601ColonTZ || std == stdNumColonTZ || std == stdISO8601ColonSecondsTZ || std == stdNumColonSecondsTZ {
+				b = append(b, ':')
+			}
+			if std != stdNumShortTZ && std != stdISO8601ShortTZ {
+				b = appendInt(b, zone%60, 2)
 			}
 
-			// Compute hour, minute, second if needed.
-			if hour < 0 && std&stdNeedClock != 0 {
-				hour, min, sec = absClock(abs)
-			}
-
-			switch std & stdMask {
-			case stdYear:
-				y := year
-				if y < 0 {
-					y = -y
-				}
-				b = appendInt(b, y%100, 2)
-			case stdLongYear:
-				b = appendInt(b, year, 4)
-			case stdMonth:
-				b = append(b, month.String()[:3]...)
-			case stdLongMonth:
-				m := month.String()
-				b = append(b, m...)
-			case stdNumMonth:
-				b = appendInt(b, int(month), 0)
-			case stdZeroMonth:
-				b = appendInt(b, int(month), 2)
-			case stdWeekDay:
-				b = append(b, absWeekday(abs).String()[:3]...)
-			case stdLongWeekDay:
-				s := absWeekday(abs).String()
-				b = append(b, s...)
-			case stdDay:
-				b = appendInt(b, day, 0)
-			case stdUnderDay:
-				if day < 10 {
-					b = append(b, ' ')
-				}
-				b = appendInt(b, day, 0)
-			case stdZeroDay:
-				b = appendInt(b, day, 2)
-			case stdUnderYearDay:
-				if yday < 100 {
-					b = append(b, ' ')
-					if yday < 10 {
-						b = append(b, ' ')
-					}
-				}
-				b = appendInt(b, yday, 0)
-			case stdZeroYearDay:
-				b = appendInt(b, yday, 3)
-			case stdHour:
-				b = appendInt(b, hour, 2)
-			case stdHour12:
-				// Noon is 12PM, midnight is 12AM.
-				hr := hour % 12
-				if hr == 0 {
-					hr = 12
-				}
-				b = appendInt(b, hr, 0)
-			case stdZeroHour12:
-				// Noon is 12PM, midnight is 12AM.
-				hr := hour % 12
-				if hr == 0 {
-					hr = 12
-				}
-				b = appendInt(b, hr, 2)
-			case stdMinute:
-				b = appendInt(b, min, 0)
-			case stdZeroMinute:
-				b = appendInt(b, min, 2)
-			case stdSecond:
-				b = appendInt(b, sec, 0)
-			case stdZeroSecond:
-				b = appendInt(b, sec, 2)
-			case stdPM:
-				if hour >= 12 {
-					b = append(b, "PM"...)
-				} else {
-					b = append(b, "AM"...)
-				}
-			case stdpm:
-				if hour >= 12 {
-					b = append(b, "pm"...)
-				} else {
-					b = append(b, "am"...)
-				}
-			case stdISO8601TZ, stdISO8601ColonTZ, stdISO8601SecondsTZ, stdISO8601ShortTZ, stdISO8601ColonSecondsTZ, stdNumTZ, stdNumColonTZ, stdNumSecondsTz, stdNumShortTZ, stdNumColonSecondsTZ:
-				// Ugly special case. We cheat and take the "Z" variants
-				// to mean "the time zone as formatted for ISO 8601".
-				if offset == 0 && (std == stdISO8601TZ || std == stdISO8601ColonTZ || std == stdISO8601SecondsTZ || std == stdISO8601ShortTZ || std == stdISO8601ColonSecondsTZ) {
-					b = append(b, 'Z')
-					break
-				}
-				zone := offset / 60 // convert to minutes
-				absoffset := offset
-				if zone < 0 {
-					b = append(b, '-')
-					zone = -zone
-					absoffset = -absoffset
-				} else {
-					b = append(b, '+')
-				}
-				b = appendInt(b, zone/60, 2)
-				if std == stdISO8601ColonTZ || std == stdNumColonTZ || std == stdISO8601ColonSecondsTZ || std == stdNumColonSecondsTZ {
+			// append seconds if appropriate
+			if std == stdISO8601SecondsTZ || std == stdNumSecondsTz || std == stdNumColonSecondsTZ || std == stdISO8601ColonSecondsTZ {
+				if std == stdNumColonSecondsTZ || std == stdISO8601ColonSecondsTZ {
 					b = append(b, ':')
 				}
-				if std != stdNumShortTZ && std != stdISO8601ShortTZ {
-					b = appendInt(b, zone%60, 2)
-				}
-
-				// append seconds if appropriate
-				if std == stdISO8601SecondsTZ || std == stdNumSecondsTz || std == stdNumColonSecondsTZ || std == stdISO8601ColonSecondsTZ {
-					if std == stdNumColonSecondsTZ || std == stdISO8601ColonSecondsTZ {
-						b = append(b, ':')
-					}
-					b = appendInt(b, absoffset%60, 2)
-				}
-
-			case stdTZ:
-				if name != "" {
-					b = append(b, name...)
-					break
-				}
-				// No time zone known for this time, but we must print one.
-				// Use the -0700 format.
-				zone := offset / 60 // convert to minutes
-				if zone < 0 {
-					b = append(b, '-')
-					zone = -zone
-				} else {
-					b = append(b, '+')
-				}
-				b = appendInt(b, zone/60, 2)
-				b = appendInt(b, zone%60, 2)
-			case stdFracSecond0, stdFracSecond9:
-				b = appendNano(b, t.Nanosecond(), std)
+				b = appendInt(b, absoffset%60, 2)
 			}
+
+		case stdTZ:
+			if name != "" {
+				b = append(b, name...)
+				break
+			}
+			// No time zone known for this time, but we must print one.
+			// Use the -0700 format.
+			zone := offset / 60 // convert to minutes
+			if zone < 0 {
+				b = append(b, '-')
+				zone = -zone
+			} else {
+				b = append(b, '+')
+			}
+			b = appendInt(b, zone/60, 2)
+			b = appendInt(b, zone%60, 2)
+		case stdFracSecond0, stdFracSecond9:
+			b = appendNano(b, t.Nanosecond(), std)
 		}
-		return b
-	*/
-	panic("todo")
+	}
+	return b
 }
 
 var errBad = errors.New("bad value for field") // placeholder not passed to user
@@ -1023,7 +1017,7 @@ func Parse(layout, value string) (Time, error) {
 		}
 		return parse(layout, value, UTC, Local)
 	*/
-	panic("todo")
+	panic("todo: time.Parse")
 }
 
 // ParseInLocation is like Parse but differs in two important ways.
@@ -1041,7 +1035,7 @@ func ParseInLocation(layout, value string, loc *Location) (Time, error) {
 		}
 		return parse(layout, value, loc, loc)
 	*/
-	panic("todo")
+	panic("todo: time.ParseInLocation")
 }
 
 func parse(layout, value string, defaultLocation, local *Location) (Time, error) {
@@ -1413,7 +1407,7 @@ func parse(layout, value string, defaultLocation, local *Location) (Time, error)
 		// Otherwise, fall back to default.
 		return Date(year, Month(month), day, hour, min, sec, nsec, defaultLocation), nil
 	*/
-	panic("todo")
+	panic("todo: time.parse")
 }
 
 // parseTimeZone parses a time zone string and returns its length. Time zones
