@@ -21,6 +21,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/internal/runtime"
 )
 
 func IndexByte(b []byte, ch byte) int {
@@ -39,4 +40,70 @@ func IndexByteString(s string, ch byte) int {
 		return int(uintptr(ret) - uintptr(ptr))
 	}
 	return -1
+}
+
+func Count(b []byte, c byte) int {
+	n := 0
+	for _, x := range b {
+		if x == c {
+			n++
+		}
+	}
+	return n
+}
+
+func CountString(s string, c byte) int {
+	n := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == c {
+			n++
+		}
+	}
+	return n
+}
+
+func Index(a, b []byte) int {
+	for i := 0; i <= len(b)-len(a); i++ {
+		if equal(a, b[i:i+len(a)]) {
+			return i
+		}
+	}
+	return -1
+}
+
+// IndexString returns the index of the first instance of b in a, or -1 if b is not present in a.
+// Requires 2 <= len(b) <= MaxLen.
+func IndexString(a, b string) int {
+	for i := 0; i <= len(a)-len(b); i++ {
+		if a[i:i+len(b)] == b {
+			return i
+		}
+	}
+	return -1
+}
+
+// MakeNoZero makes a slice of length and capacity n without zeroing the bytes.
+// It is the caller's responsibility to ensure uninitialized bytes
+// do not leak to the end user.
+func MakeNoZero(n int) (r []byte) {
+	s := (*sliceHead)(unsafe.Pointer(&r))
+	s.data = runtime.AllocU(uintptr(n))
+	s.len = n
+	s.cap = n
+	return
+}
+
+func equal(a, b []byte) bool {
+	s1 := (*sliceHead)(unsafe.Pointer(&a))
+	s2 := (*sliceHead)(unsafe.Pointer(&b))
+	if s1.len == s2.len {
+		return c.Memcmp(s1.data, s2.data, uintptr(s1.len)) == 0
+	}
+	return false
+}
+
+type sliceHead struct {
+	data unsafe.Pointer
+	len  int
+	cap  int
 }
