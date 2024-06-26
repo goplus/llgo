@@ -97,16 +97,16 @@ const (
 
 	// like CLOCK_MONOTONIC_RAW, but reads a value cached by the system at context switch. This can be
 	// read faster, but at a loss of accuracy as it may return values that are milliseconds old.
-	CLOCK_MONOTONIC_RAW_APPROX = ClockidT(C.CLOCK_MONOTONIC_RAW_APPROX)
+	// CLOCK_MONOTONIC_RAW_APPROX = ClockidT(C.CLOCK_MONOTONIC_RAW_APPROX)
 
 	// clock that increments monotonically, in the same manner as CLOCK_MONOTONIC_RAW, but that does
 	// not increment while the system is asleep. The returned value is identical to the result of
 	// mach_absolute_time() after the appropriate mach_timebase conversion is applied.
-	CLOCK_UPTIME_RAW = ClockidT(C.CLOCK_UPTIME_RAW)
+	// CLOCK_UPTIME_RAW = ClockidT(C.CLOCK_UPTIME_RAW)
 
 	// like CLOCK_UPTIME_RAW, but reads a value cached by the system at context switch. This can be read
 	// faster, but at a loss of accuracy as it may return values that are milliseconds old.
-	CLOCK_UPTIME_RAW_APPROX = ClockidT(C.CLOCK_UPTIME_RAW_APPROX)
+	// CLOCK_UPTIME_RAW_APPROX = ClockidT(C.CLOCK_UPTIME_RAW_APPROX)
 
 	// clock that tracks the amount of CPU (in user- or kernel-mode) used by the calling process.
 	CLOCK_PROCESS_CPUTIME_ID = ClockidT(C.CLOCK_PROCESS_CPUTIME_ID)
