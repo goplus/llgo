@@ -161,12 +161,12 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 4)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   %34 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 2
-  %35 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 2
+  %35 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 1
   %36 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 0
   %37 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %36, i64 8, i64 %34, i64 1, i64 %35, i64 %34)
   %38 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %37, 1
   %39 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 2
-  %40 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 2
+  %40 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 1
   %41 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 0
   %42 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.NewSlice3"(ptr %41, i64 8, i64 %39, i64 1, i64 %40, i64 %39)
   %43 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %42, 2

@@ -356,7 +356,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		nEltSize = SizeOf(prog, prog.Index(x.Type))
 		nCap = b.SliceCap(x)
 		if high.IsNil() {
-			high = b.SliceCap(x)
+			high = b.SliceLen(x)
 		}
 		ret.Type = x.Type
 		base = b.SliceData(x)
