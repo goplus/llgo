@@ -128,20 +128,15 @@ func (f *File) Write(b []byte) (n int, err error) {
 		return 0, err
 	}
 	n, e := f.write(b)
-	if n < 0 {
-		n = 0
-	}
-	if n != len(b) {
-		err = io.ErrShortWrite
-	}
 
 	// TODO(xsw):
 	// epipecheck(f, e)
 
 	if e != nil {
 		err = f.wrapErr("write", e)
+	} else if n != len(b) {
+		err = io.ErrShortWrite
 	}
-
 	return n, err
 }
 

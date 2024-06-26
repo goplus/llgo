@@ -5,6 +5,7 @@
 package os
 
 import (
+	"io"
 	"io/fs"
 	"syscall"
 	"unsafe"
@@ -38,22 +39,25 @@ func NewFile(fd uintptr, name string) *File {
 
 // write writes len(b) bytes to the File.
 // It returns the number of bytes written and an error, if any.
-func (f *File) write(b []byte) (n int, err error) {
-	n = int(os.Write(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b))))
-	if n != len(b) {
-		err = syscall.Errno(os.Errno)
+func (f *File) write(b []byte) (int, error) {
+	ret := os.Write(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)))
+	if ret >= 0 {
+		return int(ret), nil
 	}
-	return
+	return 0, syscall.Errno(os.Errno)
 }
 
 // read reads up to len(b) bytes from the File.
 // It returns the number of bytes read and an error, if any.
-func (f *File) read(b []byte) (n int, err error) {
-	n = int(os.Read(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b))))
-	if n != len(b) {
-		err = syscall.Errno(os.Errno)
+func (f *File) read(b []byte) (int, error) {
+	ret := os.Read(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)))
+	if ret > 0 {
+		return int(ret), nil
 	}
-	return
+	if ret == 0 {
+		return 0, io.EOF
+	}
+	return 0, syscall.Errno(os.Errno)
 }
 
 // checkValid checks whether f is valid for use.

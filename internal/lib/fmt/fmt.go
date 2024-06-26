@@ -14,23 +14,9 @@
  * limitations under the License.
  */
 
-package runtime
+package fmt
 
 // llgo:skipall
 import (
 	_ "unsafe"
 )
-
-// GOROOT returns the root of the Go tree. It uses the
-// GOROOT environment variable, if set at process start,
-// or else the root used during the Go build.
-func GOROOT() string {
-	/*
-		s := gogetenv("GOROOT")
-		if s != "" {
-			return s
-		}
-		return defaultGOROOT
-	*/
-	panic("todo: GOROOT")
-}
