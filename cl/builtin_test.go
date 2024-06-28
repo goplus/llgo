@@ -227,7 +227,7 @@ func TestErrImport(t *testing.T) {
 	alt.Scope().Insert(
 		types.NewConst(0, alt, "LLGoPackage", types.Typ[types.String], constant.MakeString("noinit")),
 	)
-	ctx.patches = Patches{"foo": &ssa.Package{Pkg: alt}}
+	ctx.patches = Patches{"foo": Patch{Alt: &ssa.Package{Pkg: alt}, Types: alt}}
 	ctx.importPkg(pkg, &pkgInfo{})
 }
 

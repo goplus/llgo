@@ -77,7 +77,7 @@ type pkgInfo struct {
 	kind int
 }
 
-type none struct{}
+type none = struct{}
 
 type context struct {
 	prog   llssa.Program
@@ -539,9 +539,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				}
 			}
 		}
-		t := p.prog.Type(v.Type(), llssa.InGo)
+		prog := p.prog
+		t := prog.Type(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
-		ret = b.MakeInterface(t, x)
+		ret = b.MakeInterface(t, patchValue(p, x))
 	case *ssa.MakeSlice:
 		var nCap llssa.Expr
 		t := p.prog.Type(v.Type(), llssa.InGo)
@@ -737,8 +738,14 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 
 // -----------------------------------------------------------------------------
 
+// Patch is a patch of some package.
+type Patch struct {
+	Alt   *ssa.Package
+	Types *types.Package
+}
+
 // Patches is patches of some packages.
-type Patches = map[string]*ssa.Package
+type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
@@ -749,12 +756,13 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
+	oldTypes := pkgTypes
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
-	alt, hasPatch := patches[pkgPath]
+	patch, hasPatch := patches[pkgPath]
 	if hasPatch {
-		pkgTypes = typepatch.Pkg(pkgTypes, alt.Pkg)
+		pkgTypes = patch.Types
 		pkg.Pkg = pkgTypes
-		alt.Pkg = pkgTypes
+		patch.Alt.Pkg = pkgTypes
 	}
 	if pkgPath == llssa.PkgRuntime {
 		prog.SetRuntime(pkgTypes)
@@ -781,12 +789,13 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 
 	if hasPatch {
 		skips := ctx.skips
+		typepatch.Merge(pkgTypes, oldTypes, skips, ctx.skipall)
 		ctx.skips = nil
 		ctx.state = pkgInPatch
 		if _, ok := skips["init"]; ok || ctx.skipall {
 			ctx.state |= pkgFNoOldInit
 		}
-		processPkg(ctx, ret, alt)
+		processPkg(ctx, ret, patch.Alt)
 		ctx.state = pkgHasPatch
 		ctx.skips = skips
 	}
@@ -847,10 +856,29 @@ func globalType(gbl *ssa.Global) types.Type {
 	if t, ok := t.(*types.Named); ok {
 		o := t.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
-			return gbl.Pkg.Pkg.Scope().Lookup(o.Name()).Type()
+			if patch := gbl.Pkg.Pkg.Scope().Lookup(o.Name()); patch != nil {
+				return patch.Type()
+			}
 		}
 	}
 	return t
+}
+
+func patchValue(ctx *context, v llssa.Expr) llssa.Expr {
+	/* TODO(xsw):
+	t := v.RawType()
+	if t, ok := t.(*types.Named); ok {
+		o := t.Obj()
+		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
+			if patch, ok := ctx.patches[pkg.Path()]; ok {
+				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
+					v.Type = ctx.prog.Type(obj.Type(), llssa.InGo)
+				}
+			}
+		}
+	}
+	*/
+	return v
 }
 
 // -----------------------------------------------------------------------------

@@ -43,20 +43,6 @@ type typesScope struct {
 	isFunc   bool
 }
 
-/*
-type object struct {
-	parent *types.Scope
-	pos    token.Pos
-	pkg    *types.Package // TODO(xsw): ensure offset of pkg
-	unused [8]byte
-}
-
-type iface struct {
-	tab  unsafe.Pointer
-	data unsafe.Pointer
-}
-*/
-
 const (
 	tagPatched = 0x17
 )
@@ -79,25 +65,6 @@ func setScope(pkg *types.Package, scope *types.Scope) {
 	p.scope = scope
 }
 
-/*
-func setPath(pkg *types.Package, path string) {
-	p := (*typesPackage)(unsafe.Pointer(pkg))
-	p.path = path
-}
-
-/*
-func setPkg(o types.Object, pkg *types.Package) {
-	data := (*iface)(unsafe.Pointer(&o)).data
-	(*object)(data).pkg = pkg
-}
-
-func setPkgAndParent(o types.Object, pkg *types.Package, parent *types.Scope) {
-	data := (*iface)(unsafe.Pointer(&o)).data
-	(*object)(data).pkg = pkg
-	(*object)(data).parent = parent
-}
-*/
-
 func getElems(scope *types.Scope) map[string]types.Object {
 	s := (*typesScope)(unsafe.Pointer(scope))
 	return s.elems
@@ -108,35 +75,33 @@ func setElems(scope *types.Scope, elems map[string]types.Object) {
 	s.elems = elems
 }
 
-func Pkg(pkg, alt *types.Package) *types.Package {
-	ret := *pkg
-	scope := *pkg.Scope()
+func Clone(alt *types.Package) *types.Package {
+	ret := *alt
+	return &ret
+}
 
+func Merge(alt, pkg *types.Package, skips map[string]struct{}, skipall bool) {
+	setPatched(pkg)
+	if skipall {
+		return
+	}
+
+	scope := *alt.Scope()
 	old := getElems(&scope)
 	elems := make(map[string]types.Object, len(old))
 	for name, o := range old {
 		elems[name] = o
 	}
+	setElems(&scope, elems)
+	setScope(alt, &scope)
 
-	altScope := alt.Scope()
-	for name, o := range getElems(altScope) {
-		/*
-			switch o := o.(type) {
-			case *types.TypeName:
-				if t, ok := o.Type().(*types.Named); ok {
-					for i, n := 0, t.NumMethods(); i < n; i++ {
-						m := t.Method(i)
-						setPkg(m, &ret)
-					}
-				}
-			}
-			setPkgAndParent(o, &ret, &scope)
-		*/
+	for name, o := range getElems(pkg.Scope()) {
+		if _, ok := elems[name]; ok {
+			continue
+		}
+		if _, ok := skips[name]; ok {
+			continue
+		}
 		elems[name] = o
 	}
-	setElems(&scope, elems)
-	setScope(&ret, &scope)
-	setPatched(pkg)
-	// setPath(alt, ret.Path())
-	return &ret
 }

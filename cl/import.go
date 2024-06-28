@@ -132,8 +132,8 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	scope := pkg.Scope()
 	kind, _ := pkgKindByScope(scope)
 	if kind == PkgNormal {
-		if alt, ok := p.patches[pkgPath]; ok {
-			pkg = alt.Pkg
+		if patch, ok := p.patches[pkgPath]; ok {
+			pkg = patch.Alt.Pkg
 			scope = pkg.Scope()
 			if kind, _ = pkgKindByScope(scope); kind != PkgNormal {
 				goto start
