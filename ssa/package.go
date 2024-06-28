@@ -326,12 +326,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
 	named := make(map[types.Type]Expr)
+	bucket := make(map[*types.Map]types.Type)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p}
+		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, bucket: bucket, Prog: p}
 	ret.abi.Init(pkgPath)
 	return ret
 }
@@ -576,6 +577,7 @@ type aPackage struct {
 	pymods map[string]Global
 	strs   map[string]llvm.Value
 	named  map[types.Type]Expr
+	bucket map[*types.Map]types.Type
 	afterb unsafe.Pointer
 	patch  func(types.Type) types.Type
 

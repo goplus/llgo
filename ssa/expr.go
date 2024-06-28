@@ -1005,6 +1005,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				return b.StringLen(arg)
 			case vkChan:
 				return b.InlineCall(b.Pkg.rtFunc("ChanLen"), arg)
+			case vkMap:
+				return b.MapLen(arg)
 			}
 		}
 	case "cap":
@@ -1129,6 +1131,9 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 			fn = "PrintComplex"
 			typ = prog.Complex128()
 		case vkChan:
+			fn = "PrintPointer"
+			typ = prog.VoidPtr()
+		case vkMap:
 			fn = "PrintPointer"
 			typ = prog.VoidPtr()
 		default:
