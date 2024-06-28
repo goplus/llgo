@@ -30,7 +30,7 @@ func main() {
 		return
 	}
 
-	nm := llvm.New().Nm()
+	nm := llvm.New("").Nm()
 	items, err := nm.List(os.Args[1])
 	for _, item := range items {
 		if item.File != "" {

@@ -37,8 +37,8 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/ssa/abi"
-	"github.com/goplus/llgo/xtool/clang"
 	"github.com/goplus/llgo/xtool/env"
+	"github.com/goplus/llgo/xtool/env/llvm"
 
 	llssa "github.com/goplus/llgo/ssa"
 	clangCheck "github.com/goplus/llgo/xtool/clang/check"
@@ -308,21 +308,29 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	const N = 6
-	args := make([]string, N, len(pkg.Imports)+len(llFiles)+(N+1))
-	args[0] = "-o"
-	args[1] = app
-	args[2] = "-Wno-override-module"
-	args[3] = "-Xlinker"
-	if runtime.GOOS == "darwin" { // ld64.lld (macOS)
-		args[4] = "-dead_strip"
-		args[5] = "" // It's ok to leave it empty, as we can assume libpthread is built-in on macOS.
-	} else { // ld.lld (Unix), lld-link (Windows), wasm-ld (WebAssembly)
-		args[4] = "--gc-sections"
-		args[5] = "-lpthread" // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+	args := make([]string, 0, len(pkg.Imports)+len(llFiles)+10)
+	args = append(
+		args,
+		"-o", app,
+		"-fuse-ld=lld",
+		"-Wno-override-module",
+		// "-O2", // FIXME: This will cause TestFinalizer in _test/bdwgc.go to fail on macOS.
+	)
+	switch runtime.GOOS {
+	case "darwin": // ld64.lld (macOS)
+		args = append(
+			args,
+			"-Xlinker", "-dead_strip",
+		)
+	case "windows": // lld-link (Windows)
+		// TODO: Add options for Windows.
+	default: // ld.lld (Unix), wasm-ld (WebAssembly)
+		args = append(
+			args,
+			"-Xlinker", "--gc-sections",
+			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+		)
 	}
-	//args[6] = "-fuse-ld=lld" // TODO(xsw): to check lld exists or not
-	//args[7] = "-O2"
 	needRuntime := false
 	needPyInit := false
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
@@ -378,7 +386,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err := clang.New("").Exec(args...)
+	err := llvm.New("").Clang().Exec(args...)
 	check(err)
 
 	switch mode {
@@ -646,7 +654,7 @@ func clFile(cFile, expFile string, procFile func(linkFile string), verbose bool)
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err := clang.New("").Exec(args...)
+	err := llvm.New("").Clang().Exec(args...)
 	check(err)
 	procFile(llFile)
 }

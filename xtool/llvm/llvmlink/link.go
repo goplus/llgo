@@ -35,7 +35,7 @@ type Cmd struct {
 // New creates a new llvm-link command.
 func New(app string) *Cmd {
 	if app == "" {
-		app = os.Getenv("LLGO_LLVM_ROOT") + "/bin/llvm-link"
+		app = "llvm-link"
 	}
 	return &Cmd{app, os.Stdout, os.Stderr}
 }

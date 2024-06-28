@@ -18,28 +18,73 @@ package llvm
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
+	"github.com/goplus/llgo/xtool/clang"
+	"github.com/goplus/llgo/xtool/llvm/llvmlink"
 	"github.com/goplus/llgo/xtool/nm"
 )
 
-type Env struct {
-	root     string
-	nmprefix string
-}
+// -----------------------------------------------------------------------------
 
-func New() *Env {
-	var nmprefix string
-	var root = os.Getenv("LLGO_LLVM_ROOT")
-	if root != "" {
-		nmprefix = root + "/bin/llvm-"
+// defaultLLVMConfigBin returns the default path to the llvm-config binary. It
+// checks the LLVM_CONFIG environment variable first, then searches in PATH. If
+// not found, it returns [ldLLVMConfigBin] as a last resort.
+func defaultLLVMConfigBin() string {
+	bin := os.Getenv("LLVM_CONFIG")
+	if bin != "" {
+		return bin
 	}
-	return &Env{root, nmprefix}
+	bin, _ = exec.LookPath("llvm-config")
+	if bin != "" {
+		return bin
+	}
+	return ldLLVMConfigBin
 }
 
-func (p *Env) Root() string {
-	return p.root
+// -----------------------------------------------------------------------------
+
+// Env represents an LLVM installation.
+type Env struct {
+	binDir string
 }
 
-func (p *Env) Nm() *nm.Cmd {
-	return nm.New(p.nmprefix + "nm")
+// New creates a new [Env] instance.
+func New(llvmConfigBin string) *Env {
+	if llvmConfigBin == "" {
+		llvmConfigBin = defaultLLVMConfigBin()
+	}
+
+	// Note that an empty binDir is acceptable. In this case, LLVM
+	// executables are assumed to be in PATH.
+	binDir, _ := exec.Command(llvmConfigBin, "--bindir").Output()
+
+	e := &Env{binDir: strings.TrimSpace(string(binDir))}
+	return e
 }
+
+// BinDir returns the directory containing LLVM executables. An empty string
+// means LLVM executables are assumed to be in PATH.
+func (e *Env) BinDir() string { return e.binDir }
+
+// Clang returns a new [clang.Cmd] instance.
+func (e *Env) Clang() *clang.Cmd {
+	bin := filepath.Join(e.BinDir(), "clang")
+	return clang.New(bin)
+}
+
+// Link returns a new [llvmlink.Cmd] instance.
+func (e *Env) Link() *llvmlink.Cmd {
+	bin := filepath.Join(e.BinDir(), "llvm-link")
+	return llvmlink.New(bin)
+}
+
+// Nm returns a new [nm.Cmd] instance.
+func (e *Env) Nm() *nm.Cmd {
+	bin := filepath.Join(e.BinDir(), "llvm-nm")
+	return nm.New(bin)
+}
+
+// -----------------------------------------------------------------------------
