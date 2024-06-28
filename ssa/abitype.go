@@ -70,6 +70,8 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 		return b.abiArrayOf(t)
 	case *types.Chan:
 		return b.abiChanOf(t)
+	case *types.Map:
+		return b.abiMapOf(t)
 	}
 	panic("todo")
 }
@@ -282,6 +284,25 @@ func (b Builder) abiChanOf(t *types.Chan) func() Expr {
 		dir, s := abi.ChanDir(t.Dir())
 		return b.Call(b.Pkg.rtFunc("ChanOf"), b.Prog.IntVal(uint64(dir), b.Prog.Int()), b.Str(s), elem())
 	}
+}
+
+func (b Builder) abiMapOf(t *types.Map) func() Expr {
+	key := b.abiTypeOf(t.Key())
+	elem := b.abiTypeOf(t.Elem())
+	bucket := b.abiTypeOf(b.bucketType(t))
+	flags := abi.MapTypeFlags(t, (*goProgram)(b.Prog))
+	return func() Expr {
+		return b.Call(b.Pkg.rtFunc("MapOf"), key(), elem(), bucket(), b.Prog.Val(flags))
+	}
+}
+
+func (b Builder) bucketType(t *types.Map) types.Type {
+	if bucket, ok := b.Pkg.bucket[t]; ok {
+		return bucket
+	}
+	bucket := abi.MapBucketType(t, (*goProgram)(b.Prog))
+	b.Pkg.bucket[t] = bucket
+	return bucket
 }
 
 // func StructField(name string, typ *abi.Type, off uintptr, tag string, embedded bool)
