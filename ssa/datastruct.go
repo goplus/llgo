@@ -548,8 +548,11 @@ func (b Builder) Range(x Expr) Expr {
 	switch x.kind {
 	case vkString:
 		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
+	case vkMap:
+		typ := b.abiType(x.raw.Type)
+		return b.InlineCall(b.Pkg.rtFunc("NewMapIter"), typ, x)
 	}
-	panic("todo")
+	panic("unsupport range for " + x.raw.Type.String())
 }
 
 // The Next instruction reads and advances the (map or string)
@@ -570,11 +573,41 @@ func (b Builder) Range(x Expr) Expr {
 // Example printed form:
 //
 //	t1 = next t0
-func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
+func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
 	if isString {
 		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
 	}
-	panic("todo")
+	prog := b.Prog
+	ktyp := prog.Type(typ.raw.Type.(*types.Map).Key(), InGo)
+	vtyp := prog.Type(typ.raw.Type.(*types.Map).Elem(), InGo)
+	rets := b.InlineCall(b.Pkg.rtFunc("MapIterNext"), iter)
+	ok := b.impl.CreateExtractValue(rets.impl, 0, "")
+	t := prog.Struct(prog.Bool(), ktyp, vtyp)
+	blks := b.Func.MakeBlocks(3)
+	b.If(Expr{ok, prog.Bool()}, blks[0], blks[1])
+	b.SetBlockEx(blks[2], AtEnd, false)
+	phi := b.Phi(t)
+	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
+		b.SetBlockEx(blk, AtEnd, false)
+		if i == 0 {
+			k := b.impl.CreateExtractValue(rets.impl, 1, "")
+			v := b.impl.CreateExtractValue(rets.impl, 2, "")
+			valTrue := aggregateValue(b.impl, t.ll, prog.BoolVal(true).impl,
+				llvm.CreateLoad(b.impl, ktyp.ll, k),
+				llvm.CreateLoad(b.impl, vtyp.ll, v))
+			b.Jump(blks[2])
+			return Expr{valTrue, t}
+		}
+		valFalse := aggregateValue(b.impl, t.ll, prog.BoolVal(false).impl,
+			llvm.ConstNull(ktyp.ll),
+			llvm.ConstNull(vtyp.ll))
+		b.Jump(blks[2])
+		return Expr{valFalse, t}
+	})
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
+	return phi.Expr
+
 }
 
 // The MakeChan instruction creates a new channel object and yields a

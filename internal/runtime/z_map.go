@@ -57,6 +57,22 @@ func MapAccess2(t *maptype, h *hmap, key unsafe.Pointer) (unsafe.Pointer, bool) 
 	return mapaccess2(t, h, key)
 }
 
+func NewMapIter(t *maptype, h *hmap) *hiter {
+	var it hiter
+	mapiterinit(t, h, &it)
+	return &it
+}
+
+func MapIterNext(it *hiter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
+	if it.key == nil {
+		return
+	}
+	ok = true
+	k, v = it.key, it.elem
+	mapiternext(it)
+	return
+}
+
 func mapKeyEqual(t *maptype, p, q unsafe.Pointer) bool {
 	if isDirectIface(t.Key) {
 		switch t.Key.Size_ {

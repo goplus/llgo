@@ -574,8 +574,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		ret = b.Range(x)
 	case *ssa.Next:
+		var typ llssa.Type
+		if !v.IsString {
+			typ = p.prog.Type(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+		}
 		iter := p.compileValue(b, v.Iter)
-		ret = b.Next(iter, v.IsString)
+		ret = b.Next(typ, iter, v.IsString)
 	case *ssa.ChangeInterface:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
