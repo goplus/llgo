@@ -57,6 +57,14 @@ func MapAccess2(t *maptype, h *hmap, key unsafe.Pointer) (unsafe.Pointer, bool) 
 	return mapaccess2(t, h, key)
 }
 
+func MapDelete(t *maptype, h *hmap, key unsafe.Pointer) {
+	mapdelete(t, h, key)
+}
+
+func MapClear(t *maptype, h *hmap) {
+	mapclear(t, h)
+}
+
 func NewMapIter(t *maptype, h *hmap) *hiter {
 	var it hiter
 	mapiterinit(t, h, &it)

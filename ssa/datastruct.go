@@ -150,6 +150,9 @@ func (b Builder) MapLen(x Expr) Expr {
 		log.Printf("MapLen %v\n", x.impl)
 	}
 	prog := b.Prog
+	if x.impl.IsNull() {
+		return prog.Val(0)
+	}
 	x.Type = prog.Pointer(prog.Int())
 	return b.Load(x)
 }
@@ -607,7 +610,6 @@ func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
 	b.SetBlockEx(blks[2], AtEnd, false)
 	b.blk.last = blks[2].last
 	return phi.Expr
-
 }
 
 // The MakeChan instruction creates a new channel object and yields a
