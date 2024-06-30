@@ -542,7 +542,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		prog := p.prog
 		t := prog.Type(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
-		ret = b.MakeInterface(t, patchValue(p, x))
+		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
 		var nCap llssa.Expr
 		t := p.prog.Type(v.Type(), llssa.InGo)
@@ -790,6 +790,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	if hasPatch {
 		skips := ctx.skips
 		typepatch.Merge(pkgTypes, oldTypes, skips, ctx.skipall)
+		ret.SetPatch(ctx.patchType)
 		ctx.skips = nil
 		ctx.state = pkgInPatch
 		if _, ok := skips["init"]; ok || ctx.skipall {
@@ -864,21 +865,18 @@ func globalType(gbl *ssa.Global) types.Type {
 	return t
 }
 
-func patchValue(ctx *context, v llssa.Expr) llssa.Expr {
-	/* TODO(xsw):
-	t := v.RawType()
-	if t, ok := t.(*types.Named); ok {
+func (p *context) patchType(typ types.Type) types.Type {
+	if t, ok := typ.(*types.Named); ok {
 		o := t.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
-			if patch, ok := ctx.patches[pkg.Path()]; ok {
+			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					v.Type = ctx.prog.Type(obj.Type(), llssa.InGo)
+					return p.prog.Type(obj.Type(), llssa.InGo).RawType()
 				}
 			}
 		}
 	}
-	*/
-	return v
+	return typ
 }
 
 // -----------------------------------------------------------------------------

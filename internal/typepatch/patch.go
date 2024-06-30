@@ -89,9 +89,11 @@ func Merge(alt, pkg *types.Package, skips map[string]struct{}, skipall bool) {
 	scope := *alt.Scope()
 	old := getElems(&scope)
 	elems := make(map[string]types.Object, len(old))
+
 	for name, o := range old {
 		elems[name] = o
 	}
+
 	setElems(&scope, elems)
 	setScope(alt, &scope)
 

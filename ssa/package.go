@@ -568,6 +568,7 @@ type aPackage struct {
 	strs   map[string]llvm.Value
 	named  map[types.Type]Expr
 	afterb unsafe.Pointer
+	patch  func(types.Type) types.Type
 
 	iRoutine int
 }
@@ -633,6 +634,11 @@ func (p Package) Path() string {
 // String returns a string representation of the package.
 func (p Package) String() string {
 	return p.mod.String()
+}
+
+// SetPatch sets a patch function.
+func (p Package) SetPatch(fn func(types.Type) types.Type) {
+	p.patch = fn
 }
 
 // -----------------------------------------------------------------------------
