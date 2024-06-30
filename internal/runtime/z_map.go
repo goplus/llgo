@@ -25,6 +25,8 @@ import (
 // Map represents a Go map.
 type Map = hmap
 type maptype = abi.MapType
+type arraytype = abi.ArrayType
+type structtype = abi.StructType
 
 type slice struct {
 	array unsafe.Pointer
