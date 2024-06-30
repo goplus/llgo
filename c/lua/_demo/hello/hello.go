@@ -11,7 +11,7 @@ func main() {
 	L := lua.NewState()
 	defer L.Close()
 	L.OpenLibs()
-	if res := L.Dostring(c.Str("print('hello world')")); res != lua.OK {
+	if res := L.DoString(c.Str("print('hello world')")); res != lua.OK {
 		println("error")
 	}
 }

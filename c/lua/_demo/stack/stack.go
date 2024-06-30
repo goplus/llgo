@@ -6,9 +6,8 @@ import (
 )
 
 // printStack prints the current stack of the given Lua state.
-func printStack(L *lua.Lua_State, stateName *c.Char) {
+func printStack(L *lua.State, stateName *c.Char) {
 	top := L.GetTop()
-	// c.Printf(c.Str("%s stack (top=%d): "), c.GoStringData("sdasd"), top)
 	c.Printf(c.Str("%s stack (top=%d):"), stateName, top)
 	for i := 1; i <= int(top); i++ {
 		c.Printf(c.Str("%s "), L.ToString(c.Int(i)))
@@ -73,7 +72,7 @@ func main() {
 	defer L1.Close()
 
 	// Move two elements to the new state
-	L.Xmove(L1, c.Int(2))
+	L.XMove(L1, c.Int(2))
 	c.Printf(c.Str("\nAfter moving two elements to L1:\n"))
 	printStack(L, c.Str("L1"))
 	printStack(L1, c.Str("L2"))

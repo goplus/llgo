@@ -16,16 +16,16 @@ import (
 
 // /* predefined references */
 
-// llgo:link (*Lua_State).LoadFilex C.luaL_loadfilex
-func (L *Lua_State) LoadFilex(filename *c.Char, mode *c.Char) c.Int { return 0 }
+// llgo:link (*State).LoadFilex C.luaL_loadfilex
+func (L *State) LoadFilex(filename *c.Char, mode *c.Char) c.Int { return 0 }
 
-func (L *Lua_State) LoadFile(filename *c.Char) c.Int { return L.LoadFilex(filename, nil) }
+func (L *State) LoadFile(filename *c.Char) c.Int { return L.LoadFilex(filename, nil) }
 
-// llgo:link (*Lua_State).LoadString C.luaL_loadstring
-func (L *Lua_State) LoadString(s *c.Char) c.Int { return 0 }
+// llgo:link (*State).LoadString C.luaL_loadstring
+func (L *State) LoadString(s *c.Char) c.Int { return 0 }
 
 //go:linkname NewState C.luaL_newstate
-func NewState() *Lua_State
+func NewState() *State
 
 // /*
 // ** ===============================================================
@@ -33,14 +33,14 @@ func NewState() *Lua_State
 // ** ===============================================================
 // */
 
-func (L *Lua_State) DoFile(filename *c.Char) c.Int {
+func (L *State) DoFile(filename *c.Char) c.Int {
 	if loadResult := L.LoadFile(filename); loadResult != 0 {
 		return loadResult
 	}
 	return L.PCall(c.Int(0), c.Int(MULTRET), c.Int(0))
 }
 
-func (L *Lua_State) Dostring(str *c.Char) c.Int {
+func (L *State) DoString(str *c.Char) c.Int {
 	if loadResult := L.LoadString(str); loadResult != 0 {
 		return loadResult
 	}

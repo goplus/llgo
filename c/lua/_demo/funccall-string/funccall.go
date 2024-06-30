@@ -20,7 +20,7 @@ func main() {
 	return a .. b .. c
 end`)
 
-	if res := L.Dostring(code); res != lua.OK {
+	if res := L.DoString(code); res != lua.OK {
 		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
 	}
 

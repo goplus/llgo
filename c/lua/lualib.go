@@ -4,5 +4,5 @@ import (
 	_ "unsafe"
 )
 
-// llgo:link (*Lua_State).OpenLibs C.luaL_openlibs
-func (L *Lua_State) OpenLibs() {}
+// llgo:link (*State).OpenLibs C.luaL_openlibs
+func (L *State) OpenLibs() {}

@@ -12,7 +12,7 @@ func main() {
 	defer L.Close()
 
 	L.OpenLibs()
-	if res := L.Dostring(c.Str("function combineParams(num, str) return 'Result: ' .. str .. '  ' .. num end")); res != lua.OK {
+	if res := L.DoString(c.Str("function combineParams(num, str) return 'Result: ' .. str .. '  ' .. num end")); res != lua.OK {
 		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
 	}
 	L.GetGlobal(c.Str("combineParams"))
