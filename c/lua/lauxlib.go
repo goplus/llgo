@@ -40,7 +40,7 @@ func (L *Lua_State) DoFile(filename *c.Char) c.Int {
 	return L.PCall(c.Int(0), c.Int(MULTRET), c.Int(0))
 }
 
-func (L *Lua_State) Dostring(str *c.Char) c.Int {
+func (L *Lua_State) DoString(str *c.Char) c.Int {
 	if loadResult := L.LoadString(str); loadResult != 0 {
 		return loadResult
 	}
