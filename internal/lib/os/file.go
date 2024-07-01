@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"syscall"
+	"time"
 )
 
 // Name returns the name of the file as presented to Open.
@@ -172,36 +173,42 @@ func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
 		}
 		return
 	*/
-	panic("todo")
+	panic("todo: os.(*File).WriteAt")
 }
 
-/*
 // Seek sets the offset for the next Read or Write on file to offset, interpreted
 // according to whence: 0 means relative to the origin of the file, 1 means
 // relative to the current offset, and 2 means relative to the end.
 // It returns the new offset and an error, if any.
 // The behavior of Seek on a file opened with O_APPEND is not specified.
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
-	if err := f.checkValid("seek"); err != nil {
-		return 0, err
-	}
-	r, e := f.seek(offset, whence)
-	if e == nil && f.dirinfo != nil && r != 0 {
-		e = syscall.EISDIR
-	}
-	if e != nil {
-		return 0, f.wrapErr("seek", e)
-	}
-	return r, nil
+	/*
+		if err := f.checkValid("seek"); err != nil {
+			return 0, err
+		}
+		r, e := f.seek(offset, whence)
+		if e == nil && f.dirinfo != nil && r != 0 {
+			e = syscall.EISDIR
+		}
+		if e != nil {
+			return 0, f.wrapErr("seek", e)
+		}
+		return r, nil
+	*/
+	panic("todo: os.(*File).Seek")
 }
 
 // WriteString is like Write, but writes the contents of string s rather than
 // a slice of bytes.
 func (f *File) WriteString(s string) (n int, err error) {
-	b := unsafe.Slice(unsafe.StringData(s), len(s))
-	return f.Write(b)
+	/*
+		b := unsafe.Slice(unsafe.StringData(s), len(s))
+		return f.Write(b)
+	*/
+	panic("todo: os.(*File).WriteString")
 }
 
+/*
 // setStickyBit adds ModeSticky to the permission bits of path, non atomic.
 func setStickyBit(name string) error {
 	fi, err := Stat(name)
@@ -293,6 +300,7 @@ func (f *File) wrapErr(op string, err error) error {
 func TempDir() string {
 	return tempDir()
 }
+*/
 
 // Chmod changes the mode of the file to mode.
 // If there is an error, it will be of type *PathError.
@@ -347,12 +355,16 @@ func (f *File) SetWriteDeadline(t time.Time) error {
 // SyscallConn returns a raw file.
 // This implements the syscall.Conn interface.
 func (f *File) SyscallConn() (syscall.RawConn, error) {
-	if err := f.checkValid("SyscallConn"); err != nil {
-		return nil, err
-	}
-	return newRawConn(f)
+	/*
+		if err := f.checkValid("SyscallConn"); err != nil {
+			return nil, err
+		}
+		return newRawConn(f)
+	*/
+	panic("todo: os.(*File).SyscallConn")
 }
 
+/* TODO(xsw):
 // DirFS returns a file system (an fs.FS) for the tree of files rooted at the directory dir.
 //
 // Note that DirFS("/prefix") only guarantees that the Open calls it makes to the

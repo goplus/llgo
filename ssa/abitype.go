@@ -315,6 +315,9 @@ func lastParamType(prog Program, fn Expr) Type {
 
 func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	b := p.afterBuilder()
+	if p.patch != nil {
+		t = p.patch(t)
+	}
 	tabi := b.abiTypeOf(t)
 	expr := g.Expr
 	var eq Expr

@@ -36,6 +36,7 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
@@ -457,14 +458,14 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 
 func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
-		if p.Types != nil && !p.IllTyped {
+		if typs := p.Types; typs != nil && !p.IllTyped {
 			if debugBuild || verbose {
 				log.Println("==> BuildSSA", p.PkgPath)
 			}
-			pkgSSA := prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+			pkgSSA := prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.PkgPath, altPkgPathPrefix) {
 				path := p.PkgPath[len(altPkgPathPrefix):]
-				patches[path] = pkgSSA
+				patches[path] = cl.Patch{Alt: pkgSSA, Types: typepatch.Clone(typs)}
 				if debugBuild || verbose {
 					log.Println("==> Patching", path)
 				}
