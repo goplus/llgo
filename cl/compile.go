@@ -786,11 +786,11 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
+	ret.SetPatch(ctx.patchType)
 
 	if hasPatch {
 		skips := ctx.skips
 		typepatch.Merge(pkgTypes, oldTypes, skips, ctx.skipall)
-		ret.SetPatch(ctx.patchType)
 		ctx.skips = nil
 		ctx.state = pkgInPatch
 		if _, ok := skips["init"]; ok || ctx.skipall {
