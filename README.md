@@ -167,7 +167,7 @@ Here are some examples related to them:
 
 ## Go syntax support
 
-Common Go syntax is already supported. Except for the following, which needs to be improved:
+Most of the Go syntax is already supported. Except for the following, which needs to be improved:
 
 * map (Very limited support)
 * chan (Not supported yet)
