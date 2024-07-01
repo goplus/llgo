@@ -416,14 +416,23 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 		log.Printf("MakeSlice %v, %v, %v\n", t.RawType(), len.impl, cap.impl)
 	}
 	prog := b.Prog
-	if cap.IsNil() {
-		cap = len
-	}
+	len = b.fitIntSize(len)
+	cap = b.fitIntSize(cap)
 	telem := prog.Index(t)
-	ptr := b.ArrayAlloc(telem, cap)
-	ret.impl = b.unsafeSlice(ptr, len.impl, cap.impl).impl
+	ret = b.InlineCall(b.Pkg.rtFunc("MakeSlice"), len, cap, prog.IntVal(prog.SizeOf(telem), prog.Int()))
 	ret.Type = t
 	return
+}
+
+// fit size to int
+func (b Builder) fitIntSize(n Expr) Expr {
+	prog := b.Prog
+	typ := prog.Int()
+	if prog.SizeOf(n.Type) != prog.SizeOf(typ) {
+		n.Type = typ
+		n.impl = castInt(b, n.impl, typ)
+	}
+	return n
 }
 
 // -----------------------------------------------------------------------------

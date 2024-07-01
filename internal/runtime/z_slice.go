@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/internal/runtime/math"
 )
 
 // -----------------------------------------------------------------------------
@@ -118,6 +119,26 @@ func SliceCopy(dst Slice, data unsafe.Pointer, num int, etSize int) int {
 		c.Memmove(dst.data, data, uintptr(n*etSize))
 	}
 	return n
+}
+
+func MakeSlice(len, cap int, etSize int) Slice {
+	mem, overflow := math.MulUintptr(uintptr(etSize), uintptr(cap))
+	if overflow || mem > maxAlloc || len < 0 || len > cap {
+		mem, overflow := math.MulUintptr(uintptr(etSize), uintptr(len))
+		if overflow || mem > maxAlloc || len < 0 {
+			panicmakeslicelen()
+		}
+		panicmakeslicecap()
+	}
+	return Slice{AllocZ(mem), len, cap}
+}
+
+func panicmakeslicelen() {
+	panic(errorString("makeslice: len out of range"))
+}
+
+func panicmakeslicecap() {
+	panic(errorString("makeslice: cap out of range"))
 }
 
 // -----------------------------------------------------------------------------
