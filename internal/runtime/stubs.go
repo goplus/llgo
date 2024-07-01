@@ -8,17 +8,29 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c/sync/atomic"
+	"github.com/goplus/llgo/c/time"
 	"github.com/goplus/llgo/internal/runtime/math"
 )
 
 //go:linkname fastrand C.rand
 func fastrand() uint32
 
+//go:linkname srand C.srand
+func srand(uint32)
+
 func fastrand64() uint64 {
 	n := uint64(fastrand())
 	n += 0xa0761d6478bd642f
 	hi, lo := math.Mul64(n, n^0xe7037ed1a0b428db)
 	return hi ^ lo
+}
+
+func init() {
+	srand(uint32(time.Time(nil)))
+	hashkey[0] = uintptr(fastrand()) | 1
+	hashkey[1] = uintptr(fastrand()) | 1
+	hashkey[2] = uintptr(fastrand()) | 1
+	hashkey[3] = uintptr(fastrand()) | 1
 }
 
 /* TODO(xsw):
