@@ -313,10 +313,18 @@ func lastParamType(prog Program, fn Expr) Type {
 
 // -----------------------------------------------------------------------------
 
+func (p Package) patchType(t types.Type) types.Type {
+	switch t := t.(type) {
+	case *types.Pointer:
+		return types.NewPointer(p.patchType(t.Elem()))
+	}
+	return p.patch(t)
+}
+
 func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	b := p.afterBuilder()
 	if p.patch != nil {
-		t = p.patch(t)
+		t = p.patchType(t)
 	}
 	tabi := b.abiTypeOf(t)
 	expr := g.Expr
