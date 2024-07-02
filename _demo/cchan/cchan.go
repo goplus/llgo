@@ -24,4 +24,26 @@ func doChan(cap int) {
 func main() {
 	doChan(10)
 	doChan(0)
+
+	c := runtime.NewChan(eltSize, 3)
+
+	v := 1
+	runtime.ChanSend(c, unsafe.Pointer(&v), eltSize)
+	v = 2
+	runtime.ChanSend(c, unsafe.Pointer(&v), eltSize)
+	v = 3
+	runtime.ChanSend(c, unsafe.Pointer(&v), eltSize)
+	runtime.ChanClose(c)
+
+	v = 10
+	if runtime.ChanTrySend(c, unsafe.Pointer(&v), eltSize) {
+		println("error: chan send to closed chan")
+	}
+
+	for {
+		if ok := runtime.ChanRecv(c, unsafe.Pointer(&v), eltSize); !ok {
+			break
+		}
+		println(v)
+	}
 }
