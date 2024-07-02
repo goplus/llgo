@@ -13,6 +13,20 @@ LLGo is a Go compiler based on LLVM in order to better integrate Go with the C e
 
 ## C standard libary support
 
+You can import a C standard library in LLGo!
+
+* [c](https://pkg.go.dev/github.com/goplus/llgo/c)
+* [c/os](https://pkg.go.dev/github.com/goplus/llgo/c/os)
+* [c/math](https://pkg.go.dev/github.com/goplus/llgo/c/math)
+* [c/math/cmplx](https://pkg.go.dev/github.com/goplus/llgo/c/math/cmplx)
+* [c/math/rand](https://pkg.go.dev/github.com/goplus/llgo/c/math/rand)
+* [c/pthread](https://pkg.go.dev/github.com/goplus/llgo/c/pthread)
+* [c/pthread/sync](https://pkg.go.dev/github.com/goplus/llgo/c/pthread/sync)
+* [c/sync/atomic](https://pkg.go.dev/github.com/goplus/llgo/c/sync/atomic)
+* [c/time](https://pkg.go.dev/github.com/goplus/llgo/c/time)
+
+Here is a simple example:
+
 ```go
 package main
 
@@ -38,8 +52,6 @@ cd <demo-directory>  # eg. cd _demo/hello
 llgo run .
 ```
 
-See [github.com/goplus/llgo/c](https://pkg.go.dev/github.com/goplus/llgo/c) for more detials.
-
 
 ## Python support
 
@@ -47,17 +59,17 @@ You can import a Python library in LLGo!
 
 And you can import any Python library into `llgo` through a program called `llpyg` (see [Development tools](#development-tools)). The following libraries have been included in `llgo`:
 
-* [builtins](https://pkg.go.dev/github.com/goplus/llgo/py/std)
-* [sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
-* [os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
-* [math](https://pkg.go.dev/github.com/goplus/llgo/py/math)
-* [json](https://pkg.go.dev/github.com/goplus/llgo/py/json)
-* [inspect](https://pkg.go.dev/github.com/goplus/llgo/py/inspect)
-* [statistics](https://pkg.go.dev/github.com/goplus/llgo/py/statistics)
-* [numpy](https://pkg.go.dev/github.com/goplus/llgo/py/numpy)
-* [pandas](https://pkg.go.dev/github.com/goplus/llgo/py/pandas)
-* [pytorch](https://pkg.go.dev/github.com/goplus/llgo/py/torch)
-* [matplotlib](https://pkg.go.dev/github.com/goplus/llgo/py/matplotlib)
+* [py/std](https://pkg.go.dev/github.com/goplus/llgo/py/std) (builtins)
+* [py/sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
+* [py/os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
+* [py/math](https://pkg.go.dev/github.com/goplus/llgo/py/math)
+* [py/json](https://pkg.go.dev/github.com/goplus/llgo/py/json)
+* [py/inspect](https://pkg.go.dev/github.com/goplus/llgo/py/inspect)
+* [py/statistics](https://pkg.go.dev/github.com/goplus/llgo/py/statistics)
+* [py/numpy](https://pkg.go.dev/github.com/goplus/llgo/py/numpy)
+* [py/pandas](https://pkg.go.dev/github.com/goplus/llgo/py/pandas)
+* [py/torch](https://pkg.go.dev/github.com/goplus/llgo/py/torch)
+* [py/matplotlib](https://pkg.go.dev/github.com/goplus/llgo/py/matplotlib)
 
 Note: For third-party libraries (such as pandas and pytorch), you still need to install the library files.
 
@@ -154,15 +166,20 @@ LLGo can easily import any libraries from the C ecosystem. Currently, this impor
 
 The currently supported libraries include:
 
-* [llama2.c](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
-* [cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
-* [sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
+* [c/bdwgc](https://pkg.go.dev/github.com/goplus/llgo/c/bdwgc)
+* [c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
+* [c/clang](https://pkg.go.dev/github.com/goplus/llgo/c/clang)
+* [c/llama2](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
+* [c/raylib](https://pkg.go.dev/github.com/goplus/llgo/c/raylib)
+* [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
+* [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
 
 Here are some examples related to them:
 
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
 * [mkjson](c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
 * [sqlitedemo](c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
+* [tetris](c/raylib/_demo/tetris/tetris.go): a tetris game based on raylib
 
 
 ## Go syntax support
