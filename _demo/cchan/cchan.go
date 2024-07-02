@@ -23,4 +23,5 @@ func doChan(cap int) {
 
 func main() {
 	doChan(10)
+	doChan(0)
 }
