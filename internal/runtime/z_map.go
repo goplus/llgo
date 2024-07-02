@@ -82,29 +82,3 @@ func MapIterNext(it *hiter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
 	mapiternext(it)
 	return
 }
-
-func mapKeyEqual(t *maptype, p, q unsafe.Pointer) bool {
-	if isDirectIface(t.Key) {
-		switch t.Key.Size_ {
-		case 0:
-			return true
-		case 1:
-			return memequal8(p, q)
-		case 2:
-			return memequal16(p, q)
-		case 4:
-			return memequal32(p, q)
-		case 8:
-			return memequal64(p, q)
-		}
-	}
-	switch t.Key.Kind() {
-	case abi.String:
-		return strequal(p, q)
-	case abi.Complex64:
-		return c64equal(p, q)
-	case abi.Complex128:
-		return c128equal(p, q)
-	}
-	return t.Key.Equal(p, q)
-}

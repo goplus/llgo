@@ -218,6 +218,11 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 		PkgPath_: pkgPath,
 		Methods:  methods,
 	}
+	if len(methods) == 0 {
+		ret.Equal = nilinterequal
+	} else {
+		ret.Equal = interequal
+	}
 	return ret
 }
 
@@ -355,12 +360,6 @@ func Implements(T, V *abi.Type) bool {
 }
 
 func EfaceEqual(v, u eface) bool {
-	if v.Kind() == abi.Interface {
-		v = v.Elem()
-	}
-	if u.Kind() == abi.Interface {
-		u = u.Elem()
-	}
 	if v._type == nil || u._type == nil {
 		return v._type == u._type
 	}
@@ -370,52 +369,10 @@ func EfaceEqual(v, u eface) bool {
 	if isDirectIface(v._type) {
 		return v.data == u.data
 	}
-	switch v.Kind() {
-	case abi.Bool,
-		abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
-		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
-		abi.Float32, abi.Float64:
-		return *(*uintptr)(v.data) == *(*uintptr)(u.data)
-	case abi.Complex64:
-		return *(*complex64)(v.data) == *(*complex64)(u.data)
-	case abi.Complex128:
-		return *(*complex128)(v.data) == *(*complex128)(u.data)
-	case abi.String:
-		return *(*string)(v.data) == *(*string)(u.data)
-	case abi.Pointer, abi.UnsafePointer:
-		return v.data == u.data
-	case abi.Array:
-		n := v._type.Len()
-		tt := v._type.ArrayType()
-		index := func(data unsafe.Pointer, i int) eface {
-			offset := i * int(tt.Elem.Size_)
-			return eface{tt.Elem, c.Advance(data, offset)}
-		}
-		for i := 0; i < n; i++ {
-			if !EfaceEqual(index(v.data, i), index(u.data, i)) {
-				return false
-			}
-		}
-		return true
-	case abi.Struct:
-		st := v._type.StructType()
-		field := func(data unsafe.Pointer, ft *abi.StructField) eface {
-			ptr := c.Advance(data, int(ft.Offset))
-			if isDirectIface(ft.Typ) {
-				ptr = *(*unsafe.Pointer)(ptr)
-			}
-			return eface{ft.Typ, ptr}
-		}
-		for _, ft := range st.Fields {
-			if !EfaceEqual(field(v.data, &ft), field(u.data, &ft)) {
-				return false
-			}
-		}
-		return true
-	case abi.Func, abi.Map, abi.Slice:
-		break
+	if equal := v._type.Equal; equal != nil {
+		return equal(v.data, u.data)
 	}
-	panic("not comparable")
+	panic(errorString("comparing uncomparable type " + v._type.String()).Error())
 }
 
 func (v eface) Kind() abi.Kind {

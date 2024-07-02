@@ -30,6 +30,36 @@ var (
 	tyBasic [abi.UnsafePointer + 1]*Type
 )
 
+func basicEqual(kind Kind, size uintptr) func(a, b unsafe.Pointer) bool {
+	switch kind {
+	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr:
+		switch size {
+		case 1:
+			return memequal8
+		case 2:
+			return memequal16
+		case 4:
+			return memequal32
+		case 8:
+			return memequal64
+		}
+	case abi.Float32:
+		return f32equal
+	case abi.Float64:
+		return f64equal
+	case abi.Complex64:
+		return c64equal
+	case abi.Complex128:
+		return c128equal
+	case abi.String:
+		return strequal
+	case abi.UnsafePointer:
+		return ptrequal
+	}
+	panic("unreachable")
+}
+
 func Basic(kind Kind) *Type {
 	if tyBasic[kind] == nil {
 		name, size, align := basicTypeInfo(kind)
@@ -39,10 +69,8 @@ func Basic(kind Kind) *Type {
 			Align_:      uint8(align),
 			FieldAlign_: uint8(align),
 			Kind_:       uint8(kind),
+			Equal:       basicEqual(kind, size),
 			Str_:        name,
-			Equal: func(a, b unsafe.Pointer) bool {
-				return uintptr(a) == uintptr(b)
-			},
 		}
 	}
 	return tyBasic[kind]
@@ -115,15 +143,33 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 		PkgPath_: pkgPath,
 		Fields:   fields,
 	}
+	var comparable bool = true
 	var typalign uint8
 	for _, f := range fields {
 		ft := f.Typ
 		if ft.Align_ > typalign {
 			typalign = ft.Align_
 		}
+		comparable = comparable && (ft.Equal != nil)
 	}
 	ret.Align_ = typalign
 	ret.FieldAlign_ = typalign
+	if comparable {
+		if size == 0 {
+			ret.Equal = memequal0
+		} else {
+			ret.Equal = func(p, q unsafe.Pointer) bool {
+				for _, ft := range fields {
+					pi := add(p, ft.Offset)
+					qi := add(q, ft.Offset)
+					if !ft.Typ.Equal(pi, qi) {
+						return false
+					}
+				}
+				return true
+			}
+		}
+	}
 	return &ret.Type
 }
 
@@ -149,6 +195,7 @@ func newPointer(elem *Type) *Type {
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Pointer),
+			Equal:       ptrequal,
 		},
 		Elem: elem,
 	}
@@ -191,6 +238,22 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 		Elem:  elem,
 		Slice: SliceOf(elem),
 		Len:   length,
+	}
+	if eequal := elem.Equal; eequal != nil {
+		if elem.Size_ == 0 {
+			ret.Equal = memequal0
+		} else {
+			ret.Equal = func(p, q unsafe.Pointer) bool {
+				for i := uintptr(0); i < length; i++ {
+					pi := add(p, i*elem.Size_)
+					qi := add(q, i*elem.Size_)
+					if !eequal(pi, qi) {
+						return false
+					}
+				}
+				return true
+			}
+		}
 	}
 	return &ret.Type
 }
