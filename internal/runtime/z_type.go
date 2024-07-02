@@ -192,4 +192,20 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 	return &ret.Type
 }
 
+func ChanOf(dir int, strChan string, elem *Type) *Type {
+	ret := &abi.ChanType{
+		Type: Type{
+			Size_:       8,
+			Hash:        uint32(abi.Chan),
+			Align_:      pointerAlign,
+			FieldAlign_: pointerAlign,
+			Kind_:       uint8(abi.Chan),
+			Str_:        strChan + " " + elem.String(),
+		},
+		Elem: elem,
+		Dir:  abi.ChanDir(dir),
+	}
+	return &ret.Type
+}
+
 // -----------------------------------------------------------------------------

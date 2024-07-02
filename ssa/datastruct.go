@@ -540,4 +540,75 @@ func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
 	panic("todo")
 }
 
+// The MakeChan instruction creates a new channel object and yields a
+// value of kind chan.
+//
+// Type() returns a (possibly named) *types.Chan.
+//
+// Pos() returns the ast.CallExpr.Lparen for the make(chan) that
+// created it.
+//
+// Example printed form:
+//
+//	t0 = make chan int 0
+//	t0 = make IntChan 0
+//
+//	type MakeChan struct {
+//		register
+//		Size Value // int; size of buffer; zero => synchronous.
+//	}
+func (b Builder) MakeChan(t Type, size Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("MakeChan %v, %v\n", t.RawType(), size.impl)
+	}
+	prog := b.Prog
+	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(t)), prog.Int())
+	ret.Type = t
+	ret.impl = b.InlineCall(b.Pkg.rtFunc("NewChan"), eltSize, size).impl
+	return
+}
+
+// The Send instruction sends X on channel Chan.
+//
+// Pos() returns the ast.SendStmt.Arrow, if explicit in the source.
+//
+// Example printed form:
+//
+//	send t0 <- t1
+func (b Builder) Send(ch Expr, x Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("Send %v, %v\n", ch.impl, x.impl)
+	}
+	prog := b.Prog
+	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(ch.Type)), prog.Int())
+	ret = b.InlineCall(b.Pkg.rtFunc("ChanSend"), ch, b.toPtr(x), eltSize)
+	return
+}
+
+func (b Builder) toPtr(x Expr) Expr {
+	typ := x.Type
+	vtyp := b.Prog.VoidPtr()
+	vptr := b.Alloc(typ, false)
+	b.Store(vptr, x)
+	return Expr{vptr.impl, vtyp}
+}
+
+func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
+	if debugInstr {
+		log.Printf("Recv %v, %v\n", ch.impl, commaOk)
+	}
+	prog := b.Prog
+	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(ch.Type)), prog.Int())
+	etyp := prog.Elem(ch.Type)
+	ptr := b.Alloc(etyp, false)
+	ok := b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
+	if commaOk {
+		val := b.Load(ptr)
+		t := prog.Struct(etyp, prog.Bool())
+		return b.aggregateValue(t, val.impl, ok.impl)
+	} else {
+		return b.Load(ptr)
+	}
+}
+
 // -----------------------------------------------------------------------------

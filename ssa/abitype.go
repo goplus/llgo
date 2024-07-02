@@ -68,6 +68,8 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 		return b.abiSliceOf(t)
 	case *types.Array:
 		return b.abiArrayOf(t)
+	case *types.Chan:
+		return b.abiChanOf(t)
 	}
 	panic("todo")
 }
@@ -271,6 +273,14 @@ func (b Builder) abiArrayOf(t *types.Array) func() Expr {
 	return func() Expr {
 		n := b.Prog.IntVal(uint64(t.Len()), b.Prog.Uintptr())
 		return b.Call(b.Pkg.rtFunc("ArrayOf"), n, elem())
+	}
+}
+
+func (b Builder) abiChanOf(t *types.Chan) func() Expr {
+	elem := b.abiTypeOf(t.Elem())
+	return func() Expr {
+		dir, s := abi.ChanDir(t.Dir())
+		return b.Call(b.Pkg.rtFunc("ChanOf"), b.Prog.IntVal(uint64(dir), b.Prog.Int()), b.Str(s), elem())
 	}
 }
 

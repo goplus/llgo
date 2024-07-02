@@ -133,6 +133,7 @@ type aProgram struct {
 	rtIfaceTy  llvm.Type
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
+	rtChanTy   llvm.Type
 
 	anyTy     Type
 	voidTy    Type
@@ -285,6 +286,13 @@ func (p Program) rtString() llvm.Type {
 		p.rtStringTy = p.rtType("String").ll
 	}
 	return p.rtStringTy
+}
+
+func (p Program) rtChan() llvm.Type {
+	if p.rtChanTy.IsNil() {
+		p.rtChanTy = p.rtType("Chan").ll
+	}
+	return p.rtChanTy
 }
 
 func (p Program) tyComplex64() llvm.Type {
