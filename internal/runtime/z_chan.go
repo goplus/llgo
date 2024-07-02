@@ -25,7 +25,9 @@ import (
 
 // -----------------------------------------------------------------------------
 
-const chanFull = 1
+const (
+	chanFull = 1
+)
 
 type Chan struct {
 	mutex sync.Mutex
@@ -34,6 +36,7 @@ type Chan struct {
 	getp  int
 	len   int
 	cap   int
+	close bool
 }
 
 func NewChan(eltSize, cap int) *Chan {
@@ -57,18 +60,25 @@ func ChanCap(p *Chan) int {
 	return p.cap
 }
 
+func ChanClose(p *Chan) {
+	p.mutex.Lock()
+	p.close = true
+	p.mutex.Unlock()
+	p.cond.Broadcast()
+}
+
 func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		if p.getp == chanFull {
+		if p.getp == chanFull || p.close {
 			p.mutex.Unlock()
 			return false
 		}
 		p.data = v
 		p.getp = chanFull
 	} else {
-		if p.len == n {
+		if p.len == n || p.close {
 			p.mutex.Unlock()
 			return false
 		}
@@ -81,12 +91,16 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	return true
 }
 
-func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) {
+func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
 		for p.getp == chanFull {
 			p.cond.Wait(&p.mutex)
+		}
+		if p.close {
+			p.mutex.Unlock()
+			return false
 		}
 		p.data = v
 		p.getp = chanFull
@@ -94,12 +108,17 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) {
 		for p.len == n {
 			p.cond.Wait(&p.mutex)
 		}
+		if p.close {
+			p.mutex.Unlock()
+			return false
+		}
 		off := (p.getp + p.len) % n
 		c.Memcpy(c.Advance(p.data, off*eltSize), v, uintptr(eltSize))
 		p.len++
 	}
 	p.mutex.Unlock()
 	p.cond.Broadcast()
+	return true
 }
 
 func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) bool {
@@ -126,17 +145,25 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	return true
 }
 
-func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) {
+func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
 		for p.getp == 0 {
+			if p.close {
+				p.mutex.Unlock()
+				return false
+			}
 			p.cond.Wait(&p.mutex)
 		}
 		c.Memcpy(v, p.data, uintptr(eltSize))
 		p.getp = 0
 	} else {
 		for p.len == 0 {
+			if p.close {
+				p.mutex.Unlock()
+				return false
+			}
 			p.cond.Wait(&p.mutex)
 		}
 		c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
@@ -145,6 +172,7 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) {
 	}
 	p.mutex.Unlock()
 	p.cond.Broadcast()
+	return true
 }
 
 // -----------------------------------------------------------------------------
