@@ -356,7 +356,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	}
 
 	dirty := false
-	if needRuntime && llFiles != nil {
+	if needRuntime {
 		for _, file := range llFiles {
 			args = appendLinkFiles(args, file)
 		}
