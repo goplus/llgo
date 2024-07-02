@@ -270,7 +270,7 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 			} else {
 				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
 			}
-		} else if c := inPkgName[0]; c >= 'A' && c <= 'Z' {
+		} else {
 			fmt.Fprintln(os.Stderr, "==>", line)
 			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
 		}
