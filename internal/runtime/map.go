@@ -442,7 +442,7 @@ bucketloop:
 			if t.IndirectKey() {
 				k = *((*unsafe.Pointer)(k))
 			}
-			if mapKeyEqual(t, key, k) {
+			if t.Key.Equal(key, k) {
 				e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.KeySize)+i*uintptr(t.ValueSize))
 				if t.IndirectElem() {
 					e = *((*unsafe.Pointer)(e))
@@ -503,7 +503,7 @@ bucketloop:
 			if t.IndirectKey() {
 				k = *((*unsafe.Pointer)(k))
 			}
-			if mapKeyEqual(t, key, k) {
+			if t.Key.Equal(key, k) {
 				e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.KeySize)+i*uintptr(t.ValueSize))
 				if t.IndirectElem() {
 					e = *((*unsafe.Pointer)(e))
@@ -547,7 +547,7 @@ bucketloop:
 			if t.IndirectKey() {
 				k = *((*unsafe.Pointer)(k))
 			}
-			if mapKeyEqual(t, key, k) {
+			if t.Key.Equal(key, k) {
 				e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.KeySize)+i*uintptr(t.ValueSize))
 				if t.IndirectElem() {
 					e = *((*unsafe.Pointer)(e))
@@ -635,7 +635,7 @@ bucketloop:
 			if t.IndirectKey() {
 				k = *((*unsafe.Pointer)(k))
 			}
-			if !mapKeyEqual(t, key, k) {
+			if !t.Key.Equal(key, k) {
 				continue
 			}
 			// already have a mapping for key. Update it.
@@ -747,7 +747,7 @@ search:
 			if t.IndirectKey() {
 				k2 = *((*unsafe.Pointer)(k2))
 			}
-			if !mapKeyEqual(t, key, k2) {
+			if !t.Key.Equal(key, k2) {
 				continue
 			}
 			// Only clear key if there are pointers in it.
@@ -935,7 +935,7 @@ next:
 			// through the oldbucket, skipping any keys that will go
 			// to the other new bucket (each oldbucket expands to two
 			// buckets during a grow).
-			if t.ReflexiveKey() || mapKeyEqual(t, k, k) {
+			if t.ReflexiveKey() || t.Key.Equal(k, k) {
 				// If the item in the oldbucket is not destined for
 				// the current new bucket in the iteration, skip it.
 				hash := t.Hasher(k, uintptr(h.hash0))
@@ -956,7 +956,7 @@ next:
 			}
 		}
 		if (b.tophash[offi] != evacuatedX && b.tophash[offi] != evacuatedY) ||
-			!(t.ReflexiveKey() || mapKeyEqual(t, k, k)) {
+			!(t.ReflexiveKey() || t.Key.Equal(k, k)) {
 			// This is the golden data, we can return it.
 			// OR
 			// key!=key, so the entry can't be deleted or updated, so we can just return it.
@@ -1214,7 +1214,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 					// Compute hash to make our evacuation decision (whether we need
 					// to send this key/elem to bucket x or bucket y).
 					hash := t.Hasher(k2, uintptr(h.hash0))
-					if h.flags&iterator != 0 && !t.ReflexiveKey() && !mapKeyEqual(t, k2, k2) {
+					if h.flags&iterator != 0 && !t.ReflexiveKey() && !t.Key.Equal(k2, k2) {
 						// If key != key (NaNs), then the hash could be (and probably
 						// will be) entirely different from the old hash. Moreover,
 						// it isn't reproducible. Reproducibility is required in the
