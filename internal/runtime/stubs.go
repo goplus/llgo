@@ -4,10 +4,34 @@
 
 package runtime
 
-import _ "unsafe"
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/c/sync/atomic"
+	"github.com/goplus/llgo/c/time"
+	"github.com/goplus/llgo/internal/runtime/math"
+)
 
 //go:linkname fastrand C.rand
 func fastrand() uint32
+
+//go:linkname srand C.srand
+func srand(uint32)
+
+func fastrand64() uint64 {
+	n := uint64(fastrand())
+	n += 0xa0761d6478bd642f
+	hi, lo := math.Mul64(n, n^0xe7037ed1a0b428db)
+	return hi ^ lo
+}
+
+func init() {
+	srand(uint32(time.Time(nil)))
+	hashkey[0] = uintptr(fastrand()) | 1
+	hashkey[1] = uintptr(fastrand()) | 1
+	hashkey[2] = uintptr(fastrand()) | 1
+	hashkey[3] = uintptr(fastrand()) | 1
+}
 
 /* TODO(xsw):
 func fastrand() uint32 {
@@ -37,9 +61,74 @@ func fastrand() uint32 {
 }
 */
 
+//go:nosplit
+func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p) + x)
+}
+
+// implementation of new builtin
+// compiler (both frontend and SSA backend) knows the signature
+// of this function.
+func newobject(typ *_type) unsafe.Pointer {
+	return AllocZ(typ.Size_)
+}
+
+// TODO
+func roundupsize(size uintptr) uintptr {
+	// if size < _MaxSmallSize {
+	// 	if size <= smallSizeMax-8 {
+	// 		return uintptr(class_to_size[size_to_class8[divRoundUp(size, smallSizeDiv)]])
+	// 	} else {
+	// 		return uintptr(class_to_size[size_to_class128[divRoundUp(size-smallSizeMax, largeSizeDiv)]])
+	// 	}
+	// }
+	// if size+_PageSize < size {
+	// 	return size
+	// }
+	// return alignUp(size, _PageSize)
+	return size
+}
+
+// newarray allocates an array of n elements of type typ.
+func newarray(typ *_type, n int) unsafe.Pointer {
+	if n == 1 {
+		return AllocZ(typ.Size_)
+	}
+	mem, overflow := math.MulUintptr(typ.Size_, uintptr(n))
+	if overflow || mem > maxAlloc || n < 0 {
+		panic(plainError("runtime: allocation size out of range"))
+	}
+	return AllocZ(mem)
+}
+
 const (
 	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
 	_64bit       = 1 << (^uintptr(0) >> 63) / 2
 	heapAddrBits = (_64bit)*48 + (1-_64bit)*(32)
 	maxAlloc     = (1 << heapAddrBits) - (1-_64bit)*1
 )
+
+func memclrHasPointers(ptr unsafe.Pointer, n uintptr) {
+	// bulkBarrierPreWrite(uintptr(ptr), 0, n)
+	// memclrNoHeapPointers(ptr, n)
+}
+
+func memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) {
+}
+
+func fatal(s string) {
+	print("fatal error: ", s, "\n")
+}
+
+func throw(s string) {
+	print("fatal error: ", s, "\n")
+}
+
+func atomicOr8(ptr *uint8, v uint8) uint8 {
+	return (uint8)(atomic.Or((*uint)(unsafe.Pointer(ptr)), uint(v)))
+}
+
+func noescape(p unsafe.Pointer) unsafe.Pointer {
+	x := uintptr(p)
+	return unsafe.Pointer(x ^ 0)
+}

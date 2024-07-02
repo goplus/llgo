@@ -70,6 +70,8 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 		return b.abiArrayOf(t)
 	case *types.Chan:
 		return b.abiChanOf(t)
+	case *types.Map:
+		return b.abiMapOf(t)
 	}
 	panic("todo")
 }
@@ -281,6 +283,17 @@ func (b Builder) abiChanOf(t *types.Chan) func() Expr {
 	return func() Expr {
 		dir, s := abi.ChanDir(t.Dir())
 		return b.Call(b.Pkg.rtFunc("ChanOf"), b.Prog.IntVal(uint64(dir), b.Prog.Int()), b.Str(s), elem())
+	}
+}
+
+func (b Builder) abiMapOf(t *types.Map) func() Expr {
+	key := b.abiTypeOf(t.Key())
+	elem := b.abiTypeOf(t.Elem())
+	sizes := (*goProgram)(b.Prog)
+	bucket := b.abiTypeOf(abi.MapBucketType(t, sizes))
+	flags := abi.MapTypeFlags(t, sizes)
+	return func() Expr {
+		return b.Call(b.Pkg.rtFunc("MapOf"), key(), elem(), bucket(), b.Prog.Val(flags))
 	}
 }
 

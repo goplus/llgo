@@ -138,6 +138,8 @@ func (p Program) Zero(t Type) Expr {
 		ret = llvm.ConstStruct(flds, false)
 	case *types.Slice:
 		ret = p.Zero(p.rtType("Slice")).impl
+	case *types.Array:
+		ret = llvm.ConstNull(t.ll)
 	case *types.Interface:
 		var name string
 		if u.Empty() {
@@ -596,6 +598,13 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			case token.NEQ:
 				return Expr{b.impl.CreateICmp(llvm.IntNE, dx, dy, ""), tret}
 			}
+		case vkMap:
+			switch op {
+			case token.EQL:
+				return b.Prog.BoolVal(x.impl.IsNull() == y.impl.IsNull())
+			case token.NEQ:
+				return b.Prog.BoolVal(x.impl.IsNull() != y.impl.IsNull())
+			}
 		case vkIface, vkEface:
 			toEface := func(x Expr, emtpy bool) Expr {
 				if emtpy {
@@ -1003,6 +1012,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				return b.StringLen(arg)
 			case vkChan:
 				return b.InlineCall(b.Pkg.rtFunc("ChanLen"), arg)
+			case vkMap:
+				return b.MapLen(arg)
 			}
 		}
 	case "cap":
@@ -1078,6 +1089,21 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		return b.StringData(args[0]) // TODO(xsw): check return type
 	case "SliceData":
 		return b.SliceData(args[0]) // TODO(xsw): check return type
+	case "delete":
+		if len(args) == 2 && args[0].kind == vkMap {
+			m := args[0]
+			t := b.abiType(m.raw.Type)
+			ptr := b.mapKeyPtr(args[1])
+			b.Call(b.Pkg.rtFunc("MapDelete"), t, m, ptr)
+			return
+		}
+	case "clear":
+		if len(args) == 1 && args[0].kind == vkMap {
+			m := args[0]
+			t := b.abiType(m.raw.Type)
+			b.Call(b.Pkg.rtFunc("MapClear"), t, m)
+			return
+		}
 	}
 	panic("todo: " + fn)
 }
@@ -1127,6 +1153,9 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 			fn = "PrintComplex"
 			typ = prog.Complex128()
 		case vkChan:
+			fn = "PrintPointer"
+			typ = prog.VoidPtr()
+		case vkMap:
 			fn = "PrintPointer"
 			typ = prog.VoidPtr()
 		default:

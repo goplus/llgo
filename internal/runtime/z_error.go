@@ -31,6 +31,12 @@ func (e errorString) Error() string {
 	return "runtime error: " + string(e)
 }
 
+type plainError string
+
+func (e plainError) Error() string {
+	return string(e)
+}
+
 func AssertRuntimeError(b bool, msg string) {
 	if b {
 		panic(errorString(msg).Error())
