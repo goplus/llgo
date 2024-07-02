@@ -405,6 +405,8 @@ func (b Builder) abiType(t types.Type) Expr {
 	switch t := t.(type) {
 	case *types.Pointer:
 		b.loadType(t.Elem())
+	case *types.Array:
+		b.loadType(t.Elem())
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)

@@ -138,6 +138,8 @@ func (p Program) Zero(t Type) Expr {
 		ret = llvm.ConstStruct(flds, false)
 	case *types.Slice:
 		ret = p.Zero(p.rtType("Slice")).impl
+	case *types.Array:
+		ret = llvm.ConstNull(t.ll)
 	case *types.Interface:
 		var name string
 		if u.Empty() {

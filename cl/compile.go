@@ -493,17 +493,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Index:
 		x := p.compileValue(b, v.X)
 		idx := p.compileValue(b, v.Index)
-		ret = b.Index(x, idx, func(e llssa.Expr) (ret llssa.Expr, zero bool) {
-			if e == x {
-				switch n := v.X.(type) {
-				case *ssa.Const:
-					zero = true
-					return
-				case *ssa.UnOp:
-					return p.compileValue(b, n.X), false
-				}
+		ret = b.Index(x, idx, func() (r llssa.Expr) {
+			switch n := v.X.(type) {
+			case *ssa.UnOp:
+				return p.compileValue(b, n.X)
 			}
-			panic(fmt.Errorf("todo: addr of %v", e))
+			return
 		})
 	case *ssa.Lookup:
 		x := p.compileValue(b, v.X)
