@@ -217,6 +217,7 @@ Here are the Go packages that can be imported correctly:
 * [io](https://pkg.go.dev/io) (partially)
 * [io/fs](https://pkg.go.dev/io/fs) (partially)
 * [os](https://pkg.go.dev/os) (partially)
+* [fmt](https://pkg.go.dev/fmt) (partially)
 * [reflect](https://pkg.go.dev/reflect) (partially)
 * [time](https://pkg.go.dev/time) (partially)
 
