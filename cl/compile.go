@@ -459,7 +459,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
 		x := p.compileValue(b, v.X)
-		ret = b.UnOp(v.Op, x)
+		if v.Op == token.ARROW {
+			ret = b.Recv(x, v.CommaOk)
+		} else {
+			ret = b.UnOp(v.Op, x)
+		}
 	case *ssa.ChangeType:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
@@ -579,6 +583,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Field:
 		x := p.compileValue(b, v.X)
 		ret = b.Field(x, v.Field)
+	case *ssa.MakeChan:
+		t := v.Type()
+		size := p.compileValue(b, v.Size)
+		ret = b.MakeChan(p.prog.Type(t, llssa.InGo), size)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
@@ -651,6 +659,10 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X)
 		b.Panic(arg)
+	case *ssa.Send:
+		ch := p.compileValue(b, v.Chan)
+		x := p.compileValue(b, v.X)
+		b.Send(ch, x)
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}

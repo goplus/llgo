@@ -1001,6 +1001,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				return b.SliceLen(arg)
 			case vkString:
 				return b.StringLen(arg)
+			case vkChan:
+				return b.InlineCall(b.Pkg.rtFunc("ChanLen"), arg)
 			}
 		}
 	case "cap":
@@ -1009,6 +1011,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			switch arg.kind {
 			case vkSlice:
 				return b.SliceCap(arg)
+			case vkChan:
+				return b.InlineCall(b.Pkg.rtFunc("ChanCap"), arg)
 			}
 		}
 	case "append":
@@ -1045,6 +1049,14 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				case vkString:
 					return b.InlineCall(b.Pkg.rtFunc("SliceCopy"), dst, b.StringData(src), b.StringLen(src), etSize)
 				}
+			}
+		}
+	case "close":
+		if len(args) == 1 {
+			arg := args[0]
+			switch arg.kind {
+			case vkChan:
+				return b.InlineCall(b.Pkg.rtFunc("ChanClose"), arg)
 			}
 		}
 	case "recover":
@@ -1114,6 +1126,9 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 		case vkComplex:
 			fn = "PrintComplex"
 			typ = prog.Complex128()
+		case vkChan:
+			fn = "PrintPointer"
+			typ = prog.VoidPtr()
 		default:
 			panic(fmt.Errorf("illegal types for operand: print %v", arg.RawType()))
 		}

@@ -65,6 +65,18 @@ func UnderlyingKind(t types.Type) abi.Kind {
 	panic("todo")
 }
 
+func ChanDir(dir types.ChanDir) (abi.ChanDir, string) {
+	switch dir {
+	case types.SendRecv:
+		return abi.BothDir, "chan"
+	case types.SendOnly:
+		return abi.SendDir, "chan->"
+	case types.RecvOnly:
+		return abi.RecvDir, "<-chan"
+	}
+	panic("invlid chan dir")
+}
+
 // -----------------------------------------------------------------------------
 
 type DataKind int
@@ -165,6 +177,18 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 		key, pub1 := b.TypeName(t.Key())
 		elem, pub2 := b.TypeName(t.Elem())
 		return fmt.Sprintf("map[%s]%s", key, elem), pub1 && pub2
+	case *types.Chan:
+		elem, pub := b.TypeName(t.Elem())
+		var s string
+		switch t.Dir() {
+		case types.SendRecv:
+			s = "chan"
+		case types.SendOnly:
+			s = "chan<-"
+		case types.RecvOnly:
+			s = "<-chan"
+		}
+		return fmt.Sprintf("%s %s", s, elem), pub
 	}
 	log.Panicf("todo: %T\n", t)
 	return

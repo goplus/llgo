@@ -57,6 +57,7 @@ const (
 	vkEface
 	vkIface
 	vkStruct
+	vkChan
 )
 
 // -----------------------------------------------------------------------------
@@ -371,6 +372,7 @@ func (p Program) toType(raw types.Type) Type {
 		elem := p.rawType(t.Elem())
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkArray}
 	case *types.Chan:
+		return &aType{llvm.PointerType(p.rtChan(), 0), typ, vkChan}
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
