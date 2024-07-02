@@ -135,6 +135,7 @@ func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMe
 	doInitNamed(ret, pkgPath, name, underlying, methods)
 	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
 	ret.PtrToThis_ = ptr
+	ret.Equal = underlying.Equal
 	ptr.TFlag |= abi.TFlagExtraStar
 }
 

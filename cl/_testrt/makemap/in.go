@@ -1,5 +1,7 @@
 package main
 
+type N [1]int
+
 func main() {
 	m := make(map[int]string)
 	m[1] = "hello"
@@ -33,4 +35,13 @@ func main() {
 	println(m2, len(m2), m2 == nil, m2 != nil)
 	var m3 map[int]string
 	println(m3, len(m3), m3 == nil, m3 != nil)
+
+	n := make(map[any]int)
+	n[N{1}] = 100
+	n[N{2}] = 200
+	n[N{3}] = 300
+	n[N{2}] = -200
+	for k, v := range n {
+		println(k.(N)[0], v)
+	}
 }
