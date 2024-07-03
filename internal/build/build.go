@@ -309,6 +309,7 @@ func linkMainPkg(pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
+	llFiles = append(llFiles, "/Users/zhangzhiyang/Documents/Code/goplus/llgo/c/rust/main.ll")
 	args := make([]string, 0, len(pkg.Imports)+len(llFiles)+10)
 	args = append(
 		args,
