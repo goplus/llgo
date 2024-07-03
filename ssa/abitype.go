@@ -361,7 +361,7 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	}
 	vexpr := tabi()
 	prog := p.Prog
-	kind, _, lvl := abi.DataKindOf(t, 0, prog.is32Bits)
+	kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits)
 	switch kind {
 	case abi.Integer, abi.BitCast:
 		// abi.Type.Kind_ |= abi.KindDirectIface
@@ -369,9 +369,7 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		pkind := b.FieldAddr(vexpr, 6)
 		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
 	case abi.Pointer:
-		if lvl > 0 {
-			b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
-		}
+		b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
 	}
 	b.Store(expr, vexpr)
 	if pub {

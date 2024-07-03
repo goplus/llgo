@@ -55,7 +55,7 @@ func basicEqual(kind Kind, size uintptr) func(a, b unsafe.Pointer) bool {
 	case abi.String:
 		return strequal
 	case abi.UnsafePointer:
-		return ptrequal
+		return memequalptr
 	}
 	panic("unreachable")
 }
@@ -195,7 +195,7 @@ func newPointer(elem *Type) *Type {
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Pointer),
-			Equal:       ptrequal,
+			Equal:       memequalptr,
 		},
 		Elem: elem,
 	}
@@ -266,11 +266,13 @@ func ChanOf(dir int, strChan string, elem *Type) *Type {
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Chan),
+			Equal:       memequalptr,
 			Str_:        strChan + " " + elem.String(),
 		},
 		Elem: elem,
 		Dir:  abi.ChanDir(dir),
 	}
+
 	return &ret.Type
 }
 

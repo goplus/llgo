@@ -668,6 +668,7 @@ _llgo_31:                                         ; preds = %_llgo_30
   store i64 0, ptr %100, align 4
   %101 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %97, align 8
   %102 = call ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/llgo/internal/runtime.Slice" %95, %"github.com/goplus/llgo/internal/runtime.Slice" %101, i1 false)
+  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %102)
   store ptr %102, ptr @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", align 8
   br label %_llgo_32
 
@@ -679,6 +680,7 @@ _llgo_32:                                         ; preds = %_llgo_31, %_llgo_30
 _llgo_33:                                         ; preds = %_llgo_32
   %105 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
   %106 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %105)
+  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %106)
   store ptr %106, ptr @"*_llgo_int", align 8
   br label %_llgo_34
 
@@ -837,6 +839,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice", i1)
+
+declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
 

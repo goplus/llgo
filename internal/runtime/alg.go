@@ -179,6 +179,8 @@ func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
 			h = typehash(a.Elem, add(p, i*a.Elem.Size_), h)
 		}
 		return h
+	case abi.Chan:
+		return typehash(t.Elem(), p, h)
 	case abi.Struct:
 		s := (*structtype)(unsafe.Pointer(t))
 		for _, f := range s.Fields {
@@ -195,8 +197,8 @@ func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
 	}
 }
 
-func ptrequal(p, q unsafe.Pointer) bool {
-	return p == q
+func memequalptr(p, q unsafe.Pointer) bool {
+	return *(*uintptr)(p) == *(*uintptr)(q)
 }
 func memequal0(p, q unsafe.Pointer) bool {
 	return true

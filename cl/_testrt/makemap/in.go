@@ -5,6 +5,7 @@ func main() {
 	make2()
 	make3()
 	make4()
+	make5()
 }
 
 func make1() {
@@ -85,5 +86,18 @@ func make4() {
 	m[K2{&N{3, 4}}] = 200
 	for k, v := range m {
 		println(k.(K2)[0].n1, v)
+	}
+}
+
+func make5() {
+	ch := make(chan int)
+	var a any = ch
+	var b any = ch
+	println(a == b)
+	m := make(map[chan int]int)
+	m[ch] = 100
+	m[ch] = 200
+	for k, v := range m {
+		println(k, v)
 	}
 }

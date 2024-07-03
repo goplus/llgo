@@ -143,6 +143,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2
   %8 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 3)
   %9 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %8)
+  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %9)
   store ptr %9, ptr @"*_llgo_int8", align 8
   br label %_llgo_4
 
@@ -177,6 +178,8 @@ _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
+
+declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
