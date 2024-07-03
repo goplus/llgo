@@ -286,7 +286,7 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 // Example printed form:
 //
 //	t2 = t0[t1]
-func (b Builder) Index(x, idx Expr, takeAddr func() Expr) Expr {
+func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr {
 	if debugInstr {
 		log.Printf("Index %v, %v\n", x.impl, idx.impl)
 	}
@@ -294,6 +294,7 @@ func (b Builder) Index(x, idx Expr, takeAddr func() Expr) Expr {
 	var telem Type
 	var ptr Expr
 	var max Expr
+	var zero bool
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		if t.Kind() != types.String {
@@ -304,12 +305,19 @@ func (b Builder) Index(x, idx Expr, takeAddr func() Expr) Expr {
 		max = b.StringLen(x)
 	case *types.Array:
 		telem = prog.Index(x.Type)
-		ptr = takeAddr()
+		ptr, zero = takeAddr()
 		max = prog.IntVal(uint64(t.Len()), prog.Int())
 	}
 	idx = b.checkIndex(idx, max)
+	if zero {
+		return prog.Zero(telem)
+	}
 	if ptr.IsNil() {
-		return Expr{llvm.ConstExtractElement(x.impl, idx.impl), telem}
+		if x.impl.IsConstant() {
+			return Expr{llvm.ConstExtractElement(x.impl, idx.impl), telem}
+		}
+		ptr = b.Alloc(x.Type, false)
+		b.impl.CreateStore(x.impl, ptr.impl)
 	}
 	pt := prog.Pointer(telem)
 	indices := []llvm.Value{idx.impl}

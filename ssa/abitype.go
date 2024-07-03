@@ -406,7 +406,7 @@ func (b Builder) abiType(t types.Type) Expr {
 	case *types.Pointer:
 		b.loadType(t.Elem())
 	case *types.Array:
-		b.loadType(t.Elem())
+		b.abiType(t.Elem())
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)

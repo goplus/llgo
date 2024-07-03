@@ -148,7 +148,7 @@ func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
 	switch t.Kind() {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64,
-		abi.Uintptr, abi.UnsafePointer:
+		abi.Uintptr, abi.UnsafePointer, abi.Pointer:
 		switch t.Size_ {
 		case 4:
 			return memhash32(p, h)
