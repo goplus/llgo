@@ -60,6 +60,14 @@ func basicEqual(kind Kind, size uintptr) func(a, b unsafe.Pointer) bool {
 	panic("unreachable")
 }
 
+func basicFlags(kind Kind) abi.TFlag {
+	switch kind {
+	case abi.Float32, abi.Float64, abi.Complex64, abi.Complex128, abi.String:
+		return 0
+	}
+	return abi.TFlagRegularMemory
+}
+
 func Basic(kind Kind) *Type {
 	if tyBasic[kind] == nil {
 		name, size, align := basicTypeInfo(kind)
@@ -70,6 +78,7 @@ func Basic(kind Kind) *Type {
 			FieldAlign_: uint8(align),
 			Kind_:       uint8(kind),
 			Equal:       basicEqual(kind, size),
+			TFlag:       basicFlags(kind),
 			Str_:        name,
 		}
 	}
@@ -170,6 +179,9 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 			}
 		}
 	}
+	if isRegularMemory(&ret.Type) {
+		ret.TFlag = abi.TFlagRegularMemory
+	}
 	return &ret.Type
 }
 
@@ -196,13 +208,14 @@ func newPointer(elem *Type) *Type {
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Pointer),
 			Equal:       memequalptr,
+			TFlag:       abi.TFlagRegularMemory,
 		},
 		Elem: elem,
 	}
 	if (elem.TFlag & abi.TFlagExtraStar) != 0 {
 		ptr.Str_ = "**" + elem.Str_
 	} else {
-		ptr.TFlag = abi.TFlagExtraStar
+		ptr.TFlag |= abi.TFlagExtraStar
 		ptr.Str_ = elem.Str_
 	}
 	return &ptr.Type
@@ -255,6 +268,9 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 			}
 		}
 	}
+	if ret.Len == 0 || ret.Elem.TFlag&abi.TFlagRegularMemory != 0 {
+		ret.TFlag = abi.TFlagRegularMemory
+	}
 	return &ret.Type
 }
 
@@ -264,6 +280,7 @@ func ChanOf(dir int, strChan string, elem *Type) *Type {
 			Size_:       8,
 			Hash:        uint32(abi.Chan),
 			Align_:      pointerAlign,
+			TFlag:       abi.TFlagRegularMemory,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Chan),
 			Equal:       memequalptr,
@@ -272,7 +289,6 @@ func ChanOf(dir int, strChan string, elem *Type) *Type {
 		Elem: elem,
 		Dir:  abi.ChanDir(dir),
 	}
-
 	return &ret.Type
 }
 
@@ -298,6 +314,57 @@ func MapOf(key, elem *Type, bucket *Type, flags int) *Type {
 		return typehash(key, p, seed)
 	}
 	return &ret.Type
+}
+
+func isRegularMemory(t *_type) bool {
+	switch t.Kind() {
+	case abi.Func, abi.Map, abi.Slice, abi.String, abi.Interface:
+		return false
+	case abi.Float32, abi.Float64, abi.Complex64, abi.Complex128:
+		return false
+	case abi.Array:
+		at := t.ArrayType()
+		b := isRegularMemory(at.Elem)
+		if b {
+			return true
+		}
+		if at.Len == 0 {
+			return true
+		}
+		return b
+	case abi.Struct:
+		st := t.StructType()
+		n := len(st.Fields)
+		switch n {
+		case 0:
+			return true
+		case 1:
+			f := st.Fields[0]
+			if f.Name_ == "_" {
+				return false
+			}
+			return isRegularMemory(f.Typ)
+		default:
+			for i := 0; i < n; i++ {
+				f := st.Fields[i]
+				if f.Name_ == "_" || !isRegularMemory(f.Typ) || ispaddedfield(st, i) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// ispaddedfield reports whether the i'th field of struct type t is followed
+// by padding.
+func ispaddedfield(st *structtype, i int) bool {
+	end := st.Size()
+	if i+1 < len(st.Fields) {
+		end = st.Fields[i+1].Offset
+	}
+	fd := st.Fields[i]
+	return fd.Offset+fd.Typ.Size_ != end
 }
 
 // -----------------------------------------------------------------------------

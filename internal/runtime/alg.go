@@ -134,21 +134,8 @@ func nilinterhash(p unsafe.Pointer, h uintptr) uintptr {
 // Note: this function must match the compiler generated
 // functions exactly. See issue 37716.
 func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
-	// if t.TFlag&abi.TFlagRegularMemory != 0 {
-	// 	// Handle ptr sizes specially, see issue 37086.
-	// 	switch t.Size_ {
-	// 	case 4:
-	// 		return memhash32(p, h)
-	// 	case 8:
-	// 		return memhash64(p, h)
-	// 	default:
-	// 		return memhash(p, h, t.Size_)
-	// 	}
-	// }
-	switch t.Kind() {
-	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
-		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64,
-		abi.Uintptr, abi.UnsafePointer, abi.Pointer:
+	if t.TFlag&abi.TFlagRegularMemory != 0 {
+		// Handle ptr sizes specially, see issue 37086.
 		switch t.Size_ {
 		case 4:
 			return memhash32(p, h)
@@ -157,6 +144,8 @@ func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
 		default:
 			return memhash(p, h, t.Size_)
 		}
+	}
+	switch t.Kind() {
 	case abi.Float32:
 		return f32hash(p, h)
 	case abi.Float64:
@@ -179,8 +168,6 @@ func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
 			h = typehash(a.Elem, add(p, i*a.Elem.Size_), h)
 		}
 		return h
-	case abi.Chan:
-		return typehash(t.Elem(), p, h)
 	case abi.Struct:
 		s := (*structtype)(unsafe.Pointer(t))
 		for _, f := range s.Fields {
