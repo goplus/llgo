@@ -7,11 +7,14 @@ source_filename = "main"
 @__llgo_py.math.sqrt = linkonce global ptr null, align 8
 @__llgo_py.os.getcwd = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [14 x i8] c"sqrt(2) = %f\0A\00", align 1
-@1 = private unnamed_addr constant [10 x i8] c"cwd = %s\0A\00", align 1
+@1 = private unnamed_addr constant [6 x i8] c"cwd =\00", align 1
+@__llgo_py.builtins.print = linkonce global ptr null, align 8
+@__llgo_py.builtins = external global ptr, align 8
+@2 = private unnamed_addr constant [6 x i8] c"print\00", align 1
 @__llgo_py.math = external global ptr, align 8
-@2 = private unnamed_addr constant [5 x i8] c"sqrt\00", align 1
+@3 = private unnamed_addr constant [5 x i8] c"sqrt\00", align 1
 @__llgo_py.os = external global ptr, align 8
-@3 = private unnamed_addr constant [7 x i8] c"getcwd\00", align 1
+@4 = private unnamed_addr constant [7 x i8] c"getcwd\00", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -22,10 +25,13 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
   call void @"github.com/goplus/llgo/py/math.init"()
   call void @"github.com/goplus/llgo/py/os.init"()
-  %1 = load ptr, ptr @__llgo_py.math, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @2, ptr @__llgo_py.math.sqrt, ptr null)
-  %2 = load ptr, ptr @__llgo_py.os, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %2, ptr @3, ptr @__llgo_py.os.getcwd, ptr null)
+  call void @"github.com/goplus/llgo/py/std.init"()
+  %1 = load ptr, ptr @__llgo_py.builtins, align 8
+  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
+  %2 = load ptr, ptr @__llgo_py.math, align 8
+  call void (ptr, ...) @llgoLoadPyModSyms(ptr %2, ptr @3, ptr @__llgo_py.math.sqrt, ptr null)
+  %3 = load ptr, ptr @__llgo_py.os, align 8
+  call void (ptr, ...) @llgoLoadPyModSyms(ptr %3, ptr @4, ptr @__llgo_py.os.getcwd, ptr null)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -46,14 +52,17 @@ _llgo_0:
   %6 = call ptr @PyObject_CallNoArgs(ptr %5)
   %7 = call double @PyFloat_AsDouble(ptr %4)
   %8 = call i32 (ptr, ...) @printf(ptr @0, double %7)
-  %9 = call ptr @PyUnicode_AsUTF8(ptr %6)
-  %10 = call i32 (ptr, ...) @printf(ptr @1, ptr %9)
+  %9 = call ptr @PyUnicode_FromString(ptr @1)
+  %10 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %11 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %10, ptr %9, ptr %6, ptr null)
   ret i32 0
 }
 
 declare void @"github.com/goplus/llgo/py/math.init"()
 
 declare void @"github.com/goplus/llgo/py/os.init"()
+
+declare void @"github.com/goplus/llgo/py/std.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
@@ -67,7 +76,9 @@ declare double @PyFloat_AsDouble(ptr)
 
 declare i32 @printf(ptr, ...)
 
-declare ptr @PyUnicode_AsUTF8(ptr)
+declare ptr @PyUnicode_FromString(ptr)
+
+declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
 
