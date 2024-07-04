@@ -184,6 +184,17 @@ func (p Program) tyLoadPyModSyms() *types.Signature {
 	return p.loadPyModS
 }
 
+// func(*char) *Object
+func (p Program) tyPyUnicodeFromString() *types.Signature {
+	if p.pyUniStr == nil {
+		charPtr := types.NewPointer(types.Typ[types.Int8])
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", charPtr))
+		results := types.NewTuple(p.paramObjPtr())
+		p.pyUniStr = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyUniStr
+}
+
 // func(*Objecg, *char) *Object
 func (p Program) tyGetAttrString() *types.Signature {
 	if p.getAttrStr == nil {
@@ -330,6 +341,12 @@ func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
 func (b Builder) callPyInit() (ret Expr) {
 	fn := b.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
 	return b.Call(fn)
+}
+
+// PyStr returns a py-style string constant expression.
+func (b Builder) PyStr(v string) Expr {
+	fn := b.Pkg.pyFunc("PyUnicode_FromString", b.Prog.tyPyUnicodeFromString())
+	return b.Call(fn, b.CStr(v))
 }
 
 // -----------------------------------------------------------------------------

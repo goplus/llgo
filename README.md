@@ -73,24 +73,33 @@ And you can import any Python library into `llgo` through a program called `llpy
 
 Note: For third-party libraries (such as pandas and pytorch), you still need to install the library files.
 
-Here is an example using the Python `math` library:
+Here is an example:
 
 ```go
 package main
 
 import (
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/py/math"
+	"github.com/goplus/llgo/py/std"
 )
 
 func main() {
-	x := math.Sqrt(py.Float(2))
-	c.Printf(c.Str("sqrt(2) = %f\n"), x.Float64())
+	x := math.Sqrt(py.Float(2))       // x = sqrt(2)
+	std.Print(py.Str("sqrt(2) ="), x) // print("sqrt(2) =", x)
 }
 ```
 
-Here, We call `py.Float(2)` to create a Python number 2, and pass it to Python’s `math.sqrt` to get `x`. Then use `x.Float64()` to convert x to Go's `float64` type, and print the value through the C `printf` function.
+It is equivalent to the following Python code:
+
+```py
+import math
+
+x = math.sqrt(2)
+print("sqrt =", x)
+```
+
+Here, We call `py.Float(2)` to create a Python number 2, and pass it to Python’s `math.sqrt` to get `x`. Then we call `std.Print` to print the result.
 
 Let's look at a slightly more complex example. For example, we use `numpy` to calculate:
 
@@ -98,9 +107,9 @@ Let's look at a slightly more complex example. For example, we use `numpy` to ca
 package main
 
 import (
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/py/numpy"
+	"github.com/goplus/llgo/py/std"
 )
 
 func main() {
@@ -115,7 +124,7 @@ func main() {
 		py.List(3.0, 2.0, 1.0),
 	)
 	x := numpy.Add(a, b)
-	c.Printf(c.Str("a+b = %s\n"), x.Str().CStr())
+	std.Print(py.Str("a+b ="), x)
 }
 ```
 
@@ -246,9 +255,9 @@ Here are the Go packages that can be imported correctly:
 - [Clang 17](https://clang.llvm.org)
 - [pkg-config 0.29+](https://www.freedesktop.org/wiki/Software/pkg-config/)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
-- [cJSON 1.7+](https://github.com/DaveGamble/cJSON) (optional, for [`github.com/goplus/llgo/c/cjson`](https://pkg.go.dev/github.com/goplus/llgo/c/cjson))
-- [SQLite 3](https://www.sqlite.org) (optional, for [`github.com/goplus/llgo/c/sqlite`](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite))
-- [Python 3.11+](https://www.python.org) (optional, for [`github.com/goplus/llgo/py`](https://pkg.go.dev/github.com/goplus/llgo/py))
+- [cJSON 1.7+](https://github.com/DaveGamble/cJSON) (optional, for [github.com/goplus/llgo/c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson))
+- [SQLite 3](https://www.sqlite.org) (optional, for [github.com/goplus/llgo/c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite))
+- [Python 3.11+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
 
 ## How to install
 

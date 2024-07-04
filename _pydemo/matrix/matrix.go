@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/py/numpy"
+	"github.com/goplus/llgo/py/std"
 )
 
 func main() {
@@ -18,5 +18,5 @@ func main() {
 		py.List(3.0, 2.0, 1.0),
 	)
 	x := numpy.Add(a, b)
-	c.Printf(c.Str("a+b = %s\n"), x.Str().CStr())
+	std.Print(py.Str("a+b ="), x)
 }
