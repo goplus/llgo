@@ -391,6 +391,7 @@ const (
 	llgoSiglongjmp = llgoInstrBase + 0xc
 
 	llgoPyList = llgoInstrBase + 0x10
+	llgoPyStr  = llgoInstrBase + 0x11
 
 	llgoAtomicLoad    = llgoInstrBase + 0x1d
 	llgoAtomicStore   = llgoInstrBase + 0x1e

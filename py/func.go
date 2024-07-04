@@ -46,7 +46,7 @@ func NewFuncWithQualName(code, globals, qualname *Object) *Object
 // Return true if o is a function object (has type PyFunction_Type). The
 // parameter must not be nil. This function always succeeds.
 //
-// llgo:link (*Object).FuncCheck C.PyFunction_Check
+//- llgo:link (*Object).FuncCheck C.PyFunction_Check
 func (o *Object) FuncCheck() c.Int { return 0 }
 */
 

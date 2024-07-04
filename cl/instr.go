@@ -28,6 +28,19 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// func pystr(string) *py.Object
+func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		if c, ok := args[0].(*ssa.Const); ok {
+			if v := c.Value; v.Kind() == constant.String {
+				sv := constant.StringVal(v)
+				return b.PyStr(sv)
+			}
+		}
+	}
+	panic("pystr(<string-literal>): invalid arguments")
+}
+
 // func cstr(string) *int8
 func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
@@ -175,6 +188,7 @@ var llgoInstrs = map[string]int{
 	"string":      llgoString,
 	"stringData":  llgoStringData,
 	"funcAddr":    llgoFuncAddr,
+	"pystr":       llgoPyStr,
 	"pyList":      llgoPyList,
 	"sigjmpbuf":   llgoSigjmpbuf,
 	"sigsetjmp":   llgoSigsetjmp,
@@ -314,6 +328,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)
+		case llgoPyStr:
+			ret = pystr(b, args)
 		case llgoCstr:
 			ret = cstr(b, args)
 		case llgoAdvance:

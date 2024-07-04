@@ -174,6 +174,7 @@ type aProgram struct {
 	callFOArgs   *types.Signature
 	loadPyModS   *types.Signature
 	getAttrStr   *types.Signature
+	pyUniStr     *types.Signature
 
 	mallocTy *types.Signature
 	freeTy   *types.Signature

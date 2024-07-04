@@ -24,6 +24,20 @@ import (
 
 // https://docs.python.org/3/c-api/unicode.html
 
+//go:linkname Str llgo.pystr
+func Str(s string) *Object
+
+//go:linkname FromCStr C.PyUnicode_FromString
+func FromCStr(str *c.Char) *Object
+
+//go:linkname FromCStrAndLen C.PyUnicode_FromStringAndSize
+func FromCStrAndLen(str *c.Char, n int) *Object
+
+// FromGoString returns a new Unicode object from a Go string.
+func FromGoString(s string) *Object {
+	return FromCStrAndLen(c.GoStringData(s), len(s))
+}
+
 // Return a pointer to the UTF-8 encoding of the Unicode object, and store the
 // size of the encoded representation (in bytes) in size. The size argument can
 // be nil; in this case no size will be stored. The returned buffer always has

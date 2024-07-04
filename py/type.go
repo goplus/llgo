@@ -49,5 +49,5 @@ func (t *Object) TypeFlags() uint32 { return 0 }
 // llgo:link (*Object).TypeModule C.PyType_GetModule
 func (t *Object) TypeModule() *Object { return nil }
 
-// llgo:link (*Object).TypeModuleByDef C.PyType_GetModuleByDef
+// -llgo:link (*Object).TypeModuleByDef C.PyType_GetModuleByDef
 // func (t *Object) TypeModuleByDef(def *ModuleDef) *Object { return nil }
