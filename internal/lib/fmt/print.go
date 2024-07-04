@@ -7,6 +7,7 @@ package fmt
 import (
 	"io"
 	"os"
+	"reflect"
 	"unicode/utf8"
 )
 
@@ -29,7 +30,6 @@ const (
 	invReflectString  = "<invalid reflect.Value>"
 )
 
-/* TODO(xsw):
 // State represents the printer state passed to custom formatters.
 // It provides access to the io.Writer interface plus information about
 // the flags and options for the operand's format specifier.
@@ -51,7 +51,6 @@ type State interface {
 type Formatter interface {
 	Format(f State, verb rune)
 }
-*/
 
 // Stringer is implemented by any value that has a String method,
 // which defines the “native” format for that value.
@@ -124,8 +123,7 @@ type pp struct {
 	arg any
 
 	// value is used instead of arg for reflect values.
-	// TODO(xsw):
-	// value reflect.Value
+	value reflect.Value
 
 	// fmt is used to format basic items such as integers or strings.
 	fmt fmt
@@ -222,7 +220,6 @@ func (p *pp) WriteString(s string) (ret int, err error) {
 	return len(s), nil
 }
 
-/* TODO(xsw):
 // These routines end in 'f' and take a format string.
 
 // Fprintf formats according to a format specifier and writes to w.
@@ -259,7 +256,6 @@ func Appendf(b []byte, format string, a ...any) []byte {
 	p.free()
 	return b
 }
-*/
 
 // These routines do not take a format string
 
@@ -355,6 +351,7 @@ func getField(v reflect.Value, i int) reflect.Value {
 	}
 	return val
 }
+*/
 
 // tooLarge reports whether the magnitude of the integer is
 // too large to be used as a formatting width or precision.
@@ -387,7 +384,6 @@ func (p *pp) unknownType(v reflect.Value) {
 	p.buf.writeString(v.Type().String())
 	p.buf.writeByte('?')
 }
-*/
 
 func (p *pp) badVerb(verb rune) {
 	/*
@@ -413,7 +409,6 @@ func (p *pp) badVerb(verb rune) {
 	panic("todo: fmt.(*pp).badVerb")
 }
 
-/* TODO(xsw):
 func (p *pp) fmtBool(v bool, verb rune) {
 	switch verb {
 	case 't', 'v':
@@ -499,7 +494,6 @@ func (p *pp) fmtComplex(v complex128, size int, verb rune) {
 		p.badVerb(verb)
 	}
 }
-*/
 
 func (p *pp) fmtString(v string, verb rune) {
 	switch verb {
@@ -522,7 +516,6 @@ func (p *pp) fmtString(v string, verb rune) {
 	}
 }
 
-/* TODO(xsw):
 func (p *pp) fmtBytes(v []byte, verb rune, typeString string) {
 	switch verb {
 	case 'v', 'd':
@@ -564,7 +557,6 @@ func (p *pp) fmtBytes(v []byte, verb rune, typeString string) {
 	}
 }
 
-/* TODO(xsw):
 func (p *pp) fmtPointer(value reflect.Value, verb rune) {
 	var u uintptr
 	switch value.Kind() {
@@ -696,12 +688,10 @@ func (p *pp) handleMethods(verb rune) (handled bool) {
 	}
 	return false
 }
-*/
 
 func (p *pp) printArg(arg any, verb rune) {
 	p.arg = arg
-	// TODO(xsw):
-	// p.value = reflect.Value{}
+	p.value = reflect.Value{}
 
 	if arg == nil {
 		switch verb {
@@ -717,51 +707,47 @@ func (p *pp) printArg(arg any, verb rune) {
 	// %T (the value's type) and %p (its address) are special; we always do them first.
 	switch verb {
 	case 'T':
-		// p.fmt.fmtS(reflect.TypeOf(arg).String())
-		// return
-		panic("todo: fmt.(*pp).printArg")
+		p.fmt.fmtS(reflect.TypeOf(arg).String())
+		return
 	case 'p':
-		// p.fmtPointer(reflect.ValueOf(arg), 'p')
-		// return
-		panic("todo: fmt.(*pp).printArg")
+		p.fmtPointer(reflect.ValueOf(arg), 'p')
+		return
 	}
 
 	// Some types can be done without reflection.
 	switch f := arg.(type) {
-	/*
-		case bool:
-			p.fmtBool(f, verb)
-		case float32:
-			p.fmtFloat(float64(f), 32, verb)
-		case float64:
-			p.fmtFloat(f, 64, verb)
-		case complex64:
-			p.fmtComplex(complex128(f), 64, verb)
-		case complex128:
-			p.fmtComplex(f, 128, verb)
-		case int:
-			p.fmtInteger(uint64(f), signed, verb)
-		case int8:
-			p.fmtInteger(uint64(f), signed, verb)
-		case int16:
-			p.fmtInteger(uint64(f), signed, verb)
-		case int32:
-			p.fmtInteger(uint64(f), signed, verb)
-		case int64:
-			p.fmtInteger(uint64(f), signed, verb)
-		case uint:
-			p.fmtInteger(uint64(f), unsigned, verb)
-		case uint8:
-			p.fmtInteger(uint64(f), unsigned, verb)
-		case uint16:
-			p.fmtInteger(uint64(f), unsigned, verb)
-		case uint32:
-			p.fmtInteger(uint64(f), unsigned, verb)
-		case uint64:
-			p.fmtInteger(f, unsigned, verb)
-		case uintptr:
-			p.fmtInteger(uint64(f), unsigned, verb)
-	*/
+	case bool:
+		p.fmtBool(f, verb)
+	case float32:
+		p.fmtFloat(float64(f), 32, verb)
+	case float64:
+		p.fmtFloat(f, 64, verb)
+	case complex64:
+		p.fmtComplex(complex128(f), 64, verb)
+	case complex128:
+		p.fmtComplex(f, 128, verb)
+	case int:
+		p.fmtInteger(uint64(f), signed, verb)
+	case int8:
+		p.fmtInteger(uint64(f), signed, verb)
+	case int16:
+		p.fmtInteger(uint64(f), signed, verb)
+	case int32:
+		p.fmtInteger(uint64(f), signed, verb)
+	case int64:
+		p.fmtInteger(uint64(f), signed, verb)
+	case uint:
+		p.fmtInteger(uint64(f), unsigned, verb)
+	case uint8:
+		p.fmtInteger(uint64(f), unsigned, verb)
+	case uint16:
+		p.fmtInteger(uint64(f), unsigned, verb)
+	case uint32:
+		p.fmtInteger(uint64(f), unsigned, verb)
+	case uint64:
+		p.fmtInteger(f, unsigned, verb)
+	case uintptr:
+		p.fmtInteger(uint64(f), unsigned, verb)
 	case string:
 		p.fmtString(f, verb)
 	/* TODO(xsw):
@@ -791,16 +777,18 @@ func (p *pp) printArg(arg any, verb rune) {
 	}
 }
 
-/*
 // printValue is similar to printArg but starts with a reflect value, not an interface{} value.
 // It does not handle 'p' and 'T' verbs because these should have been already handled by printArg.
 func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
 	// Handle values with special methods if not already handled by printArg (depth == 0).
 	if depth > 0 && value.IsValid() && value.CanInterface() {
+		/* TODO(xsw):
 		p.arg = value.Interface()
 		if p.handleMethods(verb) {
 			return
 		}
+		*/
+		panic("todo: fmt.(*pp).printValue - handleMethods")
 	}
 	p.arg = nil
 	p.value = value
@@ -834,6 +822,7 @@ func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
 	case reflect.String:
 		p.fmtString(f.String(), verb)
 	case reflect.Map:
+		/* TODO(xsw):
 		if p.fmt.sharpV {
 			p.buf.writeString(f.Type().String())
 			if f.IsNil() {
@@ -862,7 +851,10 @@ func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
 		} else {
 			p.buf.writeByte(']')
 		}
+		*/
+		panic("todo: fmt.(*pp).printValue - reflect.Map")
 	case reflect.Struct:
+		/* TODO(xsw):
 		if p.fmt.sharpV {
 			p.buf.writeString(f.Type().String())
 		}
@@ -884,6 +876,8 @@ func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
 			p.printValue(getField(f, i), verb, depth+1)
 		}
 		p.buf.writeByte('}')
+		*/
+		panic("todo: fmt.(*pp).printValue - reflect.Struct")
 	case reflect.Interface:
 		value := f.Elem()
 		if !value.IsValid() {
@@ -963,7 +957,6 @@ func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
 	}
 }
 
-/* TODO(xsw):
 // intFromArg gets the argNumth element of a. On return, isInt reports whether the argument has integer type.
 func intFromArg(a []any, argNum int) (num int, isInt bool, newArgNum int) {
 	newArgNum = argNum
@@ -1231,7 +1224,6 @@ formatLoop:
 		p.buf.writeByte(')')
 	}
 }
-*/
 
 func (p *pp) doPrint(a []any) {
 	/*
