@@ -750,7 +750,6 @@ func (p *pp) printArg(arg any, verb rune) {
 		p.fmtInteger(uint64(f), unsigned, verb)
 	case string:
 		p.fmtString(f, verb)
-	/* TODO(xsw):
 	case []byte:
 		p.fmtBytes(f, verb, "[]byte")
 	case reflect.Value:
@@ -763,17 +762,13 @@ func (p *pp) printArg(arg any, verb rune) {
 			}
 		}
 		p.printValue(f, verb, 0)
-	*/
 	default:
-		/*
-			// If the type is not simple, it might have methods.
-			if !p.handleMethods(verb) {
-				// Need to use reflection, since the type had no
-				// interface methods that could be used for formatting.
-				p.printValue(reflect.ValueOf(f), verb, 0)
-			}
-		*/
-		panic("todo: fmt.(*pp).printArg")
+		// If the type is not simple, it might have methods.
+		if !p.handleMethods(verb) {
+			// Need to use reflection, since the type had no
+			// interface methods that could be used for formatting.
+			p.printValue(reflect.ValueOf(f), verb, 0)
+		}
 	}
 }
 
