@@ -302,10 +302,6 @@ func IfacePtrData(i iface) unsafe.Pointer {
 	return i.data
 }
 
-func SetDirectIface(t *abi.Type) {
-	t.Kind_ |= abi.KindDirectIface
-}
-
 // Implements reports whether the type V implements the interface type T.
 func Implements(T, V *abi.Type) bool {
 	if V == nil {

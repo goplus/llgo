@@ -674,15 +674,12 @@ bucketloop:
 		kmem := newobject(t.Key)
 		*(*unsafe.Pointer)(insertk) = kmem
 		insertk = kmem
-		*(*unsafe.Pointer)(insertk) = key
 	}
 	if t.IndirectElem() {
 		vmem := newobject(t.Elem)
 		*(*unsafe.Pointer)(elem) = vmem
 	}
-
 	typedmemmove(t.Key, insertk, key)
-
 	*inserti = top
 	h.count++
 

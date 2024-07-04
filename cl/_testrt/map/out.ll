@@ -66,8 +66,8 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 34)
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 34)
   %4 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %4, i32 0, i32 0
   store ptr @0, ptr %5, align 8
@@ -80,7 +80,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %8, i32 0, i32 1
   store i64 0, ptr %10, align 4
   %11 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %8, align 8
-  %12 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 8)
+  %12 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 40)
   %13 = call ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64 8, ptr %12)
   %14 = call %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String" %7, ptr %13, i64 0, %"github.com/goplus/llgo/internal/runtime.String" %11, i1 false)
   %15 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -95,7 +95,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %21 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %19, i32 0, i32 1
   store i64 0, ptr %21, align 4
   %22 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %19, align 8
-  %23 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %23 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 34)
   %24 = call ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64 8, ptr %23)
   %25 = call %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String" %18, ptr %24, i64 8, %"github.com/goplus/llgo/internal/runtime.String" %22, i1 false)
   %26 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -110,7 +110,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %32 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %30, i32 0, i32 1
   store i64 0, ptr %32, align 4
   %33 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %30, align 8
-  %34 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
+  %34 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 34)
   %35 = call ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64 8, ptr %34)
   %36 = call %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String" %29, ptr %35, i64 72, %"github.com/goplus/llgo/internal/runtime.String" %33, i1 false)
   %37 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -125,7 +125,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %43 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %41, i32 0, i32 1
   store i64 0, ptr %43, align 4
   %44 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %41, align 8
-  %45 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 12)
+  %45 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 44)
   %46 = call %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String" %40, ptr %45, i64 136, %"github.com/goplus/llgo/internal/runtime.String" %44, i1 false)
   %47 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %48 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %47, i32 0, i32 0
@@ -152,7 +152,6 @@ _llgo_1:                                          ; preds = %_llgo_0
   %60 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %56, align 8
   %61 = call ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String" %50, i64 144, %"github.com/goplus/llgo/internal/runtime.Slice" %60)
   %62 = call ptr @"github.com/goplus/llgo/internal/runtime.MapOf"(ptr %2, ptr %3, ptr %61, i64 4)
-  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %62)
   store ptr %62, ptr @"map[_llgo_int]_llgo_int", align 8
   br label %_llgo_2
 
@@ -171,8 +170,6 @@ declare %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/l
 declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
-
-declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr, i64)
 

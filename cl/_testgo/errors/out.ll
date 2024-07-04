@@ -178,7 +178,6 @@ _llgo_3:                                          ; preds = %_llgo_2
   store i64 1, ptr %45, align 4
   %46 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %42, align 8
   %47 = call ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/llgo/internal/runtime.Slice" %39, %"github.com/goplus/llgo/internal/runtime.Slice" %46, i1 false)
-  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %47)
   store ptr %47, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
   br label %_llgo_4
 
@@ -219,7 +218,6 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %69 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %66, align 8
   call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %65, %"github.com/goplus/llgo/internal/runtime.String" %69, ptr %23, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %61)
   %70 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %0)
-  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %70)
   store ptr %70, ptr @"*_llgo_main.errorString", align 8
   %71 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
   %72 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
@@ -283,8 +281,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice", i1)
-
-declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
 

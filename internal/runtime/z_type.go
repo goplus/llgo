@@ -68,7 +68,8 @@ func basicFlags(kind Kind) abi.TFlag {
 	return abi.TFlagRegularMemory
 }
 
-func Basic(kind Kind) *Type {
+func Basic(_kind Kind) *Type {
+	kind := _kind & abi.KindMask
 	if tyBasic[kind] == nil {
 		name, size, align := basicTypeInfo(kind)
 		tyBasic[kind] = &Type{
@@ -76,7 +77,7 @@ func Basic(kind Kind) *Type {
 			Hash:        uint32(kind), // TODO(xsw): hash
 			Align_:      uint8(align),
 			FieldAlign_: uint8(align),
-			Kind_:       uint8(kind),
+			Kind_:       uint8(_kind),
 			Equal:       basicEqual(kind, size),
 			TFlag:       basicFlags(kind),
 			Str_:        name,
@@ -182,6 +183,9 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	if isRegularMemory(&ret.Type) {
 		ret.TFlag = abi.TFlagRegularMemory
 	}
+	if len(fields) == 1 && isDirectIface(fields[0].Typ) {
+		ret.Kind_ |= abi.KindDirectIface
+	}
 	return &ret.Type
 }
 
@@ -270,6 +274,9 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 	}
 	if ret.Len == 0 || ret.Elem.TFlag&abi.TFlagRegularMemory != 0 {
 		ret.TFlag = abi.TFlagRegularMemory
+	}
+	if ret.Len == 1 && isDirectIface(ret.Elem) {
+		ret.Kind_ |= abi.KindDirectIface
 	}
 	return &ret.Type
 }

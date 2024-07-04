@@ -35,6 +35,12 @@ func (b Builder) abiBasic(t *types.Basic) func() Expr {
 	*/
 	return func() Expr {
 		kind := int(abi.BasicKind(t))
+		dk, _, _ := abi.DataKindOf(t, 0, b.Prog.is32Bits)
+		switch dk {
+		case abi.Integer, abi.BitCast, abi.Pointer:
+			const kindDirectIface = 1 << 5
+			kind |= kindDirectIface
+		}
 		return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
 	}
 }
@@ -360,17 +366,6 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.SetBlockEx(blks[0], AtEnd, false)
 	}
 	vexpr := tabi()
-	prog := p.Prog
-	kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits)
-	switch kind {
-	case abi.Integer, abi.BitCast:
-		// abi.Type.Kind_ |= abi.KindDirectIface
-		const kindDirectIface = 1 << 5
-		pkind := b.FieldAddr(vexpr, 6)
-		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
-	case abi.Pointer:
-		b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
-	}
 	b.Store(expr, vexpr)
 	if pub {
 		b.Jump(blks[1])

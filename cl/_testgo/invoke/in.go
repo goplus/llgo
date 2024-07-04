@@ -48,12 +48,12 @@ func (t T5) Invoke() int {
 	return 5
 }
 
-// type T6 func() int
+type T6 func() int
 
-// func (t T6) Invoke() int {
-// 	println("invoke6", t())
-// 	return 6
-// }
+func (t T6) Invoke() int {
+	println("invoke6", t())
+	return 6
+}
 
 type I interface {
 	Invoke() int
@@ -66,7 +66,7 @@ func main() {
 	var t3 = T3(127)
 	var t4 = T4{200}
 	var t5 = T5{300}
-	//var t6 = T6(func() int { return 400 })
+	var t6 = T6(func() int { return 400 })
 	invoke(t)
 	invoke(&t)
 	invoke(t1)
@@ -78,7 +78,8 @@ func main() {
 	invoke(&t4)
 	invoke(t5)
 	invoke(&t5)
-	//invoke(t6)
+	invoke(t6)
+	invoke(&t6)
 	var m M
 	var i I = m
 	println(i, m)
@@ -88,7 +89,7 @@ func main() {
 	invoke(a.(I))
 	invoke(a.(interface{}).(interface{ Invoke() int }))
 	//panic
-	invoke(nil)
+	//invoke(nil)
 }
 
 func invoke(i I) {
