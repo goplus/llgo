@@ -358,7 +358,7 @@ func (p Program) toType(raw types.Type) Type {
 	case *types.Slice:
 		return &aType{p.rtSlice(), typ, vkSlice}
 	case *types.Map:
-		return &aType{p.rtMap(), typ, vkMap}
+		return &aType{llvm.PointerType(p.rtMap(), 0), typ, vkMap}
 	case *types.Struct:
 		ll, kind := p.toLLVMStruct(t)
 		return &aType{ll, typ, kind}

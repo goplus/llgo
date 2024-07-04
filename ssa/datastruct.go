@@ -145,6 +145,18 @@ func (b Builder) SliceCap(x Expr) Expr {
 	return Expr{ptr, b.Prog.Int()}
 }
 
+func (b Builder) MapLen(x Expr) Expr {
+	if debugInstr {
+		log.Printf("MapLen %v\n", x.impl)
+	}
+	prog := b.Prog
+	if x.impl.IsNull() {
+		return prog.Val(0)
+	}
+	x.Type = prog.Pointer(prog.Int())
+	return b.Load(x)
+}
+
 // -----------------------------------------------------------------------------
 
 // The IndexAddr instruction yields the address of the element at
@@ -274,7 +286,7 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 // Example printed form:
 //
 //	t2 = t0[t1]
-func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
+func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr {
 	if debugInstr {
 		log.Printf("Index %v, %v\n", x.impl, idx.impl)
 	}
@@ -293,21 +305,19 @@ func (b Builder) Index(x, idx Expr, addr func(Expr) (Expr, bool)) Expr {
 		max = b.StringLen(x)
 	case *types.Array:
 		telem = prog.Index(x.Type)
-		if addr != nil {
-			ptr, zero = addr(x)
-		} else {
-			/*
-				size := SizeOf(prog, telem, t.Len())
-				ptr = b.Alloca(size)
-				b.Store(ptr, x)
-			*/
-			panic("unreachable")
-		}
+		ptr, zero = takeAddr()
 		max = prog.IntVal(uint64(t.Len()), prog.Int())
 	}
 	idx = b.checkIndex(idx, max)
 	if zero {
-		return Expr{llvm.ConstNull(telem.ll), telem}
+		return prog.Zero(telem)
+	}
+	if ptr.IsNil() {
+		if x.impl.IsConstant() {
+			return Expr{llvm.ConstExtractElement(x.impl, idx.impl), telem}
+		}
+		ptr = b.Alloc(x.Type, false)
+		b.impl.CreateStore(x.impl, ptr.impl)
 	}
 	pt := prog.Pointer(telem)
 	indices := []llvm.Value{idx.impl}
@@ -450,9 +460,12 @@ func (b Builder) MakeMap(t Type, nReserve Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeMap %v, %v\n", t.RawType(), nReserve.impl)
 	}
+	if nReserve.IsNil() {
+		nReserve = b.Prog.Val(0)
+	}
+	typ := b.abiType(t.raw.Type)
+	ret = b.InlineCall(b.Pkg.rtFunc("MakeMap"), typ, nReserve)
 	ret.Type = t
-	ret.impl = b.InlineCall(b.Pkg.rtFunc("MakeSmallMap")).impl
-	// TODO(xsw): nReserve
 	return
 }
 
@@ -471,8 +484,21 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("Lookup %v, %v, %v\n", x.impl, key.impl, commaOk)
 	}
-	// TODO(xsw)
-	// panic("todo")
+	prog := b.Prog
+	typ := b.abiType(x.raw.Type)
+	vtyp := prog.Elem(x.Type)
+	ptr := b.mapKeyPtr(key)
+	if commaOk {
+		vals := b.Call(b.Pkg.rtFunc("MapAccess2"), typ, x, ptr)
+		val := b.Load(Expr{b.impl.CreateExtractValue(vals.impl, 0, ""), prog.Pointer(vtyp)})
+		ok := b.impl.CreateExtractValue(vals.impl, 1, "")
+		t := prog.Struct(vtyp, prog.Bool())
+		return b.aggregateValue(t, val.impl, ok)
+	} else {
+		val := b.Call(b.Pkg.rtFunc("MapAccess1"), typ, x, ptr)
+		val.Type = prog.Pointer(vtyp)
+		ret = b.Load(val)
+	}
 	return
 }
 
@@ -489,8 +515,20 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	if debugInstr {
 		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
 	}
-	// TODO(xsw)
-	// panic("todo")
+	typ := b.abiType(m.raw.Type)
+	ptr := b.mapKeyPtr(k)
+	ret := b.Call(b.Pkg.rtFunc("MapAssign"), typ, m, ptr)
+	ret.Type = b.Prog.Pointer(v.Type)
+	b.Store(ret, v)
+}
+
+// key => unsafe.Pointer
+func (b Builder) mapKeyPtr(x Expr) Expr {
+	typ := x.Type
+	vtyp := b.Prog.VoidPtr()
+	vptr := b.AllocU(typ)
+	b.Store(vptr, x)
+	return Expr{vptr.impl, vtyp}
 }
 
 // -----------------------------------------------------------------------------
@@ -511,8 +549,11 @@ func (b Builder) Range(x Expr) Expr {
 	switch x.kind {
 	case vkString:
 		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
+	case vkMap:
+		typ := b.abiType(x.raw.Type)
+		return b.InlineCall(b.Pkg.rtFunc("NewMapIter"), typ, x)
 	}
-	panic("todo")
+	panic("unsupport range for " + x.raw.Type.String())
 }
 
 // The Next instruction reads and advances the (map or string)
@@ -533,11 +574,40 @@ func (b Builder) Range(x Expr) Expr {
 // Example printed form:
 //
 //	t1 = next t0
-func (b Builder) Next(iter Expr, isString bool) (ret Expr) {
+func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
 	if isString {
 		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
 	}
-	panic("todo")
+	prog := b.Prog
+	ktyp := prog.Type(typ.raw.Type.(*types.Map).Key(), InGo)
+	vtyp := prog.Type(typ.raw.Type.(*types.Map).Elem(), InGo)
+	rets := b.InlineCall(b.Pkg.rtFunc("MapIterNext"), iter)
+	ok := b.impl.CreateExtractValue(rets.impl, 0, "")
+	t := prog.Struct(prog.Bool(), ktyp, vtyp)
+	blks := b.Func.MakeBlocks(3)
+	b.If(Expr{ok, prog.Bool()}, blks[0], blks[1])
+	b.SetBlockEx(blks[2], AtEnd, false)
+	phi := b.Phi(t)
+	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
+		b.SetBlockEx(blk, AtEnd, false)
+		if i == 0 {
+			k := b.impl.CreateExtractValue(rets.impl, 1, "")
+			v := b.impl.CreateExtractValue(rets.impl, 2, "")
+			valTrue := aggregateValue(b.impl, t.ll, prog.BoolVal(true).impl,
+				llvm.CreateLoad(b.impl, ktyp.ll, k),
+				llvm.CreateLoad(b.impl, vtyp.ll, v))
+			b.Jump(blks[2])
+			return Expr{valTrue, t}
+		}
+		valFalse := aggregateValue(b.impl, t.ll, prog.BoolVal(false).impl,
+			llvm.ConstNull(ktyp.ll),
+			llvm.ConstNull(vtyp.ll))
+		b.Jump(blks[2])
+		return Expr{valFalse, t}
+	})
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
+	return phi.Expr
 }
 
 // The MakeChan instruction creates a new channel object and yields a

@@ -35,6 +35,12 @@ func (b Builder) abiBasic(t *types.Basic) func() Expr {
 	*/
 	return func() Expr {
 		kind := int(abi.BasicKind(t))
+		dk, _, _ := abi.DataKindOf(t, 0, b.Prog.is32Bits)
+		switch dk {
+		case abi.Integer, abi.BitCast, abi.Pointer:
+			const kindDirectIface = 1 << 5
+			kind |= kindDirectIface
+		}
 		return b.InlineCall(b.Pkg.rtFunc("Basic"), b.Prog.Val(kind))
 	}
 }
@@ -70,6 +76,8 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 		return b.abiArrayOf(t)
 	case *types.Chan:
 		return b.abiChanOf(t)
+	case *types.Map:
+		return b.abiMapOf(t)
 	}
 	panic("todo")
 }
@@ -284,6 +292,17 @@ func (b Builder) abiChanOf(t *types.Chan) func() Expr {
 	}
 }
 
+func (b Builder) abiMapOf(t *types.Map) func() Expr {
+	key := b.abiTypeOf(t.Key())
+	elem := b.abiTypeOf(t.Elem())
+	sizes := (*goProgram)(b.Prog)
+	bucket := b.abiTypeOf(abi.MapBucketType(t, sizes))
+	flags := abi.MapTypeFlags(t, sizes)
+	return func() Expr {
+		return b.Call(b.Pkg.rtFunc("MapOf"), key(), elem(), bucket(), b.Prog.Val(flags))
+	}
+}
+
 // func StructField(name string, typ *abi.Type, off uintptr, tag string, embedded bool)
 // func Struct(pkgPath string, size uintptr, fields []abi.StructField)
 func (b Builder) abiStructOf(t *types.Struct) func() Expr {
@@ -347,19 +366,6 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.SetBlockEx(blks[0], AtEnd, false)
 	}
 	vexpr := tabi()
-	prog := p.Prog
-	kind, _, lvl := abi.DataKindOf(t, 0, prog.is32Bits)
-	switch kind {
-	case abi.Integer, abi.BitCast:
-		// abi.Type.Kind_ |= abi.KindDirectIface
-		const kindDirectIface = 1 << 5
-		pkind := b.FieldAddr(vexpr, 6)
-		b.Store(pkind, b.BinOp(token.OR, b.Load(pkind), Expr{prog.IntVal(kindDirectIface, prog.Byte()).impl, prog.Byte()}))
-	case abi.Pointer:
-		if lvl > 0 {
-			b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
-		}
-	}
 	b.Store(expr, vexpr)
 	if pub {
 		b.Jump(blks[1])
@@ -392,6 +398,8 @@ func (b Builder) abiType(t types.Type) Expr {
 	switch t := t.(type) {
 	case *types.Pointer:
 		b.loadType(t.Elem())
+	case *types.Array:
+		b.abiType(t.Elem())
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)

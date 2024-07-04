@@ -256,7 +256,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 2, i64 2)
-  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %2)
   store ptr %2, ptr @_llgo_main.Game1, align 8
   br label %_llgo_2
 
@@ -299,7 +298,6 @@ _llgo_3:                                          ; preds = %_llgo_2
   store i64 1, ptr %25, align 4
   %26 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %22, align 8
   %27 = call ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String" %19, i64 8, %"github.com/goplus/llgo/internal/runtime.Slice" %26)
-  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %27)
   store ptr %27, ptr @"_llgo_struct$cJmCzeVn0orHWafCrTGAnbbAF46F2A4Fms4bJBm8ITI", align 8
   br label %_llgo_4
 
@@ -653,8 +651,6 @@ _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
 }
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
-
-declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 

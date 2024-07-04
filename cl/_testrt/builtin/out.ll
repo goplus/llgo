@@ -4,7 +4,6 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/internal/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/internal/runtime.String", ptr }
 
 @main.a = global i64 0, align 8
 @main.b = global i64 0, align 8
@@ -663,11 +662,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 2)
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/abi.Type", ptr %2, i32 0, i32 6
-  %4 = load i8, ptr %3, align 1
-  %5 = or i8 %4, 32
-  store i8 %5, ptr %3, align 1
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64 34)
   store ptr %2, ptr @_llgo_int, align 8
   br label %_llgo_2
 
