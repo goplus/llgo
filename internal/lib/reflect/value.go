@@ -21,6 +21,7 @@
 package reflect
 
 import (
+	"errors"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
@@ -355,6 +356,260 @@ func (v Value) bytesSlow() []byte {
 		panic(&ValueError{"reflect.Value.Bytes", v.kind()})
 	*/
 	panic("todo")
+}
+
+// runes returns v's underlying value.
+// It panics if v's underlying value is not a slice of runes (int32s).
+func (v Value) runes() []rune {
+	v.mustBe(Slice)
+	if v.typ().Elem().Kind() != abi.Int32 {
+		panic("reflect.Value.Bytes of non-rune slice")
+	}
+	// Slice is always bigger than a word; assume flagIndir.
+	return *(*[]rune)(v.ptr)
+}
+
+// CanAddr reports whether the value's address can be obtained with Addr.
+// Such values are called addressable. A value is addressable if it is
+// an element of a slice, an element of an addressable array,
+// a field of an addressable struct, or the result of dereferencing a pointer.
+// If CanAddr returns false, calling Addr will panic.
+func (v Value) CanAddr() bool {
+	return v.flag&flagAddr != 0
+}
+
+// CanSet reports whether the value of v can be changed.
+// A Value can be changed only if it is addressable and was not
+// obtained by the use of unexported struct fields.
+// If CanSet returns false, calling Set or any type-specific
+// setter (e.g., SetBool, SetInt) will panic.
+func (v Value) CanSet() bool {
+	return v.flag&(flagAddr|flagRO) == flagAddr
+}
+
+// Cap returns v's capacity.
+// It panics if v's Kind is not Array, Chan, Slice or pointer to Array.
+func (v Value) Cap() int {
+	/* TODO(xsw):
+	// capNonSlice is split out to keep Cap inlineable for slice kinds.
+	if v.kind() == Slice {
+		return (*unsafeheader.Slice)(v.ptr).Cap
+	}
+	return v.capNonSlice()
+	*/
+	panic("todo: reflect.Value.Cap")
+}
+
+func (v Value) capNonSlice() int {
+	/* TODO(xsw):
+	k := v.kind()
+	switch k {
+	case Array:
+		return v.typ().Len()
+	case Chan:
+		return chancap(v.pointer())
+	case Ptr:
+		if v.typ().Elem().Kind() == abi.Array {
+			return v.typ().Elem().Len()
+		}
+		panic("reflect: call of reflect.Value.Cap on ptr to non-array Value")
+	}
+	panic(&ValueError{"reflect.Value.Cap", v.kind()})
+	*/
+	panic("todo: reflect.Value.capNonSlice")
+}
+
+// Close closes the channel v.
+// It panics if v's Kind is not Chan.
+func (v Value) Close() {
+	/* TODO(xsw):
+	v.mustBe(Chan)
+	v.mustBeExported()
+	chanclose(v.pointer())
+	*/
+	panic("todo: reflect.Value.Close")
+}
+
+// CanComplex reports whether Complex can be used without panicking.
+func (v Value) CanComplex() bool {
+	switch v.kind() {
+	case Complex64, Complex128:
+		return true
+	default:
+		return false
+	}
+}
+
+// Complex returns v's underlying value, as a complex128.
+// It panics if v's Kind is not Complex64 or Complex128
+func (v Value) Complex() complex128 {
+	k := v.kind()
+	switch k {
+	case Complex64:
+		return complex128(*(*complex64)(v.ptr))
+	case Complex128:
+		return *(*complex128)(v.ptr)
+	}
+	panic(&ValueError{"reflect.Value.Complex", v.kind()})
+}
+
+// Elem returns the value that the interface v contains
+// or that the pointer v points to.
+// It panics if v's Kind is not Interface or Pointer.
+// It returns the zero Value if v is nil.
+func (v Value) Elem() Value {
+	/* TODO(xsw):
+	k := v.kind()
+	switch k {
+	case Interface:
+		var eface any
+		if v.typ().NumMethod() == 0 {
+			eface = *(*any)(v.ptr)
+		} else {
+			eface = (any)(*(*interface {
+				M()
+			})(v.ptr))
+		}
+		x := unpackEface(eface)
+		if x.flag != 0 {
+			x.flag |= v.flag.ro()
+		}
+		return x
+	case Pointer:
+		ptr := v.ptr
+		if v.flag&flagIndir != 0 {
+			if ifaceIndir(v.typ()) {
+				// This is a pointer to a not-in-heap object. ptr points to a uintptr
+				// in the heap. That uintptr is the address of a not-in-heap object.
+				// In general, pointers to not-in-heap objects can be total junk.
+				// But Elem() is asking to dereference it, so the user has asserted
+				// that at least it is a valid pointer (not just an integer stored in
+				// a pointer slot). So let's check, to make sure that it isn't a pointer
+				// that the runtime will crash on if it sees it during GC or write barriers.
+				// Since it is a not-in-heap pointer, all pointers to the heap are
+				// forbidden! That makes the test pretty easy.
+				// See issue 48399.
+				if !verifyNotInHeapPtr(*(*uintptr)(ptr)) {
+					panic("reflect: reflect.Value.Elem on an invalid notinheap pointer")
+				}
+			}
+			ptr = *(*unsafe.Pointer)(ptr)
+		}
+		// The returned value's address is v's value.
+		if ptr == nil {
+			return Value{}
+		}
+		tt := (*ptrType)(unsafe.Pointer(v.typ()))
+		typ := tt.Elem
+		fl := v.flag&flagRO | flagIndir | flagAddr
+		fl |= flag(typ.Kind())
+		return Value{typ, ptr, fl}
+	}
+	panic(&ValueError{"reflect.Value.Elem", v.kind()})
+	*/
+	panic("todo: reflect.Value.Elem")
+}
+
+// Field returns the i'th field of the struct v.
+// It panics if v's Kind is not Struct or i is out of range.
+func (v Value) Field(i int) Value {
+	/* TODO(xsw):
+	if v.kind() != Struct {
+		panic(&ValueError{"reflect.Value.Field", v.kind()})
+	}
+	tt := (*structType)(unsafe.Pointer(v.typ()))
+	if uint(i) >= uint(len(tt.Fields)) {
+		panic("reflect: Field index out of range")
+	}
+	field := &tt.Fields[i]
+	typ := field.Typ
+
+	// Inherit permission bits from v, but clear flagEmbedRO.
+	fl := v.flag&(flagStickyRO|flagIndir|flagAddr) | flag(typ.Kind())
+	// Using an unexported field forces flagRO.
+	if !field.Name.IsExported() {
+		if field.Embedded() {
+			fl |= flagEmbedRO
+		} else {
+			fl |= flagStickyRO
+		}
+	}
+	// Either flagIndir is set and v.ptr points at struct,
+	// or flagIndir is not set and v.ptr is the actual struct data.
+	// In the former case, we want v.ptr + offset.
+	// In the latter case, we must have field.offset = 0,
+	// so v.ptr + field.offset is still the correct address.
+	ptr := add(v.ptr, field.Offset, "same as non-reflect &v.field")
+	return Value{typ, ptr, fl}
+	*/
+	panic("todo: reflect.Value.Field")
+}
+
+// FieldByIndex returns the nested field corresponding to index.
+// It panics if evaluation requires stepping through a nil
+// pointer or a field that is not a struct.
+func (v Value) FieldByIndex(index []int) Value {
+	if len(index) == 1 {
+		return v.Field(index[0])
+	}
+	v.mustBe(Struct)
+	for i, x := range index {
+		if i > 0 {
+			if v.Kind() == Pointer && v.typ().Elem().Kind() == abi.Struct {
+				if v.IsNil() {
+					panic("reflect: indirection through nil pointer to embedded struct")
+				}
+				v = v.Elem()
+			}
+		}
+		v = v.Field(x)
+	}
+	return v
+}
+
+// FieldByIndexErr returns the nested field corresponding to index.
+// It returns an error if evaluation requires stepping through a nil
+// pointer, but panics if it must step through a field that
+// is not a struct.
+func (v Value) FieldByIndexErr(index []int) (Value, error) {
+	if len(index) == 1 {
+		return v.Field(index[0]), nil
+	}
+	v.mustBe(Struct)
+	for i, x := range index {
+		if i > 0 {
+			if v.Kind() == Ptr && v.typ().Elem().Kind() == abi.Struct {
+				if v.IsNil() {
+					return Value{}, errors.New("reflect: indirection through nil pointer to embedded struct field " + nameFor(v.typ().Elem()))
+				}
+				v = v.Elem()
+			}
+		}
+		v = v.Field(x)
+	}
+	return v, nil
+}
+
+// FieldByName returns the struct field with the given name.
+// It returns the zero Value if no field was found.
+// It panics if v's Kind is not struct.
+func (v Value) FieldByName(name string) Value {
+	v.mustBe(Struct)
+	if f, ok := toRType(v.typ()).FieldByName(name); ok {
+		return v.FieldByIndex(f.Index)
+	}
+	return Value{}
+}
+
+// FieldByNameFunc returns the struct field with a name
+// that satisfies the match function.
+// It panics if v's Kind is not struct.
+// It returns the zero Value if no field was found.
+func (v Value) FieldByNameFunc(match func(string) bool) Value {
+	if f, ok := toRType(v.typ()).FieldByNameFunc(match); ok {
+		return v.FieldByIndex(f.Index)
+	}
+	return Value{}
 }
 
 // CanFloat reports whether Float can be used without panicking.
@@ -746,6 +1001,133 @@ func (v Value) lenNonSlice() int {
 	panic("todo")
 }
 
+// Pointer returns v's value as a uintptr.
+// It panics if v's Kind is not Chan, Func, Map, Pointer, Slice, or UnsafePointer.
+//
+// If v's Kind is Func, the returned pointer is an underlying
+// code pointer, but not necessarily enough to identify a
+// single function uniquely. The only guarantee is that the
+// result is zero if and only if v is a nil func Value.
+//
+// If v's Kind is Slice, the returned pointer is to the first
+// element of the slice. If the slice is nil the returned value
+// is 0.  If the slice is empty but non-nil the return value is non-zero.
+//
+// It's preferred to use uintptr(Value.UnsafePointer()) to get the equivalent result.
+func (v Value) Pointer() uintptr {
+	/* TODO(xsw):
+	// The compiler loses track as it converts to uintptr. Force escape.
+	escapes(v.ptr)
+
+	k := v.kind()
+	switch k {
+	case Pointer:
+		if v.typ().PtrBytes == 0 {
+			val := *(*uintptr)(v.ptr)
+			// Since it is a not-in-heap pointer, all pointers to the heap are
+			// forbidden! See comment in Value.Elem and issue #48399.
+			if !verifyNotInHeapPtr(val) {
+				panic("reflect: reflect.Value.Pointer on an invalid notinheap pointer")
+			}
+			return val
+		}
+		fallthrough
+	case Chan, Map, UnsafePointer:
+		return uintptr(v.pointer())
+	case Func:
+		if v.flag&flagMethod != 0 {
+			// As the doc comment says, the returned pointer is an
+			// underlying code pointer but not necessarily enough to
+			// identify a single function uniquely. All method expressions
+			// created via reflect have the same underlying code pointer,
+			// so their Pointers are equal. The function used here must
+			// match the one used in makeMethodValue.
+			return methodValueCallCodePtr()
+		}
+		p := v.pointer()
+		// Non-nil func value points at data block.
+		// First word of data block is actual code.
+		if p != nil {
+			p = *(*unsafe.Pointer)(p)
+		}
+		return uintptr(p)
+
+	case Slice:
+		return uintptr((*unsafeheader.Slice)(v.ptr).Data)
+	}
+	panic(&ValueError{"reflect.Value.Pointer", v.kind()})
+	*/
+	panic("todo: reflect.Value.Pointer")
+}
+
+// Recv receives and returns a value from the channel v.
+// It panics if v's Kind is not Chan.
+// The receive blocks until a value is ready.
+// The boolean value ok is true if the value x corresponds to a send
+// on the channel, false if it is a zero value received because the channel is closed.
+func (v Value) Recv() (x Value, ok bool) {
+	v.mustBe(Chan)
+	v.mustBeExported()
+	return v.recv(false)
+}
+
+// internal recv, possibly non-blocking (nb).
+// v is known to be a channel.
+func (v Value) recv(nb bool) (val Value, ok bool) {
+	/* TODO(xsw):
+	tt := (*chanType)(unsafe.Pointer(v.typ()))
+	if ChanDir(tt.Dir)&RecvDir == 0 {
+		panic("reflect: recv on send-only channel")
+	}
+	t := tt.Elem
+	val = Value{t, nil, flag(t.Kind())}
+	var p unsafe.Pointer
+	if ifaceIndir(t) {
+		p = unsafe_New(t)
+		val.ptr = p
+		val.flag |= flagIndir
+	} else {
+		p = unsafe.Pointer(&val.ptr)
+	}
+	selected, ok := chanrecv(v.pointer(), nb, p)
+	if !selected {
+		val = Value{}
+	}
+	return
+	*/
+	panic("todo: reflect.Value.recv")
+}
+
+// Send sends x on the channel v.
+// It panics if v's kind is not Chan or if x's type is not the same type as v's element type.
+// As in Go, x's value must be assignable to the channel's element type.
+func (v Value) Send(x Value) {
+	v.mustBe(Chan)
+	v.mustBeExported()
+	v.send(x, false)
+}
+
+// internal send, possibly non-blocking.
+// v is known to be a channel.
+func (v Value) send(x Value, nb bool) (selected bool) {
+	/* TODO(xsw):
+	tt := (*chanType)(unsafe.Pointer(v.typ()))
+	if ChanDir(tt.Dir)&SendDir == 0 {
+		panic("reflect: send on recv-only channel")
+	}
+	x.mustBeExported()
+	x = x.assignTo("reflect.Value.Send", tt.Elem, nil)
+	var p unsafe.Pointer
+	if x.flag&flagIndir != 0 {
+		p = x.ptr
+	} else {
+		p = unsafe.Pointer(&x.ptr)
+	}
+	return chansend(v.pointer(), p, nb)
+	*/
+	panic("todo: reflect.Value.send")
+}
+
 // Set assigns x to the value v.
 // It panics if CanSet returns false.
 // As in Go, x's value must be assignable to v's type and
@@ -845,6 +1227,448 @@ func (v Value) SetInt(x int64) {
 	case Int64:
 		*(*int64)(v.ptr) = x
 	}
+}
+
+// SetLen sets v's length to n.
+// It panics if v's Kind is not Slice or if n is negative or
+// greater than the capacity of the slice.
+func (v Value) SetLen(n int) {
+	/* TODO(xsw):
+	v.mustBeAssignable()
+	v.mustBe(Slice)
+	s := (*unsafeheader.Slice)(v.ptr)
+	if uint(n) > uint(s.Cap) {
+		panic("reflect: slice length out of range in SetLen")
+	}
+	s.Len = n
+	*/
+	panic("todo: reflect.Value.SetLen")
+}
+
+// SetCap sets v's capacity to n.
+// It panics if v's Kind is not Slice or if n is smaller than the length or
+// greater than the capacity of the slice.
+func (v Value) SetCap(n int) {
+	/* TODO(xsw):
+	v.mustBeAssignable()
+	v.mustBe(Slice)
+	s := (*unsafeheader.Slice)(v.ptr)
+	if n < s.Len || n > s.Cap {
+		panic("reflect: slice capacity out of range in SetCap")
+	}
+	s.Cap = n
+	*/
+	panic("todo: reflect.Value.SetCap")
+}
+
+// SetMapIndex sets the element associated with key in the map v to elem.
+// It panics if v's Kind is not Map.
+// If elem is the zero Value, SetMapIndex deletes the key from the map.
+// Otherwise if v holds a nil map, SetMapIndex will panic.
+// As in Go, key's elem must be assignable to the map's key type,
+// and elem's value must be assignable to the map's elem type.
+func (v Value) SetMapIndex(key, elem Value) {
+	/* TODO(xsw):
+	v.mustBe(Map)
+	v.mustBeExported()
+	key.mustBeExported()
+	tt := (*mapType)(unsafe.Pointer(v.typ()))
+
+	if (tt.Key == stringType || key.kind() == String) && tt.Key == key.typ() && tt.Elem.Size() <= maxValSize {
+		k := *(*string)(key.ptr)
+		if elem.typ() == nil {
+			mapdelete_faststr(v.typ(), v.pointer(), k)
+			return
+		}
+		elem.mustBeExported()
+		elem = elem.assignTo("reflect.Value.SetMapIndex", tt.Elem, nil)
+		var e unsafe.Pointer
+		if elem.flag&flagIndir != 0 {
+			e = elem.ptr
+		} else {
+			e = unsafe.Pointer(&elem.ptr)
+		}
+		mapassign_faststr(v.typ(), v.pointer(), k, e)
+		return
+	}
+
+	key = key.assignTo("reflect.Value.SetMapIndex", tt.Key, nil)
+	var k unsafe.Pointer
+	if key.flag&flagIndir != 0 {
+		k = key.ptr
+	} else {
+		k = unsafe.Pointer(&key.ptr)
+	}
+	if elem.typ() == nil {
+		mapdelete(v.typ(), v.pointer(), k)
+		return
+	}
+	elem.mustBeExported()
+	elem = elem.assignTo("reflect.Value.SetMapIndex", tt.Elem, nil)
+	var e unsafe.Pointer
+	if elem.flag&flagIndir != 0 {
+		e = elem.ptr
+	} else {
+		e = unsafe.Pointer(&elem.ptr)
+	}
+	mapassign(v.typ(), v.pointer(), k, e)
+	*/
+	panic("todo: reflect.Value.SetMapIndex")
+}
+
+// SetUint sets v's underlying value to x.
+// It panics if v's Kind is not Uint, Uintptr, Uint8, Uint16, Uint32, or Uint64, or if CanSet() is false.
+func (v Value) SetUint(x uint64) {
+	v.mustBeAssignable()
+	switch k := v.kind(); k {
+	default:
+		panic(&ValueError{"reflect.Value.SetUint", v.kind()})
+	case Uint:
+		*(*uint)(v.ptr) = uint(x)
+	case Uint8:
+		*(*uint8)(v.ptr) = uint8(x)
+	case Uint16:
+		*(*uint16)(v.ptr) = uint16(x)
+	case Uint32:
+		*(*uint32)(v.ptr) = uint32(x)
+	case Uint64:
+		*(*uint64)(v.ptr) = x
+	case Uintptr:
+		*(*uintptr)(v.ptr) = uintptr(x)
+	}
+}
+
+// SetPointer sets the [unsafe.Pointer] value v to x.
+// It panics if v's Kind is not UnsafePointer.
+func (v Value) SetPointer(x unsafe.Pointer) {
+	v.mustBeAssignable()
+	v.mustBe(UnsafePointer)
+	*(*unsafe.Pointer)(v.ptr) = x
+}
+
+// SetString sets v's underlying value to x.
+// It panics if v's Kind is not String or if CanSet() is false.
+func (v Value) SetString(x string) {
+	v.mustBeAssignable()
+	v.mustBe(String)
+	*(*string)(v.ptr) = x
+}
+
+// Slice returns v[i:j].
+// It panics if v's Kind is not Array, Slice or String, or if v is an unaddressable array,
+// or if the indexes are out of bounds.
+func (v Value) Slice(i, j int) Value {
+	/* TODO(xsw):
+	var (
+		cap  int
+		typ  *sliceType
+		base unsafe.Pointer
+	)
+	switch kind := v.kind(); kind {
+	default:
+		panic(&ValueError{"reflect.Value.Slice", v.kind()})
+
+	case Array:
+		if v.flag&flagAddr == 0 {
+			panic("reflect.Value.Slice: slice of unaddressable array")
+		}
+		tt := (*arrayType)(unsafe.Pointer(v.typ()))
+		cap = int(tt.Len)
+		typ = (*sliceType)(unsafe.Pointer(tt.Slice))
+		base = v.ptr
+
+	case Slice:
+		typ = (*sliceType)(unsafe.Pointer(v.typ()))
+		s := (*unsafeheader.Slice)(v.ptr)
+		base = s.Data
+		cap = s.Cap
+
+	case String:
+		s := (*unsafeheader.String)(v.ptr)
+		if i < 0 || j < i || j > s.Len {
+			panic("reflect.Value.Slice: string slice index out of bounds")
+		}
+		var t unsafeheader.String
+		if i < s.Len {
+			t = unsafeheader.String{Data: arrayAt(s.Data, i, 1, "i < s.Len"), Len: j - i}
+		}
+		return Value{v.typ(), unsafe.Pointer(&t), v.flag}
+	}
+
+	if i < 0 || j < i || j > cap {
+		panic("reflect.Value.Slice: slice index out of bounds")
+	}
+
+	// Declare slice so that gc can see the base pointer in it.
+	var x []unsafe.Pointer
+
+	// Reinterpret as *unsafeheader.Slice to edit.
+	s := (*unsafeheader.Slice)(unsafe.Pointer(&x))
+	s.Len = j - i
+	s.Cap = cap - i
+	if cap-i > 0 {
+		s.Data = arrayAt(base, i, typ.Elem.Size(), "i < cap")
+	} else {
+		// do not advance pointer, to avoid pointing beyond end of slice
+		s.Data = base
+	}
+
+	fl := v.flag.ro() | flagIndir | flag(Slice)
+	return Value{typ.Common(), unsafe.Pointer(&x), fl}
+	*/
+	panic("todo: reflect.Value.Slice")
+}
+
+// Slice3 is the 3-index form of the slice operation: it returns v[i:j:k].
+// It panics if v's Kind is not Array or Slice, or if v is an unaddressable array,
+// or if the indexes are out of bounds.
+func (v Value) Slice3(i, j, k int) Value {
+	/* TODO(xsw):
+	var (
+		cap  int
+		typ  *sliceType
+		base unsafe.Pointer
+	)
+	switch kind := v.kind(); kind {
+	default:
+		panic(&ValueError{"reflect.Value.Slice3", v.kind()})
+
+	case Array:
+		if v.flag&flagAddr == 0 {
+			panic("reflect.Value.Slice3: slice of unaddressable array")
+		}
+		tt := (*arrayType)(unsafe.Pointer(v.typ()))
+		cap = int(tt.Len)
+		typ = (*sliceType)(unsafe.Pointer(tt.Slice))
+		base = v.ptr
+
+	case Slice:
+		typ = (*sliceType)(unsafe.Pointer(v.typ()))
+		s := (*unsafeheader.Slice)(v.ptr)
+		base = s.Data
+		cap = s.Cap
+	}
+
+	if i < 0 || j < i || k < j || k > cap {
+		panic("reflect.Value.Slice3: slice index out of bounds")
+	}
+
+	// Declare slice so that the garbage collector
+	// can see the base pointer in it.
+	var x []unsafe.Pointer
+
+	// Reinterpret as *unsafeheader.Slice to edit.
+	s := (*unsafeheader.Slice)(unsafe.Pointer(&x))
+	s.Len = j - i
+	s.Cap = k - i
+	if k-i > 0 {
+		s.Data = arrayAt(base, i, typ.Elem.Size(), "i < k <= cap")
+	} else {
+		// do not advance pointer, to avoid pointing beyond end of slice
+		s.Data = base
+	}
+
+	fl := v.flag.ro() | flagIndir | flag(Slice)
+	return Value{typ.Common(), unsafe.Pointer(&x), fl}
+	*/
+	panic("todo: reflect.Value.Slice3")
+}
+
+// String returns the string v's underlying value, as a string.
+// String is a special case because of Go's String method convention.
+// Unlike the other getters, it does not panic if v's Kind is not String.
+// Instead, it returns a string of the form "<T value>" where T is v's type.
+// The fmt package treats Values specially. It does not call their String
+// method implicitly but instead prints the concrete values they hold.
+func (v Value) String() string {
+	// stringNonString is split out to keep String inlineable for string kinds.
+	if v.kind() == String {
+		return *(*string)(v.ptr)
+	}
+	return v.stringNonString()
+}
+
+func (v Value) stringNonString() string {
+	if v.kind() == Invalid {
+		return "<invalid Value>"
+	}
+	// If you call String on a reflect.Value of other type, it's better to
+	// print something than to panic. Useful in debugging.
+	return "<" + v.Type().String() + " Value>"
+}
+
+// TryRecv attempts to receive a value from the channel v but will not block.
+// It panics if v's Kind is not Chan.
+// If the receive delivers a value, x is the transferred value and ok is true.
+// If the receive cannot finish without blocking, x is the zero Value and ok is false.
+// If the channel is closed, x is the zero value for the channel's element type and ok is false.
+func (v Value) TryRecv() (x Value, ok bool) {
+	/* TODO(xsw):
+	v.mustBe(Chan)
+	v.mustBeExported()
+	return v.recv(true)
+	*/
+	panic("todo: reflect.Value.TryRecv")
+}
+
+// TrySend attempts to send x on the channel v but will not block.
+// It panics if v's Kind is not Chan.
+// It reports whether the value was sent.
+// As in Go, x's value must be assignable to the channel's element type.
+func (v Value) TrySend(x Value) bool {
+	/* TODO(xsw):
+	v.mustBe(Chan)
+	v.mustBeExported()
+	return v.send(x, true)
+	*/
+	panic("todo: reflect.Value.TrySend")
+}
+
+// Type returns v's type.
+func (v Value) Type() Type {
+	if v.flag != 0 && v.flag&flagMethod == 0 {
+		return (*rtype)(unsafe.Pointer(v.typ_)) // inline of toRType(v.typ()), for own inlining in inline test
+	}
+	return v.typeSlow()
+}
+
+func (v Value) typeSlow() Type {
+	/* TODO(xsw):
+	if v.flag == 0 {
+		panic(&ValueError{"reflect.Value.Type", Invalid})
+	}
+
+	typ := v.typ()
+	if v.flag&flagMethod == 0 {
+		return toRType(v.typ())
+	}
+
+	// Method value.
+	// v.typ describes the receiver, not the method type.
+	i := int(v.flag) >> flagMethodShift
+	if v.typ().Kind() == abi.Interface {
+		// Method on interface.
+		tt := (*interfaceType)(unsafe.Pointer(typ))
+		if uint(i) >= uint(len(tt.Methods)) {
+			panic("reflect: internal error: invalid method index")
+		}
+		m := &tt.Methods[i]
+		return toRType(typeOffFor(typ, m.Typ))
+	}
+	// Method on concrete type.
+	ms := typ.ExportedMethods()
+	if uint(i) >= uint(len(ms)) {
+		panic("reflect: internal error: invalid method index")
+	}
+	m := ms[i]
+	return toRType(typeOffFor(typ, m.Mtyp))
+	*/
+	panic("todo: reflect.Value.Type")
+}
+
+// CanUint reports whether Uint can be used without panicking.
+func (v Value) CanUint() bool {
+	switch v.kind() {
+	case Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
+		return true
+	default:
+		return false
+	}
+}
+
+// Uint returns v's underlying value, as a uint64.
+// It panics if v's Kind is not Uint, Uintptr, Uint8, Uint16, Uint32, or Uint64.
+func (v Value) Uint() uint64 {
+	k := v.kind()
+	p := v.ptr
+	switch k {
+	case Uint:
+		return uint64(*(*uint)(p))
+	case Uint8:
+		return uint64(*(*uint8)(p))
+	case Uint16:
+		return uint64(*(*uint16)(p))
+	case Uint32:
+		return uint64(*(*uint32)(p))
+	case Uint64:
+		return *(*uint64)(p)
+	case Uintptr:
+		return uint64(*(*uintptr)(p))
+	}
+	panic(&ValueError{"reflect.Value.Uint", v.kind()})
+}
+
+//go:nocheckptr
+// This prevents inlining Value.UnsafeAddr when -d=checkptr is enabled,
+// which ensures cmd/compile can recognize unsafe.Pointer(v.UnsafeAddr())
+// and make an exception.
+
+// UnsafeAddr returns a pointer to v's data, as a uintptr.
+// It panics if v is not addressable.
+//
+// It's preferred to use uintptr(Value.Addr().UnsafePointer()) to get the equivalent result.
+func (v Value) UnsafeAddr() uintptr {
+	if v.typ() == nil {
+		panic(&ValueError{"reflect.Value.UnsafeAddr", Invalid})
+	}
+	if v.flag&flagAddr == 0 {
+		panic("reflect.Value.UnsafeAddr of unaddressable value")
+	}
+	return uintptr(v.ptr)
+}
+
+// UnsafePointer returns v's value as a [unsafe.Pointer].
+// It panics if v's Kind is not Chan, Func, Map, Pointer, Slice, or UnsafePointer.
+//
+// If v's Kind is Func, the returned pointer is an underlying
+// code pointer, but not necessarily enough to identify a
+// single function uniquely. The only guarantee is that the
+// result is zero if and only if v is a nil func Value.
+//
+// If v's Kind is Slice, the returned pointer is to the first
+// element of the slice. If the slice is nil the returned value
+// is nil.  If the slice is empty but non-nil the return value is non-nil.
+func (v Value) UnsafePointer() unsafe.Pointer {
+	/* TODO(xsw):
+	k := v.kind()
+	switch k {
+	case Pointer:
+		if v.typ().PtrBytes == 0 {
+			// Since it is a not-in-heap pointer, all pointers to the heap are
+			// forbidden! See comment in Value.Elem and issue #48399.
+			if !verifyNotInHeapPtr(*(*uintptr)(v.ptr)) {
+				panic("reflect: reflect.Value.UnsafePointer on an invalid notinheap pointer")
+			}
+			return *(*unsafe.Pointer)(v.ptr)
+		}
+		fallthrough
+	case Chan, Map, UnsafePointer:
+		return v.pointer()
+	case Func:
+		if v.flag&flagMethod != 0 {
+			// As the doc comment says, the returned pointer is an
+			// underlying code pointer but not necessarily enough to
+			// identify a single function uniquely. All method expressions
+			// created via reflect have the same underlying code pointer,
+			// so their Pointers are equal. The function used here must
+			// match the one used in makeMethodValue.
+			code := methodValueCallCodePtr()
+			return *(*unsafe.Pointer)(unsafe.Pointer(&code))
+		}
+		p := v.pointer()
+		// Non-nil func value points at data block.
+		// First word of data block is actual code.
+		if p != nil {
+			p = *(*unsafe.Pointer)(p)
+		}
+		return p
+
+	case Slice:
+		return (*unsafeheader.Slice)(v.ptr).Data
+	}
+	panic(&ValueError{"reflect.Value.UnsafePointer", v.kind()})
+	*/
+	panic("todo: reflect.Value.UnsafePointer")
 }
 
 //go:linkname unsafe_New github.com/goplus/llgo/internal/runtime.New
