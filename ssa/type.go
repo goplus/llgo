@@ -486,7 +486,11 @@ func (p Program) toNamed(raw *types.Named) Type {
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
 		name := p.llvmNameOf(raw)
-		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, vkStruct}
+		kind := vkStruct
+		if isClosure(t) {
+			kind = vkClosure
+		}
+		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, kind}
 	default:
 		typ := p.rawType(t)
 		return &aType{typ.ll, rawType{raw}, typ.kind}

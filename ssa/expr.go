@@ -689,12 +689,14 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
 	typ := t.raw.Type
-	switch typ.(type) {
+	switch t.kind {
+	case vkClosure:
+		ret.impl = checkExpr(x, typ.Underlying(), b).impl
 	default:
-		ret.impl = llvm.CreateBitCast(b.impl, x.impl, t.ll)
-		ret.Type = b.Prog.rawType(typ)
-		return
+		ret.impl = x.impl
 	}
+	ret.Type = t
+	return
 }
 
 // The Convert instruction yields the conversion of value X to type
