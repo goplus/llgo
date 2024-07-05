@@ -6,11 +6,12 @@ import (
 )
 
 func main() {
-	//c.Printf(c.Str("helloworld\n"))
 	var valueLen c.Ulong
-	conf := &sled.SledConfig{}
-	conf.SetPath(c.Str("./db.sled"))
-	db := conf.OpenDB()
+	conf := sled.CreateConfig()
+	path := c.Str("./db")
+	copyPath := c.Strdup(path)
+	pathConfig := conf.SetPath(copyPath)
+	db := pathConfig.OpenDb()
 	db.Set(c.Str("key"), 3, c.Str("value"), 5)
 	value := db.Get(c.Str("key"), 3, &valueLen)
 	c.Printf(c.Str("value: %s\n"), value)
