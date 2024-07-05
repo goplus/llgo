@@ -21,7 +21,7 @@ func (conf *SledConfig) SetPath(char *c.Char) *SledConfig {
 }
 
 //llgo:link (*SledConfig).OpenDB C.sled_open_db
-func (conf *SledConfig) OpenDB(sledConfig *SledConfig) *SledDb {
+func (conf *SledConfig) OpenDB() *SledDb {
 	return nil
 }
 
@@ -30,6 +30,6 @@ func (db *SledDb) Set(key *c.Char, keyLen c.Ulong, value *c.Char, valueLen c.Ulo
 }
 
 //llgo:link (*SledDb).Get C.sled_get
-func (db *SledDb) Get(key *c.Char, keyLen c.Ulong) *c.Char {
+func (db *SledDb) Get(key *c.Char, keyLen c.Ulong, valLen *c.Ulong) *c.Char {
 	return nil
 }
