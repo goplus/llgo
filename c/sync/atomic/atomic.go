@@ -18,7 +18,6 @@ package atomic
 
 import (
 	"unsafe"
-	_ "unsafe"
 )
 
 const (
