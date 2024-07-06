@@ -681,4 +681,97 @@ func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	}
 }
 
+type SelectState struct {
+	Chan  Expr // channel to use (for send or receive)
+	Value Expr // value to send (for send)
+	Send  bool // direction of case (SendOnly or RecvOnly)
+}
+
+// The Select instruction tests whether (or blocks until) one
+// of the specified sent or received states is entered.
+//
+// Let n be the number of States for which Dir==RECV and T_i (0<=i<n)
+// be the element type of each such state's Chan.
+// Select returns an n+2-tuple
+//
+//	(index int, recvOk bool, r_0 T_0, ... r_n-1 T_n-1)
+//
+// The tuple's components, described below, must be accessed via the
+// Extract instruction.
+//
+// If Blocking, select waits until exactly one state holds, i.e. a
+// channel becomes ready for the designated operation of sending or
+// receiving; select chooses one among the ready states
+// pseudorandomly, performs the send or receive operation, and sets
+// 'index' to the index of the chosen channel.
+//
+// If !Blocking, select doesn't block if no states hold; instead it
+// returns immediately with index equal to -1.
+//
+// If the chosen channel was used for a receive, the r_i component is
+// set to the received value, where i is the index of that state among
+// all n receive states; otherwise r_i has the zero value of type T_i.
+// Note that the receive index i is not the same as the state
+// index index.
+//
+// The second component of the triple, recvOk, is a boolean whose value
+// is true iff the selected operation was a receive and the receive
+// successfully yielded a value.
+//
+// Pos() returns the ast.SelectStmt.Select.
+//
+// Example printed form:
+//
+//	t3 = select nonblocking [<-t0, t1<-t2]
+//	t4 = select blocking []
+func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
+	ops := make([]Expr, len(states))
+	for i, s := range states {
+		ops[i] = b.chanOp(s)
+	}
+	var fn Expr
+	if blocking {
+		fn = b.Pkg.rtFunc("Select")
+	} else {
+		fn = b.Pkg.rtFunc("TrySelect")
+	}
+	prog := b.Prog
+	tSlice := lastParamType(prog, fn)
+	slice := b.SliceLit(tSlice, ops...)
+	ret = b.Call(fn, slice)
+	chosen := b.impl.CreateExtractValue(ret.impl, 0, "")
+	recvOK := b.impl.CreateExtractValue(ret.impl, 1, "")
+	if !blocking {
+		chosen = llvm.CreateSelect(b.impl, recvOK, chosen, prog.Val(-1).impl)
+	}
+	results := []llvm.Value{chosen, recvOK}
+	typs := []Type{prog.Int(), prog.Bool()}
+	for i, s := range states {
+		if !s.Send {
+			etyp := b.Prog.Elem(s.Chan.Type)
+			typs = append(typs, etyp)
+			r := b.Load(Expr{b.impl.CreateExtractValue(ops[i].impl, 1, ""), prog.Pointer(etyp)})
+			results = append(results, r.impl)
+		}
+	}
+	return b.aggregateValue(b.Prog.Struct(typs...), results...)
+}
+
+func (b Builder) chanOp(s *SelectState) Expr {
+	prog := b.Prog
+	var val Expr
+	var size Expr
+	if s.Send {
+		val = b.toPtr(s.Value)
+		size = prog.IntVal(prog.SizeOf(s.Value.Type), prog.Int32())
+	} else {
+		etyp := prog.Elem(s.Chan.Type)
+		val = b.Alloc(etyp, false)
+		size = prog.IntVal(prog.SizeOf(etyp), prog.Int())
+	}
+	send := prog.BoolVal(s.Send)
+	typ := b.Prog.rtType("ChanOp")
+	return b.aggregateValue(typ, s.Chan.impl, val.impl, size.impl, send.impl)
+}
+
 // -----------------------------------------------------------------------------
