@@ -26,7 +26,8 @@ import (
 // -----------------------------------------------------------------------------
 
 const (
-	chanFull = 1
+	chanNoSendRecv = 0
+	chanHasRecv    = 1
 )
 
 type Chan struct {
@@ -36,6 +37,7 @@ type Chan struct {
 	getp  int
 	len   int
 	cap   int
+	sops  *selectOp
 	close bool
 }
 
@@ -60,9 +62,16 @@ func ChanCap(p *Chan) int {
 	return p.cap
 }
 
+func notifyOps(p *Chan) {
+	for sop := p.sops; sop != nil; sop = sop.next {
+		sop.notify()
+	}
+}
+
 func ChanClose(p *Chan) {
 	p.mutex.Lock()
 	p.close = true
+	notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
 }
@@ -71,12 +80,14 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		if p.getp == chanFull || p.close {
+		if p.getp != chanHasRecv || p.close {
 			p.mutex.Unlock()
 			return false
 		}
-		p.data = v
-		p.getp = chanFull
+		if p.data != nil {
+			c.Memcpy(p.data, v, uintptr(eltSize))
+		}
+		p.getp = chanNoSendRecv
 	} else {
 		if p.len == n || p.close {
 			p.mutex.Unlock()
@@ -86,6 +97,7 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		c.Memcpy(c.Advance(p.data, off*eltSize), v, uintptr(eltSize))
 		p.len++
 	}
+	notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
 	return true
@@ -95,15 +107,17 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		for p.getp == chanFull {
+		for p.getp != chanHasRecv && !p.close {
 			p.cond.Wait(&p.mutex)
 		}
 		if p.close {
 			p.mutex.Unlock()
 			return false
 		}
-		p.data = v
-		p.getp = chanFull
+		if p.data != nil {
+			c.Memcpy(p.data, v, uintptr(eltSize))
+		}
+		p.getp = chanNoSendRecv
 	} else {
 		for p.len == n {
 			p.cond.Wait(&p.mutex)
@@ -116,48 +130,50 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		c.Memcpy(c.Advance(p.data, off*eltSize), v, uintptr(eltSize))
 		p.len++
 	}
+	notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
 	return true
 }
 
-func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) bool {
+func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK bool) {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		if p.getp == 0 {
-			p.mutex.Unlock()
-			return false
-		}
-		c.Memcpy(v, p.data, uintptr(eltSize))
-		p.getp = 0
+		tryOK = p.close
+		p.mutex.Unlock()
+		return
 	} else {
 		if p.len == 0 {
+			tryOK = p.close
 			p.mutex.Unlock()
-			return false
+			return
 		}
-		c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
+		if v != nil {
+			c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
+		}
 		p.getp = (p.getp + 1) % n
 		p.len--
 	}
+	notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
-	return true
+	return true, true
 }
 
-func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) bool {
+func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		for p.getp == 0 {
-			if p.close {
-				p.mutex.Unlock()
-				return false
-			}
+		for p.getp == chanHasRecv && !p.close {
 			p.cond.Wait(&p.mutex)
 		}
-		c.Memcpy(v, p.data, uintptr(eltSize))
-		p.getp = 0
+		if p.close {
+			p.mutex.Unlock()
+			return false
+		}
+		p.getp = chanHasRecv
+		p.data = v
 	} else {
 		for p.len == 0 {
 			if p.close {
@@ -166,13 +182,124 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) bool {
 			}
 			p.cond.Wait(&p.mutex)
 		}
-		c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
+		if v != nil {
+			c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
+		}
 		p.getp = (p.getp + 1) % n
 		p.len--
 	}
+	notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
-	return true
+	if n == 0 {
+		p.mutex.Lock()
+		for p.getp == chanHasRecv && !p.close {
+			p.cond.Wait(&p.mutex)
+		}
+		recvOK = !p.close
+		p.mutex.Unlock()
+	} else {
+		recvOK = true
+	}
+	return
+}
+
+// -----------------------------------------------------------------------------
+
+type selectOp struct {
+	mutex sync.Mutex
+	cond  sync.Cond
+	next  *selectOp
+
+	sem bool
+}
+
+func (p *selectOp) init() {
+	p.mutex.Init(nil)
+	p.cond.Init(nil)
+	p.next = nil
+	p.sem = false
+}
+
+func (p *selectOp) notify() {
+	p.mutex.Lock()
+	p.sem = true
+	p.mutex.Unlock()
+	p.cond.Signal()
+}
+
+func (p *selectOp) wait() {
+	p.mutex.Lock()
+	if !p.sem {
+		p.cond.Wait(&p.mutex)
+	}
+	p.sem = false
+	p.mutex.Unlock()
+}
+
+// ChanOp represents a channel operation.
+type ChanOp struct {
+	C *Chan
+
+	Val  unsafe.Pointer
+	Size int32
+
+	Send bool
+}
+
+// TrySelect executes a non-blocking select operation.
+func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
+	for isel = range ops {
+		op := ops[isel]
+		if op.Send {
+			if tryOK = ChanTrySend(op.C, op.Val, int(op.Size)); tryOK {
+				return
+			}
+		} else {
+			if recvOK, tryOK = ChanTryRecv(op.C, op.Val, int(op.Size)); tryOK {
+				return
+			}
+		}
+	}
+	return
+}
+
+// Select executes a blocking select operation.
+func Select(ops ...ChanOp) (isel int, recvOK bool) {
+	selOp := new(selectOp) // TODO(xsw): use c.AllocaNew[selectOp]()
+	selOp.init()
+	for _, op := range ops {
+		prepareSelect(op.C, selOp)
+	}
+	var tryOK bool
+	for {
+		if isel, recvOK, tryOK = TrySelect(ops...); tryOK {
+			break
+		}
+		selOp.wait()
+	}
+	for _, op := range ops {
+		endSelect(op.C, selOp)
+	}
+	return
+}
+
+func prepareSelect(c *Chan, selOp *selectOp) {
+	c.mutex.Lock()
+	selOp.next = c.sops
+	c.sops = selOp
+	c.mutex.Unlock()
+}
+
+func endSelect(c *Chan, selOp *selectOp) {
+	c.mutex.Lock()
+	pp := &c.sops
+	for *pp != selOp {
+		pp = &(*pp).next
+	}
+	*pp = selOp.next
+	c.mutex.Unlock()
+	selOp.next = nil
 }
 
 // -----------------------------------------------------------------------------

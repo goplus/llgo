@@ -36,6 +36,7 @@ func main() {
 	runtime.ChanClose(c)
 
 	v = 10
+
 	if runtime.ChanTrySend(c, unsafe.Pointer(&v), eltSize) {
 		println("error: chan send to closed chan")
 	}
