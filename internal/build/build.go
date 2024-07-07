@@ -17,12 +17,10 @@
 package build
 
 import (
-	"archive/zip"
 	"fmt"
 	"go/constant"
 	"go/token"
 	"go/types"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -253,7 +251,8 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if isPkgInLLGo(pkg.PkgPath) {
-				pkg.ExportFile = concatPkgLinkFiles(pkg, verbose)
+				buildPkg(ctx, aPkg, verbose)
+				pkg.ExportFile = " " + concatPkgLinkFiles(pkg, verbose) + " " + pkg.ExportFile
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
@@ -611,7 +610,7 @@ func concatPkgLinkFiles(pkg *packages.Package, verbose bool) string {
 	var b strings.Builder
 	var ret string
 	var n int
-	llgoPkgLinkFiles(pkg, "", func(linkFile string) {
+	llgoPkgLinkFiles(pkg, func(linkFile string) {
 		if n == 0 {
 			ret = linkFile
 		} else {
@@ -629,14 +628,13 @@ func concatPkgLinkFiles(pkg *packages.Package, verbose bool) string {
 }
 
 // const LLGoFiles = "file1; file2; ..."
-func llgoPkgLinkFiles(pkg *packages.Package, llFile string, procFile func(linkFile string), verbose bool) {
+func llgoPkgLinkFiles(pkg *packages.Package, procFile func(linkFile string), verbose bool) {
 	if o := pkg.Types.Scope().Lookup("LLGoFiles"); o != nil {
 		val := o.(*types.Const).Val()
 		if val.Kind() == constant.String {
 			clFiles(constant.StringVal(val), pkg, procFile, verbose)
 		}
 	}
-	unzipPkgLinkFiles(pkg.PkgPath, llFile, procFile)
 }
 
 // files = "file1; file2; ..."
@@ -660,30 +658,6 @@ func clFile(cFile, expFile string, procFile func(linkFile string), verbose bool)
 	procFile(llFile)
 }
 
-func unzipPkgLinkFiles(pkgPath string, llFile string, procFile func(linkFile string)) {
-	dir := llgoRoot() + pkgPath[len(llgoModPath):] + "/"
-	if llFile == "" {
-		llFile = "llgo_autogen.ll"
-	}
-	llPath := dir + llFile
-	llaPath := llPath + "a"
-	zipf, err := zip.OpenReader(llaPath)
-	if err != nil {
-		procFile(llPath)
-		return
-	}
-	defer zipf.Close()
-
-	for _, f := range zipf.File {
-		procFile(dir + f.Name)
-	}
-	if _, err := os.Stat(llPath); os.IsNotExist(err) {
-		for _, f := range zipf.File {
-			decodeFile(dir+f.Name, f)
-		}
-	}
-}
-
 const (
 	llgoModPath = "github.com/goplus/llgo"
 )
@@ -698,19 +672,6 @@ func isPkgInMod(pkgPath, modPath string) bool {
 		return suffix == "" || suffix[0] == '/'
 	}
 	return false
-}
-
-func decodeFile(outFile string, zipf *zip.File) (err error) {
-	f, err := zipf.Open()
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	data, err := io.ReadAll(f)
-	if err == nil {
-		err = os.WriteFile(outFile, data, 0644)
-	}
-	return
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
