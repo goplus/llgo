@@ -24,7 +24,7 @@ How can these be achieved?
 LLGo := Go + C + Python
 ```
 
-LLGo is compatible with **C and Python** through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**.
+LLGo is compatible with C and Python through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**.
 
 
 ## C standard libary support
