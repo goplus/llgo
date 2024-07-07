@@ -588,6 +588,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := v.Type()
 		size := p.compileValue(b, v.Size)
 		ret = b.MakeChan(p.prog.Type(t, llssa.InGo), size)
+	case *ssa.Select:
+		states := make([]*llssa.SelectState, len(v.States))
+		for i, s := range v.States {
+			states[i] = &llssa.SelectState{
+				Chan: p.compileValue(b, s.Chan),
+				Send: s.Dir == types.SendOnly,
+			}
+			if s.Send != nil {
+				states[i].Value = p.compileValue(b, s.Send)
+			}
+		}
+		ret = b.Select(states, v.Blocking)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
