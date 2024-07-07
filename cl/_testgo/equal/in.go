@@ -77,6 +77,23 @@ func init() {
 	assert(c != y)
 }
 
+// chan
+func init() {
+	a := make(chan int)
+	b := make(chan int)
+	assert(a == a)
+	assert(a != b)
+	assert(a != nil)
+}
+
+// map
+func init() {
+	m1 := make(map[int]string)
+	var m2 map[int]string
+	assert(m1 != nil)
+	assert(m2 == nil)
+}
+
 func assert(cond bool) {
 	if !cond {
 		panic("failed")

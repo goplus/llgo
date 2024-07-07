@@ -550,7 +550,14 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			x = b.Field(x, 0)
 			y = b.Field(y, 0)
 			fallthrough
-		case vkFuncPtr, vkFuncDecl, vkChan:
+		case vkFuncPtr, vkFuncDecl:
+			switch op {
+			case token.EQL:
+				return b.Prog.BoolVal(x.impl.IsNull() == y.impl.IsNull())
+			case token.NEQ:
+				return b.Prog.BoolVal(x.impl.IsNull() != y.impl.IsNull())
+			}
+		case vkChan:
 			switch op {
 			case token.EQL:
 				return Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, y.impl), tret}
