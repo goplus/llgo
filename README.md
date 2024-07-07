@@ -154,36 +154,12 @@ The `_pydemo` directory contains some python related demos:
 * [statistics](_pydemo/statistics/statistics.go): define a python list and call `statistics.mean` to get the mean
 * [matrix](_pydemo/matrix/matrix.go): a basic `numpy` demo
 
-To run these demos, you need to set the `LLGO_LIB_PYTHON` environment variable first.
-
-If Python is in the search path for `clang` linking, then `LLGO_LIB_PYTHON` only needs to be set to the name of the Python library. For example:
-
-```sh
-export LLGO_LIB_PYTHON=python3.12
-```
-
-You can also specify the path to tell `llgo` where the Python library is located:
-
-```sh
-export LLGO_LIB_PYTHON=/foo/bar/python3.12
-```
-
-For example, `/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib` is a typical python library location under macOS. So we should set it like this:
-
-```sh
-export LLGO_LIB_PYTHON=/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib/python3.12
-```
-
-Note that the file name must be written in a platform-independent format, using `python3.12` instead of `libpython3.12.dylib`.
-
-Then you can run the demos:
+To run these demos (If you haven't installed `llgo` yet, please refer to [How to install](#how-to-install)):
 
 ```sh
 cd <demo-directory>  # eg. cd _pydemo/callpy
 llgo run .
 ```
-
-See [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py) for more detials.
 
 
 ## Other frequently used libraries
