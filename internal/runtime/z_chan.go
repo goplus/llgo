@@ -38,6 +38,7 @@ type Chan struct {
 	len   int
 	cap   int
 	sops  *selectOp
+	sends uint16
 	close bool
 }
 
@@ -108,7 +109,9 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	p.mutex.Lock()
 	if n == 0 {
 		for p.getp != chanHasRecv && !p.close {
+			p.sends++
 			p.cond.Wait(&p.mutex)
+			p.sends--
 		}
 		if p.close {
 			p.mutex.Unlock()
@@ -140,9 +143,13 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		tryOK = p.close
-		p.mutex.Unlock()
-		return
+		if p.sends == 0 || p.getp == chanHasRecv || p.close {
+			tryOK = p.close
+			p.mutex.Unlock()
+			return
+		}
+		p.getp = chanHasRecv
+		p.data = v
 	} else {
 		if p.len == 0 {
 			tryOK = p.close
@@ -158,7 +165,18 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 	notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
-	return true, true
+	if n == 0 {
+		p.mutex.Lock()
+		if p.getp == chanHasRecv {
+			p.cond.Wait(&p.mutex)
+		}
+		recvOK = (p.getp != chanHasRecv)
+		tryOK = recvOK
+		p.mutex.Unlock()
+	} else {
+		recvOK, tryOK = true, true
+	}
+	return
 }
 
 func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
