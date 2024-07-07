@@ -1,4 +1,4 @@
-//go:build !byollvm && linux && !llvm14 && !llvm15 && !llvm16
+//go:build !byollvm && linux && llvm17
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
