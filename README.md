@@ -10,6 +10,22 @@ llgo - A Go compiler based on LLVM
 
 LLGo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a subproject of [the Go+ project](https://github.com/goplus/gop).
 
+LLGo aims to expand the boundaries of Go/Go+, providing limitless possibilities such as:
+
+* Game development
+* AI and data science
+* WebAssembly
+* Embedded development
+* ...
+
+How can these be achieved?
+
+```
+LLGo := Go + C + Python
+```
+
+LLGo is compatible with **C and Python** through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**.
+
 
 ## C standard libary support
 
@@ -194,11 +210,7 @@ Here are some examples related to them:
 
 ## Go syntax support
 
-Most of the Go syntax is already supported. Except for the following, which needs to be improved:
-
-* map (Very limited support)
-
-Here are some examples related to Go syntax:
+All Go syntax is already supported. Here are some examples:
 
 * [concat](_demo/concat/concat.go): define a variadic function
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
