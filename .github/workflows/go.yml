@@ -15,14 +15,14 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        llvm: [17]
+        llvm: [18]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Update Homebrew
-        # needed as long as LLVM 17 is still fresh
-        if: matrix.llvm == 17 && startsWith(matrix.os, 'macos')
+        # needed as long as LLVM 18 is still fresh
+        if: matrix.llvm == 18 && startsWith(matrix.os, 'macos')
         run: brew update
       - name: Install LLVM ${{ matrix.llvm }} and bdw-gc
         if: startsWith(matrix.os, 'macos')
