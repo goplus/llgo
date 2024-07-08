@@ -37,13 +37,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} lld-${{ matrix.llvm }} pkg-config libgc-dev libcjson-dev libsqlite3-dev python3.11-dev
           echo /usr/lib/llvm-${{ matrix.llvm }}/bin >> $GITHUB_PATH
-    
+
       - name: Clang information
         run: |
           echo $PATH
           which clang
           clang --version
-        
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -62,19 +62,24 @@ jobs:
 
       - name: Install
         run: go install ./...
-      
+
+      - name: LLGO cmptest
+        run: |
+          cd _cmptest
+          LLGOROOT=../$PWD llgo cmptest ./...
+
       - name: LLGO tests
         if: matrix.os != 'ubuntu-latest'
         run: |
           echo "Test result on ${{ matrix.os }} with LLVM ${{ matrix.llvm }}" > result.md
           LLGOROOT=$PWD bash .github/workflows/test_llgo.sh
-      
+
       - name: Test _demo and _pydemo
         run: |
           set +e
           LLGOROOT=$PWD bash .github/workflows/test_demo.sh
           exit 0
-      
+
       - name: Show test result
         run: cat result.md
 
