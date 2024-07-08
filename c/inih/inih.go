@@ -1,9 +1,5 @@
 package inih
 
-/*
-#include <stdio.h>
-#include <stdlib.h>
-*/
 import (
 	_ "unsafe"
 
