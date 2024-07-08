@@ -79,6 +79,9 @@ func NewDefaultConf(mode Mode) *Config {
 		}
 		bin = filepath.Join(gopath, "bin")
 	}
+	if err := os.MkdirAll(bin, 0755); err != nil {
+		panic(fmt.Errorf("cannot create bin directory: %v", err))
+	}
 	conf := &Config{
 		BinPath: bin,
 		Mode:    mode,
