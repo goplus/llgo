@@ -410,6 +410,10 @@ func (v eface) Elem() eface {
 	panic("invalid eface elem")
 }
 
+func SetDirectIface(t *abi.Type) {
+	t.Kind_ |= abi.KindDirectIface
+}
+
 func isDirectIface(t *_type) bool {
 	return t.Kind_&abi.KindDirectIface != 0
 }
