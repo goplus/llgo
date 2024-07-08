@@ -8,7 +8,7 @@ import (
 func main() {
 	filename := c.Str("config.ini")
 
-	if inih.IniParse(filename, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
+	if inih.Parse(filename, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
 		println("section:", c.GoString(section), "name:", c.GoString(name), "value:", c.GoString(value))
 		return 1
 	}, nil) < 0 {
@@ -21,7 +21,7 @@ func main() {
 		println("Error opening config file")
 		return
 	} else {
-		if inih.IniParseFile(file, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
+		if inih.ParseFile(file, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
 			println("section:", c.GoString(section), "name:", c.GoString(name), "value:", c.GoString(value))
 			return 1
 		}, nil) < 0 {
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	configData := "[settings]\nusername=lee\ntimeout=20"
-	if inih.IniParseString(c.Str(configData), func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
+	if inih.ParseString(c.Str(configData), func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
 		println("section:", c.GoString(section), "name:", c.GoString(name), "value:", c.GoString(value))
 		return 1
 	}, nil) < 0 {
