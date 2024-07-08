@@ -4,7 +4,7 @@ set -e
 export LLGOROOT=$PWD
 
 testcmd=/tmp/test
-llgo build -o $testcmd ./_test
+llgo build -o $testcmd ./c/bdwgc/_test
 cases=$($testcmd)
 total=$(echo "$cases" | wc -l | tr -d ' ')
 failed=0
