@@ -1,4 +1,4 @@
-# LLGo wrapper of zlib
+# LLGo wrapper of madler/zlib
 
 ## How to install
 
@@ -18,7 +18,7 @@ TODO
 
 The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
 
-- [zlibdemo](_demo/normal/compress.go): a basic zlib demo
+- [normal](_demo/normal/compress.go): a basic zlib demo
 
 ### How to run demos
 
