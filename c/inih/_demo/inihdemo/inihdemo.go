@@ -41,5 +41,4 @@ func main() {
 	} else {
 		println("Config file parsed successfully")
 	}
-
 }

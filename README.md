@@ -171,7 +171,9 @@ The currently supported libraries include:
 * [c/bdwgc](https://pkg.go.dev/github.com/goplus/llgo/c/bdwgc)
 * [c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
 * [c/clang](https://pkg.go.dev/github.com/goplus/llgo/c/clang)
+* [c/inih](https://pkg.go.dev/github.com/goplus/llgo/c/inih)
 * [c/llama2](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
+* [c/lua](https://pkg.go.dev/github.com/goplus/llgo/c/lua)
 * [c/raylib](https://pkg.go.dev/github.com/goplus/llgo/c/raylib)
 * [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
 * [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
@@ -186,7 +188,7 @@ Here are some examples related to them:
 
 ## Go syntax support
 
-All Go syntax is already supported. Here are some examples:
+All Go syntax (not including `cgo`) is already supported. Here are some examples:
 
 * [concat](_demo/concat/concat.go): define a variadic function
 * [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
