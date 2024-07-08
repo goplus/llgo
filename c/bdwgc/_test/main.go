@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/_test/testing"
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/bdwgc/_test/testing"
 )
 
 type TestCase struct {
