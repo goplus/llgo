@@ -27,6 +27,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -145,6 +146,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	}
 	foo.WriteTo(os.Stderr)
 	prog := ssatest.NewProgramEx(t, nil, imp)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
 
 	ret, err := cl.NewPackage(prog, foo, files)
 	if err != nil {
