@@ -152,6 +152,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %60 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %56, align 8
   %61 = call ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String" %50, i64 144, %"github.com/goplus/llgo/internal/runtime.Slice" %60)
   %62 = call ptr @"github.com/goplus/llgo/internal/runtime.MapOf"(ptr %2, ptr %3, ptr %61, i64 4)
+  call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %62)
   store ptr %62, ptr @"map[_llgo_int]_llgo_int", align 8
   br label %_llgo_2
 
@@ -170,6 +171,8 @@ declare %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/l
 declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+
+declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr, i64)
 

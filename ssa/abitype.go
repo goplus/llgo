@@ -366,6 +366,10 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 		b.SetBlockEx(blks[0], AtEnd, false)
 	}
 	vexpr := tabi()
+	prog := p.Prog
+	if kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); kind == abi.Pointer {
+		b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
+	}
 	b.Store(expr, vexpr)
 	if pub {
 		b.Jump(blks[1])
