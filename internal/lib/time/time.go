@@ -259,6 +259,12 @@ const (
 	daysPer4Years    = 365*4 + 1
 )
 
+// date computes the year, day of year, and when full=true,
+// the month and day in which t occurs.
+func (t Time) date(full bool) (year int, month Month, day int, yday int) {
+	return absDate(t.abs(), full)
+}
+
 // absDate is like date but operates on an absolute time.
 func absDate(abs uint64, full bool) (year int, month Month, day int, yday int) {
 	// Split into time and day.
@@ -426,6 +432,18 @@ func Now() Time {
 	return Time{hasMonotonic | uint64(sec)<<nsecShift | uint64(nsec), mono, Local}
 }
 
+// UTC returns t with the location set to UTC.
+func (t Time) UTC() Time {
+	t.setLoc(&utcLoc)
+	return t
+}
+
+// Local returns t with the location set to local time.
+func (t Time) Local() Time {
+	t.setLoc(Local)
+	return t
+}
+
 const (
 	// The unsigned zero year for internal calculations.
 	// Must be 1 mod 400, and times before it will not compute correctly,
@@ -496,79 +514,12 @@ func (t Time) locabs() (name string, offset int, abs uint64) {
 	return
 }
 
-// Date returns the Time corresponding to
-//
-//	yyyy-mm-dd hh:mm:ss + nsec nanoseconds
-//
-// in the appropriate zone for that time in the given location.
-//
-// The month, day, hour, min, sec, and nsec values may be outside
-// their usual ranges and will be normalized during the conversion.
-// For example, October 32 converts to November 1.
-//
-// A daylight savings time transition skips or repeats times.
-// For example, in the United States, March 13, 2011 2:15am never occurred,
-// while November 6, 2011 1:15am occurred twice. In such cases, the
-// choice of time zone, and therefore the time, is not well-defined.
-// Date returns a time that is correct in one of the two zones involved
-// in the transition, but it does not guarantee which.
-//
-// Date panics if loc is nil.
-func Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) Time {
-	if loc == nil {
-		panic("time: missing Location in call to Date")
-	}
-
-	// Normalize month, overflowing into year.
-	m := int(month) - 1
-	year, m = norm(year, m, 12)
-	month = Month(m) + 1
-
-	// Normalize nsec, sec, min, hour, overflowing into day.
-	sec, nsec = norm(sec, nsec, 1e9)
-	min, sec = norm(min, sec, 60)
-	hour, min = norm(hour, min, 60)
-	day, hour = norm(day, hour, 24)
-
-	// Compute days since the absolute epoch.
-	d := daysSinceEpoch(year)
-
-	// Add in days before this month.
-	d += uint64(daysBefore[month-1])
-	if isLeap(year) && month >= March {
-		d++ // February 29
-	}
-
-	// Add in days before today.
-	d += uint64(day - 1)
-
-	// Add in time elapsed today.
-	abs := d * secondsPerDay
-	abs += uint64(hour*secondsPerHour + min*secondsPerMinute + sec)
-
-	unix := int64(abs) + (absoluteToInternal + internalToUnix)
-
-	// Look for zone offset for expected time, so we can adjust to UTC.
-	// The lookup function expects UTC, so first we pass unix in the
-	// hope that it will not be too close to a zone transition,
-	// and then adjust if it is.
-	_, offset, start, end, _ := loc.lookup(unix)
-	if offset != 0 {
-		utc := unix - int64(offset)
-		// If utc is valid for the time zone we found, then we have the right offset.
-		// If not, we get the correct offset by looking up utc in the location.
-		if utc < start || utc >= end {
-			_, offset, _, _, _ = loc.lookup(utc)
-		}
-		unix -= int64(offset)
-	}
-
-	t := unixTime(unix, int32(nsec))
-	t.setLoc(loc)
-	return t
+// Date returns the year, month, and day in which t occurs.
+func (t Time) Date() (year int, month Month, day int) {
+	year, month, day, _ = t.date(true)
+	return
 }
 
-/* TODO(xsw):
 // Year returns the year in which t occurs.
 func (t Time) Year() int {
 	year, _, _, _ := t.date(false)
@@ -586,7 +537,6 @@ func (t Time) Day() int {
 	_, _, day, _ := t.date(true)
 	return day
 }
-*/
 
 // Weekday returns the day of the week specified by t.
 func (t Time) Weekday() Weekday {
@@ -666,11 +616,80 @@ func (t Time) Nanosecond() int {
 // YearDay returns the day of the year specified by t, in the range [1,365] for non-leap years,
 // and [1,366] in leap years.
 func (t Time) YearDay() int {
-	/*
-		_, _, _, yday := t.date(false)
-		return yday + 1
-	*/
-	panic("todo: Time.YearDay")
+	_, _, _, yday := t.date(false)
+	return yday + 1
+}
+
+// Date returns the Time corresponding to
+//
+//	yyyy-mm-dd hh:mm:ss + nsec nanoseconds
+//
+// in the appropriate zone for that time in the given location.
+//
+// The month, day, hour, min, sec, and nsec values may be outside
+// their usual ranges and will be normalized during the conversion.
+// For example, October 32 converts to November 1.
+//
+// A daylight savings time transition skips or repeats times.
+// For example, in the United States, March 13, 2011 2:15am never occurred,
+// while November 6, 2011 1:15am occurred twice. In such cases, the
+// choice of time zone, and therefore the time, is not well-defined.
+// Date returns a time that is correct in one of the two zones involved
+// in the transition, but it does not guarantee which.
+//
+// Date panics if loc is nil.
+func Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) Time {
+	if loc == nil {
+		panic("time: missing Location in call to Date")
+	}
+
+	// Normalize month, overflowing into year.
+	m := int(month) - 1
+	year, m = norm(year, m, 12)
+	month = Month(m) + 1
+
+	// Normalize nsec, sec, min, hour, overflowing into day.
+	sec, nsec = norm(sec, nsec, 1e9)
+	min, sec = norm(min, sec, 60)
+	hour, min = norm(hour, min, 60)
+	day, hour = norm(day, hour, 24)
+
+	// Compute days since the absolute epoch.
+	d := daysSinceEpoch(year)
+
+	// Add in days before this month.
+	d += uint64(daysBefore[month-1])
+	if isLeap(year) && month >= March {
+		d++ // February 29
+	}
+
+	// Add in days before today.
+	d += uint64(day - 1)
+
+	// Add in time elapsed today.
+	abs := d * secondsPerDay
+	abs += uint64(hour*secondsPerHour + min*secondsPerMinute + sec)
+
+	unix := int64(abs) + (absoluteToInternal + internalToUnix)
+
+	// Look for zone offset for expected time, so we can adjust to UTC.
+	// The lookup function expects UTC, so first we pass unix in the
+	// hope that it will not be too close to a zone transition,
+	// and then adjust if it is.
+	_, offset, start, end, _ := loc.lookup(unix)
+	if offset != 0 {
+		utc := unix - int64(offset)
+		// If utc is valid for the time zone we found, then we have the right offset.
+		// If not, we get the correct offset by looking up utc in the location.
+		if utc < start || utc >= end {
+			_, offset, _, _, _ = loc.lookup(utc)
+		}
+		unix -= int64(offset)
+	}
+
+	t := unixTime(unix, int32(nsec))
+	t.setLoc(loc)
+	return t
 }
 
 func unixTime(sec int64, nsec int32) Time {
