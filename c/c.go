@@ -212,6 +212,12 @@ func Fputs(s *Char, fp FilePtr) Int
 //go:linkname Fflush C.fflush
 func Fflush(fp FilePtr) Int
 
+//go:linkname Fopen C.fopen
+func Fopen(c *Char, mod *Char) FilePtr
+
+//go:linkname Fclose C.fclose
+func Fclose(fp FilePtr) Int
+
 // -----------------------------------------------------------------------------
 
 //go:linkname Time C.time
