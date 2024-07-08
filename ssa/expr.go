@@ -127,7 +127,7 @@ func (p Program) Zero(t Type) Expr {
 		default:
 			panic("todo")
 		}
-	case *types.Pointer:
+	case *types.Pointer, *types.Signature, *types.Chan:
 		return Expr{llvm.ConstNull(t.ll), t}
 	case *types.Struct:
 		n := u.NumFields()
