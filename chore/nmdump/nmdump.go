@@ -26,7 +26,7 @@ import (
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: nmdump xxx.a")
+		fmt.Fprintln(os.Stderr, "Usage: nmdump libfile")
 		return
 	}
 
