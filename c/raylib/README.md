@@ -1,4 +1,4 @@
-# LLGo wrapper of raylib
+# LLGo wrapper of raysan5/raylib
 
 ## How to install
 
@@ -18,7 +18,7 @@ TODO
 
 The `_demo` directory contains our demos (it start with `_` to prevent the `go` command from compiling it):
 
-- [raylibdemo](_demo/tetris/tetris.go): a basic raylib demo
+- [tetris](_demo/tetris/tetris.go): tetris powered by raylib
 
 ### How to run demos
 
