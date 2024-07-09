@@ -2,7 +2,6 @@ package sled
 
 import (
 	"unsafe"
-	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
 )
