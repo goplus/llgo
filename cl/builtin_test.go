@@ -27,6 +27,12 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestToBackground(t *testing.T) {
+	if v := toBackground(""); v != llssa.InGo {
+		t.Fatal("toBackground:", v)
+	}
+}
+
 func TestCollectSkipNames(t *testing.T) {
 	ctx := &context{skips: make(map[string]none)}
 	ctx.collectSkipNames("//llgo:skipall")
