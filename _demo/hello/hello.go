@@ -7,7 +7,3 @@ import (
 func main() {
 	c.Printf(c.Str("Hello world\n"))
 }
-
-/* Expected output:
-Hello World
-*/
