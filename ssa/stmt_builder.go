@@ -177,7 +177,14 @@ func (b Builder) Return(results ...Expr) {
 		b.impl.CreateRet(ret.impl)
 	default:
 		tret := b.Func.raw.Type.(*types.Signature).Results()
-		b.impl.CreateAggregateRet(llvmParams(0, results, tret, b))
+		n := tret.Len()
+		typs := make([]Type, n)
+		for i := 0; i < n; i++ {
+			typs[i] = b.Prog.Type(tret.At(i).Type(), InC)
+		}
+		typ := b.Prog.Struct(typs...)
+		expr := b.aggregateValue(typ, llvmParams(0, results, tret, b)...)
+		b.impl.CreateRet(expr.impl)
 	}
 }
 

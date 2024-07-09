@@ -33,9 +33,13 @@ _llgo_0:
   %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
   store ptr null, ptr %2, align 8
   %3 = load { ptr, ptr }, ptr %0, align 8
-  %mrv = insertvalue { { ptr, ptr }, i64 } poison, { ptr, ptr } %3, 0
-  %mrv1 = insertvalue { { ptr, ptr }, i64 } %mrv, i64 1, 1
-  ret { { ptr, ptr }, i64 } %mrv1
+  %4 = alloca { { ptr, ptr }, i64 }, align 8
+  %5 = getelementptr inbounds { { ptr, ptr }, i64 }, ptr %4, i32 0, i32 0
+  store { ptr, ptr } %3, ptr %5, align 8
+  %6 = getelementptr inbounds { { ptr, ptr }, i64 }, ptr %4, i32 0, i32 1
+  store i64 1, ptr %6, align 4
+  %7 = load { { ptr, ptr }, i64 }, ptr %4, align 8
+  ret { { ptr, ptr }, i64 } %7
 }
 
 define i64 @"main.add2$1"(i64 %0, i64 %1) {

@@ -60,9 +60,13 @@ _llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
   %14 = phi { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } [ %9, %_llgo_1 ], [ %13, %_llgo_2 ]
   %15 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %14, 0
   %16 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %14, 1
-  %mrv = insertvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } poison, %"github.com/goplus/llgo/cl/internal/foo.Foo" %15, 0
-  %mrv1 = insertvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %mrv, i1 %16, 1
-  ret { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %mrv1
+  %17 = alloca { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 }, align 8
+  %18 = getelementptr inbounds { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 }, ptr %17, i32 0, i32 0
+  store %"github.com/goplus/llgo/cl/internal/foo.Foo" %15, ptr %18, align 8
+  %19 = getelementptr inbounds { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 }, ptr %17, i32 0, i32 1
+  store i1 %16, ptr %19, align 1
+  %20 = load { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 }, ptr %17, align 8
+  ret { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %20
 }
 
 define { %main.bar, i1 } @main.Foo(%"github.com/goplus/llgo/internal/runtime.eface" %0) {
@@ -96,9 +100,13 @@ _llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
   %14 = phi { %main.bar, i1 } [ %9, %_llgo_1 ], [ %13, %_llgo_2 ]
   %15 = extractvalue { %main.bar, i1 } %14, 0
   %16 = extractvalue { %main.bar, i1 } %14, 1
-  %mrv = insertvalue { %main.bar, i1 } poison, %main.bar %15, 0
-  %mrv1 = insertvalue { %main.bar, i1 } %mrv, i1 %16, 1
-  ret { %main.bar, i1 } %mrv1
+  %17 = alloca { %main.bar, i1 }, align 8
+  %18 = getelementptr inbounds { %main.bar, i1 }, ptr %17, i32 0, i32 0
+  store %main.bar %15, ptr %18, align 8
+  %19 = getelementptr inbounds { %main.bar, i1 }, ptr %17, i32 0, i32 1
+  store i1 %16, ptr %19, align 1
+  %20 = load { %main.bar, i1 }, ptr %17, align 8
+  ret { %main.bar, i1 } %20
 }
 
 define void @main.init() {
