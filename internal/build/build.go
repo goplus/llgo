@@ -247,7 +247,6 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			continue
 		}
 		built[pkg.PkgPath] = none{}
-		//parsePkg(ctx, aPkg, verbose)
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
@@ -584,21 +583,6 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 	} else {
 		panic("unknown flag: " + arg)
 	}
-}
-
-var (
-	rootDir string
-)
-
-func llgoRoot() string {
-	if rootDir == "" {
-		root := os.Getenv("LLGOROOT")
-		if root == "" {
-			panic("todo: LLGOROOT not set")
-		}
-		rootDir, _ = filepath.Abs(root)
-	}
-	return rootDir
 }
 
 func appendLinkFiles(args []string, file string) []string {

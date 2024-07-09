@@ -7,7 +7,7 @@ import (
 	q "github.com/goplus/llgo/cl/internal/qsort"
 )
 
-// llgo:type C
+//llgo:type C
 type Comp func(a, b c.Pointer) c.Int
 
 //go:linkname qsort C.qsort
