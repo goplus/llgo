@@ -7,17 +7,17 @@ import (
 )
 
 // llgo:type C
-type IniReader struct {
+type Reader struct {
 	Unused [0]byte
 }
 
-//go:linkname NewIniReader C.new_ini_reader
-func NewIniReader(fileName *c.Char) *IniReader
+//go:linkname NewReader C.new_ini_reader
+func NewReader(fileName *c.Char) *Reader
 
-//go:linkname DeleteIniReader C.delete_ini_reader
-func DeleteIniReader(reader *IniReader)
+//go:linkname DeleteReader C.delete_ini_reader
+func DeleteReader(r *Reader)
 
-// llgo:link (*IniReader).GetInteger C.ini_get_integer
-func (*IniReader) GetInteger(section *c.Char, name *c.Char, defaultValue c.Long) c.Long {
+// llgo:link (*Reader).GetInteger C.ini_get_integer
+func (*Reader) GetInteger(section *c.Char, name *c.Char, defaultValue c.Long) c.Long {
 	return 0
 }
