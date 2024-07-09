@@ -704,11 +704,9 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
-	typ := t.raw.Type
-	switch t.kind {
-	case vkClosure:
-		ret.impl = checkExpr(x, typ.Underlying(), b).impl
-	default:
+	if t.kind == vkClosure && x.kind == vkFuncDecl {
+		ret.impl = checkExpr(x, t.raw.Type.Underlying(), b).impl
+	} else {
 		ret.impl = x.impl
 	}
 	ret.Type = t
@@ -946,7 +944,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		raw = fn.raw.Type
 		fallthrough
 	case vkFuncPtr:
-		sig = raw.(*types.Signature)
+		sig = raw.Underlying().(*types.Signature)
 		ll = b.Prog.FuncDecl(sig, InC).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)

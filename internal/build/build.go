@@ -247,10 +247,12 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			continue
 		}
 		built[pkg.PkgPath] = none{}
+		//parsePkg(ctx, aPkg, verbose)
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
 			// and set no export file
+			cl.ParsePkgSyntax(ctx.prog, pkg.Types, pkg.Syntax)
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if isPkgInLLGo(pkg.PkgPath) {
@@ -427,6 +429,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		llssa.SetDebug(llssa.DbgFlagAll)
 		cl.SetDebug(cl.DbgFlagAll)
 	}
+
 	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
 	if showDetail {
 		llssa.SetDebug(0)

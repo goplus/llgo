@@ -196,6 +196,15 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 							p.collectSkipNames(line)
 						}
 					}
+				case token.TYPE:
+					if len(decl.Specs) == 1 {
+						if hasTypec(decl.Doc) {
+							inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
+							if obj := p.goTyps.Scope().Lookup(inPkgName); obj != nil {
+								p.prog.Type(obj.Type(), llssa.InC)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -542,6 +551,45 @@ func (p *context) initPyModule() {
 	if kind, mod := pkgKindByScope(p.goTyps.Scope()); kind == PkgPyModule {
 		p.pyMod = mod
 	}
+}
+
+// ParsePkgSyntax: check llgo:type C
+func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			switch decl := decl.(type) {
+			case *ast.GenDecl:
+				switch decl.Tok {
+				case token.TYPE:
+					if len(decl.Specs) == 1 {
+						if hasTypec(decl.Doc) {
+							inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
+							if obj := pkg.Scope().Lookup(inPkgName); obj != nil {
+								prog.Type(obj.Type(), llssa.InC)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+const (
+	llgotypec  = "//llgo:type C"
+	llgotypec2 = "// llgo:type C"
+)
+
+func hasTypec(doc *ast.CommentGroup) bool {
+	if doc != nil {
+		if n := len(doc.List); n > 0 {
+			line := doc.List[n-1].Text
+			if strings.HasPrefix(line, llgotypec) || strings.HasPrefix(line, llgotypec2) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // -----------------------------------------------------------------------------
