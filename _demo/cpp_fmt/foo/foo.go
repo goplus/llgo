@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	//LLGoFiles   = "bar/bar.cpp"
 	LLGoPackage = "link: $(pkg-config --libs fmt_utils); -lfmtutil -lfmt"
 )
 
