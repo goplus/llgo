@@ -573,8 +573,8 @@ func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
 }
 
 const (
-	llgotype  = "//llgo:type"
-	llgotype2 = "// llgo:type"
+	llgotype  = "//llgo:type "
+	llgotype2 = "// llgo:type "
 )
 
 func typeBackground(doc *ast.CommentGroup) (bg string) {
