@@ -261,10 +261,7 @@ brew update # execute if needed
 brew install llvm@18 pkg-config libgc
 brew install cjson sqlite python@3.12 # optional
 export PATH=$(brew --prefix llvm@18)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
-git clone https://github.com/goplus/llgo.git
-cd llgo
-export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
-go install -v ./...
+go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
 
 ### on Linux (Debian/Ubuntu)
@@ -276,10 +273,7 @@ sudo apt-get update # execute if needed
 sudo apt-get install -y llvm-18-dev clang-18 lld-18 pkg-config libgc-dev
 sudo apt-get install -y libcjson-dev libsqlite3-dev python3.12-dev # optional
 export PATH=/usr/lib/llvm-18/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
-git clone https://github.com/goplus/llgo.git
-cd llgo
-export LLGOROOT="/path/to/llgo" # Replace this with the root directory of the llgo project
-go install -v ./...
+go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
 
 ### on Windows
@@ -298,8 +292,9 @@ TODO
 How do I generate these tools?
 
 ```sh
-export CC=clang CXX=clang++ # only for go build; optional if you have other compatible compilers
-go install -v ./...  # compile all tools except pydump
+git clone https://github.com/goplus/llgo.git
+cd llgo
+go install -v ./chore/...  # compile all tools except pydump
 cd chore/_xtool
 llgo install ./...   # compile pydump
 go install github.com/goplus/hdq/chore/pysigfetch@v0.8.1  # compile pysigfetch
