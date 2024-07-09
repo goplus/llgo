@@ -197,14 +197,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 						}
 					}
 				case token.TYPE:
-					if len(decl.Specs) == 1 {
-						if hasTypec(decl.Doc) {
-							inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
-							if obj := p.goTyps.Scope().Lookup(inPkgName); obj != nil {
-								p.prog.Type(obj.Type(), llssa.InC)
-							}
-						}
-					}
+					handleTypeDecl(p.prog, p.goTyps, decl)
 				}
 			}
 		}
@@ -553,7 +546,7 @@ func (p *context) initPyModule() {
 	}
 }
 
-// ParsePkgSyntax: check llgo:type C
+// ParsePkgSyntax parses AST of a package to check llgo:type in type declaration.
 func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 	for _, file := range files {
 		for _, decl := range file.Decls {
@@ -561,35 +554,50 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 			case *ast.GenDecl:
 				switch decl.Tok {
 				case token.TYPE:
-					if len(decl.Specs) == 1 {
-						if hasTypec(decl.Doc) {
-							inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
-							if obj := pkg.Scope().Lookup(inPkgName); obj != nil {
-								prog.Type(obj.Type(), llssa.InC)
-							}
-						}
-					}
+					handleTypeDecl(prog, pkg, decl)
 				}
 			}
 		}
 	}
 }
 
-const (
-	llgotypec  = "//llgo:type C"
-	llgotypec2 = "// llgo:type C"
-)
-
-func hasTypec(doc *ast.CommentGroup) bool {
-	if doc != nil {
-		if n := len(doc.List); n > 0 {
-			line := doc.List[n-1].Text
-			if strings.HasPrefix(line, llgotypec) || strings.HasPrefix(line, llgotypec2) {
-				return true
+func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
+	if len(decl.Specs) == 1 {
+		if bg := typeBackground(decl.Doc); bg != "" {
+			inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
+			if obj := pkg.Scope().Lookup(inPkgName); obj != nil {
+				prog.Type(obj.Type(), toBackground(bg))
 			}
 		}
 	}
-	return false
+}
+
+const (
+	llgotype  = "//llgo:type"
+	llgotype2 = "// llgo:type"
+)
+
+func typeBackground(doc *ast.CommentGroup) (bg string) {
+	if doc != nil {
+		if n := len(doc.List); n > 0 {
+			line := doc.List[n-1].Text
+			if strings.HasPrefix(line, llgotype) {
+				return strings.TrimSpace(line[len(llgotype):])
+			}
+			if strings.HasPrefix(line, llgotype2) {
+				return strings.TrimSpace(line[len(llgotype2):])
+			}
+		}
+	}
+	return
+}
+
+func toBackground(bg string) llssa.Background {
+	switch bg {
+	case "C":
+		return llssa.InC
+	}
+	return llssa.InGo
 }
 
 // -----------------------------------------------------------------------------
