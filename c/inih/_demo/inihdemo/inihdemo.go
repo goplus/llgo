@@ -41,4 +41,12 @@ func main() {
 	} else {
 		println("Config file parsed successfully")
 	}
+	// INIReader Demo
+	// create a IniReader object
+	reader := inih.NewIniReader(filename)
+	// delete the IniReader object
+	defer inih.DeleteIniReader(reader)
+	// get integer value from the ini file
+	value := reader.GetInteger(c.Str("section"), c.Str("name"), 0)
+	println("value:", value)
 }

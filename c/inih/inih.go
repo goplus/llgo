@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	LLGoPackage = "link: $(pkg-config --libs inih); -linih"
+	LLGoPackage = "link: $(pkg-config --libs inih) $(pkg-config --libs inihReader); -linih -linihReader -lINIReader"
 )
 
 //go:linkname Parse C.ini_parse
