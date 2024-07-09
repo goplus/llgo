@@ -370,8 +370,13 @@ source_filename = "foo/bar"
 
 define { i64, double } @fn(double %0) {
 _llgo_0:
-  %mrv = insertvalue { i64, double } { ptr @a, double poison }, double %0, 1
-  ret { i64, double } %mrv
+  %1 = alloca { i64, double }, align 8
+  %2 = getelementptr inbounds { i64, double }, ptr %1, i32 0, i32 0
+  store ptr @a, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, double }, ptr %1, i32 0, i32 1
+  store double %0, ptr %3, align 8
+  %4 = load { i64, double }, ptr %1, align 8
+  ret { i64, double } %4
 }
 `)
 }
