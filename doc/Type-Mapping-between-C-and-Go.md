@@ -14,7 +14,7 @@ Type Mapping between C and Go
 | unsigned long | c.Ulong | |
 | unsigned long long | uint64 | c.UlongLong |
 | size_t | uintptr | |
-| sssize_t | int | |
+| sssize_t | int | sizeof(int) = sizeof(uint) = sizeof(uintptr) in Go |
 | float | float32 | c.Float |
 | double | float64 | c.Double |
 | complex float | complex64 |
