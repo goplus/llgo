@@ -14,8 +14,8 @@ type Reader struct {
 //go:linkname NewReader C.new_ini_reader
 func NewReader(fileName *c.Char) *Reader
 
-//go:linkname DeleteReader C.delete_ini_reader
-func DeleteReader(r *Reader)
+// llgo:link (*Reader).Free C.delete_ini_reader
+func (*Reader) Free() {}
 
 // llgo:link (*Reader).GetInteger C.ini_get_integer
 func (*Reader) GetInteger(section *c.Char, name *c.Char, defaultValue c.Long) c.Long {
