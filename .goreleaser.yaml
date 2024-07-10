@@ -1,0 +1,145 @@
+version: 2
+
+dist: .dist
+
+env:
+  - SYSROOT_DARWIN_AMD64={{.Env.PWD}}/.sysroot/darwin/amd64
+  - SYSROOT_DARWIN_ARM64={{.Env.PWD}}/.sysroot/darwin/arm64
+  - SYSROOT_LINUX_AMD64={{.Env.PWD}}/.sysroot/linux/amd64
+  - SYSROOT_LINUX_ARM64={{.Env.PWD}}/.sysroot/linux/arm64
+  - CGO_ENABLED=1
+  - CGO_CXXFLAGS=-std=c++17
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: llgo-darwin-amd64
+    main: ./cmd/llgo
+    flags:
+      - -tags=darwin,amd64,byollvm
+    ldflags:
+      - -X github.com/goplus/llgo/xtool/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/xtool/env.buildDate={{.Date}}
+      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/local/opt/llvm@18/bin/llvm-config
+    env:
+      - CC=o64-clang
+      - CXX=o64-clang++
+      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_AMD64}}/usr/local/opt/llvm@18/include -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_AMD64}}/usr/local/opt/llvm@18/lib -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-18 -lz -lm
+    targets:
+      - darwin_amd64
+    mod_timestamp: "{{.CommitTimestamp}}"
+  - id: llgo-darwin-arm64
+    main: ./cmd/llgo
+    flags:
+      - -tags=darwin,arm64,byollvm
+    ldflags:
+      - -X github.com/goplus/llgo/xtool/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/xtool/env.buildDate={{.Date}}
+      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/opt/homebrew/opt/llvm@18/bin/llvm-config
+    env:
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_ARM64}}/opt/homebrew/opt/llvm@18/include -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_ARM64}}/opt/homebrew/opt/llvm@18/lib -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-18 -lz -lm
+    targets:
+      - darwin_arm64
+    mod_timestamp: "{{.CommitTimestamp}}"
+  - id: llgo-linux-amd64
+    main: ./cmd/llgo
+    flags:
+      - -tags=linux,amd64,byollvm
+    ldflags:
+      - -X github.com/goplus/llgo/xtool/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/xtool/env.buildDate={{.Date}}
+      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/lib/llvm-18/bin/llvm-config
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+      - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -I{{.Env.SYSROOT_LINUX_AMD64}}/usr/include/llvm-18 -I{{.Env.SYSROOT_LINUX_AMD64}}/usr/include/llvm-c-18 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -L{{.Env.SYSROOT_LINUX_AMD64}}/usr/lib/llvm-18/lib -lLLVM-18
+    targets:
+      - linux_amd64
+    mod_timestamp: "{{.CommitTimestamp}}"
+  - id: llgo-linux-arm64
+    main: ./cmd/llgo
+    flags:
+      - -tags=linux,arm64,byollvm
+    ldflags:
+      - -X github.com/goplus/llgo/xtool/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/xtool/env.buildDate={{.Date}}
+      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/lib/llvm-18/bin/llvm-config
+    env:
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+      - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -I{{.Env.SYSROOT_LINUX_ARM64}}/usr/include/llvm-18 -I{{.Env.SYSROOT_LINUX_ARM64}}/usr/include/llvm-c-18 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -L{{.Env.SYSROOT_LINUX_ARM64}}/usr/lib/llvm-18/lib -lLLVM-18
+    targets:
+      - linux_arm64
+    mod_timestamp: "{{.CommitTimestamp}}"
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{.ProjectName}}{{.Version}}.{{.Os}}-{{.Arch}}
+      {{- if .Arm}}v{{.Arm}}{{end}}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "{{.ProjectName}}{{.Version}}.checksums.txt"
+
+nfpms:
+  - package_name: llgo
+    vendor: goplus
+    homepage: https://github.com/goplus/llgo
+    maintainer: Aofei Sheng <aofei@aofeisheng.com>
+    description: |
+      LLGo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a
+      subproject of the Go+ project.
+
+      LLGo aims to expand the boundaries of Go/Go+, providing limitless possibilities such as:
+
+      - Game development
+      - AI and data science
+      - WebAssembly
+      - Embedded development
+      - ...
+    license: Apache-2.0
+    formats:
+      - deb
+      - rpm
+    file_name_template: >-
+      {{.ProjectName}}{{.Version}}.{{.Os}}-{{.Arch}}
+      {{- if .Arm}}v{{.Arm}}{{end}}
+    bindir: /usr/local/bin
+
+snapcrafts:
+  - name: llgo
+    title: A Go compiler based on LLVM
+    summary: A Go compiler based on LLVM
+    description: |
+      LLGo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a
+      subproject of the Go+ project.
+
+      LLGo aims to expand the boundaries of Go/Go+, providing limitless possibilities such as:
+
+      - Game development
+      - AI and data science
+      - WebAssembly
+      - Embedded development
+      - ...
+    license: Apache-2.0
+    confinement: classic
+    name_template: >-
+      {{.ProjectName}}{{.Version}}.{{.Os}}-{{.Arch}}
+      {{- if .Arm}}v{{.Arm}}{{end}}
+
+snapshot:
+  name_template: '{{trimprefix .Summary "v"}}'
+
+release:
+  prerelease: auto
