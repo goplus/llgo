@@ -30,6 +30,7 @@ import (
 	"github.com/goplus/llgo/cmd/internal/help"
 	"github.com/goplus/llgo/cmd/internal/install"
 	"github.com/goplus/llgo/cmd/internal/run"
+	"github.com/goplus/llgo/cmd/internal/version"
 )
 
 func mainUsage() {
@@ -45,6 +46,7 @@ func init() {
 		run.Cmd,
 		run.CmpTestCmd,
 		clean.Cmd,
+		version.Cmd,
 	}
 }
 
