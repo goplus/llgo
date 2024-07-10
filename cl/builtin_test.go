@@ -236,6 +236,7 @@ func TestIgnoreName(t *testing.T) {
 
 func TestErrImport(t *testing.T) {
 	var ctx context
+	ctx.Context = NewContext(nil, nil, nil)
 	pkg := types.NewPackage("foo", "foo")
 	ctx.importPkg(pkg, nil)
 

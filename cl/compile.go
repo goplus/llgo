@@ -77,10 +77,30 @@ type pkgInfo struct {
 	kind int
 }
 
+type Context struct {
+	prog    llssa.Program
+	patches Patches
+	syntax  map[*types.Package]none // syntax map
+	kinds   map[*types.Package]int  // kind map
+	link    map[string]string       // link map
+	check   func(pkgPath string) ([]*ast.File, bool)
+}
+
+func NewContext(prog llssa.Program, patches Patches, fn func(pkgPath string) ([]*ast.File, bool)) *Context {
+	return &Context{
+		prog:    prog,
+		patches: patches,
+		syntax:  make(map[*types.Package]none),
+		kinds:   make(map[*types.Package]int),
+		link:    make(map[string]string),
+		check:   fn,
+	}
+}
+
 type none = struct{}
 
 type context struct {
-	prog   llssa.Program
+	*Context
 	pkg    llssa.Package
 	fn     llssa.Function
 	fset   *token.FileSet
@@ -88,13 +108,11 @@ type context struct {
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	pyMod  string
-	link   map[string]string // pkgPath.nameInPkg => linkname
 	skips  map[string]none
 	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
-	patches  Patches
 	blkInfos []blocks.Info
 
 	inits []func()
@@ -771,43 +789,44 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	return NewPackageEx(prog, nil, pkg, files)
+	return NewPackageEx(NewContext(prog, nil, nil), pkg, files, nil)
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+func NewPackageEx(c *Context, pkg *ssa.Package, files []*ast.File, altFiles []*ast.File) (ret llssa.Package, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
-	patch, hasPatch := patches[pkgPath]
+	patch, hasPatch := c.patches[pkgPath]
 	if hasPatch {
 		pkgTypes = patch.Types
 		pkg.Pkg = pkgTypes
 		patch.Alt.Pkg = pkgTypes
 	}
 	if pkgPath == llssa.PkgRuntime {
-		prog.SetRuntime(pkgTypes)
+		c.prog.SetRuntime(pkgTypes)
 	}
-	ret = prog.NewPackage(pkgName, pkgPath)
+	ret = c.prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
-		prog:    prog,
+		Context: c,
 		pkg:     ret,
 		fset:    pkgProg.Fset,
 		goProg:  pkgProg,
 		goTyps:  pkgTypes,
 		goPkg:   pkg,
-		patches: patches,
-		link:    make(map[string]string),
 		skips:   make(map[string]none),
 		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 	}
+
+	if len(altFiles) > 0 {
+		ctx.parsePatchSyntax(pkgPath, altFiles)
+	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files)
 	ret.SetPatch(ctx.patchType)
 
 	if hasPatch {
@@ -823,6 +842,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		ctx.skips = skips
 	}
 	if !ctx.skipall {
+		c.ParsePkgSyntax(pkgTypes, files)
 		processPkg(ctx, ret, pkg)
 	}
 	for len(ctx.inits) > 0 {

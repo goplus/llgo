@@ -18,6 +18,7 @@ package build
 
 import (
 	"fmt"
+	"go/ast"
 	"go/constant"
 	"go/token"
 	"go/types"
@@ -169,7 +170,6 @@ func Do(args []string, conf *Config) {
 	prog.SetPython(func() *types.Package {
 		return dedup.Check(llssa.PkgPython).Types
 	})
-
 	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
@@ -177,7 +177,13 @@ func Do(args []string, conf *Config) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
+	c := cl.NewContext(prog, patches, func(pkgPath string) ([]*ast.File, bool) {
+		if c := dedup.Check(pkgPath); c != nil {
+			return c.Syntax, true
+		}
+		return nil, false
+	})
+	ctx := &context{c, env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	var llFiles []string
@@ -224,6 +230,7 @@ const (
 )
 
 type context struct {
+	ctx     *cl.Context
 	env     *llvm.Env
 	progSSA *ssa.Program
 	prog    llssa.Program
@@ -256,7 +263,9 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
 			// and set no export file
-			cl.ParsePkgSyntax(ctx.prog, pkg.Types, pkg.Syntax)
+			if !canSkipToBuild(pkg.PkgPath) {
+				ctx.ctx.ParsePkgSyntax(pkg.Types, pkg.Syntax)
+			}
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if len(pkg.GoFiles) > 0 {
@@ -443,9 +452,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		pkg.ExportFile = ""
 		return
 	}
-	var syntax = pkg.Syntax
+	var syntax []*ast.File
 	if altPkg := aPkg.AltPkg; altPkg != nil {
-		syntax = append(syntax, altPkg.Syntax...)
+		syntax = altPkg.Syntax
 	}
 	showDetail := verbose && pkgExists(ctx.initial, pkg)
 	if showDetail {
@@ -453,7 +462,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
-	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+	ret, err := cl.NewPackageEx(ctx.ctx, aPkg.SSA, pkg.Syntax, syntax)
 	if showDetail {
 		llssa.SetDebug(0)
 		cl.SetDebug(0)
@@ -697,6 +706,8 @@ func canSkipToBuild(pkgPath string) bool {
 	}
 	switch pkgPath {
 	case "unsafe":
+		return true
+	case "runtime/cgo":
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||

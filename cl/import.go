@@ -128,6 +128,10 @@ func pkgKindByScope(scope *types.Scope) (int, string) {
 }
 
 func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
+	if kind, ok := p.kinds[pkg]; ok {
+		i.kind = kind
+		return
+	}
 	pkgPath := llssa.PathOf(pkg)
 	scope := pkg.Scope()
 	kind, _ := pkgKindByScope(scope)
@@ -143,6 +147,14 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 	}
 start:
 	i.kind = kind
+	p.kinds[pkg] = kind
+
+	if p.check != nil {
+		if files, ok := p.check(pkg.Path()); ok {
+			p.ParsePkgSyntax(pkg, files)
+			return
+		}
+	}
 	fset := p.fset
 	names := scope.Names()
 	syms := newPkgSymInfo()
@@ -173,7 +185,7 @@ start:
 	syms.initLinknames(p)
 }
 
-func (p *context) initFiles(pkgPath string, files []*ast.File) {
+func (p *context) parsePatchSyntax(pkgPath string, files []*ast.File) {
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
@@ -235,7 +247,7 @@ func (p *context) collectSkip(line string, prefix int) {
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
+func (p *Context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
 	if doc != nil {
 		if n := len(doc.List); n > 0 {
 			line := doc.List[n-1].Text
@@ -246,7 +258,7 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 	}
 }
 
-func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *Context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
@@ -261,7 +273,7 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 	}
 }
 
-func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *Context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
 		inPkgName := text[:idx]
@@ -550,14 +562,29 @@ func (p *context) initPyModule() {
 }
 
 // ParsePkgSyntax parses AST of a package to check llgo:type in type declaration.
-func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
+func (ctx *Context) ParsePkgSyntax(pkg *types.Package, files []*ast.File) {
+	if _, ok := ctx.syntax[pkg]; ok {
+		return
+	}
+	ctx.syntax[pkg] = none{}
+	pkgPath := llssa.PathOf(pkg)
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
+			case *ast.FuncDecl:
+				fullName, inPkgName := astFuncName(pkgPath, decl)
+				ctx.initLinknameByDoc(decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
 				switch decl.Tok {
+				case token.VAR:
+					if len(decl.Specs) == 1 {
+						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+							inPkgName := names[0].Name
+							ctx.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						}
+					}
 				case token.TYPE:
-					handleTypeDecl(prog, pkg, decl)
+					handleTypeDecl(ctx.prog, pkg, decl)
 				}
 			}
 		}
