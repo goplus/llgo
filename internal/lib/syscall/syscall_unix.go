@@ -7,7 +7,6 @@
 package syscall
 
 import (
-	"errors"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -35,8 +34,9 @@ func (e Errno) Is(target error) bool {
 		return e == EEXIST || e == ENOTEMPTY
 	case oserror.ErrNotExist:
 		return e == ENOENT
-	case errors.ErrUnsupported:
-		return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
+		// TODO(xsw): go1.21
+		// case errors.ErrUnsupported:
+		//	return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
 	}
 	return false
 }
