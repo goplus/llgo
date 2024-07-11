@@ -108,8 +108,8 @@ func Chroot(path *c.Char) c.Int
 
 // -----------------------------------------------------------------------------
 
-//go:linkname Environ C.environ
-func Environ() **c.Char
+//go:linkname Environ environ
+var Environ **c.Char
 
 //go:linkname Getenv C.getenv
 func Getenv(name *c.Char) *c.Char
@@ -207,6 +207,38 @@ func Fstat(fd c.Int, buf *StatT) c.Int
 func Isatty(fd c.Int) c.Int
 
 // -----------------------------------------------------------------------------
+
+// Execl(const char *path, const char *arg0, ..., /*, (char *)0, */)
+//
+// Execl requires the full path of the program to be provided.
+//
+//go:linkname Execl C.execl
+func Execl(path *c.Char, __llgo_va_list ...any) c.Int
+
+// Execle(const char *path, const char *arg0, ..., /* (char *)0, char *const envp[] */)
+//
+//go:linkname Execle C.execle
+func Execle(path *c.Char, __llgo_va_list ...any) c.Int
+
+// Execlp(const char *file, const char *arg0, ..., /*, (char *)0, */)
+//
+// Execlp only needs to provide the program name and it will search for the program in the
+// paths specified in the PATH environment variable.
+//
+//go:linkname Execlp C.execlp
+func Execlp(file *c.Char, __llgo_va_list ...any) c.Int
+
+//go:linkname Execv C.execv
+func Execv(path *c.Char, argv **c.Char) c.Int
+
+//go:linkname Execve C.execve
+func Execve(path *c.Char, argv **c.Char, envp **c.Char) c.Int
+
+//go:linkname Execvp C.execvp
+func Execvp(file *c.Char, argv **c.Char) c.Int
+
+//go:linkname Fork C.fork
+func Fork() c.Int
 
 //go:linkname Kill C.kill
 func Kill(pid c.Int, sig c.Int) c.Int

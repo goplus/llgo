@@ -8,6 +8,8 @@ package os
 
 import (
 	"syscall"
+
+	"github.com/goplus/llgo/internal/lib/internal/syscall/execenv"
 )
 
 // The only signal values guaranteed to be present in the os package on all
@@ -21,7 +23,6 @@ var (
 )
 
 func startProcess(name string, argv []string, attr *ProcAttr) (p *Process, err error) {
-	/* TODO(xsw):
 	// If there is no SysProcAttr (ie. no Chroot or changed
 	// UID/GID), double-check existence of the directory we want
 	// to chdir into. We can make the error clearer this way.
@@ -51,16 +52,15 @@ func startProcess(name string, argv []string, attr *ProcAttr) (p *Process, err e
 
 	pid, h, e := syscall.StartProcess(name, argv, sysattr)
 
+	// TODO(xsw):
 	// Make sure we don't run the finalizers of attr.Files.
-	runtime.KeepAlive(attr)
+	// runtime.KeepAlive(attr)
 
 	if e != nil {
 		return nil, &PathError{Op: "fork/exec", Path: name, Err: e}
 	}
 
 	return newProcess(pid, h), nil
-	*/
-	panic("todo: os.startProcess")
 }
 
 func (p *Process) kill() error {
