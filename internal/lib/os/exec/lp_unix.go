@@ -8,13 +8,17 @@ package exec
 
 import (
 	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+	"syscall"
 )
 
 // ErrNotFound is the error resulting if a path search failed to find an executable file.
 var ErrNotFound = errors.New("executable file not found in $PATH")
 
 func findExecutable(file string) error {
-	/* TODO(xsw):
 	d, err := os.Stat(file)
 	if err != nil {
 		return err
@@ -23,7 +27,7 @@ func findExecutable(file string) error {
 	if m.IsDir() {
 		return syscall.EISDIR
 	}
-	err = unix.Eaccess(file, unix.X_OK)
+	err = unixEaccess(file, unix_X_OK)
 	// ENOSYS means Eaccess is not available or not implemented.
 	// EPERM can be returned by Linux containers employing seccomp.
 	// In both cases, fall back to checking the permission bits.
@@ -34,8 +38,6 @@ func findExecutable(file string) error {
 		return nil
 	}
 	return fs.ErrPermission
-	*/
-	panic("todo: exec.findExecutable")
 }
 
 // LookPath searches for an executable named file in the
@@ -47,7 +49,6 @@ func findExecutable(file string) error {
 // As of Go 1.19, LookPath will instead return that path along with an error satisfying
 // errors.Is(err, ErrDot). See the package documentation for more details.
 func LookPath(file string) (string, error) {
-	/* TODO(xsw):
 	// NOTE(rsc): I wish we could use the Plan 9 behavior here
 	// (only bypass the path if file begins with / or ./ or ../)
 	// but that would not match all the Unix shells.
@@ -68,15 +69,16 @@ func LookPath(file string) (string, error) {
 		path := filepath.Join(dir, file)
 		if err := findExecutable(path); err == nil {
 			if !filepath.IsAbs(path) {
+				/* TODO(xsw):
 				if execerrdot.Value() != "0" {
 					return path, &Error{file, ErrDot}
 				}
 				execerrdot.IncNonDefault()
+				*/
+				panic("todo: exec.LookPath: !filepath.IsAbs(path)")
 			}
 			return path, nil
 		}
 	}
 	return "", &Error{file, ErrNotFound}
-	*/
-	panic("todo: exec.LookPath")
 }
