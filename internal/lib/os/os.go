@@ -202,7 +202,6 @@ func Getwd() (dir string, err error) {
 // func Hostname() (name string, err error)
 // func IsExist(err error) bool
 // func IsNotExist(err error) bool
-// func IsPathSeparator(c uint8) bool
 // func IsPermission(err error) bool
 // func IsTimeout(err error) bool
 

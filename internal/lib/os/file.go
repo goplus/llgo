@@ -217,6 +217,7 @@ func setStickyBit(name string) error {
 	}
 	return Chmod(name, fi.Mode()|ModeSticky)
 }
+*/
 
 // Open opens the named file for reading. If successful, methods on
 // the returned file can be used for reading; the associated file
@@ -242,7 +243,6 @@ func Create(name string) (*File, error) {
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
 func OpenFile(name string, flag int, perm FileMode) (*File, error) {
-	testlog.Open(name)
 	f, err := openFileNolog(name, flag, perm)
 	if err != nil {
 		return nil, err
@@ -252,6 +252,7 @@ func OpenFile(name string, flag int, perm FileMode) (*File, error) {
 	return f, nil
 }
 
+/*
 // lstat is overridden in tests.
 var lstat = Lstat
 
