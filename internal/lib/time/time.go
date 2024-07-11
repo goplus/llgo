@@ -1021,6 +1021,36 @@ func unixTime(sec int64, nsec int32) Time {
 	return Time{uint64(nsec), sec + unixToInternal, Local}
 }
 
+// Unix returns the local Time corresponding to the given Unix time,
+// sec seconds and nsec nanoseconds since January 1, 1970 UTC.
+// It is valid to pass nsec outside the range [0, 999999999].
+// Not all sec values have a corresponding time value. One such
+// value is 1<<63-1 (the largest int64 value).
+func Unix(sec int64, nsec int64) Time {
+	if nsec < 0 || nsec >= 1e9 {
+		n := nsec / 1e9
+		sec += n
+		nsec -= n * 1e9
+		if nsec < 0 {
+			nsec += 1e9
+			sec--
+		}
+	}
+	return unixTime(sec, int32(nsec))
+}
+
+// UnixMilli returns the local Time corresponding to the given Unix time,
+// msec milliseconds since January 1, 1970 UTC.
+func UnixMilli(msec int64) Time {
+	return Unix(msec/1e3, (msec%1e3)*1e6)
+}
+
+// UnixMicro returns the local Time corresponding to the given Unix time,
+// usec microseconds since January 1, 1970 UTC.
+func UnixMicro(usec int64) Time {
+	return Unix(usec/1e6, (usec%1e6)*1e3)
+}
+
 func isLeap(year int) bool {
 	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }

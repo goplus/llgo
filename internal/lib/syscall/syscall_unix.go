@@ -11,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/internal/lib/internal/oserror"
 )
 
 var (
@@ -28,11 +29,11 @@ func (e Errno) Error() string {
 
 func (e Errno) Is(target error) bool {
 	switch target {
-	case ErrPermission:
+	case oserror.ErrPermission:
 		return e == EACCES || e == EPERM
-	case ErrExist:
+	case oserror.ErrExist:
 		return e == EEXIST || e == ENOTEMPTY
-	case ErrNotExist:
+	case oserror.ErrNotExist:
 		return e == ENOENT
 	case errors.ErrUnsupported:
 		return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP

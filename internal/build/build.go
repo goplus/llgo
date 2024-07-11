@@ -664,8 +664,6 @@ func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
 	case "unsafe":
 		return true
-	case "internal/oserror":
-		return false
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
 			strings.HasPrefix(pkgPath, "runtime/internal/")
@@ -679,6 +677,7 @@ var hasAltPkg = map[string]none{
 	"fmt":                  {},
 	"internal/abi":         {},
 	"internal/bytealg":     {},
+	"internal/oserror":     {},
 	"internal/reflectlite": {},
 	//"io":                 {},
 	//"io/fs":              {},

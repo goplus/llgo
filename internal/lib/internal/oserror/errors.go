@@ -2,11 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package syscall
+// Package oserror defines errors values used in the os package.
+//
+// These types are defined here to permit the syscall package to reference them.
+package oserror
 
+// llgo:skipall
 import "errors"
 
-// from internal/oserror
 var (
 	ErrInvalid    = errors.New("invalid argument")
 	ErrPermission = errors.New("permission denied")

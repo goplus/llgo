@@ -22,7 +22,11 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
 )
+
+type Timespec syscall.Timespec
+type Timeval syscall.Timeval
 
 // Unix returns the time stored in ts as seconds plus nanoseconds.
 func (ts *Timespec) Unix() (sec int64, nsec int64) {

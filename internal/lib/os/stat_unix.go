@@ -6,6 +6,8 @@
 
 package os
 
+import "syscall"
+
 // Stat returns the FileInfo structure describing file.
 // If there is an error, it will be of type *PathError.
 func (f *File) Stat() (FileInfo, error) {
@@ -26,7 +28,6 @@ func (f *File) Stat() (FileInfo, error) {
 
 // statNolog stats a file with no test logging.
 func statNolog(name string) (FileInfo, error) {
-	/* TODO(xsw):
 	var fs fileStat
 	err := ignoringEINTR(func() error {
 		return syscall.Stat(name, &fs.sys)
@@ -36,13 +37,10 @@ func statNolog(name string) (FileInfo, error) {
 	}
 	fillFileStatFromSys(&fs, name)
 	return &fs, nil
-	*/
-	panic("todo: os.statNolog")
 }
 
 // lstatNolog lstats a file with no test logging.
 func lstatNolog(name string) (FileInfo, error) {
-	/* TODO(xsw):
 	var fs fileStat
 	err := ignoringEINTR(func() error {
 		return syscall.Lstat(name, &fs.sys)
@@ -52,6 +50,4 @@ func lstatNolog(name string) (FileInfo, error) {
 	}
 	fillFileStatFromSys(&fs, name)
 	return &fs, nil
-	*/
-	panic("todo: os.lstatNolog")
 }
