@@ -22,7 +22,39 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
 )
+
+type Timespec syscall.Timespec
+type Timeval syscall.Timeval
+
+// Unix returns the time stored in ts as seconds plus nanoseconds.
+func (ts *Timespec) Unix() (sec int64, nsec int64) {
+	return int64(ts.Sec), int64(ts.Nsec)
+}
+
+// Unix returns the time stored in tv as seconds plus nanoseconds.
+func (tv *Timeval) Unix() (sec int64, nsec int64) {
+	return int64(tv.Sec), int64(tv.Usec) * 1000
+}
+
+// Nano returns the time stored in ts as nanoseconds.
+func (ts *Timespec) Nano() int64 {
+	return int64(ts.Sec)*1e9 + int64(ts.Nsec)
+}
+
+// Nano returns the time stored in tv as nanoseconds.
+func (tv *Timeval) Nano() int64 {
+	return int64(tv.Sec)*1e9 + int64(tv.Usec)*1000
+}
+
+func Getpagesize() int {
+	panic("todo: syscall.Getpagesize")
+}
+
+func Exit(code int) {
+	os.Exit(c.Int(code))
+}
 
 func Getcwd(buf []byte) (n int, err error) {
 	ptr := unsafe.Pointer(unsafe.SliceData(buf))
@@ -87,6 +119,24 @@ func Read(fd int, p []byte) (n int, err error) {
 
 func Close(fd int) (err error) {
 	ret := os.Close(c.Int(fd))
+	if ret == 0 {
+		return nil
+	}
+	return Errno(os.Errno)
+}
+
+type Stat_t = syscall.Stat_t
+
+func Lstat(path string, stat *Stat_t) (err error) {
+	ret := os.Lstat(c.AllocaCStr(path), stat)
+	if ret == 0 {
+		return nil
+	}
+	return Errno(os.Errno)
+}
+
+func Stat(path string, stat *Stat_t) (err error) {
+	ret := os.Stat(c.AllocaCStr(path), stat)
 	if ret == 0 {
 		return nil
 	}

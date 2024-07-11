@@ -673,22 +673,22 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"errors":               {},
-	"fmt":                  {},
-	"internal/abi":         {},
-	"internal/bytealg":     {},
-	"internal/reflectlite": {},
-	"io":                   {},
-	"io/fs":                {},
-	"math":                 {},
-	"math/cmplx":           {},
-	"reflect":              {},
-	"sync":                 {},
-	"sync/atomic":          {},
-	"syscall":              {},
-	"time":                 {},
-	"os":                   {},
-	"runtime":              {},
+	"fmt":                      {},
+	"internal/abi":             {},
+	"internal/bytealg":         {},
+	"internal/oserror":         {},
+	"internal/reflectlite":     {},
+	"internal/syscall/execenv": {},
+	"math":                     {},
+	"math/cmplx":               {},
+	"reflect":                  {},
+	"sync":                     {},
+	"sync/atomic":              {},
+	"syscall":                  {},
+	"time":                     {},
+	"os":                       {},
+	"os/exec":                  {},
+	"runtime":                  {},
 }
 
 var overlayFiles = map[string]string{

@@ -1,18 +1,8 @@
-/*
- * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+//go:build unix
 
 package syscall
 
@@ -20,7 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/internal/lib/errors"
+	"github.com/goplus/llgo/internal/lib/internal/oserror"
 )
 
 var (
@@ -38,14 +28,15 @@ func (e Errno) Error() string {
 
 func (e Errno) Is(target error) bool {
 	switch target {
-	case ErrPermission:
+	case oserror.ErrPermission:
 		return e == EACCES || e == EPERM
-	case ErrExist:
+	case oserror.ErrExist:
 		return e == EEXIST || e == ENOTEMPTY
-	case ErrNotExist:
+	case oserror.ErrNotExist:
 		return e == ENOENT
-	case errors.ErrUnsupported:
-		return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
+		// TODO(xsw): go1.21
+		// case errors.ErrUnsupported:
+		//	return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
 	}
 	return false
 }

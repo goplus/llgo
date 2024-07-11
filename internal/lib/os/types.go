@@ -22,19 +22,7 @@ type File struct {
 	fd         uintptr
 	name       string
 	appendMode bool
-}
-
-// NewFile returns a new File with the given file descriptor and
-// name. The returned value will be nil if fd is not a valid file
-// descriptor. On Unix systems, if the file descriptor is in
-// non-blocking mode, NewFile will attempt to return a pollable File
-// (one for which the SetDeadline methods work).
-//
-// After passing it to NewFile, fd may become invalid under the same
-// conditions described in the comments of the Fd method, and the same
-// constraints apply.
-func NewFile(fd uintptr, name string) *File {
-	return &File{fd: fd, name: name}
+	nonblock   bool
 }
 
 // write writes len(b) bytes to the File.
@@ -118,10 +106,8 @@ const (
 	ModePerm = fs.ModePerm // Unix permission bits, 0o777
 )
 
-/* TODO(xsw):
 func (fs *fileStat) Name() string { return fs.name }
 func (fs *fileStat) IsDir() bool  { return fs.Mode().IsDir() }
-*/
 
 // SameFile reports whether fi1 and fi2 describe the same file.
 // For example, on Unix this means that the device and inode fields
@@ -130,13 +116,10 @@ func (fs *fileStat) IsDir() bool  { return fs.Mode().IsDir() }
 // SameFile only applies to results returned by this package's Stat.
 // It returns false in other cases.
 func SameFile(fi1, fi2 FileInfo) bool {
-	/*
-		fs1, ok1 := fi1.(*fileStat)
-		fs2, ok2 := fi2.(*fileStat)
-		if !ok1 || !ok2 {
-			return false
-		}
-		return sameFile(fs1, fs2)
-	*/
-	panic("todo")
+	fs1, ok1 := fi1.(*fileStat)
+	fs2, ok2 := fi2.(*fileStat)
+	if !ok1 || !ok2 {
+		return false
+	}
+	return sameFile(fs1, fs2)
 }
