@@ -4,11 +4,6 @@
 
 package unix
 
-import "syscall"
-
-const unlinkatTrap uintptr = syscall.SYS_UNLINKAT
-const openatTrap uintptr = syscall.SYS_OPENAT
-
 const (
 	AT_EACCESS          = 0x200
 	AT_FDCWD            = -0x64
