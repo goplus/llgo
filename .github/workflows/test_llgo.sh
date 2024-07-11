@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-export LLGOROOT=$PWD
-
 testcmd=/tmp/test
 llgo build -o $testcmd ./c/bdwgc/_test
 cases=$($testcmd)

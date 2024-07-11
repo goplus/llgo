@@ -15,7 +15,3 @@ func main() {
 	result := concat("Hello", " ", "World")
 	c.Fprintf(c.Stderr, c.Str("Hi, %s\n"), c.AllocaCStr(result))
 }
-
-/* Expected output (stderr):
-Hi, Hello World
-*/
