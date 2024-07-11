@@ -24,6 +24,7 @@ import (
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 const (
@@ -40,7 +41,10 @@ type (
 	GidT  C.gid_t
 	OffT  C.off_t
 	DevT  C.dev_t
-	StatT C.struct_stat
+)
+
+type (
+	StatT = syscall.Stat_t
 )
 
 //go:linkname Errno errno

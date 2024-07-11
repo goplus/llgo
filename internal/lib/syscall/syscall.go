@@ -124,3 +124,21 @@ func Close(fd int) (err error) {
 	}
 	return Errno(os.Errno)
 }
+
+type Stat_t = syscall.Stat_t
+
+func Lstat(path string, stat *Stat_t) (err error) {
+	ret := os.Lstat(c.AllocaCStr(path), stat)
+	if ret == 0 {
+		return nil
+	}
+	return Errno(os.Errno)
+}
+
+func Stat(path string, stat *Stat_t) (err error) {
+	ret := os.Stat(c.AllocaCStr(path), stat)
+	if ret == 0 {
+		return nil
+	}
+	return Errno(os.Errno)
+}
