@@ -114,7 +114,11 @@ func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
 func (p *goProgram) Sizeof(T types.Type) int64 {
 	prog := Program(p)
 	ptrSize := int64(prog.PointerSize())
-	return align((prog.sizes.Sizeof(T) + extraSize(T, ptrSize)), prog.sizes.Alignof(T))
+	baseSize := prog.sizes.Sizeof(T) + extraSize(T, ptrSize)
+	if _, ok := T.Underlying().(*types.Struct); ok {
+		return align(baseSize, prog.sizes.Alignof(T))
+	}
+	return baseSize
 }
 
 func extraSize(t types.Type, ptrSize int64) (ret int64) {
