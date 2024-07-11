@@ -254,7 +254,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			cl.ParsePkgSyntax(ctx.prog, pkg.Types, pkg.Syntax)
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
-			if isPkgInLLGo(pkg.PkgPath) {
+			if len(pkg.GoFiles) > 0 {
 				buildPkg(ctx, aPkg, verbose)
 				pkg.ExportFile = " " + concatPkgLinkFiles(pkg, verbose) + " " + pkg.ExportFile
 			} else {
@@ -646,22 +646,6 @@ func clFile(cFile, expFile string, procFile func(linkFile string), verbose bool)
 	err := llvm.New("").Clang().Exec(args...)
 	check(err)
 	procFile(llFile)
-}
-
-const (
-	llgoModPath = "github.com/goplus/llgo"
-)
-
-func isPkgInLLGo(pkgPath string) bool {
-	return isPkgInMod(pkgPath, llgoModPath)
-}
-
-func isPkgInMod(pkgPath, modPath string) bool {
-	if strings.HasPrefix(pkgPath, modPath) {
-		suffix := pkgPath[len(modPath):]
-		return suffix == "" || suffix[0] == '/'
-	}
-	return false
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
