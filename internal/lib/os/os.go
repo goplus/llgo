@@ -147,7 +147,11 @@ func Clearenv()
 
 // TODO(xsw):
 // func DirFS(dir string) fs.FS
-// func Environ() []string
+
+func Environ() []string {
+	panic("todo: os.Environ")
+}
+
 // func Executable() (string, error)
 
 func Exit(code int) {
@@ -282,7 +286,10 @@ func Mkdir(name string, perm FileMode) error {
 // func MkdirAll(path string, perm FileMode) error
 // func MkdirTemp(dir, pattern string) (string, error)
 // func NewSyscallError(syscall string, err error) error
-// func Pipe() (r *File, w *File, err error)
+func Pipe() (r *File, w *File, err error) {
+	panic("todo: os.Pipe")
+}
+
 // func ReadFile(name string) ([]byte, error)
 
 func Readlink(name string) (string, error) {

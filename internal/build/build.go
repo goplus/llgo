@@ -673,7 +673,7 @@ func canSkipToBuild(pkgPath string) bool {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"errors":               {},
+	//"errors":             {},
 	"fmt":                  {},
 	"internal/abi":         {},
 	"internal/bytealg":     {},
@@ -688,6 +688,7 @@ var hasAltPkg = map[string]none{
 	"syscall":              {},
 	"time":                 {},
 	"os":                   {},
+	"os/exec":              {},
 	"runtime":              {},
 }
 
