@@ -35,3 +35,7 @@ build.dir/
 
 # Go workspace file
 go.work*
+
+# GoReleaser
+.dist/
+.sysroot/
