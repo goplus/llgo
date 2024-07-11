@@ -664,6 +664,8 @@ func canSkipToBuild(pkgPath string) bool {
 	switch pkgPath {
 	case "unsafe":
 		return true
+	case "internal/oserror":
+		return false
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
 			strings.HasPrefix(pkgPath, "runtime/internal/")
@@ -678,18 +680,18 @@ var hasAltPkg = map[string]none{
 	"internal/abi":         {},
 	"internal/bytealg":     {},
 	"internal/reflectlite": {},
-	"io":                   {},
-	"io/fs":                {},
-	"math":                 {},
-	"math/cmplx":           {},
-	"reflect":              {},
-	"sync":                 {},
-	"sync/atomic":          {},
-	"syscall":              {},
-	"time":                 {},
-	"os":                   {},
-	"os/exec":              {},
-	"runtime":              {},
+	//"io":                 {},
+	//"io/fs":              {},
+	"math":        {},
+	"math/cmplx":  {},
+	"reflect":     {},
+	"sync":        {},
+	"sync/atomic": {},
+	"syscall":     {},
+	"time":        {},
+	"os":          {},
+	"os/exec":     {},
+	"runtime":     {},
 }
 
 var overlayFiles = map[string]string{
