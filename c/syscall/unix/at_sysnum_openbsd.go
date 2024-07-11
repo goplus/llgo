@@ -4,12 +4,6 @@
 
 package unix
 
-import "syscall"
-
-const unlinkatTrap uintptr = syscall.SYS_UNLINKAT
-const openatTrap uintptr = syscall.SYS_OPENAT
-const fstatatTrap uintptr = syscall.SYS_FSTATAT
-
 const AT_REMOVEDIR = 0x08
 const AT_SYMLINK_NOFOLLOW = 0x02
 
