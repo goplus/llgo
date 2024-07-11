@@ -4,8 +4,12 @@
 
 package exec
 
-import "syscall"
+import (
+	"syscall"
+
+	"github.com/goplus/llgo/c/syscall/unix"
+)
 
 func unixEaccess(path string, mode uint32) error {
-	return syscall.Faccessat(AT_FDCWD, path, mode, AT_EACCESS)
+	return syscall.Faccessat(unix.AT_FDCWD, path, mode, unix.AT_EACCESS)
 }

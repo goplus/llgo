@@ -7,7 +7,6 @@
 package os
 
 import (
-	"io/fs"
 	"runtime"
 )
 
@@ -173,7 +172,10 @@ func (d *unixDirent) Info() (FileInfo, error) {
 }
 
 func (d *unixDirent) String() string {
+	/* TODO(xsw):
 	return fs.FormatDirEntry(d)
+	*/
+	panic("todo: os.unixDirent.String")
 }
 
 /* TODO(xsw):
