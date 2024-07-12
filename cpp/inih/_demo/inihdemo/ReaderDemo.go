@@ -6,7 +6,7 @@ import (
 )
 
 /*
-	expected output:
+expected output:
 	section: owner name: name value: John Doe
 	section: owner name: organization value: Acme Widgets Inc.
 	section: database name: server value: 192.0.2.62
@@ -22,11 +22,11 @@ import (
 	section: settings name: username value: lee
 	section: settings name: timeout value: 20
 	Config file parsed successfully
+	s : 192.0.2.62
 	isDatabaseEnabled: true port: 143
-	0x10e2c8e20
+	0x109f54da0
 	0
 	value: 100
-
 */
 
 func main() {
@@ -38,8 +38,8 @@ func main() {
 	}
 	isDatabaseEnabled := reader.GetBoolean(inih.Str("database"), inih.Str("enabled"), false)
 	port := reader.GetInteger(inih.Str("database"), inih.Str("port"), 0)
-	s := reader.GetString(inih.Str("database"), inih.Str("server"), inih.Str("unknown")).String()
-	println("s :", s)
+	s := reader.GetString(inih.Str("database"), inih.Str("server"), inih.Str("unknown"))
+	println("s :", s.String())
 	println("isDatabaseEnabled:", isDatabaseEnabled, "port:", port)
 	demo2()
 

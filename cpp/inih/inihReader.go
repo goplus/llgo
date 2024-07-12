@@ -64,6 +64,6 @@ func (*Reader) GetBoolean(section *StdString, name *StdString, defaultValue bool
 }
 
 // llgo:link (*Reader).GetString C._ZNK9INIReader9GetStringERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_S8_
-func (*Reader) GetString(section *StdString, name *StdString, defaultValue *StdString) *StdString {
-	return &StdString{}
+func (*Reader) GetString(section *StdString, name *StdString, defaultValue *StdString) StdString {
+	return StdString{}
 }
