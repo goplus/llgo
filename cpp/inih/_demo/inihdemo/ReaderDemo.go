@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgoexamples/cpp/inih"
+	"github.com/goplus/llgo/cpp/inih"
 )
 
 /*
@@ -38,6 +38,8 @@ func main() {
 	}
 	isDatabaseEnabled := reader.GetBoolean(inih.Str("database"), inih.Str("enabled"), false)
 	port := reader.GetInteger(inih.Str("database"), inih.Str("port"), 0)
+	s := reader.GetString(inih.Str("database"), inih.Str("server"), inih.Str("unknown")).String()
+	println("s :", s)
 	println("isDatabaseEnabled:", isDatabaseEnabled, "port:", port)
 	demo2()
 
