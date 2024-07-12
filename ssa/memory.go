@@ -144,6 +144,13 @@ func (b Builder) Alloca(n Expr) (ret Expr) {
 	return
 }
 
+// AllocaU allocates uninitialized space for n*sizeof(elem) bytes.
+func (b Builder) AllocaU(elem Type, n ...int64) (ret Expr) {
+	prog := b.Prog
+	size := SizeOf(prog, elem, n...)
+	return Expr{b.Alloca(size).impl, prog.Pointer(elem)}
+}
+
 // AllocaCStr allocates space for copy it from a Go string.
 func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 	if debugInstr {
@@ -153,6 +160,29 @@ func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
 	cstr := b.Alloca(n1)
 	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
+}
+
+// func allocaCStrs(strs []string, endWithNil bool) **int8
+func (b Builder) AllocaCStrs(strs Expr, endWithNil bool) (cstrs Expr) {
+	if debugInstr {
+		log.Printf("AllocaCStrs %v, %v\n", strs.impl, endWithNil)
+	}
+	prog := b.Prog
+	n := b.SliceLen(strs)
+	n1 := n
+	if endWithNil {
+		n1 = b.BinOp(token.ADD, n, prog.Val(1))
+	}
+	tcstr := prog.CStr()
+	cstrs = b.ArrayAlloca(tcstr, n1)
+	b.Times(n, func(i Expr) {
+		s := b.Index(strs, i, nil)
+		b.Store(b.Advance(cstrs, i), b.AllocaCStr(s))
+	})
+	if endWithNil {
+		b.Store(b.Advance(cstrs, n), prog.Nil(tcstr))
+	}
+	return
 }
 
 // -----------------------------------------------------------------------------
@@ -189,17 +219,15 @@ func (b Builder) free(ptr Expr) Expr {
 
 // -----------------------------------------------------------------------------
 
-/*
 // ArrayAlloca reserves space for an array of n elements of type telem.
 func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	if debugInstr {
-		log.Printf("ArrayAlloca %v, %v\n", telem.t, n.impl)
+		log.Printf("ArrayAlloca %v, %v\n", telem.raw.Type, n.impl)
 	}
 	ret.impl = llvm.CreateArrayAlloca(b.impl, telem.ll, n.impl)
 	ret.Type = b.Prog.Pointer(telem)
 	return
 }
-*/
 
 // ArrayAlloc allocates zero initialized space for an array of n elements of type telem.
 func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {

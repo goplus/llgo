@@ -143,6 +143,7 @@ func TestErrBuiltin(t *testing.T) {
 	test("advance", func(ctx *context) { ctx.advance(nil, nil) })
 	test("alloca", func(ctx *context) { ctx.alloca(nil, nil) })
 	test("allocaCStr", func(ctx *context) { ctx.allocaCStr(nil, nil) })
+	test("allocaCStrs", func(ctx *context) { ctx.allocaCStrs(nil, nil) })
 	test("string", func(ctx *context) { ctx.string(nil, nil) })
 	test("stringData", func(ctx *context) { ctx.stringData(nil, nil) })
 	test("funcAddr", func(ctx *context) { ctx.funcAddr(nil, nil) })

@@ -68,6 +68,9 @@ func Alloca(size uintptr) Pointer
 //go:linkname AllocaCStr llgo.allocaCStr
 func AllocaCStr(s string) *Char
 
+//go:linkname AllocaCStrs llgo.allocaCStrs
+func AllocaCStrs(strs []string, endWithNil bool) **Char
+
 // TODO(xsw):
 // llgo:link AllocaNew llgo.allocaNew
 func AllocaNew[T any]() *T { return nil }
