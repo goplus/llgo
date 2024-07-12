@@ -15,11 +15,6 @@ type StdString struct {
 	buf [24]byte
 }
 
-type stringHead struct {
-	data unsafe.Pointer
-	size int
-}
-
 type __long struct {
 	__cap_  int
 	__size_ int
@@ -37,7 +32,7 @@ func (r *StdString) String() string {
 		return c.GoString((*c.Char)(unsafe.Pointer(&r.buf[1])))
 	} else {
 		v := *(*__long)(unsafe.Pointer(&r.buf[0]))
-		return *(*string)(unsafe.Pointer(&stringHead{data: v.__data_, size: v.__size_}))
+		return unsafe.String((*byte)(v.__data_), v.__size_)
 	}
 }
 
