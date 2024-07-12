@@ -218,6 +218,9 @@ func Fopen(c *Char, mod *Char) FilePtr
 //go:linkname Fclose C.fclose
 func Fclose(fp FilePtr) Int
 
+//go:linkname Perror C.perror
+func Perror(s *Char)
+
 // -----------------------------------------------------------------------------
 
 //go:linkname Time C.time
