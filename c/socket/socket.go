@@ -1,0 +1,128 @@
+package socket
+
+import (
+	_ "unsafe"
+
+	"github.com/goplus/llgo/c"
+)
+
+const (
+	LLGoPackage = true
+)
+
+const (
+	AF_UNSPEC          = 0       // unspecified
+	AF_UNIX            = 1       // local to host (pipes)
+	AF_LOCAL           = AF_UNIX // backward compatibility
+	AF_INET            = 2       // internetwork: UDP, TCP, etc.
+	AF_IMPLINK         = 3       // arpanet imp addresses
+	AF_PUP             = 4       // pup protocols: e.g. BSP
+	AF_CHAOS           = 5       // mit CHAOS protocols
+	AF_NS              = 6       // XEROX NS protocols
+	AF_ISO             = 7       // ISO protocols
+	AF_OSI             = AF_ISO
+	AF_ECMA            = 8       // European computer manufacturers
+	AF_DATAKIT         = 9       // datakit protocols
+	AF_CCITT           = 10      // CCITT protocols, X.25 etc
+	AF_SNA             = 11      // IBM SNA
+	AF_DECnet          = 12      // DECnet
+	AF_DLI             = 13      // DEC Direct data link interface
+	AF_LAT             = 14      // LAT
+	AF_HYLINK          = 15      // NSC Hyperchannel
+	AF_APPLETALK       = 16      // Apple Talk
+	AF_ROUTE           = 17      // Internal Routing Protocol
+	AF_LINK            = 18      // Link layer interface
+	pseudo_AF_XTP      = 19      // eXpress Transfer Protocol (no AF)
+	AF_COIP            = 20      // connection-oriented IP, aka ST II
+	AF_CNT             = 21      // Computer Network Technology
+	pseudo_AF_RTIP     = 22      // Help Identify RTIP packets
+	AF_IPX             = 23      // Novell Internet Protocol
+	AF_SIP             = 24      // Simple Internet Protocol
+	pseudo_AF_PIP      = 25      // Help Identify PIP packets
+	AF_NDRV            = 27      // Network Driver 'raw' access
+	AF_ISDN            = 28      // Integrated Services Digital Network
+	AF_E164            = AF_ISDN // CCITT E.164 recommendation
+	pseudo_AF_KEY      = 29      // Internal key-management function
+	AF_INET6           = 30      // IPv6
+	AF_NATM            = 31      // native ATM access
+	AF_SYSTEM          = 32      // Kernel event messages
+	AF_NETBIOS         = 33      // NetBIOS
+	AF_PPP             = 34      // PPP communication protocol
+	pseudo_AF_HDRCMPLT = 35      // Used by BPF to not rewrite headers in interface output routine
+	AF_RESERVED_36     = 36      // Reserved for internal usage
+	AF_IEEE80211       = 37      // IEEE 802.11 protocol
+	AF_UTUN            = 38
+	AF_VSOCK           = 40 // VM Sockets
+	AF_MAX             = 41
+)
+
+const (
+	SOCK_STREAM    = 1 // stream socket
+	SOCK_DGRAM     = 2 // datagram socket
+	SOCK_RAW       = 3 // raw-protocol interface
+	SOCK_RDM       = 4 // reliably-delivered message
+	SOCK_SEQPACKET = 5 // sequenced packet stream
+)
+
+// (TODO) merge to inet
+const INET_ADDRSTRLEN = 16
+
+type SockaddrIn struct {
+	Len    uint8
+	Family uint8
+	Port   uint16
+	Addr   InAddr
+	Zero   [8]c.Char
+}
+
+type InAddr struct {
+	Addr c.Uint
+}
+
+type SockAddr struct {
+	Len    uint8
+	Family uint8
+	Data   [14]c.Char
+}
+
+// (TODO) merge to netdb
+type Hostent struct {
+	Name     *c.Char  // official name of host
+	Aliases  **c.Char // null-terminated array of alternate names for the host
+	AddrType c.Int    // host address type
+	Length   c.Int    // length of address
+	AddrList **c.Char // null-terminated array of addresses for the host
+}
+
+//go:linkname Socket C.socket
+func Socket(domain c.Int, typ c.Int, protocol c.Int) c.Int
+
+//go:linkname Bind C.bind
+func Bind(sockfd c.Int, addr *SockaddrIn, addrlen c.Uint) c.Int
+
+//go:linkname Connect C.connect
+func Connect(sockfd c.Int, addr *SockAddr, addrlen c.Uint) c.Int
+
+//go:linkname Listen C.listen
+func Listen(sockfd c.Int, backlog c.Int) c.Int
+
+//go:linkname Accept C.accept
+func Accept(sockfd c.Int, addr *SockaddrIn, addrlen *c.Uint) c.Int
+
+// (TODO) merge to netdb
+//
+//go:linkname GetHostByName C.gethostbyname
+func GetHostByName(name *c.Char) *Hostent
+
+// (TODO) merge to inet
+//
+//go:linkname InetNtop C.inet_ntop
+func InetNtop(af c.Int, src c.Pointer, dst *c.Char, size c.Uint) *c.Char
+
+func SwapInt16(data uint16) uint16 {
+	return (data << 8) | (data >> 8)
+}
+
+func Htons(x uint16) uint16 {
+	return SwapInt16(x)
+}
