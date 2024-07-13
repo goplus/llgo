@@ -34,7 +34,7 @@ type Reader struct {
 func (r *Reader) InitFromBuffer(buffer *c.Char, bufferSize uintptr) {}
 
 // llgo:link (*Reader).InitFromFile C._ZN9INIReaderC1ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE
-func (r *Reader) InitFromFile(buffer *c.Char, bufferSize uintptr) {}
+func (r *Reader) InitFromFile(fileName *std.String) {}
 
 // -----------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ func NewReader(buffer *c.Char, bufferSize uintptr) (ret Reader) {
 }
 
 func NewReaderFile(fileName *std.String) (ret Reader) {
-	ret.InitFromFile(fileName.CStr(), fileName.Size())
+	ret.InitFromFile(fileName)
 	return
 }
 
