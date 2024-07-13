@@ -9,5 +9,5 @@ func main() {
 }
 
 /* Expected output:
-Hello World
+Hello world
 */
