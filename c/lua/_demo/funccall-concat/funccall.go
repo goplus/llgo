@@ -8,21 +8,21 @@ import (
 )
 
 func main() {
-	L := lua.NewState()
+	L := lua.Newstate()
 	defer L.Close()
 
-	L.OpenLibs()
-	if res := L.DoString(c.Str("function combineParams(num, str) return 'Result: ' .. str .. '  ' .. num end")); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	L.Openlibs()
+	if res := L.Dostring(c.Str("function combineParams(num, str) return 'Result: ' .. str .. '  ' .. num end")); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
-	L.GetGlobal(c.Str("combineParams"))
-	L.PushNumber(3.14159)
-	L.PushString(c.Str("Hello, World!"))
-	if res := L.PCall(2, 1, 0); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	L.Getglobal(c.Str("combineParams"))
+	L.Pushnumber(3.14159)
+	L.Pushstring(c.Str("Hello, World!"))
+	if res := L.Pcall(2, 1, 0); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
-	if res := L.IsString(-1); res != 0 {
-		result := L.ToString(-1)
+	if res := L.Isstring(-1); res != 0 {
+		result := L.Tostring(-1)
 		c.Printf(result)
 	}
 }

@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	L := lua.NewState()
+	L := lua.Newstate()
 	defer L.Close()
-	L.OpenLibs()
-	if res := L.LoadString(c.Str("function doubleNumber(x) ! return x * 2 end")); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	L.Openlibs()
+	if res := L.Loadstring(c.Str("function doubleNumber(x) ! return x * 2 end")); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
 }
 
