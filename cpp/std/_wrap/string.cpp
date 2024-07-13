@@ -20,7 +20,7 @@ void stdStringInitFromCStrLen(std::string* s, const char* cstr, size_t len) {
     new(s) std::string(cstr, len);
 }
 
-void stdStringDispose(const std::string* s) {
+void stdStringDispose(std::string* s) {
     s->~basic_string();
 }
 

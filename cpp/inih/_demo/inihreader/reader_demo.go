@@ -12,6 +12,8 @@ username=admin
 timeout=100
 `
 	reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
+	defer reader.Dispose()
+
 	println(reader.ParseError())
 	sec := std.Str("settings")
 	name := std.Str("timeout")
@@ -19,6 +21,8 @@ timeout=100
 	println("value:", value)
 
 	reader = inih.NewReaderFile(std.Str("config.ini"))
+	defer reader.Dispose()
+
 	if ret := reader.ParseError(); ret != 0 {
 		println("Error parsing config file:", ret)
 		return

@@ -36,6 +36,9 @@ func (r *Reader) InitFromBuffer(buffer *c.Char, bufferSize uintptr) {}
 // llgo:link (*Reader).InitFromFile C._ZN9INIReaderC1ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE
 func (r *Reader) InitFromFile(fileName *std.String) {}
 
+// llgo:link (*Reader).Dispose C.INIReaderDispose
+func (s *Reader) Dispose() {}
+
 // -----------------------------------------------------------------------------
 
 func NewReader(buffer *c.Char, bufferSize uintptr) (ret Reader) {

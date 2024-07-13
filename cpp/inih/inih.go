@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	LLGoPackage = "link: $(pkg-config --libs inih INIReader);  -linih -lINIReader"
+	LLGoFiles   = "_wrap/reader.cpp"
+	LLGoPackage = "link: $(pkg-config --cflags --libs inih INIReader);  -linih -lINIReader"
 )
 
 //go:linkname Parse C.ini_parse

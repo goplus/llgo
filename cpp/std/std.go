@@ -17,7 +17,7 @@
 package std
 
 const (
-	LLGoFiles   = "_cppstd/string.cpp"
+	LLGoFiles   = "_wrap/string.cpp"
 	LLGoPackage = "link: c++"
 )
 
