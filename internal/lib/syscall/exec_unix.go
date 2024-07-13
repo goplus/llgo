@@ -10,6 +10,10 @@ package syscall
 
 import (
 	"sync"
+	"syscall"
+
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
 )
 
 // ForkLock is used to synchronize creation of new file descriptors
@@ -102,8 +106,10 @@ type ProcAttr struct {
 	Sys   *SysProcAttr
 }
 
+/* TODO(xsw):
 var zeroProcAttr ProcAttr
 var zeroSysProcAttr SysProcAttr
+*/
 
 func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) {
 	/* TODO(xsw):
@@ -237,47 +243,9 @@ var execveOpenBSD func(path *byte, argv **byte, envp **byte) error
 
 // Exec invokes the execve(2) system call.
 func Exec(argv0 string, argv []string, envv []string) (err error) {
-	/* TODO(xsw):
-	argv0p, err := BytePtrFromString(argv0)
-	if err != nil {
-		return err
+	ret := os.Execve(c.AllocaCStr(argv0), c.AllocaCStrs(argv, true), c.AllocaCStrs(envv, true))
+	if ret == 0 {
+		return nil
 	}
-	argvp, err := SlicePtrFromStrings(argv)
-	if err != nil {
-		return err
-	}
-	envvp, err := SlicePtrFromStrings(envv)
-	if err != nil {
-		return err
-	}
-	runtime_BeforeExec()
-
-	rlim, rlimOK := origRlimitNofile.Load().(Rlimit)
-	if rlimOK && rlim.Cur != 0 {
-		Setrlimit(RLIMIT_NOFILE, &rlim)
-	}
-
-	var err1 error
-	if runtime.GOOS == "solaris" || runtime.GOOS == "illumos" || runtime.GOOS == "aix" {
-		// RawSyscall should never be used on Solaris, illumos, or AIX.
-		err1 = execveLibc(
-			uintptr(unsafe.Pointer(argv0p)),
-			uintptr(unsafe.Pointer(&argvp[0])),
-			uintptr(unsafe.Pointer(&envvp[0])))
-	} else if runtime.GOOS == "darwin" || runtime.GOOS == "ios" {
-		// Similarly on Darwin.
-		err1 = execveDarwin(argv0p, &argvp[0], &envvp[0])
-	} else if runtime.GOOS == "openbsd" && (runtime.GOARCH == "386" || runtime.GOARCH == "amd64" || runtime.GOARCH == "arm" || runtime.GOARCH == "arm64") {
-		// Similarly on OpenBSD.
-		err1 = execveOpenBSD(argv0p, &argvp[0], &envvp[0])
-	} else {
-		_, _, err1 = RawSyscall(SYS_EXECVE,
-			uintptr(unsafe.Pointer(argv0p)),
-			uintptr(unsafe.Pointer(&argvp[0])),
-			uintptr(unsafe.Pointer(&envvp[0])))
-	}
-	runtime_AfterExec()
-	return err1
-	*/
-	panic("todo: syscall.Exec")
+	return syscall.Errno(ret)
 }

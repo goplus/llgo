@@ -28,14 +28,29 @@ import (
 
 // -----------------------------------------------------------------------------
 
+func constStr(v ssa.Value) (ret string, ok bool) {
+	if c, ok := v.(*ssa.Const); ok {
+		if v := c.Value; v.Kind() == constant.String {
+			return constant.StringVal(v), true
+		}
+	}
+	return
+}
+
+func constBool(v ssa.Value) (ret bool, ok bool) {
+	if c, ok := v.(*ssa.Const); ok {
+		if v := c.Value; v.Kind() == constant.Bool {
+			return constant.BoolVal(v), true
+		}
+	}
+	return
+}
+
 // func pystr(string) *py.Object
 func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
-		if c, ok := args[0].(*ssa.Const); ok {
-			if v := c.Value; v.Kind() == constant.String {
-				sv := constant.StringVal(v)
-				return b.PyStr(sv)
-			}
+		if sv, ok := constStr(args[0]); ok {
+			return b.PyStr(sv)
 		}
 	}
 	panic("pystr(<string-literal>): invalid arguments")
@@ -44,11 +59,8 @@ func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 // func cstr(string) *int8
 func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
-		if c, ok := args[0].(*ssa.Const); ok {
-			if v := c.Value; v.Kind() == constant.String {
-				sv := constant.StringVal(v)
-				return b.CStr(sv)
-			}
+		if sv, ok := constStr(args[0]); ok {
+			return b.CStr(sv)
 		}
 	}
 	panic("cstr(<string-literal>): invalid arguments")
@@ -85,6 +97,19 @@ func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 		return b.AllocaCStr(s)
 	}
 	panic("allocaCStr(s string): invalid arguments")
+}
+
+// func allocaCStrs(strs []string, endWithNil bool) **int8
+func (p *context) allocaCStrs(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		endWithNil, ok := constBool(args[1])
+		if !ok {
+			panic("allocaCStrs(strs, endWithNil): endWithNil should be constant bool")
+		}
+		strs := p.compileValue(b, args[0])
+		return b.AllocaCStrs(strs, endWithNil)
+	}
+	panic("allocaCStrs(strs []string, endWithNil bool): invalid arguments")
 }
 
 // func string(cstr *int8, n ...int) *int8
@@ -185,6 +210,7 @@ var llgoInstrs = map[string]int{
 	"index":       llgoIndex,
 	"alloca":      llgoAlloca,
 	"allocaCStr":  llgoAllocaCStr,
+	"allocaCStrs": llgoAllocaCStrs,
 	"string":      llgoString,
 	"stringData":  llgoStringData,
 	"funcAddr":    llgoFuncAddr,
@@ -340,6 +366,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.alloca(b, args)
 		case llgoAllocaCStr:
 			ret = p.allocaCStr(b, args)
+		case llgoAllocaCStrs:
+			ret = p.allocaCStrs(b, args)
 		case llgoString:
 			ret = p.string(b, args)
 		case llgoStringData:

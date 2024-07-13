@@ -9,10 +9,10 @@ import (
 
 func main() {
 	ls := "ls"
-	args := []string{"ls", "-l"}
+	args := []string{ls, "-l"}
 	if runtime.GOOS == "windows" {
 		ls = "dir"
-		args = nil
+		args = []string{ls}
 	}
 	lspath, _ := exec.LookPath(ls)
 	if lspath != "" {

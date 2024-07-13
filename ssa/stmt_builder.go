@@ -19,6 +19,7 @@ package ssa
 import (
 	"bytes"
 	"fmt"
+	"go/token"
 	"go/types"
 	"log"
 	"strings"
@@ -246,6 +247,44 @@ func (b Builder) IfThen(cond Expr, then func()) {
 	b.Jump(blks[1])
 	b.SetBlockEx(blks[1], AtEnd, false)
 	b.blk.last = blks[1].last
+}
+
+/* TODO(xsw):
+// For emits a for-loop instruction.
+func (b Builder) For(cond func() Expr, loop func()) {
+	blks := b.Func.MakeBlocks(3)
+	b.Jump(blks[0])
+	b.SetBlockEx(blks[0], AtEnd, false)
+	b.If(cond(), blks[1], blks[2])
+	b.SetBlockEx(blks[1], AtEnd, false)
+	loop()
+	b.Jump(blks[0])
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
+}
+*/
+
+// Times emits a times-loop instruction.
+func (b Builder) Times(n Expr, loop func(i Expr)) {
+	at := b.blk
+	blks := b.Func.MakeBlocks(3)
+	b.Jump(blks[0])
+	b.SetBlockEx(blks[0], AtEnd, false)
+	typ := n.Type
+	phi := b.Phi(typ)
+	b.If(b.BinOp(token.LSS, phi.Expr, n), blks[1], blks[2])
+	b.SetBlockEx(blks[1], AtEnd, false)
+	loop(phi.Expr)
+	post := b.BinOp(token.ADD, phi.Expr, b.Prog.IntVal(1, typ))
+	b.Jump(blks[0])
+	phi.AddIncoming(b, []BasicBlock{at, blks[1]}, func(i int, blk BasicBlock) Expr {
+		if i == 0 {
+			return b.Prog.IntVal(0, typ)
+		}
+		return post
+	})
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
 }
 
 // -----------------------------------------------------------------------------
