@@ -27,6 +27,12 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
+func TestConstBool(t *testing.T) {
+	if v, ok := constBool(nil); v || ok {
+		t.Fatal("constBool?")
+	}
+}
+
 func TestToBackground(t *testing.T) {
 	if v := toBackground(""); v != llssa.InGo {
 		t.Fatal("toBackground:", v)
@@ -144,6 +150,7 @@ func TestErrBuiltin(t *testing.T) {
 	test("alloca", func(ctx *context) { ctx.alloca(nil, nil) })
 	test("allocaCStr", func(ctx *context) { ctx.allocaCStr(nil, nil) })
 	test("allocaCStrs", func(ctx *context) { ctx.allocaCStrs(nil, nil) })
+	test("allocaCStrs(Nonconst)", func(ctx *context) { ctx.allocaCStrs(nil, []ssa.Value{nil, &ssa.Parameter{}}) })
 	test("string", func(ctx *context) { ctx.string(nil, nil) })
 	test("stringData", func(ctx *context) { ctx.stringData(nil, nil) })
 	test("funcAddr", func(ctx *context) { ctx.funcAddr(nil, nil) })

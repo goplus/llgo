@@ -144,12 +144,14 @@ func (b Builder) Alloca(n Expr) (ret Expr) {
 	return
 }
 
+/* TODO(xsw):
 // AllocaU allocates uninitialized space for n*sizeof(elem) bytes.
 func (b Builder) AllocaU(elem Type, n ...int64) (ret Expr) {
 	prog := b.Prog
 	size := SizeOf(prog, elem, n...)
 	return Expr{b.Alloca(size).impl, prog.Pointer(elem)}
 }
+*/
 
 // AllocaCStr allocates space for copy it from a Go string.
 func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
@@ -230,6 +232,7 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	return
 }
 
+/* TODO(xsw):
 // ArrayAlloc allocates zero initialized space for an array of n elements of type telem.
 func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
 	prog := b.Prog
@@ -239,6 +242,7 @@ func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
 	ret.Type = prog.Pointer(telem)
 	return
 }
+*/
 
 // -----------------------------------------------------------------------------
 
