@@ -41,11 +41,13 @@ func (s *Reader) Dispose() {}
 
 // -----------------------------------------------------------------------------
 
+// NewReader creates a new INIReader instance.
 func NewReader(buffer *c.Char, bufferSize uintptr) (ret Reader) {
 	ret.InitFromBuffer(buffer, bufferSize)
 	return
 }
 
+// NewReaderFile creates a new INIReader instance.
 func NewReaderFile(fileName *std.String) (ret Reader) {
 	ret.InitFromFile(fileName)
 	return

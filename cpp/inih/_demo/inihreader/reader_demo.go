@@ -6,7 +6,7 @@ import (
 	"github.com/goplus/llgo/cpp/std"
 )
 
-func main() {
+func demoFromBuffer() {
 	buf := `[settings]
 username=admin
 timeout=100
@@ -19,8 +19,10 @@ timeout=100
 	name := std.Str("timeout")
 	value := reader.GetInteger(sec, name, 0)
 	println("value:", value)
+}
 
-	reader = inih.NewReaderFile(std.Str("config.ini"))
+func demoFromFile() {
+	reader := inih.NewReaderFile(std.Str("config.ini"))
 	defer reader.Dispose()
 
 	if ret := reader.ParseError(); ret != 0 {
@@ -32,4 +34,9 @@ timeout=100
 	s := reader.GetString(std.Str("database"), std.Str("server"), std.Str("unknown"))
 	println("s:", s.Str())
 	println("isDatabaseEnabled:", isDatabaseEnabled, "port:", port)
+}
+
+func main() {
+	demoFromBuffer()
+	demoFromFile()
 }
