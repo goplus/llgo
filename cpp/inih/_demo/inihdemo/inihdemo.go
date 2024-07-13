@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/llgo/cpp/inih"
 )
 
-func demo1() {
+func main() {
 	filename := c.Str("config.ini")
 
 	if inih.Parse(filename, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
