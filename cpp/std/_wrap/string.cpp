@@ -1,4 +1,5 @@
 #include <string>
+#include <new>
 
 extern "C" {
 
