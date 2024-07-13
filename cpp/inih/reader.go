@@ -37,7 +37,7 @@ func (r *Reader) InitFromBuffer(buffer *c.Char, bufferSize uintptr) {}
 func (r *Reader) InitFromFile(fileName *std.String) {}
 
 // llgo:link (*Reader).Dispose C.INIReaderDispose
-func (s *Reader) Dispose() {}
+func (r *Reader) Dispose() {}
 
 // -----------------------------------------------------------------------------
 
@@ -56,22 +56,22 @@ func NewReaderFile(fileName *std.String) (ret Reader) {
 // -----------------------------------------------------------------------------
 
 // llgo:link (*Reader).ParseError C._ZNK9INIReader10ParseErrorEv
-func (*Reader) ParseError() c.Int { return 0 }
+func (r *Reader) ParseError() c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
 // llgo:link (*Reader).GetInteger C._ZNK9INIReader10GetIntegerERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_l
-func (*Reader) GetInteger(section *std.String, name *std.String, defaultValue c.Long) c.Long {
+func (r *Reader) GetInteger(section *std.String, name *std.String, defaultValue c.Long) c.Long {
 	return 0
 }
 
 // llgo:link (*Reader).GetBoolean C._ZNK9INIReader10GetBooleanERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_b
-func (*Reader) GetBoolean(section *std.String, name *std.String, defaultValue bool) bool {
+func (r *Reader) GetBoolean(section *std.String, name *std.String, defaultValue bool) bool {
 	return false
 }
 
 // llgo:link (*Reader).GetString C._ZNK9INIReader9GetStringERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_S8_
-func (*Reader) GetString(section *std.String, name *std.String, defaultValue *std.String) (ret std.String) {
+func (r *Reader) GetString(section *std.String, name *std.String, defaultValue *std.String) (ret std.String) {
 	return
 }
 
