@@ -27,12 +27,13 @@ LLGo := Go + C + Python
 LLGo is compatible with C and Python through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**.
 
 
-## C standard libary support
+## C/C++ standard libary support
 
-You can import a C standard library in LLGo!
+You can import a C/C++ standard library in LLGo!
 
 * [c](https://pkg.go.dev/github.com/goplus/llgo/c)
 * [c/os](https://pkg.go.dev/github.com/goplus/llgo/c/os)
+* [c/syscall](https://pkg.go.dev/github.com/goplus/llgo/c/syscall)
 * [c/math](https://pkg.go.dev/github.com/goplus/llgo/c/math)
 * [c/math/cmplx](https://pkg.go.dev/github.com/goplus/llgo/c/math/cmplx)
 * [c/math/rand](https://pkg.go.dev/github.com/goplus/llgo/c/math/rand)
@@ -40,6 +41,8 @@ You can import a C standard library in LLGo!
 * [c/pthread/sync](https://pkg.go.dev/github.com/goplus/llgo/c/pthread/sync)
 * [c/sync/atomic](https://pkg.go.dev/github.com/goplus/llgo/c/sync/atomic)
 * [c/time](https://pkg.go.dev/github.com/goplus/llgo/c/time)
+* [c/socket](https://pkg.go.dev/github.com/goplus/llgo/c/socket)
+* [cpp/std](https://pkg.go.dev/github.com/goplus/llgo/cpp/std)
 
 Here is a simple example:
 
@@ -171,12 +174,12 @@ The currently supported libraries include:
 * [c/bdwgc](https://pkg.go.dev/github.com/goplus/llgo/c/bdwgc)
 * [c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
 * [c/clang](https://pkg.go.dev/github.com/goplus/llgo/c/clang)
-* [c/inih](https://pkg.go.dev/github.com/goplus/llgo/c/inih)
 * [c/llama2](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
 * [c/lua](https://pkg.go.dev/github.com/goplus/llgo/c/lua)
 * [c/raylib](https://pkg.go.dev/github.com/goplus/llgo/c/raylib)
 * [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
 * [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
+* [cpp/inih](https://pkg.go.dev/github.com/goplus/llgo/cpp/inih)
 
 Here are some examples related to them:
 
@@ -224,15 +227,18 @@ Here are the Go packages that can be imported correctly:
 * [math](https://pkg.go.dev/math)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math/cmplx](https://pkg.go.dev/math/cmplx)
+* [errors](https://pkg.go.dev/errors)
+* [context](https://pkg.go.dev/context)
+* [io](https://pkg.go.dev/io)
+* [io/fs](https://pkg.go.dev/io/fs)
+* [log](https://pkg.go.dev/log)
 * [sort](https://pkg.go.dev/sort)
 * [strconv](https://pkg.go.dev/strconv)
 * [sync/atomic](https://pkg.go.dev/sync/atomic)
 * [sync](https://pkg.go.dev/sync) (partially)
 * [syscall](https://pkg.go.dev/syscall) (partially)
-* [errors](https://pkg.go.dev/errors) (partially)
-* [io](https://pkg.go.dev/io) (partially)
-* [io/fs](https://pkg.go.dev/io/fs) (partially)
 * [os](https://pkg.go.dev/os) (partially)
+* [os/exec](https://pkg.go.dev/os/exec) (partially)
 * [fmt](https://pkg.go.dev/fmt) (partially)
 * [reflect](https://pkg.go.dev/reflect) (partially)
 * [time](https://pkg.go.dev/time) (partially)
