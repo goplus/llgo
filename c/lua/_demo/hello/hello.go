@@ -8,10 +8,14 @@ import (
 )
 
 func main() {
-	L := lua.NewState()
+	L := lua.Newstate()
 	defer L.Close()
-	L.OpenLibs()
-	if res := L.DoString(c.Str("print('hello world')")); res != lua.OK {
+	L.Openlibs()
+	if res := L.Dostring(c.Str("print('hello world')")); res != lua.OK {
 		println("error")
 	}
 }
+
+/* Expected output:
+hello world
+*/

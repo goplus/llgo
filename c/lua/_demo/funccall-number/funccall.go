@@ -8,29 +8,29 @@ import (
 )
 
 func main() {
-	L := lua.NewState()
+	L := lua.Newstate()
 	defer L.Close()
 
-	L.OpenLibs()
-	if res := L.LoadString(c.Str("function doubleNumber(x) return x * 2 end")); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	L.Openlibs()
+	if res := L.Loadstring(c.Str("function doubleNumber(x) return x * 2 end")); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
-	if res := L.PCall(0, 0, 0); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
-	}
-
-	L.GetGlobal(c.Str("doubleNumber"))
-	L.PushNumber(10)
-
-	if res := L.PCall(1, 1, 0); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	if res := L.Pcall(0, 0, 0); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
 
-	if res := L.IsNumber(-1); res != 0 {
-		result := L.ToInteger(-1)
+	L.Getglobal(c.Str("doubleNumber"))
+	L.Pushnumber(10)
+
+	if res := L.Pcall(1, 1, 0); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
+	}
+
+	if res := L.Isnumber(-1); res != 0 {
+		result := L.Tointeger(-1)
 		c.Printf(c.Str("result: %lld\n"), result)
 	} else {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
 }
 

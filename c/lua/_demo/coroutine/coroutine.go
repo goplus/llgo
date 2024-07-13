@@ -6,28 +6,28 @@ import (
 )
 
 func coroutineFunc(L *lua.State) {
-	L.LoadString(c.Str(`
+	L.Loadstring(c.Str(`
 	function coro_func()
 	   for i = 1, 5 do
 	       coroutine.yield(i)
 	   end
 	end
 	`))
-	L.PCall(0, 0, 0)
-	L.GetGlobal(c.Str("coro_func"))
+	L.Pcall(0, 0, 0)
+	L.Getglobal(c.Str("coro_func"))
 }
 
 func main() {
-	L := lua.NewState()
+	L := lua.Newstate()
 	defer L.Close()
 
-	L.OpenLibs()
+	L.Openlibs()
 
 	coroutineFunc(L) // Load and get the coroutine function
 
-	co := L.NewThread() // Create a new coroutine/thread
-	L.PushValue(-2)     // Move the function to the top of the stack
-	L.XMove(co, 1)      // Move the function to the new coroutine
+	co := L.Newthread() // Create a new coroutine/thread
+	L.Pushvalue(-2)     // Move the function to the top of the stack
+	L.Xmove(co, 1)      // Move the function to the new coroutine
 
 	var nres c.Int
 	var status c.Int
@@ -38,12 +38,12 @@ func main() {
 		status = co.Resume(nil, 0, &nres)
 		c.Printf(c.Str("Resuming coroutine %d...\n"), status)
 		if status == lua.YIELD {
-			yieldValue := co.ToInteger(-1)
+			yieldValue := co.Tointeger(-1)
 			c.Printf(c.Str("Yield value: %d\n"), yieldValue)
 			co.Pop(1) // Clean up the stack
 
 			// Check if the coroutine is yieldable
-			if co.IsYieldable() != 0 {
+			if co.Isyieldable() != 0 {
 				c.Printf(c.Str("Coroutine is yieldable.\n"))
 			} else {
 				c.Printf(c.Str("Coroutine is not yieldable.\n"))

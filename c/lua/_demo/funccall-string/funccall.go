@@ -8,10 +8,10 @@ import (
 )
 
 func main() {
-	L := lua.NewState()
+	L := lua.Newstate()
 	defer L.Close()
 
-	L.OpenLibs()
+	L.Openlibs()
 	code := c.Str(
 		`function processStrings(a, b, c)
 	print('Received string a: ' .. a)
@@ -20,22 +20,22 @@ func main() {
 	return a .. b .. c
 end`)
 
-	if res := L.DoString(code); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	if res := L.Dostring(code); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
 
-	L.GetGlobal(c.Str("processStrings"))
+	L.Getglobal(c.Str("processStrings"))
 
-	L.PushString(c.Str("Hello, World!"))
-	L.PushLString(c.Str(`Hello Lua In LLGO`), 17)
-	L.PushFString(c.Str(`Hello %s In %d`), c.Str("LLGO"), 2024)
+	L.Pushstring(c.Str("Hello, World!"))
+	L.Pushlstring(c.Str(`Hello Lua In LLGO`), 17)
+	L.Pushfstring(c.Str(`Hello %s In %d`), c.Str("LLGO"), 2024)
 
-	if res := L.PCall(3, 1, 0); res != lua.OK {
-		c.Printf(c.Str("error: %s\n"), L.ToString(-1))
+	if res := L.Pcall(3, 1, 0); res != lua.OK {
+		c.Printf(c.Str("error: %s\n"), L.Tostring(-1))
 	}
 
-	if res := L.IsString(-1); res != 0 {
-		result := L.ToString(-1)
+	if res := L.Isstring(-1); res != 0 {
+		result := L.Tostring(-1)
 		c.Printf(c.Str("result: %s\n"), result)
 	}
 }
