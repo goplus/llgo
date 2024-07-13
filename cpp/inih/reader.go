@@ -27,7 +27,7 @@ import (
 
 // llgo:type C
 type Reader struct {
-	Unused [24]byte
+	Unused [32]byte
 }
 
 // llgo:link (*Reader).InitFromBuffer C._ZN9INIReaderC1EPKcm
