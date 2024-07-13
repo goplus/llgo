@@ -277,14 +277,14 @@ func (b Builder) Times(n Expr, loop func(i Expr)) {
 	loop(phi.Expr)
 	post := b.BinOp(token.ADD, phi.Expr, b.Prog.IntVal(1, typ))
 	b.Jump(blks[0])
-	b.SetBlockEx(blks[2], AtEnd, false)
-	b.blk.last = blks[2].last
 	phi.AddIncoming(b, []BasicBlock{at, blks[1]}, func(i int, blk BasicBlock) Expr {
 		if i == 0 {
 			return b.Prog.IntVal(0, typ)
 		}
 		return post
 	})
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
 }
 
 // -----------------------------------------------------------------------------

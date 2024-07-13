@@ -176,7 +176,8 @@ func (b Builder) AllocaCStrs(strs Expr, endWithNil bool) (cstrs Expr) {
 	tcstr := prog.CStr()
 	cstrs = b.ArrayAlloca(tcstr, n1)
 	b.Times(n, func(i Expr) {
-		s := b.Index(strs, i, nil)
+		pstr := b.IndexAddr(strs, i)
+		s := b.Load(pstr)
 		b.Store(b.Advance(cstrs, i), b.AllocaCStr(s))
 	})
 	if endWithNil {
