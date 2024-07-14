@@ -152,7 +152,7 @@ type TranslationUnit struct {
 /**
  * Destroy the specified CXTranslationUnit object.
  */
-// llgo:linke (*TranslationUnit).Dispose C.clang_disposeTranslationUnit
+// llgo:link (*TranslationUnit).Dispose C.clang_disposeTranslationUnit
 func (*TranslationUnit) Dispose() {}
 
 /**
@@ -204,10 +204,13 @@ type Cursor struct {
 /**
  * Retrieve a name for the entity referenced by this cursor.
  */
-// llgo:link C.clang_getCursorSpelling
+// llgo:link Cursor.String C.clang_getCursorSpelling
 func (Cursor) String() (ret String) {
 	return
 }
+
+//go:linkname GetCursorSpelling C.clang_getCursorSpelling
+func GetCursorSpelling(cursor Cursor) String
 
 /**
  * Describes how the traversal of the children of a particular

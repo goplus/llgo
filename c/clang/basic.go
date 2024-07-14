@@ -38,13 +38,13 @@ type String struct {
 /**
  * Retrieve the character data associated with the given string.
  */
-// llgo:link C.clang_getCString
+// llgo:link String.CStr C.clang_getCString
 func (String) CStr() *c.Char { return nil }
 
 /**
  * Free the given string.
  */
-// llgo:link C.clang_disposeString
+// llgo:link String.Dispose C.clang_disposeString
 func (String) Dispose() {}
 
 type StringSet struct {
@@ -55,5 +55,5 @@ type StringSet struct {
 /**
  * Free the given string set.
  */
-// llgo:link C.clang_disposeStringSet
+// llgo:link (*StringSet).Dispose C.clang_disposeStringSet
 func (*StringSet) Dispose() {}
