@@ -27,45 +27,6 @@ LLGo := Go + C + Python
 LLGo is compatible with C and Python through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**.
 
 
-## How support C and Python
-
-LLGo use `go:linkname` to link an extern symbol througth its ABI:
-
-```go
-import _ "unsafe" // for go:linkname
-
-//go:linkname Sqrt C.sqrt
-func Sqrt(x float64) float64
-```
-
-You can directly integrate it into [your own code](_demo/linkname/linkname.go):
-
-```go
-package main
-
-import _ "unsafe" // for go:linkname
-
-//go:linkname Sqrt C.sqrt
-func Sqrt(x float64) float64
-
-func main() {
-	println("sqrt(2) =", Sqrt(2))
-}
-```
-
-Or put it into a package (see [c/math](c/math/math.go)):
-
-```go
-package main
-
-import "github.com/goplus/llgo/c/math"
-
-func main() {
-	println("sqrt(2) =", math.Sqrt(2))
-}
-```
-
-
 ## C/C++ standard libary support
 
 You can import a C/C++ standard library in LLGo!
@@ -108,6 +69,45 @@ To run these demos (If you haven't installed `llgo` yet, please refer to [How to
 ```sh
 cd <demo-directory>  # eg. cd _demo/hello
 llgo run .
+```
+
+
+## How support C/C++ and Python
+
+LLGo use `go:linkname` to link an extern symbol througth its ABI:
+
+```go
+import _ "unsafe" // for go:linkname
+
+//go:linkname Sqrt C.sqrt
+func Sqrt(x float64) float64
+```
+
+You can directly integrate it into [your own code](_demo/linkname/linkname.go):
+
+```go
+package main
+
+import _ "unsafe" // for go:linkname
+
+//go:linkname Sqrt C.sqrt
+func Sqrt(x float64) float64
+
+func main() {
+	println("sqrt(2) =", Sqrt(2))
+}
+```
+
+Or put it into a package (see [c/math](c/math/math.go)):
+
+```go
+package main
+
+import "github.com/goplus/llgo/c/math"
+
+func main() {
+	println("sqrt(2) =", math.Sqrt(2))
+}
 ```
 
 
