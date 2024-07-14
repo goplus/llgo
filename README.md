@@ -29,7 +29,7 @@ LLGo is compatible with C and Python through the language's **Application Binary
 
 ## How support C and Python
 
-LLGo use `go:linkname` to link an extern symbol througth its **Application Binary Interface (ABI)**:
+LLGo use `go:linkname` to link an extern symbol througth its ABI:
 
 ```go
 import _ "unsafe" // for go:linkname
