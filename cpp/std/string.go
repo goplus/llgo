@@ -25,6 +25,11 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// StringView represents a C++ std::string_view object.
+type StringView = string
+
+// -----------------------------------------------------------------------------
+
 // String represents a C++ std::string object.
 type String struct {
 	Unused [24]byte
