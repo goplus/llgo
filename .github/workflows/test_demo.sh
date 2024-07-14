@@ -8,7 +8,7 @@ for d in ./_demo/* ./_pydemo/*; do
   total=$((total+1))
   if [ -d "$d" ]; then
     echo "Testing $d"
-    if ! llgo run -v "$d"; then
+    if ! llgo run "$d"; then
       echo "FAIL"
       failed=$((failed+1))
       failed_cases="$failed_cases\n* :x: $d"
