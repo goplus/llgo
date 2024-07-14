@@ -174,7 +174,10 @@ func Do(args []string, conf *Config) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	ctx := &context{llvm.New(""), progSSA, prog, dedup, patches, make(map[string]none), initial, mode}
+	env := llvm.New("")
+	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
+
+	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	var llFiles []string

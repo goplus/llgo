@@ -154,10 +154,6 @@ func Environ() []string {
 
 // func Executable() (string, error)
 
-func Exit(code int) {
-	os.Exit(c.Int(code))
-}
-
 // TODO(xsw):
 // func Expand(s string, mapping func(string) string) string
 // func ExpandEnv(s string) string

@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package std
+package llvm
 
 // -----------------------------------------------------------------------------
 
 const (
-	LLGoFiles   = "_wrap/string.cpp"
-	LLGoPackage = "link: c++"
+	LLGoPackage = "link: -L$(llvm-config --libdir) -lLLVM; -lLLVM"
 )
+
+// StringView represents a C++ std::string_view object.
+type StringView = string
 
 // -----------------------------------------------------------------------------

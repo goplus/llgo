@@ -172,7 +172,7 @@ func (*TranslationUnit) Cursor() (ret Cursor) {
 type CursorKind c.Int
 
 /* for debug/testing */
-// llgo:link (CursorKind).String C.clang_getCursorKindSpelling
+// llgo:link CursorKind.String C.clang_getCursorKindSpelling
 func (CursorKind) String() (ret String) {
 	return
 }
