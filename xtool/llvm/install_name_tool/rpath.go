@@ -38,6 +38,14 @@ func New(app string) *Cmd {
 	return &Cmd{app: app}
 }
 
+// Exec executes a install_name_tool command.
+func (p *Cmd) Exec(args ...string) error {
+	cmd := exec.Command(p.app, args...)
+	cmd.Stdout = p.Stdout
+	cmd.Stderr = p.Stderr
+	return cmd.Run()
+}
+
 // Change represents a dependent shared library install name change.
 type Change struct {
 	Old string
@@ -51,17 +59,15 @@ func (p *Cmd) Change(target string, chgs ...Change) error {
 		args = append(args, "-change", chg.Old, chg.New)
 	}
 	args = append(args, target)
-	cmd := exec.Command(p.app, args...)
-	cmd.Stdout = p.Stdout
-	cmd.Stderr = p.Stderr
-	return cmd.Run()
+	return p.Exec(args...)
 }
 
 // ChangeToRpath changes dependent shared library install name to @rpath.
 func (p *Cmd) ChangeToRpath(target string, dylibDeps ...string) error {
-	chgs := make([]Change, len(dylibDeps))
-	for i, dep := range dylibDeps {
-		chgs[i] = Change{Old: dep, New: "@rpath/" + filepath.Base(dep)}
+	args := make([]string, len(dylibDeps)*3+1)
+	for _, dep := range dylibDeps {
+		args = append(args, "-change", dep, "@rpath/"+filepath.Base(dep))
 	}
-	return p.Change(target, chgs...)
+	args = append(args, target)
+	return p.Exec(args...)
 }
