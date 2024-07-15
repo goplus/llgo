@@ -35,6 +35,29 @@ const (
 	PATH_MAX = C.PATH_MAX
 )
 
+const (
+	/* get file status flags */
+	F_GETFL = 3
+	/* set file status flags */
+	F_SETFL = 4
+
+	/* open for reading only */
+	O_RDONLY = 0x0000
+	/* open for writing only */
+	O_WRONLY = 0x0001
+	/* open for reading and writing */
+	O_RDWR = 0x0002
+	/* mask for above modes */
+	O_ACCMODE = 0x0003
+
+	/* no delay */
+	O_NONBLOCK = 0x00000004
+	/* create if nonexistant */
+	O_CREAT = 0x00000200
+	/* truncate to zero length */
+	O_TRUNC = 0x00000400
+)
+
 type (
 	ModeT C.mode_t
 	UidT  C.uid_t
@@ -146,13 +169,16 @@ func Fstatat(dirfd c.Int, path *c.Char, buf *StatT, flags c.Int) c.Int
 // -----------------------------------------------------------------------------
 
 //go:linkname Open C.open
-func Open(path *c.Char, flags c.Int, mode ModeT) c.Int
+func Open(path *c.Char, flags c.Int, __llgo_va_list ...any) c.Int
 
 //go:linkname Openat C.openat
 func Openat(dirfd c.Int, path *c.Char, flags c.Int, mode ModeT) c.Int
 
 //go:linkname Creat C.creat
 func Creat(path *c.Char, mode ModeT) c.Int
+
+//go:linkname Fcntl C.fcntl
+func Fcntl(a c.Int, b c.Int, __llgo_va_list ...any) c.Int
 
 //go:linkname Dup C.dup
 func Dup(fd c.Int) c.Int
