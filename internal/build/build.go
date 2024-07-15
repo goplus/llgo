@@ -329,8 +329,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	args = append(
 		args,
 		"-o", app,
-		"-rpath", "@loader_path",
-		"-rpath", "@loader_path/../lib",
 		"-fuse-ld=lld",
 		"-Wno-override-module",
 		// "-O2", // FIXME: This will cause TestFinalizer in _test/bdwgc.go to fail on macOS.
@@ -339,6 +337,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	case "darwin": // ld64.lld (macOS)
 		args = append(
 			args,
+			"-rpath", "@loader_path",
+			"-rpath", "@loader_path/../lib",
 			"-Xlinker", "-dead_strip",
 		)
 	case "windows": // lld-link (Windows)
@@ -346,6 +346,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	default: // ld.lld (Unix), wasm-ld (WebAssembly)
 		args = append(
 			args,
+			"-rpath", "$ORIGIN",
+			"-rpath", "$ORIGIN/../lib",
 			"-Xlinker", "--gc-sections",
 			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
 		)
