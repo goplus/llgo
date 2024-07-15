@@ -40,6 +40,7 @@ func New(app string) *Cmd {
 	return &Cmd{app, os.Stdout, os.Stderr}
 }
 
+// Exec executes a clang command.
 func (p *Cmd) Exec(args ...string) error {
 	cmd := exec.Command(p.app, args...)
 	cmd.Stdout = p.Stdout
