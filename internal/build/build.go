@@ -177,7 +177,7 @@ func Do(args []string, conf *Config) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode}
+	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	var llFiles []string
@@ -232,6 +232,7 @@ type context struct {
 	built   map[string]none
 	initial []*packages.Package
 	mode    Mode
+	nLibdir int
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage) {
@@ -273,7 +274,13 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				expd := ""
 				altParts := strings.Split(param, ";")
 				for _, param := range altParts {
-					expd = strings.TrimSpace(env.ExpandEnv(strings.TrimSpace(param)))
+					param = strings.TrimSpace(param)
+					if strings.ContainsRune(param, '$') {
+						expd = strings.TrimSpace(env.ExpandEnv(param))
+						ctx.nLibdir++
+					} else {
+						expd = param
+					}
 					if len(expd) > 0 {
 						break
 					}
@@ -291,6 +298,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 					command = " -l " + lib
 					if dir != "" {
 						command += " -L " + dir[:len(dir)-1]
+						ctx.nLibdir++
 					}
 				}
 				if err := clangCheck.CheckLinkArgs(command); err != nil {
@@ -317,10 +325,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	args := make([]string, 0, len(pkg.Imports)+len(llFiles)+10)
+	args := make([]string, 0, len(pkg.Imports)+len(llFiles)+16)
 	args = append(
 		args,
 		"-o", app,
+		"-rpath", "@loader_path",
+		"-rpath", "@loader_path/../lib",
 		"-fuse-ld=lld",
 		"-Wno-override-module",
 		// "-O2", // FIXME: This will cause TestFinalizer in _test/bdwgc.go to fail on macOS.
@@ -390,6 +400,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 			nErr = 1
 		}
 	}()
+
+	// add rpath
+	exargs := make([]string, 0, ctx.nLibdir<<1)
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "-L") {
+			exargs = append(exargs, "-rpath", arg[2:])
+		}
+	}
+	args = append(args, exargs...)
 
 	// TODO(xsw): show work
 	if verbose {
