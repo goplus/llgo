@@ -1,2 +1,2 @@
-export LLVM_DIR=/opt/homebrew/Cellar/llvm@17/17.0.6
+export LLVM_DIR=$(llvm-config --prefix)
 clang -L$LLVM_DIR/lib -lclang -lc++ -I$LLVM_DIR/include astdump.cpp
