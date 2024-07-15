@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/xtool/clang"
+	"github.com/goplus/llgo/xtool/llvm/install_name_tool"
 	"github.com/goplus/llgo/xtool/llvm/llvmlink"
 	"github.com/goplus/llgo/xtool/nm"
 )
@@ -85,6 +86,11 @@ func (e *Env) Link() *llvmlink.Cmd {
 func (e *Env) Nm() *nm.Cmd {
 	bin := filepath.Join(e.BinDir(), "llvm-nm")
 	return nm.New(bin)
+}
+
+func (e *Env) InstallNameTool() *install_name_tool.Cmd {
+	bin := filepath.Join(e.BinDir(), "llvm-install-name-tool")
+	return install_name_tool.New(bin)
 }
 
 // -----------------------------------------------------------------------------
