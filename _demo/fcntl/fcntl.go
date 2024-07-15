@@ -70,7 +70,7 @@ func main() {
 
 	// Ensure that the buffer is null-terminated
 	buffer[bytesRead] = c.Char(0)
-	c.Printf(c.Str("Read %ld bytes: %s\n"), bytesRead, buffer)
+	c.Printf(c.Str("Read %ld bytes: %s\n"), bytesRead, &buffer[0])
 
 	// Close file
 	os.Close(fd)
