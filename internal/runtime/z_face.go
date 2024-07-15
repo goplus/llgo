@@ -190,7 +190,8 @@ func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods 
 func Func(in, out []*Type, variadic bool) *FuncType {
 	ret := &FuncType{
 		Type: Type{
-			Size_:       unsafe.Sizeof(uintptr(0)),
+			Size_:       2 * unsafe.Sizeof(uintptr(0)),
+			PtrBytes:    2 * pointerSize,
 			Hash:        uint32(abi.Func), // TODO(xsw): hash
 			Align_:      uint8(pointerAlign),
 			FieldAlign_: uint8(pointerAlign),
@@ -212,6 +213,7 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(eface{}),
+			PtrBytes:    2 * pointerSize,
 			Hash:        uint32(abi.Interface), // TODO(xsw): hash
 			Align_:      uint8(pointerAlign),
 			FieldAlign_: uint8(pointerAlign),
