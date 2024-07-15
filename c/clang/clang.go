@@ -17,12 +17,13 @@
 package clang
 
 import (
-	_ "unsafe"
+	"unsafe"
 
 	"github.com/goplus/llgo/c"
 )
 
 const (
+	LLGoFiles   = "$(llvm-config --cflags): _wrap/cursor.cpp"
 	LLGoPackage = "link: -L$(llvm-config --libdir) -lclang; -lclang"
 )
 
@@ -204,13 +205,14 @@ type Cursor struct {
 /**
  * Retrieve a name for the entity referenced by this cursor.
  */
-// llgo:link Cursor.String C.clang_getCursorSpelling
-func (Cursor) String() (ret String) {
+// llgo:link (*Cursor).wrapString C.wrap_clang_getCursorSpelling
+func (*Cursor) wrapString() (ret String) {
 	return
 }
 
-//go:linkname GetCursorSpelling C.clang_getCursorSpelling
-func GetCursorSpelling(cursor Cursor) String
+func (c Cursor) String() (ret String) {
+	return c.wrapString()
+}
 
 /**
  * Describes how the traversal of the children of a particular
@@ -260,10 +262,31 @@ const (
  * \returns a non-zero value if the traversal was terminated
  * prematurely by the visitor returning \c CXChildVisit_Break.
  */
-//go:linkname VisitChildren C.clang_visitChildren
-func VisitChildren(
-	cusor Cursor,
-	visitor func(cursor, parent Cursor, clientData ClientData) ChildVisitResult,
+//go:linkname wrapVisitChildren C.wrap_clang_visitChildren
+func wrapVisitChildren(
+	cusor *Cursor,
+	fn wrapVisitor,
 	clientData ClientData) c.Uint {
 	return 0
 }
+
+//llgo:type C
+type wrapVisitor func(cursor, parent *Cursor, clientData ClientData) ChildVisitResult
+
+type wrapData struct {
+	data ClientData
+	fn   Visitor
+}
+
+func VisitChildren(
+	root Cursor,
+	fn Visitor,
+	clientData ClientData) c.Uint {
+	return wrapVisitChildren(&root, func(cursor, parent *Cursor, data ClientData) ChildVisitResult {
+		p := (*wrapData)(data)
+		return p.fn(*cursor, *parent, p.data)
+	}, unsafe.Pointer(&wrapData{clientData, fn}))
+}
+
+//llgo:type C
+type Visitor func(cursor, parent Cursor, clientData ClientData) ChildVisitResult

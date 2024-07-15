@@ -16,21 +16,14 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 
 func printAST(cursor clang.Cursor, depth c.Uint) {
 	cursorKind := cursor.Kind.String()
-	println("cursor.Kind.String done")
-	c.Printf(c.Str("cursorKind = %s\n"), cursorKind.CStr())
 
-	cursorSpelling := clang.GetCursorSpelling(cursor) // cursor.String()
-	println("clang.GetCursorSpelling done")
+	cursorSpelling := cursor.String()
 
 	for i := c.Uint(0); i < depth; i++ {
-		println("c.Fputs start")
 		c.Fputs(c.Str("  "), c.Stdout)
-		println("c.Fputs end")
 	}
 
-	println("c.Printf start")
 	c.Printf(c.Str("%s: %s\n"), cursorKind.CStr(), cursorSpelling.CStr())
-	println("c.Printf end")
 
 	cursorKind.Dispose()
 	cursorSpelling.Dispose()
@@ -46,7 +39,6 @@ func main() {
 	sourceFile := *c.Advance(c.Argv, 1)
 
 	index := clang.CreateIndex(0, 0)
-	println("clang.CreateIndex done")
 
 	unit := index.ParseTranslationUnit(
 		sourceFile,
@@ -54,7 +46,6 @@ func main() {
 		nil, 0,
 		clang.TranslationUnit_None,
 	)
-	println("index.ParseTranslationUnit done")
 
 	if unit == nil {
 		println("Unable to parse translation unit. Quitting.")
@@ -62,7 +53,6 @@ func main() {
 	}
 
 	cursor := unit.Cursor()
-	println("unit.Cursor done")
 
 	printAST(cursor, 0)
 
