@@ -19,6 +19,7 @@ package install_name_tool
 import (
 	"io"
 	"os/exec"
+	"path/filepath"
 )
 
 // Cmd represents a install_name_tool command.
@@ -37,20 +38,30 @@ func New(app string) *Cmd {
 	return &Cmd{app: app}
 }
 
+// Change represents a dependent shared library install name change.
 type Change struct {
 	Old string
 	New string
 }
 
 // Change changes dependent shared library install name.
-func (p *Cmd) Change(dylib string, chgs ...Change) error {
+func (p *Cmd) Change(target string, chgs ...Change) error {
 	args := make([]string, len(chgs)*3+1)
 	for _, chg := range chgs {
 		args = append(args, "-change", chg.Old, chg.New)
 	}
-	args = append(args, dylib)
+	args = append(args, target)
 	cmd := exec.Command(p.app, args...)
 	cmd.Stdout = p.Stdout
 	cmd.Stderr = p.Stderr
 	return cmd.Run()
+}
+
+// ChangeToRpath changes dependent shared library install name to @rpath.
+func (p *Cmd) ChangeToRpath(target string, dylibDeps ...string) error {
+	chgs := make([]Change, len(dylibDeps))
+	for i, dep := range dylibDeps {
+		chgs[i] = Change{Old: dep, New: "@rpath/" + filepath.Base(dep)}
+	}
+	return p.Change(target, chgs...)
 }
