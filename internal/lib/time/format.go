@@ -1582,7 +1582,6 @@ func leadingFraction(s string) (x uint64, scale float64, rem string) {
 	return x, scale, s[i:]
 }
 
-/* TODO(xsw):
 var unitMap = map[string]uint64{
 	"ns": uint64(Nanosecond),
 	"us": uint64(Microsecond),
@@ -1697,4 +1696,3 @@ func ParseDuration(s string) (Duration, error) {
 	}
 	return Duration(d), nil
 }
-*/
