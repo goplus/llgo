@@ -128,7 +128,7 @@ func (v Value) pointer() unsafe.Pointer {
 		}
 		return v.ptr
 	*/
-	panic("todo")
+	panic("todo: reflect.Value.pointer")
 }
 
 // packEface converts v to the empty interface.
@@ -355,7 +355,7 @@ func (v Value) bytesSlow() []byte {
 		}
 		panic(&ValueError{"reflect.Value.Bytes", v.kind()})
 	*/
-	panic("todo")
+	panic("todo: reflect.Value.byteSlow")
 }
 
 // runes returns v's underlying value.
@@ -776,7 +776,7 @@ func valueInterface(v Value, safe bool) any {
 		// TODO: pass safe to packEface so we don't need to copy if safe==true?
 		return packEface(v)
 	*/
-	panic("todo")
+	panic("todo: reflect.valueInterface")
 }
 
 // InterfaceData returns a pair of unspecified uintptr values.
@@ -800,7 +800,7 @@ func (v Value) InterfaceData() [2]uintptr {
 		// Interface value is always bigger than a word; assume flagIndir.
 		return *(*[2]uintptr)(v.ptr)
 	*/
-	panic("todo")
+	panic("todo: reflect.Value.InterfaceData")
 }
 
 // IsNil reports whether its argument v is nil. The argument must be
@@ -901,7 +901,7 @@ func (v Value) IsZero() bool {
 			panic(&ValueError{"reflect.Value.IsZero", v.Kind()})
 		}
 	*/
-	panic("todo")
+	panic("todo: reflect.Value.IsZero")
 }
 
 // SetZero sets v to be the zero value of v's type.
@@ -958,7 +958,7 @@ func (v Value) SetZero() {
 			panic(&ValueError{"reflect.Value.SetZero", v.Kind()})
 		}
 	*/
-	panic("todo")
+	panic("todo: reflect.Value.SetZero")
 }
 
 // Kind returns v's Kind.
@@ -998,7 +998,7 @@ func (v Value) lenNonSlice() int {
 		}
 		panic(&ValueError{"reflect.Value.Len", v.kind()})
 	*/
-	panic("todo")
+	panic("todo: reflect.Value.lenNonSlice")
 }
 
 // Pointer returns v's value as a uintptr.
@@ -1772,7 +1772,7 @@ func AppendSlice(s, t Value) Value {
 		Copy(s.Slice(ns, ns+nt), t)
 		return s
 	*/
-	panic("todo")
+	panic("todo: reflect.AppendSlice")
 }
 
 // Zero returns a Value representing the zero value for the specified type.
@@ -1819,7 +1819,7 @@ func New(typ Type) Value {
 		fl := flag(Pointer)
 		return Value{pt, ptr, fl}
 	*/
-	panic("todo")
+	panic("todo: reflect.New")
 }
 
 // NewAt returns a Value representing a pointer to a value of the
@@ -1872,7 +1872,7 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 	// Failed.
 	// TODO(xsw):
 	// panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(dst))
-	panic("todo")
+	panic("todo: reflect.Value.assignTo")
 }
 
 // memmove copies size bytes to dst from src. No write barriers are used.

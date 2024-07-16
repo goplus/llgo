@@ -87,7 +87,7 @@ func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
 		}
 		return
 	*/
-	panic("todo")
+	panic("todo: os.File.ReadAt")
 }
 
 // ReadFrom implements io.ReaderFrom.
@@ -102,7 +102,7 @@ func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
 		}
 		return n, f.wrapErr("write", e)
 	*/
-	panic("todo")
+	panic("todo: os.File.ReadFrom")
 }
 
 func genericReadFrom(f *File, r io.Reader) (int64, error) {

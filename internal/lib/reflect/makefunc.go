@@ -146,7 +146,7 @@ func makeMethodValue(op string, v Value) Value {
 
 		return Value{ftyp.Common(), unsafe.Pointer(fv), v.flag&flagRO | flag(Func)}
 	*/
-	panic("todo")
+	panic("todo: reflect.makeMethodValue")
 }
 
 /*
