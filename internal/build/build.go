@@ -17,6 +17,7 @@
 package build
 
 import (
+	"debug/macho"
 	"fmt"
 	"go/constant"
 	"go/token"
@@ -403,11 +404,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 		}
 	}()
 
-	// add rpath
+	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
+	libs := make([]string, 0, ctx.nLibdir*3)
 	for _, arg := range args {
 		if strings.HasPrefix(arg, "-L") {
 			exargs = append(exargs, "-rpath", arg[2:])
+		} else if strings.HasPrefix(arg, "-l") {
+			libs = append(libs, arg[2:])
 		}
 	}
 	args = append(args, exargs...)
@@ -418,6 +422,18 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	}
 	err := ctx.env.Clang().Exec(args...)
 	check(err)
+
+	if runtime.GOOS == "darwin" {
+		dylibDeps := make([]string, 0, len(libs))
+		for _, lib := range libs {
+			dylibDep := findDylibDep(app, lib)
+			if dylibDep != "" {
+				dylibDeps = append(dylibDeps, dylibDep)
+			}
+		}
+		err := ctx.env.InstallNameTool().ChangeToRpath(app, dylibDeps...)
+		check(err)
+	}
 
 	switch mode {
 	case ModeRun:
@@ -704,6 +720,22 @@ func canSkipToBuild(pkgPath string) bool {
 		return strings.HasPrefix(pkgPath, "internal/") ||
 			strings.HasPrefix(pkgPath, "runtime/internal/")
 	}
+}
+
+// findDylibDep finds the dylib dependency in the executable. It returns empty
+// string if not found.
+func findDylibDep(exe, lib string) string {
+	file, err := macho.Open(exe)
+	check(err)
+	defer file.Close()
+	for _, load := range file.Loads {
+		if dylib, ok := load.(*macho.Dylib); ok {
+			if strings.HasPrefix(filepath.Base(dylib.Name), fmt.Sprintf("lib%s.", lib)) {
+				return dylib.Name
+			}
+		}
+	}
+	return ""
 }
 
 type none struct{}
