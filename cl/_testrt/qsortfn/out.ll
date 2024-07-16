@@ -263,31 +263,25 @@ _llgo_0:
   store i64 23, ptr %4, align 4
   store i64 2, ptr %5, align 4
   store i64 7, ptr %6, align 4
-  %7 = alloca { ptr, ptr }, align 8
-  %8 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 0
-  store ptr @"__llgo_stub.main.sort3a$1", ptr %8, align 8
-  %9 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 1
-  store ptr null, ptr %9, align 8
-  %10 = load { ptr, ptr }, ptr %7, align 8
-  %11 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %11, i64 5, i64 8, { ptr, ptr } %10)
-  %12 = load [5 x i64], ptr %1, align 4
+  %7 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %7, i64 5, i64 8, ptr @"main.sort3a$1")
+  %8 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %13 = phi i64 [ -1, %_llgo_0 ], [ %14, %_llgo_2 ]
-  %14 = add i64 %13, 1
-  %15 = icmp slt i64 %14, 5
-  br i1 %15, label %_llgo_2, label %_llgo_3
+  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
+  %10 = add i64 %9, 1
+  %11 = icmp slt i64 %10, 5
+  br i1 %11, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %16 = icmp slt i64 %14, 0
-  %17 = icmp sge i64 %14, 5
-  %18 = or i1 %17, %16
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %18)
-  %19 = getelementptr inbounds i64, ptr %1, i64 %14
-  %20 = load i64, ptr %19, align 4
-  %21 = call i32 (ptr, ...) @printf(ptr @9, i64 %20)
+  %12 = icmp slt i64 %10, 0
+  %13 = icmp sge i64 %10, 5
+  %14 = or i1 %13, %12
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = getelementptr inbounds i64, ptr %1, i64 %10
+  %16 = load i64, ptr %15, align 4
+  %17 = call i32 (ptr, ...) @printf(ptr @9, i64 %16)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -318,30 +312,24 @@ _llgo_0:
   store i64 2, ptr %5, align 4
   store i64 7, ptr %6, align 4
   %7 = getelementptr inbounds i64, ptr %1, i64 0
-  %8 = alloca { ptr, ptr }, align 8
-  %9 = getelementptr inbounds { ptr, ptr }, ptr %8, i32 0, i32 0
-  store ptr @"__llgo_stub.main.sort3b$1", ptr %9, align 8
-  %10 = getelementptr inbounds { ptr, ptr }, ptr %8, i32 0, i32 1
-  store ptr null, ptr %10, align 8
-  %11 = load { ptr, ptr }, ptr %8, align 8
-  call void @qsort(ptr %7, i64 5, i64 8, { ptr, ptr } %11)
-  %12 = load [5 x i64], ptr %1, align 4
+  call void @qsort(ptr %7, i64 5, i64 8, ptr @"main.sort3b$1")
+  %8 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %13 = phi i64 [ -1, %_llgo_0 ], [ %14, %_llgo_2 ]
-  %14 = add i64 %13, 1
-  %15 = icmp slt i64 %14, 5
-  br i1 %15, label %_llgo_2, label %_llgo_3
+  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
+  %10 = add i64 %9, 1
+  %11 = icmp slt i64 %10, 5
+  br i1 %11, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %16 = icmp slt i64 %14, 0
-  %17 = icmp sge i64 %14, 5
-  %18 = or i1 %17, %16
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %18)
-  %19 = getelementptr inbounds i64, ptr %1, i64 %14
-  %20 = load i64, ptr %19, align 4
-  %21 = call i32 (ptr, ...) @printf(ptr @11, i64 %20)
+  %12 = icmp slt i64 %10, 0
+  %13 = icmp sge i64 %10, 5
+  %14 = or i1 %13, %12
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = getelementptr inbounds i64, ptr %1, i64 %10
+  %16 = load i64, ptr %15, align 4
+  %17 = call i32 (ptr, ...) @printf(ptr @11, i64 %16)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -371,31 +359,25 @@ _llgo_0:
   store i64 23, ptr %4, align 4
   store i64 2, ptr %5, align 4
   store i64 7, ptr %6, align 4
-  %7 = alloca { ptr, ptr }, align 8
-  %8 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 0
-  store ptr @"__llgo_stub.main.sort4a$1", ptr %8, align 8
-  %9 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 1
-  store ptr null, ptr %9, align 8
-  %10 = load { ptr, ptr }, ptr %7, align 8
-  %11 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %11, i64 5, i64 8, { ptr, ptr } %10)
-  %12 = load [5 x i64], ptr %1, align 4
+  %7 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %7, i64 5, i64 8, ptr @"main.sort4a$1")
+  %8 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %13 = phi i64 [ -1, %_llgo_0 ], [ %14, %_llgo_2 ]
-  %14 = add i64 %13, 1
-  %15 = icmp slt i64 %14, 5
-  br i1 %15, label %_llgo_2, label %_llgo_3
+  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
+  %10 = add i64 %9, 1
+  %11 = icmp slt i64 %10, 5
+  br i1 %11, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %16 = icmp slt i64 %14, 0
-  %17 = icmp sge i64 %14, 5
-  %18 = or i1 %17, %16
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %18)
-  %19 = getelementptr inbounds i64, ptr %1, i64 %14
-  %20 = load i64, ptr %19, align 4
-  %21 = call i32 (ptr, ...) @printf(ptr @13, i64 %20)
+  %12 = icmp slt i64 %10, 0
+  %13 = icmp sge i64 %10, 5
+  %14 = or i1 %13, %12
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = getelementptr inbounds i64, ptr %1, i64 %10
+  %16 = load i64, ptr %15, align 4
+  %17 = call i32 (ptr, ...) @printf(ptr @13, i64 %16)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -473,31 +455,25 @@ _llgo_0:
   store i64 23, ptr %4, align 4
   store i64 2, ptr %5, align 4
   store i64 7, ptr %6, align 4
-  %7 = alloca { ptr, ptr }, align 8
-  %8 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 0
-  store ptr @"__llgo_stub.main.sort5a$1", ptr %8, align 8
-  %9 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 1
-  store ptr null, ptr %9, align 8
-  %10 = load { ptr, ptr }, ptr %7, align 8
-  %11 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %11, i64 5, i64 8, { ptr, ptr } %10)
-  %12 = load [5 x i64], ptr %1, align 4
+  %7 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %7, i64 5, i64 8, ptr @"main.sort5a$1")
+  %8 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %13 = phi i64 [ -1, %_llgo_0 ], [ %14, %_llgo_2 ]
-  %14 = add i64 %13, 1
-  %15 = icmp slt i64 %14, 5
-  br i1 %15, label %_llgo_2, label %_llgo_3
+  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
+  %10 = add i64 %9, 1
+  %11 = icmp slt i64 %10, 5
+  br i1 %11, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %16 = icmp slt i64 %14, 0
-  %17 = icmp sge i64 %14, 5
-  %18 = or i1 %17, %16
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %18)
-  %19 = getelementptr inbounds i64, ptr %1, i64 %14
-  %20 = load i64, ptr %19, align 4
-  %21 = call i32 (ptr, ...) @printf(ptr @17, i64 %20)
+  %12 = icmp slt i64 %10, 0
+  %13 = icmp sge i64 %10, 5
+  %14 = or i1 %13, %12
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = getelementptr inbounds i64, ptr %1, i64 %10
+  %16 = load i64, ptr %15, align 4
+  %17 = call i32 (ptr, ...) @printf(ptr @17, i64 %16)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -570,27 +546,3 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 declare void @qsort(ptr, i64, i64, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
-
-define linkonce i32 @"__llgo_stub.main.sort3a$1"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i32 @"main.sort3a$1"(ptr %1, ptr %2)
-  ret i32 %3
-}
-
-define linkonce i32 @"__llgo_stub.main.sort3b$1"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i32 @"main.sort3b$1"(ptr %1, ptr %2)
-  ret i32 %3
-}
-
-define linkonce i32 @"__llgo_stub.main.sort4a$1"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i32 @"main.sort4a$1"(ptr %1, ptr %2)
-  ret i32 %3
-}
-
-define linkonce i32 @"__llgo_stub.main.sort5a$1"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i32 @"main.sort5a$1"(ptr %1, ptr %2)
-  ret i32 %3
-}

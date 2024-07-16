@@ -26,12 +26,14 @@ import (
 // -----------------------------------------------------------------------------
 
 type goTypes struct {
-	typs map[unsafe.Pointer]unsafe.Pointer
+	typs  map[unsafe.Pointer]unsafe.Pointer
+	typbg map[string]Background
 }
 
 func newGoTypes() goTypes {
 	typs := make(map[unsafe.Pointer]unsafe.Pointer)
-	return goTypes{typs}
+	typbk := make(map[string]Background)
+	return goTypes{typs, typbk}
 }
 
 type Background int
@@ -93,6 +95,9 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 	case *types.Struct:
 		return p.cvtStruct(t)
 	case *types.Named:
+		if p.typbg[t.String()] == InC {
+			break
+		}
 		return p.cvtNamed(t)
 	case *types.Signature:
 		return p.cvtClosure(t), true

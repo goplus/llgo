@@ -17,17 +17,10 @@
 package llgen
 
 import (
-	"go/ast"
-	"go/parser"
-	"go/token"
-	"go/types"
 	"os"
 
-	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/mod"
-	"golang.org/x/tools/go/ssa"
-	"golang.org/x/tools/go/ssa/ssautil"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
@@ -45,49 +38,9 @@ func PkgPath(dir string) string {
 }
 
 func Do(pkgPath, inFile, outFile string) {
-	ret := Gen(pkgPath, inFile, nil)
+	ret := genFrom(inFile, pkgPath)
 	err := os.WriteFile(outFile, []byte(ret), 0644)
 	check(err)
-}
-
-func Gen(pkgPath, inFile string, src any) string {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, inFile, src, parser.ParseComments)
-	check(err)
-
-	files := []*ast.File{f}
-	name := f.Name.Name
-	if pkgPath == "" {
-		pkgPath = name
-	}
-	pkg := types.NewPackage(pkgPath, name)
-	imp := packages.NewImporter(fset)
-	ssaPkg, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
-	check(err)
-
-	if Verbose {
-		ssaPkg.WriteTo(os.Stderr)
-	}
-
-	prog := llssa.NewProgram(nil)
-	prog.SetRuntime(func() *types.Package {
-		ret, _ := imp.Import(llssa.PkgRuntime)
-		return ret
-	})
-	prog.SetPython(func() *types.Package {
-		ret, _ := imp.Import(llssa.PkgPython)
-		return ret
-	})
-
-	ret, err := cl.NewPackage(prog, ssaPkg, files)
-	check(err)
-
-	if prog.NeedPyInit { // call PyInit if needed
-		ret.PyInit()
-	}
-
-	return ret.String()
 }
 
 func check(err error) {

@@ -236,6 +236,10 @@ func (p Program) SetRuntime(runtime any) {
 	}
 }
 
+func (p Program) SetTypeBackground(fullName string, bg Background) {
+	p.gocvt.typbg[fullName] = bg
+}
+
 func (p Program) runtime() *types.Package {
 	if p.rt == nil {
 		p.rt = p.rtget()

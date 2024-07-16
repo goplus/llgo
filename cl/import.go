@@ -196,8 +196,6 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 							p.collectSkipNames(line)
 						}
 					}
-				case token.TYPE:
-					handleTypeDecl(p.prog, p.goTyps, decl)
 				}
 			}
 		}
@@ -568,9 +566,7 @@ func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
 	if len(decl.Specs) == 1 {
 		if bg := typeBackground(decl.Doc); bg != "" {
 			inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
-			if obj := pkg.Scope().Lookup(inPkgName); obj != nil {
-				prog.Type(obj.Type(), toBackground(bg))
-			}
+			prog.SetTypeBackground(pkg.Path()+"."+inPkgName, toBackground(bg))
 		}
 	}
 }

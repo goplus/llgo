@@ -18,6 +18,7 @@ package build
 
 import (
 	"fmt"
+	"go/ast"
 	"go/constant"
 	"go/token"
 	"go/types"
@@ -136,6 +137,12 @@ func Do(args []string, conf *Config) {
 	prog := llssa.NewProgram(nil)
 	sizes := prog.TypeSizes
 	dedup := packages.NewDeduper()
+	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
+		if canSkipToBuild(pkg.Path()) {
+			return
+		}
+		cl.ParsePkgSyntax(prog, pkg, files)
+	})
 
 	if patterns == nil {
 		patterns = []string{"."}
@@ -256,7 +263,6 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
 			// and set no export file
-			cl.ParsePkgSyntax(ctx.prog, pkg.Types, pkg.Syntax)
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if len(pkg.GoFiles) > 0 {

@@ -17,6 +17,7 @@
 package llgen
 
 import (
+	"go/ast"
 	"go/types"
 	"os"
 	"os/exec"
@@ -60,12 +61,32 @@ func initRtAndPy(prog llssa.Program, cfg *packages.Config) {
 }
 
 func GenFrom(fileOrPkg string) string {
+	return genFrom(fileOrPkg, "")
+}
+
+func genFrom(fileOrPkg string, pkgPath string) string {
 	prog := llssa.NewProgram(nil)
 
 	cfg := &packages.Config{
 		Mode: loadSyntax | packages.NeedDeps,
 	}
-	initial, err := packages.LoadEx(nil, prog.TypeSizes, cfg, fileOrPkg)
+
+	dedup := packages.NewDeduper()
+	dedup.SetPkgPath(func(path, name string) string {
+		if path == "command-line-arguments" {
+			if pkgPath != "" {
+				path = pkgPath
+			} else {
+				path = name
+			}
+		}
+		return path
+	})
+	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
+		cl.ParsePkgSyntax(prog, pkg, files)
+	})
+
+	initial, err := packages.LoadEx(dedup, prog.TypeSizes, cfg, fileOrPkg)
 	check(err)
 
 	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
