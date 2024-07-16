@@ -461,7 +461,7 @@ func (t *rtype) NumMethod() int {
 		}
 		return len(t.exportedMethods())
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.NumMethod")
 }
 
 func (t *rtype) Method(i int) (m Method) {
@@ -498,7 +498,7 @@ func (t *rtype) Method(i int) (m Method) {
 		m.Index = i
 		return m
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.Method")
 }
 
 func (t *rtype) MethodByName(name string) (m Method, ok bool) {
@@ -533,7 +533,7 @@ func (t *rtype) MethodByName(name string) (m Method, ok bool) {
 
 		return Method{}, false
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.MethodByName")
 }
 
 func (t *rtype) PkgPath() string {
@@ -570,7 +570,7 @@ func (t *rtype) Name() string {
 		}
 		return s[i+1:]
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.Name")
 }
 
 func nameFor(t *abi.Type) string {
@@ -596,7 +596,7 @@ func elem(t *abi.Type) *abi.Type {
 	}
 	// TODO(xsw):
 	// panic("reflect: Elem of invalid type " + stringFor(t))
-	panic("todo")
+	panic("todo: reflect.elem")
 }
 
 func (t *rtype) Elem() Type {
@@ -611,7 +611,7 @@ func (t *rtype) Field(i int) StructField {
 		tt := (*structType)(unsafe.Pointer(t))
 		return tt.Field(i)
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.Field")
 }
 
 func (t *rtype) FieldByIndex(index []int) StructField {
@@ -622,7 +622,7 @@ func (t *rtype) FieldByIndex(index []int) StructField {
 		tt := (*structType)(unsafe.Pointer(t))
 		return tt.FieldByIndex(index)
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.FieldByIndex")
 }
 
 func (t *rtype) FieldByName(name string) (StructField, bool) {
@@ -633,7 +633,7 @@ func (t *rtype) FieldByName(name string) (StructField, bool) {
 		tt := (*structType)(unsafe.Pointer(t))
 		return tt.FieldByName(name)
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.FieldByName")
 }
 
 func (t *rtype) FieldByNameFunc(match func(string) bool) (StructField, bool) {
@@ -644,7 +644,7 @@ func (t *rtype) FieldByNameFunc(match func(string) bool) (StructField, bool) {
 		tt := (*structType)(unsafe.Pointer(t))
 		return tt.FieldByNameFunc(match)
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.FieldByNameFunc")
 }
 
 func (t *rtype) Key() Type {
@@ -679,7 +679,7 @@ func (t *rtype) In(i int) Type {
 		tt := (*abi.FuncType)(unsafe.Pointer(t))
 		return toType(tt.InSlice()[i])
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.In")
 }
 
 func (t *rtype) NumIn() int {
@@ -690,7 +690,7 @@ func (t *rtype) NumIn() int {
 		tt := (*abi.FuncType)(unsafe.Pointer(t))
 		return tt.NumIn()
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.NumIn")
 }
 
 func (t *rtype) NumOut() int {
@@ -701,7 +701,7 @@ func (t *rtype) NumOut() int {
 		tt := (*abi.FuncType)(unsafe.Pointer(t))
 		return tt.NumOut()
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.NumOut")
 }
 
 func (t *rtype) Out(i int) Type {
@@ -712,7 +712,7 @@ func (t *rtype) Out(i int) Type {
 		tt := (*abi.FuncType)(unsafe.Pointer(t))
 		return toType(tt.OutSlice()[i])
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.Out")
 }
 
 func (t *rtype) IsVariadic() bool {
@@ -723,7 +723,7 @@ func (t *rtype) IsVariadic() bool {
 		tt := (*abi.FuncType)(unsafe.Pointer(t))
 		return tt.IsVariadic()
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.IsVariadic")
 }
 
 // add returns p+x.
@@ -916,7 +916,7 @@ func (t *rtype) ptrTo() *abi.Type {
 		pi, _ := ptrMap.LoadOrStore(t, &pp)
 		return &pi.(*ptrType).Type
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.ptrTo")
 }
 
 func ptrTo(t *abi.Type) *abi.Type {
@@ -942,7 +942,7 @@ func (t *rtype) Implements(u Type) bool {
 		}
 		return implements(u.common(), t.common())
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.Implements")
 }
 
 func (t *rtype) AssignableTo(u Type) bool {
@@ -953,7 +953,7 @@ func (t *rtype) AssignableTo(u Type) bool {
 		uu := u.common()
 		return directlyAssignable(uu, t.common()) || implements(uu, t.common())
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.AssignableTo")
 }
 
 func (t *rtype) ConvertibleTo(u Type) bool {
@@ -963,7 +963,7 @@ func (t *rtype) ConvertibleTo(u Type) bool {
 		}
 		return convertOp(u.common(), t.common()) != nil
 	*/
-	panic("todo")
+	panic("todo: reflect.rtype.ConvertibleTo")
 }
 
 func (t *rtype) Comparable() bool {
@@ -1055,7 +1055,7 @@ func implements(T, V *abi.Type) bool {
 		}
 		return false
 	*/
-	panic("todo")
+	panic("todo: reflect.implements")
 }
 
 // specialChannelAssignability reports whether a value x of channel type V
@@ -1070,7 +1070,7 @@ func specialChannelAssignability(T, V *abi.Type) bool {
 		// and at least one of V or T is not a defined type.
 		return V.ChanDir() == abi.BothDir && (nameFor(T) == "" || nameFor(V) == "") && haveIdenticalType(T.Elem(), V.Elem(), true)
 	*/
-	panic("todo")
+	panic("todo: reflect.specialChannelAssignability")
 }
 
 // directlyAssignable reports whether a value x of type V can be directly
@@ -1202,7 +1202,7 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 
 		return false
 	*/
-	panic("todo")
+	panic("todo: reflect.haveIdenticalUnderlyingType")
 }
 
 // SliceOf returns the slice type with element type t.

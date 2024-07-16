@@ -537,7 +537,8 @@ define void @"main.init#7"() {
 _llgo_0:
   %0 = load ptr, ptr @"map[_llgo_int]_llgo_string", align 8
   %1 = call ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr %0, i64 0)
-  call void @main.assert(i1 true)
+  %2 = icmp ne ptr %1, null
+  call void @main.assert(i1 %2)
   call void @main.assert(i1 true)
   ret void
 }

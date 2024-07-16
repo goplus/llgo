@@ -777,13 +777,10 @@ func (p *pp) printArg(arg any, verb rune) {
 func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
 	// Handle values with special methods if not already handled by printArg (depth == 0).
 	if depth > 0 && value.IsValid() && value.CanInterface() {
-		/* TODO(xsw):
 		p.arg = value.Interface()
 		if p.handleMethods(verb) {
 			return
 		}
-		*/
-		panic("todo: fmt.(*pp).printValue - handleMethods")
 	}
 	p.arg = nil
 	p.value = value

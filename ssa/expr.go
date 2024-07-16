@@ -501,6 +501,12 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkUnsigned, vkPtr:
 			pred := uintPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
+		case vkMap:
+			switch op {
+			case token.EQL, token.NEQ:
+				pred := uintPredOpToLLVM[op-predOpBase]
+				return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
+			}
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
@@ -552,7 +558,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			fallthrough
 		case vkFuncPtr, vkFuncDecl:
 			switch op {
-			case token.EQL:
+			case token.EQL: // TODO(xsw): check this code
 				return b.Prog.BoolVal(x.impl.IsNull() == y.impl.IsNull())
 			case token.NEQ:
 				return b.Prog.BoolVal(x.impl.IsNull() != y.impl.IsNull())
@@ -604,13 +610,6 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				return Expr{b.impl.CreateICmp(llvm.IntEQ, dx, dy, ""), tret}
 			case token.NEQ:
 				return Expr{b.impl.CreateICmp(llvm.IntNE, dx, dy, ""), tret}
-			}
-		case vkMap:
-			switch op {
-			case token.EQL:
-				return b.Prog.BoolVal(x.impl.IsNull() == y.impl.IsNull())
-			case token.NEQ:
-				return b.Prog.BoolVal(x.impl.IsNull() != y.impl.IsNull())
 			}
 		case vkIface, vkEface:
 			toEface := func(x Expr, emtpy bool) Expr {

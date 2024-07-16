@@ -157,7 +157,7 @@ func (t rtype) NumMethod() int {
 		}
 		return len(t.exportedMethods())
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.NumMethod")
 }
 
 func (t rtype) PkgPath() string {
@@ -171,7 +171,7 @@ func (t rtype) PkgPath() string {
 		}
 		return t.nameOff(ut.PkgPath).Name()
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.PkgPath")
 }
 
 func (t rtype) Name() string {
@@ -193,7 +193,7 @@ func (t rtype) Name() string {
 		}
 		return s[i+1:]
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.Name")
 }
 
 func toRType(t *abi.Type) rtype {
@@ -220,7 +220,7 @@ func (t rtype) In(i int) Type {
 		}
 		return toType(tt.InSlice()[i])
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.In")
 }
 
 func (t rtype) Key() Type {
@@ -255,7 +255,7 @@ func (t rtype) NumIn() int {
 		}
 		return int(tt.InCount)
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.NumIn")
 }
 
 func (t rtype) NumOut() int {
@@ -266,7 +266,7 @@ func (t rtype) NumOut() int {
 		}
 		return tt.NumOut()
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.NumOut")
 }
 
 func (t rtype) Out(i int) Type {
@@ -277,7 +277,7 @@ func (t rtype) Out(i int) Type {
 		}
 		return toType(tt.OutSlice()[i])
 	*/
-	panic("todo")
+	panic("todo: reflectlite.rtype.Out")
 }
 
 // add returns p+x.
@@ -408,7 +408,7 @@ func implements(T, V *abi.Type) bool {
 		}
 		return false
 	*/
-	panic("todo")
+	panic("todo: reflectlite.implements")
 }
 
 // directlyAssignable reports whether a value x of type V can be directly
@@ -544,7 +544,7 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 
 		return false
 	*/
-	panic("todo")
+	panic("todo: reflectlite.haveIdenticalUnderlyingType")
 }
 
 // toType converts from a *rtype to a Type that can be returned

@@ -98,7 +98,7 @@ func (v Value) pointer() unsafe.Pointer {
 		}
 		return v.ptr
 	*/
-	panic("todo")
+	panic("todo: reflectlite.Value.pointer")
 }
 
 // packEface converts v to the empty interface.
@@ -263,7 +263,7 @@ func (v Value) Elem() Value {
 		}
 		panic(&ValueError{"reflectlite.Value.Elem", v.kind()})
 	*/
-	panic("todo")
+	panic("todo: reflectlite.Value.Elem")
 }
 
 func valueInterface(v Value) any {
@@ -367,7 +367,7 @@ func (v Value) numMethod() int {
 		}
 		return v.typ.NumMethod()
 	*/
-	panic("todo")
+	panic("todo: reflectlite.Value.numMethod")
 }
 
 // Set assigns x to the value v.
@@ -455,7 +455,7 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 	// Failed.
 	// TODO(xsw):
 	// panic(context + ": value of type " + toRType(v.typ).String() + " is not assignable to type " + toRType(dst).String())
-	panic("todo")
+	panic("todo: reflectlite.Value.assignTo")
 }
 
 // arrayAt returns the i-th element of p,
