@@ -747,36 +747,36 @@ func (v Value) Interface() (i any) {
 }
 
 func valueInterface(v Value, safe bool) any {
-	/*
-		if v.flag == 0 {
-			panic(&ValueError{"reflect.Value.Interface", Invalid})
-		}
-		if safe && v.flag&flagRO != 0 {
-			// Do not allow access to unexported values via Interface,
-			// because they might be pointers that should not be
-			// writable or methods or function that should not be callable.
-			panic("reflect.Value.Interface: cannot return value obtained from unexported field or method")
-		}
-		if v.flag&flagMethod != 0 {
-			v = makeMethodValue("Interface", v)
-		}
+	if v.flag == 0 {
+		panic(&ValueError{"reflect.Value.Interface", Invalid})
+	}
+	if safe && v.flag&flagRO != 0 {
+		// Do not allow access to unexported values via Interface,
+		// because they might be pointers that should not be
+		// writable or methods or function that should not be callable.
+		panic("reflect.Value.Interface: cannot return value obtained from unexported field or method")
+	}
+	if v.flag&flagMethod != 0 {
+		v = makeMethodValue("Interface", v)
+	}
 
-		if v.kind() == Interface {
-			// Special case: return the element inside the interface.
-			// Empty interface has one layout, all interfaces with
-			// methods have a second layout.
-			if v.NumMethod() == 0 {
-				return *(*any)(v.ptr)
-			}
-			return *(*interface {
-				M()
-			})(v.ptr)
+	if v.kind() == Interface {
+		/* TODO(xsw):
+		// Special case: return the element inside the interface.
+		// Empty interface has one layout, all interfaces with
+		// methods have a second layout.
+		if v.NumMethod() == 0 {
+			return *(*any)(v.ptr)
 		}
+		return *(*interface {
+			M()
+		})(v.ptr)
+		*/
+		panic("todo: reflect.valueInterface")
+	}
 
-		// TODO: pass safe to packEface so we don't need to copy if safe==true?
-		return packEface(v)
-	*/
-	panic("todo: reflect.valueInterface")
+	// TODO: pass safe to packEface so we don't need to copy if safe==true?
+	return packEface(v)
 }
 
 // InterfaceData returns a pair of unspecified uintptr values.
