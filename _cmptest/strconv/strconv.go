@@ -1,7 +1,12 @@
 package main
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 func main() {
-	println(strconv.Itoa(-123))
+	fmt.Println(strconv.Itoa(-123))
+	fmt.Println(strings.Split("abc,def,123", ","))
 }
