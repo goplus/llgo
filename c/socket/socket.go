@@ -142,3 +142,14 @@ func SwapInt16(data uint16) uint16 {
 func Htons(x uint16) uint16 {
 	return SwapInt16(x)
 }
+
+// (TODO) merge to netdb
+//
+//go:linkname InetAddr C.inet_addr
+func InetAddr(s *c.Char) c.Uint
+
+//go:linkname Send C.send
+func Send(c.Int, c.Pointer, uintptr, c.Int) c.Long
+
+//go:linkname Recv C.recv
+func Recv(c.Int, c.Pointer, uintptr, c.Int) c.Long

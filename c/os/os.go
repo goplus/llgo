@@ -58,6 +58,10 @@ const (
 	O_TRUNC = 0x00000400
 )
 
+const (
+	EAGAIN = 35
+)
+
 type (
 	ModeT C.mode_t
 	UidT  C.uid_t
