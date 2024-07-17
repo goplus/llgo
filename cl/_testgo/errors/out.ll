@@ -99,7 +99,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 1)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 0, i64 1)
   store ptr %0, ptr @_llgo_main.errorString, align 8
   %1 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %1, i32 0, i32 0
@@ -270,7 +270,7 @@ _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 

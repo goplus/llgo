@@ -107,9 +107,9 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 }
 
 // NewNamed returns an uninitialized named type.
-func NewNamed(kind abi.Kind, methods, ptrMethods int) *Type {
-	ret := newUninitedNamed(kind, methods)
-	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, ptrMethods)
+func NewNamed(kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
+	ret := newUninitedNamed(kind, size, methods)
+	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, pointerSize, ptrMethods)
 	return ret
 }
 
@@ -138,9 +138,10 @@ func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMe
 	ptr.TFlag |= abi.TFlagExtraStar
 }
 
-func newUninitedNamed(kind abi.Kind, methods int) *Type {
-	size := hdrSizeOf(kind) + uncommonTypeHdrSize + uintptr(methods)*methodSize
-	ret := (*Type)(AllocU(size))
+func newUninitedNamed(kind abi.Kind, size uintptr, methods int) *Type {
+	allocSize := hdrSizeOf(kind) + uncommonTypeHdrSize + uintptr(methods)*methodSize
+	ret := (*Type)(AllocU(allocSize))
+	ret.Size_ = size
 	ret.Kind_ = uint8(kind)
 	ret.TFlag = abi.TFlagUninited
 	return ret
@@ -164,6 +165,7 @@ func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods 
 	ret.TFlag = tflag | abi.TFlagNamed | abi.TFlagUncommon
 	ret.Str_ = fullName
 	ret.Equal = underlying.Equal
+	ret.Size_ = underlying.Size_
 
 	n := len(methods)
 	xcount := uint16(0)

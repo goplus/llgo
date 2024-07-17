@@ -1552,7 +1552,7 @@ _llgo_21:                                         ; preds = %_llgo_20
   br label %_llgo_22
 
 _llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
-  %180 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 3, i64 3)
+  %180 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 3, i64 3)
   store ptr %180, ptr @_llgo_main.nopCloserWriterTo, align 8
   %181 = load ptr, ptr @"_llgo_func$06yPPin-fnDnxFKkLLcJ1GEUhIobjPimde7T_Id_hmY", align 8
   %182 = load ptr, ptr @"_llgo_struct$_3ow4zXXILqvC0WDqDRNq5DPhjE1DInJgN924VHWc2Y", align 8
@@ -1849,7 +1849,7 @@ _llgo_27:                                         ; preds = %_llgo_26
   br label %_llgo_28
 
 _llgo_28:                                         ; preds = %_llgo_27, %_llgo_26
-  %361 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 2, i64 2)
+  %361 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 2, i64 2)
   store ptr %361, ptr @_llgo_main.nopCloser, align 8
   %362 = load ptr, ptr @"_llgo_struct$_3ow4zXXILqvC0WDqDRNq5DPhjE1DInJgN924VHWc2Y", align 8
   %363 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -2075,7 +2075,7 @@ _llgo_33:                                         ; preds = %_llgo_32
   br label %_llgo_34
 
 _llgo_34:                                         ; preds = %_llgo_33, %_llgo_32
-  %496 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 10)
+  %496 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 32, i64 0, i64 10)
   store ptr %496, ptr @_llgo_main.stringReader, align 8
   %497 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %498 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %497, i32 0, i32 0
@@ -2643,7 +2643,7 @@ _llgo_51:                                         ; preds = %_llgo_50
   br label %_llgo_52
 
 _llgo_52:                                         ; preds = %_llgo_51, %_llgo_50
-  %830 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 1)
+  %830 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 0, i64 1)
   store ptr %830, ptr @_llgo_main.errorString, align 8
   %831 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %832 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %831, i32 0, i32 0
@@ -2790,7 +2790,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr, ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 

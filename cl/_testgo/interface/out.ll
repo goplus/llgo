@@ -255,7 +255,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 2, i64 2)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 8, i64 2, i64 2)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %2)
   store ptr %2, ptr @_llgo_main.Game1, align 8
   br label %_llgo_2
@@ -278,7 +278,7 @@ _llgo_3:                                          ; preds = %_llgo_2
   %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 1
   store i64 0, ptr %11, align 4
   %12 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %9, align 8
-  %13 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 2)
+  %13 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 0, i64 2)
   %14 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %13)
   %15 = call %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String" %8, ptr %14, i64 0, %"github.com/goplus/llgo/internal/runtime.String" %12, i1 true)
   %16 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -443,7 +443,7 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_6
   br i1 %103, label %_llgo_11, label %_llgo_12
 
 _llgo_11:                                         ; preds = %_llgo_10
-  %104 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 1)
+  %104 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 0, i64 1)
   store ptr %104, ptr @_llgo_main.Game2, align 8
   br label %_llgo_12
 
@@ -655,7 +655,7 @@ _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 

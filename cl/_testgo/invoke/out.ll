@@ -650,7 +650,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 1, i64 2)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 1, i64 2)
   store ptr %2, ptr @_llgo_main.T, align 8
   br label %_llgo_2
 
@@ -909,7 +909,7 @@ _llgo_14:                                         ; preds = %_llgo_13, %_llgo_12
   br i1 %143, label %_llgo_15, label %_llgo_16
 
 _llgo_15:                                         ; preds = %_llgo_14
-  %144 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 2, i64 1, i64 1)
+  %144 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 2, i64 8, i64 1, i64 1)
   store ptr %144, ptr @_llgo_main.T1, align 8
   br label %_llgo_16
 
@@ -999,7 +999,7 @@ _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
   br i1 %189, label %_llgo_21, label %_llgo_22
 
 _llgo_21:                                         ; preds = %_llgo_20
-  %190 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 14, i64 1, i64 1)
+  %190 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 14, i64 8, i64 1, i64 1)
   store ptr %190, ptr @_llgo_main.T2, align 8
   br label %_llgo_22
 
@@ -1099,7 +1099,7 @@ _llgo_28:                                         ; preds = %_llgo_27, %_llgo_26
   br i1 %238, label %_llgo_29, label %_llgo_30
 
 _llgo_29:                                         ; preds = %_llgo_28
-  %239 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 3, i64 0, i64 1)
+  %239 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 3, i64 1, i64 0, i64 1)
   store ptr %239, ptr @_llgo_main.T3, align 8
   br label %_llgo_30
 
@@ -1178,7 +1178,7 @@ _llgo_36:                                         ; preds = %_llgo_35, %_llgo_34
   br i1 %274, label %_llgo_37, label %_llgo_38
 
 _llgo_37:                                         ; preds = %_llgo_36
-  %275 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 1, i64 1)
+  %275 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 8, i64 1, i64 1)
   store ptr %275, ptr @_llgo_main.T4, align 8
   br label %_llgo_38
 
@@ -1280,7 +1280,7 @@ _llgo_44:                                         ; preds = %_llgo_43, %_llgo_42
   br i1 %325, label %_llgo_45, label %_llgo_46
 
 _llgo_45:                                         ; preds = %_llgo_44
-  %326 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 1, i64 1)
+  %326 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 8, i64 1, i64 1)
   store ptr %326, ptr @_llgo_main.T5, align 8
   br label %_llgo_46
 
@@ -1403,7 +1403,7 @@ _llgo_50:                                         ; preds = %_llgo_49, %_llgo_48
   br i1 %393, label %_llgo_51, label %_llgo_52
 
 _llgo_51:                                         ; preds = %_llgo_50
-  %394 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 1, i64 1)
+  %394 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 24, i64 1, i64 1)
   store ptr %394, ptr @_llgo_main.T6, align 8
   br label %_llgo_52
 
@@ -1723,7 +1723,7 @@ _llgo_66:                                         ; preds = %_llgo_65, %_llgo_64
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 
