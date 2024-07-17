@@ -1028,7 +1028,7 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   br i1 %160, label %_llgo_11, label %_llgo_12
 
 _llgo_11:                                         ; preds = %_llgo_10
-  %161 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 1, i64 1)
+  %161 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 1, i64 1)
   store ptr %161, ptr @_llgo_main.C1, align 8
   br label %_llgo_12
 
@@ -1138,7 +1138,7 @@ _llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
   br i1 %220, label %_llgo_17, label %_llgo_18
 
 _llgo_17:                                         ; preds = %_llgo_16
-  %221 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 2, i64 2)
+  %221 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 2, i64 2)
   store ptr %221, ptr @_llgo_main.C2, align 8
   br label %_llgo_18
 
@@ -1276,7 +1276,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr, ptr)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 

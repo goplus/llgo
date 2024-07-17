@@ -720,7 +720,7 @@ _llgo_38:                                         ; preds = %_llgo_37, %_llgo_36
   br i1 %117, label %_llgo_39, label %_llgo_40
 
 _llgo_39:                                         ; preds = %_llgo_38
-  %118 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 24, i64 0, i64 1)
+  %118 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 24, i64 16, i64 0, i64 1)
   store ptr %118, ptr @_llgo_main.T, align 8
   br label %_llgo_40
 
@@ -794,6 +794,6 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplu
 
 declare %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")

@@ -192,7 +192,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 1, i64 1)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 1, i64 1)
   store ptr %2, ptr @"_llgo_github.com/goplus/llgo/cl/internal/foo.Foo", align 8
   br label %_llgo_2
 
@@ -262,7 +262,7 @@ _llgo_3:                                          ; preds = %_llgo_2
   br i1 %43, label %_llgo_5, label %_llgo_6
 
 _llgo_4:                                          ; preds = %_llgo_10, %_llgo_2
-  %44 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 0)
+  %44 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 0, i64 0)
   store ptr %44, ptr @_llgo_main.bar, align 8
   %45 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %46 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %45, i32 0, i32 0
@@ -439,7 +439,7 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   br label %_llgo_4
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 

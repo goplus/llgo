@@ -1347,7 +1347,7 @@ _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
   br i1 %221, label %_llgo_9, label %_llgo_10
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %222 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 0, i64 0)
+  %222 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 8, i64 0, i64 0)
   store ptr %222, ptr @_llgo_main.N1, align 8
   br label %_llgo_10
 
@@ -1399,7 +1399,7 @@ _llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
   br i1 %241, label %_llgo_17, label %_llgo_18
 
 _llgo_17:                                         ; preds = %_llgo_16
-  %242 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 0, i64 0)
+  %242 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 2, i64 0, i64 0)
   store ptr %242, ptr @_llgo_main.K, align 8
   br label %_llgo_18
 
@@ -1409,7 +1409,7 @@ _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
   br i1 %244, label %_llgo_19, label %_llgo_20
 
 _llgo_19:                                         ; preds = %_llgo_18
-  %245 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 0, i64 0)
+  %245 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 2, i64 0, i64 0)
   store ptr %245, ptr @_llgo_main.N, align 8
   br label %_llgo_20
 
@@ -1519,7 +1519,7 @@ _llgo_26:                                         ; preds = %_llgo_25, %_llgo_24
   br i1 %302, label %_llgo_27, label %_llgo_28
 
 _llgo_27:                                         ; preds = %_llgo_26
-  %303 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 0, i64 0)
+  %303 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 8, i64 0, i64 0)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %303)
   store ptr %303, ptr @_llgo_main.K2, align 8
   br label %_llgo_28
@@ -1744,7 +1744,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/go
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64, i64, i64, i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
 
