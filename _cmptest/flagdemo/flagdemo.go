@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	fmt.Println("os.Args:", os.Args)
+	fmt.Println("args:", os.Args[1:])
 	if len(os.Args) == 1 {
 		os.Args = []string{"flagdemo", "-cpu", "100"}
 	}
