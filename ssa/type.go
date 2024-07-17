@@ -103,7 +103,7 @@ func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
 	ret = p.sizes.Offsetsof(fields)
 	for i, f := range fields {
 		ret[i] += extra
-		extra += extraSize(f.Type(), ptrSize)
+		extra += p.extraSize(f.Type(), ptrSize)
 	}
 	return
 }
@@ -114,26 +114,34 @@ func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
 func (p *goProgram) Sizeof(T types.Type) int64 {
 	prog := Program(p)
 	ptrSize := int64(prog.PointerSize())
-	baseSize := prog.sizes.Sizeof(T) + extraSize(T, ptrSize)
-	if _, ok := T.Underlying().(*types.Struct); ok {
+	baseSize := prog.sizes.Sizeof(T) + p.extraSize(T, ptrSize)
+	switch T.Underlying().(type) {
+	case *types.Struct, *types.Array:
 		return align(baseSize, prog.sizes.Alignof(T))
 	}
 	return baseSize
 }
 
-func extraSize(t types.Type, ptrSize int64) (ret int64) {
-	switch t := t.Underlying().(type) {
+func (p *goProgram) extraSize(typ types.Type, ptrSize int64) (ret int64) {
+retry:
+	switch t := typ.(type) {
+	case *types.Named:
+		if p.gocvt.typbg[t.String()] == InC {
+			return 0
+		}
+		typ = t.Underlying()
+		goto retry
 	case *types.Signature:
 		return ptrSize
 	case *types.Struct:
 		n := t.NumFields()
 		for i := 0; i < n; i++ {
 			f := t.Field(i)
-			ret += extraSize(f.Type(), ptrSize)
+			ret += p.extraSize(f.Type(), ptrSize)
 		}
 		return
 	case *types.Array:
-		return extraSize(t.Elem(), ptrSize) * t.Len()
+		return p.extraSize(t.Elem(), ptrSize) * t.Len()
 	}
 	return 0
 }

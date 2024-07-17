@@ -110,13 +110,23 @@ type Cached struct {
 }
 
 type aDeduper struct {
-	cache sync.Map
+	cache   sync.Map
+	setpath func(path string, name string) string
+	preload func(pkg *types.Package, syntax []*ast.File)
 }
 
 type Deduper = *aDeduper
 
 func NewDeduper() Deduper {
 	return &aDeduper{}
+}
+
+func (p Deduper) SetPreload(fn func(pkg *types.Package, syntax []*ast.File)) {
+	p.preload = fn
+}
+
+func (p Deduper) SetPkgPath(fn func(path, name string) string) {
+	p.setpath = fn
 }
 
 func (p Deduper) Check(pkgPath string) *Cached {
@@ -186,6 +196,9 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 				})
 			}
 		}()
+		if dedup.setpath != nil {
+			lpkg.PkgPath = dedup.setpath(lpkg.PkgPath, lpkg.Name)
+		}
 	}
 
 	// Call NewPackage directly with explicit name.
@@ -368,6 +381,10 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		log.Fatalf("internal error: package %q without types was imported from %q", path, lpkg)
 		panic("unreachable")
 	})
+
+	if dedup != nil && dedup.preload != nil {
+		dedup.preload(lpkg.Types, lpkg.Syntax)
+	}
 
 	// type-check
 	tc := &types.Config{
