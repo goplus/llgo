@@ -16,4 +16,4 @@ func main() {
 }
 
 //go:linkname runMain C.run_main
-func runMain() {}
+func runMain()

@@ -50,6 +50,9 @@ const (
 // generator
 type Gen struct{}
 
+// llgo:type C
+type Coro = func(argc c.Int, argv *c.Pointer)
+
 //go:linkname GenYield C.neco_gen_yield
 func GenYield(data c.Pointer) c.Int
 
@@ -57,7 +60,7 @@ func GenYield(data c.Pointer) c.Int
 func GenNext(gen *Gen, data c.Pointer) c.Int
 
 //go:linkname GenStart C.neco_gen_start
-func GenStart(gen **Gen, dataSize uintptr, co Coro, argc c.Int, __llgo_va_list /* argv */ ...any) c.Int
+func GenStart(gen **Gen, dataSize uintptr, co Coro, argc c.Int, __llgo_va_list ...any) c.Int
 
 //go:linkname GenRelease C.neco_gen_release
 func GenRelease(gen *Gen) c.Int
@@ -75,21 +78,4 @@ func EnvSetcanceltype(type_ c.Int)
 func Strerror(errcode c.Int) *c.Char
 
 //go:linkname Start C.neco_start
-func Start(co Coro, argc c.Int, __llgo_va_list /* argv */ ...any) c.Int
-
-// llgo:type C
-type Coro = func(argc c.Int, __llgo_va_list /* argv */ ...any)
-
-var mainfn func() c.Int
-
-func Main(fn func() c.Int) {
-	mainfn = fn
-
-	EnvSetpaniconerror(true)
-	EnvSetcanceltype(CANCEL_ASYNC)
-	ret := Start(func(argc c.Int, args ...any) {
-		ExitProg(mainfn())
-	}, 0)
-	c.Fprintf(c.Stderr, c.Str("llgo/c/neco.RunMain: Start: %s (code %d)\n"), Strerror(ret), ret)
-	c.Exit(1)
-}
+func Start(co Coro, argc c.Int, __llgo_va_list ...any) c.Int
