@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	LLGoFiles   = "_c/generators.c; ../../_neco/neco.c"
+	LLGoFiles   = "_c/gen.c; ../../_wrap/neco.c"
 	LLGoPackage = "link"
 )
 
 func main() {
-	run_main()
+	runMain()
 }
 
-//go:linkname run_main C.run_main
-func run_main() {}
+//go:linkname runMain C.run_main
+func runMain() {}

@@ -15,16 +15,16 @@ func main() {
 func run_main() {
 	// c.Printf(c.Str("run_main"))
 	// c.Fflush(c.Stdout)
-	neco.Neco_env_setpaniconerror(true)
-	neco.Neco_env_setcanceltype(neco.NECO_CANCEL_ASYNC)
-	ret := neco.Neco_start(main2, 0)
-	c.Fprintf(c.Stderr, c.Str("neco_start: %s (code %d)\n"), neco.Neco_strerror(int(ret)), ret)
+	neco.EnvSetpaniconerror(true)
+	neco.EnvSetcanceltype(neco.CANCEL_ASYNC)
+	ret := neco.Start(main2, 0)
+	c.Fprintf(c.Stderr, c.Str("neco_start: %s (code %d)\n"), neco.Strerror(ret), ret)
 }
 
 func main2(argc c.Int, argv ...any) {
 	// c.Printf(c.Str("main2"))
 	// c.Fflush(c.Stdout)
-	neco.Neco_exit_prog(main3())
+	neco.ExitProg(main3())
 }
 
 func main3() c.Int {
@@ -33,18 +33,18 @@ func main3() c.Int {
 	// c.Fflush(c.Stdout)
 
 	// Create a new generator coroutine that is used to send ints.
-	gen := new(neco.Neco_gen)
-	neco.Neco_gen_start(&gen, unsafe.Sizeof(int(0)), coroutine, 0)
+	gen := new(neco.Gen)
+	neco.GenStart(&gen, unsafe.Sizeof(int(0)), coroutine, 0)
 
 	// Iterate over each int until the generator is closed.
 	var i c.Int
 	for {
-		ret := neco.Neco_gen_next(gen, c.Pointer(&i))
+		ret := neco.GenNext(gen, c.Pointer(&i))
 
 		// c.Printf(c.Str("gen [%d, %d] "), ret, c.Int(neco.NECO_CLOSED))
 		// c.Fflush(c.Stdout)
 
-		if ret != c.Int(neco.NECO_CLOSED) {
+		if ret != c.Int(neco.CLOSED) {
 			c.Printf(c.Str("%d\n"), i)
 		} else {
 			break
@@ -52,7 +52,7 @@ func main3() c.Int {
 	}
 
 	// This coroutine no longer needs the generator.
-	neco.Neco_gen_release(gen)
+	neco.GenRelease(gen)
 
 	// c.Printf(c.Str("main3 end"))
 	// c.Fflush(c.Stdout)
@@ -63,7 +63,7 @@ func main3() c.Int {
 func coroutine(argc c.Int, argv ...any) {
 	// Yield each int to the caller, one at a time.
 	for i := 0; i < 10; i++ {
-		neco.Neco_gen_yield(c.Pointer(&i))
+		neco.GenYield(c.Pointer(&i))
 	}
 	// c.Printf(c.Str("coroutine end"))
 	// c.Fflush(c.Stdout)

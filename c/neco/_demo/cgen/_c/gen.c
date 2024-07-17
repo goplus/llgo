@@ -1,4 +1,4 @@
-#include "../../../_neco/neco.h"
+#include "../../../_wrap/neco.h"
 #include <stdio.h>
 #include <unistd.h>
 
