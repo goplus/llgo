@@ -54,7 +54,7 @@ type Change struct {
 
 // Change changes dependent shared library install name.
 func (p *Cmd) Change(target string, chgs ...Change) error {
-	args := make([]string, len(chgs)*3+1)
+	args := make([]string, 0, len(chgs)*3+1)
 	for _, chg := range chgs {
 		args = append(args, "-change", chg.Old, chg.New)
 	}
@@ -64,7 +64,7 @@ func (p *Cmd) Change(target string, chgs ...Change) error {
 
 // ChangeToRpath changes dependent shared library install name to @rpath.
 func (p *Cmd) ChangeToRpath(target string, dylibDeps ...string) error {
-	args := make([]string, len(dylibDeps)*3+1)
+	args := make([]string, 0, len(dylibDeps)*3+1)
 	for _, dep := range dylibDeps {
 		args = append(args, "-change", dep, "@rpath/"+filepath.Base(dep))
 	}
