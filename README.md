@@ -220,6 +220,7 @@ The currently supported libraries include:
 * [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
 * [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
 * [cpp/inih](https://pkg.go.dev/github.com/goplus/llgo/cpp/inih)
+* [cpp/llvm](https://pkg.go.dev/github.com/goplus/llgo/cpp/llvm)
 
 Here are some examples related to them:
 
