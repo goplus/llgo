@@ -2,32 +2,32 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/fddef"
 	"github.com/goplus/llgo/c/os"
-	_select "github.com/goplus/llgo/c/select"
+	"github.com/goplus/llgo/c/sys"
+	"github.com/goplus/llgo/c/syscall"
 	"unsafe"
 )
 
 func main() {
-	var readFds fddef.FdSet
+	var readFds syscall.FdSet
 
-	fddef.FdZero(&readFds)
+	sys.FD_ZERO(&readFds)
 
-	fddef.Fdset(0, &readFds)
+	sys.FD_SET(0, &readFds)
 
-	var tv _select.TimeVal
+	var tv sys.TimeVal
 	tv.TvSec = 5
 	tv.TvUSec = 0
 
 	c.Printf(c.Str("Waiting for input on stdin...\n"))
-	ret := _select.Select(1, &readFds, nil, nil, &tv)
+	ret := sys.Select(1, &readFds, nil, nil, &tv)
 	if ret == -1 {
 		c.Perror(c.Str("select error"))
 		c.Exit(1)
 	} else if ret == 0 {
 		c.Printf(c.Str("Timeout occurred! No data after 5 seconds.\n"))
 	} else {
-		if fddef.FdIsset(0, &readFds) != 0 {
+		if sys.FD_ISSET(0, &readFds) != 0 {
 			var buffer [100]c.Char
 			n := os.Read(0, c.Pointer(&buffer[:][0]), unsafe.Sizeof(buffer)-1)
 			if n == -1 {
