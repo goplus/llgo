@@ -267,7 +267,7 @@ Since the inih library does not have C++ style ordinary functions, we'll use an 
 Ordinary functions can be directly linked using the corresponding symbol in the dylib. Translate C++ symbols to readable form in the dylib directory.
 
 ```bash
-nm -gU $(brew --prefix inih)/lib/libINIReader.dylib -> output.txt
+nm -gU $(brew --prefix inih)/lib/libINIReader.dylib > output.txt
 c++filt <output.txt> symbol.txt
 
 ```
