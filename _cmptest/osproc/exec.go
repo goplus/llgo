@@ -26,4 +26,5 @@ func main() {
 		return
 	}
 	proc.Wait()
+	fmt.Println("proc.Wait done")
 }
