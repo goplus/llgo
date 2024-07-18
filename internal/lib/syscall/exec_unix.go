@@ -9,11 +9,14 @@
 package syscall
 
 import (
+	"errors"
+	"runtime"
 	"sync"
-	"syscall"
+	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 // ForkLock is used to synchronize creation of new file descriptors
@@ -106,13 +109,10 @@ type ProcAttr struct {
 	Sys   *SysProcAttr
 }
 
-/* TODO(xsw):
 var zeroProcAttr ProcAttr
 var zeroSysProcAttr SysProcAttr
-*/
 
 func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) {
-	/* TODO(xsw):
 	var p [2]int
 	var n int
 	var err1 Errno
@@ -127,45 +127,30 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 	}
 
 	// Convert args to C form.
-	argv0p, err := BytePtrFromString(argv0)
-	if err != nil {
-		return 0, err
-	}
-	argvp, err := SlicePtrFromStrings(argv)
-	if err != nil {
-		return 0, err
-	}
-	envvp, err := SlicePtrFromStrings(attr.Env)
-	if err != nil {
-		return 0, err
-	}
+	argv0p := c.AllocaCStr(argv0)
+	argvp := c.AllocaCStrs(argv, true)
+	envvp := c.AllocaCStrs(attr.Env, true)
 
 	if (runtime.GOOS == "freebsd" || runtime.GOOS == "dragonfly") && len(argv) > 0 && len(argv[0]) > len(argv0) {
-		argvp[0] = argv0p
+		*argvp = argv0p
 	}
 
-	var chroot *byte
+	var chroot *c.Char
 	if sys.Chroot != "" {
-		chroot, err = BytePtrFromString(sys.Chroot)
-		if err != nil {
-			return 0, err
-		}
+		chroot = c.AllocaCStr(sys.Chroot)
 	}
-	var dir *byte
+	var dir *c.Char
 	if attr.Dir != "" {
-		dir, err = BytePtrFromString(attr.Dir)
-		if err != nil {
-			return 0, err
-		}
+		dir = c.AllocaCStr(attr.Dir)
 	}
 
 	// Both Setctty and Foreground use the Ctty field,
 	// but they give it slightly different meanings.
 	if sys.Setctty && sys.Foreground {
-		return 0, errorspkg.New("both Setctty and Foreground set in SysProcAttr")
+		return 0, errors.New("both Setctty and Foreground set in SysProcAttr")
 	}
 	if sys.Setctty && sys.Ctty >= len(attr.Files) {
-		return 0, errorspkg.New("Setctty set but Ctty not valid in child")
+		return 0, errors.New("Setctty set but Ctty not valid in child")
 	}
 
 	acquireForkLock()
@@ -190,7 +175,7 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 	Close(p[1])
 	for {
 		n, err = readlen(p[0], (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
-		if err != EINTR {
+		if err != Errno(syscall.EINTR) {
 			break
 		}
 	}
@@ -200,13 +185,13 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 			err = Errno(err1)
 		}
 		if err == nil {
-			err = EPIPE
+			err = Errno(syscall.EPIPE)
 		}
 
 		// Child failed; wait for it to exit, to make sure
 		// the zombies don't accumulate.
 		_, err1 := Wait4(pid, &wstatus, 0, nil)
-		for err1 == EINTR {
+		for err1 == Errno(syscall.EINTR) {
 			_, err1 = Wait4(pid, &wstatus, 0, nil)
 		}
 		return 0, err
@@ -214,8 +199,6 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 
 	// Read got EOF, so pipe closed on exec, so exec succeeded.
 	return pid, nil
-	*/
-	panic("todo: syscall.forkExec")
 }
 
 // Combination of fork and exec, careful to be thread safe.
@@ -247,5 +230,5 @@ func Exec(argv0 string, argv []string, envv []string) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return syscall.Errno(ret)
+	return Errno(ret)
 }

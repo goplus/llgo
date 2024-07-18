@@ -73,24 +73,32 @@ func Getwd() (string, error) {
 	return "", Errno(os.Errno)
 }
 
-func Getenv(key string) (value string, found bool) {
-	ret := os.Getenv(c.AllocaCStr(key))
-	if ret != nil {
-		return c.GoString(ret), true
-	}
-	return "", false
-}
-
 func Getpid() (pid int) {
 	return int(os.Getpid())
 }
 
 func Kill(pid int, signum Signal) (err error) {
-	ret := os.Kill(c.Int(pid), c.Int(signum))
+	ret := os.Kill(os.PidT(pid), c.Int(signum))
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
+}
+
+func fork() (uintptr, Errno) {
+	ret := os.Fork()
+	if ret >= 0 {
+		return uintptr(ret), Errno(0)
+	}
+	return 0, Errno(os.Errno)
+}
+
+func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid int, err error) {
+	ret := os.Wait4(os.PidT(pid), wstatus, c.Int(options), rusage)
+	if ret >= 0 {
+		return int(ret), nil
+	}
+	return 0, Errno(os.Errno)
 }
 
 func Open(path string, mode int, perm uint32) (fd int, err error) {
@@ -117,12 +125,20 @@ func Read(fd int, p []byte) (n int, err error) {
 	return 0, Errno(os.Errno)
 }
 
+func readlen(fd int, buf *byte, nbuf int) (n int, err error) {
+	ret := os.Read(c.Int(fd), unsafe.Pointer(buf), uintptr(nbuf))
+	if ret >= 0 {
+		return ret, nil // TODO(xsw): confirm err == nil (not io.EOF) when ret == 0
+	}
+	return 0, Errno(os.Errno)
+}
+
 func Close(fd int) (err error) {
 	ret := os.Close(c.Int(fd))
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
 }
 
 type Stat_t = syscall.Stat_t
@@ -132,7 +148,7 @@ func Lstat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
 }
 
 func Stat(path string, stat *Stat_t) (err error) {
@@ -140,5 +156,37 @@ func Stat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
+}
+
+func Pipe(p []int) (err error) {
+	if len(p) != 2 {
+		return Errno(syscall.EINVAL)
+	}
+	var q [2]c.Int
+	ret := os.Pipe(&q)
+	if ret == 0 {
+		p[0] = int(q[0])
+		p[1] = int(q[1])
+		return nil
+	}
+	return Errno(ret)
+}
+
+type Rlimit syscall.Rlimit
+
+func Getrlimit(which int, lim *Rlimit) (err error) {
+	ret := os.Getrlimit(c.Int(which), (*syscall.Rlimit)(lim))
+	if ret == 0 {
+		return nil
+	}
+	return Errno(ret)
+}
+
+func setrlimit(which int, lim *Rlimit) (err error) {
+	ret := os.Setrlimit(c.Int(which), (*syscall.Rlimit)(lim))
+	if ret == 0 {
+		return nil
+	}
+	return Errno(ret)
 }

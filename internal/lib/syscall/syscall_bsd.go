@@ -12,6 +12,14 @@
 
 package syscall
 
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
+)
+
 func Getgroups() (gids []int, err error) {
 	/* TODO(xsw):
 	n, err := getgroups(0, nil)
@@ -106,9 +114,13 @@ func (w WaitStatus) Signal() Signal {
 
 func (w WaitStatus) CoreDump() bool { return w.Signaled() && w&core != 0 }
 
-func (w WaitStatus) Stopped() bool { return w&mask == stopped && Signal(w>>shift) != SIGSTOP }
+func (w WaitStatus) Stopped() bool {
+	return w&mask == stopped && Signal(w>>shift) != Signal(syscall.SIGSTOP)
+}
 
-func (w WaitStatus) Continued() bool { return w&mask == stopped && Signal(w>>shift) == SIGSTOP }
+func (w WaitStatus) Continued() bool {
+	return w&mask == stopped && Signal(w>>shift) == Signal(syscall.SIGSTOP)
+}
 
 func (w WaitStatus) StopSignal() Signal {
 	if !w.Stopped() {
@@ -119,9 +131,8 @@ func (w WaitStatus) StopSignal() Signal {
 
 func (w WaitStatus) TrapCause() int { return -1 }
 
-/* TODO(xsw):
-func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
-	var status _C_int
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
+	var status c.Int
 	wpid, err = wait4(pid, &status, options, rusage)
 	if wstatus != nil {
 		*wstatus = WaitStatus(status)
@@ -129,6 +140,7 @@ func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int,
 	return
 }
 
+/* TODO(xsw):
 func (sa *SockaddrInet4) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	if sa.Port < 0 || sa.Port > 0xFFFF {
 		return nil, 0, EINVAL
@@ -430,8 +442,10 @@ func Sysctl(name string) (value string, err error) {
 	}
 	return string(buf[0:n]), nil
 }
+*/
 
 func SysctlUint32(name string) (value uint32, err error) {
+	/* TODO(xsw):
 	// Translate name to mib number.
 	mib, err := nametomib(name)
 	if err != nil {
@@ -445,11 +459,19 @@ func SysctlUint32(name string) (value uint32, err error) {
 		return 0, err
 	}
 	if n != 4 {
-		return 0, EIO
+		return 0, Errno(syscall.EIO)
 	}
 	return *(*uint32)(unsafe.Pointer(&buf[0])), nil
+	*/
+	n := uintptr(4)
+	ret := os.Sysctlbyname(c.AllocaCStr(name), unsafe.Pointer(&value), &n, nil, 0)
+	if ret != 0 {
+		err = Errno(os.Errno)
+	}
+	return
 }
 
+/*
 //sys	utimes(path string, timeval *[2]Timeval) (err error)
 
 func Utimes(path string, tv []Timeval) (err error) {

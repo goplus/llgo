@@ -7,5 +7,6 @@
 package runtime
 
 func SetFinalizer(obj any, finalizer any) {
-	panic("todo: runtime.SetFinalizer")
+	// TODO(xsw):
+	// panic("todo: runtime.SetFinalizer")
 }

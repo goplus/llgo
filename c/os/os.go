@@ -263,20 +263,49 @@ func Execve(path *c.Char, argv **c.Char, envp **c.Char) c.Int
 //go:linkname Execvp C.execvp
 func Execvp(file *c.Char, argv **c.Char) c.Int
 
+// -----------------------------------------------------------------------------
+
+type PidT c.Int
+
 //go:linkname Fork C.fork
-func Fork() c.Int
+func Fork() PidT
+
+//go:linkname Getpid C.getpid
+func Getpid() PidT
+
+//go:linkname Getppid C.getppid
+func Getppid() PidT
 
 //go:linkname Kill C.kill
-func Kill(pid c.Int, sig c.Int) c.Int
+func Kill(pid PidT, sig c.Int) c.Int
+
+// If wait() returns due to a stopped or terminated child process, the process ID
+// of the child is returned to the calling process.  Otherwise, a value of -1 is
+// returned and errno is set to indicate the error.
+//
+//go:linkname Wait C.wait
+func Wait(statLoc *c.Int) PidT
+
+// If wait3(), wait4(), or waitpid() returns due to a stopped or terminated child
+// process, the process ID of the child is returned to the calling process.  If
+// there are no children not previously awaited, -1 is returned with errno set to
+// [ECHILD].  Otherwise, if WNOHANG is specified and there are no stopped or exited
+// children, 0 is returned.  If an error is detected or a caught signal aborts the
+// call, a value of -1 is returned and errno is set to indicate the error.
+//
+//go:linkname Wait3 C.wait3
+func Wait3(statLoc *c.Int, options c.Int, rusage *syscall.Rusage) PidT
+
+//go:linkname Wait4 C.wait4
+func Wait4(pid PidT, statLoc *c.Int, options c.Int, rusage *syscall.Rusage) PidT
+
+//go:linkname Waitpid C.waitpid
+func Waitpid(pid PidT, statLoc *c.Int, options c.Int) PidT
+
+// -----------------------------------------------------------------------------
 
 //go:linkname Exit C.exit
 func Exit(c.Int)
-
-//go:linkname Getpid C.getpid
-func Getpid() c.Int
-
-//go:linkname Getppid C.getppid
-func Getppid() c.Int
 
 //go:linkname Getuid C.getuid
 func Getuid() UidT
@@ -289,5 +318,45 @@ func Getgid() GidT
 
 //go:linkname Getegid C.getegid
 func Getegid() GidT
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Getrlimit C.getrlimit
+func Getrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
+
+//go:linkname Setrlimit C.setrlimit
+func Setrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
+
+// -----------------------------------------------------------------------------
+
+// Upon successful completion, the value 0 is returned; otherwise the value -1
+// is returned and the global variable errno is set to indicate the error.
+//
+//go:linkname Sysctl C.sysctl
+func Sysctl(
+	name *c.Int, namelen c.Uint,
+	oldp c.Pointer, oldlenp *uintptr,
+	newp c.Pointer, newlen uintptr) c.Int
+
+//go:linkname Sysctlbyname C.sysctlbyname
+func Sysctlbyname(
+	name *c.Char, oldp c.Pointer, oldlenp *uintptr,
+	newp c.Pointer, newlen uintptr) c.Int
+
+// The sysctlnametomib() function accepts an ASCII representation  of  the
+// name,  looks up the integer name	vector,	and returns the	numeric	repre-
+// sentation in the	mib array pointed to by	mibp.  The number of  elements
+// in the mib array	is given by the	location specified by sizep before the
+// call, and that location gives the number	of entries copied after	a suc-
+// cessful	call.	The  resulting	mib and	size may be used in subsequent
+// sysctl()	calls to get the data  associated  with	 the  requested	 ASCII
+// name.   This interface is intended for use by applications that want to
+// repeatedly request the same variable (the  sysctl()  function  runs  in
+// about  a	third the time as the same request made	via the	sysctlbyname()
+// function).  The sysctlnametomib() function is also useful for  fetching
+// mib  prefixes and then adding a final component.
+//
+//go:linkname Sysctlnametomib C.sysctlnametomib
+func Sysctlnametomib(name *c.Char, mibp *c.Int, sizep *uintptr) c.Int
 
 // -----------------------------------------------------------------------------

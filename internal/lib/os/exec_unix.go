@@ -14,7 +14,6 @@ import (
 )
 
 func (p *Process) wait() (ps *ProcessState, err error) {
-	/* TODO(xsw):
 	if p.Pid == -1 {
 		return nil, syscall.EINVAL
 	}
@@ -58,8 +57,6 @@ func (p *Process) wait() (ps *ProcessState, err error) {
 		rusage: &rusage,
 	}
 	return ps, nil
-	*/
-	panic("todo: os.Process.wait")
 }
 
 func (p *Process) signal(sig Signal) error {

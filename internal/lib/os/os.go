@@ -148,10 +148,6 @@ func Clearenv()
 // TODO(xsw):
 // func DirFS(dir string) fs.FS
 
-func Environ() []string {
-	panic("todo: os.Environ")
-}
-
 // func Executable() (string, error)
 
 // TODO(xsw):
@@ -160,10 +156,6 @@ func Environ() []string {
 
 func Getegid() int {
 	return int(os.Getegid())
-}
-
-func Getenv(key string) string {
-	return c.GoString(os.Getenv(c.AllocaCStr(key)))
 }
 
 func Geteuid() int {
@@ -330,14 +322,6 @@ func Rename(oldpath, newpath string) error {
 // TODO(xsw):
 // func SameFile(fi1, fi2 FileInfo) bool
 
-func Setenv(key, value string) error {
-	ret := os.Setenv(c.AllocaCStr(key), c.AllocaCStr(value), 1)
-	if ret == 0 {
-		return nil
-	}
-	return &SyscallError{"setenv", syscall.Errno(ret)}
-}
-
 func Symlink(oldname, newname string) error {
 	ret := os.Symlink(c.AllocaCStr(oldname), c.AllocaCStr(newname))
 	if ret == 0 {
@@ -355,14 +339,6 @@ func Truncate(name string, size int64) error {
 		return nil
 	}
 	return toPathErr("truncate", name, ret)
-}
-
-func Unsetenv(key string) error {
-	ret := os.Unsetenv(c.AllocaCStr(key))
-	if ret == 0 {
-		return nil
-	}
-	return syscall.Errno(ret)
 }
 
 // UserCacheDir returns the default root directory to use for user-specific
