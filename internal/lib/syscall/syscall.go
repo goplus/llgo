@@ -73,14 +73,6 @@ func Getwd() (string, error) {
 	return "", Errno(os.Errno)
 }
 
-func Getenv(key string) (value string, found bool) {
-	ret := os.Getenv(c.AllocaCStr(key))
-	if ret != nil {
-		return c.GoString(ret), true
-	}
-	return "", false
-}
-
 func Getpid() (pid int) {
 	return int(os.Getpid())
 }
