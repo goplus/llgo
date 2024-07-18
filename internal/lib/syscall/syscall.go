@@ -85,6 +85,14 @@ func Kill(pid int, signum Signal) (err error) {
 	return Errno(ret)
 }
 
+func fork() (uintptr, Errno) {
+	ret := os.Fork()
+	if ret >= 0 {
+		return uintptr(ret), Errno(0)
+	}
+	return 0, Errno(os.Errno)
+}
+
 func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid int, err error) {
 	ret := os.Wait4(os.PidT(pid), wstatus, c.Int(options), rusage)
 	if ret >= 0 {
@@ -160,6 +168,24 @@ func Pipe(p []int) (err error) {
 	if ret == 0 {
 		p[0] = int(q[0])
 		p[1] = int(q[1])
+		return nil
+	}
+	return Errno(ret)
+}
+
+type Rlimit syscall.Rlimit
+
+func Getrlimit(which int, lim *Rlimit) (err error) {
+	ret := os.Getrlimit(c.Int(which), (*syscall.Rlimit)(lim))
+	if ret == 0 {
+		return nil
+	}
+	return Errno(ret)
+}
+
+func setrlimit(which int, lim *Rlimit) (err error) {
+	ret := os.Setrlimit(c.Int(which), (*syscall.Rlimit)(lim))
+	if ret == 0 {
 		return nil
 	}
 	return Errno(ret)

@@ -320,3 +320,11 @@ func Getgid() GidT
 func Getegid() GidT
 
 // -----------------------------------------------------------------------------
+
+//go:linkname Getrlimit C.getrlimit
+func Getrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
+
+//go:linkname Setrlimit C.setrlimit
+func Setrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
+
+// -----------------------------------------------------------------------------

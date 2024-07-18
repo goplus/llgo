@@ -7,9 +7,6 @@
 package syscall
 
 import (
-	"runtime"
-	"unsafe"
-
 	"github.com/goplus/llgo/c"
 )
 
@@ -59,13 +56,13 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	// Declare all variables at top in case any
 	// declarations require heap allocation (e.g., err1).
 	var (
-		r1              uintptr
-		nextfd          int
-		i               int
-		err             error
-		pgrp            c.Int
-		cred            *Credential
-		ngroups, groups uintptr
+		r1     uintptr
+		nextfd int
+		i      int
+		// err             error
+		// pgrp            c.Int
+		cred *Credential
+		// ngroups, groups uintptr
 	)
 
 	rlim, rlimOK := origRlimitNofile.Load().(Rlimit)
@@ -85,47 +82,58 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 
 	// About to call fork.
 	// No more allocation or calls of non-assembly functions.
-	runtime_BeforeFork()
-	r1, _, err1 = rawSyscall(abi.FuncPCABI0(libc_fork_trampoline), 0, 0, 0)
+	// runtime_BeforeFork()
+	r1, err1 = fork()
 	if err1 != 0 {
-		runtime_AfterFork()
+		// runtime_AfterFork()
 		return 0, err1
 	}
 
 	if r1 != 0 {
 		// parent; return PID
-		runtime_AfterFork()
+		// runtime_AfterFork()
 		return int(r1), 0
 	}
 
 	// Fork succeeded, now in child.
 
+	// TODO(xsw): check this
 	// Enable tracing if requested.
 	if sys.Ptrace {
+		/* TODO(xsw):
 		if err = ptrace(PTRACE_TRACEME, 0, 0, 0); err != nil {
 			err1 = err.(Errno)
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Ptrace")
 	}
 
 	// Session ID
 	if sys.Setsid {
+		/* TODO(xsw):
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_setsid_trampoline), 0, 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Setsid")
 	}
 
 	// Set process group
 	if sys.Setpgid || sys.Foreground {
+		/* TODO(xsw):
 		// Place child in process group.
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_setpgid_trampoline), 0, uintptr(sys.Pgid), 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Setpgid")
 	}
 
 	if sys.Foreground {
+		/* TODO(xsw):
 		// This should really be pid_t, however _C_int (aka int32) is
 		// generally equivalent.
 		pgrp = _C_int(sys.Pgid)
@@ -142,22 +150,28 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Foreground")
 	}
 
 	// Restore the signal mask. We do this after TIOCSPGRP to avoid
 	// having the kernel send a SIGTTOU signal to the process group.
-	runtime_AfterForkInChild()
+	// runtime_AfterForkInChild()
 
 	// Chroot
 	if chroot != nil {
+		/* TODO(xsw):
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_chroot_trampoline), uintptr(unsafe.Pointer(chroot)), 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - chroot")
 	}
 
 	// User and groups
 	if cred = sys.Credential; cred != nil {
+		/* TODO(xsw):
 		ngroups = uintptr(len(cred.Groups))
 		groups = uintptr(0)
 		if ngroups > 0 {
@@ -177,19 +191,25 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Credential")
 	}
 
 	// Chdir
 	if dir != nil {
+		/* TODO(xsw):
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_chdir_trampoline), uintptr(unsafe.Pointer(dir)), 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - dir")
 	}
 
 	// Pass 1: look for fd[i] < i and move those up above len(fd)
 	// so that pass 2 won't stomp on an fd it needs later.
 	if pipe < nextfd {
+		/* TODO(xsw):
 		if runtime.GOOS == "openbsd" {
 			_, _, err1 = rawSyscall(dupTrampoline, uintptr(pipe), uintptr(nextfd), O_CLOEXEC)
 		} else {
@@ -204,9 +224,12 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		}
 		pipe = nextfd
 		nextfd++
+		*/
+		panic("todo: syscall.forkAndExecInChild - pipe < nextfd")
 	}
 	for i = 0; i < len(fd); i++ {
 		if fd[i] >= 0 && fd[i] < i {
+			/* TODO(xsw):
 			if nextfd == pipe { // don't stomp on pipe
 				nextfd++
 			}
@@ -224,16 +247,22 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			}
 			fd[i] = nextfd
 			nextfd++
+			*/
+			panic("todo: syscall.forkAndExecInChild - for fd")
 		}
 	}
 
 	// Pass 2: dup fd[i] down onto i.
 	for i = 0; i < len(fd); i++ {
 		if fd[i] == -1 {
+			/* TODO(xsw):
 			rawSyscall(abi.FuncPCABI0(libc_close_trampoline), uintptr(i), 0, 0)
 			continue
+			*/
+			panic("todo: syscall.forkAndExecInChild - fd[i] == -1")
 		}
 		if fd[i] == i {
+			/* TODO(xsw):
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
 			_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_fcntl_trampoline), uintptr(fd[i]), F_SETFD, 0)
@@ -241,13 +270,18 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 				goto childerror
 			}
 			continue
+			*/
+			panic("todo: syscall.forkAndExecInChild - fd[i] == i")
 		}
+		/* TODO(xsw):
 		// The new fd is created NOT close-on-exec,
 		// which is exactly what we want.
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_dup2_trampoline), uintptr(fd[i]), uintptr(i), 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - dup2")
 	}
 
 	// By convention, we don't close-on-exec the fds we are
@@ -255,40 +289,58 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	// Programs that know they inherit fds >= 3 will need
 	// to set them close-on-exec.
 	for i = len(fd); i < 3; i++ {
+		/* TODO(xsw):
 		rawSyscall(abi.FuncPCABI0(libc_close_trampoline), uintptr(i), 0, 0)
+		*/
+		panic("todo: syscall.forkAndExecInChild - for i")
 	}
 
 	// Detach fd 0 from tty
 	if sys.Noctty {
+		/* TODO(xsw):
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_ioctl_trampoline), 0, uintptr(TIOCNOTTY), 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Noctty")
 	}
 
 	// Set the controlling TTY to Ctty
 	if sys.Setctty {
+		/* TODO(xsw):
 		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_ioctl_trampoline), uintptr(sys.Ctty), uintptr(TIOCSCTTY), 0)
 		if err1 != 0 {
 			goto childerror
 		}
+		*/
+		panic("todo: syscall.forkAndExecInChild - sys.Setctty")
 	}
 
 	// Restore original rlimit.
 	if rlimOK && rlim.Cur != 0 {
+		/* TODO(xsw):
 		rawSyscall(abi.FuncPCABI0(libc_setrlimit_trampoline), uintptr(RLIMIT_NOFILE), uintptr(unsafe.Pointer(&rlim)), 0)
+		*/
+		panic("todo: syscall.forkAndExecInChild - rlimOK")
 	}
 
+	/* TODO(xsw):
 	// Time to exec.
 	_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_execve_trampoline),
 		uintptr(unsafe.Pointer(argv0)),
 		uintptr(unsafe.Pointer(&argv[0])),
 		uintptr(unsafe.Pointer(&envv[0])))
+	*/
+	panic("todo: syscall.forkAndExecInChild - execve")
 
-childerror:
+	//	childerror:
+	/* TODO(xsw):
 	// send error code on pipe
 	rawSyscall(abi.FuncPCABI0(libc_write_trampoline), uintptr(pipe), uintptr(unsafe.Pointer(&err1)), unsafe.Sizeof(err1))
 	for {
 		rawSyscall(abi.FuncPCABI0(libc_exit_trampoline), 253, 0, 0)
 	}
+	*/
+	// panic("todo: syscall.forkAndExecInChild - childerror")
 }

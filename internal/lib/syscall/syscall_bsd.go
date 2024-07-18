@@ -439,8 +439,10 @@ func Sysctl(name string) (value string, err error) {
 	}
 	return string(buf[0:n]), nil
 }
+*/
 
 func SysctlUint32(name string) (value uint32, err error) {
+	/* TODO(xsw):
 	// Translate name to mib number.
 	mib, err := nametomib(name)
 	if err != nil {
@@ -457,8 +459,11 @@ func SysctlUint32(name string) (value uint32, err error) {
 		return 0, EIO
 	}
 	return *(*uint32)(unsafe.Pointer(&buf[0])), nil
+	*/
+	panic("todo: syscall.SysctlUint32")
 }
 
+/*
 //sys	utimes(path string, timeval *[2]Timeval) (err error)
 
 func Utimes(path string, tv []Timeval) (err error) {
