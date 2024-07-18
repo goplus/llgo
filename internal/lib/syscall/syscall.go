@@ -137,7 +137,7 @@ func Stat(path string, stat *Stat_t) (err error) {
 
 func Pipe(p []int) (err error) {
 	if len(p) != 2 {
-		return EINVAL
+		return Errno(syscall.EINVAL)
 	}
 	var q [2]c.Int
 	ret := os.Pipe(&q)

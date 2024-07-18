@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/syscall"
 	"github.com/goplus/llgo/internal/lib/internal/oserror"
 )
 
@@ -29,11 +30,11 @@ func (e Errno) Error() string {
 func (e Errno) Is(target error) bool {
 	switch target {
 	case oserror.ErrPermission:
-		return e == EACCES || e == EPERM
+		return e == Errno(syscall.EACCES) || e == Errno(syscall.EPERM)
 	case oserror.ErrExist:
-		return e == EEXIST || e == ENOTEMPTY
+		return e == Errno(syscall.EEXIST) || e == Errno(syscall.ENOTEMPTY)
 	case oserror.ErrNotExist:
-		return e == ENOENT
+		return e == Errno(syscall.ENOENT)
 		// TODO(xsw): go1.21
 		// case errors.ErrUnsupported:
 		//	return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
@@ -42,11 +43,12 @@ func (e Errno) Is(target error) bool {
 }
 
 func (e Errno) Temporary() bool {
-	return e == EINTR || e == EMFILE || e == ENFILE || e.Timeout()
+	return e == Errno(syscall.EINTR) || e == Errno(syscall.EMFILE) ||
+		e == Errno(syscall.ENFILE) || e.Timeout()
 }
 
 func (e Errno) Timeout() bool {
-	return e == EAGAIN || e == EWOULDBLOCK || e == ETIMEDOUT
+	return e == Errno(syscall.EAGAIN) || e == Errno(syscall.EWOULDBLOCK) || e == Errno(syscall.ETIMEDOUT)
 }
 
 // A Signal is a number describing a process signal.

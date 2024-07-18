@@ -14,6 +14,7 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 var (
@@ -116,18 +117,18 @@ func Getenv(key string) (value string, found bool) {
 func Setenv(key, value string) error {
 	envOnce.Do(copyenv)
 	if len(key) == 0 {
-		return EINVAL
+		return Errno(syscall.EINVAL)
 	}
 	for i := 0; i < len(key); i++ {
 		if key[i] == '=' || key[i] == 0 {
-			return EINVAL
+			return Errno(syscall.EINVAL)
 		}
 	}
 	// On Plan 9, null is used as a separator, eg in $path.
 	if runtime.GOOS != "plan9" {
 		for i := 0; i < len(value); i++ {
 			if value[i] == 0 {
-				return EINVAL
+				return Errno(syscall.EINVAL)
 			}
 		}
 	}

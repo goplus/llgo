@@ -12,6 +12,10 @@
 
 package syscall
 
+import (
+	"github.com/goplus/llgo/c/syscall"
+)
+
 func Getgroups() (gids []int, err error) {
 	/* TODO(xsw):
 	n, err := getgroups(0, nil)
@@ -106,9 +110,13 @@ func (w WaitStatus) Signal() Signal {
 
 func (w WaitStatus) CoreDump() bool { return w.Signaled() && w&core != 0 }
 
-func (w WaitStatus) Stopped() bool { return w&mask == stopped && Signal(w>>shift) != SIGSTOP }
+func (w WaitStatus) Stopped() bool {
+	return w&mask == stopped && Signal(w>>shift) != Signal(syscall.SIGSTOP)
+}
 
-func (w WaitStatus) Continued() bool { return w&mask == stopped && Signal(w>>shift) == SIGSTOP }
+func (w WaitStatus) Continued() bool {
+	return w&mask == stopped && Signal(w>>shift) == Signal(syscall.SIGSTOP)
+}
 
 func (w WaitStatus) StopSignal() Signal {
 	if !w.Stopped() {
