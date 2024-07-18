@@ -13,7 +13,10 @@
 package syscall
 
 import (
+	"unsafe"
+
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/syscall"
 )
 
@@ -456,11 +459,16 @@ func SysctlUint32(name string) (value uint32, err error) {
 		return 0, err
 	}
 	if n != 4 {
-		return 0, EIO
+		return 0, Errno(syscall.EIO)
 	}
 	return *(*uint32)(unsafe.Pointer(&buf[0])), nil
 	*/
-	panic("todo: syscall.SysctlUint32")
+	n := uintptr(4)
+	ret := os.Sysctlbyname(c.AllocaCStr(name), unsafe.Pointer(&value), &n, nil, 0)
+	if ret != 0 {
+		err = Errno(os.Errno)
+	}
+	return
 }
 
 /*

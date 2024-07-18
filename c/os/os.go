@@ -328,3 +328,35 @@ func Getrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
 func Setrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
 
 // -----------------------------------------------------------------------------
+
+// Upon successful completion, the value 0 is returned; otherwise the value -1
+// is returned and the global variable errno is set to indicate the error.
+//
+//go:linkname Sysctl C.sysctl
+func Sysctl(
+	name *c.Int, namelen c.Uint,
+	oldp c.Pointer, oldlenp *uintptr,
+	newp c.Pointer, newlen uintptr) c.Int
+
+//go:linkname Sysctlbyname C.sysctlbyname
+func Sysctlbyname(
+	name *c.Char, oldp c.Pointer, oldlenp *uintptr,
+	newp c.Pointer, newlen uintptr) c.Int
+
+// The sysctlnametomib() function accepts an ASCII representation  of  the
+// name,  looks up the integer name	vector,	and returns the	numeric	repre-
+// sentation in the	mib array pointed to by	mibp.  The number of  elements
+// in the mib array	is given by the	location specified by sizep before the
+// call, and that location gives the number	of entries copied after	a suc-
+// cessful	call.	The  resulting	mib and	size may be used in subsequent
+// sysctl()	calls to get the data  associated  with	 the  requested	 ASCII
+// name.   This interface is intended for use by applications that want to
+// repeatedly request the same variable (the  sysctl()  function  runs  in
+// about  a	third the time as the same request made	via the	sysctlbyname()
+// function).  The sysctlnametomib() function is also useful for  fetching
+// mib  prefixes and then adding a final component.
+//
+//go:linkname Sysctlnametomib C.sysctlnametomib
+func Sysctlnametomib(name *c.Char, mibp *c.Int, sizep *uintptr) c.Int
+
+// -----------------------------------------------------------------------------
