@@ -1,39 +1,29 @@
-# LLGO Migration for C/C++ Third-Party Libraries
+# How to migrate a C/C++ Library
 
-# LLGO Migration for C Third-Party Libraries
+# Migrate a C Library
 
-## Installing Third-Party Libraries
+## Install a C Library
 
-### Using Package Manager to Download
+We recommend using a package manager (such as brew, apt-get, winget, etc.) to install a C library. For example:
 
 ```bash
 brew install inih
-```
-
-### Compiling from Source
-
-```bash
-# Compile dylib from source
-clang++ -dynamiclib x.cpp -o {users third-party libraries path}/lib/libbar.dylib -lfmt -std=c++11
-# Generate pc for the corresponding dylib
-# Install via `https://github.com/hackerchai/dylib-installer`
-
 ```
 
 ## Writing Go Files to Link Library Functions
 
 1. On macOS, use `nm -gU libbar.dylib` to parse C-style symbols
 
-   ```jsx
-   0000000000003e55 T _ini_parse
+```jsx
+0000000000003e55 T _ini_parse
+```
 
-   ```
 2. Find the function prototype you want to convert in the corresponding .h file
 
-   ```c
-   int ini_parse(const char* filename, ini_handler handler, void* user);
+```c
+int ini_parse(const char* filename, ini_handler handler, void* user);
+```
 
-   ```
 3. Create the corresponding Go file
 
    ```c
@@ -46,19 +36,18 @@ clang++ -dynamiclib x.cpp -o {users third-party libraries path}/lib/libbar.dylib
    ```
 4. In `inih.go`, use LLGoPackage to specify the location of the third-party library so that llgo can link to the third-party library. Both `pkg-config --libs inih` and `linih` are used to specify the location of the third-party library.
 
-   ```go
-   package inih
+```go
+package inih
 
-   import (
-   // Using go:linkname unsafe is necessary for the next step
-   	_ "unsafe"
-   )
+import (
+    _ "unsafe" // unsafe is necessary when using go:linkname
+)
 
-   const (
-   	LLGoPackage = "link: $(pkg-config --libs inih); -linih"
-   )
+const (
+    LLGoPackage = "link: $(pkg-config --libs inih); -linih"
+)
+```
 
-   ```
 5. Write the corresponding function in `inih.go`
 
    Note that the basic C function type mapping to Go function type can be found at [https://github.com/goplus/llgo/blob/main/doc/Type-Mapping-between-C-and-Go.md](https://github.com/goplus/llgo/blob/main/doc/Type-Mapping-between-C-and-Go.md). Some types requiring special handling are listed at the end of this document for reference.
@@ -66,12 +55,11 @@ clang++ -dynamiclib x.cpp -o {users third-party libraries path}/lib/libbar.dylib
    ```go
    //go:linkname Parse C.ini_parse
    func Parse(filename *c.Char, handler func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int, user c.Pointer) c.Int
-
    ```
+
 6. Write the function call in `inih_demo.go`
 
    ```go
-
    package main
 
    import (
