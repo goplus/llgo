@@ -61,9 +61,9 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		r1     uintptr
 		nextfd int
 		i      int
+		cred   *Credential
 		// err             error
 		// pgrp            c.Int
-		cred *Credential
 		// ngroups, groups uintptr
 	)
 
@@ -316,20 +316,17 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 
 	// Restore original rlimit.
 	if rlimOK && rlim.Cur != 0 {
-		/* TODO(xsw):
-		rawSyscall(abi.FuncPCABI0(libc_setrlimit_trampoline), uintptr(RLIMIT_NOFILE), uintptr(unsafe.Pointer(&rlim)), 0)
-		*/
-		panic("todo: syscall.forkAndExecInChild - rlimOK")
+		os.Setrlimit(syscall.RLIMIT_NOFILE, (*syscall.Rlimit)(&rlim))
 	}
 
-	/* TODO(xsw):
 	// Time to exec.
-	_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_execve_trampoline),
-		uintptr(unsafe.Pointer(argv0)),
-		uintptr(unsafe.Pointer(&argv[0])),
-		uintptr(unsafe.Pointer(&envv[0])))
+	os.Execve(argv0, argv, envv)
+	/* TODO(xsw):
+	ret := os.Execve(argv0, argv, envv)
+	if ret != 0 {
+		err1 = Errno(ret)
+	}
 	*/
-	panic("todo: syscall.forkAndExecInChild - execve")
 
 childerror:
 	/* TODO(xsw):
