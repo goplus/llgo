@@ -14,8 +14,7 @@ jobs:
   test:
     strategy:
       matrix:
-        # os: [macos-latest, ubuntu-latest]
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest]
         llvm: [18]
     runs-on: ${{ matrix.os }}
     steps:
