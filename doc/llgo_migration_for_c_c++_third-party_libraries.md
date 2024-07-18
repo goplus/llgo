@@ -96,8 +96,7 @@ clang++ -dynamiclib x.cpp -o {users third-party libraries path}/lib/libbar.dylib
 
    ```bash
    cd inih/_demo/inih_demo
-   llgo run inih_demo.go
-
+   llgo run .
    ```
 
 ## Handling Special Types
@@ -108,17 +107,6 @@ Use const to implement enum values
 
 ```go
 /*
-const (
-	BLEND_ALPHA             BlendMode = iota // Blend textures considering alpha (default)
-	BLEND_ADDITIVE                           // Blend textures adding colors
-	BLEND_MULTIPLIED                         // Blend textures multiplying colors
-	BLEND_ADD_COLORS                         // Blend textures adding colors (alternative)
-	BLEND_SUBTRACT_COLORS                    // Blend textures subtracting colors (alternative)
-	BLEND_ALPHA_PREMULTIPLY                  // Blend premultiplied textures considering alpha
-	BLEND_CUSTOM                             // Blend textures using custom src/dst factors (use rlSetBlendFactors())
-	BLEND_CUSTOM_SEPARATE                    // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
-)
-*/
 typedef enum {
     BLEND_ALPHA = 0,                // Blend textures considering alpha (default)
     BLEND_ADDITIVE,                 // Blend textures adding colors
@@ -129,7 +117,17 @@ typedef enum {
     BLEND_CUSTOM,                   // Blend textures using custom src/dst factors (use rlSetBlendFactors())
     BLEND_CUSTOM_SEPARATE           // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
 } BlendMode;
-
+*/
+const (
+	BLEND_ALPHA             BlendMode = iota // Blend textures considering alpha (default)
+	BLEND_ADDITIVE                           // Blend textures adding colors
+	BLEND_MULTIPLIED                         // Blend textures multiplying colors
+	BLEND_ADD_COLORS                         // Blend textures adding colors (alternative)
+	BLEND_SUBTRACT_COLORS                    // Blend textures subtracting colors (alternative)
+	BLEND_ALPHA_PREMULTIPLY                  // Blend premultiplied textures considering alpha
+	BLEND_CUSTOM                             // Blend textures using custom src/dst factors (use rlSetBlendFactors())
+	BLEND_CUSTOM_SEPARATE                    // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
+)
 ```
 
 ### Handling Structs in C
