@@ -13,6 +13,7 @@
 package syscall
 
 import (
+	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/syscall"
 )
 
@@ -127,9 +128,8 @@ func (w WaitStatus) StopSignal() Signal {
 
 func (w WaitStatus) TrapCause() int { return -1 }
 
-/* TODO(xsw):
-func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
-	var status _C_int
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
+	var status c.Int
 	wpid, err = wait4(pid, &status, options, rusage)
 	if wstatus != nil {
 		*wstatus = WaitStatus(status)
@@ -137,6 +137,7 @@ func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int,
 	return
 }
 
+/* TODO(xsw):
 func (sa *SockaddrInet4) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	if sa.Port < 0 || sa.Port > 0xFFFF {
 		return nil, 0, EINVAL

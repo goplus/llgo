@@ -12,11 +12,11 @@ import (
 	"errors"
 	"runtime"
 	"sync"
-	"syscall"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 // ForkLock is used to synchronize creation of new file descriptors
@@ -175,7 +175,7 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 	Close(p[1])
 	for {
 		n, err = readlen(p[0], (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
-		if err != EINTR {
+		if err != Errno(syscall.EINTR) {
 			break
 		}
 	}
@@ -185,13 +185,13 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 			err = Errno(err1)
 		}
 		if err == nil {
-			err = EPIPE
+			err = Errno(syscall.EPIPE)
 		}
 
 		// Child failed; wait for it to exit, to make sure
 		// the zombies don't accumulate.
 		_, err1 := Wait4(pid, &wstatus, 0, nil)
-		for err1 == EINTR {
+		for err1 == Errno(syscall.EINTR) {
 			_, err1 = Wait4(pid, &wstatus, 0, nil)
 		}
 		return 0, err
@@ -230,5 +230,5 @@ func Exec(argv0 string, argv []string, envv []string) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return syscall.Errno(ret)
+	return Errno(ret)
 }

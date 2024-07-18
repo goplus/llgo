@@ -263,20 +263,49 @@ func Execve(path *c.Char, argv **c.Char, envp **c.Char) c.Int
 //go:linkname Execvp C.execvp
 func Execvp(file *c.Char, argv **c.Char) c.Int
 
+// -----------------------------------------------------------------------------
+
+type PidT c.Int
+
 //go:linkname Fork C.fork
-func Fork() c.Int
+func Fork() PidT
+
+//go:linkname Getpid C.getpid
+func Getpid() PidT
+
+//go:linkname Getppid C.getppid
+func Getppid() PidT
 
 //go:linkname Kill C.kill
-func Kill(pid c.Int, sig c.Int) c.Int
+func Kill(pid PidT, sig c.Int) c.Int
+
+// If wait() returns due to a stopped or terminated child process, the process ID
+// of the child is returned to the calling process.  Otherwise, a value of -1 is
+// returned and errno is set to indicate the error.
+//
+//go:linkname Wait C.wait
+func Wait(statLoc *c.Int) PidT
+
+// If wait3(), wait4(), or waitpid() returns due to a stopped or terminated child
+// process, the process ID of the child is returned to the calling process.  If
+// there are no children not previously awaited, -1 is returned with errno set to
+// [ECHILD].  Otherwise, if WNOHANG is specified and there are no stopped or exited
+// children, 0 is returned.  If an error is detected or a caught signal aborts the
+// call, a value of -1 is returned and errno is set to indicate the error.
+//
+//go:linkname Wait3 C.wait3
+func Wait3(statLoc *c.Int, options c.Int, rusage *syscall.Rusage) PidT
+
+//go:linkname Wait4 C.wait4
+func Wait4(pid PidT, statLoc *c.Int, options c.Int, rusage *syscall.Rusage) PidT
+
+//go:linkname Waitpid C.waitpid
+func Waitpid(pid PidT, statLoc *c.Int, options c.Int) PidT
+
+// -----------------------------------------------------------------------------
 
 //go:linkname Exit C.exit
 func Exit(c.Int)
-
-//go:linkname Getpid C.getpid
-func Getpid() c.Int
-
-//go:linkname Getppid C.getppid
-func Getppid() c.Int
 
 //go:linkname Getuid C.getuid
 func Getuid() UidT

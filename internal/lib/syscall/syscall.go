@@ -78,11 +78,19 @@ func Getpid() (pid int) {
 }
 
 func Kill(pid int, signum Signal) (err error) {
-	ret := os.Kill(c.Int(pid), c.Int(signum))
+	ret := os.Kill(os.PidT(pid), c.Int(signum))
 	if ret == 0 {
 		return nil
 	}
 	return Errno(ret)
+}
+
+func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid int, err error) {
+	ret := os.Wait4(os.PidT(pid), wstatus, c.Int(options), rusage)
+	if ret >= 0 {
+		return int(ret), nil
+	}
+	return 0, Errno(os.Errno)
 }
 
 func Open(path string, mode int, perm uint32) (fd int, err error) {
@@ -103,6 +111,14 @@ func Seek(fd int, offset int64, whence int) (newoffset int64, err error) {
 
 func Read(fd int, p []byte) (n int, err error) {
 	ret := os.Read(c.Int(fd), unsafe.Pointer(unsafe.SliceData(p)), uintptr(len(p)))
+	if ret >= 0 {
+		return ret, nil // TODO(xsw): confirm err == nil (not io.EOF) when ret == 0
+	}
+	return 0, Errno(os.Errno)
+}
+
+func readlen(fd int, buf *byte, nbuf int) (n int, err error) {
+	ret := os.Read(c.Int(fd), unsafe.Pointer(buf), uintptr(nbuf))
 	if ret >= 0 {
 		return ret, nil // TODO(xsw): confirm err == nil (not io.EOF) when ret == 0
 	}
