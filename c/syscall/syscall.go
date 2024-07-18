@@ -19,3 +19,9 @@ package syscall
 const (
 	LLGoPackage = "decl"
 )
+
+type Errno = uintptr
+
+// A Signal is a number describing a process signal.
+// It implements the os.Signal interface.
+type Signal = int

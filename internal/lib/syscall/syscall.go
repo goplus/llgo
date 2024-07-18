@@ -82,7 +82,7 @@ func Kill(pid int, signum Signal) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
 }
 
 func Open(path string, mode int, perm uint32) (fd int, err error) {
@@ -114,7 +114,7 @@ func Close(fd int) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
 }
 
 type Stat_t = syscall.Stat_t
@@ -124,7 +124,7 @@ func Lstat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
 }
 
 func Stat(path string, stat *Stat_t) (err error) {
@@ -132,5 +132,19 @@ func Stat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(ret)
+}
+
+func Pipe(p []int) (err error) {
+	if len(p) != 2 {
+		return EINVAL
+	}
+	var q [2]c.Int
+	ret := os.Pipe(&q)
+	if ret == 0 {
+		p[0] = int(q[0])
+		p[1] = int(q[1])
+		return nil
+	}
+	return Errno(ret)
 }

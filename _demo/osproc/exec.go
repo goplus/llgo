@@ -8,8 +8,6 @@ import (
 )
 
 func main() {
-	fmt.Println("os.Environ:", os.Environ())
-
 	ls := "ls"
 	args := []string{ls, "-l"}
 	if runtime.GOOS == "windows" {
