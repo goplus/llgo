@@ -8,6 +8,8 @@ package syscall
 
 import (
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 type SysProcAttr struct {
@@ -255,23 +257,18 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	// Pass 2: dup fd[i] down onto i.
 	for i = 0; i < len(fd); i++ {
 		if fd[i] == -1 {
-			/* TODO(xsw):
-			rawSyscall(abi.FuncPCABI0(libc_close_trampoline), uintptr(i), 0, 0)
+			os.Close(c.Int(i))
 			continue
-			*/
-			panic("todo: syscall.forkAndExecInChild - fd[i] == -1")
 		}
 		if fd[i] == i {
-			/* TODO(xsw):
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
-			_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_fcntl_trampoline), uintptr(fd[i]), F_SETFD, 0)
-			if err1 != 0 {
+			ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0)
+			if ret != 0 {
+				err1 = Errno(ret)
 				goto childerror
 			}
 			continue
-			*/
-			panic("todo: syscall.forkAndExecInChild - fd[i] == i")
 		}
 		/* TODO(xsw):
 		// The new fd is created NOT close-on-exec,
@@ -334,7 +331,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	*/
 	panic("todo: syscall.forkAndExecInChild - execve")
 
-	//	childerror:
+childerror:
 	/* TODO(xsw):
 	// send error code on pipe
 	rawSyscall(abi.FuncPCABI0(libc_write_trampoline), uintptr(pipe), uintptr(unsafe.Pointer(&err1)), unsafe.Sizeof(err1))
@@ -342,5 +339,5 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		rawSyscall(abi.FuncPCABI0(libc_exit_trampoline), 253, 0, 0)
 	}
 	*/
-	// panic("todo: syscall.forkAndExecInChild - childerror")
+	panic("todo: syscall.forkAndExecInChild - childerror")
 }
