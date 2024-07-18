@@ -1,6 +1,6 @@
-# How to migrate a C/C++ Library
+# How to support a C/C++ Library
 
-# Migrate a C Library
+# Support a C Library
 
 ## Install a C Library
 
