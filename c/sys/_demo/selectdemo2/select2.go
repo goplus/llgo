@@ -1,12 +1,12 @@
 package main
 
 import (
+	"unsafe"
+
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/net"
 	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/sys"
-	"github.com/goplus/llgo/c/syscall"
-	"unsafe"
 )
 
 const (
@@ -41,14 +41,15 @@ func main() {
 		return
 	}
 
-	var writefds, readfds syscall.FdSet
-	var timeout sys.TimeVal
+	var writefds, readfds sys.FdSet
+	var timeout sys.Timeval
 
 	//  Monitor socket writes
 	sys.FD_ZERO(&writefds)
 	sys.FD_SET(sock, &writefds)
-	timeout.TvSec = 10
-	timeout.TvUSec = 0
+	timeout.Sec = 10
+	timeout.Usec = 0
+
 	// Use select to monitor the readiness of writes
 	if sys.Select(sock+1, nil, &writefds, nil, &timeout) > 0 {
 		if sys.FD_ISSET(sock, &writefds) != 0 {
