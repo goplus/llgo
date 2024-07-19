@@ -8,6 +8,9 @@ package os
 
 import (
 	"runtime"
+	"syscall"
+
+	"github.com/goplus/llgo/internal/lib/internal/syscall/unix"
 )
 
 // Fd returns the integer Unix file descriptor referencing the open file.
@@ -30,15 +33,6 @@ func (f *File) Fd() uintptr {
 	return f.fd
 }
 
-// NewFile returns a new File with the given file descriptor and
-// name. The returned value will be nil if fd is not a valid file
-// descriptor. On Unix systems, if the file descriptor is in
-// non-blocking mode, NewFile will attempt to return a pollable File
-// (one for which the SetDeadline methods work).
-//
-// After passing it to NewFile, fd may become invalid under the same
-// conditions described in the comments of the Fd method, and the same
-// constraints apply.
 func NewFile(fd uintptr, name string) *File {
 	return &File{fd: fd, name: name}
 }
@@ -113,6 +107,83 @@ const (
 	kindNoPoll
 )
 
+// newFile is like NewFile, but if called from OpenFile or Pipe
+// (as passed in the kind parameter) it tries to add the file to
+// the runtime poller.
+func newFile(fd int, name string, kind newFileKind) *File {
+	f := &File{
+		fd:          uintptr(fd),
+		name:        name,
+		stdoutOrErr: fd == 1 || fd == 2,
+	}
+
+	/* TODO(xsw):
+	pollable := kind == kindOpenFile || kind == kindPipe || kind == kindNonBlock
+
+	// If the caller passed a non-blocking filedes (kindNonBlock),
+	// we assume they know what they are doing so we allow it to be
+	// used with kqueue.
+	if kind == kindOpenFile {
+		switch runtime.GOOS {
+		case "darwin", "ios", "dragonfly", "freebsd", "netbsd", "openbsd":
+			var st syscall.Stat_t
+			err := ignoringEINTR(func() error {
+				return syscall.Fstat(fd, &st)
+			})
+			typ := st.Mode & syscall.S_IFMT
+			// Don't try to use kqueue with regular files on *BSDs.
+			// On FreeBSD a regular file is always
+			// reported as ready for writing.
+			// On Dragonfly, NetBSD and OpenBSD the fd is signaled
+			// only once as ready (both read and write).
+			// Issue 19093.
+			// Also don't add directories to the netpoller.
+			if err == nil && (typ == syscall.S_IFREG || typ == syscall.S_IFDIR) {
+				pollable = false
+			}
+
+			// In addition to the behavior described above for regular files,
+			// on Darwin, kqueue does not work properly with fifos:
+			// closing the last writer does not cause a kqueue event
+			// for any readers. See issue #24164.
+			if (runtime.GOOS == "darwin" || runtime.GOOS == "ios") && typ == syscall.S_IFIFO {
+				pollable = false
+			}
+		}
+	}
+
+	clearNonBlock := false
+	if pollable {
+		if kind == kindNonBlock {
+			// The descriptor is already in non-blocking mode.
+			// We only set f.nonblock if we put the file into
+			// non-blocking mode.
+		} else if err := syscall.SetNonblock(fd, true); err == nil {
+			f.nonblock = true
+			clearNonBlock = true
+		} else {
+			pollable = false
+		}
+	}
+
+	// An error here indicates a failure to register
+	// with the netpoll system. That can happen for
+	// a file descriptor that is not supported by
+	// epoll/kqueue; for example, disk files on
+	// Linux systems. We assume that any real error
+	// will show up in later I/O.
+	// We do restore the blocking behavior if it was set by us.
+	if pollErr := f.pfd.Init("file", pollable); pollErr != nil && clearNonBlock {
+		if err := syscall.SetNonblock(fd, false); err == nil {
+			f.nonblock = false
+		}
+	}
+
+	runtime.SetFinalizer(f.file, (*file).close)
+	*/
+	return f
+}
+
 // TODO(xsw):
 // func sigpipe() // implemented in package runtime
 
@@ -135,7 +206,48 @@ const DevNull = "/dev/null"
 // openFileNolog is the Unix implementation of OpenFile.
 // Changes here should be reflected in openFdAt, if relevant.
 func openFileNolog(name string, flag int, perm FileMode) (*File, error) {
-	panic("todo: os.openFileNolog")
+	setSticky := false
+	if !supportsCreateWithStickyBit && flag&O_CREATE != 0 && perm&ModeSticky != 0 {
+		if _, err := Stat(name); IsNotExist(err) {
+			setSticky = true
+		}
+	}
+
+	var r int
+	for {
+		var e error
+		r, e = syscall.Open(name, flag|syscall.O_CLOEXEC, syscallMode(perm))
+		if e == nil {
+			break
+		}
+
+		// We have to check EINTR here, per issues 11180 and 39237.
+		if e == syscall.EINTR {
+			continue
+		}
+
+		return nil, &PathError{Op: "open", Path: name, Err: e}
+	}
+
+	// open(2) itself won't handle the sticky bit on *BSD and Solaris
+	if setSticky {
+		setStickyBit(name)
+	}
+
+	// There's a race here with fork/exec, which we are
+	// content to live with. See ../syscall/exec_unix.go.
+	if !supportsCloseOnExec {
+		syscall.CloseOnExec(r)
+	}
+
+	kind := kindOpenFile
+	if unix.HasNonblockFlag(flag) {
+		kind = kindNonBlock
+		panic("todo: os.openFileNolog: unix.HasNonblockFlag")
+	}
+
+	f := newFile(r, name, kind)
+	return f, nil
 }
 
 func tempDir() string {

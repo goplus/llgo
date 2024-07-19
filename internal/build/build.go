@@ -753,6 +753,7 @@ var hasAltPkg = map[string]none{
 	"internal/oserror":         {},
 	"internal/reflectlite":     {},
 	"internal/syscall/execenv": {},
+	"internal/syscall/unix":    {},
 	"math":                     {},
 	"math/cmplx":               {},
 	"reflect":                  {},

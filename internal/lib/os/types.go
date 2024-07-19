@@ -19,10 +19,11 @@ func Getpagesize() int { return syscall.Getpagesize() }
 
 // File represents an open file descriptor.
 type File struct {
-	fd         uintptr
-	name       string
-	appendMode bool
-	nonblock   bool
+	fd          uintptr
+	name        string
+	appendMode  bool
+	nonblock    bool
+	stdoutOrErr bool
 }
 
 // write writes len(b) bytes to the File.
