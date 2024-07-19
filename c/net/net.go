@@ -109,17 +109,6 @@ type Hostent struct {
 	AddrList **c.Char // null-terminated array of addresses for the host
 }
 
-type AddrInfo struct {
-	AiFlags     c.Int
-	AiFamily    c.Int
-	AiSockType  c.Int
-	AiProtocol  c.Int
-	AiAddrLen   c.Uint
-	AiCanOnName *c.Char
-	AiAddr      *SockAddr
-	AiNext      *AddrInfo
-}
-
 //go:linkname Socket C.socket
 func Socket(domain c.Int, typ c.Int, protocol c.Int) c.Int
 
@@ -143,14 +132,6 @@ func GetHostByName(name *c.Char) *Hostent
 //go:linkname InetNtop C.inet_ntop
 func InetNtop(af c.Int, src c.Pointer, dst *c.Char, size c.Uint) *c.Char
 
-func SwapInt16(data uint16) uint16 {
-	return (data << 8) | (data >> 8)
-}
-
-func Htons(x uint16) uint16 {
-	return SwapInt16(x)
-}
-
 //go:linkname InetAddr C.inet_addr
 func InetAddr(s *c.Char) c.Uint
 
@@ -160,8 +141,33 @@ func Send(c.Int, c.Pointer, uintptr, c.Int) c.Long
 //go:linkname Recv C.recv
 func Recv(c.Int, c.Pointer, uintptr, c.Int) c.Long
 
+// -----------------------------------------------------------------------------
+
+type AddrInfo struct {
+	Flags     c.Int
+	Family    c.Int
+	SockType  c.Int
+	Protocol  c.Int
+	AddrLen   c.Uint
+	CanOnName *c.Char
+	Addr      *SockAddr
+	Next      *AddrInfo
+}
+
 //go:linkname Getaddrinfo C.getaddrinfo
 func Getaddrinfo(host *c.Char, port *c.Char, addrInfo *AddrInfo, result **AddrInfo) c.Int
 
 //go:linkname Freeaddrinfo C.freeaddrinfo
 func Freeaddrinfo(addrInfo *AddrInfo) c.Int
+
+// -----------------------------------------------------------------------------
+
+func swapInt16(data uint16) uint16 {
+	return (data << 8) | (data >> 8)
+}
+
+func Htons(x uint16) uint16 {
+	return swapInt16(x)
+}
+
+// -----------------------------------------------------------------------------
