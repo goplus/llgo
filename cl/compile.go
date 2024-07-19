@@ -26,6 +26,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/goplus/llgo/cl/blocks"
 	"github.com/goplus/llgo/internal/typepatch"
@@ -80,8 +81,30 @@ type pkgInfo struct {
 
 type none = struct{}
 
+type Context struct {
+	prog      llssa.Program
+	link      sync.Map // pkgPath.nameInPkg => linkname
+	skipLines sync.Map // pkgPath => skip lines
+	patches   Patches
+	kinds     map[string]int
+}
+
+func NewContext(prog llssa.Program) *Context {
+	return &Context{
+		prog: prog,
+		kinds: map[string]int{
+			"runtime/cgo": PkgDeclOnly,
+			"unsafe":      PkgDeclOnly,
+		},
+	}
+}
+
+func (p *Context) SetPatches(patches Patches) {
+	p.patches = patches
+}
+
 type context struct {
-	prog   llssa.Program
+	*Context
 	pkg    llssa.Package
 	fn     llssa.Function
 	fset   *token.FileSet
@@ -89,13 +112,11 @@ type context struct {
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	pyMod  string
-	link   map[string]string // pkgPath.nameInPkg => linkname
 	skips  map[string]none
 	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
-	patches  Patches
 	blkInfos []blocks.Info
 
 	inits []func()
@@ -775,16 +796,19 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	return NewPackageEx(prog, nil, pkg, files)
+	bctx := NewContext(prog)
+	bctx.ParsePkgSyntax(pkg.Pkg, files, false)
+	return NewPackageEx(bctx, pkg)
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+func NewPackageEx(bctx *Context, pkg *ssa.Package) (ret llssa.Package, err error) {
+	prog := bctx.prog
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
-	patch, hasPatch := patches[pkgPath]
+	patch, hasPatch := bctx.patches[pkgPath]
 	if hasPatch {
 		pkgTypes = patch.Types
 		pkg.Pkg = pkgTypes
@@ -796,14 +820,12 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	ret = prog.NewPackage(pkgName, pkgPath)
 
 	ctx := &context{
-		prog:    prog,
+		Context: bctx,
 		pkg:     ret,
 		fset:    pkgProg.Fset,
 		goProg:  pkgProg,
 		goTyps:  pkgTypes,
 		goPkg:   pkg,
-		patches: patches,
-		link:    make(map[string]string),
 		skips:   make(map[string]none),
 		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
@@ -811,11 +833,15 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		},
 	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files)
 	ret.SetPatch(ctx.patchType)
-	ret.SetResolveLinkname(ctx.resolveLinkname)
+	ret.SetResolveLinkname(bctx.resolveLinkname)
 
 	if hasPatch {
+		if v, ok := bctx.skipLines.Load(pkgPath); ok {
+			for _, line := range v.([]string) {
+				ctx.parseSkip(line)
+			}
+		}
 		skips := ctx.skips
 		typepatch.Merge(pkgTypes, oldTypes, skips, ctx.skipall)
 		ctx.skips = nil
@@ -892,7 +918,7 @@ func globalType(gbl *ssa.Global) types.Type {
 	return t
 }
 
-func (p *context) patchType(typ types.Type) types.Type {
+func (p *Context) patchType(typ types.Type) types.Type {
 	if t, ok := typ.(*types.Named); ok {
 		o := t.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
@@ -906,11 +932,11 @@ func (p *context) patchType(typ types.Type) types.Type {
 	return typ
 }
 
-func (p *context) resolveLinkname(name string) string {
-	if link, ok := p.link[name]; ok {
-		prefix, ltarget, _ := strings.Cut(link, ".")
+func (p *Context) resolveLinkname(name string) string {
+	if link, ok := p.link.Load(name); ok {
+		prefix, ltarget, _ := strings.Cut(link.(string), ".")
 		if prefix != "C" {
-			panic("resolveLinkname: invalid link: " + link)
+			panic("resolveLinkname: invalid link: " + link.(string))
 		}
 		return ltarget
 	}

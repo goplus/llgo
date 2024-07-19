@@ -143,12 +143,13 @@ func Do(args []string, conf *Config) {
 
 	prog := llssa.NewProgram(target)
 	sizes := prog.TypeSizes
+	bctx := cl.NewContext(prog)
 	dedup := packages.NewDeduper()
 	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
-		if canSkipToBuild(pkg.Path()) {
+		if canSkipToSyntax(pkg.Path()) {
 			return
 		}
-		cl.ParsePkgSyntax(prog, pkg, files)
+		bctx.ParsePkgSyntax(pkg, files, strings.HasPrefix(pkg.Path(), altPkgPathPrefix))
 	})
 
 	if patterns == nil {
@@ -187,11 +188,12 @@ func Do(args []string, conf *Config) {
 	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
+	bctx.SetPatches(patches)
 
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
+	ctx := &context{env, progSSA, prog, dedup, bctx, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	var llFiles []string
@@ -242,7 +244,7 @@ type context struct {
 	progSSA *ssa.Program
 	prog    llssa.Program
 	dedup   packages.Deduper
-	patches cl.Patches
+	bctx    *cl.Context
 	built   map[string]none
 	initial []*packages.Package
 	mode    Mode
@@ -477,17 +479,14 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		pkg.ExportFile = ""
 		return
 	}
-	var syntax = pkg.Syntax
-	if altPkg := aPkg.AltPkg; altPkg != nil {
-		syntax = append(syntax, altPkg.Syntax...)
-	}
+
 	showDetail := verbose && pkgExists(ctx.initial, pkg)
 	if showDetail {
 		llssa.SetDebug(llssa.DbgFlagAll)
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
-	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+	ret, err := cl.NewPackageEx(ctx.bctx, aPkg.SSA)
 	if showDetail {
 		llssa.SetDebug(0)
 		cl.SetDebug(0)
@@ -725,12 +724,28 @@ func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
 	return false
 }
 
+func canSkipToSyntax(pkgPath string) bool {
+	switch pkgPath {
+	case "runtime":
+		return true
+	case "runtime/cgo":
+		return true
+	case "unsafe":
+		return true
+	default:
+		return strings.HasPrefix(pkgPath, "internal/") ||
+			strings.HasPrefix(pkgPath, "runtime/internal/")
+	}
+}
+
 func canSkipToBuild(pkgPath string) bool {
 	if _, ok := hasAltPkg[pkgPath]; ok {
 		return false
 	}
 	switch pkgPath {
 	case "unsafe":
+		return true
+	case "runtime/cgo":
 		return true
 	default:
 		return strings.HasPrefix(pkgPath, "internal/") ||
