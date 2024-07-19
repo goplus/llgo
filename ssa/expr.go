@@ -501,12 +501,6 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		case vkUnsigned, vkPtr:
 			pred := uintPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
-		case vkMap:
-			switch op {
-			case token.EQL, token.NEQ:
-				pred := uintPredOpToLLVM[op-predOpBase]
-				return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
-			}
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
 			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
@@ -554,21 +548,18 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			}
 		case vkClosure:
 			x = b.Field(x, 0)
-			y = b.Field(y, 0)
-			fallthrough
-		case vkFuncPtr, vkFuncDecl:
-			switch op {
-			case token.EQL: // TODO(xsw): check this code
-				return b.Prog.BoolVal(x.impl.IsNull() == y.impl.IsNull())
-			case token.NEQ:
-				return b.Prog.BoolVal(x.impl.IsNull() != y.impl.IsNull())
+			if y.kind == vkClosure {
+				y = b.Field(y, 0)
 			}
-		case vkChan:
+			fallthrough
+		case vkFuncPtr, vkFuncDecl, vkChan, vkMap:
+			if y.kind == vkClosure {
+				y = b.Field(y, 0)
+			}
 			switch op {
-			case token.EQL:
-				return Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, y.impl), tret}
-			case token.NEQ:
-				return Expr{llvm.CreateICmp(b.impl, llvm.IntNE, x.impl, y.impl), tret}
+			case token.EQL, token.NEQ:
+				pred := uintPredOpToLLVM[op-predOpBase]
+				return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 			}
 		case vkArray:
 			typ := x.raw.Type.(*types.Array)
