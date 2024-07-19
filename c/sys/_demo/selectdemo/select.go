@@ -1,23 +1,21 @@
 package main
 
 import (
+	"unsafe"
+
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/sys"
-	"github.com/goplus/llgo/c/syscall"
-	"unsafe"
 )
 
 func main() {
-	var readFds syscall.FdSet
-
+	var readFds sys.FdSet
 	sys.FD_ZERO(&readFds)
-
 	sys.FD_SET(0, &readFds)
 
-	var tv sys.TimeVal
-	tv.TvSec = 5
-	tv.TvUSec = 0
+	var tv sys.Timeval
+	tv.Sec = 5
+	tv.Usec = 0
 
 	c.Printf(c.Str("Waiting for input on stdin...\n"))
 	ret := sys.Select(1, &readFds, nil, nil, &tv)
