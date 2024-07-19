@@ -91,8 +91,21 @@ type SockaddrIn struct {
 	Zero   [8]c.Char
 }
 
+type SockaddrIn6 struct {
+	Len      uint8
+	Family   uint8
+	Port     uint16
+	Flowinfo c.Uint
+	Addr     In6Addr
+	ScopeId  c.Uint
+}
+
 type InAddr struct {
 	Addr c.Uint
+}
+
+type In6Addr struct {
+	U6Addr [16]uint8
 }
 
 type SockAddr struct {
