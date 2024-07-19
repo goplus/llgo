@@ -32,8 +32,9 @@ LLGo is compatible with C and Python through the language's **Application Binary
 You can import a C/C++ standard library in LLGo!
 
 * [c](https://pkg.go.dev/github.com/goplus/llgo/c)
-* [c/os](https://pkg.go.dev/github.com/goplus/llgo/c/os)
 * [c/syscall](https://pkg.go.dev/github.com/goplus/llgo/c/syscall)
+* [c/sys](https://pkg.go.dev/github.com/goplus/llgo/c/sys)
+* [c/os](https://pkg.go.dev/github.com/goplus/llgo/c/os)
 * [c/math](https://pkg.go.dev/github.com/goplus/llgo/c/math)
 * [c/math/cmplx](https://pkg.go.dev/github.com/goplus/llgo/c/math/cmplx)
 * [c/math/rand](https://pkg.go.dev/github.com/goplus/llgo/c/math/rand)
@@ -41,7 +42,7 @@ You can import a C/C++ standard library in LLGo!
 * [c/pthread/sync](https://pkg.go.dev/github.com/goplus/llgo/c/pthread/sync)
 * [c/sync/atomic](https://pkg.go.dev/github.com/goplus/llgo/c/sync/atomic)
 * [c/time](https://pkg.go.dev/github.com/goplus/llgo/c/time)
-* [c/socket](https://pkg.go.dev/github.com/goplus/llgo/c/socket)
+* [c/net](https://pkg.go.dev/github.com/goplus/llgo/c/net)
 * [cpp/std](https://pkg.go.dev/github.com/goplus/llgo/cpp/std)
 
 Here is a simple example:
