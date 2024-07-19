@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package socket
+package net
 
 import (
 	_ "unsafe"
@@ -101,13 +101,23 @@ type SockAddr struct {
 	Data   [14]c.Char
 }
 
-// (TODO) merge to netdb
 type Hostent struct {
 	Name     *c.Char  // official name of host
 	Aliases  **c.Char // null-terminated array of alternate names for the host
 	AddrType c.Int    // host address type
 	Length   c.Int    // length of address
 	AddrList **c.Char // null-terminated array of addresses for the host
+}
+
+type AddrInfo struct {
+	AiFlags     c.Int
+	AiFamily    c.Int
+	AiSockType  c.Int
+	AiProtocol  c.Int
+	AiAddrLen   c.Uint
+	AiCanOnName *c.Char
+	AiAddr      *SockAddr
+	AiNext      *AddrInfo
 }
 
 //go:linkname Socket C.socket
@@ -125,8 +135,6 @@ func Listen(sockfd c.Int, backlog c.Int) c.Int
 //go:linkname Accept C.accept
 func Accept(sockfd c.Int, addr *SockaddrIn, addrlen *c.Uint) c.Int
 
-// (TODO) merge to netdb
-//
 //go:linkname GetHostByName C.gethostbyname
 func GetHostByName(name *c.Char) *Hostent
 
@@ -142,3 +150,18 @@ func SwapInt16(data uint16) uint16 {
 func Htons(x uint16) uint16 {
 	return SwapInt16(x)
 }
+
+//go:linkname InetAddr C.inet_addr
+func InetAddr(s *c.Char) c.Uint
+
+//go:linkname Send C.send
+func Send(c.Int, c.Pointer, uintptr, c.Int) c.Long
+
+//go:linkname Recv C.recv
+func Recv(c.Int, c.Pointer, uintptr, c.Int) c.Long
+
+//go:linkname Getaddrinfo C.getaddrinfo
+func Getaddrinfo(host *c.Char, port *c.Char, addrInfo *AddrInfo, result **AddrInfo) c.Int
+
+//go:linkname Freeaddrinfo C.freeaddrinfo
+func Freeaddrinfo(addrInfo *AddrInfo) c.Int
