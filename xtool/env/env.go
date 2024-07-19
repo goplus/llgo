@@ -17,11 +17,16 @@
 package env
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
-	"runtime"
 	"strings"
+)
+
+var (
+	reSubcmd = regexp.MustCompile(`\$\([^)]+\)`)
+	reFlag   = regexp.MustCompile(`[^ \t\n]+`)
 )
 
 func ExpandEnv(s string) string {
@@ -29,20 +34,32 @@ func ExpandEnv(s string) string {
 }
 
 func expandEnvWithCmd(s string) string {
-	re := regexp.MustCompile(`\$\(([^)]+)\)`)
-	expanded := re.ReplaceAllStringFunc(s, func(m string) string {
-		cmd := re.FindStringSubmatch(m)[1]
-		var out []byte
-		var err error
-		if runtime.GOOS == "windows" {
-			out, err = exec.Command("cmd", "/C", cmd).Output()
-		} else {
-			out, err = exec.Command("sh", "-c", cmd).Output()
-		}
-		if err != nil {
+	expanded := reSubcmd.ReplaceAllStringFunc(s, func(m string) string {
+		subcmd := strings.TrimSpace(s[2 : len(s)-1])
+
+		args := parseSubcmd(subcmd)
+
+		cmd := args[0]
+
+		if cmd != "pkg-config" && cmd != "llvm-config" {
+			fmt.Fprintf(os.Stderr, "expand cmd only support pkg-config and llvm-config: '%s'\n", subcmd)
 			return ""
 		}
-		return strings.TrimSpace(string(out))
+
+		var out []byte
+		var err error
+		out, err = exec.Command(cmd, args[1:]...).Output()
+
+		if err != nil {
+			// TODO(kindy): log in verbose mode
+			return ""
+		}
+
+		return string(out)
 	})
 	return os.Expand(expanded, os.Getenv)
+}
+
+func parseSubcmd(s string) []string {
+	return reFlag.FindAllString(s, -1)
 }
