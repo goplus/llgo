@@ -7,8 +7,8 @@ import (
 
 func main() {
 	var hints net.AddrInfo
-	hints.AiFamily = net.AF_UNSPEC
-	hints.AiSockType = net.SOCK_STREAM
+	hints.Family = net.AF_UNSPEC
+	hints.SockType = net.SOCK_STREAM
 
 	host := "httpbin.org"
 	port := "80"
