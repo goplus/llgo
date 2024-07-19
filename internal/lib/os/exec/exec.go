@@ -416,7 +416,6 @@ func (c *Cmd) argv() []string {
 }
 
 func (c *Cmd) childStdin() (*os.File, error) {
-	/* TODO(xsw):
 	if c.Stdin == nil {
 		f, err := os.Open(os.DevNull)
 		if err != nil {
@@ -448,8 +447,6 @@ func (c *Cmd) childStdin() (*os.File, error) {
 		return err
 	})
 	return pr, nil
-	*/
-	panic("todo: exec.Cmd.childStdin")
 }
 
 func (c *Cmd) childStdout() (*os.File, error) {
