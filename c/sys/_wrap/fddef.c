@@ -1,13 +1,13 @@
 #include <sys/types.h>
 
-int fd_isset(int n, fd_set *fd) {
+int llgo_FD_ISSET(int n, fd_set *fd) {
     return FD_ISSET(n, fd);
 }
 
-void fdSet(int n, fd_set *fd) {
+void llgo_FD_SET(int n, fd_set *fd) {
     FD_SET(n, fd);
 }
 
-void fd_zero(fd_set *fd) {
+void llgo_FD_ZERO(fd_set *fd) {
     FD_ZERO(fd);
 }

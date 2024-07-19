@@ -12,14 +12,23 @@ const (
 	LLGoPackage = "link"
 )
 
-//go:linkname FD_ZERO C.fd_zero
-func FD_ZERO(fdSet *syscall.FdSet)
+// -----------------------------------------------------------------------------
 
-//go:linkname FD_SET C.fdSet
-func FD_SET(fd c.Int, fdSet *syscall.FdSet)
+type (
+	FdSet   = syscall.FdSet
+	Timeval = syscall.Timeval
+)
 
-//go:linkname FD_ISSET C.fd_isset
-func FD_ISSET(fd c.Int, fdSet *syscall.FdSet) c.Int
+//go:linkname FD_ZERO C.llgo_FD_ZERO
+func FD_ZERO(fds *FdSet)
+
+//go:linkname FD_SET C.llgo_FD_SET
+func FD_SET(fd c.Int, fds *FdSet)
+
+//go:linkname FD_ISSET C.llgo_FD_ISSET
+func FD_ISSET(fd c.Int, fds *FdSet) c.Int
 
 //go:linkname Select C.select
-func Select(n c.Int, r *syscall.FdSet, w *syscall.FdSet, e *syscall.FdSet, timeout *syscall.Timeval) c.Int
+func Select(n c.Int, fdsRead, fdsWrite, fdsError *FdSet, timeout *Timeval) c.Int
+
+// -----------------------------------------------------------------------------
