@@ -96,7 +96,15 @@ _llgo_0:
   call void @main.assert(i1 true)
   call void @main.assert(i1 true)
   call void @main.assert(i1 true)
+  call void @main.assert(i1 true)
+  call void @main.assert(i1 true)
+  call void @main.assert(i1 true)
   %7 = extractvalue { ptr, ptr } %6, 0
+  %8 = icmp ne ptr %7, null
+  call void @main.assert(i1 %8)
+  %9 = extractvalue { ptr, ptr } %6, 0
+  %10 = icmp ne ptr null, %9
+  call void @main.assert(i1 %10)
   call void @main.assert(i1 true)
   call void @main.assert(i1 true)
   ret void

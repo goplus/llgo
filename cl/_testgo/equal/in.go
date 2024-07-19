@@ -10,10 +10,15 @@ func init() {
 	fn3 := func() { println(n) }
 	var fn4 func() int
 	assert(test != nil)
+	assert(nil != test)
 	assert(fn1 != nil)
+	assert(nil != fn1)
 	assert(fn2 != nil)
+	assert(nil != fn2)
 	assert(fn3 != nil)
+	assert(nil != fn3)
 	assert(fn4 == nil)
+	assert(nil == fn4)
 }
 
 // array
