@@ -48,7 +48,6 @@ func (f *File) pwrite(b []byte, off int64) (n int, err error) {
 	panic("todo: os.(*File).pwrite")
 }
 
-/*
 // syscallMode returns the syscall-specific mode bits from Go's portable mode bits.
 func syscallMode(i FileMode) (o uint32) {
 	o |= uint32(i.Perm())
@@ -65,6 +64,7 @@ func syscallMode(i FileMode) (o uint32) {
 	return
 }
 
+/* TODO(xsw):
 // See docs in file.go:Chmod.
 func chmod(name string, mode FileMode) error {
 	longName := fixLongPath(name)

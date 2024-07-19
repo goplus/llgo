@@ -208,7 +208,6 @@ func (f *File) WriteString(s string) (n int, err error) {
 	panic("todo: os.(*File).WriteString")
 }
 
-/*
 // setStickyBit adds ModeSticky to the permission bits of path, non atomic.
 func setStickyBit(name string) error {
 	fi, err := Stat(name)
@@ -217,7 +216,6 @@ func setStickyBit(name string) error {
 	}
 	return Chmod(name, fi.Mode()|ModeSticky)
 }
-*/
 
 // Open opens the named file for reading. If successful, methods on
 // the returned file can be used for reading; the associated file
