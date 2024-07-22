@@ -1,24 +1,24 @@
-# C++ 自动化工具架构文档
+# C++ Automation Tool Architecture Documentation
 
-## 总体思路
+## Overall Approach
 
-### 模块
+### Modules
 
-1. 解析模块
-2. 函数声明生成模块
-3. 代码生成模块
+1. Parsing Module
+2. Function Declaration Generation Module
+3. Code Generation Module
 
-### 流程
+### Process
 
-1. 解析模块通过读取 `config.json` 得到动态链接库和头文件以及包名，完成解析之后将生成的 `common_symbol_info.json` 地址写入到 `config.json` 中
-2. 函数声明生成模块读取 `config.json` 得到包名，头文件以及上一步生成的 `common_symbol_info.json` ，解析完成之后生成函数原型的 `func_prototype.json`
-3. 读取上一步的 `func_prototype.json` 储存为结构体，根据结构体使用 gogen 生成代码
+1. The Parsing Module reads `config.json` to obtain dynamic libraries, header files, and the package name. After parsing, it writes the generated `common_symbol_info.json` path into `config.json`.
+2. The Function Declaration Generation Module reads `config.json` to get the package name, header files, and the previously generated `common_symbol_info.json`. After parsing, it generates the function prototype `func_prototype.json`.
+3. Reads the previously generated `func_prototype.json`, stores it as a structure, and uses gogen to generate code based on the structure.
 
-## 解析模块
+## Parsing Module
 
-### 输入
+### Input
 
-通过读取 JSON 文件 `config.json` 得到头文件和动态链接库文件的路径
+Obtains the paths to header files and dynamic library files by reading the JSON file `config.json`.
 
 ```json
 {
@@ -36,9 +36,9 @@
 ./generate_symbol_table /path/to/config.json
 ```
 
-### 实现步骤
+### Implementation Steps
 
-1. 解析 dylib 并储存
+1. Parse dylib and store:
 
 ```go
 // common.go
@@ -52,7 +52,7 @@ type CPPSymbol struct {
 func ParseDylibSymbols(dylibPath string) ([]common.CPPSymbol, error)
 ```
 
-2. 解析头文件并储存
+2. Parse header files and store:
 
 ```go
 // common.go
@@ -76,7 +76,7 @@ type Parameter struct {
 func ParseHeaderFile(files []string) ([]common.ASTInformation, error)
 ```
 
-3. 根据前两步的数据做交集获取最终返回值
+3. Cross-reference data from the first two steps to get the final output
 
 ```go
 // common.go
@@ -91,14 +91,14 @@ type CommonSymbolInfo struct {
 func GetCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTInformation) []common.CommonSymbolInfo
 ```
 
-4. 生成 `common_symbol_info.json` 文件并将 JSON 文件的路径储存到 `config.json` 中
+4. Generate `common_symbol_info.json` file and store the JSON file path into `config.json`
 
 ```go
 // generator.go
 func GenerateJSON([]CommonSymbolInfo)
 ```
 
-5. `common_symbol_info.json` 文件示例
+5. Example `common_symbol_info.json` file
 
 ```json
 {
@@ -109,21 +109,21 @@ func GenerateJSON([]CommonSymbolInfo)
 }
 ```
 
-## 函数声明生成模块
+## Function Declaration Generation Module
 
-### 输入
+### Input
 
-无需输入，直接读取 `config.json` 文件
+No input required, directly reads the `config.json` file
 
-### 实现步骤
+### Implementation Steps
 
-1. 执行可执行文件
+1. Execute the executable
 
 ```bash
 ./generate_func_decl path/to/config.json
 ```
 
-2. 解析头文件
+2. Parse header files
 
 ```go
 // common.go
@@ -146,7 +146,7 @@ type Parameter struct {
 func ParseHeaderFile(filePath string) ([]common.AstInformation, error)
 ```
 
-3. 生成最终的 JSON 映射文件 `func_prototype.json`
+3. Generate the final JSON mapping file `func_prototype.json`
 
 ```go
  func GenerateJSONFile(info []common.AstInformation)
@@ -170,21 +170,21 @@ func ParseHeaderFile(filePath string) ([]common.AstInformation, error)
 }
 ```
 
-## 代码生成模块
+## Code Generation Module
 
-### 输入
+### Input
 
-无需输入，直接读 `func_prototype.json` 文件
+No input required, directly reads `func_prototype.json` file
 
-### 实现步骤
+### Implementation Steps
 
-1. 执行可执行程序
+1. Execute the executable
 
 ```bash
 ./generateCode path/to/yourfuncdecljson
 ```
 
-2. 解析 JSON 文件
+2. Parse JSON file
 
 ```go
 // common.go
@@ -200,7 +200,7 @@ type HeaderFileInfo struct {
 func ParseJSON(jsonFilePath string) ([]common.HeaderFileInfo, error)
 ```
 
-3. 根据解析出的结构体使用 gogen 生成代码
+3. Generate code using the parsed structure with gogen
 
 ```go
 // generator.go
@@ -211,9 +211,9 @@ func GenerateCode(info []common.HeaderFileInfo) {
 }
 ```
 
-### 输出
+### Output
 
-1. 目录结构
+1. Directory structure
 
 ```bash
 package_name/
@@ -225,9 +225,9 @@ package_name/
 └── c.go
 ```
 
-需要注意的是 `demo1.go` 文件需要由用户自行编写
+Note that `demo1.go` file needs to be written by the user
 
-2. `llgo_link.go` 负责连接配置
+2. `llgo_link.go` is responsible for linking configuration
 
 ```go
 package inih
@@ -237,7 +237,7 @@ const (
 )
 ```
 
-3. `a.go` 内容示例
+3. Example content for `a.go`
 
 ```go
 package inih
@@ -247,8 +247,10 @@ import (
 )
 //go:linkname Parse C.ini_parse
 func Parse(filename *c.Char, handler func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int, user c.Pointer) c.Int
+
 //go:linkname ParseFile C.ini_parse_file
 func ParseFile(file c.FilePtr, handler func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int, user c.Pointer) c.Int
+
 //go:linkname ParseString C.ini_parse_string
 func ParseString(str *c.Char, handler func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int, user c.Pointer) c.Int
 ```
