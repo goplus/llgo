@@ -23,30 +23,49 @@ async function name(param0, param1, /* …, */ paramN) {
 Example:
 
 ```typescript
-// async function
-function resolveAfter2Seconds(): Promise<string> {
+async function resolveAfter1Second(): Promise<string> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve("resolved");
-    }, 2000);
+      resolve("Resolved after 1 second");
+    }, 1000);
   });
 }
 
-// async function call
-async function asyncCall(): Promise<void> {
-  const result = await resolveAfter2Seconds();
-  console.log(result);
+async function asyncCall(): Promise<string> {
+  const result = await resolveAfter1Second();
+  return `AsyncCall: ${result}`;
 }
 
-// returns a promise directly
-function asyncCall2(): Promise<void> {
-  return resolveAfter2Seconds();
+async function asyncCall2(): Promise<string> {
+  const result = await resolveAfter1Second();
+  return `AsyncCall2: ${result}`;
 }
 
-// don't wait for the promise to resolve
-function asyncCall3() {
-  resolveAfter2Seconds();
+function asyncCall3(): void {
+  resolveAfter1Second().then((result) => {
+    console.log(`AsyncCall3: ${result}`);
+  });
 }
+
+async function main() {
+  console.log("Starting AsyncCall");
+  const result1 = await asyncCall();
+  console.log(result1);
+
+  console.log("Starting AsyncCall2");
+  const result2 = await asyncCall2();
+  console.log(result2);
+
+  console.log("Starting AsyncCall3");
+  asyncCall3();
+
+  // Wait for AsyncCall3 to complete
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  console.log("Main function completed");
+}
+
+main().catch(console.error);
 ```
 
 ### Python
@@ -65,25 +84,33 @@ Example:
 ```python
 import asyncio
 
-async def resolve_after_1_second():
+async def resolve_after_1_second() -> str:
     await asyncio.sleep(1)
-    print("resolved")
+    return "Resolved after 1 second"
 
-async def async_call():
-    await resolve_after_1_second()
+async def async_call() -> str:
+    result = await resolve_after_1_second()
+    return f"AsyncCall: {result}"
 
-def async_call2():
-    return resolve_after_1_second()
+async def async_call2() -> str:
+    result = await resolve_after_1_second()
+    return f"AsyncCall2: {result}"
 
-def async_call3():
-    asyncio.create_task(resolve_after_1_second())
+def async_call3() -> None:
+    asyncio.create_task(print_after_1_second())
+
+async def print_after_1_second() -> None:
+    result = await resolve_after_1_second()
+    print(f"AsyncCall3: {result}")
 
 async def main():
     print("Starting AsyncCall")
-    await async_call()
+    result1 = await async_call()
+    print(result1)
 
     print("Starting AsyncCall2")
-    await async_call2()
+    result2 = await async_call2()
+    print(result2)
 
     print("Starting AsyncCall3")
     async_call3()
@@ -93,9 +120,8 @@ async def main():
 
     print("Main function completed")
 
-# 运行主异步函数
-if __name__ == "__main__":
-    asyncio.run(main())
+# Run the main coroutine
+asyncio.run(main())
 ```
 
 ### Rust
@@ -113,42 +139,47 @@ async fn name(param0: Type) -> ReturnType {
 Example:
 
 ```rust
-use std::time::Duration;
-use tokio::time::sleep;
-use std::future::Future;
+use tokio::time::{sleep, Duration};
 
-async fn resolve_after_1_seconds() -> String {
+async fn resolve_after_1_second() -> String {
     sleep(Duration::from_secs(1)).await;
-    "resolved".to_string()
+    "Resolved after 1 second".to_string()
 }
 
-async fn async_call() {
-    let result = resolve_after_1_seconds().await;
-    println!("async_call: {}", result);
+async fn async_call() -> String {
+    let result = resolve_after_1_second().await;
+    format!("AsyncCall: {}", result)
 }
 
-fn async_call2() -> impl Future<Output = String> {
-    resolve_after_1_seconds()
+async fn async_call2() -> String {
+    let result = resolve_after_1_second().await;
+    format!("AsyncCall2: {}", result)
 }
 
 fn async_call3() {
     tokio::spawn(async {
-        let result = resolve_after_1_seconds().await;
-        println!("async_call3: {}", result);
+        let result = resolve_after_1_second().await;
+        println!("AsyncCall3: {}", result);
     });
 }
 
 #[tokio::main]
 async fn main() {
-    async_call().await;
+    println!("Starting AsyncCall");
+    let result1 = async_call().await;
+    println!("{}", result1);
 
-    let result = async_call2().await;
-    println!("async_call2: {}", result);
+    println!("Starting AsyncCall2");
+    let result2 = async_call2().await;
+    println!("{}", result2);
 
+    println!("Starting AsyncCall3");
     async_call3();
 
-    // wait for async_call3 to complete
-    sleep(Duration::from_secs(2)).await;
+    // Wait for AsyncCall3 to complete
+    sleep(Duration::from_secs(1)).await;
+
+    println!("Main function completed");
 }
 ```
 
@@ -171,42 +202,44 @@ Example:
 using System;
 using System.Threading.Tasks;
 
-public class Program
+class Program
 {
-    static async Task ResolveAfter1Second()
+    static async Task<string> ResolveAfter1Second()
     {
         await Task.Delay(1000);
-        Console.WriteLine("resolved");
+        return "Resolved after 1 second";
     }
 
-    static async Task AsyncCall()
+    static async Task<string> AsyncCall()
     {
-        await ResolveAfter1Second();
+        string result = await ResolveAfter1Second();
+        return $"AsyncCall: {result}";
     }
 
-    static Task AsyncCall2()
+    static async Task<string> AsyncCall2()
     {
-        return ResolveAfter1Second();
+        string result = await ResolveAfter1Second();
+        return $"AsyncCall2: {result}";
     }
 
     static void AsyncCall3()
     {
-        Task.Run(async () => await ResolveAfter1Second());
+        _ = Task.Run(async () =>
+        {
+            string result = await ResolveAfter1Second();
+            Console.WriteLine($"AsyncCall3: {result}");
+        });
     }
 
-    // 修改 Main 方法为 public
-    public static void Main(string[] args)
-    {
-        MainAsync().GetAwaiter().GetResult();
-    }
-
-    static async Task MainAsync()
+    static async Task Main()
     {
         Console.WriteLine("Starting AsyncCall");
-        await AsyncCall();
+        string result1 = await AsyncCall();
+        Console.WriteLine(result1);
 
         Console.WriteLine("Starting AsyncCall2");
-        await AsyncCall2();
+        string result2 = await AsyncCall2();
+        Console.WriteLine(result2);
 
         Console.WriteLine("Starting AsyncCall3");
         AsyncCall3();
@@ -235,73 +268,58 @@ TaskReturnType NameAsync(Type param0)
 Example:
 
 ```cpp
-#include <iostream>
+#include <cppcoro/task.hpp>
+#include <cppcoro/sync_wait.hpp>
+#include <cppcoro/when_all.hpp>
 #include <chrono>
+#include <iostream>
 #include <thread>
-#include <coroutine>
-#include <future>
 
-struct Task {
-    struct promise_type {
-        std::promise<void> p;
-        Task get_return_object() { return {p.get_future()}; }
-        std::suspend_never initial_suspend() { return {}; }
-        std::suspend_never final_suspend() noexcept { return {}; }
-        void return_void() { p.set_value(); }
-        void unhandled_exception() { p.set_exception(std::current_exception()); }
-    };
-
-    std::future<void> fut;
-    Task(std::future<void> f) : fut(std::move(f)) {}
-
-    bool await_ready() { return fut.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
-    void await_suspend(std::coroutine_handle<> h) {
-        std::thread([this, h] {
-            fut.wait();
-            h.resume();
-        }).detach();
-    }
-    void await_resume() { fut.get(); }
-};
-
-Task resolve_after_1_second() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cout << "resolved" << std::endl;
-    co_return;
+cppcoro::task<std::string> resolveAfter1Second() {
+    co_await std::chrono::seconds(1);
+    co_return "Resolved after 1 second";
 }
 
-Task async_call() {
-    co_await resolve_after_1_second();
+cppcoro::task<std::string> asyncCall() {
+    auto result = co_await resolveAfter1Second();
+    co_return "AsyncCall: " + result;
 }
 
-Task async_call2() {
-    co_return co_await resolve_after_1_second();
+cppcoro::task<std::string> asyncCall2() {
+    auto result = co_await resolveAfter1Second();
+    co_return "AsyncCall2: " + result;
 }
 
-void async_call3() {
-    std::thread([] {
-        resolve_after_1_second();
-    }).detach();
+cppcoro::task<void> asyncCall3() {
+    auto result = co_await resolveAfter1Second();
+    std::cout << "AsyncCall3: " << result << std::endl;
 }
 
-Task main_coroutine() {
+cppcoro::task<void> main() {
     std::cout << "Starting AsyncCall" << std::endl;
-    co_await async_call();
+    auto result1 = co_await asyncCall();
+    std::cout << result1 << std::endl;
 
     std::cout << "Starting AsyncCall2" << std::endl;
-    co_await async_call2();
+    auto result2 = co_await asyncCall2();
+    std::cout << result2 << std::endl;
 
     std::cout << "Starting AsyncCall3" << std::endl;
-    async_call3();
+    auto asyncCall3Task = asyncCall3();
 
     // Wait for AsyncCall3 to complete
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    co_await asyncCall3Task;
 
     std::cout << "Main function completed" << std::endl;
 }
 
 int main() {
-    main_coroutine().fut.wait();
+    try {
+        cppcoro::sync_wait(::main());
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
     return 0;
 }
 ```
