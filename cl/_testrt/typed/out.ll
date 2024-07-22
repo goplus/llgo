@@ -181,13 +181,13 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = load ptr, ptr @_llgo_main.T, align 8
-  %1 = icmp eq ptr %0, null
-  br i1 %1, label %_llgo_1, label %_llgo_2
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 24, i64 16, i64 0, i64 0)
+  %1 = load ptr, ptr @_llgo_main.T, align 8
+  %2 = icmp eq ptr %1, null
+  br i1 %2, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 24, i64 16, i64 0, i64 0)
-  store ptr %2, ptr @_llgo_main.T, align 8
+  store ptr %0, ptr @_llgo_main.T, align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -202,7 +202,7 @@ _llgo_3:                                          ; preds = %_llgo_2
 
 _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %6 = load ptr, ptr @_llgo_string, align 8
-  br i1 %1, label %_llgo_5, label %_llgo_6
+  br i1 %2, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
   %7 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -217,17 +217,17 @@ _llgo_5:                                          ; preds = %_llgo_4
   %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 1
   store i64 1, ptr %13, align 4
   %14 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %2, %"github.com/goplus/llgo/internal/runtime.String" %10, %"github.com/goplus/llgo/internal/runtime.String" %14, ptr %6, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %10, %"github.com/goplus/llgo/internal/runtime.String" %14, ptr %6, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %15 = load ptr, ptr @_llgo_main.A, align 8
-  %16 = icmp eq ptr %15, null
-  br i1 %16, label %_llgo_7, label %_llgo_8
+  %15 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 16, i64 0, i64 0)
+  %16 = load ptr, ptr @_llgo_main.A, align 8
+  %17 = icmp eq ptr %16, null
+  br i1 %17, label %_llgo_7, label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_6
-  %17 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 16, i64 0, i64 0)
-  store ptr %17, ptr @_llgo_main.A, align 8
+  store ptr %15, ptr @_llgo_main.A, align 8
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
@@ -254,7 +254,7 @@ _llgo_11:                                         ; preds = %_llgo_10
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
   %26 = load ptr, ptr @"[2]_llgo_int", align 8
-  br i1 %16, label %_llgo_13, label %_llgo_14
+  br i1 %17, label %_llgo_13, label %_llgo_14
 
 _llgo_13:                                         ; preds = %_llgo_12
   %27 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -269,7 +269,7 @@ _llgo_13:                                         ; preds = %_llgo_12
   %33 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %31, i32 0, i32 1
   store i64 1, ptr %33, align 4
   %34 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %31, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %17, %"github.com/goplus/llgo/internal/runtime.String" %30, %"github.com/goplus/llgo/internal/runtime.String" %34, ptr %26, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %15, %"github.com/goplus/llgo/internal/runtime.String" %30, %"github.com/goplus/llgo/internal/runtime.String" %34, ptr %26, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   br label %_llgo_14
 
 _llgo_14:                                         ; preds = %_llgo_13, %_llgo_12

@@ -645,13 +645,13 @@ _llgo_0:
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = load ptr, ptr @_llgo_main.T, align 8
-  %1 = icmp eq ptr %0, null
-  br i1 %1, label %_llgo_1, label %_llgo_2
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 1, i64 2)
+  %1 = load ptr, ptr @_llgo_main.T, align 8
+  %2 = icmp eq ptr %1, null
+  br i1 %2, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 16, i64 1, i64 2)
-  store ptr %2, ptr @_llgo_main.T, align 8
+  store ptr %0, ptr @_llgo_main.T, align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -689,7 +689,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   %24 = call ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String" %16, i64 16, %"github.com/goplus/llgo/internal/runtime.Slice" %23)
   store ptr %24, ptr @"main.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ", align 8
   %25 = load ptr, ptr @"main.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ", align 8
-  br i1 %1, label %_llgo_3, label %_llgo_4
+  br i1 %2, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
   %26 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -849,7 +849,7 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   %113 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %111, i32 0, i32 1
   store i64 1, ptr %113, align 4
   %114 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %111, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %2, %"github.com/goplus/llgo/internal/runtime.String" %110, %"github.com/goplus/llgo/internal/runtime.String" %114, ptr %25, %"github.com/goplus/llgo/internal/runtime.Slice" %98, %"github.com/goplus/llgo/internal/runtime.Slice" %106)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %110, %"github.com/goplus/llgo/internal/runtime.String" %114, ptr %25, %"github.com/goplus/llgo/internal/runtime.Slice" %98, %"github.com/goplus/llgo/internal/runtime.Slice" %106)
   br label %_llgo_4
 
 _llgo_11:                                         ; preds = %_llgo_4
@@ -898,24 +898,24 @@ _llgo_12:                                         ; preds = %_llgo_11, %_llgo_4
   br i1 %140, label %_llgo_13, label %_llgo_14
 
 _llgo_13:                                         ; preds = %_llgo_12
-  %141 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %2)
+  %141 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %0)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %141)
   store ptr %141, ptr @"*_llgo_main.T", align 8
   br label %_llgo_14
 
 _llgo_14:                                         ; preds = %_llgo_13, %_llgo_12
-  %142 = load ptr, ptr @_llgo_main.T1, align 8
-  %143 = icmp eq ptr %142, null
-  br i1 %143, label %_llgo_15, label %_llgo_16
+  %142 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 2, i64 8, i64 1, i64 1)
+  %143 = load ptr, ptr @_llgo_main.T1, align 8
+  %144 = icmp eq ptr %143, null
+  br i1 %144, label %_llgo_15, label %_llgo_16
 
 _llgo_15:                                         ; preds = %_llgo_14
-  %144 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 2, i64 8, i64 1, i64 1)
-  store ptr %144, ptr @_llgo_main.T1, align 8
+  store ptr %142, ptr @_llgo_main.T1, align 8
   br label %_llgo_16
 
 _llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
   %145 = load ptr, ptr @_llgo_int, align 8
-  br i1 %143, label %_llgo_17, label %_llgo_18
+  br i1 %144, label %_llgo_17, label %_llgo_18
 
 _llgo_17:                                         ; preds = %_llgo_16
   %146 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -979,7 +979,7 @@ _llgo_17:                                         ; preds = %_llgo_16
   %183 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %181, i32 0, i32 1
   store i64 2, ptr %183, align 4
   %184 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %181, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %144, %"github.com/goplus/llgo/internal/runtime.String" %180, %"github.com/goplus/llgo/internal/runtime.String" %184, ptr %145, %"github.com/goplus/llgo/internal/runtime.Slice" %169, %"github.com/goplus/llgo/internal/runtime.Slice" %176)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %142, %"github.com/goplus/llgo/internal/runtime.String" %180, %"github.com/goplus/llgo/internal/runtime.String" %184, ptr %145, %"github.com/goplus/llgo/internal/runtime.Slice" %169, %"github.com/goplus/llgo/internal/runtime.Slice" %176)
   br label %_llgo_18
 
 _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
@@ -988,19 +988,19 @@ _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
   br i1 %186, label %_llgo_19, label %_llgo_20
 
 _llgo_19:                                         ; preds = %_llgo_18
-  %187 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %144)
+  %187 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %142)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %187)
   store ptr %187, ptr @"*_llgo_main.T1", align 8
   br label %_llgo_20
 
 _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
-  %188 = load ptr, ptr @_llgo_main.T2, align 8
-  %189 = icmp eq ptr %188, null
-  br i1 %189, label %_llgo_21, label %_llgo_22
+  %188 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 14, i64 8, i64 1, i64 1)
+  %189 = load ptr, ptr @_llgo_main.T2, align 8
+  %190 = icmp eq ptr %189, null
+  br i1 %190, label %_llgo_21, label %_llgo_22
 
 _llgo_21:                                         ; preds = %_llgo_20
-  %190 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 14, i64 8, i64 1, i64 1)
-  store ptr %190, ptr @_llgo_main.T2, align 8
+  store ptr %188, ptr @_llgo_main.T2, align 8
   br label %_llgo_22
 
 _llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
@@ -1015,7 +1015,7 @@ _llgo_23:                                         ; preds = %_llgo_22
 
 _llgo_24:                                         ; preds = %_llgo_23, %_llgo_22
   %194 = load ptr, ptr @_llgo_float64, align 8
-  br i1 %189, label %_llgo_25, label %_llgo_26
+  br i1 %190, label %_llgo_25, label %_llgo_26
 
 _llgo_25:                                         ; preds = %_llgo_24
   %195 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -1079,7 +1079,7 @@ _llgo_25:                                         ; preds = %_llgo_24
   %232 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %230, i32 0, i32 1
   store i64 2, ptr %232, align 4
   %233 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %230, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %190, %"github.com/goplus/llgo/internal/runtime.String" %229, %"github.com/goplus/llgo/internal/runtime.String" %233, ptr %194, %"github.com/goplus/llgo/internal/runtime.Slice" %218, %"github.com/goplus/llgo/internal/runtime.Slice" %225)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %188, %"github.com/goplus/llgo/internal/runtime.String" %229, %"github.com/goplus/llgo/internal/runtime.String" %233, ptr %194, %"github.com/goplus/llgo/internal/runtime.Slice" %218, %"github.com/goplus/llgo/internal/runtime.Slice" %225)
   br label %_llgo_26
 
 _llgo_26:                                         ; preds = %_llgo_25, %_llgo_24
@@ -1088,19 +1088,19 @@ _llgo_26:                                         ; preds = %_llgo_25, %_llgo_24
   br i1 %235, label %_llgo_27, label %_llgo_28
 
 _llgo_27:                                         ; preds = %_llgo_26
-  %236 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %190)
+  %236 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %188)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %236)
   store ptr %236, ptr @"*_llgo_main.T2", align 8
   br label %_llgo_28
 
 _llgo_28:                                         ; preds = %_llgo_27, %_llgo_26
-  %237 = load ptr, ptr @_llgo_main.T3, align 8
-  %238 = icmp eq ptr %237, null
-  br i1 %238, label %_llgo_29, label %_llgo_30
+  %237 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 3, i64 1, i64 0, i64 1)
+  %238 = load ptr, ptr @_llgo_main.T3, align 8
+  %239 = icmp eq ptr %238, null
+  br i1 %239, label %_llgo_29, label %_llgo_30
 
 _llgo_29:                                         ; preds = %_llgo_28
-  %239 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 3, i64 1, i64 0, i64 1)
-  store ptr %239, ptr @_llgo_main.T3, align 8
+  store ptr %237, ptr @_llgo_main.T3, align 8
   br label %_llgo_30
 
 _llgo_30:                                         ; preds = %_llgo_29, %_llgo_28
@@ -1115,7 +1115,7 @@ _llgo_31:                                         ; preds = %_llgo_30
 
 _llgo_32:                                         ; preds = %_llgo_31, %_llgo_30
   %243 = load ptr, ptr @_llgo_int8, align 8
-  br i1 %238, label %_llgo_33, label %_llgo_34
+  br i1 %239, label %_llgo_33, label %_llgo_34
 
 _llgo_33:                                         ; preds = %_llgo_32
   %244 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -1158,7 +1158,7 @@ _llgo_33:                                         ; preds = %_llgo_32
   %268 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %266, i32 0, i32 1
   store i64 2, ptr %268, align 4
   %269 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %266, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %239, %"github.com/goplus/llgo/internal/runtime.String" %265, %"github.com/goplus/llgo/internal/runtime.String" %269, ptr %243, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %261)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %237, %"github.com/goplus/llgo/internal/runtime.String" %265, %"github.com/goplus/llgo/internal/runtime.String" %269, ptr %243, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %261)
   br label %_llgo_34
 
 _llgo_34:                                         ; preds = %_llgo_33, %_llgo_32
@@ -1167,19 +1167,19 @@ _llgo_34:                                         ; preds = %_llgo_33, %_llgo_32
   br i1 %271, label %_llgo_35, label %_llgo_36
 
 _llgo_35:                                         ; preds = %_llgo_34
-  %272 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %239)
+  %272 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %237)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %272)
   store ptr %272, ptr @"*_llgo_main.T3", align 8
   br label %_llgo_36
 
 _llgo_36:                                         ; preds = %_llgo_35, %_llgo_34
-  %273 = load ptr, ptr @_llgo_main.T4, align 8
-  %274 = icmp eq ptr %273, null
-  br i1 %274, label %_llgo_37, label %_llgo_38
+  %273 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 8, i64 1, i64 1)
+  %274 = load ptr, ptr @_llgo_main.T4, align 8
+  %275 = icmp eq ptr %274, null
+  br i1 %275, label %_llgo_37, label %_llgo_38
 
 _llgo_37:                                         ; preds = %_llgo_36
-  %275 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 17, i64 8, i64 1, i64 1)
-  store ptr %275, ptr @_llgo_main.T4, align 8
+  store ptr %273, ptr @_llgo_main.T4, align 8
   br label %_llgo_38
 
 _llgo_38:                                         ; preds = %_llgo_37, %_llgo_36
@@ -1196,7 +1196,7 @@ _llgo_39:                                         ; preds = %_llgo_38
 
 _llgo_40:                                         ; preds = %_llgo_39, %_llgo_38
   %281 = load ptr, ptr @"[1]_llgo_int", align 8
-  br i1 %274, label %_llgo_41, label %_llgo_42
+  br i1 %275, label %_llgo_41, label %_llgo_42
 
 _llgo_41:                                         ; preds = %_llgo_40
   %282 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -1260,7 +1260,7 @@ _llgo_41:                                         ; preds = %_llgo_40
   %319 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %317, i32 0, i32 1
   store i64 2, ptr %319, align 4
   %320 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %317, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %275, %"github.com/goplus/llgo/internal/runtime.String" %316, %"github.com/goplus/llgo/internal/runtime.String" %320, ptr %281, %"github.com/goplus/llgo/internal/runtime.Slice" %305, %"github.com/goplus/llgo/internal/runtime.Slice" %312)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %273, %"github.com/goplus/llgo/internal/runtime.String" %316, %"github.com/goplus/llgo/internal/runtime.String" %320, ptr %281, %"github.com/goplus/llgo/internal/runtime.Slice" %305, %"github.com/goplus/llgo/internal/runtime.Slice" %312)
   br label %_llgo_42
 
 _llgo_42:                                         ; preds = %_llgo_41, %_llgo_40
@@ -1269,19 +1269,19 @@ _llgo_42:                                         ; preds = %_llgo_41, %_llgo_40
   br i1 %322, label %_llgo_43, label %_llgo_44
 
 _llgo_43:                                         ; preds = %_llgo_42
-  %323 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %275)
+  %323 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %273)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %323)
   store ptr %323, ptr @"*_llgo_main.T4", align 8
   br label %_llgo_44
 
 _llgo_44:                                         ; preds = %_llgo_43, %_llgo_42
-  %324 = load ptr, ptr @_llgo_main.T5, align 8
-  %325 = icmp eq ptr %324, null
-  br i1 %325, label %_llgo_45, label %_llgo_46
+  %324 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 8, i64 1, i64 1)
+  %325 = load ptr, ptr @_llgo_main.T5, align 8
+  %326 = icmp eq ptr %325, null
+  br i1 %326, label %_llgo_45, label %_llgo_46
 
 _llgo_45:                                         ; preds = %_llgo_44
-  %326 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 8, i64 1, i64 1)
-  store ptr %326, ptr @_llgo_main.T5, align 8
+  store ptr %324, ptr @_llgo_main.T5, align 8
   br label %_llgo_46
 
 _llgo_46:                                         ; preds = %_llgo_45, %_llgo_44
@@ -1319,7 +1319,7 @@ _llgo_46:                                         ; preds = %_llgo_45, %_llgo_44
   %348 = call ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String" %340, i64 8, %"github.com/goplus/llgo/internal/runtime.Slice" %347)
   store ptr %348, ptr @"main.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U", align 8
   %349 = load ptr, ptr @"main.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U", align 8
-  br i1 %325, label %_llgo_47, label %_llgo_48
+  br i1 %326, label %_llgo_47, label %_llgo_48
 
 _llgo_47:                                         ; preds = %_llgo_46
   %350 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -1383,7 +1383,7 @@ _llgo_47:                                         ; preds = %_llgo_46
   %387 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %385, i32 0, i32 1
   store i64 2, ptr %387, align 4
   %388 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %385, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %326, %"github.com/goplus/llgo/internal/runtime.String" %384, %"github.com/goplus/llgo/internal/runtime.String" %388, ptr %349, %"github.com/goplus/llgo/internal/runtime.Slice" %373, %"github.com/goplus/llgo/internal/runtime.Slice" %380)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %324, %"github.com/goplus/llgo/internal/runtime.String" %384, %"github.com/goplus/llgo/internal/runtime.String" %388, ptr %349, %"github.com/goplus/llgo/internal/runtime.Slice" %373, %"github.com/goplus/llgo/internal/runtime.Slice" %380)
   br label %_llgo_48
 
 _llgo_48:                                         ; preds = %_llgo_47, %_llgo_46
@@ -1392,19 +1392,19 @@ _llgo_48:                                         ; preds = %_llgo_47, %_llgo_46
   br i1 %390, label %_llgo_49, label %_llgo_50
 
 _llgo_49:                                         ; preds = %_llgo_48
-  %391 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %326)
+  %391 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %324)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %391)
   store ptr %391, ptr @"*_llgo_main.T5", align 8
   br label %_llgo_50
 
 _llgo_50:                                         ; preds = %_llgo_49, %_llgo_48
-  %392 = load ptr, ptr @_llgo_main.T6, align 8
-  %393 = icmp eq ptr %392, null
-  br i1 %393, label %_llgo_51, label %_llgo_52
+  %392 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 24, i64 1, i64 1)
+  %393 = load ptr, ptr @_llgo_main.T6, align 8
+  %394 = icmp eq ptr %393, null
+  br i1 %394, label %_llgo_51, label %_llgo_52
 
 _llgo_51:                                         ; preds = %_llgo_50
-  %394 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(i64 25, i64 24, i64 1, i64 1)
-  store ptr %394, ptr @_llgo_main.T6, align 8
+  store ptr %392, ptr @_llgo_main.T6, align 8
   br label %_llgo_52
 
 _llgo_52:                                         ; preds = %_llgo_51, %_llgo_50
@@ -1493,7 +1493,7 @@ _llgo_54:                                         ; preds = %_llgo_53, %_llgo_52
   %446 = call ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String" %437, i64 16, %"github.com/goplus/llgo/internal/runtime.Slice" %445)
   store ptr %446, ptr @"main.struct$2bSfJcCYDdttnIT-JASAjsTNUZvojBt4mPXFJdH4M10", align 8
   %447 = load ptr, ptr @"main.struct$2bSfJcCYDdttnIT-JASAjsTNUZvojBt4mPXFJdH4M10", align 8
-  br i1 %393, label %_llgo_55, label %_llgo_56
+  br i1 %394, label %_llgo_55, label %_llgo_56
 
 _llgo_55:                                         ; preds = %_llgo_54
   %448 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
@@ -1557,7 +1557,7 @@ _llgo_55:                                         ; preds = %_llgo_54
   %485 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %483, i32 0, i32 1
   store i64 2, ptr %485, align 4
   %486 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %483, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %394, %"github.com/goplus/llgo/internal/runtime.String" %482, %"github.com/goplus/llgo/internal/runtime.String" %486, ptr %447, %"github.com/goplus/llgo/internal/runtime.Slice" %471, %"github.com/goplus/llgo/internal/runtime.Slice" %478)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %392, %"github.com/goplus/llgo/internal/runtime.String" %482, %"github.com/goplus/llgo/internal/runtime.String" %486, ptr %447, %"github.com/goplus/llgo/internal/runtime.Slice" %471, %"github.com/goplus/llgo/internal/runtime.Slice" %478)
   br label %_llgo_56
 
 _llgo_56:                                         ; preds = %_llgo_55, %_llgo_54
@@ -1566,7 +1566,7 @@ _llgo_56:                                         ; preds = %_llgo_55, %_llgo_54
   br i1 %488, label %_llgo_57, label %_llgo_58
 
 _llgo_57:                                         ; preds = %_llgo_56
-  %489 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %394)
+  %489 = call ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr %392)
   call void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr %489)
   store ptr %489, ptr @"*_llgo_main.T6", align 8
   br label %_llgo_58

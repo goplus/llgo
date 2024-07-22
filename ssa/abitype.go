@@ -194,8 +194,9 @@ func (b Builder) abiInterfaceOf(pkgPath string, name string, t *types.Interface)
 
 // func NewNamed(kind abi.Kind, methods, ptrMethods int)
 func (b Builder) abiNamedOf(t *types.Named) func() Expr {
+	expr := b.abiNamed(t)
 	return func() Expr {
-		return b.abiNamed(t)
+		return expr
 	}
 }
 
