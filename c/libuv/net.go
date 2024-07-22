@@ -62,6 +62,24 @@ type UdpFlags c.Int
 
 // ----------------------------------------------
 
+/* Handle types. */
+
+type Tcp struct {
+	Unused [0]byte
+}
+
+type Udp struct {
+	Unused [0]byte
+}
+
+/* Request types. */
+
+type UdpSend struct {
+	Unused [0]byte
+}
+
+// ----------------------------------------------
+
 /* Function type */
 
 // llgo:type C
@@ -78,7 +96,7 @@ type UdpRecvCb func(handle *Udp, nread c.Long, buf *Buf, addr *net.SockAddr, fla
 
 // ----------------------------------------------
 
-/* TcpT related function and method */
+/* Tcp related function and method */
 
 //go:linkname InitTcp C.uv_tcp_init
 func InitTcp(loop *Loop, tcp *Tcp) c.Int
@@ -131,7 +149,7 @@ func TcpConnect(req *Connect, tcp *Tcp, addr *net.SockAddr, connectCb ConnectCb)
 
 // ----------------------------------------------
 
-/* UdpT related function and method */
+/* Udp related function and method */
 
 //go:linkname InitUdp C.uv_udp_init
 func InitUdp(loop *Loop, udp *Udp) c.Int

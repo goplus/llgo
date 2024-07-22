@@ -5,10 +5,22 @@ import (
 	_ "unsafe"
 )
 
+// ----------------------------------------------
+
+/* Handle types. */
+
+type Timer struct {
+	Unused [0]byte
+}
+
+// ----------------------------------------------
+
 // llgo:type C
 type TimerCb func(timer *Timer)
 
-/* TimerT related function and method */
+// ----------------------------------------------
+
+/* Timer related function and method */
 
 //go:linkname InitTimer C.uv_timer_init
 func InitTimer(loop *Loop, timer *Timer) c.Int

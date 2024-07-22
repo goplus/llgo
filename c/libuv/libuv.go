@@ -18,12 +18,6 @@ const (
 )
 
 const (
-	RUN_DEFAULT RunMode = iota
-	RUN_ONCE
-	RUN_NOWAIT
-)
-
-const (
 	UV_LEAVE_GROUP Membership = iota
 	UV_JOIN_GROUP
 )
@@ -68,8 +62,6 @@ const (
 
 type LoopOption c.Int
 
-type RunMode c.Int
-
 type Membership c.Int
 
 type HandleType c.Int
@@ -85,9 +77,6 @@ type OsFd c.Int
 // ----------------------------------------------
 
 /* Handle types. */
-type Loop struct {
-	Unused [0]byte
-}
 
 type Handle struct {
 	Unused [0]byte
@@ -101,14 +90,6 @@ type Stream struct {
 	Unused [0]byte
 }
 
-type Tcp struct {
-	Unused [0]byte
-}
-
-type Udp struct {
-	Unused [0]byte
-}
-
 type Pipe struct {
 	Unused [0]byte
 }
@@ -118,10 +99,6 @@ type Tty struct {
 }
 
 type Poll struct {
-	Unused [0]byte
-}
-
-type Timer struct {
 	Unused [0]byte
 }
 
@@ -181,17 +158,6 @@ type Write struct {
 
 type Connect struct {
 	Unused [0]byte
-}
-
-type UdpSend struct {
-	Unused [0]byte
-}
-
-// ----------------------------------------------
-
-type Buf struct {
-	Base *c.Char
-	Len  uintptr
 }
 
 // ----------------------------------------------
@@ -257,7 +223,7 @@ func (shutdown *Shutdown) Shutdown(stream *Stream, shutdownCb ShutdownCb) c.Int 
 
 // ----------------------------------------------
 
-/* HandleT related function and method */
+/* Handle related function and method */
 
 // llgo:link (*Handle).Ref C.uv_ref
 func (handle *Handle) Ref() {}
@@ -316,9 +282,6 @@ func (handle *Handle) RecvBufferSize(value *c.Int) c.Int {
 func (handle *Handle) Fileno(fd *OsFd) c.Int {
 	return 0
 }
-
-//go:linkname InitBuf C.uv_buf_init
-func InitBuf(base *c.Char, len c.Uint) Buf
 
 //go:linkname UvPipe C.uv_pipe
 func UvPipe(fds [2]Uv_File, readFlags c.Int, writeFlags c.Int) c.Int {
