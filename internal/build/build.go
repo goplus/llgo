@@ -283,7 +283,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if strings.ContainsRune(param, '$') {
-						expd = strings.TrimSpace(env.ExpandEnv(param))
+						expd = env.ExpandEnv(param)
 						ctx.nLibdir++
 					} else {
 						expd = param
