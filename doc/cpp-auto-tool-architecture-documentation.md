@@ -181,7 +181,7 @@ No input required, directly reads `func_prototype.json` file
 1. Execute the executable
 
 ```bash
-./generateCode path/to/yourfuncdecljson
+./generateCode path/to/func_prototype.json
 ```
 
 2. Parse JSON file
