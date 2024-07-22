@@ -28,6 +28,7 @@ const (
 )
 
 type (
+	Void    = [0]byte
 	Char    = int8
 	Float   = float32
 	Double  = float64
