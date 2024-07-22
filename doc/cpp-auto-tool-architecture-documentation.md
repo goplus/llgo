@@ -120,7 +120,7 @@ No input required, directly reads the `config.json` file
 1. Execute the executable
 
 ```bash
-./generate_func_decl path/to/config.json
+./generate_func_decl /path/to/config.json
 ```
 
 2. Parse header files
@@ -143,13 +143,13 @@ type Parameter struct {
 }
 
 // parser_ast.go
-func ParseHeaderFile(filePath string) ([]common.AstInformation, error)
+func ParseHeaderFile(filePath string) ([]common.ASTInformation, error)
 ```
 
 3. Generate the final JSON mapping file `func_prototype.json`
 
 ```go
- func GenerateJSONFile(info []common.AstInformation)
+ func GenerateJSONFile(info []common.ASTInformation)
 ```
 
 ```json
@@ -161,7 +161,7 @@ func ParseHeaderFile(filePath string) ([]common.AstInformation, error)
     "UserFunctionName": "CFromA",
     "Parameters" : [
         {
-            "arg1" : "int",
+            "arg1" : "int"
         },
         {
             "arg2" : "*char"
@@ -181,7 +181,7 @@ No input required, directly reads `func_prototype.json` file
 1. Execute the executable
 
 ```bash
-./generateCode path/to/func_prototype.json
+./generate_code /path/to/func_prototype.json
 ```
 
 2. Parse JSON file
