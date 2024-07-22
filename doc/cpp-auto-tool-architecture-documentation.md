@@ -22,7 +22,7 @@ Obtains the paths to header files and dynamic library files by reading the JSON 
 
 ```json
 {
-  "PackageName": "IniReader",
+  "PackageName": "inireader",
   "HeaderFiles": [
     "/path/to/header/INIReader.h",
     "/path/to/header/AnotherHeader.h"
