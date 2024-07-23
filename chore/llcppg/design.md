@@ -1,12 +1,53 @@
-# C++ Automation Tool Architecture Documentation
+Design of llcppg
+=====
 
-## Overall Approach
+## Usage
 
-### Modules
+```sh
+llcppg [config-file]
+```
 
-1. Parsing Module
-2. Function Declaration Generation Module
-3. Code Generation Module
+If `config-file` is not specified, a `llcppg.cfg` file is used in current directory. The configuration file format is as follows:
+
+```json
+{
+  "name": "inireader",
+  "cflags": "$(pkg-config --cflags inireader)",
+  "include": [
+    "INIReader.h",
+    "AnotherHeaderFile.h"
+  ],
+  "libs": "$(pkg-config --libs inireader)"
+}
+```
+
+## Steps
+
+1. llcppsymg: Generate symbol table for a C/C++ library
+2. Manually modify the desired Go symbols in symbol table
+3. llcppsigfetch: Fetch information of C/C++ symbols
+4. gogensig: Generate a go package by information of symbols
+
+
+### llcppsymg
+
+```sh
+llcppsymg config-file
+```
+
+It generates symbol tables. Its file format is as follows:
+
+```json
+[
+  {
+    "mangle": "_ZN9INIReaderC1EPKcm",
+    "c++": "INIReader::INIReader(char const*, unsigned long)",
+    "go": "(*Reader).Init__0"
+  },
+]
+```
+
+## Overall
 
 ### Process
 
