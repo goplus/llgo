@@ -15,7 +15,7 @@ type Timer struct {
 
 // ----------------------------------------------
 
-// llgo:type C
+// llgo:type Cgit
 type TimerCb func(timer *Timer)
 
 // ----------------------------------------------

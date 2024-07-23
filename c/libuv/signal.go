@@ -13,24 +13,20 @@ type Signal struct {
 
 // ----------------------------------------------
 
-/* Signal related functions and method. */
+/* Function type */
 
 // llgo:type C
 type SignalCb func(handle *Signal, sigNum c.Int)
 
-//go:linkname UvSignalInit C.uv_signal_init
-func UvSignalInit(loop *Loop, handle *Signal) c.Int
+// ----------------------------------------------
 
-// llgo:link (*Signal).Start C.uv_signal_start
-func (s *Signal) Start(cb SignalCb, signum c.Int) c.Int {
-	return 0
-}
+/* Signal related functions and method. */
 
-// llgo:link (*Signal).StartOneshot C.uv_signal_start_oneshot
-func (s *Signal) StartOneshot(handle *Signal, cb SignalCb, signum c.Int) c.Int {
-	return 0
-}
+//go:linkname SignalInit C.uv_signal_init
+func SignalInit(loop *Loop, handle *Signal) c.Int
 
-func (s *Signal) Init(loop *Loop) int {
-	return UvSignalInit(loop, s)
-}
+//go:linkname SignalStart C.uv_signal_start
+func SignalStart(handle *Signal, cb SignalCb, signum c.Int) c.Int
+
+//go:linkname SignalStartOneshot C.uv_signal_start_oneshot
+func SignalStartOneshot(handle *Signal, cb SignalCb, signum c.Int) c.Int

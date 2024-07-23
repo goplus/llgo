@@ -11,6 +11,11 @@ const (
 )
 
 // ----------------------------------------------
+const (
+	RUN_DEFAULT RunMode = iota
+	RUN_ONCE
+	RUN_NOWAIT
+)
 
 const (
 	LOOP_BLOCK_SIGNAL LoopOption = iota
@@ -60,6 +65,15 @@ const (
 	REQ_TYPE_MAX
 )
 
+const (
+	READABLE PollEvent = 1 << iota
+	WRITABLE
+	DISCONNECT
+	PRIPRIORITIZED
+)
+
+type RunMode c.Int
+
 type LoopOption c.Int
 
 type Membership c.Int
@@ -68,18 +82,22 @@ type HandleType c.Int
 
 type ReqType c.Int
 
-type Uv_File c.Int
-
 type OsSock c.Int
 
 type OsFd c.Int
+
+type PollEvent c.Int
 
 // ----------------------------------------------
 
 /* Handle types. */
 
-type Handle struct {
+type Loop struct {
 	Unused [0]byte
+}
+
+type Handle struct {
+	Unused [96]byte
 }
 
 type Dir struct {
@@ -87,7 +105,7 @@ type Dir struct {
 }
 
 type Stream struct {
-	Unused [0]byte
+	Unused [264]byte
 }
 
 type Pipe struct {
@@ -122,18 +140,6 @@ type Process struct {
 	Unused [0]byte
 }
 
-type FsEvent struct {
-	Unused [0]byte
-}
-
-type FsPoll struct {
-	Unused [0]byte
-}
-
-type Signal struct {
-	Unused [0]byte
-}
-
 /* Request types. */
 
 type Req struct {
@@ -153,14 +159,17 @@ type Shutdown struct {
 }
 
 type Write struct {
-	Unused [0]byte
+	Unused [192]byte
 }
 
 type Connect struct {
 	Unused [0]byte
 }
 
-// ----------------------------------------------
+type Buf struct {
+	Base *c.Char
+	Len  uintptr
+} // ----------------------------------------------
 
 /* Function type */
 
@@ -199,6 +208,9 @@ type ShutdownCb func(req *Shutdown, status c.Int)
 
 // llgo:type C
 type WalkCb func(handle *Handle, arg c.Pointer)
+
+// llgo:type C
+type PollCb func(handle *Poll, status c.Int, events c.Int)
 
 // ----------------------------------------------
 
@@ -284,7 +296,7 @@ func (handle *Handle) Fileno(fd *OsFd) c.Int {
 }
 
 //go:linkname UvPipe C.uv_pipe
-func UvPipe(fds [2]Uv_File, readFlags c.Int, writeFlags c.Int) c.Int {
+func UvPipe(fds [2]UvFile, readFlags c.Int, writeFlags c.Int) c.Int {
 	return 0
 }
 
@@ -351,22 +363,22 @@ func (stream *Stream) StopRead() c.Int {
 }
 
 // llgo:link (*Write).Write C.uv_write
-func (req *Write) Write(stream *Stream, bufs []Buf, nbufs c.Uint, writeCb WriteCb) c.Int {
+func (req *Write) Write(stream *Stream, bufs *Buf, nbufs c.Uint, writeCb WriteCb) c.Int {
 	return 0
 }
 
 // llgo:link (*Write).Write2 C.uv_write2
-func (req *Write) Write2(stream *Stream, bufs []Buf, nbufs c.Uint, sendStream *Stream, writeCb WriteCb) c.Int {
+func (req *Write) Write2(stream *Stream, bufs *Buf, nbufs c.Uint, sendStream *Stream, writeCb WriteCb) c.Int {
 	return 0
 }
 
 // llgo:link (*Stream).TryWrite C.uv_try_write
-func (stream *Stream) TryWrite(bufs []Buf, nbufs c.Uint) c.Int {
+func (stream *Stream) TryWrite(bufs *Buf, nbufs c.Uint) c.Int {
 	return 0
 }
 
 // llgo:link (*Stream).TryWrite2 C.uv_try_write2
-func (stream *Stream) TryWrite2(bufs []Buf, nbufs c.Uint, sendStream *Stream) c.Int {
+func (stream *Stream) TryWrite2(bufs *Buf, nbufs c.Uint, sendStream *Stream) c.Int {
 	return 0
 }
 
@@ -384,6 +396,78 @@ func (stream *Stream) IsWritable() c.Int {
 func (stream *Stream) SetBlocking(blocking c.Int) c.Int {
 	return 0
 }
+
+// ----------------------------------------------
+
+/* Loop related functions and method. */
+
+//go:linkname LoopSize C.uv_loop_size
+func LoopSize() uintptr
+
+//go:linkname Run C.uv_run
+func Run(loop *Loop, mode RunMode) c.Int
+
+//go:linkname LoopAlive C.uv_loop_alive
+func LoopAlive(loop *Loop) c.Int
+
+//go:linkname LoopClose C.uv_loop_close
+func LoopClose(loop *Loop) c.Int
+
+//go:linkname LoopConfigure C.uv_loop_configure
+func LoopConfigure(loop *Loop, option LoopOption, arg c.Int) c.Int
+
+//go:linkname LoopDefault C.uv_default_loop
+func LoopDefault() *Loop
+
+//go:linkname LoopDelete C.uv_loop_delete
+func LoopDelete(loop *Loop) c.Int
+
+//go:linkname LoopFork C.uv_loop_fork
+func LoopFork(loop *Loop) c.Int
+
+//go:linkname LoopInit C.uv_loop_init
+func LoopInit(loop *Loop) c.Int
+
+//go:linkname LoopNew C.uv_loop_new
+func LoopNew() *Loop
+
+//go:linkname LoopNow C.uv_now
+func LoopNow(loop *Loop) c.UlongLong
+
+//go:linkname LoopUpdateTime C.uv_update_time
+func LoopUpdateTime(loop *Loop)
+
+//go:linkname LoopBackendFd C.uv_backend_fd
+func LoopBackendFd(loop *Loop) c.Int
+
+//go:linkname LoopBackendTimeout C.uv_backend_timeout
+func LoopBackendTimeout(loop *Loop) c.Int
+
+//go:linkname LoopWalk C.uv_walk
+func LoopWalk(loop *Loop, walkCb WalkCb, arg c.Pointer)
+
+// ----------------------------------------------
+
+/* Buf related functions and method. */
+
+//go:linkname InitBuf C.uv_buf_init
+func InitBuf(base *c.Char, len c.Uint) Buf
+
+// ----------------------------------------------
+
+/* Poll related function and method */
+
+//go:linkname PollInit C.uv_poll_init
+func PollInit(loop *Loop, handle *Poll, fd OsFd) c.Int
+
+//go:linkname PollStart C.uv_poll_start
+func PollStart(handle *Poll, events c.Int, cb PollCb) c.Int
+
+//go:linkname PollStop C.uv_poll_stop
+func PollStop(handle *Poll) c.Int
+
+//go:linkname PollInitSocket C.uv_poll_init_socket
+func PollInitSocket(loop *Loop, handle *Poll, socket c.Int) c.Int
 
 // ----------------------------------------------
 

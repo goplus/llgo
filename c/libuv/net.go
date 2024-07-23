@@ -65,7 +65,7 @@ type UdpFlags c.Int
 /* Handle types. */
 
 type Tcp struct {
-	Unused [0]byte
+	Unused [264]byte
 }
 
 type Udp struct {
@@ -207,8 +207,8 @@ func (udp *Udp) SetMulticastInterface(interfaceAddr *c.Char) c.Int {
 	return 0
 }
 
-// llgo:link (*Udp).SAetBroadcast C.uv_udp_set_broadcast
-func (udp *Udp) SAetBroadcast(on c.Int) c.Int {
+// llgo:link (*Udp).SetBroadcast C.uv_udp_set_broadcast
+func (udp *Udp) SetBroadcast(on c.Int) c.Int {
 	return 0
 }
 
@@ -218,15 +218,15 @@ func (udp *Udp) SetTTL(ttl c.Int) c.Int {
 }
 
 //go:linkname Send C.uv_udp_send
-func Send(req *UdpSend, udp *Udp, bufs []Buf, nbufs c.Uint, addr *net.SockAddr, sendCb UdpSendCb) c.Int
+func Send(req *UdpSend, udp *Udp, bufs *Buf, nbufs c.Uint, addr *net.SockAddr, sendCb UdpSendCb) c.Int
 
 // llgo:link (*Udp).TrySend C.uv_udp_try_send
-func (udp *Udp) TrySend(bufs []Buf, nbufs c.Uint, addr *net.SockAddr) c.Int {
+func (udp *Udp) TrySend(bufs *Buf, nbufs c.Uint, addr *net.SockAddr) c.Int {
 	return 0
 }
 
-// llgo:link (*Udp).RecvStart C.uv_udp_recv_start
-func (udp *Udp) RecvStart(allocCb AllocCb, recvCb UdpRecvCb) c.Int {
+// llgo:link (*Udp).StartRecv C.uv_udp_recv_start
+func (udp *Udp) StartRecv(allocCb AllocCb, recvCb UdpRecvCb) c.Int {
 	return 0
 }
 
@@ -235,8 +235,8 @@ func (udp *Udp) UsingRecvmmsg() c.Int {
 	return 0
 }
 
-// llgo:link (*Udp).RecvStop C.uv_udp_recv_stop
-func (udp *Udp) RecvStop() c.Int {
+// llgo:link (*Udp).StopRecv C.uv_udp_recv_stop
+func (udp *Udp) StopRecv() c.Int {
 	return 0
 }
 
