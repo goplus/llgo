@@ -18,83 +18,52 @@ func (r *Response) mock(body string) {
 	r.mockBody = body
 }
 
-func (r *Response) Text() *io.Promise[string] {
-	return io.NewPromise[string](func(resolve func(string, error)) {
-		resolve(r.mockBody, nil)
-	})
+func (r *Response) Text() (resolve io.Promise[string]) {
+	resolve(r.mockBody, nil)
+	return
 }
 
 func HttpGet(url string, callback func(resp *Response, err error)) {
 	panic("todo: Get")
 }
 
-func AsyncHttpGet(url string) io.AsyncCall[*Response] {
-	return io.NewPromise[*Response](func(resolve func(*Response, error)) {
-		HttpGet(url, resolve)
-	})
+func AsyncHttpGet(url string) (resolve io.Promise[*Response]) {
+	HttpGet(url, resolve)
+	return
 }
 
 type User struct {
 	Name string
 }
 
-func GetUser(uid string) io.AsyncCall[User] {
-	return io.NewPromise[User](func(resolve func(User, error)) {
-		resp, err := io.Await(AsyncHttpGet("http://example.com/user/" + uid))
-		if err != nil {
-			resolve(User{}, err)
-			return
-		}
+func GetUser(uid string) (resolve io.Promise[User]) {
+	resp, err := io.Await[*Response](AsyncHttpGet("http://example.com/user/" + uid))
+	if err != nil {
+		resolve(User{}, err)
+		return
+	}
 
-		if resp.StatusCode != 200 {
-			resolve(User{}, fmt.Errorf("http status code: %d", resp.StatusCode))
-			return
-		}
+	if resp.StatusCode != 200 {
+		resolve(User{}, fmt.Errorf("http status code: %d", resp.StatusCode))
+		return
+	}
 
-		resp.mock(`{"name":"Alice"}`)
+	resp.mock(`{"name":"Alice"}`)
 
-		body, err := io.Await[string](resp.Text())
-		if err != nil {
-			resolve(User{}, err)
-			return
-		}
-		user := User{}
-		if err := json.Unmarshal([]byte(body), &user); err != nil {
-			resolve(User{}, err)
-			return
-		}
+	body, err := io.Await[string](resp.Text())
+	if err != nil {
+		resolve(User{}, err)
+		return
+	}
+	user := User{}
+	if err := json.Unmarshal([]byte(body), &user); err != nil {
+		resolve(User{}, err)
+		return
+	}
 
-		resolve(user, nil)
-	})
+	resolve(user, nil)
+	return
 }
-
-// func GetUser1(uid string) (resolve io.AsyncCall[User]) {
-// 	resp, err := io.Await(AsyncHttpGet("http://example.com/user/" + uid))
-// 	if err != nil {
-// 		resolve(User{}, err)
-// 		return
-// 	}
-
-// 	if resp.StatusCode != 200 {
-// 		resolve(User{}, fmt.Errorf("http status code: %d", resp.StatusCode))
-// 		return
-// 	}
-
-// 	resp.mock(`{"name":"Alice"}`)
-
-// 	body, err := io.Await[string](resp.Text())
-// 	if err != nil {
-// 		resolve(User{}, err)
-// 		return
-// 	}
-// 	user := User{}
-// 	if err := json.Unmarshal([]byte(body), &user); err != nil {
-// 		resolve(User{}, err)
-// 		return
-// 	}
-
-// 	resolve(user, nil)
-// }
 
 func GetScore() *io.Promise[float64] {
 	panic("todo: GetScore")
@@ -108,8 +77,11 @@ func main() {
 	user, err := GetUser("123").Await()
 	fmt.Println(user, err)
 
-	user, err = io.Race(GetUser("123"), GetUser("456"), GetUser("789")).Await()
+	user, err = io.Race[User](GetUser("123"), GetUser("456"), GetUser("789")).Await()
 	fmt.Println(user, err)
+
+	users, err := io.All[User]([]io.AsyncCall[User]{GetUser("123"), GetUser("456"), GetUser("789")}).Await()
+	fmt.Println(users, err)
 
 	user, score, _, err := io.Await3[User, float64, io.Void](GetUser("123"), GetScore(), DoUpdate("update sth."))
 	fmt.Println(user, score, err)

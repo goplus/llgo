@@ -48,6 +48,10 @@ func Race[OutT any](acs ...AsyncCall[OutT]) (ret AsyncCall[OutT]) {
 	return
 }
 
+func All[OutT any](acs []AsyncCall[OutT]) (ret AsyncCall[[]OutT]) {
+	return nil
+}
+
 // llgo:link Await2 llgo.await
 func Await2[OutT1, OutT2 any](
 	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2],
@@ -64,31 +68,15 @@ func Await3[OutT1, OutT2, OutT3 any](
 
 // -----------------------------------------------------------------------------
 
-type Promise[OutT any] struct {
-}
+type Promise[OutT any] func(OutT, error)
 
-func NewPromise[OutT any](fn func(resolve func(OutT, error))) (ret *Promise[OutT]) {
-	ret = &Promise[OutT]{}
+// llgo:link Promise.Await llgo.await
+func (p Promise[OutT]) Await(timeout ...time.Duration) (ret OutT, err error) {
 	return
 }
 
-func NewPromiseFromValue[OutT any](value OutT) (ret *Promise[OutT]) {
-	return NewPromise[OutT](func(resolve func(OutT, error)) {
-		resolve(value, nil)
-	})
-}
-
-func (p *Promise[OutT]) Await(timeout ...time.Duration) (ret OutT, err error) {
-	return
-}
-
-func (p *Promise[OutT]) Chan() <-chan OutT {
+func (p Promise[OutT]) Chan() <-chan OutT {
 	return nil
-}
-
-// llgo:link Async llgo.async
-func Async[OutT any](fn any) (ret Promise[OutT]) {
-	return
 }
 
 // -----------------------------------------------------------------------------

@@ -366,23 +366,77 @@ In some situations, you may want to get the first result of multiple async opera
 
 ## Design
 
+Introduce `Promise` type to represent the eventual completion of an asynchronous operation and its resulting value. `Promise` can be resolved with a value or rejected with an error. `Promise` can be awaited to get the value or error.
+
+`Promise` just a type indicating the result of an asynchronous operation, it injected by the LLGo compiler, and the user can't create a `Promise` directly.
+
 ```go
-func resolveAfter1Second() Promise[string] {
-  return Async(func (context) {
-    context.ScheduleAfter(1 * time.Second, func() {
-      context.Resolve("Resolved after 1 second")
-    })
+// Some native async functions
+func timeoutAsync(d time.Duration, cb func()) {
+  go func() {
+    time.Sleep(d)
+    cb()
+  }()
+}
+
+// Wrap callback-based async function into Promise
+func resolveAfter1Second() (resolve Promise[string]) {
+  timeoutAsync(1 * time.Second, func() {
+    resolve("Resolved after 1 second", nil)
   })
 }
 
-func asyncCall() Promise[string] {
-  return Async(resolveAfter1Second().Await())
+// Compiled to:
+func resolveAfter1Second() (resolve PromiseImpl[string]) {
+  promise := io.NewPromiseImpl[string](resolve func(value string, err error) {
+    resolve: func(value string, err error) {
+      for true {
+        switch (promise.prev = promise.next) {
+          case 0:
+            timeoutAsync(1 * time.Second, func() {
+              resolve("Resolved after 1 second", nil)
+            })
+        }
+      }
+    },
+  }
+  return promise
 }
 
+func asyncCall() (resolve Promise[string]) {
+  str, err := resolveAfter1Second().Await()
+  resolve("AsyncCall: " + str, err)
+}
+
+// Compiled to:
+func asyncCall() (resolve PromiseImpl[string]) {
+  promise := io.NewPromiseImpl[string](resolve func(value string, err error) {
+    for true {
+      switch (promise.prev = promise.next) {
+        case 0:
+          resolveAfter1Second()
+          return
+        case 1:
+          str, err := promise.value, promise.err
+          resolve("AsyncCall: " + str, err)
+          return
+      }
+    }
+  })
+  return promise
+}
+
+// Directly return Promise
 func asyncCall2() Promise[string] {
   return resolveAfter1Second()
 }
 
+// Compiled to:
+func asyncCall2() PromiseImpl[string] {
+  return resolveAfter1Second()
+}
+
+// Don't wait for Promise to complete
 func asyncCall3() {
   resolveAfter1Second().Then(func(result string) {
     fmt.Println("AsyncCall3: " + result)
