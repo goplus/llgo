@@ -30,10 +30,13 @@ type Void = [0]byte
 
 // -----------------------------------------------------------------------------
 
-type AsyncCall[OutT any] chan OutT
+type AsyncCall[OutT any] interface {
+	Await(timeout ...time.Duration) (ret OutT, err error)
+	Chan() <-chan OutT
+}
 
 // llgo:link AsyncCall.Await llgo.await
-func (AsyncCall[OutT]) Await(timeout ...time.Duration) (ret OutT, err error) {
+func Await[OutT any](call AsyncCall[OutT], timeout ...time.Duration) (ret OutT, err error) {
 	return
 }
 
@@ -61,7 +64,27 @@ func Await3[OutT1, OutT2, OutT3 any](
 
 // -----------------------------------------------------------------------------
 
-type Promise[OutT any] func(...any) AsyncCall[OutT]
+type Promise[OutT any] struct {
+}
+
+func NewPromise[OutT any](fn func(resolve func(OutT, error))) (ret *Promise[OutT]) {
+	ret = &Promise[OutT]{}
+	return
+}
+
+func NewPromiseFromValue[OutT any](value OutT) (ret *Promise[OutT]) {
+	return NewPromise[OutT](func(resolve func(OutT, error)) {
+		resolve(value, nil)
+	})
+}
+
+func (p *Promise[OutT]) Await(timeout ...time.Duration) (ret OutT, err error) {
+	return
+}
+
+func (p *Promise[OutT]) Chan() <-chan OutT {
+	return nil
+}
 
 // llgo:link Async llgo.async
 func Async[OutT any](fn any) (ret Promise[OutT]) {

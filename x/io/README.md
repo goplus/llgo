@@ -36,9 +36,8 @@ async function asyncCall(): Promise<string> {
   return `AsyncCall: ${result}`;
 }
 
-async function asyncCall2(): Promise<string> {
-  const result = await resolveAfter1Second();
-  return `AsyncCall2: ${result}`;
+function asyncCall2(): Promise<string> {
+  return resolveAfter1Second();
 }
 
 function asyncCall3(): void {
@@ -92,9 +91,8 @@ async def async_call() -> str:
     result = await resolve_after_1_second()
     return f"AsyncCall: {result}"
 
-async def async_call2() -> str:
-    result = await resolve_after_1_second()
-    return f"AsyncCall2: {result}"
+def async_call2() -> asyncio.Task:
+    return resolve_after_1_second()
 
 def async_call3() -> None:
     asyncio.create_task(print_after_1_second())
@@ -139,7 +137,9 @@ async fn name(param0: Type) -> ReturnType {
 Example:
 
 ```rust
-use tokio::time::{sleep, Duration};
+use std::time::Duration;
+use tokio::time::sleep;
+use std::future::Future;
 
 async fn resolve_after_1_second() -> String {
     sleep(Duration::from_secs(1)).await;
@@ -151,9 +151,8 @@ async fn async_call() -> String {
     format!("AsyncCall: {}", result)
 }
 
-async fn async_call2() -> String {
-    let result = resolve_after_1_second().await;
-    format!("AsyncCall2: {}", result)
+fn async_call2() -> impl Future<Output = String> {
+    resolve_after_1_second()
 }
 
 fn async_call3() {
@@ -177,7 +176,7 @@ async fn main() {
     async_call3();
 
     // Wait for AsyncCall3 to complete
-    sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(2)).await;
 
     println!("Main function completed");
 }
@@ -216,10 +215,9 @@ class Program
         return $"AsyncCall: {result}";
     }
 
-    static async Task<string> AsyncCall2()
+    static Task<string> AsyncCall2()
     {
-        string result = await ResolveAfter1Second();
-        return $"AsyncCall2: {result}";
+        return ResolveAfter1Second();
     }
 
     static void AsyncCall3()
@@ -286,8 +284,7 @@ cppcoro::task<std::string> asyncCall() {
 }
 
 cppcoro::task<std::string> asyncCall2() {
-    auto result = co_await resolveAfter1Second();
-    co_return "AsyncCall2: " + result;
+    return resolveAfter1Second();
 }
 
 cppcoro::task<void> asyncCall3() {
@@ -321,5 +318,92 @@ int main() {
         return 1;
     }
     return 0;
+}
+```
+
+## Common concepts
+
+### Promise, Future, Task, and Coroutine
+
+- **Promise**: An object that represents the eventual completion (or failure) of an asynchronous operation and its resulting value. It is used to produce a value that will be consumed by a `Future`.
+
+- **Future**: An object that represents the result of an asynchronous operation. It is used to obtain the value produced by a `Promise`.
+
+- **Task**: A unit of work that can be scheduled and executed asynchronously. It is a higher-level abstraction that combines a `Promise` and a `Future`.
+
+- **Coroutine**: A special type of function that can suspend its execution and return control to the caller without losing its state. It can be resumed later, allowing for asynchronous programming.
+
+### `async`, `await` and similar keywords
+
+- **`async`**: A keyword used to define a function that returns a `Promise` or `Task`. It allows the function to pause its execution and resume later.
+
+- **`await`**: A keyword used to pause the execution of an `async` function until a `Promise` or `Task` is resolved. It unwraps the value of the `Promise` or `Task` and allows the function to continue.
+
+- **`co_return`**: A keyword used in C++ coroutines to return a value from a coroutine. It is similar to `return` but is used in coroutines to indicate that the coroutine has completed. It's similar to `return` in `async` functions in other languages that boxes the value into a `Promise` or `Task`.
+
+`async/await` and similar constructs provide a more readable and synchronous-like way of writing asynchronous code, it hides the type of `Promise`/`Future`/`Task` from the user and allows them to focus on the logic of the code.
+
+### Executing Multiple Async Operations Concurrently
+
+To run multiple promises concurrently, JavaScript provides `Promise.all`, `Promise.allSettled` and `Promise.any`, Python provides `asyncio.gather`, Rust provides `tokio::try_join`, C# provides `Task.WhenAll`, and C++ provides `cppcoro::when_all`.
+
+In some situations, you may want to get the first result of multiple async operations. JavaScript provides `Promise.race` to get the first result of multiple promises. Python provides `asyncio.wait` to get the first result of multiple coroutines. Rust provides `tokio::select!` to get the first result of multiple futures. C# provides `Task.WhenAny` to get the first result of multiple tasks. C++ provides `cppcoro::when_any` to get the first result of multiple tasks. Those functions are very simular to `select` in Go.
+
+### Error Handling
+
+`await` commonly unwraps the value of a `Promise` or `Task`, but it also propagates errors. If the `Promise` or `Task` is rejected or throws an error, the error will be thrown in the `async` function by the `await` keyword. You can use `try/catch` blocks to handle errors in `async` functions.
+
+## Common patterns
+
+- `async` keyword hides the types of `Promise`/`Future`/`Task` in the function signature in Python and Rust, but not in JavaScript, C#, and C++.
+- `await` keyword unwraps the value of a `Promise`/`Future`/`Task`.
+- `return` keyword boxes the value into a `Promise`/`Future`/`Task` if it's not already.
+
+## Design considerations in LLGo
+
+- Don't introduce `async`/`await` keywords to compatible with Go compiler.
+- For performance reason don't implement async functions with goroutines
+
+## Design
+
+```go
+func resolveAfter1Second() Promise[string] {
+  return Async(func (context) {
+    context.ScheduleAfter(1 * time.Second, func() {
+      context.Resolve("Resolved after 1 second")
+    })
+  })
+}
+
+func asyncCall() Promise[string] {
+  return Async(resolveAfter1Second().Await())
+}
+
+func asyncCall2() Promise[string] {
+  return resolveAfter1Second()
+}
+
+func asyncCall3() {
+  resolveAfter1Second().Then(func(result string) {
+    fmt.Println("AsyncCall3: " + result)
+  })
+}
+
+func asyncMain() {
+  fmt.Println("Starting AsyncCall")
+  result1 := asyncCall().Await()
+  fmt.Println(result1)
+
+  fmt.Println("Starting AsyncCall2")
+  result2 := asyncCall2().Await()
+  fmt.Println(result2)
+
+  fmt.Println("Starting AsyncCall3")
+  asyncCall3()
+
+  // Wait for AsyncCall3 to complete
+  time.Sleep(2 * time.Second)
+
+  fmt.Println("Main function completed")
 }
 ```
