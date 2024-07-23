@@ -27,10 +27,6 @@ type Loop struct {
 	Unused [0]byte
 }
 
-type Handle struct {
-	Unused [0]byte
-}
-
 type Buf struct {
 	Base *c.Char
 	Len  uintptr
@@ -44,6 +40,8 @@ type Buf struct {
 type WalkCb func(handle *Handle, arg c.Pointer)
 
 // ----------------------------------------------
+
+/* Loop related functions and method. */
 
 //go:linkname LoopSize C.uv_loop_size
 func LoopSize() uintptr
@@ -122,20 +120,9 @@ func (l *Loop) BackendTimeout() int {
 	return 0
 }
 
-// llgo:link (*Handle).Ref C.uv_ref
-func (h *Handle) Ref() {
-	return
-}
+// ----------------------------------------------
 
-// llgo:link (*Handle).Unref C.uv_unref
-func (h *Handle) Unref() {
-	return
-}
-
-// llgo:link (*Handle).HasRef C.uv_has_ref
-func (h *Handle) HasRef() int {
-	return 0
-}
+/* Buf related functions and method. */
 
 //go:linkname InitBuf C.uv_buf_init
 func InitBuf(base *c.Char, len c.Uint) Buf

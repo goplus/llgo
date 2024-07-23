@@ -5,9 +5,15 @@ import (
 	_ "unsafe"
 )
 
+/* Handle types. */
+
 type Signal struct {
 	Unused [0]byte
 }
+
+// ----------------------------------------------
+
+/* Signal related functions and method. */
 
 // llgo:type C
 type SignalCb func(handle *Signal, sigNum c.Int)

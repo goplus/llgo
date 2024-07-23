@@ -6,6 +6,47 @@ import (
 )
 
 const (
+	FS_UNKNOWN   FsType = -1
+	FS_CUSTOM    FsType = 0
+	FS_OPEN      FsType = 1
+	FS_CLOSE     FsType = 2
+	FS_READ      FsType = 3
+	FS_WRITE     FsType = 4
+	FS_SENDFILE  FsType = 5
+	FS_STAT      FsType = 6
+	FS_LSTAT     FsType = 7
+	FS_FSTAT     FsType = 8
+	FS_FTRUNCATE FsType = 9
+	FS_UTIME     FsType = 10
+	FS_FUTIME    FsType = 11
+	FS_ACCESS    FsType = 12
+	FS_CHMOD     FsType = 13
+	FS_FCHMOD    FsType = 14
+	FS_FSYNC     FsType = 15
+	FS_FDATASYNC FsType = 16
+	FS_UNLINK    FsType = 17
+	FS_RMDIR     FsType = 18
+	FS_MKDIR     FsType = 19
+	FS_MKDTEMP   FsType = 20
+	FS_RENAME    FsType = 21
+	FS_SCANDIR   FsType = 22
+	FS_LINK      FsType = 23
+	FS_SYMLINK   FsType = 24
+	FS_READLINK  FsType = 25
+	FS_CHOWN     FsType = 26
+	FS_FCHOWN    FsType = 27
+	FS_REALPATH  FsType = 28
+	FS_COPYFILE  FsType = 29
+	FS_LCHOWN    FsType = 30
+	FS_OPENDIR   FsType = 31
+	FS_READDIR   FsType = 32
+	FS_CLOSEDIR  FsType = 33
+	FS_STATFS    FsType = 34
+	FS_MKSTEMP   FsType = 35
+	FS_LUTIME    FsType = 36
+)
+
+const (
 	DirentUnknown DirentType = iota
 	DirentFile
 	DirentDir
@@ -16,7 +57,11 @@ const (
 	DirentBlock
 )
 
+type FsType int
+
 type DirentType int
+
+// ----------------------------------------------
 
 /* Handle types. */
 
@@ -42,6 +87,14 @@ type File struct {
 	Req  *Fs
 }
 
+type Stat struct {
+	Unused [0]byte
+}
+
+// ----------------------------------------------
+
+/* Function type */
+
 // llgo:type C
 type FsCb func(req *Fs)
 
@@ -51,13 +104,39 @@ type FsEventCb func(handle *FsEvent, filename *c.Char, events c.Int, status c.In
 // llgo:type C
 type FsPollCb func(handle *FsPoll, status c.Int, events c.Int)
 
-/* Request types. */
-
-/* None of the above. */
-
 // ----------------------------------------------
 
 /* Fs related function and method */
+
+// llgo:link (*Fs).GetType C.uv_fs_get_type
+func (f *Fs) GetType() *FsType {
+	return nil
+}
+
+// llgo:link (*Fs).GetPath C.uv_fs_get_path
+func (f *Fs) GetPath() *c.Char {
+	return nil
+}
+
+// llgo:link (*Fs).GetResult C.uv_fs_get_result
+func (f *Fs) GetResult() c.Int {
+	return 0
+}
+
+// llgo:link (*Fs).GetPtr C.uv_fs_get_ptr
+func (f *Fs) GetPtr() c.Pointer {
+	return nil
+}
+
+// llgo:link (*Fs).GetSystemError C.uv_fs_get_system_error
+func (f *Fs) GetSystemError() c.Int {
+	return 0
+}
+
+// llgo:link (*Fs).GetStatBuf C.uv_fs_get_statbuf
+func (f *Fs) GetStatBuf() *Stat {
+	return nil
+}
 
 //go:linkname FsReqCleanup C.uv_fs_req_cleanup
 func FsReqCleanup(req *Fs)
