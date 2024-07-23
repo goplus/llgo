@@ -361,14 +361,15 @@ In some situations, you may want to get the first result of multiple async opera
 
 ## Design considerations in LLGo
 
-- Don't introduce `async`/`await` keywords to compatible with Go compiler.
+- Don't introduce `async`/`await` keywords to compatible with Go compiler (just compiling)
 - For performance reason don't implement async functions with goroutines
+- Avoid implementing `Promise` by using `chan` to avoid blocking the thread, but it can be wrapped as a `chan` to make it compatible `select` statement
 
 ## Design
 
-Introduce `Promise` type to represent the eventual completion of an asynchronous operation and its resulting value. `Promise` can be resolved with a value or rejected with an error. `Promise` can be awaited to get the value or error.
+Introduce `Promise` type to represent an asynchronous operation and its resulting value. `Promise` can be resolved with a value with an error. `Promise` can be awaited to get the value and error.
 
-`Promise` just a type indicating the result of an asynchronous operation, it injected by the LLGo compiler, and the user can't create a `Promise` directly.
+`Promise` just a type indicating the asynchronous operation, it can't be created and assigned directly. It be replaced to `PromiseImpl` by the LLGo compiler.
 
 ```go
 // Some native async functions
