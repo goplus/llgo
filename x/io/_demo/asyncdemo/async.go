@@ -37,7 +37,7 @@ type User struct {
 }
 
 func GetUser(uid string) (resolve io.Promise[User]) {
-	resp, err := io.Await[*Response](AsyncHttpGet("http://example.com/user/" + uid))
+	resp, err := AsyncHttpGet("http://example.com/user/" + uid).Await()
 	if err != nil {
 		resolve(User{}, err)
 		return
@@ -50,7 +50,7 @@ func GetUser(uid string) (resolve io.Promise[User]) {
 
 	resp.mock(`{"name":"Alice"}`)
 
-	body, err := io.Await[string](resp.Text())
+	body, err := resp.Text().Await()
 	if err != nil {
 		resolve(User{}, err)
 		return
