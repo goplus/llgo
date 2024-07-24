@@ -29,15 +29,25 @@ func (c *Context) setClassName(name string) {
 var context = newContext()
 
 func print_cursor_info(cursor clang.Cursor) {
+	loc := cursor.Location()
+	var file clang.File
+	var line, column c.Uint
+
+	loc.SpellingLocation(&file, &line, &column, nil)
+	filename := file.FileName()
+
+	c.Printf(c.Str("%s:%d:%d\n"), filename.CStr(), line, column)
+
 	cursorStr := cursor.String()
 	symbol := cursor.Mangling()
 	defer symbol.Dispose()
 	defer cursorStr.Dispose()
+	defer filename.Dispose()
 
 	if context.namespaceName != "" && context.className != "" {
-		fmt.Printf("%s:%s", context.namespaceName, context.className)
+		fmt.Printf("%s:%s:", context.namespaceName, context.className)
 	} else if context.namespaceName != "" {
-		fmt.Printf("%s", context.namespaceName)
+		fmt.Printf("%s:", context.namespaceName)
 	}
 	c.Printf(c.Str("%s\n"), cursorStr.CStr())
 
@@ -50,7 +60,7 @@ func print_cursor_info(cursor clang.Cursor) {
 		c.Printf(c.Str("Parameters(%d): ( "), cursor.NumArguments())
 
 		for i := 0; i < int(cursor.NumArguments()); i++ {
-			argCurSor := cursor.Argument(uint8(i))
+			argCurSor := cursor.Argument(c.Uint(i))
 			argType := argCurSor.Type().String()
 			argName := argCurSor.String()
 			c.Printf(c.Str("%s %s"), argType.CStr(), argName.CStr())

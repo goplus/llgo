@@ -27,160 +27,6 @@ const (
 	LLGoPackage = "link: -L$(llvm-config --libdir) -lclang; -lclang"
 )
 
-/**
- * Opaque pointer representing client data that will be passed through
- * to various callbacks and visitors.
- */
-type ClientData = c.Pointer
-
-/**
- * Provides the contents of a file that has not yet been saved to disk.
- *
- * Each CXUnsavedFile instance provides the name of a file on the
- * system along with the current contents of that file that have not
- * yet been saved to disk.
- */
-type UnsavedFile struct {
-	/**
-	 * The file whose contents have not yet been saved.
-	 *
-	 * This file must already exist in the file system.
-	 */
-	Filename *c.Char
-
-	/**
-	 * A buffer containing the unsaved contents of this file.
-	 */
-	Contents *c.Char
-
-	/**
-	 * The length of the unsaved contents of this buffer.
-	 */
-	Length c.Ulong
-}
-
-/**
- * An "index" that consists of a set of translation units that would
- * typically be linked together into an executable or library.
- */
-type Index struct {
-	Unused [0]byte
-}
-
-/**
- * Provides a shared context for creating translation units.
- *
- * It provides two options:
- *
- * - excludeDeclarationsFromPCH: When non-zero, allows enumeration of "local"
- * declarations (when loading any new translation units). A "local" declaration
- * is one that belongs in the translation unit itself and not in a precompiled
- * header that was used by the translation unit. If zero, all declarations
- * will be enumerated.
- *
- * Here is an example:
- *
- * \code
- *   // excludeDeclsFromPCH = 1, displayDiagnostics=1
- *   Idx = clang_createIndex(1, 1);
- *
- *   // IndexTest.pch was produced with the following command:
- *   // "clang -x c IndexTest.h -emit-ast -o IndexTest.pch"
- *   TU = clang_createTranslationUnit(Idx, "IndexTest.pch");
- *
- *   // This will load all the symbols from 'IndexTest.pch'
- *   clang_visitChildren(clang_getTranslationUnitCursor(TU),
- *                       TranslationUnitVisitor, 0);
- *   clang_disposeTranslationUnit(TU);
- *
- *   // This will load all the symbols from 'IndexTest.c', excluding symbols
- *   // from 'IndexTest.pch'.
- *   char *args[] = { "-Xclang", "-include-pch=IndexTest.pch" };
- *   TU = clang_createTranslationUnitFromSourceFile(Idx, "IndexTest.c", 2, args,
- *                                                  0, 0);
- *   clang_visitChildren(clang_getTranslationUnitCursor(TU),
- *                       TranslationUnitVisitor, 0);
- *   clang_disposeTranslationUnit(TU);
- * \endcode
- *
- * This process of creating the 'pch', loading it separately, and using it (via
- * -include-pch) allows 'excludeDeclsFromPCH' to remove redundant callbacks
- * (which gives the indexer the same performance benefit as the compiler).
- */
-//go:linkname CreateIndex C.clang_createIndex
-func CreateIndex(excludeDeclarationsFromPCH, displayDiagnostics c.Int) *Index
-
-/**
- * Destroy the given index.
- *
- * The index must not be destroyed until all of the translation units created
- * within that index have been destroyed.
- */
-// llgo:link (*Index).Dispose C.clang_disposeIndex
-func (*Index) Dispose() {}
-
-/**
- * Flags that control the creation of translation units.
- *
- * The enumerators in this enumeration type are meant to be bitwise
- * ORed together to specify which options should be used when
- * constructing the translation unit.
- */
-const (
-	TranslationUnit_None = 0x0
-)
-
-/**
- * Same as \c clang_parseTranslationUnit2, but returns
- * the \c CXTranslationUnit instead of an error code.  In case of an error this
- * routine returns a \c NULL \c CXTranslationUnit, without further detailed
- * error codes.
- */
-// llgo:link (*Index).ParseTranslationUnit C.clang_parseTranslationUnit
-func (*Index) ParseTranslationUnit(
-	sourceFilename *c.Char, commandLineArgs **c.Char, numCommandLineArgs c.Int,
-	unsavedFiles *UnsavedFile, numUnsavedFiles c.Uint, options c.Uint) *TranslationUnit {
-	return nil
-}
-
-/**
- * A single translation unit, which resides in an index.
- */
-type TranslationUnit struct {
-	Unused [0]byte
-}
-
-/**
- * Destroy the specified CXTranslationUnit object.
- */
-// llgo:link (*TranslationUnit).Dispose C.clang_disposeTranslationUnit
-func (*TranslationUnit) Dispose() {}
-
-/**
- * Retrieve the cursor that represents the given translation unit.
- *
- * The translation unit cursor can be used to start traversing the
- * various declarations within the given translation unit.
- */
-func (p *TranslationUnit) Cursor() (ret Cursor) {
-	p.wrapCursor(&ret)
-	return
-}
-
-//llgo:link (*TranslationUnit).wrapCursor C.wrap_clang_getTranslationUnitCursor
-func (t *TranslationUnit) wrapCursor(cursor *Cursor) {}
-
-/**
- * Describes the kind of entity that a cursor refers to.
- */
-type CursorKind c.Int
-
-/* for debug/testing */
-// llgo:link CursorKind.String C.clang_getCursorKindSpelling
-func (CursorKind) String() (ret String) {
-	return
-}
-
 const (
 	/* Declarations */
 	/**
@@ -1280,6 +1126,161 @@ const (
 )
 
 /**
+ * Opaque pointer representing client data that will be passed through
+ * to various callbacks and visitors.
+ */
+type ClientData = c.Pointer
+
+/**
+ * Provides the contents of a file that has not yet been saved to disk.
+ *
+ * Each CXUnsavedFile instance provides the name of a file on the
+ * system along with the current contents of that file that have not
+ * yet been saved to disk.
+ */
+type UnsavedFile struct {
+	/**
+	 * The file whose contents have not yet been saved.
+	 *
+	 * This file must already exist in the file system.
+	 */
+	Filename *c.Char
+
+	/**
+	 * A buffer containing the unsaved contents of this file.
+	 */
+	Contents *c.Char
+
+	/**
+	 * The length of the unsaved contents of this buffer.
+	 */
+	Length c.Ulong
+}
+
+/**
+ * An "index" that consists of a set of translation units that would
+ * typically be linked together into an executable or library.
+ */
+type Index struct {
+	Unused [0]byte
+}
+
+/**
+ * Provides a shared context for creating translation units.
+ *
+ * It provides two options:
+ *
+ * - excludeDeclarationsFromPCH: When non-zero, allows enumeration of "local"
+ * declarations (when loading any new translation units). A "local" declaration
+ * is one that belongs in the translation unit itself and not in a precompiled
+ * header that was used by the translation unit. If zero, all declarations
+ * will be enumerated.
+ *
+ * Here is an example:
+ *
+ * \code
+ *   // excludeDeclsFromPCH = 1, displayDiagnostics=1
+ *   Idx = clang_createIndex(1, 1);
+ *
+ *   // IndexTest.pch was produced with the following command:
+ *   // "clang -x c IndexTest.h -emit-ast -o IndexTest.pch"
+ *   TU = clang_createTranslationUnit(Idx, "IndexTest.pch");
+ *
+ *   // This will load all the symbols from 'IndexTest.pch'
+ *   clang_visitChildren(clang_getTranslationUnitCursor(TU),
+ *                       TranslationUnitVisitor, 0);
+ *   clang_disposeTranslationUnit(TU);
+ *
+ *   // This will load all the symbols from 'IndexTest.c', excluding symbols
+ *   // from 'IndexTest.pch'.
+ *   char *args[] = { "-Xclang", "-include-pch=IndexTest.pch" };
+ *   TU = clang_createTranslationUnitFromSourceFile(Idx, "IndexTest.c", 2, args,
+ *                                                  0, 0);
+ *   clang_visitChildren(clang_getTranslationUnitCursor(TU),
+ *                       TranslationUnitVisitor, 0);
+ *   clang_disposeTranslationUnit(TU);
+ * \endcode
+ *
+ * This process of creating the 'pch', loading it separately, and using it (via
+ * -include-pch) allows 'excludeDeclsFromPCH' to remove redundant callbacks
+ * (which gives the indexer the same performance benefit as the compiler).
+ */
+//go:linkname CreateIndex C.clang_createIndex
+func CreateIndex(excludeDeclarationsFromPCH, displayDiagnostics c.Int) *Index
+
+/**
+ * Destroy the given index.
+ *
+ * The index must not be destroyed until all of the translation units created
+ * within that index have been destroyed.
+ */
+// llgo:link (*Index).Dispose C.clang_disposeIndex
+func (*Index) Dispose() {}
+
+/**
+ * Flags that control the creation of translation units.
+ *
+ * The enumerators in this enumeration type are meant to be bitwise
+ * ORed together to specify which options should be used when
+ * constructing the translation unit.
+ */
+const (
+	TranslationUnit_None = 0x0
+)
+
+/**
+ * Same as \c clang_parseTranslationUnit2, but returns
+ * the \c CXTranslationUnit instead of an error code.  In case of an error this
+ * routine returns a \c NULL \c CXTranslationUnit, without further detailed
+ * error codes.
+ */
+// llgo:link (*Index).ParseTranslationUnit C.clang_parseTranslationUnit
+func (*Index) ParseTranslationUnit(
+	sourceFilename *c.Char, commandLineArgs **c.Char, numCommandLineArgs c.Int,
+	unsavedFiles *UnsavedFile, numUnsavedFiles c.Uint, options c.Uint) *TranslationUnit {
+	return nil
+}
+
+/**
+ * A single translation unit, which resides in an index.
+ */
+type TranslationUnit struct {
+	Unused [0]byte
+}
+
+/**
+ * Destroy the specified CXTranslationUnit object.
+ */
+// llgo:link (*TranslationUnit).Dispose C.clang_disposeTranslationUnit
+func (*TranslationUnit) Dispose() {}
+
+/**
+ * Retrieve the cursor that represents the given translation unit.
+ *
+ * The translation unit cursor can be used to start traversing the
+ * various declarations within the given translation unit.
+ */
+
+//llgo:link (*TranslationUnit).wrapCursor C.wrap_clang_getTranslationUnitCursor
+func (t *TranslationUnit) wrapCursor(cursor *Cursor) {}
+
+func (t *TranslationUnit) Cursor() (ret Cursor) {
+	t.wrapCursor(&ret)
+	return
+}
+
+/**
+ * Describes the kind of entity that a cursor refers to.
+ */
+type CursorKind c.Int
+
+/* for debug/testing */
+// llgo:link CursorKind.String C.clang_getCursorKindSpelling
+func (CursorKind) String() (ret String) {
+	return
+}
+
+/**
  * A cursor representing some element in the abstract syntax tree for
  * a translation unit.
  *
@@ -1303,9 +1304,30 @@ type Cursor struct {
 	data  [3]c.Pointer
 }
 
+/**
+ * The type of an element in the abstract syntax tree.
+ *
+ */
 type Type struct {
 	Kind CursorKind
 	data [2]c.Pointer
+}
+
+/**
+ * A particular source file that is part of a translation unit.
+ */
+type File uintptr
+
+/**
+ * Identifies a specific source location within a translation
+ * unit.
+ *
+ * Use clang_getExpansionLocation() or clang_getSpellingLocation()
+ * to map a source location to a particular file, line, and column.
+ */
+type SourceLocation struct {
+	ptrData [2]c.Pointer
+	intData c.Uint
 }
 
 /**
@@ -1338,7 +1360,7 @@ func (c Cursor) Mangling() (ret String) {
 // llgo:link (*Cursor).wrapType C.wrap_clang_getCursorType
 func (c *Cursor) wrapType(ret *Type) {}
 
-func (c *Cursor) Type() (ret Type) {
+func (c Cursor) Type() (ret Type) {
 	c.wrapType(&ret)
 	return
 }
@@ -1351,7 +1373,7 @@ func (c *Cursor) Type() (ret Type) {
 // llgo:link (*Cursor).wrapResultType C.wrap_clang_getCursorResultType
 func (c *Cursor) wrapResultType(ret *Type) {}
 
-func (c *Cursor) ResultType() (ret Type) {
+func (c Cursor) ResultType() (ret Type) {
 	c.wrapResultType(&ret)
 	return
 }
@@ -1380,11 +1402,26 @@ func (c Cursor) NumArguments() (num c.Int) {
  * invalid cursor is returned.
  */
 // llgo:link (*Cursor).wrapArgument C.wrap_clang_Cursor_getArgument
-func (*Cursor) wrapArgument(index uint8, arg *Cursor) {}
+func (*Cursor) wrapArgument(index c.Uint, arg *Cursor) {}
 
-func (c Cursor) Argument(index uint8) (arg Cursor) {
+func (c Cursor) Argument(index c.Uint) (arg Cursor) {
 	c.wrapArgument(index, &arg)
 	return
+}
+
+// llgo:link (*Cursor).wrapLocation C.wrap_clang_getCursorLocation
+func (c *Cursor) wrapLocation(loc *SourceLocation) {}
+
+func (c Cursor) Location() (loc SourceLocation) {
+	c.wrapLocation(&loc)
+	return
+}
+
+// llgo:link (*SourceLocation).wrapSpellingLocation C.wrap_clang_getSpellingLocation
+func (l *SourceLocation) wrapSpellingLocation(file *File, line, column, offset *c.Uint) {}
+
+func (l SourceLocation) SpellingLocation(file *File, line, column, offset *c.Uint) {
+	l.wrapSpellingLocation(file, line, column, offset)
 }
 
 /**
@@ -1401,6 +1438,9 @@ func (t *Type) wrapString() (ret String) {
 func (t Type) String() (ret String) {
 	return t.wrapString()
 }
+
+//llgo:link File.FileName C.clang_getFileName
+func (File) FileName() (ret String) { return }
 
 /**
  * Describes how the traversal of the children of a particular
