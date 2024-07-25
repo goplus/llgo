@@ -45,8 +45,7 @@ It generates a symbol table file named `llcppg.symb.json`. Its file format is as
     "mangle": "_ZN9INIReaderC1EPKcm",
     "c++": "INIReader::INIReader(char const*, unsigned long)",
     "go": "(*Reader).Init__0"
-  },
-  ...
+  }
 ]
 ```
 
@@ -60,7 +59,7 @@ llcppsigfetch -  # read config from stdin
 
 It fetches information of C/C++ symbols and print to stdout. Its format is as follows:
 
-```json
+```
 TODO: see llgo/xtool/clang/ast
 ```
 

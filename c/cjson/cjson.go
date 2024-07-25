@@ -17,7 +17,7 @@
 package cjson
 
 import (
-	_ "unsafe"
+	"unsafe"
 
 	"github.com/goplus/llgo/c"
 )
@@ -29,6 +29,20 @@ const (
 // llgo:type C
 type JSON struct {
 	Unused [0]byte
+}
+
+//go:linkname Parse C.cJSON_Parse
+func Parse(value *c.Char) *JSON
+
+//go:linkname ParseWithLength C.cJSON_ParseWithLength
+func ParseWithLength(value *byte, valueLength uintptr) *JSON
+
+func ParseBytes(value []byte) *JSON {
+	return ParseWithLength(unsafe.SliceData(value), uintptr(len(value)))
+}
+
+func ParseString(value string) *JSON {
+	return ParseWithLength(unsafe.StringData(value), uintptr(len(value)))
 }
 
 //go:linkname Null C.cJSON_CreateNull
