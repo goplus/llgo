@@ -6,6 +6,7 @@ func main() {
 	make3()
 	make4()
 	make5()
+	make6()
 }
 
 func make1() {
@@ -97,6 +98,17 @@ func make5() {
 	m := make(map[chan int]int)
 	m[ch] = 100
 	m[ch] = 200
+	for k, v := range m {
+		println(k, v)
+	}
+}
+
+type M map[int]string
+
+func make6() {
+	var m M
+	m = make(map[int]string)
+	m[1] = "hello"
 	for k, v := range m {
 		println(k, v)
 	}
