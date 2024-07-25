@@ -17,10 +17,11 @@ If `config-file` is not specified, a `llcppg.cfg` file is used in current direct
     "INIReader.h",
     "AnotherHeaderFile.h"
   ],
-  "libs": "$(pkg-config --libs inireader)"
+  "libs": "$(pkg-config --libs inireader)",
+  "trimPrefixes": ["Ini", "INI"]
 }
 ```
 
 ## Design
 
-See [Design of llcppg](design.md).
+See [llcppg Design](design.md).

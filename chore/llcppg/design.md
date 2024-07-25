@@ -1,4 +1,4 @@
-Design of llcppg
+llcppg Design
 =====
 
 ## Usage
@@ -11,13 +11,14 @@ If `config-file` is not specified, a `llcppg.cfg` file is used in current direct
 
 ```json
 {
-  "name": "inireader",
+  "name": "inih",
   "cflags": "$(pkg-config --cflags inireader)",
   "include": [
     "INIReader.h",
     "AnotherHeaderFile.h"
   ],
-  "libs": "$(pkg-config --libs inireader)"
+  "libs": "$(pkg-config --libs inireader)",
+  "trimPrefixes": ["Ini", "INI"]
 }
 ```
 
@@ -33,9 +34,10 @@ If `config-file` is not specified, a `llcppg.cfg` file is used in current direct
 
 ```sh
 llcppsymg config-file
+llcppsymg -  # read config from stdin
 ```
 
-It generates symbol tables. Its file format is as follows:
+It generates a symbol table file named `llcppg.symb.json`. Its file format is as follows:
 
 ```json
 [
@@ -44,7 +46,29 @@ It generates symbol tables. Its file format is as follows:
     "c++": "INIReader::INIReader(char const*, unsigned long)",
     "go": "(*Reader).Init__0"
   },
+  ...
 ]
+```
+
+
+### llcppsigfetch
+
+```sh
+llcppsigfetch config-file
+llcppsigfetch -  # read config from stdin
+```
+
+It fetches information of C/C++ symbols and print to stdout. Its format is as follows:
+
+```json
+TODO: see llgo/xtool/clang/ast
+```
+
+### gogensig
+
+```sh
+gogensig ast-file
+gogensig -  # read AST from stdin
 ```
 
 ## Overall
