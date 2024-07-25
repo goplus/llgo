@@ -579,8 +579,8 @@ func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
 		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
 	}
 	prog := b.Prog
-	ktyp := prog.Type(typ.raw.Type.(*types.Map).Key(), InGo)
-	vtyp := prog.Type(typ.raw.Type.(*types.Map).Elem(), InGo)
+	ktyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Key(), InGo)
+	vtyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Elem(), InGo)
 	rets := b.InlineCall(b.Pkg.rtFunc("MapIterNext"), iter)
 	ok := b.impl.CreateExtractValue(rets.impl, 0, "")
 	t := prog.Struct(prog.Bool(), ktyp, vtyp)
