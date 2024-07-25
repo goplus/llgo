@@ -78,16 +78,9 @@ func Run[OutT any](ac AsyncCall[OutT]) (OutT, error) {
 		e.mu.Unlock()
 		ac := e.acs[0]
 		e.acs = e.acs[1:]
-		if ac.Done() {
-			if ac == rootAc {
-				return p.Value, p.Err
-			}
-			parent := ac.parent()
-			if parent != nil {
-				parent.Resume()
-			}
-		} else {
-			ac.Call()
+		ac.Call()
+		if ac.Done() && ac == rootAc {
+			return p.Value, p.Err
 		}
 	}
 }
@@ -149,7 +142,9 @@ func (p *PromiseImpl[TOut]) Call() {
 		}
 		p.Value = v
 		p.Err = err
-		p.Resume()
+		if p.Parent != nil {
+			p.Parent.Resume()
+		}
 	})
 }
 
