@@ -91,6 +91,7 @@ type aDefer struct {
 	data     Expr         // pointer to runtime.Defer
 	bitsPtr  Expr         // pointer to defer bits
 	rundPtr  Expr         // pointer to RunDefers index
+	stmtPtr  Expr         // pointer to stmt index
 	procBlk  BasicBlock   // deferProc block
 	runsNext []BasicBlock // next blocks of RunDefers
 	stmts    []func(bits Expr)
@@ -125,10 +126,12 @@ const (
 	// 1: bits uintptr
 	// 2: link *Defer
 	// 3: rund voidptr
+	// 4: stmt index
 	deferSigjmpbuf = iota
 	deferBits
 	deferLink
 	deferRund
+	deferStmt
 )
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
@@ -151,11 +154,13 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		procBlk, rethrowBlk := blks[0], blks[1]
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rundPtr := b.FieldAddr(deferData, deferRund)
+		stmtPtr := b.FieldAddr(deferData, deferStmt)
 		self.defer_ = &aDefer{
 			key:      key,
 			data:     deferData,
 			bitsPtr:  bitsPtr,
 			rundPtr:  rundPtr,
+			stmtPtr:  stmtPtr,
 			procBlk:  procBlk,
 			runsNext: []BasicBlock{rethrowBlk},
 		}
@@ -188,6 +193,12 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 func (b Builder) DeferData() Expr {
 	key := b.deferKey()
 	return Expr{b.pthreadGetspecific(key).impl, b.Prog.DeferPtr()}
+}
+
+// SetDeferData set the defer data (*runtime.Defer).
+func (b Builder) SetDeferData(val Expr) {
+	key := b.deferKey()
+	b.pthreadSetspecific(key, val)
 }
 
 // Defer emits a defer instruction.
@@ -250,7 +261,9 @@ func (p Function) endDefer(b Builder) {
 	b.SetBlockEx(self.procBlk, AtEnd, true)
 	bits := b.Load(self.bitsPtr)
 	stmts := self.stmts
+	// TODO b.Load(self.stmtPtr)
 	for i := len(stmts) - 1; i >= 0; i-- {
+		b.Store(self.stmtPtr, b.Prog.Val(i))
 		stmts[i](bits)
 	}
 

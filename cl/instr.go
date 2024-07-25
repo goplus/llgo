@@ -222,6 +222,8 @@ var llgoInstrs = map[string]int{
 	"deferData":   llgoDeferData,
 	"unreachable": llgoUnreachable,
 
+	"setDeferData": llgoSetDeferData,
+
 	"atomicLoad":    llgoAtomicLoad,
 	"atomicStore":   llgoAtomicStore,
 	"atomicCmpXchg": llgoAtomicCmpXchg,
@@ -386,6 +388,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer
 			ret = b.DeferData()
+		case llgoSetDeferData:
+			args := p.compileValues(b, args, kind)
+			b.SetDeferData(args[0])
 		case llgoFuncAddr:
 			ret = p.funcAddr(b, args)
 		case llgoUnreachable: // func unreachable()
