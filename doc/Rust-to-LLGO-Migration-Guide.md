@@ -1,6 +1,6 @@
 # Rust to LLGO Migration Document
 
-### Add Dependencies & Build Configuration
+## Add Dependencies & Build Configuration
 
 Edit `Cargo.toml` to include necessary dependencies and configuration:
 
@@ -15,6 +15,8 @@ crate-type = ["cdylib"] # The generated dynamic library will conform to the C st
 [build-dependencies]
 cbindgen = "0.26.0"
 ```
+
+## C-style wrapper for Rust
 
 ### Import C Language Types
 
@@ -59,12 +61,12 @@ After packaging:
 
 ```rust
 pub unsafe extern "C" fn sled_create_config() -> \*mut Config {
-Box::into_raw(Box::new(Config::new()))
+    Box::into_raw(Box::new(Config::new()))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn sled_free_config(config: \*mut Config) {
-drop(Box::from_raw(config));
+    drop(Box::from_raw(config));
 }
 ```
 
@@ -72,7 +74,7 @@ drop(Box::from_raw(config));
 
 Address the interfacing issues between generic pointers in C and Rust:
 
-```Rust
+```rust
 let mut reader = ReaderBuilder::new().from_path(file_path)?;
 ```
 
@@ -154,7 +156,7 @@ pub extern "C" fn free_string(s: *mut c_char) {
 }
 ```
 
-### Generate Header File
+## Generate Header File
 
 Edit `cbindgen.toml` to configure the header file generation rules:
 
@@ -173,9 +175,9 @@ fn main() {
 }
 ```
 
-### Compilation and Installation
+## Compilation and Installation
 
-Build the dynamic library:
+### Build the dynamic library:
 
 ```sh
 cargo build --release
@@ -185,14 +187,14 @@ cargo build --release
 
 Install the [dylib-installer](https://github.com/hackerchai/dylib-installer) tool, which is used to install dynamic libraries:
 
-```SH
+```sh
 brew tap hackerchai/tap
 brew install dylib-installer
 ```
 
 Or you can install it using Cargo:
 
-```SH
+```sh
 cargo install dylib_installer
 ```
 
@@ -200,7 +202,7 @@ cargo install dylib_installer
 
 Use dylib-installer to install the built dynamic library and the header file into the system directory:
 
-```SH
+```sh
 sudo dylib_installer <dylib_lib> <header_file_lib>
 ```
 
@@ -208,17 +210,17 @@ sudo dylib_installer <dylib_lib> <header_file_lib>
 
 You can check the installation by running the following command:
 
-```SH
+```sh
 pkg-config --libs --cflags <lib_name>
 ```
 
-if everything is installed correctly, you will see the output like this (depending on your system):
+If everything is installed correctly, you will see the output like this (depending on your system):
 
-```SH
+```sh
 -I/usr/local/include -L/usr/local/lib -l<lib_name>
 ```
 
-### LLGO Package Mapping
+## LLGO Mapping
 
 Map functions from the Rust library to an LLGO package, ensuring type consistency:
 
@@ -249,7 +251,7 @@ type Reader struct {
 
 If we want to calculate the size of this structure, we can use the following C code:
 
-```C
+```c
 printf("%d\n", sizeof(csv_reader));
 ```
 
@@ -257,7 +259,7 @@ printf("%d\n", sizeof(csv_reader));
 
 Ordinary functions can be mapped in the form of `//go:linkname`.
 
-```C
+```c
 csv_reader *csv_reader_new(const char *file_path);
 ```
 
@@ -272,7 +274,7 @@ func NewReader(file_path *c.Char) *Reader
 
 Methods need to be mapped in the form of `// llgo:link (*Receiver)`.
 
-```C
+```c
 void csv_reader_free(csv_reader *reader);
 
 const char *csv_reader_read_record(csv_reader *reader);
@@ -292,7 +294,7 @@ func (reader *Reader) ReadRecord() *c.Char { return nil }
 
 - Function pointer
 
-If you use a function pointer, that is, declare the function as a type separately, you need to use `// llgo:type C`to declare it.
+If you use a function pointer, that is, declare the function as a type separately, you need to use `// llgo:type C` to declare it.
 
 ```c
 typedef size_t (*hyper_io_read_callback)(void*, struct hyper_context*, uint8_t*, size_t);
@@ -317,13 +319,13 @@ Or declare the function directly in the parameter.
 func (io *Io) SetRead(ioSetReadCb func(c.Pointer, *Context, *uint8, uintptr) uintptr) {}
 ```
 
-### Writing Examples and README
+## Writing Examples and README
 
 Finally, provide example code and a detailed README file to help users understand how to use the generated library.
 
-### Example Code
+## Example Code
 
-You can find the migrated instance from [llgoexamples](https://github.com/goplus/llgoexamples), in the lib directory is the migrated Rust library, and in the rust directory, the migrated mapping file and go demo.
+You can find the migrated examples in the [llgoexamples](https://github.com/goplus/llgoexamples). The migrated Rust libraries are in the `lib` directory, and the migrated mapping files and Go demos are in the `rust` directory.
 
 Such as:
 
