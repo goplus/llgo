@@ -35,7 +35,7 @@ func main() {
 	(&server).Bind((*net.SockAddr)(c.Pointer(&addr)), 0)
 	res := (*libuv.Stream)(&server).Listen(DEFAULT_BACKLOG, OnNewConnection)
 	if res != 0 {
-		c.Fprintf(c.Stderr, c.Str("Listen error: %s\n"), libuv.Strerror(res))
+		c.Fprintf(c.Stderr, c.Str("Listen error: %s\n"), libuv.Strerror((libuv.Errno(res))))
 		return
 	}
 
@@ -58,7 +58,7 @@ func AllocBuffer(handle *libuv.Handle, suggestedSize uintptr, buf *libuv.Buf) {
 
 func EchoWrite(req *libuv.Write, status c.Int) {
 	if status != 0 {
-		c.Fprintf(c.Stderr, c.Str("Write error: %s\n"), libuv.Strerror(status))
+		c.Fprintf(c.Stderr, c.Str("Write error: %s\n"), libuv.Strerror((libuv.Errno(status))))
 	}
 	FreeWriteReq(req)
 }
@@ -80,7 +80,7 @@ func EchoRead(client *libuv.Stream, nread c.Long, buf *libuv.Buf) {
 	if nread < 0 {
 		// Handle read errors and EOF.
 		if (libuv.Errno)(nread) != libuv.EOF {
-			c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(c.Int(nread)))
+			c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror((libuv.Errno)(nread)))
 		}
 		(*libuv.Handle)(c.Pointer(client)).Close(nil)
 	}
@@ -92,7 +92,7 @@ func EchoRead(client *libuv.Stream, nread c.Long, buf *libuv.Buf) {
 
 func OnNewConnection(server *libuv.Stream, status c.Int) {
 	if status < 0 {
-		c.Fprintf(c.Stderr, c.Str("New connection error: %s\n"), libuv.Strerror(status))
+		c.Fprintf(c.Stderr, c.Str("New connection error: %s\n"), libuv.Strerror(libuv.Errno(status)))
 		return
 	}
 

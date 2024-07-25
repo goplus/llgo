@@ -40,7 +40,7 @@ func main() {
 func onOpen(req *libuv.Fs) {
 	// Check for errors
 	if libuv.FsGetResult(req) < 0 {
-		c.Fprintf(c.Stderr, c.Str("Error opening file: %s\n"), libuv.Strerror(libuv.LoopClose(loop)))
+		c.Fprintf(c.Stderr, c.Str("Error opening file: %s\n"), libuv.Strerror(libuv.Errno(libuv.LoopClose(loop))))
 		libuv.LoopClose(loop)
 		return
 	}
@@ -49,7 +49,7 @@ func onOpen(req *libuv.Fs) {
 	// Read the file
 	readRes := libuv.FsRead(loop, &readReq, libuv.UvFile(libuv.FsGetResult(req)), &iov, 1, -1, onRead)
 	if readRes != 0 {
-		c.Printf(c.Str("Error in FsRead: %s (code: %d)\n"), libuv.Strerror(c.Int(readRes)), readRes)
+		c.Printf(c.Str("Error in FsRead: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(readRes)), readRes)
 		libuv.LoopClose(loop)
 		return
 	}
@@ -58,7 +58,7 @@ func onOpen(req *libuv.Fs) {
 func onRead(req *libuv.Fs) {
 	// Check for errors
 	if libuv.FsGetResult(req) < 0 {
-		c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(libuv.FsGetResult(req)))
+		c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(libuv.Errno(libuv.FsGetResult(req))))
 		libuv.LoopClose(loop)
 	} else if libuv.FsGetResult(req) == 0 {
 		c.Printf(c.Str("EOF\n"))
@@ -66,7 +66,7 @@ func onRead(req *libuv.Fs) {
 		closeRes := libuv.FsClose(loop, &closeReq, libuv.UvFile(libuv.FsGetResult(&openReq)), onClose)
 		if closeRes != 0 {
 			// Print the content
-			c.Printf(c.Str("Error in FsClose: %s (code: %d)\n"), libuv.Strerror(c.Int(closeRes)), closeRes)
+			c.Printf(c.Str("Error in FsClose: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(closeRes)), closeRes)
 			libuv.LoopClose(loop)
 			return
 		}
@@ -80,7 +80,7 @@ func onRead(req *libuv.Fs) {
 func onClose(req *libuv.Fs) {
 	// Check for errors
 	if libuv.FsGetResult(req) < 0 {
-		c.Fprintf(c.Stderr, c.Str("Error closing file: %s\n"), libuv.Strerror(libuv.FsGetResult(req)))
+		c.Fprintf(c.Stderr, c.Str("Error closing file: %s\n"), libuv.Strerror(libuv.Errno(libuv.FsGetResult(req))))
 	} else {
 		c.Printf(c.Str("\nFile closed successfully.\n"))
 	}
