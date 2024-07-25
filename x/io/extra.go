@@ -60,7 +60,7 @@ func Race[OutT any](acs ...AsyncCall[OutT]) *PromiseImpl[OutT] {
 		for _, ac := range acs {
 			ac := ac
 			go func(ac AsyncCall[OutT]) {
-				v, err := Run(ac)
+				v, err := Run[OutT](ac)
 				rc <- Result[OutT]{v, err}
 			}(ac)
 		}
@@ -94,7 +94,7 @@ func All[OutT any](acs []AsyncCall[OutT]) *PromiseImpl[[]Result[OutT]] {
 			ac := ac
 			wg.Add(1)
 			go func(ac AsyncCall[OutT]) {
-				v, err := Run(ac)
+				v, err := Run[OutT](ac)
 				ret[idx] = Result[OutT]{v, err}
 				wg.Done()
 			}(ac)
@@ -157,15 +157,15 @@ func Await3Compiled[OutT1, OutT2, OutT3 any](
 
 		go func() {
 			defer wg.Done()
-			ret.V1, ret.Err = Run(ac1)
+			ret.V1, ret.Err = Run[OutT1](ac1)
 		}()
 		go func() {
 			defer wg.Done()
-			ret.V2, ret.Err = Run(ac2)
+			ret.V2, ret.Err = Run[OutT2](ac2)
 		}()
 		go func() {
 			defer wg.Done()
-			ret.V3, ret.Err = Run(ac3)
+			ret.V3, ret.Err = Run[OutT3](ac3)
 		}()
 		wg.Wait()
 		if debugAsync {

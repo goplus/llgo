@@ -35,23 +35,19 @@ type Void = [0]byte
 // -----------------------------------------------------------------------------
 
 type asyncCall interface {
+	parent() asyncCall
 	Resume()
 	Call()
 	Done() bool
 }
 
 type AsyncCall[OutT any] interface {
-	Call()
-	Await(timeout ...time.Duration) (ret OutT, err error)
-	Chan() <-chan OutT
-	Done() bool
 }
 
 type executor struct {
-	ac   asyncCall
+	acs  []asyncCall
 	mu   sync.Mutex
 	cond *sync.Cond
-	susp bool
 }
 
 func newExecutor() *executor {
@@ -60,10 +56,10 @@ func newExecutor() *executor {
 	return e
 }
 
-func (e *executor) Resume() {
+func (e *executor) schedule(ac asyncCall) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-	e.susp = false
+	e.acs = append(e.acs, ac)
+	e.mu.Unlock()
 	e.cond.Signal()
 }
 
@@ -71,18 +67,28 @@ func Run[OutT any](ac AsyncCall[OutT]) (OutT, error) {
 	e := newExecutor()
 	p := ac.(*PromiseImpl[OutT])
 	p.Exec = e
+	var rootAc asyncCall = p
+	e.schedule(rootAc)
 
 	for {
 		e.mu.Lock()
-		for e.susp {
+		for len(e.acs) == 0 {
 			e.cond.Wait()
 		}
 		e.mu.Unlock()
-		e.susp = true
+		ac := e.acs[0]
+		e.acs = e.acs[1:]
 		if ac.Done() {
-			return p.Value, p.Err
+			if ac == rootAc {
+				return p.Value, p.Err
+			}
+			parent := ac.parent()
+			if parent != nil {
+				parent.Resume()
+			}
+		} else {
+			ac.Call()
 		}
-		ac.Call()
 	}
 }
 
@@ -110,10 +116,10 @@ func (p Promise[OutT]) Done() bool {
 // -----------------------------------------------------------------------------
 
 type PromiseImpl[TOut any] struct {
-	Prev  int
-	Next  int
-	Exec  *executor
-	Debug string
+	Next   int
+	Exec   *executor
+	Parent asyncCall
+	Debug  string
 
 	Func  func(resolve func(TOut, error))
 	Err   error
@@ -121,8 +127,15 @@ type PromiseImpl[TOut any] struct {
 	c     chan TOut
 }
 
+func (p *PromiseImpl[TOut]) parent() asyncCall {
+	return p.Parent
+}
+
 func (p *PromiseImpl[TOut]) Resume() {
-	p.Exec.Resume()
+	if debugAsync {
+		log.Printf("Resume task: %+v\n", p)
+	}
+	p.Exec.schedule(p)
 }
 
 func (p *PromiseImpl[TOut]) Done() bool {
