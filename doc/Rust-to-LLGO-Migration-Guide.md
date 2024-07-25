@@ -32,37 +32,30 @@ To ensure that Rust functions can be correctly called by C and LLGO, use the fol
 - `unsafe` is used to mark operations that are unsafe, especially when dealing with raw pointers.
 - `extern "C"` specifies the use of C calling conventions.
 
-For example, in Rust, we write CSV code like this:
-
 ```rust
-use csv::ReaderBuilder;
-use std::error::Error;
-
-fn main() -> Result<(), Box<dyn Error>> {
-    // Define the CSV file path
-    let file_path = "example.csv";
-
-    // Creating a CSV Reader
-    let mut reader = ReaderBuilder::new().from_path(file_path)?;
-
-    // Define a container to store records
-    let mut record = csv::StringRecord::new();
-
-    // Read records one by one
-    while reader.read_record(&mut record)? {
-        // Print each record
-        println!("{:?}", record);
-    }
-
-    Ok(())
+pub fn add_numbers(a: i32, b: i32) -> i32 {
+    a + b
 }
 ```
 
-If we need to migrate the CSV library to LLGO, we need to encapsulate each CSV method with a C API, such as the following:
+After packaging:
+
+```rust
+#[no_mangle]
+pub unsafe extern "C" fn add_numbers_c(a: i32, b: i32) -> i32 {
+    add_numbers(a, b)
+}
+```
 
 ### Memory Management
 
 Use `Box` to manage dynamic memory to ensure correct memory release between Rust and C:
+
+```rust
+let config = Config::new();
+```
+
+After packaging:
 
 ```rust
 pub unsafe extern "C" fn sled_create_config() -> \*mut Config {
@@ -79,12 +72,39 @@ drop(Box::from_raw(config));
 
 Address the interfacing issues between generic pointers in C and Rust:
 
-```rust
-#[no_mangle]
-pub extern "C" fn csv_reader_new(file_path: *const c_char) -> *mut c_void { /* ... */ }
+```Rust
+let mut reader = ReaderBuilder::new().from_path(file_path)?;
+```
 
+After packaging:
+
+```rust
+// Create a new CSV reader for the specified file path.
 #[no_mangle]
-pub extern "C" fn csv_reader_free(ptr: *mut c_void) { /* ... */ }
+pub extern "C" fn csv_reader_new(file_path: *const c_char) -> *mut c_void {
+    let file_path = unsafe {
+        if file_path.is_null() { return ptr::null_mut(); }
+        match CStr::from_ptr(file_path).to_str() {
+            Ok(s) => s,
+            Err(_) => return ptr::null_mut(),
+        }
+    };
+
+    let reader = csv::ReaderBuilder::new().from_path(file_path);
+    match reader {
+        Ok(r) => Box::into_raw(Box::new(r)) as *mut c_void,
+        Err(_) => ptr::null_mut(),
+    }
+}
+
+// Free the memory allocated for the CSV reader.
+#[no_mangle]
+pub extern "C" fn csv_reader_free(ptr: *mut c_void) {
+    if !ptr.is_null() {
+        let reader: Box<csv::Reader<File>> = unsafe { Box::from_raw(ptr as *mut csv::Reader<File>) };
+        std::mem::drop(reader);
+    }
+}
 ```
 
 ### String Handling
@@ -92,14 +112,44 @@ pub extern "C" fn csv_reader_free(ptr: *mut c_void) { /* ... */ }
 Convert strings between C and Rust:
 
 ```rust
-#[no_mangle]
-pub extern "C" fn csv_reader_read_record(ptr: *mut c_void) -> *const c_char { /* ... */ }
+let mut record = csv::StringRecord::new();
 
+while reader.read_record(&mut record)? {
+    // Print each record
+    println!("{:?}", record);
+}
+```
+
+After packaging:
+
+```rust
+// Read the next record from the CSV reader and return it as a C string.
+#[no_mangle]
+pub extern "C" fn csv_reader_read_record(ptr: *mut c_void) -> *const c_char {
+    let reader = unsafe {
+        assert!(!ptr.is_null());
+        &mut *(ptr as *mut csv::Reader<File>)
+    };
+
+    let mut record = csv::StringRecord::new();
+    match reader.read_record(&mut record) {
+        Ok(true) => match CString::new(format!("{:?}\n", record)) {
+            Ok(c_string) => c_string.into_raw(),
+            Err(_) => ptr::null(),
+        },
+        _ => ptr::null(),
+    }
+}
+
+// Free the memory allocated for a C string returned by other functions.
 #[no_mangle]
 pub extern "C" fn free_string(s: *mut c_char) {
+    if s.is_null() {
+        return;
+    }
     unsafe {
         let c_string = CString::from_raw(s);
-        drop(c_string);
+        std::mem::drop(c_string);
     }
 }
 ```
@@ -173,7 +223,7 @@ if everything is installed correctly, you will see the output like this (dependi
 Map functions from the Rust library to an LLGO package, ensuring type consistency:
 
 - LLGoPackage
-  
+
 Specify `LLGoPackage` and use `pkg-config` to find the location of the lib library.
 
 ```go
@@ -197,9 +247,21 @@ type Reader struct {
 // }
 ```
 
+If we want to calculate the size of this structure, we can use the following C code:
+
+```C
+printf("%d\n", sizeof(csv_reader));
+```
+
 - Ordinary functions
 
 Ordinary functions can be mapped in the form of `//go:linkname`.
+
+```C
+csv_reader *csv_reader_new(const char *file_path);
+```
+
+After mapping:
 
 ```go
 //go:linkname NewReader C.csv_reader_new
@@ -207,8 +269,18 @@ func NewReader(file_path *c.Char) *Reader
 ```
 
 - Method
-  
+
 Methods need to be mapped in the form of `// llgo:link (*Receiver)`.
+
+```C
+void csv_reader_free(csv_reader *reader);
+
+const char *csv_reader_read_record(csv_reader *reader);
+```
+
+After mapping:
+
+We can extract the first parameter as Receiver:
 
 ```go
 // llgo:link (*Reader).Free C.csv_reader_free
@@ -219,8 +291,16 @@ func (reader *Reader) ReadRecord() *c.Char { return nil }
 ```
 
 - Function pointer
-  
+
 If you use a function pointer, that is, declare the function as a type separately, you need to use `// llgo:type C`to declare it.
+
+```c
+typedef size_t (*hyper_io_read_callback)(void*, struct hyper_context*, uint8_t*, size_t);
+
+void hyper_io_set_read(struct hyper_io *io, hyper_io_read_callback func);
+```
+
+After mapping:
 
 ```go
 // llgo:type C
@@ -234,11 +314,19 @@ Or declare the function directly in the parameter.
 
 ```go
 // llgo:link (*Io).SetRead C.hyper_io_set_read
-func (io *Io) SetRead(callback func(c.Pointer, *Context, *uint8, uintptr) uintptr) {}
+func (io *Io) SetRead(ioSetReadCb func(c.Pointer, *Context, *uint8, uintptr) uintptr) {}
 ```
 
 ### Writing Examples and README
 
-Provide example code and a detailed README file to help users understand how to use the generated library.
+Finally, provide example code and a detailed README file to help users understand how to use the generated library.
+
+### Example Code
 
 You can find the migrated instance from [llgoexamples](https://github.com/goplus/llgoexamples), in the lib directory is the migrated Rust library, and in the rust directory, the migrated mapping file and go demo.
+
+Such as:
+
+- CSV: [csv.rs](https://github.com/goplus/llgoexamples/blob/main/lib/rust/csv-wrapper/src/lib.rs) --> [csv.go](https://github.com/goplus/llgoexamples/blob/main/rust/csv/csv.go)
+- Sled: [sled.rs](https://github.com/goplus/llgoexamples/blob/main/lib/rust/sled/src/lib.rs) --> [sled.go](https://github.com/goplus/llgoexamples/blob/main/rust/sled/sled.go)
+- ...
