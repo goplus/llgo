@@ -46,7 +46,7 @@ func llcppsigfetch(conf []byte, out io.Writer) {
 }
 
 func gogensig(in io.Reader) error {
-	cmd := exec.Command("gogensig")
+	cmd := exec.Command("gogensig", "-")
 	cmd.Stdin = in
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
