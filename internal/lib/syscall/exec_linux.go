@@ -6,6 +6,8 @@
 
 package syscall
 
+import "github.com/goplus/llgo/c"
+
 // Linux unshare/clone/clone2/clone3 flags, architecture-independent,
 // copied from linux/sched.h.
 const (
@@ -119,8 +121,8 @@ func runtime_AfterForkInChild()
 // The calls to RawSyscall are okay because they are assembly
 // functions that do not grow the stack.
 //
-//go:norace
-func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
+// func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
+func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
 	/* TODO(xsw):
 	// Set up and fork. This returns immediately in the parent or
 	// if there's an error.
