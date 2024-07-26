@@ -15,6 +15,7 @@ import (
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 // -----------------------------------------------------------------------------
@@ -78,6 +79,15 @@ func (w WaitStatus) TrapCause() int {
 }
 */
 
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
+	var status c.Int
+	wpid, err = wait4(pid, &status, options, rusage)
+	if wstatus != nil {
+		*wstatus = WaitStatus(status)
+	}
+	return
+}
+
 // -----------------------------------------------------------------------------
 
 // int pipe2(int pipefd[2], int flags);
@@ -85,13 +95,9 @@ func (w WaitStatus) TrapCause() int {
 //go:linkname pipe2 C.pipe2
 func pipe2(pipefd *[2]c.Int, flags c.Int) c.Int
 
-func Pipe(p []int) error {
-	return Pipe2(p, 0)
-}
-
 func Pipe2(p []int, flags int) error {
 	if len(p) != 2 {
-		return EINVAL
+		return Errno(syscall.EINVAL)
 	}
 	var pp [2]c.Int
 	ret := pipe2(&pp, c.Int(flags))

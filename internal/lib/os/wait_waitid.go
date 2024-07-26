@@ -10,10 +10,10 @@
 package os
 
 import (
+	"syscall"
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/syscall"
 )
 
 const _P_PID = 1

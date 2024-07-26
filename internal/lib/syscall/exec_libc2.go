@@ -52,8 +52,6 @@ func runtime_AfterForkInChild()
 // For the same reason compiler does not race instrument it.
 // The calls to rawSyscall are okay because they are assembly
 // functions that do not grow the stack.
-//
-//go:norace
 func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err1 Errno) {
 	// Declare all variables at top in case any
 	// declarations require heap allocation (e.g., err1).
