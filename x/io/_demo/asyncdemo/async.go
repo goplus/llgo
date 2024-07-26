@@ -169,10 +169,11 @@ func GetUserCompiled(name string) *io.PromiseImpl[User] {
 				state2.Exec = P.Exec
 				state2.Parent = P
 				state2.Call()
-				log.Printf("TextCompiled state2: %v\n", state2)
+				log.Printf("TextCompiled state2: %+v\n", state2)
 				return
 			case 2:
 				P.Next = -1
+				log.Printf("TextCompiled state2: %+v\n", state2)
 				body, err := state2.Value, state2.Err
 				if err != nil {
 					resolve(User{}, err)
@@ -380,10 +381,10 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 			case 1:
 				P.Next = 2
 				user, err := state1.Value, state1.Err
-				log.Printf("user: %v, err: %v\n", user, err)
+				log.Printf("user: %+v, err: %v\n", user, err)
 
 				state2 = io.Race[User](GetUserCompiled("2"), GetUserCompiled("3"), GetUserCompiled("4"))
-				log.Printf("state2: %v\n", state2)
+				log.Printf("state2: %+v\n", state2)
 				state2.Exec = P.Exec
 				state2.Parent = P
 				state2.Call()
@@ -393,10 +394,10 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 
 				P.Next = 3
 				user, err := state2.Value, state2.Err
-				log.Printf("race user: %v, err: %v\n", user, err)
+				log.Printf("race user: %+v, err: %v\n", user, err)
 
 				state3 = io.All[User]([]io.AsyncCall[User]{GetUserCompiled("5"), GetUserCompiled("6"), GetUserCompiled("7")})
-				log.Printf("state3: %v\n", state3)
+				log.Printf("state3: %+v\n", state3)
 				state3.Exec = P.Exec
 				state3.Parent = P
 				state3.Call()
@@ -408,7 +409,7 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 				log.Println(users, err)
 
 				state4 = io.Await3Compiled[User, float64, io.Void](GetUserCompiled("8"), GetScoreCompiled(), DoUpdateCompiled("update sth."))
-				log.Printf("state4: %v\n", state4)
+				log.Printf("state4: %+v\n", state4)
 				state4.Exec = P.Exec
 				state4.Parent = P
 				state4.Call()
