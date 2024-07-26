@@ -74,30 +74,31 @@ gogensig -  # read AST from stdin
 
 ### Process
 
-1. The Parsing Module reads `config.json` to obtain dynamic libraries, header files, and the package name. After parsing, it writes the generated `common_symbol_info.json` path into `config.json`.
-2. The Function Declaration Generation Module reads `config.json` to get the package name, header files, and the previously generated `common_symbol_info.json`. After parsing, it generates the function prototype `func_prototype.json`.
-3. Reads the previously generated `func_prototype.json`, stores it as a structure, and uses gogen to generate code based on the structure.
+1. The Parsing Module reads `llcppg.cfg` to obtain dynamic libraries, header files, and the package name. After parsing, it writes the generated `llcppg.symb.json` path into `llcppg.cfg`.
+2. The Function Declaration Generation Module reads `llcppg.cfg` to get the package name, header files, and the previously generated `llcppg.symb.json`. After parsing, it generates the function prototype `llcppg.function.json`.
+3. Reads the previously generated `llcppg.information.json`, stores it as a structure, and uses gogen to generate code based on the structure.
 
 ## Parsing Module
 
 ### Input
 
-Obtains the paths to header files and dynamic library files by reading the JSON file `config.json`.
+Obtains the paths to header files and dynamic library files by reading the JSON file `llcppg.cfg`.
 
 ```json
 {
-  "PackageName": "inireader",
-  "HeaderFiles": [
-    "/path/to/header/INIReader.h",
-    "/path/to/header/AnotherHeader.h"
+  "name": "inih",
+  "cflags": "$(pkg-config --cflags INIReader)",
+  "include": [
+    "INIReader.h",
+    "AnotherHeaderFile.h"
   ],
-  "DLLFile": "/path/to/lib/libINIReader.dylib",
-  "JSONFile": "/path/to/json/config.json"
+  "libs": "$(pkg-config --libs INIReader)",
+  "trimPrefixes": ["Ini", "INI"]
 }
 ```
 
 ```bash
-./generate_symbol_table /path/to/config.json
+llcppsymg config-file
 ```
 
 ### Implementation Steps
@@ -105,15 +106,15 @@ Obtains the paths to header files and dynamic library files by reading the JSON 
 1. Parse dylib and store:
 
 ```go
-// common.go
+// types.go
 type CPPSymbol struct {
-    Address string
-    Type    string
-    Name    string
+    Symbol string `json:"symbol"`
+    Type   string `json:"type"`
+    Name   string `json:"name"`
 }
 
 // parser_dylib.go
-func ParseDylibSymbols(dylibPath string) ([]common.CPPSymbol, error)
+func parseDylibSymbols(lib string) ([]common.CPPSymbol, error) 
 ```
 
 2. Parse header files and store:
@@ -121,48 +122,46 @@ func ParseDylibSymbols(dylibPath string) ([]common.CPPSymbol, error)
 ```go
 // common.go
 type ASTInformation struct {
-    Namespace   string
-    Class       string
-    Name        string
-    BaseClasses []string
-    ReturnType  string
-    Location    string
-    Parameters  []Parameter
-    Symbol      string
+    Namespace   string      `json:"namespace"`
+    Class       string      `json:"class"`
+    Name        string      `json:"name"`
+    BaseClasses []string    `json:"baseClasses"`
+    ReturnType  string      `json:"returnType"`
+    Location    string      `json:"location"`
+    Parameters  []Parameter `json:"parameters"`
+    Symbol      string      `json:"symbol"`
 }
 
 type Parameter struct {
-    Name string
-    Type string
+    Name string `json:"name"`
+    Type string `json:"type"`
 }
 
 // parser_ast.go
-func ParseHeaderFile(files []string) ([]common.ASTInformation, error)
+func parseHeaderFile(config types.Config) ([]common.ASTInformation, error)
 ```
 
 3. Cross-reference data from the first two steps to get the final output
 
 ```go
 // common.go
-type CommonSymbolInfo struct {
-    FunctionName       string
-    Symbol             string
-    Location           string
-    UserFunctionName   string
+type SymbolInfo struct {
+    Mangle string `json:"mangle"` // C++ Symbol
+    CPP    string `json:"c++"`    // C++ function name
+    Go     string `json:"go"`     // Go function name
 }
 
 // common_symbols.go
-func GetCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTInformation) []common.CommonSymbolInfo
+func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTInformation) []common.SymbolInfo {
 ```
 
-4. Generate `common_symbol_info.json` file and store the JSON file path into `config.json`
+4. Generate `llcppg.symb.json` file and store the JSON file path into `llcppg.cfg`
 
 ```go
-// generator.go
-func GenerateJSON([]CommonSymbolInfo)
+func generateJSON([]CommonSymbolInfo)
 ```
 
-5. Example `common_symbol_info.json` file
+5. Example `llcppg.symb.json` file
 
 ```json
 {
@@ -177,14 +176,14 @@ func GenerateJSON([]CommonSymbolInfo)
 
 ### Input
 
-No input required, directly reads the `config.json` file
+No input required, directly reads the `llcppg.cfg` file
 
 ### Implementation Steps
 
 1. Execute the executable
 
 ```bash
-./generate_func_decl /path/to/config.json
+llcppsigfetch config-file
 ```
 
 2. Parse header files
@@ -192,18 +191,19 @@ No input required, directly reads the `config.json` file
 ```go
 // common.go
 type ASTInformation struct {
-    Namespace   string
-    Class       string
-    Name        string
-    BaseClasses []string
-    ReturnType  string
-    Location    string
-    Parameters  []Parameter
+    Namespace   string      `json:"namespace"`
+    Class       string      `json:"class"`
+    Name        string      `json:"name"`
+    BaseClasses []string    `json:"baseClasses"`
+    ReturnType  string      `json:"returnType"`
+    Location    string      `json:"location"`
+    Parameters  []Parameter `json:"parameters"`
+    Symbol      string      `json:"symbol"`
 }
 
 type Parameter struct {
-    Name string
-    Type string
+    Name string `json:"name"`
+    Type string `json:"type"`
 }
 
 // parser_ast.go
@@ -218,19 +218,19 @@ func ParseHeaderFile(filePath string) ([]common.ASTInformation, error)
 
 ```json
 {
-    "FunctionName": "A::B::C",
-    "Symbol": "_ZN9INIReaderC1ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE",
-    "Location": "a.h",
-    "ReturnType" : "int",
-    "UserFunctionName": "CFromA",
-    "Parameters" : [
+    "functionName": "A::B::C",
+    "symbol": "_ZN9INIReaderC1ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE",
+    "location": "a.h",
+    "returnType": "int",
+    "userFunctionName": "CFromA",
+    "parameters": [
         {
-            "arg1" : "int"
+          "arg1": "int"
         },
         {
-            "arg2" : "*char"
+          "arg2": "*char"
         }
-    ]
+  ]
 }
 ```
 
@@ -245,7 +245,7 @@ No input required, directly reads `func_prototype.json` file
 1. Execute the executable
 
 ```bash
-./generate_code /path/to/func_prototype.json
+gogensig ast-file
 ```
 
 2. Parse JSON file
@@ -253,11 +253,11 @@ No input required, directly reads `func_prototype.json` file
 ```go
 // common.go
 type HeaderFileInfo struct {
-    FunctionName     string
-    Symbol           string
-    Location         string
-    UserFunctionName string
-    Parameters       map[string]string
+    FunctionName     string            `json:"functionName"`
+    Symbol           string            `json:"symbol"`
+    Location         string            `json:"location"`
+    UserFunctionName string            `json:"userFunctionName"`
+    Parameters       map[string]string `json:"parameters"`
 }
 
 // parse_json.go

@@ -1,5 +1,3 @@
-# How to support a C/C++ Library
-
 # Support a C Library
 
 ## Install a C Library
@@ -14,7 +12,7 @@ brew install inih
 
 1. On macOS, use `nm -gU libbar.dylib` to parse C-style symbols
 
-```jsx
+```bash
 0000000000003e55 T _ini_parse
 ```
 
@@ -26,14 +24,14 @@ int ini_parse(const char* filename, ini_handler handler, void* user);
 
 3. Create the corresponding Go file
 
-   ```c
-   inih/
-   ├── _demo
-       ├── inih_demo
-   	    ├──inih_demo.go
-   └── inih.go
+```c
+inih/
+├── _demo
+   ├── inih_demo
+    ├──inih_demo.go
+└── inih.go
+```
 
-   ```
 4. In `inih.go`, use LLGoPackage to specify the location of the third-party library so that llgo can link to the third-party library. Both `pkg-config --libs inih` and `linih` are used to specify the location of the third-party library.
 
 ```go
@@ -50,42 +48,42 @@ const (
 
 5. Write the corresponding function in `inih.go`
 
-   Note that the basic C function type mapping to Go function type can be found at [https://github.com/goplus/llgo/blob/main/doc/Type-Mapping-between-C-and-Go.md](https://github.com/goplus/llgo/blob/main/doc/Type-Mapping-between-C-and-Go.md). Some types requiring special handling are listed at the end of this document for reference.
+Note that the basic C function type mapping to Go function type can be found at [https://github.com/goplus/llgo/blob/main/doc/Type-Mapping-between-C-and-Go.md](https://github.com/goplus/llgo/blob/main/doc/Type-Mapping-between-C-and-Go.md). Some types requiring special handling are listed at the end of this document for reference.
 
-   ```go
-   //go:linkname Parse C.ini_parse
-   func Parse(filename *c.Char, handler func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int, user c.Pointer) c.Int
-   ```
+```go
+//go:linkname Parse C.ini_parse
+func Parse(filename *c.Char, handler func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int, user c.Pointer) c.Int
+```
 
 6. Write the function call in `inih_demo.go`
 
-   ```go
-   package main
+```go
+package main
 
-   import (
-   	"github.com/goplus/llgo/c"
-   	"github.com/goplus/llgo/cpp/inih"
-   )
+import (
+"github.com/goplus/llgo/c"
+"github.com/goplus/llgo/cpp/inih"
+)
 
-   func main() {
-   	filename := c.Str("path/to/yourIniFile")
+func main() {
+filename := c.Str("path/to/yourIniFile")
 
-   	if inih.Parse(filename, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
-   		println("section:", c.GoString(section), "name:", c.GoString(name), "value:", c.GoString(value))
-   		return 1
-   	}, nil) < 0 {
-   		println("Error parsing config file")
-   		return
-   	}
-   }
-
-   ```
+if inih.Parse(filename, func(user c.Pointer, section *c.Char, name *c.Char, value *c.Char) c.Int {
+        println("section:", c.GoString(section), "name:", c.GoString(name), "value:", c.GoString(value))
+        return 1
+    }, nil) < 0 {
+        println("Error parsing config file")
+        return
+    }
+}
+```
+   
 7. Use llgo to run the demo
 
-   ```bash
-   cd inih/_demo/inih_demo
-   llgo run .
-   ```
+```bash
+cd inih/_demo/inih_demo
+llgo run .
+```
 
 ## Handling Special Types
 
@@ -106,15 +104,18 @@ typedef enum {
     BLEND_CUSTOM_SEPARATE           // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
 } BlendMode;
 */
+
+type BlendMode c.Int
+
 const (
-	BLEND_ALPHA             BlendMode = iota // Blend textures considering alpha (default)
-	BLEND_ADDITIVE                           // Blend textures adding colors
-	BLEND_MULTIPLIED                         // Blend textures multiplying colors
-	BLEND_ADD_COLORS                         // Blend textures adding colors (alternative)
-	BLEND_SUBTRACT_COLORS                    // Blend textures subtracting colors (alternative)
-	BLEND_ALPHA_PREMULTIPLY                  // Blend premultiplied textures considering alpha
-	BLEND_CUSTOM                             // Blend textures using custom src/dst factors (use rlSetBlendFactors())
-	BLEND_CUSTOM_SEPARATE                    // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
+    BLEND_ALPHA             BlendMode = iota // Blend textures considering alpha (default)
+    BLEND_ADDITIVE                           // Blend textures adding colors
+    BLEND_MULTIPLIED                         // Blend textures multiplying colors
+    BLEND_ADD_COLORS                         // Blend textures adding colors (alternative)
+    BLEND_SUBTRACT_COLORS                    // Blend textures subtracting colors (alternative)
+    BLEND_ALPHA_PREMULTIPLY                  // Blend premultiplied textures considering alpha
+    BLEND_CUSTOM                             // Blend textures using custom src/dst factors (use rlSetBlendFactors())
+    BLEND_CUSTOM_SEPARATE                    // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
 )
 ```
 
@@ -133,14 +134,14 @@ typedef struct Vector4 {
 */
 
 type Vector4 struct {
-	X float32 // Vector x component
-	Y float32 // Vector y component
-	Z float32 // Vector z component
-	W float32 // Vector w component
+    X float32 // Vector x component
+    Y float32 // Vector y component
+    Z float32 // Vector z component
+    W float32 // Vector w component
 }
 
 // If class member variables don't need to be exposed, like llgo/c/cjson, wrap functions that use these member variables as methods of the class. Example:
-//
+
 /*
 typedef struct cJSON
 {
@@ -167,11 +168,10 @@ typedef struct cJSON
 
 // llgo:type C
 type JSON struct {
-	Unused [0]byte
+    Unused [0]byte
 }
 // llgo:link (*JSON).AddItem C.cJSON_AddItemToArray
 func (o *JSON) AddItem(item *JSON) c.Int { return 0 }
-
 ```
 
 For the size of Unused, if the methods bound to the structure do not need to create objects, i.e., the receiver of the Go methods bound to this structure is of pointer type, you can declare `Unused [0]byte`. Otherwise, you need to write a simple C file using the `sizeof` operator to calculate the size of the structure. Assuming the structure size is 38 bytes, then declare `Unused [38]byte`.
@@ -209,14 +209,13 @@ import (
 )
 
 func main() {
-	strings := make([]*c.Char, 4)
-	strings[0] = c.Str("hello")
-	strings[1] = c.Str("world")
-	strings[2] = c.Str("ni")
-	strings[3] = c.Str("hao")
-	ptrtest.PrintStrings(unsafe.SliceData(strings), c.Int(4))
+    strings := make([]*c.Char, 4)
+    strings[0] = c.Str("hello")
+    strings[1] = c.Str("world")
+    strings[2] = c.Str("ni")
+    strings[3] = c.Str("hao")
+    ptrtest.PrintStrings(unsafe.SliceData(strings), c.Int(4))
 }
-
 ```
 
 # LLGO for C++ Third-Party Libraries
@@ -241,7 +240,6 @@ inih/
 ├── _wrap/cpp_wrap.cpp (optional)
 └── inih.go
 └── reader.go
-
 ```
 
 ## Writing Go Files to Link Library Functions
@@ -255,28 +253,24 @@ Ordinary functions can be directly linked using the corresponding symbol in the 
 ```bash
 nm -gU $(brew --prefix inih)/lib/libINIReader.dylib > output.txt
 c++filt <output.txt> symbol.txt
-
 ```
 
 Function prototype
 
 ```cpp
 int ParseError() const;
-
 ```
 
 Example of `symbol.txt`
 
 ```bash
 0000000000002992 T INIReader::ParseError() const
-
 ```
 
 Example of `output.txt`
 
 ```bash
 0000000000002992 T __ZNK9INIReader10ParseErrorEv
-
 ```
 
 Find the offset of the function you want to use in `symbol.txt`, then go back to `output.txt` and find the symbol corresponding to that offset.
@@ -287,7 +281,6 @@ For functions, generally use `go:linkname` to link. Here, refer to the migration
 // The inih library currently does not involve ordinary functions, this is for demonstration purposes only and is not needed for migrating inih
 //go:linkname ParseError C.__ZNK9INIReader10ParseErrorEv
 func ParseError() c.Int
-
 ```
 
 ### Migrating Classes
@@ -299,7 +292,6 @@ func ParseError() c.Int
   type Reader struct {
       Unused [32]byte
   }
-
   ```
 - Constructor
 
@@ -323,18 +315,16 @@ func ParseError() c.Int
 
     // llgo:link (*Reader).InitFromBuffer C._ZN9INIReaderC1EPKcm
     func (r *Reader) InitFromBuffer(buffer *c.Char, bufferSize uintptr) {}
-
     ```
   - Constructor is not explicitly declared in the class (cannot find the corresponding symbol in the dynamic library)
 
     If the destructor is not explicitly declared in the source code, the compiler will automatically generate a default destructor. Use `extern "C"` to wrap it in cppWrap.cpp:
 
-    ```jsx
+    ```c
     extern "C" void INIReaderInit(INIReader* r)
     {
     	r->INIReader();
     }
-
     ```
 
     Link in Go:
@@ -342,7 +332,6 @@ func ParseError() c.Int
     ```go
     // llgo:link (*Reader).INIReaderInit C.INIReaderInit
     func (r *Reader) INIReaderInit() {}
-
     ```
 - Class Methods
 
@@ -353,7 +342,6 @@ func ParseError() c.Int
   func (r *Reader) GetInteger(section *std.String, name *std.String, defaultValue c.Long) c.Long {
   	return 0
   }
-
   ```
 
   Template or inline methods of the class will be introduced in the next section.
@@ -362,9 +350,8 @@ func ParseError() c.Int
   Similar to the constructor process, after creating the class, use `defer` to call it explicitly:
 
   ```go
-  	reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
-  	defer reader.Dispose()
-
+    reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
+    defer reader.Dispose()
   ```
 
 ### Templates and Inlines
@@ -376,7 +363,6 @@ Templates or inlines do not generate symbols in dynamic libraries (dylib) (defau
 extern "C" void stdStringInitFromCStrLen(std::string* s, const char* cstr, size_t len) {
 	new(s) std::string(cstr, len);
 }
-
 ```
 
 Then use LLGoFiles to link in Go: the writing of standard library's `LLGoFiles` and `LLGoPackage` is slightly different from third-party libraries. Using `std::string` and `spdlog` library as examples, inih does not involve this step:
@@ -393,7 +379,6 @@ func (s *String) InitFromCStrLen(cstr *c.Char, n uintptr) {}
 const (
 LLGoFiles   = "$(pkg-config --cflags spdlog): cppWrap/cppWrap.cpp"
 LLGoPackage = "link: $(pkg-config --libs spdlog); -lspdlog -pthread -lfmt")
-
 ```
 
 ## Writing and Running the Demo
@@ -409,9 +394,8 @@ import (
 
 func demoFromBuffer() {
 	buf := `[settings]
-username=admin
-timeout=100
-`
+                username=admin
+                timeout=100`   
 	reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
 	defer reader.Dispose()
 
@@ -441,7 +425,6 @@ func main() {
 	demoFromBuffer()
 	demoFromFile()
 }
-
 ```
 
-Use `llgo run reader_demo.go` to run in the directory where the demo is written.
+Use `llgo run .` to run in the directory where the demo is written.
