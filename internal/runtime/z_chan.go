@@ -239,6 +239,12 @@ func (p *selectOp) init() {
 	p.sem = false
 }
 
+func (p *selectOp) end() {
+	p.mutex.Destroy()
+	p.cond.Destroy()
+	p.next = nil
+}
+
 func (p *selectOp) notify() {
 	p.mutex.Lock()
 	p.sem = true
@@ -299,6 +305,7 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	for _, op := range ops {
 		endSelect(op.C, selOp)
 	}
+	selOp.end()
 	return
 }
 
@@ -317,7 +324,6 @@ func endSelect(c *Chan, selOp *selectOp) {
 	}
 	*pp = selOp.next
 	c.mutex.Unlock()
-	selOp.next = nil
 }
 
 // -----------------------------------------------------------------------------
