@@ -17,7 +17,7 @@ type Context struct {
 	namespaceName string
 	className     string
 	astInfo       []common.ASTInformation
-	filename      *c.Char
+	currentFile   *c.Char
 }
 
 func newContext() *Context {
@@ -34,8 +34,8 @@ func (c *Context) setClassName(name string) {
 	c.className = name
 }
 
-func (c *Context) setFilename(filename *c.Char) {
-	c.filename = filename
+func (c *Context) setCurrentFile(filename *c.Char) {
+	c.currentFile = filename
 }
 
 var context = newContext()
@@ -109,7 +109,7 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 		loc.SpellingLocation(&file, &line, &column, nil)
 		filename := file.FileName()
 
-		if c.Strcmp(filename.CStr(), context.filename) == 0 {
+		if c.Strcmp(filename.CStr(), context.currentFile) == 0 {
 			info := collectFuncInfo(cursor)
 			info.Location = c.GoString(filename.CStr()) + ":" + strconv.Itoa(int(line)) + ":" + strconv.Itoa(int(column))
 			context.astInfo = append(context.astInfo, info)
@@ -122,31 +122,34 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 	return clang.ChildVisit_Continue
 }
 
-func parse(filename *c.Char) []common.ASTInformation {
+func parse(filenames []*c.Char) []common.ASTInformation {
 	index := clang.CreateIndex(0, 0)
 	args := make([]*c.Char, 3)
 	args[0] = c.Str("-x")
 	args[1] = c.Str("c++")
-	args[1] = c.Str("c++")
 	args[2] = c.Str("-std=c++11")
-	unit := index.ParseTranslationUnit(
-		filename,
-		unsafe.SliceData(args), 3,
-		nil, 0,
-		clang.TranslationUnit_None,
-	)
 
-	if unit == nil {
-		println("Unable to parse translation unit. Quitting.")
-		c.Exit(1)
+	for _, filename := range filenames {
+		unit := index.ParseTranslationUnit(
+			filename,
+			unsafe.SliceData(args), 3,
+			nil, 0,
+			clang.TranslationUnit_None,
+		)
+
+		if unit == nil {
+			fmt.Printf("Unable to parse translation unit for file: %s. Skipping.\n", c.GoString(filename))
+			continue
+		}
+
+		cursor := unit.Cursor()
+		context.setCurrentFile(filename)
+
+		clang.VisitChildren(cursor, visit, nil)
+
+		unit.Dispose()
 	}
 
-	cursor := unit.Cursor()
-	context.setFilename(filename)
-
-	clang.VisitChildren(cursor, visit, nil)
-
-	unit.Dispose()
 	index.Dispose()
 
 	return context.astInfo
@@ -176,13 +179,15 @@ func printJson(infos []common.ASTInformation) {
 	}
 	c.Printf(c.Str("%s\n"), root.Print())
 }
-
 func main() {
 	if c.Argc < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: <C++ header file>\n")
+		fmt.Fprintln(os.Stderr, "Usage: <C++ header file1> [<C++ header file2> ...]\n")
 		return
 	} else {
-		// todo(zzy): receive files
-		printJson(parse(c.Index(c.Argv, 1)))
+		filenames := make([]*c.Char, c.Argc-1)
+		for i := 1; i < int(c.Argc); i++ {
+			filenames[i-1] = c.Index(c.Argv, c.Int(i))
+		}
+		printJson(parse(filenames))
 	}
 }
