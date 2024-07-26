@@ -133,3 +133,9 @@ func (o *JSON) PrintUnformatted() *c.Char { return nil }
 //
 // llgo:link (*JSON).PrintBuffered C.cJSON_PrintBuffered
 func (o *JSON) PrintBuffered(prebuffer c.Int, fmt c.Int) *c.Char { return nil }
+
+//go:linkname Free C.cJSON_free
+func Free(ptr unsafe.Pointer)
+
+//go:linkname FreeCStr C.cJSON_free
+func FreeCStr(*c.Char)
