@@ -79,7 +79,7 @@ func (w WaitStatus) TrapCause() int {
 }
 */
 
-func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
 	var status c.Int
 	wpid, err = wait4(pid, &status, options, rusage)
 	if wstatus != nil {
