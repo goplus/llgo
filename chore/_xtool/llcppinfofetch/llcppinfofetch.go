@@ -17,6 +17,7 @@ type Context struct {
 	namespaceName string
 	className     string
 	astInfo       []common.ASTInformation
+	filename      *c.Char
 }
 
 func newContext() *Context {
@@ -33,24 +34,18 @@ func (c *Context) setClassName(name string) {
 	c.className = name
 }
 
+func (c *Context) setFilename(filename *c.Char) {
+	c.filename = filename
+}
+
 var context = newContext()
 
 func collectFuncInfo(cursor clang.Cursor) common.ASTInformation {
+
 	info := common.ASTInformation{
 		Namespace: context.namespaceName,
 		Class:     context.className,
 	}
-
-	loc := cursor.Location()
-	var file clang.File
-	var line, column c.Uint
-
-	loc.SpellingLocation(&file, &line, &column, nil)
-	filename := file.FileName()
-
-	info.Location = c.GoString(filename.CStr()) + ":" + strconv.Itoa(int(line)) + ":" + strconv.Itoa(int(column))
-
-	// c.Printf(c.Str("%s:%d:%d\n"), filename.CStr(), line, column)
 
 	cursorStr := cursor.String()
 	symbol := cursor.Mangling()
@@ -66,7 +61,6 @@ func collectFuncInfo(cursor clang.Cursor) common.ASTInformation {
 
 	defer symbol.Dispose()
 	defer cursorStr.Dispose()
-	defer filename.Dispose()
 
 	if context.namespaceName != "" {
 		info.Namespace = context.namespaceName
@@ -108,8 +102,21 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 		clang.VisitChildren(cursor, visit, nil)
 		context.setClassName("")
 	} else if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl || cursor.Kind == clang.Constructor || cursor.Kind == clang.Destructor {
-		info := collectFuncInfo(cursor)
-		context.astInfo = append(context.astInfo, info)
+		loc := cursor.Location()
+		var file clang.File
+		var line, column c.Uint
+
+		loc.SpellingLocation(&file, &line, &column, nil)
+		filename := file.FileName()
+
+		if c.Strcmp(filename.CStr(), context.filename) == 0 {
+			info := collectFuncInfo(cursor)
+			info.Location = c.GoString(filename.CStr()) + ":" + strconv.Itoa(int(line)) + ":" + strconv.Itoa(int(column))
+			context.astInfo = append(context.astInfo, info)
+		}
+
+		defer filename.Dispose()
+
 	}
 
 	return clang.ChildVisit_Continue
@@ -119,6 +126,7 @@ func parse(filename *c.Char) []common.ASTInformation {
 	index := clang.CreateIndex(0, 0)
 	args := make([]*c.Char, 3)
 	args[0] = c.Str("-x")
+	args[1] = c.Str("c++")
 	args[1] = c.Str("c++")
 	args[2] = c.Str("-std=c++11")
 	unit := index.ParseTranslationUnit(
@@ -134,6 +142,7 @@ func parse(filename *c.Char) []common.ASTInformation {
 	}
 
 	cursor := unit.Cursor()
+	context.setFilename(filename)
 
 	clang.VisitChildren(cursor, visit, nil)
 
