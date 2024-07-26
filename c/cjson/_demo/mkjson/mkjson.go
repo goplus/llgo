@@ -23,6 +23,19 @@ func main() {
 	mod.SetItem(c.Str("items"), syms)
 
 	cstr := mod.CStr()
+	str := c.GoString(cstr)
+	c.Printf(c.Str("%s\n"), cstr)
+	cjson.FreeCStr(cstr)
+
+	mod.Delete()
+
+	cjsonLoad(str)
+}
+
+func cjsonLoad(str string) {
+	mod := cjson.ParseString(str)
+
+	cstr := mod.Print()
 	c.Printf(c.Str("%s\n"), cstr)
 	cjson.FreeCStr(cstr)
 
