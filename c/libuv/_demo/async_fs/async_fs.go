@@ -47,7 +47,7 @@ func onOpen(req *libuv.Fs) {
 	// Init buffer
 	iov = libuv.InitBuf((*c.Char)(unsafe.Pointer(&buffer[0])), c.Uint(unsafe.Sizeof(buffer)))
 	// Read the file
-	readRes := libuv.FsRead(loop, &readReq, libuv.UvFile(libuv.FsGetResult(req)), &iov, 1, -1, onRead)
+	readRes := libuv.FsRead(loop, &readReq, libuv.File(libuv.FsGetResult(req)), &iov, 1, -1, onRead)
 	if readRes != 0 {
 		c.Printf(c.Str("Error in FsRead: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(readRes)), readRes)
 		libuv.LoopClose(loop)
@@ -63,7 +63,7 @@ func onRead(req *libuv.Fs) {
 	} else if libuv.FsGetResult(req) == 0 {
 		c.Printf(c.Str("EOF\n"))
 		// Close the file
-		closeRes := libuv.FsClose(loop, &closeReq, libuv.UvFile(libuv.FsGetResult(&openReq)), onClose)
+		closeRes := libuv.FsClose(loop, &closeReq, libuv.File(libuv.FsGetResult(&openReq)), onClose)
 		if closeRes != 0 {
 			// Print the content
 			c.Printf(c.Str("Error in FsClose: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(closeRes)), closeRes)

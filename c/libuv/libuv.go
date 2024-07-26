@@ -297,7 +297,7 @@ func (handle *Handle) Fileno(fd *OsFd) c.Int {
 }
 
 //go:linkname UvPipe C.uv_pipe
-func UvPipe(fds [2]UvFile, readFlags c.Int, writeFlags c.Int) c.Int {
+func UvPipe(fds [2]File, readFlags c.Int, writeFlags c.Int) c.Int {
 	return 0
 }
 

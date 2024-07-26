@@ -62,7 +62,7 @@ type FsType c.Int
 
 type DirentType c.Int
 
-type UvFile c.Int
+type File c.Int
 
 // ----------------------------------------------
 
@@ -83,11 +83,6 @@ type FsPoll struct {
 type Dirent struct {
 	Name *c.Char
 	Type DirentType
-}
-
-type File struct {
-	Loop *Loop
-	Req  *Fs
 }
 
 type Stat struct {
@@ -139,13 +134,13 @@ func DefaultLoop() *Loop
 func FsOpen(loop *Loop, req *Fs, path *c.Char, flags c.Int, mode c.Int, cb FsCb) c.Int
 
 //go:linkname FsClose C.uv_fs_close
-func FsClose(loop *Loop, req *Fs, file UvFile, cb FsCb) c.Int
+func FsClose(loop *Loop, req *Fs, file File, cb FsCb) c.Int
 
 //go:linkname FsRead C.uv_fs_read
-func FsRead(loop *Loop, req *Fs, file UvFile, bufs *Buf, nbufs c.Uint, offset c.LongLong, cb FsCb) c.Int
+func FsRead(loop *Loop, req *Fs, file File, bufs *Buf, nbufs c.Uint, offset c.LongLong, cb FsCb) c.Int
 
 //go:linkname FsWrite C.uv_fs_write
-func FsWrite(loop *Loop, req *Fs, file UvFile, bufs *Buf, nbufs c.Uint, offset c.LongLong, cb FsCb) c.Int
+func FsWrite(loop *Loop, req *Fs, file File, bufs *Buf, nbufs c.Uint, offset c.LongLong, cb FsCb) c.Int
 
 //go:linkname FsUnlink C.uv_fs_unlink
 func FsUnlink(loop *Loop, req *Fs, path *c.Char, cb FsCb) c.Int
@@ -166,19 +161,19 @@ func FsRmdir(loop *Loop, req *Fs, path *c.Char, cb FsCb) c.Int
 func FsStat(loop *Loop, req *Fs, path *c.Char, cb FsCb) c.Int
 
 //go:linkname FsFstat C.uv_fs_fstat
-func FsFstat(loop *Loop, req *Fs, file UvFile, cb FsCb) c.Int
+func FsFstat(loop *Loop, req *Fs, file File, cb FsCb) c.Int
 
 //go:linkname FsRename C.uv_fs_rename
 func FsRename(loop *Loop, req *Fs, path *c.Char, newPath *c.Char, cb FsCb) c.Int
 
 //go:linkname FsFsync C.uv_fs_fsync
-func FsFsync(loop *Loop, req *Fs, file UvFile, cb FsCb) c.Int
+func FsFsync(loop *Loop, req *Fs, file File, cb FsCb) c.Int
 
 //go:linkname FsFdatasync C.uv_fs_fdatasync
-func FsFdatasync(loop *Loop, req *Fs, file UvFile, cb FsCb) c.Int
+func FsFdatasync(loop *Loop, req *Fs, file File, cb FsCb) c.Int
 
 //go:linkname FsFtruncate C.uv_fs_ftruncate
-func FsFtruncate(loop *Loop, req *Fs, file UvFile, offset c.LongLong, cb FsCb) c.Int
+func FsFtruncate(loop *Loop, req *Fs, file File, offset c.LongLong, cb FsCb) c.Int
 
 //go:linkname FsSendfile C.uv_fs_sendfile
 func FsSendfile(loop *Loop, req *Fs, outFd c.Int, inFd c.Int, inOffset c.LongLong, length c.Int, cb FsCb) c.Int
@@ -190,13 +185,13 @@ func FsAccess(loop *Loop, req *Fs, path *c.Char, flags c.Int, cb FsCb) c.Int
 func FsChmod(loop *Loop, req *Fs, path *c.Char, mode c.Int, cb FsCb) c.Int
 
 //go:linkname FsFchmod C.uv_fs_fchmod
-func FsFchmod(loop *Loop, req *Fs, file UvFile, mode c.Int, cb FsCb) c.Int
+func FsFchmod(loop *Loop, req *Fs, file File, mode c.Int, cb FsCb) c.Int
 
 //go:linkname FsUtime C.uv_fs_utime
 func FsUtime(loop *Loop, req *Fs, path *c.Char, atime c.Int, mtime c.Int, cb FsCb) c.Int
 
 //go:linkname FsFutime C.uv_fs_futime
-func FsFutime(loop *Loop, req *Fs, file UvFile, atime c.Int, mtime c.Int, cb FsCb) c.Int
+func FsFutime(loop *Loop, req *Fs, file File, atime c.Int, mtime c.Int, cb FsCb) c.Int
 
 //go:linkname FsLutime C.uv_fs_lutime
 func FsLutime(loop *Loop, req *Fs, path *c.Char, atime c.Int, mtime c.Int, cb FsCb) c.Int
@@ -238,7 +233,7 @@ func FsStatfs(loop *Loop, req *Fs, path *c.Char, cb FsCb) c.Int
 func FsChown(loop *Loop, req *Fs, path *c.Char, uid c.Int, gid c.Int, cb FsCb) c.Int
 
 //go:linkname FsFchown C.uv_fs_fchown
-func FsFchown(loop *Loop, req *Fs, file UvFile, uid c.Int, gid c.Int, cb FsCb) c.Int
+func FsFchown(loop *Loop, req *Fs, file File, uid c.Int, gid c.Int, cb FsCb) c.Int
 
 //go:linkname FsLchown C.uv_fs_lchown
 func FsLchown(loop *Loop, req *Fs, path *c.Char, uid c.Int, gid c.Int, cb FsCb) c.Int
