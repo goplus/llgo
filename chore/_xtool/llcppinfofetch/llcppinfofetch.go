@@ -70,7 +70,13 @@ func collectFuncInfo(cursor clang.Cursor) ASTInformation {
 	symbol := cursor.Mangling()
 
 	info.Name = c.GoString(cursorStr.CStr())
+
 	info.Symbol = c.GoString(symbol.CStr())
+	if len(info.Symbol) >= 1 {
+		if info.Symbol[0] == '_' {
+			info.Symbol = info.Symbol[1:]
+		}
+	}
 
 	defer symbol.Dispose()
 	defer cursorStr.Dispose()
@@ -212,6 +218,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Usage: <C++ header file>\n")
 		return
 	} else {
+
 		// sourceFile := *c.Advance(c.Argv, 1)
 		printJson(parse(c.Index(c.Argv, 1)))
 		// fmt.Println("Json end")

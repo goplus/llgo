@@ -22,8 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
-	"github.com/goplus/llgo/chore/llcppg/types"
 	"io"
 	"os"
 	"os/exec"
@@ -31,6 +29,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
+	"github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func main() {
@@ -161,11 +162,16 @@ func decodeSymbolName(symbolName string) (string, error) {
 // parseHeaderFile
 func parseHeaderFile(config types.Config) ([]common.ASTInformation, error) {
 	files := generateHeaderFilePath(config.CFlags, config.Include)
+	fmt.Println(files)
 	headerFileCmd := exec.Command("llcppinfofetch", files...)
+
+	fmt.Println("Executing command:", headerFileCmd.String())
+
 	headerFileOutput, err := headerFileCmd.Output()
 	if err != nil {
 		return nil, errors.New("failed to execute header file command")
 	}
+	fmt.Println("headerFileOutput:", string(headerFileOutput), len(headerFileOutput))
 	t := make([]common.ASTInformation, 0)
 	err = json.Unmarshal(headerFileOutput, &t)
 	if err != nil {
@@ -234,11 +240,14 @@ func generateMangle(astInfo common.ASTInformation, count int) string {
 				res += "__" + strconv.Itoa(count-1)
 			}
 		} else {
-			res = "(*" + astInfo.Class + ")." + astInfo.Name + "__" + string(rune(count))
+			res = "(*" + astInfo.Class + ")." + astInfo.Name
+			if count > 1 {
+				res += "__" + strconv.Itoa(count-1)
+			}
 		}
 	} else {
 		res = astInfo.Name
-		if count > 0 {
+		if count > 1 {
 			res += "__" + strconv.Itoa(count-1)
 		}
 	}
