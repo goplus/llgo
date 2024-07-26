@@ -36,9 +36,9 @@ import (
 
 func main() {
 	cfgFile := "llcppg.cfg"
-	//if len(os.Args) > 1 {
-	//	cfgFile = os.Args[1]
-	//}
+	if len(os.Args) > 1 {
+		cfgFile = os.Args[1]
+	}
 
 	var data []byte
 	var err error
@@ -66,7 +66,7 @@ func main() {
 
 	// 写入文件
 	fileName := "llcppg.symb.json"
-	err = os.WriteFile(fileName, jsonData, 0644) // 使用 0644 权限
+	err = os.WriteFile(fileName, jsonData, 0644)
 	check(err)
 
 }
@@ -99,16 +99,14 @@ func parseDylibSymbols(lib string) ([]common.CPPSymbol, error) {
 }
 
 func generateDylibPath(lib string) (string, error) {
-	// 执行pkg-config命令
 	output := expandEnv(lib)
-	// 解析输出
 	libPath := ""
 	libName := ""
 	for _, part := range strings.Fields(string(output)) {
 		if strings.HasPrefix(part, "-L") {
-			libPath = part[2:] // 去掉-L前缀
+			libPath = part[2:]
 		} else if strings.HasPrefix(part, "-l") {
-			libName = part[2:] // 去掉-l前缀
+			libName = part[2:]
 		}
 	}
 
@@ -154,7 +152,6 @@ func decodeSymbolName(symbolName string) (string, error) {
 	}
 
 	decodedName := strings.TrimSpace(string(cppfiltOutput))
-	// 将特定的模板类型转换为 std::string
 	decodedName = strings.ReplaceAll(decodedName, "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const", "std::string")
 	return decodedName, nil
 }
@@ -181,12 +178,11 @@ func parseHeaderFile(config types.Config) ([]common.ASTInformation, error) {
 }
 
 func generateHeaderFilePath(cflags string, files []string) []string {
-	// 执行pkg-config命令
 	prefixPath := expandEnv(cflags)
 	if strings.HasPrefix(prefixPath, "-I") {
 		prefixPath = prefixPath[2:]
 	}
-	// 去掉首尾空白字符（包括换行符）
+
 	prefixPath = strings.TrimSpace(prefixPath)
 	var includePaths []string
 	for _, file := range files {
