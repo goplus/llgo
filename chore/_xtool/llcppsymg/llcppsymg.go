@@ -35,7 +35,7 @@ import (
 )
 
 func main() {
-	cfgFile := "/Users/lixianyu/go/src/llgo/chore/_xtool/llcppsymg/llcppg.cfg"
+	cfgFile := "llcppg.cfg"
 	//if len(os.Args) > 1 {
 	//	cfgFile = os.Args[1]
 	//}

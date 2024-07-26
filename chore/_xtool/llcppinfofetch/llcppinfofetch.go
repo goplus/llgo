@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
 	"os"
 	"strconv"
 	"unsafe"
+
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
@@ -74,47 +75,22 @@ func collectFuncInfo(cursor clang.Cursor) common.ASTInformation {
 		info.Class = context.className
 	}
 
-	if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl {
-		// c.Printf(c.Str("symbol:%s\n"), symbol.CStr())
+	typeStr := cursor.ResultType().String()
+	defer typeStr.Dispose()
+	info.ReturnType = c.GoString(typeStr.CStr())
 
-		typeStr := cursor.ResultType().String()
-		defer typeStr.Dispose()
-		info.ReturnType = c.GoString(typeStr.CStr())
-		// c.Printf(c.Str("Parameters(%d): ( "), cursor.NumArguments())
-
-		info.Parameters = make([]common.Parameter, cursor.NumArguments())
-		for i := 0; i < int(cursor.NumArguments()); i++ {
-			argCurSor := cursor.Argument(c.Uint(i))
-			argType := argCurSor.Type().String()
-			argName := argCurSor.String()
-			info.Parameters[i] = common.Parameter{
-				Name: c.GoString(argName.CStr()),
-				Type: c.GoString(argType.CStr()),
-			}
-
-			argType.Dispose()
-			argName.Dispose()
+	info.Parameters = make([]common.Parameter, cursor.NumArguments())
+	for i := 0; i < int(cursor.NumArguments()); i++ {
+		argCurSor := cursor.Argument(c.Uint(i))
+		argType := argCurSor.Type().String()
+		argName := argCurSor.String()
+		info.Parameters[i] = common.Parameter{
+			Name: c.GoString(argName.CStr()),
+			Type: c.GoString(argType.CStr()),
 		}
 
-		// fmt.Println("location", info.Location)
-		// fmt.Println("symbol:", info.Symbol)
-		// fmt.Println("name:", info.Name)
-		// if info.Namespace != "" {
-		// 	fmt.Println("namespace:", info.Namespace)
-		// }
-		// if info.Class != "" {
-		// 	fmt.Println("class:", info.Class)
-		// }
-		// fmt.Println("return type:", info.ReturnType)
-
-		// if len(info.Parameters) != 0 {
-		// 	fmt.Println("Parameters:(")
-		// 	for _, param := range info.Parameters {
-		// 		fmt.Println("    ", param.Name, ":", param.Type)
-		// 	}
-		// 	fmt.Println(")")
-		// }
-		// println("--------------------------------")
+		argType.Dispose()
+		argName.Dispose()
 	}
 
 	return info
@@ -131,7 +107,7 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 		context.setClassName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
 		context.setClassName("")
-	} else if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl {
+	} else if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl || cursor.Kind == clang.Constructor || cursor.Kind == clang.Destructor {
 		info := collectFuncInfo(cursor)
 		context.astInfo = append(context.astInfo, info)
 	}
@@ -193,20 +169,11 @@ func printJson(infos []common.ASTInformation) {
 }
 
 func main() {
-	// for i := c.Int(0); i < c.Argc; i++ {
-	// 	c.Printf(c.Str("%s\n"), c.Index(c.Argv, i))
-	// }
-	// c.Printf(c.Str("c.Index %s\n"), c.Index(c.Argv, 1))
-	// c.Printf(c.Str("c.Index %s\n"), *c.Advance(c.Argv, 1))
-
-	if c.Argc != 2 {
+	if c.Argc < 2 {
 		fmt.Fprintln(os.Stderr, "Usage: <C++ header file>\n")
 		return
 	} else {
-
-		// sourceFile := *c.Advance(c.Argv, 1)
+		// todo(zzy): receive files
 		printJson(parse(c.Index(c.Argv, 1)))
-		// fmt.Println("Json end")
 	}
-
 }
