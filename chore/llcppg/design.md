@@ -210,7 +210,7 @@ type Parameter struct {
 func ParseHeaderFile(filePath string) ([]common.ASTInformation, error)
 ```
 
-3. Generate the final JSON mapping file `func_prototype.json`
+3. Generate the final JSON mapping file `llcppg.information.json`
 
 ```go
  func GenerateJSONFile(info []common.ASTInformation)
@@ -238,7 +238,7 @@ func ParseHeaderFile(filePath string) ([]common.ASTInformation, error)
 
 ### Input
 
-No input required, directly reads `func_prototype.json` file
+No input required, directly reads `llcppg.information.json` file
 
 ### Implementation Steps
 
