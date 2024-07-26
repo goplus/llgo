@@ -6,12 +6,16 @@
 
 package syscall
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/goplus/llgo/c/syscall"
+)
 
 // forkExecPipe atomically opens a pipe with O_CLOEXEC set on both file
 // descriptors.
 func forkExecPipe(p []int) error {
-	return Pipe2(p, O_CLOEXEC)
+	return Pipe2(p, syscall.O_CLOEXEC)
 }
 
 var (

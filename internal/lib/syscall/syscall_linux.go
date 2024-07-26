@@ -11,6 +11,14 @@
 
 package syscall
 
+import (
+	_ "unsafe"
+
+	"github.com/goplus/llgo/c"
+)
+
+// -----------------------------------------------------------------------------
+
 type WaitStatus uint32
 
 // Wait status is 7 bits at bottom, either 0 (exited),
@@ -70,6 +78,35 @@ func (w WaitStatus) TrapCause() int {
 }
 */
 
+// -----------------------------------------------------------------------------
+
+// int pipe2(int pipefd[2], int flags);
+//
+//go:linkname pipe2 C.pipe2
+func pipe2(pipefd *[2]c.Int, flags c.Int) c.Int
+
+func Pipe(p []int) error {
+	return Pipe2(p, 0)
+}
+
+func Pipe2(p []int, flags int) error {
+	if len(p) != 2 {
+		return EINVAL
+	}
+	var pp [2]c.Int
+	ret := pipe2(&pp, c.Int(flags))
+	if ret == 0 {
+		p[0] = int(pp[0])
+		p[1] = int(pp[1])
+		return nil
+	}
+	return Errno(ret)
+}
+
+// -----------------------------------------------------------------------------
+
 func Faccessat(dirfd int, path string, mode uint32, flags int) (err error) {
 	panic("todo: syscall.Faccessat")
 }
+
+// -----------------------------------------------------------------------------

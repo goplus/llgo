@@ -21,7 +21,7 @@ const _P_PID = 1
 // int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options);
 //
 //go:linkname waitid C.waitid
-func waitid(idtype, id uintptr, infop *[16]uint64, options c.Int) c.Int
+func waitid(idtype, id uintptr, infop *uint64, options c.Int) c.Int
 
 // blockUntilWaitable attempts to block until a call to p.Wait will
 // succeed immediately, and reports whether it has done so.
@@ -35,7 +35,7 @@ func (p *Process) blockUntilWaitable() (bool, error) {
 	psig := &siginfo[0]
 	var e syscall.Errno
 	for {
-		e = syscall.Errno(waitid(_P_PID, uintptr(p.Pid), psig, syscall.WEXITED|syscall.WNOWAIT, 0, 0))
+		e = syscall.Errno(waitid(_P_PID, uintptr(p.Pid), psig, syscall.WEXITED|syscall.WNOWAIT))
 		if e != syscall.EINTR {
 			break
 		}
