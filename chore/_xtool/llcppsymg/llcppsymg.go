@@ -35,10 +35,10 @@ import (
 )
 
 func main() {
-	cfgFile := "llcppg.cfg"
-	if len(os.Args) > 1 {
-		cfgFile = os.Args[1]
-	}
+	cfgFile := "/Users/lixianyu/go/src/llgo/chore/_xtool/llcppsymg/llcppg.cfg"
+	//if len(os.Args) > 1 {
+	//	cfgFile = os.Args[1]
+	//}
 
 	var data []byte
 	var err error
@@ -59,7 +59,7 @@ func main() {
 	files, err := parseHeaderFile(config)
 	check(err)
 
-	symbolInfo := getCommonSymbols(symbols, files)
+	symbolInfo := getCommonSymbols(symbols, files, config.TrimPrefixes)
 
 	jsonData, err := json.MarshalIndent(symbolInfo, "", "  ")
 	check(err)
@@ -195,7 +195,7 @@ func generateHeaderFilePath(cflags string, files []string) []string {
 	return includePaths
 }
 
-func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTInformation) []common.SymbolInfo {
+func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTInformation, prefix []string) []common.SymbolInfo {
 	var commonSymbols []common.SymbolInfo
 	functionNameMap := make(map[string]int)
 
@@ -207,7 +207,7 @@ func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTI
 				symbolInfo := common.SymbolInfo{
 					Mangle: dylibSym.Symbol,
 					CPP:    cppName,
-					Go:     generateMangle(astInfo, functionNameMap[cppName]),
+					Go:     generateMangle(astInfo, functionNameMap[cppName], prefix),
 				}
 				commonSymbols = append(commonSymbols, symbolInfo)
 				break
@@ -226,7 +226,10 @@ func generateCPPName(astInfo common.ASTInformation) string {
 	return cppName
 }
 
-func generateMangle(astInfo common.ASTInformation, count int) string {
+func generateMangle(astInfo common.ASTInformation, count int, prefixes []string) string {
+	// 去除前缀
+	astInfo.Class = removePrefix(astInfo.Class, prefixes)
+	astInfo.Name = removePrefix(astInfo.Name, prefixes)
 	res := ""
 	if astInfo.Class != "" {
 		if astInfo.Class == astInfo.Name {
@@ -252,6 +255,15 @@ func generateMangle(astInfo common.ASTInformation, count int) string {
 		}
 	}
 	return res
+}
+
+func removePrefix(str string, prefixes []string) string {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(str, prefix) {
+			return strings.TrimPrefix(str, prefix)
+		}
+	}
+	return str
 }
 
 var (

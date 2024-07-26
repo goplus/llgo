@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
 	"os"
 	"strconv"
 	"unsafe"
@@ -11,31 +12,15 @@ import (
 	"github.com/goplus/llgo/c/clang"
 )
 
-type ASTInformation struct {
-	Namespace string `json:"namespace"`
-	Class     string `json:"class"`
-	Name      string `json:"name"`
-	// BaseClasses []string    `json:"baseClasses"`
-	ReturnType string      `json:"returnType"`
-	Location   string      `json:"location"`
-	Parameters []Parameter `json:"parameters"`
-	Symbol     string      `json:"symbol"`
-}
-
-type Parameter struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
-
 type Context struct {
 	namespaceName string
 	className     string
-	astInfo       []ASTInformation
+	astInfo       []common.ASTInformation
 }
 
 func newContext() *Context {
 	return &Context{
-		astInfo: make([]ASTInformation, 0),
+		astInfo: make([]common.ASTInformation, 0),
 	}
 }
 
@@ -49,8 +34,8 @@ func (c *Context) setClassName(name string) {
 
 var context = newContext()
 
-func collectFuncInfo(cursor clang.Cursor) ASTInformation {
-	info := ASTInformation{
+func collectFuncInfo(cursor clang.Cursor) common.ASTInformation {
+	info := common.ASTInformation{
 		Namespace: context.namespaceName,
 		Class:     context.className,
 	}
@@ -97,12 +82,12 @@ func collectFuncInfo(cursor clang.Cursor) ASTInformation {
 		info.ReturnType = c.GoString(typeStr.CStr())
 		// c.Printf(c.Str("Parameters(%d): ( "), cursor.NumArguments())
 
-		info.Parameters = make([]Parameter, cursor.NumArguments())
+		info.Parameters = make([]common.Parameter, cursor.NumArguments())
 		for i := 0; i < int(cursor.NumArguments()); i++ {
 			argCurSor := cursor.Argument(c.Uint(i))
 			argType := argCurSor.Type().String()
 			argName := argCurSor.String()
-			info.Parameters[i] = Parameter{
+			info.Parameters[i] = common.Parameter{
 				Name: c.GoString(argName.CStr()),
 				Type: c.GoString(argType.CStr()),
 			}
@@ -154,7 +139,7 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 	return clang.ChildVisit_Continue
 }
 
-func parse(filename *c.Char) []ASTInformation {
+func parse(filename *c.Char) []common.ASTInformation {
 	index := clang.CreateIndex(0, 0)
 	args := make([]*c.Char, 3)
 	args[0] = c.Str("-x")
@@ -181,7 +166,7 @@ func parse(filename *c.Char) []ASTInformation {
 
 	return context.astInfo
 }
-func printJson(infos []ASTInformation) {
+func printJson(infos []common.ASTInformation) {
 	root := cjson.Array()
 
 	for _, info := range infos {
