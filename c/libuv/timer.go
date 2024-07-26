@@ -1,8 +1,9 @@
 package libuv
 
 import (
-	"github.com/goplus/llgo/c"
 	_ "unsafe"
+
+	"github.com/goplus/llgo/c"
 )
 
 // ----------------------------------------------
