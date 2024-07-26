@@ -76,14 +76,18 @@ func (m *Mutex) Init(attr *MutexAttr) c.Int { return 0 }
 // llgo:link (*Mutex).Destroy C.pthread_mutex_destroy
 func (m *Mutex) Destroy() {}
 
-// llgo:link (*Mutex).Lock C.pthread_mutex_lock
-func (m *Mutex) Lock() {}
+func (m *Mutex) Lock() { m.lockInternal() }
+
+// llgo:link (*Mutex).lockInternal C.pthread_mutex_lock
+func (m *Mutex) lockInternal() c.Int { return 0 }
 
 // llgo:link (*Mutex).TryLock C.pthread_mutex_trylock
 func (m *Mutex) TryLock() c.Int { return 0 }
 
-// llgo:link (*Mutex).Unlock C.pthread_mutex_unlock
-func (m *Mutex) Unlock() {}
+func (m *Mutex) Unlock() { m.unlockInternal() }
+
+// llgo:link (*Mutex).unlockInternal C.pthread_mutex_unlock
+func (m *Mutex) unlockInternal() c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
