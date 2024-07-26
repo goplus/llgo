@@ -1,10 +1,11 @@
 package libuv
 
 import (
+	_ "unsafe"
+
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/net"
 	"github.com/goplus/llgo/c/syscall"
-	_ "unsafe"
 )
 
 const (
