@@ -766,10 +766,6 @@ var hasAltPkg = map[string]none{
 	"runtime":                  {},
 }
 
-var overlayFiles = map[string]string{
-	"math/exp_amd64.go": "package math;",
-}
-
 func check(err error) {
 	if err != nil {
 		panic(err)
