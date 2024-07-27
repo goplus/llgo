@@ -79,15 +79,11 @@ func (m *Mutex) Destroy() {}
 // llgo:link (*Mutex).TryLock C.pthread_mutex_trylock
 func (m *Mutex) TryLock() c.Int { return 0 }
 
-func (m *Mutex) Lock() { lockInternal(m) }
+// llgo:link (*Mutex).Lock C.wrap_pthread_mutex_lock
+func (m *Mutex) Lock() {}
 
-func (m *Mutex) Unlock() { unlockInternal(m) }
-
-//go:linkname lockInternal C.pthread_mutex_lock
-func lockInternal(m *Mutex) c.Int
-
-//go:linkname unlockInternal C.pthread_mutex_unlock
-func unlockInternal(m *Mutex) c.Int
+// llgo:link (*Mutex).Unlock C.wrap_pthread_mutex_unlock
+func (m *Mutex) Unlock() {}
 
 // -----------------------------------------------------------------------------
 
