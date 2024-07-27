@@ -754,6 +754,7 @@ var hasAltPkg = map[string]none{
 	"internal/reflectlite":     {},
 	"internal/syscall/execenv": {},
 	"internal/syscall/unix":    {},
+	"io":                       {},
 	"math":                     {},
 	"math/cmplx":               {},
 	"reflect":                  {},
