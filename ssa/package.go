@@ -583,7 +583,8 @@ type aPackage struct {
 	afterb unsafe.Pointer
 	patch  func(types.Type) types.Type
 
-	iRoutine int
+	iRoutine  int
+	initDefer bool
 }
 
 type Package = *aPackage
@@ -667,7 +668,10 @@ func (p Package) afterBuilder() Builder {
 
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	p.keyInit(deferKey)
+	if !p.initDefer {
+		p.initDefer = true
+		p.keyInit(deferKey)
+	}
 	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
 	if doAfterb || doPyLoadModSyms {
