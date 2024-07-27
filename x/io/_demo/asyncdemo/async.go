@@ -19,6 +19,7 @@ type Response struct {
 }
 
 func (r *Response) Text() (resolve io.Promise[string]) {
+	// return r.Body, nil
 	resolve(r.Body, nil)
 	return
 }
@@ -105,26 +106,31 @@ type User struct {
 func GetUser(name string) (resolve io.Promise[User]) {
 	resp, err := AsyncHttpGet("http://example.com/user/" + name).Await()
 	if err != nil {
+		// return User{}, err
 		resolve(User{}, err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
+		// return User{}, fmt.Errorf("http status code: %d", resp.StatusCode)
 		resolve(User{}, fmt.Errorf("http status code: %d", resp.StatusCode))
 		return
 	}
 
 	body, err := resp.Text().Await()
 	if err != nil {
+		// return User{}, err
 		resolve(User{}, err)
 		return
 	}
 	user := User{}
 	if err := json.Unmarshal([]byte(body), &user); err != nil {
+		// return User{}, err
 		resolve(User{}, err)
 		return
 	}
 
+	// return user, nil
 	resolve(user, nil)
 	return
 }
@@ -190,26 +196,32 @@ func GetUserCompiled(name string) *io.PromiseImpl[User] {
 func GetScore() (resolve io.Promise[float64]) {
 	resp, err := AsyncHttpGet("http://example.com/score/").Await()
 	if err != nil {
+		// return 0, err
 		resolve(0, err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
+		// return 0, fmt.Errorf("http status code: %d", resp.StatusCode)
 		resolve(0, fmt.Errorf("http status code: %d", resp.StatusCode))
 		return
 	}
 
 	body, err := resp.Text().Await()
 	if err != nil {
+		// return 0, err
 		resolve(0, err)
 		return
 	}
 
 	score := 0.0
 	if _, err := fmt.Sscanf(body, "%f", &score); err != nil {
+		// return 0, err
 		resolve(0, err)
 		return
 	}
+
+	// return score, nil
 	resolve(score, nil)
 	return
 }
@@ -273,15 +285,18 @@ func GetScoreCompiled() *io.PromiseImpl[float64] {
 func DoUpdate(op string) (resolve io.Promise[io.Void]) {
 	resp, err := AsyncHttpPost("http://example.com/update/" + op).Await()
 	if err != nil {
+		// return err
 		resolve(io.Void{}, err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
+		// return fmt.Errorf("http status code: %d", resp.StatusCode)
 		resolve(io.Void{}, fmt.Errorf("http status code: %d", resp.StatusCode))
 		return
 	}
 
+	// return nil
 	resolve(io.Void{}, nil)
 	return
 }
@@ -446,6 +461,7 @@ func Demo() (resolve io.Promise[io.Void]) {
 	}
 
 	// for loop with async generator
+	// for u, err := range GenUsers() {...}
 	g1 := GenUsers()
 	for {
 		g.Call()
