@@ -80,7 +80,7 @@ func Run[OutT any](ac AsyncCall[OutT]) (OutT, error) {
 		e.acs = e.acs[1:]
 		ac.Call()
 		if ac.Done() && ac == rootAc {
-			return p.Value, p.Err
+			return p.value, p.err
 		}
 	}
 }
@@ -91,32 +91,40 @@ type Promise[OutT any] func(OutT, error)
 
 // llgo:link Promise.Await llgo.await
 func (p Promise[OutT]) Await(timeout ...time.Duration) (ret OutT, err error) {
-	return
+	panic("should not called")
 }
 
 func (p Promise[OutT]) Call() {
-
+	panic("should not called")
 }
 
 func (p Promise[OutT]) Chan() <-chan OutT {
-	return nil
+	panic("should not called")
 }
 
 func (p Promise[OutT]) Done() bool {
-	return false
+	panic("should not called")
+}
+
+func (p Promise[OutT]) Err() error {
+	panic("should not called")
+}
+
+func (p Promise[OutT]) Value() OutT {
+	panic("should not called")
 }
 
 // -----------------------------------------------------------------------------
 
 type PromiseImpl[TOut any] struct {
+	Debug  string
 	Next   int
 	Exec   *executor
 	Parent asyncCall
-	Debug  string
 
 	Func  func(resolve func(TOut, error))
-	Err   error
-	Value TOut
+	err   error
+	value TOut
 	c     chan TOut
 }
 
@@ -137,23 +145,31 @@ func (p *PromiseImpl[TOut]) Done() bool {
 
 func (p *PromiseImpl[TOut]) Call() {
 	p.Func(func(v TOut, err error) {
+		p.value = v
+		p.err = err
 		if debugAsync {
 			log.Printf("Resolve task: %+v, %+v, %+v\n", p, v, err)
 		}
-		p.Value = v
-		p.Err = err
 		if p.Parent != nil {
 			p.Parent.Resume()
 		}
 	})
 }
 
+func (p *PromiseImpl[TOut]) Err() error {
+	return p.err
+}
+
+func (p *PromiseImpl[TOut]) Value() TOut {
+	return p.value
+}
+
 func (p *PromiseImpl[TOut]) Chan() <-chan TOut {
 	if p.c == nil {
 		p.c = make(chan TOut, 1)
 		p.Func(func(v TOut, err error) {
-			p.Value = v
-			p.Err = err
+			p.value = v
+			p.err = err
 			p.c <- v
 		})
 	}
@@ -163,5 +179,3 @@ func (p *PromiseImpl[TOut]) Chan() <-chan TOut {
 func (p *PromiseImpl[TOut]) Await(timeout ...time.Duration) (ret TOut, err error) {
 	panic("should not called")
 }
-
-// -----------------------------------------------------------------------------
