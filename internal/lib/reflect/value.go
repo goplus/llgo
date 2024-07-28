@@ -1579,26 +1579,39 @@ func (v Value) CanUint() bool {
 // Uint returns v's underlying value, as a uint64.
 // It panics if v's Kind is not Uint, Uintptr, Uint8, Uint16, Uint32, or Uint64.
 func (v Value) Uint() uint64 {
+	f := v.flag
 	k := v.kind()
 	p := v.ptr
-	switch k {
-	case Uint:
-		return uint64(*(*uint)(p))
-	case Uint8:
-		return uint64(*(*uint8)(p))
-	case Uint16:
-		return uint64(*(*uint16)(p))
-	case Uint32:
-		return uint64(*(*uint32)(p))
-	case Uint64:
-		return *(*uint64)(p)
-	case Uintptr:
-		return uint64(*(*uintptr)(p))
+	if f&flagAddr != 0 {
+		switch k {
+		case Uint:
+			return uint64(*(*uint)(p))
+		case Uint8:
+			return uint64(*(*uint8)(p))
+		case Uint16:
+			return uint64(*(*uint16)(p))
+		case Uint32:
+			return uint64(*(*uint32)(p))
+		case Uint64:
+			return *(*uint64)(p)
+		case Uintptr:
+			return uint64(*(*uintptr)(p))
+		}
+	} else if unsafe.Sizeof(uintptr(0)) == 8 {
+		if k >= Uint && k <= Uintptr {
+			return uint64(uintptr(p))
+		}
+	} else {
+		if k >= Uint && k <= Uint32 {
+			return uint64(uintptr(p))
+		}
+		if k == Uint64 || k == Uintptr {
+			return *(*uint64)(p)
+		}
 	}
 	panic(&ValueError{"reflect.Value.Uint", v.kind()})
 }
 
-//go:nocheckptr
 // This prevents inlining Value.UnsafeAddr when -d=checkptr is enabled,
 // which ensures cmd/compile can recognize unsafe.Pointer(v.UnsafeAddr())
 // and make an exception.
