@@ -7,8 +7,10 @@
 package os
 
 import (
+	"runtime"
 	"syscall"
 
+	"github.com/goplus/llgo/internal/lib/internal/itoa"
 	"github.com/goplus/llgo/internal/lib/internal/syscall/execenv"
 )
 
@@ -96,7 +98,6 @@ func (p *ProcessState) sysUsage() any {
 }
 
 func (p *ProcessState) String() string {
-	/* TODO(xsw):
 	if p == nil {
 		return "<nil>"
 	}
@@ -124,8 +125,6 @@ func (p *ProcessState) String() string {
 		res += " (core dumped)"
 	}
 	return res
-	*/
-	panic("todo: os.ProcessState.String")
 }
 
 // ExitCode returns the exit code of the exited process, or -1
