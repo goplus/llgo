@@ -255,6 +255,7 @@ func (p Function) endDefer(b Builder) {
 	}
 	procBlk := self.procBlk
 	panicBlk := self.panicBlk
+	rethPtr := self.rethPtr
 	rundPtr := self.rundPtr
 	nexts := self.rundsNext
 	if len(nexts) == 0 {
@@ -273,7 +274,7 @@ func (p Function) endDefer(b Builder) {
 
 	b.SetBlockEx(panicBlk, AtEnd, false) // exec runDefers and rethrow
 	b.Store(rundPtr, nexts[0].Addr())    // nexts[0] is rethrowBlk
-	b.Jump(procBlk)
+	b.IndirectJump(b.Load(rethPtr), self.rethsNext)
 }
 
 // -----------------------------------------------------------------------------
