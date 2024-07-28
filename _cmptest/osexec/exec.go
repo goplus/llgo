@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/goplus/llgo/xtool/env/llvm"
 )
 
 func main() {
@@ -17,6 +19,6 @@ func main() {
 	cmd.Stderr = os.Stderr
 	cmd.Run()
 
-	output, _ := exec.Command(ls).Output()
-	fmt.Print(string(output))
+	dir := llvm.New("").BinDir()
+	fmt.Println(dir)
 }
