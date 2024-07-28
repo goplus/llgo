@@ -94,7 +94,6 @@ type aDefer struct {
 	rundPtr   Expr         // next block of RunDefers
 	procBlk   BasicBlock   // deferProc block
 	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
-	rethsNext []BasicBlock // next blocks of Rethrow
 	rundsNext []BasicBlock // next blocks of RunDefers
 	stmts     []func(bits Expr)
 }
@@ -178,7 +177,6 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			rundPtr:   rundPtr,
 			procBlk:   procBlk,
 			panicBlk:  panicBlk,
-			rethsNext: []BasicBlock{procBlk},
 			rundsNext: []BasicBlock{rethrowBlk},
 		}
 
@@ -253,28 +251,42 @@ func (p Function) endDefer(b Builder) {
 	if self == nil {
 		return
 	}
-	procBlk := self.procBlk
-	panicBlk := self.panicBlk
-	rethPtr := self.rethPtr
-	rundPtr := self.rundPtr
 	nexts := self.rundsNext
 	if len(nexts) == 0 {
 		return
 	}
-	b.SetBlockEx(procBlk, AtEnd, true)
-	bits := b.Load(self.bitsPtr)
-	stmts := self.stmts
-	for i := len(stmts) - 1; i >= 0; i-- {
-		stmts[i](bits)
-	}
 
+	rethrowBlk := nexts[0]
+	procBlk := self.procBlk
+	panicBlk := self.panicBlk
+	rethPtr := self.rethPtr
+	rundPtr := self.rundPtr
+	bitsPtr := self.bitsPtr
+
+	stmts := self.stmts
+	n := len(stmts)
+	rethsNext := make([]BasicBlock, n+1)
+	blks := p.MakeBlocks(n - 1)
+	copy(rethsNext[1:], blks)
+	rethsNext[0] = rethrowBlk
+	rethsNext[n] = procBlk
+
+	for i := n - 1; i >= 0; i-- {
+		rethNext := rethsNext[i]
+		b.SetBlockEx(rethsNext[i+1], AtEnd, true)
+		b.Store(rethPtr, rethNext.Addr())
+		stmts[i](b.Load(bitsPtr))
+		if i != 0 {
+			b.Jump(rethNext)
+		}
+	}
 	link := b.getField(b.Load(self.data), deferLink)
 	b.pthreadSetspecific(self.key, link)
 	b.IndirectJump(b.Load(rundPtr), nexts)
 
-	b.SetBlockEx(panicBlk, AtEnd, false) // exec runDefers and rethrow
-	b.Store(rundPtr, nexts[0].Addr())    // nexts[0] is rethrowBlk
-	b.IndirectJump(b.Load(rethPtr), self.rethsNext)
+	b.SetBlockEx(panicBlk, AtEnd, false) // panicBlk: exec runDefers and rethrow
+	b.Store(rundPtr, rethrowBlk.Addr())
+	b.IndirectJump(b.Load(rethPtr), rethsNext)
 }
 
 // -----------------------------------------------------------------------------
