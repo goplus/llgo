@@ -96,6 +96,10 @@ func printany(i any) {
 		print(v)
 	case string:
 		print(v)
+	case error:
+		print(v.Error())
+	case interface{ String() string }:
+		print(v.String())
 	default:
 		printanycustomtype(i)
 	}

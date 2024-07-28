@@ -47,12 +47,6 @@ func Recover() (ret any) {
 
 // Panic panics with a value.
 func Panic(v any) {
-	switch e := v.(type) {
-	case error:
-		v = e.Error()
-	case interface{ String() string }:
-		v = e.String()
-	}
 	ptr := c.Malloc(unsafe.Sizeof(v))
 	*(*any)(ptr) = v
 	excepKey.Set(ptr)
@@ -91,10 +85,6 @@ func TracePanic(v any) {
 }
 
 /*
-func unpackEface(i any) *eface {
-	return (*eface)(unsafe.Pointer(&i))
-}
-
 func stringTracef(fp c.FilePtr, format *c.Char, s String) {
 	cs := c.Alloca(uintptr(s.len) + 1)
 	c.Fprintf(fp, format, CStrCopy(cs, s))
