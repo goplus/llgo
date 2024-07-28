@@ -764,6 +764,7 @@ var hasAltPkg = map[string]none{
 	"os":                       {},
 	"os/exec":                  {},
 	"runtime":                  {},
+	"io":                       {},
 }
 
 func check(err error) {
