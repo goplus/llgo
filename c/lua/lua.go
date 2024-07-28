@@ -41,17 +41,17 @@ type State struct {
 // ** basic types
 // */
 const (
-	NONE          = int(-1)
-	NIL           = int(0)
-	BOOLEAN       = int(1)
-	LIGHTUSERDATA = int(2)
-	NUMBER        = int(3)
-	STRING        = int(4)
-	TABLE         = int(5)
-	FUNCTION      = int(6)
-	USERDATA      = int(7)
-	THREAD        = int(8)
-	UMTYPES       = int(9)
+	NONE          c.Int = -1
+	NIL           c.Int = 0
+	BOOLEAN       c.Int = 1
+	LIGHTUSERDATA c.Int = 2
+	NUMBER        c.Int = 3
+	STRING        c.Int = 4
+	TABLE         c.Int = 5
+	FUNCTION      c.Int = 6
+	USERDATA      c.Int = 7
+	THREAD        c.Int = 8
+	UMTYPES       c.Int = 9
 )
 
 // /* minimum Lua stack available to a C function */
@@ -78,12 +78,14 @@ type Integer = c.Int
 type Unsigned = c.Uint
 
 // /* type for continuation-function contexts */
-// TODO(zzy): Context may not be c.Int
-type KContext c.Int
+type KContext = c.Pointer
 
 // /*
 // ** Type for C functions registered with Lua
 // */
+
+// llgo:type C
+type CFunction func(L *State) c.Int
 
 // /*
 // ** Type for continuation functions
@@ -185,9 +187,6 @@ func (L *State) Xmove(to *State, n c.Int) {}
 // /*
 // ** access functions (stack -> C)
 // */
-// LUA_API int             (lua_isinteger) (State *L, int idx);
-// llgo:link (*State).Isinteger C.lua_isinteger
-func (L *State) Isinteger(idx c.Int) c.Int { return 0 }
 
 // llgo:link (*State).Isnumber C.lua_isnumber
 func (L *State) Isnumber(idx c.Int) c.Int { return 0 }
@@ -195,11 +194,17 @@ func (L *State) Isnumber(idx c.Int) c.Int { return 0 }
 // llgo:link (*State).Isstring C.lua_isstring
 func (L *State) Isstring(idx c.Int) c.Int { return 0 }
 
-// TODO(zzy):add to demo
+// llgo:link (*State).Iscfunction C.lua_iscfunction
+func (L *State) Iscfunction(idx c.Int) c.Int { return 0 }
+
+// llgo:link (*State).Isinteger C.lua_isinteger
+func (L *State) Isinteger(idx c.Int) c.Int { return 0 }
+
+// LUA_API int             (lua_isuserdata) (State *L, int idx);
+
 // llgo:link (*State).Type C.lua_type
 func (L *State) Type(idx c.Int) c.Int { return 0 }
 
-// TODO(zzy)
 // llgo:link (*State).Typename C.lua_typename
 func (L *State) Typename(tp c.Int) *c.Char { return nil }
 
@@ -215,11 +220,11 @@ func (L *State) Toboolean(idx c.Int) bool { return false }
 // llgo:link (*State).Tolstring C.lua_tolstring
 func (L *State) Tolstring(idx c.Int, len *c.Ulong) *c.Char { return nil }
 
-// LUA_API int             (lua_iscfunction) (State *L, int idx);
-// LUA_API int             (lua_isuserdata) (State *L, int idx);
-
 // LUA_API lua_Unsigned    (lua_rawlen) (State *L, int idx);
-// LUA_API lua_CFunction   (lua_tocfunction) (State *L, int idx);
+
+// llgo:link (*State).Tocfunction C.lua_tocfunction
+func (L *State) Tocfunction(idx c.Int) CFunction { return nil }
+
 // LUA_API void	       *(lua_touserdata) (State *L, int idx);
 // LUA_API State      *(lua_tothread) (State *L, int idx);
 // LUA_API const void     *(lua_topointer) (State *L, int idx);
@@ -240,24 +245,21 @@ func (L *State) Pushnumber(n Number) {}
 // llgo:link (*State).Pushinteger C.lua_pushinteger
 func (L *State) Pushinteger(n Integer) {}
 
-// llgo:link (*State).Pushstring C.lua_pushstring
-func (L *State) Pushstring(s *c.Char) *c.Char {
-	return nil
-}
-
 // llgo:link (*State).Pushlstring C.lua_pushlstring
-func (L *State) Pushlstring(s *c.Char, len c.Ulong) *c.Char {
-	return nil
-}
+func (L *State) Pushlstring(s *c.Char, len c.Ulong) *c.Char { return nil }
+
+// llgo:link (*State).Pushstring C.lua_pushstring
+func (L *State) Pushstring(s *c.Char) *c.Char { return nil }
 
 // llgo:link (*State).Pushfstring C.lua_pushfstring
 func (L *State) Pushfstring(format *c.Char, __llgo_va_list ...any) *c.Char { return nil }
 
+// llgo:link (*State).Pushcclosure C.lua_pushcclosure
+func (L *State) Pushcclosure(fn CFunction, n c.Int) {}
+
 // llgo:link (*State).Pushboolean C.lua_pushboolean
 func (L *State) Pushboolean(b c.Int) {}
 
-//const char *(lua_pushvfstring) (State *L, const char *fmt,va_list argp);
-//void  (lua_pushcclosure) (State *L, lua_CFunction fn, int n);
 //void  (lua_pushlightuserdata) (State *L, void *p);
 //int   (lua_pushthread) (State *L);
 
@@ -274,23 +276,25 @@ func (L *State) Gettable(idx c.Int) c.Int { return 0 }
 // llgo:link (*State).Getfield C.lua_getfield
 func (L *State) Getfield(idx c.Int, k *c.Char) c.Int { return 0 }
 
-// llgo:link (*State).Createtable C.lua_createtable
-func (L *State) Createtable(narr c.Int, nrec c.Int) {}
-
 // LUA_API int (lua_geti) (State *L, int idx, lua_Integer n);
 // LUA_API int (lua_rawget) (State *L, int idx);
 // LUA_API int (lua_rawgeti) (State *L, int idx, lua_Integer n);
 // LUA_API int (lua_rawgetp) (State *L, int idx, const void *p);
 
+// llgo:link (*State).Createtable C.lua_createtable
+func (L *State) Createtable(narr c.Int, nrec c.Int) {}
+
 // LUA_API void *(lua_newuserdatauv) (State *L, size_t sz, int nuvalue);
-// LUA_API int   (lua_getmetatable) (State *L, int objindex);
+
+// llgo:link (*State).Getmetatable C.lua_getmetatable
+func (L *State) Getmetatable(objindex c.Int) c.Int { return 0 }
+
 // LUA_API int  (lua_getiuservalue) (State *L, int idx, int n);
 
 // /*
 // ** set functions (stack -> Lua)
 // */
 
-// TODO(zzy):add to demo
 // llgo:link (*State).Setglobal C.lua_setglobal
 func (L *State) Setglobal(name *c.Char) {}
 
@@ -304,24 +308,33 @@ func (L *State) Setfield(idx c.Int, k *c.Char) {}
 //void  (lua_rawset) (State *L, int idx);
 //void  (lua_rawseti) (State *L, int idx, lua_Integer n);
 //void  (lua_rawsetp) (State *L, int idx, const void *p);
-//int   (lua_setmetatable) (State *L, int objindex);
+
+// llgo:link (*State).Setmetatable C.lua_setmetatable
+func (L *State) Setmetatable(objindex c.Int) c.Int { return 0 }
+
 //int   (lua_setiuservalue) (State *L, int idx, int n);
 
 // /*
 // ** 'load' and 'call' functions (load and run Lua code)
 // */
 
+// llgo:link (*State).Callk C.lua_callk
+func (L *State) Callk(nargs c.Int, nresults c.Int, ctx KContext, k KFunction) c.Int {
+	return 0
+}
+
+func (L *State) Call(nargs c.Int, nresults c.Int) c.Int {
+	return L.Callk(nargs, nresults, nil, nil)
+}
+
 // llgo:link (*State).Pcallk C.lua_pcallk
-func (L *State) Pcallk(nargs c.Int, nresults c.Int, errfunc c.Int, ctx KContext, k *KFunction) c.Int {
+func (L *State) Pcallk(nargs c.Int, nresults c.Int, errfunc c.Int, ctx KContext, k KFunction) c.Int {
 	return 0
 }
 
 func (L *State) Pcall(nargs c.Int, nresults c.Int, errfunc c.Int) c.Int {
-	return L.Pcallk(nargs, nresults, errfunc, KContext(c.Int(0)), nil)
+	return L.Pcallk(nargs, nresults, errfunc, nil, nil)
 }
-
-// void  (lua_callk) (State *L, int nargs, int nresults, lua_KContext ctx, lua_KFunction k);
-// #define lua_call(L,n,r)		lua_callk(L, (n), (r), 0, NULL)
 
 // int   (lua_load) (State *L, lua_Reader reader, void *dt, const char *chunkname, const char *mode);
 
@@ -396,11 +409,17 @@ func (L *State) Next(idx c.Int) c.Int { return 0 }
 // ** ===============================================================
 // */
 
-func (L *State) Tonumber(idx c.Int) Number    { return L.Tonumberx(idx, nil) }
-func (L *State) Tostring(idx c.Int) *c.Char   { return L.Tolstring(idx, nil) }
-func (L *State) Tointeger(idx c.Int) Integer  { return L.Tointegerx(idx, nil) }
-func (L *State) Pop(n c.Int)                  { L.Settop(-(n) - 1) }
-func (L *State) Newtable()                    { L.Createtable(0, 0) }
+// #define lua_getextraspace(L)	((void *)((char *)(L) - LUA_EXTRASPACE))
+
+func (L *State) Tonumber(idx c.Int) Number   { return L.Tonumberx(idx, nil) }
+func (L *State) Tostring(idx c.Int) *c.Char  { return L.Tolstring(idx, nil) }
+func (L *State) Tointeger(idx c.Int) Integer { return L.Tointegerx(idx, nil) }
+func (L *State) Pop(n c.Int)                 { L.Settop(-(n) - 1) }
+func (L *State) Newtable()                   { L.Createtable(0, 0) }
+
+// #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
+func (L *State) Pushcfunction(f CFunction) { L.Pushcclosure(f, 0) }
+
 func (L *State) Isfunction(n c.Int) bool      { return L.Type(n) == c.Int(FUNCTION) }
 func (L *State) Istable(n c.Int) bool         { return L.Type(n) == c.Int(TABLE) }
 func (L *State) Islightuserdata(n c.Int) bool { return L.Type(n) == c.Int(LIGHTUSERDATA) }
@@ -410,20 +429,11 @@ func (L *State) Isthread(n c.Int) bool        { return L.Type(n) == c.Int(THREAD
 func (L *State) Isnone(n c.Int) bool          { return L.Type(n) == c.Int(NONE) }
 func (L *State) Isnoneornil(n c.Int) bool     { return L.Type(n) <= 0 }
 
-// #define lua_getextraspace(L)	((void *)((char *)(L) - LUA_EXTRASPACE))
-
-// #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
-
-// #define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
-
 // #define lua_pushliteral(L, s)	lua_pushstring(L, "" s)
-
 // #define lua_pushglobaltable(L)  ((void)lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS))
 
 // #define lua_insert(L,idx)	lua_rotate(L, (idx), 1)
-
 // #define lua_remove(L,idx)	(lua_rotate(L, (idx), -1), lua_pop(L, 1))
-
 // #define lua_replace(L,idx)	(lua_copy(L, -1, (idx)), lua_pop(L, 1))
 
 // /* }============================================================== */
