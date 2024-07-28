@@ -243,7 +243,7 @@ All Go syntax (not including `cgo`) is already supported. Here are some examples
 * [goroutine](_demo/goroutine/goroutine.go): goroutine demo
 
 
-## Defer
+### Defer
 
 LLGo `defer` does not support usage in loops. This is not a bug but a feature, because we think that using `defer` in a loop is a very unrecommended practice.
 
