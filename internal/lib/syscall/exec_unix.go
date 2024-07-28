@@ -68,10 +68,7 @@ import (
 var ForkLock sync.RWMutex
 
 func CloseOnExec(fd int) {
-	/* TODO(xsw):
-	fcntl(fd, F_SETFD, FD_CLOEXEC)
-	*/
-	panic("todo: syscall.CloseOnExec")
+	os.Fcntl(c.Int(fd), syscall.F_SETFD, syscall.FD_CLOEXEC)
 }
 
 func SetNonblock(fd int, nonblocking bool) (err error) {
