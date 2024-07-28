@@ -195,7 +195,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
 	if isInit && state == pkgHasPatch {
 		name = initFnNameOfHasPatch(name)
-		// pkg.init$guard has been set, change ssa.if-cond
+		// TODO(xsw): pkg.init$guard has been set, change ssa.If to ssa.Jump
 		block := f.Blocks[0].Instrs[1].(*ssa.If).Block()
 		block.Succs[0], block.Succs[1] = block.Succs[1], block.Succs[0]
 	}
@@ -306,7 +306,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
 	for i, instr := range instrs {
-		if i == 1 && doModInit && p.state == pkgInPatch {
+		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnOld.Expr)
