@@ -25,7 +25,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
 	"github.com/goplus/llgo/internal/typepatch"
@@ -287,16 +286,11 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
 			instrs = instrs[:last]
-		} else {
+		} else if p.state != pkgHasPatch {
 			// TODO(xsw): confirm pyMod don't need to call AfterInit
-			after := func() {
+			p.inits = append(p.inits, func() {
 				pkg.AfterInit(b, ret)
-			}
-			if strings.HasSuffix(fn.Name(), "$hasPatch") {
-				p.inits[len(p.inits)-1] = after
-			} else {
-				p.inits = append(p.inits, after)
-			}
+			})
 		}
 	} else if doMainInit {
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
