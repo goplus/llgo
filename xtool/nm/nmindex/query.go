@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package nm
+package nmindex
 
 import (
 	"bufio"
 	"os"
 	"strings"
+
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 // MatchedItem represents a matched item
 type MatchedItem struct {
 	ObjFile string
 	Symbol  string
-	Type    SymbolType
+	Type    nm.SymbolType
 }
 
 // MatchedFile represents a matched file
@@ -88,7 +90,7 @@ func queryIndex(files []*MatchedFile, idxFile, query string) []*MatchedFile {
 		items = append(items, &MatchedItem{
 			ObjFile: objFile,
 			Symbol:  sym,
-			Type:    SymbolType(typ),
+			Type:    nm.SymbolType(typ),
 		})
 	}
 	if len(items) > 0 {
