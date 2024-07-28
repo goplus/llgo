@@ -30,6 +30,7 @@ type Defer struct {
 	Addr unsafe.Pointer // sigjmpbuf
 	Bits uintptr
 	Link *Defer
+	Reth unsafe.Pointer // block address after Rethrow
 	Rund unsafe.Pointer // block address after RunDefers
 }
 
@@ -82,10 +83,6 @@ func init() {
 
 // -----------------------------------------------------------------------------
 
-func unpackEface(i any) *eface {
-	return (*eface)(unsafe.Pointer(&i))
-}
-
 // TracePanic prints panic message.
 func TracePanic(v any) {
 	print("panic: ")
@@ -94,6 +91,10 @@ func TracePanic(v any) {
 }
 
 /*
+func unpackEface(i any) *eface {
+	return (*eface)(unsafe.Pointer(&i))
+}
+
 func stringTracef(fp c.FilePtr, format *c.Char, s String) {
 	cs := c.Alloca(uintptr(s.len) + 1)
 	c.Fprintf(fp, format, CStrCopy(cs, s))
