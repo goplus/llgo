@@ -500,41 +500,6 @@ func (p *context) ensureLoaded(pkgTypes *types.Package) *types.Package {
 	return pkgTypes
 }
 
-func pkgKindByPath(pkgPath string) int {
-	switch pkgPath {
-	case "runtime/cgo", "unsafe":
-		return PkgDeclOnly
-	}
-	return PkgNormal
-}
-
-func replaceGoName(v string, pos int) string {
-	switch v[:pos] {
-	case "runtime":
-		return "github.com/goplus/llgo/internal/runtime" + v[pos:]
-	}
-	return v
-}
-
-func ignoreName(name string) bool {
-	/* TODO(xsw): confirm this is not needed more
-	if name == "unsafe.init" {
-		return true
-	}
-	*/
-	const internal = "internal/"
-	return (strings.HasPrefix(name, internal) && !supportedInternal(name[len(internal):])) ||
-		strings.HasPrefix(name, "crypto/") || strings.HasPrefix(name, "runtime/") ||
-		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
-		strings.HasPrefix(name, "plugin.")
-}
-
-func supportedInternal(name string) bool {
-	return strings.HasPrefix(name, "abi.") || strings.HasPrefix(name, "bytealg.") ||
-		strings.HasPrefix(name, "oserror.") || strings.HasPrefix(name, "reflectlite.") ||
-		strings.HasPrefix(name, "syscall/unix.") || strings.HasPrefix(name, "syscall/execenv.")
-}
-
 // -----------------------------------------------------------------------------
 
 const (
@@ -597,6 +562,43 @@ func toBackground(bg string) llssa.Background {
 		return llssa.InC
 	}
 	return llssa.InGo
+}
+
+// -----------------------------------------------------------------------------
+
+func pkgKindByPath(pkgPath string) int {
+	switch pkgPath {
+	case "runtime/cgo", "unsafe":
+		return PkgDeclOnly
+	}
+	return PkgNormal
+}
+
+func replaceGoName(v string, pos int) string {
+	switch v[:pos] {
+	case "runtime":
+		return "github.com/goplus/llgo/internal/runtime" + v[pos:]
+	}
+	return v
+}
+
+func ignoreName(name string) bool {
+	/* TODO(xsw): confirm this is not needed more
+	if name == "unsafe.init" {
+		return true
+	}
+	*/
+	const internal = "internal/"
+	return (strings.HasPrefix(name, internal) && !supportedInternal(name[len(internal):])) ||
+		strings.HasPrefix(name, "crypto/") || strings.HasPrefix(name, "runtime/") ||
+		strings.HasPrefix(name, "arena.") || strings.HasPrefix(name, "maps.") ||
+		strings.HasPrefix(name, "plugin.")
+}
+
+func supportedInternal(name string) bool {
+	return strings.HasPrefix(name, "abi.") || strings.HasPrefix(name, "bytealg.") ||
+		strings.HasPrefix(name, "itoa.") || strings.HasPrefix(name, "oserror.") || strings.HasPrefix(name, "reflectlite.") ||
+		strings.HasPrefix(name, "syscall/unix.") || strings.HasPrefix(name, "syscall/execenv.")
 }
 
 // -----------------------------------------------------------------------------

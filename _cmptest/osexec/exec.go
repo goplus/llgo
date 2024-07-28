@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/goplus/llgo/xtool/env/llvm"
 )
 
 func main() {
@@ -15,4 +18,7 @@ func main() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
+
+	dir := llvm.New("").BinDir()
+	fmt.Println(dir)
 }

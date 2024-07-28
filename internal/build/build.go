@@ -750,6 +750,7 @@ var hasAltPkg = map[string]none{
 	"fmt":                      {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
+	"internal/itoa":            {},
 	"internal/oserror":         {},
 	"internal/reflectlite":     {},
 	"internal/syscall/execenv": {},

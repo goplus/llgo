@@ -7,6 +7,8 @@
 package syscall
 
 import (
+	"unsafe"
+
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/syscall"
@@ -261,15 +263,15 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		if fd[i] == i {
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
-			if ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0); ret != 0 {
-				err1 = Errno(ret)
+			if ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0); ret < 0 {
+				err1 = Errno(os.Errno)
 				goto childerror
 			}
 			continue
 		}
 		// The new fd is created NOT close-on-exec,
-		if ret := os.Dup2(c.Int(fd[i]), c.Int(i)); ret != 0 {
-			err1 = Errno(ret)
+		if ret := os.Dup2(c.Int(fd[i]), c.Int(i)); ret < 0 {
+			err1 = Errno(os.Errno)
 			goto childerror
 		}
 	}
@@ -279,10 +281,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	// Programs that know they inherit fds >= 3 will need
 	// to set them close-on-exec.
 	for i = len(fd); i < 3; i++ {
-		/* TODO(xsw):
-		rawSyscall(abi.FuncPCABI0(libc_close_trampoline), uintptr(i), 0, 0)
-		*/
-		panic("todo: syscall.forkAndExecInChild - for i")
+		os.Close(c.Int(i))
 	}
 
 	// Detach fd 0 from tty
@@ -322,12 +321,9 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	*/
 
 childerror:
-	/* TODO(xsw):
 	// send error code on pipe
-	rawSyscall(abi.FuncPCABI0(libc_write_trampoline), uintptr(pipe), uintptr(unsafe.Pointer(&err1)), unsafe.Sizeof(err1))
+	os.Write(c.Int(pipe), unsafe.Pointer(&err1), unsafe.Sizeof(err1))
 	for {
-		rawSyscall(abi.FuncPCABI0(libc_exit_trampoline), 253, 0, 0)
+		os.Exit(253)
 	}
-	*/
-	panic("todo: syscall.forkAndExecInChild - childerror")
 }
