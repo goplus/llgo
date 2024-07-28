@@ -146,7 +146,6 @@ type KFunction func(L *State, status c.Int, ctx KContext) c.Int
 func (L *State) Close() {}
 
 // State *(lua_newstate) (lua_Alloc f, void *ud);
-// State *(lua_newthread) (State *L);
 
 // llgo:link (*State).Newthread C.lua_newthread
 func (L *State) Newthread() *State { return nil }
@@ -353,9 +352,9 @@ func (L *State) Status() c.Int { return 0 }
 // llgo:link (*State).Isyieldable C.lua_isyieldable
 func (L *State) Isyieldable() c.Int { return 0 }
 
-// TODO(zzy)
-// int  (lua_yieldk)     (State *L, int nresults, lua_KContext ctx, lua_KFunction k);
-// #define lua_yield(L,n)	lua_yieldk(L, (n), 0, NULL)
+// llgo:link (*State).Yieldk C.lua_yieldk
+func (L *State) Yieldk(nresults c.Int, ctx KContext, k KFunction) c.Int { return 0 }
+func (L *State) Yield(nresults c.Int) c.Int                             { return L.Yieldk(nresults, nil, nil) }
 
 // /*
 // ** Warning-related functions
