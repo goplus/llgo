@@ -1218,19 +1218,16 @@ formatLoop:
 }
 
 func (p *pp) doPrint(a []any) {
-	/*
-		prevString := false
-		for argNum, arg := range a {
-			isString := arg != nil && reflect.TypeOf(arg).Kind() == reflect.String
-			// Add a space between two non-string arguments.
-			if argNum > 0 && !isString && !prevString {
-				p.buf.writeByte(' ')
-			}
-			p.printArg(arg, 'v')
-			prevString = isString
+	prevString := false
+	for argNum, arg := range a {
+		isString := arg != nil && reflect.TypeOf(arg).Kind() == reflect.String
+		// Add a space between two non-string arguments.
+		if argNum > 0 && !isString && !prevString {
+			p.buf.writeByte(' ')
 		}
-	*/
-	panic("todo: fmt.(*pp).doPrint")
+		p.printArg(arg, 'v')
+		prevString = isString
+	}
 }
 
 // doPrintln is like doPrint but always adds a space between arguments

@@ -7,6 +7,8 @@
 package syscall
 
 import (
+	"unsafe"
+
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/syscall"
@@ -322,12 +324,9 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 	*/
 
 childerror:
-	/* TODO(xsw):
 	// send error code on pipe
-	rawSyscall(abi.FuncPCABI0(libc_write_trampoline), uintptr(pipe), uintptr(unsafe.Pointer(&err1)), unsafe.Sizeof(err1))
+	os.Write(c.Int(pipe), unsafe.Pointer(&err1), unsafe.Sizeof(err1))
 	for {
-		rawSyscall(abi.FuncPCABI0(libc_exit_trampoline), 253, 0, 0)
+		os.Exit(253)
 	}
-	*/
-	panic("todo: syscall.forkAndExecInChild - childerror")
 }
