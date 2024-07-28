@@ -12,35 +12,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type Response struct {
-	StatusCode int
-
-	Body string
-}
-
-func (r *Response) Text() (resolve io.Promise[string]) {
-	// return r.Body, nil
-	resolve(r.Body, nil)
-	return
-}
-
-func (r *Response) TextCompiled() *io.PromiseImpl[string] {
-	P := &io.PromiseImpl[string]{}
-	P.Debug = "Text"
-	P.Func = func(resolve func(string, error)) {
-		switch P.Next {
-		case 0:
-			P.Next = -1
-			resolve(r.Body, nil)
-			return
-		default:
-			panic("Promise already done")
-		}
-	}
-	return P
-}
-
-func Http(method string, url string, callback func(resp *Response, err error)) {
+func http(method string, url string, callback func(resp *Response, err error)) {
 	go func() {
 		body := ""
 		if strings.HasPrefix(url, "http://example.com/user/") {
@@ -55,40 +27,86 @@ func Http(method string, url string, callback func(resp *Response, err error)) {
 	}()
 }
 
-func AsyncHttpGet(url string) (resolve io.Promise[*Response]) {
-	Http("GET", url, resolve)
-	return
+// -----------------------------------------------------------------------------
+
+type Response struct {
+	StatusCode int
+
+	Body string
 }
 
-func AsyncHttpGetCompiled(url string) *io.PromiseImpl[*Response] {
-	P := &io.PromiseImpl[*Response]{}
-	P.Debug = "HttpGet"
-	P.Func = func(resolve func(*Response, error)) {
-		switch P.Next {
+func (r *Response) Text() *io.Promise[io.R2[string, error]] {
+	co := &io.Promise[io.R2[string, error]]{}
+	co.Func = func() {
+		co.Return(io.R2[string, error]{V1: r.Body, V2: nil})
+	}
+	return co
+}
+
+func (r *Response) TextCompiled() *io.Promise[io.R2[string, error]] {
+	co := &io.Promise[io.R2[string, error]]{}
+	co.Debug = "Text"
+	co.Func = func() {
+		switch co.Next {
 		case 0:
-			P.Next = -1
-			Http("GET", url, resolve)
+			co.Next = -1
+			co.Return(io.R2[string, error]{V1: r.Body, V2: nil})
 			return
 		default:
 			panic("Promise already done")
 		}
 	}
-	return P
+	return co
 }
 
-func AsyncHttpPost(url string) (resolve io.Promise[*Response]) {
-	Http("POST", url, resolve)
-	return
+func AsyncHttpGet(url string) *io.Promise[io.R2[*Response, error]] {
+	co := &io.Promise[io.R2[*Response, error]]{}
+	co.Func = func() {
+		http("GET", url, func(resp *Response, err error) {
+			co.Return(io.R2[*Response, error]{V1: resp, V2: nil})
+		})
+	}
+	return co
 }
 
-func AsyncHttpPostCompiled(url string) *io.PromiseImpl[*Response] {
-	P := &io.PromiseImpl[*Response]{}
+func AsyncHttpGetCompiled(url string) *io.Promise[io.R2[*Response, error]] {
+	co := &io.Promise[io.R2[*Response, error]]{}
+	co.Debug = "HttpGet"
+	co.Func = func() {
+		switch co.Next {
+		case 0:
+			co.Next = -1
+			http("GET", url, func(resp *Response, err error) {
+				co.Return(io.R2[*Response, error]{V1: resp, V2: nil})
+			})
+			return
+		default:
+			panic("Promise already done")
+		}
+	}
+	return co
+}
+
+func AsyncHttpPost(url string) *io.Promise[io.R2[*Response, error]] {
+	co := &io.Promise[io.R2[*Response, error]]{}
+	co.Func = func() {
+		http("POST", url, func(resp *Response, err error) {
+			co.Return(io.R2[*Response, error]{V1: resp, V2: nil})
+		})
+	}
+	return co
+}
+
+func AsyncHttpPostCompiled(url string) *io.Promise[io.R2[*Response, error]] {
+	P := &io.Promise[io.R2[*Response, error]]{}
 	P.Debug = "HttpPost"
-	P.Func = func(resolve func(*Response, error)) {
+	P.Func = func() {
 		switch P.Next {
 		case 0:
 			P.Next = -1
-			Http("POST", url, resolve)
+			http("POST", url, func(resp *Response, err error) {
+				P.Return(io.R2[*Response, error]{V1: resp, V2: nil})
+			})
 			return
 		default:
 			panic("Promise already done")
@@ -103,351 +121,365 @@ type User struct {
 	Name string
 }
 
-func GetUser(name string) (resolve io.Promise[User]) {
-	resp, err := AsyncHttpGet("http://example.com/user/" + name).Await()
+func GetUser(name string) (co *io.Promise[io.R2[User, error]]) {
+	resp, err := AsyncHttpGet("http://example.com/user/" + name).Await().Values()
 	if err != nil {
 		// return User{}, err
-		resolve(User{}, err)
+		co.Return(io.R2[User, error]{V1: User{}, V2: err})
 		return
 	}
 
 	if resp.StatusCode != 200 {
 		// return User{}, fmt.Errorf("http status code: %d", resp.StatusCode)
-		resolve(User{}, fmt.Errorf("http status code: %d", resp.StatusCode))
+		co.Return(io.R2[User, error]{V1: User{}, V2: fmt.Errorf("http status code: %d", resp.StatusCode)})
 		return
 	}
 
-	body, err := resp.Text().Await()
+	body, err := resp.Text().Await().Values()
 	if err != nil {
 		// return User{}, err
-		resolve(User{}, err)
+		co.Return(io.R2[User, error]{V1: User{}, V2: err})
 		return
 	}
 	user := User{}
 	if err := json.Unmarshal([]byte(body), &user); err != nil {
 		// return User{}, err
-		resolve(User{}, err)
+		co.Return(io.R2[User, error]{V1: User{}, V2: err})
 		return
 	}
 
 	// return user, nil
-	resolve(user, nil)
+	co.Return(io.R2[User, error]{V1: user, V2: nil})
 	return
 }
 
-func GetUserCompiled(name string) *io.PromiseImpl[User] {
-	var state1 *io.PromiseImpl[*Response]
-	var state2 *io.PromiseImpl[string]
+func GetUserCompiled(name string) (co *io.Promise[io.R2[User, error]]) {
+	var state1 *io.Promise[io.R2[*Response, error]]
+	var state2 *io.Promise[io.R2[string, error]]
 
-	P := &io.PromiseImpl[User]{}
-	P.Debug = "GetUser"
-	P.Func = func(resolve func(User, error)) {
-		switch P.Next {
+	co = &io.Promise[io.R2[User, error]]{}
+	co.Debug = "GetUser"
+	co.Func = func() {
+		switch co.Next {
 		case 0:
-			P.Next = 1
+			co.Next = 1
 			state1 = AsyncHttpGetCompiled("http://example.com/user/" + name)
-			state1.Exec = P.Exec
-			state1.Parent = P
+			state1.Exec = co.Exec
+			state1.Parent = co
 			state1.Call()
 			return
 		case 1:
-			P.Next = 2
-			resp, err := state1.Value(), state1.Err()
+			co.Next = 2
+			resp, err := state1.Value().Values()
 			log.Printf("resp: %v, err: %v\n", resp, err)
 			if err != nil {
-				resolve(User{}, err)
+				co.Return(io.R2[User, error]{V1: User{}, V2: err})
 				return
 			}
 
 			if resp.StatusCode != 200 {
-				resolve(User{}, fmt.Errorf("http status code: %d", resp.StatusCode))
+				co.Return(io.R2[User, error]{V1: User{}, V2: fmt.Errorf("http status code: %d", resp.StatusCode)})
 				return
 			}
 
 			state2 = resp.TextCompiled()
-			state2.Exec = P.Exec
-			state2.Parent = P
+			state2.Exec = co.Exec
+			state2.Parent = co
 			state2.Call()
 			return
 		case 2:
-			P.Next = -1
-			body, err := state2.Value(), state2.Err()
+			co.Next = -1
+			body, err := state2.Value().Values()
 			if err != nil {
-				resolve(User{}, err)
+				co.Return(io.R2[User, error]{V1: User{}, V2: err})
 				return
 			}
 			user := User{}
 			log.Printf("body: %v\n", body)
 			if err := json.Unmarshal([]byte(body), &user); err != nil {
-				resolve(User{}, err)
+				co.Return(io.R2[User, error]{V1: User{}, V2: err})
 				return
 			}
 
 			log.Printf("resolve user: %+v\n", user)
-			resolve(user, nil)
+			co.Return(io.R2[User, error]{V1: user, V2: nil})
 			return
 		default:
-			panic(fmt.Sprintf("Promise already done, %+v", P))
+			panic(fmt.Errorf("Promise already done, %+v", co))
 		}
 	}
-	return P
+	return
 }
 
-func GetScore() (resolve io.Promise[float64]) {
-	resp, err := AsyncHttpGet("http://example.com/score/").Await()
+func GetScore() (co *io.Promise[io.R2[float64, error]]) {
+	resp, err := AsyncHttpGet("http://example.com/score/").Await().Values()
 	if err != nil {
-		// return 0, err
-		resolve(0, err)
+		co.Return(io.R2[float64, error]{V1: 0, V2: err})
 		return
 	}
 
 	if resp.StatusCode != 200 {
 		// return 0, fmt.Errorf("http status code: %d", resp.StatusCode)
-		resolve(0, fmt.Errorf("http status code: %d", resp.StatusCode))
+		co.Return(io.R2[float64, error]{V1: 0, V2: fmt.Errorf("http status code: %d", resp.StatusCode)})
 		return
 	}
 
-	body, err := resp.Text().Await()
+	body, err := resp.Text().Await().Values()
 	if err != nil {
 		// return 0, err
-		resolve(0, err)
+		co.Return(io.R2[float64, error]{V1: 0, V2: err})
 		return
 	}
 
 	score := 0.0
 	if _, err := fmt.Sscanf(body, "%f", &score); err != nil {
 		// return 0, err
-		resolve(0, err)
+		co.Return(io.R2[float64, error]{V1: 0, V2: err})
 		return
 	}
 
 	// return score, nil
-	resolve(score, nil)
+	co.Return(io.R2[float64, error]{V1: score, V2: nil})
 	return
 }
 
-func GetScoreCompiled() *io.PromiseImpl[float64] {
-	var state1 *io.PromiseImpl[*Response]
-	var state2 *io.PromiseImpl[string]
+func GetScoreCompiled() *io.Promise[io.R2[float64, error]] {
+	var state1 *io.Promise[io.R2[*Response, error]]
+	var state2 *io.Promise[io.R2[string, error]]
 
-	P := &io.PromiseImpl[float64]{}
-	P.Debug = "GetScore"
-	P.Func = func(resolve func(float64, error)) {
-		switch P.Next {
+	co := &io.Promise[io.R2[float64, error]]{}
+	co.Debug = "GetScore"
+	co.Func = func() {
+		switch co.Next {
 		case 0:
-			P.Next = 1
+			co.Next = 1
 			state1 = AsyncHttpGetCompiled("http://example.com/score/")
-			state1.Exec = P.Exec
-			state1.Parent = P
+			state1.Exec = co.Exec
+			state1.Parent = co
 			state1.Call()
 			return
 		case 1:
-			P.Next = 2
-			resp, err := state1.Value(), state1.Err()
+			co.Next = 2
+
+			resp, err := state1.Value().Values()
 			if err != nil {
-				resolve(0, err)
+				co.Return(io.R2[float64, error]{V1: 0, V2: err})
 				return
 			}
 
 			if resp.StatusCode != 200 {
-				resolve(0, fmt.Errorf("http status code: %d", resp.StatusCode))
+				co.Return(io.R2[float64, error]{V1: 0, V2: fmt.Errorf("http status code: %d", resp.StatusCode)})
 				return
 			}
 
 			state2 = resp.TextCompiled()
-			state2.Exec = P.Exec
-			state2.Parent = P
+			state2.Exec = co.Exec
+			state2.Parent = co
 			state2.Call()
 
 			return
 		case 2:
-			P.Next = -1
-			body, err := state2.Value(), state2.Err()
+			co.Next = -1
+			body, err := state2.Value().Values()
 			if err != nil {
-				resolve(0, err)
+				co.Return(io.R2[float64, error]{V1: 0, V2: err})
 				return
 			}
 
 			score := 0.0
 			if _, err := fmt.Sscanf(body, "%f", &score); err != nil {
-				resolve(0, err)
+				co.Return(io.R2[float64, error]{V1: 0, V2: err})
 				return
 			}
-			resolve(score, nil)
+			co.Return(io.R2[float64, error]{V1: score, V2: nil})
 			return
 		default:
 			panic("Promise already done")
 		}
 	}
-	return P
+	return co
 }
 
-func DoUpdate(op string) (resolve io.Promise[io.Void]) {
-	resp, err := AsyncHttpPost("http://example.com/update/" + op).Await()
+func DoUpdate(op string) (co *io.Promise[error]) {
+	resp, err := AsyncHttpPost("http://example.com/update/" + op).Await().Values()
 	if err != nil {
-		// return err
-		resolve(io.Void{}, err)
+		co.Return(err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
-		// return fmt.Errorf("http status code: %d", resp.StatusCode)
-		resolve(io.Void{}, fmt.Errorf("http status code: %d", resp.StatusCode))
-		return
+		co.Return(fmt.Errorf("http status code: %d", resp.StatusCode))
 	}
 
-	// return nil
-	resolve(io.Void{}, nil)
+	co.Return(nil)
 	return
 }
 
-func DoUpdateCompiled(op string) *io.PromiseImpl[io.Void] {
-	var state1 *io.PromiseImpl[*Response]
+func DoUpdateCompiled(op string) *io.Promise[error] {
+	var state1 *io.Promise[io.R2[*Response, error]]
 
-	P := &io.PromiseImpl[io.Void]{}
-	P.Debug = "DoUpdate"
-	P.Func = func(resolve func(io.Void, error)) {
-		switch P.Next {
+	co := &io.Promise[error]{}
+	co.Debug = "DoUpdate"
+	co.Func = func() {
+		switch co.Next {
 		case 0:
-			P.Next = 1
+			co.Next = 1
 			state1 = AsyncHttpPostCompiled("http://example.com/update/" + op)
-			state1.Exec = P.Exec
-			state1.Parent = P
+			state1.Exec = co.Exec
+			state1.Parent = co
 			state1.Call()
 			return
 		case 1:
-			P.Next = -1
-			resp, err := state1.Value(), state1.Err()
+			co.Next = -1
+			resp, err := state1.Value().Values()
 			if err != nil {
-				resolve(io.Void{}, err)
+				co.Return(err)
 				return
 			}
 
 			if resp.StatusCode != 200 {
-				resolve(io.Void{}, fmt.Errorf("http status code: %d", resp.StatusCode))
+				co.Return(fmt.Errorf("http status code: %d", resp.StatusCode))
 				return
 			}
 
-			resolve(io.Void{}, nil)
+			co.Return(nil)
 			return
 		default:
 			panic("Promise already done")
 		}
 	}
-	return P
+	return co
 }
 
-func GenInts() (yield io.Promise[int]) {
-	yield(3, nil)
-	yield(2, nil)
-	yield(5, nil)
+func GenInts() (co *io.Promise[int]) {
+	co.Yield(3)
+	co.Yield(2)
+	co.Yield(5)
 	return
 }
 
-func GenIntsCompiled() *io.PromiseImpl[int] {
-	P := &io.PromiseImpl[int]{}
-	P.Debug = "GenInts"
-	P.Func = func(resolve func(int, error)) {
-		switch P.Next {
+func GenIntsCompiled() *io.Promise[int] {
+	co := &io.Promise[int]{}
+	co.Debug = "GenInts"
+	co.Func = func() {
+		switch co.Next {
 		case 0:
-			P.Next = 1
-			resolve(3, nil)
+			co.Next = 1
+			co.Yield(3)
 			return
 		case 1:
-			P.Next = 2
-			resolve(2, nil)
+			co.Next = 2
+			co.Yield(2)
 			return
 		case 2:
-			P.Next = 3
-			resolve(5, nil)
+			co.Next = 3
+			co.Yield(5)
 			return
 		case 3:
-			P.Next = -1
-			resolve(0, fmt.Errorf("stop"))
-			return
+			co.Next = -1
 		default:
 			panic("Generator already done")
 		}
 	}
-	return P
+	return co
 }
 
-func GenUsers() (yield io.Promise[User]) {
-	u, _ := GetUser("Alice").Await()
-	yield(u, nil)
-	u, _ = GetUser("Bob").Await()
-	yield(u, nil)
-	u, _ = GetUser("Cindy").Await()
-	yield(u, nil)
+// Generator with async calls and panic
+func GenUsers() (co *io.Promise[User]) {
+	u, err := GetUser("Alice").Await().Values()
+	if err != nil {
+		panic(err)
+	}
+	co.Yield(u)
+	u, err = GetUser("Bob").Await().Values()
+	if err != nil {
+		panic(err)
+	}
+	co.Yield(u)
+	u, err = GetUser("Cindy").Await().Values()
+	if err != nil {
+		panic(err)
+	}
+	co.Yield(u)
 	log.Printf("genUsers done\n")
 	return
 }
 
-func GenUsersCompiled() (resolve *io.PromiseImpl[User]) {
-	var state1, state2, state3 *io.PromiseImpl[User]
+func GenUsersCompiled() (resolve *io.Promise[User]) {
+	var state1, state2, state3 *io.Promise[io.R2[User, error]]
 
-	P := &io.PromiseImpl[User]{}
-	P.Debug = "GenUsers"
-	P.Func = func(resolve func(User, error)) {
-		switch P.Next {
+	co := &io.Promise[User]{}
+	co.Debug = "GenUsers"
+	co.Func = func() {
+		switch co.Next {
 		case 0:
-			P.Next = 1
+			co.Next = 1
 			state1 = GetUserCompiled("Alice")
-			state1.Exec = P.Exec
-			state1.Parent = P
+			state1.Exec = co.Exec
+			state1.Parent = co
 			state1.Call()
 			return
 		case 1:
-			P.Next = 2
-			u, _ := state1.Value(), state1.Err()
-			resolve(u, nil)
+			co.Next = 2
+			u, err := state1.Value().Values()
+			if err != nil {
+				panic(err)
+			} else {
+				co.Yield(u)
+			}
 			return
 		case 2:
-			P.Next = 3
+			co.Next = 3
 			state2 = GetUserCompiled("Bob")
-			state2.Exec = P.Exec
-			state2.Parent = P
+			state2.Exec = co.Exec
+			state2.Parent = co
 			state2.Call()
 			return
 		case 3:
-			P.Next = 4
-			u, _ := state2.Value(), state2.Err()
-			resolve(u, nil)
+			co.Next = 4
+			u, err := state2.Value().Values()
+			if err != nil {
+				panic(err)
+			} else {
+				co.Yield(u)
+			}
 			return
 		case 4:
-			P.Next = 5
+			co.Next = 5
 			state3 = GetUserCompiled("Cindy")
-			state3.Exec = P.Exec
-			state3.Parent = P
+			state3.Exec = co.Exec
+			state3.Parent = co
 			state3.Call()
 			return
 		case 5:
-			P.Next = 6
-			u, _ := state3.Value(), state3.Err()
-			resolve(u, nil)
+			co.Next = 6
+			u, err := state3.Value().Values()
+			if err != nil {
+				panic(err)
+			} else {
+				co.Yield(u)
+			}
 			return
 		case 6:
-			P.Next = -1
-			resolve(User{}, fmt.Errorf("stop"))
-			return
+			co.Next = -1
 		default:
 			panic("Generator already done")
 		}
 	}
-	return P
+	return co
 }
 
-func Demo() (resolve io.Promise[io.Void]) {
-	user, err := GetUser("1").Await()
+func Demo() {
+	user, err := GetUser("1").Await().Values()
 	log.Println(user, err)
 
-	user, err = io.Race[User](GetUser("2"), GetUser("3"), GetUser("4")).Await()
+	user, err = io.Race[io.R2[User, error]](GetUser("2"), GetUser("3"), GetUser("4")).Value().Values()
 	log.Println(user, err)
 
-	users, err := io.All[User]([]io.AsyncCall[User]{GetUser("5"), GetUser("6"), GetUser("7")}).Await()
+	users := io.All[io.R2[User, error]]([]io.AsyncCall[io.R2[User, error]]{GetUser("5"), GetUser("6"), GetUser("7")}).Value()
 	log.Println(users, err)
 
-	user, score, _, err := io.Await3[User, float64, io.Void](GetUser("8"), GetScore(), DoUpdate("update sth."))
+	user, score, _ := io.Await3Compiled[User, float64, io.Void](GetUser("8"), GetScore(), DoUpdate("update sth.")).Value().Values()
 	log.Println(user, score, err)
 
 	// for loop with generator
@@ -481,20 +513,19 @@ func Demo() (resolve io.Promise[io.Void]) {
 	// case <-io.Timeout(5 * time.Second).Chan():
 	// 	log.Println("timeout")
 	// }
-	return
 }
 
-func DemoCompiled() *io.PromiseImpl[io.Void] {
-	var state1 *io.PromiseImpl[User]
-	var state2 *io.PromiseImpl[User]
-	var state3 *io.PromiseImpl[[]io.Result[User]]
-	var state4 *io.PromiseImpl[io.Await3Result[User, float64, io.Void]]
-	var g1 *io.PromiseImpl[int]
-	var g2 *io.PromiseImpl[User]
+func DemoCompiled() *io.Promise[io.Void] {
+	var state1 *io.Promise[io.R2[User, error]]
+	var state2 *io.Promise[io.R2[User, error]]
+	var state3 *io.Promise[[]io.R2[User, error]]
+	var state4 *io.Promise[io.R3[io.R2[User, error], io.R2[float64, error], error]]
+	var g1 *io.Promise[int]
+	var g2 *io.Promise[User]
 
-	P := &io.PromiseImpl[io.Void]{}
+	P := &io.Promise[io.Void]{}
 	P.Debug = "Demo"
-	P.Func = func(resolve func(io.Void, error)) {
+	P.Func = func() {
 		switch P.Next {
 		case 0:
 			P.Next = 1
@@ -505,20 +536,20 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 			return
 		case 1:
 			P.Next = 2
-			user, err := state1.Value(), state1.Err()
+			user, err := state1.Value().Values()
 			log.Printf("user: %+v, err: %v\n", user, err)
 
-			state2 = io.Race[User](GetUserCompiled("2"), GetUserCompiled("3"), GetUserCompiled("4"))
+			state2 = io.Race[io.R2[User, error]](GetUserCompiled("2"), GetUserCompiled("3"), GetUserCompiled("4"))
 			state2.Exec = P.Exec
 			state2.Parent = P
 			state2.Call()
 			return
 		case 2:
 			P.Next = 3
-			user, err := state2.Value(), state2.Err()
+			user, err := state2.Value().Values()
 			log.Printf("race user: %+v, err: %v\n", user, err)
 
-			state3 = io.All[User]([]io.AsyncCall[User]{GetUserCompiled("5"), GetUserCompiled("6"), GetUserCompiled("7")})
+			state3 = io.All[io.R2[User, error]]([]io.AsyncCall[io.R2[User, error]]{GetUserCompiled("5"), GetUserCompiled("6"), GetUserCompiled("7")})
 			state3.Exec = P.Exec
 			state3.Parent = P
 			state3.Call()
@@ -526,18 +557,18 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 		case 3:
 
 			P.Next = 4
-			users, err := state3.Value(), state3.Err()
-			log.Println(users, err)
+			users := state3.Value()
+			log.Println(users)
 
-			state4 = io.Await3Compiled[User, float64, io.Void](GetUserCompiled("8"), GetScoreCompiled(), DoUpdateCompiled("update sth."))
+			state4 = io.Await3Compiled[io.R2[User, error], io.R2[float64, error], error](GetUserCompiled("8"), GetScoreCompiled(), DoUpdateCompiled("update sth."))
 			state4.Exec = P.Exec
 			state4.Parent = P
 			state4.Call()
 			return
 		case 4:
 			P.Next = 5
-			user, score, _, err := state4.Value().V1, state4.Value().V2, state4.Value().V3, state4.Value().Err
-			log.Println(user, score, err)
+			user, score, _ := state4.Value().Values()
+			log.Println(user, score)
 
 			g1 = GenIntsCompiled()
 			for {
@@ -555,13 +586,15 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 			g2.Call()
 			return
 		case 5:
-			if g2.Err() != nil {
+			g2.Call()
+			if g2.Done() {
 				P.Next = -1
-				resolve(io.Void{}, nil)
+				log.Printf("Demo done\n")
+				P.Return(io.Void{})
 				return
 			}
 			log.Printf("genUser: %+v, done: %v\n", g2.Value(), g2.Done())
-			g2.Call()
+			return
 		default:
 			panic("Promise already done")
 		}
@@ -572,6 +605,6 @@ func DemoCompiled() *io.PromiseImpl[io.Void] {
 func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	// io.Run(Demo())
-	v, err := io.Run[io.Void](DemoCompiled())
-	log.Println(v, err)
+	v := io.Run[io.Void](DemoCompiled())
+	log.Println(v)
 }

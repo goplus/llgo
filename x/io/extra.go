@@ -33,13 +33,13 @@ func Await[OutT any](call AsyncCall[OutT], timeout ...time.Duration) (ret OutT, 
 //go:linkname Timeout llgo.timeout
 func Timeout(time.Duration) (ret AsyncCall[Void])
 
-func TimeoutCompiled(d time.Duration) *PromiseImpl[Void] {
-	P := &PromiseImpl[Void]{}
+func TimeoutCompiled(d time.Duration) *Promise[Void] {
+	P := &Promise[Void]{}
 	P.Debug = "Timeout"
-	P.Func = func(resolve func(Void, error)) {
+	P.Func = func() {
 		go func() {
 			time.Sleep(d)
-			resolve(Void{}, nil)
+			P.Return(Void{})
 		}()
 	}
 	return P
@@ -50,20 +50,19 @@ type Result[T any] struct {
 	Err error
 }
 
-// llgo:link Race llgo.race
-func Race[OutT any](acs ...AsyncCall[OutT]) *PromiseImpl[OutT] {
+func Race[OutT any](acs ...AsyncCall[OutT]) *Promise[OutT] {
 	if len(acs) == 0 {
-		panic("face: no promise")
+		panic("race: no promise")
 	}
-	ps := make([]*PromiseImpl[OutT], len(acs))
+	ps := make([]*Promise[OutT], len(acs))
 	for idx, ac := range acs {
-		ps[idx] = ac.(*PromiseImpl[OutT])
+		ps[idx] = ac.(*Promise[OutT])
 	}
 	remaining := len(acs)
 	returned := false
-	P := &PromiseImpl[OutT]{}
+	P := &Promise[OutT]{}
 	P.Debug = "Race"
-	P.Func = func(resolve func(OutT, error)) {
+	P.Func = func() {
 		switch P.Next {
 		case 0:
 			P.Next = 1
@@ -88,7 +87,7 @@ func Race[OutT any](acs ...AsyncCall[OutT]) *PromiseImpl[OutT] {
 						log.Printf("io.Race done: %+v won the race\n", p)
 					}
 					returned = true
-					resolve(p.value, p.err)
+					P.Return(p.value)
 					return
 				}
 			}
@@ -101,15 +100,15 @@ func Race[OutT any](acs ...AsyncCall[OutT]) *PromiseImpl[OutT] {
 	return P
 }
 
-func All[OutT any](acs []AsyncCall[OutT]) *PromiseImpl[[]Result[OutT]] {
-	ps := make([]*PromiseImpl[OutT], len(acs))
+func All[OutT any](acs []AsyncCall[OutT]) *Promise[[]OutT] {
+	ps := make([]*Promise[OutT], len(acs))
 	for idx, ac := range acs {
-		ps[idx] = ac.(*PromiseImpl[OutT])
+		ps[idx] = ac.(*Promise[OutT])
 	}
 	done := 0
-	P := &PromiseImpl[[]Result[OutT]]{}
+	P := &Promise[[]OutT]{}
 	P.Debug = "All"
-	P.Func = func(resolve func([]Result[OutT], error)) {
+	P.Func = func() {
 		switch P.Next {
 		case 0:
 			P.Next = 1
@@ -132,14 +131,14 @@ func All[OutT any](acs []AsyncCall[OutT]) *PromiseImpl[[]Result[OutT]] {
 				}
 			}
 
-			ret := make([]Result[OutT], len(acs))
+			ret := make([]OutT, len(acs))
 			for idx, p := range ps {
-				ret[idx] = Result[OutT]{p.value, p.err}
+				ret[idx] = p.value
 			}
 			if debugAsync {
 				log.Printf("io.All done: %+v\n", ret)
 			}
-			resolve(ret, nil)
+			P.Return(ret)
 			return
 		default:
 			panic("unreachable")
@@ -149,27 +148,15 @@ func All[OutT any](acs []AsyncCall[OutT]) *PromiseImpl[[]Result[OutT]] {
 }
 
 // llgo:link Await2 llgo.await
-func Await2[OutT1, OutT2 any](
-	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2],
-	timeout ...time.Duration) (ret1 OutT1, ret2 OutT2, err error) {
-	return
-}
-
-type Await2Result[T1 any, T2 any] struct {
-	V1  T1
-	V2  T2
-	Err error
-}
-
 func Await2Compiled[OutT1, OutT2 any](
 	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2],
-	timeout ...time.Duration) (ret *PromiseImpl[Await2Result[OutT1, OutT2]]) {
-	p1 := ac1.(*PromiseImpl[OutT1])
-	p2 := ac2.(*PromiseImpl[OutT2])
+	timeout ...time.Duration) (ret *Promise[R3[OutT1, OutT2, error]]) {
+	p1 := ac1.(*Promise[OutT1])
+	p2 := ac2.(*Promise[OutT2])
 	remaining := 2
-	P := &PromiseImpl[Await2Result[OutT1, OutT2]]{}
+	P := &Promise[R3[OutT1, OutT2, error]]{}
 	P.Debug = "Await2"
-	P.Func = func(resolve func(Await2Result[OutT1, OutT2], error)) {
+	P.Func = func() {
 		switch P.Next {
 		case 0:
 			P.Next = 1
@@ -191,17 +178,11 @@ func Await2Compiled[OutT1, OutT2 any](
 				log.Fatalf("io.Await2: not done: %+v, %+v\n", p1, p2)
 			}
 
-			var err error
-			if p1.err != nil {
-				err = p1.err
-			} else if p2.err != nil {
-				err = p2.err
-			}
-
-			resolve(Await2Result[OutT1, OutT2]{
-				V1: p1.value, V2: p2.value,
-				Err: err,
-			}, err)
+			P.Return(R3[OutT1, OutT2, error]{
+				V1: p1.value,
+				V2: p2.value,
+				V3: nil,
+			})
 			return
 		default:
 			panic("unreachable")
@@ -210,30 +191,17 @@ func Await2Compiled[OutT1, OutT2 any](
 	return P
 }
 
-// llgo:link Await3 llgo.await
-func Await3[OutT1, OutT2, OutT3 any](
-	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2], ac3 AsyncCall[OutT3],
-	timeout ...time.Duration) (ret1 OutT1, ret2 OutT2, ret3 OutT3, err error) {
-	return
-}
-
-type Await3Result[T1 any, T2 any, T3 any] struct {
-	V1  T1
-	V2  T2
-	V3  T3
-	Err error
-}
-
+// llgo:link Await2 llgo.await
 func Await3Compiled[OutT1, OutT2, OutT3 any](
 	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2], ac3 AsyncCall[OutT3],
-	timeout ...time.Duration) *PromiseImpl[Await3Result[OutT1, OutT2, OutT3]] {
-	p1 := ac1.(*PromiseImpl[OutT1])
-	p2 := ac2.(*PromiseImpl[OutT2])
-	p3 := ac3.(*PromiseImpl[OutT3])
+	timeout ...time.Duration) *Promise[R3[OutT1, OutT2, OutT3]] {
+	p1 := ac1.(*Promise[OutT1])
+	p2 := ac2.(*Promise[OutT2])
+	p3 := ac3.(*Promise[OutT3])
 	remaining := 3
-	P := &PromiseImpl[Await3Result[OutT1, OutT2, OutT3]]{}
+	P := &Promise[R3[OutT1, OutT2, OutT3]]{}
 	P.Debug = "Await3"
-	P.Func = func(resolve func(Await3Result[OutT1, OutT2, OutT3], error)) {
+	P.Func = func() {
 		switch P.Next {
 		case 0:
 			P.Next = 1
@@ -260,19 +228,11 @@ func Await3Compiled[OutT1, OutT2, OutT3 any](
 				log.Fatalf("io.Await3: not done: %+v, %+v, %+v\n", p1, p2, p3)
 			}
 
-			var err error
-			if p1.err != nil {
-				err = p1.err
-			} else if p2.err != nil {
-				err = p2.err
-			} else if p3.err != nil {
-				err = p3.err
-			}
-
-			resolve(Await3Result[OutT1, OutT2, OutT3]{
-				V1: p1.value, V2: p2.value, V3: p3.value,
-				Err: err,
-			}, err)
+			P.Return(R3[OutT1, OutT2, OutT3]{
+				V1: p1.value,
+				V2: p2.value,
+				V3: p3.value,
+			})
 			return
 		default:
 			panic("unreachable")
@@ -281,60 +241,50 @@ func Await3Compiled[OutT1, OutT2, OutT3 any](
 	return P
 }
 
-// / PAll is a parallel version of All.
-func PAll[OutT any](acs ...AsyncCall[OutT]) (resolve Promise[[]Result[OutT]]) {
-	panic("todo: PAll")
-}
-
-func PAllCompiled[OutT any](acs ...AsyncCall[OutT]) *PromiseImpl[[]Result[OutT]] {
-	P := &PromiseImpl[[]Result[OutT]]{}
+func PAllCompiled[OutT any](acs ...AsyncCall[OutT]) *Promise[[]OutT] {
+	P := &Promise[[]OutT]{}
 	P.Debug = "Parallel"
-	P.Func = func(resolve func([]Result[OutT], error)) {
-		ret := make([]Result[OutT], len(acs))
+	P.Func = func() {
+		ret := make([]OutT, len(acs))
 		wg := sync.WaitGroup{}
 		for idx, ac := range acs {
 			idx := idx
 			ac := ac
 			wg.Add(1)
 			go func(ac AsyncCall[OutT]) {
-				v, err := Run[OutT](ac)
-				ret[idx] = Result[OutT]{v, err}
+				v := Run[OutT](ac)
+				ret[idx] = v
 				wg.Done()
 			}(ac)
 		}
 		wg.Wait()
-		resolve(ret, nil)
+		P.Return(ret)
 	}
 	return P
 }
 
-// / PAwait3 is a parallel version of Await3.
-func PAwait3[OutT1, OutT2, OutT3 any](ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2], ac3 AsyncCall[OutT3]) (resolve Promise[Await3Result[OutT1, OutT2, OutT3]]) {
-	panic("todo: PAwait2")
-}
-
 func PAwait3Compiled[OutT1, OutT2, OutT3 any](
-	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2], ac3 AsyncCall[OutT3]) *PromiseImpl[Await3Result[OutT1, OutT2, OutT3]] {
-	P := &PromiseImpl[Await3Result[OutT1, OutT2, OutT3]]{}
+	ac1 AsyncCall[OutT1], ac2 AsyncCall[OutT2], ac3 AsyncCall[OutT3]) *Promise[R4[OutT1, OutT2, OutT3, error]] {
+	P := &Promise[R4[OutT1, OutT2, OutT3, error]]{}
 	P.Debug = "PAwait3"
-	P.Func = func(resolve func(Await3Result[OutT1, OutT2, OutT3], error)) {
-		ret := Await3Result[OutT1, OutT2, OutT3]{}
+	P.Func = func() {
+		ret := R4[OutT1, OutT2, OutT3, error]{}
 		wg := sync.WaitGroup{}
 		wg.Add(3)
 		go func() {
-			ret.V1, ret.Err = Run[OutT1](ac1)
+			ret.V1 = Run[OutT1](ac1)
 			wg.Done()
 		}()
 		go func() {
-			ret.V2, ret.Err = Run[OutT2](ac2)
+			ret.V2 = Run[OutT2](ac2)
 			wg.Done()
 		}()
 		go func() {
-			ret.V3, ret.Err = Run[OutT3](ac3)
+			ret.V3 = Run[OutT3](ac3)
 			wg.Done()
 		}()
 		wg.Wait()
-		resolve(ret, nil)
+		P.Return(ret)
 	}
 	return P
 }
