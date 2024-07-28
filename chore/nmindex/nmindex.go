@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/xtool/env/llvm"
-	"github.com/goplus/llgo/xtool/nm"
+	"github.com/goplus/llgo/xtool/nm/nmindex"
 )
 
 func main() {
@@ -58,7 +58,7 @@ func makeIndex() {
 	idxDir := indexDir()
 	os.MkdirAll(idxDir, 0755)
 
-	b := nm.NewIndexBuilder(env.Nm())
+	b := nmindex.NewIndexBuilder(env.Nm())
 	libDirs := []string{
 		usrLib(false),
 		usrLib(true),
@@ -78,7 +78,7 @@ func query(q string) {
 			q = "_" + q
 		}
 	}
-	files, err := nm.Query(indexDir(), q)
+	files, err := nmindex.Query(indexDir(), q)
 	check(err)
 	for _, f := range files {
 		fmt.Printf("%s:\n", f.ArFile)

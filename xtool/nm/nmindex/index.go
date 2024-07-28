@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nm
+package nmindex
 
 import (
 	"bytes"
@@ -24,13 +24,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 type IndexBuilder struct {
-	nm *Cmd
+	nm *nm.Cmd
 }
 
-func NewIndexBuilder(nm *Cmd) *IndexBuilder {
+func NewIndexBuilder(nm *nm.Cmd) *IndexBuilder {
 	return &IndexBuilder{nm}
 }
 
@@ -95,12 +97,12 @@ func (p *IndexBuilder) IndexFile(arFile, outFile string) (err error) {
 		}
 		for _, sym := range item.Symbols {
 			switch sym.Type {
-			case Text, Data, BSS, Rodata, 'S', 'C', 'W', 'A':
+			case nm.Text, nm.Data, nm.BSS, nm.Rodata, 'S', 'C', 'W', 'A':
 				b.WriteByte(byte(sym.Type))
 				b.WriteByte(' ')
 				b.WriteString(sym.Name)
 				b.WriteByte('\n')
-			case Undefined, LocalText, LocalData, LocalBSS, LocalASym, 'I', 'i', 'a', 'w':
+			case nm.Undefined, nm.LocalText, nm.LocalData, nm.LocalBSS, nm.LocalASym, 'I', 'i', 'a', 'w':
 				/*
 					if sym.Type != Undefined && strings.Contains(sym.Name, "fprintf") {
 						log.Printf("skip symbol type %c: %s\n", sym.Type, sym.Name)
