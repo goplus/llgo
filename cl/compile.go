@@ -195,6 +195,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
 	if isInit && state == pkgHasPatch {
 		name = initFnNameOfHasPatch(name)
+		block := f.Blocks[0].Instrs[1].(*ssa.If).Block()
+		block.Succs[0], block.Succs[1] = block.Succs[1], block.Succs[0]
 	}
 
 	fn := pkg.FuncOf(name)
