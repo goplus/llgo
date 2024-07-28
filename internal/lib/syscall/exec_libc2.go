@@ -261,22 +261,17 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		if fd[i] == i {
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
-			ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0)
-			if ret != 0 {
+			if ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0); ret != 0 {
 				err1 = Errno(ret)
 				goto childerror
 			}
 			continue
 		}
-		/* TODO(xsw):
 		// The new fd is created NOT close-on-exec,
-		// which is exactly what we want.
-		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_dup2_trampoline), uintptr(fd[i]), uintptr(i), 0)
-		if err1 != 0 {
+		if ret := os.Dup2(c.Int(fd[i]), c.Int(i)); ret != 0 {
+			err1 = Errno(ret)
 			goto childerror
 		}
-		*/
-		panic("todo: syscall.forkAndExecInChild - dup2")
 	}
 
 	// By convention, we don't close-on-exec the fds we are
