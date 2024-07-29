@@ -302,7 +302,7 @@ Here are the Go packages that can be imported correctly:
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
 - [cJSON 1.7+](https://github.com/DaveGamble/cJSON) (optional, for [github.com/goplus/llgo/c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson))
 - [SQLite 3](https://www.sqlite.org) (optional, for [github.com/goplus/llgo/c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite))
-- [Python 3.11+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
+- [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
 
 ## How to install
 
