@@ -13,6 +13,6 @@ func main() {
 	md5.Init()
 	md5.UpdateString("The fog is getting thicker!")
 	md5.UpdateString("And Leon's getting laaarger!")
-	md5.Final(unsafe.Pointer(unsafe.SliceData(h)))
+	md5.Final(unsafe.SliceData(h))
 	fmt.Printf("%x", h)
 }

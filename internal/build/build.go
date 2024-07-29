@@ -755,6 +755,7 @@ func findDylibDep(exe, lib string) string {
 type none struct{}
 
 var hasAltPkg = map[string]none{
+	"crypto/md5":               {},
 	"fmt":                      {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
