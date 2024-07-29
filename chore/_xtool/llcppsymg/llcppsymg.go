@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
@@ -91,18 +92,24 @@ func check(err error) {
 	}
 }
 
-func getConf(data []byte) (config types.Config, err error) {
+func getConf(data []byte) (*types.Config, error) {
 	conf := cjson.ParseBytes(data)
-	defer conf.Delete()
 	if conf == nil {
-		return config, errors.New("failed to parse config")
+		return nil, errors.New("failed to parse config")
 	}
-	config.Name = getStringItem(conf, "name", "")
-	config.CFlags = getStringItem(conf, "cflags", "")
-	config.Libs = getStringItem(conf, "libs", "")
-	config.Include = getStringArrayItem(conf, "include")
-	config.TrimPrefixes = getStringArrayItem(conf, "trimPrefixes")
-	return
+	config := &types.Config{
+		Name:         getStringItem(conf, "name", ""),
+		CFlags:       getStringItem(conf, "cflags", ""),
+		Libs:         getStringItem(conf, "libs", ""),
+		Include:      getStringArrayItem(conf, "include"),
+		TrimPrefixes: getStringArrayItem(conf, "trimPrefixes"),
+	}
+	return config, nil
+}
+
+func getString(obj *cjson.JSON) (value string) {
+	str := obj.GetStringValue()
+	return unsafe.String((*byte)(unsafe.Pointer(str)), c.Strlen(str))
 }
 
 func getStringItem(obj *cjson.JSON, key string, defval string) (value string) {
@@ -110,7 +117,7 @@ func getStringItem(obj *cjson.JSON, key string, defval string) (value string) {
 	if item == nil {
 		return defval
 	}
-	return c.GoString(item.GetStringValue())
+	return getString(item)
 }
 
 func getStringArrayItem(obj *cjson.JSON, key string) (value []string) {
@@ -120,7 +127,7 @@ func getStringArrayItem(obj *cjson.JSON, key string) (value []string) {
 	}
 	value = make([]string, item.GetArraySize())
 	for i := range value {
-		value[i] = c.GoString(item.GetArrayItem(c.Int(i)).GetStringValue())
+		value[i] = getString(item.GetArrayItem(c.Int(i)))
 	}
 	return
 }
