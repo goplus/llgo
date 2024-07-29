@@ -137,8 +137,6 @@ func (o *JSON) PrintBuffered(prebuffer c.Int, fmt c.Int) *c.Char { return nil }
 // llgo:link (*JSON).GetObjectItemCaseSensitive C.cJSON_GetObjectItemCaseSensitive
 func (o *JSON) GetObjectItemCaseSensitive(key *c.Char) *JSON { return nil }
 
-func (o *JSON) GetItem(key string) *JSON { return o.GetObjectItemCaseSensitive(c.AllocaCStr(key)) }
-
 // llgo:link (*JSON).GetArraySize C.cJSON_GetArraySize
 func (o *JSON) GetArraySize() c.Int { return 0 }
 

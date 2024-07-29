@@ -52,6 +52,8 @@ func main() {
 	check(err)
 
 	config, err := getConf(data)
+	check(err)
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
 	}
@@ -95,16 +97,30 @@ func getConf(data []byte) (config types.Config, err error) {
 	if conf == nil {
 		return config, errors.New("failed to parse config")
 	}
-	config.Name = c.GoString(conf.GetItem("name").GetStringValue())
-	config.CFlags = c.GoString(conf.GetItem("cflags").GetStringValue())
-	config.Libs = c.GoString(conf.GetItem("libs").GetStringValue())
-	config.Include = make([]string, conf.GetItem("include").GetArraySize())
-	for i := range config.Include {
-		config.Include[i] = c.GoString(conf.GetItem("include").GetArrayItem(c.Int(i)).GetStringValue())
+	config.Name = getStringItem(conf, "name", "")
+	config.CFlags = getStringItem(conf, "cflags", "")
+	config.Libs = getStringItem(conf, "libs", "")
+	config.Include = getStringArrayItem(conf, "include")
+	config.TrimPrefixes = getStringArrayItem(conf, "trimPrefixes")
+	return
+}
+
+func getStringItem(obj *cjson.JSON, key string, defval string) (value string) {
+	item := obj.GetObjectItemCaseSensitive(c.AllocaCStr(key))
+	if item == nil {
+		return defval
 	}
-	config.TrimPrefixes = make([]string, conf.GetItem("trimPrefixes").GetArraySize())
-	for i := range config.TrimPrefixes {
-		config.TrimPrefixes[i] = c.GoString(conf.GetItem("trimPrefixes").GetArrayItem(c.Int(i)).GetStringValue())
+	return c.GoString(item.GetStringValue())
+}
+
+func getStringArrayItem(obj *cjson.JSON, key string) (value []string) {
+	item := obj.GetObjectItemCaseSensitive(c.AllocaCStr(key))
+	if item == nil {
+		return
+	}
+	value = make([]string, item.GetArraySize())
+	for i := range value {
+		value[i] = c.GoString(item.GetArrayItem(c.Int(i)).GetStringValue())
 	}
 	return
 }
