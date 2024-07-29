@@ -101,43 +101,11 @@ type Handle struct {
 	Unused [96]byte
 }
 
-type Dir struct {
-	Unused [0]byte
-}
-
 type Stream struct {
 	Unused [264]byte
 }
 
-type Pipe struct {
-	Unused [0]byte
-}
-
-type Tty struct {
-	Unused [0]byte
-}
-
 type Poll struct {
-	Unused [0]byte
-}
-
-type Prepare struct {
-	Unused [0]byte
-}
-
-type Check struct {
-	Unused [0]byte
-}
-
-type Idle struct {
-	Unused [0]byte
-}
-
-type Async struct {
-	Unused [0]byte
-}
-
-type Process struct {
 	Unused [0]byte
 }
 
@@ -296,8 +264,8 @@ func (handle *Handle) Fileno(fd *OsFd) c.Int {
 	return 0
 }
 
-//go:linkname UvPipe C.uv_pipe
-func UvPipe(fds [2]File, readFlags c.Int, writeFlags c.Int) c.Int {
+//go:linkname Pipe C.uv_pipe
+func Pipe(fds [2]File, readFlags c.Int, writeFlags c.Int) c.Int {
 	return 0
 }
 
