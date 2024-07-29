@@ -515,6 +515,23 @@ func (p *context) initPyModule() {
 // ParsePkgSyntax parses AST of a package to check llgo:type in type declaration.
 func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 	for _, file := range files {
+		ast.Inspect(file, func(node ast.Node) bool {
+			if d, ok := node.(*ast.DeferStmt); ok {
+				if _, ok := d.Call.Fun.(*ast.FuncLit); !ok {
+					d.Call = &ast.CallExpr{
+						Fun: &ast.FuncLit{
+							Type: &ast.FuncType{Params: &ast.FieldList{}},
+							Body: &ast.BlockStmt{
+								List: []ast.Stmt{&ast.ExprStmt{
+									X: d.Call,
+								}},
+							},
+						},
+					}
+				}
+			}
+			return true
+		})
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.GenDecl:
