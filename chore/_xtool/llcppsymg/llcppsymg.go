@@ -26,10 +26,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/llcppg/types"
 )
 
@@ -48,9 +49,10 @@ func main() {
 	}
 	check(err)
 
-	var config types.Config
-	err = json.Unmarshal(data, &config)
-	check(err)
+	config, err := getConf(data)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
+	}
 
 	symbols, err := parseDylibSymbols(config.Libs)
 	check(err)
@@ -84,6 +86,26 @@ func check(err error) {
 	}
 }
 
+func getConf(data []byte) (config types.Config, err error) {
+	conf := cjson.ParseBytes(data)
+	defer conf.Delete()
+	if conf == nil {
+		return config, errors.New("failed to execute nm command")
+	}
+	config.Name = c.GoString(conf.GetItem("name").GetStringValue())
+	config.CFlags = c.GoString(conf.GetItem("cflags").GetStringValue())
+	config.Libs = c.GoString(conf.GetItem("libs").GetStringValue())
+	config.Include = make([]string, conf.GetItem("include").GetArraySize())
+	for i := range config.Include {
+		config.Include[i] = c.GoString(conf.GetItem("include").GetArrayItem(c.Int(i)).GetStringValue())
+	}
+	config.TrimPrefixes = make([]string, conf.GetItem("trimPrefixes").GetArraySize())
+	for i := range config.TrimPrefixes {
+		config.TrimPrefixes[i] = c.GoString(conf.GetItem("trimPrefixes").GetArrayItem(c.Int(i)).GetStringValue())
+	}
+	return
+}
+
 func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
 	dylibPath, _ := generateDylibPath(lib)
 	nmCmd := exec.Command("nm", "-gU", dylibPath)
@@ -106,7 +128,7 @@ func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
 }
 
 func generateDylibPath(lib string) (string, error) {
-	output := expandEnv(lib)
+	output := lib
 	libPath := ""
 	libName := ""
 	for _, part := range strings.Fields(string(output)) {
@@ -160,7 +182,6 @@ func decodeSymbolName(symbolName string) (string, error) {
 	return decodedName, nil
 }
 
-// parseHeaderFile
 func parseHeaderFile(config types.Config) ([]types.ASTInformation, error) {
 	files := generateHeaderFilePath(config.CFlags, config.Include)
 	fmt.Println(files)
@@ -182,7 +203,7 @@ func parseHeaderFile(config types.Config) ([]types.ASTInformation, error) {
 }
 
 func generateHeaderFilePath(cflags string, files []string) []string {
-	prefixPath := expandEnv(cflags)
+	prefixPath := cflags
 	prefixPath = strings.TrimPrefix(prefixPath, "-I")
 	var includePaths []string
 	for _, file := range files {
@@ -259,44 +280,4 @@ func removePrefix(str string, prefixes []string) string {
 		}
 	}
 	return str
-}
-
-var (
-	reSubcmd = regexp.MustCompile(`\$\([^)]+\)`)
-	reFlag   = regexp.MustCompile(`[^ \t\n]+`)
-)
-
-func expandEnv(s string) string {
-	return expandEnvWithCmd(s)
-}
-
-func expandEnvWithCmd(s string) string {
-	expanded := reSubcmd.ReplaceAllStringFunc(s, func(m string) string {
-		subcmd := strings.TrimSpace(s[2 : len(s)-1])
-
-		args := parseSubcmd(subcmd)
-
-		cmd := args[0]
-
-		if cmd != "pkg-config" && cmd != "llvm-config" {
-			fmt.Fprintf(os.Stderr, "expand cmd only support pkg-config and llvm-config: '%s'\n", subcmd)
-			return ""
-		}
-
-		var out []byte
-		var err error
-		out, err = exec.Command(cmd, args[1:]...).Output()
-
-		if err != nil {
-			// TODO(kindy): log in verbose mode
-			return ""
-		}
-
-		return string(out)
-	})
-	return os.Expand(expanded, os.Getenv)
-}
-
-func parseSubcmd(s string) []string {
-	return reFlag.FindAllString(s, -1)
 }

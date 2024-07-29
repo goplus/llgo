@@ -134,6 +134,20 @@ func (o *JSON) PrintUnformatted() *c.Char { return nil }
 // llgo:link (*JSON).PrintBuffered C.cJSON_PrintBuffered
 func (o *JSON) PrintBuffered(prebuffer c.Int, fmt c.Int) *c.Char { return nil }
 
+// llgo:link (*JSON).GetObjectItemCaseSensitive C.cJSON_GetObjectItemCaseSensitive
+func (o *JSON) GetObjectItemCaseSensitive(key *c.Char) *JSON { return nil }
+
+func (o *JSON) GetItem(key string) *JSON { return o.GetObjectItemCaseSensitive(c.AllocaCStr(key)) }
+
+// llgo:link (*JSON).GetArraySize C.cJSON_GetArraySize
+func (o *JSON) GetArraySize() c.Int { return 0 }
+
+// llgo:link (*JSON).GetArrayItem C.cJSON_GetArrayItem
+func (o *JSON) GetArrayItem(index c.Int) *JSON { return nil }
+
+// llgo:link (*JSON).GetStringValue C.cJSON_GetStringValue
+func (o *JSON) GetStringValue() *c.Char { return nil }
+
 //go:linkname Free C.cJSON_free
 func Free(ptr unsafe.Pointer)
 
