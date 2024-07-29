@@ -1,6 +1,9 @@
-# Support a C Library
+How to support a C/C++ Library
+=====
 
-## Install a C Library
+## Support a C Library
+
+### Install a C Library
 
 We recommend using a package manager (such as brew, apt-get, winget, etc.) to install a C library. For example:
 
@@ -8,7 +11,7 @@ We recommend using a package manager (such as brew, apt-get, winget, etc.) to in
 brew install inih
 ```
 
-## Writing Go Files to Link Library Functions
+### Writing Go Files to Link Library Functions
 
 1. On macOS, use `nm -gU libbar.dylib` to parse C-style symbols
 
@@ -85,9 +88,9 @@ cd inih/_demo/inih_demo
 llgo run .
 ```
 
-## Handling Special Types
+### Handling Special Types
 
-### Handling Enum Values in C
+#### Handling Enum Values in C
 
 Use const to implement enum values
 
@@ -119,7 +122,7 @@ const (
 )
 ```
 
-### Handling Structs in C
+#### Handling Structs in C
 
 ```go
 // If you need to use class member variables, like llgo/c/raylib
@@ -176,7 +179,7 @@ func (o *JSON) AddItem(item *JSON) c.Int { return 0 }
 
 For the size of Unused, if the methods bound to the structure do not need to create objects, i.e., the receiver of the Go methods bound to this structure is of pointer type, you can declare `Unused [0]byte`. Otherwise, you need to write a simple C file using the `sizeof` operator to calculate the size of the structure. Assuming the structure size is 38 bytes, then declare `Unused [38]byte`.
 
-### Handling Function Pointers in C
+#### Handling Function Pointers in C
 
 ```go
 // Convert function pointers to Go style and then declare function pointer types using aliases
@@ -186,7 +189,7 @@ type Comp func(a c.Int)
 
 ```
 
-### Handling char ** Type in C
+#### Handling char ** Type in C
 
 Handle char ** as `[]*c.Char`
 
@@ -218,15 +221,15 @@ func main() {
 }
 ```
 
-# LLGO for C++ Third-Party Libraries
+## LLGO for C++ Third-Party Libraries
 
 Using the C++ part of the inih library as an example
 
-## Installation
+### Installation
 
 Same as installing C libraries
 
-## File Structure
+### File Structure
 
 After migrating the C part of the inih library, just continue creating files in the same directory.
 
@@ -242,9 +245,9 @@ inih/
 └── reader.go
 ```
 
-## Writing Go Files to Link Library Functions
+### Writing Go Files to Link Library Functions
 
-### Migrating Ordinary Functions
+#### Migrating Ordinary Functions
 
 Since the inih library does not have C++ style ordinary functions, we'll use an ordinary method of a class as an example. The specific process is the same.
 
@@ -283,7 +286,7 @@ For functions, generally use `go:linkname` to link. Here, refer to the migration
 func ParseError() c.Int
 ```
 
-### Migrating Classes
+#### Migrating Classes
 
 - Use a struct to map the class. The writing method is the same as migrating a struct in the C library migration:
 
@@ -354,7 +357,7 @@ func ParseError() c.Int
     defer reader.Dispose()
   ```
 
-### Templates and Inlines
+#### Templates and Inlines
 
 Templates or inlines do not generate symbols in dynamic libraries (dylib) (default constructors and destructors). To ensure that you can use C style symbols to link template or inline functions, create a C++ file and wrap it with `extern "C"`, then bind the functions directly in Go.
 
@@ -381,7 +384,7 @@ LLGoFiles   = "$(pkg-config --cflags spdlog): cppWrap/cppWrap.cpp"
 LLGoPackage = "link: $(pkg-config --libs spdlog); -lspdlog -pthread -lfmt")
 ```
 
-## Writing and Running the Demo
+### Writing and Running the Demo
 
 ```go
 package main
