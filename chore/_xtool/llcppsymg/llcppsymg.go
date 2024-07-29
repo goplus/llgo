@@ -30,7 +30,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
 	"github.com/goplus/llgo/chore/llcppg/types"
 )
 
@@ -85,7 +84,7 @@ func check(err error) {
 	}
 }
 
-func parseDylibSymbols(lib string) ([]common.CPPSymbol, error) {
+func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
 	dylibPath, _ := generateDylibPath(lib)
 	nmCmd := exec.Command("nm", "-gU", dylibPath)
 	nmOutput, err := nmCmd.Output()
@@ -126,9 +125,9 @@ func generateDylibPath(lib string) (string, error) {
 	return dylibPath, nil
 }
 
-func parseNmOutput(output []byte) []common.CPPSymbol {
+func parseNmOutput(output []byte) []types.CPPSymbol {
 	scanner := bufio.NewScanner(bytes.NewReader(output))
-	var symbols []common.CPPSymbol
+	var symbols []types.CPPSymbol
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -138,10 +137,8 @@ func parseNmOutput(output []byte) []common.CPPSymbol {
 		}
 		symbolName := fields[2]
 		// Check if the symbol name starts with an underscore and remove it if present
-		if strings.HasPrefix(symbolName, "_") {
-			symbolName = symbolName[1:]
-		}
-		symbols = append(symbols, common.CPPSymbol{
+		symbolName = strings.TrimPrefix(symbolName, "_")
+		symbols = append(symbols, types.CPPSymbol{
 			Symbol: symbolName,
 			Type:   fields[1],
 			Name:   fields[2],
@@ -164,7 +161,7 @@ func decodeSymbolName(symbolName string) (string, error) {
 }
 
 // parseHeaderFile
-func parseHeaderFile(config types.Config) ([]common.ASTInformation, error) {
+func parseHeaderFile(config types.Config) ([]types.ASTInformation, error) {
 	files := generateHeaderFilePath(config.CFlags, config.Include)
 	fmt.Println(files)
 	headerFileCmd := exec.Command("llcppinfofetch", files...)
@@ -176,7 +173,7 @@ func parseHeaderFile(config types.Config) ([]common.ASTInformation, error) {
 		return nil, errors.New("failed to execute header file command")
 	}
 	fmt.Println("headerFileOutput:", string(headerFileOutput), len(headerFileOutput))
-	t := make([]common.ASTInformation, 0)
+	t := make([]types.ASTInformation, 0)
 	err = json.Unmarshal(headerFileOutput, &t)
 	if err != nil {
 		return nil, err
@@ -186,11 +183,7 @@ func parseHeaderFile(config types.Config) ([]common.ASTInformation, error) {
 
 func generateHeaderFilePath(cflags string, files []string) []string {
 	prefixPath := expandEnv(cflags)
-	if strings.HasPrefix(prefixPath, "-I") {
-		prefixPath = prefixPath[2:]
-	}
-
-	prefixPath = strings.TrimSpace(prefixPath)
+	prefixPath = strings.TrimPrefix(prefixPath, "-I")
 	var includePaths []string
 	for _, file := range files {
 		includePaths = append(includePaths, filepath.Join(prefixPath, "/"+file))
@@ -198,8 +191,8 @@ func generateHeaderFilePath(cflags string, files []string) []string {
 	return includePaths
 }
 
-func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTInformation, prefix []string) []common.SymbolInfo {
-	var commonSymbols []common.SymbolInfo
+func getCommonSymbols(dylibSymbols []types.CPPSymbol, astInfoList []types.ASTInformation, prefix []string) []types.SymbolInfo {
+	var commonSymbols []types.SymbolInfo
 	functionNameMap := make(map[string]int)
 
 	for _, astInfo := range astInfoList {
@@ -207,7 +200,7 @@ func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTI
 			if dylibSym.Symbol == astInfo.Symbol {
 				cppName := generateCPPName(astInfo)
 				functionNameMap[cppName]++
-				symbolInfo := common.SymbolInfo{
+				symbolInfo := types.SymbolInfo{
 					Mangle: dylibSym.Symbol,
 					CPP:    cppName,
 					Go:     generateMangle(astInfo, functionNameMap[cppName], prefix),
@@ -221,7 +214,7 @@ func getCommonSymbols(dylibSymbols []common.CPPSymbol, astInfoList []common.ASTI
 	return commonSymbols
 }
 
-func generateCPPName(astInfo common.ASTInformation) string {
+func generateCPPName(astInfo types.ASTInformation) string {
 	cppName := astInfo.Name
 	if astInfo.Class != "" {
 		cppName = astInfo.Class + "::" + astInfo.Name
@@ -229,7 +222,7 @@ func generateCPPName(astInfo common.ASTInformation) string {
 	return cppName
 }
 
-func generateMangle(astInfo common.ASTInformation, count int, prefixes []string) string {
+func generateMangle(astInfo types.ASTInformation, count int, prefixes []string) string {
 	astInfo.Class = removePrefix(astInfo.Class, prefixes)
 	astInfo.Name = removePrefix(astInfo.Name, prefixes)
 	res := ""

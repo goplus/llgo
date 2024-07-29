@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/common"
+	"github.com/goplus/llgo/chore/llcppg/types"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
@@ -16,13 +16,13 @@ import (
 type Context struct {
 	namespaceName string
 	className     string
-	astInfo       []common.ASTInformation
+	astInfo       []types.ASTInformation
 	currentFile   *c.Char
 }
 
 func newContext() *Context {
 	return &Context{
-		astInfo: make([]common.ASTInformation, 0),
+		astInfo: make([]types.ASTInformation, 0),
 	}
 }
 
@@ -40,9 +40,9 @@ func (c *Context) setCurrentFile(filename *c.Char) {
 
 var context = newContext()
 
-func collectFuncInfo(cursor clang.Cursor) common.ASTInformation {
+func collectFuncInfo(cursor clang.Cursor) types.ASTInformation {
 
-	info := common.ASTInformation{
+	info := types.ASTInformation{
 		Namespace: context.namespaceName,
 		Class:     context.className,
 	}
@@ -73,12 +73,12 @@ func collectFuncInfo(cursor clang.Cursor) common.ASTInformation {
 	defer typeStr.Dispose()
 	info.ReturnType = c.GoString(typeStr.CStr())
 
-	info.Parameters = make([]common.Parameter, cursor.NumArguments())
+	info.Parameters = make([]types.Parameter, cursor.NumArguments())
 	for i := 0; i < int(cursor.NumArguments()); i++ {
 		argCurSor := cursor.Argument(c.Uint(i))
 		argType := argCurSor.Type().String()
 		argName := argCurSor.String()
-		info.Parameters[i] = common.Parameter{
+		info.Parameters[i] = types.Parameter{
 			Name: c.GoString(argName.CStr()),
 			Type: c.GoString(argType.CStr()),
 		}
@@ -122,7 +122,7 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 	return clang.ChildVisit_Continue
 }
 
-func parse(filenames []*c.Char) []common.ASTInformation {
+func parse(filenames []*c.Char) []types.ASTInformation {
 	index := clang.CreateIndex(0, 0)
 	args := make([]*c.Char, 3)
 	args[0] = c.Str("-x")
@@ -154,7 +154,7 @@ func parse(filenames []*c.Char) []common.ASTInformation {
 
 	return context.astInfo
 }
-func printJson(infos []common.ASTInformation) {
+func printJson(infos []types.ASTInformation) {
 	root := cjson.Array()
 
 	for _, info := range infos {
