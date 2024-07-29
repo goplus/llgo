@@ -19,6 +19,7 @@ package ssa
 import (
 	"go/token"
 	"go/types"
+	"runtime"
 	"strconv"
 	"unsafe"
 
@@ -203,7 +204,10 @@ type Program = *aProgram
 // NewProgram creates a new program.
 func NewProgram(target *Target) Program {
 	if target == nil {
-		target = &Target{}
+		target = &Target{
+			GOOS:   runtime.GOOS,
+			GOARCH: runtime.GOARCH,
+		}
 	}
 	ctx := llvm.NewContext()
 	td := target.targetData() // TODO(xsw): target config

@@ -63,7 +63,11 @@ func (b Builder) AllocaSigjmpBuf() Expr {
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
-	fn := b.Pkg.cFunc("sigsetjmp", b.Prog.tySigsetjmp())
+	fname := "sigsetjmp"
+	if b.Prog.target.GOOS == "linux" {
+		fname = "__sigsetjmp"
+	}
+	fn := b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
 	return b.Call(fn, jb, savemask)
 }
 
