@@ -279,6 +279,8 @@ Here are the Go packages that can be imported correctly:
 * [sort](https://pkg.go.dev/sort)
 * [strconv](https://pkg.go.dev/strconv)
 * [strings](https://pkg.go.dev/strings)
+* [path](https://pkg.go.dev/path)
+* [path/filepath](https://pkg.go.dev/path/filepath)
 * [sync/atomic](https://pkg.go.dev/sync/atomic)
 * [sync](https://pkg.go.dev/sync) (partially)
 * [syscall](https://pkg.go.dev/syscall) (partially)
@@ -292,7 +294,7 @@ Here are the Go packages that can be imported correctly:
 
 ## Dependencies
 
-- [Go 1.20+](https://go.dev) (build only)
+- [Go 1.20+](https://go.dev)
 - [LLVM 18](https://llvm.org)
 - [LLD 18](https://lld.llvm.org)
 - [Clang 18](https://clang.llvm.org)
