@@ -278,6 +278,7 @@ Here are the Go packages that can be imported correctly:
 * [flag](https://pkg.go.dev/flag)
 * [sort](https://pkg.go.dev/sort)
 * [bytes](https://pkg.go.dev/bytes)
+* [bufio](https://pkg.go.dev/bufio)
 * [strings](https://pkg.go.dev/strings)
 * [strconv](https://pkg.go.dev/strconv)
 * [path](https://pkg.go.dev/path)
@@ -295,6 +296,7 @@ Here are the Go packages that can be imported correctly:
 * [encoding/hex](https://pkg.go.dev/encoding/hex)
 * [encoding/base32](https://pkg.go.dev/encoding/base32)
 * [encoding/base64](https://pkg.go.dev/encoding/base64)
+* [encoding/csv](https://pkg.go.dev/encoding/csv)
 * [regexp](https://pkg.go.dev/regexp)
 * [regexp/syntax](https://pkg.go.dev/regexp/syntax)
 
