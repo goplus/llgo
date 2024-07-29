@@ -32,6 +32,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/llcppg/types"
+	"github.com/goplus/llgo/cpp/llvm"
 )
 
 func main() {
@@ -53,8 +54,8 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
 	}
-
 	symbols, err := parseDylibSymbols(config.Libs)
+
 	check(err)
 
 	files, err := parseHeaderFile(config)
@@ -109,7 +110,7 @@ func getConf(data []byte) (config types.Config, err error) {
 func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
 	dylibPath, _ := generateDylibPath(lib)
 	nmCmd := exec.Command("nm", "-gU", dylibPath)
-	nmOutput, err := nmCmd.Output()
+	nmOutput, err := nmCmd.Output() // maybe lock
 	if err != nil {
 		return nil, errors.New("failed to execute nm command")
 	}
@@ -171,13 +172,9 @@ func parseNmOutput(output []byte) []types.CPPSymbol {
 }
 
 func decodeSymbolName(symbolName string) (string, error) {
-	cppfiltCmd := exec.Command("c++filt", symbolName)
-	cppfiltOutput, err := cppfiltCmd.Output()
-	if err != nil {
-		return "", errors.New("failed to execute c++filt command")
-	}
-
-	decodedName := strings.TrimSpace(string(cppfiltOutput))
+	llvm.ItaniumDemangle(symbolName, true)
+	demangleName := c.GoString(llvm.ItaniumDemangle(symbolName, true))
+	decodedName := strings.TrimSpace(string(demangleName))
 	decodedName = strings.ReplaceAll(decodedName, "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const", "std::string")
 	return decodedName, nil
 }
