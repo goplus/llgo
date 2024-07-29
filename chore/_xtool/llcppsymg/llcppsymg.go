@@ -31,6 +31,7 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/llcppg/types"
 	"github.com/goplus/llgo/cpp/llvm"
 )
@@ -58,10 +59,11 @@ func main() {
 
 	check(err)
 
-	files, err := parseHeaderFile(config)
+	filepaths := generateHeaderFilePath(config.CFlags, config.Include)
+	astInfos, err := parse.ParseHeaderFile(filepaths)
 	check(err)
 
-	symbolInfo := getCommonSymbols(symbols, files, config.TrimPrefixes)
+	symbolInfo := getCommonSymbols(symbols, astInfos, config.TrimPrefixes)
 
 	jsonData, err := json.MarshalIndent(symbolInfo, "", "  ")
 	check(err)
@@ -91,7 +93,7 @@ func getConf(data []byte) (config types.Config, err error) {
 	conf := cjson.ParseBytes(data)
 	defer conf.Delete()
 	if conf == nil {
-		return config, errors.New("failed to execute nm command")
+		return config, errors.New("failed to parse config")
 	}
 	config.Name = c.GoString(conf.GetItem("name").GetStringValue())
 	config.CFlags = c.GoString(conf.GetItem("cflags").GetStringValue())
@@ -177,26 +179,6 @@ func decodeSymbolName(symbolName string) (string, error) {
 	decodedName := strings.TrimSpace(string(demangleName))
 	decodedName = strings.ReplaceAll(decodedName, "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const", "std::string")
 	return decodedName, nil
-}
-
-func parseHeaderFile(config types.Config) ([]types.ASTInformation, error) {
-	files := generateHeaderFilePath(config.CFlags, config.Include)
-	fmt.Println(files)
-	headerFileCmd := exec.Command("llcppinfofetch", files...)
-
-	fmt.Println("Executing command:", headerFileCmd.String())
-
-	headerFileOutput, err := headerFileCmd.Output()
-	if err != nil {
-		return nil, errors.New("failed to execute header file command")
-	}
-	fmt.Println("headerFileOutput:", string(headerFileOutput), len(headerFileOutput))
-	t := make([]types.ASTInformation, 0)
-	err = json.Unmarshal(headerFileOutput, &t)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
 }
 
 func generateHeaderFilePath(cflags string, files []string) []string {

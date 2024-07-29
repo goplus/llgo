@@ -1,23 +1,20 @@
-package main
+package parse
 
 import (
-	"fmt"
-	"os"
+	"errors"
 	"strconv"
 	"unsafe"
 
-	"github.com/goplus/llgo/chore/llcppg/types"
-
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
+	"github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type Context struct {
 	namespaceName string
 	className     string
 	astInfo       []types.ASTInformation
-	currentFile   *c.Char
+	currentFile   string
 }
 
 func newContext() *Context {
@@ -34,7 +31,7 @@ func (c *Context) setClassName(name string) {
 	c.className = name
 }
 
-func (c *Context) setCurrentFile(filename *c.Char) {
+func (c *Context) setCurrentFile(filename string) {
 	c.currentFile = filename
 }
 
@@ -109,37 +106,50 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 		loc.SpellingLocation(&file, &line, &column, nil)
 		filename := file.FileName()
 
-		if c.Strcmp(filename.CStr(), context.currentFile) == 0 {
+		if c.Strcmp(filename.CStr(), c.AllocaCStr(context.currentFile)) == 0 {
 			info := collectFuncInfo(cursor)
 			info.Location = c.GoString(filename.CStr()) + ":" + strconv.Itoa(int(line)) + ":" + strconv.Itoa(int(column))
 			context.astInfo = append(context.astInfo, info)
 		}
 
 		defer filename.Dispose()
-
 	}
 
 	return clang.ChildVisit_Continue
 }
 
-func parse(filenames []*c.Char) []types.ASTInformation {
+// func main() {
+// 	if c.Argc < 2 {
+// 		fmt.Fprintln(os.Stderr, "Usage: <C++ header file1> [<C++ header file2> ...]\n")
+// 		return
+// 	} else {
+// 		filenames := make([]*c.Char, c.Argc-1)
+// 		for i := 1; i < int(c.Argc); i++ {
+// 			filenames[i-1] = c.Index(c.Argv, c.Int(i))
+// 		}
+// 		printJson(parse(filenames))
+// 	}
+// }
+
+func ParseHeaderFile(filepaths []string) ([]types.ASTInformation, error) {
+
 	index := clang.CreateIndex(0, 0)
 	args := make([]*c.Char, 3)
 	args[0] = c.Str("-x")
 	args[1] = c.Str("c++")
 	args[2] = c.Str("-std=c++11")
+	context = newContext()
 
-	for _, filename := range filenames {
+	for _, filename := range filepaths {
 		unit := index.ParseTranslationUnit(
-			filename,
+			c.AllocaCStr(filename),
 			unsafe.SliceData(args), 3,
 			nil, 0,
 			clang.TranslationUnit_None,
 		)
 
 		if unit == nil {
-			fmt.Printf("Unable to parse translation unit for file: %s. Skipping.\n", c.GoString(filename))
-			continue
+			return nil, errors.New("Unable to parse translation unit for file " + filename)
 		}
 
 		cursor := unit.Cursor()
@@ -152,42 +162,23 @@ func parse(filenames []*c.Char) []types.ASTInformation {
 
 	index.Dispose()
 
-	return context.astInfo
-}
-func printJson(infos []types.ASTInformation) {
-	root := cjson.Array()
+	return context.astInfo, nil
 
-	for _, info := range infos {
-		item := cjson.Object()
-		item.SetItem(c.Str("namespace"), cjson.String(c.AllocaCStr(info.Namespace)))
-		item.SetItem(c.Str("class"), cjson.String(c.AllocaCStr(info.Class)))
-		item.SetItem(c.Str("name"), cjson.String(c.AllocaCStr(info.Name)))
-		item.SetItem(c.Str("returnType"), cjson.String(c.AllocaCStr(info.ReturnType)))
-		item.SetItem(c.Str("location"), cjson.String(c.AllocaCStr(info.Location)))
-		item.SetItem(c.Str("symbol"), cjson.String(c.AllocaCStr(info.Symbol)))
+	// files := generateHeaderFilePath(config.CFlags, config.Include)
+	// fmt.Println(files)
+	// headerFileCmd := exec.Command("llcppinfofetch", files...)
 
-		params := cjson.Array()
-		for _, param := range info.Parameters {
-			paramObj := cjson.Object()
-			paramObj.SetItem(c.Str("name"), cjson.String(c.AllocaCStr(param.Name)))
-			paramObj.SetItem(c.Str("type"), cjson.String(c.AllocaCStr(param.Type)))
-			params.AddItem(paramObj)
-		}
-		item.SetItem(c.Str("parameters"), params)
+	// fmt.Println("Executing command:", headerFileCmd.String())
 
-		root.AddItem(item)
-	}
-	c.Printf(c.Str("%s\n"), root.Print())
-}
-func main() {
-	if c.Argc < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: <C++ header file1> [<C++ header file2> ...]\n")
-		return
-	} else {
-		filenames := make([]*c.Char, c.Argc-1)
-		for i := 1; i < int(c.Argc); i++ {
-			filenames[i-1] = c.Index(c.Argv, c.Int(i))
-		}
-		printJson(parse(filenames))
-	}
+	// headerFileOutput, err := headerFileCmd.Output()
+	// if err != nil {
+	// 	return nil, errors.New("failed to execute header file command")
+	// }
+	// fmt.Println("headerFileOutput:", string(headerFileOutput), len(headerFileOutput))
+	// t := make([]types.ASTInformation, 0)
+	// err = json.Unmarshal(headerFileOutput, &t)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return t, nil
 }
