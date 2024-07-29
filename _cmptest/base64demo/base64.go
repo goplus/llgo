@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/base32"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"log"
 )
 
 func base64Demo() {
@@ -30,7 +32,17 @@ func base32Demo() {
 	fmt.Printf("%q\n", dst)
 }
 
+func hexDemo() {
+	const s = "48656c6c6f20476f7068657221"
+	decoded, err := hex.DecodeString(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", decoded)
+
+}
 func main() {
 	base64Demo()
 	base32Demo()
+	hexDemo()
 }
