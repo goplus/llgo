@@ -24,6 +24,10 @@ type Pool struct {
 func (p *Pool) Put(x any) {
 }
 
+// TODO(xsw):
 func (p *Pool) Get() any {
-	return p.New()
+	if p.New != nil {
+		return p.New()
+	}
+	return nil
 }
