@@ -19,7 +19,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -68,21 +67,7 @@ func main() {
 
 	symbolInfo := getCommonSymbols(symbols, astInfos, config.TrimPrefixes)
 
-	jsonData, err := json.MarshalIndent(symbolInfo, "", "  ")
-	check(err)
-
-	fileName := "llcppg.symb.json"
-	err = os.WriteFile(fileName, jsonData, 0644)
-	check(err)
-
-	absJSONPath, err := filepath.Abs(fileName)
-	check(err)
-
-	config.JSONPath = absJSONPath
-	updatedCfgData, err := json.MarshalIndent(config, "", "  ")
-	check(err)
-
-	err = os.WriteFile(cfgFile, updatedCfgData, 0644)
+	err = genSymbolTableFile(symbolInfo)
 	check(err)
 }
 
@@ -282,4 +267,32 @@ func removePrefix(str string, prefixes []string) string {
 		}
 	}
 	return str
+}
+
+func genSymbolTableFile(symbolInfos []types.SymbolInfo) error {
+	root := cjson.Array()
+	defer root.Delete()
+
+	for _, symbol := range symbolInfos {
+		item := cjson.Object()
+		item.SetItem(c.Str("mangle"), cjson.String(c.AllocaCStr(symbol.Mangle)))
+		item.SetItem(c.Str("c++"), cjson.String(c.AllocaCStr(symbol.CPP)))
+		item.SetItem(c.Str("go"), cjson.String(c.AllocaCStr(symbol.Go)))
+		root.AddItem(item)
+	}
+
+	fileName := "llcppg.symb.json"
+	cStr := root.Print()
+	if cStr == nil {
+		return errors.New("symbol table is empty")
+	}
+	defer c.Free(unsafe.Pointer(cStr))
+
+	data := unsafe.Slice((*byte)(unsafe.Pointer(cStr)), c.Strlen(cStr))
+
+	if err := os.WriteFile(fileName, data, 0644); err != nil {
+		return errors.New("failed to write symbol table file")
+	}
+
+	return nil
 }
