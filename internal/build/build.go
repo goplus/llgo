@@ -356,6 +356,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 			"-rpath", "$ORIGIN",
 			"-rpath", "$ORIGIN/../lib",
 			"-Xlinker", "--gc-sections",
+			"-lm",
+			"-latomic",
 			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
 		)
 	}

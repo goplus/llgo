@@ -44,9 +44,6 @@ func Longjmp(env *JmpBuf, val c.Int)
 
 // -----------------------------------------------------------------------------
 
-//go:linkname Sigsetjmp C.sigsetjmp
-func Sigsetjmp(env *SigjmpBuf, savemask c.Int) c.Int
-
 //go:linkname Siglongjmp C.siglongjmp
 func Siglongjmp(env *SigjmpBuf, val c.Int)
 
