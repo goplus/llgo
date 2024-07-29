@@ -20,7 +20,6 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/bdwgc"
 )
 
 // -----------------------------------------------------------------------------
@@ -32,7 +31,7 @@ type StringView = string
 
 // String represents a C++ std::string object.
 type String struct {
-	Unused [24]byte
+	Unused [3]uintptr
 }
 
 // llgo:link (*String).InitEmpty C.stdStringInitEmpty
@@ -51,14 +50,6 @@ func (s *String) InitFromCStrLen(cstr *c.Char, n uintptr) {}
 func (s *String) Dispose() {}
 
 // -----------------------------------------------------------------------------
-
-func allocString() *String {
-	ptr := bdwgc.Malloc(unsafe.Sizeof(String{}))
-	bdwgc.RegisterFinalizer(ptr, func(obj, data c.Pointer) {
-		(*String)(obj).Dispose()
-	}, nil, nil, nil)
-	return (*String)(ptr)
-}
 
 // NewString creates a C++ std::string object.
 func NewString(v string) *String {
