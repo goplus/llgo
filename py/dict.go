@@ -42,4 +42,22 @@ func (d *Object) DictValues() *Object { return nil }
 // llgo:link (*Object).DictItems C.PyDict_Items
 func (d *Object) DictItems() *Object { return nil }
 
+// Insert val into the dictionary d with a key of key. key must be hashable;
+// if it isn’t, return -1 and TypeError will be set. Return 0 on success or
+// -1 on failure.
+//
+// llgo:link (*Object).DictSetItem C.PyDict_SetItem
+func (d *Object) DictSetItem(key *Object, val *Object) *Object { return nil }
+
+// Return the object from dictionary d which has a key key. Return nil if the
+// key key is not present, but without setting an exception.
+//
+// llgo:link (*Object).DictGetItem C.PyDict_GetItem
+func (d *Object) DictGetItem(key *Object) *Object { return nil }
+
+// Return the number of items in the dictionary.
+//
+// llgo:link (*Object).DictSize C.PyDict_Size
+func (d *Object) DictSize() uintptr { return 0 }
+
 // -----------------------------------------------------------------------------
