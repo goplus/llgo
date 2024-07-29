@@ -20,6 +20,7 @@ import (
 	"debug/macho"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/constant"
 	"go/token"
 	"go/types"
@@ -135,7 +136,12 @@ func Do(args []string, conf *Config) {
 
 	llssa.Initialize(llssa.InitAll)
 
-	prog := llssa.NewProgram(nil)
+	target := &llssa.Target{
+		GOOS:   build.Default.GOOS,
+		GOARCH: build.Default.GOARCH,
+	}
+
+	prog := llssa.NewProgram(target)
 	sizes := prog.TypeSizes
 	dedup := packages.NewDeduper()
 	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
