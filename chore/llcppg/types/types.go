@@ -23,4 +23,5 @@ type Config struct {
 	Libs         string   `json:"libs"`
 	Include      []string `json:"include"`
 	TrimPrefixes []string `json:"trimPrefixes"`
+	JSONPath     string   `json:"jsonPath"`
 }

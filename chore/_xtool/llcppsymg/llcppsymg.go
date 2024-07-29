@@ -64,11 +64,19 @@ func main() {
 	jsonData, err := json.MarshalIndent(symbolInfo, "", "  ")
 	check(err)
 
-	// 写入文件
 	fileName := "llcppg.symb.json"
 	err = os.WriteFile(fileName, jsonData, 0644)
 	check(err)
 
+	absJSONPath, err := filepath.Abs(fileName)
+	check(err)
+
+	config.JSONPath = absJSONPath
+	updatedCfgData, err := json.MarshalIndent(config, "", "  ")
+	check(err)
+
+	err = os.WriteFile(cfgFile, updatedCfgData, 0644)
+	check(err)
 }
 
 func check(err error) {
