@@ -304,13 +304,13 @@ _llgo_0:
   %14 = getelementptr inbounds %main.T5, ptr %13, i32 0, i32 0
   store i64 300, ptr %14, align 4
   %15 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
-  %16 = alloca { ptr, ptr }, align 8
-  %17 = getelementptr inbounds { ptr, ptr }, ptr %16, i32 0, i32 0
+  %16 = alloca %main.T6, align 8
+  %17 = getelementptr inbounds %main.T6, ptr %16, i32 0, i32 0
   store ptr @"__llgo_stub.main.main$1", ptr %17, align 8
-  %18 = getelementptr inbounds { ptr, ptr }, ptr %16, i32 0, i32 1
+  %18 = getelementptr inbounds %main.T6, ptr %16, i32 0, i32 1
   store ptr null, ptr %18, align 8
-  %19 = load { ptr, ptr }, ptr %16, align 8
-  store { ptr, ptr } %19, ptr %15, align 8
+  %19 = load %main.T6, ptr %16, align 8
+  store %main.T6 %19, ptr %15, align 8
   %20 = load %main.T, ptr %2, align 8
   %21 = load ptr, ptr @_llgo_main.T, align 8
   %22 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)

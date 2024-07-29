@@ -608,7 +608,7 @@ const (
 	closureStub = "__llgo_stub."
 )
 
-func (p Package) closureStub(b Builder, t *types.Struct, v Expr) Expr {
+func (p Package) closureStub(b Builder, t types.Type, v Expr) Expr {
 	name := v.impl.Name()
 	prog := b.Prog
 	nilVal := prog.Nil(prog.VoidPtr()).impl
