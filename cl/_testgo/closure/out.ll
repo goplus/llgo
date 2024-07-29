@@ -2,6 +2,7 @@
 source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%main.T = type { ptr, ptr }
 
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -37,12 +38,12 @@ _llgo_0:
   store i64 3, ptr %5, align 4
   %6 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %3, align 8
   store %"github.com/goplus/llgo/internal/runtime.String" %6, ptr %2, align 8
-  %7 = alloca { ptr, ptr }, align 8
-  %8 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 0
+  %7 = alloca %main.T, align 8
+  %8 = getelementptr inbounds %main.T, ptr %7, i32 0, i32 0
   store ptr @"__llgo_stub.main.main$1", ptr %8, align 8
-  %9 = getelementptr inbounds { ptr, ptr }, ptr %7, i32 0, i32 1
+  %9 = getelementptr inbounds %main.T, ptr %7, i32 0, i32 1
   store ptr null, ptr %9, align 8
-  %10 = load { ptr, ptr }, ptr %7, align 8
+  %10 = load %main.T, ptr %7, align 8
   %11 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %12 = getelementptr inbounds { ptr }, ptr %11, i32 0, i32 0
   store ptr %2, ptr %12, align 8
@@ -52,12 +53,15 @@ _llgo_0:
   %15 = getelementptr inbounds { ptr, ptr }, ptr %13, i32 0, i32 1
   store ptr %11, ptr %15, align 8
   %16 = load { ptr, ptr }, ptr %13, align 8
-  %17 = extractvalue { ptr, ptr } %10, 1
-  %18 = extractvalue { ptr, ptr } %10, 0
-  call void %18(ptr %17, i64 100)
-  %19 = extractvalue { ptr, ptr } %16, 1
-  %20 = extractvalue { ptr, ptr } %16, 0
-  call void %20(ptr %19, i64 200)
+  %17 = alloca %main.T, align 8
+  store { ptr, ptr } %16, ptr %17, align 8
+  %18 = load %main.T, ptr %17, align 8
+  %19 = extractvalue %main.T %10, 1
+  %20 = extractvalue %main.T %10, 0
+  call void %20(ptr %19, i64 100)
+  %21 = extractvalue %main.T %18, 1
+  %22 = extractvalue %main.T %18, 0
+  call void %22(ptr %21, i64 200)
   ret i32 0
 }
 

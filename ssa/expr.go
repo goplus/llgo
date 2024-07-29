@@ -694,8 +694,30 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
-	if t.kind == vkClosure && x.kind == vkFuncDecl {
-		ret.impl = checkExpr(x, t.raw.Type.Underlying(), b).impl
+	if t.kind == vkClosure {
+		switch x.kind {
+		case vkFuncDecl:
+			ret.impl = checkExpr(x, t.raw.Type, b).impl
+		case vkClosure:
+			convType := func() Expr {
+				r := Expr{llvm.CreateAlloca(b.impl, t.ll), b.Prog.Pointer(t)}
+				b.Store(r, x)
+				return b.Load(r)
+			}
+			switch t.RawType().(type) {
+			case *types.Named:
+				if _, ok := x.RawType().(*types.Struct); ok {
+					return convType()
+				}
+			case *types.Struct:
+				if _, ok := x.RawType().(*types.Named); ok {
+					return convType()
+				}
+			}
+			fallthrough
+		default:
+			ret.impl = x.impl
+		}
 	} else {
 		ret.impl = x.impl
 	}
@@ -1172,7 +1194,7 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 // -----------------------------------------------------------------------------
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
-	if t, ok := t.(*types.Struct); ok && isClosure(t) {
+	if st, ok := t.Underlying().(*types.Struct); ok && isClosure(st) {
 		if v.kind != vkClosure {
 			return b.Pkg.closureStub(b, t, v)
 		}
