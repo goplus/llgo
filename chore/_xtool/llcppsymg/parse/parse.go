@@ -118,19 +118,6 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 	return clang.ChildVisit_Continue
 }
 
-// func main() {
-// 	if c.Argc < 2 {
-// 		fmt.Fprintln(os.Stderr, "Usage: <C++ header file1> [<C++ header file2> ...]\n")
-// 		return
-// 	} else {
-// 		filenames := make([]*c.Char, c.Argc-1)
-// 		for i := 1; i < int(c.Argc); i++ {
-// 			filenames[i-1] = c.Index(c.Argv, c.Int(i))
-// 		}
-// 		printJson(parse(filenames))
-// 	}
-// }
-
 func ParseHeaderFile(filepaths []string) ([]types.ASTInformation, error) {
 
 	index := clang.CreateIndex(0, 0)
@@ -163,22 +150,4 @@ func ParseHeaderFile(filepaths []string) ([]types.ASTInformation, error) {
 	index.Dispose()
 
 	return context.astInfo, nil
-
-	// files := generateHeaderFilePath(config.CFlags, config.Include)
-	// fmt.Println(files)
-	// headerFileCmd := exec.Command("llcppinfofetch", files...)
-
-	// fmt.Println("Executing command:", headerFileCmd.String())
-
-	// headerFileOutput, err := headerFileCmd.Output()
-	// if err != nil {
-	// 	return nil, errors.New("failed to execute header file command")
-	// }
-	// fmt.Println("headerFileOutput:", string(headerFileOutput), len(headerFileOutput))
-	// t := make([]types.ASTInformation, 0)
-	// err = json.Unmarshal(headerFileOutput, &t)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return t, nil
 }
