@@ -699,6 +699,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		case vkFuncDecl:
 			ret.impl = checkExpr(x, t.raw.Type, b).impl
 		case vkClosure:
+			// TODO(xsw): change type should be a noop instruction
 			convType := func() Expr {
 				r := Expr{llvm.CreateAlloca(b.impl, t.ll), b.Prog.Pointer(t)}
 				b.Store(r, x)
