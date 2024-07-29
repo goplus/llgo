@@ -291,6 +291,10 @@ Here are the Go packages that can be imported correctly:
 * [fmt](https://pkg.go.dev/fmt) (partially)
 * [reflect](https://pkg.go.dev/reflect) (partially)
 * [time](https://pkg.go.dev/time) (partially)
+* [encoding/binary](https://pkg.go.dev/encoding/binary)
+* [encoding/hex](https://pkg.go.dev/encoding/hex)
+* [encoding/base32](https://pkg.go.dev/encoding/base32)
+* [encoding/base64](https://pkg.go.dev/encoding/base64)
 * [regexp](https://pkg.go.dev/regexp)
 * [regexp/syntax](https://pkg.go.dev/regexp/syntax)
 
