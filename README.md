@@ -297,6 +297,7 @@ Here are the Go packages that can be imported correctly:
 * [encoding/base32](https://pkg.go.dev/encoding/base32)
 * [encoding/base64](https://pkg.go.dev/encoding/base64)
 * [encoding/csv](https://pkg.go.dev/encoding/csv)
+* [crypto/md5](https://pkg.go.dev/crypto/md5)
 * [regexp](https://pkg.go.dev/regexp)
 * [regexp/syntax](https://pkg.go.dev/regexp/syntax)
 

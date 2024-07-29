@@ -61,22 +61,22 @@ func (c *MD5_CTX) UpdateString(data string) c.Int {
 // OSSL_DEPRECATEDIN_3_0 int MD5_Final(unsigned char *md, MD5_CTX *c);
 //
 //go:linkname md5Final C.MD5_Final
-func md5Final(md unsafe.Pointer, c *MD5_CTX) c.Int
+func md5Final(md *byte, c *MD5_CTX) c.Int
 
-func (c *MD5_CTX) Final(md unsafe.Pointer) c.Int {
+func (c *MD5_CTX) Final(md *byte) c.Int {
 	return md5Final(md, c)
 }
 
 // OSSL_DEPRECATEDIN_3_0 unsigned char *MD5(const unsigned char *d, size_t n, unsigned char *md);
 //
 //go:linkname MD5 C.MD5
-func MD5(data unsafe.Pointer, n uintptr, md unsafe.Pointer) unsafe.Pointer
+func MD5(data unsafe.Pointer, n uintptr, md *byte) *byte
 
-func MD5Bytes(data []byte, md unsafe.Pointer) unsafe.Pointer {
+func MD5Bytes(data []byte, md *byte) *byte {
 	return MD5(unsafe.Pointer(unsafe.SliceData(data)), uintptr(len(data)), md)
 }
 
-func MD5String(data string, md unsafe.Pointer) unsafe.Pointer {
+func MD5String(data string, md *byte) *byte {
 	return MD5(unsafe.Pointer(unsafe.StringData(data)), uintptr(len(data)), md)
 }
 
