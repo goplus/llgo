@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io
+package async
 
 import (
 	"unsafe"

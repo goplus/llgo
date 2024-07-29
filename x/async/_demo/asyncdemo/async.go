@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goplus/llgo/x/io"
-	"github.com/goplus/llgo/x/io/naive"
+	"github.com/goplus/llgo/x/async"
+	"github.com/goplus/llgo/x/async/naive"
 	"github.com/goplus/llgo/x/tuple"
 )
 
@@ -37,7 +37,7 @@ type Response struct {
 	Body string
 }
 
-func (r *Response) Text() (co *io.Promise[tuple.Tuple2[string, error]]) {
+func (r *Response) Text() (co *async.Promise[tuple.Tuple2[string, error]]) {
 	co.Return(tuple.Tuple2[string, error]{V1: r.Body, V2: nil})
 	return
 }
@@ -63,8 +63,8 @@ func (r *Response) TextCompiled() *naive.PromiseImpl[tuple.Tuple2[string, error]
 //	    return resp, err
 //	  })
 //	}
-func AsyncHttpGet(url string) *io.Promise[tuple.Tuple2[*Response, error]] {
-	co := &io.Promise[tuple.Tuple2[*Response, error]]{}
+func AsyncHttpGet(url string) *async.Promise[tuple.Tuple2[*Response, error]] {
+	co := &async.Promise[tuple.Tuple2[*Response, error]]{}
 	http("GET", url, func(resp *Response, err error) {
 		co.Return(tuple.Tuple2[*Response, error]{V1: resp, V2: nil})
 	})
@@ -91,8 +91,8 @@ func AsyncHttpGetCompiled(url string) *naive.PromiseImpl[tuple.Tuple2[*Response,
 	return co
 }
 
-func AsyncHttpPost(url string) *io.Promise[tuple.Tuple2[*Response, error]] {
-	co := &io.Promise[tuple.Tuple2[*Response, error]]{}
+func AsyncHttpPost(url string) *async.Promise[tuple.Tuple2[*Response, error]] {
+	co := &async.Promise[tuple.Tuple2[*Response, error]]{}
 	http("POST", url, func(resp *Response, err error) {
 		co.Return(tuple.Tuple2[*Response, error]{V1: resp, V2: nil})
 	})
@@ -472,7 +472,7 @@ func GenUsersCompiled() (resolve *naive.PromiseImpl[User]) {
 	return co
 }
 
-func Demo() (co *io.Promise[io.Void]) {
+func Demo() (co *async.Promise[async.Void]) {
 	user, err := GetUser("1").Await().Values()
 	log.Println(user, err)
 
@@ -482,7 +482,7 @@ func Demo() (co *io.Promise[io.Void]) {
 	users := naive.All[tuple.Tuple2[User, error]]([]naive.AsyncCall[tuple.Tuple2[User, error]]{GetUser("5"), GetUser("6"), GetUser("7")}).Value()
 	log.Println(users, err)
 
-	user, score, _ := naive.Await3Compiled[User, float64, io.Void](GetUser("8"), GetScore(), DoUpdate("update sth.")).Value().Values()
+	user, score, _ := naive.Await3Compiled[User, float64, async.Void](GetUser("8"), GetScore(), DoUpdate("update sth.")).Value().Values()
 	log.Println(user, score, err)
 
 	// for loop with generator
@@ -513,16 +513,16 @@ func Demo() (co *io.Promise[io.Void]) {
 	// 	log.Println("user:", user)
 	// case score := <-GetScore().Chan():
 	// 	log.Println("score:", score)
-	// case <-io.Timeout(5 * time.Second).Chan():
+	// case <-async.Timeout(5 * time.Second).Chan():
 	// 	log.Println("timeout")
 	// }
 
 	log.Println("Demo done")
-	co.Return(io.Void{})
+	co.Return(async.Void{})
 	return
 }
 
-func DemoCompiled() *naive.PromiseImpl[io.Void] {
+func DemoCompiled() *naive.PromiseImpl[async.Void] {
 	var state1 *naive.PromiseImpl[tuple.Tuple2[User, error]]
 	var state2 *naive.PromiseImpl[tuple.Tuple2[User, error]]
 	var state3 *naive.PromiseImpl[[]tuple.Tuple2[User, error]]
@@ -530,7 +530,7 @@ func DemoCompiled() *naive.PromiseImpl[io.Void] {
 	var g1 *naive.PromiseImpl[int]
 	var g2 *naive.PromiseImpl[User]
 
-	P := &naive.PromiseImpl[io.Void]{}
+	P := &naive.PromiseImpl[async.Void]{}
 	P.Debug = "Demo"
 	P.Func = func() {
 		switch P.Next {
@@ -597,7 +597,7 @@ func DemoCompiled() *naive.PromiseImpl[io.Void] {
 			if g2.Done() {
 				P.Next = -1
 				log.Printf("Demo done\n")
-				P.Return(io.Void{})
+				P.Return(async.Void{})
 				return
 			}
 			log.Printf("genUser: %+v, done: %v\n", g2.Value(), g2.Done())
@@ -612,7 +612,7 @@ func DemoCompiled() *naive.PromiseImpl[io.Void] {
 func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	log.Printf("=========== Run Naive Demo ===========\n")
-	v := naive.RunImpl[io.Void](DemoCompiled())
+	v := naive.RunImpl[async.Void](DemoCompiled())
 	log.Println(v)
 	log.Printf("=========== Run Naive Demo finished ===========\n")
 

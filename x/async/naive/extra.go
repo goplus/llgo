@@ -22,19 +22,19 @@ import (
 	"time"
 	_ "unsafe"
 
-	"github.com/goplus/llgo/x/io"
+	"github.com/goplus/llgo/x/async"
 	"github.com/goplus/llgo/x/tuple"
 )
 
 // -----------------------------------------------------------------------------
 
-func TimeoutCompiled(d time.Duration) *PromiseImpl[io.Void] {
-	P := &PromiseImpl[io.Void]{}
+func TimeoutCompiled(d time.Duration) *PromiseImpl[async.Void] {
+	P := &PromiseImpl[async.Void]{}
 	P.Debug = "Timeout"
 	P.Func = func() {
 		go func() {
 			time.Sleep(d)
-			P.Return(io.Void{})
+			P.Return(async.Void{})
 		}()
 	}
 	return P
@@ -79,7 +79,7 @@ func Race[OutT any](acs ...AsyncCall[OutT]) *PromiseImpl[OutT] {
 			for _, p := range ps {
 				if p.Done() {
 					if debugAsync {
-						log.Printf("io.Race done: %+v won the race\n", p)
+						log.Printf("async.Race done: %+v won the race\n", p)
 					}
 					returned = true
 					P.Return(p.value)
@@ -122,7 +122,7 @@ func All[OutT any](acs []AsyncCall[OutT]) *PromiseImpl[[]OutT] {
 
 			for _, p := range ps {
 				if !p.Done() {
-					log.Fatalf("io.All: not done: %+v\n", p)
+					log.Fatalf("async.All: not done: %+v\n", p)
 				}
 			}
 
@@ -131,7 +131,7 @@ func All[OutT any](acs []AsyncCall[OutT]) *PromiseImpl[[]OutT] {
 				ret[idx] = p.value
 			}
 			if debugAsync {
-				log.Printf("io.All done: %+v\n", ret)
+				log.Printf("async.All done: %+v\n", ret)
 			}
 			P.Return(ret)
 			return
@@ -170,7 +170,7 @@ func Await2Compiled[OutT1, OutT2 any](
 			}
 			P.Next = -1
 			if !p1.Done() || !p2.Done() {
-				log.Fatalf("io.Await2: not done: %+v, %+v\n", p1, p2)
+				log.Fatalf("async.Await2: not done: %+v, %+v\n", p1, p2)
 			}
 
 			P.Return(tuple.Tuple3[OutT1, OutT2, error]{
@@ -220,7 +220,7 @@ func Await3Compiled[OutT1, OutT2, OutT3 any](
 			P.Next = -1
 			// TODO(lijie): return every error?
 			if !p1.Done() || !p2.Done() || !p3.Done() {
-				log.Fatalf("io.Await3: not done: %+v, %+v, %+v\n", p1, p2, p3)
+				log.Fatalf("async.Await3: not done: %+v, %+v, %+v\n", p1, p2, p3)
 			}
 
 			P.Return(tuple.Tuple3[OutT1, OutT2, OutT3]{
