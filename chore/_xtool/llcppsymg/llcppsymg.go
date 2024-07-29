@@ -122,7 +122,6 @@ func generateDylibPath(lib string) (string, error) {
 		return "", fmt.Errorf("failed to parse pkg-config output: %s", output)
 	}
 
-	// 构造dylib路径
 	dylibPath := filepath.Join(libPath, "lib"+libName+".dylib")
 	return dylibPath, nil
 }
@@ -231,7 +230,6 @@ func generateCPPName(astInfo common.ASTInformation) string {
 }
 
 func generateMangle(astInfo common.ASTInformation, count int, prefixes []string) string {
-	// 去除前缀
 	astInfo.Class = removePrefix(astInfo.Class, prefixes)
 	astInfo.Name = removePrefix(astInfo.Name, prefixes)
 	res := ""
