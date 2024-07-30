@@ -45,22 +45,22 @@ func main() {
 	openssl.SHA512String(str, unsafe.SliceData(h6))
 	fmt.Printf("%x\n", h6)
 
-	var sha224 openssl.SHA256_CTX
-	sha224.Init224()
-	sha224.Update224String(str)
+	var sha224 openssl.SHA224_CTX
+	sha224.Init()
+	sha224.UpdateString(str)
 
 	h7 := make([]byte, openssl.SHA224_DIGEST_LENGTH)
-	sha224.Final224(unsafe.SliceData(h7))
+	sha224.Final(unsafe.SliceData(h7))
 	fmt.Printf("%x\n", h7)
 	h8 := make([]byte, openssl.SHA224_DIGEST_LENGTH)
 	openssl.SHA224String(str, unsafe.SliceData(h8))
 	fmt.Printf("%x\n", h8)
 
-	var sha384 openssl.SHA512_CTX
-	sha384.Init384()
-	sha384.Update384String(str)
+	var sha384 openssl.SHA384_CTX
+	sha384.Init()
+	sha384.UpdateString(str)
 	h9 := make([]byte, openssl.SHA384_DIGEST_LENGTH)
-	sha384.Final384(unsafe.SliceData(h9))
+	sha384.Final(unsafe.SliceData(h9))
 	fmt.Printf("%x\n", h9)
 	h10 := make([]byte, openssl.SHA384_DIGEST_LENGTH)
 	openssl.SHA384String(str, unsafe.SliceData(h10))

@@ -13,30 +13,32 @@ type SHA256_CTX struct {
 	Num, MdLen c.Uint
 }
 
+type SHA224_CTX SHA256_CTX
+
 // OSSL_DEPRECATEDIN_3_0 int SHA224_Init(SHA256_CTX *c);
 //
-// llgo:link (*SHA256_CTX).Init224 C.SHA224_Init
-func (c *SHA256_CTX) Init224() c.Int { return 0 }
+// llgo:link (*SHA224_CTX).Init C.SHA224_Init
+func (c *SHA224_CTX) Init() c.Int { return 0 }
 
 // OSSL_DEPRECATEDIN_3_0 int SHA224_Update(SHA256_CTX *c, const void *data, size_t len);
 //
-// llgo:link (*SHA256_CTX).Update224 C.SHA224_Update
-func (c *SHA256_CTX) Update224(data unsafe.Pointer, n uintptr) c.Int { return 0 }
+// llgo:link (*SHA224_CTX).Update C.SHA224_Update
+func (c *SHA224_CTX) Update(data unsafe.Pointer, n uintptr) c.Int { return 0 }
 
-func (c *SHA256_CTX) Update224Bytes(data []byte) c.Int {
-	return c.Update224(unsafe.Pointer(unsafe.SliceData(data)), uintptr(len(data)))
+func (c *SHA224_CTX) UpdateBytes(data []byte) c.Int {
+	return c.Update(unsafe.Pointer(unsafe.SliceData(data)), uintptr(len(data)))
 }
 
-func (c *SHA256_CTX) Update224String(data string) c.Int {
-	return c.Update224(unsafe.Pointer(unsafe.StringData(data)), uintptr(len(data)))
+func (c *SHA224_CTX) UpdateString(data string) c.Int {
+	return c.Update(unsafe.Pointer(unsafe.StringData(data)), uintptr(len(data)))
 }
 
 // OSSL_DEPRECATEDIN_3_0 int SHA224_Final(unsigned char *md, SHA256_CTX *c);
 //
 //go:linkname sha224Final C.SHA224_Final
-func sha224Final(md *byte, c *SHA256_CTX) c.Int
+func sha224Final(md *byte, c *SHA224_CTX) c.Int
 
-func (c *SHA256_CTX) Final224(md *byte) c.Int {
+func (c *SHA224_CTX) Final(md *byte) c.Int {
 	return sha224Final(md, c)
 }
 

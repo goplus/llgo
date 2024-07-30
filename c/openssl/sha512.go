@@ -13,30 +13,32 @@ type SHA512_CTX struct {
 	Num, MdLen c.Uint
 }
 
+type SHA384_CTX SHA512_CTX
+
 // OSSL_DEPRECATEDIN_3_0 int SHA384_Init(SHA512_CTX *c);
 //
-// llgo:link (*SHA512_CTX).Init384 C.SHA384_Init
-func (c *SHA512_CTX) Init384() c.Int { return 0 }
+// llgo:link (*SHA384_CTX).Init C.SHA384_Init
+func (c *SHA384_CTX) Init() c.Int { return 0 }
 
 // OSSL_DEPRECATEDIN_3_0 int SHA384_Update(SHA512_CTX *c, const void *data, size_t len);
 //
-// llgo:link (*SHA512_CTX).Update384 C.SHA384_Update
-func (c *SHA512_CTX) Update384(data unsafe.Pointer, n uintptr) c.Int { return 0 }
+// llgo:link (*SHA384_CTX).Update C.SHA384_Update
+func (c *SHA384_CTX) Update(data unsafe.Pointer, n uintptr) c.Int { return 0 }
 
-func (c *SHA512_CTX) Update384Bytes(data []byte) c.Int {
-	return c.Update384(unsafe.Pointer(unsafe.SliceData(data)), uintptr(len(data)))
+func (c *SHA384_CTX) UpdateBytes(data []byte) c.Int {
+	return c.Update(unsafe.Pointer(unsafe.SliceData(data)), uintptr(len(data)))
 }
 
-func (c *SHA512_CTX) Update384String(data string) c.Int {
-	return c.Update384(unsafe.Pointer(unsafe.StringData(data)), uintptr(len(data)))
+func (c *SHA384_CTX) UpdateString(data string) c.Int {
+	return c.Update(unsafe.Pointer(unsafe.StringData(data)), uintptr(len(data)))
 }
 
 // OSSL_DEPRECATEDIN_3_0 int SHA384_Final(unsigned char *md, SHA512_CTX *c);
 //
 //go:linkname sha384Final C.SHA384_Final
-func sha384Final(md *byte, c *SHA512_CTX) c.Int
+func sha384Final(md *byte, c *SHA384_CTX) c.Int
 
-func (c *SHA512_CTX) Final384(md *byte) c.Int {
+func (c *SHA384_CTX) Final(md *byte) c.Int {
 	return sha384Final(md, c)
 }
 
