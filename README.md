@@ -310,6 +310,7 @@ Here are the Go packages that can be imported correctly:
 - [Clang 18](https://clang.llvm.org)
 - [pkg-config 0.29+](https://www.freedesktop.org/wiki/Software/pkg-config/)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
+- [OpenSSL 3.0+](https://www.openssl.org/)
 - [cJSON 1.7+](https://github.com/DaveGamble/cJSON) (optional, for [github.com/goplus/llgo/c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson))
 - [SQLite 3](https://www.sqlite.org) (optional, for [github.com/goplus/llgo/c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite))
 - [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
@@ -322,7 +323,7 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 
 ```sh
 brew update # execute if needed
-brew install llvm@18 pkg-config libgc
+brew install llvm@18 pkg-config bdw-gc openssl
 brew install cjson sqlite python@3.12 # optional
 export PATH=$(brew --prefix llvm@18)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
 go install -v github.com/goplus/llgo/cmd/llgo@latest
@@ -334,7 +335,7 @@ go install -v github.com/goplus/llgo/cmd/llgo@latest
 echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update # execute if needed
-sudo apt-get install -y llvm-18-dev clang-18 lld-18 pkg-config libgc-dev
+sudo apt-get install -y llvm-18-dev clang-18 lld-18 pkg-config libgc-dev libssl-dev
 sudo apt-get install -y libcjson-dev libsqlite3-dev python3.12-dev # optional
 export PATH=/usr/lib/llvm-18/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
 go install -v github.com/goplus/llgo/cmd/llgo@latest
