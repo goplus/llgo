@@ -6,12 +6,15 @@
 
 package os
 
-import "syscall"
+import (
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/internal/lib/syscall"
+)
 
 // Stat returns the FileInfo structure describing file.
 // If there is an error, it will be of type *PathError.
 func (f *File) Stat() (FileInfo, error) {
-	/* TODO(xsw):
 	if f == nil {
 		return nil, ErrInvalid
 	}
@@ -22,8 +25,6 @@ func (f *File) Stat() (FileInfo, error) {
 	}
 	fillFileStatFromSys(&fs, f.name)
 	return &fs, nil
-	*/
-	panic("todo: os.File.Stat")
 }
 
 // statNolog stats a file with no test logging.
