@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package openssl
 
 import (
@@ -5,6 +21,25 @@ import (
 
 	"github.com/goplus/llgo/c"
 )
+
+const (
+	SHA_DIGEST_LENGTH = 20
+	SHA_LBLOCK        = 16
+	SHA_CBLOCK        = (SHA_LBLOCK * 4)
+	SHA_LAST_BLOCK    = (SHA_CBLOCK - 8)
+
+	SHA256_CBLOCK            = (SHA_LBLOCK * 4)
+	SHA256_192_DIGEST_LENGTH = 24
+	SHA224_DIGEST_LENGTH     = 28
+	SHA256_DIGEST_LENGTH     = 32
+	SHA384_DIGEST_LENGTH     = 48
+	SHA512_DIGEST_LENGTH     = 64
+	SHA512_CBLOCK            = (SHA_LBLOCK * 8)
+)
+
+type SHA_LONG64 = c.UlongLong
+
+type SHA_LONG = c.Uint
 
 type SHA_CTX struct {
 	H0, H1, H2, H3, H4 SHA_LONG
