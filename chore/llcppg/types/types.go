@@ -17,7 +17,6 @@
 package types
 
 import (
-	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/xtool/nm"
 )
 
@@ -28,11 +27,6 @@ type Config struct {
 	Libs         string   `json:"libs"`
 	Include      []string `json:"include"`
 	TrimPrefixes []string `json:"trimPrefixes"`
-}
-
-type Conf struct {
-	*cjson.JSON
-	*Config
 }
 
 type CPPSymbol struct {

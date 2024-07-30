@@ -28,6 +28,7 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/llcppg/types"
 	"github.com/goplus/llgo/cpp/llvm"
@@ -49,22 +50,22 @@ func main() {
 	}
 	check(err)
 
-	config, err := getConf(data)
+	conf, err := config.GetConf(data)
 	check(err)
-	defer config.Delete()
+	defer conf.Delete()
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
 	}
-	symbols, err := parseDylibSymbols(config.Libs)
+	symbols, err := parseDylibSymbols(conf.Libs)
 
 	check(err)
 
-	filepaths := generateHeaderFilePath(config.CFlags, config.Include)
+	filepaths := generateHeaderFilePath(conf.CFlags, conf.Include)
 	astInfos, err := parse.ParseHeaderFile(filepaths)
 	check(err)
 
-	symbolInfo := getCommonSymbols(symbols, astInfos, config.TrimPrefixes)
+	symbolInfo := getCommonSymbols(symbols, astInfos, conf.TrimPrefixes)
 
 	err = genSymbolTableFile(symbolInfo)
 	check(err)
@@ -74,51 +75,6 @@ func check(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func getConf(data []byte) (types.Conf, error) {
-	parsedConf := cjson.ParseBytes(data)
-	if parsedConf == nil {
-		return types.Conf{}, errors.New("failed to parse config")
-	}
-
-	config := &types.Config{
-		Name:         getStringItem(parsedConf, "name", ""),
-		CFlags:       getStringItem(parsedConf, "cflags", ""),
-		Libs:         getStringItem(parsedConf, "libs", ""),
-		Include:      getStringArrayItem(parsedConf, "include"),
-		TrimPrefixes: getStringArrayItem(parsedConf, "trimPrefixes"),
-	}
-
-	return types.Conf{
-		JSON:   parsedConf,
-		Config: config,
-	}, nil
-}
-
-func getString(obj *cjson.JSON) (value string) {
-	str := obj.GetStringValue()
-	return unsafe.String((*byte)(unsafe.Pointer(str)), c.Strlen(str))
-}
-
-func getStringItem(obj *cjson.JSON, key string, defval string) (value string) {
-	item := obj.GetObjectItemCaseSensitive(c.AllocaCStr(key))
-	if item == nil {
-		return defval
-	}
-	return getString(item)
-}
-
-func getStringArrayItem(obj *cjson.JSON, key string) (value []string) {
-	item := obj.GetObjectItemCaseSensitive(c.AllocaCStr(key))
-	if item == nil {
-		return
-	}
-	value = make([]string, item.GetArraySize())
-	for i := range value {
-		value[i] = getString(item.GetArrayItem(c.Int(i)))
-	}
-	return
 }
 
 func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
