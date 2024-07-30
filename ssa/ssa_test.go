@@ -521,3 +521,34 @@ func TestBasicType(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareSelect(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Int]),
+		types.NewVar(0, nil, "c", types.Typ[types.Int]),
+	)
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+
+	b := fn.MakeBody(1)
+	result := b.compareSelect(token.GTR, fn.Param(0), fn.Param(1), fn.Param(2))
+	b.Return(result)
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = icmp sgt i64 %0, %1
+  %4 = select i1 %3, i64 %0, i64 %1
+  %5 = icmp sgt i64 %4, %2
+  %6 = select i1 %5, i64 %4, i64 %2
+  ret i64 %6
+}
+`)
+}
