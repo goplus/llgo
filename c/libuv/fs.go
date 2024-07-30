@@ -106,6 +106,9 @@ type FsPollCb func(handle *FsPoll, status c.Int, events c.Int)
 
 /* Fs related function and method */
 
+//go:linkname FsNew C.uv_fs_new
+func FsNew() Fs
+
 //go:linkname FsGetType C.uv_fs_get_type
 func FsGetType(req *Fs) FsType
 
