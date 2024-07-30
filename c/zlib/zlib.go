@@ -17,7 +17,7 @@
 package zlib
 
 import (
-	_ "unsafe"
+	"unsafe"
 
 	"github.com/goplus/llgo/c"
 )
@@ -186,6 +186,14 @@ Same as crc32(), but with a size_t length.
 //go:linkname Crc32Z C.crc32_z
 func Crc32Z(crc c.Ulong, buf *byte, len uintptr) c.Ulong
 
+func Crc32ZBytes(crc c.Ulong, buf []byte) c.Ulong {
+	return Crc32Z(crc, unsafe.SliceData(buf), uintptr(len(buf)))
+}
+
+func Crc32ZString(crc c.Ulong, buf string) c.Ulong {
+	return Crc32Z(crc, unsafe.StringData(buf), uintptr(len(buf)))
+}
+
 /*
 ZEXTERN uLong ZEXPORT crc32_combine OF((uLong crc1, uLong crc2, z_off_t len2));
 
@@ -227,6 +235,14 @@ Same as adler32(), but with a size_t length.
 */
 //go:linkname Adler32Z C.adler32_z
 func Adler32Z(adler c.Ulong, buf *byte, len uintptr) c.Ulong
+
+func Adler32ZBytes(adler c.Ulong, buf []byte) c.Ulong {
+	return Adler32Z(adler, unsafe.SliceData(buf), uintptr(len(buf)))
+}
+
+func Adler32ZString(adler c.Ulong, buf string) c.Ulong {
+	return Adler32Z(adler, unsafe.StringData(buf), uintptr(len(buf)))
+}
 
 /*
 ZEXTERN uLong ZEXPORT adler32_combine OF((uLong adler1, uLong adler2, z_off_t len2));
