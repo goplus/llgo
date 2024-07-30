@@ -17,13 +17,10 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -34,6 +31,7 @@ import (
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/llcppg/types"
 	"github.com/goplus/llgo/cpp/llvm"
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 func main() {
@@ -124,21 +122,26 @@ func getStringArrayItem(obj *cjson.JSON, key string) (value []string) {
 }
 
 func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
-	dylibPath, _ := generateDylibPath(lib)
-	nmCmd := exec.Command("nm", "-gU", dylibPath)
-	nmOutput, err := nmCmd.Output() // maybe lock
+	dylibPath, err := generateDylibPath(lib)
 	if err != nil {
-		return nil, errors.New("failed to execute nm command")
+		return nil, errors.New("failed to generate dylib path")
 	}
 
-	symbols := parseNmOutput(nmOutput)
+	files, err := nm.New("").List(dylibPath)
+	if err != nil {
+		return nil, errors.New("failed to list symbols in dylib")
+	}
 
-	for i, sym := range symbols {
-		decodedName, err := decodeSymbolName(sym.Name)
-		if err != nil {
-			return nil, err
+	var symbols []types.CPPSymbol
+
+	for _, file := range files {
+		for _, sym := range file.Symbols {
+			demangleName := decodeSymbolName(sym.Name)
+			symbols = append(symbols, types.CPPSymbol{
+				Symbol:       sym,
+				DemangleName: demangleName,
+			})
 		}
-		symbols[i].Name = decodedName
 	}
 
 	return symbols, nil
@@ -164,35 +167,28 @@ func generateDylibPath(lib string) (string, error) {
 	return dylibPath, nil
 }
 
-func parseNmOutput(output []byte) []types.CPPSymbol {
-	scanner := bufio.NewScanner(bytes.NewReader(output))
-	var symbols []types.CPPSymbol
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		if len(fields) < 3 {
-			continue
-		}
-		symbolName := fields[2]
-		// Check if the symbol name starts with an underscore and remove it if present
-		symbolName = strings.TrimPrefix(symbolName, "_")
-		symbols = append(symbols, types.CPPSymbol{
-			Symbol: symbolName,
-			Type:   fields[1],
-			Name:   fields[2],
-		})
+func decodeSymbolName(symbolName string) string {
+	if symbolName == "" {
+		return ""
 	}
 
-	return symbols
-}
+	demangled := llvm.ItaniumDemangle(symbolName, true)
+	if demangled == nil {
+		return symbolName
+	}
+	defer c.Free(unsafe.Pointer(demangled))
 
-func decodeSymbolName(symbolName string) (string, error) {
-	llvm.ItaniumDemangle(symbolName, true)
-	demangleName := c.GoString(llvm.ItaniumDemangle(symbolName, true))
-	decodedName := strings.TrimSpace(string(demangleName))
-	decodedName = strings.ReplaceAll(decodedName, "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const", "std::string")
-	return decodedName, nil
+	demangleName := c.GoString(demangled)
+	if demangleName == "" {
+		return symbolName
+	}
+
+	decodedName := strings.TrimSpace(demangleName)
+	decodedName = strings.ReplaceAll(decodedName,
+		"std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const",
+		"std::string")
+
+	return decodedName
 }
 
 func generateHeaderFilePath(cflags string, files []string) []string {
@@ -211,11 +207,11 @@ func getCommonSymbols(dylibSymbols []types.CPPSymbol, astInfoList []types.ASTInf
 
 	for _, astInfo := range astInfoList {
 		for _, dylibSym := range dylibSymbols {
-			if dylibSym.Symbol == astInfo.Symbol {
+			if strings.TrimPrefix(dylibSym.Name, "_") == astInfo.Symbol {
 				cppName := generateCPPName(astInfo)
 				functionNameMap[cppName]++
 				symbolInfo := types.SymbolInfo{
-					Mangle: dylibSym.Symbol,
+					Mangle: strings.TrimPrefix(dylibSym.Name, "_"),
 					CPP:    cppName,
 					Go:     generateMangle(astInfo, functionNameMap[cppName], prefix),
 				}
