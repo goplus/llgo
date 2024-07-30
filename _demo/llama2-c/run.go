@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/llama2"
+	"github.com/goplus/llgo/c/time"
 )
 
 func main() {
@@ -11,7 +12,7 @@ func main() {
 	var tokenizerPath *c.Char = c.Str("tokenizer.bin")
 	var temperature, topp c.Float = 1.0, 0.9
 	var steps c.Int = 256
-	var rngSeed uint64 = uint64(c.Time(nil))
+	var rngSeed uint64 = uint64(time.Time(nil))
 
 loop: // parse command line arguments
 	for {

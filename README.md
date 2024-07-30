@@ -270,6 +270,7 @@ Here are the Go packages that can be imported correctly:
 * [math](https://pkg.go.dev/math)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math/cmplx](https://pkg.go.dev/math/cmplx)
+* [math/rand](https://pkg.go.dev/math/rand)
 * [errors](https://pkg.go.dev/errors)
 * [context](https://pkg.go.dev/context)
 * [io](https://pkg.go.dev/io)
