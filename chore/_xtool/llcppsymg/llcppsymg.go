@@ -228,6 +228,23 @@ func removePrefix(str string, prefixes []string) string {
 }
 
 func genSymbolTableFile(symbolInfos []types.SymbolInfo) error {
+	// keep open follow code block can run successfully
+	for i := range symbolInfos {
+		println("symbol", symbolInfos[i].Go)
+	}
+
+	fileName := "llcppg.symb.json"
+	existingSymbols, err := readExistingSymbolTable(fileName)
+	if err != nil {
+		return err
+	}
+
+	for i := range symbolInfos {
+		if existingSymbol, exists := existingSymbols[symbolInfos[i].Mangle]; exists {
+			symbolInfos[i].Go = existingSymbol.Go
+		}
+	}
+
 	root := cjson.Array()
 	defer root.Delete()
 
@@ -239,7 +256,6 @@ func genSymbolTableFile(symbolInfos []types.SymbolInfo) error {
 		root.AddItem(item)
 	}
 
-	fileName := "llcppg.symb.json"
 	cStr := root.Print()
 	if cStr == nil {
 		return errors.New("symbol table is empty")
@@ -251,6 +267,39 @@ func genSymbolTableFile(symbolInfos []types.SymbolInfo) error {
 	if err := os.WriteFile(fileName, data, 0644); err != nil {
 		return errors.New("failed to write symbol table file")
 	}
-
 	return nil
+}
+func readExistingSymbolTable(fileName string) (map[string]types.SymbolInfo, error) {
+	existingSymbols := make(map[string]types.SymbolInfo)
+
+	if _, err := os.Stat(fileName); err != nil {
+		return existingSymbols, nil
+	}
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, errors.New("failed to read symbol table file")
+	}
+
+	parsedJSON := cjson.ParseBytes(data)
+	if parsedJSON == nil {
+		return nil, errors.New("failed to parse JSON")
+	}
+
+	arraySize := parsedJSON.GetArraySize()
+
+	for i := 0; i < int(arraySize); i++ {
+		item := parsedJSON.GetArrayItem(c.Int(i))
+		if item == nil {
+			continue
+		}
+		symbol := types.SymbolInfo{
+			Mangle: config.GetStringItem(item, "mangle", ""),
+			CPP:    config.GetStringItem(item, "c++", ""),
+			Go:     config.GetStringItem(item, "go", ""),
+		}
+		existingSymbols[symbol.Mangle] = symbol
+	}
+
+	return existingSymbols, nil
 }
