@@ -53,6 +53,7 @@ func main() {
 
 	config, err := getConf(data)
 	check(err)
+	defer config.Delete()
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
@@ -77,19 +78,24 @@ func check(err error) {
 	}
 }
 
-func getConf(data []byte) (*types.Config, error) {
-	conf := cjson.ParseBytes(data)
-	if conf == nil {
-		return nil, errors.New("failed to parse config")
+func getConf(data []byte) (types.Conf, error) {
+	parsedConf := cjson.ParseBytes(data)
+	if parsedConf == nil {
+		return types.Conf{}, errors.New("failed to parse config")
 	}
+
 	config := &types.Config{
-		Name:         getStringItem(conf, "name", ""),
-		CFlags:       getStringItem(conf, "cflags", ""),
-		Libs:         getStringItem(conf, "libs", ""),
-		Include:      getStringArrayItem(conf, "include"),
-		TrimPrefixes: getStringArrayItem(conf, "trimPrefixes"),
+		Name:         getStringItem(parsedConf, "name", ""),
+		CFlags:       getStringItem(parsedConf, "cflags", ""),
+		Libs:         getStringItem(parsedConf, "libs", ""),
+		Include:      getStringArrayItem(parsedConf, "include"),
+		TrimPrefixes: getStringArrayItem(parsedConf, "trimPrefixes"),
 	}
-	return config, nil
+
+	return types.Conf{
+		JSON:   parsedConf,
+		Config: config,
+	}, nil
 }
 
 func getString(obj *cjson.JSON) (value string) {

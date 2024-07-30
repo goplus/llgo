@@ -16,6 +16,10 @@
 
 package types
 
+import (
+	"github.com/goplus/llgo/c/cjson"
+)
+
 // Config represents a configuration for the llcppg tool.
 type Config struct {
 	Name         string   `json:"name"`
@@ -24,6 +28,11 @@ type Config struct {
 	Include      []string `json:"include"`
 	TrimPrefixes []string `json:"trimPrefixes"`
 	JSONPath     string   `json:"jsonPath"`
+}
+
+type Conf struct {
+	*cjson.JSON
+	*Config
 }
 
 type CPPSymbol struct {
