@@ -7,6 +7,10 @@ import (
 )
 
 const (
+	LLGoFiles = "$(pkg-config --cflags libuv): _wrap/fs.c"
+)
+
+const (
 	FS_UNKNOWN   FsType = -1
 	FS_CUSTOM    FsType = 0
 	FS_OPEN      FsType = 1
@@ -69,7 +73,7 @@ type File c.Int
 /* Handle types. */
 
 type Fs struct {
-	Unused [0]byte
+	Unused [440]byte
 }
 
 type FsEvent struct {
@@ -107,7 +111,7 @@ type FsPollCb func(handle *FsPoll, status c.Int, events c.Int)
 /* Fs related function and method */
 
 //go:linkname FsNew C.uv_fs_new
-func FsNew() Fs
+func FsNew() *Fs
 
 //go:linkname FsGetType C.uv_fs_get_type
 func FsGetType(req *Fs) FsType
