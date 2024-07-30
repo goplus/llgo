@@ -1022,10 +1022,6 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 // Go spec (excluding "make" and "new").
 func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	switch fn {
-	case "max":
-		fallthrough
-	case "min":
-		return b.max(args...)
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
@@ -1130,12 +1126,6 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	}
 	panic("todo: " + fn)
-}
-
-// max return the max value for the args
-func (b Builder) max(args ...Expr) (ret Expr) {
-	//todo
-	return args[len(args)-1]
 }
 
 // Println prints the arguments to stderr, followed by a newline.

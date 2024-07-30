@@ -67,12 +67,8 @@ func (c *SHA512_CTX) Final(md *byte) c.Int {
 
 // OSSL_DEPRECATEDIN_3_0 void SHA512_Transform(SHA512_CTX *c, const unsigned char *data);
 //
-//go:linkname sha512Transform C.SHA512_Transform
-func sha512Transform(c *SHA512_CTX, data *byte)
-
-func (c *SHA512_CTX) Transform(data *byte) {
-	sha512Transform(c, data)
-}
+// llgo:link (*SHA512_CTX).Transform C.SHA512_Transform
+func (c *SHA512_CTX) Transform(data *byte) {}
 
 // unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md);
 //
