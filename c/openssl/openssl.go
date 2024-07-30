@@ -16,6 +16,8 @@
 
 package openssl
 
+// -----------------------------------------------------------------------------
+
 const (
 	LLGoPackage = "link: $(pkg-config --libs openssl); -lssl -lcrypto"
 )
