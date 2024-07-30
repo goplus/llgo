@@ -562,7 +562,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 			}
 		case vkArray:
-			typ := x.raw.Type.(*types.Array)
+			typ := x.raw.Type.Underlying().(*types.Array)
 			elem := b.Prog.Elem(x.Type)
 			ret := prog.BoolVal(true)
 			for i, n := 0, int(typ.Len()); i < n; i++ {

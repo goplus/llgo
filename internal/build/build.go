@@ -759,6 +759,7 @@ type none struct{}
 var hasAltPkg = map[string]none{
 	"crypto/md5":               {},
 	"fmt":                      {},
+	"hash/crc32":               {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
 	"internal/itoa":            {},
