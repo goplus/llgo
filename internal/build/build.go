@@ -361,6 +361,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 			args,
 			"-rpath", "$ORIGIN",
 			"-rpath", "$ORIGIN/../lib",
+			"-fdata-sections",
+			"-ffunction-sections",
 			"-Xlinker", "--gc-sections",
 			"-lm",
 			"-latomic",
