@@ -769,6 +769,7 @@ var hasAltPkg = map[string]none{
 	"internal/syscall/unix":    {},
 	"math":                     {},
 	"math/cmplx":               {},
+	"math/rand":                {},
 	"reflect":                  {},
 	"sync":                     {},
 	"sync/atomic":              {},
