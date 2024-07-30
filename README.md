@@ -218,6 +218,7 @@ The currently supported libraries include:
 * [c/llama2](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
 * [c/lua](https://pkg.go.dev/github.com/goplus/llgo/c/lua)
 * [c/neco](https://pkg.go.dev/github.com/goplus/llgo/c/neco)
+* [c/openssl](https://pkg.go.dev/github.com/goplus/llgo/c/openssl)
 * [c/raylib](https://pkg.go.dev/github.com/goplus/llgo/c/raylib)
 * [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
 * [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
