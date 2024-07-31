@@ -296,6 +296,16 @@ func ParseError() c.Int
       Unused [32]byte
   }
   ```
+- Class Methods
+
+  For general methods of the class, directly use `llgo:link` to link:
+
+  ```go
+  // llgo:link (*Reader).GetInteger C._ZNK9INIReader10GetIntegerERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_l
+  func (r *Reader) GetInteger(section *std.String, name *std.String, defaultValue c.Long) c.Long {
+  	return 0
+  }
+  ```
 - Constructor
 
   - Constructor is explicitly declared in the class (can find the corresponding symbol in the dynamic library):
@@ -323,43 +333,33 @@ func ParseError() c.Int
   - Constructor is not explicitly declared in the class (cannot find the corresponding symbol in the dynamic library)
   
     In typical implementations of the inih library, directly invoking implicit constructors to instantiate reader objects is not recommended. For detailed examples of how bindings effectively handle non-exported symbols, please refer to the [Templates and Inlines](#templates-and-inlines) section.
+
 - Destructor
 
-    Destructors are typically not directly accessible in the dynamic library, so they need to be wrapped. The wrapping method for destructors differs from that of constructors as follows:
-    In the C++ wrapper file (e.g., cppWrap.cpp):
-  ```cpp
+    The accessibility of destructors in dynamic libraries depends on their definition method. Destructors that are explicitly declared in header files and implemented as non-inline functions in .cpp files typically appear in the dynamic library's symbol table. These destructors can be directly linked, consistent with the linking method of general class methods (see "Class Methods" section).
+    
+    For destructors that do not meet these conditions (such as those explicitly declared in header files but implemented inline in .cpp files) and consequently do not appear in the dynamic library's symbol table, a wrapper layer implementation is required. This wrapper in the C++ wrapper file (e.g., cppWrap.cpp) looks like:
+    ```cpp
     extern "C" {
         void INIReaderDispose(INIReader* r) {
             r->~INIReader();
         }
     } // extern "C"
-  ```
+    ```
     This wrapper function explicitly calls the object's destructor. By using extern "C", we ensure that this function can be called by C code, allowing Go to link to it.
     In the Go file:
-  ```go
+    ```go
     // llgo:link (*Reader).Dispose C.INIReaderDispose
     func (r *Reader) Dispose() {}
-  ```
+    ```
     Here we link the Go Dispose method to the C++ wrapped INIReaderDispose function.
     In actual usage:
-  ```go
+    We use defer to ensure that the Dispose method is called when the reader object goes out of scope, thus properly releasing resources.
+    ```go
     reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
     defer reader.Dispose()
-  ```
-    We use defer to ensure that the Dispose method is called when the reader object goes out of scope, thus properly releasing resources.
-- Class Methods
-
-  For general methods of the class, directly use `llgo:link` to link:
-
-  ```go
-  // llgo:link (*Reader).GetInteger C._ZNK9INIReader10GetIntegerERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_l
-  func (r *Reader) GetInteger(section *std.String, name *std.String, defaultValue c.Long) c.Long {
-  	return 0
-  }
-  ```
-
-  Template or inline methods of the class will be introduced in the next section.
-
+    ```
+    This situation is analogous to the handling of inline functions and templates described in the following section.
 
 #### Templates and Inlines
 
