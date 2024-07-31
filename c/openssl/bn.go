@@ -98,6 +98,36 @@ func (*BIGNUM) Copy(b *BIGNUM) *BIGNUM { return nil }
 // llgo:link (*BIGNUM).Swap C.BN_swap
 func (*BIGNUM) Swap(b *BIGNUM) {}
 
+// int BN_is_zero(const BIGNUM *a);
+//
+// llgo:link (*BIGNUM).IsZero C.BN_is_zero
+func (*BIGNUM) IsZero() c.Int { return 0 }
+
+// void BN_zero_ex(BIGNUM *a);
+//
+// llgo:link (*BIGNUM).SetZero C.BN_zero_ex
+func (*BIGNUM) SetZero() {}
+
+// int BN_is_one(const BIGNUM *a);
+//
+// llgo:link (*BIGNUM).IsOne C.BN_is_one
+func (*BIGNUM) IsOne() c.Int { return 0 }
+
+// int BN_is_odd(const BIGNUM *a);
+//
+// llgo:link (*BIGNUM).IsOdd C.BN_is_odd
+func (*BIGNUM) IsOdd() c.Int { return 0 }
+
+// int BN_abs_is_word(const BIGNUM *a, const BN_ULONG w);
+//
+// llgo:link (*BIGNUM).AbsIsWord C.BN_abs_is_word
+func (*BIGNUM) AbsIsWord(w BN_ULONG) c.Int { return 0 }
+
+// int BN_is_word(const BIGNUM *a, const BN_ULONG w);
+//
+// llgo:link (*BIGNUM).IsWord C.BN_is_word
+func (*BIGNUM) IsWord(w BN_ULONG) c.Int { return 0 }
+
 // int BN_set_word(BIGNUM *a, BN_ULONG w);
 //
 // llgo:link (*BIGNUM).SetWord C.BN_set_word
@@ -286,6 +316,11 @@ func (*BIGNUM) Rshift1(a *BIGNUM) c.Int { return 0 }
 //
 // llgo:link (*BIGNUM).Exp C.BN_exp
 func (*BIGNUM) Exp(a, p *BIGNUM, ctx *BN_CTX) c.Int { return 0 }
+
+// int BN_mod_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, const BIGNUM *m, BN_CTX *ctx);
+//
+// llgo:link (*BIGNUM).ModExp C.BN_mod_exp
+func (*BIGNUM) ModExp(a, p, m *BIGNUM, ctx *BN_CTX) c.Int { return 0 }
 
 // int BN_gcd(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
 //

@@ -38,5 +38,7 @@ func main() {
 		// Swap a and b so that b is the next number in the sequence.
 		a, b = b, a
 	}
-	c.Printf(c.Str("%s\n"), a.CStr()) // 100-digit Fibonacci number
+	cstr := a.CStr()
+	c.Printf(c.Str("%s\n"), cstr) // 100-digit Fibonacci number
+	openssl.FreeCStr(cstr)
 }

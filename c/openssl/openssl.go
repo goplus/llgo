@@ -25,13 +25,14 @@ import (
 // -----------------------------------------------------------------------------
 
 const (
+	LLGoFiles   = "$(pkg-config --cflags openssl): _wrap/openssl.c"
 	LLGoPackage = "link: $(pkg-config --libs openssl); -lssl -lcrypto"
 )
 
-//go:linkname Free C.OPENSSL_free
+//go:linkname Free C.opensslFree
 func Free(ptr unsafe.Pointer)
 
-//go:linkname FreeCStr C.OPENSSL_free
+//go:linkname FreeCStr C.opensslFree
 func FreeCStr(ptr *c.Char)
 
 // -----------------------------------------------------------------------------
