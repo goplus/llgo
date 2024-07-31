@@ -1,7 +1,6 @@
 package sha256
 
 // llgo:skipall
-
 import (
 	"hash"
 	"unsafe"
@@ -64,6 +63,11 @@ func Sum224(data []byte) (ret [Size224]byte) {
 
 // Sum256 returns the SHA256 checksum of the data.
 func Sum256(data []byte) (ret [Size]byte) {
+	openssl.SHA256Bytes(data, &ret[0])
+	return
+}
+
+func Sum(data []byte) (ret [Size]byte) {
 	openssl.SHA256Bytes(data, &ret[0])
 	return
 }

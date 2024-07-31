@@ -1,7 +1,6 @@
 package sha512
 
 // llgo:skipall
-
 import (
 	"hash"
 	"unsafe"
@@ -69,6 +68,11 @@ func Sum384(data []byte) (ret [Size384]byte) {
 }
 
 func Sum512(data []byte) (ret [Size]byte) {
+	openssl.SHA512Bytes(data, &ret[0])
+	return
+}
+
+func Sum(data []byte) (ret [Size]byte) {
 	openssl.SHA512Bytes(data, &ret[0])
 	return
 }
