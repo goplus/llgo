@@ -3,9 +3,12 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
+	"io"
 )
 
 func main() {
-	data := []byte("This page intentionally left blank.")
-	fmt.Printf("% x", sha1.Sum(data))
+	h := sha1.New()
+	io.WriteString(h, "The fog is getting thicker!")
+	io.WriteString(h, "And Leon's getting laaarger!")
+	fmt.Printf("%x", h.Sum(nil))
 }

@@ -1,7 +1,6 @@
 package sha1
 
 // llgo:skipall
-
 import (
 	"hash"
 	"unsafe"
