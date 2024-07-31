@@ -58,6 +58,15 @@ jobs:
           )
           sudo apt-get install -y "${opt_deps[@]}"
 
+      - name: Install further optional dependencies for demos
+        run: |
+          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+          py_deps=(
+            numpy # for github.com/goplus/llgo/py/numpy
+            torch # for github.com/goplus/llgo/py/torch
+          )
+          pip3 install --break-system-packages "${py_deps[@]}"
+
       - name: Clang information
         run: |
           echo $PATH
@@ -73,27 +82,25 @@ jobs:
         run: go build -v ./...
 
       - name: Test
-        if: matrix.os != 'macos-latest'
+        if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -v ./...
 
       - name: Test with coverage
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Install
         run: go install ./...
 
       - name: LLGO tests
-        if: matrix.os != 'ubuntu-latest'
+        if: ${{!startsWith(matrix.os, 'ubuntu')}}
         run: |
           echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
           bash .github/workflows/test_llgo.sh
 
-      - name: Test _demo and _pydemo
-        run: |
-          set +e
-          bash .github/workflows/test_demo.sh
-          exit 0
+      - name: Test demos
+        continue-on-error: true
+        run: bash .github/workflows/test_demo.sh
 
       - name: Show test result
         run: cat result.md
