@@ -135,6 +135,8 @@ type aProgram struct {
 	rtMapTy    llvm.Type
 	rtChanTy   llvm.Type
 
+	tokenType llvm.Type
+
 	anyTy     Type
 	voidTy    Type
 	voidPtr   Type
@@ -165,6 +167,8 @@ type aProgram struct {
 	deferTy   Type
 	deferPtr  Type
 
+	tokenTy Type
+
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
 	pyListSetI   *types.Signature
@@ -187,6 +191,39 @@ type aProgram struct {
 	destructTy  *types.Signature
 	sigsetjmpTy *types.Signature
 	sigljmpTy   *types.Signature
+
+	// coroutine manipulation intrinsics (ordered by LLVM coroutine doc)
+	coDestroyTy *types.Signature
+	coResumeTy  *types.Signature
+	coDoneTy    *types.Signature
+	coPromiseTy *types.Signature
+
+	// coroutine structure intrinsics (ordered by LLVM coroutine doc)
+	coSizeI32Ty              *types.Signature
+	coSizeI64Ty              *types.Signature
+	coAlignI32Ty             *types.Signature
+	coAlignI64Ty             *types.Signature
+	coBeginTy                *types.Signature
+	coFreeTy                 *types.Signature
+	coAllocTy                *types.Signature
+	coNoopTy                 *types.Signature
+	coFrameTy                *types.Signature
+	coIDTy                   *types.Signature
+	coIDAsyncTy              *types.Signature
+	coIDRetconTy             *types.Signature
+	coIDRetconOnceTy         *types.Signature
+	coEndTy                  *types.Signature
+	coEndResultsTy           *types.Signature
+	coEndAsyncTy             *types.Signature
+	coSuspendTy              *types.Signature
+	coSaveTy                 *types.Signature
+	coSuspendAsyncTy         *types.Signature
+	coPrepareAsyncTy         *types.Signature
+	coSuspendRetconTy        *types.Signature
+	coAwaitSuspendFunctionTy *types.Signature
+	coAwaitSuspendVoidTy     *types.Signature
+	coAwaitSuspendBoolTy     *types.Signature
+	coAwaitSuspendHandleTy   *types.Signature
 
 	paramObjPtr_ *types.Var
 
@@ -435,6 +472,13 @@ func (p Program) Any() Type {
 		p.anyTy = p.rawType(tyAny)
 	}
 	return p.anyTy
+}
+
+func (p Program) Token() Type {
+	if p.tokenTy == nil {
+		p.tokenTy = &aType{p.tyToken(), rawType{types.Typ[types.Invalid]}, vkInvalid}
+	}
+	return p.tokenTy
 }
 
 /*

@@ -58,6 +58,7 @@ const (
 	vkIface
 	vkStruct
 	vkChan
+	vkToken
 )
 
 // -----------------------------------------------------------------------------
@@ -282,6 +283,13 @@ func (p Program) tyInt() llvm.Type {
 	return p.intType
 }
 
+func (p Program) tyToken() llvm.Type {
+	if p.tokenType.IsNil() {
+		p.tokenType = p.ctx.TokenType()
+	}
+	return p.tokenType
+}
+
 func llvmIntType(ctx llvm.Context, size int) llvm.Type {
 	if size <= 4 {
 		return ctx.Int32Type()
@@ -362,6 +370,9 @@ func (p Program) toType(raw types.Type) Type {
 			return &aType{p.rtString(), typ, vkString}
 		case types.UnsafePointer:
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
+		// TODO(lijie): temporary solution, should be replaced by a proper type
+		case types.Invalid:
+			return &aType{p.tyToken(), typ, vkInvalid}
 		}
 	case *types.Pointer:
 		elem := p.rawType(t.Elem())
@@ -444,7 +455,8 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 	if n > 0 {
 		ret = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			ret[i] = p.rawType(t.At(i).Type()).ll
+			pt := t.At(i)
+			ret[i] = p.rawType(pt.Type()).ll
 		}
 	}
 	return
