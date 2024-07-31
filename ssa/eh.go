@@ -221,7 +221,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	case DeferAlways:
 		// nothing to do
 	default:
-		panic("todo: DeferInLoop is not supported")
+		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
 	}
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
