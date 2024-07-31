@@ -72,11 +72,6 @@ func Sum512(data []byte) (ret [Size]byte) {
 	return
 }
 
-func Sum(data []byte) (ret [Size]byte) {
-	openssl.SHA512Bytes(data, &ret[0])
-	return
-}
-
 func New512_224() hash.Hash {
 	panic("todo: New512_224")
 }

@@ -66,8 +66,3 @@ func Sum256(data []byte) (ret [Size]byte) {
 	openssl.SHA256Bytes(data, &ret[0])
 	return
 }
-
-func Sum(data []byte) (ret [Size]byte) {
-	openssl.SHA256Bytes(data, &ret[0])
-	return
-}
