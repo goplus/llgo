@@ -294,6 +294,7 @@ Here are the Go packages that can be imported correctly:
 * [fmt](https://pkg.go.dev/fmt) (partially)
 * [reflect](https://pkg.go.dev/reflect) (partially)
 * [time](https://pkg.go.dev/time) (partially)
+* [encoding](https://pkg.go.dev/encoding)
 * [encoding/binary](https://pkg.go.dev/encoding/binary)
 * [encoding/hex](https://pkg.go.dev/encoding/hex)
 * [encoding/base32](https://pkg.go.dev/encoding/base32)
@@ -307,6 +308,8 @@ Here are the Go packages that can be imported correctly:
 * [crypto/rand](https://pkg.go.dev/crypto/rand) (partially)
 * [regexp](https://pkg.go.dev/regexp)
 * [regexp/syntax](https://pkg.go.dev/regexp/syntax)
+* [go/token](https://pkg.go.dev/go/token)
+* [go/scanner](https://pkg.go.dev/go/scanner)
 
 
 ## Dependencies
