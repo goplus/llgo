@@ -2,12 +2,17 @@ package sha1
 
 // llgo:skipall
 import (
+	"crypto"
 	"hash"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/openssl"
 )
+
+func init() {
+	crypto.RegisterHash(crypto.SHA1, New)
+}
 
 // The blocksize of SHA-1 in bytes.
 const BlockSize = 64

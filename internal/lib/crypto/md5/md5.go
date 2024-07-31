@@ -18,12 +18,17 @@ package md5
 
 // llgo:skipall
 import (
+	"crypto"
 	"hash"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/openssl"
 )
+
+func init() {
+	crypto.RegisterHash(crypto.MD5, New)
+}
 
 // The blocksize of MD5 in bytes.
 const BlockSize = 64

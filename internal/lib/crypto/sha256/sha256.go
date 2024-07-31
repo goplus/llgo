@@ -2,6 +2,7 @@ package sha256
 
 // llgo:skipall
 import (
+	"crypto"
 	"hash"
 	"unsafe"
 
@@ -9,14 +10,16 @@ import (
 	"github.com/goplus/llgo/c/openssl"
 )
 
+func init() {
+	crypto.RegisterHash(crypto.SHA224, New224)
+	crypto.RegisterHash(crypto.SHA256, New)
+}
+
 // The blocksize of SHA256 and SHA224 in bytes.
 const BlockSize = 64
 
 // The size of a SHA256 checksum in bytes.
 const Size = 32
-
-// The size of a SHA224 checksum in bytes.
-const Size224 = 28
 
 type digest256 struct {
 	ctx openssl.SHA256_CTX
@@ -46,19 +49,6 @@ func New() hash.Hash {
 	d := new(digest256)
 	d.ctx.Init()
 	return d
-}
-
-// New224 returns a new hash.Hash computing the SHA224 checksum.
-func New224() hash.Hash {
-	d := new(digest224)
-	d.ctx.Init()
-	return d
-}
-
-// Sum224 returns the SHA224 checksum of the data.
-func Sum224(data []byte) (ret [Size224]byte) {
-	openssl.SHA224Bytes(data, &ret[0])
-	return
 }
 
 // Sum256 returns the SHA256 checksum of the data.

@@ -1,6 +1,7 @@
 package sha512
 
 import (
+	"hash"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -28,4 +29,15 @@ func (d *digest384) Sum(in []byte) []byte {
 	hash := (*[Size]byte)(c.Alloca(Size))
 	d.ctx.Final((*byte)(unsafe.Pointer(hash)))
 	return append(in, hash[:]...)
+}
+
+func New384() hash.Hash {
+	d := new(digest384)
+	d.ctx.Init()
+	return d
+}
+
+func Sum384(data []byte) (ret [Size384]byte) {
+	openssl.SHA384Bytes(data, &ret[0])
+	return
 }
