@@ -2,12 +2,20 @@ package sha512
 
 // llgo:skipall
 import (
+	"crypto"
 	"hash"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/openssl"
 )
+
+func init() {
+	crypto.RegisterHash(crypto.SHA384, New384)
+	crypto.RegisterHash(crypto.SHA512, New)
+	crypto.RegisterHash(crypto.SHA512_224, New512_224)
+	crypto.RegisterHash(crypto.SHA512_256, New512_256)
+}
 
 const (
 	// Size is the size, in bytes, of a SHA-512 checksum.
@@ -56,34 +64,23 @@ func New() hash.Hash {
 	return d
 }
 
-func New384() hash.Hash {
-	d := new(digest384)
-	d.ctx.Init()
-	return d
-}
-
-func Sum384(data []byte) (ret [Size384]byte) {
-	openssl.SHA384Bytes(data, &ret[0])
-	return
-}
-
 func Sum512(data []byte) (ret [Size]byte) {
 	openssl.SHA512Bytes(data, &ret[0])
 	return
 }
 
 func New512_224() hash.Hash {
-	panic("todo: New512_224")
-}
-
-func New512_256() hash.Hash {
-	panic("todo: New512_256")
+	panic("todo: crypto/sha512.New512_224")
 }
 
 func Sum512_224(data []byte) [Size224]byte {
-	panic("todo: Sum512_224")
+	panic("todo: crypto/sha512.Sum512_224")
+}
+
+func New512_256() hash.Hash {
+	panic("todo: crypto/sha512.New512_256")
 }
 
 func Sum512_256(data []byte) [Size256]byte {
-	panic("todo: Sum512_256")
+	panic("todo: crypto/sha512.Sum512_256")
 }
