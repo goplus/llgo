@@ -304,6 +304,7 @@ Here are the Go packages that can be imported correctly:
 * [hash/crc32](https://pkg.go.dev/hash/crc32) (partially)
 * [hash/crc64](https://pkg.go.dev/hash/crc64)
 * [crypto/md5](https://pkg.go.dev/crypto/md5)
+* [crypto/rand](https://pkg.go.dev/crypto/rand) (partially)
 * [regexp](https://pkg.go.dev/regexp)
 * [regexp/syntax](https://pkg.go.dev/regexp/syntax)
 
