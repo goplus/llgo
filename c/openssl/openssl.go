@@ -16,10 +16,22 @@
 
 package openssl
 
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/c"
+)
+
 // -----------------------------------------------------------------------------
 
 const (
 	LLGoPackage = "link: $(pkg-config --libs openssl); -lssl -lcrypto"
 )
+
+//go:linkname Free C.OPENSSL_free
+func Free(ptr unsafe.Pointer)
+
+//go:linkname FreeCStr C.OPENSSL_free
+func FreeCStr(ptr *c.Char)
 
 // -----------------------------------------------------------------------------
