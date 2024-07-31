@@ -97,6 +97,7 @@ type aDefer struct {
 	bitsPtr   Expr         // pointer to defer bits
 	rethPtr   Expr         // next block of Rethrow
 	rundPtr   Expr         // next block of RunDefers
+	argsPtr   Expr         // defer func and args
 	procBlk   BasicBlock   // deferProc block
 	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
 	rundsNext []BasicBlock // next blocks of RunDefers
@@ -133,11 +134,13 @@ const (
 	// 2: link *Defer
 	// 3: reth voidptr: block address after Rethrow
 	// 4: rund voidptr: block address after RunDefers
+	// 5: args []unsafe.Pointer: defer func and args
 	deferSigjmpbuf = iota
 	deferBits
 	deferLink
 	deferRethrow
 	deferRunDefers
+	deferArgs
 )
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
@@ -167,6 +170,8 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rethPtr := b.FieldAddr(deferData, deferRethrow)
 		rundPtr := b.FieldAddr(deferData, deferRunDefers)
+		argsPtr := b.FieldAddr(deferData, deferArgs)
+		b.Store(argsPtr, b.MakeSlice(prog.Slice(prog.VoidPtr()), prog.Val(0), prog.Val(0)))
 
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
@@ -184,6 +189,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			bitsPtr:   bitsPtr,
 			rethPtr:   rethPtr,
 			rundPtr:   rundPtr,
+			argsPtr:   argsPtr,
 			procBlk:   procBlk,
 			panicBlk:  panicBlk,
 			rundsNext: []BasicBlock{rethrowBlk},
@@ -212,12 +218,11 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	if debugInstr {
 		logCall("Defer", fn, args)
 	}
-	var prog Program
+	var prog = b.Prog
 	var nextbit Expr
 	var self = b.getDefer(kind)
 	switch kind {
 	case DeferInCond:
-		prog = b.Prog
 		next := self.nextBit
 		self.nextBit++
 		bits := b.Load(self.bitsPtr)
@@ -228,18 +233,54 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	default:
 		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
 	}
+
+	var offset int
+	if fn.kind != vkBuiltin {
+		offset = 1
+	}
+	typs := make([]Type, len(args)+offset)
+	flds := make([]llvm.Value, len(args)+offset)
+	if offset == 1 {
+		typs[0] = fn.Type
+		flds[0] = fn.impl
+	}
+	for i, arg := range args {
+		typs[i+offset] = arg.Type
+		flds[i+offset] = arg.impl
+	}
+	t := prog.Struct(typs...)
+	voidPtr := prog.VoidPtr()
+	ptr := Expr{b.aggregateMalloc(t, flds...), voidPtr}
+	b.Store(self.argsPtr, b.BuiltinCall("append", b.Load(self.argsPtr), b.SliceLit(prog.Slice(voidPtr), ptr)))
+	index := len(self.stmts)
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
 		case DeferInCond:
 			zero := prog.Val(uintptr(0))
 			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
 			b.IfThen(has, func() {
-				b.Call(fn, args...)
+				ptr := b.Load(b.IndexAddr(b.Load(self.argsPtr), b.Prog.Val(index)))
+				b.callDefer(fn, ptr, t, len(args))
 			})
 		case DeferAlways:
-			b.Call(fn, args...)
+			ptr := b.Load(b.IndexAddr(b.Load(self.argsPtr), b.Prog.Val(index)))
+			b.callDefer(fn, ptr, t, len(args))
 		}
 	})
+}
+
+func (b Builder) callDefer(fn Expr, ptr Expr, t Type, n int) {
+	data := Expr{llvm.CreateLoad(b.impl, t.ll, ptr.impl), t}
+	args := make([]Expr, n)
+	var offset int
+	if fn.kind != vkBuiltin {
+		fn = b.getField(data, 0)
+		offset = 1
+	}
+	for i := 0; i < n; i++ {
+		args[i] = b.getField(data, i+offset)
+	}
+	b.Call(fn, args...)
 }
 
 // RunDefers emits instructions to run deferred instructions.
