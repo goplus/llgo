@@ -336,6 +336,28 @@ func ParseError() c.Int
     // llgo:link (*Reader).INIReaderInit C.INIReaderInit
     func (r *Reader) INIReaderInit() {}
     ```
+- Destructor
+
+    Similar to constructors, destructors are typically hidden, so they also need to be wrapped. The wrapping method for destructors differs from that of constructors as follows:
+    In the C++ wrapper file (e.g., cppWrap.cpp):
+  ```c
+    void INIReaderDispose(INIReader* r) {
+        r->~INIReader();
+    }
+  ```
+    This wrapper function explicitly calls the object's destructor. By using extern "C", we ensure that this function can be called by C code, allowing Go to link to it.
+    In the Go file:
+  ```go
+    // llgo:link (*Reader).Dispose C.INIReaderDispose
+    func (r *Reader) Dispose() {}
+  ```
+    Here we link the Go Dispose method to the C++ wrapped INIReaderDispose function.
+    In actual usage:
+  ```go
+    reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
+    defer reader.Dispose()
+  ```
+    We use defer to ensure that the Dispose method is called when the reader object goes out of scope, thus properly releasing resources.
 - Class Methods
 
   For general methods of the class, directly use `llgo:link` to link:
@@ -348,14 +370,7 @@ func ParseError() c.Int
   ```
 
   Template or inline methods of the class will be introduced in the next section.
-- Destructor
 
-  Similar to the constructor process, after creating the class, use `defer` to call it explicitly:
-
-  ```go
-    reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
-    defer reader.Dispose()
-  ```
 
 #### Templates and Inlines
 
