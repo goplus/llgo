@@ -12,8 +12,8 @@ const BUFFER_SIZE = 1024
 
 var (
 	loop     *libuv.Loop
-	openReq  *libuv.Fs
-	closeReq *libuv.Fs
+	openReq  libuv.Fs
+	closeReq libuv.Fs
 
 	buffer [BUFFER_SIZE]c.Char
 	iov    libuv.Buf
@@ -27,16 +27,8 @@ func main() {
 	// Initialize the loop
 	loop = libuv.DefaultLoop()
 
-	// Initialize the requests
-	openReq = libuv.FsNew()
-	closeReq = libuv.FsNew()
-	if openReq == nil || closeReq == nil {
-		c.Fprintf(c.Stderr, c.Str("Error in FsNew\n"))
-		return
-	}
-
 	// Open the file
-	libuv.FsOpen(loop, openReq, c.Str("example.txt"), os.O_RDONLY, 0, onOpen)
+	libuv.FsOpen(loop, &openReq, c.Str("example.txt"), os.O_RDONLY, 0, onOpen)
 
 	// Run the loop
 	result := libuv.Run(loop, libuv.RUN_DEFAULT)
@@ -69,14 +61,14 @@ func onOpen(req *libuv.Fs) {
 }
 
 func readFile() {
-	// Initialize the request
-	readReq := libuv.FsNew()
+	// Initialize the request every time
+	var readReq libuv.Fs
 
 	// Read the file
-	readRes := libuv.FsRead(loop, readReq, file, &iov, 1, -1, onRead)
+	readRes := libuv.FsRead(loop, &readReq, file, &iov, 1, -1, onRead)
 	if readRes != 0 {
 		c.Printf(c.Str("Error in FsRead: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(readRes)), readRes)
-		libuv.FsReqCleanup(readReq)
+		libuv.FsReqCleanup(&readReq)
 		libuv.LoopClose(loop)
 	}
 }
@@ -89,7 +81,7 @@ func onRead(req *libuv.Fs) {
 		c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(libuv.Errno(libuv.FsGetResult(req))))
 	} else if libuv.FsGetResult(req) == 0 {
 		// Close the file
-		closeRes := libuv.FsClose(loop, closeReq, libuv.File(libuv.FsGetResult(openReq)), onClose)
+		closeRes := libuv.FsClose(loop, &closeReq, libuv.File(libuv.FsGetResult(&openReq)), onClose)
 		if closeRes != 0 {
 			c.Printf(c.Str("Error in FsClose: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(closeRes)), closeRes)
 			libuv.LoopClose(loop)
@@ -114,8 +106,8 @@ func onClose(req *libuv.Fs) {
 
 func cleanup() {
 	// Cleanup the requests
-	libuv.FsReqCleanup(openReq)
-	libuv.FsReqCleanup(closeReq)
+	libuv.FsReqCleanup(&openReq)
+	libuv.FsReqCleanup(&closeReq)
 	// Close the loop
 	result := libuv.LoopClose(loop)
 	if result != 0 {
