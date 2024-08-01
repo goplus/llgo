@@ -62,13 +62,16 @@ func (z *Int) SetInt64(x int64) *Int {
 		a.SetNegative(1)
 	} else {
 		a.SetWord(openssl.BN_ULONG(x))
+		a.SetNegative(0)
 	}
 	return z
 }
 
 // SetUint64 sets z to x and returns z.
 func (z *Int) SetUint64(x uint64) *Int {
-	(*openssl.BIGNUM)(z).SetWord(openssl.BN_ULONG(x))
+	a := (*openssl.BIGNUM)(z)
+	a.SetWord(openssl.BN_ULONG(x))
+	a.SetNegative(0)
 	return z
 }
 

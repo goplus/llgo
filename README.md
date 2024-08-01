@@ -269,6 +269,7 @@ Here are the Go packages that can be imported correctly:
 * [unicode/utf8](https://pkg.go.dev/unicode/utf8)
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
 * [math](https://pkg.go.dev/math)
+* [math/big](https://pkg.go.dev/math/big) (partially)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math/cmplx](https://pkg.go.dev/math/cmplx)
 * [math/rand](https://pkg.go.dev/math/rand)
