@@ -27,7 +27,7 @@ int ini_parse(const char* filename, ini_handler handler, void* user);
 
 3. Create the corresponding Go file
 
-```c
+```bash
 inih/
 ├── _demo
    ├── inih_demo
@@ -296,46 +296,6 @@ func ParseError() c.Int
       Unused [32]byte
   }
   ```
-- Constructor
-
-  - Constructor is explicitly declared in the class (can find the corresponding symbol in the dynamic library):
-
-    Bind to the `InitFromBuffer` method of the struct and call it in the `NewReaderFile` function to initialize the class and return the class for Go to use.
-
-    ```go
-    // NewReaderFile creates a new INIReader instance.
-    func NewReaderFile(fileName *std.String) (ret Reader) {
-        ret.InitFromFile(fileName)
-        return
-    }
-    /*
-    class INIReader
-    {
-    public:
-        explicit INIReader(const char *buffer, size_t buffer_size);
-    }
-    */
-
-    // llgo:link (*Reader).InitFromBuffer C._ZN9INIReaderC1EPKcm
-    func (r *Reader) InitFromBuffer(buffer *c.Char, bufferSize uintptr) {}
-    ```
-  - Constructor is not explicitly declared in the class (cannot find the corresponding symbol in the dynamic library)
-
-    If the destructor is not explicitly declared in the source code, the compiler will automatically generate a default destructor. Use `extern "C"` to wrap it in cppWrap.cpp:
-
-    ```c
-    extern "C" void INIReaderInit(INIReader* r)
-    {
-    	r->INIReader();
-    }
-    ```
-
-    Link in Go:
-
-    ```go
-    // llgo:link (*Reader).INIReaderInit C.INIReaderInit
-    func (r *Reader) INIReaderInit() {}
-    ```
 - Class Methods
 
   For general methods of the class, directly use `llgo:link` to link:
@@ -346,22 +306,66 @@ func ParseError() c.Int
   	return 0
   }
   ```
+- Constructor
 
-  Template or inline methods of the class will be introduced in the next section.
+  - Constructor is explicitly declared in the class (can find the corresponding symbol in the dynamic library):
+
+    ```cpp
+    class INIReader {
+    public:
+        // Construct INIReader and parse given filename.
+        INI_API explicit INIReader(const std::string &filename);
+    }
+    ```
+    Bind to the `InitFromFile` method of the struct and call it in the `NewReaderFile` function to initialize the class and return the class for Go to use.
+
+    The following long string starting with `_ZN9INI` is the corresponding function prototype in the symbol table for `INIReader(const std::string &filename)`
+    ```go
+    // llgo:link (*Reader).InitFromFile C._ZN9INIReaderC1ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE
+    func (r *Reader) InitFromFile(fileName *std.String) {}
+
+    // NewReaderFile creates a new INIReader instance.
+    func NewReaderFile(fileName *std.String) (ret Reader) {
+        ret.InitFromFile(fileName)
+        return
+    }
+    ```
+  - Constructor is not explicitly declared in the class (cannot find the corresponding symbol in the dynamic library)
+  
+    In typical implementations of the inih library, directly invoking implicit constructors to instantiate reader objects is not recommended. For detailed examples of how bindings effectively handle non-exported symbols, please refer to the [Templates and Inlines](#templates-and-inlines) section.
+
 - Destructor
 
-  Similar to the constructor process, after creating the class, use `defer` to call it explicitly:
-
-  ```go
+    The accessibility of destructors in dynamic libraries depends on their definition method. Destructors that are explicitly declared in header files and implemented as non-inline functions in .cpp files typically appear in the dynamic library's symbol table. These destructors can be directly linked, consistent with the linking method of general class methods (see "Class Methods" section).
+    
+    For destructors that do not meet these conditions (such as those explicitly declared in header files but implemented inline in .cpp files) and consequently do not appear in the dynamic library's symbol table, a wrapper layer implementation is required. This wrapper in the C++ wrapper file (e.g., cppWrap.cpp) looks like:
+    ```cpp
+    extern "C" {
+        void INIReaderDispose(INIReader* r) {
+            r->~INIReader();
+        }
+    } // extern "C"
+    ```
+    This wrapper function explicitly calls the object's destructor. By using extern "C", we ensure that this function can be called by C code, allowing Go to link to it.
+    In the Go file:
+    ```go
+    // llgo:link (*Reader).Dispose C.INIReaderDispose
+    func (r *Reader) Dispose() {}
+    ```
+    Here we link the Go Dispose method to the C++ wrapped INIReaderDispose function.
+    In actual usage:
+    We use defer to ensure that the Dispose method is called when the reader object goes out of scope, thus properly releasing resources.
+    ```go
     reader := inih.NewReader(c.Str(buf), uintptr(len(buf)))
     defer reader.Dispose()
-  ```
+    ```
+    This situation is analogous to the handling of inline functions and templates described in the following section.
 
 #### Templates and Inlines
 
 Templates or inlines do not generate symbols in dynamic libraries (dylib) (default constructors and destructors). To ensure that you can use C style symbols to link template or inline functions, create a C++ file and wrap it with `extern "C"`, then bind the functions directly in Go.
 
-```c
+```cpp
 // Using std::string as an example, not needed for migrating inih
 extern "C" void stdStringInitFromCStrLen(std::string* s, const char* cstr, size_t len) {
 	new(s) std::string(cstr, len);
