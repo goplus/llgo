@@ -1,5 +1,21 @@
 How to support a C/C++ Library
 =====
+## Symbol Visibility
+When llgo needs to link C or C++ libraries, symbol visibility is a crucial concept. It determines how C/C++ functions and methods are linked and utilized within llgo. Symbol visibility significantly impacts the handling of symbols in llgo bindings: visible symbols can typically be directly linked, while invisible symbols require wrapper functions.
+
+The accessibility of symbols, particularly destructors, in dynamic libraries depends on their definition method. For instance, destructors that are explicitly declared in header files and implemented as non-inline functions in .cpp files typically appear in the dynamic library's symbol table, making them visible and directly linkable.
+
+**Visible Symbols:** These are symbols that can be found in the dynamic library. They typically represent public API functions and methods.
+
+* Example: A class constructor explicitly declared in the header and implemented in a .cpp file.
+
+* Example: A non-inline destructor declared in the header and implemented in a .cpp file.
+
+**Invisible Symbols:** These are symbols that cannot be found in the dynamic library. This may include inline functions, templates, or certain constructors and destructors.
+
+* Example: A default constructor not explicitly declared.
+
+* Example: An inline destructor or a compiler-generated default destructor.
 
 ## Support a C Library
 
@@ -308,7 +324,7 @@ func ParseError() c.Int
   ```
 - Constructor
 
-  - Constructor is explicitly declared in the class (can find the corresponding symbol in the dynamic library):
+  - Explicitly Constructor:
 
     ```cpp
     class INIReader {
@@ -330,15 +346,14 @@ func ParseError() c.Int
         return
     }
     ```
-  - Constructor is not explicitly declared in the class (cannot find the corresponding symbol in the dynamic library)
+  - Implicitly Constructor 
   
     In typical implementations of the inih library, directly invoking implicit constructors to instantiate reader objects is not recommended. For detailed examples of how bindings effectively handle non-exported symbols, please refer to the [Templates and Inlines](#templates-and-inlines) section.
 
 - Destructor
 
-    The accessibility of destructors in dynamic libraries depends on their definition method. Destructors that are explicitly declared in header files and implemented as non-inline functions in .cpp files typically appear in the dynamic library's symbol table. These destructors can be directly linked, consistent with the linking method of general class methods (see "Class Methods" section).
-    
-    For destructors that do not meet these conditions (such as those explicitly declared in header files but implemented inline in .cpp files) and consequently do not appear in the dynamic library's symbol table, a wrapper layer implementation is required. This wrapper in the C++ wrapper file (e.g., cppWrap.cpp) looks like:
+    Explicitly declared and non-inline destructors can be directly linked, consistent with the linking method of general class methods (see "Class Methods" section). For destructors that do not appear in the dynamic library's symbol table, a wrapper layer implementation is required. This wrapper in the C++ wrapper file (e.g., cppWrap.cpp) looks like:
+
     ```cpp
     extern "C" {
         void INIReaderDispose(INIReader* r) {
