@@ -69,7 +69,7 @@ type File c.Int
 /* Handle types. */
 
 type Fs struct {
-	Unused [0]byte
+	Unused [440]byte
 }
 
 type FsEvent struct {
