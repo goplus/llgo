@@ -65,8 +65,22 @@ type UdpFlags c.Int
 
 /* Handle types. */
 
+// TODO(spongehah): Handle
+type Handle struct {
+	Data   c.Pointer
+	Unused [88]byte
+}
+
+// TODO(spongehah): Stream
+type Stream struct {
+	Data   c.Pointer
+	Unused [256]byte
+}
+
+// TODO(spongehah): Tcp
 type Tcp struct {
-	Unused [264]byte
+	Data   c.Pointer
+	Unused [256]byte
 }
 
 type Udp struct {
@@ -75,7 +89,31 @@ type Udp struct {
 
 /* Request types. */
 
+type Req struct {
+	Unused [0]byte
+}
+
 type UdpSend struct {
+	Unused [0]byte
+}
+
+// TODO(spongehah): Write
+type Write struct {
+	Data   c.Pointer
+	Unused [184]byte
+}
+
+// TODO(spongehah): Connect
+type Connect struct {
+	Data   c.Pointer
+	Unused [88]byte
+}
+
+type GetAddrInfo struct {
+	Unused [0]byte
+}
+
+type GetNameInfo struct {
 	Unused [0]byte
 }
 
@@ -94,6 +132,179 @@ type UdpSendCb func(req *UdpSend, status c.Int)
 
 // llgo:type C
 type UdpRecvCb func(handle *Udp, nread c.Long, buf *Buf, addr *net.SockAddr, flags c.Uint)
+
+// llgo:type C
+type ReadCb func(stream *Stream, nread c.Long, buf *Buf)
+
+// llgo:type C
+type WriteCb func(req *Write, status c.Int)
+
+// llgo:type C
+type ConnectionCb func(server *Stream, status c.Int)
+
+// ----------------------------------------------
+
+/* Handle related function and method */
+
+// llgo:link (*Handle).Ref C.uv_ref
+func (handle *Handle) Ref() {}
+
+// llgo:link (*Handle).Unref C.uv_unref
+func (handle *Handle) Unref() {}
+
+// llgo:link (*Handle).HasRef C.uv_has_ref
+func (handle *Handle) HasRef() c.Int {
+	return 0
+}
+
+//go:linkname HandleSize C.uv_handle_size
+func HandleSize(handleType HandleType) uintptr
+
+// llgo:link (*Handle).GetType C.uv_handle_get_type
+func (handle *Handle) GetType() HandleType {
+	return 0
+}
+
+//go:linkname HandleTypeName C.uv_handle_type_name
+func HandleTypeName(handleType HandleType) *c.Char
+
+// llgo:link (*Handle).GetData C.uv_handle_get_data
+func (handle *Handle) GetData() c.Pointer {
+	return nil
+}
+
+// llgo:link (*Handle).GetLoop C.uv_handle_get_loop
+func (handle *Handle) GetLoop() *Loop {
+	return nil
+}
+
+// llgo:link (*Handle).SetData C.uv_handle_set_data
+func (handle *Handle) SetData(data c.Pointer) {}
+
+// llgo:link (*Handle).IsActive C.uv_is_active
+func (handle *Handle) IsActive() c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).Close C.uv_close
+func (handle *Handle) Close(closeCb CloseCb) {}
+
+// llgo:link (*Handle).SendBufferSize C.uv_send_buffer_size
+func (handle *Handle) SendBufferSize(value *c.Int) c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).RecvBufferSize C.uv_recv_buffer_size
+func (handle *Handle) RecvBufferSize(value *c.Int) c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).Fileno C.uv_fileno
+func (handle *Handle) Fileno(fd *OsFd) c.Int {
+	return 0
+}
+
+//go:linkname Pipe C.uv_pipe
+func Pipe(fds [2]File, readFlags c.Int, writeFlags c.Int) c.Int {
+	return 0
+}
+
+//go:linkname Socketpair C.uv_socketpair
+func Socketpair(_type c.Int, protocol c.Int, socketVector [2]OsSock, flag0 c.Int, flag1 c.Int) c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).IsClosing C.uv_is_closing
+func (handle *Handle) IsClosing() c.Int {
+	return 0
+}
+
+// ----------------------------------------------
+
+/* Req related function and method */
+
+//go:linkname ReqSize C.uv_req_size
+func ReqSize(reqType ReqType) uintptr
+
+// llgo:link (*Req).GetData C.uv_req_get_data
+func (req *Req) GetData() c.Pointer {
+	return nil
+}
+
+// llgo:link (*Req).SetData C.uv_handle_set_data
+func (req *Req) SetData(data c.Pointer) {}
+
+// llgo:link (*Req).GetType C.uv_req_get_type
+func (req *Req) GetType() ReqType {
+	return 0
+}
+
+//go:linkname TypeName C.uv_req_type_name
+func TypeName(reqType ReqType) *c.Char
+
+// ----------------------------------------------
+
+/* Stream related function and method */
+
+// llgo:link (*Stream).GetWriteQueueSize C.uv_stream_get_write_queue_size
+func (stream *Stream) GetWriteQueueSize() uintptr {
+	return 0
+}
+
+// llgo:link (*Stream).Listen C.uv_listen
+func (stream *Stream) Listen(backlog c.Int, connectionCb ConnectionCb) c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).Accept C.uv_accept
+func (server *Stream) Accept(client *Stream) c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).StartRead C.uv_read_start
+func (stream *Stream) StartRead(allocCb AllocCb, readCb ReadCb) c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).StopRead C.uv_read_stop
+func (stream *Stream) StopRead() c.Int {
+	return 0
+}
+
+// llgo:link (*Write).Write C.uv_write
+func (req *Write) Write(stream *Stream, bufs *Buf, nbufs c.Uint, writeCb WriteCb) c.Int {
+	return 0
+}
+
+// llgo:link (*Write).Write2 C.uv_write2
+func (req *Write) Write2(stream *Stream, bufs *Buf, nbufs c.Uint, sendStream *Stream, writeCb WriteCb) c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).TryWrite C.uv_try_write
+func (stream *Stream) TryWrite(bufs *Buf, nbufs c.Uint) c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).TryWrite2 C.uv_try_write2
+func (stream *Stream) TryWrite2(bufs *Buf, nbufs c.Uint, sendStream *Stream) c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).IsReadable C.uv_is_readable
+func (stream *Stream) IsReadable() c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).IsWritable C.uv_is_writable
+func (stream *Stream) IsWritable() c.Int {
+	return 0
+}
+
+// llgo:link (*Stream).SetBlocking C.uv_stream_set_blocking
+func (stream *Stream) SetBlocking(blocking c.Int) c.Int {
+	return 0
+}
 
 // ----------------------------------------------
 
@@ -273,3 +484,20 @@ func InetNtop(af c.Int, src c.Pointer, dst *c.Char, size uintptr) c.Int
 
 //go:linkname InetPton C.uv_inet_pton
 func InetPton(af c.Int, src *c.Char, dst c.Pointer) c.Int
+
+// ----------------------------------------------
+
+/* Getaddrinfo related function and method */
+
+//go:linkname Getaddrinfo C.uv_getaddrinfo
+func Getaddrinfo(loop *Loop, req *GetAddrInfo, getaddrinfoCb GetaddrinfoCb, node *c.Char, service *c.Char, hints *net.AddrInfo) c.Int
+
+//go:linkname Freeaddrinfo C.uv_freeaddrinfo
+func Freeaddrinfo(addrInfo *net.AddrInfo)
+
+// ----------------------------------------------
+
+/* Getnameinfo related function and method */
+
+//go:linkname Getnameinfo C.uv_getnameinfo
+func Getnameinfo(loop *Loop, req *GetNameInfo, getnameinfoCb GetnameinfoCb, addr *net.SockAddr, flags c.Int) c.Int
