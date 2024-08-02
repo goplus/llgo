@@ -277,6 +277,7 @@ Here are the Go packages that can be imported correctly:
 * [context](https://pkg.go.dev/context)
 * [io](https://pkg.go.dev/io)
 * [io/fs](https://pkg.go.dev/io/fs)
+* [io/ioutil](https://pkg.go.dev/io/ioutil)
 * [log](https://pkg.go.dev/log)
 * [flag](https://pkg.go.dev/flag)
 * [sort](https://pkg.go.dev/sort)
