@@ -31,3 +31,6 @@ func SignalStart(handle *Signal, cb SignalCb, signum c.Int) c.Int
 
 //go:linkname SignalStartOneshot C.uv_signal_start_oneshot
 func SignalStartOneshot(handle *Signal, cb SignalCb, signum c.Int) c.Int
+
+//go:linkname SignalStop C.uv_signal_stop
+func SignalStop(handle *Signal) c.Int

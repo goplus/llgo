@@ -158,6 +158,9 @@ func LibraryShutdown()
 //go:linkname ReplaceAllocator C.uv_replace_allocator
 func ReplaceAllocator(mallocFunc MallocFunc, reallocFunc ReallocFunc, callocFunc CallocFunc, freeFunc FreeFunc) c.Int
 
+//go:linkname Close C.uv_close
+func Close(handle *Handle, closeCb CloseCb)
+
 // ----------------------------------------------
 
 // llgo:link (*Shutdown).Shutdown C.uv_shutdown
