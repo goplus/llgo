@@ -1,12 +1,16 @@
 //go:build !EVP_MD
 
-package internal
+package evp
 
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/internal/sslcrypto"
+	"github.com/goplus/llgo/c/openssl/pub"
 )
+
+type OSSL_LIB_CTX sslcrypto.OSSL_LIB_CTX
 
 const (
 	EVP_MAX_MD_SIZE         = 64
@@ -28,30 +32,30 @@ const (
 	EVP_PKS_DSA  = 0x0200
 	EVP_PKS_EC   = 0x0400
 
-	EVP_PKEY_NONE     = NID_undef
-	EVP_PKEY_RSA      = NID_rsaEncryption
-	EVP_PKEY_RSA2     = NID_rsa
-	EVP_PKEY_RSA_PSS  = NID_rsassaPss
-	EVP_PKEY_DSA      = NID_dsa
-	EVP_PKEY_DSA1     = NID_dsa_2
-	EVP_PKEY_DSA2     = NID_dsaWithSHA
-	EVP_PKEY_DSA3     = NID_dsaWithSHA1
-	EVP_PKEY_DSA4     = NID_dsaWithSHA1_2
-	EVP_PKEY_DH       = NID_dhKeyAgreement
-	EVP_PKEY_DHX      = NID_dhpublicnumber
-	EVP_PKEY_EC       = NID_X9_62_id_ecPublicKey
-	EVP_PKEY_SM2      = NID_sm2
-	EVP_PKEY_HMAC     = NID_hmac
-	EVP_PKEY_CMAC     = NID_cmac
-	EVP_PKEY_SCRYPT   = NID_id_scrypt
-	EVP_PKEY_TLS1_PRF = NID_tls1_prf
-	EVP_PKEY_HKDF     = NID_hkdf
-	EVP_PKEY_POLY1305 = NID_poly1305
-	EVP_PKEY_SIPHASH  = NID_siphash
-	EVP_PKEY_X25519   = NID_X25519
-	EVP_PKEY_ED25519  = NID_ED25519
-	EVP_PKEY_X448     = NID_X448
-	EVP_PKEY_ED448    = NID_ED448
+	EVP_PKEY_NONE     = pub.NID_undef
+	EVP_PKEY_RSA      = pub.NID_rsaEncryption
+	EVP_PKEY_RSA2     = pub.NID_rsa
+	EVP_PKEY_RSA_PSS  = pub.NID_rsassaPss
+	EVP_PKEY_DSA      = pub.NID_dsa
+	EVP_PKEY_DSA1     = pub.NID_dsa_2
+	EVP_PKEY_DSA2     = pub.NID_dsaWithSHA
+	EVP_PKEY_DSA3     = pub.NID_dsaWithSHA1
+	EVP_PKEY_DSA4     = pub.NID_dsaWithSHA1_2
+	EVP_PKEY_DH       = pub.NID_dhKeyAgreement
+	EVP_PKEY_DHX      = pub.NID_dhpublicnumber
+	EVP_PKEY_EC       = pub.NID_X9_62_id_ecPublicKey
+	EVP_PKEY_SM2      = pub.NID_sm2
+	EVP_PKEY_HMAC     = pub.NID_hmac
+	EVP_PKEY_CMAC     = pub.NID_cmac
+	EVP_PKEY_SCRYPT   = pub.NID_id_scrypt
+	EVP_PKEY_TLS1_PRF = pub.NID_tls1_prf
+	EVP_PKEY_HKDF     = pub.NID_hkdf
+	EVP_PKEY_POLY1305 = pub.NID_poly1305
+	EVP_PKEY_SIPHASH  = pub.NID_siphash
+	EVP_PKEY_X25519   = pub.NID_X25519
+	EVP_PKEY_ED25519  = pub.NID_ED25519
+	EVP_PKEY_X448     = pub.NID_X448
+	EVP_PKEY_ED448    = pub.NID_ED448
 	EVP_PKEY_KEYMGMT  = -1
 
 	/*

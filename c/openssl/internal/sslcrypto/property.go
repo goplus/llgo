@@ -1,10 +1,14 @@
-package internal
+package sslcrypto
 
-import "github.com/goplus/llgo/c"
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/c"
+)
 
 type ossl_method_store_st struct {
 	Ctx  *OSSL_LIB_CTX
-	Algs *TodoStruct
+	Algs *unsafe.Pointer //todo
 
 	/*
 	 * Lock to protect the |algs| array from concurrent writing, when

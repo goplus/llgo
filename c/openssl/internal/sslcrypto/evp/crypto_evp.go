@@ -1,10 +1,17 @@
-package internal
+package evp
 
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/inter"
+	"github.com/goplus/llgo/c/openssl/pub"
 )
+
+type CRYPTO_REF_COUNT inter.CRYPTO_REF_COUNT
+type OSSL_PARAM pub.OSSL_PARAM
+
+type ASN1_TYPE pub.ASN1_TYPE
 
 type InitFN func(ctx *EVP_MD_CTX) c.Int
 type UpdateFN func(ctx *EVP_MD_CTX, data unsafe.Pointer, count uintptr) c.Int
@@ -34,7 +41,7 @@ type evp_md_st struct {
 	NameId            c.Int
 	TypeName          *c.Char
 	Description       *c.Char
-	Prov              *OSSL_PROVIDER //tocheck
+	Prov              *OSSL_PROVIDER //todo
 	RefCnt            CRYPTO_REF_COUNT
 	NewCtx            *OSSL_FUNC_digest_newctx_fn
 	DInit             *OSSL_FUNC_digest_init_fn
@@ -54,7 +61,9 @@ type evp_md_st struct {
 
 type EVP_MD evp_md_st
 
-type evp_pkey_ctx_st TodoStruct
+type evp_pkey_ctx_st struct {
+	//todo
+}
 
 type EVP_PKEY_CTX evp_pkey_ctx_st
 

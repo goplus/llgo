@@ -1,10 +1,20 @@
-package internal
+//go:build OPENSSL_THREADS
+
+package sslcrypto
 
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/internal/inter"
+	"github.com/goplus/llgo/c/openssl/internal/pub"
 )
+
+type CRYPTO_RWLOCK pub.CRYPTO_RWLOCK
+type CRYPTO_THREAD_LOCAL pub.CRYPTO_THREAD_LOCAL
+
+type OSSL_EX_DATA_GLOBAL inter.OSSL_EX_DATA_GLOBAL
+type OSSL_METHOD_STORE inter.OSSL_METHOD_STORE
 
 type ossl_lib_ctx_st struct {
 	Lock, RandCrngtLock *CRYPTO_RWLOCK
@@ -31,6 +41,8 @@ type ossl_lib_ctx_st struct {
 	StoreLoaderStore *OSSL_METHOD_STORE //#ifndef FIPS_MODULE
 	SelfTestCb       unsafe.Pointer     //#ifndef FIPS_MODULE
 	IndicatorCb      unsafe.Pointer     //#ifndef FIPS_MODULE
+
+	Threads unsafe.Pointer
 
 	RandCrngt       unsafe.Pointer
 	CompMethods     *TodoStruct

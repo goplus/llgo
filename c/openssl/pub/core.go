@@ -1,4 +1,4 @@
-package internal
+package pub
 
 import (
 	"unsafe"
@@ -19,7 +19,9 @@ type ossl_dispatch_st struct {
 
 type OSSL_DISPATCH ossl_dispatch_st
 
-type ossl_core_handle_st TodoStruct
+type ossl_core_handle_st struct {
+	//todo
+}
 
 type OSSL_CORE_HANDLE ossl_core_handle_st
 

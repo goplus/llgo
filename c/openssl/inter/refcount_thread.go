@@ -1,6 +1,6 @@
 //go:build OPENSSL_THREADS
 
-package internal
+package inter
 
 import "github.com/goplus/llgo/c"
 

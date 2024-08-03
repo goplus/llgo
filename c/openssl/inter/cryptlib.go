@@ -1,4 +1,8 @@
-package internal
+package inter
+
+import "github.com/goplus/llgo/c/openssl/pub"
+
+type CRYPTO_RWLOCK pub.CRYPTO_RWLOCK
 
 const (
 	CRYPTO_EX_INDEX__COUNT = 18
@@ -9,7 +13,7 @@ const (
  * a structure allows future changes.
  */
 type ex_callbacks_st struct {
-	//meth *STACK_OF(EX_CALLBACK); todo
+	//todo
 }
 
 type EX_CALLBACKS ex_callbacks_st

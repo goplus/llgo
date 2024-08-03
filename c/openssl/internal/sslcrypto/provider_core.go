@@ -1,10 +1,24 @@
-package internal
+package sslcrypto
 
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/inter"
+	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/dso"
+	"github.com/goplus/llgo/c/openssl/pub"
 )
+
+type CRYPTO_REF_COUNT inter.CRYPTO_REF_COUNT
+type OSSL_PARAM pub.OSSL_PARAM
+type OSSL_CALLBACK pub.OSSL_CALLBACK
+type ERR_STRING_DATA pub.ERR_STRING_DATA
+
+type OSSL_provider_init_fn pub.OSSL_provider_init_fn
+type OSSL_CORE_HANDLE pub.OSSL_CORE_HANDLE
+type OSSL_DISPATCH pub.OSSL_DISPATCH
+type OSSL_ALGORITHM pub.OSSL_ALGORITHM
+type CRYPTO_RWLOCK pub.CRYPTO_RWLOCK
 
 type ossl_provider_st struct {
 	// Flag bits
@@ -21,7 +35,7 @@ type ossl_provider_st struct {
 	ActivateCnt      c.Int
 	Name             *c.Char
 	Path             *c.Char
-	Module           *DSO
+	Module           *dso.DSO
 	InitFunction     *OSSL_provider_init_fn
 
 	// STACK_OF(INFOPAIR) *parameters;*/
@@ -56,7 +70,9 @@ type ossl_provider_st struct {
 
 type OSSL_PROVIDER ossl_provider_st
 
-type provider_store_st TodoStruct
+type provider_store_st struct {
+	//todo
+}
 
 type PROVIDER_STORE provider_store_st
 
@@ -64,8 +80,8 @@ type OSSL_FUNC_provider_teardown_fn func(provctx unsafe.Pointer)
 type OSSL_FUNC_provider_gettable_params_fn func(provctx unsafe.Pointer) *OSSL_PARAM
 type OSSL_FUNC_provider_get_params_fn func(provctx unsafe.Pointer, params []OSSL_PARAM) c.Int
 type OSSL_FUNC_provider_get_capabilities_fn func(provctx unsafe.Pointer,
-	capability *c.Char, cb *OSSL_CALLBACK, arg unsafe.Pointer)
-type OSSL_FUNC_provider_self_test_fn TodoFN
+						capability *c.Char, cb *OSSL_CALLBACK, arg unsafe.Pointer)
+type OSSL_FUNC_provider_self_test_fn func() //todo
 type OSSL_FUNC_provider_query_operation_fn func(provctx unsafe.Pointer,
 	operation_id c.Int, no_cache *c.Int) *OSSL_ALGORITHM
 type OSSL_FUNC_provider_unquery_operation_fn func(provctx unsafe.Pointer,

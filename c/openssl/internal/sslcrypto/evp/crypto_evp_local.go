@@ -1,10 +1,19 @@
-package internal
+package evp
 
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/internal/sslcrypto"
+	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/engine"
+	"github.com/goplus/llgo/c/openssl/pub"
 )
+
+type OSSL_PROVIDER sslcrypto.OSSL_PROVIDER
+
+type OSSL_CALLBACK pub.OSSL_CALLBACK
+
+type ENGINE engine.ENGINE
 
 type evp_cipher_ctx_st struct {
 	Cipher  *EVP_CIPHER

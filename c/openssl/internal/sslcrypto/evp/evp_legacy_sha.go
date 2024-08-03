@@ -1,4 +1,4 @@
-package internal
+package evp
 
 const (
 	NID_sha1                  = 64
