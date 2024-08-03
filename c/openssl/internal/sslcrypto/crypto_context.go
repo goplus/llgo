@@ -1,3 +1,6 @@
+//go:build !FIPS_MODULE
+// +build !FIPS_MODULE
+
 package sslcrypto
 
 import (

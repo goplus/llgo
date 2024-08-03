@@ -1,3 +1,6 @@
+//go:build !FIPS_MODULE && !OPENSSL_NO_ERR
+// +build !FIPS_MODULE,!OPENSSL_NO_ERR
+
 package sslcrypto
 
 import (

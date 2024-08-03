@@ -1,4 +1,5 @@
-//go:build OPENSSL_THREADS
+//go:build OPENSSL_THREADS && !FIPS_MODULE
+// +build OPENSSL_THREADS,!FIPS_MODULE
 
 package sslcrypto
 
