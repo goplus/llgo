@@ -1,7 +1,7 @@
 //go:build !FIPS_MODULE
 // +build !FIPS_MODULE
 
-package sslcrypto
+package crypto_local
 
 import (
 	"unsafe"

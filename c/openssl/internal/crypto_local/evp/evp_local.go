@@ -4,21 +4,22 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/evp"
 	"github.com/goplus/llgo/c/openssl/inter"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/engine"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local/engine"
 	"github.com/goplus/llgo/c/openssl/pub"
 )
 
 type evp_cipher_ctx_st struct {
 	Cipher  *EVP_CIPHER
-	Engine  *engine.ENGINE             /* functional reference if 'cipher' is ENGINE-provided */
-	Encrypt c.Int                      /* encrypt or decrypt */
-	BufLen  c.Int                      /* number we have left */
-	Oiv     [EVP_MAX_IV_LENGTH]byte    /* original iv */
-	Iv      [EVP_MAX_IV_LENGTH]byte    /* working iv */
-	Buf     [EVP_MAX_BLOCK_LENGTH]byte /* saved partial block */
-	Num     c.Int                      /* used by cfb/ofb/ctr mode */
+	Engine  *engine.ENGINE                 /* functional reference if 'cipher' is ENGINE-provided */
+	Encrypt c.Int                          /* encrypt or decrypt */
+	BufLen  c.Int                          /* number we have left */
+	Oiv     [evp.EVP_MAX_IV_LENGTH]byte    /* original iv */
+	Iv      [evp.EVP_MAX_IV_LENGTH]byte    /* working iv */
+	Buf     [evp.EVP_MAX_BLOCK_LENGTH]byte /* saved partial block */
+	Num     c.Int                          /* used by cfb/ofb/ctr mode */
 	/* FIXME: Should this even exist? It appears unused */
 	AppData    unsafe.Pointer /* application stuff */
 	KeyLen     c.Int          /* May change for variable length cipher */
@@ -27,7 +28,7 @@ type evp_cipher_ctx_st struct {
 	CipherData unsafe.Pointer /* per EVP data */
 	FinalUsed  c.Int
 	BlockMask  c.Int
-	Final      [EVP_MAX_BLOCK_LENGTH]byte /* possible final block */
+	Final      [evp.EVP_MAX_BLOCK_LENGTH]byte /* possible final block */
 
 	/*
 	 * Opaque ctx returned from a providers cipher algorithm implementation
@@ -39,6 +40,32 @@ type evp_cipher_ctx_st struct {
 
 type EVP_CIPHER_CTX evp_cipher_ctx_st
 
+/* Macros to code block cipher wrappers */
+
+/* Wrapper functions for each cipher mode */
+
+type evp_cipher_aead_asn1_params struct {
+	Iv     [evp.EVP_MAX_IV_LENGTH]byte
+	IvLen  c.Uint
+	TagLen c.Uint
+}
+
+// int evp_cipher_param_to_asn1_ex(EVP_CIPHER_CTX *c, ASN1_TYPE *type,
+// evp_cipher_aead_asn1_params *params);
+//
+// llgo:link (*EVP_CIPHER_CTX).EvpCipherParamToAsn1Ex C.evp_cipher_param_to_asn1_ex
+func (c *EVP_CIPHER_CTX) EvpCipherParamToAsn1Ex(typ *pub.ASN1_TYPE, params *evp_cipher_aead_asn1_params) c.Int {
+	return 0
+}
+
+// int evp_cipher_asn1_to_param_ex(EVP_CIPHER_CTX *c, ASN1_TYPE *type,
+// evp_cipher_aead_asn1_params *params);
+//
+// llgo:link (*EVP_CIPHER_CTX).EvpCipherAsn1ToParamEx C.evp_cipher_asn1_to_param_ex
+func (c *EVP_CIPHER_CTX) EvpCipherAsn1ToParamEx(typ *pub.ASN1_TYPE, params *evp_cipher_aead_asn1_params) c.Int {
+	return 0
+}
+
 type evp_keymgmt_st struct {
 	Id     c.Int /* libcrypto internal */
 	NameId c.Int
@@ -46,7 +73,7 @@ type evp_keymgmt_st struct {
 	LegacyAlg   c.Int
 	TypeName    *c.Char
 	Description *c.Char
-	Prov        *sslcrypto.OSSL_PROVIDER
+	Prov        *crypto_local.OSSL_PROVIDER
 	RefCnt      inter.CRYPTO_REF_COUNT
 
 	/* Constructor(s), destructor, information */

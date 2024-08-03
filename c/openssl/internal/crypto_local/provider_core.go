@@ -1,14 +1,14 @@
 //go:build !FIPS_MODULE && !OPENSSL_NO_ERR
 // +build !FIPS_MODULE,!OPENSSL_NO_ERR
 
-package sslcrypto
+package crypto_local
 
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/openssl/inter"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/dso"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local/dso"
 	"github.com/goplus/llgo/c/openssl/pub"
 )
 

@@ -1,10 +1,10 @@
 package openssl
 
 import (
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/engine"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/evp"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/hmac"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local/engine"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local/evp"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local/hmac"
 	"github.com/goplus/llgo/c/openssl/pub"
 )
 
@@ -16,7 +16,7 @@ type EVP_MD_CTX evp.EVP_MD_CTX
 
 type ENGINE engine.ENGINE
 
-type OSSL_LIB_CTX sslcrypto.OSSL_LIB_CTX
+type OSSL_LIB_CTX crypto_local.OSSL_LIB_CTX
 
 type ERR_STRING_DATA pub.ERR_STRING_DATA
 

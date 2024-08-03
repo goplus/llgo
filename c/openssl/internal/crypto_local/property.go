@@ -1,4 +1,4 @@
-package sslcrypto
+package crypto_local
 
 import (
 	"unsafe"
