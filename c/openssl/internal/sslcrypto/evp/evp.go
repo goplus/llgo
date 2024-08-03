@@ -6,11 +6,8 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/openssl/internal/sslcrypto"
 	"github.com/goplus/llgo/c/openssl/pub"
 )
-
-type OSSL_LIB_CTX sslcrypto.OSSL_LIB_CTX
 
 const (
 	EVP_MAX_MD_SIZE         = 64
@@ -71,21 +68,6 @@ const (
 			    ( EVP_PKEY_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_PRIVATE_KEY )
 	*/
 )
-
-// int EVP_set_default_properties(OSSL_LIB_CTX *libctx, const char *propq);
-//
-// llgo:link (*OSSL_LIB_CTX).EVPSetDefaultProperties C.EVP_set_default_properties
-func (c *OSSL_LIB_CTX) EVPSetDefaultProperties(propq *c.Char) c.Int { return 0 }
-
-// int EVP_default_properties_is_fips_enabled(OSSL_LIB_CTX *libctx);
-//
-// llgo:link (*OSSL_LIB_CTX).EVPDefaultPropertiesIsFipsEnabled() C.EVP_default_properties_is_fips_enabled
-func (c *OSSL_LIB_CTX) EVPDefaultPropertiesIsFipsEnabled() c.Int { return 0 }
-
-// int EVP_default_properties_enable_fips(OSSL_LIB_CTX *libctx, int enable);
-//
-// llgo:link (*OSSL_LIB_CTX).EVPDefaultPropertiesEnableFips C.EVP_default_properties_enable_fips
-func (c *OSSL_LIB_CTX) EVPDefaultPropertiesEnableFips(enable c.Int) c.Int { return 0 }
 
 const (
 	EVP_PKEY_MO_SIGN    = 0x0001

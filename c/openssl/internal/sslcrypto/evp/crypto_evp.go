@@ -5,13 +5,10 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/openssl/inter"
+	"github.com/goplus/llgo/c/openssl/internal/sslcrypto"
+	"github.com/goplus/llgo/c/openssl/internal/sslcrypto/engine"
 	"github.com/goplus/llgo/c/openssl/pub"
 )
-
-type CRYPTO_REF_COUNT inter.CRYPTO_REF_COUNT
-type OSSL_PARAM pub.OSSL_PARAM
-
-type ASN1_TYPE pub.ASN1_TYPE
 
 type InitFN func(ctx *EVP_MD_CTX) c.Int
 type UpdateFN func(ctx *EVP_MD_CTX, data unsafe.Pointer, count uintptr) c.Int
@@ -41,8 +38,8 @@ type evp_md_st struct {
 	NameId            c.Int
 	TypeName          *c.Char
 	Description       *c.Char
-	Prov              *OSSL_PROVIDER //todo
-	RefCnt            CRYPTO_REF_COUNT
+	Prov              *sslcrypto.OSSL_PROVIDER //todo
+	RefCnt            inter.CRYPTO_REF_COUNT
 	NewCtx            *OSSL_FUNC_digest_newctx_fn
 	DInit             *OSSL_FUNC_digest_init_fn
 	DUpdate           *OSSL_FUNC_digest_update_fn
@@ -70,7 +67,7 @@ type EVP_PKEY_CTX evp_pkey_ctx_st
 type evp_md_ctx_st struct {
 	ReqDigest *EVP_MD // The original requested digest
 	Digest    *EVP_MD
-	Engine    *ENGINE // functional reference if 'digest' is ENGINE-provided
+	Engine    *engine.ENGINE // functional reference if 'digest' is ENGINE-provided
 	Flags     c.Ulong
 	MdData    unsafe.Pointer
 	// Public key context for sign/verify
@@ -86,7 +83,7 @@ type evp_md_ctx_st struct {
 type EVP_MD_CTX evp_md_ctx_st
 
 type OSSL_FUNC_digest_newctx_fn func(unsafe.Pointer) unsafe.Pointer
-type OSSL_FUNC_digest_init_fn func(ctx unsafe.Pointer, params []OSSL_PARAM) c.Int
+type OSSL_FUNC_digest_init_fn func(ctx unsafe.Pointer, params []pub.OSSL_PARAM) c.Int
 type OSSL_FUNC_digest_update_fn func(ctx unsafe.Pointer, inp *byte, len uintptr) c.Int
 type OSSL_FUNC_digest_final_fn func(ctx unsafe.Pointer, out *byte, outl *uintptr, outsz uintptr) c.Int
 type OSSL_FUNC_digest_squeeze_fn func(vctx unsafe.Pointer, out *byte, outl *uintptr, outlen uintptr) c.Int
@@ -94,18 +91,18 @@ type OSSL_FUNC_digest_digest_fn func(provctx unsafe.Pointer,
 	in *byte, inl uintptr, out *byte, outl *uintptr, outsz uintptr) c.Int
 type OSSL_FUNC_digest_freectx_fn func(vctx unsafe.Pointer)
 type OSSL_FUNC_digest_dupctx_fn func(ctx unsafe.Pointer) unsafe.Pointer
-type OSSL_FUNC_digest_get_params_fn func(params []OSSL_PARAM) c.Int
-type OSSL_FUNC_digest_set_ctx_params_fn func(vctx unsafe.Pointer, params []OSSL_PARAM) c.Int
-type OSSL_FUNC_digest_get_ctx_params_fn func(dctx unsafe.Pointer, params []OSSL_PARAM) c.Int
-type OSSL_FUNC_digest_gettable_params_fn func(provctx unsafe.Pointer) *OSSL_PARAM
-type OSSL_FUNC_digest_settable_ctx_params_fn func(ctx unsafe.Pointer, provctx unsafe.Pointer) *OSSL_PARAM
-type OSSL_FUNC_digest_gettable_ctx_params_fn func(dctx unsafe.Pointer, provctx unsafe.Pointer) *OSSL_PARAM
+type OSSL_FUNC_digest_get_params_fn func(params []pub.OSSL_PARAM) c.Int
+type OSSL_FUNC_digest_set_ctx_params_fn func(vctx unsafe.Pointer, params []pub.OSSL_PARAM) c.Int
+type OSSL_FUNC_digest_get_ctx_params_fn func(dctx unsafe.Pointer, params []pub.OSSL_PARAM) c.Int
+type OSSL_FUNC_digest_gettable_params_fn func(provctx unsafe.Pointer) *pub.OSSL_PARAM
+type OSSL_FUNC_digest_settable_ctx_params_fn func(ctx unsafe.Pointer, provctx unsafe.Pointer) *pub.OSSL_PARAM
+type OSSL_FUNC_digest_gettable_ctx_params_fn func(dctx unsafe.Pointer, provctx unsafe.Pointer) *pub.OSSL_PARAM
 
 type CipherInitFn func(ctx *EVP_CIPHER_CTX, key *byte, iv *byte, enc c.Int) c.Int
 type DoChipperFn func(ctx *EVP_CIPHER_CTX, out *byte, in *byte, intl uintptr) c.Int
 type CipherCleanFn func(ctx *EVP_CIPHER_CTX) c.Int
-type CipherSetAsn1ParametersFn func(ctx *EVP_CIPHER_CTX, t *ASN1_TYPE) c.Int
-type CipherGetAsn1ParametersFn func(ctx *EVP_CIPHER_CTX, t *ASN1_TYPE) c.Int
+type CipherSetAsn1ParametersFn func(ctx *EVP_CIPHER_CTX, t *pub.ASN1_TYPE) c.Int
+type CipherGetAsn1ParametersFn func(ctx *EVP_CIPHER_CTX, t *pub.ASN1_TYPE) c.Int
 type CipherCtrlFn func(ctx *EVP_CIPHER_CTX, typ c.Int, arg c.Int, ptr unsafe.Pointer) c.Int
 
 type evp_cipher_st struct {
@@ -140,8 +137,8 @@ type evp_cipher_st struct {
 	NameId            c.Int
 	TypeName          *c.Char
 	Description       *c.Char
-	Prov              *OSSL_PROVIDER
-	RefCnt            CRYPTO_REF_COUNT
+	Prov              *sslcrypto.OSSL_PROVIDER
+	RefCnt            inter.CRYPTO_REF_COUNT
 	NewCtx            *OSSL_FUNC_cipher_newctx_fn
 	EInit             *OSSL_FUNC_cipher_encrypt_init_fn
 	DInit             *OSSL_FUNC_cipher_decrypt_init_fn
@@ -159,9 +156,9 @@ type evp_cipher_st struct {
 }
 
 type OSSL_FUNC_cipher_newctx_fn func(provctx unsafe.Pointer) unsafe.Pointer
-type OSSL_FUNC_cipher_encrypt_init_fn func(ctx unsafe.Pointer, key *byte, keylen uintptr, iv *byte, ivlen uintptr, params []OSSL_PARAM) c.Int
+type OSSL_FUNC_cipher_encrypt_init_fn func(ctx unsafe.Pointer, key *byte, keylen uintptr, iv *byte, ivlen uintptr, params []pub.OSSL_PARAM) c.Int
 type OSSL_FUNC_cipher_decrypt_init_fn func(vctx unsafe.Pointer, key *byte,
-	keylen uintptr, iv *byte, ivlen uintptr, params []OSSL_PARAM) c.Int
+	keylen uintptr, iv *byte, ivlen uintptr, params []pub.OSSL_PARAM) c.Int
 type OSSL_FUNC_cipher_update_fn func(vctx unsafe.Pointer, out *byte, outl *uintptr,
 	outsize uintptr, in *byte, inl uintptr) c.Int
 type OSSL_FUNC_cipher_final_fn func(vctx unsafe.Pointer, out *byte, outl *uintptr,
@@ -170,12 +167,12 @@ type OSSL_FUNC_cipher_cipher_fn func(vctx unsafe.Pointer, out *byte, outl *uintp
 	outsize uintptr, in *byte, intl uintptr) c.Int
 type OSSL_FUNC_cipher_freectx_fn func(vctx unsafe.Pointer)
 type OSSL_FUNC_cipher_dupctx_fn func(vctx unsafe.Pointer) unsafe.Pointer
-type OSSL_FUNC_cipher_get_params_fn func(params []OSSL_PARAM) c.Int
-type OSSL_FUNC_cipher_get_ctx_params_fn func(vctx unsafe.Pointer, params []OSSL_PARAM) c.Int
-type OSSL_FUNC_cipher_set_ctx_params_fn func(vctx unsafe.Pointer, params []OSSL_PARAM) c.Int
-type OSSL_FUNC_cipher_gettable_params_fn func(provctx unsafe.Pointer) *OSSL_PARAM
-type OSSL_FUNC_cipher_gettable_ctx_params_fn func(cctx unsafe.Pointer, p_ctx unsafe.Pointer) *OSSL_PARAM
-type OSSL_FUNC_cipher_settable_ctx_params_fn func(cctx unsafe.Pointer, p_ctx unsafe.Pointer) *OSSL_PARAM
+type OSSL_FUNC_cipher_get_params_fn func(params []pub.OSSL_PARAM) c.Int
+type OSSL_FUNC_cipher_get_ctx_params_fn func(vctx unsafe.Pointer, params []pub.OSSL_PARAM) c.Int
+type OSSL_FUNC_cipher_set_ctx_params_fn func(vctx unsafe.Pointer, params []pub.OSSL_PARAM) c.Int
+type OSSL_FUNC_cipher_gettable_params_fn func(provctx unsafe.Pointer) *pub.OSSL_PARAM
+type OSSL_FUNC_cipher_gettable_ctx_params_fn func(cctx unsafe.Pointer, p_ctx unsafe.Pointer) *pub.OSSL_PARAM
+type OSSL_FUNC_cipher_settable_ctx_params_fn func(cctx unsafe.Pointer, p_ctx unsafe.Pointer) *pub.OSSL_PARAM
 
 type EVP_CIPHER evp_cipher_st
 
@@ -350,7 +347,7 @@ type evp_cipher_aead_asn1_params struct {
 // evp_cipher_aead_asn1_params *params);
 //
 // llgo:link (*EVP_CIPHER_CTX).EvpCipherParamToAsn1Ex C.evp_cipher_param_to_asn1_ex
-func (c *EVP_CIPHER_CTX) EvpCipherParamToAsn1Ex(typ *ASN1_TYPE, params *evp_cipher_aead_asn1_params) c.Int {
+func (c *EVP_CIPHER_CTX) EvpCipherParamToAsn1Ex(typ *pub.ASN1_TYPE, params *evp_cipher_aead_asn1_params) c.Int {
 	return 0
 }
 
@@ -358,7 +355,7 @@ func (c *EVP_CIPHER_CTX) EvpCipherParamToAsn1Ex(typ *ASN1_TYPE, params *evp_ciph
 // evp_cipher_aead_asn1_params *params);
 //
 // llgo:link (*EVP_CIPHER_CTX).EvpCipherAsn1ToParamEx C.evp_cipher_asn1_to_param_ex
-func (c *EVP_CIPHER_CTX) EvpCipherAsn1ToParamEx(typ *ASN1_TYPE, params *evp_cipher_aead_asn1_params) c.Int {
+func (c *EVP_CIPHER_CTX) EvpCipherAsn1ToParamEx(typ *pub.ASN1_TYPE, params *evp_cipher_aead_asn1_params) c.Int {
 	return 0
 }
 

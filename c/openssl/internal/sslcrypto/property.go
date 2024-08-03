@@ -4,6 +4,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/pub"
 )
 
 type ossl_method_store_st struct {
@@ -15,7 +16,7 @@ type ossl_method_store_st struct {
 	 * individual implementations or queries are inserted.  This is used
 	 * by the appropriate functions here.
 	 */
-	Lock *CRYPTO_RWLOCK
+	Lock *pub.CRYPTO_RWLOCK
 
 	/*
 	 * Lock to reserve the whole store.  This is used when fetching a set
@@ -23,7 +24,7 @@ type ossl_method_store_st struct {
 	 * ossl_method_construct_reserve_store()
 	 * ossl_method_construct_unreserve_store()
 	 */
-	BigLock *CRYPTO_RWLOCK
+	BigLock *pub.CRYPTO_RWLOCK
 
 	/* query cache specific values */
 

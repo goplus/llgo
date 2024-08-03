@@ -7,15 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/openssl/internal/inter"
-	"github.com/goplus/llgo/c/openssl/internal/pub"
 )
-
-type CRYPTO_RWLOCK pub.CRYPTO_RWLOCK
-type CRYPTO_THREAD_LOCAL pub.CRYPTO_THREAD_LOCAL
-
-type OSSL_EX_DATA_GLOBAL inter.OSSL_EX_DATA_GLOBAL
-type OSSL_METHOD_STORE inter.OSSL_METHOD_STORE
 
 type ossl_lib_ctx_st struct {
 	Lock, RandCrngtLock *CRYPTO_RWLOCK
@@ -52,5 +44,20 @@ type ossl_lib_ctx_st struct {
 }
 
 type OSSL_LIB_CTX ossl_lib_ctx_st
+
+// int EVP_set_default_properties(OSSL_LIB_CTX *libctx, const char *propq);
+//
+// llgo:link (*OSSL_LIB_CTX).EVPSetDefaultProperties C.EVP_set_default_properties
+func (c *OSSL_LIB_CTX) EVPSetDefaultProperties(propq *c.Char) c.Int { return 0 }
+
+// int EVP_default_properties_is_fips_enabled(OSSL_LIB_CTX *libctx);
+//
+// llgo:link (*OSSL_LIB_CTX).EVPDefaultPropertiesIsFipsEnabled() C.EVP_default_properties_is_fips_enabled
+func (c *OSSL_LIB_CTX) EVPDefaultPropertiesIsFipsEnabled() c.Int { return 0 }
+
+// int EVP_default_properties_enable_fips(OSSL_LIB_CTX *libctx, int enable);
+//
+// llgo:link (*OSSL_LIB_CTX).EVPDefaultPropertiesEnableFips C.EVP_default_properties_enable_fips
+func (c *OSSL_LIB_CTX) EVPDefaultPropertiesEnableFips(enable c.Int) c.Int { return 0 }
 
 // todo ...

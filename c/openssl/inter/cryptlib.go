@@ -2,8 +2,6 @@ package inter
 
 import "github.com/goplus/llgo/c/openssl/pub"
 
-type CRYPTO_RWLOCK pub.CRYPTO_RWLOCK
-
 const (
 	CRYPTO_EX_INDEX__COUNT = 18
 )
@@ -19,7 +17,7 @@ type ex_callbacks_st struct {
 type EX_CALLBACKS ex_callbacks_st
 
 type ossl_ex_data_global_st struct {
-	ExDataLock *CRYPTO_RWLOCK
+	ExDataLock *pub.CRYPTO_RWLOCK
 	ExData     [CRYPTO_EX_INDEX__COUNT]EX_CALLBACKS
 }
 
