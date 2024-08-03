@@ -162,7 +162,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
 		if kind != DeferAlways {
-			rundBlk = self.MakeBlock()
+			rundBlk = self.MakeBlock("")
 		} else {
 			blks = self.MakeBlocks(2)
 			next, rundBlk = blks[0], blks[1]
@@ -228,7 +228,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
 	self := b.getDefer(DeferInCond)
-	blk := b.Func.MakeBlock()
+	blk := b.Func.MakeBlock("")
 	self.runsNext = append(self.runsNext, blk)
 
 	b.Store(self.rundPtr, blk.Addr())

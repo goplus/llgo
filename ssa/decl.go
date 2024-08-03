@@ -293,13 +293,15 @@ func (p Function) MakeBlocks(nblk int) []BasicBlock {
 		p.blks = make([]BasicBlock, 0, nblk)
 	}
 	for i := 0; i < nblk; i++ {
-		p.addBlock(n + i)
+		p.addBlock(n+i, "")
 	}
 	return p.blks[n:]
 }
 
-func (p Function) addBlock(idx int) BasicBlock {
-	label := "_llgo_" + strconv.Itoa(idx)
+func (p Function) addBlock(idx int, label string) BasicBlock {
+	if label == "" {
+		label = "_llgo_" + strconv.Itoa(idx)
+	}
 	blk := llvm.AddBasicBlock(p.impl, label)
 	ret := &aBasicBlock{blk, blk, p, idx}
 	p.blks = append(p.blks, ret)
@@ -307,8 +309,8 @@ func (p Function) addBlock(idx int) BasicBlock {
 }
 
 // MakeBlock creates a new basic block for the function.
-func (p Function) MakeBlock() BasicBlock {
-	return p.addBlock(len(p.blks))
+func (p Function) MakeBlock(label string) BasicBlock {
+	return p.addBlock(len(p.blks), label)
 }
 
 // Block returns the ith basic block of the function.

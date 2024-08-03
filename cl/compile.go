@@ -318,7 +318,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
 		cond := b.BinOp(token.NEQ, mod, prog.Nil(mod.Type))
-		newBlk := fn.MakeBlock()
+		newBlk := fn.MakeBlock("")
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
 		b.Store(modPtr, b.PyImportMod(modPath))

@@ -94,7 +94,7 @@ func (b Builder) setBlockMoveLast(blk BasicBlock) (next BasicBlock) {
 
 	impl := b.impl
 
-	next = b.Func.MakeBlock()
+	next = b.Func.MakeBlock("")
 	impl.SetInsertPointAtEnd(next.last)
 	impl.Insert(last)
 
