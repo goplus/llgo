@@ -586,6 +586,7 @@ type aPackage struct {
 	named  map[types.Type]Expr
 	afterb unsafe.Pointer
 	patch  func(types.Type) types.Type
+	fnlink func(string) string
 
 	iRoutine int
 }
@@ -656,6 +657,11 @@ func (p Package) String() string {
 // SetPatch sets a patch function.
 func (p Package) SetPatch(fn func(types.Type) types.Type) {
 	p.patch = fn
+}
+
+// SetResolveLinkname sets a function to resolve linkname.
+func (p Package) SetResolveLinkname(fn func(string) string) {
+	p.fnlink = fn
 }
 
 // -----------------------------------------------------------------------------
