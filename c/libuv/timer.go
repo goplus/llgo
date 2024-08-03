@@ -10,6 +10,7 @@ import (
 
 /* Handle types. */
 
+// TODO(spongehah): Timer
 type Timer struct {
 	Unused [0]byte
 }

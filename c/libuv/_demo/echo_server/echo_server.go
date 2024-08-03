@@ -11,8 +11,6 @@ import (
 var DEFAULT_PORT c.Int = 8080
 var DEFAULT_BACKLOG c.Int = 128
 
-var loop *libuv.Loop
-
 type WriteReq struct {
 	Req libuv.Write
 	Buf libuv.Buf
@@ -20,7 +18,7 @@ type WriteReq struct {
 
 func main() {
 	// Initialize the default event loop
-	loop = libuv.DefaultLoop()
+	var loop = libuv.DefaultLoop()
 
 	// Initialize a TCP server
 	var server libuv.Tcp
@@ -105,7 +103,7 @@ func OnNewConnection(server *libuv.Stream, status c.Int) {
 	}
 
 	// Initialize the client TCP handle.
-	if libuv.InitTcp(loop, client) < 0 {
+	if libuv.InitTcp(libuv.DefaultLoop(), client) < 0 {
 		c.Fprintf(c.Stderr, c.Str("Failed to initialize client\n"))
 		c.Free(c.Pointer(client))
 		return
