@@ -1,3 +1,5 @@
+//go:build OPENSSL_THREADS
+
 package internal
 
 import (
@@ -31,6 +33,8 @@ type ossl_lib_ctx_st struct {
 	StoreLoaderStore *OSSL_METHOD_STORE //#ifndef FIPS_MODULE
 	SelfTestCb       unsafe.Pointer     //#ifndef FIPS_MODULE
 	IndicatorCb      unsafe.Pointer     //#ifndef FIPS_MODULE
+
+	Threads unsafe.Pointer
 
 	RandCrngt       unsafe.Pointer
 	CompMethods     *TodoStruct
