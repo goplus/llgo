@@ -7,8 +7,9 @@
 package os
 
 import (
-	"syscall"
 	"time"
+
+	"github.com/goplus/llgo/internal/lib/syscall"
 )
 
 // A fileStat is the implementation of FileInfo returned by Stat and Lstat.

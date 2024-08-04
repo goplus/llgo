@@ -214,9 +214,11 @@ The currently supported libraries include:
 * [c/bdwgc](https://pkg.go.dev/github.com/goplus/llgo/c/bdwgc)
 * [c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
 * [c/clang](https://pkg.go.dev/github.com/goplus/llgo/c/clang)
+* [c/libuv](https://pkg.go.dev/github.com/goplus/llgo/c/libuv)
 * [c/llama2](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
 * [c/lua](https://pkg.go.dev/github.com/goplus/llgo/c/lua)
 * [c/neco](https://pkg.go.dev/github.com/goplus/llgo/c/neco)
+* [c/openssl](https://pkg.go.dev/github.com/goplus/llgo/c/openssl)
 * [c/raylib](https://pkg.go.dev/github.com/goplus/llgo/c/raylib)
 * [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
 * [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
@@ -242,7 +244,7 @@ All Go syntax (not including `cgo`) is already supported. Here are some examples
 * [goroutine](_demo/goroutine/goroutine.go): goroutine demo
 
 
-## Defer
+### Defer
 
 LLGo `defer` does not support usage in loops. This is not a bug but a feature, because we think that using `defer` in a loop is a very unrecommended practice.
 
@@ -267,17 +269,24 @@ Here are the Go packages that can be imported correctly:
 * [unicode/utf8](https://pkg.go.dev/unicode/utf8)
 * [unicode/utf16](https://pkg.go.dev/unicode/utf16)
 * [math](https://pkg.go.dev/math)
+* [math/big](https://pkg.go.dev/math/big) (partially)
 * [math/bits](https://pkg.go.dev/math/bits)
 * [math/cmplx](https://pkg.go.dev/math/cmplx)
+* [math/rand](https://pkg.go.dev/math/rand)
 * [errors](https://pkg.go.dev/errors)
 * [context](https://pkg.go.dev/context)
 * [io](https://pkg.go.dev/io)
 * [io/fs](https://pkg.go.dev/io/fs)
+* [io/ioutil](https://pkg.go.dev/io/ioutil)
 * [log](https://pkg.go.dev/log)
 * [flag](https://pkg.go.dev/flag)
 * [sort](https://pkg.go.dev/sort)
-* [strconv](https://pkg.go.dev/strconv)
+* [bytes](https://pkg.go.dev/bytes)
+* [bufio](https://pkg.go.dev/bufio)
 * [strings](https://pkg.go.dev/strings)
+* [strconv](https://pkg.go.dev/strconv)
+* [path](https://pkg.go.dev/path)
+* [path/filepath](https://pkg.go.dev/path/filepath)
 * [sync/atomic](https://pkg.go.dev/sync/atomic)
 * [sync](https://pkg.go.dev/sync) (partially)
 * [syscall](https://pkg.go.dev/syscall) (partially)
@@ -287,19 +296,39 @@ Here are the Go packages that can be imported correctly:
 * [fmt](https://pkg.go.dev/fmt) (partially)
 * [reflect](https://pkg.go.dev/reflect) (partially)
 * [time](https://pkg.go.dev/time) (partially)
+* [encoding](https://pkg.go.dev/encoding)
+* [encoding/binary](https://pkg.go.dev/encoding/binary)
+* [encoding/hex](https://pkg.go.dev/encoding/hex)
+* [encoding/base32](https://pkg.go.dev/encoding/base32)
+* [encoding/base64](https://pkg.go.dev/encoding/base64)
+* [encoding/csv](https://pkg.go.dev/encoding/csv)
+* [hash](https://pkg.go.dev/hash)
+* [hash/adler32](https://pkg.go.dev/hash/adler32)
+* [hash/crc32](https://pkg.go.dev/hash/crc32) (partially)
+* [hash/crc64](https://pkg.go.dev/hash/crc64)
+* [crypto](https://pkg.go.dev/crypto)
+* [crypto/md5](https://pkg.go.dev/crypto/md5)
+* [crypto/sha1](https://pkg.go.dev/crypto/sha1)
+* [crypto/sha256](https://pkg.go.dev/crypto/sha256)
+* [crypto/sha512](https://pkg.go.dev/crypto/sha512) (partially)
+* [crypto/rand](https://pkg.go.dev/crypto/rand) (partially)
+* [regexp](https://pkg.go.dev/regexp)
+* [regexp/syntax](https://pkg.go.dev/regexp/syntax)
+* [go/token](https://pkg.go.dev/go/token)
+* [go/scanner](https://pkg.go.dev/go/scanner)
 
 
 ## Dependencies
 
-- [Go 1.20+](https://go.dev) (build only)
+- [Go 1.20+](https://go.dev)
 - [LLVM 18](https://llvm.org)
 - [LLD 18](https://lld.llvm.org)
 - [Clang 18](https://clang.llvm.org)
 - [pkg-config 0.29+](https://www.freedesktop.org/wiki/Software/pkg-config/)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
-- [cJSON 1.7+](https://github.com/DaveGamble/cJSON) (optional, for [github.com/goplus/llgo/c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson))
-- [SQLite 3](https://www.sqlite.org) (optional, for [github.com/goplus/llgo/c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite))
-- [Python 3.11+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
+- [OpenSSL 3.0+](https://www.openssl.org/)
+- [zlib 1.2+](https://www.zlib.net)
+- [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
 
 ## How to install
 
@@ -308,10 +337,9 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 ### on macOS
 
 ```sh
-brew update # execute if needed
-brew install llvm@18 pkg-config libgc
-brew install cjson sqlite python@3.12 # optional
-export PATH=$(brew --prefix llvm@18)/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.zshrc
+brew update
+brew install llvm@18 pkg-config bdw-gc openssl
+brew install python@3.12 # optional
 go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
 
@@ -320,10 +348,9 @@ go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```sh
 echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo apt-get update # execute if needed
-sudo apt-get install -y llvm-18-dev clang-18 lld-18 pkg-config libgc-dev
-sudo apt-get install -y libcjson-dev libsqlite3-dev python3.12-dev # optional
-export PATH=/usr/lib/llvm-18/bin:$PATH # you may want to add this to your shell RC file, e.g. ~/.bashrc
+sudo apt-get update
+sudo apt-get install -y llvm-18-dev clang-18 lld-18 pkg-config libgc-dev libssl-dev zlib1g-dev
+sudo apt-get install -y python3.12-dev # optional
 go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
 

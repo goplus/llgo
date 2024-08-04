@@ -11,6 +11,8 @@ package syscall
 import (
 	"runtime"
 	"unsafe"
+
+	"github.com/goplus/llgo/c"
 )
 
 type SysProcAttr struct {
@@ -77,8 +79,8 @@ func init() {
 // split the stack, or acquire mutexes). We can't call RawSyscall
 // because it's not safe even for BSD-subsystem calls.
 //
-//go:norace
-func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
+// func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
+func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
 	// Declare all variables at top in case any
 	// declarations require heap allocation (e.g., err1).
 	var (

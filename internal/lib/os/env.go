@@ -10,7 +10,6 @@ import (
 	"syscall"
 )
 
-/* TODO(xsw):
 // Expand replaces ${var} or $var in the string based on the mapping function.
 // For example, os.ExpandEnv(s) is equivalent to os.Expand(s, os.Getenv).
 func Expand(s string, mapping func(string) string) string {
@@ -94,7 +93,6 @@ func getShellName(s string) (string, int) {
 	}
 	return s[:i], i
 }
-*/
 
 // Getenv retrieves the value of the environment variable named by the key.
 // It returns the value, which will be empty if the variable is not present.

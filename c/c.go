@@ -227,9 +227,6 @@ func Perror(s *Char)
 
 // -----------------------------------------------------------------------------
 
-//go:linkname Time C.time
-func Time(*int32) int32
-
 //go:linkname Usleep C.usleep
 func Usleep(useconds Uint) Int
 

@@ -27,6 +27,1104 @@ const (
 	LLGoPackage = "link: -L$(llvm-config --libdir) -lclang; -lclang"
 )
 
+const (
+	/* Declarations */
+	/**
+	 * A declaration whose specific kind is not exposed via this
+	 * interface.
+	 *
+	 * Unexposed declarations have the same operations as any other kind
+	 * of declaration; one can extract their location information,
+	 * spelling, find their definitions, etc. However, the specific kind
+	 * of the declaration is not reported.
+	 */
+	UnexposedDecl CursorKind = iota + 1
+
+	/** A C or C++ struct. */
+	StructDecl
+
+	/** A C or C++ union. */
+	UnionDecl
+
+	/** A C++ class. */
+	ClassDecl
+
+	/** An enumeration. */
+	EnumDecl
+
+	/**
+	 * A field (in C) or non-static data member (in C++) in a
+	 * struct, union, or C++ class.
+	 */
+	FieldDecl
+
+	/** An enumerator constant. */
+	EnumConstantDecl
+
+	/** A function. */
+	FunctionDecl
+
+	/** A variable. */
+	VarDecl
+
+	/** A function or method parameter. */
+	ParmDecl
+
+	/** An Objective-C \@interface. */
+	ObjCInterfaceDecl
+
+	/** An Objective-C \@interface for a category. */
+	ObjCCategoryDecl
+
+	/** An Objective-C \@protocol declaration. */
+	ObjCProtocolDecl
+
+	/** An Objective-C \@property declaration. */
+	ObjCPropertyDecl
+
+	/** An Objective-C instance variable. */
+	ObjCIvarDecl
+
+	/** An Objective-C instance method. */
+	ObjCInstanceMethodDecl
+
+	/** An Objective-C class method. */
+	ObjCClassMethodDecl
+
+	/** An Objective-C \@implementation. */
+	ObjCImplementationDecl
+
+	/** An Objective-C \@implementation for a category. */
+	ObjCCategoryImplDecl
+
+	/** A typedef. */
+	TypedefDecl
+
+	/** A C++ class method. */
+	CXXMethod
+
+	/** A C++ namespace. */
+	Namespace
+
+	/** A linkage specification, e.g. 'extern "C"'. */
+	LinkageSpec
+
+	/** A C++ constructor. */
+	Constructor
+
+	/** A C++ destructor. */
+	Destructor
+
+	/** A C++ conversion function. */
+	ConversionFunction
+
+	/** A C++ template type parameter. */
+	TemplateTypeParameter
+
+	/** A C++ non-type template parameter. */
+	NonTypeTemplateParameter
+
+	/** A C++ template template parameter. */
+	TemplateTemplateParameter
+
+	/** A C++ function template. */
+	FunctionTemplate
+
+	/** A C++ class template. */
+	ClassTemplate
+
+	/** A C++ class template partial specialization. */
+	ClassTemplatePartialSpecialization
+
+	/** A C++ namespace alias declaration. */
+	NamespaceAlias
+
+	/** A C++ using directive. */
+	UsingDirective
+
+	/** A C++ using declaration. */
+	UsingDeclaration
+
+	/** A C++ alias declaration */
+	TypeAliasDecl
+
+	/** An Objective-C \@synthesize definition. */
+	ObjCSynthesizeDecl
+
+	/** An Objective-C \@dynamic definition. */
+	ObjCDynamicDecl
+
+	/** An access specifier. */
+	CXXAccessSpecifier
+
+	FirstDecl = UnexposedDecl
+	LastDecl  = CXXAccessSpecifier
+
+	/* References */
+	FirstRef          = 40
+	ObjCSuperClassRef = iota - 2 //40
+	ObjCProtocolRef
+	ObjCClassRef
+
+	/**
+	 * A reference to a type declaration.
+	 *
+	 * A type reference occurs anywhere where a type is named but not
+	 * declared. For example, given:
+	 *
+	 * \code
+	 * typedef unsigned size_type;
+	 * size_type size;
+	 * \endcode
+	 *
+	 * The typedef is a declaration of size_type (CXCursor_TypedefDecl),
+	 * while the type of the variable "size" is referenced. The cursor
+	 * referenced by the type of size is the typedef for size_type.
+	 */
+	TypeRef
+
+	CXXBaseSpecifier
+
+	/**
+	 * A reference to a class template, function template, template
+	 * template parameter, or class template partial specialization.
+	 */
+	TemplateRef
+
+	/**
+	 * A reference to a namespace or namespace alias.
+	 */
+	NamespaceRef
+
+	/**
+	 * A reference to a member of a struct, union, or class that occurs in
+	 * some non-expression context, e.g., a designated initializer.
+	 */
+	MemberRef
+
+	/**
+	 * A reference to a labeled statement.
+	 *
+	 * This cursor kind is used to describe the jump to "start_over" in the
+	 * goto statement in the following example:
+	 *
+	 * \code
+	 *   start_over:
+	 *     ++counter;
+	 *
+	 *     goto start_over;
+	 * \endcode
+	 *
+	 * A label reference cursor refers to a label statement.
+	 */
+	LabelRef
+
+	/**
+	 * A reference to a set of overloaded functions or function templates
+	 * that has not yet been resolved to a specific function or function template.
+	 *
+	 * An overloaded declaration reference cursor occurs in C++ templates where
+	 * a dependent name refers to a function. For example:
+	 *
+	 * \code
+	 * template<typename T> void swap(T&, T&);
+	 *
+	 * struct X { ... };
+	 * void swap(X&, X&);
+	 *
+	 * template<typename T>
+	 * void reverse(T* first, T* last) {
+	 *   while (first < last - 1) {
+	 *     swap(*first, *--last);
+	 *     ++first;
+	 *   }
+	 * }
+	 *
+	 * struct Y { };
+	 * void swap(Y&, Y&);
+	 * \endcode
+	 *
+	 * Here, the identifier "swap" is associated with an overloaded declaration
+	 * reference. In the template definition, "swap" refers to either of the two
+	 * "swap" functions declared above, so both results will be available. At
+	 * instantiation time, "swap" may also refer to other functions found via
+	 * argument-dependent lookup (e.g., the "swap" function at the end of the
+	 * example).
+	 *
+	 * The functions \c clang_getNumOverloadedDecls() and
+	 * \c clang_getOverloadedDecl() can be used to retrieve the definitions
+	 * referenced by this cursor.
+	 */
+	OverloadedDeclRef
+
+	/**
+	 * A reference to a variable that occurs in some non-expression
+	 * context, e.g., a C++ lambda capture list.
+	 */
+	VariableRef
+
+	LastRef = VariableRef
+
+	/* Error conditions */
+	FirstInvalid = 70
+	InvalidFile  = iota + 15 //70
+	NoDeclFound
+	NotImplemented
+	InvalidCode
+	LastInvalid = InvalidCode
+
+	/* Expressions */
+	FirstExpr = 100
+
+	/**
+	 * An expression whose specific kind is not exposed via this
+	 * interface.
+	 *
+	 * Unexposed expressions have the same operations as any other kind
+	 * of expression; one can extract their location information,
+	 * spelling, children, etc. However, the specific kind of the
+	 * expression is not reported.
+	 */
+	UnexposedExpr = iota + 39 //100
+
+	/**
+	 * An expression that refers to some value declaration, such
+	 * as a function, variable, or enumerator.
+	 */
+	DeclRefExpr
+
+	/**
+	 * An expression that refers to a member of a struct, union,
+	 * class, Objective-C class, etc.
+	 */
+	MemberRefExpr
+
+	/** An expression that calls a function. */
+	CallExpr
+
+	/** An expression that sends a message to an Objective-C
+	object or class. */
+	ObjCMessageExpr
+
+	/** An expression that represents a block literal. */
+	BlockExpr
+
+	/** An integer literal.
+	 */
+	IntegerLiteral
+
+	/** A floating point number literal.
+	 */
+	FloatingLiteral
+
+	/** An imaginary number literal.
+	 */
+	ImaginaryLiteral
+
+	/** A string literal.
+	 */
+	StringLiteral
+
+	/** A character literal.
+	 */
+	CharacterLiteral
+
+	/** A parenthesized expression, e.g. "(1)".
+	 *
+	 * This AST node is only formed if full location information is requested.
+	 */
+	ParenExpr
+
+	/** This represents the unary-expression's (except sizeof and
+	 * alignof).
+	 */
+	UnaryOperator
+
+	/** [C99 6.5.2.1] Array Subscripting.
+	 */
+	ArraySubscriptExpr
+
+	/** A builtin binary operation expression such as "x + y" or
+	 * "x <= y".
+	 */
+	BinaryOperator
+
+	/** Compound assignment such as "+=".
+	 */
+	CompoundAssignOperator
+
+	/** The ?: ternary operator.
+	 */
+	ConditionalOperator
+
+	/** An explicit cast in C (C99 6.5.4) or a C-style cast in C++
+	 * (C++ [expr.cast]), which uses the syntax (Type)expr.
+	 *
+	 * For example: (int)f.
+	 */
+	CStyleCastExpr
+
+	/** [C99 6.5.2.5]
+	 */
+	CompoundLiteralExpr
+
+	/** Describes an C or C++ initializer list.
+	 */
+	InitListExpr
+
+	/** The GNU address of label extension, representing &&label.
+	 */
+	AddrLabelExpr
+
+	/** This is the GNU Statement Expression extension: ({int X=4; X;})
+	 */
+	StmtExpr
+
+	/** Represents a C11 generic selection.
+	 */
+	GenericSelectionExpr
+
+	/** Implements the GNU __null extension, which is a name for a null
+	 * pointer constant that has integral type (e.g., int or long) and is the same
+	 * size and alignment as a pointer.
+	 *
+	 * The __null extension is typically only used by system headers, which define
+	 * NULL as __null in C++ rather than using 0 (which is an integer that may not
+	 * match the size of a pointer).
+	 */
+	GNUNullExpr
+
+	/** C++'s static_cast<> expression.
+	 */
+	CXXStaticCastExpr
+
+	/** C++'s dynamic_cast<> expression.
+	 */
+	CXXDynamicCastExpr
+
+	/** C++'s reinterpret_cast<> expression.
+	 */
+	CXXReinterpretCastExpr
+
+	/** C++'s const_cast<> expression.
+	 */
+	CXXConstCastExpr
+
+	/** Represents an explicit C++ type conversion that uses "functional"
+	 * notion (C++ [expr.type.conv]).
+	 *
+	 * Example:
+	 * \code
+	 *   x = int(0.5);
+	 * \endcode
+	 */
+	CXXFunctionalCastExpr
+
+	/** A C++ typeid expression (C++ [expr.typeid]).
+	 */
+	CXXTypeidExpr
+
+	/** [C++ 2.13.5] C++ Boolean Literal.
+	 */
+	CXXBoolLiteralExpr
+
+	/** [C++0x 2.14.7] C++ Pointer Literal.
+	 */
+	CXXNullPtrLiteralExpr
+
+	/** Represents the "this" expression in C++
+	 */
+	CXXThisExpr
+
+	/** [C++ 15] C++ Throw Expression.
+	 *
+	 * This handles 'throw' and 'throw' assignment-expression. When
+	 * assignment-expression isn't present, Op will be null.
+	 */
+	CXXThrowExpr
+
+	/** A new expression for memory allocation and constructor calls, e.g:
+	 * "new CXXNewExpr(foo)".
+	 */
+	CXXNewExpr
+
+	/** A delete expression for memory deallocation and destructor calls,
+	 * e.g. "delete[] pArray".
+	 */
+	CXXDeleteExpr
+
+	/** A unary expression. (noexcept, sizeof, or other traits)
+	 */
+	UnaryExpr
+
+	/** An Objective-C string literal i.e. @"foo".
+	 */
+	ObjCStringLiteral
+
+	/** An Objective-C \@encode expression.
+	 */
+	ObjCEncodeExpr
+
+	/** An Objective-C \@selector expression.
+	 */
+	ObjCSelectorExpr
+
+	/** An Objective-C \@protocol expression.
+	 */
+	ObjCProtocolExpr
+
+	/** An Objective-C "bridged" cast expression, which casts between
+	 * Objective-C pointers and C pointers, transferring ownership in the process.
+	 *
+	 * \code
+	 *   NSString *str = (__bridge_transfer NSString *)CFCreateString();
+	 * \endcode
+	 */
+	ObjCBridgedCastExpr
+
+	/** Represents a C++0x pack expansion that produces a sequence of
+	 * expressions.
+	 *
+	 * A pack expansion expression contains a pattern (which itself is an
+	 * expression) followed by an ellipsis. For example:
+	 *
+	 * \code
+	 * template<typename F, typename ...Types>
+	 * void forward(F f, Types &&...args) {
+	 *  f(static_cast<Types&&>(args)...);
+	 * }
+	 * \endcode
+	 */
+	PackExpansionExpr
+
+	/** Represents an expression that computes the length of a parameter
+	 * pack.
+	 *
+	 * \code
+	 * template<typename ...Types>
+	 * struct count {
+	 *   static const unsigned value = sizeof...(Types);
+	 * };
+	 * \endcode
+	 */
+	SizeOfPackExpr
+	/* Represents a C++ lambda expression that produces a local function
+	 * object.
+	 *
+	 * \code
+	 * void abssort(float *x, unsigned N) {
+	 *   std::sort(x, x + N,
+	 *             [](float a, float b) {
+	 *               return std::abs(a) < std::abs(b);
+	 *             });
+	 * }
+	 * \endcode
+	 */
+	LambdaExpr
+
+	/** Objective-c Boolean Literal.
+	 */
+	ObjCBoolLiteralExpr
+
+	/** Represents the "self" expression in an Objective-C method.
+	 */
+	ObjCSelfExpr
+
+	/** OpenMP 5.0 [2.1.5, Array Section].
+	 */
+	OMPArraySectionExpr
+
+	/** Represents an @available(...) check.
+	 */
+	ObjCAvailabilityCheckExpr
+
+	/**
+	 * Fixed point literal
+	 */
+	FixedPointLiteral
+
+	/** OpenMP 5.0 [2.1.4, Array Shaping].
+	 */
+	OMPArrayShapingExpr
+
+	/**
+	 * OpenMP 5.0 [2.1.6 Iterators]
+	 */
+	OMPIteratorExpr
+
+	/** OpenCL's addrspace_cast<> expression.
+	 */
+	CXXAddrspaceCastExpr
+
+	/**
+	 * Expression that references a C++20 concept.
+	 */
+	ConceptSpecializationExpr
+
+	/**
+	 * Expression that references a C++20 concept.
+	 */
+	RequiresExpr
+
+	/**
+	 * Expression that references a C++20 parenthesized list aggregate
+	 * initializer.
+	 */
+	CXXParenListInitExpr
+
+	LastExpr = CXXParenListInitExpr
+
+	/* Statements */
+	FirstStmt = 200
+	/**
+	 * A statement whose specific kind is not exposed via this
+	 * interface.
+	 *
+	 * Unexposed statements have the same operations as any other kind of
+	 * statement; one can extract their location information, spelling,
+	 * children, etc. However, the specific kind of the statement is not
+	 * reported.
+	 */
+	UnexposedStmt = iota + 81 //200
+
+	/** A labelled statement in a function.
+	 *
+	 * This cursor kind is used to describe the "start_over:" label statement in
+	 * the following example:
+	 *
+	 * \code
+	 *   start_over:
+	 *     ++counter;
+	 * \endcode
+	 *
+	 */
+	LabelStmt
+
+	/** A group of statements like { stmt stmt }.
+	 *
+	 * This cursor kind is used to describe compound statements, e.g. function
+	 * bodies.
+	 */
+	CompoundStmt
+
+	/** A case statement.
+	 */
+	CaseStmt
+
+	/** A default statement.
+	 */
+	DefaultStmt
+
+	/** An if statement
+	 */
+	IfStmt
+
+	/** A switch statement.
+	 */
+	SwitchStmt
+
+	/** A while statement.
+	 */
+	WhileStmt
+
+	/** A do statement.
+	 */
+	DoStmt
+
+	/** A for statement.
+	 */
+	ForStmt
+
+	/** A goto statement.
+	 */
+	GotoStmt
+
+	/** An indirect goto statement.
+	 */
+	IndirectGotoStmt
+
+	/** A continue statement.
+	 */
+	ContinueStmt
+
+	/** A break statement.
+	 */
+	BreakStmt
+
+	/** A return statement.
+	 */
+	ReturnStmt
+
+	/** A GCC inline assembly statement extension.
+	 */
+	GCCAsmStmt
+	AsmStmt = GCCAsmStmt
+
+	/** Objective-C's overall \@try-\@catch-\@finally statement.
+	 */
+	ObjCAtTryStmt = iota + 80 //216
+
+	/** Objective-C's \@catch statement.
+	 */
+	ObjCAtCatchStmt
+
+	/** Objective-C's \@finally statement.
+	 */
+	ObjCAtFinallyStmt
+
+	/** Objective-C's \@throw statement.
+	 */
+	ObjCAtThrowStmt
+
+	/** Objective-C's \@synchronized statement.
+	 */
+	ObjCAtSynchronizedStmt
+
+	/** Objective-C's autorelease pool statement.
+	 */
+	ObjCAutoreleasePoolStmt
+
+	/** Objective-C's collection statement.
+	 */
+	ObjCForCollectionStmt
+
+	/** C++'s catch statement.
+	 */
+	CXXCatchStmt
+
+	/** C++'s try statement.
+	 */
+	CXXTryStmt
+
+	/** C++'s for (* : *) statement.
+	 */
+	CXXForRangeStmt
+
+	/** Windows Structured Exception Handling's try statement.
+	 */
+	SEHTryStmt
+
+	/** Windows Structured Exception Handling's except statement.
+	 */
+	SEHExceptStmt
+
+	/** Windows Structured Exception Handling's finally statement.
+	 */
+	SEHFinallyStmt
+
+	/** A MS inline assembly statement extension.
+	 */
+	MSAsmStmt
+
+	/** The null statement ";": C99 6.8.3p3.
+	 *
+	 * This cursor kind is used to describe the null statement.
+	 */
+	NullStmt
+
+	/** Adaptor class for mixing declarations with statements and
+	 * expressions.
+	 */
+	DeclStmt
+
+	/** OpenMP parallel directive.
+	 */
+	OMPParallelDirective
+
+	/** OpenMP SIMD directive.
+	 */
+	OMPSimdDirective
+
+	/** OpenMP for directive.
+	 */
+	OMPForDirective
+
+	/** OpenMP sections directive.
+	 */
+	OMPSectionsDirective
+
+	/** OpenMP section directive.
+	 */
+	OMPSectionDirective
+
+	/** OpenMP single directive.
+	 */
+	OMPSingleDirective
+
+	/** OpenMP parallel for directive.
+	 */
+	OMPParallelForDirective
+
+	/** OpenMP parallel sections directive.
+	 */
+	OMPParallelSectionsDirective
+
+	/** OpenMP task directive.
+	 */
+	OMPTaskDirective
+
+	/** OpenMP master directive.
+	 */
+	OMPMasterDirective
+
+	/** OpenMP critical directive.
+	 */
+	OMPCriticalDirective
+
+	/** OpenMP taskyield directive.
+	 */
+	OMPTaskyieldDirective
+
+	/** OpenMP barrier directive.
+	 */
+	OMPBarrierDirective
+
+	/** OpenMP taskwait directive.
+	 */
+	OMPTaskwaitDirective
+
+	/** OpenMP flush directive.
+	 */
+	OMPFlushDirective
+
+	/** Windows Structured Exception Handling's leave statement.
+	 */
+	SEHLeaveStmt
+
+	/** OpenMP ordered directive.
+	 */
+	OMPOrderedDirective
+
+	/** OpenMP atomic directive.
+	 */
+	OMPAtomicDirective
+
+	/** OpenMP for SIMD directive.
+	 */
+	OMPForSimdDirective
+
+	/** OpenMP parallel for SIMD directive.
+	 */
+	OMPParallelForSimdDirective
+
+	/** OpenMP target directive.
+	 */
+	OMPTargetDirective
+
+	/** OpenMP teams directive.
+	 */
+	OMPTeamsDirective
+
+	/** OpenMP taskgroup directive.
+	 */
+	OMPTaskgroupDirective
+
+	/** OpenMP cancellation point directive.
+	 */
+	OMPCancellationPointDirective
+
+	/** OpenMP cancel directive.
+	 */
+	OMPCancelDirective
+
+	/** OpenMP target data directive.
+	 */
+	OMPTargetDataDirective
+
+	/** OpenMP taskloop directive.
+	 */
+	OMPTaskLoopDirective
+
+	/** OpenMP taskloop simd directive.
+	 */
+	OMPTaskLoopSimdDirective
+
+	/** OpenMP distribute directive.
+	 */
+	OMPDistributeDirective
+
+	/** OpenMP target enter data directive.
+	 */
+	OMPTargetEnterDataDirective
+
+	/** OpenMP target exit data directive.
+	 */
+	OMPTargetExitDataDirective
+
+	/** OpenMP target parallel directive.
+	 */
+	OMPTargetParallelDirective
+
+	/** OpenMP target parallel for directive.
+	 */
+	OMPTargetParallelForDirective
+
+	/** OpenMP target update directive.
+	 */
+	OMPTargetUpdateDirective
+
+	/** OpenMP distribute parallel for directive.
+	 */
+	OMPDistributeParallelForDirective
+
+	/** OpenMP distribute parallel for simd directive.
+	 */
+	OMPDistributeParallelForSimdDirective
+
+	/** OpenMP distribute simd directive.
+	 */
+	OMPDistributeSimdDirective
+
+	/** OpenMP target parallel for simd directive.
+	 */
+	OMPTargetParallelForSimdDirective
+
+	/** OpenMP target simd directive.
+	 */
+	OMPTargetSimdDirective
+
+	/** OpenMP teams distribute directive.
+	 */
+	OMPTeamsDistributeDirective
+
+	/** OpenMP teams distribute simd directive.
+	 */
+	OMPTeamsDistributeSimdDirective
+
+	/** OpenMP teams distribute parallel for simd directive.
+	 */
+	OMPTeamsDistributeParallelForSimdDirective
+
+	/** OpenMP teams distribute parallel for directive.
+	 */
+	OMPTeamsDistributeParallelForDirective
+
+	/** OpenMP target teams directive.
+	 */
+	OMPTargetTeamsDirective
+
+	/** OpenMP target teams distribute directive.
+	 */
+	OMPTargetTeamsDistributeDirective
+
+	/** OpenMP target teams distribute parallel for directive.
+	 */
+	OMPTargetTeamsDistributeParallelForDirective
+
+	/** OpenMP target teams distribute parallel for simd directive.
+	 */
+	OMPTargetTeamsDistributeParallelForSimdDirective
+
+	/** OpenMP target teams distribute simd directive.
+	 */
+	OMPTargetTeamsDistributeSimdDirective
+
+	/** C++2a std::bit_cast expression.
+	 */
+	BuiltinBitCastExpr
+
+	/** OpenMP master taskloop directive.
+	 */
+	OMPMasterTaskLoopDirective
+
+	/** OpenMP parallel master taskloop directive.
+	 */
+	OMPParallelMasterTaskLoopDirective
+
+	/** OpenMP master taskloop simd directive.
+	 */
+	OMPMasterTaskLoopSimdDirective
+
+	/** OpenMP parallel master taskloop simd directive.
+	 */
+	OMPParallelMasterTaskLoopSimdDirective
+
+	/** OpenMP parallel master directive.
+	 */
+	OMPParallelMasterDirective
+
+	/** OpenMP depobj directive.
+	 */
+	OMPDepobjDirective
+
+	/** OpenMP scan directive.
+	 */
+	OMPScanDirective
+
+	/** OpenMP tile directive.
+	 */
+	OMPTileDirective
+
+	/** OpenMP canonical loop.
+	 */
+	OMPCanonicalLoop
+
+	/** OpenMP interop directive.
+	 */
+	OMPInteropDirective
+
+	/** OpenMP dispatch directive.
+	 */
+	OMPDispatchDirective
+
+	/** OpenMP masked directive.
+	 */
+	OMPMaskedDirective
+
+	/** OpenMP unroll directive.
+	 */
+	OMPUnrollDirective
+
+	/** OpenMP metadirective directive.
+	 */
+	OMPMetaDirective
+
+	/** OpenMP loop directive.
+	 */
+	OMPGenericLoopDirective
+
+	/** OpenMP teams loop directive.
+	 */
+	OMPTeamsGenericLoopDirective
+
+	/** OpenMP target teams loop directive.
+	 */
+	OMPTargetTeamsGenericLoopDirective
+
+	/** OpenMP parallel loop directive.
+	 */
+	OMPParallelGenericLoopDirective
+
+	/** OpenMP target parallel loop directive.
+	 */
+	OMPTargetParallelGenericLoopDirective
+
+	/** OpenMP parallel masked directive.
+	 */
+	OMPParallelMaskedDirective
+
+	/** OpenMP masked taskloop directive.
+	 */
+	OMPMaskedTaskLoopDirective
+
+	/** OpenMP masked taskloop simd directive.
+	 */
+	OMPMaskedTaskLoopSimdDirective
+
+	/** OpenMP parallel masked taskloop directive.
+	 */
+	OMPParallelMaskedTaskLoopDirective
+
+	/** OpenMP parallel masked taskloop simd directive.
+	 */
+	OMPParallelMaskedTaskLoopSimdDirective
+
+	/** OpenMP error directive.
+	 */
+	OMPErrorDirective
+
+	/** OpenMP scope directive.
+	 */
+	OMPScopeDirective
+
+	LastStmt = OMPScopeDirective
+
+	/**
+	 * Cursor that represents the translation unit itself.
+	 *
+	 * The translation unit cursor exists primarily to act as the root
+	 * cursor for traversing the contents of a translation unit.
+	 */
+	CursorTranslationUnit = 350
+
+	/* Attributes */
+	FirstAttr = 400
+	/**
+	 * An attribute whose specific kind is not exposed via this
+	 * interface.
+	 */
+	UnexposedAttr = iota + 170
+
+	IBActionAttr
+	IBOutletAttr
+	IBOutletCollectionAttr
+	CXXFinalAttr
+	CXXOverrideAttr
+	AnnotateAttr
+	AsmLabelAttr
+	PackedAttr
+	PureAttr
+	ConstAttr
+	NoDuplicateAttr
+	CUDAConstantAttr
+	CUDADeviceAttr
+	CUDAGlobalAttr
+	CUDAHostAttr
+	CUDASharedAttr
+	VisibilityAttr
+	DLLExport
+	DLLImport
+	NSReturnsRetained
+	NSReturnsNotRetained
+	NSReturnsAutoreleased
+	NSConsumesSelf
+	NSConsumed
+	ObjCException
+	ObjCNSObject
+	ObjCIndependentClass
+	ObjCPreciseLifetime
+	ObjCReturnsInnerPointer
+	ObjCRequiresSuper
+	ObjCRootClass
+	ObjCSubclassingRestricted
+	ObjCExplicitProtocolImpl
+	ObjCDesignatedInitializer
+	ObjCRuntimeVisible
+	ObjCBoxable
+	FlagEnum
+	ConvergentAttr
+	WarnUnusedAttr
+	WarnUnusedResultAttr
+	AlignedAttr
+	LastAttr = AlignedAttr
+
+	/* Preprocessing */
+	PreprocessingDirective = iota + 227 //500
+	MacroDefinition
+	MacroExpansion
+	MacroInstantiation = MacroExpansion
+	InclusionDirective = 503
+	FirstPreprocessing = PreprocessingDirective
+	LastPreprocessing  = InclusionDirective
+
+	/* Extra Declarations */
+	/**
+	 * A module import declaration.
+	 */
+	ModuleImportDecl = iota + 320 //600
+	TypeAliasTemplateDecl
+	/**
+	* A static_assert or _Static_assert node
+	 */
+	StaticAssert
+	/**
+	* a friend declaration.
+	 */
+	FriendDecl
+	/**
+	* a concept declaration.
+	 */
+	ConceptDecl
+
+	FirstExtraDecl = ModuleImportDecl
+	LastExtraDecl  = ConceptDecl
+
+	/**
+	* A code completion overload candidate.
+	 */
+	OverloadCandidate = 700
+)
+
 /**
  * Opaque pointer representing client data that will be passed through
  * to various callbacks and visitors.
@@ -162,8 +1260,12 @@ func (*TranslationUnit) Dispose() {}
  * The translation unit cursor can be used to start traversing the
  * various declarations within the given translation unit.
  */
-// llgo:link (*TranslationUnit).Cursor C.clang_getTranslationUnitCursor
-func (*TranslationUnit) Cursor() (ret Cursor) {
+
+//llgo:link (*TranslationUnit).wrapCursor C.wrap_clang_getTranslationUnitCursor
+func (t *TranslationUnit) wrapCursor(cursor *Cursor) {}
+
+func (t *TranslationUnit) Cursor() (ret Cursor) {
+	t.wrapCursor(&ret)
 	return
 }
 
@@ -198,8 +1300,34 @@ func (CursorKind) String() (ret String) {
  */
 type Cursor struct {
 	Kind  CursorKind
-	Xdata c.Int
-	Data  [3]c.Pointer
+	xdata c.Int
+	data  [3]c.Pointer
+}
+
+/**
+ * The type of an element in the abstract syntax tree.
+ *
+ */
+type Type struct {
+	Kind CursorKind
+	data [2]c.Pointer
+}
+
+/**
+ * A particular source file that is part of a translation unit.
+ */
+type File uintptr
+
+/**
+ * Identifies a specific source location within a translation
+ * unit.
+ *
+ * Use clang_getExpansionLocation() or clang_getSpellingLocation()
+ * to map a source location to a particular file, line, and column.
+ */
+type SourceLocation struct {
+	ptrData [2]c.Pointer
+	intData c.Uint
 }
 
 /**
@@ -213,6 +1341,106 @@ func (*Cursor) wrapString() (ret String) {
 func (c Cursor) String() (ret String) {
 	return c.wrapString()
 }
+
+/**
+ * Retrieve a name for the entity referenced by this cursor.
+ */
+// llgo:link (*Cursor).wrapMangling C.wrap_clang_Cursor_getMangling
+func (*Cursor) wrapMangling() (ret String) {
+	return
+}
+
+func (c Cursor) Mangling() (ret String) {
+	return c.wrapMangling()
+}
+
+/**
+ * Retrieve the type of a CXCursor (if any).
+ */
+// llgo:link (*Cursor).wrapType C.wrap_clang_getCursorType
+func (c *Cursor) wrapType(ret *Type) {}
+
+func (c Cursor) Type() (ret Type) {
+	c.wrapType(&ret)
+	return
+}
+
+/**
+ * Retrieve the return type associated with a given cursor.
+ *
+ * This only returns a valid type if the cursor refers to a function or method.
+ */
+// llgo:link (*Cursor).wrapResultType C.wrap_clang_getCursorResultType
+func (c *Cursor) wrapResultType(ret *Type) {}
+
+func (c Cursor) ResultType() (ret Type) {
+	c.wrapResultType(&ret)
+	return
+}
+
+/**
+ * Retrieve the number of non-variadic arguments associated with a given
+ * cursor.
+ *
+ * The number of arguments can be determined for calls as well as for
+ * declarations of functions or methods. For other cursors -1 is returned.
+ */
+// llgo:link (*Cursor).wrapNumArguments C.wrap_clang_Cursor_getNumArguments
+func (*Cursor) wrapNumArguments() (num c.Int) {
+	return 0
+}
+
+func (c Cursor) NumArguments() (num c.Int) {
+	return c.wrapNumArguments()
+}
+
+/**
+ * Retrieve the argument cursor of a function or method.
+ *
+ * The argument cursor can be determined for calls as well as for declarations
+ * of functions or methods. For other cursors and for invalid indices, an
+ * invalid cursor is returned.
+ */
+// llgo:link (*Cursor).wrapArgument C.wrap_clang_Cursor_getArgument
+func (*Cursor) wrapArgument(index c.Uint, arg *Cursor) {}
+
+func (c Cursor) Argument(index c.Uint) (arg Cursor) {
+	c.wrapArgument(index, &arg)
+	return
+}
+
+// llgo:link (*Cursor).wrapLocation C.wrap_clang_getCursorLocation
+func (c *Cursor) wrapLocation(loc *SourceLocation) {}
+
+func (c Cursor) Location() (loc SourceLocation) {
+	c.wrapLocation(&loc)
+	return
+}
+
+// llgo:link (*SourceLocation).wrapSpellingLocation C.wrap_clang_getSpellingLocation
+func (l *SourceLocation) wrapSpellingLocation(file *File, line, column, offset *c.Uint) {}
+
+func (l SourceLocation) SpellingLocation(file *File, line, column, offset *c.Uint) {
+	l.wrapSpellingLocation(file, line, column, offset)
+}
+
+/**
+ * Pretty-print the underlying type using the rules of the
+ * language of the translation unit from which it came.
+ *
+ * If the type is invalid, an empty string is returned.
+ */
+// llgo:link (*Type).wrapString C.wrap_clang_getTypeSpelling
+func (t *Type) wrapString() (ret String) {
+	return
+}
+
+func (t Type) String() (ret String) {
+	return t.wrapString()
+}
+
+//llgo:link File.FileName C.clang_getFileName
+func (File) FileName() (ret String) { return }
 
 /**
  * Describes how the traversal of the children of a particular

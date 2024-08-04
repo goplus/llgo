@@ -20,6 +20,7 @@ import (
 	"debug/macho"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/constant"
 	"go/token"
 	"go/types"
@@ -135,7 +136,12 @@ func Do(args []string, conf *Config) {
 
 	llssa.Initialize(llssa.InitAll)
 
-	prog := llssa.NewProgram(nil)
+	target := &llssa.Target{
+		GOOS:   build.Default.GOOS,
+		GOARCH: build.Default.GOARCH,
+	}
+
+	prog := llssa.NewProgram(target)
 	sizes := prog.TypeSizes
 	dedup := packages.NewDeduper()
 	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
@@ -283,7 +289,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if strings.ContainsRune(param, '$') {
-						expd = strings.TrimSpace(env.ExpandEnv(param))
+						expd = env.ExpandEnv(param)
 						ctx.nLibdir++
 					} else {
 						expd = param
@@ -355,7 +361,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 			args,
 			"-rpath", "$ORIGIN",
 			"-rpath", "$ORIGIN/../lib",
+			"-fdata-sections",
+			"-ffunction-sections",
 			"-Xlinker", "--gc-sections",
+			"-lm",
+			"-latomic",
 			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
 		)
 	}
@@ -747,15 +757,24 @@ func findDylibDep(exe, lib string) string {
 type none struct{}
 
 var hasAltPkg = map[string]none{
+	"crypto/md5":               {},
+	"crypto/sha1":              {},
+	"crypto/sha256":            {},
+	"crypto/sha512":            {},
+	"crypto/rand":              {},
 	"fmt":                      {},
+	"hash/crc32":               {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
+	"internal/itoa":            {},
 	"internal/oserror":         {},
 	"internal/reflectlite":     {},
 	"internal/syscall/execenv": {},
 	"internal/syscall/unix":    {},
 	"math":                     {},
+	"math/big":                 {},
 	"math/cmplx":               {},
+	"math/rand":                {},
 	"reflect":                  {},
 	"sync":                     {},
 	"sync/atomic":              {},
@@ -764,10 +783,7 @@ var hasAltPkg = map[string]none{
 	"os":                       {},
 	"os/exec":                  {},
 	"runtime":                  {},
-}
-
-var overlayFiles = map[string]string{
-	"math/exp_amd64.go": "package math;",
+	"io":                       {},
 }
 
 func check(err error) {

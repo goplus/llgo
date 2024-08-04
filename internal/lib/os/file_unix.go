@@ -250,6 +250,27 @@ func openFileNolog(name string, flag int, perm FileMode) (*File, error) {
 	return f, nil
 }
 
+func (file *File) close() error {
+	return syscall.Close(int(file.fd))
+	/* TODO(xsw):
+	if file.dirinfo != nil {
+		file.dirinfo.close()
+		file.dirinfo = nil
+	}
+	var err error
+	if e := file.pfd.Close(); e != nil {
+		if e == poll.ErrFileClosing {
+			e = ErrClosed
+		}
+		err = &PathError{Op: "close", Path: file.name, Err: e}
+	}
+
+	// no need for a finalizer anymore
+	runtime.SetFinalizer(file, nil)
+	return err
+	*/
+}
+
 func tempDir() string {
 	dir := Getenv("TMPDIR")
 	if dir == "" {

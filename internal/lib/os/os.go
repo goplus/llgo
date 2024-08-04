@@ -274,9 +274,6 @@ func Mkdir(name string, perm FileMode) error {
 // func MkdirAll(path string, perm FileMode) error
 // func MkdirTemp(dir, pattern string) (string, error)
 // func NewSyscallError(syscall string, err error) error
-func Pipe() (r *File, w *File, err error) {
-	panic("todo: os.Pipe")
-}
 
 // func ReadFile(name string) ([]byte, error)
 

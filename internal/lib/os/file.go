@@ -467,6 +467,7 @@ func (dir dirFS) join(name string) (string, error) {
 	}
 	return string(dir) + string(PathSeparator) + name, nil
 }
+*/
 
 // ReadFile reads the named file and returns the contents.
 // A successful call returns err == nil, not err == EOF.
@@ -529,4 +530,3 @@ func WriteFile(name string, data []byte, perm FileMode) error {
 	}
 	return err
 }
-*/

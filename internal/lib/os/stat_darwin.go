@@ -5,8 +5,9 @@
 package os
 
 import (
-	"syscall"
 	"time"
+
+	"github.com/goplus/llgo/c/syscall"
 )
 
 func fillFileStatFromSys(fs *fileStat, name string) {

@@ -388,7 +388,7 @@ var boolPredOpToLLVM = []llvm.IntPredicate{
 	token.NEQ - predOpBase: llvm.IntNE,
 }
 
-// EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
+// EQL NEQ LSS LEQ GTR GEQ      == != < <= > >=
 func isPredOp(op token.Token) bool {
 	return op >= predOpBase && op <= predOpLast
 }
@@ -397,7 +397,7 @@ func isPredOp(op token.Token) bool {
 // op can be:
 // ADD SUB MUL QUO REM          + - * / %
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
-// EQL NEQ LSS LEQ GTR GEQ      == != < <= < >=
+// EQL NEQ LSS LEQ GTR GEQ      == != < <= > >=
 func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	if debugInstr {
 		log.Printf("BinOp %d, %v, %v\n", op, x.impl, y.impl)
@@ -495,7 +495,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			llop := logicOpToLLVM[op-logicOpBase]
 			return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 		}
-	case isPredOp(op): // op: == != < <= < >=
+	case isPredOp(op): // op: == != < <= > >=
 		prog := b.Prog
 		tret := prog.Bool()
 		kind := x.kind
@@ -567,7 +567,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 			}
 		case vkArray:
-			typ := x.raw.Type.(*types.Array)
+			typ := x.raw.Type.Underlying().(*types.Array)
 			elem := b.Prog.Elem(x.Type)
 			ret := prog.BoolVal(true)
 			for i, n := 0, int(typ.Len()); i < n; i++ {
@@ -699,8 +699,31 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
-	if t.kind == vkClosure && x.kind == vkFuncDecl {
-		ret.impl = checkExpr(x, t.raw.Type.Underlying(), b).impl
+	if t.kind == vkClosure {
+		switch x.kind {
+		case vkFuncDecl:
+			ret.impl = checkExpr(x, t.raw.Type, b).impl
+		case vkClosure:
+			// TODO(xsw): change type should be a noop instruction
+			convType := func() Expr {
+				r := Expr{llvm.CreateAlloca(b.impl, t.ll), b.Prog.Pointer(t)}
+				b.Store(r, x)
+				return b.Load(r)
+			}
+			switch t.RawType().(type) {
+			case *types.Named:
+				if _, ok := x.RawType().(*types.Struct); ok {
+					return convType()
+				}
+			case *types.Struct:
+				if _, ok := x.RawType().(*types.Named); ok {
+					return convType()
+				}
+			}
+			fallthrough
+		default:
+			ret.impl = x.impl
+		}
 	} else {
 		ret.impl = x.impl
 	}
@@ -996,6 +1019,22 @@ func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
 	return
 }
 
+// compareSelect performs a series of comparisons and selections based on the
+// given comparison op. It's used to implement operations like min and max.
+//
+// The function iterates through the provided expressions, comparing each with
+// the current result using the specified comparison op. It selects the
+// appropriate value based on the comparison.
+func (b Builder) compareSelect(op token.Token, x Expr, y ...Expr) Expr {
+	ret := x
+	for _, v := range y {
+		cond := b.BinOp(op, ret, v)
+		sel := llvm.CreateSelect(b.impl, cond.impl, ret.impl, v.impl)
+		ret = Expr{sel, ret.Type}
+	}
+	return ret
+}
+
 // A Builtin represents a specific use of a built-in function, e.g. len.
 //
 // Builtins are immutable values.  Builtins do not have addresses.
@@ -1106,6 +1145,14 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			b.Call(b.Pkg.rtFunc("MapClear"), t, m)
 			return
 		}
+	case "min":
+		if len(args) > 0 {
+			return b.compareSelect(token.LSS, args[0], args[1:]...)
+		}
+	case "max":
+		if len(args) > 0 {
+			return b.compareSelect(token.GTR, args[0], args[1:]...)
+		}
 	}
 	panic("todo: " + fn)
 }
@@ -1177,7 +1224,7 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 // -----------------------------------------------------------------------------
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
-	if t, ok := t.(*types.Struct); ok && isClosure(t) {
+	if st, ok := t.Underlying().(*types.Struct); ok && isClosure(st) {
 		if v.kind != vkClosure {
 			return b.Pkg.closureStub(b, t, v)
 		}

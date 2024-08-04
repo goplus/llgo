@@ -17,7 +17,7 @@
 package syscall
 
 const (
-	LLGoPackage = "decl"
+	LLGoPackage = "noinit"
 )
 
 type Errno = uintptr
@@ -25,3 +25,8 @@ type Errno = uintptr
 // A Signal is a number describing a process signal.
 // It implements the os.Signal interface.
 type Signal = int
+
+// Unix returns the time stored in ts as seconds plus nanoseconds.
+func (ts *Timespec) Unix() (sec int64, nsec int64) {
+	return int64(ts.Sec), int64(ts.Nsec)
+}

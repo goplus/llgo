@@ -14,37 +14,65 @@ jobs:
   test:
     strategy:
       matrix:
-        # os: [macos-latest, ubuntu-latest]
-        os: [macos-latest]
+        os:
+          - macos-latest
+          - ubuntu-24.04
         llvm: [18]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update Homebrew
-        # needed as long as LLVM 18 is still fresh
-        if: matrix.llvm == 18 && startsWith(matrix.os, 'macos')
-        run: brew update
-      - name: Install LLVM ${{ matrix.llvm }} and bdw-gc
+      - name: Install dependencies
         if: startsWith(matrix.os, 'macos')
         run: |
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@${{ matrix.llvm }} bdw-gc
-          echo `brew --prefix llvm@${{ matrix.llvm }}`/bin >> $GITHUB_PATH
-      - name: Install LLVM ${{ matrix.llvm }} and libgc-dev
+          brew update
+          brew install llvm@${{matrix.llvm}} pkg-config bdw-gc openssl
+          echo "$(brew --prefix llvm@${{matrix.llvm}})/bin" >> $GITHUB_PATH
+
+          # Install optional deps for demos.
+          #
+          # NOTE: Keep this list updated as new deps are introduced.
+          opt_deps=(
+            cjson       # for github.com/goplus/llgo/c/cjson
+            sqlite      # for github.com/goplus/llgo/c/sqlite
+            python@3.12 # for github.com/goplus/llgo/py
+          )
+          brew install "${opt_deps[@]}"
+
+      - name: Install dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{ matrix.llvm }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{matrix.llvm}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} lld-${{ matrix.llvm }} pkg-config libgc-dev libcjson-dev libsqlite3-dev python3.11-dev
-          echo /usr/lib/llvm-${{ matrix.llvm }}/bin >> $GITHUB_PATH
-    
+          sudo apt-get install -y llvm-${{matrix.llvm}}-dev clang-${{matrix.llvm}} lld-${{matrix.llvm}} pkg-config libgc-dev libssl-dev zlib1g-dev
+          echo "/usr/lib/llvm-${{matrix.llvm}}/bin" >> $GITHUB_PATH
+
+          # Install optional deps for demos.
+          #
+          # NOTE: Keep this list updated as new deps are introduced.
+          opt_deps=(
+            libcjson-dev   # for github.com/goplus/llgo/c/cjson
+            libsqlite3-dev # for github.com/goplus/llgo/c/sqlite
+            python3.12-dev # for github.com/goplus/llgo/py
+          )
+          sudo apt-get install -y "${opt_deps[@]}"
+
+      - name: Install further optional dependencies for demos
+        run: |
+          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+          py_deps=(
+            numpy # for github.com/goplus/llgo/py/numpy
+            torch # for github.com/goplus/llgo/py/torch
+          )
+          pip3 install --break-system-packages "${py_deps[@]}"
+
       - name: Clang information
         run: |
           echo $PATH
           which clang
           clang --version
-        
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -54,28 +82,26 @@ jobs:
         run: go build -v ./...
 
       - name: Test
-        if: matrix.os != 'macos-latest'
+        if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -v ./...
 
       - name: Test with coverage
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Install
         run: go install ./...
-      
+
       - name: LLGO tests
-        if: matrix.os != 'ubuntu-latest'
+        if: ${{!startsWith(matrix.os, 'ubuntu')}}
         run: |
-          echo "Test result on ${{ matrix.os }} with LLVM ${{ matrix.llvm }}" > result.md
-          LLGOROOT=$PWD bash .github/workflows/test_llgo.sh
-      
-      - name: Test _demo and _pydemo
-        run: |
-          set +e
-          LLGOROOT=$PWD bash .github/workflows/test_demo.sh
-          exit 0
-      
+          echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
+          bash .github/workflows/test_llgo.sh
+
+      - name: Test demos
+        continue-on-error: true
+        run: bash .github/workflows/test_demo.sh
+
       - name: Show test result
         run: cat result.md
 
@@ -84,10 +110,10 @@ jobs:
         if: false
         with:
           filePath: result.md
-          comment_tag: test-result-on-${{ matrix.os }}-with-llvm-${{ matrix.llvm }}
+          comment_tag: test-result-on-${{matrix.os}}-with-llvm-${{matrix.llvm}}
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{secrets.CODECOV_TOKEN}}
           slug: goplus/llgo

@@ -13,7 +13,7 @@ func main() {
 	select {
 	case m := <-c:
 		handle(m)
-	case <-time.After(10 * time.Second):
+	case <-time.After(time.Second / 10):
 		fmt.Println("timed out")
 	}
 }

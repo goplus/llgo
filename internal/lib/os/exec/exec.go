@@ -29,6 +29,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/goplus/llgo/internal/lib/internal/syscall/execenv"
 )
 
 // Error is returned by LookPath when it fails to classify a file as an
@@ -1089,7 +1091,6 @@ func minInt(a, b int) int {
 // would be run as it is currently configured. If an error occurs in computing
 // the environment, it is returned alongside the best-effort copy.
 func (c *Cmd) environ() ([]string, error) {
-	/* TODO(xsw):
 	var err error
 
 	env := c.Env
@@ -1128,8 +1129,6 @@ func (c *Cmd) environ() ([]string, error) {
 		err = dedupErr
 	}
 	return addCriticalEnv(env), err
-	*/
-	panic("todo: exec.Cmd.environ")
 }
 
 // Environ returns a copy of the environment in which the command would be run

@@ -16,13 +16,10 @@ import (
 // be canceled and return immediately with an ErrClosed error.
 // Close will return an error if it has already been called.
 func (f *File) Close() error {
-	/*
-		if f == nil {
-			return ErrInvalid
-		}
-		return f.file.close()
-	*/
-	panic("todo: os.(*File).Close")
+	if f == nil {
+		return ErrInvalid
+	}
+	return f.close()
 }
 
 // pread reads len(b) bytes from the File starting at byte offset off.

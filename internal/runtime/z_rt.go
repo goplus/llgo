@@ -30,6 +30,7 @@ type Defer struct {
 	Addr unsafe.Pointer // sigjmpbuf
 	Bits uintptr
 	Link *Defer
+	Reth unsafe.Pointer // block address after Rethrow
 	Rund unsafe.Pointer // block address after RunDefers
 }
 
@@ -46,12 +47,6 @@ func Recover() (ret any) {
 
 // Panic panics with a value.
 func Panic(v any) {
-	switch e := v.(type) {
-	case error:
-		v = e.Error()
-	case interface{ String() string }:
-		v = e.String()
-	}
 	ptr := c.Malloc(unsafe.Sizeof(v))
 	*(*any)(ptr) = v
 	excepKey.Set(ptr)
@@ -81,10 +76,6 @@ func init() {
 }
 
 // -----------------------------------------------------------------------------
-
-func unpackEface(i any) *eface {
-	return (*eface)(unsafe.Pointer(&i))
-}
 
 // TracePanic prints panic message.
 func TracePanic(v any) {

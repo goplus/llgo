@@ -63,7 +63,11 @@ func (b Builder) AllocaSigjmpBuf() Expr {
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
-	fn := b.Pkg.cFunc("sigsetjmp", b.Prog.tySigsetjmp())
+	fname := "sigsetjmp"
+	if b.Prog.target.GOOS == "linux" {
+		fname = "__sigsetjmp"
+	}
+	fn := b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
 	return b.Call(fn, jb, savemask)
 }
 
@@ -86,14 +90,16 @@ func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 }
 
 type aDefer struct {
-	nextBit  int          // next defer bit
-	key      Expr         // pthread TLS key
-	data     Expr         // pointer to runtime.Defer
-	bitsPtr  Expr         // pointer to defer bits
-	rundPtr  Expr         // pointer to RunDefers index
-	procBlk  BasicBlock   // deferProc block
-	runsNext []BasicBlock // next blocks of RunDefers
-	stmts    []func(bits Expr)
+	nextBit   int          // next defer bit
+	key       Expr         // pthread TLS key
+	data      Expr         // pointer to runtime.Defer
+	bitsPtr   Expr         // pointer to defer bits
+	rethPtr   Expr         // next block of Rethrow
+	rundPtr   Expr         // next block of RunDefers
+	procBlk   BasicBlock   // deferProc block
+	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
+	rundsNext []BasicBlock // next blocks of RunDefers
+	stmts     []func(bits Expr)
 }
 
 func (p Package) keyInit(name string) {
@@ -124,53 +130,59 @@ const (
 	// 0: addr sigjmpbuf
 	// 1: bits uintptr
 	// 2: link *Defer
-	// 3: rund voidptr
+	// 3: reth voidptr: block address after Rethrow
+	// 4: rund voidptr: block address after RunDefers
 	deferSigjmpbuf = iota
 	deferBits
 	deferLink
-	deferRund
+	deferRethrow
+	deferRunDefers
 )
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
 	self := b.Func
 	if self.defer_ == nil {
 		// TODO(xsw): check if in pkg.init
-		var next, rundBlk BasicBlock
+		var next, panicBlk BasicBlock
 		if kind != DeferAlways {
 			b, next = self.deferInitBuilder()
 		}
+
 		prog := b.Prog
+		blks := self.MakeBlocks(2)
+		procBlk, rethrowBlk := blks[0], blks[1]
+
 		key := b.deferKey()
 		zero := prog.Val(uintptr(0))
 		link := Expr{b.pthreadGetspecific(key).impl, prog.DeferPtr()}
 		jb := b.AllocaSigjmpBuf()
-		ptr := b.aggregateAlloca(prog.Defer(), jb.impl, zero.impl, link.impl)
+		ptr := b.aggregateAlloca(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
-		blks := self.MakeBlocks(2)
-		procBlk, rethrowBlk := blks[0], blks[1]
 		bitsPtr := b.FieldAddr(deferData, deferBits)
-		rundPtr := b.FieldAddr(deferData, deferRund)
-		self.defer_ = &aDefer{
-			key:      key,
-			data:     deferData,
-			bitsPtr:  bitsPtr,
-			rundPtr:  rundPtr,
-			procBlk:  procBlk,
-			runsNext: []BasicBlock{rethrowBlk},
-		}
+		rethPtr := b.FieldAddr(deferData, deferRethrow)
+		rundPtr := b.FieldAddr(deferData, deferRunDefers)
+
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
 		if kind != DeferAlways {
-			rundBlk = self.MakeBlock("")
+			panicBlk = self.MakeBlock("")
 		} else {
 			blks = self.MakeBlocks(2)
-			next, rundBlk = blks[0], blks[1]
+			next, panicBlk = blks[0], blks[1]
 		}
-		b.If(b.BinOp(token.EQL, retval, czero), next, rundBlk)
-		b.SetBlockEx(rundBlk, AtEnd, false) // exec runDefers and rethrow
-		b.Store(rundPtr, rethrowBlk.Addr())
-		b.Jump(procBlk)
+		b.If(b.BinOp(token.EQL, retval, czero), next, panicBlk)
+
+		self.defer_ = &aDefer{
+			key:       key,
+			data:      deferData,
+			bitsPtr:   bitsPtr,
+			rethPtr:   rethPtr,
+			rundPtr:   rundPtr,
+			procBlk:   procBlk,
+			panicBlk:  panicBlk,
+			rundsNext: []BasicBlock{rethrowBlk},
+		}
 
 		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
 		b.Call(b.Pkg.rtFunc("Rethrow"), link)
@@ -209,7 +221,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	case DeferAlways:
 		// nothing to do
 	default:
-		panic("todo: DeferInLoop is not supported")
+		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
 	}
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
@@ -229,7 +241,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 func (b Builder) RunDefers() {
 	self := b.getDefer(DeferInCond)
 	blk := b.Func.MakeBlock("")
-	self.runsNext = append(self.runsNext, blk)
+	self.rundsNext = append(self.rundsNext, blk)
 
 	b.Store(self.rundPtr, blk.Addr())
 	b.Jump(self.procBlk)
@@ -243,20 +255,42 @@ func (p Function) endDefer(b Builder) {
 	if self == nil {
 		return
 	}
-	nexts := self.runsNext
+	nexts := self.rundsNext
 	if len(nexts) == 0 {
 		return
 	}
-	b.SetBlockEx(self.procBlk, AtEnd, true)
-	bits := b.Load(self.bitsPtr)
-	stmts := self.stmts
-	for i := len(stmts) - 1; i >= 0; i-- {
-		stmts[i](bits)
-	}
 
+	rethrowBlk := nexts[0]
+	procBlk := self.procBlk
+	panicBlk := self.panicBlk
+	rethPtr := self.rethPtr
+	rundPtr := self.rundPtr
+	bitsPtr := self.bitsPtr
+
+	stmts := self.stmts
+	n := len(stmts)
+	rethsNext := make([]BasicBlock, n+1)
+	blks := p.MakeBlocks(n - 1)
+	copy(rethsNext[1:], blks)
+	rethsNext[0] = rethrowBlk
+	rethsNext[n] = procBlk
+
+	for i := n - 1; i >= 0; i-- {
+		rethNext := rethsNext[i]
+		b.SetBlockEx(rethsNext[i+1], AtEnd, true)
+		b.Store(rethPtr, rethNext.Addr())
+		stmts[i](b.Load(bitsPtr))
+		if i != 0 {
+			b.Jump(rethNext)
+		}
+	}
 	link := b.getField(b.Load(self.data), deferLink)
 	b.pthreadSetspecific(self.key, link)
-	b.IndirectJump(b.Load(self.rundPtr), nexts)
+	b.IndirectJump(b.Load(rundPtr), nexts)
+
+	b.SetBlockEx(panicBlk, AtEnd, false) // panicBlk: exec runDefers and rethrow
+	b.Store(rundPtr, rethrowBlk.Addr())
+	b.IndirectJump(b.Load(rethPtr), rethsNext)
 }
 
 // -----------------------------------------------------------------------------

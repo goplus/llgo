@@ -35,12 +35,9 @@ func ExpandEnv(s string) string {
 
 func expandEnvWithCmd(s string) string {
 	expanded := reSubcmd.ReplaceAllStringFunc(s, func(m string) string {
-		subcmd := strings.TrimSpace(s[2 : len(s)-1])
-
+		subcmd := strings.TrimSpace(m[2 : len(m)-1])
 		args := parseSubcmd(subcmd)
-
 		cmd := args[0]
-
 		if cmd != "pkg-config" && cmd != "llvm-config" {
 			fmt.Fprintf(os.Stderr, "expand cmd only support pkg-config and llvm-config: '%s'\n", subcmd)
 			return ""
@@ -55,9 +52,9 @@ func expandEnvWithCmd(s string) string {
 			return ""
 		}
 
-		return string(out)
+		return strings.Replace(strings.TrimSpace(string(out)), "\n", " ", -1)
 	})
-	return os.Expand(expanded, os.Getenv)
+	return strings.TrimSpace(os.Expand(expanded, os.Getenv))
 }
 
 func parseSubcmd(s string) []string {

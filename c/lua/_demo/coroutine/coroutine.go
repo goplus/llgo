@@ -36,8 +36,8 @@ func main() {
 	// Resume coroutine and handle yields
 	for {
 		status = co.Resume(nil, 0, &nres)
-		c.Printf(c.Str("Resuming coroutine %d...\n"), status)
 		if status == lua.YIELD {
+			c.Printf(c.Str("Resuming coroutine %d...\n"), status)
 			yieldValue := co.Tointeger(-1)
 			c.Printf(c.Str("Yield value: %d\n"), yieldValue)
 			co.Pop(1) // Clean up the stack
@@ -58,3 +58,23 @@ func main() {
 	finalStatus := co.Status()
 	c.Printf(c.Str("Final status of coroutine: %d\n"), finalStatus)
 }
+
+/* Expected output:
+Resuming coroutine...
+Resuming coroutine 1...
+Yield value: 1
+Coroutine is yieldable.
+Resuming coroutine 1...
+Yield value: 2
+Coroutine is yieldable.
+Resuming coroutine 1...
+Yield value: 3
+Coroutine is yieldable.
+Resuming coroutine 1...
+Yield value: 4
+Coroutine is yieldable.
+Resuming coroutine 1...
+Yield value: 5
+Coroutine is yieldable.
+Final status of coroutine: 0
+*/

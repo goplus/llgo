@@ -17,7 +17,7 @@
 package cjson
 
 import (
-	_ "unsafe"
+	"unsafe"
 
 	"github.com/goplus/llgo/c"
 )
@@ -29,6 +29,20 @@ const (
 // llgo:type C
 type JSON struct {
 	Unused [0]byte
+}
+
+//go:linkname Parse C.cJSON_Parse
+func Parse(value *c.Char) *JSON
+
+//go:linkname ParseWithLength C.cJSON_ParseWithLength
+func ParseWithLength(value *byte, valueLength uintptr) *JSON
+
+func ParseBytes(value []byte) *JSON {
+	return ParseWithLength(unsafe.SliceData(value), uintptr(len(value)))
+}
+
+func ParseString(value string) *JSON {
+	return ParseWithLength(unsafe.StringData(value), uintptr(len(value)))
 }
 
 //go:linkname Null C.cJSON_CreateNull
@@ -119,3 +133,21 @@ func (o *JSON) PrintUnformatted() *c.Char { return nil }
 //
 // llgo:link (*JSON).PrintBuffered C.cJSON_PrintBuffered
 func (o *JSON) PrintBuffered(prebuffer c.Int, fmt c.Int) *c.Char { return nil }
+
+// llgo:link (*JSON).GetObjectItemCaseSensitive C.cJSON_GetObjectItemCaseSensitive
+func (o *JSON) GetObjectItemCaseSensitive(key *c.Char) *JSON { return nil }
+
+// llgo:link (*JSON).GetArraySize C.cJSON_GetArraySize
+func (o *JSON) GetArraySize() c.Int { return 0 }
+
+// llgo:link (*JSON).GetArrayItem C.cJSON_GetArrayItem
+func (o *JSON) GetArrayItem(index c.Int) *JSON { return nil }
+
+// llgo:link (*JSON).GetStringValue C.cJSON_GetStringValue
+func (o *JSON) GetStringValue() *c.Char { return nil }
+
+//go:linkname Free C.cJSON_free
+func Free(ptr unsafe.Pointer)
+
+//go:linkname FreeCStr C.cJSON_free
+func FreeCStr(*c.Char)
