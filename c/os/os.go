@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	LLGoPackage = "decl"
+	LLGoFiles   = "_os/os.c"
+	LLGoPackage = "link"
 )
 
 const (
@@ -149,9 +150,6 @@ func Putenv(env *c.Char) c.Int
 
 //go:linkname Unsetenv C.unsetenv
 func Unsetenv(name *c.Char) c.Int
-
-//go:linkname Clearenv C.clearenv
-func Clearenv()
 
 // -----------------------------------------------------------------------------
 
