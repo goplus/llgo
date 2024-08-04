@@ -20,5 +20,9 @@ package os
 
 import "C"
 
+const (
+	LLGoPackage = "decl"
+)
+
 //go:linkname Clearenv C.clearenv
 func Clearenv()
