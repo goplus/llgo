@@ -180,11 +180,11 @@ type Function = *aFunction
 
 // NewFunc creates a new function.
 func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
-	return p.NewFuncEx(name, sig, bg, false)
+	return p.NewFuncEx(name, sig, bg, false, false)
 }
 
 // NewFuncEx creates a new function.
-func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool) Function {
+func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars, async bool) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
 	}
@@ -193,6 +193,9 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
 	}
 	fn := llvm.AddFunction(p.mod, name, t.ll)
+	if async {
+		fn.AddFunctionAttr(p.Prog.ctx.CreateStringAttribute("presplitcoroutine", ""))
+	}
 	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
 	p.fns[name] = ret
 	return ret
@@ -268,7 +271,7 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, nil, p, p.Pkg, prog}
+	return &aBuilder{impl: b, blk: nil, Func: p, Pkg: p.Pkg, Prog: prog}
 }
 
 // HasBody reports whether the function has a body.

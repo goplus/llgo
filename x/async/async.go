@@ -25,11 +25,7 @@ const (
 	LLGoPackage = "decl"
 )
 
-const debugAsync = false
-
 type Void = [0]byte
-
-type AsyncCall[TOut any] interface{}
 
 // -----------------------------------------------------------------------------
 
@@ -38,36 +34,45 @@ type Promise[TOut any] struct {
 	value TOut
 }
 
-// llgo:link PromiseImpl llgo.coAwait
+// // llgo:link (*Promise).Await llgo.coAwait
 func (p *Promise[TOut]) Await() TOut {
 	panic("should not executed")
 }
 
-// llgo:link Return llgo.coReturn
 func (p *Promise[TOut]) Return(v TOut) {
-	panic("should not executed")
+	p.value = v
+	coReturn(p.hdl)
 }
 
-// llgo:link Yield llgo.coYield
-func (p *Promise[TOut]) Yield(v TOut) {
-	panic("should not executed")
-}
+// llgo:link (*Promise).Yield llgo.coYield
+func (p *Promise[TOut]) Yield(v TOut) {}
 
-// llgo:link Suspend llgo.coSuspend
-func (p *Promise[TOut]) Suspend() {
-	panic("should not executed")
-}
+// llgo:link (*Promise).Suspend llgo.coSuspend
+func (p *Promise[TOut]) Suspend() {}
 
-// llgo:link Resume llgo.coResume
 func (p *Promise[TOut]) Resume() {
-	panic("should not executed")
+	coResume(p.hdl)
+}
+
+func (p *Promise[TOut]) Next() TOut {
+	coResume(p.hdl)
+	return p.value
+}
+
+// TODO(lijie): should merge to Yield()
+// call by llgo.coYield
+func (p *Promise[TOut]) setValue(v TOut) {
+	p.value = v
 }
 
 func (p *Promise[TOut]) Value() TOut {
 	return p.value
 }
 
-// llgo:link Run llgo.coRun
+func (p *Promise[TOut]) Done() bool {
+	return coDone(p.hdl) != 0
+}
+
 func Run[TOut any](f func() TOut) TOut {
 	panic("should not executed")
 }

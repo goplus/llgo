@@ -63,6 +63,12 @@ type aBuilder struct {
 	Func Function
 	Pkg  Package
 	Prog Program
+
+	async      bool
+	asyncToken Expr
+	promise    Expr
+	onSuspBlk  func(blk BasicBlock) (susp BasicBlock, next BasicBlock, clean BasicBlock)
+	blkOffset  int
 }
 
 // Builder represents a builder for creating instructions in a function.
@@ -288,7 +294,7 @@ func (b Builder) Times(n Expr, loop func(i Expr)) {
 }
 
 // -----------------------------------------------------------------------------
-/*
+
 type caseStmt struct {
 	v   llvm.Value
 	blk llvm.BasicBlock
@@ -326,7 +332,7 @@ func (b Builder) Switch(v Expr, defb BasicBlock) Switch {
 	}
 	return &aSwitch{v.impl, defb.first, nil}
 }
-*/
+
 // -----------------------------------------------------------------------------
 
 // Phi represents a phi node.

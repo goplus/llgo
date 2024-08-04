@@ -412,7 +412,16 @@ const (
 	llgoAtomicUMax = llgoAtomicOpBase + llssa.OpUMax
 	llgoAtomicUMin = llgoAtomicOpBase + llssa.OpUMin
 
-	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
+	llgoCoBase    = llgoInstrBase + 0x30
+	llgoCoAwait   = llgoCoBase + 0
+	llgoCoSuspend = llgoCoBase + 1
+	llgoCoDone    = llgoCoBase + 2
+	llgoCoResume  = llgoCoBase + 3
+	llgoCoReturn  = llgoCoBase + 4
+	llgoCoYield   = llgoCoBase + 5
+	llgoCoRun     = llgoCoBase + 6
+
+	llgoAtomicOpLast = llgoCoRun
 )
 
 func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {

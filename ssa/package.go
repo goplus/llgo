@@ -481,6 +481,11 @@ func (p Program) Token() Type {
 	return p.tokenTy
 }
 
+func (p Program) TokenNone() Expr {
+	impl := llvm.ConstNull(p.Token().ll)
+	return Expr{impl: impl, Type: p.Token()}
+}
+
 /*
 // Eface returns the empty interface type.
 // It is equivalent to Any.

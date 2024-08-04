@@ -17,11 +17,46 @@
 package ssa
 
 import (
+	"fmt"
+	"go/constant"
 	"go/token"
 	"go/types"
+	"log"
 )
 
-// declare void @llvm.coro.destroy(i8*)
+// declare void @llvm.coro.destroy(ptr <handle>)
+// declare void @llvm.coro.resume(ptr <handle>)
+// declare i1 @llvm.coro.done(ptr <handle>)
+// declare ptr @llvm.coro.promise(ptr <ptr>, i32 <alignment>, i1 <from>)
+// declare i32 @llvm.coro.size.i32()
+// declare i32 @llvm.coro.size.i64()
+// declare i32 @llvm.coro.align.i32()
+// declare i64 @llvm.coro.align.i64()
+// declare ptr @llvm.coro.begin(token <id>, ptr <mem>)
+// declare ptr @llvm.coro.free(token %id, ptr <frame>)
+// declare i1 @llvm.coro.alloc(token <id>)
+// declare ptr @llvm.coro.noop()
+// declare ptr @llvm.coro.frame()
+// declare token @llvm.coro.id(i32 <align>, ptr <promise>, ptr <coroaddr>, ptr <fnaddrs>)
+// declare token @llvm.coro.id.async(i32 <context size>, i32 <align>, ptr <context arg>, ptr <async function pointer>)
+// declare token @llvm.coro.id.retcon(i32 <size>, i32 <align>, ptr <buffer>, ptr <continuation prototype>, ptr <alloc>, ptr <dealloc>)
+// declare token @llvm.coro.id.retcon.once(i32 <size>, i32 <align>, ptr <buffer>, ptr <prototype>, ptr <alloc>, ptr <dealloc>)
+// declare i1 @llvm.coro.end(ptr <handle>, i1 <unwind>, token <result.token>)
+// declare token @llvm.coro.end.results(...)
+// declare i1 @llvm.coro.end.async(ptr <handle>, i1 <unwind>, ...)
+// declare i8 @llvm.coro.suspend(token <save>, i1 <final>)
+// declare token @llvm.coro.save(ptr <handle>)
+// declare {ptr, ptr, ptr} @llvm.coro.suspend.async(ptr <resume function>, ptr <context projection function>, ... <function to call> ... <arguments to function>)
+// declare ptr @llvm.coro.prepare.async(ptr <coroutine function>)
+// declare i1 @llvm.coro.suspend.retcon(...)
+// declare void @await_suspend_function(ptr %awaiter, ptr %hdl)
+// declare void @llvm.coro.await.suspend.void(ptr <awaiter>, ptr <handle>, ptr <await_suspend_function>)
+// declare i1 @llvm.coro.await.suspend.bool(ptr <awaiter>, ptr <handle>, ptr <await_suspend_function>)
+// declare void @llvm.coro.await.suspend.handle(ptr <awaiter>, ptr <handle>, ptr <await_suspend_function>)
+
+// -----------------------------------------------------------------------------
+
+// declare void @llvm.coro.destroy(ptr <handle>)
 func (p Program) tyCoDestroy() *types.Signature {
 	if p.coDestroyTy == nil {
 		i8Ptr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
@@ -31,7 +66,7 @@ func (p Program) tyCoDestroy() *types.Signature {
 	return p.coDestroyTy
 }
 
-// declare void @llvm.coro.resume(i8*)
+// declare void @llvm.coro.resume(ptr <handle>)
 func (p Program) tyCoResume() *types.Signature {
 	if p.coResumeTy == nil {
 		i8Ptr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
@@ -101,7 +136,7 @@ func (p Program) tyCoAlignI64() *types.Signature {
 	return p.coAlignI64Ty
 }
 
-// declare i8* @llvm.coro.begin(token, i8*)
+// declare ptr @llvm.coro.begin(token <id>, ptr <mem>)
 func (p Program) tyCoBegin() *types.Signature {
 	if p.coBeginTy == nil {
 		tokenParam := types.NewParam(token.NoPos, nil, "", p.Token().raw.Type)
@@ -113,7 +148,7 @@ func (p Program) tyCoBegin() *types.Signature {
 	return p.coBeginTy
 }
 
-// declare i8* @llvm.coro.free(token, i8*)
+// declare ptr @llvm.coro.free(token %id, ptr <frame>)
 func (p Program) tyCoFree() *types.Signature {
 	if p.coFreeTy == nil {
 		tokenParam := types.NewParam(token.NoPos, nil, "", p.Token().raw.Type)
@@ -125,7 +160,7 @@ func (p Program) tyCoFree() *types.Signature {
 	return p.coFreeTy
 }
 
-// declare i1 @llvm.coro.alloc(token)
+// declare i1 @llvm.coro.alloc(token <id>)
 func (p Program) tyCoAlloc() *types.Signature {
 	if p.coAllocTy == nil {
 		tokenParam := types.NewParam(token.NoPos, nil, "", p.Token().raw.Type)
@@ -155,7 +190,7 @@ func (p Program) tyCoFrame() *types.Signature {
 	return p.coFrameTy
 }
 
-// declare token @llvm.coro.id(i32, i8*, i8*, i8*)
+// declare token @llvm.coro.id(i32 <align>, ptr <promise>, ptr <coroaddr>, ptr <fnaddrs>)
 func (p Program) tyCoID() *types.Signature {
 	if p.coIDTy == nil {
 		i32 := types.NewParam(token.NoPos, nil, "", p.Int32().raw.Type)
@@ -207,7 +242,7 @@ func (p Program) tyCoIDRetconOnce() *types.Signature {
 	return p.coIDRetconOnceTy
 }
 
-// declare i1 @llvm.coro.end(i8*, i1, token)
+// declare i1 @llvm.coro.end(ptr <handle>, i1 <unwind>, token <result.token>)
 func (p Program) tyCoEnd() *types.Signature {
 	if p.coEndTy == nil {
 		i8Ptr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
@@ -322,6 +357,112 @@ func (p Program) tyCoAwaitSuspendHandle() *types.Signature {
 
 // -----------------------------------------------------------------------------
 
+func (b Builder) SetBlockOffset(offset int) {
+	b.blkOffset = offset
+}
+
+func (b Builder) BlockOffset() int {
+	return b.blkOffset
+}
+
+func (b Builder) Async() bool {
+	return b.async
+}
+
+func (b Builder) AsyncToken() Expr {
+	return b.asyncToken
+}
+
+func (b Builder) SetAsyncToken(token Expr) {
+	b.asyncToken = token
+}
+
+func (b Builder) EndAsync() {
+	_, _, cleanBlk := b.onSuspBlk(b.blk)
+	b.Jump(cleanBlk)
+}
+
+func promiseImplType(ty types.Type) types.Type {
+	ty = ty.Underlying().(*types.Struct).Field(0).Type()
+	if ptrTy, ok := ty.(*types.Pointer); ok {
+		return ptrTy.Elem()
+	}
+	panic(fmt.Sprintf("unexpected promise impl type: %v", ty))
+}
+
+/*
+id := @llvm.coro.id(0, null, null, null)
+frameSize := @llvm.coro.size.i64()
+needAlloc := @llvm.coro.alloc(id)
+; Allocate memory for return type and coroutine frame
+frame := null
+
+	if needAlloc {
+		frame := malloc(frameSize)
+	}
+
+hdl := @llvm.coro.begin(id, frame)
+*retPtr = hdl
+*/
+func (b Builder) BeginAsync(fn Function) {
+	ty := fn.Type.RawType().(*types.Signature).Results().At(0).Type()
+	ptrTy, ok := ty.(*types.Pointer)
+	if !ok {
+		panic("async function must return a *async.Promise")
+	}
+	promiseTy := b.Prog.Type(ptrTy.Elem(), InGo)
+
+	b.async = true
+	entryBlk := fn.Block(0)
+	allocBlk := fn.Block(1)
+	cleanBlk := fn.Block(2)
+	suspdBlk := fn.Block(3)
+	beginBlk := fn.Block(4)
+
+	b.SetBlock(entryBlk)
+	promiseSize := b.Const(constant.MakeUint64(b.Prog.SizeOf(promiseTy)), b.Prog.Int64()).SetName("promise.size")
+	promise := b.AllocZ(promiseSize).SetName("promise")
+	promise.Type = b.Prog.Pointer(promiseTy)
+	b.promise = promise
+	log.Printf("promise ptr: %v", promise.RawType())
+	align := b.Const(constant.MakeInt64(0), b.Prog.CInt()).SetName("align")
+	null := b.Const(nil, b.Prog.CIntPtr())
+	id := b.CoID(align, null, null, null).SetName("id")
+	b.asyncToken = id
+	needAlloc := b.CoAlloc(id).SetName("need.dyn.alloc")
+	b.If(needAlloc, allocBlk, beginBlk)
+	b.SetBlock(allocBlk)
+	frameSize := b.CoSizeI64().SetName("frame.size")
+	frame := b.AllocZ(frameSize).SetName("frame")
+	b.Jump(beginBlk)
+	b.SetBlock(beginBlk)
+	phi := b.Phi(b.Prog.VoidPtr())
+	phi.SetName("frame")
+	phi.AddIncoming(b, []BasicBlock{entryBlk, allocBlk}, func(i int, blk BasicBlock) Expr {
+		if i == 0 {
+			return null
+		}
+		return frame
+	})
+	hdl := b.CoBegin(id, phi.Expr)
+	hdl.SetName("hdl")
+	b.Store(promise, hdl)
+
+	b.SetBlock(cleanBlk)
+	b.CoFree(id, hdl)
+	b.Jump(suspdBlk)
+
+	b.SetBlock(suspdBlk)
+	b.CoEnd(hdl, b.Prog.BoolVal(false), b.Prog.TokenNone())
+	b.Return(promise)
+
+	b.onSuspBlk = func(nextBlk BasicBlock) (BasicBlock, BasicBlock, BasicBlock) {
+		return suspdBlk, nextBlk, cleanBlk
+	}
+}
+
+// -----------------------------------------------------------------------------
+
 // declare void @llvm.coro.destroy(ptr <handle>)
 func (b Builder) CoDestroy(hdl Expr) {
 	fn := b.Pkg.cFunc("llvm.coro.destroy", b.Prog.tyCoDestroy())
@@ -335,9 +476,18 @@ func (b Builder) CoResume(hdl Expr) {
 }
 
 // declare i1 @llvm.coro.done(ptr <handle>)
-func (b Builder) CoDone(hdl Expr) Expr {
+func (b Builder) coDone(hdl Expr) Expr {
 	fn := b.Pkg.cFunc("llvm.coro.done", b.Prog.tyCoDone())
 	return b.Call(fn, hdl)
+}
+
+// return c.Char
+func (b Builder) CoDone(hdl Expr) Expr {
+	bvar := b.coDone(hdl)
+	// TODO(lijie): inefficient
+	// %6 = zext i1 %5 to i64
+	// %7 = trunc i64 %6 to i8
+	return b.valFromData(b.Prog.Byte(), bvar.impl)
 }
 
 // declare ptr @llvm.coro.promise(ptr <ptr>, i32 <alignment>, i1 <from>)
@@ -402,12 +552,21 @@ func (b Builder) CoFrame() Expr {
 
 // declare token @llvm.coro.id(i32 <align>, ptr <promise>, ptr <coroaddr>, ptr <fnaddrs>)
 func (b Builder) CoID(align Expr, promise, coroAddr, fnAddrs Expr) Expr {
+	if align.Type != b.Prog.Int32() {
+		panic("align must be i32")
+	}
 	fn := b.Pkg.cFunc("llvm.coro.id", b.Prog.tyCoID())
 	return b.Call(fn, align, promise, coroAddr, fnAddrs)
 }
 
 // declare token @llvm.coro.id.async(i32 <context size>, i32 <align>, ptr <context arg>, ptr <async function pointer>)
 func (b Builder) CoIDAsync(contextSize, align, contextArg, asyncFnPtr Expr) Expr {
+	if contextSize.Type != b.Prog.Int32() {
+		panic("contextSize must be i32")
+	}
+	if align.Type != b.Prog.Int32() {
+		panic("align must be i32")
+	}
 	fn := b.Pkg.cFunc("llvm.coro.id.async", b.Prog.tyCoIDAsync())
 	return b.Call(fn, contextSize, align, contextArg, asyncFnPtr)
 }
@@ -439,14 +598,42 @@ func (b Builder) CoEndResults(args []Expr) Expr {
 // declare i1 @llvm.coro.end.async(ptr <handle>, i1 <unwind>, ...)
 func (b Builder) CoEndAsync(handle, unwind Expr, args ...Expr) Expr {
 	fn := b.Pkg.cFunc("llvm.coro.end.async", b.Prog.tyCoEndAsync())
-	args = append([]Expr{handle, unwind}, args...)
-	return b.Call(fn, args...)
+	vargs := append([]Expr{handle, unwind}, args...)
+	return b.Call(fn, vargs...)
 }
 
 // declare i8 @llvm.coro.suspend(token <save>, i1 <final>)
-func (b Builder) CoSuspend(save, final Expr) Expr {
+func (b Builder) coSuspend(save, final Expr) Expr {
 	fn := b.Pkg.cFunc("llvm.coro.suspend", b.Prog.tyCoSuspend())
 	return b.Call(fn, save, final)
+}
+
+func (b Builder) CoSuspend(save, final Expr) {
+	if !b.async {
+		panic(fmt.Errorf("suspend %v not in async block", b.Func.Name()))
+	}
+	ret := b.coSuspend(save, final)
+	// add resume block
+	b.Func.MakeBlock("")
+	nextBlk := b.Func.Block(b.blk.idx + 1)
+	susp, next, clean := b.onSuspBlk(nextBlk)
+	swt := b.Switch(ret, susp)
+	swt.Case(b.Const(constant.MakeInt64(0), b.Prog.Byte()), next)
+	swt.Case(b.Const(constant.MakeInt64(1), b.Prog.Byte()), clean)
+	swt.End(b)
+	b.SetBlock(nextBlk)
+}
+
+func (b Builder) CoReturn(args ...Expr) {
+	if !b.async {
+		panic(fmt.Errorf("return %v not in async block", b.Func.Name()))
+	}
+
+	b.Func.MakeBlock("")
+	nextBlk := b.Func.Block(b.blk.idx + 1)
+	_, _, cleanBlk := b.onSuspBlk(nextBlk)
+	b.Jump(cleanBlk)
+	b.SetBlock(nextBlk)
 }
 
 // declare token @llvm.coro.save(ptr <handle>)
@@ -483,4 +670,12 @@ func (b Builder) CoAwaitSuspendBool(awaiter, handle, f Expr) Expr {
 func (b Builder) CoAwaitSuspendHandle(awaiter, handle, f Expr) {
 	fn := b.Pkg.cFunc("llvm.coro.await.suspend.handle", b.Prog.tyCoAwaitSuspendHandle())
 	b.Call(fn, awaiter, handle, f)
+}
+
+func (b Builder) CoYield(setValueFn Function, value Expr) {
+	if !b.async {
+		panic(fmt.Errorf("yield %v not in async block", b.Func.Name()))
+	}
+	b.Call(setValueFn.Expr, b.promise, value)
+	b.CoSuspend(b.AsyncToken(), b.Prog.BoolVal(false))
 }

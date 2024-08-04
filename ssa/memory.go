@@ -232,6 +232,13 @@ func (b Builder) ArrayAlloca(telem Type, n Expr) (ret Expr) {
 	return
 }
 
+func (b Builder) OffsetPtr(ptr, offset Expr) Expr {
+	if debugInstr {
+		log.Printf("OffsetPtr %v, %v\n", ptr.impl, offset.impl)
+	}
+	return Expr{llvm.CreateGEP(b.impl, ptr.Type.ll, ptr.impl, []llvm.Value{offset.impl}), ptr.Type}
+}
+
 /* TODO(xsw):
 // ArrayAlloc allocates zero initialized space for an array of n elements of type telem.
 func (b Builder) ArrayAlloc(telem Type, n Expr) (ret Expr) {
