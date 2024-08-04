@@ -20,5 +20,10 @@ package os
 
 import "C"
 
-//go:linkname Clearenv C.llgo_clearenv
+const (
+	LLGoFiles   = "_os/os.c"
+	LLGoPackage = "link"
+)
+
+//go:linkname Clearenv C.llgoClearenv
 func Clearenv()

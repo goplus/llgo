@@ -28,11 +28,6 @@ import (
 )
 
 const (
-	LLGoFiles   = "_os/os.c"
-	LLGoPackage = "link"
-)
-
-const (
 	PATH_MAX = C.PATH_MAX
 )
 

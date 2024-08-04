@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-int llgo_clearenv() {
+int llgoClearenv() {
 	extern char **environ;
 	if (environ != NULL) {
 		*environ = NULL;
