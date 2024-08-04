@@ -12,6 +12,7 @@ import (
 type Context struct {
 	namespaceName string
 	className     string
+	unit          *clang.TranslationUnit
 }
 
 func newContext() *Context {
@@ -26,23 +27,50 @@ func (c *Context) setClassName(name string) {
 	c.className = name
 }
 
+func (c *Context) setUnit(unit *clang.TranslationUnit) {
+	c.unit = unit
+}
+
 var context = newContext()
 
-func print_cursor_info(cursor clang.Cursor) {
+func printCursorLocation(cursor clang.Cursor) {
 	loc := cursor.Location()
 	var file clang.File
 	var line, column c.Uint
 
 	loc.SpellingLocation(&file, &line, &column, nil)
 	filename := file.FileName()
+	defer filename.Dispose()
 
 	c.Printf(c.Str("%s:%d:%d\n"), filename.CStr(), line, column)
+}
+
+func printMarcoInfo(cursor clang.Cursor) {
+	printCursorLocation(cursor)
+	name := cursor.String()
+	c.Printf(c.Str("Marco Name: %s\n"), name.CStr())
+	ran := cursor.Extent()
+	var numTokens c.Uint
+	var tokens *clang.Token
+	context.unit.Tokenize(ran, &tokens, &numTokens)
+	c.Printf(c.Str("Content: "))
+
+	tokensSlice := unsafe.Slice(tokens, int(numTokens))
+	for _, tok := range tokensSlice {
+		tokStr := context.unit.Token(tok)
+		c.Printf(c.Str("%s "), tokStr.CStr())
+	}
+
+	c.Printf(c.Str("\n"))
+	println("--------------------------------")
+}
+func printFuncInfo(cursor clang.Cursor) {
+	printCursorLocation(cursor)
 
 	cursorStr := cursor.String()
 	symbol := cursor.Mangling()
 	defer symbol.Dispose()
 	defer cursorStr.Dispose()
-	defer filename.Dispose()
 
 	if context.namespaceName != "" && context.className != "" {
 		fmt.Printf("%s:%s:", context.namespaceName, context.className)
@@ -78,7 +106,9 @@ func print_cursor_info(cursor clang.Cursor) {
 }
 
 func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitResult {
-	if cursor.Kind == clang.Namespace {
+	if cursor.Kind == clang.MacroDefinition {
+		printMarcoInfo(cursor)
+	} else if cursor.Kind == clang.Namespace {
 		nameStr := cursor.String()
 		context.setNamespaceName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
@@ -89,7 +119,7 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 		clang.VisitChildren(cursor, visit, nil)
 		context.setClassName("")
 	} else if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl {
-		print_cursor_info(cursor)
+		printFuncInfo(cursor)
 	}
 
 	return clang.ChildVisit_Continue
@@ -105,7 +135,7 @@ func parse(filename *c.Char) {
 		filename,
 		unsafe.SliceData(args), 3,
 		nil, 0,
-		clang.TranslationUnit_None,
+		clang.DetailedPreprocessingRecord,
 	)
 
 	if unit == nil {
@@ -113,6 +143,7 @@ func parse(filename *c.Char) {
 		c.Exit(1)
 	}
 
+	context.setUnit(unit)
 	cursor := unit.Cursor()
 
 	clang.VisitChildren(cursor, visit, nil)
