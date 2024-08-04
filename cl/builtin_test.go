@@ -282,3 +282,68 @@ func TestErrVarOf(t *testing.T) {
 	g := &ssa.Global{Pkg: ssaPkg}
 	ctx.varOf(nil, g)
 }
+
+func TestContextResolveLinkname(t *testing.T) {
+	tests := []struct {
+		name    string
+		context *context
+		input   string
+		want    string
+		panics  bool
+	}{
+		{
+			name: "Normal",
+			context: &context{
+				link: map[string]string{
+					"foo": "C.bar",
+				},
+			},
+			input: "foo",
+			want:  "bar",
+		},
+		{
+			name: "MultipleLinks",
+			context: &context{
+				link: map[string]string{
+					"foo1": "C.bar1",
+					"foo2": "C.bar2",
+				},
+			},
+			input: "foo2",
+			want:  "bar2",
+		},
+		{
+			name:    "NoLink",
+			context: &context{link: map[string]string{}},
+			input:   "foo",
+			want:    "foo",
+		},
+		{
+			name: "InvalidLink",
+			context: &context{
+				link: map[string]string{
+					"foo": "invalid.bar",
+				},
+			},
+			input:  "foo",
+			panics: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.panics {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("want panic")
+					}
+				}()
+			}
+			got := tt.context.resolveLinkname(tt.input)
+			if !tt.panics {
+				if got != tt.want {
+					t.Errorf("got %q, want %q", got, tt.want)
+				}
+			}
+		})
+	}
+}

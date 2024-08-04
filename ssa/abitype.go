@@ -154,6 +154,9 @@ func (b Builder) abiMethodOf(mPkg *types.Package, mName string, mSig *types.Sign
 
 func (b Builder) abiMthd(mPkg *types.Package, mName string, mSig *types.Signature, name, abiTyp, ifn llvm.Value) (ret Expr, tfn llvm.Value) {
 	fullName := FuncName(mPkg, mName, mSig.Recv())
+	if b.Pkg.fnlink != nil {
+		fullName = b.Pkg.fnlink(fullName)
+	}
 	tfn = b.Pkg.NewFunc(fullName, mSig, InGo).impl // TODO(xsw): use rawType to speed up
 	if ifn.IsNil() {
 		ifn = tfn

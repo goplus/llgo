@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
 	"github.com/goplus/llgo/internal/typepatch"
@@ -812,6 +813,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
 	ret.SetPatch(ctx.patchType)
+	ret.SetResolveLinkname(ctx.resolveLinkname)
 
 	if hasPatch {
 		skips := ctx.skips
@@ -902,6 +904,17 @@ func (p *context) patchType(typ types.Type) types.Type {
 		}
 	}
 	return typ
+}
+
+func (p *context) resolveLinkname(name string) string {
+	if link, ok := p.link[name]; ok {
+		prefix, ltarget, _ := strings.Cut(link, ".")
+		if prefix != "C" {
+			panic("resolveLinkname: invalid link: " + link)
+		}
+		return ltarget
+	}
+	return name
 }
 
 // -----------------------------------------------------------------------------
