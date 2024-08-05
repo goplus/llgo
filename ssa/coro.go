@@ -29,7 +29,7 @@ import (
 // declare i1 @llvm.coro.done(ptr <handle>)
 // declare ptr @llvm.coro.promise(ptr <ptr>, i32 <alignment>, i1 <from>)
 // declare i32 @llvm.coro.size.i32()
-// declare i32 @llvm.coro.size.i64()
+// declare i64 @llvm.coro.size.i64()
 // declare i32 @llvm.coro.align.i32()
 // declare i64 @llvm.coro.align.i64()
 // declare ptr @llvm.coro.begin(token <id>, ptr <mem>)
@@ -109,7 +109,7 @@ func (p Program) tyCoSizeI32() *types.Signature {
 	return p.coSizeI32Ty
 }
 
-// declare i32 @llvm.coro.size.i64()
+// declare i64 @llvm.coro.size.i64()
 func (p Program) tyCoSizeI64() *types.Signature {
 	if p.coSizeI64Ty == nil {
 		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", p.Int64().raw.Type))
