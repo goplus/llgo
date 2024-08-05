@@ -1,5 +1,5 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testdata/async'
-source_filename = "github.com/goplus/llgo/cl/_testdata/async"
+; ModuleID = 'async'
+source_filename = "async"
 
 %"github.com/goplus/llgo/internal/runtime.Defer" = type { ptr, i64, ptr, ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
@@ -8,13 +8,13 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/async"
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/x/async.Promise[int]" = type { ptr, i64 }
 
-@"github.com/goplus/llgo/cl/_testdata/async.init$guard" = global i1 false, align 1
+@"async.init$guard" = global i1 false, align 1
 @__llgo_defer = linkonce global i32 0, align 4
 @0 = private unnamed_addr constant [16 x i8] c"GenIntsWithDefer", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [6 x i8] c"panic:", align 1
 
-define ptr @"github.com/goplus/llgo/cl/_testdata/async.GenInts"() #0 {
+define ptr @async.GenInts() presplitcoroutine {
 entry:
   %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
@@ -73,7 +73,7 @@ _llgo_8:                                          ; preds = %_llgo_7
   ]
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer"() #0 {
+define ptr @async.GenIntsWithDefer() presplitcoroutine {
 entry:
   %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
@@ -114,7 +114,7 @@ _llgo_5:                                          ; preds = %alloc, %entry
   %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 2
   store ptr %5, ptr %10, align 8
   %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 3
-  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_7), ptr %11, align 8
+  store ptr blockaddress(@async.GenIntsWithDefer, %_llgo_7), ptr %11, align 8
   %12 = call i32 @pthread_setspecific(i32 %4, ptr %7)
   %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 1
   %14 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 3
@@ -149,9 +149,9 @@ _llgo_6:                                          ; preds = %_llgo_9, %_llgo_8
   ]
 
 _llgo_7:                                          ; preds = %_llgo_10
-  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_8), ptr %14, align 8
+  store ptr blockaddress(@async.GenIntsWithDefer, %_llgo_8), ptr %14, align 8
   %30 = load i64, ptr %13, align 4
-  call void @"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer$1"()
+  call void @"async.GenIntsWithDefer$1"()
   %31 = load %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, align 8
   %32 = extractvalue %"github.com/goplus/llgo/internal/runtime.Defer" %31, 2
   %33 = call i32 @pthread_setspecific(i32 %4, ptr %32)
@@ -172,14 +172,14 @@ _llgo_9:                                          ; preds = %_llgo_5
   ]
 
 _llgo_10:                                         ; preds = %_llgo_5
-  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_8), ptr %15, align 8
+  store ptr blockaddress(@async.GenIntsWithDefer, %_llgo_8), ptr %15, align 8
   %37 = load ptr, ptr %14, align 8
   indirectbr ptr %37, [label %_llgo_8, label %_llgo_7]
 
 _llgo_11:                                         ; No predecessors!
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer$1"() {
+define void @"async.GenIntsWithDefer$1"() {
 _llgo_0:
   %0 = call %"github.com/goplus/llgo/internal/runtime.eface" @"github.com/goplus/llgo/internal/runtime.Recover"()
   %1 = call i1 @"github.com/goplus/llgo/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/internal/runtime.eface" %0, %"github.com/goplus/llgo/internal/runtime.eface" zeroinitializer)
@@ -222,9 +222,9 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/async.UseGenInts"() {
+define i64 @async.UseGenInts() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/cl/_testdata/async.WrapGenInts"()
+  %0 = call ptr @async.WrapGenInts()
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -242,7 +242,7 @@ _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
   br i1 %4, label %_llgo_2, label %_llgo_1
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testdata/async.WrapGenInts"() #0 {
+define ptr @async.WrapGenInts() presplitcoroutine {
 entry:
   %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
@@ -270,7 +270,7 @@ _llgo_5:                                          ; preds = %alloc, %entry
   %frame1 = phi ptr [ null, %entry ], [ %frame, %alloc ]
   %hdl = call ptr @llvm.coro.begin(token %id, ptr %frame1)
   store ptr %hdl, ptr %promise, align 8
-  %2 = call ptr @"github.com/goplus/llgo/cl/_testdata/async.GenInts"()
+  %2 = call ptr @async.GenInts()
   %3 = call i8 @llvm.coro.suspend(token %id, i1 true)
   switch i8 %3, label %suspend [
     i8 0, label %trap
@@ -278,15 +278,15 @@ _llgo_5:                                          ; preds = %alloc, %entry
   ]
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/async.init"() {
+define void @async.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/async.init$guard", align 1
+  %0 = load i1, ptr @"async.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/async.init$guard", align 1
+  store i1 true, ptr @"async.init$guard", align 1
   call void @fmt.init()
-  call void @"github.com/goplus/llgo/cl/_testdata/async.init$after"()
+  call void @"async.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -296,25 +296,25 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 ; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: read)
-declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr) #1
+declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr)
 
 ; Function Attrs: nounwind
-declare i1 @llvm.coro.alloc(token) #2
+declare i1 @llvm.coro.alloc(token)
 
 ; Function Attrs: nounwind memory(none)
-declare i64 @llvm.coro.size.i64() #3
+declare i64 @llvm.coro.size.i64()
 
 ; Function Attrs: nounwind
-declare ptr @llvm.coro.begin(token, ptr writeonly) #2
+declare ptr @llvm.coro.begin(token, ptr writeonly)
 
 ; Function Attrs: nounwind memory(argmem: read)
-declare ptr @llvm.coro.free(token, ptr nocapture readonly) #4
+declare ptr @llvm.coro.free(token, ptr nocapture readonly)
 
 ; Function Attrs: nounwind
-declare i1 @llvm.coro.end(ptr, i1, token) #2
+declare i1 @llvm.coro.end(ptr, i1, token)
 
 ; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)
-declare void @llvm.trap() #5
+declare void @llvm.trap()
 
 define void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %0, i64 %1) {
 _llgo_0:
@@ -324,7 +324,7 @@ _llgo_0:
 }
 
 ; Function Attrs: nounwind
-declare i8 @llvm.coro.suspend(token, i1) #2
+declare i8 @llvm.coro.suspend(token, i1)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
@@ -336,7 +336,7 @@ declare i32 @sigsetjmp(ptr, i32)
 
 declare void @"github.com/goplus/llgo/internal/runtime.Rethrow"(ptr)
 
-define void @"github.com/goplus/llgo/cl/_testdata/async.init$after"() {
+define void @"async.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null
@@ -401,16 +401,9 @@ _llgo_0:
 declare void @fmt.init()
 
 ; Function Attrs: nounwind memory(argmem: readwrite)
-declare i1 @llvm.coro.done(ptr nocapture readonly) #6
+declare i1 @llvm.coro.done(ptr nocapture readonly)
 
 declare void @llvm.coro.resume(ptr)
 
 declare i32 @pthread_key_create(ptr, ptr)
 
-attributes #0 = { "presplitcoroutine" }
-attributes #1 = { nocallback nofree nosync nounwind willreturn memory(argmem: read) }
-attributes #2 = { nounwind }
-attributes #3 = { nounwind memory(none) }
-attributes #4 = { nounwind memory(argmem: read) }
-attributes #5 = { cold noreturn nounwind memory(inaccessiblemem: write) }
-attributes #6 = { nounwind memory(argmem: readwrite) }
