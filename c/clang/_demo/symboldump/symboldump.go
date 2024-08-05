@@ -59,6 +59,7 @@ func printMarcoInfo(cursor clang.Cursor) {
 	for _, tok := range tokensSlice {
 		tokStr := context.unit.Token(tok)
 		c.Printf(c.Str("%s "), tokStr.CStr())
+		tokStr.Dispose()
 	}
 
 	c.Printf(c.Str("\n"))

@@ -1360,7 +1360,6 @@ type SourceRange struct {
 /**
  * Describes a kind of token.
  */
-
 type TokenKind c.Int
 
 const (
@@ -1471,6 +1470,16 @@ func (c Cursor) Argument(index c.Uint) (arg Cursor) {
 	return
 }
 
+/**
+ * Retrieve the physical location of the source constructor referenced
+ * by the given cursor.
+ *
+ * The location of a declaration is typically the location of the name of that
+ * declaration, where the name of that declaration would occur if it is
+ * unnamed, or some keyword that introduces that particular declaration.
+ * The location of a reference is where that reference occurs within the
+ * source code.
+ */
 // llgo:link (*Cursor).wrapLocation C.wrap_clang_getCursorLocation
 func (c *Cursor) wrapLocation(loc *SourceLocation) {}
 
@@ -1518,7 +1527,7 @@ func (c Cursor) Extent() (loc SourceRange) {
 // llgo:link (*TranslationUnit).wrapTokenize C.wrap_clang_tokenize
 func (t *TranslationUnit) wrapTokenize(ran *SourceRange, tokens **Token, numTokens *c.Uint) {}
 
-func (t TranslationUnit) Tokenize(ran SourceRange, tokens **Token, numTokens *c.Uint) {
+func (t *TranslationUnit) Tokenize(ran SourceRange, tokens **Token, numTokens *c.Uint) {
 	t.wrapTokenize(&ran, tokens, numTokens)
 }
 
@@ -1533,7 +1542,7 @@ func (*TranslationUnit) wrapToken(token *Token) (ret String) {
 	return
 }
 
-func (c TranslationUnit) Token(token Token) (ret String) {
+func (c *TranslationUnit) Token(token Token) (ret String) {
 	return c.wrapToken(&token)
 }
 
