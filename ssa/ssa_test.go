@@ -469,6 +469,47 @@ _llgo_0:
 `)
 }
 
+func TestSwitch(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(4)
+	cond := fn.Param(0)
+	case1 := fn.Block(1)
+	case2 := fn.Block(2)
+	defb := fn.Block(3)
+	swc := b.Switch(cond, defb)
+	swc.Case(prog.Val(1), case1)
+	swc.Case(prog.Val(2), case2)
+	swc.End(b)
+	b.SetBlock(case1).Return(prog.Val(3))
+	b.SetBlock(case2).Return(prog.Val(4))
+	b.SetBlock(defb).Return(prog.Val(5))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0) {
+_llgo_0:
+  switch i64 %0, label %_llgo_3 [
+    i64 1, label %_llgo_1
+    i64 2, label %_llgo_2
+  ]
+
+_llgo_1:                                          ; preds = %_llgo_0
+  ret i64 3
+
+_llgo_2:                                          ; preds = %_llgo_0
+  ret i64 4
+
+_llgo_3:                                          ; preds = %_llgo_0
+  ret i64 5
+}
+`)
+}
+
 func TestUnOp(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
