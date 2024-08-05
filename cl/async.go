@@ -67,7 +67,7 @@ func (p *context) coAwait(b llssa.Builder, args []ssa.Value) llssa.Expr {
 }
 
 func (p *context) coSuspend(b llssa.Builder, final llssa.Expr) {
-	b.CoSuspend(b.AsyncToken(), final)
+	b.CoSuspend(b.AsyncToken(), final, nil)
 }
 
 func (p *context) coDone(b llssa.Builder, args []ssa.Value) llssa.Expr {

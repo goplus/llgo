@@ -55,6 +55,13 @@ func (p Program) tySiglongjmp() *types.Signature {
 	return p.sigljmpTy
 }
 
+func (p Program) tyLLVMTrap() *types.Signature {
+	if p.llvmTrapTy == nil {
+		p.llvmTrapTy = types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	}
+	return p.llvmTrapTy
+}
+
 func (b Builder) AllocaSigjmpBuf() Expr {
 	prog := b.Prog
 	n := unsafe.Sizeof(sigjmpbuf{})
@@ -75,6 +82,11 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
 	b.Call(fn, jb, retval)
 	// b.Unreachable()
+}
+
+func (b Builder) LLVMTrap() {
+	fn := b.Pkg.cFunc("llvm.trap", b.Prog.tyLLVMTrap())
+	b.Call(fn)
 }
 
 // -----------------------------------------------------------------------------

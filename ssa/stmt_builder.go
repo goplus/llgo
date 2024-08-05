@@ -68,6 +68,7 @@ type aBuilder struct {
 	asyncToken Expr
 	promise    Expr
 	onSuspBlk  func(blk BasicBlock) (susp BasicBlock, next BasicBlock, clean BasicBlock)
+	onReturn   func()
 	blkOffset  int
 }
 

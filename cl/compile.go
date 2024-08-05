@@ -232,11 +232,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	nBlkOff := 0
 	if nblk := len(f.Blocks); nblk > 0 {
 		if async {
-			nBlkOff = 4
+			nBlkOff = 5
 			fn.MakeBlock("entry")
 			fn.MakeBlock("alloc")
 			fn.MakeBlock("clean")
 			fn.MakeBlock("suspend")
+			fn.MakeBlock("trap")
 		}
 		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
 		if f.Recover != nil { // set recover block

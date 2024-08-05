@@ -378,8 +378,7 @@ func (b Builder) SetAsyncToken(token Expr) {
 }
 
 func (b Builder) EndAsync() {
-	_, _, cleanBlk := b.onSuspBlk(b.blk)
-	b.Jump(cleanBlk)
+	b.onReturn()
 }
 
 /*
@@ -409,7 +408,8 @@ func (b Builder) BeginAsync(fn Function) {
 	allocBlk := fn.Block(1)
 	cleanBlk := fn.Block(2)
 	suspdBlk := fn.Block(3)
-	beginBlk := fn.Block(4)
+	trapBlk := fn.Block(4)
+	beginBlk := fn.Block(5)
 
 	b.SetBlock(entryBlk)
 	promiseSize := b.Const(constant.MakeUint64(b.Prog.SizeOf(promiseTy)), b.Prog.Int64()).SetName("promise.size")
@@ -448,8 +448,15 @@ func (b Builder) BeginAsync(fn Function) {
 	b.CoEnd(hdl, b.Prog.BoolVal(false), b.Prog.TokenNone())
 	b.Return(promise)
 
+	b.SetBlock(trapBlk)
+	b.LLVMTrap()
+	b.Unreachable()
+
 	b.onSuspBlk = func(nextBlk BasicBlock) (BasicBlock, BasicBlock, BasicBlock) {
 		return suspdBlk, nextBlk, cleanBlk
+	}
+	b.onReturn = func() {
+		b.CoSuspend(b.asyncToken, b.Prog.BoolVal(true), trapBlk)
 	}
 }
 
@@ -600,14 +607,15 @@ func (b Builder) coSuspend(save, final Expr) Expr {
 	return b.Call(fn, save, final)
 }
 
-func (b Builder) CoSuspend(save, final Expr) {
+func (b Builder) CoSuspend(save, final Expr, nextBlk BasicBlock) {
 	if !b.async {
 		panic(fmt.Errorf("suspend %v not in async block", b.Func.Name()))
 	}
+	if nextBlk == nil {
+		b.Func.MakeBlock("")
+		nextBlk = b.Func.Block(b.blk.idx + 1)
+	}
 	ret := b.coSuspend(save, final)
-	// add resume block
-	b.Func.MakeBlock("")
-	nextBlk := b.Func.Block(b.blk.idx + 1)
 	susp, next, clean := b.onSuspBlk(nextBlk)
 	swt := b.Switch(ret, susp)
 	swt.Case(b.Const(constant.MakeInt64(0), b.Prog.Byte()), next)
@@ -669,5 +677,5 @@ func (b Builder) CoYield(setValueFn Function, value Expr, final Expr) {
 		panic(fmt.Errorf("yield %v not in async block", b.Func.Name()))
 	}
 	b.Call(setValueFn.Expr, b.promise, value)
-	b.CoSuspend(b.AsyncToken(), b.Prog.BoolVal(false))
+	b.CoSuspend(b.AsyncToken(), final, nil)
 }

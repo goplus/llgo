@@ -193,6 +193,8 @@ type aProgram struct {
 	sigsetjmpTy *types.Signature
 	sigljmpTy   *types.Signature
 
+	llvmTrapTy *types.Signature
+
 	// coroutine manipulation intrinsics (ordered by LLVM coroutine doc)
 	coDestroyTy *types.Signature
 	coResumeTy  *types.Signature
