@@ -231,15 +231,17 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	nBlkOff := 0
 	if nblk := len(f.Blocks); nblk > 0 {
+		var entryBlk, allocBlk, cleanBlk, suspdBlk, trapBlk, beginBlk llssa.BasicBlock
 		if async {
 			nBlkOff = 5
-			fn.MakeBlock("entry")
-			fn.MakeBlock("alloc")
-			fn.MakeBlock("clean")
-			fn.MakeBlock("suspend")
-			fn.MakeBlock("trap")
+			entryBlk = fn.MakeBlock("entry")
+			allocBlk = fn.MakeBlock("alloc")
+			cleanBlk = fn.MakeBlock("clean")
+			suspdBlk = fn.MakeBlock("suspend")
+			trapBlk = fn.MakeBlock("trap")
 		}
-		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
+		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+		beginBlk = fn.Block(nBlkOff)
 		if f.Recover != nil { // set recover block
 			// TODO(lijie): fix this for async function because of the block offset increase
 			fn.SetRecover(fn.Block(f.Recover.Index + nBlkOff))
@@ -260,7 +262,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			b := fn.NewBuilder()
 			b.SetBlockOffset(nBlkOff)
 			if async {
-				b.BeginAsync(fn)
+				b.BeginAsync(fn, entryBlk, allocBlk, cleanBlk, suspdBlk, trapBlk, beginBlk)
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))

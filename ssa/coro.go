@@ -21,7 +21,6 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
-	"log"
 )
 
 // declare void @llvm.coro.destroy(ptr <handle>)
@@ -382,6 +381,7 @@ func (b Builder) EndAsync() {
 }
 
 /*
+retPtr := malloc(sizeof(Promise))
 id := @llvm.coro.id(0, null, null, null)
 frameSize := @llvm.coro.size.i64()
 needAlloc := @llvm.coro.alloc(id)
@@ -395,7 +395,7 @@ frame := null
 hdl := @llvm.coro.begin(id, frame)
 *retPtr = hdl
 */
-func (b Builder) BeginAsync(fn Function) {
+func (b Builder) BeginAsync(fn Function, entryBlk, allocBlk, cleanBlk, suspdBlk, trapBlk, beginBlk BasicBlock) {
 	ty := fn.Type.RawType().(*types.Signature).Results().At(0).Type()
 	ptrTy, ok := ty.(*types.Pointer)
 	if !ok {
@@ -404,19 +404,12 @@ func (b Builder) BeginAsync(fn Function) {
 	promiseTy := b.Prog.Type(ptrTy.Elem(), InGo)
 
 	b.async = true
-	entryBlk := fn.Block(0)
-	allocBlk := fn.Block(1)
-	cleanBlk := fn.Block(2)
-	suspdBlk := fn.Block(3)
-	trapBlk := fn.Block(4)
-	beginBlk := fn.Block(5)
 
 	b.SetBlock(entryBlk)
 	promiseSize := b.Const(constant.MakeUint64(b.Prog.SizeOf(promiseTy)), b.Prog.Int64()).SetName("promise.size")
 	promise := b.AllocZ(promiseSize).SetName("promise")
 	promise.Type = b.Prog.Pointer(promiseTy)
 	b.promise = promise
-	log.Printf("promise ptr: %v", promise.RawType())
 	align := b.Const(constant.MakeInt64(0), b.Prog.CInt()).SetName("align")
 	null := b.Const(nil, b.Prog.CIntPtr())
 	id := b.CoID(align, null, null, null).SetName("id")
