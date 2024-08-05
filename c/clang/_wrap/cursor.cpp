@@ -35,11 +35,21 @@ void wrap_clang_getCursorResultType(CXCursor *cur, CXType *typ) { *typ = clang_g
 
 CXString wrap_clang_getTypeSpelling(CXType *typ) { return clang_getTypeSpelling(*typ); }
 
+CXString wrap_clang_getTokenSpelling(CXTranslationUnit unit, CXToken *token) {
+    return clang_getTokenSpelling(unit, *token);
+}
+
 void wrap_clang_getCursorLocation(CXCursor *cur, CXSourceLocation *loc) { *loc = clang_getCursorLocation(*cur); }
 
 void wrap_clang_getSpellingLocation(CXSourceLocation *loc, CXFile *file, unsigned *line, unsigned *column,
                                     unsigned *offset) {
     clang_getSpellingLocation(*loc, file, line, column, offset);
+}
+
+void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }
+
+void wrap_clang_tokenize(CXTranslationUnit unit, CXSourceRange *Range, CXToken **Tokens, unsigned *NumTokens) {
+    clang_tokenize(unit, *Range, Tokens, NumTokens);
 }
 
 unsigned wrap_clang_visitChildren(CXCursor *parent, wrap_CXCursorVisitor visitor, CXClientData client_data) {

@@ -1225,7 +1225,22 @@ func (*Index) Dispose() {}
  * constructing the translation unit.
  */
 const (
+	/**
+	 * Used to indicate that no special translation-unit options are
+	 * needed.
+	 */
 	TranslationUnit_None = 0x0
+	/**
+	 * Used to indicate that the parser should construct a "detailed"
+	 * preprocessing record, including all macro definitions and instantiations.
+	 *
+	 * Constructing a detailed preprocessing record requires more memory
+	 * and time to parse, since the information contained in the record
+	 * is usually not retained. However, it can be useful for
+	 * applications that require more detailed information about the
+	 * behavior of the preprocessor.
+	 */
+	DetailedPreprocessingRecord = 0x01
 )
 
 /**
@@ -1331,6 +1346,53 @@ type SourceLocation struct {
 }
 
 /**
+ * Identifies a half-open character range in the source code.
+ *
+ * Use clang_getRangeStart() and clang_getRangeEnd() to retrieve the
+ * starting and end locations from a source range, respectively.
+ */
+type SourceRange struct {
+	ptrData      [2]c.Pointer
+	beginIntData c.Uint
+	endIntData   c.Uint
+}
+
+/**
+ * Describes a kind of token.
+ */
+
+type TokenKind c.Int
+
+const (
+	/**
+	 * A token that contains some kind of punctuation.
+	 */
+	Punctuation TokenKind = iota
+	/**
+	 * A language keyword.
+	 */
+	Keyword
+
+	/**
+	 * An identifier (that is not a keyword).
+	 */
+	Identifier
+	/**
+	 * A numeric, string, or character literal.
+	 */
+	Literal
+	/**
+	 * A comment.
+	 */
+	Comment
+)
+
+type Token struct {
+	intData [4]c.Uint
+	ptrData c.Pointer
+}
+
+/**
  * Retrieve a name for the entity referenced by this cursor.
  */
 // llgo:link (*Cursor).wrapString C.wrap_clang_getCursorSpelling
@@ -1417,6 +1479,86 @@ func (c Cursor) Location() (loc SourceLocation) {
 	return
 }
 
+/**
+ * Retrieve the physical extent of the source construct referenced by
+ * the given cursor.
+ *
+ * The extent of a cursor starts with the file/line/column pointing at the
+ * first character within the source construct that the cursor refers to and
+ * ends with the last character within that source construct. For a
+ * declaration, the extent covers the declaration itself. For a reference,
+ * the extent covers the location of the reference (e.g., where the referenced
+ * entity was actually used).
+ */
+// llgo:link (*Cursor).wrapExtent C.wrap_clang_getCursorExtent
+func (c *Cursor) wrapExtent(loc *SourceRange) {}
+
+func (c Cursor) Extent() (loc SourceRange) {
+	c.wrapExtent(&loc)
+	return
+}
+
+/**
+ * Tokenize the source code described by the given range into raw
+ * lexical tokens.
+ *
+ * \param TU the translation unit whose text is being tokenized.
+ *
+ * \param Range the source range in which text should be tokenized. All of the
+ * tokens produced by tokenization will fall within this source range,
+ *
+ * \param Tokens this pointer will be set to point to the array of tokens
+ * that occur within the given source range. The returned pointer must be
+ * freed with clang_disposeTokens() before the translation unit is destroyed.
+ *
+ * \param NumTokens will be set to the number of tokens in the \c *Tokens
+ * array.
+ *
+ */
+// llgo:link (*TranslationUnit).wrapTokenize C.wrap_clang_tokenize
+func (t *TranslationUnit) wrapTokenize(ran *SourceRange, tokens **Token, numTokens *c.Uint) {}
+
+func (t TranslationUnit) Tokenize(ran SourceRange, tokens **Token, numTokens *c.Uint) {
+	t.wrapTokenize(&ran, tokens, numTokens)
+}
+
+/**
+ * Determine the spelling of the given token.
+ *
+ * The spelling of a token is the textual representation of that token, e.g.,
+ * the text of an identifier or keyword.
+ */
+// llgo:link (*TranslationUnit).wrapToken C.wrap_clang_getTokenSpelling
+func (*TranslationUnit) wrapToken(token *Token) (ret String) {
+	return
+}
+
+func (c TranslationUnit) Token(token Token) (ret String) {
+	return c.wrapToken(&token)
+}
+
+/**
+ * Retrieve the file, line, column, and offset represented by
+ * the given source location.
+ *
+ * If the location refers into a macro instantiation, return where the
+ * location was originally spelled in the source file.
+ *
+ * \param location the location within a source file that will be decomposed
+ * into its parts.
+ *
+ * \param file [out] if non-NULL, will be set to the file to which the given
+ * source location points.
+ *
+ * \param line [out] if non-NULL, will be set to the line to which the given
+ * source location points.
+ *
+ * \param column [out] if non-NULL, will be set to the column to which the given
+ * source location points.
+ *
+ * \param offset [out] if non-NULL, will be set to the offset into the
+ * buffer to which the given source location points.
+ */
 // llgo:link (*SourceLocation).wrapSpellingLocation C.wrap_clang_getSpellingLocation
 func (l *SourceLocation) wrapSpellingLocation(file *File, line, column, offset *c.Uint) {}
 
