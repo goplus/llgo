@@ -202,6 +202,7 @@ func (p Program) tyCoID() *types.Signature {
 	return p.coIDTy
 }
 
+/*
 // declare token @llvm.coro.id.async(i32 <context size>, i32 <align>, ptr <context arg>, ptr <async function pointer>)
 func (p Program) tyCoIDAsync() *types.Signature {
 	if p.coIDAsyncTy == nil {
@@ -240,6 +241,7 @@ func (p Program) tyCoIDRetconOnce() *types.Signature {
 	}
 	return p.coIDRetconOnceTy
 }
+*/
 
 // declare i1 @llvm.coro.end(ptr <handle>, i1 <unwind>, token <result.token>)
 func (p Program) tyCoEnd() *types.Signature {
@@ -254,6 +256,7 @@ func (p Program) tyCoEnd() *types.Signature {
 	return p.coEndTy
 }
 
+/*
 // TODO(lijie): varargs
 // declare token @llvm.coro.end.results(...)
 func (p Program) tyCoEndResults() *types.Signature {
@@ -265,6 +268,7 @@ func (p Program) tyCoEndResults() *types.Signature {
 func (p Program) tyCoEndAsync() *types.Signature {
 	panic("not implemented")
 }
+*/
 
 // declare i8 @llvm.coro.suspend(token <save>, i1 <final>)
 func (p Program) tyCoSuspend() *types.Signature {
@@ -279,6 +283,7 @@ func (p Program) tyCoSuspend() *types.Signature {
 	return p.coSuspendTy
 }
 
+/*
 // declare token @llvm.coro.save(ptr <handle>)
 func (p Program) tyCoSave() *types.Signature {
 	if p.coSaveTy == nil {
@@ -353,6 +358,7 @@ func (p Program) tyCoAwaitSuspendHandle() *types.Signature {
 	}
 	return p.coAwaitSuspendHandleTy
 }
+*/
 
 // -----------------------------------------------------------------------------
 
@@ -551,6 +557,7 @@ func (b Builder) CoID(align Expr, promise, coroAddr, fnAddrs Expr) Expr {
 	return b.Call(fn, align, promise, coroAddr, fnAddrs)
 }
 
+/*
 // declare token @llvm.coro.id.async(i32 <context size>, i32 <align>, ptr <context arg>, ptr <async function pointer>)
 func (b Builder) CoIDAsync(contextSize, align, contextArg, asyncFnPtr Expr) Expr {
 	if contextSize.Type != b.Prog.Int32() {
@@ -574,6 +581,7 @@ func (b Builder) CoIDRetconOnce(size, align, buffer, prototype, alloc, dealloc E
 	fn := b.Pkg.cFunc("llvm.coro.id.retcon.once", b.Prog.tyCoIDRetconOnce())
 	return b.Call(fn, size, align, buffer, prototype, alloc, dealloc)
 }
+*/
 
 // declare i1 @llvm.coro.end(ptr <handle>, i1 <unwind>, token <result.token>)
 func (b Builder) CoEnd(hdl Expr, unwind Expr, resultToken Expr) Expr {
@@ -581,6 +589,7 @@ func (b Builder) CoEnd(hdl Expr, unwind Expr, resultToken Expr) Expr {
 	return b.Call(fn, hdl, unwind, resultToken)
 }
 
+/*
 // declare token @llvm.coro.end.results(...)
 func (b Builder) CoEndResults(args []Expr) Expr {
 	fn := b.Pkg.cFunc("llvm.coro.end.results", b.Prog.tyCoEndResults())
@@ -593,6 +602,7 @@ func (b Builder) CoEndAsync(handle, unwind Expr, args ...Expr) Expr {
 	vargs := append([]Expr{handle, unwind}, args...)
 	return b.Call(fn, vargs...)
 }
+*/
 
 // declare i8 @llvm.coro.suspend(token <save>, i1 <final>)
 func (b Builder) coSuspend(save, final Expr) Expr {
@@ -629,6 +639,7 @@ func (b Builder) CoReturn(args ...Expr) {
 	b.SetBlock(nextBlk)
 }
 
+/*
 // declare token @llvm.coro.save(ptr <handle>)
 func (b Builder) CoSave(hdl Expr) Expr {
 	fn := b.Pkg.cFunc("llvm.coro.save", b.Prog.tyCoSave())
@@ -664,6 +675,7 @@ func (b Builder) CoAwaitSuspendHandle(awaiter, handle, f Expr) {
 	fn := b.Pkg.cFunc("llvm.coro.await.suspend.handle", b.Prog.tyCoAwaitSuspendHandle())
 	b.Call(fn, awaiter, handle, f)
 }
+*/
 
 func (b Builder) CoYield(setValueFn Function, value Expr, final Expr) {
 	if !b.async {

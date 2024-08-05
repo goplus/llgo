@@ -202,31 +202,31 @@ type aProgram struct {
 	coPromiseTy *types.Signature
 
 	// coroutine structure intrinsics (ordered by LLVM coroutine doc)
-	coSizeI32Ty              *types.Signature
-	coSizeI64Ty              *types.Signature
-	coAlignI32Ty             *types.Signature
-	coAlignI64Ty             *types.Signature
-	coBeginTy                *types.Signature
-	coFreeTy                 *types.Signature
-	coAllocTy                *types.Signature
-	coNoopTy                 *types.Signature
-	coFrameTy                *types.Signature
-	coIDTy                   *types.Signature
-	coIDAsyncTy              *types.Signature
-	coIDRetconTy             *types.Signature
-	coIDRetconOnceTy         *types.Signature
-	coEndTy                  *types.Signature
-	coEndResultsTy           *types.Signature
-	coEndAsyncTy             *types.Signature
-	coSuspendTy              *types.Signature
-	coSaveTy                 *types.Signature
-	coSuspendAsyncTy         *types.Signature
-	coPrepareAsyncTy         *types.Signature
-	coSuspendRetconTy        *types.Signature
-	coAwaitSuspendFunctionTy *types.Signature
-	coAwaitSuspendVoidTy     *types.Signature
-	coAwaitSuspendBoolTy     *types.Signature
-	coAwaitSuspendHandleTy   *types.Signature
+	coSizeI32Ty  *types.Signature
+	coSizeI64Ty  *types.Signature
+	coAlignI32Ty *types.Signature
+	coAlignI64Ty *types.Signature
+	coBeginTy    *types.Signature
+	coFreeTy     *types.Signature
+	coAllocTy    *types.Signature
+	coNoopTy     *types.Signature
+	coFrameTy    *types.Signature
+	coIDTy       *types.Signature
+	// coIDAsyncTy              *types.Signature
+	// coIDRetconTy             *types.Signature
+	// coIDRetconOnceTy         *types.Signature
+	coEndTy *types.Signature
+	// coEndResultsTy           *types.Signature
+	// coEndAsyncTy             *types.Signature
+	coSuspendTy *types.Signature
+	// coSaveTy                 *types.Signature
+	// coSuspendAsyncTy         *types.Signature
+	// coPrepareAsyncTy         *types.Signature
+	// coSuspendRetconTy        *types.Signature
+	// coAwaitSuspendFunctionTy *types.Signature
+	// coAwaitSuspendVoidTy     *types.Signature
+	// coAwaitSuspendBoolTy     *types.Signature
+	// coAwaitSuspendHandleTy   *types.Signature
 
 	paramObjPtr_ *types.Var
 
