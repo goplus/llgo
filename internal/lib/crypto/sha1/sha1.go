@@ -7,7 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/openssl"
+	"github.com/goplus/llgo/c/openssl/sha"
 )
 
 func init() {
@@ -21,7 +21,7 @@ const BlockSize = 64
 const Size = 20
 
 type digest struct {
-	ctx openssl.SHA_CTX
+	ctx sha.SHA_CTX
 }
 
 func (d *digest) Size() int { return Size }
@@ -52,6 +52,6 @@ func New() hash.Hash {
 
 // Sum returns the SHA-1 checksum of the data.
 func Sum(data []byte) (ret [Size]byte) {
-	openssl.SHA1Bytes(data, &ret[0])
+	sha.SHA1Bytes(data, &ret[0])
 	return
 }

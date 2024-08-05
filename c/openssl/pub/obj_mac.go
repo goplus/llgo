@@ -83,6 +83,13 @@ const (
 	NID_ED448                = 1088
 )
 
+const (
+	NID_sha1                    = 64
+	NID_sha1WithRSAEncryption   = 65
+	NID_sha256                  = 672
+	NID_sha256WithRSAEncryption = 668
+)
+
 func OBJ_member_body() (c.Long, c.Long) {
 	return OBJ_iso, 2
 }

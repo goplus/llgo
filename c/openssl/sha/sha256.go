@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package openssl
+package sha
 
 import (
 	"unsafe"
@@ -60,13 +60,19 @@ func (c *SHA224_CTX) Final(md *byte) c.Int {
 
 // OSSL_DEPRECATEDIN_3_0 int SHA256_Init(SHA256_CTX *c);
 //
-// llgo:link (*SHA256_CTX).Init C.SHA256_Init
-func (c *SHA256_CTX) Init() c.Int { return 0 }
+//go:linkname sha256Init C.SHA256_Init
+func sha256Init() c.Int
+func (c *SHA256_CTX) Init() c.Int {
+	return sha256Init()
+}
 
 // OSSL_DEPRECATEDIN_3_0 int SHA256_Update(SHA256_CTX *c, const void *data, size_t len);
 //
-// llgo:link (*SHA256_CTX).Update C.SHA256_Update
-func (c *SHA256_CTX) Update(data unsafe.Pointer, n uintptr) c.Int { return 0 }
+//go:linkname sha256Update C.SHA256_Update
+func sha256Update(data unsafe.Pointer, n uintptr) c.Int
+func (c *SHA256_CTX) Update(data unsafe.Pointer, n uintptr) c.Int {
+	return sha256Update(data, n)
+}
 
 func (c *SHA256_CTX) UpdateBytes(data []byte) c.Int {
 	return c.Update(unsafe.Pointer(unsafe.SliceData(data)), uintptr(len(data)))

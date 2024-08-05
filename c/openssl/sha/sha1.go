@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package openssl
+package sha
 
 import (
 	"unsafe"

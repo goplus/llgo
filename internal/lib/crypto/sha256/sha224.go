@@ -5,14 +5,14 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/openssl"
+	"github.com/goplus/llgo/c/openssl/sha"
 )
 
 // The size of a SHA224 checksum in bytes.
 const Size224 = 28
 
 type digest224 struct {
-	ctx openssl.SHA224_CTX
+	ctx sha.SHA224_CTX
 }
 
 func (d *digest224) Size() int { return Size224 }
@@ -43,6 +43,6 @@ func New224() hash.Hash {
 
 // Sum224 returns the SHA224 checksum of the data.
 func Sum224(data []byte) (ret [Size224]byte) {
-	openssl.SHA224Bytes(data, &ret[0])
+	sha.SHA224Bytes(data, &ret[0])
 	return
 }

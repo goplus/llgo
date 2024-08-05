@@ -52,7 +52,7 @@ func (c *OSSL_LIB_CTX) EVPSetDefaultProperties(propq *c.Char) c.Int { return 0 }
 
 // int EVP_default_properties_is_fips_enabled(OSSL_LIB_CTX *libctx);
 //
-// llgo:link (*OSSL_LIB_CTX).EVPDefaultPropertiesIsFipsEnabled() C.EVP_default_properties_is_fips_enabled
+// llgo:link (*OSSL_LIB_CTX).EVPDefaultPropertiesIsFipsEnabled C.EVP_default_properties_is_fips_enabled
 func (c *OSSL_LIB_CTX) EVPDefaultPropertiesIsFipsEnabled() c.Int { return 0 }
 
 // int EVP_default_properties_enable_fips(OSSL_LIB_CTX *libctx, int enable);

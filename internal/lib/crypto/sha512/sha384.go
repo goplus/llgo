@@ -5,11 +5,11 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/openssl"
+	"github.com/goplus/llgo/c/openssl/sha"
 )
 
 type digest384 struct {
-	ctx openssl.SHA384_CTX
+	ctx sha.SHA384_CTX
 }
 
 func (d *digest384) Size() int { return Size384 }
@@ -38,6 +38,6 @@ func New384() hash.Hash {
 }
 
 func Sum384(data []byte) (ret [Size384]byte) {
-	openssl.SHA384Bytes(data, &ret[0])
+	sha.SHA384Bytes(data, &ret[0])
 	return
 }

@@ -4,7 +4,12 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/openssl/internal/crypto_local/evp"
 )
+
+func EVP_sha256() *EVP_MD {
+	return (*EVP_MD)(evp.EVP_sha256())
+}
 
 // OSSL_DEPRECATEDIN_3_0 HMAC_CTX *HMAC_CTX_new(void);
 //

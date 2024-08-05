@@ -94,4 +94,9 @@ const (
 	/* NOTE: 0x0400 and 0x0800 are reserved for internal usage */
 )
 
+const (
+	EVP_ORIG_GLOBAL             = 1
+	EVP_MD_FLAG_DIGALGID_ABSENT = 0x0008
+)
+
 // todo .......

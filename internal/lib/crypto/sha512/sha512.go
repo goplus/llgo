@@ -7,7 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/openssl"
+	"github.com/goplus/llgo/c/openssl/sha"
 )
 
 func init() {
@@ -36,7 +36,7 @@ const (
 )
 
 type digest512 struct {
-	ctx openssl.SHA512_CTX
+	ctx sha.SHA512_CTX
 }
 
 func (d *digest512) Size() int { return Size }
@@ -65,7 +65,7 @@ func New() hash.Hash {
 }
 
 func Sum512(data []byte) (ret [Size]byte) {
-	openssl.SHA512Bytes(data, &ret[0])
+	sha.SHA512Bytes(data, &ret[0])
 	return
 }
 
