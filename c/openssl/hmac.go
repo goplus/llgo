@@ -8,10 +8,40 @@ import (
 
 const EVP_MAX_MD_SIZE = 64 /* longest known is SHA512 */
 
+// const EVP_MD *EVP_sha1(void)
+//
+//go:linkname EVP_sha1 C.EVP_sha1
+func EVP_sha1() *EVP_MD
+
+// const EVP_MD *EVP_sha224(void)
+//
+//go:linkname EVP_sha224 C.EVP_sha224
+func EVP_sha224() *EVP_MD
+
 // func EVP_sha256() *EVP_MD
 //
 //go:linkname EVP_sha256 C.EVP_sha256
 func EVP_sha256() *EVP_MD
+
+// const EVP_MD *EVP_sha512_224(void)
+//
+//go:linkname EVP_sha512_224 C.EVP_sha512_224
+func EVP_sha512_224() *EVP_MD
+
+// const EVP_MD *EVP_sha512_256(void)
+//
+//go:linkname EVP_sha512_256 C.EVP_sha512_256
+func EVP_sha512_256() *EVP_MD
+
+// const EVP_MD *EVP_sha384(void)
+//
+//go:linkname EVP_sha384 C.EVP_sha384
+func EVP_sha384() *EVP_MD
+
+// const EVP_MD *EVP_sha512(void)
+//
+//go:linkname EVP_sha512 C.EVP_sha512
+func EVP_sha512() *EVP_MD
 
 type EVP_MD struct {
 	Unused [0]byte
