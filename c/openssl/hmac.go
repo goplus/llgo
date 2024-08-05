@@ -47,10 +47,6 @@ type EVP_MD struct {
 	Unused [0]byte
 }
 
-type EVP_MD_CTX struct {
-	Unused [0]byte
-}
-
 type HMAC_CTX struct {
 	Unused [0]byte
 }

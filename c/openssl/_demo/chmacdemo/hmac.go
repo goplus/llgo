@@ -21,7 +21,6 @@ func main() {
 		return
 	}
 	defer ctx.Free()
-
 	var ret c.Int = ctx.InitEx(unsafe.Pointer(unsafe.StringData(key)), c.Int(lenKey), openssl.EVP_sha256(), nil)
 	if ret == 0 {
 		c.Fprintf(c.Stderr, c.Str("%s\n"), c.Str("Error initializing HMAC_CTX"))
