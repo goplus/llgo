@@ -21,7 +21,9 @@ func UseGenInts() int {
 	co := WrapGenInts()
 	r := 0
 	for !co.Done() {
-		r += co.Next()
+		v := co.Value()
+		r += v
+		co.Next()
 	}
 	return r
 }

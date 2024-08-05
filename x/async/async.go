@@ -54,9 +54,8 @@ func (p *Promise[TOut]) Resume() {
 	coResume(p.hdl)
 }
 
-func (p *Promise[TOut]) Next() TOut {
+func (p *Promise[TOut]) Next() {
 	coResume(p.hdl)
-	return p.value
 }
 
 // TODO(lijie): should merge to Yield()
