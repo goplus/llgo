@@ -610,9 +610,8 @@ _llgo_0:
 }
 
 ; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)
-declare void @llvm.trap() #0
+declare void @llvm.trap()
 
-attributes #0 = { cold noreturn nounwind memory(inaccessiblemem: write) }
 `)
 }
 
@@ -710,57 +709,52 @@ _llgo_3:                                          ; No predecessors!
 }
 
 ; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: read)
-declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr) #0
+declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr)
 
 ; Function Attrs: nounwind memory(none)
-declare i32 @llvm.coro.size.i32() #1
+declare i32 @llvm.coro.size.i32()
 
 ; Function Attrs: nounwind memory(none)
-declare i64 @llvm.coro.size.i64() #1
+declare i64 @llvm.coro.size.i64()
 
 ; Function Attrs: nounwind memory(none)
-declare i32 @llvm.coro.align.i32() #1
+declare i32 @llvm.coro.align.i32()
 
 ; Function Attrs: nounwind memory(none)
-declare i64 @llvm.coro.align.i64() #1
+declare i64 @llvm.coro.align.i64()
 
 ; Function Attrs: nounwind
-declare i1 @llvm.coro.alloc(token) #2
+declare i1 @llvm.coro.alloc(token)
 
 ; Function Attrs: nounwind
-declare ptr @llvm.coro.begin(token, ptr writeonly) #2
+declare ptr @llvm.coro.begin(token, ptr writeonly)
 
 ; Function Attrs: nounwind memory(argmem: read)
-declare ptr @llvm.coro.free(token, ptr nocapture readonly) #3
+declare ptr @llvm.coro.free(token, ptr nocapture readonly)
 
 ; Function Attrs: nounwind
-declare i1 @llvm.coro.end(ptr, i1, token) #2
+declare i1 @llvm.coro.end(ptr, i1, token)
 
 declare void @llvm.coro.resume(ptr)
 
 ; Function Attrs: nounwind memory(argmem: readwrite)
-declare i1 @llvm.coro.done(ptr nocapture readonly) #4
+declare i1 @llvm.coro.done(ptr nocapture readonly)
 
 declare void @llvm.coro.destroy(ptr)
 
 ; Function Attrs: nounwind memory(none)
-declare ptr @llvm.coro.promise(ptr nocapture, i32, i1) #1
+declare ptr @llvm.coro.promise(ptr nocapture, i32, i1)
 
 ; Function Attrs: nounwind memory(none)
-declare ptr @llvm.coro.noop() #1
+declare ptr @llvm.coro.noop()
 
 ; Function Attrs: nounwind memory(none)
-declare ptr @llvm.coro.frame() #1
+declare ptr @llvm.coro.frame()
 
 declare void @setValue(i64)
 
 ; Function Attrs: nounwind
-declare i8 @llvm.coro.suspend(token, i1) #2
+declare i8 @llvm.coro.suspend(token, i1)
 
-attributes #0 = { nocallback nofree nosync nounwind willreturn memory(argmem: read) }
-attributes #1 = { nounwind memory(none) }
-attributes #2 = { nounwind }
-attributes #3 = { nounwind memory(argmem: read) }
-attributes #4 = { nounwind memory(argmem: readwrite) }
 `)
 }

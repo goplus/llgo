@@ -19,8 +19,10 @@ package ssa
 import (
 	"go/token"
 	"go/types"
+	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
@@ -699,9 +701,41 @@ func (p Package) Path() string {
 	return p.abi.Pkg
 }
 
+// Find presplitcoroutine attribute and replace attribute tag with it
+// e.g. attributes #0 = { noinline nounwind readnone "presplitcoroutine" }
+// replace #0 with presplitcoroutine
+// and also remove all other attributes
+func removeLLVMAttributes(ll string) string {
+	attrRe := regexp.MustCompile(`^attributes (#\d+) = {[^}]*}$`)
+	attrRe2 := regexp.MustCompile(`(\) #\d+ {|\) #\d+)$`)
+	lines := strings.Split(ll, "\n")
+	newLines := make([]string, 0, len(lines))
+	presplitcoroutine := ""
+	for _, line := range lines {
+		if m := attrRe.FindStringSubmatch(line); m != nil {
+			if strings.Contains(line, "\"presplitcoroutine\"") {
+				presplitcoroutine = " " + m[1] + " "
+			}
+		} else {
+			newLines = append(newLines, line)
+		}
+	}
+
+	for i, line := range newLines {
+		if presplitcoroutine != "" {
+			line = strings.Replace(line, presplitcoroutine, " presplitcoroutine ", 1)
+		}
+		line = attrRe2.ReplaceAllString(line, ")")
+		newLines[i] = line
+	}
+
+	return strings.Join(newLines, "\n")
+}
+
 // String returns a string representation of the package.
 func (p Package) String() string {
-	return p.mod.String()
+	// TODO(lijie): workaround for compiling errors of LLVM attributes
+	return removeLLVMAttributes(p.mod.String())
 }
 
 // SetPatch sets a patch function.

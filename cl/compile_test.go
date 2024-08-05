@@ -140,7 +140,7 @@ source_filename = "foo"
 
 @"foo.init$guard" = global i1 false, align 1
 
-define ptr @foo.GenInts() #0 {
+define ptr @foo.GenInts() presplitcoroutine {
 entry:
   %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
@@ -207,36 +207,30 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 ; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: read)
-declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr) #1
+declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr)
 
 ; Function Attrs: nounwind
-declare i1 @llvm.coro.alloc(token) #2
+declare i1 @llvm.coro.alloc(token)
 
 ; Function Attrs: nounwind memory(none)
-declare i64 @llvm.coro.size.i64() #3
+declare i64 @llvm.coro.size.i64()
 
 ; Function Attrs: nounwind
-declare ptr @llvm.coro.begin(token, ptr writeonly) #2
+declare ptr @llvm.coro.begin(token, ptr writeonly)
 
 ; Function Attrs: nounwind memory(argmem: read)
-declare ptr @llvm.coro.free(token, ptr nocapture readonly) #4
+declare ptr @llvm.coro.free(token, ptr nocapture readonly)
 
 ; Function Attrs: nounwind
-declare i1 @llvm.coro.end(ptr, i1, token) #2
+declare i1 @llvm.coro.end(ptr, i1, token)
 
 ; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)
-declare void @llvm.trap() #5
+declare void @llvm.trap()
 
 declare void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr, i64)
 
 ; Function Attrs: nounwind
-declare i8 @llvm.coro.suspend(token, i1) #2
+declare i8 @llvm.coro.suspend(token, i1)
 
-attributes #0 = { "presplitcoroutine" }
-attributes #1 = { nocallback nofree nosync nounwind willreturn memory(argmem: read) }
-attributes #2 = { nounwind }
-attributes #3 = { nounwind memory(none) }
-attributes #4 = { nounwind memory(argmem: read) }
-attributes #5 = { cold noreturn nounwind memory(inaccessiblemem: write) }
 `)
 }
