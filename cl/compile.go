@@ -240,6 +240,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
 		if f.Recover != nil { // set recover block
+			// TODO(lijie): fix this for async function because of the block offset increase
 			fn.SetRecover(fn.Block(f.Recover.Index + nBlkOff))
 		}
 		p.inits = append(p.inits, func() {

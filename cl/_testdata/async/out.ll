@@ -1,7 +1,7 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testdata/async'
 source_filename = "github.com/goplus/llgo/cl/_testdata/async"
 
-%"github.com/goplus/llgo/internal/runtime.Defer" = type { ptr, i64, ptr, ptr }
+%"github.com/goplus/llgo/internal/runtime.Defer" = type { ptr, i64, ptr, ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
@@ -94,66 +94,71 @@ _llgo_4:                                          ; preds = %alloc, %entry
   %4 = load i32, ptr @__llgo_defer, align 4
   %5 = call ptr @pthread_getspecific(i32 %4)
   %6 = alloca i8, i64 196, align 1
-  %7 = alloca i8, i64 32, align 1
+  %7 = alloca i8, i64 40, align 1
   %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 0
   store ptr %6, ptr %8, align 8
   %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 1
   store i64 0, ptr %9, align 4
   %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 2
   store ptr %5, ptr %10, align 8
-  %11 = call i32 @pthread_setspecific(i32 %4, ptr %7)
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 1
-  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 3
-  %14 = call i32 @sigsetjmp(ptr %6, i32 0)
-  %15 = icmp eq i32 %14, 0
-  br i1 %15, label %_llgo_8, label %_llgo_9
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 3
+  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_6), ptr %11, align 8
+  %12 = call i32 @pthread_setspecific(i32 %4, ptr %7)
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 1
+  %14 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 3
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, i32 0, i32 4
+  %16 = call i32 @sigsetjmp(ptr %6, i32 0)
+  %17 = icmp eq i32 %16, 0
+  br i1 %17, label %_llgo_8, label %_llgo_9
 
 _llgo_5:                                          ; preds = %_llgo_8, %_llgo_7
-  %16 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 0
-  store ptr @0, ptr %17, align 8
-  %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %16, i32 0, i32 1
-  store i64 16, ptr %18, align 4
-  %19 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %16, align 8
-  %20 = load ptr, ptr @_llgo_string, align 8
-  %21 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.String" %19, ptr %21, align 8
-  %22 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %22, i32 0, i32 0
-  store ptr %20, ptr %23, align 8
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %22, i32 0, i32 1
-  store ptr %21, ptr %24, align 8
-  %25 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %22, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %25)
+  %18 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %18, i32 0, i32 0
+  store ptr @0, ptr %19, align 8
+  %20 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %18, i32 0, i32 1
+  store i64 16, ptr %20, align 4
+  %21 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %18, align 8
+  %22 = load ptr, ptr @_llgo_string, align 8
+  %23 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" %21, ptr %23, align 8
+  %24 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %25 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %24, i32 0, i32 0
+  store ptr %22, ptr %25, align 8
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %24, i32 0, i32 1
+  store ptr %23, ptr %26, align 8
+  %27 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %24, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %27)
   unreachable
-  %26 = load ptr, ptr %3, align 8
+  %28 = load ptr, ptr %3, align 8
   br label %clean
 
 _llgo_6:                                          ; preds = %_llgo_9
-  %27 = load i64, ptr %12, align 4
+  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_7), ptr %14, align 8
+  %29 = load i64, ptr %13, align 4
   call void @"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer$1"()
-  %28 = load %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, align 8
-  %29 = extractvalue %"github.com/goplus/llgo/internal/runtime.Defer" %28, 2
-  %30 = call i32 @pthread_setspecific(i32 %4, ptr %29)
-  %31 = load ptr, ptr %13, align 8
-  indirectbr ptr %31, [label %_llgo_7]
+  %30 = load %"github.com/goplus/llgo/internal/runtime.Defer", ptr %7, align 8
+  %31 = extractvalue %"github.com/goplus/llgo/internal/runtime.Defer" %30, 2
+  %32 = call i32 @pthread_setspecific(i32 %4, ptr %31)
+  %33 = load ptr, ptr %15, align 8
+  indirectbr ptr %33, [label %_llgo_7]
 
-_llgo_7:                                          ; preds = %_llgo_6
+_llgo_7:                                          ; preds = %_llgo_9, %_llgo_6
   call void @"github.com/goplus/llgo/internal/runtime.Rethrow"(ptr %5)
   br label %_llgo_5
 
 _llgo_8:                                          ; preds = %_llgo_4
-  %32 = load ptr, ptr %3, align 8
+  %34 = load ptr, ptr %3, align 8
   call void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %promise, i64 1)
-  %33 = call i8 @llvm.coro.suspend(token %id, i1 false)
-  switch i8 %33, label %suspend [
+  %35 = call i8 @llvm.coro.suspend(token %id, i1 false)
+  switch i8 %35, label %suspend [
     i8 0, label %_llgo_5
     i8 1, label %clean
   ]
 
 _llgo_9:                                          ; preds = %_llgo_4
-  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_7), ptr %13, align 8
-  br label %_llgo_6
+  store ptr blockaddress(@"github.com/goplus/llgo/cl/_testdata/async.GenIntsWithDefer", %_llgo_7), ptr %15, align 8
+  %36 = load ptr, ptr %14, align 8
+  indirectbr ptr %36, [label %_llgo_7, label %_llgo_6]
 
 _llgo_10:                                         ; No predecessors!
 }
@@ -283,7 +288,12 @@ declare ptr @llvm.coro.free(token, ptr nocapture readonly) #4
 ; Function Attrs: nounwind
 declare i1 @llvm.coro.end(ptr, i1, token) #2
 
-declare void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr, i64)
+define void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/x/async.Promise[int]", ptr %0, i32 0, i32 1
+  store i64 %1, ptr %2, align 4
+  ret void
+}
 
 ; Function Attrs: nounwind
 declare i8 @llvm.coro.suspend(token, i1) #2

@@ -382,14 +382,6 @@ func (b Builder) EndAsync() {
 	b.Jump(cleanBlk)
 }
 
-func promiseImplType(ty types.Type) types.Type {
-	ty = ty.Underlying().(*types.Struct).Field(0).Type()
-	if ptrTy, ok := ty.(*types.Pointer); ok {
-		return ptrTy.Elem()
-	}
-	panic(fmt.Sprintf("unexpected promise impl type: %v", ty))
-}
-
 /*
 id := @llvm.coro.id(0, null, null, null)
 frameSize := @llvm.coro.size.i64()
@@ -672,7 +664,7 @@ func (b Builder) CoAwaitSuspendHandle(awaiter, handle, f Expr) {
 	b.Call(fn, awaiter, handle, f)
 }
 
-func (b Builder) CoYield(setValueFn Function, value Expr) {
+func (b Builder) CoYield(setValueFn Function, value Expr, final Expr) {
 	if !b.async {
 		panic(fmt.Errorf("yield %v not in async block", b.Func.Name()))
 	}

@@ -17,6 +17,7 @@
 package cl
 
 import (
+	"go/constant"
 	"go/types"
 	"strings"
 
@@ -95,7 +96,7 @@ func (p *context) coReturn(b llssa.Builder, args []ssa.Value) {
 func (p *context) coYield(b llssa.Builder, fn *ssa.Function, args []ssa.Value) {
 	typ := fn.Signature.Recv().Type()
 	mthds := p.goProg.MethodSets.MethodSet(typ)
-	// TODO(lijie): make llgo instruction callable (e.g. llgo.yield)
+	// TODO(lijie): make llgo instruction callable (e.g. llgo.yield) to avoid extra setValue method
 	var setValue *ssa.Function
 	for i := 0; i < mthds.Len(); i++ {
 		m := mthds.At(i)
@@ -110,8 +111,10 @@ func (p *context) coYield(b llssa.Builder, fn *ssa.Function, args []ssa.Value) {
 		panic("coYield(): not found method setValue")
 	}
 	value := p.compileValue(b, args[1])
-	setValueFn, _, _ := p.funcOf(setValue)
-	b.CoYield(setValueFn, value)
+	setValueFn, _, _ := p.compileFunction(setValue)
+	// TODO(lijie): find whether the co.Yield/co.Return is the last instruction
+	final := b.Const(constant.MakeBool(false), b.Prog.Bool())
+	b.CoYield(setValueFn, value, final)
 }
 
 func (p *context) coRun(b llssa.Builder, args []ssa.Value) {
