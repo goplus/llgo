@@ -378,10 +378,6 @@ func (b Builder) AsyncToken() Expr {
 	return b.asyncToken
 }
 
-func (b Builder) SetAsyncToken(token Expr) {
-	b.asyncToken = token
-}
-
 func (b Builder) EndAsync() {
 	b.onReturn()
 }
@@ -452,6 +448,9 @@ func (b Builder) BeginAsync(fn Function, entryBlk, allocBlk, cleanBlk, suspdBlk,
 	b.Unreachable()
 
 	b.onSuspBlk = func(nextBlk BasicBlock) (BasicBlock, BasicBlock, BasicBlock) {
+		if nextBlk == nil {
+			nextBlk = trapBlk
+		}
 		return suspdBlk, nextBlk, cleanBlk
 	}
 	b.onReturn = func() {
@@ -627,16 +626,21 @@ func (b Builder) CoSuspend(save, final Expr, nextBlk BasicBlock) {
 	b.SetBlock(nextBlk)
 }
 
-func (b Builder) CoReturn(args ...Expr) {
+func (b Builder) CoReturn(setValueFn Function, value Expr) {
 	if !b.async {
 		panic(fmt.Errorf("return %v not in async block", b.Func.Name()))
 	}
-
-	b.Func.MakeBlock("")
-	nextBlk := b.Func.Block(b.blk.idx + 1)
-	_, _, cleanBlk := b.onSuspBlk(nextBlk)
+	b.Call(setValueFn.Expr, b.promise, value)
+	_, _, cleanBlk := b.onSuspBlk(nil)
 	b.Jump(cleanBlk)
-	b.SetBlock(nextBlk)
+}
+
+func (b Builder) CoYield(setValueFn Function, value Expr, final Expr) {
+	if !b.async {
+		panic(fmt.Errorf("yield %v not in async block", b.Func.Name()))
+	}
+	b.Call(setValueFn.Expr, b.promise, value)
+	b.CoSuspend(b.AsyncToken(), final, nil)
 }
 
 /*
@@ -676,11 +680,3 @@ func (b Builder) CoAwaitSuspendHandle(awaiter, handle, f Expr) {
 	b.Call(fn, awaiter, handle, f)
 }
 */
-
-func (b Builder) CoYield(setValueFn Function, value Expr, final Expr) {
-	if !b.async {
-		panic(fmt.Errorf("yield %v not in async block", b.Func.Name()))
-	}
-	b.Call(setValueFn.Expr, b.promise, value)
-	b.CoSuspend(b.AsyncToken(), final, nil)
-}

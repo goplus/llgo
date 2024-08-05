@@ -408,7 +408,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoCoResume:
 			p.coResume(b, args)
 		case llgoCoReturn:
-			p.coReturn(b, args)
+			p.coReturn(b, cv, args)
 		case llgoCoYield:
 			p.coYield(b, cv, args)
 		case llgoCoRun:

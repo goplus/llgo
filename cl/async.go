@@ -85,33 +85,30 @@ func (p *context) coResume(b llssa.Builder, args []ssa.Value) {
 	}
 }
 
-func (p *context) coReturn(b llssa.Builder, args []ssa.Value) {
-	cargs := make([]llssa.Expr, len(args))
-	for i, arg := range args {
-		cargs[i] = p.compileValue(b, arg)
-	}
-	b.CoReturn(cargs...)
-}
-
-func (p *context) coYield(b llssa.Builder, fn *ssa.Function, args []ssa.Value) {
+func (p *context) getSetValueFunc(fn *ssa.Function) llssa.Function {
 	typ := fn.Signature.Recv().Type()
 	mthds := p.goProg.MethodSets.MethodSet(typ)
-	// TODO(lijie): make llgo instruction callable (e.g. llgo.yield) to avoid extra setValue method
-	var setValue *ssa.Function
 	for i := 0; i < mthds.Len(); i++ {
 		m := mthds.At(i)
 		if ssaMthd := p.goProg.MethodValue(m); ssaMthd != nil {
 			if ssaMthd.Name() == "setValue" || strings.HasPrefix(ssaMthd.Name(), "setValue[") {
-				setValue = ssaMthd
-				break
+				setValueFn, _, _ := p.compileFunction(ssaMthd)
+				return setValueFn
 			}
 		}
 	}
-	if setValue == nil {
-		panic("coYield(): not found method setValue")
-	}
+	panic("method setValue not found on type " + typ.String())
+}
+
+func (p *context) coReturn(b llssa.Builder, fn *ssa.Function, args []ssa.Value) {
+	setValueFn := p.getSetValueFunc(fn)
 	value := p.compileValue(b, args[1])
-	setValueFn, _, _ := p.compileFunction(setValue)
+	b.CoReturn(setValueFn, value)
+}
+
+func (p *context) coYield(b llssa.Builder, fn *ssa.Function, args []ssa.Value) {
+	setValueFn := p.getSetValueFunc(fn)
+	value := p.compileValue(b, args[1])
 	// TODO(lijie): find whether the co.Yield/co.Return is the last instruction
 	final := b.Const(constant.MakeBool(false), b.Prog.Bool())
 	b.CoYield(setValueFn, value, final)
