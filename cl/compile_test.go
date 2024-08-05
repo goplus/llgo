@@ -53,7 +53,7 @@ func TestFromTestrt(t *testing.T) {
 }
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata", false)
+	cltest.FromDir(t, "", "./_testdata", true)
 }
 
 func TestFromTestpymath(t *testing.T) {

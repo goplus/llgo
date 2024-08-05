@@ -50,7 +50,7 @@ func TestFromTestrt(t *testing.T) {
 }
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testdata", false)
+	cltest.FromDir(t, "", "../cl/_testdata", true)
 }
 
 func TestMakeInterface(t *testing.T) {

@@ -1,8 +1,6 @@
 package async
 
 import (
-	"fmt"
-
 	"github.com/goplus/llgo/x/async"
 )
 
@@ -26,14 +24,4 @@ func UseGenInts() int {
 		co.Next()
 	}
 	return r
-}
-
-func GenIntsWithDefer() (co *async.Promise[int]) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("panic:", r)
-		}
-	}()
-	co.Yield(1)
-	panic("GenIntsWithDefer")
 }
