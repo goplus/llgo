@@ -203,17 +203,20 @@ type Location struct {
 }
 
 type DeclBase struct {
+	Doc    *CommentGroup // associated documentation; or nil
 	Loc    *Location
 	Parent Expr // namespace or class
 }
 
+// ------------------------------------------------
+
+// typedef Type Name;
 type TypedefDecl struct {
 	DeclBase
-	Type  Expr
-	Names []*Ident
+	Type Expr
+	Name *Ident
 }
 
-// typedef Type Name1, Name2, ...;
 func (*TypedefDecl) declNode() {}
 
 // ------------------------------------------------
