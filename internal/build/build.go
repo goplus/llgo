@@ -761,6 +761,7 @@ var hasAltPkg = map[string]none{
 	"crypto/sha1":              {},
 	"crypto/sha256":            {},
 	"crypto/sha512":            {},
+	"crypto/hmac":              {},
 	"crypto/rand":              {},
 	"fmt":                      {},
 	"hash/crc32":               {},
