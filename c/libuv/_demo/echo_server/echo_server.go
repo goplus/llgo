@@ -31,7 +31,7 @@ func main() {
 
 	// Bind the server to the specified address and port
 	(&server).Bind((*net.SockAddr)(c.Pointer(&addr)), 0)
-	res := (*libuv.Stream)(&server).Listen(DEFAULT_BACKLOG, OnNewConnection)
+	res := (*libuv.Stream)(unsafe.Pointer(&server)).Listen(DEFAULT_BACKLOG, OnNewConnection)
 	if res != 0 {
 		c.Fprintf(c.Stderr, c.Str("Listen error: %s\n"), libuv.Strerror((libuv.Errno(res))))
 		return
@@ -110,8 +110,8 @@ func OnNewConnection(server *libuv.Stream, status c.Int) {
 	}
 
 	// Accept the new connection and start reading data.
-	if server.Accept((*libuv.Stream)(client)) == 0 {
-		(*libuv.Stream)(client).StartRead(AllocBuffer, EchoRead)
+	if server.Accept((*libuv.Stream)(unsafe.Pointer(client))) == 0 {
+		(*libuv.Stream)(unsafe.Pointer(client)).StartRead(AllocBuffer, EchoRead)
 	} else {
 		(*libuv.Handle)(c.Pointer(client)).Close(nil)
 	}
