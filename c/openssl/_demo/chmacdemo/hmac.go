@@ -36,9 +36,5 @@ func main() {
 		c.Fprintf(c.Stderr, c.Str("%s\n"), c.Str("Error finalizing HMAC_CTX"))
 		return
 	}
-	fmt.Print("HMAC: ")
-	for i := 0; i < int(digestLen); i++ {
-		fmt.Printf("%02x", digest[i])
-	}
-	fmt.Print("\n")
+	fmt.Printf("HMAC:%x\n", digest[:digestLen])
 }
