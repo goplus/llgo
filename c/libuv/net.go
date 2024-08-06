@@ -1,5 +1,9 @@
 package libuv
 
+//#cgo pkg-config: libuv
+//#include <uv.h>
+import "C"
+
 import (
 	_ "unsafe"
 
@@ -65,23 +69,19 @@ type UdpFlags c.Int
 
 /* Handle types. */
 
+type Tcp C.uv_tcp_t
 // TODO(spongehah): Handle
 type Handle struct {
 	Data   c.Pointer
 	Unused [88]byte
+// TODO(spongehah): Stream
 }
 
-// TODO(spongehah): Stream
 type Stream struct {
 	Data   c.Pointer
 	Unused [256]byte
 }
 
-// TODO(spongehah): Tcp
-type Tcp struct {
-	Data   c.Pointer
-	Unused [256]byte
-}
 
 type Udp struct {
 	Unused [0]byte
@@ -97,16 +97,16 @@ type UdpSend struct {
 	Unused [0]byte
 }
 
-// TODO(spongehah): Write
-type Write struct {
-	Data   c.Pointer
-	Unused [184]byte
-}
 
 // TODO(spongehah): Connect
 type Connect struct {
 	Data   c.Pointer
 	Unused [88]byte
+}
+// TODO(spongehah): Write
+type Write struct {
+	Data   c.Pointer
+	Unused [184]byte
 }
 
 type GetAddrInfo struct {
@@ -358,6 +358,11 @@ func (tcp *Tcp) CloseReset(closeCb CloseCb) c.Int {
 
 //go:linkname TcpConnect C.uv_tcp_connect
 func TcpConnect(req *Connect, tcp *Tcp, addr *net.SockAddr, connectCb ConnectCb) c.Int
+
+func (tcp *Tcp) GetIoWatcherFd() c.Int {
+	tcp_s := (*C.uv_tcp_t)(c.Pointer(tcp))
+	return c.Int(tcp_s.io_watcher.fd)
+}
 
 // ----------------------------------------------
 
