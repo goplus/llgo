@@ -1319,12 +1319,173 @@ type Cursor struct {
 	data  [3]c.Pointer
 }
 
+type TypeKind c.Int
+
+/**
+ * Describes the kind of type
+ */
+const (
+	/**
+	 * Represents an invalid type (e.g., where no type is available).
+	 */
+	TypeInvalid TypeKind = iota
+
+	/**
+	 * A type whose specific kind is not exposed via this
+	 * interface.
+	 */
+	TypeUnexposed
+
+	/* Builtin types */
+	TypeVoid
+	TypeBool
+	TypeCharU
+	TypeUChar
+	TypeChar16
+	TypeChar32
+	TypeUShort
+	TypeUInt
+	TypeULong
+	TypeULongLong
+	TypeUInt128
+	TypeCharS
+	TypeSChar
+	TypeWChar
+	TypeShort
+	TypeInt
+	TypeLong
+	TypeLongLong
+	TypeInt128
+	TypeFloat
+	TypeDouble
+	TypeLongDouble
+	TypeNullPtr
+	TypeOverload
+	TypeDependent
+	TypeObjCId
+	TypeObjCClass
+	TypeObjCSel
+	TypeFloat128
+	TypeHalf
+	TypeFloat16
+	TypeShortAccum
+	TypeAccum
+	TypeLongAccum
+	TypeUShortAccum
+	TypeUAccum
+	TypeULongAccum
+	TypeBFloat16
+	TypeIbm128
+
+	TypeFirstBuiltin = TypeVoid
+	TypeLastBuiltin  = TypeIbm128
+
+	TypeComplex TypeKind = iota + 57 //  100
+	TypePointer
+	TypeBlockPointer
+	TypeLValueReference
+	TypeRValueReference
+	TypeRecord
+	TypeEnum
+	TypeTypedef
+	TypeObjCInterface
+	TypeObjCObjectPointer
+	TypeFunctionNoProto
+	TypeFunctionProto
+	TypeConstantArray
+	TypeVector
+	TypeIncompleteArray
+	TypeVariableArray
+	TypeDependentSizedArray
+	TypeMemberPointer
+	TypeAuto
+
+	/**
+	 * Represents a type that was referred to using an elaborated type keyword.
+	 *
+	 * E.g., struct S, or via a qualified name, e.g., N::M::type, or both.
+	 */
+	TypeElaborated
+
+	/* OpenCL PipeType. */
+	TypePipe
+
+	/* OpenCL builtin types. */
+	TypeOCLImage1dRO
+	TypeOCLImage1dArrayRO
+	TypeOCLImage1dBufferRO
+	TypeOCLImage2dRO
+	TypeOCLImage2dArrayRO
+	TypeOCLImage2dDepthRO
+	TypeOCLImage2dArrayDepthRO
+	TypeOCLImage2dMSAARO
+	TypeOCLImage2dArrayMSAARO
+	TypeOCLImage2dMSAADepthRO
+	TypeOCLImage2dArrayMSAADepthRO
+	TypeOCLImage3dRO
+	TypeOCLImage1dWO
+	TypeOCLImage1dArrayWO
+	TypeOCLImage1dBufferWO
+	TypeOCLImage2dWO
+	TypeOCLImage2dArrayWO
+	TypeOCLImage2dDepthWO
+	TypeOCLImage2dArrayDepthWO
+	TypeOCLImage2dMSAAWO
+	TypeOCLImage2dArrayMSAAWO
+	TypeOCLImage2dMSAADepthWO
+	TypeOCLImage2dArrayMSAADepthWO
+	TypeOCLImage3dWO
+	TypeOCLImage1dRW
+	TypeOCLImage1dArrayRW
+	TypeOCLImage1dBufferRW
+	TypeOCLImage2dRW
+	TypeOCLImage2dArrayRW
+	TypeOCLImage2dDepthRW
+	TypeOCLImage2dArrayDepthRW
+	TypeOCLImage2dMSAARW
+	TypeOCLImage2dArrayMSAARW
+	TypeOCLImage2dMSAADepthRW
+	TypeOCLImage2dArrayMSAADepthRW
+	TypeOCLImage3dRW
+	TypeOCLSampler
+	TypeOCLEvent
+	TypeOCLQueue
+	TypeOCLReserveID
+
+	TypeObjCObject
+	TypeObjCTypeParam
+	TypeAttributed
+
+	TypeOCLIntelSubgroupAVCMcePayload
+	TypeOCLIntelSubgroupAVCImePayload
+	TypeOCLIntelSubgroupAVCRefPayload
+	TypeOCLIntelSubgroupAVCSicPayload
+	TypeOCLIntelSubgroupAVCMceResult
+	TypeOCLIntelSubgroupAVCImeResult
+	TypeOCLIntelSubgroupAVCRefResult
+	TypeOCLIntelSubgroupAVCSicResult
+	TypeOCLIntelSubgroupAVCImeResultSingleReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeResultDualReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeSingleReferenceStreamin
+	TypeOCLIntelSubgroupAVCImeDualReferenceStreamin
+
+	/* Old aliases for AVC OpenCL extension types. */
+	TypeOCLIntelSubgroupAVCImeResultSingleRefStreamout = TypeOCLIntelSubgroupAVCImeResultSingleReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeResultDualRefStreamout   = TypeOCLIntelSubgroupAVCImeResultDualReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeSingleRefStreamin        = TypeOCLIntelSubgroupAVCImeSingleReferenceStreamin
+	TypeOCLIntelSubgroupAVCImeDualRefStreamin          = TypeOCLIntelSubgroupAVCImeDualReferenceStreamin
+
+	TypeExtVector = iota + 53 // 176
+	TypeAtomic
+	TypeBTFTagAttributed
+)
+
 /**
  * The type of an element in the abstract syntax tree.
  *
  */
 type Type struct {
-	Kind CursorKind
+	Kind TypeKind
 	data [2]c.Pointer
 }
 
@@ -1486,6 +1647,35 @@ func (c *Cursor) wrapLocation(loc *SourceLocation) {}
 func (c Cursor) Location() (loc SourceLocation) {
 	c.wrapLocation(&loc)
 	return
+}
+
+/**
+ * Represents the C++ access control level to a base class for a
+ * cursor with kind CX_CXXBaseSpecifier.
+ */
+type CXXAccessSpecifier c.Int
+
+const (
+	CXXInvalidAccessSpecifier CXXAccessSpecifier = iota
+	CXXPublic
+	CXXProtected
+	CXXPrivate
+)
+
+/**
+ * Returns the access control level for the referenced object.
+ *
+ * If the cursor refers to a C++ declaration, its access control level within
+ * its parent scope is returned. Otherwise, if the cursor refers to a base
+ * specifier or access specifier, the specifier itself is returned.
+ */
+// llgo:link (*Cursor).wrapCXXAccessSpecifier C.wrap_clang_getCXXAccessSpecifier
+func (*Cursor) wrapCXXAccessSpecifier() (spec CXXAccessSpecifier) {
+	return 0
+}
+
+func (c Cursor) CXXAccessSpecifier() CXXAccessSpecifier {
+	return c.wrapCXXAccessSpecifier()
 }
 
 /**
