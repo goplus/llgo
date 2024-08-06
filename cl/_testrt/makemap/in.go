@@ -7,6 +7,7 @@ func main() {
 	make4()
 	make5()
 	make6()
+	make7()
 }
 
 func make1() {
@@ -112,4 +113,16 @@ func make6() {
 	for k, v := range m {
 		println(k, v)
 	}
+}
+
+func make7() {
+	type N int
+	m := map[N]string{
+		1: "hello",
+		2: "world",
+	}
+	for k, v := range m {
+		println(k, v)
+	}
+	println(m[1])
 }

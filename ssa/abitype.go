@@ -414,6 +414,9 @@ func (b Builder) abiType(t types.Type) Expr {
 		b.loadType(t.Elem())
 	case *types.Array:
 		b.abiType(t.Elem())
+	case *types.Map:
+		b.abiType(t.Key())
+		b.abiType(t.Elem())
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)
