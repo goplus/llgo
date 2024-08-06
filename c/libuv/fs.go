@@ -108,29 +108,40 @@ type FsPollCb func(handle *FsPoll, status c.Int, events c.Int)
 
 /* Fs related function and method */
 
-//go:linkname FsGetType C.uv_fs_get_type
-func FsGetType(req *Fs) FsType
+// llgo:link (*Fs).GetType C.uv_fs_get_type
+func (req *Fs) GetType() FsType {
+	return 0
+}
 
-//go:linkname FsGetPath C.uv_fs_get_path
-func FsGetPath(req *Fs) *c.Char
+// llgo:link (*Fs).GetPath C.uv_fs_get_path
+func (req *Fs) GetPath() *c.Char {
+	return nil
+}
 
-//go:linkname FsGetResult C.uv_fs_get_result
-func FsGetResult(req *Fs) c.Int
+// llgo:link (*Fs).GetResult C.uv_fs_get_result
+func (req *Fs) GetResult() c.Int {
+	return 0
+}
 
-//go:linkname FsGetPtr C.uv_fs_get_ptr
-func FsGetPtr(req *Fs) c.Pointer
+// llgo:link (*Fs).GetPtr C.uv_fs_get_ptr
+func (req *Fs) GetPtr() c.Pointer {
+	return nil
+}
 
-//go:linkname FsGetSystemError C.uv_fs_get_system_error
-func FsGetSystemError(req *Fs) c.Int
+// llgo:link (*Fs).GetSystemError C.uv_fs_get_system_error
+func (req *Fs) GetSystemError() c.Int {
+	return 0
+}
 
-//go:linkname FsGetStatBuf C.uv_fs_get_statbuf
-func FsGetStatBuf(req *Fs) *Stat
+// llgo:link (*Fs).GetStatBuf C.uv_fs_get_statbuf
+func (req *Fs) GetStatBuf() *Stat {
+	return nil
+}
 
-//go:linkname FsReqCleanup C.uv_fs_req_cleanup
-func FsReqCleanup(req *Fs)
-
-//go:linkname DefaultLoop C.uv_default_loop
-func DefaultLoop() *Loop
+// llgo:link (*Fs).ReqCleanup C.uv_fs_req_cleanup
+func (req *Fs) ReqCleanup() {
+	// No return value needed for this method
+}
 
 //go:linkname FsOpen C.uv_fs_open
 func FsOpen(loop *Loop, req *Fs, path *c.Char, flags c.Int, mode c.Int, cb FsCb) c.Int
@@ -243,32 +254,56 @@ func FsLchown(loop *Loop, req *Fs, path *c.Char, uid c.Int, gid c.Int, cb FsCb) 
 //go:linkname FsLstat C.uv_fs_lstat
 func FsLstat(loop *Loop, req *Fs, path *c.Char, cb FsCb) c.Int
 
+// ----------------------------------------------
+
+/* FsEvent related function and method */
+
 //go:linkname FsEventInit C.uv_fs_event_init
 func FsEventInit(loop *Loop, handle *FsEvent) c.Int
 
-//go:linkname FsEventStart C.uv_fs_event_start
-func FsEventStart(handle *FsEvent, cb FsEventCb, path *c.Char, flags c.Int) c.Int
+// llgo:link (*FsEvent).Start C.uv_fs_event_start
+func (handle *FsEvent) Start(cb FsEventCb, path *c.Char, flags c.Int) c.Int {
+	return 0
+}
 
-//go:linkname FsEventStop C.uv_fs_event_stop
-func FsEventStop(handle *FsEvent) c.Int
+// llgo:link (*FsEvent).Stop C.uv_fs_event_stop
+func (handle *FsEvent) Stop() c.Int {
+	return 0
+}
 
-//go:linkname FsEventClose C.uv_fs_event_close
-func FsEventClose(handle *FsEvent) c.Int
+// llgo:link (*FsEvent).Close C.uv_fs_event_close
+func (handle *FsEvent) Close() c.Int {
+	return 0
+}
 
-//go:linkname FsEventGetpath C.uv_fs_event_getpath
-func FsEventGetpath(handle *FsEvent) *c.Char
+// llgo:link (*FsEvent).Getpath C.uv_fs_event_getpath
+func (handle *FsEvent) Getpath() *c.Char {
+	return nil
+}
+
+// ----------------------------------------------
+
+/* FsPoll related function and method */
 
 //go:linkname FsPollInit C.uv_fs_poll_init
 func FsPollInit(loop *Loop, handle *FsPoll) c.Int
 
-//go:linkname FsPollStart C.uv_fs_poll_start
-func FsPollStart(handle *FsPoll, cb FsPollCb, path *c.Char, interval uint) c.Int
+// llgo:link (*FsPoll).Start C.uv_fs_poll_start
+func (handle *FsPoll) Start(cb FsPollCb, path *c.Char, interval uint) c.Int {
+	return 0
+}
 
-//go:linkname FsPollStop C.uv_fs_poll_stop
-func FsPollStop(handle *FsPoll) c.Int
+// llgo:link (*FsPoll).Stop C.uv_fs_poll_stop
+func (handle *FsPoll) Stop() c.Int {
+	return 0
+}
 
-//go:linkname FsPollClose C.uv_fs_poll_close
-func FsPollClose(handle *FsPoll) c.Int
+// llgo:link (*FsPoll).Close C.uv_fs_poll_close
+func (handle *FsPoll) Close() c.Int {
+	return 0
+}
 
-//go:linkname FsPollGetPath C.uv_fs_poll_getpath
-func FsPollGetPath(handle *FsPoll) *c.Char
+// llgo:link (*FsPoll).GetPath C.uv_fs_poll_getpath
+func (handle *FsPoll) GetPath() *c.Char {
+	return nil
+}
