@@ -469,6 +469,47 @@ _llgo_0:
 `)
 }
 
+func TestSwitch(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(4)
+	cond := fn.Param(0)
+	case1 := fn.Block(1)
+	case2 := fn.Block(2)
+	defb := fn.Block(3)
+	swc := b.Switch(cond, defb)
+	swc.Case(prog.Val(1), case1)
+	swc.Case(prog.Val(2), case2)
+	swc.End(b)
+	b.SetBlock(case1).Return(prog.Val(3))
+	b.SetBlock(case2).Return(prog.Val(4))
+	b.SetBlock(defb).Return(prog.Val(5))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0) {
+_llgo_0:
+  switch i64 %0, label %_llgo_3 [
+    i64 1, label %_llgo_1
+    i64 2, label %_llgo_2
+  ]
+
+_llgo_1:                                          ; preds = %_llgo_0
+  ret i64 3
+
+_llgo_2:                                          ; preds = %_llgo_0
+  ret i64 4
+
+_llgo_3:                                          ; preds = %_llgo_0
+  ret i64 5
+}
+`)
+}
+
 func TestUnOp(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
@@ -550,5 +591,196 @@ _llgo_0:
   %6 = select i1 %5, i64 %4, i64 %2
   ret i64 %6
 }
+`)
+}
+
+func TestPointerOffset(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "p", types.NewPointer(types.Typ[types.Int])),
+		types.NewVar(0, nil, "offset", types.Typ[types.Int]),
+	)
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.NewPointer(types.Typ[types.Int])))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	ptr := fn.Param(0)
+	offset := fn.Param(1)
+	result := b.OffsetPtr(ptr, offset)
+	b.Return(result)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define ptr @fn(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = getelementptr ptr, ptr %0, i64 %1
+  ret ptr %2
+}
+`)
+}
+
+func TestLLVMTrap(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	b := pkg.NewFunc("fn", NoArgsNoRet, InGo).MakeBody(1)
+	b.LLVMTrap()
+	b.Unreachable()
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @fn() {
+_llgo_0:
+  call void @llvm.trap()
+  unreachable
+}
+
+; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)
+declare void @llvm.trap()
+
+`)
+}
+
+func TestCoroFuncs(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	fn := pkg.NewFunc("fn", NoArgsNoRet, InGo)
+	entryBlk := fn.MakeBlock("entry")
+	suspdBlk := fn.MakeBlock("suspend")
+	cleanBlk := fn.MakeBlock("clean")
+	b := fn.NewBuilder()
+	b.async = true
+
+	b.SetBlock(entryBlk)
+	align := b.Const(constant.MakeInt64(0), prog.Int32())
+	align8 := b.Const(constant.MakeInt64(8), prog.Int32())
+	null := b.Const(nil, b.Prog.CIntPtr())
+	b.promise = null
+	id := b.CoID(align, null, null, null)
+	bf := b.Const(constant.MakeBool(false), prog.Bool())
+	b.CoSizeI32()
+	size := b.CoSizeI64()
+	b.CoAlignI32()
+	b.CoAlignI64()
+	b.CoAlloc(id)
+	frame := b.Alloca(size)
+	hdl := b.CoBegin(id, frame)
+
+	b.SetBlock(cleanBlk)
+	b.CoFree(id, frame)
+	b.Jump(suspdBlk)
+
+	b.SetBlock(suspdBlk)
+	b.CoEnd(hdl, bf, prog.TokenNone())
+	// b.Return(b.promise)
+
+	b.SetBlock(entryBlk)
+
+	b.CoResume(hdl)
+	b.CoDone(hdl)
+	b.CoDestroy(hdl)
+
+	b.CoPromise(null, align8, bf)
+	b.CoNoop()
+	b.CoFrame()
+	setArgs := types.NewTuple(types.NewVar(0, nil, "value", types.Typ[types.Int]))
+	setSig := types.NewSignatureType(nil, nil, nil, setArgs, nil, false)
+	setFn := pkg.NewFunc("setValue", setSig, InGo)
+	one := b.Const(constant.MakeInt64(1), prog.Int())
+
+	b.onSuspBlk = func(next BasicBlock) (BasicBlock, BasicBlock, BasicBlock) {
+		return suspdBlk, next, cleanBlk
+	}
+	b.CoYield(setFn, one, bf)
+	b.CoReturn(setFn, one)
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @fn() {
+entry:
+  %0 = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
+  %1 = call i32 @llvm.coro.size.i32()
+  %2 = call i64 @llvm.coro.size.i64()
+  %3 = call i32 @llvm.coro.align.i32()
+  %4 = call i64 @llvm.coro.align.i64()
+  %5 = call i1 @llvm.coro.alloc(token %0)
+  %6 = alloca i8, i64 %2, align 1
+  %7 = call ptr @llvm.coro.begin(token %0, ptr %6)
+  call void @llvm.coro.resume(ptr %7)
+  %8 = call i1 @llvm.coro.done(ptr %7)
+  %9 = zext i1 %8 to i64
+  %10 = trunc i64 %9 to i8
+  call void @llvm.coro.destroy(ptr %7)
+  %11 = call ptr @llvm.coro.promise(ptr null, i32 8, i1 false)
+  %12 = call ptr @llvm.coro.noop()
+  %13 = call ptr @llvm.coro.frame()
+  call void @setValue(ptr null, i64 1)
+  %14 = call i8 @llvm.coro.suspend(<null operand!>, i1 false)
+  switch i8 %14, label %suspend [
+    i8 0, label %suspend
+    i8 1, label %clean
+  ]
+
+suspend:                                          ; preds = %entry, %entry, %clean
+  %15 = call i1 @llvm.coro.end(ptr %7, i1 false, token none)
+  call void @setValue(ptr null, i64 1)
+  br label %clean
+
+clean:                                            ; preds = %suspend, %entry
+  %16 = call ptr @llvm.coro.free(token %0, ptr %6)
+  br label %suspend
+
+_llgo_3:                                          ; No predecessors!
+}
+
+; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: read)
+declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr)
+
+; Function Attrs: nounwind memory(none)
+declare i32 @llvm.coro.size.i32()
+
+; Function Attrs: nounwind memory(none)
+declare i64 @llvm.coro.size.i64()
+
+; Function Attrs: nounwind memory(none)
+declare i32 @llvm.coro.align.i32()
+
+; Function Attrs: nounwind memory(none)
+declare i64 @llvm.coro.align.i64()
+
+; Function Attrs: nounwind
+declare i1 @llvm.coro.alloc(token)
+
+; Function Attrs: nounwind
+declare ptr @llvm.coro.begin(token, ptr writeonly)
+
+; Function Attrs: nounwind memory(argmem: read)
+declare ptr @llvm.coro.free(token, ptr nocapture readonly)
+
+; Function Attrs: nounwind
+declare i1 @llvm.coro.end(ptr, i1, token)
+
+declare void @llvm.coro.resume(ptr)
+
+; Function Attrs: nounwind memory(argmem: readwrite)
+declare i1 @llvm.coro.done(ptr nocapture readonly)
+
+declare void @llvm.coro.destroy(ptr)
+
+; Function Attrs: nounwind memory(none)
+declare ptr @llvm.coro.promise(ptr nocapture, i32, i1)
+
+; Function Attrs: nounwind memory(none)
+declare ptr @llvm.coro.noop()
+
+; Function Attrs: nounwind memory(none)
+declare ptr @llvm.coro.frame()
+
+declare void @setValue(i64)
+
+; Function Attrs: nounwind
+declare i8 @llvm.coro.suspend(token, i1)
+
 `)
 }

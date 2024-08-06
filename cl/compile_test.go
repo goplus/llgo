@@ -53,7 +53,7 @@ func TestFromTestrt(t *testing.T) {
 }
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata", false)
+	cltest.FromDir(t, "", "./_testdata", true)
 }
 
 func TestFromTestpymath(t *testing.T) {
@@ -122,5 +122,116 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
+`)
+}
+
+func TestAsyncFunc(t *testing.T) {
+	testCompile(t, `package foo
+
+import "github.com/goplus/llgo/x/async"
+
+func GenInts() (co *async.Promise[int]) {
+  co.Yield(1)
+  co.Yield(2)
+  return
+}
+`, `; ModuleID = 'foo'
+source_filename = "foo"
+
+@"foo.init$guard" = global i1 false, align 1
+
+define ptr @foo.GenInts() presplitcoroutine {
+entry:
+  %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
+  %frame.size = call i64 @llvm.coro.size.i64()
+  %alloc.size = add i64 16, %frame.size
+  %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 %alloc.size)
+  %need.dyn.alloc = call i1 @llvm.coro.alloc(token %id)
+  br i1 %need.dyn.alloc, label %alloc, label %_llgo_5
+
+alloc:                                            ; preds = %entry
+  %0 = getelementptr ptr, ptr %promise, i64 16
+  br label %_llgo_5
+
+clean:                                            ; preds = %_llgo_7, %_llgo_6, %_llgo_5
+  %1 = call ptr @llvm.coro.free(token %id, ptr %hdl)
+  br label %suspend
+
+suspend:                                          ; preds = %_llgo_7, %_llgo_6, %_llgo_5, %clean
+  %2 = call i1 @llvm.coro.end(ptr %hdl, i1 false, token none)
+  ret ptr %promise
+
+trap:                                             ; preds = %_llgo_7
+  call void @llvm.trap()
+  unreachable
+
+_llgo_5:                                          ; preds = %alloc, %entry
+  %frame = phi ptr [ null, %entry ], [ %0, %alloc ]
+  %hdl = call ptr @llvm.coro.begin(token %id, ptr %frame)
+  store ptr %hdl, ptr %promise, align 8
+  call void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %promise, i64 1)
+  %3 = call i8 @llvm.coro.suspend(token %id, i1 false)
+  switch i8 %3, label %suspend [
+    i8 0, label %_llgo_6
+    i8 1, label %clean
+  ]
+
+_llgo_6:                                          ; preds = %_llgo_5
+  call void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %promise, i64 2)
+  %4 = call i8 @llvm.coro.suspend(token %id, i1 false)
+  switch i8 %4, label %suspend [
+    i8 0, label %_llgo_7
+    i8 1, label %clean
+  ]
+
+_llgo_7:                                          ; preds = %_llgo_6
+  %5 = call i8 @llvm.coro.suspend(token %id, i1 true)
+  switch i8 %5, label %suspend [
+    i8 0, label %trap
+    i8 1, label %clean
+  ]
+}
+
+define void @foo.init() {
+_llgo_0:
+  %0 = load i1, ptr @"foo.init$guard", align 1
+  br i1 %0, label %_llgo_2, label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  store i1 true, ptr @"foo.init$guard", align 1
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
+
+; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: read)
+declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr)
+
+; Function Attrs: nounwind memory(none)
+declare i64 @llvm.coro.size.i64()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+; Function Attrs: nounwind
+declare i1 @llvm.coro.alloc(token)
+
+; Function Attrs: nounwind
+declare ptr @llvm.coro.begin(token, ptr writeonly)
+
+; Function Attrs: nounwind memory(argmem: read)
+declare ptr @llvm.coro.free(token, ptr nocapture readonly)
+
+; Function Attrs: nounwind
+declare i1 @llvm.coro.end(ptr, i1, token)
+
+; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)
+declare void @llvm.trap()
+
+declare void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr, i64)
+
+; Function Attrs: nounwind
+declare i8 @llvm.coro.suspend(token, i1)
+
 `)
 }

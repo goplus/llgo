@@ -19,8 +19,10 @@ package ssa
 import (
 	"go/token"
 	"go/types"
+	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
@@ -136,6 +138,8 @@ type aProgram struct {
 	rtMapTy    llvm.Type
 	rtChanTy   llvm.Type
 
+	tokenType llvm.Type
+
 	anyTy     Type
 	voidTy    Type
 	voidPtr   Type
@@ -166,6 +170,8 @@ type aProgram struct {
 	deferTy   Type
 	deferPtr  Type
 
+	tokenTy Type
+
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
 	pyListSetI   *types.Signature
@@ -188,6 +194,41 @@ type aProgram struct {
 	destructTy  *types.Signature
 	sigsetjmpTy *types.Signature
 	sigljmpTy   *types.Signature
+
+	llvmTrapTy *types.Signature
+
+	// coroutine manipulation intrinsics (ordered by LLVM coroutine doc)
+	coDestroyTy *types.Signature
+	coResumeTy  *types.Signature
+	coDoneTy    *types.Signature
+	coPromiseTy *types.Signature
+
+	// coroutine structure intrinsics (ordered by LLVM coroutine doc)
+	coSizeI32Ty  *types.Signature
+	coSizeI64Ty  *types.Signature
+	coAlignI32Ty *types.Signature
+	coAlignI64Ty *types.Signature
+	coBeginTy    *types.Signature
+	coFreeTy     *types.Signature
+	coAllocTy    *types.Signature
+	coNoopTy     *types.Signature
+	coFrameTy    *types.Signature
+	coIDTy       *types.Signature
+	// coIDAsyncTy              *types.Signature
+	// coIDRetconTy             *types.Signature
+	// coIDRetconOnceTy         *types.Signature
+	coEndTy *types.Signature
+	// coEndResultsTy           *types.Signature
+	// coEndAsyncTy             *types.Signature
+	coSuspendTy *types.Signature
+	// coSaveTy                 *types.Signature
+	// coSuspendAsyncTy         *types.Signature
+	// coPrepareAsyncTy         *types.Signature
+	// coSuspendRetconTy        *types.Signature
+	// coAwaitSuspendFunctionTy *types.Signature
+	// coAwaitSuspendVoidTy     *types.Signature
+	// coAwaitSuspendBoolTy     *types.Signature
+	// coAwaitSuspendHandleTy   *types.Signature
 
 	paramObjPtr_ *types.Var
 
@@ -441,6 +482,18 @@ func (p Program) Any() Type {
 	return p.anyTy
 }
 
+func (p Program) Token() Type {
+	if p.tokenTy == nil {
+		p.tokenTy = &aType{p.tyToken(), rawType{types.Typ[types.Invalid]}, vkInvalid}
+	}
+	return p.tokenTy
+}
+
+func (p Program) TokenNone() Expr {
+	impl := llvm.ConstNull(p.Token().ll)
+	return Expr{impl: impl, Type: p.Token()}
+}
+
 /*
 // Eface returns the empty interface type.
 // It is equivalent to Any.
@@ -649,9 +702,41 @@ func (p Package) Path() string {
 	return p.abi.Pkg
 }
 
+// Find presplitcoroutine attribute and replace attribute tag with it
+// e.g. attributes #0 = { noinline nounwind readnone "presplitcoroutine" }
+// replace #0 with presplitcoroutine
+// and also remove all other attributes
+func removeLLVMAttributes(ll string) string {
+	attrRe := regexp.MustCompile(`^attributes (#\d+) = {[^}]*}$`)
+	attrRe2 := regexp.MustCompile(`(\) #\d+ {|\) #\d+)$`)
+	lines := strings.Split(ll, "\n")
+	newLines := make([]string, 0, len(lines))
+	presplitcoroutine := ""
+	for _, line := range lines {
+		if m := attrRe.FindStringSubmatch(line); m != nil {
+			if strings.Contains(line, "\"presplitcoroutine\"") {
+				presplitcoroutine = " " + m[1] + " "
+			}
+		} else {
+			newLines = append(newLines, line)
+		}
+	}
+
+	for i, line := range newLines {
+		if presplitcoroutine != "" {
+			line = strings.Replace(line, presplitcoroutine, " presplitcoroutine ", 1)
+		}
+		line = attrRe2.ReplaceAllString(line, ")")
+		newLines[i] = line
+	}
+
+	return strings.Join(newLines, "\n")
+}
+
 // String returns a string representation of the package.
 func (p Package) String() string {
-	return p.mod.String()
+	// TODO(lijie): workaround for compiling errors of LLVM attributes
+	return removeLLVMAttributes(p.mod.String())
 }
 
 // SetPatch sets a patch function.

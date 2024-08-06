@@ -237,6 +237,14 @@ var llgoInstrs = map[string]int{
 	"atomicMin":  int(llgoAtomicMin),
 	"atomicUMax": int(llgoAtomicUMax),
 	"atomicUMin": int(llgoAtomicUMin),
+
+	"coAwait":   int(llgoCoAwait),
+	"coResume":  int(llgoCoResume),
+	"coSuspend": int(llgoCoSuspend),
+	"coDone":    int(llgoCoDone),
+	"coReturn":  int(llgoCoReturn),
+	"coYield":   int(llgoCoYield),
+	"coRun":     int(llgoCoRun),
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -265,7 +273,8 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 				return nil, nil, ignoredFunc
 			}
 			sig := fn.Signature
-			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
+			async := isAsyncFunc(sig)
+			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, async)
 		}
 	}
 	return
@@ -390,6 +399,20 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.funcAddr(b, args)
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
+		case llgoCoAwait:
+			ret = p.coAwait(b, args)
+		case llgoCoSuspend:
+			p.coSuspend(b, p.prog.BoolVal(false))
+		case llgoCoDone:
+			return p.coDone(b, args)
+		case llgoCoResume:
+			p.coResume(b, args)
+		case llgoCoReturn:
+			p.coReturn(b, cv, args)
+		case llgoCoYield:
+			p.coYield(b, cv, args)
+		case llgoCoRun:
+			p.coRun(b, args)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)

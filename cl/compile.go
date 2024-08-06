@@ -218,6 +218,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
 	}
+	async := isAsyncFunc(f.Signature)
 	if fn == nil {
 		if name == "main" {
 			argc := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int32])
@@ -227,13 +228,24 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			results := types.NewTuple(ret)
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
-		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, async)
 	}
-
+	nBlkOff := 0
 	if nblk := len(f.Blocks); nblk > 0 {
-		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
+		var entryBlk, allocBlk, cleanBlk, suspdBlk, trapBlk, beginBlk llssa.BasicBlock
+		if async {
+			nBlkOff = 5
+			entryBlk = fn.MakeBlock("entry")
+			allocBlk = fn.MakeBlock("alloc")
+			cleanBlk = fn.MakeBlock("clean")
+			suspdBlk = fn.MakeBlock("suspend")
+			trapBlk = fn.MakeBlock("trap")
+		}
+		fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+		beginBlk = fn.Block(nBlkOff)
 		if f.Recover != nil { // set recover block
-			fn.SetRecover(fn.Block(f.Recover.Index))
+			// TODO(lijie): fix this for async function because of the block offset increase
+			fn.SetRecover(fn.Block(f.Recover.Index + nBlkOff))
 		}
 		p.inits = append(p.inits, func() {
 			p.fn = fn
@@ -249,6 +261,10 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
+			b.SetBlockOffset(nBlkOff)
+			if async {
+				b.BeginAsync(fn, entryBlk, allocBlk, cleanBlk, suspdBlk, trapBlk, beginBlk)
+			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
 			for i, block := range f.Blocks {
@@ -284,7 +300,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var pkg = p.pkg
 	var fn = p.fn
 	var instrs = block.Instrs[n:]
-	var ret = fn.Block(block.Index)
+	var ret = fn.Block(block.Index + b.BlockOffset())
 	b.SetBlock(ret)
 	if doModInit {
 		if pyModInit = p.pyMod != ""; pyModInit {
@@ -322,7 +338,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		modPtr := pkg.PyNewModVar(modName, true).Expr
 		mod := b.Load(modPtr)
 		cond := b.BinOp(token.NEQ, mod, prog.Nil(mod.Type))
-		newBlk := fn.MakeBlock()
+		newBlk := fn.MakeBlock("")
 		b.If(cond, jumpTo, newBlk)
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
 		b.Store(modPtr, b.PyImportMod(modPath))
@@ -654,7 +670,11 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 			results = make([]llssa.Expr, 1)
 			results[0] = p.prog.IntVal(0, p.prog.CInt())
 		}
-		b.Return(results...)
+		if b.Async() {
+			b.EndAsync()
+		} else {
+			b.Return(results...)
+		}
 	case *ssa.If:
 		fn := p.fn
 		cond := p.compileValue(b, v.Cond)

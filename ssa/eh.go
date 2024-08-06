@@ -55,6 +55,13 @@ func (p Program) tySiglongjmp() *types.Signature {
 	return p.sigljmpTy
 }
 
+func (p Program) tyLLVMTrap() *types.Signature {
+	if p.llvmTrapTy == nil {
+		p.llvmTrapTy = types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	}
+	return p.llvmTrapTy
+}
+
 func (b Builder) AllocaSigjmpBuf() Expr {
 	prog := b.Prog
 	n := unsafe.Sizeof(sigjmpbuf{})
@@ -75,6 +82,11 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
 	b.Call(fn, jb, retval)
 	// b.Unreachable()
+}
+
+func (b Builder) LLVMTrap() {
+	fn := b.Pkg.cFunc("llvm.trap", b.Prog.tyLLVMTrap())
+	b.Call(fn)
 }
 
 // -----------------------------------------------------------------------------
@@ -166,7 +178,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
 		if kind != DeferAlways {
-			panicBlk = self.MakeBlock()
+			panicBlk = self.MakeBlock("")
 		} else {
 			blks = self.MakeBlocks(2)
 			next, panicBlk = blks[0], blks[1]
@@ -240,7 +252,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
 	self := b.getDefer(DeferInCond)
-	blk := b.Func.MakeBlock()
+	blk := b.Func.MakeBlock("")
 	self.rundsNext = append(self.rundsNext, blk)
 
 	b.Store(self.rundPtr, blk.Addr())
