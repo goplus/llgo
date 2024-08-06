@@ -1,5 +1,9 @@
 package libuv
 
+//#cgo pkg-config: libuv
+//#include <uv.h>
+import "C"
+
 import (
 	_ "unsafe"
 
@@ -68,9 +72,7 @@ type File c.Int
 
 /* Handle types. */
 
-type Fs struct {
-	Unused [440]byte
-}
+type Fs C.uv_fs_t
 
 type FsEvent struct {
 	Unused [0]byte
