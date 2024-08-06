@@ -21,7 +21,6 @@ func main() {
 		return
 	}
 	defer ctx.Free()
-
 	var ret c.Int = ctx.InitEx(unsafe.Pointer(unsafe.StringData(key)), c.Int(lenKey), openssl.EVP_sha256(), nil)
 	if ret == 0 {
 		c.Fprintf(c.Stderr, c.Str("%s\n"), c.Str("Error initializing HMAC_CTX"))
@@ -37,9 +36,5 @@ func main() {
 		c.Fprintf(c.Stderr, c.Str("%s\n"), c.Str("Error finalizing HMAC_CTX"))
 		return
 	}
-	fmt.Print("HMAC: ")
-	for i := 0; i < int(digestLen); i++ {
-		fmt.Printf("%02x", digest[i])
-	}
-	fmt.Print("\n")
+	fmt.Printf("HMAC:%x\n", digest[:digestLen])
 }
