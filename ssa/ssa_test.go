@@ -594,6 +594,32 @@ _llgo_0:
 `)
 }
 
+func TestPointerOffset(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "p", types.NewPointer(types.Typ[types.Int])),
+		types.NewVar(0, nil, "offset", types.Typ[types.Int]),
+	)
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.NewPointer(types.Typ[types.Int])))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	ptr := fn.Param(0)
+	offset := fn.Param(1)
+	result := b.OffsetPtr(ptr, offset)
+	b.Return(result)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define ptr @fn(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = getelementptr ptr, ptr %0, i64 %1
+  ret ptr %2
+}
+`)
+}
+
 func TestLLVMTrap(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")

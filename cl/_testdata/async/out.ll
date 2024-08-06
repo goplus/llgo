@@ -7,22 +7,23 @@ source_filename = "async"
 
 define ptr @async.GenInts() presplitcoroutine {
 entry:
-  %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
+  %frame.size = call i64 @llvm.coro.size.i64()
+  %alloc.size = add i64 16, %frame.size
+  %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 %alloc.size)
   %need.dyn.alloc = call i1 @llvm.coro.alloc(token %id)
   br i1 %need.dyn.alloc, label %alloc, label %_llgo_5
 
 alloc:                                            ; preds = %entry
-  %frame.size = call i64 @llvm.coro.size.i64()
-  %frame = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 %frame.size)
+  %0 = getelementptr ptr, ptr %promise, i64 16
   br label %_llgo_5
 
 clean:                                            ; preds = %_llgo_8, %_llgo_7, %_llgo_6, %_llgo_5
-  %0 = call ptr @llvm.coro.free(token %id, ptr %hdl)
+  %1 = call ptr @llvm.coro.free(token %id, ptr %hdl)
   br label %suspend
 
 suspend:                                          ; preds = %_llgo_8, %_llgo_7, %_llgo_6, %_llgo_5, %clean
-  %1 = call i1 @llvm.coro.end(ptr %hdl, i1 false, token none)
+  %2 = call i1 @llvm.coro.end(ptr %hdl, i1 false, token none)
   ret ptr %promise
 
 trap:                                             ; preds = %_llgo_8
@@ -30,35 +31,35 @@ trap:                                             ; preds = %_llgo_8
   unreachable
 
 _llgo_5:                                          ; preds = %alloc, %entry
-  %frame1 = phi ptr [ null, %entry ], [ %frame, %alloc ]
-  %hdl = call ptr @llvm.coro.begin(token %id, ptr %frame1)
+  %frame = phi ptr [ null, %entry ], [ %0, %alloc ]
+  %hdl = call ptr @llvm.coro.begin(token %id, ptr %frame)
   store ptr %hdl, ptr %promise, align 8
   call void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %promise, i64 1)
-  %2 = call i8 @llvm.coro.suspend(token %id, i1 false)
-  switch i8 %2, label %suspend [
+  %3 = call i8 @llvm.coro.suspend(token %id, i1 false)
+  switch i8 %3, label %suspend [
     i8 0, label %_llgo_6
     i8 1, label %clean
   ]
 
 _llgo_6:                                          ; preds = %_llgo_5
   call void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %promise, i64 2)
-  %3 = call i8 @llvm.coro.suspend(token %id, i1 false)
-  switch i8 %3, label %suspend [
+  %4 = call i8 @llvm.coro.suspend(token %id, i1 false)
+  switch i8 %4, label %suspend [
     i8 0, label %_llgo_7
     i8 1, label %clean
   ]
 
 _llgo_7:                                          ; preds = %_llgo_6
   call void @"github.com/goplus/llgo/x/async.(*Promise).setValue[int]"(ptr %promise, i64 3)
-  %4 = call i8 @llvm.coro.suspend(token %id, i1 false)
-  switch i8 %4, label %suspend [
+  %5 = call i8 @llvm.coro.suspend(token %id, i1 false)
+  switch i8 %5, label %suspend [
     i8 0, label %_llgo_8
     i8 1, label %clean
   ]
 
 _llgo_8:                                          ; preds = %_llgo_7
-  %5 = call i8 @llvm.coro.suspend(token %id, i1 true)
-  switch i8 %5, label %suspend [
+  %6 = call i8 @llvm.coro.suspend(token %id, i1 true)
+  switch i8 %6, label %suspend [
     i8 0, label %trap
     i8 1, label %clean
   ]
@@ -86,22 +87,23 @@ _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
 
 define ptr @async.WrapGenInts() presplitcoroutine {
 entry:
-  %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %id = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
+  %frame.size = call i64 @llvm.coro.size.i64()
+  %alloc.size = add i64 16, %frame.size
+  %promise = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 %alloc.size)
   %need.dyn.alloc = call i1 @llvm.coro.alloc(token %id)
   br i1 %need.dyn.alloc, label %alloc, label %_llgo_5
 
 alloc:                                            ; preds = %entry
-  %frame.size = call i64 @llvm.coro.size.i64()
-  %frame = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 %frame.size)
+  %0 = getelementptr ptr, ptr %promise, i64 16
   br label %_llgo_5
 
 clean:                                            ; preds = %_llgo_5
-  %0 = call ptr @llvm.coro.free(token %id, ptr %hdl)
+  %1 = call ptr @llvm.coro.free(token %id, ptr %hdl)
   br label %suspend
 
 suspend:                                          ; preds = %_llgo_5, %clean
-  %1 = call i1 @llvm.coro.end(ptr %hdl, i1 false, token none)
+  %2 = call i1 @llvm.coro.end(ptr %hdl, i1 false, token none)
   ret ptr %promise
 
 trap:                                             ; preds = %_llgo_5
@@ -109,12 +111,12 @@ trap:                                             ; preds = %_llgo_5
   unreachable
 
 _llgo_5:                                          ; preds = %alloc, %entry
-  %frame1 = phi ptr [ null, %entry ], [ %frame, %alloc ]
-  %hdl = call ptr @llvm.coro.begin(token %id, ptr %frame1)
+  %frame = phi ptr [ null, %entry ], [ %0, %alloc ]
+  %hdl = call ptr @llvm.coro.begin(token %id, ptr %frame)
   store ptr %hdl, ptr %promise, align 8
-  %2 = call ptr @async.GenInts()
-  %3 = call i8 @llvm.coro.suspend(token %id, i1 true)
-  switch i8 %3, label %suspend [
+  %3 = call ptr @async.GenInts()
+  %4 = call i8 @llvm.coro.suspend(token %id, i1 true)
+  switch i8 %4, label %suspend [
     i8 0, label %trap
     i8 1, label %clean
   ]
@@ -133,16 +135,16 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
 ; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: read)
 declare token @llvm.coro.id(i32, ptr readnone, ptr nocapture readonly, ptr)
 
-; Function Attrs: nounwind
-declare i1 @llvm.coro.alloc(token)
-
 ; Function Attrs: nounwind memory(none)
 declare i64 @llvm.coro.size.i64()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+
+; Function Attrs: nounwind
+declare i1 @llvm.coro.alloc(token)
 
 ; Function Attrs: nounwind
 declare ptr @llvm.coro.begin(token, ptr writeonly)

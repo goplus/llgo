@@ -383,9 +383,14 @@ func (b Builder) EndAsync() {
 }
 
 /*
+	pesudo code:
+
 retPtr := malloc(sizeof(Promise))
 id := @llvm.coro.id(0, null, null, null)
+promiseSize := sizeof(Promise[T])
 frameSize := @llvm.coro.size.i64()
+allocSize := promiseSize + frameSize
+promise := malloc(allocSize)
 needAlloc := @llvm.coro.alloc(id)
 ; Allocate memory for return type and coroutine frame
 frame := null
@@ -408,20 +413,23 @@ func (b Builder) BeginAsync(fn Function, entryBlk, allocBlk, cleanBlk, suspdBlk,
 	b.async = true
 
 	b.SetBlock(entryBlk)
-	promiseSize := b.Const(constant.MakeUint64(b.Prog.SizeOf(promiseTy)), b.Prog.Int64()).SetName("promise.size")
-	promise := b.AllocZ(promiseSize).SetName("promise")
-	promise.Type = b.Prog.Pointer(promiseTy)
-	b.promise = promise
 	align := b.Const(constant.MakeInt64(0), b.Prog.CInt()).SetName("align")
 	null := b.Const(nil, b.Prog.CIntPtr())
 	id := b.CoID(align, null, null, null).SetName("id")
 	b.asyncToken = id
+	promiseSize := b.Const(constant.MakeUint64(b.Prog.SizeOf(promiseTy)), b.Prog.Int64()).SetName("alloc.size")
+	frameSize := b.CoSizeI64().SetName("frame.size")
+	allocSize := b.BinOp(token.ADD, promiseSize, frameSize).SetName("alloc.size")
+	promise := b.AllocZ(allocSize).SetName("promise")
+	b.promise = promise
+	promise.Type = b.Prog.Pointer(promiseTy)
 	needAlloc := b.CoAlloc(id).SetName("need.dyn.alloc")
 	b.If(needAlloc, allocBlk, beginBlk)
+
 	b.SetBlock(allocBlk)
-	frameSize := b.CoSizeI64().SetName("frame.size")
-	frame := b.AllocZ(frameSize).SetName("frame")
+	frame := b.OffsetPtr(promise, promiseSize)
 	b.Jump(beginBlk)
+
 	b.SetBlock(beginBlk)
 	phi := b.Phi(b.Prog.VoidPtr())
 	phi.SetName("frame")
