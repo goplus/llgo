@@ -757,12 +757,13 @@ func findDylibDep(exe, lib string) string {
 type none struct{}
 
 var hasAltPkg = map[string]none{
+	"crypto/hmac":              {},
 	"crypto/md5":               {},
+	"crypto/rand":              {},
 	"crypto/sha1":              {},
 	"crypto/sha256":            {},
 	"crypto/sha512":            {},
-	"crypto/hmac":              {},
-	"crypto/rand":              {},
+	"crypto/subtle":            {},
 	"fmt":                      {},
 	"hash/crc32":               {},
 	"internal/abi":             {},
