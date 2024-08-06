@@ -1,7 +1,15 @@
 package main
 
-import "crypto/hmac"
+import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"fmt"
+	"io"
+)
 
 func main() {
-	hmac.New(nil, []byte{'1', '2'})
+	h := hmac.New(sha1.New, []byte("<key>"))
+	io.WriteString(h, "The fog is getting thicker!")
+	io.WriteString(h, "And Leon's getting laaarger!")
+	fmt.Printf("%x", h.Sum(nil))
 }

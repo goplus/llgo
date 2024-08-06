@@ -6,7 +6,15 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
-const EVP_MAX_MD_SIZE = 64 /* longest known is SHA512 */
+const (
+	EVP_MAX_MD_SIZE = 64 /* longest known is SHA512 */
+)
+
+// -----------------------------------------------------------------------------
+
+type EVP_MD struct {
+	Unused [0]byte
+}
 
 // const EVP_MD *EVP_sha1(void)
 //
@@ -43,9 +51,7 @@ func EVP_sha384() *EVP_MD
 //go:linkname EVP_sha512 C.EVP_sha512
 func EVP_sha512() *EVP_MD
 
-type EVP_MD struct {
-	Unused [0]byte
-}
+// -----------------------------------------------------------------------------
 
 type HMAC_CTX struct {
 	Unused [0]byte
@@ -115,3 +121,5 @@ func (c *HMAC_CTX) Copy(sctx *HMAC_CTX) c.Int { return 0 }
 //
 // llgo:link (*HMAC_CTX).SetFlags C.HMAC_CTX_set_flags
 func (c *HMAC_CTX) SetFlags(flags c.Ulong) {}
+
+// -----------------------------------------------------------------------------
