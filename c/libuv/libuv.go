@@ -103,10 +103,6 @@ type Poll struct {
 
 /* Request types. */
 
-type Shutdown struct {
-	Unused [0]byte
-}
-
 type Buf struct {
 	Base *c.Char
 	Len  uintptr
@@ -136,9 +132,6 @@ type GetaddrinfoCb func(req *GetAddrInfo, status c.Int, res *net.AddrInfo)
 type GetnameinfoCb func(req *GetNameInfo, status c.Int, hostname *c.Char, service *c.Char)
 
 // llgo:type C
-type ShutdownCb func(req *Shutdown, status c.Int)
-
-// llgo:type C
 type WalkCb func(handle *Handle, arg c.Pointer)
 
 // llgo:type C
@@ -157,16 +150,6 @@ func LibraryShutdown()
 
 //go:linkname ReplaceAllocator C.uv_replace_allocator
 func ReplaceAllocator(mallocFunc MallocFunc, reallocFunc ReallocFunc, callocFunc CallocFunc, freeFunc FreeFunc) c.Int
-
-//go:linkname Close C.uv_close
-func Close(handle *Handle, closeCb CloseCb)
-
-// ----------------------------------------------
-
-// llgo:link (*Shutdown).Shutdown C.uv_shutdown
-func (shutdown *Shutdown) Shutdown(stream *Stream, shutdownCb ShutdownCb) c.Int {
-	return 0
-}
 
 // ----------------------------------------------
 
@@ -202,20 +185,20 @@ func LoopInit(loop *Loop) c.Int
 //go:linkname LoopNew C.uv_loop_new
 func LoopNew() *Loop
 
-//go:linkname LoopNow C.uv_now
-func LoopNow(loop *Loop) c.UlongLong
+//go:linkname Now C.uv_now
+func Now(loop *Loop) c.UlongLong
 
-//go:linkname LoopUpdateTime C.uv_update_time
-func LoopUpdateTime(loop *Loop)
+//go:linkname UpdateTime C.uv_update_time
+func UpdateTime(loop *Loop)
 
-//go:linkname LoopBackendFd C.uv_backend_fd
-func LoopBackendFd(loop *Loop) c.Int
+//go:linkname BackendFd C.uv_backend_fd
+func BackendFd(loop *Loop) c.Int
 
-//go:linkname LoopBackendTimeout C.uv_backend_timeout
-func LoopBackendTimeout(loop *Loop) c.Int
+//go:linkname BackendTimeout C.uv_backend_timeout
+func BackendTimeout(loop *Loop) c.Int
 
-//go:linkname LoopWalk C.uv_walk
-func LoopWalk(loop *Loop, walkCb WalkCb, arg c.Pointer)
+//go:linkname Walk C.uv_walk
+func Walk(loop *Loop, walkCb WalkCb, arg c.Pointer)
 
 // ----------------------------------------------
 

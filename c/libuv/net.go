@@ -70,11 +70,12 @@ type UdpFlags c.Int
 /* Handle types. */
 
 type Tcp C.uv_tcp_t
+
 // TODO(spongehah): Handle
 type Handle struct {
 	Data   c.Pointer
 	Unused [88]byte
-// TODO(spongehah): Stream
+	// TODO(spongehah): Stream
 }
 
 type Stream struct {
@@ -82,6 +83,9 @@ type Stream struct {
 	Unused [256]byte
 }
 
+type Shutdown struct {
+	Unused [0]byte
+}
 
 type Udp struct {
 	Unused [0]byte
@@ -97,12 +101,12 @@ type UdpSend struct {
 	Unused [0]byte
 }
 
-
 // TODO(spongehah): Connect
 type Connect struct {
 	Data   c.Pointer
 	Unused [88]byte
 }
+
 // TODO(spongehah): Write
 type Write struct {
 	Data   c.Pointer
@@ -141,6 +145,9 @@ type WriteCb func(req *Write, status c.Int)
 
 // llgo:type C
 type ConnectionCb func(server *Stream, status c.Int)
+
+// llgo:type C
+type ShutdownCb func(req *Shutdown, status c.Int)
 
 // ----------------------------------------------
 
@@ -216,6 +223,16 @@ func Socketpair(_type c.Int, protocol c.Int, socketVector [2]OsSock, flag0 c.Int
 
 // llgo:link (*Handle).IsClosing C.uv_is_closing
 func (handle *Handle) IsClosing() c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).IsReadable C.uv_is_readable
+func (handle *Handle) IsReadable() c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).IsWritable C.uv_is_writable
+func (handle *Handle) IsWritable() c.Int {
 	return 0
 }
 
@@ -303,6 +320,11 @@ func (stream *Stream) IsWritable() c.Int {
 
 // llgo:link (*Stream).SetBlocking C.uv_stream_set_blocking
 func (stream *Stream) SetBlocking(blocking c.Int) c.Int {
+	return 0
+}
+
+//go:linkname StreamShutdown C.uv_shutdown
+func StreamShutdown(shutdown *Shutdown, stream *Stream, shutdownCb ShutdownCb) c.Int {
 	return 0
 }
 
