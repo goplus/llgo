@@ -38,133 +38,133 @@ const (
 	 * spelling, find their definitions, etc. However, the specific kind
 	 * of the declaration is not reported.
 	 */
-	UnexposedDecl CursorKind = iota + 1
+	CursorUnexposedDecl CursorKind = iota + 1
 
 	/** A C or C++ struct. */
-	StructDecl
+	CursorStructDecl
 
 	/** A C or C++ union. */
-	UnionDecl
+	CursorUnionDecl
 
 	/** A C++ class. */
-	ClassDecl
+	CursorClassDecl
 
 	/** An enumeration. */
-	EnumDecl
+	CursorEnumDecl
 
 	/**
 	 * A field (in C) or non-static data member (in C++) in a
 	 * struct, union, or C++ class.
 	 */
-	FieldDecl
+	CursorFieldDecl
 
 	/** An enumerator constant. */
-	EnumConstantDecl
+	CursorEnumConstantDecl
 
 	/** A function. */
-	FunctionDecl
+	CursorFunctionDecl
 
 	/** A variable. */
-	VarDecl
+	CursorVarDecl
 
 	/** A function or method parameter. */
-	ParmDecl
+	CursorParmDecl
 
 	/** An Objective-C \@interface. */
-	ObjCInterfaceDecl
+	CursorObjCInterfaceDecl
 
 	/** An Objective-C \@interface for a category. */
-	ObjCCategoryDecl
+	CursorObjCCategoryDecl
 
 	/** An Objective-C \@protocol declaration. */
-	ObjCProtocolDecl
+	CursorObjCProtocolDecl
 
 	/** An Objective-C \@property declaration. */
-	ObjCPropertyDecl
+	CursorObjCPropertyDecl
 
 	/** An Objective-C instance variable. */
-	ObjCIvarDecl
+	CursorObjCIvarDecl
 
 	/** An Objective-C instance method. */
-	ObjCInstanceMethodDecl
+	CursorObjCInstanceMethodDecl
 
 	/** An Objective-C class method. */
-	ObjCClassMethodDecl
+	CursorObjCClassMethodDecl
 
 	/** An Objective-C \@implementation. */
-	ObjCImplementationDecl
+	CursorObjCImplementationDecl
 
 	/** An Objective-C \@implementation for a category. */
-	ObjCCategoryImplDecl
+	CursorObjCCategoryImplDecl
 
 	/** A typedef. */
-	TypedefDecl
+	CursorTypedefDecl
 
 	/** A C++ class method. */
-	CXXMethod
+	CursorCXXMethod
 
 	/** A C++ namespace. */
-	Namespace
+	CursorNamespace
 
 	/** A linkage specification, e.g. 'extern "C"'. */
-	LinkageSpec
+	CursorLinkageSpec
 
 	/** A C++ constructor. */
-	Constructor
+	CursorConstructor
 
 	/** A C++ destructor. */
-	Destructor
+	CursorDestructor
 
 	/** A C++ conversion function. */
-	ConversionFunction
+	CursorConversionFunction
 
 	/** A C++ template type parameter. */
-	TemplateTypeParameter
+	CursorTemplateTypeParameter
 
 	/** A C++ non-type template parameter. */
-	NonTypeTemplateParameter
+	CursorNonTypeTemplateParameter
 
 	/** A C++ template template parameter. */
-	TemplateTemplateParameter
+	CursorTemplateTemplateParameter
 
 	/** A C++ function template. */
-	FunctionTemplate
+	CursorFunctionTemplate
 
 	/** A C++ class template. */
-	ClassTemplate
+	CursorClassTemplate
 
 	/** A C++ class template partial specialization. */
-	ClassTemplatePartialSpecialization
+	CursorClassTemplatePartialSpecialization
 
 	/** A C++ namespace alias declaration. */
-	NamespaceAlias
+	CursorNamespaceAlias
 
 	/** A C++ using directive. */
-	UsingDirective
+	CursorUsingDirective
 
 	/** A C++ using declaration. */
-	UsingDeclaration
+	CursorUsingDeclaration
 
 	/** A C++ alias declaration */
-	TypeAliasDecl
+	CursorTypeAliasDecl
 
 	/** An Objective-C \@synthesize definition. */
-	ObjCSynthesizeDecl
+	CursorObjCSynthesizeDecl
 
 	/** An Objective-C \@dynamic definition. */
-	ObjCDynamicDecl
+	CursorObjCDynamicDecl
 
 	/** An access specifier. */
-	CXXAccessSpecifier
+	CursorCXXAccessSpecifier
 
-	FirstDecl = UnexposedDecl
-	LastDecl  = CXXAccessSpecifier
+	CursorFirstDecl = CursorUnexposedDecl
+	CursorLastDecl  = CursorCXXAccessSpecifier
 
 	/* References */
-	FirstRef          = 40
-	ObjCSuperClassRef = iota - 2 //40
-	ObjCProtocolRef
-	ObjCClassRef
+	CursorFirstRef          = 40
+	CursorObjCSuperClassRef = iota - 2 //40
+	CursorObjCProtocolRef
+	CursorObjCClassRef
 
 	/**
 	 * A reference to a type declaration.
@@ -181,26 +181,26 @@ const (
 	 * while the type of the variable "size" is referenced. The cursor
 	 * referenced by the type of size is the typedef for size_type.
 	 */
-	TypeRef
+	CursorTypeRef
 
-	CXXBaseSpecifier
+	CursorCXXBaseSpecifier
 
 	/**
 	 * A reference to a class template, function template, template
 	 * template parameter, or class template partial specialization.
 	 */
-	TemplateRef
+	CursorTemplateRef
 
 	/**
 	 * A reference to a namespace or namespace alias.
 	 */
-	NamespaceRef
+	CursorNamespaceRef
 
 	/**
 	 * A reference to a member of a struct, union, or class that occurs in
 	 * some non-expression context, e.g., a designated initializer.
 	 */
-	MemberRef
+	CursorMemberRef
 
 	/**
 	 * A reference to a labeled statement.
@@ -217,7 +217,7 @@ const (
 	 *
 	 * A label reference cursor refers to a label statement.
 	 */
-	LabelRef
+	CursorLabelRef
 
 	/**
 	 * A reference to a set of overloaded functions or function templates
@@ -255,26 +255,26 @@ const (
 	 * \c clang_getOverloadedDecl() can be used to retrieve the definitions
 	 * referenced by this cursor.
 	 */
-	OverloadedDeclRef
+	CursorOverloadedDeclRef
 
 	/**
 	 * A reference to a variable that occurs in some non-expression
 	 * context, e.g., a C++ lambda capture list.
 	 */
-	VariableRef
+	CursorVariableRef
 
-	LastRef = VariableRef
+	CursorLastRef = CursorVariableRef
 
 	/* Error conditions */
-	FirstInvalid = 70
-	InvalidFile  = iota + 15 //70
-	NoDeclFound
-	NotImplemented
-	InvalidCode
-	LastInvalid = InvalidCode
+	CursorFirstInvalid = 70
+	CursorInvalidFile  = iota + 15 //70
+	CursorNoDeclFound
+	CursorNotImplemented
+	CursorInvalidCode
+	CursorLastInvalid = CursorInvalidCode
 
 	/* Expressions */
-	FirstExpr = 100
+	CursorFirstExpr = 100
 
 	/**
 	 * An expression whose specific kind is not exposed via this
@@ -285,104 +285,104 @@ const (
 	 * spelling, children, etc. However, the specific kind of the
 	 * expression is not reported.
 	 */
-	UnexposedExpr = iota + 39 //100
+	CursorUnexposedExpr = iota + 39 //100
 
 	/**
 	 * An expression that refers to some value declaration, such
 	 * as a function, variable, or enumerator.
 	 */
-	DeclRefExpr
+	CursorDeclRefExpr
 
 	/**
 	 * An expression that refers to a member of a struct, union,
 	 * class, Objective-C class, etc.
 	 */
-	MemberRefExpr
+	CursorMemberRefExpr
 
 	/** An expression that calls a function. */
-	CallExpr
+	CursorCallExpr
 
 	/** An expression that sends a message to an Objective-C
 	object or class. */
-	ObjCMessageExpr
+	CursorObjCMessageExpr
 
 	/** An expression that represents a block literal. */
-	BlockExpr
+	CursorBlockExpr
 
 	/** An integer literal.
 	 */
-	IntegerLiteral
+	CursorIntegerLiteral
 
 	/** A floating point number literal.
 	 */
-	FloatingLiteral
+	CursorFloatingLiteral
 
 	/** An imaginary number literal.
 	 */
-	ImaginaryLiteral
+	CursorImaginaryLiteral
 
 	/** A string literal.
 	 */
-	StringLiteral
+	CursorStringLiteral
 
 	/** A character literal.
 	 */
-	CharacterLiteral
+	CursorCharacterLiteral
 
 	/** A parenthesized expression, e.g. "(1)".
 	 *
 	 * This AST node is only formed if full location information is requested.
 	 */
-	ParenExpr
+	CursorParenExpr
 
 	/** This represents the unary-expression's (except sizeof and
 	 * alignof).
 	 */
-	UnaryOperator
+	CursorUnaryOperator
 
 	/** [C99 6.5.2.1] Array Subscripting.
 	 */
-	ArraySubscriptExpr
+	CursorArraySubscriptExpr
 
 	/** A builtin binary operation expression such as "x + y" or
 	 * "x <= y".
 	 */
-	BinaryOperator
+	CursorBinaryOperator
 
 	/** Compound assignment such as "+=".
 	 */
-	CompoundAssignOperator
+	CursorCompoundAssignOperator
 
 	/** The ?: ternary operator.
 	 */
-	ConditionalOperator
+	CursorConditionalOperator
 
 	/** An explicit cast in C (C99 6.5.4) or a C-style cast in C++
 	 * (C++ [expr.cast]), which uses the syntax (Type)expr.
 	 *
 	 * For example: (int)f.
 	 */
-	CStyleCastExpr
+	CursorCStyleCastExpr
 
 	/** [C99 6.5.2.5]
 	 */
-	CompoundLiteralExpr
+	CursorCompoundLiteralExpr
 
 	/** Describes an C or C++ initializer list.
 	 */
-	InitListExpr
+	CursorInitListExpr
 
 	/** The GNU address of label extension, representing &&label.
 	 */
-	AddrLabelExpr
+	CursorAddrLabelExpr
 
 	/** This is the GNU Statement Expression extension: ({int X=4; X;})
 	 */
-	StmtExpr
+	CursorStmtExpr
 
 	/** Represents a C11 generic selection.
 	 */
-	GenericSelectionExpr
+	CursorGenericSelectionExpr
 
 	/** Implements the GNU __null extension, which is a name for a null
 	 * pointer constant that has integral type (e.g., int or long) and is the same
@@ -392,23 +392,23 @@ const (
 	 * NULL as __null in C++ rather than using 0 (which is an integer that may not
 	 * match the size of a pointer).
 	 */
-	GNUNullExpr
+	CursorGNUNullExpr
 
 	/** C++'s static_cast<> expression.
 	 */
-	CXXStaticCastExpr
+	CursorCXXStaticCastExpr
 
 	/** C++'s dynamic_cast<> expression.
 	 */
-	CXXDynamicCastExpr
+	CursorCXXDynamicCastExpr
 
 	/** C++'s reinterpret_cast<> expression.
 	 */
-	CXXReinterpretCastExpr
+	CursorCXXReinterpretCastExpr
 
 	/** C++'s const_cast<> expression.
 	 */
-	CXXConstCastExpr
+	CursorCXXConstCastExpr
 
 	/** Represents an explicit C++ type conversion that uses "functional"
 	 * notion (C++ [expr.type.conv]).
@@ -418,60 +418,60 @@ const (
 	 *   x = int(0.5);
 	 * \endcode
 	 */
-	CXXFunctionalCastExpr
+	CursorCXXFunctionalCastExpr
 
 	/** A C++ typeid expression (C++ [expr.typeid]).
 	 */
-	CXXTypeidExpr
+	CursorCXXTypeidExpr
 
 	/** [C++ 2.13.5] C++ Boolean Literal.
 	 */
-	CXXBoolLiteralExpr
+	CursorCXXBoolLiteralExpr
 
 	/** [C++0x 2.14.7] C++ Pointer Literal.
 	 */
-	CXXNullPtrLiteralExpr
+	CursorCXXNullPtrLiteralExpr
 
 	/** Represents the "this" expression in C++
 	 */
-	CXXThisExpr
+	CursorCXXThisExpr
 
 	/** [C++ 15] C++ Throw Expression.
 	 *
 	 * This handles 'throw' and 'throw' assignment-expression. When
 	 * assignment-expression isn't present, Op will be null.
 	 */
-	CXXThrowExpr
+	CursorCXXThrowExpr
 
 	/** A new expression for memory allocation and constructor calls, e.g:
 	 * "new CXXNewExpr(foo)".
 	 */
-	CXXNewExpr
+	CursorCXXNewExpr
 
 	/** A delete expression for memory deallocation and destructor calls,
 	 * e.g. "delete[] pArray".
 	 */
-	CXXDeleteExpr
+	CursorCXXDeleteExpr
 
 	/** A unary expression. (noexcept, sizeof, or other traits)
 	 */
-	UnaryExpr
+	CursorUnaryExpr
 
 	/** An Objective-C string literal i.e. @"foo".
 	 */
-	ObjCStringLiteral
+	CursorObjCStringLiteral
 
 	/** An Objective-C \@encode expression.
 	 */
-	ObjCEncodeExpr
+	CursorObjCEncodeExpr
 
 	/** An Objective-C \@selector expression.
 	 */
-	ObjCSelectorExpr
+	CursorObjCSelectorExpr
 
 	/** An Objective-C \@protocol expression.
 	 */
-	ObjCProtocolExpr
+	CursorObjCProtocolExpr
 
 	/** An Objective-C "bridged" cast expression, which casts between
 	 * Objective-C pointers and C pointers, transferring ownership in the process.
@@ -480,7 +480,7 @@ const (
 	 *   NSString *str = (__bridge_transfer NSString *)CFCreateString();
 	 * \endcode
 	 */
-	ObjCBridgedCastExpr
+	CursorObjCBridgedCastExpr
 
 	/** Represents a C++0x pack expansion that produces a sequence of
 	 * expressions.
@@ -495,7 +495,7 @@ const (
 	 * }
 	 * \endcode
 	 */
-	PackExpansionExpr
+	CursorPackExpansionExpr
 
 	/** Represents an expression that computes the length of a parameter
 	 * pack.
@@ -507,7 +507,7 @@ const (
 	 * };
 	 * \endcode
 	 */
-	SizeOfPackExpr
+	CursorSizeOfPackExpr
 	/* Represents a C++ lambda expression that produces a local function
 	 * object.
 	 *
@@ -520,62 +520,62 @@ const (
 	 * }
 	 * \endcode
 	 */
-	LambdaExpr
+	CursorLambdaExpr
 
 	/** Objective-c Boolean Literal.
 	 */
-	ObjCBoolLiteralExpr
+	CursorObjCBoolLiteralExpr
 
 	/** Represents the "self" expression in an Objective-C method.
 	 */
-	ObjCSelfExpr
+	CursorObjCSelfExpr
 
 	/** OpenMP 5.0 [2.1.5, Array Section].
 	 */
-	OMPArraySectionExpr
+	CursorOMPArraySectionExpr
 
 	/** Represents an @available(...) check.
 	 */
-	ObjCAvailabilityCheckExpr
+	CursorObjCAvailabilityCheckExpr
 
 	/**
 	 * Fixed point literal
 	 */
-	FixedPointLiteral
+	CursorFixedPointLiteral
 
 	/** OpenMP 5.0 [2.1.4, Array Shaping].
 	 */
-	OMPArrayShapingExpr
+	CursorOMPArrayShapingExpr
 
 	/**
 	 * OpenMP 5.0 [2.1.6 Iterators]
 	 */
-	OMPIteratorExpr
+	CursorOMPIteratorExpr
 
 	/** OpenCL's addrspace_cast<> expression.
 	 */
-	CXXAddrspaceCastExpr
+	CursorCXXAddrspaceCastExpr
 
 	/**
 	 * Expression that references a C++20 concept.
 	 */
-	ConceptSpecializationExpr
+	CursorConceptSpecializationExpr
 
 	/**
 	 * Expression that references a C++20 concept.
 	 */
-	RequiresExpr
+	CursorRequiresExpr
 
 	/**
 	 * Expression that references a C++20 parenthesized list aggregate
 	 * initializer.
 	 */
-	CXXParenListInitExpr
+	CursorCXXParenListInitExpr
 
-	LastExpr = CXXParenListInitExpr
+	CursorLastExpr = CursorCXXParenListInitExpr
 
 	/* Statements */
-	FirstStmt = 200
+	CursorFirstStmt = 200
 	/**
 	 * A statement whose specific kind is not exposed via this
 	 * interface.
@@ -585,7 +585,7 @@ const (
 	 * children, etc. However, the specific kind of the statement is not
 	 * reported.
 	 */
-	UnexposedStmt = iota + 81 //200
+	CursorUnexposedStmt = iota + 81 //200
 
 	/** A labelled statement in a function.
 	 *
@@ -598,436 +598,436 @@ const (
 	 * \endcode
 	 *
 	 */
-	LabelStmt
+	CursorLabelStmt
 
 	/** A group of statements like { stmt stmt }.
 	 *
 	 * This cursor kind is used to describe compound statements, e.g. function
 	 * bodies.
 	 */
-	CompoundStmt
+	CursorCompoundStmt
 
 	/** A case statement.
 	 */
-	CaseStmt
+	CursorCaseStmt
 
 	/** A default statement.
 	 */
-	DefaultStmt
+	CursorDefaultStmt
 
 	/** An if statement
 	 */
-	IfStmt
+	CursorIfStmt
 
 	/** A switch statement.
 	 */
-	SwitchStmt
+	CursorSwitchStmt
 
 	/** A while statement.
 	 */
-	WhileStmt
+	CursorWhileStmt
 
 	/** A do statement.
 	 */
-	DoStmt
+	CursorDoStmt
 
 	/** A for statement.
 	 */
-	ForStmt
+	CursorForStmt
 
 	/** A goto statement.
 	 */
-	GotoStmt
+	CursorGotoStmt
 
 	/** An indirect goto statement.
 	 */
-	IndirectGotoStmt
+	CursorIndirectGotoStmt
 
 	/** A continue statement.
 	 */
-	ContinueStmt
+	CursorContinueStmt
 
 	/** A break statement.
 	 */
-	BreakStmt
+	CursorBreakStmt
 
 	/** A return statement.
 	 */
-	ReturnStmt
+	CursorReturnStmt
 
 	/** A GCC inline assembly statement extension.
 	 */
-	GCCAsmStmt
-	AsmStmt = GCCAsmStmt
+	CursorGCCAsmStmt
+	CursorAsmStmt = CursorGCCAsmStmt
 
 	/** Objective-C's overall \@try-\@catch-\@finally statement.
 	 */
-	ObjCAtTryStmt = iota + 80 //216
+	CursorObjCAtTryStmt = iota + 80 //216
 
 	/** Objective-C's \@catch statement.
 	 */
-	ObjCAtCatchStmt
+	CursorObjCAtCatchStmt
 
 	/** Objective-C's \@finally statement.
 	 */
-	ObjCAtFinallyStmt
+	CursorObjCAtFinallyStmt
 
 	/** Objective-C's \@throw statement.
 	 */
-	ObjCAtThrowStmt
+	CursorObjCAtThrowStmt
 
 	/** Objective-C's \@synchronized statement.
 	 */
-	ObjCAtSynchronizedStmt
+	CursorObjCAtSynchronizedStmt
 
 	/** Objective-C's autorelease pool statement.
 	 */
-	ObjCAutoreleasePoolStmt
+	CursorObjCAutoreleasePoolStmt
 
 	/** Objective-C's collection statement.
 	 */
-	ObjCForCollectionStmt
+	CursorObjCForCollectionStmt
 
 	/** C++'s catch statement.
 	 */
-	CXXCatchStmt
+	CursorCXXCatchStmt
 
 	/** C++'s try statement.
 	 */
-	CXXTryStmt
+	CursorCXXTryStmt
 
 	/** C++'s for (* : *) statement.
 	 */
-	CXXForRangeStmt
+	CursorCXXForRangeStmt
 
 	/** Windows Structured Exception Handling's try statement.
 	 */
-	SEHTryStmt
+	CursorSEHTryStmt
 
 	/** Windows Structured Exception Handling's except statement.
 	 */
-	SEHExceptStmt
+	CursorSEHExceptStmt
 
 	/** Windows Structured Exception Handling's finally statement.
 	 */
-	SEHFinallyStmt
+	CursorSEHFinallyStmt
 
 	/** A MS inline assembly statement extension.
 	 */
-	MSAsmStmt
+	CursorMSAsmStmt
 
 	/** The null statement ";": C99 6.8.3p3.
 	 *
 	 * This cursor kind is used to describe the null statement.
 	 */
-	NullStmt
+	CursorNullStmt
 
 	/** Adaptor class for mixing declarations with statements and
 	 * expressions.
 	 */
-	DeclStmt
+	CursorDeclStmt
 
 	/** OpenMP parallel directive.
 	 */
-	OMPParallelDirective
+	CursorOMPParallelDirective
 
 	/** OpenMP SIMD directive.
 	 */
-	OMPSimdDirective
+	CursorOMPSimdDirective
 
 	/** OpenMP for directive.
 	 */
-	OMPForDirective
+	CursorOMPForDirective
 
 	/** OpenMP sections directive.
 	 */
-	OMPSectionsDirective
+	CursorOMPSectionsDirective
 
 	/** OpenMP section directive.
 	 */
-	OMPSectionDirective
+	CursorOMPSectionDirective
 
 	/** OpenMP single directive.
 	 */
-	OMPSingleDirective
+	CursorOMPSingleDirective
 
 	/** OpenMP parallel for directive.
 	 */
-	OMPParallelForDirective
+	CursorOMPParallelForDirective
 
 	/** OpenMP parallel sections directive.
 	 */
-	OMPParallelSectionsDirective
+	CursorOMPParallelSectionsDirective
 
 	/** OpenMP task directive.
 	 */
-	OMPTaskDirective
+	CursorOMPTaskDirective
 
 	/** OpenMP master directive.
 	 */
-	OMPMasterDirective
+	CursorOMPMasterDirective
 
 	/** OpenMP critical directive.
 	 */
-	OMPCriticalDirective
+	CursorOMPCriticalDirective
 
 	/** OpenMP taskyield directive.
 	 */
-	OMPTaskyieldDirective
+	CursorOMPTaskyieldDirective
 
 	/** OpenMP barrier directive.
 	 */
-	OMPBarrierDirective
+	CursorOMPBarrierDirective
 
 	/** OpenMP taskwait directive.
 	 */
-	OMPTaskwaitDirective
+	CursorOMPTaskwaitDirective
 
 	/** OpenMP flush directive.
 	 */
-	OMPFlushDirective
+	CursorOMPFlushDirective
 
 	/** Windows Structured Exception Handling's leave statement.
 	 */
-	SEHLeaveStmt
+	CursorSEHLeaveStmt
 
 	/** OpenMP ordered directive.
 	 */
-	OMPOrderedDirective
+	CursorOMPOrderedDirective
 
 	/** OpenMP atomic directive.
 	 */
-	OMPAtomicDirective
+	CursorOMPAtomicDirective
 
 	/** OpenMP for SIMD directive.
 	 */
-	OMPForSimdDirective
+	CursorOMPForSimdDirective
 
 	/** OpenMP parallel for SIMD directive.
 	 */
-	OMPParallelForSimdDirective
+	CursorOMPParallelForSimdDirective
 
 	/** OpenMP target directive.
 	 */
-	OMPTargetDirective
+	CursorOMPTargetDirective
 
 	/** OpenMP teams directive.
 	 */
-	OMPTeamsDirective
+	CursorOMPTeamsDirective
 
 	/** OpenMP taskgroup directive.
 	 */
-	OMPTaskgroupDirective
+	CursorOMPTaskgroupDirective
 
 	/** OpenMP cancellation point directive.
 	 */
-	OMPCancellationPointDirective
+	CursorOMPCancellationPointDirective
 
 	/** OpenMP cancel directive.
 	 */
-	OMPCancelDirective
+	CursorOMPCancelDirective
 
 	/** OpenMP target data directive.
 	 */
-	OMPTargetDataDirective
+	CursorOMPTargetDataDirective
 
 	/** OpenMP taskloop directive.
 	 */
-	OMPTaskLoopDirective
+	CursorOMPTaskLoopDirective
 
 	/** OpenMP taskloop simd directive.
 	 */
-	OMPTaskLoopSimdDirective
+	CursorOMPTaskLoopSimdDirective
 
 	/** OpenMP distribute directive.
 	 */
-	OMPDistributeDirective
+	CursorOMPDistributeDirective
 
 	/** OpenMP target enter data directive.
 	 */
-	OMPTargetEnterDataDirective
+	CursorOMPTargetEnterDataDirective
 
 	/** OpenMP target exit data directive.
 	 */
-	OMPTargetExitDataDirective
+	CursorOMPTargetExitDataDirective
 
 	/** OpenMP target parallel directive.
 	 */
-	OMPTargetParallelDirective
+	CursorOMPTargetParallelDirective
 
 	/** OpenMP target parallel for directive.
 	 */
-	OMPTargetParallelForDirective
+	CursorOMPTargetParallelForDirective
 
 	/** OpenMP target update directive.
 	 */
-	OMPTargetUpdateDirective
+	CursorOMPTargetUpdateDirective
 
 	/** OpenMP distribute parallel for directive.
 	 */
-	OMPDistributeParallelForDirective
+	CursorOMPDistributeParallelForDirective
 
 	/** OpenMP distribute parallel for simd directive.
 	 */
-	OMPDistributeParallelForSimdDirective
+	CursorOMPDistributeParallelForSimdDirective
 
 	/** OpenMP distribute simd directive.
 	 */
-	OMPDistributeSimdDirective
+	CursorOMPDistributeSimdDirective
 
 	/** OpenMP target parallel for simd directive.
 	 */
-	OMPTargetParallelForSimdDirective
+	CursorOMPTargetParallelForSimdDirective
 
 	/** OpenMP target simd directive.
 	 */
-	OMPTargetSimdDirective
+	CursorOMPTargetSimdDirective
 
 	/** OpenMP teams distribute directive.
 	 */
-	OMPTeamsDistributeDirective
+	CursorOMPTeamsDistributeDirective
 
 	/** OpenMP teams distribute simd directive.
 	 */
-	OMPTeamsDistributeSimdDirective
+	CursorOMPTeamsDistributeSimdDirective
 
 	/** OpenMP teams distribute parallel for simd directive.
 	 */
-	OMPTeamsDistributeParallelForSimdDirective
+	CursorOMPTeamsDistributeParallelForSimdDirective
 
 	/** OpenMP teams distribute parallel for directive.
 	 */
-	OMPTeamsDistributeParallelForDirective
+	CursorOMPTeamsDistributeParallelForDirective
 
 	/** OpenMP target teams directive.
 	 */
-	OMPTargetTeamsDirective
+	CursorOMPTargetTeamsDirective
 
 	/** OpenMP target teams distribute directive.
 	 */
-	OMPTargetTeamsDistributeDirective
+	CursorOMPTargetTeamsDistributeDirective
 
 	/** OpenMP target teams distribute parallel for directive.
 	 */
-	OMPTargetTeamsDistributeParallelForDirective
+	CursorOMPTargetTeamsDistributeParallelForDirective
 
 	/** OpenMP target teams distribute parallel for simd directive.
 	 */
-	OMPTargetTeamsDistributeParallelForSimdDirective
+	CursorOMPTargetTeamsDistributeParallelForSimdDirective
 
 	/** OpenMP target teams distribute simd directive.
 	 */
-	OMPTargetTeamsDistributeSimdDirective
+	CursorOMPTargetTeamsDistributeSimdDirective
 
 	/** C++2a std::bit_cast expression.
 	 */
-	BuiltinBitCastExpr
+	CursorBuiltinBitCastExpr
 
 	/** OpenMP master taskloop directive.
 	 */
-	OMPMasterTaskLoopDirective
+	CursorOMPMasterTaskLoopDirective
 
 	/** OpenMP parallel master taskloop directive.
 	 */
-	OMPParallelMasterTaskLoopDirective
+	CursorOMPParallelMasterTaskLoopDirective
 
 	/** OpenMP master taskloop simd directive.
 	 */
-	OMPMasterTaskLoopSimdDirective
+	CursorOMPMasterTaskLoopSimdDirective
 
 	/** OpenMP parallel master taskloop simd directive.
 	 */
-	OMPParallelMasterTaskLoopSimdDirective
+	CursorOMPParallelMasterTaskLoopSimdDirective
 
 	/** OpenMP parallel master directive.
 	 */
-	OMPParallelMasterDirective
+	CursorOMPParallelMasterDirective
 
 	/** OpenMP depobj directive.
 	 */
-	OMPDepobjDirective
+	CursorOMPDepobjDirective
 
 	/** OpenMP scan directive.
 	 */
-	OMPScanDirective
+	CursorOMPScanDirective
 
 	/** OpenMP tile directive.
 	 */
-	OMPTileDirective
+	CursorOMPTileDirective
 
 	/** OpenMP canonical loop.
 	 */
-	OMPCanonicalLoop
+	CursorOMPCanonicalLoop
 
 	/** OpenMP interop directive.
 	 */
-	OMPInteropDirective
+	CursorOMPInteropDirective
 
 	/** OpenMP dispatch directive.
 	 */
-	OMPDispatchDirective
+	CursorOMPDispatchDirective
 
 	/** OpenMP masked directive.
 	 */
-	OMPMaskedDirective
+	CursorOMPMaskedDirective
 
 	/** OpenMP unroll directive.
 	 */
-	OMPUnrollDirective
+	CursorOMPUnrollDirective
 
 	/** OpenMP metadirective directive.
 	 */
-	OMPMetaDirective
+	CursorOMPMetaDirective
 
 	/** OpenMP loop directive.
 	 */
-	OMPGenericLoopDirective
+	CursorOMPGenericLoopDirective
 
 	/** OpenMP teams loop directive.
 	 */
-	OMPTeamsGenericLoopDirective
+	CursorOMPTeamsGenericLoopDirective
 
 	/** OpenMP target teams loop directive.
 	 */
-	OMPTargetTeamsGenericLoopDirective
+	CursorOMPTargetTeamsGenericLoopDirective
 
 	/** OpenMP parallel loop directive.
 	 */
-	OMPParallelGenericLoopDirective
+	CursorOMPParallelGenericLoopDirective
 
 	/** OpenMP target parallel loop directive.
 	 */
-	OMPTargetParallelGenericLoopDirective
+	CursorOMPTargetParallelGenericLoopDirective
 
 	/** OpenMP parallel masked directive.
 	 */
-	OMPParallelMaskedDirective
+	CursorOMPParallelMaskedDirective
 
 	/** OpenMP masked taskloop directive.
 	 */
-	OMPMaskedTaskLoopDirective
+	CursorOMPMaskedTaskLoopDirective
 
 	/** OpenMP masked taskloop simd directive.
 	 */
-	OMPMaskedTaskLoopSimdDirective
+	CursorOMPMaskedTaskLoopSimdDirective
 
 	/** OpenMP parallel masked taskloop directive.
 	 */
-	OMPParallelMaskedTaskLoopDirective
+	CursorOMPParallelMaskedTaskLoopDirective
 
 	/** OpenMP parallel masked taskloop simd directive.
 	 */
-	OMPParallelMaskedTaskLoopSimdDirective
+	CursorOMPParallelMaskedTaskLoopSimdDirective
 
 	/** OpenMP error directive.
 	 */
-	OMPErrorDirective
+	CursorOMPErrorDirective
 
 	/** OpenMP scope directive.
 	 */
-	OMPScopeDirective
+	CursorOMPScopeDirective
 
-	LastStmt = OMPScopeDirective
+	CursorLastStmt = CursorOMPScopeDirective
 
 	/**
 	 * Cursor that represents the translation unit itself.
@@ -1038,91 +1038,91 @@ const (
 	CursorTranslationUnit = 350
 
 	/* Attributes */
-	FirstAttr = 400
+	CursorFirstAttr = 400
 	/**
 	 * An attribute whose specific kind is not exposed via this
 	 * interface.
 	 */
-	UnexposedAttr = iota + 170
+	CursorUnexposedAttr = iota + 170
 
-	IBActionAttr
-	IBOutletAttr
-	IBOutletCollectionAttr
-	CXXFinalAttr
-	CXXOverrideAttr
-	AnnotateAttr
-	AsmLabelAttr
-	PackedAttr
-	PureAttr
-	ConstAttr
-	NoDuplicateAttr
-	CUDAConstantAttr
-	CUDADeviceAttr
-	CUDAGlobalAttr
-	CUDAHostAttr
-	CUDASharedAttr
-	VisibilityAttr
-	DLLExport
-	DLLImport
-	NSReturnsRetained
-	NSReturnsNotRetained
-	NSReturnsAutoreleased
-	NSConsumesSelf
-	NSConsumed
-	ObjCException
-	ObjCNSObject
-	ObjCIndependentClass
-	ObjCPreciseLifetime
-	ObjCReturnsInnerPointer
-	ObjCRequiresSuper
-	ObjCRootClass
-	ObjCSubclassingRestricted
-	ObjCExplicitProtocolImpl
-	ObjCDesignatedInitializer
-	ObjCRuntimeVisible
-	ObjCBoxable
-	FlagEnum
-	ConvergentAttr
-	WarnUnusedAttr
-	WarnUnusedResultAttr
-	AlignedAttr
-	LastAttr = AlignedAttr
+	CursorIBActionAttr
+	CursorIBOutletAttr
+	CursorIBOutletCollectionAttr
+	CursorCXXFinalAttr
+	CursorCXXOverrideAttr
+	CursorAnnotateAttr
+	CursorAsmLabelAttr
+	CursorPackedAttr
+	CursorPureAttr
+	CursorConstAttr
+	CursorNoDuplicateAttr
+	CursorCUDAConstantAttr
+	CursorCUDADeviceAttr
+	CursorCUDAGlobalAttr
+	CursorCUDAHostAttr
+	CursorCUDASharedAttr
+	CursorVisibilityAttr
+	CursorDLLExport
+	CursorDLLImport
+	CursorNSReturnsRetained
+	CursorNSReturnsNotRetained
+	CursorNSReturnsAutoreleased
+	CursorNSConsumesSelf
+	CursorNSConsumed
+	CursorObjCException
+	CursorObjCNSObject
+	CursorObjCIndependentClass
+	CursorObjCPreciseLifetime
+	CursorObjCReturnsInnerPointer
+	CursorObjCRequiresSuper
+	CursorObjCRootClass
+	CursorObjCSubclassingRestricted
+	CursorObjCExplicitProtocolImpl
+	CursorObjCDesignatedInitializer
+	CursorObjCRuntimeVisible
+	CursorObjCBoxable
+	CursorFlagEnum
+	CursorConvergentAttr
+	CursorWarnUnusedAttr
+	CursorWarnUnusedResultAttr
+	CursorAlignedAttr
+	CursorLastAttr = CursorAlignedAttr
 
 	/* Preprocessing */
-	PreprocessingDirective = iota + 227 //500
-	MacroDefinition
-	MacroExpansion
-	MacroInstantiation = MacroExpansion
-	InclusionDirective = 503
-	FirstPreprocessing = PreprocessingDirective
-	LastPreprocessing  = InclusionDirective
+	CursorPreprocessingDirective = iota + 227 //500
+	CursorMacroDefinition
+	CursorMacroExpansion
+	CursorMacroInstantiation = CursorMacroExpansion
+	CursorInclusionDirective = 503
+	CursorFirstPreprocessing = CursorPreprocessingDirective
+	CursorLastPreprocessing  = CursorInclusionDirective
 
 	/* Extra Declarations */
 	/**
 	 * A module import declaration.
 	 */
-	ModuleImportDecl = iota + 320 //600
-	TypeAliasTemplateDecl
+	CursorModuleImportDecl = iota + 320 //600
+	CursorTypeAliasTemplateDecl
 	/**
 	* A static_assert or _Static_assert node
 	 */
-	StaticAssert
+	CursorStaticAssert
 	/**
 	* a friend declaration.
 	 */
-	FriendDecl
+	CursorFriendDecl
 	/**
 	* a concept declaration.
 	 */
-	ConceptDecl
+	CursorConceptDecl
 
-	FirstExtraDecl = ModuleImportDecl
-	LastExtraDecl  = ConceptDecl
+	CursorFirstExtraDecl = CursorModuleImportDecl
+	CursorLastExtraDecl  = CursorConceptDecl
 
 	/**
 	* A code completion overload candidate.
 	 */
-	OverloadCandidate = 700
+	CursorOverloadCandidate = 700
 )
 
 /**
@@ -1319,12 +1319,173 @@ type Cursor struct {
 	data  [3]c.Pointer
 }
 
+type TypeKind c.Int
+
+/**
+ * Describes the kind of type
+ */
+const (
+	/**
+	 * Represents an invalid type (e.g., where no type is available).
+	 */
+	TypeInvalid TypeKind = iota
+
+	/**
+	 * A type whose specific kind is not exposed via this
+	 * interface.
+	 */
+	TypeUnexposed
+
+	/* Builtin types */
+	TypeVoid
+	TypeBool
+	TypeCharU
+	TypeUChar
+	TypeChar16
+	TypeChar32
+	TypeUShort
+	TypeUInt
+	TypeULong
+	TypeULongLong
+	TypeUInt128
+	TypeCharS
+	TypeSChar
+	TypeWChar
+	TypeShort
+	TypeInt
+	TypeLong
+	TypeLongLong
+	TypeInt128
+	TypeFloat
+	TypeDouble
+	TypeLongDouble
+	TypeNullPtr
+	TypeOverload
+	TypeDependent
+	TypeObjCId
+	TypeObjCClass
+	TypeObjCSel
+	TypeFloat128
+	TypeHalf
+	TypeFloat16
+	TypeShortAccum
+	TypeAccum
+	TypeLongAccum
+	TypeUShortAccum
+	TypeUAccum
+	TypeULongAccum
+	TypeBFloat16
+	TypeIbm128
+
+	TypeFirstBuiltin = TypeVoid
+	TypeLastBuiltin  = TypeIbm128
+
+	TypeComplex TypeKind = iota + 57 //  100
+	TypePointer
+	TypeBlockPointer
+	TypeLValueReference
+	TypeRValueReference
+	TypeRecord
+	TypeEnum
+	TypeTypedef
+	TypeObjCInterface
+	TypeObjCObjectPointer
+	TypeFunctionNoProto
+	TypeFunctionProto
+	TypeConstantArray
+	TypeVector
+	TypeIncompleteArray
+	TypeVariableArray
+	TypeDependentSizedArray
+	TypeMemberPointer
+	TypeAuto
+
+	/**
+	 * Represents a type that was referred to using an elaborated type keyword.
+	 *
+	 * E.g., struct S, or via a qualified name, e.g., N::M::type, or both.
+	 */
+	TypeElaborated
+
+	/* OpenCL PipeType. */
+	TypePipe
+
+	/* OpenCL builtin types. */
+	TypeOCLImage1dRO
+	TypeOCLImage1dArrayRO
+	TypeOCLImage1dBufferRO
+	TypeOCLImage2dRO
+	TypeOCLImage2dArrayRO
+	TypeOCLImage2dDepthRO
+	TypeOCLImage2dArrayDepthRO
+	TypeOCLImage2dMSAARO
+	TypeOCLImage2dArrayMSAARO
+	TypeOCLImage2dMSAADepthRO
+	TypeOCLImage2dArrayMSAADepthRO
+	TypeOCLImage3dRO
+	TypeOCLImage1dWO
+	TypeOCLImage1dArrayWO
+	TypeOCLImage1dBufferWO
+	TypeOCLImage2dWO
+	TypeOCLImage2dArrayWO
+	TypeOCLImage2dDepthWO
+	TypeOCLImage2dArrayDepthWO
+	TypeOCLImage2dMSAAWO
+	TypeOCLImage2dArrayMSAAWO
+	TypeOCLImage2dMSAADepthWO
+	TypeOCLImage2dArrayMSAADepthWO
+	TypeOCLImage3dWO
+	TypeOCLImage1dRW
+	TypeOCLImage1dArrayRW
+	TypeOCLImage1dBufferRW
+	TypeOCLImage2dRW
+	TypeOCLImage2dArrayRW
+	TypeOCLImage2dDepthRW
+	TypeOCLImage2dArrayDepthRW
+	TypeOCLImage2dMSAARW
+	TypeOCLImage2dArrayMSAARW
+	TypeOCLImage2dMSAADepthRW
+	TypeOCLImage2dArrayMSAADepthRW
+	TypeOCLImage3dRW
+	TypeOCLSampler
+	TypeOCLEvent
+	TypeOCLQueue
+	TypeOCLReserveID
+
+	TypeObjCObject
+	TypeObjCTypeParam
+	TypeAttributed
+
+	TypeOCLIntelSubgroupAVCMcePayload
+	TypeOCLIntelSubgroupAVCImePayload
+	TypeOCLIntelSubgroupAVCRefPayload
+	TypeOCLIntelSubgroupAVCSicPayload
+	TypeOCLIntelSubgroupAVCMceResult
+	TypeOCLIntelSubgroupAVCImeResult
+	TypeOCLIntelSubgroupAVCRefResult
+	TypeOCLIntelSubgroupAVCSicResult
+	TypeOCLIntelSubgroupAVCImeResultSingleReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeResultDualReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeSingleReferenceStreamin
+	TypeOCLIntelSubgroupAVCImeDualReferenceStreamin
+
+	/* Old aliases for AVC OpenCL extension types. */
+	TypeOCLIntelSubgroupAVCImeResultSingleRefStreamout = TypeOCLIntelSubgroupAVCImeResultSingleReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeResultDualRefStreamout   = TypeOCLIntelSubgroupAVCImeResultDualReferenceStreamout
+	TypeOCLIntelSubgroupAVCImeSingleRefStreamin        = TypeOCLIntelSubgroupAVCImeSingleReferenceStreamin
+	TypeOCLIntelSubgroupAVCImeDualRefStreamin          = TypeOCLIntelSubgroupAVCImeDualReferenceStreamin
+
+	TypeExtVector = iota + 53 // 176
+	TypeAtomic
+	TypeBTFTagAttributed
+)
+
 /**
  * The type of an element in the abstract syntax tree.
  *
  */
 type Type struct {
-	Kind CursorKind
+	Kind TypeKind
 	data [2]c.Pointer
 }
 
@@ -1486,6 +1647,35 @@ func (c *Cursor) wrapLocation(loc *SourceLocation) {}
 func (c Cursor) Location() (loc SourceLocation) {
 	c.wrapLocation(&loc)
 	return
+}
+
+/**
+ * Represents the C++ access control level to a base class for a
+ * cursor with kind CX_CXXBaseSpecifier.
+ */
+type CXXAccessSpecifier c.Int
+
+const (
+	CXXInvalidAccessSpecifier CXXAccessSpecifier = iota
+	CXXPublic
+	CXXProtected
+	CXXPrivate
+)
+
+/**
+ * Returns the access control level for the referenced object.
+ *
+ * If the cursor refers to a C++ declaration, its access control level within
+ * its parent scope is returned. Otherwise, if the cursor refers to a base
+ * specifier or access specifier, the specifier itself is returned.
+ */
+// llgo:link (*Cursor).wrapCXXAccessSpecifier C.wrap_clang_getCXXAccessSpecifier
+func (*Cursor) wrapCXXAccessSpecifier() (spec CXXAccessSpecifier) {
+	return 0
+}
+
+func (c Cursor) CXXAccessSpecifier() CXXAccessSpecifier {
+	return c.wrapCXXAccessSpecifier()
 }
 
 /**

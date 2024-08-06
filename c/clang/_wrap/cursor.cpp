@@ -46,6 +46,10 @@ void wrap_clang_getSpellingLocation(CXSourceLocation *loc, CXFile *file, unsigne
     clang_getSpellingLocation(*loc, file, line, column, offset);
 }
 
+enum CX_CXXAccessSpecifier wrap_clang_getCXXAccessSpecifier(CXCursor *cursor) {
+    return clang_getCXXAccessSpecifier(*cursor);
+}
+
 void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }
 
 void wrap_clang_tokenize(CXTranslationUnit unit, CXSourceRange *Range, CXToken **Tokens, unsigned *NumTokens) {

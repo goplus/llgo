@@ -80,7 +80,7 @@ func printFuncInfo(cursor clang.Cursor) {
 	}
 	c.Printf(c.Str("%s\n"), cursorStr.CStr())
 
-	if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl {
+	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorFunctionDecl {
 		c.Printf(c.Str("symbol:%s\n"), symbol.CStr())
 
 		typeStr := cursor.ResultType().String()
@@ -107,19 +107,19 @@ func printFuncInfo(cursor clang.Cursor) {
 }
 
 func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitResult {
-	if cursor.Kind == clang.MacroDefinition {
+	if cursor.Kind == clang.CursorMacroDefinition {
 		printMarcoInfo(cursor)
-	} else if cursor.Kind == clang.Namespace {
+	} else if cursor.Kind == clang.CursorNamespace {
 		nameStr := cursor.String()
 		context.setNamespaceName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
 		context.setNamespaceName("")
-	} else if cursor.Kind == clang.ClassDecl {
+	} else if cursor.Kind == clang.CursorClassDecl {
 		nameStr := cursor.String()
 		context.setClassName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
 		context.setClassName("")
-	} else if cursor.Kind == clang.CXXMethod || cursor.Kind == clang.FunctionDecl {
+	} else if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorFunctionDecl {
 		printFuncInfo(cursor)
 	}
 
