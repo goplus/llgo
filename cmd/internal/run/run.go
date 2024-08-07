@@ -19,6 +19,8 @@ package run
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/goplus/llgo/cmd/internal/base"
@@ -57,8 +59,16 @@ func runCmpTest(cmd *base.Command, args []string) {
 func runCmdEx(cmd *base.Command, args []string, mode build.Mode) {
 	args, runArgs, err := parseRunArgs(args)
 	check(err)
+
+	tempBinPath, err := os.MkdirTemp("", "llgo-run-")
+	if err != nil {
+		panic(fmt.Errorf("os.MkdirTemp failed: %v", err))
+	}
+	defer os.RemoveAll(tempBinPath) // NOTE: this will not work if os.Exit is called; remove it manually if needed
+
 	conf := build.NewDefaultConf(mode)
 	conf.RunArgs = runArgs
+	conf.BinPath = tempBinPath
 	build.Do(args, conf)
 }
 

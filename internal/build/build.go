@@ -459,6 +459,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 		cmd.Stderr = os.Stderr
 		cmd.Run()
 		if s := cmd.ProcessState; s != nil {
+			os.RemoveAll(conf.BinPath) // remove temp dir before exit
 			os.Exit(s.ExitCode())
 		}
 	case ModeCmpTest:
