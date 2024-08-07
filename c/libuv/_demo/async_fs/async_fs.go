@@ -31,7 +31,7 @@ func main() {
 	libuv.FsOpen(loop, &openReq, c.Str("example.txt"), os.O_RDONLY, 0, onOpen)
 
 	// Run the loop
-	result := libuv.Run(loop, libuv.RUN_DEFAULT)
+	result := loop.Run(libuv.RUN_DEFAULT)
 
 	if result != 0 {
 		c.Fprintf(c.Stderr, c.Str("Error in Run: %s\n"), libuv.Strerror(libuv.Errno(result)))
@@ -43,14 +43,14 @@ func main() {
 
 func onOpen(req *libuv.Fs) {
 	// Check for errors
-	if libuv.FsGetResult(req) < 0 {
-		c.Fprintf(c.Stderr, c.Str("Error opening file: %s\n"), libuv.Strerror(libuv.Errno(libuv.FsGetResult(req))))
-		libuv.LoopClose(loop)
+	if req.GetResult() < 0 {
+		c.Fprintf(c.Stderr, c.Str("Error opening file: %s\n"), libuv.Strerror(libuv.Errno(req.GetResult())))
+		loop.Close()
 		return
 	}
 
 	// Store the file descriptor
-	file = libuv.File(libuv.FsGetResult(req))
+	file = libuv.File(req.GetResult())
 
 	// Init buffer
 	iov = libuv.InitBuf((*c.Char)(unsafe.Pointer(&buffer[0])), c.Uint(unsafe.Sizeof(buffer)))
@@ -68,28 +68,28 @@ func readFile() {
 	readRes := libuv.FsRead(loop, &readReq, file, &iov, 1, -1, onRead)
 	if readRes != 0 {
 		c.Printf(c.Str("Error in FsRead: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(readRes)), readRes)
-		libuv.FsReqCleanup(&readReq)
-		libuv.LoopClose(loop)
+		readReq.ReqCleanup()
+		loop.Close()
 	}
 }
 
 func onRead(req *libuv.Fs) {
 	// Cleanup the request
-	defer libuv.FsReqCleanup(req)
+	defer req.ReqCleanup()
 	// Check for errors
-	if libuv.FsGetResult(req) < 0 {
-		c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(libuv.Errno(libuv.FsGetResult(req))))
-	} else if libuv.FsGetResult(req) == 0 {
+	if req.GetResult() < 0 {
+		c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(libuv.Errno(req.GetResult())))
+	} else if req.GetResult() == 0 {
 		// Close the file
-		closeRes := libuv.FsClose(loop, &closeReq, libuv.File(libuv.FsGetResult(&openReq)), onClose)
+		closeRes := libuv.FsClose(loop, &closeReq, libuv.File(openReq.GetResult()), onClose)
 		if closeRes != 0 {
 			c.Printf(c.Str("Error in FsClose: %s (code: %d)\n"), libuv.Strerror(libuv.Errno(closeRes)), closeRes)
-			libuv.LoopClose(loop)
+			loop.Close()
 			return
 		}
 	} else {
-		c.Printf(c.Str("Read %d bytes\n"), libuv.FsGetResult(req))
-		c.Printf(c.Str("Read content: %.*s\n"), libuv.FsGetResult(req), (*c.Char)(unsafe.Pointer(&buffer[0])))
+		c.Printf(c.Str("Read %d bytes\n"), req.GetResult())
+		c.Printf(c.Str("Read content: %.*s\n"), req.GetResult(), (*c.Char)(unsafe.Pointer(&buffer[0])))
 		// Read the file again
 		readFile()
 	}
@@ -97,8 +97,8 @@ func onRead(req *libuv.Fs) {
 
 func onClose(req *libuv.Fs) {
 	// Check for errors
-	if libuv.FsGetResult(req) < 0 {
-		c.Fprintf(c.Stderr, c.Str("Error closing file: %s\n"), libuv.Strerror(libuv.Errno(libuv.FsGetResult(req))))
+	if req.GetResult() < 0 {
+		c.Fprintf(c.Stderr, c.Str("Error closing file: %s\n"), libuv.Strerror(libuv.Errno(req.GetResult())))
 	} else {
 		c.Printf(c.Str("\nFile closed successfully.\n"))
 	}
@@ -106,10 +106,10 @@ func onClose(req *libuv.Fs) {
 
 func cleanup() {
 	// Cleanup the requests
-	libuv.FsReqCleanup(&openReq)
-	libuv.FsReqCleanup(&closeReq)
+	openReq.ReqCleanup()
+	closeReq.ReqCleanup()
 	// Close the loop
-	result := libuv.LoopClose(loop)
+	result := loop.Close()
 	if result != 0 {
 		c.Fprintf(c.Stderr, c.Str("Error in LoopClose: %s\n"), libuv.Strerror(libuv.Errno(result)))
 	}

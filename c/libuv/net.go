@@ -117,6 +117,10 @@ type GetNameInfo struct {
 	Unused [0]byte
 }
 
+type Shutdown struct {
+	Unused [0]byte
+}
+
 // ----------------------------------------------
 
 /* Function type */
@@ -142,9 +146,18 @@ type WriteCb func(req *Write, status c.Int)
 // llgo:type C
 type ConnectionCb func(server *Stream, status c.Int)
 
+// llgo:type C
+type ShutdownCb func(req *Shutdown, status c.Int)
+
 // ----------------------------------------------
 
 /* Handle related function and method */
+
+//go:linkname HandleSize C.uv_handle_size
+func HandleSize(handleType HandleType) uintptr
+
+//go:linkname HandleTypeName C.uv_handle_type_name
+func HandleTypeName(handleType HandleType) *c.Char
 
 // llgo:link (*Handle).Ref C.uv_ref
 func (handle *Handle) Ref() {}
@@ -157,16 +170,10 @@ func (handle *Handle) HasRef() c.Int {
 	return 0
 }
 
-//go:linkname HandleSize C.uv_handle_size
-func HandleSize(handleType HandleType) uintptr
-
 // llgo:link (*Handle).GetType C.uv_handle_get_type
 func (handle *Handle) GetType() HandleType {
 	return 0
 }
-
-//go:linkname HandleTypeName C.uv_handle_type_name
-func HandleTypeName(handleType HandleType) *c.Char
 
 // llgo:link (*Handle).GetData C.uv_handle_get_data
 func (handle *Handle) GetData() c.Pointer {
@@ -204,6 +211,21 @@ func (handle *Handle) Fileno(fd *OsFd) c.Int {
 	return 0
 }
 
+// llgo:link (*Handle).IsClosing C.uv_is_closing
+func (handle *Handle) IsClosing() c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).IsReadable C.uv_is_readable
+func (handle *Handle) IsReadable() c.Int {
+	return 0
+}
+
+// llgo:link (*Handle).IsWritable C.uv_is_writable
+func (handle *Handle) IsWritable() c.Int {
+	return 0
+}
+
 //go:linkname Pipe C.uv_pipe
 func Pipe(fds [2]File, readFlags c.Int, writeFlags c.Int) c.Int {
 	return 0
@@ -214,17 +236,15 @@ func Socketpair(_type c.Int, protocol c.Int, socketVector [2]OsSock, flag0 c.Int
 	return 0
 }
 
-// llgo:link (*Handle).IsClosing C.uv_is_closing
-func (handle *Handle) IsClosing() c.Int {
-	return 0
-}
-
 // ----------------------------------------------
 
 /* Req related function and method */
 
 //go:linkname ReqSize C.uv_req_size
 func ReqSize(reqType ReqType) uintptr
+
+//go:linkname TypeName C.uv_req_type_name
+func TypeName(reqType ReqType) *c.Char
 
 // llgo:link (*Req).GetData C.uv_req_get_data
 func (req *Req) GetData() c.Pointer {
@@ -238,9 +258,6 @@ func (req *Req) SetData(data c.Pointer) {}
 func (req *Req) GetType() ReqType {
 	return 0
 }
-
-//go:linkname TypeName C.uv_req_type_name
-func TypeName(reqType ReqType) *c.Char
 
 // ----------------------------------------------
 
@@ -306,6 +323,11 @@ func (stream *Stream) SetBlocking(blocking c.Int) c.Int {
 	return 0
 }
 
+//go:linkname StreamShutdown C.uv_shutdown
+func StreamShutdown(shutdown *Shutdown, stream *Stream, shutdownCb ShutdownCb) c.Int {
+	return 0
+}
+
 // ----------------------------------------------
 
 /* Tcp related function and method */
@@ -353,6 +375,11 @@ func (tcp *Tcp) Getpeername(name *net.SockAddr, nameLen *c.Int) c.Int {
 
 // llgo:link (*Tcp).CloseReset C.uv_tcp_close_reset
 func (tcp *Tcp) CloseReset(closeCb CloseCb) c.Int {
+	return 0
+}
+
+// llgo:link (*Tcp).GetIoWatcherFd C.uv_tcp_get_io_watcher_fd
+func (tcp *Tcp) GetIoWatcherFd() c.Int {
 	return 0
 }
 
@@ -429,9 +456,6 @@ func (udp *Udp) SetTTL(ttl c.Int) c.Int {
 	return 0
 }
 
-//go:linkname Send C.uv_udp_send
-func Send(req *UdpSend, udp *Udp, bufs *Buf, nbufs c.Uint, addr *net.SockAddr, sendCb UdpSendCb) c.Int
-
 // llgo:link (*Udp).TrySend C.uv_udp_try_send
 func (udp *Udp) TrySend(bufs *Buf, nbufs c.Uint, addr *net.SockAddr) c.Int {
 	return 0
@@ -462,7 +486,12 @@ func (udp *Udp) GetSendQueueCount() uintptr {
 	return 0
 }
 
+//go:linkname Send C.uv_udp_send
+func Send(req *UdpSend, udp *Udp, bufs *Buf, nbufs c.Uint, addr *net.SockAddr, sendCb UdpSendCb) c.Int
+
 // ----------------------------------------------
+
+/* DNS related function and method */
 
 //go:linkname Ip4Addr C.uv_ip4_addr
 func Ip4Addr(ip *c.Char, port c.Int, addr *net.SockaddrIn) c.Int

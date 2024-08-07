@@ -9,6 +9,7 @@ import (
 
 const (
 	LLGoPackage = "link: $(pkg-config --libs libuv); -luv"
+	LLGoFiles   = "$(pkg-config --cflags libuv): _wrap/libuv.c"
 )
 
 // ----------------------------------------------
@@ -103,10 +104,6 @@ type Poll struct {
 
 /* Request types. */
 
-type Shutdown struct {
-	Unused [0]byte
-}
-
 type Buf struct {
 	Base *c.Char
 	Len  uintptr
@@ -136,9 +133,6 @@ type GetaddrinfoCb func(req *GetAddrInfo, status c.Int, res *net.AddrInfo)
 type GetnameinfoCb func(req *GetNameInfo, status c.Int, hostname *c.Char, service *c.Char)
 
 // llgo:type C
-type ShutdownCb func(req *Shutdown, status c.Int)
-
-// llgo:type C
 type WalkCb func(handle *Handle, arg c.Pointer)
 
 // llgo:type C
@@ -160,59 +154,83 @@ func ReplaceAllocator(mallocFunc MallocFunc, reallocFunc ReallocFunc, callocFunc
 
 // ----------------------------------------------
 
-// llgo:link (*Shutdown).Shutdown C.uv_shutdown
-func (shutdown *Shutdown) Shutdown(stream *Stream, shutdownCb ShutdownCb) c.Int {
-	return 0
-}
-
-// ----------------------------------------------
-
 /* Loop related functions and method. */
+
+//go:linkname DefaultLoop C.uv_default_loop
+func DefaultLoop() *Loop
 
 //go:linkname LoopSize C.uv_loop_size
 func LoopSize() uintptr
 
-//go:linkname Run C.uv_run
-func Run(loop *Loop, mode RunMode) c.Int
+// llgo:link (*Loop).Run C.uv_run
+func (loop *Loop) Run(mode RunMode) c.Int {
+	return 0
+}
 
-//go:linkname LoopAlive C.uv_loop_alive
-func LoopAlive(loop *Loop) c.Int
+// llgo:link (*Loop).Alive C.uv_loop_alive
+func (loop *Loop) Alive() c.Int {
+	return 0
+}
 
-//go:linkname LoopClose C.uv_loop_close
-func LoopClose(loop *Loop) c.Int
+// llgo:link (*Loop).Close C.uv_loop_close
+func (loop *Loop) Close() c.Int {
+	return 0
+}
 
-//go:linkname LoopConfigure C.uv_loop_configure
-func LoopConfigure(loop *Loop, option LoopOption, arg c.Int) c.Int
+// llgo:link (*Loop).Configure C.uv_loop_configure
+func (loop *Loop) Configure(option LoopOption, arg c.Int) c.Int {
+	return 0
+}
 
-//go:linkname LoopDefault C.uv_default_loop
-func LoopDefault() *Loop
+// llgo:link LoopDefault C.uv_default_loop
+func LoopDefault() *Loop {
+	return nil
+}
 
-//go:linkname LoopDelete C.uv_loop_delete
-func LoopDelete(loop *Loop) c.Int
+// llgo:link (*Loop).Delete C.uv_loop_delete
+func (loop *Loop) Delete() c.Int {
+	return 0
+}
 
-//go:linkname LoopFork C.uv_loop_fork
-func LoopFork(loop *Loop) c.Int
+// llgo:link (*Loop).Fork C.uv_loop_fork
+func (loop *Loop) Fork() c.Int {
+	return 0
+}
 
-//go:linkname LoopInit C.uv_loop_init
-func LoopInit(loop *Loop) c.Int
+// llgo:link (*Loop).Init C.uv_loop_init
+func (loop *Loop) Init() c.Int {
+	return 0
+}
 
-//go:linkname LoopNew C.uv_loop_new
-func LoopNew() *Loop
+// llgo:link LoopNew C.uv_loop_new
+func LoopNew() *Loop {
+	return nil
+}
 
-//go:linkname LoopNow C.uv_now
-func LoopNow(loop *Loop) c.UlongLong
+// llgo:link (*Loop).Now C.uv_now
+func (loop *Loop) Now() c.UlongLong {
+	return 0
+}
 
-//go:linkname LoopUpdateTime C.uv_update_time
-func LoopUpdateTime(loop *Loop)
+// llgo:link (*Loop).UpdateTime C.uv_update_time
+func (loop *Loop) UpdateTime() {
+	// No return value needed for this method
+}
 
-//go:linkname LoopBackendFd C.uv_backend_fd
-func LoopBackendFd(loop *Loop) c.Int
+// llgo:link (*Loop).BackendFd C.uv_backend_fd
+func (loop *Loop) BackendFd() c.Int {
+	return 0
+}
 
-//go:linkname LoopBackendTimeout C.uv_backend_timeout
-func LoopBackendTimeout(loop *Loop) c.Int
+// llgo:link (*Loop).BackendTimeout C.uv_backend_timeout
+func (loop *Loop) BackendTimeout() c.Int {
+	return 0
+}
 
-//go:linkname LoopWalk C.uv_walk
-func LoopWalk(loop *Loop, walkCb WalkCb, arg c.Pointer)
+// llgo:link (*Loop).Walk C.uv_walk
+func (loop *Loop) Walk(walkCb WalkCb, arg c.Pointer) {
+	// No return value needed for this method
+}
 
 // ----------------------------------------------
 
@@ -228,11 +246,15 @@ func InitBuf(base *c.Char, len c.Uint) Buf
 //go:linkname PollInit C.uv_poll_init
 func PollInit(loop *Loop, handle *Poll, fd OsFd) c.Int
 
-//go:linkname PollStart C.uv_poll_start
-func PollStart(handle *Poll, events c.Int, cb PollCb) c.Int
-
-//go:linkname PollStop C.uv_poll_stop
-func PollStop(handle *Poll) c.Int
-
 //go:linkname PollInitSocket C.uv_poll_init_socket
 func PollInitSocket(loop *Loop, handle *Poll, socket c.Int) c.Int
+
+// llgo:link (*Poll).Start C.uv_poll_start
+func (handle *Poll) Start(events c.Int, cb PollCb) c.Int {
+	return 0
+}
+
+// llgo:link (*Poll).Stop C.uv_poll_stop
+func (handle *Poll) Stop() c.Int {
+	return 0
+}
