@@ -378,6 +378,11 @@ func (tcp *Tcp) CloseReset(closeCb CloseCb) c.Int {
 	return 0
 }
 
+// llgo:link (*Tcp).GetIoWatcherFd C.uv_tcp_get_io_watcher_fd
+func (tcp *Tcp) GetIoWatcherFd() c.Int {
+	return 0
+}
+
 //go:linkname TcpConnect C.uv_tcp_connect
 func TcpConnect(req *Connect, tcp *Tcp, addr *net.SockAddr, connectCb ConnectCb) c.Int
 
