@@ -17,6 +17,7 @@
 package net
 
 import (
+	"unsafe"
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -97,6 +98,13 @@ const (
 	EAI_OVERFLOW              /* argument buffer overflow */
 )
 
+const (
+	ALIGNSIZE = unsafe.Sizeof(c.LongLong(0))
+	MAXSIZE   = 128
+	PAD1_SIZE = ALIGNSIZE - unsafe.Sizeof(byte(0)) - unsafe.Sizeof(byte(0))
+	PAD2_SIZE = MAXSIZE - unsafe.Sizeof(byte(0)) - unsafe.Sizeof(byte(0)) - PAD1_SIZE - ALIGNSIZE
+)
+
 // (TODO) merge to inet
 const INET_ADDRSTRLEN = 16
 
@@ -115,6 +123,14 @@ type SockaddrIn6 struct {
 	Flowinfo c.Uint
 	Addr     In6Addr
 	ScopeId  c.Uint
+}
+
+type SockaddrStorage struct {
+	Len    uint8
+	Family uint8
+	pad1   [PAD1_SIZE]c.Char
+	align  c.LongLong
+	pad2   [PAD2_SIZE]c.Char
 }
 
 type InAddr struct {
@@ -171,6 +187,9 @@ func Send(c.Int, c.Pointer, uintptr, c.Int) c.Long
 //go:linkname Recv C.recv
 func Recv(c.Int, c.Pointer, uintptr, c.Int) c.Long
 
+//go:linkname SetSockOpt C.setsockopt
+func SetSockOpt(socket c.Int, level c.Int, optionName c.Int, optionValue c.Pointer, sockLen c.Uint) c.Int
+
 // -----------------------------------------------------------------------------
 
 type AddrInfo struct {
@@ -196,8 +215,27 @@ func swapInt16(data uint16) uint16 {
 	return (data << 8) | (data >> 8)
 }
 
+func swapInt32(data c.Uint) c.Uint {
+	return ((data & 0xff) << 24) |
+		((data & 0xff00) << 8) |
+		((data & 0xff0000) >> 8) |
+		((data & 0xff000000) >> 24)
+}
+
 func Htons(x uint16) uint16 {
 	return swapInt16(x)
+}
+
+func Ntohs(x uint16) uint16 {
+	return swapInt16(x)
+}
+
+func Htonl(x c.Uint) c.Uint {
+	return swapInt32(x)
+}
+
+func Ntohl(x c.Uint) c.Uint {
+	return swapInt32(x)
 }
 
 // -----------------------------------------------------------------------------
