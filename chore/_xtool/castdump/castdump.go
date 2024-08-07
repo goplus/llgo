@@ -23,7 +23,7 @@ var accessMap = map[clang.CXXAccessSpecifier]string{
 }
 
 func printIndent(depth c.Uint) {
-	fmt.Print(strings.Repeat("  ", int(depth)))
+	fmt.Print(strings.Repeat("   ", int(depth)))
 }
 
 func accessToString(spec clang.CXXAccessSpecifier) string {
@@ -44,7 +44,11 @@ func printType(t clang.Type, data *Data) {
 
 	typeSpell := t.String()
 	typeKind := t.Kind.String()
-	if t.Kind > clang.TypeFirstBuiltin && t.Kind < clang.TypeLastBuiltin {
+
+	if t.Kind == clang.TypeInvalid {
+	} else if t.Kind == clang.TypeUnexposed {
+		c.Printf(c.Str("<UnexposedType|%s>: %s\n"), typeKind.CStr(), typeSpell.CStr())
+	} else if t.Kind >= clang.TypeFirstBuiltin && t.Kind <= clang.TypeLastBuiltin {
 		c.Printf(c.Str("<BuiltinType|%s>: %s\n"), typeKind.CStr(), typeSpell.CStr())
 	} else if t.Kind > clang.TypeComplex {
 		c.Printf(c.Str("<ComplexType|%s>: %s\n"), typeKind.CStr(), typeSpell.CStr())
@@ -58,6 +62,11 @@ func printType(t clang.Type, data *Data) {
 		printType(t.ArrayElementType(), data)
 	case clang.TypeTypedef:
 		printType(t.CanonicalType(), data)
+	case clang.TypeFunctionProto:
+		printType(t.ResultType(), data)
+		for i := 0; i < int(t.NumArgTypes()); i++ {
+			printType(t.ArgType(c.Uint(i)), data)
+		}
 	}
 	data.Depth--
 
@@ -83,7 +92,8 @@ func printAccess(cursor clang.Cursor) {
 	defer kind.Dispose()
 	defer spell.Dispose()
 
-	c.Printf(c.Str("%s: %s %s\n"), kind.CStr(), spell.CStr(), c.AllocaCStr(accessToString(cursor.CXXAccessSpecifier())))
+	c.Printf(c.Str("%s: %s %s"), kind.CStr(), spell.CStr(), c.AllocaCStr(accessToString(cursor.CXXAccessSpecifier())))
+	printLocation(cursor)
 }
 
 func printMacro(cursor clang.Cursor, unit *clang.TranslationUnit) {
@@ -101,20 +111,30 @@ func printMacro(cursor clang.Cursor, unit *clang.TranslationUnit) {
 		c.Printf(c.Str("%s "), tokStr.CStr())
 		tokStr.Dispose()
 	}
-	c.Printf(c.Str("\n"))
+	printLocation(cursor)
 }
 
-func printFunc(cursor clang.Cursor) {
+func printFunc(cursor clang.Cursor, data *Data) {
 	kind := cursor.Kind.String()
 	spell := cursor.String()
 	symbol := cursor.Mangling()
-	typ := cursor.Type().String()
 	defer symbol.Dispose()
 	defer kind.Dispose()
 	defer spell.Dispose()
-	defer typ.Dispose()
 
-	c.Printf(c.Str("%s: %s (Type: %s)(Symbol: %s)"), kind.CStr(), spell.CStr(), typ.CStr(), symbol.CStr())
+	c.Printf(c.Str("%s: %s (Symbol: %s)"), kind.CStr(), spell.CStr(), symbol.CStr())
+	printLocation(cursor)
+	printType(cursor.Type(), data)
+}
+
+func printEnumConstant(cursor clang.Cursor) {
+	kind := cursor.Kind.String()
+	spell := cursor.String()
+	defer kind.Dispose()
+	defer spell.Dispose()
+
+	c.Printf(c.Str("%s: %s:%lld"), kind.CStr(), spell.CStr(), cursor.EnumConstantDeclValue())
+	printLocation(cursor)
 }
 
 func printDefault(cursor clang.Cursor, data *Data) {
@@ -142,13 +162,12 @@ func printAST(cursor clang.Cursor, data *Data) {
 	switch cursor.Kind {
 	case clang.CursorCXXAccessSpecifier:
 		printAccess(cursor)
-		printLocation(cursor)
 	case clang.CursorMacroDefinition:
 		printMacro(cursor, data.Unit)
-		printLocation(cursor)
 	case clang.CursorFunctionDecl, clang.CursorCXXMethod, clang.CursorConstructor, clang.CursorDestructor:
-		printFunc(cursor)
-		printLocation(cursor)
+		printFunc(cursor, data)
+	case clang.CursorEnumConstantDecl:
+		printEnumConstant(cursor)
 	default:
 		printDefault(cursor, data)
 	}
