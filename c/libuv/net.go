@@ -117,6 +117,10 @@ type GetNameInfo struct {
 	Unused [0]byte
 }
 
+type Shutdown struct {
+	Unused [0]byte
+}
+
 // ----------------------------------------------
 
 /* Function type */
@@ -144,6 +148,7 @@ type ConnectionCb func(server *Stream, status c.Int)
 
 // llgo:type C
 type ShutdownCb func(req *Shutdown, status c.Int)
+
 // ----------------------------------------------
 
 /* Handle related function and method */
