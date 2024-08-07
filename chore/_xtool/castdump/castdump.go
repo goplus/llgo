@@ -14,19 +14,18 @@ type Data struct {
 	Unit  *clang.TranslationUnit
 }
 
+var accessMap = map[clang.CXXAccessSpecifier]string{
+	clang.CXXInvalidAccessSpecifier: "invalid",
+	clang.CXXPublic:                 "public",
+	clang.CXXProtected:              "protected",
+	clang.CXXPrivate:                "private",
+}
+
 func accessToString(spec clang.CXXAccessSpecifier) string {
-	switch spec {
-	case clang.CXXInvalidAccessSpecifier:
-		return "invalid"
-	case clang.CXXPublic:
-		return "public"
-	case clang.CXXProtected:
-		return "protected"
-	case clang.CXXPrivate:
-		return "private"
-	default:
-		return "unkown"
+	if str, ok := accessMap[spec]; ok {
+		return str
 	}
+	return "unknown"
 }
 
 func visit(cursor, parent clang.Cursor, ClientData c.Pointer) clang.ChildVisitResult {
