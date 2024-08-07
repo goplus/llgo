@@ -79,6 +79,9 @@ func AllocaNew[T any]() *T { return nil }
 //go:linkname Malloc C.malloc
 func Malloc(size uintptr) Pointer
 
+//go:linkname Calloc C.calloc
+func Calloc(num uintptr, size uintptr) Pointer
+
 //go:linkname Free C.free
 func Free(ptr Pointer)
 
