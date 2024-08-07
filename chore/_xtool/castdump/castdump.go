@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -21,6 +22,10 @@ var accessMap = map[clang.CXXAccessSpecifier]string{
 	clang.CXXPrivate:                "private",
 }
 
+func printIndent(depth c.Uint) {
+	fmt.Print(strings.Repeat("  ", int(depth)))
+}
+
 func accessToString(spec clang.CXXAccessSpecifier) string {
 	if str, ok := accessMap[spec]; ok {
 		return str
@@ -32,6 +37,32 @@ func visit(cursor, parent clang.Cursor, ClientData c.Pointer) clang.ChildVisitRe
 	data := (*Data)(ClientData)
 	printAST(cursor, data)
 	return clang.ChildVisit_Continue
+}
+
+func printType(t clang.Type, data *Data) {
+	printIndent(data.Depth)
+
+	typeSpell := t.String()
+	typeKind := t.Kind.String()
+	if t.Kind > clang.TypeFirstBuiltin && t.Kind < clang.TypeLastBuiltin {
+		c.Printf(c.Str("<BuiltinType|%s>: %s\n"), typeKind.CStr(), typeSpell.CStr())
+	} else if t.Kind > clang.TypeComplex {
+		c.Printf(c.Str("<ComplexType|%s>: %s\n"), typeKind.CStr(), typeSpell.CStr())
+	}
+
+	data.Depth++
+	switch t.Kind {
+	case clang.TypePointer:
+		printType(t.PointeeType(), data)
+	case clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray, clang.TypeConstantArray:
+		printType(t.ArrayElementType(), data)
+	case clang.TypeTypedef:
+		printType(t.CanonicalType(), data)
+	}
+	data.Depth--
+
+	typeKind.Dispose()
+	typeSpell.Dispose()
 }
 
 func printLocation(cursor clang.Cursor) {
@@ -77,25 +108,28 @@ func printFunc(cursor clang.Cursor) {
 	kind := cursor.Kind.String()
 	spell := cursor.String()
 	symbol := cursor.Mangling()
+	typ := cursor.Type().String()
 	defer symbol.Dispose()
 	defer kind.Dispose()
 	defer spell.Dispose()
+	defer typ.Dispose()
 
-	c.Printf(c.Str("%s: %s (Symbol: %s)"), kind.CStr(), spell.CStr(), symbol.CStr())
+	c.Printf(c.Str("%s: %s (Type: %s)(Symbol: %s)"), kind.CStr(), spell.CStr(), typ.CStr(), symbol.CStr())
 }
 
-func printDefault(cursor clang.Cursor) {
+func printDefault(cursor clang.Cursor, data *Data) {
 	kind := cursor.Kind.String()
 	spell := cursor.String()
 	defer kind.Dispose()
 	defer spell.Dispose()
 
+	// node which has type
 	if cursor.Type().Kind != clang.TypeInvalid {
-		typeSpell := cursor.Type().String()
-		c.Printf(c.Str("%s: %s (Type: %s)"), kind.CStr(), spell.CStr(), typeSpell.CStr())
-		typeSpell.Dispose()
-	} else {
 		c.Printf(c.Str("%s: %s"), kind.CStr(), spell.CStr())
+		printLocation(cursor)
+		printType(cursor.Type(), data)
+	} else {
+		c.Printf(c.Str("%s: %s\n"), kind.CStr(), spell.CStr())
 	}
 }
 
@@ -103,22 +137,21 @@ func printAST(cursor clang.Cursor, data *Data) {
 	kind := cursor.Kind.String()
 	spell := cursor.String()
 
-	for i := c.Uint(0); i < data.Depth; i++ {
-		c.Fputs(c.Str("  "), c.Stdout)
-	}
+	printIndent(data.Depth)
 
 	switch cursor.Kind {
 	case clang.CursorCXXAccessSpecifier:
 		printAccess(cursor)
+		printLocation(cursor)
 	case clang.CursorMacroDefinition:
 		printMacro(cursor, data.Unit)
+		printLocation(cursor)
 	case clang.CursorFunctionDecl, clang.CursorCXXMethod, clang.CursorConstructor, clang.CursorDestructor:
 		printFunc(cursor)
+		printLocation(cursor)
 	default:
-		printDefault(cursor)
+		printDefault(cursor, data)
 	}
-
-	printLocation(cursor)
 
 	data.Depth++
 	clang.VisitChildren(cursor, visit, c.Pointer(data))
