@@ -172,6 +172,11 @@ func (loop *Loop) Alive() c.Int {
 	return 0
 }
 
+// void uv_stop(uv_loop_t *loop)
+//
+// llgo:link (*Loop).Stop C.uv_stop
+func (loop *Loop) Stop() {}
+
 // llgo:link (*Loop).Close C.uv_loop_close
 func (loop *Loop) Close() c.Int {
 	return 0
