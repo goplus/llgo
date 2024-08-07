@@ -1,9 +1,5 @@
 package libuv
 
-//#cgo pkg-config: libuv
-//#include <uv.h>
-import "C"
-
 import (
 	_ "unsafe"
 
@@ -69,14 +65,22 @@ type UdpFlags c.Int
 
 /* Handle types. */
 
-type Tcp C.uv_tcp_t
+// TODO(spongehah): Handle
+type Handle struct {
+	Data   c.Pointer
+	Unused [88]byte
+}
 
-type Handle C.uv_handle_t
+// TODO(spongehah): Stream
+type Stream struct {
+	Data   c.Pointer
+	Unused [256]byte
+}
 
-type Stream C.uv_stream_t
-
-type Shutdown struct {
-	Unused [0]byte
+// TODO(spongehah): Tcp
+type Tcp struct {
+	Data   c.Pointer
+	Unused [256]byte
 }
 
 type Udp struct {
@@ -93,9 +97,17 @@ type UdpSend struct {
 	Unused [0]byte
 }
 
-type Connect C.uv_connect_t
+// TODO(spongehah): Write
+type Write struct {
+	Data   c.Pointer
+	Unused [184]byte
+}
 
-type Write C.uv_write_t
+// TODO(spongehah): Connect
+type Connect struct {
+	Data   c.Pointer
+	Unused [88]byte
+}
 
 type GetAddrInfo struct {
 	Unused [0]byte
@@ -132,7 +144,6 @@ type ConnectionCb func(server *Stream, status c.Int)
 
 // llgo:type C
 type ShutdownCb func(req *Shutdown, status c.Int)
-
 // ----------------------------------------------
 
 /* Handle related function and method */
@@ -360,11 +371,6 @@ func (tcp *Tcp) Getpeername(name *net.SockAddr, nameLen *c.Int) c.Int {
 // llgo:link (*Tcp).CloseReset C.uv_tcp_close_reset
 func (tcp *Tcp) CloseReset(closeCb CloseCb) c.Int {
 	return 0
-}
-
-func (tcp *Tcp) GetIoWatcherFd() c.Int {
-	tcp_s := (*C.uv_tcp_t)(c.Pointer(tcp))
-	return c.Int(tcp_s.io_watcher.fd)
 }
 
 //go:linkname TcpConnect C.uv_tcp_connect
