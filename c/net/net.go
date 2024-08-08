@@ -18,7 +18,6 @@ package net
 
 import (
 	"unsafe"
-	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
 )
