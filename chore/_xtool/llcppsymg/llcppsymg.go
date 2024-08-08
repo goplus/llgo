@@ -22,7 +22,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"unsafe"
 
@@ -61,11 +60,11 @@ func main() {
 
 	check(err)
 
-	filepaths := generateHeaderFilePath(conf.CFlags, conf.Include)
-	astInfos, err := parse.ParseHeaderFile(filepaths)
+	filepaths := genHeaderFilePath(conf.CFlags, conf.Include)
+	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes)
 	check(err)
 
-	symbolInfo := getCommonSymbols(symbols, astInfos, conf.TrimPrefixes)
+	symbolInfo := getCommonSymbols(symbols, headerInfos, conf.TrimPrefixes)
 
 	err = genSymbolTableFile(symbolInfo)
 	check(err)
@@ -77,8 +76,8 @@ func check(err error) {
 	}
 }
 
-func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
-	dylibPath, err := generateDylibPath(lib)
+func parseDylibSymbols(lib string) ([]*nm.Symbol, error) {
+	dylibPath, err := genDylibPath(lib)
 	if err != nil {
 		return nil, errors.New("failed to generate dylib path")
 	}
@@ -88,22 +87,15 @@ func parseDylibSymbols(lib string) ([]types.CPPSymbol, error) {
 		return nil, errors.New("failed to list symbols in dylib")
 	}
 
-	var symbols []types.CPPSymbol
-
+	var symbols []*nm.Symbol
 	for _, file := range files {
-		for _, sym := range file.Symbols {
-			demangleName := decodeSymbolName(sym.Name)
-			symbols = append(symbols, types.CPPSymbol{
-				Symbol:       sym,
-				DemangleName: demangleName,
-			})
-		}
+		symbols = append(symbols, file.Symbols...)
 	}
 
 	return symbols, nil
 }
 
-func generateDylibPath(lib string) (string, error) {
+func genDylibPath(lib string) (string, error) {
 	output := lib
 	libPath := ""
 	libName := ""
@@ -123,31 +115,20 @@ func generateDylibPath(lib string) (string, error) {
 	return dylibPath, nil
 }
 
-func decodeSymbolName(symbolName string) string {
+func decodeSymbol(symbolName string) string {
 	if symbolName == "" {
 		return ""
 	}
-
 	demangled := llvm.ItaniumDemangle(symbolName, true)
 	if demangled == nil {
 		return symbolName
 	}
 	defer c.Free(unsafe.Pointer(demangled))
-
 	demangleName := c.GoString(demangled)
-	if demangleName == "" {
-		return symbolName
-	}
-
-	decodedName := strings.TrimSpace(demangleName)
-	decodedName = strings.ReplaceAll(decodedName,
-		"std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const",
-		"std::string")
-
-	return decodedName
+	return strings.TrimSpace(demangleName)
 }
 
-func generateHeaderFilePath(cflags string, files []string) []string {
+func genHeaderFilePath(cflags string, files []string) []string {
 	prefixPath := cflags
 	prefixPath = strings.TrimPrefix(prefixPath, "-I")
 	var includePaths []string
@@ -157,77 +138,23 @@ func generateHeaderFilePath(cflags string, files []string) []string {
 	return includePaths
 }
 
-func getCommonSymbols(dylibSymbols []types.CPPSymbol, astInfoList []types.ASTInformation, prefix []string) []types.SymbolInfo {
-	var commonSymbols []types.SymbolInfo
-	functionNameMap := make(map[string]int)
-
-	for _, astInfo := range astInfoList {
-		for _, dylibSym := range dylibSymbols {
-			if strings.TrimPrefix(dylibSym.Name, "_") == astInfo.Symbol {
-				cppName := generateCPPName(astInfo)
-				functionNameMap[cppName]++
-				symbolInfo := types.SymbolInfo{
-					Mangle: strings.TrimPrefix(dylibSym.Name, "_"),
-					CPP:    cppName,
-					Go:     generateMangle(astInfo, functionNameMap[cppName], prefix),
-				}
-				commonSymbols = append(commonSymbols, symbolInfo)
-				break
+func getCommonSymbols(dylibSymbols []*nm.Symbol, symbolMap map[string]string, prefix []string) []*types.SymbolInfo {
+	var commonSymbols []*types.SymbolInfo
+	for _, dylibSym := range dylibSymbols {
+		symName := strings.TrimPrefix(dylibSym.Name, "_")
+		if goName, ok := symbolMap[symName]; ok {
+			symbolInfo := &types.SymbolInfo{
+				Mangle: symName,
+				CPP:    decodeSymbol(dylibSym.Name),
+				Go:     goName,
 			}
+			commonSymbols = append(commonSymbols, symbolInfo)
 		}
 	}
-
 	return commonSymbols
 }
 
-func generateCPPName(astInfo types.ASTInformation) string {
-	cppName := astInfo.Name
-	if astInfo.Class != "" {
-		cppName = astInfo.Class + "::" + astInfo.Name
-	}
-	return cppName
-}
-
-func generateMangle(astInfo types.ASTInformation, count int, prefixes []string) string {
-	astInfo.Class = removePrefix(astInfo.Class, prefixes)
-	astInfo.Name = removePrefix(astInfo.Name, prefixes)
-	res := ""
-	if astInfo.Class != "" {
-		if astInfo.Class == astInfo.Name {
-			res = "(*" + astInfo.Class + ")." + "Init"
-			if count > 1 {
-				res += "__" + strconv.Itoa(count-1)
-			}
-		} else if astInfo.Name == "~"+astInfo.Class {
-			res = "(*" + astInfo.Class + ")." + "Dispose"
-			if count > 1 {
-				res += "__" + strconv.Itoa(count-1)
-			}
-		} else {
-			res = "(*" + astInfo.Class + ")." + astInfo.Name
-			if count > 1 {
-				res += "__" + strconv.Itoa(count-1)
-			}
-		}
-	} else {
-		res = astInfo.Name
-		if count > 1 {
-			res += "__" + strconv.Itoa(count-1)
-		}
-	}
-	return res
-}
-
-func removePrefix(str string, prefixes []string) string {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(str, prefix) {
-			return strings.TrimPrefix(str, prefix)
-		}
-	}
-	return str
-}
-
-func genSymbolTableFile(symbolInfos []types.SymbolInfo) error {
+func genSymbolTableFile(symbolInfos []*types.SymbolInfo) error {
 	// keep open follow code block can run successfully
 	for i := range symbolInfos {
 		println("symbol", symbolInfos[i].Go)
@@ -269,6 +196,7 @@ func genSymbolTableFile(symbolInfos []types.SymbolInfo) error {
 	}
 	return nil
 }
+
 func readExistingSymbolTable(fileName string) (map[string]types.SymbolInfo, error) {
 	existingSymbols := make(map[string]types.SymbolInfo)
 
