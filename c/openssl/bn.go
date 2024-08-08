@@ -202,23 +202,80 @@ func BNDec2bn(a **BIGNUM, str *c.Char) c.Int
 //go:linkname BNAsc2bn C.BN_asc2bn
 func BNAsc2bn(a **BIGNUM, str *c.Char) c.Int
 
-/*
-BIGNUM *BN_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
-BIGNUM *BN_signed_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
-int BN_bn2bin(const BIGNUM *a, unsigned char *to);
-int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen);
-int BN_signed_bn2bin(const BIGNUM *a, unsigned char *to, int tolen);
-BIGNUM *BN_lebin2bn(const unsigned char *s, int len, BIGNUM *ret);
-BIGNUM *BN_signed_lebin2bn(const unsigned char *s, int len, BIGNUM *ret);
-int BN_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen);
-int BN_signed_bn2lebin(const BIGNUM *a, unsigned char *to, int tolen);
-BIGNUM *BN_native2bn(const unsigned char *s, int len, BIGNUM *ret);
-BIGNUM *BN_signed_native2bn(const unsigned char *s, int len, BIGNUM *ret);
-int BN_bn2nativepad(const BIGNUM *a, unsigned char *to, int tolen);
-int BN_signed_bn2native(const BIGNUM *a, unsigned char *to, int tolen);
-BIGNUM *BN_mpi2bn(const unsigned char *s, int len, BIGNUM *ret);
-int BN_bn2mpi(const BIGNUM *a, unsigned char *to);
-*/
+// BIGNUM *BN_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNBin2bn C.BN_bin2bn
+func BNBin2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// BIGNUM *BN_signed_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNSignedBin2bn C.BN_signed_bin2bn
+func BNSignedBin2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// int BN_bn2bin(const BIGNUM *a, unsigned char *to);
+//
+// llgo:link (*BIGNUM).Bn2bin C.BN_bn2bin
+func (bn *BIGNUM) Bn2bin(to *byte) c.Int { return 0 }
+
+// int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen);
+//
+// llgo:link (*BIGNUM).Bn2binpad C.BN_bn2binpad
+func (bn *BIGNUM) Bn2binpad(to *byte, tolen c.Int) c.Int { return 0 }
+
+// int BN_signed_bn2bin(const BIGNUM *a, unsigned char *to, int tolen);
+//
+// llgo:link (*BIGNUM).SignedBn2bin C.BN_signed_bn2bin
+func (bn *BIGNUM) SignedBn2bin(to *byte, tolen c.Int) c.Int { return 0 }
+
+// BIGNUM *BN_lebin2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNLebin2bn C.BN_lebin2bn
+func BNLebin2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// BIGNUM *BN_signed_lebin2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNSignedLebin2bn C.BN_signed_lebin2bn
+func BNSignedLebin2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// int BN_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen);
+//
+// llgo:link (*BIGNUM).Bn2lebinpad C.BN_bn2lebinpad
+func (bn *BIGNUM) Bn2lebinpad(to *byte, tolen c.Int) c.Int { return 0 }
+
+// int BN_signed_bn2lebin(const BIGNUM *a, unsigned char *to, int tolen);
+//
+// llgo:link (*BIGNUM).SignedBn2lebin C.BN_signed_bn2lebin
+func (bn *BIGNUM) SignedBn2lebin(to *byte, tolen c.Int) c.Int { return 0 }
+
+// BIGNUM *BN_native2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNNative2bn C.BN_native2bn
+func BNNative2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// BIGNUM *BN_signed_native2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNSignedNative2bn C.BN_signed_native2bn
+func BNSignedNative2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// int BN_bn2nativepad(const BIGNUM *a, unsigned char *to, int tolen);
+//
+// llgo:link (*BIGNUM).Bn2nativepad C.BN_bn2nativepad
+func (bn *BIGNUM) Bn2nativepad(to *byte, tolen c.Int) c.Int { return 0 }
+
+// int BN_signed_bn2native(const BIGNUM *a, unsigned char *to, int tolen);
+//
+// llgo:link (*BIGNUM).SignedBn2native C.BN_signed_bn2native
+func (bn *BIGNUM) SignedBn2native(to *byte, tolen c.Int) c.Int { return 0 }
+
+// BIGNUM *BN_mpi2bn(const unsigned char *s, int len, BIGNUM *ret);
+//
+//go:linkname BNMpi2bn C.BN_mpi2bn
+func BNMpi2bn(s *byte, len c.Int, ret *BIGNUM) *BIGNUM
+
+// int BN_bn2mpi(const BIGNUM *a, unsigned char *to);
+//
+// llgo:link (*BIGNUM).Bn2mpi C.BN_bn2mpi
+func (bn *BIGNUM) Bn2mpi(to *byte) c.Int { return 0 }
 
 // int BN_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b);
 //
