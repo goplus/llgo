@@ -831,8 +831,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	if !ctx.skipall {
 		processPkg(ctx, ret, pkg)
 	}
-	for len(ctx.inits) > 0 {
-		inits := ctx.inits
+	for inits := ctx.inits; len(inits) > 0 {
 		ctx.inits = nil
 		for _, ini := range inits {
 			ini()
