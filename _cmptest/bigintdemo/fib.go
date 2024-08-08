@@ -40,7 +40,7 @@ func neg() {
 	fmt.Println("value: ", big.NewInt(0).Neg(big.NewInt(0)))
 }
 
-func main() {
+func calc() {
 	a := big.NewInt(64)
 	b := big.NewInt(-52)
 	c := big.NewInt(54)
@@ -49,4 +49,15 @@ func main() {
 	d := big.NewInt(10)
 	e := big.NewInt(4)
 	fmt.Println("value:", d.Mul(d, e))
+}
+
+func bitop() {
+	a := big.NewInt(4)
+	fmt.Println("value:", a.Lsh(a, 1))
+	b := big.NewInt(16)
+	fmt.Println("value:", b.Rsh(b, 2))
+}
+
+func main() {
+	bitop()
 }

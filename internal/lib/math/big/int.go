@@ -18,8 +18,9 @@ package big
 
 // llgo:skipall
 import (
-	"sync"
+	"math/rand"
 
+	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/openssl"
 )
 
@@ -35,18 +36,6 @@ func ctxGet() *openssl.BN_CTX {
 
 func ctxPut(ctx *openssl.BN_CTX) {
 	ctx.Free()
-}
-
-var g_lock = &sync.Mutex{}
-var g_ctx *openssl.BN_CTX
-
-func getCtxInstance() *openssl.BN_CTX {
-	if g_ctx == nil {
-		g_lock.Lock()
-		defer g_lock.Unlock()
-		g_ctx = ctxGet()
-	}
-	return g_ctx
 }
 
 // -----------------------------------------------------------------------------
@@ -100,8 +89,7 @@ func (z *Int) Set(x *Int) *Int {
 	if z != x {
 		a := (*openssl.BIGNUM)(z)
 		b := (*openssl.BIGNUM)(x)
-		a.SetWord(b.GetWord())
-		a.SetNegative(b.IsNegative())
+		a.Copy(b)
 	}
 	return z
 }
@@ -132,7 +120,7 @@ func (z *Int) Neg(x *Int) *Int {
 // Bits is intended to support implementation of missing low-level Int
 // functionality outside this package; it should be avoided otherwise.
 func (x *Int) Bits() []Word {
-	panic("big.Bits")
+	panic("todo big.Bits")
 }
 
 // SetBits provides raw (unchecked but fast) access to z by setting its
@@ -141,7 +129,7 @@ func (x *Int) Bits() []Word {
 // SetBits is intended to support implementation of missing low-level Int
 // functionality outside this package; it should be avoided otherwise.
 func (z *Int) SetBits(abs []Word) *Int {
-	panic("big.SetBits")
+	panic("todo big.SetBits")
 }
 
 // Add sets z to the sum x+y and returns z.
@@ -158,100 +146,33 @@ func (z *Int) Sub(x, y *Int) *Int {
 
 // Mul sets z to the product x*y and returns z.
 func (z *Int) Mul(x, y *Int) *Int {
-	a := (*openssl.BIGNUM)(z)
-	xx := (*openssl.BIGNUM)(x)
-	yy := (*openssl.BIGNUM)(y)
-	getCtxInstance().Start()
-	defer getCtxInstance().End()
-	a.Mul(a, xx, yy, getCtxInstance())
-	return z
+	panic("todo big.Mul")
 }
 
 // MulRange sets z to the product of all integers
 // in the range [a, b] inclusively and returns z.
 // If a > b (empty range), the result is 1.
 func (z *Int) MulRange(a, b int64) *Int {
-	switch {
-	case a > b:
-		return z.SetInt64(1) // empty range
-	case a <= 0 && b >= 0:
-		return z.SetInt64(0) // range includes 0
-	}
-	// a <= b && (b < 0 || a > 0)
-	neg := false
-	if a < 0 {
-		neg = (b-a)&1 == 0
-		a, b = -b, -a
-	}
-	zz := (*openssl.BIGNUM)(z)
-	for i := a; i < b; i++ {
-		zz.MulWord(openssl.BN_ULONG(i))
-	}
-	if neg {
-		zz.SetNegative(1)
-	} else {
-		zz.SetNegative(0)
-	}
-	return z
+	panic("todo big.MulRange")
 }
 
 // Binomial sets z to the binomial coefficient C(n, k) and returns z.
 func (z *Int) Binomial(n, k int64) *Int {
-	if k > n {
-		return z.SetInt64(0)
-	}
-	// reduce the number of multiplications by reducing k
-	if k > n-k {
-		k = n - k // C(n, k) == C(n, n-k)
-	}
-	// C(n, k) == n * (n-1) * ... * (n-k+1) / k * (k-1) * ... * 1
-	//         == n * (n-1) * ... * (n-k+1) / 1 * (1+1) * ... * k
-	//
-	// Using the multiplicative formula produces smaller values
-	// at each step, requiring fewer allocations and computations:
-	//
-	// z = 1
-	// for i := 0; i < k; i = i+1 {
-	//     z *= n-i
-	//     z /= i+1
-	// }
-	//
-	// finally to avoid computing i+1 twice per loop:
-	//
-	// z = 1
-	// i := 0
-	// for i < k {
-	//     z *= n-i
-	//     i++
-	//     z /= i
-	// }
-	var N, K, i, t Int
-	N.SetInt64(n)
-	K.SetInt64(k)
-
-	intOne := NewInt(1)
-
-	z.Set(intOne)
-	for i.Cmp(&K) < 0 {
-		z.Mul(z, t.Sub(&N, &i))
-		i.Add(&i, intOne)
-		z.Quo(z, &i)
-	}
-	return z
+	panic("todo big.Binomial")
 }
 
 // Quo sets z to the quotient x/y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Quo implements truncated division (like Go); see QuoRem for more details.
 func (z *Int) Quo(x, y *Int) *Int {
-	panic("big.Quo")
+	panic("todo big.Quo")
 }
 
 // Rem sets z to the remainder x%y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Rem implements truncated modulus (like Go); see QuoRem for more details.
 func (z *Int) Rem(x, y *Int) *Int {
-	panic("big.Rem")
+	panic("todo big.Rem")
 }
 
 // QuoRem sets z to the quotient x/y and r to the remainder x%y
@@ -266,21 +187,21 @@ func (z *Int) Rem(x, y *Int) *Int {
 // (See Daan Leijen, “Division and Modulus for Computer Scientists”.)
 // See DivMod for Euclidean division and modulus (unlike Go).
 func (z *Int) QuoRem(x, y, r *Int) (*Int, *Int) {
-	panic("big.QuoRem")
+	panic("todo big.QuoRem")
 }
 
 // Div sets z to the quotient x/y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Div implements Euclidean division (unlike Go); see DivMod for more details.
 func (z *Int) Div(x, y *Int) *Int {
-	panic("big.Div")
+	panic("todo big.Div")
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Mod implements Euclidean modulus (unlike Go); see DivMod for more details.
 func (z *Int) Mod(x, y *Int) *Int {
-	panic("big.Mod")
+	panic("todo big.Mod")
 }
 
 // DivMod sets z to the quotient x div y and m to the modulus x mod y
@@ -322,28 +243,32 @@ func (x *Int) CmpAbs(y *Int) int {
 // Int64 returns the int64 representation of x.
 // If x cannot be represented in an int64, the result is undefined.
 func (x *Int) Int64() int64 {
-	panic("big.Int64")
+	panic("todo big.Int64")
 }
 
 // Uint64 returns the uint64 representation of x.
 // If x cannot be represented in a uint64, the result is undefined.
 func (x *Int) Uint64() uint64 {
-	panic("big.Uint64")
+	panic("todo big.Uint64")
 }
 
-/*
 // IsInt64 reports whether x can be represented as an int64.
 func (x *Int) IsInt64() bool {
+	panic("todo big.IsInt64")
 }
 
 // IsUint64 reports whether x can be represented as a uint64.
 func (x *Int) IsUint64() bool {
+	panic("todo big.IsUint64")
 }
 
 // Float64 returns the float64 value nearest x,
 // and an indication of any rounding that occurred.
 // TODO(xsw):
-// func (x *Int) Float64() (float64, Accuracy)
+/*
+func (x *Int) Float64() (float64, Accuracy) {
+	panic("todo big.Float64")
+}*/
 
 // SetString sets z to the value of s, interpreted in the given base,
 // and returns z and a boolean indicating success. The entire string
@@ -368,17 +293,20 @@ func (x *Int) IsUint64() bool {
 // are no other errors. If base != 0, underscores are not recognized
 // and act like any other character that is not a valid digit.
 func (z *Int) SetString(s string, base int) (*Int, bool) {
+	panic("todo big.SetString")
 }
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
 // integer, sets z to that value, and returns z.
 func (z *Int) SetBytes(buf []byte) *Int {
+	panic("todo big.SetBytes")
 }
 
 // Bytes returns the absolute value of x as a big-endian byte slice.
 //
 // To use a fixed length slice, or a preallocated one, use FillBytes.
 func (x *Int) Bytes() []byte {
+	panic("todo big.Bytes")
 }
 
 // FillBytes sets buf to the absolute value of x, storing it as a zero-extended
@@ -386,18 +314,20 @@ func (x *Int) Bytes() []byte {
 //
 // If the absolute value of x doesn't fit in buf, FillBytes will panic.
 func (x *Int) FillBytes(buf []byte) []byte {
+	panic("todo big.FillBytes")
 }
 
 // BitLen returns the length of the absolute value of x in bits.
 // The bit length of 0 is 0.
 func (x *Int) BitLen() int {
+	panic("todo big.BitLen")
 }
 
 // TrailingZeroBits returns the number of consecutive least significant zero
 // bits of |x|.
 func (x *Int) TrailingZeroBits() uint {
+	panic("todo big.TrailingZeroBits")
 }
-*/
 
 // Exp sets z = x**y mod |m| (i.e. the sign of m is ignored), and returns z.
 // If m == nil or m == 0, z = x**y unless y <= 0 then z = 1. If m != 0, y < 0,
@@ -417,7 +347,6 @@ func (z *Int) Exp(x, y, m *Int) *Int {
 	return z
 }
 
-/*
 // GCD sets z to the greatest common divisor of a and b and returns z.
 // If x or y are not nil, GCD sets their value such that z = a*x + b*y.
 //
@@ -430,6 +359,7 @@ func (z *Int) Exp(x, y, m *Int) *Int {
 //
 // If a != 0 and b == 0, GCD sets z = |a|, x = sign(a) * 1, y = 0.
 func (z *Int) GCD(x, y, a, b *Int) *Int {
+	panic("todo big.GCD")
 }
 
 // Rand sets z to a pseudo-random number in [0, n) and returns z.
@@ -437,6 +367,7 @@ func (z *Int) GCD(x, y, a, b *Int) *Int {
 // As this uses the math/rand package, it must not be used for
 // security-sensitive work. Use crypto/rand.Int instead.
 func (z *Int) Rand(rnd *rand.Rand, n *Int) *Int {
+	panic("todo big.Rand")
 }
 
 // ModInverse sets z to the multiplicative inverse of g in the ring ℤ/nℤ
@@ -444,11 +375,13 @@ func (z *Int) Rand(rnd *rand.Rand, n *Int) *Int {
 // inverse in the ring ℤ/nℤ.  In this case, z is unchanged and the return value
 // is nil. If n == 0, a division-by-zero run-time panic occurs.
 func (z *Int) ModInverse(g, n *Int) *Int {
+	panic("todo big.ModInverse")
 }
 
 // Jacobi returns the Jacobi symbol (x/y), either +1, -1, or 0.
 // The y argument must be an odd integer.
 func Jacobi(x, y *Int) int {
+	panic("todo big.Jacobi")
 }
 
 // ModSqrt sets z to a square root of x mod p if such a square root exists, and
@@ -456,19 +389,29 @@ func Jacobi(x, y *Int) int {
 // ModSqrt leaves z unchanged and returns nil. This function panics if p is
 // not an odd integer, its behavior is undefined if p is odd but not prime.
 func (z *Int) ModSqrt(x, p *Int) *Int {
+	panic("todo big.ModSqrt")
 }
 
 // Lsh sets z = x << n and returns z.
 func (z *Int) Lsh(x *Int, n uint) *Int {
+	a := (*openssl.BIGNUM)(z)
+	b := (*openssl.BIGNUM)(x)
+	a.Lshift(b, c.Int(n))
+	return z
 }
 
 // Rsh sets z = x >> n and returns z.
 func (z *Int) Rsh(x *Int, n uint) *Int {
+	a := (*openssl.BIGNUM)(z)
+	b := (*openssl.BIGNUM)(x)
+	a.Rshift(b, c.Int(n))
+	return z
 }
 
 // Bit returns the value of the i'th bit of x. That is, it
 // returns (x>>i)&1. The bit index i must be >= 0.
 func (x *Int) Bit(i int) uint {
+	panic("todo big.Bit")
 }
 
 // SetBit sets z to x, with x's i'th bit set to b (0 or 1).
@@ -476,32 +419,38 @@ func (x *Int) Bit(i int) uint {
 // if b is 0 SetBit sets z = x &^ (1 << i). If b is not 0 or 1,
 // SetBit will panic.
 func (z *Int) SetBit(x *Int, i int, b uint) *Int {
+	panic("todo big.SetBit")
 }
 
 // And sets z = x & y and returns z.
 func (z *Int) And(x, y *Int) *Int {
+	panic("todo big.And")
 }
 
 // AndNot sets z = x &^ y and returns z.
 func (z *Int) AndNot(x, y *Int) *Int {
+	panic("todo big.AndNot")
 }
 
 // Or sets z = x | y and returns z.
 func (z *Int) Or(x, y *Int) *Int {
+	panic("todo big.Or")
 }
 
 // Xor sets z = x ^ y and returns z.
 func (z *Int) Xor(x, y *Int) *Int {
+	panic("todo big.Xor")
 }
 
 // Not sets z = ^x and returns z.
 func (z *Int) Not(x *Int) *Int {
+	panic("todo big.Not")
 }
 
 // Sqrt sets z to ⌊√x⌋, the largest integer such that z² ≤ x, and returns z.
 // It panics if x is negative.
 func (z *Int) Sqrt(x *Int) *Int {
+	panic("todo big.Sqrt")
 }
-*/
 
 // -----------------------------------------------------------------------------
