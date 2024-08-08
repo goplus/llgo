@@ -98,8 +98,9 @@ type context struct {
 	patches  Patches
 	blkInfos []blocks.Info
 
-	inits []func()
-	phis  []func()
+	inits     []func()
+	phis      []func()
+	initAfter func()
 
 	state   pkgState
 	inCFunc bool
@@ -292,9 +293,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			instrs = instrs[:last]
 		} else if p.state != pkgHasPatch {
 			// TODO(xsw): confirm pyMod don't need to call AfterInit
-			p.inits = append(p.inits, func() {
+			p.initAfter = func() {
 				pkg.AfterInit(b, ret)
-			})
+			}
 		}
 	} else if doMainInit {
 		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
@@ -836,6 +837,10 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		for _, ini := range inits {
 			ini()
 		}
+	}
+	if fn := ctx.initAfter; fn != nil {
+		ctx.initAfter = nil
+		fn()
 	}
 	return
 }
