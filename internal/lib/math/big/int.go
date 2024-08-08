@@ -81,9 +81,35 @@ func NewInt(x int64) *Int {
 	return z.SetInt64(x)
 }
 
-/*
 // Set sets z to x and returns z.
 func (z *Int) Set(x *Int) *Int {
+	if z != x {
+		a := (*openssl.BIGNUM)(z)
+		b := (*openssl.BIGNUM)(x)
+		a.SetWord(b.GetWord())
+		a.SetNegative(b.IsNegative())
+	}
+	return z
+}
+
+// Abs sets z to |x| (the absolute value of x) and returns z.
+func (z *Int) Abs(x *Int) *Int {
+	z.Set(x)
+	a := (*openssl.BIGNUM)(z)
+	a.SetNegative(0)
+	return z
+}
+
+// Neg sets z to -x and returns z.
+func (z *Int) Neg(x *Int) *Int {
+	z.Set(x)
+	a := (*openssl.BIGNUM)(z)
+	if a.IsNegative() != 0 {
+		a.SetNegative(0)
+	} else {
+		a.SetNegative(1)
+	}
+	return z
 }
 
 // Bits provides raw (unchecked but fast) access to x by returning its
@@ -92,6 +118,7 @@ func (z *Int) Set(x *Int) *Int {
 // Bits is intended to support implementation of missing low-level Int
 // functionality outside this package; it should be avoided otherwise.
 func (x *Int) Bits() []Word {
+	panic("big.Bits")
 }
 
 // SetBits provides raw (unchecked but fast) access to z by setting its
@@ -100,16 +127,8 @@ func (x *Int) Bits() []Word {
 // SetBits is intended to support implementation of missing low-level Int
 // functionality outside this package; it should be avoided otherwise.
 func (z *Int) SetBits(abs []Word) *Int {
+	panic("big.SetBits")
 }
-
-// Abs sets z to |x| (the absolute value of x) and returns z.
-func (z *Int) Abs(x *Int) *Int {
-}
-
-// Neg sets z to -x and returns z.
-func (z *Int) Neg(x *Int) *Int {
-}
-*/
 
 // Add sets z to the sum x+y and returns z.
 func (z *Int) Add(x, y *Int) *Int {
@@ -123,31 +142,100 @@ func (z *Int) Sub(x, y *Int) *Int {
 	return z
 }
 
-/*
 // Mul sets z to the product x*y and returns z.
 func (z *Int) Mul(x, y *Int) *Int {
+	a := (*openssl.BIGNUM)(z)
+	xx := (*openssl.BIGNUM)(x)
+	yy := (*openssl.BIGNUM)(y)
+	a.Mul(a, xx, yy, ctxGet())
+	return z
 }
 
 // MulRange sets z to the product of all integers
 // in the range [a, b] inclusively and returns z.
 // If a > b (empty range), the result is 1.
 func (z *Int) MulRange(a, b int64) *Int {
+	switch {
+	case a > b:
+		return z.SetInt64(1) // empty range
+	case a <= 0 && b >= 0:
+		return z.SetInt64(0) // range includes 0
+	}
+	// a <= b && (b < 0 || a > 0)
+	neg := false
+	if a < 0 {
+		neg = (b-a)&1 == 0
+		a, b = -b, -a
+	}
+	zz := (*openssl.BIGNUM)(z)
+	for i := a; i < b; i++ {
+		zz.MulWord(openssl.BN_ULONG(i))
+	}
+	if neg {
+		zz.SetNegative(1)
+	} else {
+		zz.SetNegative(0)
+	}
+	return z
 }
 
 // Binomial sets z to the binomial coefficient C(n, k) and returns z.
 func (z *Int) Binomial(n, k int64) *Int {
+	if k > n {
+		return z.SetInt64(0)
+	}
+	// reduce the number of multiplications by reducing k
+	if k > n-k {
+		k = n - k // C(n, k) == C(n, n-k)
+	}
+	// C(n, k) == n * (n-1) * ... * (n-k+1) / k * (k-1) * ... * 1
+	//         == n * (n-1) * ... * (n-k+1) / 1 * (1+1) * ... * k
+	//
+	// Using the multiplicative formula produces smaller values
+	// at each step, requiring fewer allocations and computations:
+	//
+	// z = 1
+	// for i := 0; i < k; i = i+1 {
+	//     z *= n-i
+	//     z /= i+1
+	// }
+	//
+	// finally to avoid computing i+1 twice per loop:
+	//
+	// z = 1
+	// i := 0
+	// for i < k {
+	//     z *= n-i
+	//     i++
+	//     z /= i
+	// }
+	var N, K, i, t Int
+	N.SetInt64(n)
+	K.SetInt64(k)
+
+	intOne := NewInt(1)
+
+	z.Set(intOne)
+	for i.Cmp(&K) < 0 {
+		z.Mul(z, t.Sub(&N, &i))
+		i.Add(&i, intOne)
+		z.Quo(z, &i)
+	}
+	return z
 }
 
 // Quo sets z to the quotient x/y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Quo implements truncated division (like Go); see QuoRem for more details.
 func (z *Int) Quo(x, y *Int) *Int {
+	panic("big.Quo")
 }
 
 // Rem sets z to the remainder x%y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Rem implements truncated modulus (like Go); see QuoRem for more details.
 func (z *Int) Rem(x, y *Int) *Int {
+	panic("big.Rem")
 }
 
 // QuoRem sets z to the quotient x/y and r to the remainder x%y
@@ -162,18 +250,21 @@ func (z *Int) Rem(x, y *Int) *Int {
 // (See Daan Leijen, “Division and Modulus for Computer Scientists”.)
 // See DivMod for Euclidean division and modulus (unlike Go).
 func (z *Int) QuoRem(x, y, r *Int) (*Int, *Int) {
+	panic("big.QuoRem")
 }
 
 // Div sets z to the quotient x/y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Div implements Euclidean division (unlike Go); see DivMod for more details.
 func (z *Int) Div(x, y *Int) *Int {
+	panic("big.Div")
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
 // If y == 0, a division-by-zero run-time panic occurs.
 // Mod implements Euclidean modulus (unlike Go); see DivMod for more details.
 func (z *Int) Mod(x, y *Int) *Int {
+	panic("big.Mod")
 }
 
 // DivMod sets z to the quotient x div y and m to the modulus x mod y
@@ -191,8 +282,8 @@ func (z *Int) Mod(x, y *Int) *Int {
 // ACM press.)
 // See QuoRem for T-division and modulus (like Go).
 func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
+	panic("big.DivMod")
 }
-*/
 
 // Cmp compares x and y and returns:
 //
@@ -212,17 +303,19 @@ func (x *Int) CmpAbs(y *Int) int {
 	return int((*openssl.BIGNUM)(x).Ucmp((*openssl.BIGNUM)(y)))
 }
 
-/*
 // Int64 returns the int64 representation of x.
 // If x cannot be represented in an int64, the result is undefined.
 func (x *Int) Int64() int64 {
+	panic("big.Int64")
 }
 
 // Uint64 returns the uint64 representation of x.
 // If x cannot be represented in a uint64, the result is undefined.
 func (x *Int) Uint64() uint64 {
+	panic("big.Uint64")
 }
 
+/*
 // IsInt64 reports whether x can be represented as an int64.
 func (x *Int) IsInt64() bool {
 }
