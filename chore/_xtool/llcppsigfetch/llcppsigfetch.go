@@ -16,6 +16,65 @@
 
 package main
 
+import (
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
+)
+
 func main() {
-	// TODO(xsw): implement llcppsigfetch tool
+	cfgFile := "llcppg.cfg"
+	if len(os.Args) > 1 {
+		cfgFile = os.Args[1]
+	}
+
+	var data []byte
+	var err error
+	if cfgFile == "-" {
+		data, err = io.ReadAll(os.Stdin)
+	} else {
+		data, err = os.ReadFile(cfgFile)
+	}
+	check(err)
+
+	conf, err := config.GetConf(data)
+	check(err)
+	defer conf.Delete()
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
+	}
+
+	files := getHeaderFiles(conf.CFlags, conf.Include)
+
+	context := parse.NewContext()
+	err = context.ProcessFiles(files)
+	check(err)
+
+	outputInfo(context)
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func getHeaderFiles(cflags string, files []string) []string {
+	prefix := cflags
+	prefix = strings.TrimPrefix(prefix, "-I")
+	var paths []string
+	for _, f := range files {
+		paths = append(paths, filepath.Join(prefix, f))
+	}
+	return paths
+}
+
+func outputInfo(context *parse.Context) {
+	// TODO(zzy):
 }
