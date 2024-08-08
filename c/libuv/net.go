@@ -251,7 +251,7 @@ func (req *Req) GetData() c.Pointer {
 	return nil
 }
 
-// llgo:link (*Req).SetData C.uv_handle_set_data
+// llgo:link (*Req).SetData C.uv_req_set_data
 func (req *Req) SetData(data c.Pointer) {}
 
 // llgo:link (*Req).GetType C.uv_req_get_type

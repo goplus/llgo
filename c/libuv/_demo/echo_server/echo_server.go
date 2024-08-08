@@ -1,8 +1,6 @@
 package main
 
 import (
-	"unsafe"
-
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/libuv"
 	"github.com/goplus/llgo/c/net"
@@ -11,18 +9,18 @@ import (
 var DEFAULT_PORT c.Int = 8080
 var DEFAULT_BACKLOG c.Int = 128
 
-type WriteReq struct {
-	Req libuv.Write
+var (
+	Req *libuv.Write
 	Buf libuv.Buf
-}
+)
 
 func main() {
 	// Initialize the default event loop
 	var loop = libuv.DefaultLoop()
 
 	// Initialize a TCP server
-	var server libuv.Tcp
-	libuv.InitTcp(loop, &server)
+	server := &libuv.Tcp{}
+	libuv.InitTcp(loop, server)
 
 	// Set up the address to bind the server to
 	var addr net.SockaddrIn
@@ -30,8 +28,8 @@ func main() {
 	c.Printf(c.Str("Listening on %s:%d\n"), c.Str("0.0.0.0"), DEFAULT_PORT)
 
 	// Bind the server to the specified address and port
-	(&server).Bind((*net.SockAddr)(c.Pointer(&addr)), 0)
-	res := (*libuv.Stream)(unsafe.Pointer(&server)).Listen(DEFAULT_BACKLOG, OnNewConnection)
+	server.Bind((*net.SockAddr)(c.Pointer(&addr)), 0)
+	res := (*libuv.Stream)(server).Listen(DEFAULT_BACKLOG, OnNewConnection)
 	if res != 0 {
 		c.Fprintf(c.Stderr, c.Str("Listen error: %s\n"), libuv.Strerror(libuv.Errno(res)))
 		return
@@ -41,11 +39,9 @@ func main() {
 	loop.Run(libuv.RUN_DEFAULT)
 }
 
-func FreeWriteReq(req *libuv.Write) {
-	wr := (*WriteReq)(c.Pointer(req))
-	// Free the buffer base and the WriteReq itself.
-	c.Free(c.Pointer(wr.Buf.Base))
-	c.Free(c.Pointer(wr))
+func FreeWriteReq() {
+	// Free the buffer base.
+	c.Free(c.Pointer(Buf.Base))
 }
 
 func AllocBuffer(handle *libuv.Handle, suggestedSize uintptr, buf *libuv.Buf) {
@@ -58,26 +54,21 @@ func EchoWrite(req *libuv.Write, status c.Int) {
 	if status != 0 {
 		c.Fprintf(c.Stderr, c.Str("Write error: %s\n"), libuv.Strerror(libuv.Errno(status)))
 	}
-	FreeWriteReq(req)
+	FreeWriteReq()
 }
 
 func EchoRead(client *libuv.Stream, nread c.Long, buf *libuv.Buf) {
 	if nread > 0 {
-		req := (*WriteReq)(c.Malloc(unsafe.Sizeof(WriteReq{})))
-		if req == nil {
-			c.Fprintf(c.Stderr, c.Str("Failed to allocate memory for write request\n"))
-			c.Free(c.Pointer(buf.Base))
-			return
-		}
 		// Initialize the buffer with the data read.
-		req.Buf = libuv.InitBuf(buf.Base, c.Uint(nread))
+		Buf = libuv.InitBuf(buf.Base, c.Uint(nread))
 		// Write the data back to the client.
-		(&req.Req).Write(client, &req.Buf, 1, EchoWrite)
+		Req = &libuv.Write{}
+		Req.Write(client, &Buf, 1, EchoWrite)
 		return
 	}
 	if nread < 0 {
 		// Handle read errors and EOF.
-		if libuv.Errno(nread) != libuv.EOF {
+		if (libuv.Errno)(nread) != libuv.EOF {
 			c.Fprintf(c.Stderr, c.Str("Read error: %s\n"), libuv.Strerror(libuv.Errno(nread)))
 		}
 		(*libuv.Handle)(c.Pointer(client)).Close(nil)
@@ -95,7 +86,7 @@ func OnNewConnection(server *libuv.Stream, status c.Int) {
 	}
 
 	// Allocate memory for a new client.
-	client := (*libuv.Tcp)(c.Malloc(unsafe.Sizeof(libuv.Tcp{})))
+	client := &libuv.Tcp{}
 
 	if client == nil {
 		c.Fprintf(c.Stderr, c.Str("Failed to allocate memory for client\n"))
@@ -110,9 +101,9 @@ func OnNewConnection(server *libuv.Stream, status c.Int) {
 	}
 
 	// Accept the new connection and start reading data.
-	if server.Accept((*libuv.Stream)(unsafe.Pointer(client))) == 0 {
-		(*libuv.Stream)(unsafe.Pointer(client)).StartRead(AllocBuffer, EchoRead)
+	if server.Accept((*libuv.Stream)(client)) == 0 {
+		(*libuv.Stream)(client).StartRead(AllocBuffer, EchoRead)
 	} else {
-		(*libuv.Handle)(unsafe.Pointer(client)).Close(nil)
+		(*libuv.Handle)(c.Pointer(client)).Close(nil)
 	}
 }
