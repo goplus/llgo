@@ -18,6 +18,8 @@ package big
 
 // llgo:skipall
 import (
+	"sync"
+
 	"github.com/goplus/llgo/c/openssl"
 )
 
@@ -33,6 +35,18 @@ func ctxGet() *openssl.BN_CTX {
 
 func ctxPut(ctx *openssl.BN_CTX) {
 	ctx.Free()
+}
+
+var g_lock = &sync.Mutex{}
+var g_ctx *openssl.BN_CTX
+
+func getCtxInstance() *openssl.BN_CTX {
+	if g_ctx == nil {
+		g_lock.Lock()
+		defer g_lock.Unlock()
+		g_ctx = ctxGet()
+	}
+	return g_ctx
 }
 
 // -----------------------------------------------------------------------------
@@ -147,7 +161,9 @@ func (z *Int) Mul(x, y *Int) *Int {
 	a := (*openssl.BIGNUM)(z)
 	xx := (*openssl.BIGNUM)(x)
 	yy := (*openssl.BIGNUM)(y)
-	a.Mul(a, xx, yy, ctxGet())
+	getCtxInstance().Start()
+	defer getCtxInstance().End()
+	a.Mul(a, xx, yy, getCtxInstance())
 	return z
 }
 

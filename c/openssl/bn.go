@@ -49,8 +49,19 @@ func BN_CTXSecureNew() *BN_CTX
 func (*BN_CTX) Free() {}
 
 // void BN_CTX_start(BN_CTX *ctx);
+//
+// llgo:link (*BN_CTX).Start C.BN_CTX_start
+func (*BN_CTX) Start() {}
+
 // BIGNUM *BN_CTX_get(BN_CTX *ctx);
+//
+// llgo:link (*BN_CTX).Get C.BN_CTX_get
+func (*BN_CTX) Get() *BIGNUM { return nil }
+
 // void BN_CTX_end(BN_CTX *ctx);
+//
+// llgo:link (*BN_CTX).End C.BN_CTX_end
+func (*BN_CTX) End() {}
 
 // -----------------------------------------------------------------------------
 
