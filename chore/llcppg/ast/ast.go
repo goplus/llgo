@@ -36,6 +36,11 @@ type Stmt interface {
 	stmtNode()
 }
 
+type PPD interface { // preprocessing directive
+	Node
+	ppdNode()
+}
+
 // =============================================================================
 // Expressions (Types are also expressions)
 
@@ -226,6 +231,8 @@ type EnumItem struct {
 	Value Expr // optional
 }
 
+func (*EnumItem) exprNode() {}
+
 // enum Name { Item1, Item2, ... };
 type EnumTypeDecl struct {
 	DeclBase
@@ -261,8 +268,25 @@ func (*TypeDecl) declNode() {}
 // =============================================================================
 // AST File
 
+type Include struct {
+	Path string
+}
+
+func (*Include) ppdNode() {}
+
+// ------------------------------------------------
+
+type Macro struct {
+}
+
+func (*Macro) ppdNode() {}
+
+// ------------------------------------------------
+
 type File struct {
-	Decls []Decl
+	Decls    []Decl
+	Includes []*Include
+	Macros   []*Macro
 }
 
 // =============================================================================
