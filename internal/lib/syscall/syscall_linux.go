@@ -70,14 +70,16 @@ func (w WaitStatus) StopSignal() Signal {
 	return Signal(w>>shift) & 0xFF
 }
 
-/* TODO(xsw):
 func (w WaitStatus) TrapCause() int {
-	if w.StopSignal() != SIGTRAP {
-		return -1
-	}
-	return int(w>>shift) >> 8
+	/*
+		if w.StopSignal() != SIGTRAP {
+			return -1
+		}
+
+		return int(w>>shift) >> 8
+	*/
+	panic("todo: syscall.WaitStatus.TrapCause")
 }
-*/
 
 func Wait4(pid int, wstatus *WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
 	var status c.Int
