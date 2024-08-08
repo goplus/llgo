@@ -269,7 +269,7 @@ func (*TypeDecl) declNode() {}
 // AST File
 
 type Include struct {
-	Path string
+	Path string `json:"path"`
 }
 
 func (*Include) ppdNode() {}
@@ -284,9 +284,9 @@ func (*Macro) ppdNode() {}
 // ------------------------------------------------
 
 type File struct {
-	Decls    []Decl
-	Includes []*Include
-	Macros   []*Macro
+	Decls    []Decl     `json:"decls"`
+	Includes []*Include `json:"includes,omitempty"`
+	Macros   []*Macro   `json:"macros,omitempty"`
 }
 
 // =============================================================================
