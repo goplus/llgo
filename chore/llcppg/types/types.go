@@ -16,10 +16,6 @@
 
 package types
 
-import (
-	"github.com/goplus/llgo/xtool/nm"
-)
-
 // Config represents a configuration for the llcppg tool.
 type Config struct {
 	Name         string   `json:"name"`
@@ -27,27 +23,6 @@ type Config struct {
 	Libs         string   `json:"libs"`
 	Include      []string `json:"include"`
 	TrimPrefixes []string `json:"trimPrefixes"`
-}
-
-type CPPSymbol struct {
-	DemangleName string
-	*nm.Symbol
-}
-
-type ASTInformation struct {
-	Namespace   string      `json:"namespace"`
-	Class       string      `json:"class"`
-	Name        string      `json:"name"`
-	BaseClasses []string    `json:"baseClasses"`
-	ReturnType  string      `json:"returnType"`
-	Location    string      `json:"location"`
-	Parameters  []Parameter `json:"parameters"`
-	Symbol      string      `json:"symbol"`
-}
-
-type Parameter struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
 }
 
 type SymbolInfo struct {
