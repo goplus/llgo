@@ -23,14 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
-	"github.com/goplus/llgo/chore/llcppg/ast"
 )
-
-type FileInfo struct {
-	Path string   `json:"path"`
-	Doc  ast.File `json:"doc"`
-}
 
 func main() {
 	cfgFile := "llcppg.cfg"
@@ -57,10 +52,11 @@ func main() {
 
 	files := getHeaderFiles(conf.CFlags, conf.Include)
 
-	fileInfos, err := processHeaderFiles(files)
+	context := parse.NewContext()
+	err = context.ProcessFiles(files)
 	check(err)
 
-	outputInfo(fileInfos)
+	outputInfo(context)
 }
 
 func check(err error) {
@@ -79,33 +75,6 @@ func getHeaderFiles(cflags string, files []string) []string {
 	return paths
 }
 
-func outputInfo(fileInfos []FileInfo) {
-	// TODO:
-}
-
-func processHeaderFiles(files []string) ([]FileInfo, error) {
-	var fileInfos []FileInfo
-	for _, file := range files {
-		info, err := processHeaderFile(file)
-		if err != nil {
-			return nil, fmt.Errorf("error processing file %s: %w", file, err)
-		}
-		fileInfos = append(fileInfos, info)
-	}
-	return fileInfos, nil
-}
-
-func processHeaderFile(path string) (FileInfo, error) {
-	var info FileInfo
-	info.Path = path
-
-	// TODO: Implement actual processing of the header file
-
-	// info.Doc = File{
-	// 	Decls:    []Decl{},
-	// 	Includes: []*Include{},
-	// 	Macros:   []*Macro{},
-	// }
-
-	return info, nil
+func outputInfo(context *parse.Context) {
+	// TODO(zzy):
 }
