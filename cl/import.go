@@ -350,11 +350,10 @@ func funcName(pkg *types.Package, fn *ssa.Function) string {
 	}
 	var fnName string
 	if org := fn.Origin(); org != nil {
-		targs := make([]string, len(fn.TypeArgs()))
-		for i, t := range fn.TypeArgs() {
-			targs[i] = types.TypeString(t, llssa.PathOf)
+		fnName = org.Name()
+		if fn.Signature.Recv() == nil {
+			fnName += llssa.TypeArgs(fn.TypeArgs())
 		}
-		fnName = org.Name() + "[" + strings.Join(targs, ", ") + "]"
 	} else {
 		fnName = fn.Name()
 	}
