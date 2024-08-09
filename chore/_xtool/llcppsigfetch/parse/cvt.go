@@ -754,3 +754,7 @@ func buildScopingFromParts(parts []string) ast.Expr {
 	}
 	return expr
 }
+
+func (ct *Converter) GetCurFile() *ast.File {
+	return ct.curFile
+}
