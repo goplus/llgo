@@ -265,7 +265,7 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 				return nil, nil, ignoredFunc
 			}
 			sig := fn.Signature
-			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false)
+			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, fn.Origin() != nil)
 		}
 	}
 	return

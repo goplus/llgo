@@ -167,7 +167,7 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	case *types.Named:
 		o := t.Obj()
 		pkg := o.Pkg()
-		return "_llgo_" + FullName(pkg, o.Name()), (pkg == nil || o.Exported())
+		return "_llgo_" + FullName(pkg, NamedName(t)), (pkg == nil || o.Exported())
 	case *types.Interface:
 		if t.Empty() {
 			return "_llgo_any", true
@@ -192,6 +192,26 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	}
 	log.Panicf("todo: %T\n", t)
 	return
+}
+
+func NamedName(t *types.Named) string {
+	if targs := t.TypeArgs(); targs != nil {
+		n := targs.Len()
+		infos := make([]string, n)
+		for i := 0; i < n; i++ {
+			infos[i] = types.TypeString(targs.At(i), PathOf)
+		}
+		return t.Obj().Name() + "[" + strings.Join(infos, ",") + "]"
+	}
+	return t.Obj().Name()
+}
+
+func TypeArgs(typeArgs []types.Type) string {
+	targs := make([]string, len(typeArgs))
+	for i, t := range typeArgs {
+		targs[i] = types.TypeString(t, PathOf)
+	}
+	return "[" + strings.Join(targs, ",") + "]"
 }
 
 const (
