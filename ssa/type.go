@@ -545,9 +545,9 @@ func FuncName(pkg *types.Package, name string, recv *types.Var) string {
 		var tName string
 		t := recv.Type()
 		if tp, ok := t.(*types.Pointer); ok {
-			tName = "(*" + tp.Elem().(*types.Named).Obj().Name() + ")"
+			tName = "(*" + abi.NamedName(tp.Elem().(*types.Named)) + ")"
 		} else {
-			tName = t.(*types.Named).Obj().Name()
+			tName = abi.NamedName(t.(*types.Named))
 		}
 		return PathOf(pkg) + "." + tName + "." + name
 	}
@@ -556,6 +556,10 @@ func FuncName(pkg *types.Package, name string, recv *types.Var) string {
 		ret = "main"
 	}
 	return ret
+}
+
+func TypeArgs(typeArgs []types.Type) string {
+	return abi.TypeArgs(typeArgs)
 }
 
 // -----------------------------------------------------------------------------

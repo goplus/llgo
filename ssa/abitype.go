@@ -230,7 +230,8 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 		pkg := b.Pkg
 		prog := b.Prog
 		path := abi.PathOf(t.Obj().Pkg())
-		name := t.Obj().Name()
+		name := abi.NamedName(t)
+		//targs := abi.NamedTypeArgs(t)
 		var initNamed = pkg.rtFunc("InitNamed")
 		var tSlice = lastParamType(prog, initNamed)
 		mset := typeutil.IntuitiveMethodSet(t, nil)
