@@ -86,6 +86,7 @@ const (
 func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 	b = p.NewBuilder()
 	next = b.setBlockMoveLast(p.blks[0])
+	p.blks[0].last = next.last
 	return
 }
 
