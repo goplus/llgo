@@ -605,6 +605,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		ret = b.Select(states, v.Blocking)
+	case *ssa.SliceToArrayPointer:
+		t := b.Prog.Type(v.Type(), llssa.InGo)
+		x := p.compileValue(b, v.X)
+		ret = b.SliceToArrayPointer(x, t)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}

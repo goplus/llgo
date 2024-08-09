@@ -1030,6 +1030,34 @@ func (b Builder) compareSelect(op token.Token, x Expr, y ...Expr) Expr {
 	return ret
 }
 
+// The SliceToArrayPointer instruction yields the conversion of slice X to
+// array pointer.
+//
+// Pos() returns the ast.CallExpr.Lparen, if the instruction arose
+// from an explicit conversion in the source.
+//
+// Conversion may to be to or from a type parameter. All types in
+// the type set of X.Type() must be a slice types that can be converted to
+// all types in the type set of Type() which must all be pointer to array
+// types.
+//
+// This operation can fail dynamically if the length of the slice is less
+// than the length of the array.
+//
+// Example printed form:
+//
+//	t1 = slice to array pointer *[4]byte <- []byte (t0)
+func (b Builder) SliceToArrayPointer(x Expr, typ Type) (ret Expr) {
+	ret.Type = typ
+	max := b.Prog.IntVal(uint64(typ.RawType().Underlying().(*types.Pointer).Elem().Underlying().(*types.Array).Len()), b.Prog.Int())
+	failed := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, b.SliceLen(x).impl, max.impl), b.Prog.Bool()}
+	b.IfThen(failed, func() {
+		b.InlineCall(b.Pkg.rtFunc("PanicSliceConvert"), b.SliceLen(x), max)
+	})
+	ret.impl = b.SliceData(x).impl
+	return
+}
+
 // A Builtin represents a specific use of a built-in function, e.g. len.
 //
 // Builtins are immutable values.  Builtins do not have addresses.
