@@ -47,11 +47,18 @@ type PPD interface { // preprocessing directive
 type TypeKind uint
 
 const (
-	Int TypeKind = iota
-	Char
-	Float
-	Complex
+	Void TypeKind = iota
+	NullPtr
 	Bool
+	Char
+	Char16
+	Char32
+	WChar
+	Int
+	Int128
+	Float
+	Float16
+	Float128
 )
 
 type TypeFlag uint
