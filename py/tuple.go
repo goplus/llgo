@@ -32,8 +32,22 @@ func NewTuple(len uintptr) *Object
 // llgo:link (*Object).TupleLen C.PyTuple_Size
 func (t *Object) TupleLen() uintptr { return 0 }
 
-// Return the object at position pos in the tuple pointed to by p. If pos is
+// Return the object at position pos in the tuple pointed to t. If pos is
 // negative or out of bounds, return nil and set an IndexError exception.
 //
 // llgo:link (*Object).TupleItem C.PyTuple_GetItem
 func (t *Object) TupleItem(index uintptr) *Object { return nil }
+
+// Insert a reference to object o at position pos of the tuple pointed to by t.
+// Return 0 on success. If pos is out of bounds, return -1 and set an
+// IndexError exception.
+//
+// llgo:link (*Object).TupleSetItem C.PyTuple_SetItem
+func (t *Object) TupleSetItem(index int, o *Object) int { return 0 }
+
+// Return the slice of the tuple pointed to by t between low and high,
+// or NULL on failure. This is the equivalent of the Python expression
+// p[low:high]. Indexing from the end of the tuple is not supported.
+//
+// llgo:link (*Object).TupleSlice C.PyTuple_GetSlice
+func (l *Object) TupleSlice(low, high int) *Object { return nil }
