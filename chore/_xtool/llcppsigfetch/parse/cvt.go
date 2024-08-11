@@ -11,9 +11,9 @@ import (
 )
 
 type Converter struct {
-	files   map[string]*ast.File
-	typeMap map[clang.Type]ast.Expr // todo(zzy):maybe a other map key for typemap is better
-	declMap map[clang.Cursor]ast.Decl
+	files map[string]*ast.File
+	// typeMap map[clang.Type]ast.Expr // todo(zzy):cache type
+	// declMap map[clang.Cursor]ast.Decl
 	curLoc  ast.Location
 	curFile *ast.File
 	index   *clang.Index
@@ -39,11 +39,11 @@ func NewConverter(filepath string) (*Converter, error) {
 	}
 
 	return &Converter{
-		typeMap: make(map[clang.Type]ast.Expr),
-		declMap: make(map[clang.Cursor]ast.Decl),
-		files:   make(map[string]*ast.File),
-		index:   index,
-		unit:    unit,
+		// typeMap: make(map[clang.Type]ast.Expr),
+		// declMap: make(map[clang.Cursor]ast.Decl),
+		files: make(map[string]*ast.File),
+		index: index,
+		unit:  unit,
 	}, nil
 }
 
@@ -54,8 +54,9 @@ func (ct *Converter) Dispose() {
 
 // visit top decls (struct,class,function,enum & marco,include)
 func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	// todo(zzy): set current file
 	ct := (*Converter)(clientData)
+	ct.UpdateCurFile(cursor)
+
 	switch cursor.Kind {
 	case clang.CursorInclusionDirective:
 		fmt.Println("todo: Process include")
@@ -81,11 +82,47 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 	}
 }
 
-func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
-	// todo(zzy):a other map key for typemap
-	if cache, ok := ct.typeMap[t]; ok {
-		return cache
+func (ct *Converter) Convert() (map[string]*ast.File, error) {
+	cursor := ct.unit.Cursor()
+	// visit top decls (struct,class,function & marco,include)
+	clang.VisitChildren(cursor, visit, c.Pointer(ct))
+	return nil, nil
+}
+
+func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
+	loc := cursor.Location()
+	var file clang.File
+	loc.SpellingLocation(&file, nil, nil, nil)
+	filename := file.FileName()
+	defer filename.Dispose()
+
+	if filename.CStr() == nil {
+		// For some built-in macros, there is no file.
+		println("todo: filename is empty")
+		return
 	}
+
+	filePath := c.GoString(filename.CStr())
+	if ct.curFile == nil || ct.curFile.Path != filePath {
+		if f, ok := ct.files[filePath]; ok {
+			ct.curFile = f
+		} else {
+			ct.curFile = &ast.File{
+				Path:     filePath,
+				Decls:    make([]ast.Decl, 0),
+				Includes: make([]*ast.Include, 0),
+				Macros:   make([]*ast.Macro, 0),
+			}
+		}
+		ct.files[filePath] = ct.curFile
+	}
+}
+
+func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
+	// todo(zzy):cache type
+	// if cache, ok := ct.typeMap[t]; ok {
+	// 	return cache
+	// }
 	var expr ast.Expr
 	switch t.Kind {
 	case clang.TypePointer:
@@ -107,47 +144,27 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		}
 		// todo(zzy):array length
 	}
-	ct.typeMap[t] = expr
+	// ct.typeMap[t] = expr
 	return expr
 }
 
 func (ct *Converter) ProcessFunc(cursor clang.Cursor) {
 	name := cursor.String()
 	defer name.Dispose()
-
 	funcType, ok := ct.ProcessType(cursor.Type()).(*ast.FuncType)
 	if !ok {
 		fmt.Println("failed to process function type")
 		return
 	}
-
 	fn := &ast.FuncDecl{
 		Name: &ast.Ident{Name: c.GoString(name.CStr())},
 		Type: funcType,
 		// todo(zzy):DeclBase use the converter's current namespace expr
 	}
-
-	decls := ct.GetCurFile()
-	decls.Decls = append(decls.Decls, fn)
-
-	ct.declMap[cursor] = fn
+	ct.curFile.Decls = append(ct.curFile.Decls, fn)
+	// ct.declMap[cursor] = fn
 }
 
 func (ct *Converter) ProcessClass(cursor clang.Cursor) {
 	println("todo: Process class")
-}
-
-func (ct *Converter) Convert() (map[string]*ast.File, error) {
-	cursor := ct.unit.Cursor()
-	// visit top decls (struct,class,function & marco,include)
-	clang.VisitChildren(cursor, visit, c.Pointer(ct))
-	return nil, nil
-}
-
-func (ct *Converter) UpdateLocation(loc ast.Location) {
-	ct.curLoc = loc
-}
-
-func (ct *Converter) GetCurFile() *ast.File {
-	return ct.curFile
 }
