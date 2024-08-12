@@ -30,32 +30,32 @@ func List(__llgo_va_list ...any) *Object
 // Return a new list of length len on success, or nil on failure.
 //
 //go:linkname NewList C.PyList_New
-func NewList(len uintptr) *Object
+func NewList(len int) *Object
 
 // Return the length of the list object in list; this is equivalent to len(list)
 // on a list object.
 //
 // llgo:link (*Object).ListLen C.PyList_Size
-func (l *Object) ListLen() uintptr { return 0 }
+func (l *Object) ListLen() int { return 0 }
 
 // Return the object at position index in the list pointed to by list. The position
 // must be non-negative; indexing from the end of the list is not supported. If index
 // is out of bounds (<0 or >=len(list)), return nil and set an IndexError exception.
 //
 // llgo:link (*Object).ListItem C.PyList_GetItem
-func (l *Object) ListItem(index uintptr) *Object { return nil }
+func (l *Object) ListItem(index int) *Object { return nil }
 
 // Set the item at index index in list to item. Return 0 on success. If index is out
 // of bounds, return -1 and set an IndexError exception.
 //
 // llgo:link (*Object).ListSetItem C.PyList_SetItem
-func (l *Object) ListSetItem(index uintptr, item *Object) c.Int { return 0 }
+func (l *Object) ListSetItem(index int, item *Object) c.Int { return 0 }
 
 // Insert the item item into list list in front of index index. Return 0 if successful;
 // return -1 and set an exception if unsuccessful. Analogous to list.insert(index, item).
 //
 // llgo:link (*Object).ListInsert C.PyList_Insert
-func (l *Object) ListInsert(index uintptr, item *Object) c.Int { return 0 }
+func (l *Object) ListInsert(index int, item *Object) c.Int { return 0 }
 
 // Append the object item at the end of list list. Return 0 if successful; return -1
 // and set an exception if unsuccessful. Analogous to list.append(item).
@@ -68,7 +68,7 @@ func (l *Object) ListAppend(item *Object) c.Int { return 0 }
 // Indexing from the end of the list is not supported.
 //
 // llgo:link (*Object).ListSlice C.PyList_GetSlice
-func (l *Object) ListSlice(low, high uintptr) *Object { return nil }
+func (l *Object) ListSlice(low, high int) *Object { return nil }
 
 // Set the slice of list between low and high to the contents of itemlist. Analogous
 // to list[low:high] = itemlist. The itemlist may be NULL, indicating the assignment
@@ -76,7 +76,7 @@ func (l *Object) ListSlice(low, high uintptr) *Object { return nil }
 // from the end of the list is not supported.
 //
 // llgo:link (*Object).ListSetSlice C.PyList_SetSlice
-func (l *Object) ListSetSlice(low, high uintptr, itemlist *Object) c.Int { return 0 }
+func (l *Object) ListSetSlice(low, high int, itemlist *Object) c.Int { return 0 }
 
 // Sort the items of list in place. Return 0 on success, -1 on failure. This is equivalent
 // to list.sort().

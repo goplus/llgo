@@ -58,6 +58,6 @@ func (d *Object) DictGetItem(key *Object) *Object { return nil }
 // Return the number of items in the dictionary.
 //
 // llgo:link (*Object).DictSize C.PyDict_Size
-func (d *Object) DictSize() uintptr { return 0 }
+func (d *Object) DictSize() int { return 0 }
 
 // -----------------------------------------------------------------------------
