@@ -1,0 +1,30 @@
+#stdout
+{
+	"Files":	{
+		"temp.h":	{
+			"Path":	"temp.h",
+			"decls":	[{
+					"Name":	"foo",
+					"Type":	{
+						"Params":	[{
+								"Kind":	6,
+								"Flags":	0
+							}, {
+								"Kind":	6,
+								"Flags":	0
+							}],
+						"Ret":	{
+							"Kind":	6,
+							"Flags":	0
+						}
+					}
+				}],
+			"includes":	[],
+			"macros":	[]
+		}
+	}
+}
+
+#stderr
+
+#exit 0
