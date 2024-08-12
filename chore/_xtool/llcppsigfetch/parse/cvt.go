@@ -22,19 +22,38 @@ type Converter struct {
 	// todo(zzy):current namespace expr
 }
 
-func NewConverter(filepath string) (*Converter, error) {
+func NewConverter(file string, temp bool) (*Converter, error) {
 	args := []*c.Char{
 		c.Str("-x"),
 		c.Str("c++"),
 		c.Str("-std=c++11"),
 	}
 	index := clang.CreateIndex(0, 0)
-	unit := index.ParseTranslationUnit(
-		c.AllocaCStr(filepath),
-		unsafe.SliceData(args), 3,
-		nil, 0,
-		clang.DetailedPreprocessingRecord,
-	)
+
+	var unit *clang.TranslationUnit
+
+	if temp {
+		content := c.AllocaCStr(file)
+		tempFile := &clang.UnsavedFile{
+			Filename: c.Str("temp.h"),
+			Contents: content,
+			Length:   c.Ulong(c.Strlen(content)),
+		}
+		unit = index.ParseTranslationUnit(
+			tempFile.Filename,
+			unsafe.SliceData(args), c.Int(len(args)),
+			tempFile, 1,
+			clang.DetailedPreprocessingRecord,
+		)
+	} else {
+		unit = index.ParseTranslationUnit(
+			c.AllocaCStr(file),
+			unsafe.SliceData(args), c.Int(len(args)),
+			nil, 0,
+			clang.DetailedPreprocessingRecord,
+		)
+	}
+
 	if unit == nil {
 		return nil, errors.New("failed to parse translation unit")
 	}
@@ -87,7 +106,7 @@ func (ct *Converter) Convert() (map[string]*ast.File, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & marco,include)
 	clang.VisitChildren(cursor, visit, c.Pointer(ct))
-	return nil, nil
+	return ct.files, nil
 }
 
 func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
