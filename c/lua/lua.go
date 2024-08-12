@@ -152,7 +152,10 @@ func (L *State) Newthread() *State { return nil }
 
 // int        (lua_closethread) (State *L, State *from);
 // int        (lua_resetthread) (State *L);  /* Deprecated! */
-// lua_CFunction (lua_atpanic) (State *L, lua_CFunction panicf);
+
+// llgo:link (*State).Atpanic C.lua_atpanic
+func (L *State) Atpanic(panicf CFunction) CFunction { return nil }
+
 // lua_Number (lua_version) (State *L);
 
 // /*
@@ -389,7 +392,8 @@ const (
 // llgo:link (*State).Next C.lua_next
 func (L *State) Next(idx c.Int) c.Int { return 0 }
 
-// LUA_API int   (lua_error) (State *L);
+// llgo:link (*State).Error C.lua_error
+func (L *State) Error() c.Int { return 0 }
 
 // LUA_API void  (lua_concat) (State *L, int n);
 // LUA_API void  (lua_len)    (State *L, int idx);
