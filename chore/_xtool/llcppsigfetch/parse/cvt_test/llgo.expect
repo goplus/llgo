@@ -1,0 +1,30 @@
+#stdout
+Void:flags:0 kind:0
+Bool:flags:0 kind:1
+Char_S:flags:1 kind:2
+Char_U:flags:2 kind:2
+Char16:flags:0 kind:3
+Char32:flags:0 kind:4
+WChar:flags:0 kind:5
+Short:flags:32 kind:6
+UShort:flags:34 kind:6
+Int:flags:0 kind:6
+UInt:flags:2 kind:6
+Long:flags:4 kind:6
+ULong:flags:6 kind:6
+LongLong:flags:8 kind:6
+ULongLong:flags:10 kind:6
+Int128:flags:0 kind:7
+UInt128:flags:2 kind:7
+Float:flags:0 kind:8
+Half:flags:0 kind:9
+Float16:flags:0 kind:9
+Double:flags:16 kind:8
+LongDouble:flags:20 kind:8
+Float128:flags:0 kind:10
+Unknown:flags:0 kind:0
+
+#stderr
+todo: unknown builtin type: Ibm128
+
+#exit 0
