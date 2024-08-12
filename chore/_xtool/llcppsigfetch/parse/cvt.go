@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
@@ -131,8 +132,7 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 	defer filename.Dispose()
 
 	if filename.CStr() == nil {
-		// For some built-in macros, there is no file.
-		println("todo: filename is empty")
+		//todo(zzy): For some built-in macros, there is no file.
 		return
 	}
 
@@ -270,4 +270,66 @@ func (ct *Converter) UpdateLocation(loc ast.Location) {
 
 func (ct *Converter) GetCurFile() *ast.File {
 	return ct.curFile
+}
+
+func (ct *Converter) GetFilesJSON() *cjson.JSON {
+	root := cjson.Object()
+
+	Files := cjson.Object()
+	root.SetItem(c.Str("Files"), Files)
+
+	for _, file := range ct.files {
+		f := cjson.Object()
+		f.SetItem(c.Str("Path"), cjson.String(c.AllocaCStr(file.Path)))
+		ct.FileJSON(file, f)
+		Files.SetItem(c.AllocaCStr(file.Path), f)
+	}
+	return root
+}
+
+func (ct *Converter) FileJSON(file *ast.File, root *cjson.JSON) {
+	decls := cjson.Array()
+	includes := cjson.Array()
+	macros := cjson.Array()
+
+	for _, decl := range file.Decls {
+		ct.DeclJSON(decl, decls)
+	}
+
+	root.SetItem(c.Str("decls"), decls)
+	root.SetItem(c.Str("includes"), includes)
+	root.SetItem(c.Str("macros"), macros)
+}
+
+func (ct *Converter) DeclJSON(decl ast.Decl, root *cjson.JSON) {
+	switch d := decl.(type) {
+	case *ast.FuncDecl:
+		fn := cjson.Object()
+		fntype := cjson.Object()
+		fn.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(d.Name.Name)))
+		ct.TypeJSON(d.Type, fntype)
+		fn.SetItem(c.Str("Type"), fntype)
+		root.AddItem(fn)
+	}
+}
+func (ct *Converter) TypeJSON(t ast.Expr, root *cjson.JSON) {
+
+	switch d := t.(type) {
+	case *ast.FuncType:
+		params := cjson.Array()
+
+		for _, p := range d.Params.List {
+			param := cjson.Object()
+			ct.TypeJSON(p.Type, param)
+			params.AddItem(param)
+		}
+
+		root.SetItem(c.Str("Params"), params)
+		ret := cjson.Object()
+		ct.TypeJSON(d.Ret, ret)
+		root.SetItem(c.Str("Ret"), ret)
+	case *ast.BuiltinType:
+		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
+		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
+	}
 }
