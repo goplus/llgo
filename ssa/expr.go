@@ -238,6 +238,10 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 			re, _ := constant.Float64Val(constant.Real(v))
 			im, _ := constant.Float64Val(constant.Imag(v))
 			return prog.ComplexVal(complex(re, im), typ)
+		case kind == types.UnsafePointer:
+			if v, exact := constant.Uint64Val(v); exact {
+				return Expr{llvm.ConstIntToPtr(llvm.ConstInt(prog.Uintptr().ll, v, false), typ.ll), typ}
+			}
 		}
 	}
 	panic(fmt.Sprintf("unsupported Const: %v, %v", v, raw))
