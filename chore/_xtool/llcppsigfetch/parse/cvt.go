@@ -3,6 +3,7 @@ package parse
 import (
 	"errors"
 	"fmt"
+	"os"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -124,6 +125,9 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 	// 	return cache
 	// }
 	var expr ast.Expr
+	if t.Kind >= clang.TypeFirstBuiltin && t.Kind <= clang.TypeLastBuiltin {
+		return ct.ProcessBuiltinType(t)
+	}
 	switch t.Kind {
 	case clang.TypePointer:
 		expr = &ast.PointerType{X: ct.ProcessType(t.PointeeType())}
@@ -167,4 +171,73 @@ func (ct *Converter) ProcessFunc(cursor clang.Cursor) {
 
 func (ct *Converter) ProcessClass(cursor clang.Cursor) {
 	println("todo: Process class")
+}
+
+func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
+	kind := ast.Void
+	var flags ast.TypeFlag
+
+	switch t.Kind {
+	case clang.TypeVoid:
+		kind = ast.Void
+	case clang.TypeBool:
+		kind = ast.Bool
+	case clang.TypeCharU, clang.TypeUChar, clang.TypeCharS, clang.TypeSChar:
+		kind = ast.Char
+	case clang.TypeChar16:
+		kind = ast.Char16
+	case clang.TypeChar32:
+		kind = ast.Char32
+	case clang.TypeWChar:
+		kind = ast.WChar
+	case clang.TypeShort, clang.TypeUShort:
+		kind = ast.Int
+		flags |= ast.Short
+	case clang.TypeInt, clang.TypeUInt:
+		kind = ast.Int
+	case clang.TypeLong, clang.TypeULong:
+		kind = ast.Int
+		flags |= ast.Long
+	case clang.TypeLongLong, clang.TypeULongLong:
+		kind = ast.Int
+		flags |= ast.LongLong
+	case clang.TypeInt128, clang.TypeUInt128:
+		kind = ast.Int128
+	case clang.TypeFloat:
+		kind = ast.Float
+	case clang.TypeHalf, clang.TypeFloat16:
+		kind = ast.Float16
+	case clang.TypeDouble:
+		kind = ast.Float
+		flags |= ast.Double
+	case clang.TypeLongDouble:
+		kind = ast.Float
+		flags |= ast.Long | ast.Double
+	case clang.TypeFloat128:
+		kind = ast.Float128
+	default:
+		// like IBM128,NullPtr,Accum
+		fmt.Fprintln(os.Stderr, "todo: unknown builtin type:", c.GoString(t.Kind.String().CStr()))
+	}
+
+	if IsExplicitSigned(t) {
+		flags |= ast.Signed
+	} else if IsExplicitUnsigned(t) {
+		flags |= ast.Unsigned
+	}
+
+	return &ast.BuiltinType{
+		Kind:  kind,
+		Flags: flags,
+	}
+}
+func IsExplicitSigned(t clang.Type) bool {
+	return t.Kind == clang.TypeCharS || t.Kind == clang.TypeSChar
+}
+
+func IsExplicitUnsigned(t clang.Type) bool {
+	return t.Kind == clang.TypeCharU || t.Kind == clang.TypeUChar ||
+		t.Kind == clang.TypeUShort || t.Kind == clang.TypeUInt ||
+		t.Kind == clang.TypeULong || t.Kind == clang.TypeULongLong ||
+		t.Kind == clang.TypeUInt128
 }
