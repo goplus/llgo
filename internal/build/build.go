@@ -64,11 +64,12 @@ func needLLFile(mode Mode) bool {
 }
 
 type Config struct {
-	BinPath string
-	AppExt  string   // ".exe" on Windows, empty on Unix
-	OutFile string   // only valid for ModeBuild when len(pkgs) == 1
-	RunArgs []string // only valid for ModeRun
-	Mode    Mode
+	BinPath   string
+	AppExt    string   // ".exe" on Windows, empty on Unix
+	OutFile   string   // only valid for ModeBuild when len(pkgs) == 1
+	RunArgs   []string // only valid for ModeRun
+	GenExpect bool     // only valid for ModeCmpTest
+	Mode      Mode
 }
 
 func NewDefaultConf(mode Mode) *Config {
@@ -462,7 +463,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 			os.Exit(s.ExitCode())
 		}
 	case ModeCmpTest:
-		cmpTest("", pkgPath, app, conf.RunArgs)
+		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
 	return
 }
