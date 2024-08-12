@@ -21,7 +21,7 @@ type Converter struct {
 	// todo(zzy):current namespace expr
 }
 
-func NewConverter(filepath string) (*Converter, error) {
+func NewConverter(file string, temp bool) (*Converter, error) {
 	args := []*c.Char{
 		c.Str("-x"),
 		c.Str("c++"),
@@ -120,7 +120,7 @@ func (ct *Converter) Convert() (map[string]*ast.File, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & marco,include)
 	clang.VisitChildren(cursor, visit, c.Pointer(ct))
-	return nil, nil
+	return ct.files, nil
 }
 
 func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
