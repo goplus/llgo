@@ -7,15 +7,12 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type Converter struct {
-	files map[string]*ast.File
-	// typeMap map[clang.Type]ast.Expr // todo(zzy):cache type
-	// declMap map[clang.Cursor]ast.Decl
+	files   map[string]*ast.File
 	curLoc  ast.Location
 	curFile *ast.File
 	index   *clang.Index
@@ -60,8 +57,6 @@ func NewConverter(file string, temp bool) (*Converter, error) {
 	}
 
 	return &Converter{
-		// typeMap: make(map[clang.Type]ast.Expr),
-		// declMap: make(map[clang.Cursor]ast.Decl),
 		files: make(map[string]*ast.File),
 		index: index,
 		unit:  unit,
@@ -139,10 +134,6 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
-	// todo(zzy):cache type
-	// if cache, ok := ct.typeMap[t]; ok {
-	// 	return cache
-	// }
 	var expr ast.Expr
 	if t.Kind >= clang.TypeFirstBuiltin && t.Kind <= clang.TypeLastBuiltin {
 		return ct.ProcessBuiltinType(t)
@@ -167,7 +158,6 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		}
 		// todo(zzy):array length
 	}
-	// ct.typeMap[t] = expr
 	return expr
 }
 
@@ -259,66 +249,4 @@ func IsExplicitUnsigned(t clang.Type) bool {
 		t.Kind == clang.TypeUShort || t.Kind == clang.TypeUInt ||
 		t.Kind == clang.TypeULong || t.Kind == clang.TypeULongLong ||
 		t.Kind == clang.TypeUInt128
-}
-
-func (ct *Converter) GetFilesJSON() *cjson.JSON {
-	root := cjson.Object()
-
-	Files := cjson.Object()
-	root.SetItem(c.Str("Files"), Files)
-
-	for _, file := range ct.files {
-		f := cjson.Object()
-		f.SetItem(c.Str("Path"), cjson.String(c.AllocaCStr(file.Path)))
-		ct.FileJSON(file, f)
-		Files.SetItem(c.AllocaCStr(file.Path), f)
-	}
-	return root
-}
-
-func (ct *Converter) FileJSON(file *ast.File, root *cjson.JSON) {
-	decls := cjson.Array()
-	includes := cjson.Array()
-	macros := cjson.Array()
-
-	for _, decl := range file.Decls {
-		ct.DeclJSON(decl, decls)
-	}
-
-	root.SetItem(c.Str("decls"), decls)
-	root.SetItem(c.Str("includes"), includes)
-	root.SetItem(c.Str("macros"), macros)
-}
-
-func (ct *Converter) DeclJSON(decl ast.Decl, root *cjson.JSON) {
-	switch d := decl.(type) {
-	case *ast.FuncDecl:
-		fn := cjson.Object()
-		fntype := cjson.Object()
-		fn.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(d.Name.Name)))
-		ct.TypeJSON(d.Type, fntype)
-		fn.SetItem(c.Str("Type"), fntype)
-		root.AddItem(fn)
-	}
-}
-func (ct *Converter) TypeJSON(t ast.Expr, root *cjson.JSON) {
-
-	switch d := t.(type) {
-	case *ast.FuncType:
-		params := cjson.Array()
-
-		for _, p := range d.Params.List {
-			param := cjson.Object()
-			ct.TypeJSON(p.Type, param)
-			params.AddItem(param)
-		}
-
-		root.SetItem(c.Str("Params"), params)
-		ret := cjson.Object()
-		ct.TypeJSON(d.Ret, ret)
-		root.SetItem(c.Str("Ret"), ret)
-	case *ast.BuiltinType:
-		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
-		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
-	}
 }
