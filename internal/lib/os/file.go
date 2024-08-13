@@ -286,7 +286,6 @@ func (f *File) wrapErr(op string, err error) error {
 	return &PathError{Op: op, Path: f.name, Err: err}
 }
 
-/*
 // TempDir returns the default directory to use for temporary files.
 //
 // On Unix systems, it returns $TMPDIR if non-empty, else /tmp.
@@ -299,7 +298,6 @@ func (f *File) wrapErr(op string, err error) error {
 func TempDir() string {
 	return tempDir()
 }
-*/
 
 // Chmod changes the mode of the file to mode.
 // If there is an error, it will be of type *PathError.

@@ -272,7 +272,6 @@ func Mkdir(name string, perm FileMode) error {
 
 // TODO(xsw):
 // func MkdirAll(path string, perm FileMode) error
-// func MkdirTemp(dir, pattern string) (string, error)
 // func NewSyscallError(syscall string, err error) error
 
 // func ReadFile(name string) ([]byte, error)
@@ -326,9 +325,6 @@ func Symlink(oldname, newname string) error {
 	}
 	return &LinkError{"symlink", oldname, newname, syscall.Errno(ret)}
 }
-
-// TODO(xsw):
-// func TempDir() string
 
 func Truncate(name string, size int64) error {
 	ret := os.Truncate(c.AllocaCStr(name), os.OffT(size))
