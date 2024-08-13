@@ -142,14 +142,9 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 	case clang.TypePointer:
 		expr = &ast.PointerType{X: ct.ProcessType(t.PointeeType())}
 	case clang.TypeFunctionProto:
+		// function type will only collect return type, params will be collected in ProcessFunc
 		ret := ct.ProcessType(t.ResultType())
-		params := &ast.FieldList{}
-		for i := 0; i < int(t.NumArgTypes()); i++ {
-			argType := ct.ProcessType(t.ArgType(c.Uint(i)))
-			params.List = append(params.List, &ast.Field{Type: argType})
-			// todo(zzy):field name
-		}
-		expr = &ast.FuncType{Params: params, Ret: ret}
+		expr = &ast.FuncType{Ret: ret}
 	case clang.TypeTypedef:
 		expr = ct.ProcessType(t.CanonicalType())
 	case clang.TypeConstantArray, clang.TypeVariableArray, clang.TypeIncompleteArray, clang.TypeDependentSizedArray:
@@ -164,11 +159,16 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 func (ct *Converter) ProcessFunc(cursor clang.Cursor) {
 	name := cursor.String()
 	defer name.Dispose()
+
+	// function type will only collect return type
+	// ProcessType can't get the field names,will collect in follows
 	funcType, ok := ct.ProcessType(cursor.Type()).(*ast.FuncType)
 	if !ok {
 		fmt.Println("failed to process function type")
 		return
 	}
+	params := ct.ProcessFuncParams(cursor)
+	funcType.Params = params
 	fn := &ast.FuncDecl{
 		Name: &ast.Ident{Name: c.GoString(name.CStr())},
 		Type: funcType,
@@ -176,6 +176,42 @@ func (ct *Converter) ProcessFunc(cursor clang.Cursor) {
 	}
 	ct.curFile.Decls = append(ct.curFile.Decls, fn)
 	// ct.declMap[cursor] = fn
+}
+
+type visitParamContext struct {
+	params    *ast.FieldList
+	converter *Converter
+}
+
+// visit top decls (struct,class,function,enum & marco,include)
+func visitParamDecl(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+	ctx := (*visitParamContext)(clientData)
+	if cursor.Kind == clang.CursorParmDecl {
+		paramName := cursor.String()
+		defer paramName.Dispose()
+		argType := ctx.converter.ProcessType(cursor.Type())
+
+		// In C language, parameter lists do not have similar parameter grouping in Go.
+		// func foo(a, b int)
+		ctx.params.List = append(ctx.params.List,
+			&ast.Field{
+				Type: argType,
+				Names: []*ast.Ident{
+					{Name: c.GoString(paramName.CStr())},
+				},
+			})
+	}
+	return clang.ChildVisit_Continue
+}
+
+func (ct *Converter) ProcessFuncParams(cursor clang.Cursor) *ast.FieldList {
+	params := &ast.FieldList{List: []*ast.Field{}}
+	ctx := &visitParamContext{
+		params:    params,
+		converter: ct,
+	}
+	clang.VisitChildren(cursor, visitParamDecl, c.Pointer(ctx))
+	return params
 }
 
 func (ct *Converter) ProcessClass(cursor clang.Cursor) {
