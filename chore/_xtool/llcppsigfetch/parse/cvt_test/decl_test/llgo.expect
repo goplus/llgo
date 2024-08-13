@@ -1,29 +1,264 @@
 #stdout
+Test Case 1:
 {
-	"Files":	{
-		"temp.h":	{
-			"Path":	"temp.h",
-			"decls":	[{
-					"Name":	"foo",
-					"Type":	{
-						"Params":	[{
-								"Kind":	6,
-								"Flags":	0
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+Test Case 2:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+Test Case 3:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"a"
+									}]
 							}, {
-								"Kind":	6,
-								"Flags":	0
-							}],
-						"Ret":	{
-							"Kind":	6,
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	8,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+Test Case 4:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"X":	{
+										"Kind":	2,
+										"Flags":	1
+									}
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+Test Case 5:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"X":	{
+										"Kind":	2,
+										"Flags":	1
+									}
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
 							"Flags":	0
 						}
 					}
-				}],
-			"includes":	[],
-			"macros":	[]
-		}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
 	}
 }
+
+Test Case 6:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"X":	{
+										"X":	{
+											"X":	{
+												"Kind":	2,
+												"Flags":	1
+											}
+										}
+									}
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
