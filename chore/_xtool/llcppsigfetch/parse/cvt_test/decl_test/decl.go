@@ -10,17 +10,30 @@ func main() {
 }
 
 func TestFuncDecl() {
-	content := `int foo(int a, int b);`
-	converter, err := parse.NewConverter(content, true)
-	if err != nil {
-		panic(err)
+	testCases := []string{
+		`void foo();`,
+		`void foo(int a);`,
+		`float foo(int a,double b);`,
+
+		`void foo(char* str, double x);`,
+		`float* foo(char* str, double x);`,
+		`float* foo(char*** str, double x);`,
 	}
 
-	defer converter.Dispose()
-	converter.Convert()
-	if err != nil {
-		panic(err)
+	for i, content := range testCases {
+		converter, err := parse.NewConverter(content, true)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = converter.Convert()
+		if err != nil {
+			panic(err)
+		}
+
+		json := converter.GetFilesJSON()
+		c.Printf(c.Str("Test Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+
+		converter.Dispose()
 	}
-	json := converter.GetFilesJSON()
-	c.Printf(c.Str("%s\n"), json.Print())
 }
