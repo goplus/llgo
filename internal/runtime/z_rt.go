@@ -21,6 +21,8 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/pthread"
+	"github.com/goplus/llgo/c/signal"
+	"github.com/goplus/llgo/c/syscall"
 )
 
 // -----------------------------------------------------------------------------
@@ -115,5 +117,17 @@ func NewArray(t *Type, n int) unsafe.Pointer {
 const MaxZero = 1024
 
 var ZeroVal [MaxZero]byte
+
+func init() {
+	signal.Signal(c.Int(syscall.SIGSEGV), func(v c.Int) {
+		switch syscall.Signal(v) {
+		case syscall.SIGSEGV:
+			panic(errorString("invalid memory address or nil pointer dereference"))
+		default:
+			var buf [20]byte
+			panic(errorString("unexpected signal value: " + string(itoa(buf[:], uint64(v)))))
+		}
+	})
+}
 
 // -----------------------------------------------------------------------------
