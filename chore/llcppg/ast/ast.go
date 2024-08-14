@@ -44,6 +44,22 @@ type PPD interface { // preprocessing directive
 // =============================================================================
 // Expressions (Types are also expressions)
 
+type BasicLitKind uint
+
+const (
+	IntLit BasicLitKind = iota
+	FloatLit
+	CharLit
+	StringLit
+)
+
+type BasicLit struct {
+	Kind  BasicLitKind
+	Value string
+}
+
+func (*BasicLit) exprNode() {}
+
 type TypeKind uint
 
 const (
