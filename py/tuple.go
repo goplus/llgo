@@ -22,6 +22,9 @@ import (
 
 // https://docs.python.org/3/c-api/tuple.html
 
+//go:linkname Tuple llgo.pyTuple
+func Tuple(__llgo_va_list ...any) *Object
+
 // Return a new tuple object of size len, or nil on failure.
 //
 //go:linkname NewTuple C.PyTuple_New

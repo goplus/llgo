@@ -162,6 +162,30 @@ func (p Program) tyNewList() *types.Signature {
 	return p.pyNewList
 }
 
+// func(*Object, uintptr, *Object) cint
+func (p Program) tyTupleSetItem() *types.Signature {
+	if p.pyTupleSetI == nil {
+		paramUintptr := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		paramObjPtr := p.paramObjPtr()
+		params := types.NewTuple(paramObjPtr, paramUintptr, paramObjPtr)
+		results := types.NewTuple(paramCInt)
+		p.pyTupleSetI = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyTupleSetI
+}
+
+// func(uintptr) *Object
+func (p Program) tyNewTuple() *types.Signature {
+	if p.pyNewTuple == nil {
+		paramUintptr := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
+		params := types.NewTuple(paramUintptr)
+		results := types.NewTuple(p.paramObjPtr())
+		p.pyNewTuple = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyNewTuple
+}
+
 // func(float64) *Object
 func (p Program) tyFloatFromDouble() *types.Signature {
 	if p.floatFromDbl == nil {
@@ -312,6 +336,32 @@ func (b Builder) PyList(args ...Expr) (ret Expr) {
 	list := b.PyNewList(prog.IntVal(uint64(n), uintPtr))
 	for i, arg := range args {
 		b.PyListSetItem(list, prog.IntVal(uint64(i), uintPtr), b.PyVal(arg))
+	}
+	return list
+}
+
+// PyNewTuple(n int) *Object
+func (b Builder) PyNewTuple(n Expr) (ret Expr) {
+	prog := b.Prog
+	fn := b.Pkg.pyFunc("PyTuple_New", prog.tyNewTuple())
+	return b.Call(fn, n)
+}
+
+// PyListSetItem(list *Object, index uintptr, item *Object) c.Int
+func (b Builder) PyTupleSetItem(list, index, item Expr) (ret Expr) {
+	prog := b.Prog
+	fn := b.Pkg.pyFunc("PyTuple_SetItem", prog.tyTupleSetItem())
+	return b.Call(fn, list, index, item)
+}
+
+// PyList(args ...Expr) *Object
+func (b Builder) PyTuple(args ...Expr) (ret Expr) {
+	prog := b.Prog
+	n := len(args)
+	uintPtr := prog.Uintptr()
+	list := b.PyNewTuple(prog.IntVal(uint64(n), uintPtr))
+	for i, arg := range args {
+		b.PyTupleSetItem(list, prog.IntVal(uint64(i), uintPtr), b.PyVal(arg))
 	}
 	return list
 }
