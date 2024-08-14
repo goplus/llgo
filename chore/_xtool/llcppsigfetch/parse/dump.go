@@ -87,8 +87,14 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Names"), names)
 	case *ast.Ident:
 		root.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(d.Name)))
+	case *ast.BasicLit:
+		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
+		root.SetItem(c.Str("Value"), cjson.String(c.AllocaCStr(d.Value)))
 	case *ast.PointerType:
 		root.SetItem(c.Str("X"), ct.TypeJSON(d.X))
+	case *ast.ArrayType:
+		root.SetItem(c.Str("Elt"), ct.TypeJSON(d.Elt))
+		root.SetItem(c.Str("Len"), ct.TypeJSON(d.Len))
 	case *ast.BuiltinType:
 		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
 		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
