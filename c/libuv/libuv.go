@@ -99,7 +99,8 @@ type Loop struct {
 }
 
 type Poll struct {
-	Unused [0]byte
+	Data   c.Pointer
+	Unused [160]byte
 }
 
 /* Request types. */

@@ -9,7 +9,7 @@ import (
 /* Handle types. */
 
 type Signal struct {
-	Unused [0]byte
+	Unused [152]byte
 }
 
 // ----------------------------------------------
