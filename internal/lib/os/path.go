@@ -2,8 +2,6 @@ package os
 
 import (
 	"syscall"
-
-	"github.com/goplus/llgo/internal/lib/internal/filepathlite"
 )
 
 // MkdirAll creates a directory named path,
@@ -24,25 +22,19 @@ func MkdirAll(path string, perm FileMode) error {
 	}
 
 	// Slow path: make sure parent exists and then call Mkdir for path.
-
-	// Extract the parent folder from path by first removing any trailing
-	// path separator and then scanning backward until finding a path
-	// separator or reaching the beginning of the string.
-	i := len(path) - 1
-	for i >= 0 && IsPathSeparator(path[i]) {
+	i := len(path)
+	for i > 0 && IsPathSeparator(path[i-1]) { // Skip trailing path separator.
 		i--
 	}
-	for i >= 0 && !IsPathSeparator(path[i]) {
-		i--
-	}
-	if i < 0 {
-		i = 0
+
+	j := i
+	for j > 0 && !IsPathSeparator(path[j-1]) { // Scan backward over element.
+		j--
 	}
 
-	// If there is a parent directory, and it is not the volume name,
-	// recurse to ensure parent directory exists.
-	if parent := path[:i]; len(parent) > len(filepathlite.VolumeName(path)) {
-		err = MkdirAll(parent, perm)
+	if j > 1 {
+		// Create parent.
+		err = MkdirAll(fixRootDirectory(path[:j-1]), perm)
 		if err != nil {
 			return err
 		}
