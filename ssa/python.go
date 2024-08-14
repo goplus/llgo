@@ -347,14 +347,14 @@ func (b Builder) PyNewTuple(n Expr) (ret Expr) {
 	return b.Call(fn, n)
 }
 
-// PyListSetItem(list *Object, index uintptr, item *Object) c.Int
+// PyTupleSetItem(list *Object, index uintptr, item *Object) c.Int
 func (b Builder) PyTupleSetItem(list, index, item Expr) (ret Expr) {
 	prog := b.Prog
 	fn := b.Pkg.pyFunc("PyTuple_SetItem", prog.tyTupleSetItem())
 	return b.Call(fn, list, index, item)
 }
 
-// PyList(args ...Expr) *Object
+// PyTuple(args ...Expr) *Object
 func (b Builder) PyTuple(args ...Expr) (ret Expr) {
 	prog := b.Prog
 	n := len(args)
