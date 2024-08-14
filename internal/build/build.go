@@ -68,8 +68,8 @@ type Config struct {
 	AppExt    string   // ".exe" on Windows, empty on Unix
 	OutFile   string   // only valid for ModeBuild when len(pkgs) == 1
 	RunArgs   []string // only valid for ModeRun
-	GenExpect bool     // only valid for ModeCmpTest
 	Mode      Mode
+	GenExpect bool // only valid for ModeCmpTest
 }
 
 func NewDefaultConf(mode Mode) *Config {
