@@ -271,7 +271,6 @@ func Mkdir(name string, perm FileMode) error {
 */
 
 // TODO(xsw):
-// func MkdirAll(path string, perm FileMode) error
 // func NewSyscallError(syscall string, err error) error
 
 // func ReadFile(name string) ([]byte, error)
