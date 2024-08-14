@@ -259,6 +259,107 @@ Test Case 6:
 	}
 }
 
+Test Case 7:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Elt":	{
+										"Kind":	2,
+										"Flags":	1
+									},
+									"Len":	null
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+Test Case 8:
+{
+	"temp.h":	{
+		"Path":	"temp.h",
+		"decls":	[{
+				"Loc":	null,
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Elt":	{
+										"Elt":	{
+											"Kind":	6,
+											"Flags":	0
+										},
+										"Len":	{
+											"Kind":	0,
+											"Value":	"4"
+										}
+									},
+									"Len":	{
+										"Kind":	0,
+										"Value":	"3"
+									}
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[{
+										"Name":	"arr"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 

@@ -18,6 +18,9 @@ func TestFuncDecl() {
 		`void foo(char* str, double x);`,
 		`float* foo(char* str, double x);`,
 		`float* foo(char*** str, double x);`,
+
+		`float* foo(char str[], double x);`,
+		`float* foo(int arr[3][4]);`,
 	}
 
 	for i, content := range testCases {
