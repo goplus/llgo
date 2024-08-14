@@ -147,11 +147,20 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		expr = &ast.FuncType{Ret: ret}
 	case clang.TypeTypedef:
 		expr = ct.ProcessType(t.CanonicalType())
-	case clang.TypeConstantArray, clang.TypeVariableArray, clang.TypeIncompleteArray, clang.TypeDependentSizedArray:
-		expr = &ast.ArrayType{
-			Elt: ct.ProcessType(t.ArrayElementType()),
+	case clang.TypeConstantArray, clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray:
+		if t.Kind == clang.TypeConstantArray {
+			valueStr := make([]c.Char, 20)
+			c.Sprintf(unsafe.SliceData(valueStr), c.Str("%d"), t.ArraySize())
+			expr = &ast.ArrayType{
+				Elt: ct.ProcessType(t.ArrayElementType()),
+				Len: &ast.BasicLit{Kind: ast.IntLit, Value: c.GoString(unsafe.SliceData(valueStr))},
+			}
+		} else if t.Kind == clang.TypeIncompleteArray {
+			// incomplete array havent len expr
+			expr = &ast.ArrayType{
+				Elt: ct.ProcessType(t.ArrayElementType()),
+			}
 		}
-		// todo(zzy):array length
 	}
 	return expr
 }
