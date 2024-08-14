@@ -58,6 +58,19 @@ _llgo_0:
   %22 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %21, ptr %20, ptr null)
   %23 = load ptr, ptr @__llgo_py.builtins.print, align 8
   %24 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %23, ptr %22, ptr null)
+  %25 = call ptr @PyTuple_New(i64 3)
+  %26 = call ptr @PyFloat_FromDouble(double 1.000000e+00)
+  %27 = call i32 @PyTuple_SetItem(ptr %25, i64 0, ptr %26)
+  %28 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
+  %29 = call i32 @PyTuple_SetItem(ptr %25, i64 1, ptr %28)
+  %30 = call ptr @PyFloat_FromDouble(double 3.000000e+00)
+  %31 = call i32 @PyTuple_SetItem(ptr %25, i64 2, ptr %30)
+  %32 = load ptr, ptr @__llgo_py.builtins.iter, align 8
+  %33 = call ptr @PyObject_CallOneArg(ptr %32, ptr %25)
+  %34 = load ptr, ptr @__llgo_py.builtins.max, align 8
+  %35 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %34, ptr %33, ptr null)
+  %36 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %37 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %36, ptr %35, ptr null)
   ret i32 0
 }
 
@@ -74,6 +87,10 @@ declare ptr @PyList_New(i64)
 declare i32 @PyList_SetItem(ptr, i64, ptr)
 
 declare ptr @PyObject_CallOneArg(ptr, ptr)
+
+declare ptr @PyTuple_New(i64)
+
+declare i32 @PyTuple_SetItem(ptr, i64, ptr)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
 

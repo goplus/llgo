@@ -12,4 +12,8 @@ func main() {
 	list := py.List(3.0, 9.0, 23.0, 100.0)
 	y := std.Max(std.Iter(list))
 	std.Print(y)
+
+	tuple := py.Tuple(1.0, 2.0, 3.0)
+	z := std.Max(std.Iter(tuple))
+	std.Print(z)
 }
