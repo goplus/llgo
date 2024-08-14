@@ -66,7 +66,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-define i64 @"main.recur1[main.T]"(i64 %0) {
+define linkonce i64 @"main.recur1[main.T]"(i64 %0) {
 _llgo_0:
   %1 = icmp eq i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -106,7 +106,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
-define i64 @"main.recur2[main.T]"(i64 %0) {
+define linkonce i64 @"main.recur2[main.T]"(i64 %0) {
 _llgo_0:
   %1 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 8)
   %2 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 1

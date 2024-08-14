@@ -5,8 +5,8 @@ source_filename = "main"
 %"main.Data[string]" = type { %"github.com/goplus/llgo/internal/runtime.String" }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
-%"main.Slice[[]int, int]" = type { %"github.com/goplus/llgo/internal/runtime.Slice" }
-%"main.Slice[[]string, string]" = type { %"github.com/goplus/llgo/internal/runtime.Slice" }
+%"main.Slice[[]int,int]" = type { %"github.com/goplus/llgo/internal/runtime.Slice" }
+%"main.Slice[[]string,string]" = type { %"github.com/goplus/llgo/internal/runtime.Slice" }
 
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -90,7 +90,7 @@ _llgo_0:
   %36 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %33, i32 0, i32 2
   store i64 1, ptr %36, align 4
   %37 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %33, align 8
-  %38 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append[[]int, int]"(ptr %30, %"github.com/goplus/llgo/internal/runtime.Slice" %37)
+  %38 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]int,int]).Append"(ptr %30, %"github.com/goplus/llgo/internal/runtime.Slice" %37)
   %39 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
   %40 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
   %41 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %40, i64 0
@@ -109,7 +109,7 @@ _llgo_0:
   %49 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %46, i32 0, i32 2
   store i64 1, ptr %49, align 4
   %50 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %46, align 8
-  %51 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append[[]string, string]"(ptr %39, %"github.com/goplus/llgo/internal/runtime.Slice" %50)
+  %51 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]string,string]).Append"(ptr %39, %"github.com/goplus/llgo/internal/runtime.Slice" %50)
   %52 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
   %53 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
   %54 = getelementptr inbounds i64, ptr %53, i64 0
@@ -128,7 +128,7 @@ _llgo_0:
   %61 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %58, i32 0, i32 2
   store i64 4, ptr %61, align 4
   %62 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %58, align 8
-  %63 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append[[]int, int]"(ptr %52, %"github.com/goplus/llgo/internal/runtime.Slice" %62)
+  %63 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]int,int]).Append"(ptr %52, %"github.com/goplus/llgo/internal/runtime.Slice" %62)
   %64 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
   %65 = getelementptr inbounds i64, ptr %64, i64 0
   store i64 1, ptr %65, align 4
@@ -146,10 +146,10 @@ _llgo_0:
   %72 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %69, i32 0, i32 2
   store i64 4, ptr %72, align 4
   %73 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %69, align 8
-  %74 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append2[[]int, int]"(ptr %52, %"github.com/goplus/llgo/internal/runtime.Slice" %73)
-  %75 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %30, i32 0, i32 0
+  %74 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]int,int]).Append2"(ptr %52, %"github.com/goplus/llgo/internal/runtime.Slice" %73)
+  %75 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %30, i32 0, i32 0
   %76 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %75, align 8
-  %77 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %30, i32 0, i32 0
+  %77 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %30, i32 0, i32 0
   %78 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %77, align 8
   %79 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %78, 0
   %80 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %78, 1
@@ -161,9 +161,9 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %83)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %84 = getelementptr inbounds %"main.Slice[[]string, string]", ptr %39, i32 0, i32 0
+  %84 = getelementptr inbounds %"main.Slice[[]string,string]", ptr %39, i32 0, i32 0
   %85 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %84, align 8
-  %86 = getelementptr inbounds %"main.Slice[[]string, string]", ptr %39, i32 0, i32 0
+  %86 = getelementptr inbounds %"main.Slice[[]string,string]", ptr %39, i32 0, i32 0
   %87 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %86, align 8
   %88 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %87, 0
   %89 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %87, 1
@@ -175,9 +175,9 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %92)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %93 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %52, i32 0, i32 0
+  %93 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %52, i32 0, i32 0
   %94 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %93, align 8
-  %95 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %52, i32 0, i32 0
+  %95 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %52, i32 0, i32 0
   %96 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %95, align 8
   %97 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %96, 0
   %98 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %96, 1
@@ -204,44 +204,44 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
-define %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append[[]int, int]"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1) {
+define linkonce %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]int,int]).Append"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1) {
 _llgo_0:
-  %2 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %0, i32 0, i32 0
   %3 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %2, align 8
   %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 0
   %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 1
   %6 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/internal/runtime.Slice" %3, ptr %4, i64 %5, i64 8)
-  %7 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %0, i32 0, i32 0
+  %7 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %0, i32 0, i32 0
   store %"github.com/goplus/llgo/internal/runtime.Slice" %6, ptr %7, align 8
-  %8 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %0, i32 0, i32 0
+  %8 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %0, i32 0, i32 0
   %9 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, align 8
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %9
 }
 
-define %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append[[]string, string]"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1) {
+define linkonce %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]string,string]).Append"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1) {
 _llgo_0:
-  %2 = getelementptr inbounds %"main.Slice[[]string, string]", ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds %"main.Slice[[]string,string]", ptr %0, i32 0, i32 0
   %3 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %2, align 8
   %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 0
   %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 1
   %6 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/internal/runtime.Slice" %3, ptr %4, i64 %5, i64 16)
-  %7 = getelementptr inbounds %"main.Slice[[]string, string]", ptr %0, i32 0, i32 0
+  %7 = getelementptr inbounds %"main.Slice[[]string,string]", ptr %0, i32 0, i32 0
   store %"github.com/goplus/llgo/internal/runtime.Slice" %6, ptr %7, align 8
-  %8 = getelementptr inbounds %"main.Slice[[]string, string]", ptr %0, i32 0, i32 0
+  %8 = getelementptr inbounds %"main.Slice[[]string,string]", ptr %0, i32 0, i32 0
   %9 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, align 8
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %9
 }
 
-define %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice).Append2[[]int, int]"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1) {
+define linkonce %"github.com/goplus/llgo/internal/runtime.Slice" @"main.(*Slice[[]int,int]).Append2"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1) {
 _llgo_0:
-  %2 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %0, i32 0, i32 0
   %3 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %2, align 8
   %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 0
   %5 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %1, 1
   %6 = call %"github.com/goplus/llgo/internal/runtime.Slice" @"github.com/goplus/llgo/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/internal/runtime.Slice" %3, ptr %4, i64 %5, i64 8)
-  %7 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %0, i32 0, i32 0
+  %7 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %0, i32 0, i32 0
   store %"github.com/goplus/llgo/internal/runtime.Slice" %6, ptr %7, align 8
-  %8 = getelementptr inbounds %"main.Slice[[]int, int]", ptr %0, i32 0, i32 0
+  %8 = getelementptr inbounds %"main.Slice[[]int,int]", ptr %0, i32 0, i32 0
   %9 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, align 8
   ret %"github.com/goplus/llgo/internal/runtime.Slice" %9
 }

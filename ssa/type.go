@@ -19,7 +19,6 @@ package ssa
 import (
 	"fmt"
 	"go/types"
-	"strings"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -515,16 +514,7 @@ func (p Program) toNamed(raw *types.Named) Type {
 
 // NameOf returns the full name of a named type.
 func NameOf(typ *types.Named) string {
-	name := abi.TypeName(typ.Obj())
-	if targs := typ.TypeArgs(); targs != nil {
-		n := targs.Len()
-		args := make([]string, n)
-		for i := 0; i < n; i++ {
-			args[i] = types.TypeString(targs.At(i), PathOf)
-		}
-		name += "[" + strings.Join(args, ", ") + "]"
-	}
-	return name
+	return abi.FullName(typ.Obj().Pkg(), abi.NamedName(typ))
 }
 
 // FullName returns the full name of a package member.
@@ -540,14 +530,22 @@ func PathOf(pkg *types.Package) string {
 // FuncName:
 // - func: pkg.name
 // - method: pkg.T.name, pkg.(*T).name
-func FuncName(pkg *types.Package, name string, recv *types.Var) string {
+func FuncName(pkg *types.Package, name string, recv *types.Var, org bool) string {
 	if recv != nil {
 		var tName string
 		t := recv.Type()
-		if tp, ok := t.(*types.Pointer); ok {
-			tName = "(*" + tp.Elem().(*types.Named).Obj().Name() + ")"
+		if org {
+			if tp, ok := t.(*types.Pointer); ok {
+				tName = "(*" + tp.Elem().(*types.Named).Obj().Name() + ")"
+			} else {
+				tName = t.(*types.Named).Obj().Name()
+			}
 		} else {
-			tName = t.(*types.Named).Obj().Name()
+			if tp, ok := t.(*types.Pointer); ok {
+				tName = "(*" + abi.NamedName(tp.Elem().(*types.Named)) + ")"
+			} else {
+				tName = abi.NamedName(t.(*types.Named))
+			}
 		}
 		return PathOf(pkg) + "." + tName + "." + name
 	}
@@ -556,6 +554,10 @@ func FuncName(pkg *types.Package, name string, recv *types.Var) string {
 		ret = "main"
 	}
 	return ret
+}
+
+func TypeArgs(typeArgs []types.Type) string {
+	return abi.TypeArgs(typeArgs)
 }
 
 // -----------------------------------------------------------------------------

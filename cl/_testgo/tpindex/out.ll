@@ -58,7 +58,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
-define i64 @"main.index[int]"(%"github.com/goplus/llgo/internal/runtime.Slice" %0, i64 %1) {
+define linkonce i64 @"main.index[int]"(%"github.com/goplus/llgo/internal/runtime.Slice" %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %0, 1
   br label %_llgo_1

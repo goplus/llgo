@@ -95,6 +95,8 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
+	instNamed map[*types.Named]none // makeInterface named
+
 	patches  Patches
 	blkInfos []blocks.Info
 
@@ -228,7 +230,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			results := types.NewTuple(ret)
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
-		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx)
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -546,6 +548,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		prog := p.prog
+		p.checkInstanceNamed(v.X.Type())
 		t := prog.Type(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
@@ -614,6 +617,22 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	p.bvals[iv] = ret
 	return ret
+}
+
+func (p *context) checkInstanceNamed(typ types.Type) {
+	if pt, ok := typ.(*types.Pointer); ok {
+		typ = pt.Elem()
+	}
+	named, ok := typ.(*types.Named)
+	if !ok || named.TypeArgs() == nil {
+		return
+	}
+	if _, ok := p.instNamed[named]; ok {
+		return
+	}
+	p.instNamed[named] = none{}
+	p.compileMethods(p.pkg, typ)
+	p.compileMethods(p.pkg, types.NewPointer(typ))
 }
 
 func (p *context) jumpTo(v *ssa.Jump) llssa.BasicBlock {
@@ -814,6 +833,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
+		instNamed: make(map[*types.Named]none),
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)

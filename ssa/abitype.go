@@ -153,7 +153,7 @@ func (b Builder) abiMethodOf(mPkg *types.Package, mName string, mSig *types.Sign
 }
 
 func (b Builder) abiMthd(mPkg *types.Package, mName string, mSig *types.Signature, name, abiTyp, ifn llvm.Value) (ret Expr, tfn llvm.Value) {
-	fullName := FuncName(mPkg, mName, mSig.Recv())
+	fullName := FuncName(mPkg, mName, mSig.Recv(), false)
 	if b.Pkg.fnlink != nil {
 		fullName = b.Pkg.fnlink(fullName)
 	}
@@ -230,7 +230,8 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 		pkg := b.Pkg
 		prog := b.Prog
 		path := abi.PathOf(t.Obj().Pkg())
-		name := t.Obj().Name()
+		name := abi.NamedName(t)
+		//targs := abi.NamedTypeArgs(t)
 		var initNamed = pkg.rtFunc("InitNamed")
 		var tSlice = lastParamType(prog, initNamed)
 		mset := typeutil.IntuitiveMethodSet(t, nil)

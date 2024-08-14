@@ -340,7 +340,7 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 // fullName:
 // - func: pkg.name
 // - method: pkg.(T).name, pkg.(*T).name
-func funcName(pkg *types.Package, fn *ssa.Function) string {
+func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 	var recv *types.Var
 	parent := fn.Parent()
 	if parent != nil { // closure in method
@@ -350,15 +350,14 @@ func funcName(pkg *types.Package, fn *ssa.Function) string {
 	}
 	var fnName string
 	if org := fn.Origin(); org != nil {
-		targs := make([]string, len(fn.TypeArgs()))
-		for i, t := range fn.TypeArgs() {
-			targs[i] = types.TypeString(t, llssa.PathOf)
+		fnName = org.Name()
+		if fn.Signature.Recv() == nil {
+			fnName += llssa.TypeArgs(fn.TypeArgs())
 		}
-		fnName = org.Name() + "[" + strings.Join(targs, ", ") + "]"
 	} else {
 		fnName = fn.Name()
 	}
-	return llssa.FuncName(pkg, fnName, recv)
+	return llssa.FuncName(pkg, fnName, recv, org)
 }
 
 func checkCgo(fnName string) bool {
@@ -421,7 +420,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 	if origin := fn.Origin(); origin != nil {
 		pkg = origin.Pkg.Pkg
 		p.ensureLoaded(pkg)
-		orgName = funcName(pkg, origin)
+		orgName = funcName(pkg, origin, true)
 	} else {
 		if fnPkg := fn.Pkg; fnPkg != nil {
 			pkg = fnPkg.Pkg
@@ -429,7 +428,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 			pkg = p.goTyps
 		}
 		p.ensureLoaded(pkg)
-		orgName = funcName(pkg, fn)
+		orgName = funcName(pkg, fn, false)
 		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
 			return nil, orgName, ignoredFunc
 		}
@@ -446,7 +445,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		}
 		return pkg, v, goFunc
 	}
-	return pkg, funcName(pkg, fn), goFunc
+	return pkg, funcName(pkg, fn, false), goFunc
 }
 
 const (
