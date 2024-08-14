@@ -24,16 +24,49 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
-func cmpTest(dir, pkgPath, llApp string, runArgs []string) {
-	var goOut, goErr bytes.Buffer
+func cmpTest(dir, pkgPath, llApp string, genExpect bool, runArgs []string) {
 	var llgoOut, llgoErr bytes.Buffer
 	var llgoRunErr = runApp(runArgs, dir, &llgoOut, &llgoErr, llApp)
+
+	llgoExpect := formatExpect(llgoOut.Bytes(), llgoErr.Bytes(), llgoRunErr)
+	llgoExpectFile := filepath.Join(dir, "llgo.expect")
+	if genExpect {
+		if _, err := os.Stat(llgoExpectFile); !errors.Is(err, os.ErrNotExist) {
+			fatal(fmt.Errorf("llgo.expect file already exists: %s", llgoExpectFile))
+		}
+		if err := os.WriteFile(llgoExpectFile, llgoExpect, 0644); err != nil {
+			fatal(err)
+		}
+		return
+	}
+	if b, err := os.ReadFile(llgoExpectFile); err == nil {
+		checkEqual("llgo.expect", llgoExpect, b)
+		return
+	} else if !errors.Is(err, os.ErrNotExist) {
+		fatal(err)
+	}
+
+	var goOut, goErr bytes.Buffer
 	var goRunErr = runApp(runArgs, dir, &goOut, &goErr, "go", "run", pkgPath)
+
 	checkEqual("output", llgoOut.Bytes(), goOut.Bytes())
 	checkEqual("stderr", llgoErr.Bytes(), goErr.Bytes())
 	checkEqualRunErr(llgoRunErr, goRunErr)
+}
+
+func formatExpect(stdout, stderr []byte, runErr error) []byte {
+	var exitCode int
+	if runErr != nil {
+		if ee, ok := runErr.(*exec.ExitError); ok {
+			exitCode = ee.ExitCode()
+		} else { // This should never happen, but just in case.
+			exitCode = 255
+		}
+	}
+	return []byte(fmt.Sprintf("#stdout\n%s\n#stderr\n%s\n#exit %d\n", stdout, stderr, exitCode))
 }
 
 func checkEqualRunErr(llgoRunErr, goRunErr error) {
