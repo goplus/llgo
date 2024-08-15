@@ -271,7 +271,9 @@ func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
 		kind = ast.Float128
 	default:
 		// like IBM128,NullPtr,Accum
-		fmt.Fprintln(os.Stderr, "todo: unknown builtin type:", c.GoString(t.Kind.String().CStr()))
+		kindStr := t.Kind.String()
+		defer kindStr.Dispose()
+		fmt.Fprintln(os.Stderr, "todo: unknown builtin type:", c.GoString(kindStr.CStr()))
 	}
 
 	if IsExplicitSigned(t) {
