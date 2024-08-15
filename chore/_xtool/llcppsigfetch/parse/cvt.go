@@ -3,6 +3,7 @@ package parse
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -161,10 +162,28 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 }
 
 func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
+	rawComment := cursor.RawCommentText()
+	defer rawComment.Dispose()
+
+	commentGroup := &ast.CommentGroup{}
+	if rawComment.CStr() != nil {
+		commentGroup = ct.ParseComment(c.GoString(rawComment.CStr()))
+	}
+
 	return ast.DeclBase{
 		Loc:    &ct.curLoc,
 		Parent: ct.GetCurScope(),
+		Doc:    commentGroup,
 	}
+}
+
+func (ct *Converter) ParseComment(rawComment string) *ast.CommentGroup {
+	lines := strings.Split(rawComment, "\n")
+	commentGroup := &ast.CommentGroup{}
+	for _, line := range lines {
+		commentGroup.List = append(commentGroup.List, &ast.Comment{Text: line})
+	}
+	return commentGroup
 }
 
 // visit top decls (struct,class,function,enum & marco,include)
