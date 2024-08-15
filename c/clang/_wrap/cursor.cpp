@@ -49,6 +49,8 @@ void wrap_clang_getArrayElementType(CXType *arrayTyp, CXType *elemTyp) {
     *elemTyp = clang_getArrayElementType(*arrayTyp);
 }
 
+long long wrap_clang_getArraySize(CXType *arrayTyp) { return clang_getArraySize(*arrayTyp); }
+
 void wrap_clang_getCanonicalType(CXType *typ, CXType *canonicalType) { *canonicalType = clang_getCanonicalType(*typ); }
 
 CXString wrap_clang_getTypeSpelling(CXType *typ) { return clang_getTypeSpelling(*typ); }
@@ -67,6 +69,8 @@ void wrap_clang_getSpellingLocation(CXSourceLocation *loc, CXFile *file, unsigne
 enum CX_CXXAccessSpecifier wrap_clang_getCXXAccessSpecifier(CXCursor *cursor) {
     return clang_getCXXAccessSpecifier(*cursor);
 }
+
+CXString wrap_clang_Cursor_getRawCommentText(CXCursor *cursor) { return clang_Cursor_getRawCommentText(*cursor); }
 
 void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }
 

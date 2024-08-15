@@ -1703,6 +1703,19 @@ func (c Cursor) CXXAccessSpecifier() CXXAccessSpecifier {
 }
 
 /**
+ * Given a cursor that represents a declaration, return the associated
+ * comment text, including comment markers.
+ */
+// llgo:link (*Cursor).wrapRawCommentText C.wrap_clang_Cursor_getRawCommentText
+func (c *Cursor) wrapRawCommentText() (ret String) {
+	return
+}
+
+func (c Cursor) RawCommentText() (ret String) {
+	return c.wrapRawCommentText()
+}
+
+/**
  * Retrieve the physical extent of the source construct referenced by
  * the given cursor.
  *
@@ -1867,6 +1880,18 @@ func (t *Type) wrapArrayElementType(ret *Type) { return }
 func (t Type) ArrayElementType() (ret Type) {
 	t.wrapArrayElementType(&ret)
 	return
+}
+
+/**
+ * Return the array size of a constant array.
+ *
+ * If a non-array type is passed in, -1 is returned.
+ */
+// llgo:link (*Type).wrapArraySize C.wrap_clang_getArraySize
+func (t *Type) wrapArraySize() (ret c.LongLong) { return 0 }
+
+func (t Type) ArraySize() (ret c.LongLong) {
+	return t.wrapArraySize()
 }
 
 /**
