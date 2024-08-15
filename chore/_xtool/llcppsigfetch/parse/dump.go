@@ -9,15 +9,13 @@ import (
 func (ct *Converter) GetFilesJSON() *cjson.JSON {
 	root := cjson.Object()
 	for _, file := range ct.files {
-		f := cjson.Object()
-		f.SetItem(c.Str("Path"), cjson.String(c.AllocaCStr(file.Path)))
-		ct.FileJSON(file, f)
-		root.SetItem(c.AllocaCStr(file.Path), f)
+		root.SetItem(c.AllocaCStr(file.Path), ct.FileJSON(file))
 	}
 	return root
 }
 
-func (ct *Converter) FileJSON(file *ast.File, root *cjson.JSON) {
+func (ct *Converter) FileJSON(file *ast.File) *cjson.JSON {
+	root := cjson.Object()
 	decls := cjson.Array()
 	includes := cjson.Array()
 	macros := cjson.Array()
@@ -26,9 +24,11 @@ func (ct *Converter) FileJSON(file *ast.File, root *cjson.JSON) {
 		decls.AddItem(ct.DeclJSON(decl))
 	}
 
+	root.SetItem(c.Str("path"), cjson.String(c.AllocaCStr(file.Path)))
 	root.SetItem(c.Str("decls"), decls)
 	root.SetItem(c.Str("includes"), includes)
 	root.SetItem(c.Str("macros"), macros)
+	return root
 }
 
 func (ct *Converter) DeclJSON(decl ast.Decl) *cjson.JSON {
@@ -106,7 +106,6 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 		}
 		list := cjson.Array()
 		for _, c := range d.List {
-			println(c.Text)
 			list.AddItem(ct.TypeJSON(c))
 		}
 		root.SetItem(c.Str("List"), list)
