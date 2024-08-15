@@ -7,6 +7,7 @@ import (
 
 func main() {
 	TestFuncDecl()
+	TestScope()
 }
 
 func TestFuncDecl() {
@@ -35,7 +36,38 @@ func TestFuncDecl() {
 		}
 
 		json := converter.GetFilesJSON()
-		c.Printf(c.Str("Test Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+		c.Printf(c.Str("TestFuncDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+
+		converter.Dispose()
+	}
+}
+
+func TestScope() {
+	testCases := []string{
+		`void foo();`,
+		`namespace a {
+			 void foo(); 
+		 }`,
+		`namespace a {
+			namespace b {
+				void foo(); 
+			}
+	   	 }`,
+	}
+
+	for i, content := range testCases {
+		converter, err := parse.NewConverter(content, true)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = converter.Convert()
+		if err != nil {
+			panic(err)
+		}
+
+		json := converter.GetFilesJSON()
+		c.Printf(c.Str("TestScope Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
 	}
