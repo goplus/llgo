@@ -216,6 +216,7 @@ var llgoInstrs = map[string]int{
 	"funcAddr":    llgoFuncAddr,
 	"pystr":       llgoPyStr,
 	"pyList":      llgoPyList,
+	"pyTuple":     llgoPyTuple,
 	"sigjmpbuf":   llgoSigjmpbuf,
 	"sigsetjmp":   llgoSigsetjmp,
 	"siglongjmp":  llgoSiglongjmp,
@@ -354,6 +355,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)
+		case llgoPyTuple:
+			args := p.compileValues(b, args, fnHasVArg)
+			ret = b.PyTuple(args...)
 		case llgoPyStr:
 			ret = pystr(b, args)
 		case llgoCstr:

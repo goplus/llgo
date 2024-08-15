@@ -169,6 +169,8 @@ type aProgram struct {
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
 	pyListSetI   *types.Signature
+	pyNewTuple   *types.Signature
+	pyTupleSetI  *types.Signature
 	floatFromDbl *types.Signature
 	callNoArgs   *types.Signature
 	callOneArg   *types.Signature
