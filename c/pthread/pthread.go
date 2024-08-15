@@ -22,10 +22,6 @@ import (
 	"github.com/goplus/llgo/c"
 )
 
-const (
-	LLGoPackage = "decl"
-)
-
 func __noop__() c.Int {
 	return 0
 }
@@ -65,7 +61,7 @@ type Thread = *aThread
 //
 // See https://man7.org/linux/man-pages/man3/pthread_create.3.html
 //
-//go:linkname Create C.pthread_create
+//go:linkname Create C.llgoPthreadCreate
 func Create(pthread *Thread, attr *Attr, routine func(c.Pointer) c.Pointer, arg c.Pointer) c.Int
 
 // The pthread_join() function waits for the thread specified by
@@ -86,7 +82,7 @@ func Create(pthread *Thread, attr *Attr, routine func(c.Pointer) c.Pointer, arg 
 //
 // See https://man7.org/linux/man-pages/man3/pthread_join.3.html
 //
-//go:linkname Join C.pthread_join
+//go:linkname Join C.llgoPthreadJoin
 func Join(thread Thread, retval *c.Pointer) c.Int
 
 // The pthread_exit() function terminates the calling thread and
