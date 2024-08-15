@@ -303,6 +303,7 @@ Here are the Go packages that can be imported correctly:
 * [encoding/base32](https://pkg.go.dev/encoding/base32)
 * [encoding/base64](https://pkg.go.dev/encoding/base64)
 * [encoding/csv](https://pkg.go.dev/encoding/csv)
+* [net/textproto](https://pkg.go.dev/net/textproto)
 * [hash](https://pkg.go.dev/hash)
 * [hash/adler32](https://pkg.go.dev/hash/adler32)
 * [hash/crc32](https://pkg.go.dev/hash/crc32) (partially)
