@@ -12,12 +12,12 @@ import (
 )
 
 type Converter struct {
-	files   map[string]*ast.File
-	curLoc  ast.Location
-	curFile *ast.File
-	index   *clang.Index
-	unit    *clang.TranslationUnit
-	// todo(zzy):current namespace expr
+	files      map[string]*ast.File
+	curLoc     ast.Location
+	curFile    *ast.File
+	index      *clang.Index
+	unit       *clang.TranslationUnit
+	scopeStack []ast.Expr //namespace & class
 }
 
 func NewConverter(file string, temp bool) (*Converter, error) {
@@ -68,41 +68,31 @@ func (ct *Converter) Dispose() {
 	ct.unit.Dispose()
 }
 
-// visit top decls (struct,class,function,enum & marco,include)
-func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ct := (*Converter)(clientData)
-	ct.UpdateCurFile(cursor)
+func (ct *Converter) PushScope(cursor clang.Cursor) {
+	name := cursor.String()
+	defer name.Dispose()
+	ident := &ast.Ident{Name: c.GoString(name.CStr())}
 
-	switch cursor.Kind {
-	case clang.CursorInclusionDirective:
-		// todo(zzy)
-		return clang.ChildVisit_Continue
-	case clang.CursorMacroDefinition:
-		// todo(zzy)
-		return clang.ChildVisit_Continue
-	case clang.CursorEnumDecl:
-		// todo(zzy)
-		return clang.ChildVisit_Continue
-	case clang.CursorClassDecl:
-		ct.ProcessClass(cursor)
-		return clang.ChildVisit_Continue
-	case clang.CursorStructDecl:
-		// todo(zzy)
-		return clang.ChildVisit_Continue
-	case clang.CursorFunctionDecl:
-		ct.ProcessFunc(cursor)
-		return clang.ChildVisit_Continue
-	default:
-		// non-top-level decl, continue recursion
-		return clang.ChildVisit_Recurse
+	if len(ct.scopeStack) == 0 {
+		ct.scopeStack = append(ct.scopeStack, ident)
+	} else {
+		parent := ct.scopeStack[len(ct.scopeStack)-1]
+		newContext := &ast.ScopingExpr{Parent: parent, X: ident}
+		ct.scopeStack = append(ct.scopeStack, newContext)
 	}
 }
 
-func (ct *Converter) Convert() (map[string]*ast.File, error) {
-	cursor := ct.unit.Cursor()
-	// visit top decls (struct,class,function & marco,include)
-	clang.VisitChildren(cursor, visit, c.Pointer(ct))
-	return ct.files, nil
+func (ct *Converter) PopScope() {
+	if len(ct.scopeStack) > 0 {
+		ct.scopeStack = ct.scopeStack[:len(ct.scopeStack)-1]
+	}
+}
+
+func (ct *Converter) GetCurScope() ast.Expr {
+	if len(ct.scopeStack) == 0 {
+		return nil
+	}
+	return ct.scopeStack[len(ct.scopeStack)-1]
 }
 
 func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
@@ -118,6 +108,8 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 	}
 
 	filePath := c.GoString(filename.CStr())
+	ct.curLoc = ast.Location{File: filePath}
+
 	if ct.curFile == nil || ct.curFile.Path != filePath {
 		if f, ok := ct.files[filePath]; ok {
 			ct.curFile = f
@@ -128,9 +120,51 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 				Includes: make([]*ast.Include, 0),
 				Macros:   make([]*ast.Macro, 0),
 			}
+			ct.files[filePath] = ct.curFile
 		}
-		ct.files[filePath] = ct.curFile
 	}
+}
+
+func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
+	return ast.DeclBase{
+		Loc:    &ct.curLoc,
+		Parent: ct.GetCurScope(),
+	}
+}
+
+// visit top decls (struct,class,function,enum & marco,include)
+func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+	ct := (*Converter)(clientData)
+	ct.UpdateCurFile(cursor)
+
+	switch cursor.Kind {
+	case clang.CursorInclusionDirective:
+		// todo(zzy)
+	case clang.CursorMacroDefinition:
+		// todo(zzy)
+	case clang.CursorEnumDecl:
+		// todo(zzy)
+	case clang.CursorClassDecl:
+		ct.PushScope(cursor)
+		ct.ProcessClass(cursor)
+		ct.PopScope()
+	case clang.CursorStructDecl:
+		// todo(zzy)
+	case clang.CursorFunctionDecl:
+		ct.ProcessFunc(cursor)
+	case clang.CursorNamespace:
+		ct.PushScope(cursor)
+		clang.VisitChildren(cursor, visit, c.Pointer(ct))
+		ct.PopScope()
+	}
+	return clang.ChildVisit_Continue
+}
+
+func (ct *Converter) Convert() (map[string]*ast.File, error) {
+	cursor := ct.unit.Cursor()
+	// visit top decls (struct,class,function & marco,include)
+	clang.VisitChildren(cursor, visit, c.Pointer(ct))
+	return ct.files, nil
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
@@ -179,12 +213,11 @@ func (ct *Converter) ProcessFunc(cursor clang.Cursor) {
 	params := ct.ProcessFuncParams(cursor)
 	funcType.Params = params
 	fn := &ast.FuncDecl{
-		Name: &ast.Ident{Name: c.GoString(name.CStr())},
-		Type: funcType,
-		// todo(zzy):DeclBase use the converter's current namespace expr
+		DeclBase: ct.CreateDeclBase(cursor),
+		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
+		Type:     funcType,
 	}
 	ct.curFile.Decls = append(ct.curFile.Decls, fn)
-	// ct.declMap[cursor] = fn
 }
 
 type visitParamContext struct {

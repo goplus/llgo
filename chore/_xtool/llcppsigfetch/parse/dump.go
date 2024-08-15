@@ -109,6 +109,9 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 			list.AddItem(ct.TypeJSON(c))
 		}
 		root.SetItem(c.Str("List"), list)
+	case *ast.ScopingExpr:
+		root.SetItem(c.Str("X"), ct.TypeJSON(d.X))
+		root.SetItem(c.Str("Parent"), ct.TypeJSON(d.Parent))
 	default:
 		return cjson.Null()
 	}
