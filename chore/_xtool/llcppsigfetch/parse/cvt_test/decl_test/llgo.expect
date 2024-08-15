@@ -2,7 +2,7 @@
 Test Case 1:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -28,7 +28,7 @@ Test Case 1:
 Test Case 2:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -64,7 +64,7 @@ Test Case 2:
 Test Case 3:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -110,7 +110,7 @@ Test Case 3:
 Test Case 4:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -158,7 +158,7 @@ Test Case 4:
 Test Case 5:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -208,7 +208,7 @@ Test Case 5:
 Test Case 6:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -262,7 +262,7 @@ Test Case 6:
 Test Case 7:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
@@ -313,7 +313,7 @@ Test Case 7:
 Test Case 8:
 {
 	"temp.h":	{
-		"Path":	"temp.h",
+		"path":	"temp.h",
 		"decls":	[{
 				"Loc":	null,
 				"Doc":	null,
