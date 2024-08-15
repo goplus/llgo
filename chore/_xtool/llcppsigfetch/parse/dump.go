@@ -41,6 +41,15 @@ func (ct *Converter) DeclJSON(decl ast.Decl) *cjson.JSON {
 		ct.DeclBaseJSON(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), ct.TypeJSON(d.Name))
 		root.SetItem(c.Str("Type"), ct.TypeJSON(d.Type))
+	case *ast.TypeDecl:
+		ct.DeclBaseJSON(d.DeclBase, root)
+		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
+		root.SetItem(c.Str("Fields"), ct.TypeJSON(d.Fields))
+		methods := cjson.Array()
+		for _, m := range d.Methods {
+			methods.AddItem(ct.DeclJSON(m))
+		}
+		root.SetItem(c.Str("Methods"), methods)
 	}
 	return root
 }
