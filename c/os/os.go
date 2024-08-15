@@ -236,12 +236,12 @@ func Isatty(fd c.Int) c.Int
 // Execl requires the full path of the program to be provided.
 //
 //go:linkname Execl C.execl
-func Execl(path *c.Char, __llgo_va_list ...any) c.Int
+func Execl(path *c.Char, arg0 *c.Char, __llgo_va_list ...any) c.Int
 
 // Execle(const char *path, const char *arg0, ..., /* (char *)0, char *const envp[] */)
 //
 //go:linkname Execle C.execle
-func Execle(path *c.Char, __llgo_va_list ...any) c.Int
+func Execle(path *c.Char, arg0 *c.Char, __llgo_va_list ...any) c.Int
 
 // Execlp(const char *file, const char *arg0, ..., /*, (char *)0, */)
 //
@@ -249,7 +249,7 @@ func Execle(path *c.Char, __llgo_va_list ...any) c.Int
 // paths specified in the PATH environment variable.
 //
 //go:linkname Execlp C.execlp
-func Execlp(file *c.Char, __llgo_va_list ...any) c.Int
+func Execlp(file *c.Char, arg0 *c.Char, __llgo_va_list ...any) c.Int
 
 //go:linkname Execv C.execv
 func Execv(path *c.Char, argv **c.Char) c.Int
