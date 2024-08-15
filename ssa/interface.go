@@ -99,6 +99,10 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeInterface %v, %v\n", rawIntf, x.impl)
 	}
+	if x.kind == vkFuncDecl {
+		typ := b.Prog.Type(x.raw.Type, InGo)
+		x = checkExpr(x, typ.raw.Type, b)
+	}
 	prog := b.Prog
 	typ := x.Type
 	tabi := b.abiType(typ.raw.Type)
