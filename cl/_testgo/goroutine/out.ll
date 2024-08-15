@@ -51,7 +51,7 @@ _llgo_0:
   %15 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/internal/runtime.String" }, ptr %13, i32 0, i32 1
   store %"github.com/goplus/llgo/internal/runtime.String" %12, ptr %15, align 8
   %16 = alloca i8, i64 8, align 1
-  %17 = call i32 @pthread_create(ptr %16, ptr null, ptr @"main._llgo_routine$1", ptr %13)
+  %17 = call i32 @llgoPthreadCreate(ptr %16, ptr null, ptr @"main._llgo_routine$1", ptr %13)
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -104,7 +104,7 @@ _llgo_0:
 
 declare void @free(ptr)
 
-declare i32 @pthread_create(ptr, ptr, ptr, ptr)
+declare i32 @llgoPthreadCreate(ptr, ptr, ptr, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 

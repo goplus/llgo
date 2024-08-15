@@ -51,7 +51,7 @@ func (p Program) tyPthreadCreate() *types.Signature {
 }
 
 func (b Builder) pthreadCreate(pp, attr, routine, arg Expr) Expr {
-	fn := b.Pkg.cFunc("pthread_create", b.Prog.tyPthreadCreate())
+	fn := b.Pkg.cFunc("llgoPthreadCreate", b.Prog.tyPthreadCreate())
 	return b.Call(fn, pp, attr, routine, arg)
 }
 
