@@ -12,12 +12,12 @@ import (
 
 // TODO(spongehah): Timer
 type Timer struct {
-	Unused [0]byte
+	Unused [152]byte
 }
 
 // ----------------------------------------------
 
-// llgo:type Cgit
+// llgo:type C
 type TimerCb func(timer *Timer)
 
 // ----------------------------------------------
@@ -28,7 +28,7 @@ type TimerCb func(timer *Timer)
 func InitTimer(loop *Loop, timer *Timer) c.Int
 
 // llgo:link (*Timer).Start C.uv_timer_start
-func (timer *Timer) Start(cb TimerCb, timeout uint64, repeat uint64) c.Int {
+func (timer *Timer) Start(cb TimerCb, timeoutMs uint64, repeat uint64) c.Int {
 	return 0
 }
 

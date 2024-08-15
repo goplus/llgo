@@ -83,18 +83,21 @@ type Tcp struct {
 	Unused [256]byte
 }
 
+// TODO(spongehah): Udp
 type Udp struct {
-	Unused [0]byte
+	Unused [224]byte
 }
 
 /* Request types. */
 
+// TODO(spongehah): Req
 type Req struct {
-	Unused [0]byte
+	Unused [64]byte
 }
 
+// TODO(spongehah): UdpSend
 type UdpSend struct {
-	Unused [0]byte
+	Unused [320]byte
 }
 
 // TODO(spongehah): Write
@@ -109,16 +112,19 @@ type Connect struct {
 	Unused [88]byte
 }
 
+// TODO(spongehah): GetAddrInfo
 type GetAddrInfo struct {
-	Unused [0]byte
+	Unused [160]byte
 }
 
+// TODO(spongehah): GetNameInfo
 type GetNameInfo struct {
-	Unused [0]byte
+	Unused [1320]byte
 }
 
+// TODO(spongehah): Shutdown
 type Shutdown struct {
-	Unused [0]byte
+	Unused [80]byte
 }
 
 // ----------------------------------------------
