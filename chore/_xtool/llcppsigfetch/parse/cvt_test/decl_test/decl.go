@@ -9,6 +9,8 @@ func main() {
 	TestFuncDecl()
 	TestScope()
 	TestComment()
+	TestStructDecl()
+	TestClassDecl()
 }
 
 func TestFuncDecl() {
@@ -54,6 +56,14 @@ func TestScope() {
 				void foo(); 
 			}
 	   	 }`,
+		`class a {
+			void foo(); 
+		 };`,
+		`namespace a {
+		 class b {
+			void foo(); 
+		 };
+	   	 }`,
 	}
 
 	for i, content := range testCases {
@@ -73,6 +83,7 @@ func TestScope() {
 		converter.Dispose()
 	}
 }
+
 func TestComment() {
 	testCases := []string{
 		`// not read comment 1
@@ -114,6 +125,71 @@ void foo();`,
 
 		json := converter.GetFilesJSON()
 		c.Printf(c.Str("TestComment Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+
+		converter.Dispose()
+	}
+}
+
+func TestStructDecl() {
+	testCases := []string{
+		`struct A {
+			int a;
+			int b;
+		};`,
+		`struct A {
+			int a, b;
+		};`,
+		`struct A {
+			int a;
+			int b;
+			float foo(int a,double b);;
+		};`,
+	}
+
+	for i, content := range testCases {
+		converter, err := parse.NewConverter(content, true)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = converter.Convert()
+		if err != nil {
+			panic(err)
+		}
+
+		json := converter.GetFilesJSON()
+		c.Printf(c.Str("TestStructDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+
+		converter.Dispose()
+	}
+}
+
+func TestClassDecl() {
+	testCases := []string{
+		`class A {
+			int a;
+			int b;
+		};`,
+		`class A {
+			int a;
+			int b;
+			float foo(int a,double b);;
+		};`,
+	}
+
+	for i, content := range testCases {
+		converter, err := parse.NewConverter(content, true)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = converter.Convert()
+		if err != nil {
+			panic(err)
+		}
+
+		json := converter.GetFilesJSON()
+		c.Printf(c.Str("TestClassDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
 	}
