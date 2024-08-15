@@ -72,8 +72,13 @@ func Basic(_kind Kind) *Type {
 	kind := _kind & abi.KindMask
 	if tyBasic[kind] == nil {
 		name, size, align := basicTypeInfo(kind)
+		var bytes uintptr
+		if kind == abi.String {
+			bytes = pointerSize
+		}
 		tyBasic[kind] = &Type{
 			Size_:       size,
+			PtrBytes:    bytes,
 			Hash:        uint32(kind), // TODO(xsw): hash
 			Align_:      uint8(align),
 			FieldAlign_: uint8(align),
@@ -160,6 +165,9 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 		if ft.Align_ > typalign {
 			typalign = ft.Align_
 		}
+		if f.Typ.PtrBytes != 0 {
+			ret.PtrBytes = f.Offset + f.Typ.PtrBytes
+		}
 		comparable = comparable && (ft.Equal != nil)
 	}
 	ret.Align_ = typalign
@@ -207,6 +215,7 @@ func newPointer(elem *Type) *Type {
 	ptr := &abi.PtrType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(uintptr(0)),
+			PtrBytes:    pointerSize,
 			Hash:        uint32(abi.Pointer), // TODO(xsw): hash
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
@@ -230,6 +239,7 @@ func SliceOf(elem *Type) *Type {
 	ret := &abi.SliceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof([]int{}),
+			PtrBytes:    pointerSize,
 			Hash:        uint32(abi.Slice),
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
@@ -255,6 +265,9 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 		Elem:  elem,
 		Slice: SliceOf(elem),
 		Len:   length,
+	}
+	if length != 0 && elem.PtrBytes != 0 {
+		ret.PtrBytes = ret.Size_ - elem.Size_ + elem.PtrBytes
 	}
 	if eequal := elem.Equal; eequal != nil {
 		if elem.Size_ == 0 {
@@ -284,7 +297,8 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 func ChanOf(dir int, strChan string, elem *Type) *Type {
 	ret := &abi.ChanType{
 		Type: Type{
-			Size_:       8,
+			Size_:       pointerSize,
+			PtrBytes:    pointerSize,
 			Hash:        uint32(abi.Chan),
 			Align_:      pointerAlign,
 			TFlag:       abi.TFlagRegularMemory,
@@ -303,6 +317,7 @@ func MapOf(key, elem *Type, bucket *Type, flags int) *Type {
 	ret := &abi.MapType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(uintptr(0)),
+			PtrBytes:    pointerSize,
 			Hash:        uint32(abi.Map),
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
