@@ -7,7 +7,9 @@ TestFuncDecl Case 1:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -35,7 +37,9 @@ TestFuncDecl Case 2:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -73,7 +77,9 @@ TestFuncDecl Case 3:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -121,7 +127,9 @@ TestFuncDecl Case 4:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -171,7 +179,9 @@ TestFuncDecl Case 5:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -223,7 +233,9 @@ TestFuncDecl Case 6:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -279,7 +291,9 @@ TestFuncDecl Case 7:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -332,7 +346,9 @@ TestFuncDecl Case 8:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -384,7 +400,9 @@ TestScope Case 1:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
@@ -412,7 +430,9 @@ TestScope Case 2:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	{
 					"Name":	"a"
 				},
@@ -442,7 +462,9 @@ TestScope Case 3:
 				"Loc":	{
 					"File":	"temp.h"
 				},
-				"Doc":	null,
+				"Doc":	{
+					"List":	[]
+				},
 				"Parent":	{
 					"X":	{
 						"Name":	"b"
@@ -451,6 +473,302 @@ TestScope Case 3:
 						"Name":	"a"
 					}
 				},
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 2:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 3:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/// comment"
+						}]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 4:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/** comment */"
+						}]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 5:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/*! comment */"
+						}]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 6:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/// comment 1"
+						}, {
+							"Text":	"/// comment 2"
+						}]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 7:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/*! comment 1 */"
+						}, {
+							"Text":	"/*! comment 2 */"
+						}]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 8:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/** comment 1 */"
+						}, {
+							"Text":	"/** comment 1 */"
+						}]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestComment Case 9:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[{
+							"Text":	"/**"
+						}, {
+							"Text":	" * comment 1"
+						}, {
+							"Text":	" * comment 2"
+						}, {
+							"Text":	" */"
+						}]
+				},
+				"Parent":	null,
 				"Name":	{
 					"Name":	"foo"
 				},
