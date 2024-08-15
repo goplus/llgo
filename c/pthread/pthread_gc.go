@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	LLGoFiles   = "$(pkg-config --cflags bdw-gc): _pthread/pthread_gc.c"
+	LLGoFiles   = "$(pkg-config --cflags bdw-gc): _wrap/pthread_gc.c"
 	LLGoPackage = "link: $(pkg-config --libs bdw-gc); -lgc"
 )
 
