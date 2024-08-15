@@ -51,8 +51,12 @@ TestFuncDecl Case 2:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"a"
 									}]
@@ -91,8 +95,12 @@ TestFuncDecl Case 3:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"a"
 									}]
@@ -101,8 +109,12 @@ TestFuncDecl Case 3:
 									"Kind":	8,
 									"Flags":	16
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"b"
 									}]
@@ -143,8 +155,12 @@ TestFuncDecl Case 4:
 										"Flags":	1
 									}
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"str"
 									}]
@@ -153,8 +169,12 @@ TestFuncDecl Case 4:
 									"Kind":	8,
 									"Flags":	16
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"x"
 									}]
@@ -195,8 +215,12 @@ TestFuncDecl Case 5:
 										"Flags":	1
 									}
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"str"
 									}]
@@ -205,8 +229,12 @@ TestFuncDecl Case 5:
 									"Kind":	8,
 									"Flags":	16
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"x"
 									}]
@@ -253,8 +281,12 @@ TestFuncDecl Case 6:
 										}
 									}
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"str"
 									}]
@@ -263,8 +295,12 @@ TestFuncDecl Case 6:
 									"Kind":	8,
 									"Flags":	16
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"x"
 									}]
@@ -308,8 +344,12 @@ TestFuncDecl Case 7:
 									},
 									"Len":	null
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"str"
 									}]
@@ -318,8 +358,12 @@ TestFuncDecl Case 7:
 									"Kind":	8,
 									"Flags":	16
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"x"
 									}]
@@ -372,8 +416,12 @@ TestFuncDecl Case 8:
 										"Value":	"3"
 									}
 								},
-								"Doc":	null,
-								"Comment":	null,
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
 								"Names":	[{
 										"Name":	"arr"
 									}]
@@ -485,6 +533,110 @@ TestScope Case 3:
 						"Flags":	0
 					}
 				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 4:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"a"
+				},
+				"Tag":	3,
+				"Fields":	{
+					"List":	[]
+				},
+				"Methods":	[{
+						"Loc":	{
+							"File":	"temp.h"
+						},
+						"Doc":	{
+							"List":	[]
+						},
+						"Parent":	{
+							"Name":	"a"
+						},
+						"Name":	{
+							"Name":	"foo"
+						},
+						"Type":	{
+							"Params":	{
+								"List":	[]
+							},
+							"Ret":	{
+								"Kind":	0,
+								"Flags":	0
+							}
+						}
+					}]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 5:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"X":	{
+						"Name":	"b"
+					},
+					"Parent":	{
+						"Name":	"a"
+					}
+				},
+				"Tag":	3,
+				"Fields":	{
+					"List":	[]
+				},
+				"Methods":	[{
+						"Loc":	{
+							"File":	"temp.h"
+						},
+						"Doc":	{
+							"List":	[]
+						},
+						"Parent":	{
+							"X":	{
+								"Name":	"b"
+							},
+							"Parent":	{
+								"Name":	"a"
+							}
+						},
+						"Name":	{
+							"Name":	"foo"
+						},
+						"Type":	{
+							"Params":	{
+								"List":	[]
+							},
+							"Ret":	{
+								"Kind":	0,
+								"Flags":	0
+							}
+						}
+					}]
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -781,6 +933,363 @@ TestComment Case 9:
 						"Flags":	0
 					}
 				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestStructDecl Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	0,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestStructDecl Case 2:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	0,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestStructDecl Case 3:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	0,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[{
+						"Loc":	{
+							"File":	"temp.h"
+						},
+						"Doc":	{
+							"List":	[]
+						},
+						"Parent":	null,
+						"Name":	{
+							"Name":	"foo"
+						},
+						"Type":	{
+							"Params":	{
+								"List":	[{
+										"Type":	{
+											"Kind":	6,
+											"Flags":	0
+										},
+										"Doc":	{
+											"List":	[]
+										},
+										"Comment":	{
+											"List":	[]
+										},
+										"Names":	[{
+												"Name":	"a"
+											}]
+									}, {
+										"Type":	{
+											"Kind":	8,
+											"Flags":	16
+										},
+										"Doc":	{
+											"List":	[]
+										},
+										"Comment":	{
+											"List":	[]
+										},
+										"Names":	[{
+												"Name":	"b"
+											}]
+									}]
+							},
+							"Ret":	{
+								"Kind":	8,
+								"Flags":	0
+							}
+						}
+					}]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestClassDecl Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"A"
+				},
+				"Tag":	3,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestClassDecl Case 2:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"A"
+				},
+				"Tag":	3,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[{
+						"Loc":	{
+							"File":	"temp.h"
+						},
+						"Doc":	{
+							"List":	[]
+						},
+						"Parent":	{
+							"Name":	"A"
+						},
+						"Name":	{
+							"Name":	"foo"
+						},
+						"Type":	{
+							"Params":	{
+								"List":	[{
+										"Type":	{
+											"Kind":	6,
+											"Flags":	0
+										},
+										"Doc":	{
+											"List":	[]
+										},
+										"Comment":	{
+											"List":	[]
+										},
+										"Names":	[{
+												"Name":	"a"
+											}]
+									}, {
+										"Type":	{
+											"Kind":	8,
+											"Flags":	16
+										},
+										"Doc":	{
+											"List":	[]
+										},
+										"Comment":	{
+											"List":	[]
+										},
+										"Names":	[{
+												"Name":	"b"
+											}]
+									}]
+							},
+							"Ret":	{
+								"Kind":	8,
+								"Flags":	0
+							}
+						}
+					}]
 			}],
 		"includes":	[],
 		"macros":	[]
