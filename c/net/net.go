@@ -189,6 +189,18 @@ func Recv(c.Int, c.Pointer, uintptr, c.Int) c.Long
 //go:linkname SetSockOpt C.setsockopt
 func SetSockOpt(socket c.Int, level c.Int, optionName c.Int, optionValue c.Pointer, sockLen c.Uint) c.Int
 
+//go:linkname Ntohs C.ntohs
+func Ntohs(x uint16) uint16
+
+//go:linkname Htons C.htons
+func Htons(x uint16) uint16
+
+//go:linkname Ntohl C.ntohl
+func Ntohl(x c.Uint) c.Uint
+
+//go:linkname Htonl C.htonl
+func Htonl(x c.Uint) c.Uint
+
 // -----------------------------------------------------------------------------
 
 type AddrInfo struct {
@@ -207,34 +219,5 @@ func Getaddrinfo(host *c.Char, port *c.Char, addrInfo *AddrInfo, result **AddrIn
 
 //go:linkname Freeaddrinfo C.freeaddrinfo
 func Freeaddrinfo(addrInfo *AddrInfo) c.Int
-
-// -----------------------------------------------------------------------------
-
-func swapInt16(data uint16) uint16 {
-	return (data << 8) | (data >> 8)
-}
-
-func swapInt32(data c.Uint) c.Uint {
-	return ((data & 0xff) << 24) |
-		((data & 0xff00) << 8) |
-		((data & 0xff0000) >> 8) |
-		((data & 0xff000000) >> 24)
-}
-
-func Htons(x uint16) uint16 {
-	return swapInt16(x)
-}
-
-func Ntohs(x uint16) uint16 {
-	return swapInt16(x)
-}
-
-func Htonl(x c.Uint) c.Uint {
-	return swapInt32(x)
-}
-
-func Ntohl(x c.Uint) c.Uint {
-	return swapInt32(x)
-}
 
 // -----------------------------------------------------------------------------
