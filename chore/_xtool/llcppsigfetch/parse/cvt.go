@@ -203,9 +203,9 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		ct.ProcessClass(cursor)
 		ct.PopScope()
 	case clang.CursorStructDecl:
-		// todo(zzy)
+		ct.ProcessStruct(cursor)
 	case clang.CursorFunctionDecl:
-		ct.ProcessFunc(cursor)
+		ct.curFile.Decls = append(ct.curFile.Decls, ct.ProcessFunc(cursor))
 	case clang.CursorNamespace:
 		ct.PushScope(cursor)
 		clang.VisitChildren(cursor, visit, c.Pointer(ct))
@@ -321,24 +321,31 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	ct.declMap[cursor] = fn
 }
 
-type visitParamContext struct {
+type visitFieldContext struct {
 	params    *ast.FieldList
 	converter *Converter
 }
 
-// visit top decls (struct,class,function,enum & marco,include)
-func visitParamDecl(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ctx := (*visitParamContext)(clientData)
-	if cursor.Kind == clang.CursorParmDecl {
+func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+	ctx := (*visitFieldContext)(clientData)
+	if cursor.Kind == clang.CursorParmDecl || cursor.Kind == clang.CursorFieldDecl {
 		paramName := cursor.String()
 		defer paramName.Dispose()
 		argType := ctx.converter.ProcessType(cursor.Type())
 
 		// In C language, parameter lists do not have similar parameter grouping in Go.
 		// func foo(a, b int)
+
+		// For follows struct, it will also parse to two FieldDecl
+		// struct A {
+		// 	int a, b;
+		// };
 		ctx.params.List = append(ctx.params.List,
 			&ast.Field{
-				Type: argType,
+				//todo(zzy): comment & doc
+				Doc:     &ast.CommentGroup{},
+				Comment: &ast.CommentGroup{},
+				Type:    argType,
 				Names: []*ast.Ident{
 					{Name: c.GoString(paramName.CStr())},
 				},
@@ -347,18 +354,68 @@ func visitParamDecl(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 	return clang.ChildVisit_Continue
 }
 
-func (ct *Converter) ProcessFuncParams(cursor clang.Cursor) *ast.FieldList {
+func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 	params := &ast.FieldList{List: []*ast.Field{}}
-	ctx := &visitParamContext{
+	ctx := &visitFieldContext{
 		params:    params,
 		converter: ct,
 	}
-	clang.VisitChildren(cursor, visitParamDecl, c.Pointer(ctx))
+	clang.VisitChildren(cursor, visitFieldList, c.Pointer(ctx))
 	return params
 }
 
+type visitMethodsContext struct {
+	methods   *[]*ast.FuncDecl
+	converter *Converter
+}
+
+func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+	ctx := (*visitMethodsContext)(clientData)
+	if cursor.Kind == clang.CursorCXXMethod {
+		method := ctx.converter.ProcessFunc(cursor)
+		if method != nil {
+			*ctx.methods = append(*ctx.methods, method)
+		}
+	}
+	return clang.ChildVisit_Continue
+}
+
+func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
+	methods := make([]*ast.FuncDecl, 0)
+	ctx := &visitMethodsContext{
+		methods:   &methods,
+		converter: ct,
+	}
+	clang.VisitChildren(cursor, visitMethods, c.Pointer(ctx))
+	return methods
+}
+
+func (ct *Converter) ProcessStructOrClass(cursor clang.Cursor, tag ast.Tag) *ast.TypeDecl {
+	name := cursor.String()
+	defer name.Dispose()
+
+	fields := ct.ProcessFieldList(cursor)
+	methods := ct.ProcessMethods(cursor)
+
+	decl := &ast.TypeDecl{
+		DeclBase: ct.CreateDeclBase(cursor),
+		Tag:      tag,
+		Fields:   fields,
+		Methods:  methods,
+	}
+
+	return decl
+}
+
+func (ct *Converter) ProcessStruct(cursor clang.Cursor) {
+	structDecl := ct.ProcessStructOrClass(cursor, ast.Struct)
+	ct.curFile.Decls = append(ct.curFile.Decls, structDecl)
+}
+
 func (ct *Converter) ProcessClass(cursor clang.Cursor) {
-	println("todo: Process class")
+	classDecl := ct.ProcessStructOrClass(cursor, ast.Class)
+	// other logic for class
+	ct.curFile.Decls = append(ct.curFile.Decls, classDecl)
 }
 
 func (ct *Converter) Convert() (map[string]*ast.File, error) {
