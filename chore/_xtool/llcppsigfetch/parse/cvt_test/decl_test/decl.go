@@ -8,6 +8,7 @@ import (
 func main() {
 	TestFuncDecl()
 	TestScope()
+	TestComment()
 }
 
 func TestFuncDecl() {
@@ -68,6 +69,51 @@ func TestScope() {
 
 		json := converter.GetFilesJSON()
 		c.Printf(c.Str("TestScope Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+
+		converter.Dispose()
+	}
+}
+func TestComment() {
+	testCases := []string{
+		`// not read comment 1
+		 void foo();`,
+		`/* not read comment 2 */
+		 void foo();`,
+		`/// comment
+		 void foo();`,
+		`/** comment */
+		 void foo();`,
+		`/*! comment */
+		 void foo();`,
+		`/// comment 1
+/// comment 2
+void foo();`,
+		`/*! comment 1 */
+/*! comment 2 */
+void foo();`,
+		`/** comment 1 */
+/** comment 1 */
+void foo();`,
+		`/**
+ * comment 1
+ * comment 2
+ */
+void foo();`,
+	}
+
+	for i, content := range testCases {
+		converter, err := parse.NewConverter(content, true)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = converter.Convert()
+		if err != nil {
+			panic(err)
+		}
+
+		json := converter.GetFilesJSON()
+		c.Printf(c.Str("TestComment Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
 	}
