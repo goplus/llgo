@@ -155,11 +155,6 @@ func getCommonSymbols(dylibSymbols []*nm.Symbol, symbolMap map[string]string, pr
 }
 
 func genSymbolTableFile(symbolInfos []*types.SymbolInfo) error {
-	// keep open follow code block can run successfully
-	for i := range symbolInfos {
-		println("symbol", symbolInfos[i].Go)
-	}
-
 	fileName := "llcppg.symb.json"
 	existingSymbols, err := readExistingSymbolTable(fileName)
 	if err != nil {
