@@ -1,10 +1,12 @@
 #stdout
-Test Case 1:
+TestFuncDecl Case 1:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -25,12 +27,14 @@ Test Case 1:
 	}
 }
 
-Test Case 2:
+TestFuncDecl Case 2:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -61,12 +65,14 @@ Test Case 2:
 	}
 }
 
-Test Case 3:
+TestFuncDecl Case 3:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -107,12 +113,14 @@ Test Case 3:
 	}
 }
 
-Test Case 4:
+TestFuncDecl Case 4:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -155,12 +163,14 @@ Test Case 4:
 	}
 }
 
-Test Case 5:
+TestFuncDecl Case 5:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -205,12 +215,14 @@ Test Case 5:
 	}
 }
 
-Test Case 6:
+TestFuncDecl Case 6:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -259,12 +271,14 @@ Test Case 6:
 	}
 }
 
-Test Case 7:
+TestFuncDecl Case 7:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -310,12 +324,14 @@ Test Case 7:
 	}
 }
 
-Test Case 8:
+TestFuncDecl Case 8:
 {
 	"temp.h":	{
 		"path":	"temp.h",
 		"decls":	[{
-				"Loc":	null,
+				"Loc":	{
+					"File":	"temp.h"
+				},
 				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
@@ -352,6 +368,99 @@ Test Case 8:
 							"Kind":	8,
 							"Flags":	0
 						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 2:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"Name":	"a"
+				},
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 3:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"X":	{
+						"Name":	"b"
+					},
+					"Parent":	{
+						"Name":	"a"
+					}
+				},
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
 					}
 				}
 			}],
