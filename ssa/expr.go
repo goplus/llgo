@@ -148,6 +148,8 @@ func (p Program) Zero(t Type) Expr {
 			name = "Iface"
 		}
 		ret = p.Zero(p.rtType(name)).impl
+	case *types.Map:
+		ret = p.Zero(p.rtType("Map")).impl
 	default:
 		log.Panicln("todo:", u)
 	}
