@@ -38,7 +38,7 @@ func TestFuncDecl() {
 			panic(err)
 		}
 
-		json := converter.GetFilesJSON()
+		json := converter.MarshalASTFiles()
 		c.Printf(c.Str("TestFuncDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
@@ -77,7 +77,7 @@ func TestScope() {
 			panic(err)
 		}
 
-		json := converter.GetFilesJSON()
+		json := converter.MarshalASTFiles()
 		c.Printf(c.Str("TestScope Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
@@ -123,7 +123,7 @@ void foo();`,
 			panic(err)
 		}
 
-		json := converter.GetFilesJSON()
+		json := converter.MarshalASTFiles()
 		c.Printf(c.Str("TestComment Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
@@ -157,7 +157,7 @@ func TestStructDecl() {
 			panic(err)
 		}
 
-		json := converter.GetFilesJSON()
+		json := converter.MarshalASTFiles()
 		c.Printf(c.Str("TestStructDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
@@ -188,7 +188,7 @@ func TestClassDecl() {
 			panic(err)
 		}
 
-		json := converter.GetFilesJSON()
+		json := converter.MarshalASTFiles()
 		c.Printf(c.Str("TestClassDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
