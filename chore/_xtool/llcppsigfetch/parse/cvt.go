@@ -163,6 +163,7 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		// todo(zzy)
 	case clang.CursorMacroDefinition:
 		// todo(zzy)
+		ct.ProcessMarco(cursor)
 	case clang.CursorEnumDecl:
 		// todo(zzy)
 	case clang.CursorClassDecl:
@@ -238,6 +239,42 @@ func (ct *Converter) ProcessFunc(cursor clang.Cursor) *ast.FuncDecl {
 		Type:     funcType,
 	}
 	return fn
+}
+
+// current only collect marco which defined in file
+func (ct *Converter) ProcessMarco(cursor clang.Cursor) {
+	if ct.curFile == nil {
+		return
+	}
+	name := cursor.String()
+	defer name.Dispose()
+
+	ran := cursor.Extent()
+	var numTokens c.Uint
+	var tokens *clang.Token
+	ct.unit.Tokenize(ran, &tokens, &numTokens)
+	tokensSlice := unsafe.Slice(tokens, int(numTokens))
+
+	macro := &ast.Macro{
+		Name: &ast.TokenInfo{
+			Token: ast.Token(tokensSlice[0].Kind()),
+			Lit:   c.GoString(ct.unit.Token(tokensSlice[0]).CStr()),
+		},
+		Body: make([]*ast.TokenInfo, 0),
+	}
+
+	if numTokens > 1 { //have body
+		for i := 1; i < int(numTokens); i++ {
+			tok := tokensSlice[i]
+			tokStr := ct.unit.Token(tok)
+			macro.Body = append(macro.Body, &ast.TokenInfo{
+				Token: ast.Token(tok.Kind()),
+				Lit:   c.GoString(tokStr.CStr()),
+			})
+			tokStr.Dispose()
+		}
+	}
+	ct.curFile.Macros = append(ct.curFile.Macros, macro)
 }
 
 type visitFieldContext struct {
