@@ -8,12 +8,13 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type Converter struct {
-	files      map[string]*ast.File
+	Files      map[string]*ast.File
 	curLoc     ast.Location
 	curFile    *ast.File
 	index      *clang.Index
@@ -58,7 +59,7 @@ func NewConverter(file string, temp bool) (*Converter, error) {
 	}
 
 	return &Converter{
-		files: make(map[string]*ast.File),
+		Files: make(map[string]*ast.File),
 		index: index,
 		unit:  unit,
 	}, nil
@@ -112,7 +113,7 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 	ct.curLoc = ast.Location{File: filePath}
 
 	if ct.curFile == nil || ct.curFile.Path != filePath {
-		if f, ok := ct.files[filePath]; ok {
+		if f, ok := ct.Files[filePath]; ok {
 			ct.curFile = f
 		} else {
 			ct.curFile = &ast.File{
@@ -121,7 +122,7 @@ func (ct *Converter) UpdateCurFile(cursor clang.Cursor) {
 				Includes: make([]*ast.Include, 0),
 				Macros:   make([]*ast.Macro, 0),
 			}
-			ct.files[filePath] = ct.curFile
+			ct.Files[filePath] = ct.curFile
 		}
 	}
 }
@@ -135,8 +136,9 @@ func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
 		commentGroup = ct.ParseComment(c.GoString(rawComment.CStr()))
 	}
 
+	loc := ct.curLoc
 	return ast.DeclBase{
-		Loc:    &ct.curLoc,
+		Loc:    &loc,
 		Parent: ct.GetCurScope(),
 		Doc:    commentGroup,
 	}
@@ -183,7 +185,7 @@ func (ct *Converter) Convert() (map[string]*ast.File, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & marco,include)
 	clang.VisitChildren(cursor, visit, c.Pointer(ct))
-	return ct.files, nil
+	return ct.Files, nil
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
@@ -395,6 +397,11 @@ func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
 		Flags: flags,
 	}
 }
+
+func (ct *Converter) MarshalASTFiles() *cjson.JSON {
+	return MarshalASTFiles(ct.Files)
+}
+
 func IsExplicitSigned(t clang.Type) bool {
 	return t.Kind == clang.TypeCharS || t.Kind == clang.TypeSChar
 }
