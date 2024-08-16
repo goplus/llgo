@@ -22,7 +22,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unsafe"
 
+	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 )
@@ -76,5 +78,7 @@ func getHeaderFiles(cflags string, files []string) []string {
 }
 
 func outputInfo(context *parse.Context) {
-	// TODO(zzy):
+	output := context.Output().Print()
+	defer c.Free(unsafe.Pointer(output))
+	c.Printf(output)
 }
