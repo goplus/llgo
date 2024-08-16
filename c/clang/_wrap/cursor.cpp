@@ -74,6 +74,8 @@ CXString wrap_clang_Cursor_getRawCommentText(CXCursor *cursor) { return clang_Cu
 
 void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }
 
+CXTokenKind wrap_clang_getTokenKind(CXToken *token) { return clang_getTokenKind(*token); }
+
 void wrap_clang_tokenize(CXTranslationUnit unit, CXSourceRange *Range, CXToken **Tokens, unsigned *NumTokens) {
     clang_tokenize(unit, *Range, Tokens, NumTokens);
 }

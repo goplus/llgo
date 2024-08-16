@@ -1774,6 +1774,18 @@ func (c *TranslationUnit) Token(token Token) (ret String) {
 }
 
 /**
+ * Determine the kind of the given token.
+ */
+// llgo:link (*Token).wrapKind C.wrap_clang_getTokenKind
+func (c *Token) wrapKind() (ret TokenKind) {
+	return
+}
+
+func (c Token) Kind() (ret TokenKind) {
+	return c.wrapKind()
+}
+
+/**
  * Retrieve the file, line, column, and offset represented by
  * the given source location.
  *
