@@ -19,14 +19,12 @@ package os
 // llgo:skipall
 import (
 	"errors"
-	"io/fs"
 	"runtime"
 	"syscall"
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
-	sys "github.com/goplus/llgo/c/syscall"
 )
 
 const (
@@ -48,11 +46,6 @@ func (e *LinkError) Error() string {
 
 func (e *LinkError) Unwrap() error {
 	return e.Err
-}
-
-func toMode(mode FileMode) os.ModeT {
-	unixMode := fileModeToUnixMode(mode) << 16
-	return os.ModeT(unixMode)
 }
 
 func toPathErr(op, path string, errno c.Int) error {
@@ -86,7 +79,7 @@ func Chdir(dir string) error {
 */
 
 func Chmod(name string, mode FileMode) error {
-	ret := os.Chmod(c.AllocaCStr(name), toMode(mode))
+	ret := os.Chmod(c.AllocaCStr(name), os.ModeT(syscallMode(mode)))
 	if ret == 0 {
 		return nil
 	}
@@ -238,7 +231,7 @@ func Link(oldname, newname string) error {
 // func LookupEnv(key string) (string, bool)
 
 func Mkdir(name string, perm FileMode) error {
-	ret := os.Mkdir(c.AllocaCStr(name), toMode(perm))
+	ret := os.Mkdir(c.AllocaCStr(name), os.ModeT(syscallMode(perm)))
 	if ret == 0 {
 		return nil
 	}
@@ -469,33 +462,3 @@ func UserHomeDir() (string, error) {
 
 // TODO(xsw):
 // func WriteFile(name string, data []byte, perm FileMode) error
-
-func fileModeToUnixMode(mode fs.FileMode) uint32 {
-	var m uint32
-	switch mode & fs.ModeType {
-	default:
-		m = sys.S_IFREG
-	case fs.ModeDir:
-		m = sys.S_IFDIR
-	case fs.ModeSymlink:
-		m = sys.S_IFLNK
-	case fs.ModeNamedPipe:
-		m = sys.S_IFIFO
-	case fs.ModeSocket:
-		m = sys.S_IFSOCK
-	case fs.ModeDevice:
-		m = sys.S_IFBLK
-	case fs.ModeDevice | fs.ModeCharDevice:
-		m = sys.S_IFCHR
-	}
-	if mode&fs.ModeSetuid != 0 {
-		m |= sys.S_ISUID
-	}
-	if mode&fs.ModeSetgid != 0 {
-		m |= sys.S_ISGID
-	}
-	if mode&fs.ModeSticky != 0 {
-		m |= sys.S_ISVTX
-	}
-	return m | uint32(mode&0777)
-}
