@@ -1,0 +1,24 @@
+#stdout
+TestDefine Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"Name":	{
+					"Token":	2,
+					"Lit":	"foo"
+				},
+				"Body":	[{
+						"Token":	3,
+						"Lit":	"1"
+					}]
+			}]
+	}
+}
+
+
+#stderr
+
+#exit 0
