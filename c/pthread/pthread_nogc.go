@@ -56,7 +56,7 @@ const (
 // See https://man7.org/linux/man-pages/man3/pthread_create.3.html
 //
 //go:linkname Create C.pthread_create
-func Create(pthread *Thread, attr *Attr, routine func(c.Pointer) c.Pointer, arg c.Pointer) c.Int
+func Create(pthread *Thread, attr *Attr, routine RoutineFunc, arg c.Pointer) c.Int
 
 // The pthread_join() function waits for the thread specified by
 // thread to terminate.  If that thread has already terminated, then

@@ -183,7 +183,6 @@ type aProgram struct {
 	freeTy   *types.Signature
 
 	createKeyTy *types.Signature
-	createThdTy *types.Signature
 	getSpecTy   *types.Signature
 	setSpecTy   *types.Signature
 	routineTy   *types.Signature
