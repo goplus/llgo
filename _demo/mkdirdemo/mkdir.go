@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -23,11 +24,11 @@ func main() {
 	defer os.Remove(tempFile.Name())
 	fmt.Println("Temp file:", tempFile.Name())
 
-	// todo(zzy): MkdirAll nested example
-	err = os.MkdirAll(tempDir, 0755)
+	nestedDir := filepath.Join("nested", "directory")
+	err = os.MkdirAll(nestedDir, 0755)
 	if err != nil {
 		fmt.Println("Failed to create nested directory:", err)
 		return
 	}
-	fmt.Println("Nest directory 3:", tempDir)
+	fmt.Println("Nest directory:", nestedDir)
 }
