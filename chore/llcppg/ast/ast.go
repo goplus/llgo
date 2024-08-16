@@ -16,6 +16,10 @@
 
 package ast
 
+import (
+	"github.com/goplus/llgo/chore/llcppg/token"
+)
+
 // =============================================================================
 
 type Node interface {
@@ -43,6 +47,11 @@ type PPD interface { // preprocessing directive
 
 // =============================================================================
 // Expressions (Types are also expressions)
+
+type Token struct {
+	Token token.Token
+	Lit   string
+}
 
 type BasicLitKind uint
 
@@ -293,6 +302,8 @@ func (*Include) ppdNode() {}
 // ------------------------------------------------
 
 type Macro struct {
+	Name string
+	Info []*Token
 }
 
 func (*Macro) ppdNode() {}
