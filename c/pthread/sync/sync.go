@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	LLGoFiles   = "_wrap/pthd.c"
+	LLGoFiles   = "_pthd/pthd.c"
 	LLGoPackage = "link"
 )
 
