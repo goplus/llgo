@@ -34,9 +34,24 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 	// json:macros,omitempty
 	if file.Macros != nil {
 		macros := cjson.Array()
+		for _, m := range file.Macros {
+			marco := cjson.Object()
+			marco.SetItem(c.Str("Name"), TokenInfo(m.Name))
+			body := cjson.Array()
+			for _, b := range m.Body {
+				body.AddItem(TokenInfo(b))
+			}
+			marco.SetItem(c.Str("Body"), body)
+			macros.AddItem(marco)
+		}
 		root.SetItem(c.Str("macros"), macros)
 	}
-
+	return root
+}
+func TokenInfo(t *ast.TokenInfo) *cjson.JSON {
+	root := cjson.Object()
+	root.SetItem(c.Str("Token"), cjson.Number(float64(t.Token)))
+	root.SetItem(c.Str("Lit"), cjson.String(c.AllocaCStr(t.Lit)))
 	return root
 }
 
