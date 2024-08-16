@@ -36,22 +36,8 @@ func (p Program) tyRoutine() *types.Signature {
 	return p.routineTy
 }
 
-// func(pthread *Thread, attr *Attr, routine func(c.Pointer) c.Pointer, arg c.Pointer) c.Int
-func (p Program) tyPthreadCreate() *types.Signature {
-	if p.createThdTy == nil {
-		paramPPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtrPtr().raw.Type)
-		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
-		paramRoutine := types.NewParam(token.NoPos, nil, "", p.tyRoutine())
-		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
-		params := types.NewTuple(paramPPtr, paramPtr, paramRoutine, paramPtr)
-		results := types.NewTuple(paramCInt)
-		p.createThdTy = types.NewSignatureType(nil, nil, nil, params, results, false)
-	}
-	return p.createThdTy
-}
-
 func (b Builder) pthreadCreate(pp, attr, routine, arg Expr) Expr {
-	fn := b.Pkg.cFunc("llgoPthreadCreate", b.Prog.tyPthreadCreate())
+	fn := b.Pkg.rtFunc("CreateThread")
 	return b.Call(fn, pp, attr, routine, arg)
 }
 

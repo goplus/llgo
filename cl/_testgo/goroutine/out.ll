@@ -2,6 +2,7 @@
 source_filename = "main"
 
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/c/pthread.RoutineFunc" = type { ptr, ptr }
 
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -51,25 +52,31 @@ _llgo_0:
   %15 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/internal/runtime.String" }, ptr %13, i32 0, i32 1
   store %"github.com/goplus/llgo/internal/runtime.String" %12, ptr %15, align 8
   %16 = alloca i8, i64 8, align 1
-  %17 = call i32 @llgoPthreadCreate(ptr %16, ptr null, ptr @"main._llgo_routine$1", ptr %13)
+  %17 = alloca %"github.com/goplus/llgo/c/pthread.RoutineFunc", align 8
+  %18 = getelementptr inbounds %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %17, i32 0, i32 0
+  store ptr @"__llgo_stub.main._llgo_routine$1", ptr %18, align 8
+  %19 = getelementptr inbounds %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %17, i32 0, i32 1
+  store ptr null, ptr %19, align 8
+  %20 = load %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %17, align 8
+  %21 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %16, ptr null, %"github.com/goplus/llgo/c/pthread.RoutineFunc" %20, ptr %13)
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %18 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %18, i32 0, i32 0
-  store ptr @1, ptr %19, align 8
-  %20 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %18, i32 0, i32 1
-  store i64 1, ptr %20, align 4
-  %21 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %18, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %21)
+  %22 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %22, i32 0, i32 0
+  store ptr @1, ptr %23, align 8
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %22, i32 0, i32 1
+  store i64 1, ptr %24, align 4
+  %25 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %22, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %25)
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret i32 0
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %22 = load i1, ptr %2, align 1
-  br i1 %22, label %_llgo_2, label %_llgo_1
+  %26 = load i1, ptr %2, align 1
+  br i1 %26, label %_llgo_2, label %_llgo_1
 }
 
 define void @"main.main$1"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1) {
@@ -104,7 +111,13 @@ _llgo_0:
 
 declare void @free(ptr)
 
-declare i32 @llgoPthreadCreate(ptr, ptr, ptr, ptr)
+declare i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr, ptr, %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr)
+
+define linkonce ptr @"__llgo_stub.main._llgo_routine$1"(ptr %0, ptr %1) {
+_llgo_0:
+  %2 = tail call ptr @"main._llgo_routine$1"(ptr %1)
+  ret ptr %2
+}
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 
