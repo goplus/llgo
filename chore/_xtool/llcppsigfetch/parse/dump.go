@@ -28,6 +28,11 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 	// json:includes,omitempty
 	if file.Includes != nil {
 		includes := cjson.Array()
+		for _, i := range file.Includes {
+			include := cjson.Object()
+			include.SetItem(c.Str("Path"), cjson.String(c.AllocaCStr(i.Path)))
+			includes.AddItem(include)
+		}
 		root.SetItem(c.Str("includes"), includes)
 	}
 
