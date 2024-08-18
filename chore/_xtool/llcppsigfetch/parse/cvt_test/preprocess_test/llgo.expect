@@ -8,13 +8,77 @@ TestDefine Case 1:
 		"macros":	[{
 				"Name":	{
 					"Token":	2,
-					"Lit":	"foo"
+					"Lit":	"OK"
 				},
 				"Body":	[{
 						"Token":	3,
 						"Lit":	"1"
 					}]
 			}]
+	}
+}
+
+TestDefine Case 2:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"Name":	{
+					"Token":	2,
+					"Lit":	"SQUARE"
+				},
+				"Body":	[{
+						"Token":	0,
+						"Lit":	"("
+					}, {
+						"Token":	2,
+						"Lit":	"x"
+					}, {
+						"Token":	0,
+						"Lit":	")"
+					}, {
+						"Token":	0,
+						"Lit":	"("
+					}, {
+						"Token":	0,
+						"Lit":	"("
+					}, {
+						"Token":	2,
+						"Lit":	"x"
+					}, {
+						"Token":	0,
+						"Lit":	")"
+					}, {
+						"Token":	0,
+						"Lit":	"*"
+					}, {
+						"Token":	0,
+						"Lit":	"("
+					}, {
+						"Token":	2,
+						"Lit":	"x"
+					}, {
+						"Token":	0,
+						"Lit":	")"
+					}, {
+						"Token":	0,
+						"Lit":	")"
+					}]
+			}]
+	}
+}
+
+TestInclude Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[],
+		"includes":	[{
+				"Path":	"foo.h"
+			}],
+		"macros":	[]
 	}
 }
 
