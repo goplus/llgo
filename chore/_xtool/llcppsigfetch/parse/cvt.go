@@ -194,9 +194,8 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 
 	switch cursor.Kind {
 	case clang.CursorInclusionDirective:
-		// todo(zzy)
+		ct.ProcessInclude(cursor)
 	case clang.CursorMacroDefinition:
-		// todo(zzy)
 		ct.ProcessMarco(cursor)
 	case clang.CursorEnumDecl:
 		// todo(zzy)
@@ -357,6 +356,12 @@ func (ct *Converter) ProcessMarco(cursor clang.Cursor) {
 		}
 	}
 	ct.curFile.Macros = append(ct.curFile.Macros, macro)
+}
+
+func (ct *Converter) ProcessInclude(cursor clang.Cursor) {
+	name := cursor.String()
+	defer name.Dispose()
+	ct.curFile.Includes = append(ct.curFile.Includes, &ast.Include{Path: c.GoString(name.CStr())})
 }
 
 type visitFieldContext struct {
