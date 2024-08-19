@@ -488,10 +488,15 @@ func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
 		flags |= ast.Long | ast.Double
 	case clang.TypeFloat128:
 		kind = ast.Float128
-	case clang.TypeComplex: // double | float
+	case clang.TypeComplex:
 		kind = ast.Complex
 		complexKind := t.ElementType().Kind
-		println("complex kind:", complexKind) // in unit test, will panic
+		if complexKind == clang.TypeLongDouble {
+			flags |= ast.Long | ast.Double
+		} else if complexKind == clang.TypeDouble {
+			flags |= ast.Double
+		}
+		// float complfex flag is not set
 	default:
 		// like IBM128,NullPtr,Accum
 		kindStr := t.Kind.String()
