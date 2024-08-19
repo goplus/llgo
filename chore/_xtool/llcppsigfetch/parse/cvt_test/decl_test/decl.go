@@ -11,6 +11,7 @@ func main() {
 	TestComment()
 	TestStructDecl()
 	TestClassDecl()
+	TestEnumDecl()
 }
 
 func TestFuncDecl() {
@@ -190,6 +191,43 @@ func TestClassDecl() {
 
 		json := converter.MarshalASTFiles()
 		c.Printf(c.Str("TestClassDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
+
+		converter.Dispose()
+	}
+}
+
+func TestEnumDecl() {
+	testCases := []string{
+		`enum Foo {
+			a,
+			b,
+			c,
+		};`,
+		`enum Foo {
+			a = 1,
+			b = 2,
+			c = 4,
+		};`,
+		`enum Foo {
+			a = 1,
+			b,
+			c,
+		};`,
+	}
+
+	for i, content := range testCases {
+		converter, err := parse.NewConverter(content, true)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = converter.Convert()
+		if err != nil {
+			panic(err)
+		}
+
+		json := converter.MarshalASTFiles()
+		c.Printf(c.Str("TestEnumDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
 
 		converter.Dispose()
 	}
