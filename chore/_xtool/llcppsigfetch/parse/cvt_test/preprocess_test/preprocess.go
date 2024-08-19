@@ -34,7 +34,10 @@ func TestInclude() {
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}

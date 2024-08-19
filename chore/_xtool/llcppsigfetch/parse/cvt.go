@@ -23,13 +23,11 @@ type Converter struct {
 	// todo(zzy):current namespace expr
 }
 
-func NewConverter(file string, temp bool) (*Converter, error) {
-	args := []*c.Char{
-		c.Str("-x"),
-		c.Str("c++"),
-		c.Str("-std=c++11"),
-	}
-	index := clang.CreateIndex(0, 0)
+type Config struct {
+	File string
+	Temp bool
+	Args []string
+}
 
 	var unit *clang.TranslationUnit
 
@@ -69,6 +67,52 @@ func NewConverter(file string, temp bool) (*Converter, error) {
 		index:   index,
 		unit:    unit,
 	}, nil
+}
+
+func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
+	if config.Args == nil {
+		config.Args = []string{"-x", "c++", "-std=c++11"}
+	}
+
+	cArgs := make([]*c.Char, len(config.Args))
+	for i, arg := range config.Args {
+		cArgs[i] = c.AllocaCStr(arg)
+	}
+
+	index := clang.CreateIndex(0, 0)
+
+	var unit *clang.TranslationUnit
+
+	if config.Temp {
+		content := c.AllocaCStr(config.File)
+		tempFile := &clang.UnsavedFile{
+			Filename: c.Str("temp.h"),
+			Contents: content,
+			Length:   c.Ulong(c.Strlen(content)),
+		}
+
+		unit = index.ParseTranslationUnit(
+			tempFile.Filename,
+			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
+			tempFile, 1,
+			clang.DetailedPreprocessingRecord,
+		)
+
+	} else {
+		cFile := c.AllocaCStr(config.File)
+		unit = index.ParseTranslationUnit(
+			cFile,
+			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
+			nil, 0,
+			clang.DetailedPreprocessingRecord,
+		)
+	}
+
+	if unit == nil {
+		return nil, nil, errors.New("failed to parse translation unit")
+	}
+
+	return index, unit, nil
 }
 
 func (ct *Converter) Dispose() {
@@ -362,6 +406,7 @@ func (ct *Converter) ProcessEnum(cursor clang.Cursor) {
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
 		Items:    items,
 	}
+
 	ct.curFile.Decls = append(ct.curFile.Decls, enum)
 }
 

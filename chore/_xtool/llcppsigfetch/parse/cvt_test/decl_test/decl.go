@@ -29,7 +29,10 @@ func TestFuncDecl() {
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -68,7 +71,10 @@ func TestScope() {
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -114,7 +120,10 @@ void foo();`,
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -148,7 +157,10 @@ func TestStructDecl() {
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -179,7 +191,10 @@ func TestClassDecl() {
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -216,7 +231,10 @@ func TestEnumDecl() {
 	}
 
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(content, true)
+		converter, err := parse.NewConverter(&parse.Config{
+			File: content,
+			Temp: true,
+		})
 		if err != nil {
 			panic(err)
 		}
