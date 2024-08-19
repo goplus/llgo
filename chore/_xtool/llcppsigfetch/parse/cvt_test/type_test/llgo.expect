@@ -22,6 +22,9 @@ Float16:flags:0 kind:9
 Double:flags:16 kind:8
 LongDouble:flags:20 kind:8
 Float128:flags:0 kind:10
+Complex:flags:0 kind:11
+Complex:flags:16 kind:11
+Complex:flags:20 kind:11
 Unknown:flags:0 kind:0
 
 #stderr
