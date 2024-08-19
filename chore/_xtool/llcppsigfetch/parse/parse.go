@@ -59,7 +59,10 @@ func (p *Context) processFile(path string) error {
 }
 
 func (p *Context) parseFile(path string) (map[string]*ast.File, error) {
-	converter, err := NewConverter(path, false)
+	converter, err := NewConverter(&Config{
+		File: path,
+		Temp: false,
+	})
 	if err != nil {
 		return nil, errors.New("failed to create converter " + path)
 	}

@@ -22,40 +22,16 @@ type Converter struct {
 	scopeStack []ast.Expr //namespace & class
 }
 
-func NewConverter(file string, temp bool) (*Converter, error) {
-	args := []*c.Char{
-		c.Str("-x"),
-		c.Str("c++"),
-		c.Str("-std=c++11"),
-	}
-	index := clang.CreateIndex(0, 0)
+type Config struct {
+	File string
+	Temp bool
+	Args []string
+}
 
-	var unit *clang.TranslationUnit
-
-	if temp {
-		content := c.AllocaCStr(file)
-		tempFile := &clang.UnsavedFile{
-			Filename: c.Str("temp.h"),
-			Contents: content,
-			Length:   c.Ulong(c.Strlen(content)),
-		}
-		unit = index.ParseTranslationUnit(
-			tempFile.Filename,
-			unsafe.SliceData(args), c.Int(len(args)),
-			tempFile, 1,
-			clang.DetailedPreprocessingRecord,
-		)
-	} else {
-		unit = index.ParseTranslationUnit(
-			c.AllocaCStr(file),
-			unsafe.SliceData(args), c.Int(len(args)),
-			nil, 0,
-			clang.DetailedPreprocessingRecord,
-		)
-	}
-
-	if unit == nil {
-		return nil, errors.New("failed to parse translation unit")
+func NewConverter(config *Config) (*Converter, error) {
+	index, unit, err := CreateTranslationUnit(config)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Converter{
@@ -63,6 +39,52 @@ func NewConverter(file string, temp bool) (*Converter, error) {
 		index: index,
 		unit:  unit,
 	}, nil
+}
+
+func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
+	if config.Args == nil {
+		config.Args = []string{"-x", "c++", "-std=c++11"}
+	}
+
+	cArgs := make([]*c.Char, len(config.Args))
+	for i, arg := range config.Args {
+		cArgs[i] = c.AllocaCStr(arg)
+	}
+
+	index := clang.CreateIndex(0, 0)
+
+	var unit *clang.TranslationUnit
+
+	if config.Temp {
+		content := c.AllocaCStr(config.File)
+		tempFile := &clang.UnsavedFile{
+			Filename: c.Str("temp.h"),
+			Contents: content,
+			Length:   c.Ulong(c.Strlen(content)),
+		}
+
+		unit = index.ParseTranslationUnit(
+			tempFile.Filename,
+			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
+			tempFile, 1,
+			clang.DetailedPreprocessingRecord,
+		)
+
+	} else {
+		cFile := c.AllocaCStr(config.File)
+		unit = index.ParseTranslationUnit(
+			cFile,
+			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
+			nil, 0,
+			clang.DetailedPreprocessingRecord,
+		)
+	}
+
+	if unit == nil {
+		return nil, nil, errors.New("failed to parse translation unit")
+	}
+
+	return index, unit, nil
 }
 
 func (ct *Converter) Dispose() {
@@ -281,6 +303,7 @@ func (ct *Converter) ProcessEnum(cursor clang.Cursor) {
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
 		Items:    items,
 	}
+
 	ct.curFile.Decls = append(ct.curFile.Decls, enum)
 }
 
@@ -465,6 +488,10 @@ func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
 		flags |= ast.Long | ast.Double
 	case clang.TypeFloat128:
 		kind = ast.Float128
+	case clang.TypeComplex: // double | float
+		kind = ast.Complex
+		complexKind := t.ElementType().Kind
+		println("complex kind:", complexKind) // in unit test, will panic
 	default:
 		// like IBM128,NullPtr,Accum
 		kindStr := t.Kind.String()
