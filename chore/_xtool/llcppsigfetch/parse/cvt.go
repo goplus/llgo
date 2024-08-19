@@ -164,7 +164,7 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 	case clang.CursorMacroDefinition:
 		ct.ProcessMarco(cursor)
 	case clang.CursorEnumDecl:
-		// todo(zzy)
+		ct.ProcessEnum(cursor)
 	case clang.CursorClassDecl:
 		ct.PushScope(cursor)
 		ct.ProcessClass(cursor)
@@ -204,11 +204,12 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		expr = ct.ProcessType(t.CanonicalType())
 	case clang.TypeConstantArray, clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray:
 		if t.Kind == clang.TypeConstantArray {
-			valueStr := make([]c.Char, 20)
-			c.Sprintf(unsafe.SliceData(valueStr), c.Str("%d"), t.ArraySize())
+			len := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
+			c.Sprintf(len, c.Str("%lld"), t.ArraySize())
+			defer c.Free(unsafe.Pointer(len))
 			expr = &ast.ArrayType{
 				Elt: ct.ProcessType(t.ArrayElementType()),
-				Len: &ast.BasicLit{Kind: ast.IntLit, Value: c.GoString(unsafe.SliceData(valueStr))},
+				Len: &ast.BasicLit{Kind: ast.IntLit, Value: c.GoString(len)},
 			}
 		} else if t.Kind == clang.TypeIncompleteArray {
 			// incomplete array havent len expr
@@ -238,6 +239,49 @@ func (ct *Converter) ProcessFunc(cursor clang.Cursor) *ast.FuncDecl {
 		Type:     funcType,
 	}
 	return fn
+}
+
+type visitEnumContext struct {
+	enum      *[]*ast.EnumItem
+	converter *Converter
+}
+
+func visitEnum(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+	ctx := (*visitEnumContext)(clientData)
+	if cursor.Kind == clang.CursorEnumConstantDecl {
+		name := cursor.String()
+		val := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
+		c.Sprintf(val, c.Str("%lld"), cursor.EnumConstantDeclValue())
+		defer c.Free(unsafe.Pointer(val))
+		defer name.Dispose()
+		enum := &ast.EnumItem{
+			Name: &ast.Ident{Name: c.GoString(name.CStr())},
+			Value: &ast.BasicLit{
+				Kind:  ast.IntLit,
+				Value: c.GoString(val),
+			},
+		}
+		*ctx.enum = append(*ctx.enum, enum)
+	}
+	return clang.ChildVisit_Continue
+}
+
+func (ct *Converter) ProcessEnum(cursor clang.Cursor) {
+	name := cursor.String()
+	defer name.Dispose()
+	items := make([]*ast.EnumItem, 0)
+	ctx := &visitEnumContext{
+		enum:      &items,
+		converter: ct,
+	}
+	clang.VisitChildren(cursor, visitEnum, c.Pointer(ctx))
+
+	enum := &ast.EnumTypeDecl{
+		DeclBase: ct.CreateDeclBase(cursor),
+		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
+		Items:    items,
+	}
+	ct.curFile.Decls = append(ct.curFile.Decls, enum)
 }
 
 // current only collect marco which defined in file
