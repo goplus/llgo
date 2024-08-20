@@ -49,6 +49,8 @@ void wrap_clang_getArrayElementType(CXType *arrayTyp, CXType *elemTyp) {
     *elemTyp = clang_getArrayElementType(*arrayTyp);
 }
 
+void wrap_clang_getElementType(CXType *Typ, CXType *elemTyp) { *elemTyp = clang_getElementType(*Typ); }
+
 long long wrap_clang_getArraySize(CXType *arrayTyp) { return clang_getArraySize(*arrayTyp); }
 
 void wrap_clang_getCanonicalType(CXType *typ, CXType *canonicalType) { *canonicalType = clang_getCanonicalType(*typ); }

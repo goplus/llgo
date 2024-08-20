@@ -1895,6 +1895,20 @@ func (t Type) ArrayElementType() (ret Type) {
 }
 
 /**
+ * Return the element type of an array, complex, or vector type.
+ *
+ * If a type is passed in that is not an array, complex, or vector type,
+ * an invalid type is returned.
+ */
+// llgo:link (*Type).wrapElementType C.wrap_clang_getElementType
+func (t *Type) wrapElementType(ret *Type) { return }
+
+func (t Type) ElementType() (ret Type) {
+	t.wrapElementType(&ret)
+	return
+}
+
+/**
  * Return the array size of a constant array.
  *
  * If a non-array type is passed in, -1 is returned.
