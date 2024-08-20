@@ -286,6 +286,7 @@ func (*FuncDecl) declNode() {}
 type TypeDecl struct {
 	DeclBase
 	Tag     Tag
+	Name    *Ident
 	Fields  *FieldList
 	Methods []*FuncDecl
 }
