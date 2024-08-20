@@ -427,6 +427,7 @@ func (ct *Converter) ProcessStructOrClass(cursor clang.Cursor, tag ast.Tag) *ast
 	decl := &ast.TypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Tag:      tag,
+		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
 		Fields:   fields,
 		Methods:  methods,
 	}
