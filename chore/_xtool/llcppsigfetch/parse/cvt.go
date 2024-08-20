@@ -10,6 +10,7 @@ import (
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	"github.com/goplus/llgo/chore/llcppg/token"
 )
 
 type Converter struct {
@@ -425,23 +426,17 @@ func (ct *Converter) ProcessMarco(cursor clang.Cursor) {
 	tokensSlice := unsafe.Slice(tokens, int(numTokens))
 
 	macro := &ast.Macro{
-		Name: &ast.TokenInfo{
-			Token: ast.Token(tokensSlice[0].Kind()),
-			Lit:   c.GoString(ct.unit.Token(tokensSlice[0]).CStr()),
-		},
-		Body: make([]*ast.TokenInfo, 0),
+		Name:   c.GoString(name.CStr()),
+		Tokens: make([]*ast.Token, 0),
 	}
 
-	if numTokens > 1 { //have body
-		for i := 1; i < int(numTokens); i++ {
-			tok := tokensSlice[i]
-			tokStr := ct.unit.Token(tok)
-			macro.Body = append(macro.Body, &ast.TokenInfo{
-				Token: ast.Token(tok.Kind()),
-				Lit:   c.GoString(tokStr.CStr()),
-			})
-			tokStr.Dispose()
-		}
+	for _, tok := range tokensSlice {
+		tokStr := ct.unit.Token(tok)
+		macro.Tokens = append(macro.Tokens, &ast.Token{
+			Token: toToken(tok),
+			Lit:   c.GoString(tokStr.CStr()),
+		})
+		tokStr.Dispose()
 	}
 	ct.curFile.Macros = append(ct.curFile.Macros, macro)
 }
