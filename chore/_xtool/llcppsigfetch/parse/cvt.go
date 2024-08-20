@@ -425,6 +425,8 @@ func (ct *Converter) ProcessMarco(cursor clang.Cursor) {
 	var numTokens c.Uint
 	var tokens *clang.Token
 	ct.unit.Tokenize(ran, &tokens, &numTokens)
+	defer ct.unit.DisposeTokens(tokens, numTokens)
+
 	tokensSlice := unsafe.Slice(tokens, int(numTokens))
 
 	macro := &ast.Macro{
