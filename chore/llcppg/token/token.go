@@ -3,25 +3,30 @@ package token
 type Token uint
 
 const (
+	ILLEGAL Token = iota
+
 	/**
 	 * A token that contains some kind of punctuation.
 	 */
-	PunctuationToken Token = iota
+	PUNCT
+
 	/**
 	 * A language keyword.
 	 */
-	KeywordToken
+	KEYWORD
 
 	/**
 	 * An identifier (that is not a keyword).
 	 */
-	IdentifierToken
+	IDENT
+
 	/**
 	 * A numeric, string, or character literal.
 	 */
-	LiteralToken
+	LITERAL
+
 	/**
 	 * A comment.
 	 */
-	CommentToken
+	COMMENT
 )
