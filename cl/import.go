@@ -266,7 +266,7 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 		if fullName, isVar, ok := f(inPkgName); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
 			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
-				p.link[fullName] = link
+				p.prog.SetLinkname(fullName, link)
 			} else {
 				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
 			}
@@ -434,7 +434,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 			return nil, orgName, ignoredFunc
 		}
 	}
-	if v, ok := p.link[orgName]; ok {
+	if v, ok := p.prog.Linkname(orgName); ok {
 		if strings.HasPrefix(v, "C.") {
 			return nil, v[2:], cFunc
 		}
@@ -458,7 +458,7 @@ const (
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
 	name := llssa.FullName(pkg, v.Name())
-	if v, ok := p.link[name]; ok {
+	if v, ok := p.prog.Linkname(name); ok {
 		if pos := strings.IndexByte(v, '.'); pos >= 0 {
 			if pos == 2 && v[0] == 'p' && v[1] == 'y' {
 				return v[3:], pyVar, false

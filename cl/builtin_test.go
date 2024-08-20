@@ -285,45 +285,39 @@ func TestErrVarOf(t *testing.T) {
 
 func TestContextResolveLinkname(t *testing.T) {
 	tests := []struct {
-		name    string
-		context *context
-		input   string
-		want    string
-		panics  bool
+		name   string
+		link   map[string]string
+		input  string
+		want   string
+		panics bool
 	}{
 		{
 			name: "Normal",
-			context: &context{
-				link: map[string]string{
-					"foo": "C.bar",
-				},
+			link: map[string]string{
+				"foo": "C.bar",
 			},
 			input: "foo",
 			want:  "bar",
 		},
 		{
 			name: "MultipleLinks",
-			context: &context{
-				link: map[string]string{
-					"foo1": "C.bar1",
-					"foo2": "C.bar2",
-				},
+			link: map[string]string{
+				"foo1": "C.bar1",
+				"foo2": "C.bar2",
 			},
 			input: "foo2",
 			want:  "bar2",
 		},
 		{
-			name:    "NoLink",
-			context: &context{link: map[string]string{}},
-			input:   "foo",
-			want:    "foo",
+			name:  "NoLink",
+			link:  map[string]string{},
+			input: "foo",
+			want:  "foo",
 		},
 		{
 			name: "InvalidLink",
-			context: &context{
-				link: map[string]string{
-					"foo": "invalid.bar",
-				},
+			link: map[string]string{
+				"foo": "invalid.bar",
 			},
 			input:  "foo",
 			panics: true,
@@ -338,7 +332,11 @@ func TestContextResolveLinkname(t *testing.T) {
 					}
 				}()
 			}
-			got := tt.context.resolveLinkname(tt.input)
+			ctx := &context{prog: llssa.NewProgram(nil)}
+			for k, v := range tt.link {
+				ctx.prog.SetLinkname(k, v)
+			}
+			got := ctx.resolveLinkname(tt.input)
 			if !tt.panics {
 				if got != tt.want {
 					t.Errorf("got %q, want %q", got, tt.want)

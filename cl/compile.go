@@ -89,7 +89,6 @@ type context struct {
 	goTyps *types.Package
 	goPkg  *ssa.Package
 	pyMod  string
-	link   map[string]string // pkgPath.nameInPkg => linkname
 	skips  map[string]none
 	loaded map[*types.Package]*pkgInfo // loaded packages
 	bvals  map[ssa.Value]llssa.Expr    // block values
@@ -827,7 +826,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		goTyps:  pkgTypes,
 		goPkg:   pkg,
 		patches: patches,
-		link:    make(map[string]string),
 		skips:   make(map[string]none),
 		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
@@ -936,7 +934,7 @@ func (p *context) patchType(typ types.Type) types.Type {
 }
 
 func (p *context) resolveLinkname(name string) string {
-	if link, ok := p.link[name]; ok {
+	if link, ok := p.prog.Linkname(name); ok {
 		prefix, ltarget, _ := strings.Cut(link, ".")
 		if prefix != "C" {
 			panic("resolveLinkname: invalid link: " + link)

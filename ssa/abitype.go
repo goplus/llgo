@@ -431,9 +431,7 @@ func (b Builder) loadType(t types.Type) Global {
 		prog := b.Prog
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.InitNil()
-		if pub {
-			g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		}
+		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		pkg.abiTypeInit(g, t, pub)
 	}
 	return g
