@@ -554,6 +554,9 @@ TestScope Case 4:
 					"Name":	"a"
 				},
 				"Tag":	3,
+				"Name":	{
+					"Name":	"a"
+				},
 				"Fields":	{
 					"List":	[]
 				},
@@ -606,6 +609,9 @@ TestScope Case 5:
 					}
 				},
 				"Tag":	3,
+				"Name":	{
+					"Name":	"b"
+				},
 				"Fields":	{
 					"List":	[]
 				},
@@ -952,6 +958,9 @@ TestStructDecl Case 1:
 				},
 				"Parent":	null,
 				"Tag":	0,
+				"Name":	{
+					"Name":	"A"
+				},
 				"Fields":	{
 					"List":	[{
 							"Type":	{
@@ -1003,6 +1012,9 @@ TestStructDecl Case 2:
 				},
 				"Parent":	null,
 				"Tag":	0,
+				"Name":	{
+					"Name":	"A"
+				},
 				"Fields":	{
 					"List":	[{
 							"Type":	{
@@ -1054,6 +1066,9 @@ TestStructDecl Case 3:
 				},
 				"Parent":	null,
 				"Tag":	0,
+				"Name":	{
+					"Name":	"A"
+				},
 				"Fields":	{
 					"List":	[{
 							"Type":	{
@@ -1155,6 +1170,9 @@ TestClassDecl Case 1:
 					"Name":	"A"
 				},
 				"Tag":	3,
+				"Name":	{
+					"Name":	"A"
+				},
 				"Fields":	{
 					"List":	[{
 							"Type":	{
@@ -1208,6 +1226,9 @@ TestClassDecl Case 2:
 					"Name":	"A"
 				},
 				"Tag":	3,
+				"Name":	{
+					"Name":	"A"
+				},
 				"Fields":	{
 					"List":	[{
 							"Type":	{
@@ -1309,6 +1330,9 @@ TestUnionDecl Case 1:
 				},
 				"Parent":	null,
 				"Tag":	1,
+				"Name":	{
+					"Name":	"A"
+				},
 				"Fields":	{
 					"List":	[{
 							"Type":	{

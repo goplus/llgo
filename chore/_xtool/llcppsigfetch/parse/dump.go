@@ -81,6 +81,7 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 	case *ast.TypeDecl:
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
+		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
 		root.SetItem(c.Str("Fields"), MarshalASTExpr(d.Fields))
 		methods := cjson.Array()
 		for _, m := range d.Methods {
