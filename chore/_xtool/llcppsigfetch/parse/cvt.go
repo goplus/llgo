@@ -194,6 +194,8 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		ct.PopScope()
 	case clang.CursorStructDecl:
 		ct.ProcessStruct(cursor)
+	case clang.CursorUnionDecl:
+		ct.ProcessUnion(cursor)
 	case clang.CursorFunctionDecl:
 		ct.curFile.Decls = append(ct.curFile.Decls, ct.ProcessFunc(cursor))
 	case clang.CursorNamespace:
@@ -432,6 +434,11 @@ func (ct *Converter) ProcessStructOrClass(cursor clang.Cursor, tag ast.Tag) *ast
 
 func (ct *Converter) ProcessStruct(cursor clang.Cursor) {
 	structDecl := ct.ProcessStructOrClass(cursor, ast.Struct)
+	ct.curFile.Decls = append(ct.curFile.Decls, structDecl)
+}
+
+func (ct *Converter) ProcessUnion(cursor clang.Cursor) {
+	structDecl := ct.ProcessStructOrClass(cursor, ast.Union)
 	ct.curFile.Decls = append(ct.curFile.Decls, structDecl)
 }
 
