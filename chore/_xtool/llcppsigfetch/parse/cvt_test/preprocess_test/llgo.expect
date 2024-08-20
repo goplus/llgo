@@ -6,13 +6,10 @@ TestDefine Case 1:
 		"decls":	[],
 		"includes":	[],
 		"macros":	[{
-				"Name":	{
-					"Token":	2,
-					"Lit":	"OK"
-				},
-				"Body":	[{
+				"Name":	"DEBUG",
+				"Tokens":	[{
 						"Token":	3,
-						"Lit":	"1"
+						"Lit":	"DEBUG"
 					}]
 			}]
 	}
@@ -25,45 +22,64 @@ TestDefine Case 2:
 		"decls":	[],
 		"includes":	[],
 		"macros":	[{
-				"Name":	{
-					"Token":	2,
-					"Lit":	"SQUARE"
-				},
-				"Body":	[{
-						"Token":	0,
+				"Name":	"OK",
+				"Tokens":	[{
+						"Token":	3,
+						"Lit":	"OK"
+					}, {
+						"Token":	4,
+						"Lit":	"1"
+					}]
+			}]
+	}
+}
+
+TestDefine Case 3:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"Name":	"SQUARE",
+				"Tokens":	[{
+						"Token":	3,
+						"Lit":	"SQUARE"
+					}, {
+						"Token":	1,
 						"Lit":	"("
 					}, {
-						"Token":	2,
+						"Token":	3,
 						"Lit":	"x"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	")"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	"("
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	"("
 					}, {
-						"Token":	2,
+						"Token":	3,
 						"Lit":	"x"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	")"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	"*"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	"("
 					}, {
-						"Token":	2,
+						"Token":	3,
 						"Lit":	"x"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	")"
 					}, {
-						"Token":	0,
+						"Token":	1,
 						"Lit":	")"
 					}]
 			}]
