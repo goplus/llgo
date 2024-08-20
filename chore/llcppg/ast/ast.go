@@ -72,11 +72,18 @@ func (*BasicLit) exprNode() {}
 type TypeKind uint
 
 const (
-	Int TypeKind = iota
-	Char
-	Float
-	Complex
+	Void TypeKind = iota
 	Bool
+	Char
+	Char16
+	Char32
+	WChar
+	Int
+	Int128
+	Float
+	Float16
+	Float128
+	Complex
 )
 
 type TypeFlag uint
