@@ -1296,6 +1296,57 @@ TestClassDecl Case 2:
 	}
 }
 
+TestUnionDecl Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	1,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 TestEnumDecl Case 1:
 {
 	"temp.h":	{
