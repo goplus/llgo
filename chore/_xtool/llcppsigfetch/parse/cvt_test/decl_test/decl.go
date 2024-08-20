@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	test "github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse/cvt_test"
 )
 
 func main() {
@@ -27,26 +26,7 @@ func TestFuncDecl() {
 		`float* foo(char str[], double x);`,
 		`float* foo(int arr[3][4]);`,
 	}
-
-	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		json := converter.MarshalASTFiles()
-		c.Printf(c.Str("TestFuncDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
-
-		converter.Dispose()
-	}
+	test.RunTest("TestFuncDecl", testCases)
 }
 
 func TestScope() {
@@ -69,26 +49,7 @@ func TestScope() {
 		 };
 	   	 }`,
 	}
-
-	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		json := converter.MarshalASTFiles()
-		c.Printf(c.Str("TestScope Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
-
-		converter.Dispose()
-	}
+	test.RunTest("TestScope", testCases)
 }
 
 func TestComment() {
@@ -118,26 +79,7 @@ void foo();`,
  */
 void foo();`,
 	}
-
-	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		json := converter.MarshalASTFiles()
-		c.Printf(c.Str("TestComment Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
-
-		converter.Dispose()
-	}
+	test.RunTest("TestComment", testCases)
 }
 
 func TestStructDecl() {
@@ -155,26 +97,7 @@ func TestStructDecl() {
 			float foo(int a,double b);;
 		};`,
 	}
-
-	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		json := converter.MarshalASTFiles()
-		c.Printf(c.Str("TestStructDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
-
-		converter.Dispose()
-	}
+	test.RunTest("TestStructDecl", testCases)
 }
 
 func TestClassDecl() {
@@ -189,26 +112,7 @@ func TestClassDecl() {
 			float foo(int a,double b);;
 		};`,
 	}
-
-	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		json := converter.MarshalASTFiles()
-		c.Printf(c.Str("TestClassDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
-
-		converter.Dispose()
-	}
+	test.RunTest("TestClassDecl", testCases)
 }
 
 func TestEnumDecl() {
@@ -229,24 +133,5 @@ func TestEnumDecl() {
 			c,
 		};`,
 	}
-
-	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		json := converter.MarshalASTFiles()
-		c.Printf(c.Str("TestEnumDecl Case %d:\n%s\n\n"), c.Int(i+1), json.Print())
-
-		converter.Dispose()
-	}
+	test.RunTest("TestEnumDecl", testCases)
 }
