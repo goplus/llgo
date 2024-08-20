@@ -1758,6 +1758,14 @@ func (t *TranslationUnit) Tokenize(ran SourceRange, tokens **Token, numTokens *c
 	t.wrapTokenize(&ran, tokens, numTokens)
 }
 
+//  CINDEX_LINKAGE void clang_disposeTokens(CXTranslationUnit TU, CXToken *Tokens, unsigned NumTokens);
+
+/**
+ * Free the given set of tokens.
+ */
+// llgo:link (*TranslationUnit).DisposeTokens C.clang_disposeTokens
+func (t *TranslationUnit) DisposeTokens(tokens *Token, numTokens c.Uint) {}
+
 /**
  * Determine the spelling of the given token.
  *

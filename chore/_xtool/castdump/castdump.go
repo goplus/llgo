@@ -105,6 +105,8 @@ func printMacro(cursor clang.Cursor, unit *clang.TranslationUnit) {
 	var numTokens c.Uint
 	var tokens *clang.Token
 	unit.Tokenize(ran, &tokens, &numTokens)
+	defer unit.DisposeTokens(tokens, numTokens)
+
 	tokensSlice := unsafe.Slice(tokens, int(numTokens))
 	for _, tok := range tokensSlice {
 		tokStr := unit.Token(tok)
