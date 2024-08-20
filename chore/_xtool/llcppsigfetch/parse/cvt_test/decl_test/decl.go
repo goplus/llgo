@@ -10,6 +10,7 @@ func main() {
 	TestComment()
 	TestStructDecl()
 	TestClassDecl()
+	TestUnionDecl()
 	TestEnumDecl()
 }
 
@@ -98,6 +99,16 @@ func TestStructDecl() {
 		};`,
 	}
 	test.RunTest("TestStructDecl", testCases)
+}
+
+func TestUnionDecl() {
+	testCases := []string{
+		`union A {
+			int a;
+			int b;
+		};`,
+	}
+	test.RunTest("TestUnionDecl", testCases)
 }
 
 func TestClassDecl() {
