@@ -219,6 +219,14 @@ func (*FuncType) exprNode() {}
 
 // ------------------------------------------------
 
+type RecordType struct {
+	Tag     Tag
+	Fields  *FieldList
+	Methods []*FuncDecl
+}
+
+// ------------------------------------------------
+
 // Template<Arg1, Arg2, ...>
 type InstantiationType struct {
 	Template Expr
@@ -285,10 +293,8 @@ func (*FuncDecl) declNode() {}
 // struct/union/class Name { Field1, Field2, ... };
 type TypeDecl struct {
 	DeclBase
-	Tag     Tag
-	Name    *Ident
-	Fields  *FieldList
-	Methods []*FuncDecl
+	Name *Ident
+	Type *RecordType
 }
 
 func (*TypeDecl) declNode() {}
