@@ -1599,6 +1599,198 @@ TestEnumDecl Case 3:
 	}
 }
 
+TestTypeDefDecl Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"INT"
+				},
+				"Type":	{
+					"Kind":	6,
+					"Flags":	0
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestTypeDefDecl Case 2:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"INT"
+				},
+				"Type":	{
+					"Kind":	6,
+					"Flags":	0
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"STANDARD_INT"
+				},
+				"Type":	{
+					"Name":	"INT"
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestTypeDefDecl Case 3:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	0,
+				"Name":	{
+					"Name":	"StructFoo"
+				},
+				"Fields":	{
+					"List":	[]
+				},
+				"Methods":	[]
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	1,
+				"Name":	{
+					"Name":	"UnionFoo"
+				},
+				"Fields":	{
+					"List":	[]
+				},
+				"Methods":	[]
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"ClassFoo"
+				},
+				"Tag":	3,
+				"Name":	{
+					"Name":	"ClassFoo"
+				},
+				"Fields":	{
+					"List":	[]
+				},
+				"Methods":	[]
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"EnumFoo"
+				},
+				"Items":	[]
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"STRUCT_FOO"
+				},
+				"Type":	{
+					"Name":	"StructFoo"
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"UNION_FOO"
+				},
+				"Type":	{
+					"Name":	"UnionFoo"
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"CLASS_FOO"
+				},
+				"Type":	{
+					"Name":	"ClassFoo"
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"ENUM_FOO"
+				},
+				"Type":	{
+					"Name":	"EnumFoo"
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 

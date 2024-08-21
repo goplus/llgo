@@ -270,6 +270,8 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		curFile.Decls = append(curFile.Decls, unionDecl)
 	case clang.CursorFunctionDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessFunc(cursor))
+	case clang.CursorTypedefDecl:
+		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDef(cursor))
 	case clang.CursorNamespace:
 		ct.PushScope(cursor)
 		clang.VisitChildren(cursor, visit, c.Pointer(ct))
