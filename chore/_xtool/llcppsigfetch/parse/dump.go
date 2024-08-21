@@ -131,6 +131,9 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		}
 		root.SetItem(c.Str("Names"), names)
 	case *ast.Ident:
+		if d == nil {
+			return cjson.Null()
+		}
 		root.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(d.Name)))
 	case *ast.EnumItem:
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
@@ -147,6 +150,9 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
 		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
 	case *ast.Comment:
+		if d == nil {
+			return cjson.Null()
+		}
 		root.SetItem(c.Str("Text"), cjson.String(c.AllocaCStr(d.Text)))
 	case *ast.CommentGroup:
 		if d == nil {
