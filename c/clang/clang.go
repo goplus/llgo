@@ -1864,6 +1864,20 @@ func (t Type) String() (ret String) {
 }
 
 /**
+ * Retrieve the underlying type of a typedef declaration.
+ *
+ * If the cursor does not reference a typedef declaration, an invalid type is
+ * returned.
+ */
+// llgo:link (*Cursor).wrapTypedefDeclUnderlyingType C.wrap_clang_getTypedefDeclUnderlyingType
+func (c *Cursor) wrapTypedefDeclUnderlyingType(ret *Type) { return }
+
+func (c Cursor) TypedefDeclUnderlyingType() (ret Type) {
+	c.wrapTypedefDeclUnderlyingType(&ret)
+	return
+}
+
+/**
  * Retrieve the return type associated with a function type.
  *
  * If a non-function type is passed in, an invalid type is returned.
@@ -1952,6 +1966,19 @@ func (t *Type) wrapArraySize() (ret c.LongLong) { return 0 }
 
 func (t Type) ArraySize() (ret c.LongLong) {
 	return t.wrapArraySize()
+}
+
+/**
+ * Retrieve the type named by the qualified-id.
+ *
+ * If a non-elaborated type is passed in, an invalid type is returned.
+ */
+// llgo:link (*Type).wrapNamedType C.wrap_clang_Type_getNamedType
+func (t *Type) wrapNamedType(ret *Type) { return }
+
+func (t Type) NamedType() (ret Type) {
+	t.wrapNamedType(&ret)
+	return
 }
 
 /**
