@@ -213,6 +213,8 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		curFile.Decls = append(curFile.Decls, unionDecl)
 	case clang.CursorFunctionDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessFunc(cursor))
+	case clang.CursorTypedefDecl:
+		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDef(cursor))
 	case clang.CursorNamespace:
 		ct.PushScope(cursor)
 		clang.VisitChildren(cursor, visit, c.Pointer(ct))
@@ -240,8 +242,6 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		// function type will only collect return type, params will be collected in ProcessFunc
 		ret := ct.ProcessType(t.ResultType())
 		expr = &ast.FuncType{Ret: ret}
-	case clang.TypeTypedef:
-		expr = ct.ProcessType(t.CanonicalType())
 	case clang.TypeConstantArray, clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray:
 		if t.Kind == clang.TypeConstantArray {
 			len := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
@@ -259,6 +259,27 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		}
 	}
 	return expr
+}
+
+func (ct *Converter) ProcessTypeDef(cursor clang.Cursor) *ast.TypedefDecl {
+	name := cursor.String()
+	defer name.Dispose()
+	return &ast.TypedefDecl{
+		DeclBase: ct.CreateDeclBase(cursor),
+		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
+		Type:     ct.ProcessUnderLyingType(cursor),
+	}
+}
+
+func (ct *Converter) ProcessUnderLyingType(cursor clang.Cursor) ast.Expr {
+	underlying := cursor.TypedefDeclUnderlyingType()
+	// enum,union,class,struct,typedef -> elaborated type
+	if underlying.Kind == clang.TypeElaborated {
+		return &ast.Ident{
+			Name: c.GoString(underlying.String().CStr()),
+		}
+	}
+	return ct.ProcessType(underlying)
 }
 
 func (ct *Converter) ProcessFunc(cursor clang.Cursor) *ast.FuncDecl {

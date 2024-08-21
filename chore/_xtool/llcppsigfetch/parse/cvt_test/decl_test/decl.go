@@ -12,6 +12,7 @@ func main() {
 	TestClassDecl()
 	TestUnionDecl()
 	TestEnumDecl()
+	TestTypeDefDecl()
 }
 
 func TestFuncDecl() {
@@ -152,4 +153,21 @@ func TestEnumDecl() {
 		};`,
 	}
 	test.RunTest("TestEnumDecl", testCases)
+}
+
+func TestTypeDefDecl() {
+	testCases := []string{
+		`typedef int INT;`,
+		`typedef int INT;
+		 typedef INT STANDARD_INT;`,
+		`struct StructFoo {};
+		 union UnionFoo {};
+		 class ClassFoo {};
+		 enum EnumFoo {};
+		 typedef StructFoo STRUCT_FOO;
+		 typedef UnionFoo UNION_FOO;
+		 typedef ClassFoo CLASS_FOO;
+		 typedef EnumFoo ENUM_FOO;`,
+	}
+	test.RunTest("TestTypeDefDecl", testCases)
 }
