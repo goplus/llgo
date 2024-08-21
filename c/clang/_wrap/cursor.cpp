@@ -72,6 +72,12 @@ enum CX_CXXAccessSpecifier wrap_clang_getCXXAccessSpecifier(CXCursor *cursor) {
     return clang_getCXXAccessSpecifier(*cursor);
 }
 
+unsigned wrap_clang_Cursor_isAnonymous(CXCursor *cursor) { return clang_Cursor_isAnonymous(*cursor); }
+
+unsigned wrap_clang_Cursor_isAnonymousRecordDecl(CXCursor *cursor) {
+    return clang_Cursor_isAnonymousRecordDecl(*cursor);
+}
+
 CXString wrap_clang_Cursor_getRawCommentText(CXCursor *cursor) { return clang_Cursor_getRawCommentText(*cursor); }
 
 void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }

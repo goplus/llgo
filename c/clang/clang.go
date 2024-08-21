@@ -1674,6 +1674,32 @@ func (c Cursor) Location() (loc SourceLocation) {
 }
 
 /**
+ * Determine whether the given cursor represents an anonymous
+ * tag or namespace
+ */
+// llgo:link (*Cursor).wrapIsAnonymous C.wrap_clang_Cursor_isAnonymous
+func (c *Cursor) wrapIsAnonymous() (ret c.Uint) {
+	return 0
+}
+
+func (c Cursor) IsAnonymous() (ret c.Uint) {
+	return c.wrapIsAnonymous()
+}
+
+/**
+ * Determine whether the given cursor represents an anonymous record
+ * declaration.
+ */
+// llgo:link (*Cursor).wrapIsAnonymousRecordDecl C.wrap_clang_Cursor_isAnonymousRecordDecl
+func (c *Cursor) wrapIsAnonymousRecordDecl() (ret c.Uint) {
+	return 0
+}
+
+func (c Cursor) IsAnonymousRecordDecl() (ret c.Uint) {
+	return c.wrapIsAnonymousRecordDecl()
+}
+
+/**
  * Represents the C++ access control level to a base class for a
  * cursor with kind CX_CXXBaseSpecifier.
  */
