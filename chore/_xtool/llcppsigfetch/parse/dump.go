@@ -74,6 +74,10 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 			items.AddItem(MarshalASTExpr(i))
 		}
 		root.SetItem(c.Str("Items"), items)
+	case *ast.TypedefDecl:
+		MarshalASTDeclBase(d.DeclBase, root)
+		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
+		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
 	case *ast.FuncDecl:
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
