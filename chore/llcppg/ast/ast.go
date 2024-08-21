@@ -169,11 +169,18 @@ func (*PointerType) exprNode() {}
 // ------------------------------------------------
 
 // X&
-type ReferenceType struct {
+type LvalueRefType struct {
 	X Expr
 }
 
-func (*ReferenceType) exprNode() {}
+func (*LvalueRefType) exprNode() {}
+
+// X&&
+type RvalueRefType struct {
+	X Expr
+}
+
+func (*RvalueRefType) exprNode() {}
 
 // ------------------------------------------------
 
