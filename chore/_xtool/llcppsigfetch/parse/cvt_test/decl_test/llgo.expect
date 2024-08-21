@@ -958,9 +958,7 @@ TestStructDecl Case 1:
 				},
 				"Parent":	null,
 				"Tag":	0,
-				"Name":	{
-					"Name":	"A"
-				},
+				"Name":	null,
 				"Fields":	{
 					"List":	[{
 							"Type":	{
@@ -975,20 +973,6 @@ TestStructDecl Case 1:
 							},
 							"Names":	[{
 									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
 								}]
 						}]
 				},
@@ -1054,6 +1038,60 @@ TestStructDecl Case 2:
 }
 
 TestStructDecl Case 3:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	0,
+				"Name":	{
+					"Name":	"A"
+				},
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestStructDecl Case 4:
 {
 	"temp.h":	{
 		"path":	"temp.h",
@@ -1318,6 +1356,58 @@ TestClassDecl Case 2:
 }
 
 TestUnionDecl Case 1:
+{
+	"temp.h":	{
+		"path":	"temp.h",
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Tag":	1,
+				"Name":	null,
+				"Fields":	{
+					"List":	[{
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"a"
+								}]
+						}, {
+							"Type":	{
+								"Kind":	6,
+								"Flags":	0
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Comment":	{
+								"List":	[]
+							},
+							"Names":	[{
+									"Name":	"b"
+								}]
+						}]
+				},
+				"Methods":	[]
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestUnionDecl Case 2:
 {
 	"temp.h":	{
 		"path":	"temp.h",
