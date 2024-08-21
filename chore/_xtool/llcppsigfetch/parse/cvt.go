@@ -427,10 +427,15 @@ func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 	return methods
 }
 
-func (ct *Converter) ProcessStructOrClass(cursor clang.Cursor, tag ast.Tag) *ast.TypeDecl {
+func (ct *Converter) ProcessRecord(cursor clang.Cursor, tag ast.Tag) *ast.TypeDecl {
+	anony := cursor.IsAnonymousRecordDecl()
 
-	name := cursor.String()
-	defer name.Dispose()
+	var name *ast.Ident
+	if anony == 0 {
+		cursorName := cursor.String()
+		defer cursorName.Dispose()
+		name = &ast.Ident{Name: c.GoString(cursorName.CStr())}
+	}
 
 	fields := ct.ProcessFieldList(cursor)
 	methods := ct.ProcessMethods(cursor)
@@ -438,7 +443,7 @@ func (ct *Converter) ProcessStructOrClass(cursor clang.Cursor, tag ast.Tag) *ast
 	decl := &ast.TypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Tag:      tag,
-		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
+		Name:     name,
 		Fields:   fields,
 		Methods:  methods,
 	}
@@ -447,15 +452,15 @@ func (ct *Converter) ProcessStructOrClass(cursor clang.Cursor, tag ast.Tag) *ast
 }
 
 func (ct *Converter) ProcessStruct(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessStructOrClass(cursor, ast.Struct)
+	return ct.ProcessRecord(cursor, ast.Struct)
 }
 
 func (ct *Converter) ProcessUnion(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessStructOrClass(cursor, ast.Union)
+	return ct.ProcessRecord(cursor, ast.Union)
 }
 
 func (ct *Converter) ProcessClass(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessStructOrClass(cursor, ast.Class)
+	return ct.ProcessRecord(cursor, ast.Class)
 }
 
 func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
