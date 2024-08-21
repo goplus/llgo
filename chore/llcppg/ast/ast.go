@@ -44,6 +44,16 @@ type PPD interface { // preprocessing directive
 }
 
 // =============================================================================
+type AccessSpecifier uint
+
+const (
+	Invalid AccessSpecifier = iota
+	Public
+	Protected
+	Private
+)
+
+// =============================================================================
 // Expressions (Types are also expressions)
 
 type BasicLitKind uint
@@ -282,8 +292,18 @@ func (*EnumTypeDecl) declNode() {}
 // Ret Name(Params);
 type FuncDecl struct {
 	DeclBase
-	Name *Ident
-	Type *FuncType
+	Name     *Ident
+	Type     *FuncType
+	IsInline bool
+	IsStatic bool
+
+	// Class method specific fields
+	IsConst       bool // const member function
+	IsExplicit    bool // explicit constructor
+	IsConstructor bool
+	IsDestructor  bool
+	IsVirtual     bool
+	IsOverride    bool
 }
 
 func (*FuncDecl) declNode() {}
