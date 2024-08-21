@@ -85,6 +85,9 @@ void foo();`,
 
 func TestStructDecl() {
 	testCases := []string{
+		`struct {
+			int a;
+		};`,
 		`struct A {
 			int a;
 			int b;
@@ -103,6 +106,10 @@ func TestStructDecl() {
 
 func TestUnionDecl() {
 	testCases := []string{
+		`union {
+			int a;
+			int b;
+		};`,
 		`union A {
 			int a;
 			int b;
