@@ -191,6 +191,7 @@ type aProgram struct {
 	sigljmpTy   *types.Signature
 
 	paramObjPtr_ *types.Var
+	linkname     map[string]string // pkgPath.nameInPkg => linkname
 
 	ptrSize int
 
@@ -227,6 +228,7 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type), fnnamed: make(map[string]int),
+		linkname: make(map[string]string),
 	}
 }
 
@@ -243,6 +245,15 @@ func (p Program) SetRuntime(runtime any) {
 
 func (p Program) SetTypeBackground(fullName string, bg Background) {
 	p.gocvt.typbg[fullName] = bg
+}
+
+func (p Program) SetLinkname(name, link string) {
+	p.linkname[name] = link
+}
+
+func (p Program) Linkname(name string) (link string, ok bool) {
+	link, ok = p.linkname[name]
+	return
 }
 
 func (p Program) runtime() *types.Package {

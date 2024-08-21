@@ -8,7 +8,7 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/abi.StructField" = type { %"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1 }
 
 @"main.init$guard" = global i1 false, align 1
-@"main.struct$hWvPvnlB9uIZSm1cMlcssbAfCpkLhNdpCzAk4conL0o" = global ptr null, align 8
+@"main.struct$hWvPvnlB9uIZSm1cMlcssbAfCpkLhNdpCzAk4conL0o" = linkonce global ptr null, align 8
 @_llgo_Pointer = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [1 x i8] c"f", align 1
 @1 = private unnamed_addr constant [4 x i8] c"data", align 1

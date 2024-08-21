@@ -7,7 +7,7 @@ source_filename = "main"
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"main.init$guard" = global i1 false, align 1
-@"main.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88" = global ptr null, align 8
+@"main.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [1 x i8] c"v", align 1
 @1 = private unnamed_addr constant [4 x i8] c"main", align 1
 @__llgo_argc = global i32 0, align 4
