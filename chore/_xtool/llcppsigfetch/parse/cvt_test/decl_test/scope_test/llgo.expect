@@ -292,15 +292,10 @@ TestScope Case 6:
 				},
 				"Parent":	{
 					"X":	{
-						"Name":	"c"
+						"Name":	"b"
 					},
 					"Parent":	{
-						"X":	{
-							"Name":	"b"
-						},
-						"Parent":	{
-							"Name":	"a"
-						}
+						"Name":	"a"
 					}
 				},
 				"Name":	{

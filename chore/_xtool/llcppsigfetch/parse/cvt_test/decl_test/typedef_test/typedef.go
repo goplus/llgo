@@ -12,6 +12,7 @@ func TestTypeDefDecl() {
 
 		`typedef int INT;
 
+		`typedef int INT;
 		 typedef INT STANDARD_INT;`,
 
 		`typedef int INT,*IntPtr,IntArr[];`,

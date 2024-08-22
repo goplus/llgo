@@ -254,23 +254,21 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		marco := ct.ProcessMarco(cursor)
 		curFile.Macros = append(curFile.Macros, marco)
 	case clang.CursorEnumDecl:
-		enum := ct.ProcessEnum(cursor)
+		enum := ct.ProcessEnumDecl(cursor)
 		curFile.Decls = append(curFile.Decls, enum)
 	case clang.CursorClassDecl:
-		ct.PushScope(cursor)
-		classDecl := ct.ProcessClass(cursor)
+		classDecl := ct.ProcessClassDecl(cursor)
 		curFile.Decls = append(curFile.Decls, classDecl)
-		ct.PopScope()
 	case clang.CursorStructDecl:
-		structDecl := ct.ProcessStruct(cursor)
+		structDecl := ct.ProcessStructDecl(cursor)
 		curFile.Decls = append(curFile.Decls, structDecl)
 	case clang.CursorUnionDecl:
-		unionDecl := ct.ProcessUnion(cursor)
+		unionDecl := ct.ProcessUnionDecl(cursor)
 		curFile.Decls = append(curFile.Decls, unionDecl)
 	case clang.CursorFunctionDecl:
-		curFile.Decls = append(curFile.Decls, ct.ProcessFunc(cursor))
+		curFile.Decls = append(curFile.Decls, ct.ProcessFuncDecl(cursor))
 	case clang.CursorTypedefDecl:
-		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDef(cursor))
+		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
 	case clang.CursorNamespace:
 		ct.PushScope(cursor)
 		clang.VisitChildren(cursor, visit, c.Pointer(ct))
@@ -417,7 +415,7 @@ func visitEnum(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chi
 	return clang.ChildVisit_Continue
 }
 
-func (ct *Converter) ProcessEnum(cursor clang.Cursor) *ast.EnumTypeDecl {
+func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
 	name := cursor.String()
 	defer name.Dispose()
 	items := make([]*ast.EnumItem, 0)
@@ -520,7 +518,7 @@ type visitMethodsContext struct {
 func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitMethodsContext)(clientData)
 	if cursor.Kind == clang.CursorCXXMethod {
-		method := ctx.converter.ProcessFunc(cursor)
+		method := ctx.converter.ProcessFuncDecl(cursor)
 		if method != nil {
 			*ctx.methods = append(*ctx.methods, method)
 		}
@@ -538,7 +536,7 @@ func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 	return methods
 }
 
-func (ct *Converter) ProcessRecord(cursor clang.Cursor, tag ast.Tag) *ast.TypeDecl {
+func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor, tag ast.Tag) *ast.TypeDecl {
 	anony := cursor.IsAnonymousRecordDecl()
 
 	var name *ast.Ident
@@ -548,32 +546,42 @@ func (ct *Converter) ProcessRecord(cursor clang.Cursor, tag ast.Tag) *ast.TypeDe
 		name = &ast.Ident{Name: c.GoString(cursorName.CStr())}
 	}
 
-	fields := ct.ProcessFieldList(cursor)
-	methods := ct.ProcessMethods(cursor)
-
-	decl := &ast.TypeDecl{
+	return &ast.TypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     name,
-		Type: &ast.RecordType{
-			Tag:     tag,
-			Fields:  fields,
-			Methods: methods,
-		},
+		Type:     ct.ProcessRecordType(cursor, tag),
 	}
-
-	return decl
 }
 
-func (ct *Converter) ProcessStruct(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessRecord(cursor, ast.Struct)
+func (ct *Converter) ProcessStructDecl(cursor clang.Cursor) *ast.TypeDecl {
+	return ct.ProcessRecordDecl(cursor, ast.Struct)
 }
 
-func (ct *Converter) ProcessUnion(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessRecord(cursor, ast.Union)
+func (ct *Converter) ProcessUnionDecl(cursor clang.Cursor) *ast.TypeDecl {
+	return ct.ProcessRecordDecl(cursor, ast.Union)
 }
 
-func (ct *Converter) ProcessClass(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessRecord(cursor, ast.Class)
+func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
+	// Pushing class scope before processing its type and popping after
+	base := ct.CreateDeclBase(cursor)
+
+	ct.PushScope(cursor)
+	typ := ct.ProcessRecordType(cursor, ast.Class)
+	ct.PopScope()
+
+	return &ast.TypeDecl{
+		DeclBase: base,
+		Name:     &ast.Ident{Name: c.GoString(cursor.String().CStr())},
+		Type:     typ,
+	}
+}
+
+func (ct *Converter) ProcessRecordType(cursor clang.Cursor, tag ast.Tag) *ast.RecordType {
+	return &ast.RecordType{
+		Tag:     tag,
+		Fields:  ct.ProcessFieldList(cursor),
+		Methods: ct.ProcessMethods(cursor),
+	}
 }
 
 func (ct *Converter) Convert() (map[string]*ast.File, error) {

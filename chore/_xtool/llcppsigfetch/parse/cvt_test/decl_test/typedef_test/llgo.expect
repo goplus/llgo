@@ -518,9 +518,7 @@ TestTypeDefDecl Case 4:
 				"Doc":	{
 					"List":	[]
 				},
-				"Parent":	{
-					"Name":	"ClassFoo"
-				},
+				"Parent":	null,
 				"Name":	{
 					"Name":	"ClassFoo"
 				},
