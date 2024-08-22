@@ -9,9 +9,10 @@ func main() {
 func TestTypeDefDecl() {
 	testCases := []string{
 		`typedef int INT;`,
-		`typedef int INT;
 
+		`typedef int INT;
 		 typedef INT STANDARD_INT;`,
+
 		`struct StructFoo {};
 		 union UnionFoo {};
 		 class ClassFoo {};

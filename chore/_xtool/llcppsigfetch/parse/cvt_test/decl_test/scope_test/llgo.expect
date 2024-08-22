@@ -105,9 +105,7 @@ TestScope Case 4:
 				"Doc":	{
 					"List":	[]
 				},
-				"Parent":	{
-					"Name":	"a"
-				},
+				"Parent":	null,
 				"Name":	{
 					"Name":	"a"
 				},
@@ -157,12 +155,7 @@ TestScope Case 5:
 					"List":	[]
 				},
 				"Parent":	{
-					"X":	{
-						"Name":	"b"
-					},
-					"Parent":	{
-						"Name":	"a"
-					}
+					"Name":	"a"
 				},
 				"Name":	{
 					"Name":	"b"
@@ -219,15 +212,10 @@ TestScope Case 6:
 				},
 				"Parent":	{
 					"X":	{
-						"Name":	"c"
+						"Name":	"b"
 					},
 					"Parent":	{
-						"X":	{
-							"Name":	"b"
-						},
-						"Parent":	{
-							"Name":	"a"
-						}
+						"Name":	"a"
 					}
 				},
 				"Name":	{
