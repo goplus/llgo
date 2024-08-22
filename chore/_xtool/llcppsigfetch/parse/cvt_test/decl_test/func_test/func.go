@@ -11,13 +11,13 @@ func TestFuncDecl() {
 		`void foo();`,
 		`void foo(int a);`,
 		`float foo(int a,double b);`,
+		`float* foo(int a,double b);`,
 
-		`void foo(char* str, double x);`,
-		`float* foo(char* str, double x);`,
-		`float* foo(char*** str, double x);`,
+		`void foo(char* str);`,
+		`void* foo(char*** str);`,
 
-		`float* foo(char str[], double x);`,
-		`float* foo(int arr[3][4]);`,
+		`void foo(char str[]);`,
+		`void foo(int arr[3][4]);`,
 	}
 	test.RunTest("TestFuncDecl", testCases)
 }
