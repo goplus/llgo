@@ -140,6 +140,9 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 			return cjson.Null()
 		}
 		root.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(d.Name)))
+	case *ast.TagExpr:
+		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
+		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
 	case *ast.EnumItem:
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
 		root.SetItem(c.Str("Value"), MarshalASTExpr(d.Value))
