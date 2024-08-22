@@ -1,5 +1,5 @@
 #stdout
-TestComment Case 1:
+TestDoc Case 1:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -28,7 +28,7 @@ TestComment Case 1:
 	}
 }
 
-TestComment Case 2:
+TestDoc Case 2:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -57,7 +57,7 @@ TestComment Case 2:
 	}
 }
 
-TestComment Case 3:
+TestDoc Case 3:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -66,7 +66,7 @@ TestComment Case 3:
 				},
 				"Doc":	{
 					"List":	[{
-							"Text":	"/// comment"
+							"Text":	"/// doc"
 						}]
 				},
 				"Parent":	null,
@@ -88,7 +88,7 @@ TestComment Case 3:
 	}
 }
 
-TestComment Case 4:
+TestDoc Case 4:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -97,7 +97,7 @@ TestComment Case 4:
 				},
 				"Doc":	{
 					"List":	[{
-							"Text":	"/** comment */"
+							"Text":	"/** doc */"
 						}]
 				},
 				"Parent":	null,
@@ -119,7 +119,7 @@ TestComment Case 4:
 	}
 }
 
-TestComment Case 5:
+TestDoc Case 5:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -128,7 +128,7 @@ TestComment Case 5:
 				},
 				"Doc":	{
 					"List":	[{
-							"Text":	"/*! comment */"
+							"Text":	"/*! doc */"
 						}]
 				},
 				"Parent":	null,
@@ -150,7 +150,7 @@ TestComment Case 5:
 	}
 }
 
-TestComment Case 6:
+TestDoc Case 6:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -159,9 +159,9 @@ TestComment Case 6:
 				},
 				"Doc":	{
 					"List":	[{
-							"Text":	"/// comment 1"
+							"Text":	"/// doc 1"
 						}, {
-							"Text":	"/// comment 2"
+							"Text":	"/// doc 2"
 						}]
 				},
 				"Parent":	null,
@@ -183,7 +183,7 @@ TestComment Case 6:
 	}
 }
 
-TestComment Case 7:
+TestDoc Case 7:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -192,9 +192,9 @@ TestComment Case 7:
 				},
 				"Doc":	{
 					"List":	[{
-							"Text":	"/*! comment 1 */"
+							"Text":	"/*! doc 1 */"
 						}, {
-							"Text":	"/*! comment 2 */"
+							"Text":	"/*! doc 2 */"
 						}]
 				},
 				"Parent":	null,
@@ -216,7 +216,7 @@ TestComment Case 7:
 	}
 }
 
-TestComment Case 8:
+TestDoc Case 8:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -225,9 +225,9 @@ TestComment Case 8:
 				},
 				"Doc":	{
 					"List":	[{
-							"Text":	"/** comment 1 */"
+							"Text":	"/** doc 1 */"
 						}, {
-							"Text":	"/** comment 1 */"
+							"Text":	"/** doc 1 */"
 						}]
 				},
 				"Parent":	null,
@@ -249,7 +249,7 @@ TestComment Case 8:
 	}
 }
 
-TestComment Case 9:
+TestDoc Case 9:
 {
 	"temp.h":	{
 		"decls":	[{
@@ -260,9 +260,9 @@ TestComment Case 9:
 					"List":	[{
 							"Text":	"/**"
 						}, {
-							"Text":	" * comment 1"
+							"Text":	" * doc 1"
 						}, {
-							"Text":	" * comment 2"
+							"Text":	" * doc 2"
 						}, {
 							"Text":	" */"
 						}]

@@ -3,35 +3,35 @@ package main
 import test "github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse/cvt_test"
 
 func main() {
-	TestComment()
+	TestDoc()
 }
 
-func TestComment() {
+func TestDoc() {
 	testCases := []string{
-		`// not read comment 1
+		`// not read doc 1
 		 void foo();`,
-		`/* not read comment 2 */
+		`/* not read doc 2 */
 		 void foo();`,
-		`/// comment
+		`/// doc
 		 void foo();`,
-		`/** comment */
+		`/** doc */
 		 void foo();`,
-		`/*! comment */
+		`/*! doc */
 		 void foo();`,
-		`/// comment 1
-/// comment 2
+		`/// doc 1
+/// doc 2
 void foo();`,
-		`/*! comment 1 */
-/*! comment 2 */
+		`/*! doc 1 */
+/*! doc 2 */
 void foo();`,
-		`/** comment 1 */
-/** comment 1 */
+		`/** doc 1 */
+/** doc 1 */
 void foo();`,
 		`/**
- * comment 1
- * comment 2
+ * doc 1
+ * doc 2
  */
 void foo();`,
 	}
-	test.RunTest("TestComment", testCases)
+	test.RunTest("TestDoc", testCases)
 }

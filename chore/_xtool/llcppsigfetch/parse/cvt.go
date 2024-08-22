@@ -15,11 +15,11 @@ import (
 )
 
 type Converter struct {
-	Files      map[string]*ast.File
-	curLoc     ast.Location
-	index      *clang.Index
-	unit       *clang.TranslationUnit
-	scopeStack []ast.Expr //namespace & class
+	Files        map[string]*ast.File
+	curLoc       ast.Location
+	index        *clang.Index
+	unit         *clang.TranslationUnit
+	scopeContext []ast.Expr //namespace & class
 }
 
 type Config struct {
@@ -97,26 +97,26 @@ func (ct *Converter) PushScope(cursor clang.Cursor) {
 	defer name.Dispose()
 	ident := &ast.Ident{Name: c.GoString(name.CStr())}
 
-	if len(ct.scopeStack) == 0 {
-		ct.scopeStack = append(ct.scopeStack, ident)
+	if len(ct.scopeContext) == 0 {
+		ct.scopeContext = append(ct.scopeContext, ident)
 	} else {
-		parent := ct.scopeStack[len(ct.scopeStack)-1]
+		parent := ct.scopeContext[len(ct.scopeContext)-1]
 		newContext := &ast.ScopingExpr{Parent: parent, X: ident}
-		ct.scopeStack = append(ct.scopeStack, newContext)
+		ct.scopeContext = append(ct.scopeContext, newContext)
 	}
 }
 
 func (ct *Converter) PopScope() {
-	if len(ct.scopeStack) > 0 {
-		ct.scopeStack = ct.scopeStack[:len(ct.scopeStack)-1]
+	if len(ct.scopeContext) > 0 {
+		ct.scopeContext = ct.scopeContext[:len(ct.scopeContext)-1]
 	}
 }
 
 func (ct *Converter) GetCurScope() ast.Expr {
-	if len(ct.scopeStack) == 0 {
+	if len(ct.scopeContext) == 0 {
 		return nil
 	}
-	return ct.scopeStack[len(ct.scopeStack)-1]
+	return ct.scopeContext[len(ct.scopeContext)-1]
 }
 
 func (ct *Converter) UpdateLoc(cursor clang.Cursor) {
@@ -179,8 +179,8 @@ func (ct *Converter) ParseComment(rawComment string) *ast.CommentGroup {
 	return commentGroup
 }
 
-// visit top decls (struct,class,function,enum & marco,include)
-func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+// visit top decls (struct,class,function,enum & macro,include)
+func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ct := (*Converter)(clientData)
 	ct.UpdateLoc(cursor)
 
@@ -194,8 +194,8 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		include := ct.ProcessInclude(cursor)
 		curFile.Includes = append(curFile.Includes, include)
 	case clang.CursorMacroDefinition:
-		marco := ct.ProcessMarco(cursor)
-		curFile.Macros = append(curFile.Macros, marco)
+		macro := ct.ProcessMacro(cursor)
+		curFile.Macros = append(curFile.Macros, macro)
 	case clang.CursorEnumDecl:
 		enum := ct.ProcessEnumDecl(cursor)
 		curFile.Decls = append(curFile.Decls, enum)
@@ -214,7 +214,7 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
 	case clang.CursorNamespace:
 		ct.PushScope(cursor)
-		clang.VisitChildren(cursor, visit, c.Pointer(ct))
+		clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
 		ct.PopScope()
 	}
 	return clang.ChildVisit_Continue
@@ -222,8 +222,8 @@ func visit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVi
 
 func (ct *Converter) Convert() (map[string]*ast.File, error) {
 	cursor := ct.unit.Cursor()
-	// visit top decls (struct,class,function & marco,include)
-	clang.VisitChildren(cursor, visit, c.Pointer(ct))
+	// visit top decls (struct,class,function & macro,include)
+	clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
 	return ct.Files, nil
 }
 
@@ -338,8 +338,8 @@ func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
 	}
 }
 
-// current only collect marco which defined in file
-func (ct *Converter) ProcessMarco(cursor clang.Cursor) *ast.Macro {
+// current only collect macro which defined in file
+func (ct *Converter) ProcessMacro(cursor clang.Cursor) *ast.Macro {
 	name := cursor.String()
 	defer name.Dispose()
 
