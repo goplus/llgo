@@ -144,7 +144,6 @@ func (ct *Converter) GetCurFile() *ast.File {
 	file, ok := ct.Files[ct.curLoc.File]
 	if !ok {
 		file = &ast.File{
-			Path:     ct.curLoc.File,
 			Decls:    make([]ast.Decl, 0),
 			Includes: make([]*ast.Include, 0),
 			Macros:   make([]*ast.Macro, 0),
