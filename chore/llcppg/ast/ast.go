@@ -285,11 +285,17 @@ type EnumItem struct {
 
 func (*EnumItem) exprNode() {}
 
+type EnumType struct {
+	Items []*EnumItem
+}
+
+func (*EnumType) exprNode() {}
+
 // enum Name { Item1, Item2, ... };
 type EnumTypeDecl struct {
 	DeclBase
-	Name  *Ident
-	Items []*EnumItem
+	Name *Ident
+	Type *EnumType
 }
 
 func (*EnumTypeDecl) declNode() {}
