@@ -146,10 +146,8 @@ TestFuncDecl Case 4:
 					"Params":	{
 						"List":	[{
 								"Type":	{
-									"X":	{
-										"Kind":	2,
-										"Flags":	1
-									}
+									"Kind":	6,
+									"Flags":	0
 								},
 								"Doc":	{
 									"List":	[]
@@ -158,7 +156,7 @@ TestFuncDecl Case 4:
 									"List":	[]
 								},
 								"Names":	[{
-										"Name":	"str"
+										"Name":	"a"
 									}]
 							}, {
 								"Type":	{
@@ -172,13 +170,15 @@ TestFuncDecl Case 4:
 									"List":	[]
 								},
 								"Names":	[{
-										"Name":	"x"
+										"Name":	"b"
 									}]
 							}]
 					},
 					"Ret":	{
-						"Kind":	0,
-						"Flags":	0
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
 					}
 				}
 			}],
@@ -219,27 +219,11 @@ TestFuncDecl Case 5:
 								"Names":	[{
 										"Name":	"str"
 									}]
-							}, {
-								"Type":	{
-									"Kind":	8,
-									"Flags":	16
-								},
-								"Doc":	{
-									"List":	[]
-								},
-								"Comment":	{
-									"List":	[]
-								},
-								"Names":	[{
-										"Name":	"x"
-									}]
 							}]
 					},
 					"Ret":	{
-						"X":	{
-							"Kind":	8,
-							"Flags":	0
-						}
+						"Kind":	0,
+						"Flags":	0
 					}
 				}
 			}],
@@ -284,25 +268,11 @@ TestFuncDecl Case 6:
 								"Names":	[{
 										"Name":	"str"
 									}]
-							}, {
-								"Type":	{
-									"Kind":	8,
-									"Flags":	16
-								},
-								"Doc":	{
-									"List":	[]
-								},
-								"Comment":	{
-									"List":	[]
-								},
-								"Names":	[{
-										"Name":	"x"
-									}]
 							}]
 					},
 					"Ret":	{
 						"X":	{
-							"Kind":	8,
+							"Kind":	0,
 							"Flags":	0
 						}
 					}
@@ -346,27 +316,11 @@ TestFuncDecl Case 7:
 								"Names":	[{
 										"Name":	"str"
 									}]
-							}, {
-								"Type":	{
-									"Kind":	8,
-									"Flags":	16
-								},
-								"Doc":	{
-									"List":	[]
-								},
-								"Comment":	{
-									"List":	[]
-								},
-								"Names":	[{
-										"Name":	"x"
-									}]
 							}]
 					},
 					"Ret":	{
-						"X":	{
-							"Kind":	8,
-							"Flags":	0
-						}
+						"Kind":	0,
+						"Flags":	0
 					}
 				}
 			}],
@@ -420,10 +374,8 @@ TestFuncDecl Case 8:
 							}]
 					},
 					"Ret":	{
-						"X":	{
-							"Kind":	8,
-							"Flags":	0
-						}
+						"Kind":	0,
+						"Flags":	0
 					}
 				}
 			}],
