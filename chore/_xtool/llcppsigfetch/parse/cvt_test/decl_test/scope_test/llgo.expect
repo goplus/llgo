@@ -1,0 +1,213 @@
+#stdout
+TestScope Case 1:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 2:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"a"
+				},
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 3:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"X":	{
+						"Name":	"b"
+					},
+					"Parent":	{
+						"Name":	"a"
+					}
+				},
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"a"
+				},
+				"Name":	{
+					"Name":	"a"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"a"
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							}
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 5:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"X":	{
+						"Name":	"b"
+					},
+					"Parent":	{
+						"Name":	"a"
+					}
+				},
+				"Name":	{
+					"Name":	"b"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"X":	{
+									"Name":	"b"
+								},
+								"Parent":	{
+									"Name":	"a"
+								}
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							}
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+
+#stderr
+
+#exit 0
