@@ -280,6 +280,101 @@ TestScope Case 5:
 	}
 }
 
+TestScope Case 6:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"X":	{
+						"Name":	"c"
+					},
+					"Parent":	{
+						"X":	{
+							"Name":	"b"
+						},
+						"Parent":	{
+							"Name":	"a"
+						}
+					}
+				},
+				"Name":	{
+					"Name":	"c"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"X":	{
+									"Name":	"c"
+								},
+								"Parent":	{
+									"X":	{
+										"Name":	"b"
+									},
+									"Parent":	{
+										"Name":	"a"
+									}
+								}
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							}
+						}]
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"C"
+				},
+				"Type":	{
+					"X":	{
+						"Name":	"c"
+					},
+					"Parent":	{
+						"X":	{
+							"Name":	"b"
+						},
+						"Parent":	{
+							"Name":	"a"
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
