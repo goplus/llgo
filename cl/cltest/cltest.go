@@ -139,12 +139,8 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 		t.Fatal("ReadFile failed:", err)
 	}
 	expected := string(b)
-	if byLLGen {
-		if v := llgen.GenFrom(in); v != expected && expected != ";" { // expected == ";" means skipping out.ll
-			t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
-		}
-	} else {
-		TestCompileEx(t, nil, in, expected)
+	if v := llgen.GenFrom(in); v != expected && expected != ";" { // expected == ";" means skipping out.ll
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }
 

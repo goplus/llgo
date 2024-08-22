@@ -40,10 +40,10 @@ func TestToBackground(t *testing.T) {
 }
 
 func TestCollectSkipNames(t *testing.T) {
-	ctx := &context{skips: make(map[string]none)}
-	ctx.collectSkipNames("//llgo:skipall")
-	ctx.collectSkipNames("//llgo:skip")
-	ctx.collectSkipNames("//llgo:skip abs")
+	ctx := &Context{}
+	ctx.collectSkipNames("pkg", "//llgo:skipall")
+	ctx.collectSkipNames("pkg", "//llgo:skip")
+	ctx.collectSkipNames("pkg", "//llgo:skip abs")
 }
 
 func TestReplaceGoName(t *testing.T) {
@@ -236,6 +236,7 @@ func TestIgnoreName(t *testing.T) {
 
 func TestErrImport(t *testing.T) {
 	var ctx context
+	ctx.Context = NewContext(nil)
 	pkg := types.NewPackage("foo", "foo")
 	ctx.importPkg(pkg, nil)
 
@@ -249,6 +250,7 @@ func TestErrImport(t *testing.T) {
 
 func TestErrInitLinkname(t *testing.T) {
 	var ctx context
+	ctx.Context = NewContext(nil)
 	ctx.initLinkname("//llgo:link abc", func(name string) (string, bool, bool) {
 		return "", false, false
 	})
@@ -332,7 +334,7 @@ func TestContextResolveLinkname(t *testing.T) {
 					}
 				}()
 			}
-			ctx := &context{prog: llssa.NewProgram(nil)}
+			ctx := &Context{prog: llssa.NewProgram(nil)}
 			for k, v := range tt.link {
 				ctx.prog.SetLinkname(k, v)
 			}
