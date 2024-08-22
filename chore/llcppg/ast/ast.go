@@ -242,6 +242,8 @@ type RecordType struct {
 	Methods []*FuncDecl
 }
 
+func (*RecordType) exprNode() {}
+
 // ------------------------------------------------
 
 // Template<Arg1, Arg2, ...>
