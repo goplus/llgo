@@ -9,9 +9,7 @@ TestClassDecl Case 1:
 				"Doc":	{
 					"List":	[]
 				},
-				"Parent":	{
-					"Name":	"A"
-				},
+				"Parent":	null,
 				"Name":	{
 					"Name":	"A"
 				},
@@ -66,9 +64,7 @@ TestClassDecl Case 2:
 				"Doc":	{
 					"List":	[]
 				},
-				"Parent":	{
-					"Name":	"A"
-				},
+				"Parent":	null,
 				"Name":	{
 					"Name":	"A"
 				},
