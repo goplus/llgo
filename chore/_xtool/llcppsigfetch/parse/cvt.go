@@ -230,10 +230,16 @@ func (ct *Converter) Convert() (map[string]*ast.File, error) {
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
-	var expr ast.Expr
+
 	if t.Kind >= clang.TypeFirstBuiltin && t.Kind <= clang.TypeLastBuiltin {
 		return ct.ProcessBuiltinType(t)
 	}
+
+	if t.Kind == clang.TypeElaborated {
+		return ct.ProcessElaboratedType(t)
+	}
+
+	var expr ast.Expr
 	switch t.Kind {
 	case clang.TypePointer:
 		expr = &ast.PointerType{X: ct.ProcessType(t.PointeeType())}
@@ -268,19 +274,8 @@ func (ct *Converter) ProcessTypeDef(cursor clang.Cursor) *ast.TypedefDecl {
 	return &ast.TypedefDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
-		Type:     ct.ProcessUnderLyingType(cursor),
+		Type:     ct.ProcessType(cursor.TypedefDeclUnderlyingType()),
 	}
-}
-
-func (ct *Converter) ProcessUnderLyingType(cursor clang.Cursor) ast.Expr {
-	underlying := cursor.TypedefDeclUnderlyingType()
-	// enum,union,class,struct,typedef -> elaborated type
-	if underlying.Kind == clang.TypeElaborated {
-		return &ast.Ident{
-			Name: c.GoString(underlying.String().CStr()),
-		}
-	}
-	return ct.ProcessType(underlying)
 }
 
 func (ct *Converter) ProcessFunc(cursor clang.Cursor) *ast.FuncDecl {
@@ -485,6 +480,36 @@ func (ct *Converter) ProcessUnion(cursor clang.Cursor) *ast.TypeDecl {
 
 func (ct *Converter) ProcessClass(cursor clang.Cursor) *ast.TypeDecl {
 	return ct.ProcessRecord(cursor, ast.Class)
+}
+
+func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
+	name := t.String()
+	defer name.Dispose()
+
+	typeName := c.GoString(name.CStr())
+
+	tagMap := map[string]ast.Tag{
+		"struct": ast.Struct,
+		"union":  ast.Union,
+		"enum":   ast.Enum,
+		"class":  ast.Class,
+	}
+
+	// for elaborated type, it could have a tag description
+	// like struct A, union B, class C, enum D
+	parts := strings.SplitN(typeName, " ", 2)
+	if len(parts) == 2 {
+		if tagValue, ok := tagMap[parts[0]]; ok {
+			return &ast.TagExpr{
+				Tag:  tagValue,
+				Name: &ast.Ident{Name: parts[1]},
+			}
+		}
+	}
+
+	return &ast.Ident{
+		Name: typeName,
+	}
 }
 
 func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
