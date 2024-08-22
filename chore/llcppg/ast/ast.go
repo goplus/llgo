@@ -130,10 +130,10 @@ const (
 	Class
 )
 
-// struct/union/enum/class Name
+// struct/union/enum/class (A::B::)Name
 type TagExpr struct {
 	Tag  Tag
-	Name *Ident
+	Name Expr // ScopingExpr, Ident
 }
 
 func (*TagExpr) exprNode() {}
