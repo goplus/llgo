@@ -507,6 +507,20 @@ func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 		}
 	}
 
+	// qualified name
+	// todo(zzy): qualified name with tag,like struct A::B
+	if strings.Contains(typeName, "::") {
+		scopeParts := strings.Split(typeName, "::")
+		var expr ast.Expr = &ast.Ident{Name: scopeParts[0]}
+		for _, part := range scopeParts[1:] {
+			expr = &ast.ScopingExpr{
+				Parent: expr,
+				X:      &ast.Ident{Name: part},
+			}
+		}
+		return expr
+	}
+
 	return &ast.Ident{
 		Name: typeName,
 	}
