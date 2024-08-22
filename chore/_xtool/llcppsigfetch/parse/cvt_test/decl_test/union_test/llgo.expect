@@ -1,0 +1,113 @@
+#stdout
+TestUnionDecl Case 1:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	null,
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestUnionDecl Case 2:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"A"
+				},
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+
+#stderr
+
+#exit 0

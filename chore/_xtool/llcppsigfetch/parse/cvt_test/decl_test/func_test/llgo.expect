@@ -1,0 +1,438 @@
+#stdout
+TestFuncDecl Case 1:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 2:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 3:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	8,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"X":	{
+										"Kind":	2,
+										"Flags":	1
+									}
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 5:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"X":	{
+										"Kind":	2,
+										"Flags":	1
+									}
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 6:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"X":	{
+										"X":	{
+											"X":	{
+												"Kind":	2,
+												"Flags":	1
+											}
+										}
+									}
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 7:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Elt":	{
+										"Kind":	2,
+										"Flags":	1
+									},
+									"Len":	null
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"str"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	16
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 8:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Elt":	{
+										"Elt":	{
+											"Kind":	6,
+											"Flags":	0
+										},
+										"Len":	{
+											"Kind":	0,
+											"Value":	"4"
+										}
+									},
+									"Len":	{
+										"Kind":	0,
+										"Value":	"3"
+									}
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"arr"
+									}]
+							}]
+					},
+					"Ret":	{
+						"X":	{
+							"Kind":	8,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+
+#stderr
+
+#exit 0
