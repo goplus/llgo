@@ -45,6 +45,8 @@ void wrap_clang_getPointeeType(CXType *pointerTyp, CXType *pointeeTyp) {
     *pointeeTyp = clang_getPointeeType(*pointerTyp);
 }
 
+void wrap_clang_getNonReferenceType(CXType *typ, CXType *nonRefTyp) { *nonRefTyp = clang_getNonReferenceType(*typ); }
+
 void wrap_clang_getArrayElementType(CXType *arrayTyp, CXType *elemTyp) {
     *elemTyp = clang_getArrayElementType(*arrayTyp);
 }

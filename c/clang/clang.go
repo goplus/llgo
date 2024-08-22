@@ -1943,6 +1943,23 @@ func (t Type) ArrayElementType() (ret Type) {
 }
 
 /**
+ * For reference types (e.g., "const int&"), returns the type that the
+ * reference refers to (e.g "const int").
+ *
+ * Otherwise, returns the type itself.
+ *
+ * A type that has kind \c CXType_LValueReference or
+ * \c CXType_RValueReference is a reference type.
+ */
+// llgo:link (*Type).wrapNonReferenceType C.wrap_clang_getNonReferenceType
+func (t *Type) wrapNonReferenceType(ret *Type) { return }
+
+func (t Type) NonReferenceType() (ret Type) {
+	t.wrapNonReferenceType(&ret)
+	return
+}
+
+/**
  * Return the element type of an array, complex, or vector type.
  *
  * If a type is passed in that is not an array, complex, or vector type,
