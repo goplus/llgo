@@ -295,6 +295,12 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 	if t.Kind >= clang.TypeFirstBuiltin && t.Kind <= clang.TypeLastBuiltin {
 		return ct.ProcessBuiltinType(t)
 	}
+
+	if t.Kind == clang.TypeElaborated {
+		return ct.ProcessElaboratedType(t)
+	}
+
+	var expr ast.Expr
 	switch t.Kind {
 	case clang.TypePointer:
 		expr = &ast.PointerType{X: ct.ProcessType(t.PointeeType())}
