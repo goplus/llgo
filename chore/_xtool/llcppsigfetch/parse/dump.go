@@ -8,8 +8,8 @@ import (
 
 func MarshalASTFiles(files map[string]*ast.File) *cjson.JSON {
 	root := cjson.Object()
-	for _, file := range files {
-		root.SetItem(c.AllocaCStr(file.Path), MarshalASTFile(file))
+	for path, file := range files {
+		root.SetItem(c.AllocaCStr(path), MarshalASTFile(file))
 	}
 	return root
 }
@@ -22,7 +22,6 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 		decls.AddItem(MarshalASTDecl(decl))
 	}
 
-	root.SetItem(c.Str("path"), cjson.String(c.AllocaCStr(file.Path)))
 	root.SetItem(c.Str("decls"), decls)
 
 	// json:includes,omitempty
