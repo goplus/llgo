@@ -553,36 +553,38 @@ TestScope Case 4:
 				"Parent":	{
 					"Name":	"a"
 				},
-				"Tag":	3,
 				"Name":	{
 					"Name":	"a"
 				},
-				"Fields":	{
-					"List":	[]
-				},
-				"Methods":	[{
-						"Loc":	{
-							"File":	"temp.h"
-						},
-						"Doc":	{
-							"List":	[]
-						},
-						"Parent":	{
-							"Name":	"a"
-						},
-						"Name":	{
-							"Name":	"foo"
-						},
-						"Type":	{
-							"Params":	{
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
 								"List":	[]
 							},
-							"Ret":	{
-								"Kind":	0,
-								"Flags":	0
+							"Parent":	{
+								"Name":	"a"
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
 							}
-						}
-					}]
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -608,41 +610,43 @@ TestScope Case 5:
 						"Name":	"a"
 					}
 				},
-				"Tag":	3,
 				"Name":	{
 					"Name":	"b"
 				},
-				"Fields":	{
-					"List":	[]
-				},
-				"Methods":	[{
-						"Loc":	{
-							"File":	"temp.h"
-						},
-						"Doc":	{
-							"List":	[]
-						},
-						"Parent":	{
-							"X":	{
-								"Name":	"b"
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
 							},
-							"Parent":	{
-								"Name":	"a"
-							}
-						},
-						"Name":	{
-							"Name":	"foo"
-						},
-						"Type":	{
-							"Params":	{
+							"Doc":	{
 								"List":	[]
 							},
-							"Ret":	{
-								"Kind":	0,
-								"Flags":	0
+							"Parent":	{
+								"X":	{
+									"Name":	"b"
+								},
+								"Parent":	{
+									"Name":	"a"
+								}
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
 							}
-						}
-					}]
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -957,26 +961,28 @@ TestStructDecl Case 1:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	0,
 				"Name":	null,
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -995,42 +1001,44 @@ TestStructDecl Case 2:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	0,
 				"Name":	{
 					"Name":	"A"
 				},
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1049,42 +1057,44 @@ TestStructDecl Case 3:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	0,
 				"Name":	{
 					"Name":	"A"
 				},
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1103,90 +1113,92 @@ TestStructDecl Case 4:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	0,
 				"Name":	{
 					"Name":	"A"
 				},
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[{
-						"Loc":	{
-							"File":	"temp.h"
-						},
-						"Doc":	{
-							"List":	[]
-						},
-						"Parent":	null,
-						"Name":	{
-							"Name":	"foo"
-						},
-						"Type":	{
-							"Params":	{
-								"List":	[{
-										"Type":	{
-											"Kind":	6,
-											"Flags":	0
-										},
-										"Doc":	{
-											"List":	[]
-										},
-										"Comment":	{
-											"List":	[]
-										},
-										"Names":	[{
-												"Name":	"a"
-											}]
-									}, {
-										"Type":	{
-											"Kind":	8,
-											"Flags":	16
-										},
-										"Doc":	{
-											"List":	[]
-										},
-										"Comment":	{
-											"List":	[]
-										},
-										"Names":	[{
-												"Name":	"b"
-											}]
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
 									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
 							},
-							"Ret":	{
-								"Kind":	8,
-								"Flags":	0
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	null,
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[{
+											"Type":	{
+												"Kind":	6,
+												"Flags":	0
+											},
+											"Doc":	{
+												"List":	[]
+											},
+											"Comment":	{
+												"List":	[]
+											},
+											"Names":	[{
+													"Name":	"a"
+												}]
+										}, {
+											"Type":	{
+												"Kind":	8,
+												"Flags":	16
+											},
+											"Doc":	{
+												"List":	[]
+											},
+											"Comment":	{
+												"List":	[]
+											},
+											"Names":	[{
+													"Name":	"b"
+												}]
+										}]
+								},
+								"Ret":	{
+									"Kind":	8,
+									"Flags":	0
+								}
 							}
-						}
-					}]
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1207,42 +1219,44 @@ TestClassDecl Case 1:
 				"Parent":	{
 					"Name":	"A"
 				},
-				"Tag":	3,
 				"Name":	{
 					"Name":	"A"
 				},
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1263,92 +1277,94 @@ TestClassDecl Case 2:
 				"Parent":	{
 					"Name":	"A"
 				},
-				"Tag":	3,
 				"Name":	{
 					"Name":	"A"
 				},
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[{
-						"Loc":	{
-							"File":	"temp.h"
-						},
-						"Doc":	{
-							"List":	[]
-						},
-						"Parent":	{
-							"Name":	"A"
-						},
-						"Name":	{
-							"Name":	"foo"
-						},
-						"Type":	{
-							"Params":	{
-								"List":	[{
-										"Type":	{
-											"Kind":	6,
-											"Flags":	0
-										},
-										"Doc":	{
-											"List":	[]
-										},
-										"Comment":	{
-											"List":	[]
-										},
-										"Names":	[{
-												"Name":	"a"
-											}]
-									}, {
-										"Type":	{
-											"Kind":	8,
-											"Flags":	16
-										},
-										"Doc":	{
-											"List":	[]
-										},
-										"Comment":	{
-											"List":	[]
-										},
-										"Names":	[{
-												"Name":	"b"
-											}]
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
 									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
 							},
-							"Ret":	{
-								"Kind":	8,
-								"Flags":	0
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"A"
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[{
+											"Type":	{
+												"Kind":	6,
+												"Flags":	0
+											},
+											"Doc":	{
+												"List":	[]
+											},
+											"Comment":	{
+												"List":	[]
+											},
+											"Names":	[{
+													"Name":	"a"
+												}]
+										}, {
+											"Type":	{
+												"Kind":	8,
+												"Flags":	16
+											},
+											"Doc":	{
+												"List":	[]
+											},
+											"Comment":	{
+												"List":	[]
+											},
+											"Names":	[{
+													"Name":	"b"
+												}]
+										}]
+								},
+								"Ret":	{
+									"Kind":	8,
+									"Flags":	0
+								}
 							}
-						}
-					}]
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1367,40 +1383,42 @@ TestUnionDecl Case 1:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	1,
 				"Name":	null,
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1419,42 +1437,44 @@ TestUnionDecl Case 2:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	1,
 				"Name":	{
 					"Name":	"A"
 				},
-				"Fields":	{
-					"List":	[{
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"a"
-								}]
-						}, {
-							"Type":	{
-								"Kind":	6,
-								"Flags":	0
-							},
-							"Doc":	{
-								"List":	[]
-							},
-							"Comment":	{
-								"List":	[]
-							},
-							"Names":	[{
-									"Name":	"b"
-								}]
-						}]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -1675,14 +1695,16 @@ TestTypeDefDecl Case 3:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	0,
 				"Name":	{
 					"Name":	"StructFoo"
 				},
-				"Fields":	{
-					"List":	[]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
 			}, {
 				"Loc":	{
 					"File":	"temp.h"
@@ -1691,14 +1713,16 @@ TestTypeDefDecl Case 3:
 					"List":	[]
 				},
 				"Parent":	null,
-				"Tag":	1,
 				"Name":	{
 					"Name":	"UnionFoo"
 				},
-				"Fields":	{
-					"List":	[]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
 			}, {
 				"Loc":	{
 					"File":	"temp.h"
@@ -1709,14 +1733,16 @@ TestTypeDefDecl Case 3:
 				"Parent":	{
 					"Name":	"ClassFoo"
 				},
-				"Tag":	3,
 				"Name":	{
 					"Name":	"ClassFoo"
 				},
-				"Fields":	{
-					"List":	[]
-				},
-				"Methods":	[]
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
 			}, {
 				"Loc":	{
 					"File":	"temp.h"

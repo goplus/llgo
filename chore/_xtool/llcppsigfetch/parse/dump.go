@@ -84,14 +84,8 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
 	case *ast.TypeDecl:
 		MarshalASTDeclBase(d.DeclBase, root)
-		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
-		root.SetItem(c.Str("Fields"), MarshalASTExpr(d.Fields))
-		methods := cjson.Array()
-		for _, m := range d.Methods {
-			methods.AddItem(MarshalASTDecl(m))
-		}
-		root.SetItem(c.Str("Methods"), methods)
+		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
 	}
 	return root
 }
@@ -113,6 +107,14 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 	root := cjson.Object()
 
 	switch d := t.(type) {
+	case *ast.RecordType:
+		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
+		root.SetItem(c.Str("Fields"), MarshalASTExpr(d.Fields))
+		methods := cjson.Array()
+		for _, m := range d.Methods {
+			methods.AddItem(MarshalASTDecl(m))
+		}
+		root.SetItem(c.Str("Methods"), methods)
 	case *ast.FuncType:
 		root.SetItem(c.Str("Params"), MarshalASTExpr(d.Params))
 		root.SetItem(c.Str("Ret"), MarshalASTExpr(d.Ret))

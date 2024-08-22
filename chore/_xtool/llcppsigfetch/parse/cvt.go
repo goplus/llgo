@@ -463,10 +463,12 @@ func (ct *Converter) ProcessRecord(cursor clang.Cursor, tag ast.Tag) *ast.TypeDe
 
 	decl := &ast.TypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
-		Tag:      tag,
 		Name:     name,
-		Fields:   fields,
-		Methods:  methods,
+		Type: &ast.RecordType{
+			Tag:     tag,
+			Fields:  fields,
+			Methods: methods,
+		},
 	}
 
 	return decl
