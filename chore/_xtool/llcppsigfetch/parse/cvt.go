@@ -662,3 +662,15 @@ func (ct *Converter) TypeJSON(t ast.Expr, root *cjson.JSON) {
 		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
 	}
 }
+
+func qualifiedExpr(name string) ast.Expr {
+	parts := strings.Split(name, "::")
+	var expr ast.Expr = &ast.Ident{Name: parts[0]}
+	for _, part := range parts[1:] {
+		expr = &ast.ScopingExpr{
+			Parent: expr,
+			X:      &ast.Ident{Name: part},
+		}
+	}
+	return expr
+}
