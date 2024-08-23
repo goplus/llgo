@@ -19,6 +19,10 @@ void wrap_clang_getTranslationUnitCursor(CXTranslationUnit uint, CXCursor *cur) 
     *cur = clang_getTranslationUnitCursor(uint);
 }
 
+void wrap_clang_getOverriddenCursors(CXCursor *cursor, CXCursor **overridden, unsigned *num_overridden) {
+    clang_getOverriddenCursors(*cursor, overridden, num_overridden);
+}
+
 void wrap_clang_getCursorLocation(CXCursor *cur, CXSourceLocation *loc) { *loc = clang_getCursorLocation(*cur); }
 
 void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }
@@ -40,6 +44,18 @@ void wrap_clang_Cursor_getArgument(CXCursor *C, unsigned i, CXCursor *argCur) {
 }
 
 void wrap_clang_getCanonicalType(CXType *typ, CXType *canonicalType) { *canonicalType = clang_getCanonicalType(*typ); }
+
+unsigned wrap_clang_isConstQualifiedType(CXType *typ) { return clang_isConstQualifiedType(*typ); }
+
+unsigned wrap_clang_Cursor_isMacroFunctionLike(CXCursor *cur) { return clang_Cursor_isMacroFunctionLike(*cur); }
+
+unsigned wrap_clang_Cursor_isMacroBuiltin(CXCursor *cur) { return clang_Cursor_isMacroBuiltin(*cur); }
+
+unsigned wrap_clang_Cursor_isFunctionInlined(CXCursor *cur) { return clang_Cursor_isFunctionInlined(*cur); }
+
+unsigned wrap_clang_isVolatileQualifiedType(CXType *T) { return clang_isVolatileQualifiedType(*T); }
+
+unsigned wrap_clang_isRestrictQualifiedType(CXType *T) { return clang_isRestrictQualifiedType(*T); }
 
 void wrap_clang_getPointeeType(CXType *pointerTyp, CXType *pointeeTyp) {
     *pointeeTyp = clang_getPointeeType(*pointerTyp);
@@ -80,6 +96,50 @@ CXString wrap_clang_getCursorSpelling(CXCursor *cur) { return clang_getCursorSpe
 CXString wrap_clang_Cursor_getRawCommentText(CXCursor *cursor) { return clang_Cursor_getRawCommentText(*cursor); }
 
 CXString wrap_clang_Cursor_getMangling(CXCursor *cur) { return clang_Cursor_getMangling(*cur); }
+
+unsigned wrap_clang_CXXConstructor_isConvertingConstructor(CXCursor *cursor) {
+    return clang_CXXConstructor_isConvertingConstructor(*cursor);
+}
+
+unsigned wrap_clang_CXXConstructor_isCopyConstructor(CXCursor *cursor) {
+    return clang_CXXConstructor_isCopyConstructor(*cursor);
+}
+
+unsigned wrap_clang_CXXConstructor_isDefaultConstructor(CXCursor *cursor) {
+    return clang_CXXConstructor_isDefaultConstructor(*cursor);
+}
+
+unsigned wrap_clang_CXXConstructor_isMoveConstructor(CXCursor *cursor) {
+    return clang_CXXConstructor_isMoveConstructor(*cursor);
+}
+
+unsigned wrap_clang_CXXField_isMutable(CXCursor *cursor) { return clang_CXXField_isMutable(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isDefaulted(CXCursor *cursor) { return clang_CXXMethod_isDefaulted(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isDeleted(CXCursor *cursor) { return clang_CXXMethod_isDeleted(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isPureVirtual(CXCursor *cursor) { return clang_CXXMethod_isPureVirtual(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isStatic(CXCursor *cursor) { return clang_CXXMethod_isStatic(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isVirtual(CXCursor *cursor) { return clang_CXXMethod_isVirtual(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isCopyAssignmentOperator(CXCursor *cursor) {
+    return clang_CXXMethod_isCopyAssignmentOperator(*cursor);
+}
+
+unsigned wrap_clang_CXXMethod_isMoveAssignmentOperator(CXCursor *cursor) {
+    return clang_CXXMethod_isMoveAssignmentOperator(*cursor);
+}
+
+unsigned wrap_clang_CXXMethod_isExplicit(CXCursor *cursor) { return clang_CXXMethod_isExplicit(*cursor); }
+
+unsigned wrap_clang_CXXRecord_isAbstract(CXCursor *cursor) { return clang_CXXRecord_isAbstract(*cursor); }
+
+unsigned wrap_clang_EnumDecl_isScoped(CXCursor *cursor) { return clang_EnumDecl_isScoped(*cursor); }
+
+unsigned wrap_clang_CXXMethod_isConst(CXCursor *cursor) { return clang_CXXMethod_isConst(*cursor); }
 
 CXTokenKind wrap_clang_getTokenKind(CXToken *token) { return clang_getTokenKind(*token); }
 

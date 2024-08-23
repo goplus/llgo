@@ -1553,6 +1553,63 @@ type Token struct {
 }
 
 /**
+ * Determine the set of methods that are overridden by the given
+ * method.
+ *
+ * In both Objective-C and C++, a method (aka virtual member function,
+ * in C++) can override a virtual method in a base class. For
+ * Objective-C, a method is said to override any method in the class's
+ * base class, its protocols, or its categories' protocols, that has the same
+ * selector and is of the same kind (class or instance).
+ * If no such method exists, the search continues to the class's superclass,
+ * its protocols, and its categories, and so on. A method from an Objective-C
+ * implementation is considered to override the same methods as its
+ * corresponding method in the interface.
+ *
+ * For C++, a virtual member function overrides any virtual member
+ * function with the same signature that occurs in its base
+ * classes. With multiple inheritance, a virtual member function can
+ * override several virtual member functions coming from different
+ * base classes.
+ *
+ * In all cases, this function determines the immediate overridden
+ * method, rather than all of the overridden methods. For example, if
+ * a method is originally declared in a class A, then overridden in B
+ * (which in inherits from A) and also in C (which inherited from B),
+ * then the only overridden method returned from this function when
+ * invoked on C's method will be B's method. The client may then
+ * invoke this function again, given the previously-found overridden
+ * methods, to map out the complete method-override set.
+ *
+ * \param cursor A cursor representing an Objective-C or C++
+ * method. This routine will compute the set of methods that this
+ * method overrides.
+ *
+ * \param overridden A pointer whose pointee will be replaced with a
+ * pointer to an array of cursors, representing the set of overridden
+ * methods. If there are no overridden methods, the pointee will be
+ * set to NULL. The pointee must be freed via a call to
+ * \c clang_disposeOverriddenCursors().
+ *
+ * \param num_overridden A pointer to the number of overridden
+ * functions, will be set to the number of overridden functions in the
+ * array pointed to by \p overridden.
+ */
+// llgo:link (*Cursor).wrapOverriddenCursors C.wrap_clang_getOverriddenCursors
+func (c *Cursor) wrapOverriddenCursors(overridden **Cursor, numOverridden *c.Uint) {}
+
+func (c Cursor) OverriddenCursors(overridden **Cursor, numOverridden *c.Uint) {
+	c.wrapOverriddenCursors(overridden, numOverridden)
+}
+
+/**
+ * Free the set of overridden cursors returned by \c
+ * clang_getOverriddenCursors().
+ */
+// llgo:link (*Cursor).DisposeOverriddenCursors C.clang_disposeOverriddenCursors
+func (c *Cursor) DisposeOverriddenCursors() {}
+
+/**
  * Retrieve the physical location of the source constructor referenced
  * by the given cursor.
  *
@@ -1690,6 +1747,75 @@ func (t *Type) wrapCanonicalType(ret *Type) { return }
 func (t Type) CanonicalType() (ret Type) {
 	t.wrapCanonicalType(&ret)
 	return
+}
+
+/**
+ * Determine whether a CXType has the "const" qualifier set,
+ * without looking through typedefs that may have added "const" at a
+ * different level.
+ */
+// llgo:link (*Type).wrapIsConstQualifiedType C.wrap_clang_isConstQualifiedType
+func (t *Type) wrapIsConstQualifiedType() (ret c.Uint) { return 0 }
+
+func (t Type) IsConstQualifiedType() (ret c.Uint) {
+	return t.wrapIsConstQualifiedType()
+}
+
+/**
+ * Determine whether a  CXCursor that is a macro, is
+ * function like.
+ */
+// llgo:link (*Cursor).wrapIsMacroFunctionLike C.wrap_clang_Cursor_isMacroFunctionLike
+func (c *Cursor) wrapIsMacroFunctionLike() (ret c.Uint) { return 0 }
+
+func (c Cursor) IsMacroFunctionLike() (ret c.Uint) {
+	return c.wrapIsMacroFunctionLike()
+}
+
+/**
+ * Determine whether a  CXCursor that is a macro, is a
+ * builtin one.
+ */
+// llgo:link (*Cursor).wrapIsMacroBuiltin C.wrap_clang_Cursor_isMacroBuiltin
+func (c *Cursor) wrapIsMacroBuiltin() (ret c.Uint) { return 0 }
+
+func (c Cursor) IsMacroBuiltin() (ret c.Uint) {
+	return c.wrapIsMacroBuiltin()
+}
+
+/**
+ * Determine whether a  CXCursor that is a function declaration, is an
+ * inline declaration.
+ */
+// llgo:link (*Cursor).wrapIsFunctionInlined C.wrap_clang_Cursor_isFunctionInlined
+func (c *Cursor) wrapIsFunctionInlined() (ret c.Uint) { return 0 }
+
+func (c Cursor) IsFunctionInlined() (ret c.Uint) {
+	return c.wrapIsFunctionInlined()
+}
+
+/**
+ * Determine whether a CXType has the "volatile" qualifier set,
+ * without looking through typedefs that may have added "volatile" at
+ * a different level.
+ */
+// llgo:link (*Type).wrapIsVolatileQualifiedType C.wrap_clang_isVolatileQualifiedType
+func (t *Type) wrapIsVolatileQualifiedType() (ret c.Uint) { return 0 }
+
+func (t Type) IsVolatileQualifiedType() (ret c.Uint) {
+	return t.wrapIsVolatileQualifiedType()
+}
+
+/**
+ * Determine whether a CXType has the "restrict" qualifier set,
+ * without looking through typedefs that may have added "restrict" at a
+ * different level.
+ */
+// llgo:link (*Type).wrapIsRestrictQualifiedType C.wrap_clang_isRestrictQualifiedType
+func (t *Type) wrapIsRestrictQualifiedType() (ret c.Uint) { return 0 }
+
+func (t Type) IsRestrictQualifiedType() (ret c.Uint) {
+	return t.wrapIsRestrictQualifiedType()
 }
 
 /**
@@ -1923,6 +2049,269 @@ func (*Cursor) wrapMangling() (ret String) {
 
 func (c Cursor) Mangling() (ret String) {
 	return c.wrapMangling()
+}
+
+/**
+ * Determine if a C++ constructor is a converting constructor.
+ */
+// llgo:link (*Cursor).wrapIsConvertingConstructor C.wrap_clang_CXXConstructor_isConvertingConstructor
+func (c *Cursor) wrapIsConvertingConstructor() (ret c.Uint) {
+	return 0
+}
+
+func (c Cursor) IsConvertingConstructor() (ret c.Uint) {
+	return c.wrapIsConvertingConstructor()
+}
+
+/**
+ * Determine if a C++ constructor is a copy constructor.
+ */
+// llgo:link (*Cursor).wrapIsCopyConstructor C.wrap_clang_CXXConstructor_isCopyConstructor
+func (c *Cursor) wrapIsCopyConstructor() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsCopyConstructor() (ret c.Uint) {
+	return c.wrapIsCopyConstructor()
+}
+
+/**
+ * Determine if a C++ constructor is the default constructor.
+ */
+// llgo:link (*Cursor).wrapIsDefaultConstructor C.wrap_clang_CXXConstructor_isDefaultConstructor
+func (c *Cursor) wrapIsDefaultConstructor() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsDefaultConstructor() (ret c.Uint) {
+	return c.wrapIsDefaultConstructor()
+}
+
+/**
+ * Determine if a C++ constructor is a move constructor.
+ */
+// llgo:link (*Cursor).wrapIsMoveConstructor C.wrap_clang_CXXConstructor_isMoveConstructor
+func (c *Cursor) wrapIsMoveConstructor() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsMoveConstructor() (ret c.Uint) {
+	return c.wrapIsMoveConstructor()
+}
+
+/**
+ * Determine if a C++ field is declared 'mutable'.
+ */
+// llgo:link (*Cursor).wrapIsMutable C.wrap_clang_CXXField_isMutable
+func (c *Cursor) wrapIsMutable() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsMutable() (ret c.Uint) {
+	return c.wrapIsMutable()
+}
+
+/**
+ * Determine if a C++ method is declared '= default'.
+ */
+// llgo:link (*Cursor).wrapIsDefaulted C.wrap_clang_CXXMethod_isDefaulted
+func (c *Cursor) wrapIsDefaulted() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsDefaulted() (ret c.Uint) {
+	return c.wrapIsDefaulted()
+}
+
+/**
+ * Determine if a C++ method is declared '= delete'.
+ */
+// llgo:link (*Cursor).wrapIsDeleted C.wrap_clang_CXXMethod_isDeleted
+func (c *Cursor) wrapIsDeleted() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsDeleted() (ret c.Uint) {
+	return c.wrapIsDeleted()
+}
+
+/**
+ * Determine if a C++ member function or member function template is
+ * pure virtual.
+ */
+// llgo:link (*Cursor).wrapIsPureVirtual C.wrap_clang_CXXMethod_isPureVirtual
+func (c *Cursor) wrapIsPureVirtual() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsPureVirtual() (ret c.Uint) {
+	return c.wrapIsPureVirtual()
+}
+
+/**
+ * Determine if a C++ member function or member function template is
+ * declared 'static'.
+ */
+// llgo:link (*Cursor).wrapIsStatic C.wrap_clang_CXXMethod_isStatic
+func (c *Cursor) wrapIsStatic() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsStatic() (ret c.Uint) {
+	return c.wrapIsStatic()
+}
+
+/**
+ * Determine if a C++ member function or member function template is
+ * explicitly declared 'virtual' or if it overrides a virtual method from
+ * one of the base classes.
+ */
+// llgo:link (*Cursor).wrapIsVirtual C.wrap_clang_CXXMethod_isVirtual
+func (c *Cursor) wrapIsVirtual() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsVirtual() (ret c.Uint) {
+	return c.wrapIsVirtual()
+}
+
+/**
+ * Determine if a C++ member function is a copy-assignment operator,
+ * returning 1 if such is the case and 0 otherwise.
+ *
+ * > A copy-assignment operator `X::operator=` is a non-static,
+ * > non-template member function of _class_ `X` with exactly one
+ * > parameter of type `X`, `X&`, `const X&`, `volatile X&` or `const
+ * > volatile X&`.
+ *
+ * That is, for example, the `operator=` in:
+ *
+ *    class Foo {
+ *        bool operator=(const volatile Foo&);
+ *    };
+ *
+ * Is a copy-assignment operator, while the `operator=` in:
+ *
+ *    class Bar {
+ *        bool operator=(const int&);
+ *    };
+ *
+ * Is not.
+ */
+// llgo:link (*Cursor).wrapIsCopyAssignmentOperator C.wrap_clang_CXXMethod_isCopyAssignmentOperator
+func (c *Cursor) wrapIsCopyAssignmentOperator() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsCopyAssignmentOperator() (ret c.Uint) {
+	return c.wrapIsCopyAssignmentOperator()
+}
+
+/**
+ * Determine if a C++ member function is a move-assignment operator,
+ * returning 1 if such is the case and 0 otherwise.
+ *
+ * > A move-assignment operator `X::operator=` is a non-static,
+ * > non-template member function of _class_ `X` with exactly one
+ * > parameter of type `X&&`, `const X&&`, `volatile X&&` or `const
+ * > volatile X&&`.
+ *
+ * That is, for example, the `operator=` in:
+ *
+ *    class Foo {
+ *        bool operator=(const volatile Foo&&);
+ *    };
+ *
+ * Is a move-assignment operator, while the `operator=` in:
+ *
+ *    class Bar {
+ *        bool operator=(const int&&);
+ *    };
+ *
+ * Is not.
+ */
+// llgo:link (*Cursor).wrapIsMoveAssignmentOperator C.wrap_clang_CXXMethod_isMoveAssignmentOperator
+func (c *Cursor) wrapIsMoveAssignmentOperator() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsMoveAssignmentOperator() (ret c.Uint) {
+	return c.wrapIsMoveAssignmentOperator()
+}
+
+/**
+ * Determines if a C++ constructor or conversion function was declared
+ * explicit, returning 1 if such is the case and 0 otherwise.
+ *
+ * Constructors or conversion functions are declared explicit through
+ * the use of the explicit specifier.
+ *
+ * For example, the following constructor and conversion function are
+ * not explicit as they lack the explicit specifier:
+ *
+ *     class Foo {
+ *         Foo();
+ *         operator int();
+ *     };
+ *
+ * While the following constructor and conversion function are
+ * explicit as they are declared with the explicit specifier.
+ *
+ *     class Foo {
+ *         explicit Foo();
+ *         explicit operator int();
+ *     };
+ *
+ * This function will return 0 when given a cursor pointing to one of
+ * the former declarations and it will return 1 for a cursor pointing
+ * to the latter declarations.
+ *
+ * The explicit specifier allows the user to specify a
+ * conditional compile-time expression whose value decides
+ * whether the marked element is explicit or not.
+ *
+ * For example:
+ *
+ *     constexpr bool foo(int i) { return i % 2 == 0; }
+ *
+ *     class Foo {
+ *          explicit(foo(1)) Foo();
+ *          explicit(foo(2)) operator int();
+ *     }
+ *
+ * This function will return 0 for the constructor and 1 for
+ * the conversion function.
+ */
+// llgo:link (*Cursor).wrapIsExplicit C.wrap_clang_CXXMethod_isExplicit
+func (c *Cursor) wrapIsExplicit() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsExplicit() (ret c.Uint) {
+	return c.wrapIsExplicit()
+}
+
+/**
+ * Determine if a C++ record is abstract, i.e. whether a class or struct
+ * has a pure virtual member function.
+ */
+// llgo:link (*Cursor).wrapIsAbstract C.wrap_clang_CXXRecord_isAbstract
+func (c *Cursor) wrapIsAbstract() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsAbstract() (ret c.Uint) {
+	return c.wrapIsAbstract()
+}
+
+/**
+ * Determine if an enum declaration refers to a scoped enum.
+ */
+// llgo:link (*Cursor).wrapIsScoped C.wrap_clang_EnumDecl_isScoped
+func (c *Cursor) wrapIsScoped() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsScoped() (ret c.Uint) {
+	return c.wrapIsScoped()
+}
+
+/**
+ * Determine if a C++ member function or member function template is
+ * declared 'const'.
+ */
+// llgo:link (*Cursor).wrapIsConst C.wrap_clang_CXXMethod_isConst
+func (c *Cursor) wrapIsConst() (ret c.Uint) {
+	return 0
+}
+func (c Cursor) IsConst() (ret c.Uint) {
+	return c.wrapIsConst()
 }
 
 /**
