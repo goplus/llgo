@@ -279,6 +279,7 @@ func (ct *Converter) ProcessTypeDefDecl(cursor clang.Cursor) *ast.TypedefDecl {
 func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	name := cursor.String()
 	defer name.Dispose()
+
 	// function type will only collect return type
 	// ProcessType can't get the field names,will collect in follows
 	funcType, ok := ct.ProcessType(cursor.Type()).(*ast.FuncType)
@@ -286,6 +287,7 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 		fmt.Println("failed to process function type")
 		return nil
 	}
+
 	params := ct.ProcessFieldList(cursor)
 	funcType.Params = params
 	fn := &ast.FuncDecl{
@@ -293,6 +295,37 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
 		Type:     funcType,
 	}
+
+	// other info of function&method
+	if cursor.Kind == clang.CursorDestructor {
+		fn.IsDestructor = true
+	}
+
+	if cursor.Kind == clang.CursorConstructor {
+		fn.IsConstructor = true
+		if cursor.IsExplicit() != 0 {
+			fn.IsExplicit = true
+		}
+	}
+
+	if cursor.IsStatic() != 0 {
+		fn.IsStatic = true
+	}
+
+	// virtual & pure virtual
+	if cursor.IsVirtual() != 0 || cursor.IsPureVirtual() != 0 {
+		fn.IsVirtual = true
+	}
+
+	// todo(zzy):inline & const
+
+	var numOverridden c.Uint
+	var overridden *clang.Cursor
+	cursor.OverriddenCursors(&overridden, &numOverridden)
+	if numOverridden > 0 {
+		fn.IsOverride = true
+	}
+
 	return fn
 }
 
@@ -425,7 +458,7 @@ type visitMethodsContext struct {
 
 func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitMethodsContext)(clientData)
-	if cursor.Kind == clang.CursorCXXMethod {
+	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor {
 		method := ctx.converter.ProcessFuncDecl(cursor)
 		if method != nil {
 			*ctx.methods = append(*ctx.methods, method)

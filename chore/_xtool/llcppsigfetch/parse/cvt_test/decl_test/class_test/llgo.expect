@@ -150,7 +150,357 @@ TestClassDecl Case 2:
 									"Kind":	8,
 									"Flags":	0
 								}
-							}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestClassDecl Case 3:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"A"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"A"
+							},
+							"Name":	{
+								"Name":	"A"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	true,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"A"
+							},
+							"Name":	{
+								"Name":	"A"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	true,
+							"IsConstructor":	true,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"A"
+							},
+							"Name":	{
+								"Name":	"~A"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	true,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestClassDecl Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"Base"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"Base"
+							},
+							"Name":	{
+								"Name":	"Base"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	true,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"Base"
+							},
+							"Name":	{
+								"Name":	"~Base"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	true,
+							"IsVirtual":	true,
+							"IsOverride":	false
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"Base"
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	true,
+							"IsOverride":	false
+						}]
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"Derived"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[{
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"Derived"
+							},
+							"Name":	{
+								"Name":	"Derived"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	true,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"Derived"
+							},
+							"Name":	{
+								"Name":	"~Derived"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	true,
+							"IsVirtual":	true,
+							"IsOverride":	true
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"Derived"
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	true,
+							"IsOverride":	true
 						}]
 				}
 			}],
