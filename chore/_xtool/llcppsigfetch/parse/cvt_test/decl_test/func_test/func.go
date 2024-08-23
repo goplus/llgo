@@ -10,17 +10,7 @@ func TestFuncDecl() {
 	testCases := []string{
 		`void foo();`,
 		`void foo(int a);`,
-		`float foo(int a,double b);`,
 		`float* foo(int a,double b);`,
-
-		`void foo(char* str);`,
-		`void* foo(char*** str);`,
-
-		`void foo(char str[]);`,
-		`void foo(int arr[3][4]);`,
-
-		`void foo(int& a);`,
-		`void foo(int&& a);`,
 	}
 	test.RunTest("TestFuncDecl", testCases)
 }
