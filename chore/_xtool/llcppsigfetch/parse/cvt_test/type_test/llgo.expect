@@ -152,6 +152,23 @@ Type: a::b::c:
 		}
 	}
 }
+Type: class a::b::c:
+{
+	"Name":	{
+		"X":	{
+			"Name":	"c"
+		},
+		"Parent":	{
+			"X":	{
+				"Name":	"b"
+			},
+			"Parent":	{
+				"Name":	"a"
+			}
+		}
+	},
+	"Tag":	3
+}
 
 #stderr
 todo: unknown builtin type: Ibm128

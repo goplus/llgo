@@ -103,6 +103,14 @@ func TestNonBuiltinTypes() {
 		 }
 		 }
 		 a::b::c`,
+
+		`namespace a {
+		 namespace b {
+		 class c {
+		 };
+		 }
+		 }
+		 class a::b::c`,
 	}
 
 	for _, t := range tests {
