@@ -325,6 +325,7 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	if numOverridden > 0 {
 		fn.IsOverride = true
 	}
+	overridden.DisposeOverriddenCursors()
 
 	return fn
 }
