@@ -29,7 +29,7 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 		includes := cjson.Array()
 		for _, i := range file.Includes {
 			include := cjson.Object()
-			include.SetItem(c.Str("Path"), cjson.String(c.AllocaCStr(i.Path)))
+			include.SetItem(c.Str("Path"), stringField(i.Path))
 			includes.AddItem(include)
 		}
 		root.SetItem(c.Str("includes"), includes)
@@ -40,7 +40,7 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 		macros := cjson.Array()
 		for _, m := range file.Macros {
 			marco := cjson.Object()
-			marco.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(m.Name)))
+			marco.SetItem(c.Str("Name"), stringField(m.Name))
 			tokens := cjson.Array()
 			for _, tok := range m.Tokens {
 				tokens.AddItem(Token(tok))
@@ -54,8 +54,8 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 }
 func Token(tok *ast.Token) *cjson.JSON {
 	root := cjson.Object()
-	root.SetItem(c.Str("Token"), cjson.Number(float64(tok.Token)))
-	root.SetItem(c.Str("Lit"), cjson.String(c.AllocaCStr(tok.Lit)))
+	root.SetItem(c.Str("Token"), numberField(uint(tok.Token)))
+	root.SetItem(c.Str("Lit"), stringField(tok.Lit))
 	return root
 }
 
@@ -77,6 +77,14 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
 		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
+		root.SetItem(c.Str("IsInline"), boolField(d.IsInline))
+		root.SetItem(c.Str("IsStatic"), boolField(d.IsStatic))
+		root.SetItem(c.Str("IsConst"), boolField(d.IsConst))
+		root.SetItem(c.Str("IsExplicit"), boolField(d.IsExplicit))
+		root.SetItem(c.Str("IsConstructor"), boolField(d.IsConstructor))
+		root.SetItem(c.Str("IsDestructor"), boolField(d.IsDestructor))
+		root.SetItem(c.Str("IsVirtual"), boolField(d.IsVirtual))
+		root.SetItem(c.Str("IsOverride"), boolField(d.IsOverride))
 	case *ast.TypeDecl:
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
@@ -87,7 +95,7 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 
 func MarshalASTDeclBase(decl ast.DeclBase, root *cjson.JSON) {
 	loc := cjson.Object()
-	loc.SetItem(c.Str("File"), cjson.String(c.AllocaCStr(decl.Loc.File)))
+	loc.SetItem(c.Str("File"), stringField(decl.Loc.File))
 	root.SetItem(c.Str("Loc"), loc)
 
 	root.SetItem(c.Str("Doc"), MarshalASTExpr(decl.Doc))
@@ -112,7 +120,7 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
 		root.SetItem(c.Str("Value"), MarshalASTExpr(d.Value))
 	case *ast.RecordType:
-		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
+		root.SetItem(c.Str("Tag"), numberField(uint(d.Tag)))
 		root.SetItem(c.Str("Fields"), MarshalASTExpr(d.Fields))
 		methods := cjson.Array()
 		for _, m := range d.Methods {
@@ -144,13 +152,13 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		if d == nil {
 			return cjson.Null()
 		}
-		root.SetItem(c.Str("Name"), cjson.String(c.AllocaCStr(d.Name)))
+		root.SetItem(c.Str("Name"), stringField(d.Name))
 	case *ast.TagExpr:
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
-		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
+		root.SetItem(c.Str("Tag"), numberField(uint(d.Tag)))
 	case *ast.BasicLit:
-		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
-		root.SetItem(c.Str("Value"), cjson.String(c.AllocaCStr(d.Value)))
+		root.SetItem(c.Str("Kind"), numberField(uint(d.Kind)))
+		root.SetItem(c.Str("Value"), stringField(d.Value))
 	case *ast.LvalueRefType:
 		root.SetItem(c.Str("X"), MarshalASTExpr(d.X))
 	case *ast.RvalueRefType:
@@ -161,13 +169,13 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Elt"), MarshalASTExpr(d.Elt))
 		root.SetItem(c.Str("Len"), MarshalASTExpr(d.Len))
 	case *ast.BuiltinType:
-		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
-		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
+		root.SetItem(c.Str("Kind"), numberField(uint(d.Kind)))
+		root.SetItem(c.Str("Flags"), numberField(uint(d.Flags)))
 	case *ast.Comment:
 		if d == nil {
 			return cjson.Null()
 		}
-		root.SetItem(c.Str("Text"), cjson.String(c.AllocaCStr(d.Text)))
+		root.SetItem(c.Str("Text"), stringField(d.Text))
 	case *ast.CommentGroup:
 		if d == nil {
 			return cjson.Null()
@@ -184,4 +192,19 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		return cjson.Null()
 	}
 	return root
+}
+
+func stringField(s string) *cjson.JSON {
+	return cjson.String(c.AllocaCStr(s))
+}
+
+func numberField(n uint) *cjson.JSON {
+	return cjson.Number(float64(n))
+}
+
+func boolField(b bool) *cjson.JSON {
+	if b {
+		return cjson.True()
+	}
+	return cjson.False()
 }
