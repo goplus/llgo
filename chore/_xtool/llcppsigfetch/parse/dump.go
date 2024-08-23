@@ -68,11 +68,7 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 	case *ast.EnumTypeDecl:
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
-		items := cjson.Array()
-		for _, i := range d.Items {
-			items.AddItem(MarshalASTExpr(i))
-		}
-		root.SetItem(c.Str("Items"), items)
+		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
 	case *ast.TypedefDecl:
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
@@ -106,6 +102,15 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 	root := cjson.Object()
 
 	switch d := t.(type) {
+	case *ast.EnumType:
+		items := cjson.Array()
+		for _, e := range d.Items {
+			items.AddItem(MarshalASTExpr(e))
+		}
+		root.SetItem(c.Str("Items"), items)
+	case *ast.EnumItem:
+		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
+		root.SetItem(c.Str("Value"), MarshalASTExpr(d.Value))
 	case *ast.RecordType:
 		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
 		root.SetItem(c.Str("Fields"), MarshalASTExpr(d.Fields))
@@ -143,9 +148,6 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 	case *ast.TagExpr:
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
 		root.SetItem(c.Str("Tag"), cjson.Number(float64(d.Tag)))
-	case *ast.EnumItem:
-		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
-		root.SetItem(c.Str("Value"), MarshalASTExpr(d.Value))
 	case *ast.BasicLit:
 		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
 		root.SetItem(c.Str("Value"), cjson.String(c.AllocaCStr(d.Value)))
