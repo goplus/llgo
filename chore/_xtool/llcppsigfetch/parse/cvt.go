@@ -519,7 +519,7 @@ type visitMethodsContext struct {
 
 func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitMethodsContext)(clientData)
-	if cursor.Kind == clang.CursorCXXMethod {
+	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor {
 		method := ctx.converter.ProcessFuncDecl(cursor)
 		if method != nil {
 			*ctx.methods = append(*ctx.methods, method)

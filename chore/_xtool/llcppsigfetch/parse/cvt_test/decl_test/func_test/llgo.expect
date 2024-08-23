@@ -350,7 +350,15 @@ TestFuncDecl Case 9:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -395,7 +403,15 @@ TestFuncDecl Case 10:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
