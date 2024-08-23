@@ -21,7 +21,15 @@ TestScope Case 1:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -52,7 +60,15 @@ TestScope Case 2:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -88,7 +104,15 @@ TestScope Case 3:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -135,7 +159,15 @@ TestScope Case 4:
 									"Kind":	0,
 									"Flags":	0
 								}
-							}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
 						}]
 				}
 			}],
@@ -191,7 +223,15 @@ TestScope Case 5:
 									"Kind":	0,
 									"Flags":	0
 								}
-							}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
 						}]
 				}
 			}],

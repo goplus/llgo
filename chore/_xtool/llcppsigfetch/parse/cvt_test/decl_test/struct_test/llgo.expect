@@ -242,7 +242,15 @@ TestStructDecl Case 4:
 									"Kind":	8,
 									"Flags":	0
 								}
-							}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
 						}]
 				}
 			}],
