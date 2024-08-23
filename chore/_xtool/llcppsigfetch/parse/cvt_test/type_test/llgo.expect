@@ -26,6 +26,132 @@ Complex:flags:0 kind:11
 Complex:flags:16 kind:11
 Complex:flags:20 kind:11
 Unknown:flags:0 kind:0
+Type: char *:
+{
+	"X":	{
+		"Kind":	2,
+		"Flags":	1
+	}
+}
+Type: char ***:
+{
+	"X":	{
+		"X":	{
+			"X":	{
+				"Kind":	2,
+				"Flags":	1
+			}
+		}
+	}
+}
+Type: char[]:
+{
+	"Elt":	{
+		"Kind":	2,
+		"Flags":	1
+	},
+	"Len":	null
+}
+Type: char[10]:
+{
+	"Elt":	{
+		"Kind":	2,
+		"Flags":	1
+	},
+	"Len":	{
+		"Kind":	0,
+		"Value":	"10"
+	}
+}
+Type: char[3][4]:
+{
+	"Elt":	{
+		"Elt":	{
+			"Kind":	2,
+			"Flags":	1
+		},
+		"Len":	{
+			"Kind":	0,
+			"Value":	"4"
+		}
+	},
+	"Len":	{
+		"Kind":	0,
+		"Value":	"3"
+	}
+}
+Type: int &:
+{
+	"X":	{
+		"Kind":	6,
+		"Flags":	0
+	}
+}
+Type: int &&:
+{
+	"X":	{
+		"Kind":	6,
+		"Flags":	0
+	}
+}
+Type: Foo:
+{
+	"Name":	"Foo"
+}
+Type: struct Foo:
+{
+	"Name":	{
+		"Name":	"Foo"
+	},
+	"Tag":	0
+}
+Type: Foo:
+{
+	"Name":	"Foo"
+}
+Type: union Foo:
+{
+	"Name":	{
+		"Name":	"Foo"
+	},
+	"Tag":	1
+}
+Type: Foo:
+{
+	"Name":	"Foo"
+}
+Type: enum Foo:
+{
+	"Name":	{
+		"Name":	"Foo"
+	},
+	"Tag":	2
+}
+Type: Foo:
+{
+	"Name":	"Foo"
+}
+Type: class Foo:
+{
+	"Name":	{
+		"Name":	"Foo"
+	},
+	"Tag":	3
+}
+Type: a::b::c:
+{
+	"X":	{
+		"Name":	"c"
+	},
+	"Parent":	{
+		"X":	{
+			"Name":	"b"
+		},
+		"Parent":	{
+			"Name":	"a"
+		}
+	}
+}
 
 #stderr
 todo: unknown builtin type: Ibm128
