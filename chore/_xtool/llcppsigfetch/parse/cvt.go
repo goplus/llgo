@@ -334,7 +334,9 @@ func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
 	return &ast.EnumTypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
-		Items:    items,
+		Type: &ast.EnumType{
+			Items: items,
+		},
 	}
 }
 

@@ -13,31 +13,33 @@ TestEnumDecl Case 1:
 				"Name":	{
 					"Name":	"Foo"
 				},
-				"Items":	[{
-						"Name":	{
-							"Name":	"a"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"0"
-						}
-					}, {
-						"Name":	{
-							"Name":	"b"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"1"
-						}
-					}, {
-						"Name":	{
-							"Name":	"c"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"2"
-						}
-					}]
+				"Type":	{
+					"Items":	[{
+							"Name":	{
+								"Name":	"a"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"0"
+							}
+						}, {
+							"Name":	{
+								"Name":	"b"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"1"
+							}
+						}, {
+							"Name":	{
+								"Name":	"c"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"2"
+							}
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -58,31 +60,33 @@ TestEnumDecl Case 2:
 				"Name":	{
 					"Name":	"Foo"
 				},
-				"Items":	[{
-						"Name":	{
-							"Name":	"a"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"1"
-						}
-					}, {
-						"Name":	{
-							"Name":	"b"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"2"
-						}
-					}, {
-						"Name":	{
-							"Name":	"c"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"4"
-						}
-					}]
+				"Type":	{
+					"Items":	[{
+							"Name":	{
+								"Name":	"a"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"1"
+							}
+						}, {
+							"Name":	{
+								"Name":	"b"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"2"
+							}
+						}, {
+							"Name":	{
+								"Name":	"c"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"4"
+							}
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -103,31 +107,33 @@ TestEnumDecl Case 3:
 				"Name":	{
 					"Name":	"Foo"
 				},
-				"Items":	[{
-						"Name":	{
-							"Name":	"a"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"1"
-						}
-					}, {
-						"Name":	{
-							"Name":	"b"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"2"
-						}
-					}, {
-						"Name":	{
-							"Name":	"c"
-						},
-						"Value":	{
-							"Kind":	0,
-							"Value":	"3"
-						}
-					}]
+				"Type":	{
+					"Items":	[{
+							"Name":	{
+								"Name":	"a"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"1"
+							}
+						}, {
+							"Name":	{
+								"Name":	"b"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"2"
+							}
+						}, {
+							"Name":	{
+								"Name":	"c"
+							},
+							"Value":	{
+								"Kind":	0,
+								"Value":	"3"
+							}
+						}]
+				}
 			}],
 		"includes":	[],
 		"macros":	[]
