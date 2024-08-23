@@ -21,7 +21,15 @@ TestFuncDecl Case 1:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -64,7 +72,15 @@ TestFuncDecl Case 2:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -123,7 +139,15 @@ TestFuncDecl Case 3:
 							"Flags":	0
 						}
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]

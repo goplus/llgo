@@ -21,7 +21,15 @@ TestDoc Case 1:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -50,7 +58,15 @@ TestDoc Case 2:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -81,7 +97,15 @@ TestDoc Case 3:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -112,7 +136,15 @@ TestDoc Case 4:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -143,7 +175,15 @@ TestDoc Case 5:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -176,7 +216,15 @@ TestDoc Case 6:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -209,7 +257,15 @@ TestDoc Case 7:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -242,7 +298,15 @@ TestDoc Case 8:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
@@ -279,7 +343,15 @@ TestDoc Case 9:
 						"Kind":	0,
 						"Flags":	0
 					}
-				}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
 			}],
 		"includes":	[],
 		"macros":	[]
