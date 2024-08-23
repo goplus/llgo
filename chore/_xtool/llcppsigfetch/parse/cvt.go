@@ -512,28 +512,12 @@ func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 		if tagValue, ok := tagMap[parts[0]]; ok {
 			return &ast.TagExpr{
 				Tag:  tagValue,
-				Name: &ast.Ident{Name: parts[1]},
+				Name: qualifiedExpr(parts[1]),
 			}
 		}
 	}
 
-	// qualified name
-	// todo(zzy): qualified name with tag,like struct A::B
-	if strings.Contains(typeName, "::") {
-		scopeParts := strings.Split(typeName, "::")
-		var expr ast.Expr = &ast.Ident{Name: scopeParts[0]}
-		for _, part := range scopeParts[1:] {
-			expr = &ast.ScopingExpr{
-				Parent: expr,
-				X:      &ast.Ident{Name: part},
-			}
-		}
-		return expr
-	}
-
-	return &ast.Ident{
-		Name: typeName,
-	}
+	return qualifiedExpr(typeName)
 }
 
 func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
@@ -627,4 +611,16 @@ func toToken(tok clang.Token) token.Token {
 	} else {
 		return token.Token(tok.Kind() + 1)
 	}
+}
+
+func qualifiedExpr(name string) ast.Expr {
+	parts := strings.Split(name, "::")
+	var expr ast.Expr = &ast.Ident{Name: parts[0]}
+	for _, part := range parts[1:] {
+		expr = &ast.ScopingExpr{
+			Parent: expr,
+			X:      &ast.Ident{Name: part},
+		}
+	}
+	return expr
 }
