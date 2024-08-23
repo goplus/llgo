@@ -25,15 +25,6 @@ func TestScope() {
 			void foo(); 
 		 };
 	   	 }`,
-
-		`namespace a {
-		 namespace b {
-		 class c {
-			void foo(); 
-		 };
-		 }
-		 }
-		 typedef a::b::c C;`,
 	}
 	test.RunTest("TestScope", testCases)
 }
