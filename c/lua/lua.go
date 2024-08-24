@@ -202,7 +202,8 @@ func (L *State) Iscfunction(idx c.Int) c.Int { return 0 }
 // llgo:link (*State).Isinteger C.lua_isinteger
 func (L *State) Isinteger(idx c.Int) c.Int { return 0 }
 
-// LUA_API int             (lua_isuserdata) (State *L, int idx);
+// llgo:link (*State).Isuserdata C.lua_isuserdata
+func (L *State) Isuserdata(idx c.Int) c.Int { return 0 }
 
 // llgo:link (*State).Type C.lua_type
 func (L *State) Type(idx c.Int) c.Int { return 0 }
@@ -227,7 +228,9 @@ func (L *State) Tolstring(idx c.Int, len *c.Ulong) *c.Char { return nil }
 // llgo:link (*State).Tocfunction C.lua_tocfunction
 func (L *State) Tocfunction(idx c.Int) CFunction { return nil }
 
-// LUA_API void	       *(lua_touserdata) (State *L, int idx);
+// llgo:link (*State).Touserdata C.lua_touserdata
+func (L *State) Touserdata(idx c.Int) c.Pointer { return nil }
+
 // LUA_API State      *(lua_tothread) (State *L, int idx);
 // LUA_API const void     *(lua_topointer) (State *L, int idx);
 
@@ -262,7 +265,9 @@ func (L *State) Pushcclosure(fn CFunction, n c.Int) {}
 // llgo:link (*State).Pushboolean C.lua_pushboolean
 func (L *State) Pushboolean(b c.Int) {}
 
-//void  (lua_pushlightuserdata) (State *L, void *p);
+// llgo:link (*State).Pushlightuserdata C.lua_pushlightuserdata
+func (L *State) Pushlightuserdata(p c.Pointer) {}
+
 //int   (lua_pushthread) (State *L);
 
 // /*
@@ -286,7 +291,8 @@ func (L *State) Getfield(idx c.Int, k *c.Char) c.Int { return 0 }
 // llgo:link (*State).Createtable C.lua_createtable
 func (L *State) Createtable(narr c.Int, nrec c.Int) {}
 
-// LUA_API void *(lua_newuserdatauv) (State *L, size_t sz, int nuvalue);
+// llgo:link (*State).Newuserdatauv C.lua_newuserdatauv
+func (L *State) Newuserdatauv(sz uintptr, nuvalue c.Int) c.Pointer { return nil }
 
 // llgo:link (*State).Getmetatable C.lua_getmetatable
 func (L *State) Getmetatable(objindex c.Int) c.Int { return 0 }
@@ -447,7 +453,10 @@ func (L *State) Isnoneornil(n c.Int) bool     { return L.Type(n) <= 0 }
 // ** ===============================================================
 // */
 
-// #define lua_newuserdata(L,s)	lua_newuserdatauv(L,s,1)
+func (L *State) Newuserdata(sz uintptr) c.Pointer {
+	return L.Newuserdatauv(sz, 1)
+}
+
 // #define lua_getuservalue(L,idx)	lua_getiuservalue(L,idx,1)
 // #define lua_setuservalue(L,idx)	lua_setiuservalue(L,idx,1)
 
