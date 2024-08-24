@@ -56,6 +56,15 @@ func (s *Object) SetContains(key *Object) int { return 0 }
 // llgo:link (*Object).SetAdd C.PySet_Add
 func (s *Object) SetAdd(key *Object) int { return 0 }
 
+// Return 1 if found and removed, 0 if not found (no action taken), and -1 if an
+// error is encountered. Does not set KeyError for missing keys. set a TypeError
+// if the key is unhashable. Unlike the Python discard() method, this function
+// does not automatically convert unhashable sets into temporary frozensets.
+// Set SystemError if set is not an instance of set or its subtype.
+//
+// llgo:link (*Object).SetDiscard C.PySet_Discard
+func (s *Object) SetDiscard(key *Object) int { return 0 }
+
 // Return a new reference to an arbitrary object in the set, and removes the
 // object from the set. Return nil on failure. Set KeyError if the set is empty.
 // Set a SystemError if set is not an instance of set or its subtype.
