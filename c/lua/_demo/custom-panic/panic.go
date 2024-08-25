@@ -31,10 +31,8 @@ func main() {
 
 	L.Atpanic(customPanic)
 
-	L.Pushcfunction(triggerError)
-	L.Setglobal(c.Str("trigger_error"))
-	L.Pushcfunction(triggerFormatError)
-	L.Setglobal(c.Str("trigger_format_error"))
+	L.Register(c.Str("trigger_error"), triggerError)
+	L.Register(c.Str("trigger_format_error"), triggerFormatError)
 
 	c.Printf(c.Str("1. error (protected):\n"))
 	L.Getglobal(c.Str("trigger_error"))

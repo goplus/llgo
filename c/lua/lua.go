@@ -91,7 +91,7 @@ type CFunction func(L *State) c.Int
 // ** Type for continuation functions
 // */
 
-// TODO(zzy): KFunction does not currently support
+// llgo:type C
 type KFunction func(L *State, status c.Int, ctx KContext) c.Int
 
 // /*
@@ -420,7 +420,10 @@ func (L *State) Tointeger(idx c.Int) Integer { return L.Tointegerx(idx, nil) }
 func (L *State) Pop(n c.Int)                 { L.Settop(-(n) - 1) }
 func (L *State) Newtable()                   { L.Createtable(0, 0) }
 
-// #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
+func (L *State) Register(name *c.Char, f CFunction) {
+	L.Pushcfunction(f)
+	L.Setglobal(name)
+}
 func (L *State) Pushcfunction(f CFunction) { L.Pushcclosure(f, 0) }
 
 func (L *State) Isfunction(n c.Int) bool      { return L.Type(n) == c.Int(FUNCTION) }
