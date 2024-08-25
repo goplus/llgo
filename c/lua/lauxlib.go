@@ -14,6 +14,12 @@ import (
 
 // /* key, in the registry, for table of preloaded loaders */
 
+// llgo:link (*State).Checkinteger C.luaL_checkinteger
+func (L *State) Checkinteger(arg c.Int) Integer { return 0 }
+
+// llgo:link (*State).Checknumber C.luaL_checknumber
+func (L *State) Checknumber(arg c.Int) Number { return 0 }
+
 // llgo:link (*State).LError C.luaL_error
 func (L *State) LError(format *c.Char, __llgo_va_list ...any) c.Int { return 0 }
 
