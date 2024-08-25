@@ -23,6 +23,14 @@ const (
 // ** space after that to help overflow detection)
 // */
 
+const (
+	REGISTRYINDEX = -MAXSTACK - 1000
+)
+
+func Upvalueindex(i c.Int) c.Int {
+	return c.Int(REGISTRYINDEX) - i
+}
+
 // /* thread status */
 const (
 	OK        = 0
@@ -91,7 +99,7 @@ type CFunction func(L *State) c.Int
 // ** Type for continuation functions
 // */
 
-// TODO(zzy): KFunction does not currently support
+// llgo:type C
 type KFunction func(L *State, status c.Int, ctx KContext) c.Int
 
 // /*
@@ -426,7 +434,10 @@ func (L *State) Tointeger(idx c.Int) Integer { return L.Tointegerx(idx, nil) }
 func (L *State) Pop(n c.Int)                 { L.Settop(-(n) - 1) }
 func (L *State) Newtable()                   { L.Createtable(0, 0) }
 
-// #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
+func (L *State) Register(name *c.Char, f CFunction) {
+	L.Pushcfunction(f)
+	L.Setglobal(name)
+}
 func (L *State) Pushcfunction(f CFunction) { L.Pushcclosure(f, 0) }
 
 func (L *State) Isfunction(n c.Int) bool      { return L.Type(n) == c.Int(FUNCTION) }
@@ -441,9 +452,19 @@ func (L *State) Isnoneornil(n c.Int) bool     { return L.Type(n) <= 0 }
 // #define lua_pushliteral(L, s)	lua_pushstring(L, "" s)
 // #define lua_pushglobaltable(L)  ((void)lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS))
 
-// #define lua_insert(L,idx)	lua_rotate(L, (idx), 1)
-// #define lua_remove(L,idx)	(lua_rotate(L, (idx), -1), lua_pop(L, 1))
-// #define lua_replace(L,idx)	(lua_copy(L, -1, (idx)), lua_pop(L, 1))
+func (L *State) Insert(idx c.Int) {
+	L.Rotate(idx, 1)
+}
+
+func (L *State) Remove(idx c.Int) {
+	L.Rotate(idx, -1)
+	L.Pop(1)
+}
+
+func (L *State) Replace(idx c.Int) {
+	L.Copy(-1, idx)
+	L.Pop(1)
+}
 
 // /* }============================================================== */
 
@@ -484,10 +505,6 @@ const (
 // /*
 // ** Event masks
 // */
-// #define LUA_MASKCALL	(1 << LUA_HOOKCALL)
-// #define LUA_MASKRET	(1 << LUA_HOOKRET)
-// #define LUA_MASKLINE	(1 << LUA_HOOKLINE)
-// #define LUA_MASKCOUNT	(1 << LUA_HOOKCOUNT)
 
 const (
 	MASKCALL  = 1 << HOOKCOUNT
