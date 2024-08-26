@@ -265,7 +265,9 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 	case clang.CursorUnionDecl:
 		unionDecl := ct.ProcessUnionDecl(cursor)
 		curFile.Decls = append(curFile.Decls, unionDecl)
-	case clang.CursorFunctionDecl:
+	case clang.CursorFunctionDecl, clang.CursorCXXMethod, clang.CursorConstructor, clang.CursorDestructor:
+		// Handle functions and class methods (including out-of-class method)
+		// Example: void MyClass::myMethod() { ... } out-of-class method
 		curFile.Decls = append(curFile.Decls, ct.ProcessFuncDecl(cursor))
 	case clang.CursorTypedefDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
@@ -664,6 +666,22 @@ func (ct *Converter) TypeJSON(t ast.Expr, root *cjson.JSON) {
 }
 func isMethod(cursor clang.Cursor) bool {
 	return cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor
+}
+
+func buildQualifiedName(cursor clang.Cursor) string {
+	var parts []string
+	cursor = cursor.SemanticParent()
+
+	// Traverse up the semantic parents
+	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
+		name := cursor.String()
+		qualified := c.GoString(name.CStr())
+		parts = append([]string{qualified}, parts...)
+		cursor = cursor.SemanticParent()
+		name.Dispose()
+	}
+
+	return strings.Join(parts, "::")
 }
 
 func qualifiedExpr(name string) ast.Expr {
