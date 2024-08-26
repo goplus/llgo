@@ -300,7 +300,7 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 		fn.IsInline = true
 	}
 
-	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorDestructor || cursor.Kind == clang.CursorConstructor {
+	if isMethod(cursor) {
 		if cursor.Kind == clang.CursorDestructor {
 			fn.IsDestructor = true
 		}
@@ -466,7 +466,7 @@ type visitMethodsContext struct {
 
 func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitMethodsContext)(clientData)
-	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor {
+	if isMethod(cursor) && cursor.CXXAccessSpecifier() != clang.CXXPrivate {
 		method := ctx.converter.ProcessFuncDecl(cursor)
 		if method != nil {
 			*ctx.methods = append(*ctx.methods, method)
@@ -652,6 +652,9 @@ func toToken(tok clang.Token) token.Token {
 	} else {
 		return token.Token(tok.Kind() + 1)
 	}
+}
+func isMethod(cursor clang.Cursor) bool {
+	return cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor
 }
 
 func qualifiedExpr(name string) ast.Expr {
