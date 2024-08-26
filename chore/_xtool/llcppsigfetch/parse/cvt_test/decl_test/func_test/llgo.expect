@@ -154,6 +154,71 @@ TestFuncDecl Case 3:
 	}
 }
 
+TestFuncDecl Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"add"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	6,
+						"Flags":	0
+					}
+				},
+				"IsInline":	true,
+				"IsStatic":	true,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
