@@ -9,10 +9,10 @@ import (
 var DEFAULT_PORT c.Int = 8080
 var DEFAULT_BACKLOG c.Int = 128
 
-var (
-	Req *libuv.Write
+type WriteReq struct {
+	Req libuv.Write
 	Buf libuv.Buf
-)
+}
 
 func main() {
 	// Initialize the default event loop
@@ -39,9 +39,13 @@ func main() {
 	loop.Run(libuv.RUN_DEFAULT)
 }
 
-func FreeWriteReq() {
+func FreeWriteReq(req *libuv.Write) {
+	wr := (*WriteReq)(c.Pointer(req))
 	// Free the buffer base.
-	c.Free(c.Pointer(Buf.Base))
+	if wr.Buf.Base != nil {
+		c.Free(c.Pointer(wr.Buf.Base))
+		wr.Buf.Base = nil
+	}
 }
 
 func AllocBuffer(handle *libuv.Handle, suggestedSize uintptr, buf *libuv.Buf) {
@@ -54,16 +58,16 @@ func EchoWrite(req *libuv.Write, status c.Int) {
 	if status != 0 {
 		c.Fprintf(c.Stderr, c.Str("Write error: %s\n"), libuv.Strerror(libuv.Errno(status)))
 	}
-	FreeWriteReq()
+	FreeWriteReq(req)
 }
 
 func EchoRead(client *libuv.Stream, nread c.Long, buf *libuv.Buf) {
 	if nread > 0 {
+		req := new(WriteReq)
 		// Initialize the buffer with the data read.
-		Buf = libuv.InitBuf(buf.Base, c.Uint(nread))
+		req.Buf = libuv.InitBuf(buf.Base, c.Uint(nread))
 		// Write the data back to the client.
-		Req = &libuv.Write{}
-		Req.Write(client, &Buf, 1, EchoWrite)
+		req.Req.Write(client, &req.Buf, 1, EchoWrite)
 		return
 	}
 	if nread < 0 {
@@ -96,7 +100,6 @@ func OnNewConnection(server *libuv.Stream, status c.Int) {
 	// Initialize the client TCP handle.
 	if libuv.InitTcp(libuv.DefaultLoop(), client) < 0 {
 		c.Fprintf(c.Stderr, c.Str("Failed to initialize client\n"))
-		c.Free(c.Pointer(client))
 		return
 	}
 
