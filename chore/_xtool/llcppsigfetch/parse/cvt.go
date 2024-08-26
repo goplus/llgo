@@ -208,7 +208,9 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 	case clang.CursorUnionDecl:
 		unionDecl := ct.ProcessUnionDecl(cursor)
 		curFile.Decls = append(curFile.Decls, unionDecl)
-	case clang.CursorFunctionDecl:
+	case clang.CursorFunctionDecl, clang.CursorCXXMethod, clang.CursorConstructor, clang.CursorDestructor:
+		// Handle functions and class methods (including out-of-class method)
+		// Example: void MyClass::myMethod() { ... } out-of-class method
 		curFile.Decls = append(curFile.Decls, ct.ProcessFuncDecl(cursor))
 	case clang.CursorTypedefDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
@@ -276,6 +278,7 @@ func (ct *Converter) ProcessTypeDefDecl(cursor clang.Cursor) *ast.TypedefDecl {
 	}
 }
 
+// converts functions, methods, constructors, destructors (including out-of-class decl) to ast.FuncDecl nodes.
 func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	name := cursor.String()
 	defer name.Dispose()
@@ -301,6 +304,11 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	}
 
 	if isMethod(cursor) {
+
+		if parent := cursor.SemanticParent(); parent.Equal(cursor.LexicalParent()) != 1 {
+			fn.DeclBase.Parent = qualifiedExpr(buildQualifiedName(cursor))
+		}
+
 		if cursor.Kind == clang.CursorDestructor {
 			fn.IsDestructor = true
 		}
@@ -655,6 +663,22 @@ func toToken(tok clang.Token) token.Token {
 }
 func isMethod(cursor clang.Cursor) bool {
 	return cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor
+}
+
+func buildQualifiedName(cursor clang.Cursor) string {
+	var parts []string
+	cursor = cursor.SemanticParent()
+
+	// Traverse up the semantic parents
+	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
+		name := cursor.String()
+		qualified := c.GoString(name.CStr())
+		parts = append([]string{qualified}, parts...)
+		cursor = cursor.SemanticParent()
+		name.Dispose()
+	}
+
+	return strings.Join(parts, "::")
 }
 
 func qualifiedExpr(name string) ast.Expr {
