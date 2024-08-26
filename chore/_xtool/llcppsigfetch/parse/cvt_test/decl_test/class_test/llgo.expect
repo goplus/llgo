@@ -276,6 +276,36 @@ TestClassDecl Case 3:
 							"IsDestructor":	true,
 							"IsVirtual":	false,
 							"IsOverride":	false
+						}, {
+							"Loc":	{
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"List":	[]
+							},
+							"Parent":	{
+								"Name":	"A"
+							},
+							"Name":	{
+								"Name":	"foo"
+							},
+							"Type":	{
+								"Params":	{
+									"List":	[]
+								},
+								"Ret":	{
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	true,
+							"IsStatic":	true,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
 						}]
 				}
 			}],
