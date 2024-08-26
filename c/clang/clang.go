@@ -1553,6 +1553,107 @@ type Token struct {
 }
 
 /**
+ * Determine whether two cursors are equivalent.
+ */
+// llgo:link (*Cursor).wrapEqual C.wrap_clang_equalCursors
+func (*Cursor) wrapEqual(cursor *Cursor) c.Uint { return 0 }
+
+func (c Cursor) Equal(cursor Cursor) c.Uint {
+	return c.wrapEqual(&cursor)
+}
+
+/**
+ * Returns non-zero if \p cursor is null.
+ */
+// llgo:link (*Cursor).wrapIsNull C.wrap_clang_Cursor_isNull
+func (*Cursor) wrapIsNull() c.Int { return 0 }
+
+func (c Cursor) IsNull() c.Int { return c.wrapIsNull() }
+
+/**
+ * Determine the semantic parent of the given cursor.
+ *
+ * The semantic parent of a cursor is the cursor that semantically contains
+ * the given \p cursor. For many declarations, the lexical and semantic parents
+ * are equivalent (the lexical parent is returned by
+ * \c clang_getCursorLexicalParent()). They diverge when declarations or
+ * definitions are provided out-of-line. For example:
+ *
+ * \code
+ * class C {
+ *  void f();
+ * };
+ *
+ * void C::f() { }
+ * \endcode
+ *
+ * In the out-of-line definition of \c C::f, the semantic parent is
+ * the class \c C, of which this function is a member. The lexical parent is
+ * the place where the declaration actually occurs in the source code; in this
+ * case, the definition occurs in the translation unit. In general, the
+ * lexical parent for a given entity can change without affecting the semantics
+ * of the program, and the lexical parent of different declarations of the
+ * same entity may be different. Changing the semantic parent of a declaration,
+ * on the other hand, can have a major impact on semantics, and redeclarations
+ * of a particular entity should all have the same semantic context.
+ *
+ * In the example above, both declarations of \c C::f have \c C as their
+ * semantic context, while the lexical context of the first \c C::f is \c C
+ * and the lexical context of the second \c C::f is the translation unit.
+ *
+ * For global declarations, the semantic parent is the translation unit.
+ */
+// llgo:link (*Cursor).wrapSemanticParent C.wrap_clang_getCursorSemanticParent
+func (*Cursor) wrapSemanticParent(parent *Cursor) {}
+
+func (c Cursor) SemanticParent() (parent Cursor) {
+	c.wrapSemanticParent(&parent)
+	return
+}
+
+/**
+ * Determine the lexical parent of the given cursor.
+ *
+ * The lexical parent of a cursor is the cursor in which the given \p cursor
+ * was actually written. For many declarations, the lexical and semantic parents
+ * are equivalent (the semantic parent is returned by
+ * \c clang_getCursorSemanticParent()). They diverge when declarations or
+ * definitions are provided out-of-line. For example:
+ *
+ * \code
+ * class C {
+ *  void f();
+ * };
+ *
+ * void C::f() { }
+ * \endcode
+ *
+ * In the out-of-line definition of \c C::f, the semantic parent is
+ * the class \c C, of which this function is a member. The lexical parent is
+ * the place where the declaration actually occurs in the source code; in this
+ * case, the definition occurs in the translation unit. In general, the
+ * lexical parent for a given entity can change without affecting the semantics
+ * of the program, and the lexical parent of different declarations of the
+ * same entity may be different. Changing the semantic parent of a declaration,
+ * on the other hand, can have a major impact on semantics, and redeclarations
+ * of a particular entity should all have the same semantic context.
+ *
+ * In the example above, both declarations of \c C::f have \c C as their
+ * semantic context, while the lexical context of the first \c C::f is \c C
+ * and the lexical context of the second \c C::f is the translation unit.
+ *
+ * For declarations written in the global scope, the lexical parent is
+ * the translation unit.
+ */
+// llgo:link (*Cursor).wrapLexicalParent C.wrap_clang_getCursorLexicalParent
+func (*Cursor) wrapLexicalParent(parent *Cursor) {}
+
+func (c Cursor) LexicalParent() (parent Cursor) {
+	c.wrapLexicalParent(&parent)
+	return
+}
+
+/**
  * Determine the set of methods that are overridden by the given
  * method.
  *
@@ -2012,6 +2113,38 @@ func (*Cursor) wrapCXXAccessSpecifier() (spec CXXAccessSpecifier) {
 
 func (c Cursor) CXXAccessSpecifier() CXXAccessSpecifier {
 	return c.wrapCXXAccessSpecifier()
+}
+
+type StorageClass c.Int
+
+/**
+ * Represents the storage classes as declared in the source. CX_SC_Invalid
+ * was added for the case that the passed cursor in not a declaration.
+ */
+const (
+	SCInvalid StorageClass = iota
+	SCNone
+	SCExtern
+	SCStatic
+	SCPrivateExtern
+	SCOpenCLWorkGroupLocal
+	SCAuto
+	SCRegister
+)
+
+/**
+ * Returns the storage class for a function or variable declaration.
+ *
+ * If the passed in Cursor is not a function or variable declaration,
+ * CX_SC_Invalid is returned else the storage class.
+ */
+// llgo:link (*Cursor).wrapStorageClass C.wrap_clang_Cursor_getStorageClass
+func (*Cursor) wrapStorageClass() (ret StorageClass) {
+	return 0
+}
+
+func (c Cursor) StorageClass() (ret StorageClass) {
+	return c.wrapStorageClass()
 }
 
 /**

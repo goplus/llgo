@@ -19,6 +19,16 @@ void wrap_clang_getTranslationUnitCursor(CXTranslationUnit uint, CXCursor *cur) 
     *cur = clang_getTranslationUnitCursor(uint);
 }
 
+unsigned wrap_clang_equalCursors(CXCursor *cursor1, CXCursor *cursor2) {
+    return clang_equalCursors(*cursor1, *cursor2);
+}
+
+int wrap_clang_Cursor_isNull(CXCursor *cursor) { return clang_Cursor_isNull(*cursor); }
+
+void wrap_clang_getCursorSemanticParent(CXCursor *C, CXCursor *parent) { *parent = clang_getCursorSemanticParent(*C); }
+
+void wrap_clang_getCursorLexicalParent(CXCursor *C, CXCursor *parent) { *parent = clang_getCursorLexicalParent(*C); }
+
 void wrap_clang_getOverriddenCursors(CXCursor *cursor, CXCursor **overridden, unsigned *num_overridden) {
     clang_getOverriddenCursors(*cursor, overridden, num_overridden);
 }
@@ -89,6 +99,10 @@ unsigned wrap_clang_Cursor_isAnonymousRecordDecl(CXCursor *cursor) {
 
 enum CX_CXXAccessSpecifier wrap_clang_getCXXAccessSpecifier(CXCursor *cursor) {
     return clang_getCXXAccessSpecifier(*cursor);
+}
+
+enum CX_StorageClass wrap_clang_Cursor_getStorageClass(CXCursor *cursor) {
+    return clang_Cursor_getStorageClass(*cursor);
 }
 
 CXString wrap_clang_getCursorSpelling(CXCursor *cur) { return clang_getCursorSpelling(*cur); }
