@@ -41,6 +41,11 @@ func TestClassDecl() {
 			void foo() override;
 		};
 		`,
+		`namespace A{
+		class Foo{}
+		}
+		void A::Foo::bar();
+		`,
 	}
 	test.RunTest("TestClassDecl", testCases)
 }
