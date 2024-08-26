@@ -539,6 +539,70 @@ TestClassDecl Case 4:
 	}
 }
 
+TestClassDecl Case 5:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"Name":	"A"
+				},
+				"Name":	{
+					"Name":	"Foo"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	{
+					"X":	{
+						"Name":	"Foo"
+					},
+					"Parent":	{
+						"Name":	"A"
+					}
+				},
+				"Name":	{
+					"Name":	"bar"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
