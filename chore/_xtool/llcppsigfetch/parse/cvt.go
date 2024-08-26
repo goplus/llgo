@@ -519,7 +519,7 @@ type visitMethodsContext struct {
 
 func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitMethodsContext)(clientData)
-	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor {
+	if isMethod(cursor) && cursor.CXXAccessSpecifier() != clang.CXXPrivate {
 		method := ctx.converter.ProcessFuncDecl(cursor)
 		if method != nil {
 			*ctx.methods = append(*ctx.methods, method)
@@ -661,6 +661,9 @@ func (ct *Converter) TypeJSON(t ast.Expr, root *cjson.JSON) {
 		root.SetItem(c.Str("Kind"), cjson.Number(float64(d.Kind)))
 		root.SetItem(c.Str("Flags"), cjson.Number(float64(d.Flags)))
 	}
+}
+func isMethod(cursor clang.Cursor) bool {
+	return cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor
 }
 
 func qualifiedExpr(name string) ast.Expr {
