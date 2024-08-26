@@ -18,10 +18,12 @@ func TestScope() {
 			}
 	   	 }`,
 		`class a {
+		 public:
 			void foo(); 
 		 };`,
 		`namespace a {
 		 class b {
+		 public:
 			void foo(); 
 		 };
 	   	 }`,
