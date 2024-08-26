@@ -140,6 +140,14 @@ func (*TagExpr) exprNode() {}
 
 // ------------------------------------------------
 
+// type a, ...
+type Variadic struct {
+}
+
+func (*Variadic) exprNode() {}
+
+// ------------------------------------------------
+
 // (X)
 type ParenExpr struct {
 	X Expr
