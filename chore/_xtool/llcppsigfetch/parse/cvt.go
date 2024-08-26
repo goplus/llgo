@@ -296,36 +296,43 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 		Type:     funcType,
 	}
 
-	// other info of function&method
-	if cursor.Kind == clang.CursorDestructor {
-		fn.IsDestructor = true
+	if cursor.IsFunctionInlined() != 0 {
+		fn.IsInline = true
 	}
 
-	if cursor.Kind == clang.CursorConstructor {
-		fn.IsConstructor = true
-		if cursor.IsExplicit() != 0 {
-			fn.IsExplicit = true
+	if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorDestructor || cursor.Kind == clang.CursorConstructor {
+		if cursor.Kind == clang.CursorDestructor {
+			fn.IsDestructor = true
+		}
+		if cursor.Kind == clang.CursorConstructor {
+			fn.IsConstructor = true
+			if cursor.IsExplicit() != 0 {
+				fn.IsExplicit = true
+			}
+		}
+		if cursor.IsStatic() != 0 {
+			fn.IsStatic = true
+		}
+		// virtual & pure virtual
+		if cursor.IsVirtual() != 0 || cursor.IsPureVirtual() != 0 {
+			fn.IsVirtual = true
+		}
+		if cursor.IsConst() != 0 {
+			fn.IsConst = true
+		}
+
+		var numOverridden c.Uint
+		var overridden *clang.Cursor
+		cursor.OverriddenCursors(&overridden, &numOverridden)
+		if numOverridden > 0 {
+			fn.IsOverride = true
+		}
+		overridden.DisposeOverriddenCursors()
+	} else {
+		if cursor.StorageClass() == clang.SCStatic {
+			fn.IsStatic = true
 		}
 	}
-
-	if cursor.IsStatic() != 0 {
-		fn.IsStatic = true
-	}
-
-	// virtual & pure virtual
-	if cursor.IsVirtual() != 0 || cursor.IsPureVirtual() != 0 {
-		fn.IsVirtual = true
-	}
-
-	// todo(zzy):inline & const
-
-	var numOverridden c.Uint
-	var overridden *clang.Cursor
-	cursor.OverriddenCursors(&overridden, &numOverridden)
-	if numOverridden > 0 {
-		fn.IsOverride = true
-	}
-	overridden.DisposeOverriddenCursors()
 
 	return fn
 }
