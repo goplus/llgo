@@ -21,6 +21,7 @@ func TestClassDecl() {
 			A();
 			explicit A();
 			~A();
+			static inline void foo();
 		};`,
 		`class Base {
 			Base();
