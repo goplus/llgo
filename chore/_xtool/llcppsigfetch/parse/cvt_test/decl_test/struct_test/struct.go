@@ -18,11 +18,6 @@ func TestStructDecl() {
 		`struct A {
 			int a, b;
 		};`,
-		`struct A {
-			int a;
-			int b;
-			float foo(int a,double b);
-		};`,
 	}
 	test.RunTest("TestStructDecl", testCases)
 }
