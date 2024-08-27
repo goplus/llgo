@@ -226,6 +226,106 @@ TestStructDecl Case 4:
 	}
 }
 
+TestStructDecl Case 5:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"Person"
+				},
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"age"
+									}]
+							}, {
+								"Type":	{
+									"Tag":	0,
+									"Fields":	{
+										"List":	[{
+												"Type":	{
+													"Kind":	6,
+													"Flags":	0
+												},
+												"Doc":	{
+													"List":	[]
+												},
+												"Comment":	{
+													"List":	[]
+												},
+												"Names":	[{
+														"Name":	"year"
+													}]
+											}, {
+												"Type":	{
+													"Kind":	6,
+													"Flags":	0
+												},
+												"Doc":	{
+													"List":	[]
+												},
+												"Comment":	{
+													"List":	[]
+												},
+												"Names":	[{
+														"Name":	"day"
+													}]
+											}, {
+												"Type":	{
+													"Kind":	6,
+													"Flags":	0
+												},
+												"Doc":	{
+													"List":	[]
+												},
+												"Comment":	{
+													"List":	[]
+												},
+												"Names":	[{
+														"Name":	"month"
+													}]
+											}]
+									},
+									"Methods":	[]
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"birthday"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 

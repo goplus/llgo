@@ -80,21 +80,31 @@ func TestNonBuiltinTypes() {
 		 Foo`,
 		`struct Foo {};
 		 struct Foo`,
+		`struct {
+			int x;
+		}`,
 
 		`union Foo {};
 		 Foo`,
 		`union Foo {};
 		 union Foo`,
+		`union {
+			int x;
+		 }`,
 
 		`enum Foo {};
 		 Foo`,
 		`enum Foo {};
 		 enum Foo`,
+		`enum { x = 42 }`,
 
 		`class Foo {};
 		 Foo`,
 		`class Foo {};
 		 class Foo`,
+		`class {
+			int x;
+    	 }`,
 
 		`namespace a {
 		 namespace b {
@@ -123,10 +133,12 @@ func TestNonBuiltinTypes() {
 		expr := converter.ProcessType(typ)
 		json := parse.MarshalASTExpr(expr)
 		str := json.Print()
+		typstr := typ.String()
 
-		c.Printf(c.Str("Type: %s:\n"), typ.String())
+		c.Printf(c.Str("Type: %s:\n"), typstr)
 		c.Printf(c.Str("%s\n"), str)
 
+		typstr.Dispose()
 		cjson.FreeCStr(str)
 		json.Delete()
 		index.Dispose()

@@ -22,6 +22,14 @@ func TestStructDecl() {
 			int a;
 		    int (*Foo)(int, int);
 		};`,
+		`struct Person {
+			int age;
+			struct { 
+				int year;
+				int day;
+				int month;
+			} birthday;
+		};`,
 	}
 	test.RunTest("TestStructDecl", testCases)
 }
