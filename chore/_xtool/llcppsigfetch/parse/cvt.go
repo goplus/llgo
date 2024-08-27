@@ -372,22 +372,26 @@ func visitEnum(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chi
 	return clang.ChildVisit_Continue
 }
 
-func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
-	name := cursor.String()
-	defer name.Dispose()
+func (ct *Converter) ProcessEnumType(cursor clang.Cursor) *ast.EnumType {
 	items := make([]*ast.EnumItem, 0)
 	ctx := &visitEnumContext{
 		enum:      &items,
 		converter: ct,
 	}
 	clang.VisitChildren(cursor, visitEnum, c.Pointer(ctx))
+	return &ast.EnumType{
+		Items: items,
+	}
+}
+
+func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
+	name := cursor.String()
+	defer name.Dispose()
 
 	return &ast.EnumTypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
-		Type: &ast.EnumType{
-			Items: items,
-		},
+		Type:     ct.ProcessEnumType(cursor),
 	}
 }
 
@@ -501,7 +505,7 @@ func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 	return methods
 }
 
-func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor, tag ast.Tag) *ast.TypeDecl {
+func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor) *ast.TypeDecl {
 	anony := cursor.IsAnonymousRecordDecl()
 
 	var name *ast.Ident
@@ -514,23 +518,23 @@ func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor, tag ast.Tag) *ast.Ty
 	return &ast.TypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     name,
-		Type:     ct.ProcessRecordType(cursor, tag),
+		Type:     ct.ProcessRecordType(cursor),
 	}
 }
 
 func (ct *Converter) ProcessStructDecl(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessRecordDecl(cursor, ast.Struct)
+	return ct.ProcessRecordDecl(cursor)
 }
 
 func (ct *Converter) ProcessUnionDecl(cursor clang.Cursor) *ast.TypeDecl {
-	return ct.ProcessRecordDecl(cursor, ast.Union)
+	return ct.ProcessRecordDecl(cursor)
 }
 
 func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 	// Pushing class scope before processing its type and popping after
 	base := ct.CreateDeclBase(cursor)
 
-	typ := ct.ProcessRecordType(cursor, ast.Class)
+	typ := ct.ProcessRecordType(cursor)
 
 	return &ast.TypeDecl{
 		DeclBase: base,
@@ -539,17 +543,39 @@ func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 	}
 }
 
-func (ct *Converter) ProcessRecordType(cursor clang.Cursor, tag ast.Tag) *ast.RecordType {
+func (ct *Converter) ProcessRecordType(cursor clang.Cursor) *ast.RecordType {
+	tagMap := map[clang.CursorKind]ast.Tag{
+		clang.CursorStructDecl: ast.Struct,
+		clang.CursorUnionDecl:  ast.Union,
+		clang.CursorClassDecl:  ast.Class,
+	}
 	return &ast.RecordType{
-		Tag:     tag,
+		Tag:     tagMap[cursor.Kind],
 		Fields:  ct.ProcessFieldList(cursor),
 		Methods: ct.ProcessMethods(cursor),
 	}
 }
 
+// process ElaboratedType Reference
+//
+// 1. Named elaborated type references:
+// - Examples: struct MyStruct, union MyUnion, class MyClass, enum MyEnum
+// - Handling: Constructed as TagExpr or ScopingExpr references
+//
+// 2. Anonymous elaborated type references:
+// - Examples: struct { int x; int y; }, union { int a; float b; }
+// - Handling: Retrieve their corresponding concrete types
 func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 	name := t.String()
 	defer name.Dispose()
+
+	decl := t.TypeDeclaration()
+	if decl.IsAnonymous() != 0 {
+		if decl.Kind == clang.CursorEnumDecl {
+			return ct.ProcessEnumType(decl)
+		}
+		return ct.ProcessRecordType(decl)
+	}
 
 	typeName := c.GoString(name.CStr())
 

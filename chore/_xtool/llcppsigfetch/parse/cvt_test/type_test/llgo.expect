@@ -105,6 +105,28 @@ Type: struct Foo:
 	},
 	"Tag":	0
 }
+Type: struct (unnamed struct at temp.h:1:1):
+{
+	"Tag":	0,
+	"Fields":	{
+		"List":	[{
+				"Type":	{
+					"Kind":	6,
+					"Flags":	0
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Comment":	{
+					"List":	[]
+				},
+				"Names":	[{
+						"Name":	"x"
+					}]
+			}]
+	},
+	"Methods":	[]
+}
 Type: Foo:
 {
 	"Name":	"Foo"
@@ -115,6 +137,28 @@ Type: union Foo:
 		"Name":	"Foo"
 	},
 	"Tag":	1
+}
+Type: union (unnamed union at temp.h:1:1):
+{
+	"Tag":	1,
+	"Fields":	{
+		"List":	[{
+				"Type":	{
+					"Kind":	6,
+					"Flags":	0
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Comment":	{
+					"List":	[]
+				},
+				"Names":	[{
+						"Name":	"x"
+					}]
+			}]
+	},
+	"Methods":	[]
 }
 Type: Foo:
 {
@@ -127,6 +171,18 @@ Type: enum Foo:
 	},
 	"Tag":	2
 }
+Type: enum (unnamed enum at temp.h:1:1):
+{
+	"Items":	[{
+			"Name":	{
+				"Name":	"x"
+			},
+			"Value":	{
+				"Kind":	0,
+				"Value":	"42"
+			}
+		}]
+}
 Type: Foo:
 {
 	"Name":	"Foo"
@@ -137,6 +193,28 @@ Type: class Foo:
 		"Name":	"Foo"
 	},
 	"Tag":	3
+}
+Type: class (unnamed class at temp.h:1:1):
+{
+	"Tag":	3,
+	"Fields":	{
+		"List":	[{
+				"Type":	{
+					"Kind":	6,
+					"Flags":	0
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Comment":	{
+					"List":	[]
+				},
+				"Names":	[{
+						"Name":	"x"
+					}]
+			}]
+	},
+	"Methods":	[]
 }
 Type: a::b::c:
 {
