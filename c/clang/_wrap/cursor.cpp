@@ -73,11 +73,15 @@ void wrap_clang_getPointeeType(CXType *pointerTyp, CXType *pointeeTyp) {
 
 void wrap_clang_getNonReferenceType(CXType *typ, CXType *nonRefTyp) { *nonRefTyp = clang_getNonReferenceType(*typ); }
 
+void wrap_clang_getTypeDeclaration(CXType *typ, CXCursor *cur) { *cur = clang_getTypeDeclaration(*typ); }
+
 void wrap_clang_getResultType(CXType *typ, CXType *resultTyp) { *resultTyp = clang_getResultType(*typ); }
 
 int wrap_clang_getNumArgTypes(CXType *typ) { return clang_getNumArgTypes(*typ); }
 
 void wrap_clang_getArgType(CXType *typ, unsigned i, CXType *argTyp) { *argTyp = clang_getArgType(*typ, i); }
+
+unsigned wrap_clang_isFunctionTypeVariadic(CXType *typ) { return clang_isFunctionTypeVariadic(*typ); }
 
 void wrap_clang_getCursorResultType(CXCursor *cur, CXType *typ) { *typ = clang_getCursorResultType(*cur); }
 
@@ -106,6 +110,8 @@ enum CX_StorageClass wrap_clang_Cursor_getStorageClass(CXCursor *cursor) {
 }
 
 CXString wrap_clang_getCursorSpelling(CXCursor *cur) { return clang_getCursorSpelling(*cur); }
+
+unsigned wrap_clang_Cursor_isVariadic(CXCursor *cur) { return clang_Cursor_isVariadic(*cur); }
 
 CXString wrap_clang_Cursor_getRawCommentText(CXCursor *cursor) { return clang_Cursor_getRawCommentText(*cursor); }
 

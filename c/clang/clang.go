@@ -1948,6 +1948,17 @@ func (t Type) NonReferenceType() (ret Type) {
 }
 
 /**
+ * Return the cursor for the declaration of the given type.
+ */
+// llgo:link (*Type).wrapTypeDeclaration C.wrap_clang_getTypeDeclaration
+func (t *Type) wrapTypeDeclaration(ret *Cursor) { return }
+
+func (t Type) TypeDeclaration() (ret Cursor) {
+	t.wrapTypeDeclaration(&ret)
+	return
+}
+
+/**
  * Retrieve the spelling of a given CXTypeKind.
  */
 // llgo:link TypeKind.String C.clang_getTypeKindSpelling
@@ -1994,6 +2005,14 @@ func (t Type) ArgType(index c.Uint) (ret Type) {
 	t.wrapArgType(index, &ret)
 	return
 }
+
+/**
+ * Return 1 if the CXType is a variadic function type, and 0 otherwise.
+ */
+// llgo:link (*Type).wrapIsFunctionTypeVariadic C.wrap_clang_isFunctionTypeVariadic
+func (t *Type) wrapIsFunctionTypeVariadic() (ret c.Uint) { return 0 }
+
+func (t Type) IsFunctionTypeVariadic() (ret c.Uint) { return t.wrapIsFunctionTypeVariadic() }
 
 /**
  * Retrieve the return type associated with a given cursor.
@@ -2158,6 +2177,14 @@ func (*Cursor) wrapString() (ret String) {
 func (c Cursor) String() (ret String) {
 	return c.wrapString()
 }
+
+/**
+ * Returns non-zero if the given cursor is a variadic function or method.
+ */
+// llgo:link (*Cursor).wrapIsVariadic C.wrap_clang_Cursor_isVariadic
+func (*Cursor) wrapIsVariadic() (ret c.Uint) { return 0 }
+
+func (c Cursor) IsVariadic() (ret c.Uint) { return c.wrapIsVariadic() }
 
 /**
  * Given a cursor that represents a declaration, return the associated
