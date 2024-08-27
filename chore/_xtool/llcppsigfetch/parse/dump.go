@@ -149,6 +149,7 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 			names.AddItem(MarshalASTExpr(n))
 		}
 		root.SetItem(c.Str("Names"), names)
+	case *ast.Variadic:
 	case *ast.Ident:
 		if d == nil {
 			return cjson.Null()

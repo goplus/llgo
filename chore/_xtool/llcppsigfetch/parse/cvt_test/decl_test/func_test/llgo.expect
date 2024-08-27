@@ -418,7 +418,7 @@ TestFuncDecl Case 10:
 	}
 }
 
-TestFuncDecl Case 4:
+TestFuncDecl Case 5:
 {
 	"temp.h":	{
 		"decls":	[{
