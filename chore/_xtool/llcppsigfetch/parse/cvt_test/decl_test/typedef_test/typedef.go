@@ -13,7 +13,7 @@ func TestTypeDefDecl() {
 		`typedef int INT;
 		 typedef INT STANDARD_INT;`,
 
-		`typedef int (*Foo)(int, int);`,
+		`typedef int (*Foo)(int, int, ...);`,
 	}
 	test.RunTest("TestTypeDefDecl", testCases)
 }

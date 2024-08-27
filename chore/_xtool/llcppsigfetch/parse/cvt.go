@@ -255,6 +255,12 @@ func (ct *Converter) ProcessFunctionType(t clang.Type) *ast.FuncType {
 		})
 	}
 
+	if t.IsFunctionTypeVariadic() != 0 {
+		params.List = append(params.List, &ast.Field{
+			Type: &ast.Variadic{},
+		})
+	}
+
 	return &ast.FuncType{
 		Ret:    ret,
 		Params: params,
@@ -296,38 +302,7 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	}
 
 	if isMethod(cursor) {
-
-		if parent := cursor.SemanticParent(); parent.Equal(cursor.LexicalParent()) != 1 {
-			fn.DeclBase.Parent = buildScopingExpr(cursor.SemanticParent())
-		}
-
-		if cursor.Kind == clang.CursorDestructor {
-			fn.IsDestructor = true
-		}
-		if cursor.Kind == clang.CursorConstructor {
-			fn.IsConstructor = true
-			if cursor.IsExplicit() != 0 {
-				fn.IsExplicit = true
-			}
-		}
-		if cursor.IsStatic() != 0 {
-			fn.IsStatic = true
-		}
-		// virtual & pure virtual
-		if cursor.IsVirtual() != 0 || cursor.IsPureVirtual() != 0 {
-			fn.IsVirtual = true
-		}
-		if cursor.IsConst() != 0 {
-			fn.IsConst = true
-		}
-
-		var numOverridden c.Uint
-		var overridden *clang.Cursor
-		cursor.OverriddenCursors(&overridden, &numOverridden)
-		if numOverridden > 0 {
-			fn.IsOverride = true
-		}
-		overridden.DisposeOverriddenCursors()
+		ct.ProcessMethodAttributes(cursor, fn)
 	} else {
 		if cursor.StorageClass() == clang.SCStatic {
 			fn.IsStatic = true
@@ -335,6 +310,41 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	}
 
 	return fn
+}
+
+// get Methods Attributes
+func (ct *Converter) ProcessMethodAttributes(cursor clang.Cursor, fn *ast.FuncDecl) {
+	if parent := cursor.SemanticParent(); parent.Equal(cursor.LexicalParent()) != 1 {
+		fn.DeclBase.Parent = buildScopingExpr(cursor.SemanticParent())
+	}
+
+	switch cursor.Kind {
+	case clang.CursorDestructor:
+		fn.IsDestructor = true
+	case clang.CursorConstructor:
+		fn.IsConstructor = true
+		if cursor.IsExplicit() != 0 {
+			fn.IsExplicit = true
+		}
+	}
+
+	if cursor.IsStatic() != 0 {
+		fn.IsStatic = true
+	}
+	if cursor.IsVirtual() != 0 || cursor.IsPureVirtual() != 0 {
+		fn.IsVirtual = true
+	}
+	if cursor.IsConst() != 0 {
+		fn.IsConst = true
+	}
+
+	var numOverridden c.Uint
+	var overridden *clang.Cursor
+	cursor.OverriddenCursors(&overridden, &numOverridden)
+	if numOverridden > 0 {
+		fn.IsOverride = true
+	}
+	overridden.DisposeOverriddenCursors()
 }
 
 type visitEnumContext struct {
@@ -449,11 +459,17 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 	return clang.ChildVisit_Continue
 }
 
+// For Record Type(struct,union ...) & Func 's FieldList
 func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 	params := &ast.FieldList{List: []*ast.Field{}}
 	ctx := &visitFieldContext{
 		params:    params,
 		converter: ct,
+	}
+	if (cursor.Kind == clang.CursorFunctionDecl || isMethod(cursor)) && cursor.IsVariadic() != 0 {
+		params.List = append(params.List, &ast.Field{
+			Type: &ast.Variadic{},
+		})
 	}
 	clang.VisitChildren(cursor, visitFieldList, c.Pointer(ctx))
 	return params

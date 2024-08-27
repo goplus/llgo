@@ -10,6 +10,7 @@ func TestFuncDecl() {
 	testCases := []string{
 		`void foo();`,
 		`void foo(int a);`,
+		`void foo(int a,...);`,
 		`float* foo(int a,double b);`,
 		`static inline int add(int a, int b);`,
 	}
