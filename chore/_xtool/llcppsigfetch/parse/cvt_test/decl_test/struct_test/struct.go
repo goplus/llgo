@@ -18,6 +18,10 @@ func TestStructDecl() {
 		`struct A {
 			int a, b;
 		};`,
+		`struct A {
+			int a;
+		    int (*Foo)(int, int);
+		};`,
 	}
 	test.RunTest("TestStructDecl", testCases)
 }
