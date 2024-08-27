@@ -217,8 +217,7 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		expr = &ast.LvalueRefType{X: ct.ProcessType(t.NonReferenceType())}
 	case clang.TypeFunctionProto:
 		// function type will only collect return type, params will be collected in ProcessFuncDecl
-		ret := ct.ProcessType(t.ResultType())
-		expr = &ast.FuncType{Ret: ret}
+		expr = ct.ProcessFunctionType(t)
 	case clang.TypeConstantArray, clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray:
 		if t.Kind == clang.TypeConstantArray {
 			len := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
@@ -236,6 +235,30 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		}
 	}
 	return expr
+}
+
+// For function types, we can only obtain the parameter types, but not the parameter names.
+// This is because we cannot reverse-lookup the corresponding declaration node from a function type.
+// Note: For function declarations, parameter names are collected in the ProcessFuncDecl method.
+func (ct *Converter) ProcessFunctionType(t clang.Type) *ast.FuncType {
+	// Note: Attempting to get the type declaration for a function type will result in CursorNoDeclFound
+	// cursor := t.TypeDeclaration()
+	// This would return CursorNoDeclFound
+
+	ret := ct.ProcessType(t.ResultType())
+	params := &ast.FieldList{List: make([]*ast.Field, 0)}
+	numArgs := t.NumArgTypes()
+	for i := 0; i < int(numArgs); i++ {
+		argType := t.ArgType(c.Uint(i))
+		params.List = append(params.List, &ast.Field{
+			Type: ct.ProcessType(argType),
+		})
+	}
+
+	return &ast.FuncType{
+		Ret:    ret,
+		Params: params,
+	}
 }
 
 func (ct *Converter) ProcessTypeDefDecl(cursor clang.Cursor) *ast.TypedefDecl {
@@ -260,7 +283,6 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 		fmt.Println("failed to process function type")
 		return nil
 	}
-
 	params := ct.ProcessFieldList(cursor)
 	funcType.Params = params
 	fn := &ast.FuncDecl{
