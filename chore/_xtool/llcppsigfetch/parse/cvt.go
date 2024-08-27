@@ -15,11 +15,10 @@ import (
 )
 
 type Converter struct {
-	Files        map[string]*ast.File
-	curLoc       ast.Location
-	index        *clang.Index
-	unit         *clang.TranslationUnit
-	scopeContext []ast.Expr //namespace & class
+	Files  map[string]*ast.File
+	curLoc ast.Location
+	index  *clang.Index
+	unit   *clang.TranslationUnit
 }
 
 type Config struct {
@@ -92,33 +91,6 @@ func (ct *Converter) Dispose() {
 	ct.unit.Dispose()
 }
 
-func (ct *Converter) PushScope(cursor clang.Cursor) {
-	name := cursor.String()
-	defer name.Dispose()
-	ident := &ast.Ident{Name: c.GoString(name.CStr())}
-
-	if len(ct.scopeContext) == 0 {
-		ct.scopeContext = append(ct.scopeContext, ident)
-	} else {
-		parent := ct.scopeContext[len(ct.scopeContext)-1]
-		newContext := &ast.ScopingExpr{Parent: parent, X: ident}
-		ct.scopeContext = append(ct.scopeContext, newContext)
-	}
-}
-
-func (ct *Converter) PopScope() {
-	if len(ct.scopeContext) > 0 {
-		ct.scopeContext = ct.scopeContext[:len(ct.scopeContext)-1]
-	}
-}
-
-func (ct *Converter) GetCurScope() ast.Expr {
-	if len(ct.scopeContext) == 0 {
-		return nil
-	}
-	return ct.scopeContext[len(ct.scopeContext)-1]
-}
-
 func (ct *Converter) UpdateLoc(cursor clang.Cursor) {
 	loc := cursor.Location()
 	var file clang.File
@@ -165,7 +137,7 @@ func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
 	loc := ct.curLoc
 	return ast.DeclBase{
 		Loc:    &loc,
-		Parent: ct.GetCurScope(),
+		Parent: buildScopingExpr(cursor.SemanticParent()),
 		Doc:    commentGroup,
 	}
 }
@@ -215,9 +187,7 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 	case clang.CursorTypedefDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
 	case clang.CursorNamespace:
-		ct.PushScope(cursor)
 		clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
-		ct.PopScope()
 	}
 	return clang.ChildVisit_Continue
 }
@@ -306,7 +276,7 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	if isMethod(cursor) {
 
 		if parent := cursor.SemanticParent(); parent.Equal(cursor.LexicalParent()) != 1 {
-			fn.DeclBase.Parent = qualifiedExpr(buildQualifiedName(cursor))
+			fn.DeclBase.Parent = buildScopingExpr(cursor.SemanticParent())
 		}
 
 		if cursor.Kind == clang.CursorDestructor {
@@ -522,9 +492,7 @@ func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 	// Pushing class scope before processing its type and popping after
 	base := ct.CreateDeclBase(cursor)
 
-	ct.PushScope(cursor)
 	typ := ct.ProcessRecordType(cursor, ast.Class)
-	ct.PopScope()
 
 	return &ast.TypeDecl{
 		DeclBase: base,
@@ -561,12 +529,12 @@ func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 		if tagValue, ok := tagMap[parts[0]]; ok {
 			return &ast.TagExpr{
 				Tag:  tagValue,
-				Name: qualifiedExpr(parts[1]),
+				Name: buildScopingExpr(t.TypeDeclaration()),
 			}
 		}
 	}
 
-	return qualifiedExpr(typeName)
+	return buildScopingExpr(t.TypeDeclaration())
 }
 
 func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
@@ -665,9 +633,9 @@ func isMethod(cursor clang.Cursor) bool {
 	return cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor
 }
 
-func buildQualifiedName(cursor clang.Cursor) string {
+// Constructs a complete scoping expression by traversing the semantic parents, starting from the given clang.Cursor
+func buildScopingExpr(cursor clang.Cursor) ast.Expr {
 	var parts []string
-	cursor = cursor.SemanticParent()
 
 	// Traverse up the semantic parents
 	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
@@ -678,11 +646,14 @@ func buildQualifiedName(cursor clang.Cursor) string {
 		name.Dispose()
 	}
 
-	return strings.Join(parts, "::")
+	return buildScopingFromParts(parts)
 }
 
-func qualifiedExpr(name string) ast.Expr {
-	parts := strings.Split(name, "::")
+func buildScopingFromParts(parts []string) ast.Expr {
+	if len(parts) == 0 {
+		return nil
+	}
+
 	var expr ast.Expr = &ast.Ident{Name: parts[0]}
 	for _, part := range parts[1:] {
 		expr = &ast.ScopingExpr{
