@@ -105,6 +105,63 @@ TestFuncDecl Case 3:
 					"Params":	{
 						"List":	[{
 								"Type":	{
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"Names":	[]
+							}, {
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}]
+					},
+					"Ret":	{
+						"Kind":	0,
+						"Flags":	0
+					}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestFuncDecl Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"foo"
+				},
+				"Type":	{
+					"Params":	{
+						"List":	[{
+								"Type":	{
 									"Kind":	6,
 									"Flags":	0
 								},
@@ -154,7 +211,7 @@ TestFuncDecl Case 3:
 	}
 }
 
-TestFuncDecl Case 4:
+TestFuncDecl Case 5:
 {
 	"temp.h":	{
 		"decls":	[{

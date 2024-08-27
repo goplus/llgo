@@ -94,6 +94,12 @@ TestTypeDefDecl Case 3:
 									"Doc":	null,
 									"Comment":	null,
 									"Names":	[]
+								}, {
+									"Type":	{
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"Names":	[]
 								}]
 						},
 						"Ret":	{
