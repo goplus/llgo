@@ -148,6 +148,84 @@ TestStructDecl Case 3:
 	}
 }
 
+TestStructDecl Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"A"
+				},
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"a"
+									}]
+							}, {
+								"Type":	{
+									"X":	{
+										"Params":	{
+											"List":	[{
+													"Type":	{
+														"Kind":	6,
+														"Flags":	0
+													},
+													"Doc":	null,
+													"Comment":	null,
+													"Names":	[]
+												}, {
+													"Type":	{
+														"Kind":	6,
+														"Flags":	0
+													},
+													"Doc":	null,
+													"Comment":	null,
+													"Names":	[]
+												}]
+										},
+										"Ret":	{
+											"Kind":	6,
+											"Flags":	0
+										}
+									}
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"Foo"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 

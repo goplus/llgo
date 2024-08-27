@@ -169,6 +169,34 @@ Type: class a::b::c:
 	},
 	"Tag":	3
 }
+Type: int (*)(int, char):
+{
+	"X":	{
+		"Params":	{
+			"List":	[{
+					"Type":	{
+						"Kind":	6,
+						"Flags":	0
+					},
+					"Doc":	null,
+					"Comment":	null,
+					"Names":	[]
+				}, {
+					"Type":	{
+						"Kind":	2,
+						"Flags":	1
+					},
+					"Doc":	null,
+					"Comment":	null,
+					"Names":	[]
+				}]
+		},
+		"Ret":	{
+			"Kind":	6,
+			"Flags":	0
+		}
+	}
+}
 
 #stderr
 todo: unknown builtin type: Ibm128

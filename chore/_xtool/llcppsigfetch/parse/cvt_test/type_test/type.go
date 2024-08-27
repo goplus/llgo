@@ -111,6 +111,8 @@ func TestNonBuiltinTypes() {
 		 }
 		 }
 		 class a::b::c`,
+
+		`int (*p)(int, char);`,
 	}
 
 	for _, t := range tests {
