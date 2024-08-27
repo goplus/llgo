@@ -615,6 +615,53 @@ TestTypeDefDecl Case 4:
 	}
 }
 
+TestTypeDefDecl Case 3:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"Foo"
+				},
+				"Type":	{
+					"X":	{
+						"Params":	{
+							"List":	[{
+									"Type":	{
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"Names":	[]
+								}, {
+									"Type":	{
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"Names":	[]
+								}]
+						},
+						"Ret":	{
+							"Kind":	6,
+							"Flags":	0
+						}
+					}
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
