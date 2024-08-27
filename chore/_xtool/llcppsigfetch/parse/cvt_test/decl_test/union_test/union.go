@@ -16,6 +16,14 @@ func TestUnionDecl() {
 			int a;
 			int b;
 		};`,
+		`union OuterUnion {
+    		int i;
+    		float f;
+    		union {
+        		char c;
+        		short s;
+    		} inner;
+		};`,
 	}
 	test.RunTest("TestUnionDecl", testCases)
 }

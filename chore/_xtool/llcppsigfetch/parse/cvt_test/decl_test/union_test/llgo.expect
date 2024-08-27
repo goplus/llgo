@@ -107,6 +107,106 @@ TestUnionDecl Case 2:
 	}
 }
 
+TestUnionDecl Case 3:
+{
+	"temp.h":	{
+		"decls":	[{
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"OuterUnion"
+				},
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[{
+								"Type":	{
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"i"
+									}]
+							}, {
+								"Type":	{
+									"Kind":	8,
+									"Flags":	0
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"f"
+									}]
+							}, {
+								"Type":	{
+									"Tag":	1,
+									"Fields":	{
+										"List":	[{
+												"Type":	{
+													"Kind":	2,
+													"Flags":	1
+												},
+												"Doc":	{
+													"List":	[]
+												},
+												"Comment":	{
+													"List":	[]
+												},
+												"Names":	[{
+														"Name":	"c"
+													}]
+											}, {
+												"Type":	{
+													"Kind":	6,
+													"Flags":	32
+												},
+												"Doc":	{
+													"List":	[]
+												},
+												"Comment":	{
+													"List":	[]
+												},
+												"Names":	[{
+														"Name":	"s"
+													}]
+											}]
+									},
+									"Methods":	[]
+								},
+								"Doc":	{
+									"List":	[]
+								},
+								"Comment":	{
+									"List":	[]
+								},
+								"Names":	[{
+										"Name":	"inner"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
