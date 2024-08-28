@@ -437,11 +437,11 @@ type visitFieldContext struct {
 
 func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitFieldContext)(clientData)
-	if cursor.Kind == clang.CursorParmDecl || cursor.Kind == clang.CursorFieldDecl {
+
+	switch cursor.Kind {
+	case clang.CursorParmDecl, clang.CursorFieldDecl:
 		paramName := cursor.String()
 		defer paramName.Dispose()
-		argType := ctx.converter.ProcessType(cursor.Type())
-
 		// In C language, parameter lists do not have similar parameter grouping in Go.
 		// func foo(a, b int)
 
@@ -449,17 +449,36 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 		// struct A {
 		// 	int a, b;
 		// };
-		ctx.params.List = append(ctx.params.List,
-			&ast.Field{
-				//todo(zzy): comment & doc
-				Doc:     &ast.CommentGroup{},
-				Comment: &ast.CommentGroup{},
-				Type:    argType,
-				Names: []*ast.Ident{
-					{Name: c.GoString(paramName.CStr())},
-				},
+		field := &ast.Field{
+			Doc:     &ast.CommentGroup{},
+			Comment: &ast.CommentGroup{},
+			Type:    ctx.converter.ProcessType(cursor.Type()),
+			Names:   []*ast.Ident{{Name: c.GoString(paramName.CStr())}},
+		}
+
+		if cursor.Kind == clang.CursorFieldDecl {
+			field.Access = ast.AccessSpecifier(cursor.CXXAccessSpecifier())
+		}
+
+		ctx.params.List = append(ctx.params.List, field)
+
+	case clang.CursorVarDecl:
+		if cursor.StorageClass() == clang.SCStatic {
+			// static member variable
+			fieldname := cursor.String()
+			defer fieldname.Dispose()
+			//todo(zzy): comment & doc
+			ctx.params.List = append(ctx.params.List, &ast.Field{
+				Doc:      &ast.CommentGroup{},
+				Comment:  &ast.CommentGroup{},
+				Type:     ctx.converter.ProcessType(cursor.Type()),
+				Access:   ast.AccessSpecifier(cursor.CXXAccessSpecifier()),
+				IsStatic: true,
+				Names:    []*ast.Ident{{Name: c.GoString(fieldname.CStr())}},
 			})
+		}
 	}
+
 	return clang.ChildVisit_Continue
 }
 
@@ -486,7 +505,7 @@ type visitMethodsContext struct {
 
 func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitMethodsContext)(clientData)
-	if isMethod(cursor) && cursor.CXXAccessSpecifier() != clang.CXXPrivate {
+	if isMethod(cursor) && cursor.CXXAccessSpecifier() == clang.CXXPublic {
 		method := ctx.converter.ProcessFuncDecl(cursor)
 		if method != nil {
 			*ctx.methods = append(*ctx.methods, method)
@@ -495,6 +514,7 @@ func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.
 	return clang.ChildVisit_Continue
 }
 
+// Note:Public Method is considered
 func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 	methods := make([]*ast.FuncDecl, 0)
 	ctx := &visitMethodsContext{

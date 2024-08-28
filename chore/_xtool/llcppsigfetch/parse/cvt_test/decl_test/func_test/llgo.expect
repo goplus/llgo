@@ -63,6 +63,8 @@ TestFuncDecl Case 2:
 								"Comment":	{
 									"List":	[]
 								},
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[{
 										"Name":	"a"
 									}]
@@ -108,6 +110,8 @@ TestFuncDecl Case 3:
 								},
 								"Doc":	null,
 								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[]
 							}, {
 								"Type":	{
@@ -120,6 +124,8 @@ TestFuncDecl Case 3:
 								"Comment":	{
 									"List":	[]
 								},
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[{
 										"Name":	"a"
 									}]
@@ -171,6 +177,8 @@ TestFuncDecl Case 4:
 								"Comment":	{
 									"List":	[]
 								},
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[{
 										"Name":	"a"
 									}]
@@ -185,6 +193,8 @@ TestFuncDecl Case 4:
 								"Comment":	{
 									"List":	[]
 								},
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[{
 										"Name":	"b"
 									}]
@@ -238,6 +248,8 @@ TestFuncDecl Case 5:
 								"Comment":	{
 									"List":	[]
 								},
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[{
 										"Name":	"a"
 									}]
@@ -252,6 +264,8 @@ TestFuncDecl Case 5:
 								"Comment":	{
 									"List":	[]
 								},
+								"IsStatic":	false,
+								"Access":	0,
 								"Names":	[{
 										"Name":	"b"
 									}]
