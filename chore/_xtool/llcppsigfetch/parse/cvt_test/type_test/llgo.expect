@@ -120,6 +120,8 @@ Type: struct (unnamed struct at temp.h:1:1):
 				"Comment":	{
 					"List":	[]
 				},
+				"IsStatic":	false,
+				"Access":	1,
 				"Names":	[{
 						"Name":	"x"
 					}]
@@ -153,6 +155,8 @@ Type: union (unnamed union at temp.h:1:1):
 				"Comment":	{
 					"List":	[]
 				},
+				"IsStatic":	false,
+				"Access":	1,
 				"Names":	[{
 						"Name":	"x"
 					}]
@@ -209,6 +213,8 @@ Type: class (unnamed class at temp.h:1:1):
 				"Comment":	{
 					"List":	[]
 				},
+				"IsStatic":	false,
+				"Access":	3,
 				"Names":	[{
 						"Name":	"x"
 					}]
@@ -258,6 +264,8 @@ Type: int (*)(int, char):
 					},
 					"Doc":	null,
 					"Comment":	null,
+					"IsStatic":	false,
+					"Access":	0,
 					"Names":	[]
 				}, {
 					"Type":	{
@@ -266,6 +274,8 @@ Type: int (*)(int, char):
 					},
 					"Doc":	null,
 					"Comment":	null,
+					"IsStatic":	false,
+					"Access":	0,
 					"Names":	[]
 				}]
 		},

@@ -15,11 +15,13 @@ func TestClassDecl() {
 		};`,
 		`class A {
 		public:
-			int a;
+			static int a;
 			int b;
 			float foo(int a,double b);
 		private:
-			void bar();
+			static void bar();
+		protected:
+			void bar2();
 		};`,
 		`class A {
 		public:
