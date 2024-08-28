@@ -85,6 +85,8 @@ TestTypeDefDecl Case 3:
 									},
 									"Doc":	null,
 									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	0,
 									"Names":	[]
 								}, {
 									"Type":	{
@@ -93,12 +95,16 @@ TestTypeDefDecl Case 3:
 									},
 									"Doc":	null,
 									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	0,
 									"Names":	[]
 								}, {
 									"Type":	{
 									},
 									"Doc":	null,
 									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	0,
 									"Names":	[]
 								}]
 						},
