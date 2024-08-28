@@ -2,32 +2,43 @@
 TestStructDecl Case 1:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	null,
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	0,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}]
@@ -43,50 +54,67 @@ TestStructDecl Case 1:
 TestStructDecl Case 2:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	0,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"b"
 									}]
 							}]
@@ -102,50 +130,67 @@ TestStructDecl Case 2:
 TestStructDecl Case 3:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	0,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"b"
 									}]
 							}]
@@ -161,42 +206,60 @@ TestStructDecl Case 3:
 TestStructDecl Case 4:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	0,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"PointerType",
 									"X":	{
+										"_Type":	"FuncType",
 										"Params":	{
+											"_Type":	"FieldList",
 											"List":	[{
+													"_Type":	"Field",
 													"Type":	{
+														"_Type":	"BuiltinType",
 														"Kind":	6,
 														"Flags":	0
 													},
@@ -206,7 +269,9 @@ TestStructDecl Case 4:
 													"Access":	0,
 													"Names":	[]
 												}, {
+													"_Type":	"Field",
 													"Type":	{
+														"_Type":	"BuiltinType",
 														"Kind":	6,
 														"Flags":	0
 													},
@@ -218,20 +283,24 @@ TestStructDecl Case 4:
 												}]
 										},
 										"Ret":	{
+											"_Type":	"BuiltinType",
 											"Kind":	6,
 											"Flags":	0
 										}
 									}
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"Foo"
 									}]
 							}]
@@ -247,86 +316,116 @@ TestStructDecl Case 4:
 TestStructDecl Case 5:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"Person"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	0,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"age"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"RecordType",
 									"Tag":	0,
 									"Fields":	{
+										"_Type":	"FieldList",
 										"List":	[{
+												"_Type":	"Field",
 												"Type":	{
+													"_Type":	"BuiltinType",
 													"Kind":	6,
 													"Flags":	0
 												},
 												"Doc":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"Comment":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
+														"_Type":	"Ident",
 														"Name":	"year"
 													}]
 											}, {
+												"_Type":	"Field",
 												"Type":	{
+													"_Type":	"BuiltinType",
 													"Kind":	6,
 													"Flags":	0
 												},
 												"Doc":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"Comment":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
+														"_Type":	"Ident",
 														"Name":	"day"
 													}]
 											}, {
+												"_Type":	"Field",
 												"Type":	{
+													"_Type":	"BuiltinType",
 													"Kind":	6,
 													"Flags":	0
 												},
 												"Doc":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"Comment":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
+														"_Type":	"Ident",
 														"Name":	"month"
 													}]
 											}]
@@ -334,14 +433,17 @@ TestStructDecl Case 5:
 									"Methods":	[]
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"birthday"
 									}]
 							}]

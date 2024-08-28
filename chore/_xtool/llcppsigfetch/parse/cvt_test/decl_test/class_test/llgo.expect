@@ -2,50 +2,67 @@
 TestClassDecl Case 1:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	3,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"b"
 									}]
 							}]
@@ -61,104 +78,139 @@ TestClassDecl Case 1:
 TestClassDecl Case 2:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	3,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	true,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"b"
 									}]
 							}]
 					},
 					"Methods":	[{
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"foo"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[{
+											"_Type":	"Field",
 											"Type":	{
+												"_Type":	"BuiltinType",
 												"Kind":	6,
 												"Flags":	0
 											},
 											"Doc":	{
+												"_Type":	"CommentGroup",
 												"List":	[]
 											},
 											"Comment":	{
+												"_Type":	"CommentGroup",
 												"List":	[]
 											},
 											"IsStatic":	false,
 											"Access":	0,
 											"Names":	[{
+													"_Type":	"Ident",
 													"Name":	"a"
 												}]
 										}, {
+											"_Type":	"Field",
 											"Type":	{
+												"_Type":	"BuiltinType",
 												"Kind":	8,
 												"Flags":	16
 											},
 											"Doc":	{
+												"_Type":	"CommentGroup",
 												"List":	[]
 											},
 											"Comment":	{
+												"_Type":	"CommentGroup",
 												"List":	[]
 											},
 											"IsStatic":	false,
 											"Access":	0,
 											"Names":	[{
+													"_Type":	"Ident",
 													"Name":	"b"
 												}]
 										}]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	8,
 									"Flags":	0
 								}
@@ -182,40 +234,55 @@ TestClassDecl Case 2:
 TestClassDecl Case 3:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	3,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Methods":	[{
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -229,23 +296,31 @@ TestClassDecl Case 3:
 							"IsVirtual":	false,
 							"IsOverride":	false
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -259,23 +334,31 @@ TestClassDecl Case 3:
 							"IsVirtual":	false,
 							"IsOverride":	false
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"~A"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -289,23 +372,31 @@ TestClassDecl Case 3:
 							"IsVirtual":	false,
 							"IsOverride":	false
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"A"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"foo"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -329,40 +420,55 @@ TestClassDecl Case 3:
 TestClassDecl Case 4:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"Base"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	3,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Methods":	[{
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"Base"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"Base"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -376,23 +482,31 @@ TestClassDecl Case 4:
 							"IsVirtual":	false,
 							"IsOverride":	false
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"Base"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"~Base"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -406,23 +520,31 @@ TestClassDecl Case 4:
 							"IsVirtual":	true,
 							"IsOverride":	false
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"Base"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"foo"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -438,39 +560,53 @@ TestClassDecl Case 4:
 						}]
 				}
 			}, {
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"Derived"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	3,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Methods":	[{
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"Derived"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"Derived"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -484,23 +620,31 @@ TestClassDecl Case 4:
 							"IsVirtual":	false,
 							"IsOverride":	false
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"Derived"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"~Derived"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -514,23 +658,31 @@ TestClassDecl Case 4:
 							"IsVirtual":	true,
 							"IsOverride":	true
 						}, {
+							"_Type":	"FuncDecl",
 							"Loc":	{
+								"_Type":	"Location",
 								"File":	"temp.h"
 							},
 							"Doc":	{
+								"_Type":	"CommentGroup",
 								"List":	[]
 							},
 							"Parent":	{
+								"_Type":	"Ident",
 								"Name":	"Derived"
 							},
 							"Name":	{
+								"_Type":	"Ident",
 								"Name":	"foo"
 							},
 							"Type":	{
+								"_Type":	"FuncType",
 								"Params":	{
+									"_Type":	"FieldList",
 									"List":	[]
 								},
 								"Ret":	{
+									"_Type":	"BuiltinType",
 									"Kind":	0,
 									"Flags":	0
 								}
@@ -554,49 +706,67 @@ TestClassDecl Case 4:
 TestClassDecl Case 5:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"Foo"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	3,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Methods":	[]
 				}
 			}, {
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	{
+					"_Type":	"ScopingExpr",
 					"X":	{
+						"_Type":	"Ident",
 						"Name":	"Foo"
 					},
 					"Parent":	{
+						"_Type":	"Ident",
 						"Name":	"A"
 					}
 				},
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"bar"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
