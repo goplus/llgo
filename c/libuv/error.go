@@ -95,7 +95,7 @@ const (
 	ECHARSET     Errno = -4080
 	ENONET       Errno = -4056
 	UNKNOWN      Errno = -4094
-	EOF          Errno = -1
+	EOF          Errno = -4095
 	EREMOTEIO    Errno = -4030
 	ERRNO_MAX    Errno = EOF - 1
 )
