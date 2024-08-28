@@ -144,6 +144,8 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
 		root.SetItem(c.Str("Doc"), MarshalASTExpr(d.Doc))
 		root.SetItem(c.Str("Comment"), MarshalASTExpr(d.Comment))
+		root.SetItem(c.Str("IsStatic"), boolField(d.IsStatic))
+		root.SetItem(c.Str("Access"), numberField(uint(d.Access)))
 		names := cjson.Array()
 		for _, n := range d.Names {
 			names.AddItem(MarshalASTExpr(n))
