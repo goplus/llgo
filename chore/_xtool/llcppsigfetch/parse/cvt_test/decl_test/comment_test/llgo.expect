@@ -2,22 +2,30 @@
 TestDoc Case 1:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -39,22 +47,30 @@ TestDoc Case 1:
 TestDoc Case 2:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -76,24 +92,33 @@ TestDoc Case 2:
 TestDoc Case 3:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/// doc"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -115,24 +140,33 @@ TestDoc Case 3:
 TestDoc Case 4:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/** doc */"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -154,24 +188,33 @@ TestDoc Case 4:
 TestDoc Case 5:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/*! doc */"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -193,26 +236,36 @@ TestDoc Case 5:
 TestDoc Case 6:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/// doc 1"
 						}, {
+							"_Type":	"Comment",
 							"Text":	"/// doc 2"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -234,26 +287,36 @@ TestDoc Case 6:
 TestDoc Case 7:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/*! doc 1 */"
 						}, {
+							"_Type":	"Comment",
 							"Text":	"/*! doc 2 */"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -275,26 +338,36 @@ TestDoc Case 7:
 TestDoc Case 8:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/** doc 1 */"
 						}, {
+							"_Type":	"Comment",
 							"Text":	"/** doc 1 */"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}
@@ -316,30 +389,42 @@ TestDoc Case 8:
 TestDoc Case 9:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"FuncDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[{
+							"_Type":	"Comment",
 							"Text":	"/**"
 						}, {
+							"_Type":	"Comment",
 							"Text":	" * doc 1"
 						}, {
+							"_Type":	"Comment",
 							"Text":	" * doc 2"
 						}, {
+							"_Type":	"Comment",
 							"Text":	" */"
 						}]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"foo"
 				},
 				"Type":	{
+					"_Type":	"FuncType",
 					"Params":	{
+						"_Type":	"FieldList",
 						"List":	[]
 					},
 					"Ret":	{
+						"_Type":	"BuiltinType",
 						"Kind":	0,
 						"Flags":	0
 					}

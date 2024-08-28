@@ -28,16 +28,22 @@ Complex:flags:20 kind:11
 Unknown:flags:0 kind:0
 Type: char *:
 {
+	"_Type":	"PointerType",
 	"X":	{
+		"_Type":	"BuiltinType",
 		"Kind":	2,
 		"Flags":	1
 	}
 }
 Type: char ***:
 {
+	"_Type":	"PointerType",
 	"X":	{
+		"_Type":	"PointerType",
 		"X":	{
+			"_Type":	"PointerType",
 			"X":	{
+				"_Type":	"BuiltinType",
 				"Kind":	2,
 				"Flags":	1
 			}
@@ -46,7 +52,9 @@ Type: char ***:
 }
 Type: char[]:
 {
+	"_Type":	"ArrayType",
 	"Elt":	{
+		"_Type":	"BuiltinType",
 		"Kind":	2,
 		"Flags":	1
 	},
@@ -54,75 +62,97 @@ Type: char[]:
 }
 Type: char[10]:
 {
+	"_Type":	"ArrayType",
 	"Elt":	{
+		"_Type":	"BuiltinType",
 		"Kind":	2,
 		"Flags":	1
 	},
 	"Len":	{
+		"_Type":	"BasicLit",
 		"Kind":	0,
 		"Value":	"10"
 	}
 }
 Type: char[3][4]:
 {
+	"_Type":	"ArrayType",
 	"Elt":	{
+		"_Type":	"ArrayType",
 		"Elt":	{
+			"_Type":	"BuiltinType",
 			"Kind":	2,
 			"Flags":	1
 		},
 		"Len":	{
+			"_Type":	"BasicLit",
 			"Kind":	0,
 			"Value":	"4"
 		}
 	},
 	"Len":	{
+		"_Type":	"BasicLit",
 		"Kind":	0,
 		"Value":	"3"
 	}
 }
 Type: int &:
 {
+	"_Type":	"LvalueRefType",
 	"X":	{
+		"_Type":	"BuiltinType",
 		"Kind":	6,
 		"Flags":	0
 	}
 }
 Type: int &&:
 {
+	"_Type":	"LvalueRefType",
 	"X":	{
+		"_Type":	"BuiltinType",
 		"Kind":	6,
 		"Flags":	0
 	}
 }
 Type: Foo:
 {
+	"_Type":	"Ident",
 	"Name":	"Foo"
 }
 Type: struct Foo:
 {
+	"_Type":	"TagExpr",
 	"Name":	{
+		"_Type":	"Ident",
 		"Name":	"Foo"
 	},
 	"Tag":	0
 }
 Type: struct (unnamed struct at temp.h:1:1):
 {
+	"_Type":	"RecordType",
 	"Tag":	0,
 	"Fields":	{
+		"_Type":	"FieldList",
 		"List":	[{
+				"_Type":	"Field",
 				"Type":	{
+					"_Type":	"BuiltinType",
 					"Kind":	6,
 					"Flags":	0
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Comment":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"IsStatic":	false,
 				"Access":	1,
 				"Names":	[{
+						"_Type":	"Ident",
 						"Name":	"x"
 					}]
 			}]
@@ -131,33 +161,43 @@ Type: struct (unnamed struct at temp.h:1:1):
 }
 Type: Foo:
 {
+	"_Type":	"Ident",
 	"Name":	"Foo"
 }
 Type: union Foo:
 {
+	"_Type":	"TagExpr",
 	"Name":	{
+		"_Type":	"Ident",
 		"Name":	"Foo"
 	},
 	"Tag":	1
 }
 Type: union (unnamed union at temp.h:1:1):
 {
+	"_Type":	"RecordType",
 	"Tag":	1,
 	"Fields":	{
+		"_Type":	"FieldList",
 		"List":	[{
+				"_Type":	"Field",
 				"Type":	{
+					"_Type":	"BuiltinType",
 					"Kind":	6,
 					"Flags":	0
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Comment":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"IsStatic":	false,
 				"Access":	1,
 				"Names":	[{
+						"_Type":	"Ident",
 						"Name":	"x"
 					}]
 			}]
@@ -166,22 +206,29 @@ Type: union (unnamed union at temp.h:1:1):
 }
 Type: Foo:
 {
+	"_Type":	"Ident",
 	"Name":	"Foo"
 }
 Type: enum Foo:
 {
+	"_Type":	"TagExpr",
 	"Name":	{
+		"_Type":	"Ident",
 		"Name":	"Foo"
 	},
 	"Tag":	2
 }
 Type: enum (unnamed enum at temp.h:1:1):
 {
+	"_Type":	"EnumType",
 	"Items":	[{
+			"_Type":	"EnumItem",
 			"Name":	{
+				"_Type":	"Ident",
 				"Name":	"x"
 			},
 			"Value":	{
+				"_Type":	"BasicLit",
 				"Kind":	0,
 				"Value":	"42"
 			}
@@ -189,33 +236,43 @@ Type: enum (unnamed enum at temp.h:1:1):
 }
 Type: Foo:
 {
+	"_Type":	"Ident",
 	"Name":	"Foo"
 }
 Type: class Foo:
 {
+	"_Type":	"TagExpr",
 	"Name":	{
+		"_Type":	"Ident",
 		"Name":	"Foo"
 	},
 	"Tag":	3
 }
 Type: class (unnamed class at temp.h:1:1):
 {
+	"_Type":	"RecordType",
 	"Tag":	3,
 	"Fields":	{
+		"_Type":	"FieldList",
 		"List":	[{
+				"_Type":	"Field",
 				"Type":	{
+					"_Type":	"BuiltinType",
 					"Kind":	6,
 					"Flags":	0
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Comment":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"IsStatic":	false,
 				"Access":	3,
 				"Names":	[{
+						"_Type":	"Ident",
 						"Name":	"x"
 					}]
 			}]
@@ -224,29 +281,40 @@ Type: class (unnamed class at temp.h:1:1):
 }
 Type: a::b::c:
 {
+	"_Type":	"ScopingExpr",
 	"X":	{
+		"_Type":	"Ident",
 		"Name":	"c"
 	},
 	"Parent":	{
+		"_Type":	"ScopingExpr",
 		"X":	{
+			"_Type":	"Ident",
 			"Name":	"b"
 		},
 		"Parent":	{
+			"_Type":	"Ident",
 			"Name":	"a"
 		}
 	}
 }
 Type: class a::b::c:
 {
+	"_Type":	"TagExpr",
 	"Name":	{
+		"_Type":	"ScopingExpr",
 		"X":	{
+			"_Type":	"Ident",
 			"Name":	"c"
 		},
 		"Parent":	{
+			"_Type":	"ScopingExpr",
 			"X":	{
+				"_Type":	"Ident",
 				"Name":	"b"
 			},
 			"Parent":	{
+				"_Type":	"Ident",
 				"Name":	"a"
 			}
 		}
@@ -255,10 +323,15 @@ Type: class a::b::c:
 }
 Type: int (*)(int, char):
 {
+	"_Type":	"PointerType",
 	"X":	{
+		"_Type":	"FuncType",
 		"Params":	{
+			"_Type":	"FieldList",
 			"List":	[{
+					"_Type":	"Field",
 					"Type":	{
+						"_Type":	"BuiltinType",
 						"Kind":	6,
 						"Flags":	0
 					},
@@ -268,7 +341,9 @@ Type: int (*)(int, char):
 					"Access":	0,
 					"Names":	[]
 				}, {
+					"_Type":	"Field",
 					"Type":	{
+						"_Type":	"BuiltinType",
 						"Kind":	2,
 						"Flags":	1
 					},
@@ -280,6 +355,7 @@ Type: int (*)(int, char):
 				}]
 		},
 		"Ret":	{
+			"_Type":	"BuiltinType",
 			"Kind":	6,
 			"Flags":	0
 		}
