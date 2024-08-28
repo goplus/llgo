@@ -2,48 +2,64 @@
 TestUnionDecl Case 1:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	null,
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	1,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"b"
 									}]
 							}]
@@ -59,50 +75,67 @@ TestUnionDecl Case 1:
 TestUnionDecl Case 2:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"A"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	1,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"a"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"b"
 									}]
 							}]
@@ -118,86 +151,116 @@ TestUnionDecl Case 2:
 TestUnionDecl Case 3:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypeDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"OuterUnion"
 				},
 				"Type":	{
+					"_Type":	"RecordType",
 					"Tag":	1,
 					"Fields":	{
+						"_Type":	"FieldList",
 						"List":	[{
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"i"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"BuiltinType",
 									"Kind":	8,
 									"Flags":	0
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"f"
 									}]
 							}, {
+								"_Type":	"Field",
 								"Type":	{
+									"_Type":	"RecordType",
 									"Tag":	1,
 									"Fields":	{
+										"_Type":	"FieldList",
 										"List":	[{
+												"_Type":	"Field",
 												"Type":	{
+													"_Type":	"BuiltinType",
 													"Kind":	2,
 													"Flags":	1
 												},
 												"Doc":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"Comment":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
+														"_Type":	"Ident",
 														"Name":	"c"
 													}]
 											}, {
+												"_Type":	"Field",
 												"Type":	{
+													"_Type":	"BuiltinType",
 													"Kind":	6,
 													"Flags":	32
 												},
 												"Doc":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"Comment":	{
+													"_Type":	"CommentGroup",
 													"List":	[]
 												},
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
+														"_Type":	"Ident",
 														"Name":	"s"
 													}]
 											}]
@@ -205,14 +268,17 @@ TestUnionDecl Case 3:
 									"Methods":	[]
 								},
 								"Doc":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"Comment":	{
+									"_Type":	"CommentGroup",
 									"List":	[]
 								},
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
+										"_Type":	"Ident",
 										"Name":	"inner"
 									}]
 							}]
