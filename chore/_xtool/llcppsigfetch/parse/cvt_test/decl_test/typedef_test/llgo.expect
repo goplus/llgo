@@ -476,10 +476,13 @@ TestTypeDefDecl Case 4:
 {
 	"temp.h":	{
 		"decls":	[{
+				"_Type":	"TypedefDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
@@ -593,10 +596,13 @@ TestTypeDefDecl Case 4:
 					"Tag":	3
 				}
 			}, {
+				"_Type":	"TypedefDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
@@ -618,22 +624,32 @@ TestTypeDefDecl Case 4:
 TestTypeDefDecl Case 3:
 {
 	"temp.h":	{
+		"_Type":	"File",
 		"decls":	[{
+				"_Type":	"TypedefDecl",
 				"Loc":	{
+					"_Type":	"Location",
 					"File":	"temp.h"
 				},
 				"Doc":	{
+					"_Type":	"CommentGroup",
 					"List":	[]
 				},
 				"Parent":	null,
 				"Name":	{
+					"_Type":	"Ident",
 					"Name":	"Foo"
 				},
 				"Type":	{
+					"_Type":	"PointerType",
 					"X":	{
+						"_Type":	"FuncType",
 						"Params":	{
+							"_Type":	"FieldList",
 							"List":	[{
+									"_Type":	"Field",
 									"Type":	{
+										"_Type":	"BuiltinType",
 										"Kind":	6,
 										"Flags":	0
 									},
@@ -643,7 +659,9 @@ TestTypeDefDecl Case 3:
 									"Access":	0,
 									"Names":	[]
 								}, {
+									"_Type":	"Field",
 									"Type":	{
+										"_Type":	"BuiltinType",
 										"Kind":	6,
 										"Flags":	0
 									},
@@ -653,7 +671,9 @@ TestTypeDefDecl Case 3:
 									"Access":	0,
 									"Names":	[]
 								}, {
+									"_Type":	"Field",
 									"Type":	{
+										"_Type":	"Variadic"
 									},
 									"Doc":	null,
 									"Comment":	null,
@@ -663,6 +683,7 @@ TestTypeDefDecl Case 3:
 								}]
 						},
 						"Ret":	{
+							"_Type":	"BuiltinType",
 							"Kind":	6,
 							"Flags":	0
 						}
