@@ -107,7 +107,7 @@ Type: int &:
 }
 Type: int &&:
 {
-	"_Type":	"LvalueRefType",
+	"_Type":	"RvalueRefType",
 	"X":	{
 		"_Type":	"BuiltinType",
 		"Kind":	6,
