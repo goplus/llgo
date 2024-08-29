@@ -213,8 +213,10 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 	switch t.Kind {
 	case clang.TypePointer:
 		expr = &ast.PointerType{X: ct.ProcessType(t.PointeeType())}
-	case clang.TypeLValueReference, clang.TypeRValueReference:
+	case clang.TypeLValueReference:
 		expr = &ast.LvalueRefType{X: ct.ProcessType(t.NonReferenceType())}
+	case clang.TypeRValueReference:
+		expr = &ast.RvalueRefType{X: ct.ProcessType(t.NonReferenceType())}
 	case clang.TypeFunctionProto:
 		// function type will only collect return type, params will be collected in ProcessFuncDecl
 		expr = ct.ProcessFunctionType(t)
