@@ -13,7 +13,17 @@ func TestTypeDefDecl() {
 		`typedef int INT;
 		 typedef INT STANDARD_INT;`,
 
+		`typedef int INT,*IntPtr,IntArr[];`,
+
 		`typedef int (*Foo)(int, int, ...);`,
+
+		`typedef int (*Foo)(int, int),(*Bar)(void*,void*);`,
+
+		`namespace A { 
+		 typedef class Foo{ 
+		 	int x; 
+		 } MyClass,*MyClassPtr,MyClassArray[];
+		 }`,
 	}
 	test.RunTest("TestTypeDefDecl", testCases)
 }
