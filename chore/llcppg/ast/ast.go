@@ -218,10 +218,12 @@ func (*CommentGroup) exprNode() {}
 // ------------------------------------------------
 
 type Field struct {
-	Doc     *CommentGroup // associated documentation; or nil
-	Type    Expr          // field/method/parameter type; or nil
-	Names   []*Ident      // field/method/(type) parameter names; or nil
-	Comment *CommentGroup // line comments; or nil
+	Doc      *CommentGroup   // associated documentation; or nil
+	Type     Expr            // field/method/parameter type; or nil
+	Names    []*Ident        // field/method/(type) parameter names; or nil
+	Comment  *CommentGroup   // line comments; or nil
+	Access   AccessSpecifier // field access(Record Type); Struct Field default is Public,Class Field default is Private
+	IsStatic bool            // static field
 }
 
 func (*Field) exprNode() {}
