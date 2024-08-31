@@ -78,8 +78,6 @@ const (
 type Number = c.Double
 
 // /* type for integer functions */
-// TODO(zzy):consider dynamic size
-
 type Integer = c.Int
 
 // /* unsigned integer type */
@@ -106,8 +104,11 @@ type KFunction func(L *State, status c.Int, ctx KContext) c.Int
 // ** Type for functions that read/write blocks when loading/dumping Lua chunks
 // */
 
-// typedef const char * (*lua_Reader) (State *L, void *ud, size_t *sz);
-// typedef int (*lua_Writer) (State *L, const void *p, size_t sz, void *ud);
+// llgo:type C
+type Reader func(L *State, ud c.Pointer, sz *c.Ulong) *c.Char
+
+// llgo:type C
+type Writer func(L *State, p c.Pointer, sz c.Ulong, ud c.Pointer) c.Int
 
 // /*
 // ** Type for memory-allocation functions
@@ -352,9 +353,11 @@ func (L *State) Pcall(nargs c.Int, nresults c.Int, errfunc c.Int) c.Int {
 	return L.Pcallk(nargs, nresults, errfunc, nil, nil)
 }
 
-// int   (lua_load) (State *L, lua_Reader reader, void *dt, const char *chunkname, const char *mode);
+// llgo:link (*State).Load C.lua_load
+func (L *State) Load(reader Reader, dt c.Pointer, chunkname *c.Char, mode *c.Char) c.Int { return 0 }
 
-// int (lua_dump) (State *L, lua_Writer writer, void *data, int strip);
+// llgo:link (*State).Dump C.lua_dump
+func (L *State) Dump(writer Writer, data c.Pointer, strip c.Int) c.Int { return 0 }
 
 // /*
 // ** coroutine functions
