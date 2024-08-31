@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -8,11 +9,26 @@ import (
 )
 
 func reader(L *lua.State, data c.Pointer, size *c.Ulong) *c.Char {
-	buffer := make([]c.Char, 4096)
-	*size = c.Ulong(c.Fread(c.Pointer(unsafe.SliceData(buffer)), uintptr(1), uintptr(unsafe.Sizeof(buffer)), data))
-	if *size > 0 {
-		return &buffer[0]
+	file := (*os.File)(data)
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil
 	}
+	fileSize := fileInfo.Size()
+
+	buffer := make([]byte, fileSize)
+	bytesRead, err := file.Read(buffer)
+	if err != nil {
+		return nil
+	}
+
+	*size = c.Ulong(bytesRead)
+
+	if bytesRead > 0 {
+		return (*c.Char)(unsafe.Pointer(unsafe.SliceData(buffer)))
+	}
+
 	return nil
 }
 
@@ -21,12 +37,14 @@ func main() {
 	defer L.Close()
 	L.Openlibs()
 
-	file := c.Fopen(c.Str("../llgofunc.luac"), c.Str("rb"))
-	if file == nil {
-		c.Printf(c.Str("Failed to open file for writing\n"))
+	file, err := os.Open("../llgofunc.luac")
+	if err != nil {
+		c.Printf(c.Str("Failed to open file for reading\n"))
+		return
 	}
+	defer file.Close()
 
-	if L.Load(reader, file, c.Str("greet"), nil) != lua.OK {
+	if L.Load(reader, c.Pointer(file), c.Str("greet"), nil) != lua.OK {
 		c.Printf(c.Str("Failed to dump Lua function\n"))
 	}
 
@@ -42,3 +60,9 @@ func main() {
 		c.Printf(c.Str("Result: %s\n"), L.Tostring(-1))
 	}
 }
+
+/* Expected output:
+Stack size before call: 1
+Top element type after call: function
+Result: Hello, World!
+*/
