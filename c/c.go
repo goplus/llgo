@@ -216,6 +216,9 @@ func Fputc(c Int, fp FilePtr) Int
 //go:linkname Fputs C.fputs
 func Fputs(s *Char, fp FilePtr) Int
 
+//go:linkname Fread C.fread
+func Fread(data Pointer, size, count uintptr, fp FilePtr) uintptr
+
 //go:linkname Fflush C.fflush
 func Fflush(fp FilePtr) Int
 
