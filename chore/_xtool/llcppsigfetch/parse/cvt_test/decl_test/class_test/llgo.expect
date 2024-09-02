@@ -9,10 +9,7 @@ TestClassDecl Case 1:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -30,14 +27,8 @@ TestClassDecl Case 1:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -51,14 +42,8 @@ TestClassDecl Case 1:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -85,10 +70,7 @@ TestClassDecl Case 2:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -106,14 +88,8 @@ TestClassDecl Case 2:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	true,
 								"Access":	1,
 								"Names":	[{
@@ -127,14 +103,8 @@ TestClassDecl Case 2:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -149,10 +119,7 @@ TestClassDecl Case 2:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"A"
@@ -172,14 +139,8 @@ TestClassDecl Case 2:
 												"Kind":	6,
 												"Flags":	0
 											},
-											"Doc":	{
-												"_Type":	"CommentGroup",
-												"List":	[]
-											},
-											"Comment":	{
-												"_Type":	"CommentGroup",
-												"List":	[]
-											},
+											"Doc":	null,
+											"Comment":	null,
 											"IsStatic":	false,
 											"Access":	0,
 											"Names":	[{
@@ -193,14 +154,8 @@ TestClassDecl Case 2:
 												"Kind":	8,
 												"Flags":	16
 											},
-											"Doc":	{
-												"_Type":	"CommentGroup",
-												"List":	[]
-											},
-											"Comment":	{
-												"_Type":	"CommentGroup",
-												"List":	[]
-											},
+											"Doc":	null,
+											"Comment":	null,
 											"IsStatic":	false,
 											"Access":	0,
 											"Names":	[{
@@ -241,10 +196,7 @@ TestClassDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -255,7 +207,7 @@ TestClassDecl Case 3:
 					"Tag":	3,
 					"Fields":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Methods":	[{
 							"_Type":	"FuncDecl",
@@ -263,10 +215,7 @@ TestClassDecl Case 3:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"A"
@@ -279,7 +228,7 @@ TestClassDecl Case 3:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -301,10 +250,7 @@ TestClassDecl Case 3:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"A"
@@ -317,7 +263,7 @@ TestClassDecl Case 3:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -339,10 +285,7 @@ TestClassDecl Case 3:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"A"
@@ -355,7 +298,7 @@ TestClassDecl Case 3:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -377,10 +320,7 @@ TestClassDecl Case 3:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"A"
@@ -393,7 +333,7 @@ TestClassDecl Case 3:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -427,10 +367,7 @@ TestClassDecl Case 4:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -441,7 +378,7 @@ TestClassDecl Case 4:
 					"Tag":	3,
 					"Fields":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Methods":	[{
 							"_Type":	"FuncDecl",
@@ -449,10 +386,7 @@ TestClassDecl Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"Base"
@@ -465,7 +399,7 @@ TestClassDecl Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -487,10 +421,7 @@ TestClassDecl Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"Base"
@@ -503,7 +434,7 @@ TestClassDecl Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -525,10 +456,7 @@ TestClassDecl Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"Base"
@@ -541,7 +469,7 @@ TestClassDecl Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -565,10 +493,7 @@ TestClassDecl Case 4:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -579,7 +504,7 @@ TestClassDecl Case 4:
 					"Tag":	3,
 					"Fields":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Methods":	[{
 							"_Type":	"FuncDecl",
@@ -587,10 +512,7 @@ TestClassDecl Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"Derived"
@@ -603,7 +525,7 @@ TestClassDecl Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -625,10 +547,7 @@ TestClassDecl Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"Derived"
@@ -641,7 +560,7 @@ TestClassDecl Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -663,10 +582,7 @@ TestClassDecl Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"Derived"
@@ -679,7 +595,7 @@ TestClassDecl Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -713,10 +629,7 @@ TestClassDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -730,7 +643,7 @@ TestClassDecl Case 5:
 					"Tag":	3,
 					"Fields":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Methods":	[]
 				}
@@ -740,10 +653,7 @@ TestClassDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"ScopingExpr",
 					"X":	{
@@ -763,7 +673,7 @@ TestClassDecl Case 5:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
