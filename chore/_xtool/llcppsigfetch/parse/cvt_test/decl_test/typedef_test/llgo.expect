@@ -631,10 +631,7 @@ TestTypeDefDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -651,10 +648,7 @@ TestTypeDefDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -674,10 +668,7 @@ TestTypeDefDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -708,10 +699,7 @@ TestTypeDefDecl Case 4:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -734,7 +722,7 @@ TestTypeDefDecl Case 4:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -746,7 +734,7 @@ TestTypeDefDecl Case 4:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -756,7 +744,7 @@ TestTypeDefDecl Case 4:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}]
 						},
 						"Ret":	{
@@ -782,10 +770,7 @@ TestTypeDefDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -808,7 +793,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -820,7 +805,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}]
 						},
 						"Ret":	{
@@ -836,10 +821,7 @@ TestTypeDefDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -865,7 +847,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -880,7 +862,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}]
 						},
 						"Ret":	{
@@ -906,10 +888,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -930,14 +909,8 @@ TestTypeDefDecl Case 6:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	3,
 								"Names":	[{
@@ -954,10 +927,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -987,10 +957,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -1023,10 +990,275 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
+				"Doc":	null,
+				"Parent":	{
+					"_Type":	"Ident",
+					"Name":	"A"
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"MyClassArray"
+				},
+				"Type":	{
+					"_Type":	"ArrayType",
+					"Elt":	{
+						"_Type":	"TagExpr",
+						"Name":	{
+							"_Type":	"ScopingExpr",
+							"X":	{
+								"_Type":	"Ident",
+								"Name":	"Foo"
+							},
+							"Parent":	{
+								"_Type":	"Ident",
+								"Name":	"A"
+							}
+						},
+						"Tag":	3
+					},
+					"Len":	null
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestTypeDefDecl Case 4:
+{
+	"temp.h":	{
+		"decls":	[{
+				"_Type":	"TypedefDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
 				"Doc":	{
 					"_Type":	"CommentGroup",
 					"List":	[]
 				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"StructFoo"
+				},
+				"Type":	{
+					"Tag":	0,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"UnionFoo"
+				},
+				"Type":	{
+					"Tag":	1,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"ClassFoo"
+				},
+				"Type":	{
+					"Tag":	3,
+					"Fields":	{
+						"List":	[]
+					},
+					"Methods":	[]
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"EnumFoo"
+				},
+				"Items":	[]
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"STRUCT_FOO"
+				},
+				"Type":	{
+					"Name":	{
+						"Name":	"StructFoo"
+					},
+					"Tag":	0
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"UNION_FOO"
+				},
+				"Type":	{
+					"Name":	{
+						"Name":	"UnionFoo"
+					},
+					"Tag":	1
+				}
+			}, {
+				"Loc":	{
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"List":	[]
+				},
+				"Parent":	null,
+				"Name":	{
+					"Name":	"CLASS_FOO"
+				},
+				"Type":	{
+					"Name":	{
+						"Name":	"ClassFoo"
+					},
+					"Tag":	3
+				}
+			}, {
+				"_Type":	"TypedefDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	{
+					"_Type":	"CommentGroup",
+					"List":	[]
+				},
+				"Parent":	{
+					"_Type":	"Ident",
+					"Name":	"A"
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"Foo"
+				},
+				"Type":	{
+					"_Type":	"RecordType",
+					"Tag":	3,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	3,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}, {
+				"_Type":	"TypedefDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"_Type":	"Ident",
+					"Name":	"A"
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"MyClass"
+				},
+				"Type":	{
+					"_Type":	"TagExpr",
+					"Name":	{
+						"_Type":	"ScopingExpr",
+						"X":	{
+							"_Type":	"Ident",
+							"Name":	"Foo"
+						},
+						"Parent":	{
+							"_Type":	"Ident",
+							"Name":	"A"
+						}
+					},
+					"Tag":	3
+				}
+			}, {
+				"_Type":	"TypedefDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"_Type":	"Ident",
+					"Name":	"A"
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"MyClassPtr"
+				},
+				"Type":	{
+					"_Type":	"PointerType",
+					"X":	{
+						"_Type":	"TagExpr",
+						"Name":	{
+							"_Type":	"ScopingExpr",
+							"X":	{
+								"_Type":	"Ident",
+								"Name":	"Foo"
+							},
+							"Parent":	{
+								"_Type":	"Ident",
+								"Name":	"A"
+							}
+						},
+						"Tag":	3
+					}
+				}
+			}, {
+				"_Type":	"TypedefDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"

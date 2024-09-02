@@ -55,7 +55,8 @@ func MarshalASTFile(file *ast.File) *cjson.JSON {
 	}
 	return root
 }
-func Token(tok *ast.Token) *cjson.JSON {
+
+func MarshalToken(tok *ast.Token) *cjson.JSON {
 	root := cjson.Object()
 	root.SetItem(c.Str("_Type"), stringField("Token"))
 	root.SetItem(c.Str("Token"), numberField(uint(tok.Token)))
@@ -106,7 +107,6 @@ func MarshalASTDeclBase(decl ast.DeclBase, root *cjson.JSON) {
 	loc.SetItem(c.Str("_Type"), stringField("Location"))
 	loc.SetItem(c.Str("File"), stringField(decl.Loc.File))
 	root.SetItem(c.Str("Loc"), loc)
-
 	root.SetItem(c.Str("Doc"), MarshalASTExpr(decl.Doc))
 	root.SetItem(c.Str("Parent"), MarshalASTExpr(decl.Parent))
 }
@@ -145,14 +145,7 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Ret"), MarshalASTExpr(d.Ret))
 	case *ast.FieldList:
 		root.SetItem(c.Str("_Type"), stringField("FieldList"))
-		if d == nil {
-			return cjson.Null()
-		}
-		list := cjson.Array()
-		for _, f := range d.List {
-			list.AddItem(MarshalASTExpr(f))
-		}
-		root.SetItem(c.Str("List"), list)
+		root.SetItem(c.Str("List"), MarshalFieldList(d.List))
 	case *ast.Field:
 		root.SetItem(c.Str("_Type"), stringField("Field"))
 		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
@@ -160,11 +153,7 @@ func (ct *Converter) TypeJSON(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Comment"), MarshalASTExpr(d.Comment))
 		root.SetItem(c.Str("IsStatic"), boolField(d.IsStatic))
 		root.SetItem(c.Str("Access"), numberField(uint(d.Access)))
-		names := cjson.Array()
-		for _, n := range d.Names {
-			names.AddItem(MarshalASTExpr(n))
-		}
-		root.SetItem(c.Str("Names"), names)
+		root.SetItem(c.Str("Names"), MarshalIdentList(d.Names))
 	case *ast.Variadic:
 		root.SetItem(c.Str("_Type"), stringField("Variadic"))
 	case *ast.Ident:
