@@ -141,14 +141,8 @@ Type: struct (unnamed struct at temp.h:1:1):
 					"Kind":	6,
 					"Flags":	0
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
-				"Comment":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
+				"Comment":	null,
 				"IsStatic":	false,
 				"Access":	1,
 				"Names":	[{
@@ -186,14 +180,8 @@ Type: union (unnamed union at temp.h:1:1):
 					"Kind":	6,
 					"Flags":	0
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
-				"Comment":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
+				"Comment":	null,
 				"IsStatic":	false,
 				"Access":	1,
 				"Names":	[{
@@ -261,14 +249,8 @@ Type: class (unnamed class at temp.h:1:1):
 					"Kind":	6,
 					"Flags":	0
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
-				"Comment":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
+				"Comment":	null,
 				"IsStatic":	false,
 				"Access":	3,
 				"Names":	[{
@@ -339,7 +321,7 @@ Type: int (*)(int, char):
 					"Comment":	null,
 					"IsStatic":	false,
 					"Access":	0,
-					"Names":	[]
+					"Names":	null
 				}, {
 					"_Type":	"Field",
 					"Type":	{
@@ -351,7 +333,7 @@ Type: int (*)(int, char):
 					"Comment":	null,
 					"IsStatic":	false,
 					"Access":	0,
-					"Names":	[]
+					"Names":	null
 				}]
 		},
 		"Ret":	{

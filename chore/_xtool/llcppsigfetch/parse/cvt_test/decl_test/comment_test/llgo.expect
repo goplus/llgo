@@ -9,10 +9,7 @@ TestDoc Case 1:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -22,7 +19,7 @@ TestDoc Case 1:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -54,10 +51,7 @@ TestDoc Case 2:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -67,7 +61,7 @@ TestDoc Case 2:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -115,7 +109,7 @@ TestDoc Case 3:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -163,7 +157,7 @@ TestDoc Case 4:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -211,7 +205,7 @@ TestDoc Case 5:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -262,7 +256,7 @@ TestDoc Case 6:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -313,7 +307,7 @@ TestDoc Case 7:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -364,7 +358,7 @@ TestDoc Case 8:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -421,7 +415,7 @@ TestDoc Case 9:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",

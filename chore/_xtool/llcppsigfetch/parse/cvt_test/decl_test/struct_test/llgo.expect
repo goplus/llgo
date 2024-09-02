@@ -9,10 +9,7 @@ TestStructDecl Case 1:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	null,
 				"Type":	{
@@ -27,14 +24,8 @@ TestStructDecl Case 1:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -61,10 +52,7 @@ TestStructDecl Case 2:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -82,14 +70,8 @@ TestStructDecl Case 2:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -103,14 +85,8 @@ TestStructDecl Case 2:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -137,10 +113,7 @@ TestStructDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -158,14 +131,8 @@ TestStructDecl Case 3:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -179,14 +146,8 @@ TestStructDecl Case 3:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -213,10 +174,7 @@ TestStructDecl Case 4:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -234,14 +192,8 @@ TestStructDecl Case 4:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -267,7 +219,7 @@ TestStructDecl Case 4:
 													"Comment":	null,
 													"IsStatic":	false,
 													"Access":	0,
-													"Names":	[]
+													"Names":	null
 												}, {
 													"_Type":	"Field",
 													"Type":	{
@@ -279,7 +231,7 @@ TestStructDecl Case 4:
 													"Comment":	null,
 													"IsStatic":	false,
 													"Access":	0,
-													"Names":	[]
+													"Names":	null
 												}]
 										},
 										"Ret":	{
@@ -289,14 +241,8 @@ TestStructDecl Case 4:
 										}
 									}
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -323,10 +269,7 @@ TestStructDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -344,14 +287,8 @@ TestStructDecl Case 5:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
@@ -372,14 +309,8 @@ TestStructDecl Case 5:
 													"Kind":	6,
 													"Flags":	0
 												},
-												"Doc":	{
-													"_Type":	"CommentGroup",
-													"List":	[]
-												},
-												"Comment":	{
-													"_Type":	"CommentGroup",
-													"List":	[]
-												},
+												"Doc":	null,
+												"Comment":	null,
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
@@ -393,14 +324,8 @@ TestStructDecl Case 5:
 													"Kind":	6,
 													"Flags":	0
 												},
-												"Doc":	{
-													"_Type":	"CommentGroup",
-													"List":	[]
-												},
-												"Comment":	{
-													"_Type":	"CommentGroup",
-													"List":	[]
-												},
+												"Doc":	null,
+												"Comment":	null,
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
@@ -414,14 +339,8 @@ TestStructDecl Case 5:
 													"Kind":	6,
 													"Flags":	0
 												},
-												"Doc":	{
-													"_Type":	"CommentGroup",
-													"List":	[]
-												},
-												"Comment":	{
-													"_Type":	"CommentGroup",
-													"List":	[]
-												},
+												"Doc":	null,
+												"Comment":	null,
 												"IsStatic":	false,
 												"Access":	1,
 												"Names":	[{
@@ -432,14 +351,8 @@ TestStructDecl Case 5:
 									},
 									"Methods":	[]
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	1,
 								"Names":	[{
