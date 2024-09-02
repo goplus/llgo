@@ -9,10 +9,7 @@ TestTypeDefDecl Case 1:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -39,10 +36,7 @@ TestTypeDefDecl Case 2:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -59,10 +53,7 @@ TestTypeDefDecl Case 2:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -88,10 +79,7 @@ TestTypeDefDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -108,10 +96,7 @@ TestTypeDefDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -131,10 +116,7 @@ TestTypeDefDecl Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -165,10 +147,7 @@ TestTypeDefDecl Case 4:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -191,7 +170,7 @@ TestTypeDefDecl Case 4:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -203,7 +182,7 @@ TestTypeDefDecl Case 4:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -213,7 +192,7 @@ TestTypeDefDecl Case 4:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}]
 						},
 						"Ret":	{
@@ -239,10 +218,7 @@ TestTypeDefDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -265,7 +241,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -277,7 +253,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}]
 						},
 						"Ret":	{
@@ -293,10 +269,7 @@ TestTypeDefDecl Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -322,7 +295,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}, {
 									"_Type":	"Field",
 									"Type":	{
@@ -337,7 +310,7 @@ TestTypeDefDecl Case 5:
 									"Comment":	null,
 									"IsStatic":	false,
 									"Access":	0,
-									"Names":	[]
+									"Names":	null
 								}]
 						},
 						"Ret":	{
@@ -363,10 +336,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -387,14 +357,8 @@ TestTypeDefDecl Case 6:
 									"Kind":	6,
 									"Flags":	0
 								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
+								"Doc":	null,
+								"Comment":	null,
 								"IsStatic":	false,
 								"Access":	3,
 								"Names":	[{
@@ -411,10 +375,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -444,10 +405,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"
@@ -480,10 +438,7 @@ TestTypeDefDecl Case 6:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"A"

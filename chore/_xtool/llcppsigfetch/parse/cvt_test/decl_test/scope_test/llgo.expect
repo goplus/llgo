@@ -9,10 +9,7 @@ TestScope Case 1:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -22,7 +19,7 @@ TestScope Case 1:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -54,10 +51,7 @@ TestScope Case 2:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"a"
@@ -70,7 +64,7 @@ TestScope Case 2:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -102,10 +96,7 @@ TestScope Case 3:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"ScopingExpr",
 					"X":	{
@@ -125,7 +116,7 @@ TestScope Case 3:
 					"_Type":	"FuncType",
 					"Params":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Ret":	{
 						"_Type":	"BuiltinType",
@@ -157,10 +148,7 @@ TestScope Case 4:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
@@ -171,7 +159,7 @@ TestScope Case 4:
 					"Tag":	3,
 					"Fields":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Methods":	[{
 							"_Type":	"FuncDecl",
@@ -179,10 +167,7 @@ TestScope Case 4:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"Ident",
 								"Name":	"a"
@@ -195,7 +180,7 @@ TestScope Case 4:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
@@ -229,10 +214,7 @@ TestScope Case 5:
 					"_Type":	"Location",
 					"File":	"temp.h"
 				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
+				"Doc":	null,
 				"Parent":	{
 					"_Type":	"Ident",
 					"Name":	"a"
@@ -246,7 +228,7 @@ TestScope Case 5:
 					"Tag":	3,
 					"Fields":	{
 						"_Type":	"FieldList",
-						"List":	[]
+						"List":	null
 					},
 					"Methods":	[{
 							"_Type":	"FuncDecl",
@@ -254,10 +236,7 @@ TestScope Case 5:
 								"_Type":	"Location",
 								"File":	"temp.h"
 							},
-							"Doc":	{
-								"_Type":	"CommentGroup",
-								"List":	[]
-							},
+							"Doc":	null,
 							"Parent":	{
 								"_Type":	"ScopingExpr",
 								"X":	{
@@ -277,7 +256,7 @@ TestScope Case 5:
 								"_Type":	"FuncType",
 								"Params":	{
 									"_Type":	"FieldList",
-									"List":	[]
+									"List":	null
 								},
 								"Ret":	{
 									"_Type":	"BuiltinType",
