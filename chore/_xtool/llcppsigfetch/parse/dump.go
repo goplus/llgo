@@ -14,47 +14,89 @@ func MarshalASTFiles(files map[string]*ast.File) *cjson.JSON {
 	return root
 }
 
-func MarshalASTFile(file *ast.File) *cjson.JSON {
-	root := cjson.Object()
-	decls := cjson.Array()
-
-	for _, decl := range file.Decls {
-		decls.AddItem(MarshalASTDecl(decl))
+func MarshalDeclList(list []ast.Decl) *cjson.JSON {
+	if list == nil {
+		return cjson.Null()
 	}
-	root.SetItem(c.Str("_Type"), stringField("File"))
-	root.SetItem(c.Str("decls"), decls)
-
-	// json:includes,omitempty
-	if file.Includes != nil {
-		includes := cjson.Array()
-		for _, i := range file.Includes {
-			include := cjson.Object()
-			include.SetItem(c.Str("_Type"), stringField("Include"))
-			include.SetItem(c.Str("Path"), stringField(i.Path))
-			includes.AddItem(include)
-		}
-		root.SetItem(c.Str("includes"), includes)
-	}
-
-	// json:macros,omitempty
-	if file.Macros != nil {
-		macros := cjson.Array()
-		for _, m := range file.Macros {
-			marco := cjson.Object()
-			marco.SetItem(c.Str("_Type"), stringField("Macro"))
-			marco.SetItem(c.Str("Name"), stringField(m.Name))
-			tokens := cjson.Array()
-			for _, tok := range m.Tokens {
-				tokens.AddItem(Token(tok))
-			}
-			marco.SetItem(c.Str("Tokens"), tokens)
-			macros.AddItem(marco)
-		}
-		root.SetItem(c.Str("macros"), macros)
+	root := cjson.Array()
+	for _, item := range list {
+		root.AddItem(MarshalASTDecl(item))
 	}
 	return root
 }
-func Token(tok *ast.Token) *cjson.JSON {
+
+func MarshalFieldList(list []*ast.Field) *cjson.JSON {
+	if list == nil {
+		return cjson.Null()
+	}
+	root := cjson.Array()
+	for _, item := range list {
+		root.AddItem(MarshalASTExpr(item))
+	}
+	return root
+}
+
+func MarshalIncludeList(list []*ast.Include) *cjson.JSON {
+	if list == nil {
+		return cjson.Null()
+	}
+	root := cjson.Array()
+	for _, item := range list {
+		include := cjson.Object()
+		include.SetItem(c.Str("_Type"), stringField("Include"))
+		include.SetItem(c.Str("Path"), stringField(item.Path))
+		root.AddItem(include)
+	}
+	return root
+}
+
+func MarshalMacroList(list []*ast.Macro) *cjson.JSON {
+	if list == nil {
+		return cjson.Null()
+	}
+	root := cjson.Array()
+	for _, item := range list {
+		macro := cjson.Object()
+		macro.SetItem(c.Str("_Type"), stringField("Macro"))
+		macro.SetItem(c.Str("Name"), stringField(item.Name))
+		macro.SetItem(c.Str("Tokens"), MarshalTokenList(item.Tokens))
+		root.AddItem(macro)
+	}
+	return root
+}
+
+func MarshalTokenList(list []*ast.Token) *cjson.JSON {
+	if list == nil {
+		return cjson.Null()
+	}
+	root := cjson.Array()
+	for _, item := range list {
+		root.AddItem(MarshalToken(item))
+	}
+	return root
+}
+
+func MarshalIdentList(list []*ast.Ident) *cjson.JSON {
+	if list == nil {
+		return cjson.Null()
+	}
+	root := cjson.Array()
+	for _, item := range list {
+		root.AddItem(MarshalASTExpr(item))
+	}
+	return root
+}
+
+func MarshalASTFile(file *ast.File) *cjson.JSON {
+	root := cjson.Object()
+	root.SetItem(c.Str("_Type"), stringField("File"))
+	root.SetItem(c.Str("decls"), MarshalDeclList(file.Decls))
+	root.SetItem(c.Str("includes"), MarshalIncludeList(file.Includes))
+	root.SetItem(c.Str("macros"), MarshalMacroList(file.Macros))
+	return root
+}
+
+func MarshalToken(tok *ast.Token) *cjson.JSON {
 	root := cjson.Object()
 	root.SetItem(c.Str("_Type"), stringField("Token"))
 	root.SetItem(c.Str("Token"), numberField(uint(tok.Token)))
@@ -105,7 +147,6 @@ func MarshalASTDeclBase(decl ast.DeclBase, root *cjson.JSON) {
 	loc.SetItem(c.Str("_Type"), stringField("Location"))
 	loc.SetItem(c.Str("File"), stringField(decl.Loc.File))
 	root.SetItem(c.Str("Loc"), loc)
-
 	root.SetItem(c.Str("Doc"), MarshalASTExpr(decl.Doc))
 	root.SetItem(c.Str("Parent"), MarshalASTExpr(decl.Parent))
 }
@@ -144,14 +185,7 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Ret"), MarshalASTExpr(d.Ret))
 	case *ast.FieldList:
 		root.SetItem(c.Str("_Type"), stringField("FieldList"))
-		if d == nil {
-			return cjson.Null()
-		}
-		list := cjson.Array()
-		for _, f := range d.List {
-			list.AddItem(MarshalASTExpr(f))
-		}
-		root.SetItem(c.Str("List"), list)
+		root.SetItem(c.Str("List"), MarshalFieldList(d.List))
 	case *ast.Field:
 		root.SetItem(c.Str("_Type"), stringField("Field"))
 		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
@@ -159,11 +193,7 @@ func MarshalASTExpr(t ast.Expr) *cjson.JSON {
 		root.SetItem(c.Str("Comment"), MarshalASTExpr(d.Comment))
 		root.SetItem(c.Str("IsStatic"), boolField(d.IsStatic))
 		root.SetItem(c.Str("Access"), numberField(uint(d.Access)))
-		names := cjson.Array()
-		for _, n := range d.Names {
-			names.AddItem(MarshalASTExpr(n))
-		}
-		root.SetItem(c.Str("Names"), names)
+		root.SetItem(c.Str("Names"), MarshalIdentList(d.Names))
 	case *ast.Variadic:
 		root.SetItem(c.Str("_Type"), stringField("Variadic"))
 	case *ast.Ident:

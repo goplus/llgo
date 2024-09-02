@@ -129,17 +129,20 @@ func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
 	rawComment := cursor.RawCommentText()
 	defer rawComment.Dispose()
 
+	res := ast.DeclBase{
+		Loc:    &ct.curLoc,
+		Parent: buildScopingExpr(cursor.SemanticParent()),
+	}
+
 	commentGroup := &ast.CommentGroup{}
 	if rawComment.CStr() != nil {
 		commentGroup = ct.ParseComment(c.GoString(rawComment.CStr()))
+		if len(commentGroup.List) > 0 {
+			res.Doc = commentGroup
+		}
 	}
 
-	loc := ct.curLoc
-	return ast.DeclBase{
-		Loc:    &loc,
-		Parent: buildScopingExpr(cursor.SemanticParent()),
-		Doc:    commentGroup,
-	}
+	return res
 }
 
 func (ct *Converter) ParseComment(rawComment string) *ast.CommentGroup {
@@ -248,7 +251,7 @@ func (ct *Converter) ProcessFunctionType(t clang.Type) *ast.FuncType {
 	// This would return CursorNoDeclFound
 
 	ret := ct.ProcessType(t.ResultType())
-	params := &ast.FieldList{List: make([]*ast.Field, 0)}
+	params := &ast.FieldList{}
 	numArgs := t.NumArgTypes()
 	for i := 0; i < int(numArgs); i++ {
 		argType := t.ArgType(c.Uint(i))
@@ -256,7 +259,6 @@ func (ct *Converter) ProcessFunctionType(t clang.Type) *ast.FuncType {
 			Type: ct.ProcessType(argType),
 		})
 	}
-
 	if t.IsFunctionTypeVariadic() != 0 {
 		params.List = append(params.List, &ast.Field{
 			Type: &ast.Variadic{},
@@ -452,10 +454,12 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 		// 	int a, b;
 		// };
 		field := &ast.Field{
-			Doc:     &ast.CommentGroup{},
-			Comment: &ast.CommentGroup{},
-			Type:    ctx.converter.ProcessType(cursor.Type()),
-			Names:   []*ast.Ident{{Name: c.GoString(paramName.CStr())}},
+			// todo(zzy):comment & doc
+			Type: ctx.converter.ProcessType(cursor.Type()),
+		}
+
+		if paramName.CStr() != nil {
+			field.Names = []*ast.Ident{{Name: c.GoString(paramName.CStr())}}
 		}
 
 		if cursor.Kind == clang.CursorFieldDecl {
@@ -470,14 +474,15 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 			fieldname := cursor.String()
 			defer fieldname.Dispose()
 			//todo(zzy): comment & doc
-			ctx.params.List = append(ctx.params.List, &ast.Field{
-				Doc:      &ast.CommentGroup{},
-				Comment:  &ast.CommentGroup{},
+			field := &ast.Field{
 				Type:     ctx.converter.ProcessType(cursor.Type()),
 				Access:   ast.AccessSpecifier(cursor.CXXAccessSpecifier()),
 				IsStatic: true,
-				Names:    []*ast.Ident{{Name: c.GoString(fieldname.CStr())}},
-			})
+			}
+			if fieldname.CStr() != nil && c.GoString(fieldname.CStr()) != "" {
+				field.Names = []*ast.Ident{{Name: c.GoString(fieldname.CStr())}}
+			}
+			ctx.params.List = append(ctx.params.List, field)
 		}
 	}
 
@@ -486,7 +491,7 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 
 // For Record Type(struct,union ...) & Func 's FieldList
 func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
-	params := &ast.FieldList{List: []*ast.Field{}}
+	params := &ast.FieldList{}
 	ctx := &visitFieldContext{
 		params:    params,
 		converter: ct,
