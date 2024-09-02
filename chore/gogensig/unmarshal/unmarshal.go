@@ -14,34 +14,34 @@ var nodeUnmarshalers map[string]NodeUnmarshaler
 func init() {
 	nodeUnmarshalers = map[string]NodeUnmarshaler{
 		// Not need costum unmarshal
-		"Token":       unmarshalToken,
-		"Macro":       unmarshalMacro,
-		"Include":     unmarshalInclude,
-		"BasicLit":    unmarshalBasicLit,
-		"BuiltinType": unmarshalBuiltinType,
-		"Ident":       unmarshalIdent,
-		"Variadic":    unmarshalVariadic,
+		"Token":       UnmarshalToken,
+		"Macro":       UnmarshalMacro,
+		"Include":     UnmarshalInclude,
+		"BasicLit":    UnmarshalBasicLit,
+		"BuiltinType": UnmarshalBuiltinType,
+		"Ident":       UnmarshalIdent,
+		"Variadic":    UnmarshalVariadic,
 
-		"PointerType":   unmarshalPointerType,
-		"LvalueRefType": unmarshalLvalueRefType,
-		"RvalueRefType": unmarshalRvalueRefType,
+		"PointerType":   UnmarshalPointerType,
+		"LvalueRefType": UnmarshalLvalueRefType,
+		"RvalueRefType": UnmarshalRvalueRefType,
 
-		"ArrayType":   unmarshalArrayType,
-		"Field":       unmarshalField,
-		"FieldList":   unmarshalFieldList,
-		"ScopingExpr": unmarshalScopingExpr,
-		"TagExpr":     unmarshalTagExpr,
-		"EnumItem":    unmarshalEnumItem,
-		"EnumType":    unmarshalEnumType,
-		"FuncType":    unmarshalFuncType,
-		"RecordType":  unmarshalRecordType,
-		"TypedefDecl": unmarshalTypeDefDecl,
+		"ArrayType":   UnmarshalArrayType,
+		"Field":       UnmarshalField,
+		"FieldList":   UnmarshalFieldList,
+		"ScopingExpr": UnmarshalScopingExpr,
+		"TagExpr":     UnmarshalTagExpr,
+		"EnumItem":    UnmarshalEnumItem,
+		"EnumType":    UnmarshalEnumType,
+		"FuncType":    UnmarshalFuncType,
+		"RecordType":  UnmarshalRecordType,
+		"TypedefDecl": UnmarshalTypeDefDecl,
 
-		"FuncDecl":     unmarshalFuncDecl,
-		"TypeDecl":     unmarshalTypeDecl,
-		"EnumTypeDecl": unmarshalEnumTypeDecl,
+		"FuncDecl":     UnmarshalFuncDecl,
+		"TypeDecl":     UnmarshalTypeDecl,
+		"EnumTypeDecl": UnmarshalEnumTypeDecl,
 
-		"File": unmarshalFile,
+		"File": UnmarshalFile,
 	}
 }
 
@@ -86,10 +86,6 @@ func UnmarshalFileSet(data []byte) ([]struct {
 }
 
 func UnmarshalNode(data []byte) (ast.Node, error) {
-	if isJSONNull(data) {
-		return nil, nil
-	}
-
 	var temp struct {
 		Type string `json:"_Type"`
 	}
@@ -105,7 +101,7 @@ func UnmarshalNode(data []byte) (ast.Node, error) {
 	return unmarshaler(data)
 }
 
-func unmarshalToken(data []byte) (ast.Node, error) {
+func UnmarshalToken(data []byte) (ast.Node, error) {
 	var node ast.Token
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling Token: %w", err)
@@ -113,7 +109,7 @@ func unmarshalToken(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalMacro(data []byte) (ast.Node, error) {
+func UnmarshalMacro(data []byte) (ast.Node, error) {
 	var node ast.Macro
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling Macro: %w", err)
@@ -121,7 +117,7 @@ func unmarshalMacro(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalInclude(data []byte) (ast.Node, error) {
+func UnmarshalInclude(data []byte) (ast.Node, error) {
 	var node ast.Include
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling Include: %w", err)
@@ -129,7 +125,7 @@ func unmarshalInclude(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalBasicLit(data []byte) (ast.Node, error) {
+func UnmarshalBasicLit(data []byte) (ast.Node, error) {
 	var node ast.BasicLit
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling BasicLit: %w", err)
@@ -137,7 +133,7 @@ func unmarshalBasicLit(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalBuiltinType(data []byte) (ast.Node, error) {
+func UnmarshalBuiltinType(data []byte) (ast.Node, error) {
 	var node ast.BuiltinType
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling BuiltinType: %w", err)
@@ -145,7 +141,7 @@ func unmarshalBuiltinType(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalIdent(data []byte) (ast.Node, error) {
+func UnmarshalIdent(data []byte) (ast.Node, error) {
 	var node ast.Ident
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling Ident: %w", err)
@@ -153,7 +149,7 @@ func unmarshalIdent(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalVariadic(data []byte) (ast.Node, error) {
+func UnmarshalVariadic(data []byte) (ast.Node, error) {
 	var node ast.Variadic
 	if err := json.Unmarshal(data, &node); err != nil {
 		return nil, fmt.Errorf("unmarshalling Variadic: %w", err)
@@ -161,7 +157,7 @@ func unmarshalVariadic(data []byte) (ast.Node, error) {
 	return &node, nil
 }
 
-func unmarshalXType(data []byte, xType ast.Node) (ast.Node, error) {
+func UnmarshalXType(data []byte, xType ast.Node) (ast.Node, error) {
 	var temp struct {
 		X json.RawMessage
 	}
@@ -173,11 +169,7 @@ func unmarshalXType(data []byte, xType ast.Node) (ast.Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling field X: %w", err)
 	}
-	expr, ok := x.(ast.Expr)
-	if !ok {
-		return nil, fmt.Errorf("field X is not ast.Expr")
-	}
-
+	expr := x.(ast.Expr)
 	switch v := xType.(type) {
 	case *ast.PointerType:
 		v.X = expr
@@ -192,19 +184,19 @@ func unmarshalXType(data []byte, xType ast.Node) (ast.Node, error) {
 	return xType, nil
 }
 
-func unmarshalPointerType(data []byte) (ast.Node, error) {
-	return unmarshalXType(data, &ast.PointerType{})
+func UnmarshalPointerType(data []byte) (ast.Node, error) {
+	return UnmarshalXType(data, &ast.PointerType{})
 }
 
-func unmarshalLvalueRefType(data []byte) (ast.Node, error) {
-	return unmarshalXType(data, &ast.LvalueRefType{})
+func UnmarshalLvalueRefType(data []byte) (ast.Node, error) {
+	return UnmarshalXType(data, &ast.LvalueRefType{})
 }
 
-func unmarshalRvalueRefType(data []byte) (ast.Node, error) {
-	return unmarshalXType(data, &ast.RvalueRefType{})
+func UnmarshalRvalueRefType(data []byte) (ast.Node, error) {
+	return UnmarshalXType(data, &ast.RvalueRefType{})
 }
 
-func unmarshalArrayType(data []byte) (ast.Node, error) {
+func UnmarshalArrayType(data []byte) (ast.Node, error) {
 	var arrayTemp struct {
 		Elt json.RawMessage
 		Len json.RawMessage
@@ -233,7 +225,7 @@ func unmarshalArrayType(data []byte) (ast.Node, error) {
 	return arrayType, nil
 }
 
-func unmarshalField(data []byte) (ast.Node, error) {
+func UnmarshalField(data []byte) (ast.Node, error) {
 	var fieldTemp struct {
 		Type     json.RawMessage
 		Doc      *ast.CommentGroup
@@ -262,7 +254,7 @@ func unmarshalField(data []byte) (ast.Node, error) {
 	return field, nil
 }
 
-func unmarshalFieldList(data []byte) (ast.Node, error) {
+func UnmarshalFieldList(data []byte) (ast.Node, error) {
 	var fieldListTemp struct {
 		List []json.RawMessage
 	}
@@ -283,7 +275,7 @@ func unmarshalFieldList(data []byte) (ast.Node, error) {
 	return fieldList, nil
 }
 
-func unmarshalTagExpr(data []byte) (ast.Node, error) {
+func UnmarshalTagExpr(data []byte) (ast.Node, error) {
 	var tagExpr struct {
 		Name json.RawMessage
 		Tag  ast.Tag
@@ -303,7 +295,7 @@ func unmarshalTagExpr(data []byte) (ast.Node, error) {
 	}, nil
 }
 
-func unmarshalScopingExpr(data []byte) (ast.Node, error) {
+func UnmarshalScopingExpr(data []byte) (ast.Node, error) {
 	var scopingExpr struct {
 		Parent json.RawMessage
 		X      json.RawMessage
@@ -327,7 +319,7 @@ func unmarshalScopingExpr(data []byte) (ast.Node, error) {
 	}, nil
 }
 
-func unmarshalEnumItem(data []byte) (ast.Node, error) {
+func UnmarshalEnumItem(data []byte) (ast.Node, error) {
 	var enumItemTemp struct {
 		Name  *ast.Ident
 		Value json.RawMessage
@@ -352,7 +344,7 @@ func unmarshalEnumItem(data []byte) (ast.Node, error) {
 	return enumItem, nil
 }
 
-func unmarshalEnumType(data []byte) (ast.Node, error) {
+func UnmarshalEnumType(data []byte) (ast.Node, error) {
 	var enumType struct {
 		Items []json.RawMessage
 	}
@@ -373,7 +365,7 @@ func unmarshalEnumType(data []byte) (ast.Node, error) {
 	return result, nil
 }
 
-func unmarshalRecordType(data []byte) (ast.Node, error) {
+func UnmarshalRecordType(data []byte) (ast.Node, error) {
 	var recordTypeTemp struct {
 		Tag     ast.Tag
 		Fields  json.RawMessage
@@ -406,7 +398,7 @@ func unmarshalRecordType(data []byte) (ast.Node, error) {
 	return recordType, nil
 }
 
-func unmarshalFuncType(data []byte) (ast.Node, error) {
+func UnmarshalFuncType(data []byte) (ast.Node, error) {
 	var funcTypeTemp struct {
 		Params json.RawMessage
 		Ret    json.RawMessage
@@ -432,7 +424,7 @@ func unmarshalFuncType(data []byte) (ast.Node, error) {
 	return funcType, nil
 }
 
-func unmarshalFuncDecl(data []byte) (ast.Node, error) {
+func UnmarshalFuncDecl(data []byte) (ast.Node, error) {
 	var funcDecl struct {
 		Name          *ast.Ident
 		Type          json.RawMessage
@@ -454,7 +446,7 @@ func unmarshalFuncDecl(data []byte) (ast.Node, error) {
 		return nil, fmt.Errorf("error unmarshalling FuncDecl Type: %w", err)
 	}
 
-	declBase, err := unmarshalDeclBase(data)
+	declBase, err := UnmarshalDeclBase(data)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling FuncDecl DeclBase: %w", err)
 	}
@@ -476,7 +468,7 @@ func unmarshalFuncDecl(data []byte) (ast.Node, error) {
 	return result, nil
 }
 
-func unmarshalTypeDecl(data []byte) (ast.Node, error) {
+func UnmarshalTypeDecl(data []byte) (ast.Node, error) {
 	var typeDecl struct {
 		Name *ast.Ident
 		Type json.RawMessage
@@ -490,7 +482,7 @@ func unmarshalTypeDecl(data []byte) (ast.Node, error) {
 		return nil, fmt.Errorf("error unmarshalling TypeDecl Type: %w", err)
 	}
 
-	declBase, err := unmarshalDeclBase(data)
+	declBase, err := UnmarshalDeclBase(data)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling TypeDecl DeclBase: %w", err)
 	}
@@ -504,7 +496,7 @@ func unmarshalTypeDecl(data []byte) (ast.Node, error) {
 	return result, nil
 }
 
-func unmarshalTypeDefDecl(data []byte) (ast.Node, error) {
+func UnmarshalTypeDefDecl(data []byte) (ast.Node, error) {
 	var typeDecl struct {
 		Name *ast.Ident
 		Type json.RawMessage
@@ -518,7 +510,7 @@ func unmarshalTypeDefDecl(data []byte) (ast.Node, error) {
 		return nil, fmt.Errorf("error unmarshalling TypeDefDecl Type: %w", err)
 	}
 
-	declBase, err := unmarshalDeclBase(data)
+	declBase, err := UnmarshalDeclBase(data)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling TypeDefDecl DeclBase: %w", err)
 	}
@@ -532,7 +524,7 @@ func unmarshalTypeDefDecl(data []byte) (ast.Node, error) {
 	return result, nil
 }
 
-func unmarshalEnumTypeDecl(data []byte) (ast.Node, error) {
+func UnmarshalEnumTypeDecl(data []byte) (ast.Node, error) {
 	var enumTypeDecl struct {
 		Name *ast.Ident
 		Type json.RawMessage
@@ -546,7 +538,7 @@ func unmarshalEnumTypeDecl(data []byte) (ast.Node, error) {
 		return nil, fmt.Errorf("error unmarshalling EnumTypeDecl Type: %w", err)
 	}
 
-	declBase, err := unmarshalDeclBase(data)
+	declBase, err := UnmarshalDeclBase(data)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling EnumTypeDecl DeclBase: %w", err)
 	}
@@ -560,7 +552,7 @@ func unmarshalEnumTypeDecl(data []byte) (ast.Node, error) {
 	return result, nil
 }
 
-func unmarshalDeclBase(data []byte) (ast.DeclBase, error) {
+func UnmarshalDeclBase(data []byte) (ast.DeclBase, error) {
 	var DeclBase struct {
 		Loc    *ast.Location
 		Doc    *ast.CommentGroup
@@ -568,7 +560,7 @@ func unmarshalDeclBase(data []byte) (ast.DeclBase, error) {
 	}
 
 	if err := json.Unmarshal(data, &DeclBase); err != nil {
-		return ast.DeclBase{}, fmt.Errorf("error unmarshalling FuncDecl Type: %w", err)
+		return ast.DeclBase{}, fmt.Errorf("error unmarshalling DeclBase Type: %w", err)
 	}
 
 	result := ast.DeclBase{
@@ -579,7 +571,7 @@ func unmarshalDeclBase(data []byte) (ast.DeclBase, error) {
 	if !isJSONNull(DeclBase.Parent) {
 		parent, err := UnmarshalNode(DeclBase.Parent)
 		if err != nil {
-			return ast.DeclBase{}, fmt.Errorf("error unmarshalling FuncDecl Type: %w", err)
+			return ast.DeclBase{}, fmt.Errorf("error unmarshalling parent in DeclBase Type: %w", err)
 		}
 		result.Parent = parent.(ast.Expr)
 	}
@@ -587,7 +579,7 @@ func unmarshalDeclBase(data []byte) (ast.DeclBase, error) {
 	return result, nil
 }
 
-func unmarshalFile(data []byte) (ast.Node, error) {
+func UnmarshalFile(data []byte) (ast.Node, error) {
 	var file struct {
 		Decls    []json.RawMessage `json:"decls"`
 		Includes []*ast.Include    `json:"includes,omitempty"`

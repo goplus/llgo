@@ -2,6 +2,7 @@ package unmarshal_test
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
@@ -1867,5 +1868,378 @@ func TestUnmarshalFileSet(t *testing.T) {
 
 	if string(resultJSON) != string(expectedJSON) {
 		t.Errorf("JSON mismatch.\nExpected: %s\nGot: %s", string(expectedJSON), string(resultJSON))
+	}
+}
+
+func TestUnmarshalErrors(t *testing.T) {
+	testCases := []struct {
+		name        string
+		fn          func([]byte) (ast.Node, error)
+		input       string
+		expectedErr string
+	}{
+		// UnmarshalNode errors
+		{
+			name:        "UnmarshalNode - Invalid JSON",
+			fn:          unmarshal.UnmarshalNode,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling node type",
+		},
+		{
+			name:        "UnmarshalNode - Unknown type",
+			fn:          unmarshal.UnmarshalNode,
+			input:       `{"_Type": "UnknownType"}`,
+			expectedErr: "unknown node type: UnknownType",
+		},
+
+		// unmarshalToken errors
+		{
+			name:        "unmarshalToken - Invalid JSON",
+			fn:          unmarshal.UnmarshalToken,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling Token",
+		},
+
+		// unmarshalMacro errors
+		{
+			name:        "unmarshalMacro - Invalid JSON",
+			fn:          unmarshal.UnmarshalMacro,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling Macro",
+		},
+
+		// unmarshalInclude errors
+		{
+			name:        "unmarshalInclude - Invalid JSON",
+			fn:          unmarshal.UnmarshalInclude,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling Include",
+		},
+
+		// unmarshalBasicLit errors
+		{
+			name:        "unmarshalBasicLit - Invalid JSON",
+			fn:          unmarshal.UnmarshalBasicLit,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling BasicLit",
+		},
+
+		// unmarshalBuiltinType errors
+		{
+			name:        "unmarshalBuiltinType - Invalid JSON",
+			fn:          unmarshal.UnmarshalBuiltinType,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling BuiltinType",
+		},
+
+		// unmarshalIdent errors
+		{
+			name:        "unmarshalIdent - Invalid JSON",
+			fn:          unmarshal.UnmarshalIdent,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling Ident",
+		},
+
+		// unmarshalVariadic errors
+		{
+			name:        "unmarshalVariadic - Invalid JSON",
+			fn:          unmarshal.UnmarshalVariadic,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling Variadic",
+		},
+
+		// unmarshalXType errors
+		{
+			name:        "unmarshalXType - Invalid JSON",
+			fn:          unmarshal.UnmarshalPointerType,
+			input:       `{"invalid": "json"`,
+			expectedErr: "unmarshalling XType",
+		},
+		{
+			name:        "unmarshalXType - Invalid X field",
+			fn:          unmarshal.UnmarshalPointerType,
+			input:       `{"X": {"_Type": "InvalidType"}}`,
+			expectedErr: "unmarshalling field X",
+		},
+
+		// unmarshalArrayType errors
+		{
+			name:        "unmarshalArrayType - Invalid JSON",
+			fn:          unmarshal.UnmarshalArrayType,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling ArrayType",
+		},
+		{
+			name:        "unmarshalArrayType - Invalid Elt",
+			fn:          unmarshal.UnmarshalArrayType,
+			input:       `{"Elt": {"_Type": "InvalidType"}, "Len": null}`,
+			expectedErr: "error unmarshalling array Elt",
+		},
+		{
+			name:        "unmarshalArrayType - Invalid Len",
+			fn:          unmarshal.UnmarshalArrayType,
+			input:       `{"Elt": {"_Type": "BuiltinType", "Kind": 1}, "Len": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling array Len",
+		},
+
+		// unmarshalField errors
+		{
+			name:        "unmarshalField - Invalid JSON",
+			fn:          unmarshal.UnmarshalField,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling Field",
+		},
+		{
+			name:        "unmarshalField - Invalid Type",
+			fn:          unmarshal.UnmarshalField,
+			input:       `{"Type": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling field Type",
+		},
+
+		// unmarshalFieldList errors
+		{
+			name:        "unmarshalFieldList - Invalid JSON",
+			fn:          unmarshal.UnmarshalFieldList,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling FieldList",
+		},
+		{
+			name:        "unmarshalFieldList - Invalid field",
+			fn:          unmarshal.UnmarshalFieldList,
+			input:       `{"List": [{"_Type": "InvalidType"}]}`,
+			expectedErr: "error unmarshalling field in FieldList",
+		},
+		{
+			name:        "unmarshalTagExpr - Invalid JSON",
+			fn:          unmarshal.UnmarshalTagExpr,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling TagExpr",
+		},
+		{
+			name:        "unmarshalTagExpr - Invalid Name",
+			fn:          unmarshal.UnmarshalTagExpr,
+			input:       `{"Name": {"_Type": "InvalidType"}, "Tag": 0}`,
+			expectedErr: "error unmarshalling TagExpr Name",
+		},
+
+		// unmarshalScopingExpr errors
+		{
+			name:        "unmarshalScopingExpr - Invalid JSON",
+			fn:          unmarshal.UnmarshalScopingExpr,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling ScopingExpr",
+		},
+		{
+			name:        "unmarshalScopingExpr - Invalid Parent",
+			fn:          unmarshal.UnmarshalScopingExpr,
+			input:       `{"Parent": {"_Type": "InvalidType"}, "X": {"_Type": "Ident", "Name": "test"}}`,
+			expectedErr: "unknown node type: InvalidType",
+		},
+		{
+			name:        "unmarshalScopingExpr - Invalid X",
+			fn:          unmarshal.UnmarshalScopingExpr,
+			input:       `{"Parent": {"_Type": "Ident", "Name": "test"}, "X": {"_Type": "InvalidType"}}`,
+			expectedErr: "unknown node type: InvalidType",
+		},
+
+		// unmarshalEnumItem errors
+		{
+			name:        "unmarshalEnumItem - Invalid JSON",
+			fn:          unmarshal.UnmarshalEnumItem,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling EnumItem",
+		},
+		{
+			name:        "unmarshalEnumItem - Invalid Value",
+			fn:          unmarshal.UnmarshalEnumItem,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Value": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling EnumItem Value",
+		},
+
+		// unmarshalEnumType errors
+		{
+			name:        "unmarshalEnumType - Invalid JSON",
+			fn:          unmarshal.UnmarshalEnumType,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling EnumType",
+		},
+		{
+			name:        "unmarshalEnumType - Invalid Item",
+			fn:          unmarshal.UnmarshalEnumType,
+			input:       `{"Items": [{"_Type": "InvalidType"}]}`,
+			expectedErr: "error unmarshalling EnumType Item",
+		},
+
+		// unmarshalRecordType errors
+		{
+			name:        "unmarshalRecordType - Invalid JSON",
+			fn:          unmarshal.UnmarshalRecordType,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling RecordType",
+		},
+		{
+			name:        "unmarshalRecordType - Invalid Fields",
+			fn:          unmarshal.UnmarshalRecordType,
+			input:       `{"Tag": 0, "Fields": {"_Type": "InvalidType"}, "Methods": []}`,
+			expectedErr: "error unmarshalling Fields in RecordType",
+		},
+		{
+			name:        "unmarshalRecordType - Invalid Method",
+			fn:          unmarshal.UnmarshalRecordType,
+			input:       `{"Tag": 0, "Fields": {"_Type": "FieldList", "List": []}, "Methods": [{"_Type": "InvalidType"}]}`,
+			expectedErr: "error unmarshalling method in RecordType",
+		},
+
+		// unmarshalFuncType errors
+		{
+			name:        "unmarshalFuncType - Invalid JSON",
+			fn:          unmarshal.UnmarshalFuncType,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling FuncType",
+		},
+		{
+			name:        "unmarshalFuncType - Invalid Params",
+			fn:          unmarshal.UnmarshalFuncType,
+			input:       `{"Params": {"_Type": "InvalidType"}, "Ret": {"_Type": "BuiltinType", "Kind": 1}}`,
+			expectedErr: "error unmarshalling Params in FuncType",
+		},
+		{
+			name:        "unmarshalFuncType - Invalid Ret",
+			fn:          unmarshal.UnmarshalFuncType,
+			input:       `{"Params": {"_Type": "FieldList", "List": []}, "Ret": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling Ret in FuncType",
+		},
+
+		// unmarshalFuncDecl errors
+		{
+			name:        "unmarshalFuncDecl - Invalid JSON",
+			fn:          unmarshal.UnmarshalFuncDecl,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling FuncDecl",
+		},
+		{
+			name:        "unmarshalFuncDecl - Invalid Type",
+			fn:          unmarshal.UnmarshalFuncDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling FuncDecl Type",
+		},
+		{
+			name:        "unmarshalFuncDecl - Invalid DeclBase",
+			fn:          unmarshal.UnmarshalFuncDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "FuncType", "Params": {"_Type": "FieldList", "List": []}, "Ret": {"_Type": "BuiltinType", "Kind": 1}}, "Loc": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling FuncDecl DeclBase: error unmarshalling parent in DeclBase Type",
+		},
+		{
+			name:        "unmarshalFuncDecl - Invalid DeclBase",
+			fn:          unmarshal.UnmarshalFuncDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"},"Loc":false, "Type": {"_Type": "FuncType", "Params": {"_Type": "FieldList", "List": []}, "Ret": {"_Type": "BuiltinType", "Kind": 1}}, "Loc": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling DeclBase Type",
+		},
+		// unmarshalTypeDecl errors
+		{
+			name:        "unmarshalTypeDecl - Invalid JSON",
+			fn:          unmarshal.UnmarshalTypeDecl,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling TypeDecl",
+		},
+		{
+			name:        "unmarshalTypeDecl - Invalid Type",
+			fn:          unmarshal.UnmarshalTypeDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling TypeDecl Type",
+		},
+		// unmarshalTypeDefDecl errors
+		{
+			name:        "unmarshalTypeDefDecl - Invalid JSON",
+			fn:          unmarshal.UnmarshalTypeDefDecl,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling TypeDefDecl",
+		},
+		{
+			name:        "unmarshalTypeDefDecl - Invalid Type",
+			fn:          unmarshal.UnmarshalTypeDefDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling TypeDefDecl Type",
+		},
+
+		// unmarshalEnumTypeDecl errors
+		{
+			name:        "unmarshalEnumTypeDecl - Invalid JSON",
+			fn:          unmarshal.UnmarshalEnumTypeDecl,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling EnumTypeDecl",
+		},
+		{
+			name:        "unmarshalEnumTypeDecl - Invalid Type",
+			fn:          unmarshal.UnmarshalEnumTypeDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling EnumTypeDecl Type",
+		},
+
+		// unmarshalFile errors
+		{
+			name:        "unmarshalFile - Invalid JSON",
+			fn:          unmarshal.UnmarshalFile,
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling File",
+		},
+		{
+			name:        "unmarshalFile - Invalid Decl",
+			fn:          unmarshal.UnmarshalFile,
+			input:       `{"decls": [{"_Type": "InvalidType"}], "includes": [], "macros": []}`,
+			expectedErr: "error unmarshalling Decl in File",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := tc.fn([]byte(tc.input))
+			if err == nil {
+				t.Errorf("Expected error, but got nil")
+			} else if !strings.Contains(err.Error(), tc.expectedErr) {
+				t.Errorf("Expected error containing %q, but got %q", tc.expectedErr, err.Error())
+			}
+		})
+	}
+}
+
+func TestUnmarshalFileSetErrors(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       string
+		expectedErr string
+	}{
+		{
+			name:        "Invalid JSON",
+			input:       `{"invalid": "json"`,
+			expectedErr: "error unmarshalling FilesWithPath",
+		},
+		{
+			name:        "Invalid doc",
+			input:       `[{"path": "test.cpp", "doc": {"_Type": "InvalidType"}}]`,
+			expectedErr: "error unmarshalling doc for path test.cpp",
+		},
+		{
+			name:        "Doc not *ast.File",
+			input:       `[{"path": "test.cpp", "doc": {"_Type": "Token", "Token": 1, "Lit": "test"}}]`,
+			expectedErr: "doc is not of type *ast.File for path test.cpp",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := unmarshal.UnmarshalFileSet([]byte(tc.input))
+			if tc.expectedErr == "" {
+				if err != nil {
+					t.Errorf("Expected no error, but got: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Expected error containing %q, but got nil", tc.expectedErr)
+				} else if !strings.Contains(err.Error(), tc.expectedErr) {
+					t.Errorf("Expected error containing %q, but got: %v", tc.expectedErr, err)
+				}
+			}
+		})
 	}
 }
