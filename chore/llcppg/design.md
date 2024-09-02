@@ -18,7 +18,8 @@ If `config-file` is not specified, a `llcppg.cfg` file is used in current direct
     "AnotherHeaderFile.h"
   ],
   "libs": "$(pkg-config --libs inireader)",
-  "trimPrefixes": ["Ini", "INI"]
+  "trimPrefixes": ["Ini", "INI"],
+  "cplusplus":true
 }
 ```
 
