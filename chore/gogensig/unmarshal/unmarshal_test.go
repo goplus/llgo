@@ -1089,6 +1089,16 @@ func TestUnmarshalNode(t *testing.T) {
 			},
 		},
 		{
+			name: "Include",
+			json: `{
+				"_Type":	"Include",
+				"Path":	"foo.h"
+			}`,
+			expected: &ast.Include{
+				Path: "foo.h",
+			},
+		},
+		{
 			name: "File",
 			json: `{
 					"_Type":	"File",
@@ -1253,5 +1263,609 @@ func TestUnmarshalNode(t *testing.T) {
 				t.Errorf("JSON mismatch.\nExpected: %s\nGot: %s", string(expectedJSON), string(resultJSON))
 			}
 		})
+	}
+}
+
+func TestUnmarshalFileSet(t *testing.T) {
+	files := `[
+  {
+    "path": "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+    "doc": {
+      "_Type": "File",
+      "decls": [
+        {
+          "_Type": "TypeDecl",
+          "Loc": {
+            "_Type": "Location",
+            "File": "/opt/homebrew/Cellar/inih/58/include/INIReader.h"
+          },
+          "Doc": {
+            "_Type": "CommentGroup",
+            "List": []
+          },
+          "Parent": null,
+          "Name": {
+            "_Type": "Ident",
+            "Name": "INIReader"
+          },
+          "Type": {
+            "_Type": "RecordType",
+            "Tag": 3,
+            "Fields": {
+              "_Type": "FieldList",
+              "List": [
+                {
+                  "_Type": "Field",
+                  "Type": {
+                    "_Type": "BuiltinType",
+                    "Kind": 6,
+                    "Flags": 0
+                  },
+                  "Doc": {
+                    "_Type": "CommentGroup",
+                    "List": []
+                  },
+                  "Comment": {
+                    "_Type": "CommentGroup",
+                    "List": []
+                  },
+                  "IsStatic": false,
+                  "Access": 3,
+                  "Names": [
+                    {
+                      "_Type": "Ident",
+                      "Name": "_error"
+                    }
+                  ]
+                }
+              ]
+            },
+            "Methods": [
+              {
+                "_Type": "FuncDecl",
+                "Loc": {
+                  "_Type": "Location",
+                  "File": "/opt/homebrew/Cellar/inih/58/include/INIReader.h"
+                },
+                "Doc": {
+                  "_Type": "CommentGroup",
+                  "List": []
+                },
+                "Parent": {
+                  "_Type": "Ident",
+                  "Name": "INIReader"
+                },
+                "Name": {
+                  "_Type": "Ident",
+                  "Name": "INIReader"
+                },
+                "Type": {
+                  "_Type": "FuncType",
+                  "Params": {
+                    "_Type": "FieldList",
+                    "List": [
+                      {
+                        "_Type": "Field",
+                        "Type": {
+                          "_Type": "LvalueRefType",
+                          "X": {
+                            "_Type": "BuiltinType",
+                            "Kind": 6,
+                            "Flags": 0
+                          }
+                        },
+                        "Doc": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "Comment": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "IsStatic": false,
+                        "Access": 0,
+                        "Names": [
+                          {
+                            "_Type": "Ident",
+                            "Name": "filename"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "Ret": {
+                    "_Type": "BuiltinType",
+                    "Kind": 0,
+                    "Flags": 0
+                  }
+                },
+                "IsInline": false,
+                "IsStatic": false,
+                "IsConst": false,
+                "IsExplicit": true,
+                "IsConstructor": true,
+                "IsDestructor": false,
+                "IsVirtual": false,
+                "IsOverride": false
+              },
+              {
+                "_Type": "FuncDecl",
+                "Loc": {
+                  "_Type": "Location",
+                  "File": "/opt/homebrew/Cellar/inih/58/include/INIReader.h"
+                },
+                "Doc": {
+                  "_Type": "CommentGroup",
+                  "List": []
+                },
+                "Parent": {
+                  "_Type": "Ident",
+                  "Name": "INIReader"
+                },
+                "Name": {
+                  "_Type": "Ident",
+                  "Name": "HasSection"
+                },
+                "Type": {
+                  "_Type": "FuncType",
+                  "Params": {
+                    "_Type": "FieldList",
+                    "List": [
+                      {
+                        "_Type": "Field",
+                        "Type": {
+                          "_Type": "LvalueRefType",
+                          "X": {
+                            "_Type": "BuiltinType",
+                            "Kind": 6,
+                            "Flags": 0
+                          }
+                        },
+                        "Doc": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "Comment": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "IsStatic": false,
+                        "Access": 0,
+                        "Names": [
+                          {
+                            "_Type": "Ident",
+                            "Name": "section"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "Ret": {
+                    "_Type": "BuiltinType",
+                    "Kind": 1,
+                    "Flags": 0
+                  }
+                },
+                "IsInline": false,
+                "IsStatic": false,
+                "IsConst": true,
+                "IsExplicit": false,
+                "IsConstructor": false,
+                "IsDestructor": false,
+                "IsVirtual": false,
+                "IsOverride": false
+              },
+              {
+                "_Type": "FuncDecl",
+                "Loc": {
+                  "_Type": "Location",
+                  "File": "/opt/homebrew/Cellar/inih/58/include/INIReader.h"
+                },
+                "Doc": {
+                  "_Type": "CommentGroup",
+                  "List": []
+                },
+                "Parent": {
+                  "_Type": "Ident",
+                  "Name": "INIReader"
+                },
+                "Name": {
+                  "_Type": "Ident",
+                  "Name": "HasValue"
+                },
+                "Type": {
+                  "_Type": "FuncType",
+                  "Params": {
+                    "_Type": "FieldList",
+                    "List": [
+                      {
+                        "_Type": "Field",
+                        "Type": {
+                          "_Type": "LvalueRefType",
+                          "X": {
+                            "_Type": "BuiltinType",
+                            "Kind": 6,
+                            "Flags": 0
+                          }
+                        },
+                        "Doc": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "Comment": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "IsStatic": false,
+                        "Access": 0,
+                        "Names": [
+                          {
+                            "_Type": "Ident",
+                            "Name": "section"
+                          }
+                        ]
+                      },
+                      {
+                        "_Type": "Field",
+                        "Type": {
+                          "_Type": "LvalueRefType",
+                          "X": {
+                            "_Type": "BuiltinType",
+                            "Kind": 6,
+                            "Flags": 0
+                          }
+                        },
+                        "Doc": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "Comment": {
+                          "_Type": "CommentGroup",
+                          "List": []
+                        },
+                        "IsStatic": false,
+                        "Access": 0,
+                        "Names": [
+                          {
+                            "_Type": "Ident",
+                            "Name": "name"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "Ret": {
+                    "_Type": "BuiltinType",
+                    "Kind": 1,
+                    "Flags": 0
+                  }
+                },
+                "IsInline": false,
+                "IsStatic": false,
+                "IsConst": true,
+                "IsExplicit": false,
+                "IsConstructor": false,
+                "IsDestructor": false,
+                "IsVirtual": false,
+                "IsOverride": false
+              }
+            ]
+          }
+        }
+      ],
+      "includes": [
+        {
+          "_Type": "Include",
+          "Path": "string"
+        }
+      ],
+      "macros": [
+        {
+          "_Type": "Macro",
+          "Name": "INIREADER_H",
+          "Tokens": [
+            {
+              "_Type": "Token",
+              "Token": 3,
+              "Lit": "INIREADER_H"
+            }
+          ]
+        },
+        {
+          "_Type": "Macro",
+          "Name": "INI_API",
+          "Tokens": [
+            {
+              "_Type": "Token",
+              "Token": 3,
+              "Lit": "INI_API"
+            },
+            {
+              "_Type": "Token",
+              "Token": 2,
+              "Lit": "__attribute__"
+            },
+            {
+              "_Type": "Token",
+              "Token": 1,
+              "Lit": "("
+            },
+            {
+              "_Type": "Token",
+              "Token": 1,
+              "Lit": "("
+            },
+            {
+              "_Type": "Token",
+              "Token": 3,
+              "Lit": "visibility"
+            },
+            {
+              "_Type": "Token",
+              "Token": 1,
+              "Lit": "("
+            },
+            {
+              "_Type": "Token",
+              "Token": 4,
+              "Lit": "\"default\""
+            },
+            {
+              "_Type": "Token",
+              "Token": 1,
+              "Lit": ")"
+            },
+            {
+              "_Type": "Token",
+              "Token": 1,
+              "Lit": ")"
+            },
+            {
+              "_Type": "Token",
+              "Token": 1,
+              "Lit": ")"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]`
+
+	expected := []struct {
+		Path string
+		Doc  *ast.File
+	}{
+		{
+			Path: "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+			Doc: &ast.File{
+				Decls: []ast.Decl{
+					&ast.TypeDecl{
+						DeclBase: ast.DeclBase{
+							Loc: &ast.Location{
+								File: "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+							},
+							Doc: &ast.CommentGroup{
+								List: []*ast.Comment{},
+							},
+						},
+						Name: &ast.Ident{Name: "INIReader"},
+						Type: &ast.RecordType{
+							Tag: 3,
+							Fields: &ast.FieldList{
+								List: []*ast.Field{
+									{
+										Type: &ast.BuiltinType{
+											Kind:  6,
+											Flags: 0,
+										},
+										Doc: &ast.CommentGroup{
+											List: []*ast.Comment{},
+										},
+										Comment: &ast.CommentGroup{
+											List: []*ast.Comment{},
+										},
+										IsStatic: false,
+										Access:   3,
+										Names: []*ast.Ident{
+											{Name: "_error"},
+										},
+									},
+								},
+							},
+							Methods: []*ast.FuncDecl{
+								{
+									DeclBase: ast.DeclBase{
+										Loc: &ast.Location{
+											File: "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+										},
+										Doc: &ast.CommentGroup{
+											List: []*ast.Comment{},
+										},
+										Parent: &ast.Ident{Name: "INIReader"},
+									},
+									Name: &ast.Ident{Name: "INIReader"},
+									Type: &ast.FuncType{
+										Params: &ast.FieldList{
+											List: []*ast.Field{
+												{
+													Type: &ast.LvalueRefType{
+														X: &ast.BuiltinType{
+															Kind:  6,
+															Flags: 0,
+														},
+													},
+													Doc: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Comment: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Names: []*ast.Ident{
+														{Name: "filename"},
+													},
+												},
+											},
+										},
+										Ret: &ast.BuiltinType{
+											Kind:  0,
+											Flags: 0,
+										},
+									},
+									IsExplicit:    true,
+									IsConstructor: true,
+								},
+								{
+									DeclBase: ast.DeclBase{
+										Loc: &ast.Location{
+											File: "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+										},
+										Doc: &ast.CommentGroup{
+											List: []*ast.Comment{},
+										},
+										Parent: &ast.Ident{Name: "INIReader"},
+									},
+									Name: &ast.Ident{Name: "HasSection"},
+									Type: &ast.FuncType{
+										Params: &ast.FieldList{
+											List: []*ast.Field{
+												{
+													Type: &ast.LvalueRefType{
+														X: &ast.BuiltinType{
+															Kind:  6,
+															Flags: 0,
+														},
+													},
+													Doc: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Comment: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Names: []*ast.Ident{
+														{Name: "section"},
+													},
+												},
+											},
+										},
+										Ret: &ast.BuiltinType{
+											Kind:  1,
+											Flags: 0,
+										},
+									},
+									IsConst: true,
+								},
+								{
+									DeclBase: ast.DeclBase{
+										Loc: &ast.Location{
+											File: "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+										},
+										Doc: &ast.CommentGroup{
+											List: []*ast.Comment{},
+										},
+										Parent: &ast.Ident{Name: "INIReader"},
+									},
+									Name: &ast.Ident{Name: "HasValue"},
+									Type: &ast.FuncType{
+										Params: &ast.FieldList{
+											List: []*ast.Field{
+												{
+													Type: &ast.LvalueRefType{
+														X: &ast.BuiltinType{
+															Kind:  6,
+															Flags: 0,
+														},
+													},
+													Doc: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Comment: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Names: []*ast.Ident{
+														{Name: "section"},
+													},
+												},
+												{
+													Type: &ast.LvalueRefType{
+														X: &ast.BuiltinType{
+															Kind:  6,
+															Flags: 0,
+														},
+													},
+													Doc: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Comment: &ast.CommentGroup{
+														List: []*ast.Comment{},
+													},
+													Names: []*ast.Ident{
+														{Name: "name"},
+													},
+												},
+											},
+										},
+										Ret: &ast.BuiltinType{
+											Kind:  1,
+											Flags: 0,
+										},
+									},
+									IsConst: true,
+								},
+							},
+						},
+					},
+				},
+				Includes: []*ast.Include{
+					{
+						Path: "string",
+					},
+				},
+				Macros: []*ast.Macro{
+					{
+						Name: "INIREADER_H",
+						Tokens: []*ast.Token{
+							{Token: 3, Lit: "INIREADER_H"},
+						},
+					},
+					{
+						Name: "INI_API",
+						Tokens: []*ast.Token{
+							{Token: 3, Lit: "INI_API"},
+							{Token: 2, Lit: "__attribute__"},
+							{Token: 1, Lit: "("},
+							{Token: 1, Lit: "("},
+							{Token: 3, Lit: "visibility"},
+							{Token: 1, Lit: "("},
+							{Token: 4, Lit: "\"default\""},
+							{Token: 1, Lit: ")"},
+							{Token: 1, Lit: ")"},
+							{Token: 1, Lit: ")"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	node, err := unmarshal.UnmarshalFileSet([]byte(files))
+
+	if err != nil {
+		t.Fatalf("UnmarshalNode failed: %v", err)
+	}
+
+	resultJSON, err := json.MarshalIndent(node, "", " ")
+	if err != nil {
+		t.Fatalf("Failed to marshal result to JSON: %v", err)
+	}
+
+	expectedJSON, err := json.MarshalIndent(expected, "", " ")
+
+	if err != nil {
+		t.Fatalf("Failed to marshal expected result to JSON: %v", err)
+	}
+
+	if string(resultJSON) != string(expectedJSON) {
+		t.Errorf("JSON mismatch.\nExpected: %s\nGot: %s", string(expectedJSON), string(resultJSON))
 	}
 }
