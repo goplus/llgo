@@ -554,7 +554,7 @@ func addChecked(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 func splitName(s string) (pkg string, name string) {
 	i := lastDot(s)
 	if i == -1 {
-		return s, ""
+		return "", s
 	}
 	return s[:i], s[i+1:]
 }
