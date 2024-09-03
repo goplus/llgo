@@ -128,9 +128,29 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 		methods[i] = m
 	}
 	named := types.NewNamed(t.Obj(), types.Typ[types.Int], methods)
+	if tp := t.TypeParams(); tp != nil {
+		list := make([]*types.TypeParam, tp.Len())
+		for i := 0; i < tp.Len(); i++ {
+			param := tp.At(i)
+			list[i] = types.NewTypeParam(param.Obj(), param.Constraint())
+		}
+		named.SetTypeParams(list)
+	}
 	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
 	if tund, cvt := p.cvtType(t.Underlying()); cvt {
 		named.SetUnderlying(tund)
+		if tp := t.TypeArgs(); tp != nil {
+			targs := make([]types.Type, tp.Len())
+			for i := 0; i < tp.Len(); i++ {
+				targs[i] = tp.At(i)
+			}
+			typ, err := types.Instantiate(nil, named, targs, true)
+			if err != nil {
+				panic(fmt.Errorf("cvtNamed error: %v", err))
+			}
+			named = typ.(*types.Named)
+			p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
+		}
 		return named, true
 	}
 	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(t)
