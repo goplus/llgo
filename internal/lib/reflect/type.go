@@ -454,22 +454,19 @@ func (t *rtype) exportedMethods() []abi.Method {
 }
 
 func (t *rtype) NumMethod() int {
-	/*
-		if t.Kind() == Interface {
-			tt := (*interfaceType)(unsafe.Pointer(t))
-			return tt.NumMethod()
-		}
-		return len(t.exportedMethods())
-	*/
-	panic("todo: reflect.rtype.NumMethod")
+	if t.Kind() == Interface {
+		tt := (*interfaceType)(unsafe.Pointer(t))
+		return tt.NumMethod()
+	}
+	return len(t.exportedMethods())
 }
 
 func (t *rtype) Method(i int) (m Method) {
+	if t.Kind() == Interface {
+		tt := (*interfaceType)(unsafe.Pointer(t))
+		return tt.Method(i)
+	}
 	/*
-		if t.Kind() == Interface {
-			tt := (*interfaceType)(unsafe.Pointer(t))
-			return tt.Method(i)
-		}
 		methods := t.exportedMethods()
 		if i < 0 || i >= len(methods) {
 			panic("reflect: Method index out of range")
@@ -502,11 +499,11 @@ func (t *rtype) Method(i int) (m Method) {
 }
 
 func (t *rtype) MethodByName(name string) (m Method, ok bool) {
+	if t.Kind() == Interface {
+		tt := (*interfaceType)(unsafe.Pointer(t))
+		return tt.MethodByName(name)
+	}
 	/*
-		if t.Kind() == Interface {
-			tt := (*interfaceType)(unsafe.Pointer(t))
-			return tt.MethodByName(name)
-		}
 		ut := t.uncommon()
 		if ut == nil {
 			return Method{}, false
@@ -735,6 +732,37 @@ func (t *rtype) IsVariadic() bool {
 // and therefore point incorrectly at the next block in memory.
 func add(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(p) + x)
+}
+
+// Method returns the i'th method in the type's method set.
+func (t *interfaceType) Method(i int) (m Method) {
+	if i < 0 || i >= len(t.Methods) {
+		return
+	}
+	p := &t.Methods[i]
+	m.Name = p.Name()
+	m.PkgPath = p.PkgPath()
+	m.Type = toType(&p.Typ_.Type)
+	m.Index = i
+	return
+}
+
+// NumMethod returns the number of interface methods in the type's method set.
+func (t *interfaceType) NumMethod() int { return len(t.Methods) }
+
+// MethodByName method with the given name in the type's method set.
+func (t *interfaceType) MethodByName(name string) (m Method, ok bool) {
+	if t == nil {
+		return
+	}
+	var p *abi.Imethod
+	for i := range t.Methods {
+		p = &t.Methods[i]
+		if p.Name() == name {
+			return t.Method(i), true
+		}
+	}
+	return
 }
 
 // A StructField describes a single field in a struct.
