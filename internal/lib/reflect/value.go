@@ -26,6 +26,7 @@ import (
 
 	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/runtime"
+	"github.com/goplus/llgo/internal/runtime/goarch"
 )
 
 // Value is the reflection interface to a Go value.
@@ -119,16 +120,13 @@ func (v Value) typ() *abi.Type {
 // v.Kind() must be Pointer, Map, Chan, Func, or UnsafePointer
 // if v.Kind() == Pointer, the base type must not be not-in-heap.
 func (v Value) pointer() unsafe.Pointer {
-	/*
-		if v.typ().Size() != goarch.PtrSize || !v.typ().Pointers() {
-			panic("can't call pointer on a non-pointer Value")
-		}
-		if v.flag&flagIndir != 0 {
-			return *(*unsafe.Pointer)(v.ptr)
-		}
-		return v.ptr
-	*/
-	panic("todo: reflect.Value.pointer")
+	if v.typ().Size() != goarch.PtrSize || !v.typ().Pointers() {
+		panic("can't call pointer on a non-pointer Value")
+	}
+	if v.flag&flagIndir != 0 {
+		return *(*unsafe.Pointer)(v.ptr)
+	}
+	return v.ptr
 }
 
 // packEface converts v to the empty interface.
@@ -1015,7 +1013,6 @@ func (v Value) lenNonSlice() int {
 //
 // It's preferred to use uintptr(Value.UnsafePointer()) to get the equivalent result.
 func (v Value) Pointer() uintptr {
-	/* TODO(xsw):
 	// The compiler loses track as it converts to uintptr. Force escape.
 	escapes(v.ptr)
 
@@ -1026,9 +1023,9 @@ func (v Value) Pointer() uintptr {
 			val := *(*uintptr)(v.ptr)
 			// Since it is a not-in-heap pointer, all pointers to the heap are
 			// forbidden! See comment in Value.Elem and issue #48399.
-			if !verifyNotInHeapPtr(val) {
-				panic("reflect: reflect.Value.Pointer on an invalid notinheap pointer")
-			}
+			// if !verifyNotInHeapPtr(val) {
+			// 	panic("reflect: reflect.Value.Pointer on an invalid notinheap pointer")
+			// }
 			return val
 		}
 		fallthrough
@@ -1042,7 +1039,7 @@ func (v Value) Pointer() uintptr {
 			// created via reflect have the same underlying code pointer,
 			// so their Pointers are equal. The function used here must
 			// match the one used in makeMethodValue.
-			return methodValueCallCodePtr()
+			//			return methodValueCallCodePtr()
 		}
 		p := v.pointer()
 		// Non-nil func value points at data block.
@@ -1053,11 +1050,9 @@ func (v Value) Pointer() uintptr {
 		return uintptr(p)
 
 	case Slice:
-		return uintptr((*unsafeheader.Slice)(v.ptr).Data)
+		return uintptr((*unsafeheaderSlice)(v.ptr).Data)
 	}
 	panic(&ValueError{"reflect.Value.Pointer", v.kind()})
-	*/
-	panic("todo: reflect.Value.Pointer")
 }
 
 // Recv receives and returns a value from the channel v.
@@ -1930,3 +1925,33 @@ func verifyNotInHeapPtr(p uintptr) bool
 
 //go:linkname growslice github.com/goplus/llgo/internal/runtime.GrowSlice
 func growslice(src unsafeheaderSlice, num, etSize int) unsafeheaderSlice
+
+// Dummy annotation marking that the value x escapes,
+// for use in cases where the reflect code is so clever that
+// the compiler cannot follow.
+func escapes(x any) {
+	if dummy.b {
+		dummy.x = x
+	}
+}
+
+var dummy struct {
+	b bool
+	x any
+}
+
+// Dummy annotation marking that the content of value x
+// escapes (i.e. modeling roughly heap=*x),
+// for use in cases where the reflect code is so clever that
+// the compiler cannot follow.
+func contentEscapes(x unsafe.Pointer) {
+	if dummy.b {
+		escapes(*(*any)(x)) // the dereference may not always be safe, but never executed
+	}
+}
+
+//go:nosplit
+func noescape(p unsafe.Pointer) unsafe.Pointer {
+	x := uintptr(p)
+	return unsafe.Pointer(x ^ 0)
+}
