@@ -191,7 +191,6 @@ func (ct *Converter) UpdateLoc(cursor clang.Cursor) {
 
 	filePath := c.GoString(filename.CStr())
 	ct.curLoc = ast.Location{File: filePath}
-
 }
 
 func (ct *Converter) GetCurFile() *ast.File {
@@ -208,6 +207,21 @@ func (ct *Converter) GetCurFile() *ast.File {
 		ct.Files[ct.curLoc.File] = file
 	}
 	return file
+}
+
+func (ct *Converter) AddTypeDecl(cursor clang.Cursor, decl ast.Decl) {
+	usr := cursor.USR()
+	usrStr := c.GoString(usr.CStr())
+	ct.typeDecls[usrStr] = decl
+	usr.Dispose()
+}
+
+func (ct *Converter) GetTypeDecl(cursor clang.Cursor) (ast.Decl, bool) {
+	usr := cursor.USR()
+	usrStr := c.GoString(usr.CStr())
+	decl, ok := ct.typeDecls[usrStr]
+	usr.Dispose()
+	return decl, ok
 }
 
 func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
@@ -370,11 +384,33 @@ func (ct *Converter) ProcessFunctionType(t clang.Type) *ast.FuncType {
 func (ct *Converter) ProcessTypeDefDecl(cursor clang.Cursor) *ast.TypedefDecl {
 	name := cursor.String()
 	defer name.Dispose()
-	return &ast.TypedefDecl{
+
+	var typ ast.Expr
+	underlyingTyp := cursor.TypedefDeclUnderlyingType()
+	if underlyingTyp.Kind != clang.TypeElaborated {
+		typ = ct.ProcessType(underlyingTyp)
+	} else {
+		typ = ct.ProcessElaboratedType(underlyingTyp)
+		referTypeCursor := underlyingTyp.TypeDeclaration()
+		if _, ok := typ.(*ast.TagExpr); ok && isCursorChildOf(referTypeCursor, cursor) {
+			// Handle unexpected named structures generated from anonymous RecordTypes in Typedefs
+			// In this case, libclang incorrectly reports an anonymous struct as a named struct
+			// The reference style is TagRefer, for example: struct MyStruct
+			sourceCode := ct.GetTokens(referTypeCursor)
+			if sourceCode[0].Token == token.KEYWORD && (sourceCode[1].Token == token.PUNCT && sourceCode[1].Lit == "{") {
+				println("todo:unexpected named decl in typedef anonymous decl")
+			}
+		}
+	}
+
+	decl := &ast.TypedefDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
-		Type:     ct.ProcessType(cursor.TypedefDeclUnderlyingType()),
+		Type:     typ,
 	}
+
+	ct.AddTypeDecl(cursor, decl)
+	return decl
 }
 
 // converts functions, methods, constructors, destructors (including out-of-class decl) to ast.FuncDecl nodes.
@@ -475,11 +511,13 @@ func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
 	name := cursor.String()
 	defer name.Dispose()
 
-	return &ast.EnumTypeDecl{
+	decl := &ast.EnumTypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
 		Type:     ct.ProcessEnumType(cursor),
 	}
+	ct.AddTypeDecl(cursor, decl)
+	return decl
 }
 
 // current only collect macro which defined in file
@@ -487,26 +525,9 @@ func (ct *Converter) ProcessMacro(cursor clang.Cursor) *ast.Macro {
 	name := cursor.String()
 	defer name.Dispose()
 
-	ran := cursor.Extent()
-	var numTokens c.Uint
-	var tokens *clang.Token
-	ct.unit.Tokenize(ran, &tokens, &numTokens)
-	defer ct.unit.DisposeTokens(tokens, numTokens)
-
-	tokensSlice := unsafe.Slice(tokens, int(numTokens))
-
 	macro := &ast.Macro{
 		Name:   c.GoString(name.CStr()),
-		Tokens: make([]*ast.Token, 0),
-	}
-
-	for _, tok := range tokensSlice {
-		tokStr := ct.unit.Token(tok)
-		macro.Tokens = append(macro.Tokens, &ast.Token{
-			Token: toToken(tok),
-			Lit:   c.GoString(tokStr.CStr()),
-		})
-		tokStr.Dispose()
+		Tokens: ct.GetTokens(cursor),
 	}
 	return macro
 }
@@ -617,7 +638,6 @@ func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 
 func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor) *ast.TypeDecl {
 	anony := cursor.IsAnonymousRecordDecl()
-
 	var name *ast.Ident
 	if anony == 0 {
 		cursorName := cursor.String()
@@ -625,11 +645,14 @@ func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor) *ast.TypeDecl {
 		name = &ast.Ident{Name: c.GoString(cursorName.CStr())}
 	}
 
-	return &ast.TypeDecl{
+	decl := &ast.TypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     name,
 		Type:     ct.ProcessRecordType(cursor),
 	}
+	ct.AddTypeDecl(cursor, decl)
+
+	return decl
 }
 
 func (ct *Converter) ProcessStructDecl(cursor clang.Cursor) *ast.TypeDecl {
@@ -643,14 +666,16 @@ func (ct *Converter) ProcessUnionDecl(cursor clang.Cursor) *ast.TypeDecl {
 func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 	// Pushing class scope before processing its type and popping after
 	base := ct.CreateDeclBase(cursor)
-
 	typ := ct.ProcessRecordType(cursor)
 
-	return &ast.TypeDecl{
+	decl := &ast.TypeDecl{
 		DeclBase: base,
 		Name:     &ast.Ident{Name: c.GoString(cursor.String().CStr())},
 		Type:     typ,
 	}
+	ct.AddTypeDecl(cursor, decl)
+
+	return decl
 }
 
 func (ct *Converter) ProcessRecordType(cursor clang.Cursor) *ast.RecordType {
@@ -775,4 +800,23 @@ func buildScopingFromParts(parts []string) ast.Expr {
 		}
 	}
 	return expr
+}
+
+// isCursorChildOf checks if the child cursor is contained within the parent cursor.
+// This function is necessary because libclang doesn't correctly report the lexical
+// or semantic parent for anonymous structs inside typedefs. By comparing source ranges,
+// we can determine if one cursor is nested inside another.
+func isCursorChildOf(child, parent clang.Cursor) bool {
+	return isRangeChildOf(child.Extent(), parent.Extent())
+}
+
+func isRangeChildOf(childRange, parentRange clang.SourceRange) bool {
+	return getOffset(childRange.RangeStart()) >= getOffset(parentRange.RangeStart()) &&
+		getOffset(childRange.RangeEnd()) <= getOffset(parentRange.RangeEnd())
+}
+
+func getOffset(location clang.SourceLocation) c.Uint {
+	var offset c.Uint
+	location.SpellingLocation(nil, nil, nil, &offset)
+	return offset
 }
