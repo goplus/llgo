@@ -2167,6 +2167,24 @@ func (c Cursor) StorageClass() (ret StorageClass) {
 }
 
 /**
+ * Retrieve a Unified Symbol Resolution (USR) for the entity referenced
+ * by the given cursor.
+ *
+ * A Unified Symbol Resolution (USR) is a string that identifies a particular
+ * entity (function, class, variable, etc.) within a program. USRs can be
+ * compared across translation units to determine, e.g., when references in
+ * one translation refer to an entity defined in another translation unit.
+ */
+// llgo:link (*Cursor).wrapUSR C.wrap_clang_getCursorUSR
+func (*Cursor) wrapUSR() (ret String) {
+	return
+}
+
+func (c Cursor) USR() (ret String) {
+	return c.wrapUSR()
+}
+
+/**
  * Retrieve a name for the entity referenced by this cursor.
  */
 // llgo:link (*Cursor).wrapString C.wrap_clang_getCursorSpelling
@@ -2635,6 +2653,30 @@ func (l *SourceLocation) wrapSpellingLocation(file *File, line, column, offset *
 
 func (l SourceLocation) SpellingLocation(file *File, line, column, offset *c.Uint) {
 	l.wrapSpellingLocation(file, line, column, offset)
+}
+
+/**
+ * Retrieve a source location representing the first character within a
+ * source range.
+ */
+// llgo:link (*SourceRange).wrapRangeStart C.wrap_clang_getRangeStart
+func (r *SourceRange) wrapRangeStart(loc *SourceLocation) { return }
+
+func (r SourceRange) RangeStart() (loc SourceLocation) {
+	r.wrapRangeStart(&loc)
+	return
+}
+
+/**
+ * Retrieve a source location representing the last character within a
+ * source range.
+ */
+// llgo:link (*SourceRange).wrapRangeEnd C.wrap_clang_getRangeEnd
+func (r *SourceRange) wrapRangeEnd(loc *SourceLocation) { return }
+
+func (r SourceRange) RangeEnd() (loc SourceLocation) {
+	r.wrapRangeEnd(&loc)
+	return
 }
 
 //llgo:link File.FileName C.clang_getFileName
