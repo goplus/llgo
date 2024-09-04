@@ -9,5 +9,9 @@ type AstPrint struct {
 }
 
 func (cvt *AstPrint) VisitFuncDecl(funcDecl *ast.FuncDecl) {
-	c.Printf(c.Str("visit func name: %s\n"), c.AllocaCStr(funcDecl.Name.Name))
+	isStatic := 0
+	if funcDecl.IsStatic {
+		isStatic = 1
+	}
+	c.Printf(c.Str("visit func name: %s, is static %d\n"), c.AllocaCStr(funcDecl.Name.Name), isStatic)
 }

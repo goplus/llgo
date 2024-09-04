@@ -57,22 +57,30 @@ func (o *CJSON) IsEqualType(typeValue _TypeV) bool {
 	return o.IsEqualValue(string(_Type), string(typeValue))
 }
 
+func (o *CJSON) IsFalse() bool {
+	return o.Obj.IsFalse() != cjson.JSON_bool(0)
+}
+
+func (o *CJSON) IsTrue() bool {
+	return o.Obj.IsTrue() != cjson.JSON_bool(0)
+}
+
+func (o *CJSON) IsBool() bool {
+	return o.Obj.IsBool() != cjson.JSON_bool(0)
+}
+
 func (o *CJSON) GetBool() bool {
-	if o != nil {
-		boolStr := c.GoString(o.Obj.CStr())
-		if boolStr == "false" {
-			return false
-		} else if boolStr == "true" {
+	if o.IsBool() {
+		if o.IsTrue() {
 			return true
 		}
-		return false
 	}
 	return false
 }
 
 func (o *CJSON) GetNumber() int {
 	if o != nil {
-		c.Printf(c.Str("GetNumber %s\n"), o.Obj.CStr())
+		return int(o.Obj.GetNumberValue())
 	}
 	return 0
 }

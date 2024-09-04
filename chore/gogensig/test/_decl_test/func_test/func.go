@@ -8,7 +8,7 @@ func main() {
 
 func TestFuncDecl() {
 	testCases := []string{
-		`void foo();void foo(int a, int b);`,
+		`static void foo();void bar(int a, int b);`,
 		`void foo(int a);`,
 	}
 	test.RunTest("TestFuncDecl", testCases)
