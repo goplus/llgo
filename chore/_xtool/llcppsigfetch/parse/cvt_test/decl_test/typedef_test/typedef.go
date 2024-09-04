@@ -24,6 +24,30 @@ func TestTypeDefDecl() {
 		 	int x; 
 		 } MyClass,*MyClassPtr,MyClassArray[];
 		 }`,
+
+		`typedef struct {
+			int x;
+		} MyStruct`,
+		`typedef union {
+			int x;
+		} MyUnion`,
+		`typedef enum {
+			RED,
+			GREEN,
+			BLUE
+		} MyEnum`,
+
+		`typedef struct {
+			int x;
+		} MyStruct,MyStruct2,*StructPtr, StructArr[];`,
+
+		`namespace A{
+			namespace B{
+				typedef struct {
+					int x;
+				} MyStruct,MyStruct2,*StructPtr, StructArr[];
+			}
+		}`,
 	}
 	test.RunTest("TestTypeDefDecl", testCases)
 }
