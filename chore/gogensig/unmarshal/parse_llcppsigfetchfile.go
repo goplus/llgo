@@ -9,18 +9,19 @@ import (
 )
 
 type LLCppSigfetchFile struct {
-	File    string
-	Root    *CJSON
-	AstFile *ast.File
+	File        string
+	Root        *CJSON
+	AstFile     *ast.File
+	VisitorList []ast.AstVisitor
 }
 
-func NewLLCppSigfetchFile(jsonStr string, file string) (*LLCppSigfetchFile, error) {
+func NewLLCppSigfetchFile(jsonStr string, file string, visitorList []ast.AstVisitor) (*LLCppSigfetchFile, error) {
 	obj := NewCJSON(cjson.ParseString(jsonStr))
 	if obj == nil {
 		return nil, errors.New("failed to parse json string")
 	}
 	fileObj := obj.GetObjectItemCaseSensitive(file)
-	sigfetchFile := &LLCppSigfetchFile{File: file, Root: obj}
+	sigfetchFile := &LLCppSigfetchFile{File: file, Root: obj, VisitorList: visitorList}
 	astFile, err := sigfetchFile.parseAstFile(fileObj)
 	if err != nil {
 		return nil, err
@@ -40,15 +41,15 @@ func (f *LLCppSigfetchFile) parseAstFile(fileObj *CJSON) (*ast.File, error) {
 	}
 	declsObj := fileObj.GetObjectItemCaseSensitive("decls")
 	var file = new(ast.File)
-	file.Decls, _ = parseDecls(declsObj)
+	file.Decls, _ = f.parseDecls(declsObj)
 	includesObj := fileObj.GetObjectItemCaseSensitive("includes")
-	file.Includes, _ = parseIncludes(includesObj)
+	file.Includes, _ = f.parseIncludes(includesObj)
 	macrosObj := fileObj.GetObjectItemCaseSensitive("macros")
-	file.Macros, _ = parseMacros(macrosObj)
+	file.Macros, _ = f.parseMacros(macrosObj)
 	return file, nil
 }
 
-func parseDecls(declsObj *CJSON) ([]ast.Decl, error) {
+func (f *LLCppSigfetchFile) parseDecls(declsObj *CJSON) ([]ast.Decl, error) {
 	if declsObj == nil {
 		return nil, errors.New("invalid arg for parseDecls")
 	}
@@ -57,7 +58,7 @@ func parseDecls(declsObj *CJSON) ([]ast.Decl, error) {
 	var i c.Int
 	for i = 0; i < arrSize; i++ {
 		declObj := declsObj.GetArrayItem(i)
-		decl, err := parseDecl(declObj)
+		decl, err := f.parseDecl(declObj)
 		if err != nil {
 			panic(err)
 		}
@@ -66,28 +67,28 @@ func parseDecls(declsObj *CJSON) ([]ast.Decl, error) {
 	return decls, nil
 }
 
-func parseDecl(declObj *CJSON) (ast.Decl, error) {
+func (f *LLCppSigfetchFile) parseDecl(declObj *CJSON) (ast.Decl, error) {
 	if declObj == nil {
 		return nil, errors.New("invalid arg for parseDecl")
 	}
 	if declObj.IsEqualType(FuncDecl) {
-		return parseFuncDecl(declObj)
+		return f.parseFuncDecl(declObj)
 	}
 	return nil, nil
 }
 
-func parseFuncDecl(declObj *CJSON) (ast.Decl, error) {
+func (f *LLCppSigfetchFile) parseFuncDecl(declObj *CJSON) (ast.Decl, error) {
 	var funcDecl ast.FuncDecl
 	docObj := declObj.GetObjectItemCaseSensitive("Doc")
-	funcDecl.Doc, _ = parseCommentGroup(docObj)
+	funcDecl.Doc, _ = f.parseCommentGroup(docObj)
 	locObj := declObj.GetObjectItemCaseSensitive("Loc")
-	funcDecl.Loc, _ = parseLoc(locObj)
+	funcDecl.Loc, _ = f.parseLoc(locObj)
 	parentObj := declObj.GetObjectItemCaseSensitive("Parent")
-	funcDecl.Parent, _ = parseParent(parentObj)
+	funcDecl.Parent, _ = f.parseParent(parentObj)
 	nameObj := declObj.GetObjectItemCaseSensitive("Name")
-	funcDecl.Name, _ = parseFuncName(nameObj)
+	funcDecl.Name, _ = f.parseFuncName(nameObj)
 	typeObj := declObj.GetObjectItemCaseSensitive("Type")
-	funcDecl.Type, _ = parseFuncType(typeObj)
+	funcDecl.Type, _ = f.parseFuncType(typeObj)
 	isInlineObj := declObj.GetObjectItemCaseSensitive("IsInline")
 	funcDecl.IsInline = isInlineObj.GetBool()
 	isStaticObj := declObj.GetObjectItemCaseSensitive("IsStatic")
@@ -104,23 +105,25 @@ func parseFuncDecl(declObj *CJSON) (ast.Decl, error) {
 	funcDecl.IsVirtual = isVirtualObj.GetBool()
 	isOverrideObj := declObj.GetObjectItemCaseSensitive("IsOverride")
 	funcDecl.IsOverride = isOverrideObj.GetBool()
-	c.Printf(c.Str("func name:%s\n"), c.AllocaCStr(funcDecl.Name.Name))
+	for _, visit := range f.VisitorList {
+		visit.VisitFuncDecl(&funcDecl)
+	}
 	return &funcDecl, nil
 }
 
-func parseCommentGroup(docObj *CJSON) (*ast.CommentGroup, error) {
+func (f *LLCppSigfetchFile) parseCommentGroup(docObj *CJSON) (*ast.CommentGroup, error) {
 	return nil, nil
 }
 
-func parseLoc(locObj *CJSON) (*ast.Location, error) {
+func (f *LLCppSigfetchFile) parseLoc(locObj *CJSON) (*ast.Location, error) {
 	return nil, nil
 }
 
-func parseParent(parentObj *CJSON) (*ast.ParenExpr, error) {
+func (f *LLCppSigfetchFile) parseParent(parentObj *CJSON) (*ast.ParenExpr, error) {
 	return nil, nil
 }
 
-func parseFuncName(nameObj *CJSON) (*ast.Ident, error) {
+func (f *LLCppSigfetchFile) parseFuncName(nameObj *CJSON) (*ast.Ident, error) {
 	if nameObj == nil {
 		return nil, errors.New("invalid arg for parseName")
 	}
@@ -132,18 +135,18 @@ func parseFuncName(nameObj *CJSON) (*ast.Ident, error) {
 	return &ident, nil
 }
 
-func parseFuncType(typeObj *CJSON) (*ast.FuncType, error) {
+func (f *LLCppSigfetchFile) parseFuncType(typeObj *CJSON) (*ast.FuncType, error) {
 	return nil, nil
 }
 
-func parseIncludes(includesObj *CJSON) ([]*ast.Include, error) {
+func (f *LLCppSigfetchFile) parseIncludes(includesObj *CJSON) ([]*ast.Include, error) {
 	if includesObj == nil {
 		return nil, errors.New("invalid arg for parseIncludes")
 	}
 	return nil, nil
 }
 
-func parseMacros(macrosObj *CJSON) ([]*ast.Macro, error) {
+func (f *LLCppSigfetchFile) parseMacros(macrosObj *CJSON) ([]*ast.Macro, error) {
 	if macrosObj == nil {
 		return nil, errors.New("invalid arg for parseMacros")
 	}
