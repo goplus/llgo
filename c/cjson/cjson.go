@@ -134,7 +134,7 @@ func (o *JSON) PrintBuffered(prebuffer c.Int, fmt JSON_bool) *c.Char { return ni
 //
 // Render a cJSON entity to text using a buffer already allocated in memory with given
 // length. Returns 1 on success and 0 on failure.
-// NOTE: cJSON is not always 100% accurate in estimating how much memory it will use,
+// note that cJSON is not always 100% accurate in estimating how much memory it will use,
 // so to be safe allocate 5 bytes more than you actually need
 //
 // llgo:link (*JSON).PrintPreallocated C.cJSON_PrintPreallocated
@@ -482,7 +482,7 @@ func (o *JSON) AddItemToObject(key *c.Char, item *JSON) JSON_bool { return JSON_
 //
 // Use this when string is definitely const (i.e. a literal, or as good as),
 // and will definitely survive the cJSON object.
-// WARNING: When this function was used, make sure to always check that
+// warning that When this function was used, make sure to always check that
 // (item->type & cJSON_StringIsConst) is zero before writing to `item->string`
 //
 // llgo:link (*JSON).AddItemToObjectCS C.cJSON_AddItemToObjectCS
