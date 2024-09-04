@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/x/async"
 	"github.com/goplus/llgo/x/async/timeout"
 	"github.com/goplus/llgo/x/tuple"
@@ -31,10 +30,9 @@ func WriteFile(fileName string, content []byte) async.IO[error] {
 
 func sleep(i int, d time.Duration) async.IO[int] {
 	return async.Async(func(resolve func(int)) {
-		go func() {
-			c.Usleep(c.Uint(d.Microseconds()))
+		async.BindIO(timeout.Timeout(d), func(async.Void) {
 			resolve(i)
-		}()
+		})
 	})
 }
 
@@ -46,6 +44,8 @@ func main() {
 }
 
 func RunIO() {
+	println("RunIO with Await")
+
 	async.Run(func() {
 		content, err := async.Await(ReadFile("1.txt")).Get()
 		if err != nil {
@@ -62,6 +62,7 @@ func RunIO() {
 	})
 
 	// Translated to in Go+:
+	println("RunIO with BindIO")
 
 	async.Run(func() {
 		async.BindIO(ReadFile("1.txt"), func(v tuple.Tuple2[[]byte, error]) {
@@ -84,30 +85,42 @@ func RunIO() {
 }
 
 func RunAllAndRace() {
+	ms100 := 100 * time.Millisecond
+	ms200 := 200 * time.Millisecond
+	ms300 := 300 * time.Millisecond
+
+	println("Run All with Await")
+
 	async.Run(func() {
-		all := async.All(sleep(1, time.Second), sleep(2, time.Second*2), sleep(3, time.Second*3))
+		all := async.All(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))
 		async.BindIO(all, func(v []int) {
 			fmt.Printf("All: %v\n", v)
 		})
 	})
 
+	println("Run Race with Await")
+
 	async.Run(func() {
-		first := async.Race(sleep(1, time.Second), sleep(2, time.Second*2), sleep(3, time.Second*3))
+		first := async.Race(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))
 		v := async.Await(first)
 		fmt.Printf("Race: %v\n", v)
 	})
 
 	// Translated to in Go+:
 
+	println("Run All with BindIO")
+
 	async.Run(func() {
-		all := async.All(sleep(1, time.Second), sleep(2, time.Second*2), sleep(3, time.Second*3))
+		all := async.All(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))
 		async.BindIO(all, func(v []int) {
 			fmt.Printf("All: %v\n", v)
 		})
 	})
 
+	println("Run Race with BindIO")
+
 	async.Run(func() {
-		first := async.Race(sleep(1, time.Second), sleep(2, time.Second*2), sleep(3, time.Second*3))
+		first := async.Race(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))
 		async.BindIO(first, func(v int) {
 			fmt.Printf("Race: %v\n", v)
 		})
@@ -115,17 +128,21 @@ func RunAllAndRace() {
 }
 
 func RunTimeout() {
+	println("Run Timeout with Await")
+
 	async.Run(func() {
-		fmt.Printf("Start 1 second timeout\n")
-		async.Await(timeout.Timeout(1 * time.Second))
+		fmt.Printf("Start 100 ms timeout\n")
+		async.Await(timeout.Timeout(100 * time.Millisecond))
 		fmt.Printf("timeout\n")
 	})
 
 	// Translated to in Go+:
 
+	println("Run Timeout with BindIO")
+
 	async.Run(func() {
-		fmt.Printf("Start 1 second timeout\n")
-		async.BindIO(timeout.Timeout(1*time.Second), func(async.Void) {
+		fmt.Printf("Start 100 ms timeout\n")
+		async.BindIO(timeout.Timeout(100*time.Millisecond), func(async.Void) {
 			fmt.Printf("timeout\n")
 		})
 	})

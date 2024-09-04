@@ -16,7 +16,21 @@
 
 package cbind
 
-import "unsafe"
+import (
+	"unsafe"
+)
+
+// llgo:type C
+type Cb[T any] func(*T)
+
+// llgo:type C
+type Cb1[T any, A any] func(*T, A)
+
+// llgo:type C
+type Cb2[T any, A any, B any] func(*T, A, B)
+
+// llgo:type C
+type Cb3[T any, A any, B any, C any] func(*T, A, B, C)
 
 type bind[Base any] struct {
 	b  Base
@@ -38,50 +52,75 @@ type bind3[Base any, A any, B any, C any] struct {
 	fn func(A, B, C)
 }
 
-func callback[Base any](b *Base) {
+func Callback[Base any](b *Base) {
 	bind := (*bind[Base])(unsafe.Pointer(b))
 	bind.fn()
 }
 
-func callback1[Base any, A any](b *Base, a A) {
+func Callback1[Base any, A any](b *Base, a A) {
 	bind := (*bind1[Base, A])(unsafe.Pointer(b))
 	bind.fn(a)
 }
 
-func callback2[Base any, A any, B any](b *Base, a A, c B) {
+func Callback2[Base any, A any, B any](b *Base, a A, c B) {
 	bind := (*bind2[Base, A, B])(unsafe.Pointer(b))
 	bind.fn(a, c)
 }
 
-func callback3[Base any, A any, B any, C any](b *Base, a A, c B, d C) {
+func Callback3[Base any, A any, B any, C any](b *Base, a A, c B, d C) {
 	bind := (*bind3[Base, A, B, C])(unsafe.Pointer(b))
 	bind.fn(a, c, d)
 }
 
-func Bind[T any](call func()) (p *T, fn func(*T)) {
+/**
+ * Bind[N] binds a Go function to a C callback function.
+ *
+ * Example:
+ *
+ * timer, cb := cbind.Bind[libuv.Timer](func() {
+ * 	 println("hello")
+ * })
+ * libuv.InitTimer(async.Exec().L, timer)
+ * timer.Start(cb, 1000, 0)
+ *
+ * TODO(lijie): fn isn't a C func-ptr, it's closure, should fix the LLGo compiler.
+ * See: https://github.com/goplus/llgo/issues/766
+ *
+ * Workaround:
+ *
+ * timer, _ := cbind.Bind[libuv.Timer](func() {
+ * 	 println("hello")
+ * })
+ * libuv.InitTimer(async.Exec().L, timer)
+ * timer.Start(cbind.Callback[libuv.Timer], 1000, 0)
+ *
+ * @param call The Go function to bind.
+ * @return The data pointer and the C callback function.
+ */
+func Bind[T any](call func()) (p *T, fn Cb[T]) {
 	bb := &bind[T]{fn: func() { call() }}
 	p = (*T)(unsafe.Pointer(bb))
-	fn = callback[T]
+	fn = Callback[T]
 	return
 }
 
-func Bind1[T any, A any](call func(A)) (p *T, fn func(*T, A)) {
+func Bind1[T any, A any](call func(A)) (p *T, fn Cb1[T, A]) {
 	bb := &bind1[T, A]{fn: func(a A) { call(a) }}
 	p = (*T)(unsafe.Pointer(bb))
-	fn = callback1[T, A]
+	fn = Callback1[T, A]
 	return
 }
 
-func Bind2[T any, A any, B any](call func(A, B)) (p *T, fn func(*T, A, B)) {
+func Bind2[T any, A any, B any](call func(A, B)) (p *T, fn Cb2[T, A, B]) {
 	bb := &bind2[T, A, B]{fn: func(a A, b B) { call(a, b) }}
 	p = (*T)(unsafe.Pointer(bb))
-	fn = callback2[T, A, B]
+	fn = Callback2[T, A, B]
 	return
 }
 
-func Bind3[T any, A any, B any, C any](call func(A, B, C), a A, b B, c C) (p *T, fn func(*T, A, B, C)) {
+func Bind3[T any, A any, B any, C any](call func(A, B, C), a A, b B, c C) (p *T, fn Cb3[T, A, B, C]) {
 	bb := &bind3[T, A, B, C]{fn: func(a A, b B, c C) { call(a, b, c) }}
 	p = (*T)(unsafe.Pointer(bb))
-	fn = callback3[T, A, B, C]
+	fn = Callback3[T, A, B, C]
 	return
 }

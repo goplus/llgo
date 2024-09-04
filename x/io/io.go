@@ -1,3 +1,6 @@
+//go:build llgo
+// +build llgo
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -29,7 +32,7 @@ import (
 )
 
 type Tcp struct {
-	tcp *libuv.Tcp
+	tcp libuv.Tcp
 }
 
 type libuvError libuv.Errno
@@ -40,8 +43,8 @@ func (e libuvError) Error() string {
 }
 
 func NewTcp() *Tcp {
-	t := &Tcp{&libuv.Tcp{}}
-	libuv.InitTcp(async.Exec().L, t.tcp)
+	t := &Tcp{}
+	libuv.InitTcp(async.Exec().L, &t.tcp)
 	return t
 }
 
@@ -52,41 +55,40 @@ func (t *Tcp) Bind(addr *net.SockAddr, flags uint) error {
 	return nil
 }
 
-func (t *Tcp) Listen(backlog int, cb libuv.ConnectionCb) error {
-	if res := (*libuv.Stream)(t.tcp).Listen(c.Int(backlog), cb); res != 0 {
+func (t *Tcp) Listen(backlog int, cb func(server *libuv.Stream, status c.Int)) error {
+	if res := (*libuv.Stream)(&t.tcp).Listen(c.Int(backlog), cb); res != 0 {
 		return libuvError(res)
 	}
 	return nil
 }
 
 func (t *Tcp) Accept() (client *Tcp, err error) {
-	tcp := &libuv.Tcp{}
-	if res := libuv.InitTcp(async.Exec().L, tcp); res != 0 {
+	tcp := &Tcp{}
+	if res := libuv.InitTcp(async.Exec().L, &tcp.tcp); res != 0 {
 		return nil, libuvError(res)
 	}
-	if res := (*libuv.Stream)(t.tcp).Accept((*libuv.Stream)(client.tcp)); res != 0 {
+	if res := (*libuv.Stream)(&t.tcp).Accept((*libuv.Stream)(&tcp.tcp)); res != 0 {
 		return nil, libuvError(res)
 	}
-	return &Tcp{tcp}, nil
+	return tcp, nil
 }
 
 func Connect(addr *net.SockAddr) async.IO[tuple.Tuple2[*Tcp, error]] {
 	return async.Async(func(resolve func(tuple.Tuple2[*Tcp, error])) {
-		tcp := &libuv.Tcp{}
-		if res := libuv.InitTcp(async.Exec().L, tcp); res != 0 {
+		tcp := &Tcp{}
+		if res := libuv.InitTcp(async.Exec().L, &tcp.tcp); res != 0 {
 			resolve(tuple.T2[*Tcp, error]((*Tcp)(nil), libuvError(res)))
 			return
 		}
-		req, cb := cbind.Bind1[libuv.Connect](func(status c.Int) {
+		req, _ := cbind.Bind1[libuv.Connect](func(status c.Int) {
 			if status != 0 {
 				resolve(tuple.T2[*Tcp, error]((*Tcp)(nil), libuvError(libuv.Errno(status))))
-			} else {
-				resolve(tuple.T2[*Tcp, error](&Tcp{tcp}, nil))
 			}
 		})
-		if res := libuv.TcpConnect(req, tcp, addr, cb); res != 0 {
+		if res := libuv.TcpConnect(req, &tcp.tcp, addr, cbind.Callback1[libuv.Connect, c.Int]); res != 0 {
 			resolve(tuple.T2[*Tcp, error]((*Tcp)(nil), libuvError(res)))
 		}
+		resolve(tuple.T2[*Tcp, error](tcp, nil))
 	})
 }
 
@@ -95,23 +97,14 @@ func allocBuffer(handle *libuv.Handle, suggestedSize uintptr, buf *libuv.Buf) {
 	buf.Len = suggestedSize
 }
 
-type slice struct {
-	data unsafe.Pointer
-	len  int
-}
-
-func goBytes(buf *int8, n int) []byte {
-	return *(*[]byte)(unsafe.Pointer(&slice{unsafe.Pointer(buf), n}))
-}
-
 func (t *Tcp) Read() async.IO[tuple.Tuple2[[]byte, error]] {
 	return func(ctx *async.AsyncContext) async.Future[tuple.Tuple2[[]byte, error]] {
 		var result tuple.Tuple2[[]byte, error]
 		var done bool
-		tcp := (*libuv.Stream)(t.tcp)
-		libuv.ReadStart(tcp, allocBuffer, func(client *libuv.Stream, nread c.Long, buf *libuv.Buf) {
+		tcp := (*libuv.Stream)(&t.tcp)
+		tcp.StartRead(allocBuffer, func(client *libuv.Stream, nread c.Long, buf *libuv.Buf) {
 			if nread > 0 {
-				result = tuple.T2[[]byte, error](goBytes(buf.Base, int(nread)), nil)
+				result = tuple.T2[[]byte, error](cbind.GoBytes(buf.Base, int(nread)), nil)
 			} else if nread < 0 {
 				result = tuple.T2[[]byte, error](nil, libuvError(libuv.Errno(nread)))
 			} else {
@@ -129,6 +122,6 @@ func (t *Tcp) Read() async.IO[tuple.Tuple2[[]byte, error]] {
 	}
 }
 
-func (t *Tcp) Close(cb libuv.CloseCb) {
-	(*libuv.Handle)(unsafe.Pointer(t.tcp)).Close(cb)
+func (t *Tcp) Close() {
+	(*libuv.Handle)(unsafe.Pointer(&t.tcp)).Close(nil)
 }

@@ -1,3 +1,6 @@
+//go:build !llgo
+// +build !llgo
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -16,39 +19,15 @@
 
 package async
 
-import (
-	_ "unsafe"
-)
+var exec = &Executor{}
 
-type Void = [0]byte
-
-type Future[T any] func() T
-
-type IO[T any] func(e *AsyncContext) Future[T]
-
-type AsyncContext struct {
-	*Executor
-	complete func()
+type Executor struct {
 }
 
-func (ctx *AsyncContext) Complete() {
-	ctx.complete()
+func Exec() *Executor {
+	return exec
 }
 
-func Async[T any](fn func(resolve func(T))) IO[T] {
-	return func(ctx *AsyncContext) Future[T] {
-		var result T
-		var done bool
-		fn(func(t T) {
-			result = t
-			done = true
-			ctx.Complete()
-		})
-		return func() T {
-			if !done {
-				panic("async.Async: Future accessed before completion")
-			}
-			return result
-		}
-	}
+func Run(fn func()) {
+	fn()
 }

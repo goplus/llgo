@@ -1,3 +1,6 @@
+//go:build !llgo
+// +build !llgo
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -14,41 +17,19 @@
  * limitations under the License.
  */
 
-package async
+package timeout
 
 import (
-	_ "unsafe"
+	"time"
+
+	"github.com/goplus/llgo/x/async"
 )
 
-type Void = [0]byte
-
-type Future[T any] func() T
-
-type IO[T any] func(e *AsyncContext) Future[T]
-
-type AsyncContext struct {
-	*Executor
-	complete func()
-}
-
-func (ctx *AsyncContext) Complete() {
-	ctx.complete()
-}
-
-func Async[T any](fn func(resolve func(T))) IO[T] {
-	return func(ctx *AsyncContext) Future[T] {
-		var result T
-		var done bool
-		fn(func(t T) {
-			result = t
-			done = true
-			ctx.Complete()
-		})
-		return func() T {
-			if !done {
-				panic("async.Async: Future accessed before completion")
-			}
-			return result
-		}
-	}
+func Timeout(d time.Duration) async.IO[async.Void] {
+	return async.Async(func(resolve func(async.Void)) {
+		go func() {
+			time.Sleep(d)
+			resolve(async.Void{})
+		}()
+	})
 }

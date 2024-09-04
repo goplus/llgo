@@ -1,3 +1,6 @@
+//go:build llgo
+// +build llgo
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -56,4 +59,5 @@ func Run(fn func()) {
 	fn()
 	exec.Run()
 	loop.Close()
+	setExec(nil)
 }
