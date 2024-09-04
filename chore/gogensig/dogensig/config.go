@@ -1,4 +1,4 @@
-package gensig
+package dogensig
 
 import "github.com/goplus/gogen"
 

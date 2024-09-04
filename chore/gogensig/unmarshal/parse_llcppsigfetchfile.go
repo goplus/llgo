@@ -70,7 +70,7 @@ func parseDecl(declObj *CJSON) (ast.Decl, error) {
 	if declObj == nil {
 		return nil, errors.New("invalid arg for parseDecl")
 	}
-	if IsEqualString(declObj, _Type, FuncDecl) {
+	if declObj.IsEqualType(FuncDecl) {
 		return parseFuncDecl(declObj)
 	}
 	return nil, nil
@@ -124,7 +124,7 @@ func parseFuncName(nameObj *CJSON) (*ast.Ident, error) {
 	if nameObj == nil {
 		return nil, errors.New("invalid arg for parseName")
 	}
-	if !IsEqualString(nameObj, _Type, Ident) {
+	if !nameObj.IsEqualType(Ident) {
 		return nil, errors.New("invalid type for parseFuncName")
 	}
 	var ident ast.Ident

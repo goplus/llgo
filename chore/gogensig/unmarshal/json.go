@@ -43,14 +43,18 @@ func (o *CJSON) GetStringValue(key string) string {
 	return c.GoString(o.Obj.GetObjectItemCaseSensitive(k).GetStringValue())
 }
 
-func (o *CJSON) Delete() {
-	o.Obj.Delete()
+func (o *CJSON) IsEqualValue(key string, value string) bool {
+	k := c.AllocaCStr(key)
+	s := c.GoString(o.Obj.GetObjectItemCaseSensitive(k).GetStringValue())
+	return s == value
 }
 
-func IsEqualString(o *CJSON, key _TypeK, v _TypeV) bool {
-	k := c.AllocaCStr(string(key))
-	s := c.GoString(o.Obj.GetObjectItemCaseSensitive(k).GetStringValue())
-	return s == string(v)
+func (o *CJSON) IsEqualType(typeValue _TypeV) bool {
+	return o.IsEqualValue(string(_Type), string(typeValue))
+}
+
+func (o *CJSON) Delete() {
+	o.Obj.Delete()
 }
 
 func ParseBool(boolObj *CJSON) bool {

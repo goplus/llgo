@@ -1,6 +1,6 @@
 package main
 
-import test "github.com/goplus/llgo/chore/gogensig/gensig/gensigtest"
+import test "github.com/goplus/llgo/chore/gogensig/dogensig/test"
 
 func main() {
 	TestFuncDecl()
