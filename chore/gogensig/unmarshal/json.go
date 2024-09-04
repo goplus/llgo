@@ -53,13 +53,9 @@ func (o *CJSON) IsEqualType(typeValue _TypeV) bool {
 	return o.IsEqualValue(string(_Type), string(typeValue))
 }
 
-func (o *CJSON) Delete() {
-	o.Obj.Delete()
-}
-
-func ParseBool(boolObj *CJSON) bool {
-	if boolObj != nil {
-		boolStr := c.GoString(boolObj.Obj.CStr())
+func (o *CJSON) GetBool() bool {
+	if o != nil {
+		boolStr := c.GoString(o.Obj.CStr())
 		if boolStr == "false" {
 			return false
 		} else if boolStr == "true" {
@@ -68,4 +64,8 @@ func ParseBool(boolObj *CJSON) bool {
 		return false
 	}
 	return false
+}
+
+func (o *CJSON) Delete() {
+	o.Obj.Delete()
 }
