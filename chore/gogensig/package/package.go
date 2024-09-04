@@ -1,4 +1,4 @@
-package dogensig
+package gogensig
 
 import (
 	"go/token"
@@ -8,16 +8,16 @@ import (
 )
 
 type Package struct {
-	*gogen.Package
+	pkg *gogen.Package
 }
 
 func NewPackage(pkgPath, name string, conf *Config) *Package {
 	pkg := &Package{}
-	pkg.Package = gogen.NewPackage(pkgPath, name, conf.Config)
+	pkg.pkg = gogen.NewPackage(pkgPath, name, conf.cfg)
 	return pkg
 }
 
 // NewFuncDecl creates a new function without function body (declaration only).
 func (p *Package) NewFuncDecl(pos token.Pos, name string, sig *types.Signature) (*gogen.Func, error) {
-	return p.NewFuncWith(pos, name, sig, nil)
+	return p.pkg.NewFuncWith(pos, name, sig, nil)
 }

@@ -1,6 +1,6 @@
 package main
 
-import test "github.com/goplus/llgo/chore/gogensig/dogensig/test"
+import test "github.com/goplus/llgo/chore/gogensig/test"
 
 func main() {
 	TestFuncDecl()
@@ -8,7 +8,7 @@ func main() {
 
 func TestFuncDecl() {
 	testCases := []string{
-		`void foo();void foo(int a);`,
+		`void foo();void foo(int a, int b);`,
 		`void foo(int a);`,
 	}
 	test.RunTest("TestFuncDecl", testCases)

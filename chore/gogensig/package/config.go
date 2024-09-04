@@ -1,7 +1,7 @@
-package dogensig
+package gogensig
 
 import "github.com/goplus/gogen"
 
 type Config struct {
-	*gogen.Config
+	cfg *gogen.Config
 }

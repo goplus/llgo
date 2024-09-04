@@ -10,8 +10,12 @@ type _TypeV string
 type _TypeK string
 
 const (
-	FuncDecl _TypeV = "FuncDecl"
-	Ident    _TypeV = "Ident"
+	FuncDecl    _TypeV = "FuncDecl"
+	Ident       _TypeV = "Ident"
+	FuncType    _TypeV = "FuncType"
+	FieldList   _TypeV = "FieldList"
+	Field       _TypeV = "Field"
+	BuiltinType _TypeV = "BuiltinType"
 )
 
 const (
@@ -30,12 +34,12 @@ func (o *CJSON) GetObjectItemCaseSensitive(k string) *CJSON {
 	return &CJSON{o.Obj.GetObjectItemCaseSensitive(c.AllocaCStr(k))}
 }
 
-func (o *CJSON) GetArraySize() c.Int {
-	return o.Obj.GetArraySize()
+func (o *CJSON) GetArraySize() int {
+	return int(o.Obj.GetArraySize())
 }
 
-func (o *CJSON) GetArrayItem(i c.Int) *CJSON {
-	return &CJSON{Obj: o.Obj.GetArrayItem(i)}
+func (o *CJSON) GetArrayItem(i int) *CJSON {
+	return &CJSON{Obj: o.Obj.GetArrayItem(c.Int(i))}
 }
 
 func (o *CJSON) GetStringValue(key string) string {
@@ -64,6 +68,13 @@ func (o *CJSON) GetBool() bool {
 		return false
 	}
 	return false
+}
+
+func (o *CJSON) GetNumber() int {
+	if o != nil {
+		c.Printf(c.Str("GetNumber %s\n"), o.Obj.CStr())
+	}
+	return 0
 }
 
 func (o *CJSON) Delete() {
