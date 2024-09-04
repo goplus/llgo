@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/internal/lib/sync"
 	"github.com/goplus/llgo/internal/runtime"
 )
 
@@ -466,36 +467,28 @@ func (t *rtype) Method(i int) (m Method) {
 		tt := (*interfaceType)(unsafe.Pointer(t))
 		return tt.Method(i)
 	}
-	/*
-		methods := t.exportedMethods()
-		if i < 0 || i >= len(methods) {
-			panic("reflect: Method index out of range")
-		}
-		p := methods[i]
-		pname := t.nameOff(p.Name)
-		m.Name = pname.Name()
-		fl := flag(Func)
-		mtyp := t.typeOff(p.Mtyp)
-		ft := (*funcType)(unsafe.Pointer(mtyp))
-		in := make([]Type, 0, 1+ft.NumIn())
-		in = append(in, t)
-		for _, arg := range ft.InSlice() {
-			in = append(in, toRType(arg))
-		}
-		out := make([]Type, 0, ft.NumOut())
-		for _, ret := range ft.OutSlice() {
-			out = append(out, toRType(ret))
-		}
-		mt := FuncOf(in, out, ft.IsVariadic())
-		m.Type = mt
-		tfn := t.textOff(p.Tfn)
-		fn := unsafe.Pointer(&tfn)
-		m.Func = Value{&mt.(*rtype).t, fn, fl}
-
-		m.Index = i
-		return m
-	*/
-	panic("todo: reflect.rtype.Method")
+	methods := t.exportedMethods()
+	if i < 0 || i >= len(methods) {
+		panic("reflect: Method index out of range")
+	}
+	p := methods[i]
+	m.Name = p.Name()
+	fl := flag(Func)
+	ft := p.Mtyp_
+	in := make([]Type, 0, 1+len(ft.In))
+	in = append(in, t)
+	for _, arg := range ft.In {
+		in = append(in, toRType(arg))
+	}
+	out := make([]Type, 0, len(ft.Out))
+	for _, ret := range ft.Out {
+		out = append(out, toRType(ret))
+	}
+	mt := FuncOf(in, out, ft.Variadic())
+	m.Type = mt
+	m.Func = Value{&mt.(*rtype).t, p.Tfn_, fl}
+	m.Index = i
+	return m
 }
 
 func (t *rtype) MethodByName(name string) (m Method, ok bool) {
@@ -503,34 +496,31 @@ func (t *rtype) MethodByName(name string) (m Method, ok bool) {
 		tt := (*interfaceType)(unsafe.Pointer(t))
 		return tt.MethodByName(name)
 	}
-	/*
-		ut := t.uncommon()
-		if ut == nil {
-			return Method{}, false
-		}
-
-		methods := ut.ExportedMethods()
-
-		// We are looking for the first index i where the string becomes >= s.
-		// This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
-		i, j := 0, len(methods)
-		for i < j {
-			h := int(uint(i+j) >> 1) // avoid overflow when computing h
-			// i ≤ h < j
-			if !(t.nameOff(methods[h].Name).Name() >= name) {
-				i = h + 1 // preserves f(i-1) == false
-			} else {
-				j = h // preserves f(j) == true
-			}
-		}
-		// i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
-		if i < len(methods) && name == t.nameOff(methods[i].Name).Name() {
-			return t.Method(i), true
-		}
-
+	ut := t.uncommon()
+	if ut == nil {
 		return Method{}, false
-	*/
-	panic("todo: reflect.rtype.MethodByName")
+	}
+
+	methods := ut.ExportedMethods()
+
+	// We are looking for the first index i where the string becomes >= s.
+	// This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
+	i, j := 0, len(methods)
+	for i < j {
+		h := int(uint(i+j) >> 1) // avoid overflow when computing h
+		// i ≤ h < j
+		if !(methods[h].Name() >= name) {
+			i = h + 1 // preserves f(i-1) == false
+		} else {
+			j = h // preserves f(j) == true
+		}
+	}
+	// i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
+	if i < len(methods) && name == methods[i].Name() {
+		return t.Method(i), true
+	}
+
+	return Method{}, false
 }
 
 func (t *rtype) PkgPath() string {
@@ -1130,7 +1120,6 @@ func haveIdenticalType(T, V *abi.Type, cmpTags bool) bool {
 	if cmpTags {
 		return T == V
 	}
-
 	if nameFor(T) != nameFor(V) || T.Kind() != V.Kind() || pkgPathFor(T) != pkgPathFor(V) {
 		return false
 	}
@@ -1154,83 +1143,80 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 		return true
 	}
 
-	/*
-		// Composite types.
-		switch kind {
-		case Array:
-			return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+	// Composite types.
+	switch kind {
+	case Array:
+		return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
 
-		case Chan:
-			return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+	case Chan:
+		return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
 
-		case Func:
-			t := (*funcType)(unsafe.Pointer(T))
-			v := (*funcType)(unsafe.Pointer(V))
-			if t.OutCount != v.OutCount || t.InCount != v.InCount {
-				return false
-			}
-			for i := 0; i < t.NumIn(); i++ {
-				if !haveIdenticalType(t.In(i), v.In(i), cmpTags) {
-					return false
-				}
-			}
-			for i := 0; i < t.NumOut(); i++ {
-				if !haveIdenticalType(t.Out(i), v.Out(i), cmpTags) {
-					return false
-				}
-			}
-			return true
-
-		case Interface:
-			t := (*interfaceType)(unsafe.Pointer(T))
-			v := (*interfaceType)(unsafe.Pointer(V))
-			if len(t.Methods) == 0 && len(v.Methods) == 0 {
-				return true
-			}
-			// Might have the same methods but still
-			// need a run time conversion.
+	case Func:
+		t := (*funcType)(unsafe.Pointer(T))
+		v := (*funcType)(unsafe.Pointer(V))
+		if len(t.Out) != len(v.Out) || len(t.In) != len(v.In) {
 			return false
-
-		case Map:
-			return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case Pointer, Slice:
-			return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case Struct:
-			t := (*structType)(unsafe.Pointer(T))
-			v := (*structType)(unsafe.Pointer(V))
-			if len(t.Fields) != len(v.Fields) {
+		}
+		for i := 0; i < len(t.In); i++ {
+			if !haveIdenticalType(t.In[i], v.In[i], cmpTags) {
 				return false
 			}
-			if t.PkgPath.Name() != v.PkgPath.Name() {
+		}
+		for i := 0; i < len(t.Out); i++ {
+			if !haveIdenticalType(t.Out[i], v.Out[i], cmpTags) {
 				return false
 			}
-			for i := range t.Fields {
-				tf := &t.Fields[i]
-				vf := &v.Fields[i]
-				if tf.Name.Name() != vf.Name.Name() {
-					return false
-				}
-				if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
-					return false
-				}
-				if cmpTags && tf.Name.Tag() != vf.Name.Tag() {
-					return false
-				}
-				if tf.Offset != vf.Offset {
-					return false
-				}
-				if tf.Embedded() != vf.Embedded() {
-					return false
-				}
-			}
+		}
+		return true
+
+	case Interface:
+		t := (*interfaceType)(unsafe.Pointer(T))
+		v := (*interfaceType)(unsafe.Pointer(V))
+		if len(t.Methods) == 0 && len(v.Methods) == 0 {
 			return true
 		}
-
+		// Might have the same methods but still
+		// need a run time conversion.
 		return false
-	*/
-	panic("todo: reflect.haveIdenticalUnderlyingType")
+
+	case Map:
+		return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case Pointer, Slice:
+		return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case Struct:
+		t := (*structType)(unsafe.Pointer(T))
+		v := (*structType)(unsafe.Pointer(V))
+		if len(t.Fields) != len(v.Fields) {
+			return false
+		}
+		if t.PkgPath_ != v.PkgPath_ {
+			return false
+		}
+		for i := range t.Fields {
+			tf := &t.Fields[i]
+			vf := &v.Fields[i]
+			if tf.Name_ != vf.Name_ {
+				return false
+			}
+			if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
+				return false
+			}
+			if cmpTags && tf.Tag_ != vf.Tag_ {
+				return false
+			}
+			if tf.Offset != vf.Offset {
+				return false
+			}
+			if tf.Embedded() != vf.Embedded() {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
 }
 
 // SliceOf returns the slice type with element type t.
@@ -1275,4 +1261,133 @@ func toType(t *abi.Type) Type {
 		return nil
 	}
 	return toRType(t)
+}
+
+// The funcLookupCache caches FuncOf lookups.
+// FuncOf does not share the common lookupCache since cacheKey is not
+// sufficient to represent functions unambiguously.
+var funcLookupCache struct {
+	sync.Mutex // Guards stores (but not loads) on m.
+
+	// m is a map[uint32][]*rtype keyed by the hash calculated in FuncOf.
+	// Elements of m are append-only and thus safe for concurrent reading.
+	m map[uint32][]*abi.Type
+}
+
+func init() {
+	funcLookupCache.m = make(map[uint32][]*abi.Type)
+}
+
+// FuncOf returns the function type with the given argument and result types.
+// For example if k represents int and e represents string,
+// FuncOf([]Type{k}, []Type{e}, false) represents func(int) string.
+//
+// The variadic argument controls whether the function is variadic. FuncOf
+// panics if the in[len(in)-1] does not represent a slice and variadic is
+// true.
+func FuncOf(in, out []Type, variadic bool) Type {
+	if variadic && (len(in) == 0 || in[len(in)-1].Kind() != Slice) {
+		panic("reflect.FuncOf: last arg of variadic func must be slice")
+	}
+
+	// Make a func type.
+	var ifunc any = (func())(nil)
+	prototype := *(**funcType)(unsafe.Pointer(&ifunc))
+	ft := &funcType{}
+	*ft = *prototype
+	ft.In = make([]*abi.Type, len(in))
+	ft.Out = make([]*abi.Type, len(out))
+
+	// Build a hash and minimally populate ft.
+	var hash uint32
+	for i, in := range in {
+		t := in.(*rtype)
+		ft.In[i] = &t.t
+		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+	}
+	if variadic {
+		hash = fnv1(hash, 'v')
+	}
+	hash = fnv1(hash, '.')
+	for i, out := range out {
+		t := out.(*rtype)
+		ft.Out[i] = &t.t
+		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+	}
+
+	ft.TFlag = 0
+	ft.Hash = hash
+	ft.Kind_ = uint8(abi.Func)
+	if variadic {
+		ft.TFlag |= abi.TFlagVariadic
+	}
+
+	funcLookupCache.Lock()
+	defer funcLookupCache.Unlock()
+
+	// Look in cache.
+	if ts, ok := funcLookupCache.m[hash]; ok {
+		for _, t := range ts {
+			if haveIdenticalUnderlyingType(&ft.Type, t, true) {
+				return toRType(t)
+			}
+		}
+	}
+
+	addToCache := func(tt *abi.Type) Type {
+		rts := funcLookupCache.m[hash]
+		funcLookupCache.m[hash] = append(rts, tt)
+		return toType(tt)
+	}
+	str := funcStr(ft)
+
+	//TODO typesByString
+	// for _, tt := range typesByString(str) {
+	// 	if haveIdenticalUnderlyingType(&ft.Type, tt, true) {
+	// 		return addToCache(tt)
+	// 	}
+	// }
+
+	// Populate the remaining fields of ft and store in cache.
+	ft.Str_ = str
+	ft.PtrToThis_ = nil
+	return addToCache(&ft.Type)
+}
+
+func stringFor(t *abi.Type) string {
+	return toRType(t).String()
+}
+
+// funcStr builds a string representation of a funcType.
+func funcStr(ft *funcType) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "func("...)
+	for i, t := range ft.In {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		if ft.Variadic() && i == len(ft.In)-1 {
+			repr = append(repr, "..."...)
+			repr = append(repr, stringFor((*sliceType)(unsafe.Pointer(t)).Elem)...)
+		} else {
+			repr = append(repr, stringFor(t)...)
+		}
+	}
+	repr = append(repr, ')')
+	out := ft.Out
+	if len(out) == 1 {
+		repr = append(repr, ' ')
+	} else if len(out) > 1 {
+		repr = append(repr, " ("...)
+	}
+	for i, t := range out {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		repr = append(repr, stringFor(t)...)
+	}
+	if len(out) > 1 {
+		repr = append(repr, ')')
+	}
+	return string(repr)
 }

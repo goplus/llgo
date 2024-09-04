@@ -226,6 +226,13 @@ func (mt *MapType) HashMightPanic() bool { // true if hash function might panic
 	return mt.Flags&16 != 0
 }
 
+func (t *Type) Key() *Type {
+	if t.Kind() == Map {
+		return (*MapType)(unsafe.Pointer(t)).Key
+	}
+	return nil
+}
+
 type PtrType struct {
 	Type
 	Elem *Type // pointer element (pointed at) type
@@ -406,6 +413,15 @@ func (t *Type) Common() *Type {
 type structTypeUncommon struct {
 	StructType
 	u UncommonType
+}
+
+// ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir (0).
+func (t *Type) ChanDir() ChanDir {
+	if t.Kind() == Chan {
+		ch := (*ChanType)(unsafe.Pointer(t))
+		return ch.Dir
+	}
+	return InvalidDir
 }
 
 // Uncommon returns a pointer to T's "uncommon" data if there is any, otherwise nil
