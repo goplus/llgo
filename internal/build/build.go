@@ -259,6 +259,9 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		}
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
+	if len(errPkgs) > 0 {
+		os.Exit(1)
+	}
 	built := ctx.built
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
