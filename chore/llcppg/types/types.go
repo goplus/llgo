@@ -23,6 +23,7 @@ type Config struct {
 	Libs         string   `json:"libs"`
 	Include      []string `json:"include"`
 	TrimPrefixes []string `json:"trimPrefixes"`
+	Cplusplus    bool     `json:"cplusplus"`
 }
 
 type SymbolInfo struct {
