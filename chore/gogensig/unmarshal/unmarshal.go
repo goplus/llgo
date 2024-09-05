@@ -45,22 +45,13 @@ func init() {
 	}
 }
 
-func UnmarshalFileSet(data []byte) ([]struct {
-	Path string
-	Doc  *ast.File
-}, error) {
-	var filesWrapper []struct {
-		Path string          `json:"path"`
-		Doc  json.RawMessage `json:"doc"`
-	}
+func UnmarshalFileSet(data []byte) ([]DocFile, error) {
+	var filesWrapper []RawDocFile
 	if err := json.Unmarshal(data, &filesWrapper); err != nil {
 		return nil, fmt.Errorf("error unmarshalling FilesWithPath: %w", err)
 	}
 
-	result := make([]struct {
-		Path string
-		Doc  *ast.File
-	}, 0, len(filesWrapper))
+	result := make([]DocFile, 0, len(filesWrapper))
 
 	for _, fileData := range filesWrapper {
 		docNode, err := UnmarshalNode(fileData.Doc)
@@ -73,15 +64,11 @@ func UnmarshalFileSet(data []byte) ([]struct {
 			return nil, fmt.Errorf("doc is not of type *ast.File for path %s", fileData.Path)
 		}
 
-		result = append(result, struct {
-			Path string
-			Doc  *ast.File
-		}{
+		result = append(result, DocFile{
 			Path: fileData.Path,
 			Doc:  file,
 		})
 	}
-
 	return result, nil
 }
 

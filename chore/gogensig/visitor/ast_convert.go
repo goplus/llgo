@@ -7,6 +7,6 @@ import (
 type AstConvert struct {
 }
 
-func (cvt *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
+func (*AstConvert) Visit(_Type string, node ast.Node) {
 	//todo
 }
