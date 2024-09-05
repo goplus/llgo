@@ -61,7 +61,9 @@ func printType(t clang.Type, data *Data) {
 	case clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray, clang.TypeConstantArray:
 		printType(t.ArrayElementType(), data)
 	case clang.TypeTypedef:
-		printType(t.CanonicalType(), data)
+		printType(t.TypeDeclaration().TypedefDeclUnderlyingType(), data)
+	case clang.TypeElaborated:
+		printType(t.NamedType(), data)
 	case clang.TypeFunctionProto:
 		printType(t.ResultType(), data)
 		for i := 0; i < int(t.NumArgTypes()); i++ {
