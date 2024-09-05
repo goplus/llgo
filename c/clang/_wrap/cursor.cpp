@@ -109,6 +109,8 @@ enum CX_StorageClass wrap_clang_Cursor_getStorageClass(CXCursor *cursor) {
     return clang_Cursor_getStorageClass(*cursor);
 }
 
+CXString wrap_clang_getCursorUSR(CXCursor *cur) { return clang_getCursorUSR(*cur); }
+
 CXString wrap_clang_getCursorSpelling(CXCursor *cur) { return clang_getCursorSpelling(*cur); }
 
 unsigned wrap_clang_Cursor_isVariadic(CXCursor *cur) { return clang_Cursor_isVariadic(*cur); }
@@ -180,5 +182,9 @@ void wrap_clang_getSpellingLocation(CXSourceLocation *loc, CXFile *file, unsigne
                                     unsigned *offset) {
     clang_getSpellingLocation(*loc, file, line, column, offset);
 }
+
+void wrap_clang_getRangeStart(CXSourceRange *range, CXSourceLocation *loc) { *loc = clang_getRangeStart(*range); }
+
+void wrap_clang_getRangeEnd(CXSourceRange *range, CXSourceLocation *loc) { *loc = clang_getRangeEnd(*range); }
 
 } // extern "C"
