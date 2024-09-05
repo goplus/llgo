@@ -441,7 +441,7 @@ var file string = `{
 			}`
 
 func TestUnmarshalFiles(t *testing.T) {
-	docVisitors := []visitor.DocVisitor{&visitor.AstConvert{}, &visitor.AstPrint{}}
+	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert(), visitor.NewAstPrint()}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	p.Unmarshal([]byte(files))
 }
