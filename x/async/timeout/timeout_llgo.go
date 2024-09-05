@@ -29,7 +29,7 @@ import (
 
 func Timeout(d time.Duration) async.IO[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
-		t, _ := cbind.Bind[libuv.Timer](func() {
+		t, _ := cbind.BindF[libuv.Timer, libuv.TimerCb](func() {
 			resolve(async.Void{})
 		})
 		r := libuv.InitTimer(async.Exec().L, t)
