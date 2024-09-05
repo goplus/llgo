@@ -20,7 +20,7 @@ func NewBaseDocVisitor(Visitor DocVisitor) *BaseDocVisitor {
 	return &BaseDocVisitor{DocVisitor: Visitor}
 }
 
-func (p *BaseDocVisitor) visitDecl(decl ast.Decl) {
+func (p *BaseDocVisitor) visitNode(decl ast.Node) {
 	switch v := decl.(type) {
 	case *ast.FuncDecl:
 		p.visitFuncDecl(v)
@@ -35,12 +35,10 @@ func (p *BaseDocVisitor) Visit(_Type string, node ast.Node) {
 	switch v := node.(type) {
 	case *ast.File:
 		for _, decl := range v.Decls {
-			p.visitDecl(decl)
+			p.visitNode(decl)
 		}
-	case *ast.FuncDecl:
-		p.visitFuncDecl(v)
 	default:
-		panic(fmt.Errorf("todo visit %s", v))
+		p.visitNode(v)
 	}
 }
 
