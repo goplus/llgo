@@ -72,7 +72,7 @@ func NewConverter(config *Config) (*Converter, error) {
 }
 
 func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
-	if config.Args == nil {
+	if config.Args == nil || len(config.Args) == 0 {
 		config.Args = []string{"-x", "c++", "-std=c++11"}
 	}
 
