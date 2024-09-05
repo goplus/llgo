@@ -1,6 +1,3 @@
-//go:build llgo
-// +build llgo
-
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -21,92 +18,39 @@ package async
 
 import (
 	"sync/atomic"
-	"unsafe"
-
-	"github.com/goplus/llgo/c/libuv"
 )
 
-type bindAsync struct {
-	libuv.Async
-	cb func()
-}
-
-func BindIO[T any](call IO[T], callback func(T)) {
-	loop := Exec().L
-	a := &bindAsync{}
-	loop.Async(&a.Async, func(p *libuv.Async) {
-		(*bindAsync)(unsafe.Pointer(p)).cb()
-	})
-	done := atomic.Bool{}
-	ctx := &AsyncContext{
-		Executor: Exec(),
-		complete: func() {
-			done.Store(true)
-			a.Async.Send()
-		},
-	}
-	f := call(ctx)
-	called := false
-	a.cb = func() {
-		if called {
-			return
-		}
-		a.Async.Close(nil)
-		result := f()
-		callback(result)
-	}
-	// don't delay the callback if the future is already done
-	if done.Load() {
-		called = true
-		a.cb()
-	}
-}
-
-func Await[T1 any](call IO[T1]) (ret T1) {
-	BindIO(call, func(v T1) {
-		ret = v
-	})
-	return
+func Await[T1 any](call Future[T1]) (ret T1) {
+	return Run(call)
 }
 
 // -----------------------------------------------------------------------------
 
-func Race[T1 any](calls ...IO[T1]) IO[T1] {
+func Race[T1 any](futures ...Future[T1]) Future[T1] {
 	return Async(func(resolve func(T1)) {
-		done := false
-		for _, call := range calls {
-			var f Future[T1]
-			f = call(&AsyncContext{
-				Executor: Exec(),
-				complete: func() {
-					if done {
-						return
-					}
-					done = true
-					resolve(f())
-				},
+		done := atomic.Bool{}
+		for _, future := range futures {
+			future(func(v T1) {
+				if !done.Swap(true) {
+					resolve(v)
+				}
 			})
 		}
 	})
 }
 
-func All[T1 any](calls ...IO[T1]) IO[[]T1] {
+func All[T1 any](futures ...Future[T1]) Future[[]T1] {
 	return Async(func(resolve func([]T1)) {
-		n := len(calls)
+		n := len(futures)
 		results := make([]T1, n)
-		done := 0
-		for i, call := range calls {
+		var done uint32
+		for i, future := range futures {
 			i := i
-			var f Future[T1]
-			f = call(&AsyncContext{
-				Executor: Exec(),
-				complete: func() {
-					results[i] = f()
-					done++
-					if done == n {
-						resolve(results)
-					}
-				},
+			future(func(v T1) {
+				results[i] = v
+				if atomic.AddUint32(&done, 1) == uint32(n) {
+					resolve(results)
+				}
 			})
 		}
 	})

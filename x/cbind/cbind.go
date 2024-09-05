@@ -52,24 +52,24 @@ type bind3[Base any, A any, B any, C any] struct {
 	fn func(A, B, C)
 }
 
-func Callback[Base any](b *Base) {
-	bind := (*bind[Base])(unsafe.Pointer(b))
+func Callback[Base any](base *Base) {
+	bind := (*bind[Base])(unsafe.Pointer(base))
 	bind.fn()
 }
 
-func Callback1[Base any, A any](b *Base, a A) {
-	bind := (*bind1[Base, A])(unsafe.Pointer(b))
+func Callback1[Base any, A any](base *Base, a A) {
+	bind := (*bind1[Base, A])(unsafe.Pointer(base))
 	bind.fn(a)
 }
 
-func Callback2[Base any, A any, B any](b *Base, a A, c B) {
-	bind := (*bind2[Base, A, B])(unsafe.Pointer(b))
-	bind.fn(a, c)
+func Callback2[Base any, A any, B any](base *Base, a A, b B) {
+	bind := (*bind2[Base, A, B])(unsafe.Pointer(base))
+	bind.fn(a, b)
 }
 
-func Callback3[Base any, A any, B any, C any](b *Base, a A, c B, d C) {
-	bind := (*bind3[Base, A, B, C])(unsafe.Pointer(b))
-	bind.fn(a, c, d)
+func Callback3[Base any, A any, B any, C any](base *Base, a A, b B, c C) {
+	bind := (*bind3[Base, A, B, C])(unsafe.Pointer(base))
+	bind.fn(a, b, c)
 }
 
 /**
@@ -107,8 +107,8 @@ func Bind[T any](call func()) (p *T, cb Cb[T]) {
 func BindF[T any, F ~func(*T)](call func()) (*T, F) {
 	bb := &bind[T]{fn: call}
 	p := (*T)(unsafe.Pointer(bb))
-	fn := Callback[T]
-	return p, *(*F)(unsafe.Pointer(&fn))
+	var fn F = Callback[T]
+	return p, fn
 }
 
 func Bind1[T any, A any](call func(A)) (p *T, cb Cb1[T, A]) {
@@ -118,11 +118,11 @@ func Bind1[T any, A any](call func(A)) (p *T, cb Cb1[T, A]) {
 	return
 }
 
-func Bind1F[T any, A any, F ~func(A)](call func(A)) (*T, F) {
+func Bind1F[T any, F ~func(*T, A), A any](call func(A)) (*T, F) {
 	bb := &bind1[T, A]{fn: call}
 	p := (*T)(unsafe.Pointer(bb))
-	fn := Callback1[T, A]
-	return p, *(*F)(unsafe.Pointer(&fn))
+	var fn F = Callback1[T, A]
+	return p, fn
 }
 
 func Bind2[T any, A any, B any](call func(A, B)) (p *T, cb Cb2[T, A, B]) {
@@ -132,11 +132,11 @@ func Bind2[T any, A any, B any](call func(A, B)) (p *T, cb Cb2[T, A, B]) {
 	return
 }
 
-func Bind2F[T any, A any, B any, F ~func(A, B)](call func(A, B)) (*T, F) {
+func Bind2F[T any, F ~func(*T, A, B), A any, B any](call func(A, B)) (*T, F) {
 	bb := &bind2[T, A, B]{fn: call}
 	p := (*T)(unsafe.Pointer(bb))
-	fn := Callback2[T, A, B]
-	return p, *(*F)(unsafe.Pointer(&fn))
+	var fn F = Callback2[T, A, B]
+	return p, fn
 }
 
 func Bind3[T any, A any, B any, C any](call func(A, B, C), a A, b B, c C) (p *T, cb Cb3[T, A, B, C]) {
@@ -146,9 +146,9 @@ func Bind3[T any, A any, B any, C any](call func(A, B, C), a A, b B, c C) (p *T,
 	return
 }
 
-func Bind3F[T any, A any, B any, C any, F ~func(A, B, C)](call func(A, B, C), a A, b B, c C) (*T, F) {
+func Bind3F[T any, F ~func(*T, A, B, C), A any, B any, C any](call func(A, B, C), a A, b B, c C) (*T, F) {
 	bb := &bind3[T, A, B, C]{fn: call}
 	p := (*T)(unsafe.Pointer(bb))
-	fn := Callback3[T, A, B, C]
-	return p, *(*F)(unsafe.Pointer(&fn))
+	var fn F = Callback3[T, A, B, C]
+	return p, fn
 }

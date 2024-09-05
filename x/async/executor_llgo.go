@@ -1,6 +1,3 @@
-//go:build llgo
-// +build llgo
-
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -22,9 +19,13 @@ package async
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/libuv"
 	"github.com/goplus/llgo/c/pthread"
 )
+
+//go:linkname Gettid C.pthread_self
+func Gettid() c.Pointer
 
 var execKey pthread.Key
 
@@ -44,20 +45,25 @@ func Exec() *Executor {
 	return (*Executor)(v)
 }
 
-func setExec(e *Executor) {
+func setExec(e *Executor) (old *Executor) {
+	old = (*Executor)(execKey.Get())
 	execKey.Set(unsafe.Pointer(e))
+	return
 }
 
 func (e *Executor) Run() {
 	e.L.Run(libuv.RUN_DEFAULT)
 }
 
-func Run(fn func()) {
+func Run[T any](future Future[T]) (ret T) {
 	loop := libuv.LoopNew()
 	exec := &Executor{loop}
-	setExec(exec)
-	fn()
+	oldExec := setExec(exec)
+	future(func(v T) {
+		ret = v
+	})
 	exec.Run()
 	loop.Close()
-	setExec(nil)
+	setExec(oldExec)
+	return
 }

@@ -1,5 +1,5 @@
-//go:build !llgo
-// +build !llgo
+//go:build llgo11
+// +build llgo11
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.

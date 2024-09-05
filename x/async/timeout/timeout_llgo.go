@@ -1,6 +1,3 @@
-//go:build llgo
-// +build llgo
-
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -27,16 +24,16 @@ import (
 	"github.com/goplus/llgo/x/cbind"
 )
 
-func Timeout(d time.Duration) async.IO[async.Void] {
+func Timeout(d time.Duration) async.Future[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
-		t, _ := cbind.BindF[libuv.Timer, libuv.TimerCb](func() {
+		t, cb := cbind.BindF[libuv.Timer, libuv.TimerCb](func(t *libuv.Timer) {
 			resolve(async.Void{})
 		})
 		r := libuv.InitTimer(async.Exec().L, t)
 		if r != 0 {
 			panic("InitTimer failed")
 		}
-		r = t.Start(cbind.Callback[libuv.Timer], uint64(d/time.Millisecond), 0)
+		r = t.Start(cb, uint64(d/time.Millisecond), 0)
 		if r != 0 {
 			panic("Start failed")
 		}

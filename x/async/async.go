@@ -17,38 +17,45 @@
 package async
 
 import (
+	"unsafe"
 	_ "unsafe"
+
+	"github.com/goplus/llgo/c/libuv"
 )
 
 type Void = [0]byte
 
-type Future[T any] func() T
+type Future[T any] func(func(T))
 
-type IO[T any] func(e *AsyncContext) Future[T]
-
-type AsyncContext struct {
-	*Executor
-	complete func()
+type asyncBind[T any] struct {
+	libuv.Async
+	result T
+	chain  func(T)
 }
 
-func (ctx *AsyncContext) Complete() {
-	ctx.complete()
+func asyncCb[T any](a *libuv.Async) {
+	a.Close(nil)
+	aa := (*asyncBind[T])(unsafe.Pointer(a))
+	aa.chain(aa.result)
 }
 
-func Async[T any](fn func(resolve func(T))) IO[T] {
-	return func(ctx *AsyncContext) Future[T] {
-		var result T
-		var done bool
-		fn(func(t T) {
-			result = t
-			done = true
-			ctx.Complete()
+func Async[T any](fn func(func(T))) Future[T] {
+	return func(chain func(T)) {
+		loop := Exec().L
+		// var result T
+		// var a *libuv.Async
+		// var cb libuv.AsyncCb
+		// a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func() {
+		// 	a.Close(nil)
+		// 	chain(result)
+		// })
+		// loop.Async(a, cb)
+
+		aa := &asyncBind[T]{chain: chain}
+		loop.Async(&aa.Async, asyncCb[T])
+		fn(func(v T) {
+			aa.result = v
+			aa.Send()
 		})
-		return func() T {
-			if !done {
-				panic("async.Async: Future accessed before completion")
-			}
-			return result
-		}
 	}
 }
