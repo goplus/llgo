@@ -87,7 +87,7 @@ func Parse(value *c.Char) *JSON
 //go:linkname ParseWithLength C.cJSON_ParseWithLength
 func ParseWithLength(value *c.Char, valueLength uintptr) *JSON
 
-// CJSON_PUBLIC(cJSON *) cJSON_ParseWithOpts(const char *value, const char **return_parse_end, cBool require_null_terminated);
+// CJSON_PUBLIC(cJSON *) cJSON_ParseWithOpts(const char *value, const char **return_parse_end, cJSON_Bool require_null_terminated);
 //
 // ParseWithOpts allows you to require (and check) that the JSON is null terminated,
 // and to retrieve the pointer to the final byte parsed.
@@ -98,7 +98,7 @@ func ParseWithLength(value *c.Char, valueLength uintptr) *JSON
 //go:linkname ParseWithOpts C.cJSON_ParseWithOpts
 func ParseWithOpts(value *c.Char, return_parse_end **c.Char, require_null_terminated Bool) *JSON
 
-// CJSON_PUBLIC(cJSON *) cJSON_ParseWithLengthOpts(const char *value, size_t buffer_length, const char **return_parse_end, cBool require_null_terminated);
+// CJSON_PUBLIC(cJSON *) cJSON_ParseWithLengthOpts(const char *value, size_t buffer_length, const char **return_parse_end, cJSON_Bool require_null_terminated);
 //
 // ParseWithOpts allows you to require (and check) that the JSON is null terminated,
 // and to retrieve the pointer to the final byte parsed.
@@ -121,7 +121,7 @@ func (o *JSON) Print() *c.Char { return nil }
 // llgo:link (*JSON).PrintUnformatted C.cJSON_PrintUnformatted
 func (o *JSON) PrintUnformatted() *c.Char { return nil }
 
-// CJSON_PUBLIC(char *) cJSON_PrintBuffered(const cJSON *item, int prebuffer, cBool fmt);
+// CJSON_PUBLIC(char *) cJSON_PrintBuffered(const cJSON *item, int prebuffer, cJSON_Bool fmt);
 //
 // Render a JSON entity to text using a buffered strategy.
 // prebuffer is a guess at the final size. guessing well reduces reallocation.
@@ -130,7 +130,7 @@ func (o *JSON) PrintUnformatted() *c.Char { return nil }
 // llgo:link (*JSON).PrintBuffered C.cJSON_PrintBuffered
 func (o *JSON) PrintBuffered(prebuffer c.Int, fmt Bool) *c.Char { return nil }
 
-// CJSON_PUBLIC(cBool) cJSON_PrintPreallocated(cJSON *item, char *buffer, const int length, const cBool format);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_PrintPreallocated(cJSON *item, char *buffer, const int length, const cJSON_Bool format);
 //
 // Render a cJSON entity to text using a buffer already allocated in memory with given
 // length. Returns 1 on success and 0 on failure.
@@ -176,7 +176,7 @@ func (o *JSON) GetObjectItem(s *c.Char) *JSON { return nil }
 // llgo:link (*JSON).GetObjectItemCaseSensitive C.cJSON_GetObjectItemCaseSensitive
 func (o *JSON) GetObjectItemCaseSensitive(key *c.Char) *JSON { return nil }
 
-// CJSON_PUBLIC(cBool) cJSON_HasObjectItem(const cJSON *object, const char *string);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_HasObjectItem(const cJSON *object, const char *string);
 //
 // llgo:link (*JSON).HasObjectItem C.cJSON_HasObjectItem
 func (o *JSON) HasObjectItem(s *c.Char) Bool { return Bool(0) }
@@ -204,70 +204,70 @@ func (o *JSON) GetStringValue() *c.Char { return nil }
 // llgo:link (*JSON).GetNumberValue C.cJSON_GetNumberValue
 func (o *JSON) GetNumberValue() c.Double { return 0 }
 
-// CJSON_PUBLIC(cBool) cJSON_IsInvalid(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsInvalid(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsInvalid C.cJSON_IsInvalid
 func (o *JSON) IsInvalid() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsFalse(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsFalse(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsFalse C.cJSON_IsFalse
 func (o *JSON) IsFalse() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsTrue(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsTrue(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsTrue C.cJSON_IsTrue
 func (o *JSON) IsTrue() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsBool(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsBool(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsBool C.cJSON_IsBool
 func (o *JSON) IsBool() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsNull(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsNull(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsNull C.cJSON_IsNull
 func (o *JSON) IsNull() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsNumber(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsNumber(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsNumber C.cJSON_IsNumber
 func (o *JSON) IsNumber() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsString(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsString(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsString C.cJSON_IsString
 func (o *JSON) IsString() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsArray(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsArray(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsArray C.cJSON_IsArray
 func (o *JSON) IsArray() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsObject(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsObject(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
 // llgo:link (*JSON).IsObject C.cJSON_IsObject
 func (o *JSON) IsObject() Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_IsRaw(const cJSON * const item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_IsRaw(const cJSON * const item);
 //
 //	These functions check the type of an item
 //
@@ -312,7 +312,7 @@ func False() *JSON
 //go:linkname CreateFalse C.cJSON_CreateFalse
 func CreateFalse() *JSON
 
-// CJSON_PUBLIC(cJSON *) cJSON_CreateBool(cBool boolean);
+// CJSON_PUBLIC(cJSON *) cJSON_CreateBool(cJSON_Bool boolean);
 //
 // same as Bool func
 //
@@ -445,35 +445,35 @@ func CreateDoubleArray(numbers *c.Double, count c.Int) *JSON
 //go:linkname CreateStringArray C.cJSON_CreateStringArray
 func CreateStringArray(strings *c.Char, count c.Int) *JSON
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 //
 // Append item to the specified array.
 //
 // llgo:link (*JSON).AddItem C.cJSON_AddItemToArray
 func (o *JSON) AddItem(item *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 //
 // same as AddItem func
 //
 // llgo:link (*JSON).AddItemToArray C.cJSON_AddItemToArray
 func (o *JSON) AddItemToArray(item *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
 //
 // Append item to the specified object.
 //
 // llgo:link (*JSON).SetItem C.cJSON_AddItemToObject
 func (o *JSON) SetItem(key *c.Char, item *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
 //
 // same as SetItem func
 //
 // llgo:link (*JSON).AddItemToObject C.cJSON_AddItemToObject
 func (o *JSON) AddItemToObject(key *c.Char, item *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemToObjectCS(cJSON *object, const char *string, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemToObjectCS(cJSON *object, const char *string, cJSON *item);
 //
 // Use this when string is definitely const (i.e. a literal, or as good as),
 // and will definitely survive the cJSON object.
@@ -483,7 +483,7 @@ func (o *JSON) AddItemToObject(key *c.Char, item *JSON) Bool { return Bool(0) }
 // llgo:link (*JSON).AddItemToObjectCS C.cJSON_AddItemToObjectCS
 func (o *JSON) AddItemToObjectCS(s *c.Char, item *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemReferenceToArray(cJSON *array, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemReferenceToArray(cJSON *array, cJSON *item);
 //
 // Append reference to item to the specified array/object.
 // Use this when you want to add an existing cJSON to a new cJSON,
@@ -492,7 +492,7 @@ func (o *JSON) AddItemToObjectCS(s *c.Char, item *JSON) Bool { return Bool(0) }
 // llgo:link (*JSON).AddItemReferenceToArray C.cJSON_AddItemReferenceToArray
 func (o *JSON) AddItemReferenceToArray(item *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_AddItemReferenceToObject(cJSON *object, const char *string, cJSON *item);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_AddItemReferenceToObject(cJSON *object, const char *string, cJSON *item);
 //
 // llgo:link (*JSON).AddItemReferenceToObject C.cJSON_AddItemReferenceToObject
 func (o *JSON) AddItemReferenceToObject(s *c.Char, item *JSON) Bool { return Bool(0) }
@@ -534,7 +534,7 @@ func (o *JSON) DeleteItemFromObject(s *c.Char) {}
 // llgo:link (*JSON).DeleteItemFromObjectCaseSensitive C.cJSON_DeleteItemFromObjectCaseSensitive
 func (o *JSON) DeleteItemFromObjectCaseSensitive(s *c.Char) {}
 
-// CJSON_PUBLIC(cBool) cJSON_InsertItemInArray(cJSON *array, int which, cJSON *newitem);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_InsertItemInArray(cJSON *array, int which, cJSON *newitem);
 //
 // Update array items.
 // Shifts pre-existing items to the right.
@@ -542,29 +542,29 @@ func (o *JSON) DeleteItemFromObjectCaseSensitive(s *c.Char) {}
 // llgo:link (*JSON).InsertItemInArray C.cJSON_InsertItemInArray
 func (o *JSON) InsertItemInArray(which c.Int, newitem *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_ReplaceItemViaPointer(cJSON * const parent, cJSON * const item, cJSON * replacement);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_ReplaceItemViaPointer(cJSON * const parent, cJSON * const item, cJSON * replacement);
 //
 // llgo:link (*JSON).ReplaceItemViaPointer C.cJSON_ReplaceItemViaPointer
 func (o *JSON) ReplaceItemViaPointer(item *JSON, replacement *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_ReplaceItemInArray(cJSON *array, int which, cJSON *newitem);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_ReplaceItemInArray(cJSON *array, int which, cJSON *newitem);
 //
 // llgo:link (*JSON).ReplaceItemInArray C.cJSON_ReplaceItemInArray
 func (o *JSON) ReplaceItemInArray(which c.Int, newitem *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_ReplaceItemInObject(cJSON *object,const char *string,cJSON *newitem);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_ReplaceItemInObject(cJSON *object,const char *string,cJSON *newitem);
 //
 // llgo:link (*JSON).ReplaceItemInObject C.cJSON_ReplaceItemInObject
 func (o *JSON) ReplaceItemInObject(s *c.Char, newitem *JSON) Bool { return Bool(0) }
 
-// CJSON_PUBLIC(cBool) cJSON_ReplaceItemInObjectCaseSensitive(cJSON *object,const char *string,cJSON *newitem);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_ReplaceItemInObjectCaseSensitive(cJSON *object,const char *string,cJSON *newitem);
 //
 // llgo:link (*JSON).ReplaceItemInObjectCaseSensitive C.cJSON_ReplaceItemInObjectCaseSensitive
 func (o *JSON) ReplaceItemInObjectCaseSensitive(s *c.Char, newitem *JSON) Bool {
 	return Bool(0)
 }
 
-// CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cBool recurse);
+// CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_Bool recurse);
 //
 //	Duplicate a cJSON item
 //
@@ -576,7 +576,7 @@ func (o *JSON) ReplaceItemInObjectCaseSensitive(s *c.Char, newitem *JSON) Bool {
 // llgo:link (*JSON).Duplicate C.cJSON_Duplicate
 func (o *JSON) Duplicate(recurse Bool) *JSON { return nil }
 
-// CJSON_PUBLIC(cBool) cJSON_Compare(const cJSON * const a, const cJSON * const b, const cBool case_sensitive);
+// CJSON_PUBLIC(cJSON_Bool) cJSON_Compare(const cJSON * const a, const cJSON * const b, const cJSON_Bool case_sensitive);
 //
 // Recursively compare two cJSON items for equality. If either a or b is NULL or invalid,
 // they will be considered unequal. case_sensitive determines if object keys are treated
@@ -612,7 +612,7 @@ func (o *JSON) AddTrueToObject(name *c.Char) *JSON { return nil }
 // llgo:link (*JSON).AddFalseToObject C.cJSON_AddFalseToObject
 func (o *JSON) AddFalseToObject(name *c.Char) *JSON { return nil }
 
-// CJSON_PUBLIC(cJSON*) cJSON_AddBoolToObject(cJSON * const object, const char * const name, const cBool boolean);
+// CJSON_PUBLIC(cJSON*) cJSON_AddBoolToObject(cJSON * const object, const char * const name, const cJSON_Bool boolean);
 //
 // llgo:link (*JSON).AddBoolToObject C.cJSON_AddBoolToObject
 func (o *JSON) AddBoolToObject(name *c.Char, b Bool) *JSON { return nil }
