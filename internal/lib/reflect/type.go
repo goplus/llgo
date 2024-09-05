@@ -586,47 +586,35 @@ func (t *rtype) Elem() Type {
 }
 
 func (t *rtype) Field(i int) StructField {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: Field of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.Field(i)
-	*/
-	panic("todo: reflect.rtype.Field")
+	if t.Kind() != Struct {
+		panic("reflect: Field of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.Field(i)
 }
 
 func (t *rtype) FieldByIndex(index []int) StructField {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: FieldByIndex of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.FieldByIndex(index)
-	*/
-	panic("todo: reflect.rtype.FieldByIndex")
+	if t.Kind() != Struct {
+		panic("reflect: FieldByIndex of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.FieldByIndex(index)
 }
 
 func (t *rtype) FieldByName(name string) (StructField, bool) {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: FieldByName of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.FieldByName(name)
-	*/
-	panic("todo: reflect.rtype.FieldByName")
+	if t.Kind() != Struct {
+		panic("reflect: FieldByName of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.FieldByName(name)
 }
 
 func (t *rtype) FieldByNameFunc(match func(string) bool) (StructField, bool) {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: FieldByNameFunc of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.FieldByNameFunc(match)
-	*/
-	panic("todo: reflect.rtype.FieldByNameFunc")
+	if t.Kind() != Struct {
+		panic("reflect: FieldByNameFunc of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.FieldByNameFunc(match)
 }
 
 func (t *rtype) Key() Type {
@@ -852,6 +840,184 @@ func (tag StructTag) Lookup(key string) (value string, ok bool) {
 	return "", false
 }
 
+// Field returns the i'th struct field.
+func (t *structType) Field(i int) (f StructField) {
+	if i < 0 || i >= len(t.Fields) {
+		panic("reflect: Field index out of bounds")
+	}
+	p := &t.Fields[i]
+	f.Type = toType(p.Typ)
+	f.Name = p.Name_
+	f.Anonymous = p.Embedded()
+	if !abi.IsExported(p.Name_) {
+		f.PkgPath = t.PkgPath_
+	}
+	if tag := p.Tag_; tag != "" {
+		f.Tag = StructTag(tag)
+	}
+	f.Offset = p.Offset
+
+	// NOTE(rsc): This is the only allocation in the interface
+	// presented by a reflect.Type. It would be nice to avoid,
+	// at least in the common cases, but we need to make sure
+	// that misbehaving clients of reflect cannot affect other
+	// uses of reflect. One possibility is CL 5371098, but we
+	// postponed that ugliness until there is a demonstrated
+	// need for the performance. This is issue 2320.
+	f.Index = []int{i}
+	return
+}
+
+// FieldByIndex returns the nested field corresponding to index.
+func (t *structType) FieldByIndex(index []int) (f StructField) {
+	f.Type = toType(&t.Type)
+	for i, x := range index {
+		if i > 0 {
+			ft := f.Type
+			if ft.Kind() == Pointer && ft.Elem().Kind() == Struct {
+				ft = ft.Elem()
+			}
+			f.Type = ft
+		}
+		f = f.Type.Field(x)
+	}
+	return
+}
+
+// A fieldScan represents an item on the fieldByNameFunc scan work list.
+type fieldScan struct {
+	typ   *structType
+	index []int
+}
+
+// FieldByNameFunc returns the struct field with a name that satisfies the
+// match function and a boolean to indicate if the field was found.
+func (t *structType) FieldByNameFunc(match func(string) bool) (result StructField, ok bool) {
+	// This uses the same condition that the Go language does: there must be a unique instance
+	// of the match at a given depth level. If there are multiple instances of a match at the
+	// same depth, they annihilate each other and inhibit any possible match at a lower level.
+	// The algorithm is breadth first search, one depth level at a time.
+
+	// The current and next slices are work queues:
+	// current lists the fields to visit on this depth level,
+	// and next lists the fields on the next lower level.
+	current := []fieldScan{}
+	next := []fieldScan{{typ: t}}
+
+	// nextCount records the number of times an embedded type has been
+	// encountered and considered for queueing in the 'next' slice.
+	// We only queue the first one, but we increment the count on each.
+	// If a struct type T can be reached more than once at a given depth level,
+	// then it annihilates itself and need not be considered at all when we
+	// process that next depth level.
+	var nextCount map[*structType]int
+
+	// visited records the structs that have been considered already.
+	// Embedded pointer fields can create cycles in the graph of
+	// reachable embedded types; visited avoids following those cycles.
+	// It also avoids duplicated effort: if we didn't find the field in an
+	// embedded type T at level 2, we won't find it in one at level 4 either.
+	visited := map[*structType]bool{}
+
+	for len(next) > 0 {
+		current, next = next, current[:0]
+		count := nextCount
+		nextCount = nil
+
+		// Process all the fields at this depth, now listed in 'current'.
+		// The loop queues embedded fields found in 'next', for processing during the next
+		// iteration. The multiplicity of the 'current' field counts is recorded
+		// in 'count'; the multiplicity of the 'next' field counts is recorded in 'nextCount'.
+		for _, scan := range current {
+			t := scan.typ
+			if visited[t] {
+				// We've looked through this type before, at a higher level.
+				// That higher level would shadow the lower level we're now at,
+				// so this one can't be useful to us. Ignore it.
+				continue
+			}
+			visited[t] = true
+			for i := range t.Fields {
+				f := &t.Fields[i]
+				// Find name and (for embedded field) type for field f.
+				fname := f.Name_
+				var ntyp *abi.Type
+				if f.Embedded() {
+					// Embedded field of type T or *T.
+					ntyp = f.Typ
+					if ntyp.Kind() == abi.Pointer {
+						ntyp = ntyp.Elem()
+					}
+				}
+
+				// Does it match?
+				if match(fname) {
+					// Potential match
+					if count[t] > 1 || ok {
+						// Name appeared multiple times at this level: annihilate.
+						return StructField{}, false
+					}
+					result = t.Field(i)
+					result.Index = nil
+					result.Index = append(result.Index, scan.index...)
+					result.Index = append(result.Index, i)
+					ok = true
+					continue
+				}
+
+				// Queue embedded struct fields for processing with next level,
+				// but only if we haven't seen a match yet at this level and only
+				// if the embedded types haven't already been queued.
+				if ok || ntyp == nil || ntyp.Kind() != abi.Struct {
+					continue
+				}
+				styp := (*structType)(unsafe.Pointer(ntyp))
+				if nextCount[styp] > 0 {
+					nextCount[styp] = 2 // exact multiple doesn't matter
+					continue
+				}
+				if nextCount == nil {
+					nextCount = map[*structType]int{}
+				}
+				nextCount[styp] = 1
+				if count[t] > 1 {
+					nextCount[styp] = 2 // exact multiple doesn't matter
+				}
+				var index []int
+				index = append(index, scan.index...)
+				index = append(index, i)
+				next = append(next, fieldScan{styp, index})
+			}
+		}
+		if ok {
+			break
+		}
+	}
+	return
+}
+
+// FieldByName returns the struct field with the given name
+// and a boolean to indicate if the field was found.
+func (t *structType) FieldByName(name string) (f StructField, present bool) {
+	// Quick check for top-level name, or struct without embedded fields.
+	hasEmbeds := false
+	if name != "" {
+		for i := range t.Fields {
+			tf := &t.Fields[i]
+			if tf.Name_ == name {
+				return t.Field(i), true
+			}
+			if tf.Embedded() {
+				hasEmbeds = true
+			}
+		}
+	}
+	if !hasEmbeds {
+		return
+	}
+	return t.FieldByNameFunc(func(s string) bool { return s == name })
+}
+
 // TypeOf returns the reflection Type that represents the dynamic type of i.
 // If i is a nil interface value, TypeOf returns nil.
 func TypeOf(i any) Type {
@@ -872,6 +1038,15 @@ func rtypeOf(i any) *abi.Type {
 var ptrMap sync.Map // map[*rtype]*ptrType
 */
 
+var ptrMap struct {
+	sync.Mutex
+	m map[*rtype]*ptrType
+}
+
+func init() {
+	ptrMap.m = make(map[*rtype]*ptrType)
+}
+
 // PtrTo returns the pointer type with element t.
 // For example, if t represents type Foo, PtrTo(t) represents *Foo.
 //
@@ -886,50 +1061,51 @@ func PointerTo(t Type) Type {
 }
 
 func (t *rtype) ptrTo() *abi.Type {
-	/*
-		at := &t.t
-		if at.PtrToThis != 0 {
-			return t.typeOff(at.PtrToThis)
-		}
+	at := &t.t
+	if at.PtrToThis_ != nil {
+		return at.PtrToThis_
+	}
+	// Check the cache.
+	if pi, ok := ptrMap.m[t]; ok {
+		return &pi.Type
+	}
 
-		// Check the cache.
-		if pi, ok := ptrMap.Load(t); ok {
-			return &pi.(*ptrType).Type
-		}
+	// Look in known types.
+	s := "*" + t.String()
+	// // TODO typesByString
+	// /*
+	// 	for _, tt := range typesByString(s) {
+	// 		p := (*ptrType)(unsafe.Pointer(tt))
+	// 		if p.Elem != &t.t {
+	// 			continue
+	// 		}
+	// 		pi, _ := ptrMap.LoadOrStore(t, p)
+	// 		return &pi.(*ptrType).Type
+	// 	}
+	// */
 
-		// Look in known types.
-		s := "*" + t.String()
-		for _, tt := range typesByString(s) {
-			p := (*ptrType)(unsafe.Pointer(tt))
-			if p.Elem != &t.t {
-				continue
-			}
-			pi, _ := ptrMap.LoadOrStore(t, p)
-			return &pi.(*ptrType).Type
-		}
+	// Create a new ptrType starting with the description
+	// of an *unsafe.Pointer.
+	var iptr any = (*unsafe.Pointer)(nil)
+	prototype := *(**ptrType)(unsafe.Pointer(&iptr))
+	pp := *prototype
 
-		// Create a new ptrType starting with the description
-		// of an *unsafe.Pointer.
-		var iptr any = (*unsafe.Pointer)(nil)
-		prototype := *(**ptrType)(unsafe.Pointer(&iptr))
-		pp := *prototype
+	pp.Str_ = s //resolveReflectName(newName(s, "", false, false))
+	pp.PtrToThis_ = nil
 
-		pp.Str = resolveReflectName(newName(s, "", false, false))
-		pp.PtrToThis = 0
+	// For the type structures linked into the binary, the
+	// compiler provides a good hash of the string.
+	// Create a good hash for the new string by using
+	// the FNV-1 hash's mixing function to combine the
+	// old hash and the new "*".
+	pp.Hash = fnv1(t.t.Hash, '*')
 
-		// For the type structures linked into the binary, the
-		// compiler provides a good hash of the string.
-		// Create a good hash for the new string by using
-		// the FNV-1 hash's mixing function to combine the
-		// old hash and the new "*".
-		pp.Hash = fnv1(t.t.Hash, '*')
+	pp.Elem = at
 
-		pp.Elem = at
-
-		pi, _ := ptrMap.LoadOrStore(t, &pp)
-		return &pi.(*ptrType).Type
-	*/
-	panic("todo: reflect.rtype.ptrTo")
+	ptrMap.m[t] = &pp
+	return &pp.Type
+	//pi, _ := ptrMap.LoadOrStore(t, &pp)
+	//return &pi.(*ptrType).Type
 }
 
 func ptrTo(t *abi.Type) *abi.Type {

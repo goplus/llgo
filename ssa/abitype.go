@@ -204,17 +204,13 @@ func (b Builder) abiNamedOf(t *types.Named) func() Expr {
 }
 
 func (b Builder) abiNamed(t *types.Named) Expr {
-	if expr, ok := b.Pkg.named[t]; ok {
-		return expr
-	}
 	pkg := b.Pkg
 	tunder := t.Underlying()
 	kind := int(abi.UnderlyingKind(tunder))
 	size := b.sizeof(tunder)
 	numMethods, numPtrMethods := b.abiMethods(t)
 	newNamed := pkg.rtFunc("NewNamed")
-	expr := b.Call(newNamed, b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
-	b.Pkg.named[t] = expr
+	expr := b.Call(newNamed, b.Str(t.String()), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
 	return expr
 }
 

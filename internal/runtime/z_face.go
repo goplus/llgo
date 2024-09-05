@@ -106,10 +106,23 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 	}
 }
 
+type rtype struct {
+	*abi.Type
+	named string
+}
+
+var rtypeList []*rtype
+
 // NewNamed returns an uninitialized named type.
-func NewNamed(kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
+func NewNamed(name string, kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
+	for _, typ := range rtypeList {
+		if typ.named == name {
+			return typ.Type
+		}
+	}
 	ret := newUninitedNamed(kind, size, methods)
 	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, pointerSize, ptrMethods)
+	rtypeList = append(rtypeList, &rtype{Type: ret, named: name})
 	return ret
 }
 
@@ -128,6 +141,10 @@ func pkgName(path string) string {
 
 // InitNamed initializes an uninitialized named type.
 func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method) {
+	// skip initialized
+	if ret.TFlag != abi.TFlagUninited {
+		return
+	}
 	ptr := ret.PtrToThis_
 	if pkgPath != "" {
 		name = pkgName(pkgPath) + "." + name
