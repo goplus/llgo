@@ -539,25 +539,22 @@ func pkgPathFor(t *abi.Type) string {
 }
 
 func (t *rtype) Name() string {
-	/*
-		if !t.t.HasName() {
-			return ""
+	if !t.t.HasName() {
+		return ""
+	}
+	s := t.String()
+	i := len(s) - 1
+	sqBrackets := 0
+	for i >= 0 && (s[i] != '.' || sqBrackets != 0) {
+		switch s[i] {
+		case ']':
+			sqBrackets++
+		case '[':
+			sqBrackets--
 		}
-		s := t.String()
-		i := len(s) - 1
-		sqBrackets := 0
-		for i >= 0 && (s[i] != '.' || sqBrackets != 0) {
-			switch s[i] {
-			case ']':
-				sqBrackets++
-			case '[':
-				sqBrackets--
-			}
-			i--
-		}
-		return s[i+1:]
-	*/
-	panic("todo: reflect.rtype.Name")
+		i--
+	}
+	return s[i+1:]
 }
 
 func nameFor(t *abi.Type) string {
@@ -581,9 +578,7 @@ func elem(t *abi.Type) *abi.Type {
 	if et != nil {
 		return et
 	}
-	// TODO(xsw):
-	// panic("reflect: Elem of invalid type " + stringFor(t))
-	panic("todo: reflect.elem")
+	panic("reflect: Elem of invalid type " + stringFor(t))
 }
 
 func (t *rtype) Elem() Type {
