@@ -41,7 +41,7 @@ func (p *DocFileUnmarshaller) visit(_Type string, node ast.Node) bool {
 	return true
 }
 
-func (p *DocFileUnmarshaller) Unmarshal(raw json.RawMessage) error {
+func (p *DocFileUnmarshaller) Unmarshal(raw []byte) error {
 	var temp struct {
 		Type string `json:"_Type"`
 	}
