@@ -244,7 +244,7 @@ func (p Program) SetRuntime(runtime any) {
 }
 
 func (p Program) SetTypeBackground(fullName string, bg Background) {
-	p.gocvt.typbg[fullName] = bg
+	p.gocvt.typbg.Store(fullName, bg)
 }
 
 func (p Program) SetLinkname(name, link string) {

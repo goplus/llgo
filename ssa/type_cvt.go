@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"sync"
 	"unsafe"
 )
 
@@ -27,13 +28,12 @@ import (
 
 type goTypes struct {
 	typs  map[unsafe.Pointer]unsafe.Pointer
-	typbg map[string]Background
+	typbg sync.Map
 }
 
 func newGoTypes() goTypes {
 	typs := make(map[unsafe.Pointer]unsafe.Pointer)
-	typbk := make(map[string]Background)
-	return goTypes{typs, typbk}
+	return goTypes{typs: typs}
 }
 
 type Background int
@@ -95,7 +95,7 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 	case *types.Struct:
 		return p.cvtStruct(t)
 	case *types.Named:
-		if p.typbg[t.String()] == InC {
+		if v, ok := p.typbg.Load(namedLinkname(t)); ok && v.(Background) == InC {
 			break
 		}
 		return p.cvtNamed(t)
@@ -113,6 +113,14 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 		panic(fmt.Sprintf("cvtType: unexpected type - %T", typ))
 	}
 	return typ, false
+}
+
+func namedLinkname(t *types.Named) string {
+	obj := t.Obj()
+	if obj.Pkg() != nil {
+		return obj.Pkg().Path() + "." + obj.Name()
+	}
+	return obj.Name()
 }
 
 func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
