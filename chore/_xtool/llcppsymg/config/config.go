@@ -26,6 +26,7 @@ func GetConf(data []byte) (Conf, error) {
 		Libs:         GetStringItem(parsedConf, "libs", ""),
 		Include:      GetStringArrayItem(parsedConf, "include"),
 		TrimPrefixes: GetStringArrayItem(parsedConf, "trimPrefixes"),
+		Cplusplus:    GetBoolItem(parsedConf, "cplusplus"),
 	}
 
 	return Conf{
@@ -57,4 +58,15 @@ func GetStringArrayItem(obj *cjson.JSON, key string) (value []string) {
 		value[i] = GetString(item.GetArrayItem(c.Int(i)))
 	}
 	return
+}
+
+func GetBoolItem(obj *cjson.JSON, key string) bool {
+	item := obj.GetObjectItemCaseSensitive(c.AllocaCStr(key))
+	if item == nil {
+		return false
+	}
+	if item.IsBool() != 0 {
+		return item.IsTrue() != 0
+	}
+	return false
 }
