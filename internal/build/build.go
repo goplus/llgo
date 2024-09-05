@@ -121,6 +121,7 @@ const (
 
 func Do(args []string, conf *Config) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
+	flags = append(flags, "-tags", "llgo")
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
