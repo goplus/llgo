@@ -30,6 +30,43 @@ import (
 )
 
 func main() {
+	if len(os.Args) == 1 {
+		// run with default config file
+		runFromConfig()
+		return
+	}
+
+	if os.Args[1] == "--extract" {
+		runExtract()
+	} else if os.Args[1] == "--help" || os.Args[1] == "-h" {
+		printUsage()
+	} else {
+		runFromConfig()
+	}
+}
+
+func printUsage() {
+	fmt.Println("Usage:")
+	fmt.Println("  llcppsigfetch [<config_file>]")
+	fmt.Println("  OR")
+	fmt.Println("  llcppsigfetch --extract <file> <temp> [args...]")
+	fmt.Println("")
+	fmt.Println("Options:")
+	fmt.Println("  [<config_file>]: Path to the configuration file (use '-' for stdin)")
+	fmt.Println("                   If not provided, uses default 'llcppg.cfg'")
+	fmt.Println("")
+	fmt.Println("  --extract:       Extract information from a single file")
+	fmt.Println("    <file>:        When <temp> is false: the path to the file to process")
+	fmt.Println("                   When <temp> is true: the content of the file to process")
+	fmt.Println("    <temp>:        'true' if <file> contains file content, 'false' if it's a file path")
+	fmt.Println("    [args]:        Optional additional arguments (default: -x c++ -std=c++11)")
+	fmt.Println("")
+	fmt.Println("  --help, -h:      Show this help message")
+	fmt.Println("")
+	fmt.Println("Note: The two usage modes are mutually exclusive. Use either [<config_file>] OR --extract, not both.")
+}
+
+func runFromConfig() {
 	cfgFile := "llcppg.cfg"
 	if len(os.Args) > 1 {
 		cfgFile = os.Args[1]
@@ -59,6 +96,36 @@ func main() {
 	check(err)
 
 	outputInfo(context)
+}
+
+func runExtract() {
+	if len(os.Args) < 4 {
+		printUsage()
+		os.Exit(1)
+	}
+
+	cfg := &parse.Config{
+		File: os.Args[2],
+		Temp: os.Args[3] == "true",
+		Args: os.Args[4:],
+	}
+	if !cfg.Temp {
+		absPath, err := filepath.Abs(cfg.File)
+		check(err)
+		cfg.File = absPath
+		println(cfg.File)
+	}
+
+	converter, err := parse.NewConverter(cfg)
+	check(err)
+	_, err = converter.Convert()
+	check(err)
+	result := converter.MarshalASTFiles()
+	cstr := result.Print()
+	c.Printf(cstr)
+	cjson.FreeCStr(cstr)
+	result.Delete()
+	converter.Dispose()
 }
 
 func check(err error) {
