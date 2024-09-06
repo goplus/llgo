@@ -40,7 +40,7 @@ type Converter struct {
 	//
 	// Example:
 	//   typedef struct { int x; } MyStruct;
-	anonyTypeMap map[string]string // cursorUsr -> anonyname
+	anonyTypeMap map[string]bool // cursorUsr
 }
 
 var tagMap = map[string]ast.Tag{
@@ -67,7 +67,7 @@ func NewConverter(config *Config) (*Converter, error) {
 		Files:        make(map[string]*ast.File),
 		index:        index,
 		unit:         unit,
-		anonyTypeMap: make(map[string]string),
+		anonyTypeMap: make(map[string]bool),
 		typeDecls:    make(map[string]ast.Decl),
 	}, nil
 }
@@ -181,19 +181,19 @@ func (ct *Converter) GetCurFile() *ast.File {
 	return file
 }
 
-func (ct *Converter) SetAnonyType(cursor clang.Cursor, anonyname string) {
+func (ct *Converter) SetAnonyType(cursor clang.Cursor) {
 	usr := cursor.USR()
 	usrStr := c.GoString(usr.CStr())
 	defer usr.Dispose()
-	ct.anonyTypeMap[usrStr] = anonyname
+	ct.anonyTypeMap[usrStr] = true
 }
 
-func (ct *Converter) GetAnonyType(cursor clang.Cursor) (string, bool) {
+func (ct *Converter) GetAnonyType(cursor clang.Cursor) (bool, bool) {
 	usr := cursor.USR()
 	usrStr := c.GoString(usr.CStr())
 	defer usr.Dispose()
-	anonyname, ok := ct.anonyTypeMap[usrStr]
-	return anonyname, ok
+	isAnony, ok := ct.anonyTypeMap[usrStr]
+	return isAnony, ok
 }
 
 func (ct *Converter) SetTypeDecl(cursor clang.Cursor, decl ast.Decl) {
@@ -379,7 +379,6 @@ func (ct *Converter) ProcessUnderlyingType(cursor clang.Cursor) ast.Expr {
 		return ct.ProcessType(underlyingTyp)
 	}
 
-	typ := ct.ProcessElaboratedType(underlyingTyp)
 	referTypeCursor := underlyingTyp.TypeDeclaration()
 
 	// If the type decl for the reference already exists in anonyTypeMap
@@ -389,19 +388,17 @@ func (ct *Converter) ProcessUnderlyingType(cursor clang.Cursor) ast.Expr {
 		// In this case, libclang incorrectly reports an anonymous struct as a named struct
 		sourceCode := ct.GetTokens(referTypeCursor)
 		if isAnonymousStructure(sourceCode) {
-			anonyName := ct.GenerateAnonymousName(referTypeCursor)
-			// update reference's name
-			setInnerName(typ, anonyName)
-			ct.SetAnonyType(referTypeCursor, anonyName)
+			ct.SetAnonyType(referTypeCursor)
 			typ, isValidType := ct.GetTypeDecl(referTypeCursor)
 			if isValidType {
 				// There will be no anonymous classes,here will execute enum,union,struct
+				// according to a normal anonymous decl
 				switch declType := typ.(type) {
 				case *ast.EnumTypeDecl:
-					declType.Name.Name = anonyName
+					declType.Name = nil
 				case *ast.TypeDecl:
 					if declType.Type.Tag != ast.Class {
-						declType.Name.Name = anonyName
+						declType.Name = nil
 					} else {
 						// Unreachable: There should be no anonymous classes in this context
 						fmt.Fprintln(os.Stderr, "unexpect typedef anonymous class %s", declType.Name.Name)
@@ -414,12 +411,7 @@ func (ct *Converter) ProcessUnderlyingType(cursor clang.Cursor) ast.Expr {
 		}
 	}
 
-	return typ
-}
-
-// generates a name for an anonymous structure like:__ANONY_A_B_MYSTRUCT
-func (ct *Converter) GenerateAnonymousName(cursor clang.Cursor) string {
-	return fmt.Sprintf("__ANONY_%s", strings.Join(ct.BuildScopingParts(cursor), "_"))
+	return ct.ProcessElaboratedType(underlyingTyp)
 }
 
 // converts functions, methods, constructors, destructors (including out-of-class decl) to ast.FuncDecl nodes.
@@ -730,7 +722,9 @@ func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 	defer name.Dispose()
 
 	decl := t.TypeDeclaration()
-	if decl.IsAnonymous() != 0 {
+	isAnony, ok := ct.GetAnonyType(decl)
+
+	if decl.IsAnonymous() != 0 || isAnony && ok {
 		// anonymous type refer (except anonymous RecordType&EnumType in TypedefDecl)
 		if decl.Kind == clang.CursorEnumDecl {
 			return ct.ProcessEnumType(decl)
@@ -836,17 +830,11 @@ func (ct *Converter) BuildScopingParts(cursor clang.Cursor) []string {
 	var parts []string
 	// Traverse up the semantic parents
 	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
-		var qualified string
-		// anonymous decl quote
-		if anonyName, ok := ct.GetAnonyType(cursor); ok {
-			qualified = anonyName
-		} else {
-			name := cursor.String()
-			qualified = c.GoString(name.CStr())
-			name.Dispose()
-		}
+		name := cursor.String()
+		qualified := c.GoString(name.CStr())
 		parts = append([]string{qualified}, parts...)
 		cursor = cursor.SemanticParent()
+		name.Dispose()
 	}
 	return parts
 }
@@ -909,18 +897,6 @@ func getOffset(location clang.SourceLocation) c.Uint {
 	var offset c.Uint
 	location.SpellingLocation(nil, nil, nil, &offset)
 	return offset
-}
-
-// setTagName updates the name of the innermost Ident in a Name Expr
-func setInnerName(expr ast.Expr, name string) {
-	switch e := expr.(type) {
-	case *ast.TagExpr:
-		setInnerName(e.Name, name)
-	case *ast.ScopingExpr:
-		setInnerName(e.X, name)
-	case *ast.Ident:
-		e.Name = name
-	}
 }
 
 // checks if the source code represents an actual anonymous structure
