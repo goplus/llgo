@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/goplus/llgo/c"
@@ -56,10 +57,14 @@ func printUsage() {
 	fmt.Println("                   If not provided, uses default 'llcppg.cfg'")
 	fmt.Println("")
 	fmt.Println("  --extract:       Extract information from a single file")
-	fmt.Println("    <file>:        When <temp> is false: the path to the file to process")
-	fmt.Println("                   When <temp> is true: the content of the file to process")
-	fmt.Println("    <temp>:        'true' if <file> contains file content, 'false' if it's a file path")
-	fmt.Println("    [args]:        Optional additional arguments (default: -x c++ -std=c++11)")
+	fmt.Println("    <file>:        Path to the file to process, or file content if -temp=true")
+	fmt.Println("    -temp=<bool>:  Optional. Set to 'true' if <file> contains file content,")
+	fmt.Println("                   'false' (default) if it's a file path")
+	fmt.Println("    -cpp=<bool>:   Optional. Set to 'true' if the language is C++ (default: true)")
+	fmt.Println("                   If not present, <file> is a file path")
+	fmt.Println("    [args]:        Optional additional arguments")
+	fmt.Println("                   Default for C++: -x c++")
+	fmt.Println("                   Default for C: -x c")
 	fmt.Println("")
 	fmt.Println("  --help, -h:      Show this help message")
 	fmt.Println("")
@@ -91,7 +96,7 @@ func runFromConfig() {
 
 	files := getHeaderFiles(conf.CFlags, conf.Include)
 
-	context := parse.NewContext()
+	context := parse.NewContext(conf.Cplusplus)
 	err = context.ProcessFiles(files)
 	check(err)
 
@@ -99,21 +104,33 @@ func runFromConfig() {
 }
 
 func runExtract() {
-	if len(os.Args) < 4 {
+	if len(os.Args) < 3 {
+		fmt.Println("Error: Insufficient arguments for --extract")
 		printUsage()
 		os.Exit(1)
 	}
 
 	cfg := &parse.Config{
-		File: os.Args[2],
-		Temp: os.Args[3] == "true",
-		Args: os.Args[4:],
+		File:  os.Args[2],
+		Args:  []string{},
+		IsCpp: true,
+		Temp:  false,
 	}
-	if !cfg.Temp {
-		absPath, err := filepath.Abs(cfg.File)
-		check(err)
-		cfg.File = absPath
-		println(cfg.File)
+
+	for i := 3; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		switch {
+		case strings.HasPrefix(arg, "-temp="):
+			cfg.Temp = parseBoolArg(arg, "temp", false)
+			os.Args = append(os.Args[:i], os.Args[i+1:]...)
+			i--
+		case strings.HasPrefix(arg, "-cpp="):
+			cfg.IsCpp = parseBoolArg(arg, "cpp", true)
+			os.Args = append(os.Args[:i], os.Args[i+1:]...)
+			i--
+		default:
+			cfg.Args = append(cfg.Args, arg)
+		}
 	}
 
 	converter, err := parse.NewConverter(cfg)
@@ -150,4 +167,18 @@ func outputInfo(context *parse.Context) {
 	defer cjson.FreeCStr(str)
 	defer info.Delete()
 	c.Printf(str)
+}
+
+func parseBoolArg(arg, name string, defaultValue bool) bool {
+	parts := strings.SplitN(arg, "=", 2)
+	if len(parts) != 2 {
+		fmt.Printf("Warning: Invalid -%s= argument, defaulting to %v\n", name, defaultValue)
+		return defaultValue
+	}
+	value, err := strconv.ParseBool(parts[1])
+	if err != nil {
+		fmt.Printf("Warning: Invalid -%s= value '%s', defaulting to %v\n", name, parts[1], defaultValue)
+		return defaultValue
+	}
+	return value
 }

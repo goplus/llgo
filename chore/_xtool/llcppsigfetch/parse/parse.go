@@ -10,11 +10,13 @@ import (
 
 type Context struct {
 	Files map[string]*ast.File
+	IsCpp bool
 }
 
-func NewContext() *Context {
+func NewContext(isCpp bool) *Context {
 	return &Context{
 		Files: make(map[string]*ast.File),
+		IsCpp: isCpp,
 	}
 }
 
@@ -60,8 +62,9 @@ func (p *Context) processFile(path string) error {
 
 func (p *Context) parseFile(path string) (map[string]*ast.File, error) {
 	converter, err := NewConverter(&Config{
-		File: path,
-		Temp: false,
+		File:  path,
+		Temp:  false,
+		IsCpp: p.IsCpp,
 	})
 	if err != nil {
 		return nil, errors.New("failed to create converter " + path)
