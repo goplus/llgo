@@ -21,8 +21,10 @@ func (*DocFile) docFile() {
 }
 
 type RawDocFile struct {
-	Path string          `json:"path"`
-	Doc  json.RawMessage `json:"doc"`
+	Path       string          `json:"path"`
+	Doc        json.RawMessage `json:"doc"`
+	InputText  string          `json:"input_text"`  //test only
+	WantResult []string        `json:"want_result"` //test only
 }
 
 type DocFileUnmarshaller struct {
