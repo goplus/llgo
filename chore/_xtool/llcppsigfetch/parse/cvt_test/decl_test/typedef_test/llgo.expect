@@ -484,10 +484,7 @@ TestTypeDefDecl Case 7:
 				},
 				"Doc":	null,
 				"Parent":	null,
-				"Name":	{
-					"_Type":	"Ident",
-					"Name":	"__ANONY_MyStruct"
-				},
+				"Name":	null,
 				"Type":	{
 					"_Type":	"RecordType",
 					"Tag":	0,
@@ -525,12 +522,28 @@ TestTypeDefDecl Case 7:
 					"Name":	"MyStruct"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"Ident",
-						"Name":	"__ANONY_MyStruct"
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
 					},
-					"Tag":	0
+					"Methods":	[]
 				}
 			}],
 		"includes":	[],
@@ -550,10 +563,7 @@ TestTypeDefDecl Case 8:
 				},
 				"Doc":	null,
 				"Parent":	null,
-				"Name":	{
-					"_Type":	"Ident",
-					"Name":	"__ANONY_MyUnion"
-				},
+				"Name":	null,
 				"Type":	{
 					"_Type":	"RecordType",
 					"Tag":	1,
@@ -591,12 +601,28 @@ TestTypeDefDecl Case 8:
 					"Name":	"MyUnion"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"Ident",
-						"Name":	"__ANONY_MyUnion"
+					"_Type":	"RecordType",
+					"Tag":	1,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
 					},
-					"Tag":	1
+					"Methods":	[]
 				}
 			}],
 		"includes":	[],
@@ -616,10 +642,7 @@ TestTypeDefDecl Case 9:
 				},
 				"Doc":	null,
 				"Parent":	null,
-				"Name":	{
-					"_Type":	"Ident",
-					"Name":	"__ANONY_MyEnum"
-				},
+				"Name":	null,
 				"Type":	{
 					"_Type":	"EnumType",
 					"Items":	[{
@@ -670,12 +693,41 @@ TestTypeDefDecl Case 9:
 					"Name":	"MyEnum"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"Ident",
-						"Name":	"__ANONY_MyEnum"
-					},
-					"Tag":	2
+					"_Type":	"EnumType",
+					"Items":	[{
+							"_Type":	"EnumItem",
+							"Name":	{
+								"_Type":	"Ident",
+								"Name":	"RED"
+							},
+							"Value":	{
+								"_Type":	"BasicLit",
+								"Kind":	0,
+								"Value":	"0"
+							}
+						}, {
+							"_Type":	"EnumItem",
+							"Name":	{
+								"_Type":	"Ident",
+								"Name":	"GREEN"
+							},
+							"Value":	{
+								"_Type":	"BasicLit",
+								"Kind":	0,
+								"Value":	"1"
+							}
+						}, {
+							"_Type":	"EnumItem",
+							"Name":	{
+								"_Type":	"Ident",
+								"Name":	"BLUE"
+							},
+							"Value":	{
+								"_Type":	"BasicLit",
+								"Kind":	0,
+								"Value":	"2"
+							}
+						}]
 				}
 			}],
 		"includes":	[],
@@ -695,10 +747,7 @@ TestTypeDefDecl Case 10:
 				},
 				"Doc":	null,
 				"Parent":	null,
-				"Name":	{
-					"_Type":	"Ident",
-					"Name":	"__ANONY_MyStruct"
-				},
+				"Name":	null,
 				"Type":	{
 					"_Type":	"RecordType",
 					"Tag":	0,
@@ -736,12 +785,28 @@ TestTypeDefDecl Case 10:
 					"Name":	"MyStruct"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"Ident",
-						"Name":	"__ANONY_MyStruct"
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
 					},
-					"Tag":	0
+					"Methods":	[]
 				}
 			}, {
 				"_Type":	"TypedefDecl",
@@ -756,12 +821,28 @@ TestTypeDefDecl Case 10:
 					"Name":	"MyStruct2"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"Ident",
-						"Name":	"__ANONY_MyStruct"
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
 					},
-					"Tag":	0
+					"Methods":	[]
 				}
 			}, {
 				"_Type":	"TypedefDecl",
@@ -778,12 +859,28 @@ TestTypeDefDecl Case 10:
 				"Type":	{
 					"_Type":	"PointerType",
 					"X":	{
-						"_Type":	"TagExpr",
-						"Name":	{
-							"_Type":	"Ident",
-							"Name":	"__ANONY_MyStruct"
+						"_Type":	"RecordType",
+						"Tag":	0,
+						"Fields":	{
+							"_Type":	"FieldList",
+							"List":	[{
+									"_Type":	"Field",
+									"Type":	{
+										"_Type":	"BuiltinType",
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	1,
+									"Names":	[{
+											"_Type":	"Ident",
+											"Name":	"x"
+										}]
+								}]
 						},
-						"Tag":	0
+						"Methods":	[]
 					}
 				}
 			}, {
@@ -801,12 +898,28 @@ TestTypeDefDecl Case 10:
 				"Type":	{
 					"_Type":	"ArrayType",
 					"Elt":	{
-						"_Type":	"TagExpr",
-						"Name":	{
-							"_Type":	"Ident",
-							"Name":	"__ANONY_MyStruct"
+						"_Type":	"RecordType",
+						"Tag":	0,
+						"Fields":	{
+							"_Type":	"FieldList",
+							"List":	[{
+									"_Type":	"Field",
+									"Type":	{
+										"_Type":	"BuiltinType",
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	1,
+									"Names":	[{
+											"_Type":	"Ident",
+											"Name":	"x"
+										}]
+								}]
 						},
-						"Tag":	0
+						"Methods":	[]
 					},
 					"Len":	null
 				}
@@ -838,10 +951,7 @@ TestTypeDefDecl Case 11:
 						"Name":	"A"
 					}
 				},
-				"Name":	{
-					"_Type":	"Ident",
-					"Name":	"__ANONY_A_B_MyStruct"
-				},
+				"Name":	null,
 				"Type":	{
 					"_Type":	"RecordType",
 					"Tag":	0,
@@ -889,26 +999,28 @@ TestTypeDefDecl Case 11:
 					"Name":	"MyStruct"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"ScopingExpr",
-						"X":	{
-							"_Type":	"Ident",
-							"Name":	"__ANONY_A_B_MyStruct"
-						},
-						"Parent":	{
-							"_Type":	"ScopingExpr",
-							"X":	{
-								"_Type":	"Ident",
-								"Name":	"B"
-							},
-							"Parent":	{
-								"_Type":	"Ident",
-								"Name":	"A"
-							}
-						}
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
 					},
-					"Tag":	0
+					"Methods":	[]
 				}
 			}, {
 				"_Type":	"TypedefDecl",
@@ -933,26 +1045,28 @@ TestTypeDefDecl Case 11:
 					"Name":	"MyStruct2"
 				},
 				"Type":	{
-					"_Type":	"TagExpr",
-					"Name":	{
-						"_Type":	"ScopingExpr",
-						"X":	{
-							"_Type":	"Ident",
-							"Name":	"__ANONY_A_B_MyStruct"
-						},
-						"Parent":	{
-							"_Type":	"ScopingExpr",
-							"X":	{
-								"_Type":	"Ident",
-								"Name":	"B"
-							},
-							"Parent":	{
-								"_Type":	"Ident",
-								"Name":	"A"
-							}
-						}
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}]
 					},
-					"Tag":	0
+					"Methods":	[]
 				}
 			}, {
 				"_Type":	"TypedefDecl",
@@ -979,26 +1093,28 @@ TestTypeDefDecl Case 11:
 				"Type":	{
 					"_Type":	"PointerType",
 					"X":	{
-						"_Type":	"TagExpr",
-						"Name":	{
-							"_Type":	"ScopingExpr",
-							"X":	{
-								"_Type":	"Ident",
-								"Name":	"__ANONY_A_B_MyStruct"
-							},
-							"Parent":	{
-								"_Type":	"ScopingExpr",
-								"X":	{
-									"_Type":	"Ident",
-									"Name":	"B"
-								},
-								"Parent":	{
-									"_Type":	"Ident",
-									"Name":	"A"
-								}
-							}
+						"_Type":	"RecordType",
+						"Tag":	0,
+						"Fields":	{
+							"_Type":	"FieldList",
+							"List":	[{
+									"_Type":	"Field",
+									"Type":	{
+										"_Type":	"BuiltinType",
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	1,
+									"Names":	[{
+											"_Type":	"Ident",
+											"Name":	"x"
+										}]
+								}]
 						},
-						"Tag":	0
+						"Methods":	[]
 					}
 				}
 			}, {
@@ -1026,26 +1142,28 @@ TestTypeDefDecl Case 11:
 				"Type":	{
 					"_Type":	"ArrayType",
 					"Elt":	{
-						"_Type":	"TagExpr",
-						"Name":	{
-							"_Type":	"ScopingExpr",
-							"X":	{
-								"_Type":	"Ident",
-								"Name":	"__ANONY_A_B_MyStruct"
-							},
-							"Parent":	{
-								"_Type":	"ScopingExpr",
-								"X":	{
-									"_Type":	"Ident",
-									"Name":	"B"
-								},
-								"Parent":	{
-									"_Type":	"Ident",
-									"Name":	"A"
-								}
-							}
+						"_Type":	"RecordType",
+						"Tag":	0,
+						"Fields":	{
+							"_Type":	"FieldList",
+							"List":	[{
+									"_Type":	"Field",
+									"Type":	{
+										"_Type":	"BuiltinType",
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Doc":	null,
+									"Comment":	null,
+									"IsStatic":	false,
+									"Access":	1,
+									"Names":	[{
+											"_Type":	"Ident",
+											"Name":	"x"
+										}]
+								}]
 						},
-						"Tag":	0
+						"Methods":	[]
 					},
 					"Len":	null
 				}
