@@ -169,10 +169,11 @@ type aFunction struct {
 	defer_ *aDefer
 	recov  BasicBlock
 
-	params   []Type
-	freeVars Expr
-	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+	params        []Type
+	freeVars      Expr
+	freeVarsBlock int
+	base          int // base = 1 if hasFreeVars; base = 0 otherwise
+	hasVArg       bool
 }
 
 // Function represents a function or method.
@@ -249,12 +250,13 @@ func (p Function) Param(i int) Expr {
 }
 
 func (p Function) closureCtx(b Builder) Expr {
-	if p.freeVars.IsNil() {
+	if p.freeVars.IsNil() || (p.freeVarsBlock != 0 && p.freeVarsBlock != b.blk.Index()) {
 		if p.base == 0 {
 			panic("ssa: function has no free variables")
 		}
 		ptr := Expr{p.impl.Param(0), p.params[0]}
 		p.freeVars = b.Load(ptr)
+		p.freeVarsBlock = b.blk.Index()
 	}
 	return p.freeVars
 }
