@@ -13,8 +13,9 @@ import (
 func RunTest(testName string, testCases []string) {
 	for i, content := range testCases {
 		converter, err := parse.NewConverter(&parse.Config{
-			File: content,
-			Temp: true,
+			File:  content,
+			Temp:  true,
+			IsCpp: true,
 		})
 		if err != nil {
 			panic(err)
@@ -45,9 +46,16 @@ type GetTypeOptions struct {
 	ExpectTypeKind clang.TypeKind
 
 	// Args contains additional compilation arguments passed to Clang (optional)
-	// Default is []string{"-x", "c++", "-std=c++11"}
-	// *For complex C types, C language args Must be specified, e.g., []string{"-x", "c", "-std=c99"}
+	// These are appended after the default language-specific arguments
+	// Example: []string{"-std=c++11"}
 	Args []string
+
+	// IsCpp indicates whether the code should be treated as C++ (true) or C (false)
+	// This affects the default language arguments passed to Clang:
+	// - For C++: []string{"-x", "c++"}
+	// - For C:   []string{"-x", "c"}
+	// *For complex C types, C Must be specified
+	IsCpp bool
 }
 
 // GetType returns the clang.Type of the given type code
@@ -56,9 +64,10 @@ type GetTypeOptions struct {
 func GetType(option *GetTypeOptions) (clang.Type, *clang.Index, *clang.TranslationUnit) {
 	code := fmt.Sprintf("%s placeholder;", option.TypeCode)
 	index, unit, err := parse.CreateTranslationUnit(&parse.Config{
-		File: code,
-		Temp: true,
-		Args: option.Args,
+		File:  code,
+		Temp:  true,
+		Args:  option.Args,
+		IsCpp: option.IsCpp,
 	})
 	if err != nil {
 		panic(err)

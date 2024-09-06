@@ -128,6 +128,7 @@ func TestNonBuiltinTypes() {
 	for _, t := range tests {
 		typ, index, unit := test.GetType(&test.GetTypeOptions{
 			TypeCode: t,
+			IsCpp:    true,
 		})
 		converter := &parse.Converter{}
 		expr := converter.ProcessType(typ)
@@ -167,7 +168,7 @@ func getComplexType(flag ast.TypeFlag) clang.Type {
 	typ, _, _ := test.GetType(&test.GetTypeOptions{
 		TypeCode:       code,
 		ExpectTypeKind: clang.TypeComplex,
-		Args:           []string{"-x", "c", "-std=c99"},
+		IsCpp:          false,
 	})
 
 	return typ
