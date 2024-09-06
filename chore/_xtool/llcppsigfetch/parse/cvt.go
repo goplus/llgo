@@ -289,7 +289,6 @@ func (ct *Converter) Convert() (map[string]*ast.File, error) {
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
-
 	if t.Kind >= clang.TypeFirstBuiltin && t.Kind <= clang.TypeLastBuiltin {
 		return ct.ProcessBuiltinType(t)
 	}
@@ -306,7 +305,8 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		expr = &ast.LvalueRefType{X: ct.ProcessType(t.NonReferenceType())}
 	case clang.TypeRValueReference:
 		expr = &ast.RvalueRefType{X: ct.ProcessType(t.NonReferenceType())}
-	case clang.TypeFunctionProto:
+	case clang.TypeFunctionProto, clang.TypeFunctionNoProto:
+		// treating TypeFunctionNoProto as a general function without parameters
 		// function type will only collect return type, params will be collected in ProcessFuncDecl
 		expr = ct.ProcessFunctionType(t)
 	case clang.TypeConstantArray, clang.TypeIncompleteArray, clang.TypeVariableArray, clang.TypeDependentSizedArray:
