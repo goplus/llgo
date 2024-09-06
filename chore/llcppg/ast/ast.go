@@ -247,6 +247,7 @@ func (*FuncType) exprNode() {}
 // ------------------------------------------------
 
 type RecordType struct {
+	Uid     string // Unified Symbol Resolution (USR)
 	Tag     Tag
 	Fields  *FieldList
 	Methods []*FuncDecl
@@ -298,6 +299,7 @@ type EnumItem struct {
 func (*EnumItem) exprNode() {}
 
 type EnumType struct {
+	Uid   string // Unified Symbol Resolution (USR)
 	Items []*EnumItem
 }
 
