@@ -51,9 +51,10 @@ var tagMap = map[string]ast.Tag{
 }
 
 type Config struct {
-	File string
-	Temp bool
-	Args []string
+	File  string
+	Temp  bool
+	Args  []string
+	IsCpp bool
 }
 
 func NewConverter(config *Config) (*Converter, error) {
@@ -72,12 +73,16 @@ func NewConverter(config *Config) (*Converter, error) {
 }
 
 func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
-	if config.Args == nil || len(config.Args) == 0 {
-		config.Args = []string{"-x", "c++", "-std=c++11"}
+	// default use the c/c++ standard of clang; c:gnu17 c++:gnu++17
+	// https://clang.llvm.org/docs/CommandGuide/clang.html
+	defaultArgs := []string{"-x", "c"}
+	if config.IsCpp {
+		defaultArgs = []string{"-x", "c++"}
 	}
+	allArgs := append(defaultArgs, config.Args...)
 
-	cArgs := make([]*c.Char, len(config.Args))
-	for i, arg := range config.Args {
+	cArgs := make([]*c.Char, len(allArgs))
+	for i, arg := range allArgs {
 		cArgs[i] = c.AllocaCStr(arg)
 	}
 
@@ -418,6 +423,7 @@ func (ct *Converter) GenerateAnonymousName(cursor clang.Cursor) string {
 }
 
 // converts functions, methods, constructors, destructors (including out-of-class decl) to ast.FuncDecl nodes.
+// todo(zzy): manglename (c++)
 func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	name := cursor.String()
 	defer name.Dispose()
