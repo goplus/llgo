@@ -1,5 +1,5 @@
-//go:build llgo11
-// +build llgo11
+//go:build !llgo
+// +build !llgo
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -21,71 +21,47 @@ package async
 
 import "sync"
 
-func BindIO[T any](call IO[T], callback func(T)) {
-	callback(Await(call))
-}
-
-func Await[T1 any](call IO[T1]) (ret T1) {
-	ch := make(chan struct{})
-	f := call(&AsyncContext{
-		Executor: Exec(),
-		complete: func() {
-			close(ch)
-		},
-	})
-	<-ch
-	return f()
+func Async[T any](fn func(func(T))) Future[T] {
+	return func(chain func(T)) {
+		go fn(chain)
+	}
 }
 
 // -----------------------------------------------------------------------------
 
-func Race[T1 any](calls ...IO[T1]) IO[T1] {
+func Race[T1 any](futures ...Future[T1]) Future[T1] {
 	return Async(func(resolve func(T1)) {
-		ch := make(chan int, len(calls))
-		futures := make([]Future[T1], len(calls))
-		for i, call := range calls {
-			i := i
-			call := call
-			go func() {
-				f := call(&AsyncContext{
-					Executor: Exec(),
-					complete: func() {
-						defer func() {
-							_ = recover()
-						}()
-						ch <- i
-					},
-				})
-				futures[i] = f
-			}()
+		ch := make(chan T1)
+		for _, future := range futures {
+			future := future
+			future(func(v T1) {
+				defer func() {
+					// Avoid panic when the channel is closed.
+					_ = recover()
+				}()
+				ch <- v
+			})
 		}
-		i := <-ch
+		v := <-ch
 		close(ch)
-		resolve(futures[i]())
+		resolve(v)
 	})
 }
 
-func All[T1 any](calls ...IO[T1]) IO[[]T1] {
+func All[T1 any](futures ...Future[T1]) Future[[]T1] {
 	return Async(func(resolve func([]T1)) {
-		n := len(calls)
+		n := len(futures)
 		results := make([]T1, n)
-		futures := make([]Future[T1], n)
 		wg := sync.WaitGroup{}
 		wg.Add(n)
-		for i, call := range calls {
+		for i, future := range futures {
 			i := i
-			f := call(&AsyncContext{
-				Executor: Exec(),
-				complete: func() {
-					wg.Done()
-				},
+			future(func(v T1) {
+				results[i] = v
+				wg.Done()
 			})
-			futures[i] = f
 		}
 		wg.Wait()
-		for i, f := range futures {
-			results[i] = f()
-		}
 		resolve(results)
 	})
 }

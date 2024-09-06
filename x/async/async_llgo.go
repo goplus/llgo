@@ -1,3 +1,6 @@
+//go:build llgo
+// +build llgo
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -18,10 +21,30 @@ package async
 
 import (
 	"sync/atomic"
+
+	"github.com/goplus/llgo/c/libuv"
+	"github.com/goplus/llgo/x/cbind"
 )
 
-func Await[T1 any](call Future[T1]) (ret T1) {
-	return Run(call)
+// Currently Async run chain a future that call chain in the goroutine running `async.Run`.
+// TODO(lijie): It would better to switch when needed.
+func Async[T any](fn func(func(T))) Future[T] {
+	return func(chain func(T)) {
+		loop := Exec().L
+
+		var result T
+		var a *libuv.Async
+		var cb libuv.AsyncCb
+		a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
+			a.Close(nil)
+			chain(result)
+		})
+		loop.Async(a, cb)
+		fn(func(v T) {
+			result = v
+			a.Send()
+		})
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -32,6 +55,7 @@ func Race[T1 any](futures ...Future[T1]) Future[T1] {
 		for _, future := range futures {
 			future(func(v T1) {
 				if !done.Swap(true) {
+					// Just resolve the first one.
 					resolve(v)
 				}
 			})
@@ -49,6 +73,7 @@ func All[T1 any](futures ...Future[T1]) Future[[]T1] {
 			future(func(v T1) {
 				results[i] = v
 				if atomic.AddUint32(&done, 1) == uint32(n) {
+					// All done.
 					resolve(results)
 				}
 			})

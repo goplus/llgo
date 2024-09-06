@@ -1,3 +1,6 @@
+//go:build llgo
+// +build llgo
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -19,13 +22,9 @@ package async
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/libuv"
 	"github.com/goplus/llgo/c/pthread"
 )
-
-//go:linkname Gettid C.pthread_self
-func Gettid() c.Pointer
 
 var execKey pthread.Key
 

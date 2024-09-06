@@ -1,5 +1,5 @@
-//go:build llgo11
-// +build llgo11
+//go:build !llgo
+// +build !llgo
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -28,6 +28,12 @@ func Exec() *Executor {
 	return exec
 }
 
-func Run(fn func()) {
-	fn()
+func Run[T any](future Future[T]) (ret T) {
+	ch := make(chan T)
+	go func() {
+		future(func(v T) {
+			ch <- v
+		})
+	}()
+	return <-ch
 }

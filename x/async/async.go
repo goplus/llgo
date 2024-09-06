@@ -17,45 +17,14 @@
 package async
 
 import (
-	"unsafe"
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c/libuv"
 )
 
 type Void = [0]byte
 
 type Future[T any] func(func(T))
 
-type asyncBind[T any] struct {
-	libuv.Async
-	result T
-	chain  func(T)
-}
-
-func asyncCb[T any](a *libuv.Async) {
-	a.Close(nil)
-	aa := (*asyncBind[T])(unsafe.Pointer(a))
-	aa.chain(aa.result)
-}
-
-func Async[T any](fn func(func(T))) Future[T] {
-	return func(chain func(T)) {
-		loop := Exec().L
-		// var result T
-		// var a *libuv.Async
-		// var cb libuv.AsyncCb
-		// a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func() {
-		// 	a.Close(nil)
-		// 	chain(result)
-		// })
-		// loop.Async(a, cb)
-
-		aa := &asyncBind[T]{chain: chain}
-		loop.Async(&aa.Async, asyncCb[T])
-		fn(func(v T) {
-			aa.result = v
-			aa.Send()
-		})
-	}
+// Just for pure LLGo/Go, transpile to callback in Go+
+func Await[T1 any](call Future[T1]) (ret T1) {
+	return Run(call)
 }

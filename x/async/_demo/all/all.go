@@ -5,18 +5,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/net"
 	"github.com/goplus/llgo/x/async"
 	"github.com/goplus/llgo/x/async/timeout"
-	"github.com/goplus/llgo/x/io"
+	"github.com/goplus/llgo/x/socketio"
 	"github.com/goplus/llgo/x/tuple"
 )
 
 func ReadFile(fileName string) async.Future[tuple.Tuple2[[]byte, error]] {
 	return async.Async(func(resolve func(tuple.Tuple2[[]byte, error])) {
 		go func() {
-			println(async.Gettid(), "read file", fileName)
+			println("read file", fileName)
 			bytes, err := os.ReadFile(fileName)
 			resolve(tuple.T2(bytes, err))
 		}()
@@ -50,16 +48,17 @@ func main() {
 func RunIO() {
 	println("RunIO with Await")
 
+	// Hide `resolve` in Go+
 	async.Run(async.Async(func(resolve func(async.Void)) {
 		println("read file")
 		defer resolve(async.Void{})
-		content, err := async.Await(ReadFile("1.txt")).Get()
+		content, err := async.Await(ReadFile("all.go")).Get()
 		if err != nil {
 			fmt.Printf("read err: %v\n", err)
 			return
 		}
 		fmt.Printf("read content: %s\n", content)
-		err = async.Await(WriteFile("2.txt", content))
+		err = async.Await(WriteFile("2.out", content))
 		if err != nil {
 			fmt.Printf("write err: %v\n", err)
 			return
@@ -71,7 +70,7 @@ func RunIO() {
 	println("RunIO with BindIO")
 
 	async.Run(async.Async(func(resolve func(async.Void)) {
-		ReadFile("1.txt")(func(v tuple.Tuple2[[]byte, error]) {
+		ReadFile("all.go")(func(v tuple.Tuple2[[]byte, error]) {
 			content, err := v.Get()
 			if err != nil {
 				fmt.Printf("read err: %v\n", err)
@@ -79,7 +78,7 @@ func RunIO() {
 				return
 			}
 			fmt.Printf("read content: %s\n", content)
-			WriteFile("2.txt", content)(func(v error) {
+			WriteFile("2.out", content)(func(v error) {
 				err = v
 				if err != nil {
 					fmt.Printf("write err: %v\n", err)
@@ -173,129 +172,66 @@ func RunSocket() {
 
 		println("RunClient")
 
-		RunClient()(func(async.Void) {
-			println("RunClient done")
-			resolve(async.Void{})
+		timeout.Timeout(100 * time.Millisecond)(func(async.Void) {
+			RunClient()(func(async.Void) {
+				println("RunClient done")
+				resolve(async.Void{})
+			})
 		})
 	}))
 }
 
 func RunClient() async.Future[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
-		bindAddr := "127.0.0.1:3927"
-		io.ParseAddr(bindAddr)(func(v tuple.Tuple2[*net.SockAddr, error]) {
-			addr, err := v.Get()
-			println("Connect to", addr, err)
+		addr := "127.0.0.1:3927"
+		socketio.Connect("tcp", addr)(func(v tuple.Tuple2[*socketio.Conn, error]) {
+			client, err := v.Get()
+			println("Connected", client, err)
 			if err != nil {
 				panic(err)
 			}
-			io.Connect(addr)(func(v tuple.Tuple2[*io.Tcp, error]) {
-				client, err := v.Get()
-				println("Connected", client, err)
-				if err != nil {
-					panic(err)
-				}
-				var loop func(client *io.Tcp)
-				loop = func(client *io.Tcp) {
-					client.Write([]byte("Hello"))(func(err error) {
+			counter := 0
+			var loop func(client *socketio.Conn)
+			loop = func(client *socketio.Conn) {
+				counter++
+				data := fmt.Sprintf("Hello %d", counter)
+				client.Write([]byte(data))(func(err error) {
+					if err != nil {
+						panic(err)
+					}
+					client.Read()(func(v tuple.Tuple2[[]byte, error]) {
+						data, err := v.Get()
 						if err != nil {
 							panic(err)
 						}
-						client.Read()(func(v tuple.Tuple2[[]byte, error]) {
-							data, err := v.Get()
-							if err != nil {
-								panic(err)
-							}
-							println("Read:", string(data))
-							timeout.Timeout(1 * time.Second)(func(async.Void) {
-								loop(client)
-							})
+						println("Read from server:", string(data))
+						timeout.Timeout(1 * time.Second)(func(async.Void) {
+							loop(client)
 						})
 					})
-				}
-				loop(client)
-			})
+				})
+			}
+			loop(client)
 		})
 	})
 }
 
 func RunServer() async.Future[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
-		server, err := io.NewTcp()
-		if err != nil {
-			panic(err)
-		}
-
-		bindAddr := "0.0.0.0:3927"
-		io.ParseAddr(bindAddr)(func(v tuple.Tuple2[*net.SockAddr, error]) {
-			addr, err := v.Get()
-			if err != nil {
-				panic(err)
-			}
-
-			if err = server.Bind(addr, 0); err != nil {
-				panic(err)
-			}
-			c.Printf(c.Str("Listening on %s\n"), c.AllocaCStr(bindAddr))
-
-			err = server.Listen(128, func(server *io.Tcp, err error) {
-				if err != nil {
-					panic(err)
-				}
-				client, err := server.Accept()
-				println("Accept", client, err)
-
-				var loop func(client *io.Tcp)
-				loop = func(client *io.Tcp) {
-					client.Read()(func(v tuple.Tuple2[[]byte, error]) {
-						data, err := v.Get()
-						if err != nil {
-							println("Read error", err)
-						} else {
-							println("Read:", string(data))
-							client.Write(data)(func(err error) {
-								if err != nil {
-									println("Write error", err)
-								} else {
-									println("Write done")
-									loop(client)
-								}
-							})
-						}
-					})
-				}
-				loop(client)
-			})
-			if err != nil {
-				panic(err)
-			}
-		})
-	})
-}
-
-func RunServer1() async.Future[async.Void] {
-	return async.Async(func(resolve func(async.Void)) {
-		io.Listen("tcp", "0.0.0.0:3927")(func(v tuple.Tuple2[*io.Tcp, error]) {
-			server, err := v.Get()
-			if err != nil {
-				panic(err)
-			}
-			client, err := server.Accept()
-			println("Accept", client, err)
-
-			var loop func(client *io.Tcp)
-			loop = func(client *io.Tcp) {
+		socketio.Listen("tcp", "0.0.0.0:3927", func(client *socketio.Conn, err error) {
+			println("Client connected", client, err)
+			var loop func(client *socketio.Conn)
+			loop = func(client *socketio.Conn) {
 				client.Read()(func(v tuple.Tuple2[[]byte, error]) {
 					data, err := v.Get()
 					if err != nil {
 						println("Read error", err)
 					} else {
-						println("Read:", string(data))
+						println("Read from client:", string(data))
 						client.Write(data)(func(err error) {
 							if err != nil {
 								println("Write error", err)
 							} else {
-								println("Write done")
 								loop(client)
 							}
 						})

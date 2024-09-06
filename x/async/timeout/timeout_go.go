@@ -1,5 +1,5 @@
-//go:build llgo11
-// +build llgo11
+//go:build !llgo
+// +build !llgo
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -25,7 +25,7 @@ import (
 	"github.com/goplus/llgo/x/async"
 )
 
-func Timeout(d time.Duration) async.IO[async.Void] {
+func Timeout(d time.Duration) async.Future[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
 		go func() {
 			time.Sleep(d)

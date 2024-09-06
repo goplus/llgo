@@ -83,17 +83,6 @@ func Callback3[Base any, A any, B any, C any](base *Base, a A, b B, c C) {
  * libuv.InitTimer(async.Exec().L, timer)
  * timer.Start(cb, 1000, 0)
  *
- * TODO(lijie): fn isn't a C func-ptr, it's closure, should fix the LLGo compiler.
- * See: https://github.com/goplus/llgo/issues/766
- *
- * Workaround:
- *
- * timer, _ := cbind.Bind[libuv.Timer](func() {
- * 	 println("hello")
- * })
- * libuv.InitTimer(async.Exec().L, timer)
- * timer.Start(cbind.Callback[libuv.Timer], 1000, 0)
- *
  * @param call The Go function to bind.
  * @return The data pointer and the C callback function.
  */
