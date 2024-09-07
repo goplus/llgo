@@ -19,16 +19,7 @@
 
 package async
 
-var exec = &Executor{}
-
-type Executor struct {
-}
-
-func Exec() *Executor {
-	return exec
-}
-
-func Run[T any](future Future[T]) (ret T) {
+func Run[T any](future Future[T]) T {
 	ch := make(chan T)
 	go func() {
 		future(func(v T) {

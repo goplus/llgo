@@ -241,7 +241,7 @@ func (t *Conn) Read() async.Future[tuple.Tuple2[[]byte, error]] {
 
 func (t *Conn) Write(data []byte) async.Future[error] {
 	return async.Async(func(resolve func(error)) {
-		writer, _ := cbind.Bind1[libuv.Write](func(req *libuv.Write, status c.Int) {
+		writer, cb := cbind.Bind1F[libuv.Write, libuv.WriteCb](func(req *libuv.Write, status c.Int) {
 			var result error
 			if status != 0 {
 				result = libuvError(libuv.Errno(status))
@@ -251,7 +251,7 @@ func (t *Conn) Write(data []byte) async.Future[error] {
 		tcp := (*libuv.Stream)(&t.tcp)
 		buf, len := cbind.CBuffer(data)
 		bufs := &libuv.Buf{Base: buf, Len: uintptr(len)}
-		writer.Write(tcp, bufs, 1, cbind.Callback1[libuv.Write, c.Int])
+		writer.Write(tcp, bufs, 1, cb)
 	})
 }
 

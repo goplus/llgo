@@ -25,6 +25,6 @@ type Void = [0]byte
 type Future[T any] func(func(T))
 
 // Just for pure LLGo/Go, transpile to callback in Go+
-func Await[T1 any](call Future[T1]) (ret T1) {
-	return Run(call)
+func Await[T1 any](future Future[T1]) T1 {
+	return Run(future)
 }
