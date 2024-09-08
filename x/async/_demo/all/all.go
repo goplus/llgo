@@ -173,7 +173,11 @@ func RunSocket() {
 		println("RunClient")
 
 		timeout.Timeout(100 * time.Millisecond).Then(func(async.Void) {
-			RunClient().Then(func(async.Void) {
+			RunClient("Bob").Then(func(async.Void) {
+				println("RunClient done")
+				resolve(async.Void{})
+			})
+			RunClient("Uncle").Then(func(async.Void) {
 				println("RunClient done")
 				resolve(async.Void{})
 			})
@@ -181,7 +185,7 @@ func RunSocket() {
 	}))
 }
 
-func RunClient() async.Future[async.Void] {
+func RunClient(name string) async.Future[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
 		addr := "127.0.0.1:3927"
 		socketio.Connect("tcp", addr).Then(func(v tuple.Tuple2[*socketio.Conn, error]) {
@@ -194,7 +198,7 @@ func RunClient() async.Future[async.Void] {
 			var loop func(client *socketio.Conn)
 			loop = func(client *socketio.Conn) {
 				counter++
-				data := fmt.Sprintf("Hello %d", counter)
+				data := fmt.Sprintf("Hello from %s %d", name, counter)
 				client.Write([]byte(data)).Then(func(err error) {
 					if err != nil {
 						panic(err)
