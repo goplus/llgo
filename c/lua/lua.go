@@ -159,13 +159,17 @@ func (L *State) Close() {}
 // llgo:link (*State).Newthread C.lua_newthread
 func (L *State) Newthread() *State { return nil }
 
-// int        (lua_closethread) (State *L, State *from);
-// int        (lua_resetthread) (State *L);  /* Deprecated! */
+// llgo:link (*State).Closethread C.lua_closethread
+func (L *State) Closethread(from *State) c.Int { return 0 }
+
+// llgo:link (*State).Resetthread C.lua_resetthread
+func (L *State) Resetthread(from *State) c.Int { return 0 }
 
 // llgo:link (*State).Atpanic C.lua_atpanic
 func (L *State) Atpanic(panicf CFunction) CFunction { return nil }
 
-// lua_Number (lua_version) (State *L);
+// llgo:link (*State).Version C.lua_version
+func (L *State) Version() Number { return 0 }
 
 // /*
 // ** basic stack manipulation
@@ -240,7 +244,9 @@ func (L *State) Tocfunction(idx c.Int) CFunction { return nil }
 // llgo:link (*State).Touserdata C.lua_touserdata
 func (L *State) Touserdata(idx c.Int) c.Pointer { return nil }
 
-// LUA_API State      *(lua_tothread) (State *L, int idx);
+// llgo:link (*State).Tothread C.lua_tothread
+func (L *State) Tothread(idx c.Int) *State { return nil }
+
 // LUA_API const void     *(lua_topointer) (State *L, int idx);
 
 // /*
@@ -277,7 +283,8 @@ func (L *State) Pushboolean(b c.Int) {}
 // llgo:link (*State).Pushlightuserdata C.lua_pushlightuserdata
 func (L *State) Pushlightuserdata(p c.Pointer) {}
 
-//int   (lua_pushthread) (State *L);
+// llgo:link (*State).Pushthread C.lua_pushthread
+func (L *State) Pushthread() c.Int { return 0 }
 
 // /*
 // ** get functions (Lua -> stack)
