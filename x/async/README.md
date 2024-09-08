@@ -372,18 +372,22 @@ Introduce `async.IO[T]` type to represent an asynchronous operation, `async.Futu
 ```go
 package async
 
-type Future[T any] func() T
-type IO[T any] func() Future[T]
+type Future[T any] func(func(T))
+
+func Await[T any](future Future[T]) T
 
 func main() {
-  io := func() Future[string] {
-    return func() string {
-      return "Hello, World!"
+  hello := func() Future[string] {
+    return func(resolve func(string)) {
+      resolve("Hello, World!")
     }
   }
 
-  future := io()
-  value := future()
-  println(value)
+  future := hello()
+  future(func(value string) {
+    println(value)
+  })
+
+  println(Await(future))
 }
 ```

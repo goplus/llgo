@@ -104,7 +104,7 @@ func Listen(protocol, bindAddr string, listenCb func(client *Conn, err error)) {
 		listenCb(nil, err)
 		return
 	}
-	parseAddr(bindAddr)(func(v tuple.Tuple2[*net.SockAddr, error]) {
+	parseAddr(bindAddr).Then(func(v tuple.Tuple2[*net.SockAddr, error]) {
 		addr, err := v.Get()
 		if err != nil {
 			listenCb(nil, err)
@@ -167,7 +167,7 @@ func (l *Listener) accept() (client *Conn, err error) {
 
 func Connect(network, addr string) async.Future[tuple.Tuple2[*Conn, error]] {
 	return async.Async(func(resolve func(tuple.Tuple2[*Conn, error])) {
-		parseAddr(addr)(func(v tuple.Tuple2[*net.SockAddr, error]) {
+		parseAddr(addr).Then(func(v tuple.Tuple2[*net.SockAddr, error]) {
 			addr, err := v.Get()
 			if err != nil {
 				resolve(tuple.T2[*Conn, error]((*Conn)(nil), err))
