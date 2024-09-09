@@ -437,6 +437,295 @@ TestDoc Case 9:
 	}
 }
 
+TestDoc Case 10:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"TypeDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"Foo"
+				},
+				"Type":	{
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"/// doc"
+										}]
+								},
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"///< comment"
+										}]
+								},
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"y"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"/*!< comment */"
+										}]
+								},
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"z"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestDoc Case 11:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"TypeDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"Doc"
+				},
+				"Type":	{
+					"_Type":	"RecordType",
+					"Tag":	3,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"/** "
+										}, {
+											"_Type":	"Comment",
+											"Text":	"     * static field doc"
+										}, {
+											"_Type":	"Comment",
+											"Text":	"     */"
+										}]
+								},
+								"Comment":	null,
+								"IsStatic":	true,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"x"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"/*!< static field comment */"
+										}]
+								},
+								"IsStatic":	true,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"y"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"/** "
+										}, {
+											"_Type":	"Comment",
+											"Text":	"     * field doc"
+										}, {
+											"_Type":	"Comment",
+											"Text":	"     */"
+										}]
+								},
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"a"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"///< field comment"
+										}]
+								},
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"b"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	{
+									"_Type":	"CommentGroup",
+									"List":	[{
+											"_Type":	"Comment",
+											"Text":	"/*!< protected field comment */"
+										}]
+								},
+								"IsStatic":	false,
+								"Access":	2,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"value"
+									}]
+							}]
+					},
+					"Methods":	[{
+							"_Type":	"FuncDecl",
+							"Loc":	{
+								"_Type":	"Location",
+								"File":	"temp.h"
+							},
+							"Doc":	{
+								"_Type":	"CommentGroup",
+								"List":	[{
+										"_Type":	"Comment",
+										"Text":	"/** "
+									}, {
+										"_Type":	"Comment",
+										"Text":	"     * method doc"
+									}, {
+										"_Type":	"Comment",
+										"Text":	"     */"
+									}]
+							},
+							"Parent":	{
+								"_Type":	"Ident",
+								"Name":	"Doc"
+							},
+							"Name":	{
+								"_Type":	"Ident",
+								"Name":	"Foo"
+							},
+							"Type":	{
+								"_Type":	"FuncType",
+								"Params":	{
+									"_Type":	"FieldList",
+									"List":	null
+								},
+								"Ret":	{
+									"_Type":	"BuiltinType",
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
 
 #stderr
 
