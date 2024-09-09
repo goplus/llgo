@@ -2221,6 +2221,19 @@ func (c Cursor) IsVariadic() (ret c.Uint) { return c.wrapIsVariadic() }
 
 /**
  * Given a cursor that represents a declaration, return the associated
+ * comment's source range.  The range may include multiple consecutive comments
+ * with whitespace in between.
+ */
+// llgo:link (*Cursor).wrapCommentRange C.wrap_clang_Cursor_getCommentRange
+func (c *Cursor) wrapCommentRange(ret *SourceRange) {}
+
+func (c Cursor) CommentRange() (loc SourceRange) {
+	c.wrapCommentRange(&loc)
+	return
+}
+
+/**
+ * Given a cursor that represents a declaration, return the associated
  * comment text, including comment markers.
  */
 // llgo:link (*Cursor).wrapRawCommentText C.wrap_clang_Cursor_getRawCommentText
