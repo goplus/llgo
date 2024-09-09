@@ -212,23 +212,42 @@ func (ct *Converter) GetTypeDecl(cursor clang.Cursor) (ast.Decl, bool) {
 }
 
 func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
-	rawComment := cursor.RawCommentText()
-	defer rawComment.Dispose()
-
-	res := ast.DeclBase{
+	base := ast.DeclBase{
 		Loc:    &ct.curLoc,
 		Parent: ct.BuildScopingExpr(cursor.SemanticParent()),
 	}
+	commentGroup, isDoc := ct.ParseCommentGroup(cursor)
+	if isDoc {
+		base.Doc = commentGroup
+	}
+	return base
+}
 
+// extracts and parses comments associated with a given Clang cursor,
+// distinguishing between documentation comments and line comments.
+// It uses libclang to parse only Doxygen-style comments.
+
+// Reference for Doxygen documentation blocks: https://www.doxygen.nl/manual/docblocks.html
+
+// The function determines whether a comment is a documentation comment or a line comment by
+// comparing the range of the comment node with the range of the declaration node in the AST.
+
+// Note: In cases where both documentation comments and line comments conceptually exist,
+// only the line comment will be preserved.
+func (ct *Converter) ParseCommentGroup(cursor clang.Cursor) (comentGroup *ast.CommentGroup, isDoc bool) {
+	rawComment := cursor.RawCommentText()
+	defer rawComment.Dispose()
 	commentGroup := &ast.CommentGroup{}
 	if rawComment.CStr() != nil {
+		commentRange := cursor.CommentRange()
+		cursorRange := cursor.Extent()
+		isDoc := getOffset(commentRange.RangeStart()) < getOffset(cursorRange.RangeStart())
 		commentGroup = ct.ParseComment(c.GoString(rawComment.CStr()))
 		if len(commentGroup.List) > 0 {
-			res.Doc = commentGroup
+			return commentGroup, isDoc
 		}
 	}
-
-	return res
+	return nil, false
 }
 
 func (ct *Converter) ParseComment(rawComment string) *ast.CommentGroup {
@@ -560,13 +579,31 @@ type visitFieldContext struct {
 	converter *Converter
 }
 
+func (p *visitFieldContext) createBaseField(cursor clang.Cursor) *ast.Field {
+	field := &ast.Field{
+		Type: p.converter.ProcessType(cursor.Type()),
+	}
+	fieldName := cursor.String()
+	defer fieldName.Dispose()
+
+	commentGroup, isDoc := p.converter.ParseCommentGroup(cursor)
+	if commentGroup != nil {
+		if isDoc {
+			field.Doc = commentGroup
+		} else {
+			field.Comment = commentGroup
+		}
+	}
+	if name := fieldName.CStr(); name != nil {
+		field.Names = []*ast.Ident{{Name: c.GoString(name)}}
+	}
+	return field
+}
 func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
 	ctx := (*visitFieldContext)(clientData)
 
 	switch cursor.Kind {
 	case clang.CursorParmDecl, clang.CursorFieldDecl:
-		paramName := cursor.String()
-		defer paramName.Dispose()
 		// In C language, parameter lists do not have similar parameter grouping in Go.
 		// func foo(a, b int)
 
@@ -574,15 +611,7 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 		// struct A {
 		// 	int a, b;
 		// };
-		field := &ast.Field{
-			// todo(zzy):comment & doc
-			Type: ctx.converter.ProcessType(cursor.Type()),
-		}
-
-		if paramName.CStr() != nil {
-			field.Names = []*ast.Ident{{Name: c.GoString(paramName.CStr())}}
-		}
-
+		field := ctx.createBaseField(cursor)
 		if cursor.Kind == clang.CursorFieldDecl {
 			field.Access = ast.AccessSpecifier(cursor.CXXAccessSpecifier())
 		}
@@ -592,17 +621,9 @@ func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clan
 	case clang.CursorVarDecl:
 		if cursor.StorageClass() == clang.SCStatic {
 			// static member variable
-			fieldname := cursor.String()
-			defer fieldname.Dispose()
-			//todo(zzy): comment & doc
-			field := &ast.Field{
-				Type:     ctx.converter.ProcessType(cursor.Type()),
-				Access:   ast.AccessSpecifier(cursor.CXXAccessSpecifier()),
-				IsStatic: true,
-			}
-			if fieldname.CStr() != nil && c.GoString(fieldname.CStr()) != "" {
-				field.Names = []*ast.Ident{{Name: c.GoString(fieldname.CStr())}}
-			}
+			field := ctx.createBaseField(cursor)
+			field.Access = ast.AccessSpecifier(cursor.CXXAccessSpecifier())
+			field.IsStatic = true
 			ctx.params.List = append(ctx.params.List, field)
 		}
 	}

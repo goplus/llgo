@@ -41,6 +41,38 @@ void foo();`,
  * doc 2
  */
 void foo();`,
+		`
+		struct Foo {
+			/// doc
+			int x;
+			int y; ///< comment
+			/** 
+			 * field doc (parse ignore with comment in same cursor)
+			 */
+			int z; /*!< comment */
+		};
+		`,
+		`
+class Doc
+{
+  public:
+    /** 
+     * static field doc
+     */
+	static int x;
+	static int y;  /*!< static field comment */
+    /** 
+     * field doc
+     */
+    int a;
+    int b;  ///< field comment
+	/** 
+     * method doc
+     */
+    void Foo();
+  protected:
+    int value;       /*!< protected field comment */
+};`,
 	}
 	test.RunTest("TestDoc", testCases)
 }
