@@ -70,3 +70,16 @@ func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit
 
 	return index, unit, nil
 }
+
+// Traverse up the semantic parents
+func BuildScopingParts(cursor clang.Cursor) []string {
+	var parts []string
+	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
+		name := cursor.String()
+		qualified := c.GoString(name.CStr())
+		parts = append([]string{qualified}, parts...)
+		cursor = cursor.SemanticParent()
+		name.Dispose()
+	}
+	return parts
+}

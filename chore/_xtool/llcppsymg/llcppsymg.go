@@ -30,7 +30,6 @@ import (
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/llcppg/types"
-	"github.com/goplus/llgo/cpp/llvm"
 	"github.com/goplus/llgo/xtool/nm"
 )
 
@@ -115,19 +114,6 @@ func genDylibPath(lib string) (string, error) {
 	return dylibPath, nil
 }
 
-func decodeSymbol(symbolName string) string {
-	if symbolName == "" {
-		return ""
-	}
-	demangled := llvm.ItaniumDemangle(symbolName, true)
-	if demangled == nil {
-		return symbolName
-	}
-	defer c.Free(unsafe.Pointer(demangled))
-	demangleName := c.GoString(demangled)
-	return strings.TrimSpace(demangleName)
-}
-
 func genHeaderFilePath(cflags string, files []string) []string {
 	prefixPath := cflags
 	prefixPath = strings.TrimPrefix(prefixPath, "-I")
@@ -138,15 +124,15 @@ func genHeaderFilePath(cflags string, files []string) []string {
 	return includePaths
 }
 
-func getCommonSymbols(dylibSymbols []*nm.Symbol, symbolMap map[string]string, prefix []string) []*types.SymbolInfo {
+func getCommonSymbols(dylibSymbols []*nm.Symbol, symbolMap map[string]*parse.SymbolInfo, prefix []string) []*types.SymbolInfo {
 	var commonSymbols []*types.SymbolInfo
 	for _, dylibSym := range dylibSymbols {
 		symName := strings.TrimPrefix(dylibSym.Name, "_")
-		if goName, ok := symbolMap[symName]; ok {
+		if symInfo, ok := symbolMap[symName]; ok {
 			symbolInfo := &types.SymbolInfo{
 				Mangle: symName,
-				CPP:    decodeSymbol(dylibSym.Name),
-				Go:     goName,
+				CPP:    symInfo.ProtoName,
+				Go:     symInfo.GoName,
 			}
 			commonSymbols = append(commonSymbols, symbolInfo)
 		}

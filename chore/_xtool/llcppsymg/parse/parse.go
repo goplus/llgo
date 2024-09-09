@@ -10,11 +10,16 @@ import (
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
 
+type SymbolInfo struct {
+	GoName    string
+	ProtoName string
+}
+
 type Context struct {
 	namespaceName string
 	className     string
 	prefixes      []string
-	symbolMap     map[string]string
+	symbolMap     map[string]*SymbolInfo
 	currentFile   string
 	nameCounts    map[string]int
 }
@@ -22,7 +27,7 @@ type Context struct {
 func newContext(prefixes []string) *Context {
 	return &Context{
 		prefixes:   prefixes,
-		symbolMap:  make(map[string]string),
+		symbolMap:  make(map[string]*SymbolInfo),
 		nameCounts: make(map[string]int),
 	}
 }
@@ -73,6 +78,22 @@ func (c *Context) genMethodName(class, name string) string {
 	return prefix + name
 }
 
+func (p *Context) genProtoName(cursor clang.Cursor) string {
+	displayName := cursor.DisplayName()
+	defer displayName.Dispose()
+
+	scopingParts := clangutils.BuildScopingParts(cursor.SemanticParent())
+
+	var builder strings.Builder
+	for _, part := range scopingParts {
+		builder.WriteString(part)
+		builder.WriteString("::")
+	}
+
+	builder.WriteString(c.GoString(displayName.CStr()))
+	return builder.String()
+}
+
 func (c *Context) addSuffix(name string) string {
 	c.nameCounts[name]++
 	count := c.nameCounts[name]
@@ -96,8 +117,10 @@ func collectFuncInfo(cursor clang.Cursor) {
 	defer symbol.Dispose()
 	defer cursorStr.Dispose()
 
-	goName := context.genGoName(name)
-	context.symbolMap[symbolName] = goName
+	context.symbolMap[symbolName] = &SymbolInfo{
+		GoName:    context.genGoName(name),
+		ProtoName: context.genProtoName(cursor),
+	}
 }
 
 func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitResult {
@@ -133,7 +156,7 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 	return clang.ChildVisit_Continue
 }
 
-func ParseHeaderFile(filepaths []string, prefixes []string, isCpp bool) (map[string]string, error) {
+func ParseHeaderFile(filepaths []string, prefixes []string, isCpp bool) (map[string]*SymbolInfo, error) {
 	context = newContext(prefixes)
 	index := clang.CreateIndex(0, 0)
 	for _, filename := range filepaths {
