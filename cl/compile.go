@@ -904,6 +904,21 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			ctx.compileGlobal(ret, member)
 		}
 	}
+
+	// check instantiate named in RuntimeTypes
+	var typs []*types.Named
+	for _, T := range pkg.Prog.RuntimeTypes() {
+		if typ, ok := T.(*types.Named); ok && typ.TypeArgs() != nil && typ.Obj().Pkg() == pkg.Pkg {
+			typs = append(typs, typ)
+		}
+	}
+	sort.Slice(typs, func(i, j int) bool {
+		return typs[i].Obj().Name() < typs[j].Obj().Name()
+	})
+	for _, typ := range typs {
+		ctx.compileMethods(ret, typ)
+		ctx.compileMethods(ret, types.NewPointer(typ))
+	}
 }
 
 func globalType(gbl *ssa.Global) types.Type {
