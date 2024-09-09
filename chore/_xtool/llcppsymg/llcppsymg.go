@@ -61,7 +61,7 @@ func main() {
 	check(err)
 
 	filepaths := genHeaderFilePath(conf.CFlags, conf.Include)
-	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes)
+	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus)
 	check(err)
 
 	symbolInfo := getCommonSymbols(symbols, headerInfos, conf.TrimPrefixes)

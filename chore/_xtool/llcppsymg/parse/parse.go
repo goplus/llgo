@@ -134,14 +134,14 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 }
 
 func ParseHeaderFile(filepaths []string, prefixes []string, isCpp bool) (map[string]string, error) {
-
 	context = newContext(prefixes)
-
+	index := clang.CreateIndex(0, 0)
 	for _, filename := range filepaths {
-		index, unit, err := clangutils.CreateTranslationUnit(&clangutils.Config{
+		_, unit, err := clangutils.CreateTranslationUnit(&clangutils.Config{
 			File:  filename,
 			Temp:  false,
 			IsCpp: isCpp,
+			Index: index,
 		})
 		if err != nil {
 			return nil, errors.New("Unable to parse translation unit for file " + filename)
@@ -151,7 +151,7 @@ func ParseHeaderFile(filepaths []string, prefixes []string, isCpp bool) (map[str
 		context.setCurrentFile(filename)
 		clang.VisitChildren(cursor, visit, nil)
 		unit.Dispose()
-		index.Dispose()
 	}
+	index.Dispose()
 	return context.symbolMap, nil
 }
