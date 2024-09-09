@@ -1,6 +1,6 @@
 讨论：
 
-1. Future 用 interface 还是闭包：性能应该差不多，如果没有其他方法要暴露，感觉也没有换成 interface 的必要。
+1. Future 用 interface 还是闭包：性能应该差不多，如果没有其他方法要暴露，感觉也没有换成 interface 的必要，interface 多一个对象分配。先添加 Then 方法方便未来替换。
 2. 几个方法提供不同参数个数的版本还是用 tuple：如果编译器不支持可变泛型参数个数和特化，我倾向用 tuple 先简化实现，tuple 的开销应该也容易被编译器优化掉。多个方法让用户选择 Await2/Await3 这种也恶心。
 3. 是否 Cancellable，暂时不加进去，多一个 context，也不一定能快速稳定下来，可以后面根据实践再改。
 4. Executor 可能会变化，目前提供的 Run 是阻塞的，也可以把它做成异步。
@@ -12,5 +12,6 @@
 
 TODO：
 
-10. select 兼容 （可能把 Future 改为 interface 更合理？）
-11. Future 只会被执行一次
+[ ] 1. select 兼容 （可能把 Future 改为 interface 更合理？）
+[x] 2. Future 多个 Await 只会被执行一次
+[x] 3. Future 添加 Then 方法，不推荐直接当作函数调用，方便未来切换

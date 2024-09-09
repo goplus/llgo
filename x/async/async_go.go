@@ -22,8 +22,25 @@ package async
 import "sync"
 
 func Async[T any](fn func(func(T))) Future[T] {
+	var once sync.Once
+	var result T
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	return func(chain func(T)) {
-		go fn(chain)
+		once.Do(func() {
+			go func() {
+				fn(func(v T) {
+					result = v
+					wg.Done()
+				})
+			}()
+		})
+
+		go func() {
+			wg.Wait()
+			chain(result)
+		}()
 	}
 }
 

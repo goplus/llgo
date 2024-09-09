@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/goplus/llgo/x/async"
@@ -42,6 +43,8 @@ func main() {
 	RunIO()
 	RunAllAndRace()
 	RunTimeout()
+	RunMultipleCallbacksNodelay()
+	RunMultipleCallbacksDelay()
 	RunSocket()
 }
 
@@ -157,6 +160,76 @@ func RunTimeout() {
 			resolve(async.Void{})
 		})
 	}))
+}
+
+func RunMultipleCallbacksNodelay() {
+	println("Run Multiple Callbacks")
+
+	runCnt := atomic.Int32{}
+	async.Run(async.Async(func(resolve func(async.Void)) {
+		nodelay := async.Async(func(resolve func(async.Void)) {
+			println("nodelay")
+			runCnt.Add(1)
+			resolve(async.Void{})
+		})
+
+		cbCnt := atomic.Int32{}
+		cb := func() {
+			if cbCnt.Add(1) == 2 {
+				resolve(async.Void{})
+			}
+		}
+
+		nodelay.Then(func(async.Void) {
+			println("nodelay done")
+			cb()
+		})
+
+		nodelay.Then(func(async.Void) {
+			println("nodelay done again")
+			cb()
+		})
+	}))
+
+	if runCnt.Load() != 1 {
+		panic("runCnt != 1")
+	}
+}
+
+func RunMultipleCallbacksDelay() {
+	println("Run Multiple Callbacks")
+
+	runCnt := atomic.Int32{}
+	async.Run(async.Async(func(resolve func(async.Void)) {
+		delay := async.Async(func(resolve func(async.Void)) {
+			timeout.Timeout(100 * time.Millisecond).Then(func(async.Void) {
+				println("delay")
+				runCnt.Add(1)
+				resolve(async.Void{})
+			})
+		})
+
+		cbCnt := atomic.Int32{}
+		cb := func() {
+			if cbCnt.Add(1) == 2 {
+				resolve(async.Void{})
+			}
+		}
+
+		delay.Then(func(async.Void) {
+			println("delay done")
+			cb()
+		})
+
+		delay.Then(func(async.Void) {
+			println("delay done again")
+			cb()
+		})
+	}))
+
+	if runCnt.Load() != 1 {
+		panic("runCnt != 1")
+	}
 }
 
 func RunSocket() {

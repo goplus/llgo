@@ -20,6 +20,7 @@
 package async
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"github.com/goplus/llgo/c/libuv"
@@ -27,23 +28,68 @@ import (
 )
 
 // Currently Async run chain a future that call chain in the goroutine running `async.Run`.
-// TODO(lijie): It would better to switch when needed.
-func Async[T any](fn func(func(T))) Future[T] {
-	return func(chain func(T)) {
-		loop := Exec().L
+// Basic implementation:
+// func Async[T any](fn func(func(T))) Future[T] {
+// 	return func(chain func(T)) {
+// 		loop := Exec().L
 
-		var result T
-		var a *libuv.Async
-		var cb libuv.AsyncCb
-		a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
-			a.Close(nil)
+//			var result T
+//			var a *libuv.Async
+//			var cb libuv.AsyncCb
+//			a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
+//				a.Close(nil)
+//				chain(result)
+//			})
+//			loop.Async(a, cb)
+//			fn(func(v T) {
+//				result = v
+//				a.Send()
+//			})
+//		}
+//	}
+//
+// Better implementation to support multiple callbacks:
+func Async[T any](fn func(func(T))) Future[T] {
+	var result T
+	var done atomic.Bool
+	var resultReady atomic.Bool
+	var callbacks []func(T)
+	var mutex sync.Mutex
+
+	return func(chain func(T)) {
+		mutex.Lock()
+		if resultReady.Load() {
+			mutex.Unlock()
 			chain(result)
-		})
-		loop.Async(a, cb)
-		fn(func(v T) {
-			result = v
-			a.Send()
-		})
+			return
+		}
+		callbacks = append(callbacks, chain)
+		if !done.Swap(true) {
+			mutex.Unlock()
+			loop := Exec().L
+
+			var a *libuv.Async
+			var cb libuv.AsyncCb
+			a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
+				a.Close(nil)
+				mutex.Lock()
+				resultReady.Store(true)
+				currentCallbacks := callbacks
+				callbacks = nil
+				mutex.Unlock()
+
+				for _, callback := range currentCallbacks {
+					callback(result)
+				}
+			})
+			loop.Async(a, cb)
+			fn(func(v T) {
+				result = v
+				a.Send()
+			})
+		} else {
+			mutex.Unlock()
+		}
 	}
 }
 
