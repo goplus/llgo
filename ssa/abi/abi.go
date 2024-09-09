@@ -167,7 +167,7 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	case *types.Named:
 		o := t.Obj()
 		pkg := o.Pkg()
-		return "_llgo_" + FullName(pkg, NamedName(t)), (pkg == nil || o.Exported())
+		return "_llgo_" + FullName(pkg, NamedName(t)), (pkg == nil || o.Exported() || t.TypeArgs() != nil)
 	case *types.Interface:
 		if t.Empty() {
 			return "_llgo_any", true
