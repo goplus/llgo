@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/clang"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
 
 type Context struct {
@@ -133,35 +133,25 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 	return clang.ChildVisit_Continue
 }
 
-func ParseHeaderFile(filepaths []string, prefixes []string) (map[string]string, error) {
-	index := clang.CreateIndex(0, 0)
-	args := make([]*c.Char, 3)
-	args[0] = c.Str("-x")
-	args[1] = c.Str("c++")
-	args[2] = c.Str("-std=c++11")
+func ParseHeaderFile(filepaths []string, prefixes []string, isCpp bool) (map[string]string, error) {
+
 	context = newContext(prefixes)
 
 	for _, filename := range filepaths {
-		unit := index.ParseTranslationUnit(
-			c.AllocaCStr(filename),
-			unsafe.SliceData(args), 3,
-			nil, 0,
-			clang.TranslationUnit_None,
-		)
-
-		if unit == nil {
+		index, unit, err := clangutils.CreateTranslationUnit(&clangutils.Config{
+			File:  filename,
+			Temp:  false,
+			IsCpp: isCpp,
+		})
+		if err != nil {
 			return nil, errors.New("Unable to parse translation unit for file " + filename)
 		}
 
 		cursor := unit.Cursor()
 		context.setCurrentFile(filename)
-
 		clang.VisitChildren(cursor, visit, nil)
-
 		unit.Dispose()
+		index.Dispose()
 	}
-
-	index.Dispose()
-
 	return context.symbolMap, nil
 }
