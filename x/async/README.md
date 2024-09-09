@@ -362,19 +362,49 @@ In some situations, you may want to get the first result of multiple async opera
 ## Design considerations in LLGo
 
 - Don't introduce `async`/`await` keywords to compatible with Go compiler (just compiling)
-- For performance reason don't implement async functions with goroutines
+- For performance and memory reasons don't implement async functions with goroutines
 - Avoid implementing `Promise` by using `chan` to avoid blocking the thread, but it can be wrapped as a `chan` to make it compatible `select` statement
 
 ## Design
 
-Introduce `async.IO[T]` type to represent an asynchronous operation, `async.Future[T]` type to represent the result of an asynchronous operation. `async.IO[T]` can be `bind` to a function that accepts `T` as an argument to chain multiple asynchronous operations. `async.IO[T]` can be `await` to get the value of the asynchronous operation.
+### `async.Future[T]` type
+
+Introduce `async.Future[T]` type to represent an asynchronous operation that will produce a value of type `T`, similar to `Promise`/`Future` in other languages.
+
+### Future creation
+
+`async.Future[T]` can create by `async.Async[T]` function that takes a function that accepts a `resolve` function to produce a value of type `T`.
+
+### Future chaining (asynchronous callbacks style)
+
+`async.Future[T]` can be chained with `Then` method to add multiple callbacks to be executed when the operation is completed, it just runs once and calls every callbacks. `Then` method can't be chained multiple times because Go doesn't support generics method currently (Need support `func (f Future[T]) Then[U any](f func(T) Future[U]) Future[U]`).
+
+### Future waiting (synchronous style)
+
+`async.Await[T]` function can be used to wait for the completion of a `Future[T]` and return the value produced by the operation.
+
+### `async.Run[T]` function
+
+`async.Run[T]` function can be used to run the asynchronous operation and get the result of the operation. Currently it will switch the callbacks to the goroutine that calls `async.Run[T]` function, this maybe changed in the future to reduce the overhead of switching goroutines and make it more parallel.
+
+### `async.Future[T]` prototype
 
 ```go
 package async
 
 type Future[T any] func(func(T))
 
+func (f Future[T]) Then(f func(T))
+
+func Async[T any](f func(resolve func(T))) Future[T]
+
 func Await[T any](future Future[T]) T
+```
+
+### Example
+
+```go
+package main
 
 func main() {
   hello := func() Future[string] {
@@ -384,10 +414,14 @@ func main() {
   }
 
   future := hello()
-  future(func(value string) {
-    println(value)
+  future.Then(func(value string) {
+    println("first callback:", value)
+  })
+  future.Then(func(value string) {
+    println("second callback:", value)
   })
 
-  println(Await(future))
+  println("first await:", Await(future))
+  println("second await:", Await(future))
 }
 ```
