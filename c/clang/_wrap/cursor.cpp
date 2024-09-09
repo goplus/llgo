@@ -113,6 +113,8 @@ CXString wrap_clang_getCursorUSR(CXCursor *cur) { return clang_getCursorUSR(*cur
 
 CXString wrap_clang_getCursorSpelling(CXCursor *cur) { return clang_getCursorSpelling(*cur); }
 
+CXString wrap_clang_getCursorDisplayName(CXCursor *cur) { return clang_getCursorDisplayName(*cur); }
+
 unsigned wrap_clang_Cursor_isVariadic(CXCursor *cur) { return clang_Cursor_isVariadic(*cur); }
 
 CXString wrap_clang_Cursor_getRawCommentText(CXCursor *cursor) { return clang_Cursor_getRawCommentText(*cursor); }

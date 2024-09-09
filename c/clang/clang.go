@@ -2197,6 +2197,21 @@ func (c Cursor) String() (ret String) {
 }
 
 /**
+ * Retrieve the display name for the entity referenced by this cursor.
+ *
+ * The display name contains extra information that helps identify the cursor,
+ * such as the parameters of a function or template or the arguments of a
+ * class template specialization.
+ */
+// llgo:link (*Cursor).wrapDisplayName C.wrap_clang_getCursorDisplayName
+func (*Cursor) wrapDisplayName() (ret String) {
+	return
+}
+func (c Cursor) DisplayName() (ret String) {
+	return c.wrapDisplayName()
+}
+
+/**
  * Returns non-zero if the given cursor is a variadic function or method.
  */
 // llgo:link (*Cursor).wrapIsVariadic C.wrap_clang_Cursor_isVariadic
