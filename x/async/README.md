@@ -377,7 +377,7 @@ Introduce `async.Future[T]` type to represent an eventual completion (or failure
 
 ### Future chaining (asynchronous callbacks style)
 
-`async.Future[T]` can be chained with `Then` method to add multiple callbacks to be executed when the operation is completed, it just runs once and calls every callbacks. Currently `Then` method can't be chained multiple times because Go doesn't support generics method (Need support `func (f Future[T]) Then[U any](f func(T) Future[U]) Future[U]`) and function overload currently, maybe implements in Go+.
+`async.Future[T]` can be chained with `Then` method to add multiple callbacks to be executed when the operation is completed, it just runs once and calls every callbacks. Currently `Then` method can't be chained multiple times because Go doesn't support generics method (Need support `func (f Future[T]) Then[U any](f func(T) Future[U]) Future[U]`), maybe implements in Go+.
 
 ### Future waiting (synchronous style)
 
