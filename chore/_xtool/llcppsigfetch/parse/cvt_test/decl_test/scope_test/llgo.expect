@@ -15,6 +15,7 @@ TestScope Case 1:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -60,6 +61,7 @@ TestScope Case 2:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_ZN1a3fooEv",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -112,6 +114,7 @@ TestScope Case 3:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_ZN1a1b3fooEv",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -176,6 +179,7 @@ TestScope Case 4:
 								"_Type":	"Ident",
 								"Name":	"foo"
 							},
+							"MangledName":	"_ZN1a3fooEv",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -252,6 +256,7 @@ TestScope Case 5:
 								"_Type":	"Ident",
 								"Name":	"foo"
 							},
+							"MangledName":	"_ZN1a1b3fooEv",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{

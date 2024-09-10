@@ -15,6 +15,7 @@ TestDoc Case 1:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -57,6 +58,7 @@ TestDoc Case 2:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -105,6 +107,7 @@ TestDoc Case 3:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -153,6 +156,7 @@ TestDoc Case 4:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -201,6 +205,7 @@ TestDoc Case 5:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -252,6 +257,7 @@ TestDoc Case 6:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -303,6 +309,7 @@ TestDoc Case 7:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -354,6 +361,7 @@ TestDoc Case 8:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -411,6 +419,7 @@ TestDoc Case 9:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -698,6 +707,7 @@ TestDoc Case 11:
 								"_Type":	"Ident",
 								"Name":	"Foo"
 							},
+							"MangledName":	"_ZN3Doc3FooEv",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
