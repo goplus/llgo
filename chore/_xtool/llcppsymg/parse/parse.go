@@ -16,12 +16,10 @@ type SymbolInfo struct {
 }
 
 type Context struct {
-	namespaceName string
-	className     string
-	prefixes      []string
-	symbolMap     map[string]*SymbolInfo
-	currentFile   string
-	nameCounts    map[string]int
+	prefixes    []string
+	symbolMap   map[string]*SymbolInfo
+	currentFile string
+	nameCounts  map[string]int
 }
 
 func newContext(prefixes []string) *Context {
@@ -30,14 +28,6 @@ func newContext(prefixes []string) *Context {
 		symbolMap:  make(map[string]*SymbolInfo),
 		nameCounts: make(map[string]int),
 	}
-}
-
-func (c *Context) setNamespaceName(name string) {
-	c.namespaceName = name
-}
-
-func (c *Context) setClassName(name string) {
-	c.className = name
 }
 
 func (c *Context) setCurrentFile(filename string) {
@@ -79,18 +69,19 @@ func (c *Context) toGoName(name string) string {
 	return toCamel(name)
 }
 
-func (c *Context) genGoName(name string) string {
-	class := c.toGoName(c.className)
-	name = c.toGoName(name)
+func (p *Context) genGoName(cursor clang.Cursor) string {
+	funcName := cursor.String()
+	defer funcName.Dispose()
 
-	var baseName string
-	if class == "" {
-		baseName = name
-	} else {
-		baseName = c.genMethodName(class, name)
+	name := p.toGoName(c.GoString(funcName.CStr()))
+	if parent := cursor.SemanticParent(); parent.Kind == clang.CursorClassDecl {
+		parentName := parent.String()
+		defer parentName.Dispose()
+		class := p.toGoName(c.GoString(parentName.CStr()))
+		return p.addSuffix(p.genMethodName(class, name))
 	}
 
-	return c.addSuffix(baseName)
+	return p.addSuffix(name)
 }
 
 func (c *Context) genMethodName(class, name string) string {
@@ -132,19 +123,16 @@ func (c *Context) addSuffix(name string) string {
 var context = newContext([]string{})
 
 func collectFuncInfo(cursor clang.Cursor) {
-	cursorStr := cursor.String()
 	symbol := cursor.Mangling()
 
-	name := c.GoString(cursorStr.CStr())
 	symbolName := c.GoString(symbol.CStr())
 	if len(symbolName) >= 1 && symbolName[0] == '_' {
 		symbolName = symbolName[1:]
 	}
 	defer symbol.Dispose()
-	defer cursorStr.Dispose()
 
 	context.symbolMap[symbolName] = &SymbolInfo{
-		GoName:    context.genGoName(name),
+		GoName:    context.genGoName(cursor),
 		ProtoName: context.genProtoName(cursor),
 	}
 }
@@ -152,30 +140,11 @@ func collectFuncInfo(cursor clang.Cursor) {
 func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitResult {
 	switch cursor.Kind {
 	case clang.CursorNamespace, clang.CursorClassDecl:
-		nameStr := cursor.String()
-		defer nameStr.Dispose()
-
-		name := c.GoString(nameStr.CStr())
-		if cursor.Kind == clang.CursorNamespace {
-			context.setNamespaceName(name)
-		} else {
-			context.setClassName(name)
-		}
-
 		clang.VisitChildren(cursor, visit, nil)
-
-		if cursor.Kind == clang.CursorNamespace {
-			context.setNamespaceName("")
-		} else {
-			context.setClassName("")
-		}
-
 	case clang.CursorCXXMethod, clang.CursorFunctionDecl, clang.CursorConstructor, clang.CursorDestructor:
 		loc := cursor.Location()
 		var file clang.File
-		var line, column c.Uint
-
-		loc.SpellingLocation(&file, &line, &column, nil)
+		loc.SpellingLocation(&file, nil, nil, nil)
 		filename := file.FileName()
 		defer filename.Dispose()
 
@@ -186,7 +155,6 @@ func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitRe
 			collectFuncInfo(cursor)
 		}
 	}
-
 	return clang.ChildVisit_Continue
 }
 
