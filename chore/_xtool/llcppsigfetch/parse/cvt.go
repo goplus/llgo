@@ -434,10 +434,11 @@ func (ct *Converter) ProcessUnderlyingType(cursor clang.Cursor) ast.Expr {
 }
 
 // converts functions, methods, constructors, destructors (including out-of-class decl) to ast.FuncDecl nodes.
-// todo(zzy): manglename (c++)
 func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	name := cursor.String()
+	mangledName := cursor.Mangling()
 	defer name.Dispose()
+	defer mangledName.Dispose()
 
 	// function type will only collect return type
 	// ProcessType can't get the field names,will collect in follows
@@ -448,10 +449,17 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	}
 	params := ct.ProcessFieldList(cursor)
 	funcType.Params = params
+
+	mangledNameStr := c.GoString(mangledName.CStr())
+	if len(mangledNameStr) >= 1 && mangledNameStr[0] == '_' {
+		mangledNameStr = mangledNameStr[1:]
+	}
+
 	funcDecl := &ast.FuncDecl{
-		DeclBase: ct.CreateDeclBase(cursor),
-		Name:     &ast.Ident{Name: c.GoString(name.CStr())},
-		Type:     funcType,
+		DeclBase:    ct.CreateDeclBase(cursor),
+		Name:        &ast.Ident{Name: c.GoString(name.CStr())},
+		Type:        funcType,
+		MangledName: mangledNameStr,
 	}
 
 	if cursor.IsFunctionInlined() != 0 {

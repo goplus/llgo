@@ -124,6 +124,7 @@ func MarshalASTDecl(decl ast.Decl) *cjson.JSON {
 		root.SetItem(c.Str("_Type"), stringField("FuncDecl"))
 		MarshalASTDeclBase(d.DeclBase, root)
 		root.SetItem(c.Str("Name"), MarshalASTExpr(d.Name))
+		root.SetItem(c.Str("MangledName"), stringField(d.MangledName))
 		root.SetItem(c.Str("Type"), MarshalASTExpr(d.Type))
 		root.SetItem(c.Str("IsInline"), boolField(d.IsInline))
 		root.SetItem(c.Str("IsStatic"), boolField(d.IsStatic))
