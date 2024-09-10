@@ -20,6 +20,10 @@ func (p *AstPrint) VisitFuncDecl(funcDecl *ast.FuncDecl) {
 	fmt.Println(funcDecl.Name.Name)
 }
 
+func (p *AstPrint) VisitDone(docVisitor DocVisitor) {
+
+}
+
 func (p *AstPrint) VisitTypeDecl(typeDecl *ast.TypeDecl) {
 	fmt.Println(typeDecl.Name.Name)
 }

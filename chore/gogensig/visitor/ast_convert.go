@@ -27,3 +27,7 @@ func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
 func (p *AstConvert) VisitTypeDecl(typeDecl *ast.TypeDecl) {
 	fmt.Println(typeDecl.Name.Name)
 }
+
+func (p *AstConvert) VisitDone(docVisitor DocVisitor) {
+	p.pkg.Write()
+}

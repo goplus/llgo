@@ -10,6 +10,7 @@ type DocVisitor interface {
 	Visit(_Type string, node ast.Node)
 	VisitFuncDecl(*ast.FuncDecl)
 	VisitTypeDecl(*ast.TypeDecl)
+	VisitDone(DocVisitor)
 }
 
 type BaseDocVisitor struct {
@@ -40,6 +41,7 @@ func (p *BaseDocVisitor) Visit(_Type string, node ast.Node) {
 	default:
 		p.visitNode(v)
 	}
+	p.visitDone(p.DocVisitor)
 }
 
 func (p *BaseDocVisitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
@@ -48,4 +50,8 @@ func (p *BaseDocVisitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 func (p *BaseDocVisitor) visitTypeDecl(typeDecl *ast.TypeDecl) {
 	p.VisitTypeDecl(typeDecl)
+}
+
+func (p *BaseDocVisitor) visitDone(visitor DocVisitor) {
+	visitor.VisitDone(visitor)
 }

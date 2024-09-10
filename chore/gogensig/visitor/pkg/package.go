@@ -5,6 +5,7 @@ import (
 	"go/types"
 
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	"github.com/goplus/llgo/internal/lib/os"
 
 	"github.com/goplus/gogen"
 )
@@ -20,7 +21,7 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 }
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
-	sig, err := toSigniture(funcDecl.Type.Params)
+	sig, err := toSigniture(funcDecl.Type)
 	if err != nil {
 		return err
 	}
@@ -28,7 +29,12 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	return nil
 }
 
-func toSigniture(*ast.FieldList) (*types.Signature, error) {
+func (p *Package) Write() error {
+	p.p.CB().Pkg().WriteTo(os.Stdout, "temp")
+	return nil
+}
+
+func toSigniture(funcType *ast.FuncType) (*types.Signature, error) {
 	//todo
 	return nil, nil
 }
