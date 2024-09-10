@@ -1,11 +1,11 @@
 package pkg
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 
 	"github.com/goplus/llgo/chore/llcppg/ast"
-	"github.com/goplus/llgo/internal/lib/os"
 
 	"github.com/goplus/gogen"
 )
@@ -30,11 +30,9 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 }
 
 func (p *Package) Write() error {
-	p.p.CB().Pkg().WriteTo(os.Stdout, "temp")
-	return nil
+	return fmt.Errorf("%s", "todo Write package")
 }
 
 func toSigniture(funcType *ast.FuncType) (*types.Signature, error) {
-	//todo
-	return nil, nil
+	return nil, fmt.Errorf("%s", "todo toSigniture")
 }
