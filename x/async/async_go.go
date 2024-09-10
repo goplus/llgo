@@ -37,8 +37,10 @@ func Async[T any](fn func(func(T))) Future[T] {
 	})
 
 	return func(chain func(T)) {
-		wg.Wait()
-		chain(result)
+		go func() {
+			wg.Wait()
+			chain(result)
+		}()
 	}
 }
 
