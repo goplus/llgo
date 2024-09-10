@@ -338,6 +338,8 @@ func (p Program) tyComplex128() llvm.Type {
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
+	di := newDIBuilder(p, mod)
+	cu := di.CreateCompileUnit(name, pkgPath)
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// mod.Finalize()
 	gbls := make(map[string]Global)
@@ -352,7 +354,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p}
+		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p, di: di, cu: cu}
 	ret.abi.Init(pkgPath)
 	return ret
 }
@@ -589,6 +591,8 @@ type aPackage struct {
 	abi abi.Builder
 
 	Prog Program
+	di   diBuilder
+	cu   CompilationUnit
 
 	vars   map[string]Global
 	fns    map[string]Function
@@ -704,6 +708,14 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 			p.pyLoadModSyms(b)
 		}
 	}
+}
+
+func (p Package) Finalize() {
+	p.di.Finalize()
+}
+
+func (p Package) DIBuilder() diBuilder {
+	return p.di
 }
 
 // -----------------------------------------------------------------------------

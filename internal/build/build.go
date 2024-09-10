@@ -236,7 +236,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 }
 
 const (
-	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics | ssa.GlobalDebug
 )
 
 type context struct {
@@ -436,6 +436,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 		}
 	}
 	args = append(args, exargs...)
+	args = append(args, "-gdwarf-5", "-v")
 
 	// TODO(xsw): show work
 	if verbose {
@@ -498,6 +499,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		cl.SetDebug(0)
 	}
 	check(err)
+	ret.Finalize()
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)

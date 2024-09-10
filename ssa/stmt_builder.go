@@ -288,6 +288,24 @@ func (b Builder) Times(n Expr, loop func(i Expr)) {
 }
 
 // -----------------------------------------------------------------------------
+
+func (b Builder) Debug(v Expr, dv DIVar, scope DIScope, pos token.Position) {
+	b.Pkg.DIBuilder().Debug(v, dv, scope, pos, b.blk)
+}
+
+func (b Builder) DebugValue(v Expr, dv DIVar, scope DIScope, pos token.Position) {
+	b.Pkg.DIBuilder().DebugValue(v, dv, scope, pos, b.blk)
+}
+
+func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt DIType, argNo int) DIVar {
+	return b.Pkg.DIBuilder().DIVarParam(f, pos, varName, vt, argNo)
+}
+
+func (b Builder) DIVarAuto(f Function, pos token.Position, varName string, vt DIType) DIVar {
+	return b.Pkg.DIBuilder().DIVarAuto(f, pos, varName, vt)
+}
+
+// -----------------------------------------------------------------------------
 /*
 type caseStmt struct {
 	v   llvm.Value

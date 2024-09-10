@@ -228,6 +228,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
+		p.pkg.DIBuilder().DebugFunction(fn, p.goProg.Fset.Position(f.Pos()))
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -249,12 +250,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
+			b.SetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(f.Pos()))
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
 			for i, block := range f.Blocks {
 				off[i] = p.compilePhis(b, block)
 			}
 			p.blkInfos = blocks.Infos(f.Blocks)
+			p.debugParams(b, f)
 			i := 0
 			for {
 				block := f.Blocks[i]
@@ -275,6 +278,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	return fn, nil, goFunc
+}
+
+func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
+	for argNo, param := range f.Params {
+		blk := p.fn.Block(0)
+		pos := p.goProg.Fset.Position(param.Pos())
+		v := p.compileValue(b, param)
+		ty := param.Type()
+		t := b.Pkg.DIBuilder().DIType(p.prog.Type(ty, llssa.InGo), pos)
+		div := b.Pkg.DIBuilder().DIVarParam(p.fn, p.goProg.Fset.Position(param.Pos()), param.Name(), t, argNo)
+		b.Pkg.DIBuilder().DebugValue(v, div, p.fn, pos, blk)
+	}
 }
 
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
@@ -453,6 +468,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return v
 		}
 		log.Panicln("unreachable:", iv)
+	}
+	if v, ok := iv.(ssa.Instruction); ok {
+		b.SetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(v.Pos()))
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -684,9 +702,74 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		ch := p.compileValue(b, v.Chan)
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
+	case *ssa.DebugRef:
+		// object := v.Object()
+		// variable, ok := object.(*types.Var)
+		// if !ok {
+		// 	// Not a local variable.
+		// 	return
+		// }
+		// if v.IsAddr {
+		// 	// *ssa.Alloc or *ssa.FieldAddr
+		// 	return
+		// }
+		// fn := v.Parent()
+		// dbgVar := p.getLocalVariable(b, fn, variable)
+		// pos := p.goProg.Fset.Position(getPos(v))
+		// value := p.compileValue(b, v.X)
+		// b.Pkg.DIBuilder().Debug(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
+}
+
+type poser interface {
+	Pos() token.Pos
+}
+
+func getPos(v poser) token.Pos {
+	pos := v.Pos()
+	if pos.IsValid() {
+		return pos
+	}
+
+	switch v := v.(type) {
+	case *ssa.MakeInterface:
+		return getPos(v.X)
+	case *ssa.MakeClosure:
+		return v.Fn.(*ssa.Function).Pos()
+	case *ssa.Return:
+		syntax := v.Parent().Syntax()
+		if syntax != nil {
+			return syntax.End()
+		}
+		return token.NoPos
+	case *ssa.FieldAddr:
+		return getPos(v.X)
+	case *ssa.IndexAddr:
+		return getPos(v.X)
+	case *ssa.Slice:
+		return getPos(v.X)
+	case *ssa.Store:
+		return getPos(v.Addr)
+	case *ssa.Extract:
+		return getPos(v.Tuple)
+	default:
+		fmt.Printf("getPos: unknown instr - %T\n", v)
+		return token.NoPos
+	}
+}
+
+func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {
+	pos := p.fset.Position(v.Pos())
+	t := b.Prog.Type(v.Type(), llssa.InGo)
+	vt := b.Pkg.DIBuilder().DIType(t, pos)
+	for i, param := range fn.Params {
+		if param.Object().(*types.Var) == v {
+			return b.DIVarParam(p.fn, pos, v.Name(), vt, i)
+		}
+	}
+	return b.DIVarAuto(p.fn, pos, v.Name(), vt)
 }
 
 func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObjRef, kind int) {
