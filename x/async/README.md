@@ -361,44 +361,58 @@ In some situations, you may want to get the first result of multiple async opera
 
 ## Design considerations in LLGo
 
-- Don't introduce `async`/`await` keywords to compatible with Go compiler (just compiling)
-- For performance and memory reasons don't implement async functions with goroutines
-- Avoid implementing `Promise` by using `chan` to avoid blocking the thread, but it can be wrapped as a `chan` to make it compatible `select` statement
+- Don't introduce `async`/`await` keywords to compatible with Go
+- For performance and memory reasons don't implement async functions with goroutines, coroutines, or other mechanisms that require per-task stack allocation
+- Avoid implementing async task by using `chan` that blocking the thread
 
 ## Design
 
 ### `async.Future[T]` type
 
-Introduce `async.Future[T]` type to represent an asynchronous operation that will produce a value of type `T`, similar to `Promise`/`Future` in other languages.
+Introduce `async.Future[T]` type to represent an eventual completion (or failure) of an asynchronous operation and its resulting value, similar to `Promise`/`Future` in other languages. Functions that return `async.Future[T]` are considered asynchronous functions.
 
 ### Future creation
 
-`async.Future[T]` can create by `async.Async[T]` function that takes a function that accepts a `resolve` function to produce a value of type `T`.
+`async.Future[T]` can be created by `async.Async[T]` function that takes a function that accepts a `resolve` function to produce a value of type `T`.
 
 ### Future chaining (asynchronous callbacks style)
 
-`async.Future[T]` can be chained with `Then` method to add multiple callbacks to be executed when the operation is completed, it just runs once and calls every callbacks. `Then` method can't be chained multiple times because Go doesn't support generics method currently (Need support `func (f Future[T]) Then[U any](f func(T) Future[U]) Future[U]`).
+`async.Future[T]` can be chained with `Then` method to add multiple callbacks to be executed when the operation is completed, it just runs once and calls every callbacks. Currently `Then` method can't be chained multiple times because Go doesn't support generics method (Need support `func (f Future[T]) Then[U any](f func(T) Future[U]) Future[U]`) and function overload currently, maybe implements in Go+.
 
 ### Future waiting (synchronous style)
 
-`async.Await[T]` function can be used to wait for the completion of a `Future[T]` and return the value produced by the operation.
+`async.Await[T]` function can be used to wait for the completion of a `Future[T]` and return the value produced by the operation. In LLGo, `async.Await[T]` is a blocking function that waits for the completion of the `Future[T]` and returns the value synchronously, it would be transformed to `Future.Then` callback in the frontend.
 
 ### `async.Run[T]` function
 
-`async.Run[T]` function can be used to run the asynchronous operation and get the result of the operation. Currently it will switch the callbacks to the goroutine that calls `async.Run[T]` function, this maybe changed in the future to reduce the overhead of switching goroutines and make it more parallel.
+`async.Run[T]` function can be used to create an global asynchronous context and run async functions, and it would be hidden by the compiler in the future.
 
-### `async.Future[T]` prototype
+Currently it will switch the callbacks to the goroutine that calls `async.Run[T]` function, this maybe changed in the future to reduce the overhead of switching goroutines and make it more parallel.
+
+### Prototype
 
 ```go
 package async
 
-type Future[T any] func(func(T))
-
-func (f Future[T]) Then(f func(T))
+type Future[T any] interface {
+  Then(f func(T))
+}
 
 func Async[T any](f func(resolve func(T))) Future[T]
 
 func Await[T any](future Future[T]) T
+```
+
+### Some async functions
+
+```go
+package async
+
+
+func Race[T1 any](futures ...Future[T1]) Future[T1]
+
+func All[T1 any](futures ...Future[T1]) Future[[]T1]
+
 ```
 
 ### Example
@@ -407,10 +421,11 @@ func Await[T any](future Future[T]) T
 package main
 
 func main() {
-  hello := func() Future[string] {
-    return func(resolve func(string)) {
+  async.Run(func() {
+  hello := func() async.Future[string] {
+    return async.Async(func(resolve func(string)) {
       resolve("Hello, World!")
-    }
+    })
   }
 
   future := hello()
@@ -421,7 +436,8 @@ func main() {
     println("second callback:", value)
   })
 
-  println("first await:", Await(future))
-  println("second await:", Await(future))
+  println("first await:", async.Await(future))
+  println("second await:", async.Await(future))
+  })
 }
 ```

@@ -28,66 +28,42 @@ import (
 )
 
 // Currently Async run chain a future that call chain in the goroutine running `async.Run`.
-// Basic implementation:
-// func Async[T any](fn func(func(T))) Future[T] {
-// 	return func(chain func(T)) {
-// 		loop := Exec().L
-
-//			var result T
-//			var a *libuv.Async
-//			var cb libuv.AsyncCb
-//			a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
-//				a.Close(nil)
-//				chain(result)
-//			})
-//			loop.Async(a, cb)
-//			fn(func(v T) {
-//				result = v
-//				a.Send()
-//			})
-//		}
-//	}
-//
-// Better implementation to support multiple callbacks:
 func Async[T any](fn func(func(T))) Future[T] {
 	var result T
-	var done atomic.Bool
 	var resultReady atomic.Bool
 	var callbacks []func(T)
 	var mutex sync.Mutex
+	loop := Exec().L
+
+	var a *libuv.Async
+	var cb libuv.AsyncCb
+	a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
+		a.Close(nil)
+		mutex.Lock()
+		currentCallbacks := callbacks
+		callbacks = nil
+		mutex.Unlock()
+
+		for _, callback := range currentCallbacks {
+			callback(result)
+		}
+	})
+	loop.Async(a, cb)
+
+	// Execute fn immediately
+	fn(func(v T) {
+		result = v
+		resultReady.Store(true)
+		a.Send()
+	})
 
 	return func(chain func(T)) {
 		mutex.Lock()
 		if resultReady.Load() {
 			mutex.Unlock()
 			chain(result)
-			return
-		}
-		callbacks = append(callbacks, chain)
-		if !done.Swap(true) {
-			mutex.Unlock()
-			loop := Exec().L
-
-			var a *libuv.Async
-			var cb libuv.AsyncCb
-			a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
-				a.Close(nil)
-				mutex.Lock()
-				resultReady.Store(true)
-				currentCallbacks := callbacks
-				callbacks = nil
-				mutex.Unlock()
-
-				for _, callback := range currentCallbacks {
-					callback(result)
-				}
-			})
-			loop.Async(a, cb)
-			fn(func(v T) {
-				result = v
-				a.Send()
-			})
 		} else {
+			callbacks = append(callbacks, chain)
 			mutex.Unlock()
 		}
 	}
