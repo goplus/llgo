@@ -1,0 +1,76 @@
+[{
+	"input_text": "int fn(int a, int b);",
+	"want_result": [
+		"//go:linkname Fn C.fn",
+		"func Fn(a c.Int, b.Int) c.Int"
+	],
+	"path": "temp.h",
+	"doc":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"FuncDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"fn"
+				},
+				"Type":	{
+					"_Type":	"FuncType",
+					"Params":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	0,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"a"
+									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"BuiltinType",
+									"Kind":	6,
+									"Flags":	0
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	0,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"b"
+									}]
+							}]
+					},
+					"Ret":	{
+						"_Type":	"BuiltinType",
+						"Kind":	6,
+						"Flags":	0
+					}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}]
