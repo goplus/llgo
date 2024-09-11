@@ -68,7 +68,8 @@ func genFrom(fileOrPkg string, pkgPath string) string {
 	prog := llssa.NewProgram(nil)
 
 	cfg := &packages.Config{
-		Mode: loadSyntax | packages.NeedDeps,
+		Mode:       loadSyntax | packages.NeedDeps,
+		BuildFlags: []string{"-tags", "llgo"},
 	}
 
 	dedup := packages.NewDeduper()
