@@ -1,0 +1,291 @@
+#stdout
+TestScope Case 1:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"FuncDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"foo"
+				},
+				"MangledName":	"_Z3foov",
+				"Type":	{
+					"_Type":	"FuncType",
+					"Params":	{
+						"_Type":	"FieldList",
+						"List":	null
+					},
+					"Ret":	{
+						"_Type":	"BuiltinType",
+						"Kind":	0,
+						"Flags":	0
+					}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 2:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"FuncDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"_Type":	"Ident",
+					"Name":	"a"
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"foo"
+				},
+				"MangledName":	"_ZN1a3fooEv",
+				"Type":	{
+					"_Type":	"FuncType",
+					"Params":	{
+						"_Type":	"FieldList",
+						"List":	null
+					},
+					"Ret":	{
+						"_Type":	"BuiltinType",
+						"Kind":	0,
+						"Flags":	0
+					}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 3:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"FuncDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"_Type":	"ScopingExpr",
+					"X":	{
+						"_Type":	"Ident",
+						"Name":	"b"
+					},
+					"Parent":	{
+						"_Type":	"Ident",
+						"Name":	"a"
+					}
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"foo"
+				},
+				"MangledName":	"_ZN1a1b3fooEv",
+				"Type":	{
+					"_Type":	"FuncType",
+					"Params":	{
+						"_Type":	"FieldList",
+						"List":	null
+					},
+					"Ret":	{
+						"_Type":	"BuiltinType",
+						"Kind":	0,
+						"Flags":	0
+					}
+				},
+				"IsInline":	false,
+				"IsStatic":	false,
+				"IsConst":	false,
+				"IsExplicit":	false,
+				"IsConstructor":	false,
+				"IsDestructor":	false,
+				"IsVirtual":	false,
+				"IsOverride":	false
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 4:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"TypeDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"a"
+				},
+				"Type":	{
+					"_Type":	"RecordType",
+					"Tag":	3,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	null
+					},
+					"Methods":	[{
+							"_Type":	"FuncDecl",
+							"Loc":	{
+								"_Type":	"Location",
+								"File":	"temp.h"
+							},
+							"Doc":	null,
+							"Parent":	{
+								"_Type":	"Ident",
+								"Name":	"a"
+							},
+							"Name":	{
+								"_Type":	"Ident",
+								"Name":	"foo"
+							},
+							"MangledName":	"_ZN1a3fooEv",
+							"Type":	{
+								"_Type":	"FuncType",
+								"Params":	{
+									"_Type":	"FieldList",
+									"List":	null
+								},
+								"Ret":	{
+									"_Type":	"BuiltinType",
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+TestScope Case 5:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"TypeDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"temp.h"
+				},
+				"Doc":	null,
+				"Parent":	{
+					"_Type":	"Ident",
+					"Name":	"a"
+				},
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"b"
+				},
+				"Type":	{
+					"_Type":	"RecordType",
+					"Tag":	3,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	null
+					},
+					"Methods":	[{
+							"_Type":	"FuncDecl",
+							"Loc":	{
+								"_Type":	"Location",
+								"File":	"temp.h"
+							},
+							"Doc":	null,
+							"Parent":	{
+								"_Type":	"ScopingExpr",
+								"X":	{
+									"_Type":	"Ident",
+									"Name":	"b"
+								},
+								"Parent":	{
+									"_Type":	"Ident",
+									"Name":	"a"
+								}
+							},
+							"Name":	{
+								"_Type":	"Ident",
+								"Name":	"foo"
+							},
+							"MangledName":	"_ZN1a1b3fooEv",
+							"Type":	{
+								"_Type":	"FuncType",
+								"Params":	{
+									"_Type":	"FieldList",
+									"List":	null
+								},
+								"Ret":	{
+									"_Type":	"BuiltinType",
+									"Kind":	0,
+									"Flags":	0
+								}
+							},
+							"IsInline":	false,
+							"IsStatic":	false,
+							"IsConst":	false,
+							"IsExplicit":	false,
+							"IsConstructor":	false,
+							"IsDestructor":	false,
+							"IsVirtual":	false,
+							"IsOverride":	false
+						}]
+				}
+			}],
+		"includes":	[],
+		"macros":	[]
+	}
+}
+
+
+#stderr
+
+#exit 0
