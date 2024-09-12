@@ -1,5 +1,6 @@
 package unmarshal_test
 
+// TODO to improve test case
 import (
 	"io"
 	"os"
@@ -7,7 +8,6 @@ import (
 
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
-	"github.com/goplus/llgo/chore/gogensig/visitor/docset"
 )
 
 func TestUnmarshalFiles(t *testing.T) {
@@ -26,8 +26,9 @@ func TestUnmarshalAnyNode(t *testing.T) {
 		t.Error(err)
 	}
 	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("anynode")}
-	p := unmarshal.NewDocFileUnmarshaller(docset.DocPathString("./jsons/anynode.json"), docVisitors)
-	p.Unmarshal(nodeBytes)
+	p := unmarshal.NewDocFileUnmarshaller(docVisitors)
+	rawDocFile := unmarshal.NewRawDocFile("./jsons/anynode.json", nodeBytes)
+	p.Unmarshal(rawDocFile)
 }
 
 func TestFunc1(t *testing.T) {

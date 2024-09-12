@@ -28,6 +28,6 @@ func (p *AstConvert) VisitTypeDecl(typeDecl *ast.TypeDecl) {
 	fmt.Println(typeDecl.Name.Name)
 }
 
-func (p *AstConvert) VisitDone(docVisitor DocVisitor) {
-	p.pkg.Write(p.DocPath())
+func (p *AstConvert) VisitDone(docPath string) {
+	p.pkg.Write(docPath)
 }
