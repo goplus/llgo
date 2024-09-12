@@ -20,6 +20,7 @@
 package async
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"github.com/goplus/llgo/c/libuv"
@@ -27,23 +28,44 @@ import (
 )
 
 // Currently Async run chain a future that call chain in the goroutine running `async.Run`.
-// TODO(lijie): It would better to switch when needed.
 func Async[T any](fn func(func(T))) Future[T] {
-	return func(chain func(T)) {
-		loop := Exec().L
+	var result T
+	var resultReady atomic.Bool
+	var callbacks []func(T)
+	var mutex sync.Mutex
+	loop := Exec().L
 
-		var result T
-		var a *libuv.Async
-		var cb libuv.AsyncCb
-		a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
-			a.Close(nil)
+	var a *libuv.Async
+	var cb libuv.AsyncCb
+	a, cb = cbind.BindF[libuv.Async, libuv.AsyncCb](func(a *libuv.Async) {
+		a.Close(nil)
+		mutex.Lock()
+		currentCallbacks := callbacks
+		callbacks = nil
+		mutex.Unlock()
+
+		for _, callback := range currentCallbacks {
+			callback(result)
+		}
+	})
+	loop.Async(a, cb)
+
+	// Execute fn immediately
+	fn(func(v T) {
+		result = v
+		resultReady.Store(true)
+		a.Send()
+	})
+
+	return func(chain func(T)) {
+		mutex.Lock()
+		if resultReady.Load() {
+			mutex.Unlock()
 			chain(result)
-		})
-		loop.Async(a, cb)
-		fn(func(v T) {
-			result = v
-			a.Send()
-		})
+		} else {
+			callbacks = append(callbacks, chain)
+			mutex.Unlock()
+		}
 	}
 }
 
@@ -53,7 +75,7 @@ func Race[T1 any](futures ...Future[T1]) Future[T1] {
 	return Async(func(resolve func(T1)) {
 		done := atomic.Bool{}
 		for _, future := range futures {
-			future(func(v T1) {
+			future.Then(func(v T1) {
 				if !done.Swap(true) {
 					// Just resolve the first one.
 					resolve(v)
@@ -70,7 +92,7 @@ func All[T1 any](futures ...Future[T1]) Future[[]T1] {
 		var done uint32
 		for i, future := range futures {
 			i := i
-			future(func(v T1) {
+			future.Then(func(v T1) {
 				results[i] = v
 				if atomic.AddUint32(&done, 1) == uint32(n) {
 					// All done.

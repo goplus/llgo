@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/goplus/llgo/x/async"
@@ -32,64 +33,61 @@ func WriteFile(fileName string, content []byte) async.Future[error] {
 
 func sleep(i int, d time.Duration) async.Future[int] {
 	return async.Async(func(resolve func(int)) {
-		timeout.Timeout(d)(func(async.Void) {
+		timeout.Timeout(d).Then(func(async.Void) {
 			resolve(i)
 		})
 	})
 }
 
 func main() {
-	RunIO()
-	RunAllAndRace()
-	RunTimeout()
-	RunSocket()
+	async.Run(func(resolve func(async.Void)) {
+		RunIO()
+		RunAllAndRace()
+		RunTimeout()
+		RunMultipleCallbacksNodelay()
+		RunMultipleCallbacksDelay()
+		RunSocket()
+	})
 }
 
 func RunIO() {
 	println("RunIO with Await")
 
 	// Hide `resolve` in Go+
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		println("read file")
-		defer resolve(async.Void{})
-		content, err := async.Await(ReadFile("all.go")).Get()
+
+	println("read file")
+	content, err := async.Await(ReadFile("all.go")).Get()
+	if err != nil {
+		fmt.Printf("read err: %v\n", err)
+		return
+	}
+	fmt.Printf("read content: %s\n", content)
+	err = async.Await(WriteFile("2.out", content))
+	if err != nil {
+		fmt.Printf("write err: %v\n", err)
+		return
+	}
+	fmt.Printf("write done\n")
+
+	// Translated Await to BindIO in Go+:
+	println("RunIO with BindIO")
+
+	ReadFile("all.go").Then(func(v tuple.Tuple2[[]byte, error]) {
+		content, err := v.Get()
 		if err != nil {
 			fmt.Printf("read err: %v\n", err)
 			return
 		}
 		fmt.Printf("read content: %s\n", content)
-		err = async.Await(WriteFile("2.out", content))
-		if err != nil {
-			fmt.Printf("write err: %v\n", err)
-			return
-		}
-		fmt.Printf("write done\n")
-	}))
-
-	// Translated Await to BindIO in Go+:
-	println("RunIO with BindIO")
-
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		ReadFile("all.go")(func(v tuple.Tuple2[[]byte, error]) {
-			content, err := v.Get()
+		WriteFile("2.out", content).Then(func(v error) {
+			err = v
 			if err != nil {
-				fmt.Printf("read err: %v\n", err)
-				resolve(async.Void{})
+				fmt.Printf("write err: %v\n", err)
 				return
 			}
-			fmt.Printf("read content: %s\n", content)
-			WriteFile("2.out", content)(func(v error) {
-				err = v
-				if err != nil {
-					fmt.Printf("write err: %v\n", err)
-					resolve(async.Void{})
-					return
-				}
-				println("write done")
-				resolve(async.Void{})
-			})
+			println("write done")
 		})
-	}))
+	})
 }
 
 func RunAllAndRace() {
@@ -99,92 +97,139 @@ func RunAllAndRace() {
 
 	println("Run All with Await")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		async.All(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))(func(v []int) {
-			fmt.Printf("All: %v\n", v)
-			resolve(async.Void{})
-		})
-	}))
+	async.All(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300)).Then(func(v []int) {
+		fmt.Printf("All: %v\n", v)
+	})
 
 	println("Run Race with Await")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		first := async.Race(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))
-		v := async.Await(first)
-		fmt.Printf("Race: %v\n", v)
-		resolve(async.Void{})
-	}))
+	first := async.Race(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))
+	v := async.Await(first)
+	fmt.Printf("Race: %v\n", v)
 
 	// Translated to in Go+:
 
 	println("Run All with BindIO")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		async.All(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))(func(v []int) {
-			fmt.Printf("All: %v\n", v)
-			resolve(async.Void{})
-		})
-	}))
+	async.All(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300)).Then(func(v []int) {
+		fmt.Printf("All: %v\n", v)
+	})
 
 	println("Run Race with BindIO")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		async.Race(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300))(func(v int) {
-			fmt.Printf("Race: %v\n", v)
-			resolve(async.Void{})
-		})
-	}))
+	async.Race(sleep(1, ms200), sleep(2, ms100), sleep(3, ms300)).Then(func(v int) {
+		fmt.Printf("Race: %v\n", v)
+	})
+
 }
 
 func RunTimeout() {
 	println("Run Timeout with Await")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		fmt.Printf("Start 100 ms timeout\n")
-		async.Await(timeout.Timeout(100 * time.Millisecond))
-		fmt.Printf("timeout\n")
-		resolve(async.Void{})
-	}))
+	fmt.Printf("Start 100 ms timeout\n")
+	async.Await(timeout.Timeout(100 * time.Millisecond))
+	fmt.Printf("timeout\n")
 
 	// Translated to in Go+:
 
 	println("Run Timeout with BindIO")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		fmt.Printf("Start 100 ms timeout\n")
-		timeout.Timeout(100 * time.Millisecond)(func(async.Void) {
-			fmt.Printf("timeout\n")
-			resolve(async.Void{})
+	fmt.Printf("Start 100 ms timeout\n")
+	timeout.Timeout(100 * time.Millisecond).Then(func(async.Void) {
+		fmt.Printf("timeout\n")
+	})
+}
+
+func RunMultipleCallbacksNodelay() {
+	println("Run Multiple Callbacks")
+
+	runCnt := atomic.Int32{}
+
+	nodelay := async.Async(func(resolve func(async.Void)) {
+		println("nodelay")
+		runCnt.Add(1)
+	})
+
+	cbCnt := atomic.Int32{}
+	cb := func() {
+		if cbCnt.Add(1) == 2 {
+			if runCnt.Load() != 1 {
+				panic("runCnt != 1, got: " + fmt.Sprint(runCnt.Load()))
+			} else {
+				println("runCnt == 1")
+			}
+		}
+	}
+	nodelay.Then(func(async.Void) {
+		println("nodelay done")
+		cb()
+	})
+
+	nodelay.Then(func(async.Void) {
+		println("nodelay done again")
+		cb()
+	})
+}
+
+func RunMultipleCallbacksDelay() {
+	println("Run Multiple Callbacks")
+
+	runCnt := atomic.Int32{}
+
+	delay := async.Async(func(resolve func(async.Void)) {
+		timeout.Timeout(100 * time.Millisecond).Then(func(async.Void) {
+			println("delay")
+			runCnt.Add(1)
 		})
-	}))
+	})
+
+	cbCnt := atomic.Int32{}
+	cb := func() {
+		if cbCnt.Add(1) == 2 {
+			if runCnt.Load() != 1 {
+				panic("runCnt != 1, got: " + fmt.Sprint(runCnt.Load()))
+			} else {
+				println("runCnt == 1")
+			}
+		}
+	}
+
+	delay.Then(func(async.Void) {
+		println("delay done")
+		cb()
+	})
+
+	delay.Then(func(async.Void) {
+		println("delay done again")
+		cb()
+	})
 }
 
 func RunSocket() {
 	println("Run Socket")
 
-	async.Run(async.Async(func(resolve func(async.Void)) {
-		println("RunServer")
+	println("RunServer")
 
-		RunServer()(func(async.Void) {
-			println("RunServer done")
-			resolve(async.Void{})
+	RunServer().Then(func(async.Void) {
+		println("RunServer done")
+	})
+
+	println("RunClient")
+
+	timeout.Timeout(100 * time.Millisecond).Then(func(async.Void) {
+		RunClient("Bob").Then(func(async.Void) {
+			println("RunClient done")
 		})
-
-		println("RunClient")
-
-		timeout.Timeout(100 * time.Millisecond)(func(async.Void) {
-			RunClient()(func(async.Void) {
-				println("RunClient done")
-				resolve(async.Void{})
-			})
+		RunClient("Uncle").Then(func(async.Void) {
+			println("RunClient done")
 		})
-	}))
+	})
 }
 
-func RunClient() async.Future[async.Void] {
+func RunClient(name string) async.Future[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
 		addr := "127.0.0.1:3927"
-		socketio.Connect("tcp", addr)(func(v tuple.Tuple2[*socketio.Conn, error]) {
+		socketio.Connect("tcp", addr).Then(func(v tuple.Tuple2[*socketio.Conn, error]) {
 			client, err := v.Get()
 			println("Connected", client, err)
 			if err != nil {
@@ -194,18 +239,18 @@ func RunClient() async.Future[async.Void] {
 			var loop func(client *socketio.Conn)
 			loop = func(client *socketio.Conn) {
 				counter++
-				data := fmt.Sprintf("Hello %d", counter)
-				client.Write([]byte(data))(func(err error) {
+				data := fmt.Sprintf("Hello from %s %d", name, counter)
+				client.Write([]byte(data)).Then(func(err error) {
 					if err != nil {
 						panic(err)
 					}
-					client.Read()(func(v tuple.Tuple2[[]byte, error]) {
+					client.Read().Then(func(v tuple.Tuple2[[]byte, error]) {
 						data, err := v.Get()
 						if err != nil {
 							panic(err)
 						}
 						println("Read from server:", string(data))
-						timeout.Timeout(1 * time.Second)(func(async.Void) {
+						timeout.Timeout(1 * time.Second).Then(func(async.Void) {
 							loop(client)
 						})
 					})
@@ -222,13 +267,13 @@ func RunServer() async.Future[async.Void] {
 			println("Client connected", client, err)
 			var loop func(client *socketio.Conn)
 			loop = func(client *socketio.Conn) {
-				client.Read()(func(v tuple.Tuple2[[]byte, error]) {
+				client.Read().Then(func(v tuple.Tuple2[[]byte, error]) {
 					data, err := v.Get()
 					if err != nil {
 						println("Read error", err)
 					} else {
 						println("Read from client:", string(data))
-						client.Write(data)(func(err error) {
+						client.Write(data).Then(func(err error) {
 							if err != nil {
 								println("Write error", err)
 							} else {

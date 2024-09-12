@@ -24,6 +24,10 @@ type Void = [0]byte
 
 type Future[T any] func(func(T))
 
+func (f Future[T]) Then(cb func(T)) {
+	f(cb)
+}
+
 // Just for pure LLGo/Go, transpile to callback in Go+
 func Await[T1 any](future Future[T1]) T1 {
 	return Run(future)

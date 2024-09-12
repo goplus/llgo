@@ -59,7 +59,7 @@ func Run[T any](future Future[T]) T {
 	exec := &Executor{loop}
 	oldExec := setExec(exec)
 	var ret T
-	future(func(v T) {
+	future.Then(func(v T) {
 		ret = v
 	})
 	exec.Run()

@@ -22,7 +22,7 @@ package async
 func Run[T any](future Future[T]) T {
 	ch := make(chan T)
 	go func() {
-		future(func(v T) {
+		future.Then(func(v T) {
 			ch <- v
 		})
 	}()
