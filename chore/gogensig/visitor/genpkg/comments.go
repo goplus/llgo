@@ -20,8 +20,7 @@ func toGoFuncName(funcName string) string {
 	return name
 }
 
-func NewFuncDocComments(funcName string) *goast.CommentGroup {
-	goFuncName := toGoFuncName(funcName)
+func NewFuncDocComments(funcName string, goFuncName string) *goast.CommentGroup {
 	txt := "\n//go:linkname " + goFuncName + " " + "C." + funcName
 	comment := goast.Comment{Text: txt}
 	commentGroup := goast.CommentGroup{List: []*goast.Comment{&comment}}

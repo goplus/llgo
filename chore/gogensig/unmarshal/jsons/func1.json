@@ -1,7 +1,7 @@
 [{
-	"input_text": "int fn(int a, int b);",
+	"input_text": "int go_func_name(int a, int b);",
 	"want_result": [
-		"//go:linkname Fn C.fn",
+		"//go:linkname GoFuncName C.go_func_name",
 		"func Fn(a c.Int, b.Int) c.Int"
 	],
 	"path": "temp.h",
@@ -17,7 +17,7 @@
 				"Parent":	null,
 				"Name":	{
 					"_Type":	"Ident",
-					"Name":	"fn"
+					"Name":	"go_func_name"
 				},
 				"Type":	{
 					"_Type":	"FuncType",

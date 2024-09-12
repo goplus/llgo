@@ -72,7 +72,7 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 		return err
 	}
 	goFuncName := toGoFuncName(funcDecl.Name.Name)
-	p.p.NewFuncDecl(token.NoPos, goFuncName, sig).SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name))
+	p.p.NewFuncDecl(token.NoPos, goFuncName, sig).SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
 	return nil
 }
 
