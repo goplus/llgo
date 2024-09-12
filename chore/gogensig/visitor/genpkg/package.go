@@ -119,6 +119,10 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 			return p.getCType("Pointer")
 		}
 		return types.NewPointer(typ)
+	case *ast.ArrayType:
+		// todo(zzy):array in struct
+		// array in the parameter,ignore the len,convert as pointer
+		return types.NewPointer(p.ToType(t.Elt))
 	default:
 		return nil
 	}

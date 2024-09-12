@@ -254,6 +254,52 @@ import "unsafe"
 func Foo(a unsafe.Pointer) unsafe.Pointer
 			`,
 		},
+		{
+			name: "array",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								// Uint[]
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Unsigned},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								// Double[3]
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{Kind: ast.Float, Flags: ast.Double},
+									Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
+								},
+							},
+						},
+					},
+					Ret: &ast.ArrayType{
+						// char[3][4]
+						Elt: &ast.ArrayType{
+							Elt: &ast.BuiltinType{
+								Kind:  ast.Char,
+								Flags: ast.Signed,
+							},
+							Len: &ast.BasicLit{Kind: ast.IntLit, Value: "4"},
+						},
+						Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+//go:linkname Foo C.foo
+func Foo(a *c.Uint, b *float64) **int8
+			`,
+		},
 	}
 
 	for _, tc := range testCases {
