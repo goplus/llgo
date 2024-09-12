@@ -5,20 +5,9 @@ import (
 	"fmt"
 
 	"github.com/goplus/llgo/chore/gogensig/visitor"
+	"github.com/goplus/llgo/chore/gogensig/visitor/docset"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
-
-type ADoc interface {
-	docFile()
-}
-
-type DocFile struct {
-	Path string
-	Doc  *ast.File
-}
-
-func (*DocFile) docFile() {
-}
 
 type RawDocFile struct {
 	Path       string          `json:"path"`
@@ -27,18 +16,22 @@ type RawDocFile struct {
 	WantResult []string        `json:"want_result"` //test only
 }
 
+func (d *RawDocFile) DocPath() string {
+	return d.Path
+}
+
 type DocFileUnmarshaller struct {
-	*DocFile
+	docset.ADoc
 	VisitorList []visitor.DocVisitor
 }
 
-func NewDocFileUnmarshaller(visitorList []visitor.DocVisitor) *DocFileUnmarshaller {
-	return &DocFileUnmarshaller{VisitorList: visitorList}
+func NewDocFileUnmarshaller(docFile docset.ADoc, visitorList []visitor.DocVisitor) *DocFileUnmarshaller {
+	return &DocFileUnmarshaller{ADoc: docFile, VisitorList: visitorList}
 }
 
 func (p *DocFileUnmarshaller) visit(_Type string, node ast.Node) bool {
 	for _, visitor := range p.VisitorList {
-		visitor.Visit(_Type, node)
+		visitor.Visit(p.ADoc, _Type, node)
 	}
 	return true
 }
@@ -62,9 +55,6 @@ func (p *DocFileUnmarshaller) Unmarshal(raw []byte) error {
 	return nil
 }
 
-type DocFileSet struct {
-}
-
 type DocFileSetUnmarshaller struct {
 	docVisitorList []visitor.DocVisitor
 }
@@ -79,7 +69,7 @@ func (p *DocFileSetUnmarshaller) Unmarshal(raw []byte) error {
 		return fmt.Errorf("error unmarshalling FilesWithPath: %w", err)
 	}
 	for _, fileData := range filesWrapper {
-		docVisitor := NewDocFileUnmarshaller(p.docVisitorList)
+		docVisitor := NewDocFileUnmarshaller(&fileData, p.docVisitorList)
 		docVisitor.Unmarshal(fileData.Doc)
 	}
 	return nil

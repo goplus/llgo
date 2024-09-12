@@ -7,6 +7,7 @@ import (
 
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
+	"github.com/goplus/llgo/chore/gogensig/visitor/docset"
 )
 
 func TestUnmarshalFiles(t *testing.T) {
@@ -14,7 +15,7 @@ func TestUnmarshalFiles(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert()}
+	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("files")}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	p.Unmarshal(filesBytes)
 }
@@ -24,8 +25,8 @@ func TestUnmarshalAnyNode(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert()}
-	p := unmarshal.NewDocFileUnmarshaller(docVisitors)
+	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("anynode")}
+	p := unmarshal.NewDocFileUnmarshaller(docset.DocPathString("./jsons/anynode.json"), docVisitors)
 	p.Unmarshal(nodeBytes)
 }
 
@@ -34,7 +35,7 @@ func TestFunc1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert()}
+	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("func1")}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	err = p.Unmarshal(bytes)
 	if err != nil {

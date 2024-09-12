@@ -3,11 +3,12 @@ package visitor
 import (
 	"fmt"
 
+	"github.com/goplus/llgo/chore/gogensig/visitor/docset"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type DocVisitor interface {
-	Visit(_Type string, node ast.Node)
+	Visit(doc docset.ADoc, _Type string, node ast.Node)
 	VisitFuncDecl(*ast.FuncDecl)
 	VisitTypeDecl(*ast.TypeDecl)
 	VisitDone(DocVisitor)
@@ -15,6 +16,7 @@ type DocVisitor interface {
 
 type BaseDocVisitor struct {
 	DocVisitor
+	docset.ADoc
 }
 
 func NewBaseDocVisitor(Visitor DocVisitor) *BaseDocVisitor {
@@ -32,7 +34,8 @@ func (p *BaseDocVisitor) visitNode(decl ast.Node) {
 	}
 }
 
-func (p *BaseDocVisitor) Visit(_Type string, node ast.Node) {
+func (p *BaseDocVisitor) Visit(doc docset.ADoc, _Type string, node ast.Node) {
+	p.ADoc = doc
 	switch v := node.(type) {
 	case *ast.File:
 		for _, decl := range v.Decls {
