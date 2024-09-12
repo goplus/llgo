@@ -1,16 +1,18 @@
-package pkg
+package genpkg
 
 import (
 	"go/token"
 	"go/types"
 	"os"
-
-	"github.com/goplus/llgo/chore/llcppg/ast"
+	"path/filepath"
+	"strings"
 
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type Package struct {
+	name           string
 	p              *gogen.Package
 	clib           gogen.PkgRef
 	builtinTypeMap map[ast.BuiltinType]types.Type
@@ -23,6 +25,7 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 	}
 	pkg.clib = pkg.p.Import("github.com/goplus/llgo/c")
 	pkg.initBuiltinTypeMap()
+	pkg.name = name
 	return pkg
 }
 func (p *Package) initBuiltinTypeMap() {
@@ -58,11 +61,6 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	}
 	p.p.NewFuncDecl(token.NoPos, funcDecl.Name.Name, sig)
 	return nil
-}
-
-func (p *Package) Write() error {
-	// todo(zzy):related logic,temp to debug
-	return p.p.WriteTo(os.Stdout)
 }
 
 func (p *Package) toSigniture(funcType *ast.FuncType) (*types.Signature, error) {
@@ -101,4 +99,38 @@ func (p *Package) toBuiltinType(typ *ast.BuiltinType) types.Type {
 		return t
 	}
 	return nil
+}
+
+func (p *Package) Write(curName string) error {
+	fileDir, fileName := filepath.Split(curName)
+	dir, err := p.makePackageDir(fileDir)
+	if err != nil {
+		return err
+	}
+	ext := filepath.Ext(fileName)
+	if len(ext) > 0 {
+		fileName = strings.TrimSuffix(fileName, ext)
+	}
+	if len(fileName) <= 0 {
+		fileName = "temp"
+	}
+	fileName = fileName + ".go"
+	p.p.WriteFile(filepath.Join(dir, fileName))
+	return nil
+}
+
+func (p *Package) makePackageDir(dir string) (string, error) {
+	if len(dir) <= 0 {
+		dir = "."
+	}
+	curDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(curDir, p.name)
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
