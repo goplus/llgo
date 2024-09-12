@@ -94,8 +94,6 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
-	instNamed map[*types.Named]none // makeInterface named
-
 	patches  Patches
 	blkInfos []blocks.Info
 
@@ -547,7 +545,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		prog := p.prog
-		p.checkInstanceNamed(v.X.Type())
 		t := prog.Type(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
@@ -616,22 +613,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	p.bvals[iv] = ret
 	return ret
-}
-
-func (p *context) checkInstanceNamed(typ types.Type) {
-	if pt, ok := typ.(*types.Pointer); ok {
-		typ = pt.Elem()
-	}
-	named, ok := typ.(*types.Named)
-	if !ok || named.TypeArgs() == nil {
-		return
-	}
-	if _, ok := p.instNamed[named]; ok {
-		return
-	}
-	p.instNamed[named] = none{}
-	p.compileMethods(p.pkg, typ)
-	p.compileMethods(p.pkg, types.NewPointer(typ))
 }
 
 func (p *context) jumpTo(v *ssa.Jump) llssa.BasicBlock {
@@ -831,7 +812,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
-		instNamed: make(map[*types.Named]none),
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
@@ -903,6 +883,21 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		case *ssa.Global:
 			ctx.compileGlobal(ret, member)
 		}
+	}
+
+	// check instantiate named in RuntimeTypes
+	var typs []*types.Named
+	for _, T := range pkg.Prog.RuntimeTypes() {
+		if typ, ok := T.(*types.Named); ok && typ.TypeArgs() != nil && typ.Obj().Pkg() == pkg.Pkg {
+			typs = append(typs, typ)
+		}
+	}
+	sort.Slice(typs, func(i, j int) bool {
+		return typs[i].Obj().Name() < typs[j].Obj().Name()
+	})
+	for _, typ := range typs {
+		ctx.compileMethods(ret, typ)
+		ctx.compileMethods(ret, types.NewPointer(typ))
 	}
 }
 

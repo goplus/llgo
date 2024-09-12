@@ -152,10 +152,6 @@ _llgo_2:                                          ; preds = %_llgo_0
   unreachable
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
-
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
-
 define linkonce void @"main.T[string,int].Info"(%"main.T[string,int]" %0) {
 _llgo_0:
   %1 = alloca %"main.T[string,int]", align 8
@@ -191,6 +187,10 @@ _llgo_0:
   call void @"main.T[string,int].Info"(%"main.T[string,int]" %1)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/internal/runtime.init"()
+
+declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
 
 define void @"main.init$after"() {
 _llgo_0:
