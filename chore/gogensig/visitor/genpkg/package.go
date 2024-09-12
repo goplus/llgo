@@ -61,7 +61,8 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	if err != nil {
 		return err
 	}
-	p.p.NewFuncDecl(token.NoPos, funcDecl.Name.Name, sig)
+	goFuncName := toGoFuncName(funcDecl.Name.Name)
+	p.p.NewFuncDecl(token.NoPos, goFuncName, sig).SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name))
 	return nil
 }
 
@@ -99,7 +100,7 @@ func (p *Package) toVar(expr ast.Expr) *types.Var {
 	case *ast.Field:
 		return types.NewVar(token.NoPos, nil, t.Names[0].Name, p.toType(t.Type))
 	default:
-		fmt.Println("todo:unexpected type %T", t)
+		fmt.Printf("todo:unexpected type %T", t)
 	}
 	return nil
 }
