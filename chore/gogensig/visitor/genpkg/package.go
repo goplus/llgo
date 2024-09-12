@@ -112,7 +112,13 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 	case *ast.BuiltinType:
 		return p.toBuiltinType(t)
 	case *ast.PointerType:
-		return types.NewPointer(p.ToType(t.X))
+		typ := p.ToType(t.X)
+		// void * -> c.Pointer
+		// todo(zzy):alias visit the origin type unsafe.Pointer,c.Pointer is better
+		if typ == p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}] {
+			return p.getCType("Pointer")
+		}
+		return types.NewPointer(typ)
 	default:
 		return nil
 	}
