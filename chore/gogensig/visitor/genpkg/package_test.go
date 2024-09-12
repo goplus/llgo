@@ -18,7 +18,7 @@ func TestToType(t *testing.T) {
 		input    *ast.BuiltinType
 		expected string
 	}{
-		{"Void", &ast.BuiltinType{Kind: ast.Void}, "invalid type"},
+		{"Void", &ast.BuiltinType{Kind: ast.Void}, "untyped nil"},
 		{"Bool", &ast.BuiltinType{Kind: ast.Bool}, "bool"},
 		{"Char_S", &ast.BuiltinType{Kind: ast.Char, Flags: ast.Signed}, "int8"},
 		{"Char_U", &ast.BuiltinType{Kind: ast.Char, Flags: ast.Unsigned}, "int8"},
@@ -56,53 +56,190 @@ func TestNewPackage(t *testing.T) {
 	comparePackageOutput(t, pkg, `package testpkg`)
 }
 
-func TestFuncDeclBasic(t *testing.T) {
-	input := &ast.FuncDecl{
-		Name: &ast.Ident{Name: "foo"},
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{
-				List: []*ast.Field{
-					{
-						Names: []*ast.Ident{
-							{Name: "a"},
-						},
-						Type: &ast.BuiltinType{
-							Kind: ast.Int,
+func TestFuncDeclWithType(t *testing.T) {
+	testCases := []struct {
+		name     string
+		decl     *ast.FuncDecl
+		expected string
+	}{
+		{
+			name: "empty func",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: nil,
+					Ret:    nil,
+				},
+			},
+			expected: `
+package testpkg
+
+//go:linkname Foo C.foo
+func Foo()`,
+		},
+		{
+			name: "explict void return",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: nil,
+					Ret:    &ast.BuiltinType{Kind: ast.Void},
+				},
+			},
+			expected: `
+package testpkg
+
+//go:linkname Foo C.foo
+func Foo()`,
+		},
+		{
+			name: "bulitin type",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{
+									{Name: "a"},
+								},
+								Type: &ast.BuiltinType{
+									Kind:  ast.Int,
+									Flags: ast.Short | ast.Unsigned},
+							},
+							{
+								Names: []*ast.Ident{
+									{Name: "b"},
+								},
+								Type: &ast.BuiltinType{
+									Kind: ast.Bool,
+								},
+							},
 						},
 					},
-					{
-						Names: []*ast.Ident{
-							{Name: "a"},
-						},
-						Type: &ast.BuiltinType{
-							Kind:  ast.Int,
-							Flags: ast.Unsigned | ast.Long,
-						},
+					Ret: &ast.BuiltinType{
+						Kind:  ast.Float,
+						Flags: ast.Double,
 					},
 				},
 			},
-			Ret: &ast.BuiltinType{
-				Kind:  ast.Float,
-				Flags: ast.Double,
-			},
+			expected: `
+package testpkg
+
+//go:linkname Foo C.foo
+func Foo(a uint16, b bool) float64`,
 		},
-	}
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-	if pkg == nil {
-		t.Fatal("NewPackage failed")
-	}
-	err := pkg.NewFuncDecl(input)
-	if err != nil {
-		t.Fatalf("NewFuncDecl failed: %v", err)
-	}
-	// todo:(zzy) update linkname & go name
-	comparePackageOutput(t, pkg, `
+		{
+			name: "c builtin type",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type:  &ast.BuiltinType{Kind: ast.Int, Flags: ast.Unsigned},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type:  &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long},
+							},
+						},
+					},
+					Ret: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long | ast.Unsigned},
+				},
+			},
+			expected: `
 package testpkg
 
 import "github.com/goplus/llgo/c"
 
 //go:linkname Foo C.foo
-func Foo(a c.Int, a c.Ulong) float64`)
+func Foo(a c.Uint, b c.Long) c.Ulong
+`,
+		},
+		{
+			name: "basic decl with c type",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type:  &ast.BuiltinType{Kind: ast.Int, Flags: ast.Unsigned},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type:  &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long},
+							},
+						},
+					},
+					Ret: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long | ast.Unsigned},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+//go:linkname Foo C.foo
+func Foo(a c.Uint, b c.Long) c.Ulong
+`,
+		},
+		{
+			name: "pointer type",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Unsigned},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long},
+								},
+							},
+						},
+					},
+					Ret: &ast.PointerType{
+						X: &ast.BuiltinType{
+							Kind:  ast.Float,
+							Flags: ast.Double,
+						},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+//go:linkname Foo C.foo
+func Foo(a *c.Uint, b *c.Long) *float64
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+			if pkg == nil {
+				t.Fatal("NewPackage failed")
+			}
+			err := pkg.NewFuncDecl(tc.decl)
+			if err != nil {
+				t.Fatalf("NewFuncDecl failed: %v", err)
+			}
+			comparePackageOutput(t, pkg, tc.expected)
+		})
+	}
 }
 
 func comparePackageOutput(t *testing.T, pkg *genpkg.Package, expect string) {

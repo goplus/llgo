@@ -38,7 +38,7 @@ func (p *Package) getCType(typ string) types.Type {
 func (p *Package) initBuiltinTypeMap() {
 	// todo(zzy): int128/uint128  half(float16),long double,float 128
 	p.builtinTypeMap = map[ast.BuiltinType]types.Type{
-		{Kind: ast.Void}:                                    types.Typ[types.Invalid],    // For a invalid type
+		{Kind: ast.Void}:                                    types.Typ[types.UntypedNil], // For a invalid type
 		{Kind: ast.Bool}:                                    types.Typ[types.Bool],       // Bool
 		{Kind: ast.Char, Flags: ast.Signed}:                 p.getCType("Char"),          // Char_S
 		{Kind: ast.Char, Flags: ast.Unsigned}:               p.getCType("Char"),          // Char_U
@@ -95,10 +95,10 @@ func (p *Package) fieldListToParams(params *ast.FieldList) *types.Tuple {
 
 // Execute the ret in FuncType
 func (p *Package) retToResult(ret ast.Expr) *types.Tuple {
-	if ret == nil {
+	typ := p.ToType(ret)
+	if typ == nil || typ == p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}] {
 		return types.NewTuple()
 	}
-	// c's result havent name
 	return types.NewTuple(types.NewVar(token.NoPos, nil, "", p.ToType(ret)))
 }
 
@@ -111,6 +111,8 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 	switch t := expr.(type) {
 	case *ast.BuiltinType:
 		return p.toBuiltinType(t)
+	case *ast.PointerType:
+		return types.NewPointer(p.ToType(t.X))
 	default:
 		return nil
 	}
@@ -121,7 +123,7 @@ func (p *Package) toBuiltinType(typ *ast.BuiltinType) types.Type {
 	if ok {
 		return t
 	}
-	return p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}]
+	return nil
 }
 
 func (p *Package) Write(curName string) error {
