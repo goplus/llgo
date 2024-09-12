@@ -38,8 +38,7 @@ func (p *Package) getCType(typ string) types.Type {
 func (p *Package) initBuiltinTypeMap() {
 	// todo(zzy): int128/uint128  half(float16),long double,float 128
 	p.builtinTypeMap = map[ast.BuiltinType]types.Type{
-		// considerations for void type should be more rigorous
-		{Kind: ast.Void}:                                    types.Typ[types.Invalid],
+		{Kind: ast.Void}:                                    types.Typ[types.Invalid],    // For a invalid type
 		{Kind: ast.Bool}:                                    types.Typ[types.Bool],       // Bool
 		{Kind: ast.Char, Flags: ast.Signed}:                 p.getCType("Char"),          // Char_S
 		{Kind: ast.Char, Flags: ast.Unsigned}:               p.getCType("Char"),          // Char_U
@@ -67,16 +66,17 @@ func (p *Package) GetGogenPackage() *gogen.Package {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
-	sig, err := p.toSigniture(funcDecl.Type)
+	sig, err := p.toSignature(funcDecl.Type)
 	if err != nil {
 		return err
 	}
 	goFuncName := toGoFuncName(funcDecl.Name.Name)
-	p.p.NewFuncDecl(token.NoPos, goFuncName, sig).SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
+	decl := p.p.NewFuncDecl(token.NoPos, goFuncName, sig)
+	decl.SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
 	return nil
 }
 
-func (p *Package) toSigniture(funcType *ast.FuncType) (*types.Signature, error) {
+func (p *Package) toSignature(funcType *ast.FuncType) (*types.Signature, error) {
 	params := p.fieldListToParams(funcType.Params)
 	results := p.retToResult(funcType.Ret)
 	return types.NewSignatureType(nil, nil, nil, params, results, false), nil
@@ -93,6 +93,7 @@ func (p *Package) fieldListToParams(params *ast.FieldList) *types.Tuple {
 	return types.NewTuple(vars...)
 }
 
+// Execute the ret in FuncType
 func (p *Package) retToResult(ret ast.Expr) *types.Tuple {
 	if ret == nil {
 		return types.NewTuple()
@@ -105,6 +106,7 @@ func (p *Package) fieldToVar(field *ast.Field) *types.Var {
 	return types.NewVar(token.NoPos, nil, field.Names[0].Name, p.ToType(field.Type))
 }
 
+// Convert ast.Expr to types.Type
 func (p *Package) ToType(expr ast.Expr) types.Type {
 	switch t := expr.(type) {
 	case *ast.BuiltinType:
@@ -119,7 +121,7 @@ func (p *Package) toBuiltinType(typ *ast.BuiltinType) types.Type {
 	if ok {
 		return t
 	}
-	return nil
+	return p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}]
 }
 
 func (p *Package) Write(curName string) error {
