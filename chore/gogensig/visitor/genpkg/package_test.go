@@ -225,6 +225,35 @@ import "github.com/goplus/llgo/c"
 func Foo(a *c.Uint, b *c.Long) *float64
 `,
 		},
+		{
+			name: "void *",
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "foo"},
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{Kind: ast.Void},
+								},
+							},
+						},
+					},
+					Ret: &ast.PointerType{
+						X: &ast.BuiltinType{Kind: ast.Void},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "unsafe"
+
+//go:linkname Foo C.foo
+func Foo(a unsafe.Pointer) unsafe.Pointer
+			`,
+		},
 	}
 
 	for _, tc := range testCases {
