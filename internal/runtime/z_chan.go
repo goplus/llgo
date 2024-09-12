@@ -37,7 +37,7 @@ type Chan struct {
 	getp  int
 	len   int
 	cap   int
-	sops  *selectOp
+	sops  []*selectOp
 	sends uint16
 	close bool
 }
@@ -64,7 +64,7 @@ func ChanCap(p *Chan) int {
 }
 
 func notifyOps(p *Chan) {
-	for sop := p.sops; sop != nil; sop = sop.next {
+	for _, sop := range p.sops {
 		sop.notify()
 	}
 }
@@ -227,22 +227,18 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 type selectOp struct {
 	mutex sync.Mutex
 	cond  sync.Cond
-	next  *selectOp
-
-	sem bool
+	sem   bool
 }
 
 func (p *selectOp) init() {
 	p.mutex.Init(nil)
 	p.cond.Init(nil)
-	p.next = nil
 	p.sem = false
 }
 
 func (p *selectOp) end() {
 	p.mutex.Destroy()
 	p.cond.Destroy()
-	p.next = nil
 }
 
 func (p *selectOp) notify() {
@@ -311,18 +307,18 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 
 func prepareSelect(c *Chan, selOp *selectOp) {
 	c.mutex.Lock()
-	selOp.next = c.sops
-	c.sops = selOp
+	c.sops = append(c.sops, selOp)
 	c.mutex.Unlock()
 }
 
 func endSelect(c *Chan, selOp *selectOp) {
 	c.mutex.Lock()
-	pp := &c.sops
-	for *pp != selOp {
-		pp = &(*pp).next
+	for i, op := range c.sops {
+		if op == selOp {
+			c.sops = append(c.sops[:i], c.sops[i+1:]...)
+			break
+		}
 	}
-	*pp = selOp.next
 	c.mutex.Unlock()
 }
 
