@@ -3,19 +3,19 @@ package visitor
 import (
 	"fmt"
 
-	"github.com/goplus/llgo/chore/gogensig/visitor/pkg"
+	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type AstConvert struct {
 	*BaseDocVisitor
-	pkg *pkg.Package
+	pkg *genpkg.Package
 }
 
-func NewAstConvert() *AstConvert {
+func NewAstConvert(name string) *AstConvert {
 	p := new(AstConvert)
 	p.BaseDocVisitor = NewBaseDocVisitor(p)
-	pkg := pkg.NewPackage("", "temp", nil)
+	pkg := genpkg.NewPackage(".", name, nil)
 	p.pkg = pkg
 	return p
 }
@@ -29,5 +29,5 @@ func (p *AstConvert) VisitTypeDecl(typeDecl *ast.TypeDecl) {
 }
 
 func (p *AstConvert) VisitDone(docVisitor DocVisitor) {
-	p.pkg.Write()
+	p.pkg.Write(p.DocPath())
 }
