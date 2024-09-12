@@ -5,53 +5,49 @@ import (
 	"fmt"
 
 	"github.com/goplus/llgo/chore/gogensig/visitor"
-	"github.com/goplus/llgo/chore/gogensig/visitor/docset"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type RawDocFile struct {
-	Path       string          `json:"path"`
-	Doc        json.RawMessage `json:"doc"`
-	InputText  string          `json:"input_text"`  //test only
-	WantResult []string        `json:"want_result"` //test only
+	Path string          `json:"path"`
+	Doc  json.RawMessage `json:"doc"`
 }
 
-func (d *RawDocFile) DocPath() string {
-	return d.Path
+func NewRawDocFile(path string, doc json.RawMessage) *RawDocFile {
+	return &RawDocFile{Path: path, Doc: doc}
 }
 
 type DocFileUnmarshaller struct {
-	docset.ADoc
 	VisitorList []visitor.DocVisitor
 }
 
-func NewDocFileUnmarshaller(docFile docset.ADoc, visitorList []visitor.DocVisitor) *DocFileUnmarshaller {
-	return &DocFileUnmarshaller{ADoc: docFile, VisitorList: visitorList}
+func NewDocFileUnmarshaller(visitorList []visitor.DocVisitor) *DocFileUnmarshaller {
+	return &DocFileUnmarshaller{VisitorList: visitorList}
 }
 
-func (p *DocFileUnmarshaller) visit(_Type string, node ast.Node) bool {
+func (p *DocFileUnmarshaller) visit(_Type string, node ast.Node, path string) bool {
 	for _, visitor := range p.VisitorList {
-		visitor.Visit(p.ADoc, _Type, node)
+		visitor.Visit(_Type, node, path)
 	}
 	return true
 }
 
-func (p *DocFileUnmarshaller) Unmarshal(raw []byte) error {
+func (p *DocFileUnmarshaller) Unmarshal(rawDocFile *RawDocFile) error {
 	var temp struct {
 		Type string `json:"_Type"`
 	}
-	if err := json.Unmarshal(raw, &temp); err != nil {
+	if err := json.Unmarshal(rawDocFile.Doc, &temp); err != nil {
 		return fmt.Errorf("error unmarshalling node type: %v", err)
 	}
 	unmarshaler, ok := nodeUnmarshalers[temp.Type]
 	if !ok {
 		return fmt.Errorf("unknown node type: %s", temp.Type)
 	}
-	node, err := unmarshaler(raw)
+	node, err := unmarshaler(rawDocFile.Doc)
 	if err != nil {
 		return err
 	}
-	p.visit(temp.Type, node)
+	p.visit(temp.Type, node, rawDocFile.Path)
 	return nil
 }
 
@@ -69,8 +65,8 @@ func (p *DocFileSetUnmarshaller) Unmarshal(raw []byte) error {
 		return fmt.Errorf("error unmarshalling FilesWithPath: %w", err)
 	}
 	for _, fileData := range filesWrapper {
-		docVisitor := NewDocFileUnmarshaller(&fileData, p.docVisitorList)
-		docVisitor.Unmarshal(fileData.Doc)
+		docVisitor := NewDocFileUnmarshaller(p.docVisitorList)
+		docVisitor.Unmarshal(&fileData)
 	}
 	return nil
 }
