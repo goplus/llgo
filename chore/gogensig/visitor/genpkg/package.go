@@ -1,6 +1,7 @@
 package genpkg
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"os"
@@ -55,6 +56,7 @@ func (p *Package) initBuiltinTypeMap() {
 }
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
+	// todo(zzy) accept the name of llcppg.symb.json
 	sig, err := p.toSigniture(funcDecl.Type)
 	if err != nil {
 		return err
@@ -65,8 +67,8 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 func (p *Package) toSigniture(funcType *ast.FuncType) (*types.Signature, error) {
 	params := p.fieldListToParams(funcType.Params)
-	// params := fieldListToParams(funcType.Params)
-	return types.NewSignatureType(nil, nil, nil, params, nil, false), nil
+	results := p.retToResult(funcType.Ret)
+	return types.NewSignatureType(nil, nil, nil, params, results, false), nil
 }
 
 func (p *Package) fieldListToParams(params *ast.FieldList) *types.Tuple {
@@ -80,8 +82,26 @@ func (p *Package) fieldListToParams(params *ast.FieldList) *types.Tuple {
 	return types.NewTuple(vars...)
 }
 
+func (p *Package) retToResult(ret ast.Expr) *types.Tuple {
+	if ret == nil {
+		return types.NewTuple()
+	}
+	// c's result havent name
+	return types.NewTuple(types.NewVar(token.NoPos, nil, "", p.toType(ret)))
+}
+
 func (p *Package) fieldToVar(field *ast.Field) *types.Var {
 	return types.NewVar(token.NoPos, nil, field.Names[0].Name, p.toType(field.Type))
+}
+
+func (p *Package) toVar(expr ast.Expr) *types.Var {
+	switch t := expr.(type) {
+	case *ast.Field:
+		return types.NewVar(token.NoPos, nil, t.Names[0].Name, p.toType(t.Type))
+	default:
+		fmt.Println("todo:unexpected type %T", t)
+	}
+	return nil
 }
 
 func (p *Package) toType(expr ast.Expr) types.Type {
