@@ -10,26 +10,8 @@ import (
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
-func TestNewPackage(t *testing.T) {
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-	if pkg == nil {
-		t.Fatal("NewPackage failed")
-	}
-	gogenPkg := pkg.GetGogenPackage()
-	var buf bytes.Buffer
-	err := gogenPkg.WriteTo(&buf)
-	if err != nil {
-		t.Fatalf("WriteTo failed: %v", err)
-	}
-
-	expect := `package testpkg`
-	if strings.TrimSpace(buf.String()) != strings.TrimSpace(expect) {
-		t.Fatalf("unexpected output:\n%s\nExpect:\n%s\n", buf.String(), expect)
-	}
-}
-
 func TestToType(t *testing.T) {
-	pkg := genpkg.NewPackage("example.com/testpkg", "testpkg", &gogen.Config{})
+	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
 
 	testCases := []struct {
 		name     string
@@ -63,5 +45,77 @@ func TestToType(t *testing.T) {
 				t.Errorf("unexpected result:%s expected:%s", result.String(), tc.expected)
 			}
 		})
+	}
+}
+
+func TestNewPackage(t *testing.T) {
+	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	if pkg == nil {
+		t.Fatal("NewPackage failed")
+	}
+	comparePackageOutput(t, pkg, `package testpkg`)
+}
+
+func TestFuncDeclBasic(t *testing.T) {
+	input := &ast.FuncDecl{
+		Name: &ast.Ident{Name: "foo"},
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Names: []*ast.Ident{
+							{Name: "a"},
+						},
+						Type: &ast.BuiltinType{
+							Kind: ast.Int,
+						},
+					},
+					{
+						Names: []*ast.Ident{
+							{Name: "a"},
+						},
+						Type: &ast.BuiltinType{
+							Kind:  ast.Int,
+							Flags: ast.Unsigned | ast.Long,
+						},
+					},
+				},
+			},
+			Ret: &ast.BuiltinType{
+				Kind:  ast.Float,
+				Flags: ast.Double,
+			},
+		},
+	}
+	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	if pkg == nil {
+		t.Fatal("NewPackage failed")
+	}
+	err := pkg.NewFuncDecl(input)
+	if err != nil {
+		t.Fatalf("NewFuncDecl failed: %v", err)
+	}
+	// todo:(zzy) update linkname & go name
+	comparePackageOutput(t, pkg, `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+//go:linkname Foo C.foo
+func Foo(a c.Int, a c.Ulong) float64`)
+}
+
+func comparePackageOutput(t *testing.T, pkg *genpkg.Package, expect string) {
+	t.Helper()
+	gogenPkg := pkg.GetGogenPackage()
+	var buf bytes.Buffer
+	err := gogenPkg.WriteTo(&buf)
+	if err != nil {
+		t.Fatalf("WriteTo failed: %v", err)
+	}
+	actual := strings.TrimSpace(buf.String())
+	expect = strings.TrimSpace(expect)
+	if actual != expect {
+		t.Errorf("unexpected output:\n%s\nexpected get:\n%s", actual, expect)
 	}
 }
