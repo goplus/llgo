@@ -1,7 +1,6 @@
 package genpkg
 
 import (
-	"fmt"
 	"go/token"
 	"go/types"
 	"os"
@@ -24,35 +23,46 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 		p:              gogen.NewPackage(pkgPath, name, conf),
 		builtinTypeMap: make(map[ast.BuiltinType]types.Type),
 	}
-	pkg.clib = pkg.p.Import("github.com/goplus/llgo/c")
 	pkg.initBuiltinTypeMap()
 	pkg.name = name
 	return pkg
 }
+
+func (p *Package) getCType(typ string) types.Type {
+	if p.clib.Types == nil {
+		p.clib = p.p.Import("github.com/goplus/llgo/c")
+	}
+	return p.clib.Ref(typ).Type()
+}
+
 func (p *Package) initBuiltinTypeMap() {
 	// todo(zzy): int128/uint128  half(float16),long double,float 128
 	p.builtinTypeMap = map[ast.BuiltinType]types.Type{
 		// considerations for void type should be more rigorous
 		{Kind: ast.Void}:                                    types.Typ[types.Invalid],
-		{Kind: ast.Bool}:                                    types.Typ[types.Bool],          // Bool
-		{Kind: ast.Char, Flags: ast.Signed}:                 p.clib.Ref("Char").Type(),      // Char_S
-		{Kind: ast.Char, Flags: ast.Unsigned}:               p.clib.Ref("Char").Type(),      // Char_U
-		{Kind: ast.WChar}:                                   types.Typ[types.Int16],         // WChar
-		{Kind: ast.Char16}:                                  types.Typ[types.Int16],         // Char16
-		{Kind: ast.Char32}:                                  types.Typ[types.Int32],         // Char32
-		{Kind: ast.Int, Flags: ast.Short}:                   types.Typ[types.Int16],         // Short
-		{Kind: ast.Int, Flags: ast.Short | ast.Unsigned}:    types.Typ[types.Uint16],        // UShort
-		{Kind: ast.Int}:                                     p.clib.Ref("Int").Type(),       // Int
-		{Kind: ast.Int, Flags: ast.Unsigned}:                p.clib.Ref("Uint").Type(),      // UInt
-		{Kind: ast.Int, Flags: ast.Long}:                    p.clib.Ref("Long").Type(),      // Long
-		{Kind: ast.Int, Flags: ast.Long | ast.Unsigned}:     p.clib.Ref("Ulong").Type(),     // Ulong
-		{Kind: ast.Int, Flags: ast.LongLong}:                p.clib.Ref("LongLong").Type(),  // LongLong
-		{Kind: ast.Int, Flags: ast.LongLong | ast.Unsigned}: p.clib.Ref("UlongLong").Type(), // ULongLong
-		{Kind: ast.Float}:                                   p.clib.Ref("Float").Type(),     // Float
-		{Kind: ast.Float, Flags: ast.Double}:                p.clib.Ref("Double").Type(),    // Double
-		{Kind: ast.Complex}:                                 types.Typ[types.Complex64],     // ComplexFloat
-		{Kind: ast.Complex, Flags: ast.Double}:              types.Typ[types.Complex128],    // ComplexDouble
+		{Kind: ast.Bool}:                                    types.Typ[types.Bool],       // Bool
+		{Kind: ast.Char, Flags: ast.Signed}:                 p.getCType("Char"),          // Char_S
+		{Kind: ast.Char, Flags: ast.Unsigned}:               p.getCType("Char"),          // Char_U
+		{Kind: ast.WChar}:                                   types.Typ[types.Int16],      // WChar
+		{Kind: ast.Char16}:                                  types.Typ[types.Int16],      // Char16
+		{Kind: ast.Char32}:                                  types.Typ[types.Int32],      // Char32
+		{Kind: ast.Int, Flags: ast.Short}:                   types.Typ[types.Int16],      // Short
+		{Kind: ast.Int, Flags: ast.Short | ast.Unsigned}:    types.Typ[types.Uint16],     // UShort
+		{Kind: ast.Int}:                                     p.getCType("Int"),           // Int
+		{Kind: ast.Int, Flags: ast.Unsigned}:                p.getCType("Uint"),          // UInt
+		{Kind: ast.Int, Flags: ast.Long}:                    p.getCType("Long"),          // Long
+		{Kind: ast.Int, Flags: ast.Long | ast.Unsigned}:     p.getCType("Ulong"),         // Ulong
+		{Kind: ast.Int, Flags: ast.LongLong}:                p.getCType("LongLong"),      // LongLong
+		{Kind: ast.Int, Flags: ast.LongLong | ast.Unsigned}: p.getCType("UlongLong"),     // ULongLong
+		{Kind: ast.Float}:                                   p.getCType("Float"),         // Float
+		{Kind: ast.Float, Flags: ast.Double}:                p.getCType("Double"),        // Double
+		{Kind: ast.Complex}:                                 types.Typ[types.Complex64],  // ComplexFloat
+		{Kind: ast.Complex, Flags: ast.Double}:              types.Typ[types.Complex128], // ComplexDouble
 	}
+}
+
+func (p *Package) GetGogenPackage() *gogen.Package {
+	return p.p
 }
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
@@ -88,24 +98,14 @@ func (p *Package) retToResult(ret ast.Expr) *types.Tuple {
 		return types.NewTuple()
 	}
 	// c's result havent name
-	return types.NewTuple(types.NewVar(token.NoPos, nil, "", p.toType(ret)))
+	return types.NewTuple(types.NewVar(token.NoPos, nil, "", p.ToType(ret)))
 }
 
 func (p *Package) fieldToVar(field *ast.Field) *types.Var {
-	return types.NewVar(token.NoPos, nil, field.Names[0].Name, p.toType(field.Type))
+	return types.NewVar(token.NoPos, nil, field.Names[0].Name, p.ToType(field.Type))
 }
 
-func (p *Package) toVar(expr ast.Expr) *types.Var {
-	switch t := expr.(type) {
-	case *ast.Field:
-		return types.NewVar(token.NoPos, nil, t.Names[0].Name, p.toType(t.Type))
-	default:
-		fmt.Printf("todo:unexpected type %T", t)
-	}
-	return nil
-}
-
-func (p *Package) toType(expr ast.Expr) types.Type {
+func (p *Package) ToType(expr ast.Expr) types.Type {
 	switch t := expr.(type) {
 	case *ast.BuiltinType:
 		return p.toBuiltinType(t)
