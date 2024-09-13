@@ -1,10 +1,12 @@
 package genpkg
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/goplus/gogen"
@@ -16,6 +18,11 @@ type Package struct {
 	p              *gogen.Package
 	clib           gogen.PkgRef
 	builtinTypeMap map[ast.BuiltinType]types.Type
+
+	typeBlock *gogen.TypeDefs // type decls block.
+
+	// todo(zzy):refine array type in func or struct's context
+	inStruct bool // flag to indicate if currently processing a struct
 }
 
 func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
@@ -33,6 +40,13 @@ func (p *Package) getCType(typ string) types.Type {
 		p.clib = p.p.Import("github.com/goplus/llgo/c")
 	}
 	return p.clib.Ref(typ).Type()
+}
+
+func (p *Package) getTypeBlock() *gogen.TypeDefs {
+	if p.typeBlock == nil {
+		p.typeBlock = p.p.NewTypeDefs()
+	}
+	return p.typeBlock
 }
 
 func (p *Package) initBuiltinTypeMap() {
@@ -66,44 +80,68 @@ func (p *Package) GetGogenPackage() *gogen.Package {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
-	sig, err := p.toSignature(funcDecl.Type)
-	if err != nil {
-		return err
-	}
+	sig := p.toSignature(funcDecl.Type)
 	goFuncName := toGoFuncName(funcDecl.Name.Name)
 	decl := p.p.NewFuncDecl(token.NoPos, goFuncName, sig)
 	decl.SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
 	return nil
 }
 
-func (p *Package) toSignature(funcType *ast.FuncType) (*types.Signature, error) {
-	params := p.fieldListToParams(funcType.Params)
-	results := p.retToResult(funcType.Ret)
-	return types.NewSignatureType(nil, nil, nil, params, results, false), nil
+func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
+	decl := p.getTypeBlock().NewType(typeDecl.Name.Name)
+	structType := p.recordTypeToStruct(typeDecl.Type)
+	decl.InitType(p.p, structType)
+	return nil
 }
 
+func (p *Package) recordTypeToStruct(recordType *ast.RecordType) types.Type {
+	p.inStruct = true
+	defer func() { p.inStruct = false }()
+	fields := p.fieldListToVars(recordType.Fields)
+	return types.NewStruct(fields, nil)
+}
+
+func (p *Package) toSignature(funcType *ast.FuncType) *types.Signature {
+	params := p.fieldListToParams(funcType.Params)
+	results := p.retToResult(funcType.Ret)
+	return types.NewSignatureType(nil, nil, nil, params, results, false)
+}
+
+// Convert ast.FieldList to types.Tuple (Function Param)
 func (p *Package) fieldListToParams(params *ast.FieldList) *types.Tuple {
 	if params == nil {
 		return types.NewTuple()
 	}
+	return types.NewTuple(p.fieldListToVars(params)...)
+}
+
+// Convert ast.FieldList to []types.Var
+func (p *Package) fieldListToVars(params *ast.FieldList) []*types.Var {
+	if params == nil || params.List == nil {
+		return nil
+	}
+
 	var vars []*types.Var
 	for _, field := range params.List {
 		vars = append(vars, p.fieldToVar(field))
 	}
-	return types.NewTuple(vars...)
+	return vars
 }
 
 // Execute the ret in FuncType
 func (p *Package) retToResult(ret ast.Expr) *types.Tuple {
-	typ := p.ToType(ret)
-	if typ == nil || typ == p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}] {
-		return types.NewTuple()
+	if typ := p.ToType(ret); typ != nil && typ != p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}] {
+		// in c havent multiple return
+		return types.NewTuple(types.NewVar(token.NoPos, p.p.Types, "", typ))
 	}
-	return types.NewTuple(types.NewVar(token.NoPos, nil, "", p.ToType(ret)))
+	return types.NewTuple()
 }
 
 func (p *Package) fieldToVar(field *ast.Field) *types.Var {
-	return types.NewVar(token.NoPos, nil, field.Names[0].Name, p.ToType(field.Type))
+	if field == nil {
+		return nil
+	}
+	return types.NewVar(token.NoPos, p.p.Types, field.Names[0].Name, p.ToType(field.Type))
 }
 
 // Convert ast.Expr to types.Type
@@ -120,7 +158,19 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 		}
 		return types.NewPointer(typ)
 	case *ast.ArrayType:
-		// todo(zzy):array in struct
+		if p.inStruct {
+			if t.Len == nil {
+				fmt.Fprintln(os.Stderr, "unsupport field with array without length")
+				return nil
+			}
+			elemType := p.ToType(t.Elt)
+			len, ok := p.evaluateArrayLength(t.Len)
+			if !ok {
+				fmt.Fprintln(os.Stderr, "can't determine the array length")
+				return nil
+			}
+			return types.NewArray(elemType, len)
+		}
 		// array in the parameter,ignore the len,convert as pointer
 		return types.NewPointer(p.ToType(t.Elt))
 	default:
@@ -133,7 +183,21 @@ func (p *Package) toBuiltinType(typ *ast.BuiltinType) types.Type {
 	if ok {
 		return t
 	}
+	fmt.Fprintln(os.Stderr, "unsupported type:", typ)
 	return nil
+}
+
+func (p *Package) evaluateArrayLength(expr ast.Expr) (int64, bool) {
+	switch e := expr.(type) {
+	case *ast.BasicLit:
+		if e.Kind == ast.IntLit {
+			length, err := strconv.ParseInt(e.Value, 10, 64)
+			if err == nil {
+				return length, true
+			}
+		}
+	}
+	return 0, false
 }
 
 func (p *Package) Write(curName string) error {
