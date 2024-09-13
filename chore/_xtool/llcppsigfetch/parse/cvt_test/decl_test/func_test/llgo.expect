@@ -124,16 +124,6 @@ TestFuncDecl Case 3:
 						"List":	[{
 								"_Type":	"Field",
 								"Type":	{
-									"_Type":	"Variadic"
-								},
-								"Doc":	null,
-								"Comment":	null,
-								"IsStatic":	false,
-								"Access":	0,
-								"Names":	null
-							}, {
-								"_Type":	"Field",
-								"Type":	{
 									"_Type":	"BuiltinType",
 									"Kind":	6,
 									"Flags":	0
@@ -146,6 +136,16 @@ TestFuncDecl Case 3:
 										"_Type":	"Ident",
 										"Name":	"a"
 									}]
+							}, {
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"Variadic"
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	0,
+								"Names":	null
 							}]
 					},
 					"Ret":	{

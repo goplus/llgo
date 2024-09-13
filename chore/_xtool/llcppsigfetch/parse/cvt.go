@@ -646,12 +646,12 @@ func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 		params:    params,
 		converter: ct,
 	}
+	clang.VisitChildren(cursor, visitFieldList, c.Pointer(ctx))
 	if (cursor.Kind == clang.CursorFunctionDecl || isMethod(cursor)) && cursor.IsVariadic() != 0 {
 		params.List = append(params.List, &ast.Field{
 			Type: &ast.Variadic{},
 		})
 	}
-	clang.VisitChildren(cursor, visitFieldList, c.Pointer(ctx))
 	return params
 }
 
