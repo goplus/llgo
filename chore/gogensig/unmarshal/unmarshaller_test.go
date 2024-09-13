@@ -14,16 +14,10 @@ func TestUnmarshalFiles(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	astConvert := NewAstConvert("./jsons/files.json", "../../llcppg/llcppg.symb.json")
+	astConvert := visitor.NewAstConvert("./jsons/files.json", "../../llcppg/llcppg.symb.json")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
-	p.Unmarshal(filesBytes)
-}
-
-func NewAstConvert(fileName string, symbolFileName string) *visitor.AstConvert {
-	v := visitor.NewAstConvert(fileName)
-	v.SetupSymbleTableFile(symbolFileName)
-	return v
+	p.UnmarshalBytes(filesBytes)
 }
 
 func TestUnmarshalAnyNode(t *testing.T) {
@@ -31,11 +25,11 @@ func TestUnmarshalAnyNode(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	astConvert := NewAstConvert("anynode", "")
+	astConvert := visitor.NewAstConvert("anynode", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileUnmarshaller(docVisitors)
 	rawDocFile := unmarshal.NewRawDocFile("./jsons/anynode.json", nodeBytes)
-	p.Unmarshal(rawDocFile)
+	p.UnmarshalRawDocFile(rawDocFile)
 }
 
 func TestFunc1(t *testing.T) {
@@ -43,11 +37,18 @@ func TestFunc1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	astConvert := NewAstConvert("anynode", "")
+	astConvert := visitor.NewAstConvert("anynode", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
-	err = p.Unmarshal(bytes)
+	err = p.UnmarshalBytes(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestUnmarshalFile(t *testing.T) {
+	astConvert := visitor.NewAstConvert("./jsons/INIReader.json", "../../llcppg/llcppg.symb.json")
+	docVisitors := []visitor.DocVisitor{astConvert}
+	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
+	p.UnmarshalFile("./jsons/INIReader.json")
 }
