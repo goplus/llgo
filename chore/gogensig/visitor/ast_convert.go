@@ -14,15 +14,16 @@ type AstConvert struct {
 	symbTable *symb.SymbolTable
 }
 
-func NewAstConvert(name string) *AstConvert {
+func NewAstConvert(name string, symbFile string) *AstConvert {
 	p := new(AstConvert)
 	p.BaseDocVisitor = NewBaseDocVisitor(p)
 	pkg := genpkg.NewPackage(".", name, nil)
 	p.pkg = pkg
+	p.setupSymbleTableFile(symbFile)
 	return p
 }
 
-func (p *AstConvert) SetupSymbleTableFile(fileName string) error {
+func (p *AstConvert) setupSymbleTableFile(fileName string) error {
 	symbTable, err := symb.NewSymbolTable(fileName)
 	if err != nil {
 		return err
@@ -32,7 +33,7 @@ func (p *AstConvert) SetupSymbleTableFile(fileName string) error {
 }
 
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
-	p.pkg.NewFuncDecl(funcDecl)
+	p.pkg.NewFuncDeclWithSymbolTable(funcDecl, p.symbTable)
 }
 
 func (p *AstConvert) VisitTypeDecl(typeDecl *ast.TypeDecl) {
