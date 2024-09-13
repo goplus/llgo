@@ -93,7 +93,7 @@ package testpkg
 func Foo()`,
 		},
 		{
-			name: "bulitin type",
+			name: "builtin type",
 			decl: &ast.FuncDecl{
 				Name: &ast.Ident{Name: "foo"},
 				Type: &ast.FuncType{
@@ -317,6 +317,191 @@ func Foo(a *c.Uint, b *float64) **int8
 	}
 }
 
+func TestStructDecl(t *testing.T) {
+	testCases := []struct {
+		name     string
+		decl     *ast.TypeDecl
+		expected string
+	}{
+		{
+			name: "empty struct",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag:    ast.Struct,
+					Fields: nil,
+				},
+			},
+			expected: `
+package testpkg
+
+type Foo struct {
+}`,
+		},
+		{
+			name: "struct field builtin type",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.BuiltinType{
+									Kind: ast.Int,
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type: &ast.BuiltinType{
+									Kind:  ast.Float,
+									Flags: ast.Double,
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "c"}},
+								Type: &ast.BuiltinType{
+									Kind: ast.Bool,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+type Foo struct {
+	a c.Int
+	b float64
+	c bool
+}`,
+		},
+		{
+			name: "struct field pointer",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{
+										Kind: ast.Int,
+									},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{
+										Kind:  ast.Float,
+										Flags: ast.Double,
+									}},
+							},
+							{
+								Names: []*ast.Ident{{Name: "c"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{
+										Kind: ast.Bool,
+									},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "d"}},
+								Type: &ast.PointerType{
+									X: &ast.BuiltinType{
+										Kind: ast.Void,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import (
+	"github.com/goplus/llgo/c"
+	"unsafe"
+)
+
+type Foo struct {
+	a *c.Int
+	b *float64
+	c *bool
+	d unsafe.Pointer
+}`},
+		{
+			name: "struct array field",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{
+										Kind:  ast.Char,
+										Flags: ast.Signed,
+									},
+									Len: &ast.BasicLit{
+										Kind:  ast.IntLit,
+										Value: "4",
+									},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type: &ast.ArrayType{
+									Elt: &ast.ArrayType{
+										Elt: &ast.BuiltinType{
+											Kind: ast.Int,
+										},
+										Len: &ast.BasicLit{Kind: ast.IntLit, Value: "4"},
+									},
+									Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+type Foo struct {
+	a [4]int8
+	b [3][4]c.Int
+}`},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+			if pkg == nil {
+				t.Fatal("NewPackage failed")
+			}
+			err := pkg.NewTypeDecl(tc.decl)
+			if err != nil {
+				t.Fatalf("NewBasic failed: %v", err)
+			}
+			comparePackageOutput(t, pkg, tc.expected)
+		})
+	}
+}
+
+// compares the output of a gogen.Package with the expected
 func comparePackageOutput(t *testing.T, pkg *genpkg.Package, expect string) {
 	t.Helper()
 	gogenPkg := pkg.GetGogenPackage()
