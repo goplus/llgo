@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
+	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type AstConvert struct {
 	*BaseDocVisitor
-	pkg *genpkg.Package
+	pkg       *genpkg.Package
+	symbTable *symb.SymbolTable
 }
 
 func NewAstConvert(name string) *AstConvert {
@@ -18,6 +20,15 @@ func NewAstConvert(name string) *AstConvert {
 	pkg := genpkg.NewPackage(".", name, nil)
 	p.pkg = pkg
 	return p
+}
+
+func (p *AstConvert) SetupSymbleTableFile(fileName string) error {
+	symbTable, err := symb.NewSymbolTable(fileName)
+	if err != nil {
+		return err
+	}
+	p.symbTable = symbTable
+	return nil
 }
 
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
