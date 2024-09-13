@@ -24,6 +24,8 @@ type Package struct {
 
 	// todo(zzy):refine array type in func or struct's context
 	inStruct bool // flag to indicate if currently processing a struct
+
+	symbolTable *symb.SymbolTable
 }
 
 func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
@@ -34,6 +36,10 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 	pkg.initBuiltinTypeMap()
 	pkg.name = name
 	return pkg
+}
+
+func (p *Package) SetSymbolTable(symbolTable *symb.SymbolTable) {
+	p.symbolTable = symbolTable
 }
 
 func (p *Package) getCType(typ string) types.Type {
@@ -95,18 +101,6 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	return nil
 }
 
-func (p *Package) NewFuncDeclWithSymbolTable(funcDecl *ast.FuncDecl, symbolTable *symb.SymbolTable) error {
-	// todo(zzy) accept the name of llcppg.symb.json
-	sig, err := p.toSignature(funcDecl.Type)
-	if err != nil {
-		return err
-	}
-	goFuncName := toGoFuncName(funcDecl.Name.Name)
-	decl := p.p.NewFuncDecl(token.NoPos, goFuncName, sig)
-	decl.SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
-	return nil
-}
-
 func (p *Package) toSignature(funcType *ast.FuncType) (*types.Signature, error) {
 	params := p.fieldListToParams(funcType.Params)
 	results := p.retToResult(funcType.Ret)
@@ -130,13 +124,17 @@ func (p *Package) fieldListToParams(params *ast.FieldList) *types.Tuple {
 
 // Convert ast.FieldList to []types.Var
 func (p *Package) fieldListToVars(params *ast.FieldList) []*types.Var {
-	if params == nil || params.List == nil {
-		return nil
-	}
-
 	var vars []*types.Var
+	if params == nil || params.List == nil {
+		return vars
+	}
 	for _, field := range params.List {
-		vars = append(vars, p.fieldToVar(field))
+		fieldVar := p.fieldToVar(field)
+		if fieldVar != nil {
+			vars = append(vars, fieldVar)
+		} else {
+			//todo handle field _Type=Variadic case
+		}
 	}
 	return vars
 }
@@ -151,7 +149,7 @@ func (p *Package) retToResult(ret ast.Expr) *types.Tuple {
 }
 
 func (p *Package) fieldToVar(field *ast.Field) *types.Var {
-	if field == nil {
+	if field == nil || len(field.Names) <= 0 {
 		return nil
 	}
 	return types.NewVar(token.NoPos, p.p.Types, field.Names[0].Name, p.ToType(field.Type))

@@ -10,8 +10,7 @@ import (
 
 type AstConvert struct {
 	*BaseDocVisitor
-	pkg       *genpkg.Package
-	symbTable *symb.SymbolTable
+	pkg *genpkg.Package
 }
 
 func NewAstConvert(name string, symbFile string) *AstConvert {
@@ -28,12 +27,12 @@ func (p *AstConvert) setupSymbleTableFile(fileName string) error {
 	if err != nil {
 		return err
 	}
-	p.symbTable = symbTable
+	p.pkg.SetSymbolTable(symbTable)
 	return nil
 }
 
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
-	p.pkg.NewFuncDeclWithSymbolTable(funcDecl, p.symbTable)
+	p.pkg.NewFuncDecl(funcDecl)
 }
 
 func (p *AstConvert) VisitTypeDecl(typeDecl *ast.TypeDecl) {
