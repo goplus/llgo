@@ -62,6 +62,10 @@ func EnableDebugSymbols() {
 	debugSymbols = true
 }
 
+func DisableDebugSymbols() {
+	debugSymbols = false
+}
+
 func DebugSymbols() bool {
 	return debugSymbols
 }
