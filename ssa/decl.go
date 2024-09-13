@@ -277,10 +277,6 @@ func (p Function) NewBuilder() Builder {
 	return &aBuilder{b, nil, p, p.Pkg, prog}
 }
 
-func (p Function) NewDIBuilder() *llvm.DIBuilder {
-	return llvm.NewDIBuilder(p.Pkg.mod)
-}
-
 // HasBody reports whether the function has a body.
 func (p Function) HasBody() bool {
 	return len(p.blks) > 0
@@ -335,10 +331,10 @@ func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
 	if p.diFunc == nil {
 		paramTypes := make([]llvm.Metadata, len(p.params))
 		for i, t := range p.params {
-			paramTypes[i] = b.DIType(t, pos).ll
+			paramTypes[i] = b.diType(t, pos).ll
 		}
 		diFuncType := b.di.CreateSubroutineType(llvm.DISubroutineType{
-			File:       b.DIFile(pos.Filename).ll,
+			File:       b.file(pos.Filename).ll,
 			Parameters: paramTypes,
 		})
 		p.diFunc = &aDIFunction{
@@ -348,7 +344,7 @@ func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
 					Type:         diFuncType,
 					Name:         p.Name(),
 					LinkageName:  p.Name(),
-					File:         b.DIFile(pos.Filename).ll,
+					File:         b.file(pos.Filename).ll,
 					Line:         pos.Line,
 					IsDefinition: true,
 					Optimized:    false,

@@ -714,7 +714,7 @@ func (p Package) Finalize() {
 	}
 }
 
-func (p Package) DIBuilder() diBuilder {
+func (p Package) diBuilder() diBuilder {
 	return p.di
 }
 

@@ -92,7 +92,7 @@ func (b diBuilder) createFile(filename string) DIFile {
 }
 
 func (f DIFile) scopeMeta(b diBuilder, cu CompilationUnit, pos token.Position) DIScopeMeta {
-	return &aDIScopeMeta{b.DIFile(pos.Filename).ll}
+	return &aDIScopeMeta{b.file(pos.Filename).ll}
 }
 
 // ----------------------------------------------------------------------------
@@ -105,7 +105,7 @@ type DILexicalBlock = *aDILexicalBlock
 
 func (b diBuilder) createLexicalBlock(scope DIScope, pos token.Position) DILexicalBlock {
 	block := llvm.DILexicalBlock{
-		File:   b.DIFile(pos.Filename).ll,
+		File:   b.file(pos.Filename).ll,
 		Line:   pos.Line,
 		Column: pos.Column,
 	}
@@ -165,7 +165,7 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 	case *types.Pointer:
 		return b.createPointerType(b.prog.rawType(t.Elem()), pos)
 	case *types.Named:
-		return b.DIType(b.prog.rawType(t.Underlying()), pos)
+		return b.diType(b.prog.rawType(t.Underlying()), pos)
 	case *types.Interface:
 		return b.createBasicType(ty)
 	case *types.Slice:
@@ -194,7 +194,7 @@ type aDIFunction struct {
 
 type DIFunction = *aDIFunction
 
-func (b diBuilder) CreateFunction(scope DIScope, pos token.Position, name, linkageName string, ty DIType, isLocalToUnit, isDefinition, isOptimized bool) DIFunction {
+func (b diBuilder) createFunction(scope DIScope, pos token.Position, name, linkageName string, ty DIType, isLocalToUnit, isDefinition, isOptimized bool) DIFunction {
 	return &aDIFunction{ll: scope.scopeMeta(b, pos).ll}
 }
 
@@ -206,14 +206,14 @@ type aDIGlobalVariableExpression struct {
 
 type DIGlobalVariableExpression = *aDIGlobalVariableExpression
 
-func (b diBuilder) CreateGlobalVariableExpression(scope DIScope, pos token.Position, name, linkageName string, ty DIType, isLocalToUnit bool) DIGlobalVariableExpression {
+func (b diBuilder) createGlobalVariableExpression(scope DIScope, pos token.Position, name, linkageName string, ty DIType, isLocalToUnit bool) DIGlobalVariableExpression {
 	return &aDIGlobalVariableExpression{
 		ll: b.di.CreateGlobalVariableExpression(
 			scope.scopeMeta(b, pos).ll,
 			llvm.DIGlobalVariableExpression{
 				Name:        name,
 				LinkageName: linkageName,
-				File:        b.DIFile(pos.Filename).ll,
+				File:        b.file(pos.Filename).ll,
 				Line:        pos.Line,
 				Type:        ty.ll,
 				LocalToUnit: isLocalToUnit,
@@ -234,13 +234,13 @@ type aDIVar struct {
 
 type DIVar = *aDIVar
 
-func (b diBuilder) CreateParameterVariable(scope DIScope, pos token.Position, name string, argNo int, ty DIType) DIVar {
+func (b diBuilder) createParameterVariable(scope DIScope, pos token.Position, name string, argNo int, ty DIType) DIVar {
 	return &aDIVar{
 		ll: b.di.CreateParameterVariable(
 			scope.scopeMeta(b, pos).ll,
 			llvm.DIParameterVariable{
 				Name:           name,
-				File:           b.DIFile(pos.Filename).ll,
+				File:           b.file(pos.Filename).ll,
 				Line:           pos.Line,
 				ArgNo:          argNo,
 				Type:           ty.ll,
@@ -250,13 +250,13 @@ func (b diBuilder) CreateParameterVariable(scope DIScope, pos token.Position, na
 	}
 }
 
-func (b diBuilder) CreateAutoVariable(scope DIScope, pos token.Position, name string, ty DIType) DIVar {
+func (b diBuilder) createAutoVariable(scope DIScope, pos token.Position, name string, ty DIType) DIVar {
 	return &aDIVar{
 		ll: b.di.CreateAutoVariable(
 			scope.scopeMeta(b, pos).ll,
 			llvm.DIAutoVariable{
 				Name:           name,
-				File:           b.DIFile(pos.Filename).ll,
+				File:           b.file(pos.Filename).ll,
 				Line:           pos.Line,
 				Type:           ty.ll,
 				AlwaysPreserve: true,
@@ -264,8 +264,6 @@ func (b diBuilder) CreateAutoVariable(scope DIScope, pos token.Position, name st
 		),
 	}
 }
-
-// ----------------------------------------------------------------------------
 
 func (b diBuilder) createBasicType(t Type) DIType {
 	return &aDIType{ll: b.di.CreateBasicType(llvm.DIBasicType{
@@ -277,7 +275,7 @@ func (b diBuilder) createBasicType(t Type) DIType {
 
 func (b diBuilder) createPointerType(ty Type, pos token.Position) DIType {
 	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
-		Pointee:      b.DIType(ty, pos).ll,
+		Pointee:      b.diType(ty, pos).ll,
 		SizeInBits:   b.prog.SizeOf(ty) * 8,
 		AlignInBits:  uint32(b.prog.sizes.Alignof(ty.RawType())) * 8,
 		AddressSpace: 0,
@@ -285,7 +283,7 @@ func (b diBuilder) createPointerType(ty Type, pos token.Position) DIType {
 }
 
 func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
-	scope := b.DIFile(pos.Filename)
+	scope := b.file(pos.Filename)
 	ret = &aDIType{b.di.CreateReplaceableCompositeType(
 		scope.ll,
 		llvm.DIReplaceableCompositeType{
@@ -305,12 +303,12 @@ func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
 			scope.ll,
 			llvm.DIMemberType{
 				Name:         field.Name(),
-				File:         b.DIFile(pos.Filename).ll,
+				File:         b.file(pos.Filename).ll,
 				Line:         pos.Line,
 				SizeInBits:   b.prog.SizeOf(b.prog.rawType(field.Type())) * 8,
 				AlignInBits:  8,
 				OffsetInBits: b.prog.OffsetOf(ty, i) * 8,
-				Type:         b.DIType(b.prog.rawType(field.Type()), pos).ll,
+				Type:         b.diType(b.prog.rawType(field.Type()), pos).ll,
 			},
 		)
 	}
@@ -318,7 +316,7 @@ func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
 		scope.ll,
 		llvm.DIStructType{
 			Name:        ty.RawType().String(),
-			File:        b.DIFile(pos.Filename).ll,
+			File:        b.file(pos.Filename).ll,
 			Line:        pos.Line,
 			SizeInBits:  b.prog.SizeOf(ty) * 8,
 			AlignInBits: uint32(b.prog.sizes.Alignof(structType) * 8),
@@ -332,12 +330,12 @@ func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
 
 func (b diBuilder) createFuncPtrType(ty Type, pos token.Position) DIType {
 	sig := ty.RawType().(*types.Signature)
-	retTy := b.DIType(b.prog.rawType(sig.Results()), pos)
+	retTy := b.diType(b.prog.rawType(sig.Results()), pos)
 	paramTys := make([]DIType, sig.Params().Len())
 	for i := 0; i < sig.Params().Len(); i++ {
-		paramTys[i] = b.DIType(b.prog.rawType(sig.Params().At(i).Type()), pos)
+		paramTys[i] = b.diType(b.prog.rawType(sig.Params().At(i).Type()), pos)
 	}
-	rt := b.createSubroutineType(b.DIFile(pos.Filename), retTy, paramTys)
+	rt := b.createSubroutineType(b.file(pos.Filename), retTy, paramTys)
 	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
 		Pointee:      rt.ll,
 		SizeInBits:   b.prog.SizeOf(ty) * 8,
@@ -345,8 +343,6 @@ func (b diBuilder) createFuncPtrType(ty Type, pos token.Position) DIType {
 		AddressSpace: 0,
 	})}
 }
-
-// ----------------------------------------------------------------------------
 
 func (b diBuilder) createSubroutineType(file DIFile, retTy DIType, paramTys []DIType) DIType {
 	params := make([]llvm.Metadata, len(paramTys)+1)
@@ -363,7 +359,7 @@ func (b diBuilder) createSubroutineType(file DIFile, retTy DIType, paramTys []DI
 
 // ----------------------------------------------------------------------------
 
-func (b diBuilder) Debug(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+func (b diBuilder) dbgDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
 	loc := llvm.DebugLoc{
 		Line:  uint(pos.Line),
 		Col:   uint(pos.Column),
@@ -378,7 +374,7 @@ func (b diBuilder) Debug(v Expr, dv DIVar, scope DIScope, pos token.Position, bl
 	)
 }
 
-func (b diBuilder) DebugValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+func (b diBuilder) dbgValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
 	loc := llvm.DebugLoc{
 		Line:  uint(pos.Line),
 		Col:   uint(pos.Column),
@@ -393,7 +389,7 @@ func (b diBuilder) DebugValue(v Expr, dv DIVar, scope DIScope, pos token.Positio
 	)
 }
 
-func (b diBuilder) DIType(t Type, pos token.Position) DIType {
+func (b diBuilder) diType(t Type, pos token.Position) DIType {
 	if ty, ok := b.diTypes[t]; ok {
 		return ty
 	}
@@ -402,8 +398,8 @@ func (b diBuilder) DIType(t Type, pos token.Position) DIType {
 	return ty
 }
 
-func (b diBuilder) DIVarParam(f Function, pos token.Position, varName string, vt DIType, argNo int) DIVar {
-	return b.CreateParameterVariable(
+func (b diBuilder) varParam(f Function, pos token.Position, varName string, vt DIType, argNo int) DIVar {
+	return b.createParameterVariable(
 		f,
 		pos,
 		varName,
@@ -412,8 +408,8 @@ func (b diBuilder) DIVarParam(f Function, pos token.Position, varName string, vt
 	)
 }
 
-func (b diBuilder) DIVarAuto(f Function, pos token.Position, varName string, vt DIType) DIVar {
-	return b.CreateAutoVariable(
+func (b diBuilder) varAuto(f Function, pos token.Position, varName string, vt DIType) DIVar {
+	return b.createAutoVariable(
 		f,
 		pos,
 		varName,
@@ -421,21 +417,42 @@ func (b diBuilder) DIVarAuto(f Function, pos token.Position, varName string, vt 
 	)
 }
 
-func (b diBuilder) DIFile(filename string) DIFile {
+func (b diBuilder) file(filename string) DIFile {
 	return b.createFile(filename)
 }
 
 // -----------------------------------------------------------------------------
 
-func (b Builder) SetCurrentDebugLocation(f Function, pos token.Position) {
+func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+	b.Pkg.diBuilder().dbgDeclare(v, dv, scope, pos, blk)
+}
+
+func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+	b.Pkg.diBuilder().dbgValue(v, dv, scope, pos, blk)
+}
+
+func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt Type, argNo int) DIVar {
+	t := b.Pkg.diBuilder().diType(vt, pos)
+	return b.Pkg.diBuilder().varParam(f, pos, varName, t, argNo)
+}
+
+func (b Builder) DIVarAuto(f Function, pos token.Position, varName string, vt Type) DIVar {
+	t := b.Pkg.diBuilder().diType(vt, pos)
+	return b.Pkg.diBuilder().varAuto(f, pos, varName, t)
+}
+
+func (b Builder) DISetCurrentDebugLocation(f Function, pos token.Position) {
 	b.impl.SetCurrentDebugLocation(
 		uint(pos.Line),
 		uint(pos.Column),
-		f.scopeMeta(b.Pkg.DIBuilder(), pos).ll,
+		f.scopeMeta(b.Pkg.diBuilder(), pos).ll,
 		f.impl.InstructionDebugLoc(),
 	)
 }
-func (b diBuilder) DebugFunction(f Function, pos token.Position) {
+
+func (b Builder) DebugFunction(f Function, pos token.Position) {
 	// attach debug info to function
-	f.scopeMeta(b, pos)
+	f.scopeMeta(b.Pkg.di, pos)
 }
+
+// -----------------------------------------------------------------------------

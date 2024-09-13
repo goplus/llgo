@@ -267,7 +267,6 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			}
 			sig := fn.Signature
 			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, fn.Origin() != nil)
-			// p.pkg.DIBuilder().DebugFunction(aFn, p.goProg.Fset.Position(fn.Pos()))
 		}
 	}
 	return
