@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
@@ -80,7 +81,7 @@ func (p *Package) GetGogenPackage() *gogen.Package {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
-	sig := p.toSignature(funcDecl.Type)
+	sig, _ := p.toSignature(funcDecl.Type)
 	goFuncName := toGoFuncName(funcDecl.Name.Name)
 	decl := p.p.NewFuncDecl(token.NoPos, goFuncName, sig)
 	decl.SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
@@ -94,17 +95,29 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	return nil
 }
 
+func (p *Package) NewFuncDeclWithSymbolTable(funcDecl *ast.FuncDecl, symbolTable *symb.SymbolTable) error {
+	// todo(zzy) accept the name of llcppg.symb.json
+	sig, err := p.toSignature(funcDecl.Type)
+	if err != nil {
+		return err
+	}
+	goFuncName := toGoFuncName(funcDecl.Name.Name)
+	decl := p.p.NewFuncDecl(token.NoPos, goFuncName, sig)
+	decl.SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
+	return nil
+}
+
+func (p *Package) toSignature(funcType *ast.FuncType) (*types.Signature, error) {
+	params := p.fieldListToParams(funcType.Params)
+	results := p.retToResult(funcType.Ret)
+	return types.NewSignatureType(nil, nil, nil, params, results, false), nil
+}
+
 func (p *Package) recordTypeToStruct(recordType *ast.RecordType) types.Type {
 	p.inStruct = true
 	defer func() { p.inStruct = false }()
 	fields := p.fieldListToVars(recordType.Fields)
 	return types.NewStruct(fields, nil)
-}
-
-func (p *Package) toSignature(funcType *ast.FuncType) *types.Signature {
-	params := p.fieldListToParams(funcType.Params)
-	results := p.retToResult(funcType.Ret)
-	return types.NewSignatureType(nil, nil, nil, params, results, false)
 }
 
 // Convert ast.FieldList to types.Tuple (Function Param)
