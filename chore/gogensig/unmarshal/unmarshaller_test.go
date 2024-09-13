@@ -2,53 +2,52 @@ package unmarshal_test
 
 // TODO to improve test case
 import (
-	"io"
-	"os"
 	"testing"
 
+	"github.com/goplus/llgo/chore/gogensig/file"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
 func TestUnmarshalFiles(t *testing.T) {
-	filesBytes, err := readJSONFile("./jsons/files.json")
+	filesBytes, err := file.ReadFile("./jsons/files.json")
 	if err != nil {
 		t.Error(err)
 	}
-	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("files")}
+	astConvert := NewAstConvert("./jsons/files.json", "../../llcppg/llcppg.symb.json")
+	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	p.Unmarshal(filesBytes)
 }
 
+func NewAstConvert(fileName string, symbolFileName string) *visitor.AstConvert {
+	v := visitor.NewAstConvert(fileName)
+	v.SetupSymbleTableFile(symbolFileName)
+	return v
+}
+
 func TestUnmarshalAnyNode(t *testing.T) {
-	nodeBytes, err := readJSONFile("./jsons/anynode.json")
+	nodeBytes, err := file.ReadFile("./jsons/anynode.json")
 	if err != nil {
 		t.Error(err)
 	}
-	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("anynode")}
+	astConvert := NewAstConvert("anynode", "")
+	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileUnmarshaller(docVisitors)
 	rawDocFile := unmarshal.NewRawDocFile("./jsons/anynode.json", nodeBytes)
 	p.Unmarshal(rawDocFile)
 }
 
 func TestFunc1(t *testing.T) {
-	bytes, err := readJSONFile("./jsons/func1.json")
+	bytes, err := file.ReadFile("./jsons/func1.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	docVisitors := []visitor.DocVisitor{visitor.NewAstConvert("func1")}
+	astConvert := NewAstConvert("anynode", "")
+	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	err = p.Unmarshal(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-func readJSONFile(filePath string) ([]byte, error) {
-	jsonFile, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer jsonFile.Close()
-	return io.ReadAll(jsonFile)
 }
