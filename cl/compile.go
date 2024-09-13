@@ -46,14 +46,24 @@ const (
 )
 
 var (
-	debugInstr bool
-	debugGoSSA bool
+	debugInstr   bool
+	debugGoSSA   bool
+	debugSymbols bool
 )
 
 // SetDebug sets debug flags.
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
 	debugGoSSA = (dbgFlags & DbgFlagGoSSA) != 0
+}
+
+// EnableDebugSymbols enables debug symbols.
+func EnableDebugSymbols() {
+	debugSymbols = true
+}
+
+func DebugSymbols() bool {
+	return debugSymbols
 }
 
 // -----------------------------------------------------------------------------
@@ -228,7 +238,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
-		p.pkg.DIBuilder().DebugFunction(fn, p.goProg.Fset.Position(f.Pos()))
+		if debugSymbols {
+			p.pkg.DIBuilder().DebugFunction(fn, p.goProg.Fset.Position(f.Pos()))
+		}
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -250,14 +262,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
-			b.SetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(f.Pos()))
+			if debugSymbols {
+				b.SetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(f.Pos()))
+			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
 			for i, block := range f.Blocks {
 				off[i] = p.compilePhis(b, block)
 			}
 			p.blkInfos = blocks.Infos(f.Blocks)
-			p.debugParams(b, f)
+			if debugSymbols {
+				p.debugParams(b, f)
+			}
 			i := 0
 			for {
 				block := f.Blocks[i]
@@ -469,8 +485,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		log.Panicln("unreachable:", iv)
 	}
-	if v, ok := iv.(ssa.Instruction); ok {
-		b.SetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(v.Pos()))
+	if debugSymbols {
+		if v, ok := iv.(ssa.Instruction); ok {
+			b.SetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(v.Pos()))
+		}
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -881,6 +899,9 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		prog.SetRuntime(pkgTypes)
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
+	if debugSymbols {
+		ret.EnableDebugSymbols(pkgName, pkgPath)
+	}
 
 	ctx := &context{
 		prog:    prog,

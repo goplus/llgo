@@ -25,10 +25,13 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 )
 
-func Init() {
+func Init(enableDbg bool) {
 	llssa.Initialize(llssa.InitAll)
 	llssa.SetDebug(llssa.DbgFlagAll)
 	cl.SetDebug(cl.DbgFlagAll)
+	if enableDbg {
+		cl.EnableDebugSymbols()
+	}
 }
 
 func PkgPath(dir string) string {

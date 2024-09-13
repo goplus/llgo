@@ -33,7 +33,7 @@ var (
 )
 
 func Clean(args []string, conf *Config) {
-	flags, patterns, verbose := ParseArgs(args, cleanFlags)
+	flags, patterns, verbose, _ := ParseArgs(args, cleanFlags)
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedExportFile,
 		BuildFlags: flags,

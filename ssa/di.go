@@ -55,7 +55,7 @@ type aCompilationUnit struct {
 
 type CompilationUnit = *aCompilationUnit
 
-func (b diBuilder) CreateCompileUnit(filename, dir string) CompilationUnit {
+func (b diBuilder) createCompileUnit(filename, dir string) CompilationUnit {
 	return &aCompilationUnit{ll: b.di.CreateCompileUnit(llvm.DICompileUnit{
 		Language:       llvm.DW_LANG_Go,
 		File:           filename,
@@ -121,7 +121,6 @@ type aDIType struct {
 type DIType = *aDIType
 
 func (b diBuilder) createType(ty Type, pos token.Position) DIType {
-	fmt.Printf("Create type: %T, %v\n", ty.RawType(), ty.RawType())
 	var typ llvm.Metadata
 	switch t := ty.RawType().(type) {
 	case *types.Basic:
@@ -178,6 +177,8 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 	case *types.Tuple:
 		return b.createBasicType(ty)
 	case *types.Array:
+		return b.createBasicType(ty)
+	case *types.Chan:
 		return b.createBasicType(ty)
 	default:
 		panic(fmt.Errorf("can't create debug info of type: %v, %T", ty.RawType(), ty.RawType()))

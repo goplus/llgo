@@ -120,7 +120,10 @@ const (
 )
 
 func Do(args []string, conf *Config) {
-	flags, patterns, verbose := ParseArgs(args, buildFlags)
+	flags, patterns, verbose, dbg := ParseArgs(args, buildFlags)
+	if dbg {
+		cl.EnableDebugSymbols()
+	}
 	flags = append(flags, "-tags", "llgo")
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -436,7 +439,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 		}
 	}
 	args = append(args, exargs...)
-	args = append(args, "-gdwarf-5", "-v")
+	if cl.DebugSymbols() {
+		args = append(args, "-gdwarf-5")
+	}
 
 	// TODO(xsw): show work
 	if verbose {
@@ -598,6 +603,7 @@ var (
 		"-cover":     false, // -cover: enable coverage analysis
 		"-covermode": true,  // -covermode mode: set the mode for coverage analysis
 		"-v":         false, // -v: print the names of packages as they are compiled
+		"-dbg":       false, // -dbg: build with debug symbols (temporarily)
 		"-work":      false, // -work: print the name of the temporary work directory and do not delete it when exiting
 		"-x":         false, // -x: print the commands
 		"-tags":      true,  // -tags 'tag,list': a space-separated list of build tags to consider satisfied during the build
@@ -606,18 +612,22 @@ var (
 	}
 )
 
-func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
+func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose, dbg bool) {
 	n := len(args)
 	for i := 0; i < n; i++ {
 		arg := args[i]
 		if strings.HasPrefix(arg, "-") {
-			checkFlag(arg, &i, &verbose, swflags)
+			checkFlag(arg, &i, &verbose, &dbg, swflags)
 		} else {
-			flags, patterns = args[:i], args[i:]
+			patterns = args[i:]
+			for _, arg := range args[:i] {
+				if arg != "-dbg" {
+					flags = append(flags, arg)
+				}
+			}
 			return
 		}
 	}
-	flags = args
 	return
 }
 
@@ -626,7 +636,7 @@ func SkipFlagArgs(args []string) int {
 	for i := 0; i < n; i++ {
 		arg := args[i]
 		if strings.HasPrefix(arg, "-") {
-			checkFlag(arg, &i, nil, buildFlags)
+			checkFlag(arg, &i, nil, nil, buildFlags)
 		} else {
 			return i
 		}
@@ -634,7 +644,7 @@ func SkipFlagArgs(args []string) int {
 	return -1
 }
 
-func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
+func checkFlag(arg string, i *int, verbose, dbg *bool, swflags map[string]bool) {
 	if pos := strings.IndexByte(arg, '='); pos > 0 {
 		if verbose != nil && arg == "-v=true" {
 			*verbose = true
@@ -644,6 +654,8 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 			*i++
 		} else if verbose != nil && arg == "-v" {
 			*verbose = true
+		} else if dbg != nil && arg == "-dbg" {
+			*dbg = true
 		}
 	} else {
 		panic("unknown flag: " + arg)
