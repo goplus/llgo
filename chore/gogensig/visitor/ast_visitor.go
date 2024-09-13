@@ -2,14 +2,12 @@ package visitor
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type DocVisitor interface {
-	Visit(_Type string, node ast.Node, docPath string)
+	Visit(_Type string, node ast.Node)
 	VisitFuncDecl(*ast.FuncDecl)
 	VisitTypeDecl(*ast.TypeDecl)
 	VisitDone(docPath string)
@@ -34,27 +32,7 @@ func (p *BaseDocVisitor) visitNode(decl ast.Node) {
 	}
 }
 
-func (p *BaseDocVisitor) checkDocPath(docPath string) (string, error) {
-	dir, fname := filepath.Split(docPath)
-	if len(fname) <= 0 {
-		fname = "temp.h"
-	}
-	_, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		dir, err = filepath.Abs(".")
-		if err != nil {
-			return fname, err
-		}
-	}
-	resDocPath := filepath.Join(dir, fname)
-	return resDocPath, nil
-}
-
-func (p *BaseDocVisitor) Visit(_Type string, node ast.Node, docPath string) {
-	resPath, err := p.checkDocPath(docPath)
-	if err != nil {
-		panic(err)
-	}
+func (p *BaseDocVisitor) Visit(_Type string, node ast.Node) {
 	switch v := node.(type) {
 	case *ast.File:
 		for _, decl := range v.Decls {
@@ -63,7 +41,6 @@ func (p *BaseDocVisitor) Visit(_Type string, node ast.Node, docPath string) {
 	default:
 		p.visitNode(v)
 	}
-	p.visitDone(resPath)
 }
 
 func (p *BaseDocVisitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
@@ -72,8 +49,4 @@ func (p *BaseDocVisitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 func (p *BaseDocVisitor) visitTypeDecl(typeDecl *ast.TypeDecl) {
 	p.VisitTypeDecl(typeDecl)
-}
-
-func (p *BaseDocVisitor) visitDone(docPath string) {
-	p.VisitDone(docPath)
 }
