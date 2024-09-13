@@ -180,6 +180,8 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 		return b.createBasicType(ty)
 	case *types.Chan:
 		return b.createBasicType(ty)
+	case *types.Map:
+		return b.createBasicType(ty)
 	default:
 		panic(fmt.Errorf("can't create debug info of type: %v, %T", ty.RawType(), ty.RawType()))
 	}
