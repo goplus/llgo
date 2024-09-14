@@ -212,8 +212,8 @@ func (p *Package) evaluateArrayLength(expr ast.Expr) (int64, bool) {
 }
 
 func (p *Package) Write(curName string) error {
-	fileDir, fileName := filepath.Split(curName)
-	dir, err := p.makePackageDir(fileDir)
+	_, fileName := filepath.Split(curName)
+	dir, err := p.makePackageDir("")
 	if err != nil {
 		return err
 	}
