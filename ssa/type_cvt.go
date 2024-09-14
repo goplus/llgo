@@ -145,7 +145,7 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 		}
 		named.SetTypeParams(list)
 	}
-	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
+	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(t)
 	if tund, cvt := p.cvtType(t.Underlying()); cvt {
 		named.SetUnderlying(tund)
 		if tp := t.TypeArgs(); tp != nil {
@@ -158,11 +158,10 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 				panic(fmt.Errorf("cvtNamed error: %v", err))
 			}
 			named = typ.(*types.Named)
-			p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
 		}
+		p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
 		return named, true
 	}
-	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(t)
 	return t, false
 }
 
