@@ -195,17 +195,17 @@ source_filename = "foo"
 
 define i64 @foo.Foo.Foo(%foo.Foo %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1, %"github.com/goplus/llgo/internal/runtime.String" %2) !dbg !4 {
 _llgo_0:
-  call void @llvm.dbg.value(metadata %foo.Foo %0, metadata !16, metadata !DIExpression()), !dbg !17
-  call void @llvm.dbg.value(metadata %"github.com/goplus/llgo/internal/runtime.Slice" %1, metadata !18, metadata !DIExpression()), !dbg !19
-  call void @llvm.dbg.value(metadata %"github.com/goplus/llgo/internal/runtime.String" %2, metadata !20, metadata !DIExpression()), !dbg !21
+  call void @llvm.dbg.declare(metadata %foo.Foo %0, metadata !16, metadata !DIExpression()), !dbg !17
+  call void @llvm.dbg.declare(metadata %"github.com/goplus/llgo/internal/runtime.Slice" %1, metadata !18, metadata !DIExpression()), !dbg !19
+  call void @llvm.dbg.declare(metadata %"github.com/goplus/llgo/internal/runtime.String" %2, metadata !20, metadata !DIExpression()), !dbg !21
   ret i64 1, !dbg !22
 }
 
 define i64 @"foo.(*Foo).Foo"(ptr %0, %"github.com/goplus/llgo/internal/runtime.Slice" %1, %"github.com/goplus/llgo/internal/runtime.String" %2) !dbg !23 {
 _llgo_0:
-  call void @llvm.dbg.value(metadata ptr %0, metadata !26, metadata !DIExpression()), !dbg !27
-  call void @llvm.dbg.value(metadata %"github.com/goplus/llgo/internal/runtime.Slice" %1, metadata !28, metadata !DIExpression()), !dbg !29
-  call void @llvm.dbg.value(metadata %"github.com/goplus/llgo/internal/runtime.String" %2, metadata !30, metadata !DIExpression()), !dbg !31
+  call void @llvm.dbg.declare(metadata ptr %0, metadata !26, metadata !DIExpression()), !dbg !27
+  call void @llvm.dbg.declare(metadata %"github.com/goplus/llgo/internal/runtime.Slice" %1, metadata !28, metadata !DIExpression()), !dbg !29
+  call void @llvm.dbg.declare(metadata %"github.com/goplus/llgo/internal/runtime.String" %2, metadata !30, metadata !DIExpression()), !dbg !31
   %3 = load %foo.Foo, ptr %0, align 8, !dbg !32
   %4 = call i64 @foo.Foo.Foo(%foo.Foo %3, %"github.com/goplus/llgo/internal/runtime.Slice" %1, %"github.com/goplus/llgo/internal/runtime.String" %2), !dbg !32
   ret i64 %4, !dbg !32
@@ -213,14 +213,14 @@ _llgo_0:
 
 define i64 @foo.fn(i64 %0, double %1) !dbg !33 {
 _llgo_0:
-  call void @llvm.dbg.value(metadata i64 %0, metadata !38, metadata !DIExpression()), !dbg !39
-  call void @llvm.dbg.value(metadata double %1, metadata !40, metadata !DIExpression()), !dbg !41
+  call void @llvm.dbg.declare(metadata i64 %0, metadata !38, metadata !DIExpression()), !dbg !39
+  call void @llvm.dbg.declare(metadata double %1, metadata !40, metadata !DIExpression()), !dbg !41
   ret i64 1, !dbg !42
 }
 
 define void @foo.fn1({ ptr, ptr } %0) !dbg !43 {
 _llgo_0:
-  call void @llvm.dbg.value(metadata { ptr, ptr } %0, metadata !55, metadata !DIExpression()), !dbg !56
+  call void @llvm.dbg.declare(metadata { ptr, ptr } %0, metadata !55, metadata !DIExpression()), !dbg !56
   %1 = extractvalue { ptr, ptr } %0, 1, !dbg !57
   %2 = extractvalue { ptr, ptr } %0, 0, !dbg !57
   %3 = call i64 %2(ptr %1, i64 1, double 1.000000e+00), !dbg !57
@@ -324,7 +324,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
-declare void @llvm.dbg.value(metadata, metadata, metadata) #0
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #0
 
 define linkonce i64 @__llgo_stub.foo.fn(ptr %0, i64 %1, double %2) {
 _llgo_0:
@@ -735,7 +735,7 @@ attributes #0 = { nocallback nofree nosync nounwind speculatable willreturn memo
 
 !0 = !{i32 2, !"Debug Info Version", i32 3}
 !1 = !{i32 7, !"Dwarf Version", i32 5}
-!2 = distinct !DICompileUnit(language: DW_LANG_Modula3, file: !3, producer: "LLGo", isOptimized: true, runtimeVersion: 1, emissionKind: FullDebug)
+!2 = distinct !DICompileUnit(language: DW_LANG_Go, file: !3, producer: "LLGo", isOptimized: true, runtimeVersion: 1, emissionKind: FullDebug)
 !3 = !DIFile(filename: "foo", directory: "foo")
 !4 = distinct !DISubprogram(name: "foo.Foo.Foo", linkageName: "foo.Foo.Foo", scope: null, file: !5, line: 12, type: !6, spFlags: DISPFlagDefinition, unit: !2)
 !5 = !DIFile(filename: "foo.go", directory: "")
@@ -749,21 +749,21 @@ attributes #0 = { nocallback nofree nosync nounwind speculatable willreturn memo
 !13 = !DIBasicType(name: "map[string]uint64", size: 64, encoding: DW_ATE_unsigned)
 !14 = !DIBasicType(name: "[]int", size: 192, encoding: DW_ATE_unsigned)
 !15 = !DIBasicType(name: "string", size: 128, encoding: DW_ATE_unsigned_char)
-!16 = !DILocalVariable(name: "arg0", scope: !4, file: !5, line: 12, type: !8)
+!16 = !DILocalVariable(name: "arg0", arg: 1, scope: !4, file: !5, line: 12, type: !8)
 !17 = !DILocation(line: 12, column: 7, scope: !4)
-!18 = !DILocalVariable(name: "a", arg: 1, scope: !4, file: !5, line: 12, type: !14)
+!18 = !DILocalVariable(name: "a", arg: 2, scope: !4, file: !5, line: 12, type: !14)
 !19 = !DILocation(line: 12, column: 16, scope: !4)
-!20 = !DILocalVariable(name: "b", arg: 2, scope: !4, file: !5, line: 12, type: !15)
+!20 = !DILocalVariable(name: "b", arg: 3, scope: !4, file: !5, line: 12, type: !15)
 !21 = !DILocation(line: 12, column: 25, scope: !4)
 !22 = !DILocation(line: 12, column: 12, scope: !4)
 !23 = distinct !DISubprogram(name: "foo.(*Foo).Foo", linkageName: "foo.(*Foo).Foo", scope: null, file: !5, line: 12, type: !24, spFlags: DISPFlagDefinition, unit: !2)
 !24 = !DISubroutineType(types: !25)
 !25 = !{!11, !14, !15}
-!26 = !DILocalVariable(name: "arg0", scope: !23, file: !5, line: 12, type: !11)
+!26 = !DILocalVariable(name: "arg0", arg: 1, scope: !23, file: !5, line: 12, type: !11)
 !27 = !DILocation(line: 12, column: 7, scope: !23)
-!28 = !DILocalVariable(name: "a", arg: 1, scope: !23, file: !5, line: 12, type: !14)
+!28 = !DILocalVariable(name: "a", arg: 2, scope: !23, file: !5, line: 12, type: !14)
 !29 = !DILocation(line: 12, column: 16, scope: !23)
-!30 = !DILocalVariable(name: "b", arg: 2, scope: !23, file: !5, line: 12, type: !15)
+!30 = !DILocalVariable(name: "b", arg: 3, scope: !23, file: !5, line: 12, type: !15)
 !31 = !DILocation(line: 12, column: 25, scope: !23)
 !32 = !DILocation(line: 0, scope: !23)
 !33 = distinct !DISubprogram(name: "foo.fn", linkageName: "foo.fn", scope: null, file: !5, line: 16, type: !34, spFlags: DISPFlagDefinition, unit: !2)
@@ -771,9 +771,9 @@ attributes #0 = { nocallback nofree nosync nounwind speculatable willreturn memo
 !35 = !{!36, !37}
 !36 = !DIBasicType(name: "int", size: 64, encoding: DW_ATE_signed)
 !37 = !DIBasicType(name: "float64", size: 64, encoding: DW_ATE_float)
-!38 = !DILocalVariable(name: "a", scope: !33, file: !5, line: 16, type: !36)
+!38 = !DILocalVariable(name: "a", arg: 1, scope: !33, file: !5, line: 16, type: !36)
 !39 = !DILocation(line: 16, column: 9, scope: !33)
-!40 = !DILocalVariable(name: "b", arg: 1, scope: !33, file: !5, line: 16, type: !37)
+!40 = !DILocalVariable(name: "b", arg: 2, scope: !33, file: !5, line: 16, type: !37)
 !41 = !DILocation(line: 16, column: 16, scope: !33)
 !42 = !DILocation(line: 16, column: 6, scope: !33)
 !43 = distinct !DISubprogram(name: "foo.fn1", linkageName: "foo.fn1", scope: null, file: !5, line: 20, type: !44, spFlags: DISPFlagDefinition, unit: !2)
@@ -788,7 +788,7 @@ attributes #0 = { nocallback nofree nosync nounwind speculatable willreturn memo
 !52 = !DIBasicType(name: "(int)", size: 64, encoding: DW_ATE_unsigned)
 !53 = !DIDerivedType(tag: DW_TAG_pointer_type, name: "unsafe.Pointer", baseType: null, size: 64, align: 64, dwarfAddressSpace: 0)
 !54 = !DIDerivedType(tag: DW_TAG_member, name: "data", scope: !5, file: !5, line: 20, baseType: !53, size: 64, align: 8, offset: 64)
-!55 = !DILocalVariable(name: "fn", scope: !43, file: !5, line: 20, type: !46)
+!55 = !DILocalVariable(name: "fn", arg: 1, scope: !43, file: !5, line: 20, type: !46)
 !56 = !DILocation(line: 20, column: 10, scope: !43)
 !57 = !DILocation(line: 21, column: 4, scope: !43)
 !58 = distinct !DISubprogram(name: "foo.fn2", linkageName: "foo.fn2", scope: null, file: !5, line: 24, type: !59, spFlags: DISPFlagDefinition, unit: !2)

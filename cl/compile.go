@@ -722,21 +722,24 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
-		// object := v.Object()
-		// variable, ok := object.(*types.Var)
-		// if !ok {
-		// 	// Not a local variable.
-		// 	return
-		// }
-		// if v.IsAddr {
-		// 	// *ssa.Alloc or *ssa.FieldAddr
-		// 	return
-		// }
-		// fn := v.Parent()
-		// dbgVar := p.getLocalVariable(b, fn, variable)
-		// pos := p.goProg.Fset.Position(getPos(v))
-		// value := p.compileValue(b, v.X)
-		// b.Debug(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+		if !debugSymbols {
+			return
+		}
+		object := v.Object()
+		variable, ok := object.(*types.Var)
+		if !ok {
+			// Not a local variable.
+			return
+		}
+		if v.IsAddr {
+			// *ssa.Alloc or *ssa.FieldAddr
+			return
+		}
+		fn := v.Parent()
+		dbgVar := p.getLocalVariable(b, fn, variable)
+		pos := p.goProg.Fset.Position(getPos(v))
+		value := p.compileValue(b, v.X)
+		b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
