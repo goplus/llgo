@@ -57,7 +57,7 @@ type CompilationUnit = *aCompilationUnit
 
 func (b diBuilder) createCompileUnit(filename, dir string) CompilationUnit {
 	return &aCompilationUnit{ll: b.di.CreateCompileUnit(llvm.DICompileUnit{
-		Language:       llvm.DW_LANG_Go,
+		Language:       llvm.DW_LANG_Go - 1, // strange, but it works
 		File:           filename,
 		Dir:            dir,
 		Producer:       "LLGo",
