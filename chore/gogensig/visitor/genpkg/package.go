@@ -22,8 +22,8 @@ type Package struct {
 
 	typeBlock *gogen.TypeDefs // type decls block.
 
-	// todo(zzy):refine array type in func or struct's context
-	inStruct bool // flag to indicate if currently processing a struct
+	// todo(zzy):refine array type in func or param's context
+	inParam bool // flag to indicate if currently processing a param
 
 	symbolTable *symb.SymbolTable
 }
@@ -102,6 +102,9 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 }
 
 func (p *Package) toSignature(funcType *ast.FuncType) *types.Signature {
+	beforeInParam := p.inParam
+	p.inParam = true
+	defer func() { p.inParam = beforeInParam }()
 	params := p.fieldListToParams(funcType.Params)
 	results := p.retToResult(funcType.Ret)
 	return types.NewSignatureType(nil, nil, nil, params, results, false)
@@ -109,16 +112,12 @@ func (p *Package) toSignature(funcType *ast.FuncType) *types.Signature {
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	decl := p.getTypeBlock().NewType(typedefDecl.Name.Name)
-	// intArr := types.NewArray(types.Typ[types.Int], 10)
-	// typ := types.NewNamed(types.NewTypeName(token.NoPos, p.p.Types, "intArr", nil), intArr, nil)
 	typ := p.ToType(typedefDecl.Type)
 	decl.InitType(p.p, typ)
 	return nil
 }
 
 func (p *Package) recordTypeToStruct(recordType *ast.RecordType) types.Type {
-	p.inStruct = true
-	defer func() { p.inStruct = false }()
 	fields := p.fieldListToVars(recordType.Fields)
 	return types.NewStruct(fields, nil)
 }
@@ -172,21 +171,21 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 	case *ast.PointerType:
 		return p.handlePointerType(t)
 	case *ast.ArrayType:
-		if p.inStruct {
-			if t.Len == nil {
-				fmt.Fprintln(os.Stderr, "unsupport field with array without length")
-				return nil
-			}
-			elemType := p.ToType(t.Elt)
-			len, ok := p.evaluateArrayLength(t.Len)
-			if !ok {
-				fmt.Fprintln(os.Stderr, "can't determine the array length")
-				return nil
-			}
-			return types.NewArray(elemType, len)
+		if p.inParam {
+			// array in the parameter,ignore the len,convert as pointer
+			return types.NewPointer(p.ToType(t.Elt))
 		}
-		// array in the parameter,ignore the len,convert as pointer
-		return types.NewPointer(p.ToType(t.Elt))
+		if t.Len == nil {
+			fmt.Fprintln(os.Stderr, "unsupport field with array without length")
+			return nil
+		}
+		elemType := p.ToType(t.Elt)
+		len, ok := p.evaluateArrayLength(t.Len)
+		if !ok {
+			fmt.Fprintln(os.Stderr, "can't determine the array length")
+			return nil
+		}
+		return types.NewArray(elemType, len)
 	case *ast.FuncType:
 		return p.toSignature(t)
 	default:
