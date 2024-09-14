@@ -299,12 +299,13 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 }
 
 func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
-	for argNo, param := range f.Params {
+	for i, param := range f.Params {
 		pos := p.goProg.Fset.Position(param.Pos())
 		v := p.compileValue(b, param)
 		ty := param.Type()
+		argNo := i + 1
 		div := b.DIVarParam(p.fn, pos, param.Name(), b.Prog.Type(ty, llssa.InGo), argNo)
-		b.DIValue(v, div, p.fn, pos, p.fn.Block(0))
+		b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
 	}
 }
 
@@ -783,7 +784,8 @@ func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.V
 	t := b.Prog.Type(v.Type(), llssa.InGo)
 	for i, param := range fn.Params {
 		if param.Object().(*types.Var) == v {
-			return b.DIVarParam(p.fn, pos, v.Name(), t, i)
+			argNo := i + 1
+			return b.DIVarParam(p.fn, pos, v.Name(), t, argNo)
 		}
 	}
 	return b.DIVarAuto(p.fn, pos, v.Name(), t)
