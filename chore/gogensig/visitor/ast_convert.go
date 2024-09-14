@@ -60,6 +60,10 @@ func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typ
 	//TODO convert union
 }
 
+func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
+	p.pkg.NewEnumTypeDecl(enumTypeDecl)
+}
+
 func (p *AstConvert) VisitDone(docPath string) {
 	p.pkg.Write(docPath)
 }
