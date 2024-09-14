@@ -649,7 +649,11 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   %110 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %108, i32 0, i32 1
   store i64 40, ptr %110, align 4
   %111 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %108, align 8
+<<<<<<< HEAD
   %112 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" %111, i64 25, i64 80, i64 0, i64 20)
+=======
+  %112 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" %111, i64 25, i64 72, i64 0, i64 18)
+>>>>>>> 56ce8a3a (ssa: fix goTypes.cvtNamed recurs for typeargs)
   %113 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
   %114 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %113, i32 0, i32 0
   store ptr @9, ptr %114, align 8
