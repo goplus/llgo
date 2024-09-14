@@ -54,13 +54,13 @@ _llgo_0:
 define void @"main.ReadFile$1"({ ptr, ptr } %0) {
 _llgo_0:
   %1 = alloca %"main.Tuple[error]", align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 16)
-  %3 = getelementptr inbounds %"main.Tuple[error]", ptr %2, i32 0, i32 0
-  store %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer, ptr %3, align 8
-  %4 = load %"main.Tuple[error]", ptr %2, align 8
-  %5 = extractvalue { ptr, ptr } %0, 1
-  %6 = extractvalue { ptr, ptr } %0, 0
-  call void %6(ptr %5, %"main.Tuple[error]" %4)
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  %2 = getelementptr inbounds %"main.Tuple[error]", ptr %1, i32 0, i32 0
+  store %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer, ptr %2, align 8
+  %3 = load %"main.Tuple[error]", ptr %1, align 8
+  %4 = extractvalue { ptr, ptr } %0, 1
+  %5 = extractvalue { ptr, ptr } %0, 0
+  call void %5(ptr %4, %"main.Tuple[error]" %3)
   ret void
 }
 
@@ -124,11 +124,11 @@ _llgo_0:
 define linkonce %"github.com/goplus/llgo/internal/runtime.iface" @"main.Tuple[error].Get"(%"main.Tuple[error]" %0) {
 _llgo_0:
   %1 = alloca %"main.Tuple[error]", align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 16)
-  store %"main.Tuple[error]" %0, ptr %2, align 8
-  %3 = getelementptr inbounds %"main.Tuple[error]", ptr %2, i32 0, i32 0
-  %4 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %3, align 8
-  ret %"github.com/goplus/llgo/internal/runtime.iface" %4
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store %"main.Tuple[error]" %0, ptr %1, align 8
+  %2 = getelementptr inbounds %"main.Tuple[error]", ptr %1, i32 0, i32 0
+  %3 = load %"github.com/goplus/llgo/internal/runtime.iface", ptr %2, align 8
+  ret %"github.com/goplus/llgo/internal/runtime.iface" %3
 }
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"main.(*Tuple[error]).Get"(ptr %0) {
@@ -171,7 +171,8 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
@@ -796,3 +797,5 @@ declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr, ptr)
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

@@ -38,22 +38,22 @@ source_filename = "main"
 define void @main.Game1.Load(%main.Game1 %0) {
 _llgo_0:
   %1 = alloca %main.Game1, align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 8)
-  store %main.Game1 %0, ptr %2, align 8
-  %3 = getelementptr inbounds %main.Game1, ptr %2, i32 0, i32 0
-  %4 = load ptr, ptr %3, align 8
-  call void @"github.com/goplus/llgo/cl/internal/foo.(*Game).Load"(ptr %4)
+  call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
+  store %main.Game1 %0, ptr %1, align 8
+  %2 = getelementptr inbounds %main.Game1, ptr %1, i32 0, i32 0
+  %3 = load ptr, ptr %2, align 8
+  call void @"github.com/goplus/llgo/cl/internal/foo.(*Game).Load"(ptr %3)
   ret void
 }
 
 define void @main.Game1.initGame(%main.Game1 %0) {
 _llgo_0:
   %1 = alloca %main.Game1, align 8
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %1, i64 8)
-  store %main.Game1 %0, ptr %2, align 8
-  %3 = getelementptr inbounds %main.Game1, ptr %2, i32 0, i32 0
-  %4 = load ptr, ptr %3, align 8
-  call void @"github.com/goplus/llgo/cl/internal/foo.(*Game).initGame"(ptr %4)
+  call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
+  store %main.Game1 %0, ptr %1, align 8
+  %2 = getelementptr inbounds %main.Game1, ptr %1, i32 0, i32 0
+  %3 = load ptr, ptr %2, align 8
+  call void @"github.com/goplus/llgo/cl/internal/foo.(*Game).initGame"(ptr %3)
   ret void
 }
 
@@ -236,7 +236,8 @@ _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
   ret i32 0
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare void @"github.com/goplus/llgo/cl/internal/foo.(*Game).Load"(ptr)
 
@@ -686,3 +687,5 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintIface"(%"github.com/
 declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/internal/runtime.iface")
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

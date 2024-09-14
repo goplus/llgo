@@ -131,56 +131,56 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = alloca %main.bar, align 8
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %2, i64 16)
-  %4 = call { %main.bar, i1 } @main.Foo(%"github.com/goplus/llgo/internal/runtime.eface" zeroinitializer)
-  %5 = extractvalue { %main.bar, i1 } %4, 0
-  store %main.bar %5, ptr %3, align 8
-  %6 = extractvalue { %main.bar, i1 } %4, 1
-  %7 = getelementptr inbounds %main.bar, ptr %3, i32 0, i32 0
-  %8 = load ptr, ptr %7, align 8
-  %9 = getelementptr inbounds %main.bar, ptr %3, i32 0, i32 1
-  %10 = load float, ptr %9, align 4
-  %11 = xor i1 %6, true
-  %12 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %12, i32 0, i32 0
-  store ptr @8, ptr %13, align 8
-  %14 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %12, i32 0, i32 1
-  store i64 6, ptr %14, align 4
-  %15 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %12, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr %8)
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  %3 = call { %main.bar, i1 } @main.Foo(%"github.com/goplus/llgo/internal/runtime.eface" zeroinitializer)
+  %4 = extractvalue { %main.bar, i1 } %3, 0
+  store %main.bar %4, ptr %2, align 8
+  %5 = extractvalue { %main.bar, i1 } %3, 1
+  %6 = getelementptr inbounds %main.bar, ptr %2, i32 0, i32 0
+  %7 = load ptr, ptr %6, align 8
+  %8 = getelementptr inbounds %main.bar, ptr %2, i32 0, i32 1
+  %9 = load float, ptr %8, align 4
+  %10 = xor i1 %5, true
+  %11 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 0
+  store ptr @8, ptr %12, align 8
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %11, i32 0, i32 1
+  store i64 6, ptr %13, align 4
+  %14 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %11, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr %7)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  %16 = fpext float %10 to double
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %16)
+  %15 = fpext float %9 to double
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %15)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %15)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %14)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %11)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %10)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %17 = alloca %"github.com/goplus/llgo/cl/internal/foo.Foo", align 8
-  %18 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %17, i64 16)
-  %19 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/internal/foo.Foo", align 8
-  %20 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/cl/internal/foo.Foo" zeroinitializer, ptr %20, align 8
-  %21 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, i32 0, i32 0
-  store ptr %19, ptr %22, align 8
-  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, i32 0, i32 1
-  store ptr %20, ptr %23, align 8
-  %24 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %21, align 8
-  %25 = call { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/internal/runtime.eface" %24)
-  %26 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %25, 0
-  store %"github.com/goplus/llgo/cl/internal/foo.Foo" %26, ptr %18, align 8
-  %27 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %25, 1
-  %28 = load %"github.com/goplus/llgo/cl/internal/foo.Foo", ptr %18, align 8
-  %29 = call ptr @"github.com/goplus/llgo/cl/internal/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/internal/foo.Foo" %28)
-  %30 = getelementptr inbounds %"github.com/goplus/llgo/cl/internal/foo.Foo", ptr %18, i32 0, i32 1
-  %31 = load float, ptr %30, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr %29)
+  %16 = alloca %"github.com/goplus/llgo/cl/internal/foo.Foo", align 8
+  call void @llvm.memset(ptr %16, i8 0, i64 16, i1 false)
+  %17 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/internal/foo.Foo", align 8
+  %18 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/cl/internal/foo.Foo" zeroinitializer, ptr %18, align 8
+  %19 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %20 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %19, i32 0, i32 0
+  store ptr %17, ptr %20, align 8
+  %21 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %19, i32 0, i32 1
+  store ptr %18, ptr %21, align 8
+  %22 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %19, align 8
+  %23 = call { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/internal/runtime.eface" %22)
+  %24 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %23, 0
+  store %"github.com/goplus/llgo/cl/internal/foo.Foo" %24, ptr %16, align 8
+  %25 = extractvalue { %"github.com/goplus/llgo/cl/internal/foo.Foo", i1 } %23, 1
+  %26 = load %"github.com/goplus/llgo/cl/internal/foo.Foo", ptr %16, align 8
+  %27 = call ptr @"github.com/goplus/llgo/cl/internal/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/internal/foo.Foo" %26)
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/internal/foo.Foo", ptr %16, i32 0, i32 1
+  %29 = load float, ptr %28, align 4
+  call void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr %27)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  %32 = fpext float %31 to double
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %32)
+  %30 = fpext float %29 to double
+  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %30)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %27)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %25)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
@@ -465,7 +465,8 @@ declare void @"github.com/goplus/llgo/cl/internal/foo.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintPointer"(ptr)
 
@@ -476,3 +477,5 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double)
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
