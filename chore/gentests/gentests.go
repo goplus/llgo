@@ -64,17 +64,17 @@ func llgenDir(dir string, pkgPath ...string) {
 		if !fi.IsDir() || strings.HasPrefix(name, "_") {
 			continue
 		}
-		func() {
-			testDir := dir + "/" + name
-			fmt.Fprintln(os.Stderr, "llgen", testDir)
-			os.Chdir(testDir)
-			dbg := isDbgSymEnabled("flags.txt")
-			if dbg {
-				cl.EnableDebugSymbols()
-			}
-			defer cl.DisableDebugSymbols()
-			llgen.SmartDoFile("in.go", pkgPath...)
-		}()
+		testDir := dir + "/" + name
+		fmt.Fprintln(os.Stderr, "llgen", testDir)
+		os.Chdir(testDir)
+		dbg := isDbgSymEnabled("flags.txt")
+		if dbg {
+			cl.EnableDebugSymbols()
+		} else {
+			cl.DisableDebugSymbols()
+		}
+
+		llgen.SmartDoFile("in.go", pkgPath...)
 	}
 }
 
