@@ -55,9 +55,13 @@ type aCompilationUnit struct {
 
 type CompilationUnit = *aCompilationUnit
 
+var DWARF_LANG_C llvm.DwarfLang = 0x2
+var DWARF_LANG_GO llvm.DwarfLang = 0x16
+
 func (b diBuilder) createCompileUnit(filename, dir string) CompilationUnit {
 	return &aCompilationUnit{ll: b.di.CreateCompileUnit(llvm.DICompileUnit{
-		Language:       llvm.DW_LANG_Go - 1, // strange, but it works
+		// TODO(lijie): use C language for now, change after Go plugin of LLDB is ready
+		Language:       DWARF_LANG_C - 1,
 		File:           filename,
 		Dir:            dir,
 		Producer:       "LLGo",
