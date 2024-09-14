@@ -323,6 +323,7 @@ func TestStructDecl(t *testing.T) {
 		decl     *ast.TypeDecl
 		expected string
 	}{
+		// struct Foo {}
 		{
 			name: "empty struct",
 			decl: &ast.TypeDecl{
@@ -338,6 +339,7 @@ package testpkg
 type Foo struct {
 }`,
 		},
+		// struct Foo { int a; double b; bool c; }
 		{
 			name: "struct field builtin type",
 			decl: &ast.TypeDecl{
@@ -380,6 +382,7 @@ type Foo struct {
 	c bool
 }`,
 		},
+		// struct Foo { int* a; double* b; bool* c;void* d; }
 		{
 			name: "struct field pointer",
 			decl: &ast.TypeDecl{
@@ -438,6 +441,7 @@ type Foo struct {
 	c *bool
 	d unsafe.Pointer
 }`},
+		// struct Foo { char a[4]; int b[3][4]; }
 		{
 			name: "struct array field",
 			decl: &ast.TypeDecl{
