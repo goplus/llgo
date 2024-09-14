@@ -3,11 +3,12 @@ package symb_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 )
 
 func TestLookupSymble(t *testing.T) {
-	table, err := symb.NewSymbolTable("../../../llcppg/llcppg.symb.json")
+	table, err := symb.NewSymbolTable("./_testinput/llcppg.symb.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -15,8 +16,10 @@ func TestLookupSymble(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if entry.CppName != "INIReader::GetBoolean(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, bool) const" &&
-		entry.GoName != "(*Reader).GetBoolean" {
-		t.FailNow()
+	const expectCppName = "INIReader::GetBoolean(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, bool) const"
+	const expectGoName = "(*Reader).GetBoolean"
+	if !cmp.Equal(string(entry.CppName), expectCppName) ||
+		!cmp.Equal(string(entry.GoName), expectGoName) {
+		t.Fatalf("%s\n%s", cmp.Diff(entry.CppName, expectCppName), cmp.Diff(entry.GoName, expectGoName))
 	}
 }

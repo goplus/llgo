@@ -3,6 +3,7 @@ module github.com/goplus/llgo
 go 1.20
 
 require (
+	github.com/google/go-cmp v0.6.0
 	github.com/goplus/gogen v1.16.0
 	github.com/goplus/llvm v0.8.0
 	github.com/goplus/mod v0.13.12
