@@ -7,6 +7,10 @@ import (
 
 type FuncNameType string
 
+const (
+	TYPEC = "// llgo:type C"
+)
+
 func toTitle(s string) string {
 	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
 }
@@ -25,4 +29,11 @@ func NewFuncDocComments(funcName string, goFuncName string) *goast.CommentGroup 
 	comment := goast.Comment{Text: txt}
 	commentGroup := goast.CommentGroup{List: []*goast.Comment{&comment}}
 	return &commentGroup
+}
+
+func NewTypecDocComments() *goast.CommentGroup {
+	return &goast.CommentGroup{
+		List: []*goast.Comment{
+			{Text: TYPEC},
+		}}
 }

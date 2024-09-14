@@ -624,9 +624,26 @@ package testpkg
 
 type name *int8`,
 		},
+		{
+			name: "typedef array",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "name"},
+				Type: &ast.ArrayType{
+					Elt: &ast.BuiltinType{
+						Kind:  ast.Char,
+						Flags: ast.Signed,
+					},
+					Len: &ast.BasicLit{Kind: ast.IntLit, Value: "5"},
+				},
+			},
+			expected: `
+package testpkg
+
+type name [5]int8`,
+		},
 		// typedef int (*Foo) (int a, int b);
 		{
-			name: "empty func",
+			name: "typedef func",
 			decl: &ast.TypedefDecl{
 				Name: &ast.Ident{Name: "Foo"},
 				Type: &ast.PointerType{
