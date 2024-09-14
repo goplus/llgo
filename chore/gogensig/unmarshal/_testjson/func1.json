@@ -1,11 +1,5 @@
-[{
-	"input_text": "int go_func_name(int a, int b);",
-	"want_result": [
-		"//go:linkname GoFuncName C.go_func_name",
-		"func Fn(a c.Int, b.Int) c.Int"
-	],
-	"path": "temp.h",
-	"doc":	{
+{
+	"temp.h":	{
 		"_Type":	"File",
 		"decls":	[{
 				"_Type":	"FuncDecl",
@@ -72,5 +66,5 @@
 			}],
 		"includes":	[],
 		"macros":	[]
-	}
-}]
+	} 
+}

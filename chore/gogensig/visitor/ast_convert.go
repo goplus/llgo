@@ -37,6 +37,7 @@ func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
 
 func (p *AstConvert) VisitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
 	fmt.Printf("visit class %s\n", className.Name)
+	p.pkg.NewTypeDecl(typeDecl)
 	//TODO new struct and convert fields
 }
 
