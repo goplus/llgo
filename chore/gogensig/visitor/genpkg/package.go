@@ -87,7 +87,7 @@ func (p *Package) GetGogenPackage() *gogen.Package {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
-	sig, _ := p.toSignature(funcDecl.Type)
+	sig := p.toSignature(funcDecl.Type)
 	goFuncName := toGoFuncName(funcDecl.Name.Name)
 	decl := p.p.NewFuncDecl(token.NoPos, goFuncName, sig)
 	decl.SetComments(p.p, NewFuncDocComments(funcDecl.Name.Name, goFuncName))
@@ -101,10 +101,19 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	return nil
 }
 
-func (p *Package) toSignature(funcType *ast.FuncType) (*types.Signature, error) {
+func (p *Package) toSignature(funcType *ast.FuncType) *types.Signature {
 	params := p.fieldListToParams(funcType.Params)
 	results := p.retToResult(funcType.Ret)
-	return types.NewSignatureType(nil, nil, nil, params, results, false), nil
+	return types.NewSignatureType(nil, nil, nil, params, results, false)
+}
+
+func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
+	decl := p.getTypeBlock().NewType(typedefDecl.Name.Name)
+	// intArr := types.NewArray(types.Typ[types.Int], 10)
+	// typ := types.NewNamed(types.NewTypeName(token.NoPos, p.p.Types, "intArr", nil), intArr, nil)
+	typ := p.ToType(typedefDecl.Type)
+	decl.InitType(p.p, typ)
+	return nil
 }
 
 func (p *Package) recordTypeToStruct(recordType *ast.RecordType) types.Type {
@@ -161,13 +170,7 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 	case *ast.BuiltinType:
 		return p.toBuiltinType(t)
 	case *ast.PointerType:
-		typ := p.ToType(t.X)
-		// void * -> c.Pointer
-		// todo(zzy):alias visit the origin type unsafe.Pointer,c.Pointer is better
-		if typ == p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}] {
-			return p.getCType("Pointer")
-		}
-		return types.NewPointer(typ)
+		return p.handlePointerType(t)
 	case *ast.ArrayType:
 		if p.inStruct {
 			if t.Len == nil {
@@ -184,9 +187,27 @@ func (p *Package) ToType(expr ast.Expr) types.Type {
 		}
 		// array in the parameter,ignore the len,convert as pointer
 		return types.NewPointer(p.ToType(t.Elt))
+	case *ast.FuncType:
+		return p.toSignature(t)
 	default:
 		return nil
 	}
+}
+
+// - void* -> c.Pointer
+// - Function pointers -> Function types (pointer removed)
+// - Other cases -> Pointer to the base type
+func (p *Package) handlePointerType(t *ast.PointerType) types.Type {
+	baseType := p.ToType(t.X)
+	// void * -> c.Pointer
+	// todo(zzy):alias visit the origin type unsafe.Pointer,c.Pointer is better
+	if baseType == p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}] {
+		return p.getCType("Pointer")
+	}
+	if baseFuncType, ok := baseType.(*types.Signature); ok {
+		return baseFuncType
+	}
+	return types.NewPointer(baseType)
 }
 
 func (p *Package) toBuiltinType(typ *ast.BuiltinType) types.Type {

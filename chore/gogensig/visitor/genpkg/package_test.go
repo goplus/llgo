@@ -488,6 +488,52 @@ type Foo struct {
 	a [4]int8
 	b [3][4]c.Int
 }`},
+		{
+			name: "struct array field",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{
+										Kind:  ast.Char,
+										Flags: ast.Signed,
+									},
+									Len: &ast.BasicLit{
+										Kind:  ast.IntLit,
+										Value: "4",
+									},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								Type: &ast.ArrayType{
+									Elt: &ast.ArrayType{
+										Elt: &ast.BuiltinType{
+											Kind: ast.Int,
+										},
+										Len: &ast.BasicLit{Kind: ast.IntLit, Value: "4"},
+									},
+									Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+type Foo struct {
+	a [4]int8
+	b [3][4]c.Int
+}`},
 	}
 
 	for _, tc := range testCases {
@@ -499,6 +545,132 @@ type Foo struct {
 			err := pkg.NewTypeDecl(tc.decl)
 			if err != nil {
 				t.Fatalf("NewBasic failed: %v", err)
+			}
+			comparePackageOutput(t, pkg, tc.expected)
+		})
+	}
+}
+
+func TestTypedef(t *testing.T) {
+	testCases := []struct {
+		name     string
+		decl     *ast.TypedefDecl
+		expected string
+	}{
+		// typedef double DOUBLE;
+		{
+			name: "typedef double",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "DOUBLE"},
+				Type: &ast.BuiltinType{
+					Kind:  ast.Float,
+					Flags: ast.Double,
+				},
+			},
+			expected: `
+package testpkg
+
+type DOUBLE float64`,
+		},
+		// typedef int INT;
+		{
+			name: "typedef int",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "INT"},
+				Type: &ast.BuiltinType{
+					Kind: ast.Int,
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+type INT c.Int
+			`,
+		},
+		// typedef void* ctx;
+		{
+			name: "typedef pointer",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "ctx"},
+				Type: &ast.PointerType{
+					X: &ast.BuiltinType{
+						Kind: ast.Void,
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "unsafe"
+
+type ctx unsafe.Pointer`,
+		},
+		// typedef char* name;
+		{
+			name: "typedef pointer",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "name"},
+				Type: &ast.PointerType{
+					X: &ast.BuiltinType{
+						Kind:  ast.Char,
+						Flags: ast.Signed,
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+type name *int8`,
+		},
+		// typedef int (*Foo) (int a, int b);
+		{
+			name: "empty func",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.PointerType{
+					X: &ast.FuncType{
+						Params: &ast.FieldList{
+							List: []*ast.Field{
+								{
+									Type: &ast.BuiltinType{
+										Kind: ast.Int,
+									},
+									Names: []*ast.Ident{{Name: "a"}},
+								},
+								{
+									Type: &ast.BuiltinType{
+										Kind: ast.Int,
+									},
+									Names: []*ast.Ident{{Name: "b"}},
+								},
+							},
+						},
+						Ret: &ast.BuiltinType{
+							Kind: ast.Int,
+						},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import "github.com/goplus/llgo/c"
+
+type Foo func(a c.Int, b c.Int) c.Int`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+			if pkg == nil {
+				t.Fatal("NewPackage failed")
+			}
+			err := pkg.NewTypedefDecl(tc.decl)
+			if err != nil {
+				t.Fatalf("NewFuncDecl failed: %v", err)
 			}
 			comparePackageOutput(t, pkg, tc.expected)
 		})
