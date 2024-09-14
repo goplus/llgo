@@ -107,6 +107,20 @@ func Pkg(t *testing.T, pkgPath, outFile string) {
 	}
 }
 
+func isDbgSymEnabled(flagsFile string) bool {
+	data, err := os.ReadFile(flagsFile)
+	if err != nil {
+		return false
+	}
+	toks := strings.Split(strings.Join(strings.Split(string(data), "\n"), " "), " ")
+	for _, tok := range toks {
+		if tok == "-dbg" {
+			return true
+		}
+	}
+	return false
+}
+
 func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
@@ -114,6 +128,11 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	log.Println("Parsing", pkgDir)
 	in := pkgDir + "/in.go"
 	out := pkgDir + "/out.ll"
+	dbg := isDbgSymEnabled(pkgDir + "/flags.txt")
+	if dbg {
+		cl.EnableDebugSymbols()
+	}
+	defer cl.DisableDebugSymbols()
 	b, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatal("ReadFile failed:", err)

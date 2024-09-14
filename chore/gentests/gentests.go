@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/ssa"
 	"github.com/goplus/mod"
@@ -41,6 +42,20 @@ func main() {
 	llgenDir(dir+"/cl/_testdata", "")
 }
 
+func isDbgSymEnabled(flagsFile string) bool {
+	data, err := os.ReadFile(flagsFile)
+	if err != nil {
+		return false
+	}
+	toks := strings.Split(strings.Join(strings.Split(string(data), "\n"), " "), " ")
+	for _, tok := range toks {
+		if tok == "-dbg" {
+			return true
+		}
+	}
+	return false
+}
+
 func llgenDir(dir string, pkgPath ...string) {
 	fis, err := os.ReadDir(dir)
 	check(err)
@@ -49,10 +64,17 @@ func llgenDir(dir string, pkgPath ...string) {
 		if !fi.IsDir() || strings.HasPrefix(name, "_") {
 			continue
 		}
-		testDir := dir + "/" + name
-		fmt.Fprintln(os.Stderr, "llgen", testDir)
-		os.Chdir(testDir)
-		llgen.SmartDoFile("in.go", pkgPath...)
+		func() {
+			testDir := dir + "/" + name
+			fmt.Fprintln(os.Stderr, "llgen", testDir)
+			os.Chdir(testDir)
+			dbg := isDbgSymEnabled("flags.txt")
+			if dbg {
+				cl.EnableDebugSymbols()
+			}
+			defer cl.DisableDebugSymbols()
+			llgen.SmartDoFile("in.go", pkgPath...)
+		}()
 	}
 }
 
