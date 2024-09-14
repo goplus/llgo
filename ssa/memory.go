@@ -110,7 +110,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
 		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
-		ret.impl = b.InlineCall(pkg.rtFunc("Zeroinit"), ret, size).impl
+		ret.impl = b.zeroinit(ret, size).impl
 	}
 	ret.Type = prog.Pointer(elem)
 	return
@@ -210,6 +210,18 @@ func (p Program) tyFree() *types.Signature {
 	return p.freeTy
 }
 
+func (p Program) tyMemsetInline() *types.Signature {
+	if p.memsetInlineTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		paramInt := types.NewParam(token.NoPos, nil, "", p.Byte().raw.Type)
+		paramSize := types.NewParam(token.NoPos, nil, "", p.Uintptr().raw.Type)
+		paramBool := types.NewParam(token.NoPos, nil, "", p.Bool().raw.Type)
+		params := types.NewTuple(paramPtr, paramInt, paramSize, paramBool)
+		p.memsetInlineTy = types.NewSignatureType(nil, nil, nil, params, nil, false)
+	}
+	return p.memsetInlineTy
+}
+
 func (b Builder) malloc(size Expr) Expr {
 	fn := b.Pkg.cFunc("malloc", b.Prog.tyMalloc())
 	return b.Call(fn, size)
@@ -218,6 +230,18 @@ func (b Builder) malloc(size Expr) Expr {
 func (b Builder) free(ptr Expr) Expr {
 	fn := b.Pkg.cFunc("free", b.Prog.tyFree())
 	return b.Call(fn, ptr)
+}
+
+// declare void @llvm.memset.inline.p0.p0i8.i32(ptr <dest>, i8 <val>, i32 <len>, i1 <isvolatile>)
+// declare void @llvm.memset.inline.p0.p0.i64(ptr <dest>, i8 <val>, i64 <len>, i1 <isvolatile>)
+func (b Builder) memset(ptr, val, len, isvolatile Expr) Expr {
+	fn := b.Pkg.cFunc("llvm.memset", b.Prog.tyMemsetInline())
+	b.Call(fn, ptr, val, len, isvolatile)
+	return ptr
+}
+
+func (b Builder) zeroinit(ptr, size Expr) Expr {
+	return b.memset(ptr, b.Prog.IntVal(0, b.Prog.Byte()), size, b.Prog.Val(false))
 }
 
 // -----------------------------------------------------------------------------

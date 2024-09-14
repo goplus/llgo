@@ -95,11 +95,6 @@ func stringTracef(fp c.FilePtr, format *c.Char, s String) {
 
 // -----------------------------------------------------------------------------
 
-// Zeroinit initializes memory to zero.
-func Zeroinit(p unsafe.Pointer, size uintptr) unsafe.Pointer {
-	return c.Memset(p, 0, size)
-}
-
 // New allocates memory and initializes it to zero.
 func New(t *Type) unsafe.Pointer {
 	return AllocZ(t.Size_)
