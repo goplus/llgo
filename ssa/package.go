@@ -719,7 +719,7 @@ func (p Package) diBuilder() diBuilder {
 }
 
 func (p Package) EnableDebugSymbols(name, pkgPath string) {
-	p.di = newDIBuilder(p.Prog, p.mod)
+	p.di = newDIBuilder(p.Prog, p)
 	p.cu = p.di.createCompileUnit(name, pkgPath)
 }
 

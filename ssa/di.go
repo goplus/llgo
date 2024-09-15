@@ -18,7 +18,8 @@ type aDIBuilder struct {
 
 type diBuilder = *aDIBuilder
 
-func newDIBuilder(prog Program, m llvm.Module) diBuilder {
+func newDIBuilder(prog Program, pkg Package) diBuilder {
+	m := pkg.mod
 	ctx := m.Context()
 	m.AddNamedMetadataOperand("llvm.module.flags",
 		ctx.MDNode([]llvm.Metadata{
