@@ -11,9 +11,9 @@ import (
 )
 
 type aDIBuilder struct {
-	di      *llvm.DIBuilder
-	prog    Program
-	diTypes map[Type]DIType
+	di    *llvm.DIBuilder
+	prog  Program
+	types map[Type]DIType
 }
 
 type diBuilder = *aDIBuilder
@@ -36,9 +36,9 @@ func newDIBuilder(prog Program, pkg Package) diBuilder {
 		}),
 	)
 	return &aDIBuilder{
-		di:      llvm.NewDIBuilder(m),
-		prog:    prog,
-		diTypes: make(map[*aType]DIType),
+		di:    llvm.NewDIBuilder(m),
+		prog:  prog,
+		types: make(map[*aType]DIType),
 	}
 }
 
@@ -280,7 +280,7 @@ func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
 			Name: ty.RawType().String(),
 		},
 	)}
-	b.diTypes[ty] = ret
+	b.types[ty] = ret
 
 	// Create struct type
 	structType := ty.RawType().(*types.Struct)
@@ -379,11 +379,11 @@ func (b diBuilder) dbgValue(v Expr, dv DIVar, scope DIScope, pos token.Position,
 }
 
 func (b diBuilder) diType(t Type, pos token.Position) DIType {
-	if ty, ok := b.diTypes[t]; ok {
+	if ty, ok := b.types[t]; ok {
 		return ty
 	}
 	ty := b.createType(t, pos)
-	b.diTypes[t] = ty
+	b.types[t] = ty
 	return ty
 }
 
