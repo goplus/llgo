@@ -754,32 +754,33 @@ func getPos(v poser) token.Pos {
 	if pos.IsValid() {
 		return pos
 	}
+	panic(fmt.Errorf("getPos: invalid position - %T", v))
 
-	switch v := v.(type) {
-	case *ssa.MakeInterface:
-		return getPos(v.X)
-	case *ssa.MakeClosure:
-		return v.Fn.(*ssa.Function).Pos()
-	case *ssa.Return:
-		syntax := v.Parent().Syntax()
-		if syntax != nil {
-			return syntax.End()
-		}
-		return token.NoPos
-	case *ssa.FieldAddr:
-		return getPos(v.X)
-	case *ssa.IndexAddr:
-		return getPos(v.X)
-	case *ssa.Slice:
-		return getPos(v.X)
-	case *ssa.Store:
-		return getPos(v.Addr)
-	case *ssa.Extract:
-		return getPos(v.Tuple)
-	default:
-		fmt.Printf("getPos: unknown instr - %T\n", v)
-		return token.NoPos
-	}
+	// switch v := v.(type) {
+	// case *ssa.MakeInterface:
+	// 	return getPos(v.X)
+	// case *ssa.MakeClosure:
+	// 	return v.Fn.(*ssa.Function).Pos()
+	// case *ssa.Return:
+	// 	syntax := v.Parent().Syntax()
+	// 	if syntax != nil {
+	// 		return syntax.End()
+	// 	}
+	// 	return token.NoPos
+	// case *ssa.FieldAddr:
+	// 	return getPos(v.X)
+	// case *ssa.IndexAddr:
+	// 	return getPos(v.X)
+	// case *ssa.Slice:
+	// 	return getPos(v.X)
+	// case *ssa.Store:
+	// 	return getPos(v.Addr)
+	// case *ssa.Extract:
+	// 	return getPos(v.Tuple)
+	// default:
+	// 	fmt.Printf("getPos: unknown instr - %T\n", v)
+	// 	return token.NoPos
+	// }
 }
 
 func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {

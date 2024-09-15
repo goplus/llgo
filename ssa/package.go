@@ -708,12 +708,6 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 	}
 }
 
-func (p Package) Finalize() {
-	if p.di != nil {
-		p.di.Finalize()
-	}
-}
-
 func (p Package) diBuilder() diBuilder {
 	return p.di
 }

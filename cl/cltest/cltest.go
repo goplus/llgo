@@ -131,6 +131,7 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	dbg := isDbgSymEnabled(pkgDir + "/flags.txt")
 	if dbg {
 		cl.EnableDebugSymbols()
+		cl.DebugSymbols() // just for coverage
 	}
 	defer cl.DisableDebugSymbols()
 	b, err := os.ReadFile(out)

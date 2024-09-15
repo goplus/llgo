@@ -504,7 +504,6 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		cl.SetDebug(0)
 	}
 	check(err)
-	ret.Finalize()
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
