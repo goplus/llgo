@@ -141,8 +141,7 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 			})
 			return &aDIType{typ}
 		} else {
-			encoding = llvm.DW_ATE_unsigned
-			panic("todo: basic type")
+			panic(fmt.Errorf("can't create debug info of basic type: %v, %T", ty.RawType(), ty.RawType()))
 		}
 
 		typ = b.di.CreateBasicType(llvm.DIBasicType{

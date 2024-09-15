@@ -7,6 +7,22 @@ type IFoo interface {
 type Foo struct {
 	nexy *Foo
 	data map[string]uint64
+	f32  float32
+	f64  float64
+	u8   uint8
+	u16  uint16
+	u32  uint32
+	u64  uint64
+	u    uint
+	i8   int8
+	i16  int16
+	i32  int32
+	i64  int64
+	i    int
+	b    bool
+	arr  [10]int
+	c64  complex64
+	c128 complex128
 }
 
 func (Foo) Foo(a []int, b string) int {
