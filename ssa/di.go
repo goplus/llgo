@@ -133,7 +133,7 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 		} else if t.Info()&types.IsFloat != 0 {
 			encoding = llvm.DW_ATE_float
 		} else if t.Info()&types.IsComplex != 0 {
-			encoding = llvm.DW_ATE_complex_float
+			return b.createComplexType(ty)
 		} else if t.Info()&types.IsString != 0 {
 			typ = b.di.CreateBasicType(llvm.DIBasicType{
 				Name:       "string",
@@ -262,6 +262,49 @@ func (b diBuilder) createBasicType(t Type) DIType {
 		SizeInBits: b.prog.SizeOf(t) * 8,
 		Encoding:   llvm.DW_ATE_unsigned,
 	})}
+}
+
+func (b diBuilder) createComplexType(t Type) DIType {
+	var tfield Type
+	if t.RawType().(*types.Basic).Kind() == types.Complex128 {
+		tfield = b.prog.Float64()
+	} else {
+		tfield = b.prog.Float32()
+	}
+	traw := tfield.RawType().Underlying()
+	return &aDIType{ll: b.di.CreateStructType(
+		llvm.Metadata{},
+		llvm.DIStructType{
+			Name:        t.RawType().String(),
+			File:        llvm.Metadata{},
+			Line:        0,
+			SizeInBits:  b.prog.SizeOf(t) * 8,
+			AlignInBits: uint32(b.prog.sizes.Alignof(t.RawType()) * 8),
+			Elements: []llvm.Metadata{
+				b.di.CreateMemberType(
+					llvm.Metadata{},
+					llvm.DIMemberType{
+						Name:        "real",
+						File:        llvm.Metadata{},
+						Line:        0,
+						SizeInBits:  b.prog.SizeOf(tfield) * 8,
+						AlignInBits: uint32(b.prog.sizes.Alignof(traw) * 8),
+						Type:        b.diType(tfield, token.Position{}).ll,
+					},
+				),
+				b.di.CreateMemberType(
+					llvm.Metadata{},
+					llvm.DIMemberType{
+						Name:        "imag",
+						File:        llvm.Metadata{},
+						Line:        0,
+						SizeInBits:  b.prog.SizeOf(tfield) * 8,
+						AlignInBits: uint32(b.prog.sizes.Alignof(traw) * 8),
+						Type:        b.diType(tfield, token.Position{}).ll,
+					},
+				),
+			},
+		})}
 }
 
 func (b diBuilder) createPointerType(ty Type, pos token.Position) DIType {
@@ -433,7 +476,17 @@ func (b Builder) allocatedVar(v Expr) (Expr, bool) {
 	}
 	t := v.Type.RawType().Underlying()
 	var ty Type
-	switch t.(type) {
+	switch t := t.(type) {
+	case *types.Basic:
+		if t.Info()&types.IsComplex != 0 {
+			if t.Kind() == types.Complex128 {
+				ty = b.Prog.Complex128()
+			} else {
+				ty = b.Prog.Complex64()
+			}
+		} else {
+			return v, false
+		}
 	case *types.Struct:
 		ty = v.Type
 	case *types.Slice:
@@ -461,8 +514,6 @@ func skipType(t types.Type) bool {
 		return true
 	case *types.Basic:
 		if t.Info()&types.IsString != 0 {
-			return true
-		} else if t.Info()&types.IsComplex != 0 {
 			return true
 		}
 	}
