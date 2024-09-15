@@ -102,23 +102,6 @@ func (f DIFile) scopeMeta(b diBuilder, cu CompilationUnit, pos token.Position) D
 
 // ----------------------------------------------------------------------------
 
-type aDILexicalBlock struct {
-	ll llvm.Metadata
-}
-
-type DILexicalBlock = *aDILexicalBlock
-
-func (b diBuilder) createLexicalBlock(scope DIScope, pos token.Position) DILexicalBlock {
-	block := llvm.DILexicalBlock{
-		File:   b.file(pos.Filename).ll,
-		Line:   pos.Line,
-		Column: pos.Column,
-	}
-	return &aDILexicalBlock{ll: b.di.CreateLexicalBlock(scope.scopeMeta(b, pos).ll, block)}
-}
-
-// ----------------------------------------------------------------------------
-
 type aDIType struct {
 	ll llvm.Metadata
 }
