@@ -274,7 +274,7 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, nil, p, p.Pkg, prog}
+	return &aBuilder{b, nil, p, p.Pkg, prog, make(map[Expr]Expr)}
 }
 
 // HasBody reports whether the function has a body.

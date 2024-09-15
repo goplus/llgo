@@ -1,4 +1,4 @@
-package foo
+package main
 
 import "errors"
 
@@ -7,35 +7,36 @@ type Base struct {
 }
 
 type E struct {
-	Base
+	// Base
 	i int
 }
 type StructWithAllTypeFields struct {
-	i8    int8
-	i16   int16
-	i32   int32
-	i64   int64
-	i     int
-	u8    uint8
-	u16   uint16
-	u32   uint32
-	u64   uint64
-	u     uint
-	f32   float32
-	f64   float64
-	c64   complex64
-	c128  complex128
-	slice []int
-	arr   [3]int
-	b     bool
-	s     string
-	e     E
-	pf    *StructWithAllTypeFields // resursive
-	pi    *int
-	intr  Interface
-	m     map[string]uint64
-	c     chan int
-	err   error
+	i8  int8
+	i16 int16
+	i32 int32
+	i64 int64
+	i   int
+	u8  uint8
+	u16 uint16
+	u32 uint32
+	u64 uint64
+	u   uint
+	f32 float32
+	f64 float64
+	b   bool
+	// c64   complex64
+	// c128  complex128
+	// slice []int
+	// arr   [3]int
+	// s     string
+	e E
+	// pf *StructWithAllTypeFields // resursive
+	// pi *int
+	// intr  Interface
+	// m     map[string]uint64
+	// c     chan int
+	// err   error
+	// fn    func(string) (int, error)
 }
 
 type Interface interface {
@@ -66,24 +67,78 @@ func FuncWithAllTypeParams(
 	u uint,
 	f32 float32,
 	f64 float64,
-	c64 complex64,
-	c128 complex128,
-	slice []int,
-	arr [3]int,
 	b bool,
-	s string,
+	// c64 complex64,
+	// c128 complex128,
+	// slice []int,
+	// arr [3]int,
+	// s string,
 	e E,
 	f StructWithAllTypeFields,
-	pf *StructWithAllTypeFields,
-	pi *int,
-	intr Interface,
-	m map[string]uint64,
-	c chan int,
-	err error,
+	// pf *StructWithAllTypeFields,
+	// pi *int,
+	// intr Interface,
+	// m map[string]uint64,
+	// c chan int,
+	// err error,
+	// fn func(string) (int, error),
 ) (int, error) {
 	println(
-		i8, i16, i32, i64, i, u8, u16, u32, u64, u, f32, f64, c64, c128,
-		slice, arr[0:], b, s, &e, &f, pf, pi, intr, m, c, err,
+		i8, i16, i32, i64, i, u8, u16, u32, u64, u,
+		f32, f64, b,
+		// c64, c128, slice, arr[0:],
+		// s, &e, &f, pf, pi, intr, m, c, err,
+		// fn,
 	)
 	return 1, errors.New("Some error")
+}
+
+func main() {
+	i := 100
+	s := StructWithAllTypeFields{
+		i8:  1,
+		i16: 2,
+		i32: 3,
+		i64: 4,
+		i:   5,
+		u8:  6,
+		u16: 7,
+		u32: 8,
+		u64: 9,
+		u:   10,
+		f32: 11,
+		f64: 12,
+		b:   true,
+		// c64:   13 + 14i,
+		// c128:  15 + 16i,
+		// slice: []int{21, 22, 23},
+		// arr:   [3]int{24, 25, 26},
+		// s:     "hello",
+		e: E{i: 30},
+		// pf: &StructWithAllTypeFields{},
+		// pi: &i,
+		// intr:  &Struct{},
+		// m:     make(map[string]uint64),
+		// c:     make(chan int),
+		// err:   errors.New("Test error"),
+		// fn: func(s string) (int, error) {
+		// 	println("fn:", s)
+		// 	return 1, errors.New("fn error")
+		// },
+	}
+	println("s:", &s)
+	FuncWithAllTypeStructParam(s)
+	println("called function with struct")
+	i, err := FuncWithAllTypeParams(
+		s.i8, s.i16, s.i32, s.i64, s.i, s.u8, s.u16, s.u32, s.u64, s.u,
+		s.f32, s.f64, s.b,
+		// s.c64, s.c128, s.slice, s.arr, s.s,
+		s.e, s,
+		// s.pf, s.pi,
+		// s.intr, s.m, s.c, s.err,
+		// s.fn,
+	)
+	println(i, err)
+	println("called function with types")
+	println("done")
 }

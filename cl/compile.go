@@ -304,9 +304,8 @@ func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 		v := p.compileValue(b, param)
 		ty := param.Type()
 		argNo := i + 1
-		div := b.DIVarParam(p.fn, pos, param.Name(), b.Prog.Type(ty, llssa.InGo), argNo)
+		div := b.DIVarParam(p.fn, pos, param.Name(), p.prog.Type(ty, llssa.InGo), argNo)
 		b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
-		b.DIValue(v, div, p.fn, pos, p.fn.Block(0))
 	}
 }
 

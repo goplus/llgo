@@ -3,6 +3,7 @@ package ssa
 import (
 	"debug/dwarf"
 	"fmt"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"path/filepath"
@@ -156,7 +157,8 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 	case *types.Interface:
 		return b.createBasicType(ty)
 	case *types.Slice:
-		return b.createBasicType(ty)
+		ty := b.prog.rawType(b.prog.rtType("Slice").RawType().Underlying())
+		return b.createStructType(ty, pos)
 	case *types.Struct:
 		return b.createStructType(ty, pos)
 	case *types.Signature:
@@ -348,7 +350,7 @@ func (b diBuilder) createSubroutineType(file DIFile, retTy DIType, paramTys []DI
 
 // ----------------------------------------------------------------------------
 
-func (b diBuilder) dbgDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+func (b diBuilder) dbgDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, expr DIExpression, blk BasicBlock) {
 	loc := llvm.DebugLoc{
 		Line:  uint(pos.Line),
 		Col:   uint(pos.Column),
@@ -357,13 +359,13 @@ func (b diBuilder) dbgDeclare(v Expr, dv DIVar, scope DIScope, pos token.Positio
 	b.di.InsertDeclareAtEnd(
 		v.impl,
 		dv.ll,
-		b.di.CreateExpression(nil),
+		expr.ll,
 		loc,
 		blk.last,
 	)
 }
 
-func (b diBuilder) dbgValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+func (b diBuilder) dbgValue(v Expr, dv DIVar, scope DIScope, pos token.Position, expr DIExpression, blk BasicBlock) {
 	loc := llvm.DebugLoc{
 		Line:  uint(pos.Line),
 		Col:   uint(pos.Column),
@@ -372,7 +374,7 @@ func (b diBuilder) dbgValue(v Expr, dv DIVar, scope DIScope, pos token.Position,
 	b.di.InsertValueAtEnd(
 		v.impl,
 		dv.ll,
-		b.di.CreateExpression(nil),
+		expr.ll,
 		loc,
 		blk.last,
 	)
@@ -410,14 +412,87 @@ func (b diBuilder) file(filename string) DIFile {
 	return b.createFile(filename)
 }
 
+// ----------------------------------------------------------------------------
+
+type aDIExpression struct {
+	ll llvm.Metadata
+}
+
+type DIExpression = *aDIExpression
+
+func (b diBuilder) createExpression(ops []uint64) DIExpression {
+	return &aDIExpression{b.di.CreateExpression(ops)}
+}
+
 // -----------------------------------------------------------------------------
 
+// Copy struct parameters to alloca'd memory.
+func (b Builder) allocatedVar(v Expr) (Expr, bool) {
+	if v, ok := b.allocVars[v]; ok {
+		return v, true
+	}
+	t := v.Type.RawType().Underlying()
+	var ty Type
+	switch t.(type) {
+	case *types.Struct:
+		ty = v.Type
+	case *types.Slice:
+		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), InGo)
+	default:
+		return v, false
+	}
+	size := b.Const(constant.MakeUint64(b.Prog.SizeOf(ty)), b.Prog.Uint64())
+	p := b.Alloca(size)
+	p.Type = b.Prog.Pointer(ty)
+	b.Store(p, v)
+	b.allocVars[v] = p
+	return p, true
+}
+
+const (
+	opDeref = 0x06
+)
+
+func skipType(t types.Type) bool {
+	switch t := t.(type) {
+	case *types.Slice:
+		return true
+	case *types.Interface:
+		return true
+	case *types.Basic:
+		if t.Info()&types.IsString != 0 {
+			return true
+		} else if t.Info()&types.IsComplex != 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	b.Pkg.diBuilder().dbgDeclare(v, dv, scope, pos, blk)
+	t := v.Type.RawType().Underlying()
+	if skipType(t) {
+		return
+	}
+	v, alloced := b.allocatedVar(v)
+	expr := b.Pkg.diBuilder().createExpression(nil)
+	if alloced {
+		expr = b.Pkg.diBuilder().createExpression([]uint64{opDeref})
+	}
+	b.Pkg.diBuilder().dbgDeclare(v, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	b.Pkg.diBuilder().dbgValue(v, dv, scope, pos, blk)
+	t := v.Type.RawType().Underlying()
+	if skipType(t) {
+		return
+	}
+	v, alloced := b.allocatedVar(v)
+	expr := b.Pkg.diBuilder().createExpression(nil)
+	if alloced {
+		expr = b.Pkg.diBuilder().createExpression([]uint64{opDeref})
+	}
+	b.Pkg.diBuilder().dbgValue(v, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt Type, argNo int) DIVar {

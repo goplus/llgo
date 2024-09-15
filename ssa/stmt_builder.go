@@ -63,6 +63,8 @@ type aBuilder struct {
 	Func Function
 	Pkg  Package
 	Prog Program
+
+	allocVars map[Expr]Expr
 }
 
 // Builder represents a builder for creating instructions in a function.
