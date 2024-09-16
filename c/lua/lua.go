@@ -301,10 +301,17 @@ func (L *State) Gettable(idx c.Int) c.Int { return 0 }
 // llgo:link (*State).Getfield C.lua_getfield
 func (L *State) Getfield(idx c.Int, k *c.Char) c.Int { return 0 }
 
-// LUA_API int (lua_geti) (State *L, int idx, lua_Integer n);
-// LUA_API int (lua_rawget) (State *L, int idx);
-// LUA_API int (lua_rawgeti) (State *L, int idx, lua_Integer n);
-// LUA_API int (lua_rawgetp) (State *L, int idx, const void *p);
+// llgo:link (*State).Geti C.lua_geti
+func (L *State) Geti(idx c.Int, n Integer) c.Int { return 0 }
+
+// llgo:link (*State).Rawget C.lua_rawget
+func (L *State) Rawget(idx c.Int) c.Int { return 0 }
+
+// llgo:link (*State).Rawgeti C.lua_rawgeti
+func (L *State) Rawgeti(idx c.Int, n Integer) c.Int { return 0 }
+
+// llgo:link (*State).Rawgetp C.lua_rawgetp
+func (L *State) Rawgetp(idx c.Int, p c.Pointer) c.Int { return 0 }
 
 // llgo:link (*State).Createtable C.lua_createtable
 func (L *State) Createtable(narr c.Int, nrec c.Int) {}
@@ -330,10 +337,17 @@ func (L *State) Settable(idx c.Int) {}
 // llgo:link (*State).Setfield C.lua_setfield
 func (L *State) Setfield(idx c.Int, k *c.Char) {}
 
-//void  (lua_seti) (State *L, int idx, lua_Integer n);
-//void  (lua_rawset) (State *L, int idx);
-//void  (lua_rawseti) (State *L, int idx, lua_Integer n);
-//void  (lua_rawsetp) (State *L, int idx, const void *p);
+// llgo:link (*State).Seti C.lua_seti
+func (L *State) Seti(idx c.Int, n Integer) {}
+
+// llgo:link (*State).Rawset C.lua_rawset
+func (L *State) Rawset(idx c.Int) {}
+
+// llgo:link (*State).Rawseti C.lua_rawseti
+func (L *State) Rawseti(idx c.Int, n Integer) {}
+
+// llgo:link (*State).Rawsetp C.lua_rawsetp
+func (L *State) Rawsetp(idx c.Int, p c.Pointer) {}
 
 // llgo:link (*State).Setmetatable C.lua_setmetatable
 func (L *State) Setmetatable(objindex c.Int) c.Int { return 0 }
@@ -415,6 +429,7 @@ const (
 /*
  * miscellaneous functions
  */
+
 // llgo:link (*State).Next C.lua_next
 func (L *State) Next(idx c.Int) c.Int { return 0 }
 
