@@ -114,7 +114,8 @@ type Writer func(L *State, p c.Pointer, sz c.Ulong, ud c.Pointer) c.Int
  * Type for memory-allocation functions
  */
 
-// typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
+// llgo:type C
+type Alloc func(ud c.Pointer, ptr c.Pointer, osize c.Ulong, nsize c.Ulong) c.Pointer
 
 /*
  * Type for warning functions
@@ -155,7 +156,8 @@ type Writer func(L *State, p c.Pointer, sz c.Ulong, ud c.Pointer) c.Int
 // llgo:link (*State).Close C.lua_close
 func (L *State) Close() {}
 
-// State *(lua_newstate) (lua_Alloc f, void *ud);
+// llgo:link Newstate__0 C.lua_newstate
+func Newstate__0(f Alloc, ud c.Pointer) *State { return nil }
 
 // llgo:link (*State).Newthread C.lua_newthread
 func (L *State) Newthread() *State { return nil }
@@ -248,7 +250,8 @@ func (L *State) Touserdata(idx c.Int) c.Pointer { return nil }
 // llgo:link (*State).Tothread C.lua_tothread
 func (L *State) Tothread(idx c.Int) *State { return nil }
 
-// LUA_API const void     *(lua_topointer) (State *L, int idx);
+// llgo:link (*State).Topointer C.lua_topointer
+func (L *State) Topointer(idx c.Int) c.Pointer { return nil }
 
 /*
  * Comparison and arithmetic functions
@@ -322,7 +325,8 @@ func (L *State) Newuserdatauv(sz uintptr, nuvalue c.Int) c.Pointer { return nil 
 // llgo:link (*State).Getmetatable C.lua_getmetatable
 func (L *State) Getmetatable(objindex c.Int) c.Int { return 0 }
 
-// LUA_API int  (lua_getiuservalue) (State *L, int idx, int n);
+// llgo:link (*State).Getiuservalue C.lua_getiuservalue
+func (L *State) Getiuservalue(idx c.Int, n c.Int) c.Int { return 0 }
 
 /*
  * set functions (stack -> Lua)
@@ -352,7 +356,8 @@ func (L *State) Rawsetp(idx c.Int, p c.Pointer) {}
 // llgo:link (*State).Setmetatable C.lua_setmetatable
 func (L *State) Setmetatable(objindex c.Int) c.Int { return 0 }
 
-//int   (lua_setiuservalue) (State *L, int idx, int n);
+// llgo:link (*State).Setiuservalue C.lua_setiuservalue
+func (L *State) Setiuservalue(idx c.Int, n c.Int) c.Int { return 0 }
 
 /*
  * 'load' and 'call' functions (load and run Lua code)
@@ -436,16 +441,26 @@ func (L *State) Next(idx c.Int) c.Int { return 0 }
 // llgo:link (*State).Error C.lua_error
 func (L *State) Error() c.Int { return 0 }
 
-// LUA_API void  (lua_concat) (State *L, int n);
-// LUA_API void  (lua_len)    (State *L, int idx);
+// llgo:link (*State).Concat C.lua_concat
+func (L *State) Concat(n c.Int) {}
 
-// LUA_API size_t   (lua_stringtonumber) (State *L, const char *s);
+// llgo:link (*State).Len C.lua_len
+func (L *State) Len(idx c.Int) {}
 
-// LUA_API lua_Alloc (lua_getallocf) (State *L, void **ud);
-// LUA_API void      (lua_setallocf) (State *L, lua_Alloc f, void *ud);
+// llgo:link (*State).Stringtonumber C.lua_stringtonumber
+func (L *State) Stringtonumber(s *c.Char) c.Ulong { return 0 }
 
-// LUA_API void (lua_toclose) (State *L, int idx);
-// LUA_API void (lua_closeslot) (State *L, int idx);
+// llgo:link (*State).Getallocf C.lua_getallocf
+func (L *State) Getallocf(ud *c.Pointer) Alloc { return nil }
+
+// llgo:link (*State).Setallocf C.lua_setallocf
+func (L *State) Setallocf(f Alloc, ud c.Pointer) Alloc { return nil }
+
+// llgo:link (*State).Toclose C.lua_toclose
+func (L *State) Toclose(idx c.Int) {}
+
+// llgo:link (*State).Closeslot C.lua_closeslot
+func (L *State) Closeslot(idx c.Int) {}
 
 /*
  ** {==============================================================
@@ -454,7 +469,6 @@ func (L *State) Error() c.Int { return 0 }
  */
 
 // #define lua_getextraspace(L)	((void *)((char *)(L) - LUA_EXTRASPACE))
-
 func (L *State) Tonumber(idx c.Int) Number   { return L.Tonumberx(idx, nil) }
 func (L *State) Tostring(idx c.Int) *c.Char  { return L.Tolstring(idx, nil) }
 func (L *State) Tointeger(idx c.Int) Integer { return L.Tointegerx(idx, nil) }
@@ -475,9 +489,13 @@ func (L *State) Isboolean(n c.Int) bool       { return L.Type(n) == c.Int(BOOLEA
 func (L *State) Isthread(n c.Int) bool        { return L.Type(n) == c.Int(THREAD) }
 func (L *State) Isnone(n c.Int) bool          { return L.Type(n) == c.Int(NONE) }
 func (L *State) Isnoneornil(n c.Int) bool     { return L.Type(n) <= 0 }
+func (L *State) Pushliteral(s *c.Char) *c.Char {
+	return L.Pushstring(s)
+}
 
-// #define lua_pushliteral(L, s)	lua_pushstring(L, "" s)
-// #define lua_pushglobaltable(L)  ((void)lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS))
+func (L *State) Pushglobaltable() c.Int {
+	return L.Rawgeti(REGISTRYINDEX, RIDX_GLOBALS)
+}
 
 func (L *State) Insert(idx c.Int) {
 	L.Rotate(idx, 1)
@@ -505,8 +523,13 @@ func (L *State) Newuserdata(sz uintptr) c.Pointer {
 	return L.Newuserdatauv(sz, 1)
 }
 
-// #define lua_getuservalue(L,idx)	lua_getiuservalue(L,idx,1)
-// #define lua_setuservalue(L,idx)	lua_setiuservalue(L,idx,1)
+func (L *State) Getuservalue(idx c.Int) c.Int {
+	return L.Getiuservalue(idx, 1)
+}
+
+func (L *State) Setuservalue(idx c.Int) c.Int {
+	return L.Setiuservalue(idx, 1)
+}
 
 // #define LUA_NUMTAGS		LUA_NUMTYPES
 

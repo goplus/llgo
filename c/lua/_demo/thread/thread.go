@@ -15,7 +15,7 @@ func pushThread(state *lua.State, name string) {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 
 	L.Openlibs()

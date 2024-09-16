@@ -29,7 +29,7 @@ func printStack(L *lua.State, message string) {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 
 	L.Openlibs()

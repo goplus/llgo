@@ -17,7 +17,7 @@ func printStack(L *lua.State, stateName *c.Char) {
 
 func main() {
 	// Create a new Lua state and open libraries
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 	L.Openlibs()
 
@@ -68,7 +68,7 @@ func main() {
 	printStack(L, c.Str("L1"))
 
 	// Create a second Lua state
-	L1 := lua.Newstate()
+	L1 := lua.Newstate__1()
 	defer L1.Close()
 
 	// Move two elements to the new state

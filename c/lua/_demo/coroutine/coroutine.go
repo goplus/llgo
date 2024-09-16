@@ -18,7 +18,7 @@ func coroutineFunc(L *lua.State) {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 
 	L.Openlibs()
