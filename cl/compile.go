@@ -1036,7 +1036,19 @@ func (p *context) patchType(typ types.Type) types.Type {
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					return p.prog.Type(obj.Type(), llssa.InGo).RawType()
+					otyp := obj.Type()
+					if tp := t.TypeArgs(); tp != nil {
+						targs := make([]types.Type, tp.Len())
+						for i := 0; i < tp.Len(); i++ {
+							targs[i] = tp.At(i)
+						}
+						var err error
+						otyp, err = types.Instantiate(nil, obj.Type(), targs, true)
+						if err != nil {
+							panic(fmt.Errorf("patchType error: %v", err))
+						}
+					}
+					return p.prog.Type(otyp, llssa.InGo).RawType()
 				}
 			}
 		}
