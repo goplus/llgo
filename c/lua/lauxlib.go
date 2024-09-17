@@ -34,7 +34,7 @@ func (L *State) Loadfile(filename *c.Char) c.Int { return L.Loadfilex(filename, 
 func (L *State) Loadstring(s *c.Char) c.Int { return 0 }
 
 //go:linkname Newstate__1 C.luaL_newstate
-func Newstate__1() *State { return nil }
+func Newstate__1() *State
 
 // /*
 // ** ===============================================================
