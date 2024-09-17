@@ -117,62 +117,62 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
   call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %42)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   %43 = alloca [2 x i64], align 8
-  %44 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %43, i64 16)
-  %45 = getelementptr inbounds i64, ptr %44, i64 0
-  %46 = getelementptr inbounds i64, ptr %44, i64 1
-  store i64 1, ptr %45, align 4
-  store i64 2, ptr %46, align 4
-  %47 = load [2 x i64], ptr %44, align 4
-  %48 = load ptr, ptr @_llgo_main.A, align 8
-  %49 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store [2 x i64] %47, ptr %49, align 4
-  %50 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %51 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %50, i32 0, i32 0
+  call void @llvm.memset(ptr %43, i8 0, i64 16, i1 false)
+  %44 = getelementptr inbounds i64, ptr %43, i64 0
+  %45 = getelementptr inbounds i64, ptr %43, i64 1
+  store i64 1, ptr %44, align 4
+  store i64 2, ptr %45, align 4
+  %46 = load [2 x i64], ptr %43, align 4
+  %47 = load ptr, ptr @_llgo_main.A, align 8
+  %48 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store [2 x i64] %46, ptr %48, align 4
+  %49 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %49, i32 0, i32 0
+  store ptr %47, ptr %50, align 8
+  %51 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %49, i32 0, i32 1
   store ptr %48, ptr %51, align 8
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %50, i32 0, i32 1
-  store ptr %49, ptr %52, align 8
-  %53 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %50, align 8
-  %54 = alloca [2 x i64], align 8
-  %55 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %54, i64 16)
-  %56 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %53, 0
-  %57 = load ptr, ptr @_llgo_main.A, align 8
-  %58 = icmp eq ptr %56, %57
-  br i1 %58, label %_llgo_6, label %_llgo_7
+  %52 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %49, align 8
+  %53 = alloca [2 x i64], align 8
+  call void @llvm.memset(ptr %53, i8 0, i64 16, i1 false)
+  %54 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %52, 0
+  %55 = load ptr, ptr @_llgo_main.A, align 8
+  %56 = icmp eq ptr %54, %55
+  br i1 %56, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  %59 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %53, 1
-  %60 = load [2 x i64], ptr %59, align 4
-  %61 = alloca { [2 x i64], i1 }, align 8
-  %62 = getelementptr inbounds { [2 x i64], i1 }, ptr %61, i32 0, i32 0
-  store [2 x i64] %60, ptr %62, align 4
-  %63 = getelementptr inbounds { [2 x i64], i1 }, ptr %61, i32 0, i32 1
-  store i1 true, ptr %63, align 1
-  %64 = load { [2 x i64], i1 }, ptr %61, align 4
+  %57 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %52, 1
+  %58 = load [2 x i64], ptr %57, align 4
+  %59 = alloca { [2 x i64], i1 }, align 8
+  %60 = getelementptr inbounds { [2 x i64], i1 }, ptr %59, i32 0, i32 0
+  store [2 x i64] %58, ptr %60, align 4
+  %61 = getelementptr inbounds { [2 x i64], i1 }, ptr %59, i32 0, i32 1
+  store i1 true, ptr %61, align 1
+  %62 = load { [2 x i64], i1 }, ptr %59, align 4
   br label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_5
-  %65 = alloca { [2 x i64], i1 }, align 8
-  %66 = getelementptr inbounds { [2 x i64], i1 }, ptr %65, i32 0, i32 0
-  store [2 x i64] zeroinitializer, ptr %66, align 4
-  %67 = getelementptr inbounds { [2 x i64], i1 }, ptr %65, i32 0, i32 1
-  store i1 false, ptr %67, align 1
-  %68 = load { [2 x i64], i1 }, ptr %65, align 4
+  %63 = alloca { [2 x i64], i1 }, align 8
+  %64 = getelementptr inbounds { [2 x i64], i1 }, ptr %63, i32 0, i32 0
+  store [2 x i64] zeroinitializer, ptr %64, align 4
+  %65 = getelementptr inbounds { [2 x i64], i1 }, ptr %63, i32 0, i32 1
+  store i1 false, ptr %65, align 1
+  %66 = load { [2 x i64], i1 }, ptr %63, align 4
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
-  %69 = phi { [2 x i64], i1 } [ %64, %_llgo_6 ], [ %68, %_llgo_7 ]
-  %70 = extractvalue { [2 x i64], i1 } %69, 0
-  store [2 x i64] %70, ptr %55, align 4
-  %71 = extractvalue { [2 x i64], i1 } %69, 1
-  %72 = getelementptr inbounds i64, ptr %55, i64 0
+  %67 = phi { [2 x i64], i1 } [ %62, %_llgo_6 ], [ %66, %_llgo_7 ]
+  %68 = extractvalue { [2 x i64], i1 } %67, 0
+  store [2 x i64] %68, ptr %53, align 4
+  %69 = extractvalue { [2 x i64], i1 } %67, 1
+  %70 = getelementptr inbounds i64, ptr %53, i64 0
+  %71 = load i64, ptr %70, align 4
+  %72 = getelementptr inbounds i64, ptr %53, i64 1
   %73 = load i64, ptr %72, align 4
-  %74 = getelementptr inbounds i64, ptr %55, i64 1
-  %75 = load i64, ptr %74, align 4
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %71)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %73)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %75)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %71)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %69)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
@@ -292,8 +292,11 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

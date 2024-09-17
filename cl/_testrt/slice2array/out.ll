@@ -95,21 +95,21 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %42 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %38, 0
   %43 = load [2 x i8], ptr %42, align 1
   %44 = alloca [2 x i8], align 1
-  %45 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %44, i64 2)
-  %46 = getelementptr inbounds i8, ptr %45, i64 0
-  %47 = getelementptr inbounds i8, ptr %45, i64 1
-  store i8 1, ptr %46, align 1
-  store i8 2, ptr %47, align 1
-  %48 = load [2 x i8], ptr %45, align 1
-  %49 = extractvalue [2 x i8] %43, 0
-  %50 = extractvalue [2 x i8] %48, 0
-  %51 = icmp eq i8 %49, %50
-  %52 = and i1 true, %51
-  %53 = extractvalue [2 x i8] %43, 1
-  %54 = extractvalue [2 x i8] %48, 1
-  %55 = icmp eq i8 %53, %54
-  %56 = and i1 %52, %55
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %56)
+  call void @llvm.memset(ptr %44, i8 0, i64 2, i1 false)
+  %45 = getelementptr inbounds i8, ptr %44, i64 0
+  %46 = getelementptr inbounds i8, ptr %44, i64 1
+  store i8 1, ptr %45, align 1
+  store i8 2, ptr %46, align 1
+  %47 = load [2 x i8], ptr %44, align 1
+  %48 = extractvalue [2 x i8] %43, 0
+  %49 = extractvalue [2 x i8] %47, 0
+  %50 = icmp eq i8 %48, %49
+  %51 = and i1 true, %50
+  %52 = extractvalue [2 x i8] %43, 1
+  %53 = extractvalue [2 x i8] %47, 1
+  %54 = icmp eq i8 %52, %53
+  %55 = and i1 %51, %54
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %55)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
@@ -124,4 +124,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

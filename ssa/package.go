@@ -179,8 +179,9 @@ type aProgram struct {
 	getAttrStr   *types.Signature
 	pyUniStr     *types.Signature
 
-	mallocTy *types.Signature
-	freeTy   *types.Signature
+	mallocTy       *types.Signature
+	freeTy         *types.Signature
+	memsetInlineTy *types.Signature
 
 	createKeyTy *types.Signature
 	getSpecTy   *types.Signature
