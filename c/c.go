@@ -85,6 +85,9 @@ func Calloc(num uintptr, size uintptr) Pointer
 //go:linkname Free C.free
 func Free(ptr Pointer)
 
+//go:linkname Realloc C.realloc
+func Realloc(ptr Pointer, size uintptr) Pointer
+
 //go:linkname Memcpy C.memcpy
 func Memcpy(dst, src Pointer, n uintptr) Pointer
 
