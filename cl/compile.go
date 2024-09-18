@@ -730,16 +730,12 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				// Not a local variable.
 				return
 			}
-			if v.IsAddr {
-				// *ssa.Alloc or *ssa.FieldAddr
-				return
-			}
-
 			pos := p.goProg.Fset.Position(v.Pos())
 			value := p.compileValue(b, v.X)
 			fn := v.Parent()
 			dbgVar := p.getLocalVariable(b, fn, variable)
 			if v.IsAddr {
+				// *ssa.Alloc or *ssa.FieldAddr
 				b.DIDeclare(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
 			} else {
 				b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
