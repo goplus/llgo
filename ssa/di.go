@@ -149,7 +149,8 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 	case *types.Named:
 		return b.diType(b.prog.rawType(t.Underlying()), pos)
 	case *types.Interface:
-		return b.createBasicType(ty)
+		ty := b.prog.rawType(b.prog.rtType("Iface").RawType().Underlying())
+		return b.createInterfaceType(ty)
 	case *types.Slice:
 		ty := b.prog.rawType(b.prog.rtType("Slice").RawType().Underlying())
 		tyElem := b.prog.rawType(t.Elem())
@@ -359,6 +360,44 @@ func (b diBuilder) createSliceType(ty, tyElem Type) DIType {
 			},
 		),
 	}
+}
+
+func (b diBuilder) createInterfaceType(ty Type) DIType {
+	tyRaw := ty.RawType().Underlying()
+	tyIntr := b.prog.rawType(tyRaw)
+	tyType := b.prog.VoidPtr()
+	tyData := b.prog.VoidPtr()
+
+	return &aDIType{ll: b.di.CreateStructType(
+		llvm.Metadata{},
+		llvm.DIStructType{
+			Name:        ty.RawType().String(),
+			SizeInBits:  b.prog.SizeOf(tyIntr) * 8,
+			AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
+			Elements: []llvm.Metadata{
+				b.di.CreateMemberType(
+					llvm.Metadata{},
+					llvm.DIMemberType{
+						Name:         "type",
+						SizeInBits:   b.prog.SizeOf(tyType) * 8,
+						AlignInBits:  uint32(b.prog.sizes.Alignof(tyType.RawType()) * 8),
+						OffsetInBits: b.prog.OffsetOf(ty, 0) * 8,
+						Type:         b.diType(tyType, token.Position{}).ll,
+					},
+				),
+				b.di.CreateMemberType(
+					llvm.Metadata{},
+					llvm.DIMemberType{
+						Name:         "data",
+						SizeInBits:   b.prog.SizeOf(tyData) * 8,
+						AlignInBits:  uint32(b.prog.sizes.Alignof(tyData.RawType()) * 8),
+						OffsetInBits: b.prog.OffsetOf(ty, 1) * 8,
+						Type:         b.diType(tyData, token.Position{}).ll,
+					},
+				),
+			},
+		},
+	)}
 }
 
 func (b diBuilder) createComplexType(t Type) DIType {
@@ -617,8 +656,6 @@ const (
 
 func skipType(t types.Type) bool {
 	switch t.(type) {
-	case *types.Interface:
-		return true
 	case *types.Signature:
 		return true
 	}

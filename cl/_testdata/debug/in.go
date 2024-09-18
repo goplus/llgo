@@ -33,10 +33,10 @@ type StructWithAllTypeFields struct {
 	e     E
 	pf    *StructWithAllTypeFields // resursive
 	pi    *int
-	// intr  Interface
+	intr  Interface
 	// m     map[string]uint64
 	// c     chan int
-	// err   error
+	err error
 	// fn    func(string) (int, error)
 }
 
@@ -80,10 +80,10 @@ func FuncWithAllTypeParams(
 	f StructWithAllTypeFields,
 	pf *StructWithAllTypeFields,
 	pi *int,
-	// intr Interface,
+	intr Interface,
 	// m map[string]uint64,
 	// c chan int,
-	// err error,
+	err error,
 	// fn func(string) (int, error),
 ) (int, error) {
 	println(
@@ -92,7 +92,9 @@ func FuncWithAllTypeParams(
 		c64, c128,
 		slice, arr[0:],
 		s,
-		// &e, &f, pf, pi, intr, m, c, err,
+		&e,
+		// &f, pf, pi, intr, m, c,
+		err,
 		// fn,
 	)
 	return 1, errors.New("Some error")
@@ -123,10 +125,10 @@ func main() {
 		e:     E{i: 30},
 		pf:    &StructWithAllTypeFields{},
 		pi:    &i,
-		// intr:  &Struct{},
+		intr:  &Struct{},
 		// m:     make(map[string]uint64),
 		// c:     make(chan int),
-		// err:   errors.New("Test error"),
+		err: errors.New("Test error"),
 		// fn: func(s string) (int, error) {
 		// 	println("fn:", s)
 		// 	return 1, errors.New("fn error")
@@ -143,7 +145,9 @@ func main() {
 		s.s,
 		s.e, s,
 		s.pf, s.pi,
-		// s.intr, s.m, s.c, s.err,
+		s.intr,
+		//s.m, s.c,
+		s.err,
 		// s.fn,
 	)
 	println(i, err)
