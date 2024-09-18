@@ -35,7 +35,6 @@ func (p *BuiltinTypeMap) FindBuiltinType(builtinType ast.BuiltinType) (types.Typ
 	t, ok := p.builtinTypeMap[builtinType]
 	if ok {
 		return t, nil
-
 	}
 	return nil, fmt.Errorf("%s", "not found in type map")
 }

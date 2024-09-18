@@ -48,7 +48,7 @@ func (p *AstConvert) VisitMethod(className *ast.Ident, method *ast.FuncDecl, typ
 
 func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
 	fmt.Printf("visit struct %s\n", structName.Name)
-	//TODO convert struct
+	p.pkg.NewTypeDecl(typeDecl)
 }
 
 func (p *AstConvert) VisitEnum(enumName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
@@ -63,6 +63,10 @@ func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typ
 
 func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 	p.pkg.NewEnumTypeDecl(enumTypeDecl)
+}
+
+func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
+	p.pkg.NewTypedefDecl(typedefDecl)
 }
 
 func (p *AstConvert) VisitDone(docPath string) {
