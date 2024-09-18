@@ -58,8 +58,9 @@ func (p BasicBlock) Addr() Expr {
 // -----------------------------------------------------------------------------
 
 type dbgExpr struct {
-	ptr Expr
-	val Expr
+	ptr   Expr
+	val   Expr
+	deref bool
 }
 
 type aBuilder struct {
