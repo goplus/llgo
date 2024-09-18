@@ -31,7 +31,6 @@ import (
 func llcppsymg(conf []byte) error {
 	cmd := exec.Command("llcppsymg", "-")
 	cmd.Stdin = bytes.NewReader(conf)
-	cmd.Stdout = out
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
