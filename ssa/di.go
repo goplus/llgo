@@ -152,7 +152,8 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 	case *types.Struct:
 		return b.createStructType(ty, pos)
 	case *types.Signature:
-		return b.createFuncPtrType(b.prog.rawType(t), pos)
+		tyFn := b.prog.Closure(ty)
+		return b.createFuncPtrType(tyFn, pos)
 	case *types.Tuple:
 		return b.createBasicType(ty)
 	case *types.Array:
@@ -366,8 +367,6 @@ func (b diBuilder) createMapType(tyMap, tk, tv Type) DIType {
 }
 
 func (b diBuilder) createChanType(t Type) DIType {
-	tyElem := b.prog.rawType(t.RawType().(*types.Chan).Elem())
-	fmt.Printf("tyElem: %v, %T\n", tyElem, tyElem)
 	return &aDIType{ll: b.di.CreateStructType(
 		llvm.Metadata{},
 		llvm.DIStructType{
@@ -452,18 +451,11 @@ func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
 }
 
 func (b diBuilder) createFuncPtrType(ty Type, pos token.Position) DIType {
-	sig := ty.RawType().(*types.Signature)
-	retTy := b.diType(b.prog.rawType(sig.Results()), pos)
-	paramTys := make([]DIType, sig.Params().Len())
-	for i := 0; i < sig.Params().Len(); i++ {
-		paramTys[i] = b.diType(b.prog.rawType(sig.Params().At(i).Type()), pos)
-	}
-	rt := b.createSubroutineType(b.file(pos.Filename), retTy, paramTys)
+	ptr := b.prog.VoidPtr()
 	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
-		Pointee:      rt.ll,
-		SizeInBits:   b.prog.SizeOf(ty) * 8,
-		AlignInBits:  8,
-		AddressSpace: 0,
+		Pointee:     b.diType(ptr, pos).ll,
+		SizeInBits:  b.prog.SizeOf(ptr) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ptr.RawType()) * 8),
 	})}
 }
 
@@ -583,8 +575,7 @@ func (b Builder) debug(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
 	case *types.Slice:
 		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), InGo)
 	case *types.Signature:
-		fmt.Printf("t: %T, %v\n", t, t)
-		ty = b.Prog.Type(b.Prog.rtType("Func").RawType().Underlying(), InGo)
+		ty = b.Prog.Closure(b.Prog.rawType(t))
 	case *types.Named:
 		ty = b.Prog.Type(t.Underlying(), InGo)
 	case *types.Map:
@@ -592,7 +583,6 @@ func (b Builder) debug(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
 	default:
 		ty = v.Type
 	}
-	// fmt.Printf("ty: %T, %v, %T, %v\n", ty.RawType(), ty.RawType(), t, t)
 	dbgPtr = b.AllocaT(ty)
 	dbgPtr.Type = b.Prog.Pointer(v.Type)
 	b.Store(dbgPtr, v)
@@ -606,10 +596,6 @@ const (
 )
 
 func skipType(t types.Type) bool {
-	switch t.(type) {
-	case *types.Signature:
-		return true
-	}
 	return false
 }
 

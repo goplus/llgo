@@ -37,7 +37,9 @@ type StructWithAllTypeFields struct {
 	m     map[string]uint64
 	c     chan int
 	err   error
-	// fn    func(string) (int, error)
+	fn    func(string) (int, error)
+	pad1  int
+	pad2  int
 }
 
 type Interface interface {
@@ -84,7 +86,7 @@ func FuncWithAllTypeParams(
 	m map[string]uint64,
 	c chan int,
 	err error,
-	// fn func(string) (int, error),
+	fn func(string) (int, error),
 ) (int, error) {
 	println(
 		i8, i16, i32, i64, i, u8, u16, u32, u64, u,
@@ -96,7 +98,7 @@ func FuncWithAllTypeParams(
 		&f, pf, pi, intr, m,
 		c,
 		err,
-		// fn,
+		fn,
 	)
 	return 1, errors.New("Some error")
 }
@@ -130,10 +132,13 @@ func main() {
 		m:     map[string]uint64{"a": 31, "b": 32},
 		c:     make(chan int),
 		err:   errors.New("Test error"),
-		// fn: func(s string) (int, error) {
-		// 	println("fn:", s)
-		// 	return 1, errors.New("fn error")
-		// },
+		fn: func(s string) (int, error) {
+			println("fn:", s)
+			i = 201
+			return 1, errors.New("fn error")
+		},
+		pad1: 100,
+		pad2: 200,
 	}
 	println("s:", &s)
 	FuncWithAllTypeStructParam(s)
@@ -150,7 +155,7 @@ func main() {
 		s.m,
 		s.c,
 		s.err,
-		// s.fn,
+		s.fn,
 	)
 	println(i, err)
 	println("called function with types")
