@@ -10,7 +10,8 @@ import (
 
 type AstConvert struct {
 	*BaseDocVisitor
-	pkg *genpkg.Package
+	pkg       *genpkg.Package
+	visitDone func(pkg *genpkg.Package, docPath string)
 }
 
 func NewAstConvert(pkgName string, symbFile string) *AstConvert {
@@ -20,6 +21,10 @@ func NewAstConvert(pkgName string, symbFile string) *AstConvert {
 	p.pkg = pkg
 	p.setupSymbleTableFile(symbFile)
 	return p
+}
+
+func (p *AstConvert) SetVisitDone(fn func(pkg *genpkg.Package, docPath string)) {
+	p.visitDone = fn
 }
 
 func (p *AstConvert) setupSymbleTableFile(fileName string) error {
@@ -70,5 +75,9 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 }
 
 func (p *AstConvert) VisitDone(docPath string) {
-	p.pkg.Write(docPath)
+	if p.visitDone != nil {
+		p.visitDone(p.pkg, docPath)
+	} else {
+		p.pkg.Write(docPath)
+	}
 }
