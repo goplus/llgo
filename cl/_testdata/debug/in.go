@@ -35,8 +35,8 @@ type StructWithAllTypeFields struct {
 	pi    *int
 	intr  Interface
 	m     map[string]uint64
-	// c     chan int
-	err error
+	c     chan int
+	err   error
 	// fn    func(string) (int, error)
 }
 
@@ -82,7 +82,7 @@ func FuncWithAllTypeParams(
 	pi *int,
 	intr Interface,
 	m map[string]uint64,
-	// c chan int,
+	c chan int,
 	err error,
 	// fn func(string) (int, error),
 ) (int, error) {
@@ -94,7 +94,7 @@ func FuncWithAllTypeParams(
 		s,
 		&e,
 		&f, pf, pi, intr, m,
-		// c,
+		c,
 		err,
 		// fn,
 	)
@@ -128,8 +128,8 @@ func main() {
 		pi:    &i,
 		intr:  &Struct{},
 		m:     map[string]uint64{"a": 31, "b": 32},
-		// c:     make(chan int),
-		err: errors.New("Test error"),
+		c:     make(chan int),
+		err:   errors.New("Test error"),
 		// fn: func(s string) (int, error) {
 		// 	println("fn:", s)
 		// 	return 1, errors.New("fn error")
@@ -148,7 +148,7 @@ func main() {
 		s.pf, s.pi,
 		s.intr,
 		s.m,
-		// s.c,
+		s.c,
 		s.err,
 		// s.fn,
 	)

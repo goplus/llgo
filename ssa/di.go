@@ -158,7 +158,7 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 	case *types.Array:
 		return b.createArrayType(ty, t.Len())
 	case *types.Chan:
-		return b.createBasicType(ty)
+		return b.createChanType(ty)
 	case *types.Map:
 		ty := b.prog.rtType("Map")
 		tk := b.prog.rawType(t.Key())
@@ -363,6 +363,20 @@ func (b diBuilder) createMapType(tyMap, tk, tv Type) DIType {
 			AlignInBits: uint32(b.prog.sizes.Alignof(tyMap.RawType()) * 8),
 		}),
 	}
+}
+
+func (b diBuilder) createChanType(t Type) DIType {
+	tyElem := b.prog.rawType(t.RawType().(*types.Chan).Elem())
+	fmt.Printf("tyElem: %v, %T\n", tyElem, tyElem)
+	return &aDIType{ll: b.di.CreateStructType(
+		llvm.Metadata{},
+		llvm.DIStructType{
+			Name:        t.RawType().String(),
+			SizeInBits:  b.prog.SizeOf(t) * 8,
+			AlignInBits: uint32(b.prog.sizes.Alignof(t.RawType()) * 8),
+			Elements:    []llvm.Metadata{},
+		},
+	)}
 }
 
 func (b diBuilder) createComplexType(t Type) DIType {
