@@ -273,9 +273,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				off[i] = p.compilePhis(b, block)
 			}
 			p.blkInfos = blocks.Infos(f.Blocks)
-			if debugSymbols {
-				p.debugParams(b, f)
-			}
 			i := 0
 			for {
 				block := f.Blocks[i]
@@ -318,6 +315,10 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
+	// place here to avoid wrong current-block
+	if debugSymbols && block.Index == 0 {
+		p.debugParams(b, block.Parent())
+	}
 	if doModInit {
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
@@ -722,24 +723,28 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
-		if !debugSymbols {
-			return
+		if debugSymbols {
+			object := v.Object()
+			variable, ok := object.(*types.Var)
+			if !ok {
+				// Not a local variable.
+				return
+			}
+			if v.IsAddr {
+				// *ssa.Alloc or *ssa.FieldAddr
+				return
+			}
+
+			pos := p.goProg.Fset.Position(getPos(v))
+			value := p.compileValue(b, v.X)
+			fn := v.Parent()
+			dbgVar := p.getLocalVariable(b, fn, variable)
+			if v.IsAddr {
+				b.DIDeclare(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+			} else {
+				b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+			}
 		}
-		object := v.Object()
-		variable, ok := object.(*types.Var)
-		if !ok {
-			// Not a local variable.
-			return
-		}
-		if v.IsAddr {
-			// *ssa.Alloc or *ssa.FieldAddr
-			return
-		}
-		fn := v.Parent()
-		dbgVar := p.getLocalVariable(b, fn, variable)
-		pos := p.goProg.Fset.Position(getPos(v))
-		value := p.compileValue(b, v.X)
-		b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
@@ -816,7 +821,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		fn := v.Parent()
 		for idx, param := range fn.Params {
 			if param == v {
-				return p.fn.Param(idx)
+				return b.Param(idx)
 			}
 		}
 	case *ssa.Function:
@@ -905,7 +910,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
 	if debugSymbols {
-		ret.EnableDebugSymbols(pkgName, pkgPath)
+		ret.InitDebugSymbols(pkgName, pkgPath)
 	}
 
 	ctx := &context{

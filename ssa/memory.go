@@ -144,6 +144,16 @@ func (b Builder) Alloca(n Expr) (ret Expr) {
 	return
 }
 
+func (b Builder) AllocaT(t Type) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocaT %v\n", t.RawType())
+	}
+	prog := b.Prog
+	ret.impl = llvm.CreateAlloca(b.impl, t.ll)
+	ret.Type = prog.Pointer(t)
+	return
+}
+
 /* TODO(xsw):
 // AllocaU allocates uninitialized space for n*sizeof(elem) bytes.
 func (b Builder) AllocaU(elem Type, n ...int64) (ret Expr) {

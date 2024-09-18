@@ -3,7 +3,6 @@ package ssa
 import (
 	"debug/dwarf"
 	"fmt"
-	"go/constant"
 	"go/token"
 	"go/types"
 	"path/filepath"
@@ -135,12 +134,7 @@ func (b diBuilder) createType(ty Type, pos token.Position) DIType {
 		} else if t.Info()&types.IsComplex != 0 {
 			return b.createComplexType(ty)
 		} else if t.Info()&types.IsString != 0 {
-			typ = b.di.CreateBasicType(llvm.DIBasicType{
-				Name:       "string",
-				SizeInBits: b.prog.SizeOf(b.prog.rawType(t)) * 8,
-				Encoding:   llvm.DW_ATE_unsigned_char,
-			})
-			return &aDIType{typ}
+			return b.createStringType(pos)
 		} else {
 			panic(fmt.Errorf("can't create debug info of basic type: %v, %T", ty.RawType(), ty.RawType()))
 		}
@@ -184,10 +178,6 @@ type aDIFunction struct {
 }
 
 type DIFunction = *aDIFunction
-
-func (b diBuilder) createFunction(scope DIScope, pos token.Position, name, linkageName string, ty DIType, isLocalToUnit, isDefinition, isOptimized bool) DIFunction {
-	return &aDIFunction{ll: scope.scopeMeta(b, pos).ll}
-}
 
 // ----------------------------------------------------------------------------
 
@@ -264,6 +254,38 @@ func (b diBuilder) createBasicType(t Type) DIType {
 	})}
 }
 
+func (b diBuilder) createStringType(pos token.Position) DIType {
+	ty := b.prog.rtType("String")
+
+	return &aDIType{ll: b.di.CreateStructType(
+		llvm.Metadata{},
+		llvm.DIStructType{
+			Name:        "string",
+			SizeInBits:  b.prog.SizeOf(ty) * 8,
+			AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
+			Elements: []llvm.Metadata{
+				b.di.CreateMemberType(
+					llvm.Metadata{},
+					llvm.DIMemberType{
+						Name:        "data",
+						SizeInBits:  b.prog.SizeOf(b.prog.CStr()) * 8,
+						AlignInBits: uint32(b.prog.sizes.Alignof(b.prog.CStr().RawType()) * 8),
+						Type:        b.diType(b.prog.CStr(), pos).ll,
+					},
+				),
+				b.di.CreateMemberType(
+					llvm.Metadata{},
+					llvm.DIMemberType{
+						Name:        "len",
+						SizeInBits:  b.prog.SizeOf(b.prog.Int()) * 8,
+						AlignInBits: uint32(b.prog.sizes.Alignof(b.prog.Uint().RawType()) * 8),
+						Type:        b.diType(b.prog.Int(), pos).ll,
+					},
+				),
+			},
+		})}
+}
+
 func (b diBuilder) createComplexType(t Type) DIType {
 	var tfield Type
 	if t.RawType().(*types.Basic).Kind() == types.Complex128 {
@@ -317,18 +339,22 @@ func (b diBuilder) createPointerType(ty Type, pos token.Position) DIType {
 }
 
 func (b diBuilder) createStructType(ty Type, pos token.Position) (ret DIType) {
+	structType := ty.RawType().(*types.Struct)
+
 	scope := b.file(pos.Filename)
 	ret = &aDIType{b.di.CreateReplaceableCompositeType(
 		scope.ll,
 		llvm.DIReplaceableCompositeType{
-			Tag:  dwarf.TagStructType,
-			Name: ty.RawType().String(),
+			Tag:         dwarf.TagStructType,
+			Name:        ty.RawType().String(),
+			File:        b.file(pos.Filename).ll,
+			Line:        pos.Line,
+			SizeInBits:  b.prog.SizeOf(ty) * 8,
+			AlignInBits: uint32(b.prog.sizes.Alignof(structType) * 8),
 		},
 	)}
 	b.types[ty] = ret
 
-	// Create struct type
-	structType := ty.RawType().(*types.Struct)
 	fields := make([]llvm.Metadata, structType.NumFields())
 
 	for i := 0; i < structType.NumFields(); i++ {
@@ -470,9 +496,9 @@ func (b diBuilder) createExpression(ops []uint64) DIExpression {
 // -----------------------------------------------------------------------------
 
 // Copy struct parameters to alloca'd memory.
-func (b Builder) allocatedVar(v Expr) (Expr, bool) {
-	if v, ok := b.allocVars[v]; ok {
-		return v, true
+func (b Builder) debug(v Expr) (dbgPtr Expr, dbgVal Expr) {
+	if v, ok := b.dbgVars[v]; ok {
+		return v.ptr, v.val
 	}
 	t := v.Type.RawType().Underlying()
 	var ty Type
@@ -484,22 +510,30 @@ func (b Builder) allocatedVar(v Expr) (Expr, bool) {
 			} else {
 				ty = b.Prog.Complex64()
 			}
+		} else if t.Info()&types.IsString != 0 {
+			ty = b.Prog.rtType("String")
 		} else {
-			return v, false
+			ty = v.Type
 		}
 	case *types.Struct:
 		ty = v.Type
 	case *types.Slice:
 		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), InGo)
+	case *types.Signature:
+		fmt.Printf("t: %T, %v\n", t, t)
+		ty = b.Prog.Type(b.Prog.rtType("Func").RawType().Underlying(), InGo)
+	case *types.Named:
+		ty = b.Prog.Type(t.Underlying(), InGo)
 	default:
-		return v, false
+		ty = v.Type
 	}
-	size := b.Const(constant.MakeUint64(b.Prog.SizeOf(ty)), b.Prog.Uint64())
-	p := b.Alloca(size)
-	p.Type = b.Prog.Pointer(ty)
-	b.Store(p, v)
-	b.allocVars[v] = p
-	return p, true
+	// fmt.Printf("ty: %T, %v, %T, %v\n", ty.RawType(), ty.RawType(), t, t)
+	dbgPtr = b.AllocaT(ty)
+	dbgPtr.Type = b.Prog.Pointer(v.Type)
+	b.Store(dbgPtr, v)
+	dbgVal = b.Load(dbgPtr)
+	b.dbgVars[v] = dbgExpr{dbgPtr, dbgVal}
+	return dbgPtr, dbgVal
 }
 
 const (
@@ -507,15 +541,13 @@ const (
 )
 
 func skipType(t types.Type) bool {
-	switch t := t.(type) {
+	switch t.(type) {
 	case *types.Slice:
 		return true
 	case *types.Interface:
 		return true
-	case *types.Basic:
-		if t.Info()&types.IsString != 0 {
-			return true
-		}
+	case *types.Signature:
+		return true
 	}
 	return false
 }
@@ -525,12 +557,9 @@ func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, 
 	if skipType(t) {
 		return
 	}
-	v, alloced := b.allocatedVar(v)
+	dbgPtr, _ := b.debug(v)
 	expr := b.Pkg.diBuilder().createExpression(nil)
-	if alloced {
-		expr = b.Pkg.diBuilder().createExpression([]uint64{opDeref})
-	}
-	b.Pkg.diBuilder().dbgDeclare(v, dv, scope, pos, expr, blk)
+	b.Pkg.diBuilder().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
@@ -538,11 +567,7 @@ func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, bl
 	if skipType(t) {
 		return
 	}
-	v, alloced := b.allocatedVar(v)
 	expr := b.Pkg.diBuilder().createExpression(nil)
-	if alloced {
-		expr = b.Pkg.diBuilder().createExpression([]uint64{opDeref})
-	}
 	b.Pkg.diBuilder().dbgValue(v, dv, scope, pos, expr, blk)
 }
 
@@ -568,6 +593,14 @@ func (b Builder) DISetCurrentDebugLocation(f Function, pos token.Position) {
 func (b Builder) DebugFunction(f Function, pos token.Position) {
 	// attach debug info to function
 	f.scopeMeta(b.Pkg.di, pos)
+}
+
+func (b Builder) Param(idx int) Expr {
+	p := b.Func.Param(idx)
+	if v, ok := b.dbgVars[p]; ok {
+		return v.val
+	}
+	return p
 }
 
 // -----------------------------------------------------------------------------

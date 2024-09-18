@@ -712,7 +712,7 @@ func (p Package) diBuilder() diBuilder {
 	return p.di
 }
 
-func (p Package) EnableDebugSymbols(name, pkgPath string) {
+func (p Package) InitDebugSymbols(name, pkgPath string) {
 	p.di = newDIBuilder(p.Prog, p)
 	p.cu = p.di.createCompileUnit(name, pkgPath)
 }
