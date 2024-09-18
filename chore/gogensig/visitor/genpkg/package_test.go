@@ -10,6 +10,7 @@ import (
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
+// todo(zzy): add more test cases for other type
 func TestToType(t *testing.T) {
 	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
 
@@ -612,7 +613,7 @@ func TestTypedefFunc(t *testing.T) {
 package testpkg
 
 import "github.com/goplus/llgo/c"
-
+// llgo:type C
 type Foo func(a c.Int, b c.Int) c.Int`,
 		},
 	}

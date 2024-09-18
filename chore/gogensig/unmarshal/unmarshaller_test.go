@@ -3,13 +3,13 @@ package unmarshal_test
 import (
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/file"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
+	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
 func TestUnmarshalFiles(t *testing.T) {
-	filesBytes, err := file.ReadFile("./_testjson/files.json")
+	filesBytes, err := util.ReadFile("./_testjson/files.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -20,7 +20,7 @@ func TestUnmarshalFiles(t *testing.T) {
 }
 
 func TestUnmarshalAnyNode(t *testing.T) {
-	nodeBytes, err := file.ReadFile("./_testjson/anynode.json")
+	nodeBytes, err := util.ReadFile("./_testjson/anynode.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -32,7 +32,7 @@ func TestUnmarshalAnyNode(t *testing.T) {
 }
 
 func TestFunc1(t *testing.T) {
-	bytes, err := file.ReadFile("./_testjson/func1.json")
+	bytes, err := util.ReadFile("./_testjson/func1.json")
 	if err != nil {
 		t.Fatal(err)
 	}

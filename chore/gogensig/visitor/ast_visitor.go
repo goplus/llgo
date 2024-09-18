@@ -17,6 +17,7 @@ type DocVisitor interface {
 	VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 
 	VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl)
+	VisitTypedefDecl(typedefDecl *ast.TypedefDecl)
 }
 
 type BaseDocVisitor struct {
@@ -35,6 +36,8 @@ func (p *BaseDocVisitor) visitNode(decl ast.Node) {
 		p.visitTypeDecl(v)
 	case *ast.EnumTypeDecl:
 		p.visitEnumTypeDecl(v)
+	case *ast.TypedefDecl:
+		p.visitTypedefDecl(v)
 	default:
 		panic(fmt.Errorf("todo visit %v", v))
 	}
@@ -92,4 +95,8 @@ func (p *BaseDocVisitor) visitUnion(unionName *ast.Ident, fields *ast.FieldList,
 
 func (p *BaseDocVisitor) visitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 	p.VisitEnumTypeDecl(enumTypeDecl)
+}
+
+func (p *BaseDocVisitor) visitTypedefDecl(typedefDecl *ast.TypedefDecl) {
+	p.VisitTypedefDecl(typedefDecl)
 }
