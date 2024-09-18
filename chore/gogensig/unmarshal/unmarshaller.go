@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/goplus/llgo/chore/gogensig/file"
+	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
@@ -93,7 +93,7 @@ func (p *DocFileSetUnmarshaller) UnmarshalBytes(raw []byte) error {
 }
 
 func (p *DocFileSetUnmarshaller) UnmarshalFile(jsonFilePath string) error {
-	raw, err := file.ReadFile(jsonFilePath)
+	raw, err := util.ReadFile(jsonFilePath)
 	if err != nil {
 		return err
 	}

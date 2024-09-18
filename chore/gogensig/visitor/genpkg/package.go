@@ -51,6 +51,7 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	return nil
 }
 
+// todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	typeBlock := p.p.NewTypeDefs()
 	decl := typeBlock.NewType(typeDecl.Name.Name)
@@ -65,11 +66,21 @@ func (p *Package) AddToDelete(node ast.Node) {
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
-	typeBlock := p.p.NewTypeDefs()
-	decl := typeBlock.NewType(typedefDecl.Name.Name)
+	genDecl := p.p.NewTypeDefs()
 	typ := p.ToType(typedefDecl.Type)
-	decl.InitType(p.p, typ)
-	p.AddToDelete(typeBlock)
+	if named, ok := typ.(*types.Named); ok {
+		// Compare the type name with typedefDecl.Name.Name
+		if named.Obj().Name() == typedefDecl.Name.Name {
+			// If they're the same, don't create a new typedef
+			return nil
+		}
+	}
+	typeSpecdecl := genDecl.NewType(typedefDecl.Name.Name)
+	typeSpecdecl.InitType(p.p, typ)
+	if _, ok := typ.(*types.Signature); ok {
+		genDecl.SetComments(comment.NewTypecDocComments())
+	}
+	p.AddToDelete(genDecl)
 	return nil
 }
 
