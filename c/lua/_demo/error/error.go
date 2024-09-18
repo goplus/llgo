@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 	L.Openlibs()
 	if res := L.Loadstring(c.Str("function doubleNumber(x) ! return x * 2 end")); res != lua.OK {

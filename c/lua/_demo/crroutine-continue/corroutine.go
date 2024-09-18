@@ -29,7 +29,7 @@ func createCountdown(L *lua.State) c.Int {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	L.Openlibs()
 	defer L.Close()
 	L.Register(c.Str("create_countdown"), createCountdown)

@@ -10,18 +10,18 @@ const (
 	LLGoPackage = "link: $(pkg-config --libs lua); -llua -lm"
 )
 
-// /* mark for precompiled code ('<esc>Lua') */
+/* mark for precompiled code ('<esc>Lua') */
 
-// /* option for multiple returns in 'lua_pcall' and 'lua_call' */
+/* option for multiple returns in 'lua_pcall' and 'lua_call' */
 const (
 	MULTRET = -1
 )
 
-// /*
-// ** Pseudo-indices
-// ** (-LUAI_MAXSTACK is the minimum valid index; we keep some free empty
-// ** space after that to help overflow detection)
-// */
+/*
+ * Pseudo-indices
+ * (-LUAI_MAXSTACK is the minimum valid index; we keep some free empty
+ * space after that to help overflow detection)
+ */
 
 const (
 	REGISTRYINDEX = -MAXSTACK - 1000
@@ -31,7 +31,7 @@ func Upvalueindex(i c.Int) c.Int {
 	return c.Int(REGISTRYINDEX) - i
 }
 
-// /* thread status */
+/* thread status */
 const (
 	OK        = 0
 	YIELD     = 1
@@ -45,9 +45,9 @@ type State struct {
 	Unused [8]byte
 }
 
-// /*
-// ** basic types
-// */
+/*
+ * basic types
+ */
 const (
 	NONE          c.Int = -1
 	NIL           c.Int = 0
@@ -62,47 +62,47 @@ const (
 	UMTYPES       c.Int = 9
 )
 
-// /* minimum Lua stack available to a C function */
+/* minimum Lua stack available to a C function */
 const (
 	MINSTACK = 20
 )
 
-// /* predefined values in the registry */
+/* predefined values in the registry */
 const (
 	RIDX_MAINTHREAD = 1
 	RIDX_GLOBALS    = 2
 	RIDX_LAST       = RIDX_GLOBALS
 )
 
-// /* type of numbers in Lua */
+/* type of numbers in Lua */
 type Number = c.Double
 
-// /* type for integer functions */
+/* type for integer functions */
 type Integer = c.Int
 
-// /* unsigned integer type */
+/* unsigned integer type */
 type Unsigned = c.Uint
 
-// /* type for continuation-function contexts */
+/* type for continuation-function contexts */
 type KContext = c.Pointer
 
-// /*
-// ** Type for C functions registered with Lua
-// */
+/*
+ * Type for C functions registered with Lua
+ */
 
 // llgo:type C
 type CFunction func(L *State) c.Int
 
-// /*
-// ** Type for continuation functions
-// */
+/*
+ * Type for continuation functions
+ */
 
 // llgo:type C
 type KFunction func(L *State, status c.Int, ctx KContext) c.Int
 
-// /*
-// ** Type for functions that read/write blocks when loading/dumping Lua chunks
-// */
+/*
+ * Type for functions that read/write blocks when loading/dumping Lua chunks
+ */
 
 // llgo:type C
 type Reader func(L *State, ud c.Pointer, sz *c.Ulong) *c.Char
@@ -110,51 +110,54 @@ type Reader func(L *State, ud c.Pointer, sz *c.Ulong) *c.Char
 // llgo:type C
 type Writer func(L *State, p c.Pointer, sz c.Ulong, ud c.Pointer) c.Int
 
-// /*
-// ** Type for memory-allocation functions
-// */
+/*
+ * Type for memory-allocation functions
+ */
 
-// typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
+// llgo:type C
+type Alloc func(ud c.Pointer, ptr c.Pointer, osize c.Ulong, nsize c.Ulong) c.Pointer
 
-// /*
-// ** Type for warning functions
-// */
+/*
+ * Type for warning functions
+ */
 
 // typedef void (*lua_WarnFunction) (void *ud, const char *msg, int tocont);
 
-// /*
-// ** Type used by the debug API to collect debug information
-// */
+/*
+ * Type used by the debug API to collect debug information
+ */
 
 // typedef struct lua_Debug lua_Debug;
 
-// /*
-// ** Functions to be called by the debugger in specific events
-// */
+/*
+ * Functions to be called by the debugger in specific events
+ */
 
 // typedef void (*lua_Hook) (State *L, lua_Debug *ar);
 
-// /*
-// ** generic extra include file
-// */
+/*
+ * generic extra include file
+ */
 
 // #if defined(LUA_USER_H)
 // #include LUA_USER_H
 // #endif
 
-// /*
-// ** RCS ident string
-// */
+/*
+ * RCS ident string
+ */
 
 // extern const char lua_ident[];
 
-// /*
-// ** state manipulation
-// */
+/*
+ ** state manipulation
+ */
+
 // llgo:link (*State).Close C.lua_close
 func (L *State) Close() {}
 
-// State *(lua_newstate) (lua_Alloc f, void *ud);
+// llgo:link Newstate__0 C.lua_newstate
+func Newstate__0(f Alloc, ud c.Pointer) *State { return nil }
 
 // llgo:link (*State).Newthread C.lua_newthread
 func (L *State) Newthread() *State { return nil }
@@ -171,9 +174,9 @@ func (L *State) Atpanic(panicf CFunction) CFunction { return nil }
 // llgo:link (*State).Version C.lua_version
 func (L *State) Version() Number { return 0 }
 
-// /*
-// ** basic stack manipulation
-// */
+/*
+ * basic stack manipulation
+ */
 
 // llgo:link (*State).Absindex C.lua_absindex
 func (L *State) Absindex(idx c.Int) c.Int { return 0 }
@@ -199,9 +202,9 @@ func (L *State) Checkstack(n c.Int) c.Int { return 0 }
 // llgo:link (*State).Xmove C.lua_xmove
 func (L *State) Xmove(to *State, n c.Int) {}
 
-// /*
-// ** access functions (stack -> C)
-// */
+/*
+ * access functions (stack -> C)
+ */
 
 // llgo:link (*State).Isnumber C.lua_isnumber
 func (L *State) Isnumber(idx c.Int) c.Int { return 0 }
@@ -247,15 +250,17 @@ func (L *State) Touserdata(idx c.Int) c.Pointer { return nil }
 // llgo:link (*State).Tothread C.lua_tothread
 func (L *State) Tothread(idx c.Int) *State { return nil }
 
-// LUA_API const void     *(lua_topointer) (State *L, int idx);
+// llgo:link (*State).Topointer C.lua_topointer
+func (L *State) Topointer(idx c.Int) c.Pointer { return nil }
 
-// /*
-// ** Comparison and arithmetic functions
-// */
+/*
+ * Comparison and arithmetic functions
+ */
 
-// /*
-// ** push functions (C -> stack)
-// */
+/*
+ * push functions (C -> stack)
+ */
+
 // llgo:link (*State).Pushnil C.lua_pushnil
 func (L *State) Pushnil() {}
 
@@ -286,9 +291,9 @@ func (L *State) Pushlightuserdata(p c.Pointer) {}
 // llgo:link (*State).Pushthread C.lua_pushthread
 func (L *State) Pushthread() c.Int { return 0 }
 
-// /*
-// ** get functions (Lua -> stack)
-// */
+/*
+ * get functions (Lua -> stack)
+ */
 
 // llgo:link (*State).Getglobal C.lua_getglobal
 func (L *State) Getglobal(name *c.Char) c.Int { return 0 }
@@ -299,10 +304,17 @@ func (L *State) Gettable(idx c.Int) c.Int { return 0 }
 // llgo:link (*State).Getfield C.lua_getfield
 func (L *State) Getfield(idx c.Int, k *c.Char) c.Int { return 0 }
 
-// LUA_API int (lua_geti) (State *L, int idx, lua_Integer n);
-// LUA_API int (lua_rawget) (State *L, int idx);
-// LUA_API int (lua_rawgeti) (State *L, int idx, lua_Integer n);
-// LUA_API int (lua_rawgetp) (State *L, int idx, const void *p);
+// llgo:link (*State).Geti C.lua_geti
+func (L *State) Geti(idx c.Int, n Integer) c.Int { return 0 }
+
+// llgo:link (*State).Rawget C.lua_rawget
+func (L *State) Rawget(idx c.Int) c.Int { return 0 }
+
+// llgo:link (*State).Rawgeti C.lua_rawgeti
+func (L *State) Rawgeti(idx c.Int, n Integer) c.Int { return 0 }
+
+// llgo:link (*State).Rawgetp C.lua_rawgetp
+func (L *State) Rawgetp(idx c.Int, p c.Pointer) c.Int { return 0 }
 
 // llgo:link (*State).Createtable C.lua_createtable
 func (L *State) Createtable(narr c.Int, nrec c.Int) {}
@@ -313,11 +325,12 @@ func (L *State) Newuserdatauv(sz uintptr, nuvalue c.Int) c.Pointer { return nil 
 // llgo:link (*State).Getmetatable C.lua_getmetatable
 func (L *State) Getmetatable(objindex c.Int) c.Int { return 0 }
 
-// LUA_API int  (lua_getiuservalue) (State *L, int idx, int n);
+// llgo:link (*State).Getiuservalue C.lua_getiuservalue
+func (L *State) Getiuservalue(idx c.Int, n c.Int) c.Int { return 0 }
 
-// /*
-// ** set functions (stack -> Lua)
-// */
+/*
+ * set functions (stack -> Lua)
+ */
 
 // llgo:link (*State).Setglobal C.lua_setglobal
 func (L *State) Setglobal(name *c.Char) {}
@@ -328,19 +341,27 @@ func (L *State) Settable(idx c.Int) {}
 // llgo:link (*State).Setfield C.lua_setfield
 func (L *State) Setfield(idx c.Int, k *c.Char) {}
 
-//void  (lua_seti) (State *L, int idx, lua_Integer n);
-//void  (lua_rawset) (State *L, int idx);
-//void  (lua_rawseti) (State *L, int idx, lua_Integer n);
-//void  (lua_rawsetp) (State *L, int idx, const void *p);
+// llgo:link (*State).Seti C.lua_seti
+func (L *State) Seti(idx c.Int, n Integer) {}
+
+// llgo:link (*State).Rawset C.lua_rawset
+func (L *State) Rawset(idx c.Int) {}
+
+// llgo:link (*State).Rawseti C.lua_rawseti
+func (L *State) Rawseti(idx c.Int, n Integer) {}
+
+// llgo:link (*State).Rawsetp C.lua_rawsetp
+func (L *State) Rawsetp(idx c.Int, p c.Pointer) {}
 
 // llgo:link (*State).Setmetatable C.lua_setmetatable
 func (L *State) Setmetatable(objindex c.Int) c.Int { return 0 }
 
-//int   (lua_setiuservalue) (State *L, int idx, int n);
+// llgo:link (*State).Setiuservalue C.lua_setiuservalue
+func (L *State) Setiuservalue(idx c.Int, n c.Int) c.Int { return 0 }
 
-// /*
-// ** 'load' and 'call' functions (load and run Lua code)
-// */
+/*
+ * 'load' and 'call' functions (load and run Lua code)
+ */
 
 // llgo:link (*State).Callk C.lua_callk
 func (L *State) Callk(nargs c.Int, nresults c.Int, ctx KContext, k KFunction) c.Int {
@@ -366,9 +387,9 @@ func (L *State) Load(reader Reader, dt c.Pointer, chunkname *c.Char, mode *c.Cha
 // llgo:link (*State).Dump C.lua_dump
 func (L *State) Dump(writer Writer, data c.Pointer, strip c.Int) c.Int { return 0 }
 
-// /*
-// ** coroutine functions
-// */
+/*
+ * coroutine functions
+ */
 
 // llgo:link (*State).Resume C.lua_resume
 func (L *State) Resume(from *State, narg c.Int, nres *c.Int) c.Int { return 0 }
@@ -383,16 +404,16 @@ func (L *State) Isyieldable() c.Int { return 0 }
 func (L *State) Yieldk(nresults c.Int, ctx KContext, k KFunction) c.Int { return 0 }
 func (L *State) Yield(nresults c.Int) c.Int                             { return L.Yieldk(nresults, nil, nil) }
 
-// /*
-// ** Warning-related functions
-// */
+/*
+ * Warning-related functions
+ */
 
 //void (lua_setwarnf) (State *L, lua_WarnFunction f, void *ud);
 //void (lua_warning)  (State *L, const char *msg, int tocont);
 
-// /*
-// ** garbage-collection function and options
-// */
+/*
+ * garbage-collection function and options
+ */
 
 const (
 	GCSTOP       = 0
@@ -410,34 +431,44 @@ const (
 
 // LUA_API int (lua_gc) (State *L, int what, ...);
 
-// /*
-// ** miscellaneous functions
-// */
+/*
+ * miscellaneous functions
+ */
+
 // llgo:link (*State).Next C.lua_next
 func (L *State) Next(idx c.Int) c.Int { return 0 }
 
 // llgo:link (*State).Error C.lua_error
 func (L *State) Error() c.Int { return 0 }
 
-// LUA_API void  (lua_concat) (State *L, int n);
-// LUA_API void  (lua_len)    (State *L, int idx);
+// llgo:link (*State).Concat C.lua_concat
+func (L *State) Concat(n c.Int) {}
 
-// LUA_API size_t   (lua_stringtonumber) (State *L, const char *s);
+// llgo:link (*State).Len C.lua_len
+func (L *State) Len(idx c.Int) {}
 
-// LUA_API lua_Alloc (lua_getallocf) (State *L, void **ud);
-// LUA_API void      (lua_setallocf) (State *L, lua_Alloc f, void *ud);
+// llgo:link (*State).Stringtonumber C.lua_stringtonumber
+func (L *State) Stringtonumber(s *c.Char) c.Ulong { return 0 }
 
-// LUA_API void (lua_toclose) (State *L, int idx);
-// LUA_API void (lua_closeslot) (State *L, int idx);
+// llgo:link (*State).Getallocf C.lua_getallocf
+func (L *State) Getallocf(ud *c.Pointer) Alloc { return nil }
 
-// /*
-// ** {==============================================================
-// ** some useful macros
-// ** ===============================================================
-// */
+// llgo:link (*State).Setallocf C.lua_setallocf
+func (L *State) Setallocf(f Alloc, ud c.Pointer) Alloc { return nil }
+
+// llgo:link (*State).Toclose C.lua_toclose
+func (L *State) Toclose(idx c.Int) {}
+
+// llgo:link (*State).Closeslot C.lua_closeslot
+func (L *State) Closeslot(idx c.Int) {}
+
+/*
+ ** {==============================================================
+ ** some useful macros
+ ** ===============================================================
+ */
 
 // #define lua_getextraspace(L)	((void *)((char *)(L) - LUA_EXTRASPACE))
-
 func (L *State) Tonumber(idx c.Int) Number   { return L.Tonumberx(idx, nil) }
 func (L *State) Tostring(idx c.Int) *c.Char  { return L.Tolstring(idx, nil) }
 func (L *State) Tointeger(idx c.Int) Integer { return L.Tointegerx(idx, nil) }
@@ -458,9 +489,13 @@ func (L *State) Isboolean(n c.Int) bool       { return L.Type(n) == c.Int(BOOLEA
 func (L *State) Isthread(n c.Int) bool        { return L.Type(n) == c.Int(THREAD) }
 func (L *State) Isnone(n c.Int) bool          { return L.Type(n) == c.Int(NONE) }
 func (L *State) Isnoneornil(n c.Int) bool     { return L.Type(n) <= 0 }
+func (L *State) Pushliteral(s *c.Char) *c.Char {
+	return L.Pushstring(s)
+}
 
-// #define lua_pushliteral(L, s)	lua_pushstring(L, "" s)
-// #define lua_pushglobaltable(L)  ((void)lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS))
+func (L *State) Pushglobaltable() c.Int {
+	return L.Rawgeti(REGISTRYINDEX, RIDX_GLOBALS)
+}
 
 func (L *State) Insert(idx c.Int) {
 	L.Rotate(idx, 1)
@@ -476,33 +511,39 @@ func (L *State) Replace(idx c.Int) {
 	L.Pop(1)
 }
 
-// /* }============================================================== */
+/* }============================================================== */
 
-// /*
-// ** {==============================================================
-// ** compatibility macros
-// ** ===============================================================
-// */
+/*
+** {==============================================================
+** compatibility macros
+** ===============================================================
+ */
 
 func (L *State) Newuserdata(sz uintptr) c.Pointer {
 	return L.Newuserdatauv(sz, 1)
 }
 
-// #define lua_getuservalue(L,idx)	lua_getiuservalue(L,idx,1)
-// #define lua_setuservalue(L,idx)	lua_setiuservalue(L,idx,1)
+func (L *State) Getuservalue(idx c.Int) c.Int {
+	return L.Getiuservalue(idx, 1)
+}
+
+func (L *State) Setuservalue(idx c.Int) c.Int {
+	return L.Setiuservalue(idx, 1)
+}
 
 // #define LUA_NUMTAGS		LUA_NUMTYPES
 
-// /* }============================================================== */
+/* }============================================================== */
 
-// /*
-// ** {======================================================================
-// ** Debug API
-// ** =======================================================================
-// */
-// /*
-// ** Event codes
-// */
+/*
+** {======================================================================
+** Debug API
+** =======================================================================
+ */
+
+/*
+ * Event codes
+ */
 
 const (
 	HOOKCALL     = 0
@@ -512,9 +553,9 @@ const (
 	HOOKTAILCALL = 4
 )
 
-// /*
-// ** Event masks
-// */
+/*
+ * Event masks
+ */
 
 const (
 	MASKCALL  = 1 << HOOKCOUNT
@@ -541,4 +582,4 @@ const (
 // LUA_API int (lua_setcstacklimit) (State *L, unsigned int limit);
 
 // struct lua_Debug
-// /* }====================================================================== */
+/* }====================================================================== */

@@ -12,7 +12,7 @@ type lightdata struct {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 	L.Openlibs()
 

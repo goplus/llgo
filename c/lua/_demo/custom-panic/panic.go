@@ -24,7 +24,7 @@ func customPanic(L *lua.State) c.Int {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 
 	L.Openlibs()

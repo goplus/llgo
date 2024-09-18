@@ -33,7 +33,7 @@ func reader(L *lua.State, data c.Pointer, size *c.Ulong) *c.Char {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 	L.Openlibs()
 

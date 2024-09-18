@@ -21,7 +21,7 @@ func writer(L *lua.State, p c.Pointer, sz c.Ulong, ud c.Pointer) c.Int {
 }
 
 func main() {
-	L := lua.Newstate()
+	L := lua.Newstate__1()
 	defer L.Close()
 	L.Openlibs()
 
