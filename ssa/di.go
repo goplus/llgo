@@ -155,8 +155,6 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Signature:
 		tyFn := b.prog.Closure(ty)
 		return b.createFuncPtrType(name, tyFn, pos)
-	case *types.Tuple:
-		return b.createBasicType(name, ty)
 	case *types.Array:
 		return b.createArrayType(ty, t.Len())
 	case *types.Chan:
@@ -245,14 +243,6 @@ func (b diBuilder) createAutoVariable(scope DIScope, pos token.Position, name st
 			},
 		),
 	}
-}
-
-func (b diBuilder) createBasicType(name string, t Type) DIType {
-	return &aDIType{ll: b.di.CreateBasicType(llvm.DIBasicType{
-		Name:       name,
-		SizeInBits: b.prog.SizeOf(t) * 8,
-		Encoding:   llvm.DW_ATE_unsigned,
-	})}
 }
 
 func (b diBuilder) createStringType() DIType {
@@ -427,7 +417,6 @@ func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (r
 		},
 	)}
 	b.types[ty] = ret
-	fmt.Printf("create struct type: %s %p \n", name, ret)
 
 	fields := make([]llvm.Metadata, structType.NumFields())
 
@@ -460,19 +449,6 @@ func (b diBuilder) createFuncPtrType(name string, ty Type, pos token.Position) D
 		Pointee:     b.diType(ptr, pos).ll,
 		SizeInBits:  b.prog.SizeOf(ptr) * 8,
 		AlignInBits: uint32(b.prog.sizes.Alignof(ptr.RawType()) * 8),
-	})}
-}
-
-func (b diBuilder) createSubroutineType(file DIFile, retTy DIType, paramTys []DIType) DIType {
-	params := make([]llvm.Metadata, len(paramTys)+1)
-	params[0] = retTy.ll
-	for i, ty := range paramTys {
-		params[i+1] = ty.ll
-	}
-	return &aDIType{ll: b.di.CreateSubroutineType(llvm.DISubroutineType{
-		File:       file.ll,
-		Parameters: params,
-		Flags:      0,
 	})}
 }
 
@@ -600,34 +576,13 @@ func (b Builder) debug(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
 	return dbgPtr, dbgVal, deref
 }
 
-const (
-	opDeref = 0x06
-)
-
-func skipType(t types.Type) bool {
-	return false
-}
-
 func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	t := v.Type.RawType().Underlying()
-	if skipType(t) {
-		return
-	}
-	dbgPtr, _, deref := b.debug(v)
-	var expr DIExpression
-	if deref {
-		expr = b.Pkg.diBuilder().createExpression([]uint64{opDeref})
-	} else {
-		expr = b.Pkg.diBuilder().createExpression(nil)
-	}
+	dbgPtr, _, _ := b.debug(v)
+	expr := b.Pkg.diBuilder().createExpression(nil)
 	b.Pkg.diBuilder().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	t := v.Type.RawType().Underlying()
-	if skipType(t) {
-		return
-	}
 	expr := b.Pkg.diBuilder().createExpression(nil)
 	b.Pkg.diBuilder().dbgValue(v, dv, scope, pos, expr, blk)
 }
