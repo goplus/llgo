@@ -140,6 +140,9 @@ func main() {
 		pad1: 100,
 		pad2: 200,
 	}
+	globalStructPtr = &s
+	globalStruct = s
+	println("globalInt:", globalInt)
 	println("s:", &s)
 	FuncWithAllTypeStructParam(s)
 	println("called function with struct")
@@ -159,5 +162,11 @@ func main() {
 	)
 	println(i, err)
 	println("called function with types")
+	println(globalStructPtr)
+	println(&globalStruct)
 	println("done")
 }
+
+var globalInt int = 301
+var globalStruct StructWithAllTypeFields
+var globalStructPtr *StructWithAllTypeFields

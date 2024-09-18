@@ -90,7 +90,7 @@ func (b diBuilder) createFile(filename string) DIFile {
 	return &aDIFile{ll: b.di.CreateFile(file, dir)}
 }
 
-func (f DIFile) scopeMeta(b diBuilder, cu CompilationUnit, pos token.Position) DIScopeMeta {
+func (f DIFile) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
 	return &aDIScopeMeta{b.file(pos.Filename).ll}
 }
 
@@ -631,6 +631,18 @@ func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt T
 func (b Builder) DIVarAuto(f Function, pos token.Position, varName string, vt Type) DIVar {
 	t := b.Pkg.diBuilder().diType(vt, pos)
 	return b.Pkg.diBuilder().varAuto(f, pos, varName, t)
+}
+
+func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
+	gv := b.Pkg.diBuilder().createGlobalVariableExpression(
+		b.Pkg.diBuilder().file(pos.Filename),
+		pos,
+		name,
+		name,
+		b.Pkg.diBuilder().diType(v.Type, pos),
+		false,
+	)
+	v.impl.AddMetadata(0, gv.ll)
 }
 
 func (b Builder) DISetCurrentDebugLocation(f Function, pos token.Position) {

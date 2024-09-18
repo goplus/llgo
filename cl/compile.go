@@ -797,7 +797,12 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return pyFn.Expr
 	case *ssa.Global:
-		return p.varOf(b, v)
+		val := p.varOf(b, v)
+		if debugSymbols {
+			pos := p.fset.Position(v.Pos())
+			b.DIGlobal(val, v.Name(), pos)
+		}
+		return val
 	case *ssa.Const:
 		t := types.Default(v.Type())
 		bg := llssa.InGo
