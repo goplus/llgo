@@ -28,7 +28,7 @@ import (
 	"github.com/goplus/llgo/xtool/env"
 )
 
-func llcppsymg(conf []byte, out io.Writer) error {
+func llcppsymg(conf []byte) error {
 	cmd := exec.Command("llcppsymg", "-")
 	cmd.Stdin = bytes.NewReader(conf)
 	cmd.Stdout = out
@@ -75,7 +75,7 @@ func main() {
 	b, err := json.MarshalIndent(&conf, "", "  ")
 	check(err)
 
-	err = llcppsymg(b, os.Stdout)
+	err = llcppsymg(b)
 	check(err)
 
 	r, w := io.Pipe()
