@@ -13,7 +13,7 @@ func TestUnmarshalFiles(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	astConvert := visitor.NewAstConvert("files", "../../llcppg/llcppg.symb.json")
+	astConvert := visitor.NewAstConvert("files", "../../llcppg/llcppg.symb.json", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	p.UnmarshalBytes(filesBytes)
@@ -24,7 +24,7 @@ func TestUnmarshalAnyNode(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	astConvert := visitor.NewAstConvert("anynode", "")
+	astConvert := visitor.NewAstConvert("anynode", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileUnmarshaller(docVisitors)
 	rawDocFile := unmarshal.NewPathDoc("./_testjson/anynode.json", nodeBytes)
@@ -36,7 +36,7 @@ func TestFunc1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	astConvert := visitor.NewAstConvert("anynode", "")
+	astConvert := visitor.NewAstConvert("anynode", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
 	err = p.UnmarshalBytes(bytes)

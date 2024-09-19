@@ -5,10 +5,13 @@ import (
 
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/gogensig/visitor/testvisitor/cmptest"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func TestSpectrum(t *testing.T) {
-	cmptest.RunTest(t, "spectrum", true, []symb.SymbolEntry{},
+	cmptest.RunTest(t, "spectrum", true, []symb.SymbolEntry{}, &cppgtypes.Config{
+		Cplusplus: true,
+	},
 		`
 	enum spectrum
 	{
