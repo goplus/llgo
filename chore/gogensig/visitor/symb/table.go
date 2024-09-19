@@ -42,6 +42,9 @@ func NewSymbolTable(filePath string) (*SymbolTable, error) {
 }
 
 func (t *SymbolTable) LookupSymbol(name MangleNameType) (*SymbolEntry, error) {
+	if t.t == nil {
+		return nil, fmt.Errorf("symbol table not initialized")
+	}
 	if len(name) <= 0 {
 		return nil, fmt.Errorf("symbol not found")
 	}
