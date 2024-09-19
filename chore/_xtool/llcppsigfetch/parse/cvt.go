@@ -14,11 +14,17 @@ import (
 	"github.com/goplus/llgo/chore/llcppg/token"
 )
 
+type FileEntry struct {
+	Path string
+	Doc  *ast.File
+}
+
 type Converter struct {
-	Files  map[string]*ast.File
-	curLoc ast.Location
-	index  *clang.Index
-	unit   *clang.TranslationUnit
+	Files     []*FileEntry
+	FileOrder []string // todo(zzy): more efficient struct
+	curLoc    ast.Location
+	index     *clang.Index
+	unit      *clang.TranslationUnit
 
 	typeDecls map[string]ast.Decl // cursorUsr -> ast.Decl
 
@@ -64,7 +70,7 @@ func NewConverter(config *Config) (*Converter, error) {
 	}
 
 	return &Converter{
-		Files:        make(map[string]*ast.File),
+		Files:        make([]*FileEntry, 0),
 		index:        index,
 		unit:         unit,
 		anonyTypeMap: make(map[string]bool),
@@ -169,16 +175,19 @@ func (ct *Converter) GetCurFile() *ast.File {
 	if ct.curLoc.File == "" {
 		return nil
 	}
-	file, ok := ct.Files[ct.curLoc.File]
-	if !ok {
-		file = &ast.File{
-			Decls:    make([]ast.Decl, 0),
-			Includes: make([]*ast.Include, 0),
-			Macros:   make([]*ast.Macro, 0),
+	// todo(zzy): more efficient
+	for i, entry := range ct.Files {
+		if entry.Path == ct.curLoc.File {
+			return ct.Files[i].Doc
 		}
-		ct.Files[ct.curLoc.File] = file
 	}
-	return file
+	newDoc := &ast.File{
+		Decls:    make([]ast.Decl, 0),
+		Includes: make([]*ast.Include, 0),
+		Macros:   make([]*ast.Macro, 0),
+	}
+	ct.Files = append(ct.Files, &FileEntry{Path: ct.curLoc.File, Doc: newDoc})
+	return newDoc
 }
 
 func (ct *Converter) SetAnonyType(cursor clang.Cursor) {
@@ -300,7 +309,7 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 	return clang.ChildVisit_Continue
 }
 
-func (ct *Converter) Convert() (map[string]*ast.File, error) {
+func (ct *Converter) Convert() ([]*FileEntry, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & macro,include)
 	clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
