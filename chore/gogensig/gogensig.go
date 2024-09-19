@@ -16,6 +16,32 @@
 
 package main
 
+import (
+	"io"
+	"os"
+
+	"github.com/goplus/llgo/chore/gogensig/unmarshal"
+	"github.com/goplus/llgo/chore/gogensig/util"
+	"github.com/goplus/llgo/chore/gogensig/visitor"
+)
+
 func main() {
-	// TODO(xsw): implement gogensig tool
+	var data []byte
+	var err error
+	if len(os.Args) <= 1 || os.Args[1] != "-" {
+		os.Exit(1)
+	}
+	data, err = io.ReadAll(os.Stdin)
+	check(err)
+	// todo(zzy):refine interface
+	conf, err := util.GetCppgFromPath("./llcppg.cfg")
+	check(err)
+	astConvert := visitor.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
+	p := unmarshal.NewDocFileSetUnmarshaller([]visitor.DocVisitor{astConvert})
+	p.UnmarshalBytes(data)
+}
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

@@ -7,7 +7,9 @@ import (
 
 	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
+	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 // todo(zzy): add more test cases for other type
@@ -61,12 +63,15 @@ func TestFuncDeclWithArray(t *testing.T) {
 	testCases := []struct {
 		name     string
 		decl     *ast.FuncDecl
+		symbs    []symb.SymbolEntry
+		cppgconf *cppgtypes.Config
 		expected string
 	}{
 		{
 			name: "array",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: &ast.FieldList{
 						List: []*ast.Field{
@@ -100,6 +105,16 @@ func TestFuncDeclWithArray(t *testing.T) {
 					},
 				},
 			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
+			cppgconf: &cppgtypes.Config{
+				Name: "testpkg",
+			},
 			expected: `
 package testpkg
 
@@ -113,6 +128,7 @@ func Foo(a *c.Uint, b *float64) **int8
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+			pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
 			if pkg == nil {
 				t.Fatal("NewPackage failed")
 			}
@@ -129,15 +145,24 @@ func TestFuncDeclWithType(t *testing.T) {
 	testCases := []struct {
 		name     string
 		decl     *ast.FuncDecl
+		symbs    []symb.SymbolEntry
 		expected string
 	}{
 		{
 			name: "empty func",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: nil,
 					Ret:    nil,
+				},
+			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
 				},
 			},
 			expected: `
@@ -149,10 +174,18 @@ func Foo()`,
 		{
 			name: "explict void return",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: nil,
 					Ret:    &ast.BuiltinType{Kind: ast.Void},
+				},
+			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
 				},
 			},
 			expected: `
@@ -164,7 +197,8 @@ func Foo()`,
 		{
 			name: "builtin type",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: &ast.FieldList{
 						List: []*ast.Field{
@@ -192,6 +226,14 @@ func Foo()`,
 					},
 				},
 			},
+
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
 			expected: `
 package testpkg
 
@@ -201,7 +243,8 @@ func Foo(a uint16, b bool) float64`,
 		{
 			name: "c builtin type",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: &ast.FieldList{
 						List: []*ast.Field{
@@ -216,6 +259,13 @@ func Foo(a uint16, b bool) float64`,
 						},
 					},
 					Ret: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long | ast.Unsigned},
+				},
+			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
 				},
 			},
 			expected: `
@@ -230,7 +280,8 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 		{
 			name: "basic decl with c type",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: &ast.FieldList{
 						List: []*ast.Field{
@@ -247,6 +298,13 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 					Ret: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long | ast.Unsigned},
 				},
 			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
 			expected: `
 package testpkg
 
@@ -259,7 +317,8 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 		{
 			name: "pointer type",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: &ast.FieldList{
 						List: []*ast.Field{
@@ -285,6 +344,13 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 					},
 				},
 			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
 			expected: `
 package testpkg
 
@@ -297,7 +363,8 @@ func Foo(a *c.Uint, b *c.Long) *float64
 		{
 			name: "void *",
 			decl: &ast.FuncDecl{
-				Name: &ast.Ident{Name: "foo"},
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: &ast.FieldList{
 						List: []*ast.Field{
@@ -314,6 +381,13 @@ func Foo(a *c.Uint, b *c.Long) *float64
 					},
 				},
 			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
 			expected: `
 package testpkg
 
@@ -328,6 +402,7 @@ func Foo(a unsafe.Pointer) unsafe.Pointer
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+			pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
 			if pkg == nil {
 				t.Fatal("NewPackage failed")
 			}

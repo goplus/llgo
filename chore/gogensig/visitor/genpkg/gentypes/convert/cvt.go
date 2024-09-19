@@ -10,10 +10,12 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/typmap"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type TypeConv struct {
-	symbolTable *symb.SymbolTable
+	symbolTable *symb.SymbolTable // llcppg.symb.json
+	cppgConf    *cppgtypes.Config // llcppg.cfg
 	types       *types.Package
 	typeMap     *typmap.BuiltinTypeMap
 	// todo(zzy):refine array type in func or param's context
@@ -26,6 +28,10 @@ func NewConv(types *types.Package, typeMap *typmap.BuiltinTypeMap) *TypeConv {
 
 func (p *TypeConv) SetSymbolTable(symbolTable *symb.SymbolTable) {
 	p.symbolTable = symbolTable
+}
+
+func (p *TypeConv) SetCppgConf(conf *cppgtypes.Config) {
+	p.cppgConf = conf
 }
 
 // Convert ast.Expr to types.Type
@@ -81,8 +87,12 @@ func (p *TypeConv) handlePointerType(t *ast.PointerType) types.Type {
 func (p *TypeConv) handleIdentRefer(t ast.Expr) types.Type {
 	switch t := t.(type) {
 	case *ast.Ident:
-		// todo(zzy):find coresponding define
-		obj := p.types.Scope().Lookup(t.Name)
+		name, err := p.RemovePrefixedName(t.Name)
+		if err != nil {
+			// todo(zzy):panic
+			return nil
+		}
+		obj := p.types.Scope().Lookup(name)
 		if typ, ok := obj.Type().(*types.Named); ok {
 			return typ
 		}
@@ -90,9 +100,14 @@ func (p *TypeConv) handleIdentRefer(t ast.Expr) types.Type {
 	case *ast.ScopingExpr:
 		// todo(zzy)
 	case *ast.TagExpr:
-		// todo(zzy)
+		// todo(zzy):scoping
 		if ident, ok := t.Name.(*ast.Ident); ok {
-			return p.types.Scope().Lookup(ident.Name).Type()
+			name, err := p.RemovePrefixedName(ident.Name)
+			if err != nil {
+				// todo(zzy):panic
+				return nil
+			}
+			return p.types.Scope().Lookup(name).Type()
 		} else {
 			panic("todo:scoping expr")
 		}
@@ -166,7 +181,7 @@ func (p *TypeConv) fieldToVar(field *ast.Field) *types.Var {
 func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) types.Type {
 	//defaultfield use  Unused [8]byte
 	var fields []*types.Var
-	if len(recordType.Fields.List) == 0 {
+	if recordType.Fields != nil && len(recordType.Fields.List) == 0 {
 		fields = p.defaultRecordField()
 	} else {
 		fields = p.fieldListToVars(recordType.Fields)
@@ -183,6 +198,18 @@ func (p *TypeConv) LookupSymbol(mangleName symb.MangleNameType) (symb.GoNameType
 		return "", err
 	}
 	return e.GoName, nil
+}
+
+func (p *TypeConv) RemovePrefixedName(name string) (string, error) {
+	if p.cppgConf == nil {
+		return name, nil
+	}
+	for _, prefix := range p.cppgConf.TrimPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return strings.TrimPrefix(name, prefix), nil
+		}
+	}
+	return name, nil
 }
 
 func ToTitle(s string) string {

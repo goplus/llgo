@@ -5,6 +5,7 @@ import (
 
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/gogensig/visitor/testvisitor/cmptest"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func TestStructDeclRef(t *testing.T) {
@@ -14,7 +15,9 @@ func TestStructDeclRef(t *testing.T) {
 			CppName:    "ExecuteFoo",
 			GoName:     "CustomExecuteFoo",
 		},
-	}, `
+	},
+		&cppgtypes.Config{},
+		`
 struct Foo { int a; double b; bool c; };
 int ExecuteFoo(int a,Foo b);
 	`, `
@@ -39,6 +42,8 @@ func TestCustomStruct(t *testing.T) {
 		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
 		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},
 		{MangleName: "lua_resetthread", CppName: "lua_resetthread", GoName: "Resetthread"},
+	}, &cppgtypes.Config{
+		TrimPrefixes: []string{"lua_"},
 	}, `
 typedef struct lua_State lua_State;
 typedef int (*lua_CFunction)(lua_State *L);
@@ -51,19 +56,19 @@ package typeref
 
 import "github.com/goplus/llgo/c"
 
-type lua_State struct {
+type State struct {
 	Unused [8]uint8
 }
 // llgo:type C
-type lua_CFunction func(*lua_State) c.Int
+type CFunction func(*State) c.Int
 
 //go:linkname Close C.lua_close
-func Close(L *lua_State) c.Int
+func Close(L *State) c.Int
 
 //go:linkname Closethread C.lua_closethread
-func Closethread(L *lua_State, from *lua_State) c.Int
+func Closethread(L *State, from *State) c.Int
 
 //go:linkname Resetthread C.lua_resetthread
-func Resetthread(L *lua_State) c.Int
+func Resetthread(L *State) c.Int
 	`)
 }
