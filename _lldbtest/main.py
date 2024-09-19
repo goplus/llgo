@@ -6,6 +6,7 @@ import argparse
 from dataclasses import dataclass, field
 from typing import List
 import cmd
+import signal
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, line_buffering=False)
 
@@ -237,6 +238,8 @@ class LLDBDebugger:
     def run_console(self):
         print_to_lldb(
             "\nEntering LLDB interactive mode. Type 'quit' to exit and continue with the next test case.")
+        print_to_lldb(
+            "Use Ctrl+D to exit and continue, or Ctrl+C to abort all tests.")
 
         old_stdin, old_stdout, old_stderr = sys.stdin, sys.stdout, sys.stderr
         sys.stdin, sys.stdout, sys.stderr = sys.__stdin__, sys.__stdout__, sys.__stderr__
@@ -246,21 +249,46 @@ class LLDBDebugger:
         self.debugger.HandleCommand("command script import lldb")
 
         interpreter = self.debugger.GetCommandInterpreter()
-        while True:
-            print_to_lldb("\n(lldb) ", end="")
-            command = input().strip()
-            if command.lower() == 'quit':
-                break
+        continue_tests = True
 
-            result = lldb.SBCommandReturnObject()
-            interpreter.HandleCommand(command, result)
-            if result.Succeeded():
-                print_to_lldb(result.GetOutput().rstrip())
-            else:
-                print_to_lldb(result.GetError().rstrip())
+        def keyboard_interrupt_handler(sig, frame):
+            nonlocal continue_tests
+            print_to_lldb("\nTest execution aborted by user.")
+            continue_tests = False
+            raise KeyboardInterrupt
 
-        sys.stdin, sys.stdout, sys.stderr = old_stdin, old_stdout, old_stderr
-        print_to_lldb("\nExiting LLDB interactive mode.")
+        original_handler = signal.signal(
+            signal.SIGINT, keyboard_interrupt_handler)
+
+        try:
+            while continue_tests:
+                print_to_lldb("\n(lldb) ", end="")
+                try:
+                    command = input().strip()
+                except EOFError:
+                    print_to_lldb(
+                        "\nExiting LLDB interactive mode. Continuing with next test case.")
+                    break
+                except KeyboardInterrupt:
+                    break
+
+                if command.lower() == 'quit':
+                    print_to_lldb(
+                        "\nExiting LLDB interactive mode. Continuing with next test case.")
+                    break
+
+                result = lldb.SBCommandReturnObject()
+                interpreter.HandleCommand(command, result)
+                if result.Succeeded():
+                    print_to_lldb(result.GetOutput().rstrip())
+                else:
+                    print_to_lldb(result.GetError().rstrip())
+
+        finally:
+            signal.signal(signal.SIGINT, original_handler)
+            sys.stdin, sys.stdout, sys.stderr = old_stdin, old_stdout, old_stderr
+
+        return continue_tests
 
 
 def parse_expected_values(source_files):
@@ -334,17 +362,19 @@ def execute_tests(debugger, test_cases, interactive):
         results.failed += sum(1 for r in case_result.results if r.status != 'pass')
         results.case_results.append(case_result)
 
-        # Print the current case test results before entering interactive mode
         print_to_lldb(f"\nTest case: {case_result.test_case.source_file}:{
                       case_result.test_case.start_line}-{case_result.test_case.end_line} in function '{case_result.function}'")
         for result in case_result.results:
-            # Always print verbose results here
             print_test_result(result, True)
 
         if interactive and any(r.status != 'pass' for r in case_result.results):
             print_to_lldb(
                 "\nTest case failed. Entering LLDB interactive mode.")
-            debugger.run_console()
+            continue_tests = debugger.run_console()
+            if not continue_tests:
+                print_to_lldb("Aborting all tests.")
+                break
+
             # After exiting the console, we need to ensure the process is in a valid state
             if debugger.process.GetState() == lldb.eStateRunning:
                 debugger.process.Stop()
