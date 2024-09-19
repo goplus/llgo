@@ -334,12 +334,15 @@ func (b diBuilder) createChanType(name string, t Type, pos token.Position) DITyp
 
 func (b diBuilder) createComplexType(t Type) DIType {
 	var tfield Type
+	var tyName string
 	if t.RawType().(*types.Basic).Kind() == types.Complex128 {
 		tfield = b.prog.Float64()
+		tyName = "complex128"
 	} else {
 		tfield = b.prog.Float32()
+		tyName = "complex64"
 	}
-	return b.doCreateStructType("complex", t, token.Position{}, func(ditStruct DIType) []llvm.Metadata {
+	return b.doCreateStructType(tyName, t, token.Position{}, func(ditStruct DIType) []llvm.Metadata {
 		return []llvm.Metadata{
 			b.createMemberType("real", t, tfield, 0),
 			b.createMemberType("imag", t, tfield, 1),

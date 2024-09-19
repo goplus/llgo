@@ -100,7 +100,29 @@ func FuncWithAllTypeParams(
 		err,
 		fn,
 	)
-	return 1, errors.New("Some error")
+	// Expected:
+	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn globalInt globalStruct globalStructPtr
+	//   i8: '\x01'
+	//   i16: 2
+	//   i32: 3
+	//   i64: 4
+	//   i: 5
+	//   u8: '\x06'
+	//   u16: 7
+	//   u32: 8
+	//   u64: 9
+	//   u: 10
+	//   f32: 11
+	//   f64: 12
+	//   b: true
+	//   c64: complex64(real = 13, imag = 14)
+	//   c128: complex128(real = 15, imag = 16)
+	//   slice: []int[21, 22, 23]
+	//   arr: [3]int[24, 25, 26)
+	//   arr2: [3]E[(i = 27), (i = 28), (i = 29)]
+	//   s: hello
+	//   e: (i = 30)
+	return 1, errors.New("some error")
 }
 
 func main() {
@@ -164,7 +186,12 @@ func main() {
 	println("called function with types")
 	println(globalStructPtr)
 	println(&globalStruct)
+	// Expected:
+	//   all variables: globalInt globalStruct globalStructPtr s i err
+	//   s.i8: '\x01'
+	//   s.i16: 2
 	println("done")
+	println("")
 }
 
 var globalInt int = 301
