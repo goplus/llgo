@@ -347,12 +347,15 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
 	named := make(map[types.Type]Expr)
+	glbDbgVars := make(map[Expr]bool)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p, di: nil, cu: nil}
+		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p,
+		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+	}
 	ret.abi.Init(pkgPath)
 	return ret
 }
@@ -592,16 +595,17 @@ type aPackage struct {
 	di   diBuilder
 	cu   CompilationUnit
 
-	vars   map[string]Global
-	fns    map[string]Function
-	stubs  map[string]Function
-	pyobjs map[string]PyObjRef
-	pymods map[string]Global
-	strs   map[string]llvm.Value
-	named  map[types.Type]Expr
-	afterb unsafe.Pointer
-	patch  func(types.Type) types.Type
-	fnlink func(string) string
+	glbDbgVars map[Expr]bool
+	vars       map[string]Global
+	fns        map[string]Function
+	stubs      map[string]Function
+	pyobjs     map[string]PyObjRef
+	pymods     map[string]Global
+	strs       map[string]llvm.Value
+	named      map[types.Type]Expr
+	afterb     unsafe.Pointer
+	patch      func(types.Type) types.Type
+	fnlink     func(string) string
 
 	iRoutine int
 }

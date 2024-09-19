@@ -501,8 +501,16 @@ func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, deref boo
 		return v.ptr, v.val, v.deref
 	}
 	t := v.Type.RawType().Underlying()
+	dbgPtr, dbgVal, deref = b.doConstructDebugAddr(v, t)
+	b.dbgVars[v] = dbgExpr{dbgPtr, dbgVal, deref}
+	return dbgPtr, dbgVal, deref
+}
+
+func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal Expr, deref bool) {
 	var ty Type
 	switch t := t.(type) {
+	case *types.Pointer:
+		return v, v, false
 	case *types.Basic:
 		if t.Info()&types.IsComplex != 0 {
 			if t.Kind() == types.Complex128 {
@@ -532,34 +540,40 @@ func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, deref boo
 	dbgPtr.Type = b.Prog.Pointer(v.Type)
 	b.Store(dbgPtr, v)
 	dbgVal = b.Load(dbgPtr)
-	b.dbgVars[v] = dbgExpr{dbgPtr, dbgVal, deref}
 	return dbgPtr, dbgVal, deref
+}
+
+func (b Builder) di() diBuilder {
+	return b.Pkg.di
 }
 
 func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
 	dbgPtr, _, _ := b.constructDebugAddr(v)
-	expr := b.Pkg.diBuilder().createExpression(nil)
-	b.Pkg.diBuilder().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
+	expr := b.di().createExpression(nil)
+	b.di().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	expr := b.Pkg.diBuilder().createExpression(nil)
-	b.Pkg.diBuilder().dbgValue(v, dv, scope, pos, expr, blk)
+	expr := b.di().createExpression(nil)
+	b.di().dbgValue(v, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt Type, argNo int) DIVar {
-	t := b.Pkg.diBuilder().diType(vt, pos)
-	return b.Pkg.diBuilder().varParam(f, pos, varName, t, argNo)
+	t := b.di().diType(vt, pos)
+	return b.di().varParam(f, pos, varName, t, argNo)
 }
 
 func (b Builder) DIVarAuto(f Function, pos token.Position, varName string, vt Type) DIVar {
-	t := b.Pkg.diBuilder().diType(vt, pos)
-	return b.Pkg.diBuilder().varAuto(f, pos, varName, t)
+	t := b.di().diType(vt, pos)
+	return b.di().varAuto(f, pos, varName, t)
 }
 
 func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
-	gv := b.Pkg.diBuilder().createGlobalVariableExpression(
-		b.Pkg.diBuilder().file(pos.Filename),
+	if _, ok := b.Pkg.glbDbgVars[v]; ok {
+		return
+	}
+	gv := b.di().createGlobalVariableExpression(
+		b.di().file(pos.Filename),
 		pos,
 		name,
 		name,
@@ -567,13 +581,14 @@ func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
 		false,
 	)
 	v.impl.AddMetadata(0, gv.ll)
+	b.Pkg.glbDbgVars[v] = true
 }
 
 func (b Builder) DISetCurrentDebugLocation(f Function, pos token.Position) {
 	b.impl.SetCurrentDebugLocation(
 		uint(pos.Line),
 		uint(pos.Column),
-		f.scopeMeta(b.Pkg.diBuilder(), pos).ll,
+		f.scopeMeta(b.di(), pos).ll,
 		f.impl.InstructionDebugLoc(),
 	)
 }
