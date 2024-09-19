@@ -14,6 +14,7 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func EqualStringIgnoreSpace(s1 string, s2 string) (bool, string) {
@@ -25,15 +26,18 @@ func EqualStringIgnoreSpace(s1 string, s2 string) (bool, string) {
 	return true, ""
 }
 
-func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.SymbolEntry, originalCode, expectedOutput string) {
+func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) {
 	t.Helper()
 
-	filePath, err := createAndWriteTempSymbFile(symbolEntries)
+	symbolpath, err := createAndWriteTempSymbFile(symbolEntries)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	astConvert := visitor.NewAstConvert(pkgName, filePath)
+	cppgConfPath, err := createCppgConfFile(cppgConf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	astConvert := visitor.NewAstConvert(pkgName, symbolpath, cppgConfPath)
 	var buf bytes.Buffer
 	astConvert.SetVisitDone(func(pkg *genpkg.Package, docPath string) {
 		if err := pkg.WriteToBuffer(&buf); err != nil {
@@ -57,7 +61,15 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 }
 
 func createAndWriteTempSymbFile(entries []symb.SymbolEntry) (string, error) {
-	filePath := filepath.Join(os.TempDir(), "llcppg.symb.json")
+	return createJSONFile("llcppg.symb.json", entries)
+}
+
+func createCppgConfFile(config *cppgtypes.Config) (string, error) {
+	return createJSONFile("llcppg.cfg", config)
+}
+
+func createJSONFile(filename string, data interface{}) (string, error) {
+	filePath := filepath.Join(os.TempDir(), filename)
 
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -67,5 +79,5 @@ func createAndWriteTempSymbFile(entries []symb.SymbolEntry) (string, error) {
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	return filePath, encoder.Encode(entries)
+	return filePath, encoder.Encode(data)
 }

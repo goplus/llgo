@@ -14,6 +14,7 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/typmap"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type Package struct {
@@ -39,6 +40,10 @@ func (p *Package) SetSymbolTable(symbolTable *symb.SymbolTable) {
 	p.cvt.SetSymbolTable(symbolTable)
 }
 
+func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
+	p.cvt.SetCppgConf(conf)
+}
+
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
 	goFuncName, err := p.cvt.LookupSymbol(symb.MangleNameType(funcDecl.MangledName))
@@ -54,8 +59,12 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
+	name, err := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
+	if err != nil {
+		return err
+	}
 	typeBlock := p.p.NewTypeDefs()
-	decl := typeBlock.NewType(typeDecl.Name.Name)
+	decl := typeBlock.NewType(name)
 	structType := p.cvt.RecordTypeToStruct(typeDecl.Type)
 	decl.InitType(p.p, structType)
 	p.AddToDelete(decl)
@@ -69,14 +78,18 @@ func (p *Package) AddToDelete(node ast.Node) {
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	genDecl := p.p.NewTypeDefs()
 	typ := p.ToType(typedefDecl.Type)
+	name, err := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
+	if err != nil {
+		return err
+	}
 	if named, ok := typ.(*types.Named); ok {
 		// Compare the type name with typedefDecl.Name.Name
-		if named.Obj().Name() == typedefDecl.Name.Name {
+		if named.Obj().Name() == name {
 			// If they're the same, don't create a new typedef
 			return nil
 		}
 	}
-	typeSpecdecl := genDecl.NewType(typedefDecl.Name.Name)
+	typeSpecdecl := genDecl.NewType(name)
 	typeSpecdecl.InitType(p.p, typ)
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(comment.NewTypecDocComments())

@@ -96,7 +96,7 @@ func (p *DocFileSetUnmarshaller) UnmarshalBytes(raw []byte) error {
 	return nil
 }
 
-func (p *DocFileSetUnmarshaller) UnmarshalFile(jsonFilePath string, temp bool) error {
+func (p *DocFileSetUnmarshaller) UnmarshalFile(jsonFilePath string) error {
 	raw, err := util.ReadFile(jsonFilePath)
 	if err != nil {
 		return err
