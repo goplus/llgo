@@ -27,8 +27,8 @@ func TestUnmarshalAnyNode(t *testing.T) {
 	astConvert := visitor.NewAstConvert("anynode", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := unmarshal.NewDocFileUnmarshaller(docVisitors)
-	rawDocFile := unmarshal.NewRawDocFile("./_testjson/anynode.json", nodeBytes)
-	p.UnmarshalRawDocFile(rawDocFile)
+	rawDocFile := unmarshal.NewPathDoc("./_testjson/anynode.json", nodeBytes)
+	p.UnmarshalPathDocFile(rawDocFile)
 }
 
 func TestFunc1(t *testing.T) {

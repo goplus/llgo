@@ -3,76 +3,67 @@ package testvisitor_test
 import (
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/util"
-	"github.com/goplus/llgo/chore/gogensig/visitor"
+	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/visitor/testvisitor/cmptest"
 )
 
 func TestStructDeclRef(t *testing.T) {
-	astConvert := visitor.NewAstConvert("typeref", "")
-	docVisitors := []visitor.DocVisitor{astConvert}
-	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
-	orginCode :=
-		`
+	cmptest.RunTest(t, "typeref", false, []symb.SymbolEntry{
+		{
+			MangleName: "ExecuteFoo",
+			CppName:    "ExecuteFoo",
+			GoName:     "CustomExecuteFoo",
+		},
+	}, `
 struct Foo { int a; double b; bool c; };
 int ExecuteFoo(int a,Foo b);
-`
-	bytes, err := util.Llcppsigfetch(orginCode, true, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	p.UnmarshalBytes(bytes)
-	// todo(zzy):compare test
+	`, `
+package typeref
 
-	// package typeref
+import "github.com/goplus/llgo/c"
 
-	// import "github.com/goplus/llgo/c"
-
-	// type Foo struct {
-	// 	a c.Int
-	// 	b float64
-	// 	c bool
-	// }
-
-	// //go:linkname Executefoo C.ExecuteFoo
-	// func Executefoo(a c.Int, b Foo) c.Int
+type Foo struct {
+	a c.Int
+	b float64
+	c c.Int
 }
 
-// struct Foo { int a; double b; bool c; }
+//go:linkname CustomExecuteFoo C.ExecuteFoo
+func CustomExecuteFoo(a c.Int, b Foo) c.Int
+	`)
+}
 
 func TestCustomStruct(t *testing.T) {
-	astConvert := visitor.NewAstConvert("typeref", "")
-	docVisitors := []visitor.DocVisitor{astConvert}
-	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
-	orginCode :=
-		`
+	cmptest.RunTest(t, "typeref", false, []symb.SymbolEntry{
+		{MangleName: "lua_close", CppName: "lua_close", GoName: "Close"},
+		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
+		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},
+		{MangleName: "lua_resetthread", CppName: "lua_resetthread", GoName: "Resetthread"},
+	}, `
 typedef struct lua_State lua_State;
+typedef int (*lua_CFunction)(lua_State *L);
 LUA_API void(lua_close)(lua_State *L);
 LUA_API lua_State *(lua_newthread)(lua_State *L);
 LUA_API int(lua_closethread)(lua_State *L, lua_State *from);
-LUA_API int(lua_resetthread)(lua_State *L); 
-`
-	bytes, err := util.Llcppsigfetch(orginCode, true, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	p.UnmarshalBytes(bytes)
-	// todo(zzy) compare test
+LUA_API int(lua_resetthread)(lua_State *L);
+	`, `
+package typeref
 
-	package typeref
+import "github.com/goplus/llgo/c"
 
-	import "github.com/goplus/llgo/c"
+type lua_State struct {
+	Unused [8]uint8
+}
+// llgo:type C
+type lua_CFunction func(*lua_State) c.Int
 
-	type lua_State struct {
-		Unused [8]uint8
-	}
+//go:linkname Close C.lua_close
+func Close(L *lua_State) c.Int
 
-	//go:linkname LuaClose C.lua_close
-	func LuaClose(L *lua_State) c.Int
+//go:linkname Closethread C.lua_closethread
+func Closethread(L *lua_State, from *lua_State) c.Int
 
-	//go:linkname LuaClosethread C.lua_closethread
-	func LuaClosethread(L *lua_State, from *lua_State) c.Int
-
-	//go:linkname LuaResetthread C.lua_resetthread
-	func LuaResetthread(L *lua_State) c.Int
+//go:linkname Resetthread C.lua_resetthread
+func Resetthread(L *lua_State) c.Int
+	`)
 }
