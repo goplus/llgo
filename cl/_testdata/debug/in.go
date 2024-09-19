@@ -118,10 +118,10 @@ func FuncWithAllTypeParams(
 	//   c64: complex64(real = 13, imag = 14)
 	//   c128: complex128(real = 15, imag = 16)
 	//   slice: []int[21, 22, 23]
-	//   arr: [3]int[24, 25, 26)
-	//   arr2: [3]E[(i = 27), (i = 28), (i = 29)]
+	//   arr: [3]int[24, 25, 26]
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E[github.com/goplus/llgo/cl/_testdata/debug.E(i = 27), github.com/goplus/llgo/cl/_testdata/debug.E(i = 28), github.com/goplus/llgo/cl/_testdata/debug.E(i = 29)]
 	//   s: hello
-	//   e: (i = 30)
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E(i = 30)
 	return 1, errors.New("some error")
 }
 
