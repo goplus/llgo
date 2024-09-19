@@ -3,15 +3,12 @@ import io
 import os
 import sys
 import argparse
+import signal
 from dataclasses import dataclass, field
 from typing import List
-import cmd
-import signal
-
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, line_buffering=False)
 
 
-def print_to_lldb(*args, **kwargs):
+def log(*args, **kwargs):
     print(*args, **kwargs, flush=True)
 
 
@@ -74,7 +71,6 @@ class LLDBDebugger:
         if self.plugin_path:
             self.debugger.HandleCommand(
                 f'command script import "{self.plugin_path}"')
-
         self.target = self.debugger.CreateTarget(self.executable_path)
         if not self.target:
             raise Exception(f"Failed to create target for {
@@ -93,7 +89,6 @@ class LLDBDebugger:
             self.process = self.target.LaunchSimple(None, None, os.getcwd())
         else:
             self.process.Continue()
-
         if self.process.GetState() != lldb.eStateStopped:
             raise Exception("Process didn't stop at breakpoint")
 
@@ -236,9 +231,9 @@ class LLDBDebugger:
         lldb.SBDebugger.Destroy(self.debugger)
 
     def run_console(self):
-        print_to_lldb(
+        log(
             "\nEntering LLDB interactive mode. Type 'quit' to exit and continue with the next test case.")
-        print_to_lldb(
+        log(
             "Use Ctrl+D to exit and continue, or Ctrl+C to abort all tests.")
 
         old_stdin, old_stdout, old_stderr = sys.stdin, sys.stdout, sys.stderr
@@ -253,7 +248,7 @@ class LLDBDebugger:
 
         def keyboard_interrupt_handler(sig, frame):
             nonlocal continue_tests
-            print_to_lldb("\nTest execution aborted by user.")
+            log("\nTest execution aborted by user.")
             continue_tests = False
             raise KeyboardInterrupt
 
@@ -262,27 +257,25 @@ class LLDBDebugger:
 
         try:
             while continue_tests:
-                print_to_lldb("\n(lldb) ", end="")
+                log("\n(lldb) ", end="")
                 try:
                     command = input().strip()
                 except EOFError:
-                    print_to_lldb(
+                    log(
                         "\nExiting LLDB interactive mode. Continuing with next test case.")
                     break
                 except KeyboardInterrupt:
                     break
 
                 if command.lower() == 'quit':
-                    print_to_lldb(
+                    log(
                         "\nExiting LLDB interactive mode. Continuing with next test case.")
                     break
 
                 result = lldb.SBCommandReturnObject()
                 interpreter.HandleCommand(command, result)
-                if result.Succeeded():
-                    print_to_lldb(result.GetOutput().rstrip())
-                else:
-                    print_to_lldb(result.GetError().rstrip())
+                log(result.GetOutput().rstrip(
+                ) if result.Succeeded() else result.GetError().rstrip())
 
         finally:
             signal.signal(signal.SIGINT, original_handler)
@@ -324,9 +317,9 @@ def run_tests(executable_path, source_files, verbose, interactive, plugin_path):
     debugger = LLDBDebugger(executable_path, plugin_path)
     test_cases = parse_expected_values(source_files)
     if verbose:
-        print_to_lldb(
+        log(
             f"Running tests for {', '.join(source_files)} with {executable_path}")
-        print_to_lldb(f"Found {len(test_cases)} test cases")
+        log(f"Found {len(test_cases)} test cases")
 
     try:
         debugger.setup()
@@ -337,7 +330,7 @@ def run_tests(executable_path, source_files, verbose, interactive, plugin_path):
             os._exit(1)
 
     except Exception as e:
-        print_to_lldb(f"Error: {str(e)}")
+        log(f"Error: {str(e)}")
 
     finally:
         debugger.cleanup()
@@ -362,17 +355,17 @@ def execute_tests(debugger, test_cases, interactive):
         results.failed += sum(1 for r in case_result.results if r.status != 'pass')
         results.case_results.append(case_result)
 
-        print_to_lldb(f"\nTest case: {case_result.test_case.source_file}:{
-                      case_result.test_case.start_line}-{case_result.test_case.end_line} in function '{case_result.function}'")
+        log(f"\nTest case: {case_result.test_case.source_file}:{
+            case_result.test_case.start_line}-{case_result.test_case.end_line} in function '{case_result.function}'")
         for result in case_result.results:
             print_test_result(result, True)
 
         if interactive and any(r.status != 'pass' for r in case_result.results):
-            print_to_lldb(
+            log(
                 "\nTest case failed. Entering LLDB interactive mode.")
             continue_tests = debugger.run_console()
             if not continue_tests:
-                print_to_lldb("Aborting all tests.")
+                log("Aborting all tests.")
                 break
 
             # After exiting the console, we need to ensure the process is in a valid state
@@ -422,7 +415,7 @@ def execute_all_variables_test(test, all_variable_names):
 def execute_single_variable_test(debugger, test):
     actual_value = debugger.get_variable_value(test.variable)
     if actual_value is None:
-        print_to_lldb(f"Unable to fetch value for {test.variable}")
+        log(f"Unable to fetch value for {test.variable}")
         return TestResult(
             test=test,
             status='error',
@@ -450,19 +443,19 @@ def execute_single_variable_test(debugger, test):
 
 def print_test_results(results: TestResults, verbose):
     for case_result in results.case_results:
-        print_to_lldb(f"\nTest case: {case_result.test_case.source_file}:{
-                      case_result.test_case.start_line}-{case_result.test_case.end_line} in function '{case_result.function}'")
+        log(f"\nTest case: {case_result.test_case.source_file}:{
+            case_result.test_case.start_line}-{case_result.test_case.end_line} in function '{case_result.function}'")
         for result in case_result.results:
             print_test_result(result, verbose)
 
-    print_to_lldb("\nTest results:")
-    print_to_lldb(f"  Total tests: {results.total}")
-    print_to_lldb(f"  Passed tests: {results.passed}")
-    print_to_lldb(f"  Failed tests: {results.failed}")
+    log("\nTest results:")
+    log(f"  Total tests: {results.total}")
+    log(f"  Passed tests: {results.passed}")
+    log(f"  Failed tests: {results.failed}")
     if results.total == results.passed:
-        print_to_lldb("All tests passed!")
+        log("All tests passed!")
     else:
-        print_to_lldb("Some tests failed")
+        log("Some tests failed")
 
 
 def print_test_result(result: TestResult, verbose):
@@ -471,33 +464,33 @@ def print_test_result(result: TestResult, verbose):
 
     if result.status == 'pass':
         if verbose:
-            print_to_lldb(
+            log(
                 f"{status_symbol} Line {result.test.line_number}, {result.test.variable}: {status_text}")
             if result.test.variable == 'all variables':
-                print_to_lldb(f"    Variables: {
-                              ', '.join(sorted(result.actual))}")
+                log(f"    Variables: {
+                    ', '.join(sorted(result.actual))}")
     else:  # fail or error
-        print_to_lldb(
+        log(
             f"{status_symbol} Line {result.test.line_number}, {result.test.variable}: {status_text}")
         if result.test.variable == 'all variables':
             if result.missing:
-                print_to_lldb(
+                log(
                     f"    Missing variables: {', '.join(sorted(result.missing))}")
             if result.extra:
-                print_to_lldb(
+                log(
                     f"    Extra variables: {', '.join(sorted(result.extra))}")
-            print_to_lldb(
+            log(
                 f"    Expected: {', '.join(sorted(result.test.expected_value.split()))}")
-            print_to_lldb(f"    Actual: {', '.join(sorted(result.actual))}")
+            log(f"    Actual: {', '.join(sorted(result.actual))}")
         elif result.status == 'error':
-            print_to_lldb(f"    Error: {result.message}")
+            log(f"    Error: {result.message}")
         else:
-            print_to_lldb(f"    Expected: {result.test.expected_value}")
-            print_to_lldb(f"    Actual: {result.actual}")
+            log(f"    Expected: {result.test.expected_value}")
+            log(f"    Actual: {result.actual}")
 
 
 def main():
-    print_to_lldb(sys.argv)
+    log(sys.argv)
     parser = argparse.ArgumentParser(
         description="LLDB 18 Debug Script with DWARF 5 Support")
     parser.add_argument("executable", help="Path to the executable")
@@ -520,7 +513,7 @@ if __name__ == "__main__":
 
 
 def run_commands(debugger, command, result, internal_dict):
-    print_to_lldb(sys.argv)
+    log(sys.argv)
     main()
     debugger.HandleCommand("quit")
 
