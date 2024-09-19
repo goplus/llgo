@@ -7,11 +7,11 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/util"
 )
 
-type MangleNameType string
+type MangleNameType = string
 
-type CppNameType string
+type CppNameType = string
 
-type GoNameType string
+type GoNameType = string
 
 type SymbolEntry struct {
 	MangleName MangleNameType `json:"mangle"`
@@ -33,12 +33,16 @@ func NewSymbolTable(filePath string) (*SymbolTable, error) {
 	if err != nil {
 		return nil, err
 	}
-	var symbolTable SymbolTable
-	symbolTable.t = make(map[MangleNameType]SymbolEntry)
+	return CreateSymbolTable(symbs), nil
+}
+func CreateSymbolTable(symbs []SymbolEntry) *SymbolTable {
+	symbolTable := &SymbolTable{
+		t: make(map[MangleNameType]SymbolEntry),
+	}
 	for _, symb := range symbs {
 		symbolTable.t[symb.MangleName] = symb
 	}
-	return &symbolTable, nil
+	return symbolTable
 }
 
 func (t *SymbolTable) LookupSymbol(name MangleNameType) (*SymbolEntry, error) {
