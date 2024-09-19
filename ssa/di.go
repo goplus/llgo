@@ -10,15 +10,20 @@ import (
 	"github.com/goplus/llvm"
 )
 
+type Positioner interface {
+	Position(pos token.Pos) token.Position
+}
+
 type aDIBuilder struct {
-	di    *llvm.DIBuilder
-	prog  Program
-	types map[Type]DIType
+	di         *llvm.DIBuilder
+	prog       Program
+	types      map[Type]DIType
+	positioner Positioner
 }
 
 type diBuilder = *aDIBuilder
 
-func newDIBuilder(prog Program, pkg Package) diBuilder {
+func newDIBuilder(prog Program, pkg Package, positioner Positioner) diBuilder {
 	m := pkg.mod
 	ctx := m.Context()
 	m.AddNamedMetadataOperand("llvm.module.flags",
@@ -36,9 +41,10 @@ func newDIBuilder(prog Program, pkg Package) diBuilder {
 		}),
 	)
 	return &aDIBuilder{
-		di:    llvm.NewDIBuilder(m),
-		prog:  prog,
-		types: make(map[*aType]DIType),
+		di:         llvm.NewDIBuilder(m),
+		prog:       prog,
+		types:      make(map[*aType]DIType),
+		positioner: positioner,
 	}
 }
 
@@ -60,7 +66,7 @@ func (b diBuilder) createCompileUnit(filename, dir string) CompilationUnit {
 		File:           filename,
 		Dir:            dir,
 		Producer:       "LLGo",
-		Optimized:      true,
+		Optimized:      false,
 		RuntimeVersion: 1,
 	})}
 }
@@ -142,6 +148,7 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 		return b.createPointerType(name, b.prog.rawType(t.Elem()), pos)
 	case *types.Named:
 		ty = b.prog.rawType(t.Underlying())
+		pos = b.positioner.Position(t.Obj().Pos())
 		return b.diTypeEx(name, ty, pos)
 	case *types.Interface:
 		ty := b.prog.rtType("Iface")
@@ -158,12 +165,10 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Array:
 		return b.createArrayType(ty, t.Len())
 	case *types.Chan:
-		return b.createChanType(name, ty)
+		return b.createChanType(name, ty, pos)
 	case *types.Map:
 		ty := b.prog.rtType("Map")
-		tk := b.prog.rawType(t.Key())
-		tv := b.prog.rawType(t.Elem())
-		return b.createMapType(name, ty, tk, tv)
+		return b.createMapType(name, ty, pos)
 	default:
 		panic(fmt.Errorf("can't create debug info of type: %v, %T", ty.RawType(), ty.RawType()))
 	}
@@ -186,7 +191,7 @@ type aDIGlobalVariableExpression struct {
 
 type DIGlobalVariableExpression = *aDIGlobalVariableExpression
 
-func (b diBuilder) createGlobalVariableExpression(scope DIScope, pos token.Position, name, linkageName string, ty DIType, isLocalToUnit bool) DIGlobalVariableExpression {
+func (b diBuilder) createGlobalVariableExpression(scope DIScope, pos token.Position, name, linkageName string, ty Type, isLocalToUnit bool) DIGlobalVariableExpression {
 	return &aDIGlobalVariableExpression{
 		ll: b.di.CreateGlobalVariableExpression(
 			scope.scopeMeta(b, pos).ll,
@@ -195,12 +200,9 @@ func (b diBuilder) createGlobalVariableExpression(scope DIScope, pos token.Posit
 				LinkageName: linkageName,
 				File:        b.file(pos.Filename).ll,
 				Line:        pos.Line,
-				Type:        ty.ll,
+				Type:        b.diType(ty, pos).ll,
 				LocalToUnit: isLocalToUnit,
-				// TODO(lijie): check the following fields
-				// Expr:				llvm.Metadata{},
-				// Decl:				llvm.Metadata{},
-				// AlignInBits: 0,
+				AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
 			},
 		),
 	}
@@ -214,10 +216,10 @@ type aDIVar struct {
 
 type DIVar = *aDIVar
 
-func (b diBuilder) createParameterVariable(scope DIScope, pos token.Position, name string, argNo int, ty DIType) DIVar {
+func (b diBuilder) createParameterVariable(f Function, pos token.Position, name string, argNo int, ty DIType) DIVar {
 	return &aDIVar{
 		ll: b.di.CreateParameterVariable(
-			scope.scopeMeta(b, pos).ll,
+			f.scopeMeta(b, pos).ll,
 			llvm.DIParameterVariable{
 				Name:           name,
 				File:           b.file(pos.Filename).ll,
@@ -247,21 +249,12 @@ func (b diBuilder) createAutoVariable(scope DIScope, pos token.Position, name st
 
 func (b diBuilder) createStringType() DIType {
 	ty := b.prog.rtType("String")
-
-	return &aDIType{
-		ll: b.di.CreateStructType(
-			llvm.Metadata{},
-			llvm.DIStructType{
-				Name:        "string",
-				SizeInBits:  b.prog.SizeOf(ty) * 8,
-				AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
-				Elements: []llvm.Metadata{
-					b.createMemberType("data", ty, b.prog.CStr(), 0),
-					b.createMemberType("len", ty, b.prog.Uint(), 1),
-				},
-			},
-		),
-	}
+	return b.doCreateStructType("string", ty, token.Position{}, func(ditStruct DIType) []llvm.Metadata {
+		return []llvm.Metadata{
+			b.createMemberType("data", ty, b.prog.CStr(), 0),
+			b.createMemberType("len", ty, b.prog.Uint(), 1),
+		}
+	})
 }
 
 func (b diBuilder) createArrayType(ty Type, l int64) DIType {
@@ -280,21 +273,13 @@ func (b diBuilder) createSliceType(name string, ty, tyElem Type) DIType {
 	pos := token.Position{}
 	diElemTyPtr := b.prog.Pointer(tyElem)
 
-	return &aDIType{
-		ll: b.di.CreateStructType(
-			llvm.Metadata{},
-			llvm.DIStructType{
-				Name:        name,
-				SizeInBits:  b.prog.SizeOf(ty) * 8,
-				AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
-				Elements: []llvm.Metadata{
-					b.createMemberTypeEx("data", ty, diElemTyPtr, 0, pos, 0),
-					b.createMemberTypeEx("len", ty, b.prog.Uint(), 1, pos, 0),
-					b.createMemberTypeEx("cap", ty, b.prog.Uint(), 2, pos, 0),
-				},
-			},
-		),
-	}
+	return b.doCreateStructType(name, ty, pos, func(ditStruct DIType) []llvm.Metadata {
+		return []llvm.Metadata{
+			b.createMemberTypeEx("data", ty, diElemTyPtr, 0, pos, 0),
+			b.createMemberTypeEx("len", ty, b.prog.Uint(), 1, pos, 0),
+			b.createMemberTypeEx("cap", ty, b.prog.Uint(), 2, pos, 0),
+		}
+	})
 }
 
 func (b diBuilder) createInterfaceType(name string, ty Type) DIType {
@@ -303,18 +288,12 @@ func (b diBuilder) createInterfaceType(name string, ty Type) DIType {
 	tyType := b.prog.VoidPtr()
 	tyData := b.prog.VoidPtr()
 
-	return &aDIType{ll: b.di.CreateStructType(
-		llvm.Metadata{},
-		llvm.DIStructType{
-			Name:        name,
-			SizeInBits:  b.prog.SizeOf(tyIntr) * 8,
-			AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
-			Elements: []llvm.Metadata{
-				b.createMemberType("type", ty, tyType, 0),
-				b.createMemberType("data", ty, tyData, 1),
-			},
-		},
-	)}
+	return b.doCreateStructType(name, tyIntr, token.Position{}, func(ditStruct DIType) []llvm.Metadata {
+		return []llvm.Metadata{
+			b.createMemberType("type", ty, tyType, 0),
+			b.createMemberType("data", ty, tyData, 1),
+		}
+	})
 }
 
 func (b diBuilder) createMemberType(name string, tyStruct, tyField Type, idxField int) llvm.Metadata {
@@ -323,7 +302,7 @@ func (b diBuilder) createMemberType(name string, tyStruct, tyField Type, idxFiel
 
 func (b diBuilder) createMemberTypeEx(name string, tyStruct, tyField Type, idxField int, pos token.Position, flags int) llvm.Metadata {
 	return b.di.CreateMemberType(
-		llvm.Metadata{},
+		b.diType(tyStruct, pos).ll,
 		llvm.DIMemberType{
 			Name:         name,
 			SizeInBits:   b.prog.SizeOf(tyField) * 8,
@@ -335,38 +314,22 @@ func (b diBuilder) createMemberTypeEx(name string, tyStruct, tyField Type, idxFi
 	)
 }
 
-func (b diBuilder) createMapType(name string, tyMap, tk, tv Type) DIType {
+func (b diBuilder) createMapType(name string, tyMap Type, pos token.Position) DIType {
+	// ty := tyMap.RawType().(*types.Map)
+	// tk := b.prog.rawType(ty.Key())
+	// tv := b.prog.rawType(ty.Elem())
 	tyCount := b.prog.Int()
-	return &aDIType{
-		ll: b.di.CreatePointerType(llvm.DIPointerType{
-			Name: name,
-			Pointee: b.di.CreateStructType(
-				llvm.Metadata{},
-				llvm.DIStructType{
-					Name:        tyMap.RawType().String(),
-					SizeInBits:  b.prog.SizeOf(tyMap) * 8,
-					AlignInBits: uint32(b.prog.sizes.Alignof(tyMap.RawType()) * 8),
-					Elements: []llvm.Metadata{
-						b.createMemberType("count", tyMap, tyCount, 0),
-					},
-				},
-			),
-			SizeInBits:  b.prog.SizeOf(tyMap) * 8,
-			AlignInBits: uint32(b.prog.sizes.Alignof(tyMap.RawType()) * 8),
-		}),
-	}
+	return b.doCreateStructType(name, tyMap, pos, func(ditStruct DIType) []llvm.Metadata {
+		return []llvm.Metadata{
+			b.createMemberType("count", tyMap, tyCount, 0),
+		}
+	})
 }
 
-func (b diBuilder) createChanType(name string, t Type) DIType {
-	return &aDIType{ll: b.di.CreateStructType(
-		llvm.Metadata{},
-		llvm.DIStructType{
-			Name:        name,
-			SizeInBits:  b.prog.SizeOf(t) * 8,
-			AlignInBits: uint32(b.prog.sizes.Alignof(t.RawType()) * 8),
-			Elements:    []llvm.Metadata{},
-		},
-	)}
+func (b diBuilder) createChanType(name string, t Type, pos token.Position) DIType {
+	return b.doCreateStructType(name, t, pos, func(ditStruct DIType) []llvm.Metadata {
+		return []llvm.Metadata{}
+	})
 }
 
 func (b diBuilder) createComplexType(t Type) DIType {
@@ -376,19 +339,12 @@ func (b diBuilder) createComplexType(t Type) DIType {
 	} else {
 		tfield = b.prog.Float32()
 	}
-	return &aDIType{ll: b.di.CreateStructType(
-		llvm.Metadata{},
-		llvm.DIStructType{
-			Name:        t.RawType().String(),
-			File:        llvm.Metadata{},
-			Line:        0,
-			SizeInBits:  b.prog.SizeOf(t) * 8,
-			AlignInBits: uint32(b.prog.sizes.Alignof(t.RawType()) * 8),
-			Elements: []llvm.Metadata{
-				b.createMemberType("real", t, tfield, 0),
-				b.createMemberType("imag", t, tfield, 1),
-			},
-		})}
+	return b.doCreateStructType("complex", t, token.Position{}, func(ditStruct DIType) []llvm.Metadata {
+		return []llvm.Metadata{
+			b.createMemberType("real", t, tfield, 0),
+			b.createMemberType("imag", t, tfield, 1),
+		}
+	})
 }
 
 func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) DIType {
@@ -401,8 +357,8 @@ func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) D
 	})}
 }
 
-func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (ret DIType) {
-	structType := ty.RawType().(*types.Struct)
+func (b diBuilder) doCreateStructType(name string, ty Type, pos token.Position, fn func(ty DIType) []llvm.Metadata) (ret DIType) {
+	structType := ty.RawType().Underlying()
 
 	scope := b.file(pos.Filename)
 	ret = &aDIType{b.di.CreateReplaceableCompositeType(
@@ -418,14 +374,8 @@ func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (r
 	)}
 	b.types[ty] = ret
 
-	fields := make([]llvm.Metadata, structType.NumFields())
+	fields := fn(ret)
 
-	for i := 0; i < structType.NumFields(); i++ {
-		field := structType.Field(i)
-		tyField := b.prog.rawType(field.Type())
-		flags := 0
-		fields[i] = b.createMemberTypeEx(field.Name(), ty, tyField, i, pos, flags)
-	}
 	st := b.di.CreateStructType(
 		scope.ll,
 		llvm.DIStructType{
@@ -440,6 +390,21 @@ func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (r
 	ret.ll.ReplaceAllUsesWith(st)
 	ret.ll = st
 	return
+}
+
+func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (ret DIType) {
+	structType := ty.RawType().(*types.Struct)
+	return b.doCreateStructType(name, ty, pos, func(ditStruct DIType) []llvm.Metadata {
+		fields := make([]llvm.Metadata, structType.NumFields())
+		for i := 0; i < structType.NumFields(); i++ {
+			field := structType.Field(i)
+			tyField := b.prog.rawType(field.Type())
+			flags := 0
+			pos := b.positioner.Position(field.Pos())
+			fields[i] = b.createMemberTypeEx(field.Name(), ty, tyField, i, pos, flags)
+		}
+		return fields
+	})
 }
 
 func (b diBuilder) createFuncPtrType(name string, ty Type, pos token.Position) DIType {
@@ -509,12 +474,7 @@ func (b diBuilder) varParam(f Function, pos token.Position, varName string, vt D
 }
 
 func (b diBuilder) varAuto(f Function, pos token.Position, varName string, vt DIType) DIVar {
-	return b.createAutoVariable(
-		f,
-		pos,
-		varName,
-		vt,
-	)
+	return b.createAutoVariable(f, pos, varName, vt)
 }
 
 func (b diBuilder) file(filename string) DIFile {
@@ -535,8 +495,8 @@ func (b diBuilder) createExpression(ops []uint64) DIExpression {
 
 // -----------------------------------------------------------------------------
 
-// Copy struct parameters to alloca'd memory.
-func (b Builder) debug(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
+// Copy to alloca'd memory to get declareable address.
+func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
 	if v, ok := b.dbgVars[v]; ok {
 		return v.ptr, v.val, v.deref
 	}
@@ -577,7 +537,7 @@ func (b Builder) debug(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
 }
 
 func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	dbgPtr, _, _ := b.debug(v)
+	dbgPtr, _, _ := b.constructDebugAddr(v)
 	expr := b.Pkg.diBuilder().createExpression(nil)
 	b.Pkg.diBuilder().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
 }
@@ -603,7 +563,7 @@ func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
 		pos,
 		name,
 		name,
-		b.Pkg.diBuilder().diType(v.Type, pos),
+		v.Type,
 		false,
 	)
 	v.impl.AddMetadata(0, gv.ll)

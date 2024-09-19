@@ -877,7 +877,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
 	if debugSymbols {
-		ret.InitDebugSymbols(pkgName, pkgPath)
+		ret.InitDebugSymbols(pkgName, pkgPath, pkgProg.Fset)
 	}
 
 	ctx := &context{
