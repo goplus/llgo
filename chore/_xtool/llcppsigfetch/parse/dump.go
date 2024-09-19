@@ -6,6 +6,18 @@ import (
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
+func MarshalOutputASTFiles(files map[string]*ast.File) *cjson.JSON {
+	root := cjson.Array()
+	for path, file := range files {
+		f := cjson.Object()
+		path := cjson.String(c.AllocaCStr(path))
+		f.SetItem(c.Str("path"), path)
+		f.SetItem(c.Str("doc"), MarshalASTFile(file))
+		root.AddItem(f)
+	}
+	return root
+}
+
 func MarshalASTFiles(files map[string]*ast.File) *cjson.JSON {
 	root := cjson.Object()
 	for path, file := range files {

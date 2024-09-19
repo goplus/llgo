@@ -137,7 +137,7 @@ func runExtract() {
 	check(err)
 	_, err = converter.Convert()
 	check(err)
-	result := converter.MarshalASTFiles()
+	result := converter.MarshalOutputASTFiles()
 	cstr := result.Print()
 	c.Printf(cstr)
 	cjson.FreeCStr(cstr)

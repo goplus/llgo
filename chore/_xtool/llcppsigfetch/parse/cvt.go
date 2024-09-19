@@ -872,6 +872,10 @@ func (ct *Converter) MarshalASTFiles() *cjson.JSON {
 	return MarshalASTFiles(ct.Files)
 }
 
+func (ct *Converter) MarshalOutputASTFiles() *cjson.JSON {
+	return MarshalOutputASTFiles(ct.Files)
+}
+
 func IsExplicitSigned(t clang.Type) bool {
 	return t.Kind == clang.TypeCharS || t.Kind == clang.TypeSChar
 }

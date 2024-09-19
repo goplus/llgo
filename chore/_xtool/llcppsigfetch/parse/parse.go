@@ -3,7 +3,6 @@ package parse
 import (
 	"errors"
 
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
@@ -21,15 +20,7 @@ func NewContext(isCpp bool) *Context {
 }
 
 func (p *Context) Output() *cjson.JSON {
-	root := cjson.Array()
-	for path, file := range p.Files {
-		f := cjson.Object()
-		path := cjson.String(c.AllocaCStr(path))
-		f.SetItem(c.Str("path"), path)
-		f.SetItem(c.Str("doc"), MarshalASTFile(file))
-		root.AddItem(f)
-	}
-	return root
+	return MarshalOutputASTFiles(p.Files)
 }
 
 // ProcessFiles processes the given files and adds them to the context
