@@ -427,6 +427,7 @@ func UnmarshalFuncType(data []byte) (ast.Node, error) {
 func UnmarshalFuncDecl(data []byte) (ast.Node, error) {
 	var funcDecl struct {
 		Name          *ast.Ident
+		MangledName   string
 		Type          json.RawMessage
 		IsInline      bool
 		IsStatic      bool
@@ -455,6 +456,7 @@ func UnmarshalFuncDecl(data []byte) (ast.Node, error) {
 		DeclBase:      declBase,
 		Type:          typ.(*ast.FuncType),
 		Name:          funcDecl.Name,
+		MangledName:   funcDecl.MangledName,
 		IsInline:      funcDecl.IsInline,
 		IsStatic:      funcDecl.IsStatic,
 		IsConst:       funcDecl.IsConst,

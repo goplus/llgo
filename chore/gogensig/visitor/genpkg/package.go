@@ -41,12 +41,12 @@ func (p *Package) SetSymbolTable(symbolTable *symb.SymbolTable) {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
-	sig := p.cvt.ToSignature(funcDecl.Type)
-	MangledName := ""
-	goFuncName, err := p.cvt.LookupSymbol(symb.MangleNameType(MangledName))
+	goFuncName, err := p.cvt.LookupSymbol(symb.MangleNameType(funcDecl.MangledName))
 	if err != nil {
-		goFuncName = convert.ToGoFuncName(funcDecl.Name.Name)
+		// not gen the function not in the symbolmap
+		return nil
 	}
+	sig := p.cvt.ToSignature(funcDecl.Type)
 	decl := p.p.NewFuncDecl(token.NoPos, string(goFuncName), sig)
 	decl.SetComments(p.p, comment.NewFuncDocComments(funcDecl.Name.Name, string(goFuncName)))
 	return nil
