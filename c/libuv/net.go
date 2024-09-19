@@ -265,6 +265,11 @@ func (req *Req) GetType() ReqType {
 	return 0
 }
 
+// llgo:link (*Req).Cancel C.uv_cancel
+func (req *Req) Cancel() c.Int {
+	return 0
+}
+
 // ----------------------------------------------
 
 /* Stream related function and method */

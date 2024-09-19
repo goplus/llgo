@@ -213,6 +213,16 @@ func LoopNew() *Loop {
 	return nil
 }
 
+// llgo:link (*Loop).SetData C.uv_loop_set_data
+func (loop *Loop) SetData(data c.Pointer) {
+	return
+}
+
+// llgo:link (*Loop).GetData C.uv_loop_get_data
+func (loop *Loop) GetData() c.Pointer {
+	return nil
+}
+
 // llgo:link (*Loop).Now C.uv_now
 func (loop *Loop) Now() c.UlongLong {
 	return 0
