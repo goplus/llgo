@@ -9,13 +9,17 @@ import (
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
-type RawDocFile struct {
+type PathDoc struct {
 	Path string          `json:"path"`
 	Doc  json.RawMessage `json:"doc"`
 }
 
-func NewRawDocFile(path string, doc json.RawMessage) *RawDocFile {
-	return &RawDocFile{Path: path, Doc: doc}
+type RawMessageMap map[string]json.RawMessage
+
+type PathDocArray []PathDoc
+
+func NewPathDoc(path string, doc json.RawMessage) *PathDoc {
+	return &PathDoc{Path: path, Doc: doc}
 }
 
 type DocFileUnmarshaller struct {
@@ -53,7 +57,7 @@ func (p *DocFileUnmarshaller) UnmarshalBytes(raw []byte, docPath string) error {
 	return nil
 }
 
-func (p *DocFileUnmarshaller) UnmarshalRawDocFile(rawDocFile *RawDocFile) error {
+func (p *DocFileUnmarshaller) UnmarshalPathDocFile(rawDocFile *PathDoc) error {
 	var temp struct {
 		Type string `json:"_Type"`
 	}
@@ -81,18 +85,18 @@ func NewDocFileSetUnmarshaller(docVisitorList []visitor.DocVisitor) *DocFileSetU
 }
 
 func (p *DocFileSetUnmarshaller) UnmarshalBytes(raw []byte) error {
-	var filesWrapper map[string]json.RawMessage
+	var filesWrapper PathDocArray
 	if err := json.Unmarshal(raw, &filesWrapper); err != nil {
 		return fmt.Errorf("error unmarshalling FilesWithPath: %w", err)
 	}
-	for filePath, fileData := range filesWrapper {
+	for _, fileData := range filesWrapper {
 		docVisitor := NewDocFileUnmarshaller(p.docVisitorList)
-		docVisitor.UnmarshalBytes(fileData, filePath)
+		docVisitor.UnmarshalBytes(fileData.Doc, fileData.Path)
 	}
 	return nil
 }
 
-func (p *DocFileSetUnmarshaller) UnmarshalFile(jsonFilePath string) error {
+func (p *DocFileSetUnmarshaller) UnmarshalFile(jsonFilePath string, temp bool) error {
 	raw, err := util.ReadFile(jsonFilePath)
 	if err != nil {
 		return err

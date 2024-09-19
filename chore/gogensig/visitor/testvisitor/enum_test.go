@@ -1,35 +1,58 @@
 package testvisitor_test
 
 import (
-	"bytes"
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/util"
-	"github.com/goplus/llgo/chore/gogensig/visitor"
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
+	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/gogensig/visitor/testvisitor/cmptest"
 )
 
 func TestSpectrum(t *testing.T) {
-	docPath := "./_testinput/_enumtest/spectrum.h"
-	astConvert := visitor.NewAstConvert("spectrum", docPath)
-	var buf bytes.Buffer
-	astConvert.SetVisitDone(func(pkg *genpkg.Package, docPath string) {
-		err := pkg.WriteToBuffer(&buf)
-		if err != nil {
-			t.Fatalf("WriteTo failed: %v", err)
-		}
-	})
-	docVisitors := []visitor.DocVisitor{astConvert}
-	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
-	bytes, err := util.Llcppsigfetch(docPath, false, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	p.UnmarshalBytes(bytes)
-	expectedString := `
-	package spectrum
+	cmptest.RunTest(t, "spectrum", true, []symb.SymbolEntry{},
+		`
+	enum spectrum
+	{
+	    red,
+	    orange,
+	    yello,
+	    green,
+	    blue,
+	    violet
+	};
+
+	enum kids
+	{
+	    nippy,
+	    slats,
+	    skippy,
+	    nina,
+	    liz
+	};
+
+	enum levels
+	{
+	    low = 100,
+	    medium = 500,
+	    high = 2000
+	};
+
+	enum feline
+	{
+	    cat,
+	    lynx = 10,
+	    puma,
+	    tiger
+	};
+
+	enum class PieceType
+	{
+	    King = 1,
+	    Queen,
+	    Rook = 10,
+	    Pawn
+	};`,
+		`
+package spectrum
 
 const Spectrum_red int = 0
 const Spectrum_orange int = 1
@@ -52,11 +75,5 @@ const Feline_tiger int = 12
 const Piecetype_King int = 1
 const Piecetype_Queen int = 2
 const Piecetype_Rook int = 10
-const Piecetype_Pawn int = 11
-	`
-	result := buf.String()
-	isEqual, diff := cmptest.EqualStringIgnoreSpace(result, expectedString)
-	if !isEqual {
-		t.Errorf("%s", diff)
-	}
+const Piecetype_Pawn int = 11`)
 }

@@ -1,5 +1,6 @@
-{
-	"temp.h":	{
+[{
+	"path":"temp.h",
+	"doc":	{
 		"_Type":	"File",
 		"decls":	[{
 				"_Type":	"FuncDecl",
@@ -67,4 +68,4 @@
 		"includes":	[],
 		"macros":	[]
 	} 
-}
+}]
