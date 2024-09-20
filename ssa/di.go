@@ -40,6 +40,13 @@ func newDIBuilder(prog Program, pkg Package, positioner Positioner) diBuilder {
 			llvm.ConstInt(ctx.Int32Type(), 5, false).ConstantAsMetadata(),
 		}),
 	)
+
+	// Add llvm.ident metadata
+	identNode := ctx.MDNode([]llvm.Metadata{
+		ctx.MDString("LLGo Compiler"),
+	})
+	m.AddNamedMetadataOperand("llvm.ident", identNode)
+
 	return &aDIBuilder{
 		di:         llvm.NewDIBuilder(m),
 		prog:       prog,
