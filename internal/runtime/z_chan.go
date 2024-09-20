@@ -53,6 +53,9 @@ func NewChan(eltSize, cap int) *Chan {
 }
 
 func ChanLen(p *Chan) (n int) {
+	if p == nil {
+		return 0
+	}
 	p.mutex.Lock()
 	n = p.len
 	p.mutex.Unlock()
@@ -60,6 +63,9 @@ func ChanLen(p *Chan) (n int) {
 }
 
 func ChanCap(p *Chan) int {
+	if p == nil {
+		return 0
+	}
 	return p.cap
 }
 

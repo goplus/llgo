@@ -145,18 +145,6 @@ func (b Builder) SliceCap(x Expr) Expr {
 	return Expr{ptr, b.Prog.Int()}
 }
 
-func (b Builder) MapLen(x Expr) Expr {
-	if debugInstr {
-		log.Printf("MapLen %v\n", x.impl)
-	}
-	prog := b.Prog
-	if x.impl.IsNull() {
-		return prog.Val(0)
-	}
-	x.Type = prog.Pointer(prog.Int())
-	return b.Load(x)
-}
-
 // -----------------------------------------------------------------------------
 
 // The IndexAddr instruction yields the address of the element at
