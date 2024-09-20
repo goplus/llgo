@@ -53,9 +53,35 @@ func (c *Context) removePrefix(str string) string {
 	return str
 }
 
-func (c *Context) genGoName(name string) string {
-	class := c.removePrefix(c.className)
+func toTitle(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+}
+
+func toCamel(originName string) string {
+	if originName == "" {
+		return ""
+	}
+	subs := strings.Split(string(originName), "_")
+	name := ""
+	for _, sub := range subs {
+		name += toTitle(sub)
+	}
+	return name
+}
+
+// 1. remove prefix from config
+// 2. convert to camel case
+func (c *Context) toGoName(name string) string {
 	name = c.removePrefix(name)
+	return toCamel(name)
+}
+
+func (c *Context) genGoName(name string) string {
+	class := c.toGoName(c.className)
+	name = c.toGoName(name)
 
 	var baseName string
 	if class == "" {
