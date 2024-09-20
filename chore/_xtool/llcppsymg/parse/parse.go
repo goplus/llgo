@@ -101,33 +101,41 @@ func collectFuncInfo(cursor clang.Cursor) {
 }
 
 func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitResult {
-	if cursor.Kind == clang.CursorNamespace {
+	switch cursor.Kind {
+	case clang.CursorNamespace, clang.CursorClassDecl:
 		nameStr := cursor.String()
 		defer nameStr.Dispose()
 
-		context.setNamespaceName(c.GoString(nameStr.CStr()))
-		clang.VisitChildren(cursor, visit, nil)
-		context.setNamespaceName("")
-	} else if cursor.Kind == clang.CursorClassDecl {
-		nameStr := cursor.String()
-		defer nameStr.Dispose()
+		name := c.GoString(nameStr.CStr())
+		if cursor.Kind == clang.CursorNamespace {
+			context.setNamespaceName(name)
+		} else {
+			context.setClassName(name)
+		}
 
-		context.setClassName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
-		context.setClassName("")
-	} else if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorFunctionDecl || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor {
+
+		if cursor.Kind == clang.CursorNamespace {
+			context.setNamespaceName("")
+		} else {
+			context.setClassName("")
+		}
+
+	case clang.CursorCXXMethod, clang.CursorFunctionDecl, clang.CursorConstructor, clang.CursorDestructor:
 		loc := cursor.Location()
 		var file clang.File
 		var line, column c.Uint
 
 		loc.SpellingLocation(&file, &line, &column, nil)
 		filename := file.FileName()
+		defer filename.Dispose()
 
-		if c.Strcmp(filename.CStr(), c.AllocaCStr(context.currentFile)) == 0 {
+		isCurrentFile := c.Strcmp(filename.CStr(), c.AllocaCStr(context.currentFile)) == 0
+		isPublicMethod := (cursor.CXXAccessSpecifier() == clang.CXXPublic) && cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorConstructor || cursor.Kind == clang.CursorDestructor
+
+		if isCurrentFile && (cursor.Kind == clang.CursorFunctionDecl || isPublicMethod) {
 			collectFuncInfo(cursor)
 		}
-
-		defer filename.Dispose()
 	}
 
 	return clang.ChildVisit_Continue
