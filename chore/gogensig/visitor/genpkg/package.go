@@ -127,7 +127,7 @@ func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 	return p.cvt.ToType(expr)
 }
 
-func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
+func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 	if len(enumTypeDecl.Type.Items) > 0 {
 		for _, item := range enumTypeDecl.Type.Items {
 			name := convert.ToTitle(enumTypeDecl.Name.Name) + "_" + item.Name.Name
@@ -138,6 +138,7 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 			p.p.CB().NewConstStart(types.Typ[types.Int], name).Val(val).EndInit(1)
 		}
 	}
+	return nil
 }
 
 func (p *Package) delete() {
