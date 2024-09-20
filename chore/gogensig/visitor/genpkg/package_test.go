@@ -43,7 +43,7 @@ func TestToType(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := pkg.ToType(tc.input)
+			result, _ := pkg.ToType(tc.input)
 			if result != nil && result.String() != tc.expected {
 				t.Errorf("unexpected result:%s expected:%s", result.String(), tc.expected)
 			}
