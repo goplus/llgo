@@ -2,8 +2,8 @@
 # See https://github.com/llvm/llvm-project/issues/70453
 
 # go run ./cmd/llgo build -o cl/_testdata/debug/out -dbg ./cl/_testdata/debug
-# lldb -S _lldbtest/runmain.lldb
+# lldb -S _lldb/runtest.lldb
 
-command script import _lldbtest/main.py
+command script import _lldb/test.py
 script main.run_tests("cl/_testdata/debug/out", ["cl/_testdata/debug/in.go"], True, False, None)
 quit

@@ -361,8 +361,6 @@ def run_tests(executable_path, source_files, verbose, interactive, plugin_path):
 
     results = execute_tests(executable_path, test_cases, verbose,
                             interactive, plugin_path)
-    if not interactive:
-        print_test_results(results, verbose)
 
     if results.total != results.passed:
         os._exit(1)
@@ -498,3 +496,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def __lldb_init_module(debugger, _internal_dict):
+    run_tests("cl/_testdata/debug/out",
+              ["cl/_testdata/debug/in.go"], True, False, None)
+    debugger.HandleCommand('quit')
