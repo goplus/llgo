@@ -730,24 +730,19 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				// Not a local variable.
 				return
 			}
+			if v.IsAddr {
+				// skip *ssa.Alloc or *ssa.FieldAddr
+				return
+			}
 			pos := p.goProg.Fset.Position(v.Pos())
 			value := p.compileValue(b, v.X)
 			fn := v.Parent()
 			dbgVar := p.getLocalVariable(b, fn, variable)
-			if v.IsAddr {
-				// *ssa.Alloc or *ssa.FieldAddr
-				b.DIDeclare(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
-			} else {
-				b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
-			}
+			b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
 		}
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
-}
-
-type poser interface {
-	Pos() token.Pos
 }
 
 func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {
