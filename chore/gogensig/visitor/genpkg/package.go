@@ -2,6 +2,7 @@ package genpkg
 
 import (
 	"bytes"
+	"fmt"
 	"go/token"
 	"go/types"
 	"os"
@@ -42,6 +43,17 @@ func (p *Package) SetSymbolTable(symbolTable *symb.SymbolTable) {
 
 func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
 	p.cvt.SetCppgConf(conf)
+	if conf.Libs != "" {
+		p.linkLib(conf.Libs)
+	}
+
+}
+
+// todo(zzy):refine logic
+func (p *Package) linkLib(lib string) error {
+	linkString := fmt.Sprintf("link: %s;", lib)
+	p.p.CB().NewConstStart(types.Typ[types.String], "LLGoPackage").Val(linkString).EndInit(1)
+	return nil
 }
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {

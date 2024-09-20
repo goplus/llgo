@@ -9,7 +9,7 @@ import (
 )
 
 type BuiltinTypeMap struct {
-	clib           gogen.PkgRef
+	clib           gogen.PkgRef //  "github.com/goplus/llgo/c"
 	builtinTypeMap map[ast.BuiltinType]types.Type
 }
 

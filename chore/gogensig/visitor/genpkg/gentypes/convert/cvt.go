@@ -6,6 +6,7 @@ import (
 	"go/types"
 	"os"
 	"strings"
+	"unsafe"
 
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/typmap"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
@@ -159,9 +160,10 @@ func (p *TypeConv) fieldListToVars(params *ast.FieldList) []*types.Var {
 	return vars
 }
 
+// todo(zzy): use  Unused [unsafe.Sizeof(0)]byte in the source code
 func (p *TypeConv) defaultRecordField() []*types.Var {
 	return []*types.Var{
-		types.NewVar(token.NoPos, p.types, "Unused", types.NewArray(types.Typ[types.Byte], 8)),
+		types.NewVar(token.NoPos, p.types, "Unused", types.NewArray(types.Typ[types.Byte], int64(unsafe.Sizeof(0)))),
 	}
 }
 
@@ -179,7 +181,6 @@ func (p *TypeConv) fieldToVar(field *ast.Field) *types.Var {
 }
 
 func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) types.Type {
-	//defaultfield use  Unused [8]byte
 	var fields []*types.Var
 	if recordType.Fields != nil && len(recordType.Fields.List) == 0 {
 		fields = p.defaultRecordField()
