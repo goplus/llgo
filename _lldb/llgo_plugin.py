@@ -6,8 +6,6 @@ import lldb
 
 def __lldb_init_module(debugger, _):
     debugger.HandleCommand(
-        'command script add -f llgo_plugin.format_go_variable gv')
-    debugger.HandleCommand(
         'command script add -f llgo_plugin.print_go_expression p')
     debugger.HandleCommand(
         'command script add -f llgo_plugin.print_all_variables v')
@@ -42,23 +40,6 @@ def is_llgo_compiler(target):
 
     print("LLGo Compiler not detected")
     return False
-
-
-def format_go_variable(debugger, command, result, _internal_dict):
-    target = debugger.GetSelectedTarget()
-    if not is_llgo_compiler(target):
-        result.AppendMessage("Not a LLGo compiled binary.")
-        return
-
-    frame = debugger.GetSelectedTarget().GetProcess(
-    ).GetSelectedThread().GetSelectedFrame()
-    var = frame.EvaluateExpression(command)
-
-    if var.error.Success():
-        formatted = format_value(var, debugger)
-        result.AppendMessage(formatted)
-    else:
-        result.AppendMessage(f"Error: {var.error}")
 
 
 def print_go_expression(debugger, command, result, _internal_dict):
@@ -149,6 +130,9 @@ def format_slice(var, debugger, indent):
     element_size = element_type.GetByteSize()
 
     target = debugger.GetSelectedTarget()
+    indent_str = '  ' * indent
+    next_indent_str = '  ' * (indent + 1)
+
     for i in range(length):
         element_address = ptr_value + i * element_size
         element = target.CreateValueFromAddress(
@@ -158,45 +142,40 @@ def format_slice(var, debugger, indent):
         elements.append(value)
 
     type_name = var.GetType().GetName()
-    indent_str = '  ' * indent
-    next_indent_str = '  ' * (indent + 1)
 
-    if len(elements) > 5:  # For long slices, print only first and last few elements
-        result = f"{type_name}{{\n{next_indent_str}{', '.join(elements[:3])},\n{
-            next_indent_str}...,\n{next_indent_str}{', '.join(elements[-2:])}\n{indent_str}}}"
+    if len(elements) > 5:  # 如果元素数量大于5，则进行折行显示
+        result = f"{type_name}{{\n{next_indent_str}" + \
+            f",\n{next_indent_str}".join(elements) + f"\n{indent_str}}}"
     else:
-        result = f"{type_name}{{\n{next_indent_str}{', '.join(elements)}\n{
-            indent_str}}}"
+        result = f"{type_name}{{{', '.join(elements)}}}"
 
     return result
 
 
 def format_array(var, debugger, indent):
     elements = []
+    indent_str = '  ' * indent
+    next_indent_str = '  ' * (indent + 1)
+
     for i in range(var.GetNumChildren()):
         value = format_value(var.GetChildAtIndex(
             i), debugger, include_type=False, indent=indent+1)
         elements.append(value)
+
     array_size = var.GetNumChildren()
     element_type = map_type_name(var.GetType().GetArrayElementType().GetName())
     type_name = f"[{array_size}]{element_type}"
-    indent_str = '  ' * indent
-    next_indent_str = '  ' * (indent + 1)
 
-    if len(elements) > 5:  # For long arrays, print only first and last few elements
-        result = f"{type_name}{{\n{next_indent_str}{', '.join(elements[:3])},\n{
-            next_indent_str}...,\n{next_indent_str}{', '.join(elements[-2:])},\n{indent_str}}}"
+    if len(elements) > 5:  # 如果元素数量大于5，则进行折行显示
+        return f"{type_name}{{\n{next_indent_str}" + f",\n{next_indent_str}".join(elements) + f"\n{indent_str}}}"
     else:
-        result = f"{type_name}{{\n{next_indent_str}{', '.join(elements)},\n{
-            indent_str}}}"
-
-    return result
+        return f"{type_name}{{{', '.join(elements)}}}"
 
 
 def format_string(var):
     summary = var.GetSummary()
     if summary is not None:
-        return summary
+        return summary  # Keep the quotes
     else:
         data = var.GetChildMemberWithName('data').GetValue()
         length = int(var.GetChildMemberWithName('len').GetValue())
@@ -214,19 +193,15 @@ def format_struct(var, debugger, include_type=True, indent=0, type_name=""):
     for i in range(var.GetNumChildren()):
         child = var.GetChildAtIndex(i)
         child_name = child.GetName()
-        child_type = map_type_name(child.GetType().GetName())
         child_value = format_value(
             child, debugger, include_type=False, indent=indent+1)
+        children.append(f"{child_name} = {child_value}")
 
-        if '\n' in child_value or var.GetNumChildren() > 3:
-            children.append(f"{next_indent_str}{child_name}: {child_value},")
-        else:
-            children.append(f"{child_name}: {child_value}")
-
-    if var.GetNumChildren() <= 3 and all('\n' not in child for child in children):
-        struct_content = f"{{ {', '.join(children)} }}"
+    if len(children) > 5:  # 如果字段数量大于5，则进行折行显示
+        struct_content = "{\n" + ",\n".join(
+            [f"{next_indent_str}{child}" for child in children]) + f"\n{indent_str}}}"
     else:
-        struct_content = "{\n" + "\n".join(children) + "\n" + indent_str + "}"
+        struct_content = f"{{{', '.join(children)}}}"
 
     if include_type:
         return f"{type_name}{struct_content}"
@@ -237,13 +212,7 @@ def format_struct(var, debugger, include_type=True, indent=0, type_name=""):
 def format_pointer(var, debugger, indent, type_name):
     if not var.IsValid() or var.GetValueAsUnsigned() == 0:
         return "<variable not available>"
-    pointee = var.Dereference()
-    if pointee.IsValid():
-        pointee_value = format_value(
-            pointee, debugger, include_type=False, indent=indent)
-        return f"{var.GetValue()}"
-    else:
-        return f"{var.GetValue()}"
+    return var.GetValue()  # Return the address as a string
 
 
 def map_type_name(type_name):

@@ -74,7 +74,7 @@ func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	//   s.slice: []int{21, 22, 23}
 	//   s.arr: [3]int{24, 25, 26}
 	//   s.arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
-	//   s.s: hello
+	//   s.s: "hello"
 	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	//   s.pad1: 100
 	//   s.pad2: 200
@@ -147,7 +147,7 @@ func FuncWithAllTypeParams(
 	//   slice: []int{21, 22, 23}
 	//   arr: [3]int{24, 25, 26}
 	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
-	//   s: hello
+	//   s: "hello"
 	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	i8 = 9
 	// Expected:

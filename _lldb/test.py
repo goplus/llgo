@@ -7,6 +7,7 @@ import signal
 from dataclasses import dataclass, field
 from typing import List
 import lldb
+import llgo_plugin  # Add this import
 
 
 class LLDBTestException(Exception):
@@ -81,6 +82,11 @@ class LLDBDebugger:
             raise LLDBTestException(f"Failed to create target for {
                 self.executable_path}")
 
+        self.debugger.HandleCommand(
+            'command script add -f llgo_plugin.print_go_expression p')
+        self.debugger.HandleCommand(
+            'command script add -f llgo_plugin.print_all_variables v')
+
     def set_breakpoint(self, file_spec, line_number):
         bp = self.target.BreakpointCreateByLocation(
             file_spec, line_number)
@@ -97,121 +103,30 @@ class LLDBDebugger:
         if self.process.GetState() != lldb.eStateStopped:
             raise LLDBTestException("Process didn't stop at breakpoint")
 
-    def get_variable_value(self, var_name):
+    def get_variable_value(self, var_expression):
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
 
-        if isinstance(var_name, lldb.SBValue):
-            var = var_name
-        else:
-            # process struct field access
-            parts = var_name.split('.')
-            if len(parts) > 1:
-                var = frame.FindVariable(parts[0])
-                for part in parts[1:]:
-                    if var.IsValid():
-                        var = var.GetChildMemberWithName(part)
-                    else:
-                        return None
+        # 处理结构体成员访问、指针解引用和数组索引
+        parts = var_expression.split('.')
+        var = frame.FindVariable(parts[0])
+
+        for part in parts[1:]:
+            if not var.IsValid():
+                return None
+
+            # 处理数组索引
+            if '[' in part and ']' in part:
+                array_name, index = part.split('[')
+                index = int(index.rstrip(']'))
+                var = var.GetChildAtIndex(index)
+            # 处理指针解引用
+            elif var.GetType().IsPointerType():
+                var = var.Dereference()
+                var = var.GetChildMemberWithName(part)
             else:
-                actual_var_name = var_name.split('=')[0].strip()
-                if '(' in actual_var_name:
-                    actual_var_name = actual_var_name.split('(')[-1].strip()
-                var = frame.FindVariable(actual_var_name)
+                var = var.GetChildMemberWithName(part)
 
-        return self.format_value(var) if var.IsValid() else None
-
-    def format_value(self, var, include_type=True):
-        if var.IsValid():
-            type_name = var.GetTypeName()
-            var_type = var.GetType()
-            type_class = var_type.GetTypeClass()
-
-            if type_name.startswith('[]'):  # Slice
-                return self.format_slice(var)
-            elif var_type.IsArrayType():
-                return self.format_array(var)
-            elif type_name == 'string':  # String
-                return self.format_string(var)
-            elif type_class in [lldb.eTypeClassStruct, lldb.eTypeClassClass]:
-                return self.format_struct(var, include_type)
-            else:
-                value = var.GetValue()
-                summary = var.GetSummary()
-                if value is not None:
-                    return str(value)
-                elif summary is not None:
-                    return summary
-                else:
-                    return "None"
-        return "None"
-
-    def format_slice(self, var):
-        length = int(var.GetChildMemberWithName('len').GetValue())
-        data_ptr = var.GetChildMemberWithName('data')
-        elements = []
-
-        # Get the actual pointer value
-        ptr_value = int(data_ptr.GetValue(), 16)
-        element_type = data_ptr.GetType().GetPointeeType()
-        element_size = element_type.GetByteSize()
-
-        for i in range(length):
-            element_address = ptr_value + i * element_size
-            element = self.target.CreateValueFromAddress(
-                f"element_{i}", lldb.SBAddress(element_address, self.target), element_type)
-            value = self.format_value(element, include_type=False)
-            elements.append(value)
-
-        type_name = var.GetType().GetName().split(
-            '[]')[-1]  # Extract element type from slice type
-        type_name = self.type_mapping.get(type_name, type_name)  # Use mapping
-        result = f"[]{type_name}{{{', '.join(elements)}}}"
-        return result
-
-    def format_array(self, var):
-        elements = []
-        for i in range(var.GetNumChildren()):
-            value = self.format_value(
-                var.GetChildAtIndex(i), include_type=False)
-            elements.append(value)
-        array_size = var.GetNumChildren()
-        type_name = var.GetType().GetArrayElementType().GetName()
-        type_name = self.type_mapping.get(type_name, type_name)  # Use mapping
-        return f"[{array_size}]{type_name}{{{', '.join(elements)}}}"
-
-    def format_pointer(self, var):
-        target = var.Dereference()
-        if target.IsValid():
-            return f"*{self.get_variable_value(target.GetName())}"
-        else:
-            return str(var.GetValue())
-
-    def format_string(self, var):
-        summary = var.GetSummary()
-        if summary is not None:
-            return summary.strip('"')
-        else:
-            data = var.GetChildMemberWithName('data').GetValue()
-            length = int(var.GetChildMemberWithName('len').GetValue())
-            if data and length:
-                error = lldb.SBError()
-                return self.process.ReadCStringFromMemory(int(data, 16), length + 1, error)
-        return "None"
-
-    def format_struct(self, var, include_type=True):
-        children = []
-        for i in range(var.GetNumChildren()):
-            child = var.GetChildAtIndex(i)
-            child_name = child.GetName()
-            child_value = self.format_value(child)
-            children.append(f"{child_name} = {child_value}")
-
-        struct_content = f"{{{', '.join(children)}}}"
-        if include_type:
-            struct_name = var.GetTypeName()
-            return f"{struct_name}{struct_content}"
-        else:
-            return struct_content
+        return llgo_plugin.format_value(var, self.debugger) if var.IsValid() else None
 
     def get_all_variable_names(self):
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)

@@ -12,15 +12,16 @@ llgo build -o cl/_testdata/debug/out -dbg ./cl/_testdata/debug
 lldb -O "command script import _lldb/llgo_plugin.py" ./cl/_testdata/debug/out
 ```
 
-```lldb
+```shell
 /opt/homebrew/bin/lldb -O "command script import _lldb/llgo_plugin.py" ./cl/_testdata/debug/out
+# github.com/goplus/llgo/cl/_testdata/debug
 Breakpoint 1: no locations (pending).
 Breakpoint set in dummy target, will get copied into future targets.
 (lldb) command script import _lldb/llgo_plugin.py
 (lldb) target create "./cl/_testdata/debug/out"
 Current executable set to '/Users/lijie/source/goplus/llgo/cl/_testdata/debug/out' (arm64).
 (lldb) r
-Process 16088 launched: '/Users/lijie/source/goplus/llgo/cl/_testdata/debug/out' (arm64)
+Process 21992 launched: '/Users/lijie/source/goplus/llgo/cl/_testdata/debug/out' (arm64)
 globalInt: 301
 s: 0x100123e40
 0x100123be0
@@ -32,7 +33,7 @@ called function with struct
 called function with types
 0x100123e40
 0x1000343d0
-Process 16088 stopped
+Process 21992 stopped
 * thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
     frame #0: 0x000000010001b3b4 out`main at in.go:225:12
    222 		//   s.i8: '\x01'
@@ -45,80 +46,68 @@ Process 16088 stopped
 (lldb) v
 var i int = <variable not available>
 var s github.com/goplus/llgo/cl/_testdata/debug.StructWithAllTypeFields = {
-  i8: '\x12',
-  i16: 2,
-  i32: 3,
-  i64: 4,
-  i: 5,
-  u8: '\x06',
-  u16: 7,
-  u32: 8,
-  u64: 9,
-  u: 10,
-  f32: 11,
-  f64: 12,
-  b: true,
-  c64: { real: 13, imag: 14 },
-  c128: { real: 15, imag: 16 },
-  slice: []int{
-    21, 22, 23
-  },
-  arr: [3]int{
-    24, 25, 26,
-  },
-  arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{
-    { i: 27 }, { i: 28 }, { i: 29 },
-  },
-  s: "hello",
-  e: { i: 30 },
-  pf: 0x0000000100123d10,
-  pi: 0x00000001001149e0,
-  intr: { type: 0x0000000100116810, data: 0x00000001001149d0 },
-  m: { count: 4296130304 },
-  c: {  },
-  err: { type: 0x0000000100116840, data: 0x0000000100112940 },
-  fn: { f: 0x000000010001b4a4, data: 0x00000001001149c0 },
-  pad1: 100,
-  pad2: 200,
+  i8 = '\x12',
+  i16 = 2,
+  i32 = 3,
+  i64 = 4,
+  i = 5,
+  u8 = '\x06',
+  u16 = 7,
+  u32 = 8,
+  u64 = 9,
+  u = 10,
+  f32 = 11,
+  f64 = 12,
+  b = true,
+  c64 = {real = 13, imag = 14},
+  c128 = {real = 15, imag = 16},
+  slice = []int{21, 22, 23},
+  arr = [3]int{24, 25, 26},
+  arr2 = [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}},
+  s = "hello",
+  e = {i = 30},
+  pf = 0x0000000100123d10,
+  pi = 0x00000001001149e0,
+  intr = {type = 0x0000000100116810, data = 0x00000001001149d0},
+  m = {count = 4296130304},
+  c = {},
+  err = {type = 0x0000000100116840, data = 0x0000000100112940},
+  fn = {f = 0x000000010001b4a4, data = 0x00000001001149c0},
+  pad1 = 100,
+  pad2 = 200
 }
 var globalStructPtr *github.com/goplus/llgo/cl/_testdata/debug.StructWithAllTypeFields = <variable not available>
 var globalStruct github.com/goplus/llgo/cl/_testdata/debug.StructWithAllTypeFields = {
-  i8: '\x01',
-  i16: 2,
-  i32: 3,
-  i64: 4,
-  i: 5,
-  u8: '\x06',
-  u16: 7,
-  u32: 8,
-  u64: 9,
-  u: 10,
-  f32: 11,
-  f64: 12,
-  b: true,
-  c64: { real: 13, imag: 14 },
-  c128: { real: 15, imag: 16 },
-  slice: []int{
-    21, 22, 23
-  },
-  arr: [3]int{
-    24, 25, 26,
-  },
-  arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{
-    { i: 27 }, { i: 28 }, { i: 29 },
-  },
-  s: "hello",
-  e: { i: 30 },
-  pf: 0x0000000100123d10,
-  pi: 0x00000001001149e0,
-  intr: { type: 0x0000000100116810, data: 0x00000001001149d0 },
-  m: { count: 4296130304 },
-  c: {  },
-  err: { type: 0x0000000100116840, data: 0x0000000100112940 },
-  fn: { f: 0x000000010001b4a4, data: 0x00000001001149c0 },
-  pad1: 100,
-  pad2: 200,
+  i8 = '\x01',
+  i16 = 2,
+  i32 = 3,
+  i64 = 4,
+  i = 5,
+  u8 = '\x06',
+  u16 = 7,
+  u32 = 8,
+  u64 = 9,
+  u = 10,
+  f32 = 11,
+  f64 = 12,
+  b = true,
+  c64 = {real = 13, imag = 14},
+  c128 = {real = 15, imag = 16},
+  slice = []int{21, 22, 23},
+  arr = [3]int{24, 25, 26},
+  arr2 = [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}},
+  s = "hello",
+  e = {i = 30},
+  pf = 0x0000000100123d10,
+  pi = 0x00000001001149e0,
+  intr = {type = 0x0000000100116810, data = 0x00000001001149d0},
+  m = {count = 4296130304},
+  c = {},
+  err = {type = 0x0000000100116840, data = 0x0000000100112940},
+  fn = {f = 0x000000010001b4a4, data = 0x00000001001149c0},
+  pad1 = 100,
+  pad2 = 200
 }
 var globalInt int = 301
-var err error = { type: 0x0000000100112900, data: 0x000000000000001a }
+var err error = {type = 0x0000000100112900, data = 0x000000000000001a}
 ```
