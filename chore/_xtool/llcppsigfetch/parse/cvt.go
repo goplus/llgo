@@ -181,11 +181,7 @@ func (ct *Converter) GetCurFile() *ast.File {
 			return ct.Files[i].Doc
 		}
 	}
-	newDoc := &ast.File{
-		Decls:    make([]ast.Decl, 0),
-		Includes: make([]*ast.Include, 0),
-		Macros:   make([]*ast.Macro, 0),
-	}
+	newDoc := &ast.File{}
 	ct.Files = append(ct.Files, &FileEntry{Path: ct.curLoc.File, Doc: newDoc})
 	return newDoc
 }
@@ -734,13 +730,8 @@ func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 }
 
 func (ct *Converter) ProcessRecordType(cursor clang.Cursor) *ast.RecordType {
-	tagMap := map[clang.CursorKind]ast.Tag{
-		clang.CursorStructDecl: ast.Struct,
-		clang.CursorUnionDecl:  ast.Union,
-		clang.CursorClassDecl:  ast.Class,
-	}
 	return &ast.RecordType{
-		Tag:     tagMap[cursor.Kind],
+		Tag:     toTag(cursor.Kind),
 		Fields:  ct.ProcessFieldList(cursor),
 		Methods: ct.ProcessMethods(cursor),
 	}
@@ -894,6 +885,19 @@ func IsExplicitUnsigned(t clang.Type) bool {
 		t.Kind == clang.TypeUShort || t.Kind == clang.TypeUInt ||
 		t.Kind == clang.TypeULong || t.Kind == clang.TypeULongLong ||
 		t.Kind == clang.TypeUInt128
+}
+
+func toTag(kind clang.CursorKind) ast.Tag {
+	switch kind {
+	case clang.CursorStructDecl:
+		return ast.Struct
+	case clang.CursorUnionDecl:
+		return ast.Union
+	case clang.CursorClassDecl:
+		return ast.Class
+	default:
+		panic(fmt.Sprintf("Unexpected cursor kind in toTag: %v", kind))
+	}
 }
 
 func toToken(tok clang.Token) token.Token {

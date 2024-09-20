@@ -27,9 +27,6 @@ func MarshalASTFiles(files []*FileEntry) *cjson.JSON {
 }
 
 func MarshalDeclList(list []ast.Decl) *cjson.JSON {
-	if list == nil {
-		return cjson.Null()
-	}
 	root := cjson.Array()
 	for _, item := range list {
 		root.AddItem(MarshalASTDecl(item))
@@ -49,9 +46,6 @@ func MarshalFieldList(list []*ast.Field) *cjson.JSON {
 }
 
 func MarshalIncludeList(list []*ast.Include) *cjson.JSON {
-	if list == nil {
-		return cjson.Null()
-	}
 	root := cjson.Array()
 	for _, item := range list {
 		include := cjson.Object()
@@ -63,9 +57,6 @@ func MarshalIncludeList(list []*ast.Include) *cjson.JSON {
 }
 
 func MarshalMacroList(list []*ast.Macro) *cjson.JSON {
-	if list == nil {
-		return cjson.Null()
-	}
 	root := cjson.Array()
 	for _, item := range list {
 		macro := cjson.Object()
