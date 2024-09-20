@@ -78,7 +78,10 @@ func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	//   s.pad1: 100
 	//   s.pad2: 200
-	println(len(s.s))
+	s.i8 = 8
+	// Expected:
+	//   s.i8: '\x08'
+	println(len(s.s), s.i8)
 }
 
 // Params is a function with all types of parameters.
@@ -125,7 +128,7 @@ func FuncWithAllTypeParams(
 		fn,
 	)
 	// Expected:
-	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn globalInt globalStruct globalStructPtr
+	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn
 	//   i8: '\x01'
 	//   i16: 2
 	//   i32: 3
@@ -146,6 +149,10 @@ func FuncWithAllTypeParams(
 	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
 	//   s: hello
 	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
+	i8 = 9
+	// Expected:
+	//   i8: '\x09'
+	println(i8)
 	return 1, errors.New("some error")
 }
 
@@ -214,8 +221,17 @@ func main() {
 	//   all variables: globalInt globalStruct globalStructPtr s i err
 	//   s.i8: '\x01'
 	//   s.i16: 2
+	s.i8 = 0x12
+	println(s.i8)
+	// Expected:
+	//   all variables: globalInt globalStruct globalStructPtr s i err
+	//   s.i8: '\x12'
+	//   globalStruct.i8: '\x01'
+	println((*globalStructPtr).i8)
 	println("done")
 	println("")
+	println(&s, &globalStruct, globalStructPtr.i16, globalStructPtr)
+	globalStructPtr = nil
 }
 
 var globalInt int = 301

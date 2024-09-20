@@ -56,6 +56,10 @@ type aCompilationUnit struct {
 
 type CompilationUnit = *aCompilationUnit
 
+func (c CompilationUnit) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
+	return &aDIScopeMeta{c.ll}
+}
+
 var DWARF_LANG_C llvm.DwarfLang = 0x2
 var DWARF_LANG_GO llvm.DwarfLang = 0x16
 
@@ -576,7 +580,7 @@ func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
 		return
 	}
 	gv := b.di().createGlobalVariableExpression(
-		b.di().file(pos.Filename),
+		b.Pkg.cu,
 		pos,
 		name,
 		name,

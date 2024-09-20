@@ -5,5 +5,5 @@
 # lldb -S _lldbtest/runmain.lldb
 
 command script import _lldbtest/main.py
-script main.run_tests("cl/_testdata/debug/out", ["cl/_testdata/debug/in.go"], True, True, None)
+script main.run_tests("cl/_testdata/debug/out", ["cl/_testdata/debug/in.go"], True, False, None)
 quit

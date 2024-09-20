@@ -309,12 +309,15 @@ def parse_expected_values(source_files):
     return test_cases
 
 
-def execute_tests(executable_path, test_cases, interactive, plugin_path):
+def execute_tests(executable_path, test_cases, verbose, interactive, plugin_path):
     results = TestResults()
 
     for test_case in test_cases:
         debugger = LLDBDebugger(executable_path, plugin_path)
         try:
+            if verbose:
+                log(f"Setting breakpoint at {
+                    test_case.source_file}:{test_case.end_line}")
             debugger.setup()
             debugger.set_breakpoint(
                 test_case.source_file, test_case.end_line)
@@ -356,7 +359,7 @@ def run_tests(executable_path, source_files, verbose, interactive, plugin_path):
             ', '.join(source_files)} with {executable_path}")
         log(f"Found {len(test_cases)} test cases")
 
-    results = execute_tests(executable_path, test_cases,
+    results = execute_tests(executable_path, test_cases, verbose,
                             interactive, plugin_path)
     if not interactive:
         print_test_results(results, verbose)

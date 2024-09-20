@@ -339,7 +339,7 @@ func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
 		})
 		p.diFunc = &aDIFunction{
 			b.di.CreateFunction(
-				p.Pkg.cu.ll,
+				b.file(pos.Filename).ll,
 				llvm.DIFunction{
 					Type:         diFuncType,
 					Name:         p.Name(),
