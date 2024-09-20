@@ -54,6 +54,30 @@ func (s *Struct) Foo(a []int, b string) int {
 
 func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	println(&s)
+	// Expected:
+	//   all variables: s
+	//   s.i8: '\x01'
+	//   s.i16: 2
+	//   s.i32: 3
+	//   s.i64: 4
+	//   s.i: 5
+	//   s.u8: '\x06'
+	//   s.u16: 7
+	//   s.u32: 8
+	//   s.u64: 9
+	//   s.u: 10
+	//   s.f32: 11
+	//   s.f64: 12
+	//   s.b: true
+	//   s.c64: complex64{real = 13, imag = 14}
+	//   s.c128: complex128{real = 15, imag = 16}
+	//   s.slice: []int{21, 22, 23}
+	//   s.arr: [3]int{24, 25, 26}
+	//   s.arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
+	//   s.s: hello
+	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
+	//   s.pad1: 100
+	//   s.pad2: 200
 	println(len(s.s))
 }
 
@@ -115,13 +139,13 @@ func FuncWithAllTypeParams(
 	//   f32: 11
 	//   f64: 12
 	//   b: true
-	//   c64: complex64(real = 13, imag = 14)
-	//   c128: complex128(real = 15, imag = 16)
-	//   slice: []int[21, 22, 23]
-	//   arr: [3]int[24, 25, 26]
-	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E[github.com/goplus/llgo/cl/_testdata/debug.E(i = 27), github.com/goplus/llgo/cl/_testdata/debug.E(i = 28), github.com/goplus/llgo/cl/_testdata/debug.E(i = 29)]
+	//   c64: complex64{real = 13, imag = 14}
+	//   c128: complex128{real = 15, imag = 16}
+	//   slice: []int{21, 22, 23}
+	//   arr: [3]int{24, 25, 26}
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
 	//   s: hello
-	//   e: github.com/goplus/llgo/cl/_testdata/debug.E(i = 30)
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	return 1, errors.New("some error")
 }
 
