@@ -18,10 +18,10 @@ import (
 )
 
 func EqualStringIgnoreSpace(s1 string, s2 string) (bool, string) {
-	s1 = strings.TrimSpace(s1)
-	s2 = strings.TrimSpace(s2)
-	if !cmp.Equal(s1, s2) {
-		return false, cmp.Diff(s1, s2)
+	arr1 := strings.Split(strings.TrimSpace(s1), "\n")
+	arr2 := strings.Split(strings.TrimSpace(s2), "\n")
+	if !cmp.Equal(arr1, arr2) {
+		return false, cmp.Diff(arr1, arr2)
 	}
 	return true, ""
 }

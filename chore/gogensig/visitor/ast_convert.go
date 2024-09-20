@@ -73,7 +73,7 @@ func (p *AstConvert) VisitEnum(enumName *ast.Ident, fields *ast.FieldList, typeD
 }
 
 func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	fmt.Printf("visit union %s\n", unionName.Name)
+	//fmt.Printf("visit union %s\n", unionName.Name)
 	//TODO convert union
 }
 
