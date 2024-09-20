@@ -59,6 +59,7 @@ func (p *BuiltinTypeMap) initBuiltinTypeMap() {
 		{Kind: ast.Int, Flags: ast.LongLong | ast.Unsigned}: p.CType("UlongLong"),        // ULongLong
 		{Kind: ast.Float}:                                   p.CType("Float"),            // Float
 		{Kind: ast.Float, Flags: ast.Double}:                p.CType("Double"),           // Double
+		{Kind: ast.Float, Flags: ast.Double | ast.Long}:     p.CType("Double"),           // Double
 		{Kind: ast.Complex}:                                 types.Typ[types.Complex64],  // ComplexFloat
 		{Kind: ast.Complex, Flags: ast.Double}:              types.Typ[types.Complex128], // ComplexDouble
 	}
