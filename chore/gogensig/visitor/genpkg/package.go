@@ -61,9 +61,12 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	goFuncName, err := p.cvt.LookupSymbol(symb.MangleNameType(funcDecl.MangledName))
 	if err != nil {
 		// not gen the function not in the symbolmap
-		return nil
+		return err
 	}
-	sig := p.cvt.ToSignature(funcDecl.Type)
+	sig, err := p.cvt.ToSignature(funcDecl.Type)
+	if err != nil {
+		return err
+	}
 	decl := p.p.NewFuncDecl(token.NoPos, string(goFuncName), sig)
 	decl.SetComments(p.p, comment.NewFuncDocComments(funcDecl.Name.Name, string(goFuncName)))
 	return nil
@@ -77,19 +80,28 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	}
 	typeBlock := p.p.NewTypeDefs()
 	decl := typeBlock.NewType(name)
-	structType := p.cvt.RecordTypeToStruct(typeDecl.Type)
+	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
+	if err != nil {
+		return err
+	}
 	decl.InitType(p.p, structType)
-	p.AddToDelete(decl)
+	p.addToDelete(decl)
 	return nil
 }
 
-func (p *Package) AddToDelete(node ast.Node) {
+func (p *Package) addToDelete(node ast.Node) {
 	p.dels = append(p.dels, node)
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	genDecl := p.p.NewTypeDefs()
-	typ := p.ToType(typedefDecl.Type)
+	typ, err := p.ToType(typedefDecl.Type)
+	if err != nil {
+		return err
+	}
+	if typ == nil {
+		return fmt.Errorf("underlying type must not be nil")
+	}
 	name, err := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
 	if err != nil {
 		return err
@@ -106,12 +118,12 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(comment.NewTypecDocComments())
 	}
-	p.AddToDelete(genDecl)
+	p.addToDelete(genDecl)
 	return nil
 }
 
 // Convert ast.Expr to types.Type
-func (p *Package) ToType(expr ast.Expr) types.Type {
+func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 	return p.cvt.ToType(expr)
 }
 
@@ -128,7 +140,7 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 	}
 }
 
-func (p *Package) Delete() {
+func (p *Package) delete() {
 	for _, del := range p.dels {
 		switch v := del.(type) {
 		case *gogen.TypeDecl:
@@ -167,12 +179,12 @@ func (p *Package) Write(docPath string) error {
 	}
 	fileName = fileName + ".go"
 	p.p.WriteFile(filepath.Join(dir, fileName))
-	p.Delete()
+	p.delete()
 	return nil
 }
 
 func (p *Package) WriteToBuffer(buf *bytes.Buffer) error {
 	err := p.p.WriteTo(buf)
-	p.Delete()
+	p.delete()
 	return err
 }
