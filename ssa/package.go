@@ -712,10 +712,6 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 	}
 }
 
-func (p Package) diBuilder() diBuilder {
-	return p.di
-}
-
 func (p Package) InitDebugSymbols(name, pkgPath string, positioner Positioner) {
 	p.di = newDIBuilder(p.Prog, p, positioner)
 	p.cu = p.di.createCompileUnit(name, pkgPath)
