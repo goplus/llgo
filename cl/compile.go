@@ -58,12 +58,8 @@ func SetDebug(dbgFlags dbgFlags) {
 }
 
 // EnableDebugSymbols enables debug symbols.
-func EnableDebugSymbols() {
-	debugSymbols = true
-}
-
-func DisableDebugSymbols() {
-	debugSymbols = false
+func EnableDebugSymbols(b bool) {
+	debugSymbols = b
 }
 
 func DebugSymbols() bool {

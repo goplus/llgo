@@ -130,10 +130,10 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	out := pkgDir + "/out.ll"
 	dbg := isDbgSymEnabled(pkgDir + "/flags.txt")
 	if dbg {
-		cl.EnableDebugSymbols()
+		cl.EnableDebugSymbols(true)
+		defer cl.EnableDebugSymbols(false)
 		cl.DebugSymbols() // just for coverage
 	}
-	defer cl.DisableDebugSymbols()
 	b, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatal("ReadFile failed:", err)

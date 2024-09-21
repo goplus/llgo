@@ -11,7 +11,8 @@ find_lldb() {
 
     for lldb_path in "${lldb_paths[@]}"; do
         if command -v "$lldb_path" >/dev/null 2>&1; then
-            local version=$("$lldb_path" --version | grep -oE '[0-9]+' | head -1)
+            local version
+            version=$("$lldb_path" --version | grep -oE '[0-9]+' | head -1)
             if [ "$version" -ge 18 ]; then
                 echo "$lldb_path"
                 return 0
@@ -25,12 +26,13 @@ find_lldb() {
 
 # Find LLDB 18+
 LLDB_PATH=$(find_lldb)
+export LLDB_PATH
 
 # Default package path
-DEFAULT_PACKAGE_PATH="./cl/_testdata/debug"
+export DEFAULT_PACKAGE_PATH="./cl/_testdata/debug"
 
 # Function to build the project
 build_project() {
     local package_path="$1"
-    go run ./cmd/llgo build -o "${package_path}/out" -dbg "${package_path}"
+    LLGO_DEBUG=1 go run ./cmd/llgo build -o "${package_path}/out" "${package_path}"
 }

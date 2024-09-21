@@ -17,24 +17,19 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
 )
 
-var (
-	enableDbg = flag.Bool("dbg", false, "enable debug symbols")
-)
-
 func main() {
-	flag.Parse()
-	if len(flag.Args()) < 1 {
+	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "Usage: llgen [flags] <pkg> [pkgPath]")
 		return
 	}
-	llgen.Init(*enableDbg)
-	args := flag.Args()
+	llgen.Init(build.IsDebugEnabled())
+	args := os.Args[1:]
 	llgen.SmartDoFile(args[0], args[1:]...)
 }

@@ -3,14 +3,16 @@
 ### Build with debug info
 
 ```shell
-llgo build -o cl/_testdata/debug/out -dbg ./cl/_testdata/debug
+LLGO_DEBUG=1 llgo build -o cl/_testdata/debug/out ./cl/_testdata/debug
 ```
 
 ### Debug with lldb
 
 ```shell
-lldb -O "command script import _lldb/llgo_plugin.py" ./cl/_testdata/debug/out
+_lldb/runlldb.sh ./cl/_testdata/debug/out
 ```
+
+or
 
 ```shell
 /opt/homebrew/bin/lldb -O "command script import _lldb/llgo_plugin.py" ./cl/_testdata/debug/out

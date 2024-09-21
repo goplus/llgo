@@ -66,13 +66,9 @@ func llgenDir(dir string, pkgPath ...string) {
 		}
 		testDir := dir + "/" + name
 		fmt.Fprintln(os.Stderr, "llgen", testDir)
-		os.Chdir(testDir)
+		check(os.Chdir(testDir))
 		dbg := isDbgSymEnabled("flags.txt")
-		if dbg {
-			cl.EnableDebugSymbols()
-		} else {
-			cl.DisableDebugSymbols()
-		}
+		cl.EnableDebugSymbols(dbg)
 
 		llgen.SmartDoFile("in.go", pkgPath...)
 	}

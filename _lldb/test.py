@@ -91,7 +91,7 @@ class LLDBDebugger:
         bp = self.target.BreakpointCreateByLocation(file_spec, line_number)
         if not bp.IsValid():
             raise LLDBTestException(f"Failed to set breakpoint at {
-                                    file_spec}:{line_number}")
+                                    file_spec}: {line_number}")
         return bp
 
     def run_to_breakpoint(self) -> None:
@@ -225,7 +225,7 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
         try:
             if verbose:
                 log(f"Setting breakpoint at {
-                    test_case.source_file}:{test_case.end_line}")
+                    test_case.source_file}: {test_case.end_line}")
             debugger.setup()
             debugger.set_breakpoint(test_case.source_file, test_case.end_line)
             debugger.run_to_breakpoint()
@@ -269,6 +269,7 @@ def run_tests(executable_path: str, source_files: List[str], verbose: bool, inte
 
     results = execute_tests(executable_path, test_cases,
                             verbose, interactive, plugin_path)
+    print_test_results(results)
 
     if results.total != results.passed:
         os._exit(1)
@@ -331,14 +332,7 @@ def execute_single_variable_test(debugger: LLDBDebugger, test: Test) -> TestResu
         )
 
 
-def print_test_results(results: TestResults, verbose: bool) -> None:
-    for case_result in results.case_results:
-        case = case_result.test_case
-        loc = f"{case.source_file}:{case.start_line}-{case.end_line}"
-        log(f"\nTest case: {loc} in function '{case_result.function}'")
-        for result in case_result.results:
-            print_test_result(result, verbose)
-
+def print_test_results(results: TestResults) -> None:
     log("\nTest results:")
     log(f"  Total tests: {results.total}")
     log(f"  Passed tests: {results.passed}")

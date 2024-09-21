@@ -29,9 +29,7 @@ func Init(enableDbg bool) {
 	llssa.Initialize(llssa.InitAll)
 	llssa.SetDebug(llssa.DbgFlagAll)
 	cl.SetDebug(cl.DbgFlagAll)
-	if enableDbg {
-		cl.EnableDebugSymbols()
-	}
+	cl.EnableDebugSymbols(enableDbg)
 }
 
 func PkgPath(dir string) string {
