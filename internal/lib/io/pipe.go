@@ -86,9 +86,13 @@ func (p *pipe) write(b []byte) (n int, err error) {
 	for once := true; once || len(b) > 0; once = false {
 		select {
 		case p.wrCh <- b:
-			nw := <-p.rdCh
-			b = b[nw:]
-			n += nw
+			select {
+			case nw := <-p.rdCh:
+				b = b[nw:]
+				n += nw
+			case <-p.done:
+				return n, p.writeCloseError()
+			}
 		case <-p.done:
 			return n, p.writeCloseError()
 		}
