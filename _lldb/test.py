@@ -79,8 +79,8 @@ class LLDBDebugger:
                 f'command script import "{self.plugin_path}"')
         self.target = self.debugger.CreateTarget(self.executable_path)
         if not self.target:
-            raise LLDBTestException(f"Failed to create target for {
-                                    self.executable_path}")
+            raise LLDBTestException(
+                f"Failed to create target for {self.executable_path}")
 
         self.debugger.HandleCommand(
             'command script add -f llgo_plugin.print_go_expression p')
@@ -90,8 +90,8 @@ class LLDBDebugger:
     def set_breakpoint(self, file_spec: str, line_number: int) -> lldb.SBBreakpoint:
         bp = self.target.BreakpointCreateByLocation(file_spec, line_number)
         if not bp.IsValid():
-            raise LLDBTestException(f"Failed to set breakpoint at {
-                                    file_spec}: {line_number}")
+            raise LLDBTestException(
+                f"Failed to set breakpoint at {file_spec}: {line_number}")
         return bp
 
     def run_to_breakpoint(self) -> None:
@@ -224,8 +224,7 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
         debugger = LLDBDebugger(executable_path, plugin_path)
         try:
             if verbose:
-                log(f"Setting breakpoint at {
-                    test_case.source_file}: {test_case.end_line}")
+                log(f"Setting breakpoint at {test_case.source_file}: {test_case.end_line}")
             debugger.setup()
             debugger.set_breakpoint(test_case.source_file, test_case.end_line)
             debugger.run_to_breakpoint()
@@ -263,8 +262,7 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
 def run_tests(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> None:
     test_cases = parse_expected_values(source_files)
     if verbose:
-        log(f"Running tests for {
-            ', '.join(source_files)} with {executable_path}")
+        log(f"Running tests for {', '.join(source_files)} with {executable_path}")
         log(f"Found {len(test_cases)} test cases")
 
     results = execute_tests(executable_path, test_cases,
@@ -350,21 +348,17 @@ def print_test_result(result: TestResult, verbose: bool) -> None:
 
     if result.status == 'pass':
         if verbose:
-            log(f"{status_symbol} Line {test.line_number}, {
-                test.variable}: {status_text}")
+            log(f"{status_symbol} Line {test.line_number}, {test.variable}: {status_text}")
             if test.variable == 'all variables':
                 log(f"    Variables: {', '.join(sorted(result.actual))}")
     else:  # fail or error
-        log(f"{status_symbol} Line {test.line_number}, {
-            test.variable}: {status_text}")
+        log(f"{status_symbol} Line {test.line_number}, {test.variable}: {status_text}")
         if test.variable == 'all variables':
             if result.missing:
-                log(f"    Missing variables: {
-                    ', '.join(sorted(result.missing))}")
+                log(f"    Missing variables: {', '.join(sorted(result.missing))}")
             if result.extra:
                 log(f"    Extra variables: {', '.join(sorted(result.extra))}")
-            log(f"    Expected: {
-                ', '.join(sorted(test.expected_value.split()))}")
+            log(f"    Expected: {', '.join(sorted(test.expected_value.split()))}")
             log(f"    Actual: {', '.join(sorted(result.actual))}")
         elif result.status == 'error':
             log(f"    Error: {result.message}")

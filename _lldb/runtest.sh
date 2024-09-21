@@ -3,6 +3,7 @@
 set -e
 
 # Source common functions and variables
+# shellcheck source=./_lldb/common.sh
 source "$(dirname "$0")/common.sh"
 
 # Parse command-line arguments
