@@ -1,0 +1,124 @@
+#stdout
+TestDefine Case 1:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"_Type":	"Macro",
+				"Name":	"DEBUG",
+				"Tokens":	[{
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"DEBUG"
+					}]
+			}]
+	}
+}
+
+TestDefine Case 2:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"_Type":	"Macro",
+				"Name":	"OK",
+				"Tokens":	[{
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"OK"
+					}, {
+						"_Type":	"Token",
+						"Token":	4,
+						"Lit":	"1"
+					}]
+			}]
+	}
+}
+
+TestDefine Case 3:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"_Type":	"Macro",
+				"Name":	"SQUARE",
+				"Tokens":	[{
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"SQUARE"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"("
+					}, {
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"x"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	")"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"("
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"("
+					}, {
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"x"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	")"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"*"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"("
+					}, {
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"x"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	")"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	")"
+					}]
+			}]
+	}
+}
+
+TestInclude Case 1:
+{
+	"temp.h":	{
+		"_Type":	"File",
+		"decls":	[],
+		"includes":	[{
+				"_Type":	"Include",
+				"Path":	"foo.h"
+			}],
+		"macros":	[]
+	}
+}
+
+
+#stderr
+
+#exit 0
