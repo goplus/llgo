@@ -5,7 +5,7 @@ import sys
 import argparse
 import signal
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Set, Dict, Any
 import lldb
 import llgo_plugin  # Add this import
 
@@ -14,7 +14,7 @@ class LLDBTestException(Exception):
     pass
 
 
-def log(*args, **kwargs):
+def log(*args: Any, **kwargs: Any) -> None:
     print(*args, **kwargs, flush=True)
 
 
@@ -30,10 +30,10 @@ class Test:
 class TestResult:
     test: Test
     status: str
-    actual: str = None
-    message: str = None
-    missing: set = None
-    extra: set = None
+    actual: Optional[str] = None
+    message: Optional[str] = None
+    missing: Optional[Set[str]] = None
+    extra: Optional[Set[str]] = None
 
 
 @dataclass
@@ -60,42 +60,41 @@ class TestResults:
 
 
 class LLDBDebugger:
-    def __init__(self, executable_path, plugin_path=None):
-        self.executable_path = executable_path
-        self.plugin_path = plugin_path
-        self.debugger = lldb.SBDebugger.Create()
+    def __init__(self, executable_path: str, plugin_path: Optional[str] = None):
+        self.executable_path: str = executable_path
+        self.plugin_path: Optional[str] = plugin_path
+        self.debugger: lldb.SBDebugger = lldb.SBDebugger.Create()
         self.debugger.SetAsync(False)
-        self.target = None
-        self.process = None
-        self.type_mapping = {
+        self.target: Optional[lldb.SBTarget] = None
+        self.process: Optional[lldb.SBProcess] = None
+        self.type_mapping: Dict[str, str] = {
             'long': 'int',
             'unsigned long': 'uint',
             # Add more mappings as needed
         }
 
-    def setup(self):
+    def setup(self) -> None:
         if self.plugin_path:
             self.debugger.HandleCommand(
                 f'command script import "{self.plugin_path}"')
         self.target = self.debugger.CreateTarget(self.executable_path)
         if not self.target:
             raise LLDBTestException(f"Failed to create target for {
-                self.executable_path}")
+                                    self.executable_path}")
 
         self.debugger.HandleCommand(
             'command script add -f llgo_plugin.print_go_expression p')
         self.debugger.HandleCommand(
             'command script add -f llgo_plugin.print_all_variables v')
 
-    def set_breakpoint(self, file_spec, line_number):
-        bp = self.target.BreakpointCreateByLocation(
-            file_spec, line_number)
+    def set_breakpoint(self, file_spec: str, line_number: int) -> lldb.SBBreakpoint:
+        bp = self.target.BreakpointCreateByLocation(file_spec, line_number)
         if not bp.IsValid():
             raise LLDBTestException(f"Failed to set breakpoint at {
-                file_spec}:{line_number}")
+                                    file_spec}:{line_number}")
         return bp
 
-    def run_to_breakpoint(self):
+    def run_to_breakpoint(self) -> None:
         if not self.process:
             self.process = self.target.LaunchSimple(None, None, os.getcwd())
         else:
@@ -103,10 +102,9 @@ class LLDBDebugger:
         if self.process.GetState() != lldb.eStateStopped:
             raise LLDBTestException("Process didn't stop at breakpoint")
 
-    def get_variable_value(self, var_expression):
+    def get_variable_value(self, var_expression: str) -> Optional[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
 
-        # 处理结构体成员访问、指针解引用和数组索引
         parts = var_expression.split('.')
         var = frame.FindVariable(parts[0])
 
@@ -114,12 +112,10 @@ class LLDBDebugger:
             if not var.IsValid():
                 return None
 
-            # 处理数组索引
             if '[' in part and ']' in part:
                 array_name, index = part.split('[')
                 index = int(index.rstrip(']'))
                 var = var.GetChildAtIndex(index)
-            # 处理指针解引用
             elif var.GetType().IsPointerType():
                 var = var.Dereference()
                 var = var.GetChildMemberWithName(part)
@@ -128,24 +124,23 @@ class LLDBDebugger:
 
         return llgo_plugin.format_value(var, self.debugger) if var.IsValid() else None
 
-    def get_all_variable_names(self):
+    def get_all_variable_names(self) -> Set[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
         return set(var.GetName() for var in frame.GetVariables(True, True, True, False))
 
-    def get_current_function_name(self):
+    def get_current_function_name(self) -> str:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
         return frame.GetFunctionName()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         if self.process and self.process.IsValid():
             self.process.Kill()
         lldb.SBDebugger.Destroy(self.debugger)
 
-    def run_console(self):
+    def run_console(self) -> bool:
         log("\nEntering LLDB interactive mode.")
         log("Type 'quit' to exit and continue with the next test case.")
-        log(
-            "Use Ctrl+D to exit and continue, or Ctrl+C to abort all tests.")
+        log("Use Ctrl+D to exit and continue, or Ctrl+C to abort all tests.")
 
         old_stdin, old_stdout, old_stderr = sys.stdin, sys.stdout, sys.stderr
         sys.stdin, sys.stdout, sys.stderr = sys.__stdin__, sys.__stdout__, sys.__stderr__
@@ -157,7 +152,7 @@ class LLDBDebugger:
         interpreter = self.debugger.GetCommandInterpreter()
         continue_tests = True
 
-        def keyboard_interrupt_handler(_sig, _frame):
+        def keyboard_interrupt_handler(_sig: Any, _frame: Any) -> None:
             nonlocal continue_tests
             log("\nTest execution aborted by user.")
             continue_tests = False
@@ -172,21 +167,19 @@ class LLDBDebugger:
                 try:
                     command = input().strip()
                 except EOFError:
-                    log(
-                        "\nExiting LLDB interactive mode. Continuing with next test case.")
+                    log("\nExiting LLDB interactive mode. Continuing with next test case.")
                     break
                 except KeyboardInterrupt:
                     break
 
                 if command.lower() == 'quit':
-                    log(
-                        "\nExiting LLDB interactive mode. Continuing with next test case.")
+                    log("\nExiting LLDB interactive mode. Continuing with next test case.")
                     break
 
                 result = lldb.SBCommandReturnObject()
                 interpreter.HandleCommand(command, result)
-                log(result.GetOutput().rstrip(
-                ) if result.Succeeded() else result.GetError().rstrip())
+                log(result.GetOutput().rstrip() if result.Succeeded()
+                    else result.GetError().rstrip())
 
         finally:
             signal.signal(signal.SIGINT, original_handler)
@@ -195,7 +188,7 @@ class LLDBDebugger:
         return continue_tests
 
 
-def parse_expected_values(source_files):
+def parse_expected_values(source_files: List[str]) -> List[TestCase]:
     test_cases = []
     for source_file in source_files:
         with open(source_file, 'r', encoding='utf-8') as f:
@@ -224,7 +217,7 @@ def parse_expected_values(source_files):
     return test_cases
 
 
-def execute_tests(executable_path, test_cases, verbose, interactive, plugin_path):
+def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> TestResults:
     results = TestResults()
 
     for test_case in test_cases:
@@ -234,8 +227,7 @@ def execute_tests(executable_path, test_cases, verbose, interactive, plugin_path
                 log(f"Setting breakpoint at {
                     test_case.source_file}:{test_case.end_line}")
             debugger.setup()
-            debugger.set_breakpoint(
-                test_case.source_file, test_case.end_line)
+            debugger.set_breakpoint(test_case.source_file, test_case.end_line)
             debugger.run_to_breakpoint()
 
             all_variable_names = debugger.get_all_variable_names()
@@ -250,9 +242,10 @@ def execute_tests(executable_path, test_cases, verbose, interactive, plugin_path
 
             case = case_result.test_case
             loc = f"{case.source_file}:{case.start_line}-{case.end_line}"
-            log(f"\nTest case: {loc} in function '{case_result.function}'")
+            if verbose or interactive or any(r.status != 'pass' for r in case_result.results):
+                log(f"\nTest case: {loc} in function '{case_result.function}'")
             for result in case_result.results:
-                print_test_result(result, True)
+                print_test_result(result, verbose=verbose)
 
             if interactive and any(r.status != 'pass' for r in case_result.results):
                 log("\nTest case failed. Entering LLDB interactive mode.")
@@ -267,21 +260,21 @@ def execute_tests(executable_path, test_cases, verbose, interactive, plugin_path
     return results
 
 
-def run_tests(executable_path, source_files, verbose, interactive, plugin_path):
+def run_tests(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> None:
     test_cases = parse_expected_values(source_files)
     if verbose:
         log(f"Running tests for {
             ', '.join(source_files)} with {executable_path}")
         log(f"Found {len(test_cases)} test cases")
 
-    results = execute_tests(executable_path, test_cases, verbose,
-                            interactive, plugin_path)
+    results = execute_tests(executable_path, test_cases,
+                            verbose, interactive, plugin_path)
 
     if results.total != results.passed:
         os._exit(1)
 
 
-def execute_test_case(debugger, test_case, all_variable_names):
+def execute_test_case(debugger: LLDBDebugger, test_case: TestCase, all_variable_names: Set[str]) -> CaseResult:
     results = []
 
     for test in test_case.tests:
@@ -294,7 +287,7 @@ def execute_test_case(debugger, test_case, all_variable_names):
     return CaseResult(test_case, debugger.get_current_function_name(), results)
 
 
-def execute_all_variables_test(test, all_variable_names):
+def execute_all_variables_test(test: Test, all_variable_names: Set[str]) -> TestResult:
     expected_vars = set(test.expected_value.split())
     if expected_vars == all_variable_names:
         return TestResult(
@@ -312,7 +305,7 @@ def execute_all_variables_test(test, all_variable_names):
         )
 
 
-def execute_single_variable_test(debugger, test):
+def execute_single_variable_test(debugger: LLDBDebugger, test: Test) -> TestResult:
     actual_value = debugger.get_variable_value(test.variable)
     if actual_value is None:
         return TestResult(
@@ -321,11 +314,9 @@ def execute_single_variable_test(debugger, test):
             message=f'Unable to fetch value for {test.variable}'
         )
 
-    # 移除可能的空格，但保留括号
     actual_value = actual_value.strip()
     expected_value = test.expected_value.strip()
 
-    # 比较处理后的值
     if actual_value == expected_value:
         return TestResult(
             test=test,
@@ -340,7 +331,7 @@ def execute_single_variable_test(debugger, test):
         )
 
 
-def print_test_results(results: TestResults, verbose):
+def print_test_results(results: TestResults, verbose: bool) -> None:
     for case_result in results.case_results:
         case = case_result.test_case
         loc = f"{case.source_file}:{case.start_line}-{case.end_line}"
@@ -358,30 +349,28 @@ def print_test_results(results: TestResults, verbose):
         log("Some tests failed")
 
 
-def print_test_result(result: TestResult, verbose):
+def print_test_result(result: TestResult, verbose: bool) -> None:
     status_symbol = "✓" if result.status == 'pass' else "✗"
     status_text = "Pass" if result.status == 'pass' else "Fail"
     test = result.test
 
     if result.status == 'pass':
         if verbose:
-            log(
-                f"{status_symbol} Line {test.line_number}, {test.variable}: {status_text}")
+            log(f"{status_symbol} Line {test.line_number}, {
+                test.variable}: {status_text}")
             if test.variable == 'all variables':
-                log(f"    Variables: {
-                    ', '.join(sorted(result.actual))}")
+                log(f"    Variables: {', '.join(sorted(result.actual))}")
     else:  # fail or error
-        log(
-            f"{status_symbol} Line {test.line_number}, {test.variable}: {status_text}")
+        log(f"{status_symbol} Line {test.line_number}, {
+            test.variable}: {status_text}")
         if test.variable == 'all variables':
             if result.missing:
-                log(
-                    f"    Missing variables: {', '.join(sorted(result.missing))}")
+                log(f"    Missing variables: {
+                    ', '.join(sorted(result.missing))}")
             if result.extra:
-                log(
-                    f"    Extra variables: {', '.join(sorted(result.extra))}")
-            log(
-                f"    Expected: {', '.join(sorted(test.expected_value.split()))}")
+                log(f"    Extra variables: {', '.join(sorted(result.extra))}")
+            log(f"    Expected: {
+                ', '.join(sorted(test.expected_value.split()))}")
             log(f"    Actual: {', '.join(sorted(result.actual))}")
         elif result.status == 'error':
             log(f"    Error: {result.message}")
@@ -390,7 +379,7 @@ def print_test_result(result: TestResult, verbose):
             log(f"    Actual: {result.actual}")
 
 
-def main():
+def main() -> None:
     log(sys.argv)
     parser = argparse.ArgumentParser(
         description="LLDB 18 Debug Script with DWARF 5 Support")
@@ -411,9 +400,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-def __lldb_init_module(debugger, _internal_dict):
-    run_tests("cl/_testdata/debug/out",
-              ["cl/_testdata/debug/in.go"], True, False, None)
-    debugger.HandleCommand('quit')

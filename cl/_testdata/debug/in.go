@@ -156,7 +156,91 @@ func FuncWithAllTypeParams(
 	return 1, errors.New("some error")
 }
 
+type TinyStruct struct {
+	I int
+}
+
+type SmallStruct struct {
+	I int
+	J int
+}
+
+type MidStruct struct {
+	I int
+	J int
+	K int
+}
+
+type BigStruct struct {
+	I int
+	J int
+	K int
+	L int
+	M int
+	N int
+	O int
+	P int
+	Q int
+	R int
+}
+
+func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
+	println(&t, &s, &m, &b)
+	// Expected:
+	//   all variables: t s m b
+	//   t.I: 1
+	//   s.I: 2
+	//   s.J: 3
+	//   m.I: 4
+	//   m.J: 5
+	//   m.K: 6
+	//   b.I: 7
+	//   b.J: 8
+	//   b.K: 9
+	//   b.L: 10
+	//   b.M: 11
+	//   b.N: 12
+	//   b.O: 13
+	//   b.P: 14
+	//   b.Q: 15
+	//   b.R: 16
+	t.I = 10
+	// Expected:
+	//   all variables: t s m b
+	//   t.I: 10
+	println("done")
+}
+
+func FuncStructPtrParams(t *TinyStruct, s *SmallStruct, m *MidStruct, b *BigStruct) {
+	println(t, s, m, b)
+	// Expected:
+	//   all variables: t s m b
+	//   t.I: 1
+	//   s.I: 2
+	//   s.J: 3
+	//   m.I: 4
+	//   m.J: 5
+	//   m.K: 6
+	//   b.I: 7
+	//   b.J: 8
+	//   b.K: 9
+	//   b.L: 10
+	//   b.M: 11
+	//   b.N: 12
+	//   b.O: 13
+	//   b.P: 14
+	//   b.Q: 15
+	//   b.R: 16
+	t.I = 10
+	// Expected:
+	//   all variables: t s m b
+	//   t.I: 10
+	println("done")
+}
+
 func main() {
+	FuncStructParams(TinyStruct{I: 1}, SmallStruct{I: 2, J: 3}, MidStruct{I: 4, J: 5, K: 6}, BigStruct{I: 7, J: 8, K: 9, L: 10, M: 11, N: 12, O: 13, P: 14, Q: 15, R: 16})
+	FuncStructPtrParams(&TinyStruct{I: 1}, &SmallStruct{I: 2, J: 3}, &MidStruct{I: 4, J: 5, K: 6}, &BigStruct{I: 7, J: 8, K: 9, L: 10, M: 11, N: 12, O: 13, P: 14, Q: 15, R: 16})
 	i := 100
 	s := StructWithAllTypeFields{
 		i8:    1,
