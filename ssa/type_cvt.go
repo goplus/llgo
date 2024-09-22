@@ -109,6 +109,8 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 		if elem, cvt := p.cvtType(t.Elem()); cvt {
 			return types.NewChan(t.Dir(), elem), true
 		}
+	case *types.Tuple:
+		return p.cvtTuple(t)
 	default:
 		panic(fmt.Sprintf("cvtType: unexpected type - %T", typ))
 	}

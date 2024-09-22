@@ -128,7 +128,6 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 				Name:         name,
 				SizeInBits:   b.prog.SizeOf(b.prog.rawType(t)) * 8,
 				AlignInBits:  uint32(b.prog.sizes.Alignof(t) * 8),
-				AddressSpace: 0,
 			})
 			return &aDIType{typ}
 		}
@@ -180,6 +179,8 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Map:
 		ty := b.prog.rtType("Map")
 		return b.createMapType(name, ty, pos)
+	case *types.Tuple:
+		return b.createTupleType(name, ty, pos)
 	default:
 		panic(fmt.Errorf("can't create debug info of type: %v, %T", ty.RawType(), ty.RawType()))
 	}
@@ -365,9 +366,8 @@ func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) D
 	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
 		Name:         name,
 		Pointee:      b.diType(ty, pos).ll,
-		SizeInBits:   b.prog.SizeOf(ty) * 8,
-		AlignInBits:  uint32(b.prog.sizes.Alignof(ty.RawType())) * 8,
-		AddressSpace: 0,
+		SizeInBits:  b.prog.SizeOf(b.prog.VoidPtr()) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(b.prog.VoidPtr().RawType())) * 8,
 	})}
 }
 
@@ -416,6 +416,26 @@ func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (r
 			flags := 0
 			pos := b.positioner.Position(field.Pos())
 			fields[i] = b.createMemberTypeEx(field.Name(), ty, tyField, i, pos, flags)
+		}
+		return fields
+	})
+}
+
+func (b diBuilder) createTupleType(name string, ty Type, pos token.Position) DIType {
+	tupleType := ty.RawType().(*types.Tuple)
+	if tupleType.Len() == 0 {
+		return &aDIType{}
+	}
+	if tupleType.Len() == 1 {
+		t := b.prog.rawType(tupleType.At(0).Type())
+		return b.diType(t, pos)
+	}
+	return b.doCreateStructType(name, ty, pos, func(ditStruct DIType) []llvm.Metadata {
+		fields := make([]llvm.Metadata, ty.RawType().(*types.Tuple).Len())
+		for i := 0; i < ty.RawType().(*types.Tuple).Len(); i++ {
+			field := ty.RawType().(*types.Tuple).At(i)
+			tyField := b.prog.rawType(field.Type())
+			fields[i] = b.createMemberTypeEx(field.Name(), ty, tyField, i, pos, 0)
 		}
 		return fields
 	})

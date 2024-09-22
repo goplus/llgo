@@ -329,9 +329,12 @@ func (p Function) SetRecover(blk BasicBlock) {
 
 func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
 	if p.diFunc == nil {
-		paramTypes := make([]llvm.Metadata, len(p.params))
+		sig := p.Type.raw.Type.(*types.Signature)
+		rt := p.Prog.Type(sig.Results(), InGo)
+		paramTypes := make([]llvm.Metadata, len(p.params)+1)
+		paramTypes[0] = b.diType(rt, pos).ll
 		for i, t := range p.params {
-			paramTypes[i] = b.diType(t, pos).ll
+			paramTypes[i+1] = b.diType(t, pos).ll
 		}
 		diFuncType := b.di.CreateSubroutineType(llvm.DISubroutineType{
 			File:       b.file(pos.Filename).ll,
