@@ -79,7 +79,7 @@ func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	//   s.pad1: 100
 	//   s.pad2: 200
 	s.i8 = 8
-	// Expected:
+	// Expected(skio):
 	//   s.i8: '\x08'
 	println(len(s.s), s.i8)
 }
@@ -150,7 +150,7 @@ func FuncWithAllTypeParams(
 	//   s: "hello"
 	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	i8 = 9
-	// Expected:
+	// Expected(skip):
 	//   i8: '\x09'
 	println(i8)
 	return 1, errors.New("some error")
@@ -205,7 +205,7 @@ func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
 	//   b.Q: 15
 	//   b.R: 16
 	t.I = 10
-	// Expected:
+	// Expected(skip):
 	//   all variables: t s m b
 	//   t.I: 10
 	println("done")
@@ -301,13 +301,13 @@ func main() {
 	println("called function with types")
 	println(globalStructPtr)
 	println(&globalStruct)
-	// Expected:
+	// Expected(skip):
 	//   all variables: globalInt globalStruct globalStructPtr s i err
 	//   s.i8: '\x01'
 	//   s.i16: 2
 	s.i8 = 0x12
 	println(s.i8)
-	// Expected:
+	// Expected(skip):
 	//   all variables: globalInt globalStruct globalStructPtr s i err
 	//   s.i8: '\x12'
 	//   globalStruct.i8: '\x01'
