@@ -57,12 +57,20 @@ func (p BasicBlock) Addr() Expr {
 
 // -----------------------------------------------------------------------------
 
+type dbgExpr struct {
+	ptr   Expr
+	val   Expr
+	deref bool
+}
+
 type aBuilder struct {
 	impl llvm.Builder
 	blk  BasicBlock
 	Func Function
 	Pkg  Package
 	Prog Program
+
+	dbgVars map[Expr]dbgExpr
 }
 
 // Builder represents a builder for creating instructions in a function.

@@ -97,6 +97,11 @@ jobs:
         run: |
           echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
           bash .github/workflows/test_llgo.sh
+      
+      - name: LLDB tests
+        run: |
+          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
+          bash _lldb/runtest.sh
 
       - name: Test demos
         continue-on-error: true

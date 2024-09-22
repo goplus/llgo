@@ -347,12 +347,15 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
 	named := make(map[types.Type]Expr)
+	glbDbgVars := make(map[Expr]bool)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p}
+		pyobjs: pyobjs, pymods: pymods, strs: strs, named: named, Prog: p,
+		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+	}
 	ret.abi.Init(pkgPath)
 	return ret
 }
@@ -590,6 +593,10 @@ type aPackage struct {
 
 	Prog Program
 
+	di         diBuilder
+	cu         CompilationUnit
+	glbDbgVars map[Expr]bool
+
 	vars   map[string]Global
 	fns    map[string]Function
 	stubs  map[string]Function
@@ -704,6 +711,11 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 			p.pyLoadModSyms(b)
 		}
 	}
+}
+
+func (p Package) InitDebugSymbols(name, pkgPath string, positioner Positioner) {
+	p.di = newDIBuilder(p.Prog, p, positioner)
+	p.cu = p.di.createCompileUnit(name, pkgPath)
 }
 
 // -----------------------------------------------------------------------------

@@ -46,14 +46,24 @@ const (
 )
 
 var (
-	debugInstr bool
-	debugGoSSA bool
+	debugInstr   bool
+	debugGoSSA   bool
+	debugSymbols bool
 )
 
 // SetDebug sets debug flags.
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
 	debugGoSSA = (dbgFlags & DbgFlagGoSSA) != 0
+}
+
+// EnableDebugSymbols enables debug symbols.
+func EnableDebugSymbols(b bool) {
+	debugSymbols = b
+}
+
+func DebugSymbols() bool {
+	return debugSymbols
 }
 
 // -----------------------------------------------------------------------------
@@ -249,6 +259,10 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
+			if debugSymbols {
+				b.DebugFunction(fn, p.goProg.Fset.Position(f.Pos()))
+				b.DISetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(f.Pos()))
+			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
 			for i, block := range f.Blocks {
@@ -277,6 +291,17 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	return fn, nil, goFunc
 }
 
+func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
+	for i, param := range f.Params {
+		pos := p.goProg.Fset.Position(param.Pos())
+		v := p.compileValue(b, param)
+		ty := param.Type()
+		argNo := i + 1
+		div := b.DIVarParam(p.fn, pos, param.Name(), p.prog.Type(ty, llssa.InGo), argNo)
+		b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
+	}
+}
+
 func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
 	var last int
 	var pyModInit bool
@@ -286,6 +311,10 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
+	// place here to avoid wrong current-block
+	if debugSymbols && block.Index == 0 {
+		p.debugParams(b, block.Parent())
+	}
 	if doModInit {
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
@@ -453,6 +482,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return v
 		}
 		log.Panicln("unreachable:", iv)
+	}
+	if debugSymbols {
+		if v, ok := iv.(ssa.Instruction); ok {
+			b.DISetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(v.Pos()))
+		}
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -684,9 +718,44 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		ch := p.compileValue(b, v.Chan)
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
+	case *ssa.DebugRef:
+		if debugSymbols {
+			object := v.Object()
+			variable, ok := object.(*types.Var)
+			if !ok {
+				// Not a local variable.
+				return
+			}
+			if variable.IsField() {
+				// skip *ssa.FieldAddr
+				return
+			}
+			pos := p.goProg.Fset.Position(v.Pos())
+			value := p.compileValue(b, v.X)
+			fn := v.Parent()
+			dbgVar := p.getLocalVariable(b, fn, variable)
+			if v.IsAddr {
+				// *ssa.Alloc
+				b.DIDeclare(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+			} else {
+				b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+			}
+		}
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
+}
+
+func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {
+	pos := p.fset.Position(v.Pos())
+	t := b.Prog.Type(v.Type(), llssa.InGo)
+	for i, param := range fn.Params {
+		if param.Object().(*types.Var) == v {
+			argNo := i + 1
+			return b.DIVarParam(p.fn, pos, v.Name(), t, argNo)
+		}
+	}
+	return b.DIVarAuto(p.fn, pos, v.Name(), t)
 }
 
 func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObjRef, kind int) {
@@ -710,7 +779,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		fn := v.Parent()
 		for idx, param := range fn.Params {
 			if param == v {
-				return p.fn.Param(idx)
+				return b.Param(idx)
 			}
 		}
 	case *ssa.Function:
@@ -720,7 +789,12 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return pyFn.Expr
 	case *ssa.Global:
-		return p.varOf(b, v)
+		val := p.varOf(b, v)
+		if debugSymbols {
+			pos := p.fset.Position(v.Pos())
+			b.DIGlobal(val, v.Name(), pos)
+		}
+		return val
 	case *ssa.Const:
 		t := types.Default(v.Type())
 		bg := llssa.InGo
@@ -798,6 +872,9 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		prog.SetRuntime(pkgTypes)
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
+	if debugSymbols {
+		ret.InitDebugSymbols(pkgName, pkgPath, pkgProg.Fset)
+	}
 
 	ctx := &context{
 		prog:    prog,

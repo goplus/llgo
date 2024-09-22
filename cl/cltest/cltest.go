@@ -107,6 +107,20 @@ func Pkg(t *testing.T, pkgPath, outFile string) {
 	}
 }
 
+func isDbgSymEnabled(flagsFile string) bool {
+	data, err := os.ReadFile(flagsFile)
+	if err != nil {
+		return false
+	}
+	toks := strings.Split(strings.Join(strings.Split(string(data), "\n"), " "), " ")
+	for _, tok := range toks {
+		if tok == "-dbg" {
+			return true
+		}
+	}
+	return false
+}
+
 func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
@@ -114,6 +128,12 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 	log.Println("Parsing", pkgDir)
 	in := pkgDir + "/in.go"
 	out := pkgDir + "/out.ll"
+	dbg := isDbgSymEnabled(pkgDir + "/flags.txt")
+	if dbg {
+		cl.EnableDebugSymbols(true)
+		defer cl.EnableDebugSymbols(false)
+		cl.DebugSymbols() // just for coverage
+	}
 	b, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatal("ReadFile failed:", err)
@@ -140,7 +160,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	pkg := types.NewPackage(name, name)
 	imp := packages.NewImporter(fset)
 	foo, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics|ssa.GlobalDebug)
 	if err != nil {
 		t.Fatal("BuildPackage failed:", err)
 	}

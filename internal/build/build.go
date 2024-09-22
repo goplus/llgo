@@ -121,6 +121,7 @@ const (
 
 func Do(args []string, conf *Config) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
+	cl.EnableDebugSymbols(IsDebugEnabled())
 	flags = append(flags, "-tags", "llgo")
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -236,7 +237,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 }
 
 const (
-	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics | ssa.GlobalDebug
 )
 
 type context struct {
@@ -436,6 +437,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 		}
 	}
 	args = append(args, exargs...)
+	if cl.DebugSymbols() {
+		args = append(args, "-gdwarf-5")
+	}
 
 	// TODO(xsw): show work
 	if verbose {
@@ -604,6 +608,13 @@ var (
 	}
 )
 
+const llgoDebug = "LLGO_DEBUG"
+
+func IsDebugEnabled() bool {
+	llgoDbgVal := strings.ToLower(os.Getenv(llgoDebug))
+	return llgoDbgVal == "1" || llgoDbgVal == "true" || llgoDbgVal == "on"
+}
+
 func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
 	n := len(args)
 	for i := 0; i < n; i++ {
@@ -611,11 +622,11 @@ func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string
 		if strings.HasPrefix(arg, "-") {
 			checkFlag(arg, &i, &verbose, swflags)
 		} else {
-			flags, patterns = args[:i], args[i:]
+			patterns = args[i:]
+			flags = args[:i]
 			return
 		}
 	}
-	flags = args
 	return
 }
 

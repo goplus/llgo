@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/token"
 	"go/types"
 	"log"
 	"strconv"
@@ -173,6 +174,8 @@ type aFunction struct {
 	freeVars Expr
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
 	hasVArg  bool
+
+	diFunc DIFunction
 }
 
 // Function represents a function or method.
@@ -271,7 +274,7 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, nil, p, p.Pkg, prog}
+	return &aBuilder{b, nil, p, p.Pkg, prog, make(map[Expr]dbgExpr)}
 }
 
 // HasBody reports whether the function has a body.
@@ -322,6 +325,35 @@ func (p Function) Block(idx int) BasicBlock {
 // SetRecover sets the recover block for the function.
 func (p Function) SetRecover(blk BasicBlock) {
 	p.recov = blk
+}
+
+func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
+	if p.diFunc == nil {
+		paramTypes := make([]llvm.Metadata, len(p.params))
+		for i, t := range p.params {
+			paramTypes[i] = b.diType(t, pos).ll
+		}
+		diFuncType := b.di.CreateSubroutineType(llvm.DISubroutineType{
+			File:       b.file(pos.Filename).ll,
+			Parameters: paramTypes,
+		})
+		p.diFunc = &aDIFunction{
+			b.di.CreateFunction(
+				b.file(pos.Filename).ll,
+				llvm.DIFunction{
+					Type:         diFuncType,
+					Name:         p.Name(),
+					LinkageName:  p.Name(),
+					File:         b.file(pos.Filename).ll,
+					Line:         pos.Line,
+					IsDefinition: true,
+					Optimized:    false,
+				},
+			),
+		}
+		p.impl.SetSubprogram(p.diFunc.ll)
+	}
+	return &aDIScopeMeta{p.diFunc.ll}
 }
 
 // -----------------------------------------------------------------------------
