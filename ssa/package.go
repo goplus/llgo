@@ -592,20 +592,21 @@ type aPackage struct {
 	abi abi.Builder
 
 	Prog Program
-	di   diBuilder
-	cu   CompilationUnit
 
+	di         diBuilder
+	cu         CompilationUnit
 	glbDbgVars map[Expr]bool
-	vars       map[string]Global
-	fns        map[string]Function
-	stubs      map[string]Function
-	pyobjs     map[string]PyObjRef
-	pymods     map[string]Global
-	strs       map[string]llvm.Value
-	named      map[types.Type]Expr
-	afterb     unsafe.Pointer
-	patch      func(types.Type) types.Type
-	fnlink     func(string) string
+
+	vars   map[string]Global
+	fns    map[string]Function
+	stubs  map[string]Function
+	pyobjs map[string]PyObjRef
+	pymods map[string]Global
+	strs   map[string]llvm.Value
+	named  map[types.Type]Expr
+	afterb unsafe.Pointer
+	patch  func(types.Type) types.Type
+	fnlink func(string) string
 
 	iRoutine int
 }
