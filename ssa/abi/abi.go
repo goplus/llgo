@@ -321,8 +321,11 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 		if f.Embedded() {
 			name = "-"
 		}
-		ft, _ := b.TypeName(f.Type())
+		ft, pub := b.TypeName(f.Type())
 		fmt.Fprintln(h, name, ft)
+		if !pub {
+			private = true
+		}
 	}
 	ret = h.Sum(b.buf[:0])
 	return

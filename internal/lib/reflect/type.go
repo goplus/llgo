@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/internal/lib/sync"
 	"github.com/goplus/llgo/internal/runtime"
 )
 
@@ -454,86 +455,72 @@ func (t *rtype) exportedMethods() []abi.Method {
 }
 
 func (t *rtype) NumMethod() int {
-	/*
-		if t.Kind() == Interface {
-			tt := (*interfaceType)(unsafe.Pointer(t))
-			return tt.NumMethod()
-		}
-		return len(t.exportedMethods())
-	*/
-	panic("todo: reflect.rtype.NumMethod")
+	if t.Kind() == Interface {
+		tt := (*interfaceType)(unsafe.Pointer(t))
+		return tt.NumMethod()
+	}
+	return len(t.exportedMethods())
 }
 
 func (t *rtype) Method(i int) (m Method) {
-	/*
-		if t.Kind() == Interface {
-			tt := (*interfaceType)(unsafe.Pointer(t))
-			return tt.Method(i)
-		}
-		methods := t.exportedMethods()
-		if i < 0 || i >= len(methods) {
-			panic("reflect: Method index out of range")
-		}
-		p := methods[i]
-		pname := t.nameOff(p.Name)
-		m.Name = pname.Name()
-		fl := flag(Func)
-		mtyp := t.typeOff(p.Mtyp)
-		ft := (*funcType)(unsafe.Pointer(mtyp))
-		in := make([]Type, 0, 1+ft.NumIn())
-		in = append(in, t)
-		for _, arg := range ft.InSlice() {
-			in = append(in, toRType(arg))
-		}
-		out := make([]Type, 0, ft.NumOut())
-		for _, ret := range ft.OutSlice() {
-			out = append(out, toRType(ret))
-		}
-		mt := FuncOf(in, out, ft.IsVariadic())
-		m.Type = mt
-		tfn := t.textOff(p.Tfn)
-		fn := unsafe.Pointer(&tfn)
-		m.Func = Value{&mt.(*rtype).t, fn, fl}
-
-		m.Index = i
-		return m
-	*/
-	panic("todo: reflect.rtype.Method")
+	if t.Kind() == Interface {
+		tt := (*interfaceType)(unsafe.Pointer(t))
+		return tt.Method(i)
+	}
+	methods := t.exportedMethods()
+	if i < 0 || i >= len(methods) {
+		panic("reflect: Method index out of range")
+	}
+	p := methods[i]
+	m.Name = p.Name()
+	fl := flag(Func)
+	ft := p.Mtyp_
+	in := make([]Type, 0, 1+len(ft.In))
+	in = append(in, t)
+	for _, arg := range ft.In {
+		in = append(in, toRType(arg))
+	}
+	out := make([]Type, 0, len(ft.Out))
+	for _, ret := range ft.Out {
+		out = append(out, toRType(ret))
+	}
+	mt := FuncOf(in, out, ft.Variadic())
+	m.Type = mt
+	m.Func = Value{&mt.(*rtype).t, p.Tfn_, fl}
+	m.Index = i
+	return m
 }
 
 func (t *rtype) MethodByName(name string) (m Method, ok bool) {
-	/*
-		if t.Kind() == Interface {
-			tt := (*interfaceType)(unsafe.Pointer(t))
-			return tt.MethodByName(name)
-		}
-		ut := t.uncommon()
-		if ut == nil {
-			return Method{}, false
-		}
-
-		methods := ut.ExportedMethods()
-
-		// We are looking for the first index i where the string becomes >= s.
-		// This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
-		i, j := 0, len(methods)
-		for i < j {
-			h := int(uint(i+j) >> 1) // avoid overflow when computing h
-			// i ≤ h < j
-			if !(t.nameOff(methods[h].Name).Name() >= name) {
-				i = h + 1 // preserves f(i-1) == false
-			} else {
-				j = h // preserves f(j) == true
-			}
-		}
-		// i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
-		if i < len(methods) && name == t.nameOff(methods[i].Name).Name() {
-			return t.Method(i), true
-		}
-
+	if t.Kind() == Interface {
+		tt := (*interfaceType)(unsafe.Pointer(t))
+		return tt.MethodByName(name)
+	}
+	ut := t.uncommon()
+	if ut == nil {
 		return Method{}, false
-	*/
-	panic("todo: reflect.rtype.MethodByName")
+	}
+
+	methods := ut.ExportedMethods()
+
+	// We are looking for the first index i where the string becomes >= s.
+	// This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
+	i, j := 0, len(methods)
+	for i < j {
+		h := int(uint(i+j) >> 1) // avoid overflow when computing h
+		// i ≤ h < j
+		if !(methods[h].Name() >= name) {
+			i = h + 1 // preserves f(i-1) == false
+		} else {
+			j = h // preserves f(j) == true
+		}
+	}
+	// i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
+	if i < len(methods) && name == methods[i].Name() {
+		return t.Method(i), true
+	}
+
+	return Method{}, false
 }
 
 func (t *rtype) PkgPath() string {
@@ -552,25 +539,22 @@ func pkgPathFor(t *abi.Type) string {
 }
 
 func (t *rtype) Name() string {
-	/*
-		if !t.t.HasName() {
-			return ""
+	if !t.t.HasName() {
+		return ""
+	}
+	s := t.String()
+	i := len(s) - 1
+	sqBrackets := 0
+	for i >= 0 && (s[i] != '.' || sqBrackets != 0) {
+		switch s[i] {
+		case ']':
+			sqBrackets++
+		case '[':
+			sqBrackets--
 		}
-		s := t.String()
-		i := len(s) - 1
-		sqBrackets := 0
-		for i >= 0 && (s[i] != '.' || sqBrackets != 0) {
-			switch s[i] {
-			case ']':
-				sqBrackets++
-			case '[':
-				sqBrackets--
-			}
-			i--
-		}
-		return s[i+1:]
-	*/
-	panic("todo: reflect.rtype.Name")
+		i--
+	}
+	return s[i+1:]
 }
 
 func nameFor(t *abi.Type) string {
@@ -594,9 +578,7 @@ func elem(t *abi.Type) *abi.Type {
 	if et != nil {
 		return et
 	}
-	// TODO(xsw):
-	// panic("reflect: Elem of invalid type " + stringFor(t))
-	panic("todo: reflect.elem")
+	panic("reflect: Elem of invalid type " + stringFor(t))
 }
 
 func (t *rtype) Elem() Type {
@@ -604,47 +586,35 @@ func (t *rtype) Elem() Type {
 }
 
 func (t *rtype) Field(i int) StructField {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: Field of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.Field(i)
-	*/
-	panic("todo: reflect.rtype.Field")
+	if t.Kind() != Struct {
+		panic("reflect: Field of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.Field(i)
 }
 
 func (t *rtype) FieldByIndex(index []int) StructField {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: FieldByIndex of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.FieldByIndex(index)
-	*/
-	panic("todo: reflect.rtype.FieldByIndex")
+	if t.Kind() != Struct {
+		panic("reflect: FieldByIndex of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.FieldByIndex(index)
 }
 
 func (t *rtype) FieldByName(name string) (StructField, bool) {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: FieldByName of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.FieldByName(name)
-	*/
-	panic("todo: reflect.rtype.FieldByName")
+	if t.Kind() != Struct {
+		panic("reflect: FieldByName of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.FieldByName(name)
 }
 
 func (t *rtype) FieldByNameFunc(match func(string) bool) (StructField, bool) {
-	/*
-		if t.Kind() != Struct {
-			panic("reflect: FieldByNameFunc of non-struct type " + t.String())
-		}
-		tt := (*structType)(unsafe.Pointer(t))
-		return tt.FieldByNameFunc(match)
-	*/
-	panic("todo: reflect.rtype.FieldByNameFunc")
+	if t.Kind() != Struct {
+		panic("reflect: FieldByNameFunc of non-struct type " + t.String())
+	}
+	tt := (*structType)(unsafe.Pointer(t))
+	return tt.FieldByNameFunc(match)
 }
 
 func (t *rtype) Key() Type {
@@ -735,6 +705,37 @@ func (t *rtype) IsVariadic() bool {
 // and therefore point incorrectly at the next block in memory.
 func add(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(p) + x)
+}
+
+// Method returns the i'th method in the type's method set.
+func (t *interfaceType) Method(i int) (m Method) {
+	if i < 0 || i >= len(t.Methods) {
+		return
+	}
+	p := &t.Methods[i]
+	m.Name = p.Name()
+	m.PkgPath = p.PkgPath()
+	m.Type = toType(&p.Typ_.Type)
+	m.Index = i
+	return
+}
+
+// NumMethod returns the number of interface methods in the type's method set.
+func (t *interfaceType) NumMethod() int { return len(t.Methods) }
+
+// MethodByName method with the given name in the type's method set.
+func (t *interfaceType) MethodByName(name string) (m Method, ok bool) {
+	if t == nil {
+		return
+	}
+	var p *abi.Imethod
+	for i := range t.Methods {
+		p = &t.Methods[i]
+		if p.Name() == name {
+			return t.Method(i), true
+		}
+	}
+	return
 }
 
 // A StructField describes a single field in a struct.
@@ -839,6 +840,184 @@ func (tag StructTag) Lookup(key string) (value string, ok bool) {
 	return "", false
 }
 
+// Field returns the i'th struct field.
+func (t *structType) Field(i int) (f StructField) {
+	if i < 0 || i >= len(t.Fields) {
+		panic("reflect: Field index out of bounds")
+	}
+	p := &t.Fields[i]
+	f.Type = toType(p.Typ)
+	f.Name = p.Name_
+	f.Anonymous = p.Embedded()
+	if !abi.IsExported(p.Name_) {
+		f.PkgPath = t.PkgPath_
+	}
+	if tag := p.Tag_; tag != "" {
+		f.Tag = StructTag(tag)
+	}
+	f.Offset = p.Offset
+
+	// NOTE(rsc): This is the only allocation in the interface
+	// presented by a reflect.Type. It would be nice to avoid,
+	// at least in the common cases, but we need to make sure
+	// that misbehaving clients of reflect cannot affect other
+	// uses of reflect. One possibility is CL 5371098, but we
+	// postponed that ugliness until there is a demonstrated
+	// need for the performance. This is issue 2320.
+	f.Index = []int{i}
+	return
+}
+
+// FieldByIndex returns the nested field corresponding to index.
+func (t *structType) FieldByIndex(index []int) (f StructField) {
+	f.Type = toType(&t.Type)
+	for i, x := range index {
+		if i > 0 {
+			ft := f.Type
+			if ft.Kind() == Pointer && ft.Elem().Kind() == Struct {
+				ft = ft.Elem()
+			}
+			f.Type = ft
+		}
+		f = f.Type.Field(x)
+	}
+	return
+}
+
+// A fieldScan represents an item on the fieldByNameFunc scan work list.
+type fieldScan struct {
+	typ   *structType
+	index []int
+}
+
+// FieldByNameFunc returns the struct field with a name that satisfies the
+// match function and a boolean to indicate if the field was found.
+func (t *structType) FieldByNameFunc(match func(string) bool) (result StructField, ok bool) {
+	// This uses the same condition that the Go language does: there must be a unique instance
+	// of the match at a given depth level. If there are multiple instances of a match at the
+	// same depth, they annihilate each other and inhibit any possible match at a lower level.
+	// The algorithm is breadth first search, one depth level at a time.
+
+	// The current and next slices are work queues:
+	// current lists the fields to visit on this depth level,
+	// and next lists the fields on the next lower level.
+	current := []fieldScan{}
+	next := []fieldScan{{typ: t}}
+
+	// nextCount records the number of times an embedded type has been
+	// encountered and considered for queueing in the 'next' slice.
+	// We only queue the first one, but we increment the count on each.
+	// If a struct type T can be reached more than once at a given depth level,
+	// then it annihilates itself and need not be considered at all when we
+	// process that next depth level.
+	var nextCount map[*structType]int
+
+	// visited records the structs that have been considered already.
+	// Embedded pointer fields can create cycles in the graph of
+	// reachable embedded types; visited avoids following those cycles.
+	// It also avoids duplicated effort: if we didn't find the field in an
+	// embedded type T at level 2, we won't find it in one at level 4 either.
+	visited := map[*structType]bool{}
+
+	for len(next) > 0 {
+		current, next = next, current[:0]
+		count := nextCount
+		nextCount = nil
+
+		// Process all the fields at this depth, now listed in 'current'.
+		// The loop queues embedded fields found in 'next', for processing during the next
+		// iteration. The multiplicity of the 'current' field counts is recorded
+		// in 'count'; the multiplicity of the 'next' field counts is recorded in 'nextCount'.
+		for _, scan := range current {
+			t := scan.typ
+			if visited[t] {
+				// We've looked through this type before, at a higher level.
+				// That higher level would shadow the lower level we're now at,
+				// so this one can't be useful to us. Ignore it.
+				continue
+			}
+			visited[t] = true
+			for i := range t.Fields {
+				f := &t.Fields[i]
+				// Find name and (for embedded field) type for field f.
+				fname := f.Name_
+				var ntyp *abi.Type
+				if f.Embedded() {
+					// Embedded field of type T or *T.
+					ntyp = f.Typ
+					if ntyp.Kind() == abi.Pointer {
+						ntyp = ntyp.Elem()
+					}
+				}
+
+				// Does it match?
+				if match(fname) {
+					// Potential match
+					if count[t] > 1 || ok {
+						// Name appeared multiple times at this level: annihilate.
+						return StructField{}, false
+					}
+					result = t.Field(i)
+					result.Index = nil
+					result.Index = append(result.Index, scan.index...)
+					result.Index = append(result.Index, i)
+					ok = true
+					continue
+				}
+
+				// Queue embedded struct fields for processing with next level,
+				// but only if we haven't seen a match yet at this level and only
+				// if the embedded types haven't already been queued.
+				if ok || ntyp == nil || ntyp.Kind() != abi.Struct {
+					continue
+				}
+				styp := (*structType)(unsafe.Pointer(ntyp))
+				if nextCount[styp] > 0 {
+					nextCount[styp] = 2 // exact multiple doesn't matter
+					continue
+				}
+				if nextCount == nil {
+					nextCount = map[*structType]int{}
+				}
+				nextCount[styp] = 1
+				if count[t] > 1 {
+					nextCount[styp] = 2 // exact multiple doesn't matter
+				}
+				var index []int
+				index = append(index, scan.index...)
+				index = append(index, i)
+				next = append(next, fieldScan{styp, index})
+			}
+		}
+		if ok {
+			break
+		}
+	}
+	return
+}
+
+// FieldByName returns the struct field with the given name
+// and a boolean to indicate if the field was found.
+func (t *structType) FieldByName(name string) (f StructField, present bool) {
+	// Quick check for top-level name, or struct without embedded fields.
+	hasEmbeds := false
+	if name != "" {
+		for i := range t.Fields {
+			tf := &t.Fields[i]
+			if tf.Name_ == name {
+				return t.Field(i), true
+			}
+			if tf.Embedded() {
+				hasEmbeds = true
+			}
+		}
+	}
+	if !hasEmbeds {
+		return
+	}
+	return t.FieldByNameFunc(func(s string) bool { return s == name })
+}
+
 // TypeOf returns the reflection Type that represents the dynamic type of i.
 // If i is a nil interface value, TypeOf returns nil.
 func TypeOf(i any) Type {
@@ -859,6 +1038,15 @@ func rtypeOf(i any) *abi.Type {
 var ptrMap sync.Map // map[*rtype]*ptrType
 */
 
+var ptrMap struct {
+	sync.Mutex
+	m map[*rtype]*ptrType
+}
+
+func init() {
+	ptrMap.m = make(map[*rtype]*ptrType)
+}
+
 // PtrTo returns the pointer type with element t.
 // For example, if t represents type Foo, PtrTo(t) represents *Foo.
 //
@@ -873,50 +1061,51 @@ func PointerTo(t Type) Type {
 }
 
 func (t *rtype) ptrTo() *abi.Type {
-	/*
-		at := &t.t
-		if at.PtrToThis != 0 {
-			return t.typeOff(at.PtrToThis)
-		}
+	at := &t.t
+	if at.PtrToThis_ != nil {
+		return at.PtrToThis_
+	}
+	// Check the cache.
+	if pi, ok := ptrMap.m[t]; ok {
+		return &pi.Type
+	}
 
-		// Check the cache.
-		if pi, ok := ptrMap.Load(t); ok {
-			return &pi.(*ptrType).Type
-		}
+	// Look in known types.
+	s := "*" + t.String()
+	// // TODO typesByString
+	// /*
+	// 	for _, tt := range typesByString(s) {
+	// 		p := (*ptrType)(unsafe.Pointer(tt))
+	// 		if p.Elem != &t.t {
+	// 			continue
+	// 		}
+	// 		pi, _ := ptrMap.LoadOrStore(t, p)
+	// 		return &pi.(*ptrType).Type
+	// 	}
+	// */
 
-		// Look in known types.
-		s := "*" + t.String()
-		for _, tt := range typesByString(s) {
-			p := (*ptrType)(unsafe.Pointer(tt))
-			if p.Elem != &t.t {
-				continue
-			}
-			pi, _ := ptrMap.LoadOrStore(t, p)
-			return &pi.(*ptrType).Type
-		}
+	// Create a new ptrType starting with the description
+	// of an *unsafe.Pointer.
+	var iptr any = (*unsafe.Pointer)(nil)
+	prototype := *(**ptrType)(unsafe.Pointer(&iptr))
+	pp := *prototype
 
-		// Create a new ptrType starting with the description
-		// of an *unsafe.Pointer.
-		var iptr any = (*unsafe.Pointer)(nil)
-		prototype := *(**ptrType)(unsafe.Pointer(&iptr))
-		pp := *prototype
+	pp.Str_ = s //resolveReflectName(newName(s, "", false, false))
+	pp.PtrToThis_ = nil
 
-		pp.Str = resolveReflectName(newName(s, "", false, false))
-		pp.PtrToThis = 0
+	// For the type structures linked into the binary, the
+	// compiler provides a good hash of the string.
+	// Create a good hash for the new string by using
+	// the FNV-1 hash's mixing function to combine the
+	// old hash and the new "*".
+	pp.Hash = fnv1(t.t.Hash, '*')
 
-		// For the type structures linked into the binary, the
-		// compiler provides a good hash of the string.
-		// Create a good hash for the new string by using
-		// the FNV-1 hash's mixing function to combine the
-		// old hash and the new "*".
-		pp.Hash = fnv1(t.t.Hash, '*')
+	pp.Elem = at
 
-		pp.Elem = at
-
-		pi, _ := ptrMap.LoadOrStore(t, &pp)
-		return &pi.(*ptrType).Type
-	*/
-	panic("todo: reflect.rtype.ptrTo")
+	ptrMap.m[t] = &pp
+	return &pp.Type
+	//pi, _ := ptrMap.LoadOrStore(t, &pp)
+	//return &pi.(*ptrType).Type
 }
 
 func ptrTo(t *abi.Type) *abi.Type {
@@ -1102,7 +1291,6 @@ func haveIdenticalType(T, V *abi.Type, cmpTags bool) bool {
 	if cmpTags {
 		return T == V
 	}
-
 	if nameFor(T) != nameFor(V) || T.Kind() != V.Kind() || pkgPathFor(T) != pkgPathFor(V) {
 		return false
 	}
@@ -1126,83 +1314,80 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 		return true
 	}
 
-	/*
-		// Composite types.
-		switch kind {
-		case Array:
-			return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+	// Composite types.
+	switch kind {
+	case Array:
+		return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
 
-		case Chan:
-			return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+	case Chan:
+		return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
 
-		case Func:
-			t := (*funcType)(unsafe.Pointer(T))
-			v := (*funcType)(unsafe.Pointer(V))
-			if t.OutCount != v.OutCount || t.InCount != v.InCount {
-				return false
-			}
-			for i := 0; i < t.NumIn(); i++ {
-				if !haveIdenticalType(t.In(i), v.In(i), cmpTags) {
-					return false
-				}
-			}
-			for i := 0; i < t.NumOut(); i++ {
-				if !haveIdenticalType(t.Out(i), v.Out(i), cmpTags) {
-					return false
-				}
-			}
-			return true
-
-		case Interface:
-			t := (*interfaceType)(unsafe.Pointer(T))
-			v := (*interfaceType)(unsafe.Pointer(V))
-			if len(t.Methods) == 0 && len(v.Methods) == 0 {
-				return true
-			}
-			// Might have the same methods but still
-			// need a run time conversion.
+	case Func:
+		t := (*funcType)(unsafe.Pointer(T))
+		v := (*funcType)(unsafe.Pointer(V))
+		if len(t.Out) != len(v.Out) || len(t.In) != len(v.In) {
 			return false
-
-		case Map:
-			return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case Pointer, Slice:
-			return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case Struct:
-			t := (*structType)(unsafe.Pointer(T))
-			v := (*structType)(unsafe.Pointer(V))
-			if len(t.Fields) != len(v.Fields) {
+		}
+		for i := 0; i < len(t.In); i++ {
+			if !haveIdenticalType(t.In[i], v.In[i], cmpTags) {
 				return false
 			}
-			if t.PkgPath.Name() != v.PkgPath.Name() {
+		}
+		for i := 0; i < len(t.Out); i++ {
+			if !haveIdenticalType(t.Out[i], v.Out[i], cmpTags) {
 				return false
 			}
-			for i := range t.Fields {
-				tf := &t.Fields[i]
-				vf := &v.Fields[i]
-				if tf.Name.Name() != vf.Name.Name() {
-					return false
-				}
-				if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
-					return false
-				}
-				if cmpTags && tf.Name.Tag() != vf.Name.Tag() {
-					return false
-				}
-				if tf.Offset != vf.Offset {
-					return false
-				}
-				if tf.Embedded() != vf.Embedded() {
-					return false
-				}
-			}
+		}
+		return true
+
+	case Interface:
+		t := (*interfaceType)(unsafe.Pointer(T))
+		v := (*interfaceType)(unsafe.Pointer(V))
+		if len(t.Methods) == 0 && len(v.Methods) == 0 {
 			return true
 		}
-
+		// Might have the same methods but still
+		// need a run time conversion.
 		return false
-	*/
-	panic("todo: reflect.haveIdenticalUnderlyingType")
+
+	case Map:
+		return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case Pointer, Slice:
+		return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case Struct:
+		t := (*structType)(unsafe.Pointer(T))
+		v := (*structType)(unsafe.Pointer(V))
+		if len(t.Fields) != len(v.Fields) {
+			return false
+		}
+		if t.PkgPath_ != v.PkgPath_ {
+			return false
+		}
+		for i := range t.Fields {
+			tf := &t.Fields[i]
+			vf := &v.Fields[i]
+			if tf.Name_ != vf.Name_ {
+				return false
+			}
+			if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
+				return false
+			}
+			if cmpTags && tf.Tag_ != vf.Tag_ {
+				return false
+			}
+			if tf.Offset != vf.Offset {
+				return false
+			}
+			if tf.Embedded() != vf.Embedded() {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
 }
 
 // SliceOf returns the slice type with element type t.
@@ -1247,4 +1432,133 @@ func toType(t *abi.Type) Type {
 		return nil
 	}
 	return toRType(t)
+}
+
+// The funcLookupCache caches FuncOf lookups.
+// FuncOf does not share the common lookupCache since cacheKey is not
+// sufficient to represent functions unambiguously.
+var funcLookupCache struct {
+	sync.Mutex // Guards stores (but not loads) on m.
+
+	// m is a map[uint32][]*rtype keyed by the hash calculated in FuncOf.
+	// Elements of m are append-only and thus safe for concurrent reading.
+	m map[uint32][]*abi.Type
+}
+
+func init() {
+	funcLookupCache.m = make(map[uint32][]*abi.Type)
+}
+
+// FuncOf returns the function type with the given argument and result types.
+// For example if k represents int and e represents string,
+// FuncOf([]Type{k}, []Type{e}, false) represents func(int) string.
+//
+// The variadic argument controls whether the function is variadic. FuncOf
+// panics if the in[len(in)-1] does not represent a slice and variadic is
+// true.
+func FuncOf(in, out []Type, variadic bool) Type {
+	if variadic && (len(in) == 0 || in[len(in)-1].Kind() != Slice) {
+		panic("reflect.FuncOf: last arg of variadic func must be slice")
+	}
+
+	// Make a func type.
+	var ifunc any = (func())(nil)
+	prototype := *(**funcType)(unsafe.Pointer(&ifunc))
+	ft := &funcType{}
+	*ft = *prototype
+	ft.In = make([]*abi.Type, len(in))
+	ft.Out = make([]*abi.Type, len(out))
+
+	// Build a hash and minimally populate ft.
+	var hash uint32
+	for i, in := range in {
+		t := in.(*rtype)
+		ft.In[i] = &t.t
+		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+	}
+	if variadic {
+		hash = fnv1(hash, 'v')
+	}
+	hash = fnv1(hash, '.')
+	for i, out := range out {
+		t := out.(*rtype)
+		ft.Out[i] = &t.t
+		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+	}
+
+	ft.TFlag = 0
+	ft.Hash = hash
+	ft.Kind_ = uint8(abi.Func)
+	if variadic {
+		ft.TFlag |= abi.TFlagVariadic
+	}
+
+	funcLookupCache.Lock()
+	defer funcLookupCache.Unlock()
+
+	// Look in cache.
+	if ts, ok := funcLookupCache.m[hash]; ok {
+		for _, t := range ts {
+			if haveIdenticalUnderlyingType(&ft.Type, t, true) {
+				return toRType(t)
+			}
+		}
+	}
+
+	addToCache := func(tt *abi.Type) Type {
+		rts := funcLookupCache.m[hash]
+		funcLookupCache.m[hash] = append(rts, tt)
+		return toType(tt)
+	}
+	str := funcStr(ft)
+
+	//TODO typesByString
+	// for _, tt := range typesByString(str) {
+	// 	if haveIdenticalUnderlyingType(&ft.Type, tt, true) {
+	// 		return addToCache(tt)
+	// 	}
+	// }
+
+	// Populate the remaining fields of ft and store in cache.
+	ft.Str_ = str
+	ft.PtrToThis_ = nil
+	return addToCache(&ft.Type)
+}
+
+func stringFor(t *abi.Type) string {
+	return toRType(t).String()
+}
+
+// funcStr builds a string representation of a funcType.
+func funcStr(ft *funcType) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "func("...)
+	for i, t := range ft.In {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		if ft.Variadic() && i == len(ft.In)-1 {
+			repr = append(repr, "..."...)
+			repr = append(repr, stringFor((*sliceType)(unsafe.Pointer(t)).Elem)...)
+		} else {
+			repr = append(repr, stringFor(t)...)
+		}
+	}
+	repr = append(repr, ')')
+	out := ft.Out
+	if len(out) == 1 {
+		repr = append(repr, ' ')
+	} else if len(out) > 1 {
+		repr = append(repr, " ("...)
+	}
+	for i, t := range out {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		repr = append(repr, stringFor(t)...)
+	}
+	if len(out) > 1 {
+		repr = append(repr, ')')
+	}
+	return string(repr)
 }
