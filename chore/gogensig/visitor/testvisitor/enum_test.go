@@ -55,28 +55,39 @@ func TestSpectrum(t *testing.T) {
 	    Pawn
 	};`,
 		`
-package spectrum
+		package spectrum
 
-const Spectrum_red int = 0
-const Spectrum_orange int = 1
-const Spectrum_yello int = 2
-const Spectrum_green int = 3
-const Spectrum_blue int = 4
-const Spectrum_violet int = 5
-const Kids_nippy int = 0
-const Kids_slats int = 1
-const Kids_skippy int = 2
-const Kids_nina int = 3
-const Kids_liz int = 4
-const Levels_low int = 100
-const Levels_medium int = 500
-const Levels_high int = 2000
-const Feline_cat int = 0
-const Feline_lynx int = 10
-const Feline_puma int = 11
-const Feline_tiger int = 12
-const Piecetype_King int = 1
-const Piecetype_Queen int = 2
-const Piecetype_Rook int = 10
-const Piecetype_Pawn int = 11`)
+const (
+	Spectrum_red    = 0
+	Spectrum_orange = 1
+	Spectrum_yello  = 2
+	Spectrum_green  = 3
+	Spectrum_blue   = 4
+	Spectrum_violet = 5
+)
+const (
+	Kids_nippy  = 0
+	Kids_slats  = 1
+	Kids_skippy = 2
+	Kids_nina   = 3
+	Kids_liz    = 4
+)
+const (
+	Levels_low    = 100
+	Levels_medium = 500
+	Levels_high   = 2000
+)
+const (
+	Feline_cat   = 0
+	Feline_lynx  = 10
+	Feline_puma  = 11
+	Feline_tiger = 12
+)
+const (
+	Piecetype_King  = 1
+	Piecetype_Queen = 2
+	Piecetype_Rook  = 10
+	Piecetype_Pawn  = 11
+)
+`)
 }
