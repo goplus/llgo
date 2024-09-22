@@ -7,15 +7,12 @@ import signal
 from dataclasses import dataclass, field
 from typing import List, Optional, Set, Dict, Any
 import lldb
-import llgo_plugin  # Add this import
+import llgo_plugin
+from llgo_plugin import log
 
 
 class LLDBTestException(Exception):
     pass
-
-
-def log(*args: Any, **kwargs: Any) -> None:
-    print(*args, **kwargs, flush=True)
 
 
 @dataclass
@@ -60,7 +57,7 @@ class TestResults:
 
 
 class LLDBDebugger:
-    def __init__(self, executable_path: str, plugin_path: Optional[str] = None):
+    def __init__(self, executable_path: str, plugin_path: Optional[str] = None) -> None:
         self.executable_path: str = executable_path
         self.plugin_path: Optional[str] = plugin_path
         self.debugger: lldb.SBDebugger = lldb.SBDebugger.Create()
@@ -70,7 +67,6 @@ class LLDBDebugger:
         self.type_mapping: Dict[str, str] = {
             'long': 'int',
             'unsigned long': 'uint',
-            # Add more mappings as needed
         }
 
     def setup(self) -> None:
@@ -104,25 +100,10 @@ class LLDBDebugger:
 
     def get_variable_value(self, var_expression: str) -> Optional[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
-
-        parts = var_expression.split('.')
-        var = frame.FindVariable(parts[0])
-
-        for part in parts[1:]:
-            if not var.IsValid():
-                return None
-
-            if '[' in part and ']' in part:
-                array_name, index = part.split('[')
-                index = int(index.rstrip(']'))
-                var = var.GetChildAtIndex(index)
-            elif var.GetType().IsPointerType():
-                var = var.Dereference()
-                var = var.GetChildMemberWithName(part)
-            else:
-                var = var.GetChildMemberWithName(part)
-
-        return llgo_plugin.format_value(var, self.debugger) if var.IsValid() else None
+        value = llgo_plugin.evaluate_expression(frame, var_expression)
+        if value and value.IsValid():
+            return llgo_plugin.format_value(value, self.debugger)
+        return None
 
     def get_all_variable_names(self) -> Set[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
@@ -189,7 +170,7 @@ class LLDBDebugger:
 
 
 def parse_expected_values(source_files: List[str]) -> List[TestCase]:
-    test_cases = []
+    test_cases: List[TestCase] = []
     for source_file in source_files:
         with open(source_file, 'r', encoding='utf-8') as f:
             content = f.readlines()
@@ -198,7 +179,7 @@ def parse_expected_values(source_files: List[str]) -> List[TestCase]:
                 line = content[i].strip()
                 if line.startswith('// Expected:'):
                     start_line = i + 1
-                    tests = []
+                    tests: List[Test] = []
                     i += 1
                     while i < len(content):
                         line = content[i].strip()
@@ -224,7 +205,8 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
         debugger = LLDBDebugger(executable_path, plugin_path)
         try:
             if verbose:
-                log(f"Setting breakpoint at {test_case.source_file}: {test_case.end_line}")
+                log(
+                    f"\nSetting breakpoint at {test_case.source_file}:{test_case.end_line}")
             debugger.setup()
             debugger.set_breakpoint(test_case.source_file, test_case.end_line)
             debugger.run_to_breakpoint()
@@ -274,7 +256,7 @@ def run_tests(executable_path: str, source_files: List[str], verbose: bool, inte
 
 
 def execute_test_case(debugger: LLDBDebugger, test_case: TestCase, all_variable_names: Set[str]) -> CaseResult:
-    results = []
+    results: List[TestResult] = []
 
     for test in test_case.tests:
         if test.variable == "all variables":

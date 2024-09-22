@@ -1,70 +1,91 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
+from typing import List, Optional, Dict, Any, Tuple
 import re
 import lldb
 
 
-def __lldb_init_module(debugger, _):
+def log(*args: Any, **kwargs: Any) -> None:
+    print(*args, **kwargs, flush=True)
+
+
+def __lldb_init_module(debugger: lldb.SBDebugger, _: Dict[str, Any]) -> None:
     debugger.HandleCommand(
         'command script add -f llgo_plugin.print_go_expression p')
     debugger.HandleCommand(
         'command script add -f llgo_plugin.print_all_variables v')
 
 
-def is_llgo_compiler(target):
+def is_llgo_compiler(_target: lldb.SBTarget) -> bool:
     return True
-    module = target.GetModuleAtIndex(0)
-
-    # Check for specific sections or symbols that might be unique to LLGo
-    llgo_indicators = ["__llgo_", "runtime.llgo", "llgo."]
-
-    # Check sections
-    for i in range(module.GetNumSections()):
-        section = module.GetSectionAtIndex(i)
-        section_name = section.GetName()
-        if any(indicator in section_name for indicator in llgo_indicators):
-            return True
-
-    # Check symbols
-    for symbol in module.symbols:
-        symbol_name = symbol.GetName()
-        if any(indicator in symbol_name for indicator in llgo_indicators):
-            return True
-
-    # Check compile units
-    for i in range(module.GetNumCompileUnits()):
-        cu = module.GetCompileUnitAtIndex(i)
-        cu_name = cu.GetFileSpec().GetFilename()
-        print(f"Compile unit: {cu_name}")
-        # You can add more checks here if needed
-
-    print("LLGo Compiler not detected")
-    return False
 
 
-def print_go_expression(debugger, command, result, _internal_dict):
-    target = debugger.GetSelectedTarget()
-    if not is_llgo_compiler(target):
-        result.AppendMessage("Not a LLGo compiled binary.")
-        return
+def evaluate_expression(frame: lldb.SBFrame, expression: str) -> Optional[lldb.SBValue]:
+    parts = re.findall(r'\*|\w+|\(|\)|\[.*?\]|\.', expression)
 
+    def evaluate_part(i: int) -> Tuple[Optional[lldb.SBValue], int]:
+        nonlocal parts
+        value: Optional[lldb.SBValue] = None
+        while i < len(parts):
+            part = parts[i]
+
+            if part == '*':
+                sub_value, i = evaluate_part(i + 1)
+                if sub_value and sub_value.IsValid():
+                    value = sub_value.Dereference()
+                else:
+                    return None, i
+            elif part == '(':
+                depth = 1
+                j = i + 1
+                while j < len(parts) and depth > 0:
+                    if parts[j] == '(':
+                        depth += 1
+                    elif parts[j] == ')':
+                        depth -= 1
+                    j += 1
+                value, i = evaluate_part(i + 1)
+                i = j - 1
+            elif part == ')':
+                return value, i + 1
+            elif part == '.':
+                if value is None:
+                    value = frame.FindVariable(parts[i+1])
+                else:
+                    value = value.GetChildMemberWithName(parts[i+1])
+                i += 2
+            elif part.startswith('['):
+                index = int(part[1:-1])
+                value = value.GetChildAtIndex(index)
+                i += 1
+            else:
+                if value is None:
+                    value = frame.FindVariable(part)
+                else:
+                    value = value.GetChildMemberWithName(part)
+                i += 1
+
+            if not value or not value.IsValid():
+                return None, i
+
+        return value, i
+
+    value, _ = evaluate_part(0)
+    return value
+
+
+def print_go_expression(debugger: lldb.SBDebugger, command: str, result: lldb.SBCommandReturnObject, _internal_dict: Dict[str, Any]) -> None:
     frame = debugger.GetSelectedTarget().GetProcess(
     ).GetSelectedThread().GetSelectedFrame()
-
-    # Handle Go-style pointer member access
-    command = re.sub(r'(\w+)\.(\w+)', lambda m: f'(*{m.group(1)}).{m.group(
-        2)}' if is_pointer(frame, m.group(1)) else m.group(0), command)
-
-    var = frame.EvaluateExpression(command)
-
-    if var.error.Success():
-        formatted = format_value(var, debugger)
-        result.AppendMessage(formatted)
+    value = evaluate_expression(frame, command)
+    if value and value.IsValid():
+        result.AppendMessage(format_value(value, debugger))
     else:
-        result.AppendMessage(f"Error: {var.error}")
+        result.AppendMessage(
+            f"Error: Unable to evaluate expression '{command}'")
 
 
-def print_all_variables(debugger, command, result, _internal_dict):
+def print_all_variables(debugger: lldb.SBDebugger, _command: str, result: lldb.SBCommandReturnObject, _internal_dict: Dict[str, Any]) -> None:
     target = debugger.GetSelectedTarget()
     if not is_llgo_compiler(target):
         result.AppendMessage("Not a LLGo compiled binary.")
@@ -74,7 +95,7 @@ def print_all_variables(debugger, command, result, _internal_dict):
     ).GetSelectedThread().GetSelectedFrame()
     variables = frame.GetVariables(True, True, True, False)
 
-    output = []
+    output: List[str] = []
     for var in variables:
         type_name = map_type_name(var.GetType().GetName())
         formatted = format_value(var, debugger, include_type=False, indent=0)
@@ -83,14 +104,12 @@ def print_all_variables(debugger, command, result, _internal_dict):
     result.AppendMessage("\n".join(output))
 
 
-def is_pointer(frame, var_name):
+def is_pointer(frame: lldb.SBFrame, var_name: str) -> bool:
     var = frame.FindVariable(var_name)
     return var.IsValid() and var.GetType().IsPointerType()
 
-# Format functions extracted from main.py
 
-
-def format_value(var, debugger, include_type=True, indent=0):
+def format_value(var: lldb.SBValue, debugger: lldb.SBDebugger, include_type: bool = True, indent: int = 0) -> str:
     if not var.IsValid():
         return "<variable not available>"
 
@@ -120,10 +139,10 @@ def format_value(var, debugger, include_type=True, indent=0):
             return "<variable not available>"
 
 
-def format_slice(var, debugger, indent):
+def format_slice(var: lldb.SBValue, debugger: lldb.SBDebugger, indent: int) -> str:
     length = int(var.GetChildMemberWithName('len').GetValue())
     data_ptr = var.GetChildMemberWithName('data')
-    elements = []
+    elements: List[str] = []
 
     ptr_value = int(data_ptr.GetValue(), 16)
     element_type = data_ptr.GetType().GetPointeeType()
@@ -152,8 +171,8 @@ def format_slice(var, debugger, indent):
     return result
 
 
-def format_array(var, debugger, indent):
-    elements = []
+def format_array(var: lldb.SBValue, debugger: lldb.SBDebugger, indent: int) -> str:
+    elements: List[str] = []
     indent_str = '  ' * indent
     next_indent_str = '  ' * (indent + 1)
 
@@ -166,13 +185,13 @@ def format_array(var, debugger, indent):
     element_type = map_type_name(var.GetType().GetArrayElementType().GetName())
     type_name = f"[{array_size}]{element_type}"
 
-    if len(elements) > 5:  # 如果元素数量大于5，则进行折行显示
+    if len(elements) > 5:  # wrap line if too many elements
         return f"{type_name}{{\n{next_indent_str}" + f",\n{next_indent_str}".join(elements) + f"\n{indent_str}}}"
     else:
         return f"{type_name}{{{', '.join(elements)}}}"
 
 
-def format_string(var):
+def format_string(var: lldb.SBValue) -> str:
     summary = var.GetSummary()
     if summary is not None:
         return summary  # Keep the quotes
@@ -185,8 +204,8 @@ def format_string(var):
     return '""'
 
 
-def format_struct(var, debugger, include_type=True, indent=0, type_name=""):
-    children = []
+def format_struct(var: lldb.SBValue, debugger: lldb.SBDebugger, include_type: bool = True, indent: int = 0, type_name: str = "") -> str:
+    children: List[str] = []
     indent_str = '  ' * indent
     next_indent_str = '  ' * (indent + 1)
 
@@ -209,13 +228,13 @@ def format_struct(var, debugger, include_type=True, indent=0, type_name=""):
         return struct_content
 
 
-def format_pointer(var, debugger, indent, type_name):
+def format_pointer(var: lldb.SBValue, _debugger: lldb.SBDebugger, _indent: int, _type_name: str) -> str:
     if not var.IsValid() or var.GetValueAsUnsigned() == 0:
         return "<variable not available>"
     return var.GetValue()  # Return the address as a string
 
 
-def map_type_name(type_name):
+def map_type_name(type_name: str) -> str:
     # Handle pointer types
     if type_name.endswith('*'):
         base_type = type_name[:-1].strip()
@@ -223,7 +242,7 @@ def map_type_name(type_name):
         return f"*{mapped_base_type}"
 
     # Map other types
-    type_mapping = {
+    type_mapping: Dict[str, str] = {
         'long': 'int',
         'void': 'unsafe.Pointer',
         'char': 'byte',
