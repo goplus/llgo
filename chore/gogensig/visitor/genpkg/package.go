@@ -129,13 +129,17 @@ func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 	if len(enumTypeDecl.Type.Items) > 0 {
+		constDefs := p.p.NewConstDefs(p.p.CB().Scope())
 		for _, item := range enumTypeDecl.Type.Items {
 			name := convert.ToTitle(enumTypeDecl.Name.Name) + "_" + item.Name.Name
 			val, err := convert.Expr(item.Value).ToInt()
 			if err != nil {
 				continue
 			}
-			p.p.CB().NewConstStart(types.Typ[types.Int], name).Val(val).EndInit(1)
+			constDefs.New(func(cb *gogen.CodeBuilder) int {
+				cb.Val(val)
+				return 1
+			}, 0, token.NoPos, nil, name)
 		}
 	}
 	return nil
