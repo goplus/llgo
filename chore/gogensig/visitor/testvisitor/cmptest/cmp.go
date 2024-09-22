@@ -88,7 +88,7 @@ func EqualStringIgnoreSpace(s1 string, s2 string) (bool, string) {
 	return true, ""
 }
 
-func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) {
+func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) bytes.Buffer {
 	t.Helper()
 
 	symbolpath, err := createAndWriteTempSymbFile(symbolEntries)
@@ -120,6 +120,8 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 	if isEqual, diff := EqualStringIgnoreSpace(expectedOutput, result); !isEqual {
 		t.Errorf("unexpected result:\n%s", diff)
 	}
+
+	return buf
 }
 
 func createAndWriteTempSymbFile(entries []symb.SymbolEntry) (string, error) {
