@@ -298,7 +298,11 @@ func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 		ty := param.Type()
 		argNo := i + 1
 		div := b.DIVarParam(p.fn, pos, param.Name(), p.prog.Type(ty, llssa.InGo), argNo)
-		b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
+		if _, ok := param.Type().(*types.Pointer); ok {
+			b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
+		} else {
+			b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
+		}
 	}
 }
 

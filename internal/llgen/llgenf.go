@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/packages"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -90,7 +91,14 @@ func genFrom(fileOrPkg string, pkgPath string) string {
 	initial, err := packages.LoadEx(dedup, prog.TypeSizes, cfg, fileOrPkg)
 	check(err)
 
-	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions|ssa.InstantiateGenerics|ssa.GlobalDebug)
+	buildMode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	if build.IsDebugEnabled() {
+		buildMode |= ssa.GlobalDebug
+	}
+	if !build.IsOptimizeEnabled() {
+		buildMode |= ssa.NaiveForm
+	}
+	_, pkgs := ssautil.AllPackages(initial, buildMode)
 
 	pkg := initial[0]
 	ssaPkg := pkgs[0]
