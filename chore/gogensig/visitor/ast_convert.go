@@ -63,7 +63,6 @@ func (p *AstConvert) VisitMethod(className *ast.Ident, method *ast.FuncDecl, typ
 }
 
 func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	fmt.Printf("visit struct %s\n", structName.Name)
 	p.pkg.NewTypeDecl(typeDecl)
 }
 

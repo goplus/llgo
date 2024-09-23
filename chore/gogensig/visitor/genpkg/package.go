@@ -68,7 +68,9 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 		return err
 	}
 	decl := p.p.NewFuncDecl(token.NoPos, string(goFuncName), sig)
-	decl.SetComments(p.p, comment.NewFuncDocComments(funcDecl.Name.Name, string(goFuncName)))
+	doc := convert.CommentGroup(funcDecl.Doc)
+	doc.AddCommentGroup(comment.NewFuncDocComments(funcDecl.Name.Name, string(goFuncName)))
+	decl.SetComments(p.p, doc.CommentGroup)
 	return nil
 }
 
@@ -79,6 +81,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return err
 	}
 	typeBlock := p.p.NewTypeDefs()
+	typeBlock.SetComments(convert.CommentGroup(typeDecl.Doc).CommentGroup)
 	decl := typeBlock.NewType(name)
 	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
 	if err != nil {
