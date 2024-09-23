@@ -99,7 +99,7 @@ TestDoc Case 3:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/// doc"
+							"Text":	"/// doc\n"
 						}]
 				},
 				"Parent":	null,
@@ -148,7 +148,7 @@ TestDoc Case 4:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/** doc */"
+							"Text":	"/** doc */\n"
 						}]
 				},
 				"Parent":	null,
@@ -197,7 +197,7 @@ TestDoc Case 5:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/*! doc */"
+							"Text":	"/*! doc */\n"
 						}]
 				},
 				"Parent":	null,
@@ -246,10 +246,10 @@ TestDoc Case 6:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/// doc 1"
+							"Text":	"/// doc 1\n"
 						}, {
 							"_Type":	"Comment",
-							"Text":	"/// doc 2"
+							"Text":	"/// doc 2\n"
 						}]
 				},
 				"Parent":	null,
@@ -298,10 +298,10 @@ TestDoc Case 7:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/*! doc 1 */"
+							"Text":	"/*! doc 1 */\n"
 						}, {
 							"_Type":	"Comment",
-							"Text":	"/*! doc 2 */"
+							"Text":	"/*! doc 2 */\n"
 						}]
 				},
 				"Parent":	null,
@@ -350,10 +350,10 @@ TestDoc Case 8:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/** doc 1 */"
+							"Text":	"/** doc 1 */\n"
 						}, {
 							"_Type":	"Comment",
-							"Text":	"/** doc 1 */"
+							"Text":	"/** doc 1 */\n"
 						}]
 				},
 				"Parent":	null,
@@ -402,16 +402,16 @@ TestDoc Case 9:
 					"_Type":	"CommentGroup",
 					"List":	[{
 							"_Type":	"Comment",
-							"Text":	"/**"
+							"Text":	"/**\n"
 						}, {
 							"_Type":	"Comment",
-							"Text":	" * doc 1"
+							"Text":	" * doc 1\n"
 						}, {
 							"_Type":	"Comment",
-							"Text":	" * doc 2"
+							"Text":	" * doc 2\n"
 						}, {
 							"_Type":	"Comment",
-							"Text":	" */"
+							"Text":	" */\n"
 						}]
 				},
 				"Parent":	null,
@@ -478,7 +478,7 @@ TestDoc Case 10:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"/// doc"
+											"Text":	"/// doc\n"
 										}]
 								},
 								"Comment":	null,
@@ -500,7 +500,7 @@ TestDoc Case 10:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"///< comment"
+											"Text":	"///< comment\n"
 										}]
 								},
 								"IsStatic":	false,
@@ -521,7 +521,7 @@ TestDoc Case 10:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"/*!< comment */"
+											"Text":	"/*!< comment */\n"
 										}]
 								},
 								"IsStatic":	false,
@@ -572,13 +572,13 @@ TestDoc Case 11:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"/** "
+											"Text":	"/** \n"
 										}, {
 											"_Type":	"Comment",
-											"Text":	"     * static field doc"
+											"Text":	"     * static field doc\n"
 										}, {
 											"_Type":	"Comment",
-											"Text":	"     */"
+											"Text":	"     */\n"
 										}]
 								},
 								"Comment":	null,
@@ -600,7 +600,7 @@ TestDoc Case 11:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"/*!< static field comment */"
+											"Text":	"/*!< static field comment */\n"
 										}]
 								},
 								"IsStatic":	true,
@@ -620,13 +620,13 @@ TestDoc Case 11:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"/** "
+											"Text":	"/** \n"
 										}, {
 											"_Type":	"Comment",
-											"Text":	"     * field doc"
+											"Text":	"     * field doc\n"
 										}, {
 											"_Type":	"Comment",
-											"Text":	"     */"
+											"Text":	"     */\n"
 										}]
 								},
 								"Comment":	null,
@@ -648,7 +648,7 @@ TestDoc Case 11:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"///< field comment"
+											"Text":	"///< field comment\n"
 										}]
 								},
 								"IsStatic":	false,
@@ -669,7 +669,7 @@ TestDoc Case 11:
 									"_Type":	"CommentGroup",
 									"List":	[{
 											"_Type":	"Comment",
-											"Text":	"/*!< protected field comment */"
+											"Text":	"/*!< protected field comment */\n"
 										}]
 								},
 								"IsStatic":	false,
@@ -690,13 +690,13 @@ TestDoc Case 11:
 								"_Type":	"CommentGroup",
 								"List":	[{
 										"_Type":	"Comment",
-										"Text":	"/** "
+										"Text":	"/** \n"
 									}, {
 										"_Type":	"Comment",
-										"Text":	"     * method doc"
+										"Text":	"     * method doc\n"
 									}, {
 										"_Type":	"Comment",
-										"Text":	"     */"
+										"Text":	"     */\n"
 									}]
 							},
 							"Parent":	{
