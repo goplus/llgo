@@ -9,7 +9,7 @@ const (
 )
 
 func NewFuncDocComments(funcName string, goFuncName string) *goast.CommentGroup {
-	txt := "\n//go:linkname " + goFuncName + " " + "C." + funcName
+	txt := "//go:linkname " + goFuncName + " " + "C." + funcName
 	comment := goast.Comment{Text: txt}
 	commentGroup := goast.CommentGroup{List: []*goast.Comment{&comment}}
 	return &commentGroup
