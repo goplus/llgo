@@ -31,30 +31,37 @@ import (
 )
 
 func main() {
-	if len(os.Args) == 1 {
-		// run with default config file
-		runFromConfig()
-		return
+	cfgFile := ""
+	outputToFile := false
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if arg == "--extract" {
+			runExtract()
+			return
+		} else if arg == "--help" || arg == "-h" {
+			printUsage()
+			return
+		} else if strings.HasPrefix(arg, "-out=") {
+			outputToFile = parseBoolArg(arg, "out", false)
+		} else if cfgFile == "" && !strings.HasPrefix(arg, "-") {
+			cfgFile = arg
+		}
 	}
-
-	if os.Args[1] == "--extract" {
-		runExtract()
-	} else if os.Args[1] == "--help" || os.Args[1] == "-h" {
-		printUsage()
-	} else {
-		runFromConfig()
-	}
+	runFromConfig(cfgFile, outputToFile)
 }
 
 func printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("  llcppsigfetch [<config_file>]")
+	fmt.Println("  llcppsigfetch [<config_file>] [-out=<bool>]")
 	fmt.Println("  OR")
-	fmt.Println("  llcppsigfetch --extract <file> <temp> [args...]")
+	fmt.Println("  llcppsigfetch --extract <file> [-out=<bool>] [-temp=<bool>] [-cpp=<bool>] [args...]")
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("  [<config_file>]: Path to the configuration file (use '-' for stdin)")
 	fmt.Println("                   If not provided, uses default 'llcppg.cfg'")
+	fmt.Println("  -out=<bool>:     Optional. Set to 'true' to output results to a file,")
+	fmt.Println("                   'false' (default) to output to stdout")
+	fmt.Println("                   This option can be used with both modes")
 	fmt.Println("")
 	fmt.Println("  --extract:       Extract information from a single file")
 	fmt.Println("    <file>:        Path to the file to process, or file content if -temp=true")
@@ -71,10 +78,9 @@ func printUsage() {
 	fmt.Println("Note: The two usage modes are mutually exclusive. Use either [<config_file>] OR --extract, not both.")
 }
 
-func runFromConfig() {
-	cfgFile := "llcppg.cfg"
-	if len(os.Args) > 1 {
-		cfgFile = os.Args[1]
+func runFromConfig(cfgFile string, outputToFile bool) {
+	if cfgFile == "" {
+		cfgFile = "llcppg.cfg"
 	}
 
 	var data []byte
@@ -100,7 +106,7 @@ func runFromConfig() {
 	err = context.ProcessFiles(files)
 	check(err)
 
-	outputInfo(context)
+	outputInfo(context, outputToFile)
 }
 
 func runExtract() {
@@ -117,6 +123,7 @@ func runExtract() {
 		Temp:  false,
 	}
 
+	outputToFile := false
 	for i := 3; i < len(os.Args); i++ {
 		arg := os.Args[i]
 		switch {
@@ -126,6 +133,10 @@ func runExtract() {
 			i--
 		case strings.HasPrefix(arg, "-cpp="):
 			cfg.IsCpp = parseBoolArg(arg, "cpp", true)
+			os.Args = append(os.Args[:i], os.Args[i+1:]...)
+			i--
+		case strings.HasPrefix(arg, "-out="):
+			outputToFile = parseBoolArg(arg, "out", false)
 			os.Args = append(os.Args[:i], os.Args[i+1:]...)
 			i--
 		default:
@@ -139,7 +150,7 @@ func runExtract() {
 	check(err)
 	result := converter.MarshalOutputASTFiles()
 	cstr := result.Print()
-	c.Printf(cstr)
+	outputResult(cstr, outputToFile)
 	cjson.FreeCStr(cstr)
 	result.Delete()
 	converter.Dispose()
@@ -148,6 +159,20 @@ func runExtract() {
 func check(err error) {
 	if err != nil {
 		panic(err)
+	}
+}
+
+func outputResult(result *c.Char, outputToFile bool) {
+	if outputToFile {
+		outputFile := "llcppg.sigfetch.json"
+		err := os.WriteFile(outputFile, []byte(c.GoString(result)), 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to output file: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Results saved to %s\n", outputFile)
+	} else {
+		c.Printf(result)
 	}
 }
 
@@ -161,12 +186,12 @@ func getHeaderFiles(cflags string, files []string) []string {
 	return paths
 }
 
-func outputInfo(context *parse.Context) {
+func outputInfo(context *parse.Context, outputToFile bool) {
 	info := context.Output()
 	str := info.Print()
 	defer cjson.FreeCStr(str)
 	defer info.Delete()
-	c.Printf(str)
+	outputResult(str, outputToFile)
 }
 
 func parseBoolArg(arg, name string, defaultValue bool) bool {
