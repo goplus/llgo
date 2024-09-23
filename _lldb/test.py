@@ -252,7 +252,7 @@ def run_tests(executable_path: str, source_files: List[str], verbose: bool, inte
     print_test_results(results)
 
     if results.total != results.passed:
-        os._exit(1)
+        sys.exit(1)
 
 
 def execute_test_case(debugger: LLDBDebugger, test_case: TestCase, all_variable_names: Set[str]) -> CaseResult:
