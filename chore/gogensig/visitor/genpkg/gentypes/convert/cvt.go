@@ -1,3 +1,6 @@
+/*
+This file is used to convert type from ast type to types.Type
+*/
 package convert
 
 import (
