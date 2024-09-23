@@ -28,12 +28,21 @@ import (
 func main() {
 	var data []byte
 	var err error
-	if len(os.Args) <= 1 || os.Args[1] != "-" {
+	if len(os.Args) <= 1 {
 		os.Exit(1)
 	}
-	data, err = io.ReadAll(os.Stdin)
+
+	sigfetchFile := "llcppg.sigfetch.json"
+	if len(os.Args) > 1 {
+		sigfetchFile = os.Args[1]
+	}
+
+	if sigfetchFile == "-" {
+		data, err = io.ReadAll(os.Stdin)
+	} else {
+		data, err = os.ReadFile(sigfetchFile)
+	}
 	check(err)
-	// todo(zzy):refine interface
 	conf, err := util.GetCppgFromPath("./llcppg.cfg")
 	check(err)
 	astConvert := visitor.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
