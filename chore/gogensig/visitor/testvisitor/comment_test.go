@@ -3,8 +3,8 @@ package testvisitor_test
 import (
 	"testing"
 
+	"github.com/goplus/llgo/chore/gogensig/cmptest"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
-	"github.com/goplus/llgo/chore/gogensig/visitor/testvisitor/cmptest"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
