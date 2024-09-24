@@ -260,8 +260,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			b := fn.NewBuilder()
 			if debugSymbols {
-				b.DebugFunction(fn, p.goProg.Fset.Position(f.Pos()))
-				b.DISetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(f.Pos()))
+				pos := p.goProg.Fset.Position(f.Pos())
+				bodyPos := p.getFuncBodyPos(f)
+				b.DebugFunction(fn, pos, bodyPos)
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
@@ -291,17 +292,70 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	return fn, nil, goFunc
 }
 
+func (p *context) getDebugPosition(f *ssa.Function, pos token.Pos) token.Position {
+	ppos := p.goProg.Fset.Position(pos)
+	bodyPos := p.getFuncBodyPos(f)
+	if bodyPos.Filename == "" {
+		return ppos
+	}
+	if ppos.Line < bodyPos.Line {
+		return bodyPos
+	}
+	return ppos
+}
+
+func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
+	if f.Object() != nil {
+		return p.goProg.Fset.Position(f.Object().(*types.Func).Scope().Pos())
+	}
+	return p.goProg.Fset.Position(f.Pos())
+}
+
+func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
+	object := v.Object()
+	variable, ok := object.(*types.Var)
+	if !ok {
+		// Not a local variable.
+		return
+	}
+	if variable.IsField() {
+		// skip *ssa.FieldAddr
+		return
+	}
+	pos := p.goProg.Fset.Position(v.Pos())
+	value := p.compileValue(b, v.X)
+	fn := v.Parent()
+	dbgVar := p.getLocalVariable(b, fn, variable)
+	if v.IsAddr {
+		// *ssa.Alloc
+		b.DIDeclare(variable, value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+	} else {
+		b.DIValue(variable, value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+	}
+}
+
+func isBasicTypeOrPtr(ty types.Type) bool {
+	if _, ok := ty.(*types.Basic); ok {
+		return true
+	}
+	if _, ok := ty.(*types.Pointer); ok {
+		return true
+	}
+	return false
+}
+
 func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 	for i, param := range f.Params {
+		variable := param.Object().(*types.Var)
 		pos := p.goProg.Fset.Position(param.Pos())
 		v := p.compileValue(b, param)
 		ty := param.Type()
 		argNo := i + 1
 		div := b.DIVarParam(p.fn, pos, param.Name(), p.prog.Type(ty, llssa.InGo), argNo)
-		if _, ok := param.Type().(*types.Pointer); ok {
-			b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
+		if isBasicTypeOrPtr(ty) {
+			b.DIDeclare(variable, v, div, p.fn, pos, p.fn.Block(0))
 		} else {
-			b.DIDeclare(v, div, p.fn, pos, p.fn.Block(0))
+			b.DIValue(variable, v, div, p.fn, pos, p.fn.Block(0))
 		}
 	}
 }
@@ -488,9 +542,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		log.Panicln("unreachable:", iv)
 	}
 	if debugSymbols {
-		if v, ok := iv.(ssa.Instruction); ok {
-			b.DISetCurrentDebugLocation(p.fn, p.goProg.Fset.Position(v.Pos()))
-		}
+		pos := p.getDebugPosition(iv.Parent(), iv.Pos())
+		b.DISetCurrentDebugLocation(p.fn, pos)
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -724,26 +777,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		b.Send(ch, x)
 	case *ssa.DebugRef:
 		if debugSymbols {
-			object := v.Object()
-			variable, ok := object.(*types.Var)
-			if !ok {
-				// Not a local variable.
-				return
-			}
-			if variable.IsField() {
-				// skip *ssa.FieldAddr
-				return
-			}
-			pos := p.goProg.Fset.Position(v.Pos())
-			value := p.compileValue(b, v.X)
-			fn := v.Parent()
-			dbgVar := p.getLocalVariable(b, fn, variable)
-			if v.IsAddr {
-				// *ssa.Alloc
-				b.DIDeclare(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
-			} else {
-				b.DIValue(value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
-			}
+			p.debugRef(b, v)
 		}
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))

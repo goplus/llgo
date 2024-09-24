@@ -77,7 +77,7 @@ func (b diBuilder) createCompileUnit(filename, dir string) CompilationUnit {
 		File:           filename,
 		Dir:            dir,
 		Producer:       "LLGo",
-		Optimized:      false,
+		Optimized:      true,
 		RuntimeVersion: 1,
 	})}
 }
@@ -125,9 +125,9 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Basic:
 		if t.Kind() == types.UnsafePointer {
 			typ = b.di.CreatePointerType(llvm.DIPointerType{
-				Name:         name,
-				SizeInBits:   b.prog.SizeOf(b.prog.rawType(t)) * 8,
-				AlignInBits:  uint32(b.prog.sizes.Alignof(t) * 8),
+				Name:        name,
+				SizeInBits:  b.prog.SizeOf(b.prog.rawType(t)) * 8,
+				AlignInBits: uint32(b.prog.sizes.Alignof(t) * 8),
 			})
 			return &aDIType{typ}
 		}
@@ -194,6 +194,10 @@ type aDIFunction struct {
 }
 
 type DIFunction = *aDIFunction
+
+func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
+	return &aDIScopeMeta{p.diFunc.ll}
+}
 
 // ----------------------------------------------------------------------------
 
@@ -363,11 +367,12 @@ func (b diBuilder) createComplexType(t Type) DIType {
 }
 
 func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) DIType {
+	ptrType := b.prog.VoidPtr()
 	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
-		Name:         name,
-		Pointee:      b.diType(ty, pos).ll,
-		SizeInBits:  b.prog.SizeOf(b.prog.VoidPtr()) * 8,
-		AlignInBits: uint32(b.prog.sizes.Alignof(b.prog.VoidPtr().RawType())) * 8,
+		Name:        name,
+		Pointee:     b.diType(ty, pos).ll,
+		SizeInBits:  b.prog.SizeOf(ptrType) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ptrType.RawType())) * 8,
 	})}
 }
 
@@ -581,15 +586,39 @@ func (b Builder) di() diBuilder {
 	return b.Pkg.di
 }
 
-func (b Builder) DIDeclare(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+func (b Builder) DIDeclare(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
 	dbgPtr, _, _ := b.constructDebugAddr(v)
 	expr := b.di().createExpression(nil)
 	b.di().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
+	// v.impl = dbgVal.impl
 }
 
-func (b Builder) DIValue(v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	expr := b.di().createExpression(nil)
-	b.di().dbgValue(v, dv, scope, pos, expr, blk)
+const (
+	opDeref = 0x06
+)
+
+func isBasicTypeOrPtr(t types.Type) bool {
+	switch t.(type) {
+	case *types.Basic:
+		return true
+	case *types.Pointer:
+		return true
+	default:
+		return false
+	}
+}
+
+func (b Builder) DIValue(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+	ty := v.Type.RawType().Underlying()
+	if isBasicTypeOrPtr(ty) {
+		expr := b.di().createExpression(nil)
+		b.di().dbgValue(v, dv, scope, pos, expr, blk)
+	} else {
+		dbgPtr, dbgVal, _ := b.constructDebugAddr(v)
+		expr := b.di().createExpression([]uint64{opDeref})
+		b.di().dbgValue(dbgPtr, dv, scope, pos, expr, blk)
+		v.impl = dbgVal.impl
+	}
 }
 
 func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt Type, argNo int) DIVar {
@@ -627,9 +656,41 @@ func (b Builder) DISetCurrentDebugLocation(f Function, pos token.Position) {
 	)
 }
 
-func (b Builder) DebugFunction(f Function, pos token.Position) {
-	// attach debug info to function
-	f.scopeMeta(b.Pkg.di, pos)
+func (b Builder) DebugFunction(f Function, pos token.Position, bodyPos token.Position) {
+	p := f
+	if p.diFunc == nil {
+		sig := p.Type.raw.Type.(*types.Signature)
+		rt := p.Prog.Type(sig.Results(), InGo)
+		paramTypes := make([]llvm.Metadata, len(p.params)+1)
+		paramTypes[0] = b.di().diType(rt, pos).ll
+		for i, t := range p.params {
+			paramTypes[i+1] = b.di().diType(t, pos).ll
+		}
+		diFuncType := b.di().di.CreateSubroutineType(llvm.DISubroutineType{
+			File:       b.di().file(pos.Filename).ll,
+			Parameters: paramTypes,
+		})
+		dif := llvm.DIFunction{
+			Type:         diFuncType,
+			Name:         p.Name(),
+			LinkageName:  p.Name(),
+			File:         b.di().file(pos.Filename).ll,
+			Line:         pos.Line,
+			ScopeLine:    bodyPos.Line,
+			IsDefinition: true,
+			Optimized:    true,
+		}
+		p.diFunc = &aDIFunction{
+			b.di().di.CreateFunction(b.di().file(pos.Filename).ll, dif),
+		}
+		p.impl.SetSubprogram(p.diFunc.ll)
+	}
+	b.impl.SetCurrentDebugLocation(
+		uint(bodyPos.Line),
+		uint(bodyPos.Column),
+		p.diFunc.ll,
+		f.impl.InstructionDebugLoc(),
+	)
 }
 
 func (b Builder) Param(idx int) Expr {

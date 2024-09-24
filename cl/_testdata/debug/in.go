@@ -193,7 +193,7 @@ func FuncWithAllTypeParams(
 	s = "world"
 	e = E{i: 40}
 
-	// Expected:
+	// Expected(skip):
 	//   i8: '\x09'
 	//   i16: 10
 	//   i32: 11

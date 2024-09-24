@@ -17,7 +17,6 @@
 package ssa
 
 import (
-	"go/token"
 	"go/types"
 	"log"
 	"strconv"
@@ -325,38 +324,6 @@ func (p Function) Block(idx int) BasicBlock {
 // SetRecover sets the recover block for the function.
 func (p Function) SetRecover(blk BasicBlock) {
 	p.recov = blk
-}
-
-func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
-	if p.diFunc == nil {
-		sig := p.Type.raw.Type.(*types.Signature)
-		rt := p.Prog.Type(sig.Results(), InGo)
-		paramTypes := make([]llvm.Metadata, len(p.params)+1)
-		paramTypes[0] = b.diType(rt, pos).ll
-		for i, t := range p.params {
-			paramTypes[i+1] = b.diType(t, pos).ll
-		}
-		diFuncType := b.di.CreateSubroutineType(llvm.DISubroutineType{
-			File:       b.file(pos.Filename).ll,
-			Parameters: paramTypes,
-		})
-		p.diFunc = &aDIFunction{
-			b.di.CreateFunction(
-				b.file(pos.Filename).ll,
-				llvm.DIFunction{
-					Type:         diFuncType,
-					Name:         p.Name(),
-					LinkageName:  p.Name(),
-					File:         b.file(pos.Filename).ll,
-					Line:         pos.Line,
-					IsDefinition: true,
-					Optimized:    false,
-				},
-			),
-		}
-		p.impl.SetSubprogram(p.diFunc.ll)
-	}
-	return &aDIScopeMeta{p.diFunc.ll}
 }
 
 // -----------------------------------------------------------------------------
