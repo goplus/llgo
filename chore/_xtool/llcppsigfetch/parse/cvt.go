@@ -265,8 +265,7 @@ func (ct *Converter) ParseComment(rawComment string) *ast.CommentGroup {
 }
 
 // visit top decls (struct,class,function,enum & macro,include)
-func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ct := (*Converter)(clientData)
+func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResult {
 	ct.UpdateLoc(cursor)
 
 	curFile := ct.GetCurFile()
@@ -300,7 +299,7 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 	case clang.CursorTypedefDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
 	case clang.CursorNamespace:
-		clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
+		VisitChildren(cursor, ct.visitTop)
 	}
 	return clang.ChildVisit_Continue
 }
@@ -308,8 +307,17 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 func (ct *Converter) Convert() ([]*FileEntry, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & macro,include)
-	clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
+	VisitChildren(cursor, ct.visitTop)
 	return ct.Files, nil
+}
+
+type Visitor func(cursor, parent clang.Cursor) clang.ChildVisitResult
+
+func VisitChildren(cursor clang.Cursor, fn Visitor) c.Uint {
+	return clang.VisitChildren(cursor, func(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+		cfn := *(*Visitor)(clientData)
+		return cfn(cursor, parent)
+	}, unsafe.Pointer(&fn))
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
@@ -519,38 +527,30 @@ func (ct *Converter) ProcessMethodAttributes(cursor clang.Cursor, fn *ast.FuncDe
 	overridden.DisposeOverriddenCursors()
 }
 
-type visitEnumContext struct {
-	enum      *[]*ast.EnumItem
-	converter *Converter
-}
-
-func visitEnum(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ctx := (*visitEnumContext)(clientData)
-	if cursor.Kind == clang.CursorEnumConstantDecl {
-		name := cursor.String()
-		val := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
-		c.Sprintf(val, c.Str("%lld"), cursor.EnumConstantDeclValue())
-		defer c.Free(unsafe.Pointer(val))
-		defer name.Dispose()
-		enum := &ast.EnumItem{
-			Name: &ast.Ident{Name: c.GoString(name.CStr())},
-			Value: &ast.BasicLit{
-				Kind:  ast.IntLit,
-				Value: c.GoString(val),
-			},
-		}
-		*ctx.enum = append(*ctx.enum, enum)
-	}
-	return clang.ChildVisit_Continue
-}
-
 func (ct *Converter) ProcessEnumType(cursor clang.Cursor) *ast.EnumType {
 	items := make([]*ast.EnumItem, 0)
-	ctx := &visitEnumContext{
-		enum:      &items,
-		converter: ct,
-	}
-	clang.VisitChildren(cursor, visitEnum, c.Pointer(ctx))
+
+	VisitChildren(cursor, func(cursor, parent clang.Cursor) clang.ChildVisitResult {
+		if cursor.Kind == clang.CursorEnumConstantDecl {
+			name := cursor.String()
+			defer name.Dispose()
+
+			val := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
+			c.Sprintf(val, c.Str("%lld"), cursor.EnumConstantDeclValue())
+			defer c.Free(unsafe.Pointer(val))
+
+			enum := &ast.EnumItem{
+				Name: &ast.Ident{Name: c.GoString(name.CStr())},
+				Value: &ast.BasicLit{
+					Kind:  ast.IntLit,
+					Value: c.GoString(val),
+				},
+			}
+			items = append(items, enum)
+		}
+		return clang.ChildVisit_Continue
+	})
+
 	return &ast.EnumType{
 		Items: items,
 	}
@@ -587,6 +587,8 @@ func (ct *Converter) ProcessInclude(cursor clang.Cursor) *ast.Include {
 	return &ast.Include{Path: c.GoString(name.CStr())}
 }
 
+// todo(zzy): after https://github.com/goplus/llgo/issues/804 has be resolved
+// Change the following code to use the closure
 type visitFieldContext struct {
 	params    *ast.FieldList
 	converter *Converter
