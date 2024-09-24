@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	"github.com/goplus/llgo/chore/llcppg/token"
 )
@@ -63,8 +63,8 @@ type Config struct {
 	IsCpp bool
 }
 
-func NewConverter(config *Config) (*Converter, error) {
-	index, unit, err := CreateTranslationUnit(config)
+func NewConverter(config *clangutils.Config) (*Converter, error) {
+	index, unit, err := clangutils.CreateTranslationUnit(config)
 	if err != nil {
 		return nil, err
 	}
@@ -76,56 +76,6 @@ func NewConverter(config *Config) (*Converter, error) {
 		anonyTypeMap: make(map[string]bool),
 		typeDecls:    make(map[string]ast.Decl),
 	}, nil
-}
-
-func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
-	// default use the c/c++ standard of clang; c:gnu17 c++:gnu++17
-	// https://clang.llvm.org/docs/CommandGuide/clang.html
-	defaultArgs := []string{"-x", "c"}
-	if config.IsCpp {
-		defaultArgs = []string{"-x", "c++"}
-	}
-	allArgs := append(defaultArgs, config.Args...)
-
-	cArgs := make([]*c.Char, len(allArgs))
-	for i, arg := range allArgs {
-		cArgs[i] = c.AllocaCStr(arg)
-	}
-
-	index := clang.CreateIndex(0, 0)
-
-	var unit *clang.TranslationUnit
-
-	if config.Temp {
-		content := c.AllocaCStr(config.File)
-		tempFile := &clang.UnsavedFile{
-			Filename: c.Str("temp.h"),
-			Contents: content,
-			Length:   c.Ulong(c.Strlen(content)),
-		}
-
-		unit = index.ParseTranslationUnit(
-			tempFile.Filename,
-			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
-			tempFile, 1,
-			clang.DetailedPreprocessingRecord,
-		)
-
-	} else {
-		cFile := c.AllocaCStr(config.File)
-		unit = index.ParseTranslationUnit(
-			cFile,
-			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
-			nil, 0,
-			clang.DetailedPreprocessingRecord,
-		)
-	}
-
-	if unit == nil {
-		return nil, nil, errors.New("failed to parse translation unit")
-	}
-
-	return index, unit, nil
 }
 
 func (ct *Converter) Dispose() {
@@ -853,21 +803,8 @@ func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
 // Constructs a complete scoping expression by traversing the semantic parents, starting from the given clang.Cursor
 // For anonymous decl of typedef references, use their anonymous name
 func (ct *Converter) BuildScopingExpr(cursor clang.Cursor) ast.Expr {
-	parts := ct.BuildScopingParts(cursor)
+	parts := clangutils.BuildScopingParts(cursor)
 	return buildScopingFromParts(parts)
-}
-
-func (ct *Converter) BuildScopingParts(cursor clang.Cursor) []string {
-	var parts []string
-	// Traverse up the semantic parents
-	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
-		name := cursor.String()
-		qualified := c.GoString(name.CStr())
-		parts = append([]string{qualified}, parts...)
-		cursor = cursor.SemanticParent()
-		name.Dispose()
-	}
-	return parts
 }
 
 func (ct *Converter) MarshalASTFiles() *cjson.JSON {

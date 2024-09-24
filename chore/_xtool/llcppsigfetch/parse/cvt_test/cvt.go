@@ -8,11 +8,12 @@ import (
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
 
 func RunTest(testName string, testCases []string) {
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
+		converter, err := parse.NewConverter(&clangutils.Config{
 			File:  content,
 			Temp:  true,
 			IsCpp: true,
@@ -63,7 +64,7 @@ type GetTypeOptions struct {
 // e.g. index.Dispose(), unit.Dispose()
 func GetType(option *GetTypeOptions) (clang.Type, *clang.Index, *clang.TranslationUnit) {
 	code := fmt.Sprintf("%s placeholder;", option.TypeCode)
-	index, unit, err := parse.CreateTranslationUnit(&parse.Config{
+	index, unit, err := clangutils.CreateTranslationUnit(&clangutils.Config{
 		File:  code,
 		Temp:  true,
 		Args:  option.Args,

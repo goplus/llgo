@@ -27,6 +27,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 )
 
@@ -116,7 +117,7 @@ func runExtract() {
 		os.Exit(1)
 	}
 
-	cfg := &parse.Config{
+	cfg := &clangutils.Config{
 		File:  os.Args[2],
 		Args:  []string{},
 		IsCpp: true,

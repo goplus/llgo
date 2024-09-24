@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/goplus/llgo/c/cjson"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
 
 type Context struct {
@@ -49,7 +50,7 @@ func (p *Context) processFile(path string) error {
 }
 
 func (p *Context) parseFile(path string) ([]*FileEntry, error) {
-	converter, err := NewConverter(&Config{
+	converter, err := NewConverter(&clangutils.Config{
 		File:  path,
 		Temp:  false,
 		IsCpp: p.IsCpp,
