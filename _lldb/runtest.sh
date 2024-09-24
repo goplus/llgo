@@ -4,7 +4,8 @@ set -e
 
 # Source common functions and variables
 # shellcheck source=./_lldb/common.sh
-source "$(dirname "$0")/common.sh"
+# shellcheck disable=SC1091
+source "$(dirname "$0")/common.sh" || exit 1
 
 # Parse command-line arguments
 package_path="$DEFAULT_PACKAGE_PATH"
@@ -34,7 +35,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Build the project
-build_project "$package_path"
+build_project "$package_path" || exit 1
 
 # Prepare LLDB commands
 lldb_commands=(
@@ -53,4 +54,4 @@ for cmd in "${lldb_commands[@]}"; do
     lldb_command_string+=" -O \"$cmd\""
 done
 
-eval "$LLDB_PATH $lldb_command_string"
+eval "$LLDB_PATH $lldb_command_string" || exit 1
