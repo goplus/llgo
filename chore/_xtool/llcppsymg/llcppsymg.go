@@ -47,7 +47,6 @@ func main() {
 		data, err = os.ReadFile(cfgFile)
 	}
 	check(err)
-
 	conf, err := config.GetConf(data)
 	check(err)
 	defer conf.Delete()
@@ -60,7 +59,7 @@ func main() {
 	check(err)
 
 	filepaths := genHeaderFilePath(conf.CFlags, conf.Include)
-	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus)
+	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus, false)
 	check(err)
 
 	symbolInfo := getCommonSymbols(symbols, headerInfos, conf.TrimPrefixes)

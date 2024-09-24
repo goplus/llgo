@@ -1,0 +1,44 @@
+#stdout
+=== Test NewSymbolProcessor ===
+Before: No prefixes After: Prefixes: [lua_ luaL_]
+
+=== Test RemovePrefix ===
+Before: lua_closethread After: closethread
+Before: luaL_checknumber After: checknumber
+
+=== Test ToGoName ===
+Before: lua_closethread After: Closethread
+Before: luaL_checknumber After: Checknumber
+Before: sqlite3_close_v2 After: CloseV2
+Before: sqlite3_callback After: Callback
+Before: GetReal After: GetReal
+Before: GetBoolean After: GetBoolean
+Before: INIReader After: Reader
+
+=== Test GenMethodName ===
+Before: Class: INIReader, Name: INIReader After: (*INIReader).Init
+Before: Class: INIReader, Name: INIReader After: (*INIReader).Dispose
+Before: Class: INIReader, Name: HasValue After: (*INIReader).HasValue
+
+=== Test AddSuffix ===
+Before: Class: INIReader, Method: INIReader After: (*Reader).Init
+Before: Class: INIReader, Method: INIReader After: (*Reader).Init__1
+Before: Class: INIReader, Method: ParseError After: (*Reader).ParseError
+Before: Class: INIReader, Method: HasValue After: (*Reader).HasValue
+
+=== Test Case: C++ Class with Methods ===
+Parsed Symbols:
+Symbol Map GoName: (*Reader).Init__1, ProtoName In HeaderFile: INIReader::INIReader(const char *, int), MangledName: _ZN9INIReaderC1EPKci
+Symbol Map GoName: (*Reader).Init, ProtoName In HeaderFile: INIReader::INIReader(const int &), MangledName: _ZN9INIReaderC1ERKi
+Symbol Map GoName: (*Reader).Dispose, ProtoName In HeaderFile: INIReader::~INIReader(), MangledName: _ZN9INIReaderD1Ev
+Symbol Map GoName: (*Reader).ParseError, ProtoName In HeaderFile: INIReader::ParseError(), MangledName: _ZNK9INIReader10ParseErrorEv
+
+=== Test Case: C Functions ===
+Parsed Symbols:
+Symbol Map GoName: Compare, ProtoName In HeaderFile: lua_compare(lua_State *, int, int, int), MangledName: lua_compare
+Symbol Map GoName: Rawequal, ProtoName In HeaderFile: lua_rawequal(lua_State *, int, int), MangledName: lua_rawequal
+
+
+#stderr
+
+#exit 0
