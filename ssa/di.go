@@ -157,9 +157,8 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Pointer:
 		return b.createPointerType(name, b.prog.rawType(t.Elem()), pos)
 	case *types.Named:
-		ty = b.prog.rawType(t.Underlying())
-		pos = b.positioner.Position(t.Obj().Pos())
-		return b.diTypeEx(name, ty, pos)
+		// Create typedef type for named types
+		return b.createTypedefType(name, ty, pos)
 	case *types.Interface:
 		ty := b.prog.rtType("Iface")
 		return b.createInterfaceType(name, ty)
@@ -261,6 +260,18 @@ func (b diBuilder) createAutoVariable(scope DIScope, pos token.Position, name st
 			},
 		),
 	}
+}
+
+func (b diBuilder) createTypedefType(name string, ty Type, pos token.Position) DIType {
+	underlyingType := b.diType(b.prog.rawType(ty.RawType().(*types.Named).Underlying()), pos)
+	typ := b.di.CreateTypedef(llvm.DITypedef{
+		Name:        name,
+		Type:        underlyingType.ll,
+		File:        b.file(pos.Filename).ll,
+		Line:        pos.Line,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
+	})
+	return &aDIType{typ}
 }
 
 func (b diBuilder) createStringType() DIType {

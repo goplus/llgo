@@ -117,8 +117,15 @@ def format_value(var: lldb.SBValue, debugger: lldb.SBDebugger, include_type: boo
     type_class = var_type.GetTypeClass()
     type_name = map_type_name(var_type.GetName())
 
+    # Handle typedef types
+    original_type_name = type_name
+    while var_type.IsTypedefType():
+        var_type = var_type.GetTypedefedType()
+        type_name = map_type_name(var_type.GetName())
+        type_class = var_type.GetTypeClass()
+
     if var_type.IsPointerType():
-        return format_pointer(var, debugger, indent, type_name)
+        return format_pointer(var, debugger, indent, original_type_name)
 
     if type_name.startswith('[]'):  # Slice
         return format_slice(var, debugger, indent)
@@ -127,7 +134,7 @@ def format_value(var: lldb.SBValue, debugger: lldb.SBDebugger, include_type: boo
     elif type_name == 'string':  # String
         return format_string(var)
     elif type_class in [lldb.eTypeClassStruct, lldb.eTypeClassClass]:
-        return format_struct(var, debugger, include_type, indent, type_name)
+        return format_struct(var, debugger, include_type, indent, original_type_name)
     else:
         value = var.GetValue()
         summary = var.GetSummary()
