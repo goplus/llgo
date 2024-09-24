@@ -81,6 +81,7 @@ func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	s.i8 = 8
 	// Expected(skio):
 	//   s.i8: '\x08'
+	//   s.i16: 2
 	println(len(s.s), s.i8)
 }
 
@@ -115,6 +116,28 @@ func FuncWithAllTypeParams(
 	err error,
 	fn func(string) (int, error),
 ) (int, error) {
+	// Expected:
+	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn
+	//   i8: '\x01'
+	//   i16: 2
+	//   i32: 3
+	//   i64: 4
+	//   i: 5
+	//   u8: '\x06'
+	//   u16: 7
+	//   u32: 8
+	//   u64: 9
+	//   u: 10
+	//   f32: 11
+	//   f64: 12
+	//   b: true
+	//   c64: complex64{real = 13, imag = 14}
+	//   c128: complex128{real = 15, imag = 16}
+	//   slice: []int{21, 22, 23}
+	//   arr: [3]int{24, 25, 26}
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
+	//   s: "hello"
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	println(
 		i8, i16, i32, i64, i, u8, u16, u32, u64, u,
 		f32, f64, b,
@@ -150,9 +173,58 @@ func FuncWithAllTypeParams(
 	//   s: "hello"
 	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	i8 = 9
-	// Expected(skip):
+	i16 = 10
+	i32 = 11
+	i64 = 12
+	i = 13
+	u8 = 14
+	u16 = 15
+	u32 = 16
+	u64 = 17
+	u = 18
+	f32 = 19
+	f64 = 20
+	b = false
+	c64 = 21 + 22i
+	c128 = 23 + 24i
+	slice = []int{31, 32, 33}
+	arr = [3]int{34, 35, 36}
+	arr2 = [3]E{{i: 37}, {i: 38}, {i: 39}}
+	s = "world"
+	e = E{i: 40}
+
+	// Expected:
 	//   i8: '\x09'
-	println(i8)
+	//   i16: 10
+	//   i32: 11
+	//   i64: 12
+	//   i: 13
+	//   u8: 14
+	//   u16: 15
+	//   u32: 16
+	//   u64: 17
+	//   u: 18
+	//   f32: 19
+	//   f64: 20
+	//   b: false
+	//   c64: complex64{real = 21, imag = 22}
+	//   c128: complex128{real = 23, imag = 24}
+	//   slice: []int{31, 32, 33}
+	//   arr: [3]int{34, 35, 36}
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 37}, {i = 38}, {i = 39}}
+	//   s: "world"
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 40}
+	println(i8, i16, i32, i64, i, u8, u16, u32, u64, u,
+		f32, f64, b,
+		c64, c128,
+		slice, arr[0:], &arr2,
+		s,
+		&e,
+		&f, pf, pi, intr, m,
+		c,
+		err,
+		fn,
+	)
 	return 1, errors.New("some error")
 }
 
@@ -185,7 +257,7 @@ type BigStruct struct {
 }
 
 func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
-	println(&t, &s, &m, &b)
+	// println(&t, &s, &m, &b)
 	// Expected:
 	//   all variables: t s m b
 	//   t.I: 1
@@ -205,9 +277,39 @@ func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
 	//   b.Q: 15
 	//   b.R: 16
 	t.I = 10
-	// Expected(skip):
+	s.I = 20
+	s.J = 21
+	m.I = 40
+	m.J = 41
+	m.K = 42
+	b.I = 70
+	b.J = 71
+	b.K = 72
+	b.L = 73
+	b.M = 74
+	b.N = 75
+	b.O = 76
+	b.P = 77
+	b.Q = 78
+	b.R = 79
+	// Expected:
 	//   all variables: t s m b
 	//   t.I: 10
+	//   s.I: 20
+	//   s.J: 21
+	//   m.I: 40
+	//   m.J: 41
+	//   m.K: 42
+	//   b.I: 70
+	//   b.J: 71
+	//   b.K: 72
+	//   b.L: 73
+	//   b.M: 74
+	//   b.N: 75
+	//   b.O: 76
+	//   b.P: 77
+	//   b.Q: 78
+	//   b.R: 79
 	println("done")
 }
 
@@ -232,9 +334,40 @@ func FuncStructPtrParams(t *TinyStruct, s *SmallStruct, m *MidStruct, b *BigStru
 	//   b.Q: 15
 	//   b.R: 16
 	t.I = 10
+	s.I = 20
+	s.J = 21
+	m.I = 40
+	m.J = 41
+	m.K = 42
+	b.I = 70
+	b.J = 71
+	b.K = 72
+	b.L = 73
+	b.M = 74
+	b.N = 75
+	b.O = 76
+	b.P = 77
+	b.Q = 78
+	b.R = 79
 	// Expected:
 	//   all variables: t s m b
 	//   t.I: 10
+	//   s.I: 20
+	//   s.J: 21
+	//   m.I: 40
+	//   m.J: 41
+	//   m.K: 42
+	//   b.I: 70
+	//   b.J: 71
+	//   b.K: 72
+	//   b.L: 73
+	//   b.M: 74
+	//   b.N: 75
+	//   b.O: 76
+	//   b.P: 77
+	//   b.Q: 78
+	//   b.R: 79
+	println(t.I, s.I, s.J, m.I, m.J, m.K, b.I, b.J, b.K, b.L, b.M, b.N, b.O, b.P, b.Q, b.R)
 	println("done")
 }
 
@@ -263,7 +396,7 @@ func main() {
 		arr2:  [3]E{{i: 27}, {i: 28}, {i: 29}},
 		s:     "hello",
 		e:     E{i: 30},
-		pf:    &StructWithAllTypeFields{},
+		pf:    &StructWithAllTypeFields{i16: 100},
 		pi:    &i,
 		intr:  &Struct{},
 		m:     map[string]uint64{"a": 31, "b": 32},
@@ -277,6 +410,31 @@ func main() {
 		pad1: 100,
 		pad2: 200,
 	}
+	// Expected:
+	//   all variables: globalInt globalStruct globalStructPtr s i err
+	//   s.i8: '\x01'
+	//   s.i16: 2
+	//   s.i32: 3
+	//   s.i64: 4
+	//   s.i: 5
+	//   s.u8: '\x06'
+	//   s.u16: 7
+	//   s.u32: 8
+	//   s.u64: 9
+	//   s.u: 10
+	//   s.f32: 11
+	//   s.f64: 12
+	//   s.b: true
+	//   s.c64: complex64{real = 13, imag = 14}
+	//   s.c128: complex128{real = 15, imag = 16}
+	//   s.slice: []int{21, 22, 23}
+	//   s.arr: [3]int{24, 25, 26}
+	//   s.arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
+	//   s.s: "hello"
+	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
+	//   s.pf.i16: 100
+	//   *(s.pf).i16: 100
+	//   *(s.pi): 100
 	globalStructPtr = &s
 	globalStruct = s
 	println("globalInt:", globalInt)
@@ -301,13 +459,9 @@ func main() {
 	println("called function with types")
 	println(globalStructPtr)
 	println(&globalStruct)
-	// Expected(skip):
-	//   all variables: globalInt globalStruct globalStructPtr s i err
-	//   s.i8: '\x01'
-	//   s.i16: 2
 	s.i8 = 0x12
 	println(s.i8)
-	// Expected(skip):
+	// Expected:
 	//   all variables: globalInt globalStruct globalStructPtr s i err
 	//   s.i8: '\x12'
 	//   globalStruct.i8: '\x01'
