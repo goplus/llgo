@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	"github.com/goplus/llgo/chore/llcppg/token"
 )
@@ -63,8 +63,8 @@ type Config struct {
 	IsCpp bool
 }
 
-func NewConverter(config *Config) (*Converter, error) {
-	index, unit, err := CreateTranslationUnit(config)
+func NewConverter(config *clangutils.Config) (*Converter, error) {
+	index, unit, err := clangutils.CreateTranslationUnit(config)
 	if err != nil {
 		return nil, err
 	}
@@ -76,56 +76,6 @@ func NewConverter(config *Config) (*Converter, error) {
 		anonyTypeMap: make(map[string]bool),
 		typeDecls:    make(map[string]ast.Decl),
 	}, nil
-}
-
-func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
-	// default use the c/c++ standard of clang; c:gnu17 c++:gnu++17
-	// https://clang.llvm.org/docs/CommandGuide/clang.html
-	defaultArgs := []string{"-x", "c"}
-	if config.IsCpp {
-		defaultArgs = []string{"-x", "c++"}
-	}
-	allArgs := append(defaultArgs, config.Args...)
-
-	cArgs := make([]*c.Char, len(allArgs))
-	for i, arg := range allArgs {
-		cArgs[i] = c.AllocaCStr(arg)
-	}
-
-	index := clang.CreateIndex(0, 0)
-
-	var unit *clang.TranslationUnit
-
-	if config.Temp {
-		content := c.AllocaCStr(config.File)
-		tempFile := &clang.UnsavedFile{
-			Filename: c.Str("temp.h"),
-			Contents: content,
-			Length:   c.Ulong(c.Strlen(content)),
-		}
-
-		unit = index.ParseTranslationUnit(
-			tempFile.Filename,
-			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
-			tempFile, 1,
-			clang.DetailedPreprocessingRecord,
-		)
-
-	} else {
-		cFile := c.AllocaCStr(config.File)
-		unit = index.ParseTranslationUnit(
-			cFile,
-			unsafe.SliceData(cArgs), c.Int(len(cArgs)),
-			nil, 0,
-			clang.DetailedPreprocessingRecord,
-		)
-	}
-
-	if unit == nil {
-		return nil, nil, errors.New("failed to parse translation unit")
-	}
-
-	return index, unit, nil
 }
 
 func (ct *Converter) Dispose() {
@@ -259,14 +209,13 @@ func (ct *Converter) ParseComment(rawComment string) *ast.CommentGroup {
 	lines := strings.Split(rawComment, "\n")
 	commentGroup := &ast.CommentGroup{}
 	for _, line := range lines {
-		commentGroup.List = append(commentGroup.List, &ast.Comment{Text: line})
+		commentGroup.List = append(commentGroup.List, &ast.Comment{Text: line + "\n"})
 	}
 	return commentGroup
 }
 
 // visit top decls (struct,class,function,enum & macro,include)
-func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ct := (*Converter)(clientData)
+func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResult {
 	ct.UpdateLoc(cursor)
 
 	curFile := ct.GetCurFile()
@@ -300,7 +249,7 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 	case clang.CursorTypedefDecl:
 		curFile.Decls = append(curFile.Decls, ct.ProcessTypeDefDecl(cursor))
 	case clang.CursorNamespace:
-		clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
+		VisitChildren(cursor, ct.visitTop)
 	}
 	return clang.ChildVisit_Continue
 }
@@ -308,8 +257,17 @@ func visitTop(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.Chil
 func (ct *Converter) Convert() ([]*FileEntry, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & macro,include)
-	clang.VisitChildren(cursor, visitTop, c.Pointer(ct))
+	VisitChildren(cursor, ct.visitTop)
 	return ct.Files, nil
+}
+
+type Visitor func(cursor, parent clang.Cursor) clang.ChildVisitResult
+
+func VisitChildren(cursor clang.Cursor, fn Visitor) c.Uint {
+	return clang.VisitChildren(cursor, func(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+		cfn := *(*Visitor)(clientData)
+		return cfn(cursor, parent)
+	}, unsafe.Pointer(&fn))
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
@@ -519,38 +477,30 @@ func (ct *Converter) ProcessMethodAttributes(cursor clang.Cursor, fn *ast.FuncDe
 	overridden.DisposeOverriddenCursors()
 }
 
-type visitEnumContext struct {
-	enum      *[]*ast.EnumItem
-	converter *Converter
-}
-
-func visitEnum(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ctx := (*visitEnumContext)(clientData)
-	if cursor.Kind == clang.CursorEnumConstantDecl {
-		name := cursor.String()
-		val := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
-		c.Sprintf(val, c.Str("%lld"), cursor.EnumConstantDeclValue())
-		defer c.Free(unsafe.Pointer(val))
-		defer name.Dispose()
-		enum := &ast.EnumItem{
-			Name: &ast.Ident{Name: c.GoString(name.CStr())},
-			Value: &ast.BasicLit{
-				Kind:  ast.IntLit,
-				Value: c.GoString(val),
-			},
-		}
-		*ctx.enum = append(*ctx.enum, enum)
-	}
-	return clang.ChildVisit_Continue
-}
-
 func (ct *Converter) ProcessEnumType(cursor clang.Cursor) *ast.EnumType {
 	items := make([]*ast.EnumItem, 0)
-	ctx := &visitEnumContext{
-		enum:      &items,
-		converter: ct,
-	}
-	clang.VisitChildren(cursor, visitEnum, c.Pointer(ctx))
+
+	VisitChildren(cursor, func(cursor, parent clang.Cursor) clang.ChildVisitResult {
+		if cursor.Kind == clang.CursorEnumConstantDecl {
+			name := cursor.String()
+			defer name.Dispose()
+
+			val := (*c.Char)(c.Malloc(unsafe.Sizeof(c.Char(0)) * 20))
+			c.Sprintf(val, c.Str("%lld"), cursor.EnumConstantDeclValue())
+			defer c.Free(unsafe.Pointer(val))
+
+			enum := &ast.EnumItem{
+				Name: &ast.Ident{Name: c.GoString(name.CStr())},
+				Value: &ast.BasicLit{
+					Kind:  ast.IntLit,
+					Value: c.GoString(val),
+				},
+			}
+			items = append(items, enum)
+		}
+		return clang.ChildVisit_Continue
+	})
+
 	return &ast.EnumType{
 		Items: items,
 	}
@@ -587,6 +537,8 @@ func (ct *Converter) ProcessInclude(cursor clang.Cursor) *ast.Include {
 	return &ast.Include{Path: c.GoString(name.CStr())}
 }
 
+// todo(zzy): after https://github.com/goplus/llgo/issues/804 has be resolved
+// Change the following code to use the closure
 type visitFieldContext struct {
 	params    *ast.FieldList
 	converter *Converter
@@ -851,21 +803,8 @@ func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
 // Constructs a complete scoping expression by traversing the semantic parents, starting from the given clang.Cursor
 // For anonymous decl of typedef references, use their anonymous name
 func (ct *Converter) BuildScopingExpr(cursor clang.Cursor) ast.Expr {
-	parts := ct.BuildScopingParts(cursor)
+	parts := clangutils.BuildScopingParts(cursor)
 	return buildScopingFromParts(parts)
-}
-
-func (ct *Converter) BuildScopingParts(cursor clang.Cursor) []string {
-	var parts []string
-	// Traverse up the semantic parents
-	for cursor.IsNull() != 1 && cursor.Kind != clang.CursorTranslationUnit {
-		name := cursor.String()
-		qualified := c.GoString(name.CStr())
-		parts = append([]string{qualified}, parts...)
-		cursor = cursor.SemanticParent()
-		name.Dispose()
-	}
-	return parts
 }
 
 func (ct *Converter) MarshalASTFiles() *cjson.JSON {

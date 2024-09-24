@@ -2,17 +2,17 @@ package cvttest
 
 import (
 	"fmt"
-	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
 
 func RunTest(testName string, testCases []string) {
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(&parse.Config{
+		converter, err := parse.NewConverter(&clangutils.Config{
 			File:  content,
 			Temp:  true,
 			IsCpp: true,
@@ -63,7 +63,7 @@ type GetTypeOptions struct {
 // e.g. index.Dispose(), unit.Dispose()
 func GetType(option *GetTypeOptions) (clang.Type, *clang.Index, *clang.TranslationUnit) {
 	code := fmt.Sprintf("%s placeholder;", option.TypeCode)
-	index, unit, err := parse.CreateTranslationUnit(&parse.Config{
+	index, unit, err := clangutils.CreateTranslationUnit(&clangutils.Config{
 		File:  code,
 		Temp:  true,
 		Args:  option.Args,
@@ -73,22 +73,13 @@ func GetType(option *GetTypeOptions) (clang.Type, *clang.Index, *clang.Translati
 		panic(err)
 	}
 	cursor := unit.Cursor()
-	visitType := &typeVisitData{typ: &clang.Type{}, expectTypeKind: option.ExpectTypeKind}
-
-	clang.VisitChildren(cursor, typeVisit, unsafe.Pointer(visitType))
-	return *visitType.typ, index, unit
-}
-
-type typeVisitData struct {
-	typ            *clang.Type
-	expectTypeKind clang.TypeKind
-}
-
-func typeVisit(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	visitData := (*typeVisitData)(clientData)
-	if cursor.Kind == clang.CursorVarDecl && (visitData.expectTypeKind == clang.TypeInvalid || cursor.Type().Kind == visitData.expectTypeKind) {
-		*visitData.typ = cursor.Type()
-		return clang.ChildVisit_Break
-	}
-	return clang.ChildVisit_Continue
+	var typ clang.Type
+	parse.VisitChildren(cursor, func(child, parent clang.Cursor) clang.ChildVisitResult {
+		if child.Kind == clang.CursorVarDecl && (option.ExpectTypeKind == clang.TypeInvalid || option.ExpectTypeKind == child.Type().Kind) {
+			typ = child.Type()
+			return clang.ChildVisit_Break
+		}
+		return clang.ChildVisit_Continue
+	})
+	return typ, index, unit
 }
