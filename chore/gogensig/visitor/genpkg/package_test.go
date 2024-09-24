@@ -2,10 +2,10 @@ package genpkg_test
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/chore/gogensig/cmp"
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
@@ -822,9 +822,8 @@ func comparePackageOutput(t *testing.T, pkg *genpkg.Package, expect string) {
 	if err != nil {
 		t.Fatalf("WriteTo failed: %v", err)
 	}
-	actual := strings.TrimSpace(buf.String())
-	expect = strings.TrimSpace(expect)
-	if actual != expect {
-		t.Errorf("unexpected output:\n%s\nexpected get:\n%s", actual, expect)
+	eq, diff := cmp.EqualStringIgnoreSpace(buf.String(), expect)
+	if !eq {
+		t.Error(diff)
 	}
 }
