@@ -16,6 +16,10 @@ type Config struct {
 	Index *clang.Index
 }
 
+type Visitor func(cursor, parent clang.Cursor) clang.ChildVisitResult
+
+const TEMP_FILE = "temp.h"
+
 func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
 	// default use the c/c++ standard of clang; c:gnu17 c++:gnu++17
 	// https://clang.llvm.org/docs/CommandGuide/clang.html
@@ -42,7 +46,7 @@ func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit
 	if config.Temp {
 		content := c.AllocaCStr(config.File)
 		tempFile := &clang.UnsavedFile{
-			Filename: c.Str("temp.h"),
+			Filename: c.Str(TEMP_FILE),
 			Contents: content,
 			Length:   c.Ulong(c.Strlen(content)),
 		}
@@ -82,4 +86,11 @@ func BuildScopingParts(cursor clang.Cursor) []string {
 		name.Dispose()
 	}
 	return parts
+}
+
+func VisitChildren(cursor clang.Cursor, fn Visitor) c.Uint {
+	return clang.VisitChildren(cursor, func(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
+		cfn := *(*Visitor)(clientData)
+		return cfn(cursor, parent)
+	}, unsafe.Pointer(&fn))
 }
