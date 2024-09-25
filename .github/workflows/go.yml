@@ -5,20 +5,20 @@ name: Go
 
 on:
   push:
-    branches: [ "*" ]
+    branches: ["*"]
   pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
 
 jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: "1.20"
 
       - name: Check formatting
         run: |
@@ -93,10 +93,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: "1.20"
 
       - name: Build
         run: go build -v ./...
+
+      - name: Install
+        run: go install ./...
+
+      - name: Install llcppsigfetch
+        run: bash .github/workflows/install_llcppsigfetch.sh
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
@@ -106,20 +112,17 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
-      - name: Install
-        run: go install ./...
-
       - name: LLGO tests
         if: ${{!startsWith(matrix.os, 'ubuntu')}}
         run: |
           echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
           bash .github/workflows/test_llgo.sh
-      
+
       - name: chore/_xtool build tests
         run: |
           cd chore/_xtool
           llgo build -v ./...
-      
+
       - name: LLDB tests
         if: ${{startsWith(matrix.os, 'macos')}}
         run: |
