@@ -82,3 +82,10 @@ func MapIterNext(it *hiter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
 	mapiternext(it)
 	return
 }
+
+func MapLen(h *Map) int {
+	if h == nil {
+		return 0
+	}
+	return h.count
+}
