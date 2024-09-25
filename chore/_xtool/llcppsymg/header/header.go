@@ -2,22 +2,41 @@ package header
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
 func GenHeaderFilePath(cflags string, files []string) ([]string, error) {
-	fmt.Printf("get filepath from config cflags%s & include:%v\n", cflags, files)
 	prefixPath := strings.TrimPrefix(cflags, "-I")
-	var includePaths []string
+
+	var validPaths []string
+	var errs []string
+
 	for _, file := range files {
 		if file == "" {
 			continue
 		}
-		includePaths = append(includePaths, filepath.Join(prefixPath, "/"+file))
+		fullPath := filepath.Join(prefixPath, file)
+		if f, err := os.Open(fullPath); err != nil {
+			if os.IsNotExist(err) {
+				errs = append(errs, fmt.Sprintf("file not found: %s", file))
+			} else {
+				errs = append(errs, fmt.Sprintf("error accessing file %s: %v", file, err))
+			}
+		} else {
+			f.Close()
+			validPaths = append(validPaths, fullPath)
+		}
 	}
-	if len(includePaths) == 0 {
+
+	if len(validPaths) == 0 && len(errs) == 0 {
 		return nil, fmt.Errorf("no valid header files")
 	}
-	return includePaths, nil
+
+	if len(errs) > 0 {
+		return validPaths, fmt.Errorf("some files not found or inaccessible: %v", errs)
+	}
+
+	return validPaths, nil
 }

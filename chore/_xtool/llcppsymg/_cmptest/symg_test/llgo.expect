@@ -1,0 +1,45 @@
+#stdout
+=== Test Case: inireader ===
+[{
+		"mangle":	"_ZN9INIReaderC1EPKc",
+		"c++":	"INIReader::INIReader(const char *)",
+		"go":	"(*Reader).Init"
+	}, {
+		"mangle":	"_ZN9INIReaderC1EPKcl",
+		"c++":	"INIReader::INIReader(const char *, long)",
+		"go":	"(*Reader).Init__1"
+	}, {
+		"mangle":	"_ZN9INIReaderD1Ev",
+		"c++":	"INIReader::~INIReader()",
+		"go":	"(*Reader).Dispose"
+	}, {
+		"mangle":	"_ZNK9INIReader10ParseErrorEv",
+		"c++":	"INIReader::ParseError()",
+		"go":	"(*Reader).ModifyedParseError"
+	}, {
+		"mangle":	"_ZNK9INIReader3GetEPKcS1_S1_",
+		"c++":	"INIReader::Get(const char *, const char *, const char *)",
+		"go":	"(*Reader).Get"
+	}]
+=== Test Case: lua ===
+[{
+		"mangle":	"lua_error",
+		"c++":	"lua_error(lua_State *)",
+		"go":	"Error"
+	}, {
+		"mangle":	"lua_next",
+		"c++":	"lua_next(lua_State *, int)",
+		"go":	"Next"
+	}, {
+		"mangle":	"lua_concat",
+		"c++":	"lua_concat(lua_State *, int)",
+		"go":	"Concat"
+	}, {
+		"mangle":	"lua_stringtonumber",
+		"c++":	"lua_stringtonumber(lua_State *, const char *)",
+		"go":	"Stringtonumber"
+	}]
+
+#stderr
+
+#exit 0
