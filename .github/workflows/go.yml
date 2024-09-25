@@ -45,7 +45,7 @@ jobs:
           echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{matrix.llvm}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y llvm-${{matrix.llvm}}-dev clang-${{matrix.llvm}} lld-${{matrix.llvm}} pkg-config libgc-dev libssl-dev zlib1g-dev
+          sudo apt-get install -y llvm-${{matrix.llvm}}-dev clang-${{matrix.llvm}} libclang-${{matrix.llvm}}-dev lld-${{matrix.llvm}} pkg-config libgc-dev libssl-dev zlib1g-dev --fix-missing
           echo "/usr/lib/llvm-${{matrix.llvm}}/bin" >> $GITHUB_PATH
 
           # Install optional deps for demos.
@@ -80,18 +80,22 @@ jobs:
 
       - name: Build
         run: go build -v ./...
-
+        
+      - name: Install
+        run: go install ./...
+        
+      - name: Install llcppsigfetch
+        run: bash .github/workflows/install_llcppsigfetch.sh
+        
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -v ./...
-
+     
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
-      - name: Install
-        run: go install ./...
-
+     
       - name: LLGO tests
         if: ${{!startsWith(matrix.os, 'ubuntu')}}
         run: |
