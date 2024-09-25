@@ -43,7 +43,7 @@ func (p *DocFileUnmarshaller) UnmarshalBytes(raw []byte, docPath string) error {
 		Type string `json:"_Type"`
 	}
 	if err := json.Unmarshal(raw, &temp); err != nil {
-		return fmt.Errorf("error unmarshalling node type: %v", err)
+		panic(err)
 	}
 	unmarshaler, ok := nodeUnmarshalers[temp.Type]
 	if !ok {
@@ -54,25 +54,6 @@ func (p *DocFileUnmarshaller) UnmarshalBytes(raw []byte, docPath string) error {
 		return err
 	}
 	p.visit(temp.Type, node, docPath)
-	return nil
-}
-
-func (p *DocFileUnmarshaller) UnmarshalPathDocFile(rawDocFile *PathDoc) error {
-	var temp struct {
-		Type string `json:"_Type"`
-	}
-	if err := json.Unmarshal(rawDocFile.Doc, &temp); err != nil {
-		return fmt.Errorf("error unmarshalling node type: %v", err)
-	}
-	unmarshaler, ok := nodeUnmarshalers[temp.Type]
-	if !ok {
-		return fmt.Errorf("unknown node type: %s", temp.Type)
-	}
-	node, err := unmarshaler(rawDocFile.Doc)
-	if err != nil {
-		return err
-	}
-	p.visit(temp.Type, node, rawDocFile.Path)
 	return nil
 }
 
@@ -87,7 +68,7 @@ func NewDocFileSetUnmarshaller(docVisitorList []visitor.DocVisitor) *DocFileSetU
 func (p *DocFileSetUnmarshaller) UnmarshalBytes(raw []byte) error {
 	var filesWrapper PathDocArray
 	if err := json.Unmarshal(raw, &filesWrapper); err != nil {
-		return fmt.Errorf("error unmarshalling FilesWithPath: %w", err)
+		panic(err)
 	}
 	for _, fileData := range filesWrapper {
 		docVisitor := NewDocFileUnmarshaller(p.docVisitorList)
