@@ -19,6 +19,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"github.com/goplus/llgo/py.init"()
   call void @"github.com/goplus/llgo/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @0, ptr @__llgo_py.builtins.iter, ptr @1, ptr @__llgo_py.builtins.max, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
@@ -73,6 +74,8 @@ _llgo_0:
   %37 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %36, ptr %35, ptr null)
   ret i32 0
 }
+
+declare void @"github.com/goplus/llgo/py.init"()
 
 declare void @"github.com/goplus/llgo/py/std.init"()
 
