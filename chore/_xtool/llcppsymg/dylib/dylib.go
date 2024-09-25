@@ -1,7 +1,6 @@
 package dylib
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,23 +9,32 @@ import (
 	"github.com/goplus/llgo/xtool/nm"
 )
 
+// ParseDylibSymbols parses symbols from dynamic libraries specified in the lib string.
+// It handles multiple libraries (e.g., -L/opt/homebrew/lib -llua -lm) and returns
+// symbols if at least one library is successfully parsed. Errors from inaccessible
+// libraries (like standard libs) are logged as warnings.
+//
+// Returns symbols and nil error if any symbols are found, or nil and error if none found.
 func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 	fmt.Printf("parse dylib symbols from config lib:%s\n", lib)
+
 	dylibPaths, err := GenDylibPaths(lib)
 	if err != nil {
-		return nil, errors.New("failed to generate dylib path")
+		fmt.Printf("Warning: failed to generate some dylib paths: %v\n", err)
 	}
 
 	var symbols []*nm.Symbol
+	var parseErrors []string
+
 	for _, dylibPath := range dylibPaths {
 		if _, err := os.Stat(dylibPath); err != nil {
-			fmt.Printf("Failed to access dylib error: %s\n", err)
+			fmt.Printf("Warning: Failed to access dylib %s: %v\n", dylibPath, err)
 			continue
 		}
 
 		files, err := nm.New("").List(dylibPath)
 		if err != nil {
-			fmt.Printf("Failed to list symbols in dylib: %s, error: %s\n", dylibPath, err)
+			parseErrors = append(parseErrors, fmt.Sprintf("Failed to list symbols in dylib %s: %v", dylibPath, err))
 			continue
 		}
 
@@ -35,11 +43,14 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 		}
 	}
 
-	if len(symbols) == 0 {
-		return nil, errors.New("no symbols found in any dylib")
+	if len(symbols) > 0 {
+		if len(parseErrors) > 0 {
+			fmt.Printf("Warning: Some libraries could not be parsed: %v\n", parseErrors)
+		}
+		return symbols, nil
 	}
 
-	return symbols, nil
+	return nil, fmt.Errorf("no symbols found in any dylib. Errors: %v", parseErrors)
 }
 
 func GenDylibPaths(lib string) ([]string, error) {
