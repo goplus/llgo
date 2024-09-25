@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/dylib"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/header"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/llcppg/types"
 	"github.com/goplus/llgo/xtool/nm"
@@ -54,11 +55,11 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
 	}
-	symbols, err := parseDylibSymbols(conf.Libs)
-
+	symbols, err := dylib.ParseDylibSymbols(conf.Libs)
 	check(err)
 
-	filepaths := genHeaderFilePath(conf.CFlags, conf.Include)
+	filepaths, err := header.GenHeaderFilePath(conf.CFlags, conf.Include)
+	check(err)
 	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus, false)
 	check(err)
 
@@ -72,55 +73,6 @@ func check(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func parseDylibSymbols(lib string) ([]*nm.Symbol, error) {
-	dylibPath, err := genDylibPath(lib)
-	if err != nil {
-		return nil, errors.New("failed to generate dylib path")
-	}
-
-	files, err := nm.New("").List(dylibPath)
-	if err != nil {
-		return nil, errors.New("failed to list symbols in dylib")
-	}
-
-	var symbols []*nm.Symbol
-	for _, file := range files {
-		symbols = append(symbols, file.Symbols...)
-	}
-
-	return symbols, nil
-}
-
-func genDylibPath(lib string) (string, error) {
-	output := lib
-	libPath := ""
-	libName := ""
-	for _, part := range strings.Fields(string(output)) {
-		if strings.HasPrefix(part, "-L") {
-			libPath = part[2:]
-		} else if strings.HasPrefix(part, "-l") {
-			libName = part[2:]
-		}
-	}
-
-	if libPath == "" || libName == "" {
-		return "", fmt.Errorf("failed to parse pkg-config output: %s", output)
-	}
-
-	dylibPath := filepath.Join(libPath, "lib"+libName+".dylib")
-	return dylibPath, nil
-}
-
-func genHeaderFilePath(cflags string, files []string) []string {
-	prefixPath := cflags
-	prefixPath = strings.TrimPrefix(prefixPath, "-I")
-	var includePaths []string
-	for _, file := range files {
-		includePaths = append(includePaths, filepath.Join(prefixPath, "/"+file))
-	}
-	return includePaths
 }
 
 func getCommonSymbols(dylibSymbols []*nm.Symbol, symbolMap map[string]*parse.SymbolInfo, prefix []string) []*types.SymbolInfo {
