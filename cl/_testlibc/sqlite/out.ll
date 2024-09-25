@@ -29,6 +29,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"github.com/goplus/llgo/c/sqlite.init"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -54,6 +55,8 @@ declare ptr @sqlite3_errstr(i32)
 declare i32 @printf(ptr, ...)
 
 declare void @exit(i32)
+
+declare void @"github.com/goplus/llgo/c/sqlite.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
