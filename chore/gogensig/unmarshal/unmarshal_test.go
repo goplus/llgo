@@ -776,132 +776,6 @@ func TestUnmarshalNode(t *testing.T) {
 			},
 		},
 		{
-			name: "TypeDecl",
-			json: `{
-				"_Type":	"TypeDecl",
-				"Loc":	{
-					"_Type":	"Location",
-					"File":	"temp.h"
-				},
-				"Doc":	{
-					"_Type":	"CommentGroup",
-					"List":	[]
-				},
-				"Parent":	null,
-				"Name":	{
-					"_Type":	"Ident",
-					"Name":	"A"
-				},
-				"Type":	{
-					"_Type":	"RecordType",
-					"Tag":	3,
-					"Fields":	{
-						"_Type":	"FieldList",
-						"List":	[{
-								"_Type":	"Field",
-								"Type":	{
-									"_Type":	"BuiltinType",
-									"Kind":	6,
-									"Flags":	0
-								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"IsStatic":	false,
-								"Access":	1,
-								"Names":	[{
-										"_Type":	"Ident",
-										"Name":	"a"
-									}]
-							}, {
-								"_Type":	"Field",
-								"Type":	{
-									"_Type":	"BuiltinType",
-									"Kind":	6,
-									"Flags":	0
-								},
-								"Doc":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"Comment":	{
-									"_Type":	"CommentGroup",
-									"List":	[]
-								},
-								"IsStatic":	false,
-								"Access":	1,
-								"Names":	[{
-										"_Type":	"Ident",
-										"Name":	"b"
-									}]
-							}]
-					},
-					"Methods":	[]
-				}
-			}`,
-			expected: &ast.TypeDecl{
-				DeclBase: ast.DeclBase{
-					Loc: &ast.Location{
-						File: "temp.h",
-					},
-					Doc: &ast.CommentGroup{
-						List: []*ast.Comment{},
-					},
-					Parent: nil,
-				},
-				Name: &ast.Ident{
-					Name: "A",
-				},
-				Type: &ast.RecordType{
-					Tag: 3,
-					Fields: &ast.FieldList{
-						List: []*ast.Field{
-							{
-								Type: &ast.BuiltinType{
-									Kind:  6,
-									Flags: 0,
-								},
-								Doc: &ast.CommentGroup{
-									List: []*ast.Comment{},
-								},
-								Comment: &ast.CommentGroup{
-									List: []*ast.Comment{},
-								},
-								IsStatic: false,
-								Access:   1,
-								Names: []*ast.Ident{
-									{Name: "a"},
-								},
-							},
-							{
-								Type: &ast.BuiltinType{
-									Kind:  6,
-									Flags: 0,
-								},
-								Doc: &ast.CommentGroup{
-									List: []*ast.Comment{},
-								},
-								Comment: &ast.CommentGroup{
-									List: []*ast.Comment{},
-								},
-								IsStatic: false,
-								Access:   1,
-								Names: []*ast.Ident{
-									{Name: "b"},
-								},
-							},
-						},
-					},
-					Methods: []*ast.FuncDecl{},
-				},
-			},
-		},
-		{
 			name: "TypedefDecl",
 			json: `{
 				"_Type":	"TypedefDecl",
@@ -1961,6 +1835,14 @@ func TestUnmarshalErrors(t *testing.T) {
 			input:       `{"X": {"_Type": "InvalidType"}}`,
 			expectedErr: "unmarshalling field X",
 		},
+		{
+			name: "unmarshalXType - Unexpected type",
+			fn: func(data []byte) (ast.Node, error) {
+				return unmarshal.UnmarshalXType(data, &ast.BasicLit{})
+			},
+			input:       `{"X": {"_Type": "Ident", "Name": "test"}}`,
+			expectedErr: "unexpected type: *ast.BasicLit",
+		},
 
 		// unmarshalArrayType errors
 		{
@@ -2148,6 +2030,12 @@ func TestUnmarshalErrors(t *testing.T) {
 			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
 			expectedErr: "error unmarshalling TypeDecl Type",
 		},
+		{
+			name:        "unmarshalTypeDecl - Invalid DeclBase",
+			fn:          unmarshal.UnmarshalTypeDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "BuiltinType", "Kind": 1}, "Loc": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling TypeDecl DeclBase",
+		},
 		// unmarshalTypeDefDecl errors
 		{
 			name:        "unmarshalTypeDefDecl - Invalid JSON",
@@ -2161,7 +2049,12 @@ func TestUnmarshalErrors(t *testing.T) {
 			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
 			expectedErr: "error unmarshalling TypeDefDecl Type",
 		},
-
+		{
+			name:        "unmarshalTypeDefDecl - Invalid DeclBase",
+			fn:          unmarshal.UnmarshalTypeDefDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "BuiltinType", "Kind": 1}, "Loc": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling TypeDefDecl DeclBase",
+		},
 		// unmarshalEnumTypeDecl errors
 		{
 			name:        "unmarshalEnumTypeDecl - Invalid JSON",
@@ -2174,6 +2067,12 @@ func TestUnmarshalErrors(t *testing.T) {
 			fn:          unmarshal.UnmarshalEnumTypeDecl,
 			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "InvalidType"}}`,
 			expectedErr: "error unmarshalling EnumTypeDecl Type",
+		},
+		{
+			name:        "unmarshalEnumTypeDecl - Invalid DeclBase",
+			fn:          unmarshal.UnmarshalEnumTypeDecl,
+			input:       `{"Name": {"_Type": "Ident", "Name": "test"}, "Type": {"_Type": "EnumType", "Items": []}, "Loc": {"_Type": "InvalidType"}}`,
+			expectedErr: "error unmarshalling EnumTypeDecl DeclBase",
 		},
 
 		// unmarshalFile errors

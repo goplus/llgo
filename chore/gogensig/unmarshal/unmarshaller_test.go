@@ -66,3 +66,19 @@ func TestUnmarshalFileFileNotExistError(t *testing.T) {
 		t.Error("expect no such file or directory error")
 	}
 }
+
+func TestDocFileUnmarshalBytesPanic(t *testing.T) {
+	defer func() {
+		if e := recover(); e == nil {
+			t.Errorf("%s", "expect panic")
+		}
+	}()
+	path := "./_testjson/panic.json"
+	astConvert := visitor.NewAstConvert("panic", "", "")
+	docVisitors := []visitor.DocVisitor{astConvert}
+	p := unmarshal.NewDocFileSetUnmarshaller(docVisitors)
+	err := p.UnmarshalFile(path)
+	if err != nil {
+		panic(err)
+	}
+}
