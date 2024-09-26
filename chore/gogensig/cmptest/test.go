@@ -20,11 +20,11 @@ import (
 func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) bytes.Buffer {
 	t.Helper()
 
-	symbolpath, err := createAndWriteTempSymbFile(symbolEntries)
+	symbolpath, err := CreateAndWriteTempSymbFile(symbolEntries)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cppgConfPath, err := createCppgConfFile(cppgConf)
+	cppgConfPath, err := CreateCppgConfFile(cppgConf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,15 +58,15 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 	return buf
 }
 
-func createAndWriteTempSymbFile(entries []symb.SymbolEntry) (string, error) {
-	return createJSONFile("llcppg.symb.json", entries)
+func CreateAndWriteTempSymbFile(entries []symb.SymbolEntry) (string, error) {
+	return CreateJSONFile("llcppg.symb.json", entries)
 }
 
-func createCppgConfFile(config *cppgtypes.Config) (string, error) {
-	return createJSONFile("llcppg.cfg", config)
+func CreateCppgConfFile(config *cppgtypes.Config) (string, error) {
+	return CreateJSONFile("llcppg.cfg", config)
 }
 
-func createJSONFile(filename string, data interface{}) (string, error) {
+func CreateJSONFile(filename string, data interface{}) (string, error) {
 	filePath := filepath.Join(os.TempDir(), filename)
 
 	file, err := os.Create(filePath)

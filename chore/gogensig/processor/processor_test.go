@@ -4,81 +4,86 @@ import (
 	"os"
 	"testing"
 
+	"github.com/goplus/llgo/chore/gogensig/cmptest"
 	"github.com/goplus/llgo/chore/gogensig/processor"
-	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
-func TestUnmarshalFiles(t *testing.T) {
-	filesBytes, err := util.ReadFile("./_testjson/files.json")
+func TestProcessValidSigfetchContent(t *testing.T) {
+	content := []map[string]interface{}{
+		{
+			"path": "temp.h",
+			"doc": map[string]interface{}{
+				"_Type": "File",
+				"decls": []map[string]interface{}{
+					{
+						"_Type":  "FuncDecl",
+						"Loc":    map[string]interface{}{"_Type": "Location", "File": "temp.h"},
+						"Doc":    nil,
+						"Parent": nil,
+						"Name":   map[string]interface{}{"_Type": "Ident", "Name": "go_func_name"},
+						"Type": map[string]interface{}{
+							"_Type":  "FuncType",
+							"Params": map[string]interface{}{"_Type": "FieldList", "List": []interface{}{}},
+							"Ret":    map[string]interface{}{"_Type": "BuiltinType", "Kind": 6, "Flags": 0},
+						},
+						"IsInline":      false,
+						"IsStatic":      false,
+						"IsConst":       false,
+						"IsExplicit":    false,
+						"IsConstructor": false,
+						"IsDestructor":  false,
+						"IsVirtual":     false,
+						"IsOverride":    false,
+					},
+				},
+			},
+		},
+	}
+
+	tempFileName, err := cmptest.CreateJSONFile("llcppg.sigfetch-test.json", content)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.Remove(tempFileName)
+
 	astConvert := visitor.NewAstConvert("files", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
-
-	data, err := unmarshal.UnmarshalFileSet(filesBytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = p.ProcessFileSet(data)
+	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func TestFunc1(t *testing.T) {
-	bytes, err := util.ReadFile("./_testjson/func1.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	astConvert := visitor.NewAstConvert("anynode", "", "")
-	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors)
-	data, err := unmarshal.UnmarshalFileSet(bytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = p.ProcessFileSet(data)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func TestUnmarshalFile(t *testing.T) {
+func TestProcessFileNotExist(t *testing.T) {
 	astConvert := visitor.NewAstConvert("error", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
-	err := p.ProcessFileSetFromPath("./_testjson/files.json")
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func TestUnmarshalFileFileNotExistError(t *testing.T) {
-	astConvert := visitor.NewAstConvert("error", "", "")
-	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors)
-	err := p.ProcessFileSetFromPath("./_testjson/notexist.json")
+	err := p.ProcessFileSetFromPath("notexist.json")
 	if !os.IsNotExist(err) {
 		t.Error("expect no such file or directory error")
 	}
 }
 
-func TestDocFileUnmarshalBytesPanic(t *testing.T) {
+func TestProcessInvalidSigfetchContent(t *testing.T) {
 	defer func() {
 		if e := recover(); e == nil {
 			t.Errorf("%s", "expect panic")
 		}
 	}()
-	path := "../unmarshal/_testjson/panic.txt"
+
+	invalidContent := "invalid json content"
+	tempFileName, err := cmptest.CreateJSONFile("llcppg.sigfetch-panic.json", invalidContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tempFileName)
+
 	astConvert := visitor.NewAstConvert("panic", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
-	err := p.ProcessFileSetFromPath(path)
+	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		panic(err)
 	}
