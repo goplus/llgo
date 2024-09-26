@@ -1,0 +1,24 @@
+#stdout
+=== Test case: SQLite configuration ===
+Name: sqlite
+CFlags: -I/opt/homebrew/opt/sqlite/include
+Libs: -L/opt/homebrew/opt/sqlite/lib -lsqlite3
+Include: sqlite3.h
+TrimPrefixes: sqlite3_
+Cplusplus: false
+
+=== Test case: Lua configuration ===
+Name: lua
+CFlags: -I/opt/homebrew/include/lua
+Libs: -L/opt/homebrew/lib -llua -lm
+Include: lua.h
+TrimPrefixes: lua_, lua_
+Cplusplus: false
+
+=== Test case: Invalid JSON ===
+Error: failed to parse config
+
+
+#stderr
+
+#exit 0
