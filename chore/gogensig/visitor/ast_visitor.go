@@ -7,7 +7,7 @@ import (
 )
 
 type DocVisitor interface {
-	Visit(_Type string, node ast.Node)
+	Visit(node ast.Node)
 	VisitFuncDecl(funcDecl *ast.FuncDecl)
 	VisitDone(docPath string)
 	VisitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
@@ -43,7 +43,7 @@ func (p *BaseDocVisitor) visitNode(decl ast.Node) {
 	}
 }
 
-func (p *BaseDocVisitor) Visit(_Type string, node ast.Node) {
+func (p *BaseDocVisitor) Visit(node ast.Node) {
 	switch v := node.(type) {
 	case *ast.File:
 		for _, decl := range v.Decls {
