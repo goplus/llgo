@@ -8,6 +8,56 @@ import (
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
+func TestBasicLitFail(t *testing.T) {
+	t.Parallel()
+	type CaseType[T any] struct {
+		name string
+		expr ast.Expr
+		want T
+	}
+	type CaseTypeSlice[T any] []CaseType[T]
+	testCases := CaseTypeSlice[any]{
+		{
+			name: "ToInt",
+			expr: &ast.TagExpr{Tag: ast.Class, Name: &ast.Ident{Name: "Foo"}},
+			want: 123,
+		},
+		{
+			name: "ToFloat",
+			expr: &ast.TagExpr{Tag: ast.Class, Name: &ast.Ident{Name: "Foo"}},
+			want: 123.123,
+		},
+		{
+			name: "ToString",
+			expr: &ast.TagExpr{Tag: ast.Class, Name: &ast.Ident{Name: "Foo"}},
+			want: "abcd",
+		},
+		{
+			name: "ToChar",
+			expr: &ast.TagExpr{Tag: ast.Class, Name: &ast.Ident{Name: "Foo"}},
+			want: (int8)(98),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run("convert "+tc.name, func(t *testing.T) {
+			if tc.name == "ToInt" {
+				_, err := convert.Expr(tc.expr).ToInt()
+				expectError(t, err)
+			} else if tc.name == "ToFloat" {
+				_, err := convert.Expr(tc.expr).ToFloat(64)
+				expectError(t, err)
+			} else if tc.name == "ToChar" {
+				_, err := convert.Expr(tc.expr).ToChar()
+				expectError(t, err)
+			} else if tc.name == "ToString" {
+				_, err := convert.Expr(tc.expr).ToString()
+				expectError(t, err)
+			}
+		})
+	}
+}
+
 func TestBasicLitOK(t *testing.T) {
 	t.Parallel()
 	type CaseType[T any] struct {
@@ -55,6 +105,12 @@ func TestBasicLitOK(t *testing.T) {
 				checkResult(t, result, err, tc.want)
 			}
 		})
+	}
+}
+
+func expectError(t *testing.T, err error) {
+	if err == nil {
+		t.Error("expect error")
 	}
 }
 
