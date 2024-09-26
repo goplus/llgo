@@ -1,18 +1,15 @@
 package typmap_test
 
 import (
+	"go/types"
 	"testing"
 
-	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/typmap"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 func TestBuiltinType(t *testing.T) {
-	p := gogen.NewPackage(".", "temp", &gogen.Config{})
-	clib := p.Import("github.com/goplus/llgo/c")
-	typmap := typmap.NewBuiltinTypeMap(clib)
-
+	typmap := typmap.NewBuiltinTypeMap(".", "temp", nil)
 	testCases := []struct {
 		name     string
 		input    *ast.BuiltinType
@@ -57,5 +54,20 @@ func TestBuiltinType(t *testing.T) {
 				t.Errorf("unexpected result:%s expected:%s", result.String(), tc.expected)
 			}
 		})
+	}
+}
+
+func TestIsVoidType(t *testing.T) {
+	typmap := typmap.NewBuiltinTypeMap(".", "temp", nil)
+	if !typmap.IsVoidType(types.Typ[types.UntypedNil]) {
+		t.Error("Expect return true")
+	}
+}
+
+func TestCType(t *testing.T) {
+	typmap := typmap.NewBuiltinTypeMap(".", "temp", nil)
+	ptrType := typmap.CType("Pointer")
+	if ptrType == nil {
+		t.Error("Expect a non nil pointer type")
 	}
 }

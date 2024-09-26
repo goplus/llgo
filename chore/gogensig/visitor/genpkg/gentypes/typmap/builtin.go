@@ -13,7 +13,15 @@ type BuiltinTypeMap struct {
 	builtinTypeMap map[ast.BuiltinType]types.Type
 }
 
-func NewBuiltinTypeMap(clib gogen.PkgRef) *BuiltinTypeMap {
+func NewBuiltinTypeMapWithClib(clib gogen.PkgRef) *BuiltinTypeMap {
+	builtinTypeMap := &BuiltinTypeMap{clib: clib}
+	builtinTypeMap.initBuiltinTypeMap()
+	return builtinTypeMap
+}
+
+func NewBuiltinTypeMap(pkgPath, name string, conf *gogen.Config) *BuiltinTypeMap {
+	p := gogen.NewPackage(".", "temp", &gogen.Config{})
+	clib := p.Import("github.com/goplus/llgo/c")
 	builtinTypeMap := &BuiltinTypeMap{clib: clib}
 	builtinTypeMap.initBuiltinTypeMap()
 	return builtinTypeMap
