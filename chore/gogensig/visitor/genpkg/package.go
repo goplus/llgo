@@ -30,7 +30,7 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 		p: gogen.NewPackage(pkgPath, name, conf),
 	}
 	clib := p.p.Import("github.com/goplus/llgo/c")
-	typeMap := typmap.NewBuiltinTypeMap(clib)
+	typeMap := typmap.NewBuiltinTypeMapWithClib(clib)
 	p.cvt = convert.NewConv(p.p.Types, typeMap)
 	p.name = name
 	p.dels = make([]any, 0)
@@ -46,7 +46,6 @@ func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
 	if conf.Libs != "" {
 		p.linkLib(conf.Libs)
 	}
-
 }
 
 // todo(zzy):refine logic
