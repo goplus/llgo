@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmp"
+	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
@@ -35,7 +36,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 		}
 	})
 
-	p := unmarshal.NewDocFileSetUnmarshaller([]visitor.DocVisitor{astConvert})
+	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
 
 	bytes, err := util.Llcppsigfetch(originalCode, true, isCpp)
 	if err != nil {
@@ -47,7 +48,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 		t.Fatal(err)
 	}
 
-	p.UnmarshalFileSet(inputdata)
+	p.ProcessFileSet(inputdata)
 
 	result := buf.String()
 	if isEqual, diff := cmp.EqualStringIgnoreSpace(expectedOutput, result); !isEqual {
