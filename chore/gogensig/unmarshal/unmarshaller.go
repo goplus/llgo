@@ -18,10 +18,6 @@ type RawMessageMap map[string]json.RawMessage
 
 type PathDocArray []PathDoc
 
-func NewPathDoc(path string, doc json.RawMessage) *PathDoc {
-	return &PathDoc{Path: path, Doc: doc}
-}
-
 type DocFileUnmarshaller struct {
 	VisitorList []visitor.DocVisitor
 }
