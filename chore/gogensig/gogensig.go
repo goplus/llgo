@@ -45,9 +45,13 @@ func main() {
 	check(err)
 	conf, err := util.GetCppgFromPath("./llcppg.cfg")
 	check(err)
+
 	astConvert := visitor.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
 	p := unmarshal.NewDocFileSetUnmarshaller([]visitor.DocVisitor{astConvert})
-	p.UnmarshalBytes(data)
+	inputdata, err := unmarshal.UnmarshalFileSet(data)
+	check(err)
+	err = p.UnmarshalFileSet(inputdata)
+	check(err)
 }
 func check(err error) {
 	if err != nil {

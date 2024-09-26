@@ -42,7 +42,12 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 		t.Fatal(err)
 	}
 
-	p.UnmarshalBytes(bytes)
+	inputdata, err := unmarshal.UnmarshalFileSet(bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p.UnmarshalFileSet(inputdata)
 
 	result := buf.String()
 	if isEqual, diff := cmp.EqualStringIgnoreSpace(expectedOutput, result); !isEqual {
