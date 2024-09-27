@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 )
 
-func TestLookupSymble(t *testing.T) {
+func TestLookupSymbleOK(t *testing.T) {
 	table, err := symb.NewSymbolTable("./_testinput/llcppg.symb.json")
 	if err != nil {
 		t.Fatal(err)
@@ -21,5 +21,31 @@ func TestLookupSymble(t *testing.T) {
 	if !cmp.Equal(string(entry.CppName), expectCppName) ||
 		!cmp.Equal(string(entry.GoName), expectGoName) {
 		t.Fatalf("%s\n%s", cmp.Diff(entry.CppName, expectCppName), cmp.Diff(entry.GoName, expectGoName))
+	}
+}
+
+func TestLookupSymbleError(t *testing.T) {
+	_, err := symb.NewSymbolTable("./_testinput/llcppg.symb.txt")
+	if err == nil {
+		t.Error("expect error")
+	}
+	table, err := symb.NewSymbolTable("./_testinput/llcppg.symb.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lookupSymbs := []string{
+		"_ZNK9INIReader10GetBooleanERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_bXXX",
+		"",
+	}
+	for _, lookupSymbol := range lookupSymbs {
+		_, err := table.LookupSymbol(lookupSymbol)
+		if err == nil {
+			t.Error("expect error")
+		}
+	}
+	nilTable, _ := symb.NewSymbolTable("")
+	_, err = nilTable.LookupSymbol("_ZNK9INIReader10GetBooleanERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_bXXX")
+	if err == nil {
+		t.Error("expect error")
 	}
 }
