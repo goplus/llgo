@@ -8,16 +8,15 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmp"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) bytes.Buffer {
+func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) bytes.Buffer {
 	t.Helper()
 
 	symbolpath, err := CreateAndWriteTempSymbFile(symbolEntries)
@@ -38,7 +37,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 
 	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
 
-	bytes, err := util.Llcppsigfetch(originalCode, true, isCpp)
+	bytes, err := config.Llcppsigfetch(originalCode, true, isCpp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +57,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 	return buf
 }
 
-func CreateAndWriteTempSymbFile(entries []symb.SymbolEntry) (string, error) {
+func CreateAndWriteTempSymbFile(entries []config.SymbolEntry) (string, error) {
 	return CreateJSONFile("llcppg.symb.json", entries)
 }
 

@@ -1,10 +1,8 @@
-package symb
+package config
 
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/goplus/llgo/chore/gogensig/util"
 )
 
 type MangleNameType = string
@@ -24,7 +22,7 @@ type SymbolTable struct {
 }
 
 func NewSymbolTable(filePath string) (*SymbolTable, error) {
-	bytes, err := util.ReadFile(filePath)
+	bytes, err := ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
