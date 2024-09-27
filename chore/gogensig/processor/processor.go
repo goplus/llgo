@@ -1,8 +1,8 @@
 package processor
 
 import (
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
@@ -40,7 +40,7 @@ func (p *DocFileSetProcessor) ProcessFileSet(files []unmarshal.FileEntry) error 
 }
 
 func (p *DocFileSetProcessor) ProcessFileSetFromPath(filePath string) error {
-	raw, err := util.ReadFile(filePath)
+	raw, err := config.ReadFile(filePath)
 	if err != nil {
 		return err
 	}

@@ -3,9 +3,8 @@ package convert
 import (
 	"fmt"
 
-	"github.com/goplus/llgo/chore/gogensig/util"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
@@ -30,7 +29,7 @@ func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
 }
 
 func (p *AstConvert) setupSymbleTableFile(filePath string) error {
-	symbTable, err := symb.NewSymbolTable(filePath)
+	symbTable, err := config.NewSymbolTable(filePath)
 	if err != nil {
 		return err
 	}
@@ -39,7 +38,7 @@ func (p *AstConvert) setupSymbleTableFile(filePath string) error {
 }
 
 func (p *AstConvert) setupGenConfig(filePath string) error {
-	conf, err := util.GetCppgFromPath(filePath)
+	conf, err := config.GetCppgFromPath(filePath)
 	if err != nil {
 		return err
 	}
