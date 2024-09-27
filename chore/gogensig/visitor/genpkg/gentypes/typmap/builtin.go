@@ -22,8 +22,7 @@ func NewBuiltinTypeMapWithClib(clib gogen.PkgRef) *BuiltinTypeMap {
 func NewBuiltinTypeMap(pkgPath, name string, conf *gogen.Config) *BuiltinTypeMap {
 	p := gogen.NewPackage(".", "temp", &gogen.Config{})
 	clib := p.Import("github.com/goplus/llgo/c")
-	builtinTypeMap := &BuiltinTypeMap{clib: clib}
-	builtinTypeMap.initBuiltinTypeMap()
+	builtinTypeMap := NewBuiltinTypeMapWithClib(clib)
 	return builtinTypeMap
 }
 
@@ -32,11 +31,8 @@ func (p *BuiltinTypeMap) CType(typ string) types.Type {
 }
 
 func (p *BuiltinTypeMap) IsVoidType(typ types.Type) bool {
-	voidType, ok := p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}]
-	if ok {
-		return typ == voidType
-	}
-	return false
+	voidType := p.builtinTypeMap[ast.BuiltinType{Kind: ast.Void}]
+	return typ == voidType
 }
 
 func (p *BuiltinTypeMap) FindBuiltinType(builtinType ast.BuiltinType) (types.Type, error) {
