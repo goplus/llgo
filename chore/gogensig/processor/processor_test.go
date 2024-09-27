@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
+	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
@@ -47,7 +48,7 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 	}
 	defer os.Remove(tempFileName)
 
-	astConvert := visitor.NewAstConvert("files", "", "")
+	astConvert := convert.NewAstConvert("files", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
 	err = p.ProcessFileSetFromPath(tempFileName)
@@ -57,7 +58,7 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 }
 
 func TestProcessFileNotExist(t *testing.T) {
-	astConvert := visitor.NewAstConvert("error", "", "")
+	astConvert := convert.NewAstConvert("error", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
 	err := p.ProcessFileSetFromPath("notexist.json")
@@ -80,7 +81,7 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 	}
 	defer os.Remove(tempFileName)
 
-	astConvert := visitor.NewAstConvert("panic", "", "")
+	astConvert := convert.NewAstConvert("panic", "", "")
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
 	err = p.ProcessFileSetFromPath(tempFileName)

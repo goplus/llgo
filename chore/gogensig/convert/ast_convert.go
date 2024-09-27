@@ -1,31 +1,31 @@
-package visitor
+package convert
 
 import (
 	"fmt"
 
 	"github.com/goplus/llgo/chore/gogensig/util"
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
+	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 type AstConvert struct {
-	*BaseDocVisitor
-	pkg       *genpkg.Package
-	visitDone func(pkg *genpkg.Package, docPath string)
+	*visitor.BaseDocVisitor
+	pkg       *Package
+	visitDone func(pkg *Package, docPath string)
 }
 
 func NewAstConvert(pkgName string, symbFile string, genConfFile string) *AstConvert {
 	p := new(AstConvert)
-	p.BaseDocVisitor = NewBaseDocVisitor(p)
-	pkg := genpkg.NewPackage(".", pkgName, nil)
+	p.BaseDocVisitor = visitor.NewBaseDocVisitor(p)
+	pkg := NewPackage(".", pkgName, nil)
 	p.pkg = pkg
 	p.setupSymbleTableFile(symbFile)
 	p.setupGenConfig(genConfFile)
 	return p
 }
 
-func (p *AstConvert) SetVisitDone(fn func(pkg *genpkg.Package, docPath string)) {
+func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
 	p.visitDone = fn
 }
 

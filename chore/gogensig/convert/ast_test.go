@@ -4,7 +4,7 @@ import (
 	goast "go/ast"
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/convert"
+	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 

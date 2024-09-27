@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmp"
+	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
@@ -28,9 +28,9 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []symb.Symb
 	if err != nil {
 		t.Fatal(err)
 	}
-	astConvert := visitor.NewAstConvert(pkgName, symbolpath, cppgConfPath)
+	astConvert := convert.NewAstConvert(pkgName, symbolpath, cppgConfPath)
 	var buf bytes.Buffer
-	astConvert.SetVisitDone(func(pkg *genpkg.Package, docPath string) {
+	astConvert.SetVisitDone(func(pkg *convert.Package, docPath string) {
 		if err := pkg.WriteToBuffer(&buf); err != nil {
 			t.Fatalf("WriteTo failed: %v", err)
 		}
