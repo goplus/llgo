@@ -12,7 +12,6 @@ import (
 	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/comment"
 	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/convert"
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/typmap"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
@@ -30,7 +29,7 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 		p: gogen.NewPackage(pkgPath, name, conf),
 	}
 	clib := p.p.Import("github.com/goplus/llgo/c")
-	typeMap := typmap.NewBuiltinTypeMapWithClib(clib)
+	typeMap := convert.NewBuiltinTypeMapWithClib(clib)
 	p.cvt = convert.NewConv(p.p.Types, typeMap)
 	p.name = name
 	p.dels = make([]any, 0)
