@@ -20,7 +20,7 @@ func NewBuiltinTypeMapWithClib(clib gogen.PkgRef) *BuiltinTypeMap {
 }
 
 func NewBuiltinTypeMap(pkgPath, name string, conf *gogen.Config) *BuiltinTypeMap {
-	p := gogen.NewPackage(".", "temp", &gogen.Config{})
+	p := gogen.NewPackage(pkgPath, name, conf)
 	clib := p.Import("github.com/goplus/llgo/c")
 	builtinTypeMap := NewBuiltinTypeMapWithClib(clib)
 	return builtinTypeMap
