@@ -597,31 +597,24 @@ func (b Builder) di() diBuilder {
 	return b.Pkg.di
 }
 
-func (b Builder) DIDeclare(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	dbgPtr, _, _ := b.constructDebugAddr(v)
-	expr := b.di().createExpression(nil)
-	b.di().dbgDeclare(dbgPtr, dv, scope, pos, expr, blk)
-	// v.impl = dbgVal.impl
+func (b Builder) DIParam(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+	ty := v.Type.RawType().Underlying()
+	if isPtrType(ty) {
+		expr := b.di().createExpression(nil)
+		b.di().dbgDeclare(v, dv, scope, pos, expr, blk)
+	} else {
+		b.DIValue(variable, v, dv, scope, pos, blk)
+	}
 }
 
-const (
-	opDeref = 0x06
-)
-
-func isBasicTypeOrPtr(t types.Type) bool {
-	switch t.(type) {
-	case *types.Basic:
-		return true
-	case *types.Pointer:
-		return true
-	default:
-		return false
-	}
+func (b Builder) DIDeclare(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
+	expr := b.di().createExpression(nil)
+	b.di().dbgDeclare(v, dv, scope, pos, expr, blk)
 }
 
 func (b Builder) DIValue(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
 	ty := v.Type.RawType().Underlying()
-	if isBasicTypeOrPtr(ty) {
+	if isPtrType(ty) {
 		expr := b.di().createExpression(nil)
 		b.di().dbgValue(v, dv, scope, pos, expr, blk)
 	} else {
@@ -629,6 +622,19 @@ func (b Builder) DIValue(variable *types.Var, v Expr, dv DIVar, scope DIScope, p
 		expr := b.di().createExpression([]uint64{opDeref})
 		b.di().dbgValue(dbgPtr, dv, scope, pos, expr, blk)
 		v.impl = dbgVal.impl
+	}
+}
+
+const (
+	opDeref = 0x06
+)
+
+func isPtrType(t types.Type) bool {
+	switch t.(type) {
+	case *types.Pointer:
+		return true
+	default:
+		return false
 	}
 }
 

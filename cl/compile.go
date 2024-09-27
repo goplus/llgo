@@ -334,16 +334,6 @@ func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
 	}
 }
 
-func isBasicTypeOrPtr(ty types.Type) bool {
-	if _, ok := ty.(*types.Basic); ok {
-		return true
-	}
-	if _, ok := ty.(*types.Pointer); ok {
-		return true
-	}
-	return false
-}
-
 func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 	for i, param := range f.Params {
 		variable := param.Object().(*types.Var)
@@ -352,11 +342,7 @@ func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 		ty := param.Type()
 		argNo := i + 1
 		div := b.DIVarParam(p.fn, pos, param.Name(), p.prog.Type(ty, llssa.InGo), argNo)
-		if isBasicTypeOrPtr(ty) {
-			b.DIDeclare(variable, v, div, p.fn, pos, p.fn.Block(0))
-		} else {
-			b.DIValue(variable, v, div, p.fn, pos, p.fn.Block(0))
-		}
+		b.DIParam(variable, v, div, p.fn, pos, p.fn.Block(0))
 	}
 }
 

@@ -78,9 +78,9 @@ func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	//   s.pad1: 100
 	//   s.pad2: 200
-	s.i8 = 8
-	// Expected(skio):
-	//   s.i8: '\x08'
+	s.i8 = '\b'
+	// Expected:
+	//   s.i8: '\b'
 	//   s.i16: 2
 	println(len(s.s), s.i8)
 }
@@ -150,28 +150,6 @@ func FuncWithAllTypeParams(
 		err,
 		fn,
 	)
-	// Expected:
-	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn
-	//   i8: '\x01'
-	//   i16: 2
-	//   i32: 3
-	//   i64: 4
-	//   i: 5
-	//   u8: '\x06'
-	//   u16: 7
-	//   u32: 8
-	//   u64: 9
-	//   u: 10
-	//   f32: 11
-	//   f64: 12
-	//   b: true
-	//   c64: complex64{real = 13, imag = 14}
-	//   c128: complex128{real = 15, imag = 16}
-	//   slice: []int{21, 22, 23}
-	//   arr: [3]int{24, 25, 26}
-	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
-	//   s: "hello"
-	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	i8 = 9
 	i16 = 10
 	i32 = 11
@@ -193,27 +171,6 @@ func FuncWithAllTypeParams(
 	s = "world"
 	e = E{i: 40}
 
-	// Expected(skip):
-	//   i8: '\x09'
-	//   i16: 10
-	//   i32: 11
-	//   i64: 12
-	//   i: 13
-	//   u8: 14
-	//   u16: 15
-	//   u32: 16
-	//   u64: 17
-	//   u: 18
-	//   f32: 19
-	//   f64: 20
-	//   b: false
-	//   c64: complex64{real = 21, imag = 22}
-	//   c128: complex128{real = 23, imag = 24}
-	//   slice: []int{31, 32, 33}
-	//   arr: [3]int{34, 35, 36}
-	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 37}, {i = 38}, {i = 39}}
-	//   s: "world"
-	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 40}
 	println(i8, i16, i32, i64, i, u8, u16, u32, u64, u,
 		f32, f64, b,
 		c64, c128,
@@ -225,6 +182,29 @@ func FuncWithAllTypeParams(
 		err,
 		fn,
 	)
+	// Expected:
+	//   i8: '\t'
+	//   i16: 10
+	//   i32: 11
+	//   i64: 12
+	//   i: 13
+	//   u8: '\x0e'
+	//   u16: 15
+	//   u32: 16
+	//   u64: 17
+	//   u: 18
+	//   f32: 19
+	//   f64: 20
+	//   b: false
+	//   c64: complex64{real = 21, imag = 22}
+	//   c128: complex128{real = 23, imag = 24}
+	//   slice: []int{31, 32, 33}
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 37}, {i = 38}, {i = 39}}
+	//   s: "world"
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 40}
+
+	// Expected(skip):
+	//   arr: [3]int{34, 35, 36}
 	return 1, errors.New("some error")
 }
 
@@ -276,6 +256,7 @@ func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
 	//   b.P: 14
 	//   b.Q: 15
 	//   b.R: 16
+	println(t.I, s.I, s.J, m.I, m.J, m.K, b.I, b.J, b.K, b.L, b.M, b.N, b.O, b.P, b.Q, b.R)
 	t.I = 10
 	s.I = 20
 	s.J = 21
@@ -314,7 +295,6 @@ func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
 }
 
 func FuncStructPtrParams(t *TinyStruct, s *SmallStruct, m *MidStruct, b *BigStruct) {
-	println(t, s, m, b)
 	// Expected:
 	//   all variables: t s m b
 	//   t.I: 1
@@ -333,6 +313,7 @@ func FuncStructPtrParams(t *TinyStruct, s *SmallStruct, m *MidStruct, b *BigStru
 	//   b.P: 14
 	//   b.Q: 15
 	//   b.R: 16
+	println(t, s, m, b)
 	t.I = 10
 	s.I = 20
 	s.J = 21

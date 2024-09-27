@@ -147,7 +147,10 @@ def format_value(var: lldb.SBValue, debugger: lldb.SBDebugger, include_type: boo
 
 
 def format_slice(var: lldb.SBValue, debugger: lldb.SBDebugger, indent: int) -> str:
-    length = int(var.GetChildMemberWithName('len').GetValue())
+    length = var.GetChildMemberWithName('len').GetValue()
+    if length is None:
+        return "<variable not available>"
+    length = int(length)
     data_ptr = var.GetChildMemberWithName('data')
     elements: List[str] = []
 
@@ -204,11 +207,12 @@ def format_string(var: lldb.SBValue) -> str:
         return summary  # Keep the quotes
     else:
         data = var.GetChildMemberWithName('data').GetValue()
-        length = int(var.GetChildMemberWithName('len').GetValue())
+        length = var.GetChildMemberWithName('len').GetValue()
         if data and length:
+            length = int(length)
             error = lldb.SBError()
             return '"%s"' % var.process.ReadCStringFromMemory(int(data, 16), length + 1, error)
-    return '""'
+    return "<variable not available>"
 
 
 def format_struct(var: lldb.SBValue, debugger: lldb.SBDebugger, include_type: bool = True, indent: int = 0, type_name: str = "") -> str:

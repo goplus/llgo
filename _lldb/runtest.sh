@@ -40,7 +40,7 @@ build_project "$package_path" || exit 1
 # Prepare LLDB commands
 lldb_commands=(
     "command script import _lldb/test.py"
-    "script test.run_tests(\\\"${package_path}/out\\\", [\\\"${package_path}/in.go\\\"], ${verbose}, ${interactive}, ${plugin_path})"
+    "script test.run_tests(\\\"${package_path}/debug.out\\\", [\\\"${package_path}/in.go\\\"], ${verbose}, ${interactive}, ${plugin_path})"
 )
 
 # Add quit command if not in interactive mode

@@ -34,5 +34,5 @@ export DEFAULT_PACKAGE_PATH="./cl/_testdata/debug"
 # Function to build the project
 build_project() {
     local package_path="$1"
-    LLGO_DEBUG=1 go run ./cmd/llgo build -o "${package_path}/out" "${package_path}"
+    LLGO_DEBUG=1 go run ./cmd/llgo build -o "${package_path}/debug.out" "${package_path}"
 }
