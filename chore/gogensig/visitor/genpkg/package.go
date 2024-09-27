@@ -51,6 +51,10 @@ func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
 	}
 }
 
+func (p *Package) GetGenPackage() *gogen.Package {
+	return p.p
+}
+
 // todo(zzy):refine logic
 func (p *Package) linkLib(lib string) error {
 	linkString := fmt.Sprintf("link: %s;", lib)
@@ -101,6 +105,7 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if err != nil {
 		return err
 	}
+	// todo(zzy): add to test case
 	if typ == nil {
 		return fmt.Errorf("underlying type must not be nil")
 	}
@@ -153,36 +158,22 @@ func (p *Package) delete() {
 	}
 }
 
-func (p *Package) Write(docPath string) error {
-	fnMakeDir := func(dir string) (string, error) {
-		if len(dir) <= 0 {
-			dir = "."
-		}
-		curDir, err := filepath.Abs(dir)
-		if err != nil {
-			return "", err
-		}
-		path := filepath.Join(curDir, p.name)
-		err = os.MkdirAll(path, 0755)
-		if err != nil {
-			return "", err
-		}
-		return path, nil
-	}
-	_, fileName := filepath.Split(docPath)
-	dir, err := fnMakeDir("")
+// Write generates a Go file based on the package content.
+// The output file will be generated in a subdirectory named after the package within the outputDir.
+// If outputDir is not provided, the current directory will be used.
+// The header file name is the go file name.
+func (p *Package) Write(headerFile, outputDir string) error {
+	dir, err := p.prepareOutputDir(outputDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to prepare output directory: %w", err)
 	}
-	ext := filepath.Ext(fileName)
-	if len(ext) > 0 {
-		fileName = strings.TrimSuffix(fileName, ext)
+
+	fileName := p.processFileName(headerFile)
+
+	if err := p.p.WriteFile(filepath.Join(dir, fileName)); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
 	}
-	if len(fileName) <= 0 {
-		fileName = "temp"
-	}
-	fileName = fileName + ".go"
-	p.p.WriteFile(filepath.Join(dir, fileName))
+
 	p.delete()
 	return nil
 }
@@ -191,4 +182,34 @@ func (p *Package) WriteToBuffer(buf *bytes.Buffer) error {
 	err := p.p.WriteTo(buf)
 	p.delete()
 	return err
+}
+
+func (p *Package) prepareOutputDir(outputDir string) (string, error) {
+	if outputDir == "" {
+		outputDir = "."
+	}
+
+	absDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(absDir, p.name)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+
+	return dir, nil
+}
+
+func (p *Package) processFileName(headerFile string) string {
+	_, fileName := filepath.Split(headerFile)
+	ext := filepath.Ext(fileName)
+	if len(ext) > 0 {
+		fileName = strings.TrimSuffix(fileName, ext)
+	}
+	if len(fileName) <= 0 {
+		fileName = "temp"
+	}
+	return fileName + ".go"
 }
