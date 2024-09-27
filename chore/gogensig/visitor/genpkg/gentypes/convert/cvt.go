@@ -98,11 +98,7 @@ func (p *TypeConv) handlePointerType(t *ast.PointerType) (types.Type, error) {
 func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
 	switch t := t.(type) {
 	case *ast.Ident:
-		name, err := p.RemovePrefixedName(t.Name)
-		if err != nil {
-			// todo(zzy):panic
-			return nil, err
-		}
+		name := p.RemovePrefixedName(t.Name)
 		obj := p.types.Scope().Lookup(name)
 		if obj == nil {
 			return nil, fmt.Errorf("%s not found", name)
@@ -116,11 +112,7 @@ func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
 	case *ast.TagExpr:
 		// todo(zzy):scoping
 		if ident, ok := t.Name.(*ast.Ident); ok {
-			name, err := p.RemovePrefixedName(ident.Name)
-			if err != nil {
-				// todo(zzy):panic
-				return nil, err
-			}
+			name := p.RemovePrefixedName(ident.Name)
 			obj := p.types.Scope().Lookup(name)
 			if obj != nil {
 				return obj.Type(), nil
@@ -180,7 +172,10 @@ func (p *TypeConv) fieldListToVars(params *ast.FieldList) ([]*types.Var, error) 
 		return vars, nil
 	}
 	for _, field := range params.List {
-		fieldVar, _ := p.fieldToVar(field)
+		fieldVar, err := p.fieldToVar(field)
+		if err != nil {
+			return nil, err
+		}
 		if fieldVar != nil {
 			vars = append(vars, fieldVar)
 		} else {
@@ -239,16 +234,16 @@ func (p *TypeConv) LookupSymbol(mangleName symb.MangleNameType) (symb.GoNameType
 	return e.GoName, nil
 }
 
-func (p *TypeConv) RemovePrefixedName(name string) (string, error) {
+func (p *TypeConv) RemovePrefixedName(name string) string {
 	if p.cppgConf == nil {
-		return name, nil
+		return name
 	}
 	for _, prefix := range p.cppgConf.TrimPrefixes {
 		if strings.HasPrefix(name, prefix) {
-			return strings.TrimPrefix(name, prefix), nil
+			return strings.TrimPrefix(name, prefix)
 		}
 	}
-	return name, nil
+	return name
 }
 
 func ToTitle(s string) string {
