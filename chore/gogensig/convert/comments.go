@@ -1,4 +1,4 @@
-package comment
+package convert
 
 import (
 	goast "go/ast"

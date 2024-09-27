@@ -1,14 +1,15 @@
-package convert
+package convert_test
 
 import (
 	"go/types"
 	"testing"
 
+	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 func TestBuiltinType(t *testing.T) {
-	typmap := NewBuiltinTypeMap(".", "temp", nil)
+	typmap := convert.NewBuiltinTypeMap(".", "temp", nil)
 	testCases := []struct {
 		name     string
 		input    *ast.BuiltinType
@@ -57,7 +58,7 @@ func TestBuiltinType(t *testing.T) {
 }
 
 func TestIsVoidType(t *testing.T) {
-	typmap := NewBuiltinTypeMap(".", "temp", nil)
+	typmap := convert.NewBuiltinTypeMap(".", "temp", nil)
 	if !typmap.IsVoidType(types.Typ[types.UntypedNil]) {
 		t.Error("Expect return true")
 	}
@@ -67,7 +68,7 @@ func TestIsVoidType(t *testing.T) {
 }
 
 func TestCType(t *testing.T) {
-	typmap := NewBuiltinTypeMap(".", "temp", nil)
+	typmap := convert.NewBuiltinTypeMap(".", "temp", nil)
 	ptrType := typmap.CType("Pointer")
 	if ptrType == nil {
 		t.Error("Expect a non nil pointer type")

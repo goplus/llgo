@@ -1,4 +1,4 @@
-package genpkg_test
+package convert_test
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/cmp"
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg"
+	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
@@ -18,7 +18,7 @@ import (
 // todo(zzy):test named typeref
 
 func TestToType(t *testing.T) {
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 
 	testCases := []struct {
 		name     string
@@ -56,7 +56,7 @@ func TestToType(t *testing.T) {
 }
 
 func TestNewPackage(t *testing.T) {
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 	if pkg == nil {
 		t.Fatal("NewPackage failed")
 	}
@@ -64,7 +64,7 @@ func TestNewPackage(t *testing.T) {
 }
 
 func TestSetCppgConf(t *testing.T) {
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 	if pkg == nil {
 		t.Fatal("NewPackage failed")
 	}
@@ -104,7 +104,7 @@ func TestPackageWrite(t *testing.T) {
 		}
 		defer os.RemoveAll(tempDir)
 
-		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 
 		err = pkg.Write(headerFilePath, tempDir)
 		if err != nil {
@@ -125,7 +125,7 @@ func TestPackageWrite(t *testing.T) {
 			os.RemoveAll(filepath.Join(currentDir, "testpkg"))
 		}()
 
-		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 
 		err = pkg.Write(headerFilePath, "")
 		if err != nil {
@@ -143,7 +143,7 @@ func TestPackageWrite(t *testing.T) {
 		}
 		defer os.RemoveAll(tempDir)
 
-		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 
 		err = pkg.Write("", tempDir)
 		if err != nil {
@@ -155,7 +155,7 @@ func TestPackageWrite(t *testing.T) {
 	})
 
 	t.Run("InvalidOutputDir", func(t *testing.T) {
-		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 		err := pkg.Write(headerFilePath, "/nonexistent/directory")
 		if err == nil {
 			t.Fatal("Expected an error for invalid output directory, but got nil")
@@ -175,7 +175,7 @@ func TestPackageWrite(t *testing.T) {
 			t.Fatalf("Failed to change directory permissions: %v", err)
 		}
 
-		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 		err = pkg.Write(headerFilePath, tempDir)
 		if err == nil {
 			t.Fatal("Expected an error for unwritable output directory, but got nil")
@@ -828,7 +828,7 @@ type Foo func(a c.Int, b c.Int) c.Int`,
 }
 
 func TestRedefTypedef(t *testing.T) {
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 
 	pkg.NewTypeDecl(&ast.TypeDecl{
 		Name: &ast.Ident{Name: "Foo"},
@@ -1006,7 +1006,7 @@ type genDeclTestCase struct {
 }
 
 func testGenDecl(t *testing.T, tc genDeclTestCase) {
-	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 	pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
 	pkg.SetCppgConf(tc.cppgconf)
 	if pkg == nil {
@@ -1042,7 +1042,7 @@ func testGenDecl(t *testing.T, tc genDeclTestCase) {
 }
 
 // compares the output of a gogen.Package with the expected
-func comparePackageOutput(t *testing.T, pkg *genpkg.Package, expect string) {
+func comparePackageOutput(t *testing.T, pkg *convert.Package, expect string) {
 	t.Helper()
 	var buf bytes.Buffer
 	err := pkg.WriteToBuffer(&buf)

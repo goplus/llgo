@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/util"
@@ -47,7 +48,7 @@ func main() {
 	conf, err := util.GetCppgFromPath("./llcppg.cfg")
 	check(err)
 
-	astConvert := visitor.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
+	astConvert := convert.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
 	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
 	inputdata, err := unmarshal.UnmarshalFileSet(data)
 	check(err)
