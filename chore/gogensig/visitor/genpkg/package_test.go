@@ -76,14 +76,7 @@ func TestSetCppgConf(t *testing.T) {
 }
 
 func TestFuncDecl(t *testing.T) {
-	testCases := []struct {
-		name        string
-		decl        *ast.FuncDecl
-		symbs       []symb.SymbolEntry
-		cppgconf    *cppgtypes.Config
-		expected    string
-		expectedErr string
-	}{
+	testCases := []genDeclTestCase{
 		{
 			name: "empty func",
 			decl: &ast.FuncDecl{
@@ -108,7 +101,7 @@ package testpkg
 func Foo()`,
 		},
 		{
-			name: "empty func not in symbol table",
+			name: "func not in symbol table",
 			decl: &ast.FuncDecl{
 				Name:        &ast.Ident{Name: "foo"},
 				MangledName: "foo",
@@ -431,39 +424,13 @@ func Foo(a *c.Uint, b *float64) **int8
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-			pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
-			pkg.SetCppgConf(tc.cppgconf)
-			if pkg == nil {
-				t.Fatal("NewPackage failed")
-			}
-			err := pkg.NewFuncDecl(tc.decl)
-			if tc.expectedErr != "" {
-				if err == nil {
-					t.Fatalf("Expected error containing %q,but got nil", tc.expectedErr)
-				}
-				if !strings.Contains(err.Error(), tc.expectedErr) {
-					t.Fatalf("Expected error contain %q,but got %q", tc.expectedErr, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("NewFuncDecl failed: %v", err)
-				}
-				comparePackageOutput(t, pkg, tc.expected)
-			}
+			testGenDecl(t, tc)
 		})
 	}
 }
 
 func TestStructDecl(t *testing.T) {
-	testCases := []struct {
-		name        string
-		decl        *ast.TypeDecl
-		symbs       []symb.SymbolEntry
-		cppgconf    *cppgtypes.Config
-		expected    string
-		expectedErr string
-	}{
+	testCases := []genDeclTestCase{
 		// struct Foo {}
 		{
 			name: "empty struct",
@@ -479,6 +446,25 @@ package testpkg
 
 type Foo struct {
 }`,
+		},
+		// invalid struct type
+		{
+			name: "invalid struct type",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "InvalidStruct"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "invalidField"}},
+								Type:  &ast.BuiltinType{Kind: ast.Bool, Flags: ast.Long},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: "not found in type map",
 		},
 		// struct Foo { int a; double b; bool c; }
 		{
@@ -679,27 +665,13 @@ type Foo struct {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-			if pkg == nil {
-				t.Fatal("NewPackage failed")
-			}
-			err := pkg.NewTypeDecl(tc.decl)
-			if err != nil {
-				t.Fatalf("NewBasic failed: %v", err)
-			}
-			comparePackageOutput(t, pkg, tc.expected)
+			testGenDecl(t, tc)
 		})
 	}
 }
 
 func TestTypedefFunc(t *testing.T) {
-	testCases := []struct {
-		name     string
-		decl     *ast.TypedefDecl
-		symbs    []symb.SymbolEntry
-		cppgconf *cppgtypes.Config
-		expected string
-	}{
+	testCases := []genDeclTestCase{
 		// typedef int (*Foo) (int a, int b);
 		{
 			name: "typedef func",
@@ -739,27 +711,13 @@ type Foo func(a c.Int, b c.Int) c.Int`,
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-			if pkg == nil {
-				t.Fatal("NewPackage failed")
-			}
-			err := pkg.NewTypedefDecl(tc.decl)
-			if err != nil {
-				t.Fatalf("NewFuncDecl failed: %v", err)
-			}
-			comparePackageOutput(t, pkg, tc.expected)
+			testGenDecl(t, tc)
 		})
 	}
 }
 
 func TestTypedef(t *testing.T) {
-	testCases := []struct {
-		name     string
-		decl     *ast.TypedefDecl
-		symbs    []symb.SymbolEntry
-		cppgconf *cppgtypes.Config
-		expected string
-	}{
+	testCases := []genDeclTestCase{
 		// typedef double DOUBLE;
 		{
 			name: "typedef double",
@@ -848,16 +806,52 @@ type name [5]int8`,
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-			if pkg == nil {
-				t.Fatal("NewPackage failed")
-			}
-			err := pkg.NewTypedefDecl(tc.decl)
-			if err != nil {
-				t.Fatalf("NewFuncDecl failed: %v", err)
-			}
-			comparePackageOutput(t, pkg, tc.expected)
+			testGenDecl(t, tc)
 		})
+	}
+}
+
+type genDeclTestCase struct {
+	name        string
+	decl        ast.Decl
+	symbs       []symb.SymbolEntry
+	cppgconf    *cppgtypes.Config
+	expected    string
+	expectedErr string
+}
+
+func testGenDecl(t *testing.T, tc genDeclTestCase) {
+	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
+	pkg.SetCppgConf(tc.cppgconf)
+	if pkg == nil {
+		t.Fatal("NewPackage failed")
+	}
+	var err error
+	switch d := tc.decl.(type) {
+	case *ast.TypeDecl:
+		err = pkg.NewTypeDecl(d)
+	case *ast.TypedefDecl:
+		err = pkg.NewTypedefDecl(d)
+	case *ast.FuncDecl:
+		err = pkg.NewFuncDecl(d)
+	// 可以添加其他类型的声明
+	default:
+		t.Errorf("Unsupported declaration type: %T", tc.decl)
+		return
+	}
+	if tc.expectedErr != "" {
+		if err == nil {
+			t.Errorf("Expected error containing %q, but got nil", tc.expectedErr)
+		} else if !strings.Contains(err.Error(), tc.expectedErr) {
+			t.Errorf("Expected error contain %q, but got %q", tc.expectedErr, err.Error())
+		}
+	} else {
+		if err != nil {
+			t.Errorf("Declaration generation failed: %v", err)
+		} else {
+			comparePackageOutput(t, pkg, tc.expected)
+		}
 	}
 }
 
