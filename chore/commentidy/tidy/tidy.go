@@ -65,7 +65,7 @@ func (p *Commentidy) TidyBytes(b []byte) ([]byte, error) {
 			return 0, nil, nil
 		}
 		// find slash
-		if i := bytes.IndexAny(data, "/\"'`"); i >= 0 {
+		if i := bytes.IndexAny(data, "/\""); i >= 0 {
 			iRune, iSize, _ := p.readRuneAt(data, i)
 			if iRune == '/' { // handle start with '/'
 				iSlashNext := i + iSize
