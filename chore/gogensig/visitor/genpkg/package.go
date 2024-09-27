@@ -42,6 +42,9 @@ func (p *Package) SetSymbolTable(symbolTable *symb.SymbolTable) {
 }
 
 func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
+	if conf == nil {
+		return
+	}
 	p.cvt.SetCppgConf(conf)
 	if conf.Libs != "" {
 		p.linkLib(conf.Libs)
@@ -75,10 +78,7 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
-	name, err := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
-	if err != nil {
-		return err
-	}
+	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
 	typeBlock := p.p.NewTypeDefs()
 	typeBlock.SetComments(convert.CommentGroup(typeDecl.Doc).CommentGroup)
 	decl := typeBlock.NewType(name)
@@ -104,10 +104,7 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if typ == nil {
 		return fmt.Errorf("underlying type must not be nil")
 	}
-	name, err := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
-	if err != nil {
-		return err
-	}
+	name := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
 	if named, ok := typ.(*types.Named); ok {
 		// Compare the type name with typedefDecl.Name.Name
 		if named.Obj().Name() == name {
