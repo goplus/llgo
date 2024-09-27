@@ -2,6 +2,7 @@ package genpkg_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/goplus/gogen"
@@ -12,7 +13,8 @@ import (
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-// todo(zzy): add more test cases for other type
+// todo(zzy):test named typeref
+
 func TestToType(t *testing.T) {
 	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
 
@@ -59,94 +61,28 @@ func TestNewPackage(t *testing.T) {
 	comparePackageOutput(t, pkg, `package testpkg`)
 }
 
-func TestFuncDeclWithArray(t *testing.T) {
-	testCases := []struct {
-		name     string
-		decl     *ast.FuncDecl
-		symbs    []symb.SymbolEntry
-		cppgconf *cppgtypes.Config
-		expected string
-	}{
-		{
-			name: "array",
-			decl: &ast.FuncDecl{
-				Name:        &ast.Ident{Name: "foo"},
-				MangledName: "foo",
-				Type: &ast.FuncType{
-					Params: &ast.FieldList{
-						List: []*ast.Field{
-							{
-								Names: []*ast.Ident{{Name: "a"}},
-								// Uint[]
-								Type: &ast.ArrayType{
-									Elt: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Unsigned},
-								},
-							},
-							{
-								Names: []*ast.Ident{{Name: "b"}},
-								// Double[3]
-								Type: &ast.ArrayType{
-									Elt: &ast.BuiltinType{Kind: ast.Float, Flags: ast.Double},
-									Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
-								},
-							},
-						},
-					},
-					Ret: &ast.ArrayType{
-						// char[3][4]
-						Elt: &ast.ArrayType{
-							Elt: &ast.BuiltinType{
-								Kind:  ast.Char,
-								Flags: ast.Signed,
-							},
-							Len: &ast.BasicLit{Kind: ast.IntLit, Value: "4"},
-						},
-						Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
-					},
-				},
-			},
-			symbs: []symb.SymbolEntry{
-				{
-					CppName:    "foo",
-					MangleName: "foo",
-					GoName:     "Foo",
-				},
-			},
-			cppgconf: &cppgtypes.Config{
-				Name: "testpkg",
-			},
-			expected: `
-package testpkg
-
-import "github.com/goplus/llgo/c"
-
-//go:linkname Foo C.foo
-func Foo(a *c.Uint, b *float64) **int8
-			`,
-		},
+func TestSetCppgConf(t *testing.T) {
+	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+	if pkg == nil {
+		t.Fatal("NewPackage failed")
 	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
-			pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
-			if pkg == nil {
-				t.Fatal("NewPackage failed")
-			}
-			err := pkg.NewFuncDecl(tc.decl)
-			if err != nil {
-				t.Fatalf("NewFuncDecl failed: %v", err)
-			}
-			comparePackageOutput(t, pkg, tc.expected)
-		})
-	}
+	pkg.SetCppgConf(&cppgtypes.Config{
+		Libs: "pkg-config --libs lua5.4",
+	})
+	comparePackageOutput(t, pkg,
+		`package testpkg
+		 const LLGoPackage string = "link: pkg-config --libs lua5.4;"
+		`)
 }
 
-func TestFuncDeclWithType(t *testing.T) {
+func TestFuncDecl(t *testing.T) {
 	testCases := []struct {
-		name     string
-		decl     *ast.FuncDecl
-		symbs    []symb.SymbolEntry
-		expected string
+		name        string
+		decl        *ast.FuncDecl
+		symbs       []symb.SymbolEntry
+		cppgconf    *cppgtypes.Config
+		expected    string
+		expectedErr string
 	}{
 		{
 			name: "empty func",
@@ -170,6 +106,44 @@ package testpkg
 
 //go:linkname Foo C.foo
 func Foo()`,
+		},
+		{
+			name: "empty func not in symbol table",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
+				Type: &ast.FuncType{
+					Params: nil,
+					Ret:    nil,
+				},
+			},
+			expectedErr: "symbol not found",
+		},
+		{
+			name: "invalid function type",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "invalidFunc"},
+				MangledName: "invalidFunc",
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type:  &ast.BuiltinType{Kind: ast.Bool, Flags: ast.Long}, // invalid
+							},
+						},
+					},
+					Ret: nil,
+				},
+			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "invalidFunc",
+					MangleName: "invalidFunc",
+					GoName:     "InvalidFunc",
+				},
+			},
+			expectedErr: "not found in type map",
 		},
 		{
 			name: "explict void return",
@@ -397,29 +371,98 @@ import "unsafe"
 func Foo(a unsafe.Pointer) unsafe.Pointer
 			`,
 		},
-	}
+		{
+			name: "array",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								// Uint[]
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Unsigned},
+								},
+							},
+							{
+								Names: []*ast.Ident{{Name: "b"}},
+								// Double[3]
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{Kind: ast.Float, Flags: ast.Double},
+									Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
+								},
+							},
+						},
+					},
+					Ret: &ast.ArrayType{
+						// char[3][4]
+						Elt: &ast.ArrayType{
+							Elt: &ast.BuiltinType{
+								Kind:  ast.Char,
+								Flags: ast.Signed,
+							},
+							Len: &ast.BasicLit{Kind: ast.IntLit, Value: "4"},
+						},
+						Len: &ast.BasicLit{Kind: ast.IntLit, Value: "3"},
+					},
+				},
+			},
+			symbs: []symb.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
+			cppgconf: &cppgtypes.Config{
+				Name: "testpkg",
+			},
+			expected: `
+package testpkg
 
+import "github.com/goplus/llgo/c"
+
+//go:linkname Foo C.foo
+func Foo(a *c.Uint, b *float64) **int8
+			`,
+		},
+	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
 			pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
+			pkg.SetCppgConf(tc.cppgconf)
 			if pkg == nil {
 				t.Fatal("NewPackage failed")
 			}
 			err := pkg.NewFuncDecl(tc.decl)
-			if err != nil {
-				t.Fatalf("NewFuncDecl failed: %v", err)
+			if tc.expectedErr != "" {
+				if err == nil {
+					t.Fatalf("Expected error containing %q,but got nil", tc.expectedErr)
+				}
+				if !strings.Contains(err.Error(), tc.expectedErr) {
+					t.Fatalf("Expected error contain %q,but got %q", tc.expectedErr, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("NewFuncDecl failed: %v", err)
+				}
+				comparePackageOutput(t, pkg, tc.expected)
 			}
-			comparePackageOutput(t, pkg, tc.expected)
 		})
 	}
 }
 
 func TestStructDecl(t *testing.T) {
 	testCases := []struct {
-		name     string
-		decl     *ast.TypeDecl
-		expected string
+		name        string
+		decl        *ast.TypeDecl
+		symbs       []symb.SymbolEntry
+		cppgconf    *cppgtypes.Config
+		expected    string
+		expectedErr string
 	}{
 		// struct Foo {}
 		{
@@ -653,6 +696,8 @@ func TestTypedefFunc(t *testing.T) {
 	testCases := []struct {
 		name     string
 		decl     *ast.TypedefDecl
+		symbs    []symb.SymbolEntry
+		cppgconf *cppgtypes.Config
 		expected string
 	}{
 		// typedef int (*Foo) (int a, int b);
@@ -711,6 +756,8 @@ func TestTypedef(t *testing.T) {
 	testCases := []struct {
 		name     string
 		decl     *ast.TypedefDecl
+		symbs    []symb.SymbolEntry
+		cppgconf *cppgtypes.Config
 		expected string
 	}{
 		// typedef double DOUBLE;
