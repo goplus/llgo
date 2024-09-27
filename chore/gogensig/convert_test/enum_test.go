@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func TestSpectrum(t *testing.T) {
-	cmptest.RunTest(t, "spectrum", true, []symb.SymbolEntry{}, &cppgtypes.Config{
+	cmptest.RunTest(t, "spectrum", true, []config.SymbolEntry{}, &cppgtypes.Config{
 		Cplusplus: true,
 	},
 		`

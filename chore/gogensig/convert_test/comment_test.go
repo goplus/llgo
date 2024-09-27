@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func TestCommentSlashSlashSlash(t *testing.T) {
-	cmptest.RunTest(t, "typeref", false, []symb.SymbolEntry{
+	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
 		{
 			MangleName: "ExecuteFoo",
 			CppName:    "ExecuteFoo",
