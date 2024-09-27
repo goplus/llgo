@@ -2,6 +2,8 @@ package genpkg_test
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -73,6 +75,115 @@ func TestSetCppgConf(t *testing.T) {
 		`package testpkg
 		 const LLGoPackage string = "link: pkg-config --libs lua5.4;"
 		`)
+}
+
+func TestPackageWrite(t *testing.T) {
+	verifyGeneratedFile := func(t *testing.T, expectedFilePath string) {
+		t.Helper()
+		if _, err := os.Stat(expectedFilePath); os.IsNotExist(err) {
+			t.Fatalf("Expected output file does not exist: %s", expectedFilePath)
+		}
+
+		content, err := os.ReadFile(expectedFilePath)
+		if err != nil {
+			t.Fatalf("Unable to read generated file: %v", err)
+		}
+
+		expectedContent := "package testpkg"
+		if !strings.Contains(string(content), expectedContent) {
+			t.Errorf("Generated file content does not match expected.\nExpected:\n%s\nActual:\n%s", expectedContent, string(content))
+		}
+	}
+
+	headerFilePath := "/path/to/mock_header.h"
+
+	t.Run("OutputToTempDir", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_package_write")
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+
+		err = pkg.Write(headerFilePath, tempDir)
+		if err != nil {
+			t.Fatalf("Write method failed: %v", err)
+		}
+
+		expectedFilePath := filepath.Join(tempDir, "testpkg", "mock_header.go")
+		verifyGeneratedFile(t, expectedFilePath)
+	})
+
+	t.Run("OutputToCurrentDir", func(t *testing.T) {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("Failed to get current directory: %v", err)
+		}
+		defer func() {
+			// Clean up generated files and directory
+			os.RemoveAll(filepath.Join(currentDir, "testpkg"))
+		}()
+
+		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+
+		err = pkg.Write(headerFilePath, "")
+		if err != nil {
+			t.Fatalf("Write method failed: %v", err)
+		}
+
+		expectedFilePath := filepath.Join(currentDir, "testpkg", "mock_header.go")
+		verifyGeneratedFile(t, expectedFilePath)
+	})
+
+	t.Run("OutputWithoutFilename", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_package_write_no_filename")
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+
+		err = pkg.Write("", tempDir)
+		if err != nil {
+			t.Fatalf("Write method failed: %v", err)
+		}
+
+		expectedFilePath := filepath.Join(tempDir, "testpkg", "temp.go")
+		verifyGeneratedFile(t, expectedFilePath)
+	})
+
+	t.Run("InvalidOutputDir", func(t *testing.T) {
+		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		err := pkg.Write(headerFilePath, "/nonexistent/directory")
+		if err == nil {
+			t.Fatal("Expected an error for invalid output directory, but got nil")
+		}
+	})
+
+	t.Run("UnwritableOutputDir", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_package_write_unwritable")
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		// read-only
+		err = os.Chmod(tempDir, 0555)
+		if err != nil {
+			t.Fatalf("Failed to change directory permissions: %v", err)
+		}
+
+		pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+		err = pkg.Write(headerFilePath, tempDir)
+		if err == nil {
+			t.Fatal("Expected an error for unwritable output directory, but got nil")
+		}
+
+		// Restore permissions
+		os.Chmod(tempDir, 0755)
+	})
 }
 
 func TestFuncDecl(t *testing.T) {
@@ -716,6 +827,36 @@ type Foo func(a c.Int, b c.Int) c.Int`,
 	}
 }
 
+func TestRedefTypedef(t *testing.T) {
+	pkg := genpkg.NewPackage(".", "testpkg", &gogen.Config{})
+
+	pkg.NewTypeDecl(&ast.TypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.RecordType{
+			Tag:    ast.Struct,
+			Fields: nil,
+		},
+	})
+	pkg.NewTypedefDecl(&ast.TypedefDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.Ident{Name: "Foo"},
+	})
+
+	var buf bytes.Buffer
+	err := pkg.GetGenPackage().WriteTo(&buf)
+	if err != nil {
+		t.Fatalf("WriteTo failed: %v", err)
+	}
+
+	expect := `
+package testpkg
+
+type Foo struct {
+}`
+	comparePackageOutput(t, pkg, expect)
+
+}
+
 func TestTypedef(t *testing.T) {
 	testCases := []genDeclTestCase{
 		// typedef double DOUBLE;
@@ -733,6 +874,18 @@ package testpkg
 
 type DOUBLE float64`,
 		},
+		// invalid typedef
+		{
+			name: "invalid typedef",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "INVALID"},
+				Type: &ast.BuiltinType{
+					Kind:  ast.Bool,
+					Flags: ast.Double,
+				},
+			},
+			expectedErr: "not found in type map",
+		},
 		// typedef int INT;
 		{
 			name: "typedef int",
@@ -749,6 +902,23 @@ import "github.com/goplus/llgo/c"
 
 type INT c.Int
 			`,
+		},
+		{
+			name: "typedef array",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "name"},
+				Type: &ast.ArrayType{
+					Elt: &ast.BuiltinType{
+						Kind:  ast.Char,
+						Flags: ast.Signed,
+					},
+					Len: &ast.BasicLit{Kind: ast.IntLit, Value: "5"},
+				},
+			},
+			expected: `
+package testpkg
+
+type name [5]int8`,
 		},
 		// typedef void* ctx;
 		{
@@ -784,23 +954,6 @@ type ctx unsafe.Pointer`,
 package testpkg
 
 type name *int8`,
-		},
-		{
-			name: "typedef array",
-			decl: &ast.TypedefDecl{
-				Name: &ast.Ident{Name: "name"},
-				Type: &ast.ArrayType{
-					Elt: &ast.BuiltinType{
-						Kind:  ast.Char,
-						Flags: ast.Signed,
-					},
-					Len: &ast.BasicLit{Kind: ast.IntLit, Value: "5"},
-				},
-			},
-			expected: `
-package testpkg
-
-type name [5]int8`,
 		},
 	}
 
