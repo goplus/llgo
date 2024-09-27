@@ -62,6 +62,9 @@ func TestIsVoidType(t *testing.T) {
 	if !typmap.IsVoidType(types.Typ[types.UntypedNil]) {
 		t.Error("Expect return true")
 	}
+	if typmap.IsVoidType(types.Typ[types.Float32]) {
+		t.Error("Expect return false")
+	}
 }
 
 func TestCType(t *testing.T) {
