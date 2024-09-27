@@ -811,6 +811,38 @@ type name [5]int8`,
 	}
 }
 
+func TestEnumDecl(t *testing.T) {
+	testCases := []genDeclTestCase{
+		{
+			name: "enum",
+			decl: &ast.EnumTypeDecl{
+				Name: &ast.Ident{Name: "Color"},
+				Type: &ast.EnumType{
+					Items: []*ast.EnumItem{
+						{Name: &ast.Ident{Name: "Red"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "0"}},
+						{Name: &ast.Ident{Name: "Green"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "1"}},
+						{Name: &ast.Ident{Name: "Blue"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "2"}},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+const (
+	Color_Red = 0
+	Color_Green = 1
+	Color_Blue = 2
+)
+			`,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testGenDecl(t, tc)
+		})
+	}
+}
+
 type genDeclTestCase struct {
 	name        string
 	decl        ast.Decl
@@ -835,7 +867,8 @@ func testGenDecl(t *testing.T, tc genDeclTestCase) {
 		err = pkg.NewTypedefDecl(d)
 	case *ast.FuncDecl:
 		err = pkg.NewFuncDecl(d)
-	// 可以添加其他类型的声明
+	case *ast.EnumTypeDecl:
+		err = pkg.NewEnumTypeDecl(d)
 	default:
 		t.Errorf("Unsupported declaration type: %T", tc.decl)
 		return
