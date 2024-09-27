@@ -30,7 +30,15 @@ func main() {
 	}
 	file := args[0]
 	commentidy := tidy.NewCommentidy()
-	outBytes, _ := commentidy.TidyFile(file)
-	buf := bytes.NewBuffer(outBytes)
-	buf.WriteTo(os.Stdout)
+	fileInfo, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		panic(err)
+	}
+	if fileInfo.IsDir() {
+		commentidy.TidyDir(file, ".h", ".hpp")
+	} else {
+		outBytes, _ := commentidy.TidyFile(file)
+		buf := bytes.NewBuffer(outBytes)
+		buf.WriteTo(os.Stdout)
+	}
 }
