@@ -1,4 +1,4 @@
-package typmap
+package convert
 
 import (
 	"fmt"
