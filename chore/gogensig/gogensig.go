@@ -20,10 +20,10 @@ import (
 	"io"
 	"os"
 
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/util"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
@@ -45,7 +45,7 @@ func main() {
 		data, err = os.ReadFile(sigfetchFile)
 	}
 	check(err)
-	conf, err := util.GetCppgFromPath("./llcppg.cfg")
+	conf, err := config.GetCppgFromPath("./llcppg.cfg")
 	check(err)
 
 	astConvert := convert.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")

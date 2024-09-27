@@ -1,14 +1,14 @@
-package symb_test
+package config_test
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/config"
 )
 
 func TestLookupSymbleOK(t *testing.T) {
-	table, err := symb.NewSymbolTable("./_testinput/llcppg.symb.json")
+	table, err := config.NewSymbolTable("./_testinput/llcppg.symb.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,11 +25,11 @@ func TestLookupSymbleOK(t *testing.T) {
 }
 
 func TestLookupSymbleError(t *testing.T) {
-	_, err := symb.NewSymbolTable("./_testinput/llcppg.symb.txt")
+	_, err := config.NewSymbolTable("./_testinput/llcppg.symb.txt")
 	if err == nil {
 		t.Error("expect error")
 	}
-	table, err := symb.NewSymbolTable("./_testinput/llcppg.symb.json")
+	table, err := config.NewSymbolTable("./_testinput/llcppg.symb.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestLookupSymbleError(t *testing.T) {
 			t.Error("expect error")
 		}
 	}
-	nilTable, _ := symb.NewSymbolTable("")
+	nilTable, _ := config.NewSymbolTable("")
 	_, err = nilTable.LookupSymbol("_ZNK9INIReader10GetBooleanERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_bXXX")
 	if err == nil {
 		t.Error("expect error")

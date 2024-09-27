@@ -10,14 +10,14 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type TypeConv struct {
-	symbolTable *symb.SymbolTable // llcppg.symb.json
-	cppgConf    *cppgtypes.Config // llcppg.cfg
+	symbolTable *config.SymbolTable // llcppg.symb.json
+	cppgConf    *cppgtypes.Config   // llcppg.cfg
 	types       *types.Package
 	typeMap     *BuiltinTypeMap
 	// todo(zzy):refine array type in func or param's context
@@ -28,7 +28,7 @@ func NewConv(types *types.Package, typeMap *BuiltinTypeMap) *TypeConv {
 	return &TypeConv{types: types, typeMap: typeMap}
 }
 
-func (p *TypeConv) SetSymbolTable(symbolTable *symb.SymbolTable) {
+func (p *TypeConv) SetSymbolTable(symbolTable *config.SymbolTable) {
 	p.symbolTable = symbolTable
 }
 
@@ -222,7 +222,7 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 	return types.NewStruct(fields, nil), nil
 }
 
-func (p *TypeConv) LookupSymbol(mangleName symb.MangleNameType) (symb.GoNameType, error) {
+func (p *TypeConv) LookupSymbol(mangleName config.MangleNameType) (config.GoNameType, error) {
 	if p.symbolTable == nil {
 		return "", fmt.Errorf("symbol table not initialized")
 	}

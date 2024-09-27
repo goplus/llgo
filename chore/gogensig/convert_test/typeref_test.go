@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func TestStructDeclRef(t *testing.T) {
-	cmptest.RunTest(t, "typeref", false, []symb.SymbolEntry{
+	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
 		{
 			MangleName: "ExecuteFoo",
 			CppName:    "ExecuteFoo",
@@ -37,7 +37,7 @@ func CustomExecuteFoo(a c.Int, b Foo) c.Int
 }
 
 func TestCustomStruct(t *testing.T) {
-	cmptest.RunTest(t, "typeref", false, []symb.SymbolEntry{
+	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
 		{MangleName: "lua_close", CppName: "lua_close", GoName: "Close"},
 		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
 		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},

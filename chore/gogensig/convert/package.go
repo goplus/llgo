@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/goplus/gogen"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
@@ -34,7 +34,7 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 	return p
 }
 
-func (p *Package) SetSymbolTable(symbolTable *symb.SymbolTable) {
+func (p *Package) SetSymbolTable(symbolTable *config.SymbolTable) {
 	p.cvt.SetSymbolTable(symbolTable)
 }
 
@@ -61,7 +61,7 @@ func (p *Package) linkLib(lib string) error {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	// todo(zzy) accept the name of llcppg.symb.json
-	goFuncName, err := p.cvt.LookupSymbol(symb.MangleNameType(funcDecl.MangledName))
+	goFuncName, err := p.cvt.LookupSymbol(config.MangleNameType(funcDecl.MangledName))
 	if err != nil {
 		// not gen the function not in the symbolmap
 		return err

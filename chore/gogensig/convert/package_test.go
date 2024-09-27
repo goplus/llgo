@@ -9,8 +9,8 @@ import (
 
 	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/cmp"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
-	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
@@ -198,7 +198,7 @@ func TestFuncDecl(t *testing.T) {
 					Ret:    nil,
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -240,7 +240,7 @@ func Foo()`,
 					Ret: nil,
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "invalidFunc",
 					MangleName: "invalidFunc",
@@ -259,7 +259,7 @@ func Foo()`,
 					Ret:    &ast.BuiltinType{Kind: ast.Void},
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -305,7 +305,7 @@ func Foo()`,
 				},
 			},
 
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -339,7 +339,7 @@ func Foo(a uint16, b bool) float64`,
 					Ret: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long | ast.Unsigned},
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -376,7 +376,7 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 					Ret: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Long | ast.Unsigned},
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -422,7 +422,7 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 					},
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -459,7 +459,7 @@ func Foo(a *c.Uint, b *c.Long) *float64
 					},
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -513,7 +513,7 @@ func Foo(a unsafe.Pointer) unsafe.Pointer
 					},
 				},
 			},
-			symbs: []symb.SymbolEntry{
+			symbs: []config.SymbolEntry{
 				{
 					CppName:    "foo",
 					MangleName: "foo",
@@ -999,7 +999,7 @@ const (
 type genDeclTestCase struct {
 	name        string
 	decl        ast.Decl
-	symbs       []symb.SymbolEntry
+	symbs       []config.SymbolEntry
 	cppgconf    *cppgtypes.Config
 	expected    string
 	expectedErr string
@@ -1007,7 +1007,7 @@ type genDeclTestCase struct {
 
 func testGenDecl(t *testing.T, tc genDeclTestCase) {
 	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
-	pkg.SetSymbolTable(symb.CreateSymbolTable(tc.symbs))
+	pkg.SetSymbolTable(config.CreateSymbolTable(tc.symbs))
 	pkg.SetCppgConf(tc.cppgconf)
 	if pkg == nil {
 		t.Fatal("NewPackage failed")
