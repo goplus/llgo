@@ -10,7 +10,6 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/goplus/llgo/chore/gogensig/visitor/genpkg/gentypes/typmap"
 	"github.com/goplus/llgo/chore/gogensig/visitor/symb"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
@@ -20,12 +19,12 @@ type TypeConv struct {
 	symbolTable *symb.SymbolTable // llcppg.symb.json
 	cppgConf    *cppgtypes.Config // llcppg.cfg
 	types       *types.Package
-	typeMap     *typmap.BuiltinTypeMap
+	typeMap     *BuiltinTypeMap
 	// todo(zzy):refine array type in func or param's context
 	inParam bool // flag to indicate if currently processing a param
 }
 
-func NewConv(types *types.Package, typeMap *typmap.BuiltinTypeMap) *TypeConv {
+func NewConv(types *types.Package, typeMap *BuiltinTypeMap) *TypeConv {
 	return &TypeConv{types: types, typeMap: typeMap}
 }
 
@@ -178,9 +177,9 @@ func (p *TypeConv) fieldListToVars(params *ast.FieldList) ([]*types.Var, error) 
 		}
 		if fieldVar != nil {
 			vars = append(vars, fieldVar)
-		} else {
-			//todo handle field _Type=Variadic case
 		}
+		//todo(zzy): handle field _Type=Variadic case
+
 	}
 	return vars, nil
 }
