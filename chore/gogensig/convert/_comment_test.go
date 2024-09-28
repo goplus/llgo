@@ -1,4 +1,4 @@
-package testvisitor_test
+package convert_test
 
 import (
 	"testing"
