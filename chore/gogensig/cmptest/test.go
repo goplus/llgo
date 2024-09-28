@@ -37,7 +37,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 
 	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
 
-	bytes, err := config.Llcppsigfetch(originalCode, true, isCpp)
+	bytes, err := config.Sigfetch(originalCode, true, isCpp)
 	if err != nil {
 		t.Fatal(err)
 	}

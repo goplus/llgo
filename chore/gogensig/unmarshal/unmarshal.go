@@ -11,6 +11,8 @@ type NodeUnmarshaler func(data []byte) (ast.Node, error)
 
 var nodeUnmarshalers map[string]NodeUnmarshaler
 
+type FileSet []FileEntry
+
 type FileEntry struct {
 	Path string
 	Doc  *ast.File
@@ -50,7 +52,7 @@ func init() {
 	}
 }
 
-func UnmarshalFileSet(data []byte) ([]FileEntry, error) {
+func UnmarshalFileSet(data []byte) (FileSet, error) {
 	var filesWrapper []struct {
 		Path string          `json:"path"`
 		Doc  json.RawMessage `json:"doc"`

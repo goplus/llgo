@@ -19,7 +19,7 @@ func NewAstConvert(pkgName string, symbFile string, genConfFile string) *AstConv
 	p.BaseDocVisitor = visitor.NewBaseDocVisitor(p)
 	pkg := NewPackage(".", pkgName, nil)
 	p.pkg = pkg
-	p.setupSymbleTableFile(symbFile)
+	p.setupSymbolTableFile(symbFile)
 	p.setupGenConfig(genConfFile)
 	return p
 }
@@ -28,7 +28,7 @@ func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
 	p.visitDone = fn
 }
 
-func (p *AstConvert) setupSymbleTableFile(filePath string) error {
+func (p *AstConvert) setupSymbolTableFile(filePath string) error {
 	symbTable, err := config.NewSymbolTable(filePath)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (p *AstConvert) setupSymbleTableFile(filePath string) error {
 }
 
 func (p *AstConvert) setupGenConfig(filePath string) error {
-	conf, err := config.GetCppgFromPath(filePath)
+	conf, err := config.GetCppgCfgFromPath(filePath)
 	if err != nil {
 		return err
 	}
