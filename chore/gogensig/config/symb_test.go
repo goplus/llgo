@@ -1,13 +1,17 @@
 package config_test
 
 import (
+	"os"
+	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/goplus/llgo/chore/gogensig/config"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-func TestLookupSymbleOK(t *testing.T) {
+func TestLookupSymbolOK(t *testing.T) {
 	table, err := config.NewSymbolTable("./_testinput/llcppg.symb.json")
 	if err != nil {
 		t.Fatal(err)
@@ -24,7 +28,7 @@ func TestLookupSymbleOK(t *testing.T) {
 	}
 }
 
-func TestLookupSymbleError(t *testing.T) {
+func TestLookupSymbolError(t *testing.T) {
 	_, err := config.NewSymbolTable("./_testinput/llcppg.symb.txt")
 	if err == nil {
 		t.Error("expect error")
@@ -48,4 +52,95 @@ func TestLookupSymbleError(t *testing.T) {
 	if err == nil {
 		t.Error("expect error")
 	}
+}
+
+func TestSigfetch(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		isTemp bool
+		isCpp  bool
+	}{
+		{name: "cpp sigfetch", input: `void fn();`, isTemp: true, isCpp: true},
+		{name: "c sigfetch", input: `void fn();`, isTemp: true, isCpp: false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := config.Sigfetch(tc.input, tc.isTemp, tc.isCpp)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = config.GetCppgSigfetchFromByte(data)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestGetCppgCfgFromPath(t *testing.T) {
+	// Create temporary directory
+	tempDir, err := os.MkdirTemp("", "config_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Prepare valid config file
+	validConfigPath := filepath.Join(tempDir, "valid_config.cfg")
+	validConfigContent := `{
+		"name": "lua",
+		"cflags": "$(pkg-config --cflags lua5.4)",
+		"include": ["litelua.h"],
+		"libs": "$(pkg-config --libs lua5.4)",
+		"trimPrefixes": ["lua_"],
+		"cplusplus": false
+	}`
+	err = os.WriteFile(validConfigPath, []byte(validConfigContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create valid config file: %v", err)
+	}
+
+	t.Run("Successfully parse config file", func(t *testing.T) {
+		cfg, err := config.GetCppgCfgFromPath(validConfigPath)
+		if err != nil {
+			t.Fatalf("Expected no error, got: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("Expected non-nil config")
+		}
+
+		expectedConfig := &cppgtypes.Config{
+			Name:         "lua",
+			CFlags:       "$(pkg-config --cflags lua5.4)",
+			Include:      []string{"litelua.h"},
+			Libs:         "$(pkg-config --libs lua5.4)",
+			TrimPrefixes: []string{"lua_"},
+			Cplusplus:    false,
+		}
+
+		if !reflect.DeepEqual(cfg, expectedConfig) {
+			t.Errorf("Parsed config does not match expected config.\nGot: %+v\nWant: %+v", cfg, expectedConfig)
+		}
+	})
+
+	t.Run("File not found", func(t *testing.T) {
+		_, err := config.GetCppgCfgFromPath(filepath.Join(tempDir, "nonexistent_file.cfg"))
+		if err == nil {
+			t.Error("Expected error for non-existent file, got nil")
+		}
+	})
+
+	t.Run("Invalid JSON", func(t *testing.T) {
+		invalidJSONPath := filepath.Join(tempDir, "invalid_config.cfg")
+		err := os.WriteFile(invalidJSONPath, []byte("{invalid json}"), 0644)
+		if err != nil {
+			t.Fatalf("Failed to create invalid JSON file: %v", err)
+		}
+
+		_, err = config.GetCppgCfgFromPath(invalidJSONPath)
+		if err == nil {
+			t.Error("Expected error for invalid JSON, got nil")
+		}
+	})
 }

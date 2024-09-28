@@ -1723,13 +1723,13 @@ func TestUnmarshalFileSet(t *testing.T) {
 		},
 	}
 
-	node, err := unmarshal.UnmarshalFileSet([]byte(files))
+	fileSet, err := unmarshal.UnmarshalFileSet([]byte(files))
 
 	if err != nil {
 		t.Fatalf("UnmarshalNode failed: %v", err)
 	}
 
-	resultJSON, err := json.MarshalIndent(node, "", " ")
+	resultJSON, err := json.MarshalIndent(fileSet, "", " ")
 	if err != nil {
 		t.Fatalf("Failed to marshal result to JSON: %v", err)
 	}
