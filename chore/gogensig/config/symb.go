@@ -21,6 +21,7 @@ type SymbolTable struct {
 	t map[MangleNameType]SymbolEntry
 }
 
+// llcppg.symb.json
 func NewSymbolTable(filePath string) (*SymbolTable, error) {
 	bytes, err := ReadFile(filePath)
 	if err != nil {

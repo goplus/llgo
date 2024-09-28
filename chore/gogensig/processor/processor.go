@@ -31,7 +31,7 @@ func NewDocFileSetProcessor(docVisitorList []visitor.DocVisitor) *DocFileSetProc
 	return &DocFileSetProcessor{docVisitorList: docVisitorList}
 }
 
-func (p *DocFileSetProcessor) ProcessFileSet(files []unmarshal.FileEntry) error {
+func (p *DocFileSetProcessor) ProcessFileSet(files unmarshal.FileSet) error {
 	for _, file := range files {
 		docVisitor := NewDocVisitorManager(p.docVisitorList)
 		docVisitor.visit(file.Doc, file.Path)
@@ -39,14 +39,18 @@ func (p *DocFileSetProcessor) ProcessFileSet(files []unmarshal.FileEntry) error 
 	return nil
 }
 
+func (p *DocFileSetProcessor) ProcessFileSetFromByte(data []byte) error {
+	fileSet, err := config.GetCppgSigfetchFromByte(data)
+	if err != nil {
+		return err
+	}
+	return p.ProcessFileSet(fileSet)
+}
+
 func (p *DocFileSetProcessor) ProcessFileSetFromPath(filePath string) error {
-	raw, err := config.ReadFile(filePath)
+	data, err := config.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
-	data, err := unmarshal.UnmarshalFileSet(raw)
-	if err != nil {
-		return err
-	}
-	return p.ProcessFileSet(data)
+	return p.ProcessFileSetFromByte(data)
 }
