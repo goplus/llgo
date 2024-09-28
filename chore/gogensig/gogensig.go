@@ -45,7 +45,7 @@ func main() {
 		data, err = os.ReadFile(sigfetchFile)
 	}
 	check(err)
-	conf, err := config.GetCppgFromPath("./llcppg.cfg")
+	conf, err := config.GetCppgCfgFromPath("./llcppg.cfg")
 	check(err)
 
 	astConvert := convert.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
