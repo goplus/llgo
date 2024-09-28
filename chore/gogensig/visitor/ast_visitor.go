@@ -10,12 +10,10 @@ type DocVisitor interface {
 	Visit(node ast.Node)
 	VisitFuncDecl(funcDecl *ast.FuncDecl)
 	VisitDone(docPath string)
-	VisitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
-	VisitMethod(className *ast.Ident, method *ast.FuncDecl, typeDecl *ast.TypeDecl)
 	VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
-	VisitEnum(enumName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
-	VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
-
+	//VisitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
+	//VisitMethod(className *ast.Ident, method *ast.FuncDecl, typeDecl *ast.TypeDecl)
+	//VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 	VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl)
 	VisitTypedefDecl(typedefDecl *ast.TypedefDecl)
 }
@@ -72,31 +70,25 @@ func (p *BaseDocVisitor) visitTypeDecl(typeDecl *ast.TypeDecl) {
 		}
 	} else if typeDecl.Type.Tag == ast.Struct {
 		p.visitStruct(typeDecl.Name, typeDecl.Type.Fields, typeDecl)
-	} else if typeDecl.Type.Tag == ast.Enum {
-		p.visitEnum(typeDecl.Name, typeDecl.Type.Fields, typeDecl)
 	} else if typeDecl.Type.Tag == ast.Union {
 		p.visitUnion(typeDecl.Name, typeDecl.Type.Fields, typeDecl)
 	}
 }
 
 func (p *BaseDocVisitor) visitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	p.VisitClass(className, fields, typeDecl)
+	//p.VisitClass(className, fields, typeDecl)
 }
 
 func (p *BaseDocVisitor) visitMethod(className *ast.Ident, method *ast.FuncDecl, typeDecl *ast.TypeDecl) {
-	p.VisitMethod(className, method, typeDecl)
+	//p.VisitMethod(className, method, typeDecl)
 }
 
 func (p *BaseDocVisitor) visitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
 	p.VisitStruct(structName, fields, typeDecl)
 }
 
-func (p *BaseDocVisitor) visitEnum(enumName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	p.VisitEnum(enumName, fields, typeDecl)
-}
-
 func (p *BaseDocVisitor) visitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	p.VisitUnion(unionName, fields, typeDecl)
+	//p.VisitUnion(unionName, fields, typeDecl)
 }
 
 func (p *BaseDocVisitor) visitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
