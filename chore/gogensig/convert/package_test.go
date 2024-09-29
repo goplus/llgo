@@ -532,6 +532,33 @@ import "github.com/goplus/llgo/c"
 func Foo(a *c.Uint, b *float64) **int8
 			`,
 		},
+		{
+			name: "error array param",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Double},
+								},
+							},
+						},
+					},
+					Ret: nil,
+				},
+			},
+			symbs: []config.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
+			expectedErr: "error convert elem type",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -772,6 +799,29 @@ type Foo struct {
 	a [4]int8
 	b [3][4]c.Int
 }`},
+		{
+			name: "struct array field without len",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{
+										Kind:  ast.Char,
+										Flags: ast.Signed,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: "unsupport field with array without length",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -938,6 +988,7 @@ import "unsafe"
 
 type ctx unsafe.Pointer`,
 		},
+
 		// typedef char* name;
 		{
 			name: "typedef pointer",
@@ -954,6 +1005,19 @@ type ctx unsafe.Pointer`,
 package testpkg
 
 type name *int8`,
+		},
+		{
+			name: "typedef invalid pointer",
+			decl: &ast.TypedefDecl{
+				Name: &ast.Ident{Name: "name"},
+				Type: &ast.PointerType{
+					X: &ast.BuiltinType{
+						Kind:  ast.Char,
+						Flags: ast.Double,
+					},
+				},
+			},
+			expectedErr: "error convert baseType",
 		},
 	}
 
