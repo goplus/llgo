@@ -29,6 +29,14 @@ func TestTypeConv_ToType(t *testing.T) {
 			expr:     &ast.PointerType{X: &ast.BuiltinType{Kind: ast.Int}},
 			expected: types.NewPointer(typ.CType("Int")),
 		},
+		{
+			name: "ArrayType",
+			expr: &ast.ArrayType{
+				Elt: &ast.BuiltinType{Kind: ast.Int},
+				Len: &ast.BasicLit{Value: "2", Kind: ast.IntLit},
+			},
+			expected: types.NewArray(typ.CType("Int"), 2),
+		},
 	}
 
 	for _, tt := range tests {
