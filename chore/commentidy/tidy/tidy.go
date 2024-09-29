@@ -202,6 +202,19 @@ func (p *Commentidy) TidyDir(dir string, exts ...string) error {
 	})
 }
 
+func (p *Commentidy) CleanDir(dir string) error {
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if strings.HasSuffix(path, ".out.h") {
+			os.Remove(path)
+		}
+		return nil
+	})
+	return nil
+}
+
 func (p *Commentidy) TidyDirWithFilter(dir string, fnFilter func(path string, d fs.DirEntry, err error) bool) error {
 	_, err := os.Stat(dir)
 	if os.IsNotExist(err) {

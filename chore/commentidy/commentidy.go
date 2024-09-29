@@ -10,7 +10,7 @@ import (
 )
 
 func mainUsage() {
-	fmt.Fprintln(os.Stderr, "commentidy [filepath]")
+	fmt.Fprintln(os.Stderr, "commentidy [clean] filepath")
 	os.Exit(2)
 }
 
@@ -26,6 +26,15 @@ func main() {
 	}
 	if args[0] == "help" {
 		flag.Usage()
+		return
+	}
+	if args[0] == "clean" {
+		commentidy := tidy.NewCommentidy()
+		dir := "."
+		if len(args) > 1 {
+			dir = args[1]
+		}
+		commentidy.CleanDir(dir)
 		return
 	}
 	file := args[0]
