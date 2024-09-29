@@ -45,26 +45,7 @@ func (p *TypeConv) ToType(expr ast.Expr) (types.Type, error) {
 	case *ast.PointerType:
 		return p.handlePointerType(t)
 	case *ast.ArrayType:
-		if p.inParam {
-			// array in the parameter,ignore the len,convert as pointer
-			typ, err := p.ToType(t.Elt)
-			if err != nil {
-				return nil, fmt.Errorf("error convert elem type: %w", err)
-			}
-			return types.NewPointer(typ), nil
-		}
-		if t.Len == nil {
-			return nil, fmt.Errorf("%s", "unsupport field with array without length")
-		}
-		elemType, err := p.ToType(t.Elt)
-		if err != nil {
-			return nil, err
-		}
-		len, err := Expr(t.Len).ToInt()
-		if err != nil {
-			return nil, fmt.Errorf("%s", "can't determine the array length")
-		}
-		return types.NewArray(elemType, int64(len)), nil
+		return p.handleArrayType(t)
 	case *ast.FuncType:
 		return p.ToSignature(t)
 	case *ast.Ident, *ast.ScopingExpr, *ast.TagExpr:
@@ -72,6 +53,28 @@ func (p *TypeConv) ToType(expr ast.Expr) (types.Type, error) {
 	default:
 		return nil, nil
 	}
+}
+
+func (p *TypeConv) handleArrayType(t *ast.ArrayType) (types.Type, error) {
+	elemType, err := p.ToType(t.Elt)
+	if err != nil {
+		return nil, fmt.Errorf("error convert elem type: %w", err)
+	}
+	if p.inParam {
+		// array in the parameter,ignore the len,convert as pointer
+		return types.NewPointer(elemType), nil
+	}
+
+	if t.Len == nil {
+		return nil, fmt.Errorf("%s", "unsupport field with array without length")
+	}
+
+	len, err := Expr(t.Len).ToInt()
+	if err != nil {
+		return nil, fmt.Errorf("%s", "can't determine the array length")
+	}
+
+	return types.NewArray(elemType, int64(len)), nil
 }
 
 // - void* -> c.Pointer
@@ -94,33 +97,38 @@ func (p *TypeConv) handlePointerType(t *ast.PointerType) (types.Type, error) {
 }
 
 func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
-	switch t := t.(type) {
-	case *ast.Ident:
-		name := p.RemovePrefixedName(t.Name)
+	lookup := func(name string) (types.Object, error) {
 		obj := p.types.Scope().Lookup(name)
 		if obj == nil {
 			return nil, fmt.Errorf("%s not found", name)
 		}
+		return obj, nil
+	}
+	switch t := t.(type) {
+	case *ast.Ident:
+		obj, err := lookup(p.RemovePrefixedName(t.Name))
+		if err != nil {
+			return nil, fmt.Errorf("%s not found", t.Name)
+		}
 		if typ, ok := obj.Type().(*types.Named); ok {
 			return typ, nil
 		}
-		return nil, fmt.Errorf("the ident %s not found", name)
 	case *ast.ScopingExpr:
 		// todo(zzy)
 	case *ast.TagExpr:
 		// todo(zzy):scoping
 		if ident, ok := t.Name.(*ast.Ident); ok {
-			name := p.RemovePrefixedName(ident.Name)
-			obj := p.types.Scope().Lookup(name)
-			if obj != nil {
-				return obj.Type(), nil
+			obj, err := lookup(p.RemovePrefixedName(p.RemovePrefixedName(ident.Name)))
+			if err != nil {
+				return nil, fmt.Errorf("%s not found", ident.Name)
 			}
-			return nil, fmt.Errorf("%s", "not found")
-		} else {
-			panic("todo:scoping expr")
+			if typ, ok := obj.Type().(*types.Named); ok {
+				return typ, nil
+			}
 		}
+		// todo(zzy):scoping expr
 	}
-	return nil, nil
+	return nil, fmt.Errorf("unsupported refer: %T", t)
 }
 
 func (p *TypeConv) ToSignature(funcType *ast.FuncType) (*types.Signature, error) {
@@ -154,7 +162,7 @@ func (p *TypeConv) fieldListToParams(params *ast.FieldList) (*types.Tuple, error
 func (p *TypeConv) retToResult(ret ast.Expr) (*types.Tuple, error) {
 	typ, err := p.ToType(ret)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error convert return type: %w", err)
 	}
 	if typ != nil && !p.typeMap.IsVoidType(typ) {
 		// in c havent multiple return
@@ -192,7 +200,7 @@ func (p *TypeConv) defaultRecordField() []*types.Var {
 
 func (p *TypeConv) fieldToVar(field *ast.Field) (*types.Var, error) {
 	if field == nil {
-		return nil, fmt.Errorf("nil field")
+		return nil, fmt.Errorf("unexpected nil field")
 	}
 
 	//field without name
