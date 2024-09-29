@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -75,6 +76,38 @@ func TestSigfetch(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestSigfetchError(t *testing.T) {
+	oldPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", oldPath)
+
+	_, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current working directory: %v", err)
+	}
+
+	tempDir, err := os.MkdirTemp("", "test")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	mockScript := filepath.Join(tempDir, "llcppsigfetch")
+	err = os.WriteFile(mockScript, []byte("#!/bin/bash\necho 'Simulated llcppsigfetch error' >&2\nexit 1"), 0755)
+	if err != nil {
+		t.Fatalf("Failed to create mock script: %v", err)
+	}
+
+	os.Setenv("PATH", tempDir+string(os.PathListSeparator)+oldPath)
+
+	_, err = config.Sigfetch("test.cpp", false, true)
+	if err == nil {
+		t.Error("Expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Simulated llcppsigfetch error") {
+		t.Errorf("Unexpected error message: %v", err)
 	}
 }
 
