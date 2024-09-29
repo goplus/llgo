@@ -33,22 +33,26 @@ import (
 
 func main() {
 	cfgFile := ""
+	useStdin := false
 	outputToFile := false
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
-		if arg == "--extract" {
+		switch {
+		case arg == "--extract":
 			runExtract()
 			return
-		} else if arg == "--help" || arg == "-h" {
+		case arg == "--help" || arg == "-h":
 			printUsage()
 			return
-		} else if strings.HasPrefix(arg, "-out=") {
+		case strings.HasPrefix(arg, "-out="):
 			outputToFile = parseBoolArg(arg, "out", false)
-		} else if cfgFile == "" && !strings.HasPrefix(arg, "-") {
+		case cfgFile == "" && !strings.HasPrefix(arg, "-"):
 			cfgFile = arg
+		case arg == "-":
+			useStdin = true
 		}
 	}
-	runFromConfig(cfgFile, outputToFile)
+	runFromConfig(cfgFile, useStdin, outputToFile)
 }
 
 func printUsage() {
@@ -79,14 +83,14 @@ func printUsage() {
 	fmt.Println("Note: The two usage modes are mutually exclusive. Use either [<config_file>] OR --extract, not both.")
 }
 
-func runFromConfig(cfgFile string, outputToFile bool) {
+func runFromConfig(cfgFile string, useStdin bool, outputToFile bool) {
 	if cfgFile == "" {
 		cfgFile = "llcppg.cfg"
 	}
 
 	var data []byte
 	var err error
-	if cfgFile == "-" {
+	if useStdin {
 		data, err = io.ReadAll(os.Stdin)
 	} else {
 		data, err = os.ReadFile(cfgFile)
