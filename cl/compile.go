@@ -238,6 +238,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
 		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
+		if debugSymbols {
+			fn.Inline(llssa.NoInline)
+		}
 	}
 
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -292,23 +295,16 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	return fn, nil, goFunc
 }
 
-func (p *context) getDebugPosition(f *ssa.Function, pos token.Pos) token.Position {
-	ppos := p.goProg.Fset.Position(pos)
-	bodyPos := p.getFuncBodyPos(f)
-	if bodyPos.Filename == "" {
-		return ppos
-	}
-	if ppos.Line < bodyPos.Line {
-		return bodyPos
-	}
-	return ppos
-}
-
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
 	if f.Object() != nil {
 		return p.goProg.Fset.Position(f.Object().(*types.Func).Scope().Pos())
 	}
 	return p.goProg.Fset.Position(f.Pos())
+}
+
+func isGlobal(v *types.Var) bool {
+	// TODO(lijie): better implementation
+	return strings.HasPrefix(v.Parent().String(), "package ")
 }
 
 func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
@@ -322,15 +318,21 @@ func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
 		// skip *ssa.FieldAddr
 		return
 	}
+	if isGlobal(variable) {
+		// avoid generate local variable debug info of global variable in function
+		return
+	}
 	pos := p.goProg.Fset.Position(v.Pos())
 	value := p.compileValue(b, v.X)
 	fn := v.Parent()
 	dbgVar := p.getLocalVariable(b, fn, variable)
+	scope := variable.Parent()
+	diScope := b.DIScope(p.fn, scope)
 	if v.IsAddr {
 		// *ssa.Alloc
-		b.DIDeclare(variable, value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+		b.DIDeclare(variable, value, dbgVar, diScope, pos, b.Func.Block(v.Block().Index))
 	} else {
-		b.DIValue(variable, value, dbgVar, p.fn, pos, b.Func.Block(v.Block().Index))
+		b.DIValue(variable, value, dbgVar, diScope, pos, b.Func.Block(v.Block().Index))
 	}
 }
 
@@ -527,10 +529,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		log.Panicln("unreachable:", iv)
 	}
-	if debugSymbols {
-		pos := p.getDebugPosition(iv.Parent(), iv.Pos())
-		b.DISetCurrentDebugLocation(p.fn, pos)
-	}
 	switch v := iv.(type) {
 	case *ssa.Call:
 		ret = p.call(b, llssa.Call, &v.Call)
@@ -698,10 +696,26 @@ func (p *context) jumpTo(v *ssa.Jump) llssa.BasicBlock {
 	return fn.Block(succs[0].Index)
 }
 
+func (p *context) getDebugLocScope(v *ssa.Function, pos token.Pos) *types.Scope {
+	if v.Object() == nil {
+		return nil
+	}
+	funcScope := v.Object().(*types.Func).Scope()
+	return funcScope.Innermost(pos)
+}
+
 func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	if iv, ok := instr.(instrOrValue); ok {
 		p.compileInstrOrValue(b, iv, false)
 		return
+	}
+	if debugSymbols {
+		scope := p.getDebugLocScope(instr.Parent(), instr.Pos())
+		if scope != nil {
+			diScope := b.DIScope(p.fn, scope)
+			pos := p.fset.Position(instr.Pos())
+			b.DISetCurrentDebugLocation(diScope, pos)
+		}
 	}
 	switch v := instr.(type) {
 	case *ssa.Store:
@@ -779,7 +793,8 @@ func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.V
 			return b.DIVarParam(p.fn, pos, v.Name(), t, argNo)
 		}
 	}
-	return b.DIVarAuto(p.fn, pos, v.Name(), t)
+	scope := b.DIScope(p.fn, v.Parent())
+	return b.DIVarAuto(scope, pos, v.Name(), t)
 }
 
 func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn llssa.PyObjRef, kind int) {

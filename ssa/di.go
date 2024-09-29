@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"go/types"
 	"path/filepath"
+	"unsafe"
 
 	"github.com/goplus/llvm"
 )
@@ -19,6 +20,7 @@ type aDIBuilder struct {
 	prog       Program
 	types      map[Type]DIType
 	positioner Positioner
+	m          llvm.Module // Add this field
 }
 
 type diBuilder = *aDIBuilder
@@ -26,20 +28,21 @@ type diBuilder = *aDIBuilder
 func newDIBuilder(prog Program, pkg Package, positioner Positioner) diBuilder {
 	m := pkg.mod
 	ctx := m.Context()
-	m.AddNamedMetadataOperand("llvm.module.flags",
-		ctx.MDNode([]llvm.Metadata{
-			llvm.ConstInt(ctx.Int32Type(), 2, false).ConstantAsMetadata(), // Warning on mismatch
-			ctx.MDString("Debug Info Version"),
-			llvm.ConstInt(ctx.Int32Type(), 3, false).ConstantAsMetadata(),
-		}),
-	)
-	m.AddNamedMetadataOperand("llvm.module.flags",
-		ctx.MDNode([]llvm.Metadata{
-			llvm.ConstInt(ctx.Int32Type(), 7, false).ConstantAsMetadata(), // Max on mismatch
-			ctx.MDString("Dwarf Version"),
-			llvm.ConstInt(ctx.Int32Type(), 5, false).ConstantAsMetadata(),
-		}),
-	)
+
+	b := &aDIBuilder{
+		di:         llvm.NewDIBuilder(m),
+		prog:       prog,
+		types:      make(map[*aType]DIType),
+		positioner: positioner,
+		m:          m, // Initialize the m field
+	}
+
+	b.addNamedMetadataOperand("llvm.module.flags", 2, "Debug Info Version", 3)
+	b.addNamedMetadataOperand("llvm.module.flags", 7, "Dwarf Version", 5)
+	b.addNamedMetadataOperand("llvm.module.flags", 1, "wchar_size", 4)
+	b.addNamedMetadataOperand("llvm.module.flags", 8, "PIC Level", 2)
+	b.addNamedMetadataOperand("llvm.module.flags", 7, "uwtable", 1)
+	b.addNamedMetadataOperand("llvm.module.flags", 7, "frame-pointer", 1)
 
 	// Add llvm.ident metadata
 	identNode := ctx.MDNode([]llvm.Metadata{
@@ -47,12 +50,19 @@ func newDIBuilder(prog Program, pkg Package, positioner Positioner) diBuilder {
 	})
 	m.AddNamedMetadataOperand("llvm.ident", identNode)
 
-	return &aDIBuilder{
-		di:         llvm.NewDIBuilder(m),
-		prog:       prog,
-		types:      make(map[*aType]DIType),
-		positioner: positioner,
-	}
+	return b
+}
+
+// New method to add named metadata operand
+func (b diBuilder) addNamedMetadataOperand(name string, intValue int, stringValue string, intValue2 int) {
+	ctx := b.m.Context()
+	b.m.AddNamedMetadataOperand(name,
+		ctx.MDNode([]llvm.Metadata{
+			llvm.ConstInt(ctx.Int32Type(), uint64(intValue), false).ConstantAsMetadata(),
+			ctx.MDString(stringValue),
+			llvm.ConstInt(ctx.Int32Type(), uint64(intValue2), false).ConstantAsMetadata(),
+		}),
+	)
 }
 
 // ----------------------------------------------------------------------------
@@ -225,16 +235,28 @@ func (b diBuilder) createGlobalVariableExpression(scope DIScope, pos token.Posit
 
 // ----------------------------------------------------------------------------
 
+type aDILexicalBlock struct {
+	ll llvm.Metadata
+}
+
+type DILexicalBlock = *aDILexicalBlock
+
+func (l *aDILexicalBlock) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
+	return &aDIScopeMeta{l.ll}
+}
+
+// ----------------------------------------------------------------------------
+
 type aDIVar struct {
 	ll llvm.Metadata
 }
 
 type DIVar = *aDIVar
 
-func (b diBuilder) createParameterVariable(f Function, pos token.Position, name string, argNo int, ty DIType) DIVar {
+func (b diBuilder) createParameterVariable(scope DIScope, pos token.Position, name string, argNo int, ty DIType) DIVar {
 	return &aDIVar{
 		ll: b.di.CreateParameterVariable(
-			f.scopeMeta(b, pos).ll,
+			scope.scopeMeta(b, pos).ll,
 			llvm.DIParameterVariable{
 				Name:           name,
 				File:           b.file(pos.Filename).ll,
@@ -513,9 +535,9 @@ func (b diBuilder) diTypeEx(name string, t Type, pos token.Position) DIType {
 	return ty
 }
 
-func (b diBuilder) varParam(f Function, pos token.Position, varName string, vt DIType, argNo int) DIVar {
+func (b diBuilder) varParam(scope DIScope, pos token.Position, varName string, vt DIType, argNo int) DIVar {
 	return b.createParameterVariable(
-		f,
+		scope,
 		pos,
 		varName,
 		argNo,
@@ -523,8 +545,8 @@ func (b diBuilder) varParam(f Function, pos token.Position, varName string, vt D
 	)
 }
 
-func (b diBuilder) varAuto(f Function, pos token.Position, varName string, vt DIType) DIVar {
-	return b.createAutoVariable(f, pos, varName, vt)
+func (b diBuilder) varAuto(scope DIScope, pos token.Position, varName string, vt DIType) DIVar {
+	return b.createAutoVariable(scope, pos, varName, vt)
 }
 
 func (b diBuilder) file(filename string) DIFile {
@@ -546,21 +568,21 @@ func (b diBuilder) createExpression(ops []uint64) DIExpression {
 // -----------------------------------------------------------------------------
 
 // Copy to alloca'd memory to get declareable address.
-func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, deref bool) {
+func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, exists bool) {
 	if v, ok := b.dbgVars[v]; ok {
-		return v.ptr, v.val, v.deref
+		return v.ptr, v.val, true
 	}
 	t := v.Type.RawType().Underlying()
-	dbgPtr, dbgVal, deref = b.doConstructDebugAddr(v, t)
-	b.dbgVars[v] = dbgExpr{dbgPtr, dbgVal, deref}
-	return dbgPtr, dbgVal, deref
+	dbgPtr, dbgVal = b.doConstructDebugAddr(v, t)
+	dbgExpr := dbgExpr{dbgPtr, dbgVal}
+	b.dbgVars[v] = dbgExpr
+	b.dbgVars[dbgVal] = dbgExpr
+	return dbgPtr, dbgVal, false
 }
 
-func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal Expr, deref bool) {
+func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal Expr) {
 	var ty Type
 	switch t := t.(type) {
-	case *types.Pointer:
-		return v, v, false
 	case *types.Basic:
 		if t.Info()&types.IsComplex != 0 {
 			if t.Kind() == types.Complex128 {
@@ -590,7 +612,7 @@ func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal
 	dbgPtr.Type = b.Prog.Pointer(v.Type)
 	b.Store(dbgPtr, v)
 	dbgVal = b.Load(dbgPtr)
-	return dbgPtr, dbgVal, deref
+	return dbgPtr, dbgVal
 }
 
 func (b Builder) di() diBuilder {
@@ -598,13 +620,7 @@ func (b Builder) di() diBuilder {
 }
 
 func (b Builder) DIParam(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	ty := v.Type.RawType().Underlying()
-	if isPtrType(ty) {
-		expr := b.di().createExpression(nil)
-		b.di().dbgDeclare(v, dv, scope, pos, expr, blk)
-	} else {
-		b.DIValue(variable, v, dv, scope, pos, blk)
-	}
+	b.DIValue(variable, v, dv, scope, pos, blk)
 }
 
 func (b Builder) DIDeclare(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
@@ -614,14 +630,13 @@ func (b Builder) DIDeclare(variable *types.Var, v Expr, dv DIVar, scope DIScope,
 
 func (b Builder) DIValue(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
 	ty := v.Type.RawType().Underlying()
-	if isPtrType(ty) {
+	if !needConstructAddr(ty) {
 		expr := b.di().createExpression(nil)
 		b.di().dbgValue(v, dv, scope, pos, expr, blk)
 	} else {
-		dbgPtr, dbgVal, _ := b.constructDebugAddr(v)
+		dbgPtr, _, _ := b.constructDebugAddr(v)
 		expr := b.di().createExpression([]uint64{opDeref})
 		b.di().dbgValue(dbgPtr, dv, scope, pos, expr, blk)
-		v.impl = dbgVal.impl
 	}
 }
 
@@ -629,24 +644,78 @@ const (
 	opDeref = 0x06
 )
 
-func isPtrType(t types.Type) bool {
-	switch t.(type) {
-	case *types.Pointer:
-		return true
-	default:
+func needConstructAddr(t types.Type) bool {
+	switch t := t.(type) {
+	case *types.Basic:
+		if t.Info()&types.IsComplex != 0 {
+			return true
+		} else if t.Info()&types.IsString != 0 {
+			return true
+		}
 		return false
+	case *types.Pointer:
+		return false
+	default:
+		return true
 	}
 }
 
-func (b Builder) DIVarParam(f Function, pos token.Position, varName string, vt Type, argNo int) DIVar {
+func (b Builder) DIVarParam(scope DIScope, pos token.Position, varName string, vt Type, argNo int) DIVar {
 	t := b.di().diType(vt, pos)
-	return b.di().varParam(f, pos, varName, t, argNo)
+	return b.di().varParam(scope, pos, varName, t, argNo)
 }
 
-func (b Builder) DIVarAuto(f Function, pos token.Position, varName string, vt Type) DIVar {
+func (b Builder) DIVarAuto(scope DIScope, pos token.Position, varName string, vt Type) DIVar {
 	t := b.di().diType(vt, pos)
-	return b.di().varAuto(f, pos, varName, t)
+	return b.di().varAuto(scope, pos, varName, t)
 }
+
+// hack for types.Scope
+type hackScope struct {
+	parent   *types.Scope
+	children []*types.Scope
+	number   int                     // parent.children[number-1] is this scope; 0 if there is no parent
+	elems    map[string]types.Object // lazily allocated
+	pos, end token.Pos               // scope extent; may be invalid
+	comment  string                  // for debugging only
+	isFunc   bool                    // set if this is a function scope (internal use only)
+}
+
+func isFunc(scope *types.Scope) bool {
+	hs := (*hackScope)(unsafe.Pointer(scope))
+	return hs.isFunc
+}
+
+func (b Builder) DIScope(f Function, scope *types.Scope) DIScope {
+	if cachedScope, ok := b.diScopeCache[scope]; ok {
+		return cachedScope
+	}
+	pos := b.di().positioner.Position(scope.Pos())
+	// skip package and universe scope
+	// if scope.Parent().Parent() == nil {
+	// 	return b.di().file(pos.Filename)
+	// }
+
+	var result DIScope
+	if isFunc(scope) {
+		// TODO(lijie): should check scope == function scope
+		result = f
+	} else {
+		parentScope := b.DIScope(f, scope.Parent())
+		result = &aDILexicalBlock{b.di().di.CreateLexicalBlock(parentScope.scopeMeta(b.di(), pos).ll, llvm.DILexicalBlock{
+			File:   b.di().file(pos.Filename).ll,
+			Line:   pos.Line,
+			Column: pos.Column,
+		})}
+	}
+
+	b.diScopeCache[scope] = result
+	return result
+}
+
+const (
+	MD_dbg = 0
+)
 
 func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
 	if _, ok := b.Pkg.glbDbgVars[v]; ok {
@@ -660,16 +729,16 @@ func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
 		v.Type,
 		false,
 	)
-	v.impl.AddMetadata(0, gv.ll)
+	v.impl.AddMetadata(MD_dbg, gv.ll)
 	b.Pkg.glbDbgVars[v] = true
 }
 
-func (b Builder) DISetCurrentDebugLocation(f Function, pos token.Position) {
+func (b Builder) DISetCurrentDebugLocation(diScope DIScope, pos token.Position) {
 	b.impl.SetCurrentDebugLocation(
 		uint(pos.Line),
 		uint(pos.Column),
-		f.scopeMeta(b.di(), pos).ll,
-		f.impl.InstructionDebugLoc(),
+		diScope.scopeMeta(b.di(), pos).ll,
+		llvm.Metadata{},
 	)
 }
 
@@ -695,6 +764,7 @@ func (b Builder) DebugFunction(f Function, pos token.Position, bodyPos token.Pos
 			Line:         pos.Line,
 			ScopeLine:    bodyPos.Line,
 			IsDefinition: true,
+			LocalToUnit:  true,
 			Optimized:    true,
 		}
 		p.diFunc = &aDIFunction{

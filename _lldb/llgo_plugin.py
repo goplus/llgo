@@ -93,7 +93,7 @@ def print_all_variables(debugger: lldb.SBDebugger, _command: str, result: lldb.S
 
     frame = debugger.GetSelectedTarget().GetProcess(
     ).GetSelectedThread().GetSelectedFrame()
-    variables = frame.GetVariables(True, True, True, False)
+    variables = frame.GetVariables(True, True, True, True)
 
     output: List[str] = []
     for var in variables:

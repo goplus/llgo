@@ -273,7 +273,8 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, nil, p, p.Pkg, prog, make(map[Expr]dbgExpr)}
+	return &aBuilder{b, nil, p, p.Pkg, prog,
+		make(map[Expr]dbgExpr), make(map[*types.Scope]DIScope)}
 }
 
 // HasBody reports whether the function has a body.
@@ -324,6 +325,26 @@ func (p Function) Block(idx int) BasicBlock {
 // SetRecover sets the recover block for the function.
 func (p Function) SetRecover(blk BasicBlock) {
 	p.recov = blk
+}
+
+// -----------------------------------------------------------------------------
+
+type inlineAttr int
+
+const (
+	NoInline inlineAttr = iota
+	AlwaysInline
+	InlineHint
+)
+
+func (p Function) Inline(inline inlineAttr) {
+	inlineAttrName := map[inlineAttr]string{
+		NoInline:     "noinline",
+		AlwaysInline: "alwaysinline",
+		InlineHint:   "inlinehint",
+	}[inline]
+	inlineAttr := p.Pkg.mod.Context().CreateEnumAttribute(llvm.AttributeKindID(inlineAttrName), 0)
+	p.impl.AddFunctionAttr(inlineAttr)
 }
 
 // -----------------------------------------------------------------------------

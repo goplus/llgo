@@ -107,7 +107,7 @@ class LLDBDebugger:
 
     def get_all_variable_names(self) -> Set[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
-        return set(var.GetName() for var in frame.GetVariables(True, True, True, False))
+        return set(var.GetName() for var in frame.GetVariables(True, True, True, True))
 
     def get_current_function_name(self) -> str:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
