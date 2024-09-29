@@ -43,14 +43,13 @@ func (p *TypeConv) ToType(expr ast.Expr) (types.Type, error) {
 		typ, err := p.typeMap.FindBuiltinType(*t)
 		return typ, err
 	case *ast.PointerType:
-		typ, err := p.handlePointerType(t)
-		return typ, err
+		return p.handlePointerType(t)
 	case *ast.ArrayType:
 		if p.inParam {
 			// array in the parameter,ignore the len,convert as pointer
 			typ, err := p.ToType(t.Elt)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error convert elem type: %w", err)
 			}
 			return types.NewPointer(typ), nil
 		}
@@ -81,7 +80,7 @@ func (p *TypeConv) ToType(expr ast.Expr) (types.Type, error) {
 func (p *TypeConv) handlePointerType(t *ast.PointerType) (types.Type, error) {
 	baseType, err := p.ToType(t.X)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error convert baseType: %w", err)
 	}
 	// void * -> c.Pointer
 	// todo(zzy):alias visit the origin type unsafe.Pointer,c.Pointer is better
