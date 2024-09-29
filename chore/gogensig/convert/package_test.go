@@ -15,8 +15,6 @@ import (
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-// todo(zzy):test named typeref
-
 func TestToType(t *testing.T) {
 	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 
@@ -559,6 +557,48 @@ func Foo(a *c.Uint, b *float64) **int8
 			},
 			expectedErr: "error convert elem type",
 		},
+		{
+			name: "error return type",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
+				Type: &ast.FuncType{
+					Params: nil,
+					Ret:    &ast.BuiltinType{Kind: ast.Bool, Flags: ast.Double},
+				},
+			},
+			symbs: []config.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
+			expectedErr: "error convert return type",
+		},
+		{
+			name: "error nil param",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							nil,
+						},
+					},
+					Ret: nil,
+				},
+			},
+			symbs: []config.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
+			expectedErr: "unexpected nil field",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -822,6 +862,30 @@ type Foo struct {
 			},
 			expectedErr: "unsupport field with array without length",
 		},
+		{
+			name: "struct array field without len",
+			decl: &ast.TypeDecl{
+				Name: &ast.Ident{Name: "Foo"},
+				Type: &ast.RecordType{
+					Tag: ast.Struct,
+					Fields: &ast.FieldList{
+						List: []*ast.Field{
+							{
+								Names: []*ast.Ident{{Name: "a"}},
+								Type: &ast.ArrayType{
+									Elt: &ast.BuiltinType{
+										Kind:  ast.Char,
+										Flags: ast.Signed,
+									},
+									Len: &ast.BuiltinType{Kind: ast.TypeKind(ast.Signed)}, //invalid
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: "can't determine the array length",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -904,7 +968,6 @@ package testpkg
 type Foo struct {
 }`
 	comparePackageOutput(t, pkg, expect)
-
 }
 
 func TestTypedef(t *testing.T) {
@@ -1060,6 +1123,52 @@ const (
 	}
 }
 
+func TestIdentRefer(t *testing.T) {
+	t.Run("undef ident ref", func(t *testing.T) {
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
+		err := pkg.NewTypeDecl(&ast.TypeDecl{
+			Name: &ast.Ident{Name: "Foo"},
+			Type: &ast.RecordType{
+				Tag: ast.Struct,
+				Fields: &ast.FieldList{
+					List: []*ast.Field{
+						{
+							Names: []*ast.Ident{{Name: "notfound"}},
+							Type: &ast.Ident{
+								Name: "undefType",
+							},
+						},
+					},
+				},
+			},
+		})
+		compareError(t, err, "undefType not found")
+	})
+	t.Run("undef tag ident ref", func(t *testing.T) {
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
+		err := pkg.NewTypeDecl(&ast.TypeDecl{
+			Name: &ast.Ident{Name: "Foo"},
+			Type: &ast.RecordType{
+				Tag: ast.Struct,
+				Fields: &ast.FieldList{
+					List: []*ast.Field{
+						{
+							Names: []*ast.Ident{{Name: "notfound"}},
+							Type: &ast.TagExpr{
+								Tag: ast.Class,
+								Name: &ast.Ident{
+									Name: "undefType",
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		compareError(t, err, "undefType not found")
+	})
+}
+
 type genDeclTestCase struct {
 	name        string
 	decl        ast.Decl
@@ -1091,17 +1200,23 @@ func testGenDecl(t *testing.T, tc genDeclTestCase) {
 		return
 	}
 	if tc.expectedErr != "" {
-		if err == nil {
-			t.Errorf("Expected error containing %q, but got nil", tc.expectedErr)
-		} else if !strings.Contains(err.Error(), tc.expectedErr) {
-			t.Errorf("Expected error contain %q, but got %q", tc.expectedErr, err.Error())
-		}
+		compareError(t, err, tc.expectedErr)
 	} else {
 		if err != nil {
 			t.Errorf("Declaration generation failed: %v", err)
 		} else {
 			comparePackageOutput(t, pkg, tc.expected)
 		}
+	}
+}
+
+// compare error
+func compareError(t *testing.T, err error, expectErr string) {
+	t.Helper()
+	if err == nil {
+		t.Errorf("Expected error containing %q, but got nil", expectErr)
+	} else if !strings.Contains(err.Error(), expectErr) {
+		t.Errorf("Expected error contain %q, but got %q", expectErr, err.Error())
 	}
 }
 
