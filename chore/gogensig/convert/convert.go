@@ -4,6 +4,7 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	"github.com/qiniu/x/log"
 )
 
 type AstConvert struct {
@@ -81,5 +82,8 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 func (p *AstConvert) VisitDone(docPath string) {
 	if p.visitDone != nil {
 		p.visitDone(p.pkg, docPath)
+	} else {
+		log.Println(docPath)
+		p.pkg.Write(docPath, "")
 	}
 }
