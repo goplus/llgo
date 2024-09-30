@@ -101,7 +101,7 @@ jobs:
       - name: LLDB tests
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash _lldb/runtest.sh
+          bash _lldb/runtest.sh -v
 
       - name: Test demos
         continue-on-error: true
