@@ -40,8 +40,23 @@ build_project "$package_path" || exit 1
 # Set up the result file path
 result_file="/tmp/lldb_exit_code"
 
+# Prepare LLDB commands
+lldb_commands=(
+    "command script import _lldb/llgo_plugin.py"
+    "command script import _lldb/test.py"
+    "script test.run_tests_with_result('${package_path}/debug.out', ['${package_path}/in.go'], $verbose, $interactive, $plugin_path, '$result_file')"
+    "quit"
+)
+
+# Run LLDB with prepared commands 
+lldb_command_string=""
+for cmd in "${lldb_commands[@]}"; do
+    lldb_command_string+=" -o \"$cmd\""
+done
+
+
 # Run LLDB with the test script
-"$LLDB_PATH" -o "command script import _lldb/test.py" -o "script test.run_tests_with_result('${package_path}/debug.out', ['${package_path}/in.go'], $verbose, $interactive, $plugin_path, '$result_file')" -o "quit"
+eval "$LLDB_PATH $lldb_command_string"
 
 # Read the exit code from the result file
 if [ -f "$result_file" ]; then
