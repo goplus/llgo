@@ -58,7 +58,10 @@ func TestNewPackage(t *testing.T) {
 	if pkg == nil {
 		t.Fatal("NewPackage failed")
 	}
-	comparePackageOutput(t, pkg, `package testpkg`)
+	comparePackageOutput(t, pkg, `
+	package testpkg
+	import _ "unsafe"
+	`)
 }
 
 func TestSetCppgConf(t *testing.T) {
@@ -70,8 +73,10 @@ func TestSetCppgConf(t *testing.T) {
 		Libs: "pkg-config --libs lua5.4",
 	})
 	comparePackageOutput(t, pkg,
-		`package testpkg
-		 const LLGoPackage string = "link: pkg-config --libs lua5.4;"
+		`
+		package testpkg
+		import _ "unsafe"
+		const LLGoPackage string = "link: pkg-config --libs lua5.4;"
 		`)
 }
 
@@ -205,7 +210,7 @@ func TestFuncDecl(t *testing.T) {
 			},
 			expected: `
 package testpkg
-
+import _ "unsafe"
 //go:linkname Foo C.foo
 func Foo()`,
 		},
@@ -266,7 +271,7 @@ func Foo()`,
 			},
 			expected: `
 package testpkg
-
+import _ "unsafe"
 //go:linkname Foo C.foo
 func Foo()`,
 		},
@@ -312,7 +317,7 @@ func Foo()`,
 			},
 			expected: `
 package testpkg
-
+import _ "unsafe"
 //go:linkname Foo C.foo
 func Foo(a uint16, b bool) float64`,
 		},
@@ -347,7 +352,10 @@ func Foo(a uint16, b bool) float64`,
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 //go:linkname Foo C.foo
 func Foo(a c.Uint, b c.Long) c.Ulong
@@ -384,7 +392,10 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 //go:linkname Foo C.foo
 func Foo(a c.Uint, b c.Long) c.Ulong
@@ -430,7 +441,10 @@ func Foo(a c.Uint, b c.Long) c.Ulong
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 //go:linkname Foo C.foo
 func Foo(a *c.Uint, b *c.Long) *float64
@@ -524,7 +538,10 @@ func Foo(a unsafe.Pointer) unsafe.Pointer
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 //go:linkname Foo C.foo
 func Foo(a *c.Uint, b *float64) **int8
@@ -622,6 +639,8 @@ func TestStructDecl(t *testing.T) {
 			expected: `
 package testpkg
 
+import _ "unsafe"
+
 type Foo struct {
 }`,
 		},
@@ -679,7 +698,10 @@ type Foo struct {
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 type Foo struct {
 	a c.Int
@@ -787,7 +809,10 @@ type Foo struct {
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 type Foo struct {
 	a [4]int8
@@ -833,7 +858,10 @@ type Foo struct {
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 type Foo struct {
 	a [4]int8
@@ -929,7 +957,10 @@ func TestTypedefFunc(t *testing.T) {
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 // llgo:type C
 type Foo func(a c.Int, b c.Int) c.Int`,
 		},
@@ -965,6 +996,8 @@ func TestRedefTypedef(t *testing.T) {
 	expect := `
 package testpkg
 
+import _ "unsafe"
+
 type Foo struct {
 }`
 	comparePackageOutput(t, pkg, expect)
@@ -984,6 +1017,8 @@ func TestTypedef(t *testing.T) {
 			},
 			expected: `
 package testpkg
+
+import _ "unsafe"
 
 type DOUBLE float64`,
 		},
@@ -1011,7 +1046,10 @@ type DOUBLE float64`,
 			expected: `
 package testpkg
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 type INT c.Int
 			`,
@@ -1030,6 +1068,8 @@ type INT c.Int
 			},
 			expected: `
 package testpkg
+
+import _ "unsafe"
 
 type name [5]int8`,
 		},
@@ -1066,7 +1106,7 @@ type ctx unsafe.Pointer`,
 			},
 			expected: `
 package testpkg
-
+import _ "unsafe"
 type name *int8`,
 		},
 		{
@@ -1108,6 +1148,7 @@ func TestEnumDecl(t *testing.T) {
 			expected: `
 package testpkg
 
+import _ "unsafe"
 const (
 	Color_Red = 0
 	Color_Green = 1
