@@ -30,7 +30,10 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 	astConvert := convert.NewAstConvert(pkgName, symbolpath, cppgConfPath)
 	var buf bytes.Buffer
 	astConvert.SetVisitDone(func(pkg *convert.Package, docPath string) {
-		if err := pkg.WriteToBuffer(&buf); err != nil {
+		// Write conversion result to buffer For Test
+		// Note: The converted file path for llcppsigfetch's temp header file is temp.h,
+		// so the corresponding Go file name is temp.go
+		if err := pkg.WriteToBuffer(&buf, "temp.go"); err != nil {
 			t.Fatalf("WriteTo failed: %v", err)
 		}
 	})
