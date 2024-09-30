@@ -28,7 +28,10 @@ int ExecuteFoo(int a,Foo b);
 	`, `
 package typeref
 
-import "github.com/goplus/llgo/c"
+import (
+"github.com/goplus/llgo/c"
+_ "unsafe"
+)
 
 /// Foo comment
 type Foo struct {
@@ -92,6 +95,8 @@ func TestEnum(t *testing.T) {
 		`
 		package spectrum
 
+import _ "unsafe"
+
 const (
 	Spectrum_red    = 0
 	Spectrum_orange = 1
@@ -142,7 +147,10 @@ int ExecuteFoo(int a,Foo b);
 	`, `
 package typeref
 
-import "github.com/goplus/llgo/c"
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
 
 type Foo struct {
 	a c.Int
