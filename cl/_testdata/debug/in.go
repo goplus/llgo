@@ -408,6 +408,43 @@ func ScopeFor() {
 	println("a:", a)
 }
 
+func ScopeSwitch(i int) {
+	a := 0
+	switch i {
+	case 1:
+		b := 1
+		println("i is 1")
+		// Expected:
+		//   all variables: i a b
+		//   i: 1
+		//   a: 0
+		//   b: 1
+		println("i:", i, "a:", a, "b:", b)
+	case 2:
+		c := 2
+		println("i is 2")
+		// Expected:
+		//   all variables: i a c
+		//   i: 2
+		//   a: 0
+		//   c: 2
+		println("i:", i, "a:", a, "c:", c)
+	default:
+		d := 3
+		println("i is", i)
+		// Expected:
+		//   all variables: i a d
+		//   i: 3
+		//   a: 0
+		//   d: 3
+		println("i:", i, "a:", a, "d:", d)
+	}
+	// Expected:
+	//   all variables: a i
+	//   a: 0
+	println("a:", a)
+}
+
 func main() {
 	FuncStructParams(TinyStruct{I: 1}, SmallStruct{I: 2, J: 3}, MidStruct{I: 4, J: 5, K: 6}, BigStruct{I: 7, J: 8, K: 9, L: 10, M: 11, N: 12, O: 13, P: 14, Q: 15, R: 16})
 	FuncStructPtrParams(&TinyStruct{I: 1}, &SmallStruct{I: 2, J: 3}, &MidStruct{I: 4, J: 5, K: 6}, &BigStruct{I: 7, J: 8, K: 9, L: 10, M: 11, N: 12, O: 13, P: 14, Q: 15, R: 16})
@@ -498,6 +535,9 @@ func main() {
 	ScopeIf(1)
 	ScopeIf(0)
 	ScopeFor()
+	ScopeSwitch(1)
+	ScopeSwitch(2)
+	ScopeSwitch(3)
 	println(globalStructPtr)
 	println(&globalStruct)
 	s.i8 = 0x12
