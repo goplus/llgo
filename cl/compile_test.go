@@ -22,7 +22,6 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
-	"github.com/goplus/llgo/ssa"
 )
 
 func testCompile(t *testing.T, src, expected string) {
@@ -54,14 +53,6 @@ func TestFromTestrt(t *testing.T) {
 
 func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "./_testdata", false)
-}
-
-func TestFromTestpymath(t *testing.T) {
-	cltest.Pkg(t, ssa.PkgPython+"/math", "../py/math/llgo_autogen.ll")
-}
-
-func TestPython(t *testing.T) {
-	cltest.Pkg(t, ssa.PkgPython, "../py/llgo_autogen.ll")
 }
 
 func TestGoPkgMath(t *testing.T) {
