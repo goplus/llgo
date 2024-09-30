@@ -74,6 +74,7 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	doc := CommentGroup(funcDecl.Doc)
 	doc.AddCommentGroup(NewFuncDocComments(funcDecl.Name.Name, string(goFuncName)))
 	decl.SetComments(p.p, doc.CommentGroup)
+	p.addToDelete(decl)
 	return nil
 }
 
@@ -119,7 +120,7 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(NewTypecDocComments())
 	}
-	p.addToDelete(genDecl)
+	p.addToDelete(typeSpecdecl)
 	return nil
 }
 
@@ -150,6 +151,8 @@ func (p *Package) delete() {
 	for _, del := range p.dels {
 		switch v := del.(type) {
 		case *gogen.TypeDecl:
+			// todo(zzy):cause a unexcepted space line
+			// may because the delete function dont remove the GenDecl in ast
 			v.Delete()
 		}
 	}
