@@ -16,7 +16,7 @@ import (
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) bytes.Buffer {
+func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) *bytes.Buffer {
 	t.Helper()
 
 	symbolpath, err := CreateAndWriteTempSymbFile(symbolEntries)
@@ -28,12 +28,13 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 		t.Fatal(err)
 	}
 	astConvert := convert.NewAstConvert(pkgName, symbolpath, cppgConfPath)
-	var buf bytes.Buffer
+
+	var buf *bytes.Buffer
 	astConvert.SetVisitDone(func(pkg *convert.Package, docPath string) {
 		// Write conversion result to buffer For Test
 		// Note: The converted file path for llcppsigfetch's temp header file is temp.h,
-		// so the corresponding Go file name is temp.go
-		if err := pkg.WriteToBuffer(&buf, "temp.go"); err != nil {
+		buf, err = pkg.WriteToBuffer("temp.h")
+		if err != nil {
 			t.Fatalf("WriteTo failed: %v", err)
 		}
 	})
@@ -52,8 +53,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 
 	p.ProcessFileSet(inputdata)
 
-	result := buf.String()
-	if isEqual, diff := cmp.EqualStringIgnoreSpace(expectedOutput, result); !isEqual {
+	if isEqual, diff := cmp.EqualStringIgnoreSpace(expectedOutput, buf.String()); !isEqual {
 		t.Errorf("unexpected result:\n%s", diff)
 	}
 

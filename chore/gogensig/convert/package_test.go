@@ -1264,8 +1264,8 @@ func compareError(t *testing.T, err error, expectErr string) {
 // compares the output of a gogen.Package with the expected
 func comparePackageOutput(t *testing.T, pkg *convert.Package, expect string) {
 	t.Helper()
-	var buf bytes.Buffer
-	err := pkg.WriteToBuffer(&buf, pkg.Name()+".go")
+	// For Test,The Test package's header filename same as package name
+	buf, err := pkg.WriteToBuffer(pkg.Name() + ".h")
 	if err != nil {
 		t.Fatalf("WriteTo failed: %v", err)
 	}
@@ -1327,9 +1327,10 @@ func TestTypeClean(t *testing.T) {
 		pkg.SetCurFile(tc.headerFile, true)
 		tc.addType()
 
-		outputFile := strings.TrimSuffix(tc.headerFile, ".h") + ".go"
-		var buf bytes.Buffer
-		pkg.WriteToBuffer(&buf, outputFile)
+		buf, err := pkg.WriteToBuffer(tc.headerFile)
+		if err != nil {
+			t.Fatal(err)
+		}
 		result := buf.String()
 
 		if !strings.Contains(result, tc.newType) {
