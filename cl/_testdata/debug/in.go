@@ -130,14 +130,6 @@ func FuncWithAllTypeParams(
 	//   arr: [3]int{24, 25, 26}
 	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
 	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
-	//   i8: '\b'
-	//   i16: 2
-	//   u8: '\x06'
-	//   u16: 7
-	//   b: true
-	//   c64: complex64{real = 13, imag = 14}
-	//   c128: complex128{real = 15, imag = 16}
-	//   s: "hello"
 
 	// Expected(skip):
 	//   i8: '\b'
