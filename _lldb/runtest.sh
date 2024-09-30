@@ -37,21 +37,18 @@ done
 # Build the project
 build_project "$package_path" || exit 1
 
-# Prepare LLDB commands
-lldb_commands=(
-    "command script import _lldb/test.py"
-    "script test.run_tests(\\\"${package_path}/debug.out\\\", [\\\"${package_path}/in.go\\\"], ${verbose}, ${interactive}, ${plugin_path})"
-)
+# Set up the result file path
+result_file="/tmp/lldb_exit_code"
 
-# Add quit command if not in interactive mode
-if [ "$interactive" = False ]; then
-    lldb_commands+=("quit")
+# Run LLDB with the test script
+"$LLDB_PATH" -o "command script import _lldb/test.py" -o "script test.run_tests_with_result('${package_path}/debug.out', ['${package_path}/in.go'], $verbose, $interactive, $plugin_path, '$result_file')" -o "quit"
+
+# Read the exit code from the result file
+if [ -f "$result_file" ]; then
+    exit_code=$(cat "$result_file")
+    rm "$result_file"
+    exit "$exit_code"
+else
+    echo "Error: Could not find exit code file"
+    exit 1
 fi
-
-# Run LLDB with prepared commands 
-lldb_command_string=""
-for cmd in "${lldb_commands[@]}"; do
-    lldb_command_string+=" -O \"$cmd\""
-done
-
-eval "$LLDB_PATH $lldb_command_string" || exit 1

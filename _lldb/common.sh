@@ -26,6 +26,8 @@ find_lldb() {
 
 # Find LLDB 18+
 LLDB_PATH=$(find_lldb)
+echo "LLDB_PATH: $LLDB_PATH"
+$LLDB_PATH --version
 export LLDB_PATH
 
 # Default package path

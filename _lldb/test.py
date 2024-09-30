@@ -241,7 +241,7 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
     return results
 
 
-def run_tests(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> None:
+def run_tests(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> int:
     test_cases = parse_expected_values(source_files)
     if verbose:
         log(f"Running tests for {', '.join(source_files)} with {executable_path}")
@@ -251,8 +251,8 @@ def run_tests(executable_path: str, source_files: List[str], verbose: bool, inte
                             verbose, interactive, plugin_path)
     print_test_results(results)
 
-    if results.total != results.passed:
-        sys.exit(1)
+    # Return 0 if all tests passed, 1 otherwise
+    return 0 if results.failed == 0 else 1
 
 
 def execute_test_case(debugger: LLDBDebugger, test_case: TestCase, all_variable_names: Set[str]) -> CaseResult:
@@ -349,6 +349,24 @@ def print_test_result(result: TestResult, verbose: bool) -> None:
             log(f"    Actual: {result.actual}")
 
 
+def run_tests_with_result(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str], result_path: str) -> int:
+    try:
+        exit_code = run_tests(executable_path, source_files,
+                              verbose, interactive, plugin_path)
+    except Exception as e:
+        log(f"An error occurred during test execution: {str(e)}")
+        exit_code = 2  # Use a different exit code for unexpected errors
+
+    try:
+        with open(result_path, 'w', encoding='utf-8') as f:
+            f.write(str(exit_code))
+    except IOError as e:
+        log(f"Error writing result to file {result_path}: {str(e)}")
+        # If we can't write to the file, we should still return the exit code
+
+    return exit_code
+
+
 def main() -> None:
     log(sys.argv)
     parser = argparse.ArgumentParser(
@@ -360,12 +378,24 @@ def main() -> None:
     parser.add_argument("-i", "--interactive", action="store_true",
                         help="Enable interactive mode on test failure")
     parser.add_argument("--plugin", help="Path to the LLDB plugin")
+    parser.add_argument("--result-path", help="Path to write the result")
     args = parser.parse_args()
 
     plugin_path = args.plugin or os.path.join(os.path.dirname(
         os.path.realpath(__file__)), "go_lldb_plugin.py")
-    run_tests(args.executable, args.sources,
-              args.verbose, args.interactive, plugin_path)
+
+    try:
+        if args.result_path:
+            exit_code = run_tests_with_result(args.executable, args.sources,
+                                              args.verbose, args.interactive, plugin_path, args.result_path)
+        else:
+            exit_code = run_tests(args.executable, args.sources,
+                                  args.verbose, args.interactive, plugin_path)
+    except Exception as e:
+        log(f"An unexpected error occurred: {str(e)}")
+        exit_code = 2  # Use a different exit code for unexpected errors
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
