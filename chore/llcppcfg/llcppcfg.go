@@ -14,7 +14,7 @@ type LLCppConfig struct {
 	Cflags       string   `json:"cflags"`
 	Include      []string `json:"include"`
 	Libs         string   `json:"libs"`
-	TrimPrefixes []string `json:"trim_prefixes"`
+	TrimPrefixes []string `json:"trimPrefixes"`
 	Cplusplus    bool     `json:"cplusplus"`
 }
 
