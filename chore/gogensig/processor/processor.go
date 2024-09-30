@@ -17,6 +17,7 @@ func NewDocVisitorManager(visitorList []visitor.DocVisitor) *DocVisitorManager {
 
 func (p *DocVisitorManager) visit(node ast.Node, docPath string) bool {
 	for _, v := range p.VisitorList {
+		v.VisitStart(docPath)
 		v.Visit(node)
 		v.VisitDone(docPath)
 	}

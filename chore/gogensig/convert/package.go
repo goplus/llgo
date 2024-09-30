@@ -26,13 +26,36 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 	p := &Package{
 		p: gogen.NewPackage(pkgPath, name, conf),
 	}
+
+	// default file name is the package name
+	err := p.SetCurFile(name, false)
+	if err != nil {
+		panic(fmt.Errorf("SetDefaultFile %s for gogen Fail %w", name+".go", err))
+	}
+
 	clib := p.p.Import("github.com/goplus/llgo/c")
-	p.p.Unsafe().MarkForceUsed(p.p)
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
 	p.name = name
 	p.dels = make([]any, 0)
 	return p
+}
+
+func (p *Package) SetCurFile(file string, isHeaderFile bool) error {
+	var fileName string
+	if isHeaderFile {
+		// headerfile to go filename
+		fileName = p.processHeaderFileName(file)
+	} else {
+		// package name as the default file
+		fileName = file + ".go"
+	}
+	_, err := p.p.SetCurFile(fileName, true)
+	if err != nil {
+		return fmt.Errorf("fail to set current file %s\n%w", file, err)
+	}
+	p.p.Unsafe().MarkForceUsed(p.p)
+	return nil
 }
 
 func (p *Package) SetSymbolTable(symbolTable *config.SymbolTable) {
@@ -51,6 +74,10 @@ func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
 
 func (p *Package) GetGenPackage() *gogen.Package {
 	return p.p
+}
+
+func (p *Package) Name() string {
+	return p.name
 }
 
 // todo(zzy):refine logic
@@ -169,9 +196,9 @@ func (p *Package) Write(headerFile, outputDir string) error {
 		return fmt.Errorf("failed to prepare output directory: %w", err)
 	}
 
-	fileName := p.processFileName(headerFile)
+	fileName := p.processHeaderFileName(headerFile)
 
-	if err := p.p.WriteFile(filepath.Join(dir, fileName)); err != nil {
+	if err := p.p.WriteFile(filepath.Join(dir, fileName), fileName); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -179,8 +206,8 @@ func (p *Package) Write(headerFile, outputDir string) error {
 	return nil
 }
 
-func (p *Package) WriteToBuffer(buf *bytes.Buffer) error {
-	err := p.p.WriteTo(buf)
+func (p *Package) WriteToBuffer(buf *bytes.Buffer, fname ...string) error {
+	err := p.p.WriteTo(buf, fname...)
 	p.delete()
 	return err
 }
@@ -203,7 +230,9 @@ func (p *Package) prepareOutputDir(outputDir string) (string, error) {
 	return dir, nil
 }
 
-func (p *Package) processFileName(headerFile string) string {
+// /path/to/foo.h
+// foo.go
+func (p *Package) processHeaderFileName(headerFile string) string {
 	_, fileName := filepath.Split(headerFile)
 	ext := filepath.Ext(fileName)
 	if len(ext) > 0 {
