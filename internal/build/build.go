@@ -445,7 +445,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	}
 	args = append(args, exargs...)
 	if cl.DebugSymbols() {
-		args = append(args, "-gdwarf-5")
+		args = append(args, "-gdwarf-4")
 	}
 
 	// TODO(xsw): show work

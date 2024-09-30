@@ -38,7 +38,7 @@ func newDIBuilder(prog Program, pkg Package, positioner Positioner) diBuilder {
 	}
 
 	b.addNamedMetadataOperand("llvm.module.flags", 2, "Debug Info Version", 3)
-	b.addNamedMetadataOperand("llvm.module.flags", 7, "Dwarf Version", 5)
+	b.addNamedMetadataOperand("llvm.module.flags", 7, "Dwarf Version", 4)
 	b.addNamedMetadataOperand("llvm.module.flags", 1, "wchar_size", 4)
 	b.addNamedMetadataOperand("llvm.module.flags", 8, "PIC Level", 2)
 	b.addNamedMetadataOperand("llvm.module.flags", 7, "uwtable", 1)
