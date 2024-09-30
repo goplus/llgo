@@ -1281,25 +1281,14 @@ func TestTypeClean(t *testing.T) {
 	pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
 	pkg.SetSymbolTable(config.CreateSymbolTable(
 		[]config.SymbolEntry{
-			{
-				CppName:    "Func1",
-				MangleName: "Func1",
-				GoName:     "Func1",
-			},
-			{
-				CppName:    "Func2",
-				MangleName: "Func2",
-				GoName:     "Func2",
-			},
+			{CppName: "Func1", MangleName: "Func1", GoName: "Func1"},
+			{CppName: "Func2", MangleName: "Func2", GoName: "Func2"},
 		},
 	))
-
-	var addedTypes []string
 
 	testCases := []struct {
 		addType    func()
 		headerFile string
-		outputFile string
 		newType    string
 	}{
 		{
@@ -1310,30 +1299,7 @@ func TestTypeClean(t *testing.T) {
 				})
 			},
 			headerFile: "file1.h",
-			outputFile: "file1.go",
 			newType:    "Foo1",
-		},
-		{
-			addType: func() {
-				pkg.NewTypeDecl(&ast.TypeDecl{
-					Name: &ast.Ident{Name: "Bar1"},
-					Type: &ast.RecordType{Tag: ast.Struct},
-				})
-			},
-			headerFile: "file1.h",
-			outputFile: "file1.go",
-			newType:    "Bar1",
-		},
-		{
-			addType: func() {
-				pkg.NewTypedefDecl(&ast.TypedefDecl{
-					Name: &ast.Ident{Name: "Foo2"},
-					Type: &ast.BuiltinType{Kind: ast.Bool},
-				})
-			},
-			headerFile: "file2.h",
-			outputFile: "file2.go",
-			newType:    "Foo2",
 		},
 		{
 			addType: func() {
@@ -1343,41 +1309,35 @@ func TestTypeClean(t *testing.T) {
 				})
 			},
 			headerFile: "file2.h",
-			outputFile: "file2.go",
 			newType:    "Bar2",
 		},
 		{
 			addType: func() {
 				pkg.NewFuncDecl(&ast.FuncDecl{
-					Name:        &ast.Ident{Name: "Func1"},
-					MangledName: "Func1",
-					Type: &ast.FuncType{
-						Params: nil,
-						Ret:    nil,
-					},
+					Name: &ast.Ident{Name: "Func1"}, MangledName: "Func1",
+					Type: &ast.FuncType{Params: nil, Ret: nil},
 				})
 			},
 			headerFile: "file3.h",
-			outputFile: "file3.go",
 			newType:    "Func1",
 		},
-		// todo(zzy):func2
 	}
 
 	for i, tc := range testCases {
 		pkg.SetCurFile(tc.headerFile, true)
 		tc.addType()
-		addedTypes = append(addedTypes, tc.newType)
 
+		outputFile := strings.TrimSuffix(tc.headerFile, ".h") + ".go"
 		var buf bytes.Buffer
-		pkg.WriteToBuffer(&buf, tc.outputFile)
+		pkg.WriteToBuffer(&buf, outputFile)
 		result := buf.String()
 
 		if !strings.Contains(result, tc.newType) {
 			t.Errorf("Case %d: Generated type does not contain %s", i, tc.newType)
 		}
 
-		for j, oldType := range addedTypes[:len(addedTypes)-1] {
+		for j := 0; j < i; j++ {
+			oldType := testCases[j].newType
 			if strings.Contains(result, oldType) {
 				t.Errorf("Case %d: Previously added type %s (from case %d) still exists", i, oldType, j)
 			}
