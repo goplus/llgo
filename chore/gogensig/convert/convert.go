@@ -81,5 +81,7 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 func (p *AstConvert) VisitDone(docPath string) {
 	if p.visitDone != nil {
 		p.visitDone(p.pkg, docPath)
+	} else {
+		p.pkg.Write(docPath, "")
 	}
 }
