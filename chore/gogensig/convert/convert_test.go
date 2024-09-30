@@ -1,6 +1,7 @@
 package convert_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
@@ -155,7 +156,7 @@ func CustomExecuteFoo(a c.Int, b Foo) c.Int
 }
 
 func TestCustomStruct(t *testing.T) {
-	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
+	buf := cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
 		{MangleName: "lua_close", CppName: "lua_close", GoName: "Close"},
 		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
 		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},
@@ -172,23 +173,24 @@ LUA_API int(lua_resetthread)(lua_State *L);
 	`, `
 package typeref
 
-import "github.com/goplus/llgo/c"
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
 
 type State struct {
 	Unused [8]uint8
 }
 // llgo:type C
 type CFunction func(*State) c.Int
-
 //go:linkname Close C.lua_close
 func Close(L *State) c.Int
-
 //go:linkname Closethread C.lua_closethread
 func Closethread(L *State, from *State) c.Int
-
 //go:linkname Resetthread C.lua_resetthread
 func Resetthread(L *State) c.Int
 	`)
+	buf.WriteTo(os.Stderr)
 }
 
 // ===========================error

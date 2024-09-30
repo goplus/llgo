@@ -9,12 +9,17 @@ import (
 )
 
 type BuiltinTypeMap struct {
-	clib           gogen.PkgRef //  "github.com/goplus/llgo/c"
+	pkgMap         map[string]gogen.PkgRef
 	builtinTypeMap map[ast.BuiltinType]types.Type
 }
 
-func NewBuiltinTypeMapWithClib(clib gogen.PkgRef) *BuiltinTypeMap {
-	builtinTypeMap := &BuiltinTypeMap{clib: clib}
+func NewBuiltinTypeMapWithPkgRefS(pkgs ...gogen.PkgRef) *BuiltinTypeMap {
+	builtinTypeMap := &BuiltinTypeMap{}
+	builtinTypeMap.pkgMap = make(map[string]gogen.PkgRef)
+	for _, pkg := range pkgs {
+		builtinTypeMap.pkgMap[pkg.Types.Name()] = pkg
+		builtinTypeMap.pkgMap[pkg.Path()] = pkg
+	}
 	builtinTypeMap.initBuiltinTypeMap()
 	return builtinTypeMap
 }
@@ -22,12 +27,17 @@ func NewBuiltinTypeMapWithClib(clib gogen.PkgRef) *BuiltinTypeMap {
 func NewBuiltinTypeMap(pkgPath, name string, conf *gogen.Config) *BuiltinTypeMap {
 	p := gogen.NewPackage(pkgPath, name, conf)
 	clib := p.Import("github.com/goplus/llgo/c")
-	builtinTypeMap := NewBuiltinTypeMapWithClib(clib)
+	builtinTypeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.Unsafe())
+	builtinTypeMap.initBuiltinTypeMap()
 	return builtinTypeMap
 }
 
 func (p *BuiltinTypeMap) CType(typ string) types.Type {
-	return p.clib.Ref(typ).Type()
+	clib, ok := p.pkgMap["c"]
+	if ok {
+		return clib.Ref(typ).Type()
+	}
+	return nil
 }
 
 func (p *BuiltinTypeMap) IsVoidType(typ types.Type) bool {
