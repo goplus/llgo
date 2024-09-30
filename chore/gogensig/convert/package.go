@@ -185,9 +185,14 @@ func (p *Package) Write(headerFile, outputDir string) error {
 	return nil
 }
 
-func (p *Package) WriteToBuffer(buf *bytes.Buffer, fname ...string) error {
-	err := p.p.WriteTo(buf, fname...)
-	return err
+func (p *Package) WriteToBuffer(headerFile string) (*bytes.Buffer, error) {
+	goFileName := p.processHeaderFileName(headerFile)
+	buf := new(bytes.Buffer)
+	err := p.p.WriteTo(buf, goFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write to buffer: %w", err)
+	}
+	return buf, nil
 }
 
 func (p *Package) prepareOutputDir(outputDir string) (string, error) {
