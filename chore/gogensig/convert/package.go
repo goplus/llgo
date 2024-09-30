@@ -27,7 +27,8 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 		p: gogen.NewPackage(pkgPath, name, conf),
 	}
 	clib := p.p.Import("github.com/goplus/llgo/c")
-	typeMap := NewBuiltinTypeMapWithClib(clib)
+	p.p.Unsafe().MarkForceUsed(p.p)
+	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
 	p.name = name
 	p.dels = make([]any, 0)
