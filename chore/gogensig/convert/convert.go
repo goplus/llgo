@@ -78,6 +78,10 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 	p.pkg.NewTypedefDecl(typedefDecl)
 }
 
+func (p *AstConvert) VisitStart(docPath string) {
+	p.pkg.SetCurFile(docPath, true)
+}
+
 func (p *AstConvert) VisitDone(docPath string) {
 	if p.visitDone != nil {
 		p.visitDone(p.pkg, docPath)
