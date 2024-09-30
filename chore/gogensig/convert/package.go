@@ -19,7 +19,6 @@ type Package struct {
 	name string
 	p    *gogen.Package
 	cvt  *TypeConv
-	dels []any
 }
 
 func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
@@ -37,7 +36,6 @@ func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
 	p.name = name
-	p.dels = make([]any, 0)
 	return p
 }
 
@@ -102,7 +100,6 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	doc := CommentGroup(funcDecl.Doc)
 	doc.AddCommentGroup(NewFuncDocComments(funcDecl.Name.Name, string(goFuncName)))
 	decl.SetComments(p.p, doc.CommentGroup)
-	p.addToDelete(decl)
 	return nil
 }
 
@@ -117,12 +114,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return err
 	}
 	decl.InitType(p.p, structType)
-	p.addToDelete(decl)
 	return nil
-}
-
-func (p *Package) addToDelete(node ast.Node) {
-	p.dels = append(p.dels, node)
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
@@ -148,7 +140,6 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(NewTypecDocComments())
 	}
-	p.addToDelete(typeSpecdecl)
 	return nil
 }
 
@@ -175,17 +166,6 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 	return nil
 }
 
-func (p *Package) delete() {
-	for _, del := range p.dels {
-		switch v := del.(type) {
-		case *gogen.TypeDecl:
-			// todo(zzy):cause a unexcepted space line
-			// may because the delete function dont remove the GenDecl in ast
-			v.Delete()
-		}
-	}
-}
-
 // Write generates a Go file based on the package content.
 // The output file will be generated in a subdirectory named after the package within the outputDir.
 // If outputDir is not provided, the current directory will be used.
@@ -202,13 +182,11 @@ func (p *Package) Write(headerFile, outputDir string) error {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
-	p.delete()
 	return nil
 }
 
 func (p *Package) WriteToBuffer(buf *bytes.Buffer, fname ...string) error {
 	err := p.p.WriteTo(buf, fname...)
-	p.delete()
 	return err
 }
 
