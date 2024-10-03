@@ -59,7 +59,7 @@ const (
 	FUNCTION      c.Int = 6
 	USERDATA      c.Int = 7
 	THREAD        c.Int = 8
-	UMTYPES       c.Int = 9
+	NUMTYPES      c.Int = 9
 )
 
 /* minimum Lua stack available to a C function */
@@ -121,27 +121,15 @@ type Alloc func(ud c.Pointer, ptr c.Pointer, osize c.Ulong, nsize c.Ulong) c.Poi
  * Type for warning functions
  */
 
-// typedef void (*lua_WarnFunction) (void *ud, const char *msg, int tocont);
-
-/*
- * Type used by the debug API to collect debug information
- */
-
-// typedef struct lua_Debug lua_Debug;
+// llgo:type C
+type WarnFunction func(ud c.Pointer, msg c.Char, tocont c.Int)
 
 /*
  * Functions to be called by the debugger in specific events
  */
 
-// typedef void (*lua_Hook) (State *L, lua_Debug *ar);
-
-/*
- * generic extra include file
- */
-
-// #if defined(LUA_USER_H)
-// #include LUA_USER_H
-// #endif
+// llgo:type C
+type Hook func(L *State, ar *Debug)
 
 /*
  * RCS ident string
@@ -408,8 +396,11 @@ func (L *State) Yield(nresults c.Int) c.Int                             { return
  * Warning-related functions
  */
 
-//void (lua_setwarnf) (State *L, lua_WarnFunction f, void *ud);
-//void (lua_warning)  (State *L, const char *msg, int tocont);
+// llgo:link (*State).Setwarnf C.lua_setwarnf
+func (L *State) Setwarnf(f WarnFunction, ud c.Pointer) {}
+
+// llgo:link (*State).Warning C.lua_warning
+func (L *State) Warning(msg *c.Char, tocont c.Int) {}
 
 /*
  * garbage-collection function and options
@@ -429,7 +420,8 @@ const (
 	GCINC        = 11
 )
 
-// LUA_API int (lua_gc) (State *L, int what, ...);
+// llgo:link (*State).Gc C.lua_gc
+func (L *State) Gc(what c.Int, __llgo_va_list ...any) c.Int { return 0 }
 
 /*
  * miscellaneous functions
@@ -531,7 +523,9 @@ func (L *State) Setuservalue(idx c.Int) c.Int {
 	return L.Setiuservalue(idx, 1)
 }
 
-// #define LUA_NUMTAGS		LUA_NUMTYPES
+const (
+	NUMTAGS = NUMTYPES
+)
 
 /* }============================================================== */
 
@@ -564,22 +558,68 @@ const (
 	MASKCOUNT = 1 << HOOKCOUNT
 )
 
-// LUA_API int (lua_getstack) (State *L, int level, lua_Debug *ar);
-// LUA_API int (lua_getinfo) (State *L, const char *what, lua_Debug *ar);
-// LUA_API const char *(lua_getlocal) (State *L, const lua_Debug *ar, int n);
-// LUA_API const char *(lua_setlocal) (State *L, const lua_Debug *ar, int n);
-// LUA_API const char *(lua_getupvalue) (State *L, int funcindex, int n);
-// LUA_API const char *(lua_setupvalue) (State *L, int funcindex, int n);
+// llgo:link (*State).Getstack C.lua_getstack
+func (L *State) Getstack(level c.Int, ar *Debug) c.Int { return 0 }
 
-// LUA_API void *(lua_upvalueid) (State *L, int fidx, int n);
-// LUA_API void  (lua_upvaluejoin) (State *L, int fidx1, int n1, int fidx2, int n2);
+// llgo:link (*State).Getinfo C.lua_getinfo
+func (L *State) Getinfo(what *c.Char, ar *Debug) c.Int { return 0 }
 
-// LUA_API void (lua_sethook) (State *L, lua_Hook func, int mask, int count);
-// LUA_API lua_Hook (lua_gethook) (State *L);
-// LUA_API int (lua_gethookmask) (State *L);
-// LUA_API int (lua_gethookcount) (State *L);
+// llgo:link (*State).Getlocal C.lua_getlocal
+func (L *State) Getlocal(ar *Debug, n c.Int) *c.Char { return nil }
 
-// LUA_API int (lua_setcstacklimit) (State *L, unsigned int limit);
+// llgo:link (*State).Setlocal C.lua_setlocal
+func (L *State) Setlocal(ar *Debug, n c.Int) *c.Char { return nil }
 
-// struct lua_Debug
+// llgo:link (*State).Getupvalue C.lua_getupvalue
+func (L *State) Getupvalue(funcindex c.Int, n c.Int) *c.Char { return nil }
+
+// llgo:link (*State).Setupvalue C.lua_setupvalue
+func (L *State) Setupvalue(funcindex c.Int, n c.Int) *c.Char { return nil }
+
+// llgo:link (*State).Upvalueid C.lua_upvalueid
+func (L *State) Upvalueid(fidx c.Int, n c.Int) c.Pointer { return nil }
+
+// llgo:link (*State).Upvaluejoin C.lua_upvaluejoin
+func (L *State) Upvaluejoin(fidx1 c.Int, n1 c.Int, fidx2 c.Int, n2 c.Int) {}
+
+// llgo:link (*State).Sethook C.lua_sethook
+func (L *State) Sethook(fn Hook, mask c.Int, count c.Int) {}
+
+// llgo:link (*State).Gethook C.lua_gethook
+func (L *State) Gethook() Hook { return nil }
+
+// llgo:link (*State).Gethookmask C.lua_gethookmask
+func (L *State) Gethookmask() c.Int { return 0 }
+
+// llgo:link (*State).Gethookcount C.lua_gethookcount
+func (L *State) Gethookcount() c.Int { return 0 }
+
+// llgo:link (*State).Setcstacklimit C.lua_setcstacklimit
+func (L *State) Setcstacklimit(limit c.Uint) c.Int { return 0 }
+
+type CallInfo struct {
+	Unused [8]byte
+}
+
+type Debug struct {
+	Event           c.Int
+	Name            *c.Char        /* (n) */
+	Namewhat        *c.Char        /* (n) 'global', 'local', 'field', 'method' */
+	What            *c.Char        /* (S) 'Lua', 'C', 'main', 'tail' */
+	Source          *c.Char        /* (S) */
+	Srclen          uintptr        /* (S) */
+	Currentline     c.Int          /* (l) */
+	Linedefined     c.Int          /* (S) */
+	Lastlinedefined c.Int          /* (S) */
+	Nups            byte           /* (u) number of upvalues */
+	Nparams         byte           /* (u) number of parameters */
+	Isvararg        c.Char         /* (u) */
+	Istailcall      c.Char         /* (t) */
+	Ftransfer       uint16         /* (r) index of first value transferred */
+	Ntransfer       uint16         /* (r) number of transferred values */
+	ShortSrc        [IDSIZE]c.Char /* (S) */
+	/* private part */
+	ICi *CallInfo
+}
+
 /* }====================================================================== */
