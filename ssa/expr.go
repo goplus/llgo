@@ -1083,7 +1083,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			case vkChan:
 				return b.InlineCall(b.Pkg.rtFunc("ChanLen"), arg)
 			case vkMap:
-				return b.MapLen(arg)
+				return b.InlineCall(b.Pkg.rtFunc("MapLen"), arg)
 			}
 		}
 	case "cap":
