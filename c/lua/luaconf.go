@@ -1,5 +1,7 @@
 package lua
 
+import "unsafe"
+
 /*
 ** {==================================================================
 ** Macros that affect the API and must be stable (that is, must be the
@@ -18,6 +20,15 @@ package lua
 
 const (
 	MAXSTACK = 1000000
+)
+
+/*
+@@ LUA_EXTRASPACE defines the size of a raw memory area associated with
+** a Lua state with very fast access.
+** CHANGE it if you need a different size.
+*/
+const (
+	EXTRASPACE = unsafe.Sizeof(uintptr(0))
 )
 
 /*

@@ -460,7 +460,9 @@ func (L *State) Closeslot(idx c.Int) {}
  ** ===============================================================
  */
 
-// #define lua_getextraspace(L)	((void *)((char *)(L) - LUA_EXTRASPACE))
+func (L *State) Getextraspace() c.Pointer {
+	return c.Pointer(uintptr(c.Pointer(L)) - EXTRASPACE)
+}
 func (L *State) Tonumber(idx c.Int) Number   { return L.Tonumberx(idx, nil) }
 func (L *State) Tostring(idx c.Int) *c.Char  { return L.Tolstring(idx, nil) }
 func (L *State) Tointeger(idx c.Int) Integer { return L.Tointegerx(idx, nil) }
