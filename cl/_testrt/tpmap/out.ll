@@ -71,82 +71,82 @@ _llgo_0:
   %4 = load ptr, ptr @"map[_llgo_main.cacheKey]_llgo_string", align 8
   %5 = call ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr %4, i64 0)
   %6 = alloca %main.cacheKey, align 8
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %6, i64 48)
-  %8 = getelementptr inbounds %main.cacheKey, ptr %7, i32 0, i32 0
-  %9 = getelementptr inbounds %main.cacheKey, ptr %7, i32 0, i32 1
-  %10 = getelementptr inbounds %main.T2, ptr %9, i32 0, i32 0
-  %11 = getelementptr inbounds %main.cacheKey, ptr %7, i32 0, i32 2
-  %12 = getelementptr inbounds %"main.T3[any]", ptr %11, i32 0, i32 0
-  %13 = getelementptr inbounds %main.cacheKey, ptr %7, i32 0, i32 3
-  %14 = getelementptr inbounds %main.cacheKey, ptr %7, i32 0, i32 4
-  store i64 0, ptr %8, align 4
-  store i64 0, ptr %10, align 4
-  %15 = load ptr, ptr @_llgo_int, align 8
-  %16 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %16, i32 0, i32 0
-  store ptr %15, ptr %17, align 8
-  %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %16, i32 0, i32 1
-  store ptr null, ptr %18, align 8
-  %19 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %16, align 8
-  store %"github.com/goplus/llgo/internal/runtime.eface" %19, ptr %12, align 8
-  store ptr null, ptr %13, align 8
-  store i64 0, ptr %14, align 4
-  %20 = load %main.cacheKey, ptr %7, align 8
-  %21 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %21, i32 0, i32 0
-  store ptr @19, ptr %22, align 8
-  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %21, i32 0, i32 1
-  store i64 5, ptr %23, align 4
-  %24 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %21, align 8
-  %25 = load ptr, ptr @_llgo_main.cacheKey, align 8
-  %26 = load ptr, ptr @_llgo_string, align 8
-  %27 = load ptr, ptr @"map[_llgo_main.cacheKey]_llgo_string", align 8
-  %28 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
-  store %main.cacheKey %20, ptr %28, align 8
-  %29 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %27, ptr %5, ptr %28)
-  store %"github.com/goplus/llgo/internal/runtime.String" %24, ptr %29, align 8
-  %30 = alloca %main.cacheKey, align 8
-  %31 = call ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr %30, i64 48)
-  %32 = getelementptr inbounds %main.cacheKey, ptr %31, i32 0, i32 0
-  %33 = getelementptr inbounds %main.cacheKey, ptr %31, i32 0, i32 1
-  %34 = getelementptr inbounds %main.T2, ptr %33, i32 0, i32 0
-  %35 = getelementptr inbounds %main.cacheKey, ptr %31, i32 0, i32 2
-  %36 = getelementptr inbounds %"main.T3[any]", ptr %35, i32 0, i32 0
-  %37 = getelementptr inbounds %main.cacheKey, ptr %31, i32 0, i32 3
-  %38 = getelementptr inbounds %main.cacheKey, ptr %31, i32 0, i32 4
+  call void @llvm.memset(ptr %6, i8 0, i64 48, i1 false)
+  %7 = getelementptr inbounds %main.cacheKey, ptr %6, i32 0, i32 0
+  %8 = getelementptr inbounds %main.cacheKey, ptr %6, i32 0, i32 1
+  %9 = getelementptr inbounds %main.T2, ptr %8, i32 0, i32 0
+  %10 = getelementptr inbounds %main.cacheKey, ptr %6, i32 0, i32 2
+  %11 = getelementptr inbounds %"main.T3[any]", ptr %10, i32 0, i32 0
+  %12 = getelementptr inbounds %main.cacheKey, ptr %6, i32 0, i32 3
+  %13 = getelementptr inbounds %main.cacheKey, ptr %6, i32 0, i32 4
+  store i64 0, ptr %7, align 4
+  store i64 0, ptr %9, align 4
+  %14 = load ptr, ptr @_llgo_int, align 8
+  %15 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %16 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %15, i32 0, i32 0
+  store ptr %14, ptr %16, align 8
+  %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %15, i32 0, i32 1
+  store ptr null, ptr %17, align 8
+  %18 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %15, align 8
+  store %"github.com/goplus/llgo/internal/runtime.eface" %18, ptr %11, align 8
+  store ptr null, ptr %12, align 8
+  store i64 0, ptr %13, align 4
+  %19 = load %main.cacheKey, ptr %6, align 8
+  %20 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
+  %21 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %20, i32 0, i32 0
+  store ptr @19, ptr %21, align 8
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %20, i32 0, i32 1
+  store i64 5, ptr %22, align 4
+  %23 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %20, align 8
+  %24 = load ptr, ptr @_llgo_main.cacheKey, align 8
+  %25 = load ptr, ptr @_llgo_string, align 8
+  %26 = load ptr, ptr @"map[_llgo_main.cacheKey]_llgo_string", align 8
+  %27 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
+  store %main.cacheKey %19, ptr %27, align 8
+  %28 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %26, ptr %5, ptr %27)
+  store %"github.com/goplus/llgo/internal/runtime.String" %23, ptr %28, align 8
+  %29 = alloca %main.cacheKey, align 8
+  call void @llvm.memset(ptr %29, i8 0, i64 48, i1 false)
+  %30 = getelementptr inbounds %main.cacheKey, ptr %29, i32 0, i32 0
+  %31 = getelementptr inbounds %main.cacheKey, ptr %29, i32 0, i32 1
+  %32 = getelementptr inbounds %main.T2, ptr %31, i32 0, i32 0
+  %33 = getelementptr inbounds %main.cacheKey, ptr %29, i32 0, i32 2
+  %34 = getelementptr inbounds %"main.T3[any]", ptr %33, i32 0, i32 0
+  %35 = getelementptr inbounds %main.cacheKey, ptr %29, i32 0, i32 3
+  %36 = getelementptr inbounds %main.cacheKey, ptr %29, i32 0, i32 4
+  store i64 0, ptr %30, align 4
   store i64 0, ptr %32, align 4
-  store i64 0, ptr %34, align 4
-  %39 = load ptr, ptr @_llgo_int, align 8
-  %40 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %41 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %40, i32 0, i32 0
-  store ptr %39, ptr %41, align 8
-  %42 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %40, i32 0, i32 1
-  store ptr null, ptr %42, align 8
-  %43 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %40, align 8
-  store %"github.com/goplus/llgo/internal/runtime.eface" %43, ptr %36, align 8
-  store ptr null, ptr %37, align 8
-  store i64 0, ptr %38, align 4
-  %44 = load %main.cacheKey, ptr %31, align 8
-  %45 = load ptr, ptr @_llgo_main.cacheKey, align 8
-  %46 = load ptr, ptr @_llgo_string, align 8
-  %47 = load ptr, ptr @"map[_llgo_main.cacheKey]_llgo_string", align 8
-  %48 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
-  store %main.cacheKey %44, ptr %48, align 8
-  %49 = call { ptr, i1 } @"github.com/goplus/llgo/internal/runtime.MapAccess2"(ptr %47, ptr %5, ptr %48)
-  %50 = extractvalue { ptr, i1 } %49, 0
-  %51 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %50, align 8
-  %52 = extractvalue { ptr, i1 } %49, 1
-  %53 = alloca { %"github.com/goplus/llgo/internal/runtime.String", i1 }, align 8
-  %54 = getelementptr inbounds { %"github.com/goplus/llgo/internal/runtime.String", i1 }, ptr %53, i32 0, i32 0
-  store %"github.com/goplus/llgo/internal/runtime.String" %51, ptr %54, align 8
-  %55 = getelementptr inbounds { %"github.com/goplus/llgo/internal/runtime.String", i1 }, ptr %53, i32 0, i32 1
-  store i1 %52, ptr %55, align 1
-  %56 = load { %"github.com/goplus/llgo/internal/runtime.String", i1 }, ptr %53, align 8
-  %57 = extractvalue { %"github.com/goplus/llgo/internal/runtime.String", i1 } %56, 0
-  %58 = extractvalue { %"github.com/goplus/llgo/internal/runtime.String", i1 } %56, 1
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %57)
+  %37 = load ptr, ptr @_llgo_int, align 8
+  %38 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
+  %39 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %38, i32 0, i32 0
+  store ptr %37, ptr %39, align 8
+  %40 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %38, i32 0, i32 1
+  store ptr null, ptr %40, align 8
+  %41 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %38, align 8
+  store %"github.com/goplus/llgo/internal/runtime.eface" %41, ptr %34, align 8
+  store ptr null, ptr %35, align 8
+  store i64 0, ptr %36, align 4
+  %42 = load %main.cacheKey, ptr %29, align 8
+  %43 = load ptr, ptr @_llgo_main.cacheKey, align 8
+  %44 = load ptr, ptr @_llgo_string, align 8
+  %45 = load ptr, ptr @"map[_llgo_main.cacheKey]_llgo_string", align 8
+  %46 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
+  store %main.cacheKey %42, ptr %46, align 8
+  %47 = call { ptr, i1 } @"github.com/goplus/llgo/internal/runtime.MapAccess2"(ptr %45, ptr %5, ptr %46)
+  %48 = extractvalue { ptr, i1 } %47, 0
+  %49 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %48, align 8
+  %50 = extractvalue { ptr, i1 } %47, 1
+  %51 = alloca { %"github.com/goplus/llgo/internal/runtime.String", i1 }, align 8
+  %52 = getelementptr inbounds { %"github.com/goplus/llgo/internal/runtime.String", i1 }, ptr %51, i32 0, i32 0
+  store %"github.com/goplus/llgo/internal/runtime.String" %49, ptr %52, align 8
+  %53 = getelementptr inbounds { %"github.com/goplus/llgo/internal/runtime.String", i1 }, ptr %51, i32 0, i32 1
+  store i1 %50, ptr %53, align 1
+  %54 = load { %"github.com/goplus/llgo/internal/runtime.String", i1 }, ptr %51, align 8
+  %55 = extractvalue { %"github.com/goplus/llgo/internal/runtime.String", i1 } %54, 0
+  %56 = extractvalue { %"github.com/goplus/llgo/internal/runtime.String", i1 } %54, 1
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %55)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %58)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %56)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
@@ -695,7 +695,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr, i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Zeroinit"(ptr, i64)
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr, ptr, ptr)
 
@@ -706,3 +707,5 @@ declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com
 declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
