@@ -78,9 +78,10 @@ func FuncWithAllTypeStructParam(s StructWithAllTypeFields) {
 	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	//   s.pad1: 100
 	//   s.pad2: 200
-	s.i8 = 8
-	// Expected(skio):
-	//   s.i8: '\x08'
+	s.i8 = '\b'
+	// Expected:
+	//   s.i8: '\b'
+	//   s.i16: 2
 	println(len(s.s), s.i8)
 }
 
@@ -115,6 +116,36 @@ func FuncWithAllTypeParams(
 	err error,
 	fn func(string) (int, error),
 ) (int, error) {
+	// Expected:
+	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn
+	//   i32: 3
+	//   i64: 4
+	//   i: 5
+	//   u32: 8
+	//   u64: 9
+	//   u: 10
+	//   f32: 11
+	//   f64: 12
+	//   slice: []int{21, 22, 23}
+	//   arr: [3]int{24, 25, 26}
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
+	//   slice[0]: 21
+	//   slice[1]: 22
+	//   slice[2]: 23
+	//   arr[0]: 24
+	//   arr[1]: 25
+	//   arr[2]: 26
+	//   arr2[0].i: 27
+	//   arr2[1].i: 28
+	//   arr2[2].i: 29
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
+
+	// Expected(skip):
+	//   i8: '\b'
+	//   i16: 2
+	//   u8: '\x06'
+	//   u16: 7
+	//   b: true
 	println(
 		i8, i16, i32, i64, i, u8, u16, u32, u64, u,
 		f32, f64, b,
@@ -127,32 +158,61 @@ func FuncWithAllTypeParams(
 		err,
 		fn,
 	)
-	// Expected:
-	//   all variables: i8 i16 i32 i64 i u8 u16 u32 u64 u f32 f64 b c64 c128 slice arr arr2 s e f pf pi intr m c err fn
-	//   i8: '\x01'
-	//   i16: 2
-	//   i32: 3
-	//   i64: 4
-	//   i: 5
-	//   u8: '\x06'
-	//   u16: 7
-	//   u32: 8
-	//   u64: 9
-	//   u: 10
-	//   f32: 11
-	//   f64: 12
-	//   b: true
-	//   c64: complex64{real = 13, imag = 14}
-	//   c128: complex128{real = 15, imag = 16}
-	//   slice: []int{21, 22, 23}
-	//   arr: [3]int{24, 25, 26}
-	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
-	//   s: "hello"
-	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 	i8 = 9
+	i16 = 10
+	i32 = 11
+	i64 = 12
+	i = 13
+	u8 = 14
+	u16 = 15
+	u32 = 16
+	u64 = 17
+	u = 18
+	f32 = 19
+	f64 = 20
+	b = false
+	c64 = 21 + 22i
+	c128 = 23 + 24i
+	slice = []int{31, 32, 33}
+	arr = [3]int{34, 35, 36}
+	arr2 = [3]E{{i: 37}, {i: 38}, {i: 39}}
+	s = "world"
+	e = E{i: 40}
+
+	println(i8, i16, i32, i64, i, u8, u16, u32, u64, u,
+		f32, f64, b,
+		c64, c128,
+		slice, arr[0:], &arr2,
+		s,
+		&e,
+		&f, pf, pi, intr, m,
+		c,
+		err,
+		fn,
+	)
+	// Expected:
+	//   i8: '\t'
+	//   i16: 10
+	//   i32: 11
+	//   i64: 12
+	//   i: 13
+	//   u8: '\x0e'
+	//   u16: 15
+	//   u32: 16
+	//   u64: 17
+	//   u: 18
+	//   f32: 19
+	//   f64: 20
+	//   b: false
+	//   c64: complex64{real = 21, imag = 22}
+	//   c128: complex128{real = 23, imag = 24}
+	//   slice: []int{31, 32, 33}
+	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 37}, {i = 38}, {i = 39}}
+	//   s: "world"
+	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 40}
+
 	// Expected(skip):
-	//   i8: '\x09'
-	println(i8)
+	//   arr: [3]int{34, 35, 36}
 	return 1, errors.New("some error")
 }
 
@@ -185,7 +245,7 @@ type BigStruct struct {
 }
 
 func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
-	println(&t, &s, &m, &b)
+	// println(&t, &s, &m, &b)
 	// Expected:
 	//   all variables: t s m b
 	//   t.I: 1
@@ -204,15 +264,45 @@ func FuncStructParams(t TinyStruct, s SmallStruct, m MidStruct, b BigStruct) {
 	//   b.P: 14
 	//   b.Q: 15
 	//   b.R: 16
+	println(t.I, s.I, s.J, m.I, m.J, m.K, b.I, b.J, b.K, b.L, b.M, b.N, b.O, b.P, b.Q, b.R)
 	t.I = 10
-	// Expected(skip):
+	s.I = 20
+	s.J = 21
+	m.I = 40
+	m.J = 41
+	m.K = 42
+	b.I = 70
+	b.J = 71
+	b.K = 72
+	b.L = 73
+	b.M = 74
+	b.N = 75
+	b.O = 76
+	b.P = 77
+	b.Q = 78
+	b.R = 79
+	// Expected:
 	//   all variables: t s m b
 	//   t.I: 10
+	//   s.I: 20
+	//   s.J: 21
+	//   m.I: 40
+	//   m.J: 41
+	//   m.K: 42
+	//   b.I: 70
+	//   b.J: 71
+	//   b.K: 72
+	//   b.L: 73
+	//   b.M: 74
+	//   b.N: 75
+	//   b.O: 76
+	//   b.P: 77
+	//   b.Q: 78
+	//   b.R: 79
 	println("done")
 }
 
 func FuncStructPtrParams(t *TinyStruct, s *SmallStruct, m *MidStruct, b *BigStruct) {
-	println(t, s, m, b)
 	// Expected:
 	//   all variables: t s m b
 	//   t.I: 1
@@ -231,11 +321,137 @@ func FuncStructPtrParams(t *TinyStruct, s *SmallStruct, m *MidStruct, b *BigStru
 	//   b.P: 14
 	//   b.Q: 15
 	//   b.R: 16
+	println(t, s, m, b)
 	t.I = 10
+	s.I = 20
+	s.J = 21
+	m.I = 40
+	m.J = 41
+	m.K = 42
+	b.I = 70
+	b.J = 71
+	b.K = 72
+	b.L = 73
+	b.M = 74
+	b.N = 75
+	b.O = 76
+	b.P = 77
+	b.Q = 78
+	b.R = 79
 	// Expected:
 	//   all variables: t s m b
 	//   t.I: 10
+	//   s.I: 20
+	//   s.J: 21
+	//   m.I: 40
+	//   m.J: 41
+	//   m.K: 42
+	//   b.I: 70
+	//   b.J: 71
+	//   b.K: 72
+	//   b.L: 73
+	//   b.M: 74
+	//   b.N: 75
+	//   b.O: 76
+	//   b.P: 77
+	//   b.Q: 78
+	//   b.R: 79
+	println(t.I, s.I, s.J, m.I, m.J, m.K, b.I, b.J, b.K, b.L, b.M, b.N, b.O, b.P, b.Q, b.R)
 	println("done")
+}
+
+func ScopeIf(branch int) {
+	a := 1
+	// Expected:
+	//   all variables: a branch
+	//   a: 1
+	if branch == 1 {
+		b := 2
+		c := 3
+		// Expected:
+		//   all variables: a b c branch
+		//   a: 1
+		//   b: 2
+		//   c: 3
+		//   branch: 1
+		println(a, b, c)
+	} else {
+		c := 3
+		d := 4
+		// Expected:
+		//   all variables: a c d branch
+		//   a: 1
+		//   c: 3
+		//   d: 4
+		//   branch: 0
+		println(a, c, d)
+	}
+	// Expected:
+	//   all variables: a branch
+	//   a: 1
+	println("a:", a)
+}
+
+func ScopeFor() {
+	a := 1
+	for i := 0; i < 10; i++ {
+		switch i {
+		case 0:
+			println("i is 0")
+			// Expected:
+			//   all variables: i a
+			//   i: 0
+			//   a: 1
+			println("i:", i)
+		case 1:
+			println("i is 1")
+			// Expected:
+			//   all variables: i a
+			//   i: 1
+			//   a: 1
+			println("i:", i)
+		default:
+			println("i is", i)
+		}
+	}
+	println("a:", a)
+}
+
+func ScopeSwitch(i int) {
+	a := 0
+	switch i {
+	case 1:
+		b := 1
+		println("i is 1")
+		// Expected:
+		//   all variables: i a b
+		//   i: 1
+		//   a: 0
+		//   b: 1
+		println("i:", i, "a:", a, "b:", b)
+	case 2:
+		c := 2
+		println("i is 2")
+		// Expected:
+		//   all variables: i a c
+		//   i: 2
+		//   a: 0
+		//   c: 2
+		println("i:", i, "a:", a, "c:", c)
+	default:
+		d := 3
+		println("i is", i)
+		// Expected:
+		//   all variables: i a d
+		//   i: 3
+		//   a: 0
+		//   d: 3
+		println("i:", i, "a:", a, "d:", d)
+	}
+	// Expected:
+	//   all variables: a i
+	//   a: 0
+	println("a:", a)
 }
 
 func main() {
@@ -263,7 +479,7 @@ func main() {
 		arr2:  [3]E{{i: 27}, {i: 28}, {i: 29}},
 		s:     "hello",
 		e:     E{i: 30},
-		pf:    &StructWithAllTypeFields{},
+		pf:    &StructWithAllTypeFields{i16: 100},
 		pi:    &i,
 		intr:  &Struct{},
 		m:     map[string]uint64{"a": 31, "b": 32},
@@ -277,9 +493,36 @@ func main() {
 		pad1: 100,
 		pad2: 200,
 	}
+	// Expected:
+	//   all variables: s i err
+	//   s.i8: '\x01'
+	//   s.i16: 2
+	//   s.i32: 3
+	//   s.i64: 4
+	//   s.i: 5
+	//   s.u8: '\x06'
+	//   s.u16: 7
+	//   s.u32: 8
+	//   s.u64: 9
+	//   s.u: 10
+	//   s.f32: 11
+	//   s.f64: 12
+	//   s.b: true
+	//   s.c64: complex64{real = 13, imag = 14}
+	//   s.c128: complex128{real = 15, imag = 16}
+	//   s.slice: []int{21, 22, 23}
+	//   s.arr: [3]int{24, 25, 26}
+	//   s.arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
+	//   s.s: "hello"
+	//   s.e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
+	//   s.pf.i16: 100
+	//   *(s.pf).i16: 100
+	//   *(s.pi): 100
 	globalStructPtr = &s
 	globalStruct = s
 	println("globalInt:", globalInt)
+	// Expected(skip):
+	//   all variables: globalInt globalStruct globalStructPtr s i err
 	println("s:", &s)
 	FuncWithAllTypeStructParam(s)
 	println("called function with struct")
@@ -298,18 +541,21 @@ func main() {
 		s.fn,
 	)
 	println(i, err)
-	println("called function with types")
+	ScopeIf(1)
+	ScopeIf(0)
+	ScopeFor()
+	ScopeSwitch(1)
+	ScopeSwitch(2)
+	ScopeSwitch(3)
 	println(globalStructPtr)
 	println(&globalStruct)
-	// Expected(skip):
-	//   all variables: globalInt globalStruct globalStructPtr s i err
-	//   s.i8: '\x01'
-	//   s.i16: 2
 	s.i8 = 0x12
 	println(s.i8)
-	// Expected(skip):
-	//   all variables: globalInt globalStruct globalStructPtr s i err
+	// Expected:
+	//   all variables: s i err
 	//   s.i8: '\x12'
+
+	// Expected(skip):
 	//   globalStruct.i8: '\x01'
 	println((*globalStructPtr).i8)
 	println("done")

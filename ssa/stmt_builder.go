@@ -58,9 +58,8 @@ func (p BasicBlock) Addr() Expr {
 // -----------------------------------------------------------------------------
 
 type dbgExpr struct {
-	ptr   Expr
-	val   Expr
-	deref bool
+	ptr Expr
+	val Expr
 }
 
 type aBuilder struct {
@@ -70,7 +69,8 @@ type aBuilder struct {
 	Pkg  Package
 	Prog Program
 
-	dbgVars map[Expr]dbgExpr
+	dbgVars      map[Expr]dbgExpr         // save copied address and values for debug info
+	diScopeCache map[*types.Scope]DIScope // avoid duplicated DILexicalBlock(s)
 }
 
 // Builder represents a builder for creating instructions in a function.
