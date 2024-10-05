@@ -129,6 +129,15 @@ func FuncWithAllTypeParams(
 	//   slice: []int{21, 22, 23}
 	//   arr: [3]int{24, 25, 26}
 	//   arr2: [3]github.com/goplus/llgo/cl/_testdata/debug.E{{i = 27}, {i = 28}, {i = 29}}
+	//   slice[0]: 21
+	//   slice[1]: 22
+	//   slice[2]: 23
+	//   arr[0]: 24
+	//   arr[1]: 25
+	//   arr[2]: 26
+	//   arr2[0].i: 27
+	//   arr2[1].i: 28
+	//   arr2[2].i: 29
 	//   e: github.com/goplus/llgo/cl/_testdata/debug.E{i = 30}
 
 	// Expected(skip):
@@ -375,7 +384,7 @@ func ScopeIf(branch int) {
 		//   c: 3
 		//   d: 4
 		//   branch: 0
-		println(c, d)
+		println(a, c, d)
 	}
 	// Expected:
 	//   all variables: a branch

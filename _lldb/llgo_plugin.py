@@ -20,6 +20,27 @@ def is_llgo_compiler(_target: lldb.SBTarget) -> bool:
     return True
 
 
+def get_indexed_value(value: lldb.SBValue, index: int) -> Optional[lldb.SBValue]:
+    if not value or not value.IsValid():
+        return None
+
+    type_name = value.GetType().GetName()
+
+    if type_name.startswith('[]'):  # Slice
+        data_ptr = value.GetChildMemberWithName('data')
+        element_type = data_ptr.GetType().GetPointeeType()
+        element_size = element_type.GetByteSize()
+        ptr_value = int(data_ptr.GetValue(), 16)
+        element_address = ptr_value + index * element_size
+        target = value.GetTarget()
+        return target.CreateValueFromAddress(
+            f"element_{index}", lldb.SBAddress(element_address, target), element_type)
+    elif value.GetType().IsArrayType():  # Array
+        return value.GetChildAtIndex(index)
+    else:
+        return None
+
+
 def evaluate_expression(frame: lldb.SBFrame, expression: str) -> Optional[lldb.SBValue]:
     parts = re.findall(r'\*|\w+|\(|\)|\[.*?\]|\.', expression)
 
@@ -56,7 +77,7 @@ def evaluate_expression(frame: lldb.SBFrame, expression: str) -> Optional[lldb.S
                 i += 2
             elif part.startswith('['):
                 index = int(part[1:-1])
-                value = value.GetChildAtIndex(index)
+                value = get_indexed_value(value, index)
                 i += 1
             else:
                 if value is None:
