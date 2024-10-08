@@ -63,7 +63,7 @@ func expandCflags(str string, fn func(s string) bool) []string {
 			if !fn(d.Name()) {
 				return nil
 			}
-			results = append(results, path)
+			results = append(results, d.Name())
 			return nil
 		})
 	}
