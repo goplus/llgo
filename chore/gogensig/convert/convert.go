@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"errors"
+
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/llcppg/ast"
@@ -12,14 +14,28 @@ type AstConvert struct {
 	visitDone func(pkg *Package, docPath string)
 }
 
-func NewAstConvert(pkgName string, symbFile string, genConfFile string) *AstConvert {
+type AstConvertConfig struct {
+	PkgName   string
+	SymbFile  string // llcppg.symb.json
+	CfgFile   string // llcppg.cfg
+	OutputDir string
+}
+
+func NewAstConvert(config *AstConvertConfig) (*AstConvert, error) {
+	if config == nil {
+		return nil, errors.New("config is nil")
+	}
 	p := new(AstConvert)
 	p.BaseDocVisitor = visitor.NewBaseDocVisitor(p)
-	pkg := NewPackage(".", pkgName, nil)
+	pkg := NewPackage(&PackageConfig{
+		PkgPath:   ".",
+		Name:      config.PkgName,
+		OutputDir: config.OutputDir,
+	})
 	p.pkg = pkg
-	p.setupSymbolTableFile(symbFile)
-	p.setupGenConfig(genConfFile)
-	return p
+	p.setupSymbolTableFile(config.SymbFile)
+	p.setupGenConfig(config.CfgFile)
+	return p, nil
 }
 
 func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
@@ -86,6 +102,6 @@ func (p *AstConvert) VisitDone(docPath string) {
 	if p.visitDone != nil {
 		p.visitDone(p.pkg, docPath)
 	} else {
-		p.pkg.Write(docPath, "")
+		p.pkg.Write(docPath)
 	}
 }

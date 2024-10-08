@@ -23,11 +23,18 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 	if err != nil {
 		t.Fatal(err)
 	}
-	cppgConfPath, err := CreateCppgConfFile(cppgConf)
+	cfgPath, err := CreateCppgConfFile(cppgConf)
 	if err != nil {
 		t.Fatal(err)
 	}
-	astConvert := convert.NewAstConvert(pkgName, symbolpath, cppgConfPath)
+	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  pkgName,
+		SymbFile: symbolpath,
+		CfgFile:  cfgPath,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var buf *bytes.Buffer
 	astConvert.SetVisitDone(func(pkg *convert.Package, docPath string) {
