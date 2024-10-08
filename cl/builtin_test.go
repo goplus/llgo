@@ -151,6 +151,7 @@ func TestErrBuiltin(t *testing.T) {
 	test("allocaCStr", func(ctx *context) { ctx.allocaCStr(nil, nil) })
 	test("allocaCStrs", func(ctx *context) { ctx.allocaCStrs(nil, nil) })
 	test("allocaCStrs(Nonconst)", func(ctx *context) { ctx.allocaCStrs(nil, []ssa.Value{nil, &ssa.Parameter{}}) })
+	test("allocCStr", func(ctx *context) { ctx.allocCStr(nil, nil) })
 	test("string", func(ctx *context) { ctx.string(nil, nil) })
 	test("stringData", func(ctx *context) { ctx.stringData(nil, nil) })
 	test("funcAddr", func(ctx *context) { ctx.funcAddr(nil, nil) })

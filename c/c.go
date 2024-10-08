@@ -72,6 +72,9 @@ func AllocaCStr(s string) *Char
 //go:linkname AllocaCStrs llgo.allocaCStrs
 func AllocaCStrs(strs []string, endWithNil bool) **Char
 
+//go:linkname AllocCStr llgo.allocCStr
+func AllocCStr(s string) *Char
+
 // TODO(xsw):
 // llgo:link AllocaNew llgo.allocaNew
 func AllocaNew[T any]() *T { return nil }
