@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
-	"log"
 	"path/filepath"
 	"strings"
 	"unsafe"
@@ -273,11 +272,9 @@ func (c *TypeConv) IsHeaderFileAliased(headerFile string) bool {
 	relativeHeaderFile := c.getRelativeHeaderPath(headerFile)
 	for _, info := range c.typeMap.typeAliases {
 		if info.HeaderFile == relativeHeaderFile {
-			log.Printf("info.HeaderFile Skip: %s, relativeHeaderFile: %s", info.HeaderFile, relativeHeaderFile)
 			return true
 		}
 	}
-	log.Printf("info.HeaderFile Not Skip: %s, relativeHeaderFile: %s", headerFile, relativeHeaderFile)
 	return false
 }
 

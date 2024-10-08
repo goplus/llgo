@@ -48,7 +48,14 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 	}
 	defer os.Remove(tempFileName)
 
-	astConvert := convert.NewAstConvert("files", "", "")
+	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  "files",
+		SymbFile: "",
+		CfgFile:  "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
 	err = p.ProcessFileSetFromPath(tempFileName)
@@ -58,10 +65,17 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 }
 
 func TestProcessFileNotExist(t *testing.T) {
-	astConvert := convert.NewAstConvert("error", "", "")
+	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  "error",
+		SymbFile: "",
+		CfgFile:  "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
-	err := p.ProcessFileSetFromPath("notexist.json")
+	err = p.ProcessFileSetFromPath("notexist.json")
 	if !os.IsNotExist(err) {
 		t.Error("expect no such file or directory error")
 	}
@@ -81,7 +95,14 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 	}
 	defer os.Remove(tempFileName)
 
-	astConvert := convert.NewAstConvert("panic", "", "")
+	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  "panic",
+		SymbFile: "",
+		CfgFile:  "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	docVisitors := []visitor.DocVisitor{astConvert}
 	p := processor.NewDocFileSetProcessor(docVisitors)
 	err = p.ProcessFileSetFromPath(tempFileName)
