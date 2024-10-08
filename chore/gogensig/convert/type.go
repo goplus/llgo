@@ -97,34 +97,45 @@ func (p *TypeConv) handlePointerType(t *ast.PointerType) (types.Type, error) {
 }
 
 func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
-	lookup := func(name string) (types.Object, error) {
+	lookup := func(name string) (types.Type, error) {
+		// First, check for type aliases like int8_t, uint8_t, etc.
+		// These types are typically defined in system header files such as:
+		// /include/sys/_types/_int8_t.h
+		// /include/sys/_types/_int16_t.h
+		// /include/sys/_types/_uint8_t.h
+		// /include/sys/_types/_uint16_t.h
+		// We don't generate Go files for these system headers.
+		// Instead, we directly map these types to their corresponding Go types
+		// using our type alias mapping in BuiltinTypeMap.
+		typ, err := p.typeMap.FindTypeAlias(name)
+		if err == nil {
+			return typ, nil
+		}
+		// We don't check for types.Named here because the type returned from ConvertType
+		// for aliases like int8_t might be a built-in type (e.g., int8),
 		obj := p.types.Scope().Lookup(name)
 		if obj == nil {
 			return nil, fmt.Errorf("%s not found", name)
 		}
-		return obj, nil
+		return obj.Type(), nil
 	}
 	switch t := t.(type) {
 	case *ast.Ident:
-		obj, err := lookup(p.RemovePrefixedName(t.Name))
+		typ, err := lookup(p.RemovePrefixedName(t.Name))
 		if err != nil {
 			return nil, fmt.Errorf("%s not found", t.Name)
 		}
-		if typ, ok := obj.Type().(*types.Named); ok {
-			return typ, nil
-		}
+		return typ, nil
 	case *ast.ScopingExpr:
 		// todo(zzy)
 	case *ast.TagExpr:
 		// todo(zzy):scoping
 		if ident, ok := t.Name.(*ast.Ident); ok {
-			obj, err := lookup(p.RemovePrefixedName(p.RemovePrefixedName(ident.Name)))
+			typ, err := lookup(p.RemovePrefixedName(ident.Name))
 			if err != nil {
 				return nil, fmt.Errorf("%s not found", ident.Name)
 			}
-			if typ, ok := obj.Type().(*types.Named); ok {
-				return typ, nil
-			}
+			return typ, nil
 		}
 		// todo(zzy):scoping expr
 	}
