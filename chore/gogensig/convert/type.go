@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"log"
+	"path/filepath"
 	"strings"
 	"unsafe"
 
@@ -261,6 +263,41 @@ func (p *TypeConv) RemovePrefixedName(name string) string {
 		}
 	}
 	return name
+}
+
+// checks if a header file is aliased in the type map.
+// Note: Files like _types.h and sys/_types.h correspond to different actual files.
+// Therefore, we need to compare the relative paths from the include directory
+// to determine if they refer to the same file.
+func (c *TypeConv) IsHeaderFileAliased(headerFile string) bool {
+	relativeHeaderFile := c.getRelativeHeaderPath(headerFile)
+	for _, info := range c.typeMap.typeAliases {
+		if info.HeaderFile == relativeHeaderFile {
+			log.Printf("info.HeaderFile Skip: %s, relativeHeaderFile: %s", info.HeaderFile, relativeHeaderFile)
+			return true
+		}
+	}
+	log.Printf("info.HeaderFile Not Skip: %s, relativeHeaderFile: %s", headerFile, relativeHeaderFile)
+	return false
+}
+
+func (c *TypeConv) getRelativeHeaderPath(headerFile string) string {
+	parts := strings.Split(headerFile, string(filepath.Separator))
+
+	includeIndex := -1
+	for i, part := range parts {
+
+		if part == "include" {
+			includeIndex = i
+			break
+		}
+	}
+
+	if includeIndex != -1 && includeIndex < len(parts)-1 {
+		return filepath.Join(parts[includeIndex+1:]...)
+	}
+
+	return headerFile
 }
 
 func ToTitle(s string) string {

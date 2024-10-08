@@ -170,7 +170,12 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 // The output file will be generated in a subdirectory named after the package within the outputDir.
 // If outputDir is not provided, the current directory will be used.
 // The header file name is the go file name.
+//
+// Files that are already mapped in BuiltinTypeMap.typeAliases will not be output.
 func (p *Package) Write(headerFile, outputDir string) error {
+	if p.shouldSkipFile(headerFile) {
+		return nil
+	}
 	dir, err := p.prepareOutputDir(outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to prepare output directory: %w", err)
@@ -185,6 +190,8 @@ func (p *Package) Write(headerFile, outputDir string) error {
 	return nil
 }
 
+// WriteToBuffer writes the Go file to a buffer.
+// Include the aliased file for debug
 func (p *Package) WriteToBuffer(headerFile string) (*bytes.Buffer, error) {
 	goFileName := p.processHeaderFileName(headerFile)
 	buf := new(bytes.Buffer)
@@ -225,4 +232,8 @@ func (p *Package) processHeaderFileName(headerFile string) string {
 		fileName = "temp"
 	}
 	return fileName + ".go"
+}
+
+func (p *Package) shouldSkipFile(headerFile string) bool {
+	return p.cvt.IsHeaderFileAliased(headerFile)
 }
