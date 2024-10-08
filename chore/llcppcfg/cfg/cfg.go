@@ -88,11 +88,11 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 	return cfg
 }
 
-func GenCfg(name string) (*bytes.Buffer, error) {
+func GenCfg(name string, cpp bool) (*bytes.Buffer, error) {
 	if len(name) <= 0 {
 		return nil, fmt.Errorf("name can't be empty")
 	}
-	cfg := NewLLCppConfig(name, true)
+	cfg := NewLLCppConfig(name, cpp)
 	buf := bytes.NewBuffer([]byte{})
 	jsonEncoder := json.NewEncoder(buf)
 	jsonEncoder.SetIndent("", "\t")
