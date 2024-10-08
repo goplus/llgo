@@ -11,6 +11,7 @@ import (
 type BuiltinTypeMap struct {
 	pkgMap         map[string]gogen.PkgRef
 	builtinTypeMap map[ast.BuiltinType]types.Type
+	typeAliases    map[string]types.Type
 }
 
 func NewBuiltinTypeMapWithPkgRefS(pkgs ...gogen.PkgRef) *BuiltinTypeMap {
@@ -28,7 +29,6 @@ func NewBuiltinTypeMap(pkgPath, name string, conf *gogen.Config) *BuiltinTypeMap
 	p := gogen.NewPackage(pkgPath, name, conf)
 	clib := p.Import("github.com/goplus/llgo/c")
 	builtinTypeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.Unsafe())
-	builtinTypeMap.initBuiltinTypeMap()
 	return builtinTypeMap
 }
 
@@ -51,6 +51,14 @@ func (p *BuiltinTypeMap) FindBuiltinType(builtinType ast.BuiltinType) (types.Typ
 		return t, nil
 	}
 	return nil, fmt.Errorf("%s", "not found in type map")
+}
+
+func (p *BuiltinTypeMap) FindTypeAlias(name string) (types.Type, error) {
+	t, ok := p.typeAliases[name]
+	if ok {
+		return t, nil
+	}
+	return nil, fmt.Errorf("%s", "not found in type alias map")
 }
 
 func (p *BuiltinTypeMap) initBuiltinTypeMap() {
@@ -76,5 +84,9 @@ func (p *BuiltinTypeMap) initBuiltinTypeMap() {
 		{Kind: ast.Float, Flags: ast.Double | ast.Long}:     p.CType("Double"),           // Long Double (same as double,need more precision)
 		{Kind: ast.Complex}:                                 types.Typ[types.Complex64],  // ComplexFloat
 		{Kind: ast.Complex, Flags: ast.Double}:              types.Typ[types.Complex128], // ComplexDouble
+	}
+
+	p.typeAliases = map[string]types.Type{
+		"int8_t": p.CType("Char"),
 	}
 }
