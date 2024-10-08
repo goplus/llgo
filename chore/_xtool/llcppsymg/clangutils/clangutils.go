@@ -75,6 +75,11 @@ func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit
 	return index, unit, nil
 }
 
+func GetLocation(loc clang.SourceLocation) (file clang.File, line c.Uint, column c.Uint, offset c.Uint) {
+	loc.SpellingLocation(&file, &line, &column, &offset)
+	return
+}
+
 // Traverse up the semantic parents
 func BuildScopingParts(cursor clang.Cursor) []string {
 	var parts []string

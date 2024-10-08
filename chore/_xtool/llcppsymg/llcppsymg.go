@@ -22,8 +22,6 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/dylib"
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/header"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/symbol"
 )
@@ -50,10 +48,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
 	}
-	symbols, err := dylib.ParseDylibSymbols(conf.Libs)
+	symbols, err := symbol.ParseDylibSymbols(conf.Libs)
 	check(err)
 
-	filepaths, err := header.GenHeaderFilePath(conf.CFlags, conf.Include)
+	filepaths, err := parse.GenHeaderFilePath(conf.CFlags, conf.Include)
 	check(err)
 	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus, false)
 	check(err)
