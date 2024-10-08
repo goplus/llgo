@@ -9,11 +9,8 @@ import (
 
 // -------------------------------------------------------------------------------------------------
 
-type pyobj interface {
-	pyObj() *pyObject
-	setPyObj(obj *pyObject)
-}
-
+// pyObject is a wrapper type that holds a Python Object and automatically calls
+// the Python Object's DecRef method during garbage collection.
 type pyObject struct {
 	obj *py.Object
 }
@@ -33,6 +30,22 @@ func (obj *pyObject) Nil() bool {
 
 func (obj PyObject) GetAttrString(name string) PyObject {
 	return NewObject(obj.obj.GetAttrString(c.AllocCStr(name)))
+}
+
+func (obj PyObject) GetFuncAttr(name string) PyFunc {
+	return NewFunc(obj.obj.GetAttrString(c.AllocCStr(name)))
+}
+
+func (obj PyObject) GetBoolAttr(name string) PyBool {
+	return NewBool(obj.obj.GetAttrString(c.AllocCStr(name)))
+}
+
+func (obj PyObject) GetFloatAttr(name string) PyFloat {
+	return NewFloat(obj.obj.GetAttrString(c.AllocCStr(name)))
+}
+
+func (obj PyObject) GetDictAttr(name string) PyDict {
+	return NewDict(obj.obj.GetAttrString(c.AllocCStr(name)))
 }
 
 type PyObject struct {
@@ -165,6 +178,11 @@ func (f PyFunc) CallOneArg(arg PyObject) PyObject {
 }
 
 // -------------------------------------------------------------------------------------------------
+
+type pyobj interface {
+	pyObj() *pyObject
+	setPyObj(obj *pyObject)
+}
 
 func Cast[U, T pyobj](obj T) (ret U) {
 	// TODO(lijie): avoid heap allocation
