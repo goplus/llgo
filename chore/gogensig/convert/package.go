@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,27 +16,57 @@ import (
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-type Package struct {
-	name string
-	p    *gogen.Package
-	cvt  *TypeConv
+const (
+	DbgFlagAll = 1
+)
+
+var (
+	debug bool
+)
+
+func SetDebug(flags int) {
+	if flags != 0 {
+		debug = true
+	}
 }
 
-func NewPackage(pkgPath, name string, conf *gogen.Config) *Package {
+// -----------------------------------------------------------------------------
+
+type Package struct {
+	name      string
+	p         *gogen.Package
+	cvt       *TypeConv
+	outputDir string
+}
+
+type PackageConfig struct {
+	PkgPath   string
+	Name      string
+	Conf      *gogen.Config
+	OutputDir string
+}
+
+func NewPackage(config *PackageConfig) *Package {
 	p := &Package{
-		p: gogen.NewPackage(pkgPath, name, conf),
+		p:    gogen.NewPackage(config.PkgPath, config.Name, config.Conf),
+		name: config.Name,
 	}
 
-	// default file name is the package name
-	err := p.SetCurFile(name, false)
+	dir, err := p.prepareOutputDir(config.OutputDir)
 	if err != nil {
-		panic(fmt.Errorf("SetDefaultFile %s for gogen Fail %w", name+".go", err))
+		panic(fmt.Errorf("failed to prepare output directory: %w", err))
+	}
+	p.outputDir = dir
+
+	// default file name is the package name
+	err = p.SetCurFile(config.Name, false)
+	if err != nil {
+		panic(fmt.Errorf("SetDefaultFile %s for gogen Fail %w", config.Name+".go", err))
 	}
 
 	clib := p.p.Import("github.com/goplus/llgo/c")
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
-	p.name = name
 	return p
 }
 
@@ -47,6 +78,9 @@ func (p *Package) SetCurFile(file string, isHeaderFile bool) error {
 	} else {
 		// package name as the default file
 		fileName = file + ".go"
+	}
+	if debug {
+		log.Printf("SetCurFile: %s\n", fileName)
 	}
 	_, err := p.p.SetCurFile(fileName, true)
 	if err != nil {
@@ -86,6 +120,9 @@ func (p *Package) linkLib(lib string) error {
 }
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
+	if debug {
+		log.Printf("NewFuncDecl: %s\n", funcDecl.Name.Name)
+	}
 	// todo(zzy) accept the name of llcppg.symb.json
 	goFuncName, err := p.cvt.LookupSymbol(config.MangleNameType(funcDecl.MangledName))
 	if err != nil {
@@ -105,6 +142,9 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
+	if debug {
+		log.Printf("NewTypeDecl: %s\n", typeDecl.Name.Name)
+	}
 	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
 	typeBlock := p.p.NewTypeDefs()
 	typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
@@ -118,6 +158,9 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
+	if debug {
+		log.Printf("NewTypedefDecl: %s\n", typedefDecl.Name.Name)
+	}
 	genDecl := p.p.NewTypeDefs()
 	typ, err := p.ToType(typedefDecl.Type)
 	if err != nil {
@@ -149,6 +192,9 @@ func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 }
 
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
+	if debug {
+		log.Printf("NewEnumTypeDecl: %s\n", enumTypeDecl.Name.Name)
+	}
 	if len(enumTypeDecl.Type.Items) > 0 {
 		constDefs := p.p.NewConstDefs(p.p.CB().Scope())
 		for _, item := range enumTypeDecl.Type.Items {
@@ -172,18 +218,21 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 // The header file name is the go file name.
 //
 // Files that are already mapped in BuiltinTypeMap.typeAliases will not be output.
-func (p *Package) Write(headerFile, outputDir string) error {
+func (p *Package) Write(headerFile string) error {
 	if p.shouldSkipFile(headerFile) {
+		if debug {
+			log.Printf("Skip Write File: %s\n", headerFile)
+		}
 		return nil
-	}
-	dir, err := p.prepareOutputDir(outputDir)
-	if err != nil {
-		return fmt.Errorf("failed to prepare output directory: %w", err)
 	}
 
 	fileName := p.processHeaderFileName(headerFile)
 
-	if err := p.p.WriteFile(filepath.Join(dir, fileName), fileName); err != nil {
+	if debug {
+		log.Printf("Write HeaderFile [%s] from  gogen:[%s] to [%s]\n", headerFile, fileName, filepath.Join(p.outputDir, fileName))
+	}
+
+	if err := p.p.WriteFile(filepath.Join(p.outputDir, fileName), fileName); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

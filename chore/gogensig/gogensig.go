@@ -48,7 +48,11 @@ func main() {
 	conf, err := config.GetCppgCfgFromPath("./llcppg.cfg")
 	check(err)
 
-	astConvert := convert.NewAstConvert(conf.Name, "./llcppg.symb.json", "./llcppg.cfg")
+	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  conf.Name,
+		SymbFile: "./llcppg.symb.json",
+		CfgFile:  "./llcppg.cfg",
+	})
 	check(err)
 	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
 	inputdata, err := unmarshal.UnmarshalFileSet(data)

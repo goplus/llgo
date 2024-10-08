@@ -203,5 +203,9 @@ func Resetthread(L *State) c.Int
 
 // ===========================error
 func TestNewAstConvert(t *testing.T) {
-	convert.NewAstConvert("test", "", "")
+	convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  "test",
+		SymbFile: "",
+		CfgFile:  "",
+	})
 }
