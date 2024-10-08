@@ -50,7 +50,7 @@ for i in range(10):
 		c.Printf(c.Str("Iteration %d in python - Memory usage: %d MB\n"), i+1, bdwgc.GetMemoryUse()/(1024*1024))
 	}
 
-	memory_allocation_test := python.Cast[python.PyFunc](mod.GetAttrString("memory_allocation_test"))
+	memory_allocation_test := mod.GetFuncAttr("memory_allocation_test")
 	if memory_allocation_test.Nil() {
 		panic("Failed to get memory_allocation_test function")
 	}
