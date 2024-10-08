@@ -1,4 +1,22 @@
 #stdout
+=== Test GenHeaderFilePath ===
+Test case: Valid files
+Input files: [test1.h test2.h]
+Output: [test1.h test2.h]
+
+Test case: Mixed existing and non-existing files
+Input files: [test1.h nonexistent.h]
+Error: some files not found or inaccessible: [file not found: nonexistent.h]
+Output: [test1.h]
+
+Test case: No existing files
+Input files: [nonexistent1.h nonexistent2.h]
+Error: some files not found or inaccessible: [file not found: nonexistent1.h file not found: nonexistent2.h]
+
+Test case: Empty file list
+Input files: []
+Error: no valid header files
+
 === Test NewSymbolProcessor ===
 Before: No prefixes After: Prefixes: [lua_ luaL_]
 
