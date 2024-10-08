@@ -31,16 +31,8 @@ func CmdOutString(cmd *exec.Cmd) (string, error) {
 	return outBuf.String(), nil
 }
 
-func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
-	cfg := &LLCppConfig{
-		Name: name,
-	}
-	cfg.Cflags = fmt.Sprintf("${pkg-config --cflags %s}", name)
-	cfg.Libs = fmt.Sprintf("${pkg-config --libs %s}", name)
-	cfg.TrimPrefixes = []string{}
-	cfg.Cplusplus = isCpp
-	cfg.Include = []string{}
-	cflags := os.Expand(cfg.Cflags, func(s string) string {
+func expandString(str string) string {
+	return os.Expand(str, func(s string) string {
 		args := strings.Fields(s)
 		if len(args) <= 0 {
 			return ""
@@ -51,27 +43,48 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 		}
 		return outString
 	})
-	includes := strings.FieldsFunc(cflags, func(r rune) bool {
+}
+
+func expandCflags(str string, fn func(s string) bool) []string {
+	list := strings.FieldsFunc(str, func(r rune) bool {
 		return r == '\n'
 	})
-	for _, include := range includes {
-		trimInclude := strings.TrimPrefix(include, "-I")
-		trimInclude += "/"
-		filepath.WalkDir(trimInclude, func(path string, d fs.DirEntry, err error) error {
+	results := make([]string, 0)
+	for _, l := range list {
+		trimStr := strings.TrimPrefix(l, "-I")
+		trimStr += "/"
+		filepath.WalkDir(trimStr, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 			if d.IsDir() {
 				return nil
 			}
-			ext := filepath.Ext(d.Name())
-			if ext != ".h" && ext != ".hpp" {
+			if !fn(d.Name()) {
 				return nil
 			}
-			cfg.Include = append(cfg.Include, path)
+			results = append(results, path)
 			return nil
 		})
 	}
+	return results
+}
+
+func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
+	cfg := &LLCppConfig{
+		Name: name,
+	}
+	cfg.Cflags = fmt.Sprintf("$(pkg-config --cflags %s)", name)
+	cfg.Libs = fmt.Sprintf("$(pkg-config --libs %s)", name)
+	cfg.TrimPrefixes = []string{}
+	cfg.Cplusplus = isCpp
+	cfg.Include = []string{}
+	Cflags := fmt.Sprintf("${pkg-config --cflags %s}", name)
+	cflags := expandString(Cflags)
+	cfg.Include = expandCflags(cflags, func(s string) bool {
+		ext := filepath.Ext(s)
+		return ext == ".h" || ext == ".hpp"
+	})
 	return cfg
 }
 
