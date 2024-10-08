@@ -1208,6 +1208,33 @@ func TestIdentRefer(t *testing.T) {
 		})
 		compareError(t, err, "undefType not found")
 	})
+
+	t.Run("type alias", func(t *testing.T) {
+		pkg := convert.NewPackage(".", "testpkg", &gogen.Config{})
+		pkg.NewTypeDecl(&ast.TypeDecl{
+			Name: &ast.Ident{Name: "Foo"},
+			Type: &ast.RecordType{
+				Tag: ast.Struct,
+				Fields: &ast.FieldList{
+					List: []*ast.Field{
+						{
+							Names: []*ast.Ident{{Name: "a"}},
+							Type: &ast.Ident{
+								Name: "int8_t",
+							},
+						},
+					},
+				},
+			},
+		})
+		comparePackageOutput(t, pkg, `
+		package testpkg
+		import _ "unsafe"
+		type Foo struct {
+			a int8
+		}
+		`)
+	})
 }
 
 type genDeclTestCase struct {
