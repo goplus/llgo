@@ -74,7 +74,7 @@ func (p *Package) SetCurFile(file string, isHeaderFile bool) error {
 	var fileName string
 	if isHeaderFile {
 		// headerfile to go filename
-		fileName = p.processHeaderFileName(file)
+		fileName = HeaderFileToGo(file)
 	} else {
 		// package name as the default file
 		fileName = file + ".go"
@@ -106,6 +106,14 @@ func (p *Package) SetCppgConf(conf *cppgtypes.Config) {
 
 func (p *Package) GetGenPackage() *gogen.Package {
 	return p.p
+}
+
+func (p *Package) GetOutputDir() string {
+	return p.outputDir
+}
+
+func (p *Package) GetTypeCvt() *TypeConv {
+	return p.cvt
 }
 
 func (p *Package) Name() string {
@@ -226,7 +234,7 @@ func (p *Package) Write(headerFile string) error {
 		return nil
 	}
 
-	fileName := p.processHeaderFileName(headerFile)
+	fileName := HeaderFileToGo(headerFile)
 
 	if debug {
 		log.Printf("Write HeaderFile [%s] from  gogen:[%s] to [%s]\n", headerFile, fileName, filepath.Join(p.outputDir, fileName))
@@ -242,7 +250,7 @@ func (p *Package) Write(headerFile string) error {
 // WriteToBuffer writes the Go file to a buffer.
 // Include the aliased file for debug
 func (p *Package) WriteToBuffer(headerFile string) (*bytes.Buffer, error) {
-	goFileName := p.processHeaderFileName(headerFile)
+	goFileName := HeaderFileToGo(headerFile)
 	buf := new(bytes.Buffer)
 	err := p.p.WriteTo(buf, goFileName)
 	if err != nil {
@@ -271,7 +279,7 @@ func (p *Package) prepareOutputDir(outputDir string) (string, error) {
 
 // /path/to/foo.h
 // foo.go
-func (p *Package) processHeaderFileName(headerFile string) string {
+func HeaderFileToGo(headerFile string) string {
 	_, fileName := filepath.Split(headerFile)
 	ext := filepath.Ext(fileName)
 	if len(ext) > 0 {

@@ -42,6 +42,10 @@ func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
 	p.visitDone = fn
 }
 
+func (p *AstConvert) GetPackage() *Package {
+	return p.pkg
+}
+
 func (p *AstConvert) setupSymbolTableFile(filePath string) error {
 	symbTable, err := config.NewSymbolTable(filePath)
 	if err != nil {
