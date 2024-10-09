@@ -66,6 +66,10 @@ func (p *BuiltinTypeMap) FindTypeAlias(name string) (types.Type, error) {
 	return nil, fmt.Errorf("%s", "not found in type alias map")
 }
 
+func (p *BuiltinTypeMap) GetTypeAliases() map[string]typeAliasInfo {
+	return p.typeAliases
+}
+
 func (p *BuiltinTypeMap) initBuiltinTypeMap() {
 	// todo(zzy): int128/uint128  half(float16),long double,float 128
 	p.builtinTypeMap = map[ast.BuiltinType]types.Type{
