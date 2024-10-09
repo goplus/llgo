@@ -6,8 +6,8 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/bdwgc"
 	"github.com/goplus/llgo/py"
-	"github.com/goplus/llgo/py/_demo/autoderef/foo"
 	"github.com/goplus/llgo/x/python"
+	"github.com/goplus/llgo/x/python/_demo/autoderef/foo"
 	pymath "github.com/goplus/llgo/x/python/math"
 )
 
@@ -16,6 +16,12 @@ func main() {
 	fooMod := foo.InitFooModule()
 	sum := python.Cast[python.PyLong](fooMod.GetFuncAttr("add").CallArgs(python.Long(1), python.Long(2)))
 	c.Printf(c.Str("Sum: %d\n"), sum.Int())
+
+	dict := fooMod.ModuleGetDict()
+	pointClass := python.Cast[python.PyFunc](dict.GetItem(python.Str("Point")))
+	point := pointClass.CallArgs(python.Long(3), python.Long(4))
+	area := python.Cast[python.PyLong](point.CallMethod("area"))
+	c.Printf(c.Str("Area of 3 * 4: %d\n"), area.Int())
 
 	pythonCode := `
 def allocate_memory():
