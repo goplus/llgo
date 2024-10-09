@@ -1033,19 +1033,8 @@ func rtypeOf(i any) *abi.Type {
 	return eface.typ
 }
 
-/* TODO(xsw):
 // ptrMap is the cache for PointerTo.
 var ptrMap sync.Map // map[*rtype]*ptrType
-*/
-
-var ptrMap struct {
-	sync.Mutex
-	m map[*rtype]*ptrType
-}
-
-func init() {
-	ptrMap.m = make(map[*rtype]*ptrType)
-}
 
 // PtrTo returns the pointer type with element t.
 // For example, if t represents type Foo, PtrTo(t) represents *Foo.
@@ -1066,8 +1055,8 @@ func (t *rtype) ptrTo() *abi.Type {
 		return at.PtrToThis_
 	}
 	// Check the cache.
-	if pi, ok := ptrMap.m[t]; ok {
-		return &pi.Type
+	if pi, ok := ptrMap.Load(t); ok {
+		return &pi.(*ptrType).Type
 	}
 
 	// Look in known types.
@@ -1102,10 +1091,8 @@ func (t *rtype) ptrTo() *abi.Type {
 
 	pp.Elem = at
 
-	ptrMap.m[t] = &pp
-	return &pp.Type
-	//pi, _ := ptrMap.LoadOrStore(t, &pp)
-	//return &pi.(*ptrType).Type
+	pi, _ := ptrMap.LoadOrStore(t, &pp)
+	return &pi.(*ptrType).Type
 }
 
 func ptrTo(t *abi.Type) *abi.Type {
@@ -1442,11 +1429,7 @@ var funcLookupCache struct {
 
 	// m is a map[uint32][]*rtype keyed by the hash calculated in FuncOf.
 	// Elements of m are append-only and thus safe for concurrent reading.
-	m map[uint32][]*abi.Type
-}
-
-func init() {
-	funcLookupCache.m = make(map[uint32][]*abi.Type)
+	m sync.Map
 }
 
 // FuncOf returns the function type with the given argument and result types.
@@ -1497,8 +1480,8 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	defer funcLookupCache.Unlock()
 
 	// Look in cache.
-	if ts, ok := funcLookupCache.m[hash]; ok {
-		for _, t := range ts {
+	if ts, ok := funcLookupCache.m.Load(hash); ok {
+		for _, t := range ts.([]*abi.Type) {
 			if haveIdenticalUnderlyingType(&ft.Type, t, true) {
 				return toRType(t)
 			}
@@ -1506,8 +1489,11 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	}
 
 	addToCache := func(tt *abi.Type) Type {
-		rts := funcLookupCache.m[hash]
-		funcLookupCache.m[hash] = append(rts, tt)
+		var rts []*abi.Type
+		if rti, ok := funcLookupCache.m.Load(hash); ok {
+			rts = rti.([]*abi.Type)
+		}
+		funcLookupCache.m.Store(hash, append(rts, tt))
 		return toType(tt)
 	}
 	str := funcStr(ft)
