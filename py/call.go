@@ -82,11 +82,11 @@ func (o *Object) CallObject(args *Object) *Object { return nil }
 //
 // This is the equivalent of the Python expression: o(*args).
 //
-// Note that if you only pass PyObject* args, (*Object).CallFunctionObjArgs is a
+// Note that if you only pass PyObject* args, CallFunctionObjArgs is a
 // faster alternative.
 //
-// llgo:link (*Object).CallFunction C.PyObject_CallFunction
-func (o *Object) CallFunction(format *c.Char, __llgo_va_list ...any) *Object { return nil }
+// llgo:link CallFunction C.PyObject_CallFunction
+func CallFunction(o *Object, format *c.Char, __llgo_va_list ...any) *Object { return nil }
 
 // Call a callable Python object o, with a variable number of PyObject* arguments.
 // The arguments are provided as a variable number of parameters followed by nil.
@@ -96,16 +96,16 @@ func (o *Object) CallFunction(format *c.Char, __llgo_va_list ...any) *Object { r
 //
 // This is the equivalent of the Python expression: o(arg1, arg2, ...).
 //
-// llgo:link (*Object).CallFunctionObjArgs C.PyObject_CallFunctionObjArgs
-func (o *Object) CallFunctionObjArgs(__llgo_va_list ...any) *Object { return nil }
+// llgo:link CallFunctionObjArgs C.PyObject_CallFunctionObjArgs
+func CallFunctionObjArgs(o *Object, __llgo_va_list ...any) *Object { return nil }
 
-// llgo:link (*Object).CallMethod C.PyObject_CallMethod
-func (o *Object) CallMethod(name *c.Char, format *c.Char, __llgo_va_list ...any) *Object {
+// llgo:link CallMethod C.PyObject_CallMethod
+func CallMethod(o *Object, name *c.Char, format *c.Char, __llgo_va_list ...any) *Object {
 	return nil
 }
 
-// llgo:link (*Object).CallMethodObjArgs C.PyObject_CallMethodObjArgs
-func (o *Object) CallMethodObjArgs(name *Object, __llgo_va_list ...any) *Object { return nil }
+// llgo:link CallMethodObjArgs C.PyObject_CallMethodObjArgs
+func CallMethodObjArgs(o *Object, name *Object, __llgo_va_list ...any) *Object { return nil }
 
 // llgo:link (*Object).Vectorcall C.PyObject_Vectorcall
 func (o *Object) Vectorcall(args **Object, nargs uintptr, kwnames *Object) *Object {
