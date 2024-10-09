@@ -16,7 +16,8 @@ import (
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string) {
+// The validateFunc is used to validate the generated file,
+func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package)) {
 	t.Helper()
 
 	tempDir, err := os.MkdirTemp("", "gogensig-test")
@@ -80,6 +81,10 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 
 	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(string(content)) {
 		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, string(content))
+	}
+
+	if validateFunc != nil {
+		validateFunc(t, astConvert.GetPackage())
 	}
 }
 
