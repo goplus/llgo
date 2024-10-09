@@ -6,12 +6,16 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/bdwgc"
 	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/py/_demo/autoderef/foo"
 	"github.com/goplus/llgo/x/python"
 	pymath "github.com/goplus/llgo/x/python/math"
 )
 
 func main() {
 	python.SetProgramName(os.Args[0])
+	fooMod := foo.InitFooModule()
+	sum := python.Cast[python.PyLong](fooMod.GetFuncAttr("add").CallArgs(python.Long(1), python.Long(2)))
+	c.Printf(c.Str("Sum: %d\n"), sum.Int())
 
 	pythonCode := `
 def allocate_memory():
@@ -62,13 +66,13 @@ for i in range(10):
 		bdwgc.Gcollect()
 	}
 
-	for i := 1; i <= 10000000; i++ {
+	for i := 1; i <= 100000; i++ {
 		// TODO(lijie): Can't run successfully because https://github.com/goplus/llgo/issues/819
 		f := python.Float(float64(i))
 		r := pymath.Sqrt(f)
 		b := r.IsInteger()
 		var _ bool = b.Bool()
-		if i%100000 == 0 {
+		if i%10000 == 0 {
 			c.Printf(c.Str("Iteration %d in go - Memory usage: %d MB\n"), i, bdwgc.GetMemoryUse()/(1024*1024))
 		}
 	}

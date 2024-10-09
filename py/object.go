@@ -24,10 +24,21 @@ import (
 
 // https://docs.python.org/3/c-api/object.html
 
-// Object represents a Python object.
+//	struct _object {
+//	    union {
+//	       Py_ssize_t ob_refcnt;
+//	       uint32_t ob_refcnt_split[2];
+//	    };
+//	    PyTypeObject *ob_type;
+//	};
 type Object struct {
-	Unused [8]byte
+	ObRefcnt c.Int
+	_padding c.Int
+	ObType   c.Pointer
 }
+
+// llgo:link (*Object).IncRef C.Py_IncRef
+func (o *Object) IncRef() {}
 
 // llgo:link (*Object).DecRef C.Py_DecRef
 func (o *Object) DecRef() {}
