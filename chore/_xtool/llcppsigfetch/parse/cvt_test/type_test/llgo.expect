@@ -1,4 +1,5 @@
 #stdout
+Char's flags is signed or unsigned
 Void:flags:0 kind:0
 Bool:flags:0 kind:1
 Char_S:flags:1 kind:2
@@ -26,16 +27,16 @@ Complex:flags:0 kind:11
 Complex:flags:16 kind:11
 Complex:flags:20 kind:11
 Unknown:flags:0 kind:0
-Type: char *:
+Type: int *:
 {
 	"_Type":	"PointerType",
 	"X":	{
 		"_Type":	"BuiltinType",
-		"Kind":	2,
-		"Flags":	1
+		"Kind":	6,
+		"Flags":	0
 	}
 }
-Type: char ***:
+Type: int ***:
 {
 	"_Type":	"PointerType",
 	"X":	{
@@ -44,29 +45,29 @@ Type: char ***:
 			"_Type":	"PointerType",
 			"X":	{
 				"_Type":	"BuiltinType",
-				"Kind":	2,
-				"Flags":	1
+				"Kind":	6,
+				"Flags":	0
 			}
 		}
 	}
 }
-Type: char[]:
+Type: int[]:
 {
 	"_Type":	"ArrayType",
 	"Elt":	{
 		"_Type":	"BuiltinType",
-		"Kind":	2,
-		"Flags":	1
+		"Kind":	6,
+		"Flags":	0
 	},
 	"Len":	null
 }
-Type: char[10]:
+Type: int[10]:
 {
 	"_Type":	"ArrayType",
 	"Elt":	{
 		"_Type":	"BuiltinType",
-		"Kind":	2,
-		"Flags":	1
+		"Kind":	6,
+		"Flags":	0
 	},
 	"Len":	{
 		"_Type":	"BasicLit",
@@ -74,15 +75,15 @@ Type: char[10]:
 		"Value":	"10"
 	}
 }
-Type: char[3][4]:
+Type: int[3][4]:
 {
 	"_Type":	"ArrayType",
 	"Elt":	{
 		"_Type":	"ArrayType",
 		"Elt":	{
 			"_Type":	"BuiltinType",
-			"Kind":	2,
-			"Flags":	1
+			"Kind":	6,
+			"Flags":	0
 		},
 		"Len":	{
 			"_Type":	"BasicLit",
@@ -303,7 +304,7 @@ Type: class a::b::c:
 	},
 	"Tag":	3
 }
-Type: int (*)(int, char):
+Type: int (*)(int, int):
 {
 	"_Type":	"PointerType",
 	"X":	{
@@ -326,8 +327,8 @@ Type: int (*)(int, char):
 					"_Type":	"Field",
 					"Type":	{
 						"_Type":	"BuiltinType",
-						"Kind":	2,
-						"Flags":	1
+						"Kind":	6,
+						"Flags":	0
 					},
 					"Doc":	null,
 					"Comment":	null,

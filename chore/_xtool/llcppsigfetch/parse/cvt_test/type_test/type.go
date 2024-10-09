@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
@@ -12,6 +13,7 @@ import (
 )
 
 func main() {
+	TestChar()
 	TestBuiltinType()
 	TestNonBuiltinTypes()
 }
@@ -64,14 +66,38 @@ func TestBuiltinType() {
 	}
 }
 
+// Char's Default Type in macos is signed char & in linux is unsigned char
+// So we only confirm the char's kind is char & flags is unsigned or signed
+func TestChar() {
+	typ, index, transunit := test.GetType(&test.GetTypeOptions{
+		TypeCode: "char",
+		IsCpp:    false,
+	})
+	converter := &parse.Converter{}
+	expr := converter.ProcessType(typ)
+	if btType, ok := expr.(*ast.BuiltinType); ok {
+		if btType.Kind == ast.Char {
+			if btType.Flags == ast.Signed || btType.Flags == ast.Unsigned {
+				fmt.Println("Char's flags is signed or unsigned")
+			} else {
+				fmt.Fprintf(os.Stderr, "Char's flags is not signed or unsigned")
+			}
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "Char's expr is not a builtin type")
+	}
+	index.Dispose()
+	transunit.Dispose()
+}
+
 func TestNonBuiltinTypes() {
 	tests := []string{
-		"char*",
-		"char***",
+		"int*",
+		"int***",
 
-		"char[]",
-		"char[10]",
-		"char[3][4]",
+		"int[]",
+		"int[10]",
+		"int[3][4]",
 
 		"int&",
 		"int&&",
@@ -122,7 +148,7 @@ func TestNonBuiltinTypes() {
 		 }
 		 class a::b::c`,
 
-		`int (*p)(int, char);`,
+		`int (*p)(int, int);`,
 	}
 
 	for _, t := range tests {
