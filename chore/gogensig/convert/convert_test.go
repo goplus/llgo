@@ -211,22 +211,28 @@ func Resetthread(L *State) c.Int
 }
 
 // Test if it can properly skip types from packages that have already been confirmed to be mapped
-// The _int8_t, _int16_t, _int32_t, _int64_t below are types that have already been confirmed to be mapped.
+// The _int8_t, _int16_t, _int32_t, _int64_t below are types that have already been confirmed to be mapped (macos).
 // The corresponding header files only define these aliases. For these header files, we skip them directly.
+//
+// In the follow include,the follow header files are included in the stdint.
+// And this sys/_types/* int header files are have mapped,so we need skip them.
+// And stdint.h's other included header files are not mapped yet, so we need to gradually generate them and create mappings for them.
+//
+// #include <sys/_types/_int8_t.h>
+// #include <sys/_types/_int16_t.h>
+// #include <sys/_types/_int32_t.h>
+// #include <sys/_types/_int64_t.h>
+
+// #include <sys/_types/_u_int8_t.h>
+// #include <sys/_types/_u_int16_t.h>
+// #include <sys/_types/_u_int32_t.h>
+// #include <sys/_types/_u_int64_t.h>
 func TestSkipBuiltinTypedefine(t *testing.T) {
 	cmptest.RunTest(t, "skip", false, []config.SymbolEntry{
 		{MangleName: "testInt", CppName: "testInt", GoName: "TestInt"},
 		{MangleName: "testUint", CppName: "testUint", GoName: "TestUint"},
 	}, &cppgtypes.Config{}, `
-#include <sys/_types/_int8_t.h>
-#include <sys/_types/_int16_t.h>
-#include <sys/_types/_int32_t.h>
-#include <sys/_types/_int64_t.h>
-
-#include <sys/_types/_u_int8_t.h>
-#include <sys/_types/_u_int16_t.h>
-#include <sys/_types/_u_int32_t.h>
-#include <sys/_types/_u_int64_t.h>
+#include <stdint.h>
 
 void testInt(int8_t a, int16_t b, int32_t c, int64_t d);
 void testUint(u_int8_t a, u_int16_t b, u_int32_t c, u_int64_t d);
@@ -250,7 +256,7 @@ func TestUint(a int8, b uint16, c c.Uint, d c.UlongLong)
 		}
 
 		for _, file := range files {
-			log.Println(file.Name())
+			log.Println("Generated file:", file.Name())
 			typeAliasMap := convert.NewBuiltinTypeMap(".", "temp", nil).GetTypeAliases()
 			for _, v := range typeAliasMap {
 				if file.Name() == convert.HeaderFileToGo(v.HeaderFile) {
