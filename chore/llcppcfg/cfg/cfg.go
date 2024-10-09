@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 type LLCppConfig struct {
@@ -47,8 +48,9 @@ func expandString(str string) string {
 
 func expandCflags(str string, fn func(s string) bool) []string {
 	list := strings.FieldsFunc(str, func(r rune) bool {
-		return r == '\n'
+		return unicode.IsSpace(r)
 	})
+	contains := make(map[string]string, 0)
 	results := make([]string, 0)
 	for _, l := range list {
 		trimStr := strings.TrimPrefix(l, "-I")
@@ -63,7 +65,11 @@ func expandCflags(str string, fn func(s string) bool) []string {
 			if !fn(d.Name()) {
 				return nil
 			}
-			results = append(results, d.Name())
+			_, ok := contains[path]
+			if !ok {
+				results = append(results, d.Name())
+				contains[path] = d.Name()
+			}
 			return nil
 		})
 	}
