@@ -18,6 +18,7 @@ type LLCppConfig struct {
 	Include      []string `json:"include"`
 	Libs         string   `json:"libs"`
 	TrimPrefixes []string `json:"trimPrefixes"`
+	ReplPrefixes []string `json:"replPrefixes"`
 	Cplusplus    bool     `json:"cplusplus"`
 }
 
@@ -83,6 +84,7 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 	cfg.Cflags = fmt.Sprintf("$(pkg-config --cflags %s)", name)
 	cfg.Libs = fmt.Sprintf("$(pkg-config --libs %s)", name)
 	cfg.TrimPrefixes = []string{}
+	cfg.ReplPrefixes = []string{}
 	cfg.Cplusplus = isCpp
 	cfg.Include = []string{}
 	Cflags := fmt.Sprintf("${pkg-config --cflags %s}", name)
