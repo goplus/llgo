@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/llgo/py"
 )
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 // pyObject is a wrapper type that holds a Python Object and automatically calls
 // the Python Object's DecRef method during garbage collection.
@@ -26,7 +26,7 @@ func (obj *pyObject) Nil() bool {
 	return obj == nil
 }
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 func (obj PyObject) GetAttrString(name string) PyObject {
 	return NewObject(obj.obj.GetAttrString(c.AllocCStr(name)))
@@ -52,6 +52,10 @@ type PyObject struct {
 	*pyObject
 }
 
+func (obj PyObject) Obj() *py.Object {
+	return obj.pyObject.obj
+}
+
 // fake method
 func (obj PyObject) pyObj() *pyObject {
 	return obj.pyObject
@@ -62,7 +66,17 @@ func (obj PyObject) setPyObj(p *pyObject) {
 
 }
 
-// -------------------------------------------------------------------------------------------------
+// -----
+
+type PyList struct {
+	PyObject
+}
+
+func NewList(obj *py.Object) PyList {
+	return PyList{NewObject(obj)}
+}
+
+// ----------------------------------------------------------------------------
 
 type PyDict struct {
 	PyObject
@@ -72,11 +86,7 @@ func NewDict(obj *py.Object) PyDict {
 	return PyDict{NewObject(obj)}
 }
 
-func (d PyDict) Obj() *py.Object {
-	return d.obj
-}
-
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 func SetProgramName(name string) {
 	py.SetProgramName(c.AllocCStr(name))
@@ -98,13 +108,13 @@ func CompileString(code, filename string, start InputType) PyObject {
 	return NewObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), start))
 }
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 func EvalCode(code PyObject, globals, locals PyDict) PyObject {
 	return NewObject(py.EvalCode(code.Obj(), globals.Obj(), locals.Obj()))
 }
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 type PyModule struct {
 	PyObject
@@ -122,7 +132,25 @@ func (m *PyModule) ModuleGetDict() PyDict {
 	return NewDict(m.obj.ModuleGetDict())
 }
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+type PyLong struct {
+	PyObject
+}
+
+func NewLong(obj *py.Object) PyLong {
+	return PyLong{NewObject(obj)}
+}
+
+func Long(i int) PyLong {
+	return NewLong(py.Long(c.Long(i)))
+}
+
+func (l PyLong) Int() int {
+	return int(l.obj.Long())
+}
+
+// ----------------------------------------------------------------------------
 
 type PyFloat struct {
 	PyObject
@@ -145,7 +173,7 @@ func (f PyFloat) IsInteger() PyBool {
 	return Cast[PyBool](fn.CallNoArgs())
 }
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 type PyBool struct {
 	PyObject
@@ -159,7 +187,11 @@ func (b PyBool) Bool() bool {
 	return b.obj.IsTrue() != 0
 }
 
-// -------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+type PyObjecter interface {
+	Obj() *py.Object
+}
 
 type PyFunc struct {
 	PyObject
@@ -169,15 +201,31 @@ func NewFunc(obj *py.Object) PyFunc {
 	return PyFunc{NewObject(obj)}
 }
 
+func (f PyFunc) Call(args PyList, kwargs PyDict) PyObject {
+	return NewObject(f.obj.Call(args.obj, kwargs.obj))
+}
+
 func (f PyFunc) CallNoArgs() PyObject {
 	return NewObject(f.obj.CallNoArgs())
 }
 
-func (f PyFunc) CallOneArg(arg PyObject) PyObject {
-	return NewObject(f.obj.CallOneArg(arg.obj))
+func (f PyFunc) CallOneArg(arg PyObjecter) PyObject {
+	return NewObject(f.obj.CallOneArg(arg.Obj()))
 }
 
-// -------------------------------------------------------------------------------------------------
+func (f PyFunc) CallObject(args PyObject) PyObject {
+	return NewObject(f.obj.CallObject(args.obj))
+}
+
+func (f PyFunc) CallArgs(args ...PyObjecter) PyObject {
+	argsTuple := py.NewTuple(len(args))
+	for i, arg := range args {
+		argsTuple.TupleSetItem(i, arg.Obj())
+	}
+	return NewObject(f.obj.CallObject(argsTuple))
+}
+
+// ----------------------------------------------------------------------------
 
 type pyobj interface {
 	pyObj() *pyObject
