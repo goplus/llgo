@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
@@ -53,7 +54,7 @@ func Sigfetch(file string, isTemp bool, isCPP bool) ([]byte, error) {
 
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("error running llcppsigfetch: %v\nStderr: %s", err, stderr.String())
+		return nil, fmt.Errorf("error running llcppsigfetch: %v\nStderr: %s\nArgs: %s", err, stderr.String(), strings.Join(args, " "))
 	}
 
 	return out.Bytes(), nil
