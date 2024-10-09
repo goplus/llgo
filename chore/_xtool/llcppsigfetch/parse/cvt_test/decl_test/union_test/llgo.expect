@@ -180,8 +180,8 @@ TestUnionDecl Case 3:
 												"_Type":	"Field",
 												"Type":	{
 													"_Type":	"BuiltinType",
-													"Kind":	2,
-													"Flags":	1
+													"Kind":	6,
+													"Flags":	0
 												},
 												"Doc":	null,
 												"Comment":	null,
