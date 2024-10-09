@@ -66,7 +66,16 @@ func (obj PyObject) setPyObj(p *pyObject) {
 
 }
 
-// -----
+func (obj PyObject) CallMethod(name string, args ...PyObjecter) PyObject {
+	mthd := Cast[PyFunc](obj.GetAttrString(name))
+	argsTuple := py.NewTuple(len(args))
+	for i, arg := range args {
+		argsTuple.TupleSetItem(i, arg.Obj())
+	}
+	return mthd.CallObject(NewObject(argsTuple))
+}
+
+// ----------------------------------------------------------------------------
 
 type PyList struct {
 	PyObject
@@ -84,6 +93,10 @@ type PyDict struct {
 
 func NewDict(obj *py.Object) PyDict {
 	return PyDict{NewObject(obj)}
+}
+
+func (d PyDict) GetItem(key PyObjecter) PyObject {
+	return NewObject(d.obj.DictGetItem(key.Obj()))
 }
 
 // ----------------------------------------------------------------------------
@@ -185,6 +198,25 @@ func NewBool(obj *py.Object) PyBool {
 
 func (b PyBool) Bool() bool {
 	return b.obj.IsTrue() != 0
+}
+
+// ----------------------------------------------------------------------------
+
+type PyStr struct {
+	PyObject
+}
+
+func NewStr(obj *py.Object) PyStr {
+	return PyStr{NewObject(obj)}
+}
+
+func Str(s string) PyStr {
+	return NewStr(py.FromGoString(s))
+}
+
+func (s PyStr) String() string {
+	buf, n := s.obj.CStrAndLen()
+	return c.GoString(buf, n)
 }
 
 // ----------------------------------------------------------------------------
