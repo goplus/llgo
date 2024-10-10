@@ -1,23 +1,23 @@
 #stdout
 === Test Case: inireader ===
 [{
-		"mangle":	"_ZN9INIReaderC1EPKc",
+		"mangle":	"ZN9INIReaderC1EPKc",
 		"c++":	"INIReader::INIReader(const char *)",
 		"go":	"(*Reader).Init"
 	}, {
-		"mangle":	"_ZN9INIReaderC1EPKcl",
+		"mangle":	"ZN9INIReaderC1EPKcl",
 		"c++":	"INIReader::INIReader(const char *, long)",
 		"go":	"(*Reader).Init__1"
 	}, {
-		"mangle":	"_ZN9INIReaderD1Ev",
+		"mangle":	"ZN9INIReaderD1Ev",
 		"c++":	"INIReader::~INIReader()",
 		"go":	"(*Reader).Dispose"
 	}, {
-		"mangle":	"_ZNK9INIReader10ParseErrorEv",
+		"mangle":	"ZNK9INIReader10ParseErrorEv",
 		"c++":	"INIReader::ParseError()",
-		"go":	"(*Reader).ModifyedParseError"
+		"go":	"(*Reader).ParseError"
 	}, {
-		"mangle":	"_ZNK9INIReader3GetEPKcS1_S1_",
+		"mangle":	"ZNK9INIReader3GetEPKcS1_S1_",
 		"c++":	"INIReader::Get(const char *, const char *, const char *)",
 		"go":	"(*Reader).Get"
 	}]

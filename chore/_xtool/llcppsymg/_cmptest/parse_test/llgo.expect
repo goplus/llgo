@@ -46,10 +46,10 @@ Before: Class: INIReader, Method: HasValue After: (*Reader).HasValue
 
 === Test Case: C++ Class with Methods ===
 Parsed Symbols:
-Symbol Map GoName: (*Reader).Init__1, ProtoName In HeaderFile: INIReader::INIReader(const char *, int), MangledName: _ZN9INIReaderC1EPKci
-Symbol Map GoName: (*Reader).Init, ProtoName In HeaderFile: INIReader::INIReader(const int &), MangledName: _ZN9INIReaderC1ERKi
-Symbol Map GoName: (*Reader).Dispose, ProtoName In HeaderFile: INIReader::~INIReader(), MangledName: _ZN9INIReaderD1Ev
-Symbol Map GoName: (*Reader).ParseError, ProtoName In HeaderFile: INIReader::ParseError(), MangledName: _ZNK9INIReader10ParseErrorEv
+Symbol Map GoName: (*Reader).Init__1, ProtoName In HeaderFile: INIReader::INIReader(const char *, int), MangledName: ZN9INIReaderC1EPKci
+Symbol Map GoName: (*Reader).Init, ProtoName In HeaderFile: INIReader::INIReader(const int &), MangledName: ZN9INIReaderC1ERKi
+Symbol Map GoName: (*Reader).Dispose, ProtoName In HeaderFile: INIReader::~INIReader(), MangledName: ZN9INIReaderD1Ev
+Symbol Map GoName: (*Reader).ParseError, ProtoName In HeaderFile: INIReader::ParseError(), MangledName: ZNK9INIReader10ParseErrorEv
 
 === Test Case: C Functions ===
 Parsed Symbols:
