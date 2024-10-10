@@ -5,6 +5,6 @@ import (
 	"github.com/goplus/llgo/x/python"
 )
 
-func Sqrt(x python.PyFloat) python.PyFloat {
+func Sqrt(x python.Float) python.Float {
 	return python.NewFloat(math.Sqrt(x.Obj()))
 }

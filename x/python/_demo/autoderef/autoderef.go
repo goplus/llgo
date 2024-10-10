@@ -14,13 +14,13 @@ import (
 func main() {
 	python.SetProgramName(os.Args[0])
 	fooMod := foo.InitFooModule()
-	sum := python.Cast[python.PyLong](fooMod.GetFuncAttr("add").CallArgs(python.Long(1), python.Long(2)))
+	sum := python.Cast[python.Long](fooMod.GetFuncAttr("add").CallArgs(python.MakeLong(1), python.MakeLong(2)))
 	c.Printf(c.Str("Sum: %d\n"), sum.Int())
 
 	dict := fooMod.ModuleGetDict()
-	pointClass := python.Cast[python.PyFunc](dict.GetItem(python.Str("Point")))
-	point := pointClass.CallArgs(python.Long(3), python.Long(4))
-	area := python.Cast[python.PyLong](point.CallMethod("area"))
+	pointClass := python.Cast[python.Func](dict.GetItem(python.MakeStr("Point")))
+	point := pointClass.CallArgs(python.MakeLong(3), python.MakeLong(4))
+	area := python.Cast[python.Long](point.CallMethod("area"))
 	c.Printf(c.Str("Area of 3 * 4: %d\n"), area.Int())
 
 	pythonCode := `
@@ -74,7 +74,7 @@ for i in range(10):
 
 	for i := 1; i <= 100000; i++ {
 		// TODO(lijie): Can't run successfully because https://github.com/goplus/llgo/issues/819
-		f := python.Float(float64(i))
+		f := python.MakeFloat(float64(i))
 		r := pymath.Sqrt(f)
 		b := r.IsInteger()
 		var _ bool = b.Bool()

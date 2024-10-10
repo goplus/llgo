@@ -6,7 +6,7 @@ import (
 )
 
 type plt struct {
-	python.PyModule
+	python.Module
 }
 
 func Plt() plt {
@@ -23,14 +23,14 @@ func (m plt) Show() {
 
 func plot1() {
 	plt := python.ImportModule("matplotlib.pyplot")
-	plt.Call("plot", python.Tuple(5, 10), python.Tuple(10, 15),
+	plt.Call("plot", python.MakeTuple(5, 10), python.MakeTuple(10, 15),
 		python.DictFromPairs("color", "red"))
 	plt.Call("show")
 }
 
 func plot2() {
 	plt := Plt()
-	plt.Plot(python.Tuple(5, 10), python.Tuple(10, 15), python.DictFromPairs("color", "red"))
+	plt.Plot(python.MakeTuple(5, 10), python.MakeTuple(10, 15), python.DictFromPairs("color", "red"))
 	plt.Show()
 }
 
