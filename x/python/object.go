@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/internal/runtime"
@@ -28,7 +27,7 @@ func (obj *pyObject) Nil() bool {
 
 // ----------------------------------------------------------------------------
 
-func (obj Object) GetAttrString(name string) Object {
+func (obj Object) GetAttr(name string) Object {
 	return NewObject(obj.obj.GetAttrString(c.AllocCStr(name)))
 }
 
@@ -57,52 +56,29 @@ func finalizerCallback(p *pyObject) {
 }
 
 func NewObject(obj *py.Object) Object {
-	p := Object{&pyObject{obj: obj}}
+	if obj == nil {
+		py.ErrPrint()
+		panic("nil Python object")
+	}
+	o := &pyObject{obj: obj}
+	p := Object{o}
 	f := finalizerCallback
 	fn := *(**c.Pointer)(c.Pointer(&f))
-	runtime.SetFinalizer(p.pyObject, fn)
+	runtime.SetFinalizer(o, fn)
 	return p
+}
+
+func (obj Object) Repr() string {
+	return NewStr(obj.obj.Repr()).String()
 }
 
 func (obj Object) Obj() *py.Object {
 	return obj.pyObject.obj
 }
 
-// fake method
-func (obj Object) pyObj() *pyObject {
-	return obj.pyObject
-}
-
-// fake method
-func (obj Object) setPyObj(p *pyObject) {
-
-}
-
-func fromMap(m reflect.Value) Dict {
-	dict := NewDict(py.NewDict())
-	iter := m.MapRange()
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		obj := From(value)
-		keyObj := From(key)
-		dict.SetItem(keyObj, obj)
-	}
-	return dict
-}
-
-func fromSlice(s reflect.Value) List {
-	list := NewList(py.NewList(s.Len()))
-	for i := 0; i < s.Len(); i++ {
-		obj := From(s.Index(i))
-		list.Append(obj)
-	}
-	return list
-}
-
 func From(v any) Object {
 	switch v := v.(type) {
-	case PyObjecter:
+	case Objecter:
 		return NewObject(v.Obj())
 	case int8:
 		return NewObject(py.Long(c.Long(v)))
@@ -134,25 +110,52 @@ func From(v any) Object {
 		} else {
 			return NewObject(py.False())
 		}
+
+	// TODO(lijie): workaround for lame reflection
+	case []Objecter:
+		return fromSlice(v).Object
+	case []int8:
+		return fromSlice(v).Object
+	case []int16:
+		return fromSlice(v).Object
+	case []int32:
+		return fromSlice(v).Object
+	case []int64:
+		return fromSlice(v).Object
+	case []int:
+		return fromSlice(v).Object
+	case []uint8:
+		return fromSlice(v).Object
+	case []uint16:
+		return fromSlice(v).Object
+	case []uint32:
+		return fromSlice(v).Object
+	case []uint64:
+		return fromSlice(v).Object
+	case []uint:
+		return fromSlice(v).Object
+	case []float64:
+		return fromSlice(v).Object
+	case []string:
+		return fromSlice(v).Object
+	case []bool:
+		return fromSlice(v).Object
 	default:
-		vv := reflect.ValueOf(v)
-		switch vv.Kind() {
-		// case reflect.Map:
-		// 	return fromMap(vv).PyObject
-		case reflect.Slice:
-			return fromSlice(vv).Object
-		}
-		panic(fmt.Sprintf("unsupported type for Python call: %T", v))
+		fmt.Printf("From: %T\n", v)
+		panic("unsupported type for Python call")
 	}
 }
 
-func (obj Object) CallMethod(name string, args ...PyObjecter) Object {
-	mthd := Cast[Func](obj.GetAttrString(name))
-	argsTuple := py.NewTuple(len(args))
-	for i, arg := range args {
-		obj := arg.Obj()
-		obj.IncRef()
-		argsTuple.TupleSetItem(i, obj)
+func fromSlice[T any](v []T) List {
+	list := NewList(py.NewList(len(v)))
+	for i, x := range v {
+		list.SetItem(i, From(x))
 	}
-	return mthd.CallObject(NewObject(argsTuple))
+	return list
+}
+
+func (obj Object) CallMethod(name string, args ...any) Object {
+	mthd := Cast[Func](obj.GetAttr(name))
+	argsTuple := MakeTupleWith(args...)
+	return mthd.CallObject(argsTuple.Object)
 }

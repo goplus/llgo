@@ -10,6 +10,15 @@ func NewList(obj *py.Object) List {
 	return List{NewObject(obj)}
 }
 
+func MakeList(args ...any) List {
+	list := NewList(py.NewList(len(args)))
+	for i, arg := range args {
+		obj := From(arg)
+		list.SetItem(i, obj)
+	}
+	return list
+}
+
 func (l List) GetItem(index int) Object {
 	v := l.obj.ListItem(index)
 	v.IncRef()

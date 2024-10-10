@@ -15,13 +15,13 @@ func main() {
 	python.SetProgramName(os.Args[0])
 	fooMod := foo.InitFooModule()
 	sum := python.Cast[python.Long](fooMod.GetFuncAttr("add").CallArgs(python.MakeLong(1), python.MakeLong(2)))
-	c.Printf(c.Str("Sum: %d\n"), sum.Int())
+	c.Printf(c.Str("Sum: %d\n"), sum.Int64())
 
 	dict := fooMod.ModuleGetDict()
-	pointClass := python.Cast[python.Func](dict.GetItem(python.MakeStr("Point")))
+	pointClass := python.Cast[python.Func](dict.Get(python.MakeStr("Point")))
 	point := pointClass.CallArgs(python.MakeLong(3), python.MakeLong(4))
 	area := python.Cast[python.Long](point.CallMethod("area"))
-	c.Printf(c.Str("Area of 3 * 4: %d\n"), area.Int())
+	c.Printf(c.Str("Area of 3 * 4: %d\n"), area.Int64())
 
 	pythonCode := `
 def allocate_memory():
@@ -44,10 +44,6 @@ for i in range(10):
 	gbl := mod.ModuleGetDict()
 
 	code := python.CompileString(pythonCode, "<string>", python.FileInput)
-	if code.Nil() {
-		python.ErrPrint()
-		panic("Failed to compile Python code")
-	}
 
 	_ = python.EvalCode(code, gbl, python.NewDict(nil))
 
@@ -61,9 +57,6 @@ for i in range(10):
 	}
 
 	memory_allocation_test := mod.GetFuncAttr("memory_allocation_test")
-	if memory_allocation_test.Nil() {
-		panic("Failed to get memory_allocation_test function")
-	}
 
 	for i := 0; i < 100; i++ {
 		// 100MB every time

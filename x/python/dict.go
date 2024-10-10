@@ -1,6 +1,9 @@
 package python
 
-import "github.com/goplus/llgo/py"
+import (
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/py"
+)
 
 type Dict struct {
 	Object
@@ -18,7 +21,7 @@ func DictFromPairs(pairs ...any) Dict {
 	for i := 0; i < len(pairs); i += 2 {
 		key := From(pairs[i])
 		value := From(pairs[i+1])
-		dict.SetItem(key, value)
+		dict.Set(key, value)
 	}
 	return dict
 }
@@ -28,17 +31,24 @@ func MakeDict(m map[any]any) Dict {
 	for key, value := range m {
 		keyObj := From(key)
 		valueObj := From(value)
-		dict.SetItem(keyObj, valueObj)
+		dict.Set(keyObj, valueObj)
 	}
 	return dict
 }
 
-func (d Dict) GetItem(key PyObjecter) Object {
+func (d Dict) Get(key Objecter) Object {
 	v := d.obj.DictGetItem(key.Obj())
 	v.IncRef()
 	return NewObject(v)
 }
 
-func (d Dict) SetItem(key, value Object) {
+func (d Dict) Set(key, value Object) {
+	key.obj.IncRef()
+	value.obj.IncRef()
 	d.obj.DictSetItem(key.obj, value.obj)
+}
+
+func (d Dict) SetString(key string, value Object) {
+	value.obj.IncRef()
+	d.obj.DictSetItemString(c.AllocCStr(key), value.obj)
 }
