@@ -80,7 +80,7 @@ func exampleAdd(self, args *py.Object) *py.Object {
 	return py.Long(c.Long(a + b))
 }
 
-func InitFooModule() python.PyModule {
+func InitFooModule() python.Module {
 	m := py.ModuleCreate2(&py.ModuleDef{
 		Base: py.PyModuleDef_HEAD_INIT(),
 		Name: c.Str("foo"),
