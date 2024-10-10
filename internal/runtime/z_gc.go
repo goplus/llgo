@@ -49,24 +49,20 @@ func Free(ptr unsafe.Pointer) {
 
 // -----------------------------------------------------------------------------
 
-// llgo:type C
 type finalizerFunc func(unsafe.Pointer)
 
 func finalizerCallback(ptr unsafe.Pointer, cd unsafe.Pointer) {
-	c.Printf(c.Str("finalizerCallback: ptr=%p, cd=%p\n"), ptr, cd)
-	fn := *(*finalizerFunc)(unsafe.Pointer(&cd))
+	iface := [2]unsafe.Pointer{cd, nil}
+	fn := *(*finalizerFunc)((c.Pointer)(&iface))
 	fn(ptr)
 }
 
 // obj and finalizer must pointer
 func SetFinalizer(obj any, finalizer any) {
-	println("obj:", (*[2]uintptr)(unsafe.Pointer(&obj)), "finalizer:", (*[2]uintptr)(unsafe.Pointer(&finalizer)))
-	p := unsafe.Pointer((*(*[2]uintptr)(unsafe.Pointer(&obj)))[1])
-	println("p:", p)
-
+	iface := (*[2]unsafe.Pointer)(unsafe.Pointer(&obj))
+	p := iface[1]
 	// Convert finalizer to unsafe.Pointer
-	cd := unsafe.Pointer((*(*[2]uintptr)(unsafe.Pointer(&finalizer)))[0])
-	println("cd:", cd)
-	println(obj, p, finalizer, cd)
+	iface = (*[2]unsafe.Pointer)(unsafe.Pointer(&finalizer))
+	cd := iface[1]
 	bdwgc.RegisterFinalizer(p, finalizerCallback, cd, nil, nil)
 }
