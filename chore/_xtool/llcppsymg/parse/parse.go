@@ -132,10 +132,12 @@ func (p *SymbolProcessor) collectFuncInfo(cursor clang.Cursor) {
 	symbol := cursor.Mangling()
 	defer symbol.Dispose()
 
+	// Remove all leading underscores from C++ symbol names
+	// On Linux, C++ symbols typically have one leading underscore
+	// On macOS, C++ symbols may have two leading underscores
+	// We remove all leading underscores to handle both cases consistently
 	symbolName := c.GoString(symbol.CStr())
-	if len(symbolName) >= 1 && symbolName[0] == '_' {
-		symbolName = symbolName[1:]
-	}
+	symbolName = strings.TrimLeft(symbolName, "_")
 	p.SymbolMap[symbolName] = &SymbolInfo{
 		GoName:    p.genGoName(cursor),
 		ProtoName: p.genProtoName(cursor),

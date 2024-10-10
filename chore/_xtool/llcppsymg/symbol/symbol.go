@@ -88,7 +88,7 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 func GetCommonSymbols(dylibSymbols []*nm.Symbol, headerSymbols map[string]*parse.SymbolInfo) []*types.SymbolInfo {
 	var commonSymbols []*types.SymbolInfo
 	for _, dylibSym := range dylibSymbols {
-		symName := strings.TrimPrefix(dylibSym.Name, "_")
+		symName := strings.TrimLeft(dylibSym.Name, "_")
 		if symInfo, ok := headerSymbols[symName]; ok {
 			symbolInfo := &types.SymbolInfo{
 				Mangle: symName,
