@@ -422,6 +422,17 @@ func (b Builder) abiType(t types.Type) Expr {
 		for i := 0; i < t.NumFields(); i++ {
 			b.abiType(t.Field(i).Type())
 		}
+	case *types.Interface:
+		for i := 0; i < t.NumMethods(); i++ {
+			b.abiType(t.Method(i).Type())
+		}
+	case *types.Signature:
+		for i := 0; i < t.Params().Len(); i++ {
+			b.abiType(t.Params().At(i).Type())
+		}
+		for i := 0; i < t.Results().Len(); i++ {
+			b.abiType(t.Results().At(i).Type())
+		}
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)
