@@ -38,31 +38,24 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = load ptr, ptr @_llgo_int, align 8
-  %3 = load ptr, ptr @_llgo_int, align 8
-  %4 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
-  %5 = call ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr %4, i64 2)
-  %6 = load ptr, ptr @_llgo_int, align 8
-  %7 = load ptr, ptr @_llgo_int, align 8
+  %3 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
+  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.MakeMap"(ptr %3, i64 2)
+  %5 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
+  %6 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store i64 23, ptr %6, align 4
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %5, ptr %4, ptr %6)
+  store i64 100, ptr %7, align 4
   %8 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
   %9 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  store i64 23, ptr %9, align 4
-  %10 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %8, ptr %5, ptr %9)
-  store i64 100, ptr %10, align 4
-  %11 = load ptr, ptr @_llgo_int, align 8
-  %12 = load ptr, ptr @_llgo_int, align 8
-  %13 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
-  %14 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  store i64 7, ptr %14, align 4
-  %15 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %13, ptr %5, ptr %14)
-  store i64 29, ptr %15, align 4
-  %16 = load ptr, ptr @_llgo_int, align 8
-  %17 = load ptr, ptr @_llgo_int, align 8
-  %18 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
-  %19 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  store i64 23, ptr %19, align 4
-  %20 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAccess1"(ptr %18, ptr %5, ptr %19)
-  %21 = load i64, ptr %20, align 4
-  %22 = call i32 (ptr, ...) @printf(ptr @5, i64 %21)
+  store i64 7, ptr %9, align 4
+  %10 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAssign"(ptr %8, ptr %4, ptr %9)
+  store i64 29, ptr %10, align 4
+  %11 = load ptr, ptr @"map[_llgo_int]_llgo_int", align 8
+  %12 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  store i64 23, ptr %12, align 4
+  %13 = call ptr @"github.com/goplus/llgo/internal/runtime.MapAccess1"(ptr %11, ptr %4, ptr %12)
+  %14 = load i64, ptr %13, align 4
+  %15 = call i32 (ptr, ...) @printf(ptr @5, i64 %14)
   ret i32 0
 }
 
