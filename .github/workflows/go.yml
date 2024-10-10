@@ -111,7 +111,7 @@ jobs:
         run: cat result.md
 
       - name: PR comment with test result
-        uses: thollander/actions-comment-pull-request@v2
+        uses: thollander/actions-comment-pull-request@v3
         if: false
         with:
           filePath: result.md
