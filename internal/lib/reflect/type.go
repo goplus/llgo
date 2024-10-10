@@ -1382,31 +1382,27 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 func SliceOf(t Type) Type {
 	typ := t.common()
 
-	/* TODO(xsw): no cache
 	// Look in cache.
 	ckey := cacheKey{Slice, typ, nil, 0}
 	if slice, ok := lookupCache.Load(ckey); ok {
 		return slice.(Type)
 	}
 
-	// Look in known types.
-	s := "[]" + stringFor(typ)
-	for _, tt := range typesByString(s) {
-		slice := (*sliceType)(unsafe.Pointer(tt))
-		if slice.Elem == typ {
-			ti, _ := lookupCache.LoadOrStore(ckey, toRType(tt))
-			return ti.(Type)
+	/*
+		// Look in known types.
+		s := "[]" + stringFor(typ)
+		for _, tt := range typesByString(s) {
+			slice := (*sliceType)(unsafe.Pointer(tt))
+			if slice.Elem == typ {
+				ti, _ := lookupCache.LoadOrStore(ckey, toRType(tt))
+				return ti.(Type)
+			}
 		}
-	}
 	*/
 
 	slice := runtime.SliceOf(typ)
-
-	// TODO(xsw):
-	// ti, _ := lookupCache.LoadOrStore(ckey, toRType(&slice.Type))
-	// return ti.(Type)
-
-	return toType(slice)
+	ti, _ := lookupCache.LoadOrStore(ckey, toRType(slice))
+	return ti.(Type)
 }
 
 // toType converts from a *rtype to a Type that can be returned
@@ -1419,6 +1415,19 @@ func toType(t *abi.Type) Type {
 		return nil
 	}
 	return toRType(t)
+}
+
+// The lookupCache caches ArrayOf, ChanOf, MapOf and SliceOf lookups.
+var lookupCache sync.Map // map[cacheKey]*rtype
+
+// A cacheKey is the key for use in the lookupCache.
+// Four values describe any of the types we are looking for:
+// type kind, one or two subtypes, and an extra integer.
+type cacheKey struct {
+	kind  Kind
+	t1    *abi.Type
+	t2    *abi.Type
+	extra uintptr
 }
 
 // The funcLookupCache caches FuncOf lookups.
