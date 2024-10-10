@@ -4,6 +4,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/internal/runtime"
 	"github.com/goplus/llgo/py"
 )
 
@@ -50,6 +51,18 @@ func (obj PyObject) GetDictAttr(name string) PyDict {
 
 type PyObject struct {
 	*pyObject
+}
+
+func finalizerCallback(p *pyObject) {
+	p.obj.DecRef()
+}
+
+func NewObject(obj *py.Object) PyObject {
+	p := PyObject{&pyObject{obj: obj}}
+	f := finalizerCallback
+	fn := *(**c.Pointer)(c.Pointer(&f))
+	runtime.SetFinalizer(p.pyObject, fn)
+	return p
 }
 
 func (obj PyObject) Obj() *py.Object {
