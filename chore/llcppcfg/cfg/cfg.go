@@ -93,6 +93,11 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 		ext := filepath.Ext(s)
 		return ext == ".h" || ext == ".hpp"
 	})
+	// expand Cflags and Libs
+	cfg.Cflags = cflags
+	Libs := fmt.Sprintf("${pkg-config --libs %s}", name)
+	libs := expandString(Libs)
+	cfg.Libs = libs
 	return cfg
 }
 
