@@ -81,31 +81,22 @@ func exampleAdd(self, args *py.Object) *py.Object {
 }
 
 func InitFooModule() python.Module {
-	m := py.ModuleCreate2(&py.ModuleDef{
-		Base: py.PyModuleDef_HEAD_INIT(),
-		Name: c.Str("foo"),
-		Doc:  c.Str("This is a demo module for auto deref."),
-		Size: -1,
-		Methods: &[]py.MethodDef{
-			{Name: c.Str("add"), Func: c.Func(exampleAdd), Flags: py.METH_VARARGS, Doc: c.Str("Add two integers.")},
-			{Name: nil, Func: nil, Flags: 0, Doc: nil},
-		}[0],
-	}, 1013)
+	mb := python.NewModuleBuilder("foo", "This is a demo module for auto deref.")
 
-	if m == nil {
-		panic("failed to create module")
-	}
+	mb.AddMethod("add", c.Func(exampleAdd), "Add two integers.")
+
+	m := mb.Build()
 
 	if PointType.Ready() < 0 {
 		panic("failed to ready type")
 	}
 
 	PointType.Ob_base.Ob_base.IncRef()
-	if py.ModuleAddObject(m, c.Str("Point"), &PointType.Ob_base.Ob_base) < 0 {
+	if m.AddObject("Point", python.NewObject(&PointType.Ob_base.Ob_base)) < 0 {
 		PointType.Ob_base.Ob_base.DecRef()
-		m.DecRef()
+		m.Obj().DecRef()
 		return python.NewModule(nil)
 	}
 
-	return python.NewModule(m)
+	return m
 }

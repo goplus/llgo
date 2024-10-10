@@ -32,3 +32,7 @@ func (m Module) Call(name string, args ...any) Object {
 	fn := Cast[Func](m.GetAttrString(name))
 	return fn.CallObject(MakeTuple(args...).Object)
 }
+
+func (m Module) AddObject(name string, obj Object) int {
+	return int(py.ModuleAddObject(m.obj, c.AllocCStr(name), obj.obj))
+}
