@@ -94,10 +94,10 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 		return ext == ".h" || ext == ".hpp"
 	})
 	// expand Cflags and Libs
-	cfg.Cflags = cflags
+	cfg.Cflags = strings.TrimLeft(strings.TrimRight(cflags, " \t\r\n"), " \t\r\n")
 	Libs := fmt.Sprintf("${pkg-config --libs %s}", name)
 	libs := expandString(Libs)
-	cfg.Libs = libs
+	cfg.Libs = strings.TrimLeft(strings.TrimRight(libs, " \t\r\n"), " \t\r\n")
 	return cfg
 }
 
