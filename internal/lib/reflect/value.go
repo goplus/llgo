@@ -759,7 +759,6 @@ func valueInterface(v Value, safe bool) any {
 	}
 
 	if v.kind() == Interface {
-		/* TODO(xsw):
 		// Special case: return the element inside the interface.
 		// Empty interface has one layout, all interfaces with
 		// methods have a second layout.
@@ -769,8 +768,6 @@ func valueInterface(v Value, safe bool) any {
 		return *(*interface {
 			M()
 		})(v.ptr)
-		*/
-		panic("todo: reflect.valueInterface")
 	}
 
 	// TODO: pass safe to packEface so we don't need to copy if safe==true?
@@ -1954,4 +1951,58 @@ func contentEscapes(x unsafe.Pointer) {
 func noescape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
 	return unsafe.Pointer(x ^ 0)
+}
+
+// Method returns a function value corresponding to v's i'th method.
+// The arguments to a Call on the returned function should not include
+// a receiver; the returned function will always use v as the receiver.
+// Method panics if i is out of range or if v is a nil interface value.
+func (v Value) Method(i int) Value {
+	if v.typ() == nil {
+		panic(&ValueError{"reflect.Value.Method", Invalid})
+	}
+	if v.flag&flagMethod != 0 || uint(i) >= uint(toRType(v.typ()).NumMethod()) {
+		panic("reflect: Method index out of range")
+	}
+	if v.typ().Kind() == abi.Interface && v.IsNil() {
+		panic("reflect: Method on nil interface value")
+	}
+	fl := v.flag.ro() | (v.flag & flagIndir)
+	fl |= flag(Func)
+	fl |= flag(i)<<flagMethodShift | flagMethod
+	return Value{v.typ(), v.ptr, fl}
+}
+
+// NumMethod returns the number of methods in the value's method set.
+//
+// For a non-interface type, it returns the number of exported methods.
+//
+// For an interface type, it returns the number of exported and unexported methods.
+func (v Value) NumMethod() int {
+	if v.typ() == nil {
+		panic(&ValueError{"reflect.Value.NumMethod", Invalid})
+	}
+	if v.flag&flagMethod != 0 {
+		return 0
+	}
+	return toRType(v.typ()).NumMethod()
+}
+
+// MethodByName returns a function value corresponding to the method
+// of v with the given name.
+// The arguments to a Call on the returned function should not include
+// a receiver; the returned function will always use v as the receiver.
+// It returns the zero Value if no method was found.
+func (v Value) MethodByName(name string) Value {
+	if v.typ() == nil {
+		panic(&ValueError{"reflect.Value.MethodByName", Invalid})
+	}
+	if v.flag&flagMethod != 0 {
+		return Value{}
+	}
+	m, ok := toRType(v.typ()).MethodByName(name)
+	if !ok {
+		return Value{}
+	}
+	return v.Method(m.Index)
 }
