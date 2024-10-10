@@ -414,6 +414,14 @@ func (b Builder) abiType(t types.Type) Expr {
 	case *types.Map:
 		b.abiType(t.Key())
 		b.abiType(t.Elem())
+	case *types.Slice:
+		b.abiType(t.Elem())
+	case *types.Chan:
+		b.abiType(t.Elem())
+	case *types.Struct:
+		for i := 0; i < t.NumFields(); i++ {
+			b.abiType(t.Field(i).Type())
+		}
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)
