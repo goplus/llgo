@@ -1182,6 +1182,10 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		if len(args) > 0 {
 			return b.compareSelect(token.GTR, args[0], args[1:]...)
 		}
+	case "Sizeof":
+		if len(args) == 1 {
+			return SizeOf(b.Prog, args[0].Type)
+		}
 	}
 	panic("todo: " + fn)
 }
