@@ -414,9 +414,7 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	funcType.Params = params
 
 	mangledNameStr := c.GoString(mangledName.CStr())
-	if len(mangledNameStr) >= 1 && mangledNameStr[0] == '_' {
-		mangledNameStr = mangledNameStr[1:]
-	}
+	mangledNameStr = strings.TrimLeft(mangledNameStr, "_")
 
 	funcDecl := &ast.FuncDecl{
 		DeclBase:    ct.CreateDeclBase(cursor),
