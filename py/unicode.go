@@ -53,7 +53,7 @@ func FromGoString(s string) *Object {
 // to it become invalid when the Unicode object is garbage collected.
 //
 // llgo:link (*Object).CStrAndLen C.PyUnicode_AsUTF8AndSize
-func (u *Object) CStrAndLen() (*c.Char, uintptr) { return nil, 0 }
+func (u *Object) CStrAndLen(*uintptr) *c.Char { return nil }
 
 // As CStrAndLen, but does not store the len.
 //

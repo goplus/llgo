@@ -18,6 +18,17 @@ func MakeStr(s string) Str {
 }
 
 func (s Str) String() string {
-	buf, n := s.obj.CStrAndLen()
-	return c.GoString(buf, n)
+	var l uintptr
+	buf := s.obj.CStrAndLen(&l)
+	return c.GoString(buf, l)
+}
+
+func (s Str) Len() int {
+	var l uintptr
+	s.obj.CStrAndLen(&l)
+	return int(l)
+}
+
+func (s Str) Encode(encoding string) Bytes {
+	return Cast[Bytes](s.CallMethod("encode", MakeStr(encoding)))
 }

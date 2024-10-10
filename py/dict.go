@@ -18,6 +18,8 @@ package py
 
 import (
 	_ "unsafe"
+
+	"github.com/goplus/llgo/c"
 )
 
 // https://docs.python.org/3/c-api/dict.html
@@ -48,6 +50,12 @@ func (d *Object) DictItems() *Object { return nil }
 //
 // llgo:link (*Object).DictSetItem C.PyDict_SetItem
 func (d *Object) DictSetItem(key *Object, val *Object) *Object { return nil }
+
+// int PyDict_SetItemString(PyObject *p, const char *key, PyObject *val)
+// Part of the Stable ABI.
+// This is the same as PyDict_SetItem(), but key is specified as a const char* UTF-8 encoded bytes string, rather than a PyObject*.
+// llgo:link (*Object).DictSetItemString C.PyDict_SetItemString
+func (d *Object) DictSetItemString(key *c.Char, val *Object) *Object { return nil }
 
 // Return the object from dictionary d which has a key key. Return nil if the
 // key key is not present, but without setting an exception.

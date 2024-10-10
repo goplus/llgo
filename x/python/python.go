@@ -1,6 +1,7 @@
 package python
 
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -11,10 +12,6 @@ import (
 
 func SetProgramName(name string) {
 	py.SetProgramName(c.AllocCStr(name))
-}
-
-func ErrPrint() {
-	py.ErrPrint()
 }
 
 type InputType = py.InputType
@@ -35,7 +32,10 @@ func EvalCode(code Object, globals, locals Dict) Object {
 	return NewObject(py.EvalCode(code.Obj(), globals.Obj(), locals.Obj()))
 }
 
-func Cast[U, T PyObjecter](obj T) (ret U) {
+func Cast[U, T Objecter](obj T) (ret U) {
+	if unsafe.Sizeof(obj) != unsafe.Sizeof(ret) {
+		panic(fmt.Errorf("size mismatch: %T %d and %T %d", obj, unsafe.Sizeof(obj), ret, unsafe.Sizeof(ret)))
+	}
 	// TODO(lijie): avoid heap allocation
 	rret := *(*U)(unsafe.Pointer(&obj))
 	ret = rret
