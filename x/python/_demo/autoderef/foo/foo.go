@@ -75,10 +75,8 @@ func init() {
 func exampleAdd(self, args *py.Object) *py.Object {
 	var a, b int
 	if !py.ParseTuple(args, c.Str("ii"), &a, &b) {
-		fmt.Println("ParseTuple failed")
-		return nil
+		panic("parse tuple failed")
 	}
-	fmt.Printf("a: %d, b: %d\n", a, b)
 	return py.Long(c.Long(a + b))
 }
 

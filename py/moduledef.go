@@ -50,6 +50,14 @@ func None() *Object {
 	return (*Object)(unsafe.Pointer(&C._Py_NoneStruct))
 }
 
+func True() *Object {
+	return (*Object)(unsafe.Pointer(&C._Py_TrueStruct))
+}
+
+func False() *Object {
+	return (*Object)(unsafe.Pointer(&C._Py_FalseStruct))
+}
+
 const (
 	TPFLAGS_DEFAULT  = 0
 	TPFLAGS_BASETYPE = 1 << 10

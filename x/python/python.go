@@ -1,6 +1,8 @@
 package python
 
 import (
+	"fmt"
+	"reflect"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -79,11 +81,81 @@ func (obj PyObject) setPyObj(p *pyObject) {
 
 }
 
+func fromMap(m reflect.Value) PyDict {
+	dict := NewDict(py.NewDict())
+	iter := m.MapRange()
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		obj := From(value)
+		keyObj := From(key)
+		dict.SetItem(keyObj, obj)
+	}
+	return dict
+}
+
+func fromSlice(s reflect.Value) PyList {
+	list := NewList(py.NewList(s.Len()))
+	for i := 0; i < s.Len(); i++ {
+		obj := From(s.Index(i))
+		list.Append(obj)
+	}
+	return list
+}
+
+func From(v any) PyObject {
+	switch v := v.(type) {
+	case PyObjecter:
+		return NewObject(v.Obj())
+	case int8:
+		return NewObject(py.Long(c.Long(v)))
+	case int16:
+		return NewObject(py.Long(c.Long(v)))
+	case int32:
+		return NewObject(py.Long(c.Long(v)))
+	case int64:
+		return NewObject(py.Long(c.Long(v)))
+	case int:
+		return NewObject(py.Long(c.Long(v)))
+	case uint8:
+		return NewObject(py.Long(c.Long(v)))
+	case uint16:
+		return NewObject(py.Long(c.Long(v)))
+	case uint32:
+		return NewObject(py.Long(c.Long(v)))
+	case uint64:
+		return NewObject(py.Long(c.Long(v)))
+	case uint:
+		return NewObject(py.Long(c.Long(v)))
+	case float64:
+		return NewObject(py.Float(v))
+	case string:
+		return NewObject(py.FromGoString(v))
+	case bool:
+		if v {
+			return NewObject(py.True())
+		} else {
+			return NewObject(py.False())
+		}
+	default:
+		vv := reflect.ValueOf(v)
+		switch vv.Kind() {
+		// case reflect.Map:
+		// 	return fromMap(vv).PyObject
+		case reflect.Slice:
+			return fromSlice(vv).PyObject
+		}
+		panic(fmt.Sprintf("unsupported type for Python call: %T", v))
+	}
+}
+
 func (obj PyObject) CallMethod(name string, args ...PyObjecter) PyObject {
 	mthd := Cast[PyFunc](obj.GetAttrString(name))
 	argsTuple := py.NewTuple(len(args))
 	for i, arg := range args {
-		argsTuple.TupleSetItem(i, arg.Obj())
+		obj := arg.Obj()
+		obj.IncRef()
+		argsTuple.TupleSetItem(i, obj)
 	}
 	return mthd.CallObject(NewObject(argsTuple))
 }
@@ -98,6 +170,49 @@ func NewList(obj *py.Object) PyList {
 	return PyList{NewObject(obj)}
 }
 
+func (l PyList) GetItem(index int) PyObject {
+	v := l.obj.ListItem(index)
+	v.IncRef()
+	return NewObject(v)
+}
+
+func (l PyList) SetItem(index int, item PyObject) {
+	l.obj.ListSetItem(index, item.obj)
+}
+
+func (l PyList) Append(obj PyObject) {
+	l.obj.ListAppend(obj.obj)
+}
+
+// ----------------------------------------------------------------------------
+
+type PyTuple struct {
+	PyObject
+}
+
+func NewTuple(obj *py.Object) PyTuple {
+	return PyTuple{NewObject(obj)}
+}
+
+func Tuple(args ...any) PyTuple {
+	tuple := NewTuple(py.NewTuple(len(args)))
+	for i, arg := range args {
+		obj := From(arg)
+		tuple.Set(i, obj)
+	}
+	return tuple
+}
+
+func (t PyTuple) Get(index int) PyObject {
+	v := t.obj.TupleItem(index)
+	v.IncRef()
+	return NewObject(v)
+}
+
+func (t PyTuple) Set(index int, obj PyObject) {
+	t.obj.TupleSetItem(index, obj.obj)
+}
+
 // ----------------------------------------------------------------------------
 
 type PyDict struct {
@@ -108,8 +223,37 @@ func NewDict(obj *py.Object) PyDict {
 	return PyDict{NewObject(obj)}
 }
 
+func DictFromPairs(pairs ...any) PyDict {
+	if len(pairs)%2 != 0 {
+		panic("DictFromPairs requires an even number of arguments")
+	}
+	dict := NewDict(py.NewDict())
+	for i := 0; i < len(pairs); i += 2 {
+		key := From(pairs[i])
+		value := From(pairs[i+1])
+		dict.SetItem(key, value)
+	}
+	return dict
+}
+
+func Dict(m map[any]any) PyDict {
+	dict := NewDict(py.NewDict())
+	for key, value := range m {
+		keyObj := From(key)
+		valueObj := From(value)
+		dict.SetItem(keyObj, valueObj)
+	}
+	return dict
+}
+
 func (d PyDict) GetItem(key PyObjecter) PyObject {
-	return NewObject(d.obj.DictGetItem(key.Obj()))
+	v := d.obj.DictGetItem(key.Obj())
+	v.IncRef()
+	return NewObject(v)
+}
+
+func (d PyDict) SetItem(key, value PyObject) {
+	d.obj.DictSetItem(key.obj, value.obj)
 }
 
 // ----------------------------------------------------------------------------
@@ -151,11 +295,21 @@ func NewModule(obj *py.Object) PyModule {
 }
 
 func ImportModule(name string) PyModule {
-	return NewModule(py.ImportModule(c.AllocaCStr(name)))
+	mod := py.ImportModule(c.AllocaCStr(name))
+	if mod == nil {
+		py.ErrPrint()
+		panic(fmt.Errorf("failed to import module %s", name))
+	}
+	return NewModule(mod)
 }
 
-func (m *PyModule) ModuleGetDict() PyDict {
+func (m PyModule) ModuleGetDict() PyDict {
 	return NewDict(m.obj.ModuleGetDict())
+}
+
+func (m PyModule) Call(name string, args ...any) PyObject {
+	fn := Cast[PyFunc](m.GetAttrString(name))
+	return fn.CallObject(Tuple(args...).PyObject)
 }
 
 // ----------------------------------------------------------------------------
@@ -207,6 +361,14 @@ type PyBool struct {
 
 func NewBool(obj *py.Object) PyBool {
 	return PyBool{NewObject(obj)}
+}
+
+func True() PyBool {
+	return NewBool(py.True())
+}
+
+func False() PyBool {
+	return NewBool(py.False())
 }
 
 func (b PyBool) Bool() bool {
@@ -265,7 +427,9 @@ func (f PyFunc) CallObject(args PyObject) PyObject {
 func (f PyFunc) CallArgs(args ...PyObjecter) PyObject {
 	argsTuple := py.NewTuple(len(args))
 	for i, arg := range args {
-		argsTuple.TupleSetItem(i, arg.Obj())
+		obj := arg.Obj()
+		obj.IncRef()
+		argsTuple.TupleSetItem(i, obj)
 	}
 	return NewObject(f.obj.CallObject(argsTuple))
 }
