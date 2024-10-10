@@ -408,18 +408,45 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 func (b Builder) abiType(t types.Type) Expr {
 	switch t := t.(type) {
 	case *types.Pointer:
-		b.loadType(t.Elem())
+		b.checkAbi(t.Elem())
 	case *types.Array:
-		b.abiType(t.Elem())
+		b.checkAbi(t.Elem())
 	case *types.Map:
-		b.abiType(t.Key())
-		b.abiType(t.Elem())
+		b.checkAbi(t.Key())
+		b.checkAbi(t.Elem())
+	case *types.Slice:
+		b.checkAbi(t.Elem())
+	case *types.Chan:
+		b.checkAbi(t.Elem())
+	case *types.Struct:
+		for i := 0; i < t.NumFields(); i++ {
+			b.checkAbi(t.Field(i).Type())
+		}
+	case *types.Interface:
+		for i := 0; i < t.NumMethods(); i++ {
+			b.checkAbi(t.Method(i).Type())
+		}
+	case *types.Signature:
+		for i := 0; i < t.Params().Len(); i++ {
+			b.checkAbi(t.Params().At(i).Type())
+		}
+		for i := 0; i < t.Results().Len(); i++ {
+			b.checkAbi(t.Results().At(i).Type())
+		}
 	}
 	g := b.loadType(t)
 	return b.Load(g.Expr)
 }
 
+func (b Builder) checkAbi(t types.Type) {
+	if b.Pkg.chkabi[t] {
+		return
+	}
+	b.abiType(t)
+}
+
 func (b Builder) loadType(t types.Type) Global {
+	b.Pkg.chkabi[t] = true
 	pkg := b.Pkg
 	name, pub := pkg.abi.TypeName(t)
 	g := pkg.VarOf(name)
