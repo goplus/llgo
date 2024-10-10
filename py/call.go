@@ -107,12 +107,6 @@ func (o *Object) CallMethod(name *c.Char, format *c.Char, __llgo_va_list ...any)
 // llgo:link (*Object).CallMethodObjArgs C.PyObject_CallMethodObjArgs
 func (o *Object) CallMethodObjArgs(name *Object, __llgo_va_list ...any) *Object { return nil }
 
-// llgo:link (*Object).CallMethodNoArgs C.PyObject_CallMethodNoArgs
-func (o *Object) CallMethodNoArgs(name *Object) *Object { return nil }
-
-// llgo:link (*Object).CallMethodOneArg C.PyObject_CallMethodOneArg
-func (o *Object) CallMethodOneArg(name, arg *Object) *Object { return nil }
-
 // llgo:link (*Object).Vectorcall C.PyObject_Vectorcall
 func (o *Object) Vectorcall(args **Object, nargs uintptr, kwnames *Object) *Object {
 	return nil
