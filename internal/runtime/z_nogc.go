@@ -35,3 +35,17 @@ func AllocZ(size uintptr) unsafe.Pointer {
 	ret := c.Malloc(size)
 	return c.Memset(ret, 0, size)
 }
+
+// Realloc reallocates memory.
+func Realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
+	return c.Realloc(ptr, size)
+}
+
+// Free frees memory.
+func Free(ptr unsafe.Pointer) {
+	c.Free(ptr)
+}
+
+func SetFinalizer(obj any, finalizer any) {
+
+}

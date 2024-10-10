@@ -24,10 +24,21 @@ import (
 
 // https://docs.python.org/3/c-api/object.html
 
-// Object represents a Python object.
+//	struct _object {
+//	    union {
+//	       Py_ssize_t ob_refcnt;
+//	       uint32_t ob_refcnt_split[2];
+//	    };
+//	    PyTypeObject *ob_type;
+//	};
 type Object struct {
-	Unused [8]byte
+	ObRefcnt c.Int
+	_padding c.Int
+	ObType   c.Pointer
 }
+
+// llgo:link (*Object).IncRef C.Py_IncRef
+func (o *Object) IncRef() {}
 
 // llgo:link (*Object).DecRef C.Py_DecRef
 func (o *Object) DecRef() {}
@@ -66,3 +77,14 @@ func (o *Object) GetAttr(attrName *Object) *Object { return nil }
 func (o *Object) GetAttrString(attrName *c.Char) *Object { return nil }
 
 // -----------------------------------------------------------------------------
+
+// PyObject *PyObject_Repr(PyObject *o)
+// Return value: New reference. Part of the Stable ABI.
+// Compute a string representation of object o. Returns the string representation on success, NULL on failure. This is the equivalent of the Python expression repr(o). Called by the repr() built-in function.
+// llgo:link (*Object).Repr C.PyObject_Repr
+func (o *Object) Repr() *Object { return nil }
+
+// int PyObject_Print(PyObject *o, FILE *fp, int flags)
+// Print an object o, on file fp. Returns -1 on error. The flags argument is used to enable certain printing options. The only option currently supported is Py_PRINT_RAW; if given, the str() of the object is written instead of the repr().
+// llgo:link (*Object).Print C.PyObject_Print
+func (o *Object) Print(fp c.FilePtr, flags c.Int) c.Int { return -1 }
