@@ -28,7 +28,7 @@ To wrap generic PyObject(s) to typed Python objects, the best way is using alias
 type Object *pyObject
 
 func (o Object) GetAttrString(name string) Object {
-  return NewObject(o.obj.GetAttrString(name))
+  return newObject(o.obj.GetAttrString(name))
 }
 
 type Dict Object
