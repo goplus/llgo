@@ -6,6 +6,7 @@ import (
 
 type Objecter interface {
 	Obj() *py.Object
+	object() Object
 }
 
 type Func struct {

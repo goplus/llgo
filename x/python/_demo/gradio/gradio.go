@@ -54,21 +54,18 @@ func main() {
 	fn := mod.AddFunction("update_examples", c.Func(UpdateExamples),
 		"update_examples(country, /)\n--\n\nUpdate examples based on country")
 
-	demo := gr.Call("Blocks")
-	// with demo:
-	demo.CallMethod("__enter__")
-	// TODO(lijie): check why call __exit__ early
-	// defer demo.CallMethod("__exit__")
-	dropdown := gr.CallKeywords("Dropdown", python.MakeTupleWith(), python.MakeDict(map[any]any{
-		"label":   "Country",
-		"choices": []string{"USA", "Pakistan"},
-		"value":   "USA",
-	}))
-	textbox := gr.Call("Textbox")
-	options := python.From([][]string{{"Chicago"}, {"Little Rock"}, {"San Francisco"}})
-	examples := gr.Call("Examples", options, textbox)
-	dataset := examples.GetAttr("dataset")
-	dropdown.CallMethod("change", fn, dropdown, dataset)
+	demo := python.With(gr.Call("Blocks"), func(v python.Object) {
+		dropdown := gr.CallKeywords("Dropdown", python.MakeTupleWith(), python.MakeDict(map[any]any{
+			"label":   "Country",
+			"choices": []string{"USA", "Pakistan"},
+			"value":   "USA",
+		}))
+		textbox := gr.Call("Textbox")
+		options := python.From([][]string{{"Chicago"}, {"Little Rock"}, {"San Francisco"}})
+		examples := gr.Call("Examples", options, textbox)
+		dataset := examples.GetAttr("dataset")
+		dropdown.CallMethod("change", fn, dropdown, dataset)
+	})
 	demo.CallMethod("launch")
 	println("done")
 }

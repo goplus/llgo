@@ -69,6 +69,10 @@ func NewObject(obj *py.Object) Object {
 	return p
 }
 
+func (obj Object) object() Object {
+	return obj
+}
+
 func (obj Object) CallKeywords(name string, args Tuple, kw Dict) Object {
 	fn := Cast[Func](obj.GetAttr(name))
 	r := fn.Call(args, kw)

@@ -26,11 +26,11 @@ func CompileString(code, filename string, start InputType) Object {
 	return NewObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), start))
 }
 
-// ----------------------------------------------------------------------------
-
 func EvalCode(code Object, globals, locals Dict) Object {
 	return NewObject(py.EvalCode(code.Obj(), globals.Obj(), locals.Obj()))
 }
+
+// ----------------------------------------------------------------------------
 
 func Cast[U, T Objecter](obj T) (ret U) {
 	if unsafe.Sizeof(obj) != unsafe.Sizeof(ret) {
@@ -40,4 +40,13 @@ func Cast[U, T Objecter](obj T) (ret U) {
 	rret := *(*U)(unsafe.Pointer(&obj))
 	ret = rret
 	return
+}
+
+// ----------------------------------------------------------------------------
+
+func With[T Objecter](obj T, fn func(v T)) T {
+	obj.object().Call("__enter__")
+	defer obj.object().Call("__exit__")
+	fn(obj)
+	return obj
 }
