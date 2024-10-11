@@ -26,6 +26,12 @@ func (obj *pyObject) Nil() bool {
 	return obj == nil
 }
 
+func (obj *pyObject) Ensure() {
+	if obj == nil {
+		panic("nil Python object")
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 func (obj Object) GetAttr(name string) Object {
@@ -73,9 +79,11 @@ func (obj Object) object() Object {
 	return obj
 }
 
-func (obj Object) CallKeywords(name string, args Tuple, kw Dict) Object {
+func (obj Object) CallKeywords(name string, args []any, kw any) Object {
 	fn := Cast[Func](obj.GetAttr(name))
-	r := fn.Call(args, kw)
+	pyArgs := MakeTupleWith(args...)
+	pyKw := Cast[Dict](From(kw))
+	r := fn.Call(pyArgs, pyKw)
 	return r
 }
 

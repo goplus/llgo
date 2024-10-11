@@ -39,6 +39,7 @@ func Cast[U, T Objecter](obj T) (ret U) {
 	// TODO(lijie): avoid heap allocation
 	rret := *(*U)(c.Pointer(&obj))
 	ret = rret
+	ret.Ensure()
 	return
 }
 
