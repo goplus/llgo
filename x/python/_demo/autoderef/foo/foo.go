@@ -46,7 +46,7 @@ func NewPoint(self, args *py.Object) *py.Object {
 	return point.Object.Init(PointType)
 }
 
-func PyVaragsFunc[T any](fn func(T, *py.Object) *py.Object) unsafe.Pointer {
+func PyVaragsFunc[T any](fn func(T, *py.Object) *py.Object) c.Pointer {
 	return c.Func(fn)
 }
 

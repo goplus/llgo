@@ -37,7 +37,7 @@ func Cast[U, T Objecter](obj T) (ret U) {
 		panic(fmt.Errorf("size mismatch: %T %d and %T %d", obj, unsafe.Sizeof(obj), ret, unsafe.Sizeof(ret)))
 	}
 	// TODO(lijie): avoid heap allocation
-	rret := *(*U)(unsafe.Pointer(&obj))
+	rret := *(*U)(c.Pointer(&obj))
 	ret = rret
 	return
 }
