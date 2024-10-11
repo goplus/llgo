@@ -109,5 +109,8 @@ func (p *BuiltinTypeMap) initBuiltinTypeMap() {
 		"int64_t":   {Type: p.CType("LongLong"), HeaderFile: "sys/_types/_int64_t.h"},
 		"uint64_t":  {Type: p.CType("UlongLong"), HeaderFile: "_types/_uint64_t.h"},
 		"u_int64_t": {Type: p.CType("UlongLong"), HeaderFile: "sys/_types/_u_int64_t.h"},
+		// todo(zzy): undef type log
+		// other headerfile
+		"size_t": {Type: types.Typ[types.Uintptr], HeaderFile: "sys/_types/_u_int64_t.h"},
 	}
 }

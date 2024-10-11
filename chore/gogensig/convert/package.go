@@ -139,6 +139,7 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	}
 	sig, err := p.cvt.ToSignature(funcDecl.Type)
 	if err != nil {
+		log.Printf("FuncDeclToSignature Fail: %s\n", err.Error())
 		return err
 	}
 	decl := p.p.NewFuncDecl(token.NoPos, string(goFuncName), sig)
