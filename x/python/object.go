@@ -121,6 +121,12 @@ func From(v any) Object {
 		return NewObject(py.Float(v))
 	case string:
 		return NewObject(py.FromGoString(v))
+	case complex128:
+		return MakeComplex(v).Object
+	case complex64:
+		return MakeComplex(complex128(v)).Object
+	case []byte:
+		return MakeBytes(v).Object
 	case bool:
 		if v {
 			return NewObject(py.True())

@@ -31,11 +31,11 @@ func BytesFromCStr(s *c.Char) *Object
 
 // FromString returns a new bytes object from a Go string.
 func BytesFromString(s string) *Object {
-	return stringFromStringAndSize(c.GoStringData(s), uintptr(len(s)))
+	return BytesFromStringAndSize(c.GoStringData(s), uintptr(len(s)))
 }
 
-//go:linkname stringFromStringAndSize C.PyBytes_FromStringAndSize
-func stringFromStringAndSize(s *c.Char, size uintptr) *Object
+//go:linkname BytesFromStringAndSize C.PyBytes_FromStringAndSize
+func BytesFromStringAndSize(s *c.Char, size uintptr) *Object
 
 // CStr returns the content of a bytes object as a C string.
 //
