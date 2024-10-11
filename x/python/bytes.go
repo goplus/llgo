@@ -1,6 +1,8 @@
 package python
 
 import (
+	"unsafe"
+
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 )
@@ -20,6 +22,13 @@ func BytesFromStr(s string) Bytes {
 func MakeBytes(bytes []byte) Bytes {
 	ptr := *(**c.Char)(c.Pointer(&bytes))
 	return NewBytes(py.BytesFromStringAndSize(ptr, uintptr(len(bytes))))
+}
+
+func (b Bytes) Bytes() []byte {
+	var p *byte
+	var l uintptr
+	b.obj.BytesAsCStrAndSize((**c.Char)(c.Pointer(&p)), &l)
+	return unsafe.Slice(p, l)
 }
 
 func (b Bytes) Decode(encoding string) Str {

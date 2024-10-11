@@ -44,3 +44,11 @@ func (o *Object) BytesAsCStr() *c.Char { return nil }
 
 // llgo:link (*Object).BytesSize C.PyBytes_Size
 func (o *Object) BytesSize() uintptr { return 0 }
+
+// int PyBytes_AsStringAndSize(PyObject *obj, char **buffer, Py_ssize_t *length)
+// Part of the Stable ABI.
+// Return the null-terminated contents of the object obj through the output variables buffer and length. Returns 0 on success.
+// If length is NULL, the bytes object may not contain embedded null bytes; if it does, the function returns -1 and a ValueError is raised.
+// The buffer refers to an internal buffer of obj, which includes an additional null byte at the end (not counted in length). The data must not be modified in any way, unless the object was just created using PyBytes_FromStringAndSize(NULL, size). It must not be deallocated. If obj is not a bytes object at all, PyBytes_AsStringAndSize() returns -1 and raises TypeError.
+// llgo:link (*Object).BytesAsCStrAndSize C.PyBytes_AsStringAndSize
+func (o *Object) BytesAsCStrAndSize(**c.Char, *uintptr)
