@@ -121,6 +121,25 @@ func (p *context) allocaCStrs(b llssa.Builder, args []ssa.Value) (ret llssa.Expr
 	panic("allocaCStrs(strs []string, endWithNil bool): invalid arguments")
 }
 
+// func staticCast[U, T any](v T) U
+// Avoid heap allocation with static cast.
+func (p *context) staticCast(b llssa.Builder, fn *ssa.Function, args []ssa.Value) (ret llssa.Expr) {
+	sig := fn.Type().(*types.Signature)
+	if sig.Params().Len() != 1 || sig.Results().Len() != 1 {
+		panic("staticCast(v T) U: invalid signature")
+	}
+
+	tyFrom := p.prog.Type(sig.Params().At(0).Type(), llssa.InGo)
+	tyTo := p.prog.Type(sig.Results().At(0).Type(), llssa.InGo)
+	szFrom := p.prog.SizeOf(tyFrom)
+	szTo := p.prog.SizeOf(tyTo)
+	if szFrom != szTo {
+		panic("staticCast(v T) U: size mismatch")
+	}
+	v := p.compileValue(b, args[0])
+	return b.StaticCast(tyTo, v)
+}
+
 // func string(cstr *int8, n ...int) *int8
 func (p *context) string(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 2 {
@@ -221,6 +240,7 @@ var llgoInstrs = map[string]int{
 	"allocCStr":   llgoAllocCStr,
 	"allocaCStr":  llgoAllocaCStr,
 	"allocaCStrs": llgoAllocaCStrs,
+	"staticCast":  llgoStaticCast,
 	"string":      llgoString,
 	"stringData":  llgoStringData,
 	"funcAddr":    llgoFuncAddr,
@@ -380,6 +400,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.alloca(b, args)
 		case llgoAllocCStr:
 			ret = p.allocCStr(b, args)
+		case llgoStaticCast:
+			ret = p.staticCast(b, cv, args)
 		case llgoAllocaCStr:
 			ret = p.allocaCStr(b, args)
 		case llgoAllocaCStrs:

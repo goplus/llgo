@@ -391,7 +391,8 @@ const (
 
 	llgoFuncAddr = llgoInstrBase + 0xd
 
-	llgoAllocCStr = llgoInstrBase + 0xe
+	llgoAllocCStr  = llgoInstrBase + 0xe
+	llgoStaticCast = llgoInstrBase + 0xf
 
 	llgoPyList  = llgoInstrBase + 0x10
 	llgoPyStr   = llgoInstrBase + 0x11

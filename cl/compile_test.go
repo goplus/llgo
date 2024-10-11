@@ -115,3 +115,44 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 `)
 }
+
+func TestStaticCastInvalidSignature(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic, but not")
+		}
+	}()
+	testCompile(t, `package foo
+
+// llgo:link Cast llgo.staticCast
+func Cast() {
+}
+
+func UseCast() {
+	Cast()
+}
+`, `; ModuleID = 'foo'
+source_filename = "foo"
+`)
+}
+
+func TestStaticCastTypeSizeMismatch(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic, but not")
+		}
+	}()
+	testCompile(t, `package foo
+
+// llgo:link Cast llgo.staticCast
+func Cast(i uint64) uint32 {
+	return uint32(i)
+}
+
+func UseCast() {
+	Cast(1)
+}
+`, `; ModuleID = 'foo'
+source_filename = "foo"
+`)
+}

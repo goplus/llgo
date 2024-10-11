@@ -732,6 +732,15 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	return
 }
 
+func (b Builder) StaticCast(t Type, x Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("StaticCast %v, %v\n", t.RawType(), x.impl)
+	}
+	p := b.AllocaT(t)
+	b.Store(p, x)
+	return b.Load(p)
+}
+
 // The Convert instruction yields the conversion of value X to type
 // Type().  One or both of those types is basic (but possibly named).
 //
