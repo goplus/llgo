@@ -33,11 +33,11 @@ func UpdateExamples(self, args *py.Object) *py.Object {
 	country := python.Cast[python.Str](argsTuple.Get(0)).String()
 	println("country:", country)
 	if country == "USA" {
-		return gr.Call("Dataset", python.MakeDict(map[any]any{
+		return gr.CallKeywords("Dataset", nil, python.MakeDict(map[any]any{
 			"samples": [][]string{{"Chicago"}, {"Little Rock"}, {"San Francisco"}},
 		})).Obj()
 	} else {
-		return gr.Call("Dataset", python.MakeDict(map[any]any{
+		return gr.CallKeywords("Dataset", nil, python.MakeDict(map[any]any{
 			"samples": [][]string{{"Islamabad"}, {"Karachi"}, {"Lahore"}},
 		})).Obj()
 	}
