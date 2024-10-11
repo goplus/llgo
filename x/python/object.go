@@ -97,6 +97,10 @@ func (obj Object) Repr() string {
 	return NewStr(obj.obj.Repr()).String()
 }
 
+func (obj Object) String() string {
+	return NewStr(obj.obj.Str()).String()
+}
+
 func (obj Object) Obj() *py.Object {
 	return obj.pyObject.obj
 }
@@ -147,8 +151,7 @@ func From(v any) Object {
 		case reflect.Slice:
 			return fromSlice(vv).Object
 		}
-		fmt.Printf("From: %T\n", v)
-		panic("unsupported type for Python call")
+		panic(fmt.Errorf("unsupported type for Python: %T\n", v))
 	}
 }
 
