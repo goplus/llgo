@@ -2,6 +2,7 @@ package python
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/internal/runtime"
@@ -68,6 +69,18 @@ func NewObject(obj *py.Object) Object {
 	return p
 }
 
+func (obj Object) CallKeywords(name string, args Tuple, kw Dict) Object {
+	fn := Cast[Func](obj.GetAttr(name))
+	r := fn.Call(args, kw)
+	return r
+}
+
+func (obj Object) Call(name string, args ...any) Object {
+	fn := Cast[Func](obj.GetAttr(name))
+	callArgs := MakeTupleWith(args...)
+	return fn.CallObject(callArgs.Object)
+}
+
 func (obj Object) Repr() string {
 	return NewStr(obj.obj.Repr()).String()
 }
@@ -110,46 +123,22 @@ func From(v any) Object {
 		} else {
 			return NewObject(py.False())
 		}
-
-	// TODO(lijie): workaround for lame reflection
-	case []Objecter:
-		return fromSlice(v).Object
-	case []int8:
-		return fromSlice(v).Object
-	case []int16:
-		return fromSlice(v).Object
-	case []int32:
-		return fromSlice(v).Object
-	case []int64:
-		return fromSlice(v).Object
-	case []int:
-		return fromSlice(v).Object
-	case []uint8:
-		return fromSlice(v).Object
-	case []uint16:
-		return fromSlice(v).Object
-	case []uint32:
-		return fromSlice(v).Object
-	case []uint64:
-		return fromSlice(v).Object
-	case []uint:
-		return fromSlice(v).Object
-	case []float64:
-		return fromSlice(v).Object
-	case []string:
-		return fromSlice(v).Object
-	case []bool:
-		return fromSlice(v).Object
 	default:
+		vv := reflect.ValueOf(v)
+		switch vv.Kind() {
+		case reflect.Slice:
+			return fromSlice(vv).Object
+		}
 		fmt.Printf("From: %T\n", v)
 		panic("unsupported type for Python call")
 	}
 }
 
-func fromSlice[T any](v []T) List {
-	list := NewList(py.NewList(len(v)))
-	for i, x := range v {
-		list.SetItem(i, From(x))
+func fromSlice(v reflect.Value) List {
+	l := v.Len()
+	list := NewList(py.NewList(l))
+	for i := 0; i < l; i++ {
+		list.SetItem(i, From(v.Index(i).Interface()))
 	}
 	return list
 }

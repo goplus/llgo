@@ -22,18 +22,6 @@ func (m Module) ModuleGetDict() Dict {
 	return NewDict(m.obj.ModuleGetDict())
 }
 
-func (m Module) CallKeywords(name string, args Tuple, kw Dict) Object {
-	fn := Cast[Func](m.GetAttr(name))
-	r := fn.Call(args, kw)
-	return r
-}
-
-func (m Module) Call(name string, args ...any) Object {
-	fn := Cast[Func](m.GetAttr(name))
-	callArgs := MakeTupleWith(args...)
-	return fn.CallObject(callArgs.Object)
-}
-
 func (m Module) AddObject(name string, obj Object) int {
 	return int(py.ModuleAddObject(m.obj, c.AllocCStr(name), obj.obj))
 }

@@ -59,13 +59,13 @@ func main() {
 	demo.CallMethod("__enter__")
 	// TODO(lijie): check why call __exit__ early
 	// defer demo.CallMethod("__exit__")
-	dropdown := gr.CallKeywords("Dropdown", python.MakeTupleWith(), python.DictFromPairs(
-		"label", "Country",
-		"choices", python.MakeList("USA", "Pakistan"),
-		"value", "USA",
-	))
+	dropdown := gr.CallKeywords("Dropdown", python.MakeTupleWith(), python.MakeDict(map[any]any{
+		"label":   "Country",
+		"choices": []string{"USA", "Pakistan"},
+		"value":   "USA",
+	}))
 	textbox := gr.Call("Textbox")
-	options := python.From(python.MakeList(python.MakeList("Chicago"), python.MakeList("Little Rock"), python.MakeList("San Francisco")))
+	options := python.From([][]string{{"Chicago"}, {"Little Rock"}, {"San Francisco"}})
 	examples := gr.Call("Examples", options, textbox)
 	dataset := examples.GetAttr("dataset")
 	dropdown.CallMethod("change", fn, dropdown, dataset)
