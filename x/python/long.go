@@ -21,6 +21,10 @@ func (l Long) Int64() int64 {
 	return int64(l.obj.Long())
 }
 
+func (l Long) Uint64() uint64 {
+	return uint64(l.obj.Ulong())
+}
+
 func (l Long) AsFloat64() float64 {
 	return l.obj.LongAsFloat64()
 }

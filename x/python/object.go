@@ -155,6 +155,62 @@ func From(v any) Object {
 	}
 }
 
+func To[T any](obj Object) (ret T) {
+	switch any(ret).(type) {
+	case int8:
+		return any(int8(Cast[Long](obj).Int64())).(T)
+	case int16:
+		return any(int16(Cast[Long](obj).Int64())).(T)
+	case int32:
+		return any(int32(Cast[Long](obj).Int64())).(T)
+	case int64:
+		return any(Cast[Long](obj).Int64()).(T)
+	case int:
+		return any(int(Cast[Long](obj).Int64())).(T)
+	case uint8:
+		return any(uint8(Cast[Long](obj).Uint64())).(T)
+	case uint16:
+		return any(uint16(Cast[Long](obj).Uint64())).(T)
+	case uint32:
+		return any(uint32(Cast[Long](obj).Uint64())).(T)
+	case uint64:
+		return any(Cast[Long](obj).Uint64()).(T)
+	case uint:
+		return any(uint(Cast[Long](obj).Uint64())).(T)
+	case float32:
+		return any(float32(Cast[Float](obj).Float64())).(T)
+	case float64:
+		return any(Cast[Float](obj).Float64()).(T)
+	case complex64:
+		return any(complex64(Cast[Complex](obj).Complex128())).(T)
+	case complex128:
+		return any(Cast[Complex](obj).Complex128()).(T)
+	case string:
+		return any(Cast[Str](obj).String()).(T)
+	case bool:
+		return any(Cast[Bool](obj).Bool()).(T)
+	case []byte:
+		return any(Cast[Bytes](obj).Bytes()).(T)
+	default:
+		v := reflect.ValueOf(ret)
+		switch v.Kind() {
+		case reflect.Slice:
+			return toSlice[T](obj, v)
+		}
+		panic(fmt.Errorf("unsupported type conversion from Python object to %T", ret))
+	}
+}
+
+func toSlice[T any](obj Object, v reflect.Value) T {
+	list := Cast[List](obj)
+	l := list.Len()
+	v = reflect.MakeSlice(v.Type(), l, l)
+	for i := 0; i < l; i++ {
+		v.Index(i).Set(reflect.ValueOf(To[T](list.GetItem(i))))
+	}
+	return v.Interface().(T)
+}
+
 func fromSlice(v reflect.Value) List {
 	l := v.Len()
 	list := NewList(py.NewList(l))

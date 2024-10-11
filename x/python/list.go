@@ -29,6 +29,10 @@ func (l List) SetItem(index int, item Object) {
 	l.obj.ListSetItem(index, item.obj)
 }
 
+func (l List) Len() int {
+	return l.obj.ListLen()
+}
+
 func (l List) Append(obj Object) {
 	l.obj.ListAppend(obj.obj)
 }
