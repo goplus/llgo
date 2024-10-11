@@ -1525,7 +1525,6 @@ func (v Value) Type() Type {
 }
 
 func (v Value) typeSlow() Type {
-	/* TODO(xsw):
 	if v.flag == 0 {
 		panic(&ValueError{"reflect.Value.Type", Invalid})
 	}
@@ -1545,7 +1544,7 @@ func (v Value) typeSlow() Type {
 			panic("reflect: internal error: invalid method index")
 		}
 		m := &tt.Methods[i]
-		return toRType(typeOffFor(typ, m.Typ))
+		return toRType(&m.Typ_.Type)
 	}
 	// Method on concrete type.
 	ms := typ.ExportedMethods()
@@ -1553,9 +1552,7 @@ func (v Value) typeSlow() Type {
 		panic("reflect: internal error: invalid method index")
 	}
 	m := ms[i]
-	return toRType(typeOffFor(typ, m.Mtyp))
-	*/
-	panic("todo: reflect.Value.Type")
+	return toRType(&m.Mtyp_.Type)
 }
 
 // CanUint reports whether Uint can be used without panicking.
