@@ -1,9 +1,6 @@
 package python
 
 import (
-	"fmt"
-	"unsafe"
-
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/py"
 )
@@ -32,15 +29,9 @@ func EvalCode(code Object, globals, locals Dict) Object {
 
 // ----------------------------------------------------------------------------
 
-func Cast[U, T Objecter](obj T) (ret U) {
-	if unsafe.Sizeof(obj) != unsafe.Sizeof(ret) {
-		panic(fmt.Errorf("size mismatch: %T %d and %T %d", obj, unsafe.Sizeof(obj), ret, unsafe.Sizeof(ret)))
-	}
-	// TODO(lijie): avoid heap allocation
-	rret := *(*U)(c.Pointer(&obj))
-	ret = rret
-	ret.Ensure()
-	return
+// llgo:link Cast llgo.staticCast
+func Cast[U, T Objecter](obj T) (u U) {
+	panic("implement by llgo instruction to avoid heap allocation")
 }
 
 // ----------------------------------------------------------------------------
