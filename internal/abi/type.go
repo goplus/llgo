@@ -553,6 +553,22 @@ func (t *Type) InterfaceType() *InterfaceType {
 	return (*InterfaceType)(unsafe.Pointer(t))
 }
 
+func (t *Type) ExportedMethods() []Method {
+	ut := t.Uncommon()
+	if ut == nil {
+		return nil
+	}
+	return ut.ExportedMethods()
+}
+
+func (t *Type) NumMethod() int {
+	if t.Kind() == Interface {
+		tt := (*InterfaceType)(unsafe.Pointer(t))
+		return tt.NumMethod()
+	}
+	return len(t.ExportedMethods())
+}
+
 // -----------------------------------------------------------------------------
 
 // addChecked returns p+x.
