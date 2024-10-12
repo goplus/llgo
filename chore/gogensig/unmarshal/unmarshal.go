@@ -44,9 +44,8 @@ func (s FileSet) IncludeDir() string {
 }
 
 type FileEntry struct {
-	Path    string
-	Doc     *ast.File
-	Visited bool
+	Path string
+	Doc  *ast.File
 }
 
 func init() {
