@@ -6,16 +6,23 @@ type Bool struct {
 	Object
 }
 
-func NewBool(obj *py.Object) Bool {
-	return Bool{NewObject(obj)}
+func newBool(obj *py.Object) Bool {
+	return Bool{newObject(obj)}
+}
+
+func MakeBool(b bool) Bool {
+	if b {
+		return True()
+	}
+	return False()
 }
 
 func True() Bool {
-	return NewBool(py.True())
+	return newBool(py.True())
 }
 
 func False() Bool {
-	return NewBool(py.False())
+	return newBool(py.False())
 }
 
 func (b Bool) Bool() bool {

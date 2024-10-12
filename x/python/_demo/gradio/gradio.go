@@ -29,15 +29,15 @@ demo.launch()
 var gr python.Module
 
 func UpdateExamples(self, args *py.Object) *py.Object {
-	argsTuple := python.NewTuple(args)
-	country := python.Cast[python.Str](argsTuple.Get(0)).String()
+	argsTuple := python.FromPy(args).AsTuple()
+	country := argsTuple.Get(0).AsStr().String()
 	println("country:", country)
 	if country == "USA" {
-		return gr.CallKeywords("Dataset", nil, python.MakeDict(map[any]any{
+		return gr.CallKeywords("Dataset")(python.MakeDict(map[any]any{
 			"samples": [][]string{{"Chicago"}, {"Little Rock"}, {"San Francisco"}},
 		})).Obj()
 	} else {
-		return gr.CallKeywords("Dataset", nil, python.MakeDict(map[any]any{
+		return gr.CallKeywords("Dataset")(python.MakeDict(map[any]any{
 			"samples": [][]string{{"Islamabad"}, {"Karachi"}, {"Lahore"}},
 		})).Obj()
 	}
@@ -56,7 +56,7 @@ func main() {
 	// fn := python.FuncOf(UpdateExamples)
 
 	demo := python.With(gr.Call("Blocks"), func(v python.Object) {
-		dropdown := gr.CallKeywords("Dropdown", nil, python.MakeDict(map[any]any{
+		dropdown := gr.CallKeywords("Dropdown")(python.MakeDict(map[any]any{
 			"label":   "Country",
 			"choices": []string{"USA", "Pakistan"},
 			"value":   "USA",

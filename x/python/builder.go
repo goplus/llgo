@@ -48,5 +48,5 @@ func (mb *ModuleBuilder) Build() Module {
 		panic("failed to create module")
 	}
 
-	return NewModule(m)
+	return newModule(m)
 }

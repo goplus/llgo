@@ -19,38 +19,45 @@ type Func struct {
 	Object
 }
 
-func NewFunc(obj *py.Object) Func {
-	return Func{NewObject(obj)}
+func newFunc(obj *py.Object) Func {
+	return Func{newObject(obj)}
 }
 
 func (f Func) Ensure() {
 	f.pyObject.Ensure()
 }
 
-func (f Func) Call(args Tuple, kwargs Dict) Object {
-	return NewObject(f.obj.Call(args.obj, kwargs.obj))
+func (f Func) call(args Tuple, kwargs Dict) Object {
+	return newObject(f.obj.Call(args.obj, kwargs.obj))
 }
 
-func (f Func) CallNoArgs() Object {
-	return NewObject(f.obj.CallNoArgs())
+func (f Func) callNoArgs() Object {
+	return newObject(f.obj.CallNoArgs())
 }
 
-func (f Func) CallOneArg(arg Objecter) Object {
-	return NewObject(f.obj.CallOneArg(arg.Obj()))
+func (f Func) callOneArg(arg Objecter) Object {
+	return newObject(f.obj.CallOneArg(arg.Obj()))
 }
 
-func (f Func) CallObject(args Object) Object {
-	return NewObject(f.obj.CallObject(args.obj))
+func (f Func) CallObject(args Tuple) Object {
+	return newObject(f.obj.CallObject(args.obj))
 }
 
-func (f Func) CallArgs(args ...Objecter) Object {
-	argsTuple := py.NewTuple(len(args))
-	for i, arg := range args {
-		obj := arg.Obj()
-		obj.IncRef()
-		argsTuple.TupleSetItem(i, obj)
+func (f Func) Call(args ...any) Object {
+	switch len(args) {
+	case 0:
+		return f.callNoArgs()
+	case 1:
+		return f.callOneArg(From(args[0]))
+	default:
+		argsTuple := py.NewTuple(len(args))
+		for i, arg := range args {
+			obj := From(arg).Obj()
+			obj.IncRef()
+			argsTuple.TupleSetItem(i, obj)
+		}
+		return newObject(f.obj.CallObject(argsTuple))
 	}
-	return NewObject(f.obj.CallObject(argsTuple))
 }
 
 // ----------------------------------------------------------------------------
@@ -93,7 +100,7 @@ func FuncOf1[T any](fn T) Func {
 		if len(results) == 1 {
 			return From(results[0].Interface()).Obj()
 		}
-		tuple := MakeTuple(len(results))
+		tuple := MakeTupleWithLen(len(results))
 		for i := range results {
 			tuple.Set(i, From(results[i].Interface()))
 		}
@@ -115,7 +122,7 @@ func FuncOf1[T any](fn T) Func {
 	if pyFn == nil {
 		panic(fmt.Sprintf("Failed to add function %s to module", name))
 	}
-	return NewFunc(pyFn)
+	return newFunc(pyFn)
 }
 
 func buildFormatString(t reflect.Type) *c.Char {

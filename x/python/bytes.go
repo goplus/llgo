@@ -11,17 +11,17 @@ type Bytes struct {
 	Object
 }
 
-func NewBytes(obj *py.Object) Bytes {
-	return Bytes{NewObject(obj)}
+func newBytes(obj *py.Object) Bytes {
+	return Bytes{newObject(obj)}
 }
 
 func BytesFromStr(s string) Bytes {
-	return NewBytes(py.BytesFromString(s))
+	return newBytes(py.BytesFromString(s))
 }
 
 func MakeBytes(bytes []byte) Bytes {
 	ptr := *(**c.Char)(c.Pointer(&bytes))
-	return NewBytes(py.BytesFromStringAndSize(ptr, uintptr(len(bytes))))
+	return newBytes(py.BytesFromStringAndSize(ptr, uintptr(len(bytes))))
 }
 
 func (b Bytes) Bytes() []byte {

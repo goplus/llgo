@@ -20,11 +20,11 @@ const (
 )
 
 func CompileString(code, filename string, start InputType) Object {
-	return NewObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), start))
+	return newObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), start))
 }
 
 func EvalCode(code Object, globals, locals Dict) Object {
-	return NewObject(py.EvalCode(code.Obj(), globals.Obj(), locals.Obj()))
+	return newObject(py.EvalCode(code.Obj(), globals.Obj(), locals.Obj()))
 }
 
 // ----------------------------------------------------------------------------

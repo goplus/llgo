@@ -9,15 +9,15 @@ type Dict struct {
 	Object
 }
 
-func NewDict(obj *py.Object) Dict {
-	return Dict{NewObject(obj)}
+func newDict(obj *py.Object) Dict {
+	return Dict{newObject(obj)}
 }
 
 func DictFromPairs(pairs ...any) Dict {
 	if len(pairs)%2 != 0 {
 		panic("DictFromPairs requires an even number of arguments")
 	}
-	dict := NewDict(py.NewDict())
+	dict := newDict(py.NewDict())
 	for i := 0; i < len(pairs); i += 2 {
 		key := From(pairs[i])
 		value := From(pairs[i+1])
@@ -27,7 +27,7 @@ func DictFromPairs(pairs ...any) Dict {
 }
 
 func MakeDict(m map[any]any) Dict {
-	dict := NewDict(py.NewDict())
+	dict := newDict(py.NewDict())
 	for key, value := range m {
 		keyObj := From(key)
 		valueObj := From(value)
@@ -39,7 +39,7 @@ func MakeDict(m map[any]any) Dict {
 func (d Dict) Get(key Objecter) Object {
 	v := d.obj.DictGetItem(key.Obj())
 	v.IncRef()
-	return NewObject(v)
+	return newObject(v)
 }
 
 func (d Dict) Set(key, value Object) {

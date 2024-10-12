@@ -8,16 +8,16 @@ type Tuple struct {
 	Object
 }
 
-func NewTuple(obj *py.Object) Tuple {
-	return Tuple{NewObject(obj)}
+func newTuple(obj *py.Object) Tuple {
+	return Tuple{newObject(obj)}
 }
 
-func MakeTuple(size int) Tuple {
-	return NewTuple(py.NewTuple(size))
+func MakeTupleWithLen(len int) Tuple {
+	return newTuple(py.NewTuple(len))
 }
 
-func MakeTupleWith(args ...any) Tuple {
-	tuple := NewTuple(py.NewTuple(len(args)))
+func MakeTuple(args ...any) Tuple {
+	tuple := newTuple(py.NewTuple(len(args)))
 	for i, arg := range args {
 		obj := From(arg)
 		tuple.Set(i, obj)
@@ -28,7 +28,7 @@ func MakeTupleWith(args ...any) Tuple {
 func (t Tuple) Get(index int) Object {
 	v := t.obj.TupleItem(index)
 	v.IncRef()
-	return NewObject(v)
+	return newObject(v)
 }
 
 func (t Tuple) Set(index int, obj Objecter) {
@@ -40,5 +40,5 @@ func (t Tuple) Len() int {
 }
 
 func (t Tuple) Slice(low, high int) Tuple {
-	return NewTuple(t.obj.TupleSlice(low, high))
+	return newTuple(t.obj.TupleSlice(low, high))
 }

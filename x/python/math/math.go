@@ -6,5 +6,5 @@ import (
 )
 
 func Sqrt(x python.Float) python.Float {
-	return python.NewFloat(math.Sqrt(x.Obj()))
+	return python.FromPy(math.Sqrt(x.Obj())).AsFloat()
 }

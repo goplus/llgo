@@ -9,17 +9,17 @@ type Module struct {
 	Object
 }
 
-func NewModule(obj *py.Object) Module {
-	return Module{NewObject(obj)}
+func newModule(obj *py.Object) Module {
+	return Module{newObject(obj)}
 }
 
 func ImportModule(name string) Module {
 	mod := py.ImportModule(c.AllocaCStr(name))
-	return NewModule(mod)
+	return newModule(mod)
 }
 
-func (m Module) ModuleGetDict() Dict {
-	return NewDict(m.obj.ModuleGetDict())
+func (m Module) Dict() Dict {
+	return newDict(m.obj.ModuleGetDict())
 }
 
 func (m Module) AddObject(name string, obj Object) int {
@@ -34,5 +34,5 @@ func (m Module) AddFunction(name string, fn c.Pointer, doc string) Func {
 		Doc:   c.AllocCStr(doc),
 	}
 	pyFn := def.NewMethod(nil, m.obj, nil)
-	return NewFunc(pyFn)
+	return newFunc(pyFn)
 }

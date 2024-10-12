@@ -9,12 +9,12 @@ type Str struct {
 	Object
 }
 
-func NewStr(obj *py.Object) Str {
-	return Str{NewObject(obj)}
+func newStr(obj *py.Object) Str {
+	return Str{newObject(obj)}
 }
 
 func MakeStr(s string) Str {
-	return NewStr(py.FromGoString(s))
+	return newStr(py.FromGoString(s))
 }
 
 func (s Str) String() string {

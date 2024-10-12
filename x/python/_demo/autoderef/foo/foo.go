@@ -19,7 +19,7 @@ func (p *Point) Print() {
 	fmt.Printf("Point(%d, %d)\n", p.X, p.Y)
 }
 
-func (p *Point) Area(args *py.Object) *py.Object {
+func (p *Point) Distance(args *py.Object) *py.Object {
 	return py.Long(c.Long(p.X * p.Y))
 }
 
@@ -60,7 +60,7 @@ func init() {
 		Tp_new:       c.Func(NewPoint),
 		Tp_methods: &[]py.MethodDef{
 			{Name: c.Str("move"), Func: c.Func((*Point).Move), Flags: py.METH_VARARGS, Doc: c.Str("Move the point.")},
-			{Name: c.Str("area"), Func: c.Func((*Point).Area), Flags: py.METH_NOARGS, Doc: c.Str("Calculate the area.")},
+			{Name: c.Str("distance"), Func: c.Func((*Point).Distance), Flags: py.METH_NOARGS, Doc: c.Str("Calculate the distance.")},
 			{Name: nil, Func: nil, Flags: 0, Doc: nil},
 		}[0],
 		Tp_members: &[]py.MemberDef{
@@ -92,10 +92,10 @@ func InitFooModule() python.Module {
 	}
 
 	PointType.Ob_base.Ob_base.IncRef()
-	if m.AddObject("Point", python.NewObject(&PointType.Ob_base.Ob_base)) < 0 {
+	if m.AddObject("Point", python.FromPy(&PointType.Ob_base.Ob_base)) < 0 {
 		PointType.Ob_base.Ob_base.DecRef()
 		m.Obj().DecRef()
-		return python.NewModule(nil)
+		return python.FromPy(nil).AsModule()
 	}
 
 	return m

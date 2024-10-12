@@ -6,12 +6,12 @@ type Float struct {
 	Object
 }
 
-func NewFloat(obj *py.Object) Float {
-	return Float{NewObject(obj)}
+func newFloat(obj *py.Object) Float {
+	return Float{newObject(obj)}
 }
 
 func MakeFloat(f float64) Float {
-	return NewFloat(py.Float(f))
+	return newFloat(py.Float(f))
 }
 
 func (f Float) Float64() float64 {
@@ -20,5 +20,5 @@ func (f Float) Float64() float64 {
 
 func (f Float) IsInteger() Bool {
 	fn := Cast[Func](f.GetAttr("is_integer"))
-	return Cast[Bool](fn.CallNoArgs())
+	return Cast[Bool](fn.callNoArgs())
 }

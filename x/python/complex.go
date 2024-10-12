@@ -6,12 +6,12 @@ type Complex struct {
 	Object
 }
 
-func NewComplex(obj *py.Object) Complex {
-	return Complex{NewObject(obj)}
+func newComplex(obj *py.Object) Complex {
+	return Complex{newObject(obj)}
 }
 
 func MakeComplex(f complex128) Complex {
-	return NewComplex(py.ComplexFromDoubles(real(f), imag(f)))
+	return newComplex(py.ComplexFromDoubles(real(f), imag(f)))
 }
 
 func (c Complex) Complex128() complex128 {

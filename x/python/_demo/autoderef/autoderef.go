@@ -14,14 +14,14 @@ import (
 func main() {
 	python.SetProgramName(os.Args[0])
 	fooMod := foo.InitFooModule()
-	sum := python.Cast[python.Long](fooMod.GetFuncAttr("add").CallArgs(python.MakeLong(1), python.MakeLong(2)))
+	sum := fooMod.GetFuncAttr("add").Call(python.MakeLong(1), python.MakeLong(2)).AsLong()
 	c.Printf(c.Str("Sum: %d\n"), sum.Int64())
 
-	dict := fooMod.ModuleGetDict()
-	pointClass := python.Cast[python.Func](dict.Get(python.MakeStr("Point")))
-	point := pointClass.CallArgs(python.MakeLong(3), python.MakeLong(4))
-	area := python.Cast[python.Long](point.CallMethod("area"))
-	c.Printf(c.Str("Area of 3 * 4: %d\n"), area.Int64())
+	dict := fooMod.Dict()
+	pointClass := dict.Get(python.MakeStr("Point")).AsFunc()
+	point := pointClass.Call(python.MakeLong(3), python.MakeLong(4))
+	distance := point.CallMethod("distance").AsLong()
+	c.Printf(c.Str("Distance of 3 * 4: %d\n"), distance.Int64())
 
 	pythonCode := `
 def allocate_memory():
@@ -41,14 +41,14 @@ for i in range(10):
 	c.Printf(c.Str("Memory usage: %d MB at start\n"), bdwgc.GetMemoryUse()/(1024*1024))
 
 	mod := python.ImportModule("__main__")
-	gbl := mod.ModuleGetDict()
+	gbl := mod.Dict()
 
 	code := python.CompileString(pythonCode, "<string>", python.FileInput)
 
-	_ = python.EvalCode(code, gbl, python.NewDict(nil))
+	_ = python.EvalCode(code, gbl, python.FromPy(nil).AsDict())
 
 	for i := 0; i < 10; i++ {
-		result := python.EvalCode(code, gbl, python.NewDict(nil))
+		result := python.EvalCode(code, gbl, python.FromPy(nil).AsDict())
 		if result.Nil() {
 			c.Printf(c.Str("Failed to execute Python code\n"))
 			return
@@ -60,7 +60,7 @@ for i in range(10):
 
 	for i := 0; i < 100; i++ {
 		// 100MB every time
-		memory_allocation_test.CallNoArgs()
+		memory_allocation_test.Call()
 		c.Printf(c.Str("Iteration %d in go - Memory usage: %d MB\n"), i+1, bdwgc.GetMemoryUse()/(1024*1024))
 		bdwgc.Gcollect()
 	}

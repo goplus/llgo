@@ -9,12 +9,12 @@ type Long struct {
 	Object
 }
 
-func NewLong(obj *py.Object) Long {
-	return Long{NewObject(obj)}
+func newLong(obj *py.Object) Long {
+	return Long{newObject(obj)}
 }
 
 func MakeLong(i int64) Long {
-	return NewLong(py.Long(c.Long(i)))
+	return newLong(py.Long(c.Long(i)))
 }
 
 func (l Long) Int64() int64 {
@@ -30,16 +30,16 @@ func (l Long) AsFloat64() float64 {
 }
 
 func LongFromFloat64(v float64) Long {
-	return NewLong(py.LongFromFloat64(v))
+	return newLong(py.LongFromFloat64(v))
 }
 
 func LongFromString(s string, base int) Long {
 	cstr := c.AllocCStr(s)
-	return NewLong(py.LongFromCStr(cstr, nil, c.Int(base)))
+	return newLong(py.LongFromCStr(cstr, nil, c.Int(base)))
 }
 
 func LongFromUnicode(u Object, base int) Long {
-	return NewLong(py.LongFromUnicode(u.Obj(), c.Int(base)))
+	return newLong(py.LongFromUnicode(u.Obj(), c.Int(base)))
 }
 
 func (l Long) AsUint64() uint64 {
@@ -51,5 +51,5 @@ func (l Long) AsUintptr() uintptr {
 }
 
 func LongFromUintptr(v uintptr) Long {
-	return NewLong(py.Uintptr(v))
+	return newLong(py.Uintptr(v))
 }
