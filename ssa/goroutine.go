@@ -59,20 +59,26 @@ func (b Builder) Go(fn Expr, args ...Expr) {
 	prog := b.Prog
 	pkg := b.Pkg
 
-	typs := make([]Type, len(args)+1)
-	flds := make([]llvm.Value, len(args)+1)
-	typs[0] = fn.Type
-	flds[0] = fn.impl
+	var offset int
+	if fn.kind != vkBuiltin {
+		offset = 1
+	}
+	typs := make([]Type, len(args)+offset)
+	flds := make([]llvm.Value, len(args)+offset)
+	if offset == 1 {
+		typs[0] = fn.Type
+		flds[0] = fn.impl
+	}
 	for i, arg := range args {
-		typs[i+1] = arg.Type
-		flds[i+1] = arg.impl
+		typs[i+offset] = arg.Type
+		flds[i+offset] = arg.impl
 	}
 	t := prog.Struct(typs...)
 	voidPtr := prog.VoidPtr()
 	data := Expr{b.aggregateMalloc(t, flds...), voidPtr}
 	size := prog.SizeOf(voidPtr)
 	pthd := b.Alloca(prog.IntVal(uint64(size), prog.Uintptr()))
-	b.pthreadCreate(pthd, prog.Nil(voidPtr), pkg.routine(t, len(args)), data)
+	b.pthreadCreate(pthd, prog.Nil(voidPtr), pkg.routine(t, fn, len(args)), data)
 }
 
 func (p Package) routineName() string {
@@ -80,16 +86,20 @@ func (p Package) routineName() string {
 	return p.Path() + "._llgo_routine$" + strconv.Itoa(p.iRoutine)
 }
 
-func (p Package) routine(t Type, n int) Expr {
+func (p Package) routine(t Type, fn Expr, n int) Expr {
 	prog := p.Prog
 	routine := p.NewFunc(p.routineName(), prog.tyRoutine(), InC)
 	b := routine.MakeBody(1)
 	param := routine.Param(0)
 	data := Expr{llvm.CreateLoad(b.impl, t.ll, param.impl), t}
 	args := make([]Expr, n)
-	fn := b.getField(data, 0)
+	var offset int
+	if fn.kind != vkBuiltin {
+		fn = b.getField(data, 0)
+		offset = 1
+	}
 	for i := 0; i < n; i++ {
-		args[i] = b.getField(data, i+1)
+		args[i] = b.getField(data, i+offset)
 	}
 	b.Call(fn, args...)
 	b.free(param)
