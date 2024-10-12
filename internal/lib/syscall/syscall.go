@@ -148,7 +148,7 @@ func Lstat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(ret)
+	return Errno(os.Errno)
 }
 
 func Stat(path string, stat *Stat_t) (err error) {
@@ -156,7 +156,7 @@ func Stat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(ret)
+	return Errno(os.Errno)
 }
 
 func Pipe(p []int) (err error) {
