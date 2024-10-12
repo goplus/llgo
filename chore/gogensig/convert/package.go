@@ -37,6 +37,7 @@ type Package struct {
 	p         *gogen.Package
 	cvt       *TypeConv
 	outputDir string
+	newTypes  map[string]struct{}
 }
 
 type PackageConfig struct {
@@ -67,6 +68,7 @@ func NewPackage(config *PackageConfig) *Package {
 	clib := p.p.Import("github.com/goplus/llgo/c")
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
+	p.newTypes = make(map[string]struct{}, 0)
 	return p
 }
 
@@ -151,10 +153,13 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
+	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
+	if _, ok := p.newTypes[name]; ok {
+		return nil
+	}
 	if debug {
 		log.Printf("NewTypeDecl: %s\n", typeDecl.Name.Name)
 	}
-	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
 	typeBlock := p.p.NewTypeDefs()
 	typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
 	decl := typeBlock.NewType(name)
@@ -163,10 +168,15 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return err
 	}
 	decl.InitType(p.p, structType)
+	p.newTypes[name] = struct{}{}
 	return nil
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
+	name := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
+	if _, ok := p.newTypes[name]; ok {
+		return nil
+	}
 	if debug {
 		log.Printf("NewTypedefDecl: %s\n", typedefDecl.Name.Name)
 	}
@@ -179,7 +189,6 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if typ == nil {
 		return fmt.Errorf("underlying type must not be nil")
 	}
-	name := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
 	if named, ok := typ.(*types.Named); ok {
 		// Compare the type name with typedefDecl.Name.Name
 		if named.Obj().Name() == name {
@@ -189,6 +198,7 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	}
 	typeSpecdecl := genDecl.NewType(name)
 	typeSpecdecl.InitType(p.p, typ)
+	p.newTypes[name] = struct{}{}
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(NewTypecDocComments())
 	}
