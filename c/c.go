@@ -30,6 +30,8 @@ const (
 type (
 	Void    = [0]byte
 	Char    = int8
+	Uchar   = uint8
+	Wchar   = int16
 	Float   = float32
 	Double  = float64
 	Pointer = unsafe.Pointer
