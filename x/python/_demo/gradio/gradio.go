@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/x/python"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 /*

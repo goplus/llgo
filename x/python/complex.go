@@ -1,6 +1,6 @@
 package python
 
-import "github.com/goplus/llgo/py"
+import "github.com/goplus/llgo/x/python/py"
 
 type Complex struct {
 	Object
@@ -15,15 +15,15 @@ func MakeComplex(f complex128) Complex {
 }
 
 func (c Complex) Complex128() complex128 {
-	real := c.obj.ComplexRealAsDouble()
-	imag := c.obj.ComplexImagAsDouble()
+	real := py.ComplexRealAsDouble(c.obj)
+	imag := py.ComplexImagAsDouble(c.obj)
 	return complex(real, imag)
 }
 
 func (c Complex) Real() float64 {
-	return c.obj.ComplexRealAsDouble()
+	return py.ComplexRealAsDouble(c.obj)
 }
 
 func (c Complex) Imag() float64 {
-	return c.obj.ComplexImagAsDouble()
+	return py.ComplexImagAsDouble(c.obj)
 }

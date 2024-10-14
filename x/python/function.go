@@ -6,7 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Objecter interface {
@@ -28,19 +28,19 @@ func (f Func) Ensure() {
 }
 
 func (f Func) call(args Tuple, kwargs Dict) Object {
-	return newObject(f.obj.Call(args.obj, kwargs.obj))
+	return newObject(py.ObjectCall(f.obj, args.obj, kwargs.obj))
 }
 
 func (f Func) callNoArgs() Object {
-	return newObject(f.obj.CallNoArgs())
+	return newObject(py.ObjectCallNoArgs(f.obj))
 }
 
 func (f Func) callOneArg(arg Objecter) Object {
-	return newObject(f.obj.CallOneArg(arg.Obj()))
+	return newObject(py.ObjectCallOneArg(f.obj, arg.Obj()))
 }
 
 func (f Func) CallObject(args Tuple) Object {
-	return newObject(f.obj.CallObject(args.obj))
+	return newObject(py.ObjectCallObject(f.obj, args.obj))
 }
 
 func (f Func) Call(args ...any) Object {
@@ -50,13 +50,13 @@ func (f Func) Call(args ...any) Object {
 	case 1:
 		return f.callOneArg(From(args[0]))
 	default:
-		argsTuple := py.NewTuple(len(args))
+		argsTuple := py.TupleNew(len(args))
 		for i, arg := range args {
 			obj := From(arg).Obj()
-			obj.IncRef()
-			argsTuple.TupleSetItem(i, obj)
+			py.IncRef(obj)
+			py.TupleSetItem(argsTuple, i, obj)
 		}
-		return newObject(f.obj.CallObject(argsTuple))
+		return newObject(py.ObjectCallObject(f.obj, argsTuple))
 	}
 }
 
@@ -88,7 +88,7 @@ func FuncOf1[T any](fn T) Func {
 		goArgs := make([]reflect.Value, t.NumIn())
 		if t.NumIn() > 0 {
 			argPtrs := buildArgPointers(goArgs)
-			if !py.ParseTuple(args, buildFormatString(t), argPtrs...) {
+			if py.ArgParseTuple(args, buildFormatString(t), argPtrs...) == 0 {
 				return nil // Python will set an appropriate exception
 			}
 		}

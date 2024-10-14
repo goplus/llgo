@@ -6,7 +6,7 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/internal/runtime"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 // pyObject is a wrapper type that holds a Python Object and automatically calls
@@ -36,43 +36,43 @@ func (obj *pyObject) Ensure() {
 // ----------------------------------------------------------------------------
 
 func (obj Object) GetAttr(name string) Object {
-	return newObject(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newObject(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetFloatAttr(name string) Float {
-	return newFloat(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newFloat(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetLongAttr(name string) Long {
-	return newLong(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newLong(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetStrAttr(name string) Str {
-	return newStr(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newStr(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetBytesAttr(name string) Bytes {
-	return newBytes(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newBytes(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetBoolAttr(name string) Bool {
-	return newBool(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newBool(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetDictAttr(name string) Dict {
-	return newDict(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newDict(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetListAttr(name string) List {
-	return newList(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newList(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetTupleAttr(name string) Tuple {
-	return newTuple(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newTuple(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) GetFuncAttr(name string) Func {
-	return newFunc(obj.obj.GetAttrString(c.AllocCStr(name)))
+	return newFunc(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
 }
 
 func (obj Object) AsFloat() Float {
@@ -120,7 +120,7 @@ type Object struct {
 }
 
 func finalizerCallback(p *pyObject) {
-	p.obj.DecRef()
+	py.DecRef(p.obj)
 }
 
 func FromPy(obj *py.Object) Object {
@@ -161,11 +161,11 @@ func (obj Object) Call(name string, args ...any) Object {
 }
 
 func (obj Object) Repr() string {
-	return newStr(obj.obj.Repr()).String()
+	return newStr(py.ObjectRepr(obj.obj)).String()
 }
 
 func (obj Object) String() string {
-	return newStr(obj.obj.Str()).String()
+	return newStr(py.ObjectStr(obj.obj)).String()
 }
 
 func (obj Object) Obj() *py.Object {
@@ -177,29 +177,29 @@ func From(v any) Object {
 	case Objecter:
 		return newObject(v.Obj())
 	case int8:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case int16:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case int32:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case int64:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLongLong(c.LongLong(v)))
 	case int:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case uint8:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case uint16:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case uint32:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromLong(c.Long(v)))
 	case uint64:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromUnsignedLongLong(c.UlongLong(v)))
 	case uint:
-		return newObject(py.Long(c.Long(v)))
+		return newObject(py.LongFromUnsignedLong(c.Ulong(v)))
 	case float64:
-		return newObject(py.Float(v))
+		return newObject(py.FloatFromDouble(v))
 	case string:
-		return newObject(py.FromGoString(v))
+		return newObject(py.UnicodeFromString(c.AllocCStr(v)))
 	case complex128:
 		return MakeComplex(v).Object
 	case complex64:
@@ -280,7 +280,7 @@ func toSlice[T any](obj Object, v reflect.Value) T {
 
 func fromSlice(v reflect.Value) List {
 	l := v.Len()
-	list := newList(py.NewList(l))
+	list := newList(py.ListNew(l))
 	for i := 0; i < l; i++ {
 		list.SetItem(i, From(v.Index(i).Interface()))
 	}

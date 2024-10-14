@@ -2,7 +2,7 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Str struct {
@@ -14,19 +14,19 @@ func newStr(obj *py.Object) Str {
 }
 
 func MakeStr(s string) Str {
-	return newStr(py.FromGoString(s))
+	return newStr(py.UnicodeFromStringAndSize(c.GoStringData(s), len(s)))
 }
 
 func (s Str) String() string {
-	var l uintptr
-	buf := s.obj.CStrAndLen(&l)
+	var l int
+	buf := py.UnicodeAsUTF8AndSize(s.obj, &l)
 	return c.GoString(buf, l)
 }
 
 func (s Str) Len() int {
-	var l uintptr
-	s.obj.CStrAndLen(&l)
-	return int(l)
+	var l int
+	py.UnicodeAsUTF8AndSize(s.obj, &l)
+	return l
 }
 
 func (s Str) Encode(encoding string) Bytes {

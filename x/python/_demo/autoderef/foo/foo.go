@@ -5,8 +5,8 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/x/python"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Point struct {
@@ -20,13 +20,13 @@ func (p *Point) Print() {
 }
 
 func (p *Point) Distance(args *py.Object) *py.Object {
-	return py.Long(c.Long(p.X * p.Y))
+	return py.LongFromLong(c.Long(p.X * p.Y))
 }
 
 // Move method for Point
 func (p *Point) Move(args *py.Object) *py.Object {
 	var dx, dy int
-	if !py.ParseTuple(args, c.Str("ii"), &dx, &dy) {
+	if py.ArgParseTuple(args, c.Str("ii"), &dx, &dy) == 0 {
 		return nil
 	}
 	p.X += dx
@@ -37,13 +37,13 @@ func (p *Point) Move(args *py.Object) *py.Object {
 var PointType *py.TypeObject
 
 // NewPoint creates a new Point instance
-func NewPoint(self, args *py.Object) *py.Object {
+func NewPoint(self, args *py.Object, kw *py.Object) *py.Object {
 	var x, y int
-	if !py.ParseTuple(args, c.Str("ii"), &x, &y) {
+	if py.ArgParseTuple(args, c.Str("ii"), &x, &y) == 0 {
 		return nil
 	}
 	point := &Point{X: x, Y: y}
-	return point.Object.Init(PointType)
+	return py.ObjectInit(&point.Object, PointType)
 }
 
 func PyVaragsFunc[T any](fn func(T, *py.Object) *py.Object) c.Pointer {
@@ -57,7 +57,7 @@ func init() {
 		Tp_doc:       c.Str("Point objects"),
 		Tp_basicsize: int(unsafe.Sizeof(Point{})),
 		Tp_flags:     py.TPFLAGS_DEFAULT | py.TPFLAGS_BASETYPE,
-		Tp_new:       c.Func(NewPoint),
+		Tp_new:       NewPoint,
 		Tp_methods: &[]py.MethodDef{
 			{Name: c.Str("move"), Func: c.Func((*Point).Move), Flags: py.METH_VARARGS, Doc: c.Str("Move the point.")},
 			{Name: c.Str("distance"), Func: c.Func((*Point).Distance), Flags: py.METH_NOARGS, Doc: c.Str("Calculate the distance.")},
@@ -74,10 +74,10 @@ func init() {
 // Example function to add two integers
 func exampleAdd(self, args *py.Object) *py.Object {
 	var a, b int
-	if !py.ParseTuple(args, c.Str("ii"), &a, &b) {
+	if py.ArgParseTuple(args, c.Str("ii"), &a, &b) == 0 {
 		panic("parse tuple failed")
 	}
-	return py.Long(c.Long(a + b))
+	return py.LongFromLong(c.Long(a + b))
 }
 
 func InitFooModule() python.Module {
@@ -87,14 +87,14 @@ func InitFooModule() python.Module {
 
 	m := mb.Build()
 
-	if PointType.Ready() < 0 {
+	if py.TypeReady(PointType) < 0 {
 		panic("failed to ready type")
 	}
 
-	PointType.Ob_base.Ob_base.IncRef()
+	py.IncRef(&PointType.Ob_base.Ob_base)
 	if m.AddObject("Point", python.FromPy(&PointType.Ob_base.Ob_base)) < 0 {
-		PointType.Ob_base.Ob_base.DecRef()
-		m.Obj().DecRef()
+		py.DecRef(&PointType.Ob_base.Ob_base)
+		py.DecRef(m.Obj())
 		return python.FromPy(nil).AsModule()
 	}
 

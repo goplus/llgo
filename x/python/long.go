@@ -2,7 +2,7 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Long struct {
@@ -14,42 +14,42 @@ func newLong(obj *py.Object) Long {
 }
 
 func MakeLong(i int64) Long {
-	return newLong(py.Long(c.Long(i)))
+	return newLong(py.LongFromLongLong(c.LongLong(i)))
 }
 
 func (l Long) Int64() int64 {
-	return int64(l.obj.Long())
+	return int64(py.LongAsLongLong(l.obj))
 }
 
 func (l Long) Uint64() uint64 {
-	return uint64(l.obj.Ulong())
+	return uint64(py.LongAsUnsignedLongLong(l.obj))
 }
 
 func (l Long) AsFloat64() float64 {
-	return l.obj.LongAsFloat64()
+	return py.LongAsDouble(l.obj)
 }
 
 func LongFromFloat64(v float64) Long {
-	return newLong(py.LongFromFloat64(v))
+	return newLong(py.LongFromDouble(v))
 }
 
 func LongFromString(s string, base int) Long {
 	cstr := c.AllocCStr(s)
-	return newLong(py.LongFromCStr(cstr, nil, c.Int(base)))
+	return newLong(py.LongFromString(cstr, nil, c.Int(base)))
 }
 
 func LongFromUnicode(u Object, base int) Long {
-	return newLong(py.LongFromUnicode(u.Obj(), c.Int(base)))
+	return newLong(py.LongFromUnicodeObject(u.Obj(), c.Int(base)))
 }
 
 func (l Long) AsUint64() uint64 {
-	return uint64(l.obj.UlongLong())
+	return uint64(py.LongAsUnsignedLongLong(l.obj))
 }
 
 func (l Long) AsUintptr() uintptr {
-	return l.obj.Uintptr()
+	return uintptr(py.LongAsLong(l.obj))
 }
 
 func LongFromUintptr(v uintptr) Long {
-	return newLong(py.Uintptr(v))
+	return newLong(py.LongFromLong(c.Long(v)))
 }

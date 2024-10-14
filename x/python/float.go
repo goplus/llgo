@@ -1,6 +1,6 @@
 package python
 
-import "github.com/goplus/llgo/py"
+import "github.com/goplus/llgo/x/python/py"
 
 type Float struct {
 	Object
@@ -11,11 +11,11 @@ func newFloat(obj *py.Object) Float {
 }
 
 func MakeFloat(f float64) Float {
-	return newFloat(py.Float(f))
+	return newFloat(py.FloatFromDouble(f))
 }
 
 func (f Float) Float64() float64 {
-	return f.obj.Float64()
+	return py.FloatAsDouble(f.obj)
 }
 
 func (f Float) IsInteger() Bool {

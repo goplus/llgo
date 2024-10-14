@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/x/python"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type plt struct {

@@ -1,7 +1,7 @@
 package python
 
 import (
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Tuple struct {
@@ -13,11 +13,11 @@ func newTuple(obj *py.Object) Tuple {
 }
 
 func MakeTupleWithLen(len int) Tuple {
-	return newTuple(py.NewTuple(len))
+	return newTuple(py.TupleNew(len))
 }
 
 func MakeTuple(args ...any) Tuple {
-	tuple := newTuple(py.NewTuple(len(args)))
+	tuple := newTuple(py.TupleNew(len(args)))
 	for i, arg := range args {
 		obj := From(arg)
 		tuple.Set(i, obj)
@@ -26,19 +26,19 @@ func MakeTuple(args ...any) Tuple {
 }
 
 func (t Tuple) Get(index int) Object {
-	v := t.obj.TupleItem(index)
-	v.IncRef()
+	v := py.TupleGetItem(t.obj, index)
+	py.IncRef(v)
 	return newObject(v)
 }
 
 func (t Tuple) Set(index int, obj Objecter) {
-	t.obj.TupleSetItem(index, obj.Obj())
+	py.TupleSetItem(t.obj, index, obj.Obj())
 }
 
 func (t Tuple) Len() int {
-	return t.obj.TupleLen()
+	return py.TupleSize(t.obj)
 }
 
 func (t Tuple) Slice(low, high int) Tuple {
-	return newTuple(t.obj.TupleSlice(low, high))
+	return newTuple(py.TupleGetSlice(t.obj, low, high))
 }

@@ -4,7 +4,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Bytes struct {
@@ -16,18 +16,20 @@ func newBytes(obj *py.Object) Bytes {
 }
 
 func BytesFromStr(s string) Bytes {
-	return newBytes(py.BytesFromString(s))
+	return MakeBytes([]byte(s))
 }
 
 func MakeBytes(bytes []byte) Bytes {
 	ptr := *(**c.Char)(c.Pointer(&bytes))
-	return newBytes(py.BytesFromStringAndSize(ptr, uintptr(len(bytes))))
+	return newBytes(py.BytesFromStringAndSize(ptr, len(bytes)))
 }
 
 func (b Bytes) Bytes() []byte {
 	var p *byte
-	var l uintptr
-	b.obj.BytesAsCStrAndSize((**c.Char)(c.Pointer(&p)), &l)
+	var l int
+	if py.BytesAsStringAndSize(b.obj, (**c.Char)(c.Pointer(&p)), &l) != 0 {
+		panic("python.Bytes.Bytes: failed")
+	}
 	return unsafe.Slice(p, l)
 }
 

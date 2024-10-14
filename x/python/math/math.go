@@ -1,10 +1,18 @@
 package math
 
 import (
-	math "github.com/goplus/llgo/py/math"
 	"github.com/goplus/llgo/x/python"
 )
 
+var math_ python.Module
+
+func math() python.Module {
+	if math_.Nil() {
+		math_ = python.ImportModule("math")
+	}
+	return math_
+}
+
 func Sqrt(x python.Float) python.Float {
-	return python.FromPy(math.Sqrt(x.Obj())).AsFloat()
+	return math().CallMethod("sqrt", x.Obj()).AsFloat()
 }

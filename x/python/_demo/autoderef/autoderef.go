@@ -5,10 +5,10 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/bdwgc"
-	"github.com/goplus/llgo/py"
 	"github.com/goplus/llgo/x/python"
 	"github.com/goplus/llgo/x/python/_demo/autoderef/foo"
 	pymath "github.com/goplus/llgo/x/python/math"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 func main() {

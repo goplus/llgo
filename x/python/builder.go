@@ -2,7 +2,7 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 // ModuleBuilder helps to build Python modules
@@ -35,14 +35,19 @@ func (mb *ModuleBuilder) AddMethod(name string, fn c.Pointer, doc string) *Modul
 func (mb *ModuleBuilder) Build() Module {
 	// Add a null terminator to the methods slice
 	mb.methods = append(mb.methods, py.MethodDef{})
-
-	m := py.ModuleCreate2(&py.ModuleDef{
+	def := &py.ModuleDef{
 		Base:    py.PyModuleDef_HEAD_INIT(),
 		Name:    c.AllocCStr(mb.name),
 		Doc:     c.AllocCStr(mb.doc),
 		Size:    -1,
 		Methods: &mb.methods[0],
-	}, 1013)
+	}
+	c.Printf(c.Str("name: %s, doc: %s, size: %d\n"), def.Name, def.Doc, def.Size)
+	for _, m := range mb.methods {
+		c.Printf(c.Str("method: %s, doc: %s\n"), m.Name, m.Doc)
+	}
+
+	m := py.ModuleCreate2(def, 1013)
 
 	if m == nil {
 		panic("failed to create module")

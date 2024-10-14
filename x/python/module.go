@@ -2,7 +2,7 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Module struct {
@@ -14,12 +14,12 @@ func newModule(obj *py.Object) Module {
 }
 
 func ImportModule(name string) Module {
-	mod := py.ImportModule(c.AllocaCStr(name))
+	mod := py.ImportImportModule(c.AllocaCStr(name))
 	return newModule(mod)
 }
 
 func (m Module) Dict() Dict {
-	return newDict(m.obj.ModuleGetDict())
+	return newDict(py.ModuleGetDict(m.obj))
 }
 
 func (m Module) AddObject(name string, obj Object) int {

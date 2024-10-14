@@ -2,7 +2,7 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 type Dict struct {
@@ -17,7 +17,7 @@ func DictFromPairs(pairs ...any) Dict {
 	if len(pairs)%2 != 0 {
 		panic("DictFromPairs requires an even number of arguments")
 	}
-	dict := newDict(py.NewDict())
+	dict := newDict(py.DictNew())
 	for i := 0; i < len(pairs); i += 2 {
 		key := From(pairs[i])
 		value := From(pairs[i+1])
@@ -27,7 +27,7 @@ func DictFromPairs(pairs ...any) Dict {
 }
 
 func MakeDict(m map[any]any) Dict {
-	dict := newDict(py.NewDict())
+	dict := newDict(py.DictNew())
 	for key, value := range m {
 		keyObj := From(key)
 		valueObj := From(value)
@@ -37,18 +37,18 @@ func MakeDict(m map[any]any) Dict {
 }
 
 func (d Dict) Get(key Objecter) Object {
-	v := d.obj.DictGetItem(key.Obj())
-	v.IncRef()
+	v := py.DictGetItem(d.obj, key.Obj())
+	py.IncRef(v)
 	return newObject(v)
 }
 
 func (d Dict) Set(key, value Object) {
-	key.obj.IncRef()
-	value.obj.IncRef()
-	d.obj.DictSetItem(key.obj, value.obj)
+	py.IncRef(key.obj)
+	py.IncRef(value.obj)
+	py.DictSetItem(d.obj, key.obj, value.obj)
 }
 
 func (d Dict) SetString(key string, value Object) {
-	value.obj.IncRef()
-	d.obj.DictSetItemString(c.AllocCStr(key), value.obj)
+	py.IncRef(value.obj)
+	py.DictSetItemString(d.obj, c.AllocCStr(key), value.obj)
 }

@@ -2,13 +2,14 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/llgo/c/wchar"
+	"github.com/goplus/llgo/x/python/py"
 )
 
 // ----------------------------------------------------------------------------
 
 func SetProgramName(name string) {
-	py.SetProgramName(c.AllocCStr(name))
+	py.SetProgramName(wchar.AllocWCStr(name))
 }
 
 type InputType = py.InputType
@@ -20,11 +21,11 @@ const (
 )
 
 func CompileString(code, filename string, start InputType) Object {
-	return newObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), start))
+	return newObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), c.Int(start)))
 }
 
 func EvalCode(code Object, globals, locals Dict) Object {
-	return newObject(py.EvalCode(code.Obj(), globals.Obj(), locals.Obj()))
+	return newObject(py.EvalEvalCode(code.Obj(), globals.Obj(), locals.Obj()))
 }
 
 // ----------------------------------------------------------------------------

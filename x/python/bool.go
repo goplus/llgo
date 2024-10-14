@@ -1,6 +1,6 @@
 package python
 
-import "github.com/goplus/llgo/py"
+import "github.com/goplus/llgo/x/python/py"
 
 type Bool struct {
 	Object
@@ -26,5 +26,5 @@ func False() Bool {
 }
 
 func (b Bool) Bool() bool {
-	return b.obj.IsTrue() != 0
+	return py.ObjectIsTrue(b.obj) != 0
 }
