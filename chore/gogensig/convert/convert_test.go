@@ -1,6 +1,8 @@
 package convert_test
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
@@ -275,13 +277,13 @@ void testUint(u_int8_t a, u_int16_t b, u_int32_t c, u_int64_t d);
 package skip
 
 import (
-	c7 "github.com/goplus/llgo/c"
+	c "github.com/goplus/llgo/c"
 	_ "unsafe"
 )
 //go:linkname TestInt C.testInt
-func TestInt(a int8, b int16, c c7.Int, d c7.LongLong)
+func TestInt(a int8, b int16, c c.Int, d c.LongLong)
 //go:linkname TestUint C.testUint
-func TestUint(a int8, b uint16, c c7.Uint, d c7.UlongLong)
+func TestUint(a int8, b uint16, c c.Uint, d c.UlongLong)
 	`, func(t *testing.T, pkg *convert.Package) {
 		files, err := os.ReadDir(pkg.GetOutputDir())
 		if err != nil {

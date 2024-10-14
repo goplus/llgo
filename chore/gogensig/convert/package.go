@@ -37,7 +37,7 @@ type Package struct {
 	p         *gogen.Package
 	cvt       *TypeConv
 	outputDir string
-	newTypes  map[string]struct{}
+	newTypes  map[string]struct{} //todo(xlj): Temporary solution to avoid crashes
 }
 
 type PackageConfig struct {
