@@ -13,7 +13,7 @@ import (
 //
 // Note that the returned value may not actually reflect how many
 // references to the object are actually held.  For example, some
-// objects are :term:`immortal` and have a very high refcount that does not
+// objects are "immortal" and have a very high refcount that does not
 // reflect the actual number of references.  Consequently, do not rely
 // on the returned value to be accurate, other than a value of 0 or 1.
 //
@@ -29,10 +29,9 @@ func REFCNT(o *Object) SSizeT
 // void Py_SET_REFCNT(PyObject *o, Py_ssize_t refcnt)
 // Set the object *o* reference counter to *refcnt*.
 //
-// On :ref:`Python build with Free Threading <free-threading-build>`, if
-// *refcnt* is larger than “UINT32_MAX“, the object is made :term:`immortal`.
-//
-// This function has no effect on :term:`immortal` objects.
+// Note that this function has no effect on
+// `immortal <https://peps.python.org/pep-0683/>`_
+// objects.
 //
 // Immortal objects are not modified.
 //
@@ -43,13 +42,11 @@ func SETREFCNT(o *Object, refcnt SSizeT)
 // Indicate taking a new :term:`strong reference` to object *o*,
 // indicating it is in use and should not be destroyed.
 //
-// This function has no effect on :term:`immortal` objects.
-//
 // This function is usually used to convert a :term:`borrowed reference` to a
 // :term:`strong reference` in-place. The :c:func:`Py_NewRef` function can be
 // used to create a new :term:`strong reference`.
 //
-// When done using the object, release is by calling :c:func:`Py_DECREF`.
+// When done using the object, release it by calling :c:func:`Py_DECREF`.
 //
 // The object must not be “NULL“; if you aren't sure that it isn't
 // “NULL“, use :c:func:`Py_XINCREF`.
@@ -107,8 +104,6 @@ func XNewRef(o *Object) *Object
 // void Py_DECREF(PyObject *o)
 // Release a :term:`strong reference` to object *o*, indicating the
 // reference is no longer used.
-//
-// This function has no effect on :term:`immortal` objects.
 //
 // Once the last :term:`strong reference` is released
 // (i.e. the object's reference count reaches 0),

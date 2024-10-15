@@ -10,8 +10,7 @@ import (
 
 // int PyIter_Check(PyObject *o)
 // Return non-zero if the object *o* can be safely passed to
-// :c:func:`PyIter_NextItem` and “0“ otherwise.
-// This function always succeeds.
+// :c:func:`PyIter_Next`, and “0“ otherwise.  This function always succeeds.
 //
 //go:linkname IterCheck PyIter_Check
 func IterCheck(o *Object) Int
@@ -24,15 +23,37 @@ func IterCheck(o *Object) Int
 func AIterCheck(o *Object) Int
 
 // PyObject* PyIter_Next(PyObject *o)
-// This is an older version of :c:func:`!PyIter_NextItem`,
-// which is retained for backwards compatibility.
-// Prefer :c:func:`PyIter_NextItem`.
-//
 // Return the next value from the iterator *o*.  The object must be an iterator
 // according to :c:func:`PyIter_Check` (it is up to the caller to check this).
 // If there are no remaining values, returns “NULL“ with no exception set.
 // If an error occurs while retrieving the item, returns “NULL“ and passes
 // along the exception.
+//
+// To write a loop which iterates over an iterator, the C code should look
+// something like this::
+//
+// PyObject *iterator = PyObject_GetIter(obj);
+// PyObject *item;
+//
+// if (iterator == NULL) {
+// /* propagate error */
+// }
+//
+// while ((item = PyIter_Next(iterator))) {
+// /* do something with item */
+// ...
+// /* release reference when done */
+// Py_DECREF(item);
+// }
+//
+// Py_DECREF(iterator);
+//
+// if (PyErr_Occurred()) {
+// /* propagate error */
+// }
+// else {
+// /* continue doing useful work */
+// }
 //
 //go:linkname IterNext PyIter_Next
 func IterNext(o *Object) *Object

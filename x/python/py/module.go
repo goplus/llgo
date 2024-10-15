@@ -362,8 +362,7 @@ func ModuleAddObjectRef(module *Object, name *Char, value *Object) Int
 // Similar to :c:func:`PyModule_AddObjectRef`, but steals a reference to
 // *value* on success (if it returns “0“).
 //
-// The new :c:func:`PyModule_Add` or :c:func:`PyModule_AddObjectRef`
-// functions are recommended, since it is
+// The new :c:func:`PyModule_AddObjectRef` function is recommended, since it is
 // easy to introduce reference leaks by misusing the
 // :c:func:`PyModule_AddObject` function.
 //
@@ -373,24 +372,44 @@ func ModuleAddObjectRef(module *Object, name *Char, value *Object) Int
 // only releases the reference to *value* **on success**.
 //
 // This means that its return value must be checked, and calling code must
-// :c:func:`Py_XDECREF` *value* manually on error.
+// :c:func:`Py_DECREF` *value* manually on error.
 //
 // Example usage::
 //
-// PyObject *obj = PyBytes_FromString(value);
+// static int
+// add_spam(PyObject *module, int value)
+// {
+// PyObject *obj = PyLong_FromLong(value);
+// if (obj == NULL) {
+// return -1;
+// }
 // if (PyModule_AddObject(module, "spam", obj) < 0) {
-// // If 'obj' is not NULL and PyModule_AddObject() failed,
-// // 'obj' strong reference must be deleted with Py_XDECREF().
-// // If 'obj' is NULL, Py_XDECREF() does nothing.
-// Py_XDECREF(obj);
-// goto error;
+// Py_DECREF(obj);
+// return -1;
 // }
 // // PyModule_AddObject() stole a reference to obj:
-// // Py_XDECREF(obj) is not needed here.
+// // Py_DECREF(obj) is not needed here
+// return 0;
+// }
 //
-// .. deprecated:: 3.13
+// The example can also be written without checking explicitly if *obj* is
+// “NULL“::
 //
-// :c:func:`PyModule_AddObject` is :term:`soft deprecated`.
+// static int
+// add_spam(PyObject *module, int value)
+// {
+// PyObject *obj = PyLong_FromLong(value);
+// if (PyModule_AddObject(module, "spam", obj) < 0) {
+// Py_XDECREF(obj);
+// return -1;
+// }
+// // PyModule_AddObject() stole a reference to obj:
+// // Py_DECREF(obj) is not needed here
+// return 0;
+// }
+//
+// Note that “Py_XDECREF()“ should be used instead of “Py_DECREF()“ in
+// this case, since *obj* can be “NULL“.
 //
 //go:linkname ModuleAddObject PyModule_AddObject
 func ModuleAddObject(module *Object, name *Char, value *Object) Int
@@ -425,6 +444,16 @@ func ModuleAddStringConstant(module *Object, name *Char, value *Char) Int
 // The name of the type object is taken from the last component of
 // :c:member:`~PyTypeObject.tp_name` after dot.
 // Return “-1“ with an exception set on error, “0“ on success.
+//
+// Module lookup
+// ^^^^^^^^^^^^^
+//
+// Single-phase initialization creates singleton modules that can be looked up
+// in the context of the current interpreter. This allows the module object to be
+// retrieved later with only a reference to the module definition.
+//
+// These functions will not work on modules created using multi-phase initialization,
+// since multiple such modules can be created from a single definition.
 //
 //go:linkname ModuleAddType PyModule_AddType
 func ModuleAddType(module *Object, type_ *TypeObject) Int

@@ -309,10 +309,8 @@ func TypeFromMetaclass(metaclass *TypeObject, module *Object, spec *TypeSpec, ba
 // The :c:member:`~PyTypeObject.tp_new` of the metaclass is *ignored*.
 // which may result in incomplete initialization.
 // Creating classes whose metaclass overrides
-// :c:member:`~PyTypeObject.tp_new` is deprecated.
-//
-// Creating classes whose metaclass overrides
-// :c:member:`~PyTypeObject.tp_new` is no longer allowed.
+// :c:member:`~PyTypeObject.tp_new` is deprecated and in Python 3.14+ it
+// will be no longer allowed.
 //
 //go:linkname TypeFromModuleAndSpec PyType_FromModuleAndSpec
 func TypeFromModuleAndSpec(module *Object, spec *TypeSpec, bases *Object) *Object
@@ -326,10 +324,8 @@ func TypeFromModuleAndSpec(module *Object, spec *TypeSpec, bases *Object) *Objec
 // The :c:member:`~PyTypeObject.tp_new` of the metaclass is *ignored*.
 // which may result in incomplete initialization.
 // Creating classes whose metaclass overrides
-// :c:member:`~PyTypeObject.tp_new` is deprecated.
-//
-// Creating classes whose metaclass overrides
-// :c:member:`~PyTypeObject.tp_new` is no longer allowed.
+// :c:member:`~PyTypeObject.tp_new` is deprecated and in Python 3.14+ it
+// will be no longer allowed.
 //
 //go:linkname TypeFromSpecWithBases PyType_FromSpecWithBases
 func TypeFromSpecWithBases(spec *TypeSpec, bases *Object) *Object
@@ -344,10 +340,8 @@ func TypeFromSpecWithBases(spec *TypeSpec, bases *Object) *Object
 // The :c:member:`~PyTypeObject.tp_new` of the metaclass is *ignored*.
 // which may result in incomplete initialization.
 // Creating classes whose metaclass overrides
-// :c:member:`~PyTypeObject.tp_new` is deprecated.
-//
-// Creating classes whose metaclass overrides
-// :c:member:`~PyTypeObject.tp_new` is no longer allowed.
+// :c:member:`~PyTypeObject.tp_new` is deprecated and in Python 3.14+ it
+// will be no longer allowed.
 //
 // .. raw:: html
 //

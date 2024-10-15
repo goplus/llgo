@@ -16,57 +16,38 @@ import (
 //go:linkname ArgParseTuple PyArg_ParseTuple
 func ArgParseTuple(args *Object, format *Char, __llgo_va_list ...any) Int
 
-// int PyArg_ParseTupleAndKeywords(PyObject *args, PyObject *kw, const char *format, char * const *keywords, ...)
+// int PyArg_ParseTupleAndKeywords(PyObject *args, PyObject *kw, const char *format, char *keywords[], ...)
 // Parse the parameters of a function that takes both positional and keyword
-// parameters into local variables.
-// The *keywords* argument is a “NULL“-terminated array of keyword parameter
-// names specified as null-terminated ASCII or UTF-8 encoded C strings.
-// Empty names denote
+// parameters into local variables.  The *keywords* argument is a
+// “NULL“-terminated array of keyword parameter names.  Empty names denote
 // :ref:`positional-only parameters <positional-only_parameter>`.
 // Returns true on success; on failure, it returns false and raises the
 // appropriate exception.
 //
-// .. note::
-//
-// The *keywords* parameter declaration is :c:expr:`char * const *` in C and
-// :c:expr:`const char * const *` in C++.
-// This can be overridden with the :c:macro:`PY_CXX_CONST` macro.
-//
 // Added support for :ref:`positional-only parameters
 // <positional-only_parameter>`.
 //
-// The *keywords* parameter has now type :c:expr:`char * const *` in C and
-// :c:expr:`const char * const *` in C++, instead of :c:expr:`char **`.
-// Added support for non-ASCII keyword parameter names.
-//
 //go:linkname ArgParseTupleAndKeywords PyArg_ParseTupleAndKeywords
-func ArgParseTupleAndKeywords(args *Object, kw *Object, format *Char, keywords **Char, __llgo_va_list ...any) Int
+func ArgParseTupleAndKeywords(args *Object, kw *Object, format *Char, keywords *Char, __llgo_va_list ...any) Int
 
 // int PyArg_ValidateKeywordArguments(PyObject *)
 // Ensure that the keys in the keywords argument dictionary are strings.  This
 // is only needed if :c:func:`PyArg_ParseTupleAndKeywords` is not used, since the
 // latter already does this check.
 //
+// .. XXX deprecated, will be removed
+//
 //go:linkname ArgValidateKeywordArguments PyArg_ValidateKeywordArguments
 func ArgValidateKeywordArguments(*Object) Int
 
 // int PyArg_Parse(PyObject *args, const char *format, ...)
-// Parse the parameter of a function that takes a single positional parameter
-// into a local variable.  Returns true on success; on failure, it returns
-// false and raises the appropriate exception.
-//
-// Example::
-//
-// // Function using METH_O calling convention
-// static PyObject*
-// my_function(PyObject *module, PyObject *arg)
-// {
-// int value;
-// if (!PyArg_Parse(arg, "i:my_function", &value)) {
-// return NULL;
-// }
-// // ... use value ...
-// }
+// Function used to deconstruct the argument lists of "old-style" functions ---
+// these are functions which use the :const:`METH_OLDARGS` parameter parsing
+// method, which has been removed in Python 3.  This is not recommended for use
+// in parameter parsing in new code, and most code in the standard interpreter
+// has been modified to no longer use this for that purpose.  It does remain a
+// convenient way to decompose other tuples, however, and may continue to be
+// used for that purpose.
 //
 //go:linkname ArgParse PyArg_Parse
 func ArgParse(args *Object, format *Char, __llgo_va_list ...any) Int
@@ -107,6 +88,10 @@ func ArgParse(args *Object, format *Char, __llgo_va_list ...any) Int
 // this call to :c:func:`PyArg_ParseTuple`::
 //
 // PyArg_ParseTuple(args, "O|O:ref", &object, &callback)
+//
+// ---------------
+// Building values
+// ---------------
 //
 //go:linkname ArgUnpackTuple PyArg_UnpackTuple
 func ArgUnpackTuple(args *Object, name *Char, min SSizeT, max SSizeT, __llgo_va_list ...any) Int

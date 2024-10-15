@@ -108,7 +108,7 @@ func StatusIsExit(status Status) Int
 // }
 //
 // PyPreConfig
-// -----------
+// ===========
 //
 //go:linkname ExitStatusException Py_ExitStatusException
 func ExitStatusException(status Status)
@@ -195,7 +195,7 @@ func PreInitializeFromBytesArgs(preconfig *PreConfig, argc Int, argv **Char) Sta
 // Py_Finalize();
 //
 // PyConfig
-// --------
+// ========
 //
 //go:linkname PreInitializeFromArgs Py_PreInitializeFromArgs
 func PreInitializeFromArgs(preconfig *PreConfig, argc Int, argv **Wchar) Status
@@ -312,254 +312,259 @@ func ConfigRead(config *Config) Status
 //go:linkname ConfigClear PyConfig_Clear
 func ConfigClear(config *Config)
 
-// PyInitConfig* PyInitConfig_Create(void)
-// Create a new initialization configuration using :ref:`Isolated Configuration
-// <init-isolated-conf>` default values.
+// PyStatus Py_InitializeFromConfig(const PyConfig *config)
+// Initialize Python from *config* configuration.
 //
-// It must be freed by :c:func:`PyInitConfig_Free`.
+// The caller is responsible to handle exceptions (error or exit) using
+// :c:func:`PyStatus_Exception` and :c:func:`Py_ExitStatusException`.
 //
-// Return “NULL“ on memory allocation failure.
+// If :c:func:`PyImport_FrozenModules`, :c:func:`PyImport_AppendInittab` or
+// :c:func:`PyImport_ExtendInittab` are used, they must be set or called after
+// Python preinitialization and before the Python initialization. If Python is
+// initialized multiple times, :c:func:`PyImport_AppendInittab` or
+// :c:func:`PyImport_ExtendInittab` must be called before each Python
+// initialization.
 //
-//go:linkname InitConfigCreate PyInitConfig_Create
-func InitConfigCreate() *InitConfig
-
-// void PyInitConfig_Free(PyInitConfig *config)
-// Free memory of the initialization configuration *config*.
+// The current configuration (“PyConfig“ type) is stored in
+// “PyInterpreterState.config“.
 //
-// Error Handling
-// --------------
+// Example setting the program name::
 //
-//go:linkname InitConfigFree PyInitConfig_Free
-func InitConfigFree(config *InitConfig)
-
-// int PyInitConfig_GetError(PyInitConfig* config, const char **err_msg)
-// Get the *config* error message.
-//
-// * Set *\*err_msg* and return “1“ if an error is set.
-// * Set *\*err_msg* to “NULL“ and return “0“ otherwise.
-//
-// An error message is an UTF-8 encoded string.
-//
-// If *config* has an exit code, format the exit code as an error
-// message.
-//
-// The error message remains valid until another “PyInitConfig“
-// function is called with *config*. The caller doesn't have to free the
-// error message.
-//
-//go:linkname InitConfigGetError PyInitConfig_GetError
-func InitConfigGetError(config *InitConfig, errMsg **Char) Int
-
-// int PyInitConfig_GetExitCode(PyInitConfig* config, int *exitcode)
-// Get the *config* exit code.
-//
-// * Set *\*exitcode* and return “1“ if *config* has an exit code set.
-// * Return “0“ if *config* has no exit code set.
-//
-// Only the “Py_InitializeFromInitConfig()“ function can set an exit
-// code if the “parse_argv“ option is non-zero.
-//
-// An exit code can be set when parsing the command line failed (exit
-// code “2“) or when a command line option asks to display the command
-// line help (exit code “0“).
-//
-// Get Options
-// -----------
-//
-// The configuration option *name* parameter must be a non-NULL
-// null-terminated UTF-8 encoded string.
-//
-//go:linkname InitConfigGetExitCode PyInitConfig_GetExitCode
-func InitConfigGetExitCode(config *InitConfig, exitcode *Int) Int
-
-// int PyInitConfig_HasOption(PyInitConfig *config, const char *name)
-// Test if the configuration has an option called *name*.
-//
-// Return “1“ if the option exists, or return “0“ otherwise.
-//
-//go:linkname InitConfigHasOption PyInitConfig_HasOption
-func InitConfigHasOption(config *InitConfig, name *Char) Int
-
-// int PyInitConfig_GetInt(PyInitConfig *config, const char *name, int64_t *value)
-// Get an integer configuration option.
-//
-// * Set *\*value*, and return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-//go:linkname InitConfigGetInt PyInitConfig_GetInt
-func InitConfigGetInt(config *InitConfig, name *Char, value *UlongLong) Int
-
-// int PyInitConfig_GetStr(PyInitConfig *config, const char *name, char **value)
-// Get a string configuration option as a null-terminated UTF-8
-// encoded string.
-//
-// * Set *\*value*, and return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-// *\*value* can be set to “NULL“ if the option is an optional string and the
-// option is unset.
-//
-// On success, the string must be released with “free(value)“ if it's not
-// “NULL“.
-//
-//go:linkname InitConfigGetStr PyInitConfig_GetStr
-func InitConfigGetStr(config *InitConfig, name *Char, value **Char) Int
-
-// int PyInitConfig_GetStrList(PyInitConfig *config, const char *name, size_t *length, char ***items)
-// Get a string list configuration option as an array of
-// null-terminated UTF-8 encoded strings.
-//
-// * Set *\*length* and *\*value*, and return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-// On success, the string list must be released with
-// “PyInitConfig_FreeStrList(length, items)“.
-//
-//go:linkname InitConfigGetStrList PyInitConfig_GetStrList
-func InitConfigGetStrList(config *InitConfig, name *Char, length *Ulong, items ***Char) Int
-
-// void PyInitConfig_FreeStrList(size_t length, char **items)
-// Free memory of a string list created by
-// “PyInitConfig_GetStrList()“.
-//
-// Set Options
-// -----------
-//
-// The configuration option *name* parameter must be a non-NULL null-terminated
-// UTF-8 encoded string.
-//
-// Some configuration options have side effects on other options. This logic is
-// only implemented when “Py_InitializeFromInitConfig()“ is called, not by the
-// "Set" functions below. For example, setting “dev_mode“ to “1“ does not set
-// “faulthandler“ to “1“.
-//
-//go:linkname InitConfigFreeStrList PyInitConfig_FreeStrList
-func InitConfigFreeStrList(length Ulong, items **Char)
-
-// int PyInitConfig_SetInt(PyInitConfig *config, const char *name, int64_t value)
-// Set an integer configuration option.
-//
-// * Return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-//go:linkname InitConfigSetInt PyInitConfig_SetInt
-func InitConfigSetInt(config *InitConfig, name *Char, value UlongLong) Int
-
-// int PyInitConfig_SetStr(PyInitConfig *config, const char *name, const char *value)
-// Set a string configuration option from a null-terminated UTF-8
-// encoded string. The string is copied.
-//
-// * Return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-//go:linkname InitConfigSetStr PyInitConfig_SetStr
-func InitConfigSetStr(config *InitConfig, name *Char, value *Char) Int
-
-// int PyInitConfig_SetStrList(PyInitConfig *config, const char *name, size_t length, char * const *items)
-// Set a string list configuration option from an array of
-// null-terminated UTF-8 encoded strings. The string list is copied.
-//
-// * Return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-// Module
-// ------
-//
-//go:linkname InitConfigSetStrList PyInitConfig_SetStrList
-func InitConfigSetStrList(config *InitConfig, name *Char, length Ulong, items **Char) Int
-
-// int PyInitConfig_AddModule(PyInitConfig *config, const char *name, PyObject* (*initfunc)(void))
-// Add a built-in extension module to the table of built-in modules.
-//
-// The new module can be imported by the name *name*, and uses the function
-// *initfunc* as the initialization function called on the first attempted
-// import.
-//
-// * Return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-//
-// If Python is initialized multiple times, “PyInitConfig_AddModule()“ must
-// be called at each Python initialization.
-//
-// Similar to the :c:func:`PyImport_AppendInittab` function.
-//
-// Initialize Python
-// -----------------
-//
-//go:linkname InitConfigAddModule PyInitConfig_AddModule
-func InitConfigAddModule(config *InitConfig, name *Char, initfunc func() *Object) Int
-
-// int Py_InitializeFromInitConfig(PyInitConfig *config)
-// Initialize Python from the initialization configuration.
-//
-// * Return “0“ on success.
-// * Set an error in *config* and return “-1“ on error.
-// * Set an exit code in *config* and return “-1“ if Python wants to
-// exit.
-//
-// See “PyInitConfig_GetExitcode()“ for the exit code case.
-//
-// Example
-// -------
-//
-// Example initializing Python, set configuration options of various types,
-// return “-1“ on error:
-//
-// .. code-block:: c
-//
-// int init_python(void)
+// void init_python(void)
 // {
-// PyInitConfig *config = PyInitConfig_Create();
-// if (config == NULL) {
-// printf("PYTHON INIT ERROR: memory allocation failed\n");
-// return -1;
+// PyStatus status;
+//
+// PyConfig config;
+// PyConfig_InitPythonConfig(&config);
+//
+// /* Set the program name. Implicitly preinitialize Python. */
+// status = PyConfig_SetString(&config, &config.program_name,
+// L"/path/to/my_program");
+// if (PyStatus_Exception(status)) {
+// goto exception;
 // }
 //
-// // Set an integer (dev mode)
-// if (PyInitConfig_SetInt(config, "dev_mode", 1) < 0) {
-// goto error;
+// status = Py_InitializeFromConfig(&config);
+// if (PyStatus_Exception(status)) {
+// goto exception;
+// }
+// PyConfig_Clear(&config);
+// return;
+//
+// exception:
+// PyConfig_Clear(&config);
+// Py_ExitStatusException(status);
 // }
 //
-// // Set a list of UTF-8 strings (argv)
-// char *argv[] = {"my_program", "-c", "pass"};
-// if (PyInitConfig_SetStrList(config, "argv",
-// Py_ARRAY_LENGTH(argv), argv) < 0) {
-// goto error;
+// More complete example modifying the default configuration, read the
+// configuration, and then override some parameters. Note that since
+// 3.11, many parameters are not calculated until initialization, and
+// so values cannot be read from the configuration structure. Any values
+// set before initialize is called will be left unchanged by
+// initialization::
+//
+// PyStatus init_python(const char *program_name)
+// {
+// PyStatus status;
+//
+// PyConfig config;
+// PyConfig_InitPythonConfig(&config);
+//
+// /* Set the program name before reading the configuration
+// (decode byte string from the locale encoding).
+//
+// Implicitly preinitialize Python. */
+// status = PyConfig_SetBytesString(&config, &config.program_name,
+// program_name);
+// if (PyStatus_Exception(status)) {
+// goto done;
 // }
 //
-// // Set a UTF-8 string (program name)
-// if (PyInitConfig_SetStr(config, "program_name", L"my_program") < 0) {
-// goto error;
+// /* Read all configuration at once */
+// status = PyConfig_Read(&config);
+// if (PyStatus_Exception(status)) {
+// goto done;
 // }
 //
-// // Initialize Python with the configuration
-// if (Py_InitializeFromInitConfig(config) < 0) {
-// goto error;
+// /* Specify sys.path explicitly */
+// /* If you want to modify the default set of paths, finish
+// initialization first and then use PySys_GetObject("path") */
+// config.module_search_paths_set = 1;
+// status = PyWideStringList_Append(&config.module_search_paths,
+// L"/path/to/stdlib");
+// if (PyStatus_Exception(status)) {
+// goto done;
 // }
-// PyInitConfig_Free(config);
-// return 0;
-//
-// // Display the error message
-// const char *err_msg;
-// error:
-// (void)PyInitConfig_GetError(config, &err_msg);
-// printf("PYTHON INIT ERROR: %s\n", err_msg);
-// PyInitConfig_Free(config);
-//
-// return -1;
+// status = PyWideStringList_Append(&config.module_search_paths,
+// L"/path/to/more/modules");
+// if (PyStatus_Exception(status)) {
+// goto done;
 // }
 //
-// Runtime Python configuration API
-// ================================
+// /* Override executable computed by PyConfig_Read() */
+// status = PyConfig_SetString(&config, &config.executable,
+// L"/path/to/my_executable");
+// if (PyStatus_Exception(status)) {
+// goto done;
+// }
 //
-// The configuration option *name* parameter must be a non-NULL null-terminated
-// UTF-8 encoded string.
+// status = Py_InitializeFromConfig(&config);
 //
-// Some options are read from the :mod:`sys` attributes. For example, the option
-// “"argv"“ is read from :data:`sys.argv`.
+// done:
+// PyConfig_Clear(&config);
+// return status;
+// }
 //
-//go:linkname InitializeFromInitConfig Py_InitializeFromInitConfig
-func InitializeFromInitConfig(config *InitConfig) Int
+// .. _init-isolated-conf:
+//
+// Isolated Configuration
+// ======================
+//
+// :c:func:`PyPreConfig_InitIsolatedConfig` and
+// :c:func:`PyConfig_InitIsolatedConfig` functions create a configuration to
+// isolate Python from the system. For example, to embed Python into an
+// application.
+//
+// This configuration ignores global configuration variables, environment
+// variables, command line arguments (:c:member:`PyConfig.argv` is not parsed)
+// and user site directory. The C standard streams (ex: “stdout“) and the
+// LC_CTYPE locale are left unchanged. Signal handlers are not installed.
+//
+// Configuration files are still used with this configuration to determine
+// paths that are unspecified. Ensure :c:member:`PyConfig.home` is specified
+// to avoid computing the default path configuration.
+//
+// .. _init-python-config:
+//
+// Python Configuration
+// ====================
+//
+// :c:func:`PyPreConfig_InitPythonConfig` and :c:func:`PyConfig_InitPythonConfig`
+// functions create a configuration to build a customized Python which behaves as
+// the regular Python.
+//
+// Environments variables and command line arguments are used to configure
+// Python, whereas global configuration variables are ignored.
+//
+// This function enables C locale coercion (:pep:`538`)
+// and :ref:`Python UTF-8 Mode <utf8-mode>`
+// (:pep:`540`) depending on the LC_CTYPE locale, :envvar:`PYTHONUTF8` and
+// :envvar:`PYTHONCOERCECLOCALE` environment variables.
+//
+// .. _init-path-config:
+//
+// Python Path Configuration
+// =========================
+//
+// :c:type:`PyConfig` contains multiple fields for the path configuration:
+//
+// * Path configuration inputs:
+//
+// * :c:member:`PyConfig.home`
+// * :c:member:`PyConfig.platlibdir`
+// * :c:member:`PyConfig.pathconfig_warnings`
+// * :c:member:`PyConfig.program_name`
+// * :c:member:`PyConfig.pythonpath_env`
+// * current working directory: to get absolute paths
+// * “PATH“ environment variable to get the program full path
+// (from :c:member:`PyConfig.program_name`)
+// * “__PYVENV_LAUNCHER__“ environment variable
+// * (Windows only) Application paths in the registry under
+// "Software\Python\PythonCore\X.Y\PythonPath" of HKEY_CURRENT_USER and
+// HKEY_LOCAL_MACHINE (where X.Y is the Python version).
+//
+// * Path configuration output fields:
+//
+// * :c:member:`PyConfig.base_exec_prefix`
+// * :c:member:`PyConfig.base_executable`
+// * :c:member:`PyConfig.base_prefix`
+// * :c:member:`PyConfig.exec_prefix`
+// * :c:member:`PyConfig.executable`
+// * :c:member:`PyConfig.module_search_paths_set`,
+// :c:member:`PyConfig.module_search_paths`
+// * :c:member:`PyConfig.prefix`
+//
+// If at least one "output field" is not set, Python calculates the path
+// configuration to fill unset fields. If
+// :c:member:`~PyConfig.module_search_paths_set` is equal to “0“,
+// :c:member:`~PyConfig.module_search_paths` is overridden and
+// :c:member:`~PyConfig.module_search_paths_set` is set to “1“.
+//
+// It is possible to completely ignore the function calculating the default
+// path configuration by setting explicitly all path configuration output
+// fields listed above. A string is considered as set even if it is non-empty.
+// “module_search_paths“ is considered as set if
+// “module_search_paths_set“ is set to “1“. In this case,
+// “module_search_paths“ will be used without modification.
+//
+// Set :c:member:`~PyConfig.pathconfig_warnings` to “0“ to suppress warnings when
+// calculating the path configuration (Unix only, Windows does not log any warning).
+//
+// If :c:member:`~PyConfig.base_prefix` or :c:member:`~PyConfig.base_exec_prefix`
+// fields are not set, they inherit their value from :c:member:`~PyConfig.prefix`
+// and :c:member:`~PyConfig.exec_prefix` respectively.
+//
+// :c:func:`Py_RunMain` and :c:func:`Py_Main` modify :data:`sys.path`:
+//
+// * If :c:member:`~PyConfig.run_filename` is set and is a directory which contains a
+// “__main__.py“ script, prepend :c:member:`~PyConfig.run_filename` to
+// :data:`sys.path`.
+// * If :c:member:`~PyConfig.isolated` is zero:
+//
+// * If :c:member:`~PyConfig.run_module` is set, prepend the current directory
+// to :data:`sys.path`. Do nothing if the current directory cannot be read.
+// * If :c:member:`~PyConfig.run_filename` is set, prepend the directory of the
+// filename to :data:`sys.path`.
+// * Otherwise, prepend an empty string to :data:`sys.path`.
+//
+// If :c:member:`~PyConfig.site_import` is non-zero, :data:`sys.path` can be
+// modified by the :mod:`site` module. If
+// :c:member:`~PyConfig.user_site_directory` is non-zero and the user's
+// site-package directory exists, the :mod:`site` module appends the user's
+// site-package directory to :data:`sys.path`.
+//
+// The following configuration files are used by the path configuration:
+//
+// * “pyvenv.cfg“
+// * “._pth“ file (ex: “python._pth“)
+// * “pybuilddir.txt“ (Unix only)
+//
+// If a “._pth“ file is present:
+//
+// * Set :c:member:`~PyConfig.isolated` to “1“.
+// * Set :c:member:`~PyConfig.use_environment` to “0“.
+// * Set :c:member:`~PyConfig.site_import` to “0“.
+// * Set :c:member:`~PyConfig.safe_path` to “1“.
+//
+// The “__PYVENV_LAUNCHER__“ environment variable is used to set
+// :c:member:`PyConfig.base_executable`
+//
+// Py_RunMain()
+// ============
+//
+//go:linkname InitializeFromConfig Py_InitializeFromConfig
+func InitializeFromConfig(config *Config) Status
+
+// int Py_RunMain(void)
+// Execute the command (:c:member:`PyConfig.run_command`), the script
+// (:c:member:`PyConfig.run_filename`) or the module
+// (:c:member:`PyConfig.run_module`) specified on the command line or in the
+// configuration.
+//
+// By default and when if :option:`-i` option is used, run the REPL.
+//
+// Finally, finalizes Python and returns an exit status that can be passed to
+// the “exit()“ function.
+//
+// See :ref:`Python Configuration <init-python-config>` for an example of
+// customized Python always running in isolated mode using
+// :c:func:`Py_RunMain`.
+//
+// Py_GetArgcArgv()
+// ================
+//
+//go:linkname RunMain Py_RunMain
+func RunMain() Int
 
 // void Py_GetArgcArgv(int *argc, wchar_t ***argv)
 // Get the original command line arguments, before Python modified them.
@@ -683,7 +688,3 @@ type PreConfig = C.PyPreConfig
 // When done, the :c:func:`PyConfig_Clear` function must be used to release the
 // configuration memory.
 type Config = C.PyConfig
-
-// struct PyInitConfig
-// Opaque structure to configure the Python initialization.
-type InitConfig struct{}

@@ -90,16 +90,9 @@ func FrameGetVar(frame *FrameObject, name *Object) *Object
 func FrameGetVarString(frame *FrameObject, name *Char) *Object
 
 // PyObject* PyFrame_GetLocals(PyFrameObject *frame)
-// Get the *frame*'s :attr:`~frame.f_locals` attribute.
-// If the frame refers to an :term:`optimized scope`, this returns a
-// write-through proxy object that allows modifying the locals.
-// In all other cases (classes, modules, :func:`exec`, :func:`eval`) it returns
-// the mapping representing the frame locals directly (as described for
-// :func:`locals`).
+// Get the *frame*'s :attr:`~frame.f_locals` attribute (:class:`dict`).
 //
 // Return a :term:`strong reference`.
-//
-// As part of :pep:`667`, return a proxy object for optimized scopes.
 //
 //go:linkname FrameGetLocals PyFrame_GetLocals
 func FrameGetLocals(frame *FrameObject) *Object

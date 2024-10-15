@@ -53,8 +53,6 @@ func CQuot(dividend Complex, divisor Complex) Complex
 // If *num* is null and *exp* is not a positive real number,
 // this method returns zero and sets :c:data:`errno` to :c:macro:`!EDOM`.
 //
-// Set :c:data:`errno` to :c:macro:`!ERANGE` on overflows.
-//
 // Complex Numbers as Python Objects
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 //
@@ -92,33 +90,14 @@ func ComplexFromDoubles(real Double, imag Double) *Object
 // double PyComplex_RealAsDouble(PyObject *op)
 // Return the real part of *op* as a C :c:expr:`double`.
 //
-// If *op* is not a Python complex number object but has a
-// :meth:`~object.__complex__` method, this method will first be called to
-// convert *op* to a Python complex number object.  If :meth:`!__complex__` is
-// not defined then it falls back to call :c:func:`PyFloat_AsDouble` and
-// returns its result.
-//
 // Upon failure, this method returns “-1.0“ with an exception set, so one
 // should call :c:func:`PyErr_Occurred` to check for errors.
-//
-// Use :meth:`~object.__complex__` if available.
 //
 //go:linkname ComplexRealAsDouble PyComplex_RealAsDouble
 func ComplexRealAsDouble(op *Object) Double
 
 // double PyComplex_ImagAsDouble(PyObject *op)
 // Return the imaginary part of *op* as a C :c:expr:`double`.
-//
-// If *op* is not a Python complex number object but has a
-// :meth:`~object.__complex__` method, this method will first be called to
-// convert *op* to a Python complex number object.  If :meth:`!__complex__` is
-// not defined then it falls back to call :c:func:`PyFloat_AsDouble` and
-// returns “0.0“ on success.
-//
-// Upon failure, this method returns “-1.0“ with an exception set, so one
-// should call :c:func:`PyErr_Occurred` to check for errors.
-//
-// Use :meth:`~object.__complex__` if available.
 //
 //go:linkname ComplexImagAsDouble PyComplex_ImagAsDouble
 func ComplexImagAsDouble(op *Object) Double

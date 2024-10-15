@@ -38,7 +38,11 @@ func ObjectInit(op *Object, type_ *TypeObject) *Object
 func ObjectInitVar(op *VarObject, type_ *TypeObject, size SSizeT) *VarObject
 
 // void PyObject_Del(void *op)
-// Same as :c:func:`PyObject_Free`.
+// Releases memory allocated to an object using :c:macro:`PyObject_New` or
+// :c:macro:`PyObject_NewVar`.  This is normally called from the
+// :c:member:`~PyTypeObject.tp_dealloc` handler specified in the object's type.  The fields of
+// the object should not be accessed after this call as the memory is no
+// longer a valid Python object.
 //
 //go:linkname ObjectDel PyObject_Del
 func ObjectDel(op Pointer)

@@ -10,6 +10,7 @@ import (
 
 // void Py_Initialize()
 // .. index::
+// single: Py_SetProgramName()
 // single: PyEval_InitThreads()
 // single: modules (in module sys)
 // single: path (in module sys)
@@ -17,51 +18,42 @@ import (
 // pair: module; __main__
 // pair: module; sys
 // triple: module; search; path
+// single: PySys_SetArgv (C function)
+// single: PySys_SetArgvEx (C function)
 // single: Py_FinalizeEx (C function)
 //
 // Initialize the Python interpreter.  In an application embedding  Python,
 // this should be called before using any other Python/C API functions; see
 // :ref:`Before Python Initialization <pre-init-safe>` for the few exceptions.
 //
-// This initializes the table of loaded modules (“sys.modules“), and creates
-// the fundamental modules :mod:`builtins`, :mod:`__main__` and :mod:`sys`.
-// It also initializes the module search path (“sys.path“). It does not set
-// “sys.argv“; use the :ref:`Python Initialization Configuration <init-config>`
-// API for that. This is a no-op when called for a second time (without calling
-// :c:func:`Py_FinalizeEx` first).  There is no return value; it is a fatal
-// error if the initialization fails.
+// This initializes
+// the table of loaded modules (“sys.modules“), and creates the fundamental
+// modules :mod:`builtins`, :mod:`__main__` and :mod:`sys`.  It also initializes
+// the module search path (“sys.path“). It does not set “sys.argv“; use
+// :c:func:`PySys_SetArgvEx` for that.  This is a no-op when called for a second time
+// (without calling :c:func:`Py_FinalizeEx` first).  There is no return value; it is a
+// fatal error if the initialization fails.
 //
-// Use :c:func:`Py_InitializeFromConfig` to customize the
+// Use the :c:func:`Py_InitializeFromConfig` function to customize the
 // :ref:`Python Initialization Configuration <init-config>`.
 //
 // .. note::
-// On Windows, changes the console mode from “O_TEXT“ to “O_BINARY“,
-// which will also affect non-Python uses of the console using the C Runtime.
+// On Windows, changes the console mode from “O_TEXT“ to “O_BINARY“, which will
+// also affect non-Python uses of the console using the C Runtime.
 //
 //go:linkname Initialize Py_Initialize
 func Initialize()
 
 // void Py_InitializeEx(int initsigs)
 // This function works like :c:func:`Py_Initialize` if *initsigs* is “1“. If
-// *initsigs* is “0“, it skips initialization registration of signal handlers,
-// which may be useful when CPython is embedded as part of a larger application.
+// *initsigs* is “0“, it skips initialization registration of signal handlers, which
+// might be useful when Python is embedded.
 //
-// Use :c:func:`Py_InitializeFromConfig` to customize the
+// Use the :c:func:`Py_InitializeFromConfig` function to customize the
 // :ref:`Python Initialization Configuration <init-config>`.
 //
 //go:linkname InitializeEx Py_InitializeEx
 func InitializeEx(initsigs Int)
-
-// PyStatus Py_InitializeFromConfig(const PyConfig *config)
-// Initialize Python from *config* configuration, as described in
-// :ref:`init-from-config`.
-//
-// See the :ref:`init-config` section for details on pre-initializing the
-// interpreter, populating the runtime configuration structure, and querying
-// the returned status structure.
-//
-//go:linkname InitializeFromConfig Py_InitializeFromConfig
-func InitializeFromConfig(config *Config) Status
 
 // int Py_IsInitialized()
 // Return true (nonzero) when the Python interpreter has been initialized, false
@@ -75,7 +67,8 @@ func IsInitialized() Int
 // Undo all initializations made by :c:func:`Py_Initialize` and subsequent use of
 // Python/C API functions, and destroy all sub-interpreters (see
 // :c:func:`Py_NewInterpreter` below) that were created and not yet destroyed since
-// the last call to :c:func:`Py_Initialize`.  This is a no-op when called for a second
+// the last call to :c:func:`Py_Initialize`.  Ideally, this frees all memory
+// allocated by the Python interpreter.  This is a no-op when called for a second
 // time (without calling :c:func:`Py_Initialize` again first).
 //
 // Since this is the reverse of :c:func:`Py_Initialize`, it should be called
@@ -86,12 +79,6 @@ func IsInitialized() Int
 // Normally the return value is “0“.
 // If there were errors during finalization (flushing buffered data),
 // “-1“ is returned.
-//
-// Note that Python will do a best effort at freeing all memory allocated by the Python
-// interpreter.  Therefore, any C-Extension should make sure to correctly clean up all
-// of the preveiously allocated PyObjects before using them in subsequent calls to
-// :c:func:`Py_Initialize`.  Otherwise it could introduce vulnerabilities and incorrect
-// behavior.
 //
 // This function is provided for a number of reasons.  An embedding application
 // might want to restart Python without having to restart the application itself.
@@ -107,15 +94,10 @@ func IsInitialized() Int
 // loaded extension modules loaded by Python are not unloaded.  Small amounts of
 // memory allocated by the Python interpreter may not be freed (if you find a leak,
 // please report it).  Memory tied up in circular references between objects is not
-// freed.  Interned strings will all be deallocated regardless of their reference count.
-// Some memory allocated by extension modules may not be freed.  Some extensions may not
-// work properly if their initialization routine is called more than once; this can
-// happen if an application calls :c:func:`Py_Initialize` and :c:func:`Py_FinalizeEx`
-// more than once.  :c:func:`Py_FinalizeEx` must not be called recursively from
-// within itself.  Therefore, it must not be called by any code that may be run
-// as part of the interpreter shutdown process, such as :py:mod:`atexit`
-// handlers, object finalizers, or any code that may be run while flushing the
-// stdout and stderr files.
+// freed.  Some memory allocated by extension modules may not be freed.  Some
+// extensions may not work properly if their initialization routine is called more
+// than once; this can happen if an application calls :c:func:`Py_Initialize` and
+// :c:func:`Py_FinalizeEx` more than once.
 //
 // .. audit-event:: cpython._PySys_ClearAuditHooks "" c.Py_FinalizeEx
 //
@@ -126,110 +108,47 @@ func FinalizeEx() Int
 // This is a backwards-compatible version of :c:func:`Py_FinalizeEx` that
 // disregards the return value.
 //
-//go:linkname Finalize Py_Finalize
-func Finalize()
-
-// int Py_BytesMain(int argc, char **argv)
-// Similar to :c:func:`Py_Main` but *argv* is an array of bytes strings,
-// allowing the calling application to delegate the text decoding step to
-// the CPython runtime.
-//
-//go:linkname BytesMain Py_BytesMain
-func BytesMain(argc Int, argv **Char) Int
-
-// int Py_Main(int argc, wchar_t **argv)
-// The main program for the standard interpreter, encapsulating a full
-// initialization/finalization cycle, as well as additional
-// behaviour to implement reading configurations settings from the environment
-// and command line, and then executing “__main__“ in accordance with
-// :ref:`using-on-cmdline`.
-//
-// This is made available for programs which wish to support the full CPython
-// command line interface, rather than just embedding a Python runtime in a
-// larger application.
-//
-// The *argc* and *argv* parameters are similar to those which are passed to a
-// C program's :c:func:`main` function, except that the *argv* entries are first
-// converted to “wchar_t“ using :c:func:`Py_DecodeLocale`. It is also
-// important to note that the argument list entries may be modified to point to
-// strings other than those passed in (however, the contents of the strings
-// pointed to by the argument list are not modified).
-//
-// The return value will be “0“ if the interpreter exits normally (i.e.,
-// without an exception), “1“ if the interpreter exits due to an exception,
-// or “2“ if the argument list does not represent a valid Python command
-// line.
-//
-// Note that if an otherwise unhandled :exc:`SystemExit` is raised, this
-// function will not return “1“, but exit the process, as long as
-// “Py_InspectFlag“ is not set. If “Py_InspectFlag“ is set, execution will
-// drop into the interactive Python prompt, at which point a second otherwise
-// unhandled :exc:`SystemExit` will still exit the process, while any other
-// means of exiting will set the return value as described above.
-//
-// In terms of the CPython runtime configuration APIs documented in the
-// :ref:`runtime configuration <init-config>` section (and without accounting
-// for error handling), “Py_Main“ is approximately equivalent to::
-//
-// PyConfig config;
-// PyConfig_InitPythonConfig(&config);
-// PyConfig_SetArgv(&config, argc, argv);
-// Py_InitializeFromConfig(&config);
-// PyConfig_Clear(&config);
-//
-// Py_RunMain();
-//
-// In normal usage, an embedding application will call this function
-// *instead* of calling :c:func:`Py_Initialize`, :c:func:`Py_InitializeEx` or
-// :c:func:`Py_InitializeFromConfig` directly, and all settings will be applied
-// as described elsewhere in this documentation. If this function is instead
-// called *after* a preceding runtime initialization API call, then exactly
-// which environmental and command line configuration settings will be updated
-// is version dependent (as it depends on which settings correctly support
-// being modified after they have already been set once when the runtime was
-// first initialized).
-//
-//go:linkname Main Py_Main
-func Main(argc Int, argv **Wchar) Int
-
-// int Py_RunMain(void)
-// Executes the main module in a fully configured CPython runtime.
-//
-// Executes the command (:c:member:`PyConfig.run_command`), the script
-// (:c:member:`PyConfig.run_filename`) or the module
-// (:c:member:`PyConfig.run_module`) specified on the command line or in the
-// configuration. If none of these values are set, runs the interactive Python
-// prompt (REPL) using the “__main__“ module's global namespace.
-//
-// If :c:member:`PyConfig.inspect` is not set (the default), the return value
-// will be “0“ if the interpreter exits normally (that is, without raising
-// an exception), or “1“ if the interpreter exits due to an exception. If an
-// otherwise unhandled :exc:`SystemExit` is raised, the function will immediately
-// exit the process instead of returning “1“.
-//
-// If :c:member:`PyConfig.inspect` is set (such as when the :option:`-i` option
-// is used), rather than returning when the interpreter exits, execution will
-// instead resume in an interactive Python prompt (REPL) using the “__main__“
-// module's global namespace. If the interpreter exited with an exception, it
-// is immediately raised in the REPL session. The function return value is
-// then determined by the way the *REPL session* terminates: returning “0“
-// if the session terminates without raising an unhandled exception, exiting
-// immediately for an unhandled :exc:`SystemExit`, and returning “1“ for
-// any other unhandled exception.
-//
-// This function always finalizes the Python interpreter regardless of whether
-// it returns a value or immediately exits the process due to an unhandled
-// :exc:`SystemExit` exception.
-//
-// See :ref:`Python Configuration <init-python-config>` for an example of a
-// customized Python that always runs in isolated mode using
-// :c:func:`Py_RunMain`.
-//
 // Process-wide parameters
 // =======================
 //
-//go:linkname RunMain Py_RunMain
-func RunMain() Int
+//go:linkname Finalize Py_Finalize
+func Finalize()
+
+// int Py_SetStandardStreamEncoding(const char *encoding, const char *errors)
+// .. index::
+// single: Py_Initialize()
+// single: main()
+// triple: stdin; stdout; sdterr
+//
+// This API is kept for backward compatibility: setting
+// :c:member:`PyConfig.stdio_encoding` and :c:member:`PyConfig.stdio_errors`
+// should be used instead, see :ref:`Python Initialization Configuration
+// <init-config>`.
+//
+// This function should be called before :c:func:`Py_Initialize`, if it is
+// called at all. It specifies which encoding and error handling to use
+// with standard IO, with the same meanings as in :func:`str.encode`.
+//
+// It overrides :envvar:`PYTHONIOENCODING` values, and allows embedding code
+// to control IO encoding when the environment variable does not work.
+//
+// *encoding* and/or *errors* may be “NULL“ to use
+// :envvar:`PYTHONIOENCODING` and/or default values (depending on other
+// settings).
+//
+// Note that :data:`sys.stderr` always uses the "backslashreplace" error
+// handler, regardless of this (or any other) setting.
+//
+// If :c:func:`Py_FinalizeEx` is called, this function will need to be called
+// again in order to affect subsequent calls to :c:func:`Py_Initialize`.
+//
+// Returns “0“ if successful, a nonzero value on error (e.g. calling after the
+// interpreter has already been initialized).
+//
+// .. deprecated:: 3.11
+//
+//go:linkname SetStandardStreamEncoding Py_SetStandardStreamEncoding
+func SetStandardStreamEncoding(encoding *Char, errors *Char) Int
 
 // void Py_SetProgramName(const wchar_t *name)
 // .. index::
@@ -253,7 +172,7 @@ func RunMain() Int
 // interpreter will change the contents of this storage.
 //
 // Use :c:func:`Py_DecodeLocale` to decode a bytes string to get a
-// :c:expr:`wchar_*` string.
+// :c:expr:`wchar_t *` string.
 //
 // .. deprecated:: 3.11
 //
@@ -261,7 +180,9 @@ func RunMain() Int
 func SetProgramName(name *Wchar)
 
 // wchar_t* Py_GetProgramName()
-// Return the program name set with :c:member:`PyConfig.program_name`, or the default.
+// .. index:: single: Py_SetProgramName()
+//
+// Return the program name set with :c:func:`Py_SetProgramName`, or the default.
 // The returned string points into static storage; the caller should not modify its
 // value.
 //
@@ -270,16 +191,13 @@ func SetProgramName(name *Wchar)
 //
 // It now returns “NULL“ if called before :c:func:`Py_Initialize`.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Get :data:`sys.executable` instead.
-//
 //go:linkname GetProgramName Py_GetProgramName
 func GetProgramName() *Wchar
 
 // wchar_t* Py_GetPrefix()
 // Return the *prefix* for installed platform-independent files. This is derived
 // through a number of complicated rules from the program name set with
-// :c:member:`PyConfig.program_name` and some environment variables; for example, if the
+// :c:func:`Py_SetProgramName` and some environment variables; for example, if the
 // program name is “'/usr/local/bin/python'“, the prefix is “'/usr/local'“. The
 // returned string points into static storage; the caller should not modify its
 // value.  This corresponds to the :makevar:`prefix` variable in the top-level
@@ -292,16 +210,13 @@ func GetProgramName() *Wchar
 //
 // It now returns “NULL“ if called before :c:func:`Py_Initialize`.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Get :data:`sys.prefix` instead.
-//
 //go:linkname GetPrefix Py_GetPrefix
 func GetPrefix() *Wchar
 
 // wchar_t* Py_GetExecPrefix()
 // Return the *exec-prefix* for installed platform-*dependent* files.  This is
 // derived through a number of complicated rules from the program name set with
-// :c:member:`PyConfig.program_name` and some environment variables; for example, if the
+// :c:func:`Py_SetProgramName` and some environment variables; for example, if the
 // program name is “'/usr/local/bin/python'“, the exec-prefix is
 // “'/usr/local'“.  The returned string points into static storage; the caller
 // should not modify its value.  This corresponds to the :makevar:`exec_prefix`
@@ -336,19 +251,17 @@ func GetPrefix() *Wchar
 //
 // It now returns “NULL“ if called before :c:func:`Py_Initialize`.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Get :data:`sys.exec_prefix` instead.
-//
 //go:linkname GetExecPrefix Py_GetExecPrefix
 func GetExecPrefix() *Wchar
 
 // wchar_t* Py_GetProgramFullPath()
 // .. index::
+// single: Py_SetProgramName()
 // single: executable (in module sys)
 //
 // Return the full program name of the Python executable; this is  computed as a
 // side-effect of deriving the default module search path  from the program name
-// (set by :c:member:`PyConfig.program_name`). The returned string points into
+// (set by :c:func:`Py_SetProgramName` above). The returned string points into
 // static storage; the caller should not modify its value.  The value is available
 // to Python code as “sys.executable“.
 //
@@ -357,9 +270,6 @@ func GetExecPrefix() *Wchar
 //
 // It now returns “NULL“ if called before :c:func:`Py_Initialize`.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Get :data:`sys.executable` instead.
-//
 //go:linkname GetProgramFullPath Py_GetProgramFullPath
 func GetProgramFullPath() *Wchar
 
@@ -367,9 +277,10 @@ func GetProgramFullPath() *Wchar
 // .. index::
 // triple: module; search; path
 // single: path (in module sys)
+// single: Py_SetPath()
 //
 // Return the default module search path; this is computed from the program name
-// (set by :c:member:`PyConfig.program_name`) and some environment variables.
+// (set by :c:func:`Py_SetProgramName` above) and some environment variables.
 // The returned string consists of a series of directory names separated by a
 // platform dependent delimiter character.  The delimiter character is “':'“
 // on Unix and macOS, “';'“ on Windows.  The returned string points into
@@ -385,11 +296,46 @@ func GetProgramFullPath() *Wchar
 //
 // It now returns “NULL“ if called before :c:func:`Py_Initialize`.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Get :data:`sys.path` instead.
-//
 //go:linkname GetPath Py_GetPath
 func GetPath() *Wchar
+
+// void Py_SetPath(const wchar_t *)
+// .. index::
+// triple: module; search; path
+// single: path (in module sys)
+// single: Py_GetPath()
+//
+// This API is kept for backward compatibility: setting
+// :c:member:`PyConfig.module_search_paths` and
+// :c:member:`PyConfig.module_search_paths_set` should be used instead, see
+// :ref:`Python Initialization Configuration <init-config>`.
+//
+// Set the default module search path.  If this function is called before
+// :c:func:`Py_Initialize`, then :c:func:`Py_GetPath` won't attempt to compute a
+// default search path but uses the one provided instead.  This is useful if
+// Python is embedded by an application that has full knowledge of the location
+// of all modules.  The path components should be separated by the platform
+// dependent delimiter character, which is “':'“ on Unix and macOS, “';'“
+// on Windows.
+//
+// This also causes :data:`sys.executable` to be set to the program
+// full path (see :c:func:`Py_GetProgramFullPath`) and for :data:`sys.prefix` and
+// :data:`sys.exec_prefix` to be empty.  It is up to the caller to modify these
+// if required after calling :c:func:`Py_Initialize`.
+//
+// Use :c:func:`Py_DecodeLocale` to decode a bytes string to get a
+// :c:expr:`wchar_*` string.
+//
+// The path argument is copied internally, so the caller may free it after the
+// call completes.
+//
+// The program full path is now used for :data:`sys.executable`, instead
+// of the program name.
+//
+// .. deprecated:: 3.11
+//
+//go:linkname SetPath Py_SetPath
+func SetPath(*Wchar)
 
 // const char* Py_GetVersion()
 // Return the version of this Python interpreter.  This is a string that looks
@@ -566,18 +512,14 @@ func SysSetArgv(argc Int, argv **Wchar)
 func SetPythonHome(home *Wchar)
 
 // wchar_t* Py_GetPythonHome()
-// Return the default "home", that is, the value set by
-// :c:member:`PyConfig.home`, or the value of the :envvar:`PYTHONHOME`
+// Return the default "home", that is, the value set by a previous call to
+// :c:func:`Py_SetPythonHome`, or the value of the :envvar:`PYTHONHOME`
 // environment variable if it is set.
 //
 // This function should not be called before :c:func:`Py_Initialize`, otherwise
 // it returns “NULL“.
 //
 // It now returns “NULL“ if called before :c:func:`Py_Initialize`.
-//
-// .. deprecated-removed:: 3.13 3.15
-// Get :c:member:`PyConfig.home` or :envvar:`PYTHONHOME` environment
-// variable instead.
 //
 // .. _threads:
 //
@@ -745,37 +687,6 @@ func SetPythonHome(home *Wchar)
 // The only exception is if :c:func:`exec` will be called immediately
 // after.
 //
-// .. _cautions-regarding-runtime-finalization:
-//
-// Cautions regarding runtime finalization
-// ---------------------------------------
-//
-// In the late stage of :term:`interpreter shutdown`, after attempting to wait for
-// non-daemon threads to exit (though this can be interrupted by
-// :class:`KeyboardInterrupt`) and running the :mod:`atexit` functions, the runtime
-// is marked as *finalizing*: :c:func:`_Py_IsFinalizing` and
-// :func:`sys.is_finalizing` return true.  At this point, only the *finalization
-// thread* that initiated finalization (typically the main thread) is allowed to
-// acquire the :term:`GIL`.
-//
-// If any thread, other than the finalization thread, attempts to acquire the GIL
-// during finalization, either explicitly via :c:func:`PyGILState_Ensure`,
-// :c:macro:`Py_END_ALLOW_THREADS`, :c:func:`PyEval_AcquireThread`, or
-// :c:func:`PyEval_AcquireLock`, or implicitly when the interpreter attempts to
-// reacquire it after having yielded it, the thread enters **a permanently blocked
-// state** where it remains until the program exits.  In most cases this is
-// harmless, but this can result in deadlock if a later stage of finalization
-// attempts to acquire a lock owned by the blocked thread, or otherwise waits on
-// the blocked thread.
-//
-// Gross? Yes. This prevents random crashes and/or unexpectedly skipped C++
-// finalizations further up the call stack when such threads were forcibly exited
-// here in CPython 3.13 and earlier. The CPython runtime GIL acquiring C APIs
-// have never had any error reporting or handling expectations at GIL acquisition
-// time that would've allowed for graceful exit from this situation. Changing that
-// would require new stable C APIs and rewriting the majority of C code in the
-// CPython ecosystem to use those with error handling.
-//
 // High-level API
 // --------------
 //
@@ -810,6 +721,18 @@ func GetPythonHome() *Wchar
 //go:linkname EvalInitThreads PyEval_InitThreads
 func EvalInitThreads()
 
+// int PyEval_ThreadsInitialized()
+// Returns a non-zero value if :c:func:`PyEval_InitThreads` has been called.  This
+// function can be called without holding the GIL, and therefore can be used to
+// avoid calls to the locking API when running single-threaded.
+//
+// The :term:`GIL` is now initialized by :c:func:`Py_Initialize()`.
+//
+// .. deprecated:: 3.9
+//
+//go:linkname EvalThreadsInitialized PyEval_ThreadsInitialized
+func EvalThreadsInitialized() Int
+
 // PyThreadState* PyEval_SaveThread()
 // Release the global interpreter lock (if it has been created) and reset the
 // thread state to “NULL“, returning the previous thread state (which is not
@@ -826,13 +749,11 @@ func EvalSaveThread() *ThreadState
 // ensues.
 //
 // .. note::
-// Calling this function from a thread when the runtime is finalizing will
-// hang the thread until the program exits, even if the thread was not
-// created by Python.  Refer to
-// :ref:`cautions-regarding-runtime-finalization` for more details.
-//
-// Hangs the current thread, rather than terminating it, if called while the
-// interpreter is finalizing.
+// Calling this function from a thread when the runtime is finalizing
+// will terminate the thread, even if the thread was not created by Python.
+// You can use :c:func:`!_Py_IsFinalizing` or :func:`sys.is_finalizing` to
+// check if the interpreter is in process of being finalized before calling
+// this function to avoid unwanted termination.
 //
 //go:linkname EvalRestoreThread PyEval_RestoreThread
 func EvalRestoreThread(tstate *ThreadState)
@@ -841,8 +762,6 @@ func EvalRestoreThread(tstate *ThreadState)
 // Return the current thread state.  The global interpreter lock must be held.
 // When the current thread state is “NULL“, this issues a fatal error (so that
 // the caller needn't check for “NULL“).
-//
-// See also :c:func:`PyThreadState_GetUnchecked`.
 //
 //go:linkname ThreadStateGet PyThreadState_Get
 func ThreadStateGet() *ThreadState
@@ -880,13 +799,11 @@ func ThreadStateSwap(tstate *ThreadState) *ThreadState
 // to call arbitrary Python code.  Failure is a fatal error.
 //
 // .. note::
-// Calling this function from a thread when the runtime is finalizing will
-// hang the thread until the program exits, even if the thread was not
-// created by Python.  Refer to
-// :ref:`cautions-regarding-runtime-finalization` for more details.
-//
-// Hangs the current thread, rather than terminating it, if called while the
-// interpreter is finalizing.
+// Calling this function from a thread when the runtime is finalizing
+// will terminate the thread, even if the thread was not created by Python.
+// You can use :c:func:`!_Py_IsFinalizing` or :func:`sys.is_finalizing` to
+// check if the interpreter is in process of being finalized before calling
+// this function to avoid unwanted termination.
 //
 //go:linkname GILStateEnsure PyGILState_Ensure
 func GILStateEnsure() GILStateSTATE
@@ -1115,17 +1032,15 @@ func ThreadStateSetAsyncExc(id Ulong, exc *Object) Int
 // If this thread already has the lock, deadlock ensues.
 //
 // .. note::
-// Calling this function from a thread when the runtime is finalizing will
-// hang the thread until the program exits, even if the thread was not
-// created by Python.  Refer to
-// :ref:`cautions-regarding-runtime-finalization` for more details.
+// Calling this function from a thread when the runtime is finalizing
+// will terminate the thread, even if the thread was not created by Python.
+// You can use :c:func:`!_Py_IsFinalizing` or :func:`sys.is_finalizing` to
+// check if the interpreter is in process of being finalized before calling
+// this function to avoid unwanted termination.
 //
 // Updated to be consistent with :c:func:`PyEval_RestoreThread`,
 // :c:func:`Py_END_ALLOW_THREADS`, and :c:func:`PyGILState_Ensure`,
 // and terminate the current thread if called while the interpreter is finalizing.
-//
-// Hangs the current thread, rather than terminating it, if called while the
-// interpreter is finalizing.
 //
 // :c:func:`PyEval_RestoreThread` is a higher-level function which is always
 // available (even when threads have not been initialized).
@@ -1142,6 +1057,40 @@ func EvalAcquireThread(tstate *ThreadState)
 //
 // :c:func:`PyEval_SaveThread` is a higher-level function which is always
 // available (even when threads have not been initialized).
+//
+//go:linkname EvalReleaseThread PyEval_ReleaseThread
+func EvalReleaseThread(tstate *ThreadState)
+
+// void PyEval_AcquireLock()
+// Acquire the global interpreter lock.  The lock must have been created earlier.
+// If this thread already has the lock, a deadlock ensues.
+//
+// .. deprecated:: 3.2
+// This function does not update the current thread state.  Please use
+// :c:func:`PyEval_RestoreThread` or :c:func:`PyEval_AcquireThread`
+// instead.
+//
+// .. note::
+// Calling this function from a thread when the runtime is finalizing
+// will terminate the thread, even if the thread was not created by Python.
+// You can use :c:func:`_Py_IsFinalizing` or :func:`sys.is_finalizing` to
+// check if the interpreter is in process of being finalized before calling
+// this function to avoid unwanted termination.
+//
+// Updated to be consistent with :c:func:`PyEval_RestoreThread`,
+// :c:func:`Py_END_ALLOW_THREADS`, and :c:func:`PyGILState_Ensure`,
+// and terminate the current thread if called while the interpreter is finalizing.
+//
+//go:linkname EvalAcquireLock PyEval_AcquireLock
+func EvalAcquireLock()
+
+// void PyEval_ReleaseLock()
+// Release the global interpreter lock.  The lock must have been created earlier.
+//
+// .. deprecated:: 3.2
+// This function does not update the current thread state.  Please use
+// :c:func:`PyEval_SaveThread` or :c:func:`PyEval_ReleaseThread`
+// instead.
 //
 // .. _sub-interpreter-support:
 //
@@ -1163,8 +1112,8 @@ func EvalAcquireThread(tstate *ThreadState)
 // You can switch between sub-interpreters using the :c:func:`PyThreadState_Swap`
 // function. You can create and destroy them using the following functions:
 //
-//go:linkname EvalReleaseThread PyEval_ReleaseThread
-func EvalReleaseThread(tstate *ThreadState)
+//go:linkname EvalReleaseLock PyEval_ReleaseLock
+func EvalReleaseLock()
 
 // PyStatus Py_NewInterpreterFromConfig(PyThreadState **tstate_p, const PyInterpreterConfig *config)
 // .. index::
@@ -1313,7 +1262,7 @@ func NewInterpreter() *ThreadState
 // because of the refcount.  One simple but less-efficient approach around
 // this is to use a global lock around all use of some state (or object).
 // Alternately, effectively immutable objects (like integers or strings)
-// can be made safe in spite of their refcounts by making them :term:`immortal`.
+// can be made safe in spite of their refcounts by making them "immortal".
 // In fact, this has been done for the builtin singletons, small integers,
 // and a number of other builtin objects.
 //
@@ -1468,6 +1417,27 @@ func EvalSetProfileAllThreads(func_ Tracefunc, obj *Object)
 //
 //go:linkname EvalSetTrace PyEval_SetTrace
 func EvalSetTrace(func_ Tracefunc, obj *Object)
+
+// void PyEval_SetTraceAllThreads(Py_tracefunc func, PyObject *obj)
+// Like :c:func:`PyEval_SetTrace` but sets the tracing function in all running threads
+// belonging to the current interpreter instead of the setting it only on the current thread.
+//
+// The caller must hold the :term:`GIL`.
+//
+// As :c:func:`PyEval_SetTrace`, this function ignores any exceptions raised while
+// setting the trace functions in all threads.
+//
+// .. _advanced-debugging:
+//
+// Advanced Debugger Support
+// =========================
+//
+// .. sectionauthor:: Fred L. Drake, Jr. <fdrake@acm.org>
+//
+// These functions are only intended to be used by advanced debugging tools.
+//
+//go:linkname EvalSetTraceAllThreads PyEval_SetTraceAllThreads
+func EvalSetTraceAllThreads(func_ Tracefunc, obj *Object)
 
 // PyInterpreterState* PyInterpreterState_Head()
 // Return the interpreter state object at the head of the list of all such objects.
@@ -1660,10 +1630,7 @@ func ThreadGetKeyValue(key Int) Pointer
 func ThreadDeleteKeyValue(key Int)
 
 // void PyThread_ReInitTLS()
-// Synchronization Primitives
-// ==========================
-//
-// The C-API provides a basic mutual exclusion lock.
+
 //
 //go:linkname ThreadReInitTLS PyThread_ReInitTLS
 func ThreadReInitTLS()
@@ -1758,7 +1725,7 @@ type TssT = C.Py_tss_t
 //
 // Set by the :option:`-b` option.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func BytesWarningFlag() Int {
 	return Int(C.Py_BytesWarningFlag)
 }
@@ -1774,7 +1741,7 @@ func BytesWarningFlag() Int {
 // Set by the :option:`-d` option and the :envvar:`PYTHONDEBUG` environment
 // variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func DebugFlag() Int {
 	return Int(C.Py_DebugFlag)
 }
@@ -1790,7 +1757,7 @@ func DebugFlag() Int {
 // Set by the :option:`-B` option and the :envvar:`PYTHONDONTWRITEBYTECODE`
 // environment variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func DontWriteBytecodeFlag() Int {
 	return Int(C.Py_DontWriteBytecodeFlag)
 }
@@ -1805,7 +1772,7 @@ func DontWriteBytecodeFlag() Int {
 //
 // Private flag used by “_freeze_module“ and “frozenmain“ programs.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func FrozenFlag() Int {
 	return Int(C.Py_FrozenFlag)
 }
@@ -1822,7 +1789,7 @@ func FrozenFlag() Int {
 // If the flag is non-zero, read the :envvar:`PYTHONHASHSEED` environment
 // variable to initialize the secret hash seed.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func HashRandomizationFlag() Int {
 	return Int(C.Py_HashRandomizationFlag)
 }
@@ -1837,7 +1804,7 @@ func HashRandomizationFlag() Int {
 //
 // Set by the :option:`-E` and :option:`-I` options.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func IgnoreEnvironmentFlag() Int {
 	return Int(C.Py_IgnoreEnvironmentFlag)
 }
@@ -1854,7 +1821,7 @@ func IgnoreEnvironmentFlag() Int {
 // Set by the :option:`-i` option and the :envvar:`PYTHONINSPECT` environment
 // variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func InspectFlag() Int {
 	return Int(C.Py_InspectFlag)
 }
@@ -1881,7 +1848,7 @@ func InteractiveFlag() Int {
 //
 // Set by the :option:`-I` option.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func IsolatedFlag() Int {
 	return Int(C.Py_IsolatedFlag)
 }
@@ -1898,7 +1865,7 @@ func IsolatedFlag() Int {
 //
 // Set by the :option:`-S` option.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func NoSiteFlag() Int {
 	return Int(C.Py_NoSiteFlag)
 }
@@ -1914,7 +1881,7 @@ func NoSiteFlag() Int {
 // Set by the :option:`-s` and :option:`-I` options, and the
 // :envvar:`PYTHONNOUSERSITE` environment variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func NoUserSiteDirectory() Int {
 	return Int(C.Py_NoUserSiteDirectory)
 }
@@ -1927,7 +1894,7 @@ func NoUserSiteDirectory() Int {
 // Set by the :option:`-O` option and the :envvar:`PYTHONOPTIMIZE` environment
 // variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func OptimizeFlag() Int {
 	return Int(C.Py_OptimizeFlag)
 }
@@ -1941,7 +1908,7 @@ func OptimizeFlag() Int {
 //
 // Set by the :option:`-q` option.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func QuietFlag() Int {
 	return Int(C.Py_QuietFlag)
 }
@@ -1956,7 +1923,7 @@ func QuietFlag() Int {
 // Set by the :option:`-u` option and the :envvar:`PYTHONUNBUFFERED`
 // environment variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 func UnbufferedStdioFlag() Int {
 	return Int(C.Py_UnbufferedStdioFlag)
 }
@@ -1974,7 +1941,7 @@ func UnbufferedStdioFlag() Int {
 // Set by the :option:`-v` option and the :envvar:`PYTHONVERBOSE` environment
 // variable.
 //
-// .. deprecated-removed:: 3.12 3.14
+// .. deprecated:: 3.12
 //
 // Initializing and finalizing the interpreter
 // ===========================================

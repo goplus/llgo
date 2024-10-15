@@ -16,22 +16,16 @@ import (
 func CodeCheck(co *Object) Int
 
 // Py_ssize_t PyCode_GetNumFree(PyCodeObject *co)
-// Return the number of :term:`free (closure) variables <closure variable>`
-// in a code object.
+// Return the number of free variables in a code object.
 //
 //go:linkname CodeGetNumFree PyCode_GetNumFree
 func CodeGetNumFree(co *CodeObject) SSizeT
 
-// int PyUnstable_Code_GetFirstFree(PyCodeObject *co)
-// Return the position of the first :term:`free (closure) variable <closure variable>`
-// in a code object.
+// int PyCode_GetFirstFree(PyCodeObject *co)
+// Return the position of the first free variable in a code object.
 //
-// Renamed from “PyCode_GetFirstFree“ as part of :ref:`unstable-c-api`.
-// The old name is deprecated, but will remain available until the
-// signature changes again.
-//
-//go:linkname UnstableCodeGetFirstFree PyUnstable_Code_GetFirstFree
-func UnstableCodeGetFirstFree(co *CodeObject) Int
+//go:linkname CodeGetFirstFree PyCode_GetFirstFree
+func CodeGetFirstFree(co *CodeObject) Int
 
 // PyCodeObject* PyUnstable_Code_New(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, PyObject *code, PyObject *consts, PyObject *names, PyObject *varnames, PyObject *freevars, PyObject *cellvars, PyObject *filename, PyObject *name, PyObject *qualname, int firstlineno, PyObject *linetable, PyObject *exceptiontable)
 // Return a new code object.  If you need a dummy code object to create a frame,
@@ -132,8 +126,7 @@ func CodeGetCellvars(co *CodeObject) *Object
 // PyObject* PyCode_GetFreevars(PyCodeObject *co)
 // Equivalent to the Python code “getattr(co, 'co_freevars')“.
 // Returns a new reference to a :c:type:`PyTupleObject` containing the names of
-// the :term:`free (closure) variables <closure variable>`. On error, “NULL“ is returned
-// and an exception is raised.
+// the free variables. On error, “NULL“ is returned and an exception is raised.
 //
 //go:linkname CodeGetFreevars PyCode_GetFreevars
 func CodeGetFreevars(co *CodeObject) *Object

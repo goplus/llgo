@@ -993,7 +993,6 @@ func ReprEnter(object *Object) Int
 // single: PyExc_OverflowError (C var)
 // single: PyExc_PermissionError (C var)
 // single: PyExc_ProcessLookupError (C var)
-// single: PyExc_PythonFinalizationError (C var)
 // single: PyExc_RecursionError (C var)
 // single: PyExc_ReferenceError (C var)
 // single: PyExc_RuntimeError (C var)
@@ -1085,8 +1084,6 @@ func ReprEnter(object *Object) Int
 // | :c:data:`PyExc_PermissionError`         | :exc:`PermissionError`          |          |
 // +-----------------------------------------+---------------------------------+----------+
 // | :c:data:`PyExc_ProcessLookupError`      | :exc:`ProcessLookupError`       |          |
-// +-----------------------------------------+---------------------------------+----------+
-// | :c:data:`PyExc_PythonFinalizationError` | :exc:`PythonFinalizationError`  |          |
 // +-----------------------------------------+---------------------------------+----------+
 // | :c:data:`PyExc_RecursionError`          | :exc:`RecursionError`           |          |
 // +-----------------------------------------+---------------------------------+----------+

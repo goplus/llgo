@@ -86,9 +86,9 @@ func LongFromDouble(v Double) *Object
 // ignored.  If there are no digits or *str* is not NULL-terminated following the
 // digits and trailing whitespace, :exc:`ValueError` will be raised.
 //
-// .. seealso:: :c:func:`PyLong_AsNativeBytes()` and
-// :c:func:`PyLong_FromNativeBytes()` functions can be used to convert
-// a :c:type:`PyLongObject` to/from an array of bytes in base “256“.
+// .. seealso:: Python methods :meth:`int.to_bytes` and :meth:`int.from_bytes`
+// to convert a :c:type:`PyLongObject` to/from an array of bytes in base
+// “256“. You can call those from C using :c:func:`PyObject_CallMethod`.
 //
 //go:linkname LongFromString PyLong_FromString
 func LongFromString(str *Char, pend **Char, base Int) *Object
@@ -103,6 +103,8 @@ func LongFromUnicodeObject(u *Object, base Int) *Object
 // PyObject* PyLong_FromVoidPtr(void *p)
 // Create a Python integer from the pointer *p*. The pointer value can be
 // retrieved from the resulting value using :c:func:`PyLong_AsVoidPtr`.
+//
+// .. XXX alias PyLong_AS_LONG (for now)
 //
 //go:linkname LongFromVoidPtr PyLong_FromVoidPtr
 func LongFromVoidPtr(p Pointer) *Object
@@ -127,17 +129,6 @@ func LongFromVoidPtr(p Pointer) *Object
 //
 //go:linkname LongAsLong PyLong_AsLong
 func LongAsLong(obj *Object) Long
-
-// long PyLong_AS_LONG(PyObject *obj)
-// A :term:`soft deprecated` alias.
-// Exactly equivalent to the preferred “PyLong_AsLong“. In particular,
-// it can fail with :exc:`OverflowError` or another exception.
-//
-// .. deprecated:: 3.14
-// The function is soft deprecated.
-//
-//go:linkname LongASLONG PyLong_AS_LONG
-func LongASLONG(obj *Object) Long
 
 // long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow)
 // Return a C :c:expr:`long` representation of *obj*.  If *obj* is not an
@@ -325,114 +316,6 @@ func LongAsDouble(pylong *Object) Double
 //go:linkname LongAsVoidPtr PyLong_AsVoidPtr
 func LongAsVoidPtr(pylong *Object) Pointer
 
-// Py_ssize_t PyLong_AsNativeBytes(PyObject *pylong, void* buffer, Py_ssize_t n_bytes, int flags)
-// Copy the Python integer value *pylong* to a native *buffer* of size
-// *n_bytes*. The *flags* can be set to “-1“ to behave similarly to a C cast,
-// or to values documented below to control the behavior.
-//
-// Returns “-1“ with an exception raised on error.  This may happen if
-// *pylong* cannot be interpreted as an integer, or if *pylong* was negative
-// and the “Py_ASNATIVEBYTES_REJECT_NEGATIVE“ flag was set.
-//
-// Otherwise, returns the number of bytes required to store the value.
-// If this is equal to or less than *n_bytes*, the entire value was copied.
-// All *n_bytes* of the buffer are written: large buffers are padded with
-// zeroes.
-//
-// If the returned value is greater than than *n_bytes*, the value was
-// truncated: as many of the lowest bits of the value as could fit are written,
-// and the higher bits are ignored. This matches the typical behavior
-// of a C-style downcast.
-//
-// .. note::
-//
-// Overflow is not considered an error. If the returned value
-// is larger than *n_bytes*, most significant bits were discarded.
-//
-// “0“ will never be returned.
-//
-// Values are always copied as two's-complement.
-//
-// Usage example::
-//
-// int32_t value;
-// Py_ssize_t bytes = PyLong_AsNativeBytes(pylong, &value, sizeof(value), -1);
-// if (bytes < 0) {
-// // Failed. A Python exception was set with the reason.
-// return NULL;
-// }
-// else if (bytes <= (Py_ssize_t)sizeof(value)) {
-// // Success!
-// }
-// else {
-// // Overflow occurred, but 'value' contains the truncated
-// // lowest bits of pylong.
-// }
-//
-// Passing zero to *n_bytes* will return the size of a buffer that would
-// be large enough to hold the value. This may be larger than technically
-// necessary, but not unreasonably so. If *n_bytes=0*, *buffer* may be
-// “NULL“.
-//
-// .. note::
-//
-// Passing *n_bytes=0* to this function is not an accurate way to determine
-// the bit length of the value.
-//
-// To get at the entire Python value of an unknown size, the function can be
-// called twice: first to determine the buffer size, then to fill it::
-//
-// // Ask how much space we need.
-// Py_ssize_t expected = PyLong_AsNativeBytes(pylong, NULL, 0, -1);
-// if (expected < 0) {
-// // Failed. A Python exception was set with the reason.
-// return NULL;
-// }
-// assert(expected != 0);  // Impossible per the API definition.
-// uint8_t *bignum = malloc(expected);
-// if (!bignum) {
-// PyErr_SetString(PyExc_MemoryError, "bignum malloc failed.");
-// return NULL;
-// }
-// // Safely get the entire value.
-// Py_ssize_t bytes = PyLong_AsNativeBytes(pylong, bignum, expected, -1);
-// if (bytes < 0) {  // Exception has been set.
-// free(bignum);
-// return NULL;
-// }
-// else if (bytes > expected) {  // This should not be possible.
-// PyErr_SetString(PyExc_RuntimeError,
-// "Unexpected bignum truncation after a size check.");
-// free(bignum);
-// return NULL;
-// }
-// // The expected success given the above pre-check.
-// // ... use bignum ...
-// free(bignum);
-//
-// *flags* is either “-1“ (“Py_ASNATIVEBYTES_DEFAULTS“) to select defaults
-// that behave most like a C cast, or a combintation of the other flags in
-// the table below.
-// Note that “-1“ cannot be combined with other flags.
-//
-// Currently, “-1“ corresponds to
-// “Py_ASNATIVEBYTES_NATIVE_ENDIAN | Py_ASNATIVEBYTES_UNSIGNED_BUFFER“.
-//
-//go:linkname LongAsNativeBytes PyLong_AsNativeBytes
-func LongAsNativeBytes(pylong *Object, buffer Pointer, nBytes SSizeT, flags Int) SSizeT
-
-// int PyLong_GetSign(PyObject *obj, int *sign)
-// Get the sign of the integer object *obj*.
-//
-// On success, set *\*sign* to the integer sign  (0, -1 or +1 for zero, negative or
-// positive integer, respectively) and return 0.
-//
-// On failure, return -1 with an exception set.  This function always succeeds
-// if *obj* is a :c:type:`PyLongObject` or its subtype.
-//
-//go:linkname LongGetSign PyLong_GetSign
-func LongGetSign(obj *Object, sign *Int) Int
-
 // PyObject* PyLong_GetInfo(void)
 // On success, return a read only :term:`named tuple`, that holds
 // information about Python's internal representation of integers.
@@ -450,7 +333,7 @@ func LongGetInfo() *Object
 // a “fast path” for small integers. For compact values use
 // :c:func:`PyUnstable_Long_CompactValue`; for others fall back to a
 // :c:func:`PyLong_As* <PyLong_AsSize_t>` function or
-// :c:func:`PyLong_AsNativeBytes`.
+// :c:func:`calling <PyObject_CallMethod>` :meth:`int.to_bytes`.
 //
 // The speedup is expected to be negligible for most users.
 //

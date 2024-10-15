@@ -28,11 +28,9 @@ func ListCheckExact(p *Object) Int
 // .. note::
 //
 // If *len* is greater than zero, the returned list object's items are
-// set to “NULL“. Thus you cannot use abstract API functions such as
-// :c:func:`PySequence_SetItem` or expose the object to Python code before
-// setting all items to a real object with :c:func:`PyList_SetItem` or
-// :c:func:`PyList_SET_ITEM()`. The following APIs are safe APIs before
-// the list is fully initialized: :c:func:`PyList_SetItem()` and :c:func:`PyList_SET_ITEM()`.
+// set to “NULL“.  Thus you cannot use abstract API functions such as
+// :c:func:`PySequence_SetItem`  or expose the object to Python code before
+// setting all items to a real object with :c:func:`PyList_SetItem`.
 //
 //go:linkname ListNew PyList_New
 func ListNew(len SSizeT) *Object
@@ -53,8 +51,10 @@ func ListSize(list *Object) SSizeT
 func ListGETSIZE(list *Object) SSizeT
 
 // PyObject* PyList_GetItem(PyObject *list, Py_ssize_t index)
-// Like :c:func:`PyList_GetItemRef`, but returns a
-// :term:`borrowed reference` instead of a :term:`strong reference`.
+// Return the object at position *index* in the list pointed to by *list*.  The
+// position must be non-negative; indexing from the end of the list is not
+// supported.  If *index* is out of bounds (<0 or >=len(list)),
+// return “NULL“ and set an :exc:`IndexError` exception.
 //
 //go:linkname ListGetItem PyList_GetItem
 func ListGetItem(list *Object, index SSizeT) *Object
@@ -81,10 +81,6 @@ func ListSetItem(list *Object, index SSizeT, item *Object) Int
 // void PyList_SET_ITEM(PyObject *list, Py_ssize_t i, PyObject *o)
 // Macro form of :c:func:`PyList_SetItem` without error checking. This is
 // normally only used to fill in new lists where there is no previous content.
-//
-// Bounds checking is performed as an assertion if Python is built in
-// :ref:`debug mode <debug-build>` or :option:`with assertions
-// <--with-assertions>`.
 //
 // .. note::
 //

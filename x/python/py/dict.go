@@ -91,9 +91,8 @@ func DictDelItem(p *Object, key *Object) Int
 func DictDelItemString(p *Object, key *Char) Int
 
 // PyObject* PyDict_GetItem(PyObject *p, PyObject *key)
-// Return a :term:`borrowed reference` to the object from dictionary *p* which
-// has a key *key*.  Return “NULL“ if the key *key* is missing *without*
-// setting an exception.
+// Return the object from dictionary *p* which has a key *key*.  Return “NULL“
+// if the key *key* is not present, but *without* setting an exception.
 //
 // .. note::
 //
@@ -213,17 +212,6 @@ func DictSize(p *Object) SSizeT
 // }
 // Py_DECREF(o);
 // }
-//
-// The function is not thread-safe in the :term:`free-threaded <free threading>`
-// build without external synchronization.  You can use
-// :c:macro:`Py_BEGIN_CRITICAL_SECTION` to lock the dictionary while iterating
-// over it::
-//
-// Py_BEGIN_CRITICAL_SECTION(self->dict);
-// while (PyDict_Next(self->dict, &pos, &key, &value)) {
-// ...
-// }
-// Py_END_CRITICAL_SECTION();
 //
 //go:linkname DictNext PyDict_Next
 func DictNext(p *Object, ppos *SSizeT, pkey **Object, pvalue **Object) Int

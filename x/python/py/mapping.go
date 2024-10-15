@@ -67,8 +67,7 @@ func MappingDelItemString(o *Object, key *Char) Int
 //
 // Exceptions which occur when this calls :meth:`~object.__getitem__`
 // method are silently ignored.
-// For proper error handling, use :c:func:`PyMapping_HasKeyWithError`,
-// :c:func:`PyMapping_GetOptionalItem` or :c:func:`PyObject_GetItem()` instead.
+// For proper error handling, use :c:func:`PyObject_GetItem()` instead.
 //
 //go:linkname MappingHasKey PyMapping_HasKey
 func MappingHasKey(o *Object, key *Object) Int
@@ -83,9 +82,7 @@ func MappingHasKey(o *Object, key *Object) Int
 // Exceptions that occur when this calls :meth:`~object.__getitem__`
 // method or while creating the temporary :class:`str`
 // object are silently ignored.
-// For proper error handling, use :c:func:`PyMapping_HasKeyStringWithError`,
-// :c:func:`PyMapping_GetOptionalItemString` or
-// :c:func:`PyMapping_GetItemString` instead.
+// For proper error handling, use :c:func:`PyMapping_GetItemString` instead.
 //
 //go:linkname MappingHasKeyString PyMapping_HasKeyString
 func MappingHasKeyString(o *Object, key *Char) Int

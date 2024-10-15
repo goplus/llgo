@@ -8,16 +8,6 @@ import (
 	_ "unsafe"
 )
 
-// PyObject* Py_GetConstant(unsigned int constant_id)
-// Get a :term:`strong reference` to a constant.
-//
-// Set an exception and return “NULL“ if *constant_id* is invalid.
-//
-// *constant_id* must be one of these constant identifiers:
-//
-//go:linkname GetConstant Py_GetConstant
-func GetConstant(constantId Uint) *Object
-
 // int PyObject_Print(PyObject *o, FILE *fp, int flags)
 // Print an object *o*, on file *fp*.  Returns “-1“ on error.  The flags argument
 // is used to enable certain printing options.  The only option currently supported
@@ -28,15 +18,15 @@ func GetConstant(constantId Uint) *Object
 func ObjectPrint(o *Object, fp FilePtr, flags Int) Int
 
 // int PyObject_HasAttr(PyObject *o, PyObject *attr_name)
-// Returns “1“ if *o* has the attribute *attr_name*, and “0“ otherwise.
-// This function always succeeds.
+// Returns “1“ if *o* has the attribute *attr_name*, and “0“ otherwise.  This
+// is equivalent to the Python expression “hasattr(o, attr_name)“.  This function
+// always succeeds.
 //
 // .. note::
 //
 // Exceptions that occur when this calls :meth:`~object.__getattr__` and
 // :meth:`~object.__getattribute__` methods are silently ignored.
-// For proper error handling, use :c:func:`PyObject_HasAttrWithError`,
-// :c:func:`PyObject_GetOptionalAttr` or :c:func:`PyObject_GetAttr` instead.
+// For proper error handling, use :c:func:`PyObject_GetAttr` instead.
 //
 //go:linkname ObjectHasAttr PyObject_HasAttr
 func ObjectHasAttr(o *Object, attrName *Object) Int
@@ -51,9 +41,7 @@ func ObjectHasAttr(o *Object, attrName *Object) Int
 // Exceptions that occur when this calls :meth:`~object.__getattr__` and
 // :meth:`~object.__getattribute__` methods or while creating the temporary
 // :class:`str` object are silently ignored.
-// For proper error handling, use :c:func:`PyObject_HasAttrStringWithError`,
-// :c:func:`PyObject_GetOptionalAttrString`
-// or :c:func:`PyObject_GetAttrString` instead.
+// For proper error handling, use :c:func:`PyObject_GetAttrString` instead.
 //
 //go:linkname ObjectHasAttrString PyObject_HasAttrString
 func ObjectHasAttrString(o *Object, attrName *Char) Int
@@ -63,9 +51,6 @@ func ObjectHasAttrString(o *Object, attrName *Char) Int
 // value on success, or “NULL“ on failure.  This is the equivalent of the Python
 // expression “o.attr_name“.
 //
-// If the missing attribute should not be treated as a failure, you can use
-// :c:func:`PyObject_GetOptionalAttr` instead.
-//
 //go:linkname ObjectGetAttr PyObject_GetAttr
 func ObjectGetAttr(o *Object, attrName *Object) *Object
 
@@ -73,9 +58,6 @@ func ObjectGetAttr(o *Object, attrName *Object) *Object
 // This is the same as :c:func:`PyObject_GetAttr`, but *attr_name* is
 // specified as a :c:expr:`const char*` UTF-8 encoded bytes string,
 // rather than a :c:expr:`PyObject*`.
-//
-// If the missing attribute should not be treated as a failure, you can use
-// :c:func:`PyObject_GetOptionalAttrString` instead.
 //
 //go:linkname ObjectGetAttrString PyObject_GetAttrString
 func ObjectGetAttrString(o *Object, attrName *Char) *Object

@@ -64,6 +64,8 @@ func ContextEnter(ctx *Object) Int
 // current context for the current thread.  Returns “0“ on success,
 // and “-1“ on error.
 //
+// Context variable functions:
+//
 //go:linkname ContextExit PyContext_Exit
 func ContextExit(ctx *Object) Int
 

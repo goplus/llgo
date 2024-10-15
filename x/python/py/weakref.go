@@ -9,20 +9,20 @@ import (
 )
 
 // int PyWeakref_Check(PyObject *ob)
-// Return non-zero if *ob* is either a reference or proxy object.  This function
+// Return true if *ob* is either a reference or proxy object.  This function
 // always succeeds.
 //
 //go:linkname WeakrefCheck PyWeakref_Check
 func WeakrefCheck(ob *Object) Int
 
 // int PyWeakref_CheckRef(PyObject *ob)
-// Return non-zero if *ob* is a reference object.  This function always succeeds.
+// Return true if *ob* is a reference object.  This function always succeeds.
 //
 //go:linkname WeakrefCheckRef PyWeakref_CheckRef
 func WeakrefCheckRef(ob *Object) Int
 
 // int PyWeakref_CheckProxy(PyObject *ob)
-// Return non-zero if *ob* is a proxy object.  This function always succeeds.
+// Return true if *ob* is a proxy object.  This function always succeeds.
 //
 //go:linkname WeakrefCheckProxy PyWeakref_CheckProxy
 func WeakrefCheckProxy(ob *Object) Int
@@ -54,8 +54,8 @@ func WeakrefNewRef(ob *Object, callback *Object) *Object
 func WeakrefNewProxy(ob *Object, callback *Object) *Object
 
 // PyObject* PyWeakref_GetObject(PyObject *ref)
-// Return a :term:`borrowed reference` to the referenced object from a weak
-// reference, *ref*.  If the referent is no longer live, returns “Py_None“.
+// Return the referenced object from a weak reference, *ref*.  If the referent is
+// no longer live, returns “Py_None“.
 //
 // .. note::
 //
@@ -64,17 +64,11 @@ func WeakrefNewProxy(ob *Object, callback *Object) *Object
 // except when it cannot be destroyed before the last usage of the borrowed
 // reference.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Use :c:func:`PyWeakref_GetRef` instead.
-//
 //go:linkname WeakrefGetObject PyWeakref_GetObject
 func WeakrefGetObject(ref *Object) *Object
 
 // PyObject* PyWeakref_GET_OBJECT(PyObject *ref)
 // Similar to :c:func:`PyWeakref_GetObject`, but does no error checking.
-//
-// .. deprecated-removed:: 3.13 3.15
-// Use :c:func:`PyWeakref_GetRef` instead.
 //
 //go:linkname WeakrefGETOBJECT PyWeakref_GET_OBJECT
 func WeakrefGETOBJECT(ref *Object) *Object

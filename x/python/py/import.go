@@ -28,9 +28,6 @@ func ImportImportModule(name *Char) *Object
 // to per-module locks for most purposes, so this function's special
 // behaviour isn't needed anymore.
 //
-// .. deprecated-removed:: 3.13 3.15
-// Use :c:func:`PyImport_ImportModule` instead.
-//
 //go:linkname ImportImportModuleNoBlock PyImport_ImportModuleNoBlock
 func ImportImportModuleNoBlock(name *Char) *Object
 
@@ -94,15 +91,24 @@ func ImportImport(name *Object) *Object
 func ImportReloadModule(m *Object) *Object
 
 // PyObject* PyImport_AddModuleObject(PyObject *name)
-// Similar to :c:func:`PyImport_AddModuleRef`, but return a :term:`borrowed
-// reference` and *name* is a Python :class:`str` object.
+// Return the module object corresponding to a module name.  The *name* argument
+// may be of the form “package.module“. First check the modules dictionary if
+// there's one there, and if not, create a new one and insert it in the modules
+// dictionary. Return “NULL“ with an exception set on failure.
+//
+// .. note::
+//
+// This function does not load or import the module; if the module wasn't already
+// loaded, you will get an empty module object. Use :c:func:`PyImport_ImportModule`
+// or one of its variants to import a module.  Package structures implied by a
+// dotted name for *name* are not created if not already present.
 //
 //go:linkname ImportAddModuleObject PyImport_AddModuleObject
 func ImportAddModuleObject(name *Object) *Object
 
 // PyObject* PyImport_AddModule(const char *name)
-// Similar to :c:func:`PyImport_AddModuleRef`, but return a :term:`borrowed
-// reference`.
+// Similar to :c:func:`PyImport_AddModuleObject`, but the name is a UTF-8
+// encoded string instead of a Unicode object.
 //
 //go:linkname ImportAddModule PyImport_AddModule
 func ImportAddModule(name *Char) *Object

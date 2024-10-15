@@ -8,6 +8,30 @@ import (
 	_ "unsafe"
 )
 
+// int Py_Main(int argc, wchar_t **argv)
+// The main program for the standard interpreter.  This is made available for
+// programs which embed Python.  The *argc* and *argv* parameters should be
+// prepared exactly as those which are passed to a C program's :c:func:`main`
+// function (converted to wchar_t according to the user's locale).  It is
+// important to note that the argument list may be modified (but the contents of
+// the strings pointed to by the argument list are not). The return value will
+// be “0“ if the interpreter exits normally (i.e., without an exception),
+// “1“ if the interpreter exits due to an exception, or “2“ if the parameter
+// list does not represent a valid Python command line.
+//
+// Note that if an otherwise unhandled :exc:`SystemExit` is raised, this
+// function will not return “1“, but exit the process, as long as
+// :c:member:`PyConfig.inspect` is zero.
+//
+//go:linkname Main Py_Main
+func Main(argc Int, argv **Wchar) Int
+
+// int Py_BytesMain(int argc, char **argv)
+// Similar to :c:func:`Py_Main` but *argv* is an array of bytes strings.
+//
+//go:linkname BytesMain Py_BytesMain
+func BytesMain(argc Int, argv **Char) Int
+
 // int PyRun_AnyFile(FILE *fp, const char *filename)
 // This is a simplified interface to :c:func:`PyRun_AnyFileExFlags` below, leaving
 // *closeit* set to “0“ and *flags* set to “NULL“.

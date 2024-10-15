@@ -197,17 +197,26 @@ func UNICODEISPRINTABLE(ch UCS4) Int
 // Py_UCS4 Py_UNICODE_TOLOWER(Py_UCS4 ch)
 // Return the character *ch* converted to lower case.
 //
+// .. deprecated:: 3.3
+// This function uses simple case mappings.
+//
 //go:linkname UNICODETOLOWER Py_UNICODE_TOLOWER
 func UNICODETOLOWER(ch UCS4) UCS4
 
 // Py_UCS4 Py_UNICODE_TOUPPER(Py_UCS4 ch)
 // Return the character *ch* converted to upper case.
 //
+// .. deprecated:: 3.3
+// This function uses simple case mappings.
+//
 //go:linkname UNICODETOUPPER Py_UNICODE_TOUPPER
 func UNICODETOUPPER(ch UCS4) UCS4
 
 // Py_UCS4 Py_UNICODE_TOTITLE(Py_UCS4 ch)
 // Return the character *ch* converted to title case.
+//
+// .. deprecated:: 3.3
+// This function uses simple case mappings.
 //
 //go:linkname UNICODETOTITLE Py_UNICODE_TOTITLE
 func UNICODETOTITLE(ch UCS4) UCS4
@@ -254,7 +263,7 @@ func UNICODEISHIGHSURROGATE(ch UCS4) Int
 func UNICODEISLOWSURROGATE(ch UCS4) Int
 
 // Py_UCS4 Py_UNICODE_JOIN_SURROGATES(Py_UCS4 high, Py_UCS4 low)
-// Join two surrogate code points and return a single :c:type:`Py_UCS4` value.
+// Join two surrogate characters and return a single :c:type:`Py_UCS4` value.
 // *high* and *low* are respectively the leading and trailing surrogates in a
 // surrogate pair. *high* must be in the range [0xD800; 0xDBFF] and *low* must
 // be in the range [0xDC00; 0xDFFF].
@@ -458,26 +467,6 @@ func UnicodeFromString(str *Char) *Object
 // - :c:expr:`PyObject*`
 // - The result of calling :c:func:`PyObject_Repr`.
 //
-// * - “T“
-// - :c:expr:`PyObject*`
-// - Get the fully qualified name of an object type;
-// call :c:func:`PyType_GetFullyQualifiedName`.
-//
-// * - “#T“
-// - :c:expr:`PyObject*`
-// - Similar to “T“ format, but use a colon (“:“) as separator between
-// the module name and the qualified name.
-//
-// * - “N“
-// - :c:expr:`PyTypeObject*`
-// - Get the fully qualified name of a type;
-// call :c:func:`PyType_GetFullyQualifiedName`.
-//
-// * - “#N“
-// - :c:expr:`PyTypeObject*`
-// - Similar to “N“ format, but use a colon (“:“) as separator between
-// the module name and the qualified name.
-//
 // .. note::
 // The width formatter unit is number of characters rather than bytes.
 // The precision formatter unit is number of bytes or :c:type:`wchar_t`
@@ -508,8 +497,6 @@ func UnicodeFromString(str *Char) *Object
 // An unrecognized format character now sets a :exc:`SystemError`.
 // In previous versions it caused all the rest of the format string to be
 // copied as-is to the result string, and any extra arguments discarded.
-//
-// Support for “%T“, “%#T“, “%N“ and “%#N“ formats added.
 //
 //go:linkname UnicodeFromFormat PyUnicode_FromFormat
 func UnicodeFromFormat(format *Char, __llgo_va_list ...any) *Object
@@ -923,9 +910,6 @@ func UnicodeDecodeUTF8Stateful(str *Char, size SSizeT) *Object
 // object.  Error handling is "strict".  Return “NULL“ if an exception was
 // raised by the codec.
 //
-// The function fails if the string contains surrogate code points
-// (“U+D800“ - “U+DFFF“).
-//
 //go:linkname UnicodeAsUTF8String PyUnicode_AsUTF8String
 func UnicodeAsUTF8String(unicode *Object) *Object
 
@@ -936,11 +920,8 @@ func UnicodeAsUTF8String(unicode *Object) *Object
 // returned buffer always has an extra null byte appended (not included in
 // *size*), regardless of whether there are any other null code points.
 //
-// On error, set an exception, set *size* to “-1“ (if it's not NULL) and
-// return “NULL“.
-//
-// The function fails if the string contains surrogate code points
-// (“U+D800“ - “U+DFFF“).
+// In the case of an error, “NULL“ is returned with an exception set and no
+// *size* is stored.
 //
 // This caches the UTF-8 representation of the string in the Unicode object, and
 // subsequent calls will return a pointer to the same buffer.  The caller is not
@@ -1390,10 +1371,6 @@ func UnicodeReplace(unicode *Object, substr *Object) *Object
 // This function returns “-1“ upon failure, so one should call
 // :c:func:`PyErr_Occurred` to check for errors.
 //
-// .. seealso::
-//
-// The :c:func:`PyUnicode_Equal` function.
-//
 //go:linkname UnicodeCompare PyUnicode_Compare
 func UnicodeCompare(left *Object, right *Object) Int
 
@@ -1472,157 +1449,14 @@ func UnicodeInternInPlace(pUnicode **Object)
 // that has been interned, or an earlier interned string object with the
 // same value.
 //
-// Python may keep a reference to the result, or make it :term:`immortal`,
-// preventing it from being garbage-collected promptly.
+// Python may keep a reference to the result, or
+// prevent it from being garbage-collected promptly.
 // For interning an unbounded number of different strings, such as ones coming
 // from user input, prefer calling :c:func:`PyUnicode_FromString` and
 // :c:func:`PyUnicode_InternInPlace` directly.
 //
-// .. impl-detail::
-//
-// Strings interned this way are made :term:`immortal`.
-//
-// PyUnicodeWriter
-// ^^^^^^^^^^^^^^^
-//
-// The :c:type:`PyUnicodeWriter` API can be used to create a Python :class:`str`
-// object.
-//
 //go:linkname UnicodeInternFromString PyUnicode_InternFromString
 func UnicodeInternFromString(str *Char) *Object
-
-// PyUnicodeWriter* PyUnicodeWriter_Create(Py_ssize_t length)
-// Create a Unicode writer instance.
-//
-// Set an exception and return “NULL“ on error.
-//
-//go:linkname UnicodeWriterCreate PyUnicodeWriter_Create
-func UnicodeWriterCreate(length SSizeT) *UnicodeWriter
-
-// PyObject* PyUnicodeWriter_Finish(PyUnicodeWriter *writer)
-// Return the final Python :class:`str` object and destroy the writer instance.
-//
-// Set an exception and return “NULL“ on error.
-//
-//go:linkname UnicodeWriterFinish PyUnicodeWriter_Finish
-func UnicodeWriterFinish(writer *UnicodeWriter) *Object
-
-// void PyUnicodeWriter_Discard(PyUnicodeWriter *writer)
-// Discard the internal Unicode buffer and destroy the writer instance.
-//
-// If *writer* is “NULL“, no operation is performed.
-//
-//go:linkname UnicodeWriterDiscard PyUnicodeWriter_Discard
-func UnicodeWriterDiscard(writer *UnicodeWriter)
-
-// int PyUnicodeWriter_WriteChar(PyUnicodeWriter *writer, Py_UCS4 ch)
-// Write the single Unicode character *ch* into *writer*.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterWriteChar PyUnicodeWriter_WriteChar
-func UnicodeWriterWriteChar(writer *UnicodeWriter, ch UCS4) Int
-
-// int PyUnicodeWriter_WriteUTF8(PyUnicodeWriter *writer, const char *str, Py_ssize_t size)
-// Decode the string *str* from UTF-8 in strict mode and write the output into *writer*.
-//
-// *size* is the string length in bytes. If *size* is equal to “-1“, call
-// “strlen(str)“ to get the string length.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-// See also :c:func:`PyUnicodeWriter_DecodeUTF8Stateful`.
-//
-//go:linkname UnicodeWriterWriteUTF8 PyUnicodeWriter_WriteUTF8
-func UnicodeWriterWriteUTF8(writer *UnicodeWriter, str *Char, size SSizeT) Int
-
-// int PyUnicodeWriter_WriteWideChar(PyUnicodeWriter *writer, const wchar_t *str, Py_ssize_t size)
-// Writer the wide string *str* into *writer*.
-//
-// *size* is a number of wide characters. If *size* is equal to “-1“, call
-// “wcslen(str)“ to get the string length.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterWriteWideChar PyUnicodeWriter_WriteWideChar
-func UnicodeWriterWriteWideChar(writer *UnicodeWriter, str *Wchar, size SSizeT) Int
-
-// int PyUnicodeWriter_WriteUCS4(PyUnicodeWriter *writer, Py_UCS4 *str, Py_ssize_t size)
-// Writer the UCS4 string *str* into *writer*.
-//
-// *size* is a number of UCS4 characters.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterWriteUCS4 PyUnicodeWriter_WriteUCS4
-func UnicodeWriterWriteUCS4(writer *UnicodeWriter, str *UCS4, size SSizeT) Int
-
-// int PyUnicodeWriter_WriteStr(PyUnicodeWriter *writer, PyObject *obj)
-// Call :c:func:`PyObject_Str` on *obj* and write the output into *writer*.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterWriteStr PyUnicodeWriter_WriteStr
-func UnicodeWriterWriteStr(writer *UnicodeWriter, obj *Object) Int
-
-// int PyUnicodeWriter_WriteRepr(PyUnicodeWriter *writer, PyObject *obj)
-// Call :c:func:`PyObject_Repr` on *obj* and write the output into *writer*.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterWriteRepr PyUnicodeWriter_WriteRepr
-func UnicodeWriterWriteRepr(writer *UnicodeWriter, obj *Object) Int
-
-// int PyUnicodeWriter_WriteSubstring(PyUnicodeWriter *writer, PyObject *str, Py_ssize_t start, Py_ssize_t end)
-// Write the substring “str[start:end]“ into *writer*.
-//
-// *str* must be Python :class:`str` object. *start* must be greater than or
-// equal to 0, and less than or equal to *end*. *end* must be less than or
-// equal to *str* length.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterWriteSubstring PyUnicodeWriter_WriteSubstring
-func UnicodeWriterWriteSubstring(writer *UnicodeWriter, str *Object, start SSizeT, end SSizeT) Int
-
-// int PyUnicodeWriter_Format(PyUnicodeWriter *writer, const char *format, ...)
-// Similar to :c:func:`PyUnicode_FromFormat`, but write the output directly into *writer*.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-//go:linkname UnicodeWriterFormat PyUnicodeWriter_Format
-func UnicodeWriterFormat(writer *UnicodeWriter, format *Char, __llgo_va_list ...any) Int
-
-// int PyUnicodeWriter_DecodeUTF8Stateful(PyUnicodeWriter *writer, const char *string, Py_ssize_t length, const char *errors, Py_ssize_t *consumed)
-// Decode the string *str* from UTF-8 with *errors* error handler and write the
-// output into *writer*.
-//
-// *size* is the string length in bytes. If *size* is equal to “-1“, call
-// “strlen(str)“ to get the string length.
-//
-// *errors* is an error handler name, such as “"replace"“. If *errors* is
-// “NULL“, use the strict error handler.
-//
-// If *consumed* is not “NULL“, set *\*consumed* to the number of decoded
-// bytes on success.
-// If *consumed* is “NULL“, treat trailing incomplete UTF-8 byte sequences
-// as an error.
-//
-// On success, return “0“.
-// On error, set an exception, leave the writer unchanged, and return “-1“.
-//
-// See also :c:func:`PyUnicodeWriter_WriteUTF8`.
-//
-//go:linkname UnicodeWriterDecodeUTF8Stateful PyUnicodeWriter_DecodeUTF8Stateful
-func UnicodeWriterDecodeUTF8Stateful(writer *UnicodeWriter, string_ *Char, length SSizeT, errors *Char, consumed *SSizeT) Int
 
 // Py_UCS4
 // Py_UCS2
@@ -1640,8 +1474,6 @@ type UCS4 = C.Py_UCS4
 // In previous versions, this was a 16-bit type or a 32-bit type depending on
 // whether you selected a "narrow" or "wide" Unicode version of Python at
 // build time.
-//
-// .. deprecated-removed:: 3.13 3.15
 type UNICODE = C.Py_UNICODE
 
 // PyASCIIObject
@@ -1652,13 +1484,6 @@ type UNICODE = C.Py_UNICODE
 // almost all cases, they shouldn't be used directly, since all API functions
 // that deal with Unicode objects take and return :c:type:`PyObject` pointers.
 type ASCIIObject = C.PyASCIIObject
-
-// PyUnicodeWriter
-// A Unicode writer instance.
-//
-// The instance must be destroyed by :c:func:`PyUnicodeWriter_Finish` on
-// success, or :c:func:`PyUnicodeWriter_Discard` on error.
-type UnicodeWriter struct{}
 
 // PyTypeObject PyUnicode_Type
 // This instance of :c:type:`PyTypeObject` represents the Python Unicode type.  It

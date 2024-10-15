@@ -97,21 +97,12 @@ func TupleSetItem(p *Object, pos SSizeT, o *Object) Int
 // Like :c:func:`PyTuple_SetItem`, but does no error checking, and should *only* be
 // used to fill in brand new tuples.
 //
-// Bounds checking is performed as an assertion if Python is built in
-// :ref:`debug mode <debug-build>` or :option:`with assertions <--with-assertions>`.
-//
 // .. note::
 //
 // This function "steals" a reference to *o*, and, unlike
 // :c:func:`PyTuple_SetItem`, does *not* discard a reference to any item that
 // is being replaced; any reference in the tuple at position *pos* will be
 // leaked.
-//
-// .. warning::
-//
-// This macro should *only* be used on tuples that are newly created.
-// Using this macro on a tuple that is already in use (or in other words, has
-// a refcount > 1) could lead to undefined behavior.
 //
 //go:linkname TupleSETITEM PyTuple_SET_ITEM
 func TupleSETITEM(p *Object, pos SSizeT, o *Object)
@@ -174,17 +165,13 @@ func StructSequenceNew(type_ *TypeObject) *Object
 
 // PyObject* PyStructSequence_GetItem(PyObject *p, Py_ssize_t pos)
 // Return the object at position *pos* in the struct sequence pointed to by *p*.
-//
-// Bounds checking is performed as an assertion if Python is built in
-// :ref:`debug mode <debug-build>` or :option:`with assertions <--with-assertions>`.
+// No bounds checking is performed.
 //
 //go:linkname StructSequenceGetItem PyStructSequence_GetItem
 func StructSequenceGetItem(p *Object, pos SSizeT) *Object
 
 // PyObject* PyStructSequence_GET_ITEM(PyObject *p, Py_ssize_t pos)
-// Alias to :c:func:`PyStructSequence_GetItem`.
-//
-// Now implemented as an alias to :c:func:`PyStructSequence_GetItem`.
+// Macro equivalent of :c:func:`PyStructSequence_GetItem`.
 //
 //go:linkname StructSequenceGETITEM PyStructSequence_GET_ITEM
 func StructSequenceGETITEM(p *Object, pos SSizeT) *Object
@@ -194,9 +181,6 @@ func StructSequenceGETITEM(p *Object, pos SSizeT) *Object
 // :c:func:`PyTuple_SET_ITEM`, this should only be used to fill in brand new
 // instances.
 //
-// Bounds checking is performed as an assertion if Python is built in
-// :ref:`debug mode <debug-build>` or :option:`with assertions <--with-assertions>`.
-//
 // .. note::
 //
 // This function "steals" a reference to *o*.
@@ -205,9 +189,12 @@ func StructSequenceGETITEM(p *Object, pos SSizeT) *Object
 func StructSequenceSetItem(p *Object, pos SSizeT, o *Object)
 
 // void PyStructSequence_SET_ITEM(PyObject *p, Py_ssize_t *pos, PyObject *o)
-// Alias to :c:func:`PyStructSequence_SetItem`.
+// Similar to :c:func:`PyStructSequence_SetItem`, but implemented as a static
+// inlined function.
 //
-// Now implemented as an alias to :c:func:`PyStructSequence_SetItem`.
+// .. note::
+//
+// This function "steals" a reference to *o*.
 //
 //go:linkname StructSequenceSETITEM PyStructSequence_SET_ITEM
 func StructSequenceSETITEM(p *Object, pos *SSizeT, o *Object)
