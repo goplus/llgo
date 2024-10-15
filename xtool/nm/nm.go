@@ -76,11 +76,20 @@ type ObjectFile struct {
 	Symbols []*Symbol // symbols
 }
 
-// List lists symbols in an archive file.
-func (p *Cmd) List(arfile string) (items []*ObjectFile, err error) {
+// List lists symbols in an archive file
+// accepts optional nm command flags.
+// Note: The available flags may vary depending on the operating system.
+// On Linux, the -D flag is used to display dynamic symbols from the dynamic symbol table.
+// On macOS, there's no -D flag. The nm command displays all symbols (including dynamic ones) by default.
+// This difference is due to the distinct ways Linux (using ELF format) and macOS (using Mach-O format)
+// When working with dynamic libraries:
+// On Linux: Use 'nm -D /path/to/library.so'
+// On macOS: Simply use 'nm /path/to/library.dylib'
+func (p *Cmd) List(arfile string, options ...string) (items []*ObjectFile, err error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	cmd := exec.Command(p.app, arfile)
+	args := append(options, arfile)
+	cmd := exec.Command(p.app, args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	e := cmd.Run()
