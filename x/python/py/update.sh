@@ -2,6 +2,10 @@
 
 cd "$(dirname "$0")" || exit 1
 
+python_version="3.12"
+file_list_url="https://api.github.com/repos/python/cpython/git/trees/${python_version}:Doc/c-api"
+base_url="https://raw.githubusercontent.com/python/cpython/${python_version}/Doc/c-api"
+
 # Check if the -u parameter is provided
 update_files=false
 while getopts "u" opt; do
@@ -16,79 +20,24 @@ while getopts "u" opt; do
   esac
 done
 
-content=(
-  abstract.rst
-  allocation.rst
-  apiabiversion.rst
-  arg.rst
-  bool.rst
-  buffer.rst
-  bytearray.rst
-  bytes.rst
-  call.rst
-  capsule.rst
-  cell.rst
-  code.rst
-  codec.rst
-  complex.rst
-  concrete.rst
-  contextvars.rst
-  conversion.rst
-  coro.rst
-  datetime.rst
-  descriptor.rst
-  dict.rst
-  exceptions.rst
-  file.rst
-  float.rst
-  frame.rst
-  function.rst
-  gcsupport.rst
-  gen.rst
-  hash.rst
-  import.rst
-  index.rst
-  init.rst
-  init_config.rst
-  intro.rst
-  iter.rst
-  iterator.rst
-  list.rst
-  long.rst
-  mapping.rst
-  marshal.rst
-  memory.rst
-  memoryview.rst
-  method.rst
-  module.rst
-  monitoring.rst
-  none.rst
-  number.rst
-  object.rst
-  objimpl.rst
-  perfmaps.rst
-  refcounting.rst
-  reflection.rst
-  sequence.rst
-  set.rst
-  slice.rst
-  stable.rst
-  structures.rst
-  sys.rst
-  time.rst
-  tuple.rst
-  type.rst
-  typehints.rst
-  typeobj.rst
-  unicode.rst
-  utilities.rst
-  veryhigh.rst
-  weakref.rst
-)
+# Fetch the file list based on whether update is requested or not
+if [ "$update_files" = true ]; then
+  # Fetch the file list from GitHub API
+  content=$(curl -s "$file_list_url" | grep -o '"path": "[^"]*\.rst"' | sed 's/"path": "\(.*\)"/\1/')
 
-base_url="https://raw.githubusercontent.com/python/cpython/refs/heads/main/Doc/c-api"
+  if [ -z "$content" ]; then
+    echo "Failed to fetch file list from GitHub API"
+    exit 1
+  fi
+else
+  # Use local .rst files
+  content=$(ls ./*.rst)
+fi
 
-for i in "${content[@]}"; do
+# Array to store generated .go file names
+generated_files=()
+
+for i in $content; do
   if [ "$update_files" = true ]; then
     url="${base_url}/${i}"
     echo "Downloading from: $url"
@@ -104,7 +53,7 @@ for i in "${content[@]}"; do
       exit 1
     fi
   else
-    echo "Skipping download for $i"
+    echo "Using local file: $i"
   fi
   
   # Generate the corresponding Go file regardless of whether the file was updated
@@ -112,16 +61,26 @@ for i in "${content[@]}"; do
   echo "Generating $out_file"
   if python gen.py "$i" "$out_file"; then
     echo "Successfully generated $out_file"
+    generated_files+=("$out_file")
   else
     echo "Failed to generate $out_file"
     exit 1
   fi
 done
 
+# Remove .go files that are not in the generated list and not python.go or moduledef.go
+echo "Cleaning up unnecessary .go files..."
+for file in ./*.go; do
+  if [[ ! " ${generated_files[*]} " =~ ${file##*/} ]] && [[ "$file" != "./python.go" ]] && [[ "$file" != "./moduledef.go" ]]; then
+    echo "Removing $file"
+    rm "$file"
+  fi
+done
+
 goimports -w .
 
 if [ "$update_files" = true ]; then
-  echo "All files downloaded and processed successfully"
+  echo "All files downloaded, processed, and cleaned up successfully"
 else
-  echo "All files processed successfully (without downloading updates)"
+  echo "All files processed and cleaned up successfully (without downloading updates)"
 fi
