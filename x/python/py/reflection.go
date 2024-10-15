@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* PyEval_GetBuiltins(void)
@@ -75,7 +72,7 @@ func EvalGetFrame() *FrameObject
 // name of *func*\s type.
 //
 //go:linkname EvalGetFuncName C.PyEval_GetFuncName
-func EvalGetFuncName(func_ *Object) *c.Char
+func EvalGetFuncName(func_ *Object) *Char
 
 // const char* PyEval_GetFuncDesc(PyObject *func)
 // Return a description string, depending on the type of *func*.
@@ -85,4 +82,4 @@ func EvalGetFuncName(func_ *Object) *c.Char
 // *func*.
 //
 //go:linkname EvalGetFuncDesc C.PyEval_GetFuncDesc
-func EvalGetFuncDesc(func_ *Object) *c.Char
+func EvalGetFuncDesc(func_ *Object) *Char

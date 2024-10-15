@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyTuple_Check(PyObject *p)
@@ -16,14 +13,14 @@ import (
 // tuple type.  This function always succeeds.
 //
 //go:linkname TupleCheck C.PyTuple_Check
-func TupleCheck(p *Object) c.Int
+func TupleCheck(p *Object) Int
 
 // int PyTuple_CheckExact(PyObject *p)
 // Return true if *p* is a tuple object, but not an instance of a subtype of the
 // tuple type.  This function always succeeds.
 //
 //go:linkname TupleCheckExact C.PyTuple_CheckExact
-func TupleCheckExact(p *Object) c.Int
+func TupleCheckExact(p *Object) Int
 
 // PyObject* PyTuple_New(Py_ssize_t len)
 // Return a new tuple object of size *len*,
@@ -94,7 +91,7 @@ func TupleGetSlice(p *Object, low SSizeT, high SSizeT) *Object
 // an item already in the tuple at the affected position.
 //
 //go:linkname TupleSetItem C.PyTuple_SetItem
-func TupleSetItem(p *Object, pos SSizeT, o *Object) c.Int
+func TupleSetItem(p *Object, pos SSizeT, o *Object) Int
 
 // void PyTuple_SET_ITEM(PyObject *p, Py_ssize_t pos, PyObject *o)
 // Like :c:func:`PyTuple_SetItem`, but does no error checking, and should *only* be
@@ -142,7 +139,7 @@ func TupleSETITEM(p *Object, pos SSizeT, o *Object)
 // type.
 //
 //go:linkname TupleResize C._PyTuple_Resize
-func TupleResize(p **Object, newsize SSizeT) c.Int
+func TupleResize(p **Object, newsize SSizeT) Int
 
 // PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc)
 // Create a new struct sequence type from the data in *desc*, described below. Instances
@@ -164,7 +161,7 @@ func StructSequenceInitType(type_ *TypeObject, desc *StructSequenceDesc)
 // and “-1“ with an exception set on failure.
 //
 //go:linkname StructSequenceInitType2 C.PyStructSequence_InitType2
-func StructSequenceInitType2(type_ *TypeObject, desc *StructSequenceDesc) c.Int
+func StructSequenceInitType2(type_ *TypeObject, desc *StructSequenceDesc) Int
 
 // PyObject* PyStructSequence_New(PyTypeObject *type)
 // Creates an instance of *type*, which must have been created with
@@ -235,13 +232,13 @@ type StructSequenceField = C.PyStructSequence_Field
 // This instance of :c:type:`PyTypeObject` represents the Python tuple type; it
 // is the same object as :class:`tuple` in the Python layer.
 func TupleType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyTuple_Type))
+	return *(*TypeObject)(Pointer(&C.PyTuple_Type))
 }
 
 // const char * const PyStructSequence_UnnamedField
 // Special value for a field name to leave it unnamed.
 //
 // The type was changed from “char *“.
-func StructSequenceUnnamedField() *c.Char {
-	return *(**c.Char)(c.Pointer(&C.PyStructSequence_UnnamedField))
+func StructSequenceUnnamedField() *Char {
+	return *(**Char)(Pointer(&C.PyStructSequence_UnnamedField))
 }

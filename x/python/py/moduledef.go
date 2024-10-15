@@ -8,9 +8,6 @@ import "C"
 
 import (
 	"unsafe"
-	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 func checkTrue(b bool) {
@@ -117,11 +114,11 @@ type VarObject struct {
 //	    const char *doc;
 //	};
 type MemberDef struct {
-	Name   *c.Char
+	Name   *Char
 	Type   int
 	Offset int
 	Flags  int
-	Doc    *c.Char
+	Doc    *Char
 }
 
 //	struct GetSetDef {
@@ -132,10 +129,10 @@ type MemberDef struct {
 //	    void *closure;
 //	};
 type GetSetDef struct {
-	Name    *c.Char
+	Name    *Char
 	Get     Getter
 	Set     Setter
-	Doc     *c.Char
+	Doc     *Char
 	Closure *Object
 }
 
@@ -229,7 +226,7 @@ type GetSetDef struct {
 */
 type TypeObject struct {
 	Ob_base      VarObject
-	Tp_name      *c.Char
+	Tp_name      *Char
 	Tp_basicsize int
 	Tp_itemsize  int
 
@@ -255,7 +252,7 @@ type TypeObject struct {
 
 	Tp_flags int
 
-	Tp_doc *c.Char
+	Tp_doc *Char
 
 	Tp_traverse Traverseproc
 
@@ -291,7 +288,7 @@ type TypeObject struct {
 }
 
 // typedef PyObject *(*CFunction)(PyObject *, PyObject *);
-type CFunction = c.Pointer
+type CFunction = Pointer
 
 //	struct MethodDef {
 //	    const char *ml_name;
@@ -300,14 +297,14 @@ type CFunction = c.Pointer
 //		const char *ml_doc;
 //	};
 type MethodDef struct {
-	Name  *c.Char
+	Name  *Char
 	Func  CFunction
-	Flags c.Int
-	Doc   *c.Char
+	Flags Int
+	Doc   *Char
 }
 
 // llgo:type C
-type initfunc = c.Pointer
+type initfunc = Pointer
 
 // llgo:type C
 type freefunc = func(*Object)
@@ -347,8 +344,8 @@ type ModuleDefSlot struct {
 //	};
 type ModuleDef struct {
 	Base     ModuleDefBase
-	Name     *c.Char
-	Doc      *c.Char
+	Name     *Char
+	Doc      *Char
 	Size     int
 	Methods  *MethodDef
 	Slots    *ModuleDefSlot
@@ -356,14 +353,6 @@ type ModuleDef struct {
 	Clear    Inquiry
 	Free     freefunc
 }
-
-// PyObject *PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls)
-// Return value: New reference. Part of the Stable ABI since version 3.9.
-// Turn ml into a Python callable object. The caller must ensure that ml outlives the callable. Typically, ml is defined as a static variable.
-// The self parameter will be passed as the self argument to the C function in ml->ml_meth when invoked. self can be NULL.
-// The callable object’s __module__ attribute can be set from the given module argument. module should be a Python string, which will be used as name of the module the function is defined in. If unavailable, it can be set to None or NULL.
-// llgo:link (*MethodDef).NewMethod C.PyCMethod_New
-func (ml *MethodDef) NewMethod(self, module, cls *Object) *Object
 
 // #define _Py_IMMORTAL_REFCNT _Py_CAST(Py_ssize_t, UINT_MAX >> 2)
 const _Py_IMMORTAL_REFCNT = 0x7FFFFFFF
@@ -390,7 +379,7 @@ const _Py_IMMORTAL_REFCNT = 0x7FFFFFFF
 //	    },
 //
 // #endif
-func PyObject_HEAD_INIT(t c.Pointer) Object {
+func PyObject_HEAD_INIT(t Pointer) Object {
 	return Object{
 		ObRefcnt: _Py_IMMORTAL_REFCNT,
 		ObType:   t,

@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* Py_GenericAlias(PyObject *origin, PyObject *args)
@@ -45,5 +42,5 @@ func GenericAlias(origin *Object, args *Object) *Object
 // The C type of the object returned by :c:func:`Py_GenericAlias`. Equivalent to
 // :class:`types.GenericAlias` in Python.
 func GenericAliasType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.Py_GenericAliasType))
+	return *(*TypeObject)(Pointer(&C.Py_GenericAliasType))
 }

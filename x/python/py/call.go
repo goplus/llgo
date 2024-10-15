@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // Py_ssize_t PyVectorcall_NARGS(size_t nargsf)
@@ -22,7 +19,7 @@ import (
 // for future extensions.
 //
 //go:linkname VectorcallNARGS C.PyVectorcall_NARGS
-func VectorcallNARGS(nargsf c.Ulong) SSizeT
+func VectorcallNARGS(nargsf Ulong) SSizeT
 
 // vectorcallfunc PyVectorcall_Function(PyObject *op)
 // If *op* does not support the vectorcall protocol (either because the type
@@ -156,7 +153,7 @@ func ObjectCallObject(callable *Object, args *Object) *Object
 // The type of *format* was changed from “char *“.
 //
 //go:linkname ObjectCallFunction C.PyObject_CallFunction
-func ObjectCallFunction(callable *Object, format *c.Char, __llgo_va_list ...any) *Object
+func ObjectCallFunction(callable *Object, format *Char, __llgo_va_list ...any) *Object
 
 // PyObject* PyObject_CallMethod(PyObject *obj, const char *name, const char *format, ...)
 // Call the method named *name* of object *obj* with a variable number of C
@@ -177,7 +174,7 @@ func ObjectCallFunction(callable *Object, format *c.Char, __llgo_va_list ...any)
 // The types of *name* and *format* were changed from “char *“.
 //
 //go:linkname ObjectCallMethod C.PyObject_CallMethod
-func ObjectCallMethod(obj *Object, name *c.Char, format *c.Char, __llgo_va_list ...any) *Object
+func ObjectCallMethod(obj *Object, name *Char, format *Char, __llgo_va_list ...any) *Object
 
 // PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...)
 // Call a callable Python object *callable*, with a variable number of
@@ -236,7 +233,7 @@ func ObjectCallMethodOneArg(obj *Object, name *Object, arg *Object) *Object
 // *NULL* on failure.
 //
 //go:linkname ObjectVectorcall C.PyObject_Vectorcall
-func ObjectVectorcall(callable *Object, args **Object, nargsf c.Ulong, kwnames *Object) *Object
+func ObjectVectorcall(callable *Object, args **Object, nargsf Ulong, kwnames *Object) *Object
 
 // PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwdict)
 // Call *callable* with positional arguments passed exactly as in the vectorcall_ protocol,
@@ -250,7 +247,7 @@ func ObjectVectorcall(callable *Object, args **Object, nargsf c.Ulong, kwnames *
 // but not a tuple for the positional arguments.
 //
 //go:linkname ObjectVectorcallDict C.PyObject_VectorcallDict
-func ObjectVectorcallDict(callable *Object, args **Object, nargsf c.Ulong, kwdict *Object) *Object
+func ObjectVectorcallDict(callable *Object, args **Object, nargsf Ulong, kwdict *Object) *Object
 
 // PyObject* PyObject_VectorcallMethod(PyObject *name, PyObject *const *args, size_t nargsf, PyObject *kwnames)
 // Call a method using the vectorcall calling convention. The name of the method
@@ -273,14 +270,14 @@ func ObjectVectorcallDict(callable *Object, args **Object, nargsf c.Ulong, kwdic
 // ----------------
 //
 //go:linkname ObjectVectorcallMethod C.PyObject_VectorcallMethod
-func ObjectVectorcallMethod(name *Object, args **Object, nargsf c.Ulong, kwnames *Object) *Object
+func ObjectVectorcallMethod(name *Object, args **Object, nargsf Ulong, kwnames *Object) *Object
 
 // int PyCallable_Check(PyObject *o)
 // Determine if the object *o* is callable.  Return “1“ if the object is callable
 // and “0“ otherwise.  This function always succeeds.
 //
 //go:linkname CallableCheck C.PyCallable_Check
-func CallableCheck(o *Object) c.Int
+func CallableCheck(o *Object) Int
 
 // PyObject *(*vectorcallfunc)(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwnames)
 // - *callable* is the object being called.
@@ -297,4 +294,4 @@ func CallableCheck(o *Object) c.Int
 // and they must be unique.
 // If there are no keyword arguments, then *kwnames* can instead be *NULL*.
 // llgo:type C
-type Vectorcallfunc func(callable *Object, args **Object, nargsf c.Ulong, kwnames *Object) *Object
+type Vectorcallfunc func(callable *Object, args **Object, nargsf Ulong, kwnames *Object) *Object

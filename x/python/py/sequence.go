@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PySequence_Check(PyObject *o)
@@ -19,7 +16,7 @@ import (
 // function always succeeds.
 //
 //go:linkname SequenceCheck C.PySequence_Check
-func SequenceCheck(o *Object) c.Int
+func SequenceCheck(o *Object) Int
 
 // Py_ssize_t PySequence_Size(PyObject *o)
 // Py_ssize_t PySequence_Length(PyObject *o)
@@ -86,28 +83,28 @@ func SequenceGetSlice(o *Object, i1 SSizeT, i2 SSizeT) *Object
 // deprecated in favour of using :c:func:`PySequence_DelItem`.
 //
 //go:linkname SequenceSetItem C.PySequence_SetItem
-func SequenceSetItem(o *Object, i SSizeT, v *Object) c.Int
+func SequenceSetItem(o *Object, i SSizeT, v *Object) Int
 
 // int PySequence_DelItem(PyObject *o, Py_ssize_t i)
 // Delete the *i*\ th element of object *o*.  Returns “-1“ on failure.  This is the
 // equivalent of the Python statement “del o[i]“.
 //
 //go:linkname SequenceDelItem C.PySequence_DelItem
-func SequenceDelItem(o *Object, i SSizeT) c.Int
+func SequenceDelItem(o *Object, i SSizeT) Int
 
 // int PySequence_SetSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2, PyObject *v)
 // Assign the sequence object *v* to the slice in sequence object *o* from *i1* to
 // *i2*.  This is the equivalent of the Python statement “o[i1:i2] = v“.
 //
 //go:linkname SequenceSetSlice C.PySequence_SetSlice
-func SequenceSetSlice(o *Object, i1 SSizeT, i2 SSizeT, v *Object) c.Int
+func SequenceSetSlice(o *Object, i1 SSizeT, i2 SSizeT, v *Object) Int
 
 // int PySequence_DelSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2)
 // Delete the slice in sequence object *o* from *i1* to *i2*.  Returns “-1“ on
 // failure.  This is the equivalent of the Python statement “del o[i1:i2]“.
 //
 //go:linkname SequenceDelSlice C.PySequence_DelSlice
-func SequenceDelSlice(o *Object, i1 SSizeT, i2 SSizeT) c.Int
+func SequenceDelSlice(o *Object, i1 SSizeT, i2 SSizeT) Int
 
 // Py_ssize_t PySequence_Count(PyObject *o, PyObject *value)
 // Return the number of occurrences of *value* in *o*, that is, return the number
@@ -123,7 +120,7 @@ func SequenceCount(o *Object, value *Object) SSizeT
 // equivalent to the Python expression “value in o“.
 //
 //go:linkname SequenceContains C.PySequence_Contains
-func SequenceContains(o *Object, value *Object) c.Int
+func SequenceContains(o *Object, value *Object) Int
 
 // Py_ssize_t PySequence_Index(PyObject *o, PyObject *value)
 // Return the first index *i* for which “o[i] == value“.  On error, return
@@ -165,7 +162,7 @@ func SequenceTuple(o *Object) *Object
 // will be returned.
 //
 //go:linkname SequenceFast C.PySequence_Fast
-func SequenceFast(o *Object, m *c.Char) *Object
+func SequenceFast(o *Object, m *Char) *Object
 
 // Py_ssize_t PySequence_Fast_GET_SIZE(PyObject *o)
 // Returns the length of *o*, assuming that *o* was returned by

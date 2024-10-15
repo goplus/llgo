@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PySet_Check(PyObject *p)
@@ -16,42 +13,42 @@ import (
 // This function always succeeds.
 //
 //go:linkname SetCheck C.PySet_Check
-func SetCheck(p *Object) c.Int
+func SetCheck(p *Object) Int
 
 // int PyFrozenSet_Check(PyObject *p)
 // Return true if *p* is a :class:`frozenset` object or an instance of a
 // subtype.  This function always succeeds.
 //
 //go:linkname FrozenSetCheck C.PyFrozenSet_Check
-func FrozenSetCheck(p *Object) c.Int
+func FrozenSetCheck(p *Object) Int
 
 // int PyAnySet_Check(PyObject *p)
 // Return true if *p* is a :class:`set` object, a :class:`frozenset` object, or an
 // instance of a subtype.  This function always succeeds.
 //
 //go:linkname AnySetCheck C.PyAnySet_Check
-func AnySetCheck(p *Object) c.Int
+func AnySetCheck(p *Object) Int
 
 // int PySet_CheckExact(PyObject *p)
 // Return true if *p* is a :class:`set` object but not an instance of a
 // subtype.  This function always succeeds.
 //
 //go:linkname SetCheckExact C.PySet_CheckExact
-func SetCheckExact(p *Object) c.Int
+func SetCheckExact(p *Object) Int
 
 // int PyAnySet_CheckExact(PyObject *p)
 // Return true if *p* is a :class:`set` object or a :class:`frozenset` object but
 // not an instance of a subtype.  This function always succeeds.
 //
 //go:linkname AnySetCheckExact C.PyAnySet_CheckExact
-func AnySetCheckExact(p *Object) c.Int
+func AnySetCheckExact(p *Object) Int
 
 // int PyFrozenSet_CheckExact(PyObject *p)
 // Return true if *p* is a :class:`frozenset` object but not an instance of a
 // subtype.  This function always succeeds.
 //
 //go:linkname FrozenSetCheckExact C.PyFrozenSet_CheckExact
-func FrozenSetCheckExact(p *Object) c.Int
+func FrozenSetCheckExact(p *Object) Int
 
 // PyObject* PySet_New(PyObject *iterable)
 // Return a new :class:`set` containing objects returned by the *iterable*.  The
@@ -99,7 +96,7 @@ func SetGETSIZE(anyset *Object) SSizeT
 // :class:`set`, :class:`frozenset`, or an instance of a subtype.
 //
 //go:linkname SetContains C.PySet_Contains
-func SetContains(anyset *Object, key *Object) c.Int
+func SetContains(anyset *Object, key *Object) Int
 
 // int PySet_Add(PyObject *set, PyObject *key)
 // Add *key* to a :class:`set` instance.  Also works with :class:`frozenset`
@@ -114,7 +111,7 @@ func SetContains(anyset *Object, key *Object) c.Int
 // subtypes but not for instances of :class:`frozenset` or its subtypes.
 //
 //go:linkname SetAdd C.PySet_Add
-func SetAdd(set *Object, key *Object) c.Int
+func SetAdd(set *Object, key *Object) Int
 
 // int PySet_Discard(PyObject *set, PyObject *key)
 // Return “1“ if found and removed, “0“ if not found (no action taken), and “-1“ if an
@@ -125,7 +122,7 @@ func SetAdd(set *Object, key *Object) c.Int
 // instance of :class:`set` or its subtype.
 //
 //go:linkname SetDiscard C.PySet_Discard
-func SetDiscard(set *Object, key *Object) c.Int
+func SetDiscard(set *Object, key *Object) Int
 
 // PyObject* PySet_Pop(PyObject *set)
 // Return a new reference to an arbitrary object in the *set*, and removes the
@@ -142,7 +139,7 @@ func SetPop(set *Object) *Object
 // :class:`set` or its subtype.
 //
 //go:linkname SetClear C.PySet_Clear
-func SetClear(set *Object) c.Int
+func SetClear(set *Object) Int
 
 // PySetObject
 // This subtype of :c:type:`PyObject` is used to hold the internal data for both
@@ -158,7 +155,7 @@ type SetObject = C.PySetObject
 // This is an instance of :c:type:`PyTypeObject` representing the Python
 // :class:`set` type.
 func SetType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PySet_Type))
+	return *(*TypeObject)(Pointer(&C.PySet_Type))
 }
 
 // PyTypeObject PyFrozenSet_Type
@@ -168,5 +165,5 @@ func SetType() TypeObject {
 // The following type check macros work on pointers to any Python object. Likewise,
 // the constructor functions work with any iterable Python object.
 func FrozenSetType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyFrozenSet_Type))
+	return *(*TypeObject)(Pointer(&C.PyFrozenSet_Type))
 }

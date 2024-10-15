@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyCodec_Register(PyObject *search_function)
@@ -18,7 +15,7 @@ import (
 // done, to make sure that it is always first in the list of search functions.
 //
 //go:linkname CodecRegister C.PyCodec_Register
-func CodecRegister(searchFunction *Object) c.Int
+func CodecRegister(searchFunction *Object) Int
 
 // int PyCodec_Unregister(PyObject *search_function)
 // Unregister a codec search function and clear the registry's cache.
@@ -26,14 +23,14 @@ func CodecRegister(searchFunction *Object) c.Int
 // Return 0 on success. Raise an exception and return -1 on error.
 //
 //go:linkname CodecUnregister C.PyCodec_Unregister
-func CodecUnregister(searchFunction *Object) c.Int
+func CodecUnregister(searchFunction *Object) Int
 
 // int PyCodec_KnownEncoding(const char *encoding)
 // Return “1“ or “0“ depending on whether there is a registered codec for
 // the given *encoding*.  This function always succeeds.
 //
 //go:linkname CodecKnownEncoding C.PyCodec_KnownEncoding
-func CodecKnownEncoding(encoding *c.Char) c.Int
+func CodecKnownEncoding(encoding *Char) Int
 
 // PyObject* PyCodec_Encode(PyObject *object, const char *encoding, const char *errors)
 // Generic codec based encoding API.
@@ -44,7 +41,7 @@ func CodecKnownEncoding(encoding *c.Char) c.Int
 // :exc:`LookupError` if no encoder can be found.
 //
 //go:linkname CodecEncode C.PyCodec_Encode
-func CodecEncode(object *Object, encoding *c.Char, errors *c.Char) *Object
+func CodecEncode(object *Object, encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_Decode(PyObject *object, const char *encoding, const char *errors)
 // Generic codec based decoding API.
@@ -63,37 +60,37 @@ func CodecEncode(object *Object, encoding *c.Char, errors *c.Char) *Object
 // and “NULL“ returned.
 //
 //go:linkname CodecDecode C.PyCodec_Decode
-func CodecDecode(object *Object, encoding *c.Char, errors *c.Char) *Object
+func CodecDecode(object *Object, encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_Encoder(const char *encoding)
 // Get an encoder function for the given *encoding*.
 //
 //go:linkname CodecEncoder C.PyCodec_Encoder
-func CodecEncoder(encoding *c.Char) *Object
+func CodecEncoder(encoding *Char) *Object
 
 // PyObject* PyCodec_Decoder(const char *encoding)
 // Get a decoder function for the given *encoding*.
 //
 //go:linkname CodecDecoder C.PyCodec_Decoder
-func CodecDecoder(encoding *c.Char) *Object
+func CodecDecoder(encoding *Char) *Object
 
 // PyObject* PyCodec_IncrementalEncoder(const char *encoding, const char *errors)
 // Get an :class:`~codecs.IncrementalEncoder` object for the given *encoding*.
 //
 //go:linkname CodecIncrementalEncoder C.PyCodec_IncrementalEncoder
-func CodecIncrementalEncoder(encoding *c.Char, errors *c.Char) *Object
+func CodecIncrementalEncoder(encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_IncrementalDecoder(const char *encoding, const char *errors)
 // Get an :class:`~codecs.IncrementalDecoder` object for the given *encoding*.
 //
 //go:linkname CodecIncrementalDecoder C.PyCodec_IncrementalDecoder
-func CodecIncrementalDecoder(encoding *c.Char, errors *c.Char) *Object
+func CodecIncrementalDecoder(encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_StreamReader(const char *encoding, PyObject *stream, const char *errors)
 // Get a :class:`~codecs.StreamReader` factory function for the given *encoding*.
 //
 //go:linkname CodecStreamReader C.PyCodec_StreamReader
-func CodecStreamReader(encoding *c.Char, stream *Object, errors *c.Char) *Object
+func CodecStreamReader(encoding *Char, stream *Object, errors *Char) *Object
 
 // PyObject* PyCodec_StreamWriter(const char *encoding, PyObject *stream, const char *errors)
 // Get a :class:`~codecs.StreamWriter` factory function for the given *encoding*.
@@ -102,7 +99,7 @@ func CodecStreamReader(encoding *c.Char, stream *Object, errors *c.Char) *Object
 // ------------------------------------------------
 //
 //go:linkname CodecStreamWriter C.PyCodec_StreamWriter
-func CodecStreamWriter(encoding *c.Char, stream *Object, errors *c.Char) *Object
+func CodecStreamWriter(encoding *Char, stream *Object, errors *Char) *Object
 
 // int PyCodec_RegisterError(const char *name, PyObject *error)
 // Register the error handling callback function *error* under the given *name*.
@@ -123,7 +120,7 @@ func CodecStreamWriter(encoding *c.Char, stream *Object, errors *c.Char) *Object
 // Return “0“ on success, “-1“ on error.
 //
 //go:linkname CodecRegisterError C.PyCodec_RegisterError
-func CodecRegisterError(name *c.Char, error *Object) c.Int
+func CodecRegisterError(name *Char, error *Object) Int
 
 // PyObject* PyCodec_LookupError(const char *name)
 // Lookup the error handling callback function registered under *name*.  As a
@@ -131,7 +128,7 @@ func CodecRegisterError(name *c.Char, error *Object) c.Int
 // for "strict" will be returned.
 //
 //go:linkname CodecLookupError C.PyCodec_LookupError
-func CodecLookupError(name *c.Char) *Object
+func CodecLookupError(name *Char) *Object
 
 // PyObject* PyCodec_StrictErrors(PyObject *exc)
 // Raise *exc* as an exception.

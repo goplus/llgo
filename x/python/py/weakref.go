@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyWeakref_Check(PyObject *ob)
@@ -16,19 +13,19 @@ import (
 // always succeeds.
 //
 //go:linkname WeakrefCheck C.PyWeakref_Check
-func WeakrefCheck(ob *Object) c.Int
+func WeakrefCheck(ob *Object) Int
 
 // int PyWeakref_CheckRef(PyObject *ob)
 // Return non-zero if *ob* is a reference object.  This function always succeeds.
 //
 //go:linkname WeakrefCheckRef C.PyWeakref_CheckRef
-func WeakrefCheckRef(ob *Object) c.Int
+func WeakrefCheckRef(ob *Object) Int
 
 // int PyWeakref_CheckProxy(PyObject *ob)
 // Return non-zero if *ob* is a proxy object.  This function always succeeds.
 //
 //go:linkname WeakrefCheckProxy C.PyWeakref_CheckProxy
-func WeakrefCheckProxy(ob *Object) c.Int
+func WeakrefCheckProxy(ob *Object) Int
 
 // PyObject* PyWeakref_NewRef(PyObject *ob, PyObject *callback)
 // Return a weak reference object for the object *ob*.  This will always return

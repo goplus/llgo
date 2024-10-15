@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyArg_ParseTuple(PyObject *args, const char *format, ...)
@@ -17,7 +14,7 @@ import (
 // raises the appropriate exception.
 //
 //go:linkname ArgParseTuple C.PyArg_ParseTuple
-func ArgParseTuple(args *Object, format *c.Char, __llgo_va_list ...any) c.Int
+func ArgParseTuple(args *Object, format *Char, __llgo_va_list ...any) Int
 
 // int PyArg_ParseTupleAndKeywords(PyObject *args, PyObject *kw, const char *format, char * const *keywords, ...)
 // Parse the parameters of a function that takes both positional and keyword
@@ -43,7 +40,7 @@ func ArgParseTuple(args *Object, format *c.Char, __llgo_va_list ...any) c.Int
 // Added support for non-ASCII keyword parameter names.
 //
 //go:linkname ArgParseTupleAndKeywords C.PyArg_ParseTupleAndKeywords
-func ArgParseTupleAndKeywords(args *Object, kw *Object, format *c.Char, keywords **c.Char, __llgo_va_list ...any) c.Int
+func ArgParseTupleAndKeywords(args *Object, kw *Object, format *Char, keywords **Char, __llgo_va_list ...any) Int
 
 // int PyArg_ValidateKeywordArguments(PyObject *)
 // Ensure that the keys in the keywords argument dictionary are strings.  This
@@ -51,7 +48,7 @@ func ArgParseTupleAndKeywords(args *Object, kw *Object, format *c.Char, keywords
 // latter already does this check.
 //
 //go:linkname ArgValidateKeywordArguments C.PyArg_ValidateKeywordArguments
-func ArgValidateKeywordArguments(*Object) c.Int
+func ArgValidateKeywordArguments(*Object) Int
 
 // int PyArg_Parse(PyObject *args, const char *format, ...)
 // Parse the parameter of a function that takes a single positional parameter
@@ -72,7 +69,7 @@ func ArgValidateKeywordArguments(*Object) c.Int
 // }
 //
 //go:linkname ArgParse C.PyArg_Parse
-func ArgParse(args *Object, format *c.Char, __llgo_va_list ...any) c.Int
+func ArgParse(args *Object, format *Char, __llgo_va_list ...any) Int
 
 // int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, ...)
 // A simpler form of parameter retrieval which does not use a format string to
@@ -112,7 +109,7 @@ func ArgParse(args *Object, format *c.Char, __llgo_va_list ...any) c.Int
 // PyArg_ParseTuple(args, "O|O:ref", &object, &callback)
 //
 //go:linkname ArgUnpackTuple C.PyArg_UnpackTuple
-func ArgUnpackTuple(args *Object, name *c.Char, min SSizeT, max SSizeT, __llgo_va_list ...any) c.Int
+func ArgUnpackTuple(args *Object, name *Char, min SSizeT, max SSizeT, __llgo_va_list ...any) Int
 
 // PyObject* Py_BuildValue(const char *format, ...)
 // Create a new value based on a format string similar to those accepted by the
@@ -270,4 +267,4 @@ func ArgUnpackTuple(args *Object, name *c.Char, min SSizeT, max SSizeT, __llgo_v
 // set and “NULL“ returned.
 //
 //go:linkname BuildValue C.Py_BuildValue
-func BuildValue(format *c.Char, __llgo_va_list ...any) *Object
+func BuildValue(format *Char, __llgo_va_list ...any) *Object

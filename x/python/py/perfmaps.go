@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyUnstable_PerfMapState_Init(void)
@@ -23,7 +20,7 @@ import (
 // about the cause of a failure.
 //
 //go:linkname UnstablePerfMapStateInit C.PyUnstable_PerfMapState_Init
-func UnstablePerfMapStateInit() c.Int
+func UnstablePerfMapStateInit() Int
 
 // int PyUnstable_WritePerfMapEntry(const void *code_addr, unsigned int code_size, const char *entry_name)
 // Write one single entry to the “/tmp/perf-$pid.map“ file. This function is
@@ -37,7 +34,7 @@ func UnstablePerfMapStateInit() c.Int
 // same error codes as :c:func:`PyUnstable_PerfMapState_Init` on failure.
 //
 //go:linkname UnstableWritePerfMapEntry C.PyUnstable_WritePerfMapEntry
-func UnstableWritePerfMapEntry(codeAddr c.Pointer, codeSize c.Uint, entryName *c.Char) c.Int
+func UnstableWritePerfMapEntry(codeAddr Pointer, codeSize Uint, entryName *Char) Int
 
 // void PyUnstable_PerfMapState_Fini(void)
 // Close the perf map file opened by :c:func:`PyUnstable_PerfMapState_Init`.

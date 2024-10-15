@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyStatus PyWideStringList_Append(PyWideStringList *list, const wchar_t *item)
@@ -17,7 +14,7 @@ import (
 // Python must be preinitialized to call this function.
 //
 //go:linkname WideStringListAppend C.PyWideStringList_Append
-func WideStringListAppend(list *WideStringList, item *c.Wchar) Status
+func WideStringListAppend(list *WideStringList, item *Wchar) Status
 
 // PyStatus PyWideStringList_Insert(PyWideStringList *list, Py_ssize_t index, const wchar_t *item)
 // Insert *item* into *list* at *index*.
@@ -30,7 +27,7 @@ func WideStringListAppend(list *WideStringList, item *c.Wchar) Status
 // Python must be preinitialized to call this function.
 //
 //go:linkname WideStringListInsert C.PyWideStringList_Insert
-func WideStringListInsert(list *WideStringList, index SSizeT, item *c.Wchar) Status
+func WideStringListInsert(list *WideStringList, index SSizeT, item *Wchar) Status
 
 // PyStatus PyStatus_Ok(void)
 // Success.
@@ -44,7 +41,7 @@ func StatusOk() Status
 // *err_msg* must not be “NULL“.
 //
 //go:linkname StatusError C.PyStatus_Error
-func StatusError(errMsg *c.Char) Status
+func StatusError(errMsg *Char) Status
 
 // PyStatus PyStatus_NoMemory(void)
 // Memory allocation failure (out of memory).
@@ -58,26 +55,26 @@ func StatusNoMemory() Status
 // Functions to handle a status:
 //
 //go:linkname StatusExit C.PyStatus_Exit
-func StatusExit(exitcode c.Int) Status
+func StatusExit(exitcode Int) Status
 
 // int PyStatus_Exception(PyStatus status)
 // Is the status an error or an exit? If true, the exception must be
 // handled; by calling :c:func:`Py_ExitStatusException` for example.
 //
 //go:linkname StatusException C.PyStatus_Exception
-func StatusException(status Status) c.Int
+func StatusException(status Status) Int
 
 // int PyStatus_IsError(PyStatus status)
 // Is the result an error?
 //
 //go:linkname StatusIsError C.PyStatus_IsError
-func StatusIsError(status Status) c.Int
+func StatusIsError(status Status) Int
 
 // int PyStatus_IsExit(PyStatus status)
 // Is the result an exit?
 //
 //go:linkname StatusIsExit C.PyStatus_IsExit
-func StatusIsExit(status Status) c.Int
+func StatusIsExit(status Status) Int
 
 // void Py_ExitStatusException(PyStatus status)
 // Call “exit(exitcode)“ if *status* is an exit. Print the error
@@ -147,7 +144,7 @@ func PreInitialize(preconfig *PreConfig) Status
 // *preconfig* must not be “NULL“.
 //
 //go:linkname PreInitializeFromBytesArgs C.Py_PreInitializeFromBytesArgs
-func PreInitializeFromBytesArgs(preconfig *PreConfig, argc c.Int, argv **c.Char) Status
+func PreInitializeFromBytesArgs(preconfig *PreConfig, argc Int, argv **Char) Status
 
 // PyStatus Py_PreInitializeFromArgs(const PyPreConfig *preconfig, int argc, wchar_t * const * argv)
 // Preinitialize Python from *preconfig* preconfiguration.
@@ -201,7 +198,7 @@ func PreInitializeFromBytesArgs(preconfig *PreConfig, argc c.Int, argv **c.Char)
 // --------
 //
 //go:linkname PreInitializeFromArgs C.Py_PreInitializeFromArgs
-func PreInitializeFromArgs(preconfig *PreConfig, argc c.Int, argv **c.Wchar) Status
+func PreInitializeFromArgs(preconfig *PreConfig, argc Int, argv **Wchar) Status
 
 // void PyConfig_InitPythonConfig(PyConfig *config)
 // Initialize configuration with the :ref:`Python Configuration
@@ -223,7 +220,7 @@ func ConfigInitIsolatedConfig(config *Config)
 // :ref:`Preinitialize Python <c-preinit>` if needed.
 //
 //go:linkname ConfigSetString C.PyConfig_SetString
-func ConfigSetString(config *Config, configStr **c.Wchar, str *c.Wchar) Status
+func ConfigSetString(config *Config, configStr **Wchar, str *Wchar) Status
 
 // PyStatus PyConfig_SetBytesString(PyConfig *config, wchar_t * const *config_str, const char *str)
 // Decode *str* using :c:func:`Py_DecodeLocale` and set the result into
@@ -232,7 +229,7 @@ func ConfigSetString(config *Config, configStr **c.Wchar, str *c.Wchar) Status
 // :ref:`Preinitialize Python <c-preinit>` if needed.
 //
 //go:linkname ConfigSetBytesString C.PyConfig_SetBytesString
-func ConfigSetBytesString(config *Config, configStr **c.Wchar, str *c.Char) Status
+func ConfigSetBytesString(config *Config, configStr **Wchar, str *Char) Status
 
 // PyStatus PyConfig_SetArgv(PyConfig *config, int argc, wchar_t * const *argv)
 // Set command line arguments (:c:member:`~PyConfig.argv` member of
@@ -241,7 +238,7 @@ func ConfigSetBytesString(config *Config, configStr **c.Wchar, str *c.Char) Stat
 // :ref:`Preinitialize Python <c-preinit>` if needed.
 //
 //go:linkname ConfigSetArgv C.PyConfig_SetArgv
-func ConfigSetArgv(config *Config, argc c.Int, argv **c.Wchar) Status
+func ConfigSetArgv(config *Config, argc Int, argv **Wchar) Status
 
 // PyStatus PyConfig_SetBytesArgv(PyConfig *config, int argc, char * const *argv)
 // Set command line arguments (:c:member:`~PyConfig.argv` member of
@@ -251,7 +248,7 @@ func ConfigSetArgv(config *Config, argc c.Int, argv **c.Wchar) Status
 // :ref:`Preinitialize Python <c-preinit>` if needed.
 //
 //go:linkname ConfigSetBytesArgv C.PyConfig_SetBytesArgv
-func ConfigSetBytesArgv(config *Config, argc c.Int, argv **c.Char) Status
+func ConfigSetBytesArgv(config *Config, argc Int, argv **Char) Status
 
 // PyStatus PyConfig_SetWideStringList(PyConfig *config, PyWideStringList *list, Py_ssize_t length, wchar_t **items)
 // Set the list of wide strings *list* to *length* and *items*.
@@ -259,7 +256,7 @@ func ConfigSetBytesArgv(config *Config, argc c.Int, argv **c.Char) Status
 // :ref:`Preinitialize Python <c-preinit>` if needed.
 //
 //go:linkname ConfigSetWideStringList C.PyConfig_SetWideStringList
-func ConfigSetWideStringList(config *Config, list *WideStringList, length SSizeT, items **c.Wchar) Status
+func ConfigSetWideStringList(config *Config, list *WideStringList, length SSizeT, items **Wchar) Status
 
 // PyStatus PyConfig_Read(PyConfig *config)
 // Read all Python configuration.
@@ -351,7 +348,7 @@ func InitConfigFree(config *InitConfig)
 // error message.
 //
 //go:linkname InitConfigGetError C.PyInitConfig_GetError
-func InitConfigGetError(config *InitConfig, errMsg **c.Char) c.Int
+func InitConfigGetError(config *InitConfig, errMsg **Char) Int
 
 // int PyInitConfig_GetExitCode(PyInitConfig* config, int *exitcode)
 // Get the *config* exit code.
@@ -373,7 +370,7 @@ func InitConfigGetError(config *InitConfig, errMsg **c.Char) c.Int
 // null-terminated UTF-8 encoded string.
 //
 //go:linkname InitConfigGetExitCode C.PyInitConfig_GetExitCode
-func InitConfigGetExitCode(config *InitConfig, exitcode *c.Int) c.Int
+func InitConfigGetExitCode(config *InitConfig, exitcode *Int) Int
 
 // int PyInitConfig_HasOption(PyInitConfig *config, const char *name)
 // Test if the configuration has an option called *name*.
@@ -381,7 +378,7 @@ func InitConfigGetExitCode(config *InitConfig, exitcode *c.Int) c.Int
 // Return “1“ if the option exists, or return “0“ otherwise.
 //
 //go:linkname InitConfigHasOption C.PyInitConfig_HasOption
-func InitConfigHasOption(config *InitConfig, name *c.Char) c.Int
+func InitConfigHasOption(config *InitConfig, name *Char) Int
 
 // int PyInitConfig_GetInt(PyInitConfig *config, const char *name, int64_t *value)
 // Get an integer configuration option.
@@ -390,7 +387,7 @@ func InitConfigHasOption(config *InitConfig, name *c.Char) c.Int
 // * Set an error in *config* and return “-1“ on error.
 //
 //go:linkname InitConfigGetInt C.PyInitConfig_GetInt
-func InitConfigGetInt(config *InitConfig, name *c.Char, value *c.UlongLong) c.Int
+func InitConfigGetInt(config *InitConfig, name *Char, value *UlongLong) Int
 
 // int PyInitConfig_GetStr(PyInitConfig *config, const char *name, char **value)
 // Get a string configuration option as a null-terminated UTF-8
@@ -406,7 +403,7 @@ func InitConfigGetInt(config *InitConfig, name *c.Char, value *c.UlongLong) c.In
 // “NULL“.
 //
 //go:linkname InitConfigGetStr C.PyInitConfig_GetStr
-func InitConfigGetStr(config *InitConfig, name *c.Char, value **c.Char) c.Int
+func InitConfigGetStr(config *InitConfig, name *Char, value **Char) Int
 
 // int PyInitConfig_GetStrList(PyInitConfig *config, const char *name, size_t *length, char ***items)
 // Get a string list configuration option as an array of
@@ -419,7 +416,7 @@ func InitConfigGetStr(config *InitConfig, name *c.Char, value **c.Char) c.Int
 // “PyInitConfig_FreeStrList(length, items)“.
 //
 //go:linkname InitConfigGetStrList C.PyInitConfig_GetStrList
-func InitConfigGetStrList(config *InitConfig, name *c.Char, length *c.Ulong, items ***c.Char) c.Int
+func InitConfigGetStrList(config *InitConfig, name *Char, length *Ulong, items ***Char) Int
 
 // void PyInitConfig_FreeStrList(size_t length, char **items)
 // Free memory of a string list created by
@@ -437,7 +434,7 @@ func InitConfigGetStrList(config *InitConfig, name *c.Char, length *c.Ulong, ite
 // “faulthandler“ to “1“.
 //
 //go:linkname InitConfigFreeStrList C.PyInitConfig_FreeStrList
-func InitConfigFreeStrList(length c.Ulong, items **c.Char)
+func InitConfigFreeStrList(length Ulong, items **Char)
 
 // int PyInitConfig_SetInt(PyInitConfig *config, const char *name, int64_t value)
 // Set an integer configuration option.
@@ -446,7 +443,7 @@ func InitConfigFreeStrList(length c.Ulong, items **c.Char)
 // * Set an error in *config* and return “-1“ on error.
 //
 //go:linkname InitConfigSetInt C.PyInitConfig_SetInt
-func InitConfigSetInt(config *InitConfig, name *c.Char, value c.UlongLong) c.Int
+func InitConfigSetInt(config *InitConfig, name *Char, value UlongLong) Int
 
 // int PyInitConfig_SetStr(PyInitConfig *config, const char *name, const char *value)
 // Set a string configuration option from a null-terminated UTF-8
@@ -456,7 +453,7 @@ func InitConfigSetInt(config *InitConfig, name *c.Char, value c.UlongLong) c.Int
 // * Set an error in *config* and return “-1“ on error.
 //
 //go:linkname InitConfigSetStr C.PyInitConfig_SetStr
-func InitConfigSetStr(config *InitConfig, name *c.Char, value *c.Char) c.Int
+func InitConfigSetStr(config *InitConfig, name *Char, value *Char) Int
 
 // int PyInitConfig_SetStrList(PyInitConfig *config, const char *name, size_t length, char * const *items)
 // Set a string list configuration option from an array of
@@ -469,7 +466,7 @@ func InitConfigSetStr(config *InitConfig, name *c.Char, value *c.Char) c.Int
 // ------
 //
 //go:linkname InitConfigSetStrList C.PyInitConfig_SetStrList
-func InitConfigSetStrList(config *InitConfig, name *c.Char, length c.Ulong, items **c.Char) c.Int
+func InitConfigSetStrList(config *InitConfig, name *Char, length Ulong, items **Char) Int
 
 // int PyInitConfig_AddModule(PyInitConfig *config, const char *name, PyObject* (*initfunc)(void))
 // Add a built-in extension module to the table of built-in modules.
@@ -490,7 +487,7 @@ func InitConfigSetStrList(config *InitConfig, name *c.Char, length c.Ulong, item
 // -----------------
 //
 //go:linkname InitConfigAddModule C.PyInitConfig_AddModule
-func InitConfigAddModule(config *InitConfig, name *c.Char, initfunc func() *Object) c.Int
+func InitConfigAddModule(config *InitConfig, name *Char, initfunc func() *Object) Int
 
 // int Py_InitializeFromInitConfig(PyInitConfig *config)
 // Initialize Python from the initialization configuration.
@@ -562,7 +559,7 @@ func InitConfigAddModule(config *InitConfig, name *c.Char, initfunc func() *Obje
 // “"argv"“ is read from :data:`sys.argv`.
 //
 //go:linkname InitializeFromInitConfig C.Py_InitializeFromInitConfig
-func InitializeFromInitConfig(config *InitConfig) c.Int
+func InitializeFromInitConfig(config *InitConfig) Int
 
 // void Py_GetArgcArgv(int *argc, wchar_t ***argv)
 // Get the original command line arguments, before Python modified them.
@@ -600,7 +597,7 @@ func InitializeFromInitConfig(config *InitConfig) c.Int
 // :c:func:`Py_InitializeFromConfig` stops at the "Core" initialization phase.
 //
 //go:linkname GetArgcArgv C.Py_GetArgcArgv
-func GetArgcArgv(argc *c.Int, argv ***c.Wchar)
+func GetArgcArgv(argc *Int, argv ***Wchar)
 
 // PyStatus _Py_InitializeMain(void)
 // Move to the "Main" initialization phase, finish the Python initialization.

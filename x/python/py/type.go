@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyType_Check(PyObject *o)
@@ -17,7 +14,7 @@ import (
 // This function always succeeds.
 //
 //go:linkname TypeCheck C.PyType_Check
-func TypeCheck(o *Object) c.Int
+func TypeCheck(o *Object) Int
 
 // int PyType_CheckExact(PyObject *o)
 // Return non-zero if the object *o* is a type object, but not a subtype of
@@ -25,13 +22,13 @@ func TypeCheck(o *Object) c.Int
 // always succeeds.
 //
 //go:linkname TypeCheckExact C.PyType_CheckExact
-func TypeCheckExact(o *Object) c.Int
+func TypeCheckExact(o *Object) Int
 
 // unsigned int PyType_ClearCache()
 // Clear the internal lookup cache. Return the current version tag.
 //
 //go:linkname TypeClearCache C.PyType_ClearCache
-func TypeClearCache() c.Uint
+func TypeClearCache() Uint
 
 // unsigned long PyType_GetFlags(PyTypeObject* type)
 // Return the :c:member:`~PyTypeObject.tp_flags` member of *type*. This function is primarily
@@ -42,7 +39,7 @@ func TypeClearCache() c.Uint
 // The return type is now “unsigned long“ rather than “long“.
 //
 //go:linkname TypeGetFlags C.PyType_GetFlags
-func TypeGetFlags(type_ *TypeObject) c.Ulong
+func TypeGetFlags(type_ *TypeObject) Ulong
 
 // PyObject* PyType_GetDict(PyTypeObject* type)
 // Return the type object's internal namespace, which is otherwise only
@@ -76,7 +73,7 @@ func TypeModified(type_ *TypeObject)
 // exception.
 //
 //go:linkname TypeAddWatcher C.PyType_AddWatcher
-func TypeAddWatcher(callback TypeWatchCallback) c.Int
+func TypeAddWatcher(callback TypeWatchCallback) Int
 
 // int PyType_ClearWatcher(int watcher_id)
 // Clear watcher identified by *watcher_id* (previously returned from
@@ -88,7 +85,7 @@ func TypeAddWatcher(callback TypeWatchCallback) c.Int
 // :c:func:`PyType_AddWatcher`.
 //
 //go:linkname TypeClearWatcher C.PyType_ClearWatcher
-func TypeClearWatcher(watcherId c.Int) c.Int
+func TypeClearWatcher(watcherId Int) Int
 
 // int PyType_Watch(int watcher_id, PyObject *type)
 // Mark *type* as watched. The callback granted *watcher_id* by
@@ -102,21 +99,21 @@ func TypeClearWatcher(watcherId c.Int) c.Int
 // not returned to it by a previous call to :c:func:`PyType_AddWatcher`.
 //
 //go:linkname TypeWatch C.PyType_Watch
-func TypeWatch(watcherId c.Int, type_ *Object) c.Int
+func TypeWatch(watcherId Int, type_ *Object) Int
 
 // int PyType_HasFeature(PyTypeObject *o, int feature)
 // Return non-zero if the type object *o* sets the feature *feature*.
 // Type features are denoted by single bit flags.
 //
 //go:linkname TypeHasFeature C.PyType_HasFeature
-func TypeHasFeature(o *TypeObject, feature c.Int) c.Int
+func TypeHasFeature(o *TypeObject, feature Int) Int
 
 // int PyType_IS_GC(PyTypeObject *o)
 // Return true if the type object includes support for the cycle detector; this
 // tests the type flag :c:macro:`Py_TPFLAGS_HAVE_GC`.
 //
 //go:linkname TypeISGC C.PyType_IS_GC
-func TypeISGC(o *TypeObject) c.Int
+func TypeISGC(o *TypeObject) Int
 
 // int PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b)
 // Return true if *a* is a subtype of *b*.
@@ -127,7 +124,7 @@ func TypeISGC(o *TypeObject) c.Int
 // would do.
 //
 //go:linkname TypeIsSubtype C.PyType_IsSubtype
-func TypeIsSubtype(a *TypeObject, b *TypeObject) c.Int
+func TypeIsSubtype(a *TypeObject, b *TypeObject) Int
 
 // PyObject* PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
 // Generic handler for the :c:member:`~PyTypeObject.tp_alloc` slot of a type object.  Use
@@ -160,7 +157,7 @@ func TypeGenericNew(type_ *TypeObject, args *Object, kwds *Object) *Object
 // :c:member:`~PyTypeObject.tp_traverse` handle.
 //
 //go:linkname TypeReady C.PyType_Ready
-func TypeReady(type_ *TypeObject) c.Int
+func TypeReady(type_ *TypeObject) Int
 
 // PyObject* PyType_GetName(PyTypeObject *type)
 // Return the type's name. Equivalent to getting the type's
@@ -189,7 +186,7 @@ func TypeGetQualName(type_ *TypeObject) *Object
 // Previously, it was limited to :ref:`heap types <heap-types>`.
 //
 //go:linkname TypeGetSlot C.PyType_GetSlot
-func TypeGetSlot(type_ *TypeObject, slot c.Int) c.Pointer
+func TypeGetSlot(type_ *TypeObject, slot Int) Pointer
 
 // PyObject* PyType_GetModule(PyTypeObject *type)
 // Return the module object associated with the given type when the type was
@@ -222,7 +219,7 @@ func TypeGetModule(type_ *TypeObject) *Object
 // returns “NULL“ without setting an exception.
 //
 //go:linkname TypeGetModuleState C.PyType_GetModuleState
-func TypeGetModuleState(type_ *TypeObject) c.Pointer
+func TypeGetModuleState(type_ *TypeObject) Pointer
 
 // PyObject* PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
 // Find the first superclass whose module was created from
@@ -252,7 +249,7 @@ func TypeGetModuleByDef(type_ *TypeObject, def *ModuleDef) *Object
 // :ref:`heap types <heap-types>`.
 //
 //go:linkname UnstableTypeAssignVersionTag C.PyUnstable_Type_AssignVersionTag
-func UnstableTypeAssignVersionTag(type_ *TypeObject) c.Int
+func UnstableTypeAssignVersionTag(type_ *TypeObject) Int
 
 // PyObject* PyType_FromMetaclass(PyTypeObject *metaclass, PyObject *module, PyType_Spec *spec, PyObject *bases)
 // Create and return a :ref:`heap type <heap-types>` from the *spec*
@@ -371,7 +368,7 @@ func TypeFromSpec(spec *TypeSpec) *Object
 // called on *type* or any type in its MRO; violating this rule could cause
 // infinite recursion.
 // llgo:type C
-type TypeWatchCallback func(type_ *Object) c.Int
+type TypeWatchCallback func(type_ *Object) Int
 
 // PyType_Spec
 // Structure defining a type's behavior.
@@ -386,5 +383,5 @@ type TypeSlot = C.PyType_Slot
 // This is the type object for type objects; it is the same object as
 // :class:`type` in the Python layer.
 func TypeType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyType_Type))
+	return *(*TypeObject)(Pointer(&C.PyType_Type))
 }

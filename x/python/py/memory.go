@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // void* PyMem_RawMalloc(size_t n)
@@ -20,7 +17,7 @@ import (
 // been initialized in any way.
 //
 //go:linkname MemRawMalloc C.PyMem_RawMalloc
-func MemRawMalloc(n c.Ulong) c.Pointer
+func MemRawMalloc(n Ulong) Pointer
 
 // void* PyMem_RawCalloc(size_t nelem, size_t elsize)
 // Allocates *nelem* elements each whose size in bytes is *elsize* and returns
@@ -32,7 +29,7 @@ func MemRawMalloc(n c.Ulong) c.Pointer
 // called instead.
 //
 //go:linkname MemRawCalloc C.PyMem_RawCalloc
-func MemRawCalloc(nelem c.Ulong, elsize c.Ulong) c.Pointer
+func MemRawCalloc(nelem Ulong, elsize Ulong) Pointer
 
 // void* PyMem_RawRealloc(void *p, size_t n)
 // Resizes the memory block pointed to by *p* to *n* bytes. The contents will
@@ -50,7 +47,7 @@ func MemRawCalloc(nelem c.Ulong, elsize c.Ulong) c.Pointer
 // remains a valid pointer to the previous memory area.
 //
 //go:linkname MemRawRealloc C.PyMem_RawRealloc
-func MemRawRealloc(p c.Pointer, n c.Ulong) c.Pointer
+func MemRawRealloc(p Pointer, n Ulong) Pointer
 
 // void PyMem_RawFree(void *p)
 // Frees the memory block pointed to by *p*, which must have been returned by a
@@ -80,7 +77,7 @@ func MemRawRealloc(p c.Pointer, n c.Ulong) c.Pointer
 // The default allocator is now pymalloc instead of system :c:func:`malloc`.
 //
 //go:linkname MemRawFree C.PyMem_RawFree
-func MemRawFree(p c.Pointer)
+func MemRawFree(p Pointer)
 
 // void* PyMem_Malloc(size_t n)
 // Allocates *n* bytes and returns a pointer of type :c:expr:`void*` to the
@@ -91,7 +88,7 @@ func MemRawFree(p c.Pointer)
 // been initialized in any way.
 //
 //go:linkname MemMalloc C.PyMem_Malloc
-func MemMalloc(n c.Ulong) c.Pointer
+func MemMalloc(n Ulong) Pointer
 
 // void* PyMem_Calloc(size_t nelem, size_t elsize)
 // Allocates *nelem* elements each whose size in bytes is *elsize* and returns
@@ -103,7 +100,7 @@ func MemMalloc(n c.Ulong) c.Pointer
 // instead.
 //
 //go:linkname MemCalloc C.PyMem_Calloc
-func MemCalloc(nelem c.Ulong, elsize c.Ulong) c.Pointer
+func MemCalloc(nelem Ulong, elsize Ulong) Pointer
 
 // void* PyMem_Realloc(void *p, size_t n)
 // Resizes the memory block pointed to by *p* to *n* bytes. The contents will be
@@ -120,7 +117,7 @@ func MemCalloc(nelem c.Ulong, elsize c.Ulong) c.Pointer
 // a valid pointer to the previous memory area.
 //
 //go:linkname MemRealloc C.PyMem_Realloc
-func MemRealloc(p c.Pointer, n c.Ulong) c.Pointer
+func MemRealloc(p Pointer, n Ulong) Pointer
 
 // void PyMem_Free(void *p)
 // Frees the memory block pointed to by *p*, which must have been returned by a
@@ -134,7 +131,7 @@ func MemRealloc(p c.Pointer, n c.Ulong) c.Pointer
 // *TYPE* refers to any C type.
 //
 //go:linkname MemFree C.PyMem_Free
-func MemFree(p c.Pointer)
+func MemFree(p Pointer)
 
 // void PyMem_Del(void *p)
 // Same as :c:func:`PyMem_Free`.
@@ -175,7 +172,7 @@ func MemFree(p c.Pointer)
 // functions.
 //
 //go:linkname MemDel C.PyMem_Del
-func MemDel(p c.Pointer)
+func MemDel(p Pointer)
 
 // void* PyObject_Malloc(size_t n)
 // Allocates *n* bytes and returns a pointer of type :c:expr:`void*` to the
@@ -186,7 +183,7 @@ func MemDel(p c.Pointer)
 // been initialized in any way.
 //
 //go:linkname ObjectMalloc C.PyObject_Malloc
-func ObjectMalloc(n c.Ulong) c.Pointer
+func ObjectMalloc(n Ulong) Pointer
 
 // void* PyObject_Calloc(size_t nelem, size_t elsize)
 // Allocates *nelem* elements each whose size in bytes is *elsize* and returns
@@ -198,7 +195,7 @@ func ObjectMalloc(n c.Ulong) c.Pointer
 // instead.
 //
 //go:linkname ObjectCalloc C.PyObject_Calloc
-func ObjectCalloc(nelem c.Ulong, elsize c.Ulong) c.Pointer
+func ObjectCalloc(nelem Ulong, elsize Ulong) Pointer
 
 // void* PyObject_Realloc(void *p, size_t n)
 // Resizes the memory block pointed to by *p* to *n* bytes. The contents will be
@@ -215,7 +212,7 @@ func ObjectCalloc(nelem c.Ulong, elsize c.Ulong) c.Pointer
 // a valid pointer to the previous memory area.
 //
 //go:linkname ObjectRealloc C.PyObject_Realloc
-func ObjectRealloc(p c.Pointer, n c.Ulong) c.Pointer
+func ObjectRealloc(p Pointer, n Ulong) Pointer
 
 // void PyObject_Free(void *p)
 // Frees the memory block pointed to by *p*, which must have been returned by a
@@ -259,7 +256,7 @@ func ObjectRealloc(p c.Pointer, n c.Ulong) c.Pointer
 // ===========================
 //
 //go:linkname ObjectFree C.PyObject_Free
-func ObjectFree(p c.Pointer)
+func ObjectFree(p Pointer)
 
 // void PyMem_GetAllocator(PyMemAllocatorDomain domain, PyMemAllocatorEx *allocator)
 // Get the memory block allocator of the specified domain.
@@ -480,7 +477,7 @@ func ObjectSetArenaAllocator(allocator *ObjectArenaAllocator)
 // If memory block is already tracked, update the existing trace.
 //
 //go:linkname TraceMallocTrack C.PyTraceMalloc_Track
-func TraceMallocTrack(domain c.Uint, ptr c.Ulong, size c.Ulong) c.Int
+func TraceMallocTrack(domain Uint, ptr Ulong, size Ulong) Int
 
 // int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr)
 // Untrack an allocated memory block in the :mod:`tracemalloc` module.
@@ -541,7 +538,7 @@ func TraceMallocTrack(domain c.Uint, ptr c.Ulong, size c.Ulong) c.Int
 // object types in C.
 //
 //go:linkname TraceMallocUntrack C.PyTraceMalloc_Untrack
-func TraceMallocUntrack(domain c.Uint, ptr c.Ulong) c.Int
+func TraceMallocUntrack(domain Uint, ptr Ulong) Int
 
 // PyMemAllocatorEx
 // Structure used to describe a memory block allocator. The structure has

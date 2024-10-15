@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* _PyObject_New(PyTypeObject *type)
@@ -44,4 +41,4 @@ func ObjectInitVar(op *VarObject, type_ *TypeObject, size SSizeT) *VarObject
 // Same as :c:func:`PyObject_Free`.
 //
 //go:linkname ObjectDel C.PyObject_Del
-func ObjectDel(op c.Pointer)
+func ObjectDel(op Pointer)

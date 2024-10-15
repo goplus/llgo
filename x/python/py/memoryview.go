@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject *PyMemoryView_FromObject(PyObject *obj)
@@ -25,7 +22,7 @@ func MemoryViewFromObject(obj *Object) *Object
 // *flags* can be one of :c:macro:`PyBUF_READ` or :c:macro:`PyBUF_WRITE`.
 //
 //go:linkname MemoryViewFromMemory C.PyMemoryView_FromMemory
-func MemoryViewFromMemory(mem *c.Char, size SSizeT, flags c.Int) *Object
+func MemoryViewFromMemory(mem *Char, size SSizeT, flags Int) *Object
 
 // PyObject *PyMemoryView_FromBuffer(const Py_buffer *view)
 // Create a memoryview object wrapping the given buffer structure *view*.
@@ -45,7 +42,7 @@ func MemoryViewFromBuffer(view *Buffer) *Object
 // *buffertype* can be one of :c:macro:`PyBUF_READ` or :c:macro:`PyBUF_WRITE`.
 //
 //go:linkname MemoryViewGetContiguous C.PyMemoryView_GetContiguous
-func MemoryViewGetContiguous(obj *Object, buffertype c.Int, order c.Char) *Object
+func MemoryViewGetContiguous(obj *Object, buffertype Int, order Char) *Object
 
 // int PyMemoryView_Check(PyObject *obj)
 // Return true if the object *obj* is a memoryview object.  It is not
@@ -53,7 +50,7 @@ func MemoryViewGetContiguous(obj *Object, buffertype c.Int, order c.Char) *Objec
 // function always succeeds.
 //
 //go:linkname MemoryViewCheck C.PyMemoryView_Check
-func MemoryViewCheck(obj *Object) c.Int
+func MemoryViewCheck(obj *Object) Int
 
 // Py_buffer *PyMemoryView_GET_BUFFER(PyObject *mview)
 // Return a pointer to the memoryview's private copy of the exporter's buffer.

@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyNumber_Check(PyObject *o)
@@ -18,7 +15,7 @@ import (
 // Returns “1“ if *o* is an index integer.
 //
 //go:linkname NumberCheck C.PyNumber_Check
-func NumberCheck(o *Object) c.Int
+func NumberCheck(o *Object) Int
 
 // PyObject* PyNumber_Add(PyObject *o1, PyObject *o2)
 // Returns the result of adding *o1* and *o2*, or “NULL“ on failure.  This is the
@@ -304,7 +301,7 @@ func NumberIndex(o *Object) *Object
 // :c:func:`PyNumber_Index` first.
 //
 //go:linkname NumberToBase C.PyNumber_ToBase
-func NumberToBase(n *Object, base c.Int) *Object
+func NumberToBase(n *Object, base Int) *Object
 
 // Py_ssize_t PyNumber_AsSsize_t(PyObject *o, PyObject *exc)
 // Returns *o* converted to a :c:type:`Py_ssize_t` value if *o* can be interpreted as an
@@ -326,4 +323,4 @@ func NumberAsSsizeT(o *Object, exc *Object) SSizeT
 // This function always succeeds.
 //
 //go:linkname IndexCheck C.PyIndex_Check
-func IndexCheck(o *Object) c.Int
+func IndexCheck(o *Object) Int

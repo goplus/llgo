@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyNumberMethods
@@ -133,7 +130,7 @@ type Destructor func(*Object)
 // void (*freefunc)(void *)
 // See :c:member:`~PyTypeObject.tp_free`.
 // llgo:type C
-type Freefunc func(c.Pointer)
+type Freefunc func(Pointer)
 
 // PyObject *(*newfunc)(PyObject *, PyObject *, PyObject *)
 // See :c:member:`~PyTypeObject.tp_new`.
@@ -143,7 +140,7 @@ type Newfunc func(*Object, *Object, *Object) *Object
 // int (*initproc)(PyObject *, PyObject *, PyObject *)
 // See :c:member:`~PyTypeObject.tp_init`.
 // llgo:type C
-type Initproc func(*Object, *Object, *Object) c.Int
+type Initproc func(*Object, *Object, *Object) Int
 
 // PyObject *(*reprfunc)(PyObject *)
 // See :c:member:`~PyTypeObject.tp_repr`.
@@ -153,13 +150,13 @@ type Reprfunc func(*Object) *Object
 // PyObject *(*getattrfunc)(PyObject *self, char *attr)
 // Return the value of the named attribute for the object.
 // llgo:type C
-type Getattrfunc func(self *Object, attr *c.Char) *Object
+type Getattrfunc func(self *Object, attr *Char) *Object
 
 // int (*setattrfunc)(PyObject *self, char *attr, PyObject *value)
 // Set the value of the named attribute for the object.
 // The value argument is set to “NULL“ to delete the attribute.
 // llgo:type C
-type Setattrfunc func(self *Object, attr *c.Char, value *Object) c.Int
+type Setattrfunc func(self *Object, attr *Char, value *Object) Int
 
 // PyObject *(*getattrofunc)(PyObject *self, PyObject *attr)
 // Return the value of the named attribute for the object.
@@ -174,7 +171,7 @@ type Getattrofunc func(self *Object, attr *Object) *Object
 //
 // See :c:member:`~PyTypeObject.tp_setattro`.
 // llgo:type C
-type Setattrofunc func(self *Object, attr *Object, value *Object) c.Int
+type Setattrofunc func(self *Object, attr *Object, value *Object) Int
 
 // PyObject *(*descrgetfunc)(PyObject *, PyObject *, PyObject *)
 // See :c:member:`~PyTypeObject.tp_descr_get`.
@@ -184,7 +181,7 @@ type Descrgetfunc func(*Object, *Object, *Object) *Object
 // int (*descrsetfunc)(PyObject *, PyObject *, PyObject *)
 // See :c:member:`~PyTypeObject.tp_descr_set`.
 // llgo:type C
-type Descrsetfunc func(*Object, *Object, *Object) c.Int
+type Descrsetfunc func(*Object, *Object, *Object) Int
 
 // Py_hash_t (*hashfunc)(PyObject *)
 // See :c:member:`~PyTypeObject.tp_hash`.
@@ -194,7 +191,7 @@ type Hashfunc func(*Object) HashT
 // PyObject *(*richcmpfunc)(PyObject *, PyObject *, int)
 // See :c:member:`~PyTypeObject.tp_richcompare`.
 // llgo:type C
-type Richcmpfunc func(*Object, *Object, c.Int) *Object
+type Richcmpfunc func(*Object, *Object, Int) *Object
 
 // PyObject *(*getiterfunc)(PyObject *)
 // See :c:member:`~PyTypeObject.tp_iter`.
@@ -214,7 +211,7 @@ type Lenfunc func(*Object) SSizeT
 // int (*getbufferproc)(PyObject *, Py_buffer *, int)
 
 // llgo:type C
-type Getbufferproc func(*Object, *Buffer, c.Int) c.Int
+type Getbufferproc func(*Object, *Buffer, Int) Int
 
 // void (*releasebufferproc)(PyObject *, Py_buffer *)
 
@@ -249,12 +246,12 @@ type Ssizeargfunc func(*Object, SSizeT) *Object
 // int (*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *)
 
 // llgo:type C
-type Ssizeobjargproc func(*Object, SSizeT, *Object) c.Int
+type Ssizeobjargproc func(*Object, SSizeT, *Object) Int
 
 // int (*objobjproc)(PyObject *, PyObject *)
 
 // llgo:type C
-type Objobjproc func(*Object, *Object) c.Int
+type Objobjproc func(*Object, *Object) Int
 
 // int (*objobjargproc)(PyObject *, PyObject *, PyObject *)
 // .. _typedef-examples:
@@ -397,4 +394,4 @@ type Objobjproc func(*Object, *Object) c.Int
 // .tp_itemsize = sizeof(char *),
 // };
 // llgo:type C
-type Objobjargproc func(*Object, *Object, *Object) c.Int
+type Objobjargproc func(*Object, *Object, *Object) Int

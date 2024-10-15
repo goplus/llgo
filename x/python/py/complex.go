@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // Py_complex _Py_c_sum(Py_complex left, Py_complex right)
@@ -69,14 +66,14 @@ func CPow(num Complex, exp Complex) Complex
 // :c:type:`PyComplexObject`.  This function always succeeds.
 //
 //go:linkname ComplexCheck C.PyComplex_Check
-func ComplexCheck(p *Object) c.Int
+func ComplexCheck(p *Object) Int
 
 // int PyComplex_CheckExact(PyObject *p)
 // Return true if its argument is a :c:type:`PyComplexObject`, but not a subtype of
 // :c:type:`PyComplexObject`.  This function always succeeds.
 //
 //go:linkname ComplexCheckExact C.PyComplex_CheckExact
-func ComplexCheckExact(p *Object) c.Int
+func ComplexCheckExact(p *Object) Int
 
 // PyObject* PyComplex_FromCComplex(Py_complex v)
 // Create a new Python complex number object from a C :c:type:`Py_complex` value.
@@ -90,7 +87,7 @@ func ComplexFromCComplex(v Complex) *Object
 // Return “NULL“ with an exception set on error.
 //
 //go:linkname ComplexFromDoubles C.PyComplex_FromDoubles
-func ComplexFromDoubles(real c.Double, imag c.Double) *Object
+func ComplexFromDoubles(real Double, imag Double) *Object
 
 // double PyComplex_RealAsDouble(PyObject *op)
 // Return the real part of *op* as a C :c:expr:`double`.
@@ -107,7 +104,7 @@ func ComplexFromDoubles(real c.Double, imag c.Double) *Object
 // Use :meth:`~object.__complex__` if available.
 //
 //go:linkname ComplexRealAsDouble C.PyComplex_RealAsDouble
-func ComplexRealAsDouble(op *Object) c.Double
+func ComplexRealAsDouble(op *Object) Double
 
 // double PyComplex_ImagAsDouble(PyObject *op)
 // Return the imaginary part of *op* as a C :c:expr:`double`.
@@ -124,7 +121,7 @@ func ComplexRealAsDouble(op *Object) c.Double
 // Use :meth:`~object.__complex__` if available.
 //
 //go:linkname ComplexImagAsDouble C.PyComplex_ImagAsDouble
-func ComplexImagAsDouble(op *Object) c.Double
+func ComplexImagAsDouble(op *Object) Double
 
 // Py_complex PyComplex_AsCComplex(PyObject *op)
 // Return the :c:type:`Py_complex` value of the complex number *op*.
@@ -158,5 +155,5 @@ type ComplexObject = C.PyComplexObject
 // This instance of :c:type:`PyTypeObject` represents the Python complex number
 // type. It is the same object as :class:`complex` in the Python layer.
 func ComplexType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyComplex_Type))
+	return *(*TypeObject)(Pointer(&C.PyComplex_Type))
 }

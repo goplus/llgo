@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyMapping_Check(PyObject *o)
@@ -18,7 +15,7 @@ import (
 // determine what type of keys the class supports. This function always succeeds.
 //
 //go:linkname MappingCheck C.PyMapping_Check
-func MappingCheck(o *Object) c.Int
+func MappingCheck(o *Object) Int
 
 // Py_ssize_t PyMapping_Size(PyObject *o)
 // Py_ssize_t PyMapping_Length(PyObject *o)
@@ -37,7 +34,7 @@ func MappingSize(o *Object) SSizeT
 // rather than a :c:expr:`PyObject*`.
 //
 //go:linkname MappingGetItemString C.PyMapping_GetItemString
-func MappingGetItemString(o *Object, key *c.Char) *Object
+func MappingGetItemString(o *Object, key *Char) *Object
 
 // int PyMapping_SetItemString(PyObject *o, const char *key, PyObject *v)
 // This is the same as :c:func:`PyObject_SetItem`, but *key* is
@@ -45,13 +42,13 @@ func MappingGetItemString(o *Object, key *c.Char) *Object
 // rather than a :c:expr:`PyObject*`.
 //
 //go:linkname MappingSetItemString C.PyMapping_SetItemString
-func MappingSetItemString(o *Object, key *c.Char, v *Object) c.Int
+func MappingSetItemString(o *Object, key *Char, v *Object) Int
 
 // int PyMapping_DelItem(PyObject *o, PyObject *key)
 // This is an alias of :c:func:`PyObject_DelItem`.
 //
 //go:linkname MappingDelItem C.PyMapping_DelItem
-func MappingDelItem(o *Object, key *Object) c.Int
+func MappingDelItem(o *Object, key *Object) Int
 
 // int PyMapping_DelItemString(PyObject *o, const char *key)
 // This is the same as :c:func:`PyObject_DelItem`, but *key* is
@@ -59,7 +56,7 @@ func MappingDelItem(o *Object, key *Object) c.Int
 // rather than a :c:expr:`PyObject*`.
 //
 //go:linkname MappingDelItemString C.PyMapping_DelItemString
-func MappingDelItemString(o *Object, key *c.Char) c.Int
+func MappingDelItemString(o *Object, key *Char) Int
 
 // int PyMapping_HasKey(PyObject *o, PyObject *key)
 // Return “1“ if the mapping object has the key *key* and “0“ otherwise.
@@ -74,7 +71,7 @@ func MappingDelItemString(o *Object, key *c.Char) c.Int
 // :c:func:`PyMapping_GetOptionalItem` or :c:func:`PyObject_GetItem()` instead.
 //
 //go:linkname MappingHasKey C.PyMapping_HasKey
-func MappingHasKey(o *Object, key *Object) c.Int
+func MappingHasKey(o *Object, key *Object) Int
 
 // int PyMapping_HasKeyString(PyObject *o, const char *key)
 // This is the same as :c:func:`PyMapping_HasKey`, but *key* is
@@ -91,7 +88,7 @@ func MappingHasKey(o *Object, key *Object) c.Int
 // :c:func:`PyMapping_GetItemString` instead.
 //
 //go:linkname MappingHasKeyString C.PyMapping_HasKeyString
-func MappingHasKeyString(o *Object, key *c.Char) c.Int
+func MappingHasKeyString(o *Object, key *Char) Int
 
 // PyObject* PyMapping_Keys(PyObject *o)
 // On success, return a list of the keys in object *o*.  On failure, return

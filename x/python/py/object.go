@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* Py_GetConstant(unsigned int constant_id)
@@ -19,7 +16,7 @@ import (
 // *constant_id* must be one of these constant identifiers:
 //
 //go:linkname GetConstant C.Py_GetConstant
-func GetConstant(constantId c.Uint) *Object
+func GetConstant(constantId Uint) *Object
 
 // int PyObject_Print(PyObject *o, FILE *fp, int flags)
 // Print an object *o*, on file *fp*.  Returns “-1“ on error.  The flags argument
@@ -28,7 +25,7 @@ func GetConstant(constantId c.Uint) *Object
 // instead of the :func:`repr`.
 //
 //go:linkname ObjectPrint C.PyObject_Print
-func ObjectPrint(o *Object, fp c.FilePtr, flags c.Int) c.Int
+func ObjectPrint(o *Object, fp FilePtr, flags Int) Int
 
 // int PyObject_HasAttr(PyObject *o, PyObject *attr_name)
 // Returns “1“ if *o* has the attribute *attr_name*, and “0“ otherwise.
@@ -42,7 +39,7 @@ func ObjectPrint(o *Object, fp c.FilePtr, flags c.Int) c.Int
 // :c:func:`PyObject_GetOptionalAttr` or :c:func:`PyObject_GetAttr` instead.
 //
 //go:linkname ObjectHasAttr C.PyObject_HasAttr
-func ObjectHasAttr(o *Object, attrName *Object) c.Int
+func ObjectHasAttr(o *Object, attrName *Object) Int
 
 // int PyObject_HasAttrString(PyObject *o, const char *attr_name)
 // This is the same as :c:func:`PyObject_HasAttr`, but *attr_name* is
@@ -59,7 +56,7 @@ func ObjectHasAttr(o *Object, attrName *Object) c.Int
 // or :c:func:`PyObject_GetAttrString` instead.
 //
 //go:linkname ObjectHasAttrString C.PyObject_HasAttrString
-func ObjectHasAttrString(o *Object, attrName *c.Char) c.Int
+func ObjectHasAttrString(o *Object, attrName *Char) Int
 
 // PyObject* PyObject_GetAttr(PyObject *o, PyObject *attr_name)
 // Retrieve an attribute named *attr_name* from object *o*. Returns the attribute
@@ -81,7 +78,7 @@ func ObjectGetAttr(o *Object, attrName *Object) *Object
 // :c:func:`PyObject_GetOptionalAttrString` instead.
 //
 //go:linkname ObjectGetAttrString C.PyObject_GetAttrString
-func ObjectGetAttrString(o *Object, attrName *c.Char) *Object
+func ObjectGetAttrString(o *Object, attrName *Char) *Object
 
 // PyObject* PyObject_GenericGetAttr(PyObject *o, PyObject *name)
 // Generic attribute getter function that is meant to be put into a type
@@ -105,7 +102,7 @@ func ObjectGenericGetAttr(o *Object, name *Object) *Object
 // plans to remove it.
 //
 //go:linkname ObjectSetAttr C.PyObject_SetAttr
-func ObjectSetAttr(o *Object, attrName *Object, v *Object) c.Int
+func ObjectSetAttr(o *Object, attrName *Object, v *Object) Int
 
 // int PyObject_SetAttrString(PyObject *o, const char *attr_name, PyObject *v)
 // This is the same as :c:func:`PyObject_SetAttr`, but *attr_name* is
@@ -124,7 +121,7 @@ func ObjectSetAttr(o *Object, attrName *Object, v *Object) c.Int
 // used internally to create a key object.
 //
 //go:linkname ObjectSetAttrString C.PyObject_SetAttrString
-func ObjectSetAttrString(o *Object, attrName *c.Char, v *Object) c.Int
+func ObjectSetAttrString(o *Object, attrName *Char, v *Object) Int
 
 // int PyObject_GenericSetAttr(PyObject *o, PyObject *name, PyObject *value)
 // Generic attribute setter and deleter function that is meant
@@ -137,14 +134,14 @@ func ObjectSetAttrString(o *Object, attrName *c.Char, v *Object) c.Int
 // is raised and “-1“ is returned.
 //
 //go:linkname ObjectGenericSetAttr C.PyObject_GenericSetAttr
-func ObjectGenericSetAttr(o *Object, name *Object, value *Object) c.Int
+func ObjectGenericSetAttr(o *Object, name *Object, value *Object) Int
 
 // int PyObject_DelAttr(PyObject *o, PyObject *attr_name)
 // Delete attribute named *attr_name*, for object *o*. Returns “-1“ on failure.
 // This is the equivalent of the Python statement “del o.attr_name“.
 //
 //go:linkname ObjectDelAttr C.PyObject_DelAttr
-func ObjectDelAttr(o *Object, attrName *Object) c.Int
+func ObjectDelAttr(o *Object, attrName *Object) Int
 
 // int PyObject_DelAttrString(PyObject *o, const char *attr_name)
 // This is the same as :c:func:`PyObject_DelAttr`, but *attr_name* is
@@ -160,7 +157,7 @@ func ObjectDelAttr(o *Object, attrName *Object) c.Int
 // used internally to create a key object for lookup.
 //
 //go:linkname ObjectDelAttrString C.PyObject_DelAttrString
-func ObjectDelAttrString(o *Object, attrName *c.Char) c.Int
+func ObjectDelAttrString(o *Object, attrName *Char) Int
 
 // PyObject* PyObject_GenericGetDict(PyObject *o, void *context)
 // A generic implementation for the getter of a “__dict__“ descriptor. It
@@ -175,14 +172,14 @@ func ObjectDelAttrString(o *Object, attrName *c.Char) c.Int
 // On failure, returns “NULL“ with an exception set.
 //
 //go:linkname ObjectGenericGetDict C.PyObject_GenericGetDict
-func ObjectGenericGetDict(o *Object, context c.Pointer) *Object
+func ObjectGenericGetDict(o *Object, context Pointer) *Object
 
 // int PyObject_GenericSetDict(PyObject *o, PyObject *value, void *context)
 // A generic implementation for the setter of a “__dict__“ descriptor. This
 // implementation does not allow the dictionary to be deleted.
 //
 //go:linkname ObjectGenericSetDict C.PyObject_GenericSetDict
-func ObjectGenericSetDict(o *Object, value *Object, context c.Pointer) c.Int
+func ObjectGenericSetDict(o *Object, value *Object, context Pointer) Int
 
 // PyObject** _PyObject_GetDictPtr(PyObject *obj)
 // Return a pointer to :py:attr:`~object.__dict__` of the object *obj*.
@@ -204,7 +201,7 @@ func ObjectGetDictPtr(obj *Object) **Object
 // to *opid*. Returns the value of the comparison on success, or “NULL“ on failure.
 //
 //go:linkname ObjectRichCompare C.PyObject_RichCompare
-func ObjectRichCompare(o1 *Object, o2 *Object, opid c.Int) *Object
+func ObjectRichCompare(o1 *Object, o2 *Object, opid Int) *Object
 
 // int PyObject_RichCompareBool(PyObject *o1, PyObject *o2, int opid)
 // Compare the values of *o1* and *o2* using the operation specified by *opid*,
@@ -216,7 +213,7 @@ func ObjectRichCompare(o1 *Object, o2 *Object, opid c.Int) *Object
 // will always return “1“ for :c:macro:`Py_EQ` and “0“ for :c:macro:`Py_NE`.
 //
 //go:linkname ObjectRichCompareBool C.PyObject_RichCompareBool
-func ObjectRichCompareBool(o1 *Object, o2 *Object, opid c.Int) c.Int
+func ObjectRichCompareBool(o1 *Object, o2 *Object, opid Int) Int
 
 // PyObject* PyObject_Format(PyObject *obj, PyObject *format_spec)
 // Format *obj* using *format_spec*. This is equivalent to the Python
@@ -298,7 +295,7 @@ func ObjectBytes(o *Object) *Object
 // a :attr:`~type.__bases__` attribute (which must be a tuple of base classes).
 //
 //go:linkname ObjectIsSubclass C.PyObject_IsSubclass
-func ObjectIsSubclass(derived *Object, cls *Object) c.Int
+func ObjectIsSubclass(derived *Object, cls *Object) Int
 
 // int PyObject_IsInstance(PyObject *inst, PyObject *cls)
 // Return “1“ if *inst* is an instance of the class *cls* or a subclass of
@@ -320,7 +317,7 @@ func ObjectIsSubclass(derived *Object, cls *Object) c.Int
 // of base classes).
 //
 //go:linkname ObjectIsInstance C.PyObject_IsInstance
-func ObjectIsInstance(inst *Object, cls *Object) c.Int
+func ObjectIsInstance(inst *Object, cls *Object) Int
 
 // Py_hash_t PyObject_Hash(PyObject *o)
 // .. index:: pair: built-in function; hash
@@ -349,7 +346,7 @@ func ObjectHashNotImplemented(o *Object) HashT
 // “-1“.
 //
 //go:linkname ObjectIsTrue C.PyObject_IsTrue
-func ObjectIsTrue(o *Object) c.Int
+func ObjectIsTrue(o *Object) Int
 
 // int PyObject_Not(PyObject *o)
 // Returns “0“ if the object *o* is considered to be true, and “1“ otherwise.
@@ -357,7 +354,7 @@ func ObjectIsTrue(o *Object) c.Int
 // “-1“.
 //
 //go:linkname ObjectNot C.PyObject_Not
-func ObjectNot(o *Object) c.Int
+func ObjectNot(o *Object) Int
 
 // PyObject* PyObject_Type(PyObject *o)
 // .. index:: pair: built-in function; type
@@ -379,7 +376,7 @@ func ObjectType(o *Object) *Object
 // “0“ otherwise.  Both parameters must be non-“NULL“.
 //
 //go:linkname ObjectTypeCheck C.PyObject_TypeCheck
-func ObjectTypeCheck(o *Object, type_ *TypeObject) c.Int
+func ObjectTypeCheck(o *Object, type_ *TypeObject) Int
 
 // Py_ssize_t PyObject_Size(PyObject *o)
 // Py_ssize_t PyObject_Length(PyObject *o)
@@ -416,14 +413,14 @@ func ObjectGetItem(o *Object, key *Object) *Object
 // not* steal a reference to *v*.
 //
 //go:linkname ObjectSetItem C.PyObject_SetItem
-func ObjectSetItem(o *Object, key *Object, v *Object) c.Int
+func ObjectSetItem(o *Object, key *Object, v *Object) Int
 
 // int PyObject_DelItem(PyObject *o, PyObject *key)
 // Remove the mapping for the object *key* from the object *o*.  Return “-1“
 // on failure.  This is equivalent to the Python statement “del o[key]“.
 //
 //go:linkname ObjectDelItem C.PyObject_DelItem
-func ObjectDelItem(o *Object, key *Object) c.Int
+func ObjectDelItem(o *Object, key *Object) Int
 
 // PyObject* PyObject_Dir(PyObject *o)
 // This is equivalent to the Python expression “dir(o)“, returning a (possibly
@@ -464,7 +461,7 @@ func ObjectGetAIter(o *Object) *Object
 // On error, set an exception and return “NULL“.
 //
 //go:linkname ObjectGetTypeData C.PyObject_GetTypeData
-func ObjectGetTypeData(o *Object, cls *TypeObject) c.Pointer
+func ObjectGetTypeData(o *Object, cls *TypeObject) Pointer
 
 // Py_ssize_t PyType_GetTypeDataSize(PyTypeObject *cls)
 // Return the size of the instance memory space reserved for *cls*, i.e. the size of the
@@ -491,4 +488,4 @@ func TypeGetTypeDataSize(cls *TypeObject) SSizeT
 // :c:macro:`Py_TPFLAGS_ITEMS_AT_END` set.
 //
 //go:linkname ObjectGetItemData C.PyObject_GetItemData
-func ObjectGetItemData(o *Object) c.Pointer
+func ObjectGetItemData(o *Object) Pointer

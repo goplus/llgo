@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* PyFile_FromFd(int fd, const char *name, const char *mode, int buffering, const char *encoding, const char *errors, const char *newline, int closefd)
@@ -28,7 +25,7 @@ import (
 // Ignore *name* attribute.
 //
 //go:linkname FileFromFd C.PyFile_FromFd
-func FileFromFd(fd c.Int, name *c.Char, mode *c.Char, buffering c.Int, encoding *c.Char, errors *c.Char, newline *c.Char, closefd c.Int) *Object
+func FileFromFd(fd Int, name *Char, mode *Char, buffering Int, encoding *Char, errors *Char, newline *Char, closefd Int) *Object
 
 // int PyObject_AsFileDescriptor(PyObject *p)
 // Return the file descriptor associated with *p* as an :c:expr:`int`.  If the
@@ -38,7 +35,7 @@ func FileFromFd(fd c.Int, name *c.Char, mode *c.Char, buffering c.Int, encoding 
 // value.  Sets an exception and returns “-1“ on failure.
 //
 //go:linkname ObjectAsFileDescriptor C.PyObject_AsFileDescriptor
-func ObjectAsFileDescriptor(p *Object) c.Int
+func ObjectAsFileDescriptor(p *Object) Int
 
 // PyObject* PyFile_GetLine(PyObject *p, int n)
 // .. index:: single: EOFError (built-in exception)
@@ -54,7 +51,7 @@ func ObjectAsFileDescriptor(p *Object) c.Int
 // raised if the end of the file is reached immediately.
 //
 //go:linkname FileGetLine C.PyFile_GetLine
-func FileGetLine(p *Object, n c.Int) *Object
+func FileGetLine(p *Object, n Int) *Object
 
 // int PyFile_SetOpenCodeHook(Py_OpenCodeHookFunction handler)
 // Overrides the normal behavior of :func:`io.open_code` to pass its parameter
@@ -63,7 +60,7 @@ func FileGetLine(p *Object, n c.Int) *Object
 // The *handler* is a function of type:
 //
 //go:linkname FileSetOpenCodeHook C.PyFile_SetOpenCodeHook
-func FileSetOpenCodeHook(handler OpenCodeHookFunction) c.Int
+func FileSetOpenCodeHook(handler OpenCodeHookFunction) Int
 
 // int PyFile_WriteObject(PyObject *obj, PyObject *p, int flags)
 // .. index:: single: Py_PRINT_RAW (C macro)
@@ -74,14 +71,14 @@ func FileSetOpenCodeHook(handler OpenCodeHookFunction) c.Int
 // appropriate exception will be set.
 //
 //go:linkname FileWriteObject C.PyFile_WriteObject
-func FileWriteObject(obj *Object, p *Object, flags c.Int) c.Int
+func FileWriteObject(obj *Object, p *Object, flags Int) Int
 
 // int PyFile_WriteString(const char *s, PyObject *p)
 // Write string *s* to file object *p*.  Return “0“ on success or “-1“ on
 // failure; the appropriate exception will be set.
 //
 //go:linkname FileWriteString C.PyFile_WriteString
-func FileWriteString(s *c.Char, p *Object) c.Int
+func FileWriteString(s *Char, p *Object) Int
 
 // PyObject * (*Py_OpenCodeHookFunction)(PyObject *, void *)
 // Equivalent of :c:expr:`PyObject *(\*)(PyObject *path,
@@ -104,4 +101,4 @@ func FileWriteString(s *c.Char, p *Object) c.Int
 //
 // .. audit-event:: setopencodehook "" c.PyFile_SetOpenCodeHook
 // llgo:type C
-type OpenCodeHookFunction func(*Object, c.Pointer) *Object
+type OpenCodeHookFunction func(*Object, Pointer) *Object

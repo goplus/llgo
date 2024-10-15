@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyCell_Check(PyObject *ob)
@@ -16,7 +13,7 @@ import (
 // function always succeeds.
 //
 //go:linkname CellCheck C.PyCell_Check
-func CellCheck(ob *Object) c.Int
+func CellCheck(ob *Object) Int
 
 // PyObject* PyCell_New(PyObject *ob)
 // Create and return a new cell object containing the value *ob*. The parameter may
@@ -48,7 +45,7 @@ func CellGET(cell *Object) *Object
 // If *cell* is not a cell object, set an exception and return “-1“.
 //
 //go:linkname CellSet C.PyCell_Set
-func CellSet(cell *Object, value *Object) c.Int
+func CellSet(cell *Object, value *Object) Int
 
 // void PyCell_SET(PyObject *cell, PyObject *value)
 // Sets the value of the cell object *cell* to *value*.  No reference counts are
@@ -65,5 +62,5 @@ type CellObject = C.PyCellObject
 // PyTypeObject PyCell_Type
 // The type object corresponding to cell objects.
 func CellType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyCell_Type))
+	return *(*TypeObject)(Pointer(&C.PyCell_Type))
 }

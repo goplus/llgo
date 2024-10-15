@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* PyImport_ImportModule(const char *name)
@@ -21,7 +18,7 @@ import (
 // :c:expr:`const char *` as an argument instead of a :c:expr:`PyObject *`.
 //
 //go:linkname ImportImportModule C.PyImport_ImportModule
-func ImportImportModule(name *c.Char) *Object
+func ImportImportModule(name *Char) *Object
 
 // PyObject* PyImport_ImportModuleNoBlock(const char *name)
 // This function is a deprecated alias of :c:func:`PyImport_ImportModule`.
@@ -35,7 +32,7 @@ func ImportImportModule(name *c.Char) *Object
 // Use :c:func:`PyImport_ImportModule` instead.
 //
 //go:linkname ImportImportModuleNoBlock C.PyImport_ImportModuleNoBlock
-func ImportImportModuleNoBlock(name *c.Char) *Object
+func ImportImportModuleNoBlock(name *Char) *Object
 
 // PyObject* PyImport_ImportModuleEx(const char *name, PyObject *globals, PyObject *locals, PyObject *fromlist)
 // .. index:: pair: built-in function; __import__
@@ -53,7 +50,7 @@ func ImportImportModuleNoBlock(name *c.Char) *Object
 // :c:func:`PyImport_ImportModule`.
 //
 //go:linkname ImportImportModuleEx C.PyImport_ImportModuleEx
-func ImportImportModuleEx(name *c.Char, globals *Object, locals *Object, fromlist *Object) *Object
+func ImportImportModuleEx(name *Char, globals *Object, locals *Object, fromlist *Object) *Object
 
 // PyObject* PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals, PyObject *locals, PyObject *fromlist, int level)
 // Import a module.  This is best described by referring to the built-in Python
@@ -66,7 +63,7 @@ func ImportImportModuleEx(name *c.Char, globals *Object, locals *Object, fromlis
 // top-level package, unless a non-empty *fromlist* was given.
 //
 //go:linkname ImportImportModuleLevelObject C.PyImport_ImportModuleLevelObject
-func ImportImportModuleLevelObject(name *Object, globals *Object, locals *Object, fromlist *Object, level c.Int) *Object
+func ImportImportModuleLevelObject(name *Object, globals *Object, locals *Object, fromlist *Object, level Int) *Object
 
 // PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals, PyObject *fromlist, int level)
 // Similar to :c:func:`PyImport_ImportModuleLevelObject`, but the name is a
@@ -75,7 +72,7 @@ func ImportImportModuleLevelObject(name *Object, globals *Object, locals *Object
 // Negative values for *level* are no longer accepted.
 //
 //go:linkname ImportImportModuleLevel C.PyImport_ImportModuleLevel
-func ImportImportModuleLevel(name *c.Char, globals *Object, locals *Object, fromlist *Object, level c.Int) *Object
+func ImportImportModuleLevel(name *Char, globals *Object, locals *Object, fromlist *Object, level Int) *Object
 
 // PyObject* PyImport_Import(PyObject *name)
 // This is a higher-level interface that calls the current "import hook
@@ -108,7 +105,7 @@ func ImportAddModuleObject(name *Object) *Object
 // reference`.
 //
 //go:linkname ImportAddModule C.PyImport_AddModule
-func ImportAddModule(name *c.Char) *Object
+func ImportAddModule(name *Char) *Object
 
 // PyObject* PyImport_ExecCodeModule(const char *name, PyObject *co)
 // .. index:: pair: built-in function; compile
@@ -146,7 +143,7 @@ func ImportAddModule(name *c.Char) *Object
 // alternatives.
 //
 //go:linkname ImportExecCodeModule C.PyImport_ExecCodeModule
-func ImportExecCodeModule(name *c.Char, co *Object) *Object
+func ImportExecCodeModule(name *Char, co *Object) *Object
 
 // PyObject* PyImport_ExecCodeModuleEx(const char *name, PyObject *co, const char *pathname)
 // Like :c:func:`PyImport_ExecCodeModule`, but the :attr:`~module.__file__`
@@ -155,7 +152,7 @@ func ImportExecCodeModule(name *c.Char, co *Object) *Object
 // See also :c:func:`PyImport_ExecCodeModuleWithPathnames`.
 //
 //go:linkname ImportExecCodeModuleEx C.PyImport_ExecCodeModuleEx
-func ImportExecCodeModuleEx(name *c.Char, co *Object, pathname *c.Char) *Object
+func ImportExecCodeModuleEx(name *Char, co *Object, pathname *Char) *Object
 
 // PyObject* PyImport_ExecCodeModuleObject(PyObject *name, PyObject *co, PyObject *pathname, PyObject *cpathname)
 // Like :c:func:`PyImport_ExecCodeModuleEx`, but the :attr:`~module.__cached__`
@@ -179,7 +176,7 @@ func ImportExecCodeModuleObject(name *Object, co *Object, pathname *Object, cpat
 // No longer uses the removed :mod:`!imp` module.
 //
 //go:linkname ImportExecCodeModuleWithPathnames C.PyImport_ExecCodeModuleWithPathnames
-func ImportExecCodeModuleWithPathnames(name *c.Char, co *Object, pathname *c.Char, cpathname *c.Char) *Object
+func ImportExecCodeModuleWithPathnames(name *Char, co *Object, pathname *Char, cpathname *Char) *Object
 
 // long PyImport_GetMagicNumber()
 // Return the magic number for Python bytecode files (a.k.a. :file:`.pyc` file).
@@ -189,7 +186,7 @@ func ImportExecCodeModuleWithPathnames(name *c.Char, co *Object, pathname *c.Cha
 // Return value of “-1“ upon failure.
 //
 //go:linkname ImportGetMagicNumber C.PyImport_GetMagicNumber
-func ImportGetMagicNumber() c.Long
+func ImportGetMagicNumber() Long
 
 // const char * PyImport_GetMagicTag()
 // Return the magic tag string for :pep:`3147` format Python bytecode file
@@ -197,7 +194,7 @@ func ImportGetMagicNumber() c.Long
 // authoritative and should be used instead of this function.
 //
 //go:linkname ImportGetMagicTag C.PyImport_GetMagicTag
-func ImportGetMagicTag() *c.Char
+func ImportGetMagicTag() *Char
 
 // PyObject* PyImport_GetModuleDict()
 // Return the dictionary used for the module administration (a.k.a.
@@ -236,14 +233,14 @@ func ImportGetImporter(path *Object) *Object
 // The “__file__“ attribute is no longer set on the module.
 //
 //go:linkname ImportImportFrozenModuleObject C.PyImport_ImportFrozenModuleObject
-func ImportImportFrozenModuleObject(name *Object) c.Int
+func ImportImportFrozenModuleObject(name *Object) Int
 
 // int PyImport_ImportFrozenModule(const char *name)
 // Similar to :c:func:`PyImport_ImportFrozenModuleObject`, but the name is a
 // UTF-8 encoded string instead of a Unicode object.
 //
 //go:linkname ImportImportFrozenModule C.PyImport_ImportFrozenModule
-func ImportImportFrozenModule(name *c.Char) c.Int
+func ImportImportFrozenModule(name *Char) Int
 
 // int PyImport_AppendInittab(const char *name, PyObject* (*initfunc)(void))
 // Add a single module to the existing table of built-in modules.  This is a
@@ -254,7 +251,7 @@ func ImportImportFrozenModule(name *c.Char) c.Int
 // :c:func:`Py_Initialize`.
 //
 //go:linkname ImportAppendInittab C.PyImport_AppendInittab
-func ImportAppendInittab(name *c.Char, initfunc func() *Object) c.Int
+func ImportAppendInittab(name *Char, initfunc func() *Object) Int
 
 // int PyImport_ExtendInittab(struct _inittab *newtab)
 // Add a collection of modules to the table of built-in modules.  The *newtab*
@@ -269,7 +266,7 @@ func ImportAppendInittab(name *c.Char, initfunc func() *Object) c.Int
 // initialization.
 //
 //go:linkname ImportExtendInittab C.PyImport_ExtendInittab
-func ImportExtendInittab(newtab *Inittab) c.Int
+func ImportExtendInittab(newtab *Inittab) Int
 
 // struct _frozen
 // .. index:: single: freeze utility
@@ -304,5 +301,5 @@ type Inittab struct{}
 // module is imported, it is searched in this table.  Third-party code could play
 // tricks with this to provide a dynamically created collection of frozen modules.
 func ImportFrozenModules() *Frozen {
-	return *(**Frozen)(c.Pointer(&C.PyImport_FrozenModules))
+	return *(**Frozen)(Pointer(&C.PyImport_FrozenModules))
 }

@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PySlice_Check(PyObject *ob)
@@ -16,7 +13,7 @@ import (
 // function always succeeds.
 //
 //go:linkname SliceCheck C.PySlice_Check
-func SliceCheck(ob *Object) c.Int
+func SliceCheck(ob *Object) Int
 
 // PyObject* PySlice_New(PyObject *start, PyObject *stop, PyObject *step)
 // Return a new slice object with the given values.  The *start*, *stop*, and
@@ -45,7 +42,7 @@ func SliceNew(start *Object, stop *Object, step *Object) *Object
 // before.
 //
 //go:linkname SliceGetIndices C.PySlice_GetIndices
-func SliceGetIndices(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, step *SSizeT) c.Int
+func SliceGetIndices(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, step *SSizeT) Int
 
 // int PySlice_GetIndicesEx(PyObject *slice, Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step, Py_ssize_t *slicelength)
 // Usable replacement for :c:func:`PySlice_GetIndices`.  Retrieve the start,
@@ -87,7 +84,7 @@ func SliceGetIndices(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, 
 // :c:func:`!PySlice_GetIndicesEx` is a deprecated function.
 //
 //go:linkname SliceGetIndicesEx C.PySlice_GetIndicesEx
-func SliceGetIndicesEx(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, step *SSizeT, slicelength *SSizeT) c.Int
+func SliceGetIndicesEx(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, step *SSizeT, slicelength *SSizeT) Int
 
 // int PySlice_Unpack(PyObject *slice, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step)
 // Extract the start, stop and step data members from a slice object as
@@ -99,7 +96,7 @@ func SliceGetIndicesEx(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT
 // Return “-1“ with an exception set on error, “0“ on success.
 //
 //go:linkname SliceUnpack C.PySlice_Unpack
-func SliceUnpack(slice *Object, start *SSizeT, stop *SSizeT, step *SSizeT) c.Int
+func SliceUnpack(slice *Object, start *SSizeT, stop *SSizeT, step *SSizeT) Int
 
 // Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step)
 // Adjust start/end slice indices assuming a sequence of the specified length.
@@ -119,5 +116,5 @@ func SliceAdjustIndices(length SSizeT, start *SSizeT, stop *SSizeT, step SSizeT)
 // The type object for slice objects.  This is the same as :class:`slice` in the
 // Python layer.
 func SliceType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PySlice_Type))
+	return *(*TypeObject)(Pointer(&C.PySlice_Type))
 }

@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyContext_CheckExact(PyObject *o)
@@ -16,14 +13,14 @@ import (
 // “NULL“.  This function always succeeds.
 //
 //go:linkname ContextCheckExact C.PyContext_CheckExact
-func ContextCheckExact(o *Object) c.Int
+func ContextCheckExact(o *Object) Int
 
 // int PyContextVar_CheckExact(PyObject *o)
 // Return true if *o* is of type :c:data:`PyContextVar_Type`. *o* must not be
 // “NULL“.  This function always succeeds.
 //
 //go:linkname ContextVarCheckExact C.PyContextVar_CheckExact
-func ContextVarCheckExact(o *Object) c.Int
+func ContextVarCheckExact(o *Object) Int
 
 // int PyContextToken_CheckExact(PyObject *o)
 // Return true if *o* is of type :c:data:`PyContextToken_Type`.
@@ -32,7 +29,7 @@ func ContextVarCheckExact(o *Object) c.Int
 // Context object management functions:
 //
 //go:linkname ContextTokenCheckExact C.PyContextToken_CheckExact
-func ContextTokenCheckExact(o *Object) c.Int
+func ContextTokenCheckExact(o *Object) Int
 
 // PyObject *PyContext_New(void)
 // Create a new empty context object.  Returns “NULL“ if an error
@@ -60,7 +57,7 @@ func ContextCopyCurrent() *Object
 // Returns “0“ on success, and “-1“ on error.
 //
 //go:linkname ContextEnter C.PyContext_Enter
-func ContextEnter(ctx *Object) c.Int
+func ContextEnter(ctx *Object) Int
 
 // int PyContext_Exit(PyObject *ctx)
 // Deactivate the *ctx* context and restore the previous context as the
@@ -68,7 +65,7 @@ func ContextEnter(ctx *Object) c.Int
 // and “-1“ on error.
 //
 //go:linkname ContextExit C.PyContext_Exit
-func ContextExit(ctx *Object) c.Int
+func ContextExit(ctx *Object) Int
 
 // PyObject *PyContextVar_New(const char *name, PyObject *def)
 // Create a new “ContextVar“ object.  The *name* parameter is used
@@ -77,7 +74,7 @@ func ContextExit(ctx *Object) c.Int
 // If an error has occurred, this function returns “NULL“.
 //
 //go:linkname ContextVarNew C.PyContextVar_New
-func ContextVarNew(name *c.Char, def *Object) *Object
+func ContextVarNew(name *Char, def *Object) *Object
 
 // int PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value)
 // Get the value of a context variable.  Returns “-1“ if an error has
@@ -94,7 +91,7 @@ func ContextVarNew(name *c.Char, def *Object) *Object
 // Except for “NULL“, the function returns a new reference.
 //
 //go:linkname ContextVarGet C.PyContextVar_Get
-func ContextVarGet(var_ *Object, defaultValue *Object, value **Object) c.Int
+func ContextVarGet(var_ *Object, defaultValue *Object, value **Object) Int
 
 // PyObject *PyContextVar_Set(PyObject *var, PyObject *value)
 // Set the value of *var* to *value* in the current context.  Returns
@@ -109,7 +106,7 @@ func ContextVarSet(var_ *Object, value *Object) *Object
 // This function returns “0“ on success and “-1“ on error.
 //
 //go:linkname ContextVarReset C.PyContextVar_Reset
-func ContextVarReset(var_ *Object, token *Object) c.Int
+func ContextVarReset(var_ *Object, token *Object) Int
 
 // PyContext
 // The C structure used to represent a :class:`contextvars.Context`
@@ -128,13 +125,13 @@ type ContextToken = C.PyContextToken
 // PyTypeObject PyContext_Type
 // The type object representing the *context* type.
 func ContextType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyContext_Type))
+	return *(*TypeObject)(Pointer(&C.PyContext_Type))
 }
 
 // PyTypeObject PyContextVar_Type
 // The type object representing the *context variable* type.
 func ContextVarType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyContextVar_Type))
+	return *(*TypeObject)(Pointer(&C.PyContextVar_Type))
 }
 
 // PyTypeObject PyContextToken_Type
@@ -142,5 +139,5 @@ func ContextVarType() TypeObject {
 //
 // Type-check macros:
 func ContextTokenType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyContextToken_Type))
+	return *(*TypeObject)(Pointer(&C.PyContextToken_Type))
 }

@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyBytes_Check(PyObject *o)
@@ -16,14 +13,14 @@ import (
 // of the bytes type.  This function always succeeds.
 //
 //go:linkname BytesCheck C.PyBytes_Check
-func BytesCheck(o *Object) c.Int
+func BytesCheck(o *Object) Int
 
 // int PyBytes_CheckExact(PyObject *o)
 // Return true if the object *o* is a bytes object, but not an instance of a
 // subtype of the bytes type.  This function always succeeds.
 //
 //go:linkname BytesCheckExact C.PyBytes_CheckExact
-func BytesCheckExact(o *Object) c.Int
+func BytesCheckExact(o *Object) Int
 
 // PyObject* PyBytes_FromString(const char *v)
 // Return a new bytes object with a copy of the string *v* as value on success,
@@ -31,7 +28,7 @@ func BytesCheckExact(o *Object) c.Int
 // checked.
 //
 //go:linkname BytesFromString C.PyBytes_FromString
-func BytesFromString(v *c.Char) *Object
+func BytesFromString(v *Char) *Object
 
 // PyObject* PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
 // Return a new bytes object with a copy of the string *v* as value and length
@@ -39,7 +36,7 @@ func BytesFromString(v *c.Char) *Object
 // the bytes object are uninitialized.
 //
 //go:linkname BytesFromStringAndSize C.PyBytes_FromStringAndSize
-func BytesFromStringAndSize(v *c.Char, len SSizeT) *Object
+func BytesFromStringAndSize(v *Char, len SSizeT) *Object
 
 // PyObject* PyBytes_FromFormat(const char *format, ...)
 // Take a C :c:func:`printf`\ -style *format* string and a variable number of
@@ -104,7 +101,7 @@ func BytesFromStringAndSize(v *c.Char, len SSizeT) *Object
 // flag has effect even when a precision is given.
 //
 //go:linkname BytesFromFormat C.PyBytes_FromFormat
-func BytesFromFormat(format *c.Char, __llgo_va_list ...any) *Object
+func BytesFromFormat(format *Char, __llgo_va_list ...any) *Object
 
 // PyObject* PyBytes_FromObject(PyObject *o)
 // Return the bytes representation of object *o* that implements the buffer
@@ -136,13 +133,13 @@ func BytesGETSIZE(o *Object) SSizeT
 // and raises :exc:`TypeError`.
 //
 //go:linkname BytesAsString C.PyBytes_AsString
-func BytesAsString(o *Object) *c.Char
+func BytesAsString(o *Object) *Char
 
 // char* PyBytes_AS_STRING(PyObject *string)
 // Similar to :c:func:`PyBytes_AsString`, but without error checking.
 //
 //go:linkname BytesASSTRING C.PyBytes_AS_STRING
-func BytesASSTRING(string_ *Object) *c.Char
+func BytesASSTRING(string_ *Object) *Char
 
 // int PyBytes_AsStringAndSize(PyObject *obj, char **buffer, Py_ssize_t *length)
 // Return the null-terminated contents of the object *obj*
@@ -164,7 +161,7 @@ func BytesASSTRING(string_ *Object) *c.Char
 // encountered in the bytes object.
 //
 //go:linkname BytesAsStringAndSize C.PyBytes_AsStringAndSize
-func BytesAsStringAndSize(obj *Object, buffer **c.Char, length *SSizeT) c.Int
+func BytesAsStringAndSize(obj *Object, buffer **Char, length *SSizeT) Int
 
 // void PyBytes_Concat(PyObject **bytes, PyObject *newpart)
 // Create a new bytes object in *\*bytes* containing the contents of *newpart*
@@ -197,7 +194,7 @@ func BytesConcatAndDel(bytes **Object, newpart *Object)
 // returned.
 //
 //go:linkname BytesResize C._PyBytes_Resize
-func BytesResize(bytes **Object, newsize SSizeT) c.Int
+func BytesResize(bytes **Object, newsize SSizeT) Int
 
 // PyBytesObject
 // This subtype of :c:type:`PyObject` represents a Python bytes object.
@@ -207,5 +204,5 @@ type BytesObject = C.PyBytesObject
 // This instance of :c:type:`PyTypeObject` represents the Python bytes type; it
 // is the same object as :class:`bytes` in the Python layer.
 func BytesType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyBytes_Type))
+	return *(*TypeObject)(Pointer(&C.PyBytes_Type))
 }

@@ -1,42 +1,39 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int Py_Is(PyObject *x, PyObject *y)
 // Test if the *x* object is the *y* object, the same as “x is y“ in Python.
 //
 //go:linkname Is C.Py_Is
-func Is(x *Object, y *Object) c.Int
+func Is(x *Object, y *Object) Int
 
 // int Py_IsNone(PyObject *x)
 // Test if an object is the “None“ singleton,
 // the same as “x is None“ in Python.
 //
 //go:linkname IsNone C.Py_IsNone
-func IsNone(x *Object) c.Int
+func IsNone(x *Object) Int
 
 // int Py_IsTrue(PyObject *x)
 // Test if an object is the “True“ singleton,
 // the same as “x is True“ in Python.
 //
 //go:linkname IsTrue C.Py_IsTrue
-func IsTrue(x *Object) c.Int
+func IsTrue(x *Object) Int
 
 // int Py_IsFalse(PyObject *x)
 // Test if an object is the “False“ singleton,
 // the same as “x is False“ in Python.
 //
 //go:linkname IsFalse C.Py_IsFalse
-func IsFalse(x *Object) c.Int
+func IsFalse(x *Object) Int
 
 // PyTypeObject* Py_TYPE(PyObject *o)
 // Get the type of the Python object *o*.
@@ -56,7 +53,7 @@ func TYPE_(o *Object) *TypeObject
 // Equivalent to: “Py_TYPE(o) == type“.
 //
 //go:linkname ISTYPE C.Py_IS_TYPE
-func ISTYPE(o *Object, type_ *TypeObject) c.Int
+func ISTYPE(o *Object, type_ *TypeObject) Int
 
 // void Py_SET_TYPE(PyObject *o, PyTypeObject *type)
 // Set the object *o* type to *type*.
@@ -129,7 +126,7 @@ func CFunctionNew(ml *MethodDef, self *Object) *Object
 // Previously, it required including “"structmember.h"“.
 //
 //go:linkname MemberGetOne C.PyMember_GetOne
-func MemberGetOne(objAddr *c.Char, m *MemberDef) *Object
+func MemberGetOne(objAddr *Char, m *MemberDef) *Object
 
 // int PyMember_SetOne(char *obj_addr, struct PyMemberDef *m, PyObject *o)
 // Set an attribute belonging to the object at address *obj_addr* to object *o*.
@@ -147,7 +144,7 @@ func MemberGetOne(objAddr *c.Char, m *MemberDef) *Object
 // The following flags can be used with :c:member:`PyMemberDef.flags`:
 //
 //go:linkname MemberSetOne C.PyMember_SetOne
-func MemberSetOne(objAddr *c.Char, m *MemberDef, o *Object) c.Int
+func MemberSetOne(objAddr *Char, m *MemberDef, o *Object) Int
 
 // PyCFunctionWithKeywords
 // Type of the functions used to implement Python callables in C
@@ -178,7 +175,7 @@ type CMethod = C.PyCMethod
 // It should return a new reference on success or “NULL“ with a set exception
 // on failure.
 // llgo:type C
-type Getter func(*Object, c.Pointer) *Object
+type Getter func(*Object, Pointer) *Object
 
 // int (*setter)(PyObject *, PyObject *, void *)
 // “set“ functions take two :c:expr:`PyObject*` parameters (the instance and
@@ -187,4 +184,4 @@ type Getter func(*Object, c.Pointer) *Object
 // In case the attribute should be deleted the second parameter is “NULL“.
 // Should return “0“ on success or “-1“ with a set exception on failure.
 // llgo:type C
-type Setter func(*Object, *Object, c.Pointer) c.Int
+type Setter func(*Object, *Object, Pointer) Int

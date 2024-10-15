@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // void PyMarshal_WriteLongToFile(long value, FILE *file, int version)
@@ -20,7 +17,7 @@ import (
 // Use :c:func:`PyErr_Occurred` to check for that.
 //
 //go:linkname MarshalWriteLongToFile C.PyMarshal_WriteLongToFile
-func MarshalWriteLongToFile(value c.Long, file c.FilePtr, version c.Int)
+func MarshalWriteLongToFile(value Long, file FilePtr, version Int)
 
 // void PyMarshal_WriteObjectToFile(PyObject *value, FILE *file, int version)
 // Marshal a Python object, *value*, to *file*.
@@ -30,7 +27,7 @@ func MarshalWriteLongToFile(value c.Long, file c.FilePtr, version c.Int)
 // Use :c:func:`PyErr_Occurred` to check for that.
 //
 //go:linkname MarshalWriteObjectToFile C.PyMarshal_WriteObjectToFile
-func MarshalWriteObjectToFile(value *Object, file c.FilePtr, version c.Int)
+func MarshalWriteObjectToFile(value *Object, file FilePtr, version Int)
 
 // PyObject* PyMarshal_WriteObjectToString(PyObject *value, int version)
 // Return a bytes object containing the marshalled representation of *value*.
@@ -39,7 +36,7 @@ func MarshalWriteObjectToFile(value *Object, file c.FilePtr, version c.Int)
 // The following functions allow marshalled values to be read back in.
 //
 //go:linkname MarshalWriteObjectToString C.PyMarshal_WriteObjectToString
-func MarshalWriteObjectToString(value *Object, version c.Int) *Object
+func MarshalWriteObjectToString(value *Object, version Int) *Object
 
 // long PyMarshal_ReadLongFromFile(FILE *file)
 // Return a C :c:expr:`long` from the data stream in a :c:expr:`FILE*` opened
@@ -50,7 +47,7 @@ func MarshalWriteObjectToString(value *Object, version c.Int) *Object
 // “-1“.
 //
 //go:linkname MarshalReadLongFromFile C.PyMarshal_ReadLongFromFile
-func MarshalReadLongFromFile(file c.FilePtr) c.Long
+func MarshalReadLongFromFile(file FilePtr) Long
 
 // int PyMarshal_ReadShortFromFile(FILE *file)
 // Return a C :c:expr:`short` from the data stream in a :c:expr:`FILE*` opened
@@ -61,7 +58,7 @@ func MarshalReadLongFromFile(file c.FilePtr) c.Long
 // “-1“.
 //
 //go:linkname MarshalReadShortFromFile C.PyMarshal_ReadShortFromFile
-func MarshalReadShortFromFile(file c.FilePtr) c.Int
+func MarshalReadShortFromFile(file FilePtr) Int
 
 // PyObject* PyMarshal_ReadObjectFromFile(FILE *file)
 // Return a Python object from the data stream in a :c:expr:`FILE*` opened for
@@ -71,7 +68,7 @@ func MarshalReadShortFromFile(file c.FilePtr) c.Int
 // or :exc:`TypeError`) and returns “NULL“.
 //
 //go:linkname MarshalReadObjectFromFile C.PyMarshal_ReadObjectFromFile
-func MarshalReadObjectFromFile(file c.FilePtr) *Object
+func MarshalReadObjectFromFile(file FilePtr) *Object
 
 // PyObject* PyMarshal_ReadLastObjectFromFile(FILE *file)
 // Return a Python object from the data stream in a :c:expr:`FILE*` opened for
@@ -86,7 +83,7 @@ func MarshalReadObjectFromFile(file c.FilePtr) *Object
 // or :exc:`TypeError`) and returns “NULL“.
 //
 //go:linkname MarshalReadLastObjectFromFile C.PyMarshal_ReadLastObjectFromFile
-func MarshalReadLastObjectFromFile(file c.FilePtr) *Object
+func MarshalReadLastObjectFromFile(file FilePtr) *Object
 
 // PyObject* PyMarshal_ReadObjectFromString(const char *data, Py_ssize_t len)
 // Return a Python object from the data stream in a byte buffer
@@ -96,4 +93,4 @@ func MarshalReadLastObjectFromFile(file c.FilePtr) *Object
 // or :exc:`TypeError`) and returns “NULL“.
 //
 //go:linkname MarshalReadObjectFromString C.PyMarshal_ReadObjectFromString
-func MarshalReadObjectFromString(data *c.Char, len SSizeT) *Object
+func MarshalReadObjectFromString(data *Char, len SSizeT) *Object

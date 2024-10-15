@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* PyDescr_NewGetSet(PyTypeObject *type, struct PyGetSetDef *getset)
@@ -41,7 +38,7 @@ func DescrNewClassMethod(type_ *TypeObject, method *MethodDef) *Object
 // no error checking.
 //
 //go:linkname DescrIsData C.PyDescr_IsData
-func DescrIsData(descr *Object) c.Int
+func DescrIsData(descr *Object) Int
 
 // PyObject* PyWrapper_New(PyObject *, PyObject *)
 
@@ -52,5 +49,5 @@ func WrapperNew(*Object, *Object) *Object
 // PyTypeObject PyProperty_Type
 // The type object for the built-in descriptor types.
 func PropertyType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyProperty_Type))
+	return *(*TypeObject)(Pointer(&C.PyProperty_Type))
 }

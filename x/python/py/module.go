@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyModule_Check(PyObject *p)
@@ -16,14 +13,14 @@ import (
 // This function always succeeds.
 //
 //go:linkname ModuleCheck C.PyModule_Check
-func ModuleCheck(p *Object) c.Int
+func ModuleCheck(p *Object) Int
 
 // int PyModule_CheckExact(PyObject *p)
 // Return true if *p* is a module object, but not a subtype of
 // :c:data:`PyModule_Type`.  This function always succeeds.
 //
 //go:linkname ModuleCheckExact C.PyModule_CheckExact
-func ModuleCheckExact(p *Object) c.Int
+func ModuleCheckExact(p *Object) Int
 
 // PyObject* PyModule_NewObject(PyObject *name)
 // .. index::
@@ -52,7 +49,7 @@ func ModuleNewObject(name *Object) *Object
 // string instead of a Unicode object.
 //
 //go:linkname ModuleNew C.PyModule_New
-func ModuleNew(name *c.Char) *Object
+func ModuleNew(name *Char) *Object
 
 // PyObject* PyModule_GetDict(PyObject *module)
 // .. index:: single: __dict__ (module attribute)
@@ -86,7 +83,7 @@ func ModuleGetNameObject(module *Object) *Object
 // “'utf-8'“.
 //
 //go:linkname ModuleGetName C.PyModule_GetName
-func ModuleGetName(module *Object) *c.Char
+func ModuleGetName(module *Object) *Char
 
 // void* PyModule_GetState(PyObject *module)
 // Return the "state" of the module, that is, a pointer to the block of memory
@@ -94,7 +91,7 @@ func ModuleGetName(module *Object) *c.Char
 // :c:member:`PyModuleDef.m_size`.
 //
 //go:linkname ModuleGetState C.PyModule_GetState
-func ModuleGetState(module *Object) c.Pointer
+func ModuleGetState(module *Object) Pointer
 
 // PyModuleDef* PyModule_GetDef(PyObject *module)
 // Return a pointer to the :c:type:`PyModuleDef` struct from which the module was
@@ -139,7 +136,7 @@ func ModuleGetFilenameObject(module *Object) *Object
 // or request "multi-phase initialization" by returning the definition struct itself.
 //
 //go:linkname ModuleGetFilename C.PyModule_GetFilename
-func ModuleGetFilename(module *Object) *c.Char
+func ModuleGetFilename(module *Object) *Char
 
 // PyObject* PyModule_Create(PyModuleDef *def)
 // Create a new module object, given the definition in *def*.  This behaves
@@ -196,7 +193,7 @@ func ModuleCreate(def *ModuleDef) *Object
 // instance must be initialized with the following function:
 //
 //go:linkname ModuleCreate2 C.PyModule_Create2
-func ModuleCreate2(def *ModuleDef, moduleApiVersion c.Int) *Object
+func ModuleCreate2(def *ModuleDef, moduleApiVersion Int) *Object
 
 // PyObject* PyModuleDef_Init(PyModuleDef *def)
 // Ensures a module definition is a properly initialized Python object that
@@ -250,7 +247,7 @@ func CreateModule(spec *Object, def *ModuleDef) *Object
 // order they appear in the *m_slots* array.
 //
 //go:linkname ExecModule C.exec_module
-func ExecModule(module *Object) c.Int
+func ExecModule(module *Object) Int
 
 // PyObject * PyModule_FromDefAndSpec(PyModuleDef *def, PyObject *spec)
 // Create a new module object, given the definition in *def* and the
@@ -274,13 +271,13 @@ func ModuleFromDefAndSpec(def *ModuleDef, spec *Object) *Object
 // instead; only use this if you are sure you need it.
 //
 //go:linkname ModuleFromDefAndSpec2 C.PyModule_FromDefAndSpec2
-func ModuleFromDefAndSpec2(def *ModuleDef, spec *Object, moduleApiVersion c.Int) *Object
+func ModuleFromDefAndSpec2(def *ModuleDef, spec *Object, moduleApiVersion Int) *Object
 
 // int PyModule_ExecDef(PyObject *module, PyModuleDef *def)
 // Process any execution slots (:c:data:`Py_mod_exec`) given in *def*.
 //
 //go:linkname ModuleExecDef C.PyModule_ExecDef
-func ModuleExecDef(module *Object, def *ModuleDef) c.Int
+func ModuleExecDef(module *Object, def *ModuleDef) Int
 
 // int PyModule_SetDocString(PyObject *module, const char *docstring)
 // Set the docstring for *module* to *docstring*.
@@ -289,7 +286,7 @@ func ModuleExecDef(module *Object, def *ModuleDef) c.Int
 // “PyModule_FromDefAndSpec“.
 //
 //go:linkname ModuleSetDocString C.PyModule_SetDocString
-func ModuleSetDocString(module *Object, docstring *c.Char) c.Int
+func ModuleSetDocString(module *Object, docstring *Char) Int
 
 // int PyModule_AddFunctions(PyObject *module, PyMethodDef *functions)
 // Add the functions from the “NULL“ terminated *functions* array to *module*.
@@ -310,7 +307,7 @@ func ModuleSetDocString(module *Object, docstring *c.Char) c.Int
 // state:
 //
 //go:linkname ModuleAddFunctions C.PyModule_AddFunctions
-func ModuleAddFunctions(module *Object, functions *MethodDef) c.Int
+func ModuleAddFunctions(module *Object, functions *MethodDef) Int
 
 // int PyModule_AddObjectRef(PyObject *module, const char *name, PyObject *value)
 // Add an object to *module* as *name*.  This is a convenience function which
@@ -359,7 +356,7 @@ func ModuleAddFunctions(module *Object, functions *MethodDef) c.Int
 // used internally to create a key object.
 //
 //go:linkname ModuleAddObjectRef C.PyModule_AddObjectRef
-func ModuleAddObjectRef(module *Object, name *c.Char, value *Object) c.Int
+func ModuleAddObjectRef(module *Object, name *Char, value *Object) Int
 
 // int PyModule_AddObject(PyObject *module, const char *name, PyObject *value)
 // Similar to :c:func:`PyModule_AddObjectRef`, but steals a reference to
@@ -396,7 +393,7 @@ func ModuleAddObjectRef(module *Object, name *c.Char, value *Object) c.Int
 // :c:func:`PyModule_AddObject` is :term:`soft deprecated`.
 //
 //go:linkname ModuleAddObject C.PyModule_AddObject
-func ModuleAddObject(module *Object, name *c.Char, value *Object) c.Int
+func ModuleAddObject(module *Object, name *Char, value *Object) Int
 
 // int PyModule_AddIntConstant(PyObject *module, const char *name, long value)
 // Add an integer constant to *module* as *name*.  This convenience function can be
@@ -407,7 +404,7 @@ func ModuleAddObject(module *Object, name *c.Char, value *Object) c.Int
 // :c:func:`PyModule_AddObjectRef`; see their documentation for details.
 //
 //go:linkname ModuleAddIntConstant C.PyModule_AddIntConstant
-func ModuleAddIntConstant(module *Object, name *c.Char, value c.Long) c.Int
+func ModuleAddIntConstant(module *Object, name *Char, value Long) Int
 
 // int PyModule_AddStringConstant(PyObject *module, const char *name, const char *value)
 // Add a string constant to *module* as *name*.  This convenience function can be
@@ -420,7 +417,7 @@ func ModuleAddIntConstant(module *Object, name *c.Char, value c.Long) c.Int
 // see their documentation for details.
 //
 //go:linkname ModuleAddStringConstant C.PyModule_AddStringConstant
-func ModuleAddStringConstant(module *Object, name *c.Char, value *c.Char) c.Int
+func ModuleAddStringConstant(module *Object, name *Char, value *Char) Int
 
 // int PyModule_AddType(PyObject *module, PyTypeObject *type)
 // Add a type object to *module*.
@@ -430,7 +427,7 @@ func ModuleAddStringConstant(module *Object, name *c.Char, value *c.Char) c.Int
 // Return “-1“ with an exception set on error, “0“ on success.
 //
 //go:linkname ModuleAddType C.PyModule_AddType
-func ModuleAddType(module *Object, type_ *TypeObject) c.Int
+func ModuleAddType(module *Object, type_ *TypeObject) Int
 
 // PyObject* PyState_FindModule(PyModuleDef *def)
 // Returns the module object that was created from *def* for the current interpreter.
@@ -460,7 +457,7 @@ func StateFindModule(def *ModuleDef) *Object
 // Return “-1“ with an exception set on error, “0“ on success.
 //
 //go:linkname StateAddModule C.PyState_AddModule
-func StateAddModule(module *Object, def *ModuleDef) c.Int
+func StateAddModule(module *Object, def *ModuleDef) Int
 
 // int PyState_RemoveModule(PyModuleDef *def)
 // Removes the module object created from *def* from the interpreter state.
@@ -469,7 +466,7 @@ func StateAddModule(module *Object, def *ModuleDef) c.Int
 // The caller must hold the GIL.
 //
 //go:linkname StateRemoveModule C.PyState_RemoveModule
-func StateRemoveModule(def *ModuleDef) c.Int
+func StateRemoveModule(def *ModuleDef) Int
 
 // PyTypeObject PyModule_Type
 // .. index:: single: ModuleType (in module types)
@@ -477,5 +474,5 @@ func StateRemoveModule(def *ModuleDef) c.Int
 // This instance of :c:type:`PyTypeObject` represents the Python module type.  This
 // is exposed to Python programs as “types.ModuleType“.
 func ModuleType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyModule_Type))
+	return *(*TypeObject)(Pointer(&C.PyModule_Type))
 }

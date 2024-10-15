@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyFunction_Check(PyObject *o)
@@ -16,7 +13,7 @@ import (
 // The parameter must not be “NULL“.  This function always succeeds.
 //
 //go:linkname FunctionCheck C.PyFunction_Check
-func FunctionCheck(o *Object) c.Int
+func FunctionCheck(o *Object) Int
 
 // PyObject* PyFunction_New(PyObject *code, PyObject *globals)
 // Return a new function object associated with the code object *code*. *globals*
@@ -78,7 +75,7 @@ func FunctionGetDefaults(op *Object) *Object
 // Raises :exc:`SystemError` and returns “-1“ on failure.
 //
 //go:linkname FunctionSetDefaults C.PyFunction_SetDefaults
-func FunctionSetDefaults(op *Object, defaults *Object) c.Int
+func FunctionSetDefaults(op *Object, defaults *Object) Int
 
 // void PyFunction_SetVectorcall(PyFunctionObject *func, vectorcallfunc vectorcall)
 // Set the vectorcall field of a given function object *func*.
@@ -103,7 +100,7 @@ func FunctionGetClosure(op *Object) *Object
 // Raises :exc:`SystemError` and returns “-1“ on failure.
 //
 //go:linkname FunctionSetClosure C.PyFunction_SetClosure
-func FunctionSetClosure(op *Object, closure *Object) c.Int
+func FunctionSetClosure(op *Object, closure *Object) Int
 
 // PyObject *PyFunction_GetAnnotations(PyObject *op)
 // Return the annotations of the function object *op*. This can be a
@@ -119,7 +116,7 @@ func FunctionGetAnnotations(op *Object) *Object
 // Raises :exc:`SystemError` and returns “-1“ on failure.
 //
 //go:linkname FunctionSetAnnotations C.PyFunction_SetAnnotations
-func FunctionSetAnnotations(op *Object, annotations *Object) c.Int
+func FunctionSetAnnotations(op *Object, annotations *Object) Int
 
 // int PyFunction_AddWatcher(PyFunction_WatchCallback callback)
 // Register *callback* as a function watcher for the current interpreter.
@@ -128,7 +125,7 @@ func FunctionSetAnnotations(op *Object, annotations *Object) c.Int
 // return “-1“ and set an exception.
 //
 //go:linkname FunctionAddWatcher C.PyFunction_AddWatcher
-func FunctionAddWatcher(callback FunctionWatchCallback) c.Int
+func FunctionAddWatcher(callback FunctionWatchCallback) Int
 
 // int PyFunction_ClearWatcher(int watcher_id)
 // Clear watcher identified by *watcher_id* previously returned from
@@ -137,7 +134,7 @@ func FunctionAddWatcher(callback FunctionWatchCallback) c.Int
 // (e.g.  if the given *watcher_id* was never registered.)
 //
 //go:linkname FunctionClearWatcher C.PyFunction_ClearWatcher
-func FunctionClearWatcher(watcherId c.Int) c.Int
+func FunctionClearWatcher(watcherId Int) Int
 
 // PyFunctionObject
 // The C structure used for functions.
@@ -187,7 +184,7 @@ type FunctionWatchEvent = C.PyFunction_WatchEvent
 // exception unless it saves and clears the exception state first, and restores
 // it before returning.
 // llgo:type C
-type FunctionWatchCallback func(event FunctionWatchEvent, func_ *FunctionObject, newValue *Object) c.Int
+type FunctionWatchCallback func(event FunctionWatchEvent, func_ *FunctionObject, newValue *Object) Int
 
 // PyTypeObject PyFunction_Type
 // .. index:: single: MethodType (in module types)
@@ -195,5 +192,5 @@ type FunctionWatchCallback func(event FunctionWatchEvent, func_ *FunctionObject,
 // This is an instance of :c:type:`PyTypeObject` and represents the Python function
 // type.  It is exposed to Python programmers as “types.FunctionType“.
 func FunctionType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyFunction_Type))
+	return *(*TypeObject)(Pointer(&C.PyFunction_Type))
 }

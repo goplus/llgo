@@ -1,111 +1,108 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyMonitoring_FirePyStartEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “PY_START“ event.
 //
 //go:linkname MonitoringFirePyStartEvent C.PyMonitoring_FirePyStartEvent
-func MonitoringFirePyStartEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFirePyStartEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FirePyResumeEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “PY_RESUME“ event.
 //
 //go:linkname MonitoringFirePyResumeEvent C.PyMonitoring_FirePyResumeEvent
-func MonitoringFirePyResumeEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFirePyResumeEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FirePyReturnEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject* retval)
 // Fire a “PY_RETURN“ event.
 //
 //go:linkname MonitoringFirePyReturnEvent C.PyMonitoring_FirePyReturnEvent
-func MonitoringFirePyReturnEvent(state *MonitoringState, codelike *Object, offset c.Int, retval *Object) c.Int
+func MonitoringFirePyReturnEvent(state *MonitoringState, codelike *Object, offset Int, retval *Object) Int
 
 // int PyMonitoring_FirePyYieldEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject* retval)
 // Fire a “PY_YIELD“ event.
 //
 //go:linkname MonitoringFirePyYieldEvent C.PyMonitoring_FirePyYieldEvent
-func MonitoringFirePyYieldEvent(state *MonitoringState, codelike *Object, offset c.Int, retval *Object) c.Int
+func MonitoringFirePyYieldEvent(state *MonitoringState, codelike *Object, offset Int, retval *Object) Int
 
 // int PyMonitoring_FireCallEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject* callable, PyObject *arg0)
 // Fire a “CALL“ event.
 //
 //go:linkname MonitoringFireCallEvent C.PyMonitoring_FireCallEvent
-func MonitoringFireCallEvent(state *MonitoringState, codelike *Object, offset c.Int, callable *Object, arg0 *Object) c.Int
+func MonitoringFireCallEvent(state *MonitoringState, codelike *Object, offset Int, callable *Object, arg0 *Object) Int
 
 // int PyMonitoring_FireLineEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, int lineno)
 // Fire a “LINE“ event.
 //
 //go:linkname MonitoringFireLineEvent C.PyMonitoring_FireLineEvent
-func MonitoringFireLineEvent(state *MonitoringState, codelike *Object, offset c.Int, lineno c.Int) c.Int
+func MonitoringFireLineEvent(state *MonitoringState, codelike *Object, offset Int, lineno Int) Int
 
 // int PyMonitoring_FireJumpEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject *target_offset)
 // Fire a “JUMP“ event.
 //
 //go:linkname MonitoringFireJumpEvent C.PyMonitoring_FireJumpEvent
-func MonitoringFireJumpEvent(state *MonitoringState, codelike *Object, offset c.Int, targetOffset *Object) c.Int
+func MonitoringFireJumpEvent(state *MonitoringState, codelike *Object, offset Int, targetOffset *Object) Int
 
 // int PyMonitoring_FireBranchEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject *target_offset)
 // Fire a “BRANCH“ event.
 //
 //go:linkname MonitoringFireBranchEvent C.PyMonitoring_FireBranchEvent
-func MonitoringFireBranchEvent(state *MonitoringState, codelike *Object, offset c.Int, targetOffset *Object) c.Int
+func MonitoringFireBranchEvent(state *MonitoringState, codelike *Object, offset Int, targetOffset *Object) Int
 
 // int PyMonitoring_FireCReturnEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject *retval)
 // Fire a “C_RETURN“ event.
 //
 //go:linkname MonitoringFireCReturnEvent C.PyMonitoring_FireCReturnEvent
-func MonitoringFireCReturnEvent(state *MonitoringState, codelike *Object, offset c.Int, retval *Object) c.Int
+func MonitoringFireCReturnEvent(state *MonitoringState, codelike *Object, offset Int, retval *Object) Int
 
 // int PyMonitoring_FirePyThrowEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “PY_THROW“ event with the current exception (as returned by
 // :c:func:`PyErr_GetRaisedException`).
 //
 //go:linkname MonitoringFirePyThrowEvent C.PyMonitoring_FirePyThrowEvent
-func MonitoringFirePyThrowEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFirePyThrowEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FireRaiseEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “RAISE“ event with the current exception (as returned by
 // :c:func:`PyErr_GetRaisedException`).
 //
 //go:linkname MonitoringFireRaiseEvent C.PyMonitoring_FireRaiseEvent
-func MonitoringFireRaiseEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFireRaiseEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FireCRaiseEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “C_RAISE“ event with the current exception (as returned by
 // :c:func:`PyErr_GetRaisedException`).
 //
 //go:linkname MonitoringFireCRaiseEvent C.PyMonitoring_FireCRaiseEvent
-func MonitoringFireCRaiseEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFireCRaiseEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FireReraiseEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “RERAISE“ event with the current exception (as returned by
 // :c:func:`PyErr_GetRaisedException`).
 //
 //go:linkname MonitoringFireReraiseEvent C.PyMonitoring_FireReraiseEvent
-func MonitoringFireReraiseEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFireReraiseEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FireExceptionHandledEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire an “EXCEPTION_HANDLED“ event with the current exception (as returned by
 // :c:func:`PyErr_GetRaisedException`).
 //
 //go:linkname MonitoringFireExceptionHandledEvent C.PyMonitoring_FireExceptionHandledEvent
-func MonitoringFireExceptionHandledEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFireExceptionHandledEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FirePyUnwindEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset)
 // Fire a “PY_UNWIND“ event with the current exception (as returned by
 // :c:func:`PyErr_GetRaisedException`).
 //
 //go:linkname MonitoringFirePyUnwindEvent C.PyMonitoring_FirePyUnwindEvent
-func MonitoringFirePyUnwindEvent(state *MonitoringState, codelike *Object, offset c.Int) c.Int
+func MonitoringFirePyUnwindEvent(state *MonitoringState, codelike *Object, offset Int) Int
 
 // int PyMonitoring_FireStopIterationEvent(PyMonitoringState *state, PyObject *codelike, int32_t offset, PyObject *value)
 // Fire a “STOP_ITERATION“ event. If “value“ is an instance of :exc:`StopIteration`, it is used. Otherwise,
@@ -118,7 +115,7 @@ func MonitoringFirePyUnwindEvent(state *MonitoringState, codelike *Object, offse
 // would typically correspond to a python function.
 //
 //go:linkname MonitoringFireStopIterationEvent C.PyMonitoring_FireStopIterationEvent
-func MonitoringFireStopIterationEvent(state *MonitoringState, codelike *Object, offset c.Int, value *Object) c.Int
+func MonitoringFireStopIterationEvent(state *MonitoringState, codelike *Object, offset Int, value *Object) Int
 
 // int PyMonitoring_EnterScope(PyMonitoringState *state_array, uint64_t *version, const uint8_t *event_types, Py_ssize_t length)
 // Enter a monitored scope. “event_types“ is an array of the event IDs for
@@ -147,13 +144,13 @@ func MonitoringFireStopIterationEvent(state *MonitoringState, codelike *Object, 
 // The macros for *event_types* are:
 //
 //go:linkname MonitoringEnterScope C.PyMonitoring_EnterScope
-func MonitoringEnterScope(stateArray *MonitoringState, version *c.LongLong, eventTypes *c.Uchar, length SSizeT) c.Int
+func MonitoringEnterScope(stateArray *MonitoringState, version *LongLong, eventTypes *Uchar, length SSizeT) Int
 
 // int PyMonitoring_ExitScope(void)
 // Exit the last scope that was entered with :c:func:`!PyMonitoring_EnterScope`.
 //
 //go:linkname MonitoringExitScope C.PyMonitoring_ExitScope
-func MonitoringExitScope() c.Int
+func MonitoringExitScope() Int
 
 // PyMonitoringState
 // Representation of the state of an event type. It is allocated by the user

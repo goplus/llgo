@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyOS_snprintf(char *str, size_t size,  const char *format, ...)
@@ -16,7 +13,7 @@ import (
 // *format* and the extra arguments. See the Unix man page :manpage:`snprintf(3)`.
 //
 //go:linkname OSSnprintf C.PyOS_snprintf
-func OSSnprintf(str *c.Char, size c.Ulong, format *c.Char, __llgo_va_list ...any) c.Int
+func OSSnprintf(str *Char, size Ulong, format *Char, __llgo_va_list ...any) Int
 
 // unsigned long PyOS_strtoul(const char *str, char **ptr, int base)
 // Convert the initial part of the string in “str“ to an :c:expr:`unsigned
@@ -37,7 +34,7 @@ func OSSnprintf(str *c.Char, size c.Ulong, format *c.Char, __llgo_va_list ...any
 // See also the Unix man page :manpage:`strtoul(3)`.
 //
 //go:linkname OSStrtoul C.PyOS_strtoul
-func OSStrtoul(str *c.Char, ptr **c.Char, base c.Int) c.Ulong
+func OSStrtoul(str *Char, ptr **Char, base Int) Ulong
 
 // long PyOS_strtol(const char *str, char **ptr, int base)
 // Convert the initial part of the string in “str“ to an :c:expr:`long` value
@@ -50,7 +47,7 @@ func OSStrtoul(str *c.Char, ptr **c.Char, base c.Int) c.Ulong
 // See also the Unix man page :manpage:`strtol(3)`.
 //
 //go:linkname OSStrtol C.PyOS_strtol
-func OSStrtol(str *c.Char, ptr **c.Char, base c.Int) c.Long
+func OSStrtol(str *Char, ptr **Char, base Int) Long
 
 // double PyOS_string_to_double(const char *s, char **endptr, PyObject *overflow_exception)
 // Convert a string “s“ to a :c:expr:`double`, raising a Python
@@ -83,7 +80,7 @@ func OSStrtol(str *c.Char, ptr **c.Char, base c.Int) c.Long
 // return “-1.0“.
 //
 //go:linkname OSStringToDouble C.PyOS_string_to_double
-func OSStringToDouble(s *c.Char, endptr **c.Char, overflowException *Object) c.Double
+func OSStringToDouble(s *Char, endptr **Char, overflowException *Object) Double
 
 // char* PyOS_double_to_string(double val, char format_code, int precision, int flags, int *ptype)
 // Convert a :c:expr:`double` *val* to a string using supplied
@@ -116,18 +113,18 @@ func OSStringToDouble(s *c.Char, endptr **c.Char, overflowException *Object) c.D
 // returned string by calling :c:func:`PyMem_Free`.
 //
 //go:linkname OSDoubleToString C.PyOS_double_to_string
-func OSDoubleToString(val c.Double, formatCode c.Char, precision c.Int, flags c.Int, ptype *c.Int) *c.Char
+func OSDoubleToString(val Double, formatCode Char, precision Int, flags Int, ptype *Int) *Char
 
 // int PyOS_stricmp(const char *s1, const char *s2)
 // Case insensitive comparison of strings. The function works almost
 // identically to :c:func:`!strcmp` except that it ignores the case.
 //
 //go:linkname OSStricmp C.PyOS_stricmp
-func OSStricmp(s1 *c.Char, s2 *c.Char) c.Int
+func OSStricmp(s1 *Char, s2 *Char) Int
 
 // int PyOS_strnicmp(const char *s1, const char *s2, Py_ssize_t  size)
 // Case insensitive comparison of strings. The function works almost
 // identically to :c:func:`!strncmp` except that it ignores the case.
 //
 //go:linkname OSStrnicmp C.PyOS_strnicmp
-func OSStrnicmp(s1 *c.Char, s2 *c.Char, size SSizeT) c.Int
+func OSStrnicmp(s1 *Char, s2 *Char, size SSizeT) Int

@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyFrame_Check(PyObject *obj)
@@ -18,7 +15,7 @@ import (
 // “<frameobject.h>“.
 //
 //go:linkname FrameCheck C.PyFrame_Check
-func FrameCheck(obj *Object) c.Int
+func FrameCheck(obj *Object) Int
 
 // PyFrameObject* PyFrame_GetBack(PyFrameObject *frame)
 // Get the *frame* next outer frame.
@@ -71,7 +68,7 @@ func FrameGetGlobals(frame *FrameObject) *Object
 // Returns -1 if “frame.f_lasti“ is “None“.
 //
 //go:linkname FrameGetLasti C.PyFrame_GetLasti
-func FrameGetLasti(frame *FrameObject) c.Int
+func FrameGetLasti(frame *FrameObject) Int
 
 // PyObject* PyFrame_GetVar(PyFrameObject *frame, PyObject *name)
 // Get the variable *name* of *frame*.
@@ -90,7 +87,7 @@ func FrameGetVar(frame *FrameObject, name *Object) *Object
 // encoded in UTF-8.
 //
 //go:linkname FrameGetVarString C.PyFrame_GetVarString
-func FrameGetVarString(frame *FrameObject, name *c.Char) *Object
+func FrameGetVarString(frame *FrameObject, name *Char) *Object
 
 // PyObject* PyFrame_GetLocals(PyFrameObject *frame)
 // Get the *frame*'s :attr:`~frame.f_locals` attribute.
@@ -116,7 +113,7 @@ func FrameGetLocals(frame *FrameObject) *Object
 // Unless using :pep:`523`, you will not need this.
 //
 //go:linkname FrameGetLineNumber C.PyFrame_GetLineNumber
-func FrameGetLineNumber(frame *FrameObject) c.Int
+func FrameGetLineNumber(frame *FrameObject) Int
 
 // PyObject* PyUnstable_InterpreterFrame_GetCode(struct _PyInterpreterFrame *frame);
 // Return a :term:`strong reference` to the code object for the frame.
@@ -128,13 +125,13 @@ func UnstableInterpreterFrameGetCode(frame *InterpreterFrame) *Object
 // Return the byte offset into the last executed instruction.
 //
 //go:linkname UnstableInterpreterFrameGetLasti C.PyUnstable_InterpreterFrame_GetLasti
-func UnstableInterpreterFrameGetLasti(frame *InterpreterFrame) c.Int
+func UnstableInterpreterFrameGetLasti(frame *InterpreterFrame) Int
 
 // int PyUnstable_InterpreterFrame_GetLine(struct _PyInterpreterFrame *frame);
 // Return the currently executing line number, or -1 if there is no line number.
 //
 //go:linkname UnstableInterpreterFrameGetLine C.PyUnstable_InterpreterFrame_GetLine
-func UnstableInterpreterFrameGetLine(frame *InterpreterFrame) c.Int
+func UnstableInterpreterFrameGetLine(frame *InterpreterFrame) Int
 
 // PyFrameObject
 // The C structure of the objects used to describe frame objects.
@@ -162,5 +159,5 @@ type InterpreterFrame struct{}
 // Previously, this type was only available after including
 // “<frameobject.h>“.
 func FrameType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyFrame_Type))
+	return *(*TypeObject)(Pointer(&C.PyFrame_Type))
 }

@@ -6,31 +6,31 @@ from typing import Optional
 
 
 C_TO_GO_TYPE_MAP = {
-    "char": "c.Char",
-    "double": "c.Double",
-    "float": "c.Float",
-    "int": "c.Int",
-    "int8_t": "c.Char",
-    "int32_t": "c.Int",
-    "int64_t": "c.UlongLong",
-    "long long": "c.LongLong",
-    "long": "c.Long",
+    "char": "Char",
+    "double": "Double",
+    "float": "Float",
+    "int": "Int",
+    "int8_t": "Char",
+    "int32_t": "Int",
+    "int64_t": "UlongLong",
+    "long long": "LongLong",
+    "long": "Long",
     "Py_ssize_t": "SSizeT",
     "PyObject": "Object",
-    "short": "c.Short",
-    "size_t": "c.Ulong",
-    "ssize_t": "c.Long",
-    "uint8_t": "c.Uchar",
-    "uint32_t": "c.Uint",
-    "uint64_t": "c.LongLong",
-    "uintptr_t": "c.Ulong",
-    "unsigned char": "c.Uchar",
-    "unsigned int": "c.Uint",
-    "unsigned long long": "c.UlongLong",
-    "unsigned long": "c.Ulong",
-    "unsigned short": "c.Ushort",
+    "short": "Short",
+    "size_t": "Ulong",
+    "ssize_t": "Long",
+    "uint8_t": "Uchar",
+    "uint32_t": "Uint",
+    "uint64_t": "LongLong",
+    "uintptr_t": "Ulong",
+    "unsigned char": "Uchar",
+    "unsigned int": "Uint",
+    "unsigned long long": "UlongLong",
+    "unsigned long": "Ulong",
+    "unsigned short": "Ushort",
     "void": "",
-    "wchar_t": "c.Wchar",
+    "wchar_t": "Wchar",
 }
 
 GO_KEYWORDS = {
@@ -57,7 +57,7 @@ CTYPE_MAPPING = {
     "PyDateTime_DateTime": "struct{}",
     "PyDateTime_Delta": "struct{}",
     "PyDateTime_Time": "struct{}",
-    "PyTime_t": "c.LongLong",
+    "PyTime_t": "LongLong",
 }
 
 
@@ -112,9 +112,9 @@ class Pointer:
     def to_go(self):
         if isinstance(self.type, Type):
             if self.type.name == "void":
-                return "c.Pointer"
+                return "Pointer"
             if self.type.name == "FILE":
-                return "c.FilePtr"
+                return "FilePtr"
         return f"*{self.type.to_go()}"
 
 
@@ -253,7 +253,7 @@ class CVar:
         name = ctogo(self.name)
         if isinstance(self.type, FunctionPointer):
             return f"var {ctogo(self.name)} {self.type.to_go()}"
-        ret_stmt = f"return *(*{self.type.to_go()})(c.Pointer(&C.{self.name}))"
+        ret_stmt = f"return *(*{self.type.to_go()})(Pointer(&C.{self.name}))"
         if isinstance(self.type, Type):
             if C_TO_GO_TYPE_MAP.get(self.type.name, "") != "" or self.type.name in C_TO_GO_STATIC_CAST:
                 ret_stmt = f"return {self.type.to_go()}(C.{self.name})"
@@ -669,14 +669,11 @@ def main():
             """package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
   _ "unsafe"
-
-  "github.com/goplus/llgo/c"
 )
 
 """)

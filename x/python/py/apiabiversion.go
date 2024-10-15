@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // const unsigned long Py_Version
@@ -17,6 +14,6 @@ import (
 // This contains the Python version used at run time.
 //
 // All the given macros are defined in :source:`Include/patchlevel.h`.
-func Version() c.Ulong {
-	return c.Ulong(C.Py_Version)
+func Version() Ulong {
+	return Ulong(C.Py_Version)
 }

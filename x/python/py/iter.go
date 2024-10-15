@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyIter_Check(PyObject *o)
@@ -17,14 +14,14 @@ import (
 // This function always succeeds.
 //
 //go:linkname IterCheck C.PyIter_Check
-func IterCheck(o *Object) c.Int
+func IterCheck(o *Object) Int
 
 // int PyAIter_Check(PyObject *o)
 // Return non-zero if the object *o* provides the :class:`AsyncIterator`
 // protocol, and “0“ otherwise.  This function always succeeds.
 //
 //go:linkname AIterCheck C.PyAIter_Check
-func AIterCheck(o *Object) c.Int
+func AIterCheck(o *Object) Int
 
 // PyObject* PyIter_Next(PyObject *o)
 // This is an older version of :c:func:`!PyIter_NextItem`,

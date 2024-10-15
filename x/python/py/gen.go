@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyGen_Check(PyObject *ob)
@@ -16,14 +13,14 @@ import (
 // function always succeeds.
 //
 //go:linkname GenCheck C.PyGen_Check
-func GenCheck(ob *Object) c.Int
+func GenCheck(ob *Object) Int
 
 // int PyGen_CheckExact(PyObject *ob)
 // Return true if *ob*'s type is :c:type:`PyGen_Type`; *ob* must not be
 // “NULL“.  This function always succeeds.
 //
 //go:linkname GenCheckExact C.PyGen_CheckExact
-func GenCheckExact(ob *Object) c.Int
+func GenCheckExact(ob *Object) Int
 
 // PyObject* PyGen_New(PyFrameObject *frame)
 // Create and return a new generator object based on the *frame* object.
@@ -49,5 +46,5 @@ type GenObject = C.PyGenObject
 // PyTypeObject PyGen_Type
 // The type object corresponding to generator objects.
 func GenType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyGen_Type))
+	return *(*TypeObject)(Pointer(&C.PyGen_Type))
 }

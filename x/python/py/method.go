@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyInstanceMethod_Check(PyObject *o)
@@ -17,7 +14,7 @@ import (
 // This function always succeeds.
 //
 //go:linkname InstanceMethodCheck C.PyInstanceMethod_Check
-func InstanceMethodCheck(o *Object) c.Int
+func InstanceMethodCheck(o *Object) Int
 
 // PyObject* PyInstanceMethod_New(PyObject *func)
 // Return a new instance method object, with *func* being any callable object.
@@ -55,7 +52,7 @@ func InstanceMethodGETFUNCTION(im *Object) *Object
 // parameter must not be “NULL“.  This function always succeeds.
 //
 //go:linkname MethodCheck C.PyMethod_Check
-func MethodCheck(o *Object) c.Int
+func MethodCheck(o *Object) Int
 
 // PyObject* PyMethod_New(PyObject *func, PyObject *self)
 // Return a new method object, with *func* being any callable object and *self*
@@ -93,7 +90,7 @@ func MethodGETSELF(meth *Object) *Object
 // This instance of :c:type:`PyTypeObject` represents the Python instance
 // method type. It is not exposed to Python programs.
 func InstanceMethodType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyInstanceMethod_Type))
+	return *(*TypeObject)(Pointer(&C.PyInstanceMethod_Type))
 }
 
 // PyTypeObject PyMethod_Type
@@ -102,5 +99,5 @@ func InstanceMethodType() TypeObject {
 // This instance of :c:type:`PyTypeObject` represents the Python method type.  This
 // is exposed to Python programs as “types.MethodType“.
 func MethodType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyMethod_Type))
+	return *(*TypeObject)(Pointer(&C.PyMethod_Type))
 }

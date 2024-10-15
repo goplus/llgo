@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyObject_CheckBuffer(PyObject *obj)
@@ -17,7 +14,7 @@ import (
 // succeed.  This function always succeeds.
 //
 //go:linkname ObjectCheckBuffer C.PyObject_CheckBuffer
-func ObjectCheckBuffer(obj *Object) c.Int
+func ObjectCheckBuffer(obj *Object) Int
 
 // int PyObject_GetBuffer(PyObject *exporter, Py_buffer *view, int flags)
 // Send a request to *exporter* to fill in *view* as specified by  *flags*.
@@ -36,7 +33,7 @@ func ObjectCheckBuffer(obj *Object) c.Int
 // must be called exactly once.
 //
 //go:linkname ObjectGetBuffer C.PyObject_GetBuffer
-func ObjectGetBuffer(exporter *Object, view *Buffer, flags c.Int) c.Int
+func ObjectGetBuffer(exporter *Object, view *Buffer, flags Int) Int
 
 // void PyBuffer_Release(Py_buffer *view)
 // Release the buffer *view* and release the :term:`strong reference`
@@ -55,7 +52,7 @@ func BufferRelease(view *Buffer)
 // On error, raise an exception and return -1.
 //
 //go:linkname BufferSizeFromFormat C.PyBuffer_SizeFromFormat
-func BufferSizeFromFormat(format *c.Char) SSizeT
+func BufferSizeFromFormat(format *Char) SSizeT
 
 // int PyBuffer_IsContiguous(const Py_buffer *view, char order)
 // Return “1“ if the memory defined by the *view* is C-style (*order* is
@@ -63,14 +60,14 @@ func BufferSizeFromFormat(format *c.Char) SSizeT
 // (*order* is “'A'“).  Return “0“ otherwise.  This function always succeeds.
 //
 //go:linkname BufferIsContiguous C.PyBuffer_IsContiguous
-func BufferIsContiguous(view *Buffer, order c.Char) c.Int
+func BufferIsContiguous(view *Buffer, order Char) Int
 
 // void* PyBuffer_GetPointer(const Py_buffer *view, const Py_ssize_t *indices)
 // Get the memory area pointed to by the *indices* inside the given *view*.
 // *indices* must point to an array of “view->ndim“ indices.
 //
 //go:linkname BufferGetPointer C.PyBuffer_GetPointer
-func BufferGetPointer(view *Buffer, indices *SSizeT) c.Pointer
+func BufferGetPointer(view *Buffer, indices *SSizeT) Pointer
 
 // int PyBuffer_FromContiguous(const Py_buffer *view, const void *buf, Py_ssize_t len, char fort)
 // Copy contiguous *len* bytes from *buf* to *view*.
@@ -78,7 +75,7 @@ func BufferGetPointer(view *Buffer, indices *SSizeT) c.Pointer
 // “0“ is returned on success, “-1“ on error.
 //
 //go:linkname BufferFromContiguous C.PyBuffer_FromContiguous
-func BufferFromContiguous(view *Buffer, buf c.Pointer, len SSizeT, fort c.Char) c.Int
+func BufferFromContiguous(view *Buffer, buf Pointer, len SSizeT, fort Char) Int
 
 // int PyBuffer_ToContiguous(void *buf, const Py_buffer *src, Py_ssize_t len, char order)
 // Copy *len* bytes from *src* to its contiguous representation in *buf*.
@@ -88,7 +85,7 @@ func BufferFromContiguous(view *Buffer, buf c.Pointer, len SSizeT, fort c.Char) 
 // This function fails if *len* != *src->len*.
 //
 //go:linkname BufferToContiguous C.PyBuffer_ToContiguous
-func BufferToContiguous(buf c.Pointer, src *Buffer, len SSizeT, order c.Char) c.Int
+func BufferToContiguous(buf Pointer, src *Buffer, len SSizeT, order Char) Int
 
 // int PyObject_CopyData(PyObject *dest, PyObject *src)
 // Copy data from *src* to *dest* buffer. Can convert between C-style and
@@ -97,7 +94,7 @@ func BufferToContiguous(buf c.Pointer, src *Buffer, len SSizeT, order c.Char) c.
 // “0“ is returned on success, “-1“ on error.
 //
 //go:linkname ObjectCopyData C.PyObject_CopyData
-func ObjectCopyData(dest *Object, src *Object) c.Int
+func ObjectCopyData(dest *Object, src *Object) Int
 
 // void PyBuffer_FillContiguousStrides(int ndims, Py_ssize_t *shape, Py_ssize_t *strides, int itemsize, char order)
 // Fill the *strides* array with byte-strides of a :term:`contiguous` (C-style if
@@ -105,7 +102,7 @@ func ObjectCopyData(dest *Object, src *Object) c.Int
 // given shape with the given number of bytes per element.
 //
 //go:linkname BufferFillContiguousStrides C.PyBuffer_FillContiguousStrides
-func BufferFillContiguousStrides(ndims c.Int, shape *SSizeT, strides *SSizeT, itemsize c.Int, order c.Char)
+func BufferFillContiguousStrides(ndims Int, shape *SSizeT, strides *SSizeT, itemsize Int, order Char)
 
 // int PyBuffer_FillInfo(Py_buffer *view, PyObject *exporter, void *buf, Py_ssize_t len, int readonly, int flags)
 // Handle buffer requests for an exporter that wants to expose *buf* of size *len*
@@ -125,7 +122,7 @@ func BufferFillContiguousStrides(ndims c.Int, shape *SSizeT, strides *SSizeT, it
 // unmodified. Otherwise, *exporter* MUST be “NULL“.
 //
 //go:linkname BufferFillInfo C.PyBuffer_FillInfo
-func BufferFillInfo(view *Buffer, exporter *Object, buf c.Pointer, len SSizeT, readonly c.Int, flags c.Int) c.Int
+func BufferFillInfo(view *Buffer, exporter *Object, buf Pointer, len SSizeT, readonly Int, flags Int) Int
 
 // Py_buffer
 

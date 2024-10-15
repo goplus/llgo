@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyCode_Check(PyObject *co)
@@ -16,7 +13,7 @@ import (
 // This function always succeeds.
 //
 //go:linkname CodeCheck C.PyCode_Check
-func CodeCheck(co *Object) c.Int
+func CodeCheck(co *Object) Int
 
 // Py_ssize_t PyCode_GetNumFree(PyCodeObject *co)
 // Return the number of :term:`free (closure) variables <closure variable>`
@@ -34,7 +31,7 @@ func CodeGetNumFree(co *CodeObject) SSizeT
 // signature changes again.
 //
 //go:linkname UnstableCodeGetFirstFree C.PyUnstable_Code_GetFirstFree
-func UnstableCodeGetFirstFree(co *CodeObject) c.Int
+func UnstableCodeGetFirstFree(co *CodeObject) Int
 
 // PyCodeObject* PyUnstable_Code_New(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, PyObject *code, PyObject *consts, PyObject *names, PyObject *varnames, PyObject *freevars, PyObject *cellvars, PyObject *filename, PyObject *name, PyObject *qualname, int firstlineno, PyObject *linetable, PyObject *exceptiontable)
 // Return a new code object.  If you need a dummy code object to create a frame,
@@ -56,7 +53,7 @@ func UnstableCodeGetFirstFree(co *CodeObject) c.Int
 // signature changes again.
 //
 //go:linkname UnstableCodeNew C.PyUnstable_Code_New
-func UnstableCodeNew(argcount c.Int, kwonlyargcount c.Int, nlocals c.Int, stacksize c.Int, flags c.Int, code *Object, consts *Object, names *Object, varnames *Object, freevars *Object, cellvars *Object, filename *Object, name *Object, qualname *Object, firstlineno c.Int, linetable *Object, exceptiontable *Object) *CodeObject
+func UnstableCodeNew(argcount Int, kwonlyargcount Int, nlocals Int, stacksize Int, flags Int, code *Object, consts *Object, names *Object, varnames *Object, freevars *Object, cellvars *Object, filename *Object, name *Object, qualname *Object, firstlineno Int, linetable *Object, exceptiontable *Object) *CodeObject
 
 // PyCodeObject* PyUnstable_Code_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, PyObject *code, PyObject *consts, PyObject *names, PyObject *varnames, PyObject *freevars, PyObject *cellvars, PyObject *filename, PyObject *name, PyObject *qualname, int firstlineno, PyObject *linetable, PyObject *exceptiontable)
 // Similar to :c:func:`PyUnstable_Code_New`, but with an extra "posonlyargcount" for positional-only arguments.
@@ -71,7 +68,7 @@ func UnstableCodeNew(argcount c.Int, kwonlyargcount c.Int, nlocals c.Int, stacks
 // signature changes again.
 //
 //go:linkname UnstableCodeNewWithPosOnlyArgs C.PyUnstable_Code_NewWithPosOnlyArgs
-func UnstableCodeNewWithPosOnlyArgs(argcount c.Int, posonlyargcount c.Int, kwonlyargcount c.Int, nlocals c.Int, stacksize c.Int, flags c.Int, code *Object, consts *Object, names *Object, varnames *Object, freevars *Object, cellvars *Object, filename *Object, name *Object, qualname *Object, firstlineno c.Int, linetable *Object, exceptiontable *Object) *CodeObject
+func UnstableCodeNewWithPosOnlyArgs(argcount Int, posonlyargcount Int, kwonlyargcount Int, nlocals Int, stacksize Int, flags Int, code *Object, consts *Object, names *Object, varnames *Object, freevars *Object, cellvars *Object, filename *Object, name *Object, qualname *Object, firstlineno Int, linetable *Object, exceptiontable *Object) *CodeObject
 
 // PyCodeObject* PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno)
 // Return a new empty code object with the specified filename,
@@ -79,7 +76,7 @@ func UnstableCodeNewWithPosOnlyArgs(argcount c.Int, posonlyargcount c.Int, kwonl
 // object will raise an “Exception“ if executed.
 //
 //go:linkname CodeNewEmpty C.PyCode_NewEmpty
-func CodeNewEmpty(filename *c.Char, funcname *c.Char, firstlineno c.Int) *CodeObject
+func CodeNewEmpty(filename *Char, funcname *Char, firstlineno Int) *CodeObject
 
 // int PyCode_Addr2Line(PyCodeObject *co, int byte_offset)
 // Return the line number of the instruction that occurs on or before “byte_offset“ and ends after it.
@@ -89,7 +86,7 @@ func CodeNewEmpty(filename *c.Char, funcname *c.Char, firstlineno c.Int) *CodeOb
 // <0626#out-of-process-debuggers-and-profilers>`.
 //
 //go:linkname CodeAddr2Line C.PyCode_Addr2Line
-func CodeAddr2Line(co *CodeObject, byteOffset c.Int) c.Int
+func CodeAddr2Line(co *CodeObject, byteOffset Int) Int
 
 // int PyCode_Addr2Location(PyObject *co, int byte_offset, int *start_line, int *start_column, int *end_line, int *end_column)
 // Sets the passed “int“ pointers to the source code line and column numbers
@@ -99,7 +96,7 @@ func CodeAddr2Line(co *CodeObject, byteOffset c.Int) c.Int
 // Returns “1“ if the function succeeds and 0 otherwise.
 //
 //go:linkname CodeAddr2Location C.PyCode_Addr2Location
-func CodeAddr2Location(co *Object, byteOffset c.Int, startLine *c.Int, startColumn *c.Int, endLine *c.Int, endColumn *c.Int) c.Int
+func CodeAddr2Location(co *Object, byteOffset Int, startLine *Int, startColumn *Int, endLine *Int, endColumn *Int) Int
 
 // PyObject* PyCode_GetCode(PyCodeObject *co)
 // Equivalent to the Python code “getattr(co, 'co_code')“.
@@ -148,7 +145,7 @@ func CodeGetFreevars(co *CodeObject) *Object
 // return “-1“ and set an exception.
 //
 //go:linkname CodeAddWatcher C.PyCode_AddWatcher
-func CodeAddWatcher(callback CodeWatchCallback) c.Int
+func CodeAddWatcher(callback CodeWatchCallback) Int
 
 // int PyCode_ClearWatcher(int watcher_id)
 // Clear watcher identified by *watcher_id* previously returned from
@@ -157,7 +154,7 @@ func CodeAddWatcher(callback CodeWatchCallback) c.Int
 // (e.g. if the given *watcher_id* was never registered.)
 //
 //go:linkname CodeClearWatcher C.PyCode_ClearWatcher
-func CodeClearWatcher(watcherId c.Int) c.Int
+func CodeClearWatcher(watcherId Int) Int
 
 // Py_ssize_t PyUnstable_Eval_RequestCodeExtraIndex(freefunc free)
 // Return a new an opaque index value used to adding data to code objects.
@@ -193,7 +190,7 @@ func UnstableEvalRequestCodeExtraIndex(free Freefunc) SSizeT
 // changes.
 //
 //go:linkname UnstableCodeGetExtra C.PyUnstable_Code_GetExtra
-func UnstableCodeGetExtra(code *Object, index SSizeT, extra *c.Pointer) c.Int
+func UnstableCodeGetExtra(code *Object, index SSizeT, extra *Pointer) Int
 
 // int PyUnstable_Code_SetExtra(PyObject *code, Py_ssize_t index, void *extra)
 // Set the extra data stored under the given index to *extra*.
@@ -206,7 +203,7 @@ func UnstableCodeGetExtra(code *Object, index SSizeT, extra *c.Pointer) c.Int
 // changes.
 //
 //go:linkname UnstableCodeSetExtra C.PyUnstable_Code_SetExtra
-func UnstableCodeSetExtra(code *Object, index SSizeT, extra c.Pointer) c.Int
+func UnstableCodeSetExtra(code *Object, index SSizeT, extra Pointer) Int
 
 // PyCodeObject
 // The C structure of the objects used to describe code objects.  The
@@ -260,11 +257,11 @@ type CodeEvent = C.PyCodeEvent
 // this functionality is a CPython implementation detail, and the API
 // may change without deprecation warnings.
 // llgo:type C
-type CodeWatchCallback func(event CodeEvent, co *CodeObject) c.Int
+type CodeWatchCallback func(event CodeEvent, co *CodeObject) Int
 
 // PyTypeObject PyCode_Type
 // This is an instance of :c:type:`PyTypeObject` representing the Python
 // :ref:`code object <code-objects>`.
 func CodeType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyCode_Type))
+	return *(*TypeObject)(Pointer(&C.PyCode_Type))
 }

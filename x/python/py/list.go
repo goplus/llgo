@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyList_Check(PyObject *p)
@@ -16,14 +13,14 @@ import (
 // type.  This function always succeeds.
 //
 //go:linkname ListCheck C.PyList_Check
-func ListCheck(p *Object) c.Int
+func ListCheck(p *Object) Int
 
 // int PyList_CheckExact(PyObject *p)
 // Return true if *p* is a list object, but not an instance of a subtype of
 // the list type.  This function always succeeds.
 //
 //go:linkname ListCheckExact C.PyList_CheckExact
-func ListCheckExact(p *Object) c.Int
+func ListCheckExact(p *Object) Int
 
 // PyObject* PyList_New(Py_ssize_t len)
 // Return a new list of length *len* on success, or “NULL“ on failure.
@@ -79,7 +76,7 @@ func ListGETITEM(list *Object, i SSizeT) *Object
 // an item already in the list at the affected position.
 //
 //go:linkname ListSetItem C.PyList_SetItem
-func ListSetItem(list *Object, index SSizeT, item *Object) c.Int
+func ListSetItem(list *Object, index SSizeT, item *Object) Int
 
 // void PyList_SET_ITEM(PyObject *list, Py_ssize_t i, PyObject *o)
 // Macro form of :c:func:`PyList_SetItem` without error checking. This is
@@ -105,7 +102,7 @@ func ListSETITEM(list *Object, i SSizeT, o *Object)
 // Analogous to “list.insert(index, item)“.
 //
 //go:linkname ListInsert C.PyList_Insert
-func ListInsert(list *Object, index SSizeT, item *Object) c.Int
+func ListInsert(list *Object, index SSizeT, item *Object) Int
 
 // int PyList_Append(PyObject *list, PyObject *item)
 // Append the object *item* at the end of list *list*. Return “0“ if
@@ -113,7 +110,7 @@ func ListInsert(list *Object, index SSizeT, item *Object) c.Int
 // to “list.append(item)“.
 //
 //go:linkname ListAppend C.PyList_Append
-func ListAppend(list *Object, item *Object) c.Int
+func ListAppend(list *Object, item *Object) Int
 
 // PyObject* PyList_GetSlice(PyObject *list, Py_ssize_t low, Py_ssize_t high)
 // Return a list of the objects in *list* containing the objects *between* *low*
@@ -131,21 +128,21 @@ func ListGetSlice(list *Object, low SSizeT, high SSizeT) *Object
 // list is not supported.
 //
 //go:linkname ListSetSlice C.PyList_SetSlice
-func ListSetSlice(list *Object, low SSizeT, high SSizeT, itemlist *Object) c.Int
+func ListSetSlice(list *Object, low SSizeT, high SSizeT, itemlist *Object) Int
 
 // int PyList_Sort(PyObject *list)
 // Sort the items of *list* in place.  Return “0“ on success, “-1“ on
 // failure.  This is equivalent to “list.sort()“.
 //
 //go:linkname ListSort C.PyList_Sort
-func ListSort(list *Object) c.Int
+func ListSort(list *Object) Int
 
 // int PyList_Reverse(PyObject *list)
 // Reverse the items of *list* in place.  Return “0“ on success, “-1“ on
 // failure.  This is the equivalent of “list.reverse()“.
 //
 //go:linkname ListReverse C.PyList_Reverse
-func ListReverse(list *Object) c.Int
+func ListReverse(list *Object) Int
 
 // PyObject* PyList_AsTuple(PyObject *list)
 // .. index:: pair: built-in function; tuple
@@ -164,5 +161,5 @@ type ListObject = C.PyListObject
 // This instance of :c:type:`PyTypeObject` represents the Python list type.
 // This is the same object as :class:`list` in the Python layer.
 func ListType() TypeObject {
-	return *(*TypeObject)(c.Pointer(&C.PyList_Type))
+	return *(*TypeObject)(Pointer(&C.PyList_Type))
 }

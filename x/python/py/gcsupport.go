@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* PyUnstable_Object_GC_NewWithExtraData(PyTypeObject *type, size_t extra_size)
@@ -29,7 +26,7 @@ import (
 // instead.
 //
 //go:linkname UnstableObjectGCNewWithExtraData C.PyUnstable_Object_GC_NewWithExtraData
-func UnstableObjectGCNewWithExtraData(type_ *TypeObject, extraSize c.Ulong) *Object
+func UnstableObjectGCNewWithExtraData(type_ *TypeObject, extraSize Ulong) *Object
 
 // void PyObject_GC_Track(PyObject *op)
 // Adds the object *op* to the set of container objects tracked by the
@@ -48,7 +45,7 @@ func ObjectGCTrack(op *Object)
 // The object cannot be tracked by the garbage collector if this function returns 0.
 //
 //go:linkname ObjectISGC C.PyObject_IS_GC
-func ObjectISGC(obj *Object) c.Int
+func ObjectISGC(obj *Object) Int
 
 // int PyObject_GC_IsTracked(PyObject *op)
 // Returns 1 if the object type of *op* implements the GC protocol and *op* is being
@@ -57,7 +54,7 @@ func ObjectISGC(obj *Object) c.Int
 // This is analogous to the Python function :func:`gc.is_tracked`.
 //
 //go:linkname ObjectGCIsTracked C.PyObject_GC_IsTracked
-func ObjectGCIsTracked(op *Object) c.Int
+func ObjectGCIsTracked(op *Object) Int
 
 // int PyObject_GC_IsFinalized(PyObject *op)
 // Returns 1 if the object type of *op* implements the GC protocol and *op* has been
@@ -66,14 +63,14 @@ func ObjectGCIsTracked(op *Object) c.Int
 // This is analogous to the Python function :func:`gc.is_finalized`.
 //
 //go:linkname ObjectGCIsFinalized C.PyObject_GC_IsFinalized
-func ObjectGCIsFinalized(op *Object) c.Int
+func ObjectGCIsFinalized(op *Object) Int
 
 // void PyObject_GC_Del(void *op)
 // Releases memory allocated to an object using :c:macro:`PyObject_GC_New` or
 // :c:macro:`PyObject_GC_NewVar`.
 //
 //go:linkname ObjectGCDel C.PyObject_GC_Del
-func ObjectGCDel(op c.Pointer)
+func ObjectGCDel(op Pointer)
 
 // void PyObject_GC_UnTrack(void *op)
 // Remove the object *op* from the set of container objects tracked by the
@@ -88,7 +85,7 @@ func ObjectGCDel(op c.Pointer)
 // The :c:member:`~PyTypeObject.tp_traverse` handler accepts a function parameter of this type:
 //
 //go:linkname ObjectGCUnTrack C.PyObject_GC_UnTrack
-func ObjectGCUnTrack(op c.Pointer)
+func ObjectGCUnTrack(op Pointer)
 
 // void Py_VISIT(PyObject *o)
 // If *o* is not “NULL“, call the *visit* callback, with arguments *o*
@@ -129,14 +126,14 @@ func GCCollect() SSizeT
 // Returns the previous state, 0 for disabled and 1 for enabled.
 //
 //go:linkname GCEnable C.PyGC_Enable
-func GCEnable() c.Int
+func GCEnable() Int
 
 // int PyGC_Disable(void)
 // Disable the garbage collector: similar to :func:`gc.disable`.
 // Returns the previous state, 0 for disabled and 1 for enabled.
 //
 //go:linkname GCDisable C.PyGC_Disable
-func GCDisable() c.Int
+func GCDisable() Int
 
 // int PyGC_IsEnabled(void)
 // Query the state of the garbage collector: similar to :func:`gc.isenabled`.
@@ -149,7 +146,7 @@ func GCDisable() c.Int
 // the garbage collector.
 //
 //go:linkname GCIsEnabled C.PyGC_IsEnabled
-func GCIsEnabled() c.Int
+func GCIsEnabled() Int
 
 // void PyUnstable_GC_VisitObjects(gcvisitobjects_t callback, void *arg)
 // Run supplied *callback* on all live GC-capable objects. *arg* is passed through to
@@ -164,7 +161,7 @@ func GCIsEnabled() c.Int
 // multiple times or not at all.
 //
 //go:linkname UnstableGCVisitObjects C.PyUnstable_GC_VisitObjects
-func UnstableGCVisitObjects(callback GcvisitobjectsT, arg c.Pointer)
+func UnstableGCVisitObjects(callback GcvisitobjectsT, arg Pointer)
 
 // int (*visitproc)(PyObject *object, void *arg)
 // Type of the visitor function passed to the :c:member:`~PyTypeObject.tp_traverse` handler.
@@ -176,7 +173,7 @@ func UnstableGCVisitObjects(callback GcvisitobjectsT, arg c.Pointer)
 //
 // The :c:member:`~PyTypeObject.tp_traverse` handler must have the following type:
 // llgo:type C
-type Visitproc func(object *Object, arg c.Pointer) c.Int
+type Visitproc func(object *Object, arg Pointer) Int
 
 // int (*traverseproc)(PyObject *self, visitproc visit, void *arg)
 // Traversal function for a container object.  Implementations must call the
@@ -190,7 +187,7 @@ type Visitproc func(object *Object, arg c.Pointer) c.Int
 // provided.  In order to use this macro, the :c:member:`~PyTypeObject.tp_traverse` implementation
 // must name its arguments exactly *visit* and *arg*:
 // llgo:type C
-type Traverseproc func(self *Object, visit Visitproc, arg c.Pointer) c.Int
+type Traverseproc func(self *Object, visit Visitproc, arg Pointer) Int
 
 // int (*inquiry)(PyObject *self)
 // Drop references that may have created reference cycles.  Immutable objects
@@ -206,7 +203,7 @@ type Traverseproc func(self *Object, visit Visitproc, arg c.Pointer) c.Int
 // The C-API provides the following functions for controlling
 // garbage collection runs.
 // llgo:type C
-type Inquiry func(self *Object) c.Int
+type Inquiry func(self *Object) Int
 
 // int (*gcvisitobjects_t)(PyObject *object, void *arg)
 // Type of the visitor function to be passed to :c:func:`PyUnstable_GC_VisitObjects`.
@@ -214,4 +211,4 @@ type Inquiry func(self *Object) c.Int
 // Return “0“ to continue iteration, return “1“ to stop iteration. Other return
 // values are reserved for now so behavior on returning anything else is undefined.
 // llgo:type C
-type GcvisitobjectsT func(object *Object, arg c.Pointer) c.Int
+type GcvisitobjectsT func(object *Object, arg Pointer) Int

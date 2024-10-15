@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // void Py_Initialize()
@@ -53,7 +50,7 @@ func Initialize()
 // :ref:`Python Initialization Configuration <init-config>`.
 //
 //go:linkname InitializeEx C.Py_InitializeEx
-func InitializeEx(initsigs c.Int)
+func InitializeEx(initsigs Int)
 
 // PyStatus Py_InitializeFromConfig(const PyConfig *config)
 // Initialize Python from *config* configuration, as described in
@@ -72,7 +69,7 @@ func InitializeFromConfig(config *Config) Status
 // :c:func:`Py_Initialize` is called again.
 //
 //go:linkname IsInitialized C.Py_IsInitialized
-func IsInitialized() c.Int
+func IsInitialized() Int
 
 // int Py_FinalizeEx()
 // Undo all initializations made by :c:func:`Py_Initialize` and subsequent use of
@@ -123,7 +120,7 @@ func IsInitialized() c.Int
 // .. audit-event:: cpython._PySys_ClearAuditHooks "" c.Py_FinalizeEx
 //
 //go:linkname FinalizeEx C.Py_FinalizeEx
-func FinalizeEx() c.Int
+func FinalizeEx() Int
 
 // void Py_Finalize()
 // This is a backwards-compatible version of :c:func:`Py_FinalizeEx` that
@@ -138,7 +135,7 @@ func Finalize()
 // the CPython runtime.
 //
 //go:linkname BytesMain C.Py_BytesMain
-func BytesMain(argc c.Int, argv **c.Char) c.Int
+func BytesMain(argc Int, argv **Char) Int
 
 // int Py_Main(int argc, wchar_t **argv)
 // The main program for the standard interpreter, encapsulating a full
@@ -193,7 +190,7 @@ func BytesMain(argc c.Int, argv **c.Char) c.Int
 // first initialized).
 //
 //go:linkname Main C.Py_Main
-func Main(argc c.Int, argv **c.Wchar) c.Int
+func Main(argc Int, argv **Wchar) Int
 
 // int Py_RunMain(void)
 // Executes the main module in a fully configured CPython runtime.
@@ -232,7 +229,7 @@ func Main(argc c.Int, argv **c.Wchar) c.Int
 // =======================
 //
 //go:linkname RunMain C.Py_RunMain
-func RunMain() c.Int
+func RunMain() Int
 
 // void Py_SetProgramName(const wchar_t *name)
 // .. index::
@@ -261,7 +258,7 @@ func RunMain() c.Int
 // .. deprecated:: 3.11
 //
 //go:linkname SetProgramName C.Py_SetProgramName
-func SetProgramName(name *c.Wchar)
+func SetProgramName(name *Wchar)
 
 // wchar_t* Py_GetProgramName()
 // Return the program name set with :c:member:`PyConfig.program_name`, or the default.
@@ -277,7 +274,7 @@ func SetProgramName(name *c.Wchar)
 // Get :data:`sys.executable` instead.
 //
 //go:linkname GetProgramName C.Py_GetProgramName
-func GetProgramName() *c.Wchar
+func GetProgramName() *Wchar
 
 // wchar_t* Py_GetPrefix()
 // Return the *prefix* for installed platform-independent files. This is derived
@@ -299,7 +296,7 @@ func GetProgramName() *c.Wchar
 // Get :data:`sys.prefix` instead.
 //
 //go:linkname GetPrefix C.Py_GetPrefix
-func GetPrefix() *c.Wchar
+func GetPrefix() *Wchar
 
 // wchar_t* Py_GetExecPrefix()
 // Return the *exec-prefix* for installed platform-*dependent* files.  This is
@@ -343,7 +340,7 @@ func GetPrefix() *c.Wchar
 // Get :data:`sys.exec_prefix` instead.
 //
 //go:linkname GetExecPrefix C.Py_GetExecPrefix
-func GetExecPrefix() *c.Wchar
+func GetExecPrefix() *Wchar
 
 // wchar_t* Py_GetProgramFullPath()
 // .. index::
@@ -364,7 +361,7 @@ func GetExecPrefix() *c.Wchar
 // Get :data:`sys.executable` instead.
 //
 //go:linkname GetProgramFullPath C.Py_GetProgramFullPath
-func GetProgramFullPath() *c.Wchar
+func GetProgramFullPath() *Wchar
 
 // wchar_t* Py_GetPath()
 // .. index::
@@ -392,7 +389,7 @@ func GetProgramFullPath() *c.Wchar
 // Get :data:`sys.path` instead.
 //
 //go:linkname GetPath C.Py_GetPath
-func GetPath() *c.Wchar
+func GetPath() *Wchar
 
 // const char* Py_GetVersion()
 // Return the version of this Python interpreter.  This is a string that looks
@@ -410,7 +407,7 @@ func GetPath() *c.Wchar
 // See also the :c:var:`Py_Version` constant.
 //
 //go:linkname GetVersion C.Py_GetVersion
-func GetVersion() *c.Char
+func GetVersion() *Char
 
 // const char* Py_GetPlatform()
 // .. index:: single: platform (in module sys)
@@ -424,7 +421,7 @@ func GetVersion() *c.Char
 // to Python code as “sys.platform“.
 //
 //go:linkname GetPlatform C.Py_GetPlatform
-func GetPlatform() *c.Char
+func GetPlatform() *Char
 
 // const char* Py_GetCopyright()
 // Return the official copyright string for the current Python version, for example
@@ -437,7 +434,7 @@ func GetPlatform() *c.Char
 // value.  The value is available to Python code as “sys.copyright“.
 //
 //go:linkname GetCopyright C.Py_GetCopyright
-func GetCopyright() *c.Char
+func GetCopyright() *Char
 
 // const char* Py_GetCompiler()
 // Return an indication of the compiler used to build the current Python version,
@@ -452,7 +449,7 @@ func GetCopyright() *c.Char
 // “sys.version“.
 //
 //go:linkname GetCompiler C.Py_GetCompiler
-func GetCompiler() *c.Char
+func GetCompiler() *Char
 
 // const char* Py_GetBuildInfo()
 // Return information about the sequence number and build date and time  of the
@@ -467,7 +464,7 @@ func GetCompiler() *c.Char
 // “sys.version“.
 //
 //go:linkname GetBuildInfo C.Py_GetBuildInfo
-func GetBuildInfo() *c.Char
+func GetBuildInfo() *Char
 
 // void PySys_SetArgvEx(int argc, wchar_t **argv, int updatepath)
 // .. index::
@@ -524,7 +521,7 @@ func GetBuildInfo() *c.Char
 // .. deprecated:: 3.11
 //
 //go:linkname SysSetArgvEx C.PySys_SetArgvEx
-func SysSetArgvEx(argc c.Int, argv **c.Wchar, updatepath c.Int)
+func SysSetArgvEx(argc Int, argv **Wchar, updatepath Int)
 
 // void PySys_SetArgv(int argc, wchar_t **argv)
 // This API is kept for backward compatibility: setting
@@ -544,7 +541,7 @@ func SysSetArgvEx(argc c.Int, argv **c.Wchar, updatepath c.Int)
 // .. deprecated:: 3.11
 //
 //go:linkname SysSetArgv C.PySys_SetArgv
-func SysSetArgv(argc c.Int, argv **c.Wchar)
+func SysSetArgv(argc Int, argv **Wchar)
 
 // void Py_SetPythonHome(const wchar_t *home)
 // This API is kept for backward compatibility: setting
@@ -566,7 +563,7 @@ func SysSetArgv(argc c.Int, argv **c.Wchar)
 // .. deprecated:: 3.11
 //
 //go:linkname SetPythonHome C.Py_SetPythonHome
-func SetPythonHome(home *c.Wchar)
+func SetPythonHome(home *Wchar)
 
 // wchar_t* Py_GetPythonHome()
 // Return the default "home", that is, the value set by
@@ -786,7 +783,7 @@ func SetPythonHome(home *c.Wchar)
 // code, or when embedding the Python interpreter:
 //
 //go:linkname GetPythonHome C.Py_GetPythonHome
-func GetPythonHome() *c.Wchar
+func GetPythonHome() *Wchar
 
 // void PyEval_InitThreads()
 // .. index::
@@ -929,7 +926,7 @@ func GILStateGetThisThreadState() *ThreadState
 // example usage in the Python source distribution.
 //
 //go:linkname GILStateCheck C.PyGILState_Check
-func GILStateCheck() c.Int
+func GILStateCheck() Int
 
 // PyInterpreterState* PyInterpreterState_New()
 // Create a new interpreter state object.  The global interpreter lock need not
@@ -1012,7 +1009,7 @@ func ThreadStateGetFrame(tstate *ThreadState) *FrameObject
 // *tstate* must not be “NULL“.
 //
 //go:linkname ThreadStateGetID C.PyThreadState_GetID
-func ThreadStateGetID(tstate *ThreadState) c.LongLong
+func ThreadStateGetID(tstate *ThreadState) LongLong
 
 // PyInterpreterState* PyThreadState_GetInterpreter(PyThreadState *tstate)
 // Get the interpreter of the Python thread state *tstate*.
@@ -1058,7 +1055,7 @@ func InterpreterStateGet() *InterpreterState
 // The caller must hold the GIL.
 //
 //go:linkname InterpreterStateGetID C.PyInterpreterState_GetID
-func InterpreterStateGetID(interp *InterpreterState) c.UlongLong
+func InterpreterStateGetID(interp *InterpreterState) UlongLong
 
 // PyObject* PyInterpreterState_GetDict(PyInterpreterState *interp)
 // Return a dictionary in which interpreter-specific data may be stored.
@@ -1110,7 +1107,7 @@ func ThreadStateGetDict() *Object
 // :c:expr:`unsigned long`.
 //
 //go:linkname ThreadStateSetAsyncExc C.PyThreadState_SetAsyncExc
-func ThreadStateSetAsyncExc(id c.Ulong, exc *Object) c.Int
+func ThreadStateSetAsyncExc(id Ulong, exc *Object) Int
 
 // void PyEval_AcquireThread(PyThreadState *tstate)
 // Acquire the global interpreter lock and set the current thread state to
@@ -1428,7 +1425,7 @@ func EndInterpreter(tstate *ThreadState)
 // Python-level trace functions in previous versions.
 //
 //go:linkname AddPendingCall C.Py_AddPendingCall
-func AddPendingCall(func_ func(c.Pointer) c.Int, arg c.Pointer) c.Int
+func AddPendingCall(func_ func(Pointer) Int, arg Pointer) Int
 
 // void PyEval_SetProfile(Py_tracefunc func, PyObject *obj)
 // Set the profiler function to *func*.  The *obj* parameter is passed to the
@@ -1576,7 +1573,7 @@ func ThreadTssFree(key *TssT)
 // by :c:func:`PyThread_tss_create`.
 //
 //go:linkname ThreadTssIsCreated C.PyThread_tss_is_created
-func ThreadTssIsCreated(key *TssT) c.Int
+func ThreadTssIsCreated(key *TssT) Int
 
 // int PyThread_tss_create(Py_tss_t *key)
 // Return a zero value on successful initialization of a TSS key.  The behavior
@@ -1586,7 +1583,7 @@ func ThreadTssIsCreated(key *TssT) c.Int
 // no-op and immediately returns success.
 //
 //go:linkname ThreadTssCreate C.PyThread_tss_create
-func ThreadTssCreate(key *TssT) c.Int
+func ThreadTssCreate(key *TssT) Int
 
 // void PyThread_tss_delete(Py_tss_t *key)
 // Destroy a TSS key to forget the values associated with the key across all
@@ -1604,7 +1601,7 @@ func ThreadTssDelete(key *TssT)
 // mapping of the key to a :c:expr:`void*` value.
 //
 //go:linkname ThreadTssSet C.PyThread_tss_set
-func ThreadTssSet(key *TssT, value c.Pointer) c.Int
+func ThreadTssSet(key *TssT, value Pointer) Int
 
 // void* PyThread_tss_get(Py_tss_t *key)
 // Return the :c:expr:`void*` value associated with a TSS key in the current
@@ -1630,37 +1627,37 @@ func ThreadTssSet(key *TssT, value c.Pointer) c.Int
 // be used in new code.
 //
 //go:linkname ThreadTssGet C.PyThread_tss_get
-func ThreadTssGet(key *TssT) c.Pointer
+func ThreadTssGet(key *TssT) Pointer
 
 // int PyThread_create_key()
 
 //
 //go:linkname ThreadCreateKey C.PyThread_create_key
-func ThreadCreateKey() c.Int
+func ThreadCreateKey() Int
 
 // void PyThread_delete_key(int key)
 
 //
 //go:linkname ThreadDeleteKey C.PyThread_delete_key
-func ThreadDeleteKey(key c.Int)
+func ThreadDeleteKey(key Int)
 
 // int PyThread_set_key_value(int key, void *value)
 
 //
 //go:linkname ThreadSetKeyValue C.PyThread_set_key_value
-func ThreadSetKeyValue(key c.Int, value c.Pointer) c.Int
+func ThreadSetKeyValue(key Int, value Pointer) Int
 
 // void* PyThread_get_key_value(int key)
 
 //
 //go:linkname ThreadGetKeyValue C.PyThread_get_key_value
-func ThreadGetKeyValue(key c.Int) c.Pointer
+func ThreadGetKeyValue(key Int) Pointer
 
 // void PyThread_delete_key_value(int key)
 
 //
 //go:linkname ThreadDeleteKeyValue C.PyThread_delete_key_value
-func ThreadDeleteKeyValue(key c.Int)
+func ThreadDeleteKeyValue(key Int)
 
 // void PyThread_ReInitTLS()
 // Synchronization Primitives
@@ -1738,7 +1735,7 @@ type InterpreterConfig = C.PyInterpreterConfig
 // | :c:data:`PyTrace_OPCODE`      | Always :c:data:`Py_None`.              |
 // +-------------------------------+----------------------------------------+
 // llgo:type C
-type Tracefunc func(obj *Object, frame *FrameObject, what c.Int, arg *Object) c.Int
+type Tracefunc func(obj *Object, frame *FrameObject, what Int, arg *Object) Int
 
 // Py_tss_t
 // This data structure represents the state of a thread key, the definition of
@@ -1762,8 +1759,8 @@ type TssT = C.Py_tss_t
 // Set by the :option:`-b` option.
 //
 // .. deprecated-removed:: 3.12 3.14
-func BytesWarningFlag() c.Int {
-	return c.Int(C.Py_BytesWarningFlag)
+func BytesWarningFlag() Int {
+	return Int(C.Py_BytesWarningFlag)
 }
 
 // int Py_DebugFlag
@@ -1778,8 +1775,8 @@ func BytesWarningFlag() c.Int {
 // variable.
 //
 // .. deprecated-removed:: 3.12 3.14
-func DebugFlag() c.Int {
-	return c.Int(C.Py_DebugFlag)
+func DebugFlag() Int {
+	return Int(C.Py_DebugFlag)
 }
 
 // int Py_DontWriteBytecodeFlag
@@ -1794,8 +1791,8 @@ func DebugFlag() c.Int {
 // environment variable.
 //
 // .. deprecated-removed:: 3.12 3.14
-func DontWriteBytecodeFlag() c.Int {
-	return c.Int(C.Py_DontWriteBytecodeFlag)
+func DontWriteBytecodeFlag() Int {
+	return Int(C.Py_DontWriteBytecodeFlag)
 }
 
 // int Py_FrozenFlag
@@ -1809,8 +1806,8 @@ func DontWriteBytecodeFlag() c.Int {
 // Private flag used by “_freeze_module“ and “frozenmain“ programs.
 //
 // .. deprecated-removed:: 3.12 3.14
-func FrozenFlag() c.Int {
-	return c.Int(C.Py_FrozenFlag)
+func FrozenFlag() Int {
+	return Int(C.Py_FrozenFlag)
 }
 
 // int Py_HashRandomizationFlag
@@ -1826,8 +1823,8 @@ func FrozenFlag() c.Int {
 // variable to initialize the secret hash seed.
 //
 // .. deprecated-removed:: 3.12 3.14
-func HashRandomizationFlag() c.Int {
-	return c.Int(C.Py_HashRandomizationFlag)
+func HashRandomizationFlag() Int {
+	return Int(C.Py_HashRandomizationFlag)
 }
 
 // int Py_IgnoreEnvironmentFlag
@@ -1841,8 +1838,8 @@ func HashRandomizationFlag() c.Int {
 // Set by the :option:`-E` and :option:`-I` options.
 //
 // .. deprecated-removed:: 3.12 3.14
-func IgnoreEnvironmentFlag() c.Int {
-	return c.Int(C.Py_IgnoreEnvironmentFlag)
+func IgnoreEnvironmentFlag() Int {
+	return Int(C.Py_IgnoreEnvironmentFlag)
 }
 
 // int Py_InspectFlag
@@ -1858,8 +1855,8 @@ func IgnoreEnvironmentFlag() c.Int {
 // variable.
 //
 // .. deprecated-removed:: 3.12 3.14
-func InspectFlag() c.Int {
-	return c.Int(C.Py_InspectFlag)
+func InspectFlag() Int {
+	return Int(C.Py_InspectFlag)
 }
 
 // int Py_InteractiveFlag
@@ -1870,8 +1867,8 @@ func InspectFlag() c.Int {
 // Set by the :option:`-i` option.
 //
 // .. deprecated:: 3.12
-func InteractiveFlag() c.Int {
-	return c.Int(C.Py_InteractiveFlag)
+func InteractiveFlag() Int {
+	return Int(C.Py_InteractiveFlag)
 }
 
 // int Py_IsolatedFlag
@@ -1885,8 +1882,8 @@ func InteractiveFlag() c.Int {
 // Set by the :option:`-I` option.
 //
 // .. deprecated-removed:: 3.12 3.14
-func IsolatedFlag() c.Int {
-	return c.Int(C.Py_IsolatedFlag)
+func IsolatedFlag() Int {
+	return Int(C.Py_IsolatedFlag)
 }
 
 // int Py_NoSiteFlag
@@ -1902,8 +1899,8 @@ func IsolatedFlag() c.Int {
 // Set by the :option:`-S` option.
 //
 // .. deprecated-removed:: 3.12 3.14
-func NoSiteFlag() c.Int {
-	return c.Int(C.Py_NoSiteFlag)
+func NoSiteFlag() Int {
+	return Int(C.Py_NoSiteFlag)
 }
 
 // int Py_NoUserSiteDirectory
@@ -1918,8 +1915,8 @@ func NoSiteFlag() c.Int {
 // :envvar:`PYTHONNOUSERSITE` environment variable.
 //
 // .. deprecated-removed:: 3.12 3.14
-func NoUserSiteDirectory() c.Int {
-	return c.Int(C.Py_NoUserSiteDirectory)
+func NoUserSiteDirectory() Int {
+	return Int(C.Py_NoUserSiteDirectory)
 }
 
 // int Py_OptimizeFlag
@@ -1931,8 +1928,8 @@ func NoUserSiteDirectory() c.Int {
 // variable.
 //
 // .. deprecated-removed:: 3.12 3.14
-func OptimizeFlag() c.Int {
-	return c.Int(C.Py_OptimizeFlag)
+func OptimizeFlag() Int {
+	return Int(C.Py_OptimizeFlag)
 }
 
 // int Py_QuietFlag
@@ -1945,8 +1942,8 @@ func OptimizeFlag() c.Int {
 // Set by the :option:`-q` option.
 //
 // .. deprecated-removed:: 3.12 3.14
-func QuietFlag() c.Int {
-	return c.Int(C.Py_QuietFlag)
+func QuietFlag() Int {
+	return Int(C.Py_QuietFlag)
 }
 
 // int Py_UnbufferedStdioFlag
@@ -1960,8 +1957,8 @@ func QuietFlag() c.Int {
 // environment variable.
 //
 // .. deprecated-removed:: 3.12 3.14
-func UnbufferedStdioFlag() c.Int {
-	return c.Int(C.Py_UnbufferedStdioFlag)
+func UnbufferedStdioFlag() Int {
+	return Int(C.Py_UnbufferedStdioFlag)
 }
 
 // int Py_VerboseFlag
@@ -1981,8 +1978,8 @@ func UnbufferedStdioFlag() c.Int {
 //
 // Initializing and finalizing the interpreter
 // ===========================================
-func VerboseFlag() c.Int {
-	return c.Int(C.Py_VerboseFlag)
+func VerboseFlag() Int {
+	return Int(C.Py_VerboseFlag)
 }
 
 // int PyTrace_CALL
@@ -1991,8 +1988,8 @@ func VerboseFlag() c.Int {
 // Note that the creation of the iterator for a generator function is not reported
 // as there is no control transfer to the Python bytecode in the corresponding
 // frame.
-func TraceCALL() c.Int {
-	return c.Int(C.PyTrace_CALL)
+func TraceCALL() Int {
+	return Int(C.PyTrace_CALL)
 }
 
 // int PyTrace_EXCEPTION
@@ -2003,8 +2000,8 @@ func TraceCALL() c.Int {
 // propagation causes the Python stack to unwind, the callback is called upon
 // return to each frame as the exception propagates.  Only trace functions receives
 // these events; they are not needed by the profiler.
-func TraceEXCEPTION() c.Int {
-	return c.Int(C.PyTrace_EXCEPTION)
+func TraceEXCEPTION() Int {
+	return Int(C.PyTrace_EXCEPTION)
 }
 
 // int PyTrace_LINE
@@ -2012,36 +2009,36 @@ func TraceEXCEPTION() c.Int {
 // (but not a profiling function) when a line-number event is being reported.
 // It may be disabled for a frame by setting :attr:`~frame.f_trace_lines` to
 // *0* on that frame.
-func TraceLINE() c.Int {
-	return c.Int(C.PyTrace_LINE)
+func TraceLINE() Int {
+	return Int(C.PyTrace_LINE)
 }
 
 // int PyTrace_RETURN
 // The value for the *what* parameter to :c:type:`Py_tracefunc` functions when a
 // call is about to return.
-func TraceRETURN() c.Int {
-	return c.Int(C.PyTrace_RETURN)
+func TraceRETURN() Int {
+	return Int(C.PyTrace_RETURN)
 }
 
 // int PyTrace_C_CALL
 // The value for the *what* parameter to :c:type:`Py_tracefunc` functions when a C
 // function is about to be called.
-func TraceCCALL() c.Int {
-	return c.Int(C.PyTrace_C_CALL)
+func TraceCCALL() Int {
+	return Int(C.PyTrace_C_CALL)
 }
 
 // int PyTrace_C_EXCEPTION
 // The value for the *what* parameter to :c:type:`Py_tracefunc` functions when a C
 // function has raised an exception.
-func TraceCEXCEPTION() c.Int {
-	return c.Int(C.PyTrace_C_EXCEPTION)
+func TraceCEXCEPTION() Int {
+	return Int(C.PyTrace_C_EXCEPTION)
 }
 
 // int PyTrace_C_RETURN
 // The value for the *what* parameter to :c:type:`Py_tracefunc` functions when a C
 // function has returned.
-func TraceCRETURN() c.Int {
-	return c.Int(C.PyTrace_C_RETURN)
+func TraceCRETURN() Int {
+	return Int(C.PyTrace_C_RETURN)
 }
 
 // int PyTrace_OPCODE
@@ -2049,6 +2046,6 @@ func TraceCRETURN() c.Int {
 // profiling functions) when a new opcode is about to be executed.  This event is
 // not emitted by default: it must be explicitly requested by setting
 // :attr:`~frame.f_trace_opcodes` to *1* on the frame.
-func TraceOPCODE() c.Int {
-	return c.Int(C.PyTrace_OPCODE)
+func TraceOPCODE() Int {
+	return Int(C.PyTrace_OPCODE)
 }

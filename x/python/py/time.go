@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // int PyTime_Monotonic(PyTime_t *result)
@@ -16,14 +13,14 @@ import (
 // See :func:`time.monotonic` for important details on this clock.
 //
 //go:linkname TimeMonotonic C.PyTime_Monotonic
-func TimeMonotonic(result *TimeT) c.Int
+func TimeMonotonic(result *TimeT) Int
 
 // int PyTime_PerfCounter(PyTime_t *result)
 // Read the performance counter.
 // See :func:`time.perf_counter` for important details on this clock.
 //
 //go:linkname TimePerfCounter C.PyTime_PerfCounter
-func TimePerfCounter(result *TimeT) c.Int
+func TimePerfCounter(result *TimeT) Int
 
 // int PyTime_Time(PyTime_t *result)
 // Read the “wall clock” time.
@@ -43,21 +40,21 @@ func TimePerfCounter(result *TimeT) c.Int
 // the “Raw“ one failed.
 //
 //go:linkname TimeTime C.PyTime_Time
-func TimeTime(result *TimeT) c.Int
+func TimeTime(result *TimeT) Int
 
 // int PyTime_MonotonicRaw(PyTime_t *result)
 // Similar to :c:func:`PyTime_Monotonic`,
 // but don't set an exception on error and don't require holding the GIL.
 //
 //go:linkname TimeMonotonicRaw C.PyTime_MonotonicRaw
-func TimeMonotonicRaw(result *TimeT) c.Int
+func TimeMonotonicRaw(result *TimeT) Int
 
 // int PyTime_PerfCounterRaw(PyTime_t *result)
 // Similar to :c:func:`PyTime_PerfCounter`,
 // but don't set an exception on error and don't require holding the GIL.
 //
 //go:linkname TimePerfCounterRaw C.PyTime_PerfCounterRaw
-func TimePerfCounterRaw(result *TimeT) c.Int
+func TimePerfCounterRaw(result *TimeT) Int
 
 // int PyTime_TimeRaw(PyTime_t *result)
 // Similar to :c:func:`PyTime_Time`,
@@ -67,7 +64,7 @@ func TimePerfCounterRaw(result *TimeT) c.Int
 // --------------------
 //
 //go:linkname TimeTimeRaw C.PyTime_TimeRaw
-func TimeTimeRaw(result *TimeT) c.Int
+func TimeTimeRaw(result *TimeT) Int
 
 // double PyTime_AsSecondsDouble(PyTime_t t)
 // Convert a timestamp to a number of seconds as a C :c:expr:`double`.
@@ -76,7 +73,7 @@ func TimeTimeRaw(result *TimeT) c.Int
 // accuracy for large values.
 //
 //go:linkname TimeAsSecondsDouble C.PyTime_AsSecondsDouble
-func TimeAsSecondsDouble(t TimeT) c.Double
+func TimeAsSecondsDouble(t TimeT) Double
 
 // PyTime_t
 // A timestamp or duration in nanoseconds, represented as a signed 64-bit
@@ -89,4 +86,4 @@ func TimeAsSecondsDouble(t TimeT) c.Double
 // Using the Unix epoch (January 1st, 1970) as reference, the supported date
 // range is around [1677-09-21; 2262-04-11].
 // The exact limits are exposed as constants:
-type TimeT c.LongLong
+type TimeT LongLong

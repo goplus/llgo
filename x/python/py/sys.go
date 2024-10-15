@@ -1,14 +1,11 @@
 package py
 
 /*
-#cgo pkg-config: python-3.12-embed
 #include <Python.h>
 */
 import "C"
 import (
 	_ "unsafe"
-
-	"github.com/goplus/llgo/c"
 )
 
 // PyObject* PyOS_FSPath(PyObject *path)
@@ -33,7 +30,7 @@ func OSFSPath(path *Object) *Object
 // This function must not be called before Python is initialized.
 //
 //go:linkname FdIsInteractive C.Py_FdIsInteractive
-func FdIsInteractive(fp c.FilePtr, filename *c.Char) c.Int
+func FdIsInteractive(fp FilePtr, filename *Char) Int
 
 // void PyOS_BeforeFork()
 // Function to prepare some internal state before a process fork.  This
@@ -109,7 +106,7 @@ func OSAfterFork()
 // change the definition in your own code.
 //
 //go:linkname OSCheckStack C.PyOS_CheckStack
-func OSCheckStack() c.Int
+func OSCheckStack() Int
 
 // PyOS_sighandler_t PyOS_getsig(int i)
 // Return the current signal handler for signal *i*.  This is a thin wrapper around
@@ -117,7 +114,7 @@ func OSCheckStack() c.Int
 // directly!
 //
 //go:linkname OSGetsig C.PyOS_getsig
-func OSGetsig(i c.Int) OSSighandlerT
+func OSGetsig(i Int) OSSighandlerT
 
 // PyOS_sighandler_t PyOS_setsig(int i, PyOS_sighandler_t h)
 // Set the signal handler for signal *i* to be *h*; return the old signal handler.
@@ -125,7 +122,7 @@ func OSGetsig(i c.Int) OSSighandlerT
 // not call those functions directly!
 //
 //go:linkname OSSetsig C.PyOS_setsig
-func OSSetsig(i c.Int, h OSSighandlerT) OSSighandlerT
+func OSSetsig(i Int, h OSSighandlerT) OSSighandlerT
 
 // wchar_t* Py_DecodeLocale(const char* arg, size_t *size)
 // .. warning::
@@ -174,7 +171,7 @@ func OSSetsig(i c.Int, h OSSighandlerT) OSSighandlerT
 // :c:member:`PyPreConfig.legacy_windows_fs_encoding` is zero;
 //
 //go:linkname DecodeLocale C.Py_DecodeLocale
-func DecodeLocale(arg *c.Char, size *c.Ulong) *c.Wchar
+func DecodeLocale(arg *Char, size *Ulong) *Wchar
 
 // char* Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
 // Encode a wide character string to the :term:`filesystem encoding and error
@@ -222,14 +219,14 @@ func DecodeLocale(arg *c.Char, size *c.Ulong) *c.Wchar
 // :mod:`sys` module's dict, which is contained in the internal thread state structure.
 //
 //go:linkname EncodeLocale C.Py_EncodeLocale
-func EncodeLocale(text *c.Wchar, errorPos *c.Ulong) *c.Char
+func EncodeLocale(text *Wchar, errorPos *Ulong) *Char
 
 // PyObject *PySys_GetObject(const char *name)
 // Return the object *name* from the :mod:`sys` module or “NULL“ if it does
 // not exist, without setting an exception.
 //
 //go:linkname SysGetObject C.PySys_GetObject
-func SysGetObject(name *c.Char) *Object
+func SysGetObject(name *Char) *Object
 
 // int PySys_SetObject(const char *name, PyObject *v)
 // Set *name* in the :mod:`sys` module to *v* unless *v* is “NULL“, in which
@@ -237,7 +234,7 @@ func SysGetObject(name *c.Char) *Object
 // on error.
 //
 //go:linkname SysSetObject C.PySys_SetObject
-func SysSetObject(name *c.Char, v *Object) c.Int
+func SysSetObject(name *Char, v *Object) Int
 
 // void PySys_ResetWarnOptions()
 // Reset :data:`sys.warnoptions` to an empty list. This function may be
@@ -265,14 +262,14 @@ func SysResetWarnOptions()
 // is written to the real (C level) *stdout*.
 //
 //go:linkname SysWriteStdout C.PySys_WriteStdout
-func SysWriteStdout(format *c.Char, __llgo_va_list ...any)
+func SysWriteStdout(format *Char, __llgo_va_list ...any)
 
 // void PySys_WriteStderr(const char *format, ...)
 // As :c:func:`PySys_WriteStdout`, but write to :data:`sys.stderr` or *stderr*
 // instead.
 //
 //go:linkname SysWriteStderr C.PySys_WriteStderr
-func SysWriteStderr(format *c.Char, __llgo_va_list ...any)
+func SysWriteStderr(format *Char, __llgo_va_list ...any)
 
 // void PySys_FormatStdout(const char *format, ...)
 // Function similar to PySys_WriteStdout() but format the message using
@@ -280,14 +277,14 @@ func SysWriteStderr(format *c.Char, __llgo_va_list ...any)
 // arbitrary length.
 //
 //go:linkname SysFormatStdout C.PySys_FormatStdout
-func SysFormatStdout(format *c.Char, __llgo_va_list ...any)
+func SysFormatStdout(format *Char, __llgo_va_list ...any)
 
 // void PySys_FormatStderr(const char *format, ...)
 // As :c:func:`PySys_FormatStdout`, but write to :data:`sys.stderr` or *stderr*
 // instead.
 //
 //go:linkname SysFormatStderr C.PySys_FormatStderr
-func SysFormatStderr(format *c.Char, __llgo_va_list ...any)
+func SysFormatStderr(format *Char, __llgo_va_list ...any)
 
 // PyObject *PySys_GetXOptions()
 // Return the current dictionary of :option:`-X` options, similarly to
@@ -323,7 +320,7 @@ func SysGetXOptions() *Object
 // unavoidable deprecation warning was raised.
 //
 //go:linkname SysAudit C.PySys_Audit
-func SysAudit(event *c.Char, format *c.Char, __llgo_va_list ...any) c.Int
+func SysAudit(event *Char, format *Char, __llgo_va_list ...any) Int
 
 // int PySys_AddAuditHook(Py_AuditHookFunction hook, void *userData)
 // Append the callable *hook* to the list of active auditing hooks.
@@ -358,7 +355,7 @@ func SysAudit(event *c.Char, format *c.Char, __llgo_va_list ...any) c.Int
 // that their hook has been added unless they control all existing hooks.
 //
 //go:linkname SysAddAuditHook C.PySys_AddAuditHook
-func SysAddAuditHook(hook AuditHookFunction, userData c.Pointer) c.Int
+func SysAddAuditHook(hook AuditHookFunction, userData Pointer) Int
 
 // void Py_FatalError(const char *message)
 // .. index:: single: abort (C function)
@@ -377,7 +374,7 @@ func SysAddAuditHook(hook AuditHookFunction, userData c.Pointer) c.Int
 // Log the function name automatically.
 //
 //go:linkname FatalError C.Py_FatalError
-func FatalError(message *c.Char)
+func FatalError(message *Char)
 
 // void Py_Exit(int status)
 // .. index::
@@ -391,7 +388,7 @@ func FatalError(message *c.Char)
 // Errors from finalization no longer ignored.
 //
 //go:linkname Exit C.Py_Exit
-func Exit(status c.Int)
+func Exit(status Int)
 
 // int Py_AtExit(void (*func) ())
 // .. index::
@@ -407,12 +404,12 @@ func Exit(status c.Int)
 // the cleanup function, no Python APIs should be called by *func*.
 //
 //go:linkname AtExit C.Py_AtExit
-func AtExit(func_ func()) c.Int
+func AtExit(func_ func()) Int
 
 // void (*PyOS_sighandler_t)(int)
 
 // llgo:type C
-type OSSighandlerT func(c.Int)
+type OSSighandlerT func(Int)
 
 // int (*Py_AuditHookFunction) (const char *event, PyObject *args, void *userData)
 // The type of the hook function.
@@ -426,4 +423,4 @@ type OSSighandlerT func(c.Int)
 // Process Control
 // ===============
 // llgo:type C
-type AuditHookFunction func(event *c.Char, args *Object, userData c.Pointer) c.Int
+type AuditHookFunction func(event *Char, args *Object, userData Pointer) Int
