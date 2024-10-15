@@ -25,13 +25,21 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: nmdump libfile")
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "Usage: nmdump [flags] libfile")
 		return
 	}
 
 	nm := llvm.New("").Nm()
-	items, err := nm.List(os.Args[1])
+
+	var flags []string
+	libfile := os.Args[len(os.Args)-1]
+	if len(os.Args) > 2 {
+		flags = os.Args[1 : len(os.Args)-1]
+	}
+
+	items, err := nm.List(libfile, flags...)
+
 	for _, item := range items {
 		if item.File != "" {
 			fmt.Printf("\n%s:\n", item.File)
