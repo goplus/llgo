@@ -66,3 +66,7 @@ func SetFinalizer(obj any, finalizer any) {
 	cd := iface[1]
 	bdwgc.RegisterFinalizer(p, finalizerCallback, cd, nil, nil)
 }
+
+func GC() {
+	bdwgc.Gcollect()
+}

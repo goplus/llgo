@@ -49,3 +49,6 @@ func Free(ptr unsafe.Pointer) {
 func SetFinalizer(obj any, finalizer any) {
 
 }
+
+func GC() {
+}
