@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unsafe"
 
@@ -16,27 +17,55 @@ import (
 	"github.com/goplus/llgo/xtool/nm"
 )
 
-func GenDylibPaths(lib string) ([]string, error) {
+type LibConfig struct {
+	Paths []string
+	Names []string
+}
+
+func ParseLibConfig(lib string) *LibConfig {
 	parts := strings.Fields(lib)
-	var libPath, libName string
-	var dylibPaths []string
+	config := &LibConfig{}
 
 	for _, part := range parts {
 		if strings.HasPrefix(part, "-L") {
-			libPath = part[2:]
+			config.Paths = append(config.Paths, part[2:])
 		} else if strings.HasPrefix(part, "-l") {
-			libName = part[2:]
-			if libPath != "" && libName != "" {
-				dylibPaths = append(dylibPaths, filepath.Join(libPath, "lib"+libName+".dylib"))
-			}
+			config.Names = append(config.Names, part[2:])
 		}
 	}
 
-	if len(dylibPaths) == 0 {
-		return nil, fmt.Errorf("failed to parse pkg-config output: %s", lib)
-	}
+	return config
+}
 
-	return dylibPaths, nil
+func GenDylibPaths(config *LibConfig, defaultPaths []string) ([]string, error) {
+	var foundPaths []string
+	var notFound []string
+	affix := ".dylib"
+	if runtime.GOOS == "linux" {
+		affix = ".so"
+	}
+	searchPaths := append(config.Paths, defaultPaths...)
+	for _, name := range config.Names {
+		var foundPath string
+		for _, path := range searchPaths {
+			dylibPath := filepath.Join(path, "lib"+name+affix)
+			if _, err := os.Stat(dylibPath); err == nil {
+				foundPath = dylibPath
+			}
+		}
+		if foundPath != "" {
+			foundPaths = append(foundPaths, foundPath)
+		} else {
+			notFound = append(notFound, name)
+		}
+	}
+	if len(notFound) > 0 {
+		fmt.Printf("Warning: Some libraries were not found: %s\n", strings.Join(notFound, ", "))
+	}
+	if len(foundPaths) == 0 {
+		return nil, fmt.Errorf("failed to find any libraries")
+	}
+	return foundPaths, nil
 }
 
 // ParseDylibSymbols parses symbols from dynamic libraries specified in the lib string.
@@ -48,7 +77,8 @@ func GenDylibPaths(lib string) ([]string, error) {
 func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 	fmt.Printf("parse dylib symbols from config lib:%s\n", lib)
 
-	dylibPaths, err := GenDylibPaths(lib)
+	conf := ParseLibConfig(lib)
+	dylibPaths, err := GenDylibPaths(conf, []string{})
 	if err != nil {
 		fmt.Printf("Warning: failed to generate some dylib paths: %v\n", err)
 	}
