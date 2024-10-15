@@ -62,12 +62,26 @@ const (
 	LocalASym = SymbolType('s') // Local symbol in an assembler source file
 )
 
+// VersionType represents the version type of a symbol.
+// This is specific to Linux systems.
+// On macOS , this will always be VersionNone.
+// https://sourceware.org/binutils/docs/binutils/nm.html
+type VersionType int
+
+const (
+	VersionNone     VersionType = iota // No version information
+	VersionSpecific                    // Specific version (@)
+	VersionDefault                     // Default version (@@)
+)
+
 // Symbol represents a symbol in an object file.
 type Symbol struct {
-	Name  string     // symbol name
-	Addr  uint64     // symbol address
-	Type  SymbolType // symbol type
-	FAddr bool       // address is valid
+	Name        string      // symbol name
+	Addr        uint64      // symbol address
+	Type        SymbolType  // symbol type
+	FAddr       bool        // address is valid
+	VersionType VersionType // version type of the symbol
+	Version     string      // version information of the symbol
 }
 
 // ObjectFile represents an object file.
@@ -143,24 +157,44 @@ func listOutput(data []byte) (items []*ObjectFile, err error) {
 			return
 		}
 		var sym *Symbol
+		var fullSymName string
 		if is64bits(line) {
+			fullSymName = string(line[19:])
 			sym = &Symbol{
-				Name: string(line[19:]),
 				Type: SymbolType(line[17]),
 			}
 			if sym.FAddr = hasAddr(line); sym.FAddr {
 				sym.Addr = hexUint64(line)
 			}
 		} else {
+			fullSymName = string(line[11:])
 			sym = &Symbol{
-				Name: string(line[11:]),
 				Type: SymbolType(line[9]),
 			}
 			if sym.FAddr = hasAddr(line); sym.FAddr {
 				sym.Addr = uint64(hexUint32(line))
 			}
 		}
+
+		sym.Name, sym.VersionType, sym.Version = parseSymName(fullSymName)
 		item.Symbols = append(item.Symbols, sym)
+	}
+	return
+}
+
+func parseSymName(symName string) (name string, versionType VersionType, version string) {
+	if idx := strings.LastIndex(symName, "@"); idx != -1 {
+		name = symName[:idx]
+		version = symName[idx+1:]
+		if idx > 0 && symName[idx-1] == '@' {
+			versionType = VersionDefault
+			name = symName[:idx-1]
+		} else {
+			versionType = VersionSpecific
+		}
+	} else {
+		name = symName
+		versionType = VersionNone
 	}
 	return
 }

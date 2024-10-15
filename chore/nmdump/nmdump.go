@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/xtool/env/llvm"
+	nmtool "github.com/goplus/llgo/xtool/nm"
 )
 
 func main() {
@@ -45,10 +46,17 @@ func main() {
 			fmt.Printf("\n%s:\n", item.File)
 		}
 		for _, sym := range item.Symbols {
+			var versionInfo string
+			switch sym.VersionType {
+			case nmtool.VersionSpecific:
+				versionInfo = fmt.Sprintf("@%s", sym.Version)
+			case nmtool.VersionDefault:
+				versionInfo = fmt.Sprintf("@@%s", sym.Version)
+			}
 			if sym.FAddr {
-				fmt.Printf("%016x %c %s\n", sym.Addr, sym.Type, sym.Name)
+				fmt.Printf("%016x %c %s%s\n", sym.Addr, sym.Type, sym.Name, versionInfo)
 			} else {
-				fmt.Printf("%16s %c %s\n", "", sym.Type, sym.Name)
+				fmt.Printf("%16s %c %s%s\n", "", sym.Type, sym.Name, versionInfo)
 			}
 		}
 	}
