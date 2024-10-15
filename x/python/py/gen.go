@@ -12,14 +12,14 @@ import (
 // Return true if *ob* is a generator object; *ob* must not be “NULL“.  This
 // function always succeeds.
 //
-//go:linkname GenCheck C.PyGen_Check
+//go:linkname GenCheck PyGen_Check
 func GenCheck(ob *Object) Int
 
 // int PyGen_CheckExact(PyObject *ob)
 // Return true if *ob*'s type is :c:type:`PyGen_Type`; *ob* must not be
 // “NULL“.  This function always succeeds.
 //
-//go:linkname GenCheckExact C.PyGen_CheckExact
+//go:linkname GenCheckExact PyGen_CheckExact
 func GenCheckExact(ob *Object) Int
 
 // PyObject* PyGen_New(PyFrameObject *frame)
@@ -27,7 +27,7 @@ func GenCheckExact(ob *Object) Int
 // A reference to *frame* is stolen by this function. The argument must not be
 // “NULL“.
 //
-//go:linkname GenNew C.PyGen_New
+//go:linkname GenNew PyGen_New
 func GenNew(frame *FrameObject) *Object
 
 // PyObject* PyGen_NewWithQualName(PyFrameObject *frame, PyObject *name, PyObject *qualname)
@@ -36,7 +36,7 @@ func GenNew(frame *FrameObject) *Object
 // A reference to *frame* is stolen by this function.  The *frame* argument
 // must not be “NULL“.
 //
-//go:linkname GenNewWithQualName C.PyGen_NewWithQualName
+//go:linkname GenNewWithQualName PyGen_NewWithQualName
 func GenNewWithQualName(frame *FrameObject, name *Object, qualname *Object) *Object
 
 // PyGenObject

@@ -13,7 +13,7 @@ import (
 // types derived from the standard type object.  Return 0 in all other cases.
 // This function always succeeds.
 //
-//go:linkname TypeCheck C.PyType_Check
+//go:linkname TypeCheck PyType_Check
 func TypeCheck(o *Object) Int
 
 // int PyType_CheckExact(PyObject *o)
@@ -21,13 +21,13 @@ func TypeCheck(o *Object) Int
 // the standard type object.  Return 0 in all other cases.  This function
 // always succeeds.
 //
-//go:linkname TypeCheckExact C.PyType_CheckExact
+//go:linkname TypeCheckExact PyType_CheckExact
 func TypeCheckExact(o *Object) Int
 
 // unsigned int PyType_ClearCache()
 // Clear the internal lookup cache. Return the current version tag.
 //
-//go:linkname TypeClearCache C.PyType_ClearCache
+//go:linkname TypeClearCache PyType_ClearCache
 func TypeClearCache() Uint
 
 // unsigned long PyType_GetFlags(PyTypeObject* type)
@@ -38,7 +38,7 @@ func TypeClearCache() Uint
 //
 // The return type is now “unsigned long“ rather than “long“.
 //
-//go:linkname TypeGetFlags C.PyType_GetFlags
+//go:linkname TypeGetFlags PyType_GetFlags
 func TypeGetFlags(type_ *TypeObject) Ulong
 
 // PyObject* PyType_GetDict(PyTypeObject* type)
@@ -55,7 +55,7 @@ func TypeGetFlags(type_ *TypeObject) Ulong
 // Extension modules should continue to use “tp_dict“,
 // directly or indirectly, when setting up their own types.
 //
-//go:linkname TypeGetDict C.PyType_GetDict
+//go:linkname TypeGetDict PyType_GetDict
 func TypeGetDict(type_ *TypeObject) *Object
 
 // void PyType_Modified(PyTypeObject *type)
@@ -63,7 +63,7 @@ func TypeGetDict(type_ *TypeObject) *Object
 // subtypes.  This function must be called after any manual
 // modification of the attributes or base classes of the type.
 //
-//go:linkname TypeModified C.PyType_Modified
+//go:linkname TypeModified PyType_Modified
 func TypeModified(type_ *TypeObject)
 
 // int PyType_AddWatcher(PyType_WatchCallback callback)
@@ -72,7 +72,7 @@ func TypeModified(type_ *TypeObject)
 // error (e.g. no more watcher IDs available), return “-1“ and set an
 // exception.
 //
-//go:linkname TypeAddWatcher C.PyType_AddWatcher
+//go:linkname TypeAddWatcher PyType_AddWatcher
 func TypeAddWatcher(callback TypeWatchCallback) Int
 
 // int PyType_ClearWatcher(int watcher_id)
@@ -84,7 +84,7 @@ func TypeAddWatcher(callback TypeWatchCallback) Int
 // that was not returned to it by a previous call to
 // :c:func:`PyType_AddWatcher`.
 //
-//go:linkname TypeClearWatcher C.PyType_ClearWatcher
+//go:linkname TypeClearWatcher PyType_ClearWatcher
 func TypeClearWatcher(watcherId Int) Int
 
 // int PyType_Watch(int watcher_id, PyObject *type)
@@ -98,21 +98,21 @@ func TypeClearWatcher(watcherId Int) Int
 // An extension should never call “PyType_Watch“ with a *watcher_id* that was
 // not returned to it by a previous call to :c:func:`PyType_AddWatcher`.
 //
-//go:linkname TypeWatch C.PyType_Watch
+//go:linkname TypeWatch PyType_Watch
 func TypeWatch(watcherId Int, type_ *Object) Int
 
 // int PyType_HasFeature(PyTypeObject *o, int feature)
 // Return non-zero if the type object *o* sets the feature *feature*.
 // Type features are denoted by single bit flags.
 //
-//go:linkname TypeHasFeature C.PyType_HasFeature
+//go:linkname TypeHasFeature PyType_HasFeature
 func TypeHasFeature(o *TypeObject, feature Int) Int
 
 // int PyType_IS_GC(PyTypeObject *o)
 // Return true if the type object includes support for the cycle detector; this
 // tests the type flag :c:macro:`Py_TPFLAGS_HAVE_GC`.
 //
-//go:linkname TypeISGC C.PyType_IS_GC
+//go:linkname TypeISGC PyType_IS_GC
 func TypeISGC(o *TypeObject) Int
 
 // int PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b)
@@ -123,7 +123,7 @@ func TypeISGC(o *TypeObject) Int
 // :c:func:`PyObject_IsSubclass` to do the same check that :func:`issubclass`
 // would do.
 //
-//go:linkname TypeIsSubtype C.PyType_IsSubtype
+//go:linkname TypeIsSubtype PyType_IsSubtype
 func TypeIsSubtype(a *TypeObject, b *TypeObject) Int
 
 // PyObject* PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
@@ -131,14 +131,14 @@ func TypeIsSubtype(a *TypeObject, b *TypeObject) Int
 // Python's default memory allocation mechanism to allocate a new instance and
 // initialize all its contents to “NULL“.
 //
-//go:linkname TypeGenericAlloc C.PyType_GenericAlloc
+//go:linkname TypeGenericAlloc PyType_GenericAlloc
 func TypeGenericAlloc(type_ *TypeObject, nitems SSizeT) *Object
 
 // PyObject* PyType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds)
 // Generic handler for the :c:member:`~PyTypeObject.tp_new` slot of a type object.  Create a
 // new instance using the type's :c:member:`~PyTypeObject.tp_alloc` slot.
 //
-//go:linkname TypeGenericNew C.PyType_GenericNew
+//go:linkname TypeGenericNew PyType_GenericNew
 func TypeGenericNew(type_ *TypeObject, args *Object, kwds *Object) *Object
 
 // int PyType_Ready(PyTypeObject *type)
@@ -156,21 +156,21 @@ func TypeGenericNew(type_ *TypeObject, args *Object, kwds *Object) *Object
 // GC protocol itself by at least implementing the
 // :c:member:`~PyTypeObject.tp_traverse` handle.
 //
-//go:linkname TypeReady C.PyType_Ready
+//go:linkname TypeReady PyType_Ready
 func TypeReady(type_ *TypeObject) Int
 
 // PyObject* PyType_GetName(PyTypeObject *type)
 // Return the type's name. Equivalent to getting the type's
 // :attr:`~type.__name__` attribute.
 //
-//go:linkname TypeGetName C.PyType_GetName
+//go:linkname TypeGetName PyType_GetName
 func TypeGetName(type_ *TypeObject) *Object
 
 // PyObject* PyType_GetQualName(PyTypeObject *type)
 // Return the type's qualified name. Equivalent to getting the
 // type's :attr:`~type.__qualname__` attribute.
 //
-//go:linkname TypeGetQualName C.PyType_GetQualName
+//go:linkname TypeGetQualName PyType_GetQualName
 func TypeGetQualName(type_ *TypeObject) *Object
 
 // void* PyType_GetSlot(PyTypeObject *type, int slot)
@@ -185,7 +185,7 @@ func TypeGetQualName(type_ *TypeObject) *Object
 // :c:func:`PyType_GetSlot` can now accept all types.
 // Previously, it was limited to :ref:`heap types <heap-types>`.
 //
-//go:linkname TypeGetSlot C.PyType_GetSlot
+//go:linkname TypeGetSlot PyType_GetSlot
 func TypeGetSlot(type_ *TypeObject, slot Int) Pointer
 
 // PyObject* PyType_GetModule(PyTypeObject *type)
@@ -204,7 +204,7 @@ func TypeGetSlot(type_ *TypeObject, slot Int) Pointer
 // See :c:func:`PyType_GetModuleByDef` for cases when :c:type:`!PyCMethod` cannot
 // be used.
 //
-//go:linkname TypeGetModule C.PyType_GetModule
+//go:linkname TypeGetModule PyType_GetModule
 func TypeGetModule(type_ *TypeObject) *Object
 
 // void* PyType_GetModuleState(PyTypeObject *type)
@@ -218,7 +218,7 @@ func TypeGetModule(type_ *TypeObject) *Object
 // If the *type* has an associated module but its state is “NULL“,
 // returns “NULL“ without setting an exception.
 //
-//go:linkname TypeGetModuleState C.PyType_GetModuleState
+//go:linkname TypeGetModuleState PyType_GetModuleState
 func TypeGetModuleState(type_ *TypeObject) Pointer
 
 // PyObject* PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
@@ -233,7 +233,7 @@ func TypeGetModuleState(type_ *TypeObject) Pointer
 // and other places where a method's defining class cannot be passed using the
 // :c:type:`PyCMethod` calling convention.
 //
-//go:linkname TypeGetModuleByDef C.PyType_GetModuleByDef
+//go:linkname TypeGetModuleByDef PyType_GetModuleByDef
 func TypeGetModuleByDef(type_ *TypeObject, def *ModuleDef) *Object
 
 // int PyUnstable_Type_AssignVersionTag(PyTypeObject *type)
@@ -248,7 +248,7 @@ func TypeGetModuleByDef(type_ *TypeObject, def *ModuleDef) *Object
 // The following functions and structs are used to create
 // :ref:`heap types <heap-types>`.
 //
-//go:linkname UnstableTypeAssignVersionTag C.PyUnstable_Type_AssignVersionTag
+//go:linkname UnstableTypeAssignVersionTag PyUnstable_Type_AssignVersionTag
 func UnstableTypeAssignVersionTag(type_ *TypeObject) Int
 
 // PyObject* PyType_FromMetaclass(PyTypeObject *metaclass, PyObject *module, PyType_Spec *spec, PyObject *bases)
@@ -294,7 +294,7 @@ func UnstableTypeAssignVersionTag(type_ *TypeObject) Int
 // * :py:meth:`~object.__init_subclass__` is not called on any bases.
 // * :py:meth:`~object.__set_name__` is not called on new descriptors.
 //
-//go:linkname TypeFromMetaclass C.PyType_FromMetaclass
+//go:linkname TypeFromMetaclass PyType_FromMetaclass
 func TypeFromMetaclass(metaclass *TypeObject, module *Object, spec *TypeSpec, bases *Object) *Object
 
 // PyObject* PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
@@ -314,7 +314,7 @@ func TypeFromMetaclass(metaclass *TypeObject, module *Object, spec *TypeSpec, ba
 // Creating classes whose metaclass overrides
 // :c:member:`~PyTypeObject.tp_new` is no longer allowed.
 //
-//go:linkname TypeFromModuleAndSpec C.PyType_FromModuleAndSpec
+//go:linkname TypeFromModuleAndSpec PyType_FromModuleAndSpec
 func TypeFromModuleAndSpec(module *Object, spec *TypeSpec, bases *Object) *Object
 
 // PyObject* PyType_FromSpecWithBases(PyType_Spec *spec, PyObject *bases)
@@ -331,7 +331,7 @@ func TypeFromModuleAndSpec(module *Object, spec *TypeSpec, bases *Object) *Objec
 // Creating classes whose metaclass overrides
 // :c:member:`~PyTypeObject.tp_new` is no longer allowed.
 //
-//go:linkname TypeFromSpecWithBases C.PyType_FromSpecWithBases
+//go:linkname TypeFromSpecWithBases PyType_FromSpecWithBases
 func TypeFromSpecWithBases(spec *TypeSpec, bases *Object) *Object
 
 // PyObject* PyType_FromSpec(PyType_Spec *spec)
@@ -358,7 +358,7 @@ func TypeFromSpecWithBases(spec *TypeSpec, bases *Object) *Object
 // <span id='c.PyType_Spec.PyType_Spec.flags'></span>
 // <span id='c.PyType_Spec.PyType_Spec.slots'></span>
 //
-//go:linkname TypeFromSpec C.PyType_FromSpec
+//go:linkname TypeFromSpec PyType_FromSpec
 func TypeFromSpec(spec *TypeSpec) *Object
 
 // int (*PyType_WatchCallback)(PyObject *type)

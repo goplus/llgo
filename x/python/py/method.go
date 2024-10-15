@@ -13,7 +13,7 @@ import (
 // :c:data:`PyInstanceMethod_Type`).  The parameter must not be “NULL“.
 // This function always succeeds.
 //
-//go:linkname InstanceMethodCheck C.PyInstanceMethod_Check
+//go:linkname InstanceMethodCheck PyInstanceMethod_Check
 func InstanceMethodCheck(o *Object) Int
 
 // PyObject* PyInstanceMethod_New(PyObject *func)
@@ -21,13 +21,13 @@ func InstanceMethodCheck(o *Object) Int
 // *func* is the function that will be called when the instance method is
 // called.
 //
-//go:linkname InstanceMethodNew C.PyInstanceMethod_New
+//go:linkname InstanceMethodNew PyInstanceMethod_New
 func InstanceMethodNew(func_ *Object) *Object
 
 // PyObject* PyInstanceMethod_Function(PyObject *im)
 // Return the function object associated with the instance method *im*.
 //
-//go:linkname InstanceMethodFunction C.PyInstanceMethod_Function
+//go:linkname InstanceMethodFunction PyInstanceMethod_Function
 func InstanceMethodFunction(im *Object) *Object
 
 // PyObject* PyInstanceMethod_GET_FUNCTION(PyObject *im)
@@ -44,14 +44,14 @@ func InstanceMethodFunction(im *Object) *Object
 // a user-defined class. Unbound methods (methods bound to a class object) are
 // no longer available.
 //
-//go:linkname InstanceMethodGETFUNCTION C.PyInstanceMethod_GET_FUNCTION
+//go:linkname InstanceMethodGETFUNCTION PyInstanceMethod_GET_FUNCTION
 func InstanceMethodGETFUNCTION(im *Object) *Object
 
 // int PyMethod_Check(PyObject *o)
 // Return true if *o* is a method object (has type :c:data:`PyMethod_Type`).  The
 // parameter must not be “NULL“.  This function always succeeds.
 //
-//go:linkname MethodCheck C.PyMethod_Check
+//go:linkname MethodCheck PyMethod_Check
 func MethodCheck(o *Object) Int
 
 // PyObject* PyMethod_New(PyObject *func, PyObject *self)
@@ -59,31 +59,31 @@ func MethodCheck(o *Object) Int
 // the instance the method should be bound. *func* is the function that will
 // be called when the method is called. *self* must not be “NULL“.
 //
-//go:linkname MethodNew C.PyMethod_New
+//go:linkname MethodNew PyMethod_New
 func MethodNew(func_ *Object, self *Object) *Object
 
 // PyObject* PyMethod_Function(PyObject *meth)
 // Return the function object associated with the method *meth*.
 //
-//go:linkname MethodFunction C.PyMethod_Function
+//go:linkname MethodFunction PyMethod_Function
 func MethodFunction(meth *Object) *Object
 
 // PyObject* PyMethod_GET_FUNCTION(PyObject *meth)
 // Macro version of :c:func:`PyMethod_Function` which avoids error checking.
 //
-//go:linkname MethodGETFUNCTION C.PyMethod_GET_FUNCTION
+//go:linkname MethodGETFUNCTION PyMethod_GET_FUNCTION
 func MethodGETFUNCTION(meth *Object) *Object
 
 // PyObject* PyMethod_Self(PyObject *meth)
 // Return the instance associated with the method *meth*.
 //
-//go:linkname MethodSelf C.PyMethod_Self
+//go:linkname MethodSelf PyMethod_Self
 func MethodSelf(meth *Object) *Object
 
 // PyObject* PyMethod_GET_SELF(PyObject *meth)
 // Macro version of :c:func:`PyMethod_Self` which avoids error checking.
 //
-//go:linkname MethodGETSELF C.PyMethod_GET_SELF
+//go:linkname MethodGETSELF PyMethod_GET_SELF
 func MethodGETSELF(meth *Object) *Object
 
 // PyTypeObject PyInstanceMethod_Type

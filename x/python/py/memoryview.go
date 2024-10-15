@@ -14,14 +14,14 @@ import (
 // read/write, otherwise it may be either read-only or read/write at the
 // discretion of the exporter.
 //
-//go:linkname MemoryViewFromObject C.PyMemoryView_FromObject
+//go:linkname MemoryViewFromObject PyMemoryView_FromObject
 func MemoryViewFromObject(obj *Object) *Object
 
 // PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 // Create a memoryview object using *mem* as the underlying buffer.
 // *flags* can be one of :c:macro:`PyBUF_READ` or :c:macro:`PyBUF_WRITE`.
 //
-//go:linkname MemoryViewFromMemory C.PyMemoryView_FromMemory
+//go:linkname MemoryViewFromMemory PyMemoryView_FromMemory
 func MemoryViewFromMemory(mem *Char, size SSizeT, flags Int) *Object
 
 // PyObject *PyMemoryView_FromBuffer(const Py_buffer *view)
@@ -29,7 +29,7 @@ func MemoryViewFromMemory(mem *Char, size SSizeT, flags Int) *Object
 // For simple byte buffers, :c:func:`PyMemoryView_FromMemory` is the preferred
 // function.
 //
-//go:linkname MemoryViewFromBuffer C.PyMemoryView_FromBuffer
+//go:linkname MemoryViewFromBuffer PyMemoryView_FromBuffer
 func MemoryViewFromBuffer(view *Buffer) *Object
 
 // PyObject *PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order)
@@ -41,7 +41,7 @@ func MemoryViewFromBuffer(view *Buffer) *Object
 //
 // *buffertype* can be one of :c:macro:`PyBUF_READ` or :c:macro:`PyBUF_WRITE`.
 //
-//go:linkname MemoryViewGetContiguous C.PyMemoryView_GetContiguous
+//go:linkname MemoryViewGetContiguous PyMemoryView_GetContiguous
 func MemoryViewGetContiguous(obj *Object, buffertype Int, order Char) *Object
 
 // int PyMemoryView_Check(PyObject *obj)
@@ -49,7 +49,7 @@ func MemoryViewGetContiguous(obj *Object, buffertype Int, order Char) *Object
 // currently allowed to create subclasses of :class:`memoryview`.  This
 // function always succeeds.
 //
-//go:linkname MemoryViewCheck C.PyMemoryView_Check
+//go:linkname MemoryViewCheck PyMemoryView_Check
 func MemoryViewCheck(obj *Object) Int
 
 // Py_buffer *PyMemoryView_GET_BUFFER(PyObject *mview)
@@ -57,7 +57,7 @@ func MemoryViewCheck(obj *Object) Int
 // *mview* **must** be a memoryview instance; this macro doesn't check its type,
 // you must do it yourself or you will risk crashes.
 //
-//go:linkname MemoryViewGETBUFFER C.PyMemoryView_GET_BUFFER
+//go:linkname MemoryViewGETBUFFER PyMemoryView_GET_BUFFER
 func MemoryViewGETBUFFER(mview *Object) *Buffer
 
 // PyObject *PyMemoryView_GET_BASE(PyObject *mview)
@@ -66,5 +66,5 @@ func MemoryViewGETBUFFER(mview *Object) *Buffer
 // :c:func:`PyMemoryView_FromMemory` or :c:func:`PyMemoryView_FromBuffer`.
 // *mview* **must** be a memoryview instance.
 //
-//go:linkname MemoryViewGETBASE C.PyMemoryView_GET_BASE
+//go:linkname MemoryViewGETBASE PyMemoryView_GET_BASE
 func MemoryViewGETBASE(mview *Object) *Object

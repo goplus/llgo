@@ -12,14 +12,14 @@ import (
 // Read the monotonic clock.
 // See :func:`time.monotonic` for important details on this clock.
 //
-//go:linkname TimeMonotonic C.PyTime_Monotonic
+//go:linkname TimeMonotonic PyTime_Monotonic
 func TimeMonotonic(result *TimeT) Int
 
 // int PyTime_PerfCounter(PyTime_t *result)
 // Read the performance counter.
 // See :func:`time.perf_counter` for important details on this clock.
 //
-//go:linkname TimePerfCounter C.PyTime_PerfCounter
+//go:linkname TimePerfCounter PyTime_PerfCounter
 func TimePerfCounter(result *TimeT) Int
 
 // int PyTime_Time(PyTime_t *result)
@@ -39,21 +39,21 @@ func TimePerfCounter(result *TimeT) Int
 // regular (non-“Raw“) function. Note that the regular function may succeed after
 // the “Raw“ one failed.
 //
-//go:linkname TimeTime C.PyTime_Time
+//go:linkname TimeTime PyTime_Time
 func TimeTime(result *TimeT) Int
 
 // int PyTime_MonotonicRaw(PyTime_t *result)
 // Similar to :c:func:`PyTime_Monotonic`,
 // but don't set an exception on error and don't require holding the GIL.
 //
-//go:linkname TimeMonotonicRaw C.PyTime_MonotonicRaw
+//go:linkname TimeMonotonicRaw PyTime_MonotonicRaw
 func TimeMonotonicRaw(result *TimeT) Int
 
 // int PyTime_PerfCounterRaw(PyTime_t *result)
 // Similar to :c:func:`PyTime_PerfCounter`,
 // but don't set an exception on error and don't require holding the GIL.
 //
-//go:linkname TimePerfCounterRaw C.PyTime_PerfCounterRaw
+//go:linkname TimePerfCounterRaw PyTime_PerfCounterRaw
 func TimePerfCounterRaw(result *TimeT) Int
 
 // int PyTime_TimeRaw(PyTime_t *result)
@@ -63,7 +63,7 @@ func TimePerfCounterRaw(result *TimeT) Int
 // Conversion functions
 // --------------------
 //
-//go:linkname TimeTimeRaw C.PyTime_TimeRaw
+//go:linkname TimeTimeRaw PyTime_TimeRaw
 func TimeTimeRaw(result *TimeT) Int
 
 // double PyTime_AsSecondsDouble(PyTime_t t)
@@ -72,7 +72,7 @@ func TimeTimeRaw(result *TimeT) Int
 // The function cannot fail, but note that :c:expr:`double` has limited
 // accuracy for large values.
 //
-//go:linkname TimeAsSecondsDouble C.PyTime_AsSecondsDouble
+//go:linkname TimeAsSecondsDouble PyTime_AsSecondsDouble
 func TimeAsSecondsDouble(t TimeT) Double
 
 // PyTime_t

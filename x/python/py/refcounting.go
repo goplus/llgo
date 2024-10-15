@@ -23,7 +23,7 @@ import (
 //
 // The parameter type is no longer :c:expr:`const PyObject*`.
 //
-//go:linkname REFCNT C.Py_REFCNT
+//go:linkname REFCNT Py_REFCNT
 func REFCNT(o *Object) SSizeT
 
 // void Py_SET_REFCNT(PyObject *o, Py_ssize_t refcnt)
@@ -36,7 +36,7 @@ func REFCNT(o *Object) SSizeT
 //
 // Immortal objects are not modified.
 //
-//go:linkname SETREFCNT C.Py_SET_REFCNT
+//go:linkname SETREFCNT Py_SET_REFCNT
 func SETREFCNT(o *Object, refcnt SSizeT)
 
 // void Py_INCREF(PyObject *o)
@@ -60,7 +60,7 @@ func SETREFCNT(o *Object, refcnt SSizeT)
 //
 // Immortal objects are not modified.
 //
-//go:linkname INCREF C.Py_INCREF
+//go:linkname INCREF Py_INCREF
 func INCREF(o *Object)
 
 // void Py_XINCREF(PyObject *o)
@@ -69,7 +69,7 @@ func INCREF(o *Object)
 //
 // See also :c:func:`Py_XNewRef`.
 //
-//go:linkname XINCREF C.Py_XINCREF
+//go:linkname XINCREF Py_XINCREF
 func XINCREF(o *Object)
 
 // PyObject* Py_NewRef(PyObject *o)
@@ -93,7 +93,7 @@ func XINCREF(o *Object)
 //
 // See also :c:func:`Py_INCREF`.
 //
-//go:linkname NewRef C.Py_NewRef
+//go:linkname NewRef Py_NewRef
 func NewRef(o *Object) *Object
 
 // PyObject* Py_XNewRef(PyObject *o)
@@ -101,7 +101,7 @@ func NewRef(o *Object) *Object
 //
 // If the object *o* is “NULL“, the function just returns “NULL“.
 //
-//go:linkname XNewRef C.Py_XNewRef
+//go:linkname XNewRef Py_XNewRef
 func XNewRef(o *Object) *Object
 
 // void Py_DECREF(PyObject *o)
@@ -138,7 +138,7 @@ func XNewRef(o *Object) *Object
 //
 // Immortal objects are not modified.
 //
-//go:linkname DECREF C.Py_DECREF
+//go:linkname DECREF Py_DECREF
 func DECREF(o *Object)
 
 // void Py_XDECREF(PyObject *o)
@@ -146,7 +146,7 @@ func DECREF(o *Object)
 // in which case this has no effect.
 // The same warning from :c:func:`Py_DECREF` applies here as well.
 //
-//go:linkname XDECREF C.Py_XDECREF
+//go:linkname XDECREF Py_XDECREF
 func XDECREF(o *Object)
 
 // void Py_CLEAR(PyObject *o)
@@ -164,7 +164,7 @@ func XDECREF(o *Object)
 // The macro argument is now only evaluated once. If the argument has side
 // effects, these are no longer duplicated.
 //
-//go:linkname CLEAR C.Py_CLEAR
+//go:linkname CLEAR Py_CLEAR
 func CLEAR(o *Object)
 
 // void Py_IncRef(PyObject *o)
@@ -172,7 +172,7 @@ func CLEAR(o *Object)
 // A function version of :c:func:`Py_XINCREF`.
 // It can be used for runtime dynamic embedding of Python.
 //
-//go:linkname IncRef C.Py_IncRef
+//go:linkname IncRef Py_IncRef
 func IncRef(o *Object)
 
 // void Py_DecRef(PyObject *o)
@@ -180,5 +180,5 @@ func IncRef(o *Object)
 // A function version of :c:func:`Py_XDECREF`.
 // It can be used for runtime dynamic embedding of Python.
 //
-//go:linkname DecRef C.Py_DecRef
+//go:linkname DecRef Py_DecRef
 func DecRef(o *Object)

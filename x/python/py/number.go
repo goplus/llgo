@@ -14,42 +14,42 @@ import (
 //
 // Returns “1“ if *o* is an index integer.
 //
-//go:linkname NumberCheck C.PyNumber_Check
+//go:linkname NumberCheck PyNumber_Check
 func NumberCheck(o *Object) Int
 
 // PyObject* PyNumber_Add(PyObject *o1, PyObject *o2)
 // Returns the result of adding *o1* and *o2*, or “NULL“ on failure.  This is the
 // equivalent of the Python expression “o1 + o2“.
 //
-//go:linkname NumberAdd C.PyNumber_Add
+//go:linkname NumberAdd PyNumber_Add
 func NumberAdd(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Subtract(PyObject *o1, PyObject *o2)
 // Returns the result of subtracting *o2* from *o1*, or “NULL“ on failure.  This is
 // the equivalent of the Python expression “o1 - o2“.
 //
-//go:linkname NumberSubtract C.PyNumber_Subtract
+//go:linkname NumberSubtract PyNumber_Subtract
 func NumberSubtract(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Multiply(PyObject *o1, PyObject *o2)
 // Returns the result of multiplying *o1* and *o2*, or “NULL“ on failure.  This is
 // the equivalent of the Python expression “o1 * o2“.
 //
-//go:linkname NumberMultiply C.PyNumber_Multiply
+//go:linkname NumberMultiply PyNumber_Multiply
 func NumberMultiply(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_MatrixMultiply(PyObject *o1, PyObject *o2)
 // Returns the result of matrix multiplication on *o1* and *o2*, or “NULL“ on
 // failure.  This is the equivalent of the Python expression “o1 @ o2“.
 //
-//go:linkname NumberMatrixMultiply C.PyNumber_MatrixMultiply
+//go:linkname NumberMatrixMultiply PyNumber_MatrixMultiply
 func NumberMatrixMultiply(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_FloorDivide(PyObject *o1, PyObject *o2)
 // Return the floor of *o1* divided by *o2*, or “NULL“ on failure.  This is
 // the equivalent of the Python expression “o1 // o2“.
 //
-//go:linkname NumberFloorDivide C.PyNumber_FloorDivide
+//go:linkname NumberFloorDivide PyNumber_FloorDivide
 func NumberFloorDivide(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_TrueDivide(PyObject *o1, PyObject *o2)
@@ -59,14 +59,14 @@ func NumberFloorDivide(o1 *Object, o2 *Object) *Object
 // numbers in base two.  This function can return a floating-point value when
 // passed two integers.  This is the equivalent of the Python expression “o1 / o2“.
 //
-//go:linkname NumberTrueDivide C.PyNumber_TrueDivide
+//go:linkname NumberTrueDivide PyNumber_TrueDivide
 func NumberTrueDivide(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Remainder(PyObject *o1, PyObject *o2)
 // Returns the remainder of dividing *o1* by *o2*, or “NULL“ on failure.  This is
 // the equivalent of the Python expression “o1 % o2“.
 //
-//go:linkname NumberRemainder C.PyNumber_Remainder
+//go:linkname NumberRemainder PyNumber_Remainder
 func NumberRemainder(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Divmod(PyObject *o1, PyObject *o2)
@@ -75,7 +75,7 @@ func NumberRemainder(o1 *Object, o2 *Object) *Object
 // See the built-in function :func:`divmod`. Returns “NULL“ on failure.  This is
 // the equivalent of the Python expression “divmod(o1, o2)“.
 //
-//go:linkname NumberDivmod C.PyNumber_Divmod
+//go:linkname NumberDivmod PyNumber_Divmod
 func NumberDivmod(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Power(PyObject *o1, PyObject *o2, PyObject *o3)
@@ -86,21 +86,21 @@ func NumberDivmod(o1 *Object, o2 *Object) *Object
 // If *o3* is to be ignored, pass :c:data:`Py_None` in its place (passing “NULL“ for
 // *o3* would cause an illegal memory access).
 //
-//go:linkname NumberPower C.PyNumber_Power
+//go:linkname NumberPower PyNumber_Power
 func NumberPower(o1 *Object, o2 *Object, o3 *Object) *Object
 
 // PyObject* PyNumber_Negative(PyObject *o)
 // Returns the negation of *o* on success, or “NULL“ on failure. This is the
 // equivalent of the Python expression “-o“.
 //
-//go:linkname NumberNegative C.PyNumber_Negative
+//go:linkname NumberNegative PyNumber_Negative
 func NumberNegative(o *Object) *Object
 
 // PyObject* PyNumber_Positive(PyObject *o)
 // Returns *o* on success, or “NULL“ on failure.  This is the equivalent of the
 // Python expression “+o“.
 //
-//go:linkname NumberPositive C.PyNumber_Positive
+//go:linkname NumberPositive PyNumber_Positive
 func NumberPositive(o *Object) *Object
 
 // PyObject* PyNumber_Absolute(PyObject *o)
@@ -109,49 +109,49 @@ func NumberPositive(o *Object) *Object
 // Returns the absolute value of *o*, or “NULL“ on failure.  This is the equivalent
 // of the Python expression “abs(o)“.
 //
-//go:linkname NumberAbsolute C.PyNumber_Absolute
+//go:linkname NumberAbsolute PyNumber_Absolute
 func NumberAbsolute(o *Object) *Object
 
 // PyObject* PyNumber_Invert(PyObject *o)
 // Returns the bitwise negation of *o* on success, or “NULL“ on failure.  This is
 // the equivalent of the Python expression “~o“.
 //
-//go:linkname NumberInvert C.PyNumber_Invert
+//go:linkname NumberInvert PyNumber_Invert
 func NumberInvert(o *Object) *Object
 
 // PyObject* PyNumber_Lshift(PyObject *o1, PyObject *o2)
 // Returns the result of left shifting *o1* by *o2* on success, or “NULL“ on
 // failure.  This is the equivalent of the Python expression “o1 << o2“.
 //
-//go:linkname NumberLshift C.PyNumber_Lshift
+//go:linkname NumberLshift PyNumber_Lshift
 func NumberLshift(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Rshift(PyObject *o1, PyObject *o2)
 // Returns the result of right shifting *o1* by *o2* on success, or “NULL“ on
 // failure.  This is the equivalent of the Python expression “o1 >> o2“.
 //
-//go:linkname NumberRshift C.PyNumber_Rshift
+//go:linkname NumberRshift PyNumber_Rshift
 func NumberRshift(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_And(PyObject *o1, PyObject *o2)
 // Returns the "bitwise and" of *o1* and *o2* on success and “NULL“ on failure.
 // This is the equivalent of the Python expression “o1 & o2“.
 //
-//go:linkname NumberAnd C.PyNumber_And
+//go:linkname NumberAnd PyNumber_And
 func NumberAnd(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Xor(PyObject *o1, PyObject *o2)
 // Returns the "bitwise exclusive or" of *o1* by *o2* on success, or “NULL“ on
 // failure.  This is the equivalent of the Python expression “o1 ^ o2“.
 //
-//go:linkname NumberXor C.PyNumber_Xor
+//go:linkname NumberXor PyNumber_Xor
 func NumberXor(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Or(PyObject *o1, PyObject *o2)
 // Returns the "bitwise or" of *o1* and *o2* on success, or “NULL“ on failure.
 // This is the equivalent of the Python expression “o1 | o2“.
 //
-//go:linkname NumberOr C.PyNumber_Or
+//go:linkname NumberOr PyNumber_Or
 func NumberOr(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceAdd(PyObject *o1, PyObject *o2)
@@ -159,7 +159,7 @@ func NumberOr(o1 *Object, o2 *Object) *Object
 // is done *in-place* when *o1* supports it.  This is the equivalent of the Python
 // statement “o1 += o2“.
 //
-//go:linkname NumberInPlaceAdd C.PyNumber_InPlaceAdd
+//go:linkname NumberInPlaceAdd PyNumber_InPlaceAdd
 func NumberInPlaceAdd(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceSubtract(PyObject *o1, PyObject *o2)
@@ -167,7 +167,7 @@ func NumberInPlaceAdd(o1 *Object, o2 *Object) *Object
 // operation is done *in-place* when *o1* supports it.  This is the equivalent of
 // the Python statement “o1 -= o2“.
 //
-//go:linkname NumberInPlaceSubtract C.PyNumber_InPlaceSubtract
+//go:linkname NumberInPlaceSubtract PyNumber_InPlaceSubtract
 func NumberInPlaceSubtract(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceMultiply(PyObject *o1, PyObject *o2)
@@ -175,7 +175,7 @@ func NumberInPlaceSubtract(o1 *Object, o2 *Object) *Object
 // operation is done *in-place* when *o1* supports it.  This is the equivalent of
 // the Python statement “o1 *= o2“.
 //
-//go:linkname NumberInPlaceMultiply C.PyNumber_InPlaceMultiply
+//go:linkname NumberInPlaceMultiply PyNumber_InPlaceMultiply
 func NumberInPlaceMultiply(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceMatrixMultiply(PyObject *o1, PyObject *o2)
@@ -183,7 +183,7 @@ func NumberInPlaceMultiply(o1 *Object, o2 *Object) *Object
 // failure.  The operation is done *in-place* when *o1* supports it.  This is
 // the equivalent of the Python statement “o1 @= o2“.
 //
-//go:linkname NumberInPlaceMatrixMultiply C.PyNumber_InPlaceMatrixMultiply
+//go:linkname NumberInPlaceMatrixMultiply PyNumber_InPlaceMatrixMultiply
 func NumberInPlaceMatrixMultiply(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceFloorDivide(PyObject *o1, PyObject *o2)
@@ -191,7 +191,7 @@ func NumberInPlaceMatrixMultiply(o1 *Object, o2 *Object) *Object
 // The operation is done *in-place* when *o1* supports it.  This is the equivalent
 // of the Python statement “o1 //= o2“.
 //
-//go:linkname NumberInPlaceFloorDivide C.PyNumber_InPlaceFloorDivide
+//go:linkname NumberInPlaceFloorDivide PyNumber_InPlaceFloorDivide
 func NumberInPlaceFloorDivide(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceTrueDivide(PyObject *o1, PyObject *o2)
@@ -202,7 +202,7 @@ func NumberInPlaceFloorDivide(o1 *Object, o2 *Object) *Object
 // passed two integers.  The operation is done *in-place* when *o1* supports it.
 // This is the equivalent of the Python statement “o1 /= o2“.
 //
-//go:linkname NumberInPlaceTrueDivide C.PyNumber_InPlaceTrueDivide
+//go:linkname NumberInPlaceTrueDivide PyNumber_InPlaceTrueDivide
 func NumberInPlaceTrueDivide(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceRemainder(PyObject *o1, PyObject *o2)
@@ -210,7 +210,7 @@ func NumberInPlaceTrueDivide(o1 *Object, o2 *Object) *Object
 // operation is done *in-place* when *o1* supports it.  This is the equivalent of
 // the Python statement “o1 %= o2“.
 //
-//go:linkname NumberInPlaceRemainder C.PyNumber_InPlaceRemainder
+//go:linkname NumberInPlaceRemainder PyNumber_InPlaceRemainder
 func NumberInPlaceRemainder(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlacePower(PyObject *o1, PyObject *o2, PyObject *o3)
@@ -222,7 +222,7 @@ func NumberInPlaceRemainder(o1 *Object, o2 *Object) *Object
 // “pow(o1, o2, o3)“ otherwise. If *o3* is to be ignored, pass :c:data:`Py_None`
 // in its place (passing “NULL“ for *o3* would cause an illegal memory access).
 //
-//go:linkname NumberInPlacePower C.PyNumber_InPlacePower
+//go:linkname NumberInPlacePower PyNumber_InPlacePower
 func NumberInPlacePower(o1 *Object, o2 *Object, o3 *Object) *Object
 
 // PyObject* PyNumber_InPlaceLshift(PyObject *o1, PyObject *o2)
@@ -230,7 +230,7 @@ func NumberInPlacePower(o1 *Object, o2 *Object, o3 *Object) *Object
 // failure.  The operation is done *in-place* when *o1* supports it.  This is the
 // equivalent of the Python statement “o1 <<= o2“.
 //
-//go:linkname NumberInPlaceLshift C.PyNumber_InPlaceLshift
+//go:linkname NumberInPlaceLshift PyNumber_InPlaceLshift
 func NumberInPlaceLshift(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceRshift(PyObject *o1, PyObject *o2)
@@ -238,7 +238,7 @@ func NumberInPlaceLshift(o1 *Object, o2 *Object) *Object
 // failure.  The operation is done *in-place* when *o1* supports it.  This is the
 // equivalent of the Python statement “o1 >>= o2“.
 //
-//go:linkname NumberInPlaceRshift C.PyNumber_InPlaceRshift
+//go:linkname NumberInPlaceRshift PyNumber_InPlaceRshift
 func NumberInPlaceRshift(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceAnd(PyObject *o1, PyObject *o2)
@@ -246,7 +246,7 @@ func NumberInPlaceRshift(o1 *Object, o2 *Object) *Object
 // operation is done *in-place* when *o1* supports it.  This is the equivalent of
 // the Python statement “o1 &= o2“.
 //
-//go:linkname NumberInPlaceAnd C.PyNumber_InPlaceAnd
+//go:linkname NumberInPlaceAnd PyNumber_InPlaceAnd
 func NumberInPlaceAnd(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceXor(PyObject *o1, PyObject *o2)
@@ -254,7 +254,7 @@ func NumberInPlaceAnd(o1 *Object, o2 *Object) *Object
 // failure.  The operation is done *in-place* when *o1* supports it.  This is the
 // equivalent of the Python statement “o1 ^= o2“.
 //
-//go:linkname NumberInPlaceXor C.PyNumber_InPlaceXor
+//go:linkname NumberInPlaceXor PyNumber_InPlaceXor
 func NumberInPlaceXor(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_InPlaceOr(PyObject *o1, PyObject *o2)
@@ -262,7 +262,7 @@ func NumberInPlaceXor(o1 *Object, o2 *Object) *Object
 // operation is done *in-place* when *o1* supports it.  This is the equivalent of
 // the Python statement “o1 |= o2“.
 //
-//go:linkname NumberInPlaceOr C.PyNumber_InPlaceOr
+//go:linkname NumberInPlaceOr PyNumber_InPlaceOr
 func NumberInPlaceOr(o1 *Object, o2 *Object) *Object
 
 // PyObject* PyNumber_Long(PyObject *o)
@@ -271,7 +271,7 @@ func NumberInPlaceOr(o1 *Object, o2 *Object) *Object
 // Returns the *o* converted to an integer object on success, or “NULL“ on
 // failure.  This is the equivalent of the Python expression “int(o)“.
 //
-//go:linkname NumberLong C.PyNumber_Long
+//go:linkname NumberLong PyNumber_Long
 func NumberLong(o *Object) *Object
 
 // PyObject* PyNumber_Float(PyObject *o)
@@ -280,7 +280,7 @@ func NumberLong(o *Object) *Object
 // Returns the *o* converted to a float object on success, or “NULL“ on failure.
 // This is the equivalent of the Python expression “float(o)“.
 //
-//go:linkname NumberFloat C.PyNumber_Float
+//go:linkname NumberFloat PyNumber_Float
 func NumberFloat(o *Object) *Object
 
 // PyObject* PyNumber_Index(PyObject *o)
@@ -290,7 +290,7 @@ func NumberFloat(o *Object) *Object
 // The result always has exact type :class:`int`.  Previously, the result
 // could have been an instance of a subclass of “int“.
 //
-//go:linkname NumberIndex C.PyNumber_Index
+//go:linkname NumberIndex PyNumber_Index
 func NumberIndex(o *Object) *Object
 
 // PyObject* PyNumber_ToBase(PyObject *n, int base)
@@ -300,7 +300,7 @@ func NumberIndex(o *Object) *Object
 // “'0x'“, respectively.  If *n* is not a Python int, it is converted with
 // :c:func:`PyNumber_Index` first.
 //
-//go:linkname NumberToBase C.PyNumber_ToBase
+//go:linkname NumberToBase PyNumber_ToBase
 func NumberToBase(n *Object, base Int) *Object
 
 // Py_ssize_t PyNumber_AsSsize_t(PyObject *o, PyObject *exc)
@@ -314,7 +314,7 @@ func NumberToBase(n *Object, base Int) *Object
 // exception is cleared and the value is clipped to “PY_SSIZE_T_MIN“ for a negative
 // integer or “PY_SSIZE_T_MAX“ for a positive integer.
 //
-//go:linkname NumberAsSsizeT C.PyNumber_AsSsize_t
+//go:linkname NumberAsSsizeT PyNumber_AsSsize_t
 func NumberAsSsizeT(o *Object, exc *Object) SSizeT
 
 // int PyIndex_Check(PyObject *o)
@@ -322,5 +322,5 @@ func NumberAsSsizeT(o *Object, exc *Object) SSizeT
 // “tp_as_number“ structure filled in), and “0“ otherwise.
 // This function always succeeds.
 //
-//go:linkname IndexCheck C.PyIndex_Check
+//go:linkname IndexCheck PyIndex_Check
 func IndexCheck(o *Object) Int

@@ -12,20 +12,20 @@ import (
 // Return true if *p* is a dict object or an instance of a subtype of the dict
 // type.  This function always succeeds.
 //
-//go:linkname DictCheck C.PyDict_Check
+//go:linkname DictCheck PyDict_Check
 func DictCheck(p *Object) Int
 
 // int PyDict_CheckExact(PyObject *p)
 // Return true if *p* is a dict object, but not an instance of a subtype of
 // the dict type.  This function always succeeds.
 //
-//go:linkname DictCheckExact C.PyDict_CheckExact
+//go:linkname DictCheckExact PyDict_CheckExact
 func DictCheckExact(p *Object) Int
 
 // PyObject* PyDict_New()
 // Return a new empty dictionary, or “NULL“ on failure.
 //
-//go:linkname DictNew C.PyDict_New
+//go:linkname DictNew PyDict_New
 func DictNew() *Object
 
 // PyObject* PyDictProxy_New(PyObject *mapping)
@@ -33,13 +33,13 @@ func DictNew() *Object
 // enforces read-only behavior.  This is normally used to create a view to
 // prevent modification of the dictionary for non-dynamic class types.
 //
-//go:linkname DictProxyNew C.PyDictProxy_New
+//go:linkname DictProxyNew PyDictProxy_New
 func DictProxyNew(mapping *Object) *Object
 
 // void PyDict_Clear(PyObject *p)
 // Empty an existing dictionary of all key-value pairs.
 //
-//go:linkname DictClear C.PyDict_Clear
+//go:linkname DictClear PyDict_Clear
 func DictClear(p *Object)
 
 // int PyDict_Contains(PyObject *p, PyObject *key)
@@ -47,13 +47,13 @@ func DictClear(p *Object)
 // *key*, return “1“, otherwise return “0“.  On error, return “-1“.
 // This is equivalent to the Python expression “key in p“.
 //
-//go:linkname DictContains C.PyDict_Contains
+//go:linkname DictContains PyDict_Contains
 func DictContains(p *Object, key *Object) Int
 
 // PyObject* PyDict_Copy(PyObject *p)
 // Return a new dictionary that contains the same key-value pairs as *p*.
 //
-//go:linkname DictCopy C.PyDict_Copy
+//go:linkname DictCopy PyDict_Copy
 func DictCopy(p *Object) *Object
 
 // int PyDict_SetItem(PyObject *p, PyObject *key, PyObject *val)
@@ -62,7 +62,7 @@ func DictCopy(p *Object) *Object
 // “0“ on success or “-1“ on failure.  This function *does not* steal a
 // reference to *val*.
 //
-//go:linkname DictSetItem C.PyDict_SetItem
+//go:linkname DictSetItem PyDict_SetItem
 func DictSetItem(p *Object, key *Object, val *Object) Int
 
 // int PyDict_SetItemString(PyObject *p, const char *key, PyObject *val)
@@ -70,7 +70,7 @@ func DictSetItem(p *Object, key *Object, val *Object) Int
 // specified as a :c:expr:`const char*` UTF-8 encoded bytes string,
 // rather than a :c:expr:`PyObject*`.
 //
-//go:linkname DictSetItemString C.PyDict_SetItemString
+//go:linkname DictSetItemString PyDict_SetItemString
 func DictSetItemString(p *Object, key *Char, val *Object) Int
 
 // int PyDict_DelItem(PyObject *p, PyObject *key)
@@ -79,7 +79,7 @@ func DictSetItemString(p *Object, key *Char, val *Object) Int
 // If *key* is not in the dictionary, :exc:`KeyError` is raised.
 // Return “0“ on success or “-1“ on failure.
 //
-//go:linkname DictDelItem C.PyDict_DelItem
+//go:linkname DictDelItem PyDict_DelItem
 func DictDelItem(p *Object, key *Object) Int
 
 // int PyDict_DelItemString(PyObject *p, const char *key)
@@ -87,7 +87,7 @@ func DictDelItem(p *Object, key *Object) Int
 // specified as a :c:expr:`const char*` UTF-8 encoded bytes string,
 // rather than a :c:expr:`PyObject*`.
 //
-//go:linkname DictDelItemString C.PyDict_DelItemString
+//go:linkname DictDelItemString PyDict_DelItemString
 func DictDelItemString(p *Object, key *Char) Int
 
 // PyObject* PyDict_GetItem(PyObject *p, PyObject *key)
@@ -104,7 +104,7 @@ func DictDelItemString(p *Object, key *Char) Int
 // Calling this API without :term:`GIL` held had been allowed for historical
 // reason. It is no longer allowed.
 //
-//go:linkname DictGetItem C.PyDict_GetItem
+//go:linkname DictGetItem PyDict_GetItem
 func DictGetItem(p *Object, key *Object) *Object
 
 // PyObject* PyDict_GetItemWithError(PyObject *p, PyObject *key)
@@ -113,7 +113,7 @@ func DictGetItem(p *Object, key *Object) *Object
 // occurred.  Return “NULL“ **without** an exception set if the key
 // wasn't present.
 //
-//go:linkname DictGetItemWithError C.PyDict_GetItemWithError
+//go:linkname DictGetItemWithError PyDict_GetItemWithError
 func DictGetItemWithError(p *Object, key *Object) *Object
 
 // PyObject* PyDict_GetItemString(PyObject *p, const char *key)
@@ -129,7 +129,7 @@ func DictGetItemWithError(p *Object, key *Object) *Object
 // Prefer using the :c:func:`PyDict_GetItemWithError` function with your own
 // :c:func:`PyUnicode_FromString` *key* instead.
 //
-//go:linkname DictGetItemString C.PyDict_GetItemString
+//go:linkname DictGetItemString PyDict_GetItemString
 func DictGetItemString(p *Object, key *Char) *Object
 
 // PyObject* PyDict_SetDefault(PyObject *p, PyObject *key, PyObject *defaultobj)
@@ -139,26 +139,26 @@ func DictGetItemString(p *Object, key *Char) *Object
 // is returned.  This function evaluates the hash function of *key* only once,
 // instead of evaluating it independently for the lookup and the insertion.
 //
-//go:linkname DictSetDefault C.PyDict_SetDefault
+//go:linkname DictSetDefault PyDict_SetDefault
 func DictSetDefault(p *Object, key *Object, defaultobj *Object) *Object
 
 // PyObject* PyDict_Items(PyObject *p)
 // Return a :c:type:`PyListObject` containing all the items from the dictionary.
 //
-//go:linkname DictItems C.PyDict_Items
+//go:linkname DictItems PyDict_Items
 func DictItems(p *Object) *Object
 
 // PyObject* PyDict_Keys(PyObject *p)
 // Return a :c:type:`PyListObject` containing all the keys from the dictionary.
 //
-//go:linkname DictKeys C.PyDict_Keys
+//go:linkname DictKeys PyDict_Keys
 func DictKeys(p *Object) *Object
 
 // PyObject* PyDict_Values(PyObject *p)
 // Return a :c:type:`PyListObject` containing all the values from the dictionary
 // *p*.
 //
-//go:linkname DictValues C.PyDict_Values
+//go:linkname DictValues PyDict_Values
 func DictValues(p *Object) *Object
 
 // Py_ssize_t PyDict_Size(PyObject *p)
@@ -167,7 +167,7 @@ func DictValues(p *Object) *Object
 // Return the number of items in the dictionary.  This is equivalent to
 // “len(p)“ on a dictionary.
 //
-//go:linkname DictSize C.PyDict_Size
+//go:linkname DictSize PyDict_Size
 func DictSize(p *Object) SSizeT
 
 // int PyDict_Next(PyObject *p, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue)
@@ -225,7 +225,7 @@ func DictSize(p *Object) SSizeT
 // }
 // Py_END_CRITICAL_SECTION();
 //
-//go:linkname DictNext C.PyDict_Next
+//go:linkname DictNext PyDict_Next
 func DictNext(p *Object, ppos *SSizeT, pkey **Object, pvalue **Object) Int
 
 // int PyDict_Merge(PyObject *a, PyObject *b, int override)
@@ -236,7 +236,7 @@ func DictNext(p *Object, ppos *SSizeT, pkey **Object, pvalue **Object) Int
 // only be added if there is not a matching key in *a*. Return “0“ on
 // success or “-1“ if an exception was raised.
 //
-//go:linkname DictMerge C.PyDict_Merge
+//go:linkname DictMerge PyDict_Merge
 func DictMerge(a *Object, b *Object, override Int) Int
 
 // int PyDict_Update(PyObject *a, PyObject *b)
@@ -246,7 +246,7 @@ func DictMerge(a *Object, b *Object, override Int) Int
 // argument has no "keys" attribute.  Return “0“ on success or “-1“ if an
 // exception was raised.
 //
-//go:linkname DictUpdate C.PyDict_Update
+//go:linkname DictUpdate PyDict_Update
 func DictUpdate(a *Object, b *Object) Int
 
 // int PyDict_MergeFromSeq2(PyObject *a, PyObject *seq2, int override)
@@ -262,7 +262,7 @@ func DictUpdate(a *Object, b *Object) Int
 // if override or key not in a:
 // a[key] = value
 //
-//go:linkname DictMergeFromSeq2 C.PyDict_MergeFromSeq2
+//go:linkname DictMergeFromSeq2 PyDict_MergeFromSeq2
 func DictMergeFromSeq2(a *Object, seq2 *Object, override Int) Int
 
 // int PyDict_AddWatcher(PyDict_WatchCallback callback)
@@ -271,7 +271,7 @@ func DictMergeFromSeq2(a *Object, seq2 *Object, override Int) Int
 // of error (e.g. no more watcher IDs available), return “-1“ and set an
 // exception.
 //
-//go:linkname DictAddWatcher C.PyDict_AddWatcher
+//go:linkname DictAddWatcher PyDict_AddWatcher
 func DictAddWatcher(callback DictWatchCallback) Int
 
 // int PyDict_ClearWatcher(int watcher_id)
@@ -279,7 +279,7 @@ func DictAddWatcher(callback DictWatchCallback) Int
 // :c:func:`PyDict_AddWatcher`. Return “0“ on success, “-1“ on error (e.g.
 // if the given *watcher_id* was never registered.)
 //
-//go:linkname DictClearWatcher C.PyDict_ClearWatcher
+//go:linkname DictClearWatcher PyDict_ClearWatcher
 func DictClearWatcher(watcherId Int) Int
 
 // int PyDict_Watch(int watcher_id, PyObject *dict)
@@ -287,7 +287,7 @@ func DictClearWatcher(watcherId Int) Int
 // :c:func:`PyDict_AddWatcher` will be called when *dict* is modified or
 // deallocated. Return “0“ on success or “-1“ on error.
 //
-//go:linkname DictWatch C.PyDict_Watch
+//go:linkname DictWatch PyDict_Watch
 func DictWatch(watcherId Int, dict *Object) Int
 
 // int PyDict_Unwatch(int watcher_id, PyObject *dict)
@@ -296,7 +296,7 @@ func DictWatch(watcherId Int, dict *Object) Int
 // *dict* is modified or deallocated. The dict must previously have been
 // watched by this watcher. Return “0“ on success or “-1“ on error.
 //
-//go:linkname DictUnwatch C.PyDict_Unwatch
+//go:linkname DictUnwatch PyDict_Unwatch
 func DictUnwatch(watcherId Int, dict *Object) Int
 
 // PyDictObject

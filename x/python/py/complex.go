@@ -12,28 +12,28 @@ import (
 // Return the sum of two complex numbers, using the C :c:type:`Py_complex`
 // representation.
 //
-//go:linkname CSum C._Py_c_sum
+//go:linkname CSum _Py_c_sum
 func CSum(left Complex, right Complex) Complex
 
 // Py_complex _Py_c_diff(Py_complex left, Py_complex right)
 // Return the difference between two complex numbers, using the C
 // :c:type:`Py_complex` representation.
 //
-//go:linkname CDiff C._Py_c_diff
+//go:linkname CDiff _Py_c_diff
 func CDiff(left Complex, right Complex) Complex
 
 // Py_complex _Py_c_neg(Py_complex num)
 // Return the negation of the complex number *num*, using the C
 // :c:type:`Py_complex` representation.
 //
-//go:linkname CNeg C._Py_c_neg
+//go:linkname CNeg _Py_c_neg
 func CNeg(num Complex) Complex
 
 // Py_complex _Py_c_prod(Py_complex left, Py_complex right)
 // Return the product of two complex numbers, using the C :c:type:`Py_complex`
 // representation.
 //
-//go:linkname CProd C._Py_c_prod
+//go:linkname CProd _Py_c_prod
 func CProd(left Complex, right Complex) Complex
 
 // Py_complex _Py_c_quot(Py_complex dividend, Py_complex divisor)
@@ -43,7 +43,7 @@ func CProd(left Complex, right Complex) Complex
 // If *divisor* is null, this method returns zero and sets
 // :c:data:`errno` to :c:macro:`!EDOM`.
 //
-//go:linkname CQuot C._Py_c_quot
+//go:linkname CQuot _Py_c_quot
 func CQuot(dividend Complex, divisor Complex) Complex
 
 // Py_complex _Py_c_pow(Py_complex num, Py_complex exp)
@@ -58,35 +58,35 @@ func CQuot(dividend Complex, divisor Complex) Complex
 // Complex Numbers as Python Objects
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 //
-//go:linkname CPow C._Py_c_pow
+//go:linkname CPow _Py_c_pow
 func CPow(num Complex, exp Complex) Complex
 
 // int PyComplex_Check(PyObject *p)
 // Return true if its argument is a :c:type:`PyComplexObject` or a subtype of
 // :c:type:`PyComplexObject`.  This function always succeeds.
 //
-//go:linkname ComplexCheck C.PyComplex_Check
+//go:linkname ComplexCheck PyComplex_Check
 func ComplexCheck(p *Object) Int
 
 // int PyComplex_CheckExact(PyObject *p)
 // Return true if its argument is a :c:type:`PyComplexObject`, but not a subtype of
 // :c:type:`PyComplexObject`.  This function always succeeds.
 //
-//go:linkname ComplexCheckExact C.PyComplex_CheckExact
+//go:linkname ComplexCheckExact PyComplex_CheckExact
 func ComplexCheckExact(p *Object) Int
 
 // PyObject* PyComplex_FromCComplex(Py_complex v)
 // Create a new Python complex number object from a C :c:type:`Py_complex` value.
 // Return “NULL“ with an exception set on error.
 //
-//go:linkname ComplexFromCComplex C.PyComplex_FromCComplex
+//go:linkname ComplexFromCComplex PyComplex_FromCComplex
 func ComplexFromCComplex(v Complex) *Object
 
 // PyObject* PyComplex_FromDoubles(double real, double imag)
 // Return a new :c:type:`PyComplexObject` object from *real* and *imag*.
 // Return “NULL“ with an exception set on error.
 //
-//go:linkname ComplexFromDoubles C.PyComplex_FromDoubles
+//go:linkname ComplexFromDoubles PyComplex_FromDoubles
 func ComplexFromDoubles(real Double, imag Double) *Object
 
 // double PyComplex_RealAsDouble(PyObject *op)
@@ -103,7 +103,7 @@ func ComplexFromDoubles(real Double, imag Double) *Object
 //
 // Use :meth:`~object.__complex__` if available.
 //
-//go:linkname ComplexRealAsDouble C.PyComplex_RealAsDouble
+//go:linkname ComplexRealAsDouble PyComplex_RealAsDouble
 func ComplexRealAsDouble(op *Object) Double
 
 // double PyComplex_ImagAsDouble(PyObject *op)
@@ -120,7 +120,7 @@ func ComplexRealAsDouble(op *Object) Double
 //
 // Use :meth:`~object.__complex__` if available.
 //
-//go:linkname ComplexImagAsDouble C.PyComplex_ImagAsDouble
+//go:linkname ComplexImagAsDouble PyComplex_ImagAsDouble
 func ComplexImagAsDouble(op *Object) Double
 
 // Py_complex PyComplex_AsCComplex(PyObject *op)
@@ -138,7 +138,7 @@ func ComplexImagAsDouble(op *Object) Double
 //
 // Use :meth:`~object.__index__` if available.
 //
-//go:linkname ComplexAsCComplex C.PyComplex_AsCComplex
+//go:linkname ComplexAsCComplex PyComplex_AsCComplex
 func ComplexAsCComplex(op *Object) Complex
 
 // Py_complex

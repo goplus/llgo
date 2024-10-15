@@ -38,7 +38,7 @@ import (
 // On Windows, changes the console mode from “O_TEXT“ to “O_BINARY“,
 // which will also affect non-Python uses of the console using the C Runtime.
 //
-//go:linkname Initialize C.Py_Initialize
+//go:linkname Initialize Py_Initialize
 func Initialize()
 
 // void Py_InitializeEx(int initsigs)
@@ -49,7 +49,7 @@ func Initialize()
 // Use :c:func:`Py_InitializeFromConfig` to customize the
 // :ref:`Python Initialization Configuration <init-config>`.
 //
-//go:linkname InitializeEx C.Py_InitializeEx
+//go:linkname InitializeEx Py_InitializeEx
 func InitializeEx(initsigs Int)
 
 // PyStatus Py_InitializeFromConfig(const PyConfig *config)
@@ -60,7 +60,7 @@ func InitializeEx(initsigs Int)
 // interpreter, populating the runtime configuration structure, and querying
 // the returned status structure.
 //
-//go:linkname InitializeFromConfig C.Py_InitializeFromConfig
+//go:linkname InitializeFromConfig Py_InitializeFromConfig
 func InitializeFromConfig(config *Config) Status
 
 // int Py_IsInitialized()
@@ -68,7 +68,7 @@ func InitializeFromConfig(config *Config) Status
 // (zero) if not.  After :c:func:`Py_FinalizeEx` is called, this returns false until
 // :c:func:`Py_Initialize` is called again.
 //
-//go:linkname IsInitialized C.Py_IsInitialized
+//go:linkname IsInitialized Py_IsInitialized
 func IsInitialized() Int
 
 // int Py_FinalizeEx()
@@ -119,14 +119,14 @@ func IsInitialized() Int
 //
 // .. audit-event:: cpython._PySys_ClearAuditHooks "" c.Py_FinalizeEx
 //
-//go:linkname FinalizeEx C.Py_FinalizeEx
+//go:linkname FinalizeEx Py_FinalizeEx
 func FinalizeEx() Int
 
 // void Py_Finalize()
 // This is a backwards-compatible version of :c:func:`Py_FinalizeEx` that
 // disregards the return value.
 //
-//go:linkname Finalize C.Py_Finalize
+//go:linkname Finalize Py_Finalize
 func Finalize()
 
 // int Py_BytesMain(int argc, char **argv)
@@ -134,7 +134,7 @@ func Finalize()
 // allowing the calling application to delegate the text decoding step to
 // the CPython runtime.
 //
-//go:linkname BytesMain C.Py_BytesMain
+//go:linkname BytesMain Py_BytesMain
 func BytesMain(argc Int, argv **Char) Int
 
 // int Py_Main(int argc, wchar_t **argv)
@@ -189,7 +189,7 @@ func BytesMain(argc Int, argv **Char) Int
 // being modified after they have already been set once when the runtime was
 // first initialized).
 //
-//go:linkname Main C.Py_Main
+//go:linkname Main Py_Main
 func Main(argc Int, argv **Wchar) Int
 
 // int Py_RunMain(void)
@@ -228,7 +228,7 @@ func Main(argc Int, argv **Wchar) Int
 // Process-wide parameters
 // =======================
 //
-//go:linkname RunMain C.Py_RunMain
+//go:linkname RunMain Py_RunMain
 func RunMain() Int
 
 // void Py_SetProgramName(const wchar_t *name)
@@ -257,7 +257,7 @@ func RunMain() Int
 //
 // .. deprecated:: 3.11
 //
-//go:linkname SetProgramName C.Py_SetProgramName
+//go:linkname SetProgramName Py_SetProgramName
 func SetProgramName(name *Wchar)
 
 // wchar_t* Py_GetProgramName()
@@ -273,7 +273,7 @@ func SetProgramName(name *Wchar)
 // .. deprecated-removed:: 3.13 3.15
 // Get :data:`sys.executable` instead.
 //
-//go:linkname GetProgramName C.Py_GetProgramName
+//go:linkname GetProgramName Py_GetProgramName
 func GetProgramName() *Wchar
 
 // wchar_t* Py_GetPrefix()
@@ -295,7 +295,7 @@ func GetProgramName() *Wchar
 // .. deprecated-removed:: 3.13 3.15
 // Get :data:`sys.prefix` instead.
 //
-//go:linkname GetPrefix C.Py_GetPrefix
+//go:linkname GetPrefix Py_GetPrefix
 func GetPrefix() *Wchar
 
 // wchar_t* Py_GetExecPrefix()
@@ -339,7 +339,7 @@ func GetPrefix() *Wchar
 // .. deprecated-removed:: 3.13 3.15
 // Get :data:`sys.exec_prefix` instead.
 //
-//go:linkname GetExecPrefix C.Py_GetExecPrefix
+//go:linkname GetExecPrefix Py_GetExecPrefix
 func GetExecPrefix() *Wchar
 
 // wchar_t* Py_GetProgramFullPath()
@@ -360,7 +360,7 @@ func GetExecPrefix() *Wchar
 // .. deprecated-removed:: 3.13 3.15
 // Get :data:`sys.executable` instead.
 //
-//go:linkname GetProgramFullPath C.Py_GetProgramFullPath
+//go:linkname GetProgramFullPath Py_GetProgramFullPath
 func GetProgramFullPath() *Wchar
 
 // wchar_t* Py_GetPath()
@@ -388,7 +388,7 @@ func GetProgramFullPath() *Wchar
 // .. deprecated-removed:: 3.13 3.15
 // Get :data:`sys.path` instead.
 //
-//go:linkname GetPath C.Py_GetPath
+//go:linkname GetPath Py_GetPath
 func GetPath() *Wchar
 
 // const char* Py_GetVersion()
@@ -406,7 +406,7 @@ func GetPath() *Wchar
 //
 // See also the :c:var:`Py_Version` constant.
 //
-//go:linkname GetVersion C.Py_GetVersion
+//go:linkname GetVersion Py_GetVersion
 func GetVersion() *Char
 
 // const char* Py_GetPlatform()
@@ -420,7 +420,7 @@ func GetVersion() *Char
 // static storage; the caller should not modify its value.  The value is available
 // to Python code as “sys.platform“.
 //
-//go:linkname GetPlatform C.Py_GetPlatform
+//go:linkname GetPlatform Py_GetPlatform
 func GetPlatform() *Char
 
 // const char* Py_GetCopyright()
@@ -433,7 +433,7 @@ func GetPlatform() *Char
 // The returned string points into static storage; the caller should not modify its
 // value.  The value is available to Python code as “sys.copyright“.
 //
-//go:linkname GetCopyright C.Py_GetCopyright
+//go:linkname GetCopyright Py_GetCopyright
 func GetCopyright() *Char
 
 // const char* Py_GetCompiler()
@@ -448,7 +448,7 @@ func GetCopyright() *Char
 // value.  The value is available to Python code as part of the variable
 // “sys.version“.
 //
-//go:linkname GetCompiler C.Py_GetCompiler
+//go:linkname GetCompiler Py_GetCompiler
 func GetCompiler() *Char
 
 // const char* Py_GetBuildInfo()
@@ -463,7 +463,7 @@ func GetCompiler() *Char
 // value.  The value is available to Python code as part of the variable
 // “sys.version“.
 //
-//go:linkname GetBuildInfo C.Py_GetBuildInfo
+//go:linkname GetBuildInfo Py_GetBuildInfo
 func GetBuildInfo() *Char
 
 // void PySys_SetArgvEx(int argc, wchar_t **argv, int updatepath)
@@ -520,7 +520,7 @@ func GetBuildInfo() *Char
 //
 // .. deprecated:: 3.11
 //
-//go:linkname SysSetArgvEx C.PySys_SetArgvEx
+//go:linkname SysSetArgvEx PySys_SetArgvEx
 func SysSetArgvEx(argc Int, argv **Wchar, updatepath Int)
 
 // void PySys_SetArgv(int argc, wchar_t **argv)
@@ -540,7 +540,7 @@ func SysSetArgvEx(argc Int, argv **Wchar, updatepath Int)
 //
 // .. deprecated:: 3.11
 //
-//go:linkname SysSetArgv C.PySys_SetArgv
+//go:linkname SysSetArgv PySys_SetArgv
 func SysSetArgv(argc Int, argv **Wchar)
 
 // void Py_SetPythonHome(const wchar_t *home)
@@ -562,7 +562,7 @@ func SysSetArgv(argc Int, argv **Wchar)
 //
 // .. deprecated:: 3.11
 //
-//go:linkname SetPythonHome C.Py_SetPythonHome
+//go:linkname SetPythonHome Py_SetPythonHome
 func SetPythonHome(home *Wchar)
 
 // wchar_t* Py_GetPythonHome()
@@ -782,7 +782,7 @@ func SetPythonHome(home *Wchar)
 // These are the most commonly used types and functions when writing C extension
 // code, or when embedding the Python interpreter:
 //
-//go:linkname GetPythonHome C.Py_GetPythonHome
+//go:linkname GetPythonHome Py_GetPythonHome
 func GetPythonHome() *Wchar
 
 // void PyEval_InitThreads()
@@ -807,7 +807,7 @@ func GetPythonHome() *Wchar
 //
 // .. index:: pair: module; _thread
 //
-//go:linkname EvalInitThreads C.PyEval_InitThreads
+//go:linkname EvalInitThreads PyEval_InitThreads
 func EvalInitThreads()
 
 // PyThreadState* PyEval_SaveThread()
@@ -816,7 +816,7 @@ func EvalInitThreads()
 // “NULL“).  If the lock has been created, the current thread must have
 // acquired it.
 //
-//go:linkname EvalSaveThread C.PyEval_SaveThread
+//go:linkname EvalSaveThread PyEval_SaveThread
 func EvalSaveThread() *ThreadState
 
 // void PyEval_RestoreThread(PyThreadState *tstate)
@@ -834,7 +834,7 @@ func EvalSaveThread() *ThreadState
 // Hangs the current thread, rather than terminating it, if called while the
 // interpreter is finalizing.
 //
-//go:linkname EvalRestoreThread C.PyEval_RestoreThread
+//go:linkname EvalRestoreThread PyEval_RestoreThread
 func EvalRestoreThread(tstate *ThreadState)
 
 // PyThreadState* PyThreadState_Get()
@@ -844,7 +844,7 @@ func EvalRestoreThread(tstate *ThreadState)
 //
 // See also :c:func:`PyThreadState_GetUnchecked`.
 //
-//go:linkname ThreadStateGet C.PyThreadState_Get
+//go:linkname ThreadStateGet PyThreadState_Get
 func ThreadStateGet() *ThreadState
 
 // PyThreadState* PyThreadState_Swap(PyThreadState *tstate)
@@ -855,7 +855,7 @@ func ThreadStateGet() *ThreadState
 // The following functions use thread-local storage, and are not compatible
 // with sub-interpreters:
 //
-//go:linkname ThreadStateSwap C.PyThreadState_Swap
+//go:linkname ThreadStateSwap PyThreadState_Swap
 func ThreadStateSwap(tstate *ThreadState) *ThreadState
 
 // PyGILState_STATE PyGILState_Ensure()
@@ -888,7 +888,7 @@ func ThreadStateSwap(tstate *ThreadState) *ThreadState
 // Hangs the current thread, rather than terminating it, if called while the
 // interpreter is finalizing.
 //
-//go:linkname GILStateEnsure C.PyGILState_Ensure
+//go:linkname GILStateEnsure PyGILState_Ensure
 func GILStateEnsure() GILStateSTATE
 
 // void PyGILState_Release(PyGILState_STATE)
@@ -900,7 +900,7 @@ func GILStateEnsure() GILStateSTATE
 // Every call to :c:func:`PyGILState_Ensure` must be matched by a call to
 // :c:func:`PyGILState_Release` on the same thread.
 //
-//go:linkname GILStateRelease C.PyGILState_Release
+//go:linkname GILStateRelease PyGILState_Release
 func GILStateRelease(GILStateSTATE)
 
 // PyThreadState* PyGILState_GetThisThreadState()
@@ -909,7 +909,7 @@ func GILStateRelease(GILStateSTATE)
 // always has such a thread-state, even if no auto-thread-state call has been
 // made on the main thread.  This is mainly a helper/diagnostic function.
 //
-//go:linkname GILStateGetThisThreadState C.PyGILState_GetThisThreadState
+//go:linkname GILStateGetThisThreadState PyGILState_GetThisThreadState
 func GILStateGetThisThreadState() *ThreadState
 
 // int PyGILState_Check()
@@ -925,7 +925,7 @@ func GILStateGetThisThreadState() *ThreadState
 // The following macros are normally used without a trailing semicolon; look for
 // example usage in the Python source distribution.
 //
-//go:linkname GILStateCheck C.PyGILState_Check
+//go:linkname GILStateCheck PyGILState_Check
 func GILStateCheck() Int
 
 // PyInterpreterState* PyInterpreterState_New()
@@ -935,7 +935,7 @@ func GILStateCheck() Int
 //
 // .. audit-event:: cpython.PyInterpreterState_New "" c.PyInterpreterState_New
 //
-//go:linkname InterpreterStateNew C.PyInterpreterState_New
+//go:linkname InterpreterStateNew PyInterpreterState_New
 func InterpreterStateNew() *InterpreterState
 
 // void PyInterpreterState_Clear(PyInterpreterState *interp)
@@ -944,7 +944,7 @@ func InterpreterStateNew() *InterpreterState
 //
 // .. audit-event:: cpython.PyInterpreterState_Clear "" c.PyInterpreterState_Clear
 //
-//go:linkname InterpreterStateClear C.PyInterpreterState_Clear
+//go:linkname InterpreterStateClear PyInterpreterState_Clear
 func InterpreterStateClear(interp *InterpreterState)
 
 // void PyInterpreterState_Delete(PyInterpreterState *interp)
@@ -952,7 +952,7 @@ func InterpreterStateClear(interp *InterpreterState)
 // held.  The interpreter state must have been reset with a previous call to
 // :c:func:`PyInterpreterState_Clear`.
 //
-//go:linkname InterpreterStateDelete C.PyInterpreterState_Delete
+//go:linkname InterpreterStateDelete PyInterpreterState_Delete
 func InterpreterStateDelete(interp *InterpreterState)
 
 // PyThreadState* PyThreadState_New(PyInterpreterState *interp)
@@ -960,7 +960,7 @@ func InterpreterStateDelete(interp *InterpreterState)
 // The global interpreter lock need not be held, but may be held if it is
 // necessary to serialize calls to this function.
 //
-//go:linkname ThreadStateNew C.PyThreadState_New
+//go:linkname ThreadStateNew PyThreadState_New
 func ThreadStateNew(interp *InterpreterState) *ThreadState
 
 // void PyThreadState_Clear(PyThreadState *tstate)
@@ -970,7 +970,7 @@ func ThreadStateNew(interp *InterpreterState) *ThreadState
 // This function now calls the :c:member:`PyThreadState.on_delete` callback.
 // Previously, that happened in :c:func:`PyThreadState_Delete`.
 //
-//go:linkname ThreadStateClear C.PyThreadState_Clear
+//go:linkname ThreadStateClear PyThreadState_Clear
 func ThreadStateClear(tstate *ThreadState)
 
 // void PyThreadState_Delete(PyThreadState *tstate)
@@ -978,7 +978,7 @@ func ThreadStateClear(tstate *ThreadState)
 // The thread state must have been reset with a previous call to
 // :c:func:`PyThreadState_Clear`.
 //
-//go:linkname ThreadStateDelete C.PyThreadState_Delete
+//go:linkname ThreadStateDelete PyThreadState_Delete
 func ThreadStateDelete(tstate *ThreadState)
 
 // void PyThreadState_DeleteCurrent(void)
@@ -987,7 +987,7 @@ func ThreadStateDelete(tstate *ThreadState)
 // be held. The thread state must have been reset with a previous call
 // to :c:func:`PyThreadState_Clear`.
 //
-//go:linkname ThreadStateDeleteCurrent C.PyThreadState_DeleteCurrent
+//go:linkname ThreadStateDeleteCurrent PyThreadState_DeleteCurrent
 func ThreadStateDeleteCurrent()
 
 // PyFrameObject* PyThreadState_GetFrame(PyThreadState *tstate)
@@ -1000,7 +1000,7 @@ func ThreadStateDeleteCurrent()
 //
 // *tstate* must not be “NULL“.
 //
-//go:linkname ThreadStateGetFrame C.PyThreadState_GetFrame
+//go:linkname ThreadStateGetFrame PyThreadState_GetFrame
 func ThreadStateGetFrame(tstate *ThreadState) *FrameObject
 
 // uint64_t PyThreadState_GetID(PyThreadState *tstate)
@@ -1008,7 +1008,7 @@ func ThreadStateGetFrame(tstate *ThreadState) *FrameObject
 //
 // *tstate* must not be “NULL“.
 //
-//go:linkname ThreadStateGetID C.PyThreadState_GetID
+//go:linkname ThreadStateGetID PyThreadState_GetID
 func ThreadStateGetID(tstate *ThreadState) LongLong
 
 // PyInterpreterState* PyThreadState_GetInterpreter(PyThreadState *tstate)
@@ -1016,7 +1016,7 @@ func ThreadStateGetID(tstate *ThreadState) LongLong
 //
 // *tstate* must not be “NULL“.
 //
-//go:linkname ThreadStateGetInterpreter C.PyThreadState_GetInterpreter
+//go:linkname ThreadStateGetInterpreter PyThreadState_GetInterpreter
 func ThreadStateGetInterpreter(tstate *ThreadState) *InterpreterState
 
 // void PyThreadState_EnterTracing(PyThreadState *tstate)
@@ -1024,7 +1024,7 @@ func ThreadStateGetInterpreter(tstate *ThreadState) *InterpreterState
 //
 // Resume them using the :c:func:`PyThreadState_LeaveTracing` function.
 //
-//go:linkname ThreadStateEnterTracing C.PyThreadState_EnterTracing
+//go:linkname ThreadStateEnterTracing PyThreadState_EnterTracing
 func ThreadStateEnterTracing(tstate *ThreadState)
 
 // void PyThreadState_LeaveTracing(PyThreadState *tstate)
@@ -1034,7 +1034,7 @@ func ThreadStateEnterTracing(tstate *ThreadState)
 // See also :c:func:`PyEval_SetTrace` and :c:func:`PyEval_SetProfile`
 // functions.
 //
-//go:linkname ThreadStateLeaveTracing C.PyThreadState_LeaveTracing
+//go:linkname ThreadStateLeaveTracing PyThreadState_LeaveTracing
 func ThreadStateLeaveTracing(tstate *ThreadState)
 
 // PyInterpreterState* PyInterpreterState_Get(void)
@@ -1045,7 +1045,7 @@ func ThreadStateLeaveTracing(tstate *ThreadState)
 //
 // The caller must hold the GIL.
 //
-//go:linkname InterpreterStateGet C.PyInterpreterState_Get
+//go:linkname InterpreterStateGet PyInterpreterState_Get
 func InterpreterStateGet() *InterpreterState
 
 // int64_t PyInterpreterState_GetID(PyInterpreterState *interp)
@@ -1054,7 +1054,7 @@ func InterpreterStateGet() *InterpreterState
 //
 // The caller must hold the GIL.
 //
-//go:linkname InterpreterStateGetID C.PyInterpreterState_GetID
+//go:linkname InterpreterStateGetID PyInterpreterState_GetID
 func InterpreterStateGetID(interp *InterpreterState) UlongLong
 
 // PyObject* PyInterpreterState_GetDict(PyInterpreterState *interp)
@@ -1065,7 +1065,7 @@ func InterpreterStateGetID(interp *InterpreterState) UlongLong
 // This is not a replacement for :c:func:`PyModule_GetState()`, which
 // extensions should use to store interpreter-specific state information.
 //
-//go:linkname InterpreterStateGetDict C.PyInterpreterState_GetDict
+//go:linkname InterpreterStateGetDict PyInterpreterState_GetDict
 func InterpreterStateGetDict(interp *InterpreterState) *Object
 
 // _PyFrameEvalFunction _PyInterpreterState_GetEvalFrameFunc(PyInterpreterState *interp)
@@ -1073,7 +1073,7 @@ func InterpreterStateGetDict(interp *InterpreterState) *Object
 //
 // See the :pep:`523` "Adding a frame evaluation API to CPython".
 //
-//go:linkname InterpreterStateGetEvalFrameFunc C._PyInterpreterState_GetEvalFrameFunc
+//go:linkname InterpreterStateGetEvalFrameFunc _PyInterpreterState_GetEvalFrameFunc
 func InterpreterStateGetEvalFrameFunc(interp *InterpreterState) FrameEvalFunction
 
 // void _PyInterpreterState_SetEvalFrameFunc(PyInterpreterState *interp, _PyFrameEvalFunction eval_frame)
@@ -1081,7 +1081,7 @@ func InterpreterStateGetEvalFrameFunc(interp *InterpreterState) FrameEvalFunctio
 //
 // See the :pep:`523` "Adding a frame evaluation API to CPython".
 //
-//go:linkname InterpreterStateSetEvalFrameFunc C._PyInterpreterState_SetEvalFrameFunc
+//go:linkname InterpreterStateSetEvalFrameFunc _PyInterpreterState_SetEvalFrameFunc
 func InterpreterStateSetEvalFrameFunc(interp *InterpreterState, evalFrame FrameEvalFunction)
 
 // PyObject* PyThreadState_GetDict()
@@ -1091,7 +1091,7 @@ func InterpreterStateSetEvalFrameFunc(interp *InterpreterState, evalFrame FrameE
 // is available. If this function returns “NULL“, no exception has been raised and
 // the caller should assume no current thread state is available.
 //
-//go:linkname ThreadStateGetDict C.PyThreadState_GetDict
+//go:linkname ThreadStateGetDict PyThreadState_GetDict
 func ThreadStateGetDict() *Object
 
 // int PyThreadState_SetAsyncExc(unsigned long id, PyObject *exc)
@@ -1106,7 +1106,7 @@ func ThreadStateGetDict() *Object
 // The type of the *id* parameter changed from :c:expr:`long` to
 // :c:expr:`unsigned long`.
 //
-//go:linkname ThreadStateSetAsyncExc C.PyThreadState_SetAsyncExc
+//go:linkname ThreadStateSetAsyncExc PyThreadState_SetAsyncExc
 func ThreadStateSetAsyncExc(id Ulong, exc *Object) Int
 
 // void PyEval_AcquireThread(PyThreadState *tstate)
@@ -1130,7 +1130,7 @@ func ThreadStateSetAsyncExc(id Ulong, exc *Object) Int
 // :c:func:`PyEval_RestoreThread` is a higher-level function which is always
 // available (even when threads have not been initialized).
 //
-//go:linkname EvalAcquireThread C.PyEval_AcquireThread
+//go:linkname EvalAcquireThread PyEval_AcquireThread
 func EvalAcquireThread(tstate *ThreadState)
 
 // void PyEval_ReleaseThread(PyThreadState *tstate)
@@ -1163,7 +1163,7 @@ func EvalAcquireThread(tstate *ThreadState)
 // You can switch between sub-interpreters using the :c:func:`PyThreadState_Swap`
 // function. You can create and destroy them using the following functions:
 //
-//go:linkname EvalReleaseThread C.PyEval_ReleaseThread
+//go:linkname EvalReleaseThread PyEval_ReleaseThread
 func EvalReleaseThread(tstate *ThreadState)
 
 // PyStatus Py_NewInterpreterFromConfig(PyThreadState **tstate_p, const PyInterpreterConfig *config)
@@ -1257,7 +1257,7 @@ func EvalReleaseThread(tstate *ThreadState)
 //
 // .. index:: single: close (in module os)
 //
-//go:linkname NewInterpreterFromConfig C.Py_NewInterpreterFromConfig
+//go:linkname NewInterpreterFromConfig Py_NewInterpreterFromConfig
 func NewInterpreterFromConfig(tstateP **ThreadState, config *InterpreterConfig) Status
 
 // PyThreadState* Py_NewInterpreter(void)
@@ -1276,7 +1276,7 @@ func NewInterpreterFromConfig(tstateP **ThreadState, config *InterpreterConfig) 
 // fork/exec, allows daemon threads, and allows single-phase init
 // modules.
 //
-//go:linkname NewInterpreter C.Py_NewInterpreter
+//go:linkname NewInterpreter Py_NewInterpreter
 func NewInterpreter() *ThreadState
 
 // void Py_EndInterpreter(PyThreadState *tstate)
@@ -1364,7 +1364,7 @@ func NewInterpreter() *ThreadState
 // interpreter thread.  These notifications take the form of a function
 // pointer and a void pointer argument.
 //
-//go:linkname EndInterpreter C.Py_EndInterpreter
+//go:linkname EndInterpreter Py_EndInterpreter
 func EndInterpreter(tstate *ThreadState)
 
 // int Py_AddPendingCall(int (*func)(void *), void *arg)
@@ -1424,7 +1424,7 @@ func EndInterpreter(tstate *ThreadState)
 // events reported to the trace function are the same as had been reported to the
 // Python-level trace functions in previous versions.
 //
-//go:linkname AddPendingCall C.Py_AddPendingCall
+//go:linkname AddPendingCall Py_AddPendingCall
 func AddPendingCall(func_ func(Pointer) Int, arg Pointer) Int
 
 // void PyEval_SetProfile(Py_tracefunc func, PyObject *obj)
@@ -1439,7 +1439,7 @@ func AddPendingCall(func_ func(Pointer) Int, arg Pointer) Int
 //
 // The caller must hold the :term:`GIL`.
 //
-//go:linkname EvalSetProfile C.PyEval_SetProfile
+//go:linkname EvalSetProfile PyEval_SetProfile
 func EvalSetProfile(func_ Tracefunc, obj *Object)
 
 // void PyEval_SetProfileAllThreads(Py_tracefunc func, PyObject *obj)
@@ -1451,7 +1451,7 @@ func EvalSetProfile(func_ Tracefunc, obj *Object)
 // As :c:func:`PyEval_SetProfile`, this function ignores any exceptions raised while
 // setting the profile functions in all threads.
 //
-//go:linkname EvalSetProfileAllThreads C.PyEval_SetProfileAllThreads
+//go:linkname EvalSetProfileAllThreads PyEval_SetProfileAllThreads
 func EvalSetProfileAllThreads(func_ Tracefunc, obj *Object)
 
 // void PyEval_SetTrace(Py_tracefunc func, PyObject *obj)
@@ -1466,33 +1466,33 @@ func EvalSetProfileAllThreads(func_ Tracefunc, obj *Object)
 //
 // The caller must hold the :term:`GIL`.
 //
-//go:linkname EvalSetTrace C.PyEval_SetTrace
+//go:linkname EvalSetTrace PyEval_SetTrace
 func EvalSetTrace(func_ Tracefunc, obj *Object)
 
 // PyInterpreterState* PyInterpreterState_Head()
 // Return the interpreter state object at the head of the list of all such objects.
 //
-//go:linkname InterpreterStateHead C.PyInterpreterState_Head
+//go:linkname InterpreterStateHead PyInterpreterState_Head
 func InterpreterStateHead() *InterpreterState
 
 // PyInterpreterState* PyInterpreterState_Main()
 // Return the main interpreter state object.
 //
-//go:linkname InterpreterStateMain C.PyInterpreterState_Main
+//go:linkname InterpreterStateMain PyInterpreterState_Main
 func InterpreterStateMain() *InterpreterState
 
 // PyInterpreterState* PyInterpreterState_Next(PyInterpreterState *interp)
 // Return the next interpreter state object after *interp* from the list of all
 // such objects.
 //
-//go:linkname InterpreterStateNext C.PyInterpreterState_Next
+//go:linkname InterpreterStateNext PyInterpreterState_Next
 func InterpreterStateNext(interp *InterpreterState) *InterpreterState
 
 // PyThreadState * PyInterpreterState_ThreadHead(PyInterpreterState *interp)
 // Return the pointer to the first :c:type:`PyThreadState` object in the list of
 // threads associated with the interpreter *interp*.
 //
-//go:linkname InterpreterStateThreadHead C.PyInterpreterState_ThreadHead
+//go:linkname InterpreterStateThreadHead PyInterpreterState_ThreadHead
 func InterpreterStateThreadHead(interp *InterpreterState) *ThreadState
 
 // PyThreadState* PyThreadState_Next(PyThreadState *tstate)
@@ -1536,7 +1536,7 @@ func InterpreterStateThreadHead(interp *InterpreterState) *ThreadState
 //
 // .. seealso:: "A New C-API for Thread-Local Storage in CPython" (:pep:`539`)
 //
-//go:linkname ThreadStateNext C.PyThreadState_Next
+//go:linkname ThreadStateNext PyThreadState_Next
 func ThreadStateNext(tstate *ThreadState) *ThreadState
 
 // Py_tss_t* PyThread_tss_alloc()
@@ -1544,7 +1544,7 @@ func ThreadStateNext(tstate *ThreadState) *ThreadState
 // :c:macro:`Py_tss_NEEDS_INIT`, or “NULL“ in the case of dynamic allocation
 // failure.
 //
-//go:linkname ThreadTssAlloc C.PyThread_tss_alloc
+//go:linkname ThreadTssAlloc PyThread_tss_alloc
 func ThreadTssAlloc() *TssT
 
 // void PyThread_tss_free(Py_tss_t *key)
@@ -1565,14 +1565,14 @@ func ThreadTssAlloc() *TssT
 // undefined if the given :c:type:`Py_tss_t` has not been initialized by
 // :c:func:`PyThread_tss_create`.
 //
-//go:linkname ThreadTssFree C.PyThread_tss_free
+//go:linkname ThreadTssFree PyThread_tss_free
 func ThreadTssFree(key *TssT)
 
 // int PyThread_tss_is_created(Py_tss_t *key)
 // Return a non-zero value if the given :c:type:`Py_tss_t` has been initialized
 // by :c:func:`PyThread_tss_create`.
 //
-//go:linkname ThreadTssIsCreated C.PyThread_tss_is_created
+//go:linkname ThreadTssIsCreated PyThread_tss_is_created
 func ThreadTssIsCreated(key *TssT) Int
 
 // int PyThread_tss_create(Py_tss_t *key)
@@ -1582,7 +1582,7 @@ func ThreadTssIsCreated(key *TssT) Int
 // repeatedly on the same key -- calling it on an already initialized key is a
 // no-op and immediately returns success.
 //
-//go:linkname ThreadTssCreate C.PyThread_tss_create
+//go:linkname ThreadTssCreate PyThread_tss_create
 func ThreadTssCreate(key *TssT) Int
 
 // void PyThread_tss_delete(Py_tss_t *key)
@@ -1592,7 +1592,7 @@ func ThreadTssCreate(key *TssT) Int
 // :c:func:`PyThread_tss_create`. This function can be called repeatedly on
 // the same key -- calling it on an already destroyed key is a no-op.
 //
-//go:linkname ThreadTssDelete C.PyThread_tss_delete
+//go:linkname ThreadTssDelete PyThread_tss_delete
 func ThreadTssDelete(key *TssT)
 
 // int PyThread_tss_set(Py_tss_t *key, void *value)
@@ -1600,7 +1600,7 @@ func ThreadTssDelete(key *TssT)
 // value with a TSS key in the current thread.  Each thread has a distinct
 // mapping of the key to a :c:expr:`void*` value.
 //
-//go:linkname ThreadTssSet C.PyThread_tss_set
+//go:linkname ThreadTssSet PyThread_tss_set
 func ThreadTssSet(key *TssT, value Pointer) Int
 
 // void* PyThread_tss_get(Py_tss_t *key)
@@ -1626,37 +1626,37 @@ func ThreadTssSet(key *TssT, value Pointer) Int
 // Due to the compatibility problem noted above, this version of the API should not
 // be used in new code.
 //
-//go:linkname ThreadTssGet C.PyThread_tss_get
+//go:linkname ThreadTssGet PyThread_tss_get
 func ThreadTssGet(key *TssT) Pointer
 
 // int PyThread_create_key()
 
 //
-//go:linkname ThreadCreateKey C.PyThread_create_key
+//go:linkname ThreadCreateKey PyThread_create_key
 func ThreadCreateKey() Int
 
 // void PyThread_delete_key(int key)
 
 //
-//go:linkname ThreadDeleteKey C.PyThread_delete_key
+//go:linkname ThreadDeleteKey PyThread_delete_key
 func ThreadDeleteKey(key Int)
 
 // int PyThread_set_key_value(int key, void *value)
 
 //
-//go:linkname ThreadSetKeyValue C.PyThread_set_key_value
+//go:linkname ThreadSetKeyValue PyThread_set_key_value
 func ThreadSetKeyValue(key Int, value Pointer) Int
 
 // void* PyThread_get_key_value(int key)
 
 //
-//go:linkname ThreadGetKeyValue C.PyThread_get_key_value
+//go:linkname ThreadGetKeyValue PyThread_get_key_value
 func ThreadGetKeyValue(key Int) Pointer
 
 // void PyThread_delete_key_value(int key)
 
 //
-//go:linkname ThreadDeleteKeyValue C.PyThread_delete_key_value
+//go:linkname ThreadDeleteKeyValue PyThread_delete_key_value
 func ThreadDeleteKeyValue(key Int)
 
 // void PyThread_ReInitTLS()
@@ -1665,7 +1665,7 @@ func ThreadDeleteKeyValue(key Int)
 //
 // The C-API provides a basic mutual exclusion lock.
 //
-//go:linkname ThreadReInitTLS C.PyThread_ReInitTLS
+//go:linkname ThreadReInitTLS PyThread_ReInitTLS
 func ThreadReInitTLS()
 
 // PyInterpreterState

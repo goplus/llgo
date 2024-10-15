@@ -13,7 +13,7 @@ import (
 // local variables.  Returns true on success; on failure, it returns false and
 // raises the appropriate exception.
 //
-//go:linkname ArgParseTuple C.PyArg_ParseTuple
+//go:linkname ArgParseTuple PyArg_ParseTuple
 func ArgParseTuple(args *Object, format *Char, __llgo_va_list ...any) Int
 
 // int PyArg_ParseTupleAndKeywords(PyObject *args, PyObject *kw, const char *format, char * const *keywords, ...)
@@ -39,7 +39,7 @@ func ArgParseTuple(args *Object, format *Char, __llgo_va_list ...any) Int
 // :c:expr:`const char * const *` in C++, instead of :c:expr:`char **`.
 // Added support for non-ASCII keyword parameter names.
 //
-//go:linkname ArgParseTupleAndKeywords C.PyArg_ParseTupleAndKeywords
+//go:linkname ArgParseTupleAndKeywords PyArg_ParseTupleAndKeywords
 func ArgParseTupleAndKeywords(args *Object, kw *Object, format *Char, keywords **Char, __llgo_va_list ...any) Int
 
 // int PyArg_ValidateKeywordArguments(PyObject *)
@@ -47,7 +47,7 @@ func ArgParseTupleAndKeywords(args *Object, kw *Object, format *Char, keywords *
 // is only needed if :c:func:`PyArg_ParseTupleAndKeywords` is not used, since the
 // latter already does this check.
 //
-//go:linkname ArgValidateKeywordArguments C.PyArg_ValidateKeywordArguments
+//go:linkname ArgValidateKeywordArguments PyArg_ValidateKeywordArguments
 func ArgValidateKeywordArguments(*Object) Int
 
 // int PyArg_Parse(PyObject *args, const char *format, ...)
@@ -68,7 +68,7 @@ func ArgValidateKeywordArguments(*Object) Int
 // // ... use value ...
 // }
 //
-//go:linkname ArgParse C.PyArg_Parse
+//go:linkname ArgParse PyArg_Parse
 func ArgParse(args *Object, format *Char, __llgo_va_list ...any) Int
 
 // int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, ...)
@@ -108,7 +108,7 @@ func ArgParse(args *Object, format *Char, __llgo_va_list ...any) Int
 //
 // PyArg_ParseTuple(args, "O|O:ref", &object, &callback)
 //
-//go:linkname ArgUnpackTuple C.PyArg_UnpackTuple
+//go:linkname ArgUnpackTuple PyArg_UnpackTuple
 func ArgUnpackTuple(args *Object, name *Char, min SSizeT, max SSizeT, __llgo_va_list ...any) Int
 
 // PyObject* Py_BuildValue(const char *format, ...)
@@ -266,5 +266,5 @@ func ArgUnpackTuple(args *Object, name *Char, min SSizeT, max SSizeT, __llgo_va_
 // If there is an error in the format string, the :exc:`SystemError` exception is
 // set and “NULL“ returned.
 //
-//go:linkname BuildValue C.Py_BuildValue
+//go:linkname BuildValue Py_BuildValue
 func BuildValue(format *Char, __llgo_va_list ...any) *Object

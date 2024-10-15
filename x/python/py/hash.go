@@ -14,7 +14,7 @@ import (
 // .. seealso::
 // :pep:`456` "Secure and interchangeable hash algorithm".
 //
-//go:linkname HashGetFuncDef C.PyHash_GetFuncDef
+//go:linkname HashGetFuncDef PyHash_GetFuncDef
 func HashGetFuncDef() *HashFuncDef
 
 // Py_hash_t

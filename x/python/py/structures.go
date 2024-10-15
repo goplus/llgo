@@ -11,28 +11,28 @@ import (
 // int Py_Is(PyObject *x, PyObject *y)
 // Test if the *x* object is the *y* object, the same as “x is y“ in Python.
 //
-//go:linkname Is C.Py_Is
+//go:linkname Is Py_Is
 func Is(x *Object, y *Object) Int
 
 // int Py_IsNone(PyObject *x)
 // Test if an object is the “None“ singleton,
 // the same as “x is None“ in Python.
 //
-//go:linkname IsNone C.Py_IsNone
+//go:linkname IsNone Py_IsNone
 func IsNone(x *Object) Int
 
 // int Py_IsTrue(PyObject *x)
 // Test if an object is the “True“ singleton,
 // the same as “x is True“ in Python.
 //
-//go:linkname IsTrue C.Py_IsTrue
+//go:linkname IsTrue Py_IsTrue
 func IsTrue(x *Object) Int
 
 // int Py_IsFalse(PyObject *x)
 // Test if an object is the “False“ singleton,
 // the same as “x is False“ in Python.
 //
-//go:linkname IsFalse C.Py_IsFalse
+//go:linkname IsFalse Py_IsFalse
 func IsFalse(x *Object) Int
 
 // PyTypeObject* Py_TYPE(PyObject *o)
@@ -45,20 +45,20 @@ func IsFalse(x *Object) Int
 // :c:func:`Py_TYPE()` is changed to an inline static function.
 // The parameter type is no longer :c:expr:`const PyObject*`.
 //
-//go:linkname TYPE_ C.Py_TYPE
+//go:linkname TYPE_ Py_TYPE
 func TYPE_(o *Object) *TypeObject
 
 // int Py_IS_TYPE(PyObject *o, PyTypeObject *type)
 // Return non-zero if the object *o* type is *type*. Return zero otherwise.
 // Equivalent to: “Py_TYPE(o) == type“.
 //
-//go:linkname ISTYPE C.Py_IS_TYPE
+//go:linkname ISTYPE Py_IS_TYPE
 func ISTYPE(o *Object, type_ *TypeObject) Int
 
 // void Py_SET_TYPE(PyObject *o, PyTypeObject *type)
 // Set the object *o* type to *type*.
 //
-//go:linkname SETTYPE C.Py_SET_TYPE
+//go:linkname SETTYPE Py_SET_TYPE
 func SETTYPE(o *Object, type_ *TypeObject)
 
 // Py_ssize_t Py_SIZE(PyVarObject *o)
@@ -69,13 +69,13 @@ func SETTYPE(o *Object, type_ *TypeObject)
 // :c:func:`Py_SIZE()` is changed to an inline static function.
 // The parameter type is no longer :c:expr:`const PyVarObject*`.
 //
-//go:linkname SIZE C.Py_SIZE
+//go:linkname SIZE Py_SIZE
 func SIZE(o *VarObject) SSizeT
 
 // void Py_SET_SIZE(PyVarObject *o, Py_ssize_t size)
 // Set the object *o* size to *size*.
 //
-//go:linkname SETSIZE C.Py_SET_SIZE
+//go:linkname SETSIZE Py_SET_SIZE
 func SETSIZE(o *VarObject, size SSizeT)
 
 // PyObject * PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls)
@@ -99,13 +99,13 @@ func SETSIZE(o *VarObject, size SSizeT)
 // argument to the C function.
 // Must be set if :c:macro:`METH_METHOD` is set on “ml->ml_flags“.
 //
-//go:linkname CMethodNew C.PyCMethod_New
+//go:linkname CMethodNew PyCMethod_New
 func CMethodNew(ml *MethodDef, self *Object, module *Object, cls *TypeObject) *Object
 
 // PyObject * PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module)
 // Equivalent to “PyCMethod_New(ml, self, module, NULL)“.
 //
-//go:linkname CFunctionNewEx C.PyCFunction_NewEx
+//go:linkname CFunctionNewEx PyCFunction_NewEx
 func CFunctionNewEx(ml *MethodDef, self *Object, module *Object) *Object
 
 // PyObject * PyCFunction_New(PyMethodDef *ml, PyObject *self)
@@ -114,7 +114,7 @@ func CFunctionNewEx(ml *MethodDef, self *Object, module *Object) *Object
 // Accessing attributes of extension types
 // ---------------------------------------
 //
-//go:linkname CFunctionNew C.PyCFunction_New
+//go:linkname CFunctionNew PyCFunction_New
 func CFunctionNew(ml *MethodDef, self *Object) *Object
 
 // PyObject* PyMember_GetOne(const char *obj_addr, struct PyMemberDef *m)
@@ -125,7 +125,7 @@ func CFunctionNew(ml *MethodDef, self *Object) *Object
 // “PyMember_GetOne“ is always available.
 // Previously, it required including “"structmember.h"“.
 //
-//go:linkname MemberGetOne C.PyMember_GetOne
+//go:linkname MemberGetOne PyMember_GetOne
 func MemberGetOne(objAddr *Char, m *MemberDef) *Object
 
 // int PyMember_SetOne(char *obj_addr, struct PyMemberDef *m, PyObject *o)
@@ -143,7 +143,7 @@ func MemberGetOne(objAddr *Char, m *MemberDef) *Object
 //
 // The following flags can be used with :c:member:`PyMemberDef.flags`:
 //
-//go:linkname MemberSetOne C.PyMember_SetOne
+//go:linkname MemberSetOne PyMember_SetOne
 func MemberSetOne(objAddr *Char, m *MemberDef, o *Object) Int
 
 // PyCFunctionWithKeywords

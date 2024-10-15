@@ -14,7 +14,7 @@ import (
 // Previously, this function was only available after including
 // “<frameobject.h>“.
 //
-//go:linkname FrameCheck C.PyFrame_Check
+//go:linkname FrameCheck PyFrame_Check
 func FrameCheck(obj *Object) Int
 
 // PyFrameObject* PyFrame_GetBack(PyFrameObject *frame)
@@ -23,7 +23,7 @@ func FrameCheck(obj *Object) Int
 // Return a :term:`strong reference`, or “NULL“ if *frame* has no outer
 // frame.
 //
-//go:linkname FrameGetBack C.PyFrame_GetBack
+//go:linkname FrameGetBack PyFrame_GetBack
 func FrameGetBack(frame *FrameObject) *FrameObject
 
 // PyObject* PyFrame_GetBuiltins(PyFrameObject *frame)
@@ -31,7 +31,7 @@ func FrameGetBack(frame *FrameObject) *FrameObject
 //
 // Return a :term:`strong reference`. The result cannot be “NULL“.
 //
-//go:linkname FrameGetBuiltins C.PyFrame_GetBuiltins
+//go:linkname FrameGetBuiltins PyFrame_GetBuiltins
 func FrameGetBuiltins(frame *FrameObject) *Object
 
 // PyCodeObject* PyFrame_GetCode(PyFrameObject *frame)
@@ -41,7 +41,7 @@ func FrameGetBuiltins(frame *FrameObject) *Object
 //
 // The result (frame code) cannot be “NULL“.
 //
-//go:linkname FrameGetCode C.PyFrame_GetCode
+//go:linkname FrameGetCode PyFrame_GetCode
 func FrameGetCode(frame *FrameObject) *CodeObject
 
 // PyObject* PyFrame_GetGenerator(PyFrameObject *frame)
@@ -51,7 +51,7 @@ func FrameGetCode(frame *FrameObject) *CodeObject
 //
 // Return a :term:`strong reference`, or “NULL“.
 //
-//go:linkname FrameGetGenerator C.PyFrame_GetGenerator
+//go:linkname FrameGetGenerator PyFrame_GetGenerator
 func FrameGetGenerator(frame *FrameObject) *Object
 
 // PyObject* PyFrame_GetGlobals(PyFrameObject *frame)
@@ -59,7 +59,7 @@ func FrameGetGenerator(frame *FrameObject) *Object
 //
 // Return a :term:`strong reference`. The result cannot be “NULL“.
 //
-//go:linkname FrameGetGlobals C.PyFrame_GetGlobals
+//go:linkname FrameGetGlobals PyFrame_GetGlobals
 func FrameGetGlobals(frame *FrameObject) *Object
 
 // int PyFrame_GetLasti(PyFrameObject *frame)
@@ -67,7 +67,7 @@ func FrameGetGlobals(frame *FrameObject) *Object
 //
 // Returns -1 if “frame.f_lasti“ is “None“.
 //
-//go:linkname FrameGetLasti C.PyFrame_GetLasti
+//go:linkname FrameGetLasti PyFrame_GetLasti
 func FrameGetLasti(frame *FrameObject) Int
 
 // PyObject* PyFrame_GetVar(PyFrameObject *frame, PyObject *name)
@@ -79,14 +79,14 @@ func FrameGetLasti(frame *FrameObject) Int
 //
 // *name* type must be a :class:`str`.
 //
-//go:linkname FrameGetVar C.PyFrame_GetVar
+//go:linkname FrameGetVar PyFrame_GetVar
 func FrameGetVar(frame *FrameObject, name *Object) *Object
 
 // PyObject* PyFrame_GetVarString(PyFrameObject *frame, const char *name)
 // Similar to :c:func:`PyFrame_GetVar`, but the variable name is a C string
 // encoded in UTF-8.
 //
-//go:linkname FrameGetVarString C.PyFrame_GetVarString
+//go:linkname FrameGetVarString PyFrame_GetVarString
 func FrameGetVarString(frame *FrameObject, name *Char) *Object
 
 // PyObject* PyFrame_GetLocals(PyFrameObject *frame)
@@ -101,7 +101,7 @@ func FrameGetVarString(frame *FrameObject, name *Char) *Object
 //
 // As part of :pep:`667`, return a proxy object for optimized scopes.
 //
-//go:linkname FrameGetLocals C.PyFrame_GetLocals
+//go:linkname FrameGetLocals PyFrame_GetLocals
 func FrameGetLocals(frame *FrameObject) *Object
 
 // int PyFrame_GetLineNumber(PyFrameObject *frame)
@@ -112,25 +112,25 @@ func FrameGetLocals(frame *FrameObject) *Object
 //
 // Unless using :pep:`523`, you will not need this.
 //
-//go:linkname FrameGetLineNumber C.PyFrame_GetLineNumber
+//go:linkname FrameGetLineNumber PyFrame_GetLineNumber
 func FrameGetLineNumber(frame *FrameObject) Int
 
 // PyObject* PyUnstable_InterpreterFrame_GetCode(struct _PyInterpreterFrame *frame);
 // Return a :term:`strong reference` to the code object for the frame.
 //
-//go:linkname UnstableInterpreterFrameGetCode C.PyUnstable_InterpreterFrame_GetCode
+//go:linkname UnstableInterpreterFrameGetCode PyUnstable_InterpreterFrame_GetCode
 func UnstableInterpreterFrameGetCode(frame *InterpreterFrame) *Object
 
 // int PyUnstable_InterpreterFrame_GetLasti(struct _PyInterpreterFrame *frame);
 // Return the byte offset into the last executed instruction.
 //
-//go:linkname UnstableInterpreterFrameGetLasti C.PyUnstable_InterpreterFrame_GetLasti
+//go:linkname UnstableInterpreterFrameGetLasti PyUnstable_InterpreterFrame_GetLasti
 func UnstableInterpreterFrameGetLasti(frame *InterpreterFrame) Int
 
 // int PyUnstable_InterpreterFrame_GetLine(struct _PyInterpreterFrame *frame);
 // Return the currently executing line number, or -1 if there is no line number.
 //
-//go:linkname UnstableInterpreterFrameGetLine C.PyUnstable_InterpreterFrame_GetLine
+//go:linkname UnstableInterpreterFrameGetLine PyUnstable_InterpreterFrame_GetLine
 func UnstableInterpreterFrameGetLine(frame *InterpreterFrame) Int
 
 // PyFrameObject

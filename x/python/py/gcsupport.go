@@ -25,7 +25,7 @@ import (
 // :c:type:`PyVarObject` and :c:member:`~PyTypeObject.tp_itemsize`
 // instead.
 //
-//go:linkname UnstableObjectGCNewWithExtraData C.PyUnstable_Object_GC_NewWithExtraData
+//go:linkname UnstableObjectGCNewWithExtraData PyUnstable_Object_GC_NewWithExtraData
 func UnstableObjectGCNewWithExtraData(type_ *TypeObject, extraSize Ulong) *Object
 
 // void PyObject_GC_Track(PyObject *op)
@@ -35,7 +35,7 @@ func UnstableObjectGCNewWithExtraData(type_ *TypeObject, extraSize Ulong) *Objec
 // followed by the :c:member:`~PyTypeObject.tp_traverse` handler become valid, usually near the
 // end of the constructor.
 //
-//go:linkname ObjectGCTrack C.PyObject_GC_Track
+//go:linkname ObjectGCTrack PyObject_GC_Track
 func ObjectGCTrack(op *Object)
 
 // int PyObject_IS_GC(PyObject *obj)
@@ -44,7 +44,7 @@ func ObjectGCTrack(op *Object)
 //
 // The object cannot be tracked by the garbage collector if this function returns 0.
 //
-//go:linkname ObjectISGC C.PyObject_IS_GC
+//go:linkname ObjectISGC PyObject_IS_GC
 func ObjectISGC(obj *Object) Int
 
 // int PyObject_GC_IsTracked(PyObject *op)
@@ -53,7 +53,7 @@ func ObjectISGC(obj *Object) Int
 //
 // This is analogous to the Python function :func:`gc.is_tracked`.
 //
-//go:linkname ObjectGCIsTracked C.PyObject_GC_IsTracked
+//go:linkname ObjectGCIsTracked PyObject_GC_IsTracked
 func ObjectGCIsTracked(op *Object) Int
 
 // int PyObject_GC_IsFinalized(PyObject *op)
@@ -62,14 +62,14 @@ func ObjectGCIsTracked(op *Object) Int
 //
 // This is analogous to the Python function :func:`gc.is_finalized`.
 //
-//go:linkname ObjectGCIsFinalized C.PyObject_GC_IsFinalized
+//go:linkname ObjectGCIsFinalized PyObject_GC_IsFinalized
 func ObjectGCIsFinalized(op *Object) Int
 
 // void PyObject_GC_Del(void *op)
 // Releases memory allocated to an object using :c:macro:`PyObject_GC_New` or
 // :c:macro:`PyObject_GC_NewVar`.
 //
-//go:linkname ObjectGCDel C.PyObject_GC_Del
+//go:linkname ObjectGCDel PyObject_GC_Del
 func ObjectGCDel(op Pointer)
 
 // void PyObject_GC_UnTrack(void *op)
@@ -84,7 +84,7 @@ func ObjectGCDel(op Pointer)
 //
 // The :c:member:`~PyTypeObject.tp_traverse` handler accepts a function parameter of this type:
 //
-//go:linkname ObjectGCUnTrack C.PyObject_GC_UnTrack
+//go:linkname ObjectGCUnTrack PyObject_GC_UnTrack
 func ObjectGCUnTrack(op Pointer)
 
 // void Py_VISIT(PyObject *o)
@@ -104,7 +104,7 @@ func ObjectGCUnTrack(op Pointer)
 // The :c:member:`~PyTypeObject.tp_clear` handler must be of the :c:type:`inquiry` type, or “NULL“
 // if the object is immutable.
 //
-//go:linkname VISIT C.Py_VISIT
+//go:linkname VISIT Py_VISIT
 func VISIT(o *Object)
 
 // Py_ssize_t PyGC_Collect(void)
@@ -118,21 +118,21 @@ func VISIT(o *Object)
 // Errors during garbage collection are passed to :data:`sys.unraisablehook`.
 // This function does not raise exceptions.
 //
-//go:linkname GCCollect C.PyGC_Collect
+//go:linkname GCCollect PyGC_Collect
 func GCCollect() SSizeT
 
 // int PyGC_Enable(void)
 // Enable the garbage collector: similar to :func:`gc.enable`.
 // Returns the previous state, 0 for disabled and 1 for enabled.
 //
-//go:linkname GCEnable C.PyGC_Enable
+//go:linkname GCEnable PyGC_Enable
 func GCEnable() Int
 
 // int PyGC_Disable(void)
 // Disable the garbage collector: similar to :func:`gc.disable`.
 // Returns the previous state, 0 for disabled and 1 for enabled.
 //
-//go:linkname GCDisable C.PyGC_Disable
+//go:linkname GCDisable PyGC_Disable
 func GCDisable() Int
 
 // int PyGC_IsEnabled(void)
@@ -145,7 +145,7 @@ func GCDisable() Int
 // The C-API provides the following interface for querying information about
 // the garbage collector.
 //
-//go:linkname GCIsEnabled C.PyGC_IsEnabled
+//go:linkname GCIsEnabled PyGC_IsEnabled
 func GCIsEnabled() Int
 
 // void PyUnstable_GC_VisitObjects(gcvisitobjects_t callback, void *arg)
@@ -160,7 +160,7 @@ func GCIsEnabled() Int
 // in the callback may lead to undefined behaviour e.g. visiting the same objects
 // multiple times or not at all.
 //
-//go:linkname UnstableGCVisitObjects C.PyUnstable_GC_VisitObjects
+//go:linkname UnstableGCVisitObjects PyUnstable_GC_VisitObjects
 func UnstableGCVisitObjects(callback GcvisitobjectsT, arg Pointer)
 
 // int (*visitproc)(PyObject *object, void *arg)

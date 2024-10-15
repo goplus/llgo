@@ -12,7 +12,7 @@ import (
 // Return true if *ob* is a slice object; *ob* must not be “NULL“.  This
 // function always succeeds.
 //
-//go:linkname SliceCheck C.PySlice_Check
+//go:linkname SliceCheck PySlice_Check
 func SliceCheck(ob *Object) Int
 
 // PyObject* PySlice_New(PyObject *start, PyObject *stop, PyObject *step)
@@ -24,7 +24,7 @@ func SliceCheck(ob *Object) Int
 // Return “NULL“ with an exception set if
 // the new object could not be allocated.
 //
-//go:linkname SliceNew C.PySlice_New
+//go:linkname SliceNew PySlice_New
 func SliceNew(start *Object, stop *Object, step *Object) *Object
 
 // int PySlice_GetIndices(PyObject *slice, Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step)
@@ -41,7 +41,7 @@ func SliceNew(start *Object, stop *Object, step *Object) *Object
 // The parameter type for the *slice* parameter was “PySliceObject*“
 // before.
 //
-//go:linkname SliceGetIndices C.PySlice_GetIndices
+//go:linkname SliceGetIndices PySlice_GetIndices
 func SliceGetIndices(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, step *SSizeT) Int
 
 // int PySlice_GetIndicesEx(PyObject *slice, Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step, Py_ssize_t *slicelength)
@@ -83,7 +83,7 @@ func SliceGetIndices(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, 
 // between “0x03060000“ and “0x03060100“ (not including)
 // :c:func:`!PySlice_GetIndicesEx` is a deprecated function.
 //
-//go:linkname SliceGetIndicesEx C.PySlice_GetIndicesEx
+//go:linkname SliceGetIndicesEx PySlice_GetIndicesEx
 func SliceGetIndicesEx(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT, step *SSizeT, slicelength *SSizeT) Int
 
 // int PySlice_Unpack(PyObject *slice, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step)
@@ -95,7 +95,7 @@ func SliceGetIndicesEx(slice *Object, length SSizeT, start *SSizeT, stop *SSizeT
 //
 // Return “-1“ with an exception set on error, “0“ on success.
 //
-//go:linkname SliceUnpack C.PySlice_Unpack
+//go:linkname SliceUnpack PySlice_Unpack
 func SliceUnpack(slice *Object, start *SSizeT, stop *SSizeT, step *SSizeT) Int
 
 // Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step)
@@ -109,7 +109,7 @@ func SliceUnpack(slice *Object, start *SSizeT, stop *SSizeT, step *SSizeT) Int
 // Ellipsis Object
 // ^^^^^^^^^^^^^^^
 //
-//go:linkname SliceAdjustIndices C.PySlice_AdjustIndices
+//go:linkname SliceAdjustIndices PySlice_AdjustIndices
 func SliceAdjustIndices(length SSizeT, start *SSizeT, stop *SSizeT, step SSizeT) SSizeT
 
 // PyTypeObject PySlice_Type

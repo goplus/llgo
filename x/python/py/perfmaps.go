@@ -19,7 +19,7 @@ import (
 // or “-2“ on failure to create a lock. Check “errno“ for more information
 // about the cause of a failure.
 //
-//go:linkname UnstablePerfMapStateInit C.PyUnstable_PerfMapState_Init
+//go:linkname UnstablePerfMapStateInit PyUnstable_PerfMapState_Init
 func UnstablePerfMapStateInit() Int
 
 // int PyUnstable_WritePerfMapEntry(const void *code_addr, unsigned int code_size, const char *entry_name)
@@ -33,7 +33,7 @@ func UnstablePerfMapStateInit() Int
 // the perf map file is not already opened. Returns “0“ on success, or the
 // same error codes as :c:func:`PyUnstable_PerfMapState_Init` on failure.
 //
-//go:linkname UnstableWritePerfMapEntry C.PyUnstable_WritePerfMapEntry
+//go:linkname UnstableWritePerfMapEntry PyUnstable_WritePerfMapEntry
 func UnstableWritePerfMapEntry(codeAddr Pointer, codeSize Uint, entryName *Char) Int
 
 // void PyUnstable_PerfMapState_Fini(void)
@@ -42,5 +42,5 @@ func UnstableWritePerfMapEntry(codeAddr Pointer, codeSize Uint, entryName *Char)
 // general, there shouldn't be a reason to explicitly call this, except to
 // handle specific scenarios such as forking.
 //
-//go:linkname UnstablePerfMapStateFini C.PyUnstable_PerfMapState_Fini
+//go:linkname UnstablePerfMapStateFini PyUnstable_PerfMapState_Fini
 func UnstablePerfMapStateFini()

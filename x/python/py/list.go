@@ -12,14 +12,14 @@ import (
 // Return true if *p* is a list object or an instance of a subtype of the list
 // type.  This function always succeeds.
 //
-//go:linkname ListCheck C.PyList_Check
+//go:linkname ListCheck PyList_Check
 func ListCheck(p *Object) Int
 
 // int PyList_CheckExact(PyObject *p)
 // Return true if *p* is a list object, but not an instance of a subtype of
 // the list type.  This function always succeeds.
 //
-//go:linkname ListCheckExact C.PyList_CheckExact
+//go:linkname ListCheckExact PyList_CheckExact
 func ListCheckExact(p *Object) Int
 
 // PyObject* PyList_New(Py_ssize_t len)
@@ -34,7 +34,7 @@ func ListCheckExact(p *Object) Int
 // :c:func:`PyList_SET_ITEM()`. The following APIs are safe APIs before
 // the list is fully initialized: :c:func:`PyList_SetItem()` and :c:func:`PyList_SET_ITEM()`.
 //
-//go:linkname ListNew C.PyList_New
+//go:linkname ListNew PyList_New
 func ListNew(len SSizeT) *Object
 
 // Py_ssize_t PyList_Size(PyObject *list)
@@ -43,26 +43,26 @@ func ListNew(len SSizeT) *Object
 // Return the length of the list object in *list*; this is equivalent to
 // “len(list)“ on a list object.
 //
-//go:linkname ListSize C.PyList_Size
+//go:linkname ListSize PyList_Size
 func ListSize(list *Object) SSizeT
 
 // Py_ssize_t PyList_GET_SIZE(PyObject *list)
 // Similar to :c:func:`PyList_Size`, but without error checking.
 //
-//go:linkname ListGETSIZE C.PyList_GET_SIZE
+//go:linkname ListGETSIZE PyList_GET_SIZE
 func ListGETSIZE(list *Object) SSizeT
 
 // PyObject* PyList_GetItem(PyObject *list, Py_ssize_t index)
 // Like :c:func:`PyList_GetItemRef`, but returns a
 // :term:`borrowed reference` instead of a :term:`strong reference`.
 //
-//go:linkname ListGetItem C.PyList_GetItem
+//go:linkname ListGetItem PyList_GetItem
 func ListGetItem(list *Object, index SSizeT) *Object
 
 // PyObject* PyList_GET_ITEM(PyObject *list, Py_ssize_t i)
 // Similar to :c:func:`PyList_GetItem`, but without error checking.
 //
-//go:linkname ListGETITEM C.PyList_GET_ITEM
+//go:linkname ListGETITEM PyList_GET_ITEM
 func ListGETITEM(list *Object, i SSizeT) *Object
 
 // int PyList_SetItem(PyObject *list, Py_ssize_t index, PyObject *item)
@@ -75,7 +75,7 @@ func ListGETITEM(list *Object, i SSizeT) *Object
 // This function "steals" a reference to *item* and discards a reference to
 // an item already in the list at the affected position.
 //
-//go:linkname ListSetItem C.PyList_SetItem
+//go:linkname ListSetItem PyList_SetItem
 func ListSetItem(list *Object, index SSizeT, item *Object) Int
 
 // void PyList_SET_ITEM(PyObject *list, Py_ssize_t i, PyObject *o)
@@ -93,7 +93,7 @@ func ListSetItem(list *Object, index SSizeT, item *Object) Int
 // is being replaced; any reference in *list* at position *i* will be
 // leaked.
 //
-//go:linkname ListSETITEM C.PyList_SET_ITEM
+//go:linkname ListSETITEM PyList_SET_ITEM
 func ListSETITEM(list *Object, i SSizeT, o *Object)
 
 // int PyList_Insert(PyObject *list, Py_ssize_t index, PyObject *item)
@@ -101,7 +101,7 @@ func ListSETITEM(list *Object, i SSizeT, o *Object)
 // “0“ if successful; return “-1“ and set an exception if unsuccessful.
 // Analogous to “list.insert(index, item)“.
 //
-//go:linkname ListInsert C.PyList_Insert
+//go:linkname ListInsert PyList_Insert
 func ListInsert(list *Object, index SSizeT, item *Object) Int
 
 // int PyList_Append(PyObject *list, PyObject *item)
@@ -109,7 +109,7 @@ func ListInsert(list *Object, index SSizeT, item *Object) Int
 // successful; return “-1“ and set an exception if unsuccessful.  Analogous
 // to “list.append(item)“.
 //
-//go:linkname ListAppend C.PyList_Append
+//go:linkname ListAppend PyList_Append
 func ListAppend(list *Object, item *Object) Int
 
 // PyObject* PyList_GetSlice(PyObject *list, Py_ssize_t low, Py_ssize_t high)
@@ -117,7 +117,7 @@ func ListAppend(list *Object, item *Object) Int
 // and *high*.  Return “NULL“ and set an exception if unsuccessful.  Analogous
 // to “list[low:high]“.  Indexing from the end of the list is not supported.
 //
-//go:linkname ListGetSlice C.PyList_GetSlice
+//go:linkname ListGetSlice PyList_GetSlice
 func ListGetSlice(list *Object, low SSizeT, high SSizeT) *Object
 
 // int PyList_SetSlice(PyObject *list, Py_ssize_t low, Py_ssize_t high, PyObject *itemlist)
@@ -127,21 +127,21 @@ func ListGetSlice(list *Object, low SSizeT, high SSizeT) *Object
 // Return “0“ on success, “-1“ on failure.  Indexing from the end of the
 // list is not supported.
 //
-//go:linkname ListSetSlice C.PyList_SetSlice
+//go:linkname ListSetSlice PyList_SetSlice
 func ListSetSlice(list *Object, low SSizeT, high SSizeT, itemlist *Object) Int
 
 // int PyList_Sort(PyObject *list)
 // Sort the items of *list* in place.  Return “0“ on success, “-1“ on
 // failure.  This is equivalent to “list.sort()“.
 //
-//go:linkname ListSort C.PyList_Sort
+//go:linkname ListSort PyList_Sort
 func ListSort(list *Object) Int
 
 // int PyList_Reverse(PyObject *list)
 // Reverse the items of *list* in place.  Return “0“ on success, “-1“ on
 // failure.  This is the equivalent of “list.reverse()“.
 //
-//go:linkname ListReverse C.PyList_Reverse
+//go:linkname ListReverse PyList_Reverse
 func ListReverse(list *Object) Int
 
 // PyObject* PyList_AsTuple(PyObject *list)
@@ -150,7 +150,7 @@ func ListReverse(list *Object) Int
 // Return a new tuple object containing the contents of *list*; equivalent to
 // “tuple(list)“.
 //
-//go:linkname ListAsTuple C.PyList_AsTuple
+//go:linkname ListAsTuple PyList_AsTuple
 func ListAsTuple(list *Object) *Object
 
 // PyListObject

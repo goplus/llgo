@@ -15,7 +15,7 @@ import (
 // is impossible to determine what type of keys the class supports.  This
 // function always succeeds.
 //
-//go:linkname SequenceCheck C.PySequence_Check
+//go:linkname SequenceCheck PySequence_Check
 func SequenceCheck(o *Object) Int
 
 // Py_ssize_t PySequence_Size(PyObject *o)
@@ -26,21 +26,21 @@ func SequenceCheck(o *Object) Int
 // Returns the number of objects in sequence *o* on success, and “-1“ on
 // failure.  This is equivalent to the Python expression “len(o)“.
 //
-//go:linkname SequenceSize C.PySequence_Size
+//go:linkname SequenceSize PySequence_Size
 func SequenceSize(o *Object) SSizeT
 
 // PyObject* PySequence_Concat(PyObject *o1, PyObject *o2)
 // Return the concatenation of *o1* and *o2* on success, and “NULL“ on failure.
 // This is the equivalent of the Python expression “o1 + o2“.
 //
-//go:linkname SequenceConcat C.PySequence_Concat
+//go:linkname SequenceConcat PySequence_Concat
 func SequenceConcat(o1 *Object, o2 *Object) *Object
 
 // PyObject* PySequence_Repeat(PyObject *o, Py_ssize_t count)
 // Return the result of repeating sequence object *o* *count* times, or “NULL“ on
 // failure.  This is the equivalent of the Python expression “o * count“.
 //
-//go:linkname SequenceRepeat C.PySequence_Repeat
+//go:linkname SequenceRepeat PySequence_Repeat
 func SequenceRepeat(o *Object, count SSizeT) *Object
 
 // PyObject* PySequence_InPlaceConcat(PyObject *o1, PyObject *o2)
@@ -48,7 +48,7 @@ func SequenceRepeat(o *Object, count SSizeT) *Object
 // The operation is done *in-place* when *o1* supports it.  This is the equivalent
 // of the Python expression “o1 += o2“.
 //
-//go:linkname SequenceInPlaceConcat C.PySequence_InPlaceConcat
+//go:linkname SequenceInPlaceConcat PySequence_InPlaceConcat
 func SequenceInPlaceConcat(o1 *Object, o2 *Object) *Object
 
 // PyObject* PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count)
@@ -56,21 +56,21 @@ func SequenceInPlaceConcat(o1 *Object, o2 *Object) *Object
 // failure.  The operation is done *in-place* when *o* supports it.  This is the
 // equivalent of the Python expression “o *= count“.
 //
-//go:linkname SequenceInPlaceRepeat C.PySequence_InPlaceRepeat
+//go:linkname SequenceInPlaceRepeat PySequence_InPlaceRepeat
 func SequenceInPlaceRepeat(o *Object, count SSizeT) *Object
 
 // PyObject* PySequence_GetItem(PyObject *o, Py_ssize_t i)
 // Return the *i*\ th element of *o*, or “NULL“ on failure. This is the equivalent of
 // the Python expression “o[i]“.
 //
-//go:linkname SequenceGetItem C.PySequence_GetItem
+//go:linkname SequenceGetItem PySequence_GetItem
 func SequenceGetItem(o *Object, i SSizeT) *Object
 
 // PyObject* PySequence_GetSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2)
 // Return the slice of sequence object *o* between *i1* and *i2*, or “NULL“ on
 // failure. This is the equivalent of the Python expression “o[i1:i2]“.
 //
-//go:linkname SequenceGetSlice C.PySequence_GetSlice
+//go:linkname SequenceGetSlice PySequence_GetSlice
 func SequenceGetSlice(o *Object, i1 SSizeT, i2 SSizeT) *Object
 
 // int PySequence_SetItem(PyObject *o, Py_ssize_t i, PyObject *v)
@@ -82,28 +82,28 @@ func SequenceGetSlice(o *Object, i1 SSizeT, i2 SSizeT) *Object
 // If *v* is “NULL“, the element is deleted, but this feature is
 // deprecated in favour of using :c:func:`PySequence_DelItem`.
 //
-//go:linkname SequenceSetItem C.PySequence_SetItem
+//go:linkname SequenceSetItem PySequence_SetItem
 func SequenceSetItem(o *Object, i SSizeT, v *Object) Int
 
 // int PySequence_DelItem(PyObject *o, Py_ssize_t i)
 // Delete the *i*\ th element of object *o*.  Returns “-1“ on failure.  This is the
 // equivalent of the Python statement “del o[i]“.
 //
-//go:linkname SequenceDelItem C.PySequence_DelItem
+//go:linkname SequenceDelItem PySequence_DelItem
 func SequenceDelItem(o *Object, i SSizeT) Int
 
 // int PySequence_SetSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2, PyObject *v)
 // Assign the sequence object *v* to the slice in sequence object *o* from *i1* to
 // *i2*.  This is the equivalent of the Python statement “o[i1:i2] = v“.
 //
-//go:linkname SequenceSetSlice C.PySequence_SetSlice
+//go:linkname SequenceSetSlice PySequence_SetSlice
 func SequenceSetSlice(o *Object, i1 SSizeT, i2 SSizeT, v *Object) Int
 
 // int PySequence_DelSlice(PyObject *o, Py_ssize_t i1, Py_ssize_t i2)
 // Delete the slice in sequence object *o* from *i1* to *i2*.  Returns “-1“ on
 // failure.  This is the equivalent of the Python statement “del o[i1:i2]“.
 //
-//go:linkname SequenceDelSlice C.PySequence_DelSlice
+//go:linkname SequenceDelSlice PySequence_DelSlice
 func SequenceDelSlice(o *Object, i1 SSizeT, i2 SSizeT) Int
 
 // Py_ssize_t PySequence_Count(PyObject *o, PyObject *value)
@@ -111,7 +111,7 @@ func SequenceDelSlice(o *Object, i1 SSizeT, i2 SSizeT) Int
 // of keys for which “o[key] == value“.  On failure, return “-1“.  This is
 // equivalent to the Python expression “o.count(value)“.
 //
-//go:linkname SequenceCount C.PySequence_Count
+//go:linkname SequenceCount PySequence_Count
 func SequenceCount(o *Object, value *Object) SSizeT
 
 // int PySequence_Contains(PyObject *o, PyObject *value)
@@ -119,14 +119,14 @@ func SequenceCount(o *Object, value *Object) SSizeT
 // return “1“, otherwise return “0“. On error, return “-1“.  This is
 // equivalent to the Python expression “value in o“.
 //
-//go:linkname SequenceContains C.PySequence_Contains
+//go:linkname SequenceContains PySequence_Contains
 func SequenceContains(o *Object, value *Object) Int
 
 // Py_ssize_t PySequence_Index(PyObject *o, PyObject *value)
 // Return the first index *i* for which “o[i] == value“.  On error, return
 // “-1“.    This is equivalent to the Python expression “o.index(value)“.
 //
-//go:linkname SequenceIndex C.PySequence_Index
+//go:linkname SequenceIndex PySequence_Index
 func SequenceIndex(o *Object, value *Object) SSizeT
 
 // PyObject* PySequence_List(PyObject *o)
@@ -134,7 +134,7 @@ func SequenceIndex(o *Object, value *Object) SSizeT
 // or “NULL“ on failure.  The returned list is guaranteed to be new.  This is
 // equivalent to the Python expression “list(o)“.
 //
-//go:linkname SequenceList C.PySequence_List
+//go:linkname SequenceList PySequence_List
 func SequenceList(o *Object) *Object
 
 // PyObject* PySequence_Tuple(PyObject *o)
@@ -145,7 +145,7 @@ func SequenceList(o *Object) *Object
 // otherwise a tuple will be constructed with the appropriate contents.  This is
 // equivalent to the Python expression “tuple(o)“.
 //
-//go:linkname SequenceTuple C.PySequence_Tuple
+//go:linkname SequenceTuple PySequence_Tuple
 func SequenceTuple(o *Object) *Object
 
 // PyObject* PySequence_Fast(PyObject *o, const char *m)
@@ -161,7 +161,7 @@ func SequenceTuple(o *Object) *Object
 // As a CPython implementation detail, if *o* is already a sequence or list, it
 // will be returned.
 //
-//go:linkname SequenceFast C.PySequence_Fast
+//go:linkname SequenceFast PySequence_Fast
 func SequenceFast(o *Object, m *Char) *Object
 
 // Py_ssize_t PySequence_Fast_GET_SIZE(PyObject *o)
@@ -171,14 +171,14 @@ func SequenceFast(o *Object, m *Char) *Object
 // :c:func:`PySequence_Fast_GET_SIZE` is faster because it can assume *o* is a
 // list or tuple.
 //
-//go:linkname SequenceFastGETSIZE C.PySequence_Fast_GET_SIZE
+//go:linkname SequenceFastGETSIZE PySequence_Fast_GET_SIZE
 func SequenceFastGETSIZE(o *Object) SSizeT
 
 // PyObject* PySequence_Fast_GET_ITEM(PyObject *o, Py_ssize_t i)
 // Return the *i*\ th element of *o*, assuming that *o* was returned by
 // :c:func:`PySequence_Fast`, *o* is not “NULL“, and that *i* is within bounds.
 //
-//go:linkname SequenceFastGETITEM C.PySequence_Fast_GET_ITEM
+//go:linkname SequenceFastGETITEM PySequence_Fast_GET_ITEM
 func SequenceFastGETITEM(o *Object, i SSizeT) *Object
 
 // PyObject** PySequence_Fast_ITEMS(PyObject *o)
@@ -189,7 +189,7 @@ func SequenceFastGETITEM(o *Object, i SSizeT) *Object
 // So, only use the underlying array pointer in contexts where the sequence
 // cannot change.
 //
-//go:linkname SequenceFastITEMS C.PySequence_Fast_ITEMS
+//go:linkname SequenceFastITEMS PySequence_Fast_ITEMS
 func SequenceFastITEMS(o *Object) **Object
 
 // PyObject* PySequence_ITEM(PyObject *o, Py_ssize_t i)
@@ -198,5 +198,5 @@ func SequenceFastITEMS(o *Object) **Object
 // :c:func:`PySequence_Check` on *o* is true and without adjustment for negative
 // indices.
 //
-//go:linkname SequenceITEM C.PySequence_ITEM
+//go:linkname SequenceITEM PySequence_ITEM
 func SequenceITEM(o *Object, i SSizeT) *Object

@@ -12,14 +12,14 @@ import (
 // Return true if *o* is of type :c:data:`PyContext_Type`. *o* must not be
 // “NULL“.  This function always succeeds.
 //
-//go:linkname ContextCheckExact C.PyContext_CheckExact
+//go:linkname ContextCheckExact PyContext_CheckExact
 func ContextCheckExact(o *Object) Int
 
 // int PyContextVar_CheckExact(PyObject *o)
 // Return true if *o* is of type :c:data:`PyContextVar_Type`. *o* must not be
 // “NULL“.  This function always succeeds.
 //
-//go:linkname ContextVarCheckExact C.PyContextVar_CheckExact
+//go:linkname ContextVarCheckExact PyContextVar_CheckExact
 func ContextVarCheckExact(o *Object) Int
 
 // int PyContextToken_CheckExact(PyObject *o)
@@ -28,35 +28,35 @@ func ContextVarCheckExact(o *Object) Int
 //
 // Context object management functions:
 //
-//go:linkname ContextTokenCheckExact C.PyContextToken_CheckExact
+//go:linkname ContextTokenCheckExact PyContextToken_CheckExact
 func ContextTokenCheckExact(o *Object) Int
 
 // PyObject *PyContext_New(void)
 // Create a new empty context object.  Returns “NULL“ if an error
 // has occurred.
 //
-//go:linkname ContextNew C.PyContext_New
+//go:linkname ContextNew PyContext_New
 func ContextNew() *Object
 
 // PyObject *PyContext_Copy(PyObject *ctx)
 // Create a shallow copy of the passed *ctx* context object.
 // Returns “NULL“ if an error has occurred.
 //
-//go:linkname ContextCopy C.PyContext_Copy
+//go:linkname ContextCopy PyContext_Copy
 func ContextCopy(ctx *Object) *Object
 
 // PyObject *PyContext_CopyCurrent(void)
 // Create a shallow copy of the current thread context.
 // Returns “NULL“ if an error has occurred.
 //
-//go:linkname ContextCopyCurrent C.PyContext_CopyCurrent
+//go:linkname ContextCopyCurrent PyContext_CopyCurrent
 func ContextCopyCurrent() *Object
 
 // int PyContext_Enter(PyObject *ctx)
 // Set *ctx* as the current context for the current thread.
 // Returns “0“ on success, and “-1“ on error.
 //
-//go:linkname ContextEnter C.PyContext_Enter
+//go:linkname ContextEnter PyContext_Enter
 func ContextEnter(ctx *Object) Int
 
 // int PyContext_Exit(PyObject *ctx)
@@ -64,7 +64,7 @@ func ContextEnter(ctx *Object) Int
 // current context for the current thread.  Returns “0“ on success,
 // and “-1“ on error.
 //
-//go:linkname ContextExit C.PyContext_Exit
+//go:linkname ContextExit PyContext_Exit
 func ContextExit(ctx *Object) Int
 
 // PyObject *PyContextVar_New(const char *name, PyObject *def)
@@ -73,7 +73,7 @@ func ContextExit(ctx *Object) Int
 // a default value for the context variable, or “NULL“ for no default.
 // If an error has occurred, this function returns “NULL“.
 //
-//go:linkname ContextVarNew C.PyContextVar_New
+//go:linkname ContextVarNew PyContextVar_New
 func ContextVarNew(name *Char, def *Object) *Object
 
 // int PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value)
@@ -90,14 +90,14 @@ func ContextVarNew(name *Char, def *Object) *Object
 //
 // Except for “NULL“, the function returns a new reference.
 //
-//go:linkname ContextVarGet C.PyContextVar_Get
+//go:linkname ContextVarGet PyContextVar_Get
 func ContextVarGet(var_ *Object, defaultValue *Object, value **Object) Int
 
 // PyObject *PyContextVar_Set(PyObject *var, PyObject *value)
 // Set the value of *var* to *value* in the current context.  Returns
 // a new token object for this change, or “NULL“ if an error has occurred.
 //
-//go:linkname ContextVarSet C.PyContextVar_Set
+//go:linkname ContextVarSet PyContextVar_Set
 func ContextVarSet(var_ *Object, value *Object) *Object
 
 // int PyContextVar_Reset(PyObject *var, PyObject *token)
@@ -105,7 +105,7 @@ func ContextVarSet(var_ *Object, value *Object) *Object
 // :c:func:`PyContextVar_Set` that returned the *token* was called.
 // This function returns “0“ on success and “-1“ on error.
 //
-//go:linkname ContextVarReset C.PyContextVar_Reset
+//go:linkname ContextVarReset PyContextVar_Reset
 func ContextVarReset(var_ *Object, token *Object) Int
 
 // PyContext

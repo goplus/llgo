@@ -17,7 +17,7 @@ import (
 // :class:`str` or :class:`bytes` object. Otherwise :exc:`TypeError` is raised
 // and “NULL“ is returned.
 //
-//go:linkname OSFSPath C.PyOS_FSPath
+//go:linkname OSFSPath PyOS_FSPath
 func OSFSPath(path *Object) *Object
 
 // int Py_FdIsInteractive(FILE *fp, const char *filename)
@@ -29,7 +29,7 @@ func OSFSPath(path *Object) *Object
 //
 // This function must not be called before Python is initialized.
 //
-//go:linkname FdIsInteractive C.Py_FdIsInteractive
+//go:linkname FdIsInteractive Py_FdIsInteractive
 func FdIsInteractive(fp FilePtr, filename *Char) Int
 
 // void PyOS_BeforeFork()
@@ -44,7 +44,7 @@ func FdIsInteractive(fp FilePtr, filename *Char) Int
 // :ref:`"main" interpreter <sub-interpreter-support>`).  The same is
 // true for “PyOS_BeforeFork()“.
 //
-//go:linkname OSBeforeFork C.PyOS_BeforeFork
+//go:linkname OSBeforeFork PyOS_BeforeFork
 func OSBeforeFork()
 
 // void PyOS_AfterFork_Parent()
@@ -60,7 +60,7 @@ func OSBeforeFork()
 // :ref:`"main" interpreter <sub-interpreter-support>`).  The same is
 // true for “PyOS_AfterFork_Parent()“.
 //
-//go:linkname OSAfterForkParent C.PyOS_AfterFork_Parent
+//go:linkname OSAfterForkParent PyOS_AfterFork_Parent
 func OSAfterForkParent()
 
 // void PyOS_AfterFork_Child()
@@ -81,7 +81,7 @@ func OSAfterForkParent()
 // to be called by :c:func:`PyOS_BeforeFork()`,
 // :c:func:`PyOS_AfterFork_Parent` and  :c:func:`PyOS_AfterFork_Child`.
 //
-//go:linkname OSAfterForkChild C.PyOS_AfterFork_Child
+//go:linkname OSAfterForkChild PyOS_AfterFork_Child
 func OSAfterForkChild()
 
 // void PyOS_AfterFork()
@@ -93,7 +93,7 @@ func OSAfterForkChild()
 // .. deprecated:: 3.7
 // This function is superseded by :c:func:`PyOS_AfterFork_Child()`.
 //
-//go:linkname OSAfterFork C.PyOS_AfterFork
+//go:linkname OSAfterFork PyOS_AfterFork
 func OSAfterFork()
 
 // int PyOS_CheckStack()
@@ -105,7 +105,7 @@ func OSAfterFork()
 // :c:macro:`!USE_STACKCHECK` will be defined automatically; you should never
 // change the definition in your own code.
 //
-//go:linkname OSCheckStack C.PyOS_CheckStack
+//go:linkname OSCheckStack PyOS_CheckStack
 func OSCheckStack() Int
 
 // PyOS_sighandler_t PyOS_getsig(int i)
@@ -113,7 +113,7 @@ func OSCheckStack() Int
 // either :c:func:`!sigaction` or :c:func:`!signal`.  Do not call those functions
 // directly!
 //
-//go:linkname OSGetsig C.PyOS_getsig
+//go:linkname OSGetsig PyOS_getsig
 func OSGetsig(i Int) OSSighandlerT
 
 // PyOS_sighandler_t PyOS_setsig(int i, PyOS_sighandler_t h)
@@ -121,7 +121,7 @@ func OSGetsig(i Int) OSSighandlerT
 // This is a thin wrapper around either :c:func:`!sigaction` or :c:func:`!signal`.  Do
 // not call those functions directly!
 //
-//go:linkname OSSetsig C.PyOS_setsig
+//go:linkname OSSetsig PyOS_setsig
 func OSSetsig(i Int, h OSSighandlerT) OSSighandlerT
 
 // wchar_t* Py_DecodeLocale(const char* arg, size_t *size)
@@ -170,7 +170,7 @@ func OSSetsig(i Int, h OSSighandlerT) OSSighandlerT
 // The function now uses the UTF-8 encoding on Windows if
 // :c:member:`PyPreConfig.legacy_windows_fs_encoding` is zero;
 //
-//go:linkname DecodeLocale C.Py_DecodeLocale
+//go:linkname DecodeLocale Py_DecodeLocale
 func DecodeLocale(arg *Char, size *Ulong) *Wchar
 
 // char* Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
@@ -218,14 +218,14 @@ func DecodeLocale(arg *Char, size *Ulong) *Wchar
 // accessible to C code.  They all work with the current interpreter thread's
 // :mod:`sys` module's dict, which is contained in the internal thread state structure.
 //
-//go:linkname EncodeLocale C.Py_EncodeLocale
+//go:linkname EncodeLocale Py_EncodeLocale
 func EncodeLocale(text *Wchar, errorPos *Ulong) *Char
 
 // PyObject *PySys_GetObject(const char *name)
 // Return the object *name* from the :mod:`sys` module or “NULL“ if it does
 // not exist, without setting an exception.
 //
-//go:linkname SysGetObject C.PySys_GetObject
+//go:linkname SysGetObject PySys_GetObject
 func SysGetObject(name *Char) *Object
 
 // int PySys_SetObject(const char *name, PyObject *v)
@@ -233,7 +233,7 @@ func SysGetObject(name *Char) *Object
 // case *name* is deleted from the sys module. Returns “0“ on success, “-1“
 // on error.
 //
-//go:linkname SysSetObject C.PySys_SetObject
+//go:linkname SysSetObject PySys_SetObject
 func SysSetObject(name *Char, v *Object) Int
 
 // void PySys_ResetWarnOptions()
@@ -243,7 +243,7 @@ func SysSetObject(name *Char, v *Object) Int
 // .. deprecated-removed:: 3.13 3.15
 // Clear :data:`sys.warnoptions` and :data:`!warnings.filters` instead.
 //
-//go:linkname SysResetWarnOptions C.PySys_ResetWarnOptions
+//go:linkname SysResetWarnOptions PySys_ResetWarnOptions
 func SysResetWarnOptions()
 
 // void PySys_WriteStdout(const char *format, ...)
@@ -261,14 +261,14 @@ func SysResetWarnOptions()
 // If a problem occurs, or :data:`sys.stdout` is unset, the formatted message
 // is written to the real (C level) *stdout*.
 //
-//go:linkname SysWriteStdout C.PySys_WriteStdout
+//go:linkname SysWriteStdout PySys_WriteStdout
 func SysWriteStdout(format *Char, __llgo_va_list ...any)
 
 // void PySys_WriteStderr(const char *format, ...)
 // As :c:func:`PySys_WriteStdout`, but write to :data:`sys.stderr` or *stderr*
 // instead.
 //
-//go:linkname SysWriteStderr C.PySys_WriteStderr
+//go:linkname SysWriteStderr PySys_WriteStderr
 func SysWriteStderr(format *Char, __llgo_va_list ...any)
 
 // void PySys_FormatStdout(const char *format, ...)
@@ -276,14 +276,14 @@ func SysWriteStderr(format *Char, __llgo_va_list ...any)
 // :c:func:`PyUnicode_FromFormatV` and don't truncate the message to an
 // arbitrary length.
 //
-//go:linkname SysFormatStdout C.PySys_FormatStdout
+//go:linkname SysFormatStdout PySys_FormatStdout
 func SysFormatStdout(format *Char, __llgo_va_list ...any)
 
 // void PySys_FormatStderr(const char *format, ...)
 // As :c:func:`PySys_FormatStdout`, but write to :data:`sys.stderr` or *stderr*
 // instead.
 //
-//go:linkname SysFormatStderr C.PySys_FormatStderr
+//go:linkname SysFormatStderr PySys_FormatStderr
 func SysFormatStderr(format *Char, __llgo_va_list ...any)
 
 // PyObject *PySys_GetXOptions()
@@ -291,7 +291,7 @@ func SysFormatStderr(format *Char, __llgo_va_list ...any)
 // :data:`sys._xoptions`.  On error, “NULL“ is returned and an exception is
 // set.
 //
-//go:linkname SysGetXOptions C.PySys_GetXOptions
+//go:linkname SysGetXOptions PySys_GetXOptions
 func SysGetXOptions() *Object
 
 // int PySys_Audit(const char *event, const char *format, ...)
@@ -319,7 +319,7 @@ func SysGetXOptions() *Object
 // Require :c:type:`Py_ssize_t` for “#“ format characters. Previously, an
 // unavoidable deprecation warning was raised.
 //
-//go:linkname SysAudit C.PySys_Audit
+//go:linkname SysAudit PySys_Audit
 func SysAudit(event *Char, format *Char, __llgo_va_list ...any) Int
 
 // int PySys_AddAuditHook(Py_AuditHookFunction hook, void *userData)
@@ -354,7 +354,7 @@ func SysAudit(event *Char, format *Char, __llgo_va_list ...any) Int
 // added and the exception is cleared. As a result, callers cannot assume
 // that their hook has been added unless they control all existing hooks.
 //
-//go:linkname SysAddAuditHook C.PySys_AddAuditHook
+//go:linkname SysAddAuditHook PySys_AddAuditHook
 func SysAddAuditHook(hook AuditHookFunction, userData Pointer) Int
 
 // void Py_FatalError(const char *message)
@@ -373,7 +373,7 @@ func SysAddAuditHook(hook AuditHookFunction, userData Pointer) Int
 //
 // Log the function name automatically.
 //
-//go:linkname FatalError C.Py_FatalError
+//go:linkname FatalError Py_FatalError
 func FatalError(message *Char)
 
 // void Py_Exit(int status)
@@ -387,7 +387,7 @@ func FatalError(message *Char)
 //
 // Errors from finalization no longer ignored.
 //
-//go:linkname Exit C.Py_Exit
+//go:linkname Exit Py_Exit
 func Exit(status Int)
 
 // int Py_AtExit(void (*func) ())
@@ -403,7 +403,7 @@ func Exit(status Int)
 // at most once.  Since Python's internal finalization will have completed before
 // the cleanup function, no Python APIs should be called by *func*.
 //
-//go:linkname AtExit C.Py_AtExit
+//go:linkname AtExit Py_AtExit
 func AtExit(func_ func()) Int
 
 // void (*PyOS_sighandler_t)(int)

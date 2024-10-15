@@ -12,7 +12,7 @@ import (
 // Return true if *ob*'s type is :c:type:`PyCoro_Type`; *ob* must not be “NULL“.
 // This function always succeeds.
 //
-//go:linkname CoroCheckExact C.PyCoro_CheckExact
+//go:linkname CoroCheckExact PyCoro_CheckExact
 func CoroCheckExact(ob *Object) Int
 
 // PyObject* PyCoro_New(PyFrameObject *frame, PyObject *name, PyObject *qualname)
@@ -21,7 +21,7 @@ func CoroCheckExact(ob *Object) Int
 // A reference to *frame* is stolen by this function.  The *frame* argument
 // must not be “NULL“.
 //
-//go:linkname CoroNew C.PyCoro_New
+//go:linkname CoroNew PyCoro_New
 func CoroNew(frame *FrameObject, name *Object, qualname *Object) *Object
 
 // PyCoroObject

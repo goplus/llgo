@@ -12,7 +12,7 @@ import (
 // Return true if its argument is a :c:type:`PyCapsule`.  This function always
 // succeeds.
 //
-//go:linkname CapsuleCheckExact C.PyCapsule_CheckExact
+//go:linkname CapsuleCheckExact PyCapsule_CheckExact
 func CapsuleCheckExact(p *Object) Int
 
 // PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor)
@@ -32,7 +32,7 @@ func CapsuleCheckExact(p *Object) Int
 // be specified as “modulename.attributename“.  This will enable other modules
 // to import the capsule using :c:func:`PyCapsule_Import`.
 //
-//go:linkname CapsuleNew C.PyCapsule_New
+//go:linkname CapsuleNew PyCapsule_New
 func CapsuleNew(pointer Pointer, name *Char, destructor CapsuleDestructor) *Object
 
 // void* PyCapsule_GetPointer(PyObject *capsule, const char *name)
@@ -44,7 +44,7 @@ func CapsuleNew(pointer Pointer, name *Char, destructor CapsuleDestructor) *Obje
 // be “NULL“.  Python uses the C function :c:func:`!strcmp` to compare capsule
 // names.
 //
-//go:linkname CapsuleGetPointer C.PyCapsule_GetPointer
+//go:linkname CapsuleGetPointer PyCapsule_GetPointer
 func CapsuleGetPointer(capsule *Object, name *Char) Pointer
 
 // PyCapsule_Destructor PyCapsule_GetDestructor(PyObject *capsule)
@@ -55,7 +55,7 @@ func CapsuleGetPointer(capsule *Object, name *Char) Pointer
 // return code somewhat ambiguous; use :c:func:`PyCapsule_IsValid` or
 // :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname CapsuleGetDestructor C.PyCapsule_GetDestructor
+//go:linkname CapsuleGetDestructor PyCapsule_GetDestructor
 func CapsuleGetDestructor(capsule *Object) CapsuleDestructor
 
 // void* PyCapsule_GetContext(PyObject *capsule)
@@ -66,7 +66,7 @@ func CapsuleGetDestructor(capsule *Object) CapsuleDestructor
 // return code somewhat ambiguous; use :c:func:`PyCapsule_IsValid` or
 // :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname CapsuleGetContext C.PyCapsule_GetContext
+//go:linkname CapsuleGetContext PyCapsule_GetContext
 func CapsuleGetContext(capsule *Object) Pointer
 
 // const char* PyCapsule_GetName(PyObject *capsule)
@@ -77,7 +77,7 @@ func CapsuleGetContext(capsule *Object) Pointer
 // code somewhat ambiguous; use :c:func:`PyCapsule_IsValid` or
 // :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname CapsuleGetName C.PyCapsule_GetName
+//go:linkname CapsuleGetName PyCapsule_GetName
 func CapsuleGetName(capsule *Object) *Char
 
 // void* PyCapsule_Import(const char *name, int no_block)
@@ -91,7 +91,7 @@ func CapsuleGetName(capsule *Object) *Char
 //
 // *no_block* has no effect anymore.
 //
-//go:linkname CapsuleImport C.PyCapsule_Import
+//go:linkname CapsuleImport PyCapsule_Import
 func CapsuleImport(name *Char, noBlock Int) Pointer
 
 // int PyCapsule_IsValid(PyObject *capsule, const char *name)
@@ -108,7 +108,7 @@ func CapsuleImport(name *Char, noBlock Int) Pointer
 // Return a nonzero value if the object is valid and matches the name passed in.
 // Return “0“ otherwise.  This function will not fail.
 //
-//go:linkname CapsuleIsValid C.PyCapsule_IsValid
+//go:linkname CapsuleIsValid PyCapsule_IsValid
 func CapsuleIsValid(capsule *Object, name *Char) Int
 
 // int PyCapsule_SetContext(PyObject *capsule, void *context)
@@ -116,7 +116,7 @@ func CapsuleIsValid(capsule *Object, name *Char) Int
 //
 // Return “0“ on success.  Return nonzero and set an exception on failure.
 //
-//go:linkname CapsuleSetContext C.PyCapsule_SetContext
+//go:linkname CapsuleSetContext PyCapsule_SetContext
 func CapsuleSetContext(capsule *Object, context Pointer) Int
 
 // int PyCapsule_SetDestructor(PyObject *capsule, PyCapsule_Destructor destructor)
@@ -124,7 +124,7 @@ func CapsuleSetContext(capsule *Object, context Pointer) Int
 //
 // Return “0“ on success.  Return nonzero and set an exception on failure.
 //
-//go:linkname CapsuleSetDestructor C.PyCapsule_SetDestructor
+//go:linkname CapsuleSetDestructor PyCapsule_SetDestructor
 func CapsuleSetDestructor(capsule *Object, destructor CapsuleDestructor) Int
 
 // int PyCapsule_SetName(PyObject *capsule, const char *name)
@@ -134,7 +134,7 @@ func CapsuleSetDestructor(capsule *Object, destructor CapsuleDestructor) Int
 //
 // Return “0“ on success.  Return nonzero and set an exception on failure.
 //
-//go:linkname CapsuleSetName C.PyCapsule_SetName
+//go:linkname CapsuleSetName PyCapsule_SetName
 func CapsuleSetName(capsule *Object, name *Char) Int
 
 // int PyCapsule_SetPointer(PyObject *capsule, void *pointer)
@@ -143,7 +143,7 @@ func CapsuleSetName(capsule *Object, name *Char) Int
 //
 // Return “0“ on success.  Return nonzero and set an exception on failure.
 //
-//go:linkname CapsuleSetPointer C.PyCapsule_SetPointer
+//go:linkname CapsuleSetPointer PyCapsule_SetPointer
 func CapsuleSetPointer(capsule *Object, pointer Pointer) Int
 
 // PyCapsule_Destructor

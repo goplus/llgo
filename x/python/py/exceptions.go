@@ -12,7 +12,7 @@ import (
 // Clear the error indicator.  If the error indicator is not set, there is no
 // effect.
 //
-//go:linkname ErrClear C.PyErr_Clear
+//go:linkname ErrClear PyErr_Clear
 func ErrClear()
 
 // void PyErr_PrintEx(int set_sys_last_vars)
@@ -32,13 +32,13 @@ func ErrClear()
 //
 // The setting of :data:`sys.last_exc` was added.
 //
-//go:linkname ErrPrintEx C.PyErr_PrintEx
+//go:linkname ErrPrintEx PyErr_PrintEx
 func ErrPrintEx(setSysLastVars Int)
 
 // void PyErr_Print()
 // Alias for “PyErr_PrintEx(1)“.
 //
-//go:linkname ErrPrint C.PyErr_Print
+//go:linkname ErrPrint PyErr_Print
 func ErrPrint()
 
 // void PyErr_WriteUnraisable(PyObject *obj)
@@ -61,7 +61,7 @@ func ErrPrint()
 //
 // Use :func:`sys.unraisablehook`.
 //
-//go:linkname ErrWriteUnraisable C.PyErr_WriteUnraisable
+//go:linkname ErrWriteUnraisable PyErr_WriteUnraisable
 func ErrWriteUnraisable(obj *Object)
 
 // void PyErr_DisplayException(PyObject *exc)
@@ -75,7 +75,7 @@ func ErrWriteUnraisable(obj *Object)
 // For convenience, some of these functions will always return a
 // “NULL“ pointer for use in a “return“ statement.
 //
-//go:linkname ErrDisplayException C.PyErr_DisplayException
+//go:linkname ErrDisplayException PyErr_DisplayException
 func ErrDisplayException(exc *Object)
 
 // void PyErr_SetString(PyObject *type, const char *message)
@@ -85,14 +85,14 @@ func ErrDisplayException(exc *Object)
 // :term:`strong reference` to it (e.g. with :c:func:`Py_INCREF`).
 // The second argument is an error message; it is decoded from “'utf-8'“.
 //
-//go:linkname ErrSetString C.PyErr_SetString
+//go:linkname ErrSetString PyErr_SetString
 func ErrSetString(type_ *Object, message *Char)
 
 // void PyErr_SetObject(PyObject *type, PyObject *value)
 // This function is similar to :c:func:`PyErr_SetString` but lets you specify an
 // arbitrary Python object for the "value" of the exception.
 //
-//go:linkname ErrSetObject C.PyErr_SetObject
+//go:linkname ErrSetObject PyErr_SetObject
 func ErrSetObject(type_ *Object, value *Object)
 
 // PyObject* PyErr_Format(PyObject *exception, const char *format, ...)
@@ -102,13 +102,13 @@ func ErrSetObject(type_ *Object, value *Object)
 // values as in :c:func:`PyUnicode_FromFormat`. *format* is an ASCII-encoded
 // string.
 //
-//go:linkname ErrFormat C.PyErr_Format
+//go:linkname ErrFormat PyErr_Format
 func ErrFormat(exception *Object, format *Char, __llgo_va_list ...any) *Object
 
 // void PyErr_SetNone(PyObject *type)
 // This is a shorthand for “PyErr_SetObject(type, Py_None)“.
 //
-//go:linkname ErrSetNone C.PyErr_SetNone
+//go:linkname ErrSetNone PyErr_SetNone
 func ErrSetNone(type_ *Object)
 
 // int PyErr_BadArgument()
@@ -116,7 +116,7 @@ func ErrSetNone(type_ *Object)
 // *message* indicates that a built-in operation was invoked with an illegal
 // argument.  It is mostly for internal use.
 //
-//go:linkname ErrBadArgument C.PyErr_BadArgument
+//go:linkname ErrBadArgument PyErr_BadArgument
 func ErrBadArgument() Int
 
 // PyObject* PyErr_NoMemory()
@@ -124,7 +124,7 @@ func ErrBadArgument() Int
 // so an object allocation function can write “return PyErr_NoMemory();“ when it
 // runs out of memory.
 //
-//go:linkname ErrNoMemory C.PyErr_NoMemory
+//go:linkname ErrNoMemory PyErr_NoMemory
 func ErrNoMemory() *Object
 
 // PyObject* PyErr_SetFromErrno(PyObject *type)
@@ -141,7 +141,7 @@ func ErrNoMemory() *Object
 // function around a system call can write “return PyErr_SetFromErrno(type);“
 // when the system call returns an error.
 //
-//go:linkname ErrSetFromErrno C.PyErr_SetFromErrno
+//go:linkname ErrSetFromErrno PyErr_SetFromErrno
 func ErrSetFromErrno(type_ *Object) *Object
 
 // PyObject* PyErr_SetFromErrnoWithFilenameObject(PyObject *type, PyObject *filenameObject)
@@ -151,7 +151,7 @@ func ErrSetFromErrno(type_ *Object) *Object
 // this is used to define the :attr:`!filename` attribute of the
 // exception instance.
 //
-//go:linkname ErrSetFromErrnoWithFilenameObject C.PyErr_SetFromErrnoWithFilenameObject
+//go:linkname ErrSetFromErrnoWithFilenameObject PyErr_SetFromErrnoWithFilenameObject
 func ErrSetFromErrnoWithFilenameObject(type_ *Object, filenameObject *Object) *Object
 
 // PyObject* PyErr_SetFromErrnoWithFilenameObjects(PyObject *type, PyObject *filenameObject, PyObject *filenameObject2)
@@ -159,7 +159,7 @@ func ErrSetFromErrnoWithFilenameObject(type_ *Object, filenameObject *Object) *O
 // filename object, for raising errors when a function that takes two filenames
 // fails.
 //
-//go:linkname ErrSetFromErrnoWithFilenameObjects C.PyErr_SetFromErrnoWithFilenameObjects
+//go:linkname ErrSetFromErrnoWithFilenameObjects PyErr_SetFromErrnoWithFilenameObjects
 func ErrSetFromErrnoWithFilenameObjects(type_ *Object, filenameObject *Object, filenameObject2 *Object) *Object
 
 // PyObject* PyErr_SetFromErrnoWithFilename(PyObject *type, const char *filename)
@@ -167,7 +167,7 @@ func ErrSetFromErrnoWithFilenameObjects(type_ *Object, filenameObject *Object, f
 // is given as a C string.  *filename* is decoded from the :term:`filesystem
 // encoding and error handler`.
 //
-//go:linkname ErrSetFromErrnoWithFilename C.PyErr_SetFromErrnoWithFilename
+//go:linkname ErrSetFromErrnoWithFilename PyErr_SetFromErrnoWithFilename
 func ErrSetFromErrnoWithFilename(type_ *Object, filename *Char) *Object
 
 // PyObject* PyErr_SetFromWindowsErr(int ierr)
@@ -183,7 +183,7 @@ func ErrSetFromErrnoWithFilename(type_ *Object, filename *Char) *Object
 //
 // .. availability:: Windows.
 //
-//go:linkname ErrSetFromWindowsErr C.PyErr_SetFromWindowsErr
+//go:linkname ErrSetFromWindowsErr PyErr_SetFromWindowsErr
 func ErrSetFromWindowsErr(ierr Int) *Object
 
 // PyObject* PyErr_SetExcFromWindowsErr(PyObject *type, int ierr)
@@ -192,7 +192,7 @@ func ErrSetFromWindowsErr(ierr Int) *Object
 //
 // .. availability:: Windows.
 //
-//go:linkname ErrSetExcFromWindowsErr C.PyErr_SetExcFromWindowsErr
+//go:linkname ErrSetExcFromWindowsErr PyErr_SetExcFromWindowsErr
 func ErrSetExcFromWindowsErr(type_ *Object, ierr Int) *Object
 
 // PyObject* PyErr_SetFromWindowsErrWithFilename(int ierr, const char *filename)
@@ -204,7 +204,7 @@ func ErrSetExcFromWindowsErr(type_ *Object, ierr Int) *Object
 //
 // .. availability:: Windows.
 //
-//go:linkname ErrSetFromWindowsErrWithFilename C.PyErr_SetFromWindowsErrWithFilename
+//go:linkname ErrSetFromWindowsErrWithFilename PyErr_SetFromWindowsErrWithFilename
 func ErrSetFromWindowsErrWithFilename(ierr Int, filename *Char) *Object
 
 // PyObject* PyErr_SetExcFromWindowsErrWithFilenameObject(PyObject *type, int ierr, PyObject *filename)
@@ -215,7 +215,7 @@ func ErrSetFromWindowsErrWithFilename(ierr Int, filename *Char) *Object
 //
 // .. availability:: Windows.
 //
-//go:linkname ErrSetExcFromWindowsErrWithFilenameObject C.PyErr_SetExcFromWindowsErrWithFilenameObject
+//go:linkname ErrSetExcFromWindowsErrWithFilenameObject PyErr_SetExcFromWindowsErrWithFilenameObject
 func ErrSetExcFromWindowsErrWithFilenameObject(type_ *Object, ierr Int, filename *Object) *Object
 
 // PyObject* PyErr_SetExcFromWindowsErrWithFilenameObjects(PyObject *type, int ierr, PyObject *filename, PyObject *filename2)
@@ -224,7 +224,7 @@ func ErrSetExcFromWindowsErrWithFilenameObject(type_ *Object, ierr Int, filename
 //
 // .. availability:: Windows.
 //
-//go:linkname ErrSetExcFromWindowsErrWithFilenameObjects C.PyErr_SetExcFromWindowsErrWithFilenameObjects
+//go:linkname ErrSetExcFromWindowsErrWithFilenameObjects PyErr_SetExcFromWindowsErrWithFilenameObjects
 func ErrSetExcFromWindowsErrWithFilenameObjects(type_ *Object, ierr Int, filename *Object, filename2 *Object) *Object
 
 // PyObject* PyErr_SetExcFromWindowsErrWithFilename(PyObject *type, int ierr, const char *filename)
@@ -233,7 +233,7 @@ func ErrSetExcFromWindowsErrWithFilenameObjects(type_ *Object, ierr Int, filenam
 //
 // .. availability:: Windows.
 //
-//go:linkname ErrSetExcFromWindowsErrWithFilename C.PyErr_SetExcFromWindowsErrWithFilename
+//go:linkname ErrSetExcFromWindowsErrWithFilename PyErr_SetExcFromWindowsErrWithFilename
 func ErrSetExcFromWindowsErrWithFilename(type_ *Object, ierr Int, filename *Char) *Object
 
 // PyObject* PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
@@ -242,14 +242,14 @@ func ErrSetExcFromWindowsErrWithFilename(type_ *Object, ierr Int, filename *Char
 // be “NULL“, will be set as the :exc:`ImportError`'s respective “name“
 // and “path“ attributes.
 //
-//go:linkname ErrSetImportError C.PyErr_SetImportError
+//go:linkname ErrSetImportError PyErr_SetImportError
 func ErrSetImportError(msg *Object, name *Object, path *Object) *Object
 
 // PyObject* PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg, PyObject *name, PyObject *path)
 // Much like :c:func:`PyErr_SetImportError` but this function allows for
 // specifying a subclass of :exc:`ImportError` to raise.
 //
-//go:linkname ErrSetImportErrorSubclass C.PyErr_SetImportErrorSubclass
+//go:linkname ErrSetImportErrorSubclass PyErr_SetImportErrorSubclass
 func ErrSetImportErrorSubclass(exception *Object, msg *Object, name *Object, path *Object) *Object
 
 // void PyErr_SyntaxLocationObject(PyObject *filename, int lineno, int col_offset)
@@ -258,21 +258,21 @@ func ErrSetImportErrorSubclass(exception *Object, msg *Object, name *Object, pat
 // attributes, which make the exception printing subsystem think the exception
 // is a :exc:`SyntaxError`.
 //
-//go:linkname ErrSyntaxLocationObject C.PyErr_SyntaxLocationObject
+//go:linkname ErrSyntaxLocationObject PyErr_SyntaxLocationObject
 func ErrSyntaxLocationObject(filename *Object, lineno Int, colOffset Int)
 
 // void PyErr_SyntaxLocationEx(const char *filename, int lineno, int col_offset)
 // Like :c:func:`PyErr_SyntaxLocationObject`, but *filename* is a byte string
 // decoded from the :term:`filesystem encoding and error handler`.
 //
-//go:linkname ErrSyntaxLocationEx C.PyErr_SyntaxLocationEx
+//go:linkname ErrSyntaxLocationEx PyErr_SyntaxLocationEx
 func ErrSyntaxLocationEx(filename *Char, lineno Int, colOffset Int)
 
 // void PyErr_SyntaxLocation(const char *filename, int lineno)
 // Like :c:func:`PyErr_SyntaxLocationEx`, but the *col_offset* parameter is
 // omitted.
 //
-//go:linkname ErrSyntaxLocation C.PyErr_SyntaxLocation
+//go:linkname ErrSyntaxLocation PyErr_SyntaxLocation
 func ErrSyntaxLocation(filename *Char, lineno Int)
 
 // void PyErr_BadInternalCall()
@@ -297,7 +297,7 @@ func ErrSyntaxLocation(filename *Char, lineno Int)
 // exception handling (for example, :c:func:`Py_DECREF` owned references and return
 // an error value).
 //
-//go:linkname ErrBadInternalCall C.PyErr_BadInternalCall
+//go:linkname ErrBadInternalCall PyErr_BadInternalCall
 func ErrBadInternalCall()
 
 // int PyErr_WarnEx(PyObject *category, const char *message, Py_ssize_t stack_level)
@@ -318,7 +318,7 @@ func ErrBadInternalCall()
 // :mod:`warnings` module and the :option:`-W` option in the command line
 // documentation.  There is no C API for warning control.
 //
-//go:linkname ErrWarnEx C.PyErr_WarnEx
+//go:linkname ErrWarnEx PyErr_WarnEx
 func ErrWarnEx(category *Object, message *Char, stackLevel SSizeT) Int
 
 // int PyErr_WarnExplicitObject(PyObject *category, PyObject *message, PyObject *filename, int lineno, PyObject *module, PyObject *registry)
@@ -328,7 +328,7 @@ func ErrWarnEx(category *Object, message *Char, stackLevel SSizeT) Int
 // and *registry* arguments may be set to “NULL“ to get the default effect
 // described there.
 //
-//go:linkname ErrWarnExplicitObject C.PyErr_WarnExplicitObject
+//go:linkname ErrWarnExplicitObject PyErr_WarnExplicitObject
 func ErrWarnExplicitObject(category *Object, message *Object, filename *Object, lineno Int, module *Object, registry *Object) Int
 
 // int PyErr_WarnExplicit(PyObject *category, const char *message, const char *filename, int lineno, const char *module, PyObject *registry)
@@ -336,7 +336,7 @@ func ErrWarnExplicitObject(category *Object, message *Object, filename *Object, 
 // *module* are UTF-8 encoded strings, and *filename* is decoded from the
 // :term:`filesystem encoding and error handler`.
 //
-//go:linkname ErrWarnExplicit C.PyErr_WarnExplicit
+//go:linkname ErrWarnExplicit PyErr_WarnExplicit
 func ErrWarnExplicit(category *Object, message *Char, filename *Char, lineno Int, module *Char, registry *Object) Int
 
 // int PyErr_WarnFormat(PyObject *category, Py_ssize_t stack_level, const char *format, ...)
@@ -344,7 +344,7 @@ func ErrWarnExplicit(category *Object, message *Char, filename *Char, lineno Int
 // :c:func:`PyUnicode_FromFormat` to format the warning message.  *format* is
 // an ASCII-encoded string.
 //
-//go:linkname ErrWarnFormat C.PyErr_WarnFormat
+//go:linkname ErrWarnFormat PyErr_WarnFormat
 func ErrWarnFormat(category *Object, stackLevel SSizeT, format *Char, __llgo_va_list ...any) Int
 
 // int PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level, const char *format, ...)
@@ -354,7 +354,7 @@ func ErrWarnFormat(category *Object, stackLevel SSizeT, format *Char, __llgo_va_
 // Querying the error indicator
 // ============================
 //
-//go:linkname ErrResourceWarning C.PyErr_ResourceWarning
+//go:linkname ErrResourceWarning PyErr_ResourceWarning
 func ErrResourceWarning(source *Object, stackLevel SSizeT, format *Char, __llgo_va_list ...any) Int
 
 // PyObject* PyErr_Occurred()
@@ -373,7 +373,7 @@ func ErrResourceWarning(source *Object, stackLevel SSizeT, format *Char, __llgo_
 // easily fail since the exception may be an instance instead of a class, in the
 // case of a class exception, or it may be a subclass of the expected exception.)
 //
-//go:linkname ErrOccurred C.PyErr_Occurred
+//go:linkname ErrOccurred PyErr_Occurred
 func ErrOccurred() *Object
 
 // int PyErr_ExceptionMatches(PyObject *exc)
@@ -381,7 +381,7 @@ func ErrOccurred() *Object
 // should only be called when an exception is actually set; a memory access
 // violation will occur if no exception has been raised.
 //
-//go:linkname ErrExceptionMatches C.PyErr_ExceptionMatches
+//go:linkname ErrExceptionMatches PyErr_ExceptionMatches
 func ErrExceptionMatches(exc *Object) Int
 
 // int PyErr_GivenExceptionMatches(PyObject *given, PyObject *exc)
@@ -390,7 +390,7 @@ func ErrExceptionMatches(exc *Object) Int
 // of a subclass.  If *exc* is a tuple, all exception types in the tuple (and
 // recursively in subtuples) are searched for a match.
 //
-//go:linkname ErrGivenExceptionMatches C.PyErr_GivenExceptionMatches
+//go:linkname ErrGivenExceptionMatches PyErr_GivenExceptionMatches
 func ErrGivenExceptionMatches(given *Object, exc *Object) Int
 
 // PyObject *PyErr_GetRaisedException(void)
@@ -413,7 +413,7 @@ func ErrGivenExceptionMatches(given *Object, exc *Object) Int
 // .. seealso:: :c:func:`PyErr_GetHandledException`,
 // to save the exception currently being handled.
 //
-//go:linkname ErrGetRaisedException C.PyErr_GetRaisedException
+//go:linkname ErrGetRaisedException PyErr_GetRaisedException
 func ErrGetRaisedException() *Object
 
 // void PyErr_SetRaisedException(PyObject *exc)
@@ -424,7 +424,7 @@ func ErrGetRaisedException() *Object
 //
 // This call steals a reference to *exc*, which must be a valid exception.
 //
-//go:linkname ErrSetRaisedException C.PyErr_SetRaisedException
+//go:linkname ErrSetRaisedException PyErr_SetRaisedException
 func ErrSetRaisedException(exc *Object)
 
 // void PyErr_Fetch(PyObject **ptype, PyObject **pvalue, PyObject **ptraceback)
@@ -453,7 +453,7 @@ func ErrSetRaisedException(exc *Object)
 // PyErr_Restore(type, value, traceback);
 // }
 //
-//go:linkname ErrFetch C.PyErr_Fetch
+//go:linkname ErrFetch PyErr_Fetch
 func ErrFetch(ptype **Object, pvalue **Object, ptraceback **Object)
 
 // void PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
@@ -479,7 +479,7 @@ func ErrFetch(ptype **Object, pvalue **Object, ptraceback **Object)
 // save and restore the error indicator temporarily.
 // Use :c:func:`PyErr_Fetch` to save the current error indicator.
 //
-//go:linkname ErrRestore C.PyErr_Restore
+//go:linkname ErrRestore PyErr_Restore
 func ErrRestore(type_ *Object, value *Object, traceback *Object)
 
 // void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
@@ -505,7 +505,7 @@ func ErrRestore(type_ *Object, value *Object, traceback *Object)
 // PyException_SetTraceback(val, tb);
 // }
 //
-//go:linkname ErrNormalizeException C.PyErr_NormalizeException
+//go:linkname ErrNormalizeException PyErr_NormalizeException
 func ErrNormalizeException(exc **Object, val **Object, tb **Object)
 
 // PyObject* PyErr_GetHandledException(void)
@@ -521,7 +521,7 @@ func ErrNormalizeException(exc **Object, val **Object, tb **Object)
 // state temporarily.  Use :c:func:`PyErr_SetHandledException` to restore or
 // clear the exception state.
 //
-//go:linkname ErrGetHandledException C.PyErr_GetHandledException
+//go:linkname ErrGetHandledException PyErr_GetHandledException
 func ErrGetHandledException() *Object
 
 // void PyErr_SetHandledException(PyObject *exc)
@@ -537,7 +537,7 @@ func ErrGetHandledException() *Object
 // state temporarily.  Use :c:func:`PyErr_GetHandledException` to get the exception
 // state.
 //
-//go:linkname ErrSetHandledException C.PyErr_SetHandledException
+//go:linkname ErrSetHandledException PyErr_SetHandledException
 func ErrSetHandledException(exc *Object)
 
 // void PyErr_GetExcInfo(PyObject **ptype, PyObject **pvalue, PyObject **ptraceback)
@@ -555,7 +555,7 @@ func ErrSetHandledException(exc *Object)
 // state temporarily.  Use :c:func:`PyErr_SetExcInfo` to restore or clear the
 // exception state.
 //
-//go:linkname ErrGetExcInfo C.PyErr_GetExcInfo
+//go:linkname ErrGetExcInfo PyErr_GetExcInfo
 func ErrGetExcInfo(ptype **Object, pvalue **Object, ptraceback **Object)
 
 // void PyErr_SetExcInfo(PyObject *type, PyObject *value, PyObject *traceback)
@@ -581,7 +581,7 @@ func ErrGetExcInfo(ptype **Object, pvalue **Object, ptraceback **Object)
 // Signal Handling
 // ===============
 //
-//go:linkname ErrSetExcInfo C.PyErr_SetExcInfo
+//go:linkname ErrSetExcInfo PyErr_SetExcInfo
 func ErrSetExcInfo(type_ *Object, value *Object, traceback *Object)
 
 // int PyErr_CheckSignals()
@@ -613,7 +613,7 @@ func ErrSetExcInfo(type_ *Object, value *Object, traceback *Object)
 // The default Python signal handler for :c:macro:`!SIGINT` raises the
 // :exc:`KeyboardInterrupt` exception.
 //
-//go:linkname ErrCheckSignals C.PyErr_CheckSignals
+//go:linkname ErrCheckSignals PyErr_CheckSignals
 func ErrCheckSignals() Int
 
 // void PyErr_SetInterrupt()
@@ -629,7 +629,7 @@ func ErrCheckSignals() Int
 // This function is async-signal-safe.  It can be called without
 // the :term:`GIL` and from a C signal handler.
 //
-//go:linkname ErrSetInterrupt C.PyErr_SetInterrupt
+//go:linkname ErrSetInterrupt PyErr_SetInterrupt
 func ErrSetInterrupt()
 
 // int PyErr_SetInterruptEx(int signum)
@@ -657,7 +657,7 @@ func ErrSetInterrupt()
 // This function is async-signal-safe.  It can be called without
 // the :term:`GIL` and from a C signal handler.
 //
-//go:linkname ErrSetInterruptEx C.PyErr_SetInterruptEx
+//go:linkname ErrSetInterruptEx PyErr_SetInterruptEx
 func ErrSetInterruptEx(signum Int) Int
 
 // int PySignal_SetWakeupFd(int fd)
@@ -675,7 +675,7 @@ func ErrSetInterruptEx(signum Int) Int
 // Exception Classes
 // =================
 //
-//go:linkname SignalSetWakeupFd C.PySignal_SetWakeupFd
+//go:linkname SignalSetWakeupFd PySignal_SetWakeupFd
 func SignalSetWakeupFd(fd Int) Int
 
 // PyObject* PyErr_NewException(const char *name, PyObject *base, PyObject *dict)
@@ -691,7 +691,7 @@ func SignalSetWakeupFd(fd Int) Int
 // base classes; it can either be only one class or a tuple of classes. The *dict*
 // argument can be used to specify a dictionary of class variables and methods.
 //
-//go:linkname ErrNewException C.PyErr_NewException
+//go:linkname ErrNewException PyErr_NewException
 func ErrNewException(name *Char, base *Object, dict *Object) *Object
 
 // PyObject* PyErr_NewExceptionWithDoc(const char *name, const char *doc, PyObject *base, PyObject *dict)
@@ -702,7 +702,7 @@ func ErrNewException(name *Char, base *Object, dict *Object) *Object
 // Exception Objects
 // =================
 //
-//go:linkname ErrNewExceptionWithDoc C.PyErr_NewExceptionWithDoc
+//go:linkname ErrNewExceptionWithDoc PyErr_NewExceptionWithDoc
 func ErrNewExceptionWithDoc(name *Char, doc *Char, base *Object, dict *Object) *Object
 
 // PyObject* PyException_GetTraceback(PyObject *ex)
@@ -711,14 +711,14 @@ func ErrNewExceptionWithDoc(name *Char, doc *Char, base *Object, dict *Object) *
 // attribute. If there is no
 // traceback associated, this returns “NULL“.
 //
-//go:linkname ExceptionGetTraceback C.PyException_GetTraceback
+//go:linkname ExceptionGetTraceback PyException_GetTraceback
 func ExceptionGetTraceback(ex *Object) *Object
 
 // int PyException_SetTraceback(PyObject *ex, PyObject *tb)
 // Set the traceback associated with the exception to *tb*.  Use “Py_None“ to
 // clear it.
 //
-//go:linkname ExceptionSetTraceback C.PyException_SetTraceback
+//go:linkname ExceptionSetTraceback PyException_SetTraceback
 func ExceptionSetTraceback(ex *Object, tb *Object) Int
 
 // PyObject* PyException_GetContext(PyObject *ex)
@@ -727,7 +727,7 @@ func ExceptionSetTraceback(ex *Object, tb *Object) Int
 // Python through the :attr:`~BaseException.__context__` attribute.
 // If there is no context associated, this returns “NULL“.
 //
-//go:linkname ExceptionGetContext C.PyException_GetContext
+//go:linkname ExceptionGetContext PyException_GetContext
 func ExceptionGetContext(ex *Object) *Object
 
 // void PyException_SetContext(PyObject *ex, PyObject *ctx)
@@ -735,7 +735,7 @@ func ExceptionGetContext(ex *Object) *Object
 // it.  There is no type check to make sure that *ctx* is an exception instance.
 // This steals a reference to *ctx*.
 //
-//go:linkname ExceptionSetContext C.PyException_SetContext
+//go:linkname ExceptionSetContext PyException_SetContext
 func ExceptionSetContext(ex *Object, ctx *Object)
 
 // PyObject* PyException_GetCause(PyObject *ex)
@@ -744,7 +744,7 @@ func ExceptionSetContext(ex *Object, ctx *Object)
 // reference, as accessible from Python through the
 // :attr:`~BaseException.__cause__` attribute.
 //
-//go:linkname ExceptionGetCause C.PyException_GetCause
+//go:linkname ExceptionGetCause PyException_GetCause
 func ExceptionGetCause(ex *Object) *Object
 
 // void PyException_SetCause(PyObject *ex, PyObject *cause)
@@ -755,19 +755,19 @@ func ExceptionGetCause(ex *Object) *Object
 // The :attr:`~BaseException.__suppress_context__` attribute is implicitly set
 // to “True“ by this function.
 //
-//go:linkname ExceptionSetCause C.PyException_SetCause
+//go:linkname ExceptionSetCause PyException_SetCause
 func ExceptionSetCause(ex *Object, cause *Object)
 
 // PyObject* PyException_GetArgs(PyObject *ex)
 // Return :attr:`~BaseException.args` of exception *ex*.
 //
-//go:linkname ExceptionGetArgs C.PyException_GetArgs
+//go:linkname ExceptionGetArgs PyException_GetArgs
 func ExceptionGetArgs(ex *Object) *Object
 
 // void PyException_SetArgs(PyObject *ex, PyObject *args)
 // Set :attr:`~BaseException.args` of exception *ex* to *args*.
 //
-//go:linkname ExceptionSetArgs C.PyException_SetArgs
+//go:linkname ExceptionSetArgs PyException_SetArgs
 func ExceptionSetArgs(ex *Object, args *Object)
 
 // PyObject* PyUnstable_Exc_PrepReraiseStar(PyObject *orig, PyObject *excs)
@@ -787,7 +787,7 @@ func ExceptionSetArgs(ex *Object, args *Object)
 //
 // The following functions are used to create and modify Unicode exceptions from C.
 //
-//go:linkname UnstableExcPrepReraiseStar C.PyUnstable_Exc_PrepReraiseStar
+//go:linkname UnstableExcPrepReraiseStar PyUnstable_Exc_PrepReraiseStar
 func UnstableExcPrepReraiseStar(orig *Object, excs *Object) *Object
 
 // PyObject* PyUnicodeDecodeError_Create(const char *encoding, const char *object, Py_ssize_t length, Py_ssize_t start, Py_ssize_t end, const char *reason)
@@ -795,7 +795,7 @@ func UnstableExcPrepReraiseStar(orig *Object, excs *Object) *Object
 // *object*, *length*, *start*, *end* and *reason*. *encoding* and *reason* are
 // UTF-8 encoded strings.
 //
-//go:linkname UnicodeDecodeErrorCreate C.PyUnicodeDecodeError_Create
+//go:linkname UnicodeDecodeErrorCreate PyUnicodeDecodeError_Create
 func UnicodeDecodeErrorCreate(encoding *Char, object *Char, length SSizeT, start SSizeT, end SSizeT, reason *Char) *Object
 
 // PyObject* PyUnicodeDecodeError_GetEncoding(PyObject *exc)
@@ -803,7 +803,7 @@ func UnicodeDecodeErrorCreate(encoding *Char, object *Char, length SSizeT, start
 //
 // Return the *encoding* attribute of the given exception object.
 //
-//go:linkname UnicodeDecodeErrorGetEncoding C.PyUnicodeDecodeError_GetEncoding
+//go:linkname UnicodeDecodeErrorGetEncoding PyUnicodeDecodeError_GetEncoding
 func UnicodeDecodeErrorGetEncoding(exc *Object) *Object
 
 // PyObject* PyUnicodeDecodeError_GetObject(PyObject *exc)
@@ -812,7 +812,7 @@ func UnicodeDecodeErrorGetEncoding(exc *Object) *Object
 //
 // Return the *object* attribute of the given exception object.
 //
-//go:linkname UnicodeDecodeErrorGetObject C.PyUnicodeDecodeError_GetObject
+//go:linkname UnicodeDecodeErrorGetObject PyUnicodeDecodeError_GetObject
 func UnicodeDecodeErrorGetObject(exc *Object) *Object
 
 // int PyUnicodeDecodeError_GetStart(PyObject *exc, Py_ssize_t *start)
@@ -823,7 +823,7 @@ func UnicodeDecodeErrorGetObject(exc *Object) *Object
 // *\*start*.  *start* must not be “NULL“.  Return “0“ on success, “-1“ on
 // failure.
 //
-//go:linkname UnicodeDecodeErrorGetStart C.PyUnicodeDecodeError_GetStart
+//go:linkname UnicodeDecodeErrorGetStart PyUnicodeDecodeError_GetStart
 func UnicodeDecodeErrorGetStart(exc *Object, start *SSizeT) Int
 
 // int PyUnicodeDecodeError_SetStart(PyObject *exc, Py_ssize_t start)
@@ -833,7 +833,7 @@ func UnicodeDecodeErrorGetStart(exc *Object, start *SSizeT) Int
 // Set the *start* attribute of the given exception object to *start*.  Return
 // “0“ on success, “-1“ on failure.
 //
-//go:linkname UnicodeDecodeErrorSetStart C.PyUnicodeDecodeError_SetStart
+//go:linkname UnicodeDecodeErrorSetStart PyUnicodeDecodeError_SetStart
 func UnicodeDecodeErrorSetStart(exc *Object, start SSizeT) Int
 
 // int PyUnicodeDecodeError_GetEnd(PyObject *exc, Py_ssize_t *end)
@@ -844,7 +844,7 @@ func UnicodeDecodeErrorSetStart(exc *Object, start SSizeT) Int
 // *\*end*.  *end* must not be “NULL“.  Return “0“ on success, “-1“ on
 // failure.
 //
-//go:linkname UnicodeDecodeErrorGetEnd C.PyUnicodeDecodeError_GetEnd
+//go:linkname UnicodeDecodeErrorGetEnd PyUnicodeDecodeError_GetEnd
 func UnicodeDecodeErrorGetEnd(exc *Object, end *SSizeT) Int
 
 // int PyUnicodeDecodeError_SetEnd(PyObject *exc, Py_ssize_t end)
@@ -854,7 +854,7 @@ func UnicodeDecodeErrorGetEnd(exc *Object, end *SSizeT) Int
 // Set the *end* attribute of the given exception object to *end*.  Return “0“
 // on success, “-1“ on failure.
 //
-//go:linkname UnicodeDecodeErrorSetEnd C.PyUnicodeDecodeError_SetEnd
+//go:linkname UnicodeDecodeErrorSetEnd PyUnicodeDecodeError_SetEnd
 func UnicodeDecodeErrorSetEnd(exc *Object, end SSizeT) Int
 
 // PyObject* PyUnicodeDecodeError_GetReason(PyObject *exc)
@@ -863,7 +863,7 @@ func UnicodeDecodeErrorSetEnd(exc *Object, end SSizeT) Int
 //
 // Return the *reason* attribute of the given exception object.
 //
-//go:linkname UnicodeDecodeErrorGetReason C.PyUnicodeDecodeError_GetReason
+//go:linkname UnicodeDecodeErrorGetReason PyUnicodeDecodeError_GetReason
 func UnicodeDecodeErrorGetReason(exc *Object) *Object
 
 // int PyUnicodeDecodeError_SetReason(PyObject *exc, const char *reason)
@@ -885,7 +885,7 @@ func UnicodeDecodeErrorGetReason(exc *Object) *Object
 // They are also not needed for *tp_call* implementations
 // because the :ref:`call protocol <call>` takes care of recursion handling.
 //
-//go:linkname UnicodeDecodeErrorSetReason C.PyUnicodeDecodeError_SetReason
+//go:linkname UnicodeDecodeErrorSetReason PyUnicodeDecodeError_SetReason
 func UnicodeDecodeErrorSetReason(exc *Object, reason *Char) Int
 
 // int Py_EnterRecursiveCall(const char *where)
@@ -905,7 +905,7 @@ func UnicodeDecodeErrorSetReason(exc *Object, reason *Char) Int
 //
 // This function is now also available in the :ref:`limited API <limited-c-api>`.
 //
-//go:linkname EnterRecursiveCall C.Py_EnterRecursiveCall
+//go:linkname EnterRecursiveCall Py_EnterRecursiveCall
 func EnterRecursiveCall(where *Char) Int
 
 // void Py_LeaveRecursiveCall(void)
@@ -920,7 +920,7 @@ func EnterRecursiveCall(where *Char) Int
 // following two functions facilitate this functionality.  Effectively,
 // these are the C equivalent to :func:`reprlib.recursive_repr`.
 //
-//go:linkname LeaveRecursiveCall C.Py_LeaveRecursiveCall
+//go:linkname LeaveRecursiveCall Py_LeaveRecursiveCall
 func LeaveRecursiveCall()
 
 // int Py_ReprEnter(PyObject *object)
@@ -940,7 +940,7 @@ func LeaveRecursiveCall()
 // Otherwise, the function returns zero and the :c:member:`~PyTypeObject.tp_repr`
 // implementation can continue normally.
 //
-//go:linkname ReprEnter C.Py_ReprEnter
+//go:linkname ReprEnter Py_ReprEnter
 func ReprEnter(object *Object) Int
 
 // void Py_ReprLeave(PyObject *object)
@@ -1222,5 +1222,5 @@ func ReprEnter(object *Object) Int
 // .. [3]
 // This is a base class for other standard warning categories.
 //
-//go:linkname ReprLeave C.Py_ReprLeave
+//go:linkname ReprLeave Py_ReprLeave
 func ReprLeave(object *Object)

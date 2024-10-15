@@ -24,7 +24,7 @@ import (
 //
 // Ignore *name* attribute.
 //
-//go:linkname FileFromFd C.PyFile_FromFd
+//go:linkname FileFromFd PyFile_FromFd
 func FileFromFd(fd Int, name *Char, mode *Char, buffering Int, encoding *Char, errors *Char, newline *Char, closefd Int) *Object
 
 // int PyObject_AsFileDescriptor(PyObject *p)
@@ -34,7 +34,7 @@ func FileFromFd(fd Int, name *Char, mode *Char, buffering Int, encoding *Char, e
 // method must return an integer, which is returned as the file descriptor
 // value.  Sets an exception and returns “-1“ on failure.
 //
-//go:linkname ObjectAsFileDescriptor C.PyObject_AsFileDescriptor
+//go:linkname ObjectAsFileDescriptor PyObject_AsFileDescriptor
 func ObjectAsFileDescriptor(p *Object) Int
 
 // PyObject* PyFile_GetLine(PyObject *p, int n)
@@ -50,7 +50,7 @@ func ObjectAsFileDescriptor(p *Object) Int
 // “0“, however, one line is read regardless of length, but :exc:`EOFError` is
 // raised if the end of the file is reached immediately.
 //
-//go:linkname FileGetLine C.PyFile_GetLine
+//go:linkname FileGetLine PyFile_GetLine
 func FileGetLine(p *Object, n Int) *Object
 
 // int PyFile_SetOpenCodeHook(Py_OpenCodeHookFunction handler)
@@ -59,7 +59,7 @@ func FileGetLine(p *Object, n Int) *Object
 //
 // The *handler* is a function of type:
 //
-//go:linkname FileSetOpenCodeHook C.PyFile_SetOpenCodeHook
+//go:linkname FileSetOpenCodeHook PyFile_SetOpenCodeHook
 func FileSetOpenCodeHook(handler OpenCodeHookFunction) Int
 
 // int PyFile_WriteObject(PyObject *obj, PyObject *p, int flags)
@@ -70,14 +70,14 @@ func FileSetOpenCodeHook(handler OpenCodeHookFunction) Int
 // instead of the :func:`repr`.  Return “0“ on success or “-1“ on failure; the
 // appropriate exception will be set.
 //
-//go:linkname FileWriteObject C.PyFile_WriteObject
+//go:linkname FileWriteObject PyFile_WriteObject
 func FileWriteObject(obj *Object, p *Object, flags Int) Int
 
 // int PyFile_WriteString(const char *s, PyObject *p)
 // Write string *s* to file object *p*.  Return “0“ on success or “-1“ on
 // failure; the appropriate exception will be set.
 //
-//go:linkname FileWriteString C.PyFile_WriteString
+//go:linkname FileWriteString PyFile_WriteString
 func FileWriteString(s *Char, p *Object) Int
 
 // PyObject * (*Py_OpenCodeHookFunction)(PyObject *, void *)

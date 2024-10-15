@@ -12,21 +12,21 @@ import (
 // Return true if *p* is a tuple object or an instance of a subtype of the
 // tuple type.  This function always succeeds.
 //
-//go:linkname TupleCheck C.PyTuple_Check
+//go:linkname TupleCheck PyTuple_Check
 func TupleCheck(p *Object) Int
 
 // int PyTuple_CheckExact(PyObject *p)
 // Return true if *p* is a tuple object, but not an instance of a subtype of the
 // tuple type.  This function always succeeds.
 //
-//go:linkname TupleCheckExact C.PyTuple_CheckExact
+//go:linkname TupleCheckExact PyTuple_CheckExact
 func TupleCheckExact(p *Object) Int
 
 // PyObject* PyTuple_New(Py_ssize_t len)
 // Return a new tuple object of size *len*,
 // or “NULL“ with an exception set on failure.
 //
-//go:linkname TupleNew C.PyTuple_New
+//go:linkname TupleNew PyTuple_New
 func TupleNew(len SSizeT) *Object
 
 // PyObject* PyTuple_Pack(Py_ssize_t n, ...)
@@ -35,20 +35,20 @@ func TupleNew(len SSizeT) *Object
 // are initialized to the subsequent *n* C arguments pointing to Python objects.
 // “PyTuple_Pack(2, a, b)“ is equivalent to “Py_BuildValue("(OO)", a, b)“.
 //
-//go:linkname TuplePack C.PyTuple_Pack
+//go:linkname TuplePack PyTuple_Pack
 func TuplePack(n SSizeT, __llgo_va_list ...any) *Object
 
 // Py_ssize_t PyTuple_Size(PyObject *p)
 // Take a pointer to a tuple object, and return the size of that tuple.
 // On error, return “-1“ and with an exception set.
 //
-//go:linkname TupleSize C.PyTuple_Size
+//go:linkname TupleSize PyTuple_Size
 func TupleSize(p *Object) SSizeT
 
 // Py_ssize_t PyTuple_GET_SIZE(PyObject *p)
 // Like :c:func:`PyTuple_Size`, but without error checking.
 //
-//go:linkname TupleGETSIZE C.PyTuple_GET_SIZE
+//go:linkname TupleGETSIZE PyTuple_GET_SIZE
 func TupleGETSIZE(p *Object) SSizeT
 
 // PyObject* PyTuple_GetItem(PyObject *p, Py_ssize_t pos)
@@ -61,13 +61,13 @@ func TupleGETSIZE(p *Object) SSizeT
 // :c:func:`Py_NewRef(PyTuple_GetItem(...)) <Py_NewRef>`
 // or :c:func:`PySequence_GetItem`.
 //
-//go:linkname TupleGetItem C.PyTuple_GetItem
+//go:linkname TupleGetItem PyTuple_GetItem
 func TupleGetItem(p *Object, pos SSizeT) *Object
 
 // PyObject* PyTuple_GET_ITEM(PyObject *p, Py_ssize_t pos)
 // Like :c:func:`PyTuple_GetItem`, but does no checking of its arguments.
 //
-//go:linkname TupleGETITEM C.PyTuple_GET_ITEM
+//go:linkname TupleGETITEM PyTuple_GET_ITEM
 func TupleGETITEM(p *Object, pos SSizeT) *Object
 
 // PyObject* PyTuple_GetSlice(PyObject *p, Py_ssize_t low, Py_ssize_t high)
@@ -77,7 +77,7 @@ func TupleGETITEM(p *Object, pos SSizeT) *Object
 // This is the equivalent of the Python expression “p[low:high]“.
 // Indexing from the end of the tuple is not supported.
 //
-//go:linkname TupleGetSlice C.PyTuple_GetSlice
+//go:linkname TupleGetSlice PyTuple_GetSlice
 func TupleGetSlice(p *Object, low SSizeT, high SSizeT) *Object
 
 // int PyTuple_SetItem(PyObject *p, Py_ssize_t pos, PyObject *o)
@@ -90,7 +90,7 @@ func TupleGetSlice(p *Object, low SSizeT, high SSizeT) *Object
 // This function "steals" a reference to *o* and discards a reference to
 // an item already in the tuple at the affected position.
 //
-//go:linkname TupleSetItem C.PyTuple_SetItem
+//go:linkname TupleSetItem PyTuple_SetItem
 func TupleSetItem(p *Object, pos SSizeT, o *Object) Int
 
 // void PyTuple_SET_ITEM(PyObject *p, Py_ssize_t pos, PyObject *o)
@@ -113,7 +113,7 @@ func TupleSetItem(p *Object, pos SSizeT, o *Object) Int
 // Using this macro on a tuple that is already in use (or in other words, has
 // a refcount > 1) could lead to undefined behavior.
 //
-//go:linkname TupleSETITEM C.PyTuple_SET_ITEM
+//go:linkname TupleSETITEM PyTuple_SET_ITEM
 func TupleSETITEM(p *Object, pos SSizeT, o *Object)
 
 // int _PyTuple_Resize(PyObject **p, Py_ssize_t newsize)
@@ -138,7 +138,7 @@ func TupleSETITEM(p *Object, pos SSizeT, o *Object)
 // To create a struct sequence, you first have to create a specific struct sequence
 // type.
 //
-//go:linkname TupleResize C._PyTuple_Resize
+//go:linkname TupleResize _PyTuple_Resize
 func TupleResize(p **Object, newsize SSizeT) Int
 
 // PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc)
@@ -147,20 +147,20 @@ func TupleResize(p **Object, newsize SSizeT) Int
 //
 // Return “NULL“ with an exception set on failure.
 //
-//go:linkname StructSequenceNewType C.PyStructSequence_NewType
+//go:linkname StructSequenceNewType PyStructSequence_NewType
 func StructSequenceNewType(desc *StructSequenceDesc) *TypeObject
 
 // void PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc)
 // Initializes a struct sequence type *type* from *desc* in place.
 //
-//go:linkname StructSequenceInitType C.PyStructSequence_InitType
+//go:linkname StructSequenceInitType PyStructSequence_InitType
 func StructSequenceInitType(type_ *TypeObject, desc *StructSequenceDesc)
 
 // int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc)
 // Like :c:func:`PyStructSequence_InitType`, but returns “0“ on success
 // and “-1“ with an exception set on failure.
 //
-//go:linkname StructSequenceInitType2 C.PyStructSequence_InitType2
+//go:linkname StructSequenceInitType2 PyStructSequence_InitType2
 func StructSequenceInitType2(type_ *TypeObject, desc *StructSequenceDesc) Int
 
 // PyObject* PyStructSequence_New(PyTypeObject *type)
@@ -169,7 +169,7 @@ func StructSequenceInitType2(type_ *TypeObject, desc *StructSequenceDesc) Int
 //
 // Return “NULL“ with an exception set on failure.
 //
-//go:linkname StructSequenceNew C.PyStructSequence_New
+//go:linkname StructSequenceNew PyStructSequence_New
 func StructSequenceNew(type_ *TypeObject) *Object
 
 // PyObject* PyStructSequence_GetItem(PyObject *p, Py_ssize_t pos)
@@ -178,7 +178,7 @@ func StructSequenceNew(type_ *TypeObject) *Object
 // Bounds checking is performed as an assertion if Python is built in
 // :ref:`debug mode <debug-build>` or :option:`with assertions <--with-assertions>`.
 //
-//go:linkname StructSequenceGetItem C.PyStructSequence_GetItem
+//go:linkname StructSequenceGetItem PyStructSequence_GetItem
 func StructSequenceGetItem(p *Object, pos SSizeT) *Object
 
 // PyObject* PyStructSequence_GET_ITEM(PyObject *p, Py_ssize_t pos)
@@ -186,7 +186,7 @@ func StructSequenceGetItem(p *Object, pos SSizeT) *Object
 //
 // Now implemented as an alias to :c:func:`PyStructSequence_GetItem`.
 //
-//go:linkname StructSequenceGETITEM C.PyStructSequence_GET_ITEM
+//go:linkname StructSequenceGETITEM PyStructSequence_GET_ITEM
 func StructSequenceGETITEM(p *Object, pos SSizeT) *Object
 
 // void PyStructSequence_SetItem(PyObject *p, Py_ssize_t pos, PyObject *o)
@@ -201,7 +201,7 @@ func StructSequenceGETITEM(p *Object, pos SSizeT) *Object
 //
 // This function "steals" a reference to *o*.
 //
-//go:linkname StructSequenceSetItem C.PyStructSequence_SetItem
+//go:linkname StructSequenceSetItem PyStructSequence_SetItem
 func StructSequenceSetItem(p *Object, pos SSizeT, o *Object)
 
 // void PyStructSequence_SET_ITEM(PyObject *p, Py_ssize_t *pos, PyObject *o)
@@ -209,7 +209,7 @@ func StructSequenceSetItem(p *Object, pos SSizeT, o *Object)
 //
 // Now implemented as an alias to :c:func:`PyStructSequence_SetItem`.
 //
-//go:linkname StructSequenceSETITEM C.PyStructSequence_SET_ITEM
+//go:linkname StructSequenceSETITEM PyStructSequence_SET_ITEM
 func StructSequenceSETITEM(p *Object, pos *SSizeT, o *Object)
 
 // PyTupleObject

@@ -12,14 +12,14 @@ import (
 // Return true if the object *o* is a bytes object or an instance of a subtype
 // of the bytes type.  This function always succeeds.
 //
-//go:linkname BytesCheck C.PyBytes_Check
+//go:linkname BytesCheck PyBytes_Check
 func BytesCheck(o *Object) Int
 
 // int PyBytes_CheckExact(PyObject *o)
 // Return true if the object *o* is a bytes object, but not an instance of a
 // subtype of the bytes type.  This function always succeeds.
 //
-//go:linkname BytesCheckExact C.PyBytes_CheckExact
+//go:linkname BytesCheckExact PyBytes_CheckExact
 func BytesCheckExact(o *Object) Int
 
 // PyObject* PyBytes_FromString(const char *v)
@@ -27,7 +27,7 @@ func BytesCheckExact(o *Object) Int
 // and “NULL“ on failure.  The parameter *v* must not be “NULL“; it will not be
 // checked.
 //
-//go:linkname BytesFromString C.PyBytes_FromString
+//go:linkname BytesFromString PyBytes_FromString
 func BytesFromString(v *Char) *Object
 
 // PyObject* PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
@@ -35,7 +35,7 @@ func BytesFromString(v *Char) *Object
 // *len* on success, and “NULL“ on failure.  If *v* is “NULL“, the contents of
 // the bytes object are uninitialized.
 //
-//go:linkname BytesFromStringAndSize C.PyBytes_FromStringAndSize
+//go:linkname BytesFromStringAndSize PyBytes_FromStringAndSize
 func BytesFromStringAndSize(v *Char, len SSizeT) *Object
 
 // PyObject* PyBytes_FromFormat(const char *format, ...)
@@ -100,26 +100,26 @@ func BytesFromStringAndSize(v *Char, len SSizeT) *Object
 // .. [1] For integer specifiers (d, u, ld, lu, zd, zu, i, x): the 0-conversion
 // flag has effect even when a precision is given.
 //
-//go:linkname BytesFromFormat C.PyBytes_FromFormat
+//go:linkname BytesFromFormat PyBytes_FromFormat
 func BytesFromFormat(format *Char, __llgo_va_list ...any) *Object
 
 // PyObject* PyBytes_FromObject(PyObject *o)
 // Return the bytes representation of object *o* that implements the buffer
 // protocol.
 //
-//go:linkname BytesFromObject C.PyBytes_FromObject
+//go:linkname BytesFromObject PyBytes_FromObject
 func BytesFromObject(o *Object) *Object
 
 // Py_ssize_t PyBytes_Size(PyObject *o)
 // Return the length of the bytes in bytes object *o*.
 //
-//go:linkname BytesSize C.PyBytes_Size
+//go:linkname BytesSize PyBytes_Size
 func BytesSize(o *Object) SSizeT
 
 // Py_ssize_t PyBytes_GET_SIZE(PyObject *o)
 // Similar to :c:func:`PyBytes_Size`, but without error checking.
 //
-//go:linkname BytesGETSIZE C.PyBytes_GET_SIZE
+//go:linkname BytesGETSIZE PyBytes_GET_SIZE
 func BytesGETSIZE(o *Object) SSizeT
 
 // char* PyBytes_AsString(PyObject *o)
@@ -132,13 +132,13 @@ func BytesGETSIZE(o *Object) SSizeT
 // *o* is not a bytes object at all, :c:func:`PyBytes_AsString` returns “NULL“
 // and raises :exc:`TypeError`.
 //
-//go:linkname BytesAsString C.PyBytes_AsString
+//go:linkname BytesAsString PyBytes_AsString
 func BytesAsString(o *Object) *Char
 
 // char* PyBytes_AS_STRING(PyObject *string)
 // Similar to :c:func:`PyBytes_AsString`, but without error checking.
 //
-//go:linkname BytesASSTRING C.PyBytes_AS_STRING
+//go:linkname BytesASSTRING PyBytes_AS_STRING
 func BytesASSTRING(string_ *Object) *Char
 
 // int PyBytes_AsStringAndSize(PyObject *obj, char **buffer, Py_ssize_t *length)
@@ -160,7 +160,7 @@ func BytesASSTRING(string_ *Object) *Char
 // Previously, :exc:`TypeError` was raised when embedded null bytes were
 // encountered in the bytes object.
 //
-//go:linkname BytesAsStringAndSize C.PyBytes_AsStringAndSize
+//go:linkname BytesAsStringAndSize PyBytes_AsStringAndSize
 func BytesAsStringAndSize(obj *Object, buffer **Char, length *SSizeT) Int
 
 // void PyBytes_Concat(PyObject **bytes, PyObject *newpart)
@@ -170,7 +170,7 @@ func BytesAsStringAndSize(obj *Object, buffer **Char, length *SSizeT) Int
 // created, the old reference to *bytes* will still be discarded and the value
 // of *\*bytes* will be set to “NULL“; the appropriate exception will be set.
 //
-//go:linkname BytesConcat C.PyBytes_Concat
+//go:linkname BytesConcat PyBytes_Concat
 func BytesConcat(bytes **Object, newpart *Object)
 
 // void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart)
@@ -178,7 +178,7 @@ func BytesConcat(bytes **Object, newpart *Object)
 // appended to *bytes*.  This version releases the :term:`strong reference`
 // to *newpart* (i.e. decrements its reference count).
 //
-//go:linkname BytesConcatAndDel C.PyBytes_ConcatAndDel
+//go:linkname BytesConcatAndDel PyBytes_ConcatAndDel
 func BytesConcatAndDel(bytes **Object, newpart *Object)
 
 // int _PyBytes_Resize(PyObject **bytes, Py_ssize_t newsize)
@@ -193,7 +193,7 @@ func BytesConcatAndDel(bytes **Object, newpart *Object)
 // *\*bytes* is set to “NULL“, :exc:`MemoryError` is set, and “-1“ is
 // returned.
 //
-//go:linkname BytesResize C._PyBytes_Resize
+//go:linkname BytesResize _PyBytes_Resize
 func BytesResize(bytes **Object, newsize SSizeT) Int
 
 // PyBytesObject

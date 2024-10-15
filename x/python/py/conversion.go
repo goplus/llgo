@@ -12,7 +12,7 @@ import (
 // Output not more than *size* bytes to *str* according to the format string
 // *format* and the extra arguments. See the Unix man page :manpage:`snprintf(3)`.
 //
-//go:linkname OSSnprintf C.PyOS_snprintf
+//go:linkname OSSnprintf PyOS_snprintf
 func OSSnprintf(str *Char, size Ulong, format *Char, __llgo_va_list ...any) Int
 
 // unsigned long PyOS_strtoul(const char *str, char **ptr, int base)
@@ -33,7 +33,7 @@ func OSSnprintf(str *Char, size Ulong, format *Char, __llgo_va_list ...any) Int
 //
 // See also the Unix man page :manpage:`strtoul(3)`.
 //
-//go:linkname OSStrtoul C.PyOS_strtoul
+//go:linkname OSStrtoul PyOS_strtoul
 func OSStrtoul(str *Char, ptr **Char, base Int) Ulong
 
 // long PyOS_strtol(const char *str, char **ptr, int base)
@@ -46,7 +46,7 @@ func OSStrtoul(str *Char, ptr **Char, base Int) Ulong
 //
 // See also the Unix man page :manpage:`strtol(3)`.
 //
-//go:linkname OSStrtol C.PyOS_strtol
+//go:linkname OSStrtol PyOS_strtol
 func OSStrtol(str *Char, ptr **Char, base Int) Long
 
 // double PyOS_string_to_double(const char *s, char **endptr, PyObject *overflow_exception)
@@ -79,7 +79,7 @@ func OSStrtol(str *Char, ptr **Char, base Int) Long
 // out-of-memory error), set the appropriate Python exception and
 // return “-1.0“.
 //
-//go:linkname OSStringToDouble C.PyOS_string_to_double
+//go:linkname OSStringToDouble PyOS_string_to_double
 func OSStringToDouble(s *Char, endptr **Char, overflowException *Object) Double
 
 // char* PyOS_double_to_string(double val, char format_code, int precision, int flags, int *ptype)
@@ -112,19 +112,19 @@ func OSStringToDouble(s *Char, endptr **Char, overflowException *Object) Double
 // “NULL“ if the conversion failed. The caller is responsible for freeing the
 // returned string by calling :c:func:`PyMem_Free`.
 //
-//go:linkname OSDoubleToString C.PyOS_double_to_string
+//go:linkname OSDoubleToString PyOS_double_to_string
 func OSDoubleToString(val Double, formatCode Char, precision Int, flags Int, ptype *Int) *Char
 
 // int PyOS_stricmp(const char *s1, const char *s2)
 // Case insensitive comparison of strings. The function works almost
 // identically to :c:func:`!strcmp` except that it ignores the case.
 //
-//go:linkname OSStricmp C.PyOS_stricmp
+//go:linkname OSStricmp PyOS_stricmp
 func OSStricmp(s1 *Char, s2 *Char) Int
 
 // int PyOS_strnicmp(const char *s1, const char *s2, Py_ssize_t  size)
 // Case insensitive comparison of strings. The function works almost
 // identically to :c:func:`!strncmp` except that it ignores the case.
 //
-//go:linkname OSStrnicmp C.PyOS_strnicmp
+//go:linkname OSStrnicmp PyOS_strnicmp
 func OSStrnicmp(s1 *Char, s2 *Char, size SSizeT) Int

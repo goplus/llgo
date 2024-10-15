@@ -12,27 +12,27 @@ import (
 // Return true if its argument is a :c:type:`PyFloatObject` or a subtype of
 // :c:type:`PyFloatObject`.  This function always succeeds.
 //
-//go:linkname FloatCheck C.PyFloat_Check
+//go:linkname FloatCheck PyFloat_Check
 func FloatCheck(p *Object) Int
 
 // int PyFloat_CheckExact(PyObject *p)
 // Return true if its argument is a :c:type:`PyFloatObject`, but not a subtype of
 // :c:type:`PyFloatObject`.  This function always succeeds.
 //
-//go:linkname FloatCheckExact C.PyFloat_CheckExact
+//go:linkname FloatCheckExact PyFloat_CheckExact
 func FloatCheckExact(p *Object) Int
 
 // PyObject* PyFloat_FromString(PyObject *str)
 // Create a :c:type:`PyFloatObject` object based on the string value in *str*, or
 // “NULL“ on failure.
 //
-//go:linkname FloatFromString C.PyFloat_FromString
+//go:linkname FloatFromString PyFloat_FromString
 func FloatFromString(str *Object) *Object
 
 // PyObject* PyFloat_FromDouble(double v)
 // Create a :c:type:`PyFloatObject` object from *v*, or “NULL“ on failure.
 //
-//go:linkname FloatFromDouble C.PyFloat_FromDouble
+//go:linkname FloatFromDouble PyFloat_FromDouble
 func FloatFromDouble(v Double) *Object
 
 // double PyFloat_AsDouble(PyObject *pyfloat)
@@ -45,14 +45,14 @@ func FloatFromDouble(v Double) *Object
 //
 // Use :meth:`~object.__index__` if available.
 //
-//go:linkname FloatAsDouble C.PyFloat_AsDouble
+//go:linkname FloatAsDouble PyFloat_AsDouble
 func FloatAsDouble(pyfloat *Object) Double
 
 // double PyFloat_AS_DOUBLE(PyObject *pyfloat)
 // Return a C :c:expr:`double` representation of the contents of *pyfloat*, but
 // without error checking.
 //
-//go:linkname FloatASDOUBLE C.PyFloat_AS_DOUBLE
+//go:linkname FloatASDOUBLE PyFloat_AS_DOUBLE
 func FloatASDOUBLE(pyfloat *Object) Double
 
 // PyObject* PyFloat_GetInfo(void)
@@ -60,13 +60,13 @@ func FloatASDOUBLE(pyfloat *Object) Double
 // precision, minimum and maximum values of a float. It's a thin wrapper
 // around the header file :file:`float.h`.
 //
-//go:linkname FloatGetInfo C.PyFloat_GetInfo
+//go:linkname FloatGetInfo PyFloat_GetInfo
 func FloatGetInfo() *Object
 
 // double PyFloat_GetMax()
 // Return the maximum representable finite float *DBL_MAX* as C :c:expr:`double`.
 //
-//go:linkname FloatGetMax C.PyFloat_GetMax
+//go:linkname FloatGetMax PyFloat_GetMax
 func FloatGetMax() Double
 
 // double PyFloat_GetMin()
@@ -113,19 +113,19 @@ func FloatGetMax() Double
 // * What this does is undefined if *x* is a NaN or infinity.
 // * “-0.0“ and “+0.0“ produce the same bytes string.
 //
-//go:linkname FloatGetMin C.PyFloat_GetMin
+//go:linkname FloatGetMin PyFloat_GetMin
 func FloatGetMin() Double
 
 // int PyFloat_Pack2(double x, unsigned char *p, int le)
 // Pack a C double as the IEEE 754 binary16 half-precision format.
 //
-//go:linkname FloatPack2 C.PyFloat_Pack2
+//go:linkname FloatPack2 PyFloat_Pack2
 func FloatPack2(x Double, p *Uchar, le Int) Int
 
 // int PyFloat_Pack4(double x, unsigned char *p, int le)
 // Pack a C double as the IEEE 754 binary32 single precision format.
 //
-//go:linkname FloatPack4 C.PyFloat_Pack4
+//go:linkname FloatPack4 PyFloat_Pack4
 func FloatPack4(x Double, p *Uchar, le Int) Int
 
 // int PyFloat_Pack8(double x, unsigned char *p, int le)
@@ -148,25 +148,25 @@ func FloatPack4(x Double, p *Uchar, le Int) Int
 // Note that on a non-IEEE platform this will refuse to unpack a bytes string that
 // represents a NaN or infinity.
 //
-//go:linkname FloatPack8 C.PyFloat_Pack8
+//go:linkname FloatPack8 PyFloat_Pack8
 func FloatPack8(x Double, p *Uchar, le Int) Int
 
 // double PyFloat_Unpack2(const unsigned char *p, int le)
 // Unpack the IEEE 754 binary16 half-precision format as a C double.
 //
-//go:linkname FloatUnpack2 C.PyFloat_Unpack2
+//go:linkname FloatUnpack2 PyFloat_Unpack2
 func FloatUnpack2(p *Uchar, le Int) Double
 
 // double PyFloat_Unpack4(const unsigned char *p, int le)
 // Unpack the IEEE 754 binary32 single precision format as a C double.
 //
-//go:linkname FloatUnpack4 C.PyFloat_Unpack4
+//go:linkname FloatUnpack4 PyFloat_Unpack4
 func FloatUnpack4(p *Uchar, le Int) Double
 
 // double PyFloat_Unpack8(const unsigned char *p, int le)
 // Unpack the IEEE 754 binary64 double precision format as a C double.
 //
-//go:linkname FloatUnpack8 C.PyFloat_Unpack8
+//go:linkname FloatUnpack8 PyFloat_Unpack8
 func FloatUnpack8(p *Uchar, le Int) Double
 
 // PyFloatObject

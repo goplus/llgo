@@ -12,19 +12,19 @@ import (
 // Return non-zero if *ob* is either a reference or proxy object.  This function
 // always succeeds.
 //
-//go:linkname WeakrefCheck C.PyWeakref_Check
+//go:linkname WeakrefCheck PyWeakref_Check
 func WeakrefCheck(ob *Object) Int
 
 // int PyWeakref_CheckRef(PyObject *ob)
 // Return non-zero if *ob* is a reference object.  This function always succeeds.
 //
-//go:linkname WeakrefCheckRef C.PyWeakref_CheckRef
+//go:linkname WeakrefCheckRef PyWeakref_CheckRef
 func WeakrefCheckRef(ob *Object) Int
 
 // int PyWeakref_CheckProxy(PyObject *ob)
 // Return non-zero if *ob* is a proxy object.  This function always succeeds.
 //
-//go:linkname WeakrefCheckProxy C.PyWeakref_CheckProxy
+//go:linkname WeakrefCheckProxy PyWeakref_CheckProxy
 func WeakrefCheckProxy(ob *Object) Int
 
 // PyObject* PyWeakref_NewRef(PyObject *ob, PyObject *callback)
@@ -37,7 +37,7 @@ func WeakrefCheckProxy(ob *Object) Int
 // weakly referenceable object, or if *callback* is not callable, “None“, or
 // “NULL“, this will return “NULL“ and raise :exc:`TypeError`.
 //
-//go:linkname WeakrefNewRef C.PyWeakref_NewRef
+//go:linkname WeakrefNewRef PyWeakref_NewRef
 func WeakrefNewRef(ob *Object, callback *Object) *Object
 
 // PyObject* PyWeakref_NewProxy(PyObject *ob, PyObject *callback)
@@ -50,7 +50,7 @@ func WeakrefNewRef(ob *Object, callback *Object) *Object
 // is not a weakly referenceable object, or if *callback* is not callable,
 // “None“, or “NULL“, this will return “NULL“ and raise :exc:`TypeError`.
 //
-//go:linkname WeakrefNewProxy C.PyWeakref_NewProxy
+//go:linkname WeakrefNewProxy PyWeakref_NewProxy
 func WeakrefNewProxy(ob *Object, callback *Object) *Object
 
 // PyObject* PyWeakref_GetObject(PyObject *ref)
@@ -67,7 +67,7 @@ func WeakrefNewProxy(ob *Object, callback *Object) *Object
 // .. deprecated-removed:: 3.13 3.15
 // Use :c:func:`PyWeakref_GetRef` instead.
 //
-//go:linkname WeakrefGetObject C.PyWeakref_GetObject
+//go:linkname WeakrefGetObject PyWeakref_GetObject
 func WeakrefGetObject(ref *Object) *Object
 
 // PyObject* PyWeakref_GET_OBJECT(PyObject *ref)
@@ -76,7 +76,7 @@ func WeakrefGetObject(ref *Object) *Object
 // .. deprecated-removed:: 3.13 3.15
 // Use :c:func:`PyWeakref_GetRef` instead.
 //
-//go:linkname WeakrefGETOBJECT C.PyWeakref_GET_OBJECT
+//go:linkname WeakrefGETOBJECT PyWeakref_GET_OBJECT
 func WeakrefGETOBJECT(ref *Object) *Object
 
 // void PyObject_ClearWeakRefs(PyObject *object)
@@ -87,5 +87,5 @@ func WeakrefGETOBJECT(ref *Object) *Object
 // for those references which have one. It returns when all callbacks have
 // been attempted.
 //
-//go:linkname ObjectClearWeakRefs C.PyObject_ClearWeakRefs
+//go:linkname ObjectClearWeakRefs PyObject_ClearWeakRefs
 func ObjectClearWeakRefs(object *Object)

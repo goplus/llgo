@@ -7,7 +7,6 @@ package py
 */
 import "C"
 import (
-	"unsafe"
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -58,15 +57,3 @@ const (
 )
 
 type GILStateSTATE = C.PyGILState_STATE
-
-func None() *Object {
-	return (*Object)(unsafe.Pointer(&C._Py_NoneStruct))
-}
-
-func True() *Object {
-	return (*Object)(unsafe.Pointer(&C._Py_TrueStruct))
-}
-
-func False() *Object {
-	return (*Object)(unsafe.Pointer(&C._Py_FalseStruct))
-}

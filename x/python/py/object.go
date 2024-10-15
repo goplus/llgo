@@ -15,7 +15,7 @@ import (
 //
 // *constant_id* must be one of these constant identifiers:
 //
-//go:linkname GetConstant C.Py_GetConstant
+//go:linkname GetConstant Py_GetConstant
 func GetConstant(constantId Uint) *Object
 
 // int PyObject_Print(PyObject *o, FILE *fp, int flags)
@@ -24,7 +24,7 @@ func GetConstant(constantId Uint) *Object
 // is :c:macro:`Py_PRINT_RAW`; if given, the :func:`str` of the object is written
 // instead of the :func:`repr`.
 //
-//go:linkname ObjectPrint C.PyObject_Print
+//go:linkname ObjectPrint PyObject_Print
 func ObjectPrint(o *Object, fp FilePtr, flags Int) Int
 
 // int PyObject_HasAttr(PyObject *o, PyObject *attr_name)
@@ -38,7 +38,7 @@ func ObjectPrint(o *Object, fp FilePtr, flags Int) Int
 // For proper error handling, use :c:func:`PyObject_HasAttrWithError`,
 // :c:func:`PyObject_GetOptionalAttr` or :c:func:`PyObject_GetAttr` instead.
 //
-//go:linkname ObjectHasAttr C.PyObject_HasAttr
+//go:linkname ObjectHasAttr PyObject_HasAttr
 func ObjectHasAttr(o *Object, attrName *Object) Int
 
 // int PyObject_HasAttrString(PyObject *o, const char *attr_name)
@@ -55,7 +55,7 @@ func ObjectHasAttr(o *Object, attrName *Object) Int
 // :c:func:`PyObject_GetOptionalAttrString`
 // or :c:func:`PyObject_GetAttrString` instead.
 //
-//go:linkname ObjectHasAttrString C.PyObject_HasAttrString
+//go:linkname ObjectHasAttrString PyObject_HasAttrString
 func ObjectHasAttrString(o *Object, attrName *Char) Int
 
 // PyObject* PyObject_GetAttr(PyObject *o, PyObject *attr_name)
@@ -66,7 +66,7 @@ func ObjectHasAttrString(o *Object, attrName *Char) Int
 // If the missing attribute should not be treated as a failure, you can use
 // :c:func:`PyObject_GetOptionalAttr` instead.
 //
-//go:linkname ObjectGetAttr C.PyObject_GetAttr
+//go:linkname ObjectGetAttr PyObject_GetAttr
 func ObjectGetAttr(o *Object, attrName *Object) *Object
 
 // PyObject* PyObject_GetAttrString(PyObject *o, const char *attr_name)
@@ -77,7 +77,7 @@ func ObjectGetAttr(o *Object, attrName *Object) *Object
 // If the missing attribute should not be treated as a failure, you can use
 // :c:func:`PyObject_GetOptionalAttrString` instead.
 //
-//go:linkname ObjectGetAttrString C.PyObject_GetAttrString
+//go:linkname ObjectGetAttrString PyObject_GetAttrString
 func ObjectGetAttrString(o *Object, attrName *Char) *Object
 
 // PyObject* PyObject_GenericGetAttr(PyObject *o, PyObject *name)
@@ -88,7 +88,7 @@ func ObjectGetAttrString(o *Object, attrName *Char) *Object
 // data descriptors take preference over instance attributes, while non-data
 // descriptors don't.  Otherwise, an :exc:`AttributeError` is raised.
 //
-//go:linkname ObjectGenericGetAttr C.PyObject_GenericGetAttr
+//go:linkname ObjectGenericGetAttr PyObject_GenericGetAttr
 func ObjectGenericGetAttr(o *Object, name *Object) *Object
 
 // int PyObject_SetAttr(PyObject *o, PyObject *attr_name, PyObject *v)
@@ -101,7 +101,7 @@ func ObjectGenericGetAttr(o *Object, name *Object) *Object
 // in favour of using :c:func:`PyObject_DelAttr`, but there are currently no
 // plans to remove it.
 //
-//go:linkname ObjectSetAttr C.PyObject_SetAttr
+//go:linkname ObjectSetAttr PyObject_SetAttr
 func ObjectSetAttr(o *Object, attrName *Object, v *Object) Int
 
 // int PyObject_SetAttrString(PyObject *o, const char *attr_name, PyObject *v)
@@ -120,7 +120,7 @@ func ObjectSetAttr(o *Object, attrName *Object, v *Object) Int
 // For more details, see :c:func:`PyUnicode_InternFromString`, which may be
 // used internally to create a key object.
 //
-//go:linkname ObjectSetAttrString C.PyObject_SetAttrString
+//go:linkname ObjectSetAttrString PyObject_SetAttrString
 func ObjectSetAttrString(o *Object, attrName *Char, v *Object) Int
 
 // int PyObject_GenericSetAttr(PyObject *o, PyObject *name, PyObject *value)
@@ -133,14 +133,14 @@ func ObjectSetAttrString(o *Object, attrName *Char, v *Object) Int
 // On success, “0“ is returned, otherwise an :exc:`AttributeError`
 // is raised and “-1“ is returned.
 //
-//go:linkname ObjectGenericSetAttr C.PyObject_GenericSetAttr
+//go:linkname ObjectGenericSetAttr PyObject_GenericSetAttr
 func ObjectGenericSetAttr(o *Object, name *Object, value *Object) Int
 
 // int PyObject_DelAttr(PyObject *o, PyObject *attr_name)
 // Delete attribute named *attr_name*, for object *o*. Returns “-1“ on failure.
 // This is the equivalent of the Python statement “del o.attr_name“.
 //
-//go:linkname ObjectDelAttr C.PyObject_DelAttr
+//go:linkname ObjectDelAttr PyObject_DelAttr
 func ObjectDelAttr(o *Object, attrName *Object) Int
 
 // int PyObject_DelAttrString(PyObject *o, const char *attr_name)
@@ -156,7 +156,7 @@ func ObjectDelAttr(o *Object, attrName *Object) Int
 // For more details, see :c:func:`PyUnicode_InternFromString`, which may be
 // used internally to create a key object for lookup.
 //
-//go:linkname ObjectDelAttrString C.PyObject_DelAttrString
+//go:linkname ObjectDelAttrString PyObject_DelAttrString
 func ObjectDelAttrString(o *Object, attrName *Char) Int
 
 // PyObject* PyObject_GenericGetDict(PyObject *o, void *context)
@@ -171,14 +171,14 @@ func ObjectDelAttrString(o *Object, attrName *Char) Int
 //
 // On failure, returns “NULL“ with an exception set.
 //
-//go:linkname ObjectGenericGetDict C.PyObject_GenericGetDict
+//go:linkname ObjectGenericGetDict PyObject_GenericGetDict
 func ObjectGenericGetDict(o *Object, context Pointer) *Object
 
 // int PyObject_GenericSetDict(PyObject *o, PyObject *value, void *context)
 // A generic implementation for the setter of a “__dict__“ descriptor. This
 // implementation does not allow the dictionary to be deleted.
 //
-//go:linkname ObjectGenericSetDict C.PyObject_GenericSetDict
+//go:linkname ObjectGenericSetDict PyObject_GenericSetDict
 func ObjectGenericSetDict(o *Object, value *Object, context Pointer) Int
 
 // PyObject** _PyObject_GetDictPtr(PyObject *obj)
@@ -189,7 +189,7 @@ func ObjectGenericSetDict(o *Object, value *Object, context Pointer) Int
 // dictionary, so it may be more efficient to call :c:func:`PyObject_GetAttr`
 // when accessing an attribute on the object.
 //
-//go:linkname ObjectGetDictPtr C._PyObject_GetDictPtr
+//go:linkname ObjectGetDictPtr _PyObject_GetDictPtr
 func ObjectGetDictPtr(obj *Object) **Object
 
 // PyObject* PyObject_RichCompare(PyObject *o1, PyObject *o2, int opid)
@@ -200,7 +200,7 @@ func ObjectGetDictPtr(obj *Object) **Object
 // the Python expression “o1 op o2“, where “op“ is the operator corresponding
 // to *opid*. Returns the value of the comparison on success, or “NULL“ on failure.
 //
-//go:linkname ObjectRichCompare C.PyObject_RichCompare
+//go:linkname ObjectRichCompare PyObject_RichCompare
 func ObjectRichCompare(o1 *Object, o2 *Object, opid Int) *Object
 
 // int PyObject_RichCompareBool(PyObject *o1, PyObject *o2, int opid)
@@ -212,7 +212,7 @@ func ObjectRichCompare(o1 *Object, o2 *Object, opid Int) *Object
 // If *o1* and *o2* are the same object, :c:func:`PyObject_RichCompareBool`
 // will always return “1“ for :c:macro:`Py_EQ` and “0“ for :c:macro:`Py_NE`.
 //
-//go:linkname ObjectRichCompareBool C.PyObject_RichCompareBool
+//go:linkname ObjectRichCompareBool PyObject_RichCompareBool
 func ObjectRichCompareBool(o1 *Object, o2 *Object, opid Int) Int
 
 // PyObject* PyObject_Format(PyObject *obj, PyObject *format_spec)
@@ -223,7 +223,7 @@ func ObjectRichCompareBool(o1 *Object, o2 *Object, opid Int) Int
 // to “format(obj)“.
 // Returns the formatted string on success, “NULL“ on failure.
 //
-//go:linkname ObjectFormat C.PyObject_Format
+//go:linkname ObjectFormat PyObject_Format
 func ObjectFormat(obj *Object, formatSpec *Object) *Object
 
 // PyObject* PyObject_Repr(PyObject *o)
@@ -236,7 +236,7 @@ func ObjectFormat(obj *Object, formatSpec *Object) *Object
 // This function now includes a debug assertion to help ensure that it
 // does not silently discard an active exception.
 //
-//go:linkname ObjectRepr C.PyObject_Repr
+//go:linkname ObjectRepr PyObject_Repr
 func ObjectRepr(o *Object) *Object
 
 // PyObject* PyObject_ASCII(PyObject *o)
@@ -250,7 +250,7 @@ func ObjectRepr(o *Object) *Object
 //
 // .. index:: string; PyObject_Str (C function)
 //
-//go:linkname ObjectASCII C.PyObject_ASCII
+//go:linkname ObjectASCII PyObject_ASCII
 func ObjectASCII(o *Object) *Object
 
 // PyObject* PyObject_Str(PyObject *o)
@@ -262,7 +262,7 @@ func ObjectASCII(o *Object) *Object
 // This function now includes a debug assertion to help ensure that it
 // does not silently discard an active exception.
 //
-//go:linkname ObjectStr C.PyObject_Str
+//go:linkname ObjectStr PyObject_Str
 func ObjectStr(o *Object) *Object
 
 // PyObject* PyObject_Bytes(PyObject *o)
@@ -274,7 +274,7 @@ func ObjectStr(o *Object) *Object
 // a TypeError is raised when *o* is an integer instead of a zero-initialized
 // bytes object.
 //
-//go:linkname ObjectBytes C.PyObject_Bytes
+//go:linkname ObjectBytes PyObject_Bytes
 func ObjectBytes(o *Object) *Object
 
 // int PyObject_IsSubclass(PyObject *derived, PyObject *cls)
@@ -294,7 +294,7 @@ func ObjectBytes(o *Object) *Object
 // class, are considered classes.  However, objects can override this by having
 // a :attr:`~type.__bases__` attribute (which must be a tuple of base classes).
 //
-//go:linkname ObjectIsSubclass C.PyObject_IsSubclass
+//go:linkname ObjectIsSubclass PyObject_IsSubclass
 func ObjectIsSubclass(derived *Object, cls *Object) Int
 
 // int PyObject_IsInstance(PyObject *inst, PyObject *cls)
@@ -316,7 +316,7 @@ func ObjectIsSubclass(derived *Object, cls *Object) Int
 // classes are, by having a :attr:`~type.__bases__` attribute (which must be a tuple
 // of base classes).
 //
-//go:linkname ObjectIsInstance C.PyObject_IsInstance
+//go:linkname ObjectIsInstance PyObject_IsInstance
 func ObjectIsInstance(inst *Object, cls *Object) Int
 
 // Py_hash_t PyObject_Hash(PyObject *o)
@@ -328,7 +328,7 @@ func ObjectIsInstance(inst *Object, cls *Object) Int
 // The return type is now Py_hash_t.  This is a signed integer the same size
 // as :c:type:`Py_ssize_t`.
 //
-//go:linkname ObjectHash C.PyObject_Hash
+//go:linkname ObjectHash PyObject_Hash
 func ObjectHash(o *Object) HashT
 
 // Py_hash_t PyObject_HashNotImplemented(PyObject *o)
@@ -337,7 +337,7 @@ func ObjectHash(o *Object) HashT
 // allowing a type to explicitly indicate to the interpreter that it is not
 // hashable.
 //
-//go:linkname ObjectHashNotImplemented C.PyObject_HashNotImplemented
+//go:linkname ObjectHashNotImplemented PyObject_HashNotImplemented
 func ObjectHashNotImplemented(o *Object) HashT
 
 // int PyObject_IsTrue(PyObject *o)
@@ -345,7 +345,7 @@ func ObjectHashNotImplemented(o *Object) HashT
 // This is equivalent to the Python expression “not not o“.  On failure, return
 // “-1“.
 //
-//go:linkname ObjectIsTrue C.PyObject_IsTrue
+//go:linkname ObjectIsTrue PyObject_IsTrue
 func ObjectIsTrue(o *Object) Int
 
 // int PyObject_Not(PyObject *o)
@@ -353,7 +353,7 @@ func ObjectIsTrue(o *Object) Int
 // This is equivalent to the Python expression “not o“.  On failure, return
 // “-1“.
 //
-//go:linkname ObjectNot C.PyObject_Not
+//go:linkname ObjectNot PyObject_Not
 func ObjectNot(o *Object) Int
 
 // PyObject* PyObject_Type(PyObject *o)
@@ -368,14 +368,14 @@ func ObjectNot(o *Object) Int
 // pointer of type :c:expr:`PyTypeObject*`, except when a new
 // :term:`strong reference` is needed.
 //
-//go:linkname ObjectType C.PyObject_Type
+//go:linkname ObjectType PyObject_Type
 func ObjectType(o *Object) *Object
 
 // int PyObject_TypeCheck(PyObject *o, PyTypeObject *type)
 // Return non-zero if the object *o* is of type *type* or a subtype of *type*, and
 // “0“ otherwise.  Both parameters must be non-“NULL“.
 //
-//go:linkname ObjectTypeCheck C.PyObject_TypeCheck
+//go:linkname ObjectTypeCheck PyObject_TypeCheck
 func ObjectTypeCheck(o *Object, type_ *TypeObject) Int
 
 // Py_ssize_t PyObject_Size(PyObject *o)
@@ -387,7 +387,7 @@ func ObjectTypeCheck(o *Object, type_ *TypeObject) Int
 // and mapping protocols, the sequence length is returned.  On error, “-1“ is
 // returned.  This is the equivalent to the Python expression “len(o)“.
 //
-//go:linkname ObjectSize C.PyObject_Size
+//go:linkname ObjectSize PyObject_Size
 func ObjectSize(o *Object) SSizeT
 
 // Py_ssize_t PyObject_LengthHint(PyObject *o, Py_ssize_t defaultvalue)
@@ -396,14 +396,14 @@ func ObjectSize(o *Object) SSizeT
 // finally return the default value. On error return “-1“. This is the
 // equivalent to the Python expression “operator.length_hint(o, defaultvalue)“.
 //
-//go:linkname ObjectLengthHint C.PyObject_LengthHint
+//go:linkname ObjectLengthHint PyObject_LengthHint
 func ObjectLengthHint(o *Object, defaultvalue SSizeT) SSizeT
 
 // PyObject* PyObject_GetItem(PyObject *o, PyObject *key)
 // Return element of *o* corresponding to the object *key* or “NULL“ on failure.
 // This is the equivalent of the Python expression “o[key]“.
 //
-//go:linkname ObjectGetItem C.PyObject_GetItem
+//go:linkname ObjectGetItem PyObject_GetItem
 func ObjectGetItem(o *Object, key *Object) *Object
 
 // int PyObject_SetItem(PyObject *o, PyObject *key, PyObject *v)
@@ -412,14 +412,14 @@ func ObjectGetItem(o *Object, key *Object) *Object
 // equivalent of the Python statement “o[key] = v“.  This function *does
 // not* steal a reference to *v*.
 //
-//go:linkname ObjectSetItem C.PyObject_SetItem
+//go:linkname ObjectSetItem PyObject_SetItem
 func ObjectSetItem(o *Object, key *Object, v *Object) Int
 
 // int PyObject_DelItem(PyObject *o, PyObject *key)
 // Remove the mapping for the object *key* from the object *o*.  Return “-1“
 // on failure.  This is equivalent to the Python statement “del o[key]“.
 //
-//go:linkname ObjectDelItem C.PyObject_DelItem
+//go:linkname ObjectDelItem PyObject_DelItem
 func ObjectDelItem(o *Object, key *Object) Int
 
 // PyObject* PyObject_Dir(PyObject *o)
@@ -429,7 +429,7 @@ func ObjectDelItem(o *Object, key *Object) Int
 // returning the names of the current locals; in this case, if no execution frame
 // is active then “NULL“ is returned but :c:func:`PyErr_Occurred` will return false.
 //
-//go:linkname ObjectDir C.PyObject_Dir
+//go:linkname ObjectDir PyObject_Dir
 func ObjectDir(o *Object) *Object
 
 // PyObject* PyObject_GetIter(PyObject *o)
@@ -438,7 +438,7 @@ func ObjectDir(o *Object) *Object
 // an iterator.  Raises :exc:`TypeError` and returns “NULL“ if the object cannot be
 // iterated.
 //
-//go:linkname ObjectGetIter C.PyObject_GetIter
+//go:linkname ObjectGetIter PyObject_GetIter
 func ObjectGetIter(o *Object) *Object
 
 // PyObject* PyObject_GetAIter(PyObject *o)
@@ -448,7 +448,7 @@ func ObjectGetIter(o *Object) *Object
 // :class:`AsyncIterator`, this returns itself. Raises :exc:`TypeError` and
 // returns “NULL“ if the object cannot be iterated.
 //
-//go:linkname ObjectGetAIter C.PyObject_GetAIter
+//go:linkname ObjectGetAIter PyObject_GetAIter
 func ObjectGetAIter(o *Object) *Object
 
 // void *PyObject_GetTypeData(PyObject *o, PyTypeObject *cls)
@@ -460,7 +460,7 @@ func ObjectGetAIter(o *Object) *Object
 //
 // On error, set an exception and return “NULL“.
 //
-//go:linkname ObjectGetTypeData C.PyObject_GetTypeData
+//go:linkname ObjectGetTypeData PyObject_GetTypeData
 func ObjectGetTypeData(o *Object, cls *TypeObject) Pointer
 
 // Py_ssize_t PyType_GetTypeDataSize(PyTypeObject *cls)
@@ -476,7 +476,7 @@ func ObjectGetTypeData(o *Object, cls *TypeObject) Pointer
 //
 // On error, set an exception and return a negative value.
 //
-//go:linkname TypeGetTypeDataSize C.PyType_GetTypeDataSize
+//go:linkname TypeGetTypeDataSize PyType_GetTypeDataSize
 func TypeGetTypeDataSize(cls *TypeObject) SSizeT
 
 // void *PyObject_GetItemData(PyObject *o)
@@ -487,5 +487,5 @@ func TypeGetTypeDataSize(cls *TypeObject) SSizeT
 // :py:exc:`TypeError` is raised if *o* does not have
 // :c:macro:`Py_TPFLAGS_ITEMS_AT_END` set.
 //
-//go:linkname ObjectGetItemData C.PyObject_GetItemData
+//go:linkname ObjectGetItemData PyObject_GetItemData
 func ObjectGetItemData(o *Object) Pointer

@@ -190,7 +190,7 @@ class CFunctionPrototype:
     parameters: list[CParameter]
 
     def to_go(self):
-        linkname = f"//go:linkname {ctogo(self.name)} C.{self.name}"
+        linkname = f"//go:linkname {ctogo(self.name)} {self.name}"
         params = generate_param_names(self.parameters)
         params_str = ", ".join(params)
         sig = f"{linkname}\nfunc {ctogo(self.name)}("

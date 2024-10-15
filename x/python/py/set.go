@@ -12,42 +12,42 @@ import (
 // Return true if *p* is a :class:`set` object or an instance of a subtype.
 // This function always succeeds.
 //
-//go:linkname SetCheck C.PySet_Check
+//go:linkname SetCheck PySet_Check
 func SetCheck(p *Object) Int
 
 // int PyFrozenSet_Check(PyObject *p)
 // Return true if *p* is a :class:`frozenset` object or an instance of a
 // subtype.  This function always succeeds.
 //
-//go:linkname FrozenSetCheck C.PyFrozenSet_Check
+//go:linkname FrozenSetCheck PyFrozenSet_Check
 func FrozenSetCheck(p *Object) Int
 
 // int PyAnySet_Check(PyObject *p)
 // Return true if *p* is a :class:`set` object, a :class:`frozenset` object, or an
 // instance of a subtype.  This function always succeeds.
 //
-//go:linkname AnySetCheck C.PyAnySet_Check
+//go:linkname AnySetCheck PyAnySet_Check
 func AnySetCheck(p *Object) Int
 
 // int PySet_CheckExact(PyObject *p)
 // Return true if *p* is a :class:`set` object but not an instance of a
 // subtype.  This function always succeeds.
 //
-//go:linkname SetCheckExact C.PySet_CheckExact
+//go:linkname SetCheckExact PySet_CheckExact
 func SetCheckExact(p *Object) Int
 
 // int PyAnySet_CheckExact(PyObject *p)
 // Return true if *p* is a :class:`set` object or a :class:`frozenset` object but
 // not an instance of a subtype.  This function always succeeds.
 //
-//go:linkname AnySetCheckExact C.PyAnySet_CheckExact
+//go:linkname AnySetCheckExact PyAnySet_CheckExact
 func AnySetCheckExact(p *Object) Int
 
 // int PyFrozenSet_CheckExact(PyObject *p)
 // Return true if *p* is a :class:`frozenset` object but not an instance of a
 // subtype.  This function always succeeds.
 //
-//go:linkname FrozenSetCheckExact C.PyFrozenSet_CheckExact
+//go:linkname FrozenSetCheckExact PyFrozenSet_CheckExact
 func FrozenSetCheckExact(p *Object) Int
 
 // PyObject* PySet_New(PyObject *iterable)
@@ -57,7 +57,7 @@ func FrozenSetCheckExact(p *Object) Int
 // actually iterable.  The constructor is also useful for copying a set
 // (“c=set(s)“).
 //
-//go:linkname SetNew C.PySet_New
+//go:linkname SetNew PySet_New
 func SetNew(iterable *Object) *Object
 
 // PyObject* PyFrozenSet_New(PyObject *iterable)
@@ -69,7 +69,7 @@ func SetNew(iterable *Object) *Object
 // The following functions and macros are available for instances of :class:`set`
 // or :class:`frozenset` or instances of their subtypes.
 //
-//go:linkname FrozenSetNew C.PyFrozenSet_New
+//go:linkname FrozenSetNew PyFrozenSet_New
 func FrozenSetNew(iterable *Object) *Object
 
 // Py_ssize_t PySet_Size(PyObject *anyset)
@@ -79,13 +79,13 @@ func FrozenSetNew(iterable *Object) *Object
 // “len(anyset)“.  Raises a :exc:`SystemError` if *anyset* is not a
 // :class:`set`, :class:`frozenset`, or an instance of a subtype.
 //
-//go:linkname SetSize C.PySet_Size
+//go:linkname SetSize PySet_Size
 func SetSize(anyset *Object) SSizeT
 
 // Py_ssize_t PySet_GET_SIZE(PyObject *anyset)
 // Macro form of :c:func:`PySet_Size` without error checking.
 //
-//go:linkname SetGETSIZE C.PySet_GET_SIZE
+//go:linkname SetGETSIZE PySet_GET_SIZE
 func SetGETSIZE(anyset *Object) SSizeT
 
 // int PySet_Contains(PyObject *anyset, PyObject *key)
@@ -95,7 +95,7 @@ func SetGETSIZE(anyset *Object) SSizeT
 // the *key* is unhashable. Raise :exc:`SystemError` if *anyset* is not a
 // :class:`set`, :class:`frozenset`, or an instance of a subtype.
 //
-//go:linkname SetContains C.PySet_Contains
+//go:linkname SetContains PySet_Contains
 func SetContains(anyset *Object, key *Object) Int
 
 // int PySet_Add(PyObject *set, PyObject *key)
@@ -110,7 +110,7 @@ func SetContains(anyset *Object, key *Object) Int
 // The following functions are available for instances of :class:`set` or its
 // subtypes but not for instances of :class:`frozenset` or its subtypes.
 //
-//go:linkname SetAdd C.PySet_Add
+//go:linkname SetAdd PySet_Add
 func SetAdd(set *Object, key *Object) Int
 
 // int PySet_Discard(PyObject *set, PyObject *key)
@@ -121,7 +121,7 @@ func SetAdd(set *Object, key *Object) Int
 // temporary frozensets. Raise :exc:`SystemError` if *set* is not an
 // instance of :class:`set` or its subtype.
 //
-//go:linkname SetDiscard C.PySet_Discard
+//go:linkname SetDiscard PySet_Discard
 func SetDiscard(set *Object, key *Object) Int
 
 // PyObject* PySet_Pop(PyObject *set)
@@ -130,7 +130,7 @@ func SetDiscard(set *Object, key *Object) Int
 // set is empty. Raise a :exc:`SystemError` if *set* is not an instance of
 // :class:`set` or its subtype.
 //
-//go:linkname SetPop C.PySet_Pop
+//go:linkname SetPop PySet_Pop
 func SetPop(set *Object) *Object
 
 // int PySet_Clear(PyObject *set)
@@ -138,7 +138,7 @@ func SetPop(set *Object) *Object
 // success. Return “-1“ and raise :exc:`SystemError` if *set* is not an instance of
 // :class:`set` or its subtype.
 //
-//go:linkname SetClear C.PySet_Clear
+//go:linkname SetClear PySet_Clear
 func SetClear(set *Object) Int
 
 // PySetObject

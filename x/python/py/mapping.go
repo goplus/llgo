@@ -14,7 +14,7 @@ import (
 // a :meth:`~object.__getitem__` method, since in general it is impossible to
 // determine what type of keys the class supports. This function always succeeds.
 //
-//go:linkname MappingCheck C.PyMapping_Check
+//go:linkname MappingCheck PyMapping_Check
 func MappingCheck(o *Object) Int
 
 // Py_ssize_t PyMapping_Size(PyObject *o)
@@ -25,7 +25,7 @@ func MappingCheck(o *Object) Int
 // Returns the number of keys in object *o* on success, and “-1“ on failure.
 // This is equivalent to the Python expression “len(o)“.
 //
-//go:linkname MappingSize C.PyMapping_Size
+//go:linkname MappingSize PyMapping_Size
 func MappingSize(o *Object) SSizeT
 
 // PyObject* PyMapping_GetItemString(PyObject *o, const char *key)
@@ -33,7 +33,7 @@ func MappingSize(o *Object) SSizeT
 // specified as a :c:expr:`const char*` UTF-8 encoded bytes string,
 // rather than a :c:expr:`PyObject*`.
 //
-//go:linkname MappingGetItemString C.PyMapping_GetItemString
+//go:linkname MappingGetItemString PyMapping_GetItemString
 func MappingGetItemString(o *Object, key *Char) *Object
 
 // int PyMapping_SetItemString(PyObject *o, const char *key, PyObject *v)
@@ -41,13 +41,13 @@ func MappingGetItemString(o *Object, key *Char) *Object
 // specified as a :c:expr:`const char*` UTF-8 encoded bytes string,
 // rather than a :c:expr:`PyObject*`.
 //
-//go:linkname MappingSetItemString C.PyMapping_SetItemString
+//go:linkname MappingSetItemString PyMapping_SetItemString
 func MappingSetItemString(o *Object, key *Char, v *Object) Int
 
 // int PyMapping_DelItem(PyObject *o, PyObject *key)
 // This is an alias of :c:func:`PyObject_DelItem`.
 //
-//go:linkname MappingDelItem C.PyMapping_DelItem
+//go:linkname MappingDelItem PyMapping_DelItem
 func MappingDelItem(o *Object, key *Object) Int
 
 // int PyMapping_DelItemString(PyObject *o, const char *key)
@@ -55,7 +55,7 @@ func MappingDelItem(o *Object, key *Object) Int
 // specified as a :c:expr:`const char*` UTF-8 encoded bytes string,
 // rather than a :c:expr:`PyObject*`.
 //
-//go:linkname MappingDelItemString C.PyMapping_DelItemString
+//go:linkname MappingDelItemString PyMapping_DelItemString
 func MappingDelItemString(o *Object, key *Char) Int
 
 // int PyMapping_HasKey(PyObject *o, PyObject *key)
@@ -70,7 +70,7 @@ func MappingDelItemString(o *Object, key *Char) Int
 // For proper error handling, use :c:func:`PyMapping_HasKeyWithError`,
 // :c:func:`PyMapping_GetOptionalItem` or :c:func:`PyObject_GetItem()` instead.
 //
-//go:linkname MappingHasKey C.PyMapping_HasKey
+//go:linkname MappingHasKey PyMapping_HasKey
 func MappingHasKey(o *Object, key *Object) Int
 
 // int PyMapping_HasKeyString(PyObject *o, const char *key)
@@ -87,7 +87,7 @@ func MappingHasKey(o *Object, key *Object) Int
 // :c:func:`PyMapping_GetOptionalItemString` or
 // :c:func:`PyMapping_GetItemString` instead.
 //
-//go:linkname MappingHasKeyString C.PyMapping_HasKeyString
+//go:linkname MappingHasKeyString PyMapping_HasKeyString
 func MappingHasKeyString(o *Object, key *Char) Int
 
 // PyObject* PyMapping_Keys(PyObject *o)
@@ -96,7 +96,7 @@ func MappingHasKeyString(o *Object, key *Char) Int
 //
 // Previously, the function returned a list or a tuple.
 //
-//go:linkname MappingKeys C.PyMapping_Keys
+//go:linkname MappingKeys PyMapping_Keys
 func MappingKeys(o *Object) *Object
 
 // PyObject* PyMapping_Values(PyObject *o)
@@ -105,7 +105,7 @@ func MappingKeys(o *Object) *Object
 //
 // Previously, the function returned a list or a tuple.
 //
-//go:linkname MappingValues C.PyMapping_Values
+//go:linkname MappingValues PyMapping_Values
 func MappingValues(o *Object) *Object
 
 // PyObject* PyMapping_Items(PyObject *o)
@@ -114,5 +114,5 @@ func MappingValues(o *Object) *Object
 //
 // Previously, the function returned a list or a tuple.
 //
-//go:linkname MappingItems C.PyMapping_Items
+//go:linkname MappingItems PyMapping_Items
 func MappingItems(o *Object) *Object

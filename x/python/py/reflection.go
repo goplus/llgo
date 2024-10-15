@@ -16,7 +16,7 @@ import (
 // Return a dictionary of the builtins in the current execution frame,
 // or the interpreter of the thread state if no frame is currently executing.
 //
-//go:linkname EvalGetBuiltins C.PyEval_GetBuiltins
+//go:linkname EvalGetBuiltins PyEval_GetBuiltins
 func EvalGetBuiltins() *Object
 
 // PyObject* PyEval_GetLocals(void)
@@ -44,7 +44,7 @@ func EvalGetBuiltins() *Object
 // dictionary. Refer to the :ref:`What's New entry <whatsnew313-locals-semantics>` for
 // additional details.
 //
-//go:linkname EvalGetLocals C.PyEval_GetLocals
+//go:linkname EvalGetLocals PyEval_GetLocals
 func EvalGetLocals() *Object
 
 // PyObject* PyEval_GetGlobals(void)
@@ -55,7 +55,7 @@ func EvalGetLocals() *Object
 // Return a dictionary of the global variables in the current execution frame,
 // or “NULL“ if no frame is currently executing.
 //
-//go:linkname EvalGetGlobals C.PyEval_GetGlobals
+//go:linkname EvalGetGlobals PyEval_GetGlobals
 func EvalGetGlobals() *Object
 
 // PyFrameObject* PyEval_GetFrame(void)
@@ -64,14 +64,14 @@ func EvalGetGlobals() *Object
 //
 // See also :c:func:`PyThreadState_GetFrame`.
 //
-//go:linkname EvalGetFrame C.PyEval_GetFrame
+//go:linkname EvalGetFrame PyEval_GetFrame
 func EvalGetFrame() *FrameObject
 
 // const char* PyEval_GetFuncName(PyObject *func)
 // Return the name of *func* if it is a function, class or instance object, else the
 // name of *func*\s type.
 //
-//go:linkname EvalGetFuncName C.PyEval_GetFuncName
+//go:linkname EvalGetFuncName PyEval_GetFuncName
 func EvalGetFuncName(func_ *Object) *Char
 
 // const char* PyEval_GetFuncDesc(PyObject *func)
@@ -81,5 +81,5 @@ func EvalGetFuncName(func_ *Object) *Char
 // :c:func:`PyEval_GetFuncName`, the result will be a description of
 // *func*.
 //
-//go:linkname EvalGetFuncDesc C.PyEval_GetFuncDesc
+//go:linkname EvalGetFuncDesc PyEval_GetFuncDesc
 func EvalGetFuncDesc(func_ *Object) *Char

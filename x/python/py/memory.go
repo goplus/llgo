@@ -16,7 +16,7 @@ import (
 // if “PyMem_RawMalloc(1)“ had been called instead. The memory will not have
 // been initialized in any way.
 //
-//go:linkname MemRawMalloc C.PyMem_RawMalloc
+//go:linkname MemRawMalloc PyMem_RawMalloc
 func MemRawMalloc(n Ulong) Pointer
 
 // void* PyMem_RawCalloc(size_t nelem, size_t elsize)
@@ -28,7 +28,7 @@ func MemRawMalloc(n Ulong) Pointer
 // non-“NULL“ pointer if possible, as if “PyMem_RawCalloc(1, 1)“ had been
 // called instead.
 //
-//go:linkname MemRawCalloc C.PyMem_RawCalloc
+//go:linkname MemRawCalloc PyMem_RawCalloc
 func MemRawCalloc(nelem Ulong, elsize Ulong) Pointer
 
 // void* PyMem_RawRealloc(void *p, size_t n)
@@ -46,7 +46,7 @@ func MemRawCalloc(nelem Ulong, elsize Ulong) Pointer
 // If the request fails, :c:func:`PyMem_RawRealloc` returns “NULL“ and *p*
 // remains a valid pointer to the previous memory area.
 //
-//go:linkname MemRawRealloc C.PyMem_RawRealloc
+//go:linkname MemRawRealloc PyMem_RawRealloc
 func MemRawRealloc(p Pointer, n Ulong) Pointer
 
 // void PyMem_RawFree(void *p)
@@ -76,7 +76,7 @@ func MemRawRealloc(p Pointer, n Ulong) Pointer
 //
 // The default allocator is now pymalloc instead of system :c:func:`malloc`.
 //
-//go:linkname MemRawFree C.PyMem_RawFree
+//go:linkname MemRawFree PyMem_RawFree
 func MemRawFree(p Pointer)
 
 // void* PyMem_Malloc(size_t n)
@@ -87,7 +87,7 @@ func MemRawFree(p Pointer)
 // if “PyMem_Malloc(1)“ had been called instead. The memory will not have
 // been initialized in any way.
 //
-//go:linkname MemMalloc C.PyMem_Malloc
+//go:linkname MemMalloc PyMem_Malloc
 func MemMalloc(n Ulong) Pointer
 
 // void* PyMem_Calloc(size_t nelem, size_t elsize)
@@ -99,7 +99,7 @@ func MemMalloc(n Ulong) Pointer
 // non-“NULL“ pointer if possible, as if “PyMem_Calloc(1, 1)“ had been called
 // instead.
 //
-//go:linkname MemCalloc C.PyMem_Calloc
+//go:linkname MemCalloc PyMem_Calloc
 func MemCalloc(nelem Ulong, elsize Ulong) Pointer
 
 // void* PyMem_Realloc(void *p, size_t n)
@@ -116,7 +116,7 @@ func MemCalloc(nelem Ulong, elsize Ulong) Pointer
 // If the request fails, :c:func:`PyMem_Realloc` returns “NULL“ and *p* remains
 // a valid pointer to the previous memory area.
 //
-//go:linkname MemRealloc C.PyMem_Realloc
+//go:linkname MemRealloc PyMem_Realloc
 func MemRealloc(p Pointer, n Ulong) Pointer
 
 // void PyMem_Free(void *p)
@@ -130,7 +130,7 @@ func MemRealloc(p Pointer, n Ulong) Pointer
 // The following type-oriented macros are provided for convenience.  Note  that
 // *TYPE* refers to any C type.
 //
-//go:linkname MemFree C.PyMem_Free
+//go:linkname MemFree PyMem_Free
 func MemFree(p Pointer)
 
 // void PyMem_Del(void *p)
@@ -171,7 +171,7 @@ func MemFree(p Pointer)
 // The :term:`GIL <global interpreter lock>` must be held when using these
 // functions.
 //
-//go:linkname MemDel C.PyMem_Del
+//go:linkname MemDel PyMem_Del
 func MemDel(p Pointer)
 
 // void* PyObject_Malloc(size_t n)
@@ -182,7 +182,7 @@ func MemDel(p Pointer)
 // if “PyObject_Malloc(1)“ had been called instead. The memory will not have
 // been initialized in any way.
 //
-//go:linkname ObjectMalloc C.PyObject_Malloc
+//go:linkname ObjectMalloc PyObject_Malloc
 func ObjectMalloc(n Ulong) Pointer
 
 // void* PyObject_Calloc(size_t nelem, size_t elsize)
@@ -194,7 +194,7 @@ func ObjectMalloc(n Ulong) Pointer
 // non-“NULL“ pointer if possible, as if “PyObject_Calloc(1, 1)“ had been called
 // instead.
 //
-//go:linkname ObjectCalloc C.PyObject_Calloc
+//go:linkname ObjectCalloc PyObject_Calloc
 func ObjectCalloc(nelem Ulong, elsize Ulong) Pointer
 
 // void* PyObject_Realloc(void *p, size_t n)
@@ -211,7 +211,7 @@ func ObjectCalloc(nelem Ulong, elsize Ulong) Pointer
 // If the request fails, :c:func:`PyObject_Realloc` returns “NULL“ and *p* remains
 // a valid pointer to the previous memory area.
 //
-//go:linkname ObjectRealloc C.PyObject_Realloc
+//go:linkname ObjectRealloc PyObject_Realloc
 func ObjectRealloc(p Pointer, n Ulong) Pointer
 
 // void PyObject_Free(void *p)
@@ -255,13 +255,13 @@ func ObjectRealloc(p Pointer, n Ulong) Pointer
 // Customize Memory Allocators
 // ===========================
 //
-//go:linkname ObjectFree C.PyObject_Free
+//go:linkname ObjectFree PyObject_Free
 func ObjectFree(p Pointer)
 
 // void PyMem_GetAllocator(PyMemAllocatorDomain domain, PyMemAllocatorEx *allocator)
 // Get the memory block allocator of the specified domain.
 //
-//go:linkname MemGetAllocator C.PyMem_GetAllocator
+//go:linkname MemGetAllocator PyMem_GetAllocator
 func MemGetAllocator(domain MemAllocatorDomain, allocator *MemAllocatorEx)
 
 // void PyMem_SetAllocator(PyMemAllocatorDomain domain, PyMemAllocatorEx *allocator)
@@ -304,7 +304,7 @@ func MemGetAllocator(domain MemAllocatorDomain, allocator *MemAllocatorEx)
 //
 // All allocators must be thread-safe.
 //
-//go:linkname MemSetAllocator C.PyMem_SetAllocator
+//go:linkname MemSetAllocator PyMem_SetAllocator
 func MemSetAllocator(domain MemAllocatorDomain, allocator *MemAllocatorEx)
 
 // void PyMem_SetupDebugHooks(void)
@@ -441,13 +441,13 @@ func MemSetAllocator(domain MemAllocatorDomain, allocator *MemAllocatorEx)
 // Customize pymalloc Arena Allocator
 // ----------------------------------
 //
-//go:linkname MemSetupDebugHooks C.PyMem_SetupDebugHooks
+//go:linkname MemSetupDebugHooks PyMem_SetupDebugHooks
 func MemSetupDebugHooks()
 
 // void PyObject_GetArenaAllocator(PyObjectArenaAllocator *allocator)
 // Get the arena allocator.
 //
-//go:linkname ObjectGetArenaAllocator C.PyObject_GetArenaAllocator
+//go:linkname ObjectGetArenaAllocator PyObject_GetArenaAllocator
 func ObjectGetArenaAllocator(allocator *ObjectArenaAllocator)
 
 // void PyObject_SetArenaAllocator(PyObjectArenaAllocator *allocator)
@@ -465,7 +465,7 @@ func ObjectGetArenaAllocator(allocator *ObjectArenaAllocator)
 // tracemalloc C API
 // =================
 //
-//go:linkname ObjectSetArenaAllocator C.PyObject_SetArenaAllocator
+//go:linkname ObjectSetArenaAllocator PyObject_SetArenaAllocator
 func ObjectSetArenaAllocator(allocator *ObjectArenaAllocator)
 
 // int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size)
@@ -476,7 +476,7 @@ func ObjectSetArenaAllocator(allocator *ObjectArenaAllocator)
 //
 // If memory block is already tracked, update the existing trace.
 //
-//go:linkname TraceMallocTrack C.PyTraceMalloc_Track
+//go:linkname TraceMallocTrack PyTraceMalloc_Track
 func TraceMallocTrack(domain Uint, ptr Ulong, size Ulong) Int
 
 // int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr)
@@ -537,7 +537,7 @@ func TraceMallocTrack(domain Uint, ptr Ulong, size Ulong) Int
 // These will be explained in the next chapter on defining and implementing new
 // object types in C.
 //
-//go:linkname TraceMallocUntrack C.PyTraceMalloc_Untrack
+//go:linkname TraceMallocUntrack PyTraceMalloc_Untrack
 func TraceMallocUntrack(domain Uint, ptr Ulong) Int
 
 // PyMemAllocatorEx

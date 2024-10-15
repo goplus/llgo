@@ -16,7 +16,7 @@ import (
 // This function can fail, in which case it sets the error indicator.
 // Use :c:func:`PyErr_Occurred` to check for that.
 //
-//go:linkname MarshalWriteLongToFile C.PyMarshal_WriteLongToFile
+//go:linkname MarshalWriteLongToFile PyMarshal_WriteLongToFile
 func MarshalWriteLongToFile(value Long, file FilePtr, version Int)
 
 // void PyMarshal_WriteObjectToFile(PyObject *value, FILE *file, int version)
@@ -26,7 +26,7 @@ func MarshalWriteLongToFile(value Long, file FilePtr, version Int)
 // This function can fail, in which case it sets the error indicator.
 // Use :c:func:`PyErr_Occurred` to check for that.
 //
-//go:linkname MarshalWriteObjectToFile C.PyMarshal_WriteObjectToFile
+//go:linkname MarshalWriteObjectToFile PyMarshal_WriteObjectToFile
 func MarshalWriteObjectToFile(value *Object, file FilePtr, version Int)
 
 // PyObject* PyMarshal_WriteObjectToString(PyObject *value, int version)
@@ -35,7 +35,7 @@ func MarshalWriteObjectToFile(value *Object, file FilePtr, version Int)
 //
 // The following functions allow marshalled values to be read back in.
 //
-//go:linkname MarshalWriteObjectToString C.PyMarshal_WriteObjectToString
+//go:linkname MarshalWriteObjectToString PyMarshal_WriteObjectToString
 func MarshalWriteObjectToString(value *Object, version Int) *Object
 
 // long PyMarshal_ReadLongFromFile(FILE *file)
@@ -46,7 +46,7 @@ func MarshalWriteObjectToString(value *Object, version Int) *Object
 // On error, sets the appropriate exception (:exc:`EOFError`) and returns
 // “-1“.
 //
-//go:linkname MarshalReadLongFromFile C.PyMarshal_ReadLongFromFile
+//go:linkname MarshalReadLongFromFile PyMarshal_ReadLongFromFile
 func MarshalReadLongFromFile(file FilePtr) Long
 
 // int PyMarshal_ReadShortFromFile(FILE *file)
@@ -57,7 +57,7 @@ func MarshalReadLongFromFile(file FilePtr) Long
 // On error, sets the appropriate exception (:exc:`EOFError`) and returns
 // “-1“.
 //
-//go:linkname MarshalReadShortFromFile C.PyMarshal_ReadShortFromFile
+//go:linkname MarshalReadShortFromFile PyMarshal_ReadShortFromFile
 func MarshalReadShortFromFile(file FilePtr) Int
 
 // PyObject* PyMarshal_ReadObjectFromFile(FILE *file)
@@ -67,7 +67,7 @@ func MarshalReadShortFromFile(file FilePtr) Int
 // On error, sets the appropriate exception (:exc:`EOFError`, :exc:`ValueError`
 // or :exc:`TypeError`) and returns “NULL“.
 //
-//go:linkname MarshalReadObjectFromFile C.PyMarshal_ReadObjectFromFile
+//go:linkname MarshalReadObjectFromFile PyMarshal_ReadObjectFromFile
 func MarshalReadObjectFromFile(file FilePtr) *Object
 
 // PyObject* PyMarshal_ReadLastObjectFromFile(FILE *file)
@@ -82,7 +82,7 @@ func MarshalReadObjectFromFile(file FilePtr) *Object
 // On error, sets the appropriate exception (:exc:`EOFError`, :exc:`ValueError`
 // or :exc:`TypeError`) and returns “NULL“.
 //
-//go:linkname MarshalReadLastObjectFromFile C.PyMarshal_ReadLastObjectFromFile
+//go:linkname MarshalReadLastObjectFromFile PyMarshal_ReadLastObjectFromFile
 func MarshalReadLastObjectFromFile(file FilePtr) *Object
 
 // PyObject* PyMarshal_ReadObjectFromString(const char *data, Py_ssize_t len)
@@ -92,5 +92,5 @@ func MarshalReadLastObjectFromFile(file FilePtr) *Object
 // On error, sets the appropriate exception (:exc:`EOFError`, :exc:`ValueError`
 // or :exc:`TypeError`) and returns “NULL“.
 //
-//go:linkname MarshalReadObjectFromString C.PyMarshal_ReadObjectFromString
+//go:linkname MarshalReadObjectFromString PyMarshal_ReadObjectFromString
 func MarshalReadObjectFromString(data *Char, len SSizeT) *Object

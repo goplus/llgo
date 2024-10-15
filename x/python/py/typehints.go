@@ -35,7 +35,7 @@ import (
 //
 // .. seealso:: The data model method :meth:`~object.__class_getitem__`.
 //
-//go:linkname GenericAlias C.Py_GenericAlias
+//go:linkname GenericAlias Py_GenericAlias
 func GenericAlias(origin *Object, args *Object) *Object
 
 // PyTypeObject Py_GenericAliasType

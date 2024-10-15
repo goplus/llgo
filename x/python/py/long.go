@@ -12,14 +12,14 @@ import (
 // Return true if its argument is a :c:type:`PyLongObject` or a subtype of
 // :c:type:`PyLongObject`.  This function always succeeds.
 //
-//go:linkname LongCheck C.PyLong_Check
+//go:linkname LongCheck PyLong_Check
 func LongCheck(p *Object) Int
 
 // int PyLong_CheckExact(PyObject *p)
 // Return true if its argument is a :c:type:`PyLongObject`, but not a subtype of
 // :c:type:`PyLongObject`.  This function always succeeds.
 //
-//go:linkname LongCheckExact C.PyLong_CheckExact
+//go:linkname LongCheckExact PyLong_CheckExact
 func LongCheckExact(p *Object) Int
 
 // PyObject* PyLong_FromLong(long v)
@@ -29,49 +29,49 @@ func LongCheckExact(p *Object) Int
 // between “-5“ and “256“. When you create an int in that range you actually
 // just get back a reference to the existing object.
 //
-//go:linkname LongFromLong C.PyLong_FromLong
+//go:linkname LongFromLong PyLong_FromLong
 func LongFromLong(v Long) *Object
 
 // PyObject* PyLong_FromUnsignedLong(unsigned long v)
 // Return a new :c:type:`PyLongObject` object from a C :c:expr:`unsigned long`, or
 // “NULL“ on failure.
 //
-//go:linkname LongFromUnsignedLong C.PyLong_FromUnsignedLong
+//go:linkname LongFromUnsignedLong PyLong_FromUnsignedLong
 func LongFromUnsignedLong(v Ulong) *Object
 
 // PyObject* PyLong_FromSsize_t(Py_ssize_t v)
 // Return a new :c:type:`PyLongObject` object from a C :c:type:`Py_ssize_t`, or
 // “NULL“ on failure.
 //
-//go:linkname LongFromSsizeT C.PyLong_FromSsize_t
+//go:linkname LongFromSsizeT PyLong_FromSsize_t
 func LongFromSsizeT(v SSizeT) *Object
 
 // PyObject* PyLong_FromSize_t(size_t v)
 // Return a new :c:type:`PyLongObject` object from a C :c:type:`size_t`, or
 // “NULL“ on failure.
 //
-//go:linkname LongFromSizeT C.PyLong_FromSize_t
+//go:linkname LongFromSizeT PyLong_FromSize_t
 func LongFromSizeT(v Ulong) *Object
 
 // PyObject* PyLong_FromLongLong(long long v)
 // Return a new :c:type:`PyLongObject` object from a C :c:expr:`long long`, or “NULL“
 // on failure.
 //
-//go:linkname LongFromLongLong C.PyLong_FromLongLong
+//go:linkname LongFromLongLong PyLong_FromLongLong
 func LongFromLongLong(v LongLong) *Object
 
 // PyObject* PyLong_FromUnsignedLongLong(unsigned long long v)
 // Return a new :c:type:`PyLongObject` object from a C :c:expr:`unsigned long long`,
 // or “NULL“ on failure.
 //
-//go:linkname LongFromUnsignedLongLong C.PyLong_FromUnsignedLongLong
+//go:linkname LongFromUnsignedLongLong PyLong_FromUnsignedLongLong
 func LongFromUnsignedLongLong(v UlongLong) *Object
 
 // PyObject* PyLong_FromDouble(double v)
 // Return a new :c:type:`PyLongObject` object from the integer part of *v*, or
 // “NULL“ on failure.
 //
-//go:linkname LongFromDouble C.PyLong_FromDouble
+//go:linkname LongFromDouble PyLong_FromDouble
 func LongFromDouble(v Double) *Object
 
 // PyObject* PyLong_FromString(const char *str, char **pend, int base)
@@ -90,21 +90,21 @@ func LongFromDouble(v Double) *Object
 // :c:func:`PyLong_FromNativeBytes()` functions can be used to convert
 // a :c:type:`PyLongObject` to/from an array of bytes in base “256“.
 //
-//go:linkname LongFromString C.PyLong_FromString
+//go:linkname LongFromString PyLong_FromString
 func LongFromString(str *Char, pend **Char, base Int) *Object
 
 // PyObject* PyLong_FromUnicodeObject(PyObject *u, int base)
 // Convert a sequence of Unicode digits in the string *u* to a Python integer
 // value.
 //
-//go:linkname LongFromUnicodeObject C.PyLong_FromUnicodeObject
+//go:linkname LongFromUnicodeObject PyLong_FromUnicodeObject
 func LongFromUnicodeObject(u *Object, base Int) *Object
 
 // PyObject* PyLong_FromVoidPtr(void *p)
 // Create a Python integer from the pointer *p*. The pointer value can be
 // retrieved from the resulting value using :c:func:`PyLong_AsVoidPtr`.
 //
-//go:linkname LongFromVoidPtr C.PyLong_FromVoidPtr
+//go:linkname LongFromVoidPtr PyLong_FromVoidPtr
 func LongFromVoidPtr(p Pointer) *Object
 
 // long PyLong_AsLong(PyObject *obj)
@@ -125,7 +125,7 @@ func LongFromVoidPtr(p Pointer) *Object
 //
 // This function will no longer use :meth:`~object.__int__`.
 //
-//go:linkname LongAsLong C.PyLong_AsLong
+//go:linkname LongAsLong PyLong_AsLong
 func LongAsLong(obj *Object) Long
 
 // long PyLong_AS_LONG(PyObject *obj)
@@ -136,7 +136,7 @@ func LongAsLong(obj *Object) Long
 // .. deprecated:: 3.14
 // The function is soft deprecated.
 //
-//go:linkname LongASLONG C.PyLong_AS_LONG
+//go:linkname LongASLONG PyLong_AS_LONG
 func LongASLONG(obj *Object) Long
 
 // long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow)
@@ -155,7 +155,7 @@ func LongASLONG(obj *Object) Long
 //
 // This function will no longer use :meth:`~object.__int__`.
 //
-//go:linkname LongAsLongAndOverflow C.PyLong_AsLongAndOverflow
+//go:linkname LongAsLongAndOverflow PyLong_AsLongAndOverflow
 func LongAsLongAndOverflow(obj *Object, overflow *Int) Long
 
 // long long PyLong_AsLongLong(PyObject *obj)
@@ -175,7 +175,7 @@ func LongAsLongAndOverflow(obj *Object, overflow *Int) Long
 //
 // This function will no longer use :meth:`~object.__int__`.
 //
-//go:linkname LongAsLongLong C.PyLong_AsLongLong
+//go:linkname LongAsLongLong PyLong_AsLongLong
 func LongAsLongLong(obj *Object) LongLong
 
 // long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow)
@@ -194,7 +194,7 @@ func LongAsLongLong(obj *Object) LongLong
 //
 // This function will no longer use :meth:`~object.__int__`.
 //
-//go:linkname LongAsLongLongAndOverflow C.PyLong_AsLongLongAndOverflow
+//go:linkname LongAsLongLongAndOverflow PyLong_AsLongLongAndOverflow
 func LongAsLongLongAndOverflow(obj *Object, overflow *Int) LongLong
 
 // Py_ssize_t PyLong_AsSsize_t(PyObject *pylong)
@@ -210,7 +210,7 @@ func LongAsLongLongAndOverflow(obj *Object, overflow *Int) LongLong
 //
 // Returns “-1“ on error.  Use :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname LongAsSsizeT C.PyLong_AsSsize_t
+//go:linkname LongAsSsizeT PyLong_AsSsize_t
 func LongAsSsizeT(pylong *Object) SSizeT
 
 // unsigned long PyLong_AsUnsignedLong(PyObject *pylong)
@@ -227,7 +227,7 @@ func LongAsSsizeT(pylong *Object) SSizeT
 // Returns “(unsigned long)-1“ on error.
 // Use :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname LongAsUnsignedLong C.PyLong_AsUnsignedLong
+//go:linkname LongAsUnsignedLong PyLong_AsUnsignedLong
 func LongAsUnsignedLong(pylong *Object) Ulong
 
 // size_t PyLong_AsSize_t(PyObject *pylong)
@@ -244,7 +244,7 @@ func LongAsUnsignedLong(pylong *Object) Ulong
 // Returns “(size_t)-1“ on error.
 // Use :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname LongAsSizeT C.PyLong_AsSize_t
+//go:linkname LongAsSizeT PyLong_AsSize_t
 func LongAsSizeT(pylong *Object) Ulong
 
 // unsigned long long PyLong_AsUnsignedLongLong(PyObject *pylong)
@@ -262,7 +262,7 @@ func LongAsSizeT(pylong *Object) Ulong
 //
 // A negative *pylong* now raises :exc:`OverflowError`, not :exc:`TypeError`.
 //
-//go:linkname LongAsUnsignedLongLong C.PyLong_AsUnsignedLongLong
+//go:linkname LongAsUnsignedLongLong PyLong_AsUnsignedLongLong
 func LongAsUnsignedLongLong(pylong *Object) UlongLong
 
 // unsigned long PyLong_AsUnsignedLongMask(PyObject *obj)
@@ -280,7 +280,7 @@ func LongAsUnsignedLongLong(pylong *Object) UlongLong
 //
 // This function will no longer use :meth:`~object.__int__`.
 //
-//go:linkname LongAsUnsignedLongMask C.PyLong_AsUnsignedLongMask
+//go:linkname LongAsUnsignedLongMask PyLong_AsUnsignedLongMask
 func LongAsUnsignedLongMask(obj *Object) Ulong
 
 // unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj)
@@ -299,7 +299,7 @@ func LongAsUnsignedLongMask(obj *Object) Ulong
 //
 // This function will no longer use :meth:`~object.__int__`.
 //
-//go:linkname LongAsUnsignedLongLongMask C.PyLong_AsUnsignedLongLongMask
+//go:linkname LongAsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
 func LongAsUnsignedLongLongMask(obj *Object) UlongLong
 
 // double PyLong_AsDouble(PyObject *pylong)
@@ -311,7 +311,7 @@ func LongAsUnsignedLongLongMask(obj *Object) UlongLong
 //
 // Returns “-1.0“ on error.  Use :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname LongAsDouble C.PyLong_AsDouble
+//go:linkname LongAsDouble PyLong_AsDouble
 func LongAsDouble(pylong *Object) Double
 
 // void* PyLong_AsVoidPtr(PyObject *pylong)
@@ -322,7 +322,7 @@ func LongAsDouble(pylong *Object) Double
 //
 // Returns “NULL“ on error.  Use :c:func:`PyErr_Occurred` to disambiguate.
 //
-//go:linkname LongAsVoidPtr C.PyLong_AsVoidPtr
+//go:linkname LongAsVoidPtr PyLong_AsVoidPtr
 func LongAsVoidPtr(pylong *Object) Pointer
 
 // Py_ssize_t PyLong_AsNativeBytes(PyObject *pylong, void* buffer, Py_ssize_t n_bytes, int flags)
@@ -418,7 +418,7 @@ func LongAsVoidPtr(pylong *Object) Pointer
 // Currently, “-1“ corresponds to
 // “Py_ASNATIVEBYTES_NATIVE_ENDIAN | Py_ASNATIVEBYTES_UNSIGNED_BUFFER“.
 //
-//go:linkname LongAsNativeBytes C.PyLong_AsNativeBytes
+//go:linkname LongAsNativeBytes PyLong_AsNativeBytes
 func LongAsNativeBytes(pylong *Object, buffer Pointer, nBytes SSizeT, flags Int) SSizeT
 
 // int PyLong_GetSign(PyObject *obj, int *sign)
@@ -430,7 +430,7 @@ func LongAsNativeBytes(pylong *Object, buffer Pointer, nBytes SSizeT, flags Int)
 // On failure, return -1 with an exception set.  This function always succeeds
 // if *obj* is a :c:type:`PyLongObject` or its subtype.
 //
-//go:linkname LongGetSign C.PyLong_GetSign
+//go:linkname LongGetSign PyLong_GetSign
 func LongGetSign(obj *Object, sign *Int) Int
 
 // PyObject* PyLong_GetInfo(void)
@@ -440,7 +440,7 @@ func LongGetSign(obj *Object, sign *Int) Int
 //
 // On failure, return “NULL“ with an exception set.
 //
-//go:linkname LongGetInfo C.PyLong_GetInfo
+//go:linkname LongGetInfo PyLong_GetInfo
 func LongGetInfo() *Object
 
 // int PyUnstable_Long_IsCompact(const PyLongObject* op)
@@ -457,7 +457,7 @@ func LongGetInfo() *Object
 // Exactly what values are considered compact is an implementation detail
 // and is subject to change.
 //
-//go:linkname UnstableLongIsCompact C.PyUnstable_Long_IsCompact
+//go:linkname UnstableLongIsCompact PyUnstable_Long_IsCompact
 func UnstableLongIsCompact(op *LongObject) Int
 
 // Py_ssize_t PyUnstable_Long_CompactValue(const PyLongObject* op)
@@ -466,7 +466,7 @@ func UnstableLongIsCompact(op *LongObject) Int
 //
 // Otherwise, the return value is undefined.
 //
-//go:linkname UnstableLongCompactValue C.PyUnstable_Long_CompactValue
+//go:linkname UnstableLongCompactValue PyUnstable_Long_CompactValue
 func UnstableLongCompactValue(op *LongObject) SSizeT
 
 // PyLongObject

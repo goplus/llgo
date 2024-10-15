@@ -13,14 +13,14 @@ import (
 // :c:func:`PyIter_NextItem` and “0“ otherwise.
 // This function always succeeds.
 //
-//go:linkname IterCheck C.PyIter_Check
+//go:linkname IterCheck PyIter_Check
 func IterCheck(o *Object) Int
 
 // int PyAIter_Check(PyObject *o)
 // Return non-zero if the object *o* provides the :class:`AsyncIterator`
 // protocol, and “0“ otherwise.  This function always succeeds.
 //
-//go:linkname AIterCheck C.PyAIter_Check
+//go:linkname AIterCheck PyAIter_Check
 func AIterCheck(o *Object) Int
 
 // PyObject* PyIter_Next(PyObject *o)
@@ -34,7 +34,7 @@ func AIterCheck(o *Object) Int
 // If an error occurs while retrieving the item, returns “NULL“ and passes
 // along the exception.
 //
-//go:linkname IterNext C.PyIter_Next
+//go:linkname IterNext PyIter_Next
 func IterNext(o *Object) *Object
 
 // PySendResult PyIter_Send(PyObject *iter, PyObject *arg, PyObject **presult)
@@ -44,7 +44,7 @@ func IterNext(o *Object) *Object
 // - “PYGEN_NEXT“ if iterator yields. Yielded value is returned via *presult*.
 // - “PYGEN_ERROR“ if iterator has raised and exception. *presult* is set to “NULL“.
 //
-//go:linkname IterSend C.PyIter_Send
+//go:linkname IterSend PyIter_Send
 func IterSend(iter *Object, arg *Object, presult **Object) SendResult
 
 // PySendResult

@@ -12,7 +12,7 @@ import (
 // Return true if *o* is a function object (has type :c:data:`PyFunction_Type`).
 // The parameter must not be “NULL“.  This function always succeeds.
 //
-//go:linkname FunctionCheck C.PyFunction_Check
+//go:linkname FunctionCheck PyFunction_Check
 func FunctionCheck(o *Object) Int
 
 // PyObject* PyFunction_New(PyObject *code, PyObject *globals)
@@ -25,7 +25,7 @@ func FunctionCheck(o *Object) Int
 // set to “NULL“. :attr:`~function.__qualname__` is set to the same value as
 // the code object's :attr:`~codeobject.co_qualname` field.
 //
-//go:linkname FunctionNew C.PyFunction_New
+//go:linkname FunctionNew PyFunction_New
 func FunctionNew(code *Object, globals *Object) *Object
 
 // PyObject* PyFunction_NewWithQualName(PyObject *code, PyObject *globals, PyObject *qualname)
@@ -35,19 +35,19 @@ func FunctionNew(code *Object, globals *Object) *Object
 // if “NULL“, the :attr:`!__qualname__` attribute is set to the same value as
 // the code object's :attr:`~codeobject.co_qualname` field.
 //
-//go:linkname FunctionNewWithQualName C.PyFunction_NewWithQualName
+//go:linkname FunctionNewWithQualName PyFunction_NewWithQualName
 func FunctionNewWithQualName(code *Object, globals *Object, qualname *Object) *Object
 
 // PyObject* PyFunction_GetCode(PyObject *op)
 // Return the code object associated with the function object *op*.
 //
-//go:linkname FunctionGetCode C.PyFunction_GetCode
+//go:linkname FunctionGetCode PyFunction_GetCode
 func FunctionGetCode(op *Object) *Object
 
 // PyObject* PyFunction_GetGlobals(PyObject *op)
 // Return the globals dictionary associated with the function object *op*.
 //
-//go:linkname FunctionGetGlobals C.PyFunction_GetGlobals
+//go:linkname FunctionGetGlobals PyFunction_GetGlobals
 func FunctionGetGlobals(op *Object) *Object
 
 // PyObject* PyFunction_GetModule(PyObject *op)
@@ -58,14 +58,14 @@ func FunctionGetGlobals(op *Object) *Object
 // This is normally a :class:`string <str>` containing the module name,
 // but can be set to any other object by Python code.
 //
-//go:linkname FunctionGetModule C.PyFunction_GetModule
+//go:linkname FunctionGetModule PyFunction_GetModule
 func FunctionGetModule(op *Object) *Object
 
 // PyObject* PyFunction_GetDefaults(PyObject *op)
 // Return the argument default values of the function object *op*. This can be a
 // tuple of arguments or “NULL“.
 //
-//go:linkname FunctionGetDefaults C.PyFunction_GetDefaults
+//go:linkname FunctionGetDefaults PyFunction_GetDefaults
 func FunctionGetDefaults(op *Object) *Object
 
 // int PyFunction_SetDefaults(PyObject *op, PyObject *defaults)
@@ -74,7 +74,7 @@ func FunctionGetDefaults(op *Object) *Object
 //
 // Raises :exc:`SystemError` and returns “-1“ on failure.
 //
-//go:linkname FunctionSetDefaults C.PyFunction_SetDefaults
+//go:linkname FunctionSetDefaults PyFunction_SetDefaults
 func FunctionSetDefaults(op *Object, defaults *Object) Int
 
 // void PyFunction_SetVectorcall(PyFunctionObject *func, vectorcallfunc vectorcall)
@@ -83,14 +83,14 @@ func FunctionSetDefaults(op *Object, defaults *Object) Int
 // Warning: extensions using this API must preserve the behavior
 // of the unaltered (default) vectorcall function!
 //
-//go:linkname FunctionSetVectorcall C.PyFunction_SetVectorcall
+//go:linkname FunctionSetVectorcall PyFunction_SetVectorcall
 func FunctionSetVectorcall(func_ *FunctionObject, vectorcall Vectorcallfunc)
 
 // PyObject* PyFunction_GetClosure(PyObject *op)
 // Return the closure associated with the function object *op*. This can be “NULL“
 // or a tuple of cell objects.
 //
-//go:linkname FunctionGetClosure C.PyFunction_GetClosure
+//go:linkname FunctionGetClosure PyFunction_GetClosure
 func FunctionGetClosure(op *Object) *Object
 
 // int PyFunction_SetClosure(PyObject *op, PyObject *closure)
@@ -99,14 +99,14 @@ func FunctionGetClosure(op *Object) *Object
 //
 // Raises :exc:`SystemError` and returns “-1“ on failure.
 //
-//go:linkname FunctionSetClosure C.PyFunction_SetClosure
+//go:linkname FunctionSetClosure PyFunction_SetClosure
 func FunctionSetClosure(op *Object, closure *Object) Int
 
 // PyObject *PyFunction_GetAnnotations(PyObject *op)
 // Return the annotations of the function object *op*. This can be a
 // mutable dictionary or “NULL“.
 //
-//go:linkname FunctionGetAnnotations C.PyFunction_GetAnnotations
+//go:linkname FunctionGetAnnotations PyFunction_GetAnnotations
 func FunctionGetAnnotations(op *Object) *Object
 
 // int PyFunction_SetAnnotations(PyObject *op, PyObject *annotations)
@@ -115,7 +115,7 @@ func FunctionGetAnnotations(op *Object) *Object
 //
 // Raises :exc:`SystemError` and returns “-1“ on failure.
 //
-//go:linkname FunctionSetAnnotations C.PyFunction_SetAnnotations
+//go:linkname FunctionSetAnnotations PyFunction_SetAnnotations
 func FunctionSetAnnotations(op *Object, annotations *Object) Int
 
 // int PyFunction_AddWatcher(PyFunction_WatchCallback callback)
@@ -124,7 +124,7 @@ func FunctionSetAnnotations(op *Object, annotations *Object) Int
 // In case of error (e.g. no more watcher IDs available),
 // return “-1“ and set an exception.
 //
-//go:linkname FunctionAddWatcher C.PyFunction_AddWatcher
+//go:linkname FunctionAddWatcher PyFunction_AddWatcher
 func FunctionAddWatcher(callback FunctionWatchCallback) Int
 
 // int PyFunction_ClearWatcher(int watcher_id)
@@ -133,7 +133,7 @@ func FunctionAddWatcher(callback FunctionWatchCallback) Int
 // Return “0“ on success, or “-1“ and set an exception on error
 // (e.g.  if the given *watcher_id* was never registered.)
 //
-//go:linkname FunctionClearWatcher C.PyFunction_ClearWatcher
+//go:linkname FunctionClearWatcher PyFunction_ClearWatcher
 func FunctionClearWatcher(watcherId Int) Int
 
 // PyFunctionObject

@@ -14,7 +14,7 @@ import (
 // As side effect, this tries to load the :mod:`!encodings` package, if not yet
 // done, to make sure that it is always first in the list of search functions.
 //
-//go:linkname CodecRegister C.PyCodec_Register
+//go:linkname CodecRegister PyCodec_Register
 func CodecRegister(searchFunction *Object) Int
 
 // int PyCodec_Unregister(PyObject *search_function)
@@ -22,14 +22,14 @@ func CodecRegister(searchFunction *Object) Int
 // If the search function is not registered, do nothing.
 // Return 0 on success. Raise an exception and return -1 on error.
 //
-//go:linkname CodecUnregister C.PyCodec_Unregister
+//go:linkname CodecUnregister PyCodec_Unregister
 func CodecUnregister(searchFunction *Object) Int
 
 // int PyCodec_KnownEncoding(const char *encoding)
 // Return “1“ or “0“ depending on whether there is a registered codec for
 // the given *encoding*.  This function always succeeds.
 //
-//go:linkname CodecKnownEncoding C.PyCodec_KnownEncoding
+//go:linkname CodecKnownEncoding PyCodec_KnownEncoding
 func CodecKnownEncoding(encoding *Char) Int
 
 // PyObject* PyCodec_Encode(PyObject *object, const char *encoding, const char *errors)
@@ -40,7 +40,7 @@ func CodecKnownEncoding(encoding *Char) Int
 // be “NULL“ to use the default method defined for the codec.  Raises a
 // :exc:`LookupError` if no encoder can be found.
 //
-//go:linkname CodecEncode C.PyCodec_Encode
+//go:linkname CodecEncode PyCodec_Encode
 func CodecEncode(object *Object, encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_Decode(PyObject *object, const char *encoding, const char *errors)
@@ -59,37 +59,37 @@ func CodecEncode(object *Object, encoding *Char, errors *Char) *Object
 // effectively case-insensitive.  If no codec is found, a :exc:`KeyError` is set
 // and “NULL“ returned.
 //
-//go:linkname CodecDecode C.PyCodec_Decode
+//go:linkname CodecDecode PyCodec_Decode
 func CodecDecode(object *Object, encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_Encoder(const char *encoding)
 // Get an encoder function for the given *encoding*.
 //
-//go:linkname CodecEncoder C.PyCodec_Encoder
+//go:linkname CodecEncoder PyCodec_Encoder
 func CodecEncoder(encoding *Char) *Object
 
 // PyObject* PyCodec_Decoder(const char *encoding)
 // Get a decoder function for the given *encoding*.
 //
-//go:linkname CodecDecoder C.PyCodec_Decoder
+//go:linkname CodecDecoder PyCodec_Decoder
 func CodecDecoder(encoding *Char) *Object
 
 // PyObject* PyCodec_IncrementalEncoder(const char *encoding, const char *errors)
 // Get an :class:`~codecs.IncrementalEncoder` object for the given *encoding*.
 //
-//go:linkname CodecIncrementalEncoder C.PyCodec_IncrementalEncoder
+//go:linkname CodecIncrementalEncoder PyCodec_IncrementalEncoder
 func CodecIncrementalEncoder(encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_IncrementalDecoder(const char *encoding, const char *errors)
 // Get an :class:`~codecs.IncrementalDecoder` object for the given *encoding*.
 //
-//go:linkname CodecIncrementalDecoder C.PyCodec_IncrementalDecoder
+//go:linkname CodecIncrementalDecoder PyCodec_IncrementalDecoder
 func CodecIncrementalDecoder(encoding *Char, errors *Char) *Object
 
 // PyObject* PyCodec_StreamReader(const char *encoding, PyObject *stream, const char *errors)
 // Get a :class:`~codecs.StreamReader` factory function for the given *encoding*.
 //
-//go:linkname CodecStreamReader C.PyCodec_StreamReader
+//go:linkname CodecStreamReader PyCodec_StreamReader
 func CodecStreamReader(encoding *Char, stream *Object, errors *Char) *Object
 
 // PyObject* PyCodec_StreamWriter(const char *encoding, PyObject *stream, const char *errors)
@@ -98,7 +98,7 @@ func CodecStreamReader(encoding *Char, stream *Object, errors *Char) *Object
 // Registry API for Unicode encoding error handlers
 // ------------------------------------------------
 //
-//go:linkname CodecStreamWriter C.PyCodec_StreamWriter
+//go:linkname CodecStreamWriter PyCodec_StreamWriter
 func CodecStreamWriter(encoding *Char, stream *Object, errors *Char) *Object
 
 // int PyCodec_RegisterError(const char *name, PyObject *error)
@@ -119,7 +119,7 @@ func CodecStreamWriter(encoding *Char, stream *Object, errors *Char) *Object
 //
 // Return “0“ on success, “-1“ on error.
 //
-//go:linkname CodecRegisterError C.PyCodec_RegisterError
+//go:linkname CodecRegisterError PyCodec_RegisterError
 func CodecRegisterError(name *Char, error *Object) Int
 
 // PyObject* PyCodec_LookupError(const char *name)
@@ -127,42 +127,42 @@ func CodecRegisterError(name *Char, error *Object) Int
 // special case “NULL“ can be passed, in which case the error handling callback
 // for "strict" will be returned.
 //
-//go:linkname CodecLookupError C.PyCodec_LookupError
+//go:linkname CodecLookupError PyCodec_LookupError
 func CodecLookupError(name *Char) *Object
 
 // PyObject* PyCodec_StrictErrors(PyObject *exc)
 // Raise *exc* as an exception.
 //
-//go:linkname CodecStrictErrors C.PyCodec_StrictErrors
+//go:linkname CodecStrictErrors PyCodec_StrictErrors
 func CodecStrictErrors(exc *Object) *Object
 
 // PyObject* PyCodec_IgnoreErrors(PyObject *exc)
 // Ignore the unicode error, skipping the faulty input.
 //
-//go:linkname CodecIgnoreErrors C.PyCodec_IgnoreErrors
+//go:linkname CodecIgnoreErrors PyCodec_IgnoreErrors
 func CodecIgnoreErrors(exc *Object) *Object
 
 // PyObject* PyCodec_ReplaceErrors(PyObject *exc)
 // Replace the unicode encode error with “?“ or “U+FFFD“.
 //
-//go:linkname CodecReplaceErrors C.PyCodec_ReplaceErrors
+//go:linkname CodecReplaceErrors PyCodec_ReplaceErrors
 func CodecReplaceErrors(exc *Object) *Object
 
 // PyObject* PyCodec_XMLCharRefReplaceErrors(PyObject *exc)
 // Replace the unicode encode error with XML character references.
 //
-//go:linkname CodecXMLCharRefReplaceErrors C.PyCodec_XMLCharRefReplaceErrors
+//go:linkname CodecXMLCharRefReplaceErrors PyCodec_XMLCharRefReplaceErrors
 func CodecXMLCharRefReplaceErrors(exc *Object) *Object
 
 // PyObject* PyCodec_BackslashReplaceErrors(PyObject *exc)
 // Replace the unicode encode error with backslash escapes (“\x“, “\u“ and
 // “\U“).
 //
-//go:linkname CodecBackslashReplaceErrors C.PyCodec_BackslashReplaceErrors
+//go:linkname CodecBackslashReplaceErrors PyCodec_BackslashReplaceErrors
 func CodecBackslashReplaceErrors(exc *Object) *Object
 
 // PyObject* PyCodec_NameReplaceErrors(PyObject *exc)
 // Replace the unicode encode error with “\N{...}“ escapes.
 //
-//go:linkname CodecNameReplaceErrors C.PyCodec_NameReplaceErrors
+//go:linkname CodecNameReplaceErrors PyCodec_NameReplaceErrors
 func CodecNameReplaceErrors(exc *Object) *Object

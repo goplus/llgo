@@ -12,28 +12,28 @@ import (
 // Return true if *ob* is a cell object; *ob* must not be “NULL“.  This
 // function always succeeds.
 //
-//go:linkname CellCheck C.PyCell_Check
+//go:linkname CellCheck PyCell_Check
 func CellCheck(ob *Object) Int
 
 // PyObject* PyCell_New(PyObject *ob)
 // Create and return a new cell object containing the value *ob*. The parameter may
 // be “NULL“.
 //
-//go:linkname CellNew C.PyCell_New
+//go:linkname CellNew PyCell_New
 func CellNew(ob *Object) *Object
 
 // PyObject* PyCell_Get(PyObject *cell)
 // Return the contents of the cell *cell*, which can be “NULL“.
 // If *cell* is not a cell object, returns “NULL“ with an exception set.
 //
-//go:linkname CellGet C.PyCell_Get
+//go:linkname CellGet PyCell_Get
 func CellGet(cell *Object) *Object
 
 // PyObject* PyCell_GET(PyObject *cell)
 // Return the contents of the cell *cell*, but without checking that *cell* is
 // non-“NULL“ and a cell object.
 //
-//go:linkname CellGET C.PyCell_GET
+//go:linkname CellGET PyCell_GET
 func CellGET(cell *Object) *Object
 
 // int PyCell_Set(PyObject *cell, PyObject *value)
@@ -44,7 +44,7 @@ func CellGET(cell *Object) *Object
 // On success, return “0“.
 // If *cell* is not a cell object, set an exception and return “-1“.
 //
-//go:linkname CellSet C.PyCell_Set
+//go:linkname CellSet PyCell_Set
 func CellSet(cell *Object, value *Object) Int
 
 // void PyCell_SET(PyObject *cell, PyObject *value)
@@ -52,7 +52,7 @@ func CellSet(cell *Object, value *Object) Int
 // adjusted, and no checks are made for safety; *cell* must be non-“NULL“ and must
 // be a cell object.
 //
-//go:linkname CellSET C.PyCell_SET
+//go:linkname CellSET PyCell_SET
 func CellSET(cell *Object, value *Object)
 
 // PyCellObject

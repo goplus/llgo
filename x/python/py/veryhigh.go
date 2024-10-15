@@ -12,21 +12,21 @@ import (
 // This is a simplified interface to :c:func:`PyRun_AnyFileExFlags` below, leaving
 // *closeit* set to “0“ and *flags* set to “NULL“.
 //
-//go:linkname RunAnyFile C.PyRun_AnyFile
+//go:linkname RunAnyFile PyRun_AnyFile
 func RunAnyFile(fp FilePtr, filename *Char) Int
 
 // int PyRun_AnyFileFlags(FILE *fp, const char *filename, PyCompilerFlags *flags)
 // This is a simplified interface to :c:func:`PyRun_AnyFileExFlags` below, leaving
 // the *closeit* argument set to “0“.
 //
-//go:linkname RunAnyFileFlags C.PyRun_AnyFileFlags
+//go:linkname RunAnyFileFlags PyRun_AnyFileFlags
 func RunAnyFileFlags(fp FilePtr, filename *Char, flags *CompilerFlags) Int
 
 // int PyRun_AnyFileEx(FILE *fp, const char *filename, int closeit)
 // This is a simplified interface to :c:func:`PyRun_AnyFileExFlags` below, leaving
 // the *flags* argument set to “NULL“.
 //
-//go:linkname RunAnyFileEx C.PyRun_AnyFileEx
+//go:linkname RunAnyFileEx PyRun_AnyFileEx
 func RunAnyFileEx(fp FilePtr, filename *Char, closeit Int) Int
 
 // int PyRun_AnyFileExFlags(FILE *fp, const char *filename, int closeit, PyCompilerFlags *flags)
@@ -39,14 +39,14 @@ func RunAnyFileEx(fp FilePtr, filename *Char, closeit Int) Int
 // If *closeit* is true, the file is closed before
 // “PyRun_SimpleFileExFlags()“ returns.
 //
-//go:linkname RunAnyFileExFlags C.PyRun_AnyFileExFlags
+//go:linkname RunAnyFileExFlags PyRun_AnyFileExFlags
 func RunAnyFileExFlags(fp FilePtr, filename *Char, closeit Int, flags *CompilerFlags) Int
 
 // int PyRun_SimpleString(const char *command)
 // This is a simplified interface to :c:func:`PyRun_SimpleStringFlags` below,
 // leaving the :c:struct:`PyCompilerFlags`\* argument set to “NULL“.
 //
-//go:linkname RunSimpleString C.PyRun_SimpleString
+//go:linkname RunSimpleString PyRun_SimpleString
 func RunSimpleString(command *Char) Int
 
 // int PyRun_SimpleStringFlags(const char *command, PyCompilerFlags *flags)
@@ -60,21 +60,21 @@ func RunSimpleString(command *Char) Int
 // function will not return “-1“, but exit the process, as long as
 // :c:member:`PyConfig.inspect` is zero.
 //
-//go:linkname RunSimpleStringFlags C.PyRun_SimpleStringFlags
+//go:linkname RunSimpleStringFlags PyRun_SimpleStringFlags
 func RunSimpleStringFlags(command *Char, flags *CompilerFlags) Int
 
 // int PyRun_SimpleFile(FILE *fp, const char *filename)
 // This is a simplified interface to :c:func:`PyRun_SimpleFileExFlags` below,
 // leaving *closeit* set to “0“ and *flags* set to “NULL“.
 //
-//go:linkname RunSimpleFile C.PyRun_SimpleFile
+//go:linkname RunSimpleFile PyRun_SimpleFile
 func RunSimpleFile(fp FilePtr, filename *Char) Int
 
 // int PyRun_SimpleFileEx(FILE *fp, const char *filename, int closeit)
 // This is a simplified interface to :c:func:`PyRun_SimpleFileExFlags` below,
 // leaving *flags* set to “NULL“.
 //
-//go:linkname RunSimpleFileEx C.PyRun_SimpleFileEx
+//go:linkname RunSimpleFileEx PyRun_SimpleFileEx
 func RunSimpleFileEx(fp FilePtr, filename *Char, closeit Int) Int
 
 // int PyRun_SimpleFileExFlags(FILE *fp, const char *filename, int closeit, PyCompilerFlags *flags)
@@ -88,14 +88,14 @@ func RunSimpleFileEx(fp FilePtr, filename *Char, closeit Int) Int
 // On Windows, *fp* should be opened as binary mode (e.g. “fopen(filename, "rb")“).
 // Otherwise, Python may not handle script file with LF line ending correctly.
 //
-//go:linkname RunSimpleFileExFlags C.PyRun_SimpleFileExFlags
+//go:linkname RunSimpleFileExFlags PyRun_SimpleFileExFlags
 func RunSimpleFileExFlags(fp FilePtr, filename *Char, closeit Int, flags *CompilerFlags) Int
 
 // int PyRun_InteractiveOne(FILE *fp, const char *filename)
 // This is a simplified interface to :c:func:`PyRun_InteractiveOneFlags` below,
 // leaving *flags* set to “NULL“.
 //
-//go:linkname RunInteractiveOne C.PyRun_InteractiveOne
+//go:linkname RunInteractiveOne PyRun_InteractiveOne
 func RunInteractiveOne(fp FilePtr, filename *Char) Int
 
 // int PyRun_InteractiveOneFlags(FILE *fp, const char *filename, PyCompilerFlags *flags)
@@ -110,14 +110,14 @@ func RunInteractiveOne(fp FilePtr, filename *Char) Int
 // there was a parse error.  (Note that :file:`errcode.h` is not included by
 // :file:`Python.h`, so must be included specifically if needed.)
 //
-//go:linkname RunInteractiveOneFlags C.PyRun_InteractiveOneFlags
+//go:linkname RunInteractiveOneFlags PyRun_InteractiveOneFlags
 func RunInteractiveOneFlags(fp FilePtr, filename *Char, flags *CompilerFlags) Int
 
 // int PyRun_InteractiveLoop(FILE *fp, const char *filename)
 // This is a simplified interface to :c:func:`PyRun_InteractiveLoopFlags` below,
 // leaving *flags* set to “NULL“.
 //
-//go:linkname RunInteractiveLoop C.PyRun_InteractiveLoop
+//go:linkname RunInteractiveLoop PyRun_InteractiveLoop
 func RunInteractiveLoop(fp FilePtr, filename *Char) Int
 
 // int PyRun_InteractiveLoopFlags(FILE *fp, const char *filename, PyCompilerFlags *flags)
@@ -126,14 +126,14 @@ func RunInteractiveLoop(fp FilePtr, filename *Char) Int
 // “sys.ps2“.  *filename* is decoded from the :term:`filesystem encoding and
 // error handler`.  Returns “0“ at EOF or a negative number upon failure.
 //
-//go:linkname RunInteractiveLoopFlags C.PyRun_InteractiveLoopFlags
+//go:linkname RunInteractiveLoopFlags PyRun_InteractiveLoopFlags
 func RunInteractiveLoopFlags(fp FilePtr, filename *Char, flags *CompilerFlags) Int
 
 // PyObject* PyRun_String(const char *str, int start, PyObject *globals, PyObject *locals)
 // This is a simplified interface to :c:func:`PyRun_StringFlags` below, leaving
 // *flags* set to “NULL“.
 //
-//go:linkname RunString C.PyRun_String
+//go:linkname RunString PyRun_String
 func RunString(str *Char, start Int, globals *Object, locals *Object) *Object
 
 // PyObject* PyRun_StringFlags(const char *str, int start, PyObject *globals, PyObject *locals, PyCompilerFlags *flags)
@@ -146,28 +146,28 @@ func RunString(str *Char, start Int, globals *Object, locals *Object) *Object
 // Returns the result of executing the code as a Python object, or “NULL“ if an
 // exception was raised.
 //
-//go:linkname RunStringFlags C.PyRun_StringFlags
+//go:linkname RunStringFlags PyRun_StringFlags
 func RunStringFlags(str *Char, start Int, globals *Object, locals *Object, flags *CompilerFlags) *Object
 
 // PyObject* PyRun_File(FILE *fp, const char *filename, int start, PyObject *globals, PyObject *locals)
 // This is a simplified interface to :c:func:`PyRun_FileExFlags` below, leaving
 // *closeit* set to “0“ and *flags* set to “NULL“.
 //
-//go:linkname RunFile C.PyRun_File
+//go:linkname RunFile PyRun_File
 func RunFile(fp FilePtr, filename *Char, start Int, globals *Object, locals *Object) *Object
 
 // PyObject* PyRun_FileEx(FILE *fp, const char *filename, int start, PyObject *globals, PyObject *locals, int closeit)
 // This is a simplified interface to :c:func:`PyRun_FileExFlags` below, leaving
 // *flags* set to “NULL“.
 //
-//go:linkname RunFileEx C.PyRun_FileEx
+//go:linkname RunFileEx PyRun_FileEx
 func RunFileEx(fp FilePtr, filename *Char, start Int, globals *Object, locals *Object, closeit Int) *Object
 
 // PyObject* PyRun_FileFlags(FILE *fp, const char *filename, int start, PyObject *globals, PyObject *locals, PyCompilerFlags *flags)
 // This is a simplified interface to :c:func:`PyRun_FileExFlags` below, leaving
 // *closeit* set to “0“.
 //
-//go:linkname RunFileFlags C.PyRun_FileFlags
+//go:linkname RunFileFlags PyRun_FileFlags
 func RunFileFlags(fp FilePtr, filename *Char, start Int, globals *Object, locals *Object, flags *CompilerFlags) *Object
 
 // PyObject* PyRun_FileExFlags(FILE *fp, const char *filename, int start, PyObject *globals, PyObject *locals, int closeit, PyCompilerFlags *flags)
@@ -177,21 +177,21 @@ func RunFileFlags(fp FilePtr, filename *Char, start Int, globals *Object, locals
 // If *closeit* is true, the file is closed before :c:func:`PyRun_FileExFlags`
 // returns.
 //
-//go:linkname RunFileExFlags C.PyRun_FileExFlags
+//go:linkname RunFileExFlags PyRun_FileExFlags
 func RunFileExFlags(fp FilePtr, filename *Char, start Int, globals *Object, locals *Object, closeit Int, flags *CompilerFlags) *Object
 
 // PyObject* Py_CompileString(const char *str, const char *filename, int start)
 // This is a simplified interface to :c:func:`Py_CompileStringFlags` below, leaving
 // *flags* set to “NULL“.
 //
-//go:linkname CompileString C.Py_CompileString
+//go:linkname CompileString Py_CompileString
 func CompileString(str *Char, filename *Char, start Int) *Object
 
 // PyObject* Py_CompileStringFlags(const char *str, const char *filename, int start, PyCompilerFlags *flags)
 // This is a simplified interface to :c:func:`Py_CompileStringExFlags` below, with
 // *optimize* set to “-1“.
 //
-//go:linkname CompileStringFlags C.Py_CompileStringFlags
+//go:linkname CompileStringFlags Py_CompileStringFlags
 func CompileStringFlags(str *Char, filename *Char, start Int, flags *CompilerFlags) *Object
 
 // PyObject* Py_CompileStringObject(const char *str, PyObject *filename, int start, PyCompilerFlags *flags, int optimize)
@@ -209,14 +209,14 @@ func CompileStringFlags(str *Char, filename *Char, start Int, flags *CompilerFla
 // “__debug__“ is true), “1“ (asserts are removed, “__debug__“ is false)
 // or “2“ (docstrings are removed too).
 //
-//go:linkname CompileStringObject C.Py_CompileStringObject
+//go:linkname CompileStringObject Py_CompileStringObject
 func CompileStringObject(str *Char, filename *Object, start Int, flags *CompilerFlags, optimize Int) *Object
 
 // PyObject* Py_CompileStringExFlags(const char *str, const char *filename, int start, PyCompilerFlags *flags, int optimize)
 // Like :c:func:`Py_CompileStringObject`, but *filename* is a byte string
 // decoded from the :term:`filesystem encoding and error handler`.
 //
-//go:linkname CompileStringExFlags C.Py_CompileStringExFlags
+//go:linkname CompileStringExFlags Py_CompileStringExFlags
 func CompileStringExFlags(str *Char, filename *Char, start Int, flags *CompilerFlags, optimize Int) *Object
 
 // PyObject* PyEval_EvalCode(PyObject *co, PyObject *globals, PyObject *locals)
@@ -224,7 +224,7 @@ func CompileStringExFlags(str *Char, filename *Char, start Int, flags *CompilerF
 // the code object, and global and local variables.  The other arguments are
 // set to “NULL“.
 //
-//go:linkname EvalEvalCode C.PyEval_EvalCode
+//go:linkname EvalEvalCode PyEval_EvalCode
 func EvalEvalCode(co *Object, globals *Object, locals *Object) *Object
 
 // PyObject* PyEval_EvalCodeEx(PyObject *co, PyObject *globals, PyObject *locals, PyObject *const *args, int argcount, PyObject *const *kws, int kwcount, PyObject *const *defs, int defcount, PyObject *kwdefs, PyObject *closure)
@@ -234,14 +234,14 @@ func EvalEvalCode(co *Object, globals *Object, locals *Object) *Object
 // defaults, a dictionary of default values for :ref:`keyword-only
 // <keyword-only_parameter>` arguments and a closure tuple of cells.
 //
-//go:linkname EvalEvalCodeEx C.PyEval_EvalCodeEx
+//go:linkname EvalEvalCodeEx PyEval_EvalCodeEx
 func EvalEvalCodeEx(co *Object, globals *Object, locals *Object, args **Object, argcount Int, kws **Object, kwcount Int, defs **Object, defcount Int, kwdefs *Object, closure *Object) *Object
 
 // PyObject* PyEval_EvalFrame(PyFrameObject *f)
 // Evaluate an execution frame.  This is a simplified interface to
 // :c:func:`PyEval_EvalFrameEx`, for backward compatibility.
 //
-//go:linkname EvalEvalFrame C.PyEval_EvalFrame
+//go:linkname EvalEvalFrame PyEval_EvalFrame
 func EvalEvalFrame(f *FrameObject) *Object
 
 // PyObject* PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
@@ -255,14 +255,14 @@ func EvalEvalFrame(f *FrameObject) *Object
 // This function now includes a debug assertion to help ensure that it
 // does not silently discard an active exception.
 //
-//go:linkname EvalEvalFrameEx C.PyEval_EvalFrameEx
+//go:linkname EvalEvalFrameEx PyEval_EvalFrameEx
 func EvalEvalFrameEx(f *FrameObject, throwflag Int) *Object
 
 // int PyEval_MergeCompilerFlags(PyCompilerFlags *cf)
 // This function changes the flags of the current evaluation frame, and returns
 // true on success, false on failure.
 //
-//go:linkname EvalMergeCompilerFlags C.PyEval_MergeCompilerFlags
+//go:linkname EvalMergeCompilerFlags PyEval_MergeCompilerFlags
 func EvalMergeCompilerFlags(cf *CompilerFlags) Int
 
 // struct PyCompilerFlags

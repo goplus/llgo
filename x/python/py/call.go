@@ -18,7 +18,7 @@ import (
 // However, the function “PyVectorcall_NARGS“ should be used to allow
 // for future extensions.
 //
-//go:linkname VectorcallNARGS C.PyVectorcall_NARGS
+//go:linkname VectorcallNARGS PyVectorcall_NARGS
 func VectorcallNARGS(nargsf Ulong) SSizeT
 
 // vectorcallfunc PyVectorcall_Function(PyObject *op)
@@ -30,7 +30,7 @@ func VectorcallNARGS(nargsf Ulong) SSizeT
 // This is mostly useful to check whether or not *op* supports vectorcall,
 // which can be done by checking “PyVectorcall_Function(op) != NULL“.
 //
-//go:linkname VectorcallFunction C.PyVectorcall_Function
+//go:linkname VectorcallFunction PyVectorcall_Function
 func VectorcallFunction(op *Object) Vectorcallfunc
 
 // PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *dict)
@@ -86,7 +86,7 @@ func VectorcallFunction(op *Object) Vectorcallfunc
 // | :c:func:`PyObject_VectorcallMethod`      | arg + name       | vectorcall         | vectorcall    |
 // +------------------------------------------+------------------+--------------------+---------------+
 //
-//go:linkname VectorcallCall C.PyVectorcall_Call
+//go:linkname VectorcallCall PyVectorcall_Call
 func VectorcallCall(callable *Object, tuple *Object, dict *Object) *Object
 
 // PyObject* PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
@@ -102,7 +102,7 @@ func VectorcallCall(callable *Object, tuple *Object, dict *Object) *Object
 // This is the equivalent of the Python expression:
 // “callable(*args, **kwargs)“.
 //
-//go:linkname ObjectCall C.PyObject_Call
+//go:linkname ObjectCall PyObject_Call
 func ObjectCall(callable *Object, args *Object, kwargs *Object) *Object
 
 // PyObject* PyObject_CallNoArgs(PyObject *callable)
@@ -112,7 +112,7 @@ func ObjectCall(callable *Object, args *Object, kwargs *Object) *Object
 // Return the result of the call on success, or raise an exception and return
 // *NULL* on failure.
 //
-//go:linkname ObjectCallNoArgs C.PyObject_CallNoArgs
+//go:linkname ObjectCallNoArgs PyObject_CallNoArgs
 func ObjectCallNoArgs(callable *Object) *Object
 
 // PyObject* PyObject_CallOneArg(PyObject *callable, PyObject *arg)
@@ -122,7 +122,7 @@ func ObjectCallNoArgs(callable *Object) *Object
 // Return the result of the call on success, or raise an exception and return
 // *NULL* on failure.
 //
-//go:linkname ObjectCallOneArg C.PyObject_CallOneArg
+//go:linkname ObjectCallOneArg PyObject_CallOneArg
 func ObjectCallOneArg(callable *Object, arg *Object) *Object
 
 // PyObject* PyObject_CallObject(PyObject *callable, PyObject *args)
@@ -134,7 +134,7 @@ func ObjectCallOneArg(callable *Object, arg *Object) *Object
 //
 // This is the equivalent of the Python expression: “callable(*args)“.
 //
-//go:linkname ObjectCallObject C.PyObject_CallObject
+//go:linkname ObjectCallObject PyObject_CallObject
 func ObjectCallObject(callable *Object, args *Object) *Object
 
 // PyObject* PyObject_CallFunction(PyObject *callable, const char *format, ...)
@@ -152,7 +152,7 @@ func ObjectCallObject(callable *Object, args *Object) *Object
 //
 // The type of *format* was changed from “char *“.
 //
-//go:linkname ObjectCallFunction C.PyObject_CallFunction
+//go:linkname ObjectCallFunction PyObject_CallFunction
 func ObjectCallFunction(callable *Object, format *Char, __llgo_va_list ...any) *Object
 
 // PyObject* PyObject_CallMethod(PyObject *obj, const char *name, const char *format, ...)
@@ -173,7 +173,7 @@ func ObjectCallFunction(callable *Object, format *Char, __llgo_va_list ...any) *
 //
 // The types of *name* and *format* were changed from “char *“.
 //
-//go:linkname ObjectCallMethod C.PyObject_CallMethod
+//go:linkname ObjectCallMethod PyObject_CallMethod
 func ObjectCallMethod(obj *Object, name *Char, format *Char, __llgo_va_list ...any) *Object
 
 // PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...)
@@ -187,7 +187,7 @@ func ObjectCallMethod(obj *Object, name *Char, format *Char, __llgo_va_list ...a
 // This is the equivalent of the Python expression:
 // “callable(arg1, arg2, ...)“.
 //
-//go:linkname ObjectCallFunctionObjArgs C.PyObject_CallFunctionObjArgs
+//go:linkname ObjectCallFunctionObjArgs PyObject_CallFunctionObjArgs
 func ObjectCallFunctionObjArgs(callable *Object, __llgo_va_list ...any) *Object
 
 // PyObject* PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)
@@ -199,7 +199,7 @@ func ObjectCallFunctionObjArgs(callable *Object, __llgo_va_list ...any) *Object
 // Return the result of the call on success, or raise an exception and return
 // *NULL* on failure.
 //
-//go:linkname ObjectCallMethodObjArgs C.PyObject_CallMethodObjArgs
+//go:linkname ObjectCallMethodObjArgs PyObject_CallMethodObjArgs
 func ObjectCallMethodObjArgs(obj *Object, name *Object, __llgo_va_list ...any) *Object
 
 // PyObject* PyObject_CallMethodNoArgs(PyObject *obj, PyObject *name)
@@ -209,7 +209,7 @@ func ObjectCallMethodObjArgs(obj *Object, name *Object, __llgo_va_list ...any) *
 // Return the result of the call on success, or raise an exception and return
 // *NULL* on failure.
 //
-//go:linkname ObjectCallMethodNoArgs C.PyObject_CallMethodNoArgs
+//go:linkname ObjectCallMethodNoArgs PyObject_CallMethodNoArgs
 func ObjectCallMethodNoArgs(obj *Object, name *Object) *Object
 
 // PyObject* PyObject_CallMethodOneArg(PyObject *obj, PyObject *name, PyObject *arg)
@@ -220,7 +220,7 @@ func ObjectCallMethodNoArgs(obj *Object, name *Object) *Object
 // Return the result of the call on success, or raise an exception and return
 // *NULL* on failure.
 //
-//go:linkname ObjectCallMethodOneArg C.PyObject_CallMethodOneArg
+//go:linkname ObjectCallMethodOneArg PyObject_CallMethodOneArg
 func ObjectCallMethodOneArg(obj *Object, name *Object, arg *Object) *Object
 
 // PyObject* PyObject_Vectorcall(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwnames)
@@ -232,7 +232,7 @@ func ObjectCallMethodOneArg(obj *Object, name *Object, arg *Object) *Object
 // Return the result of the call on success, or raise an exception and return
 // *NULL* on failure.
 //
-//go:linkname ObjectVectorcall C.PyObject_Vectorcall
+//go:linkname ObjectVectorcall PyObject_Vectorcall
 func ObjectVectorcall(callable *Object, args **Object, nargsf Ulong, kwnames *Object) *Object
 
 // PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwdict)
@@ -246,7 +246,7 @@ func ObjectVectorcall(callable *Object, args **Object, nargsf Ulong, kwnames *Ob
 // already has a dictionary ready to use for the keyword arguments,
 // but not a tuple for the positional arguments.
 //
-//go:linkname ObjectVectorcallDict C.PyObject_VectorcallDict
+//go:linkname ObjectVectorcallDict PyObject_VectorcallDict
 func ObjectVectorcallDict(callable *Object, args **Object, nargsf Ulong, kwdict *Object) *Object
 
 // PyObject* PyObject_VectorcallMethod(PyObject *name, PyObject *const *args, size_t nargsf, PyObject *kwnames)
@@ -269,14 +269,14 @@ func ObjectVectorcallDict(callable *Object, args **Object, nargsf Ulong, kwdict 
 // Call Support API
 // ----------------
 //
-//go:linkname ObjectVectorcallMethod C.PyObject_VectorcallMethod
+//go:linkname ObjectVectorcallMethod PyObject_VectorcallMethod
 func ObjectVectorcallMethod(name *Object, args **Object, nargsf Ulong, kwnames *Object) *Object
 
 // int PyCallable_Check(PyObject *o)
 // Determine if the object *o* is callable.  Return “1“ if the object is callable
 // and “0“ otherwise.  This function always succeeds.
 //
-//go:linkname CallableCheck C.PyCallable_Check
+//go:linkname CallableCheck PyCallable_Check
 func CallableCheck(o *Object) Int
 
 // PyObject *(*vectorcallfunc)(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwnames)
