@@ -1,5 +1,6 @@
 package python
 
+import "C"
 import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/x/python/py"
@@ -20,7 +21,7 @@ func MakeStr(s string) Str {
 func (s Str) String() string {
 	var l int
 	buf := py.UnicodeAsUTF8AndSize(s.obj, &l)
-	return c.GoString(buf, l)
+	return GoStringN((*c.Char)(buf), l)
 }
 
 func (s Str) Len() int {

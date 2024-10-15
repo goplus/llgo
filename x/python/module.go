@@ -14,7 +14,7 @@ func newModule(obj *py.Object) Module {
 }
 
 func ImportModule(name string) Module {
-	mod := py.ImportImportModule(c.AllocaCStr(name))
+	mod := py.ImportImportModule(AllocCStr(name))
 	return newModule(mod)
 }
 
@@ -23,16 +23,16 @@ func (m Module) Dict() Dict {
 }
 
 func (m Module) AddObject(name string, obj Object) int {
-	return int(py.ModuleAddObject(m.obj, c.AllocCStr(name), obj.obj))
+	return int(py.ModuleAddObject(m.obj, AllocCStr(name), obj.obj))
 }
 
 func (m Module) AddFunction(name string, fn c.Pointer, doc string) Func {
 	def := &py.MethodDef{
-		Name:  c.AllocCStr(name),
+		Name:  AllocCStr(name),
 		Func:  fn,
 		Flags: py.METH_VARARGS,
-		Doc:   c.AllocCStr(doc),
+		Doc:   AllocCStr(doc),
 	}
-	pyFn := def.NewMethod(nil, m.obj, nil)
+	pyFn := py.CMethodNew(def, nil, m.obj, nil)
 	return newFunc(pyFn)
 }

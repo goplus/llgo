@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/internal/runtime"
 	"github.com/goplus/llgo/x/python/py"
 )
 
@@ -36,43 +35,45 @@ func (obj *pyObject) Ensure() {
 // ----------------------------------------------------------------------------
 
 func (obj Object) GetAttr(name string) Object {
-	return newObject(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	o := py.ObjectGetAttrString(obj.obj, AllocCStr(name))
+	py.IncRef(o)
+	return newObject(o)
 }
 
 func (obj Object) GetFloatAttr(name string) Float {
-	return newFloat(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsFloat()
 }
 
 func (obj Object) GetLongAttr(name string) Long {
-	return newLong(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsLong()
 }
 
 func (obj Object) GetStrAttr(name string) Str {
-	return newStr(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsStr()
 }
 
 func (obj Object) GetBytesAttr(name string) Bytes {
-	return newBytes(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsBytes()
 }
 
 func (obj Object) GetBoolAttr(name string) Bool {
-	return newBool(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsBool()
 }
 
 func (obj Object) GetDictAttr(name string) Dict {
-	return newDict(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsDict()
 }
 
 func (obj Object) GetListAttr(name string) List {
-	return newList(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsList()
 }
 
 func (obj Object) GetTupleAttr(name string) Tuple {
-	return newTuple(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsTuple()
 }
 
 func (obj Object) GetFuncAttr(name string) Func {
-	return newFunc(py.ObjectGetAttrString(obj.obj, c.AllocCStr(name)))
+	return obj.GetAttr(name).AsFunc()
 }
 
 func (obj Object) AsFloat() Float {
@@ -127,19 +128,6 @@ func FromPy(obj *py.Object) Object {
 	return newObject(obj)
 }
 
-func newObject(obj *py.Object) Object {
-	if obj == nil {
-		py.ErrPrint()
-		panic("nil Python object")
-	}
-	o := &pyObject{obj: obj}
-	p := Object{o}
-	f := finalizerCallback
-	fn := *(**c.Pointer)(c.Pointer(&f))
-	runtime.SetFinalizer(o, fn)
-	return p
-}
-
 func (obj Object) object() Object {
 	return obj
 }
@@ -169,6 +157,9 @@ func (obj Object) String() string {
 }
 
 func (obj Object) Obj() *py.Object {
+	if obj.Nil() {
+		return nil
+	}
 	return obj.pyObject.obj
 }
 
@@ -199,7 +190,7 @@ func From(v any) Object {
 	case float64:
 		return newObject(py.FloatFromDouble(v))
 	case string:
-		return newObject(py.UnicodeFromString(c.AllocCStr(v)))
+		return newObject(py.UnicodeFromString(AllocCStr(v)))
 	case complex128:
 		return MakeComplex(v).Object
 	case complex64:
@@ -208,10 +199,12 @@ func From(v any) Object {
 		return MakeBytes(v).Object
 	case bool:
 		if v {
-			return newObject(py.True())
+			return True().Object
 		} else {
-			return newObject(py.False())
+			return False().Object
 		}
+	case *py.Object:
+		return newObject(v)
 	default:
 		vv := reflect.ValueOf(v)
 		switch vv.Kind() {

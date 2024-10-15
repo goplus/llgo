@@ -2,14 +2,13 @@ package python
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/wchar"
 	"github.com/goplus/llgo/x/python/py"
 )
 
 // ----------------------------------------------------------------------------
 
 func SetProgramName(name string) {
-	py.SetProgramName(wchar.AllocWCStr(name))
+	py.SetProgramName(AllocWCStr(name))
 }
 
 type InputType = py.InputType
@@ -21,7 +20,7 @@ const (
 )
 
 func CompileString(code, filename string, start InputType) Object {
-	return newObject(py.CompileString(c.AllocCStr(code), c.AllocCStr(filename), c.Int(start)))
+	return newObject(py.CompileString(AllocCStr(code), AllocCStr(filename), c.Int(start)))
 }
 
 func EvalCode(code Object, globals, locals Dict) Object {
@@ -42,4 +41,43 @@ func With[T Objecter](obj T, fn func(v T)) T {
 	defer obj.object().Call("__exit__")
 	fn(obj)
 	return obj
+}
+
+// ----------------------------------------------------------------------------
+
+var mainMod Module
+
+func MainModule() Module {
+	if mainMod.Nil() {
+		mainMod = ImportModule("__main__")
+	}
+	return mainMod
+}
+
+var noneObj Object
+
+/*
+from Dojo:
+if self.none_value.is_null():
+
+	var list_obj = self.PyList_New(0)
+	var tuple_obj = self.PyTuple_New(0)
+	var callable_obj = self.PyObject_GetAttrString(list_obj, "reverse")
+	self.none_value = self.PyObject_CallObject(callable_obj, tuple_obj)
+	self.Py_DecRef(tuple_obj)
+	self.Py_DecRef(callable_obj)
+	self.Py_DecRef(list_obj)
+*/
+func None() Object {
+	if noneObj.Nil() {
+		listObj := MakeList()
+		tupleObj := MakeTuple()
+		callableObj := listObj.GetFuncAttr("reverse")
+		noneObj = callableObj.CallObject(tupleObj)
+	}
+	return noneObj
+}
+
+func Nil() Object {
+	return Object{}
 }

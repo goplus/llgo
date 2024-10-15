@@ -1,10 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/bdwgc"
 	"github.com/goplus/llgo/x/python"
 	"github.com/goplus/llgo/x/python/_demo/autoderef/foo"
 	pymath "github.com/goplus/llgo/x/python/math"
@@ -12,16 +11,17 @@ import (
 )
 
 func main() {
+	py.Initialize()
 	python.SetProgramName(os.Args[0])
 	fooMod := foo.InitFooModule()
 	sum := fooMod.GetFuncAttr("add").Call(python.MakeLong(1), python.MakeLong(2)).AsLong()
-	c.Printf(c.Str("Sum: %d\n"), sum.Int64())
+	fmt.Printf("Sum: %d\n", sum.Int64())
 
 	dict := fooMod.Dict()
 	pointClass := dict.Get(python.MakeStr("Point")).AsFunc()
 	point := pointClass.Call(python.MakeLong(3), python.MakeLong(4))
 	distance := point.CallMethod("distance").AsLong()
-	c.Printf(c.Str("Distance of 3 * 4: %d\n"), distance.Int64())
+	fmt.Printf("Distance of 3 * 4: %d\n", distance.Int64())
 
 	pythonCode := `
 def allocate_memory():
@@ -38,22 +38,19 @@ for i in range(10):
     memory_allocation_test()
 `
 
-	c.Printf(c.Str("Memory usage: %d MB at start\n"), bdwgc.GetMemoryUse()/(1024*1024))
+	fmt.Printf("Memory usage: %d MB at start\n", python.GetHostMemoryUse()/(1024*1024))
 
 	mod := python.ImportModule("__main__")
 	gbl := mod.Dict()
-
 	code := python.CompileString(pythonCode, "<string>", python.FileInput)
-
-	_ = python.EvalCode(code, gbl, python.FromPy(nil).AsDict())
-
+	_ = python.EvalCode(code, gbl, python.Nil().AsDict())
 	for i := 0; i < 10; i++ {
-		result := python.EvalCode(code, gbl, python.FromPy(nil).AsDict())
+		result := python.EvalCode(code, gbl, python.Nil().AsDict())
 		if result.Nil() {
-			c.Printf(c.Str("Failed to execute Python code\n"))
+			fmt.Printf("Failed to execute Python code\n")
 			return
 		}
-		c.Printf(c.Str("Iteration %d in python - Memory usage: %d MB\n"), i+1, bdwgc.GetMemoryUse()/(1024*1024))
+		fmt.Printf("Iteration %d in python - Memory usage: %d MB\n", i+1, python.GetHostMemoryUse()/(1024*1024))
 	}
 
 	memory_allocation_test := mod.GetFuncAttr("memory_allocation_test")
@@ -61,21 +58,22 @@ for i in range(10):
 	for i := 0; i < 100; i++ {
 		// 100MB every time
 		memory_allocation_test.Call()
-		c.Printf(c.Str("Iteration %d in go - Memory usage: %d MB\n"), i+1, bdwgc.GetMemoryUse()/(1024*1024))
-		bdwgc.Gcollect()
+		fmt.Printf("Iteration %d in go - Memory usage: %d MB\n", i+1, python.GetHostMemoryUse()/(1024*1024))
+		python.RuntimeGC()
 	}
 
 	for i := 1; i <= 100000; i++ {
+		println(i)
 		// TODO(lijie): Can't run successfully because https://github.com/goplus/llgo/issues/819
 		f := python.MakeFloat(float64(i))
 		r := pymath.Sqrt(f)
 		b := r.IsInteger()
 		var _ bool = b.Bool()
 		if i%10000 == 0 {
-			c.Printf(c.Str("Iteration %d in go - Memory usage: %d MB\n"), i, bdwgc.GetMemoryUse()/(1024*1024))
+			fmt.Printf("Iteration %d in go - Memory usage: %d MB\n", i, python.GetHostMemoryUse()/(1024*1024))
 		}
 	}
 
 	py.Finalize()
-	c.Printf(c.Str("Done\n"))
+	fmt.Printf("Done\n")
 }

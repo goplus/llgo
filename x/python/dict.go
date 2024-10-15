@@ -1,7 +1,6 @@
 package python
 
 import (
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/x/python/py"
 )
 
@@ -11,6 +10,10 @@ type Dict struct {
 
 func newDict(obj *py.Object) Dict {
 	return Dict{newObject(obj)}
+}
+
+func NewDict(obj *py.Object) Dict {
+	return newDict(obj)
 }
 
 func DictFromPairs(pairs ...any) Dict {
@@ -50,5 +53,16 @@ func (d Dict) Set(key, value Object) {
 
 func (d Dict) SetString(key string, value Object) {
 	py.IncRef(value.obj)
-	py.DictSetItemString(d.obj, c.AllocCStr(key), value.obj)
+	py.DictSetItemString(d.obj, AllocCStr(key), value.obj)
+}
+
+func (d Dict) GetString(key string) Object {
+	v := py.DictGetItemString(d.obj, AllocCStr(key))
+	py.IncRef(v)
+	return newObject(v)
+}
+
+func (d Dict) Del(key Object) {
+	py.DictDelItem(d.obj, key.obj)
+	py.DecRef(key.obj)
 }

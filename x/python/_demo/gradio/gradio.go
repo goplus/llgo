@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/x/python"
 	"github.com/goplus/llgo/x/python/py"
 )
@@ -51,7 +50,7 @@ func main() {
 	// TODO(lijie): python initialization automatically not working
 	py.Initialize()
 	gr = python.ImportModule("gradio")
-	fn := python.FuncOf("update_examples", c.Func(UpdateExamples),
+	fn := python.FuncOf("update_examples", python.FuncPtr(UpdateExamples),
 		"update_examples(country, /)\n--\n\nUpdate examples based on country")
 	// fn := python.FuncOf(UpdateExamples)
 

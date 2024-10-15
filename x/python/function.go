@@ -62,18 +62,13 @@ func (f Func) Call(args ...any) Object {
 
 // ----------------------------------------------------------------------------
 
-var mainMod Module
-
 // TODO(lijie): wait for bug fix of reflect.Value.Call, reflect.ValueOf(func)
 func FuncOf(name string, fn c.Pointer, doc string) Func {
-	if mainMod.Nil() {
-		mainMod = ImportModule("__main__")
-	}
-	return mainMod.AddFunction(name, fn, doc)
+	return MainModule().AddFunction(name, fn, doc)
 }
 
 func FuncOf1[T any](fn T) Func {
-	m := ImportModule("__main__")
+	m := MainModule()
 	v := reflect.ValueOf(fn)
 	t := v.Type()
 	// if t.Kind() != reflect.Func {
@@ -95,7 +90,7 @@ func FuncOf1[T any](fn T) Func {
 		// results := v.Call(goArgs)
 		results := make([]reflect.Value, 0)
 		if len(results) == 0 {
-			return py.None()
+			return None().Obj()
 		}
 		if len(results) == 1 {
 			return From(results[0].Interface()).Obj()
@@ -107,18 +102,18 @@ func FuncOf1[T any](fn T) Func {
 		// Assuming the last return value is the one we want to return to Python
 		return tuple.Obj()
 	}
-	c.Printf(c.Str("sizeof wrapper: %d\n"), unsafe.Sizeof(wrapper))
+	fmt.Printf("sizeof wrapper: %d\n", unsafe.Sizeof(wrapper))
 	iface := *(*[2]c.Pointer)(c.Pointer(&wrapper))
 	pfn := iface[0]
 	pob := iface[1]
-	c.Printf(c.Str("pfn: %p, pob: %p\n"), pfn, pob)
+	fmt.Printf("pfn: %p, pob: %p\n", pfn, pob)
 	def := &py.MethodDef{
-		Name:  c.AllocCStr(name),
+		Name:  AllocCStr(name),
 		Func:  pfn,
 		Flags: py.METH_VARARGS,
-		Doc:   c.AllocCStr(fmt.Sprintf("Go function %s", name)),
+		Doc:   AllocCStr(fmt.Sprintf("Go function %s", name)),
 	}
-	pyFn := def.NewMethod((*py.Object)(pob), m.obj, nil)
+	pyFn := py.CMethodNew(def, (*py.Object)(pob), m.obj, nil)
 	if pyFn == nil {
 		panic(fmt.Sprintf("Failed to add function %s to module", name))
 	}
@@ -140,7 +135,7 @@ func buildFormatString(t reflect.Type) *c.Char {
 			panic(fmt.Sprintf("Unsupported argument type: %v", t.In(i)))
 		}
 	}
-	return c.AllocCStr(format)
+	return AllocCStr(format)
 }
 
 func buildArgPointers(args []reflect.Value) []interface{} {

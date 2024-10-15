@@ -34,7 +34,7 @@ func LongFromFloat64(v float64) Long {
 }
 
 func LongFromString(s string, base int) Long {
-	cstr := c.AllocCStr(s)
+	cstr := AllocCStr(s)
 	return newLong(py.LongFromString(cstr, nil, c.Int(base)))
 }
 
