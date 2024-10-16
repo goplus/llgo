@@ -153,6 +153,10 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
+	if typeDecl.Name == nil {
+		log.Printf("NewTypeDecl: %s\n", "nil")
+		return nil
+	}
 	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
 	if _, ok := p.newTypes[name]; ok {
 		return nil

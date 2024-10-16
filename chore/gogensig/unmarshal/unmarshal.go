@@ -23,22 +23,11 @@ func (s FileSet) FindEntry(absIncludePath string) int {
 	return -1
 }
 
-// todo(xlj): to improve
-func (s FileSet) IncludeDir() string {
-	paths := make([]string, 0)
-	includes := make([]string, 0)
+func (s FileSet) IncludeDir(includeFile string) string {
 	for _, f := range s {
-		paths = append(paths, f.Path)
-		for _, inc := range f.Doc.Includes {
-			includes = append(includes, inc.Path)
-		}
-	}
-	for _, inc := range includes {
-		for _, path := range paths {
-			after, found := strings.CutSuffix(path, inc)
-			if found {
-				return after
-			}
+		after, found := strings.CutSuffix(f.Path, includeFile)
+		if found {
+			return after
 		}
 	}
 	return ""
