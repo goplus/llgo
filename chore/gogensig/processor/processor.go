@@ -38,22 +38,15 @@ func NewDocFileSetProcessor(docVisitorList []visitor.DocVisitor) *DocFileSetProc
 	p := &DocFileSetProcessor{docVisitorList: docVisitorList}
 	p.visitedFile = make(map[string]struct{})
 	p.visitedIncludeFile = make(map[string]struct{})
-	includes := make([]string, 0)
-	initIncludes := false
 	p.SetAbsPathFunc(func(s string, fs unmarshal.FileSet) string {
-		if !initIncludes {
-			includes = append(includes, fs.IncludeDir())
-			initIncludes = true
-		}
 		if filepath.IsAbs(s) {
 			return s
 		}
-		for _, includePath := range includes {
-			absIncludePath := filepath.Join(includePath, s)
-			_, err := os.Stat(absIncludePath)
-			if err == nil {
-				return absIncludePath
-			}
+		includePath := fs.IncludeDir(s)
+		absIncludePath := filepath.Join(includePath, s)
+		_, err := os.Stat(absIncludePath)
+		if err == nil {
+			return absIncludePath
 		}
 		return s
 	})
