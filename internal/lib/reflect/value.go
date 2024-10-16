@@ -770,7 +770,7 @@ func valueInterface(v Value, safe bool) any {
 		})(v.ptr)
 	}
 
-	// TODO: pass safe to packEface so we don't need to copy if safe==true?
+	// TODO(visualc): pass safe to packEface so we don't need to copy if safe==true?
 	return packEface(v)
 }
 

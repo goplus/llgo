@@ -72,7 +72,7 @@ func Import(name *Object) *Object
 // llgo:link (*Object).ModuleGetDict C.PyModule_GetDict
 func (m *Object) ModuleGetDict() *Object { return nil }
 
-// llgo:link (*Object).ModuleLoadSyms C.llgoLoadPyModSyms
-func (m *Object) ModuleLoadSyms(__llgo_va_list ...any) {}
+// llgo:link ModuleLoadSyms C.llgoLoadPyModSyms
+func ModuleLoadSyms(o *Object, __llgo_va_list ...any) {}
 
 // -----------------------------------------------------------------------------

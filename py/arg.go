@@ -31,3 +31,12 @@ import (
 //
 //go:linkname BuildValue C.Py_BuildValue
 func BuildValue(format *c.Char, __llgo_va_list ...any) *Object
+
+// int PyArg_ParseTuple(PyObject *args, const char *format, ...)
+// Part of the Stable ABI.
+// Parse the parameters of a function that takes only positional parameters
+// into local variables. Returns true on success; on failure, it returns false
+// and raises the appropriate exception.
+//
+//go:linkname ParseTuple C.PyArg_ParseTuple
+func ParseTuple(args *Object, format *c.Char, __llgo_va_list ...any) bool

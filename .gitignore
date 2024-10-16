@@ -20,6 +20,7 @@ _go/
 _runtime/
 _tinygo/
 _output/
+__pycache__/
 build.dir/
 .vscode/
 

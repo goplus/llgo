@@ -16,8 +16,6 @@
 
 package py
 
-/*
-
 import (
 	_ "unsafe"
 
@@ -28,23 +26,29 @@ import (
 
 // String returns a new bytes object from a C string.
 //
-//go:linkname FromCStr C.PyBytes_FromString
-func FromCStr(s *c.Char) *Object
+//go:linkname BytesFromCStr C.PyBytes_FromString
+func BytesFromCStr(s *c.Char) *Object
 
 // FromString returns a new bytes object from a Go string.
-func FromString(s string) *Object {
-	return stringFromStringAndSize(c.GoStringData(s), uintptr(len(s)))
+func BytesFromString(s string) *Object {
+	return BytesFromStringAndSize(c.GoStringData(s), uintptr(len(s)))
 }
 
-//go:linkname stringFromStringAndSize C.PyBytes_FromStringAndSize
-func stringFromStringAndSize(s *c.Char, size uintptr) *Object
+//go:linkname BytesFromStringAndSize C.PyBytes_FromStringAndSize
+func BytesFromStringAndSize(s *c.Char, size uintptr) *Object
 
 // CStr returns the content of a bytes object as a C string.
 //
-// llgo:link (*Object).CStr C.PyBytes_AsString
-func (o *Object) CStr() *c.Char { return nil }
+// llgo:link (*Object).BytesAsCStr C.PyBytes_AsString
+func (o *Object) BytesAsCStr() *c.Char { return nil }
 
-// llgo:link (*Object).Strlen C.PyBytes_Size
-func (o *Object) Strlen() uintptr { return 0 }
+// llgo:link (*Object).BytesSize C.PyBytes_Size
+func (o *Object) BytesSize() uintptr { return 0 }
 
-*/
+// int PyBytes_AsStringAndSize(PyObject *obj, char **buffer, Py_ssize_t *length)
+// Part of the Stable ABI.
+// Return the null-terminated contents of the object obj through the output variables buffer and length. Returns 0 on success.
+// If length is NULL, the bytes object may not contain embedded null bytes; if it does, the function returns -1 and a ValueError is raised.
+// The buffer refers to an internal buffer of obj, which includes an additional null byte at the end (not counted in length). The data must not be modified in any way, unless the object was just created using PyBytes_FromStringAndSize(NULL, size). It must not be deallocated. If obj is not a bytes object at all, PyBytes_AsStringAndSize() returns -1 and raises TypeError.
+// llgo:link (*Object).BytesAsCStrAndSize C.PyBytes_AsStringAndSize
+func (o *Object) BytesAsCStrAndSize(**c.Char, *uintptr)
