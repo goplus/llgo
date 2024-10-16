@@ -78,7 +78,8 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 	fmt.Printf("parse dylib symbols from config lib:%s\n", lib)
 
 	conf := ParseLibConfig(lib)
-	dylibPaths, err := GenDylibPaths(conf, []string{})
+	defaultPaths := getSysLibPaths()
+	dylibPaths, err := GenDylibPaths(conf, defaultPaths)
 	if err != nil {
 		fmt.Printf("Warning: failed to generate some dylib paths: %v\n", err)
 	}
@@ -111,6 +112,48 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 	}
 
 	return nil, fmt.Errorf("no symbols found in any dylib. Errors: %v", parseErrors)
+}
+
+func getSysLibPaths() []string {
+	var paths []string
+	if runtime.GOOS == "linux" {
+		paths = []string{
+			"/usr/lib",
+			"/usr/local/lib",
+		}
+		paths = append(paths, getPath("/etc/ld.so.conf")...)
+		confd := "/etc/ld.so.conf.d"
+		if dir, err := os.Stat(confd); err == nil && dir.IsDir() {
+			_ = dir
+			// todo(zzy) : wait llgo os.ReadDir support
+			// files, err := os.ReadDir(confd)
+			// if err == nil {
+			// 	for _, file := range files {
+			// 		filepath := filepath.Join(confd, file.Name())
+			// 		paths = append(paths, getPath(filepath)...)
+			// 	}
+			// }
+		}
+	}
+	return paths
+}
+
+func getPath(file string) []string {
+	var paths []string
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return paths
+	}
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			if file, err := os.Stat(line); err == nil && file.IsDir() {
+				paths = append(paths, line)
+			}
+		}
+	}
+	return paths
 }
 
 // finds the intersection of symbols from the dynamic library's symbol table and the symbols parsed from header files.
