@@ -47,12 +47,11 @@ func expandString(str string) string {
 	})
 }
 
-func expandCflags(str string, fn func(s string) bool) []string {
+func expandCflags(str string, fn func(s string) bool) (includes []string, flags string) {
 	list := strings.FieldsFunc(str, func(r rune) bool {
 		return unicode.IsSpace(r)
 	})
 	contains := make(map[string]string, 0)
-	results := make([]string, 0)
 	for _, l := range list {
 		trimStr := strings.TrimPrefix(l, "-I")
 		trimStr += "/"
@@ -68,13 +67,34 @@ func expandCflags(str string, fn func(s string) bool) []string {
 			}
 			_, ok := contains[path]
 			if !ok {
-				results = append(results, d.Name())
-				contains[path] = d.Name()
+				relPath, err := filepath.Rel(trimStr, path)
+				if err == nil {
+					contains[path] = relPath
+				} else {
+					contains[path] = d.Name()
+				}
 			}
 			return nil
 		})
 	}
-	return results
+
+	includeMap := make(map[string]struct{})
+	for path, relPath := range contains {
+		includeDir, found := strings.CutSuffix(path, relPath)
+		if found {
+			includeMap[includeDir] = struct{}{}
+		}
+		includes = append(includes, relPath)
+	}
+	var flagsBuilder strings.Builder
+	for include := range includeMap {
+		if flagsBuilder.Len() > 0 {
+			flagsBuilder.WriteRune(' ')
+		}
+		flagsBuilder.WriteString("-I" + include)
+	}
+	flags = flagsBuilder.String()
+	return
 }
 
 func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
@@ -89,10 +109,14 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 	cfg.Include = []string{}
 	Cflags := fmt.Sprintf("${pkg-config --cflags %s}", name)
 	cflags := expandString(Cflags)
-	cfg.Include = expandCflags(cflags, func(s string) bool {
+	retIncludes, retCflags := expandCflags(cflags, func(s string) bool {
 		ext := filepath.Ext(s)
 		return ext == ".h" || ext == ".hpp"
 	})
+	cfg.Include = retIncludes
+	if len(retCflags) > 0 {
+		cflags = retCflags
+	}
 	// expand Cflags and Libs
 	cfg.Cflags = strings.TrimLeft(strings.TrimRight(cflags, " \t\r\n"), " \t\r\n")
 	Libs := fmt.Sprintf("${pkg-config --libs %s}", name)
