@@ -41,5 +41,4 @@ usage: llcppcfg [-cpp|-help] libname`)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Config file has been generated at ", outFile, "!")
 }
