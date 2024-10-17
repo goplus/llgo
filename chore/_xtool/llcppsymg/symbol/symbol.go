@@ -17,6 +17,25 @@ import (
 	"github.com/goplus/llgo/xtool/nm"
 )
 
+type dbgFlags = int
+
+const (
+	DbgConf dbgFlags = 1 << iota
+	DbgSymbol
+
+	DbgFlagAll = DbgConf | DbgSymbol
+)
+
+var (
+	debugConf   bool
+	debugSymbol bool
+)
+
+func SetDebug(dbgFlags dbgFlags) {
+	debugConf = (dbgFlags & DbgConf) != 0
+	debugSymbol = (dbgFlags & DbgSymbol) != 0
+}
+
 type LibConfig struct {
 	Paths []string
 	Names []string
@@ -59,7 +78,7 @@ func GenDylibPaths(config *LibConfig, defaultPaths []string) ([]string, error) {
 			notFound = append(notFound, name)
 		}
 	}
-	if len(notFound) > 0 {
+	if len(notFound) > 0 && debugSymbol {
 		fmt.Printf("Warning: Some libraries were not found: %s\n", strings.Join(notFound, ", "))
 	}
 	if len(foundPaths) == 0 {
@@ -75,13 +94,23 @@ func GenDylibPaths(config *LibConfig, defaultPaths []string) ([]string, error) {
 //
 // Returns symbols and nil error if any symbols are found, or nil and error if none found.
 func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
-	fmt.Printf("parse dylib symbols from config lib:%s\n", lib)
-
+	if debugConf {
+		fmt.Println("ParseDylibSymbols:from", lib)
+	}
 	conf := ParseLibConfig(lib)
+	if debugConf {
+		fmt.Println("ParseDylibSymbols:LibConfig Parse To")
+		fmt.Println("conf.Names: ", conf.Names)
+		fmt.Println("conf.Paths: ", conf.Paths)
+	}
 	defaultPaths := getSysLibPaths()
 	dylibPaths, err := GenDylibPaths(conf, defaultPaths)
 	if err != nil {
-		fmt.Printf("Warning: failed to generate some dylib paths: %v\n", err)
+		return nil, fmt.Errorf("failed to generate some dylib paths: %v", err)
+	}
+
+	if debugSymbol {
+		fmt.Println("ParseDylibSymbols:dylibPaths", dylibPaths)
 	}
 
 	var symbols []*nm.Symbol
@@ -89,13 +118,15 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 
 	for _, dylibPath := range dylibPaths {
 		if _, err := os.Stat(dylibPath); err != nil {
-			fmt.Printf("Warning: Failed to access dylib %s: %v\n", dylibPath, err)
+			if debugSymbol {
+				fmt.Printf("ParseDylibSymbols:Failed to access dylib %s: %v\n", dylibPath, err)
+			}
 			continue
 		}
 
 		files, err := nm.New("").List(dylibPath)
 		if err != nil {
-			parseErrors = append(parseErrors, fmt.Sprintf("Failed to list symbols in dylib %s: %v", dylibPath, err))
+			parseErrors = append(parseErrors, fmt.Sprintf("ParseDylibSymbols:Failed to list symbols in dylib %s: %v", dylibPath, err))
 			continue
 		}
 
@@ -105,8 +136,11 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 	}
 
 	if len(symbols) > 0 {
-		if len(parseErrors) > 0 {
-			fmt.Printf("Warning: Some libraries could not be parsed: %v\n", parseErrors)
+		if debugSymbol {
+			if len(parseErrors) > 0 {
+				fmt.Printf("ParseDylibSymbols:Some libraries could not be parsed: %v\n", parseErrors)
+			}
+			fmt.Println("ParseDylibSymbols:", len(symbols), "symbols")
 		}
 		return symbols, nil
 	}
@@ -117,28 +151,41 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 func getSysLibPaths() []string {
 	var paths []string
 	if runtime.GOOS == "linux" {
+		if debugConf {
+			fmt.Println("getSysLibPaths:find sys lib path from linux")
+		}
 		paths = []string{
 			"/usr/lib",
 			"/usr/local/lib",
 		}
 		paths = append(paths, getPath("/etc/ld.so.conf")...)
-		confd := "/etc/ld.so.conf.d"
-		if dir, err := os.Stat(confd); err == nil && dir.IsDir() {
-			_ = dir
-			// todo(zzy) : wait llgo os.ReadDir support
-			// files, err := os.ReadDir(confd)
-			// if err == nil {
-			// 	for _, file := range files {
-			// 		filepath := filepath.Join(confd, file.Name())
-			// 		paths = append(paths, getPath(filepath)...)
-			// 	}
-			// }
+		if debugConf && len(paths) == 0 {
+			fmt.Println("getSysLibPaths:/etc/ld.so.conf havent find any path")
 		}
+		confd := "/etc/ld.so.conf.d"
+		dir, err := os.Stat(confd)
+		if err != nil || !dir.IsDir() {
+			if debugConf {
+				fmt.Println("getSysLibPaths:/etc/ld.so.conf.d not found or not dir")
+			}
+			return paths
+		}
+		// todo(zzy) : wait llgo os.ReadDir support
+		// files, err := os.ReadDir(confd)
+		// if err == nil {
+		// 	for _, file := range files {
+		// 		filepath := filepath.Join(confd, file.Name())
+		// 		paths = append(paths, getPath(filepath)...)
+		// 	}
+		// }
 	}
 	return paths
 }
 
 func getPath(file string) []string {
+	if debugConf {
+		fmt.Println("getPath:from", file)
+	}
 	var paths []string
 	content, err := os.ReadFile(file)
 	if err != nil {
@@ -206,12 +253,28 @@ func ReadExistingSymbolTable(fileName string) (map[string]types.SymbolInfo, bool
 }
 
 func GenSymbolTableData(commonSymbols []*types.SymbolInfo, existingSymbols map[string]types.SymbolInfo) ([]byte, error) {
-	// todo(zzy): len(existingSymbols) !=0
-	// https://github.com/goplus/llgo/issues/808 will cause unexpected panic
-	// https://github.com/goplus/llgo/pull/793 this pr can fix it
-	for i := range commonSymbols {
-		if existingSymbol, exists := existingSymbols[commonSymbols[i].Mangle]; exists {
-			commonSymbols[i].Go = existingSymbol.Go
+	if len(existingSymbols) > 0 {
+		if debugSymbol {
+			fmt.Println("GenSymbolTableData:generate symbol table with exist symbol table")
+		}
+		for i := range commonSymbols {
+			if existingSymbol, exists := existingSymbols[commonSymbols[i].Mangle]; exists && commonSymbols[i].Go != existingSymbol.Go {
+				if debugSymbol {
+					fmt.Println("symbol", commonSymbols[i].Mangle, "already exist, use exist symbol", existingSymbol.Go)
+				}
+				commonSymbols[i].Go = existingSymbol.Go
+			} else {
+				if debugSymbol {
+					fmt.Println("new symbol", commonSymbols[i].Mangle, "-", commonSymbols[i].CPP, "-", commonSymbols[i].Go)
+				}
+			}
+		}
+	} else {
+		if debugSymbol {
+			fmt.Println("GenSymbolTableData:generate symbol table without symbol table")
+			for _, symbol := range commonSymbols {
+				fmt.Println("new symbol", symbol.Mangle, "-", symbol.CPP, "-", symbol.Go)
+			}
 		}
 	}
 
@@ -237,8 +300,14 @@ func GenSymbolTableData(commonSymbols []*types.SymbolInfo, existingSymbols map[s
 
 func GenerateAndUpdateSymbolTable(symbols []*nm.Symbol, headerInfos map[string]*parse.SymbolInfo, symbFile string) ([]byte, error) {
 	commonSymbols := GetCommonSymbols(symbols, headerInfos)
+	if debugSymbol {
+		fmt.Println("GenerateAndUpdateSymbolTable:", len(commonSymbols), "common symbols")
+	}
 
-	existSymbols, _ := ReadExistingSymbolTable(symbFile)
+	existSymbols, exist := ReadExistingSymbolTable(symbFile)
+	if exist && debugSymbol {
+		fmt.Println("GenerateAndUpdateSymbolTable:current path have exist symbol table", symbFile)
+	}
 
 	symbolData, err := GenSymbolTableData(commonSymbols, existSymbols)
 	if err != nil {

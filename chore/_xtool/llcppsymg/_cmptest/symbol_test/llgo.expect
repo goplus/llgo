@@ -30,7 +30,6 @@ Test case: existint default paths
 Path libsymb1 is in the expected paths
 Path libsymb3 is in the expected paths
 Test case: no existing dylib
-Warning: Some libraries were not found: notexist
 === Test GetCommonSymbols ===
 
 Test Case: Lua symbols
