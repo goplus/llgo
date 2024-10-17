@@ -264,14 +264,14 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
 			if ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0); ret < 0 {
-				err1 = Errno(os.Errno)
+				err1 = Errno(os.Errno())
 				goto childerror
 			}
 			continue
 		}
 		// The new fd is created NOT close-on-exec,
 		if ret := os.Dup2(c.Int(fd[i]), c.Int(i)); ret < 0 {
-			err1 = Errno(os.Errno)
+			err1 = Errno(os.Errno())
 			goto childerror
 		}
 	}

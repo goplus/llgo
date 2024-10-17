@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <errno.h>
 
 int llgoClearenv() {
 	extern char **environ;
@@ -7,3 +8,5 @@ int llgoClearenv() {
 	}
 	return 0;
 }
+
+int llgoErrno() { return errno; }

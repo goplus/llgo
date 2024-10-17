@@ -21,7 +21,8 @@ package os
 import "C"
 
 const (
-	LLGoPackage = "decl"
+	LLGoFiles   = "_os/os.c"
+	LLGoPackage = "link"
 )
 
 //go:linkname Clearenv C.clearenv

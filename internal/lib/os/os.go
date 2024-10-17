@@ -183,7 +183,7 @@ func Getwd() (dir string, err error) {
 	if wd != nil {
 		return c.GoString(wd), nil
 	}
-	return "", syscall.Errno(os.Errno)
+	return "", syscall.Errno(os.Errno())
 }
 
 // TODO(xsw):

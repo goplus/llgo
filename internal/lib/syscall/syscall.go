@@ -62,7 +62,7 @@ func Getcwd(buf []byte) (n int, err error) {
 	if ret != nil {
 		return int(c.Strlen(ret)), nil
 	}
-	return 0, Errno(os.Errno)
+	return 0, Errno(os.Errno())
 }
 
 func Getwd() (string, error) {
@@ -70,7 +70,7 @@ func Getwd() (string, error) {
 	if wd != nil {
 		return c.GoString(wd), nil
 	}
-	return "", Errno(os.Errno)
+	return "", Errno(os.Errno())
 }
 
 func Getpid() (pid int) {
@@ -90,7 +90,7 @@ func fork() (uintptr, Errno) {
 	if ret >= 0 {
 		return uintptr(ret), Errno(0)
 	}
-	return 0, Errno(os.Errno)
+	return 0, Errno(os.Errno())
 }
 
 func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid int, err error) {
@@ -98,7 +98,7 @@ func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid i
 	if ret >= 0 {
 		return int(ret), nil
 	}
-	return 0, Errno(os.Errno)
+	return 0, Errno(os.Errno())
 }
 
 func Open(path string, mode int, perm uint32) (fd int, err error) {
@@ -106,7 +106,7 @@ func Open(path string, mode int, perm uint32) (fd int, err error) {
 	if ret >= 0 {
 		return int(ret), nil
 	}
-	return 0, Errno(os.Errno)
+	return 0, Errno(os.Errno())
 }
 
 func Seek(fd int, offset int64, whence int) (newoffset int64, err error) {
@@ -114,7 +114,7 @@ func Seek(fd int, offset int64, whence int) (newoffset int64, err error) {
 	if ret >= 0 {
 		return int64(ret), nil
 	}
-	return -1, Errno(os.Errno)
+	return -1, Errno(os.Errno())
 }
 
 func Read(fd int, p []byte) (n int, err error) {
@@ -122,7 +122,7 @@ func Read(fd int, p []byte) (n int, err error) {
 	if ret >= 0 {
 		return ret, nil // TODO(xsw): confirm err == nil (not io.EOF) when ret == 0
 	}
-	return 0, Errno(os.Errno)
+	return 0, Errno(os.Errno())
 }
 
 func readlen(fd int, buf *byte, nbuf int) (n int, err error) {
@@ -130,7 +130,7 @@ func readlen(fd int, buf *byte, nbuf int) (n int, err error) {
 	if ret >= 0 {
 		return ret, nil // TODO(xsw): confirm err == nil (not io.EOF) when ret == 0
 	}
-	return 0, Errno(os.Errno)
+	return 0, Errno(os.Errno())
 }
 
 func Close(fd int) (err error) {
@@ -148,7 +148,7 @@ func Lstat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(os.Errno())
 }
 
 func Stat(path string, stat *Stat_t) (err error) {
@@ -156,7 +156,7 @@ func Stat(path string, stat *Stat_t) (err error) {
 	if ret == 0 {
 		return nil
 	}
-	return Errno(os.Errno)
+	return Errno(os.Errno())
 }
 
 func Pipe(p []int) (err error) {
