@@ -133,12 +133,18 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 }
 
 // func funcAddr(fn any) unsafe.Pointer
-func (p *context) funcAddr(_ llssa.Builder, args []ssa.Value) llssa.Expr {
+func (p *context) funcAddr(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	if len(args) == 1 {
 		if fn, ok := args[0].(*ssa.MakeInterface); ok {
-			if fnDecl, ok := fn.X.(*ssa.Function); ok {
-				if aFn, _, _ := p.compileFunction(fnDecl); aFn != nil {
+			switch f := fn.X.(type) {
+			case *ssa.Function:
+				if aFn, _, _ := p.compileFunction(f); aFn != nil {
 					return aFn.Expr
+				}
+			default:
+				v := p.compileValue(b, f)
+				if _, ok := v.Type.RawType().Underlying().(*types.Signature); ok {
+					return v
 				}
 			}
 		}
