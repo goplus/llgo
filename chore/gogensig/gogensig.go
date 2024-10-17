@@ -16,6 +16,52 @@
 
 package main
 
+import (
+	"io"
+	"os"
+
+	"github.com/goplus/llgo/chore/gogensig/config"
+	"github.com/goplus/llgo/chore/gogensig/convert"
+	"github.com/goplus/llgo/chore/gogensig/processor"
+	"github.com/goplus/llgo/chore/gogensig/unmarshal"
+	"github.com/goplus/llgo/chore/gogensig/visitor"
+)
+
 func main() {
-	// TODO(xsw): implement gogensig tool
+	var data []byte
+	var err error
+	if len(os.Args) <= 1 {
+		os.Exit(1)
+	}
+
+	sigfetchFile := "llcppg.sigfetch.json"
+	if len(os.Args) > 1 {
+		sigfetchFile = os.Args[1]
+	}
+
+	if sigfetchFile == "-" {
+		data, err = io.ReadAll(os.Stdin)
+	} else {
+		data, err = os.ReadFile(sigfetchFile)
+	}
+	check(err)
+	conf, err := config.GetCppgCfgFromPath("./llcppg.cfg")
+	check(err)
+
+	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  conf.Name,
+		SymbFile: "./llcppg.symb.json",
+		CfgFile:  "./llcppg.cfg",
+	})
+	check(err)
+	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
+	inputdata, err := unmarshal.UnmarshalFileSet(data)
+	check(err)
+	err = p.ProcessFileSet(inputdata)
+	check(err)
+}
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
