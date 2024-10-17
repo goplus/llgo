@@ -1033,19 +1033,8 @@ func rtypeOf(i any) *abi.Type {
 	return eface.typ
 }
 
-/* TODO(xsw):
 // ptrMap is the cache for PointerTo.
 var ptrMap sync.Map // map[*rtype]*ptrType
-*/
-
-var ptrMap struct {
-	sync.Mutex
-	m map[*rtype]*ptrType
-}
-
-func init() {
-	ptrMap.m = make(map[*rtype]*ptrType)
-}
 
 // PtrTo returns the pointer type with element t.
 // For example, if t represents type Foo, PtrTo(t) represents *Foo.
@@ -1066,8 +1055,8 @@ func (t *rtype) ptrTo() *abi.Type {
 		return at.PtrToThis_
 	}
 	// Check the cache.
-	if pi, ok := ptrMap.m[t]; ok {
-		return &pi.Type
+	if pi, ok := ptrMap.Load(t); ok {
+		return &pi.(*ptrType).Type
 	}
 
 	// Look in known types.
@@ -1102,10 +1091,8 @@ func (t *rtype) ptrTo() *abi.Type {
 
 	pp.Elem = at
 
-	ptrMap.m[t] = &pp
-	return &pp.Type
-	//pi, _ := ptrMap.LoadOrStore(t, &pp)
-	//return &pi.(*ptrType).Type
+	pi, _ := ptrMap.LoadOrStore(t, &pp)
+	return &pi.(*ptrType).Type
 }
 
 func ptrTo(t *abi.Type) *abi.Type {
@@ -1395,31 +1382,27 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 func SliceOf(t Type) Type {
 	typ := t.common()
 
-	/* TODO(xsw): no cache
 	// Look in cache.
 	ckey := cacheKey{Slice, typ, nil, 0}
 	if slice, ok := lookupCache.Load(ckey); ok {
 		return slice.(Type)
 	}
 
-	// Look in known types.
-	s := "[]" + stringFor(typ)
-	for _, tt := range typesByString(s) {
-		slice := (*sliceType)(unsafe.Pointer(tt))
-		if slice.Elem == typ {
-			ti, _ := lookupCache.LoadOrStore(ckey, toRType(tt))
-			return ti.(Type)
+	/*
+		// Look in known types.
+		s := "[]" + stringFor(typ)
+		for _, tt := range typesByString(s) {
+			slice := (*sliceType)(unsafe.Pointer(tt))
+			if slice.Elem == typ {
+				ti, _ := lookupCache.LoadOrStore(ckey, toRType(tt))
+				return ti.(Type)
+			}
 		}
-	}
 	*/
 
 	slice := runtime.SliceOf(typ)
-
-	// TODO(xsw):
-	// ti, _ := lookupCache.LoadOrStore(ckey, toRType(&slice.Type))
-	// return ti.(Type)
-
-	return toType(slice)
+	ti, _ := lookupCache.LoadOrStore(ckey, toRType(slice))
+	return ti.(Type)
 }
 
 // toType converts from a *rtype to a Type that can be returned
@@ -1434,6 +1417,19 @@ func toType(t *abi.Type) Type {
 	return toRType(t)
 }
 
+// The lookupCache caches ArrayOf, ChanOf, MapOf and SliceOf lookups.
+var lookupCache sync.Map // map[cacheKey]*rtype
+
+// A cacheKey is the key for use in the lookupCache.
+// Four values describe any of the types we are looking for:
+// type kind, one or two subtypes, and an extra integer.
+type cacheKey struct {
+	kind  Kind
+	t1    *abi.Type
+	t2    *abi.Type
+	extra uintptr
+}
+
 // The funcLookupCache caches FuncOf lookups.
 // FuncOf does not share the common lookupCache since cacheKey is not
 // sufficient to represent functions unambiguously.
@@ -1442,11 +1438,7 @@ var funcLookupCache struct {
 
 	// m is a map[uint32][]*rtype keyed by the hash calculated in FuncOf.
 	// Elements of m are append-only and thus safe for concurrent reading.
-	m map[uint32][]*abi.Type
-}
-
-func init() {
-	funcLookupCache.m = make(map[uint32][]*abi.Type)
+	m sync.Map
 }
 
 // FuncOf returns the function type with the given argument and result types.
@@ -1497,8 +1489,8 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	defer funcLookupCache.Unlock()
 
 	// Look in cache.
-	if ts, ok := funcLookupCache.m[hash]; ok {
-		for _, t := range ts {
+	if ts, ok := funcLookupCache.m.Load(hash); ok {
+		for _, t := range ts.([]*abi.Type) {
 			if haveIdenticalUnderlyingType(&ft.Type, t, true) {
 				return toRType(t)
 			}
@@ -1506,8 +1498,11 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	}
 
 	addToCache := func(tt *abi.Type) Type {
-		rts := funcLookupCache.m[hash]
-		funcLookupCache.m[hash] = append(rts, tt)
+		var rts []*abi.Type
+		if rti, ok := funcLookupCache.m.Load(hash); ok {
+			rts = rti.([]*abi.Type)
+		}
+		funcLookupCache.m.Store(hash, append(rts, tt))
 		return toType(tt)
 	}
 	str := funcStr(ft)
