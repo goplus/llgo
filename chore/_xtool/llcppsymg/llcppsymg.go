@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/args"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config/cfgparse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
@@ -29,29 +29,16 @@ import (
 )
 
 func main() {
-	cfgFile := "llcppg.cfg"
 	symbFile := "llcppg.symb.json"
-	verbose := false
-	readStdin := false
 
-	for i := 1; i < len(os.Args); i++ {
-		arg := os.Args[i]
-		if arg == "-" {
-			readStdin = true
-		} else if arg == "-v" {
-			verbose = true
-		} else if !strings.HasPrefix(arg, "-") {
-			cfgFile = arg
-			break
-		}
-	}
+	ags, _ := args.ParseArgs(os.Args[1:], nil)
 
 	var data []byte
 	var err error
-	if readStdin {
+	if ags.UseStdin {
 		data, err = io.ReadAll(os.Stdin)
 	} else {
-		data, err = os.ReadFile(cfgFile)
+		data, err = os.ReadFile(ags.CfgFile)
 	}
 
 	check(err)
@@ -59,12 +46,12 @@ func main() {
 	check(err)
 	defer conf.Delete()
 
-	if verbose {
+	if ags.Verbose {
 		symbol.SetDebug(symbol.DbgFlagAll)
-		if readStdin {
+		if ags.UseStdin {
 			fmt.Println("Config From Stdin")
 		} else {
-			fmt.Println("Config From File", cfgFile)
+			fmt.Println("Config From File", ags.CfgFile)
 		}
 		fmt.Println("Name:", conf.Name)
 		fmt.Println("CFlags:", conf.CFlags)
@@ -75,7 +62,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
+		fmt.Fprintln(os.Stderr, "Failed to parse config file:", ags.CfgFile)
 	}
 	symbols, err := symbol.ParseDylibSymbols(conf.Libs)
 	check(err)
@@ -84,7 +71,7 @@ func main() {
 	filepaths, notFounds, err := cflag.GenHeaderFilePaths(conf.Include)
 	check(err)
 
-	if verbose {
+	if ags.Verbose {
 		fmt.Println("header file paths", filepaths)
 		if len(notFounds) > 0 {
 			fmt.Println("not found header files", notFounds)
