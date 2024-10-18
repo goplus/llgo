@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config/cfgparse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/symbol"
 )
@@ -79,11 +80,15 @@ func main() {
 	symbols, err := symbol.ParseDylibSymbols(conf.Libs)
 	check(err)
 
-	filepaths, err := parse.GenHeaderFilePath(conf.CFlags, conf.Include)
+	cflag := cfgparse.ParseCFlags(conf.CFlags)
+	filepaths, notFounds, err := cflag.GenHeaderFilePaths(conf.Include)
 	check(err)
 
 	if verbose {
-		fmt.Println("filepaths", filepaths)
+		fmt.Println("header file paths", filepaths)
+		if len(notFounds) > 0 {
+			fmt.Println("not found header files", notFounds)
+		}
 	}
 
 	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus, false)

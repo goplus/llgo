@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"unsafe"
@@ -12,6 +11,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config/cfgparse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/llcppg/types"
 	"github.com/goplus/llgo/xtool/nm"
@@ -20,71 +20,16 @@ import (
 type dbgFlags = int
 
 const (
-	DbgConf dbgFlags = 1 << iota
-	DbgSymbol
-
-	DbgFlagAll = DbgConf | DbgSymbol
+	DbgSymbol  dbgFlags = 1 << iota
+	DbgFlagAll          = DbgSymbol
 )
 
 var (
-	debugConf   bool
 	debugSymbol bool
 )
 
 func SetDebug(dbgFlags dbgFlags) {
-	debugConf = (dbgFlags & DbgConf) != 0
 	debugSymbol = (dbgFlags & DbgSymbol) != 0
-}
-
-type LibConfig struct {
-	Paths []string
-	Names []string
-}
-
-func ParseLibConfig(lib string) *LibConfig {
-	parts := strings.Fields(lib)
-	config := &LibConfig{}
-
-	for _, part := range parts {
-		if strings.HasPrefix(part, "-L") {
-			config.Paths = append(config.Paths, part[2:])
-		} else if strings.HasPrefix(part, "-l") {
-			config.Names = append(config.Names, part[2:])
-		}
-	}
-
-	return config
-}
-
-func GenDylibPaths(config *LibConfig, defaultPaths []string) ([]string, error) {
-	var foundPaths []string
-	var notFound []string
-	affix := ".dylib"
-	if runtime.GOOS == "linux" {
-		affix = ".so"
-	}
-	searchPaths := append(config.Paths, defaultPaths...)
-	for _, name := range config.Names {
-		var foundPath string
-		for _, path := range searchPaths {
-			dylibPath := filepath.Join(path, "lib"+name+affix)
-			if _, err := os.Stat(dylibPath); err == nil {
-				foundPath = dylibPath
-			}
-		}
-		if foundPath != "" {
-			foundPaths = append(foundPaths, foundPath)
-		} else {
-			notFound = append(notFound, name)
-		}
-	}
-	if len(notFound) > 0 && debugSymbol {
-		fmt.Printf("Warning: Some libraries were not found: %s\n", strings.Join(notFound, ", "))
-	}
-	if len(foundPaths) == 0 {
-		return nil, fmt.Errorf("failed to find any libraries")
-	}
-	return foundPaths, nil
 }
 
 // ParseDylibSymbols parses symbols from dynamic libraries specified in the lib string.
@@ -94,23 +39,28 @@ func GenDylibPaths(config *LibConfig, defaultPaths []string) ([]string, error) {
 //
 // Returns symbols and nil error if any symbols are found, or nil and error if none found.
 func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
-	if debugConf {
+	if debugSymbol {
 		fmt.Println("ParseDylibSymbols:from", lib)
 	}
-	conf := ParseLibConfig(lib)
-	if debugConf {
+	sysPaths := getSysLibPaths()
+	lbs := cfgparse.ParseLibs(lib)
+	if debugSymbol {
 		fmt.Println("ParseDylibSymbols:LibConfig Parse To")
-		fmt.Println("conf.Names: ", conf.Names)
-		fmt.Println("conf.Paths: ", conf.Paths)
+		fmt.Println("libs.Names: ", lbs.Names)
+		fmt.Println("libs.Paths: ", lbs.Paths)
 	}
-	defaultPaths := getSysLibPaths()
-	dylibPaths, err := GenDylibPaths(conf, defaultPaths)
+	dylibPaths, notFounds, err := lbs.GenDylibPaths(sysPaths)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate some dylib paths: %v", err)
 	}
 
 	if debugSymbol {
 		fmt.Println("ParseDylibSymbols:dylibPaths", dylibPaths)
+		if len(notFounds) > 0 {
+			fmt.Println("ParseDylibSymbols:not found libname", notFounds)
+		} else {
+			fmt.Println("ParseDylibSymbols:every library is found")
+		}
 	}
 
 	var symbols []*nm.Symbol
@@ -151,7 +101,7 @@ func ParseDylibSymbols(lib string) ([]*nm.Symbol, error) {
 func getSysLibPaths() []string {
 	var paths []string
 	if runtime.GOOS == "linux" {
-		if debugConf {
+		if debugSymbol {
 			fmt.Println("getSysLibPaths:find sys lib path from linux")
 		}
 		paths = []string{
@@ -159,13 +109,13 @@ func getSysLibPaths() []string {
 			"/usr/local/lib",
 		}
 		paths = append(paths, getPath("/etc/ld.so.conf")...)
-		if debugConf && len(paths) == 0 {
+		if debugSymbol && len(paths) == 0 {
 			fmt.Println("getSysLibPaths:/etc/ld.so.conf havent find any path")
 		}
 		confd := "/etc/ld.so.conf.d"
 		dir, err := os.Stat(confd)
 		if err != nil || !dir.IsDir() {
-			if debugConf {
+			if debugSymbol {
 				fmt.Println("getSysLibPaths:/etc/ld.so.conf.d not found or not dir")
 			}
 			return paths
@@ -183,7 +133,7 @@ func getSysLibPaths() []string {
 }
 
 func getPath(file string) []string {
-	if debugConf {
+	if debugSymbol {
 		fmt.Println("getPath:from", file)
 	}
 	var paths []string
