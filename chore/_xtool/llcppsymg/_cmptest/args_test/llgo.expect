@@ -1,0 +1,48 @@
+#stdout
+=== Test ParseArgs ===
+Test case: Basic flags
+Input: [-h -v -]
+Help: true
+Verbose: true
+UseStdin: true
+CfgFile: llcppg.cfg
+
+Test case: Config file
+Input: [lua.llcppg.cfg]
+Help: false
+Verbose: false
+UseStdin: false
+CfgFile: lua.llcppg.cfg
+
+Test case: Extract with multiple args
+Input: [--extract file1.h file2.h -v]
+Help: false
+Verbose: true
+UseStdin: false
+CfgFile: llcppg.cfg
+
+Test case: Non-skippable flags
+Input: [--extract file1.h file2.h -out=true -cpp=true -v]
+Help: false
+Verbose: true
+UseStdin: false
+CfgFile: llcppg.cfg
+
+Test case: Mixed flags
+Input: [-v --extract file.h -out=true config.json]
+Help: false
+Verbose: true
+UseStdin: false
+CfgFile: config.json
+
+Test case: Empty input
+Input: []
+Help: false
+Verbose: false
+UseStdin: false
+CfgFile: llcppg.cfg
+
+
+#stderr
+
+#exit 0

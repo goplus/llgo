@@ -1,0 +1,23 @@
+#stdout
+=== Test Case: C Header File ===
+CreateTranslationUnit succeeded
+Function/Method: test_function
+Scoping parts: [test_function]
+Function/Method: another_function
+Scoping parts: [another_function]
+
+=== Test Case: C++ Temp File ===
+CreateTranslationUnit succeeded
+Class: TestClass
+Function/Method: test_method
+Scoping parts: [TestClass test_method]
+Function/Method: static_method
+Scoping parts: [TestClass static_method]
+Namespace: TestNamespace
+Function/Method: namespaced_function
+Scoping parts: [TestNamespace namespaced_function]
+
+
+#stderr
+
+#exit 0
