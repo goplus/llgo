@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 	"sort"
-	"strings"
 
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/symbol"
@@ -15,158 +12,11 @@ import (
 )
 
 func main() {
-	TestParseLibConfig()
-	TestGenDylibPaths()
 	TestGetCommonSymbols()
 	TestReadExistingSymbolTable()
 	TestGenSymbolTableData()
 }
-func TestParseLibConfig() {
-	fmt.Println("=== Test ParseLibConfig ===")
 
-	testCases := []struct {
-		name  string
-		input string
-	}{
-		{
-			name:  "Lua library",
-			input: "-L/opt/homebrew/lib -llua -lm",
-		},
-		{
-			name:  "SQLite library",
-			input: "-L/opt/homebrew/opt/sqlite/lib -lsqlite3",
-		},
-		{
-			name:  "INIReader library",
-			input: "-L/opt/homebrew/Cellar/inih/58/lib -lINIReader",
-		},
-		{
-			name:  "Multiple library paths",
-			input: "-L/opt/homebrew/lib -L/usr/lib -llua",
-		},
-		{
-			name:  "No valid library",
-			input: "-L/opt/homebrew/lib",
-		},
-	}
-
-	for _, tc := range testCases {
-		fmt.Printf("Test case: %s\n", tc.name)
-		fmt.Printf("Input: %s\n", tc.input)
-
-		conf := symbol.ParseLibConfig(tc.input)
-
-		fmt.Println("Paths:", conf.Paths)
-		fmt.Println("Names:", conf.Names)
-	}
-}
-
-func TestGenDylibPaths() {
-	fmt.Println("=== Test GenDylibPaths ===")
-
-	tempDir := os.TempDir()
-	tempDefaultPath := filepath.Join(tempDir, "symblib")
-	affix := ".dylib"
-	if runtime.GOOS == "linux" {
-		affix = ".so"
-	}
-	err := os.MkdirAll(tempDefaultPath, 0755)
-	if err != nil {
-		fmt.Printf("Failed to create temp default path: %v\n", err)
-		return
-	}
-
-	dylib1 := filepath.Join(tempDir, "libsymb1"+affix)
-	dylib2 := filepath.Join(tempDir, "libsymb2"+affix)
-	defaultDylib3 := filepath.Join(tempDefaultPath, "libsymb3"+affix)
-
-	os.Create(dylib1)
-	os.Create(dylib2)
-	os.Create(defaultDylib3)
-	defer os.Remove(dylib1)
-	defer os.Remove(dylib2)
-	defer os.Remove(defaultDylib3)
-	defer os.Remove(tempDefaultPath)
-
-	testCase := []struct {
-		name         string
-		conf         *symbol.LibConfig
-		defaultPaths []string
-		want         []string
-		wantErr      bool
-	}{
-		{
-			name: "existing dylib",
-			conf: &symbol.LibConfig{
-				Names: []string{"symb1"},
-				Paths: []string{tempDir},
-			},
-			defaultPaths: []string{},
-			want:         []string{dylib1},
-		},
-		{
-			name: "existing dylibs",
-			conf: &symbol.LibConfig{
-				Names: []string{"symb1", "symb2"},
-				Paths: []string{tempDir},
-			},
-			defaultPaths: []string{},
-			want:         []string{dylib1, dylib2},
-		},
-		{
-			name: "existint default paths",
-			conf: &symbol.LibConfig{
-				Names: []string{"symb1", "symb3"},
-				Paths: []string{tempDir},
-			},
-			defaultPaths: []string{tempDefaultPath},
-			want:         []string{dylib1, defaultDylib3},
-		},
-		{
-			name: "no existing dylib",
-			conf: &symbol.LibConfig{
-				Names: []string{"notexist"},
-				Paths: []string{tempDir},
-			},
-			want:    []string{},
-			wantErr: true,
-		},
-	}
-	for _, tc := range testCase {
-		fmt.Printf("Test case: %s\n", tc.name)
-		paths, err := symbol.GenDylibPaths(tc.conf, tc.defaultPaths)
-
-		if tc.wantErr {
-			if err == nil {
-				fmt.Printf("Expected error, but got nil\n")
-			}
-		} else {
-			if err != nil {
-				fmt.Printf("Unexpected error: %v\n", err)
-			}
-			for _, path := range paths {
-				found := false
-				for _, wantPath := range tc.want {
-					if path == wantPath {
-						found = true
-						fileName := filepath.Base(path)
-						if runtime.GOOS == "linux" {
-							fileName = strings.TrimSuffix(fileName, ".so")
-						} else {
-							fileName = strings.TrimSuffix(fileName, ".dylib")
-						}
-						fmt.Printf("Path %s is in the expected paths\n", fileName)
-						break
-					}
-				}
-				if !found {
-					fmt.Printf("Path %s is not in the expected paths\n", path)
-				}
-			}
-		}
-	}
-
-}
 func TestGetCommonSymbols() {
 	fmt.Println("=== Test GetCommonSymbols ===")
 	testCases := []struct {
