@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -105,9 +106,36 @@ func runPkg() {
 	pkgs := getPkgs()
 	idx := randIndex(len(pkgs))
 	pkg := pkgs[idx]
+	fmt.Printf("***start test %s\n", pkg)
 	runPkgs([]string{pkg})
 }
 
+func printHelp() {
+	helpString := `llcppgtest is used to test llcppg
+usage: llcppgtest [-h|-r] pkgname`
+	fmt.Println(helpString)
+	flag.PrintDefaults()
+}
+
 func main() {
-	runPkg()
+	help := false
+	flag.BoolVar(&help, "h", false, "print help message")
+	rand := false
+	flag.BoolVar(&rand, "r", false, "select one pkg of pkg-config --list-all to test")
+	flag.Parse()
+	if help || len(os.Args) <= 1 {
+		printHelp()
+		return
+	}
+	if rand {
+		runPkg()
+	} else {
+		if len(flag.Args()) > 0 {
+			arg := flag.Arg(0)
+			fmt.Printf("***start test %s\n", arg)
+			runPkgs([]string{arg})
+		} else {
+			printHelp()
+		}
+	}
 }
