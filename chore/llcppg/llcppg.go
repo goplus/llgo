@@ -53,6 +53,13 @@ func gogensig(in io.Reader) error {
 	return cmd.Run()
 }
 
+func runCommand(cmdName string, args ...string) error {
+	cmd := exec.Command(cmdName, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 func main() {
 	cfgFile := "llcppg.cfg"
 	if len(os.Args) > 1 {
@@ -71,6 +78,10 @@ func main() {
 	json.NewDecoder(f).Decode(&conf)
 	conf.CFlags = env.ExpandEnv(conf.CFlags)
 	conf.Libs = env.ExpandEnv(conf.Libs)
+
+	runCommand("go", "mod", "init", conf.Name)
+
+	runCommand("go", "get", "github.com/goplus/llgo")
 
 	b, err := json.MarshalIndent(&conf, "", "  ")
 	check(err)
