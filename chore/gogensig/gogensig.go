@@ -19,6 +19,8 @@ package main
 import (
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
@@ -26,6 +28,23 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
+
+func runCommand(dir, cmdName string, args ...string) error {
+	execCmd := exec.Command(cmdName, args...)
+	execCmd.Stdout = os.Stdout
+	execCmd.Stderr = os.Stderr
+	execCmd.Dir = dir
+	return execCmd.Run()
+}
+
+func runGoCmds(pkg string) {
+	wd, _ := os.Getwd()
+	dir := filepath.Join(wd, pkg)
+	os.MkdirAll(dir, 0744)
+	os.Chdir(pkg)
+	runCommand(dir, "go", "mod", "init", pkg)
+	runCommand(dir, "go", "get", "github.com/goplus/llgo")
+}
 
 func main() {
 	var data []byte
@@ -45,8 +64,11 @@ func main() {
 		data, err = os.ReadFile(sigfetchFile)
 	}
 	check(err)
+
 	conf, err := config.GetCppgCfgFromPath("./llcppg.cfg")
 	check(err)
+
+	runGoCmds(conf.Name)
 
 	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
 		PkgName:  conf.Name,
@@ -60,6 +82,7 @@ func main() {
 	err = p.ProcessFileSet(inputdata)
 	check(err)
 }
+
 func check(err error) {
 	if err != nil {
 		panic(err)
