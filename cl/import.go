@@ -360,12 +360,6 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 	return llssa.FuncName(pkg, fnName, recv, org)
 }
 
-func checkCgo(fnName string) bool {
-	return len(fnName) > 4 && fnName[0] == '_' && fnName[2] == 'g' && fnName[3] == 'o' &&
-		(fnName[1] == 'C' || fnName[1] == 'c') &&
-		(fnName[4] == '_' || strings.HasPrefix(fnName[4:], "Check"))
-}
-
 const (
 	ignoredFunc = iota
 	goFunc      = int(llssa.InGo)
@@ -430,7 +424,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		}
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn, false)
-		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
+		if ignore && ignoreName(orgName) {
 			return nil, orgName, ignoredFunc
 		}
 	}
