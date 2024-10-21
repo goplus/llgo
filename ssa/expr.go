@@ -223,15 +223,15 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 		case kind == types.Bool:
 			return Expr{prog.BoolVal(constant.BoolVal(v)).impl, typ}
 		case kind >= types.Int && kind <= types.Int64:
-			if v, exact := constant.Int64Val(v); exact {
+			if v, exact := constant.Int64Val(constant.ToInt(v)); exact {
 				return prog.IntVal(uint64(v), typ)
 			}
 		case kind >= types.Uint && kind <= types.Uintptr:
-			if v, exact := constant.Uint64Val(v); exact {
+			if v, exact := constant.Uint64Val(constant.ToInt(v)); exact {
 				return prog.IntVal(v, typ)
 			}
 		case kind == types.Float64 || kind == types.Float32:
-			v, _ := constant.Float64Val(v)
+			v, _ := constant.Float64Val(constant.ToFloat(v))
 			return prog.FloatVal(v, typ)
 		case kind == types.String:
 			return Expr{b.Str(constant.StringVal(v)).impl, typ}
