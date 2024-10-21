@@ -108,7 +108,7 @@ func (conn *cConn) Read(p []byte) (n int, err error) {
 	for n < len(p) {
 		result := os.Read(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
 		if result < 0 {
-			if os.Errno == c.Int(syscall.EINTR) {
+			if os.Errno() == c.Int(syscall.EINTR) {
 				continue
 			}
 			return n, errors.New("read error")
@@ -128,7 +128,7 @@ func (conn *cConn) Write(p []byte) (n int, err error) {
 	for n < len(p) {
 		result := os.Write(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
 		if result < 0 {
-			if os.Errno == c.Int(syscall.EINTR) {
+			if os.Errno() == c.Int(syscall.EINTR) {
 				continue
 			}
 			return n, errors.New("write error")
@@ -151,7 +151,7 @@ func (conn *cConn) Close() error {
 	conn.closed = true
 	result := os.Close(conn.socketFd)
 	if result < 0 {
-		return errors.New(c.GoString(c.Strerror(os.Errno)))
+		return errors.New(c.GoString(c.Strerror(os.Errno())))
 	}
 	return nil
 }

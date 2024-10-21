@@ -33,7 +33,7 @@ func (f *File) write(b []byte) (int, error) {
 	if ret >= 0 {
 		return int(ret), nil
 	}
-	return 0, syscall.Errno(os.Errno)
+	return 0, syscall.Errno(os.Errno())
 }
 
 /* TODO(xsw):
@@ -56,7 +56,7 @@ func (f *File) read(b []byte) (int, error) {
 	if ret == 0 {
 		return 0, io.EOF
 	}
-	return 0, syscall.Errno(os.Errno)
+	return 0, syscall.Errno(os.Errno())
 }
 
 /* TODO(xsw):

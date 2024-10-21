@@ -466,7 +466,7 @@ func SysctlUint32(name string) (value uint32, err error) {
 	n := uintptr(4)
 	ret := os.Sysctlbyname(c.AllocaCStr(name), unsafe.Pointer(&value), &n, nil, 0)
 	if ret != 0 {
-		err = Errno(os.Errno)
+		err = Errno(os.Errno())
 	}
 	return
 }
