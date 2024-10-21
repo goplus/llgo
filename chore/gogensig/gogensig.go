@@ -37,8 +37,7 @@ func runCommand(dir, cmdName string, args ...string) error {
 	return execCmd.Run()
 }
 
-func runGoCmds(pkg string) {
-	wd, _ := os.Getwd()
+func runGoCmds(wd, pkg string) {
 	dir := filepath.Join(wd, pkg)
 	os.MkdirAll(dir, 0744)
 	os.Chdir(pkg)
@@ -68,17 +67,22 @@ func main() {
 	conf, err := config.GetCppgCfgFromPath("./llcppg.cfg")
 	check(err)
 
-	runGoCmds(conf.Name)
+	wd, err := os.Getwd()
+	check(err)
+
+	runGoCmds(wd, conf.Name)
 
 	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
 		PkgName:  conf.Name,
-		SymbFile: "./llcppg.symb.json",
-		CfgFile:  "./llcppg.cfg",
+		SymbFile: filepath.Join(wd, "llcppg.symb.json"),
+		CfgFile:  filepath.Join(wd, "llcppg.cfg"),
 	})
 	check(err)
+
 	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
 	inputdata, err := unmarshal.UnmarshalFileSet(data)
 	check(err)
+
 	err = p.ProcessFileSet(inputdata)
 	check(err)
 }
