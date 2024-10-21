@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -40,6 +41,10 @@ func main() {
 	if ags.Help {
 		printUsage()
 		return
+	}
+	if ags.Verbose {
+		log.SetFlags(0)
+		parse.SetDebug(parse.DbgFlagAll)
 	}
 	extract := false
 	out := false
@@ -74,9 +79,21 @@ func main() {
 	}
 
 	if extract {
-		runExtract(extractFile, isTemp, isCpp, out, otherArgs)
+		if ags.Verbose {
+			log.Println("runExtract: extractFile:", extractFile)
+			log.Println("isTemp:", isTemp)
+			log.Println("isCpp:", isCpp)
+			log.Println("out:", out)
+			log.Println("otherArgs:", otherArgs)
+		}
+		runExtract(extractFile, isTemp, isCpp, out, otherArgs, ags.Verbose)
 	} else {
-		runFromConfig(ags.CfgFile, ags.UseStdin, out)
+		if ags.Verbose {
+			log.Println("runFromConfig: config file:", ags.CfgFile)
+			log.Println("use stdin:", ags.UseStdin)
+			log.Println("output to file:", out)
+		}
+		runFromConfig(ags.CfgFile, ags.UseStdin, out, ags.Verbose)
 	}
 
 }
@@ -109,13 +126,20 @@ func printUsage() {
 	fmt.Println("Note: The two usage modes are mutually exclusive. Use either [<config_file>] OR --extract, not both.")
 }
 
-func runFromConfig(cfgFile string, useStdin bool, outputToFile bool) {
+func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose bool) {
 	var data []byte
 	var err error
 	if useStdin {
 		data, err = io.ReadAll(os.Stdin)
 	} else {
 		data, err = os.ReadFile(cfgFile)
+	}
+	if verbose {
+		if useStdin {
+			log.Println("runFromConfig: read from stdin")
+		} else {
+			log.Println("runFromConfig: read from file", cfgFile)
+		}
 	}
 	check(err)
 
@@ -124,10 +148,21 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool) {
 	defer conf.Delete()
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
+		log.Println("Failed to parse config file:", cfgFile)
+		os.Exit(1)
 	}
 
-	files := getHeaderFiles(conf.CFlags, conf.Include)
+	//todo(zzy): reuse the llcppsymg's cflags parse
+	cflag := ParseCFlags(conf.CFlags)
+	files, notFounds, err := cflag.GenHeaderFilePaths(conf.Include)
+	check(err)
+
+	if verbose {
+		log.Println("runFromConfig: header file paths", files)
+		if len(notFounds) > 0 {
+			log.Println("runFromConfig: not found header files", notFounds)
+		}
+	}
 
 	context := parse.NewContext(conf.Cplusplus)
 	err = context.ProcessFiles(files)
@@ -136,7 +171,7 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool) {
 	outputInfo(context, outputToFile)
 }
 
-func runExtract(file string, isTemp bool, isCpp bool, outToFile bool, otherArgs []string) {
+func runExtract(file string, isTemp bool, isCpp bool, outToFile bool, otherArgs []string, verbose bool) {
 	cfg := &clangutils.Config{
 		File:  file,
 		Args:  otherArgs,
@@ -175,14 +210,46 @@ func outputResult(result *c.Char, outputToFile bool) {
 	}
 }
 
-func getHeaderFiles(cflags string, files []string) []string {
-	prefix := cflags
-	prefix = strings.TrimPrefix(prefix, "-I")
-	var paths []string
-	for _, f := range files {
-		paths = append(paths, filepath.Join(prefix, f))
+// todo(zzy): reuse the llcppsymg's cflags parse https://github.com/goplus/llgo/pull/788
+type CFlags struct {
+	Paths []string // Include Path
+}
+
+func ParseCFlags(cflags string) *CFlags {
+	parts := strings.Fields(cflags)
+	cf := &CFlags{}
+	for _, part := range parts {
+		if strings.HasPrefix(part, "-I") {
+			cf.Paths = append(cf.Paths, part[2:])
+		}
 	}
-	return paths
+	return cf
+}
+
+func (cf *CFlags) GenHeaderFilePaths(files []string) ([]string, []string, error) {
+	var foundPaths []string
+	var notFound []string
+
+	for _, file := range files {
+		var found bool
+		for _, path := range cf.Paths {
+			fullPath := filepath.Join(path, file)
+			if _, err := os.Stat(fullPath); err == nil {
+				foundPaths = append(foundPaths, fullPath)
+				found = true
+				break
+			}
+		}
+		if !found {
+			notFound = append(notFound, file)
+		}
+	}
+
+	if len(foundPaths) == 0 {
+		return nil, notFound, fmt.Errorf("failed to find any header files")
+	}
+
+	return foundPaths, notFound, nil
 }
 
 func outputInfo(context *parse.Context, outputToFile bool) {

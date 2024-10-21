@@ -2,10 +2,26 @@ package parse
 
 import (
 	"errors"
+	"log"
 
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
+
+type dbgFlags = int
+
+const (
+	DbgParse   dbgFlags = 1 << iota
+	DbgFlagAll          = DbgParse
+)
+
+var (
+	debugParse bool
+)
+
+func SetDebug(dbgFlags dbgFlags) {
+	debugParse = (dbgFlags & DbgParse) != 0
+}
 
 type Context struct {
 	Files []*FileEntry
@@ -25,6 +41,9 @@ func (p *Context) Output() *cjson.JSON {
 
 // ProcessFiles processes the given files and adds them to the context
 func (p *Context) ProcessFiles(files []string) error {
+	if debugParse {
+		log.Println("ProcessFiles: files", files, "isCpp", p.IsCpp)
+	}
 	for _, file := range files {
 		if err := p.processFile(file); err != nil {
 			return err
@@ -35,8 +54,14 @@ func (p *Context) ProcessFiles(files []string) error {
 
 // parse file and add it to the context,avoid duplicate parsing
 func (p *Context) processFile(path string) error {
+	if debugParse {
+		log.Println("processFile: path", path)
+	}
 	for _, entry := range p.Files {
 		if entry.Path == path {
+			if debugParse {
+				log.Println("processFile: already parsed", path)
+			}
 			return nil
 		}
 	}
@@ -50,6 +75,9 @@ func (p *Context) processFile(path string) error {
 }
 
 func (p *Context) parseFile(path string) ([]*FileEntry, error) {
+	if debugParse {
+		log.Println("parseFile: path", path)
+	}
 	converter, err := NewConverter(&clangutils.Config{
 		File:  path,
 		Temp:  false,
