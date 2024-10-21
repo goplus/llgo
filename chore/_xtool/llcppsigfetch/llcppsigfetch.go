@@ -27,32 +27,58 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/args"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 )
 
 func main() {
-	cfgFile := ""
-	useStdin := false
-	outputToFile := false
-	for i := 1; i < len(os.Args); i++ {
-		arg := os.Args[i]
+	ags, remainArgs := args.ParseArgs(os.Args[1:], map[string]bool{
+		"--extract": true,
+	})
+
+	if ags.Help {
+		printUsage()
+		return
+	}
+	extract := false
+	out := false
+
+	var extractFile string
+	isTemp := false
+	isCpp := true
+	otherArgs := []string{}
+
+	for i := 0; i < len(remainArgs); i++ {
+		arg := remainArgs[i]
 		switch {
 		case arg == "--extract":
-			runExtract()
-			return
-		case arg == "--help" || arg == "-h":
-			printUsage()
-			return
+			extract = true
+			if i+1 < len(remainArgs) && !strings.HasPrefix(remainArgs[i+1], "-") {
+				extractFile = remainArgs[i+1]
+				i++
+			} else {
+				fmt.Println("Error: --extract requires a valid file argument")
+				printUsage()
+				os.Exit(1)
+			}
 		case strings.HasPrefix(arg, "-out="):
-			outputToFile = parseBoolArg(arg, "out", false)
-		case cfgFile == "" && !strings.HasPrefix(arg, "-"):
-			cfgFile = arg
-		case arg == "-":
-			useStdin = true
+			out = parseBoolArg(arg, "out", false)
+		case strings.HasPrefix(arg, "-temp="):
+			isTemp = parseBoolArg(arg, "temp", false)
+		case strings.HasPrefix(arg, "-cpp="):
+			isCpp = parseBoolArg(arg, "cpp", true)
+		default:
+			otherArgs = append(otherArgs, arg)
 		}
 	}
-	runFromConfig(cfgFile, useStdin, outputToFile)
+
+	if extract {
+		runExtract(extractFile, isTemp, isCpp, out, otherArgs)
+	} else {
+		runFromConfig(ags.CfgFile, ags.UseStdin, out)
+	}
+
 }
 
 func printUsage() {
@@ -84,10 +110,6 @@ func printUsage() {
 }
 
 func runFromConfig(cfgFile string, useStdin bool, outputToFile bool) {
-	if cfgFile == "" {
-		cfgFile = "llcppg.cfg"
-	}
-
 	var data []byte
 	var err error
 	if useStdin {
@@ -114,48 +136,20 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool) {
 	outputInfo(context, outputToFile)
 }
 
-func runExtract() {
-	if len(os.Args) < 3 {
-		fmt.Println("Error: Insufficient arguments for --extract")
-		printUsage()
-		os.Exit(1)
-	}
-
+func runExtract(file string, isTemp bool, isCpp bool, outToFile bool, otherArgs []string) {
 	cfg := &clangutils.Config{
-		File:  os.Args[2],
-		Args:  []string{},
-		IsCpp: true,
-		Temp:  false,
+		File:  file,
+		Args:  otherArgs,
+		IsCpp: isCpp,
+		Temp:  isTemp,
 	}
-
-	outputToFile := false
-	for i := 3; i < len(os.Args); i++ {
-		arg := os.Args[i]
-		switch {
-		case strings.HasPrefix(arg, "-temp="):
-			cfg.Temp = parseBoolArg(arg, "temp", false)
-			os.Args = append(os.Args[:i], os.Args[i+1:]...)
-			i--
-		case strings.HasPrefix(arg, "-cpp="):
-			cfg.IsCpp = parseBoolArg(arg, "cpp", true)
-			os.Args = append(os.Args[:i], os.Args[i+1:]...)
-			i--
-		case strings.HasPrefix(arg, "-out="):
-			outputToFile = parseBoolArg(arg, "out", false)
-			os.Args = append(os.Args[:i], os.Args[i+1:]...)
-			i--
-		default:
-			cfg.Args = append(cfg.Args, arg)
-		}
-	}
-
 	converter, err := parse.NewConverter(cfg)
 	check(err)
 	_, err = converter.Convert()
 	check(err)
 	result := converter.MarshalOutputASTFiles()
 	cstr := result.Print()
-	outputResult(cstr, outputToFile)
+	outputResult(cstr, outToFile)
 	cjson.FreeCStr(cstr)
 	result.Delete()
 	converter.Dispose()
