@@ -124,7 +124,9 @@ func (b Builder) SliceData(x Expr) Expr {
 		log.Printf("SliceData %v\n", x.impl)
 	}
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 0)
-	return Expr{ptr, b.Prog.VoidPtr()}
+	ty := x.Type.RawType()
+	tySlice := ty.Underlying().(*types.Slice)
+	return Expr{ptr, b.Prog.Pointer(b.Prog.rawType(tySlice.Elem()))}
 }
 
 // SliceLen returns the length of a slice.
