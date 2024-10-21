@@ -268,7 +268,8 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
 				p.prog.SetLinkname(fullName, link)
 			} else {
-				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
+				link = "C." + link
+				p.prog.SetLinkname(fullName, link)
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "==>", line)
@@ -390,6 +391,9 @@ const (
 	llgoSiglongjmp = llgoInstrBase + 0xc
 
 	llgoFuncAddr = llgoInstrBase + 0xd
+
+	llgoAllocCStr  = llgoInstrBase + 0xe
+	llgoStaticCast = llgoInstrBase + 0xf
 
 	llgoPyList  = llgoInstrBase + 0x10
 	llgoPyStr   = llgoInstrBase + 0x11

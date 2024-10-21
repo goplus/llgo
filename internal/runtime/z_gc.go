@@ -36,3 +36,37 @@ func AllocZ(size uintptr) unsafe.Pointer {
 	ret := bdwgc.Malloc(size)
 	return c.Memset(ret, 0, size)
 }
+
+// Realloc reallocates memory.
+func Realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
+	return bdwgc.Realloc(ptr, size)
+}
+
+// Free frees memory.
+func Free(ptr unsafe.Pointer) {
+	bdwgc.Free(ptr)
+}
+
+// -----------------------------------------------------------------------------
+
+type finalizerFunc func(unsafe.Pointer)
+
+func finalizerCallback(ptr unsafe.Pointer, cd unsafe.Pointer) {
+	iface := [2]unsafe.Pointer{cd, nil}
+	fn := *(*finalizerFunc)((c.Pointer)(&iface))
+	fn(ptr)
+}
+
+// obj and finalizer must pointer
+func SetFinalizer(obj any, finalizer any) {
+	iface := (*[2]unsafe.Pointer)(unsafe.Pointer(&obj))
+	p := iface[1]
+	// Convert finalizer to unsafe.Pointer
+	iface = (*[2]unsafe.Pointer)(unsafe.Pointer(&finalizer))
+	cd := iface[1]
+	bdwgc.RegisterFinalizer(p, finalizerCallback, cd, nil, nil)
+}
+
+func GC() {
+	bdwgc.Gcollect()
+}

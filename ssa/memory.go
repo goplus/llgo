@@ -163,7 +163,18 @@ func (b Builder) AllocaU(elem Type, n ...int64) (ret Expr) {
 }
 */
 
-// AllocaCStr allocates space for copy it from a Go string.
+// AllocCstr allocates space on heap and copy it from a Go string.
+func (b Builder) AllocCStr(gostr Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocCStr %v\n", gostr.impl)
+	}
+	n := b.StringLen(gostr)
+	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
+	cstr := b.allocUninited(n1)
+	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
+}
+
+// AllocaCStr allocates space on stack and copy it from a Go string.
 func (b Builder) AllocaCStr(gostr Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("AllocaCStr %v\n", gostr.impl)
