@@ -1182,6 +1182,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		if len(args) > 0 {
 			return b.compareSelect(token.GTR, args[0], args[1:]...)
 		}
+	case "Add":
+		return b.Advance(args[0], args[1])
 	}
 	panic("todo: " + fn)
 }
