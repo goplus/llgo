@@ -2,7 +2,9 @@
 source_filename = "main"
 
 %main.Foo = type { i32, i1 }
+%"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
+@"github.com/goplus/llgo/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
 @main.format = global [10 x i8] zeroinitializer, align 1
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -33,6 +35,19 @@ _llgo_0:
   call void @main.Foo.Print(%main.Foo %1)
   ret void
 }
+
+define ptr @main._Cgo_ptr(ptr %0) {
+_llgo_0:
+  ret ptr %0
+}
+
+declare void @runtime.cgoUse(%"github.com/goplus/llgo/internal/runtime.eface")
+
+declare void @runtime.cgoCheckPointer(%"github.com/goplus/llgo/internal/runtime.eface", %"github.com/goplus/llgo/internal/runtime.eface")
+
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/internal/runtime.eface")
+
+declare i32 @runtime.cgocall(ptr, i64)
 
 define void @main.init() {
 _llgo_0:
