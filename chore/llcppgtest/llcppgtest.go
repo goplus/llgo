@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -75,10 +74,14 @@ func getPkgs() []string {
 	return pkgs
 }
 
-func runPkgs(pkgs []string) {
+func runPkgs(pkgs []string, cpp bool) {
 	wd, _ := os.Getwd()
 	wg := sync.WaitGroup{}
 	wg.Add(len(pkgs))
+	llcppcfgArg := []string{}
+	if cpp {
+		llcppcfgArg = append(llcppcfgArg, "-cpp")
+	}
 	for _, pkg := range pkgs {
 		dir := "./out/" + pkg
 		RunCommand("mkdir", "-p", dir)
@@ -87,11 +90,8 @@ func runPkgs(pkgs []string) {
 		RunCommandInDir(curDir, func(err error) {
 			go RunCommandInDir(curDir, func(err error) {
 				wg.Done()
-				if err != nil {
-					log.Fatalf("\n---Run llcppg in %s fail!---\n", curDir)
-				}
 			}, "llcppg")
-		}, "llcppcfg", pkg)
+		}, "llcppcfg", append(llcppcfgArg, pkg)...)
 	}
 	wg.Wait()
 	fmt.Printf("llcppgtest run %v finished!\n", pkgs)
@@ -102,12 +102,12 @@ func randIndex(len int) int {
 	return r.Intn(len)
 }
 
-func runPkg() {
+func runPkg(cpp bool) {
 	pkgs := getPkgs()
 	idx := randIndex(len(pkgs))
 	pkg := pkgs[idx]
 	fmt.Printf("***start test %s\n", pkg)
-	runPkgs([]string{pkg})
+	runPkgs([]string{pkg}, cpp)
 }
 
 func printHelp() {
@@ -122,18 +122,20 @@ func main() {
 	flag.BoolVar(&help, "h", false, "print help message")
 	rand := false
 	flag.BoolVar(&rand, "r", false, "select one pkg of pkg-config --list-all to test")
+	cpp := false
+	flag.BoolVar(&cpp, "cpp", false, "if it is a cpp library")
 	flag.Parse()
 	if help || len(os.Args) <= 1 {
 		printHelp()
 		return
 	}
 	if rand {
-		runPkg()
+		runPkg(cpp)
 	} else {
 		if len(flag.Args()) > 0 {
 			arg := flag.Arg(0)
 			fmt.Printf("***start test %s\n", arg)
-			runPkgs([]string{arg})
+			runPkgs([]string{arg}, cpp)
 		} else {
 			printHelp()
 		}
