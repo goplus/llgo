@@ -96,3 +96,11 @@ func (c *Closure) Bind(cif *Signature, fn ffi.ClosureFunc, userdata unsafe.Point
 	}
 	return Error(status)
 }
+
+func add(ptr unsafe.Pointer, offset uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(ptr) + offset)
+}
+
+func Index(args *unsafe.Pointer, i uintptr) unsafe.Pointer {
+	return (*(*unsafe.Pointer)(add(unsafe.Pointer(args), i*unsafe.Sizeof(0))))
+}
