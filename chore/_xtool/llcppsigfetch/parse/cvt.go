@@ -354,6 +354,10 @@ func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
 		return ct.ProcessElaboratedType(t)
 	}
 
+	if t.Kind == clang.TypeTypedef {
+		return ct.ProcessTypeDefType(t)
+	}
+
 	var expr ast.Expr
 	switch t.Kind {
 	case clang.TypePointer:
@@ -437,7 +441,7 @@ func (ct *Converter) ProcessTypeDefDecl(cursor clang.Cursor) *ast.TypedefDecl {
 	ct.incIndent()
 	defer ct.decIndent()
 	name, kind := getCursorDesc(cursor)
-	ct.logln("ProcessTypeDefDecl: CursorName:", name, "CursorKind:", kind)
+	ct.logln("ProcessTypeDefDecl: CursorName:", name, "CursorKind:", kind, "CursorTypeKind:", toStr(cursor.Type().Kind.String()))
 
 	typ := ct.ProcessUnderlyingType(cursor)
 
@@ -868,6 +872,16 @@ func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 	}
 
 	return ct.BuildScopingExpr(decl)
+}
+
+func (ct *Converter) ProcessTypeDefType(t clang.Type) ast.Expr {
+	cursor := t.TypeDeclaration()
+	ct.logln("ProcessTypeDefType: Typedef TypeDeclaration", toStr(cursor.String()), toStr(t.String()))
+	if name := toStr(cursor.String()); name != "" {
+		return &ast.Ident{Name: name}
+	}
+	ct.logln("ProcessTypeDefType: typedef type have no name")
+	return nil
 }
 
 func (ct *Converter) ProcessBuiltinType(t clang.Type) *ast.BuiltinType {
