@@ -157,8 +157,7 @@ func genFakeAsmHdr(prog llssa.Program, ssaPkg *ssa.Package, asmHdr string) error
 				}
 			}
 		case *ssa.NamedConst:
-			// format: 134:uintptr
-			value := strings.Split(m.Value.String(), ":")[0]
+			value := m.Value.Value.ExactString()
 			fmt.Fprintf(f, "#define const_%s %v\n", m.Name(), value)
 		}
 	}
