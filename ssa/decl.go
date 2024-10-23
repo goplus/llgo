@@ -257,7 +257,14 @@ func (p Function) closureCtx(b Builder) Expr {
 			panic("ssa: function has no free variables")
 		}
 		ptr := Expr{p.impl.Param(0), p.params[0]}
-		p.freeVars = b.Load(ptr)
+		if b.blk.Index() != 0 {
+			blk := b.impl.GetInsertBlock()
+			b.SetBlockEx(p.blks[0], AtStart, false)
+			p.freeVars = b.Load(ptr)
+			b.impl.SetInsertPointAtEnd(blk)
+		} else {
+			p.freeVars = b.Load(ptr)
+		}
 	}
 	return p.freeVars
 }
