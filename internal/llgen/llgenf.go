@@ -96,6 +96,9 @@ func GenWithAsmHdr(asmHdr string, pkgPath string, inFilesOrPkg ...string) string
 
 	pkg := initial[0]
 	ssaPkg := pkgs[0]
+	if ssaPkg == nil {
+		panic(fmt.Sprintf("package %s is nil\n", pkg.PkgPath))
+	}
 	ssaPkg.Build()
 
 	initRtAndPy(prog, cfg)
