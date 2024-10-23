@@ -17,55 +17,74 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"strings"
-	"unsafe"
 
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/cjson"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/args"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config/cfgparse"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
-	"github.com/goplus/llgo/chore/llcppg/types"
-	"github.com/goplus/llgo/xtool/nm"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/symbol"
 )
 
 func main() {
-	cfgFile := "llcppg.cfg"
-	if len(os.Args) > 1 {
-		cfgFile = os.Args[1]
-	}
+	symbFile := "llcppg.symb.json"
+
+	ags, _ := args.ParseArgs(os.Args[1:], nil)
 
 	var data []byte
 	var err error
-	if cfgFile == "-" {
+	if ags.UseStdin {
 		data, err = io.ReadAll(os.Stdin)
 	} else {
-		data, err = os.ReadFile(cfgFile)
+		data, err = os.ReadFile(ags.CfgFile)
 	}
-	check(err)
 
+	check(err)
 	conf, err := config.GetConf(data)
 	check(err)
 	defer conf.Delete()
 
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
+	if ags.Verbose {
+		symbol.SetDebug(symbol.DbgFlagAll)
+		if ags.UseStdin {
+			fmt.Println("Config From Stdin")
+		} else {
+			fmt.Println("Config From File", ags.CfgFile)
+		}
+		fmt.Println("Name:", conf.Name)
+		fmt.Println("CFlags:", conf.CFlags)
+		fmt.Println("Libs:", conf.Libs)
+		fmt.Println("Include:", conf.Include)
+		fmt.Println("TrimPrefixes:", conf.TrimPrefixes)
+		fmt.Println("Cplusplus:", conf.Cplusplus)
 	}
-	symbols, err := parseDylibSymbols(conf.Libs)
 
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to parse config file:", ags.CfgFile)
+	}
+	symbols, err := symbol.ParseDylibSymbols(conf.Libs)
 	check(err)
 
-	filepaths := genHeaderFilePath(conf.CFlags, conf.Include)
-	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus)
+	cflag := cfgparse.ParseCFlags(conf.CFlags)
+	filepaths, notFounds, err := cflag.GenHeaderFilePaths(conf.Include)
 	check(err)
 
-	symbolInfo := getCommonSymbols(symbols, headerInfos, conf.TrimPrefixes)
+	if ags.Verbose {
+		fmt.Println("header file paths", filepaths)
+		if len(notFounds) > 0 {
+			fmt.Println("not found header files", notFounds)
+		}
+	}
 
-	err = genSymbolTableFile(symbolInfo)
+	headerInfos, err := parse.ParseHeaderFile(filepaths, conf.TrimPrefixes, conf.Cplusplus, false)
+	check(err)
+
+	symbolData, err := symbol.GenerateAndUpdateSymbolTable(symbols, headerInfos, symbFile)
+	check(err)
+
+	err = os.WriteFile(symbFile, symbolData, 0644)
 	check(err)
 }
 
@@ -73,142 +92,4 @@ func check(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func parseDylibSymbols(lib string) ([]*nm.Symbol, error) {
-	dylibPath, err := genDylibPath(lib)
-	if err != nil {
-		return nil, errors.New("failed to generate dylib path")
-	}
-
-	files, err := nm.New("").List(dylibPath)
-	if err != nil {
-		return nil, errors.New("failed to list symbols in dylib")
-	}
-
-	var symbols []*nm.Symbol
-	for _, file := range files {
-		symbols = append(symbols, file.Symbols...)
-	}
-
-	return symbols, nil
-}
-
-func genDylibPath(lib string) (string, error) {
-	output := lib
-	libPath := ""
-	libName := ""
-	for _, part := range strings.Fields(string(output)) {
-		if strings.HasPrefix(part, "-L") {
-			libPath = part[2:]
-		} else if strings.HasPrefix(part, "-l") {
-			libName = part[2:]
-		}
-	}
-
-	if libPath == "" || libName == "" {
-		return "", fmt.Errorf("failed to parse pkg-config output: %s", output)
-	}
-
-	dylibPath := filepath.Join(libPath, "lib"+libName+".dylib")
-	return dylibPath, nil
-}
-
-func genHeaderFilePath(cflags string, files []string) []string {
-	prefixPath := cflags
-	prefixPath = strings.TrimPrefix(prefixPath, "-I")
-	var includePaths []string
-	for _, file := range files {
-		includePaths = append(includePaths, filepath.Join(prefixPath, "/"+file))
-	}
-	return includePaths
-}
-
-func getCommonSymbols(dylibSymbols []*nm.Symbol, symbolMap map[string]*parse.SymbolInfo, prefix []string) []*types.SymbolInfo {
-	var commonSymbols []*types.SymbolInfo
-	for _, dylibSym := range dylibSymbols {
-		symName := strings.TrimPrefix(dylibSym.Name, "_")
-		if symInfo, ok := symbolMap[symName]; ok {
-			symbolInfo := &types.SymbolInfo{
-				Mangle: symName,
-				CPP:    symInfo.ProtoName,
-				Go:     symInfo.GoName,
-			}
-			commonSymbols = append(commonSymbols, symbolInfo)
-		}
-	}
-	return commonSymbols
-}
-
-func genSymbolTableFile(symbolInfos []*types.SymbolInfo) error {
-	fileName := "llcppg.symb.json"
-	existingSymbols, err := readExistingSymbolTable(fileName)
-	if err != nil {
-		return err
-	}
-
-	for i := range symbolInfos {
-		if existingSymbol, exists := existingSymbols[symbolInfos[i].Mangle]; exists {
-			symbolInfos[i].Go = existingSymbol.Go
-		}
-	}
-
-	root := cjson.Array()
-	defer root.Delete()
-
-	for _, symbol := range symbolInfos {
-		item := cjson.Object()
-		item.SetItem(c.Str("mangle"), cjson.String(c.AllocaCStr(symbol.Mangle)))
-		item.SetItem(c.Str("c++"), cjson.String(c.AllocaCStr(symbol.CPP)))
-		item.SetItem(c.Str("go"), cjson.String(c.AllocaCStr(symbol.Go)))
-		root.AddItem(item)
-	}
-
-	cStr := root.Print()
-	if cStr == nil {
-		return errors.New("symbol table is empty")
-	}
-	defer c.Free(unsafe.Pointer(cStr))
-
-	data := unsafe.Slice((*byte)(unsafe.Pointer(cStr)), c.Strlen(cStr))
-
-	if err := os.WriteFile(fileName, data, 0644); err != nil {
-		return errors.New("failed to write symbol table file")
-	}
-	return nil
-}
-
-func readExistingSymbolTable(fileName string) (map[string]types.SymbolInfo, error) {
-	existingSymbols := make(map[string]types.SymbolInfo)
-
-	if _, err := os.Stat(fileName); err != nil {
-		return existingSymbols, nil
-	}
-
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		return nil, errors.New("failed to read symbol table file")
-	}
-
-	parsedJSON := cjson.ParseBytes(data)
-	if parsedJSON == nil {
-		return nil, errors.New("failed to parse JSON")
-	}
-
-	arraySize := parsedJSON.GetArraySize()
-
-	for i := 0; i < int(arraySize); i++ {
-		item := parsedJSON.GetArrayItem(c.Int(i))
-		if item == nil {
-			continue
-		}
-		symbol := types.SymbolInfo{
-			Mangle: config.GetStringItem(item, "mangle", ""),
-			CPP:    config.GetStringItem(item, "c++", ""),
-			Go:     config.GetStringItem(item, "go", ""),
-		}
-		existingSymbols[symbol.Mangle] = symbol
-	}
-
-	return existingSymbols, nil
 }
