@@ -34,6 +34,11 @@ func demo(a array) c.Int {
 	return a.x + a.y + a.z + a.k
 }
 
+var (
+	typeInt32   = &ffi.Type{4, 4, ffi.Sint32, nil}
+	typePointer = &ffi.Type{unsafe.Sizeof(0), uint16(unsafe.Alignof(0)), ffi.Pointer, nil}
+)
+
 func main() {
 	gofn()
 	c.Printf(c.Str("\n"))
@@ -41,38 +46,48 @@ func main() {
 }
 
 func gofn() {
-	sig, err := ffi.NewSignature(ffi.TypeInt32, ffi.TypePointer)
-	if err != nil {
-		panic(err)
+	var cif ffi.Cif
+	status := ffi.PrepCif(&cif, ffi.DefaultAbi, 1, typeInt32, &[]*ffi.Type{typePointer}[0])
+	if status != ffi.OK {
+		panic(status)
 	}
-	closure := ffi.NewClosure()
-	defer closure.Free()
-	err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	var fncode unsafe.Pointer
+	closure := ffi.ClosureAlloc(&fncode)
+	defer ffi.ClosureFree(closure)
+	status = ffi.PreClosureLoc(closure, &cif, func(cif *ffi.Cif, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 		ar := *(*array)(ffi.Index(args, 0))
 		*(*c.Int)(ret) = demo(ar)
-	}, nil)
+	}, nil, fncode)
+	if status != ffi.OK {
+		panic(status)
+	}
 	var ret int32
-	ffi.Call(sig, c.Func(demo2), unsafe.Pointer(&ret), unsafe.Pointer(&closure.Fn))
+	ffi.Call(&cif, c.Func(demo2), unsafe.Pointer(&ret), &[]unsafe.Pointer{unsafe.Pointer(&fncode)}[0])
 	c.Printf(c.Str("ret: %d\n"), ret)
 }
 
 func goclosure() {
-	sig, err := ffi.NewSignature(ffi.TypeInt32, ffi.TypePointer)
-	if err != nil {
-		panic(err)
+	var cif ffi.Cif
+	status := ffi.PrepCif(&cif, ffi.DefaultAbi, 1, typeInt32, &[]*ffi.Type{typePointer}[0])
+	if status != ffi.OK {
+		panic(status)
 	}
 	fn := func(ar array) c.Int {
-		c.Printf(c.Str("call closure %d\n"), sig.NArgs)
+		c.Printf(c.Str("call closure %d\n"), cif.NArgs)
 		return demo(ar)
 	}
-	closure := ffi.NewClosure()
-	defer closure.Free()
-	err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	var fncode unsafe.Pointer
+	closure := ffi.ClosureAlloc(&fncode)
+	defer ffi.ClosureFree(closure)
+	status = ffi.PreClosureLoc(closure, &cif, func(cif *ffi.Cif, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 		ar := *(*array)(ffi.Index(args, 0))
 		fn := *(*func(array) c.Int)(userdata)
 		*(*c.Int)(ret) = fn(ar)
-	}, unsafe.Pointer(&fn))
+	}, unsafe.Pointer(&fn), fncode)
+	if status != ffi.OK {
+		panic(status)
+	}
 	var ret int32
-	ffi.Call(sig, c.Func(demo2), unsafe.Pointer(&ret), unsafe.Pointer(&closure.Fn))
+	ffi.Call(&cif, c.Func(demo2), unsafe.Pointer(&ret), &[]unsafe.Pointer{unsafe.Pointer(&fncode)}[0])
 	c.Printf(c.Str("ret: %d\n"), ret)
 }

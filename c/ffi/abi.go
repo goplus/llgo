@@ -3,5 +3,5 @@
 package ffi
 
 const (
-	DefaultAbi Abi = 1
+	DefaultAbi = 1
 )

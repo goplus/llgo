@@ -1,101 +1,127 @@
 package ffi
 
 import (
-	"fmt"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/ffi/ffi"
 )
 
-type Type = ffi.Type
-
-type Signature = ffi.Cif
-
-type Abi c.Uint
-
-type Error c.Uint
+const (
+	LLGoPackage = "link: $(pkg-config --libs libffi); -lffi"
+	LLGoFiles   = "$(pkg-config --cflags libffi): _wrap/libffi.c"
+)
 
 const (
-	OK Error = iota
+	Void = iota
+	Int
+	Float
+	Double
+	LongDouble
+	Uint8
+	Sint8
+	Uint16
+	Sint16
+	Uint32
+	Sint32
+	Uint64
+	Sint64
+	Struct
+	Pointer
+	Complex
+)
+
+const (
+	OK = iota
 	BAD_TYPEDEF
 	BAD_ABI
 	BAD_ARGTYPE
 )
 
-func (s Error) Error() string {
-	switch s {
-	case OK:
-		return "ok"
-	case BAD_TYPEDEF:
-		return "bad type def"
-	case BAD_ABI:
-		return "bad ABI"
-	case BAD_ARGTYPE:
-		return "bad argument type"
-	}
-	return fmt.Sprintf("invalid status: %v", int(s))
+type Type struct {
+	Size      uintptr
+	Alignment uint16
+	Type      uint16
+	Elements  **Type
 }
 
-func NewSignature(ret *Type, args ...*Type) (*Signature, error) {
-	var cif ffi.Cif
-	var atype **Type
-	if len(args) > 0 {
-		atype = &args[0]
-	}
-	status := ffi.PrepCif(&cif, c.Uint(DefaultAbi), c.Uint(len(args)), ret, atype)
-	if status == 0 {
-		return &cif, nil
-	}
-	return nil, Error(status)
+/*typedef struct {
+  ffi_abi abi;
+  unsigned nargs;
+  ffi_type **arg_types;
+  ffi_type *rtype;
+  unsigned bytes;
+  unsigned flags;
+#ifdef FFI_EXTRA_CIF_FIELDS
+  FFI_EXTRA_CIF_FIELDS;
+#endif
+} ffi_cif;
+*/
+
+type Cif struct {
+	Abi      c.Uint
+	NArgs    c.Uint
+	ArgTypes **Type
+	RType    *Type
+	Bytes    c.Uint
+	Flags    c.Uint
+	//Extra    c.Uint
 }
 
-func NewSignatureVar(ret *Type, fixed int, args ...*Type) (*Signature, error) {
-	var cif ffi.Cif
-	var atype **Type
-	if len(args) > 0 {
-		atype = &args[0]
-	}
-	status := ffi.PrepCifVar(&cif, c.Uint(DefaultAbi), c.Uint(fixed), c.Uint(len(args)), ret, atype)
-	if status == 0 {
-		return &cif, nil
-	}
-	return nil, Error(status)
-}
+/*
+ffi_status
+ffi_prep_cif(ffi_cif *cif,
+			ffi_abi abi,
+			unsigned int nargs,
+			ffi_type *rtype,
+			ffi_type **atypes);
+*/
+//go:linkname PrepCif C.ffi_prep_cif
+func PrepCif(cif *Cif, abi c.Uint, nargs c.Uint, rtype *Type, atype **Type) c.Uint
 
-func Call(cif *Signature, fn unsafe.Pointer, ret unsafe.Pointer, args ...unsafe.Pointer) {
-	var avalues *unsafe.Pointer
-	if len(args) > 0 {
-		avalues = &args[0]
-	}
-	ffi.Call(cif, fn, ret, avalues)
-}
+/*
+ffi_status ffi_prep_cif_var(ffi_cif *cif,
+			    ffi_abi abi,
+			    unsigned int nfixedargs,
+			    unsigned int ntotalargs,
+			    ffi_type *rtype,
+			    ffi_type **atypes);
+*/
+//go:linkname PrepCifVar C.ffi_prep_cif_var
+func PrepCifVar(cif *Cif, abi c.Uint, nfixedargs c.Uint, ntotalargs c.Uint, rtype *Type, atype **Type) c.Uint
 
-type Closure struct {
-	ptr unsafe.Pointer
-	Fn  unsafe.Pointer
-}
+/*
+void ffi_call(ffi_cif *cif,
+			void (*fn)(void),
+			void *rvalue,
+			void **avalue);
+*/
+//go:linkname Call C.ffi_call
+func Call(cif *Cif, fn unsafe.Pointer, rvalue unsafe.Pointer, avalue *unsafe.Pointer)
 
-func NewClosure() *Closure {
-	c := &Closure{}
-	c.ptr = ffi.ClosureAlloc(&c.Fn)
-	return c
-}
+// void *ffi_closure_alloc (size_t size, void **code);
+//
+//go:linkname ClosureAlloc C.llog_ffi_closure_alloc
+func ClosureAlloc(code *unsafe.Pointer) unsafe.Pointer
 
-func (c *Closure) Free() {
-	if c != nil && c.ptr != nil {
-		ffi.ClosureFree(c.ptr)
-		c.ptr = nil
-	}
-}
+// void ffi_closure_free (void *);
+//
+//go:linkname ClosureFree C.ffi_closure_free
+func ClosureFree(unsafe.Pointer)
 
-func (c *Closure) Bind(cif *Signature, fn ffi.ClosureFunc, userdata unsafe.Pointer) error {
-	status := ffi.PreClosureLoc(c.ptr, cif, fn, userdata, c.Fn)
-	if status == 0 {
-		return nil
-	}
-	return Error(status)
-}
+/*
+ffi_status
+ffi_prep_closure_loc (ffi_closure*,
+      ffi_cif *,
+      void (*fun)(ffi_cif*,void*,void**,void*),
+      void *user_data,
+      void *codeloc);
+*/
+
+//llgo:type C
+type ClosureFunc func(cif *Cif, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer)
+
+//go:linkname PreClosureLoc C.ffi_prep_closure_loc
+func PreClosureLoc(closure unsafe.Pointer, cif *Cif, fn ClosureFunc, userdata unsafe.Pointer, codeloc unsafe.Pointer) c.Uint
 
 func add(ptr unsafe.Pointer, offset uintptr) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(ptr) + offset)

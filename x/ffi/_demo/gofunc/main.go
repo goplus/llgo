@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c/ffi"
+	"github.com/goplus/llgo/x/ffi"
 )
 
 type array struct {
