@@ -23,10 +23,10 @@ for item in "$GOROOT"/pkg/*; do
     fi
 done
 
-# Create symlinks for files in pkg/tool/darwin_arm64, excluding cgo and compile
+# Create symlinks for files in pkg/tool/darwin_arm64, excluding cgo, compile and link
 for item in "$GOROOT"/pkg/tool/darwin_arm64/*; do
     filename=$(basename "$item")
-    if [ "$filename" != "cgo" ] && [ "$filename" != "compile" ]; then
+    if [ "$filename" != "cgo" ] && [ "$filename" != "compile" ] && [ "$filename" != "link" ]; then
         ln -s "$item" "$TEST_GO_PATH/pkg/tool/darwin_arm64/$filename"
     fi
 done
@@ -37,6 +37,7 @@ set -e
 cd "$LLGO_PATH" || exit
 go build -o "$TEST_GO_PATH/pkg/tool/darwin_arm64/cgo" ./cmd/llcgo
 go build -o "$TEST_GO_PATH/pkg/tool/darwin_arm64/compile" ./cmd/llgoc
+go build -o "$TEST_GO_PATH/pkg/tool/darwin_arm64/link" ./cmd/llgolink
 
 cd "$DIR" || exit
 export GOROOT="$TEST_GO_PATH"

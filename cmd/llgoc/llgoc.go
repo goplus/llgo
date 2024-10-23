@@ -114,14 +114,15 @@ func main() {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH"))
 
-	objFile := *output + ".o"
+	dir := filepath.Dir(*output)
+	objFile := filepath.Join(dir, "_go_.o")
 	cl := clang.New("clang")
-	if err := cl.Exec("-c", "-o", objFile, llFile); err != nil {
+	if err := cl.Exec("-c", "-v", "-o", objFile, llFile); err != nil {
 		log.Fatalf("Error compiling LLVM IR %s to %s: %v\n", llFile, objFile, err)
 	}
 
 	ar := clang.New("ar")
-	if err := ar.Exec("-rcs", *output, objFile); err != nil {
+	if err := ar.Exec("-rcS", *output, objFile); err != nil {
 		log.Fatalf("Error creating archive %s: %v\n", *output, err)
 	}
 }
