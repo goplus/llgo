@@ -32,6 +32,7 @@ for item in "$GOROOT"/pkg/tool/darwin_arm64/*; do
 done
 
 set -x
+set -e
 
 cd "$LLGO_PATH" || exit
 go build -o "$TEST_GO_PATH/pkg/tool/darwin_arm64/cgo" ./cmd/llcgo
