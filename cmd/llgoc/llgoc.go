@@ -41,6 +41,7 @@ func main() {
 	trimpath := customFlags.String("trimpath", "", "remove `prefix` from recorded source file paths")
 	versionFlag := customFlags.String("V", "no", "print version and exit")
 	verbose := customFlags.Bool("v", false, "print verbose information")
+	lang := customFlags.String("lang", "", "Go language `version` (e.g. go1.20)")
 
 	err := customFlags.Parse(os.Args[1:])
 	if err != nil {
@@ -76,6 +77,7 @@ func main() {
 	log.Println("Compilation concurrency:", *c)
 	log.Println("Compiling runtime:", *compilingRuntime)
 	log.Println("Source files:", strings.Join(sourceFiles, ", "))
+	log.Println("Go language version:", *lang)
 
 	if *output == "" || *packagePath == "" || len(sourceFiles) == 0 {
 		log.Println("usage: compile [options] file.go...")
