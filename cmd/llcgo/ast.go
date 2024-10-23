@@ -128,11 +128,22 @@ func (f *File) ParseGo(abspath string, src []byte) {
 				continue
 			}
 			for _, spec := range d.Specs {
-				if s, ok := spec.(*ast.ImportSpec); ok && s.Path.Value == `"C"` {
-					// Replace "C" with _ "unsafe", to keep program valid.
-					// (Deleting import statement or clause is not safe if it is followed
-					// in the source by an explicit semicolon.)
-					f.Edit.Replace(f.offset(s.Path.Pos()), f.offset(s.Path.End()), `_ "unsafe"`)
+				if s, ok := spec.(*ast.ImportSpec); ok {
+					if s.Path.Value == `"C"` {
+						// Replace "C" with _ "unsafe", to keep program valid.
+						// (Deleting import statement or clause is not safe if it is followed
+						// in the source by an explicit semicolon.)
+						f.Edit.Replace(f.offset(s.Path.Pos()), f.offset(s.Path.End()), `_ "unsafe"`)
+					} else if s.Path.Value == `"runtime/internal/sys"` {
+						// Remove import "runtime/internal/sys"
+						// Insert type nih and NotInHeap.
+						f.Edit.Replace(f.offset(d.Pos()), f.offset(d.End()), "type nih struct{}\n\ntype notInHeap struct{\n\t_ nih\n}")
+					}
+				} else if s, ok := spec.(*ast.TypeSpec); ok {
+					if s.Name.Name == "Incomplete" {
+						// Modify the Incomplete type to use notInHeap instead of sys.NotInHeap
+						f.Edit.Replace(f.offset(s.Type.Pos()), f.offset(s.Type.End()), "struct {\n\t_ notInHeap\n}")
+					}
 				}
 			}
 		}
