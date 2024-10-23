@@ -638,29 +638,22 @@ func (ct *Converter) ProcessInclude(cursor clang.Cursor) *ast.Include {
 	return &ast.Include{Path: name}
 }
 
-// todo(zzy): after https://github.com/goplus/llgo/issues/804 has be resolved
-// Change the following code to use the closure
-type visitFieldContext struct {
-	params    *ast.FieldList
-	converter *Converter
-}
-
-func (p *visitFieldContext) createBaseField(cursor clang.Cursor) *ast.Field {
-	p.converter.incIndent()
-	defer p.converter.decIndent()
+func (ct *Converter) createBaseField(cursor clang.Cursor) *ast.Field {
+	ct.incIndent()
+	defer ct.decIndent()
 
 	fieldName := toStr(cursor.String())
 
 	typ := cursor.Type()
 	typeName, typeKind := getTypeDesc(typ)
 
-	p.converter.logf("createBaseField: ProcessType %s TypeKind: %s", typeName, typeKind)
+	ct.logf("createBaseField: ProcessType %s TypeKind: %s", typeName, typeKind)
 
 	field := &ast.Field{
-		Type: p.converter.ProcessType(typ),
+		Type: ct.ProcessType(typ),
 	}
 
-	commentGroup, isDoc := p.converter.ParseCommentGroup(cursor)
+	commentGroup, isDoc := ct.ParseCommentGroup(cursor)
 	if commentGroup != nil {
 		if isDoc {
 			field.Doc = commentGroup
@@ -673,43 +666,6 @@ func (p *visitFieldContext) createBaseField(cursor clang.Cursor) *ast.Field {
 	}
 	return field
 }
-func visitFieldList(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ctx := (*visitFieldContext)(clientData)
-
-	switch cursor.Kind {
-	case clang.CursorParmDecl, clang.CursorFieldDecl:
-		// In C language, parameter lists do not have similar parameter grouping in Go.
-		// func foo(a, b int)
-
-		// For follows struct, it will also parse to two FieldDecl
-		// struct A {
-		// 	int a, b;
-		// };
-		if cursor.Kind == clang.CursorFieldDecl {
-			ctx.converter.logln("visitFieldList: CursorFieldDecl")
-		} else {
-			ctx.converter.logln("visitFieldList: CursorParmDecl")
-		}
-
-		field := ctx.createBaseField(cursor)
-		if cursor.Kind == clang.CursorFieldDecl {
-			field.Access = ast.AccessSpecifier(cursor.CXXAccessSpecifier())
-		}
-
-		ctx.params.List = append(ctx.params.List, field)
-
-	case clang.CursorVarDecl:
-		if cursor.StorageClass() == clang.SCStatic {
-			// static member variable
-			field := ctx.createBaseField(cursor)
-			field.Access = ast.AccessSpecifier(cursor.CXXAccessSpecifier())
-			field.IsStatic = true
-			ctx.params.List = append(ctx.params.List, field)
-		}
-	}
-
-	return clang.ChildVisit_Continue
-}
 
 // For Record Type(struct,union ...) & Func 's FieldList
 func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
@@ -717,12 +673,42 @@ func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 	defer ct.decIndent()
 
 	params := &ast.FieldList{}
-	ctx := &visitFieldContext{
-		params:    params,
-		converter: ct,
-	}
 	ct.logln("ProcessFieldList: VisitChildren")
-	clang.VisitChildren(cursor, visitFieldList, c.Pointer(ctx))
+	VisitChildren(cursor, func(subcsr, parent clang.Cursor) clang.ChildVisitResult {
+		switch subcsr.Kind {
+		case clang.CursorParmDecl, clang.CursorFieldDecl:
+			// In C language, parameter lists do not have similar parameter grouping in Go.
+			// func foo(a, b int)
+
+			// For follows struct, it will also parse to two FieldDecl
+			// struct A {
+			// 	int a, b;
+			// };
+			if subcsr.Kind == clang.CursorFieldDecl {
+				ct.logln("ProcessFieldList: CursorFieldDecl")
+			} else {
+				ct.logln("ProcessFieldList: CursorParmDecl")
+			}
+
+			field := ct.createBaseField(subcsr)
+			if subcsr.Kind == clang.CursorFieldDecl {
+				field.Access = ast.AccessSpecifier(subcsr.CXXAccessSpecifier())
+			}
+
+			params.List = append(params.List, field)
+
+		case clang.CursorVarDecl:
+			if subcsr.StorageClass() == clang.SCStatic {
+				// static member variable
+				field := ct.createBaseField(subcsr)
+				field.Access = ast.AccessSpecifier(subcsr.CXXAccessSpecifier())
+				field.IsStatic = true
+				params.List = append(params.List, field)
+			}
+		}
+		return clang.ChildVisit_Continue
+	})
+
 	if (cursor.Kind == clang.CursorFunctionDecl || isMethod(cursor)) && cursor.IsVariadic() != 0 {
 		params.List = append(params.List, &ast.Field{
 			Type: &ast.Variadic{},
@@ -731,30 +717,18 @@ func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 	return params
 }
 
-type visitMethodsContext struct {
-	methods   *[]*ast.FuncDecl
-	converter *Converter
-}
-
-func visitMethods(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-	ctx := (*visitMethodsContext)(clientData)
-	if isMethod(cursor) && cursor.CXXAccessSpecifier() == clang.CXXPublic {
-		method := ctx.converter.ProcessFuncDecl(cursor)
-		if method != nil {
-			*ctx.methods = append(*ctx.methods, method)
-		}
-	}
-	return clang.ChildVisit_Continue
-}
-
 // Note:Public Method is considered
 func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 	methods := make([]*ast.FuncDecl, 0)
-	ctx := &visitMethodsContext{
-		methods:   &methods,
-		converter: ct,
-	}
-	clang.VisitChildren(cursor, visitMethods, c.Pointer(ctx))
+	VisitChildren(cursor, func(subcsr, parent clang.Cursor) clang.ChildVisitResult {
+		if isMethod(subcsr) && subcsr.CXXAccessSpecifier() == clang.CXXPublic {
+			method := ct.ProcessFuncDecl(subcsr)
+			if method != nil {
+				methods = append(methods, method)
+			}
+		}
+		return clang.ChildVisit_Continue
+	})
 	return methods
 }
 
