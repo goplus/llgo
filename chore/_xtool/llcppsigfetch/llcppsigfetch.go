@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -43,7 +42,6 @@ func main() {
 		return
 	}
 	if ags.Verbose {
-		log.SetFlags(0)
 		parse.SetDebug(parse.DbgFlagAll)
 	}
 	extract := false
@@ -63,7 +61,7 @@ func main() {
 				extractFile = remainArgs[i+1]
 				i++
 			} else {
-				fmt.Println("Error: --extract requires a valid file argument")
+				fmt.Fprintln(os.Stderr, "Error: --extract requires a valid file argument")
 				printUsage()
 				os.Exit(1)
 			}
@@ -80,18 +78,18 @@ func main() {
 
 	if extract {
 		if ags.Verbose {
-			log.Println("runExtract: extractFile:", extractFile)
-			log.Println("isTemp:", isTemp)
-			log.Println("isCpp:", isCpp)
-			log.Println("out:", out)
-			log.Println("otherArgs:", otherArgs)
+			fmt.Fprintln(os.Stderr, "runExtract: extractFile:", extractFile)
+			fmt.Fprintln(os.Stderr, "isTemp:", isTemp)
+			fmt.Fprintln(os.Stderr, "isCpp:", isCpp)
+			fmt.Fprintln(os.Stderr, "out:", out)
+			fmt.Fprintln(os.Stderr, "otherArgs:", otherArgs)
 		}
 		runExtract(extractFile, isTemp, isCpp, out, otherArgs, ags.Verbose)
 	} else {
 		if ags.Verbose {
-			log.Println("runFromConfig: config file:", ags.CfgFile)
-			log.Println("use stdin:", ags.UseStdin)
-			log.Println("output to file:", out)
+			fmt.Fprintln(os.Stderr, "runFromConfig: config file:", ags.CfgFile)
+			fmt.Fprintln(os.Stderr, "use stdin:", ags.UseStdin)
+			fmt.Fprintln(os.Stderr, "output to file:", out)
 		}
 		runFromConfig(ags.CfgFile, ags.UseStdin, out, ags.Verbose)
 	}
@@ -136,9 +134,9 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose boo
 	}
 	if verbose {
 		if useStdin {
-			log.Println("runFromConfig: read from stdin")
+			fmt.Fprintln(os.Stderr, "runFromConfig: read from stdin")
 		} else {
-			log.Println("runFromConfig: read from file", cfgFile)
+			fmt.Fprintln(os.Stderr, "runFromConfig: read from file", cfgFile)
 		}
 	}
 	check(err)
@@ -148,7 +146,7 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose boo
 	defer conf.Delete()
 
 	if err != nil {
-		log.Println("Failed to parse config file:", cfgFile)
+		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
 		os.Exit(1)
 	}
 
@@ -158,9 +156,9 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose boo
 	check(err)
 
 	if verbose {
-		log.Println("runFromConfig: header file paths", files)
+		fmt.Fprintln(os.Stderr, "runFromConfig: header file paths", files)
 		if len(notFounds) > 0 {
-			log.Println("runFromConfig: not found header files", notFounds)
+			fmt.Fprintln(os.Stderr, "runFromConfig: not found header files", notFounds)
 		}
 	}
 
@@ -204,7 +202,7 @@ func outputResult(result *c.Char, outputToFile bool) {
 			fmt.Fprintf(os.Stderr, "Error writing to output file: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Results saved to %s\n", outputFile)
+		fmt.Fprintf(os.Stderr, "Results saved to %s\n", outputFile)
 	} else {
 		c.Printf(result)
 	}
@@ -263,12 +261,12 @@ func outputInfo(context *parse.Context, outputToFile bool) {
 func parseBoolArg(arg, name string, defaultValue bool) bool {
 	parts := strings.SplitN(arg, "=", 2)
 	if len(parts) != 2 {
-		fmt.Printf("Warning: Invalid -%s= argument, defaulting to %v\n", name, defaultValue)
+		fmt.Fprintf(os.Stderr, "Warning: Invalid -%s= argument, defaulting to %v\n", name, defaultValue)
 		return defaultValue
 	}
 	value, err := strconv.ParseBool(parts[1])
 	if err != nil {
-		fmt.Printf("Warning: Invalid -%s= value '%s', defaulting to %v\n", name, parts[1], defaultValue)
+		fmt.Fprintf(os.Stderr, "Warning: Invalid -%s= value '%s', defaulting to %v\n", name, parts[1], defaultValue)
 		return defaultValue
 	}
 	return value

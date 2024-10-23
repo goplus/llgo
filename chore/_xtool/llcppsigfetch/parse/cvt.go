@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"unsafe"
@@ -67,11 +66,11 @@ type Config struct {
 
 func NewConverter(config *clangutils.Config) (*Converter, error) {
 	if debugParse {
-		log.Println("NewConverter: config")
-		log.Println("config.File", config.File)
-		log.Println("config.Args", config.Args)
-		log.Println("config.IsCpp", config.IsCpp)
-		log.Println("config.Temp", config.Temp)
+		fmt.Fprintln(os.Stderr, "NewConverter: config")
+		fmt.Fprintln(os.Stderr, "config.File", config.File)
+		fmt.Fprintln(os.Stderr, "config.Args", config.Args)
+		fmt.Fprintln(os.Stderr, "config.IsCpp", config.IsCpp)
+		fmt.Fprintln(os.Stderr, "config.Temp", config.Temp)
 	}
 
 	index, unit, err := clangutils.CreateTranslationUnit(config)
@@ -130,16 +129,16 @@ func (ct *Converter) decIndent() {
 
 func (ct *Converter) logf(format string, args ...interface{}) {
 	if debugParse {
-		log.Printf(ct.logBase()+format, args...)
+		fmt.Fprintf(os.Stderr, ct.logBase()+format, args...)
 	}
 }
 func (ct *Converter) logln(args ...interface{}) {
 	if debugParse {
 		if len(args) > 0 {
 			firstArg := fmt.Sprintf("%s%v", ct.logBase(), args[0])
-			log.Println(append([]interface{}{firstArg}, args[1:]...)...)
+			fmt.Fprintln(os.Stderr, append([]interface{}{firstArg}, args[1:]...)...)
 		} else {
-			log.Println(ct.logBase())
+			fmt.Fprintln(os.Stderr, ct.logBase())
 		}
 	}
 }
