@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/goplus/llgo/cl"
@@ -15,8 +16,10 @@ import (
 )
 
 func main() {
+	// disable timestamps for reproducible output
+	log.SetFlags(0)
+	log.SetPrefix("compile: ")
 	log.SetOutput(os.Stderr)
-	log.SetFlags(0) // Remove timestamp from log output
 
 	log.Printf("args: %v\n", os.Args)
 
@@ -59,6 +62,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	envWork := os.Getenv("WORK")
 	sourceFiles := customFlags.Args()
 
 	log.Println("Output file:", *output)
@@ -98,6 +102,8 @@ func main() {
 	}
 	cl.EnableDebugSymbols(false)
 
+	sourceFiles = fixInFilesOrPkg(envWork, sourceFiles)
+
 	llFile := *output + ".ll"
 	llOut := llgen.GenWithAsmHdr(*asmhdr, *packagePath, sourceFiles...)
 	err = os.WriteFile(llFile, []byte(llOut), 0644)
@@ -115,7 +121,69 @@ func main() {
 	}
 
 	ar := clang.New("ar")
-	if err := ar.Exec("rcs", *output, objFile); err != nil {
+	if err := ar.Exec("-rcs", *output, objFile); err != nil {
 		log.Fatalf("Error creating archive %s: %v\n", *output, err)
 	}
+}
+
+func check(err error) {
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+}
+
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
+}
+
+// longestCommonPrefix returns the longest common prefix of two strings
+func longestCommonPrefix(a, b string) string {
+	a = filepath.ToSlash(a)
+	b = filepath.ToSlash(b)
+	i := 0
+	for ; i < len(a) && i < len(b); i++ {
+		if a[i] != b[i] {
+			break
+		}
+	}
+	return a[:i]
+}
+
+// avoid discarding _*.go files and ensure all files in one directory
+func fixInFilesOrPkg(envWork string, inFilesOrPkg []string) []string {
+	dir := filepath.Dir(inFilesOrPkg[0])
+	// find path more like envWork (temporary directory)
+	curCommonPrefix := longestCommonPrefix(dir, envWork)
+
+	for _, file := range inFilesOrPkg {
+		d := filepath.Dir(file)
+		if d == dir {
+			continue
+		}
+
+		// Use longest common prefix to check if file is in envWork
+		commonPrefix := longestCommonPrefix(file, envWork)
+		if len(commonPrefix) >= len(curCommonPrefix) {
+			dir = d
+			break
+		}
+	}
+
+	result := make([]string, 0, len(inFilesOrPkg))
+	for _, file := range inFilesOrPkg {
+		base := filepath.Base(file)
+		if strings.HasPrefix(base, "_") || !strings.HasSuffix(file, dir) {
+			// copy and remove prefix
+			newFile := filepath.Join(dir, strings.TrimPrefix(base, "_"))
+			check(copyFile(file, newFile))
+			result = append(result, newFile)
+		} else {
+			result = append(result, file)
+		}
+	}
+	return result
 }
