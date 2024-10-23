@@ -17,6 +17,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"github.com/goplus/llgo/cpp/llvm.init"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -57,6 +58,8 @@ _llgo_3:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_2
 }
+
+declare void @"github.com/goplus/llgo/cpp/llvm.init"()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
