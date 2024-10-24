@@ -1059,8 +1059,14 @@ type Foo func(a c.Int, b c.Int) c.Int`,
 	}
 }
 
-func TestRedefTypedef(t *testing.T) {
+// Test Redefine error
+func TestRedef(t *testing.T) {
 	pkg := createTestPkg(t, "")
+	pkg.SetSymbolTable(config.CreateSymbolTable(
+		[]config.SymbolEntry{
+			{CppName: "Bar", MangleName: "Bar", GoName: "Bar"},
+		},
+	))
 
 	pkg.NewTypeDecl(&ast.TypeDecl{
 		Name: &ast.Ident{Name: "Foo"},
@@ -1069,13 +1075,52 @@ func TestRedefTypedef(t *testing.T) {
 			Fields: nil,
 		},
 	})
+
+	err := pkg.NewTypeDecl(&ast.TypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.RecordType{
+			Tag:    ast.Struct,
+			Fields: nil,
+		},
+	})
+	if err == nil {
+		t.Fatal("Expect a redefine err")
+	}
+
 	pkg.NewTypedefDecl(&ast.TypedefDecl{
 		Name: &ast.Ident{Name: "Foo"},
 		Type: &ast.Ident{Name: "Foo"},
 	})
 
+	err = pkg.NewFuncDecl(&ast.FuncDecl{
+		Name:        &ast.Ident{Name: "Bar"},
+		MangledName: "Bar",
+		Type:        &ast.FuncType{},
+	})
+	if err != nil {
+		t.Fatal("NewFuncDecl failed", err)
+	}
+
+	err = pkg.NewFuncDecl(&ast.FuncDecl{
+		Name:        &ast.Ident{Name: "Bar"},
+		MangledName: "Bar",
+		Type:        &ast.FuncType{},
+	})
+	if err == nil {
+		t.Fatal("Expect a redefine err")
+	}
+
+	err = pkg.NewEnumTypeDecl(&ast.EnumTypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.EnumType{},
+	})
+
+	if err == nil {
+		t.Fatal("Expect a redefine err")
+	}
+
 	var buf bytes.Buffer
-	err := pkg.GetGenPackage().WriteTo(&buf)
+	err = pkg.GetGenPackage().WriteTo(&buf)
 	if err != nil {
 		t.Fatalf("WriteTo failed: %v", err)
 	}
@@ -1086,7 +1131,10 @@ package testpkg
 import _ "unsafe"
 
 type Foo struct {
-}`
+}
+//go:linkname Bar C.Bar
+func Bar()
+`
 	comparePackageOutput(t, pkg, expect)
 }
 
