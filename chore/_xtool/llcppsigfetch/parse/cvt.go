@@ -611,13 +611,22 @@ func (ct *Converter) ProcessEnumType(cursor clang.Cursor) *ast.EnumType {
 }
 
 func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
-	name := toStr(cursor.String())
+	cursorName, cursorKind := getCursorDesc(cursor)
+	ct.logln("ProcessEnumDecl: CursorName:", cursorName, "CursorKind:", cursorKind)
 
 	decl := &ast.EnumTypeDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
-		Name:     &ast.Ident{Name: name},
 		Type:     ct.ProcessEnumType(cursor),
 	}
+
+	anony := cursor.IsAnonymous()
+	if anony == 0 {
+		decl.Name = &ast.Ident{Name: cursorName}
+		ct.logln("ProcessEnumDecl: has name", cursorName)
+	} else {
+		ct.logln("ProcessRecordDecl: is anonymous")
+	}
+
 	ct.SetTypeDecl(cursor, decl)
 	return decl
 }
@@ -738,22 +747,20 @@ func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor) *ast.TypeDecl {
 	cursorName, cursorKind := getCursorDesc(cursor)
 	ct.logln("ProcessRecordDecl: CursorName:", cursorName, "CursorKind:", cursorKind)
 
+	decl := &ast.TypeDecl{
+		DeclBase: ct.CreateDeclBase(cursor),
+		Type:     ct.ProcessRecordType(cursor),
+	}
+
 	anony := cursor.IsAnonymousRecordDecl()
-	var name *ast.Ident
 	if anony == 0 {
-		name = &ast.Ident{Name: cursorName}
+		decl.Name = &ast.Ident{Name: cursorName}
 		ct.logln("ProcessRecordDecl: has name", cursorName)
 	} else {
 		ct.logln("ProcessRecordDecl: is anonymous")
 	}
 
-	decl := &ast.TypeDecl{
-		DeclBase: ct.CreateDeclBase(cursor),
-		Name:     name,
-		Type:     ct.ProcessRecordType(cursor),
-	}
 	ct.SetTypeDecl(cursor, decl)
-
 	return decl
 }
 
@@ -775,7 +782,7 @@ func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 
 	decl := &ast.TypeDecl{
 		DeclBase: base,
-		Name:     &ast.Ident{Name: c.GoString(cursor.String().CStr())},
+		Name:     &ast.Ident{Name: cursorName},
 		Type:     typ,
 	}
 
