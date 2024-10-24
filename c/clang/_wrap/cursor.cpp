@@ -115,6 +115,10 @@ CXString wrap_clang_getCursorSpelling(CXCursor *cur) { return clang_getCursorSpe
 
 CXString wrap_clang_getCursorDisplayName(CXCursor *cur) { return clang_getCursorDisplayName(*cur); }
 
+void wrap_clang_getCursorReferenced(CXCursor *cur, CXCursor *referenced) {
+    *referenced = clang_getCursorReferenced(*cur);
+}
+
 unsigned wrap_clang_Cursor_isVariadic(CXCursor *cur) { return clang_Cursor_isVariadic(*cur); }
 
 void wrap_clang_Cursor_getCommentRange(CXCursor *cur, CXSourceRange *range) {
