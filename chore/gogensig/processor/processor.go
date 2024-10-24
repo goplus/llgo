@@ -79,10 +79,13 @@ func (p *DocFileSetProcessor) visitFile(docVisitor *DocVisitorManager, file unma
 	p.visitedFile[file.Path] = struct{}{}
 }
 
-func (p *DocFileSetProcessor) ProcessFileSet(files unmarshal.FileSet) error {
+func (p *DocFileSetProcessor) ProcessFileSet(files unmarshal.FileSet, done func()) error {
 	docVisitor := NewDocVisitorManager(p.docVisitorList)
 	for _, file := range files {
 		p.visitFile(docVisitor, file, files)
+	}
+	if done != nil {
+		done()
 	}
 	return nil
 }
@@ -92,7 +95,7 @@ func (p *DocFileSetProcessor) ProcessFileSetFromByte(data []byte) error {
 	if err != nil {
 		return err
 	}
-	return p.ProcessFileSet(fileSet)
+	return p.ProcessFileSet(fileSet, nil)
 }
 
 func (p *DocFileSetProcessor) ProcessFileSetFromPath(filePath string) error {
