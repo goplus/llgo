@@ -42,6 +42,10 @@ func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
 	p.visitDone = fn
 }
 
+func (p *AstConvert) WriteLinkFile() {
+	p.pkg.WriteLinkFile()
+}
+
 func (p *AstConvert) GetPackage() *Package {
 	return p.pkg
 }

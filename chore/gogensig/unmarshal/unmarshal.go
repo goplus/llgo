@@ -615,10 +615,10 @@ func UnmarshalFile(data []byte) (ast.Node, error) {
 		Decls:    []ast.Decl{},
 	}
 
-	for _, declData := range file.Decls {
+	for i, declData := range file.Decls {
 		decl, err := UnmarshalNode(declData)
 		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling Decl in File: %w", err)
+			return nil, fmt.Errorf("error unmarshalling %d Decl in File: %w", i, err)
 		}
 		result.Decls = append(result.Decls, decl.(ast.Decl))
 	}
