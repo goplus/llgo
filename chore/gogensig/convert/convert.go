@@ -2,6 +2,7 @@ package convert
 
 import (
 	"errors"
+	"log"
 
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
@@ -69,7 +70,10 @@ func (p *AstConvert) setupGenConfig(filePath string) error {
 }
 
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
-	p.pkg.NewFuncDecl(funcDecl)
+	err := p.pkg.NewFuncDecl(funcDecl)
+	if err != nil {
+		log.Printf("NewFuncDecl Fail: %s\n", err.Error())
+	}
 }
 
 /*
@@ -84,7 +88,10 @@ func (p *AstConvert) VisitMethod(className *ast.Ident, method *ast.FuncDecl, typ
 }*/
 
 func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	p.pkg.NewTypeDecl(typeDecl)
+	err := p.pkg.NewTypeDecl(typeDecl)
+	if err != nil {
+		log.Printf("NewTypeDecl Fail: %s\n", err.Error())
+	}
 }
 
 /*
@@ -95,11 +102,17 @@ func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typ
 }*/
 
 func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
-	p.pkg.NewEnumTypeDecl(enumTypeDecl)
+	err := p.pkg.NewEnumTypeDecl(enumTypeDecl)
+	if err != nil {
+		log.Printf("NewEnumTypeDecl Fail: %s\n", err.Error())
+	}
 }
 
 func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
-	p.pkg.NewTypedefDecl(typedefDecl)
+	err := p.pkg.NewTypedefDecl(typedefDecl)
+	if err != nil {
+		log.Printf("NewTypedefDecl Fail: %s\n", err.Error())
+	}
 }
 
 func (p *AstConvert) VisitStart(docPath string) {

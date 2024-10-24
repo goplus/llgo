@@ -37,7 +37,6 @@ type Package struct {
 	p         *gogen.Package
 	cvt       *TypeConv
 	outputDir string
-	newTypes  map[string]struct{} //todo(xlj): Temporary solution to avoid crashes
 }
 
 type PackageConfig struct {
@@ -61,7 +60,6 @@ func NewPackage(config *PackageConfig) *Package {
 	clib := p.p.Import("github.com/goplus/llgo/c")
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
-	p.newTypes = make(map[string]struct{}, 0)
 	p.SetCurFile(p.Name(), false)
 	return p
 }
@@ -123,11 +121,13 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	if debug {
 		log.Printf("NewFuncDecl: %s\n", funcDecl.Name.Name)
 	}
-	// todo(zzy) accept the name of llcppg.symb.json
 	goFuncName, err := p.cvt.LookupSymbol(config.MangleNameType(funcDecl.MangledName))
 	if err != nil {
 		// not gen the function not in the symbolmap
 		return err
+	}
+	if obj := p.p.Types.Scope().Lookup(goFuncName); obj != nil {
+		return fmt.Errorf("function %s already defined", goFuncName)
 	}
 	sig, err := p.cvt.ToSignature(funcDecl.Type)
 	if err != nil {
@@ -144,31 +144,39 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	if typeDecl.Name == nil {
-		log.Printf("NewTypeDecl: %s\n", "nil")
+		if debug {
+			log.Println("NewTypeDecl:Skip a anonymous type")
+		}
 		return nil
 	}
 	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
-	if _, ok := p.newTypes[name]; ok {
-		return nil
+
+	// for a type name, it should be unique
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+		return fmt.Errorf("type %s already defined", name)
 	}
 	if debug {
 		log.Printf("NewTypeDecl: %s\n", typeDecl.Name.Name)
 	}
-	typeBlock := p.p.NewTypeDefs()
-	typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
-	decl := typeBlock.NewType(name)
+
 	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
 	if err != nil {
 		return err
 	}
+	typeBlock := p.p.NewTypeDefs()
+	typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
+	decl := typeBlock.NewType(name)
 	decl.InitType(p.p, structType)
-	p.newTypes[name] = struct{}{}
 	return nil
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	name := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
-	if _, ok := p.newTypes[name]; ok {
+
+	// for a typedef ,always appear same name like
+	// typedef struct foo { int a; } foo;
+	// For this typedef, we only need skip this
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
 		return nil
 	}
 	if debug {
@@ -183,16 +191,8 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if typ == nil {
 		return fmt.Errorf("underlying type must not be nil")
 	}
-	if named, ok := typ.(*types.Named); ok {
-		// Compare the type name with typedefDecl.Name.Name
-		if named.Obj().Name() == name {
-			// If they're the same, don't create a new typedef
-			return nil
-		}
-	}
 	typeSpecdecl := genDecl.NewType(name)
 	typeSpecdecl.InitType(p.p, typ)
-	p.newTypes[name] = struct{}{}
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(NewTypecDocComments())
 	}
@@ -205,9 +205,21 @@ func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 }
 
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
+	if enumTypeDecl.Name == nil {
+		if debug {
+			log.Println("todo:anonymous enum")
+		}
+		return nil
+	}
 	if debug {
 		log.Printf("NewEnumTypeDecl: %s\n", enumTypeDecl.Name.Name)
 	}
+
+	name := p.cvt.RemovePrefixedName(enumTypeDecl.Name.Name)
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+		return fmt.Errorf("enum type %s already defined", name)
+	}
+
 	if len(enumTypeDecl.Type.Items) > 0 {
 		constDefs := p.p.NewConstDefs(p.p.CB().Scope())
 		for _, item := range enumTypeDecl.Type.Items {

@@ -3,15 +3,17 @@ package convert_test
 import (
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
+	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
-func TestSizeT(t *testing.T) {
+func TestReferStdSizeT(t *testing.T) {
 	cmptest.RunTest(t, "size_t", false, []config.SymbolEntry{
 		{MangleName: "testSize", CppName: "testSize", GoName: "TestSize"},
 	}, &cppgtypes.Config{}, `
@@ -339,4 +341,76 @@ func TestVisitDone(t *testing.T) {
 		}
 	})
 	pkg.VisitDone("test.h")
+}
+
+func TestVisitFail(t *testing.T) {
+	converter, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  "test",
+		SymbFile: "",
+		CfgFile:  "",
+	})
+	if err != nil {
+		t.Fatal("NewAstConvert Fail")
+	}
+
+	// expect type
+	converter.VisitTypedefDecl(&ast.TypedefDecl{
+		Name: &ast.Ident{Name: "NormalType"},
+		Type: &ast.BuiltinType{Kind: ast.Int},
+	})
+
+	// not appear in output,because expect error
+	converter.VisitTypedefDecl(&ast.TypedefDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: nil,
+	})
+
+	converter.VisitStruct(&ast.Ident{Name: "Foo"}, nil, &ast.TypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.RecordType{
+			Tag: ast.Struct,
+			Fields: &ast.FieldList{
+				List: []*ast.Field{
+					{Type: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Double}},
+				},
+			},
+		},
+	})
+
+	converter.VisitEnumTypeDecl(&ast.EnumTypeDecl{
+		Name: &ast.Ident{Name: "NormalType"},
+		Type: &ast.EnumType{},
+	})
+
+	converter.VisitFuncDecl(&ast.FuncDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{
+					{Type: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Double}},
+				},
+			},
+		},
+	})
+	// not appear in output
+
+	buf, err := converter.GetPackage().WriteToBuffer(converter.GetPackage().Name() + ".h")
+	if err != nil {
+		t.Fatalf("WriteTo failed: %v", err)
+	}
+
+	expectedOutput :=
+		`
+package test
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type NormalType c.Int
+`
+	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(string(buf.Bytes())) {
+		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, string(buf.Bytes()))
+	}
 }
