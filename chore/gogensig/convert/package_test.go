@@ -19,6 +19,36 @@ func init() {
 	convert.SetDebug(convert.DbgFlagAll)
 }
 
+func TestLinkFileOK(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "test_package_link")
+	if err != nil {
+		t.Fatalf("Failed to create temporary directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	pkg := createTestPkg(t, tempDir)
+	pkg.SetCppgConf(&cppgtypes.Config{
+		Libs: "pkg-config --libs libcjson",
+	})
+	filePath, _ := pkg.WriteLinkFile()
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		t.FailNow()
+	}
+}
+
+func TestLinkFileFail(t *testing.T) {
+	defer func() {
+		if e := recover(); e == nil {
+			t.FailNow()
+		} else {
+			t.Log("success!")
+		}
+	}()
+	pkg := createTestPkg(t, "")
+	pkg.WriteLinkFile()
+}
+
 func TestToType(t *testing.T) {
 	pkg := createTestPkg(t, "")
 
@@ -75,7 +105,6 @@ func TestSetCppgConf(t *testing.T) {
 		`
 		package testpkg
 		import _ "unsafe"
-		const LLGoPackage string = "link: pkg-config --libs lua5.4;"
 		`)
 }
 
