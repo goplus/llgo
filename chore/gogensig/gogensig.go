@@ -83,7 +83,9 @@ func main() {
 	inputdata, err := unmarshal.UnmarshalFileSet(data)
 	check(err)
 
-	err = p.ProcessFileSet(inputdata)
+	err = p.ProcessFileSet(inputdata, func() {
+		astConvert.WriteLinkFile()
+	})
 	check(err)
 }
 
