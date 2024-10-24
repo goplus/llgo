@@ -2211,6 +2211,24 @@ func (c Cursor) DisplayName() (ret String) {
 	return c.wrapDisplayName()
 }
 
+/** For a cursor that is a reference, retrieve a cursor representing the
+ * entity that it references.
+ *
+ * Reference cursors refer to other entities in the AST. For example, an
+ * Objective-C superclass reference cursor refers to an Objective-C class.
+ * This function produces the cursor for the Objective-C class from the
+ * cursor for the superclass reference. If the input cursor is a declaration or
+ * definition, it returns that declaration or definition unchanged.
+ * Otherwise, returns the NULL cursor.
+ */
+// llgo:link (*Cursor).wrapReferenced C.wrap_clang_getCursorReferenced
+func (*Cursor) wrapReferenced(referenced *Cursor) {}
+
+func (c Cursor) Referenced() (referenced Cursor) {
+	c.wrapReferenced(&referenced)
+	return
+}
+
 /**
  * Returns non-zero if the given cursor is a variadic function or method.
  */
