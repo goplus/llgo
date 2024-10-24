@@ -72,7 +72,7 @@ func (p *AstConvert) setupGenConfig(filePath string) error {
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
 	err := p.pkg.NewFuncDecl(funcDecl)
 	if err != nil {
-		log.Printf("NewFuncDecl Fail: %s\n", err.Error())
+		log.Printf("NewFuncDecl %s Fail: %s\n", funcDecl.Name.Name, err.Error())
 	}
 }
 
@@ -90,7 +90,11 @@ func (p *AstConvert) VisitMethod(className *ast.Ident, method *ast.FuncDecl, typ
 func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
 	err := p.pkg.NewTypeDecl(typeDecl)
 	if err != nil {
-		log.Printf("NewTypeDecl Fail: %s\n", err.Error())
+		if name := typeDecl.Name; name != nil {
+			log.Printf("NewTypeDecl %s Fail: %s\n", name.Name, err.Error())
+		} else {
+			log.Printf("NewTypeDecl anonymous Fail: %s\n", err.Error())
+		}
 	}
 }
 
@@ -104,14 +108,18 @@ func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typ
 func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 	err := p.pkg.NewEnumTypeDecl(enumTypeDecl)
 	if err != nil {
-		log.Printf("NewEnumTypeDecl Fail: %s\n", err.Error())
+		if name := enumTypeDecl.Name; name != nil {
+			log.Printf("NewEnumTypeDecl %s Fail: %s\n", name.Name, err.Error())
+		} else {
+			log.Printf("NewEnumTypeDecl anonymous Fail: %s\n", err.Error())
+		}
 	}
 }
 
 func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 	err := p.pkg.NewTypedefDecl(typedefDecl)
 	if err != nil {
-		log.Printf("NewTypedefDecl Fail: %s\n", err.Error())
+		log.Printf("NewTypedefDecl %s Fail: %s\n", typedefDecl.Name.Name, err.Error())
 	}
 }
 

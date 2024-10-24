@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
@@ -51,8 +52,10 @@ func (p *TypeConv) ToType(expr ast.Expr) (types.Type, error) {
 		return p.ToSignature(t)
 	case *ast.Ident, *ast.ScopingExpr, *ast.TagExpr:
 		return p.handleIdentRefer(expr)
+	case *ast.Variadic:
+		return types.NewSlice(gogen.TyEmptyInterface), nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("unsupported type: %T", expr)
 	}
 }
 
@@ -147,7 +150,7 @@ func (p *TypeConv) ToSignature(funcType *ast.FuncType) (*types.Signature, error)
 	beforeInParam := p.inParam
 	p.inParam = true
 	defer func() { p.inParam = beforeInParam }()
-	params, err := p.fieldListToParams(funcType.Params)
+	params, variadic, err := p.fieldListToParams(funcType.Params)
 	if err != nil {
 		return nil, err
 	}
@@ -155,19 +158,26 @@ func (p *TypeConv) ToSignature(funcType *ast.FuncType) (*types.Signature, error)
 	if err != nil {
 		return nil, err
 	}
-	return types.NewSignatureType(nil, nil, nil, params, results, false), nil
+	return types.NewSignatureType(nil, nil, nil, params, results, variadic), nil
 }
 
 // Convert ast.FieldList to types.Tuple (Function Param)
-func (p *TypeConv) fieldListToParams(params *ast.FieldList) (*types.Tuple, error) {
+func (p *TypeConv) fieldListToParams(params *ast.FieldList) (*types.Tuple, bool, error) {
 	if params == nil {
-		return types.NewTuple(), nil
+		return types.NewTuple(), false, nil
 	}
 	vars, err := p.fieldListToVars(params)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return types.NewTuple(vars...), nil
+	variadic := false
+	if len(params.List) > 0 {
+		lastField := params.List[len(params.List)-1]
+		if _, ok := lastField.Type.(*ast.Variadic); ok {
+			variadic = true
+		}
+	}
+	return types.NewTuple(vars...), variadic, nil
 }
 
 // Execute the ret in FuncType
@@ -197,8 +207,6 @@ func (p *TypeConv) fieldListToVars(params *ast.FieldList) ([]*types.Var, error) 
 		if fieldVar != nil {
 			vars = append(vars, fieldVar)
 		}
-		//todo(zzy): handle field _Type=Variadic case
-
 	}
 	return vars, nil
 }
@@ -219,6 +227,8 @@ func (p *TypeConv) fieldToVar(field *ast.Field) (*types.Var, error) {
 	var name string
 	if len(field.Names) > 0 {
 		name = field.Names[0].Name
+	} else if _, ok := field.Type.(*ast.Variadic); ok {
+		name = "__llgo_va_list"
 	}
 	typ, err := p.ToType(field.Type)
 	if err != nil {
