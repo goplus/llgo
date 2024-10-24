@@ -8,6 +8,11 @@ func main() {
 
 func TestEnumDecl() {
 	testCases := []string{
+		`enum {
+			a,
+			b,
+			c,
+		};`,
 		`enum Foo {
 			a,
 			b,
