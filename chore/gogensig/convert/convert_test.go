@@ -304,9 +304,39 @@ func TestUint(a int8, b uint16, c c.Uint, d c.UlongLong)
 */
 // ===========================error
 func TestNewAstConvert(t *testing.T) {
-	convert.NewAstConvert(&convert.AstConvertConfig{
+	_, err := convert.NewAstConvert(&convert.AstConvertConfig{
 		PkgName:  "test",
 		SymbFile: "",
 		CfgFile:  "",
 	})
+	if err != nil {
+		t.Fatal("NewAstConvert Fail")
+	}
+}
+
+func TestNewAstConvertFail(t *testing.T) {
+	_, err := convert.NewAstConvert(nil)
+	if err == nil {
+		t.Fatal("no error")
+	}
+}
+
+func TestVisitDone(t *testing.T) {
+	pkg, err := convert.NewAstConvert(&convert.AstConvertConfig{
+		PkgName:  "test",
+		SymbFile: "",
+		CfgFile:  "",
+	})
+	if err != nil {
+		t.Fatal("NewAstConvert Fail")
+	}
+	pkg.SetVisitDone(func(pkg *convert.Package, docPath string) {
+		if pkg.Name() != "test" {
+			t.Fatal("pkg name error")
+		}
+		if docPath != "test.h" {
+			t.Fatal("doc path error")
+		}
+	})
+	pkg.VisitDone("test.h")
 }

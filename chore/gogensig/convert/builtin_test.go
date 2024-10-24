@@ -74,3 +74,11 @@ func TestCType(t *testing.T) {
 		t.Error("Expect a non nil pointer type")
 	}
 }
+
+func TestCTypeNotFound(t *testing.T) {
+	typmap := &convert.BuiltinTypeMap{}
+	ptrType := typmap.CType("Pointer")
+	if ptrType != nil {
+		t.Error("Expect a nil")
+	}
+}
