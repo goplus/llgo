@@ -272,7 +272,7 @@ func TestFuncDecl(t *testing.T) {
 				MangledName: "foo",
 				Type: &ast.FuncType{
 					Params: nil,
-					Ret:    nil,
+					Ret:    &ast.BuiltinType{Kind: ast.Void},
 				},
 			},
 			symbs: []config.SymbolEntry{
@@ -287,6 +287,33 @@ package testpkg
 import _ "unsafe"
 //go:linkname Foo C.foo
 func Foo()`,
+		},
+		{
+			name: "variadic func",
+			decl: &ast.FuncDecl{
+				Name:        &ast.Ident{Name: "foo"},
+				MangledName: "foo",
+				Type: &ast.FuncType{
+					Params: &ast.FieldList{
+						List: []*ast.Field{
+							{Type: &ast.Variadic{}},
+						},
+					},
+					Ret: &ast.BuiltinType{Kind: ast.Void},
+				},
+			},
+			symbs: []config.SymbolEntry{
+				{
+					CppName:    "foo",
+					MangleName: "foo",
+					GoName:     "Foo",
+				},
+			},
+			expected: `
+package testpkg
+import _ "unsafe"
+//go:linkname Foo C.foo
+func Foo(__llgo_va_list ...interface{})`,
 		},
 		{
 			name: "func not in symbol table",
@@ -1095,7 +1122,11 @@ func TestRedef(t *testing.T) {
 	err = pkg.NewFuncDecl(&ast.FuncDecl{
 		Name:        &ast.Ident{Name: "Bar"},
 		MangledName: "Bar",
-		Type:        &ast.FuncType{},
+		Type: &ast.FuncType{
+			Ret: &ast.BuiltinType{
+				Kind: ast.Void,
+			},
+		},
 	})
 	if err != nil {
 		t.Fatal("NewFuncDecl failed", err)
@@ -1492,7 +1523,7 @@ func TestTypeClean(t *testing.T) {
 			addType: func() {
 				pkg.NewFuncDecl(&ast.FuncDecl{
 					Name: &ast.Ident{Name: "Func1"}, MangledName: "Func1",
-					Type: &ast.FuncType{Params: nil, Ret: nil},
+					Type: &ast.FuncType{Params: nil, Ret: &ast.BuiltinType{Kind: ast.Void}},
 				})
 			},
 			headerFile: "file3.h",
