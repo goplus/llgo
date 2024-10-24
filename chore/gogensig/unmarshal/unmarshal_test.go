@@ -2086,7 +2086,7 @@ func TestUnmarshalErrors(t *testing.T) {
 			name:        "unmarshalFile - Invalid Decl",
 			fn:          unmarshal.UnmarshalFile,
 			input:       `{"decls": [{"_Type": "InvalidType"}], "includes": [], "macros": []}`,
-			expectedErr: "error unmarshalling Decl in File",
+			expectedErr: "error unmarshalling 0 Decl in File",
 		},
 	}
 

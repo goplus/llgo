@@ -62,6 +62,7 @@ func NewPackage(config *PackageConfig) *Package {
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
 	p.cvt = NewConv(p.p.Types, typeMap)
 	p.newTypes = make(map[string]struct{}, 0)
+	p.SetCurFile(p.Name(), false)
 	return p
 }
 
@@ -255,15 +256,15 @@ func (p *Package) Write(headerFile string) error {
 	return nil
 }
 
-func (p *Package) WriteLinkFile() error {
+func (p *Package) WriteLinkFile() (string, error) {
 	fileName := p.name + "_autogen_link.go"
 	filePath := filepath.Join(p.outputDir, fileName)
 	p.p.SetCurFile(fileName, true)
 	p.linkLib(p.cvt.cppgConf.Libs)
 	if err := p.p.WriteFile(filePath, fileName); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return "", fmt.Errorf("failed to write file: %w", err)
 	}
-	return nil
+	return filePath, nil
 }
 
 // WriteToBuffer writes the Go file to a buffer.
