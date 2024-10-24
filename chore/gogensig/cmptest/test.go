@@ -70,7 +70,10 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 		t.Fatal(err)
 	}
 
-	p.ProcessFileSet(inputdata, nil)
+	// same as gogensig.go
+	p.ProcessFileSet(inputdata, func() {
+		astConvert.WriteLinkFile()
+	})
 
 	// Note: The converted file path for llcppsigfetch's temp header file is temp.h,
 	genFilePath := filepath.Join(rootDir, "temp.go")
