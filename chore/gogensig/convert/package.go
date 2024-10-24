@@ -105,10 +105,6 @@ func (p *Package) GetOutputDir() string {
 	return p.outputDir
 }
 
-func (p *Package) GetTypeCvt() *TypeConv {
-	return p.cvt
-}
-
 func (p *Package) Name() string {
 	return p.name
 }
@@ -260,7 +256,10 @@ func (p *Package) WriteLinkFile() (string, error) {
 	fileName := p.name + "_autogen_link.go"
 	filePath := filepath.Join(p.outputDir, fileName)
 	p.p.SetCurFile(fileName, true)
-	p.linkLib(p.cvt.cppgConf.Libs)
+	err := p.linkLib(p.cvt.cppgConf.Libs)
+	if err != nil {
+		return "", fmt.Errorf("failed to link lib: %w", err)
+	}
 	if err := p.p.WriteFile(filePath, fileName); err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}

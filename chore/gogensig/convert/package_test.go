@@ -38,15 +38,43 @@ func TestLinkFileOK(t *testing.T) {
 }
 
 func TestLinkFileFail(t *testing.T) {
-	defer func() {
-		if e := recover(); e == nil {
-			t.FailNow()
-		} else {
-			t.Log("success!")
+
+	t.Run("not link lib", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_package_link")
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
 		}
-	}()
-	pkg := createTestPkg(t, "")
-	pkg.WriteLinkFile()
+		defer os.RemoveAll(tempDir)
+		pkg := createTestPkg(t, tempDir)
+		pkg.SetCppgConf(&cppgtypes.Config{
+			Libs: "",
+		})
+		_, err = pkg.WriteLinkFile()
+		if err == nil {
+			t.FailNow()
+		}
+	})
+	t.Run("no permission", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_package_link")
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+		pkg := createTestPkg(t, tempDir)
+		pkg.SetCppgConf(&cppgtypes.Config{
+			Libs: "${pkg-config --libs libcjson}",
+		})
+		err = os.Chmod(filepath.Join(tempDir, pkg.Name()), 0555)
+		if err != nil {
+			t.Fatalf("Failed to change directory permissions: %v", err)
+		}
+		defer os.Chmod(filepath.Join(tempDir, pkg.Name()), 0755)
+		_, err = pkg.WriteLinkFile()
+		if err == nil {
+			t.FailNow()
+		}
+	})
+
 }
 
 func TestToType(t *testing.T) {
@@ -205,19 +233,33 @@ func TestPackageWrite(t *testing.T) {
 		}
 		defer os.RemoveAll(tempDir)
 
+		pkg := createTestPkg(t, tempDir)
+
 		// read-only
 		err = os.Chmod(tempDir, 0555)
+		defer os.Chmod(tempDir, 0755)
 		if err != nil {
 			t.Fatalf("Failed to change directory permissions: %v", err)
 		}
 
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("no permission folder: no error?")
-			}
-			os.Chmod(tempDir, 0755)
-		}()
-		createTestPkg(t, tempDir)
+		err = pkg.Write(headerFilePath)
+		if err == nil {
+			t.Fatal("Expected an error for invalid output directory, but got nil")
+		}
+	})
+}
+
+func TestPreparseOutputDir(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("no permission folder: no error?")
+		}
+	}()
+	convert.NewPackage(&convert.PackageConfig{
+		PkgPath:   ".",
+		Name:      "testpkg",
+		Conf:      &gogen.Config{},
+		OutputDir: "invalid\x00path",
 	})
 }
 
@@ -899,6 +941,19 @@ type Foo struct {
 	a [4]int8
 	b [3][4]c.Int
 }`},
+		{
+			name: "anonymous struct",
+			decl: &ast.TypeDecl{
+				Name: nil,
+				Type: &ast.RecordType{
+					Tag:    ast.Struct,
+					Fields: &ast.FieldList{},
+				},
+			},
+			expected: `
+package testpkg
+import _ "unsafe"
+			`},
 		{
 			name: "struct array field without len",
 			decl: &ast.TypeDecl{
