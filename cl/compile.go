@@ -163,7 +163,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
-	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
+	if vtype == pyVar || ignoreName(name) {
 		return
 	}
 	if debugInstr {

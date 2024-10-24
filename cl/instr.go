@@ -20,6 +20,7 @@ import (
 	"go/constant"
 	"go/types"
 	"log"
+	"os"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -404,7 +405,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
 			} else {
-				log.Panicln("unknown ftype:", ftype)
+				cv.WriteTo(os.Stderr)
+				log.Panicf("unknown ftype: %d, func: %s\n", ftype, cv.Name())
 			}
 		}
 	default:

@@ -18,7 +18,6 @@ package sync
 
 // llgo:skipall
 import (
-	gosync "sync"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -108,12 +107,17 @@ func (o *Once) Do(f func()) {
 
 // -----------------------------------------------------------------------------
 
+type Locker interface {
+	Lock()
+	Unlock()
+}
+
 type Cond struct {
 	cond sync.Cond
 	m    *sync.Mutex
 }
 
-func NewCond(l gosync.Locker) *Cond {
+func NewCond(l Locker) *Cond {
 	ret := &Cond{m: l.(*sync.Mutex)}
 	ret.cond.Init(nil) // TODO(xsw): finalize
 	return ret

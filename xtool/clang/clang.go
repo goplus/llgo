@@ -48,4 +48,10 @@ func (p *Cmd) Exec(args ...string) error {
 	return cmd.Run()
 }
 
+func (p *Cmd) ExecWithOutput(args ...string) (string, error) {
+	cmd := exec.Command(p.app, args...)
+	out, err := cmd.Output()
+	return string(out), err
+}
+
 // -----------------------------------------------------------------------------

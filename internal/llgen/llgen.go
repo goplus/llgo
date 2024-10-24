@@ -38,8 +38,8 @@ func PkgPath(dir string) string {
 	return pkgPath
 }
 
-func Do(pkgPath, inFile, outFile string) {
-	ret := genFrom(inFile, pkgPath)
+func Do(outFile, pkgPath string, inFiles ...string) {
+	ret := GenWithAsmHdr("", pkgPath, inFiles...)
 	err := os.WriteFile(outFile, []byte(ret), 0644)
 	check(err)
 }
