@@ -26,7 +26,6 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 }
 
 func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package), checkEqual func(t *testing.T, expected, content string)) {
-
 	t.Helper()
 
 	tempDir, err := os.MkdirTemp("", "gogensig-test")
