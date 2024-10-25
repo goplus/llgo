@@ -121,7 +121,7 @@ func (p *Package) linkLib(lib string) error {
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	if debug {
-		log.Printf("NewFuncDecl: %s\n", funcDecl.Name.Name)
+		log.Printf("NewFuncDecl: %v\n", funcDecl.Name)
 	}
 	goFuncName, err := p.cvt.LookupSymbol(config.MangleNameType(funcDecl.MangledName))
 	if err != nil {
@@ -157,7 +157,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return fmt.Errorf("type %s already defined", name)
 	}
 	if debug {
-		log.Printf("NewTypeDecl: %s\n", typeDecl.Name.Name)
+		log.Printf("NewTypeDecl: %v\n", typeDecl.Name)
 	}
 
 	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
@@ -213,37 +213,55 @@ func (p *Package) NewTypedefs(name string, typ types.Type) *types.Named {
 }
 
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
-	if enumTypeDecl.Name == nil {
-		if debug {
-			log.Println("todo:anonymous enum")
-		}
-		return nil
-	}
 	if debug {
-		log.Printf("NewEnumTypeDecl: %s\n", enumTypeDecl.Name.Name)
+		log.Printf("NewEnumTypeDecl: %v\n", enumTypeDecl.Name)
 	}
-
-	enumName := ToTitle(p.cvt.RemovePrefixedName(enumTypeDecl.Name.Name))
-	if obj := p.p.Types.Scope().Lookup(enumName); obj != nil {
-		return fmt.Errorf("enum type %s already defined", enumName)
+	enumType, enumTypeName, err := p.createEnumType(enumTypeDecl.Name)
+	if err != nil {
+		return err
 	}
-
 	if len(enumTypeDecl.Type.Items) > 0 {
-		//default enum type is int
-		typ, err := p.cvt.ToDefaultEnumType(enumTypeDecl.Name)
+		err = p.createEnumItems(enumTypeDecl.Type.Items, enumType, enumTypeName)
 		if err != nil {
 			return err
 		}
-		enumType := p.NewTypedefs(enumName, typ)
-		constDefs := p.p.NewConstDefs(p.p.CB().Scope())
-		for _, item := range enumTypeDecl.Type.Items {
-			name := enumName + "_" + item.Name.Name
-			val, _ := Expr(item.Value).ToInt()
-			constDefs.New(func(cb *gogen.CodeBuilder) int {
-				cb.Val(val)
-				return 1
-			}, 0, token.NoPos, enumType, name)
+	}
+	return nil
+}
+
+func (p *Package) createEnumType(enumName *ast.Ident) (types.Type, string, error) {
+	var name string
+	if enumName != nil {
+		name = ToTitle(p.cvt.RemovePrefixedName(enumName.Name))
+	}
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+		return nil, "", fmt.Errorf("enum type %s already defined", name)
+	}
+	enumType := p.cvt.ToDefaultEnumType()
+	if name != "" {
+		enumType = p.NewTypedefs(name, enumType)
+	}
+	return enumType, name, nil
+}
+
+func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, enumTypeName string) error {
+	constDefs := p.p.NewConstDefs(p.p.Types.Scope())
+	for _, item := range items {
+		var constName string
+		if enumTypeName != "" {
+			constName = enumTypeName + "_" + item.Name.Name
+		} else {
+			constName = item.Name.Name
 		}
+		// maybe get a new name,because the after executed name,have lots situation will found same name
+		if obj := p.p.Types.Scope().Lookup(constName); obj != nil {
+			return fmt.Errorf("enum item %s already defined", constName)
+		}
+		val, _ := Expr(item.Value).ToInt()
+		constDefs.New(func(cb *gogen.CodeBuilder) int {
+			cb.Val(val)
+			return 1
+		}, 0, token.NoPos, enumType, constName)
 	}
 	return nil
 }
