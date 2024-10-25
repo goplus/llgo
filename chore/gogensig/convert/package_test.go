@@ -1553,3 +1553,30 @@ func TestTypeClean(t *testing.T) {
 		}
 	}
 }
+
+func TestHeaderFileToGo(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "normal",
+			input:    "/path/to/foo.h",
+			expected: "foo.go",
+		},
+		{
+			name:     "sys",
+			input:    "/path/to/_intptr.h",
+			expected: "SYS_intptr.go",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := convert.HeaderFileToGo(tc.input)
+			if result != tc.expected {
+				t.Errorf("Expected %s, but got %s", tc.expected, result)
+			}
+		})
+	}
+}
