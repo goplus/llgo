@@ -205,6 +205,13 @@ func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 	return p.cvt.ToType(expr)
 }
 
+func (p *Package) NewTypedefs(name string, typ types.Type) *types.Named {
+	def := p.p.NewTypeDefs()
+	named := def.NewType(name).InitType(def.Pkg(), typ)
+	def.Complete()
+	return named
+}
+
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 	if enumTypeDecl.Name == nil {
 		if debug {
@@ -222,17 +229,18 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 	}
 
 	if len(enumTypeDecl.Type.Items) > 0 {
+		enumName := ToTitle(enumTypeDecl.Name.Name)
+		//1 typedef int
+		enumType := p.NewTypedefs(enumName, types.Typ[types.Int])
+
 		constDefs := p.p.NewConstDefs(p.p.CB().Scope())
 		for _, item := range enumTypeDecl.Type.Items {
-			name := ToTitle(enumTypeDecl.Name.Name) + "_" + item.Name.Name
-			val, err := Expr(item.Value).ToInt()
-			if err != nil {
-				continue
-			}
+			name := enumName + "_" + item.Name.Name
+			val, _ := Expr(item.Value).ToInt()
 			constDefs.New(func(cb *gogen.CodeBuilder) int {
 				cb.Val(val)
 				return 1
-			}, 0, token.NoPos, nil, name)
+			}, 0, token.NoPos, enumType, name)
 		}
 	}
 	return nil
