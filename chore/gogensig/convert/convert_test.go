@@ -171,13 +171,13 @@ const (
 	Feline_tiger Feline = 12
 )
 
-type Piecetype c.Int
+type PieceType c.Int
 
 const (
-	Piecetype_King  Piecetype = 1
-	Piecetype_Queen Piecetype = 2
-	Piecetype_Rook  Piecetype = 10
-	Piecetype_Pawn  Piecetype = 11
+	PieceType_King  PieceType = 1
+	PieceType_Queen PieceType = 2
+	PieceType_Rook  PieceType = 10
+	PieceType_Pawn  PieceType = 11
 )
 `, nil, func(t *testing.T, expected, content string) {
 			eq, diff := cmp.EqualStringIgnoreSpace(expected, content)
