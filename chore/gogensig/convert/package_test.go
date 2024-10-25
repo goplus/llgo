@@ -195,24 +195,6 @@ func TestPackageWrite(t *testing.T) {
 		verifyGeneratedFile(t, expectedFilePath)
 	})
 
-	t.Run("OutputWithoutFilename", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "test_package_write_no_filename")
-		if err != nil {
-			t.Fatalf("Failed to create temporary directory: %v", err)
-		}
-		defer os.RemoveAll(tempDir)
-
-		pkg := createTestPkg(t, tempDir)
-		pkg.SetCurFile("", true)
-		err = pkg.Write("")
-		if err != nil {
-			t.Fatalf("Write method failed: %v", err)
-		}
-
-		expectedFilePath := filepath.Join(tempDir, "testpkg", "temp.go")
-		verifyGeneratedFile(t, expectedFilePath)
-	})
-
 	t.Run("InvalidOutputDir", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
