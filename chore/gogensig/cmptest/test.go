@@ -18,6 +18,15 @@ import (
 
 // The validateFunc is used to validate the generated file,
 func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package)) {
+	RunTestWithCheckEqual(t, pkgName, isCpp, symbolEntries, cppgConf, originalCode, expectedOutput, validateFunc, func(t *testing.T, expected, content string) {
+		if strings.TrimSpace(expected) != strings.TrimSpace(content) {
+			t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expected, string(content))
+		}
+	})
+}
+
+func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package), checkEqual func(t *testing.T, expected, content string)) {
+
 	t.Helper()
 
 	tempDir, err := os.MkdirTemp("", "gogensig-test")
@@ -82,9 +91,7 @@ func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.Sy
 		t.Fatalf("Fail to read generated file: %v", err)
 	}
 
-	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(string(content)) {
-		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, string(content))
-	}
+	checkEqual(t, expectedOutput, string(content))
 
 	if validateFunc != nil {
 		validateFunc(t, astConvert.GetPackage())

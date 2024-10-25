@@ -1315,10 +1315,11 @@ func TestEnumDecl(t *testing.T) {
 package testpkg
 
 import _ "unsafe"
+type Color int
 const (
-	Color_Red = 0
-	Color_Green = 1
-	Color_Blue = 2
+	Color_Red   Color = 0
+	Color_Green Color = 1
+	Color_Blue  Color = 2
 )
 			`,
 		},
