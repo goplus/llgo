@@ -328,12 +328,9 @@ func HeaderFileToGo(headerFile string) string {
 	if len(ext) > 0 {
 		fileName = strings.TrimSuffix(fileName, ext)
 	}
-	if len(fileName) == 0 {
-		fileName = "temp"
-	} else if strings.HasPrefix(fileName, "_") {
+	if strings.HasPrefix(fileName, "_") {
 		fileName = "SYS" + fileName
 	}
-
 	return fileName + ".go"
 }
 
