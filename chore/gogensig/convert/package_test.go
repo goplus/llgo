@@ -1314,8 +1314,12 @@ func TestEnumDecl(t *testing.T) {
 			expected: `
 package testpkg
 
-import _ "unsafe"
-type Color int
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type Color c.Int
 const (
 	Color_Red   Color = 0
 	Color_Green Color = 1
