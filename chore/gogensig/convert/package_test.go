@@ -1460,7 +1460,7 @@ func createTestPkg(t *testing.T, outputDir string) *convert.Package {
 func comparePackageOutput(t *testing.T, pkg *convert.Package, expect string) {
 	t.Helper()
 	// For Test,The Test package's header filename same as package name
-	buf, err := pkg.WriteToBuffer(pkg.Name() + ".h")
+	buf, err := pkg.WriteDefaultFileToBuffer()
 	if err != nil {
 		t.Fatalf("WriteTo failed: %v", err)
 	}
@@ -1522,7 +1522,8 @@ func TestTypeClean(t *testing.T) {
 		pkg.SetCurFile(tc.headerFile, true)
 		tc.addType()
 
-		buf, err := pkg.WriteToBuffer(tc.headerFile)
+		goFileName := convert.HeaderFileToGo(tc.headerFile)
+		buf, err := pkg.WriteToBuffer(goFileName)
 		if err != nil {
 			t.Fatal(err)
 		}

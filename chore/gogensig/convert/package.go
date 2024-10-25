@@ -261,18 +261,12 @@ func (p *Package) Write(headerFile string) error {
 		}
 		return nil
 	}
-
 	fileName := HeaderFileToGo(headerFile)
-
+	filePath := filepath.Join(p.outputDir, fileName)
 	if debug {
-		log.Printf("Write HeaderFile [%s] from  gogen:[%s] to [%s]\n", headerFile, fileName, filepath.Join(p.outputDir, fileName))
+		log.Printf("Write HeaderFile [%s] from  gogen:[%s] to [%s]\n", headerFile, fileName, filePath)
 	}
-
-	if err := p.p.WriteFile(filepath.Join(p.outputDir, fileName), fileName); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-
-	return nil
+	return p.writeToFile(fileName, filePath)
 }
 
 func (p *Package) WriteLinkFile() (string, error) {
@@ -280,21 +274,41 @@ func (p *Package) WriteLinkFile() (string, error) {
 	filePath := filepath.Join(p.outputDir, fileName)
 	p.p.SetCurFile(fileName, true)
 	err := p.linkLib(p.cvt.cppgConf.Libs)
+	if debug {
+		log.Printf("Write LinkFile [%s] from  gogen:[%s] to [%s]\n", fileName, fileName, filePath)
+	}
 	if err != nil {
 		return "", fmt.Errorf("failed to link lib: %w", err)
 	}
-	if err := p.p.WriteFile(filePath, fileName); err != nil {
+	if err := p.writeToFile(fileName, filePath); err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 	return filePath, nil
 }
 
-// WriteToBuffer writes the Go file to a buffer.
-// Include the aliased file for debug
-func (p *Package) WriteToBuffer(headerFile string) (*bytes.Buffer, error) {
-	goFileName := HeaderFileToGo(headerFile)
+// WriteDefaultFileToBuffer writes the content of the default Go file to a buffer.
+// The default file is named after the package (p.Name() + ".go").
+// This method is particularly useful for testing type outputs, especially in package tests
+// where there typically isn't (and doesn't need to be) a corresponding header file.
+// Before calling SetCurFile, all type creations are written to this default gogen file.
+// It allows for easy inspection of generated types without the need for actual file I/O.
+func (p *Package) WriteDefaultFileToBuffer() (*bytes.Buffer, error) {
+	return p.WriteToBuffer(p.Name() + ".go")
+}
+
+// Write the corresponding files in gogen package to the file
+func (p *Package) writeToFile(genFName string, filePath string) error {
+	buf, err := p.WriteToBuffer(genFName)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filePath, buf.Bytes(), 0644)
+}
+
+// Write the corresponding files in gogen package to the buffer
+func (p *Package) WriteToBuffer(genFName string) (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
-	err := p.p.WriteTo(buf, goFileName)
+	err := p.p.WriteTo(buf, genFName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write to buffer: %w", err)
 	}
