@@ -223,16 +223,18 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 		log.Printf("NewEnumTypeDecl: %s\n", enumTypeDecl.Name.Name)
 	}
 
-	name := p.cvt.RemovePrefixedName(enumTypeDecl.Name.Name)
-	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
-		return fmt.Errorf("enum type %s already defined", name)
+	enumName := ToTitle(p.cvt.RemovePrefixedName(enumTypeDecl.Name.Name))
+	if obj := p.p.Types.Scope().Lookup(enumName); obj != nil {
+		return fmt.Errorf("enum type %s already defined", enumName)
 	}
 
 	if len(enumTypeDecl.Type.Items) > 0 {
-		enumName := ToTitle(enumTypeDecl.Name.Name)
-		//1 typedef int
-		enumType := p.NewTypedefs(enumName, types.Typ[types.Int])
-
+		//default enum type is int
+		typ, err := p.cvt.ToDefaultEnumType(enumTypeDecl.Name)
+		if err != nil {
+			return err
+		}
+		enumType := p.NewTypedefs(enumName, typ)
 		constDefs := p.p.NewConstDefs(p.p.CB().Scope())
 		for _, item := range enumTypeDecl.Type.Items {
 			name := enumName + "_" + item.Name.Name
