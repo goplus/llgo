@@ -251,6 +251,13 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 	return types.NewStruct(fields, nil), nil
 }
 
+func (p *TypeConv) ToDefaultEnumType(name *ast.Ident) (types.Type, error) {
+	if name == nil {
+		return nil, fmt.Errorf("nil enum type name")
+	}
+	return p.typeMap.CType("Int"), nil
+}
+
 func (p *TypeConv) LookupSymbol(mangleName config.MangleNameType) (config.GoNameType, error) {
 	if p.symbolTable == nil {
 		return "", fmt.Errorf("symbol table not initialized")
