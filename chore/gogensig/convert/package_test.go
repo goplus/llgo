@@ -1306,8 +1306,33 @@ const (
 	Color_Red   Color = 0
 	Color_Green Color = 1
 	Color_Blue  Color = 2
+)`,
+		},
+		{
+			name: "anonymous enum",
+			decl: &ast.EnumTypeDecl{
+				Name: nil,
+				Type: &ast.EnumType{
+					Items: []*ast.EnumItem{
+						{Name: &ast.Ident{Name: "Red"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "0"}},
+						{Name: &ast.Ident{Name: "Green"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "1"}},
+						{Name: &ast.Ident{Name: "Blue"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "2"}},
+					},
+				},
+			},
+			expected: `
+package testpkg
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
 )
-			`,
+
+const (
+	Red   c.Int = 0
+	Green c.Int = 1
+	Blue  c.Int = 2
+)`,
 		},
 	}
 	for _, tc := range testCases {

@@ -251,11 +251,8 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 	return types.NewStruct(fields, nil), nil
 }
 
-func (p *TypeConv) ToDefaultEnumType(name *ast.Ident) (types.Type, error) {
-	if name == nil {
-		return nil, fmt.Errorf("nil enum type name")
-	}
-	return p.typeMap.CType("Int"), nil
+func (p *TypeConv) ToDefaultEnumType() types.Type {
+	return p.typeMap.CType("Int")
 }
 
 func (p *TypeConv) LookupSymbol(mangleName config.MangleNameType) (config.GoNameType, error) {
@@ -315,5 +312,5 @@ func (c *TypeConv) getRelativeHeaderPath(headerFile string) string {
 }
 
 func ToTitle(s string) string {
-	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+	return strings.ToUpper(s[:1]) + s[1:]
 }
