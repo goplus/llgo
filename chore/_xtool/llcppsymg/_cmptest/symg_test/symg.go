@@ -40,11 +40,11 @@ class INIReader {
 			isCpp:    true,
 			prefixes: []string{"INI"},
 			dylibSymbols: []*nm.Symbol{
-				{Name: "__ZN9INIReaderC1EPKc"},
-				{Name: "__ZN9INIReaderC1EPKcl"},
-				{Name: "__ZN9INIReaderD1Ev"},
-				{Name: "__ZNK9INIReader10ParseErrorEv"},
-				{Name: "__ZNK9INIReader3GetEPKcS1_S1_"},
+				{Name: symbol.AddSymbolPrefixUnder("ZN9INIReaderC1EPKc", true)},
+				{Name: symbol.AddSymbolPrefixUnder("ZN9INIReaderC1EPKcl", true)},
+				{Name: symbol.AddSymbolPrefixUnder("ZN9INIReaderD1Ev", true)},
+				{Name: symbol.AddSymbolPrefixUnder("ZNK9INIReader10ParseErrorEv", true)},
+				{Name: symbol.AddSymbolPrefixUnder("ZNK9INIReader3GetEPKcS1_S1_", true)},
 			},
 			symbFileContent: `
 [{
@@ -87,10 +87,10 @@ LUA_API void(lua_closeslot)(lua_State *L, int idx);
 			isCpp:    false,
 			prefixes: []string{"lua_"},
 			dylibSymbols: []*nm.Symbol{
-				{Name: "_lua_error"},
-				{Name: "_lua_next"},
-				{Name: "_lua_concat"},
-				{Name: "_lua_stringtonumber"},
+				{Name: symbol.AddSymbolPrefixUnder("lua_error", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_next", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_concat", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_stringtonumber", false)},
 			},
 		},
 	}

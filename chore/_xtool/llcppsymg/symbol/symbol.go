@@ -158,7 +158,10 @@ func getPath(file string) []string {
 func GetCommonSymbols(dylibSymbols []*nm.Symbol, headerSymbols map[string]*parse.SymbolInfo) []*types.SymbolInfo {
 	var commonSymbols []*types.SymbolInfo
 	for _, dylibSym := range dylibSymbols {
-		symName := strings.TrimLeft(dylibSym.Name, "_")
+		symName := dylibSym.Name
+		if runtime.GOOS == "darwin" {
+			symName = strings.TrimPrefix(symName, "_")
+		}
 		if symInfo, ok := headerSymbols[symName]; ok {
 			symbolInfo := &types.SymbolInfo{
 				Mangle: symName,
@@ -265,4 +268,16 @@ func GenerateAndUpdateSymbolTable(symbols []*nm.Symbol, headerInfos map[string]*
 	}
 
 	return symbolData, nil
+}
+
+// For mutiple os test,the nm output's symbol name is different.
+func AddSymbolPrefixUnder(name string, isCpp bool) string {
+	prefix := ""
+	if runtime.GOOS == "darwin" {
+		prefix = prefix + "_"
+	}
+	if isCpp {
+		prefix = prefix + "_"
+	}
+	return prefix + name
 }

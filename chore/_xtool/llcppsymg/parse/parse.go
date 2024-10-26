@@ -2,6 +2,7 @@ package parse
 
 import (
 	"errors"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -129,12 +130,13 @@ func (p *SymbolProcessor) collectFuncInfo(cursor clang.Cursor) {
 	symbol := cursor.Mangling()
 	defer symbol.Dispose()
 
-	// Remove all leading underscores from C++ symbol names
 	// On Linux, C++ symbols typically have one leading underscore
 	// On macOS, C++ symbols may have two leading underscores
-	// We remove all leading underscores to handle both cases consistently
+	// For consistency, we remove the first leading underscore on macOS
 	symbolName := c.GoString(symbol.CStr())
-	symbolName = strings.TrimLeft(symbolName, "_")
+	if runtime.GOOS == "darwin" {
+		symbolName = strings.TrimPrefix(symbolName, "_")
+	}
 	p.SymbolMap[symbolName] = &SymbolInfo{
 		GoName:    p.genGoName(cursor),
 		ProtoName: p.genProtoName(cursor),

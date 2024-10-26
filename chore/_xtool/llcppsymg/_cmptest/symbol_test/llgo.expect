@@ -10,9 +10,9 @@ Mangle: lua_callk, CPP: lua_callk(lua_State *, int, int, lua_KContext, lua_KFunc
 
 Test Case: INIReader and Std library symbols
 Common Symbols (3):
-Mangle: ZNK9INIReader12GetInteger64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_x, CPP: INIReader::GetInteger64(const std::string &, const std::string &, int64_t), Go: (*Reader).GetInteger64
-Mangle: ZNK9INIReader7GetRealERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_d, CPP: INIReader::GetReal(const std::string &, const std::string &, double), Go: (*Reader).GetReal
-Mangle: ZNK9INIReader10ParseErrorEv, CPP: INIReader::ParseError(), Go: (*Reader).ParseError
+Mangle: _ZNK9INIReader12GetInteger64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_x, CPP: INIReader::GetInteger64(const std::string &, const std::string &, int64_t), Go: (*Reader).GetInteger64
+Mangle: _ZNK9INIReader7GetRealERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_d, CPP: INIReader::GetReal(const std::string &, const std::string &, double), Go: (*Reader).GetReal
+Mangle: _ZNK9INIReader10ParseErrorEv, CPP: INIReader::ParseError(), Go: (*Reader).ParseError
 
 === Test ReadExistingSymbolTable ===
 Symbols read from the file:
