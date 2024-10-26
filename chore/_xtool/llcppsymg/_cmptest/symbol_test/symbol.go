@@ -27,11 +27,11 @@ func TestGetCommonSymbols() {
 		{
 			name: "Lua symbols",
 			dylibSymbols: []*nm.Symbol{
-				{Name: "_lua_absindex"},
-				{Name: "_lua_arith"},
-				{Name: "_lua_atpanic"},
-				{Name: "_lua_callk"},
-				{Name: "_lua_lib_nonexistent"},
+				{Name: symbol.AddSymbolPrefixUnder("lua_absindex", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_arith", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_atpanic", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_callk", false)},
+				{Name: symbol.AddSymbolPrefixUnder("lua_lib_nonexistent", false)},
 			},
 			headerSymbols: map[string]*parse.SymbolInfo{
 				"lua_absindex":           {ProtoName: "lua_absindex(lua_State *, int)", GoName: "Absindex"},
@@ -44,16 +44,16 @@ func TestGetCommonSymbols() {
 		{
 			name: "INIReader and Std library symbols",
 			dylibSymbols: []*nm.Symbol{
-				{Name: "_ZNK9INIReader12GetInteger64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_x"},
-				{Name: "_ZNK9INIReader7GetRealERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_d"},
-				{Name: "_ZNK9INIReader10ParseErrorEv"},
+				{Name: symbol.AddSymbolPrefixUnder("ZNK9INIReader12GetInteger64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_x", true)},
+				{Name: symbol.AddSymbolPrefixUnder("ZNK9INIReader7GetRealERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_d", true)},
+				{Name: symbol.AddSymbolPrefixUnder("ZNK9INIReader10ParseErrorEv", true)},
 			},
 			headerSymbols: map[string]*parse.SymbolInfo{
-				"ZNK9INIReader12GetInteger64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_x":  {GoName: "(*Reader).GetInteger64", ProtoName: "INIReader::GetInteger64(const std::string &, const std::string &, int64_t)"},
-				"ZNK9INIReader13GetUnsigned64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_y": {GoName: "(*Reader).GetUnsigned64", ProtoName: "INIReader::GetUnsigned64(const std::string &, const std::string &, uint64_t)"},
-				"ZNK9INIReader7GetRealERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_d":        {GoName: "(*Reader).GetReal", ProtoName: "INIReader::GetReal(const std::string &, const std::string &, double)"},
-				"ZNK9INIReader10ParseErrorEv": {GoName: "(*Reader).ParseError", ProtoName: "INIReader::ParseError()"},
-				"ZNK9INIReader10GetBooleanERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_b": {GoName: "(*Reader).GetBoolean", ProtoName: "INIReader::GetBoolean(const std::string &, const std::string &, bool)"},
+				"_ZNK9INIReader12GetInteger64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_x":  {GoName: "(*Reader).GetInteger64", ProtoName: "INIReader::GetInteger64(const std::string &, const std::string &, int64_t)"},
+				"_ZNK9INIReader13GetUnsigned64ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_y": {GoName: "(*Reader).GetUnsigned64", ProtoName: "INIReader::GetUnsigned64(const std::string &, const std::string &, uint64_t)"},
+				"_ZNK9INIReader7GetRealERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_d":        {GoName: "(*Reader).GetReal", ProtoName: "INIReader::GetReal(const std::string &, const std::string &, double)"},
+				"_ZNK9INIReader10ParseErrorEv": {GoName: "(*Reader).ParseError", ProtoName: "INIReader::ParseError()"},
+				"_ZNK9INIReader10GetBooleanERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEES8_b": {GoName: "(*Reader).GetBoolean", ProtoName: "INIReader::GetBoolean(const std::string &, const std::string &, bool)"},
 			},
 		},
 	}
