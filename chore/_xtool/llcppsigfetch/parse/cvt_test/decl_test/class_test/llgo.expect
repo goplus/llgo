@@ -128,7 +128,7 @@ TestClassDecl Case 2:
 								"_Type":	"Ident",
 								"Name":	"foo"
 							},
-							"MangledName":	"ZN1A3fooEid",
+							"MangledName":	"_ZN1A3fooEid",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -225,7 +225,7 @@ TestClassDecl Case 3:
 								"_Type":	"Ident",
 								"Name":	"A"
 							},
-							"MangledName":	"ZN1AC1Ev",
+							"MangledName":	"_ZN1AC1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -261,7 +261,7 @@ TestClassDecl Case 3:
 								"_Type":	"Ident",
 								"Name":	"A"
 							},
-							"MangledName":	"ZN1AC1Ev",
+							"MangledName":	"_ZN1AC1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -297,7 +297,7 @@ TestClassDecl Case 3:
 								"_Type":	"Ident",
 								"Name":	"~A"
 							},
-							"MangledName":	"ZN1AD1Ev",
+							"MangledName":	"_ZN1AD1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -333,7 +333,7 @@ TestClassDecl Case 3:
 								"_Type":	"Ident",
 								"Name":	"foo"
 							},
-							"MangledName":	"ZN1A3fooEv",
+							"MangledName":	"_ZN1A3fooEv",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -400,7 +400,7 @@ TestClassDecl Case 4:
 								"_Type":	"Ident",
 								"Name":	"Base"
 							},
-							"MangledName":	"ZN4BaseC1Ev",
+							"MangledName":	"_ZN4BaseC1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -436,7 +436,7 @@ TestClassDecl Case 4:
 								"_Type":	"Ident",
 								"Name":	"~Base"
 							},
-							"MangledName":	"ZN4BaseD1Ev",
+							"MangledName":	"_ZN4BaseD1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -472,7 +472,7 @@ TestClassDecl Case 4:
 								"_Type":	"Ident",
 								"Name":	"foo"
 							},
-							"MangledName":	"ZN4Base3fooEv",
+							"MangledName":	"_ZN4Base3fooEv",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -529,7 +529,7 @@ TestClassDecl Case 4:
 								"_Type":	"Ident",
 								"Name":	"Derived"
 							},
-							"MangledName":	"ZN7DerivedC1Ev",
+							"MangledName":	"_ZN7DerivedC1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -565,7 +565,7 @@ TestClassDecl Case 4:
 								"_Type":	"Ident",
 								"Name":	"~Derived"
 							},
-							"MangledName":	"ZN7DerivedD1Ev",
+							"MangledName":	"_ZN7DerivedD1Ev",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -601,7 +601,7 @@ TestClassDecl Case 4:
 								"_Type":	"Ident",
 								"Name":	"foo"
 							},
-							"MangledName":	"ZN7Derived3fooEv",
+							"MangledName":	"_ZN7Derived3fooEv",
 							"Type":	{
 								"_Type":	"FuncType",
 								"Params":	{
@@ -680,7 +680,7 @@ TestClassDecl Case 5:
 					"_Type":	"Ident",
 					"Name":	"bar"
 				},
-				"MangledName":	"ZN1A3Foo3barEv",
+				"MangledName":	"_ZN1A3Foo3barEv",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{

@@ -15,7 +15,7 @@ TestFuncDecl Case 1:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
-				"MangledName":	"Z3foov",
+				"MangledName":	"_Z3foov",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -58,7 +58,7 @@ TestFuncDecl Case 2:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
-				"MangledName":	"Z3fooi",
+				"MangledName":	"_Z3fooi",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -116,7 +116,7 @@ TestFuncDecl Case 3:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
-				"MangledName":	"Z3fooiz",
+				"MangledName":	"_Z3fooiz",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -184,7 +184,7 @@ TestFuncDecl Case 4:
 					"_Type":	"Ident",
 					"Name":	"foo"
 				},
-				"MangledName":	"Z3fooid",
+				"MangledName":	"_Z3fooid",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{
@@ -260,7 +260,7 @@ TestFuncDecl Case 5:
 					"_Type":	"Ident",
 					"Name":	"add"
 				},
-				"MangledName":	"ZL3addii",
+				"MangledName":	"_ZL3addii",
 				"Type":	{
 					"_Type":	"FuncType",
 					"Params":	{

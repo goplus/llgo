@@ -3,6 +3,7 @@ package parse
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"unsafe"
 
@@ -520,7 +521,10 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 	params := ct.ProcessFieldList(cursor)
 	funcType.Params = params
 
-	mangledName = strings.TrimLeft(mangledName, "_")
+	// Linux has one less leading underscore than macOS, so remove one leading underscore on macOS
+	if runtime.GOOS == "darwin" {
+		mangledName = strings.TrimPrefix(mangledName, "_")
+	}
 
 	funcDecl := &ast.FuncDecl{
 		DeclBase:    ct.CreateDeclBase(cursor),
