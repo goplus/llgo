@@ -83,8 +83,12 @@ func genFrom(fileOrPkg string, pkgPath string) string {
 		}
 		return path
 	})
+	bctx := cl.NewContext(prog)
 	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
-		cl.ParsePkgSyntax(prog, pkg, files)
+		if canSkipToSyntax(pkg.Path()) {
+			return
+		}
+		bctx.ParsePkgSyntax(pkg, files, false)
 	})
 
 	initial, err := packages.LoadEx(dedup, prog.TypeSizes, cfg, fileOrPkg)
@@ -92,7 +96,6 @@ func genFrom(fileOrPkg string, pkgPath string) string {
 
 	_, pkgs := ssautil.AllPackages(initial, ssa.SanityCheckFunctions|ssa.InstantiateGenerics|ssa.GlobalDebug)
 
-	pkg := initial[0]
 	ssaPkg := pkgs[0]
 	ssaPkg.Build()
 
@@ -102,7 +105,7 @@ func genFrom(fileOrPkg string, pkgPath string) string {
 		ssaPkg.WriteTo(os.Stderr)
 	}
 
-	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
+	ret, err := cl.NewPackageEx(bctx, ssaPkg)
 	check(err)
 
 	if prog.NeedPyInit { // call PyInit if needed
@@ -110,6 +113,18 @@ func genFrom(fileOrPkg string, pkgPath string) string {
 	}
 
 	return ret.String()
+}
+
+func canSkipToSyntax(pkgPath string) bool {
+	switch pkgPath {
+	case "unsafe":
+		return true
+	case "runtime/cgo":
+		return true
+	default:
+		return strings.HasPrefix(pkgPath, "internal/") ||
+			strings.HasPrefix(pkgPath, "runtime/internal/")
+	}
 }
 
 func DoFile(fileOrPkg, outFile string) {
