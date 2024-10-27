@@ -15,11 +15,6 @@ for item in "$GOROOT"/*; do
     fi
 done
 
-mkdir -p "$WRAPPED_GOROOT/src"
-ln -s "$LLGOROOT/internal/lib"/* "$WRAPPED_GOROOT/src/"
-ln -s "$GOROOT/src/errors" "$WRAPPED_GOROOT/src/"
-ln -s "$GOROOT/src/unsafe" "$WRAPPED_GOROOT/src/"
-
 # Special handling for the pkg/tool/darwin_arm64 directory
 mkdir -p "$WRAPPED_GOROOT/pkg/tool/darwin_arm64"
 for item in "$GOROOT"/pkg/*; do
@@ -35,6 +30,13 @@ for item in "$GOROOT"/pkg/tool/darwin_arm64/*; do
         ln -s "$item" "$WRAPPED_GOROOT/pkg/tool/darwin_arm64/$filename"
     fi
 done
+
+mkdir -p "$WRAPPED_GOROOT/src"
+rm -rf "$WRAPPED_GOROOT/src"/*
+go run ./chore/cpskip "$GOROOT"/src "$LLGOROOT"/internal/lib "$WRAPPED_GOROOT"/src
+
+mkdir -p "$WRAPPED_GOROOT/src/vendor/github.com/goplus"
+ln -s "$LLGOROOT" "$WRAPPED_GOROOT/src/vendor/github.com/goplus/llgo"
 
 set -x
 set -e
