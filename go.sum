@@ -1,5 +1,5 @@
-github.com/goplus/gogen v1.16.0 h1:hAK2ZX8vCjH+Y2QoJl9viSZ8Gw9pzE0vCz5voYBYnv4=
-github.com/goplus/gogen v1.16.0/go.mod h1:92qEzVgv7y8JEFICWG9GvYI5IzfEkxYdsA1DbmnTkqk=
+github.com/goplus/gogen v1.16.1 h1:f55LIfyTO5GcXxCfwXKqLKiQV3AORvn9PSGCncWvB1A=
+github.com/goplus/gogen v1.16.1/go.mod h1:6TQYbabXDF9LCdDkOOzHmfg1R4ENfXQ3XpHa9RhTSD8=
 github.com/goplus/llvm v0.8.0 h1:9eFutGm3d0G7bAd8/e+Tuyva0tu1IPNPm0kVG4AgHwY=
 github.com/goplus/llvm v0.8.0/go.mod h1:PeVK8GgzxwAYCiMiUAJb5wJR6xbhj989tu9oulKLLT4=
 github.com/goplus/mod v0.13.12 h1:Trwk6j3i9VvBuW6/9ZxmkoFlEL2v3HKQu0Na1c6DAdw=
