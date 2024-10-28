@@ -27,28 +27,73 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/args"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
 )
 
 func main() {
-	cfgFile := ""
-	outputToFile := false
-	for i := 1; i < len(os.Args); i++ {
-		arg := os.Args[i]
-		if arg == "--extract" {
-			runExtract()
-			return
-		} else if arg == "--help" || arg == "-h" {
-			printUsage()
-			return
-		} else if strings.HasPrefix(arg, "-out=") {
-			outputToFile = parseBoolArg(arg, "out", false)
-		} else if cfgFile == "" && !strings.HasPrefix(arg, "-") {
-			cfgFile = arg
+	ags, remainArgs := args.ParseArgs(os.Args[1:], map[string]bool{
+		"--extract": true,
+	})
+
+	if ags.Help {
+		printUsage()
+		return
+	}
+	if ags.Verbose {
+		parse.SetDebug(parse.DbgFlagAll)
+	}
+	extract := false
+	out := false
+
+	var extractFile string
+	isTemp := false
+	isCpp := true
+	otherArgs := []string{}
+
+	for i := 0; i < len(remainArgs); i++ {
+		arg := remainArgs[i]
+		switch {
+		case arg == "--extract":
+			extract = true
+			if i+1 < len(remainArgs) && !strings.HasPrefix(remainArgs[i+1], "-") {
+				extractFile = remainArgs[i+1]
+				i++
+			} else {
+				fmt.Fprintln(os.Stderr, "Error: --extract requires a valid file argument")
+				printUsage()
+				os.Exit(1)
+			}
+		case strings.HasPrefix(arg, "-out="):
+			out = parseBoolArg(arg, "out", false)
+		case strings.HasPrefix(arg, "-temp="):
+			isTemp = parseBoolArg(arg, "temp", false)
+		case strings.HasPrefix(arg, "-cpp="):
+			isCpp = parseBoolArg(arg, "cpp", true)
+		default:
+			otherArgs = append(otherArgs, arg)
 		}
 	}
-	runFromConfig(cfgFile, outputToFile)
+
+	if extract {
+		if ags.Verbose {
+			fmt.Fprintln(os.Stderr, "runExtract: extractFile:", extractFile)
+			fmt.Fprintln(os.Stderr, "isTemp:", isTemp)
+			fmt.Fprintln(os.Stderr, "isCpp:", isCpp)
+			fmt.Fprintln(os.Stderr, "out:", out)
+			fmt.Fprintln(os.Stderr, "otherArgs:", otherArgs)
+		}
+		runExtract(extractFile, isTemp, isCpp, out, otherArgs, ags.Verbose)
+	} else {
+		if ags.Verbose {
+			fmt.Fprintln(os.Stderr, "runFromConfig: config file:", ags.CfgFile)
+			fmt.Fprintln(os.Stderr, "use stdin:", ags.UseStdin)
+			fmt.Fprintln(os.Stderr, "output to file:", out)
+		}
+		runFromConfig(ags.CfgFile, ags.UseStdin, out, ags.Verbose)
+	}
+
 }
 
 func printUsage() {
@@ -79,17 +124,20 @@ func printUsage() {
 	fmt.Println("Note: The two usage modes are mutually exclusive. Use either [<config_file>] OR --extract, not both.")
 }
 
-func runFromConfig(cfgFile string, outputToFile bool) {
-	if cfgFile == "" {
-		cfgFile = "llcppg.cfg"
-	}
-
+func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose bool) {
 	var data []byte
 	var err error
-	if cfgFile == "-" {
+	if useStdin {
 		data, err = io.ReadAll(os.Stdin)
 	} else {
 		data, err = os.ReadFile(cfgFile)
+	}
+	if verbose {
+		if useStdin {
+			fmt.Fprintln(os.Stderr, "runFromConfig: read from stdin")
+		} else {
+			fmt.Fprintln(os.Stderr, "runFromConfig: read from file", cfgFile)
+		}
 	}
 	check(err)
 
@@ -99,9 +147,20 @@ func runFromConfig(cfgFile string, outputToFile bool) {
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to parse config file:", cfgFile)
+		os.Exit(1)
 	}
 
-	files := getHeaderFiles(conf.CFlags, conf.Include)
+	//todo(zzy): reuse the llcppsymg's cflags parse
+	cflag := ParseCFlags(conf.CFlags)
+	files, notFounds, err := cflag.GenHeaderFilePaths(conf.Include)
+	check(err)
+
+	if verbose {
+		fmt.Fprintln(os.Stderr, "runFromConfig: header file paths", files)
+		if len(notFounds) > 0 {
+			fmt.Fprintln(os.Stderr, "runFromConfig: not found header files", notFounds)
+		}
+	}
 
 	context := parse.NewContext(conf.Cplusplus)
 	err = context.ProcessFiles(files)
@@ -110,48 +169,20 @@ func runFromConfig(cfgFile string, outputToFile bool) {
 	outputInfo(context, outputToFile)
 }
 
-func runExtract() {
-	if len(os.Args) < 3 {
-		fmt.Println("Error: Insufficient arguments for --extract")
-		printUsage()
-		os.Exit(1)
-	}
-
+func runExtract(file string, isTemp bool, isCpp bool, outToFile bool, otherArgs []string, verbose bool) {
 	cfg := &clangutils.Config{
-		File:  os.Args[2],
-		Args:  []string{},
-		IsCpp: true,
-		Temp:  false,
+		File:  file,
+		Args:  otherArgs,
+		IsCpp: isCpp,
+		Temp:  isTemp,
 	}
-
-	outputToFile := false
-	for i := 3; i < len(os.Args); i++ {
-		arg := os.Args[i]
-		switch {
-		case strings.HasPrefix(arg, "-temp="):
-			cfg.Temp = parseBoolArg(arg, "temp", false)
-			os.Args = append(os.Args[:i], os.Args[i+1:]...)
-			i--
-		case strings.HasPrefix(arg, "-cpp="):
-			cfg.IsCpp = parseBoolArg(arg, "cpp", true)
-			os.Args = append(os.Args[:i], os.Args[i+1:]...)
-			i--
-		case strings.HasPrefix(arg, "-out="):
-			outputToFile = parseBoolArg(arg, "out", false)
-			os.Args = append(os.Args[:i], os.Args[i+1:]...)
-			i--
-		default:
-			cfg.Args = append(cfg.Args, arg)
-		}
-	}
-
 	converter, err := parse.NewConverter(cfg)
 	check(err)
 	_, err = converter.Convert()
 	check(err)
 	result := converter.MarshalOutputASTFiles()
 	cstr := result.Print()
-	outputResult(cstr, outputToFile)
+	outputResult(cstr, outToFile)
 	cjson.FreeCStr(cstr)
 	result.Delete()
 	converter.Dispose()
@@ -171,20 +202,52 @@ func outputResult(result *c.Char, outputToFile bool) {
 			fmt.Fprintf(os.Stderr, "Error writing to output file: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Results saved to %s\n", outputFile)
+		fmt.Fprintf(os.Stderr, "Results saved to %s\n", outputFile)
 	} else {
 		c.Printf(result)
 	}
 }
 
-func getHeaderFiles(cflags string, files []string) []string {
-	prefix := cflags
-	prefix = strings.TrimPrefix(prefix, "-I")
-	var paths []string
-	for _, f := range files {
-		paths = append(paths, filepath.Join(prefix, f))
+// todo(zzy): reuse the llcppsymg's cflags parse https://github.com/goplus/llgo/pull/788
+type CFlags struct {
+	Paths []string // Include Path
+}
+
+func ParseCFlags(cflags string) *CFlags {
+	parts := strings.Fields(cflags)
+	cf := &CFlags{}
+	for _, part := range parts {
+		if strings.HasPrefix(part, "-I") {
+			cf.Paths = append(cf.Paths, part[2:])
+		}
 	}
-	return paths
+	return cf
+}
+
+func (cf *CFlags) GenHeaderFilePaths(files []string) ([]string, []string, error) {
+	var foundPaths []string
+	var notFound []string
+
+	for _, file := range files {
+		var found bool
+		for _, path := range cf.Paths {
+			fullPath := filepath.Join(path, file)
+			if _, err := os.Stat(fullPath); err == nil {
+				foundPaths = append(foundPaths, fullPath)
+				found = true
+				break
+			}
+		}
+		if !found {
+			notFound = append(notFound, file)
+		}
+	}
+
+	if len(foundPaths) == 0 {
+		return nil, notFound, fmt.Errorf("failed to find any header files")
+	}
+
+	return foundPaths, notFound, nil
 }
 
 func outputInfo(context *parse.Context, outputToFile bool) {
@@ -198,12 +261,12 @@ func outputInfo(context *parse.Context, outputToFile bool) {
 func parseBoolArg(arg, name string, defaultValue bool) bool {
 	parts := strings.SplitN(arg, "=", 2)
 	if len(parts) != 2 {
-		fmt.Printf("Warning: Invalid -%s= argument, defaulting to %v\n", name, defaultValue)
+		fmt.Fprintf(os.Stderr, "Warning: Invalid -%s= argument, defaulting to %v\n", name, defaultValue)
 		return defaultValue
 	}
 	value, err := strconv.ParseBool(parts[1])
 	if err != nil {
-		fmt.Printf("Warning: Invalid -%s= value '%s', defaulting to %v\n", name, parts[1], defaultValue)
+		fmt.Fprintf(os.Stderr, "Warning: Invalid -%s= value '%s', defaulting to %v\n", name, parts[1], defaultValue)
 		return defaultValue
 	}
 	return value

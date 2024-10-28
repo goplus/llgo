@@ -20,7 +20,7 @@ func TestUnionDecl() {
     		int i;
     		float f;
     		union {
-        		char c;
+        		int c;
         		short s;
     		} inner;
 		};`,
