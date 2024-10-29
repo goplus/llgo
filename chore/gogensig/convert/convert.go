@@ -98,12 +98,9 @@ func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, t
 	}
 }
 
-/*
-//TODO
 func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	//fmt.Printf("visit union %s\n", unionName.Name)
-	//TODO convert union
-}*/
+	p.VisitStruct(unionName, fields, typeDecl)
+}
 
 func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 	err := p.pkg.NewEnumTypeDecl(enumTypeDecl)
