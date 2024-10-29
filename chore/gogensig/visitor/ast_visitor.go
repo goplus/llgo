@@ -14,7 +14,7 @@ type DocVisitor interface {
 	VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 	//VisitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 	//VisitMethod(className *ast.Ident, method *ast.FuncDecl, typeDecl *ast.TypeDecl)
-	//VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
+	VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 	VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl)
 	VisitTypedefDecl(typedefDecl *ast.TypedefDecl)
 }
@@ -89,7 +89,7 @@ func (p *BaseDocVisitor) visitStruct(structName *ast.Ident, fields *ast.FieldLis
 }
 
 func (p *BaseDocVisitor) visitUnion(unionName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	//p.VisitUnion(unionName, fields, typeDecl)
+	p.VisitUnion(unionName, fields, typeDecl)
 }
 
 func (p *BaseDocVisitor) visitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
