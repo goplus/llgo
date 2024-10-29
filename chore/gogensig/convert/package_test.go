@@ -122,7 +122,11 @@ func TestLinkFileFail(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 			CppgConf:  &cppgtypes.Config{},
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			OutputDir: tempDir,
+			CppgConf:  &cppgtypes.Config{},
 		})
+
 
 		_, err = pkg.WriteLinkFile()
 		if err == nil {
@@ -135,6 +139,11 @@ func TestLinkFileFail(t *testing.T) {
 			t.Fatalf("Failed to create temporary directory: %v", err)
 		}
 		defer os.RemoveAll(tempDir)
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			OutputDir: tempDir,
+			CppgConf: &cppgtypes.Config{
+				Libs: "${pkg-config --libs libcjson}",
+			},
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 			CppgConf: &cppgtypes.Config{
@@ -155,6 +164,9 @@ func TestLinkFileFail(t *testing.T) {
 }
 
 func TestToType(t *testing.T) {
+	pkg := createTestPkg(t, &convert.PackageConfig{
+		OutputDir: "",
+	})
 	pkg := createTestPkg(t, &convert.PackageConfig{
 		OutputDir: "",
 	})
@@ -196,7 +208,11 @@ func TestToType(t *testing.T) {
 
 func TestNewPackage(t *testing.T) {
 	pkg := createTestPkg(t, &convert.PackageConfig{})
+	pkg := createTestPkg(t, &convert.PackageConfig{})
 	comparePackageOutput(t, pkg, `
+	package testpkg
+	import _ "unsafe"
+	`)
 	package testpkg
 	import _ "unsafe"
 	`)
@@ -232,6 +248,9 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 		})
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			OutputDir: tempDir,
+		})
 		pkg.SetCurFile(headerFilePath, true)
 		err = pkg.Write(headerFilePath)
 		if err != nil {
@@ -255,6 +274,9 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: currentDir,
 		})
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			OutputDir: currentDir,
+		})
 		pkg.SetCurFile(headerFilePath, true)
 		err = pkg.Write(headerFilePath)
 		if err != nil {
@@ -274,6 +296,9 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: "/nonexistent/directory",
 		})
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			OutputDir: "/nonexistent/directory",
+		})
 		err := pkg.Write(headerFilePath)
 		if err == nil {
 			t.Fatal("Expected an error for invalid output directory, but got nil")
@@ -287,6 +312,9 @@ func TestPackageWrite(t *testing.T) {
 		}
 		defer os.RemoveAll(tempDir)
 
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			OutputDir: tempDir,
+		})
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 		})
@@ -314,6 +342,7 @@ func TestPreparseOutputDir(t *testing.T) {
 	convert.NewPackage(&convert.PackageConfig{
 		PkgPath:   ".",
 		Name:      "testpkg",
+		GenConf:   &gogen.Config{},
 		GenConf:   &gogen.Config{},
 		OutputDir: "invalid\x00path",
 	})
@@ -1146,8 +1175,8 @@ type Foo func(a c.Int, b c.Int) c.Int`,
 func TestRedef(t *testing.T) {
 	pkg := createTestPkg(t, &convert.PackageConfig{
 		OutputDir: "",
-		SymbolTable: cfg.CreateSymbolTable(
-			[]cfg.SymbolEntry{
+		SymbolTable: config.CreateSymbolTable(
+			[]config.SymbolEntry{
 				{CppName: "Bar", MangleName: "Bar", GoName: "Bar"},
 			},
 		),
@@ -1503,7 +1532,7 @@ type genDeclTestCase struct {
 func testGenDecl(t *testing.T, tc genDeclTestCase) {
 	t.Helper()
 	pkg := createTestPkg(t, &convert.PackageConfig{
-		SymbolTable: cfg.CreateSymbolTable(tc.symbs),
+		SymbolTable: config.CreateSymbolTable(tc.symbs),
 		CppgConf:    tc.cppgconf,
 	})
 	if pkg == nil {
@@ -1545,6 +1574,7 @@ func compareError(t *testing.T, err error, expectErr string) {
 }
 
 func createTestPkg(t *testing.T, config *convert.PackageConfig) *convert.Package {
+func createTestPkg(t *testing.T, config *convert.PackageConfig) *convert.Package {
 	t.Helper()
 	if config.CppgConf == nil {
 		config.CppgConf = &cppgtypes.Config{}
@@ -1552,7 +1582,19 @@ func createTestPkg(t *testing.T, config *convert.PackageConfig) *convert.Package
 	if config.SymbolTable == nil {
 		config.SymbolTable = cfg.CreateSymbolTable([]cfg.SymbolEntry{})
 	}
+	if config.CppgConf == nil {
+		config.CppgConf = &cppgtypes.Config{}
+	}
+	if config.SymbolTable == nil {
+		config.SymbolTable = cfg.CreateSymbolTable([]cfg.SymbolEntry{})
+	}
 	pkg := convert.NewPackage(&convert.PackageConfig{
+		PkgPath:     ".",
+		Name:        "testpkg",
+		GenConf:     &gogen.Config{},
+		OutputDir:   config.OutputDir,
+		SymbolTable: config.SymbolTable,
+		CppgConf:    config.CppgConf,
 		PkgPath:     ".",
 		Name:        "testpkg",
 		GenConf:     &gogen.Config{},
@@ -1585,8 +1627,8 @@ func comparePackageOutput(t *testing.T, pkg *convert.Package, expect string) {
 func TestTypeClean(t *testing.T) {
 	pkg := createTestPkg(t, &convert.PackageConfig{
 		OutputDir: "",
-		SymbolTable: cfg.CreateSymbolTable(
-			[]cfg.SymbolEntry{
+		SymbolTable: config.CreateSymbolTable(
+			[]config.SymbolEntry{
 				{CppName: "Func1", MangleName: "Func1", GoName: "Func1"},
 				{CppName: "Func2", MangleName: "Func2", GoName: "Func2"},
 			},
