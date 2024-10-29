@@ -32,6 +32,7 @@ _llgo_0:
   %5 = load ptr, ptr @_llgo_Pointer, align 8
   %6 = load ptr, ptr @"_llgo_func$CqBkokmWG3Ia8PBDErMKLrnXwWQ3khfTBm7VXk_2y30", align 8
   %7 = load ptr, ptr @"main.struct$hWvPvnlB9uIZSm1cMlcssbAfCpkLhNdpCzAk4conL0o", align 8
+  call void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr %7)
   %8 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
   store { ptr, ptr } %4, ptr %8, align 8
   %9 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
@@ -41,6 +42,7 @@ _llgo_0:
   store ptr %8, ptr %11, align 8
   %12 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, align 8
   %13 = load ptr, ptr @"main.struct$hWvPvnlB9uIZSm1cMlcssbAfCpkLhNdpCzAk4conL0o", align 8
+  call void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr %13)
   %14 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
   store { ptr, ptr } %0, ptr %14, align 8
   %15 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
@@ -333,6 +335,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplus/llgo/internal/runtime.String", i64, %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1)
+
+declare void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 

@@ -447,6 +447,7 @@ _llgo_0:
   call void @main.invoke(%"github.com/goplus/llgo/internal/runtime.iface" %111)
   %112 = load %main.T6, ptr %15, align 8
   %113 = load ptr, ptr @_llgo_main.T6, align 8
+  call void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr %113)
   %114 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
   store %main.T6 %112, ptr %114, align 8
   %115 = load ptr, ptr @"_llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0", align 8
@@ -1888,6 +1889,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr, ptr)
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.ArrayOf"(i64, ptr)
+
+declare void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.IfaceType"(%"github.com/goplus/llgo/internal/runtime.iface")
 
