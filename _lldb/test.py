@@ -7,15 +7,12 @@ import signal
 from dataclasses import dataclass, field
 from typing import List, Optional, Set, Dict, Any
 import lldb
-import llgo_plugin  # Add this import
+import llgo_plugin
+from llgo_plugin import log
 
 
 class LLDBTestException(Exception):
     pass
-
-
-def log(*args: Any, **kwargs: Any) -> None:
-    print(*args, **kwargs, flush=True)
 
 
 @dataclass
@@ -60,7 +57,7 @@ class TestResults:
 
 
 class LLDBDebugger:
-    def __init__(self, executable_path: str, plugin_path: Optional[str] = None):
+    def __init__(self, executable_path: str, plugin_path: Optional[str] = None) -> None:
         self.executable_path: str = executable_path
         self.plugin_path: Optional[str] = plugin_path
         self.debugger: lldb.SBDebugger = lldb.SBDebugger.Create()
@@ -70,7 +67,6 @@ class LLDBDebugger:
         self.type_mapping: Dict[str, str] = {
             'long': 'int',
             'unsigned long': 'uint',
-            # Add more mappings as needed
         }
 
     def setup(self) -> None:
@@ -104,29 +100,14 @@ class LLDBDebugger:
 
     def get_variable_value(self, var_expression: str) -> Optional[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
-
-        parts = var_expression.split('.')
-        var = frame.FindVariable(parts[0])
-
-        for part in parts[1:]:
-            if not var.IsValid():
-                return None
-
-            if '[' in part and ']' in part:
-                array_name, index = part.split('[')
-                index = int(index.rstrip(']'))
-                var = var.GetChildAtIndex(index)
-            elif var.GetType().IsPointerType():
-                var = var.Dereference()
-                var = var.GetChildMemberWithName(part)
-            else:
-                var = var.GetChildMemberWithName(part)
-
-        return llgo_plugin.format_value(var, self.debugger) if var.IsValid() else None
+        value = llgo_plugin.evaluate_expression(frame, var_expression)
+        if value and value.IsValid():
+            return llgo_plugin.format_value(value, self.debugger)
+        return None
 
     def get_all_variable_names(self) -> Set[str]:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
-        return set(var.GetName() for var in frame.GetVariables(True, True, True, False))
+        return set(var.GetName() for var in frame.GetVariables(True, True, True, True))
 
     def get_current_function_name(self) -> str:
         frame = self.process.GetSelectedThread().GetFrameAtIndex(0)
@@ -189,7 +170,7 @@ class LLDBDebugger:
 
 
 def parse_expected_values(source_files: List[str]) -> List[TestCase]:
-    test_cases = []
+    test_cases: List[TestCase] = []
     for source_file in source_files:
         with open(source_file, 'r', encoding='utf-8') as f:
             content = f.readlines()
@@ -198,7 +179,7 @@ def parse_expected_values(source_files: List[str]) -> List[TestCase]:
                 line = content[i].strip()
                 if line.startswith('// Expected:'):
                     start_line = i + 1
-                    tests = []
+                    tests: List[Test] = []
                     i += 1
                     while i < len(content):
                         line = content[i].strip()
@@ -224,7 +205,8 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
         debugger = LLDBDebugger(executable_path, plugin_path)
         try:
             if verbose:
-                log(f"Setting breakpoint at {test_case.source_file}: {test_case.end_line}")
+                log(
+                    f"\nSetting breakpoint at {test_case.source_file}:{test_case.end_line}")
             debugger.setup()
             debugger.set_breakpoint(test_case.source_file, test_case.end_line)
             debugger.run_to_breakpoint()
@@ -259,7 +241,7 @@ def execute_tests(executable_path: str, test_cases: List[TestCase], verbose: boo
     return results
 
 
-def run_tests(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> None:
+def run_tests(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str]) -> int:
     test_cases = parse_expected_values(source_files)
     if verbose:
         log(f"Running tests for {', '.join(source_files)} with {executable_path}")
@@ -269,12 +251,12 @@ def run_tests(executable_path: str, source_files: List[str], verbose: bool, inte
                             verbose, interactive, plugin_path)
     print_test_results(results)
 
-    if results.total != results.passed:
-        os._exit(1)
+    # Return 0 if all tests passed, 1 otherwise
+    return 0 if results.failed == 0 else 1
 
 
 def execute_test_case(debugger: LLDBDebugger, test_case: TestCase, all_variable_names: Set[str]) -> CaseResult:
-    results = []
+    results: List[TestResult] = []
 
     for test in test_case.tests:
         if test.variable == "all variables":
@@ -367,6 +349,24 @@ def print_test_result(result: TestResult, verbose: bool) -> None:
             log(f"    Actual: {result.actual}")
 
 
+def run_tests_with_result(executable_path: str, source_files: List[str], verbose: bool, interactive: bool, plugin_path: Optional[str], result_path: str) -> int:
+    try:
+        exit_code = run_tests(executable_path, source_files,
+                              verbose, interactive, plugin_path)
+    except Exception as e:
+        log(f"An error occurred during test execution: {str(e)}")
+        exit_code = 2  # Use a different exit code for unexpected errors
+
+    try:
+        with open(result_path, 'w', encoding='utf-8') as f:
+            f.write(str(exit_code))
+    except IOError as e:
+        log(f"Error writing result to file {result_path}: {str(e)}")
+        # If we can't write to the file, we should still return the exit code
+
+    return exit_code
+
+
 def main() -> None:
     log(sys.argv)
     parser = argparse.ArgumentParser(
@@ -378,12 +378,24 @@ def main() -> None:
     parser.add_argument("-i", "--interactive", action="store_true",
                         help="Enable interactive mode on test failure")
     parser.add_argument("--plugin", help="Path to the LLDB plugin")
+    parser.add_argument("--result-path", help="Path to write the result")
     args = parser.parse_args()
 
     plugin_path = args.plugin or os.path.join(os.path.dirname(
         os.path.realpath(__file__)), "go_lldb_plugin.py")
-    run_tests(args.executable, args.sources,
-              args.verbose, args.interactive, plugin_path)
+
+    try:
+        if args.result_path:
+            exit_code = run_tests_with_result(args.executable, args.sources,
+                                              args.verbose, args.interactive, plugin_path, args.result_path)
+        else:
+            exit_code = run_tests(args.executable, args.sources,
+                                  args.verbose, args.interactive, plugin_path)
+    except Exception as e:
+        log(f"An unexpected error occurred: {str(e)}")
+        exit_code = 2  # Use a different exit code for unexpected errors
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

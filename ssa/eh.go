@@ -141,6 +141,10 @@ const (
 )
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
+	if b.Func.recov == nil {
+		// b.Func.recov maybe nil in ssa.NaiveForm
+		return nil
+	}
 	self := b.Func
 	if self.defer_ == nil {
 		// TODO(xsw): check if in pkg.init
@@ -241,6 +245,9 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 // RunDefers emits instructions to run deferred instructions.
 func (b Builder) RunDefers() {
 	self := b.getDefer(DeferInCond)
+	if self == nil {
+		return
+	}
 	blk := b.Func.MakeBlock()
 	self.rundsNext = append(self.rundsNext, blk)
 

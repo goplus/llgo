@@ -17,7 +17,6 @@
 package ssa
 
 import (
-	"go/token"
 	"go/types"
 	"log"
 	"strconv"
@@ -281,7 +280,8 @@ func (p Function) NewBuilder() Builder {
 	b := prog.ctx.NewBuilder()
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
-	return &aBuilder{b, nil, p, p.Pkg, prog, make(map[Expr]dbgExpr)}
+	return &aBuilder{b, nil, p, p.Pkg, prog,
+		make(map[Expr]dbgExpr), make(map[*types.Scope]DIScope)}
 }
 
 // HasBody reports whether the function has a body.
@@ -334,33 +334,24 @@ func (p Function) SetRecover(blk BasicBlock) {
 	p.recov = blk
 }
 
-func (p Function) scopeMeta(b diBuilder, pos token.Position) DIScopeMeta {
-	if p.diFunc == nil {
-		paramTypes := make([]llvm.Metadata, len(p.params))
-		for i, t := range p.params {
-			paramTypes[i] = b.diType(t, pos).ll
-		}
-		diFuncType := b.di.CreateSubroutineType(llvm.DISubroutineType{
-			File:       b.file(pos.Filename).ll,
-			Parameters: paramTypes,
-		})
-		p.diFunc = &aDIFunction{
-			b.di.CreateFunction(
-				b.file(pos.Filename).ll,
-				llvm.DIFunction{
-					Type:         diFuncType,
-					Name:         p.Name(),
-					LinkageName:  p.Name(),
-					File:         b.file(pos.Filename).ll,
-					Line:         pos.Line,
-					IsDefinition: true,
-					Optimized:    false,
-				},
-			),
-		}
-		p.impl.SetSubprogram(p.diFunc.ll)
-	}
-	return &aDIScopeMeta{p.diFunc.ll}
+// -----------------------------------------------------------------------------
+
+type inlineAttr int
+
+const (
+	NoInline inlineAttr = iota
+	AlwaysInline
+	InlineHint
+)
+
+func (p Function) Inline(inline inlineAttr) {
+	inlineAttrName := map[inlineAttr]string{
+		NoInline:     "noinline",
+		AlwaysInline: "alwaysinline",
+		InlineHint:   "inlinehint",
+	}[inline]
+	inlineAttr := p.Pkg.mod.Context().CreateEnumAttribute(llvm.AttributeKindID(inlineAttrName), 0)
+	p.impl.AddFunctionAttr(inlineAttr)
 }
 
 // -----------------------------------------------------------------------------
