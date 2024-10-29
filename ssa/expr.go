@@ -924,7 +924,19 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	tctx := sig.Params().At(0).Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
 	flds := llvmFields(bindings, tctx, b)
 	data := b.aggregateAllocU(prog.rawType(tctx), flds...)
-	return b.aggregateValue(prog.Closure(tfn), fn.impl, data)
+	return b.aggregateValue(closureType(prog, sig), fn.impl, data)
+}
+
+func closureType(p Program, sig *types.Signature) Type {
+	params := sig.Params()
+	n := params.Len()
+	args := make([]*types.Var, n-1)
+	for i := 0; i < n-1; i++ {
+		args[i] = params.At(i + 1)
+	}
+	sig = types.NewSignature(sig.Recv(), types.NewTuple(args...), sig.Results(), sig.Variadic())
+	closure := p.gocvt.cvtClosure(sig)
+	return p.rawType(closure)
 }
 
 // -----------------------------------------------------------------------------
