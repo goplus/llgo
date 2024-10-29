@@ -14,6 +14,29 @@ import (
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
+func TestUnion(t *testing.T) {
+	cmptest.RunTest(t, "union", false, []config.SymbolEntry{}, &cppgtypes.Config{}, `
+typedef union  __u
+{
+    int a;
+    long b;
+    float c;
+}u;
+	`, `
+package union
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type __u struct {
+	b c.Long
+}
+type u __u
+	`, nil)
+}
+
 func TestReferStdSizeT(t *testing.T) {
 	cmptest.RunTest(t, "size_t", false, []config.SymbolEntry{
 		{MangleName: "testSize", CppName: "testSize", GoName: "TestSize"},

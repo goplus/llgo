@@ -13,6 +13,7 @@ import (
 
 	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/config"
+	"github.com/goplus/llgo/chore/gogensig/convert/sizes"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
@@ -246,7 +247,23 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 		if err != nil {
 			return nil, err
 		}
-		fields = flds
+		if recordType.Tag != ast.Union {
+			fields = flds
+		} else {
+			var maxFld *types.Var
+			maxSize := int64(0)
+			for _, fld := range flds {
+				t := fld.Type()
+				size := sizes.Sizeof(t)
+				if size > maxSize {
+					maxSize = size
+					maxFld = fld
+				}
+			}
+			if maxFld != nil {
+				fields = []*types.Var{maxFld}
+			}
+		}
 	}
 	return types.NewStruct(fields, nil), nil
 }
