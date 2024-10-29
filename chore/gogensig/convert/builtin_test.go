@@ -16,7 +16,7 @@ func TestBuiltinType(t *testing.T) {
 		expected string
 		wantErr  bool
 	}{
-		{"Void", &ast.BuiltinType{Kind: ast.Void}, "untyped nil", false},
+		{"Void", &ast.BuiltinType{Kind: ast.Void}, "[0]byte", false},
 		{"Bool", &ast.BuiltinType{Kind: ast.Bool}, "bool", false},
 		{"Char_S", &ast.BuiltinType{Kind: ast.Char, Flags: ast.Signed}, "int8", false},
 		{"Char_U", &ast.BuiltinType{Kind: ast.Char, Flags: ast.Unsigned}, "int8", false},
@@ -59,7 +59,7 @@ func TestBuiltinType(t *testing.T) {
 
 func TestIsVoidType(t *testing.T) {
 	typmap := convert.NewBuiltinTypeMap(".", "temp", nil)
-	if !typmap.IsVoidType(types.Typ[types.UntypedNil]) {
+	if !typmap.IsVoidType(typmap.CType("Void")) {
 		t.Error("Expect return true")
 	}
 	if typmap.IsVoidType(types.Typ[types.Float32]) {

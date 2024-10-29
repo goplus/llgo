@@ -85,7 +85,7 @@ func TestToType(t *testing.T) {
 		input    *ast.BuiltinType
 		expected string
 	}{
-		{"Void", &ast.BuiltinType{Kind: ast.Void}, "untyped nil"},
+		{"Void", &ast.BuiltinType{Kind: ast.Void}, "[0]byte"},
 		{"Bool", &ast.BuiltinType{Kind: ast.Bool}, "bool"},
 		{"Char_S", &ast.BuiltinType{Kind: ast.Char, Flags: ast.Signed}, "int8"},
 		{"Char_U", &ast.BuiltinType{Kind: ast.Char, Flags: ast.Unsigned}, "int8"},
