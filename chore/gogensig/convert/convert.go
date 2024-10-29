@@ -4,9 +4,10 @@ import (
 	"errors"
 	"log"
 
-	"github.com/goplus/llgo/chore/gogensig/config"
+	cfg "github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type AstConvert struct {
@@ -28,14 +29,30 @@ func NewAstConvert(config *AstConvertConfig) (*AstConvert, error) {
 	}
 	p := new(AstConvert)
 	p.BaseDocVisitor = visitor.NewBaseDocVisitor(p)
+	symbTable, err := cfg.NewSymbolTable(config.SymbFile)
+	if err != nil {
+		if debug {
+			log.Printf("Can't get llcppg.symb.json from %s Use empty table\n", config.SymbFile)
+		}
+		symbTable = cfg.CreateSymbolTable([]cfg.SymbolEntry{})
+	}
+
+	conf, err := cfg.GetCppgCfgFromPath(config.CfgFile)
+	if err != nil {
+		if debug {
+			log.Printf("Cant get llcppg.cfg from %s Use empty config\n", config.CfgFile)
+		}
+		conf = &cppgtypes.Config{}
+	}
+
 	pkg := NewPackage(&PackageConfig{
-		PkgPath:   ".",
-		Name:      config.PkgName,
-		OutputDir: config.OutputDir,
+		PkgPath:     ".",
+		Name:        config.PkgName,
+		OutputDir:   config.OutputDir,
+		SymbolTable: symbTable,
+		CppgConf:    conf,
 	})
 	p.pkg = pkg
-	p.setupSymbolTableFile(config.SymbFile)
-	p.setupGenConfig(config.CfgFile)
 	return p, nil
 }
 
@@ -49,24 +66,6 @@ func (p *AstConvert) WriteLinkFile() {
 
 func (p *AstConvert) GetPackage() *Package {
 	return p.pkg
-}
-
-func (p *AstConvert) setupSymbolTableFile(filePath string) error {
-	symbTable, err := config.NewSymbolTable(filePath)
-	if err != nil {
-		return err
-	}
-	p.pkg.SetSymbolTable(symbTable)
-	return nil
-}
-
-func (p *AstConvert) setupGenConfig(filePath string) error {
-	conf, err := config.GetCppgCfgFromPath(filePath)
-	if err != nil {
-		return err
-	}
-	p.pkg.SetCppgConf(conf)
-	return nil
 }
 
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
