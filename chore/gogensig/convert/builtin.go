@@ -73,7 +73,7 @@ func (p *BuiltinTypeMap) GetTypeAliases() map[string]typeAliasInfo {
 func (p *BuiltinTypeMap) initBuiltinTypeMap() {
 	// todo(zzy): int128/uint128  half(float16),long double,float 128
 	p.builtinTypeMap = map[ast.BuiltinType]types.Type{
-		{Kind: ast.Void}:                                    types.Typ[types.UntypedNil], // For a invalid type
+		{Kind: ast.Void}:                                    p.CType("Void"),             // [0]byte
 		{Kind: ast.Bool}:                                    types.Typ[types.Bool],       // Bool
 		{Kind: ast.Char, Flags: ast.Signed}:                 p.CType("Char"),             // Char_S
 		{Kind: ast.Char, Flags: ast.Unsigned}:               p.CType("Char"),             // Char_U
