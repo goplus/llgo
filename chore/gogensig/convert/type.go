@@ -15,28 +15,36 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert/sizes"
 	"github.com/goplus/llgo/chore/llcppg/ast"
-	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type TypeConv struct {
-	symbolTable *config.SymbolTable // llcppg.symb.json
-	cppgConf    *cppgtypes.Config   // llcppg.cfg
-	types       *types.Package
-	typeMap     *BuiltinTypeMap
+	gogen.PkgRef
+	symbolTable  *config.SymbolTable // llcppg.symb.json
+	trimPrefixes []string
+	typeMap      *BuiltinTypeMap
 	// todo(zzy):refine array type in func or param's context
 	inParam bool // flag to indicate if currently processing a param
+
+	conf *TypeConfig
 }
 
-func NewConv(types *types.Package, typeMap *BuiltinTypeMap) *TypeConv {
-	return &TypeConv{types: types, typeMap: typeMap}
+type TypeConfig struct {
+	Types        *types.Package
+	TypeMap      *BuiltinTypeMap
+	SymbolTable  *config.SymbolTable
+	TrimPrefixes []string
 }
 
-func (p *TypeConv) SetSymbolTable(symbolTable *config.SymbolTable) {
-	p.symbolTable = symbolTable
-}
+func NewConv(conf *TypeConfig) *TypeConv {
+	typeConv := &TypeConv{
+		symbolTable:  conf.SymbolTable,
+		typeMap:      conf.TypeMap,
+		trimPrefixes: conf.TrimPrefixes,
+		conf:         conf,
+	}
+	typeConv.Types = conf.Types
 
-func (p *TypeConv) SetCppgConf(conf *cppgtypes.Config) {
-	p.cppgConf = conf
+	return typeConv
 }
 
 // Convert ast.Expr to types.Type
@@ -118,7 +126,7 @@ func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
 		}
 		// We don't check for types.Named here because the type returned from ConvertType
 		// for aliases like int8_t might be a built-in type (e.g., int8),
-		obj := p.types.Scope().Lookup(name)
+		obj := p.Types.Scope().Lookup(name)
 		if obj == nil {
 			return nil, fmt.Errorf("%s not found", name)
 		}
@@ -189,7 +197,7 @@ func (p *TypeConv) retToResult(ret ast.Expr) (*types.Tuple, error) {
 	}
 	if typ != nil && !p.typeMap.IsVoidType(typ) {
 		// in c havent multiple return
-		return types.NewTuple(types.NewVar(token.NoPos, p.types, "", typ)), nil
+		return types.NewTuple(types.NewVar(token.NoPos, p.Types, "", typ)), nil
 	}
 	return types.NewTuple(), nil
 }
@@ -215,7 +223,7 @@ func (p *TypeConv) fieldListToVars(params *ast.FieldList) ([]*types.Var, error) 
 // todo(zzy): use  Unused [unsafe.Sizeof(0)]byte in the source code
 func (p *TypeConv) defaultRecordField() []*types.Var {
 	return []*types.Var{
-		types.NewVar(token.NoPos, p.types, "Unused", types.NewArray(types.Typ[types.Byte], int64(unsafe.Sizeof(0)))),
+		types.NewVar(token.NoPos, p.Types, "Unused", types.NewArray(types.Typ[types.Byte], int64(unsafe.Sizeof(0)))),
 	}
 }
 
@@ -235,7 +243,7 @@ func (p *TypeConv) fieldToVar(field *ast.Field) (*types.Var, error) {
 	if err != nil {
 		return nil, err
 	}
-	return types.NewVar(token.NoPos, p.types, name, typ), nil
+	return types.NewVar(token.NoPos, p.Types, name, typ), nil
 }
 
 func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, error) {
@@ -284,10 +292,10 @@ func (p *TypeConv) LookupSymbol(mangleName config.MangleNameType) (config.GoName
 }
 
 func (p *TypeConv) RemovePrefixedName(name string) string {
-	if p.cppgConf == nil {
+	if len(p.trimPrefixes) == 0 {
 		return name
 	}
-	for _, prefix := range p.cppgConf.TrimPrefixes {
+	for _, prefix := range p.trimPrefixes {
 		if strings.HasPrefix(name, prefix) {
 			return strings.TrimPrefix(name, prefix)
 		}
