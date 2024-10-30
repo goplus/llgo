@@ -74,7 +74,7 @@ func getPkgs() []string {
 	return pkgs
 }
 
-func runPkgs(pkgs []string, cpp bool) {
+func runPkgs(pkgs []string, cpp bool, verbose bool) {
 	wd, _ := os.Getwd()
 	wg := sync.WaitGroup{}
 	wg.Add(len(pkgs))
@@ -82,19 +82,24 @@ func runPkgs(pkgs []string, cpp bool) {
 	if cpp {
 		llcppcfgArg = append(llcppcfgArg, "-cpp")
 	}
+	if verbose {
+		llcppcfgArg = append(llcppcfgArg, "-v")
+	}
+	runs := make([]string, 0)
 	for _, pkg := range pkgs {
 		dir := "./out/" + pkg
 		RunCommand("mkdir", "-p", dir)
 		RunCommand("cd", dir)
 		curDir := wd + "/out/" + pkg
 		RunCommandInDir(curDir, func(err error) {
+			runs = append(runs, pkg)
 			go RunCommandInDir(curDir, func(err error) {
 				wg.Done()
 			}, "llcppg")
 		}, "llcppcfg", append(llcppcfgArg, pkg)...)
 	}
 	wg.Wait()
-	fmt.Printf("llcppgtest run %v finished!\n", pkgs)
+	fmt.Printf("llcppgtest run %v finished!\n", runs)
 }
 
 func randIndex(len int) int {
@@ -102,17 +107,17 @@ func randIndex(len int) int {
 	return r.Intn(len)
 }
 
-func runPkg(cpp bool) {
+func runPkg(cpp bool, verbose bool) {
 	pkgs := getPkgs()
 	idx := randIndex(len(pkgs))
 	pkg := pkgs[idx]
 	fmt.Printf("***start test %s\n", pkg)
-	runPkgs([]string{pkg}, cpp)
+	runPkgs([]string{pkg}, cpp, verbose)
 }
 
 func printHelp() {
 	helpString := `llcppgtest is used to test llcppg
-usage: llcppgtest [-h|-r] pkgname`
+usage: llcppgtest [-h|-r|-cpp|-a|-v] pkgname`
 	fmt.Println(helpString)
 	flag.PrintDefaults()
 }
@@ -124,18 +129,25 @@ func main() {
 	flag.BoolVar(&rand, "r", false, "select one pkg of pkg-config --list-all to test")
 	cpp := false
 	flag.BoolVar(&cpp, "cpp", false, "if it is a cpp library")
+	all := false
+	flag.BoolVar(&all, "a", false, "test all pkgs of pkg-config --list-all")
+	verbose := false
+	flag.BoolVar(&verbose, "v", false, "enable verbose")
 	flag.Parse()
 	if help || len(os.Args) <= 1 {
 		printHelp()
 		return
 	}
 	if rand {
-		runPkg(cpp)
+		runPkg(cpp, verbose)
+	} else if all {
+		pkgs := getPkgs()
+		runPkgs(pkgs, cpp, verbose)
 	} else {
 		if len(flag.Args()) > 0 {
 			arg := flag.Arg(0)
 			fmt.Printf("***start test %s\n", arg)
-			runPkgs([]string{arg}, cpp)
+			runPkgs([]string{arg}, cpp, verbose)
 		} else {
 			printHelp()
 		}
