@@ -1,3 +1,5 @@
+github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
+github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/goplus/gogen v1.16.1 h1:f55LIfyTO5GcXxCfwXKqLKiQV3AORvn9PSGCncWvB1A=
 github.com/goplus/gogen v1.16.1/go.mod h1:6TQYbabXDF9LCdDkOOzHmfg1R4ENfXQ3XpHa9RhTSD8=
 github.com/goplus/llvm v0.8.0 h1:9eFutGm3d0G7bAd8/e+Tuyva0tu1IPNPm0kVG4AgHwY=
