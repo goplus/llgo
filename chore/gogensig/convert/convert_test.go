@@ -448,7 +448,7 @@ import (
 
 type NormalType c.Int
 `
-	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(string(buf.Bytes())) {
-		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, string(buf.Bytes()))
+	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(buf.String()) {
+		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, buf.String())
 	}
 }
