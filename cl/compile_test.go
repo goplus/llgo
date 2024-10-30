@@ -26,7 +26,7 @@ import (
 
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
-	cltest.TestCompileEx(t, src, "foo.go", expected)
+	cltest.TestCompileEx(t, src, "foo.go", expected, false)
 }
 
 func TestFromTestgo(t *testing.T) {

@@ -144,11 +144,11 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 			t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 		}
 	} else {
-		TestCompileEx(t, nil, in, expected)
+		TestCompileEx(t, nil, in, expected, dbg)
 	}
 }
 
-func TestCompileEx(t *testing.T, src any, fname, expected string) {
+func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
 	t.Helper()
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fname, src, parser.ParseComments)
@@ -159,8 +159,12 @@ func TestCompileEx(t *testing.T, src any, fname, expected string) {
 	name := f.Name.Name
 	pkg := types.NewPackage(name, name)
 	imp := packages.NewImporter(fset)
+	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	if dbg {
+		mode |= ssa.GlobalDebug
+	}
 	foo, _, err := ssautil.BuildPackage(
-		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics|ssa.GlobalDebug)
+		&types.Config{Importer: imp}, fset, pkg, files, mode)
 	if err != nil {
 		t.Fatal("BuildPackage failed:", err)
 	}

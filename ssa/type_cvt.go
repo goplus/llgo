@@ -67,8 +67,7 @@ func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
 }
 
 // Closure creates a closture type for a function.
-func (p Program) Closure(fn Type) Type {
-	sig := fn.raw.Type.(*types.Signature)
+func (p Program) Closure(sig *types.Signature) Type {
 	closure := p.gocvt.cvtClosure(sig)
 	return p.rawType(closure)
 }

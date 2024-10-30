@@ -179,7 +179,7 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Struct:
 		return b.createStructType(name, ty, pos)
 	case *types.Signature:
-		tyFn := b.prog.Closure(ty)
+		tyFn := b.prog.Closure(t)
 		return b.createFuncPtrType(name, tyFn, pos)
 	case *types.Array:
 		return b.createArrayType(ty, t.Len())
@@ -600,7 +600,7 @@ func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal
 	case *types.Slice:
 		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), InGo)
 	case *types.Signature:
-		ty = b.Prog.Closure(b.Prog.rawType(t))
+		ty = b.Prog.Closure(t)
 	case *types.Named:
 		ty = b.Prog.Type(t.Underlying(), InGo)
 	case *types.Map:
