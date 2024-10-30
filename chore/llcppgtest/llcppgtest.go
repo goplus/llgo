@@ -82,8 +82,9 @@ func runPkgs(pkgs []string, cpp bool, verbose bool) {
 	if cpp {
 		llcppcfgArg = append(llcppcfgArg, "-cpp")
 	}
+	llcppgArg := []string{}
 	if verbose {
-		llcppcfgArg = append(llcppcfgArg, "-v")
+		llcppgArg = append(llcppgArg, "-v")
 	}
 	runs := make([]string, 0)
 	for _, pkg := range pkgs {
@@ -95,7 +96,7 @@ func runPkgs(pkgs []string, cpp bool, verbose bool) {
 			runs = append(runs, pkg)
 			go RunCommandInDir(curDir, func(err error) {
 				wg.Done()
-			}, "llcppg")
+			}, "llcppg", llcppgArg...)
 		}, "llcppcfg", append(llcppcfgArg, pkg)...)
 	}
 	wg.Wait()
@@ -131,23 +132,23 @@ func main() {
 	flag.BoolVar(&cpp, "cpp", false, "if it is a cpp library")
 	all := false
 	flag.BoolVar(&all, "a", false, "test all pkgs of pkg-config --list-all")
-	verbose := false
-	flag.BoolVar(&verbose, "v", false, "enable verbose")
+	v := false
+	flag.BoolVar(&v, "v", false, "enable verbose")
 	flag.Parse()
 	if help || len(os.Args) <= 1 {
 		printHelp()
 		return
 	}
 	if rand {
-		runPkg(cpp, verbose)
+		runPkg(cpp, v)
 	} else if all {
 		pkgs := getPkgs()
-		runPkgs(pkgs, cpp, verbose)
+		runPkgs(pkgs, cpp, v)
 	} else {
 		if len(flag.Args()) > 0 {
 			arg := flag.Arg(0)
 			fmt.Printf("***start test %s\n", arg)
-			runPkgs([]string{arg}, cpp, verbose)
+			runPkgs([]string{arg}, cpp, v)
 		} else {
 			printHelp()
 		}
