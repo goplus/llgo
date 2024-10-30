@@ -25,10 +25,6 @@ import (
 	"github.com/goplus/llgo/c/pthread/sync"
 )
 
-const (
-	LLGoPackage = "link"
-)
-
 // -----------------------------------------------------------------------------
 
 type Mutex sync.Mutex

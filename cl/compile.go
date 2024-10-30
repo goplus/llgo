@@ -1036,12 +1036,17 @@ func (p *context) patchType(typ types.Type) types.Type {
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					return p.prog.Type(obj.Type(), llssa.InGo).RawType()
+					return p.prog.Type(instantiate(obj.Type(), t), llssa.InGo).RawType()
 				}
 			}
 		}
 	}
 	return typ
+}
+
+func instantiate(orig types.Type, t *types.Named) (typ types.Type) {
+	typ, _ = llssa.Instantiate(orig, t)
+	return
 }
 
 func (p *context) resolveLinkname(name string) string {
