@@ -345,3 +345,20 @@ func TestContextResolveLinkname(t *testing.T) {
 		})
 	}
 }
+
+func TestInstantiate(t *testing.T) {
+	obj := types.NewTypeName(0, nil, "T", nil)
+	named := types.NewNamed(obj, types.Typ[types.Int], nil)
+	if typ := obj.Type(); typ != instantiate(typ, named) {
+		t.Fatal("error")
+	}
+	tparam := types.NewTypeParam(types.NewTypeName(0, nil, "P", nil), types.NewInterface(nil, nil))
+	named.SetTypeParams([]*types.TypeParam{tparam})
+	inamed, err := types.Instantiate(nil, named, []types.Type{types.Typ[types.Int]}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ := instantiate(obj.Type(), inamed.(*types.Named)); typ == obj.Type() || typ.(*types.Named).TypeArgs() == nil {
+		t.Fatal("error")
+	}
+}

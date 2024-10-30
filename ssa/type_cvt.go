@@ -148,21 +148,26 @@ func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {
 	p.typs[unsafe.Pointer(t)] = unsafe.Pointer(t)
 	if tund, cvt := p.cvtType(t.Underlying()); cvt {
 		named.SetUnderlying(tund)
-		if tp := t.TypeArgs(); tp != nil {
-			targs := make([]types.Type, tp.Len())
-			for i := 0; i < tp.Len(); i++ {
-				targs[i] = tp.At(i)
-			}
-			typ, err := types.Instantiate(nil, named, targs, true)
-			if err != nil {
-				panic(fmt.Errorf("cvtNamed error: %v", err))
-			}
+		if typ, ok := Instantiate(named, t); ok {
 			named = typ.(*types.Named)
 		}
 		p.typs[unsafe.Pointer(t)] = unsafe.Pointer(named)
 		return named, true
 	}
 	return t, false
+}
+
+func Instantiate(orig types.Type, t *types.Named) (types.Type, bool) {
+	if tp := t.TypeArgs(); tp != nil {
+		targs := make([]types.Type, tp.Len())
+		for i := 0; i < tp.Len(); i++ {
+			targs[i] = tp.At(i)
+		}
+		if typ, err := types.Instantiate(nil, orig, targs, true); err == nil {
+			return typ, true
+		}
+	}
+	return orig, false
 }
 
 func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
