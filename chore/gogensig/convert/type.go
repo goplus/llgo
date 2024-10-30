@@ -260,10 +260,11 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 		} else {
 			var maxFld *types.Var
 			maxSize := int64(0)
-			for _, fld := range flds {
+			for i := len(flds) - 1; i >= 0; i-- {
+				fld := flds[i]
 				t := fld.Type()
 				size := sizes.Sizeof(t)
-				if size > maxSize {
+				if size >= maxSize {
 					maxSize = size
 					maxFld = fld
 				}
