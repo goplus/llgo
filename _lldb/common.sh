@@ -26,6 +26,8 @@ find_lldb() {
 
 # Find LLDB 18+
 LLDB_PATH=$(find_lldb)
+echo "LLDB_PATH: $LLDB_PATH"
+$LLDB_PATH --version
 export LLDB_PATH
 
 # Default package path
@@ -34,5 +36,5 @@ export DEFAULT_PACKAGE_PATH="./cl/_testdata/debug"
 # Function to build the project
 build_project() {
     local package_path="$1"
-    LLGO_DEBUG=1 go run ./cmd/llgo build -o "${package_path}/out" "${package_path}"
+    LLGO_DEBUG=1 go run ./cmd/llgo build -o "${package_path}/debug.out" "${package_path}"
 }

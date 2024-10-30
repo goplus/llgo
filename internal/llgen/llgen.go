@@ -20,16 +20,17 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/mod"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
 
-func Init(enableDbg bool) {
+func Init() {
 	llssa.Initialize(llssa.InitAll)
 	llssa.SetDebug(llssa.DbgFlagAll)
 	cl.SetDebug(cl.DbgFlagAll)
-	cl.EnableDebugSymbols(enableDbg)
+	cl.EnableDebugSymbols(build.IsDebugEnabled())
 }
 
 func PkgPath(dir string) string {

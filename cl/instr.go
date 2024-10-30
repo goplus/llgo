@@ -273,6 +273,9 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			}
 			sig := fn.Signature
 			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, fn.Origin() != nil)
+			if debugSymbols {
+				aFn.Inline(llssa.NoInline)
+			}
 		}
 	}
 	return

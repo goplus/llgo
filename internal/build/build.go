@@ -187,7 +187,14 @@ func Do(args []string, conf *Config) {
 		return dedup.Check(llssa.PkgPython).Types
 	})
 
-	progSSA := ssa.NewProgram(initial[0].Fset, ssaBuildMode)
+	buildMode := ssaBuildMode
+	if cl.DebugSymbols() {
+		buildMode |= ssa.GlobalDebug
+	}
+	if !IsOptimizeEnabled() {
+		buildMode |= ssa.NaiveForm
+	}
+	progSSA := ssa.NewProgram(initial[0].Fset, buildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
@@ -237,7 +244,7 @@ func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool)
 }
 
 const (
-	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics | ssa.GlobalDebug
+	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics
 )
 
 type context struct {
@@ -438,7 +445,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	}
 	args = append(args, exargs...)
 	if cl.DebugSymbols() {
-		args = append(args, "-gdwarf-5")
+		args = append(args, "-gdwarf-4")
 	}
 
 	// TODO(xsw): show work
@@ -609,10 +616,22 @@ var (
 )
 
 const llgoDebug = "LLGO_DEBUG"
+const llgoOptimize = "LLGO_OPTIMIZE"
+
+func isEnvOn(env string, defVal bool) bool {
+	envVal := strings.ToLower(os.Getenv(env))
+	if envVal == "" {
+		return defVal
+	}
+	return envVal == "1" || envVal == "true" || envVal == "on"
+}
 
 func IsDebugEnabled() bool {
-	llgoDbgVal := strings.ToLower(os.Getenv(llgoDebug))
-	return llgoDbgVal == "1" || llgoDbgVal == "true" || llgoDbgVal == "on"
+	return isEnvOn(llgoDebug, false)
+}
+
+func IsOptimizeEnabled() bool {
+	return isEnvOn(llgoOptimize, true)
 }
 
 func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {

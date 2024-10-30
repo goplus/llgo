@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
 )
 
@@ -29,7 +28,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Usage: llgen [flags] <pkg> [pkgPath]")
 		return
 	}
-	llgen.Init(build.IsDebugEnabled())
+	llgen.Init()
 	args := os.Args[1:]
 	llgen.SmartDoFile(args[0], args[1:]...)
 }

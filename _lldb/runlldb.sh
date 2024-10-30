@@ -8,5 +8,8 @@ source "$(dirname "$0")/common.sh"
 
 executable="$1"
 
-# Run LLDB
-"$LLDB_PATH" "$executable"
+# Get the directory of the current script
+script_dir="$(dirname "$0")"
+
+# Run LLDB with the LLGO plugin
+"$LLDB_PATH" -O "command script import ${script_dir}/llgo_plugin.py" "$executable"
