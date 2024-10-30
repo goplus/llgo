@@ -12,6 +12,7 @@ import (
 
 	"github.com/goplus/gogen"
 	cfg "github.com/goplus/llgo/chore/gogensig/config"
+	"github.com/goplus/llgo/chore/gogensig/convert/deps"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
@@ -35,9 +36,11 @@ func SetDebug(flags int) {
 type Package struct {
 	name      string
 	p         *gogen.Package
+	deps      []*deps.CPackage
 	cvt       *TypeConv
 	outputDir string
 	conf      *PackageConfig
+	depIncs   []string
 }
 
 type PackageConfig struct {
@@ -58,20 +61,25 @@ func NewPackage(config *PackageConfig) *Package {
 		conf: config,
 	}
 
-	dir, err := p.prepareOutputDir(config.OutputDir)
+	p.outputDir = config.OutputDir
+
+	// init deps
+	deps, err := deps.LoadDeps(p.outputDir, config.CppgConf.Deps)
 	if err != nil {
-		panic(fmt.Errorf("failed to prepare output directory: %w", err))
+		log.Println("failed to load deps: \n", err.Error())
 	}
-	p.outputDir = dir
+	p.deps = deps
 	clib := p.p.Import("github.com/goplus/llgo/c")
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
-
+	// init type converter
 	p.cvt = NewConv(&TypeConfig{
 		Types:        p.p.Types,
 		TypeMap:      typeMap,
 		SymbolTable:  config.SymbolTable,
 		TrimPrefixes: config.CppgConf.TrimPrefixes,
+		Deps:         deps,
 	})
+	p.initDepPkgs()
 	p.SetCurFile(p.Name(), false)
 	return p
 }
@@ -270,14 +278,8 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 // If outputDir is not provided, the current directory will be used.
 // The header file name is the go file name.
 //
-// Files that are already mapped in BuiltinTypeMap.typeAliases will not be output.
+// Files that are already processed in dependent packages will not be output.
 func (p *Package) Write(headerFile string) error {
-	if p.shouldSkipFile(headerFile) {
-		if debug {
-			log.Printf("Skip Write File: %s\n", headerFile)
-		}
-		return nil
-	}
 	fileName := HeaderFileToGo(headerFile)
 	filePath := filepath.Join(p.outputDir, fileName)
 	if debug {
@@ -332,24 +334,6 @@ func (p *Package) WriteToBuffer(genFName string) (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func (p *Package) prepareOutputDir(outputDir string) (string, error) {
-	if outputDir == "" {
-		outputDir = "."
-	}
-
-	absDir, err := filepath.Abs(outputDir)
-	if err != nil {
-		return "", err
-	}
-
-	dir := filepath.Join(absDir, p.name)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-
-	return dir, nil
-}
-
 // /path/to/foo.h -> foo.go
 // /path/to/_intptr.h -> SYS_intptr.go
 
@@ -365,6 +349,24 @@ func HeaderFileToGo(headerFile string) string {
 	return fileName + ".go"
 }
 
-func (p *Package) shouldSkipFile(headerFile string) bool {
-	return p.cvt.IsHeaderFileAliased(headerFile)
+func (p *Package) initDepPkgs() {
+	allDepIncs := make([]string, 0)
+	scope := p.p.Types.Scope()
+	for _, dep := range p.deps {
+		allDepIncs = append(allDepIncs, dep.StdIncs...)
+		depPkg := p.p.Import(dep.Path)
+		for cName, pubGoName := range dep.Pubs {
+			if obj := depPkg.TryRef(pubGoName); obj != nil {
+				if old := scope.Insert(gogen.NewSubst(token.NoPos, p.p.Types, cName, obj)); old != nil {
+					log.Printf("conflicted name `%v` in %v, previous definition is %v\n", pubGoName, dep.Path, old)
+				}
+			}
+		}
+	}
+	p.depIncs = allDepIncs
+}
+
+// AllDepIncs returns all std include paths of dependent packages
+func (p *Package) AllDepIncs() []string {
+	return p.depIncs
 }

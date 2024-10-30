@@ -12,7 +12,7 @@ import (
 
 type AstConvert struct {
 	*visitor.BaseDocVisitor
-	pkg       *Package
+	Pkg       *Package
 	visitDone func(pkg *Package, docPath string)
 }
 
@@ -52,7 +52,7 @@ func NewAstConvert(config *AstConvertConfig) (*AstConvert, error) {
 		SymbolTable: symbTable,
 		CppgConf:    conf,
 	})
-	p.pkg = pkg
+	p.Pkg = pkg
 	return p, nil
 }
 
@@ -61,15 +61,11 @@ func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
 }
 
 func (p *AstConvert) WriteLinkFile() {
-	p.pkg.WriteLinkFile()
-}
-
-func (p *AstConvert) GetPackage() *Package {
-	return p.pkg
+	p.Pkg.WriteLinkFile()
 }
 
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
-	err := p.pkg.NewFuncDecl(funcDecl)
+	err := p.Pkg.NewFuncDecl(funcDecl)
 	if err != nil {
 		log.Printf("NewFuncDecl %s Fail: %s\n", funcDecl.Name.Name, err.Error())
 	}
@@ -87,7 +83,7 @@ func (p *AstConvert) VisitMethod(className *ast.Ident, method *ast.FuncDecl, typ
 }*/
 
 func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
-	err := p.pkg.NewTypeDecl(typeDecl)
+	err := p.Pkg.NewTypeDecl(typeDecl)
 	if err != nil {
 		if name := typeDecl.Name; name != nil {
 			log.Printf("NewTypeDecl %s Fail: %s\n", name.Name, err.Error())
@@ -102,7 +98,7 @@ func (p *AstConvert) VisitUnion(unionName *ast.Ident, fields *ast.FieldList, typ
 }
 
 func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
-	err := p.pkg.NewEnumTypeDecl(enumTypeDecl)
+	err := p.Pkg.NewEnumTypeDecl(enumTypeDecl)
 	if err != nil {
 		if name := enumTypeDecl.Name; name != nil {
 			log.Printf("NewEnumTypeDecl %s Fail: %s\n", name.Name, err.Error())
@@ -113,20 +109,20 @@ func (p *AstConvert) VisitEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) {
 }
 
 func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
-	err := p.pkg.NewTypedefDecl(typedefDecl)
+	err := p.Pkg.NewTypedefDecl(typedefDecl)
 	if err != nil {
 		log.Printf("NewTypedefDecl %s Fail: %s\n", typedefDecl.Name.Name, err.Error())
 	}
 }
 
 func (p *AstConvert) VisitStart(docPath string) {
-	p.pkg.SetCurFile(docPath, true)
+	p.Pkg.SetCurFile(docPath, true)
 }
 
 func (p *AstConvert) VisitDone(docPath string) {
 	if p.visitDone != nil {
-		p.visitDone(p.pkg, docPath)
+		p.visitDone(p.Pkg, docPath)
 	} else {
-		p.pkg.Write(docPath)
+		p.Pkg.Write(docPath)
 	}
 }

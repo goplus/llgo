@@ -57,7 +57,7 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors)
+	p := processor.NewDocFileSetProcessor(docVisitors, []string{})
 	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		t.Error(err)
@@ -74,7 +74,7 @@ func TestProcessFileNotExist(t *testing.T) {
 		t.Fatal(err)
 	}
 	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors)
+	p := processor.NewDocFileSetProcessor(docVisitors, []string{})
 	err = p.ProcessFileSetFromPath("notexist.json")
 	if !os.IsNotExist(err) {
 		t.Error("expect no such file or directory error")
@@ -104,7 +104,7 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors)
+	p := processor.NewDocFileSetProcessor(docVisitors, []string{})
 	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		panic(err)

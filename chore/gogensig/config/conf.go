@@ -68,3 +68,11 @@ func ReadFile(filePath string) ([]byte, error) {
 	defer jsonFile.Close()
 	return io.ReadAll(jsonFile)
 }
+
+func RunCommand(dir, cmdName string, args ...string) error {
+	execCmd := exec.Command(cmdName, args...)
+	execCmd.Stdout = os.Stdout
+	execCmd.Stderr = os.Stderr
+	execCmd.Dir = dir
+	return execCmd.Run()
+}
