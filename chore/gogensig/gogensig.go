@@ -19,7 +19,6 @@ package main
 import (
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/goplus/llgo/chore/gogensig/config"
@@ -29,20 +28,13 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
-func runCommand(dir, cmdName string, args ...string) error {
-	execCmd := exec.Command(cmdName, args...)
-	execCmd.Stdout = os.Stdout
-	execCmd.Stderr = os.Stderr
-	execCmd.Dir = dir
-	return execCmd.Run()
-}
-
 func runGoCmds(wd, pkg string) {
 	dir := filepath.Join(wd, pkg)
 	os.MkdirAll(dir, 0744)
 	os.Chdir(pkg)
-	runCommand(dir, "go", "mod", "init", pkg)
-	runCommand(dir, "go", "get", "github.com/goplus/llgo")
+	config.RunCommand(dir, "go", "mod", "init", pkg)
+	config.RunCommand(dir, "go", "get", "github.com/goplus/llgo")
+	config.RunCommand(dir, "go", "mod", "edit", "-replace", "github.com/goplus/llgo="+"/Users/zhangzhiyang/Documents/Code/goplus/llgo")
 }
 
 func main() {
@@ -79,7 +71,7 @@ func main() {
 	})
 	check(err)
 
-	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert})
+	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert}, astConvert.Pkg.AllDepIncs())
 	inputdata, err := unmarshal.UnmarshalFileSet(data)
 	check(err)
 

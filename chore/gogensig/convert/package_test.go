@@ -150,11 +150,11 @@ func TestLinkFileFail(t *testing.T) {
 				Libs: "${pkg-config --libs libcjson}",
 			},
 		})
-		err = os.Chmod(filepath.Join(tempDir, pkg.Name()), 0555)
+		err = os.Chmod(filepath.Join(tempDir), 0555)
 		if err != nil {
 			t.Fatalf("Failed to change directory permissions: %v", err)
 		}
-		defer os.Chmod(filepath.Join(tempDir, pkg.Name()), 0755)
+		defer os.Chmod(filepath.Join(tempDir), 0755)
 		_, err = pkg.WriteLinkFile()
 		if err == nil {
 			t.FailNow()
@@ -257,7 +257,7 @@ func TestPackageWrite(t *testing.T) {
 			t.Fatalf("Write method failed: %v", err)
 		}
 
-		expectedFilePath := filepath.Join(tempDir, "testpkg", "mock_header.go")
+		expectedFilePath := filepath.Join(tempDir, "mock_header.go")
 		verifyGeneratedFile(t, expectedFilePath)
 	})
 
@@ -266,13 +266,18 @@ func TestPackageWrite(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
+		testpkgDir := filepath.Join(currentDir, "testpkg")
+		if err := os.MkdirAll(testpkgDir, 0755); err != nil {
+			t.Fatalf("Failed to create testpkg directory: %v", err)
+		}
+
 		defer func() {
 			// Clean up generated files and directory
-			os.RemoveAll(filepath.Join(currentDir, "testpkg"))
+			os.RemoveAll(testpkgDir)
 		}()
 
 		pkg := createTestPkg(t, &convert.PackageConfig{
-			OutputDir: currentDir,
+			OutputDir: testpkgDir,
 		})
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: currentDir,
@@ -283,16 +288,11 @@ func TestPackageWrite(t *testing.T) {
 			t.Fatalf("Write method failed: %v", err)
 		}
 
-		expectedFilePath := filepath.Join(currentDir, "testpkg", "mock_header.go")
+		expectedFilePath := filepath.Join(testpkgDir, "mock_header.go")
 		verifyGeneratedFile(t, expectedFilePath)
 	})
 
 	t.Run("InvalidOutputDir", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("no permission folder: no error?")
-			}
-		}()
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: "/nonexistent/directory",
 		})
@@ -1175,8 +1175,8 @@ type Foo func(a c.Int, b c.Int) c.Int`,
 func TestRedef(t *testing.T) {
 	pkg := createTestPkg(t, &convert.PackageConfig{
 		OutputDir: "",
-		SymbolTable: config.CreateSymbolTable(
-			[]config.SymbolEntry{
+		SymbolTable: cfg.CreateSymbolTable(
+			[]cfg.SymbolEntry{
 				{CppName: "Bar", MangleName: "Bar", GoName: "Bar"},
 			},
 		),
@@ -1491,9 +1491,17 @@ func TestIdentRefer(t *testing.T) {
 		})
 		compareError(t, err, "undefType not found")
 	})
-
 	t.Run("type alias", func(t *testing.T) {
-		pkg := createTestPkg(t, &convert.PackageConfig{})
+		pkg := createTestPkg(t, &convert.PackageConfig{
+			CppgConf: &cppgtypes.Config{},
+		})
+		pkg.NewTypedefDecl(&ast.TypedefDecl{
+			Name: &ast.Ident{Name: "int8_t"},
+			Type: &ast.BuiltinType{
+				Kind:  ast.Char,
+				Flags: ast.Signed,
+			},
+		})
 		pkg.NewTypeDecl(&ast.TypeDecl{
 			Name: &ast.Ident{Name: "Foo"},
 			Type: &ast.RecordType{
@@ -1513,8 +1521,9 @@ func TestIdentRefer(t *testing.T) {
 		comparePackageOutput(t, pkg, `
 		package testpkg
 		import _ "unsafe"
+		type int8_t int8
 		type Foo struct {
-			a int8
+			a int8_t
 		}
 		`)
 	})
@@ -1532,7 +1541,7 @@ type genDeclTestCase struct {
 func testGenDecl(t *testing.T, tc genDeclTestCase) {
 	t.Helper()
 	pkg := createTestPkg(t, &convert.PackageConfig{
-		SymbolTable: config.CreateSymbolTable(tc.symbs),
+		SymbolTable: cfg.CreateSymbolTable(tc.symbs),
 		CppgConf:    tc.cppgconf,
 	})
 	if pkg == nil {
@@ -1627,8 +1636,8 @@ func comparePackageOutput(t *testing.T, pkg *convert.Package, expect string) {
 func TestTypeClean(t *testing.T) {
 	pkg := createTestPkg(t, &convert.PackageConfig{
 		OutputDir: "",
-		SymbolTable: config.CreateSymbolTable(
-			[]config.SymbolEntry{
+		SymbolTable: cfg.CreateSymbolTable(
+			[]cfg.SymbolEntry{
 				{CppName: "Func1", MangleName: "Func1", GoName: "Func1"},
 				{CppName: "Func2", MangleName: "Func2", GoName: "Func2"},
 			},

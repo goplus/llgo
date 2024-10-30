@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
-	"path/filepath"
 	"strings"
 	"unsafe"
 
 	"github.com/goplus/gogen"
 	"github.com/goplus/llgo/chore/gogensig/config"
+	"github.com/goplus/llgo/chore/gogensig/convert/deps"
 	"github.com/goplus/llgo/chore/gogensig/convert/sizes"
 	"github.com/goplus/llgo/chore/llcppg/ast"
 )
@@ -33,6 +33,7 @@ type TypeConfig struct {
 	TypeMap      *BuiltinTypeMap
 	SymbolTable  *config.SymbolTable
 	TrimPrefixes []string
+	Deps         []*deps.CPackage
 }
 
 func NewConv(conf *TypeConfig) *TypeConv {
@@ -111,22 +112,10 @@ func (p *TypeConv) handlePointerType(t *ast.PointerType) (types.Type, error) {
 
 func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
 	lookup := func(name string) (types.Type, error) {
-		// First, check for type aliases like int8_t, uint8_t, etc.
-		// These types are typically defined in system header files such as:
-		// /include/sys/_types/_int8_t.h
-		// /include/sys/_types/_int16_t.h
-		// /include/sys/_types/_uint8_t.h
-		// /include/sys/_types/_uint16_t.h
-		// We don't generate Go files for these system headers.
-		// Instead, we directly map these types to their corresponding Go types
-		// using our type alias mapping in BuiltinTypeMap.
-		typ, err := p.typeMap.FindTypeAlias(name)
-		if err == nil {
-			return typ, nil
-		}
+		// For types defined in other packages, they should already be in current scope
 		// We don't check for types.Named here because the type returned from ConvertType
 		// for aliases like int8_t might be a built-in type (e.g., int8),
-		obj := p.Types.Scope().Lookup(name)
+		obj := gogen.Lookup(p.Types.Scope(), name)
 		if obj == nil {
 			return nil, fmt.Errorf("%s not found", name)
 		}
@@ -302,39 +291,6 @@ func (p *TypeConv) RemovePrefixedName(name string) string {
 		}
 	}
 	return name
-}
-
-// checks if a header file is aliased in the type map.
-// Note: Files like _types.h and sys/_types.h correspond to different actual files.
-// Therefore, we need to compare the relative paths from the include directory
-// to determine if they refer to the same file.
-func (c *TypeConv) IsHeaderFileAliased(headerFile string) bool {
-	relativeHeaderFile := c.getRelativeHeaderPath(headerFile)
-	for _, info := range c.typeMap.typeAliases {
-		if info.HeaderFile == relativeHeaderFile {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *TypeConv) getRelativeHeaderPath(headerFile string) string {
-	parts := strings.Split(headerFile, string(filepath.Separator))
-
-	includeIndex := -1
-	for i, part := range parts {
-
-		if part == "include" {
-			includeIndex = i
-			break
-		}
-	}
-
-	if includeIndex != -1 && includeIndex < len(parts)-1 {
-		return filepath.Join(parts[includeIndex+1:]...)
-	}
-
-	return headerFile
 }
 
 func ToTitle(s string) string {

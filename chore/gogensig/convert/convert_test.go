@@ -51,22 +51,7 @@ package size_t
 import _ "unsafe"
 //go:linkname TestSize C.testSize
 func TestSize(a size_t)
-	`, func(t *testing.T, pkg *convert.Package) {
-		files, err := os.ReadDir(pkg.GetOutputDir())
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		for _, file := range files {
-			log.Println("Generated file:", file.Name())
-			typeAliasMap := convert.NewBuiltinTypeMap(".", "temp", nil).GetTypeAliases()
-			for _, v := range typeAliasMap {
-				if file.Name() == convert.HeaderFileToGo(v.HeaderFile) {
-					t.Fatal("skip file should not be output")
-				}
-			}
-		}
-	})
+	`, nil)
 }
 
 func TestCommentSlashSlashSlash(t *testing.T) {
@@ -305,10 +290,13 @@ func TestSkipBuiltinTypedefine(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("skip on non-macos")
 	}
+
 	cmptest.RunTest(t, "skip", false, []config.SymbolEntry{
 		{MangleName: "testInt", CppName: "testInt", GoName: "TestInt"},
 		{MangleName: "testUint", CppName: "testUint", GoName: "TestUint"},
-	}, &cppgtypes.Config{}, `
+	}, &cppgtypes.Config{
+		Deps: []string{"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"},
+	}, `
 #include <stdint.h>
 
 void testInt(int8_t a, int16_t b, int32_t c, int64_t d);
@@ -317,24 +305,23 @@ void testUint(u_int8_t a, u_int16_t b, u_int32_t c, u_int64_t d);
 		`package skip
 
 import (
-	c7 "github.com/goplus/llgo/c"
+	stdint6 "github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"
 	_ "unsafe"
 )
 //go:linkname TestInt C.testInt
-func TestInt(a int8, b int16, c c7.Int, d c7.LongLong)
+func TestInt(a stdint6.Int8_t, b stdint6.Int16_t, c stdint6.Int32_t, d stdint6.Int64_t)
 //go:linkname TestUint C.testUint
-func TestUint(a int8, b uint16, c c7.Uint, d c7.UlongLong)
+func TestUint(a stdint6.U_int8_t, b stdint6.U_int16_t, c stdint6.U_int32_t, d stdint6.U_int64_t)
 	`, func(t *testing.T, pkg *convert.Package) {
 			files, err := os.ReadDir(pkg.GetOutputDir())
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			needSkipHeaderFiles := pkg.AllDepIncs()
 			for _, file := range files {
 				log.Println("Generated file:", file.Name())
-				typeAliasMap := convert.NewBuiltinTypeMap(".", "temp", nil).GetTypeAliases()
-				for _, v := range typeAliasMap {
-					if file.Name() == convert.HeaderFileToGo(v.HeaderFile) {
+				for _, headerFile := range needSkipHeaderFiles {
+					if file.Name() == convert.HeaderFileToGo(headerFile) {
 						t.Fatal("skip file should not be output")
 					}
 				}
@@ -432,7 +419,7 @@ func TestVisitFail(t *testing.T) {
 	})
 	// not appear in output
 
-	buf, err := converter.GetPackage().WriteDefaultFileToBuffer()
+	buf, err := converter.Pkg.WriteDefaultFileToBuffer()
 	if err != nil {
 		t.Fatalf("WriteTo failed: %v", err)
 	}
