@@ -106,6 +106,9 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	prog := b.Prog
 	typ := x.Type
 	tabi := b.abiType(typ.raw.Type)
+	if x.kind == vkClosure {
+		b.InlineCall(b.Pkg.rtFunc("SetClosure"), tabi)
+	}
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:

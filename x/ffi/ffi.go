@@ -1,7 +1,6 @@
 package ffi
 
 import (
-	"fmt"
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
@@ -25,7 +24,7 @@ func (s Error) Error() string {
 	case ffi.BAD_ARGTYPE:
 		return "bad argument type"
 	}
-	return fmt.Sprintf("invalid status: %v", int(s))
+	return "invalid status"
 }
 
 func NewSignature(ret *Type, args ...*Type) (*Signature, error) {

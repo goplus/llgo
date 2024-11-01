@@ -176,6 +176,9 @@ const (
 	// TFlagVariadic means a funcType with variadic parameters
 	TFlagVariadic TFlag = 1 << 4
 
+	// TFflagClosure means the structType is a closure
+	TFlagClosure TFlag = 1 << 5
+
 	// TFlagUninited means this type is not fully initialized.
 	TFlagUninited TFlag = 1 << 7
 )

@@ -24,6 +24,8 @@ import (
 	"errors"
 	"unsafe"
 
+	"github.com/goplus/llgo/x/ffi"
+
 	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/runtime"
 	"github.com/goplus/llgo/internal/runtime/goarch"
@@ -92,6 +94,7 @@ const (
 	flagIndir       flag = 1 << 7
 	flagAddr        flag = 1 << 8
 	flagMethod      flag = 1 << 9
+	flagClosure     flag = 1 << 10
 	flagMethodShift      = 10
 	flagRO          flag = flagStickyRO | flagEmbedRO
 )
@@ -177,6 +180,12 @@ func unpackEface(i any) Value {
 	f := flag(t.Kind())
 	if t.IfaceIndir() {
 		f |= flagIndir
+	}
+	if t.TFlag&abi.TFlagClosure != 0 {
+		f = (f & flag(^Struct)) | flag(Func) | flagClosure
+		ft := *t.StructType().Fields[0].Typ.FuncType()
+		ft.In = ft.In[1:]
+		t = &ft.Type
 	}
 	return Value{t, e.word, f}
 }
@@ -456,7 +465,6 @@ func (v Value) Complex() complex128 {
 // It panics if v's Kind is not Interface or Pointer.
 // It returns the zero Value if v is nil.
 func (v Value) Elem() Value {
-	/* TODO(xsw):
 	k := v.kind()
 	switch k {
 	case Interface:
@@ -487,9 +495,9 @@ func (v Value) Elem() Value {
 				// Since it is a not-in-heap pointer, all pointers to the heap are
 				// forbidden! That makes the test pretty easy.
 				// See issue 48399.
-				if !verifyNotInHeapPtr(*(*uintptr)(ptr)) {
-					panic("reflect: reflect.Value.Elem on an invalid notinheap pointer")
-				}
+				// if !verifyNotInHeapPtr(*(*uintptr)(ptr)) {
+				// 	panic("reflect: reflect.Value.Elem on an invalid notinheap pointer")
+				// }
 			}
 			ptr = *(*unsafe.Pointer)(ptr)
 		}
@@ -504,8 +512,10 @@ func (v Value) Elem() Value {
 		return Value{typ, ptr, fl}
 	}
 	panic(&ValueError{"reflect.Value.Elem", v.kind()})
-	*/
-	panic("todo: reflect.Value.Elem")
+}
+
+func ifaceIndir(typ *abi.Type) bool {
+	return typ.IfaceIndir()
 }
 
 // Field returns the i'th field of the struct v.
@@ -2003,3 +2013,405 @@ func (v Value) MethodByName(name string) Value {
 	}
 	return v.Method(m.Index)
 }
+
+// Call calls the function v with the input arguments in.
+// For example, if len(in) == 3, v.Call(in) represents the Go call v(in[0], in[1], in[2]).
+// Call panics if v's Kind is not Func.
+// It returns the output results as Values.
+// As in Go, each input argument must be assignable to the
+// type of the function's corresponding input parameter.
+// If v is a variadic function, Call creates the variadic slice parameter
+// itself, copying in the corresponding values.
+func (v Value) Call(in []Value) []Value {
+	v.mustBe(Func)
+	v.mustBeExported()
+	return v.call("Call", in)
+}
+
+// CallSlice calls the variadic function v with the input arguments in,
+// assigning the slice in[len(in)-1] to v's final variadic argument.
+// For example, if len(in) == 3, v.CallSlice(in) represents the Go call v(in[0], in[1], in[2]...).
+// CallSlice panics if v's Kind is not Func or if v is not variadic.
+// It returns the output results as Values.
+// As in Go, each input argument must be assignable to the
+// type of the function's corresponding input parameter.
+func (v Value) CallSlice(in []Value) []Value {
+	v.mustBe(Func)
+	v.mustBeExported()
+	return v.call("CallSlice", in)
+}
+
+type closure struct {
+	fn  unsafe.Pointer
+	env unsafe.Pointer
+}
+
+func toFFIType(typ *abi.Type) *ffi.Type {
+	kind := typ.Kind()
+	switch {
+	case kind >= abi.Bool && kind <= abi.Complex128:
+		return ffi.Typ[kind]
+	case kind == abi.Pointer || kind == abi.UnsafePointer:
+		return ffi.TypePointer
+	}
+	panic("unsupport type " + typ.String())
+}
+
+func toFFISig(typ *abi.FuncType, closure bool) (*ffi.Signature, error) {
+	var args []*ffi.Type
+	if closure {
+		args = append(args, ffi.TypePointer)
+	}
+	for _, in := range typ.In {
+		args = append(args, toFFIType(in))
+	}
+	var ret *ffi.Type
+	switch n := len(typ.Out); n {
+	case 0:
+		ret = ffi.TypeVoid
+	case 1:
+		ret = toFFIType(typ.Out[0])
+	default:
+		fields := make([]*ffi.Type, n)
+		for i, out := range typ.Out {
+			fields[i] = toFFIType(out)
+		}
+		ret = ffi.StructOf(fields...)
+	}
+	return ffi.NewSignature(ret, args...)
+}
+
+func (v Value) call(op string, in []Value) (out []Value) {
+	var (
+		fn   unsafe.Pointer
+		ret  unsafe.Pointer
+		args []unsafe.Pointer
+	)
+	if v.flag&flagClosure != 0 {
+		c := (*closure)(v.ptr)
+		fn = c.fn
+		args = append(args, unsafe.Pointer(&c.env))
+	} else {
+		if v.flag&flagIndir != 0 {
+			fn = *(*unsafe.Pointer)(v.ptr)
+		} else {
+			fn = v.ptr
+		}
+	}
+	ft := v.typ().FuncType()
+	sig, err := toFFISig(ft, v.flag&flagClosure != 0)
+	if err != nil {
+		panic(err)
+	}
+	if sig.RType != ffi.TypeVoid {
+		v := runtime.AllocZ(sig.RType.Size)
+		ret = unsafe.Pointer(&v)
+	}
+	for _, in := range in {
+		if in.flag&flagIndir != 0 {
+			args = append(args, in.ptr)
+		} else {
+			args = append(args, unsafe.Pointer(&in.ptr))
+		}
+	}
+	ffi.Call(sig, fn, ret, args...)
+	switch n := len(ft.Out); n {
+	case 0:
+	case 1:
+		return []Value{NewAt(toType(ft.Out[0]), ret).Elem()}
+	default:
+		panic("TODO multi ret")
+	}
+	return
+}
+
+// var callGC bool // for testing; see TestCallMethodJump and TestCallArgLive
+
+// const debugReflectCall = false
+
+// func (v Value) call(op string, in []Value) []Value {
+// 	// Get function pointer, type.
+// 	t := (*funcType)(unsafe.Pointer(v.typ()))
+// 	var (
+// 		fn       unsafe.Pointer
+// 		rcvr     Value
+// 		rcvrtype *abi.Type
+// 	)
+// 	if v.flag&flagMethod != 0 {
+// 		rcvr = v
+// 		rcvrtype, t, fn = methodReceiver(op, v, int(v.flag)>>flagMethodShift)
+// 	} else if v.flag&flagIndir != 0 {
+// 		fn = *(*unsafe.Pointer)(v.ptr)
+// 	} else {
+// 		fn = v.ptr
+// 	}
+
+// 	if fn == nil {
+// 		panic("reflect.Value.Call: call of nil function")
+// 	}
+
+// 	isSlice := op == "CallSlice"
+// 	n := t.NumIn()
+// 	isVariadic := t.IsVariadic()
+// 	if isSlice {
+// 		if !isVariadic {
+// 			panic("reflect: CallSlice of non-variadic function")
+// 		}
+// 		if len(in) < n {
+// 			panic("reflect: CallSlice with too few input arguments")
+// 		}
+// 		if len(in) > n {
+// 			panic("reflect: CallSlice with too many input arguments")
+// 		}
+// 	} else {
+// 		if isVariadic {
+// 			n--
+// 		}
+// 		if len(in) < n {
+// 			panic("reflect: Call with too few input arguments")
+// 		}
+// 		if !isVariadic && len(in) > n {
+// 			panic("reflect: Call with too many input arguments")
+// 		}
+// 	}
+// 	for _, x := range in {
+// 		if x.Kind() == Invalid {
+// 			panic("reflect: " + op + " using zero Value argument")
+// 		}
+// 	}
+// 	for i := 0; i < n; i++ {
+// 		if xt, targ := in[i].Type(), t.In(i); !xt.AssignableTo(toRType(targ)) {
+// 			panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
+// 		}
+// 	}
+// 	if !isSlice && isVariadic {
+// 		// prepare slice for remaining values
+// 		m := len(in) - n
+// 		slice := MakeSlice(toRType(t.In(n)), m, m)
+// 		elem := toRType(t.In(n)).Elem() // FIXME cast to slice type and Elem()
+// 		for i := 0; i < m; i++ {
+// 			x := in[n+i]
+// 			if xt := x.Type(); !xt.AssignableTo(elem) {
+// 				panic("reflect: cannot use " + xt.String() + " as type " + elem.String() + " in " + op)
+// 			}
+// 			slice.Index(i).Set(x)
+// 		}
+// 		origIn := in
+// 		in = make([]Value, n+1)
+// 		copy(in[:n], origIn)
+// 		in[n] = slice
+// 	}
+
+// 	nin := len(in)
+// 	if nin != t.NumIn() {
+// 		panic("reflect.Value.Call: wrong argument count")
+// 	}
+// 	nout := t.NumOut()
+
+// 	// Register argument space.
+// 	var regArgs abi.RegArgs
+
+// 	// Compute frame type.
+// 	frametype, framePool, abid := funcLayout(t, rcvrtype)
+
+// 	// Allocate a chunk of memory for frame if needed.
+// 	var stackArgs unsafe.Pointer
+// 	if frametype.Size() != 0 {
+// 		if nout == 0 {
+// 			stackArgs = framePool.Get().(unsafe.Pointer)
+// 		} else {
+// 			// Can't use pool if the function has return values.
+// 			// We will leak pointer to args in ret, so its lifetime is not scoped.
+// 			stackArgs = unsafe_New(frametype)
+// 		}
+// 	}
+// 	frameSize := frametype.Size()
+
+// 	if debugReflectCall {
+// 		println("reflect.call", stringFor(&t.Type))
+// 		abid.dump()
+// 	}
+
+// 	// Copy inputs into args.
+
+// 	// Handle receiver.
+// 	inStart := 0
+// 	if rcvrtype != nil {
+// 		// Guaranteed to only be one word in size,
+// 		// so it will only take up exactly 1 abiStep (either
+// 		// in a register or on the stack).
+// 		switch st := abid.call.steps[0]; st.kind {
+// 		case abiStepStack:
+// 			storeRcvr(rcvr, stackArgs)
+// 		case abiStepPointer:
+// 			storeRcvr(rcvr, unsafe.Pointer(&regArgs.Ptrs[st.ireg]))
+// 			fallthrough
+// 		case abiStepIntReg:
+// 			storeRcvr(rcvr, unsafe.Pointer(&regArgs.Ints[st.ireg]))
+// 		case abiStepFloatReg:
+// 			storeRcvr(rcvr, unsafe.Pointer(&regArgs.Floats[st.freg]))
+// 		default:
+// 			panic("unknown ABI parameter kind")
+// 		}
+// 		inStart = 1
+// 	}
+
+// 	// Handle arguments.
+// 	for i, v := range in {
+// 		v.mustBeExported()
+// 		targ := toRType(t.In(i))
+// 		// TODO(mknyszek): Figure out if it's possible to get some
+// 		// scratch space for this assignment check. Previously, it
+// 		// was possible to use space in the argument frame.
+// 		v = v.assignTo("reflect.Value.Call", &targ.t, nil)
+// 	stepsLoop:
+// 		for _, st := range abid.call.stepsForValue(i + inStart) {
+// 			switch st.kind {
+// 			case abiStepStack:
+// 				// Copy values to the "stack."
+// 				addr := add(stackArgs, st.stkOff, "precomputed stack arg offset")
+// 				if v.flag&flagIndir != 0 {
+// 					typedmemmove(&targ.t, addr, v.ptr)
+// 				} else {
+// 					*(*unsafe.Pointer)(addr) = v.ptr
+// 				}
+// 				// There's only one step for a stack-allocated value.
+// 				break stepsLoop
+// 			case abiStepIntReg, abiStepPointer:
+// 				// Copy values to "integer registers."
+// 				if v.flag&flagIndir != 0 {
+// 					offset := add(v.ptr, st.offset, "precomputed value offset")
+// 					if st.kind == abiStepPointer {
+// 						// Duplicate this pointer in the pointer area of the
+// 						// register space. Otherwise, there's the potential for
+// 						// this to be the last reference to v.ptr.
+// 						regArgs.Ptrs[st.ireg] = *(*unsafe.Pointer)(offset)
+// 					}
+// 					intToReg(&regArgs, st.ireg, st.size, offset)
+// 				} else {
+// 					if st.kind == abiStepPointer {
+// 						// See the comment in abiStepPointer case above.
+// 						regArgs.Ptrs[st.ireg] = v.ptr
+// 					}
+// 					regArgs.Ints[st.ireg] = uintptr(v.ptr)
+// 				}
+// 			case abiStepFloatReg:
+// 				// Copy values to "float registers."
+// 				if v.flag&flagIndir == 0 {
+// 					panic("attempted to copy pointer to FP register")
+// 				}
+// 				offset := add(v.ptr, st.offset, "precomputed value offset")
+// 				floatToReg(&regArgs, st.freg, st.size, offset)
+// 			default:
+// 				panic("unknown ABI part kind")
+// 			}
+// 		}
+// 	}
+// 	// TODO(mknyszek): Remove this when we no longer have
+// 	// caller reserved spill space.
+// 	frameSize = align(frameSize, goarch.PtrSize)
+// 	frameSize += abid.spill
+
+// 	// Mark pointers in registers for the return path.
+// 	regArgs.ReturnIsPtr = abid.outRegPtrs
+
+// 	if debugReflectCall {
+// 		regArgs.Dump()
+// 	}
+
+// 	// For testing; see TestCallArgLive.
+// 	if callGC {
+// 		runtime.GC()
+// 	}
+
+// 	// Call.
+// 	call(frametype, fn, stackArgs, uint32(frametype.Size()), uint32(abid.retOffset), uint32(frameSize), &regArgs)
+
+// 	// For testing; see TestCallMethodJump.
+// 	if callGC {
+// 		runtime.GC()
+// 	}
+
+// 	var ret []Value
+// 	if nout == 0 {
+// 		if stackArgs != nil {
+// 			typedmemclr(frametype, stackArgs)
+// 			framePool.Put(stackArgs)
+// 		}
+// 	} else {
+// 		if stackArgs != nil {
+// 			// Zero the now unused input area of args,
+// 			// because the Values returned by this function contain pointers to the args object,
+// 			// and will thus keep the args object alive indefinitely.
+// 			typedmemclrpartial(frametype, stackArgs, 0, abid.retOffset)
+// 		}
+
+// 		// Wrap Values around return values in args.
+// 		ret = make([]Value, nout)
+// 		for i := 0; i < nout; i++ {
+// 			tv := t.Out(i)
+// 			if tv.Size() == 0 {
+// 				// For zero-sized return value, args+off may point to the next object.
+// 				// In this case, return the zero value instead.
+// 				ret[i] = Zero(toRType(tv))
+// 				continue
+// 			}
+// 			steps := abid.ret.stepsForValue(i)
+// 			if st := steps[0]; st.kind == abiStepStack {
+// 				// This value is on the stack. If part of a value is stack
+// 				// allocated, the entire value is according to the ABI. So
+// 				// just make an indirection into the allocated frame.
+// 				fl := flagIndir | flag(tv.Kind())
+// 				ret[i] = Value{tv, add(stackArgs, st.stkOff, "tv.Size() != 0"), fl}
+// 				// Note: this does introduce false sharing between results -
+// 				// if any result is live, they are all live.
+// 				// (And the space for the args is live as well, but as we've
+// 				// cleared that space it isn't as big a deal.)
+// 				continue
+// 			}
+
+// 			// Handle pointers passed in registers.
+// 			if !ifaceIndir(tv) {
+// 				// Pointer-valued data gets put directly
+// 				// into v.ptr.
+// 				if steps[0].kind != abiStepPointer {
+// 					print("kind=", steps[0].kind, ", type=", stringFor(tv), "\n")
+// 					panic("mismatch between ABI description and types")
+// 				}
+// 				ret[i] = Value{tv, regArgs.Ptrs[steps[0].ireg], flag(tv.Kind())}
+// 				continue
+// 			}
+
+// 			// All that's left is values passed in registers that we need to
+// 			// create space for and copy values back into.
+// 			//
+// 			// TODO(mknyszek): We make a new allocation for each register-allocated
+// 			// value, but previously we could always point into the heap-allocated
+// 			// stack frame. This is a regression that could be fixed by adding
+// 			// additional space to the allocated stack frame and storing the
+// 			// register-allocated return values into the allocated stack frame and
+// 			// referring there in the resulting Value.
+// 			s := unsafe_New(tv)
+// 			for _, st := range steps {
+// 				switch st.kind {
+// 				case abiStepIntReg:
+// 					offset := add(s, st.offset, "precomputed value offset")
+// 					intFromReg(&regArgs, st.ireg, st.size, offset)
+// 				case abiStepPointer:
+// 					s := add(s, st.offset, "precomputed value offset")
+// 					*((*unsafe.Pointer)(s)) = regArgs.Ptrs[st.ireg]
+// 				case abiStepFloatReg:
+// 					offset := add(s, st.offset, "precomputed value offset")
+// 					floatFromReg(&regArgs, st.freg, st.size, offset)
+// 				case abiStepStack:
+// 					panic("register-based return value has stack component")
+// 				default:
+// 					panic("unknown ABI part kind")
+// 				}
+// 			}
+// 			ret[i] = Value{tv, s, flagIndir | flag(tv.Kind())}
+// 		}
+// 	}
+
+// 	return ret
+// }
