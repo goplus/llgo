@@ -2643,6 +2643,29 @@ func VisitChildren(
 type Visitor func(cursor, parent Cursor, clientData ClientData) ChildVisitResult
 
 /**
+ * Visitor invoked for each file in a translation unit
+ *        (used with clang_getInclusions()).
+ *
+ * This visitor function will be invoked by clang_getInclusions() for each
+ * file included (either at the top-level or by \#include directives) within
+ * a translation unit.  The first argument is the file being included, and
+ * the second and third arguments provide the inclusion stack.  The
+ * array is sorted in order of immediate inclusion.  For example,
+ * the first element refers to the location that included 'included_file'.
+ */
+//llgo:type C
+type InclusionVisitor func(included_file File, inclusion_stack *SourceLocation, include_len c.Uint, client_data ClientData)
+
+/**
+ * Visit the set of preprocessor inclusions in a translation unit.
+ *   The visitor function is called with the provided data for every included
+ *   file.  This does not include headers included by the PCH file (unless one
+ *   is inspecting the inclusions in the PCH file itself).
+ */
+//go:linkname GetInclusions C.clang_getInclusions
+func GetInclusions(tu *TranslationUnit, visitor InclusionVisitor, client_data ClientData)
+
+/**
  * Tokenize the source code described by the given range into raw
  * lexical tokens.
  *
