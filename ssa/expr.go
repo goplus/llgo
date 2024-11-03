@@ -1163,8 +1163,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "String": // unsafe.String
 		return b.unsafeString(args[0].impl, args[1].impl)
 	case "Slice": // unsafe.Slice
-		size := args[1].impl
-		return b.unsafeSlice(args[0], size, size)
+		size := b.fitIntSize(args[1])
+		return b.unsafeSlice(args[0], size.impl, size.impl)
 	case "StringData":
 		return b.StringData(args[0]) // TODO(xsw): check return type
 	case "SliceData":
