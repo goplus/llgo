@@ -1007,6 +1007,12 @@ func (t *structType) FieldByName(name string) (f StructField, present bool) {
 // If i is a nil interface value, TypeOf returns nil.
 func TypeOf(i any) Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
+	// closure type
+	if eface.typ.TFlag&abi.TFlagClosure != 0 {
+		ft := *eface.typ.StructType().Fields[0].Typ.FuncType()
+		ft.In = ft.In[1:]
+		return toType(&ft.Type)
+	}
 	// Noescape so this doesn't make i to escape. See the comment
 	// at Value.typ for why this is safe.
 	return toType((*abi.Type)(unsafe.Pointer(eface.typ)))
