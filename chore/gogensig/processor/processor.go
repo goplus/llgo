@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -48,18 +47,6 @@ func NewDocFileSetProcessor(docVisitorList []visitor.DocVisitor, allDepIncs []st
 		allDepIncs:         depIncsMap,
 		visitedFile:        make(map[string]struct{}),
 		visitedIncludeFile: make(map[string]struct{}),
-		absPathFunc: func(s string, fs unmarshal.FileSet) string {
-			if filepath.IsAbs(s) {
-				return s
-			}
-			includePath := fs.IncludeDir(s)
-			absIncludePath := filepath.Join(includePath, s)
-			_, err := os.Stat(absIncludePath)
-			if err == nil {
-				return absIncludePath
-			}
-			return s
-		},
 	}
 	return p
 }
@@ -68,22 +55,19 @@ func (p *DocFileSetProcessor) visitFile(docVisitor *DocVisitorManager, file unma
 	if _, ok := p.visitedFile[file.Path]; ok {
 		return
 	}
-	if p.absPathFunc != nil {
-		for _, inc := range file.Doc.Includes {
-			// skip processed file(std path)
-			if _, ok := p.visitedIncludeFile[inc.Path]; ok {
-				continue
-			}
-			if _, ok := p.allDepIncs[inc.Path]; ok {
-				continue
-			}
-			p.visitedIncludeFile[inc.Path] = struct{}{}
-			absPath := p.absPathFunc(inc.Path, files)
-			idx := files.FindEntry(absPath)
-			if idx >= 0 {
-				findFile := files[idx]
-				p.visitFile(docVisitor, findFile, files)
-			}
+
+	for _, inc := range file.Doc.Includes {
+		if _, ok := p.visitedIncludeFile[inc.Path]; ok {
+			continue
+		}
+		if _, ok := p.allDepIncs[inc.Path]; ok {
+			continue
+		}
+		p.visitedIncludeFile[inc.Path] = struct{}{}
+		idx := files.FindEntry(inc.Path)
+		if idx >= 0 {
+			findFile := files[idx]
+			p.visitFile(docVisitor, findFile, files)
 		}
 	}
 	docVisitor.visit(file.Doc, file.Path)
@@ -93,10 +77,10 @@ func (p *DocFileSetProcessor) visitFile(docVisitor *DocVisitorManager, file unma
 func (p *DocFileSetProcessor) ProcessFileSet(files unmarshal.FileSet, done func()) error {
 	docVisitor := NewDocVisitorManager(p.docVisitorList)
 	for inc := range p.allDepIncs {
-		absDepPath := p.absPathFunc(inc, files)
-		idx := files.FindEntry(absDepPath)
+		idx := files.FindEntry(inc)
 		if idx >= 0 {
-			p.visitedFile[absDepPath] = struct{}{}
+			p.visitedFile[files[idx].Path] = struct{}{}
+			p.visitedIncludeFile[inc] = struct{}{}
 		}
 	}
 	for _, file := range files {

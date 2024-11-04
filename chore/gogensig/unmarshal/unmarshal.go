@@ -14,9 +14,9 @@ var nodeUnmarshalers map[string]NodeUnmarshaler
 
 type FileSet []FileEntry
 
-func (s FileSet) FindEntry(absIncludePath string) int {
+func (s FileSet) FindEntry(incPath string) int {
 	for i, e := range s {
-		if e.Path == absIncludePath {
+		if e.IncPath == incPath {
 			return i
 		}
 	}
@@ -34,8 +34,9 @@ func (s FileSet) IncludeDir(includeFile string) string {
 }
 
 type FileEntry struct {
-	Path string
-	Doc  *ast.File
+	Path    string
+	IncPath string
+	Doc     *ast.File
 }
 
 func init() {
@@ -74,8 +75,9 @@ func init() {
 
 func UnmarshalFileSet(data []byte) (FileSet, error) {
 	var filesWrapper []struct {
-		Path string          `json:"path"`
-		Doc  json.RawMessage `json:"doc"`
+		Path    string          `json:"path"`
+		IncPath string          `json:"incPath"`
+		Doc     json.RawMessage `json:"doc"`
 	}
 	if err := json.Unmarshal(data, &filesWrapper); err != nil {
 		return nil, fmt.Errorf("error unmarshalling FilesWithPath: %w", err)
@@ -95,8 +97,9 @@ func UnmarshalFileSet(data []byte) (FileSet, error) {
 		}
 
 		result = append(result, FileEntry{
-			Path: fileData.Path,
-			Doc:  file,
+			Path:    fileData.Path,
+			IncPath: fileData.IncPath,
+			Doc:     file,
 		})
 	}
 
