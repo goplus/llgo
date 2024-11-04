@@ -33,6 +33,10 @@ void wrap_clang_getOverriddenCursors(CXCursor *cursor, CXCursor **overridden, un
     clang_getOverriddenCursors(*cursor, overridden, num_overridden);
 }
 
+void wrap_clang_getCursor(CXTranslationUnit uint, CXSourceLocation *loc, CXCursor *cur) {
+    *cur = clang_getCursor(uint, *loc);
+}
+
 void wrap_clang_getCursorLocation(CXCursor *cur, CXSourceLocation *loc) { *loc = clang_getCursorLocation(*cur); }
 
 void wrap_clang_getCursorExtent(CXCursor *cur, CXSourceRange *range) { *range = clang_getCursorExtent(*cur); }

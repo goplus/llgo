@@ -1711,6 +1711,30 @@ func (c Cursor) OverriddenCursors(overridden **Cursor, numOverridden *c.Uint) {
 func (c *Cursor) DisposeOverriddenCursors() {}
 
 /**
+ * Map a source location to the cursor that describes the entity at that
+ * location in the source code.
+ *
+ * clang_getCursor() maps an arbitrary source location within a translation
+ * unit down to the most specific cursor that describes the entity at that
+ * location. For example, given an expression \c x + y, invoking
+ * clang_getCursor() with a source location pointing to "x" will return the
+ * cursor for "x"; similarly for "y". If the cursor points anywhere between
+ * "x" or "y" (e.g., on the + or the whitespace around it), clang_getCursor()
+ * will return a cursor referring to the "+" expression.
+ *
+ * \returns a cursor representing the entity at the given source location, or
+ * a NULL cursor if no such entity can be found.
+ */
+
+// llgo:link (*TranslationUnit).wrapGetCursor C.wrap_clang_getCursor
+func (l *TranslationUnit) wrapGetCursor(loc *SourceLocation, cur *Cursor) {}
+
+func (l *TranslationUnit) GetCursor(loc *SourceLocation) (cur Cursor) {
+	l.wrapGetCursor(loc, &cur)
+	return
+}
+
+/**
  * Retrieve the physical location of the source constructor referenced
  * by the given cursor.
  *
