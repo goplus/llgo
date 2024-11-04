@@ -79,7 +79,7 @@ func GetType(option *GetTypeOptions) (clang.Type, *clang.Index, *clang.Translati
 	}
 	cursor := unit.Cursor()
 	var typ clang.Type
-	parse.VisitChildren(cursor, func(child, parent clang.Cursor) clang.ChildVisitResult {
+	clangutils.VisitChildren(cursor, func(child, parent clang.Cursor) clang.ChildVisitResult {
 		if child.Kind == clang.CursorVarDecl && (option.ExpectTypeKind == clang.TypeInvalid || option.ExpectTypeKind == child.Type().Kind) {
 			typ = child.Type()
 			return clang.ChildVisit_Break

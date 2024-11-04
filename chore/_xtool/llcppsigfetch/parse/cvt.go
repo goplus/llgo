@@ -276,7 +276,7 @@ func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResul
 		curFile.Decls = append(curFile.Decls, typedefDecl)
 		ct.logln("visitTop: ProcessTypeDefDecl END", typedefDecl.Name.Name)
 	case clang.CursorNamespace:
-		VisitChildren(cursor, ct.visitTop)
+		clangutils.VisitChildren(cursor, ct.visitTop)
 	}
 	return clang.ChildVisit_Continue
 }
@@ -284,17 +284,8 @@ func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResul
 func (ct *Converter) Convert() ([]*FileEntry, error) {
 	cursor := ct.unit.Cursor()
 	// visit top decls (struct,class,function & macro,include)
-	VisitChildren(cursor, ct.visitTop)
+	clangutils.VisitChildren(cursor, ct.visitTop)
 	return ct.Files, nil
-}
-
-type Visitor func(cursor, parent clang.Cursor) clang.ChildVisitResult
-
-func VisitChildren(cursor clang.Cursor, fn Visitor) c.Uint {
-	return clang.VisitChildren(cursor, func(cursor, parent clang.Cursor, clientData unsafe.Pointer) clang.ChildVisitResult {
-		cfn := *(*Visitor)(clientData)
-		return cfn(cursor, parent)
-	}, unsafe.Pointer(&fn))
 }
 
 func (ct *Converter) ProcessType(t clang.Type) ast.Expr {
@@ -521,7 +512,7 @@ func (ct *Converter) ProcessMethodAttributes(cursor clang.Cursor, fn *ast.FuncDe
 func (ct *Converter) ProcessEnumType(cursor clang.Cursor) *ast.EnumType {
 	items := make([]*ast.EnumItem, 0)
 
-	VisitChildren(cursor, func(cursor, parent clang.Cursor) clang.ChildVisitResult {
+	clangutils.VisitChildren(cursor, func(cursor, parent clang.Cursor) clang.ChildVisitResult {
 		if cursor.Kind == clang.CursorEnumConstantDecl {
 			name := cursor.String()
 			defer name.Dispose()
@@ -619,7 +610,7 @@ func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 
 	params := &ast.FieldList{}
 	ct.logln("ProcessFieldList: VisitChildren")
-	VisitChildren(cursor, func(subcsr, parent clang.Cursor) clang.ChildVisitResult {
+	clangutils.VisitChildren(cursor, func(subcsr, parent clang.Cursor) clang.ChildVisitResult {
 		switch subcsr.Kind {
 		case clang.CursorParmDecl, clang.CursorFieldDecl:
 			// In C language, parameter lists do not have similar parameter grouping in Go.
@@ -665,7 +656,7 @@ func (ct *Converter) ProcessFieldList(cursor clang.Cursor) *ast.FieldList {
 // Note:Public Method is considered
 func (ct *Converter) ProcessMethods(cursor clang.Cursor) []*ast.FuncDecl {
 	methods := make([]*ast.FuncDecl, 0)
-	VisitChildren(cursor, func(subcsr, parent clang.Cursor) clang.ChildVisitResult {
+	clangutils.VisitChildren(cursor, func(subcsr, parent clang.Cursor) clang.ChildVisitResult {
 		if isMethod(subcsr) && subcsr.CXXAccessSpecifier() == clang.CXXPublic {
 			method := ct.ProcessFuncDecl(subcsr)
 			if method != nil {
@@ -950,8 +941,7 @@ func isRangeChildOf(childRange, parentRange clang.SourceRange) bool {
 }
 
 func getOffset(location clang.SourceLocation) c.Uint {
-	var offset c.Uint
-	location.SpellingLocation(nil, nil, nil, &offset)
+	_, _, _, offset := clangutils.GetLocation(location)
 	return offset
 }
 
