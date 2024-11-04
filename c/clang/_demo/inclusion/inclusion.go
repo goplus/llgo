@@ -23,15 +23,13 @@ func main() {
 		filename := included_file.FileName()
 		c.Printf(c.Str("Included file: %s Include length: %d\n"), filename.CStr(), include_len)
 		inclusions := unsafe.Slice(inclusion_stack, include_len)
-		if include_len > 0 {
-			for i := range inclusions {
-				loc := inclusions[i]
-				var file clang.File
-				var line, column c.Uint
-				loc.SpellingLocation(&file, &line, &column, nil)
-				filename = file.FileName()
-				c.Printf(c.Str("  included from: %s:%d:%d\n"), filename.CStr(), line, column)
-			}
+		for i := range inclusions {
+			loc := inclusions[i]
+			var file clang.File
+			var line, column c.Uint
+			loc.SpellingLocation(&file, &line, &column, nil)
+			filename = file.FileName()
+			c.Printf(c.Str("  included from: %s:%d:%d\n"), filename.CStr(), line, column)
 		}
 	}, nil)
 }
