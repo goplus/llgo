@@ -642,58 +642,43 @@ func (t *rtype) NumField() int {
 }
 
 func (t *rtype) In(i int) Type {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: In of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return toType(tt.InSlice()[i])
-	*/
-	panic("todo: reflect.rtype.In")
+	if t.Kind() != Func {
+		panic("reflect: In of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return toType(tt.In[i])
 }
 
 func (t *rtype) NumIn() int {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: NumIn of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return tt.NumIn()
-	*/
-	panic("todo: reflect.rtype.NumIn")
+	if t.Kind() != Func {
+		panic("reflect: NumIn of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return len(tt.In)
 }
 
 func (t *rtype) NumOut() int {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: NumOut of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return tt.NumOut()
-	*/
-	panic("todo: reflect.rtype.NumOut")
+	if t.Kind() != Func {
+		panic("reflect: NumOut of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return len(tt.Out)
 }
 
 func (t *rtype) Out(i int) Type {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: Out of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return toType(tt.OutSlice()[i])
-	*/
-	panic("todo: reflect.rtype.Out")
+	if t.Kind() != Func {
+		panic("reflect: Out of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return toType(tt.Out[i])
 }
 
 func (t *rtype) IsVariadic() bool {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: IsVariadic of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return tt.IsVariadic()
-	*/
-	panic("todo: reflect.rtype.IsVariadic")
+	if t.Kind() != Func {
+		panic("reflect: IsVariadic of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return tt.Variadic()
 }
 
 // add returns p+x.

@@ -183,9 +183,6 @@ func unpackEface(i any) Value {
 	}
 	if t.TFlag&abi.TFlagClosure != 0 {
 		f = (f & flag(^Struct)) | flag(Func) | flagClosure
-		ft := *t.StructType().Fields[0].Typ.FuncType()
-		ft.In = ft.In[1:]
-		t = &ft.Type
 	}
 	return Value{t, e.word, f}
 }
@@ -1528,7 +1525,7 @@ func (v Value) TrySend(x Value) bool {
 
 // Type returns v's type.
 func (v Value) Type() Type {
-	if v.flag != 0 && v.flag&flagMethod == 0 {
+	if v.flag != 0 && v.flag&flagMethod == 0 && v.flag&flagClosure == 0 {
 		return (*rtype)(unsafe.Pointer(v.typ_)) // inline of toRType(v.typ()), for own inlining in inline test
 	}
 	return v.typeSlow()
@@ -1537,6 +1534,11 @@ func (v Value) Type() Type {
 func (v Value) typeSlow() Type {
 	if v.flag == 0 {
 		panic(&ValueError{"reflect.Value.Type", Invalid})
+	}
+
+	// closure func
+	if v.flag&flagClosure != 0 {
+		return toRType(&v.funcType().Type)
 	}
 
 	typ := v.typ()
@@ -2081,6 +2083,16 @@ func toFFISig(typ *abi.FuncType, closure bool) (*ffi.Signature, error) {
 	return ffi.NewSignature(ret, args...)
 }
 
+func (v Value) funcType() *abi.FuncType {
+	if v.flag&flagClosure != 0 {
+		t := v.typ()
+		ft := *t.StructType().Fields[0].Typ.FuncType()
+		ft.In = ft.In[1:]
+		return &ft
+	}
+	return v.typ().FuncType()
+}
+
 func (v Value) call(op string, in []Value) (out []Value) {
 	var (
 		fn   unsafe.Pointer
@@ -2098,7 +2110,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			fn = v.ptr
 		}
 	}
-	ft := v.typ().FuncType()
+	ft := v.funcType()
 	sig, err := toFFISig(ft, v.flag&flagClosure != 0)
 	if err != nil {
 		panic(err)
