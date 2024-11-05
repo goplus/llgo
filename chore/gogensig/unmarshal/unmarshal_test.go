@@ -1145,6 +1145,7 @@ func TestUnmarshalFileSet(t *testing.T) {
 	files := `[
   {
     "path": "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+    "incPath": "INIReader.h",
     "doc": {
       "_Type": "File",
       "decls": [
@@ -1508,11 +1509,13 @@ func TestUnmarshalFileSet(t *testing.T) {
 ]`
 
 	expected := []struct {
-		Path string
-		Doc  *ast.File
+		Path    string
+		IncPath string
+		Doc     *ast.File
 	}{
 		{
-			Path: "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+			Path:    "/opt/homebrew/Cellar/inih/58/include/INIReader.h",
+			IncPath: "INIReader.h",
 			Doc: &ast.File{
 				Decls: []ast.Decl{
 					&ast.TypeDecl{
