@@ -49,10 +49,6 @@ func defaultExec(file *unmarshal.FileEntry) error {
 // allDepIncs is the std path of all dependent include files
 // such as sys/_types/_int8_t.h, etc. skip these files,because they are already processed
 func NewDocFileSetProcessor(cfg *ProcesserConfig) *DocFileSetProcessor {
-	depIncsMap := make(map[string]struct{})
-	for _, inc := range cfg.DepIncs {
-		depIncsMap[inc] = struct{}{}
-	}
 	p := &DocFileSetProcessor{
 		processing:  make(map[string]struct{}),
 		visitedFile: make(map[string]struct{}),
