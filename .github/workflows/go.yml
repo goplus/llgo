@@ -26,8 +26,9 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           brew update
-          brew install llvm@${{matrix.llvm}} pkg-config bdw-gc openssl
+          brew install llvm@${{matrix.llvm}} pkg-config bdw-gc openssl libffi
           echo "$(brew --prefix llvm@${{matrix.llvm}})/bin" >> $GITHUB_PATH
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/libffi/lib/pkgconfig" >> $GITHUB_ENV
 
           # Install optional deps for demos.
           #
@@ -45,7 +46,7 @@ jobs:
           echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{matrix.llvm}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y llvm-${{matrix.llvm}}-dev clang-${{matrix.llvm}} lld-${{matrix.llvm}} pkg-config libgc-dev libssl-dev zlib1g-dev
+          sudo apt-get install -y llvm-${{matrix.llvm}}-dev clang-${{matrix.llvm}} lld-${{matrix.llvm}} pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev
           echo "/usr/lib/llvm-${{matrix.llvm}}/bin" >> $GITHUB_PATH
 
           # Install optional deps for demos.
