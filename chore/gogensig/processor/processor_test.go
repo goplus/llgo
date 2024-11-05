@@ -6,7 +6,9 @@ import (
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
 	"github.com/goplus/llgo/chore/gogensig/convert"
+	"github.com/goplus/llgo/chore/gogensig/convert/basic"
 	"github.com/goplus/llgo/chore/gogensig/processor"
+	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
@@ -48,16 +50,23 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 	}
 	defer os.Remove(tempFileName)
 
-	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
-		PkgName:  "files",
-		SymbFile: "",
-		CfgFile:  "",
+	tempDir, err := os.MkdirTemp("", "gogensig-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	p, _, err := basic.ConvertProcesser(&basic.Config{
+		AstConvertConfig: convert.AstConvertConfig{
+			PkgName:   "files",
+			SymbFile:  "",
+			CfgFile:   "",
+			OutputDir: tempDir,
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors, []string{})
 	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		t.Error(err)
@@ -74,7 +83,14 @@ func TestProcessFileNotExist(t *testing.T) {
 		t.Fatal(err)
 	}
 	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors, []string{})
+	manager := processor.NewDocVisitorManager(docVisitors)
+	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
+		Exec: func(file *unmarshal.FileEntry) error {
+			manager.Visit(file.Doc, file.Path)
+			return nil
+		},
+		DepIncs: []string{},
+	})
 	err = p.ProcessFileSetFromPath("notexist.json")
 	if !os.IsNotExist(err) {
 		t.Error("expect no such file or directory error")
@@ -104,7 +120,14 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	docVisitors := []visitor.DocVisitor{astConvert}
-	p := processor.NewDocFileSetProcessor(docVisitors, []string{})
+	manager := processor.NewDocVisitorManager(docVisitors)
+	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
+		Exec: func(file *unmarshal.FileEntry) error {
+			manager.Visit(file.Doc, file.Path)
+			return nil
+		},
+		DepIncs: []string{},
+	})
 	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		panic(err)

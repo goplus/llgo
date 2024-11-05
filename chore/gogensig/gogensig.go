@@ -23,9 +23,8 @@ import (
 
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
-	"github.com/goplus/llgo/chore/gogensig/processor"
+	"github.com/goplus/llgo/chore/gogensig/convert/basic"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
-	"github.com/goplus/llgo/chore/gogensig/visitor"
 )
 
 func runGoCmds(wd, pkg string) {
@@ -64,20 +63,19 @@ func main() {
 
 	runGoCmds(wd, conf.Name)
 
-	astConvert, err := convert.NewAstConvert(&convert.AstConvertConfig{
-		PkgName:  conf.Name,
-		SymbFile: filepath.Join(wd, "llcppg.symb.json"),
-		CfgFile:  filepath.Join(wd, "llcppg.cfg"),
+	p, _, err := basic.ConvertProcesser(&basic.Config{
+		AstConvertConfig: convert.AstConvertConfig{
+			PkgName:  conf.Name,
+			SymbFile: filepath.Join(wd, "llcppg.symb.json"),
+			CfgFile:  filepath.Join(wd, "llcppg.cfg"),
+		},
 	})
 	check(err)
 
-	p := processor.NewDocFileSetProcessor([]visitor.DocVisitor{astConvert}, astConvert.Pkg.AllDepIncs())
 	inputdata, err := unmarshal.UnmarshalFileSet(data)
 	check(err)
 
-	err = p.ProcessFileSet(inputdata, func() {
-		astConvert.WriteLinkFile()
-	})
+	err = p.ProcessFileSet(inputdata)
 	check(err)
 }
 
