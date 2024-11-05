@@ -2,6 +2,7 @@ package processor_test
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
@@ -10,6 +11,7 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/processor"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/gogensig/visitor"
+	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 func TestProcessValidSigfetchContent(t *testing.T) {
@@ -131,5 +133,109 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 	err = p.ProcessFileSetFromPath(tempFileName)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func TestDefaultExec(t *testing.T) {
+	file := unmarshal.FileSet{
+		{
+			Path:    "foo.h",
+			IncPath: "foo.h",
+			Doc:     &ast.File{},
+		},
+	}
+	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{})
+	p.ProcessFileSet(file)
+}
+
+func TestExecOrder(t *testing.T) {
+	depIncs := []string{"int16_t.h"}
+	fileSet := unmarshal.FileSet{
+		{
+			Path:    "/path/to/foo.h",
+			IncPath: "foo.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{
+					{Path: "cdef.h"},
+					{Path: "stdint.h"},
+				},
+			},
+		},
+		{
+			Path:    "/path/to/cdef.h",
+			IncPath: "cdef.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{
+					{Path: "int8_t.h"},
+					{Path: "int16_t.h"},
+				},
+			},
+		},
+		{
+			Path:    "/path/to/stdint.h",
+			IncPath: "stdint.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{
+					{Path: "int8_t.h"},
+					{Path: "int16_t.h"},
+				},
+			},
+		},
+		{
+			Path:    "/path/to/int8_t.h",
+			IncPath: "int8_t.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{},
+			},
+		},
+		{
+			Path:    "/path/to/int16_t.h",
+			IncPath: "int16_t.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{},
+			},
+		},
+		{
+			Path:    "/path/to/bar.h",
+			IncPath: "bar.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{
+					{Path: "stdint.h"},
+					{Path: "a.h"},
+				},
+			},
+		},
+		// circular dependency
+		{
+			Path:    "/path/to/a.h",
+			IncPath: "a.h",
+			Doc: &ast.File{
+				Includes: []*ast.Include{
+					{Path: "bar.h"},
+					// will not appear in normal
+					{Path: "noexist.h"},
+				},
+			},
+		},
+	}
+	var processFiles []string
+	expectedOrder := []string{
+		"int8_t.h",
+		"cdef.h",
+		"stdint.h",
+		"foo.h",
+		"a.h",
+		"bar.h",
+	}
+	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
+		Exec: func(file *unmarshal.FileEntry) error {
+			processFiles = append(processFiles, file.IncPath)
+			return nil
+		},
+		DepIncs: depIncs,
+	})
+	p.ProcessFileSet(fileSet)
+	if !reflect.DeepEqual(processFiles, expectedOrder) {
+		t.Errorf("expect %v, got %v", expectedOrder, processFiles)
 	}
 }
