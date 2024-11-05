@@ -94,7 +94,6 @@ const (
 	flagIndir       flag = 1 << 7
 	flagAddr        flag = 1 << 8
 	flagMethod      flag = 1 << 9
-	flagClosure     flag = 1 << 10
 	flagMethodShift      = 10
 	flagRO          flag = flagStickyRO | flagEmbedRO
 )
@@ -178,11 +177,11 @@ func unpackEface(i any) Value {
 		return Value{}
 	}
 	f := flag(t.Kind())
+	if t.IsClosure() {
+		f = flag(Func)
+	}
 	if t.IfaceIndir() {
 		f |= flagIndir
-	}
-	if t.TFlag&abi.TFlagClosure != 0 {
-		f = (f & flag(^Struct)) | flag(Func) | flagClosure
 	}
 	return Value{t, e.word, f}
 }
@@ -1525,7 +1524,7 @@ func (v Value) TrySend(x Value) bool {
 
 // Type returns v's type.
 func (v Value) Type() Type {
-	if v.flag != 0 && v.flag&flagMethod == 0 && v.flag&flagClosure == 0 {
+	if v.flag != 0 && v.flag&flagMethod == 0 && !v.typ_.IsClosure() {
 		return (*rtype)(unsafe.Pointer(v.typ_)) // inline of toRType(v.typ()), for own inlining in inline test
 	}
 	return v.typeSlow()
@@ -1536,12 +1535,11 @@ func (v Value) typeSlow() Type {
 		panic(&ValueError{"reflect.Value.Type", Invalid})
 	}
 
-	// closure func
-	if v.flag&flagClosure != 0 {
-		return toRType(&v.funcType().Type)
-	}
-
 	typ := v.typ()
+	// closure func
+	if v.typ_.IsClosure() {
+		return toRType(&v.closureFunc().Type)
+	}
 	if v.flag&flagMethod == 0 {
 		return toRType(v.typ())
 	}
@@ -2059,23 +2057,20 @@ func toFFIType(typ *abi.Type) *ffi.Type {
 	panic("unsupport type " + typ.String())
 }
 
-func toFFISig(typ *abi.FuncType, closure bool) (*ffi.Signature, error) {
-	var args []*ffi.Type
-	if closure {
-		args = append(args, ffi.TypePointer)
-	}
-	for _, in := range typ.In {
-		args = append(args, toFFIType(in))
+func toFFISig(tin, tout []*abi.Type) (*ffi.Signature, error) {
+	args := make([]*ffi.Type, len(tin))
+	for i, in := range tin {
+		args[i] = toFFIType(in)
 	}
 	var ret *ffi.Type
-	switch n := len(typ.Out); n {
+	switch n := len(tout); n {
 	case 0:
 		ret = ffi.TypeVoid
 	case 1:
-		ret = toFFIType(typ.Out[0])
+		ret = toFFIType(tout[0])
 	default:
 		fields := make([]*ffi.Type, n)
-		for i, out := range typ.Out {
+		for i, out := range tout {
 			fields[i] = toFFIType(out)
 		}
 		ret = ffi.StructOf(fields...)
@@ -2083,35 +2078,56 @@ func toFFISig(typ *abi.FuncType, closure bool) (*ffi.Signature, error) {
 	return ffi.NewSignature(ret, args...)
 }
 
-func (v Value) funcType() *abi.FuncType {
-	if v.flag&flagClosure != 0 {
-		t := v.typ()
-		ft := *t.StructType().Fields[0].Typ.FuncType()
-		ft.In = ft.In[1:]
-		return &ft
-	}
-	return v.typ().FuncType()
+func (v Value) closureFunc() *abi.FuncType {
+	ft := *v.typ_.StructType().Fields[0].Typ.FuncType()
+	ft.In = ft.In[1:]
+	return &ft
 }
 
 func (v Value) call(op string, in []Value) (out []Value) {
 	var (
+		tin  []*abi.Type
+		tout []*abi.Type
+		args []unsafe.Pointer
 		fn   unsafe.Pointer
 		ret  unsafe.Pointer
-		args []unsafe.Pointer
 	)
-	if v.flag&flagClosure != 0 {
-		c := (*closure)(v.ptr)
+	if v.typ_.IsClosure() {
+		ft := v.typ_.StructType().Fields[0].Typ.FuncType()
+		tin = ft.In
+		tout = ft.Out
+		c := (*struct {
+			fn  unsafe.Pointer
+			env unsafe.Pointer
+		})(v.ptr)
 		fn = c.fn
 		args = append(args, unsafe.Pointer(&c.env))
 	} else {
-		if v.flag&flagIndir != 0 {
-			fn = *(*unsafe.Pointer)(v.ptr)
+		if v.flag&flagMethod != 0 {
+			var (
+				rcvrtype *abi.Type
+				ft       *abi.FuncType
+			)
+			rcvrtype, ft, fn = methodReceiver(op, v, int(v.flag)>>flagMethodShift)
+			tin = append([]*abi.Type{rcvrtype}, ft.In...)
+			tout = ft.Out
+			if v.flag&flagIndir != 0 {
+				args = append(args, v.ptr)
+			} else {
+				args = append(args, unsafe.Pointer(&v.ptr))
+			}
 		} else {
-			fn = v.ptr
+			if v.flag&flagIndir != 0 {
+				fn = *(*unsafe.Pointer)(v.ptr)
+			} else {
+				fn = v.ptr
+			}
+			ft := v.typ_.FuncType()
+			tin = ft.In
+			tout = ft.Out
 		}
 	}
-	ft := v.funcType()
-	sig, err := toFFISig(ft, v.flag&flagClosure != 0)
+	sig, err := toFFISig(tin, tout)
 	if err != nil {
 		panic(err)
 	}
@@ -2127,10 +2143,10 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		}
 	}
 	ffi.Call(sig, fn, ret, args...)
-	switch n := len(ft.Out); n {
+	switch n := len(tout); n {
 	case 0:
 	case 1:
-		return []Value{NewAt(toType(ft.Out[0]), ret).Elem()}
+		return []Value{NewAt(toType(tout[0]), ret).Elem()}
 	default:
 		panic("TODO multi ret")
 	}
@@ -2427,3 +2443,45 @@ func (v Value) call(op string, in []Value) (out []Value) {
 
 // 	return ret
 // }
+
+// methodReceiver returns information about the receiver
+// described by v. The Value v may or may not have the
+// flagMethod bit set, so the kind cached in v.flag should
+// not be used.
+// The return value rcvrtype gives the method's actual receiver type.
+// The return value t gives the method type signature (without the receiver).
+// The return value fn is a pointer to the method code.
+func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t *funcType, fn unsafe.Pointer) {
+	i := methodIndex
+	if v.typ().Kind() == abi.Interface {
+		tt := (*interfaceType)(unsafe.Pointer(v.typ()))
+		if uint(i) >= uint(len(tt.Methods)) {
+			panic("reflect: internal error: invalid method index")
+		}
+		m := &tt.Methods[i]
+		if !abi.IsExported(m.Name()) {
+			panic("reflect: " + op + " of unexported method")
+		}
+		iface := (*nonEmptyInterface)(v.ptr)
+		if iface.itab == nil {
+			panic("reflect: " + op + " of method on nil interface value")
+		}
+		rcvrtype = iface.itab.typ
+		fn = unsafe.Pointer(&iface.itab.fun[i])
+		t = (*funcType)(unsafe.Pointer(m.Typ_))
+	} else {
+		rcvrtype = v.typ()
+		ms := v.typ().ExportedMethods()
+		if uint(i) >= uint(len(ms)) {
+			panic("reflect: internal error: invalid method index")
+		}
+		m := ms[i]
+		if !abi.IsExported(m.Name()) {
+			panic("reflect: " + op + " of unexported method")
+		}
+		ifn := m.Ifn_
+		fn = unsafe.Pointer(ifn)
+		t = (*funcType)(unsafe.Pointer(m.Mtyp_))
+	}
+	return
+}

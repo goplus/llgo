@@ -1008,7 +1008,7 @@ func (t *structType) FieldByName(name string) (f StructField, present bool) {
 func TypeOf(i any) Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
 	// closure type
-	if eface.typ.TFlag&abi.TFlagClosure != 0 {
+	if eface.typ.IsClosure() {
 		ft := *eface.typ.StructType().Fields[0].Typ.FuncType()
 		ft.In = ft.In[1:]
 		return toType(&ft.Type)
