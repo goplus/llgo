@@ -43,6 +43,7 @@ jobs:
         run: |
           brew update
           brew install llvm@${{matrix.llvm}} pkg-config bdw-gc openssl libffi
+          brew install llvm@${{matrix.llvm}} pkg-config bdw-gc openssl libffi
           echo "$(brew --prefix llvm@${{matrix.llvm}})/bin" >> $GITHUB_PATH
           echo "PKG_CONFIG_PATH=/opt/homebrew/opt/libffi/lib/pkgconfig" >> $GITHUB_ENV
 
