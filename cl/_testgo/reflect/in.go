@@ -1,6 +1,9 @@
 package main
 
-import "reflect"
+import (
+	"reflect"
+	"unsafe"
+)
 
 func main() {
 	callFunc()
@@ -56,6 +59,11 @@ type I interface {
 	Add(n int) int
 }
 
+type abi struct {
+	typ  unsafe.Pointer
+	data unsafe.Pointer
+}
+
 func callMethod() {
 	t := &T{1}
 	v := reflect.ValueOf(t)
@@ -63,11 +71,15 @@ func callMethod() {
 	println("method", fn.Kind(), fn.Type().String())
 	r := fn.Call([]reflect.Value{reflect.ValueOf(100)})
 	println(r[0].Int())
+	//TODO type assert
 	// ifn, ok := fn.Interface().(func(int) int)
 	// if !ok {
 	// 	panic("error")
 	// }
 	// ifn(1)
+	v2 := reflect.ValueOf(fn.Interface())
+	r2 := v2.Call([]reflect.Value{reflect.ValueOf(100)})
+	println(r2[0].Int())
 }
 
 func callIMethod() {
@@ -77,9 +89,13 @@ func callIMethod() {
 	println("imethod", fn.Kind(), fn.Type().String())
 	r := fn.Call([]reflect.Value{reflect.ValueOf(100)})
 	println(r[0].Int())
+	//TODO type assert
 	// ifn, ok := fn.Interface().(func(int) int)
 	// if !ok {
 	// 	panic("error")
 	// }
 	// ifn(1)
+	v2 := reflect.ValueOf(fn.Interface())
+	r2 := v2.Call([]reflect.Value{reflect.ValueOf(100)})
+	println(r2[0].Int())
 }

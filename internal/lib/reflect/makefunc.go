@@ -22,6 +22,13 @@
 
 package reflect
 
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/internal/runtime"
+)
+
 /*
 import (
 	"unsafe"
@@ -111,42 +118,37 @@ type methodValue struct {
 // reflect can tell, but the true func representation can be handled
 // by code like Convert and Interface and Assign.
 func makeMethodValue(op string, v Value) Value {
-	/*
-		if v.flag&flagMethod == 0 {
-			panic("reflect: internal error: invalid use of makeMethodValue")
-		}
+	if v.flag&flagMethod == 0 {
+		panic("reflect: internal error: invalid use of makeMethodValue")
+	}
 
-		// Ignoring the flagMethod bit, v describes the receiver, not the method type.
-		fl := v.flag & (flagRO | flagAddr | flagIndir)
-		fl |= flag(v.typ().Kind())
-		rcvr := Value{v.typ(), v.ptr, fl}
+	// Ignoring the flagMethod bit, v describes the receiver, not the method type.
+	fl := v.flag & (flagRO | flagAddr | flagIndir)
+	fl |= flag(v.typ().Kind())
+	rcvr := Value{v.typ(), v.ptr, fl}
 
-		// v.Type returns the actual type of the method value.
-		ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
-
-		code := methodValueCallCodePtr()
-
-		// methodValue contains a stack map for use by the runtime
-		_, _, abid := funcLayout(ftyp, nil)
-		fv := &methodValue{
-			makeFuncCtxt: makeFuncCtxt{
-				fn:      code,
-				stack:   abid.stackPtrs,
-				argLen:  abid.stackCallArgsSize,
-				regPtrs: abid.inRegPtrs,
-			},
-			method: int(v.flag) >> flagMethodShift,
-			rcvr:   rcvr,
-		}
-
-		// Cause panic if method is not appropriate.
-		// The panic would still happen during the call if we omit this,
-		// but we want Interface() and other operations to fail early.
-		methodReceiver(op, fv.rcvr, fv.method)
-
-		return Value{ftyp.Common(), unsafe.Pointer(fv), v.flag&flagRO | flag(Func)}
-	*/
-	panic("todo: reflect.makeMethodValue")
+	// v.Type returns the actual type of the method value.
+	ftyp := *(*funcType)(unsafe.Pointer(v.Type().(*rtype)))
+	ptyp := rtypeOf(unsafe.Pointer(uintptr(0)))
+	ftyp.In = append([]*abi.Type{ptyp}, ftyp.In...)
+	typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
+		Name_: "llgo_ctx",
+		Typ:   &ftyp.Type,
+	}, abi.StructField{
+		Name_:  "f",
+		Typ:    ptyp,
+		Offset: unsafe.Sizeof(0),
+	})
+	typ.TFlag |= abi.TFlagClosure
+	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
+	fv := &struct {
+		fn  unsafe.Pointer
+		env unsafe.Pointer
+	}{fn, v.ptr}
+	// Cause panic if method is not appropriate.
+	// The panic would still happen during the call if we omit this,
+	// but we want Interface() and other operations to fail early.
+	return Value{typ, unsafe.Pointer(fv), v.flag&flagRO | flagIndir | flag(Func)}
 }
 
 /*
