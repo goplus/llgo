@@ -32,7 +32,7 @@ import (
 )
 
 type __u struct {
-	b c.Long
+	B c.Long
 }
 type u __u
 	`, nil)
@@ -78,9 +78,9 @@ import (
 )
 /// Foo comment
 type Foo struct {
-	a c.Int
-	b float64
-	c c.Int
+	A c.Int
+	B float64
+	C c.Int
 }
 /// ExecuteFoo comment
 //go:linkname CustomExecuteFoo C.ExecuteFoo
@@ -219,9 +219,9 @@ import (
 )
 
 type Foo struct {
-	a c.Int
-	b float64
-	c c.Int
+	A c.Int
+	B float64
+	C c.Int
 }
 //go:linkname CustomExecuteFoo C.ExecuteFoo
 func CustomExecuteFoo(a c.Int, b Foo) c.Int

@@ -81,7 +81,7 @@ import (
 	_ "unsafe"
 )
 type u struct {
-	b c.Long
+	B c.Long
 }`,
 		},
 	}
@@ -861,9 +861,9 @@ _ "unsafe"
 )
 
 type Foo struct {
-	a c.Int
-	b float64
-	c bool
+	A c.Int
+	B float64
+	C bool
 }`,
 		},
 		// struct Foo { int* a; double* b; bool* c;void* d; }
@@ -920,10 +920,10 @@ import (
 )
 
 type Foo struct {
-	a *c.Int
-	b *float64
-	c *bool
-	d unsafe.Pointer
+	A *c.Int
+	B *float64
+	C *bool
+	D unsafe.Pointer
 }`},
 		// struct Foo { char a[4]; int b[3][4]; }
 		{
@@ -972,8 +972,8 @@ _ "unsafe"
 )
 
 type Foo struct {
-	a [4]int8
-	b [3][4]c.Int
+	A [4]int8
+	B [3][4]c.Int
 }`},
 		{
 			name: "struct array field",
@@ -1021,8 +1021,8 @@ _ "unsafe"
 )
 
 type Foo struct {
-	a [4]int8
-	b [3][4]c.Int
+	A [4]int8
+	B [3][4]c.Int
 }`},
 		{
 			name: "anonymous struct",
@@ -1507,7 +1507,7 @@ func TestIdentRefer(t *testing.T) {
 		import _ "unsafe"
 		type int8_t int8
 		type Foo struct {
-			a int8_t
+			A int8_t
 		}
 		`)
 	})
