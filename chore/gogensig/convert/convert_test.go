@@ -276,6 +276,31 @@ func Resetthread(L *State) c.Int
 	`, nil)
 }
 
+func TestAvoidKeyword(t *testing.T) {
+	cmptest.RunTest(t, "avoid", false, []config.SymbolEntry{
+		{MangleName: "lua_sethook", CppName: "lua_sethook", GoName: "Sethook"},
+	}, &cppgtypes.Config{}, `
+	typedef struct lua_State lua_State;
+	typedef void (*lua_Hook)(lua_State *L, lua_Debug *ar);
+	void(lua_sethook)(lua_State *L, lua_Hook func, int mask, int count);
+	`, `
+package avoid
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type Lua_State struct {
+	Unused [8]uint8
+}
+// llgo:type C
+type Lua_Hook func(*Lua_State, *c.Int)
+//go:linkname Sethook C.lua_sethook
+func Sethook(L *Lua_State, func_ Lua_Hook, mask c.Int, count c.Int)
+	`, nil)
+}
+
 // todo(zzy): https://github.com/luoliwoshang/llgo/issues/78 error in linux
 // Test if it can properly skip types from packages that have already been confirmed to be mapped
 // The _int8_t, _int16_t, _int32_t, _int64_t below are types that have already been confirmed to be mapped (macos).
