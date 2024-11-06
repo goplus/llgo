@@ -84,11 +84,12 @@ func (p *AstConvert) VisitMethod(className *ast.Ident, method *ast.FuncDecl, typ
 
 func (p *AstConvert) VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl) {
 	err := p.Pkg.NewTypeDecl(typeDecl)
+	if typeDecl.Name == nil {
+		log.Printf("NewTypeDecl anonymous struct skipped")
+	}
 	if err != nil {
 		if name := typeDecl.Name; name != nil {
 			log.Printf("NewTypeDecl %s Fail: %s\n", name.Name, err.Error())
-		} else {
-			log.Printf("NewTypeDecl anonymous Fail: %s\n", err.Error())
 		}
 	}
 }

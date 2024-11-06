@@ -195,10 +195,6 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if err != nil {
 		return err
 	}
-	// todo(zzy): add to test case
-	if typ == nil {
-		return fmt.Errorf("underlying type must not be nil")
-	}
 	typeSpecdecl := genDecl.NewType(name)
 	typeSpecdecl.InitType(p.p, typ)
 	if _, ok := typ.(*types.Signature); ok {
@@ -264,7 +260,10 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 		if obj := p.p.Types.Scope().Lookup(constName); obj != nil {
 			return fmt.Errorf("enum item %s already defined", constName)
 		}
-		val, _ := Expr(item.Value).ToInt()
+		val, err := Expr(item.Value).ToInt()
+		if err != nil {
+			return err
+		}
 		constDefs.New(func(cb *gogen.CodeBuilder) int {
 			cb.Val(val)
 			return 1
