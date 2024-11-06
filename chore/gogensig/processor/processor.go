@@ -72,7 +72,7 @@ func (p *DocFileSetProcessor) visitFile(incPath string, files unmarshal.FileSet)
 		return
 	}
 	p.processing[incPath] = struct{}{}
-	idx := files.FindEntry(incPath)
+	idx := FindEntry(files, incPath)
 	if idx < 0 {
 		return
 	}
@@ -110,4 +110,13 @@ func (p *DocFileSetProcessor) ProcessFileSetFromPath(filePath string) error {
 		return err
 	}
 	return p.ProcessFileSetFromByte(data)
+}
+
+func FindEntry(files unmarshal.FileSet, incPath string) int {
+	for i, e := range files {
+		if e.IncPath == incPath {
+			return i
+		}
+	}
+	return -1
 }

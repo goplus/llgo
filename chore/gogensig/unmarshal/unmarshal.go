@@ -13,15 +13,6 @@ var nodeUnmarshalers map[string]NodeUnmarshaler
 
 type FileSet []FileEntry
 
-func (s FileSet) FindEntry(incPath string) int {
-	for i, e := range s {
-		if e.IncPath == incPath {
-			return i
-		}
-	}
-	return -1
-}
-
 type FileEntry struct {
 	Path    string
 	IncPath string

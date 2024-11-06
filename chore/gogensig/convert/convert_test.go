@@ -390,21 +390,39 @@ func TestVisitFail(t *testing.T) {
 		Type: nil,
 	})
 
-	converter.VisitStruct(&ast.Ident{Name: "Foo"}, nil, &ast.TypeDecl{
-		Name: &ast.Ident{Name: "Foo"},
-		Type: &ast.RecordType{
-			Tag: ast.Struct,
-			Fields: &ast.FieldList{
-				List: []*ast.Field{
-					{Type: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Double}},
-				},
+	errRecordType := &ast.RecordType{
+		Tag: ast.Struct,
+		Fields: &ast.FieldList{
+			List: []*ast.Field{
+				{Type: &ast.BuiltinType{Kind: ast.Int, Flags: ast.Double}},
 			},
 		},
+	}
+	// error field type for struct
+	converter.VisitStruct(&ast.Ident{Name: "Foo"}, nil, &ast.TypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: errRecordType,
+	})
+
+	// error field type for anonymous struct
+	converter.VisitStruct(&ast.Ident{Name: "Foo"}, nil, &ast.TypeDecl{
+		Name: nil,
+		Type: errRecordType,
 	})
 
 	converter.VisitEnumTypeDecl(&ast.EnumTypeDecl{
 		Name: &ast.Ident{Name: "NormalType"},
 		Type: &ast.EnumType{},
+	})
+
+	// error enum item for anonymous enum
+	converter.VisitEnumTypeDecl(&ast.EnumTypeDecl{
+		Name: nil,
+		Type: &ast.EnumType{
+			Items: []*ast.EnumItem{
+				{Name: &ast.Ident{Name: "Item1"}},
+			},
+		},
 	})
 
 	converter.VisitFuncDecl(&ast.FuncDecl{

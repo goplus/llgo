@@ -177,3 +177,10 @@ func TestGetCppgCfgFromPath(t *testing.T) {
 		}
 	})
 }
+
+func TestRunCommand(t *testing.T) {
+	err := config.RunCommand(".", "echo", "hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
