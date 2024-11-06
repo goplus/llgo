@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"log"
 	"strings"
 	"unsafe"
 
@@ -44,7 +45,6 @@ func NewConv(conf *TypeConfig) *TypeConv {
 		conf:         conf,
 	}
 	typeConv.Types = conf.Types
-
 	return typeConv
 }
 
@@ -298,6 +298,8 @@ func (p *TypeConv) RemovePrefixedName(name string) string {
 }
 
 // isVariadic determines if the field is a variadic parameter
+// The field or param name should be public if it's a record field
+// and they will not record to the public symbol table
 func checkFieldName(name string, isRecord bool, isVariadic bool) string {
 	if isVariadic {
 		return "__llgo_va_list"
@@ -325,4 +327,15 @@ func avoidKeyword(name string) string {
 		return name + "_"
 	}
 	return name
+}
+
+func substObj(pkg *types.Package, scope *types.Scope, origName string, real types.Object) {
+	old := scope.Insert(gogen.NewSubst(token.NoPos, pkg, origName, real))
+	if old != nil {
+		if t, ok := old.Type().(*gogen.SubstType); ok {
+			t.Real = real
+		} else {
+			log.Panicln(origName, "redefined")
+		}
+	}
 }

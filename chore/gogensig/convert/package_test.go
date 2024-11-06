@@ -80,7 +80,7 @@ import (
 	"github.com/goplus/llgo/c"
 	_ "unsafe"
 )
-type u struct {
+type U struct {
 	B c.Long
 }`,
 		},
@@ -1308,7 +1308,7 @@ package testpkg
 
 import _ "unsafe"
 
-type name [5]int8`,
+type Name [5]int8`,
 		},
 		// typedef void* ctx;
 		{
@@ -1326,7 +1326,7 @@ package testpkg
 
 import "unsafe"
 
-type ctx unsafe.Pointer`,
+type Ctx unsafe.Pointer`,
 		},
 
 		// typedef char* name;
@@ -1344,7 +1344,7 @@ type ctx unsafe.Pointer`,
 			expected: `
 package testpkg
 import _ "unsafe"
-type name *int8`,
+type Name *int8`,
 		},
 		{
 			name: "typedef invalid pointer",
@@ -1403,9 +1403,9 @@ const (
 				Name: nil,
 				Type: &ast.EnumType{
 					Items: []*ast.EnumItem{
-						{Name: &ast.Ident{Name: "Red"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "0"}},
-						{Name: &ast.Ident{Name: "Green"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "1"}},
-						{Name: &ast.Ident{Name: "Blue"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "2"}},
+						{Name: &ast.Ident{Name: "red"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "0"}},
+						{Name: &ast.Ident{Name: "green"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "1"}},
+						{Name: &ast.Ident{Name: "blue"}, Value: &ast.BasicLit{Kind: ast.IntLit, Value: "2"}},
 					},
 				},
 			},
@@ -1505,9 +1505,9 @@ func TestIdentRefer(t *testing.T) {
 		comparePackageOutput(t, pkg, `
 		package testpkg
 		import _ "unsafe"
-		type int8_t int8
+		type Int8_t int8
 		type Foo struct {
-			A int8_t
+			A Int8_t
 		}
 		`)
 	})

@@ -157,38 +157,41 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		}
 		return nil
 	}
-	name := p.cvt.RemovePrefixedName(typeDecl.Name.Name)
-
-	// for a type name, it should be unique
-	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
-		return fmt.Errorf("type %s already defined", name)
+	// every type name should be public
+	name, changed, err := p.DeclName(typeDecl.Name.Name, true)
+	if err != nil {
+		return err
 	}
 	if debug {
-		log.Printf("NewTypeDecl: %v\n", typeDecl.Name)
+		log.Printf("NewTypeDecl: %v\n", name)
 	}
 
 	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
 	if err != nil {
 		return err
 	}
+
 	typeBlock := p.p.NewTypeDefs()
 	typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
 	decl := typeBlock.NewType(name)
 	decl.InitType(p.p, structType)
+
+	if changed {
+		substObj(p.p.Types, p.p.Types.Scope(), typeDecl.Name.Name, decl.Type().Obj())
+	}
 	return nil
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
-	name := p.cvt.RemovePrefixedName(typedefDecl.Name.Name)
-
-	// for a typedef ,always appear same name like
-	// typedef struct foo { int a; } foo;
-	// For this typedef, we only need skip this
-	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+	name, changed, err := p.DeclName(typedefDecl.Name.Name, true)
+	if err != nil {
+		// for a typedef ,always appear same name like
+		// typedef struct foo { int a; } foo;
+		// For this typedef, we only need skip this
 		return nil
 	}
 	if debug {
-		log.Printf("NewTypedefDecl: %s\n", typedefDecl.Name.Name)
+		log.Printf("NewTypedefDecl: %s\n", name)
 	}
 	genDecl := p.p.NewTypeDefs()
 	typ, err := p.ToType(typedefDecl.Type)
@@ -200,6 +203,9 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	if _, ok := typ.(*types.Signature); ok {
 		genDecl.SetComments(NewTypecDocComments())
 	}
+	if changed {
+		substObj(p.p.Types, p.p.Types.Scope(), typedefDecl.Name.Name, typeSpecdecl.Type().Obj())
+	}
 	return nil
 }
 
@@ -208,11 +214,12 @@ func (p *Package) ToType(expr ast.Expr) (types.Type, error) {
 	return p.cvt.ToType(expr)
 }
 
-func (p *Package) NewTypedefs(name string, typ types.Type) *types.Named {
+func (p *Package) NewTypedefs(name string, typ types.Type) *gogen.TypeDecl {
 	def := p.p.NewTypeDefs()
-	named := def.NewType(name).InitType(def.Pkg(), typ)
+	t := def.NewType(name)
+	t.InitType(def.Pkg(), typ)
 	def.Complete()
-	return named
+	return t
 }
 
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
@@ -234,15 +241,22 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 
 func (p *Package) createEnumType(enumName *ast.Ident) (types.Type, string, error) {
 	var name string
+	var changed bool
+	var err error
+	var t *gogen.TypeDecl
 	if enumName != nil {
-		name = CPubName(p.cvt.RemovePrefixedName(enumName.Name))
-	}
-	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
-		return nil, "", fmt.Errorf("enum type %s already defined", name)
+		name, changed, err = p.DeclName(enumName.Name, true)
+		if err != nil {
+			return nil, "", fmt.Errorf("enum type %s already defined", enumName.Name)
+		}
 	}
 	enumType := p.cvt.ToDefaultEnumType()
 	if name != "" {
-		enumType = p.NewTypedefs(name, enumType)
+		t = p.NewTypedefs(name, enumType)
+		enumType = p.p.Types.Scope().Lookup(name).Type()
+	}
+	if changed {
+		substObj(p.p.Types, p.p.Types.Scope(), enumName.Name, t.Type().Obj())
 	}
 	return enumType, name, nil
 }
@@ -251,14 +265,15 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 	constDefs := p.p.NewConstDefs(p.p.Types.Scope())
 	for _, item := range items {
 		var constName string
+		// maybe get a new name,because the after executed name,have some situation will found same name
 		if enumTypeName != "" {
 			constName = enumTypeName + "_" + item.Name.Name
 		} else {
 			constName = item.Name.Name
 		}
-		// maybe get a new name,because the after executed name,have lots situation will found same name
-		if obj := p.p.Types.Scope().Lookup(constName); obj != nil {
-			return fmt.Errorf("enum item %s already defined", constName)
+		name, changed, err := p.DeclName(constName, true)
+		if err != nil {
+			return fmt.Errorf("enum item %s already defined %w", name, err)
 		}
 		val, err := Expr(item.Value).ToInt()
 		if err != nil {
@@ -267,7 +282,12 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 		constDefs.New(func(cb *gogen.CodeBuilder) int {
 			cb.Val(val)
 			return 1
-		}, 0, token.NoPos, enumType, constName)
+		}, 0, token.NoPos, enumType, name)
+		if changed {
+			if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+				substObj(p.p.Types, p.p.Types.Scope(), item.Name.Name, obj)
+			}
+		}
 	}
 	return nil
 }
@@ -363,6 +383,20 @@ func (p *Package) initDepPkgs() {
 		}
 	}
 	p.depIncs = allDepIncs
+}
+
+// For a decl name, if it's a current package, remove the prefixed name
+// For a decl name, it should be unique
+// todo(zzy): not current converter package file,need not remove prefixed name
+func (p *Package) DeclName(name string, curPkg bool) (pubName string, changed bool, err error) {
+	if curPkg {
+		pubName = p.cvt.RemovePrefixedName(name)
+	}
+	pubName = CPubName(pubName)
+	if obj := p.p.Types.Scope().Lookup(pubName); obj != nil {
+		return "", false, fmt.Errorf("type %s already defined,original name is %s", pubName, name)
+	}
+	return pubName, name != pubName, nil
 }
 
 // AllDepIncs returns all std include paths of dependent packages
