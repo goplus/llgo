@@ -31,10 +31,10 @@ import (
 	_ "unsafe"
 )
 
-type __u struct {
+type X__u struct {
 	B c.Long
 }
-type u __u
+type U X__u
 	`, nil)
 }
 
@@ -50,7 +50,7 @@ package size_t
 
 import _ "unsafe"
 //go:linkname TestSize C.testSize
-func TestSize(a size_t)
+func TestSize(a Size_t)
 	`, nil)
 }
 
@@ -93,6 +93,10 @@ func TestEnum(t *testing.T) {
 		Cplusplus: true,
 	},
 		`
+	enum{
+		enum1,
+		enum2
+	};
 	enum spectrum
 	{
 	    red,
@@ -140,6 +144,11 @@ package spectrum
 import (
 	"github.com/goplus/llgo/c"
 	_ "unsafe"
+)
+
+const (
+	Enum1 c.Int = 0
+	Enum2 c.Int = 1
 )
 
 type Spectrum c.Int
