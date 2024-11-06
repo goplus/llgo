@@ -38,7 +38,7 @@ func main() {
 	items := cjson.Array()
 	mod := py.ImportModule(pyLib)
 	keys := mod.ModuleGetDict().DictKeys()
-	for i, n := uintptr(0), keys.ListLen(); i < n; i++ {
+	for i, n := 0, keys.ListLen(); i < n; i++ {
 		key := keys.ListItem(i)
 		val := mod.GetAttr(key)
 		doc := val.GetAttrString(c.Str("__doc__"))
