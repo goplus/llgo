@@ -164,7 +164,7 @@ func (p *TypeConv) fieldListToParams(params *ast.FieldList) (*types.Tuple, bool,
 	if params == nil {
 		return types.NewTuple(), false, nil
 	}
-	vars, err := p.fieldListToVars(params)
+	vars, err := p.fieldListToVars(params, false)
 	if err != nil {
 		return nil, false, err
 	}
@@ -192,13 +192,13 @@ func (p *TypeConv) retToResult(ret ast.Expr) (*types.Tuple, error) {
 }
 
 // Convert ast.FieldList to []types.Var
-func (p *TypeConv) fieldListToVars(params *ast.FieldList) ([]*types.Var, error) {
+func (p *TypeConv) fieldListToVars(params *ast.FieldList, isRecord bool) ([]*types.Var, error) {
 	var vars []*types.Var
 	if params == nil || params.List == nil {
 		return vars, nil
 	}
 	for _, field := range params.List {
-		fieldVar, err := p.fieldToVar(field)
+		fieldVar, err := p.fieldToVar(field, isRecord)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +216,7 @@ func (p *TypeConv) defaultRecordField() []*types.Var {
 	}
 }
 
-func (p *TypeConv) fieldToVar(field *ast.Field) (*types.Var, error) {
+func (p *TypeConv) fieldToVar(field *ast.Field, isRecord bool) (*types.Var, error) {
 	if field == nil {
 		return nil, fmt.Errorf("unexpected nil field")
 	}
@@ -225,13 +225,17 @@ func (p *TypeConv) fieldToVar(field *ast.Field) (*types.Var, error) {
 	var name string
 	if len(field.Names) > 0 {
 		name = field.Names[0].Name
-	} else if _, ok := field.Type.(*ast.Variadic); ok {
-		name = "__llgo_va_list"
 	}
 	typ, err := p.ToType(field.Type)
 	if err != nil {
 		return nil, err
 	}
+
+	isVariadic := false
+	if _, ok := field.Type.(*ast.Variadic); ok {
+		isVariadic = true
+	}
+	name = checkFieldName(name, isRecord, isVariadic)
 	return types.NewVar(token.NoPos, p.Types, name, typ), nil
 }
 
@@ -240,7 +244,7 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 	if recordType.Fields != nil && len(recordType.Fields.List) == 0 {
 		fields = p.defaultRecordField()
 	} else {
-		flds, err := p.fieldListToVars(recordType.Fields)
+		flds, err := p.fieldListToVars(recordType.Fields, true)
 		if err != nil {
 			return nil, err
 		}
@@ -293,6 +297,32 @@ func (p *TypeConv) RemovePrefixedName(name string) string {
 	return name
 }
 
-func ToTitle(s string) string {
-	return strings.ToUpper(s[:1]) + s[1:]
+// isVariadic determines if the field is a variadic parameter
+func checkFieldName(name string, isRecord bool, isVariadic bool) string {
+	if isVariadic {
+		return "__llgo_va_list"
+	}
+	// every field name should be public,will not be a keyword
+	if isRecord {
+		return CPubName(name)
+	}
+	return avoidKeyword(name)
+}
+
+// from gogen@1.15.2
+func CPubName(name string) string {
+	if r := name[0]; 'a' <= r && r <= 'z' {
+		r -= 'a' - 'A'
+		return string(r) + name[1:]
+	} else if r == '_' {
+		return "X" + name
+	}
+	return name
+}
+
+func avoidKeyword(name string) string {
+	if token.IsKeyword(name) {
+		return name + "_"
+	}
+	return name
 }

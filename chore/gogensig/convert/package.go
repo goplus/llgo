@@ -235,7 +235,7 @@ func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
 func (p *Package) createEnumType(enumName *ast.Ident) (types.Type, string, error) {
 	var name string
 	if enumName != nil {
-		name = ToTitle(p.cvt.RemovePrefixedName(enumName.Name))
+		name = CPubName(p.cvt.RemovePrefixedName(enumName.Name))
 	}
 	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
 		return nil, "", fmt.Errorf("enum type %s already defined", name)
