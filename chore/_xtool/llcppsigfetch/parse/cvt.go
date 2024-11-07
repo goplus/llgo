@@ -49,6 +49,15 @@ type Converter struct {
 	//   typedef struct { int x; } MyStruct;
 	anonyTypeMap map[string]bool // cursorUsr
 	indent       int             // for verbose debug
+
+	macroDefMap map[string]*ast.Macro // macroName -> macro
+	// expansion is after the macro definition
+	macroExMap map[ofRange]*ast.Macro // macroUsr -> marcro
+}
+
+type ofRange struct {
+	start c.Uint
+	end   c.Uint
 }
 
 var tagMap = map[string]ast.Tag{
@@ -85,6 +94,8 @@ func NewConverter(config *clangutils.Config) (*Converter, error) {
 		unit:         unit,
 		anonyTypeMap: make(map[string]bool),
 		typeDecls:    make(map[string]ast.Decl),
+		macroExMap:   make(map[ofRange]*ast.Macro),
+		macroDefMap:  make(map[string]*ast.Macro),
 	}, nil
 }
 
@@ -270,7 +281,17 @@ func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResul
 	case clang.CursorMacroDefinition:
 		macro := ct.ProcessMacro(cursor)
 		curFile.Macros = append(curFile.Macros, macro)
+		ct.macroDefMap[macro.Name] = macro
 		ct.logln("visitTop: ProcessMacro END ", macro.Name, "Tokens Length:", len(macro.Tokens))
+	case clang.CursorMacroExpansion:
+		ran := cursor.Extent()
+		_, _, _, startOffset := clangutils.GetLocation(ran.RangeStart())
+		_, _, _, endOffset := clangutils.GetLocation(ran.RangeEnd())
+		macro, ok := ct.macroDefMap[name]
+		if ok {
+			ct.macroExMap[ofRange{start: startOffset, end: endOffset}] = macro
+			ct.logln("visitTop: ProcessMacroExpansion END ", macro.Name, "Tokens Length:", len(macro.Tokens))
+		}
 	case clang.CursorEnumDecl:
 		enum := ct.ProcessEnumDecl(cursor)
 		curFile.Decls = append(curFile.Decls, enum)
@@ -472,6 +493,17 @@ func (ct *Converter) ProcessUnderlyingType(cursor clang.Cursor) ast.Expr {
 		// Handle unexpected named structures generated from anonymous RecordTypes in Typedefs
 		// In this case, libclang incorrectly reports an anonymous struct as a named struct
 		sourceCode := ct.GetTokens(referTypeCursor)
+		// type from a macro expansion
+		if len(sourceCode) == 0 {
+			ran := referTypeCursor.Extent()
+			_, _, _, startOf := clangutils.GetLocation(ran.RangeStart())
+			_, _, _, endOf := clangutils.GetLocation(ran.RangeEnd())
+			if macro, ok := ct.macroExMap[ofRange{start: startOf, end: endOf}]; ok {
+				ct.logln("ProcessUnderlyingType: is macro expansion", macro.Name)
+				sourceCode = macro.Tokens[1:]
+			}
+		}
+
 		if isAnonymousStructure(sourceCode) {
 			ct.logln("ProcessUnderlyingType: is anonymous structure")
 			ct.SetAnonyType(referTypeCursor)
