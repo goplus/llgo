@@ -247,6 +247,8 @@ func TestCustomStruct(t *testing.T) {
 		{MangleName: "lua_resetthread", CppName: "lua_resetthread", GoName: "Resetthread"},
 	}, &cppgtypes.Config{
 		TrimPrefixes: []string{"lua_"},
+		Include:      []string{"temp.h"},
+		// prefix only remove in the llcppg.cfg includes
 	}, `
 typedef struct lua_State lua_State;
 typedef int (*lua_CFunction)(lua_State *L);
@@ -391,11 +393,11 @@ func TestVisitDone(t *testing.T) {
 	if err != nil {
 		t.Fatal("NewAstConvert Fail")
 	}
-	pkg.SetVisitDone(func(pkg *convert.Package, docPath string) {
+	pkg.SetVisitDone(func(pkg *convert.Package, incPath string) {
 		if pkg.Name() != "test" {
 			t.Fatal("pkg name error")
 		}
-		if docPath != "test.h" {
+		if incPath != "test.h" {
 			t.Fatal("doc path error")
 		}
 	})

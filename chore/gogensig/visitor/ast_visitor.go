@@ -7,10 +7,10 @@ import (
 )
 
 type DocVisitor interface {
-	VisitStart(docPath string)
+	VisitStart(incPath string)
 	Visit(node ast.Node)
 	VisitFuncDecl(funcDecl *ast.FuncDecl)
-	VisitDone(docPath string)
+	VisitDone(incPath string)
 	VisitStruct(structName *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 	//VisitClass(className *ast.Ident, fields *ast.FieldList, typeDecl *ast.TypeDecl)
 	//VisitMethod(className *ast.Ident, method *ast.FuncDecl, typeDecl *ast.TypeDecl)

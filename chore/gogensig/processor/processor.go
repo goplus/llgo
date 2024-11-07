@@ -17,11 +17,11 @@ func NewDocVisitorManager(visitorList []visitor.DocVisitor) *DocVisitorManager {
 	return &DocVisitorManager{VisitorList: visitorList}
 }
 
-func (p *DocVisitorManager) Visit(node ast.Node, docPath string) bool {
+func (p *DocVisitorManager) Visit(node ast.Node, incPath string) bool {
 	for _, v := range p.VisitorList {
-		v.VisitStart(docPath)
+		v.VisitStart(incPath)
 		v.Visit(node)
-		v.VisitDone(docPath)
+		v.VisitDone(incPath)
 	}
 	return true
 }

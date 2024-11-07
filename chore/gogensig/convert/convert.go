@@ -13,7 +13,7 @@ import (
 type AstConvert struct {
 	*visitor.BaseDocVisitor
 	Pkg       *Package
-	visitDone func(pkg *Package, docPath string)
+	visitDone func(pkg *Package, incPath string)
 }
 
 type AstConvertConfig struct {
@@ -56,7 +56,7 @@ func NewAstConvert(config *AstConvertConfig) (*AstConvert, error) {
 	return p, nil
 }
 
-func (p *AstConvert) SetVisitDone(fn func(pkg *Package, docPath string)) {
+func (p *AstConvert) SetVisitDone(fn func(pkg *Package, incPath string)) {
 	p.visitDone = fn
 }
 
@@ -116,14 +116,21 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 	}
 }
 
-func (p *AstConvert) VisitStart(docPath string) {
-	p.Pkg.SetCurFile(docPath, true)
+func (p *AstConvert) VisitStart(incPath string) {
+	inPkgIncPath := false
+	for _, includePath := range p.Pkg.conf.CppgConf.Include {
+		if includePath == incPath {
+			inPkgIncPath = true
+			break
+		}
+	}
+	p.Pkg.SetCurFile(incPath, true, inPkgIncPath)
 }
 
-func (p *AstConvert) VisitDone(docPath string) {
+func (p *AstConvert) VisitDone(incPath string) {
 	if p.visitDone != nil {
-		p.visitDone(p.Pkg, docPath)
+		p.visitDone(p.Pkg, incPath)
 	} else {
-		p.Pkg.Write(docPath)
+		p.Pkg.Write(incPath)
 	}
 }
