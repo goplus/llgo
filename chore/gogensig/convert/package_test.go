@@ -232,7 +232,7 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 		})
-		pkg.SetCurFile(headerFilePath, true)
+		pkg.SetCurFile(headerFilePath, true, true)
 		err = pkg.Write(headerFilePath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
@@ -260,7 +260,7 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: testpkgDir,
 		})
-		pkg.SetCurFile(headerFilePath, true)
+		pkg.SetCurFile(headerFilePath, true, true)
 		err = pkg.Write(headerFilePath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
@@ -1659,7 +1659,7 @@ func TestTypeClean(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		pkg.SetCurFile(tc.headerFile, true)
+		pkg.SetCurFile(tc.headerFile, true, true)
 		tc.addType()
 
 		goFileName := convert.HeaderFileToGo(tc.headerFile)

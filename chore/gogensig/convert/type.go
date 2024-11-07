@@ -123,7 +123,7 @@ func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
 	}
 	switch t := t.(type) {
 	case *ast.Ident:
-		typ, err := lookup(p.RemovePrefixedName(t.Name))
+		typ, err := lookup(t.Name)
 		if err != nil {
 			return nil, fmt.Errorf("%s not found", t.Name)
 		}
@@ -133,7 +133,7 @@ func (p *TypeConv) handleIdentRefer(t ast.Expr) (types.Type, error) {
 	case *ast.TagExpr:
 		// todo(zzy):scoping
 		if ident, ok := t.Name.(*ast.Ident); ok {
-			typ, err := lookup(p.RemovePrefixedName(ident.Name))
+			typ, err := lookup(ident.Name)
 			if err != nil {
 				return nil, fmt.Errorf("%s not found", ident.Name)
 			}

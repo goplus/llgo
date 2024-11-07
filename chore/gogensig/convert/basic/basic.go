@@ -27,7 +27,7 @@ func ConvertProcesser(cfg *Config) (*processor.DocFileSetProcessor, *convert.Pac
 
 	return processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
 		Exec: func(file *unmarshal.FileEntry) error {
-			visitorManager.Visit(file.Doc, file.Path)
+			visitorManager.Visit(file.Doc, file.IncPath)
 			return nil
 		},
 		DepIncs: astConvert.Pkg.AllDepIncs(),

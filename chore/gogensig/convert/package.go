@@ -41,6 +41,7 @@ type Package struct {
 	outputDir string
 	conf      *PackageConfig
 	depIncs   []string
+	inCurPkg  bool // whether the current file is in the llcppg package not the dependent files
 }
 
 type PackageConfig struct {
@@ -80,11 +81,11 @@ func NewPackage(config *PackageConfig) *Package {
 		Deps:         deps,
 	})
 	p.initDepPkgs()
-	p.SetCurFile(p.Name(), false)
+	p.SetCurFile(p.Name(), false, false)
 	return p
 }
 
-func (p *Package) SetCurFile(file string, isHeaderFile bool) error {
+func (p *Package) SetCurFile(file string, isHeaderFile bool, inCurPkg bool) error {
 	var fileName string
 	if isHeaderFile {
 		// headerfile to go filename
@@ -94,12 +95,13 @@ func (p *Package) SetCurFile(file string, isHeaderFile bool) error {
 		fileName = file + ".go"
 	}
 	if debug {
-		log.Printf("SetCurFile: %s\n", fileName)
+		log.Printf("SetCurFile: %s File in Current Package: %v\n", fileName, inCurPkg)
 	}
 	_, err := p.p.SetCurFile(fileName, true)
 	if err != nil {
 		return fmt.Errorf("fail to set current file %s\n%w", file, err)
 	}
+	p.inCurPkg = inCurPkg
 	p.p.Unsafe().MarkForceUsed(p.p)
 	return nil
 }
@@ -158,7 +160,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return nil
 	}
 	// every type name should be public
-	name, changed, err := p.DeclName(typeDecl.Name.Name, true)
+	name, changed, err := p.DeclName(typeDecl.Name.Name)
 	if err != nil {
 		return err
 	}
@@ -183,7 +185,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
-	name, changed, err := p.DeclName(typedefDecl.Name.Name, true)
+	name, changed, err := p.DeclName(typedefDecl.Name.Name)
 	if err != nil {
 		// for a typedef ,always appear same name like
 		// typedef struct foo { int a; } foo;
@@ -245,7 +247,7 @@ func (p *Package) createEnumType(enumName *ast.Ident) (types.Type, string, error
 	var err error
 	var t *gogen.TypeDecl
 	if enumName != nil {
-		name, changed, err = p.DeclName(enumName.Name, true)
+		name, changed, err = p.DeclName(enumName.Name)
 		if err != nil {
 			return nil, "", fmt.Errorf("enum type %s already defined", enumName.Name)
 		}
@@ -271,7 +273,7 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 		} else {
 			constName = item.Name.Name
 		}
-		name, changed, err := p.DeclName(constName, true)
+		name, changed, err := p.DeclName(constName)
 		if err != nil {
 			return fmt.Errorf("enum item %s already defined %w", name, err)
 		}
@@ -388,15 +390,16 @@ func (p *Package) initDepPkgs() {
 // For a decl name, if it's a current package, remove the prefixed name
 // For a decl name, it should be unique
 // todo(zzy): not current converter package file,need not remove prefixed name
-func (p *Package) DeclName(name string, curPkg bool) (pubName string, changed bool, err error) {
-	if curPkg {
-		pubName = p.cvt.RemovePrefixedName(name)
+func (p *Package) DeclName(name string) (pubName string, changed bool, err error) {
+	originName := name
+	if p.inCurPkg {
+		name = p.cvt.RemovePrefixedName(name)
 	}
-	pubName = CPubName(pubName)
-	if obj := p.p.Types.Scope().Lookup(pubName); obj != nil {
-		return "", false, fmt.Errorf("type %s already defined,original name is %s", pubName, name)
+	name = CPubName(name)
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+		return "", false, fmt.Errorf("type %s already defined,original name is %s", name, originName)
 	}
-	return pubName, name != pubName, nil
+	return name, name != originName, nil
 }
 
 // AllDepIncs returns all std include paths of dependent packages
