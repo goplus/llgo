@@ -22,7 +22,6 @@ type Config struct {
 	CFlags       string   `json:"cflags"`
 	Libs         string   `json:"libs"`
 	Include      []string `json:"include"`
-	StdIncludes  []string `json:"stdIncludes"`
 	Deps         []string `json:"deps"`
 	TrimPrefixes []string `json:"trimPrefixes"`
 	Cplusplus    bool     `json:"cplusplus"`
