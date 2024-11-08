@@ -47,6 +47,8 @@ You can import a C/C++ standard library in LLGo!
 
 Here is a simple example:
 
+<!-- embedme doc/_readme/llgo_simple/simple.go -->
+
 ```go
 package main
 
@@ -77,6 +79,8 @@ llgo run .
 
 LLGo use `go:linkname` to link an extern symbol througth its ABI:
 
+<!-- embedme doc/_readme/llgo_call_c/call_c.go#L3-L6 -->
+
 ```go
 import _ "unsafe" // for go:linkname
 
@@ -85,6 +89,8 @@ func Sqrt(x float64) float64
 ```
 
 You can directly integrate it into [your own code](_demo/linkname/linkname.go):
+
+<!-- embedme doc/_readme/llgo_call_c/call_c.go -->
 
 ```go
 package main
@@ -100,6 +106,8 @@ func main() {
 ```
 
 Or put it into a package (see [c/math](c/math/math.go)):
+
+<!-- embedme doc/_readme/llgo_call_cmath/call_cmath.go -->
 
 ```go
 package main
@@ -135,6 +143,8 @@ Note: For third-party libraries (such as pandas and pytorch), you still need to 
 
 Here is an example:
 
+<!-- embedme doc/_readme/llgo_call_py/call_py.go -->
+
 ```go
 package main
 
@@ -152,6 +162,8 @@ func main() {
 
 It is equivalent to the following Python code:
 
+<!-- embedme doc/_readme/llgo_call_py/call_math.py -->
+
 ```py
 import math
 
@@ -162,6 +174,8 @@ print("sqrt =", x)
 Here, We call `py.Float(2)` to create a Python number 2, and pass it to Python’s `math.sqrt` to get `x`. Then we call `std.Print` to print the result.
 
 Let's look at a slightly more complex example. For example, we use `numpy` to calculate:
+
+<!-- embedme doc/_readme/llgo_py_list/py_list.go -->
 
 ```go
 package main
@@ -340,20 +354,24 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 
 ### on macOS
 
+<!-- embedme doc/_readme/scripts/install_macos.sh#L2-L1000 -->
+
 ```sh
 brew update
-brew install llvm@18 pkg-config bdw-gc openssl
+brew install llvm@18 pkg-config bdw-gc openssl cjson
 brew install python@3.12 # optional
 go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
 
 ### on Linux (Debian/Ubuntu)
 
+<!-- embedme doc/_readme/scripts/install_ubuntu.sh#L2-L1000 -->
+
 ```sh
 echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
-sudo apt-get install -y llvm-18-dev clang-18 lld-18 pkg-config libgc-dev libssl-dev zlib1g-dev
+sudo apt-get install -y llvm-18-dev clang-18 libclang-18-dev lld-18 pkg-config libgc-dev libssl-dev zlib1g-dev libcjson-dev python3.12-dev
 sudo apt-get install -y python3.12-dev # optional
 go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
@@ -373,9 +391,12 @@ TODO
 
 How do I generate these tools?
 
+<!-- embedme doc/_readme/scripts/install_llgo.sh#L2-L1000 -->
+
 ```sh
 git clone https://github.com/goplus/llgo.git
 cd llgo
+go install -v ./cmd/...
 go install -v ./chore/...  # compile all tools except pydump
 cd chore/_xtool
 llgo install ./...   # compile pydump

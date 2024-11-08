@@ -1,0 +1,68 @@
+name: Docs
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  doc_verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install embedme
+        run: npm install -g embedme
+        
+      - name: Verify README.md embedded code
+        run: npx embedme --verify README.md
+
+  doc_test:
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-24.04
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Install dependencies on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_macos.sh
+
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_ubuntu.sh
+
+      - name: Install llgo
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_llgo.sh
+
+      - name: Test doc code blocks
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/run.sh
+

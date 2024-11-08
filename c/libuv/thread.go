@@ -76,5 +76,3 @@ func (t *Thread) GetAffinity(cpuMask *c.Char, maskSize uintptr) c.Int {
 
 //go:linkname QueueWork C.uv_queue_work
 func QueueWork(loop *Loop, req *Work, workCb WorkCb, afterWorkCb AfterWorkCb) c.Int
-
-
