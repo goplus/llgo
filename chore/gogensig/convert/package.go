@@ -91,7 +91,7 @@ func NewPackage(config *PackageConfig) *Package {
 func (p *Package) SetCurFile(file string, isHeaderFile bool, inCurPkg bool) error {
 	var fileName string
 	if isHeaderFile {
-		// headerfile to go filename
+		// include path to go filename
 		fileName = HeaderFileToGo(file)
 	} else {
 		// package name as the default file
@@ -360,15 +360,16 @@ func (p *Package) WriteToBuffer(genFName string) (*bytes.Buffer, error) {
 
 // /path/to/foo.h -> foo.go
 // /path/to/_intptr.h -> SYS_intptr.go
-
-func HeaderFileToGo(headerFile string) string {
-	_, fileName := filepath.Split(headerFile)
+// for std include header file path
+func HeaderFileToGo(incPath string) string {
+	// _, fileName := filepath.Split(headerFile)
+	fileName := strings.ReplaceAll(incPath, string(filepath.Separator), "_")
 	ext := filepath.Ext(fileName)
 	if len(ext) > 0 {
 		fileName = strings.TrimSuffix(fileName, ext)
 	}
 	if strings.HasPrefix(fileName, "_") {
-		fileName = "SYS" + fileName
+		fileName = "X" + fileName
 	}
 	return fileName + ".go"
 }

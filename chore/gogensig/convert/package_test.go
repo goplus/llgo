@@ -220,7 +220,8 @@ func TestPackageWrite(t *testing.T) {
 		}
 	}
 
-	headerFilePath := "/path/to/mock_header.h"
+	incPath := "path/to/mock_header.h"
+	genPath := convert.HeaderFileToGo(incPath)
 
 	t.Run("OutputToTempDir", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "test_package_write")
@@ -232,13 +233,13 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 		})
-		pkg.SetCurFile(headerFilePath, true, true)
-		err = pkg.Write(headerFilePath)
+		pkg.SetCurFile(incPath, true, true)
+		err = pkg.Write(incPath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
 		}
 
-		expectedFilePath := filepath.Join(tempDir, "mock_header.go")
+		expectedFilePath := filepath.Join(tempDir, genPath)
 		verifyGeneratedFile(t, expectedFilePath)
 	})
 
@@ -260,13 +261,13 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: testpkgDir,
 		})
-		pkg.SetCurFile(headerFilePath, true, true)
-		err = pkg.Write(headerFilePath)
+		pkg.SetCurFile(incPath, true, true)
+		err = pkg.Write(incPath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
 		}
 
-		expectedFilePath := filepath.Join(testpkgDir, "mock_header.go")
+		expectedFilePath := filepath.Join(testpkgDir, genPath)
 		verifyGeneratedFile(t, expectedFilePath)
 	})
 
@@ -274,7 +275,7 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: "/nonexistent/directory",
 		})
-		err := pkg.Write(headerFilePath)
+		err := pkg.Write(incPath)
 		if err == nil {
 			t.Fatal("Expected an error for invalid output directory, but got nil")
 		}
@@ -298,7 +299,7 @@ func TestPackageWrite(t *testing.T) {
 			t.Fatalf("Failed to change directory permissions: %v", err)
 		}
 
-		err = pkg.Write(headerFilePath)
+		err = pkg.Write(incPath)
 		if err == nil {
 			t.Fatal("Expected an error for invalid output directory, but got nil")
 		}
@@ -1690,13 +1691,18 @@ func TestHeaderFileToGo(t *testing.T) {
 	}{
 		{
 			name:     "normal",
-			input:    "/path/to/foo.h",
-			expected: "foo.go",
+			input:    "sys/dirent.h",
+			expected: "sys_dirent.go",
 		},
 		{
 			name:     "sys",
-			input:    "/path/to/_intptr.h",
-			expected: "SYS_intptr.go",
+			input:    "sys/_pthread/_pthread_types.h",
+			expected: "sys__pthread__pthread_types.go",
+		},
+		{
+			name:     "sys",
+			input:    "_types.h",
+			expected: "X_types.go",
 		},
 	}
 	for _, tc := range testCases {
