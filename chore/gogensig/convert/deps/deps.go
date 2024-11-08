@@ -122,5 +122,5 @@ func findStdIncs(pkgDir string) (incs []string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return cfg.StdIncludes, nil
+	return cfg.Include, nil
 }
