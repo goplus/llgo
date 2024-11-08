@@ -17,11 +17,13 @@ import (
 
 // The validateFunc is used to validate the generated file,
 func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package)) {
-	RunTestWithCheckEqual(t, pkgName, isCpp, symbolEntries, cppgConf, originalCode, expectedOutput, validateFunc, func(t *testing.T, expected, content string) {
-		if strings.TrimSpace(expected) != strings.TrimSpace(content) {
-			t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expected, string(content))
-		}
-	})
+	RunTestWithCheckEqual(t, pkgName, isCpp, symbolEntries, cppgConf, originalCode, expectedOutput, validateFunc, CheckResult)
+}
+
+func CheckResult(t *testing.T, expected, content string) {
+	if strings.TrimSpace(expected) != strings.TrimSpace(content) {
+		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expected, string(content))
+	}
 }
 
 // RunTestWithCheckEqual initializes a test Go project with local llgo dependency
