@@ -341,13 +341,13 @@ void testUint(u_int8_t a, u_int16_t b, u_int32_t c, u_int64_t d);
 		`package skip
 
 import (
-	stdint6 "github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"
+	"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"
 	_ "unsafe"
 )
 //go:linkname TestInt C.testInt
-func TestInt(a stdint6.Int8_t, b stdint6.Int16_t, c stdint6.Int32_t, d stdint6.Int64_t)
+func TestInt(a stdint.Int8_t, b stdint.Int16_t, c stdint.Int32_t, d stdint.Int64_t)
 //go:linkname TestUint C.testUint
-func TestUint(a stdint6.U_int8_t, b stdint6.U_int16_t, c stdint6.U_int32_t, d stdint6.U_int64_t)
+func TestUint(a stdint.U_int8_t, b stdint.U_int16_t, c stdint.U_int32_t, d stdint.U_int64_t)
 	`, func(t *testing.T, pkg *convert.Package) {
 			files, err := os.ReadDir(pkg.GetOutputDir())
 			if err != nil {

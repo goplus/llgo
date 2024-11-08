@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/goplus/gogen v1.16.2
 	github.com/google/go-cmp v0.6.0
+	github.com/goplus/gogen v1.16.2-0.20241108035448-d74175784239
 	github.com/goplus/llvm v0.8.0
 	github.com/goplus/mod v0.13.12
 	github.com/qiniu/x v1.13.10
