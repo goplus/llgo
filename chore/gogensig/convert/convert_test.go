@@ -3,6 +3,7 @@ package convert_test
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -330,24 +331,34 @@ func TestSkipBuiltinTypedefine(t *testing.T) {
 	cmptest.RunTest(t, "skip", false, []config.SymbolEntry{
 		{MangleName: "testInt", CppName: "testInt", GoName: "TestInt"},
 		{MangleName: "testUint", CppName: "testUint", GoName: "TestUint"},
+		{MangleName: "testFile", CppName: "testFile", GoName: "TestFile"},
 	}, &cppgtypes.Config{
-		Deps: []string{"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"},
+		Deps: []string{
+			"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint",
+			"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdio",
+		},
 	}, `
 #include <stdint.h>
+#include <stdio.h>
 
 void testInt(int8_t a, int16_t b, int32_t c, int64_t d);
 void testUint(u_int8_t a, u_int16_t b, u_int32_t c, u_int64_t d);
+
+void testFile(FILE *f);
 	`,
 		`package skip
 
 import (
 	"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"
+	"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdio"
 	_ "unsafe"
 )
 //go:linkname TestInt C.testInt
 func TestInt(a stdint.Int8_t, b stdint.Int16_t, c stdint.Int32_t, d stdint.Int64_t)
 //go:linkname TestUint C.testUint
 func TestUint(a stdint.U_int8_t, b stdint.U_int16_t, c stdint.U_int32_t, d stdint.U_int64_t)
+//go:linkname TestFile C.testFile
+func TestFile(f *stdio.FILE)
 	`, func(t *testing.T, pkg *convert.Package) {
 			files, err := os.ReadDir(pkg.GetOutputDir())
 			if err != nil {
@@ -358,11 +369,81 @@ func TestUint(a stdint.U_int8_t, b stdint.U_int16_t, c stdint.U_int32_t, d stdin
 				log.Println("Generated file:", file.Name())
 				for _, headerFile := range needSkipHeaderFiles {
 					if file.Name() == convert.HeaderFileToGo(headerFile) {
-						t.Fatal("skip file should not be output")
+						content, err := os.ReadFile(filepath.Join(pkg.GetOutputDir(), file.Name()))
+						if err != nil {
+							t.Fatal(err)
+						}
+						t.Fatal("skip file should not be output: " + headerFile + "\n" + string(content))
 					}
 				}
 			}
 		})
+}
+
+func TestPubFile(t *testing.T) {
+	cmptest.RunTest(t, "pub", false, []config.SymbolEntry{
+		{MangleName: "func", CppName: "func", GoName: "Func"},
+	}, &cppgtypes.Config{
+		Include: []string{"temp.h"},
+	}, `
+struct point {
+	int x;
+	int y;
+};
+struct Capital {
+	int x;
+	int y;
+};
+union data {
+	float f;
+	char str[20];
+};
+typedef unsigned int uint_t;
+enum color {
+	RED = 0,
+};
+void func(int a, int b);
+	`, `
+package pub
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type Point struct {
+	X c.Int
+	Y c.Int
+}
+
+type Capital struct {
+	X c.Int
+	Y c.Int
+}
+
+type Data struct {
+	Str [20]int8
+}
+type Uint_t c.Uint
+type Color c.Int
+
+const Color_RED Color = 0
+//go:linkname Func C.func
+func Func(a c.Int, b c.Int)
+	`, func(t *testing.T, pkg *convert.Package) {
+		bytes, err := os.ReadFile(filepath.Join(pkg.GetOutputDir(), "llcppg.pub"))
+		if err != nil {
+			t.Fatal("llcppg.pub not found")
+		}
+		expectedPub := `
+Capital
+color Color
+data Data
+point Point
+uint_t Uint_t
+`
+		cmptest.CheckResult(t, expectedPub, string(bytes))
+	})
 }
 
 // ===========================error

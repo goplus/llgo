@@ -64,6 +64,10 @@ func (p *AstConvert) WriteLinkFile() {
 	p.Pkg.WriteLinkFile()
 }
 
+func (p *AstConvert) WritePubFile() {
+	p.Pkg.WritePubFile()
+}
+
 func (p *AstConvert) VisitFuncDecl(funcDecl *ast.FuncDecl) {
 	err := p.Pkg.NewFuncDecl(funcDecl)
 	if err != nil {

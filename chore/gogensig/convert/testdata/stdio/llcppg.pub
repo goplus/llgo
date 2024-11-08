@@ -1,0 +1,5 @@
+fpos_t Fpos_t
+__sbuf X__sbuf
+__sFILEX X__sFILEX
+__sFILE X__sFILE
+FILE

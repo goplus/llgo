@@ -41,7 +41,9 @@ type Package struct {
 	outputDir string
 	conf      *PackageConfig
 	depIncs   []string
-	inCurPkg  bool // whether the current file is in the llcppg package not the dependent files
+	inCurPkg  bool              // whether the current file is in the llcppg package not the dependent files
+	public    map[string]string // original C name -> public Go name
+
 }
 
 type PackageConfig struct {
@@ -57,9 +59,10 @@ type PackageConfig struct {
 // If SetCurFile is not called, all type conversions will be written to this default Go file.
 func NewPackage(config *PackageConfig) *Package {
 	p := &Package{
-		p:    gogen.NewPackage(config.PkgPath, config.Name, config.GenConf),
-		name: config.Name,
-		conf: config,
+		p:      gogen.NewPackage(config.PkgPath, config.Name, config.GenConf),
+		name:   config.Name,
+		conf:   config,
+		public: make(map[string]string),
 	}
 
 	p.outputDir = config.OutputDir
@@ -160,7 +163,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return nil
 	}
 	// every type name should be public
-	name, changed, err := p.DeclName(typeDecl.Name.Name)
+	name, changed, err := p.DeclName(typeDecl.Name.Name, true)
 	if err != nil {
 		return err
 	}
@@ -185,7 +188,7 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
-	name, changed, err := p.DeclName(typedefDecl.Name.Name)
+	name, changed, err := p.DeclName(typedefDecl.Name.Name, true)
 	if err != nil {
 		// for a typedef ,always appear same name like
 		// typedef struct foo { int a; } foo;
@@ -247,7 +250,7 @@ func (p *Package) createEnumType(enumName *ast.Ident) (types.Type, string, error
 	var err error
 	var t *gogen.TypeDecl
 	if enumName != nil {
-		name, changed, err = p.DeclName(enumName.Name)
+		name, changed, err = p.DeclName(enumName.Name, true)
 		if err != nil {
 			return nil, "", fmt.Errorf("enum type %s already defined", enumName.Name)
 		}
@@ -273,7 +276,7 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 		} else {
 			constName = item.Name.Name
 		}
-		name, changed, err := p.DeclName(constName)
+		name, changed, err := p.DeclName(constName, false)
 		if err != nil {
 			return fmt.Errorf("enum item %s already defined %w", name, err)
 		}
@@ -370,6 +373,10 @@ func HeaderFileToGo(headerFile string) string {
 	return fileName + ".go"
 }
 
+func (p *Package) WritePubFile() error {
+	return deps.WritePubFile(filepath.Join(p.outputDir, "llcppg.pub"), p.public)
+}
+
 func (p *Package) initDepPkgs() {
 	allDepIncs := make([]string, 0)
 	scope := p.p.Types.Scope()
@@ -377,8 +384,17 @@ func (p *Package) initDepPkgs() {
 		allDepIncs = append(allDepIncs, dep.StdIncs...)
 		depPkg := p.p.Import(dep.Path)
 		for cName, pubGoName := range dep.Pubs {
+			if pubGoName == "" {
+				pubGoName = cName
+			}
 			if obj := depPkg.TryRef(pubGoName); obj != nil {
-				if old := scope.Insert(gogen.NewSubst(token.NoPos, p.p.Types, cName, obj)); old != nil {
+				var preObj types.Object
+				if pubGoName == cName {
+					preObj = obj
+				} else {
+					preObj = gogen.NewSubst(token.NoPos, p.p.Types, cName, obj)
+				}
+				if old := scope.Insert(preObj); old != nil {
 					log.Printf("conflicted name `%v` in %v, previous definition is %v\n", pubGoName, dep.Path, old)
 				}
 			}
@@ -390,7 +406,7 @@ func (p *Package) initDepPkgs() {
 // For a decl name, if it's a current package, remove the prefixed name
 // For a decl name, it should be unique
 // todo(zzy): not current converter package file,need not remove prefixed name
-func (p *Package) DeclName(name string) (pubName string, changed bool, err error) {
+func (p *Package) DeclName(name string, collect bool) (pubName string, changed bool, err error) {
 	originName := name
 	if p.inCurPkg {
 		name = p.cvt.RemovePrefixedName(name)
@@ -399,7 +415,15 @@ func (p *Package) DeclName(name string) (pubName string, changed bool, err error
 	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
 		return "", false, fmt.Errorf("type %s already defined,original name is %s", name, originName)
 	}
-	return name, name != originName, nil
+	changed = name != originName
+	if collect && p.inCurPkg {
+		if changed {
+			p.public[originName] = name
+		} else {
+			p.public[originName] = ""
+		}
+	}
+	return name, changed, nil
 }
 
 // AllDepIncs returns all std include paths of dependent packages
