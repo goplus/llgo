@@ -18,6 +18,7 @@ func ConvertProcesser(cfg *Config) (*processor.DocFileSetProcessor, *convert.Pac
 		SymbFile:  cfg.SymbFile,
 		CfgFile:   cfg.CfgFile,
 		OutputDir: cfg.OutputDir,
+		PubFile:   cfg.PubFile,
 	})
 	if err != nil {
 		return nil, nil, err

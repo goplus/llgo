@@ -20,6 +20,7 @@ type AstConvertConfig struct {
 	PkgName   string
 	SymbFile  string // llcppg.symb.json
 	CfgFile   string // llcppg.cfg
+	PubFile   string // llcppg.pub
 	OutputDir string
 }
 
@@ -45,12 +46,18 @@ func NewAstConvert(config *AstConvertConfig) (*AstConvert, error) {
 		conf = &cppgtypes.Config{}
 	}
 
+	public, err := cfg.GetPubFromPath(config.PubFile)
+	if err != nil {
+		return nil, err
+	}
+
 	pkg := NewPackage(&PackageConfig{
 		PkgPath:     ".",
 		Name:        config.PkgName,
 		OutputDir:   config.OutputDir,
 		SymbolTable: symbTable,
 		CppgConf:    conf,
+		Public:      public,
 	})
 	p.Pkg = pkg
 	return p, nil

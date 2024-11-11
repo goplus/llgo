@@ -17,7 +17,7 @@ import (
 )
 
 func TestUnion(t *testing.T) {
-	cmptest.RunTest(t, "union", false, []config.SymbolEntry{}, &cppgtypes.Config{}, `
+	cmptest.RunTest(t, "union", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{}, `
 typedef union  __u
 {
     int a;
@@ -42,7 +42,7 @@ type U X__u
 func TestReferStdSizeT(t *testing.T) {
 	cmptest.RunTest(t, "size_t", false, []config.SymbolEntry{
 		{MangleName: "testSize", CppName: "testSize", GoName: "TestSize"},
-	}, &cppgtypes.Config{}, `
+	}, map[string]string{}, &cppgtypes.Config{}, `
 #include <stddef.h>
 
 void testSize(size_t a);
@@ -62,9 +62,7 @@ func TestCommentSlashSlashSlash(t *testing.T) {
 			CppName:    "ExecuteFoo",
 			GoName:     "CustomExecuteFoo",
 		},
-	},
-		&cppgtypes.Config{},
-		`
+	}, map[string]string{}, &cppgtypes.Config{}, `
 /// Foo comment
 struct Foo { int a; double b; bool c; };
 
@@ -90,7 +88,7 @@ func CustomExecuteFoo(a c.Int, b Foo) c.Int
 }
 
 func TestEnum(t *testing.T) {
-	cmptest.RunTestWithCheckEqual(t, "spectrum", true, []config.SymbolEntry{}, &cppgtypes.Config{
+	cmptest.RunTestWithCheckEqual(t, "spectrum", true, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
 		Cplusplus: true,
 	},
 		`
@@ -215,7 +213,7 @@ func TestStructDeclRef(t *testing.T) {
 			CppName:    "ExecuteFoo",
 			GoName:     "CustomExecuteFoo",
 		},
-	},
+	}, map[string]string{},
 		&cppgtypes.Config{},
 		`
 struct Foo { int a; double b; bool c; };
@@ -246,7 +244,7 @@ func TestCustomStruct(t *testing.T) {
 		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
 		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},
 		{MangleName: "lua_resetthread", CppName: "lua_resetthread", GoName: "Resetthread"},
-	}, &cppgtypes.Config{
+	}, map[string]string{}, &cppgtypes.Config{
 		TrimPrefixes: []string{"lua_"},
 		Include:      []string{"temp.h"},
 		// prefix only remove in the llcppg.cfg includes
@@ -282,7 +280,7 @@ func Resetthread(L *State) c.Int
 func TestAvoidKeyword(t *testing.T) {
 	cmptest.RunTest(t, "avoid", false, []config.SymbolEntry{
 		{MangleName: "lua_sethook", CppName: "lua_sethook", GoName: "Sethook"},
-	}, &cppgtypes.Config{}, `
+	}, map[string]string{}, &cppgtypes.Config{}, `
 	typedef struct lua_State lua_State;
 	typedef void (*lua_Hook)(lua_State *L, lua_Debug *ar);
 	void(lua_sethook)(lua_State *L, lua_Hook func, int mask, int count);
@@ -332,7 +330,7 @@ func TestSkipBuiltinTypedefine(t *testing.T) {
 		{MangleName: "testInt", CppName: "testInt", GoName: "TestInt"},
 		{MangleName: "testUint", CppName: "testUint", GoName: "TestUint"},
 		{MangleName: "testFile", CppName: "testFile", GoName: "TestFile"},
-	}, &cppgtypes.Config{
+	}, map[string]string{}, &cppgtypes.Config{
 		Deps: []string{
 			"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint",
 			"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdio",
@@ -383,6 +381,8 @@ func TestFile(f *stdio.FILE)
 func TestPubFile(t *testing.T) {
 	cmptest.RunTest(t, "pub", false, []config.SymbolEntry{
 		{MangleName: "func", CppName: "func", GoName: "Func"},
+	}, map[string]string{
+		"data": "CustomData",
 	}, &cppgtypes.Config{
 		Include: []string{"temp.h"},
 	}, `
@@ -421,7 +421,7 @@ type Capital struct {
 	Y c.Int
 }
 
-type Data struct {
+type CustomData struct {
 	Str [20]int8
 }
 type Uint_t c.Uint
@@ -438,7 +438,7 @@ func Func(a c.Int, b c.Int)
 		expectedPub := `
 Capital
 color Color
-data Data
+data CustomData
 point Point
 uint_t Uint_t
 `

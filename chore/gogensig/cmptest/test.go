@@ -16,8 +16,8 @@ import (
 )
 
 // The validateFunc is used to validate the generated file,
-func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package)) {
-	RunTestWithCheckEqual(t, pkgName, isCpp, symbolEntries, cppgConf, originalCode, expectedOutput, validateFunc, CheckResult)
+func RunTest(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, public map[string]string, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package)) {
+	RunTestWithCheckEqual(t, pkgName, isCpp, symbolEntries, public, cppgConf, originalCode, expectedOutput, validateFunc, CheckResult)
 }
 
 func CheckResult(t *testing.T, expected, content string) {
@@ -27,7 +27,7 @@ func CheckResult(t *testing.T, expected, content string) {
 }
 
 // RunTestWithCheckEqual initializes a test Go project with local llgo dependency
-func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package), checkEqual func(t *testing.T, expected, content string)) {
+func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, public map[string]string, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package), checkEqual func(t *testing.T, expected, content string)) {
 	t.Helper()
 
 	tempDir, err := os.MkdirTemp("", "gogensig-test")
@@ -67,6 +67,10 @@ func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntri
 	if err != nil {
 		t.Fatal(err)
 	}
+	pubPath, err := CreatePubFile(public)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// The result file will be generated in a directory based on the package name.
 	// For example, if the package name is "typeref", the result file will be generated in a directory named "typeref".
@@ -85,6 +89,7 @@ func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntri
 			SymbFile:  symbolpath,
 			CfgFile:   cfgPath,
 			OutputDir: outputDir,
+			PubFile:   pubPath,
 		},
 	})
 	if err != nil {
@@ -131,15 +136,27 @@ func CreateCppgConfFile(config *cppgtypes.Config) (string, error) {
 	return CreateJSONFile("llcppg.cfg", config)
 }
 
-func CreateJSONFile(filename string, data interface{}) (string, error) {
-	filePath := filepath.Join(os.TempDir(), filename)
-
+func CreatePubFile(public map[string]string) (string, error) {
+	filePath := filepath.Join(os.TempDir(), "llcppg.pub")
 	file, err := os.Create(filePath)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
+	err = config.WritePubFile(filePath, public)
+	if err != nil {
+		return "", err
+	}
+	return filePath, nil
+}
 
+func CreateJSONFile(filename string, data interface{}) (string, error) {
+	filePath := filepath.Join(os.TempDir(), filename)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 	return filePath, encoder.Encode(data)
