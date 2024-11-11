@@ -204,7 +204,7 @@ func outputResult(result *c.Char, outputToFile bool) {
 		}
 		fmt.Fprintf(os.Stderr, "Results saved to %s\n", outputFile)
 	} else {
-		c.Printf(result)
+		fmt.Println(c.GoString(result))
 	}
 }
 
