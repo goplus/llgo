@@ -1588,6 +1588,7 @@ func createTestPkg(t *testing.T, config *convert.PackageConfig) *convert.Package
 		OutputDir:   config.OutputDir,
 		SymbolTable: config.SymbolTable,
 		CppgConf:    config.CppgConf,
+		Public:      make(map[string]string),
 	})
 	if pkg == nil {
 		t.Fatal("NewPackage failed")

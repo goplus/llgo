@@ -67,6 +67,7 @@ func main() {
 			PkgName:  conf.Name,
 			SymbFile: filepath.Join(wd, "llcppg.symb.json"),
 			CfgFile:  filepath.Join(wd, "llcppg.cfg"),
+			PubFile:  filepath.Join(wd, "llcppg.pub"),
 		},
 	})
 	check(err)
