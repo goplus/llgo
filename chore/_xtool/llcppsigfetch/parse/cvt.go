@@ -214,7 +214,11 @@ func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResul
 
 	switch cursor.Kind {
 	case clang.CursorInclusionDirective:
-		include := ct.ProcessInclude(cursor)
+		include, err := ct.ProcessInclude(cursor)
+		if err != nil {
+			ct.logln(err)
+			return clang.ChildVisit_Continue
+		}
 		curFile.Includes = append(curFile.Includes, include)
 		ct.logln("visitTop: ProcessInclude END ", include.Path)
 	case clang.CursorMacroDefinition:
@@ -564,9 +568,14 @@ func (ct *Converter) ProcessMacro(cursor clang.Cursor) *ast.Macro {
 	return macro
 }
 
-func (ct *Converter) ProcessInclude(cursor clang.Cursor) *ast.Include {
+func (ct *Converter) ProcessInclude(cursor clang.Cursor) (*ast.Include, error) {
 	name := toStr(cursor.String())
-	return &ast.Include{Path: name}
+	includedFile := cursor.IncludedFile()
+	includedPath := toStr(includedFile.FileName())
+	if includedPath == "" {
+		return nil, fmt.Errorf("%s: failed to get included file", name)
+	}
+	return &ast.Include{Path: includedPath}, nil
 }
 
 func (ct *Converter) createBaseField(cursor clang.Cursor) *ast.Field {

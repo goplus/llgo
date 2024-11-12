@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
@@ -50,6 +52,12 @@ func TestSystemHeader() {
 	if converter.Files[0].IsSys {
 		panic("entry file is not system header")
 	}
+
+	includePath := converter.Files[0].Doc.Includes[0].Path
+	if strings.HasSuffix(includePath, "stdio.h") && filepath.IsAbs(includePath) {
+		fmt.Println("stdio.h is absolute path")
+	}
+
 	for i := 1; i < len(converter.Files); i++ {
 		if !converter.Files[i].IsSys {
 			panic(fmt.Errorf("include file is not system header: %s", converter.Files[i].Path))

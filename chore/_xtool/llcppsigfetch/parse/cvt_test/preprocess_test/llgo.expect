@@ -1,5 +1,6 @@
 #stdout
 === TestSystemHeader ===
+stdio.h is absolute path
 include files are all system headers
 TestDefine Case 1:
 {
@@ -112,10 +113,7 @@ TestInclude Case 1:
 	"temp.h":	{
 		"_Type":	"File",
 		"decls":	[],
-		"includes":	[{
-				"_Type":	"Include",
-				"Path":	"foo.h"
-			}],
+		"includes":	[],
 		"macros":	[]
 	}
 }
