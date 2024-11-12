@@ -13,6 +13,7 @@ func MarshalOutputASTFiles(files []*FileEntry) *cjson.JSON {
 		path := cjson.String(c.AllocaCStr(entry.Path))
 		f.SetItem(c.Str("path"), path)
 		f.SetItem(c.Str("doc"), MarshalASTFile(entry.Doc))
+		f.SetItem(c.Str("IsSys"), boolField(entry.IsSys))
 		root.AddItem(f)
 	}
 	return root

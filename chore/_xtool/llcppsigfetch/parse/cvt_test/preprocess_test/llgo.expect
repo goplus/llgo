@@ -1,4 +1,6 @@
 #stdout
+=== TestSystemHeader ===
+include files are all system headers
 TestDefine Case 1:
 {
 	"temp.h":	{

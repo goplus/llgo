@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
 	test "github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse/cvt_test"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 )
@@ -9,6 +12,7 @@ import (
 func main() {
 	TestDefine()
 	TestInclude()
+	TestSystemHeader()
 	TestMacroExpansionOtherFile()
 }
 
@@ -27,6 +31,31 @@ func TestInclude() {
 		// `#include <limits.h>`, //  Standard libraries are mostly platform-dependent
 	}
 	test.RunTest("TestInclude", testCases)
+}
+
+func TestSystemHeader() {
+	fmt.Println("=== TestSystemHeader ===")
+	converter, err := parse.NewConverter(&clangutils.Config{
+		File:  "#include <stdio.h>",
+		Temp:  true,
+		IsCpp: false,
+	})
+	if err != nil {
+		panic(err)
+	}
+	converter.Convert()
+	if len(converter.Files) < 2 {
+		panic("expect 2 files")
+	}
+	if converter.Files[0].IsSys {
+		panic("entry file is not system header")
+	}
+	for i := 1; i < len(converter.Files); i++ {
+		if !converter.Files[i].IsSys {
+			panic(fmt.Errorf("include file is not system header: %s", converter.Files[i].Path))
+		}
+	}
+	fmt.Println("include files are all system headers")
 }
 
 func TestMacroExpansionOtherFile() {

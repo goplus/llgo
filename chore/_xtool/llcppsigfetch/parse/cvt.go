@@ -16,8 +16,9 @@ import (
 )
 
 type FileEntry struct {
-	Path string
-	Doc  *ast.File
+	Path  string
+	IsSys bool
+	Doc   *ast.File
 }
 
 type Converter struct {
@@ -121,37 +122,33 @@ func (ct *Converter) logln(args ...interface{}) {
 	}
 }
 
-func (ct *Converter) UpdateLoc(cursor clang.Cursor) {
+func (ct *Converter) GetCurFile(cursor clang.Cursor) *ast.File {
 	loc := cursor.Location()
 	var file clang.File
 	loc.SpellingLocation(&file, nil, nil, nil)
-
 	filePath := toStr(file.FileName())
-
 	if filePath == "" {
 		//todo(zzy): For some built-in macros, there is no file.
 		ct.curLoc = ast.Location{File: ""}
-		return
-	}
-	ct.curLoc = ast.Location{File: filePath}
-}
-
-func (ct *Converter) GetCurFile() *ast.File {
-	if ct.curLoc.File == "" {
 		ct.logln("GetCurFile: NO FILE")
 		return nil
 	}
+	ct.curLoc = ast.Location{File: filePath}
+
 	// todo(zzy): more efficient
 	for i, entry := range ct.Files {
-		if entry.Path == ct.curLoc.File {
-			ct.logln("GetCurFile: found", ct.curLoc.File)
+		if entry.Path == filePath {
+			ct.logln("GetCurFile: found", filePath)
 			return ct.Files[i].Doc
 		}
 	}
-	ct.logln("GetCurFile: Create New ast.File", ct.curLoc.File)
-	newDoc := &ast.File{}
-	ct.Files = append(ct.Files, &FileEntry{Path: ct.curLoc.File, Doc: newDoc})
-	return newDoc
+	ct.logln("GetCurFile: Create New ast.File", filePath)
+	entry := &FileEntry{Path: filePath, Doc: &ast.File{}, IsSys: false}
+	if loc.IsInSystemHeader() != 0 {
+		entry.IsSys = true
+	}
+	ct.Files = append(ct.Files, entry)
+	return entry.Doc
 }
 
 func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
@@ -206,9 +203,7 @@ func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResul
 	ct.incIndent()
 	defer ct.decIndent()
 
-	ct.UpdateLoc(cursor)
-
-	curFile := ct.GetCurFile()
+	curFile := ct.GetCurFile(cursor)
 
 	name := toStr(cursor.String())
 	ct.logf("visitTop: Cursor: %s\n", name)
