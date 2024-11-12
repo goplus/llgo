@@ -1711,6 +1711,19 @@ func (c Cursor) OverriddenCursors(overridden **Cursor, numOverridden *c.Uint) {
 func (c *Cursor) DisposeOverriddenCursors() {}
 
 /**
+ * Retrieve the file that is included by the given inclusion directive
+ * cursor.
+ */
+// llgo:link (*Cursor).wrapIncludedFile C.wrap_clang_getIncludedFile
+func (c *Cursor) wrapIncludedFile() File {
+	return 0
+}
+
+func (c Cursor) IncludedFile() (file File) {
+	return c.wrapIncludedFile()
+}
+
+/**
  * Map a source location to the cursor that describes the entity at that
  * location in the source code.
  *
@@ -2718,6 +2731,16 @@ func (t *TranslationUnit) Tokenize(ran SourceRange, tokens **Token, numTokens *c
  */
 // llgo:link (*TranslationUnit).DisposeTokens C.clang_disposeTokens
 func (t *TranslationUnit) DisposeTokens(tokens *Token, numTokens c.Uint) {}
+
+/**
+ * Returns non-zero if the given source location is in a system header.
+ */
+// llgo:link (*SourceLocation).wrapIsInSystemHeader C.wrap_clang_Location_isInSystemHeader
+func (l *SourceLocation) wrapIsInSystemHeader() (ret c.Uint) { return 0 }
+
+func (l SourceLocation) IsInSystemHeader() (ret c.Uint) {
+	return l.wrapIsInSystemHeader()
+}
 
 /**
  * Retrieve the file, line, column, and offset represented by
