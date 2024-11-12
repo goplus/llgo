@@ -1692,17 +1692,17 @@ func TestHeaderFileToGo(t *testing.T) {
 	}{
 		{
 			name:     "normal",
-			input:    "sys/dirent.h",
-			expected: "sys_dirent.go",
+			input:    "/path/to/sys/dirent.h",
+			expected: "dirent.go",
 		},
 		{
 			name:     "sys",
-			input:    "sys/_pthread/_pthread_types.h",
-			expected: "sys__pthread__pthread_types.go",
+			input:    "/path/to/sys/_pthread/_pthread_types.h",
+			expected: "X_pthread_types.go",
 		},
 		{
 			name:     "sys",
-			input:    "_types.h",
+			input:    "/path/to/_types.h",
 			expected: "X_types.go",
 		},
 	}

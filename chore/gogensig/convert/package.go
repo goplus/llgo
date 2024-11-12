@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config/cfgparse"
 	cfg "github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert/deps"
 	"github.com/goplus/llgo/chore/llcppg/ast"
@@ -43,6 +44,7 @@ type Package struct {
 	depIncs   []string
 	inCurPkg  bool              // whether the current file is in the llcppg package not the dependent files
 	public    map[string]string // original C name -> public Go name
+	incPaths  []string          //current pkg's include file
 }
 
 type PackageConfig struct {
@@ -68,6 +70,12 @@ func NewPackage(config *PackageConfig) *Package {
 	p.outputDir = config.OutputDir
 	p.public = config.Public
 
+	cflags := cfgparse.ParseCFlags(config.CppgConf.CFlags)
+	incPaths, _, err := cflags.GenHeaderFilePaths(config.CppgConf.Include)
+	if err != nil {
+		log.Println("failed to gen include paths: \n", err.Error())
+	}
+	p.incPaths = incPaths
 	// init deps
 	deps, err := deps.LoadDeps(p.outputDir, config.CppgConf.Deps)
 	if err != nil {
@@ -89,6 +97,7 @@ func NewPackage(config *PackageConfig) *Package {
 	return p
 }
 
+// absolute path
 func (p *Package) SetCurFile(file string, isHeaderFile bool, inCurPkg bool) error {
 	var fileName string
 	if isHeaderFile {
@@ -360,11 +369,9 @@ func (p *Package) WriteToBuffer(genFName string) (*bytes.Buffer, error) {
 }
 
 // /path/to/foo.h -> foo.go
-// /path/to/_intptr.h -> SYS_intptr.go
-// for std include header file path
+// /path/to/_intptr.h -> X_intptr.go
 func HeaderFileToGo(incPath string) string {
-	// _, fileName := filepath.Split(headerFile)
-	fileName := strings.ReplaceAll(incPath, string(filepath.Separator), "_")
+	_, fileName := filepath.Split(incPath)
 	ext := filepath.Ext(fileName)
 	if len(ext) > 0 {
 		fileName = strings.TrimSuffix(fileName, ext)

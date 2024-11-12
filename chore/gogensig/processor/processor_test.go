@@ -88,7 +88,7 @@ func TestProcessFileNotExist(t *testing.T) {
 	manager := processor.NewDocVisitorManager(docVisitors)
 	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
 		Exec: func(file *unmarshal.FileEntry) error {
-			manager.Visit(file.Doc, file.IncPath)
+			manager.Visit(file.Doc, file.Path)
 			return nil
 		},
 		DepIncs: []string{},
@@ -125,7 +125,7 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 	manager := processor.NewDocVisitorManager(docVisitors)
 	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
 		Exec: func(file *unmarshal.FileEntry) error {
-			manager.Visit(file.Doc, file.IncPath)
+			manager.Visit(file.Doc, file.Path)
 			return nil
 		},
 		DepIncs: []string{},
@@ -139,9 +139,9 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 func TestDefaultExec(t *testing.T) {
 	file := unmarshal.FileSet{
 		{
-			Path:    "foo.h",
-			IncPath: "foo.h",
-			Doc:     &ast.File{},
+			Path:  "foo.h",
+			IsSys: false,
+			Doc:   &ast.File{},
 		},
 	}
 	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{})
@@ -149,87 +149,87 @@ func TestDefaultExec(t *testing.T) {
 }
 
 func TestExecOrder(t *testing.T) {
-	depIncs := []string{"int16_t.h"}
+	depIncs := []string{"/path/to/int16_t.h"}
 	fileSet := unmarshal.FileSet{
 		{
-			Path:    "/path/to/foo.h",
-			IncPath: "foo.h",
+			Path:  "/path/to/foo.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
-					{Path: "cdef.h"},
-					{Path: "stdint.h"},
+					{Path: "/path/to/cdef.h"},
+					{Path: "/path/to/stdint.h"},
 				},
 			},
 		},
 		{
-			Path:    "/path/to/cdef.h",
-			IncPath: "cdef.h",
+			Path:  "/path/to/cdef.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
-					{Path: "int8_t.h"},
-					{Path: "int16_t.h"},
+					{Path: "/path/to/int8_t.h"},
+					{Path: "/path/to/int16_t.h"},
 				},
 			},
 		},
 		{
-			Path:    "/path/to/stdint.h",
-			IncPath: "stdint.h",
+			Path:  "/path/to/stdint.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
-					{Path: "int8_t.h"},
-					{Path: "int16_t.h"},
+					{Path: "/path/to/int8_t.h"},
+					{Path: "/path/to/int16_t.h"},
 				},
 			},
 		},
 		{
-			Path:    "/path/to/int8_t.h",
-			IncPath: "int8_t.h",
+			Path:  "/path/to/int8_t.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{},
 			},
 		},
 		{
-			Path:    "/path/to/int16_t.h",
-			IncPath: "int16_t.h",
+			Path:  "/path/to/int16_t.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{},
 			},
 		},
 		{
-			Path:    "/path/to/bar.h",
-			IncPath: "bar.h",
+			Path:  "/path/to/bar.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
-					{Path: "stdint.h"},
-					{Path: "a.h"},
+					{Path: "/path/to/stdint.h"},
+					{Path: "/path/to/a.h"},
 				},
 			},
 		},
 		// circular dependency
 		{
-			Path:    "/path/to/a.h",
-			IncPath: "a.h",
+			Path:  "/path/to/a.h",
+			IsSys: false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
-					{Path: "bar.h"},
+					{Path: "/path/to/bar.h"},
 					// will not appear in normal
-					{Path: "noexist.h"},
+					{Path: "/path/to/noexist.h"},
 				},
 			},
 		},
 	}
 	var processFiles []string
 	expectedOrder := []string{
-		"int8_t.h",
-		"cdef.h",
-		"stdint.h",
-		"foo.h",
-		"a.h",
-		"bar.h",
+		"/path/to/int8_t.h",
+		"/path/to/cdef.h",
+		"/path/to/stdint.h",
+		"/path/to/foo.h",
+		"/path/to/a.h",
+		"/path/to/bar.h",
 	}
 	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
 		Exec: func(file *unmarshal.FileEntry) error {
-			processFiles = append(processFiles, file.IncPath)
+			processFiles = append(processFiles, file.Path)
 			return nil
 		},
 		DepIncs: depIncs,

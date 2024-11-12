@@ -239,12 +239,15 @@ func CustomExecuteFoo(a c.Int, b Foo) c.Int
 // Test if function names and type names can remove specified prefixes,
 // generate correct linkname, and use function names defined in llcppg.symb.json
 func TestCustomStruct(t *testing.T) {
+	// 获得当前目录的绝对路径
+	tempDir := cmptest.GetTempHeaderPathDir()
 	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
 		{MangleName: "lua_close", CppName: "lua_close", GoName: "Close"},
 		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
 		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},
 		{MangleName: "lua_resetthread", CppName: "lua_resetthread", GoName: "Resetthread"},
 	}, map[string]string{}, &cppgtypes.Config{
+		CFlags:       "-I" + tempDir,
 		TrimPrefixes: []string{"lua_"},
 		Include:      []string{"temp.h"},
 		// prefix only remove in the llcppg.cfg includes
@@ -379,11 +382,14 @@ func TestFile(f *stdio.FILE)
 }
 
 func TestPubFile(t *testing.T) {
+	tempDir := cmptest.GetTempHeaderPathDir()
+
 	cmptest.RunTest(t, "pub", false, []config.SymbolEntry{
 		{MangleName: "func", CppName: "func", GoName: "Func"},
 	}, map[string]string{
 		"data": "CustomData",
 	}, &cppgtypes.Config{
+		CFlags:  "-I" + tempDir,
 		Include: []string{"temp.h"},
 	}, `
 struct point {
