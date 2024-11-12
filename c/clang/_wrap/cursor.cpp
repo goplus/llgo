@@ -33,6 +33,8 @@ void wrap_clang_getOverriddenCursors(CXCursor *cursor, CXCursor **overridden, un
     clang_getOverriddenCursors(*cursor, overridden, num_overridden);
 }
 
+CXFile wrap_clang_getIncludedFile(CXCursor *cursor) { return clang_getIncludedFile(*cursor); }
+
 void wrap_clang_getCursor(CXTranslationUnit uint, CXSourceLocation *loc, CXCursor *cur) {
     *cur = clang_getCursor(uint, *loc);
 }
@@ -191,6 +193,8 @@ unsigned wrap_clang_visitChildren(CXCursor *parent, wrap_CXCursorVisitor visitor
     wrap_data data = {client_data, visitor};
     return clang_visitChildren(*parent, wrap_visitor, CXClientData(&data));
 }
+
+int wrap_clang_Location_isInSystemHeader(CXSourceLocation *loc) { return clang_Location_isInSystemHeader(*loc); }
 
 void wrap_clang_getSpellingLocation(CXSourceLocation *loc, CXFile *file, unsigned *line, unsigned *column,
                                     unsigned *offset) {
