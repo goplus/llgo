@@ -9,6 +9,7 @@ import (
 	"github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse"
 	test "github.com/goplus/llgo/chore/_xtool/llcppsigfetch/parse/cvt_test"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
+	"github.com/goplus/llgo/chore/llcppg/ast"
 )
 
 func main() {
@@ -61,6 +62,17 @@ func TestSystemHeader() {
 	for i := 1; i < len(converter.Files); i++ {
 		if !converter.Files[i].IsSys {
 			panic(fmt.Errorf("include file is not system header: %s", converter.Files[i].Path))
+		}
+		for _, decl := range converter.Files[i].Doc.Decls {
+			switch decl := decl.(type) {
+			case *ast.TypeDecl:
+			case *ast.EnumTypeDecl:
+			case *ast.FuncDecl:
+			case *ast.TypedefDecl:
+				if decl.DeclBase.Loc.File != converter.Files[i].Path {
+					fmt.Println("Decl is not in the file", decl.DeclBase.Loc.File, "expect", converter.Files[i].Path)
+				}
+			}
 		}
 	}
 	fmt.Println("include files are all system headers")

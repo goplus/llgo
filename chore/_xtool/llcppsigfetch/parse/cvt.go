@@ -153,7 +153,9 @@ func (ct *Converter) GetCurFile(cursor clang.Cursor) *ast.File {
 
 func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
 	base := ast.DeclBase{
-		Loc:    &ct.curLoc,
+		Loc: &ast.Location{
+			File: ct.curLoc.File,
+		},
 		Parent: ct.BuildScopingExpr(cursor.SemanticParent()),
 	}
 	commentGroup, isDoc := ct.ParseCommentGroup(cursor)
