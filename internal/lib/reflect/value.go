@@ -1228,32 +1228,26 @@ func (v Value) SetInt(x int64) {
 // It panics if v's Kind is not Slice or if n is negative or
 // greater than the capacity of the slice.
 func (v Value) SetLen(n int) {
-	/* TODO(xsw):
 	v.mustBeAssignable()
 	v.mustBe(Slice)
-	s := (*unsafeheader.Slice)(v.ptr)
+	s := (*unsafeheaderSlice)(v.ptr)
 	if uint(n) > uint(s.Cap) {
 		panic("reflect: slice length out of range in SetLen")
 	}
 	s.Len = n
-	*/
-	panic("todo: reflect.Value.SetLen")
 }
 
 // SetCap sets v's capacity to n.
 // It panics if v's Kind is not Slice or if n is smaller than the length or
 // greater than the capacity of the slice.
 func (v Value) SetCap(n int) {
-	/* TODO(xsw):
 	v.mustBeAssignable()
 	v.mustBe(Slice)
-	s := (*unsafeheader.Slice)(v.ptr)
+	s := (*unsafeheaderSlice)(v.ptr)
 	if n < s.Len || n > s.Cap {
 		panic("reflect: slice capacity out of range in SetCap")
 	}
 	s.Cap = n
-	*/
-	panic("todo: reflect.Value.SetCap")
 }
 
 // SetMapIndex sets the element associated with key in the map v to elem.
