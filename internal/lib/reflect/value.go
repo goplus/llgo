@@ -517,7 +517,6 @@ func ifaceIndir(typ *abi.Type) bool {
 // Field returns the i'th field of the struct v.
 // It panics if v's Kind is not Struct or i is out of range.
 func (v Value) Field(i int) Value {
-	/* TODO(xsw):
 	if v.kind() != Struct {
 		panic(&ValueError{"reflect.Value.Field", v.kind()})
 	}
@@ -531,7 +530,7 @@ func (v Value) Field(i int) Value {
 	// Inherit permission bits from v, but clear flagEmbedRO.
 	fl := v.flag&(flagStickyRO|flagIndir|flagAddr) | flag(typ.Kind())
 	// Using an unexported field forces flagRO.
-	if !field.Name.IsExported() {
+	if !field.Exported() {
 		if field.Embedded() {
 			fl |= flagEmbedRO
 		} else {
@@ -545,8 +544,6 @@ func (v Value) Field(i int) Value {
 	// so v.ptr + field.offset is still the correct address.
 	ptr := add(v.ptr, field.Offset, "same as non-reflect &v.field")
 	return Value{typ, ptr, fl}
-	*/
-	panic("todo: reflect.Value.Field")
 }
 
 // FieldByIndex returns the nested field corresponding to index.
@@ -2012,6 +2009,14 @@ func (v Value) MethodByName(name string) Value {
 		return Value{}
 	}
 	return v.Method(m.Index)
+}
+
+// NumField returns the number of fields in the struct v.
+// It panics if v's Kind is not Struct.
+func (v Value) NumField() int {
+	v.mustBe(Struct)
+	tt := (*structType)(unsafe.Pointer(v.typ()))
+	return len(tt.Fields)
 }
 
 // Call calls the function v with the input arguments in.
