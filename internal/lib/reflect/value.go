@@ -24,11 +24,11 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/goplus/llgo/x/ffi"
-
+	"github.com/goplus/llgo/c/bitcast"
 	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/runtime"
 	"github.com/goplus/llgo/internal/runtime/goarch"
+	"github.com/goplus/llgo/x/ffi"
 )
 
 // Value is the reflection interface to a Go value.
@@ -316,7 +316,10 @@ func (v Value) Bool() bool {
 	if v.kind() != Bool {
 		v.panicNotBool()
 	}
-	return *(*bool)(v.ptr)
+	if v.flag&flagAddr != 0 {
+		return *(*bool)(v.ptr)
+	}
+	return uintptr(v.ptr) != 0
 }
 
 func (v Value) panicNotBool() {
@@ -627,11 +630,20 @@ func (v Value) CanFloat() bool {
 // It panics if v's Kind is not Float32 or Float64
 func (v Value) Float() float64 {
 	k := v.kind()
-	switch k {
-	case Float32:
-		return float64(*(*float32)(v.ptr))
-	case Float64:
-		return *(*float64)(v.ptr)
+	if v.flag&flagAddr != 0 {
+		switch k {
+		case Float32:
+			return float64(*(*float32)(v.ptr))
+		case Float64:
+			return *(*float64)(v.ptr)
+		}
+	} else {
+		switch k {
+		case Float32:
+			return float64(bitcast.ToFloat32(uintptr(v.ptr)))
+		case Float64:
+			return bitcast.ToFloat64(uintptr(v.ptr))
+		}
 	}
 	panic(&ValueError{"reflect.Value.Float", v.kind()})
 }
