@@ -233,7 +233,7 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 		})
-		pkg.SetCurFile(incPath, true, true)
+		pkg.SetCurFile(incPath, true, true, false)
 		err = pkg.Write(incPath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
@@ -261,7 +261,7 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: testpkgDir,
 		})
-		pkg.SetCurFile(incPath, true, true)
+		pkg.SetCurFile(incPath, true, true, false)
 		err = pkg.Write(incPath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
@@ -1393,9 +1393,9 @@ import (
 
 type Color c.Int
 const (
-	Color_Red   Color = 0
-	Color_Green Color = 1
-	Color_Blue  Color = 2
+	ColorRed   Color = 0
+	ColorGreen Color = 1
+	ColorBlue  Color = 2
 )`,
 		},
 		{
@@ -1506,9 +1506,9 @@ func TestIdentRefer(t *testing.T) {
 		comparePackageOutput(t, pkg, `
 		package testpkg
 		import _ "unsafe"
-		type Int8_t int8
+		type Int8T int8
 		type Foo struct {
-			A Int8_t
+			A Int8T
 		}
 		`)
 	})
@@ -1661,7 +1661,7 @@ func TestTypeClean(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		pkg.SetCurFile(tc.headerFile, true, true)
+		pkg.SetCurFile(tc.headerFile, true, true, false)
 		tc.addType()
 
 		goFileName := convert.HeaderFileToGo(tc.headerFile)
@@ -1714,4 +1714,12 @@ func TestHeaderFileToGo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetSysHeaderFullPath(t *testing.T) {
+	fullPath, err := convert.GetSysHeaderFullPath("sys/_types/_size_t.h")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(fullPath)
 }

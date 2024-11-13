@@ -17,11 +17,11 @@ func NewDocVisitorManager(visitorList []visitor.DocVisitor) *DocVisitorManager {
 	return &DocVisitorManager{VisitorList: visitorList}
 }
 
-func (p *DocVisitorManager) Visit(node ast.Node, incPath string) bool {
+func (p *DocVisitorManager) Visit(node ast.Node, path string, isSys bool) bool {
 	for _, v := range p.VisitorList {
-		v.VisitStart(incPath)
+		v.VisitStart(path, isSys)
 		v.Visit(node)
-		v.VisitDone(incPath)
+		v.VisitDone(path)
 	}
 	return true
 }
@@ -77,13 +77,10 @@ func (p *DocFileSetProcessor) visitFile(path string, files unmarshal.FileSet) {
 		return
 	}
 	findFile := files[idx]
-	if !findFile.IsSys {
-		for _, include := range findFile.Doc.Includes {
-			p.visitFile(include.Path, files)
-		}
-		p.exec(&findFile)
-		return
+	for _, include := range findFile.Doc.Includes {
+		p.visitFile(include.Path, files)
 	}
+	p.exec(&findFile)
 	p.visitedFile[findFile.Path] = struct{}{}
 	delete(p.processing, findFile.Path)
 }

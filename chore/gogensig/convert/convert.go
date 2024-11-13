@@ -127,15 +127,15 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 	}
 }
 
-func (p *AstConvert) VisitStart(incPath string) {
+func (p *AstConvert) VisitStart(path string, isSys bool) {
 	inPkgIncPath := false
 	for _, includePath := range p.Pkg.incPaths {
-		if includePath == incPath {
+		if includePath == path {
 			inPkgIncPath = true
 			break
 		}
 	}
-	p.Pkg.SetCurFile(incPath, true, inPkgIncPath)
+	p.Pkg.SetCurFile(path, true, inPkgIncPath, isSys)
 }
 
 func (p *AstConvert) VisitDone(incPath string) {

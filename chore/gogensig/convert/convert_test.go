@@ -1,10 +1,8 @@
 package convert_test
 
 import (
-	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -32,10 +30,10 @@ import (
 	_ "unsafe"
 )
 
-type X__u struct {
+type X__U struct {
 	B c.Long
 }
-type U X__u
+type U X__U
 	`, nil)
 }
 
@@ -49,9 +47,12 @@ void testSize(size_t a);
 	`, `
 package size_t
 
-import _ "unsafe"
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
 //go:linkname TestSize C.testSize
-func TestSize(a Size_t)
+func TestSize(a c.SizeT)
 	`, nil)
 }
 
@@ -153,48 +154,48 @@ const (
 type Spectrum c.Int
 
 const (
-	Spectrum_red    Spectrum = 0
-	Spectrum_orange Spectrum = 1
-	Spectrum_yello  Spectrum = 2
-	Spectrum_green  Spectrum = 3
-	Spectrum_blue   Spectrum = 4
-	Spectrum_violet Spectrum = 5
+	SpectrumRed    Spectrum = 0
+	SpectrumOrange Spectrum = 1
+	SpectrumYello  Spectrum = 2
+	SpectrumGreen  Spectrum = 3
+	SpectrumBlue   Spectrum = 4
+	SpectrumViolet Spectrum = 5
 )
 
 type Kids c.Int
 
 const (
-	Kids_nippy  Kids = 0
-	Kids_slats  Kids = 1
-	Kids_skippy Kids = 2
-	Kids_nina   Kids = 3
-	Kids_liz    Kids = 4
+	KidsNippy  Kids = 0
+	KidsSlats  Kids = 1
+	KidsSkippy Kids = 2
+	KidsNina   Kids = 3
+	KidsLiz    Kids = 4
 )
 
 type Levels c.Int
 
 const (
-	Levels_low    Levels = 100
-	Levels_medium Levels = 500
-	Levels_high   Levels = 2000
+	LevelsLow    Levels = 100
+	LevelsMedium Levels = 500
+	LevelsHigh   Levels = 2000
 )
 
 type Feline c.Int
 
 const (
-	Feline_cat   Feline = 0
-	Feline_lynx  Feline = 10
-	Feline_puma  Feline = 11
-	Feline_tiger Feline = 12
+	FelineCat   Feline = 0
+	FelineLynx  Feline = 10
+	FelinePuma  Feline = 11
+	FelineTiger Feline = 12
 )
 
 type PieceType c.Int
 
 const (
-	PieceType_King  PieceType = 1
-	PieceType_Queen PieceType = 2
-	PieceType_Rook  PieceType = 10
-	PieceType_Pawn  PieceType = 11
+	PieceTypeKing  PieceType = 1
+	PieceTypeQueen PieceType = 2
+	PieceTypeRook  PieceType = 10
+	PieceTypePawn  PieceType = 11
 )
 `, nil, func(t *testing.T, expected, content string) {
 			eq, diff := cmp.EqualStringIgnoreSpace(expected, content)
@@ -295,90 +296,14 @@ import (
 	_ "unsafe"
 )
 
-type Lua_State struct {
+type LuaState struct {
 	Unused [8]uint8
 }
 // llgo:type C
-type Lua_Hook func(*Lua_State, *c.Int)
+type LuaHook func(*LuaState, *c.Int)
 //go:linkname Sethook C.lua_sethook
-func Sethook(L *Lua_State, func_ Lua_Hook, mask c.Int, count c.Int)
+func Sethook(L *LuaState, func_ LuaHook, mask c.Int, count c.Int)
 	`, nil)
-}
-
-// todo(zzy): https://github.com/luoliwoshang/llgo/issues/78 error in linux
-// Test if it can properly skip types from packages that have already been confirmed to be mapped
-// The _int8_t, _int16_t, _int32_t, _int64_t below are types that have already been confirmed to be mapped (macos).
-// The corresponding header files only define these aliases. For these header files, we skip them directly.
-//
-// In the follow include,the follow header files are included in the stdint.
-// And this sys/_types/* int header files are have mapped,so we need skip them.
-// And stdint.h's other included header files are not mapped yet, so we need to gradually generate them and create mappings for them.
-//
-// #include <sys/_types/_int8_t.h>
-// #include <sys/_types/_int16_t.h>
-// #include <sys/_types/_int32_t.h>
-// #include <sys/_types/_int64_t.h>
-
-// #include <sys/_types/_u_int8_t.h>
-// #include <sys/_types/_u_int16_t.h>
-// #include <sys/_types/_u_int32_t.h>
-// #include <sys/_types/_u_int64_t.h>
-func TestSkipBuiltinTypedefine(t *testing.T) {
-	// current only support macos
-	if runtime.GOOS != "darwin" {
-		t.Skip("skip on non-macos")
-	}
-
-	cmptest.RunTest(t, "skip", false, []config.SymbolEntry{
-		{MangleName: "testInt", CppName: "testInt", GoName: "TestInt"},
-		{MangleName: "testUint", CppName: "testUint", GoName: "TestUint"},
-		{MangleName: "testFile", CppName: "testFile", GoName: "TestFile"},
-	}, map[string]string{}, &cppgtypes.Config{
-		Deps: []string{
-			"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint",
-			"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdio",
-		},
-	}, `
-#include <stdint.h>
-#include <stdio.h>
-
-void testInt(int8_t a, int16_t b, int32_t c, int64_t d);
-void testUint(u_int8_t a, u_int16_t b, u_int32_t c, u_int64_t d);
-
-void testFile(FILE *f);
-	`,
-		`package skip
-
-import (
-	"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdint"
-	"github.com/goplus/llgo/chore/gogensig/convert/testdata/stdio"
-	_ "unsafe"
-)
-//go:linkname TestInt C.testInt
-func TestInt(a stdint.Int8_t, b stdint.Int16_t, c stdint.Int32_t, d stdint.Int64_t)
-//go:linkname TestUint C.testUint
-func TestUint(a stdint.U_int8_t, b stdint.U_int16_t, c stdint.U_int32_t, d stdint.U_int64_t)
-//go:linkname TestFile C.testFile
-func TestFile(f *stdio.FILE)
-	`, func(t *testing.T, pkg *convert.Package) {
-			files, err := os.ReadDir(pkg.GetOutputDir())
-			if err != nil {
-				t.Fatal(err)
-			}
-			needSkipHeaderFiles := pkg.AllDepIncs()
-			for _, file := range files {
-				log.Println("Generated file:", file.Name())
-				for _, headerFile := range needSkipHeaderFiles {
-					if file.Name() == convert.HeaderFileToGo(headerFile) {
-						content, err := os.ReadFile(filepath.Join(pkg.GetOutputDir(), file.Name()))
-						if err != nil {
-							t.Fatal(err)
-						}
-						t.Fatal("skip file should not be output: " + headerFile + "\n" + string(content))
-					}
-				}
-			}
-		})
 }
 
 func TestPubFile(t *testing.T) {
@@ -430,10 +355,10 @@ type Capital struct {
 type CustomData struct {
 	Str [20]int8
 }
-type Uint_t c.Uint
+type UintT c.Uint
 type Color c.Int
 
-const Color_RED Color = 0
+const ColorRED Color = 0
 //go:linkname Func C.func
 func Func(a c.Int, b c.Int)
 	`, func(t *testing.T, pkg *convert.Package) {
@@ -446,7 +371,7 @@ Capital
 color Color
 data CustomData
 point Point
-uint_t Uint_t
+uint_t UintT
 `
 		cmptest.CheckResult(t, expectedPub, string(bytes))
 	})

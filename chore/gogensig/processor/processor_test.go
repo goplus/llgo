@@ -88,7 +88,7 @@ func TestProcessFileNotExist(t *testing.T) {
 	manager := processor.NewDocVisitorManager(docVisitors)
 	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
 		Exec: func(file *unmarshal.FileEntry) error {
-			manager.Visit(file.Doc, file.Path)
+			manager.Visit(file.Doc, file.Path, file.IsSys)
 			return nil
 		},
 		DepIncs: []string{},
@@ -125,7 +125,7 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 	manager := processor.NewDocVisitorManager(docVisitors)
 	p := processor.NewDocFileSetProcessor(&processor.ProcesserConfig{
 		Exec: func(file *unmarshal.FileEntry) error {
-			manager.Visit(file.Doc, file.Path)
+			manager.Visit(file.Doc, file.Path, file.IsSys)
 			return nil
 		},
 		DepIncs: []string{},

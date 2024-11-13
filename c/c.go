@@ -47,6 +47,8 @@ type (
 	UlongLong C.ulonglong
 )
 
+type SizeT uintptr
+
 type integer interface {
 	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64
 }

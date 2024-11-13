@@ -43,6 +43,7 @@ type Package struct {
 	conf      *PackageConfig
 	depIncs   []string
 	inCurPkg  bool              // whether the current file is in the llcppg package not the dependent files
+	isSys     bool              // whether system header
 	public    map[string]string // original C name -> public Go name
 	incPaths  []string          //current pkg's include file
 }
@@ -84,24 +85,30 @@ func NewPackage(config *PackageConfig) *Package {
 	p.deps = deps
 	clib := p.p.Import("github.com/goplus/llgo/c")
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
-	// init type converter
 	p.cvt = NewConv(&TypeConfig{
 		Types:        p.p.Types,
 		TypeMap:      typeMap,
 		SymbolTable:  config.SymbolTable,
 		TrimPrefixes: config.CppgConf.TrimPrefixes,
 		Deps:         deps,
+		Package:      p,
 	})
 	p.initDepPkgs()
-	p.SetCurFile(p.Name(), false, false)
+	p.SetCurFile(p.Name(), false, false, false)
 	return p
 }
 
-// absolute path
-func (p *Package) SetCurFile(file string, isHeaderFile bool, inCurPkg bool) error {
+func (p *Package) SetCurFile(file string, isHeaderFile bool, inCurPkg bool, isSys bool) error {
+	// for system header file,avoid create a file of gogen
+	if p.isSys = isSys; p.isSys {
+		if debug {
+			log.Printf("%s is a system header file\n", file)
+		}
+		return nil
+	}
 	var fileName string
 	if isHeaderFile {
-		// include path to go filename
+		// path to go filename
 		fileName = HeaderFileToGo(file)
 	} else {
 		// package name as the default file
@@ -142,9 +149,20 @@ func (p *Package) linkLib(lib string) error {
 }
 
 func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
+	skip, anony, err := p.cvt.handleSysType(funcDecl.Name, funcDecl.Loc)
+	if skip {
+		if debug {
+			log.Printf("NewFuncDecl: %v is a function of system header file\n", funcDecl.Name)
+		}
+		return err
+	}
 	if debug {
 		log.Printf("NewFuncDecl: %v\n", funcDecl.Name)
 	}
+	if anony {
+		return fmt.Errorf("anonymous function not supported")
+	}
+
 	goFuncName, err := p.cvt.LookupSymbol(cfg.MangleNameType(funcDecl.MangledName))
 	if err != nil {
 		// not gen the function not in the symbolmap
@@ -166,19 +184,27 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 
 // todo(zzy): for class,union,struct
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
-	if typeDecl.Name == nil {
+	skip, anony, err := p.cvt.handleSysType(typeDecl.Name, typeDecl.Loc)
+	if skip {
+		if debug {
+			log.Printf("NewTypeDecl: %s type of system header\n", typeDecl.Name)
+		}
+		return err
+	}
+	if debug {
+		log.Printf("NewTypeDecl: %v\n", typeDecl.Name)
+	}
+	if anony {
 		if debug {
 			log.Println("NewTypeDecl:Skip a anonymous type")
 		}
 		return nil
 	}
+
 	// every type name should be public
 	name, changed, err := p.DeclName(typeDecl.Name.Name, true)
 	if err != nil {
 		return err
-	}
-	if debug {
-		log.Printf("NewTypeDecl: %v\n", name)
 	}
 
 	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
@@ -198,6 +224,16 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
+	skip, _, err := p.cvt.handleSysType(typedefDecl.Name, typedefDecl.Loc)
+	if skip {
+		if debug {
+			log.Printf("NewTypedefDecl: %v is a typedef of system header file\n", typedefDecl.Name)
+		}
+		return err
+	}
+	if debug {
+		log.Printf("NewTypedefDecl: %v\n", typedefDecl.Name)
+	}
 	name, changed, err := p.DeclName(typedefDecl.Name.Name, true)
 	if err != nil {
 		// for a typedef ,always appear same name like
@@ -205,9 +241,7 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 		// For this typedef, we only need skip this
 		return nil
 	}
-	if debug {
-		log.Printf("NewTypedefDecl: %s\n", name)
-	}
+
 	genDecl := p.p.NewTypeDefs()
 	typ, err := p.ToType(typedefDecl.Type)
 	if err != nil {
@@ -238,6 +272,13 @@ func (p *Package) NewTypedefs(name string, typ types.Type) *gogen.TypeDecl {
 }
 
 func (p *Package) NewEnumTypeDecl(enumTypeDecl *ast.EnumTypeDecl) error {
+	skip, _, err := p.cvt.handleSysType(enumTypeDecl.Name, enumTypeDecl.Loc)
+	if skip {
+		if debug {
+			log.Printf("NewEnumTypeDecl: %v is a enum type of system header file\n", enumTypeDecl.Name)
+		}
+		return err
+	}
 	if debug {
 		log.Printf("NewEnumTypeDecl: %v\n", enumTypeDecl.Name)
 	}
@@ -314,6 +355,9 @@ func (p *Package) createEnumItems(items []*ast.EnumItem, enumType types.Type, en
 //
 // Files that are already processed in dependent packages will not be output.
 func (p *Package) Write(headerFile string) error {
+	if p.isSys {
+		return nil
+	}
 	fileName := HeaderFileToGo(headerFile)
 	filePath := filepath.Join(p.outputDir, fileName)
 	if debug {
