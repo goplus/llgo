@@ -163,7 +163,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
-	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
+	if vtype == pyVar || ignoreName(name) || checkCgo(name) {
 		return
 	}
 	if debugInstr {
@@ -719,6 +719,10 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	}
 	switch v := instr.(type) {
 	case *ssa.Store:
+		// skip cgo global variables
+		if checkCgo(v.Addr.Name()) {
+			return
+		}
 		va := v.Addr
 		if va, ok := va.(*ssa.IndexAddr); ok {
 			if args, ok := p.isVArgs(va.X); ok { // varargs: this is a varargs store
@@ -997,6 +1001,10 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
+			// skip cgo global variables
+			if checkCgo(member.Name()) {
+				continue
+			}
 			ctx.compileGlobal(ret, member)
 		}
 	}
