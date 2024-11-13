@@ -393,18 +393,14 @@ func (v Value) CanSet() bool {
 // Cap returns v's capacity.
 // It panics if v's Kind is not Array, Chan, Slice or pointer to Array.
 func (v Value) Cap() int {
-	/* TODO(xsw):
 	// capNonSlice is split out to keep Cap inlineable for slice kinds.
 	if v.kind() == Slice {
-		return (*unsafeheader.Slice)(v.ptr).Cap
+		return (*unsafeheaderSlice)(v.ptr).Cap
 	}
 	return v.capNonSlice()
-	*/
-	panic("todo: reflect.Value.Cap")
 }
 
 func (v Value) capNonSlice() int {
-	/* TODO(xsw):
 	k := v.kind()
 	switch k {
 	case Array:
@@ -418,8 +414,6 @@ func (v Value) capNonSlice() int {
 		panic("reflect: call of reflect.Value.Cap on ptr to non-array Value")
 	}
 	panic(&ValueError{"reflect.Value.Cap", v.kind()})
-	*/
-	panic("todo: reflect.Value.capNonSlice")
 }
 
 // Close closes the channel v.
@@ -985,27 +979,24 @@ func (v Value) Len() int {
 }
 
 func (v Value) lenNonSlice() int {
-	/*
-		switch k := v.kind(); k {
-		case Array:
-			tt := (*arrayType)(unsafe.Pointer(v.typ()))
-			return int(tt.Len)
-		case Chan:
-			return chanlen(v.pointer())
-		case Map:
-			return maplen(v.pointer())
-		case String:
-			// String is bigger than a word; assume flagIndir.
-			return (*unsafeheader.String)(v.ptr).Len
-		case Ptr:
-			if v.typ().Elem().Kind() == abi.Array {
-				return v.typ().Elem().Len()
-			}
-			panic("reflect: call of reflect.Value.Len on ptr to non-array Value")
+	switch k := v.kind(); k {
+	case Array:
+		tt := (*arrayType)(unsafe.Pointer(v.typ()))
+		return int(tt.Len)
+	case Chan:
+		return chanlen(v.pointer())
+	case Map:
+		return maplen(v.pointer())
+	case String:
+		// String is bigger than a word; assume flagIndir.
+		return (*unsafeheaderString)(v.ptr).Len
+	case Ptr:
+		if v.typ().Elem().Kind() == abi.Array {
+			return v.typ().Elem().Len()
 		}
-		panic(&ValueError{"reflect.Value.Len", v.kind()})
-	*/
-	panic("todo: reflect.Value.lenNonSlice")
+		panic("reflect: call of reflect.Value.Len on ptr to non-array Value")
+	}
+	panic(&ValueError{"reflect.Value.Len", v.kind()})
 }
 
 // Pointer returns v's value as a uintptr.
@@ -2499,3 +2490,12 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 	}
 	return
 }
+
+//go:linkname chancap github.com/goplus/llgo/internal/runtime.ChanCap
+func chancap(ch unsafe.Pointer) int
+
+//go:linkname chanlen github.com/goplus/llgo/internal/runtime.ChanLen
+func chanlen(ch unsafe.Pointer) int
+
+//go:linkname maplen github.com/goplus/llgo/internal/runtime.MapLen
+func maplen(ch unsafe.Pointer) int
