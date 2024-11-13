@@ -340,28 +340,25 @@ func (v Value) Bytes() []byte {
 }
 
 func (v Value) bytesSlow() []byte {
-	/*
-		switch v.kind() {
-		case Slice:
-			if v.typ().Elem().Kind() != abi.Uint8 {
-				panic("reflect.Value.Bytes of non-byte slice")
-			}
-			// Slice is always bigger than a word; assume flagIndir.
-			return *(*[]byte)(v.ptr)
-		case Array:
-			if v.typ().Elem().Kind() != abi.Uint8 {
-				panic("reflect.Value.Bytes of non-byte array")
-			}
-			if !v.CanAddr() {
-				panic("reflect.Value.Bytes of unaddressable byte array")
-			}
-			p := (*byte)(v.ptr)
-			n := int((*arrayType)(unsafe.Pointer(v.typ())).Len)
-			return unsafe.Slice(p, n)
+	switch v.kind() {
+	case Slice:
+		if v.typ().Elem().Kind() != abi.Uint8 {
+			panic("reflect.Value.Bytes of non-byte slice")
 		}
-		panic(&ValueError{"reflect.Value.Bytes", v.kind()})
-	*/
-	panic("todo: reflect.Value.byteSlow")
+		// Slice is always bigger than a word; assume flagIndir.
+		return *(*[]byte)(v.ptr)
+	case Array:
+		if v.typ().Elem().Kind() != abi.Uint8 {
+			panic("reflect.Value.Bytes of non-byte array")
+		}
+		if !v.CanAddr() {
+			panic("reflect.Value.Bytes of unaddressable byte array")
+		}
+		p := (*byte)(v.ptr)
+		n := int((*arrayType)(unsafe.Pointer(v.typ())).Len)
+		return unsafe.Slice(p, n)
+	}
+	panic(&ValueError{"reflect.Value.Bytes", v.kind()})
 }
 
 // runes returns v's underlying value.
