@@ -16,9 +16,10 @@ import (
 )
 
 type FileEntry struct {
-	Path  string
-	IsSys bool
-	Doc   *ast.File
+	Path    string
+	IncPath string
+	IsSys   bool
+	Doc     *ast.File
 }
 
 type Converter struct {
@@ -59,17 +60,40 @@ func NewConverter(config *clangutils.Config) (*Converter, error) {
 		return nil, err
 	}
 
+	files := initFileEntries(unit)
+
 	return &Converter{
-		Files: make([]*FileEntry, 0),
+		Files: files,
 		index: index,
 		unit:  unit,
 	}, nil
+
 }
 
 func (ct *Converter) Dispose() {
 	ct.logln("Dispose")
 	ct.index.Dispose()
 	ct.unit.Dispose()
+}
+
+func initFileEntries(unit *clang.TranslationUnit) []*FileEntry {
+	files := make([]*FileEntry, 0)
+	clangutils.GetInclusions(unit, func(inced clang.File, incins []clang.SourceLocation) {
+		loc := unit.GetLocation(inced, 1, 1)
+		incedFile := toStr(inced.FileName())
+		var incPath string
+		if len(incins) > 0 {
+			cur := unit.GetCursor(&incins[0])
+			incPath = toStr(cur.String())
+		}
+		files = append(files, &FileEntry{
+			Path:    incedFile,
+			IncPath: incPath,
+			IsSys:   loc.IsInSystemHeader() != 0,
+			Doc:     &ast.File{},
+		})
+	})
+	return files
 }
 
 func (ct *Converter) GetTokens(cursor clang.Cursor) []*ast.Token {

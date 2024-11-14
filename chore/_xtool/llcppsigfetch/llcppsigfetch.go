@@ -162,7 +162,10 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose boo
 		}
 	}
 
-	context := parse.NewContext(conf.Cplusplus)
+	context := parse.NewContext(&parse.ContextConfig{
+		IsCpp:   conf.Cplusplus,
+		Include: conf.Include,
+	})
 	err = context.ProcessFiles(files)
 	check(err)
 

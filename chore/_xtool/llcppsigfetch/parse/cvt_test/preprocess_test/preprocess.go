@@ -16,6 +16,7 @@ func main() {
 	TestDefine()
 	TestInclude()
 	TestSystemHeader()
+	TestInclusionMap()
 	TestMacroExpansionOtherFile()
 }
 
@@ -34,6 +35,29 @@ func TestInclude() {
 		// `#include <limits.h>`, //  Standard libraries are mostly platform-dependent
 	}
 	test.RunTest("TestInclude", testCases)
+}
+
+func TestInclusionMap() {
+	fmt.Println("=== TestInclusionMap ===")
+	converter, err := parse.NewConverter(&clangutils.Config{
+		File:  "#include <sys/types.h>",
+		Temp:  true,
+		IsCpp: false,
+	})
+	if err != nil {
+		panic(err)
+	}
+	found := false
+	for _, f := range converter.Files {
+		if f.IncPath == "sys/types.h" {
+			found = true
+		}
+	}
+	if !found {
+		panic("sys/types.h not found")
+	} else {
+		fmt.Println("sys/types.h include path found")
+	}
 }
 
 func TestSystemHeader() {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
@@ -25,14 +26,21 @@ func SetDebug(dbgFlags dbgFlags) {
 }
 
 type Context struct {
-	Files []*FileEntry
-	IsCpp bool
+	Files   []*FileEntry
+	IsCpp   bool
+	Include []string
 }
 
-func NewContext(isCpp bool) *Context {
+type ContextConfig struct {
+	Include []string
+	IsCpp   bool
+}
+
+func NewContext(cfg *ContextConfig) *Context {
 	return &Context{
-		Files: make([]*FileEntry, 0),
-		IsCpp: isCpp,
+		Files:   make([]*FileEntry, 0),
+		IsCpp:   cfg.IsCpp,
+		Include: cfg.Include,
 	}
 }
 
@@ -90,6 +98,24 @@ func (p *Context) parseFile(path string) ([]*FileEntry, error) {
 	defer converter.Dispose()
 
 	files, err := converter.Convert()
+
+	// the entry file is the first file in the files list
+	entryFile := files[0]
+	if entryFile.IncPath != "" {
+		return nil, errors.New("entry file " + entryFile.Path + " has include path " + entryFile.IncPath)
+	}
+
+	for _, include := range p.Include {
+		if strings.Contains(entryFile.Path, include) {
+			entryFile.IncPath = include
+			break
+		}
+	}
+
+	if entryFile.IncPath == "" {
+		return nil, errors.New("entry file " + entryFile.Path + " is not in include list")
+	}
+
 	if err != nil {
 		return nil, err
 	}

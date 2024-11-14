@@ -18,6 +18,8 @@ type Config struct {
 
 type Visitor func(cursor, parent clang.Cursor) clang.ChildVisitResult
 
+type InclusionVisitor func(included_file clang.File, inclusions []clang.SourceLocation)
+
 const TEMP_FILE = "temp.h"
 
 func CreateTranslationUnit(config *Config) (*clang.Index, *clang.TranslationUnit, error) {
@@ -98,4 +100,12 @@ func VisitChildren(cursor clang.Cursor, fn Visitor) c.Uint {
 		cfn := *(*Visitor)(clientData)
 		return cfn(cursor, parent)
 	}, unsafe.Pointer(&fn))
+}
+
+func GetInclusions(unit *clang.TranslationUnit, visitor InclusionVisitor) {
+	clang.GetInclusions(unit, func(inced clang.File, incin *clang.SourceLocation, incilen c.Uint, data c.Pointer) {
+		ics := unsafe.Slice(incin, incilen)
+		cfn := *(*InclusionVisitor)(data)
+		cfn(inced, ics)
+	}, unsafe.Pointer(&visitor))
 }
