@@ -15,6 +15,14 @@ CXChildVisitResult wrap_visitor(CXCursor cursor, CXCursor parent, CXClientData d
 
 extern "C" {
 
+void wrap_clang_getLocation(CXTranslationUnit tu, CXFile file, unsigned line, unsigned column, CXSourceLocation *loc) {
+    *loc = clang_getLocation(tu, file, line, column);
+}
+
+void wrap_clang_getLocationForOffset(CXTranslationUnit tu, CXFile file, unsigned offset, CXSourceLocation *loc) {
+    *loc = clang_getLocationForOffset(tu, file, offset);
+}
+
 void wrap_clang_getTranslationUnitCursor(CXTranslationUnit uint, CXCursor *cur) {
     *cur = clang_getTranslationUnitCursor(uint);
 }

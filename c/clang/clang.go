@@ -1158,6 +1158,30 @@ type UnsavedFile struct {
 }
 
 /**
+ * Retrieves the source location associated with a given file/line/column
+ * in a particular translation unit.
+ */
+// llgo:link (*TranslationUnit).wrapGetLocation C.wrap_clang_getLocation
+func (t *TranslationUnit) wrapGetLocation(file File, line, column c.Uint, loc *SourceLocation) {}
+
+func (t *TranslationUnit) GetLocation(file File, line, column c.Uint) (ret SourceLocation) {
+	t.wrapGetLocation(file, line, column, &ret)
+	return
+}
+
+/**
+ * Retrieves the source location associated with a given character offset
+ * in a particular translation unit.
+ */
+// llgo:link (*TranslationUnit).wrapGetLocationForOffset C.wrap_clang_getLocationForOffset
+func (t *TranslationUnit) wrapGetLocationForOffset(file File, offset c.Uint, loc *SourceLocation) {}
+
+func (t *TranslationUnit) GetLocationForOffset(file File, offset c.Uint) (ret SourceLocation) {
+	t.wrapGetLocationForOffset(file, offset, &ret)
+	return
+}
+
+/**
  * An "index" that consists of a set of translation units that would
  * typically be linked together into an executable or library.
  */
