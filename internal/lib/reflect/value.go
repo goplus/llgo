@@ -2035,13 +2035,37 @@ type closure struct {
 
 func toFFIType(typ *abi.Type) *ffi.Type {
 	kind := typ.Kind()
-	switch {
-	case kind >= abi.Bool && kind <= abi.Complex128:
+	switch kind {
+	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64, abi.Complex64, abi.Complex128:
 		return ffi.Typ[kind]
-	case kind == abi.Pointer || kind == abi.UnsafePointer:
+	case abi.Array:
+		st := typ.ArrayType()
+		return ffi.ArrayOf(toFFIType(st.Elem), int(st.Len))
+	case abi.Chan:
+		return ffi.TypePointer
+	case abi.Func:
+	case abi.Interface:
+		return ffi.TypeInterface
+	case abi.Map:
+		return ffi.TypePointer
+	case abi.Pointer:
+		return ffi.TypePointer
+	case abi.Slice:
+	case abi.String:
+		return ffi.TypeString
+	case abi.Struct:
+		st := typ.StructType()
+		fields := make([]*ffi.Type, len(st.Fields))
+		for i, fs := range st.Fields {
+			fields[i] = toFFIType(fs.Typ)
+		}
+		return ffi.StructOf(fields...)
+	case abi.UnsafePointer:
 		return ffi.TypePointer
 	}
-	panic("unsupport type " + typ.String())
+	panic("reflect.toFFIType unsupport type " + typ.String())
 }
 
 func toFFISig(tin, tout []*abi.Type) (*ffi.Signature, error) {
