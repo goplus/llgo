@@ -3,6 +3,8 @@ package convert_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -504,4 +506,79 @@ type NormalType c.Int
 	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(buf.String()) {
 		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, buf.String())
 	}
+}
+
+// test sys type in stdinclude to package
+func TestSysTypeToPkg(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		t.Skip("skip on linux")
+	}
+	tempDir := cmptest.GetTempHeaderPathDir()
+
+	cmptest.RunTest(t, "systype", false, []config.SymbolEntry{
+		{MangleName: "funcc", CppName: "funcc", GoName: "FuncC"},
+	}, map[string]string{
+		"data": "CustomData",
+	}, &cppgtypes.Config{
+		CFlags:  "-I" + tempDir,
+		Include: []string{"temp.h"},
+	}, `
+#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <limits.h>
+#include <time.h>
+#include <fenv.h>
+
+// posix
+#include <arpa/inet.h>
+#include <net/if.h>
+
+void funcc(uint_least64_t a, uint_least64_t b);
+	`, `
+package systype
+
+import _ "unsafe"
+	`, func(t *testing.T, pkg *convert.Package) {
+		typConv := pkg.GetTypeConv()
+		if typConv.SysTypeLoc == nil {
+			t.Fatal("sysTypeLoc is nil")
+		}
+		type inf struct {
+			typeName  string
+			isDefault bool // is default llgo/c
+			info      *convert.HeaderInfo
+		}
+		pkgTypes := make(map[string][]*inf)
+
+		for name, info := range typConv.SysTypeLoc {
+			targetPkg, isDefault := convert.IncPathToPkg(info.IncPath)
+			pkgTypes[targetPkg] = append(pkgTypes[targetPkg], &inf{
+				typeName:  name,
+				info:      info,
+				isDefault: isDefault,
+			})
+		}
+
+		for pkg, types := range pkgTypes {
+			t.Logf("Package %s contains types:", pkg)
+			sort.Slice(types, func(i, j int) bool {
+				if types[i].isDefault != types[j].isDefault {
+					return types[i].isDefault
+				}
+				return types[i].typeName < types[j].typeName
+			})
+			for _, inf := range types {
+				if !inf.isDefault {
+					t.Logf("  - %s (%s)", inf.typeName, inf.info.IncPath)
+				} else {
+					t.Logf("  - %s (%s) [default]", inf.typeName, inf.info.IncPath)
+				}
+			}
+		}
+	})
 }

@@ -30,7 +30,6 @@ type Cmd struct {
 
 	Stdout io.Writer
 	Stderr io.Writer
-	Stdin  io.Reader
 }
 
 // New creates a new clang command.
@@ -38,14 +37,13 @@ func New(app string) *Cmd {
 	if app == "" {
 		app = "clang"
 	}
-	return &Cmd{app, os.Stdout, os.Stderr, os.Stdin}
+	return &Cmd{app, os.Stdout, os.Stderr}
 }
 
 // Exec executes a clang command.
 func (p *Cmd) Exec(args ...string) error {
 	cmd := exec.Command(p.app, args...)
 	cmd.Stdout = p.Stdout
-	cmd.Stdin = p.Stdin
 	cmd.Stderr = p.Stderr
 	return cmd.Run()
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type DocVisitor interface {
-	VisitStart(path string, isSys bool)
+	VisitStart(path string, incPath string, isSys bool)
 	Visit(node ast.Node)
 	VisitFuncDecl(funcDecl *ast.FuncDecl)
 	VisitDone(path string)

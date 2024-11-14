@@ -17,9 +17,9 @@ func NewDocVisitorManager(visitorList []visitor.DocVisitor) *DocVisitorManager {
 	return &DocVisitorManager{VisitorList: visitorList}
 }
 
-func (p *DocVisitorManager) Visit(node ast.Node, path string, isSys bool) bool {
+func (p *DocVisitorManager) Visit(node ast.Node, path string, incPath string, isSys bool) bool {
 	for _, v := range p.VisitorList {
-		v.VisitStart(path, isSys)
+		v.VisitStart(path, incPath, isSys)
 		v.Visit(node)
 		v.VisitDone(path)
 	}

@@ -220,8 +220,9 @@ func TestPackageWrite(t *testing.T) {
 		}
 	}
 
-	incPath := "path/to/mock_header.h"
-	genPath := convert.HeaderFileToGo(incPath)
+	incPath := "mock_header.h"
+	filePath := filepath.Join("/path", "to", incPath)
+	genPath := convert.HeaderFileToGo(filePath)
 
 	t.Run("OutputToTempDir", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "test_package_write")
@@ -233,8 +234,8 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: tempDir,
 		})
-		pkg.SetCurFile(incPath, true, true, false)
-		err = pkg.Write(incPath)
+		pkg.SetCurFile(filePath, incPath, true, true, false)
+		err = pkg.Write(filePath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
 		}
@@ -261,8 +262,8 @@ func TestPackageWrite(t *testing.T) {
 		pkg := createTestPkg(t, &convert.PackageConfig{
 			OutputDir: testpkgDir,
 		})
-		pkg.SetCurFile(incPath, true, true, false)
-		err = pkg.Write(incPath)
+		pkg.SetCurFile(filePath, incPath, true, true, false)
+		err = pkg.Write(filePath)
 		if err != nil {
 			t.Fatalf("Write method failed: %v", err)
 		}
@@ -1626,6 +1627,7 @@ func TestTypeClean(t *testing.T) {
 	testCases := []struct {
 		addType    func()
 		headerFile string
+		incPath    string
 		newType    string
 	}{
 		{
@@ -1635,7 +1637,8 @@ func TestTypeClean(t *testing.T) {
 					Type: &ast.RecordType{Tag: ast.Struct},
 				})
 			},
-			headerFile: "file1.h",
+			headerFile: "/path/to/file1.h",
+			incPath:    "file1.h",
 			newType:    "Foo1",
 		},
 		{
@@ -1645,7 +1648,8 @@ func TestTypeClean(t *testing.T) {
 					Type: &ast.BuiltinType{Kind: ast.Int},
 				})
 			},
-			headerFile: "file2.h",
+			headerFile: "/path/to/file2.h",
+			incPath:    "file2.h",
 			newType:    "Bar2",
 		},
 		{
@@ -1655,13 +1659,14 @@ func TestTypeClean(t *testing.T) {
 					Type: &ast.FuncType{Params: nil, Ret: &ast.BuiltinType{Kind: ast.Void}},
 				})
 			},
-			headerFile: "file3.h",
+			headerFile: "/path/to/file3.h",
+			incPath:    "file3.h",
 			newType:    "Func1",
 		},
 	}
 
 	for i, tc := range testCases {
-		pkg.SetCurFile(tc.headerFile, true, true, false)
+		pkg.SetCurFile(tc.headerFile, tc.incPath, true, true, false)
 		tc.addType()
 
 		goFileName := convert.HeaderFileToGo(tc.headerFile)
@@ -1716,10 +1721,63 @@ func TestHeaderFileToGo(t *testing.T) {
 	}
 }
 
-func TestGetSysHeaderFullPath(t *testing.T) {
-	fullPath, err := convert.GetSysHeaderFullPath("sys/_types/_size_t.h")
-	if err != nil {
-		t.Fatal(err)
+func TestIncPathToPkg(t *testing.T) {
+	testCases := map[string]map[string][]string{
+		// macos 14.0
+		"darwin": {
+			convert.LLGO_C: []string{
+				"_stdio.h",
+				"secure/_stdio.h",
+				"stdio.h",
+				"sys/_types/_int16_t.h",
+				"sys/_types/_int32_t.h",
+				"sys/_types/_int64_t.h",
+				"sys/_types/_int8_t.h",
+				"sys/_types/_intptr_t.h",
+				"sys/_types/_size_t.h",
+				"sys/_types/_u_int16_t.h",
+				"sys/_types/_u_int32_t.h",
+				"sys/_types/_u_int64_t.h",
+				"sys/_types/_u_int8_t.h",
+				"sys/_types/_uintptr_t.h",
+				"sys/_types.h",
+				"arm/_types.h",
+				"sys/_types/_ct_rune_t.h",
+				"sys/_types/_dev_t.h",
+				"sys/_types/_id_t.h",
+				"sys/_types.h",
+				"arm/_types.h",
+				"sys/_types/_errno_t.h",
+			},
+			convert.LLGO_PTHREAD: []string{
+				"sys/_pthread/_pthread_types.h",
+			},
+			convert.LLGO_SYSTEM: []string{
+				"sys/signal.h",
+				"sys/resource.h",
+				"sys/wait.h",
+			},
+			convert.LLGO_TIME: []string{
+				"time.h",
+				"sys/_types/_time_t.h",
+			},
+			convert.LLGO_UNIX_NET: []string{
+				"sys/socket.h",
+				"arpa/inet.h",
+				"netinet6/in6.h",
+				"netinet/in.h",
+				"net/if.h",
+				"net/if_var.h",
+			},
+		},
 	}
-	t.Log(fullPath)
+	for testVer, pkgMap := range testCases {
+		for expectPkg, incs := range pkgMap {
+			for _, inc := range incs {
+				if gotPkg, _ := convert.IncPathToPkg(inc); gotPkg != expectPkg {
+					t.Errorf("testVer: %s, inc: %s, expect: %s, got: %s", testVer, inc, expectPkg, gotPkg)
+				}
+			}
+		}
+	}
 }
