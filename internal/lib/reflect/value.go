@@ -22,6 +22,7 @@ package reflect
 
 import (
 	"errors"
+	"math"
 	"unsafe"
 
 	"github.com/goplus/llgo/c/bitcast"
@@ -843,66 +844,63 @@ func (v Value) IsValid() bool {
 // IsZero reports whether v is the zero value for its type.
 // It panics if the argument is invalid.
 func (v Value) IsZero() bool {
-	/*
-		switch v.kind() {
-		case Bool:
-			return !v.Bool()
-		case Int, Int8, Int16, Int32, Int64:
-			return v.Int() == 0
-		case Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
-			return v.Uint() == 0
-		case Float32, Float64:
-			return math.Float64bits(v.Float()) == 0
-		case Complex64, Complex128:
-			c := v.Complex()
-			return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
-		case Array:
-			// If the type is comparable, then compare directly with zero.
-			if v.typ().Equal != nil && v.typ().Size() <= maxZero {
-				if v.flag&flagIndir == 0 {
-					return v.ptr == nil
-				}
-				// v.ptr doesn't escape, as Equal functions are compiler generated
-				// and never escape. The escape analysis doesn't know, as it is a
-				// function pointer call.
-				return v.typ().Equal(noescape(v.ptr), unsafe.Pointer(&zeroVal[0]))
+	switch v.kind() {
+	case Bool:
+		return !v.Bool()
+	case Int, Int8, Int16, Int32, Int64:
+		return v.Int() == 0
+	case Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
+		return v.Uint() == 0
+	case Float32, Float64:
+		return math.Float64bits(v.Float()) == 0
+	case Complex64, Complex128:
+		c := v.Complex()
+		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
+	case Array:
+		// If the type is comparable, then compare directly with zero.
+		if v.typ().Equal != nil && v.typ().Size() <= maxZero {
+			if v.flag&flagIndir == 0 {
+				return v.ptr == nil
 			}
-
-			n := v.Len()
-			for i := 0; i < n; i++ {
-				if !v.Index(i).IsZero() {
-					return false
-				}
-			}
-			return true
-		case Chan, Func, Interface, Map, Pointer, Slice, UnsafePointer:
-			return v.IsNil()
-		case String:
-			return v.Len() == 0
-		case Struct:
-			// If the type is comparable, then compare directly with zero.
-			if v.typ().Equal != nil && v.typ().Size() <= maxZero {
-				if v.flag&flagIndir == 0 {
-					return v.ptr == nil
-				}
-				// See noescape justification above.
-				return v.typ().Equal(noescape(v.ptr), unsafe.Pointer(&zeroVal[0]))
-			}
-
-			n := v.NumField()
-			for i := 0; i < n; i++ {
-				if !v.Field(i).IsZero() {
-					return false
-				}
-			}
-			return true
-		default:
-			// This should never happen, but will act as a safeguard for later,
-			// as a default value doesn't makes sense here.
-			panic(&ValueError{"reflect.Value.IsZero", v.Kind()})
+			// v.ptr doesn't escape, as Equal functions are compiler generated
+			// and never escape. The escape analysis doesn't know, as it is a
+			// function pointer call.
+			return v.typ().Equal(noescape(v.ptr), unsafe.Pointer(&zeroVal[0]))
 		}
-	*/
-	panic("todo: reflect.Value.IsZero")
+
+		n := v.Len()
+		for i := 0; i < n; i++ {
+			if !v.Index(i).IsZero() {
+				return false
+			}
+		}
+		return true
+	case Chan, Func, Interface, Map, Pointer, Slice, UnsafePointer:
+		return v.IsNil()
+	case String:
+		return v.Len() == 0
+	case Struct:
+		// If the type is comparable, then compare directly with zero.
+		if v.typ().Equal != nil && v.typ().Size() <= maxZero {
+			if v.flag&flagIndir == 0 {
+				return v.ptr == nil
+			}
+			// See noescape justification above.
+			return v.typ().Equal(noescape(v.ptr), unsafe.Pointer(&zeroVal[0]))
+		}
+
+		n := v.NumField()
+		for i := 0; i < n; i++ {
+			if !v.Field(i).IsZero() {
+				return false
+			}
+		}
+		return true
+	default:
+		// This should never happen, but will act as a safeguard for later,
+		// as a default value doesn't makes sense here.
+		panic(&ValueError{"reflect.Value.IsZero", v.Kind()})
+	}
 }
 
 // SetZero sets v to be the zero value of v's type.
@@ -1792,6 +1790,9 @@ func Zero(typ Type) Value {
 // TODO(xsw): check this
 // must match declarations in runtime/map.go.
 const maxZero = runtime.MaxZero
+
+//go:linkname zeroVal runtime.ZeroVal
+var zeroVal [maxZero]byte
 
 // New returns a Value representing a pointer to a new zero value
 // for the specified type. That is, the returned Value's Type is PointerTo(typ).
