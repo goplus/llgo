@@ -791,18 +791,15 @@ func valueInterface(v Value, safe bool) any {
 // Deprecated: The memory representation of interface values is not
 // compatible with InterfaceData.
 func (v Value) InterfaceData() [2]uintptr {
-	/*
-		v.mustBe(Interface)
-		// The compiler loses track as it converts to uintptr. Force escape.
-		escapes(v.ptr)
-		// We treat this as a read operation, so we allow
-		// it even for unexported data, because the caller
-		// has to import "unsafe" to turn it into something
-		// that can be abused.
-		// Interface value is always bigger than a word; assume flagIndir.
-		return *(*[2]uintptr)(v.ptr)
-	*/
-	panic("todo: reflect.Value.InterfaceData")
+	v.mustBe(Interface)
+	// The compiler loses track as it converts to uintptr. Force escape.
+	escapes(v.ptr)
+	// We treat this as a read operation, so we allow
+	// it even for unexported data, because the caller
+	// has to import "unsafe" to turn it into something
+	// that can be abused.
+	// Interface value is always bigger than a word; assume flagIndir.
+	return *(*[2]uintptr)(v.ptr)
 }
 
 // IsNil reports whether its argument v is nil. The argument must be
@@ -1035,6 +1032,8 @@ func (v Value) Pointer() uintptr {
 			// so their Pointers are equal. The function used here must
 			// match the one used in makeMethodValue.
 			//			return methodValueCallCodePtr()
+			_, _, fn := methodReceiver("unsafePointer", v, int(v.flag)>>flagMethodShift)
+			return uintptr(fn)
 		}
 		p := v.pointer()
 		// Non-nil func value points at data block.
