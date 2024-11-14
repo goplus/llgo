@@ -1626,7 +1626,6 @@ func (v Value) UnsafeAddr() uintptr {
 // element of the slice. If the slice is nil the returned value
 // is nil.  If the slice is empty but non-nil the return value is non-nil.
 func (v Value) UnsafePointer() unsafe.Pointer {
-	/* TODO(xsw):
 	k := v.kind()
 	switch k {
 	case Pointer:
@@ -1649,8 +1648,8 @@ func (v Value) UnsafePointer() unsafe.Pointer {
 			// created via reflect have the same underlying code pointer,
 			// so their Pointers are equal. The function used here must
 			// match the one used in makeMethodValue.
-			code := methodValueCallCodePtr()
-			return *(*unsafe.Pointer)(unsafe.Pointer(&code))
+			_, _, fn := methodReceiver("unsafePointer", v, int(v.flag)>>flagMethodShift)
+			return fn
 		}
 		p := v.pointer()
 		// Non-nil func value points at data block.
@@ -1661,11 +1660,9 @@ func (v Value) UnsafePointer() unsafe.Pointer {
 		return p
 
 	case Slice:
-		return (*unsafeheader.Slice)(v.ptr).Data
+		return (*unsafeheaderSlice)(v.ptr).Data
 	}
 	panic(&ValueError{"reflect.Value.UnsafePointer", v.kind()})
-	*/
-	panic("todo: reflect.Value.UnsafePointer")
 }
 
 //go:linkname unsafe_New github.com/goplus/llgo/internal/runtime.New
@@ -1887,7 +1884,9 @@ func typedmemmove(t *abi.Type, dst, src unsafe.Pointer)
 //go:linkname typedmemclr github.com/goplus/llgo/internal/runtime.Typedmemclr
 func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
 
-/* TODO(xsw):
+/*
+	TODO(xsw):
+
 // typedmemclrpartial is like typedmemclr but assumes that
 // dst points off bytes into the value and only clears size bytes.
 //
@@ -1908,9 +1907,10 @@ func typedarrayclear(elemType *abi.Type, ptr unsafe.Pointer, len int)
 
 //go:noescape
 func typehash(t *abi.Type, p unsafe.Pointer, h uintptr) uintptr
-
-func verifyNotInHeapPtr(p uintptr) bool
 */
+func verifyNotInHeapPtr(p uintptr) bool {
+	return true
+}
 
 //go:linkname growslice github.com/goplus/llgo/internal/runtime.GrowSlice
 func growslice(src unsafeheaderSlice, num, etSize int) unsafeheaderSlice
