@@ -1799,21 +1799,18 @@ const maxZero = runtime.MaxZero
 // New returns a Value representing a pointer to a new zero value
 // for the specified type. That is, the returned Value's Type is PointerTo(typ).
 func New(typ Type) Value {
-	/*
-		if typ == nil {
-			panic("reflect: New(nil)")
-		}
-		t := &typ.(*rtype).t
-		pt := ptrTo(t)
-		if ifaceIndir(pt) {
-			// This is a pointer to a not-in-heap type.
-			panic("reflect: New of type that may not be allocated in heap (possibly undefined cgo C type)")
-		}
-		ptr := unsafe_New(t)
-		fl := flag(Pointer)
-		return Value{pt, ptr, fl}
-	*/
-	panic("todo: reflect.New")
+	if typ == nil {
+		panic("reflect: New(nil)")
+	}
+	t := &typ.(*rtype).t
+	pt := ptrTo(t)
+	if ifaceIndir(pt) {
+		// This is a pointer to a not-in-heap type.
+		panic("reflect: New of type that may not be allocated in heap (possibly undefined cgo C type)")
+	}
+	ptr := unsafe_New(t)
+	fl := flag(Pointer)
+	return Value{pt, ptr, fl}
 }
 
 // NewAt returns a Value representing a pointer to a value of the
