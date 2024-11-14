@@ -2033,6 +2033,52 @@ type closure struct {
 	env unsafe.Pointer
 }
 
+func toFFIArg(v Value) unsafe.Pointer {
+	kind := v.typ_.Kind()
+	switch kind {
+	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64, abi.Complex64:
+		if v.flag&flagAddr != 0 {
+			return v.ptr
+		} else {
+			return unsafe.Pointer(&v.ptr)
+		}
+	case abi.Complex128:
+		return unsafe.Pointer(v.ptr)
+	case abi.Array:
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
+		return unsafe.Pointer(&v.ptr)
+	case abi.Chan:
+		return unsafe.Pointer(&v.ptr)
+	case abi.Func:
+		return unsafe.Pointer(&v.ptr)
+	case abi.Interface:
+	case abi.Map:
+		return unsafe.Pointer(&v.ptr)
+	case abi.Pointer:
+		return unsafe.Pointer(&v.ptr)
+	case abi.Slice:
+		return v.ptr
+	case abi.String:
+		return v.ptr
+	case abi.Struct:
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
+		return unsafe.Pointer(&v.ptr)
+	case abi.UnsafePointer:
+		return unsafe.Pointer(&v.ptr)
+	}
+	panic("reflect.toFFIArg unsupport type " + v.typ().String())
+}
+
+var (
+	ffiTypeClosure = ffi.StructOf(ffi.TypePointer, ffi.TypePointer)
+)
+
 func toFFIType(typ *abi.Type) *ffi.Type {
 	kind := typ.Kind()
 	switch kind {
@@ -2046,6 +2092,7 @@ func toFFIType(typ *abi.Type) *ffi.Type {
 	case abi.Chan:
 		return ffi.TypePointer
 	case abi.Func:
+		return ffiTypeClosure
 	case abi.Interface:
 		return ffi.TypeInterface
 	case abi.Map:
@@ -2053,6 +2100,7 @@ func toFFIType(typ *abi.Type) *ffi.Type {
 	case abi.Pointer:
 		return ffi.TypePointer
 	case abi.Slice:
+		return ffi.TypeSlice
 	case abi.String:
 		return ffi.TypeString
 	case abi.Struct:
@@ -2147,11 +2195,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		ret = unsafe.Pointer(&v)
 	}
 	for _, in := range in {
-		if in.flag&flagIndir != 0 {
-			args = append(args, in.ptr)
-		} else {
-			args = append(args, unsafe.Pointer(&in.ptr))
-		}
+		args = append(args, toFFIArg(in))
 	}
 	ffi.Call(sig, fn, ret, args...)
 	switch n := len(tout); n {
