@@ -1347,7 +1347,6 @@ func (v Value) SetString(x string) {
 // It panics if v's Kind is not Array, Slice or String, or if v is an unaddressable array,
 // or if the indexes are out of bounds.
 func (v Value) Slice(i, j int) Value {
-	/* TODO(xsw):
 	var (
 		cap  int
 		typ  *sliceType
@@ -1368,18 +1367,18 @@ func (v Value) Slice(i, j int) Value {
 
 	case Slice:
 		typ = (*sliceType)(unsafe.Pointer(v.typ()))
-		s := (*unsafeheader.Slice)(v.ptr)
+		s := (*unsafeheaderSlice)(v.ptr)
 		base = s.Data
 		cap = s.Cap
 
 	case String:
-		s := (*unsafeheader.String)(v.ptr)
+		s := (*unsafeheaderString)(v.ptr)
 		if i < 0 || j < i || j > s.Len {
 			panic("reflect.Value.Slice: string slice index out of bounds")
 		}
-		var t unsafeheader.String
+		var t unsafeheaderString
 		if i < s.Len {
-			t = unsafeheader.String{Data: arrayAt(s.Data, i, 1, "i < s.Len"), Len: j - i}
+			t = unsafeheaderString{Data: arrayAt(s.Data, i, 1, "i < s.Len"), Len: j - i}
 		}
 		return Value{v.typ(), unsafe.Pointer(&t), v.flag}
 	}
@@ -1392,7 +1391,7 @@ func (v Value) Slice(i, j int) Value {
 	var x []unsafe.Pointer
 
 	// Reinterpret as *unsafeheader.Slice to edit.
-	s := (*unsafeheader.Slice)(unsafe.Pointer(&x))
+	s := (*unsafeheaderSlice)(unsafe.Pointer(&x))
 	s.Len = j - i
 	s.Cap = cap - i
 	if cap-i > 0 {
@@ -1404,15 +1403,12 @@ func (v Value) Slice(i, j int) Value {
 
 	fl := v.flag.ro() | flagIndir | flag(Slice)
 	return Value{typ.Common(), unsafe.Pointer(&x), fl}
-	*/
-	panic("todo: reflect.Value.Slice")
 }
 
 // Slice3 is the 3-index form of the slice operation: it returns v[i:j:k].
 // It panics if v's Kind is not Array or Slice, or if v is an unaddressable array,
 // or if the indexes are out of bounds.
 func (v Value) Slice3(i, j, k int) Value {
-	/* TODO(xsw):
 	var (
 		cap  int
 		typ  *sliceType
@@ -1433,7 +1429,7 @@ func (v Value) Slice3(i, j, k int) Value {
 
 	case Slice:
 		typ = (*sliceType)(unsafe.Pointer(v.typ()))
-		s := (*unsafeheader.Slice)(v.ptr)
+		s := (*unsafeheaderSlice)(v.ptr)
 		base = s.Data
 		cap = s.Cap
 	}
@@ -1447,7 +1443,7 @@ func (v Value) Slice3(i, j, k int) Value {
 	var x []unsafe.Pointer
 
 	// Reinterpret as *unsafeheader.Slice to edit.
-	s := (*unsafeheader.Slice)(unsafe.Pointer(&x))
+	s := (*unsafeheaderSlice)(unsafe.Pointer(&x))
 	s.Len = j - i
 	s.Cap = k - i
 	if k-i > 0 {
@@ -1459,8 +1455,6 @@ func (v Value) Slice3(i, j, k int) Value {
 
 	fl := v.flag.ro() | flagIndir | flag(Slice)
 	return Value{typ.Common(), unsafe.Pointer(&x), fl}
-	*/
-	panic("todo: reflect.Value.Slice3")
 }
 
 // String returns the string v's underlying value, as a string.
