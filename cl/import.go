@@ -420,6 +420,8 @@ const (
 	llgoCgoGoBytes      = llgoCgoBase + 0x4
 	llgoCgoCMalloc      = llgoCgoBase + 0x5
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
+	llgoCgoCgocall      = llgoCgoBase + 0x7
+	llgoCgoUse          = llgoCgoBase + 0x8
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
@@ -433,15 +435,16 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		orgName = funcName(pkg, origin, true)
 	} else {
 		fname := fn.Name()
-		if fname == "_cgoCheckPointer" {
+		if checkCgo(fname) {
 			return nil, fname, llgoInstr
 		}
 		if strings.HasPrefix(fname, "_Cfunc_") {
 			if _, ok := llgoInstrs[fname]; ok {
 				return nil, fname, llgoInstr
 			}
-			fname = fname[7:]
-			return nil, fname, cFunc
+			// fname = fname[7:]
+			// fn.WriteTo(os.Stdout)
+			// return nil, fname, cFunc
 		}
 		if fnPkg := fn.Pkg; fnPkg != nil {
 			pkg = fnPkg.Pkg
