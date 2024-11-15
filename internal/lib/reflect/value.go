@@ -2033,17 +2033,19 @@ type closure struct {
 	env unsafe.Pointer
 }
 
-func toFFIArg(v Value) unsafe.Pointer {
-	kind := v.typ_.Kind()
+func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
+	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
-		abi.Float32, abi.Float64, abi.Complex64:
+		abi.Float32, abi.Float64:
 		if v.flag&flagAddr != 0 {
 			return v.ptr
 		} else {
 			return unsafe.Pointer(&v.ptr)
 		}
+	case abi.Complex64:
+		//TODO
 	case abi.Complex128:
 		return unsafe.Pointer(v.ptr)
 	case abi.Array:
@@ -2056,6 +2058,8 @@ func toFFIArg(v Value) unsafe.Pointer {
 	case abi.Func:
 		return unsafe.Pointer(&v.ptr)
 	case abi.Interface:
+		i := v.Interface()
+		return unsafe.Pointer(&i)
 	case abi.Map:
 		return unsafe.Pointer(&v.ptr)
 	case abi.Pointer:
@@ -2150,6 +2154,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		args []unsafe.Pointer
 		fn   unsafe.Pointer
 		ret  unsafe.Pointer
+		ioff int
 	)
 	if v.typ_.IsClosure() {
 		ft := v.typ_.StructType().Fields[0].Typ.FuncType()
@@ -2160,6 +2165,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			env unsafe.Pointer
 		})(v.ptr)
 		fn = c.fn
+		ioff = 1
 		args = append(args, unsafe.Pointer(&c.env))
 	} else {
 		if v.flag&flagMethod != 0 {
@@ -2170,6 +2176,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			rcvrtype, ft, fn = methodReceiver(op, v, int(v.flag)>>flagMethodShift)
 			tin = append([]*abi.Type{rcvrtype}, ft.In...)
 			tout = ft.Out
+			ioff = 1
 			if v.flag&flagIndir != 0 {
 				args = append(args, v.ptr)
 			} else {
@@ -2194,8 +2201,8 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		v := runtime.AllocZ(sig.RType.Size)
 		ret = unsafe.Pointer(&v)
 	}
-	for _, in := range in {
-		args = append(args, toFFIArg(in))
+	for i, in := range in {
+		args = append(args, toFFIArg(in, tin[ioff+i]))
 	}
 	ffi.Call(sig, fn, ret, args...)
 	switch n := len(tout); n {
