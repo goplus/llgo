@@ -201,7 +201,7 @@ func Do(args []string, conf *Config) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	var llFiles []string
@@ -249,6 +249,7 @@ const (
 
 type context struct {
 	env     *llvm.Env
+	conf    *packages.Config
 	progSSA *ssa.Program
 	prog    llssa.Program
 	dedup   packages.Deduper
@@ -286,8 +287,14 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if len(pkg.GoFiles) > 0 {
-				buildPkg(ctx, aPkg, verbose)
-				pkg.ExportFile = " " + concatPkgLinkFiles(ctx, pkg, verbose) + " " + pkg.ExportFile
+				cgoParts, err := buildPkg(ctx, aPkg, verbose)
+				if err != nil {
+					panic(err)
+				}
+				linkParts := concatPkgLinkFiles(ctx, pkg, verbose)
+				allParts := append(linkParts, cgoParts...)
+				allParts = append(allParts, pkg.ExportFile)
+				pkg.ExportFile = " " + strings.Join(allParts, " ")
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
@@ -337,7 +344,12 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				}
 			}
 		default:
-			buildPkg(ctx, aPkg, verbose)
+			cgoParts, err := buildPkg(ctx, aPkg, verbose)
+			if err != nil {
+				panic(err)
+			}
+			allParts := append(cgoParts, pkg.ExportFile)
+			pkg.ExportFile = " " + strings.Join(allParts, " ")
 			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
@@ -483,7 +495,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	return
 }
 
-func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
+func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoParts []string, err error) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
 	if debugBuild || verbose {
@@ -503,12 +515,13 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
-	ret, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+	ret, externs, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
 	if showDetail {
 		llssa.SetDebug(0)
 		cl.SetDebug(0)
 	}
 	check(err)
+	cgoParts, err = buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
@@ -517,6 +530,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) {
 		}
 	}
 	aPkg.LPkg = ret
+	return
 }
 
 const (
@@ -690,25 +704,11 @@ func isSingleLinkFile(ret string) bool {
 	return len(ret) > 0 && ret[0] != ' '
 }
 
-func concatPkgLinkFiles(ctx *context, pkg *packages.Package, verbose bool) string {
-	var b strings.Builder
-	var ret string
-	var n int
+func concatPkgLinkFiles(ctx *context, pkg *packages.Package, verbose bool) (parts []string) {
 	llgoPkgLinkFiles(ctx, pkg, func(linkFile string) {
-		if n == 0 {
-			ret = linkFile
-		} else {
-			b.WriteByte(' ')
-			b.WriteString(linkFile)
-		}
-		n++
+		parts = append(parts, linkFile)
 	}, verbose)
-	if n > 1 {
-		b.WriteByte(' ')
-		b.WriteString(ret)
-		return b.String()
-	}
-	return ret
+	return
 }
 
 // const LLGoFiles = "file1; file2; ..."

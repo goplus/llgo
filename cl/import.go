@@ -412,6 +412,17 @@ const (
 	llgoAtomicUMax = llgoAtomicOpBase + llssa.OpUMax
 	llgoAtomicUMin = llgoAtomicOpBase + llssa.OpUMin
 
+	llgoCgoBase         = llgoInstrBase + 0x30
+	llgoCgoCString      = llgoCgoBase + 0x0
+	llgoCgoCBytes       = llgoCgoBase + 0x1
+	llgoCgoGoString     = llgoCgoBase + 0x2
+	llgoCgoGoStringN    = llgoCgoBase + 0x3
+	llgoCgoGoBytes      = llgoCgoBase + 0x4
+	llgoCgoCMalloc      = llgoCgoBase + 0x5
+	llgoCgoCheckPointer = llgoCgoBase + 0x6
+	llgoCgoCgocall      = llgoCgoBase + 0x7
+	llgoCgoUse          = llgoCgoBase + 0x8
+
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 
@@ -423,6 +434,15 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, origin, true)
 	} else {
+		fname := fn.Name()
+		if checkCgo(fname) {
+			return nil, fname, llgoInstr
+		}
+		if isCgoCfunc(fn) {
+			if _, ok := llgoInstrs[fname]; ok {
+				return nil, fname, llgoInstr
+			}
+		}
 		if fnPkg := fn.Pkg; fnPkg != nil {
 			pkg = fnPkg.Pkg
 		} else {

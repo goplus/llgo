@@ -114,6 +114,11 @@ type context struct {
 	state   pkgState
 	inCFunc bool
 	skipall bool
+
+	cgoCalled bool
+	cgoArgs   []llssa.Expr
+	cgoRet    llssa.Expr
+	cgoFuncs  map[string][]string
 }
 
 type pkgState byte
@@ -163,7 +168,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
-	if vtype == pyVar || ignoreName(name) || checkCgo(gbl.Name()) {
+	if vtype == pyVar || ignoreName(name) {
 		return
 	}
 	if debugInstr {
@@ -188,6 +193,10 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
+
+func isCgoCfunc(f *ssa.Function) bool {
+	return strings.HasPrefix(f.Name(), "_Cfunc_")
+}
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f, true)
@@ -242,9 +251,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
-
 	if nblk := len(f.Blocks); nblk > 0 {
-		fn.MakeBlocks(nblk)   // to set fn.HasBody() = true
+		p.cgoCalled = false
+		p.cgoArgs = nil
+		if isCgoCfunc(f) {
+			fn.MakeBlocks(1)
+		} else {
+			fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+		}
 		if f.Recover != nil { // set recover block
 			fn.SetRecover(fn.Block(f.Recover.Index))
 		}
@@ -269,8 +283,15 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
-			for i, block := range f.Blocks {
-				off[i] = p.compilePhis(b, block)
+			if isCgoCfunc(f) {
+				p.cgoArgs = make([]llssa.Expr, len(f.Params))
+				for i, param := range f.Params {
+					p.cgoArgs[i] = p.compileValue(b, param)
+				}
+			} else {
+				for i, block := range f.Blocks {
+					off[i] = p.compilePhis(b, block)
+				}
 			}
 			p.blkInfos = blocks.Infos(f.Blocks)
 			i := 0
@@ -279,6 +300,10 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				doMainInit := (i == 0 && name == "main")
 				doModInit := (i == 1 && isInit)
 				p.compileBlock(b, block, off[i], doMainInit, doModInit)
+				if isCgoCfunc(f) {
+					// just process first block for performance
+					break
+				}
 				if i = p.blkInfos[i].Next; i < 0 {
 					break
 				}
@@ -381,14 +406,69 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
+	fname := p.goProg.Fset.Position(block.Parent().Pos()).Filename
+	if p.cgoFuncs == nil {
+		p.cgoFuncs = make(map[string][]string)
+	}
+	var cgoFuncs []string
+	if funcs, ok := p.cgoFuncs[fname]; ok {
+		cgoFuncs = funcs
+	}
+	cgoReturned := false
 	for i, instr := range instrs {
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnOld.Expr)
 		}
-		p.compileInstr(b, instr)
+		if isCgoCfunc(block.Parent()) {
+			switch instr := instr.(type) {
+			case *ssa.Alloc:
+				// return value allocation
+				p.compileInstr(b, instr)
+			case *ssa.UnOp:
+				// load cgo function pointer
+				if instr.Op == token.MUL && strings.HasPrefix(instr.X.Name(), "_cgo_") {
+					cgoFuncs = append(cgoFuncs, instr.X.Name())
+					p.cgoFuncs[fname] = cgoFuncs
+					p.compileInstr(b, instr)
+				}
+			case *ssa.Call:
+				// call c function
+				p.compileInstr(b, instr)
+				p.cgoCalled = true
+			case *ssa.Return:
+				// return cgo function result
+				if len(instr.Results) > 0 {
+					b.Return(p.cgoRet)
+				} else {
+					b.Return(llssa.Nil)
+				}
+				cgoReturned = true
+			}
+		} else {
+			p.compileInstr(b, instr)
+		}
 	}
+	// is cgo cfunc but not return yet, some funcs has multiple blocks
+	if isCgoCfunc(block.Parent()) && !cgoReturned {
+		if !p.cgoCalled {
+			panic("cgo cfunc not called")
+		}
+		for _, block := range block.Parent().Blocks {
+			for _, instr := range block.Instrs {
+				if instr, ok := instr.(*ssa.Return); ok {
+					if len(instr.Results) > 0 {
+						b.Return(p.cgoRet)
+					} else {
+						b.Return(llssa.Nil)
+					}
+					goto end
+				}
+			}
+		}
+	}
+end:
 	if pyModInit {
 		jump := block.Instrs[n+last].(*ssa.Jump)
 		jumpTo := p.jumpTo(jump)
@@ -892,11 +972,12 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	return NewPackageEx(prog, nil, pkg, files)
+	ret, _, err = NewPackageEx(prog, nil, pkg, files)
+	return
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
+func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs map[string][]string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -960,6 +1041,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		ctx.initAfter = nil
 		fn()
 	}
+	externs = ctx.cgoFuncs
 	return
 }
 

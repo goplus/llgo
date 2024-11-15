@@ -254,6 +254,41 @@ func (b Builder) CStr(v string) Expr {
 	return Expr{llvm.CreateGlobalStringPtr(b.impl, v), b.Prog.CStr()}
 }
 
+// CString returns a c-style string
+func (b Builder) CString(v Expr) Expr {
+	fn := b.Pkg.rtFunc("CString")
+	return b.Call(fn, v)
+}
+
+// CBytes returns a c-style bytes
+func (b Builder) CBytes(v Expr) Expr {
+	fn := b.Pkg.rtFunc("CBytes")
+	return b.Call(fn, v)
+}
+
+// GoString returns a Go string
+func (b Builder) GoString(v Expr) Expr {
+	fn := b.Pkg.rtFunc("GoString")
+	return b.Call(fn, v)
+}
+
+// GoStringN returns a Go string
+func (b Builder) GoStringN(v Expr, n Expr) Expr {
+	fn := b.Pkg.rtFunc("GoStringN")
+	return b.Call(fn, v, n)
+}
+
+// GoBytes returns a Go bytes
+func (b Builder) GoBytes(v Expr, n Expr) (ret Expr) {
+	fn := b.Pkg.rtFunc("GoBytes")
+	return b.Call(fn, v, n)
+}
+
+// CMalloc returns a c-style pointer
+func (b Builder) CMalloc(n Expr) Expr {
+	return b.malloc(n)
+}
+
 // Str returns a Go string constant expression.
 func (b Builder) Str(v string) Expr {
 	prog := b.Prog
@@ -982,7 +1017,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		bi := raw.(*builtinTy)
 		return b.BuiltinCall(bi.name, args...)
 	default:
-		log.Panicf("unreachable: %d(%T)\n", kind, raw)
+		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
 	ret.Type = b.Prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))

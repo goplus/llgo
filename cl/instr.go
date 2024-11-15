@@ -66,6 +66,77 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+// -----------------------------------------------------------------------------
+
+// func _Cfunc_CString(s string) *int8
+func (p *context) cgoCString(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		return b.CString(p.compileValue(b, args[0]))
+	}
+	panic("cgoCString(string): invalid arguments")
+}
+
+// func _Cfunc_CBytes(bytes []byte) *int8
+func (p *context) cgoCBytes(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		return b.CBytes(p.compileValue(b, args[0]))
+	}
+	panic("cgoCBytes([]byte): invalid arguments")
+}
+
+// func _Cfunc_GoString(s *int8) string
+func (p *context) cgoGoString(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		return b.GoString(p.compileValue(b, args[0]))
+	}
+	panic("cgoGoString(<cstr>): invalid arguments")
+}
+
+// func _Cfunc_GoStringN(s *int8, n int) string
+func (p *context) cgoGoStringN(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		return b.GoStringN(p.compileValue(b, args[0]), p.compileValue(b, args[1]))
+	}
+	panic("cgoGoStringN(<cstr>, n int): invalid arguments")
+}
+
+// func _Cfunc_GoBytes(s *int8, n int) []byte
+func (p *context) cgoGoBytes(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 2 {
+		return b.GoBytes(p.compileValue(b, args[0]), p.compileValue(b, args[1]))
+	}
+	panic("cgoGoBytes(<cstr>, n int): invalid arguments")
+}
+
+// func _Cfunc__CMalloc(n int) unsafe.Pointer
+func (p *context) cgoCMalloc(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		return b.CMalloc(p.compileValue(b, args[0]))
+	}
+	panic("cgoCMalloc(n int): invalid arguments")
+}
+
+// func _cgoCheckPointer(ptr any, arg any)
+func (p *context) cgoCheckPointer(b llssa.Builder, args []ssa.Value) {
+	// don't need to do anything
+}
+
+// func _cgo_runtime_cgocall(fn unsafe.Pointer, arg unsafe.Pointer) int
+func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	pfn := p.compileValue(b, args[0])
+	pfn.Type = p.prog.Pointer(p.fn.Type)
+	fn := b.Load(pfn)
+	p.cgoRet = b.Call(fn, p.cgoArgs...)
+	return p.cgoRet
+}
+
+// func _Cgo_use(v any)
+func (p *context) cgoUse(b llssa.Builder, args []ssa.Value) {
+	// don't need to do anything
+}
+
+// -----------------------------------------------------------------------------
+
 // func index(arr *T, idx int) T
 func (p *context) index(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	return b.Load(p.advance(b, args))
@@ -244,6 +315,16 @@ var llgoInstrs = map[string]int{
 	"atomicMin":  int(llgoAtomicMin),
 	"atomicUMax": int(llgoAtomicUMax),
 	"atomicUMin": int(llgoAtomicUMin),
+
+	"_Cfunc_CString":       llgoCgoCString,
+	"_Cfunc_CBytes":        llgoCgoCBytes,
+	"_Cfunc_GoString":      llgoCgoGoString,
+	"_Cfunc_GoStringN":     llgoCgoGoStringN,
+	"_Cfunc_GoBytes":       llgoCgoGoBytes,
+	"_Cfunc__CMalloc":      llgoCgoCMalloc,
+	"_cgoCheckPointer":     llgoCgoCheckPointer,
+	"_cgo_runtime_cgocall": llgoCgoCgocall,
+	"_Cgo_use":             llgoCgoUse,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -371,6 +452,24 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = pystr(b, args)
 		case llgoCstr:
 			ret = cstr(b, args)
+		case llgoCgoCString:
+			ret = p.cgoCString(b, args)
+		case llgoCgoCBytes:
+			ret = p.cgoCBytes(b, args)
+		case llgoCgoGoString:
+			ret = p.cgoGoString(b, args)
+		case llgoCgoGoStringN:
+			ret = p.cgoGoStringN(b, args)
+		case llgoCgoGoBytes:
+			ret = p.cgoGoBytes(b, args)
+		case llgoCgoCMalloc:
+			ret = p.cgoCMalloc(b, args)
+		case llgoCgoCheckPointer:
+			p.cgoCheckPointer(b, args)
+		case llgoCgoCgocall:
+			p.cgoCgocall(b, args)
+		case llgoCgoUse:
+			p.cgoUse(b, args)
 		case llgoAdvance:
 			ret = p.advance(b, args)
 		case llgoIndex:
@@ -407,7 +506,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
 			} else {
-				log.Panicln("unknown ftype:", ftype)
+				log.Panicf("unknown ftype: %d for %s", ftype, cv.Name())
 			}
 		}
 	default:
