@@ -1,6 +1,11 @@
 package main
 
 /*
+#cgo windows,!amd64 CFLAGS: -D_WIN32
+#cgo !windows CFLAGS: -D_POSIX
+#cgo windows,amd64 CFLAGS: -D_WIN64
+#cgo linux,amd64 CFLAGS: -D_LINUX64
+#cgo !windows,amd64 CFLAGS: -D_UNIX64
 #include <stdio.h>
 #include "foo.h"
 typedef struct {
@@ -49,6 +54,21 @@ static void test_macros() {
 #endif
 #ifdef BAR
 	printf("BAR is defined\n");
+#endif
+#ifdef _WIN32
+	printf("WIN32 is defined\n");
+#endif
+#ifdef _POSIX
+	printf("POSIX is defined\n");
+#endif
+#ifdef _WIN64
+	printf("WIN64 is defined\n");
+#endif
+#ifdef _LINUX64
+	printf("LINUX64 is defined\n");
+#endif
+#ifdef _UNIX64
+	printf("UNIX64 is defined\n");
 #endif
 }
 */

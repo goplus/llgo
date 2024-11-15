@@ -26,12 +26,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/goplus/llgo/internal/buildtags"
 )
 
 type cgoDecl struct {
-	platform string
-	cflags   string
-	ldflags  string
+	tag     string
+	cflags  string
+	ldflags string
 }
 
 type cgoPreamble struct {
@@ -48,16 +50,29 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
-func parseCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoParts []string, err error) {
+func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoParts []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
 		return
 	}
+	tagUsed := make(map[string]bool)
+	for _, cdecl := range cdecls {
+		if cdecl.tag != "" {
+			tagUsed[cdecl.tag] = false
+		}
+	}
+	buildtags.CheckTags(ctx.conf.BuildFlags, tagUsed)
 	cflags := []string{}
 	ldflags := []string{}
 	for _, cdecl := range cdecls {
-		cflags = append(cflags, cdecl.cflags)
-		ldflags = append(ldflags, cdecl.ldflags)
+		if cdecl.tag == "" || tagUsed[cdecl.tag] {
+			if cdecl.cflags != "" {
+				cflags = append(cflags, cdecl.cflags)
+			}
+			if cdecl.ldflags != "" {
+				ldflags = append(ldflags, cdecl.ldflags)
+			}
+		}
 	}
 	incDirs := make(map[string]none)
 	for _, preamble := range preambles {
@@ -95,7 +110,7 @@ func parseCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 			return nil, fmt.Errorf("failed to create temp file: %v", err)
 		}
 		tmpName := tmpFile.Name()
-		// defer os.Remove(tmpName)
+		defer os.Remove(tmpName)
 		code := cgoHeader + "\n\n" + preamble.src
 		externDecls := genExternDeclsByClang(code, cflags, cgoFuncs)
 		if err = os.WriteFile(tmpName, []byte(code+"\n\n"+externDecls), 0644); err != nil {
@@ -136,38 +151,29 @@ func genExternDeclsByClang(src string, cflags []string, cgoFuncs map[string]stri
 	if err := json.Unmarshal(output, &astRoot); err != nil {
 		return ""
 	}
-	// Extract just function names
+
 	funcNames := make(map[string]bool)
 	extractFuncNames(&astRoot, funcNames)
 
 	b := strings.Builder{}
-	// Create a list of functions to remove
 	var toRemove []string
-	// Process cgoFuncs and build assignments
 	for cgoFunc, funcName := range cgoFuncs {
 		if funcNames[funcName] {
-			// Only generate the assignment, not the extern declaration
 			b.WriteString(fmt.Sprintf("void* %s = (void*)%s;\n", cgoFunc, funcName))
-			// Mark this function for removal
 			toRemove = append(toRemove, cgoFunc)
 		}
 	}
-	// Remove processed functions from cgoFuncs
 	for _, funcName := range toRemove {
 		delete(cgoFuncs, funcName)
 	}
 	return b.String()
 }
 
-// Simplified function to just collect function names
 func extractFuncNames(node *clangASTNode, funcNames map[string]bool) {
-	if node.Kind == "FunctionDecl" && node.Name != "" {
-		// Skip functions that are likely internal/system functions
-		funcNames[node.Name] = true
-	}
-	// Recursively process inner nodes
-	for i := range node.Inner {
-		extractFuncNames(&node.Inner[i], funcNames)
+	for _, inner := range node.Inner {
+		if inner.Kind == "FunctionDecl" && inner.Name != "" {
+			funcNames[inner.Name] = true
+		}
 	}
 }
 
@@ -251,18 +257,29 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 		err = fmt.Errorf("invalid cgo format: %v", line)
 		return
 	}
+
 	decl := strings.TrimSpace(line[:idx])
 	arg := strings.TrimSpace(line[idx+1:])
-	toks := strings.Split(decl, " ")
-	var platform, flag string
-	if len(toks) == 2 {
-		flag = toks[1]
-	} else if len(toks) == 3 {
-		platform, flag = toks[1], toks[2]
-	} else {
-		err = fmt.Errorf("invalid cgo directive: %v, toks: %v", line, toks)
+
+	// Split on first space to remove #cgo
+	parts := strings.SplitN(decl, " ", 2)
+	if len(parts) < 2 {
+		err = fmt.Errorf("invalid cgo directive: %v", line)
 		return
 	}
+
+	// Process remaining part
+	remaining := strings.TrimSpace(parts[1])
+	var tag, flag string
+
+	// Split on last space to get flag
+	if lastSpace := strings.LastIndex(remaining, " "); lastSpace != -1 {
+		tag = strings.TrimSpace(remaining[:lastSpace])
+		flag = strings.TrimSpace(remaining[lastSpace+1:])
+	} else {
+		flag = remaining
+	}
+
 	switch flag {
 	case "pkg-config":
 		ldflags, e := exec.Command("pkg-config", "--libs", arg).Output()
@@ -276,19 +293,19 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 			return
 		}
 		cgoDecls = append(cgoDecls, cgoDecl{
-			platform: platform,
-			cflags:   strings.TrimSpace(string(cflags)),
-			ldflags:  strings.TrimSpace(string(ldflags)),
+			tag:     tag,
+			cflags:  strings.TrimSpace(string(cflags)),
+			ldflags: strings.TrimSpace(string(ldflags)),
 		})
 	case "CFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
-			platform: platform,
-			cflags:   arg,
+			tag:    tag,
+			cflags: arg,
 		})
 	case "LDFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
-			platform: platform,
-			ldflags:  arg,
+			tag:     tag,
+			ldflags: arg,
 		})
 	}
 	return

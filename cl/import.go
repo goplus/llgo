@@ -438,13 +438,10 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		if checkCgo(fname) {
 			return nil, fname, llgoInstr
 		}
-		if strings.HasPrefix(fname, "_Cfunc_") {
+		if isCgoCfunc(fn) {
 			if _, ok := llgoInstrs[fname]; ok {
 				return nil, fname, llgoInstr
 			}
-			// fname = fname[7:]
-			// fn.WriteTo(os.Stdout)
-			// return nil, fname, cFunc
 		}
 		if fnPkg := fn.Pkg; fnPkg != nil {
 			pkg = fnPkg.Pkg

@@ -201,7 +201,7 @@ func Do(args []string, conf *Config) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	ctx := &context{env, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
 	var llFiles []string
@@ -249,6 +249,7 @@ const (
 
 type context struct {
 	env     *llvm.Env
+	conf    *packages.Config
 	progSSA *ssa.Program
 	prog    llssa.Program
 	dedup   packages.Deduper
@@ -520,7 +521,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoParts []string, er
 		cl.SetDebug(0)
 	}
 	check(err)
-	cgoParts, err = parseCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
+	cgoParts, err = buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
