@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-func CheckLinkArgs(args string) error {
-	cmdArgs := strings.Split(args, " ")
+func CheckLinkArgs(cmdArgs []string) error {
 	cmd := exec.Command("clang")
 	nul := "/dev/null"
 	if runtime.GOOS == "windows" {

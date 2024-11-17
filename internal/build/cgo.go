@@ -50,7 +50,7 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
-func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoParts []string, err error) {
+func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
 		return
@@ -84,7 +84,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 	}
 	for _, cfile := range cfiles {
 		clFile(ctx, cflags, cfile, pkg.ExportFile, func(linkFile string) {
-			cgoParts = append(cgoParts, linkFile)
+			cgoLdflags = append(cgoLdflags, linkFile)
 		}, verbose)
 	}
 	re := regexp.MustCompile(`^(_cgo_[^_]+_Cfunc_)(.*)$`)
@@ -117,10 +117,12 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 			return nil, err
 		}
 		clFile(ctx, cflags, tmpName, pkg.ExportFile, func(linkFile string) {
-			cgoParts = append(cgoParts, linkFile)
+			cgoLdflags = append(cgoLdflags, linkFile)
 		}, verbose)
 	}
-	cgoParts = append(cgoParts, ldflags...)
+	for _, ldflag := range ldflags {
+		cgoLdflags = append(cgoLdflags, strings.Split(ldflag, " ")...)
+	}
 	return
 }
 
