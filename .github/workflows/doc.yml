@@ -24,9 +24,7 @@ jobs:
         run: npx embedme --verify README.md
 
   doc_test:
-    continue-on-error: true
     strategy:
-      fail-fast: false
       matrix:
         os:
           - macos-latest
@@ -58,6 +56,14 @@ jobs:
         run: |
           set -e
           set -x
+          git() {
+            if [ "$1" = "clone" ]; then
+              # do nothing because we already have the branch
+              cd ..
+            else
+              command git "$@"
+            fi
+          }
           source doc/_readme/scripts/install_llgo.sh
 
       - name: Test doc code blocks
