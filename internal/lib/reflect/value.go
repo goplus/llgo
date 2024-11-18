@@ -2044,9 +2044,7 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 		} else {
 			return unsafe.Pointer(&v.ptr)
 		}
-	case abi.Complex64:
-		//TODO
-	case abi.Complex128:
+	case abi.Complex64, abi.Complex128:
 		return unsafe.Pointer(v.ptr)
 	case abi.Array:
 		if v.flag&flagIndir != 0 {
@@ -2210,7 +2208,12 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	case 1:
 		return []Value{NewAt(toType(tout[0]), ret).Elem()}
 	default:
-		panic("TODO multi ret")
+		out = make([]Value, n)
+		var off uintptr
+		for i, tout := range tout {
+			out[i] = NewAt(toType(tout), add(ret, off, "")).Elem()
+			off += tout.Size()
+		}
 	}
 	return
 }
