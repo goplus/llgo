@@ -301,29 +301,29 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// need to be linked with external library
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
-				expd := ""
 				altParts := strings.Split(param, ";")
+				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if strings.ContainsRune(param, '$') {
-						expd = env.ExpandEnv(param)
+						expdArgs = append(expdArgs, env.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
 					} else {
-						expd = param
+						expdArgs = append(expdArgs, param)
 					}
-					if len(expd) > 0 {
+					if len(expdArgs) > 0 {
 						break
 					}
 				}
-				if expd == "" {
+				if len(expdArgs) == 0 {
 					panic(fmt.Sprintf("'%s' cannot locate the external library", param))
 				}
 
 				pkgLinkArgs := make([]string, 0, 3)
-				if expd[0] == '-' {
-					pkgLinkArgs = append(pkgLinkArgs, strings.Split(expd, " ")...)
+				if expdArgs[0][0] == '-' {
+					pkgLinkArgs = append(pkgLinkArgs, expdArgs...)
 				} else {
-					linkFile := expd
+					linkFile := expdArgs[0]
 					dir, lib := filepath.Split(linkFile)
 					pkgLinkArgs = append(pkgLinkArgs, "-l"+lib)
 					if dir != "" {
@@ -332,7 +332,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 					}
 				}
 				if err := clangCheck.CheckLinkArgs(pkgLinkArgs); err != nil {
-					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %s\n\tresolved to: %v\n\terror: %v", param, expd, pkgLinkArgs, err))
+					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
 				}
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
@@ -714,9 +714,9 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	args := make([]string, 0, 16)
 	if strings.HasPrefix(files, "$") { // has cflags
 		if pos := strings.IndexByte(files, ':'); pos > 0 {
-			cflags := env.ExpandEnv(files[:pos])
+			cflags := env.ExpandEnvToArgs(files[:pos])
 			files = files[pos+1:]
-			args = append(args, strings.Split(cflags, " ")...)
+			args = append(args, cflags...)
 		}
 	}
 	for _, file := range strings.Split(files, ";") {

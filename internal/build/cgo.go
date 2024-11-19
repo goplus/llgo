@@ -28,12 +28,13 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/buildtags"
+	"github.com/goplus/llgo/internal/safesplit"
 )
 
 type cgoDecl struct {
 	tag     string
-	cflags  string
-	ldflags string
+	cflags  []string
+	ldflags []string
 }
 
 type cgoPreamble struct {
@@ -66,11 +67,11 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 	ldflags := []string{}
 	for _, cdecl := range cdecls {
 		if cdecl.tag == "" || tagUsed[cdecl.tag] {
-			if cdecl.cflags != "" {
-				cflags = append(cflags, cdecl.cflags)
+			if len(cdecl.cflags) > 0 {
+				cflags = append(cflags, cdecl.cflags...)
 			}
-			if cdecl.ldflags != "" {
-				ldflags = append(ldflags, cdecl.ldflags)
+			if len(cdecl.ldflags) > 0 {
+				ldflags = append(ldflags, cdecl.ldflags...)
 			}
 		}
 	}
@@ -121,7 +122,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 		}, verbose)
 	}
 	for _, ldflag := range ldflags {
-		cgoLdflags = append(cgoLdflags, strings.Split(ldflag, " ")...)
+		cgoLdflags = append(cgoLdflags, safesplit.SplitPkgConfigFlags(ldflag)...)
 	}
 	return
 }
@@ -296,18 +297,18 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 		}
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:     tag,
-			cflags:  strings.TrimSpace(string(cflags)),
-			ldflags: strings.TrimSpace(string(ldflags)),
+			cflags:  safesplit.SplitPkgConfigFlags(string(cflags)),
+			ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
 		})
 	case "CFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:    tag,
-			cflags: arg,
+			cflags: safesplit.SplitPkgConfigFlags(arg),
 		})
 	case "LDFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:     tag,
-			ldflags: arg,
+			ldflags: safesplit.SplitPkgConfigFlags(arg),
 		})
 	}
 	return
