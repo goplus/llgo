@@ -28,12 +28,13 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/buildtags"
+	"github.com/goplus/llgo/internal/safesplit"
 )
 
 type cgoDecl struct {
 	tag     string
-	cflags  string
-	ldflags string
+	cflags  []string
+	ldflags []string
 }
 
 type cgoPreamble struct {
@@ -50,7 +51,7 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
-func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoParts []string, err error) {
+func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
 		return
@@ -66,11 +67,11 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 	ldflags := []string{}
 	for _, cdecl := range cdecls {
 		if cdecl.tag == "" || tagUsed[cdecl.tag] {
-			if cdecl.cflags != "" {
-				cflags = append(cflags, cdecl.cflags)
+			if len(cdecl.cflags) > 0 {
+				cflags = append(cflags, cdecl.cflags...)
 			}
-			if cdecl.ldflags != "" {
-				ldflags = append(ldflags, cdecl.ldflags)
+			if len(cdecl.ldflags) > 0 {
+				ldflags = append(ldflags, cdecl.ldflags...)
 			}
 		}
 	}
@@ -84,7 +85,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 	}
 	for _, cfile := range cfiles {
 		clFile(ctx, cflags, cfile, pkg.ExportFile, func(linkFile string) {
-			cgoParts = append(cgoParts, linkFile)
+			cgoLdflags = append(cgoLdflags, linkFile)
 		}, verbose)
 	}
 	re := regexp.MustCompile(`^(_cgo_[^_]+_Cfunc_)(.*)$`)
@@ -117,10 +118,12 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 			return nil, err
 		}
 		clFile(ctx, cflags, tmpName, pkg.ExportFile, func(linkFile string) {
-			cgoParts = append(cgoParts, linkFile)
+			cgoLdflags = append(cgoLdflags, linkFile)
 		}, verbose)
 	}
-	cgoParts = append(cgoParts, ldflags...)
+	for _, ldflag := range ldflags {
+		cgoLdflags = append(cgoLdflags, safesplit.SplitPkgConfigFlags(ldflag)...)
+	}
 	return
 }
 
@@ -294,18 +297,18 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 		}
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:     tag,
-			cflags:  strings.TrimSpace(string(cflags)),
-			ldflags: strings.TrimSpace(string(ldflags)),
+			cflags:  safesplit.SplitPkgConfigFlags(string(cflags)),
+			ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
 		})
 	case "CFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:    tag,
-			cflags: arg,
+			cflags: safesplit.SplitPkgConfigFlags(arg),
 		})
 	case "LDFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:     tag,
-			ldflags: arg,
+			ldflags: safesplit.SplitPkgConfigFlags(arg),
 		})
 	}
 	return

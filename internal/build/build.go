@@ -204,19 +204,16 @@ func Do(args []string, conf *Config) {
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
 
-	var llFiles []string
 	dpkg := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
+	var linkArgs []string
 	for _, pkg := range dpkg {
-		if !strings.HasSuffix(pkg.ExportFile, ".ll") {
-			continue
-		}
-		llFiles = append(llFiles, pkg.ExportFile)
+		linkArgs = append(linkArgs, pkg.LinkArgs...)
 	}
 	if mode != ModeBuild {
 		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				nErr += linkMainPkg(ctx, pkg, pkgs, llFiles, conf, mode, verbose)
+				nErr += linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
 			}
 		}
 		if nErr > 0 {
@@ -287,14 +284,14 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if len(pkg.GoFiles) > 0 {
-				cgoParts, err := buildPkg(ctx, aPkg, verbose)
+				cgoLdflags, err := buildPkg(ctx, aPkg, verbose)
 				if err != nil {
 					panic(err)
 				}
 				linkParts := concatPkgLinkFiles(ctx, pkg, verbose)
-				allParts := append(linkParts, cgoParts...)
+				allParts := append(linkParts, cgoLdflags...)
 				allParts = append(allParts, pkg.ExportFile)
-				pkg.ExportFile = " " + strings.Join(allParts, " ")
+				aPkg.LinkArgs = allParts
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
@@ -304,66 +301,61 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// need to be linked with external library
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
-				expd := ""
 				altParts := strings.Split(param, ";")
+				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if strings.ContainsRune(param, '$') {
-						expd = env.ExpandEnv(param)
+						expdArgs = append(expdArgs, env.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
 					} else {
-						expd = param
+						expdArgs = append(expdArgs, param)
 					}
-					if len(expd) > 0 {
+					if len(expdArgs) > 0 {
 						break
 					}
 				}
-				if expd == "" {
+				if len(expdArgs) == 0 {
 					panic(fmt.Sprintf("'%s' cannot locate the external library", param))
 				}
 
-				command := ""
-				if expd[0] == '-' {
-					command += " " + expd
+				pkgLinkArgs := make([]string, 0, 3)
+				if expdArgs[0][0] == '-' {
+					pkgLinkArgs = append(pkgLinkArgs, expdArgs...)
 				} else {
-					linkFile := expd
+					linkFile := expdArgs[0]
 					dir, lib := filepath.Split(linkFile)
-					command = " -l " + lib
+					pkgLinkArgs = append(pkgLinkArgs, "-l"+lib)
 					if dir != "" {
-						command += " -L " + dir[:len(dir)-1]
+						pkgLinkArgs = append(pkgLinkArgs, "-L"+dir)
 						ctx.nLibdir++
 					}
 				}
-				if err := clangCheck.CheckLinkArgs(command); err != nil {
-					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %s\n\tresolved to: %v\n\terror: %v", param, expd, command, err))
+				if err := clangCheck.CheckLinkArgs(pkgLinkArgs); err != nil {
+					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
 				}
-				if isSingleLinkFile(pkg.ExportFile) {
-					pkg.ExportFile = command + " " + pkg.ExportFile
-				} else {
-					pkg.ExportFile = command + pkg.ExportFile
-				}
+				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
 		default:
-			cgoParts, err := buildPkg(ctx, aPkg, verbose)
+			cgoLdflags, err := buildPkg(ctx, aPkg, verbose)
 			if err != nil {
 				panic(err)
 			}
-			allParts := append(cgoParts, pkg.ExportFile)
-			pkg.ExportFile = " " + strings.Join(allParts, " ")
+			aPkg.LinkArgs = append(cgoLdflags, pkg.ExportFile)
 			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
 	return
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles []string, conf *Config, mode Mode, verbose bool) (nErr int) {
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs []string, conf *Config, mode Mode, verbose bool) (nErr int) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
 	if app == "" {
 		app = filepath.Join(conf.BinPath, name+conf.AppExt)
 	}
-	args := make([]string, 0, len(pkg.Imports)+len(llFiles)+16)
+	args := make([]string, 0, len(pkg.Imports)+len(linkArgs)+16)
 	args = append(
 		args,
 		"-o", app,
@@ -396,9 +388,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	}
 	needRuntime := false
 	needPyInit := false
+	pkgsMap := make(map[*packages.Package]*aPackage, len(pkgs))
+	for _, v := range pkgs {
+		pkgsMap[v.Package] = v
+	}
 	packages.Visit([]*packages.Package{pkg}, nil, func(p *packages.Package) {
 		if p.ExportFile != "" { // skip packages that only contain declarations
-			args = appendLinkFiles(args, p.ExportFile)
+			aPkg := pkgsMap[p]
+			args = append(args, aPkg.LinkArgs...)
 			need1, need2 := isNeedRuntimeOrPyInit(p)
 			if !needRuntime {
 				needRuntime = need1
@@ -419,9 +416,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 
 	dirty := false
 	if needRuntime {
-		for _, file := range llFiles {
-			args = appendLinkFiles(args, file)
-		}
+		args = append(args, linkArgs...)
 	} else {
 		dirty = true
 		fn := aPkg.LPkg.FuncOf(cl.RuntimeInit)
@@ -495,7 +490,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, llFiles 
 	return
 }
 
-func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoParts []string, err error) {
+func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, err error) {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
 	if debugBuild || verbose {
@@ -521,7 +516,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoParts []string, er
 		cl.SetDebug(0)
 	}
 	check(err)
-	cgoParts, err = buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
+	cgoLdflags, err = buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
@@ -572,6 +567,8 @@ type aPackage struct {
 	SSA    *ssa.Package
 	AltPkg *packages.Cached
 	LPkg   llssa.Package
+
+	LinkArgs []string
 }
 
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
@@ -590,7 +587,7 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 					return
 				}
 			}
-			all = append(all, &aPackage{p, ssaPkg, altPkg, nil})
+			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil})
 		} else {
 			errs = append(errs, p)
 		}
@@ -692,18 +689,6 @@ func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
 	}
 }
 
-func appendLinkFiles(args []string, file string) []string {
-	if isSingleLinkFile(file) {
-		return append(args, file)
-	}
-	// TODO(xsw): consider filename with spaces
-	return append(args, strings.Split(file[1:], " ")...)
-}
-
-func isSingleLinkFile(ret string) bool {
-	return len(ret) > 0 && ret[0] != ' '
-}
-
 func concatPkgLinkFiles(ctx *context, pkg *packages.Package, verbose bool) (parts []string) {
 	llgoPkgLinkFiles(ctx, pkg, func(linkFile string) {
 		parts = append(parts, linkFile)
@@ -729,9 +714,9 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	args := make([]string, 0, 16)
 	if strings.HasPrefix(files, "$") { // has cflags
 		if pos := strings.IndexByte(files, ':'); pos > 0 {
-			cflags := env.ExpandEnv(files[:pos])
+			cflags := env.ExpandEnvToArgs(files[:pos])
 			files = files[pos+1:]
-			args = append(args, strings.Split(cflags, " ")...)
+			args = append(args, cflags...)
 		}
 	}
 	for _, file := range strings.Split(files, ";") {

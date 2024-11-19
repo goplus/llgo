@@ -22,12 +22,18 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/goplus/llgo/internal/safesplit"
 )
 
 var (
 	reSubcmd = regexp.MustCompile(`\$\([^)]+\)`)
 	reFlag   = regexp.MustCompile(`[^ \t\n]+`)
 )
+
+func ExpandEnvToArgs(s string) []string {
+	return safesplit.SplitPkgConfigFlags(expandEnvWithCmd(s))
+}
 
 func ExpandEnv(s string) string {
 	return expandEnvWithCmd(s)
