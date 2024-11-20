@@ -41,6 +41,12 @@ func TestTypeDefDecl() {
 			int x;
 		} MyStruct,MyStruct2,*StructPtr, StructArr[];`,
 
+		`typedef enum {
+			RED,
+			GREEN,
+			BLUE
+		} MyEnum,MyEnum2,*EnumPtr,EnumArr[];`,
+
 		`namespace A{
 			namespace B{
 				typedef struct {
