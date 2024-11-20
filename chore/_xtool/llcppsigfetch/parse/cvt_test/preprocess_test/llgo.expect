@@ -118,6 +118,113 @@ TestInclude Case 1:
 	}
 }
 
+TestMacroExpansionOtherFile:
+{
+	"./testdata/macroexpan/ref.h":	{
+		"_Type":	"File",
+		"decls":	[{
+				"_Type":	"TypeDecl",
+				"Loc":	{
+					"_Type":	"Location",
+					"File":	"./testdata/macroexpan/ref.h"
+				},
+				"Doc":	null,
+				"Parent":	null,
+				"Name":	{
+					"_Type":	"Ident",
+					"Name":	"NewType"
+				},
+				"Type":	{
+					"_Type":	"RecordType",
+					"Tag":	0,
+					"Fields":	{
+						"_Type":	"FieldList",
+						"List":	[{
+								"_Type":	"Field",
+								"Type":	{
+									"_Type":	"ArrayType",
+									"Elt":	{
+										"_Type":	"BuiltinType",
+										"Kind":	6,
+										"Flags":	0
+									},
+									"Len":	{
+										"_Type":	"BasicLit",
+										"Kind":	0,
+										"Value":	"2"
+									}
+								},
+								"Doc":	null,
+								"Comment":	null,
+								"IsStatic":	false,
+								"Access":	1,
+								"Names":	[{
+										"_Type":	"Ident",
+										"Name":	"__val"
+									}]
+							}]
+					},
+					"Methods":	[]
+				}
+			}],
+		"includes":	[{
+				"_Type":	"Include",
+				"Path":	"def.h"
+			}],
+		"macros":	[]
+	},
+	"./testdata/macroexpan/def.h":	{
+		"_Type":	"File",
+		"decls":	[],
+		"includes":	[],
+		"macros":	[{
+				"_Type":	"Macro",
+				"Name":	"__FSID_T_TYPE",
+				"Tokens":	[{
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"__FSID_T_TYPE"
+					}, {
+						"_Type":	"Token",
+						"Token":	2,
+						"Lit":	"struct"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"{"
+					}, {
+						"_Type":	"Token",
+						"Token":	2,
+						"Lit":	"int"
+					}, {
+						"_Type":	"Token",
+						"Token":	3,
+						"Lit":	"__val"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"["
+					}, {
+						"_Type":	"Token",
+						"Token":	4,
+						"Lit":	"2"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"]"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	";"
+					}, {
+						"_Type":	"Token",
+						"Token":	1,
+						"Lit":	"}"
+					}]
+			}]
+	}
+}
+
 
 #stderr
 
