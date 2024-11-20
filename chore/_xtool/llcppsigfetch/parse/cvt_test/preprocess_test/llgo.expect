@@ -120,13 +120,13 @@ TestInclude Case 1:
 
 TestMacroExpansionOtherFile:
 {
-	"./testmarcoexpand/ref.h":	{
+	"./testdata/macroexpan/ref.h":	{
 		"_Type":	"File",
 		"decls":	[{
 				"_Type":	"TypeDecl",
 				"Loc":	{
 					"_Type":	"Location",
-					"File":	"./testmarcoexpand/ref.h"
+					"File":	"./testdata/macroexpan/ref.h"
 				},
 				"Doc":	null,
 				"Parent":	null,
@@ -167,7 +167,7 @@ TestMacroExpansionOtherFile:
 				"_Type":	"TypedefDecl",
 				"Loc":	{
 					"_Type":	"Location",
-					"File":	"./testmarcoexpand/ref.h"
+					"File":	"./testdata/macroexpan/ref.h"
 				},
 				"Doc":	null,
 				"Parent":	null,
@@ -214,7 +214,7 @@ TestMacroExpansionOtherFile:
 			}],
 		"macros":	[]
 	},
-	"./testmarcoexpand/def.h":	{
+	"./testdata/macroexpan/def.h":	{
 		"_Type":	"File",
 		"decls":	[],
 		"includes":	[],
@@ -266,6 +266,10 @@ TestMacroExpansionOtherFile:
 	}
 }
 
+TestMacroExpansionOtherFile:
+CursorTypedefDecl: NewType
+UnderlyingType: NewType
+Tokens: 0
 
 #stderr
 
