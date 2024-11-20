@@ -642,58 +642,43 @@ func (t *rtype) NumField() int {
 }
 
 func (t *rtype) In(i int) Type {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: In of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return toType(tt.InSlice()[i])
-	*/
-	panic("todo: reflect.rtype.In")
+	if t.Kind() != Func {
+		panic("reflect: In of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return toType(tt.In[i])
 }
 
 func (t *rtype) NumIn() int {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: NumIn of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return tt.NumIn()
-	*/
-	panic("todo: reflect.rtype.NumIn")
+	if t.Kind() != Func {
+		panic("reflect: NumIn of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return len(tt.In)
 }
 
 func (t *rtype) NumOut() int {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: NumOut of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return tt.NumOut()
-	*/
-	panic("todo: reflect.rtype.NumOut")
+	if t.Kind() != Func {
+		panic("reflect: NumOut of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return len(tt.Out)
 }
 
 func (t *rtype) Out(i int) Type {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: Out of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return toType(tt.OutSlice()[i])
-	*/
-	panic("todo: reflect.rtype.Out")
+	if t.Kind() != Func {
+		panic("reflect: Out of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return toType(tt.Out[i])
 }
 
 func (t *rtype) IsVariadic() bool {
-	/*
-		if t.Kind() != Func {
-			panic("reflect: IsVariadic of non-func type " + t.String())
-		}
-		tt := (*abi.FuncType)(unsafe.Pointer(t))
-		return tt.IsVariadic()
-	*/
-	panic("todo: reflect.rtype.IsVariadic")
+	if t.Kind() != Func {
+		panic("reflect: IsVariadic of non-func type " + t.String())
+	}
+	tt := (*abi.FuncType)(unsafe.Pointer(t))
+	return tt.Variadic()
 }
 
 // add returns p+x.
@@ -1022,6 +1007,12 @@ func (t *structType) FieldByName(name string) (f StructField, present bool) {
 // If i is a nil interface value, TypeOf returns nil.
 func TypeOf(i any) Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
+	// closure type
+	if eface.typ.IsClosure() {
+		ft := *eface.typ.StructType().Fields[0].Typ.FuncType()
+		ft.In = ft.In[1:]
+		return toType(&ft.Type)
+	}
 	// Noescape so this doesn't make i to escape. See the comment
 	// at Value.typ for why this is safe.
 	return toType((*abi.Type)(unsafe.Pointer(eface.typ)))

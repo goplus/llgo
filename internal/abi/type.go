@@ -388,9 +388,14 @@ func (t *Type) IfaceIndir() bool {
 	return t.Kind_&KindDirectIface == 0
 }
 
-// isDirectIface reports whether t is stored directly in an interface value.
+// IsDirectIface reports whether t is stored directly in an interface value.
 func (t *Type) IsDirectIface() bool {
 	return t.Kind_&KindDirectIface != 0
+}
+
+// IsClosure reports whether t is closure struct
+func (t *Type) IsClosure() bool {
+	return t.TFlag&TFlagClosure != 0
 }
 
 // Size returns the size of data with type t.
