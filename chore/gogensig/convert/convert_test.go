@@ -39,22 +39,22 @@ type U X__U
 	`, nil)
 }
 
-func TestReferStdSizeT(t *testing.T) {
-	cmptest.RunTest(t, "size_t", false, []config.SymbolEntry{
-		{MangleName: "testSize", CppName: "testSize", GoName: "TestSize"},
+func TestReferStdType(t *testing.T) {
+	cmptest.RunTest(t, "StdType", false, []config.SymbolEntry{
+		{MangleName: "testStdType", CppName: "testStdType", GoName: "TestStdType"},
 	}, map[string]string{}, &cppgtypes.Config{}, `
 #include <stddef.h>
 
-void testSize(size_t a);
+void testStdType(size_t a,ptrdiff_t b);
 	`, `
-package size_t
+package StdType
 
 import (
 	"github.com/goplus/llgo/c"
 	_ "unsafe"
 )
-//go:linkname TestSize C.testSize
-func TestSize(a c.SizeT)
+//go:linkname TestStdType C.testStdType
+func TestStdType(a c.SizeT, b c.PtrdiffT)
 	`, nil)
 }
 
@@ -510,6 +510,7 @@ type NormalType c.Int
 
 // test sys type in stdinclude to package
 func TestSysTypeToPkg(t *testing.T) {
+	// todo(zzy): wait https://github.com/goplus/llgo/pull/870 merge
 	if runtime.GOOS == "linux" {
 		t.Skip("skip on linux")
 	}

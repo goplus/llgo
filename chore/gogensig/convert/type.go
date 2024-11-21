@@ -8,7 +8,6 @@ import (
 	"go/token"
 	"go/types"
 	"log"
-	"strings"
 	"unsafe"
 
 	"github.com/goplus/gogen"
@@ -307,14 +306,12 @@ func (p *TypeConv) handleSysType(ident *ast.Ident, loc *ast.Location, incPath st
 
 func (p *TypeConv) referSysType(name string) (types.Object, error) {
 	if info, ok := p.SysTypeLoc[name]; ok {
-		// todo(zzy): additional logic for incpath -> package
 		var obj types.Object
-		if strings.HasSuffix(info.IncPath, "size_t.h") {
-			depPkg := p.conf.Package.p.Import("github.com/goplus/llgo/c")
-			obj = depPkg.TryRef(names.CPubName(name))
-		}
+		pkg, _ := IncPathToPkg(info.IncPath)
+		depPkg := p.conf.Package.p.Import(pkg)
+		obj = depPkg.TryRef(names.CPubName(name))
 		if obj == nil {
-			return nil, fmt.Errorf("sys type %s in %s not found full path %s", name, info.IncPath, info.Path)
+			return nil, fmt.Errorf("sys type %s in %s not found in package %s, full path %s", name, info.IncPath, pkg, info.Path)
 		}
 		return obj, nil
 
