@@ -129,7 +129,8 @@ func (p *AstConvert) VisitTypedefDecl(typedefDecl *ast.TypedefDecl) {
 
 func (p *AstConvert) VisitStart(path string, incPath string, isSys bool) {
 	inPkgIncPath := false
-	for _, includePath := range p.Pkg.incPaths {
+	incPaths := p.Pkg.GetIncPaths()
+	for _, includePath := range incPaths {
 		if includePath == path {
 			inPkgIncPath = true
 			break
