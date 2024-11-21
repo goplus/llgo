@@ -34,6 +34,14 @@ func CheckResult(t *testing.T, expected, content string) {
 	}
 }
 
+func CheckPubFile(t *testing.T, pkg *convert.Package, expectedPub string) {
+	bytes, err := os.ReadFile(filepath.Join(pkg.GetOutputDir(), "llcppg.pub"))
+	if err != nil {
+		t.Fatal("llcppg.pub not found")
+	}
+	CheckResult(t, expectedPub, string(bytes))
+}
+
 // RunTestWithCheckEqual initializes a test Go project with local llgo dependency
 func RunTestWithCheckEqual(t *testing.T, pkgName string, isCpp bool, symbolEntries []config.SymbolEntry, public map[string]string, cppgConf *cppgtypes.Config, originalCode, expectedOutput string, validateFunc func(t *testing.T, pkg *convert.Package), checkEqual func(t *testing.T, expected, content string)) {
 	t.Helper()

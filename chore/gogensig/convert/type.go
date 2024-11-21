@@ -251,14 +251,19 @@ func (p *TypeConv) fieldToVar(field *ast.Field, isRecord bool) (*types.Var, erro
 	return types.NewVar(token.NoPos, p.Types, name, typ), nil
 }
 
-func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, error) {
+func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, bool, error) {
 	var fields []*types.Var
+	complete := true
+	//todo(zzy): Current forward declaration detection is imprecise
+	// It incorrectly treats both empty struct `struct a {}` and forward declaration `struct a` as the same
+	// by only checking if Fields.List is empty
+	// Should use recordType == nil to identify forward declarations, which requires llcppsigfetch support
 	if recordType.Fields != nil && len(recordType.Fields.List) == 0 {
-		fields = p.defaultRecordField()
+		return nil, false, nil
 	} else {
 		flds, err := p.fieldListToVars(recordType.Fields, true)
 		if err != nil {
-			return nil, err
+			return nil, complete, err
 		}
 		if recordType.Tag != ast.Union {
 			fields = flds
@@ -279,7 +284,7 @@ func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, e
 			}
 		}
 	}
-	return types.NewStruct(fields, nil), nil
+	return types.NewStruct(fields, nil), complete, nil
 }
 
 func (p *TypeConv) ToDefaultEnumType() types.Type {
@@ -354,7 +359,7 @@ func avoidKeyword(name string) string {
 func substObj(pkg *types.Package, scope *types.Scope, origName string, real types.Object) {
 	old := scope.Insert(gogen.NewSubst(token.NoPos, pkg, origName, real))
 	if old != nil {
-		if t, ok := old.Type().(*gogen.SubstType); ok {
+		if t, ok := old.Type().(*gogen.TySubst); ok {
 			t.Real = real
 		} else {
 			log.Panicln(origName, "redefined")

@@ -1,8 +1,6 @@
 package convert_test
 
 import (
-	"os"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -239,6 +237,79 @@ func CustomExecuteFoo(a c.Int, b Foo) c.Int
 	`, nil)
 }
 
+func TestSqlite3ForwardDecl(t *testing.T) {
+	tempDir := cmptest.GetTempHeaderPathDir()
+
+	cmptest.RunTest(t, "sqlite3", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
+		CFlags:       "-I" + tempDir,
+		TrimPrefixes: []string{"sqlite3_"},
+		Include:      []string{"temp.h"},
+	}, `
+	typedef struct sqlite3_pcache_page sqlite3_pcache_page;
+	struct sqlite3_pcache_page {
+		void *pBuf;        /* The content of the page */
+		void *pExtra;      /* Extra information associated with the page */
+	};
+
+	typedef struct sqlite3_pcache sqlite3_pcache;
+
+	typedef struct sqlite3_pcache_methods2 sqlite3_pcache_methods2;
+	struct sqlite3_pcache_methods2 {
+		int iVersion;
+		void *pArg;
+		int (*xInit)(void*);
+		void (*xShutdown)(void*);
+		sqlite3_pcache *(*xCreate)(int szPage, int szExtra, int bPurgeable);
+		void (*xCachesize)(sqlite3_pcache*, int nCachesize);
+		int (*xPagecount)(sqlite3_pcache*);
+		sqlite3_pcache_page *(*xFetch)(sqlite3_pcache*, unsigned key, int createFlag);
+		void (*xUnpin)(sqlite3_pcache*, sqlite3_pcache_page*, int discard);
+		void (*xRekey)(sqlite3_pcache*, sqlite3_pcache_page*,
+			unsigned oldKey, unsigned newKey);
+		void (*xTruncate)(sqlite3_pcache*, unsigned iLimit);
+		void (*xDestroy)(sqlite3_pcache*);
+		void (*xShrink)(sqlite3_pcache*);
+	};
+	`, `
+package sqlite3
+
+import (
+	"github.com/goplus/llgo/c"
+	"unsafe"
+)
+
+type PcachePage struct {
+	PBuf   unsafe.Pointer
+	PExtra unsafe.Pointer
+}
+
+type Pcache struct {
+	Unused [8]uint8
+}
+
+type PcacheMethods2 struct {
+	IVersion   c.Int
+	PArg       unsafe.Pointer
+	XInit      func(unsafe.Pointer) c.Int
+	XShutdown  func(unsafe.Pointer)
+	XCreate    func(c.Int, c.Int, c.Int) *Pcache
+	XCachesize func(*Pcache, c.Int)
+	XPagecount func(*Pcache) c.Int
+	XFetch     func(*Pcache, c.Uint, c.Int) *PcachePage
+	XUnpin     func(*Pcache, *PcachePage, c.Int)
+	XRekey     func(*Pcache, *PcachePage, c.Uint, c.Uint)
+	XTruncate  func(*Pcache, c.Uint)
+	XDestroy   func(*Pcache)
+	XShrink    func(*Pcache)
+}
+	`, func(t *testing.T, pkg *convert.Package) {
+		cmptest.CheckPubFile(t, pkg, `
+sqlite3_pcache Pcache
+sqlite3_pcache_methods2 PcacheMethods2
+sqlite3_pcache_page PcachePage`)
+	})
+}
+
 // Test if function names and type names can remove specified prefixes,
 // generate correct linkname, and use function names defined in llcppg.symb.json
 func TestCustomStruct(t *testing.T) {
@@ -364,18 +435,13 @@ const ColorRED Color = 0
 //go:linkname Func C.func
 func Func(a c.Int, b c.Int)
 	`, func(t *testing.T, pkg *convert.Package) {
-		bytes, err := os.ReadFile(filepath.Join(pkg.GetOutputDir(), "llcppg.pub"))
-		if err != nil {
-			t.Fatal("llcppg.pub not found")
-		}
-		expectedPub := `
+		cmptest.CheckPubFile(t, pkg, `
 Capital
 color Color
 data CustomData
 point Point
 uint_t UintT
-`
-		cmptest.CheckResult(t, expectedPub, string(bytes))
+		`)
 	})
 }
 

@@ -1157,11 +1157,18 @@ func TestRedef(t *testing.T) {
 		),
 	})
 
+	flds := &ast.FieldList{
+		List: []*ast.Field{
+			{
+				Type: &ast.BuiltinType{Kind: ast.Int},
+			},
+		},
+	}
 	pkg.NewTypeDecl(&ast.TypeDecl{
 		Name: &ast.Ident{Name: "Foo"},
 		Type: &ast.RecordType{
 			Tag:    ast.Struct,
-			Fields: nil,
+			Fields: flds,
 		},
 	})
 
@@ -1169,7 +1176,7 @@ func TestRedef(t *testing.T) {
 		Name: &ast.Ident{Name: "Foo"},
 		Type: &ast.RecordType{
 			Tag:    ast.Struct,
-			Fields: nil,
+			Fields: flds,
 		},
 	})
 	if err == nil {
@@ -1234,9 +1241,13 @@ func TestRedef(t *testing.T) {
 	expect := `
 package testpkg
 
-import _ "unsafe"
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
 
 type Foo struct {
+	c.Int
 }
 //go:linkname Bar C.Bar
 func Bar()
@@ -1515,6 +1526,64 @@ func TestIdentRefer(t *testing.T) {
 		}
 		`)
 	})
+}
+
+func TestForwardDecl(t *testing.T) {
+	pkg := createTestPkg(t, &convert.PackageConfig{
+		OutputDir: "",
+		SymbolTable: cfg.CreateSymbolTable(
+			[]cfg.SymbolEntry{
+				{CppName: "Bar", MangleName: "Bar", GoName: "Bar"},
+			},
+		),
+	})
+
+	// forward decl
+	err := pkg.NewTypeDecl(&ast.TypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.RecordType{
+			Tag:    ast.Struct,
+			Fields: &ast.FieldList{},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("NewTypeDecl failed: %v", err)
+	}
+
+	// complete decl
+	err = pkg.NewTypeDecl(&ast.TypeDecl{
+		Name: &ast.Ident{Name: "Foo"},
+		Type: &ast.RecordType{
+			Tag: ast.Struct,
+			Fields: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Names: []*ast.Ident{{Name: "a"}},
+						Type:  &ast.BuiltinType{Kind: ast.Int},
+					},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("NewTypeDecl failed: %v", err)
+	}
+
+	expect := `
+package testpkg
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type Foo struct {
+	A c.Int
+}
+`
+	comparePackageOutput(t, pkg, expect)
 }
 
 type genDeclTestCase struct {

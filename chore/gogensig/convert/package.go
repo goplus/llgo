@@ -34,11 +34,12 @@ func SetDebug(flags int) {
 }
 
 type Package struct {
-	name    string         // package name
-	p       *gogen.Package // package writer
-	conf    *PackageConfig // package config
-	cvt     *TypeConv      // package type convert
-	curFile *HeaderFile    // current processing c header file.
+	name       string         // package name
+	p          *gogen.Package // package writer
+	conf       *PackageConfig // package config
+	cvt        *TypeConv      // package type convert
+	curFile    *HeaderFile    // current processing c header file.
+	incomplete map[string]*gogen.TypeDecl
 }
 
 type PackageConfig struct {
@@ -72,9 +73,10 @@ func (p *PackageConfig) GetIncPaths() ([]string, error) {
 // If SetCurFile is not called, all type conversions will be written to this default Go file.
 func NewPackage(config *PackageConfig) *Package {
 	p := &Package{
-		p:    gogen.NewPackage(config.PkgPath, config.Name, config.GenConf),
-		name: config.Name,
-		conf: config,
+		p:          gogen.NewPackage(config.PkgPath, config.Name, config.GenConf),
+		name:       config.Name,
+		conf:       config,
+		incomplete: make(map[string]*gogen.TypeDecl),
 	}
 	clib := p.p.Import("github.com/goplus/llgo/c")
 	typeMap := NewBuiltinTypeMapWithPkgRefS(clib, p.p.Unsafe())
@@ -199,19 +201,36 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return err
 	}
 
-	structType, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
+	structType, complete, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
 	if err != nil {
 		return err
 	}
 
-	typeBlock := p.p.NewTypeDefs()
-	typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
-	decl := typeBlock.NewType(name)
-	decl.InitType(p.p, structType)
+	getDecl := func(name string) *gogen.TypeDecl {
+		typeBlock := p.p.NewTypeDefs()
+		typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
+		return typeBlock.NewType(name)
+	}
+
+	var decl *gogen.TypeDecl
+	if complete {
+		var ok bool
+		decl, ok = p.incomplete[name]
+		if ok {
+			delete(p.incomplete, name)
+		} else {
+			decl = getDecl(name)
+		}
+		decl.InitType(p.p, structType)
+	} else {
+		decl = getDecl(name)
+		p.incomplete[name] = decl
+	}
 
 	if changed {
 		substObj(p.p.Types, p.p.Types.Scope(), typeDecl.Name.Name, decl.Type().Obj())
 	}
+
 	return nil
 }
 
@@ -228,6 +247,10 @@ func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {
 	}
 	name, changed, err := p.DeclName(typedefDecl.Name.Name, true)
 	if err != nil {
+		return err
+	}
+	// todo(zzy): this block will be removed after https://github.com/goplus/llgo/pull/870
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
 		// for a typedef ,always appear same name like
 		// typedef struct foo { int a; } foo;
 		// For this typedef, we only need skip this
@@ -396,6 +419,9 @@ func (p *Package) writeToFile(genFName string, filePath string) error {
 
 // Write the corresponding files in gogen package to the buffer
 func (p *Package) WriteToBuffer(genFName string) (*bytes.Buffer, error) {
+	for _, decl := range p.incomplete {
+		decl.InitType(p.p, types.NewStruct(p.cvt.defaultRecordField(), nil))
+	}
 	buf := new(bytes.Buffer)
 	err := p.p.WriteTo(buf, genFName)
 	if err != nil {
@@ -440,7 +466,8 @@ func (p *Package) getAllDepPkgs(deps []*deps.CPackage) []string {
 func (p *Package) DeclName(name string, collect bool) (pubName string, changed bool, err error) {
 	originName := name
 	name = p.conf.GetGoName(name, p.curFile.inCurPkg)
-	if obj := p.p.Types.Scope().Lookup(name); obj != nil {
+	// if the type is incomplete,it's ok to have the same name
+	if obj := p.p.Types.Scope().Lookup(name); obj != nil && p.incomplete[name] == nil {
 		return "", false, fmt.Errorf("type %s already defined,original name is %s", name, originName)
 	}
 	changed = name != originName
