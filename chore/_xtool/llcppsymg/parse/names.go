@@ -1,14 +1,12 @@
 package parse
 
 import (
-	"path/filepath"
 	"strings"
 )
 
-func ToGoName(name string, trimPrefixes []string, inCurPkg bool) string {
-	name = strings.TrimPrefix(name, "struct ")
+func GoName(name string, trimPrefixes []string, inCurPkg bool) string {
 	if inCurPkg {
-		return RemovePrefixedName(name, trimPrefixes)
+		name = RemovePrefixedName(name, trimPrefixes)
 	}
 	return CPubName(name)
 }
@@ -47,37 +45,4 @@ func CPubName(name string) string {
 		return "X" + prefix + toCamelCase(name[i:])
 	}
 	return toCamelCase(name)
-}
-
-// /path/to/foo.h -> foo.go
-// /path/to/_intptr.h -> X_intptr.go
-func HeaderFileToGo(incPath string) string {
-	_, fileName := filepath.Split(incPath)
-	ext := filepath.Ext(fileName)
-	if len(ext) > 0 {
-		fileName = strings.TrimSuffix(fileName, ext)
-	}
-	if strings.HasPrefix(fileName, "_") {
-		fileName = "X" + fileName
-	}
-	return fileName + ".go"
-}
-
-func ToTitle(s string) string {
-	if s == "" {
-		return ""
-	}
-	return strings.ToUpper(s[:1]) + (s[1:])
-}
-
-func ToUpperCamelCase(originName string) string {
-	if originName == "" {
-		return ""
-	}
-	subs := strings.Split(string(originName), "_")
-	name := ""
-	for _, sub := range subs {
-		name += ToTitle(sub)
-	}
-	return name
 }

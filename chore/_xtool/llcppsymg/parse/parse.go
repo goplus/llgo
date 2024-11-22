@@ -99,10 +99,10 @@ func (p *SymbolProcessor) isMethod(cur clang.Cursor, isArg bool) (bool, bool, st
 	typ := cur.Type()
 	if typ.Kind == clang.TypePointer {
 		namedType := typ.PointeeType().NamedType().String()
-		return isInCurPkg, true, ToGoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
+		return isInCurPkg, true, GoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
 	}
 	namedType := typ.NamedType().String()
-	return isInCurPkg, false, ToGoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
+	return isInCurPkg, false, GoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
 }
 
 func (p *SymbolProcessor) genGoName(cursor clang.Cursor) string {
@@ -110,13 +110,13 @@ func (p *SymbolProcessor) genGoName(cursor clang.Cursor) string {
 	isDestructor := cursor.Kind == clang.CursorDestructor
 	var convertedName string
 	if isDestructor {
-		convertedName = ToGoName(originName[1:], p.Prefixes, p.inCurPkg(cursor, false))
+		convertedName = GoName(originName[1:], p.Prefixes, p.inCurPkg(cursor, false))
 	} else {
-		convertedName = ToGoName(originName, p.Prefixes, p.inCurPkg(cursor, false))
+		convertedName = GoName(originName, p.Prefixes, p.inCurPkg(cursor, false))
 	}
 
 	if parent := cursor.SemanticParent(); parent.Kind == clang.CursorClassDecl {
-		class := ToGoName(clang.GoString(parent.String()), p.Prefixes, p.inCurPkg(cursor, false))
+		class := GoName(clang.GoString(parent.String()), p.Prefixes, p.inCurPkg(cursor, false))
 		return p.AddSuffix(p.GenMethodName(class, convertedName, isDestructor, false))
 	} else if cursor.Kind == clang.CursorFunctionDecl {
 		numArgs := cursor.NumArguments()
