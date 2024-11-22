@@ -12,28 +12,33 @@ import (
 
 func RunTest(testName string, testCases []string) {
 	for i, content := range testCases {
-		converter, err := parse.NewConverter(&clangutils.Config{
+		c.Printf(c.Str("%s Case %d:\n"), c.AllocaCStr(testName), c.Int(i+1))
+		RunTestWithConfig(&clangutils.Config{
 			File:  content,
 			Temp:  true,
 			IsCpp: true,
 		})
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = converter.Convert()
-		if err != nil {
-			panic(err)
-		}
-
-		result := converter.MarshalASTFiles()
-		str := result.Print()
-		c.Printf(c.Str("%s Case %d:\n%s\n\n"), c.AllocaCStr(testName), c.Int(i+1), str)
-
-		cjson.FreeCStr(str)
-		result.Delete()
-		converter.Dispose()
 	}
+}
+
+func RunTestWithConfig(config *clangutils.Config) {
+	converter, err := parse.NewConverter(config)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = converter.Convert()
+	if err != nil {
+		panic(err)
+	}
+
+	result := converter.MarshalASTFiles()
+	str := result.Print()
+	c.Printf(c.Str("%s\n\n"), str)
+
+	cjson.FreeCStr(str)
+	result.Delete()
+	converter.Dispose()
 }
 
 type GetTypeOptions struct {

@@ -27,28 +27,7 @@ type Converter struct {
 	index     *clang.Index
 	unit      *clang.TranslationUnit
 
-	typeDecls map[string]ast.Decl // cursorUsr -> ast.Decl
-
-	// anonyTypeMap stores mappings for unexpected named declarations in typedefs
-	// that actually represent anonymous types.
-	//
-	// Key: The USR (Unified Symbol Resolution) of the declaration cursor.
-	// Value: The generated name for the anonymous type.
-	//
-	// This map is necessary due to a limitation in libclang where anonymous
-	// structs, unions, or enums within typedefs are incorrectly reported as
-	// named declarations. We use this map to keep track of these cases and
-	// generate appropriate names for them.
-	//
-	// Additionally, for all nodes referencing these anonymous types, their
-	// name references are updated to use the corresponding anonyname from
-	// this map. This ensures consistent naming across the entire AST for
-	// these anonymous types.
-	//
-	// Example:
-	//   typedef struct { int x; } MyStruct;
-	anonyTypeMap map[string]bool // cursorUsr
-	indent       int             // for verbose debug
+	indent int // for verbose debug
 }
 
 var tagMap = map[string]ast.Tag{
@@ -80,11 +59,9 @@ func NewConverter(config *clangutils.Config) (*Converter, error) {
 	}
 
 	return &Converter{
-		Files:        make([]*FileEntry, 0),
-		index:        index,
-		unit:         unit,
-		anonyTypeMap: make(map[string]bool),
-		typeDecls:    make(map[string]ast.Decl),
+		Files: make([]*FileEntry, 0),
+		index: index,
+		unit:  unit,
 	}, nil
 }
 
@@ -175,28 +152,6 @@ func (ct *Converter) GetCurFile() *ast.File {
 	newDoc := &ast.File{}
 	ct.Files = append(ct.Files, &FileEntry{Path: ct.curLoc.File, Doc: newDoc})
 	return newDoc
-}
-
-func (ct *Converter) SetAnonyType(cursor clang.Cursor) {
-	usr := toStr(cursor.USR())
-	ct.anonyTypeMap[usr] = true
-}
-
-func (ct *Converter) GetAnonyType(cursor clang.Cursor) (bool, bool) {
-	usr := toStr(cursor.USR())
-	isAnony, ok := ct.anonyTypeMap[usr]
-	return isAnony, ok
-}
-
-func (ct *Converter) SetTypeDecl(cursor clang.Cursor, decl ast.Decl) {
-	usr := toStr(cursor.USR())
-	ct.typeDecls[usr] = decl
-}
-
-func (ct *Converter) GetTypeDecl(cursor clang.Cursor) (ast.Decl, bool) {
-	usr := toStr(cursor.USR())
-	decl, ok := ct.typeDecls[usr]
-	return decl, ok
 }
 
 func (ct *Converter) CreateDeclBase(cursor clang.Cursor) ast.DeclBase {
@@ -315,6 +270,9 @@ func (ct *Converter) visitTop(cursor, parent clang.Cursor) clang.ChildVisitResul
 		ct.logln("visitTop: ProcessFuncDecl END", funcDecl.Name.Name, funcDecl.MangledName, "isStatic:", funcDecl.IsStatic, "isInline:", funcDecl.IsInline)
 	case clang.CursorTypedefDecl:
 		typedefDecl := ct.ProcessTypeDefDecl(cursor)
+		if typedefDecl == nil {
+			return clang.ChildVisit_Continue
+		}
 		curFile.Decls = append(curFile.Decls, typedefDecl)
 		ct.logln("visitTop: ProcessTypeDefDecl END", typedefDecl.Name.Name)
 	case clang.CursorNamespace:
@@ -444,15 +402,20 @@ func (ct *Converter) ProcessTypeDefDecl(cursor clang.Cursor) *ast.TypedefDecl {
 	ct.logln("ProcessTypeDefDecl: CursorName:", name, "CursorKind:", kind, "CursorTypeKind:", toStr(cursor.Type().Kind.String()))
 
 	typ := ct.ProcessUnderlyingType(cursor)
+	// For cases like: typedef struct { int x; } Name;
+	// libclang incorrectly reports the anonymous structure as a named structure
+	// with the same name as the typedef. Since the anonymous structure definition
+	// has already been collected when processing its declaration cursor,
+	// we skip this redundant typedef declaration by returning nil.
+	if typ == nil {
+		return nil
+	}
 
 	decl := &ast.TypedefDecl{
 		DeclBase: ct.CreateDeclBase(cursor),
 		Name:     &ast.Ident{Name: name},
 		Type:     typ,
 	}
-
-	ct.SetTypeDecl(cursor, decl)
-
 	return decl
 }
 
@@ -465,38 +428,9 @@ func (ct *Converter) ProcessUnderlyingType(cursor clang.Cursor) ast.Expr {
 	}
 
 	referTypeCursor := underlyingTyp.TypeDeclaration()
-
-	// If the type decl for the reference already exists in anonyTypeMap
-	// then the refer has been processed in ProcessElaboratedType
-	if _, ok := ct.GetAnonyType(referTypeCursor); !ok && isCursorChildOf(referTypeCursor, cursor) {
-		// Handle unexpected named structures generated from anonymous RecordTypes in Typedefs
-		// In this case, libclang incorrectly reports an anonymous struct as a named struct
-		sourceCode := ct.GetTokens(referTypeCursor)
-		if isAnonymousStructure(sourceCode) {
-			ct.logln("ProcessUnderlyingType: is anonymous structure")
-			ct.SetAnonyType(referTypeCursor)
-			typ, isValidType := ct.GetTypeDecl(referTypeCursor)
-			if isValidType {
-				// There will be no anonymous classes,here will execute enum,union,struct
-				// according to a normal anonymous decl
-				switch declType := typ.(type) {
-				case *ast.EnumTypeDecl:
-					ct.logln("ProcessUnderlyingType: is actually anonymous enum,remove name")
-					declType.Name = nil
-				case *ast.TypeDecl:
-					if declType.Type.Tag != ast.Class {
-						ct.logln("ProcessUnderlyingType: is actually anonymous struct,remove name")
-						declType.Name = nil
-					} else {
-						// Unreachable: There should be no anonymous classes in this context
-						fmt.Fprintln(os.Stderr, "unexpect typedef anonymous class %s", declType.Name.Name)
-					}
-				}
-			} else {
-				// Unreachable:When referencing an anonymous node, its collection must have been completed beforehand
-				fmt.Fprintln(os.Stderr, "anonymous node not collected before reference")
-			}
-		}
+	if toStr(cursor.String()) == toStr(referTypeCursor.String()) && isCursorChildOf(referTypeCursor, cursor) {
+		ct.logln("ProcessUnderlyingType: is self reference")
+		return nil
 	}
 
 	return ct.ProcessElaboratedType(underlyingTyp)
@@ -546,7 +480,6 @@ func (ct *Converter) ProcessFuncDecl(cursor clang.Cursor) *ast.FuncDecl {
 		}
 	}
 
-	ct.SetTypeDecl(cursor, funcDecl)
 	return funcDecl
 }
 
@@ -631,7 +564,6 @@ func (ct *Converter) ProcessEnumDecl(cursor clang.Cursor) *ast.EnumTypeDecl {
 		ct.logln("ProcessRecordDecl: is anonymous")
 	}
 
-	ct.SetTypeDecl(cursor, decl)
 	return decl
 }
 
@@ -764,7 +696,6 @@ func (ct *Converter) ProcessRecordDecl(cursor clang.Cursor) *ast.TypeDecl {
 		ct.logln("ProcessRecordDecl: is anonymous")
 	}
 
-	ct.SetTypeDecl(cursor, decl)
 	return decl
 }
 
@@ -790,7 +721,6 @@ func (ct *Converter) ProcessClassDecl(cursor clang.Cursor) *ast.TypeDecl {
 		Type:     typ,
 	}
 
-	ct.SetTypeDecl(cursor, decl)
 	return decl
 }
 
@@ -833,9 +763,8 @@ func (ct *Converter) ProcessElaboratedType(t clang.Type) ast.Expr {
 	ct.logln("ProcessElaboratedType: TypeName:", typeName, "TypeKind:", typeKind)
 
 	decl := t.TypeDeclaration()
-	isAnony, ok := ct.GetAnonyType(decl)
 
-	if decl.IsAnonymous() != 0 || isAnony && ok {
+	if decl.IsAnonymous() != 0 {
 		// anonymous type refer (except anonymous RecordType&EnumType in TypedefDecl)
 		if decl.Kind == clang.CursorEnumDecl {
 			return ct.ProcessEnumType(decl)
@@ -1024,15 +953,6 @@ func getOffset(location clang.SourceLocation) c.Uint {
 	var offset c.Uint
 	location.SpellingLocation(nil, nil, nil, &offset)
 	return offset
-}
-
-// checks if the source code represents an actual anonymous structure
-func isAnonymousStructure(sourceCode []*ast.Token) bool {
-	_, isValidTag := tagMap[sourceCode[0].Lit]
-	return sourceCode[0].Token == token.KEYWORD &&
-		isValidTag &&
-		sourceCode[1].Token == token.PUNCT &&
-		sourceCode[1].Lit == "{"
 }
 
 func toStr(clangStr clang.String) (str string) {
