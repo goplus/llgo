@@ -176,7 +176,10 @@ func (p *Package) NewFuncDecl(funcDecl *ast.FuncDecl) error {
 	return nil
 }
 
-// todo(zzy): for class,union,struct
+// NewTypeDecl converts C/C++ type declarations to Go.
+// Besides regular type declarations, it also supports:
+// - Forward declarations: Pre-registers incomplete types for later definition
+// - Self-referential types: Handles types that reference themselves (like linked lists)
 func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 	skip, anony, err := p.cvt.handleSysType(typeDecl.Name, typeDecl.Loc, p.curFile.sysIncPath)
 	if skip {
@@ -201,37 +204,51 @@ func (p *Package) NewTypeDecl(typeDecl *ast.TypeDecl) error {
 		return err
 	}
 
-	structType, complete, err := p.cvt.RecordTypeToStruct(typeDecl.Type)
-	if err != nil {
-		return err
-	}
+	decl := p.handleTypeDecl(name, typeDecl, changed)
 
-	getDecl := func(name string) *gogen.TypeDecl {
-		typeBlock := p.p.NewTypeDefs()
-		typeBlock.SetComments(CommentGroup(typeDecl.Doc).CommentGroup)
-		return typeBlock.NewType(name)
-	}
-
-	var decl *gogen.TypeDecl
-	if complete {
-		var ok bool
-		decl, ok = p.incomplete[name]
-		if ok {
-			delete(p.incomplete, name)
-		} else {
-			decl = getDecl(name)
+	if !p.cvt.inComplete(typeDecl.Type) {
+		if err := p.handleCompleteType(decl, typeDecl.Type, name); err != nil {
+			return err
 		}
-		decl.InitType(p.p, structType)
+	}
+	return nil
+}
+
+// handleTypeDecl creates a new type declaration or retrieves existing one
+func (p *Package) handleTypeDecl(name string, typeDecl *ast.TypeDecl, changed bool) *gogen.TypeDecl {
+	var decl *gogen.TypeDecl
+	if !p.cvt.inComplete(typeDecl.Type) {
+		if existDecl, exists := p.incomplete[name]; exists {
+			decl = existDecl
+		} else {
+			decl = p.emptyTypeDecl(name, typeDecl.Doc)
+		}
 	} else {
-		decl = getDecl(name)
+		decl = p.emptyTypeDecl(name, typeDecl.Doc)
 		p.incomplete[name] = decl
 	}
 
 	if changed {
 		substObj(p.p.Types, p.p.Types.Scope(), typeDecl.Name.Name, decl.Type().Obj())
 	}
+	return decl
+}
 
+func (p *Package) handleCompleteType(decl *gogen.TypeDecl, typ *ast.RecordType, name string) error {
+	structType, err := p.cvt.RecordTypeToStruct(typ)
+	if err != nil {
+		decl.Delete()
+		return err
+	}
+	decl.InitType(p.p, structType)
+	delete(p.incomplete, name)
 	return nil
+}
+
+func (p *Package) emptyTypeDecl(name string, doc *ast.CommentGroup) *gogen.TypeDecl {
+	typeBlock := p.p.NewTypeDefs()
+	typeBlock.SetComments(CommentGroup(doc).CommentGroup)
+	return typeBlock.NewType(name)
 }
 
 func (p *Package) NewTypedefDecl(typedefDecl *ast.TypedefDecl) error {

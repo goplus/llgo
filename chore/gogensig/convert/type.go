@@ -251,44 +251,43 @@ func (p *TypeConv) fieldToVar(field *ast.Field, isRecord bool) (*types.Var, erro
 	return types.NewVar(token.NoPos, p.Types, name, typ), nil
 }
 
-func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, bool, error) {
+func (p *TypeConv) RecordTypeToStruct(recordType *ast.RecordType) (types.Type, error) {
 	var fields []*types.Var
-	complete := true
-	//todo(zzy): Current forward declaration detection is imprecise
-	// It incorrectly treats both empty struct `struct a {}` and forward declaration `struct a` as the same
-	// by only checking if Fields.List is empty
-	// Should use recordType == nil to identify forward declarations, which requires llcppsigfetch support
-	if recordType.Fields != nil && len(recordType.Fields.List) == 0 {
-		return nil, false, nil
+	flds, err := p.fieldListToVars(recordType.Fields, true)
+	if err != nil {
+		return nil, err
+	}
+	if recordType.Tag != ast.Union {
+		fields = flds
 	} else {
-		flds, err := p.fieldListToVars(recordType.Fields, true)
-		if err != nil {
-			return nil, complete, err
+		var maxFld *types.Var
+		maxSize := int64(0)
+		for i := len(flds) - 1; i >= 0; i-- {
+			fld := flds[i]
+			t := fld.Type()
+			size := sizes.Sizeof(t)
+			if size >= maxSize {
+				maxSize = size
+				maxFld = fld
+			}
 		}
-		if recordType.Tag != ast.Union {
-			fields = flds
-		} else {
-			var maxFld *types.Var
-			maxSize := int64(0)
-			for i := len(flds) - 1; i >= 0; i-- {
-				fld := flds[i]
-				t := fld.Type()
-				size := sizes.Sizeof(t)
-				if size >= maxSize {
-					maxSize = size
-					maxFld = fld
-				}
-			}
-			if maxFld != nil {
-				fields = []*types.Var{maxFld}
-			}
+		if maxFld != nil {
+			fields = []*types.Var{maxFld}
 		}
 	}
-	return types.NewStruct(fields, nil), complete, nil
+	return types.NewStruct(fields, nil), nil
 }
 
 func (p *TypeConv) ToDefaultEnumType() types.Type {
 	return p.typeMap.CType("Int")
+}
+
+// todo(zzy): Current forward declaration detection is imprecise
+// It incorrectly treats both empty struct `struct a {}` and forward declaration `struct a` as the same
+// by only checking if Fields.List is empty
+// Should use recordType == nil to identify forward declarations, which requires llcppsigfetch support
+func (p *TypeConv) inComplete(recordType *ast.RecordType) bool {
+	return recordType.Fields != nil && len(recordType.Fields.List) == 0
 }
 
 // typedecl,enumdecl,funcdecl,funcdecl

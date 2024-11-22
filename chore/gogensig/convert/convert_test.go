@@ -239,7 +239,6 @@ func CustomExecuteFoo(a c.Int, b Foo) c.Int
 
 func TestSqlite3ForwardDecl(t *testing.T) {
 	tempDir := cmptest.GetTempHeaderPathDir()
-
 	cmptest.RunTest(t, "sqlite3", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
 		CFlags:       "-I" + tempDir,
 		TrimPrefixes: []string{"sqlite3_"},
@@ -247,8 +246,8 @@ func TestSqlite3ForwardDecl(t *testing.T) {
 	}, `
 	typedef struct sqlite3_pcache_page sqlite3_pcache_page;
 	struct sqlite3_pcache_page {
-		void *pBuf;        /* The content of the page */
-		void *pExtra;      /* Extra information associated with the page */
+		void *pBuf;
+		void *pExtra;
 	};
 
 	typedef struct sqlite3_pcache sqlite3_pcache;
@@ -308,6 +307,47 @@ sqlite3_pcache Pcache
 sqlite3_pcache_methods2 PcacheMethods2
 sqlite3_pcache_page PcachePage`)
 	})
+}
+
+func TestCjsonSelfRefStruct(t *testing.T) {
+	tempDir := cmptest.GetTempHeaderPathDir()
+	cmptest.RunTest(t, "cjson", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
+		CFlags:  "-I" + tempDir,
+		Include: []string{"temp.h"},
+	}, `
+typedef struct cJSON {
+    struct cJSON *next;
+    struct cJSON *prev;
+    struct cJSON *child;
+    int type;
+    char *valuestring;
+    int valueint;
+    double valuedouble;
+    char *string;
+} cJSON;
+	`, `
+package cjson
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type CJSON struct {
+	Next        *CJSON
+	Prev        *CJSON
+	Child       *CJSON
+	Type        c.Int
+	Valuestring *int8
+	Valueint    c.Int
+	Valuedouble float64
+	String      *int8
+}
+	`,
+		func(t *testing.T, pkg *convert.Package) {
+			cmptest.CheckPubFile(t, pkg, `cJSON CJSON`)
+		},
+	)
 }
 
 // Test if function names and type names can remove specified prefixes,
