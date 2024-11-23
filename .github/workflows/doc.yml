@@ -43,6 +43,7 @@ jobs:
         run: |
           set -e
           set -x
+          brew uninstall pkg-config@0.29.2
           source doc/_readme/scripts/install_macos.sh
 
       - name: Install dependencies on Ubuntu
