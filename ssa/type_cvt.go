@@ -92,6 +92,9 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 			return types.NewMap(key, elem), true
 		}
 	case *types.Struct:
+		if isClosure(t) {
+			return typ, false
+		}
 		return p.cvtStruct(t)
 	case *types.Named:
 		if v, ok := p.typbg.Load(namedLinkname(t)); ok && v.(Background) == InC {
