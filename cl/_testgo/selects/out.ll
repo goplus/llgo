@@ -95,7 +95,7 @@ _llgo_0:
   %36 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 1
   store ptr %33, ptr %36, align 8
   %37 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 2
-  store i64 0, ptr %37, align 4
+  store i32 0, ptr %37, align 4
   %38 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 3
   store i1 false, ptr %38, align 1
   %39 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, align 8
@@ -107,7 +107,7 @@ _llgo_0:
   %43 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 1
   store ptr %40, ptr %43, align 8
   %44 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 2
-  store i64 0, ptr %44, align 4
+  store i32 0, ptr %44, align 4
   %45 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 3
   store i1 false, ptr %45, align 1
   %46 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, align 8
@@ -236,7 +236,7 @@ _llgo_0:
   %25 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 1
   store ptr %22, ptr %25, align 8
   %26 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 2
-  store i64 0, ptr %26, align 4
+  store i32 0, ptr %26, align 4
   %27 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 3
   store i1 false, ptr %27, align 1
   %28 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, align 8
