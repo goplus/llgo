@@ -72,101 +72,85 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca { ptr, ptr }, align 8
-  %3 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 0
-  store ptr @__llgo_stub.rand, ptr %3, align 8
-  %4 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 1
-  store ptr null, ptr %4, align 8
-  %5 = load { ptr, ptr }, ptr %2, align 8
-  %6 = call %"github.com/goplus/llgo/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %5)
-  %7 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %6, 1
+  %2 = call %"github.com/goplus/llgo/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } { ptr @__llgo_stub.rand, ptr null })
+  %3 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %2, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %8 = phi i64 [ -1, %_llgo_0 ], [ %9, %_llgo_2 ]
-  %9 = add i64 %8, 1
-  %10 = icmp slt i64 %9, %7
-  br i1 %10, label %_llgo_2, label %_llgo_3
+  %4 = phi i64 [ -1, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %5 = add i64 %4, 1
+  %6 = icmp slt i64 %5, %3
+  br i1 %6, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %11 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %6, 0
-  %12 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %6, 1
-  %13 = icmp slt i64 %9, 0
-  %14 = icmp sge i64 %9, %12
-  %15 = or i1 %14, %13
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %15)
-  %16 = getelementptr inbounds i32, ptr %11, i64 %9
-  %17 = load i32, ptr %16, align 4
-  %18 = call i32 (ptr, ...) @printf(ptr @0, i32 %17)
+  %7 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %2, 0
+  %8 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %2, 1
+  %9 = icmp slt i64 %5, 0
+  %10 = icmp sge i64 %5, %8
+  %11 = or i1 %10, %9
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %11)
+  %12 = getelementptr inbounds i32, ptr %7, i64 %5
+  %13 = load i32, ptr %12, align 4
+  %14 = call i32 (ptr, ...) @printf(ptr @0, i32 %13)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %19 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 4)
-  store i32 1, ptr %19, align 4
-  %20 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  %21 = getelementptr inbounds { ptr }, ptr %20, i32 0, i32 0
-  store ptr %19, ptr %21, align 8
-  %22 = alloca { ptr, ptr }, align 8
-  %23 = getelementptr inbounds { ptr, ptr }, ptr %22, i32 0, i32 0
-  store ptr @"main.main$1", ptr %23, align 8
-  %24 = getelementptr inbounds { ptr, ptr }, ptr %22, i32 0, i32 1
-  store ptr %20, ptr %24, align 8
-  %25 = load { ptr, ptr }, ptr %22, align 8
-  %26 = call %"github.com/goplus/llgo/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %25)
-  %27 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %26, 1
+  %15 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 4)
+  store i32 1, ptr %15, align 4
+  %16 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %17 = getelementptr inbounds { ptr }, ptr %16, i32 0, i32 0
+  store ptr %15, ptr %17, align 8
+  %18 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %16, 1
+  %19 = call %"github.com/goplus/llgo/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %18)
+  %20 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %19, 1
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_5, %_llgo_3
-  %28 = phi i64 [ -1, %_llgo_3 ], [ %29, %_llgo_5 ]
-  %29 = add i64 %28, 1
-  %30 = icmp slt i64 %29, %27
-  br i1 %30, label %_llgo_5, label %_llgo_6
+  %21 = phi i64 [ -1, %_llgo_3 ], [ %22, %_llgo_5 ]
+  %22 = add i64 %21, 1
+  %23 = icmp slt i64 %22, %20
+  br i1 %23, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
-  %31 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %26, 0
-  %32 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %26, 1
-  %33 = icmp slt i64 %29, 0
-  %34 = icmp sge i64 %29, %32
-  %35 = or i1 %34, %33
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %35)
-  %36 = getelementptr inbounds i32, ptr %31, i64 %29
-  %37 = load i32, ptr %36, align 4
-  %38 = call i32 (ptr, ...) @printf(ptr @1, i32 %37)
+  %24 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %19, 0
+  %25 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %19, 1
+  %26 = icmp slt i64 %22, 0
+  %27 = icmp sge i64 %22, %25
+  %28 = or i1 %27, %26
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %28)
+  %29 = getelementptr inbounds i32, ptr %24, i64 %22
+  %30 = load i32, ptr %29, align 4
+  %31 = call i32 (ptr, ...) @printf(ptr @1, i32 %30)
   br label %_llgo_4
 
 _llgo_6:                                          ; preds = %_llgo_4
-  %39 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 4)
-  %40 = getelementptr inbounds %main.generator, ptr %39, i32 0, i32 0
-  store i32 1, ptr %40, align 4
-  %41 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  %42 = getelementptr inbounds { ptr }, ptr %41, i32 0, i32 0
-  store ptr %39, ptr %42, align 8
-  %43 = alloca { ptr, ptr }, align 8
-  %44 = getelementptr inbounds { ptr, ptr }, ptr %43, i32 0, i32 0
-  store ptr @"main.next$bound", ptr %44, align 8
-  %45 = getelementptr inbounds { ptr, ptr }, ptr %43, i32 0, i32 1
-  store ptr %41, ptr %45, align 8
-  %46 = load { ptr, ptr }, ptr %43, align 8
-  %47 = call %"github.com/goplus/llgo/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %46)
-  %48 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %47, 1
+  %32 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 4)
+  %33 = getelementptr inbounds %main.generator, ptr %32, i32 0, i32 0
+  store i32 1, ptr %33, align 4
+  %34 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %35 = getelementptr inbounds { ptr }, ptr %34, i32 0, i32 0
+  store ptr %32, ptr %35, align 8
+  %36 = insertvalue { ptr, ptr } { ptr @"main.next$bound", ptr undef }, ptr %34, 1
+  %37 = call %"github.com/goplus/llgo/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %36)
+  %38 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %37, 1
   br label %_llgo_7
 
 _llgo_7:                                          ; preds = %_llgo_8, %_llgo_6
-  %49 = phi i64 [ -1, %_llgo_6 ], [ %50, %_llgo_8 ]
-  %50 = add i64 %49, 1
-  %51 = icmp slt i64 %50, %48
-  br i1 %51, label %_llgo_8, label %_llgo_9
+  %39 = phi i64 [ -1, %_llgo_6 ], [ %40, %_llgo_8 ]
+  %40 = add i64 %39, 1
+  %41 = icmp slt i64 %40, %38
+  br i1 %41, label %_llgo_8, label %_llgo_9
 
 _llgo_8:                                          ; preds = %_llgo_7
-  %52 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %47, 0
-  %53 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %47, 1
-  %54 = icmp slt i64 %50, 0
-  %55 = icmp sge i64 %50, %53
-  %56 = or i1 %55, %54
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %56)
-  %57 = getelementptr inbounds i32, ptr %52, i64 %50
-  %58 = load i32, ptr %57, align 4
-  %59 = call i32 (ptr, ...) @printf(ptr @2, i32 %58)
+  %42 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %37, 0
+  %43 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %37, 1
+  %44 = icmp slt i64 %40, 0
+  %45 = icmp sge i64 %40, %43
+  %46 = or i1 %45, %44
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %46)
+  %47 = getelementptr inbounds i32, ptr %42, i64 %40
+  %48 = load i32, ptr %47, align 4
+  %49 = call i32 (ptr, ...) @printf(ptr @2, i32 %48)
   br label %_llgo_7
 
 _llgo_9:                                          ; preds = %_llgo_7

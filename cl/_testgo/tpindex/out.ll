@@ -37,19 +37,14 @@ _llgo_0:
   store i64 2, ptr %6, align 4
   %7 = getelementptr inbounds i64, ptr %2, i64 4
   store i64 4, ptr %7, align 4
-  %8 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, i32 0, i32 0
-  store ptr %2, ptr %9, align 8
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, i32 0, i32 1
-  store i64 5, ptr %10, align 4
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, i32 0, i32 2
-  store i64 5, ptr %11, align 4
-  %12 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %8, align 8
-  %13 = call i64 @"main.index[int]"(%"github.com/goplus/llgo/internal/runtime.Slice" %12, i64 3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %13)
+  %8 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %2, 0
+  %9 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %8, i64 5, 1
+  %10 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %9, i64 5, 2
+  %11 = call i64 @"main.index[int]"(%"github.com/goplus/llgo/internal/runtime.Slice" %10, i64 3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %11)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %14 = call i64 @"main.index[int]"(%"github.com/goplus/llgo/internal/runtime.Slice" %12, i64 6)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %14)
+  %12 = call i64 @"main.index[int]"(%"github.com/goplus/llgo/internal/runtime.Slice" %10, i64 6)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %12)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }

@@ -42,16 +42,10 @@ _llgo_0:
   call void @"github.com/goplus/llgo/cl/internal/linktarget.F"(ptr @0, ptr @1, ptr @2, ptr @3)
   call void @"github.com/goplus/llgo/cl/internal/linktarget.F"(ptr @4, ptr @5, ptr @6, ptr @7)
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
-  %3 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %3, i32 0, i32 0
-  store ptr @8, ptr %4, align 8
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %3, i32 0, i32 1
-  store i64 5, ptr %5, align 4
-  %6 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %3, align 8
-  call void @"github.com/goplus/llgo/cl/internal/linktarget.(*m).setInfo"(ptr %2, %"github.com/goplus/llgo/internal/runtime.String" %6)
-  %7 = load %main.m, ptr %2, align 8
-  %8 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/cl/internal/linktarget.m.info"(%main.m %7)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %8)
+  call void @"github.com/goplus/llgo/cl/internal/linktarget.(*m).setInfo"(ptr %2, %"github.com/goplus/llgo/internal/runtime.String" { ptr @8, i64 5 })
+  %3 = load %main.m, ptr %2, align 8
+  %4 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/cl/internal/linktarget.m.info"(%main.m %3)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %4)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }

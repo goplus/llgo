@@ -56,9 +56,11 @@ func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 }
 
 func aggregateValue(b llvm.Builder, tll llvm.Type, flds ...llvm.Value) llvm.Value {
-	ptr := llvm.CreateAlloca(b, tll)
-	aggregateInit(b, ptr, tll, flds...)
-	return llvm.CreateLoad(b, tll, ptr)
+	agg := llvm.Undef(tll)
+	for i, fld := range flds {
+		agg = b.CreateInsertValue(agg, fld, i, "")
+	}
+	return agg
 }
 
 func aggregateInit(b llvm.Builder, ptr llvm.Value, tll llvm.Type, flds ...llvm.Value) {

@@ -1,8 +1,8 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
 
 @"main.init$guard" = global i1 false, align 1
@@ -30,22 +30,12 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
-  store ptr @0, ptr %3, align 8
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
-  store i64 5, ptr %4, align 4
-  %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
-  %6 = call %"github.com/goplus/llgo/internal/runtime.iface" @errors.New(%"github.com/goplus/llgo/internal/runtime.String" %5)
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.IfaceType"(%"github.com/goplus/llgo/internal/runtime.iface" %6)
-  %8 = extractvalue %"github.com/goplus/llgo/internal/runtime.iface" %6, 1
-  %9 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, i32 0, i32 0
-  store ptr %7, ptr %10, align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, i32 0, i32 1
-  store ptr %8, ptr %11, align 8
-  %12 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %9, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %12)
+  %2 = call %"github.com/goplus/llgo/internal/runtime.iface" @errors.New(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 5 })
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.IfaceType"(%"github.com/goplus/llgo/internal/runtime.iface" %2)
+  %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.iface" %2, 1
+  %5 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %3, 0
+  %6 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %5, ptr %4, 1
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %6)
   unreachable
 }
 

@@ -36,16 +36,11 @@ _llgo_0:
   store i64 3, ptr %5, align 4
   %6 = getelementptr inbounds i64, ptr %2, i64 3
   store i64 4, ptr %6, align 4
-  %7 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, i32 0, i32 0
-  store ptr %2, ptr %8, align 8
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, i32 0, i32 1
-  store i64 4, ptr %9, align 4
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, i32 0, i32 2
-  store i64 4, ptr %10, align 4
-  %11 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, align 8
-  %12 = call i64 @main.sum(%"github.com/goplus/llgo/internal/runtime.Slice" %11)
-  %13 = call i32 (ptr, ...) @printf(ptr @0, i64 %12)
+  %7 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %2, 0
+  %8 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %7, i64 4, 1
+  %9 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %8, i64 4, 2
+  %10 = call i64 @main.sum(%"github.com/goplus/llgo/internal/runtime.Slice" %9)
+  %11 = call i32 (ptr, ...) @printf(ptr @0, i64 %10)
   ret i32 0
 }
 

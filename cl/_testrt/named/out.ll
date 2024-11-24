@@ -74,52 +74,47 @@ _llgo_0:
   %35 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %36 = getelementptr inbounds { ptr }, ptr %35, i32 0, i32 0
   store ptr %2, ptr %36, align 8
-  %37 = alloca { ptr, ptr }, align 8
-  %38 = getelementptr inbounds { ptr, ptr }, ptr %37, i32 0, i32 0
-  store ptr @"main.main$1", ptr %38, align 8
-  %39 = getelementptr inbounds { ptr, ptr }, ptr %37, i32 0, i32 1
-  store ptr %35, ptr %39, align 8
-  %40 = load { ptr, ptr }, ptr %37, align 8
-  %41 = getelementptr inbounds %main.mspan, ptr %34, i32 0, i32 5
-  store { ptr, ptr } %40, ptr %41, align 8
-  %42 = load ptr, ptr %2, align 8
-  %43 = getelementptr inbounds %main.mspan, ptr %42, i32 0, i32 0
-  %44 = load ptr, ptr %43, align 8
-  %45 = getelementptr inbounds %main.mspan, ptr %44, i32 0, i32 4
-  %46 = load i64, ptr %45, align 4
-  %47 = load ptr, ptr %2, align 8
-  %48 = getelementptr inbounds %main.mspan, ptr %47, i32 0, i32 2
-  %49 = load ptr, ptr %48, align 8
-  %50 = getelementptr inbounds %main.mSpanList, ptr %49, i32 0, i32 1
-  %51 = load ptr, ptr %50, align 8
-  %52 = getelementptr inbounds %main.mspan, ptr %51, i32 0, i32 4
-  %53 = load i64, ptr %52, align 4
-  %54 = load ptr, ptr %2, align 8
-  %55 = getelementptr inbounds %main.mspan, ptr %54, i32 0, i32 3
-  %56 = getelementptr inbounds %main.minfo, ptr %55, i32 0, i32 1
-  %57 = load i64, ptr %56, align 4
-  %58 = load ptr, ptr %2, align 8
-  %59 = getelementptr inbounds %main.mspan, ptr %58, i32 0, i32 3
-  %60 = getelementptr inbounds %main.minfo, ptr %59, i32 0, i32 0
-  %61 = load ptr, ptr %60, align 8
-  %62 = getelementptr inbounds %main.mspan, ptr %61, i32 0, i32 4
-  %63 = load i64, ptr %62, align 4
-  %64 = load ptr, ptr %2, align 8
-  %65 = getelementptr inbounds %main.mspan, ptr %64, i32 0, i32 5
-  %66 = load { ptr, ptr }, ptr %65, align 8
-  %67 = extractvalue { ptr, ptr } %66, 1
-  %68 = extractvalue { ptr, ptr } %66, 0
-  %69 = call i64 %68(ptr %67, i64 -2)
-  %70 = load ptr, ptr %2, align 8
-  %71 = getelementptr inbounds %main.mspan, ptr %70, i32 0, i32 3
-  %72 = getelementptr inbounds %main.minfo, ptr %71, i32 0, i32 0
-  %73 = load ptr, ptr %72, align 8
-  %74 = getelementptr inbounds %main.mspan, ptr %73, i32 0, i32 5
-  %75 = load { ptr, ptr }, ptr %74, align 8
-  %76 = extractvalue { ptr, ptr } %75, 1
-  %77 = extractvalue { ptr, ptr } %75, 0
-  %78 = call i64 %77(ptr %76, i64 -3)
-  %79 = call i32 (ptr, ...) @printf(ptr @0, i64 %46, i64 %53, i64 %57, i64 %63, i64 %69, i64 %78)
+  %37 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %35, 1
+  %38 = getelementptr inbounds %main.mspan, ptr %34, i32 0, i32 5
+  store { ptr, ptr } %37, ptr %38, align 8
+  %39 = load ptr, ptr %2, align 8
+  %40 = getelementptr inbounds %main.mspan, ptr %39, i32 0, i32 0
+  %41 = load ptr, ptr %40, align 8
+  %42 = getelementptr inbounds %main.mspan, ptr %41, i32 0, i32 4
+  %43 = load i64, ptr %42, align 4
+  %44 = load ptr, ptr %2, align 8
+  %45 = getelementptr inbounds %main.mspan, ptr %44, i32 0, i32 2
+  %46 = load ptr, ptr %45, align 8
+  %47 = getelementptr inbounds %main.mSpanList, ptr %46, i32 0, i32 1
+  %48 = load ptr, ptr %47, align 8
+  %49 = getelementptr inbounds %main.mspan, ptr %48, i32 0, i32 4
+  %50 = load i64, ptr %49, align 4
+  %51 = load ptr, ptr %2, align 8
+  %52 = getelementptr inbounds %main.mspan, ptr %51, i32 0, i32 3
+  %53 = getelementptr inbounds %main.minfo, ptr %52, i32 0, i32 1
+  %54 = load i64, ptr %53, align 4
+  %55 = load ptr, ptr %2, align 8
+  %56 = getelementptr inbounds %main.mspan, ptr %55, i32 0, i32 3
+  %57 = getelementptr inbounds %main.minfo, ptr %56, i32 0, i32 0
+  %58 = load ptr, ptr %57, align 8
+  %59 = getelementptr inbounds %main.mspan, ptr %58, i32 0, i32 4
+  %60 = load i64, ptr %59, align 4
+  %61 = load ptr, ptr %2, align 8
+  %62 = getelementptr inbounds %main.mspan, ptr %61, i32 0, i32 5
+  %63 = load { ptr, ptr }, ptr %62, align 8
+  %64 = extractvalue { ptr, ptr } %63, 1
+  %65 = extractvalue { ptr, ptr } %63, 0
+  %66 = call i64 %65(ptr %64, i64 -2)
+  %67 = load ptr, ptr %2, align 8
+  %68 = getelementptr inbounds %main.mspan, ptr %67, i32 0, i32 3
+  %69 = getelementptr inbounds %main.minfo, ptr %68, i32 0, i32 0
+  %70 = load ptr, ptr %69, align 8
+  %71 = getelementptr inbounds %main.mspan, ptr %70, i32 0, i32 5
+  %72 = load { ptr, ptr }, ptr %71, align 8
+  %73 = extractvalue { ptr, ptr } %72, 1
+  %74 = extractvalue { ptr, ptr } %72, 0
+  %75 = call i64 %74(ptr %73, i64 -3)
+  %76 = call i32 (ptr, ...) @printf(ptr @0, i64 %43, i64 %50, i64 %54, i64 %60, i64 %66, i64 %75)
   ret i32 0
 }
 

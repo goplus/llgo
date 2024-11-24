@@ -28,25 +28,14 @@ _llgo_0:
   call void @main.init()
   call void @"main.main$1"(i64 100, i64 200)
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
-  %3 = alloca { ptr, ptr }, align 8
-  %4 = getelementptr inbounds { ptr, ptr }, ptr %3, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$2", ptr %4, align 8
-  %5 = getelementptr inbounds { ptr, ptr }, ptr %3, i32 0, i32 1
-  store ptr null, ptr %5, align 8
-  %6 = load { ptr, ptr }, ptr %3, align 8
-  store { ptr, ptr } %6, ptr %2, align 8
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
-  %8 = getelementptr inbounds { ptr }, ptr %7, i32 0, i32 0
-  store ptr %2, ptr %8, align 8
-  %9 = alloca { ptr, ptr }, align 8
-  %10 = getelementptr inbounds { ptr, ptr }, ptr %9, i32 0, i32 0
-  store ptr @"main.main$3", ptr %10, align 8
-  %11 = getelementptr inbounds { ptr, ptr }, ptr %9, i32 0, i32 1
-  store ptr %7, ptr %11, align 8
-  %12 = load { ptr, ptr }, ptr %9, align 8
-  %13 = extractvalue { ptr, ptr } %12, 1
-  %14 = extractvalue { ptr, ptr } %12, 0
-  call void %14(ptr %13)
+  store { ptr, ptr } { ptr @"__llgo_stub.main.main$2", ptr null }, ptr %2, align 8
+  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
+  store ptr %2, ptr %4, align 8
+  %5 = insertvalue { ptr, ptr } { ptr @"main.main$3", ptr undef }, ptr %3, 1
+  %6 = extractvalue { ptr, ptr } %5, 1
+  %7 = extractvalue { ptr, ptr } %5, 0
+  call void %7(ptr %6)
   ret i32 0
 }
 

@@ -29,31 +29,19 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 0
-  store ptr @0, ptr %3, align 8
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %2, i32 0, i32 1
-  store i64 29, ptr %4, align 4
-  %5 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %2, align 8
-  %6 = call ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"github.com/goplus/llgo/internal/runtime.String" %5, i1 true)
-  %7 = icmp ne ptr %6, null
-  br i1 %7, label %_llgo_1, label %_llgo_3
+  %2 = call ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 29 }, i1 true)
+  %3 = icmp ne ptr %2, null
+  br i1 %3, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %8 = call i32 (ptr, ...) @printf(ptr @1, ptr %6)
+  %4 = call i32 (ptr, ...) @printf(ptr @1, ptr %2)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
   ret i32 0
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %9 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 0
-  store ptr @2, ptr %10, align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 1
-  store i64 18, ptr %11, align 4
-  %12 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %9, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %12)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 18 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_2
 }

@@ -14,24 +14,12 @@ source_filename = "main"
 
 define %"main.IO[error]" @main.WriteFile(%"github.com/goplus/llgo/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = alloca %"main.IO[error]", align 8
-  %2 = getelementptr inbounds %"main.IO[error]", ptr %1, i32 0, i32 0
-  store ptr @"__llgo_stub.main.WriteFile$1", ptr %2, align 8
-  %3 = getelementptr inbounds %"main.IO[error]", ptr %1, i32 0, i32 1
-  store ptr null, ptr %3, align 8
-  %4 = load %"main.IO[error]", ptr %1, align 8
-  ret %"main.IO[error]" %4
+  ret %"main.IO[error]" { ptr @"__llgo_stub.main.WriteFile$1", ptr null }
 }
 
 define %"main.Future[error]" @"main.WriteFile$1"() {
 _llgo_0:
-  %0 = alloca %"main.Future[error]", align 8
-  %1 = getelementptr inbounds %"main.Future[error]", ptr %0, i32 0, i32 0
-  store ptr @"__llgo_stub.main.WriteFile$1$1", ptr %1, align 8
-  %2 = getelementptr inbounds %"main.Future[error]", ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load %"main.Future[error]", ptr %0, align 8
-  ret %"main.Future[error]" %3
+  ret %"main.Future[error]" { ptr @"__llgo_stub.main.WriteFile$1$1", ptr null }
 }
 
 define %"github.com/goplus/llgo/internal/runtime.iface" @"main.WriteFile$1$1"() {
@@ -58,25 +46,13 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca %"main.IO[[0]byte]", align 8
-  %3 = getelementptr inbounds %"main.IO[[0]byte]", ptr %2, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$1", ptr %3, align 8
-  %4 = getelementptr inbounds %"main.IO[[0]byte]", ptr %2, i32 0, i32 1
-  store ptr null, ptr %4, align 8
-  %5 = load %"main.IO[[0]byte]", ptr %2, align 8
-  %6 = call [0 x i8] @"main.RunIO[[0]byte]"(%"main.IO[[0]byte]" %5)
+  %2 = call [0 x i8] @"main.RunIO[[0]byte]"(%"main.IO[[0]byte]" { ptr @"__llgo_stub.main.main$1", ptr null })
   ret i32 0
 }
 
 define %"main.Future[[0]byte]" @"main.main$1"() {
 _llgo_0:
-  %0 = alloca %"main.Future[[0]byte]", align 8
-  %1 = getelementptr inbounds %"main.Future[[0]byte]", ptr %0, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$1$1", ptr %1, align 8
-  %2 = getelementptr inbounds %"main.Future[[0]byte]", ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load %"main.Future[[0]byte]", ptr %0, align 8
-  ret %"main.Future[[0]byte]" %3
+  ret %"main.Future[[0]byte]" { ptr @"__llgo_stub.main.main$1$1", ptr null }
 }
 
 define [0 x i8] @"main.main$1$1"() {

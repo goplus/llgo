@@ -10,13 +10,7 @@ source_filename = "main"
 
 define %"github.com/goplus/llgo/internal/runtime.String" @main.hello() {
 _llgo_0:
-  %0 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 0
-  store ptr @0, ptr %1, align 8
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %0, i32 0, i32 1
-  store i64 12, ptr %2, align 4
-  %3 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %0, align 8
-  ret %"github.com/goplus/llgo/internal/runtime.String" %3
+  ret %"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 12 }
 }
 
 define void @main.init() {

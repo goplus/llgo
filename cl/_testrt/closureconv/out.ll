@@ -31,20 +31,15 @@ _llgo_0:
   %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
   store ptr %1, ptr %4, align 8
-  %5 = alloca { ptr, ptr }, align 8
-  %6 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 0
-  store ptr @"main.add$bound", ptr %6, align 8
-  %7 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 1
-  store ptr %3, ptr %7, align 8
-  %8 = load { ptr, ptr }, ptr %5, align 8
+  %5 = insertvalue { ptr, ptr } { ptr @"main.add$bound", ptr undef }, ptr %3, 1
+  %6 = getelementptr inbounds %main.Call, ptr %1, i32 0, i32 0
+  %7 = alloca %main.Func, align 8
+  store { ptr, ptr } %5, ptr %7, align 8
+  %8 = load %main.Func, ptr %7, align 8
+  store %main.Func %8, ptr %6, align 8
   %9 = getelementptr inbounds %main.Call, ptr %1, i32 0, i32 0
-  %10 = alloca %main.Func, align 8
-  store { ptr, ptr } %8, ptr %10, align 8
-  %11 = load %main.Func, ptr %10, align 8
-  store %main.Func %11, ptr %9, align 8
-  %12 = getelementptr inbounds %main.Call, ptr %1, i32 0, i32 0
-  %13 = load %main.Func, ptr %12, align 8
-  ret %main.Func %13
+  %10 = load %main.Func, ptr %9, align 8
+  ret %main.Func %10
 }
 
 define %main.Func @main.demo2() {
@@ -53,38 +48,21 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %2 = getelementptr inbounds { ptr }, ptr %1, i32 0, i32 0
   store ptr %0, ptr %2, align 8
-  %3 = alloca { ptr, ptr }, align 8
-  %4 = getelementptr inbounds { ptr, ptr }, ptr %3, i32 0, i32 0
-  store ptr @"main.add$bound", ptr %4, align 8
-  %5 = getelementptr inbounds { ptr, ptr }, ptr %3, i32 0, i32 1
-  store ptr %1, ptr %5, align 8
-  %6 = load { ptr, ptr }, ptr %3, align 8
-  %7 = alloca %main.Func, align 8
-  store { ptr, ptr } %6, ptr %7, align 8
-  %8 = load %main.Func, ptr %7, align 8
-  ret %main.Func %8
+  %3 = insertvalue { ptr, ptr } { ptr @"main.add$bound", ptr undef }, ptr %1, 1
+  %4 = alloca %main.Func, align 8
+  store { ptr, ptr } %3, ptr %4, align 8
+  %5 = load %main.Func, ptr %4, align 8
+  ret %main.Func %5
 }
 
 define %main.Func @main.demo3() {
 _llgo_0:
-  %0 = alloca %main.Func, align 8
-  %1 = getelementptr inbounds %main.Func, ptr %0, i32 0, i32 0
-  store ptr @__llgo_stub.main.add, ptr %1, align 8
-  %2 = getelementptr inbounds %main.Func, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load %main.Func, ptr %0, align 8
-  ret %main.Func %3
+  ret %main.Func { ptr @__llgo_stub.main.add, ptr null }
 }
 
 define %main.Func @main.demo4() {
 _llgo_0:
-  %0 = alloca %main.Func, align 8
-  %1 = getelementptr inbounds %main.Func, ptr %0, i32 0, i32 0
-  store ptr @"__llgo_stub.main.demo4$1", ptr %1, align 8
-  %2 = getelementptr inbounds %main.Func, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load %main.Func, ptr %0, align 8
-  ret %main.Func %3
+  ret %main.Func { ptr @"__llgo_stub.main.demo4$1", ptr null }
 }
 
 define i64 @"main.demo4$1"(i64 %0, i64 %1) {
@@ -100,16 +78,11 @@ _llgo_0:
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
   store ptr %1, ptr %3, align 8
-  %4 = alloca { ptr, ptr }, align 8
-  %5 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 0
-  store ptr @"main.demo5$1", ptr %5, align 8
-  %6 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 1
-  store ptr %2, ptr %6, align 8
-  %7 = load { ptr, ptr }, ptr %4, align 8
-  %8 = alloca %main.Func, align 8
-  store { ptr, ptr } %7, ptr %8, align 8
-  %9 = load %main.Func, ptr %8, align 8
-  ret %main.Func %9
+  %4 = insertvalue { ptr, ptr } { ptr @"main.demo5$1", ptr undef }, ptr %2, 1
+  %5 = alloca %main.Func, align 8
+  store { ptr, ptr } %4, ptr %5, align 8
+  %6 = load %main.Func, ptr %5, align 8
+  ret %main.Func %6
 }
 
 define i64 @"main.demo5$1"(ptr %0, i64 %1, i64 %2) {
