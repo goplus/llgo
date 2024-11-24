@@ -128,7 +128,6 @@ jobs:
           bash _lldb/runtest.sh -v
 
       - name: Test demos
-        continue-on-error: true
         run: |
           # TODO(lijie): force python3-embed to be linked with python-3.12-embed
           # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
