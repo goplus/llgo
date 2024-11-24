@@ -421,7 +421,6 @@ const (
 	llgoCgoCMalloc      = llgoCgoBase + 0x5
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
 	llgoCgoCgocall      = llgoCgoBase + 0x7
-	llgoCgoUse          = llgoCgoBase + 0x8
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
@@ -438,7 +437,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		if checkCgo(fname) {
 			return nil, fname, llgoInstr
 		}
-		if isCgoCfunc(fn) {
+		if isCgoCfuncOrCmacro(fn) {
 			if _, ok := llgoInstrs[fname]; ok {
 				return nil, fname, llgoInstr
 			}
@@ -450,7 +449,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		}
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn, false)
-		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
+		if ignore && ignoreName(orgName) {
 			return nil, orgName, ignoredFunc
 		}
 	}
