@@ -15,6 +15,7 @@ import (
 	_ "unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/os"
 	"github.com/goplus/llgo/c/syscall"
 )
 
@@ -114,7 +115,14 @@ func Pipe2(p []int, flags int) error {
 // -----------------------------------------------------------------------------
 
 func Faccessat(dirfd int, path string, mode uint32, flags int) (err error) {
-	panic("todo: syscall.Faccessat")
+	ret := faccessat(c.Int(dirfd), c.AllocaCStr(path), c.Int(mode), c.Int(flags))
+	if ret != 0 {
+		return Errno(os.Errno())
+	}
+	return nil
 }
+
+//go:linkname faccessat C.faccessat
+func faccessat(dirfd c.Int, path *c.Char, mode c.Int, flags c.Int) c.Int
 
 // -----------------------------------------------------------------------------
