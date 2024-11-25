@@ -188,11 +188,18 @@ func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []c
 		dirs[dir] = none{}
 	}
 	for dir := range dirs {
-		files, err := filepath.Glob(filepath.Join(dir, "*.c"))
+		matches, err := filepath.Glob(filepath.Join(dir, "*.c"))
 		if err != nil {
 			continue
 		}
-		cfiles = append(cfiles, files...)
+		for _, match := range matches {
+			if strings.HasSuffix(match, "_test.c") {
+				continue
+			}
+			if fi, err := os.Stat(match); err == nil && !fi.IsDir() {
+				cfiles = append(cfiles, match)
+			}
+		}
 	}
 
 	for _, file := range files {

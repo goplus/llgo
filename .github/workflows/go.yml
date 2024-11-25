@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -115,12 +115,12 @@ jobs:
         run: |
           echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
           bash .github/workflows/test_llgo.sh
-      
+
       - name: chore/_xtool build tests
         run: |
           cd chore/_xtool
           llgo build -v ./...
-      
+
       - name: LLDB tests
         if: ${{startsWith(matrix.os, 'macos')}}
         run: |
@@ -128,8 +128,17 @@ jobs:
           bash _lldb/runtest.sh -v
 
       - name: Test demos
-        continue-on-error: true
-        run: bash .github/workflows/test_demo.sh
+        run: |
+          # TODO(lijie): force python3-embed to be linked with python-3.12-embed
+          # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
+          # Will remove this after pytorch is fixed.
+          pcdir=$HOME/pc
+          mkdir -p $pcdir
+          libdir=$(pkg-config --variable=libdir python-3.12-embed)
+          echo "libdir: $libdir"
+          ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
+          export PKG_CONFIG_PATH=$pcdir
+          bash .github/workflows/test_demo.sh
 
       - name: Show test result
         run: cat result.md
