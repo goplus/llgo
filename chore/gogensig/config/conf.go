@@ -37,8 +37,7 @@ func GetCppgSigfetchFromByte(data []byte) (unmarshal.FileSet, error) {
 	return unmarshal.UnmarshalFileSet(data)
 }
 
-// calls the installed llcppsigfetch to simulate the output of llcppsigfetch.
-func Sigfetch(file string, isTemp bool, isCPP bool) ([]byte, error) {
+func SigfetchExtract(file string, isTemp bool, isCPP bool, dir string) ([]byte, error) {
 	args := []string{"--extract", file}
 
 	if isTemp {
@@ -51,7 +50,19 @@ func Sigfetch(file string, isTemp bool, isCPP bool) ([]byte, error) {
 		args = append(args, "-cpp=false")
 	}
 
+	return executeSigfetch(args, dir)
+}
+
+func SigfetchConfig(configFile string, dir string) ([]byte, error) {
+	args := []string{configFile}
+	return executeSigfetch(args, dir)
+}
+
+func executeSigfetch(args []string, dir string) ([]byte, error) {
 	cmd := exec.Command("llcppsigfetch", args...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer

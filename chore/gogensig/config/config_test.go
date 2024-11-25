@@ -67,7 +67,7 @@ func TestSigfetch(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := config.Sigfetch(tc.input, tc.isTemp, tc.isCpp)
+			data, err := config.SigfetchExtract(tc.input, tc.isTemp, tc.isCpp, ".")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -102,7 +102,7 @@ func TestSigfetchError(t *testing.T) {
 
 	os.Setenv("PATH", tempDir+string(os.PathListSeparator)+oldPath)
 
-	_, err = config.Sigfetch("test.cpp", false, true)
+	_, err = config.SigfetchExtract("test.cpp", false, true, ".")
 	if err == nil {
 		t.Error("Expected error, got nil")
 	}

@@ -24,8 +24,6 @@ build.dir/
 .vscode/
 .devcontainer
 
-*.json
-
 # Test binary, built with `go test -c`
 *.test
 

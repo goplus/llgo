@@ -49,6 +49,7 @@ type (
 
 type SizeT uintptr
 type PtrdiffT Long
+type IntptrT Long
 
 type integer interface {
 	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64

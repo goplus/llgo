@@ -439,6 +439,7 @@ func (p *Package) WriteToBuffer(genFName string) (*bytes.Buffer, error) {
 	for _, decl := range p.incomplete {
 		decl.InitType(p.p, types.NewStruct(p.cvt.defaultRecordField(), nil))
 	}
+	p.incomplete = make(map[string]*gogen.TypeDecl, 0)
 	buf := new(bytes.Buffer)
 	err := p.p.WriteTo(buf, genFName)
 	if err != nil {
