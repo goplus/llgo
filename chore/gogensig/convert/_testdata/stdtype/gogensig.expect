@@ -1,0 +1,10 @@
+===== temp.go =====
+package stdtype
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+//go:linkname TestStdType C.testStdType
+func TestStdType(a c.SizeT, b c.PtrdiffT)
+

@@ -1,0 +1,37 @@
+===== temp.go =====
+package forwarddecl
+
+import (
+	"github.com/goplus/llgo/c"
+	"unsafe"
+)
+
+type PcachePage struct {
+	PBuf   unsafe.Pointer
+	PExtra unsafe.Pointer
+}
+
+type Pcache struct {
+	Unused [8]uint8
+}
+
+type PcacheMethods2 struct {
+	IVersion   c.Int
+	PArg       unsafe.Pointer
+	XInit      func(unsafe.Pointer) c.Int
+	XShutdown  func(unsafe.Pointer)
+	XCreate    func(c.Int, c.Int, c.Int) *Pcache
+	XCachesize func(*Pcache, c.Int)
+	XPagecount func(*Pcache) c.Int
+	XFetch     func(*Pcache, c.Uint, c.Int) *PcachePage
+	XUnpin     func(*Pcache, *PcachePage, c.Int)
+	XRekey     func(*Pcache, *PcachePage, c.Uint, c.Uint)
+	XTruncate  func(*Pcache, c.Uint)
+	XDestroy   func(*Pcache)
+	XShrink    func(*Pcache)
+}
+
+===== llcppg.pub =====
+sqlite3_pcache Pcache
+sqlite3_pcache_methods2 PcacheMethods2
+sqlite3_pcache_page PcachePage

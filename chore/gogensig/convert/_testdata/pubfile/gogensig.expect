@@ -1,0 +1,34 @@
+===== temp.go =====
+package pubfile
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type Point struct {
+	X c.Int
+	Y c.Int
+}
+
+type Capital struct {
+	X c.Int
+	Y c.Int
+}
+
+type CustomData struct {
+	Str [20]int8
+}
+type UintT c.Uint
+type Color c.Int
+
+const ColorRED Color = 0
+//go:linkname Func C.func
+func Func(a c.Int, b c.Int)
+
+===== llcppg.pub =====
+Capital
+color Color
+data CustomData
+point Point
+uint_t UintT

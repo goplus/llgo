@@ -1,0 +1,16 @@
+===== temp.go =====
+package union
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type X__U struct {
+	B c.Long
+}
+type U X__U
+
+===== llcppg.pub =====
+__u X__U
+u U

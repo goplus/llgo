@@ -1,0 +1,7 @@
+[
+  {
+    "mangle": "func",
+    "c++": "func",
+    "go": "Func"
+  }
+]

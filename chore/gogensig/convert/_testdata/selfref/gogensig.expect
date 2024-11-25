@@ -1,0 +1,21 @@
+===== temp.go =====
+package selfref
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+type CJSON struct {
+	Next        *CJSON
+	Prev        *CJSON
+	Child       *CJSON
+	Type        c.Int
+	Valuestring *int8
+	Valueint    c.Int
+	Valuedouble float64
+	String      *int8
+}
+
+===== llcppg.pub =====
+cJSON CJSON

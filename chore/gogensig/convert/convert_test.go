@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/cmp"
 	"github.com/goplus/llgo/chore/gogensig/cmptest"
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
@@ -23,475 +22,142 @@ func init() {
 	convert.SetDebug(convert.DbgFlagAll)
 }
 
-func TestUnion(t *testing.T) {
-	cmptest.RunTest(t, "union", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{}, `
-typedef union  __u
-{
-    int a;
-    long b;
-    float c;
-}u;
-	`, `
-package union
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-
-type X__U struct {
-	B c.Long
-}
-type U X__U
-	`, nil)
+func TestFromTestdata(t *testing.T) {
+	testFromDir(t, "./_testdata", true)
 }
 
-func TestReferStdType(t *testing.T) {
-	cmptest.RunTest(t, "StdType", false, []config.SymbolEntry{
-		{MangleName: "testStdType", CppName: "testStdType", GoName: "TestStdType"},
-	}, map[string]string{}, &cppgtypes.Config{}, `
-#include <stddef.h>
-
-void testStdType(size_t a,ptrdiff_t b);
-	`, `
-package StdType
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-//go:linkname TestStdType C.testStdType
-func TestStdType(a c.SizeT, b c.PtrdiffT)
-	`, nil)
-}
-
-func TestCommentSlashSlashSlash(t *testing.T) {
-	cmptest.RunTest(t, "comment", false, []config.SymbolEntry{
-		{
-			MangleName: "ExecuteFoo",
-			CppName:    "ExecuteFoo",
-			GoName:     "CustomExecuteFoo",
-		},
-	}, map[string]string{}, &cppgtypes.Config{}, `
-/// Foo comment
-struct Foo { int a; double b; bool c; };
-
-/// ExecuteFoo comment
-int ExecuteFoo(int a,Foo b);
-	`, `
-package comment
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-/// Foo comment
-type Foo struct {
-	A c.Int
-	B float64
-	C c.Int
-}
-/// ExecuteFoo comment
-//go:linkname CustomExecuteFoo C.ExecuteFoo
-func CustomExecuteFoo(a c.Int, b Foo) c.Int
-	`, nil)
-}
-
-func TestEnum(t *testing.T) {
-	cmptest.RunTestWithCheckEqual(t, "spectrum", true, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
-		Cplusplus: true,
-	},
-		`
-	enum{
-		enum1,
-		enum2
-	};
-	enum spectrum
-	{
-	    red,
-	    orange,
-	    yello,
-	    green,
-	    blue,
-	    violet
-	};
-
-	enum kids
-	{
-	    nippy,
-	    slats,
-	    skippy,
-	    nina,
-	    liz
-	};
-
-	enum levels
-	{
-	    low = 100,
-	    medium = 500,
-	    high = 2000
-	};
-
-	enum feline
-	{
-	    cat,
-	    lynx = 10,
-	    puma,
-	    tiger
-	};
-
-	enum class PieceType
-	{
-	    King = 1,
-	    Queen,
-	    Rook = 10,
-	    Pawn
-	};`,
-		`
-package spectrum
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-
-const (
-	Enum1 c.Int = 0
-	Enum2 c.Int = 1
-)
-
-type Spectrum c.Int
-
-const (
-	SpectrumRed    Spectrum = 0
-	SpectrumOrange Spectrum = 1
-	SpectrumYello  Spectrum = 2
-	SpectrumGreen  Spectrum = 3
-	SpectrumBlue   Spectrum = 4
-	SpectrumViolet Spectrum = 5
-)
-
-type Kids c.Int
-
-const (
-	KidsNippy  Kids = 0
-	KidsSlats  Kids = 1
-	KidsSkippy Kids = 2
-	KidsNina   Kids = 3
-	KidsLiz    Kids = 4
-)
-
-type Levels c.Int
-
-const (
-	LevelsLow    Levels = 100
-	LevelsMedium Levels = 500
-	LevelsHigh   Levels = 2000
-)
-
-type Feline c.Int
-
-const (
-	FelineCat   Feline = 0
-	FelineLynx  Feline = 10
-	FelinePuma  Feline = 11
-	FelineTiger Feline = 12
-)
-
-type PieceType c.Int
-
-const (
-	PieceTypeKing  PieceType = 1
-	PieceTypeQueen PieceType = 2
-	PieceTypeRook  PieceType = 10
-	PieceTypePawn  PieceType = 11
-)
-`, nil, func(t *testing.T, expected, content string) {
-			eq, diff := cmp.EqualStringIgnoreSpace(expected, content)
-			if !eq {
-				t.Errorf(diff)
-			}
+func testFromDir(t *testing.T, relDir string, gen bool) {
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	dir = path.Join(dir, relDir)
+	fis, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal("ReadDir failed:", err)
+	}
+	for _, fi := range fis {
+		name := fi.Name()
+		t.Run(name, func(t *testing.T) {
+			testFrom(t, name, dir+"/"+name, gen)
 		})
+	}
 }
 
-// Test generating a basic struct, correctly converting its fields,
-// and properly referencing it in a function
-func TestStructDeclRef(t *testing.T) {
-	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
-		{
-			MangleName: "ExecuteFoo",
-			CppName:    "ExecuteFoo",
-			GoName:     "CustomExecuteFoo",
+func testFrom(t *testing.T, name, dir string, gen bool) {
+	confPath := filepath.Join(dir, "conf")
+	cfgPath := filepath.Join(confPath, "llcppg.cfg")
+	symbPath := filepath.Join(confPath, "llcppg.symb.json")
+	pubPath := filepath.Join(confPath, "llcppg.pub")
+	expect := filepath.Join(dir, "gogensig.expect")
+	var expectContent []byte
+	if !gen {
+		var err error
+		expectContent, err = os.ReadFile(expect)
+		if err != nil {
+			t.Fatal(expectContent)
+		}
+	}
+
+	cfg, err := config.GetCppgCfgFromPath(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg.CFlags = "-I" + filepath.Join(dir, "hfile")
+	flagedCfgPath, err := cmptest.CreateCppgConfFile(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tempDir, err := os.MkdirTemp("", "gogensig-test")
+	if err != nil {
+		t.Fatal("failed to create temp dir")
+	}
+	defer os.RemoveAll(tempDir)
+
+	outputDir := filepath.Join(tempDir, name)
+	err = os.MkdirAll(outputDir, 0744)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(outputDir)
+
+	projectRoot, err := filepath.Abs("../../../")
+	if err != nil {
+		t.Fatal(err)
+	}
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(originalWd)
+	os.Chdir(outputDir)
+
+	config.RunCommand(outputDir, "go", "mod", "init", name)
+	config.RunCommand(outputDir, "go", "get", "github.com/goplus/llgo")
+	config.RunCommand(outputDir, "go", "mod", "edit", "-replace", "github.com/goplus/llgo="+projectRoot)
+
+	p, _, err := basic.ConvertProcesser(&basic.Config{
+		AstConvertConfig: convert.AstConvertConfig{
+			PkgName:   name,
+			SymbFile:  symbPath,
+			CfgFile:   flagedCfgPath,
+			OutputDir: outputDir,
+			PubFile:   pubPath,
 		},
-	}, map[string]string{},
-		&cppgtypes.Config{},
-		`
-struct Foo { int a; double b; bool c; };
-int ExecuteFoo(int a,Foo b);
-	`, `
-package typeref
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-
-type Foo struct {
-	A c.Int
-	B float64
-	C c.Int
-}
-//go:linkname CustomExecuteFoo C.ExecuteFoo
-func CustomExecuteFoo(a c.Int, b Foo) c.Int
-	`, nil)
-}
-
-func TestSqlite3ForwardDecl(t *testing.T) {
-	tempDir := cmptest.GetTempHeaderPathDir()
-	cmptest.RunTest(t, "sqlite3", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
-		CFlags:       "-I" + tempDir,
-		TrimPrefixes: []string{"sqlite3_"},
-		Include:      []string{"temp.h"},
-	}, `
-	typedef struct sqlite3_pcache_page sqlite3_pcache_page;
-	struct sqlite3_pcache_page {
-		void *pBuf;
-		void *pExtra;
-	};
-
-	typedef struct sqlite3_pcache sqlite3_pcache;
-
-	typedef struct sqlite3_pcache_methods2 sqlite3_pcache_methods2;
-	struct sqlite3_pcache_methods2 {
-		int iVersion;
-		void *pArg;
-		int (*xInit)(void*);
-		void (*xShutdown)(void*);
-		sqlite3_pcache *(*xCreate)(int szPage, int szExtra, int bPurgeable);
-		void (*xCachesize)(sqlite3_pcache*, int nCachesize);
-		int (*xPagecount)(sqlite3_pcache*);
-		sqlite3_pcache_page *(*xFetch)(sqlite3_pcache*, unsigned key, int createFlag);
-		void (*xUnpin)(sqlite3_pcache*, sqlite3_pcache_page*, int discard);
-		void (*xRekey)(sqlite3_pcache*, sqlite3_pcache_page*,
-			unsigned oldKey, unsigned newKey);
-		void (*xTruncate)(sqlite3_pcache*, unsigned iLimit);
-		void (*xDestroy)(sqlite3_pcache*);
-		void (*xShrink)(sqlite3_pcache*);
-	};
-	`, `
-package sqlite3
-
-import (
-	"github.com/goplus/llgo/c"
-	"unsafe"
-)
-
-type PcachePage struct {
-	PBuf   unsafe.Pointer
-	PExtra unsafe.Pointer
-}
-
-type Pcache struct {
-	Unused [8]uint8
-}
-
-type PcacheMethods2 struct {
-	IVersion   c.Int
-	PArg       unsafe.Pointer
-	XInit      func(unsafe.Pointer) c.Int
-	XShutdown  func(unsafe.Pointer)
-	XCreate    func(c.Int, c.Int, c.Int) *Pcache
-	XCachesize func(*Pcache, c.Int)
-	XPagecount func(*Pcache) c.Int
-	XFetch     func(*Pcache, c.Uint, c.Int) *PcachePage
-	XUnpin     func(*Pcache, *PcachePage, c.Int)
-	XRekey     func(*Pcache, *PcachePage, c.Uint, c.Uint)
-	XTruncate  func(*Pcache, c.Uint)
-	XDestroy   func(*Pcache)
-	XShrink    func(*Pcache)
-}
-	`, func(t *testing.T, pkg *convert.Package) {
-		cmptest.CheckPubFile(t, pkg, `
-sqlite3_pcache Pcache
-sqlite3_pcache_methods2 PcacheMethods2
-sqlite3_pcache_page PcachePage`)
 	})
-}
+	if err != nil {
+		t.Fatal(err)
+	}
 
-func TestCjsonSelfRefStruct(t *testing.T) {
-	tempDir := cmptest.GetTempHeaderPathDir()
-	cmptest.RunTest(t, "cjson", false, []config.SymbolEntry{}, map[string]string{}, &cppgtypes.Config{
-		CFlags:  "-I" + tempDir,
-		Include: []string{"temp.h"},
-	}, `
-typedef struct cJSON {
-    struct cJSON *next;
-    struct cJSON *prev;
-    struct cJSON *child;
-    int type;
-    char *valuestring;
-    int valueint;
-    double valuedouble;
-    char *string;
-} cJSON;
-	`, `
-package cjson
+	bytes, err := config.SigfetchConfig(flagedCfgPath, confPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
+	inputdata, err := unmarshal.UnmarshalFileSet(bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-type CJSON struct {
-	Next        *CJSON
-	Prev        *CJSON
-	Child       *CJSON
-	Type        c.Int
-	Valuestring *int8
-	Valueint    c.Int
-	Valuedouble float64
-	String      *int8
-}
-	`,
-		func(t *testing.T, pkg *convert.Package) {
-			cmptest.CheckPubFile(t, pkg, `cJSON CJSON`)
-		},
-	)
-}
+	err = p.ProcessFileSet(inputdata)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// Test if function names and type names can remove specified prefixes,
-// generate correct linkname, and use function names defined in llcppg.symb.json
-func TestCustomStruct(t *testing.T) {
-	// 获得当前目录的绝对路径
-	tempDir := cmptest.GetTempHeaderPathDir()
-	cmptest.RunTest(t, "typeref", false, []config.SymbolEntry{
-		{MangleName: "lua_close", CppName: "lua_close", GoName: "Close"},
-		{MangleName: "lua_newthread", CppName: "lua_newthread", GoName: "Newthread"},
-		{MangleName: "lua_closethread", CppName: "lua_closethread", GoName: "Closethread"},
-		{MangleName: "lua_resetthread", CppName: "lua_resetthread", GoName: "Resetthread"},
-	}, map[string]string{}, &cppgtypes.Config{
-		CFlags:       "-I" + tempDir,
-		TrimPrefixes: []string{"lua_"},
-		Include:      []string{"temp.h"},
-		// prefix only remove in the llcppg.cfg includes
-	}, `
-typedef struct lua_State lua_State;
-typedef int (*lua_CFunction)(lua_State *L);
-LUA_API void(lua_close)(lua_State *L);
-LUA_API lua_State *(lua_newthread)(lua_State *L);
-LUA_API int(lua_closethread)(lua_State *L, lua_State *from);
-LUA_API int(lua_resetthread)(lua_State *L);
-	`, `
-package typeref
+	var res strings.Builder
 
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
+	outDir, err := os.ReadDir(outputDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, fi := range outDir {
+		if strings.HasSuffix(fi.Name(), "go.mod") || strings.HasSuffix(fi.Name(), "go.sum") || strings.HasSuffix(fi.Name(), "llcppg.pub") {
+			continue
+		} else {
+			content, err := os.ReadFile(filepath.Join(outputDir, fi.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			res.WriteString(fmt.Sprintf("===== %s =====\n", fi.Name()))
+			res.Write(content)
+			res.WriteString("\n")
+		}
+	}
 
-type State struct {
-	Unused [8]uint8
-}
-// llgo:type C
-type CFunction func(*State) c.Int
-//go:linkname Close C.lua_close
-func Close(L *State) c.Int
-//go:linkname Closethread C.lua_closethread
-func Closethread(L *State, from *State) c.Int
-//go:linkname Resetthread C.lua_resetthread
-func Resetthread(L *State) c.Int
-	`, nil)
-}
+	pub, err := os.ReadFile(filepath.Join(outputDir, "llcppg.pub"))
+	if err == nil {
+		res.WriteString("===== llcppg.pub =====\n")
+		res.Write(pub)
+	}
 
-func TestAvoidKeyword(t *testing.T) {
-	cmptest.RunTest(t, "avoid", false, []config.SymbolEntry{
-		{MangleName: "lua_sethook", CppName: "lua_sethook", GoName: "Sethook"},
-	}, map[string]string{}, &cppgtypes.Config{}, `
-	typedef struct lua_State lua_State;
-	typedef void (*lua_Hook)(lua_State *L, lua_Debug *ar);
-	void(lua_sethook)(lua_State *L, lua_Hook func, int mask, int count);
-	`, `
-package avoid
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-
-type LuaState struct {
-	Unused [8]uint8
-}
-// llgo:type C
-type LuaHook func(*LuaState, *c.Int)
-//go:linkname Sethook C.lua_sethook
-func Sethook(L *LuaState, func_ LuaHook, mask c.Int, count c.Int)
-	`, nil)
-}
-
-func TestPubFile(t *testing.T) {
-	tempDir := cmptest.GetTempHeaderPathDir()
-
-	cmptest.RunTest(t, "pub", false, []config.SymbolEntry{
-		{MangleName: "func", CppName: "func", GoName: "Func"},
-	}, map[string]string{
-		"data": "CustomData",
-	}, &cppgtypes.Config{
-		CFlags:  "-I" + tempDir,
-		Include: []string{"temp.h"},
-	}, `
-struct point {
-	int x;
-	int y;
-};
-struct Capital {
-	int x;
-	int y;
-};
-union data {
-	float f;
-	char str[20];
-};
-typedef unsigned int uint_t;
-enum color {
-	RED = 0,
-};
-void func(int a, int b);
-	`, `
-package pub
-
-import (
-	"github.com/goplus/llgo/c"
-	_ "unsafe"
-)
-
-type Point struct {
-	X c.Int
-	Y c.Int
-}
-
-type Capital struct {
-	X c.Int
-	Y c.Int
-}
-
-type CustomData struct {
-	Str [20]int8
-}
-type UintT c.Uint
-type Color c.Int
-
-const ColorRED Color = 0
-//go:linkname Func C.func
-func Func(a c.Int, b c.Int)
-	`, func(t *testing.T, pkg *convert.Package) {
-		cmptest.CheckPubFile(t, pkg, `
-Capital
-color Color
-data CustomData
-point Point
-uint_t UintT
-		`)
-	})
+	if gen {
+		if err := os.WriteFile(expect, []byte(res.String()), 0644); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		cmptest.CheckResult(t, string(expectContent), res.String())
+	}
 }
 
 // ===========================error
@@ -692,142 +358,4 @@ import _ "unsafe"
 			}
 		}
 	})
-}
-
-func TestFromTestdata(t *testing.T) {
-	testFromDir(t, "./_testdata", false)
-}
-
-func testFromDir(t *testing.T, relDir string, gen bool) {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Getwd failed:", err)
-	}
-	dir = path.Join(dir, relDir)
-	fis, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal("ReadDir failed:", err)
-	}
-	for _, fi := range fis {
-		name := fi.Name()
-		t.Run(name, func(t *testing.T) {
-			testFrom(t, name, dir+"/"+name, gen)
-		})
-	}
-}
-
-func testFrom(t *testing.T, name, dir string, gen bool) {
-	confPath := filepath.Join(dir, "conf")
-	cfgPath := filepath.Join(confPath, "llcppg.cfg")
-	symbPath := filepath.Join(confPath, "llcppg.symb.json")
-	pubPath := filepath.Join(confPath, "llcppg.pub")
-	expect := filepath.Join(dir, "gogensig.expect")
-	var expectContent []byte
-	if !gen {
-		var err error
-		expectContent, err = os.ReadFile(expect)
-		if err != nil {
-			t.Fatal(expectContent)
-		}
-	}
-
-	cfg, err := config.GetCppgCfgFromPath(cfgPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cfg.CFlags = "-I" + filepath.Join(dir, "hfile")
-	flagedCfgPath, err := cmptest.CreateCppgConfFile(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tempDir, err := os.MkdirTemp("", "gogensig-test")
-	if err != nil {
-		t.Fatal("failed to create temp dir")
-	}
-	defer os.RemoveAll(tempDir)
-
-	outputDir := filepath.Join(tempDir, name)
-	err = os.MkdirAll(outputDir, 0744)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outputDir)
-
-	projectRoot, err := filepath.Abs("../../../")
-	if err != nil {
-		t.Fatal(err)
-	}
-	originalWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(originalWd)
-	os.Chdir(outputDir)
-
-	config.RunCommand(outputDir, "go", "mod", "init", name)
-	config.RunCommand(outputDir, "go", "get", "github.com/goplus/llgo")
-	config.RunCommand(outputDir, "go", "mod", "edit", "-replace", "github.com/goplus/llgo="+projectRoot)
-
-	p, _, err := basic.ConvertProcesser(&basic.Config{
-		AstConvertConfig: convert.AstConvertConfig{
-			PkgName:   name,
-			SymbFile:  symbPath,
-			CfgFile:   flagedCfgPath,
-			OutputDir: outputDir,
-			PubFile:   pubPath,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	bytes, err := config.SigfetchConfig(flagedCfgPath, confPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	inputdata, err := unmarshal.UnmarshalFileSet(bytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = p.ProcessFileSet(inputdata)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var res strings.Builder
-
-	outDir, err := os.ReadDir(outputDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, fi := range outDir {
-		if strings.HasSuffix(fi.Name(), "go.mod") || strings.HasSuffix(fi.Name(), "go.sum") || strings.HasSuffix(fi.Name(), "llcppg.pub") {
-			continue
-		} else {
-			content, err := os.ReadFile(filepath.Join(outputDir, fi.Name()))
-			if err != nil {
-				t.Fatal(err)
-			}
-			res.WriteString(fmt.Sprintf("===== %s =====\n", fi.Name()))
-			res.Write(content)
-			res.WriteString("\n")
-		}
-	}
-
-	pub, err := os.ReadFile(filepath.Join(outputDir, "llcppg.pub"))
-	if err == nil {
-		res.WriteString("===== llcppg.pub =====\n")
-		res.Write(pub)
-	}
-
-	if gen {
-		if err := os.WriteFile(expect, []byte(res.String()), 0644); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		cmptest.CheckResult(t, string(expectContent), res.String())
-	}
 }

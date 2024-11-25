@@ -1,0 +1,56 @@
+===== temp.go =====
+package enum
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+
+const (
+	Enum1 c.Int = 0
+	Enum2 c.Int = 1
+)
+
+type Spectrum c.Int
+
+const (
+	SpectrumRed    Spectrum = 0
+	SpectrumOrange Spectrum = 1
+	SpectrumYello  Spectrum = 2
+	SpectrumGreen  Spectrum = 3
+	SpectrumBlue   Spectrum = 4
+	SpectrumViolet Spectrum = 5
+)
+
+type Kids c.Int
+
+const (
+	KidsNippy  Kids = 0
+	KidsSlats  Kids = 1
+	KidsSkippy Kids = 2
+	KidsNina   Kids = 3
+	KidsLiz    Kids = 4
+)
+
+type Levels c.Int
+
+const (
+	LevelsLow    Levels = 100
+	LevelsMedium Levels = 500
+	LevelsHigh   Levels = 2000
+)
+
+type Feline c.Int
+
+const (
+	FelineCat   Feline = 0
+	FelineLynx  Feline = 10
+	FelinePuma  Feline = 11
+	FelineTiger Feline = 12
+)
+
+===== llcppg.pub =====
+feline Feline
+kids Kids
+levels Levels
+spectrum Spectrum

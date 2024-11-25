@@ -1,0 +1,7 @@
+[
+  {
+    "mangle": "ExecuteFoo",
+    "c++": "ExecuteFoo",
+    "go": "CustomExecuteFoo"
+  }
+]

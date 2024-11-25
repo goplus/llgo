@@ -1,0 +1,19 @@
+===== temp.go =====
+package keepcomment
+
+import (
+	"github.com/goplus/llgo/c"
+	_ "unsafe"
+)
+/// Foo comment
+type Foo struct {
+	A c.Int
+	B float64
+	C c.Int
+}
+/// ExecuteFoo comment
+//go:linkname CustomExecuteFoo C.ExecuteFoo
+func CustomExecuteFoo(a c.Int, b Foo) c.Int
+
+===== llcppg.pub =====
+Foo
