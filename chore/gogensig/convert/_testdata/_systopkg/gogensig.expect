@@ -1,0 +1,5 @@
+===== temp.go =====
+package _systopkg
+
+import _ "unsafe"
+

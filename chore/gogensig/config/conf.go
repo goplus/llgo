@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -144,4 +145,16 @@ func RunCommand(dir, cmdName string, args ...string) error {
 	execCmd.Stderr = os.Stderr
 	execCmd.Dir = dir
 	return execCmd.Run()
+}
+
+func CreateJSONFile(filename string, data interface{}) (string, error) {
+	filePath := filepath.Join(os.TempDir(), filename)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	return filePath, encoder.Encode(data)
 }

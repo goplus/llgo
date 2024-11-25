@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/cmptest"
+	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/convert/basic"
 	"github.com/goplus/llgo/chore/gogensig/processor"
@@ -46,7 +46,7 @@ func TestProcessValidSigfetchContent(t *testing.T) {
 		},
 	}
 
-	tempFileName, err := cmptest.CreateJSONFile("llcppg.sigfetch-test.json", content)
+	tempFileName, err := config.CreateJSONFile("llcppg.sigfetch-test.json", content)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestProcessInvalidSigfetchContent(t *testing.T) {
 	}()
 
 	invalidContent := "invalid json content"
-	tempFileName, err := cmptest.CreateJSONFile("llcppg.sigfetch-panic.json", invalidContent)
+	tempFileName, err := config.CreateJSONFile("llcppg.sigfetch-panic.json", invalidContent)
 	if err != nil {
 		t.Fatal(err)
 	}

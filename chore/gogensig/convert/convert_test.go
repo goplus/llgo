@@ -9,13 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/chore/gogensig/cmptest"
 	"github.com/goplus/llgo/chore/gogensig/config"
 	"github.com/goplus/llgo/chore/gogensig/convert"
 	"github.com/goplus/llgo/chore/gogensig/convert/basic"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/llcppg/ast"
-	cppgtypes "github.com/goplus/llgo/chore/llcppg/types"
 )
 
 func init() {
@@ -23,7 +21,54 @@ func init() {
 }
 
 func TestFromTestdata(t *testing.T) {
-	testFromDir(t, "./_testdata", true)
+	testFromDir(t, "./_testdata", false)
+}
+
+// test sys type in stdinclude to package
+func TestSysToPkg(t *testing.T) {
+	name := "_systopkg"
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	testFrom(t, name, path.Join(dir, "_testdata", name), false, func(t *testing.T, pkg *convert.Package) {
+		typConv := pkg.GetTypeConv()
+		if typConv.SysTypeLoc == nil {
+			t.Fatal("sysTypeLoc is nil")
+		}
+		type inf struct {
+			typeName  string
+			isDefault bool // is default llgo/c
+			info      *convert.HeaderInfo
+		}
+		pkgTypes := make(map[string][]*inf)
+
+		for name, info := range typConv.SysTypeLoc {
+			targetPkg, isDefault := convert.IncPathToPkg(info.IncPath)
+			pkgTypes[targetPkg] = append(pkgTypes[targetPkg], &inf{
+				typeName:  name,
+				info:      info,
+				isDefault: isDefault,
+			})
+		}
+
+		for pkg, types := range pkgTypes {
+			t.Logf("Package %s contains types:", pkg)
+			sort.Slice(types, func(i, j int) bool {
+				if types[i].isDefault != types[j].isDefault {
+					return types[i].isDefault
+				}
+				return types[i].typeName < types[j].typeName
+			})
+			for _, inf := range types {
+				if !inf.isDefault {
+					t.Logf("  - %s (%s)", inf.typeName, inf.info.IncPath)
+				} else {
+					t.Logf("  - %s (%s) [default]", inf.typeName, inf.info.IncPath)
+				}
+			}
+		}
+	})
 }
 
 func testFromDir(t *testing.T, relDir string, gen bool) {
@@ -38,13 +83,16 @@ func testFromDir(t *testing.T, relDir string, gen bool) {
 	}
 	for _, fi := range fis {
 		name := fi.Name()
+		if strings.HasPrefix(name, "_") {
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
-			testFrom(t, name, dir+"/"+name, gen)
+			testFrom(t, name, dir+"/"+name, gen, nil)
 		})
 	}
 }
 
-func testFrom(t *testing.T, name, dir string, gen bool) {
+func testFrom(t *testing.T, name, dir string, gen bool, validateFunc func(t *testing.T, pkg *convert.Package)) {
 	confPath := filepath.Join(dir, "conf")
 	cfgPath := filepath.Join(confPath, "llcppg.cfg")
 	symbPath := filepath.Join(confPath, "llcppg.symb.json")
@@ -65,7 +113,7 @@ func testFrom(t *testing.T, name, dir string, gen bool) {
 	}
 
 	cfg.CFlags = "-I" + filepath.Join(dir, "hfile")
-	flagedCfgPath, err := cmptest.CreateCppgConfFile(cfg)
+	flagedCfgPath, err := config.CreateJSONFile("llcppg.cfg", cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +145,7 @@ func testFrom(t *testing.T, name, dir string, gen bool) {
 	config.RunCommand(outputDir, "go", "get", "github.com/goplus/llgo")
 	config.RunCommand(outputDir, "go", "mod", "edit", "-replace", "github.com/goplus/llgo="+projectRoot)
 
-	p, _, err := basic.ConvertProcesser(&basic.Config{
+	p, pkg, err := basic.ConvertProcesser(&basic.Config{
 		AstConvertConfig: convert.AstConvertConfig{
 			PkgName:   name,
 			SymbFile:  symbPath,
@@ -156,7 +204,15 @@ func testFrom(t *testing.T, name, dir string, gen bool) {
 			t.Fatal(err)
 		}
 	} else {
-		cmptest.CheckResult(t, string(expectContent), res.String())
+		expect := string(expectContent)
+		got := res.String()
+		if strings.TrimSpace(expect) != strings.TrimSpace(got) {
+			t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expect, got)
+		}
+	}
+
+	if validateFunc != nil {
+		validateFunc(t, pkg)
 	}
 }
 
@@ -287,75 +343,4 @@ type NormalType c.Int
 	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(buf.String()) {
 		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, buf.String())
 	}
-}
-
-// test sys type in stdinclude to package
-func TestSysTypeToPkg(t *testing.T) {
-	tempDir := cmptest.GetTempHeaderPathDir()
-	cmptest.RunTest(t, "systype", false, []config.SymbolEntry{
-		{MangleName: "funcc", CppName: "funcc", GoName: "FuncC"},
-	}, map[string]string{
-		"data": "CustomData",
-	}, &cppgtypes.Config{
-		CFlags:  "-I" + tempDir,
-		Include: []string{"temp.h"},
-	}, `
-#include <stdio.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <limits.h>
-#include <time.h>
-#include <fenv.h>
-
-// posix
-#include <arpa/inet.h>
-#include <net/if.h>
-
-void funcc(uint_least64_t a, uint_least64_t b);
-	`, `
-package systype
-
-import _ "unsafe"
-	`, func(t *testing.T, pkg *convert.Package) {
-		typConv := pkg.GetTypeConv()
-		if typConv.SysTypeLoc == nil {
-			t.Fatal("sysTypeLoc is nil")
-		}
-		type inf struct {
-			typeName  string
-			isDefault bool // is default llgo/c
-			info      *convert.HeaderInfo
-		}
-		pkgTypes := make(map[string][]*inf)
-
-		for name, info := range typConv.SysTypeLoc {
-			targetPkg, isDefault := convert.IncPathToPkg(info.IncPath)
-			pkgTypes[targetPkg] = append(pkgTypes[targetPkg], &inf{
-				typeName:  name,
-				info:      info,
-				isDefault: isDefault,
-			})
-		}
-
-		for pkg, types := range pkgTypes {
-			t.Logf("Package %s contains types:", pkg)
-			sort.Slice(types, func(i, j int) bool {
-				if types[i].isDefault != types[j].isDefault {
-					return types[i].isDefault
-				}
-				return types[i].typeName < types[j].typeName
-			})
-			for _, inf := range types {
-				if !inf.isDefault {
-					t.Logf("  - %s (%s)", inf.typeName, inf.info.IncPath)
-				} else {
-					t.Logf("  - %s (%s) [default]", inf.typeName, inf.info.IncPath)
-				}
-			}
-		}
-	})
 }
