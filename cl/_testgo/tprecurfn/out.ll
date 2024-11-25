@@ -30,21 +30,15 @@ _llgo_0:
   %3 = getelementptr inbounds %"main.My[int]", ptr %2, i32 0, i32 1
   %4 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
   %5 = getelementptr inbounds %"main.My[int]", ptr %4, i32 0, i32 0
-  %6 = alloca { ptr, ptr }, align 8
-  %7 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$1", ptr %7, align 8
-  %8 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 1
-  store ptr null, ptr %8, align 8
-  %9 = load { ptr, ptr }, ptr %6, align 8
-  store { ptr, ptr } %9, ptr %5, align 8
+  store { ptr, ptr } { ptr @"__llgo_stub.main.main$1", ptr null }, ptr %5, align 8
   store ptr %4, ptr %3, align 8
-  %10 = getelementptr inbounds %"main.My[int]", ptr %2, i32 0, i32 1
-  %11 = load ptr, ptr %10, align 8
-  %12 = getelementptr inbounds %"main.My[int]", ptr %11, i32 0, i32 0
-  %13 = load { ptr, ptr }, ptr %12, align 8
-  %14 = extractvalue { ptr, ptr } %13, 1
-  %15 = extractvalue { ptr, ptr } %13, 0
-  call void %15(ptr %14, i64 100)
+  %6 = getelementptr inbounds %"main.My[int]", ptr %2, i32 0, i32 1
+  %7 = load ptr, ptr %6, align 8
+  %8 = getelementptr inbounds %"main.My[int]", ptr %7, i32 0, i32 0
+  %9 = load { ptr, ptr }, ptr %8, align 8
+  %10 = extractvalue { ptr, ptr } %9, 1
+  %11 = extractvalue { ptr, ptr } %9, 0
+  call void %11(ptr %10, i64 100)
   ret i32 0
 }
 

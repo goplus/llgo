@@ -27,13 +27,7 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca { ptr, ptr }, align 8
-  %3 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$2", ptr %3, align 8
-  %4 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 1
-  store ptr null, ptr %4, align 8
-  %5 = load { ptr, ptr }, ptr %2, align 8
-  call void @"main.main$1"({ ptr, ptr } %5)
+  call void @"main.main$1"({ ptr, ptr } { ptr @"__llgo_stub.main.main$2", ptr null })
   ret i32 0
 }
 
@@ -44,15 +38,10 @@ _llgo_0:
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
   store ptr %1, ptr %3, align 8
-  %4 = alloca { ptr, ptr }, align 8
-  %5 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 0
-  store ptr @"main.main$1$1", ptr %5, align 8
-  %6 = getelementptr inbounds { ptr, ptr }, ptr %4, i32 0, i32 1
-  store ptr %2, ptr %6, align 8
-  %7 = load { ptr, ptr }, ptr %4, align 8
-  %8 = extractvalue { ptr, ptr } %7, 1
-  %9 = extractvalue { ptr, ptr } %7, 0
-  call void %9(ptr %8, %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer)
+  %4 = insertvalue { ptr, ptr } { ptr @"main.main$1$1", ptr undef }, ptr %2, 1
+  %5 = extractvalue { ptr, ptr } %4, 1
+  %6 = extractvalue { ptr, ptr } %4, 0
+  call void %6(ptr %5, %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer)
   ret void
 }
 
@@ -61,37 +50,29 @@ _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
   %3 = call ptr @"github.com/goplus/llgo/internal/runtime.IfaceType"(%"github.com/goplus/llgo/internal/runtime.iface" %1)
   %4 = extractvalue %"github.com/goplus/llgo/internal/runtime.iface" %1, 1
-  %5 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %5, i32 0, i32 0
-  store ptr %3, ptr %6, align 8
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %5, i32 0, i32 1
-  store ptr %4, ptr %7, align 8
-  %8 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %5, align 8
-  %9 = call ptr @"github.com/goplus/llgo/internal/runtime.IfaceType"(%"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer)
-  %10 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 0
-  store ptr %9, ptr %11, align 8
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, i32 0, i32 1
-  store ptr null, ptr %12, align 8
-  %13 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %10, align 8
-  %14 = call i1 @"github.com/goplus/llgo/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/internal/runtime.eface" %8, %"github.com/goplus/llgo/internal/runtime.eface" %13)
-  %15 = xor i1 %14, true
-  br i1 %15, label %_llgo_1, label %_llgo_2
+  %5 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %3, 0
+  %6 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %5, ptr %4, 1
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.IfaceType"(%"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer)
+  %8 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %7, 0
+  %9 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %8, ptr null, 1
+  %10 = call i1 @"github.com/goplus/llgo/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/internal/runtime.eface" %6, %"github.com/goplus/llgo/internal/runtime.eface" %9)
+  %11 = xor i1 %10, true
+  br i1 %11, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
+  %12 = extractvalue { ptr } %2, 0
+  %13 = load { ptr, ptr }, ptr %12, align 8
+  %14 = extractvalue { ptr, ptr } %13, 1
+  %15 = extractvalue { ptr, ptr } %13, 0
+  call void %15(ptr %14, %"github.com/goplus/llgo/internal/runtime.iface" %1)
+  ret void
+
+_llgo_2:                                          ; preds = %_llgo_0
   %16 = extractvalue { ptr } %2, 0
   %17 = load { ptr, ptr }, ptr %16, align 8
   %18 = extractvalue { ptr, ptr } %17, 1
   %19 = extractvalue { ptr, ptr } %17, 0
-  call void %19(ptr %18, %"github.com/goplus/llgo/internal/runtime.iface" %1)
-  ret void
-
-_llgo_2:                                          ; preds = %_llgo_0
-  %20 = extractvalue { ptr } %2, 0
-  %21 = load { ptr, ptr }, ptr %20, align 8
-  %22 = extractvalue { ptr, ptr } %21, 1
-  %23 = extractvalue { ptr, ptr } %21, 0
-  call void %23(ptr %22, %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer)
+  call void %19(ptr %18, %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer)
   ret void
 }
 

@@ -34,49 +34,26 @@ _llgo_0:
   %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
   %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
   store ptr %2, ptr %4, align 8
-  %5 = alloca { ptr, ptr }, align 8
-  %6 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 0
-  store ptr @"main.main$1", ptr %6, align 8
-  %7 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 1
-  store ptr %3, ptr %7, align 8
-  %8 = load { ptr, ptr }, ptr %5, align 8
-  %9 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 0
-  store ptr @0, ptr %10, align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %9, i32 0, i32 1
-  store i64 16, ptr %11, align 4
-  %12 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %9, align 8
-  %13 = call ptr @malloc(i64 32)
-  %14 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/internal/runtime.String" }, ptr %13, i32 0, i32 0
-  store { ptr, ptr } %8, ptr %14, align 8
-  %15 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/internal/runtime.String" }, ptr %13, i32 0, i32 1
-  store %"github.com/goplus/llgo/internal/runtime.String" %12, ptr %15, align 8
-  %16 = alloca i8, i64 8, align 1
-  %17 = alloca %"github.com/goplus/llgo/c/pthread.RoutineFunc", align 8
-  %18 = getelementptr inbounds %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %17, i32 0, i32 0
-  store ptr @"__llgo_stub.main._llgo_routine$1", ptr %18, align 8
-  %19 = getelementptr inbounds %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %17, i32 0, i32 1
-  store ptr null, ptr %19, align 8
-  %20 = load %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %17, align 8
-  %21 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %16, ptr null, %"github.com/goplus/llgo/c/pthread.RoutineFunc" %20, ptr %13)
+  %5 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %3, 1
+  %6 = call ptr @malloc(i64 32)
+  %7 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/internal/runtime.String" }, ptr %6, i32 0, i32 0
+  store { ptr, ptr } %5, ptr %7, align 8
+  %8 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/internal/runtime.String" }, ptr %6, i32 0, i32 1
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 16 }, ptr %8, align 8
+  %9 = alloca i8, i64 8, align 1
+  %10 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %9, ptr null, %"github.com/goplus/llgo/c/pthread.RoutineFunc" { ptr @"__llgo_stub.main._llgo_routine$1", ptr null }, ptr %6)
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %22 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %23 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %22, i32 0, i32 0
-  store ptr @1, ptr %23, align 8
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %22, i32 0, i32 1
-  store i64 1, ptr %24, align 4
-  %25 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %22, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %25)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 1 })
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret i32 0
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %26 = load i1, ptr %2, align 1
-  br i1 %26, label %_llgo_2, label %_llgo_1
+  %11 = load i1, ptr %2, align 1
+  br i1 %11, label %_llgo_2, label %_llgo_1
 }
 
 define void @"main.main$1"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" %1) {

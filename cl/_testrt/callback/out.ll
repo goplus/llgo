@@ -34,20 +34,8 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca { ptr, ptr }, align 8
-  %3 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 0
-  store ptr @__llgo_stub.main.print, ptr %3, align 8
-  %4 = getelementptr inbounds { ptr, ptr }, ptr %2, i32 0, i32 1
-  store ptr null, ptr %4, align 8
-  %5 = load { ptr, ptr }, ptr %2, align 8
-  call void @main.callback(ptr @0, { ptr, ptr } %5)
-  %6 = alloca { ptr, ptr }, align 8
-  %7 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 0
-  store ptr @__llgo_stub.main.print, ptr %7, align 8
-  %8 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 1
-  store ptr null, ptr %8, align 8
-  %9 = load { ptr, ptr }, ptr %6, align 8
-  call void @main.callback(ptr @1, { ptr, ptr } %9)
+  call void @main.callback(ptr @0, { ptr, ptr } { ptr @__llgo_stub.main.print, ptr null })
+  call void @main.callback(ptr @1, { ptr, ptr } { ptr @__llgo_stub.main.print, ptr null })
   ret i32 0
 }
 

@@ -10,13 +10,7 @@ source_filename = "main"
 
 define { ptr, ptr } @main.add() {
 _llgo_0:
-  %0 = alloca { ptr, ptr }, align 8
-  %1 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 0
-  store ptr @"__llgo_stub.main.add$1", ptr %1, align 8
-  %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load { ptr, ptr }, ptr %0, align 8
-  ret { ptr, ptr } %3
+  ret { ptr, ptr } { ptr @"__llgo_stub.main.add$1", ptr null }
 }
 
 define i64 @"main.add$1"(i64 %0, i64 %1) {
@@ -27,19 +21,7 @@ _llgo_0:
 
 define { { ptr, ptr }, i64 } @main.add2() {
 _llgo_0:
-  %0 = alloca { ptr, ptr }, align 8
-  %1 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 0
-  store ptr @"__llgo_stub.main.add2$1", ptr %1, align 8
-  %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load { ptr, ptr }, ptr %0, align 8
-  %4 = alloca { { ptr, ptr }, i64 }, align 8
-  %5 = getelementptr inbounds { { ptr, ptr }, i64 }, ptr %4, i32 0, i32 0
-  store { ptr, ptr } %3, ptr %5, align 8
-  %6 = getelementptr inbounds { { ptr, ptr }, i64 }, ptr %4, i32 0, i32 1
-  store i64 1, ptr %6, align 4
-  %7 = load { { ptr, ptr }, i64 }, ptr %4, align 8
-  ret { { ptr, ptr }, i64 } %7
+  ret { { ptr, ptr }, i64 } { { ptr, ptr } { ptr @"__llgo_stub.main.add2$1", ptr null }, i64 1 }
 }
 
 define i64 @"main.add2$1"(i64 %0, i64 %1) {
@@ -90,13 +72,7 @@ _llgo_0:
 
 define { ptr, ptr } @"main.main$1"() {
 _llgo_0:
-  %0 = alloca { ptr, ptr }, align 8
-  %1 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$1$1", ptr %1, align 8
-  %2 = getelementptr inbounds { ptr, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load { ptr, ptr }, ptr %0, align 8
-  ret { ptr, ptr } %3
+  ret { ptr, ptr } { ptr @"__llgo_stub.main.main$1$1", ptr null }
 }
 
 define i64 @"main.main$1$1"(i64 %0, i64 %1) {

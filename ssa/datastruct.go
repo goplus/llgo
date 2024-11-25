@@ -757,7 +757,7 @@ func (b Builder) chanOp(s *SelectState) Expr {
 	} else {
 		etyp := prog.Elem(s.Chan.Type)
 		val = b.Alloc(etyp, false)
-		size = prog.IntVal(prog.SizeOf(etyp), prog.Int())
+		size = prog.IntVal(prog.SizeOf(etyp), prog.Int32())
 	}
 	send := prog.BoolVal(s.Send)
 	typ := b.Prog.rtType("ChanOp")

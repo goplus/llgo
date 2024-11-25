@@ -346,6 +346,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
+	goStrs := make(map[string]llvm.Value)
 	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
 	p.NeedRuntime = false
@@ -353,7 +354,8 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, strs: strs, chkabi: chkabi, Prog: p,
+		pyobjs: pyobjs, pymods: pymods, strs: strs, goStrs: goStrs,
+		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
 	}
 	ret.abi.Init(pkgPath)
@@ -603,6 +605,7 @@ type aPackage struct {
 	pyobjs map[string]PyObjRef
 	pymods map[string]Global
 	strs   map[string]llvm.Value
+	goStrs map[string]llvm.Value
 	chkabi map[types.Type]bool
 	afterb unsafe.Pointer
 	patch  func(types.Type) types.Type

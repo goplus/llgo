@@ -35,81 +35,71 @@ _llgo_0:
   store i8 2, ptr %4, align 1
   store i8 3, ptr %5, align 1
   store i8 4, ptr %6, align 1
-  %7 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, i32 0, i32 0
-  store ptr %2, ptr %8, align 8
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, i32 0, i32 1
-  store i64 4, ptr %9, align 4
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, i32 0, i32 2
-  store i64 4, ptr %10, align 4
-  %11 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %7, align 8
-  %12 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 1
-  %13 = icmp slt i64 %12, 4
-  br i1 %13, label %_llgo_1, label %_llgo_2
+  %7 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %2, 0
+  %8 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %7, i64 4, 1
+  %9 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %8, i64 4, 2
+  %10 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %9, 1
+  %11 = icmp slt i64 %10, 4
+  br i1 %11, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %14 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 1
-  call void @"github.com/goplus/llgo/internal/runtime.PanicSliceConvert"(i64 %14, i64 4)
+  %12 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %9, 1
+  call void @"github.com/goplus/llgo/internal/runtime.PanicSliceConvert"(i64 %12, i64 4)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %15 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %11, 0
-  %16 = load [4 x i8], ptr %2, align 1
-  %17 = load [4 x i8], ptr %15, align 1
-  %18 = extractvalue [4 x i8] %16, 0
-  %19 = extractvalue [4 x i8] %17, 0
-  %20 = icmp eq i8 %18, %19
-  %21 = and i1 true, %20
-  %22 = extractvalue [4 x i8] %16, 1
-  %23 = extractvalue [4 x i8] %17, 1
-  %24 = icmp eq i8 %22, %23
-  %25 = and i1 %21, %24
-  %26 = extractvalue [4 x i8] %16, 2
-  %27 = extractvalue [4 x i8] %17, 2
-  %28 = icmp eq i8 %26, %27
-  %29 = and i1 %25, %28
-  %30 = extractvalue [4 x i8] %16, 3
-  %31 = extractvalue [4 x i8] %17, 3
-  %32 = icmp eq i8 %30, %31
-  %33 = and i1 %29, %32
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %33)
+  %13 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %9, 0
+  %14 = load [4 x i8], ptr %2, align 1
+  %15 = load [4 x i8], ptr %13, align 1
+  %16 = extractvalue [4 x i8] %14, 0
+  %17 = extractvalue [4 x i8] %15, 0
+  %18 = icmp eq i8 %16, %17
+  %19 = and i1 true, %18
+  %20 = extractvalue [4 x i8] %14, 1
+  %21 = extractvalue [4 x i8] %15, 1
+  %22 = icmp eq i8 %20, %21
+  %23 = and i1 %19, %22
+  %24 = extractvalue [4 x i8] %14, 2
+  %25 = extractvalue [4 x i8] %15, 2
+  %26 = icmp eq i8 %24, %25
+  %27 = and i1 %23, %26
+  %28 = extractvalue [4 x i8] %14, 3
+  %29 = extractvalue [4 x i8] %15, 3
+  %30 = icmp eq i8 %28, %29
+  %31 = and i1 %27, %30
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %31)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %34 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
-  %35 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %34, i32 0, i32 0
-  store ptr %2, ptr %35, align 8
-  %36 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %34, i32 0, i32 1
-  store i64 4, ptr %36, align 4
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %34, i32 0, i32 2
-  store i64 4, ptr %37, align 4
-  %38 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %34, align 8
-  %39 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %38, 1
-  %40 = icmp slt i64 %39, 2
-  br i1 %40, label %_llgo_3, label %_llgo_4
+  %32 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %2, 0
+  %33 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %32, i64 4, 1
+  %34 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %33, i64 4, 2
+  %35 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %34, 1
+  %36 = icmp slt i64 %35, 2
+  br i1 %36, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %41 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %38, 1
-  call void @"github.com/goplus/llgo/internal/runtime.PanicSliceConvert"(i64 %41, i64 2)
+  %37 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %34, 1
+  call void @"github.com/goplus/llgo/internal/runtime.PanicSliceConvert"(i64 %37, i64 2)
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
-  %42 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %38, 0
-  %43 = load [2 x i8], ptr %42, align 1
-  %44 = alloca [2 x i8], align 1
-  call void @llvm.memset(ptr %44, i8 0, i64 2, i1 false)
-  %45 = getelementptr inbounds i8, ptr %44, i64 0
-  %46 = getelementptr inbounds i8, ptr %44, i64 1
-  store i8 1, ptr %45, align 1
-  store i8 2, ptr %46, align 1
-  %47 = load [2 x i8], ptr %44, align 1
-  %48 = extractvalue [2 x i8] %43, 0
-  %49 = extractvalue [2 x i8] %47, 0
+  %38 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %34, 0
+  %39 = load [2 x i8], ptr %38, align 1
+  %40 = alloca [2 x i8], align 1
+  call void @llvm.memset(ptr %40, i8 0, i64 2, i1 false)
+  %41 = getelementptr inbounds i8, ptr %40, i64 0
+  %42 = getelementptr inbounds i8, ptr %40, i64 1
+  store i8 1, ptr %41, align 1
+  store i8 2, ptr %42, align 1
+  %43 = load [2 x i8], ptr %40, align 1
+  %44 = extractvalue [2 x i8] %39, 0
+  %45 = extractvalue [2 x i8] %43, 0
+  %46 = icmp eq i8 %44, %45
+  %47 = and i1 true, %46
+  %48 = extractvalue [2 x i8] %39, 1
+  %49 = extractvalue [2 x i8] %43, 1
   %50 = icmp eq i8 %48, %49
-  %51 = and i1 true, %50
-  %52 = extractvalue [2 x i8] %43, 1
-  %53 = extractvalue [2 x i8] %47, 1
-  %54 = icmp eq i8 %52, %53
-  %55 = and i1 %51, %54
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %55)
+  %51 = and i1 %47, %50
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %51)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }

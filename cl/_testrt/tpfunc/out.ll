@@ -1,8 +1,6 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%main.Func = type { ptr, ptr }
-
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
@@ -26,12 +24,6 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = alloca %main.Func, align 8
-  %3 = getelementptr inbounds %main.Func, ptr %2, i32 0, i32 0
-  store ptr @"__llgo_stub.main.main$1", ptr %3, align 8
-  %4 = getelementptr inbounds %main.Func, ptr %2, i32 0, i32 1
-  store ptr null, ptr %4, align 8
-  %5 = load %main.Func, ptr %2, align 8
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 16)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 8)

@@ -56,141 +56,79 @@ _llgo_0:
   store ptr %4, ptr %11, align 8
   %12 = getelementptr inbounds { ptr, ptr, ptr }, ptr %9, i32 0, i32 2
   store ptr %6, ptr %12, align 8
-  %13 = alloca { ptr, ptr }, align 8
-  %14 = getelementptr inbounds { ptr, ptr }, ptr %13, i32 0, i32 0
-  store ptr @"main.main$1", ptr %14, align 8
-  %15 = getelementptr inbounds { ptr, ptr }, ptr %13, i32 0, i32 1
-  store ptr %9, ptr %15, align 8
-  %16 = load { ptr, ptr }, ptr %13, align 8
-  %17 = call ptr @malloc(i64 16)
-  %18 = getelementptr inbounds { { ptr, ptr } }, ptr %17, i32 0, i32 0
-  store { ptr, ptr } %16, ptr %18, align 8
-  %19 = alloca i8, i64 8, align 1
-  %20 = alloca %"github.com/goplus/llgo/c/pthread.RoutineFunc", align 8
-  %21 = getelementptr inbounds %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %20, i32 0, i32 0
-  store ptr @"__llgo_stub.main._llgo_routine$1", ptr %21, align 8
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %20, i32 0, i32 1
-  store ptr null, ptr %22, align 8
-  %23 = load %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr %20, align 8
-  %24 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %19, ptr null, %"github.com/goplus/llgo/c/pthread.RoutineFunc" %23, ptr %17)
-  %25 = load ptr, ptr %2, align 8
-  %26 = alloca {}, align 8
-  call void @llvm.memset(ptr %26, i8 0, i64 0, i1 false)
-  store {} zeroinitializer, ptr %26, align 1
-  %27 = call i1 @"github.com/goplus/llgo/internal/runtime.ChanSend"(ptr %25, ptr %26, i64 0)
-  %28 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %29 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %28, i32 0, i32 0
-  store ptr @0, ptr %29, align 8
-  %30 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %28, i32 0, i32 1
-  store i64 4, ptr %30, align 4
-  %31 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %28, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %31)
+  %13 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %9, 1
+  %14 = call ptr @malloc(i64 16)
+  %15 = getelementptr inbounds { { ptr, ptr } }, ptr %14, i32 0, i32 0
+  store { ptr, ptr } %13, ptr %15, align 8
+  %16 = alloca i8, i64 8, align 1
+  %17 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %16, ptr null, %"github.com/goplus/llgo/c/pthread.RoutineFunc" { ptr @"__llgo_stub.main._llgo_routine$1", ptr null }, ptr %14)
+  %18 = load ptr, ptr %2, align 8
+  %19 = alloca {}, align 8
+  call void @llvm.memset(ptr %19, i8 0, i64 0, i1 false)
+  store {} zeroinitializer, ptr %19, align 1
+  %20 = call i1 @"github.com/goplus/llgo/internal/runtime.ChanSend"(ptr %18, ptr %19, i64 0)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %32 = load ptr, ptr %4, align 8
-  %33 = alloca {}, align 8
-  call void @llvm.memset(ptr %33, i8 0, i64 0, i1 false)
-  %34 = alloca %"github.com/goplus/llgo/internal/runtime.ChanOp", align 8
-  %35 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 0
-  store ptr %32, ptr %35, align 8
-  %36 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 1
-  store ptr %33, ptr %36, align 8
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 2
-  store i64 0, ptr %37, align 4
-  %38 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, i32 0, i32 3
-  store i1 false, ptr %38, align 1
-  %39 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %34, align 8
-  %40 = alloca {}, align 8
-  call void @llvm.memset(ptr %40, i8 0, i64 0, i1 false)
-  %41 = alloca %"github.com/goplus/llgo/internal/runtime.ChanOp", align 8
-  %42 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 0
-  store ptr %8, ptr %42, align 8
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 1
-  store ptr %40, ptr %43, align 8
-  %44 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 2
-  store i64 0, ptr %44, align 4
-  %45 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, i32 0, i32 3
-  store i1 false, ptr %45, align 1
-  %46 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %41, align 8
-  %47 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
-  %48 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %47, i64 0
-  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %39, ptr %48, align 8
-  %49 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %47, i64 1
-  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %46, ptr %49, align 8
-  %50 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
-  %51 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %50, i32 0, i32 0
-  store ptr %47, ptr %51, align 8
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %50, i32 0, i32 1
-  store i64 2, ptr %52, align 4
-  %53 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %50, i32 0, i32 2
-  store i64 2, ptr %53, align 4
-  %54 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %50, align 8
-  %55 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.Select"(%"github.com/goplus/llgo/internal/runtime.Slice" %54)
-  %56 = extractvalue { i64, i1 } %55, 0
-  %57 = extractvalue { i64, i1 } %55, 1
-  %58 = extractvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %39, 1
-  %59 = load {}, ptr %58, align 1
-  %60 = extractvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %46, 1
-  %61 = load {}, ptr %60, align 1
-  %62 = alloca { i64, i1, {}, {} }, align 8
-  %63 = getelementptr inbounds { i64, i1, {}, {} }, ptr %62, i32 0, i32 0
-  store i64 %56, ptr %63, align 4
-  %64 = getelementptr inbounds { i64, i1, {}, {} }, ptr %62, i32 0, i32 1
-  store i1 %57, ptr %64, align 1
-  %65 = getelementptr inbounds { i64, i1, {}, {} }, ptr %62, i32 0, i32 2
-  store {} %59, ptr %65, align 1
-  %66 = getelementptr inbounds { i64, i1, {}, {} }, ptr %62, i32 0, i32 3
-  store {} %61, ptr %66, align 1
-  %67 = load { i64, i1, {}, {} }, ptr %62, align 4
-  %68 = extractvalue { i64, i1, {}, {} } %67, 0
-  %69 = icmp eq i64 %68, 0
-  br i1 %69, label %_llgo_2, label %_llgo_3
+  %21 = load ptr, ptr %4, align 8
+  %22 = alloca {}, align 8
+  call void @llvm.memset(ptr %22, i8 0, i64 0, i1 false)
+  %23 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" undef, ptr %21, 0
+  %24 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %23, ptr %22, 1
+  %25 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %24, i32 0, 2
+  %26 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %25, i1 false, 3
+  %27 = alloca {}, align 8
+  call void @llvm.memset(ptr %27, i8 0, i64 0, i1 false)
+  %28 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" undef, ptr %8, 0
+  %29 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %28, ptr %27, 1
+  %30 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %29, i32 0, 2
+  %31 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %30, i1 false, 3
+  %32 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
+  %33 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %32, i64 0
+  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %26, ptr %33, align 8
+  %34 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %32, i64 1
+  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %31, ptr %34, align 8
+  %35 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %32, 0
+  %36 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %35, i64 2, 1
+  %37 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %36, i64 2, 2
+  %38 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.Select"(%"github.com/goplus/llgo/internal/runtime.Slice" %37)
+  %39 = extractvalue { i64, i1 } %38, 0
+  %40 = extractvalue { i64, i1 } %38, 1
+  %41 = extractvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %26, 1
+  %42 = load {}, ptr %41, align 1
+  %43 = extractvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %31, 1
+  %44 = load {}, ptr %43, align 1
+  %45 = insertvalue { i64, i1, {}, {} } undef, i64 %39, 0
+  %46 = insertvalue { i64, i1, {}, {} } %45, i1 %40, 1
+  %47 = insertvalue { i64, i1, {}, {} } %46, {} %42, 2
+  %48 = insertvalue { i64, i1, {}, {} } %47, {} %44, 3
+  %49 = extractvalue { i64, i1, {}, {} } %48, 0
+  %50 = icmp eq i64 %49, 0
+  br i1 %50, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_4, %_llgo_2
   ret i32 0
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %70 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %71 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %70, i32 0, i32 0
-  store ptr @1, ptr %71, align 8
-  %72 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %70, i32 0, i32 1
-  store i64 4, ptr %72, align 4
-  %73 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %70, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %73)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 4 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %74 = icmp eq i64 %68, 1
-  br i1 %74, label %_llgo_4, label %_llgo_5
+  %51 = icmp eq i64 %49, 1
+  br i1 %51, label %_llgo_4, label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_3
-  %75 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %76 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %75, i32 0, i32 0
-  store ptr @2, ptr %76, align 8
-  %77 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %75, i32 0, i32 1
-  store i64 4, ptr %77, align 4
-  %78 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %75, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %78)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 4 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_5:                                          ; preds = %_llgo_3
-  %79 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %80 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %79, i32 0, i32 0
-  store ptr @3, ptr %80, align 8
-  %81 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %79, i32 0, i32 1
-  store i64 31, ptr %81, align 4
-  %82 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %79, align 8
-  %83 = load ptr, ptr @_llgo_string, align 8
-  %84 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.String" %82, ptr %84, align 8
-  %85 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %86 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %85, i32 0, i32 0
-  store ptr %83, ptr %86, align 8
-  %87 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %85, i32 0, i32 1
-  store ptr %84, ptr %87, align 8
-  %88 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %85, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %88)
+  %52 = load ptr, ptr @_llgo_string, align 8
+  %53 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @3, i64 31 }, ptr %53, align 8
+  %54 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %52, 0
+  %55 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %54, ptr %53, 1
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %55)
   unreachable
 }
 
@@ -203,119 +141,69 @@ _llgo_0:
   call void @llvm.memset(ptr %4, i8 0, i64 0, i1 false)
   %5 = call i1 @"github.com/goplus/llgo/internal/runtime.ChanRecv"(ptr %3, ptr %4, i64 0)
   %6 = load {}, ptr %4, align 1
-  %7 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %7, i32 0, i32 0
-  store ptr @4, ptr %8, align 8
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %7, i32 0, i32 1
-  store i64 4, ptr %9, align 4
-  %10 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %7, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %10)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @4, i64 4 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  %11 = extractvalue { ptr, ptr, ptr } %1, 1
-  %12 = load ptr, ptr %11, align 8
-  %13 = extractvalue { ptr, ptr, ptr } %1, 2
-  %14 = load ptr, ptr %13, align 8
-  %15 = alloca {}, align 8
-  call void @llvm.memset(ptr %15, i8 0, i64 0, i1 false)
-  store {} zeroinitializer, ptr %15, align 1
-  %16 = alloca %"github.com/goplus/llgo/internal/runtime.ChanOp", align 8
-  %17 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %16, i32 0, i32 0
-  store ptr %12, ptr %17, align 8
-  %18 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %16, i32 0, i32 1
-  store ptr %15, ptr %18, align 8
-  %19 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %16, i32 0, i32 2
-  store i32 0, ptr %19, align 4
-  %20 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %16, i32 0, i32 3
-  store i1 true, ptr %20, align 1
-  %21 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %16, align 8
-  %22 = alloca {}, align 8
-  call void @llvm.memset(ptr %22, i8 0, i64 0, i1 false)
-  %23 = alloca %"github.com/goplus/llgo/internal/runtime.ChanOp", align 8
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 0
-  store ptr %14, ptr %24, align 8
-  %25 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 1
-  store ptr %22, ptr %25, align 8
-  %26 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 2
-  store i64 0, ptr %26, align 4
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, i32 0, i32 3
-  store i1 false, ptr %27, align 1
-  %28 = load %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %23, align 8
-  %29 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
-  %30 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %29, i64 0
-  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %21, ptr %30, align 8
-  %31 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %29, i64 1
-  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %28, ptr %31, align 8
-  %32 = alloca %"github.com/goplus/llgo/internal/runtime.Slice", align 8
-  %33 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %32, i32 0, i32 0
-  store ptr %29, ptr %33, align 8
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %32, i32 0, i32 1
-  store i64 2, ptr %34, align 4
-  %35 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.Slice", ptr %32, i32 0, i32 2
-  store i64 2, ptr %35, align 4
-  %36 = load %"github.com/goplus/llgo/internal/runtime.Slice", ptr %32, align 8
-  %37 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.Select"(%"github.com/goplus/llgo/internal/runtime.Slice" %36)
-  %38 = extractvalue { i64, i1 } %37, 0
-  %39 = extractvalue { i64, i1 } %37, 1
-  %40 = extractvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %28, 1
-  %41 = load {}, ptr %40, align 1
-  %42 = alloca { i64, i1, {} }, align 8
-  %43 = getelementptr inbounds { i64, i1, {} }, ptr %42, i32 0, i32 0
-  store i64 %38, ptr %43, align 4
-  %44 = getelementptr inbounds { i64, i1, {} }, ptr %42, i32 0, i32 1
-  store i1 %39, ptr %44, align 1
-  %45 = getelementptr inbounds { i64, i1, {} }, ptr %42, i32 0, i32 2
-  store {} %41, ptr %45, align 1
-  %46 = load { i64, i1, {} }, ptr %42, align 4
-  %47 = extractvalue { i64, i1, {} } %46, 0
-  %48 = icmp eq i64 %47, 0
-  br i1 %48, label %_llgo_2, label %_llgo_3
+  %7 = extractvalue { ptr, ptr, ptr } %1, 1
+  %8 = load ptr, ptr %7, align 8
+  %9 = extractvalue { ptr, ptr, ptr } %1, 2
+  %10 = load ptr, ptr %9, align 8
+  %11 = alloca {}, align 8
+  call void @llvm.memset(ptr %11, i8 0, i64 0, i1 false)
+  store {} zeroinitializer, ptr %11, align 1
+  %12 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" undef, ptr %8, 0
+  %13 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %12, ptr %11, 1
+  %14 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %13, i32 0, 2
+  %15 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %14, i1 true, 3
+  %16 = alloca {}, align 8
+  call void @llvm.memset(ptr %16, i8 0, i64 0, i1 false)
+  %17 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" undef, ptr %10, 0
+  %18 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %17, ptr %16, 1
+  %19 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %18, i32 0, 2
+  %20 = insertvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %19, i1 false, 3
+  %21 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 48)
+  %22 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %21, i64 0
+  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %15, ptr %22, align 8
+  %23 = getelementptr %"github.com/goplus/llgo/internal/runtime.ChanOp", ptr %21, i64 1
+  store %"github.com/goplus/llgo/internal/runtime.ChanOp" %20, ptr %23, align 8
+  %24 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %21, 0
+  %25 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %24, i64 2, 1
+  %26 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %25, i64 2, 2
+  %27 = call { i64, i1 } @"github.com/goplus/llgo/internal/runtime.Select"(%"github.com/goplus/llgo/internal/runtime.Slice" %26)
+  %28 = extractvalue { i64, i1 } %27, 0
+  %29 = extractvalue { i64, i1 } %27, 1
+  %30 = extractvalue %"github.com/goplus/llgo/internal/runtime.ChanOp" %20, 1
+  %31 = load {}, ptr %30, align 1
+  %32 = insertvalue { i64, i1, {} } undef, i64 %28, 0
+  %33 = insertvalue { i64, i1, {} } %32, i1 %29, 1
+  %34 = insertvalue { i64, i1, {} } %33, {} %31, 2
+  %35 = extractvalue { i64, i1, {} } %34, 0
+  %36 = icmp eq i64 %35, 0
+  br i1 %36, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_4, %_llgo_2
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %49 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %49, i32 0, i32 0
-  store ptr @5, ptr %50, align 8
-  %51 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %49, i32 0, i32 1
-  store i64 4, ptr %51, align 4
-  %52 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %49, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %52)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @5, i64 4 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %53 = icmp eq i64 %47, 1
-  br i1 %53, label %_llgo_4, label %_llgo_5
+  %37 = icmp eq i64 %35, 1
+  br i1 %37, label %_llgo_4, label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_3
-  %54 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %55 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %54, i32 0, i32 0
-  store ptr @6, ptr %55, align 8
-  %56 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %54, i32 0, i32 1
-  store i64 4, ptr %56, align 4
-  %57 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %54, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %57)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @6, i64 4 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_5:                                          ; preds = %_llgo_3
-  %58 = alloca %"github.com/goplus/llgo/internal/runtime.String", align 8
-  %59 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %58, i32 0, i32 0
-  store ptr @3, ptr %59, align 8
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.String", ptr %58, i32 0, i32 1
-  store i64 31, ptr %60, align 4
-  %61 = load %"github.com/goplus/llgo/internal/runtime.String", ptr %58, align 8
-  %62 = load ptr, ptr @_llgo_string, align 8
-  %63 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.String" %61, ptr %63, align 8
-  %64 = alloca %"github.com/goplus/llgo/internal/runtime.eface", align 8
-  %65 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %64, i32 0, i32 0
-  store ptr %62, ptr %65, align 8
-  %66 = getelementptr inbounds %"github.com/goplus/llgo/internal/runtime.eface", ptr %64, i32 0, i32 1
-  store ptr %63, ptr %66, align 8
-  %67 = load %"github.com/goplus/llgo/internal/runtime.eface", ptr %64, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %67)
+  %38 = load ptr, ptr @_llgo_string, align 8
+  %39 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @3, i64 31 }, ptr %39, align 8
+  %40 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %38, 0
+  %41 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %40, ptr %39, 1
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %41)
   unreachable
 }
 
