@@ -1,7 +1,6 @@
 package convert_test
 
 import (
-	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -616,12 +615,7 @@ type NormalType c.Int
 
 // test sys type in stdinclude to package
 func TestSysTypeToPkg(t *testing.T) {
-	// todo(zzy): wait https://github.com/goplus/llgo/pull/870 merge
-	if runtime.GOOS == "linux" {
-		t.Skip("skip on linux")
-	}
 	tempDir := cmptest.GetTempHeaderPathDir()
-
 	cmptest.RunTest(t, "systype", false, []config.SymbolEntry{
 		{MangleName: "funcc", CppName: "funcc", GoName: "FuncC"},
 	}, map[string]string{
