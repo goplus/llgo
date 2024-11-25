@@ -1005,7 +1005,8 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	case vkClosure:
 		data = b.Field(fn, 1)
 		fn = b.Field(fn, 0)
-		raw = fn.raw.Type
+		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
+		raw = FuncAddCtx(ctx, fn.raw.Type.(*types.Signature))
 		fallthrough
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)

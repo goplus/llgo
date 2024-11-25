@@ -174,8 +174,7 @@ func Instantiate(orig types.Type, t *types.Named) (types.Type, bool) {
 }
 
 func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
-	ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-	raw := p.cvtFunc(sig, ctx)
+	raw := p.cvtFunc(sig, nil)
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "f", raw, false),
 		types.NewField(token.NoPos, nil, "data", types.Typ[types.UnsafePointer], false),

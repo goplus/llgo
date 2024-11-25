@@ -1009,8 +1009,7 @@ func TypeOf(i any) Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
 	// closure type
 	if eface.typ.IsClosure() {
-		ft := *eface.typ.StructType().Fields[0].Typ.FuncType()
-		ft.In = ft.In[1:]
+		ft := eface.typ.StructType().Fields[0].Typ.FuncType()
 		return toType(&ft.Type)
 	}
 	// Noescape so this doesn't make i to escape. See the comment
