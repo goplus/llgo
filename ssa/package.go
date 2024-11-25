@@ -105,6 +105,8 @@ type aProgram struct {
 	sizes types.Sizes  // provided by Go compiler
 	gocvt goTypes
 
+	patchType func(types.Type) types.Type
+
 	rt    *types.Package
 	rtget func() *types.Package
 
@@ -231,6 +233,17 @@ func NewProgram(target *Target) Program {
 		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string),
 	}
+}
+
+func (p Program) SetPatch(patchType func(types.Type) types.Type) {
+	p.patchType = patchType
+}
+
+func (p Program) patch(typ types.Type) types.Type {
+	if p.patchType != nil {
+		return p.patchType(typ)
+	}
+	return typ
 }
 
 // SetRuntime sets the runtime.
