@@ -6,7 +6,9 @@ package main
 #cgo windows,amd64 CFLAGS: -D_WIN64
 #cgo linux,amd64 CFLAGS: -D_LINUX64
 #cgo !windows,amd64 CFLAGS: -D_UNIX64
+#cgo pkg-config: python3-embed
 #include <stdio.h>
+#include <Python.h>
 #include "foo.h"
 typedef struct {
 	int a;
@@ -71,9 +73,18 @@ static void test_macros() {
 	printf("UNIX64 is defined\n");
 #endif
 }
+
+#define MY_VERSION "1.0.0"
+#define MY_CODE 0x12345678
 */
 import "C"
-import "fmt"
+import (
+	"fmt"
+	"unsafe"
+
+	"github.com/goplus/llgo/_demo/cgofull/pymod1"
+	"github.com/goplus/llgo/_demo/cgofull/pymod2"
+)
 
 func main() {
 	runPy()
@@ -86,10 +97,14 @@ func main() {
 	if r != 35 {
 		panic("test_structs failed")
 	}
+	fmt.Println(C.MY_VERSION)
+	fmt.Println(int(C.MY_CODE))
 }
 
 func runPy() {
 	Initialize()
 	defer Finalize()
 	Run("print('Hello, Python!')")
+	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(pymod1.Float(1.23))), C.stderr, 0)
+	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(pymod2.Long(123))), C.stdout, 0)
 }
