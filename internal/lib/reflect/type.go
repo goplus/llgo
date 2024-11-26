@@ -27,6 +27,7 @@ import (
 	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/lib/sync"
 	"github.com/goplus/llgo/internal/runtime"
+	"github.com/goplus/llgo/internal/runtime/goarch"
 )
 
 // Type is the representation of a Go type.
@@ -1465,4 +1466,172 @@ func funcStr(ft *funcType) string {
 		repr = append(repr, ')')
 	}
 	return string(repr)
+}
+
+// isReflexive reports whether the == operation on the type is reflexive.
+// That is, x == x for all values x of type t.
+func isReflexive(t *abi.Type) bool {
+	switch Kind(t.Kind()) {
+	case Bool, Int, Int8, Int16, Int32, Int64, Uint, Uint8, Uint16, Uint32, Uint64, Uintptr, Chan, Pointer, String, UnsafePointer:
+		return true
+	case Float32, Float64, Complex64, Complex128, Interface:
+		return false
+	case Array:
+		tt := (*arrayType)(unsafe.Pointer(t))
+		return isReflexive(tt.Elem)
+	case Struct:
+		tt := (*structType)(unsafe.Pointer(t))
+		for _, f := range tt.Fields {
+			if !isReflexive(f.Typ) {
+				return false
+			}
+		}
+		return true
+	default:
+		// Func, Map, Slice, Invalid
+		panic("isReflexive called on non-key type " + stringFor(t))
+	}
+}
+
+// needKeyUpdate reports whether map overwrites require the key to be copied.
+func needKeyUpdate(t *abi.Type) bool {
+	switch Kind(t.Kind()) {
+	case Bool, Int, Int8, Int16, Int32, Int64, Uint, Uint8, Uint16, Uint32, Uint64, Uintptr, Chan, Pointer, UnsafePointer:
+		return false
+	case Float32, Float64, Complex64, Complex128, Interface, String:
+		// Float keys can be updated from +0 to -0.
+		// String keys can be updated to use a smaller backing store.
+		// Interfaces might have floats of strings in them.
+		return true
+	case Array:
+		tt := (*arrayType)(unsafe.Pointer(t))
+		return needKeyUpdate(tt.Elem)
+	case Struct:
+		tt := (*structType)(unsafe.Pointer(t))
+		for _, f := range tt.Fields {
+			if needKeyUpdate(f.Typ) {
+				return true
+			}
+		}
+		return false
+	default:
+		// Func, Map, Slice, Invalid
+		panic("needKeyUpdate called on non-key type " + stringFor(t))
+	}
+}
+
+// hashMightPanic reports whether the hash of a map key of type t might panic.
+func hashMightPanic(t *abi.Type) bool {
+	switch Kind(t.Kind()) {
+	case Interface:
+		return true
+	case Array:
+		tt := (*arrayType)(unsafe.Pointer(t))
+		return hashMightPanic(tt.Elem)
+	case Struct:
+		tt := (*structType)(unsafe.Pointer(t))
+		for _, f := range tt.Fields {
+			if hashMightPanic(f.Typ) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+// Make sure these routines stay in sync with ../runtime/map.go!
+// These types exist only for GC, so we only fill out GC relevant info.
+// Currently, that's just size and the GC program. We also fill in string
+// for possible debugging use.
+const (
+	bucketSize uintptr = abi.MapBucketCount
+	maxKeySize uintptr = abi.MapMaxKeyBytes
+	maxValSize uintptr = abi.MapMaxElemBytes
+)
+
+func bucketOf(ktyp, etyp *abi.Type) *abi.Type {
+	if ktyp.Size_ > maxKeySize {
+		ktyp = ptrTo(ktyp)
+	}
+	if etyp.Size_ > maxValSize {
+		etyp = ptrTo(etyp)
+	}
+
+	// Prepare GC data if any.
+	// A bucket is at most bucketSize*(1+maxKeySize+maxValSize)+ptrSize bytes,
+	// or 2064 bytes, or 258 pointer-size words, or 33 bytes of pointer bitmap.
+	// Note that since the key and value are known to be <= 128 bytes,
+	// they're guaranteed to have bitmaps instead of GC programs.
+	var gcdata *byte
+	var ptrdata uintptr
+
+	size := bucketSize*(1+ktyp.Size_+etyp.Size_) + goarch.PtrSize
+	if size&uintptr(ktyp.Align_-1) != 0 || size&uintptr(etyp.Align_-1) != 0 {
+		panic("reflect: bad size computation in MapOf")
+	}
+
+	if ktyp.PtrBytes != 0 || etyp.PtrBytes != 0 {
+		nptr := (bucketSize*(1+ktyp.Size_+etyp.Size_) + goarch.PtrSize) / goarch.PtrSize
+		n := (nptr + 7) / 8
+
+		// Runtime needs pointer masks to be a multiple of uintptr in size.
+		n = (n + goarch.PtrSize - 1) &^ (goarch.PtrSize - 1)
+		mask := make([]byte, n)
+		base := bucketSize / goarch.PtrSize
+
+		if ktyp.PtrBytes != 0 {
+			emitGCMask(mask, base, ktyp, bucketSize)
+		}
+		base += bucketSize * ktyp.Size_ / goarch.PtrSize
+
+		if etyp.PtrBytes != 0 {
+			emitGCMask(mask, base, etyp, bucketSize)
+		}
+		base += bucketSize * etyp.Size_ / goarch.PtrSize
+
+		word := base
+		mask[word/8] |= 1 << (word % 8)
+		gcdata = &mask[0]
+		ptrdata = (word + 1) * goarch.PtrSize
+
+		// overflow word must be last
+		if ptrdata != size {
+			panic("reflect: bad layout computation in MapOf")
+		}
+	}
+
+	b := &abi.Type{
+		Align_:   goarch.PtrSize,
+		Size_:    size,
+		Kind_:    uint8(Struct),
+		PtrBytes: ptrdata,
+		GCData:   gcdata,
+	}
+	b.Str_ = "bucket(" + stringFor(ktyp) + "," + stringFor(etyp) + ")"
+	return b
+}
+
+func (t *rtype) gcSlice(begin, end uintptr) []byte {
+	return (*[1 << 30]byte)(unsafe.Pointer(t.t.GCData))[begin:end:end]
+}
+
+// emitGCMask writes the GC mask for [n]typ into out, starting at bit
+// offset base.
+func emitGCMask(out []byte, base uintptr, typ *abi.Type, n uintptr) {
+	// if typ.Kind_&kindGCProg != 0 {
+	// 	panic("reflect: unexpected GC program")
+	// }
+	// ptrs := typ.PtrBytes / goarch.PtrSize
+	// words := typ.Size_ / goarch.PtrSize
+	// mask := typ.GcSlice(0, (ptrs+7)/8)
+	// for j := uintptr(0); j < ptrs; j++ {
+	// 	if (mask[j/8]>>(j%8))&1 != 0 {
+	// 		for i := uintptr(0); i < n; i++ {
+	// 			k := base + i*words + j
+	// 			out[k/8] |= 1 << (k % 8)
+	// 		}
+	// 	}
+	// }
 }
