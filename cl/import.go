@@ -366,6 +366,17 @@ func checkCgo(fnName string) bool {
 		(fnName[4] == '_' || strings.HasPrefix(fnName[4:], "Check"))
 }
 
+var cgoIgnoredNames = map[string]none{
+	"_Cgo_ptr":        {},
+	"_Cgo_use":        {},
+	"_cgoCheckResult": {},
+}
+
+func cgoIgnored(fnName string) bool {
+	_, ok := cgoIgnoredNames[fnName]
+	return ok
+}
+
 const (
 	ignoredFunc = iota
 	goFunc      = int(llssa.InGo)
@@ -434,7 +445,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		orgName = funcName(pkg, origin, true)
 	} else {
 		fname := fn.Name()
-		if checkCgo(fname) {
+		if checkCgo(fname) && !cgoIgnored(fname) {
 			return nil, fname, llgoInstr
 		}
 		if isCgoCfuncOrCmacro(fn) {
