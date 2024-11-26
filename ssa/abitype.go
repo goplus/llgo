@@ -210,7 +210,7 @@ func (b Builder) abiNamed(t *types.Named) Expr {
 	size := b.sizeof(tunder)
 	numMethods, numPtrMethods := b.abiMethods(t)
 	newNamed := pkg.rtFunc("NewNamed")
-	expr := b.Call(newNamed, b.Str(t.String()), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
+	expr := b.Call(newNamed, b.Str(NameOf(t)), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
 	return expr
 }
 

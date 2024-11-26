@@ -174,8 +174,7 @@ func Instantiate(orig types.Type, t *types.Named) (types.Type, bool) {
 }
 
 func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
-	ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-	raw := p.cvtFunc(sig, ctx)
+	raw := p.cvtFunc(sig, nil)
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "f", raw, false),
 		types.NewField(token.NoPos, nil, "data", types.Typ[types.UnsafePointer], false),
@@ -189,9 +188,8 @@ func (p goTypes) cvtFunc(sig *types.Signature, recv *types.Var) (raw *types.Sign
 	}
 	params, cvt1 := p.cvtTuple(sig.Params())
 	results, cvt2 := p.cvtTuple(sig.Results())
-	if cvt1 || cvt2 || sig.Variadic() {
-		// variadic always is false in raw type for Go function
-		return types.NewSignatureType(nil, nil, nil, params, results, false)
+	if cvt1 || cvt2 {
+		return types.NewSignatureType(nil, nil, nil, params, results, sig.Variadic())
 	}
 	return sig
 }

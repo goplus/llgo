@@ -1009,8 +1009,7 @@ func TypeOf(i any) Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
 	// closure type
 	if eface.typ.IsClosure() {
-		ft := *eface.typ.StructType().Fields[0].Typ.FuncType()
-		ft.In = ft.In[1:]
+		ft := eface.typ.StructType().Fields[0].Typ.FuncType()
 		return toType(&ft.Type)
 	}
 	// Noescape so this doesn't make i to escape. See the comment
@@ -1126,14 +1125,11 @@ func (t *rtype) Implements(u Type) bool {
 }
 
 func (t *rtype) AssignableTo(u Type) bool {
-	/*
-		if u == nil {
-			panic("reflect: nil type passed to Type.AssignableTo")
-		}
-		uu := u.common()
-		return directlyAssignable(uu, t.common()) || implements(uu, t.common())
-	*/
-	panic("todo: reflect.rtype.AssignableTo")
+	if u == nil {
+		panic("reflect: nil type passed to Type.AssignableTo")
+	}
+	uu := u.common()
+	return directlyAssignable(uu, t.common()) || implements(uu, t.common())
 }
 
 func (t *rtype) ConvertibleTo(u Type) bool {
@@ -1151,92 +1147,9 @@ func (t *rtype) Comparable() bool {
 }
 
 // implements reports whether the type V implements the interface type T.
-func implements(T, V *abi.Type) bool {
-	if T.Kind() != abi.Interface {
-		return false
-	}
-	t := (*interfaceType)(unsafe.Pointer(T))
-	if len(t.Methods) == 0 {
-		return true
-	}
-
-	/*
-		// The same algorithm applies in both cases, but the
-		// method tables for an interface type and a concrete type
-		// are different, so the code is duplicated.
-		// In both cases the algorithm is a linear scan over the two
-		// lists - T's methods and V's methods - simultaneously.
-		// Since method tables are stored in a unique sorted order
-		// (alphabetical, with no duplicate method names), the scan
-		// through V's methods must hit a match for each of T's
-		// methods along the way, or else V does not implement T.
-		// This lets us run the scan in overall linear time instead of
-		// the quadratic time  a naive search would require.
-		// See also ../runtime/iface.go.
-		if V.Kind() == abi.Interface {
-			v := (*interfaceType)(unsafe.Pointer(V))
-			i := 0
-			for j := 0; j < len(v.Methods); j++ {
-				tm := &t.Methods[i]
-				tmName := t.nameOff(tm.Name)
-				vm := &v.Methods[j]
-				vmName := nameOffFor(V, vm.Name)
-				if vmName.Name() == tmName.Name() && typeOffFor(V, vm.Typ) == t.typeOff(tm.Typ) {
-					if !tmName.IsExported() {
-						tmPkgPath := pkgPath(tmName)
-						if tmPkgPath == "" {
-							tmPkgPath = t.PkgPath.Name()
-						}
-						vmPkgPath := pkgPath(vmName)
-						if vmPkgPath == "" {
-							vmPkgPath = v.PkgPath.Name()
-						}
-						if tmPkgPath != vmPkgPath {
-							continue
-						}
-					}
-					if i++; i >= len(t.Methods) {
-						return true
-					}
-				}
-			}
-			return false
-		}
-
-		v := V.Uncommon()
-		if v == nil {
-			return false
-		}
-		i := 0
-		vmethods := v.Methods()
-		for j := 0; j < int(v.Mcount); j++ {
-			tm := &t.Methods[i]
-			tmName := t.nameOff(tm.Name)
-			vm := vmethods[j]
-			vmName := nameOffFor(V, vm.Name)
-			if vmName.Name() == tmName.Name() && typeOffFor(V, vm.Mtyp) == t.typeOff(tm.Typ) {
-				if !tmName.IsExported() {
-					tmPkgPath := pkgPath(tmName)
-					if tmPkgPath == "" {
-						tmPkgPath = t.PkgPath.Name()
-					}
-					vmPkgPath := pkgPath(vmName)
-					if vmPkgPath == "" {
-						vmPkgPath = nameOffFor(V, v.PkgPath).Name()
-					}
-					if tmPkgPath != vmPkgPath {
-						continue
-					}
-				}
-				if i++; i >= len(t.Methods) {
-					return true
-				}
-			}
-		}
-		return false
-	*/
-	panic("todo: reflect.implements")
-}
+//
+//go:linkname implements github.com/goplus/llgo/internal/runtime.Implements
+func implements(T, V *abi.Type) bool
 
 // specialChannelAssignability reports whether a value x of channel type V
 // can be directly assigned (using memmove) to another channel type T.

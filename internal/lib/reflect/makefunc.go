@@ -128,9 +128,8 @@ func makeMethodValue(op string, v Value) Value {
 	rcvr := Value{v.typ(), v.ptr, fl}
 
 	// v.Type returns the actual type of the method value.
-	ftyp := *(*funcType)(unsafe.Pointer(v.Type().(*rtype)))
+	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
 	ptyp := rtypeOf(unsafe.Pointer(uintptr(0)))
-	ftyp.In = append([]*abi.Type{ptyp}, ftyp.In...)
 	typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
 		Name_: "llgo_ctx",
 		Typ:   &ftyp.Type,

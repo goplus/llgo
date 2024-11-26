@@ -572,7 +572,7 @@ func (t *Type) ExportedMethods() []Method {
 func (t *Type) NumMethod() int {
 	if t.Kind() == Interface {
 		tt := (*InterfaceType)(unsafe.Pointer(t))
-		return tt.NumMethod()
+		return len(tt.Methods)
 	}
 	return len(t.ExportedMethods())
 }

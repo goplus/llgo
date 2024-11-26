@@ -1843,7 +1843,6 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 			// Avoid the panic by returning a nil dst (e.g., Reader) explicitly.
 			return Value{dst, nil, flag(Interface)}
 		}
-		/* TODO(xsw):
 		x := valueInterface(v, false)
 		if target == nil {
 			target = unsafe_New(dst)
@@ -1854,13 +1853,10 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 			ifaceE2I(dst, x, target)
 		}
 		return Value{dst, target, flagIndir | flag(Interface)}
-		*/
 	}
 
 	// Failed.
-	// TODO(xsw):
-	// panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(dst))
-	panic("todo: reflect.Value.assignTo")
+	panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(dst))
 }
 
 // memmove copies size bytes to dst from src. No write barriers are used.
@@ -2140,13 +2136,12 @@ func toFFISig(tin, tout []*abi.Type) (*ffi.Signature, error) {
 }
 
 func (v Value) closureFunc() *abi.FuncType {
-	ft := *v.typ_.StructType().Fields[0].Typ.FuncType()
-	ft.In = ft.In[1:]
-	return &ft
+	return v.typ_.StructType().Fields[0].Typ.FuncType()
 }
 
 func (v Value) call(op string, in []Value) (out []Value) {
 	var (
+		ft   *abi.FuncType
 		tin  []*abi.Type
 		tout []*abi.Type
 		args []unsafe.Pointer
@@ -2155,8 +2150,8 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		ioff int
 	)
 	if v.typ_.IsClosure() {
-		ft := v.typ_.StructType().Fields[0].Typ.FuncType()
-		tin = ft.In
+		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
+		tin = append([]*abi.Type{rtypeOf(unsafe.Pointer(nil))}, ft.In...)
 		tout = ft.Out
 		c := (*struct {
 			fn  unsafe.Pointer
@@ -2169,7 +2164,6 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		if v.flag&flagMethod != 0 {
 			var (
 				rcvrtype *abi.Type
-				ft       *abi.FuncType
 			)
 			rcvrtype, ft, fn = methodReceiver(op, v, int(v.flag)>>flagMethodShift)
 			tin = append([]*abi.Type{rcvrtype}, ft.In...)
@@ -2186,11 +2180,69 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			} else {
 				fn = v.ptr
 			}
-			ft := v.typ_.FuncType()
+			ft = v.typ_.FuncType()
 			tin = ft.In
 			tout = ft.Out
 		}
 	}
+
+	isSlice := op == "CallSlice"
+	n := len(ft.In)
+	isVariadic := ft.Variadic()
+	if isSlice {
+		if !isVariadic {
+			panic("reflect: CallSlice of non-variadic function")
+		}
+		if len(in) < n {
+			panic("reflect: CallSlice with too few input arguments")
+		}
+		if len(in) > n {
+			panic("reflect: CallSlice with too many input arguments")
+		}
+	} else {
+		if isVariadic {
+			n--
+		}
+		if len(in) < n {
+			panic("reflect: Call with too few input arguments")
+		}
+		if !isVariadic && len(in) > n {
+			panic("reflect: Call with too many input arguments")
+		}
+	}
+	for _, x := range in {
+		if x.Kind() == Invalid {
+			panic("reflect: " + op + " using zero Value argument")
+		}
+	}
+	for i := 0; i < n; i++ {
+		if xt, targ := in[i].Type(), ft.In[i]; !xt.AssignableTo(toRType(targ)) {
+			panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
+		}
+	}
+	if !isSlice && isVariadic {
+		// prepare slice for remaining values
+		m := len(in) - n
+		slice := MakeSlice(toRType(ft.In[n]), m, m)
+		elem := toRType(ft.In[n].Elem()) // FIXME cast to slice type and Elem()
+		for i := 0; i < m; i++ {
+			x := in[n+i]
+			if xt := x.Type(); !xt.AssignableTo(elem) {
+				panic("reflect: cannot use " + xt.String() + " as type " + elem.String() + " in " + op)
+			}
+			slice.Index(i).Set(x)
+		}
+		origIn := in
+		in = make([]Value, n+1)
+		copy(in[:n], origIn)
+		in[n] = slice
+	}
+
+	nin := len(in)
+	if nin != len(ft.In) {
+		panic("reflect.Value.Call: wrong argument count")
+	}
+
 	sig, err := toFFISig(tin, tout)
 	if err != nil {
 		panic(err)
@@ -2559,3 +2611,27 @@ func chanlen(ch unsafe.Pointer) int
 
 //go:linkname maplen github.com/goplus/llgo/internal/runtime.MapLen
 func maplen(ch unsafe.Pointer) int
+
+// MakeSlice creates a new zero-initialized slice value
+// for the specified slice type, length, and capacity.
+func MakeSlice(typ Type, len, cap int) Value {
+	if typ.Kind() != Slice {
+		panic("reflect.MakeSlice of non-slice type")
+	}
+	if len < 0 {
+		panic("reflect.MakeSlice: negative len")
+	}
+	if cap < 0 {
+		panic("reflect.MakeSlice: negative cap")
+	}
+	if len > cap {
+		panic("reflect.MakeSlice: len > cap")
+	}
+
+	s := unsafeheaderSlice{Data: unsafe_NewArray(&(typ.Elem().(*rtype).t), cap), Len: len, Cap: cap}
+	return Value{&typ.(*rtype).t, unsafe.Pointer(&s), flagIndir | flag(Slice)}
+}
+
+func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer) {
+	panic("todo: reflect.ifaceE2I")
+}

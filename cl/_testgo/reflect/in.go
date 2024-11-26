@@ -6,10 +6,30 @@ import (
 )
 
 func main() {
+	callSlice()
 	callFunc()
 	callClosure()
 	callMethod()
 	callIMethod()
+}
+
+func demo(n1, n2, n3, n4, n5, n6, n7, n8, n9 int, a ...interface{}) (int, int) {
+	var sum int
+	for _, v := range a {
+		sum += v.(int)
+	}
+	return n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9, sum
+}
+
+func callSlice() {
+	v := reflect.ValueOf(demo)
+	n := reflect.ValueOf(1)
+	r := v.Call([]reflect.Value{n, n, n, n, n, n, n, n, n,
+		reflect.ValueOf(1), reflect.ValueOf(2), reflect.ValueOf(3)})
+	println("call.slice", r[0].Int(), r[1].Int())
+	r = v.CallSlice([]reflect.Value{n, n, n, n, n, n, n, n, n,
+		reflect.ValueOf([]interface{}{1, 2, 3})})
+	println("call.slice", r[0].Int(), r[1].Int())
 }
 
 func callFunc() {
