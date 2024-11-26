@@ -17,6 +17,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -24,11 +25,10 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: llgen [flags] <pkg> [pkgPath]")
+	flag.Parse()
+	if len(flag.Args()) != 1 {
+		fmt.Fprintln(os.Stderr, "Usage: llgen [flags] <pkg>")
 		return
 	}
-	llgen.Init()
-	args := os.Args[1:]
-	llgen.SmartDoFile(args[0], args[1:]...)
+	llgen.SmartDoFile(flag.Args()[0])
 }

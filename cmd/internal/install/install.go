@@ -18,6 +18,9 @@
 package install
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/goplus/llgo/cmd/internal/base"
 	"github.com/goplus/llgo/internal/build"
 )
@@ -34,5 +37,9 @@ func init() {
 
 func runCmd(cmd *base.Command, args []string) {
 	conf := build.NewDefaultConf(build.ModeInstall)
-	build.Do(args, conf)
+	_, err := build.Do(args, conf)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }

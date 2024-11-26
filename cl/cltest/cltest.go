@@ -50,7 +50,7 @@ func InitDebug() {
 	llssa.SetDebug(llssa.DbgFlagAll)
 }
 
-func FromDir(t *testing.T, sel, relDir string, byLLGen bool) {
+func FromDir(t *testing.T, sel, relDir string) {
 	dir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -66,7 +66,7 @@ func FromDir(t *testing.T, sel, relDir string, byLLGen bool) {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
-			testFrom(t, dir+"/"+name, sel, byLLGen)
+			testFrom(t, dir+"/"+name, sel)
 		})
 	}
 }
@@ -121,12 +121,11 @@ func isDbgSymEnabled(flagsFile string) bool {
 	return false
 }
 
-func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
+func testFrom(t *testing.T, pkgDir, sel string) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
 	log.Println("Parsing", pkgDir)
-	in := pkgDir + "/in.go"
 	out := pkgDir + "/out.ll"
 	dbg := isDbgSymEnabled(pkgDir + "/flags.txt")
 	if dbg {
@@ -139,12 +138,8 @@ func testFrom(t *testing.T, pkgDir, sel string, byLLGen bool) {
 		t.Fatal("ReadFile failed:", err)
 	}
 	expected := string(b)
-	if byLLGen {
-		if v := llgen.GenFrom(in); v != expected && expected != ";" { // expected == ";" means skipping out.ll
-			t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
-		}
-	} else {
-		TestCompileEx(t, nil, in, expected, dbg)
+	if v := llgen.GenFrom(pkgDir); v != expected && expected != ";" { // expected == ";" means skipping out.ll
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }
 

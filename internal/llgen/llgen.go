@@ -16,41 +16,8 @@
 
 package llgen
 
-import (
-	"os"
-
-	"github.com/goplus/llgo/cl"
-	"github.com/goplus/llgo/internal/build"
-	"github.com/goplus/llgo/internal/mod"
-
-	llssa "github.com/goplus/llgo/ssa"
-)
-
-func Init() {
-	llssa.Initialize(llssa.InitAll)
-	llssa.SetDebug(llssa.DbgFlagAll)
-	cl.SetDebug(cl.DbgFlagAll)
-	cl.EnableDebugSymbols(build.IsDebugEnabled())
-}
-
-func PkgPath(dir string) string {
-	_, pkgPath, err := mod.Load(dir)
-	check(err)
-	return pkgPath
-}
-
-func Do(pkgPath, inFile, outFile string) {
-	ret := genFrom(inFile, pkgPath)
-	err := os.WriteFile(outFile, []byte(ret), 0644)
-	check(err)
-}
-
 func check(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
-
-var (
-	Verbose = true
-)

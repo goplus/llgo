@@ -23,7 +23,6 @@ import (
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/llgen"
-	"github.com/goplus/llgo/ssa"
 	"github.com/goplus/mod"
 )
 
@@ -31,15 +30,12 @@ func main() {
 	dir, _, err := mod.FindGoMod(".")
 	check(err)
 
-	ssa.Initialize(ssa.InitAll | ssa.InitNative)
-	llgen.Verbose = false
-
 	llgenDir(dir + "/cl/_testlibc")
 	llgenDir(dir + "/cl/_testlibgo")
 	llgenDir(dir + "/cl/_testrt")
 	llgenDir(dir + "/cl/_testgo")
-	llgenDir(dir+"/cl/_testpy", "")
-	llgenDir(dir+"/cl/_testdata", "")
+	llgenDir(dir + "/cl/_testpy")
+	llgenDir(dir + "/cl/_testdata")
 }
 
 func isDbgSymEnabled(flagsFile string) bool {
@@ -56,7 +52,7 @@ func isDbgSymEnabled(flagsFile string) bool {
 	return false
 }
 
-func llgenDir(dir string, pkgPath ...string) {
+func llgenDir(dir string) {
 	fis, err := os.ReadDir(dir)
 	check(err)
 	for _, fi := range fis {
@@ -69,8 +65,7 @@ func llgenDir(dir string, pkgPath ...string) {
 		check(os.Chdir(testDir))
 		dbg := isDbgSymEnabled("flags.txt")
 		cl.EnableDebugSymbols(dbg)
-
-		llgen.SmartDoFile("in.go", pkgPath...)
+		llgen.SmartDoFile(testDir)
 	}
 }
 
