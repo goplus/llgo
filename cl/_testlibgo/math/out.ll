@@ -25,7 +25,7 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = call double @math.Sqrt(double 2.000000e+00)
+  %2 = call double @sqrt(double 2.000000e+00)
   call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %2)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   %3 = call double @math.Abs(double -1.200000e+00)
@@ -41,7 +41,7 @@ declare void @math.init()
 
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
-declare double @math.Sqrt(double)
+declare double @sqrt(double)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double)
 

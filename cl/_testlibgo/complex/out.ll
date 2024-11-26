@@ -12,7 +12,7 @@ source_filename = "main"
 
 define void @main.f({ double, double } %0, { double, double } %1) {
 _llgo_0:
-  %2 = call double @"math/cmplx.Abs"({ double, double } %0)
+  %2 = call double @cabs({ double, double } %0)
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 10 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %2)
@@ -54,7 +54,7 @@ _llgo_0:
   ret i32 0
 }
 
-declare double @"math/cmplx.Abs"({ double, double })
+declare double @cabs({ double, double })
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 

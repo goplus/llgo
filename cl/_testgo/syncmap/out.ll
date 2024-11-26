@@ -38,7 +38,7 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 32)
+  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 88)
   %3 = load ptr, ptr @_llgo_int, align 8
   %4 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %3, 0
   %5 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %4, ptr inttoptr (i64 1 to ptr), 1
