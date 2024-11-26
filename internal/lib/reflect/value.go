@@ -1843,7 +1843,6 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 			// Avoid the panic by returning a nil dst (e.g., Reader) explicitly.
 			return Value{dst, nil, flag(Interface)}
 		}
-		/* TODO(xsw):
 		x := valueInterface(v, false)
 		if target == nil {
 			target = unsafe_New(dst)
@@ -1854,13 +1853,10 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 			ifaceE2I(dst, x, target)
 		}
 		return Value{dst, target, flagIndir | flag(Interface)}
-		*/
 	}
 
 	// Failed.
-	// TODO(xsw):
-	// panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(dst))
-	panic("todo: reflect.Value.assignTo")
+	panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(dst))
 }
 
 // memmove copies size bytes to dst from src. No write barriers are used.
@@ -2219,23 +2215,21 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			panic("reflect: " + op + " using zero Value argument")
 		}
 	}
-	// TODO AssignableTo
-	// for i := 0; i < n; i++ {
-	// 	if xt, targ := in[i].Type(), ft.In(i); !xt.AssignableTo(toRType(targ)) {
-	// 		panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
-	// 	}
-	// }
+	for i := 0; i < n; i++ {
+		if xt, targ := in[i].Type(), ft.In[i]; !xt.AssignableTo(toRType(targ)) {
+			panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
+		}
+	}
 	if !isSlice && isVariadic {
 		// prepare slice for remaining values
 		m := len(in) - n
 		slice := MakeSlice(toRType(ft.In[n]), m, m)
-		//		elem := toRType(ft.In[n]).Elem() // FIXME cast to slice type and Elem()
+		elem := toRType(ft.In[n].Elem()) // FIXME cast to slice type and Elem()
 		for i := 0; i < m; i++ {
 			x := in[n+i]
-			// TODO AssignableTo
-			// if xt := x.Type(); !xt.AssignableTo(elem) {
-			// 	panic("reflect: cannot use " + xt.String() + " as type " + elem.String() + " in " + op)
-			// }
+			if xt := x.Type(); !xt.AssignableTo(elem) {
+				panic("reflect: cannot use " + xt.String() + " as type " + elem.String() + " in " + op)
+			}
 			slice.Index(i).Set(x)
 		}
 		origIn := in
@@ -2636,4 +2630,8 @@ func MakeSlice(typ Type, len, cap int) Value {
 
 	s := unsafeheaderSlice{Data: unsafe_NewArray(&(typ.Elem().(*rtype).t), cap), Len: len, Cap: cap}
 	return Value{&typ.(*rtype).t, unsafe.Pointer(&s), flagIndir | flag(Slice)}
+}
+
+func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer) {
+	panic("todo: reflect.ifaceE2I")
 }
