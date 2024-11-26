@@ -2,9 +2,9 @@ name: Docs
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "*" ]
+    branches: [ "**" ]
 
 jobs:
   doc_verify:
@@ -43,7 +43,7 @@ jobs:
         run: |
           set -e
           set -x
-          brew uninstall pkg-config@0.29.2
+          bash .github/workflows/cleanup.sh
           source doc/_readme/scripts/install_macos.sh
 
       - name: Install dependencies on Ubuntu
