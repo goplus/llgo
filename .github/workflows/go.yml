@@ -99,6 +99,12 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      - name: Install
+        run: go install ./...
+
+      - name: Install llcppg
+        run: bash .github/workflows/install_llcppg_depend.sh
+
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -v ./...
@@ -106,9 +112,6 @@ jobs:
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
-
-      - name: Install
-        run: go install ./...
 
       - name: LLGO tests
         if: ${{!startsWith(matrix.os, 'ubuntu')}}
