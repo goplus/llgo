@@ -358,7 +358,7 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 
 ```sh
 brew update
-brew install llvm@18 pkg-config bdw-gc openssl cjson
+brew install llvm@18 bdw-gc openssl cjson
 brew install python@3.12 # optional
 go install -v github.com/goplus/llgo/cmd/llgo@latest
 ```
