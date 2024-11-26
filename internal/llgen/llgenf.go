@@ -32,6 +32,13 @@ func GenFrom(fileOrPkg string) string {
 }
 
 func genFrom(pkgPath string) (build.Package, error) {
+	oldDbg := os.Getenv("LLGO_DEBUG")
+	dbg := isDbgSymEnabled(filepath.Join(pkgPath, "flags.txt"))
+	if dbg {
+		os.Setenv("LLGO_DEBUG", "1")
+	}
+	defer os.Setenv("LLGO_DEBUG", oldDbg)
+
 	conf := &build.Config{
 		Mode:   build.ModeGen,
 		AppExt: build.DefaultAppExt(),
@@ -49,8 +56,22 @@ func DoFile(fileOrPkg, outFile string) {
 	check(err)
 }
 
-func SmartDoFile(pkgPath ...string) {
-	pkg, err := genFrom(pkgPath[0])
+func isDbgSymEnabled(flagsFile string) bool {
+	data, err := os.ReadFile(flagsFile)
+	if err != nil {
+		return false
+	}
+	toks := strings.Split(strings.Join(strings.Split(string(data), "\n"), " "), " ")
+	for _, tok := range toks {
+		if tok == "-dbg" {
+			return true
+		}
+	}
+	return false
+}
+
+func SmartDoFile(pkgPath string) {
+	pkg, err := genFrom(pkgPath)
 	check(err)
 
 	const autgenFile = "llgo_autogen.ll"

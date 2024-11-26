@@ -122,7 +122,6 @@ const (
 
 func Do(args []string, conf *Config) ([]Package, error) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
-	cl.EnableDebugSymbols(IsDebugEnabled())
 	flags = append(flags, "-tags", "llgo")
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -138,6 +137,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 	}
 
+	cl.EnableDebugSymbols(IsDebugEnabled())
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
@@ -187,7 +187,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	})
 
 	buildMode := ssaBuildMode
-	if cl.DebugSymbols() {
+	if IsDebugEnabled() {
 		buildMode |= ssa.GlobalDebug
 	}
 	if !IsOptimizeEnabled() {
@@ -460,7 +460,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		}
 	}
 	args = append(args, exargs...)
-	if cl.DebugSymbols() {
+	if IsDebugEnabled() {
 		args = append(args, "-gdwarf-4")
 	}
 

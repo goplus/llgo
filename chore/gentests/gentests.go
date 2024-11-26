@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/mod"
 )
@@ -38,20 +37,6 @@ func main() {
 	llgenDir(dir + "/cl/_testdata")
 }
 
-func isDbgSymEnabled(flagsFile string) bool {
-	data, err := os.ReadFile(flagsFile)
-	if err != nil {
-		return false
-	}
-	toks := strings.Split(strings.Join(strings.Split(string(data), "\n"), " "), " ")
-	for _, tok := range toks {
-		if tok == "-dbg" {
-			return true
-		}
-	}
-	return false
-}
-
 func llgenDir(dir string) {
 	fis, err := os.ReadDir(dir)
 	check(err)
@@ -63,8 +48,6 @@ func llgenDir(dir string) {
 		testDir := dir + "/" + name
 		fmt.Fprintln(os.Stderr, "llgen", testDir)
 		check(os.Chdir(testDir))
-		dbg := isDbgSymEnabled("flags.txt")
-		cl.EnableDebugSymbols(dbg)
 		llgen.SmartDoFile(testDir)
 	}
 }
