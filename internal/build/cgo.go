@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/goplus/llgo/internal/buildtags"
 	"github.com/goplus/llgo/internal/safesplit"
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 type cgoDecl struct {
@@ -93,12 +95,21 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 	mallocFix := false
 	for _, symbols := range externs {
 		for _, symbolName := range symbols {
-			if m := re.FindStringSubmatch(symbolName); len(m) > 0 {
-				cgoSymbols[symbolName] = m[3]
-				pkgPrefix := m[1]
+			lastPart := symbolName
+			lastDot := strings.LastIndex(symbolName, ".")
+			if lastDot != -1 {
+				lastPart = symbolName[lastDot+1:]
+			}
+			if strings.HasPrefix(lastPart, "__cgo_") {
+				// func ptr var: main.__cgo_func_name
+				cgoSymbols[symbolName] = lastPart
+			} else if m := re.FindStringSubmatch(symbolName); len(m) > 0 {
+				prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
+				name := m[3]   // remaining part
+				cgoSymbols[symbolName] = name
 				// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
 				if !mallocFix && m[2] == "Cfunc" {
-					mallocName := pkgPrefix + "_Cmalloc"
+					mallocName := prefix + "_Cmalloc"
 					cgoSymbols[mallocName] = "_Cmalloc"
 					mallocFix = true
 				}
@@ -113,7 +124,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 		tmpName := tmpFile.Name()
 		defer os.Remove(tmpName)
 		code := cgoHeader + "\n\n" + preamble.src
-		externDecls, err := genExternDeclsByClang(code, cflags, cgoSymbols)
+		externDecls, err := genExternDeclsByClang(pkg, code, cflags, cgoSymbols)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +148,7 @@ type clangASTNode struct {
 	Inner []clangASTNode `json:"inner,omitempty"`
 }
 
-func genExternDeclsByClang(src string, cflags []string, cgoSymbols map[string]string) (string, error) {
+func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbols map[string]string) (string, error) {
 	tmpSrc, err := os.CreateTemp("", "cgo-src-*.c")
 	if err != nil {
 		return "", err
@@ -158,25 +169,37 @@ func genExternDeclsByClang(src string, cflags []string, cgoSymbols map[string]st
 	b := strings.Builder{}
 	var toRemove []string
 	for cgoName, symbolName := range cgoSymbols {
-		if symbolNames[symbolName] {
-			b.WriteString(fmt.Sprintf("void* %s = (void*)%s;\n", cgoName, symbolName))
+		if strings.HasPrefix(symbolName, "__cgo_") {
+			cfuncName := symbolName[len("__cgo_"):]
+			cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignature(nil, nil, nil, false), llssa.InC)
+			cgoVar := pkg.LPkg.VarOf(cgoName)
+			cgoVar.ReplaceAllUsesWith(cfn.Expr)
 			toRemove = append(toRemove, cgoName)
-		} else if macroNames[symbolName] {
+		} else {
+			usePtr := ""
+			if symbolNames[symbolName] {
+				usePtr = "*"
+			} else if !macroNames[symbolName] {
+				continue
+			}
 			/* template:
-			typeof(stdout) _cgo_1574167f3838_Cmacro_stdout;
+			typeof(fputs)* _cgo_1574167f3838_Cfunc_fputs;
 
 			__attribute__((constructor))
-			static void _init__cgo_1574167f3838_Cmacro_stdout() {
-				_cgo_1574167f3838_Cmacro_stdout = stdout;
+			static void _init__cgo_1574167f3838_Cfunc_fputs() {
+				_cgo_1574167f3838_Cfunc_fputs = fputs;
 			}*/
 			b.WriteString(fmt.Sprintf(`
-typeof(%s) %s;
+typeof(%s)%s %s;
 
 __attribute__((constructor))
 static void _init_%s() {
 	%s = %s;
 }
-`, symbolName, cgoName, cgoName, cgoName, symbolName))
+`,
+				symbolName, usePtr, cgoName,
+				cgoName,
+				cgoName, symbolName))
 			toRemove = append(toRemove, cgoName)
 		}
 	}

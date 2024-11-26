@@ -189,7 +189,7 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func isCgoCfuncOrCmacro(f *ssa.Function) bool {
+func isCgoExternSymbol(f *ssa.Function) bool {
 	name := f.Name()
 	return isCgoCfunc(name) || isCgoCmacro(name)
 }
@@ -200,6 +200,10 @@ func isCgoCfunc(name string) bool {
 
 func isCgoCmacro(name string) bool {
 	return strings.HasPrefix(name, "_Cmacro_")
+}
+
+func isCgoVar(name string) bool {
+	return strings.HasPrefix(name, "__cgo_")
 }
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
@@ -255,7 +259,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
-	isCgo := isCgoCfuncOrCmacro(f)
+	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
 		p.cgoArgs = nil
@@ -918,7 +922,17 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return pyFn.Expr
 	case *ssa.Global:
+		varName := v.Name()
 		val := p.varOf(b, v)
+		if isCgoVar(varName) {
+			fname := p.fset.Position(v.Pos()).Filename
+			funcs, ok := p.cgoFuncs[fname]
+			if !ok {
+				funcs = make([]string, 0, 1)
+			}
+			funcs = append(funcs, val.Name())
+			p.cgoFuncs[fname] = funcs
+		}
 		if debugSymbols {
 			pos := p.fset.Position(v.Pos())
 			b.DIGlobal(val, v.Name(), pos)
@@ -1053,6 +1067,26 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		fn()
 	}
 	externs = ctx.cgoFuncs
+	// TODO(lijie): read export name
+	for _, funcs := range externs {
+		for _, funcName := range funcs {
+			if strings.Contains(funcName, ".__cgo_") {
+				goFnName := strings.Replace(funcName, ".__cgo_", ".", 1)
+				idx := strings.LastIndex(funcName, ".__cgo_")
+				cfuncName := funcName[idx+len(".__cgo_"):]
+				v := ret.VarOf(funcName)
+				if fn := ret.FuncOf(goFnName); fn != nil {
+					// TODO(lijie): naive go:export, need better way from comment
+					fn.SetName(cfuncName)
+					// Replace symbol instead of static linking
+					v.ReplaceAllUsesWith(fn.Expr)
+				} else if fn := ret.FuncOf(cfuncName); fn != nil {
+					// Replace symbol instead of static linking
+					v.ReplaceAllUsesWith(fn.Expr)
+				}
+			}
+		}
+	}
 	return
 }
 

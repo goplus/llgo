@@ -448,7 +448,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		if checkCgo(fname) && !cgoIgnored(fname) {
 			return nil, fname, llgoInstr
 		}
-		if isCgoCfuncOrCmacro(fn) {
+		if isCgoExternSymbol(fn) {
 			if _, ok := llgoInstrs[fname]; ok {
 				return nil, fname, llgoInstr
 			}

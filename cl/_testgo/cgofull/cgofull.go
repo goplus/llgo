@@ -77,8 +77,25 @@ static void test_macros() {
 #define MY_VERSION "1.0.0"
 #define MY_CODE 0x12345678
 
-void test_void() {
+static void test_void() {
 	printf("test_void\n");
+}
+
+typedef int (*Cb)(int);
+
+extern int go_callback(int);
+
+extern int c_callback(int i);
+
+static void test_callback(Cb cb) {
+	printf("test_callback, cb: %p, go_callback: %p, c_callback: %p\n", cb, go_callback, c_callback);
+	printf("test_callback, *cb: %p, *go_callback: %p, *c_callback: %p\n", *(void**)cb, *(void**)(go_callback), *(void**)(c_callback));
+	printf("cb result: %d\n", cb(123));
+	printf("done\n");
+}
+
+static void run_callback() {
+	test_callback(c_callback);
 }
 */
 import "C"
@@ -89,6 +106,11 @@ import (
 	"github.com/goplus/llgo/_demo/cgofull/pymod1"
 	"github.com/goplus/llgo/_demo/cgofull/pymod2"
 )
+
+//export go_callback
+func go_callback(i C.int) C.int {
+	return i + 1
+}
 
 func main() {
 	runPy()
@@ -104,6 +126,16 @@ func main() {
 	fmt.Println(C.MY_VERSION)
 	fmt.Println(int(C.MY_CODE))
 	C.test_void()
+
+	println("call run_callback")
+	C.run_callback()
+
+	// test _Cgo_ptr and _cgoCheckResult
+	println("call with go_callback")
+	C.test_callback((C.Cb)(C.go_callback))
+
+	println("call with c_callback")
+	C.test_callback((C.Cb)(C.c_callback))
 }
 
 func runPy() {
@@ -112,4 +144,6 @@ func runPy() {
 	Run("print('Hello, Python!')")
 	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(pymod1.Float(1.23))), C.stderr, 0)
 	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(pymod2.Long(123))), C.stdout, 0)
+	// test _Cgo_use
+	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(C.PyComplex_FromDoubles(C.double(1.23), C.double(4.56)))), C.stdout, 0)
 }
