@@ -1,0 +1,13 @@
+===== temp.go =====
+package _depcjson
+
+import (
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/chore/gogensig/convert/testdata/cjson"
+	_ "unsafe"
+)
+//go:linkname CreateResponse C.create_response
+func CreateResponse(status_code c.Int, message *int8) *cjson.CJSON
+//go:linkname SerializeResponse C.serialize_response
+func SerializeResponse(response *cjson.CJSON, buffer *int8, length c.Int, pretty_print cjson.CJSONBool) cjson.CJSONBool
+

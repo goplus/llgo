@@ -1,0 +1,18 @@
+[
+    {
+      "mangle": "create_response",
+      "c++": "create_response",
+      "go": "CreateResponse"
+    },
+    {
+      "mangle": "parse_client_request",
+      "c++": "parse_client_request",
+      "go": "ParseClientRequest"
+    },
+    {
+      "mangle": "serialize_response",
+      "c++": "serialize_response",
+      "go": "SerializeResponse"
+    }
+  ]
+  

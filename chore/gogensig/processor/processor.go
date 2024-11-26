@@ -29,8 +29,9 @@ func (p *DocVisitorManager) Visit(node ast.Node, path string, incPath string, is
 type DocFileSetProcessor struct {
 	visitedFile map[string]struct{}
 	processing  map[string]struct{}
-	exec        Exec   // execute a single file
-	done        func() // done callback
+	exec        Exec     // execute a single file
+	done        func()   // done callback
+	depIncs     []string // rel path
 }
 
 type Exec func(*unmarshal.FileEntry) error
@@ -38,7 +39,7 @@ type Exec func(*unmarshal.FileEntry) error
 type ProcesserConfig struct {
 	Exec    Exec
 	Done    func()
-	DepIncs []string
+	DepIncs []string // rel path
 }
 
 func defaultExec(file *unmarshal.FileEntry) error {
@@ -54,9 +55,7 @@ func NewDocFileSetProcessor(cfg *ProcesserConfig) *DocFileSetProcessor {
 		visitedFile: make(map[string]struct{}),
 		exec:        defaultExec,
 		done:        cfg.Done,
-	}
-	for _, inc := range cfg.DepIncs {
-		p.visitedFile[inc] = struct{}{}
+		depIncs:     cfg.DepIncs,
 	}
 	if cfg.Exec != nil {
 		p.exec = cfg.Exec
@@ -72,7 +71,7 @@ func (p *DocFileSetProcessor) visitFile(path string, files unmarshal.FileSet) {
 		return
 	}
 	p.processing[path] = struct{}{}
-	idx := FindEntry(files, path)
+	idx := FindEntry(files, path, false)
 	if idx < 0 {
 		return
 	}
@@ -86,6 +85,14 @@ func (p *DocFileSetProcessor) visitFile(path string, files unmarshal.FileSet) {
 }
 
 func (p *DocFileSetProcessor) ProcessFileSet(files unmarshal.FileSet) error {
+	//todo(zzy): may have same incPath
+	for _, inc := range p.depIncs {
+		idx := FindEntry(files, inc, true)
+		if idx < 0 {
+			continue
+		}
+		p.visitedFile[files[idx].Path] = struct{}{}
+	}
 	for _, file := range files {
 		p.visitFile(file.Path, files)
 	}
@@ -111,10 +118,17 @@ func (p *DocFileSetProcessor) ProcessFileSetFromPath(filePath string) error {
 	return p.ProcessFileSetFromByte(data)
 }
 
-func FindEntry(files unmarshal.FileSet, path string) int {
+// FindEntry finds the entry in FileSet. If useIncPath is true, it searches by IncPath, otherwise by Path
+func FindEntry(files unmarshal.FileSet, path string, isInc bool) int {
 	for i, e := range files {
-		if e.Path == path {
-			return i
+		if isInc {
+			if e.IncPath == path {
+				return i
+			}
+		} else {
+			if e.Path == path {
+				return i
+			}
 		}
 	}
 	return -1

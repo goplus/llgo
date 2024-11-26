@@ -14,6 +14,7 @@ import (
 	"github.com/goplus/llgo/chore/gogensig/convert/basic"
 	"github.com/goplus/llgo/chore/gogensig/unmarshal"
 	"github.com/goplus/llgo/chore/llcppg/ast"
+	"github.com/goplus/llgo/xtool/env"
 )
 
 func init() {
@@ -71,6 +72,15 @@ func TestSysToPkg(t *testing.T) {
 	})
 }
 
+func TestDepPkg(t *testing.T) {
+	name := "_depcjson"
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	testFrom(t, name, path.Join(dir, "_testdata", name), false, nil)
+}
+
 func testFromDir(t *testing.T, relDir string, gen bool) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -112,7 +122,12 @@ func testFrom(t *testing.T, name, dir string, gen bool, validateFunc func(t *tes
 		t.Fatal(err)
 	}
 
-	cfg.CFlags = "-I" + filepath.Join(dir, "hfile")
+	if cfg.CFlags != "" {
+		cfg.CFlags = env.ExpandEnv(cfg.CFlags)
+	}
+
+	cfg.CFlags += " -I" + filepath.Join(dir, "hfile")
+
 	flagedCfgPath, err := config.CreateJSONFile("llcppg.cfg", cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -344,3 +359,5 @@ type NormalType c.Int
 		t.Errorf("does not match expected.\nExpected:\n%s\nGot:\n%s", expectedOutput, buf.String())
 	}
 }
+
+// = env.ExpandEnv(conf.CFlags)
