@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/args"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/config/cfgparse"
 )
 
 func main() {
@@ -151,7 +151,7 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose boo
 	}
 
 	//todo(zzy): reuse the llcppsymg's cflags parse
-	cflag := ParseCFlags(conf.CFlags)
+	cflag := cfgparse.ParseCFlags(conf.CFlags)
 	files, notFounds, err := cflag.GenHeaderFilePaths(conf.Include)
 	check(err)
 
@@ -162,9 +162,15 @@ func runFromConfig(cfgFile string, useStdin bool, outputToFile bool, verbose boo
 		}
 	}
 
+	// Generate include directory flags (-I flags)
+	incFlags := make([]string, 0, len(cflag.Paths))
+	for _, path := range cflag.Paths {
+		incFlags = append(incFlags, "-I"+path)
+	}
+
 	context := parse.NewContext(&parse.ContextConfig{
-		IsCpp:   conf.Cplusplus,
-		Include: conf.Include,
+		Conf:     conf.Config,
+		IncFlags: incFlags,
 	})
 	err = context.ProcessFiles(files)
 	check(err)
@@ -209,48 +215,6 @@ func outputResult(result *c.Char, outputToFile bool) {
 	} else {
 		c.Printf(c.Str("%s"), result)
 	}
-}
-
-// todo(zzy): reuse the llcppsymg's cflags parse https://github.com/goplus/llgo/pull/788
-type CFlags struct {
-	Paths []string // Include Path
-}
-
-func ParseCFlags(cflags string) *CFlags {
-	parts := strings.Fields(cflags)
-	cf := &CFlags{}
-	for _, part := range parts {
-		if strings.HasPrefix(part, "-I") {
-			cf.Paths = append(cf.Paths, part[2:])
-		}
-	}
-	return cf
-}
-
-func (cf *CFlags) GenHeaderFilePaths(files []string) ([]string, []string, error) {
-	var foundPaths []string
-	var notFound []string
-
-	for _, file := range files {
-		var found bool
-		for _, path := range cf.Paths {
-			fullPath := filepath.Join(path, file)
-			if _, err := os.Stat(fullPath); err == nil {
-				foundPaths = append(foundPaths, fullPath)
-				found = true
-				break
-			}
-		}
-		if !found {
-			notFound = append(notFound, file)
-		}
-	}
-
-	if len(foundPaths) == 0 {
-		return nil, notFound, fmt.Errorf("failed to find any header files")
-	}
-
-	return foundPaths, notFound, nil
 }
 
 func outputInfo(context *parse.Context, outputToFile bool) {

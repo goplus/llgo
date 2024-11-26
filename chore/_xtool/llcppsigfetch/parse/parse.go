@@ -8,6 +8,7 @@ import (
 
 	"github.com/goplus/llgo/c/cjson"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
+	"github.com/goplus/llgo/chore/llcppg/types"
 )
 
 type dbgFlags = int
@@ -26,21 +27,22 @@ func SetDebug(dbgFlags dbgFlags) {
 }
 
 type Context struct {
-	Files   []*FileEntry
-	IsCpp   bool
-	Include []string
+	Files []*FileEntry
+	*ContextConfig
 }
 
 type ContextConfig struct {
-	Include []string
-	IsCpp   bool
+	Conf     *types.Config
+	IncFlags []string
 }
 
 func NewContext(cfg *ContextConfig) *Context {
 	return &Context{
-		Files:   make([]*FileEntry, 0),
-		IsCpp:   cfg.IsCpp,
-		Include: cfg.Include,
+		Files: make([]*FileEntry, 0),
+		ContextConfig: &ContextConfig{
+			Conf:     cfg.Conf,
+			IncFlags: cfg.IncFlags,
+		},
 	}
 }
 
@@ -51,7 +53,7 @@ func (p *Context) Output() *cjson.JSON {
 // ProcessFiles processes the given files and adds them to the context
 func (p *Context) ProcessFiles(files []string) error {
 	if debugParse {
-		fmt.Fprintln(os.Stderr, "ProcessFiles: files", files, "isCpp", p.IsCpp)
+		fmt.Fprintln(os.Stderr, "ProcessFiles: files", files, "isCpp", p.Conf.Cplusplus)
 	}
 	for _, file := range files {
 		if err := p.processFile(file); err != nil {
@@ -90,7 +92,8 @@ func (p *Context) parseFile(path string) ([]*FileEntry, error) {
 	converter, err := NewConverter(&clangutils.Config{
 		File:  path,
 		Temp:  false,
-		IsCpp: p.IsCpp,
+		IsCpp: p.Conf.Cplusplus,
+		Args:  p.IncFlags,
 	})
 	if err != nil {
 		return nil, errors.New("failed to create converter " + path)
@@ -105,7 +108,7 @@ func (p *Context) parseFile(path string) ([]*FileEntry, error) {
 		return nil, errors.New("entry file " + entryFile.Path + " has include path " + entryFile.IncPath)
 	}
 
-	for _, include := range p.Include {
+	for _, include := range p.Conf.Include {
 		if strings.Contains(entryFile.Path, include) {
 			entryFile.IncPath = include
 			break
