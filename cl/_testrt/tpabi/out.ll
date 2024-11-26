@@ -15,7 +15,7 @@ source_filename = "main"
 @__llgo_argv = global ptr null, align 8
 @0 = private unnamed_addr constant [1 x i8] c"a", align 1
 @"_llgo_main.T[string,int]" = linkonce global ptr null, align 8
-@1 = private unnamed_addr constant [19 x i8] c"main.T[string, int]", align 1
+@1 = private unnamed_addr constant [18 x i8] c"main.T[string,int]", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @_llgo_int = linkonce global ptr null, align 8
 @"main.struct$A2OTYqQyUOqOQ-i_F5iXeAKWtxeWGEuyeN7HCfULCDk" = linkonce global ptr null, align 8
@@ -164,7 +164,7 @@ declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 19 }, i64 25, i64 24, i64 1, i64 2)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 18 }, i64 25, i64 24, i64 1, i64 2)
   %1 = load ptr, ptr @"_llgo_main.T[string,int]", align 8
   %2 = icmp eq ptr %1, null
   br i1 %2, label %_llgo_1, label %_llgo_2
@@ -219,7 +219,7 @@ _llgo_7:                                          ; preds = %_llgo_6
   br i1 %24, label %_llgo_9, label %_llgo_10
 
 _llgo_8:                                          ; preds = %_llgo_10, %_llgo_6
-  %25 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 19 }, i64 25, i64 24, i64 1, i64 2)
+  %25 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 18 }, i64 25, i64 24, i64 1, i64 2)
   %26 = load ptr, ptr @"*_llgo_main.T[string,int]", align 8
   %27 = icmp eq ptr %26, null
   br i1 %27, label %_llgo_11, label %_llgo_12
