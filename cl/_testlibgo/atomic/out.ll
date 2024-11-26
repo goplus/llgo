@@ -32,8 +32,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
   %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  call void @"sync/atomic.StoreInt64"(ptr %2, i64 100)
-  %3 = call i64 @"sync/atomic.LoadInt64"(ptr %2)
+  store atomic i64 100, ptr %2 seq_cst, align 4
+  %3 = load atomic i64, ptr %2 seq_cst, align 4
   call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 6 })
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
@@ -86,10 +86,6 @@ declare void @"sync/atomic.init"()
 declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
-
-declare void @"sync/atomic.StoreInt64"(ptr, i64)
-
-declare i64 @"sync/atomic.LoadInt64"(ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
 

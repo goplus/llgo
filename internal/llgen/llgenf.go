@@ -17,107 +17,37 @@
 package llgen
 
 import (
-	"go/ast"
-	"go/types"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/build"
-	"github.com/goplus/llgo/internal/packages"
-	"golang.org/x/tools/go/ssa"
-	"golang.org/x/tools/go/ssa/ssautil"
-
-	llssa "github.com/goplus/llgo/ssa"
 )
-
-const (
-	loadFiles   = packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles
-	loadImports = loadFiles | packages.NeedImports
-	loadTypes   = loadImports | packages.NeedTypes | packages.NeedTypesSizes
-	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
-)
-
-func initRtAndPy(prog llssa.Program, cfg *packages.Config) {
-	var pkgRtAndPy []*packages.Package
-	load := func() []*packages.Package {
-		if pkgRtAndPy == nil {
-			var err error
-			pkgRtAndPy, err = packages.LoadEx(nil, prog.TypeSizes, cfg, llssa.PkgRuntime, llssa.PkgPython)
-			check(err)
-		}
-		return pkgRtAndPy
-	}
-
-	prog.SetRuntime(func() *types.Package {
-		rt := load()
-		return rt[0].Types
-	})
-	prog.SetPython(func() *types.Package {
-		rt := load()
-		return rt[1].Types
-	})
-}
 
 func GenFrom(fileOrPkg string) string {
-	return genFrom(fileOrPkg, "")
+	pkg, err := genFrom(fileOrPkg)
+	check(err)
+	return pkg.LPkg.String()
 }
 
-func genFrom(fileOrPkg string, pkgPath string) string {
-	prog := llssa.NewProgram(nil)
-
-	cfg := &packages.Config{
-		Mode:       loadSyntax | packages.NeedDeps,
-		BuildFlags: []string{"-tags", "llgo"},
+func genFrom(pkgPath string) (build.Package, error) {
+	oldDbg := os.Getenv("LLGO_DEBUG")
+	dbg := isDbgSymEnabled(filepath.Join(pkgPath, "flags.txt"))
+	if dbg {
+		os.Setenv("LLGO_DEBUG", "1")
 	}
+	defer os.Setenv("LLGO_DEBUG", oldDbg)
 
-	dedup := packages.NewDeduper()
-	dedup.SetPkgPath(func(path, name string) string {
-		if path == "command-line-arguments" {
-			if pkgPath != "" {
-				path = pkgPath
-			} else {
-				path = name
-			}
-		}
-		return path
-	})
-	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
-		cl.ParsePkgSyntax(prog, pkg, files)
-	})
-
-	initial, err := packages.LoadEx(dedup, prog.TypeSizes, cfg, fileOrPkg)
-	check(err)
-
-	buildMode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
-	if build.IsDebugEnabled() {
-		buildMode |= ssa.GlobalDebug
+	conf := &build.Config{
+		Mode:   build.ModeGen,
+		AppExt: build.DefaultAppExt(),
 	}
-	if !build.IsOptimizeEnabled() {
-		buildMode |= ssa.NaiveForm
+	pkgs, err := build.Do([]string{pkgPath}, conf)
+	if err != nil {
+		return nil, err
 	}
-	_, pkgs := ssautil.AllPackages(initial, buildMode)
-
-	pkg := initial[0]
-	ssaPkg := pkgs[0]
-	ssaPkg.Build()
-
-	initRtAndPy(prog, cfg)
-
-	if Verbose {
-		ssaPkg.WriteTo(os.Stderr)
-	}
-
-	ret, err := cl.NewPackage(prog, ssaPkg, pkg.Syntax)
-	check(err)
-
-	if prog.NeedPyInit { // call PyInit if needed
-		ret.PyInit()
-	}
-
-	return ret.String()
+	return pkgs[0], nil
 }
 
 func DoFile(fileOrPkg, outFile string) {
@@ -126,9 +56,26 @@ func DoFile(fileOrPkg, outFile string) {
 	check(err)
 }
 
-func SmartDoFile(inFile string, pkgPath ...string) {
+func isDbgSymEnabled(flagsFile string) bool {
+	data, err := os.ReadFile(flagsFile)
+	if err != nil {
+		return false
+	}
+	toks := strings.Split(strings.Join(strings.Split(string(data), "\n"), " "), " ")
+	for _, tok := range toks {
+		if tok == "-dbg" {
+			return true
+		}
+	}
+	return false
+}
+
+func SmartDoFile(pkgPath string) {
+	pkg, err := genFrom(pkgPath)
+	check(err)
+
 	const autgenFile = "llgo_autogen.ll"
-	dir, _ := filepath.Split(inFile)
+	dir, _ := filepath.Split(pkg.GoFiles[0])
 	absDir, _ := filepath.Abs(dir)
 	absDir = filepath.ToSlash(absDir)
 	fname := autgenFile
@@ -142,10 +89,8 @@ func SmartDoFile(inFile string, pkgPath ...string) {
 		return // skip to gen
 	}
 
-	if len(pkgPath) > 0 {
-		Do(pkgPath[0], inFile, outFile)
-	} else {
-		DoFile(inFile, outFile)
+	if err = os.WriteFile(outFile, []byte(pkg.LPkg.String()), 0644); err != nil {
+		panic(err)
 	}
 	if false && fname == autgenFile {
 		genZip(absDir, "llgo_autogen.lla", autgenFile)

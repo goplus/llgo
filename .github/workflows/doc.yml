@@ -16,10 +16,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
+
       - name: Install embedme
         run: npm install -g embedme
-        
+
       - name: Verify README.md embedded code
         run: npx embedme --verify README.md
 
@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
-        
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -43,7 +43,6 @@ jobs:
         run: |
           set -e
           set -x
-          bash .github/workflows/cleanup.sh
           source doc/_readme/scripts/install_macos.sh
 
       - name: Install dependencies on Ubuntu

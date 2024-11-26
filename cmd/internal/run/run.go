@@ -19,6 +19,8 @@ package run
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/goplus/llgo/cmd/internal/base"
@@ -63,7 +65,11 @@ func runCmdEx(_ *base.Command, args []string, mode build.Mode) {
 	args, runArgs, err := parseRunArgs(args)
 	check(err)
 	conf.RunArgs = runArgs
-	build.Do(args, conf)
+	_, err = build.Do(args, conf)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
 func parseRunArgs(args []string) ([]string, []string, error) {

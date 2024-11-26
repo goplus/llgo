@@ -53,6 +53,7 @@ const (
 	ModeInstall
 	ModeRun
 	ModeCmpTest
+	ModeGen
 )
 
 const (
@@ -119,9 +120,8 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
-func Do(args []string, conf *Config) {
+func Do(args []string, conf *Config) ([]Package, error) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
-	cl.EnableDebugSymbols(IsDebugEnabled())
 	flags = append(flags, "-tags", "llgo")
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -137,6 +137,7 @@ func Do(args []string, conf *Config) {
 		}
 	}
 
+	cl.EnableDebugSymbols(IsDebugEnabled())
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
@@ -159,7 +160,6 @@ func Do(args []string, conf *Config) {
 	}
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	check(err)
-
 	mode := conf.Mode
 	if len(initial) == 1 && len(initial[0].CompiledGoFiles) > 0 {
 		if mode == ModeBuild {
@@ -167,11 +167,10 @@ func Do(args []string, conf *Config) {
 		}
 	} else if mode == ModeRun {
 		if len(initial) > 1 {
-			fmt.Fprintln(os.Stderr, "cannot run multiple packages")
+			return nil, fmt.Errorf("cannot run multiple packages")
 		} else {
-			fmt.Fprintln(os.Stderr, "no Go files in matched packages")
+			return nil, fmt.Errorf("no Go files in matched packages")
 		}
-		return
 	}
 
 	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
@@ -188,7 +187,7 @@ func Do(args []string, conf *Config) {
 	})
 
 	buildMode := ssaBuildMode
-	if cl.DebugSymbols() {
+	if IsDebugEnabled() {
 		buildMode |= ssa.GlobalDebug
 	}
 	if !IsOptimizeEnabled() {
@@ -203,12 +202,21 @@ func Do(args []string, conf *Config) {
 
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0}
 	pkgs := buildAllPkgs(ctx, initial, verbose)
+	if mode == ModeGen {
+		for _, pkg := range pkgs {
+			if pkg.Package == initial[0] {
+				return []*aPackage{pkg}, nil
+			}
+		}
+		return nil, fmt.Errorf("initial package not found")
+	}
 
 	dpkg := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
 	var linkArgs []string
 	for _, pkg := range dpkg {
 		linkArgs = append(linkArgs, pkg.LinkArgs...)
 	}
+
 	if mode != ModeBuild {
 		nErr := 0
 		for _, pkg := range initial {
@@ -220,6 +228,7 @@ func Do(args []string, conf *Config) {
 			os.Exit(nErr)
 		}
 	}
+	return dpkg, nil
 }
 
 func setNeedRuntimeOrPyInit(pkg *packages.Package, needRuntime, needPyInit bool) {
@@ -451,7 +460,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		}
 	}
 	args = append(args, exargs...)
-	if cl.DebugSymbols() {
+	if IsDebugEnabled() {
 		args = append(args, "-gdwarf-4")
 	}
 
@@ -570,6 +579,8 @@ type aPackage struct {
 
 	LinkArgs []string
 }
+
+type Package = *aPackage
 
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA

@@ -30,34 +30,37 @@ func testCompile(t *testing.T, src, expected string) {
 }
 
 func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testgo", false)
+	cltest.FromDir(t, "", "./_testgo")
 }
 
 func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "", "./_testpy", false)
+	cltest.FromDir(t, "", "./_testpy")
 }
 
 func TestFromTestlibgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibgo", true)
+	cltest.FromDir(t, "", "./_testlibgo")
 }
 
 func TestFromTestlibc(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibc", true)
+	cltest.FromDir(t, "", "./_testlibc")
 }
 
 func TestFromTestrt(t *testing.T) {
 	cl.SetDebug(cl.DbgFlagAll)
-	cltest.FromDir(t, "", "./_testrt", true)
+	cltest.FromDir(t, "", "./_testrt")
 	cl.SetDebug(0)
 }
 
 func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata", false)
+	cltest.FromDir(t, "", "./_testdata")
 }
 
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
-	build.Do([]string{"math"}, conf)
+	_, err := build.Do([]string{"math"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestVar(t *testing.T) {

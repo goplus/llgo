@@ -19,7 +19,7 @@ package llvm
 // -----------------------------------------------------------------------------
 
 const (
-	LLGoPackage = "link: -L$(llvm-config --libdir) -lLLVM; -lLLVM"
+	LLGoPackage = "link: -L$(llvm-config --libs) $(llvm-config --ldflags); -lLLVM"
 )
 
 // StringView represents a C++ std::string_view object.

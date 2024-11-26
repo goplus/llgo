@@ -1,5 +1,6 @@
 # shellcheck disable=all
 brew update
-brew install llvm@18 pkg-config bdw-gc openssl cjson
+brew install llvm@18 bdw-gc openssl cjson libffi
 brew install python@3.12 # optional
+brew link --force libffi
 go install -v github.com/goplus/llgo/cmd/llgo@latest

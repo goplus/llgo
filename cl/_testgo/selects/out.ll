@@ -1,7 +1,6 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/c/pthread.RoutineFunc" = type { ptr, ptr }
 %"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/internal/runtime.ChanOp" = type { ptr, ptr, i32, i1 }
 %"github.com/goplus/llgo/internal/runtime.Slice" = type { ptr, i64, i64 }
@@ -61,7 +60,7 @@ _llgo_0:
   %15 = getelementptr inbounds { { ptr, ptr } }, ptr %14, i32 0, i32 0
   store { ptr, ptr } %13, ptr %15, align 8
   %16 = alloca i8, i64 8, align 1
-  %17 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %16, ptr null, %"github.com/goplus/llgo/c/pthread.RoutineFunc" { ptr @"__llgo_stub.main._llgo_routine$1", ptr null }, ptr %14)
+  %17 = call i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr %16, ptr null, ptr @"main._llgo_routine$1", ptr %14)
   %18 = load ptr, ptr %2, align 8
   %19 = alloca {}, align 8
   call void @llvm.memset(ptr %19, i8 0, i64 0, i1 false)
@@ -230,13 +229,7 @@ _llgo_0:
 
 declare void @free(ptr)
 
-declare i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr, ptr, %"github.com/goplus/llgo/c/pthread.RoutineFunc", ptr)
-
-define linkonce ptr @"__llgo_stub.main._llgo_routine$1"(ptr %0, ptr %1) {
-_llgo_0:
-  %2 = tail call ptr @"main._llgo_routine$1"(ptr %1)
-  ret ptr %2
-}
+declare i32 @"github.com/goplus/llgo/internal/runtime.CreateThread"(ptr, ptr, ptr, ptr)
 
 declare i1 @"github.com/goplus/llgo/internal/runtime.ChanSend"(ptr, ptr, i64)
 
