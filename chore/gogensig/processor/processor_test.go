@@ -149,11 +149,12 @@ func TestDefaultExec(t *testing.T) {
 }
 
 func TestExecOrder(t *testing.T) {
-	depIncs := []string{"/path/to/int16_t.h"}
+	depIncs := []string{"int16_t.h"}
 	fileSet := unmarshal.FileSet{
 		{
-			Path:  "/path/to/foo.h",
-			IsSys: false,
+			Path:    "/path/to/foo.h",
+			IncPath: "foo.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
 					{Path: "/path/to/cdef.h"},
@@ -162,8 +163,9 @@ func TestExecOrder(t *testing.T) {
 			},
 		},
 		{
-			Path:  "/path/to/cdef.h",
-			IsSys: false,
+			Path:    "/path/to/cdef.h",
+			IncPath: "cdef.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
 					{Path: "/path/to/int8_t.h"},
@@ -172,8 +174,9 @@ func TestExecOrder(t *testing.T) {
 			},
 		},
 		{
-			Path:  "/path/to/stdint.h",
-			IsSys: false,
+			Path:    "/path/to/stdint.h",
+			IncPath: "stdint.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
 					{Path: "/path/to/int8_t.h"},
@@ -182,22 +185,25 @@ func TestExecOrder(t *testing.T) {
 			},
 		},
 		{
-			Path:  "/path/to/int8_t.h",
-			IsSys: false,
+			Path:    "/path/to/int8_t.h",
+			IncPath: "int8_t.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{},
 			},
 		},
 		{
-			Path:  "/path/to/int16_t.h",
-			IsSys: false,
+			Path:    "/path/to/int16_t.h",
+			IncPath: "int16_t.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{},
 			},
 		},
 		{
-			Path:  "/path/to/bar.h",
-			IsSys: false,
+			Path:    "/path/to/bar.h",
+			IncPath: "bar.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
 					{Path: "/path/to/stdint.h"},
@@ -207,8 +213,9 @@ func TestExecOrder(t *testing.T) {
 		},
 		// circular dependency
 		{
-			Path:  "/path/to/a.h",
-			IsSys: false,
+			Path:    "/path/to/a.h",
+			IncPath: "a.h",
+			IsSys:   false,
 			Doc: &ast.File{
 				Includes: []*ast.Include{
 					{Path: "/path/to/bar.h"},
