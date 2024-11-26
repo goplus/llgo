@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew uninstall pkg-config@0.29.2
+          bash .github/workflows/cleanup.sh
           brew update
           brew install llvm@${{matrix.llvm}} pkg-config bdw-gc openssl libffi
           echo "$(brew --prefix llvm@${{matrix.llvm}})/bin" >> $GITHUB_PATH
