@@ -53,7 +53,7 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
-func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoLdflags []string, err error) {
+func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, verbose bool) (cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
 		return
@@ -93,26 +93,24 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 	re := regexp.MustCompile(`^(_cgo_[^_]+_(Cfunc|Cmacro)_)(.*)$`)
 	cgoSymbols := make(map[string]string)
 	mallocFix := false
-	for _, symbols := range externs {
-		for _, symbolName := range symbols {
-			lastPart := symbolName
-			lastDot := strings.LastIndex(symbolName, ".")
-			if lastDot != -1 {
-				lastPart = symbolName[lastDot+1:]
-			}
-			if strings.HasPrefix(lastPart, "__cgo_") {
-				// func ptr var: main.__cgo_func_name
-				cgoSymbols[symbolName] = lastPart
-			} else if m := re.FindStringSubmatch(symbolName); len(m) > 0 {
-				prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
-				name := m[3]   // remaining part
-				cgoSymbols[symbolName] = name
-				// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
-				if !mallocFix && m[2] == "Cfunc" {
-					mallocName := prefix + "_Cmalloc"
-					cgoSymbols[mallocName] = "_Cmalloc"
-					mallocFix = true
-				}
+	for _, symbolName := range externs {
+		lastPart := symbolName
+		lastDot := strings.LastIndex(symbolName, ".")
+		if lastDot != -1 {
+			lastPart = symbolName[lastDot+1:]
+		}
+		if strings.HasPrefix(lastPart, "__cgo_") {
+			// func ptr var: main.__cgo_func_name
+			cgoSymbols[symbolName] = lastPart
+		} else if m := re.FindStringSubmatch(symbolName); len(m) > 0 {
+			prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
+			name := m[3]   // remaining part
+			cgoSymbols[symbolName] = name
+			// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
+			if !mallocFix && m[2] == "Cfunc" {
+				mallocName := prefix + "_Cmalloc"
+				cgoSymbols[mallocName] = "_Cmalloc"
+				mallocFix = true
 			}
 		}
 	}
@@ -170,10 +168,16 @@ func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbol
 	var toRemove []string
 	for cgoName, symbolName := range cgoSymbols {
 		if strings.HasPrefix(symbolName, "__cgo_") {
-			cfuncName := symbolName[len("__cgo_"):]
-			cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignature(nil, nil, nil, false), llssa.InC)
+			gofuncName := strings.Replace(cgoName, ".__cgo_", ".", 1)
+			gofn := pkg.LPkg.FuncOf(gofuncName)
 			cgoVar := pkg.LPkg.VarOf(cgoName)
-			cgoVar.ReplaceAllUsesWith(cfn.Expr)
+			if gofn != nil {
+				cgoVar.ReplaceAllUsesWith(gofn.Expr)
+			} else {
+				cfuncName := symbolName[len("__cgo_"):]
+				cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InC)
+				cgoVar.ReplaceAllUsesWith(cfn.Expr)
+			}
 			toRemove = append(toRemove, cgoName)
 		} else {
 			usePtr := ""

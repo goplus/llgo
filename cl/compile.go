@@ -110,10 +110,11 @@ type context struct {
 	inCFunc bool
 	skipall bool
 
-	cgoCalled bool
-	cgoArgs   []llssa.Expr
-	cgoRet    llssa.Expr
-	cgoFuncs  map[string][]string
+	cgoCalled  bool
+	cgoArgs    []llssa.Expr
+	cgoRet     llssa.Expr
+	cgoSymbols []string
+	cgoExports map[string]string
 }
 
 type pkgState byte
@@ -415,14 +416,6 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
-	fname := p.goProg.Fset.Position(block.Parent().Pos()).Filename
-	if p.cgoFuncs == nil {
-		p.cgoFuncs = make(map[string][]string)
-	}
-	var cgoFuncs []string
-	if funcs, ok := p.cgoFuncs[fname]; ok {
-		cgoFuncs = funcs
-	}
 	fnName := block.Parent().Name()
 	cgoReturned := false
 	isCgoCfunc := isCgoCfunc(fnName)
@@ -442,8 +435,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 				// load cgo function pointer
 				varName := instr.X.Name()
 				if instr.Op == token.MUL && strings.HasPrefix(varName, "_cgo_") {
-					cgoFuncs = append(cgoFuncs, varName)
-					p.cgoFuncs[fname] = cgoFuncs
+					p.cgoSymbols = append(p.cgoSymbols, varName)
 					p.compileInstr(b, instr)
 				}
 			case *ssa.Call:
@@ -925,13 +917,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		varName := v.Name()
 		val := p.varOf(b, v)
 		if isCgoVar(varName) {
-			fname := p.fset.Position(v.Pos()).Filename
-			funcs, ok := p.cgoFuncs[fname]
-			if !ok {
-				funcs = make([]string, 0, 1)
-			}
-			funcs = append(funcs, val.Name())
-			p.cgoFuncs[fname] = funcs
+			p.cgoSymbols = append(p.cgoSymbols, val.Name())
 		}
 		if debugSymbols {
 			pos := p.fset.Position(v.Pos())
@@ -1001,7 +987,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs map[string][]string, err error) {
+func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -1033,6 +1019,8 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
+		cgoExports: make(map[string]string),
+		cgoSymbols: make([]string, 0, 128),
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
@@ -1066,25 +1054,11 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		ctx.initAfter = nil
 		fn()
 	}
-	externs = ctx.cgoFuncs
-	// TODO(lijie): read export name
-	for _, funcs := range externs {
-		for _, funcName := range funcs {
-			if strings.Contains(funcName, ".__cgo_") {
-				goFnName := strings.Replace(funcName, ".__cgo_", ".", 1)
-				idx := strings.LastIndex(funcName, ".__cgo_")
-				cfuncName := funcName[idx+len(".__cgo_"):]
-				v := ret.VarOf(funcName)
-				if fn := ret.FuncOf(goFnName); fn != nil {
-					// TODO(lijie): naive go:export, need better way from comment
-					fn.SetName(cfuncName)
-					// Replace symbol instead of static linking
-					v.ReplaceAllUsesWith(fn.Expr)
-				} else if fn := ret.FuncOf(cfuncName); fn != nil {
-					// Replace symbol instead of static linking
-					v.ReplaceAllUsesWith(fn.Expr)
-				}
-			}
+	externs = ctx.cgoSymbols
+	for fnName, exportName := range ctx.cgoExports {
+		fn := ret.FuncOf(fnName)
+		if fn != nil {
+			fn.SetName(exportName)
 		}
 	}
 	return

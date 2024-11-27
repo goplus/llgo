@@ -246,9 +246,10 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 
 func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	const (
-		linkname  = "//go:linkname "
-		llgolink  = "//llgo:link "
-		llgolink2 = "// llgo:link "
+		linkname   = "//go:linkname "
+		llgolink   = "//llgo:link "
+		llgolink2  = "// llgo:link "
+		exportName = "//export "
 	)
 	if strings.HasPrefix(line, linkname) {
 		p.initLink(line, len(linkname), f)
@@ -256,6 +257,15 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 		p.initLink(line, len(llgolink2), f)
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
+	} else if strings.HasPrefix(line, exportName) {
+		p.initCgoExport(line, len(exportName), f)
+	}
+}
+
+func (p *context) initCgoExport(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+	name := strings.TrimSpace(line[prefix:])
+	if fullName, _, ok := f(name); ok {
+		p.cgoExports[fullName] = name
 	}
 }
 

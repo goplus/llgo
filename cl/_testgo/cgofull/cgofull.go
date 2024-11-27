@@ -94,8 +94,11 @@ static void test_callback(Cb cb) {
 	printf("done\n");
 }
 
+extern int go_callback_not_use_in_go(int);
+
 static void run_callback() {
 	test_callback(c_callback);
+	test_callback(go_callback_not_use_in_go);
 }
 */
 import "C"
@@ -106,6 +109,11 @@ import (
 	"github.com/goplus/llgo/cl/_testgo/cgofull/pymod1"
 	"github.com/goplus/llgo/cl/_testgo/cgofull/pymod2"
 )
+
+//export go_callback_not_use_in_go
+func go_callback_not_use_in_go(i C.int) C.int {
+	return i + 1
+}
 
 //export go_callback
 func go_callback(i C.int) C.int {
