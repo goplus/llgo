@@ -11,6 +11,8 @@ func main() {
 	callClosure()
 	callMethod()
 	callIMethod()
+	mapDemo1()
+	mapDemo2()
 }
 
 func demo(n1, n2, n3, n4, n5, n6, n7, n8, n9 int, a ...interface{}) (int, int) {
@@ -118,4 +120,64 @@ func callIMethod() {
 	v2 := reflect.ValueOf(fn.Interface())
 	r2 := v2.Call([]reflect.Value{reflect.ValueOf(100)})
 	println(r2[0].Int())
+}
+
+func mapDemo1() {
+	m := map[int]string{
+		1: "hello",
+		2: "world",
+	}
+	v := reflect.ValueOf(m)
+	if v.Len() != 2 || len(v.MapKeys()) != 2 {
+		panic("error")
+	}
+	if v.MapIndex(reflect.ValueOf(2)).String() != "world" {
+		panic("MapIndex error")
+	}
+	v.SetMapIndex(reflect.ValueOf(2), reflect.ValueOf("todo"))
+	if v.MapIndex(reflect.ValueOf(2)).String() != "todo" {
+		panic("MapIndex error")
+	}
+	if v.MapIndex(reflect.ValueOf(0)).IsValid() {
+		println("must invalid")
+	}
+	key := reflect.New(v.Type().Key()).Elem()
+	value := reflect.New(v.Type().Elem()).Elem()
+	iter := v.MapRange()
+	for iter.Next() {
+		key.SetIterKey(iter)
+		value.SetIterValue(iter)
+		if key.Int() != iter.Key().Int() || value.String() != iter.Value().String() {
+			panic("MapIter error")
+		}
+	}
+}
+
+func mapDemo2() {
+	v := reflect.MakeMap(reflect.MapOf(reflect.TypeOf(0), reflect.TypeOf("")))
+	v.SetMapIndex(reflect.ValueOf(1), reflect.ValueOf("hello"))
+	v.SetMapIndex(reflect.ValueOf(2), reflect.ValueOf("world"))
+	if v.Len() != 2 || len(v.MapKeys()) != 2 {
+		panic("error")
+	}
+	if v.MapIndex(reflect.ValueOf(2)).String() != "world" {
+		panic("MapIndex error")
+	}
+	v.SetMapIndex(reflect.ValueOf(2), reflect.ValueOf("todo"))
+	if v.MapIndex(reflect.ValueOf(2)).String() != "todo" {
+		panic("MapIndex error")
+	}
+	if v.MapIndex(reflect.ValueOf(0)).IsValid() {
+		println("must invalid")
+	}
+	key := reflect.New(v.Type().Key()).Elem()
+	value := reflect.New(v.Type().Elem()).Elem()
+	iter := v.MapRange()
+	for iter.Next() {
+		key.SetIterKey(iter)
+		value.SetIterValue(iter)
+		if key.Int() != iter.Key().Int() || value.String() != iter.Value().String() {
+			panic("MapIter error")
+		}
+	}
 }
