@@ -51,6 +51,15 @@ type integer interface {
 	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64
 }
 
+type SizeT = uintptr
+
+type IntptrT = uintptr
+type UintptrT = uintptr
+type Int8T = int8
+type Int16T = int16
+type Int32T = int32
+type Int64T = int64
+
 //go:linkname Str llgo.cstr
 func Str(string) *Char
 
