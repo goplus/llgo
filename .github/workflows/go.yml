@@ -101,9 +101,6 @@ jobs:
       - name: Install
         run: go install ./...
 
-      - name: Install llcppg
-        run: bash .github/workflows/install_llcppg_depend.sh
-
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -v ./...
