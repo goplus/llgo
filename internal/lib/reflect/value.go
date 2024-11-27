@@ -2297,9 +2297,9 @@ func (v Value) MapIndex(key Value) Value {
 	} else {
 		k = unsafe.Pointer(&key.ptr)
 	}
-	e = mapaccess(v.typ(), v.pointer(), k)
-	// }
-	if e == nil {
+	var ok bool
+	e, ok = mapaccess(v.typ(), v.pointer(), k)
+	if !ok {
 		return Value{}
 	}
 	typ := tt.Elem
@@ -2519,7 +2519,7 @@ func (v Value) MapRange() *MapIter {
 
 // Force slow panicking path not inlined, so it won't add to the
 // inlining budget of the caller.
-// TODO: undo when the inliner is no longer bottom-up only.
+// TODO undo when the inliner is no longer bottom-up only.
 //
 //go:noinline
 func (f flag) panicNotMap() {
@@ -2587,11 +2587,14 @@ func chancap(ch unsafe.Pointer) int
 //go:linkname chanlen github.com/goplus/llgo/internal/runtime.ChanLen
 func chanlen(ch unsafe.Pointer) int
 
+//go:linkname makemap github.com/goplus/llgo/internal/runtime.MakeMap
+func makemap(t *abi.Type, cap int) (m unsafe.Pointer)
+
 //go:linkname maplen github.com/goplus/llgo/internal/runtime.MapLen
 func maplen(ch unsafe.Pointer) int
 
-//go:linkname mapaccess github.com/goplus/llgo/internal/runtime.MapAccess1
-func mapaccess(t *abi.Type, m unsafe.Pointer, key unsafe.Pointer) (val unsafe.Pointer)
+//go:linkname mapaccess github.com/goplus/llgo/internal/runtime.MapAccess2
+func mapaccess(t *abi.Type, m unsafe.Pointer, key unsafe.Pointer) (val unsafe.Pointer, ok bool)
 
 //go:linkname mapassign0 github.com/goplus/llgo/internal/runtime.MapAssign
 func mapassign0(t *abi.Type, m unsafe.Pointer, key unsafe.Pointer) unsafe.Pointer
@@ -2635,6 +2638,9 @@ func mapiternext(it *hiter)
 //go:linkname mapclear github.com/goplus/llgo/internal/runtime.mapclear
 func mapclear(t *abi.Type, m unsafe.Pointer)
 
+//go:linkname typehash github.com/goplus/llgo/internal/runtime.typehash
+func typehash(t *abi.Type, p unsafe.Pointer, h uintptr) uintptr
+
 // MakeSlice creates a new zero-initialized slice value
 // for the specified slice type, length, and capacity.
 func MakeSlice(typ Type, len, cap int) Value {
@@ -2653,6 +2659,22 @@ func MakeSlice(typ Type, len, cap int) Value {
 
 	s := unsafeheaderSlice{Data: unsafe_NewArray(&(typ.Elem().(*rtype).t), cap), Len: len, Cap: cap}
 	return Value{&typ.(*rtype).t, unsafe.Pointer(&s), flagIndir | flag(Slice)}
+}
+
+// MakeMap creates a new map with the specified type.
+func MakeMap(typ Type) Value {
+	return MakeMapWithSize(typ, 0)
+}
+
+// MakeMapWithSize creates a new map with the specified type
+// and initial space for approximately n elements.
+func MakeMapWithSize(typ Type, n int) Value {
+	if typ.Kind() != Map {
+		panic("reflect.MakeMapWithSize of non-map type")
+	}
+	t := typ.common()
+	m := makemap(t, n)
+	return Value{t, m, flag(Map)}
 }
 
 func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer) {

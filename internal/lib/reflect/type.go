@@ -1463,6 +1463,79 @@ func funcStr(ft *funcType) string {
 	return string(repr)
 }
 
+// MapOf returns the map type with the given key and element types.
+// For example, if k represents int and e represents string,
+// MapOf(k, e) represents map[int]string.
+//
+// If the key type is not a valid map key type (that is, if it does
+// not implement Go's == operator), MapOf panics.
+func MapOf(key, elem Type) Type {
+	ktyp := key.common()
+	etyp := elem.common()
+
+	if ktyp.Equal == nil {
+		panic("reflect.MapOf: invalid key type " + stringFor(ktyp))
+	}
+
+	// Look in cache.
+	ckey := cacheKey{Map, ktyp, etyp, 0}
+	if mt, ok := lookupCache.Load(ckey); ok {
+		return mt.(Type)
+	}
+
+	// Look in known types.
+	s := "map[" + stringFor(ktyp) + "]" + stringFor(etyp)
+	// for _, tt := range typesByString(s) {
+	// 	mt := (*mapType)(unsafe.Pointer(tt))
+	// 	if mt.Key == ktyp && mt.Elem == etyp {
+	// 		ti, _ := lookupCache.LoadOrStore(ckey, toRType(tt))
+	// 		return ti.(Type)
+	// 	}
+	// }
+
+	// Make a map type.
+	// Note: flag values must match those used in the TMAP case
+	// in ../cmd/compile/internal/reflectdata/reflect.go:writeType.
+	var imap any = (map[unsafe.Pointer]unsafe.Pointer)(nil)
+	mt := **(**mapType)(unsafe.Pointer(&imap))
+	mt.Str_ = s
+	mt.TFlag = 0
+	mt.Hash = fnv1(etyp.Hash, 'm', byte(ktyp.Hash>>24), byte(ktyp.Hash>>16), byte(ktyp.Hash>>8), byte(ktyp.Hash))
+	mt.Key = ktyp
+	mt.Elem = etyp
+	mt.Bucket = bucketOf(ktyp, etyp)
+	mt.Hasher = func(p unsafe.Pointer, seed uintptr) uintptr {
+		return typehash(ktyp, p, seed)
+	}
+	mt.Flags = 0
+	if ktyp.Size_ > maxKeySize {
+		mt.KeySize = uint8(goarch.PtrSize)
+		mt.Flags |= 1 // indirect key
+	} else {
+		mt.KeySize = uint8(ktyp.Size_)
+	}
+	if etyp.Size_ > maxValSize {
+		mt.ValueSize = uint8(goarch.PtrSize)
+		mt.Flags |= 2 // indirect value
+	} else {
+		mt.MapType.ValueSize = uint8(etyp.Size_)
+	}
+	mt.MapType.BucketSize = uint16(mt.Bucket.Size_)
+	if isReflexive(ktyp) {
+		mt.Flags |= 4
+	}
+	if needKeyUpdate(ktyp) {
+		mt.Flags |= 8
+	}
+	if hashMightPanic(ktyp) {
+		mt.Flags |= 16
+	}
+	mt.PtrToThis_ = nil
+
+	ti, _ := lookupCache.LoadOrStore(ckey, toRType(&mt.Type))
+	return ti.(Type)
+}
+
 // isReflexive reports whether the == operation on the type is reflexive.
 // That is, x == x for all values x of type t.
 func isReflexive(t *abi.Type) bool {
