@@ -25,19 +25,19 @@
 [{
 		"mangle":	"lua_error",
 		"c++":	"lua_error(lua_State *)",
-		"go":	"Error"
+		"go":	"(*State).Error"
 	}, {
 		"mangle":	"lua_next",
 		"c++":	"lua_next(lua_State *, int)",
-		"go":	"Next"
+		"go":	"(*State).Next"
 	}, {
 		"mangle":	"lua_concat",
 		"c++":	"lua_concat(lua_State *, int)",
-		"go":	"Concat"
+		"go":	"(*State).Concat"
 	}, {
 		"mangle":	"lua_stringtonumber",
 		"c++":	"lua_stringtonumber(lua_State *, const char *)",
-		"go":	"Stringtonumber"
+		"go":	"(*State).Stringtonumber"
 	}]
 
 #stderr

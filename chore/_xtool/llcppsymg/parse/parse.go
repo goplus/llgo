@@ -10,6 +10,7 @@ import (
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/clang"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/names"
 )
 
 type SymbolInfo struct {
@@ -39,6 +40,9 @@ func (p *SymbolProcessor) setCurrentFile(filename string) {
 }
 
 func (p *SymbolProcessor) isSelfFile(filename string) bool {
+	if filename == p.CurrentFile {
+		return true
+	}
 	for _, file := range p.Files {
 		if file == filename {
 			return true
@@ -99,10 +103,10 @@ func (p *SymbolProcessor) isMethod(cur clang.Cursor, isArg bool) (bool, bool, st
 	typ := cur.Type()
 	if typ.Kind == clang.TypePointer {
 		namedType := typ.PointeeType().NamedType().String()
-		return isInCurPkg, true, GoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
+		return isInCurPkg, true, names.GoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
 	}
 	namedType := typ.NamedType().String()
-	return isInCurPkg, false, GoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
+	return isInCurPkg, false, names.GoName(clang.GoString(namedType), p.Prefixes, isInCurPkg)
 }
 
 func (p *SymbolProcessor) genGoName(cursor clang.Cursor) string {
@@ -110,14 +114,14 @@ func (p *SymbolProcessor) genGoName(cursor clang.Cursor) string {
 	isDestructor := cursor.Kind == clang.CursorDestructor
 	var convertedName string
 	if isDestructor {
-		convertedName = GoName(originName[1:], p.Prefixes, p.inCurPkg(cursor, false))
+		convertedName = names.GoName(originName[1:], p.Prefixes, p.inCurPkg(cursor, false))
 	} else {
-		convertedName = GoName(originName, p.Prefixes, p.inCurPkg(cursor, false))
+		convertedName = names.GoName(originName, p.Prefixes, p.inCurPkg(cursor, false))
 	}
 
 	if parent := cursor.SemanticParent(); parent.Kind == clang.CursorClassDecl {
-		class := GoName(clang.GoString(parent.String()), p.Prefixes, p.inCurPkg(cursor, false))
-		return p.AddSuffix(p.GenMethodName(class, convertedName, isDestructor, false))
+		class := names.GoName(clang.GoString(parent.String()), p.Prefixes, p.inCurPkg(cursor, false))
+		return p.AddSuffix(p.GenMethodName(class, convertedName, isDestructor, true))
 	} else if cursor.Kind == clang.CursorFunctionDecl {
 		numArgs := cursor.NumArguments()
 		if numArgs > 0 {

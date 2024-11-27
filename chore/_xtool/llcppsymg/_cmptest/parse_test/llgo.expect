@@ -2,19 +2,6 @@
 === Test NewSymbolProcessor ===
 Before: No prefixes After: Prefixes: [lua_ luaL_]
 
-=== Test RemovePrefix ===
-Before: lua_closethread After: closethread
-Before: luaL_checknumber After: checknumber
-
-=== Test ToGoName ===
-Before: lua_closethread After: Closethread
-Before: luaL_checknumber After: Checknumber
-Before: sqlite3_close_v2 After: CloseV2
-Before: sqlite3_callback After: Callback
-Before: GetReal After: GetReal
-Before: GetBoolean After: GetBoolean
-Before: INIReader After: Reader
-
 === Test GenMethodName ===
 Before: Class: INIReader, Name: INIReader After: (*INIReader).Init
 Before: Class: INIReader, Name: INIReader After: (*INIReader).Dispose
@@ -35,8 +22,9 @@ Symbol Map GoName: (*Reader).ParseError, ProtoName In HeaderFile: INIReader::Par
 
 === Test Case: C Functions ===
 Parsed Symbols:
-Symbol Map GoName: Compare, ProtoName In HeaderFile: lua_compare(lua_State *, int, int, int), MangledName: lua_compare
-Symbol Map GoName: Rawequal, ProtoName In HeaderFile: lua_rawequal(lua_State *, int, int), MangledName: lua_rawequal
+Symbol Map GoName: (*State).Compare, ProtoName In HeaderFile: lua_compare(lua_State *, int, int, int), MangledName: lua_compare
+Symbol Map GoName: (*State).Rawequal, ProtoName In HeaderFile: lua_rawequal(lua_State *, int, int), MangledName: lua_rawequal
+Symbol Map GoName: Sizecomp, ProtoName In HeaderFile: lua_sizecomp(int, int, int, int), MangledName: lua_sizecomp
 
 
 #stderr

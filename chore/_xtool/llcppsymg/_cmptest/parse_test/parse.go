@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/goplus/llgo/chore/_xtool/llcppsymg/names"
 	"github.com/goplus/llgo/chore/_xtool/llcppsymg/parse"
 )
 
 func main() {
 	TestNewSymbolProcessor()
-	TestRemovePrefix()
-	TestToGoName()
 	TestGenMethodName()
 	TestAddSuffix()
 	TestParseHeaderFile()
@@ -18,47 +17,8 @@ func main() {
 
 func TestNewSymbolProcessor() {
 	fmt.Println("=== Test NewSymbolProcessor ===")
-	process := parse.NewSymbolProcessor([]string{"lua_", "luaL_"})
+	process := parse.NewSymbolProcessor([]string{}, []string{"lua_", "luaL_"})
 	fmt.Printf("Before: No prefixes After: Prefixes: %v\n", process.Prefixes)
-	fmt.Println()
-}
-
-func TestRemovePrefix() {
-	fmt.Println("=== Test RemovePrefix ===")
-	process := parse.NewSymbolProcessor([]string{"lua_", "luaL_"})
-
-	testCases := []string{"lua_closethread", "luaL_checknumber"}
-
-	for _, input := range testCases {
-		result := process.TrimPrefixes(input)
-		fmt.Printf("Before: %s After: %s\n", input, result)
-	}
-	fmt.Println()
-}
-
-func TestToGoName() {
-	fmt.Println("=== Test ToGoName ===")
-	process1 := parse.NewSymbolProcessor([]string{"lua_", "luaL_"})
-	process2 := parse.NewSymbolProcessor([]string{"sqlite3_", "sqlite3_"})
-	process3 := parse.NewSymbolProcessor([]string{"INI"})
-
-	testCases := []struct {
-		processor *parse.SymbolProcessor
-		input     string
-	}{
-		{process1, "lua_closethread"},
-		{process1, "luaL_checknumber"},
-		{process2, "sqlite3_close_v2"},
-		{process2, "sqlite3_callback"},
-		{process3, "GetReal"},
-		{process3, "GetBoolean"},
-		{process3, "INIReader"},
-	}
-
-	for _, tc := range testCases {
-		result := tc.processor.ToGoName(tc.input)
-		fmt.Printf("Before: %s After: %s\n", tc.input, result)
-	}
 	fmt.Println()
 }
 
@@ -77,7 +37,7 @@ func TestGenMethodName() {
 	}
 	for _, tc := range testCases {
 		input := fmt.Sprintf("Class: %s, Name: %s", tc.class, tc.name)
-		result := process.GenMethodName(tc.class, tc.name, tc.isDestructor)
+		result := process.GenMethodName(tc.class, tc.name, tc.isDestructor, true)
 		fmt.Printf("Before: %s After: %s\n", input, result)
 	}
 	fmt.Println()
@@ -85,7 +45,7 @@ func TestGenMethodName() {
 
 func TestAddSuffix() {
 	fmt.Println("=== Test AddSuffix ===")
-	process := parse.NewSymbolProcessor([]string{"INI"})
+	process := parse.NewSymbolProcessor([]string{}, []string{"INI"})
 	methods := []string{
 		"INIReader",
 		"INIReader",
@@ -93,9 +53,9 @@ func TestAddSuffix() {
 		"HasValue",
 	}
 	for _, method := range methods {
-		goName := process.ToGoName(method)
-		className := process.ToGoName("INIReader")
-		methodName := process.GenMethodName(className, goName, false)
+		goName := names.GoName(method, process.Prefixes, true)
+		className := names.GoName("INIReader", process.Prefixes, true)
+		methodName := process.GenMethodName(className, goName, false, true)
 		finalName := process.AddSuffix(methodName)
 		input := fmt.Sprintf("Class: INIReader, Method: %s", method)
 		fmt.Printf("Before: %s After: %s\n", input, finalName)
@@ -132,6 +92,7 @@ class INIReader {
 typedef struct lua_State lua_State;
 int(lua_rawequal)(lua_State *L, int idx1, int idx2);
 int(lua_compare)(lua_State *L, int idx1, int idx2, int op);
+int(lua_sizecomp)(size_t s, int idx1, int idx2, int op);
             `,
 			isCpp:    false,
 			prefixes: []string{"lua_"},

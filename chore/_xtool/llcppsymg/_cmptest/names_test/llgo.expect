@@ -1,0 +1,14 @@
+#stdout
+=== Test ToGoName ===
+Before: lua_closethread After: Closethread
+Before: luaL_checknumber After: Checknumber
+Before: sqlite3_close_v2 After: CloseV2
+Before: sqlite3_callback After: Callback
+Before: GetReal After: GetReal
+Before: GetBoolean After: GetBoolean
+Before: INIReader After: Reader
+
+
+#stderr
+
+#exit 0
