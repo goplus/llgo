@@ -246,9 +246,10 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 
 func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	const (
-		linkname  = "//go:linkname "
-		llgolink  = "//llgo:link "
-		llgolink2 = "// llgo:link "
+		linkname   = "//go:linkname "
+		llgolink   = "//llgo:link "
+		llgolink2  = "// llgo:link "
+		exportName = "//export "
 	)
 	if strings.HasPrefix(line, linkname) {
 		p.initLink(line, len(linkname), f)
@@ -256,6 +257,15 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 		p.initLink(line, len(llgolink2), f)
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
+	} else if strings.HasPrefix(line, exportName) {
+		p.initCgoExport(line, len(exportName), f)
+	}
+}
+
+func (p *context) initCgoExport(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+	name := strings.TrimSpace(line[prefix:])
+	if fullName, _, ok := f(name); ok {
+		p.cgoExports[fullName] = name
 	}
 }
 
@@ -366,6 +376,17 @@ func checkCgo(fnName string) bool {
 		(fnName[4] == '_' || strings.HasPrefix(fnName[4:], "Check"))
 }
 
+var cgoIgnoredNames = map[string]none{
+	"_Cgo_ptr":        {},
+	"_Cgo_use":        {},
+	"_cgoCheckResult": {},
+}
+
+func cgoIgnored(fnName string) bool {
+	_, ok := cgoIgnoredNames[fnName]
+	return ok
+}
+
 const (
 	ignoredFunc = iota
 	goFunc      = int(llssa.InGo)
@@ -421,7 +442,6 @@ const (
 	llgoCgoCMalloc      = llgoCgoBase + 0x5
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
 	llgoCgoCgocall      = llgoCgoBase + 0x7
-	llgoCgoUse          = llgoCgoBase + 0x8
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
@@ -435,10 +455,10 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		orgName = funcName(pkg, origin, true)
 	} else {
 		fname := fn.Name()
-		if checkCgo(fname) {
+		if checkCgo(fname) && !cgoIgnored(fname) {
 			return nil, fname, llgoInstr
 		}
-		if isCgoCfunc(fn) {
+		if isCgoExternSymbol(fn) {
 			if _, ok := llgoInstrs[fname]; ok {
 				return nil, fname, llgoInstr
 			}
@@ -450,7 +470,7 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		}
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn, false)
-		if ignore && ignoreName(orgName) || checkCgo(fn.Name()) {
+		if ignore && ignoreName(orgName) {
 			return nil, orgName, ignoredFunc
 		}
 	}

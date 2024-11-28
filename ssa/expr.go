@@ -59,6 +59,15 @@ func (v Expr) SetOrdering(ordering AtomicOrdering) Expr {
 	return v
 }
 
+func (v Expr) SetName(alias string) Expr {
+	v.impl.SetName(alias)
+	return v
+}
+
+func (v Expr) Name() string {
+	return v.impl.Name()
+}
+
 // -----------------------------------------------------------------------------
 
 type builtinTy struct {

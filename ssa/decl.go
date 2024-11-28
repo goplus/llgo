@@ -117,6 +117,10 @@ func (g Global) InitNil() {
 	g.impl.SetInitializer(llvm.ConstNull(g.impl.GlobalValueType()))
 }
 
+func (g Global) ReplaceAllUsesWith(v Expr) {
+	g.impl.ReplaceAllUsesWith(v.impl)
+}
+
 // -----------------------------------------------------------------------------
 
 // Function represents the parameters, results, and code of a function

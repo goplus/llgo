@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/goplus/llgo/internal/buildtags"
 	"github.com/goplus/llgo/internal/safesplit"
+	llssa "github.com/goplus/llgo/ssa"
 )
 
 type cgoDecl struct {
@@ -51,7 +53,7 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
-func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string][]string, verbose bool) (cgoLdflags []string, err error) {
+func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, verbose bool) (cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
 		return
@@ -88,20 +90,27 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 			cgoLdflags = append(cgoLdflags, linkFile)
 		}, verbose)
 	}
-	re := regexp.MustCompile(`^(_cgo_[^_]+_Cfunc_)(.*)$`)
-	cgoFuncs := make(map[string]string)
+	re := regexp.MustCompile(`^(_cgo_[^_]+_(Cfunc|Cmacro)_)(.*)$`)
+	cgoSymbols := make(map[string]string)
 	mallocFix := false
-	for _, funcs := range externs {
-		for _, funcName := range funcs {
-			if m := re.FindStringSubmatch(funcName); len(m) > 0 {
-				cgoFuncs[funcName] = m[2]
-				// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
-				if !mallocFix {
-					pkgPrefix := m[1]
-					mallocName := pkgPrefix + "_Cmalloc"
-					cgoFuncs[mallocName] = "_Cmalloc"
-					mallocFix = true
-				}
+	for _, symbolName := range externs {
+		lastPart := symbolName
+		lastDot := strings.LastIndex(symbolName, ".")
+		if lastDot != -1 {
+			lastPart = symbolName[lastDot+1:]
+		}
+		if strings.HasPrefix(lastPart, "__cgo_") {
+			// func ptr var: main.__cgo_func_name
+			cgoSymbols[symbolName] = lastPart
+		} else if m := re.FindStringSubmatch(symbolName); len(m) > 0 {
+			prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
+			name := m[3]   // remaining part
+			cgoSymbols[symbolName] = name
+			// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
+			if !mallocFix && m[2] == "Cfunc" {
+				mallocName := prefix + "_Cmalloc"
+				cgoSymbols[mallocName] = "_Cmalloc"
+				mallocFix = true
 			}
 		}
 	}
@@ -113,7 +122,10 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs map[string
 		tmpName := tmpFile.Name()
 		defer os.Remove(tmpName)
 		code := cgoHeader + "\n\n" + preamble.src
-		externDecls := genExternDeclsByClang(code, cflags, cgoFuncs)
+		externDecls, err := genExternDeclsByClang(pkg, code, cflags, cgoSymbols)
+		if err != nil {
+			return nil, err
+		}
 		if err = os.WriteFile(tmpName, []byte(code+"\n\n"+externDecls), 0644); err != nil {
 			return nil, err
 		}
@@ -134,42 +146,108 @@ type clangASTNode struct {
 	Inner []clangASTNode `json:"inner,omitempty"`
 }
 
-func genExternDeclsByClang(src string, cflags []string, cgoFuncs map[string]string) string {
+func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbols map[string]string) (string, error) {
 	tmpSrc, err := os.CreateTemp("", "cgo-src-*.c")
 	if err != nil {
-		return ""
+		return "", err
 	}
 	defer os.Remove(tmpSrc.Name())
 	if err := os.WriteFile(tmpSrc.Name(), []byte(src), 0644); err != nil {
-		return ""
+		return "", err
 	}
-	args := append([]string{"-Xclang", "-ast-dump=json", "-fsyntax-only"}, cflags...)
-	args = append(args, tmpSrc.Name())
-	cmd := exec.Command("clang", args...)
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
+	symbolNames := make(map[string]bool)
+	if err := getFuncNames(tmpSrc.Name(), cflags, symbolNames); err != nil {
+		return "", err
 	}
-	var astRoot clangASTNode
-	if err := json.Unmarshal(output, &astRoot); err != nil {
-		return ""
+	macroNames := make(map[string]bool)
+	if err := getMacroNames(tmpSrc.Name(), cflags, macroNames); err != nil {
+		return "", err
 	}
-
-	funcNames := make(map[string]bool)
-	extractFuncNames(&astRoot, funcNames)
 
 	b := strings.Builder{}
 	var toRemove []string
-	for cgoFunc, funcName := range cgoFuncs {
-		if funcNames[funcName] {
-			b.WriteString(fmt.Sprintf("void* %s = (void*)%s;\n", cgoFunc, funcName))
-			toRemove = append(toRemove, cgoFunc)
+	for cgoName, symbolName := range cgoSymbols {
+		if strings.HasPrefix(symbolName, "__cgo_") {
+			gofuncName := strings.Replace(cgoName, ".__cgo_", ".", 1)
+			gofn := pkg.LPkg.FuncOf(gofuncName)
+			cgoVar := pkg.LPkg.VarOf(cgoName)
+			if gofn != nil {
+				cgoVar.ReplaceAllUsesWith(gofn.Expr)
+			} else {
+				cfuncName := symbolName[len("__cgo_"):]
+				cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InC)
+				cgoVar.ReplaceAllUsesWith(cfn.Expr)
+			}
+			toRemove = append(toRemove, cgoName)
+		} else {
+			usePtr := ""
+			if symbolNames[symbolName] {
+				usePtr = "*"
+			} else if !macroNames[symbolName] {
+				continue
+			}
+			/* template:
+			typeof(fputs)* _cgo_1574167f3838_Cfunc_fputs;
+
+			__attribute__((constructor))
+			static void _init__cgo_1574167f3838_Cfunc_fputs() {
+				_cgo_1574167f3838_Cfunc_fputs = fputs;
+			}*/
+			b.WriteString(fmt.Sprintf(`
+typeof(%s)%s %s;
+
+__attribute__((constructor))
+static void _init_%s() {
+	%s = %s;
+}
+`,
+				symbolName, usePtr, cgoName,
+				cgoName,
+				cgoName, symbolName))
+			toRemove = append(toRemove, cgoName)
 		}
 	}
 	for _, funcName := range toRemove {
-		delete(cgoFuncs, funcName)
+		delete(cgoSymbols, funcName)
 	}
-	return b.String()
+	return b.String(), nil
+}
+
+func getMacroNames(file string, cflags []string, macroNames map[string]bool) error {
+	args := append([]string{"-dM", "-E"}, cflags...)
+	args = append(args, file)
+	cmd := exec.Command("clang", args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	for _, line := range strings.Split(string(output), "\n") {
+		if strings.HasPrefix(line, "#define ") {
+			define := strings.TrimPrefix(line, "#define ")
+			parts := strings.SplitN(define, " ", 2)
+			if len(parts) > 1 {
+				macroNames[parts[0]] = true
+			}
+		}
+	}
+	return nil
+}
+
+func getFuncNames(file string, cflags []string, symbolNames map[string]bool) error {
+	args := append([]string{"-Xclang", "-ast-dump=json", "-fsyntax-only"}, cflags...)
+	args = append(args, file)
+	cmd := exec.Command("clang", args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	var astRoot clangASTNode
+	if err := json.Unmarshal(output, &astRoot); err != nil {
+		return err
+	}
+
+	extractFuncNames(&astRoot, symbolNames)
+	return nil
 }
 
 func extractFuncNames(node *clangASTNode, funcNames map[string]bool) {

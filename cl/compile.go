@@ -110,10 +110,11 @@ type context struct {
 	inCFunc bool
 	skipall bool
 
-	cgoCalled bool
-	cgoArgs   []llssa.Expr
-	cgoRet    llssa.Expr
-	cgoFuncs  map[string][]string
+	cgoCalled  bool
+	cgoArgs    []llssa.Expr
+	cgoRet     llssa.Expr
+	cgoSymbols []string
+	cgoExports map[string]string
 }
 
 type pkgState byte
@@ -189,8 +190,21 @@ var (
 	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
 )
 
-func isCgoCfunc(f *ssa.Function) bool {
-	return strings.HasPrefix(f.Name(), "_Cfunc_")
+func isCgoExternSymbol(f *ssa.Function) bool {
+	name := f.Name()
+	return isCgoCfunc(name) || isCgoCmacro(name)
+}
+
+func isCgoCfunc(name string) bool {
+	return strings.HasPrefix(name, "_Cfunc_")
+}
+
+func isCgoCmacro(name string) bool {
+	return strings.HasPrefix(name, "_Cmacro_")
+}
+
+func isCgoVar(name string) bool {
+	return strings.HasPrefix(name, "__cgo_")
 }
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
@@ -246,10 +260,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
+	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
 		p.cgoArgs = nil
-		if isCgoCfunc(f) {
+		if isCgo {
 			fn.MakeBlocks(1)
 		} else {
 			fn.MakeBlocks(nblk) // to set fn.HasBody() = true
@@ -278,7 +293,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			off := make([]int, len(f.Blocks))
-			if isCgoCfunc(f) {
+			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
 				for i, param := range f.Params {
 					p.cgoArgs[i] = p.compileValue(b, param)
@@ -295,7 +310,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				doMainInit := (i == 0 && name == "main")
 				doModInit := (i == 1 && isInit)
 				p.compileBlock(b, block, off[i], doMainInit, doModInit)
-				if isCgoCfunc(f) {
+				if isCgo {
 					// just process first block for performance
 					break
 				}
@@ -401,44 +416,45 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		callRuntimeInit(b, pkg)
 		b.Call(pkg.FuncOf("main.init").Expr)
 	}
-	fname := p.goProg.Fset.Position(block.Parent().Pos()).Filename
-	if p.cgoFuncs == nil {
-		p.cgoFuncs = make(map[string][]string)
-	}
-	var cgoFuncs []string
-	if funcs, ok := p.cgoFuncs[fname]; ok {
-		cgoFuncs = funcs
-	}
+	fnName := block.Parent().Name()
 	cgoReturned := false
+	isCgoCfunc := isCgoCfunc(fnName)
+	isCgoCmacro := isCgoCmacro(fnName)
 	for i, instr := range instrs {
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnOld.Expr)
 		}
-		if isCgoCfunc(block.Parent()) {
+		if isCgoCfunc || isCgoCmacro {
 			switch instr := instr.(type) {
 			case *ssa.Alloc:
 				// return value allocation
 				p.compileInstr(b, instr)
 			case *ssa.UnOp:
 				// load cgo function pointer
-				if instr.Op == token.MUL && strings.HasPrefix(instr.X.Name(), "_cgo_") {
-					cgoFuncs = append(cgoFuncs, instr.X.Name())
-					p.cgoFuncs[fname] = cgoFuncs
+				varName := instr.X.Name()
+				if instr.Op == token.MUL && strings.HasPrefix(varName, "_cgo_") {
+					p.cgoSymbols = append(p.cgoSymbols, varName)
 					p.compileInstr(b, instr)
 				}
 			case *ssa.Call:
-				// call c function
-				p.compileInstr(b, instr)
-				p.cgoCalled = true
+				if isCgoCmacro {
+					p.cgoRet = p.compileValue(b, instr.Call.Args[0])
+					p.cgoCalled = true
+				} else {
+					// call c function
+					p.compileInstr(b, instr)
+					p.cgoCalled = true
+				}
 			case *ssa.Return:
 				// return cgo function result
-				if len(instr.Results) > 0 {
-					b.Return(p.cgoRet)
-				} else {
-					b.Return(llssa.Nil)
+				if isCgoCmacro {
+					ty := p.type_(instr.Results[0].Type(), llssa.InGo)
+					p.cgoRet.Type = p.prog.Pointer(ty)
+					p.cgoRet = b.Load(p.cgoRet)
 				}
+				b.Return(p.cgoRet)
 				cgoReturned = true
 			}
 		} else {
@@ -446,18 +462,14 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 	}
 	// is cgo cfunc but not return yet, some funcs has multiple blocks
-	if isCgoCfunc(block.Parent()) && !cgoReturned {
+	if (isCgoCfunc || isCgoCmacro) && !cgoReturned {
 		if !p.cgoCalled {
 			panic("cgo cfunc not called")
 		}
 		for _, block := range block.Parent().Blocks {
 			for _, instr := range block.Instrs {
-				if instr, ok := instr.(*ssa.Return); ok {
-					if len(instr.Results) > 0 {
-						b.Return(p.cgoRet)
-					} else {
-						b.Return(llssa.Nil)
-					}
+				if _, ok := instr.(*ssa.Return); ok {
+					b.Return(p.cgoRet)
 					goto end
 				}
 			}
@@ -902,7 +914,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return pyFn.Expr
 	case *ssa.Global:
+		varName := v.Name()
 		val := p.varOf(b, v)
+		if isCgoVar(varName) {
+			p.cgoSymbols = append(p.cgoSymbols, val.Name())
+		}
 		if debugSymbols {
 			pos := p.fset.Position(v.Pos())
 			b.DIGlobal(val, v.Name(), pos)
@@ -971,7 +987,7 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs map[string][]string, err error) {
+func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -1003,6 +1019,8 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
+		cgoExports: make(map[string]string),
+		cgoSymbols: make([]string, 0, 128),
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files)
@@ -1036,7 +1054,13 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		ctx.initAfter = nil
 		fn()
 	}
-	externs = ctx.cgoFuncs
+	externs = ctx.cgoSymbols
+	for fnName, exportName := range ctx.cgoExports {
+		fn := ret.FuncOf(fnName)
+		if fn != nil {
+			fn.SetName(exportName)
+		}
+	}
 	return
 }
 

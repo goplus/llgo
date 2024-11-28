@@ -6,7 +6,9 @@ package main
 #cgo windows,amd64 CFLAGS: -D_WIN64
 #cgo linux,amd64 CFLAGS: -D_LINUX64
 #cgo !windows,amd64 CFLAGS: -D_UNIX64
+#cgo pkg-config: python3-embed
 #include <stdio.h>
+#include <Python.h>
 #include "foo.h"
 typedef struct {
 	int a;
@@ -71,9 +73,52 @@ static void test_macros() {
 	printf("UNIX64 is defined\n");
 #endif
 }
+
+#define MY_VERSION "1.0.0"
+#define MY_CODE 0x12345678
+
+static void test_void() {
+	printf("test_void\n");
+}
+
+typedef int (*Cb)(int);
+
+extern int go_callback(int);
+
+extern int c_callback(int i);
+
+static void test_callback(Cb cb) {
+	printf("test_callback, cb: %p, go_callback: %p, c_callback: %p\n", cb, go_callback, c_callback);
+	printf("test_callback, *cb: %p, *go_callback: %p, *c_callback: %p\n", *(void**)cb, *(void**)(go_callback), *(void**)(c_callback));
+	printf("cb result: %d\n", cb(123));
+	printf("done\n");
+}
+
+extern int go_callback_not_use_in_go(int);
+
+static void run_callback() {
+	test_callback(c_callback);
+	test_callback(go_callback_not_use_in_go);
+}
 */
 import "C"
-import "fmt"
+import (
+	"fmt"
+	"unsafe"
+
+	"github.com/goplus/llgo/cl/_testgo/cgofull/pymod1"
+	"github.com/goplus/llgo/cl/_testgo/cgofull/pymod2"
+)
+
+//export go_callback_not_use_in_go
+func go_callback_not_use_in_go(i C.int) C.int {
+	return i + 1
+}
+
+//export go_callback
+func go_callback(i C.int) C.int {
+	return i + 1
+}
 
 func main() {
 	runPy()
@@ -86,10 +131,27 @@ func main() {
 	if r != 35 {
 		panic("test_structs failed")
 	}
+	fmt.Println(C.MY_VERSION)
+	fmt.Println(int(C.MY_CODE))
+	C.test_void()
+
+	println("call run_callback")
+	C.run_callback()
+
+	// test _Cgo_ptr and _cgoCheckResult
+	println("call with go_callback")
+	C.test_callback((C.Cb)(C.go_callback))
+
+	println("call with c_callback")
+	C.test_callback((C.Cb)(C.c_callback))
 }
 
 func runPy() {
 	Initialize()
 	defer Finalize()
 	Run("print('Hello, Python!')")
+	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(pymod1.Float(1.23))), C.stderr, 0)
+	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(pymod2.Long(123))), C.stdout, 0)
+	// test _Cgo_use
+	C.PyObject_Print((*C.PyObject)(unsafe.Pointer(C.PyComplex_FromDoubles(C.double(1.23), C.double(4.56)))), C.stdout, 0)
 }

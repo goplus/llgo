@@ -525,6 +525,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 		cl.SetDebug(0)
 	}
 	check(err)
+	aPkg.LPkg = ret
 	cgoLdflags, err = buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
@@ -533,7 +534,6 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
 	}
-	aPkg.LPkg = ret
 	return
 }
 

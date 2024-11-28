@@ -130,11 +130,6 @@ func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	return p.cgoRet
 }
 
-// func _Cgo_use(v any)
-func (p *context) cgoUse(b llssa.Builder, args []ssa.Value) {
-	// don't need to do anything
-}
-
 // -----------------------------------------------------------------------------
 
 // func index(arr *T, idx int) T
@@ -324,7 +319,6 @@ var llgoInstrs = map[string]int{
 	"_Cfunc__CMalloc":      llgoCgoCMalloc,
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
-	"_Cgo_use":             llgoCgoUse,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -468,8 +462,6 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.cgoCheckPointer(b, args)
 		case llgoCgoCgocall:
 			p.cgoCgocall(b, args)
-		case llgoCgoUse:
-			p.cgoUse(b, args)
 		case llgoAdvance:
 			ret = p.advance(b, args)
 		case llgoIndex:
