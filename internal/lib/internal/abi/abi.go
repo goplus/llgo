@@ -18,9 +18,14 @@ package abi
 
 // llgo:skipall
 import (
-	_ "unsafe"
+	"unsafe"
 
 	"github.com/goplus/llgo/internal/abi"
 )
 
 type InterfaceType = abi.InterfaceType
+
+func NoEscape(p unsafe.Pointer) unsafe.Pointer {
+	x := uintptr(p)
+	return unsafe.Pointer(x ^ 0)
+}
