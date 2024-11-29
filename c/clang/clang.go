@@ -1635,6 +1635,14 @@ func (c Cursor) SemanticParent() (parent Cursor) {
 	return
 }
 
+// llgo:link (*Cursor).wrapDefinition C.wrap_clang_getCursorDefinition
+func (*Cursor) wrapDefinition(def *Cursor) {}
+
+func (c Cursor) Definition() (def Cursor) {
+	c.wrapDefinition(&def)
+	return
+}
+
 /**
  * Determine the lexical parent of the given cursor.
  *
@@ -2793,6 +2801,26 @@ func (l *SourceLocation) wrapSpellingLocation(file *File, line, column, offset *
 
 func (l SourceLocation) SpellingLocation(file *File, line, column, offset *c.Uint) {
 	l.wrapSpellingLocation(file, line, column, offset)
+}
+
+func (l SourceLocation) File() (ret File) {
+	l.wrapSpellingLocation(&ret, nil, nil, nil)
+	return
+}
+
+func (l SourceLocation) Line() (ret c.Uint) {
+	l.wrapSpellingLocation(nil, &ret, nil, nil)
+	return
+}
+
+func (l SourceLocation) Column() (ret c.Uint) {
+	l.wrapSpellingLocation(nil, nil, &ret, nil)
+	return
+}
+
+func (l SourceLocation) Offset() (ret c.Uint) {
+	l.wrapSpellingLocation(nil, nil, nil, &ret)
+	return
 }
 
 /**
