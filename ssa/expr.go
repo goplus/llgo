@@ -1223,11 +1223,20 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			return
 		}
 	case "clear":
-		if len(args) == 1 && args[0].kind == vkMap {
-			m := args[0]
-			t := b.abiType(m.raw.Type)
-			b.Call(b.Pkg.rtFunc("MapClear"), t, m)
-			return
+		if len(args) == 1 {
+			arg := args[0]
+			switch arg.kind {
+			case vkMap:
+				m := arg
+				t := b.abiType(m.raw.Type)
+				b.Call(b.Pkg.rtFunc("MapClear"), t, m)
+				return
+			case vkSlice:
+				s := arg
+				t := b.abiType(s.raw.Type)
+				b.Call(b.Pkg.rtFunc("SliceClear"), t, s)
+				return
+			}
 		}
 	case "min":
 		if len(args) > 0 {
@@ -1239,6 +1248,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	case "Add":
 		return b.Advance(args[0], args[1])
+	case "Sizeof":
+		return b.Prog.Val(int(b.Prog.SizeOf(args[0].Type)))
 	}
 	panic("todo: " + fn)
 }

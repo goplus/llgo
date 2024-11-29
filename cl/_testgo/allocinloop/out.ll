@@ -16,24 +16,24 @@ _llgo_0:
 
 define void @main.Test() {
 _llgo_0:
-  br label %_llgo_3
+  br label %_llgo_1
 
-_llgo_1:                                          ; preds = %_llgo_3
-  %0 = call i64 @main.Foo(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 5 })
-  %1 = add i64 %3, %0
-  %2 = add i64 %4, 1
-  br label %_llgo_3
+_llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
+  %0 = phi i64 [ 0, %_llgo_0 ], [ %4, %_llgo_2 ]
+  %1 = phi i64 [ 0, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %2 = icmp slt i64 %1, 10000000
+  br i1 %2, label %_llgo_2, label %_llgo_3
 
-_llgo_2:                                          ; preds = %_llgo_3
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
+_llgo_2:                                          ; preds = %_llgo_1
+  %3 = call i64 @main.Foo(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 5 })
+  %4 = add i64 %0, %3
+  %5 = add i64 %1, 1
+  br label %_llgo_1
+
+_llgo_3:                                          ; preds = %_llgo_1
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %0)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret void
-
-_llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %3 = phi i64 [ 0, %_llgo_0 ], [ %1, %_llgo_1 ]
-  %4 = phi i64 [ 0, %_llgo_0 ], [ %2, %_llgo_1 ]
-  %5 = icmp slt i64 %4, 10000000
-  br i1 %5, label %_llgo_1, label %_llgo_2
 }
 
 define void @main.init() {
