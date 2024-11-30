@@ -218,11 +218,12 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	if debugInstr {
 		logCall("Defer", fn, args)
 	}
-	var prog = b.Prog
+	var prog Program
 	var nextbit Expr
 	var self = b.getDefer(kind)
 	switch kind {
 	case DeferInCond:
+		prog = b.Prog
 		next := self.nextBit
 		self.nextBit++
 		bits := b.Load(self.bitsPtr)
@@ -233,7 +234,22 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	default:
 		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
 	}
+	typ := b.saveDeferArgs(self, fn, args)
+	self.stmts = append(self.stmts, func(bits Expr) {
+		switch kind {
+		case DeferInCond:
+			zero := prog.Val(uintptr(0))
+			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
+			b.IfThen(has, func() {
+				b.callDefer(self, typ, fn, len(args))
+			})
+		case DeferAlways:
+			b.callDefer(self, typ, fn, len(args))
+		}
+	})
+}
 
+func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 	var offset int
 	if fn.kind != vkBuiltin {
 		offset = 1
@@ -248,36 +264,27 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 		typs[i+offset] = arg.Type
 		flds[i+offset] = arg.impl
 	}
-	t := prog.Struct(typs...)
+	prog := b.Prog
+	typ := prog.Struct(typs...)
 	voidPtr := prog.VoidPtr()
-	ptr := Expr{b.aggregateMalloc(t, flds...), voidPtr}
+	ptr := Expr{b.aggregateMalloc(typ, flds...), voidPtr}
 	b.Store(self.argsPtr, b.BuiltinCall("append", b.Load(self.argsPtr), b.SliceLit(prog.Slice(voidPtr), ptr)))
-	index := len(self.stmts)
-	self.stmts = append(self.stmts, func(bits Expr) {
-		switch kind {
-		case DeferInCond:
-			zero := prog.Val(uintptr(0))
-			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
-			b.IfThen(has, func() {
-				ptr := b.Load(b.IndexAddr(b.Load(self.argsPtr), b.Prog.Val(index)))
-				b.callDefer(fn, ptr, t, len(args))
-			})
-		case DeferAlways:
-			ptr := b.Load(b.IndexAddr(b.Load(self.argsPtr), b.Prog.Val(index)))
-			b.callDefer(fn, ptr, t, len(args))
-		}
-	})
+	return typ
 }
 
-func (b Builder) callDefer(fn Expr, ptr Expr, t Type, n int) {
-	data := Expr{llvm.CreateLoad(b.impl, t.ll, ptr.impl), t}
-	args := make([]Expr, n)
+func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, nargs int) {
+	nLen := b.FieldAddr(Expr{self.argsPtr.impl, b.Prog.Pointer(b.Prog.rtType("Slice"))}, 1)
+	index := b.BinOp(token.SUB, b.Load(nLen), b.Prog.Val(1))
+	ptr := b.Load(b.IndexAddr(b.Load(self.argsPtr), index))
+	b.Store(nLen, index)
+	data := Expr{llvm.CreateLoad(b.impl, typ.ll, ptr.impl), typ}
+	args := make([]Expr, nargs)
 	var offset int
 	if fn.kind != vkBuiltin {
 		fn = b.getField(data, 0)
 		offset = 1
 	}
-	for i := 0; i < n; i++ {
+	for i := 0; i < nargs; i++ {
 		args[i] = b.getField(data, i+offset)
 	}
 	b.Call(fn, args...)
