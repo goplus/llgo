@@ -32,14 +32,23 @@ var (
 )
 
 func ExpandEnvToArgs(s string) []string {
-	return safesplit.SplitPkgConfigFlags(expandEnvWithCmd(s))
+	r, config := expandEnvWithCmd(s)
+	if r == "" {
+		return nil
+	}
+	if config {
+		return safesplit.SplitPkgConfigFlags(r)
+	}
+	return []string{r}
 }
 
 func ExpandEnv(s string) string {
-	return expandEnvWithCmd(s)
+	r, _ := expandEnvWithCmd(s)
+	return r
 }
 
-func expandEnvWithCmd(s string) string {
+func expandEnvWithCmd(s string) (string, bool) {
+	var config bool
 	expanded := reSubcmd.ReplaceAllStringFunc(s, func(m string) string {
 		subcmd := strings.TrimSpace(m[2 : len(m)-1])
 		args := parseSubcmd(subcmd)
@@ -48,6 +57,7 @@ func expandEnvWithCmd(s string) string {
 			fmt.Fprintf(os.Stderr, "expand cmd only support pkg-config and llvm-config: '%s'\n", subcmd)
 			return ""
 		}
+		config = true
 
 		var out []byte
 		var err error
@@ -60,7 +70,7 @@ func expandEnvWithCmd(s string) string {
 
 		return strings.Replace(strings.TrimSpace(string(out)), "\n", " ", -1)
 	})
-	return strings.TrimSpace(os.Expand(expanded, os.Getenv))
+	return strings.TrimSpace(os.Expand(expanded, os.Getenv)), config
 }
 
 func parseSubcmd(s string) []string {
