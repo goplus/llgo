@@ -32,8 +32,9 @@ type Defer struct {
 	Addr unsafe.Pointer // sigjmpbuf
 	Bits uintptr
 	Link *Defer
-	Reth unsafe.Pointer // block address after Rethrow
-	Rund unsafe.Pointer // block address after RunDefers
+	Reth unsafe.Pointer   // block address after Rethrow
+	Rund unsafe.Pointer   // block address after RunDefers
+	Args []unsafe.Pointer // defer func and args
 }
 
 // Recover recovers a panic.
