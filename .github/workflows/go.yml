@@ -137,17 +137,7 @@ jobs:
           echo "libdir: $libdir"
           ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
           export PKG_CONFIG_PATH=$pcdir
-          bash .github/workflows/test_demo.sh
-
-      - name: Show test result
-        run: cat result.md
-
-      - name: PR comment with test result
-        uses: thollander/actions-comment-pull-request@v3
-        if: false
-        with:
-          filePath: result.md
-          comment_tag: test-result-on-${{matrix.os}}-with-llvm-${{matrix.llvm}}
+          go test -v ./_demo
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
