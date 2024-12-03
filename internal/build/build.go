@@ -36,6 +36,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/astrewriter"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
@@ -592,6 +593,9 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				return
 			}
 			var altPkg *packages.Cached
+			if err := rewrite(p); err != nil {
+				panic(err)
+			}
 			var ssaPkg = createSSAPkg(prog, p, verbose)
 			if _, ok := hasAltPkg[pkgPath]; ok {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
@@ -604,6 +608,13 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 		}
 	})
 	return
+}
+
+func rewrite(pkg *packages.Package) error {
+	rewriter := astrewriter.NewASTRewriter(
+		astrewriter.DeferInLoopRewriter(pkg.TypesInfo),
+	)
+	return rewriter.RewritePkg(pkg)
 }
 
 func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
