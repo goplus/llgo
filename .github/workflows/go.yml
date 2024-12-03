@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [ "**" ]
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   fmt:
     runs-on: ubuntu-latest
@@ -142,12 +146,13 @@ jobs:
       - name: Show test result
         run: cat result.md
 
-      - name: PR comment with test result
-        uses: thollander/actions-comment-pull-request@v3
-        if: false
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ matrix.os == 'macos-latest' && github.event_name == 'pull_request' }}
         with:
-          filePath: result.md
-          comment_tag: test-result-on-${{matrix.os}}-with-llvm-${{matrix.llvm}}
+          header: Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}
+          recreate: true
+          path: result.md
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
