@@ -107,7 +107,9 @@ jobs:
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
-        run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
+        run: |
+          export DISABLE_LOG_OUTPUT=1
+          go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: LLGO tests
         if: ${{!startsWith(matrix.os, 'ubuntu')}}

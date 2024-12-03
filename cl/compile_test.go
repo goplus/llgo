@@ -17,6 +17,9 @@
 package cl_test
 
 import (
+	"io"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/goplus/llgo/cl"
@@ -27,6 +30,13 @@ import (
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
 	cltest.TestCompileEx(t, src, "foo.go", expected, false)
+}
+
+func TestMain(m *testing.M) {
+	if os.Getenv("DISABLE_LOG_OUTPUT") == "1" {
+		log.SetOutput(io.Discard)
+	}
+	os.Exit(m.Run())
 }
 
 func TestFromTestgo(t *testing.T) {
