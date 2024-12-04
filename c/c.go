@@ -33,8 +33,12 @@ type (
 	Float   = float32
 	Double  = float64
 	Pointer = unsafe.Pointer
-	FilePtr = unsafe.Pointer
+	FilePtr = *FILE
 )
+
+type FILE struct {
+	Unused [8]byte
+}
 
 type (
 	Int  C.int
