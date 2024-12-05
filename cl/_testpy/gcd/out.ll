@@ -16,6 +16,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
+  call void @"github.com/goplus/llgo/py.init"()
   call void @"github.com/goplus/llgo/py/math.init"()
   %1 = load ptr, ptr @__llgo_py.math, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @1, ptr @__llgo_py.math.gcd, ptr null)
@@ -40,6 +41,8 @@ _llgo_0:
   %8 = call i32 (ptr, ...) @printf(ptr @0, i64 %7)
   ret i32 0
 }
+
+declare void @"github.com/goplus/llgo/py.init"()
 
 declare void @"github.com/goplus/llgo/py/math.init"()
 
