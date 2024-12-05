@@ -17,6 +17,7 @@
 package build
 
 import (
+	"bytes"
 	"debug/macho"
 	"fmt"
 	"go/ast"
@@ -533,6 +534,22 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
+		if IsCheckEnable() {
+			if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
+				fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
+			}
+		}
+	}
+	return
+}
+
+func llcCheck(env *llvm.Env, exportFile string) (err error, msg string) {
+	bin := filepath.Join(env.BinDir(), "llc")
+	cmd := exec.Command(bin, "-filetype=null", exportFile)
+	var buf bytes.Buffer
+	cmd.Stderr = &buf
+	if err = cmd.Run(); err != nil {
+		msg = buf.String()
 	}
 	return
 }
@@ -639,6 +656,7 @@ var (
 
 const llgoDebug = "LLGO_DEBUG"
 const llgoOptimize = "LLGO_OPTIMIZE"
+const llgoCheck = "LLGO_CHECK"
 
 func isEnvOn(env string, defVal bool) bool {
 	envVal := strings.ToLower(os.Getenv(env))
@@ -654,6 +672,10 @@ func IsDebugEnabled() bool {
 
 func IsOptimizeEnabled() bool {
 	return isEnvOn(llgoOptimize, true)
+}
+
+func IsCheckEnable() bool {
+	return isEnvOn(llgoCheck, false)
 }
 
 func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
