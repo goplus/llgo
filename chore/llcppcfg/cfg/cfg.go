@@ -33,7 +33,7 @@ func CmdOutString(cmd *exec.Cmd) (string, error) {
 	return outBuf.String(), nil
 }
 
-func expandString(str string) string {
+func ExpandString(str string) string {
 	return os.Expand(str, func(s string) string {
 		args := strings.Fields(s)
 		if len(args) <= 0 {
@@ -47,7 +47,7 @@ func expandString(str string) string {
 	})
 }
 
-func expandCflags(str string, fn func(s string) bool) (includes []string, flags string) {
+func ExpandCflags(str string, fn func(s string) bool) (includes []string, flags string) {
 	list := strings.FieldsFunc(str, func(r rune) bool {
 		return unicode.IsSpace(r)
 	})
@@ -97,6 +97,22 @@ func expandCflags(str string, fn func(s string) bool) (includes []string, flags 
 	return
 }
 
+func ExpandCFlagsName(name string) (retIncludes []string, retCflags string) {
+	originCFlags := fmt.Sprintf("${pkg-config --cflags %s}", name)
+	cflags := ExpandString(originCFlags)
+	expandIncludes, expandCflags := ExpandCflags(cflags, func(s string) bool {
+		ext := filepath.Ext(s)
+		return ext == ".h" || ext == ".hpp"
+	})
+	if len(expandCflags) > 0 {
+		cflags = expandCflags
+	}
+	// expand Cflags and Libs
+	retIncludes = expandIncludes
+	retCflags = strings.TrimLeft(strings.TrimRight(cflags, " \t\r\n"), " \t\r\n")
+	return
+}
+
 func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 	cfg := &LLCppConfig{
 		Name: name,
@@ -104,24 +120,9 @@ func NewLLCppConfig(name string, isCpp bool) *LLCppConfig {
 	cfg.Cflags = fmt.Sprintf("$(pkg-config --cflags %s)", name)
 	cfg.Libs = fmt.Sprintf("$(pkg-config --libs %s)", name)
 	cfg.TrimPrefixes = []string{}
-	cfg.ReplPrefixes = []string{}
 	cfg.Cplusplus = isCpp
 	cfg.Include = []string{}
-	Cflags := fmt.Sprintf("${pkg-config --cflags %s}", name)
-	cflags := expandString(Cflags)
-	retIncludes, retCflags := expandCflags(cflags, func(s string) bool {
-		ext := filepath.Ext(s)
-		return ext == ".h" || ext == ".hpp"
-	})
-	cfg.Include = retIncludes
-	if len(retCflags) > 0 {
-		cflags = retCflags
-	}
-	// expand Cflags and Libs
-	cfg.Cflags = strings.TrimLeft(strings.TrimRight(cflags, " \t\r\n"), " \t\r\n")
-	Libs := fmt.Sprintf("${pkg-config --libs %s}", name)
-	libs := expandString(Libs)
-	cfg.Libs = strings.TrimLeft(strings.TrimRight(libs, " \t\r\n"), " \t\r\n")
+	cfg.Include, _ = ExpandCFlagsName(name)
 	return cfg
 }
 
