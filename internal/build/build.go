@@ -319,7 +319,8 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						expdArgs = append(expdArgs, env.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
 					} else {
-						expdArgs = append(expdArgs, param)
+						fields := strings.Fields(param)
+						expdArgs = append(expdArgs, fields...)
 					}
 					if len(expdArgs) > 0 {
 						break
