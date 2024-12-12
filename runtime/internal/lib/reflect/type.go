@@ -924,13 +924,10 @@ func (t *rtype) AssignableTo(u Type) bool {
 }
 
 func (t *rtype) ConvertibleTo(u Type) bool {
-	/*
-		if u == nil {
-			panic("reflect: nil type passed to Type.ConvertibleTo")
-		}
-		return convertOp(u.common(), t.common()) != nil
-	*/
-	panic("todo: reflect.rtype.ConvertibleTo")
+	if u == nil {
+		panic("reflect: nil type passed to Type.ConvertibleTo")
+	}
+	return convertOp(u.common(), t.common()) != nil
 }
 
 func (t *rtype) Comparable() bool {
