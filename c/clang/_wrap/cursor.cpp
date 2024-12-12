@@ -111,6 +111,8 @@ long long wrap_clang_getArraySize(CXType *arrayTyp) { return clang_getArraySize(
 
 void wrap_clang_Type_getNamedType(CXType *typ, CXType *namedTyp) { *namedTyp = clang_Type_getNamedType(*typ); }
 
+long long wrap_clang_Type_getSizeOf(CXType *typ) { return clang_Type_getSizeOf(*typ); }
+
 unsigned wrap_clang_Cursor_isAnonymous(CXCursor *cursor) { return clang_Cursor_isAnonymous(*cursor); }
 
 unsigned wrap_clang_Cursor_isAnonymousRecordDecl(CXCursor *cursor) {
