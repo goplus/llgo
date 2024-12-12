@@ -2149,6 +2149,61 @@ func (t Type) NamedType() (ret Type) {
 }
 
 /**
+ * List the possible error codes for \c clang_Type_getSizeOf,
+ *   \c clang_Type_getAlignOf, \c clang_Type_getOffsetOf and
+ *   \c clang_Cursor_getOffsetOf.
+ *
+ * A value of this enumeration type can be returned if the target type is not
+ * a valid argument to sizeof, alignof or offsetof.
+ */
+type LayoutError c.Int
+
+const (
+	/**
+	 * Type is of kind CXType_Invalid.
+	 */
+	LayoutErrorInvalid LayoutError = -1
+	/**
+	 * The type is an incomplete Type.
+	 */
+	LayoutErrorIncomplete LayoutError = -2
+	/**
+	 * The type is a dependent Type.
+	 */
+	LayoutErrorDependent LayoutError = -3
+	/**
+	 * The type is not a constant size type.
+	 */
+	LayoutErrorNotConstantSize LayoutError = -4
+	/**
+	 * The Field name is not valid for this record.
+	 */
+	LayoutErrorInvalidFieldName LayoutError = -5
+	/**
+	 * The type is undeduced.
+	 */
+	LayoutErrorUndeduced LayoutError = -6
+)
+
+/**
+ * Return the size of a type in bytes as per C++[expr.sizeof] standard.
+ *
+ * If the type declaration is invalid, CXTypeLayoutError_Invalid is returned.
+ * If the type declaration is an incomplete type, CXTypeLayoutError_Incomplete
+ *   is returned.
+ * If the type declaration is a dependent type, CXTypeLayoutError_Dependent is
+ *   returned.
+ */
+// llgo:link (*Type).wrapSizeOf C.wrap_clang_Type_getSizeOf
+func (t *Type) wrapSizeOf() (ret c.LongLong) {
+	return 0
+}
+
+func (t Type) SizeOf() (ret c.LongLong) {
+	return t.wrapSizeOf()
+}
+
+/**
  * Determine whether the given cursor represents an anonymous
  * tag or namespace
  */
