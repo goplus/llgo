@@ -28,3 +28,9 @@ func ToFloat64(v uintptr) float64
 
 //go:linkname ToFloat32 C.llgoToFloat32
 func ToFloat32(v uintptr) float32
+
+//go:linkname FromFloat64 C.llgoFromFloat64
+func FromFloat64(v float64) uintptr
+
+//go:linkname FromFloat32 C.llgoFromFloat32
+func FromFloat32(v float32) uintptr
