@@ -152,7 +152,7 @@ func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMe
 	doInitNamed(ret, pkgPath, name, underlying, methods)
 	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
 	ret.PtrToThis_ = ptr
-	ptr.TFlag |= abi.TFlagExtraStar
+	ptr.TFlag = ptr.TFlag&^abi.TFlagNamed | abi.TFlagExtraStar
 }
 
 func newUninitedNamed(kind abi.Kind, size uintptr, methods int) *Type {
