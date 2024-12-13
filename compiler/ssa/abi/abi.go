@@ -308,7 +308,7 @@ func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 	if private {
 		return b.Pkg + ".struct$" + hashStr, false
 	}
-	return "_llgo_struct$" + hashStr, true
+	return "_llgo_struct$" + hashStr, false
 }
 
 func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
