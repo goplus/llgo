@@ -1868,7 +1868,12 @@ func (v Value) Convert(t Type) Value {
 	if v.flag&flagMethod != 0 {
 		v = makeMethodValue("Convert", v)
 	}
-	op := convertOp(t.common(), v.typ())
+	var op func(Value, Type) Value
+	if kind := v.Kind(); kind == Func && kind == t.Kind() {
+		op = convertOp(t.common(), v.Type().common())
+	} else {
+		op = convertOp(t.common(), v.typ())
+	}
 	if op == nil {
 		panic("reflect.Value.Convert: value of type " + stringFor(v.typ()) + " cannot be converted to type " + t.String())
 	}
