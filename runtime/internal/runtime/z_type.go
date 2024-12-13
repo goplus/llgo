@@ -235,7 +235,7 @@ func newPointer(elem *Type) *Type {
 			Hash:        9067 + 2*elem.Hash,
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
-			Kind_:       uint8(abi.Pointer),
+			Kind_:       uint8(abi.Pointer) | abi.KindDirectIface,
 			Equal:       memequalptr,
 			TFlag:       abi.TFlagRegularMemory,
 		},
