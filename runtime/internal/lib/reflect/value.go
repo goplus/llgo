@@ -623,7 +623,7 @@ func (v Value) CanFloat() bool {
 // It panics if v's Kind is not Float32 or Float64
 func (v Value) Float() float64 {
 	k := v.kind()
-	if v.flag&flagAddr != 0 {
+	if v.flag&flagIndir != 0 {
 		switch k {
 		case Float32:
 			return float64(*(*float32)(v.ptr))
@@ -635,7 +635,11 @@ func (v Value) Float() float64 {
 		case Float32:
 			return float64(bitcast.ToFloat32(uintptr(v.ptr)))
 		case Float64:
-			return bitcast.ToFloat64(uintptr(v.ptr))
+			if is64bit {
+				return bitcast.ToFloat64(uintptr(v.ptr))
+			} else {
+				return *(*float64)(v.ptr)
+			}
 		}
 	}
 	panic(&ValueError{"reflect.Value.Float", v.kind()})
@@ -705,7 +709,7 @@ func (v Value) Int() int64 {
 	f := v.flag
 	k := f.kind()
 	p := v.ptr
-	if f&flagAddr != 0 {
+	if f&flagIndir != 0 {
 		switch k {
 		case Int:
 			return int64(*(*int)(p))
@@ -718,16 +722,16 @@ func (v Value) Int() int64 {
 		case Int64:
 			return *(*int64)(p)
 		}
-	} else if unsafe.Sizeof(uintptr(0)) == 8 {
-		if k >= Int && k <= Int64 {
-			return int64(uintptr(p))
-		}
 	} else {
-		if k >= Int && k <= Int32 {
+		switch k {
+		case Int, Int8, Int16, Int32:
 			return int64(uintptr(p))
-		}
-		if k == Int64 {
-			return *(*int64)(p)
+		case Int64:
+			if is64bit {
+				return int64(uintptr(p))
+			} else {
+				return *(*int64)(p)
+			}
 		}
 	}
 	panic(&ValueError{"reflect.Value.Int", v.kind()})
@@ -1558,7 +1562,7 @@ func (v Value) Uint() uint64 {
 	f := v.flag
 	k := v.kind()
 	p := v.ptr
-	if f&flagAddr != 0 {
+	if f&flagIndir != 0 {
 		switch k {
 		case Uint:
 			return uint64(*(*uint)(p))
@@ -1573,16 +1577,16 @@ func (v Value) Uint() uint64 {
 		case Uintptr:
 			return uint64(*(*uintptr)(p))
 		}
-	} else if unsafe.Sizeof(uintptr(0)) == 8 {
-		if k >= Uint && k <= Uintptr {
-			return uint64(uintptr(p))
-		}
 	} else {
-		if k >= Uint && k <= Uint32 {
+		switch k {
+		case Uint, Uint8, Uint16, Uint32:
 			return uint64(uintptr(p))
-		}
-		if k == Uint64 || k == Uintptr {
-			return *(*uint64)(p)
+		case Uint64, Uintptr:
+			if is64bit {
+				return uint64(uintptr(p))
+			} else {
+				return *(*uint64)(p)
+			}
 		}
 	}
 	panic(&ValueError{"reflect.Value.Uint", v.kind()})
