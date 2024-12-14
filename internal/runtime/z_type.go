@@ -79,7 +79,7 @@ func Basic(_kind Kind) *Type {
 		tyBasic[kind] = &Type{
 			Size_:       size,
 			PtrBytes:    bytes,
-			Hash:        uint32(kind), // TODO(xsw): hash
+			Hash:        uint32(kind),
 			Align_:      uint8(align),
 			FieldAlign_: uint8(align),
 			Kind_:       uint8(_kind),
@@ -154,13 +154,13 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	ret := &abi.StructType{
 		Type: Type{
 			Size_: size,
-			Hash:  uint32(abi.Struct), // TODO(xsw): hash
 			Kind_: uint8(abi.Struct),
 			Str_:  structStr(fields),
 		},
 		PkgPath_: pkgPath,
 		Fields:   fields,
 	}
+	var hash uint32 = 9059
 	var comparable bool = true
 	var typalign uint8
 	for _, f := range fields {
@@ -172,7 +172,14 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 			ret.PtrBytes = f.Offset + f.Typ.PtrBytes
 		}
 		comparable = comparable && (ft.Equal != nil)
+		if f.Embedded_ {
+			hash += 8861
+		}
+		hash += hashString(f.Tag_)
+		hash += hashString(f.Name_)
+		hash += f.Typ.Hash
 	}
+	ret.Hash = hash
 	ret.Align_ = typalign
 	ret.FieldAlign_ = typalign
 	if comparable {
@@ -220,7 +227,7 @@ func newPointer(elem *Type) *Type {
 		Type: Type{
 			Size_:       unsafe.Sizeof(uintptr(0)),
 			PtrBytes:    pointerSize,
-			Hash:        uint32(abi.Pointer), // TODO(xsw): hash
+			Hash:        9067 + 2*elem.Hash,
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Pointer),
@@ -259,7 +266,7 @@ func SliceOf(elem *Type) *Type {
 		Type: Type{
 			Size_:       unsafe.Sizeof([]int{}),
 			PtrBytes:    pointerSize,
-			Hash:        uint32(abi.Slice),
+			Hash:        9049 + 2*elem.Hash,
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Slice),
@@ -279,7 +286,7 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 	ret := &abi.ArrayType{
 		Type: Type{
 			Size_:       length * elem.Size_,
-			Hash:        uint32(abi.Array),
+			Hash:        9043 + 2*uint32(length) + 3*elem.Hash,
 			Align_:      elem.Align_,
 			FieldAlign_: elem.FieldAlign_,
 			Kind_:       uint8(abi.Array),
@@ -326,7 +333,7 @@ func ChanOf(dir int, strChan string, elem *Type) *Type {
 		Type: Type{
 			Size_:       pointerSize,
 			PtrBytes:    pointerSize,
-			Hash:        uint32(abi.Chan),
+			Hash:        9127 + 2*uint32(dir) + 3*elem.Hash,
 			Align_:      pointerAlign,
 			TFlag:       abi.TFlagRegularMemory,
 			FieldAlign_: pointerAlign,
@@ -349,7 +356,7 @@ func MapOf(key, elem *Type, bucket *Type, flags int) *Type {
 		Type: Type{
 			Size_:       unsafe.Sizeof(uintptr(0)),
 			PtrBytes:    pointerSize,
-			Hash:        uint32(abi.Map),
+			Hash:        9109 + 2*key.Hash + 3*elem.Hash,
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Kind_:       uint8(abi.Map),
@@ -566,5 +573,15 @@ func (r *rtypes) addType(typ *Type) {
 }
 
 var rtypeList rtypes
+
+// hashString computes the Fowler–Noll–Vo hash of s.
+func hashString(s string) uint32 {
+	var h uint32
+	for i := 0; i < len(s); i++ {
+		h ^= uint32(s[i])
+		h *= 16777619
+	}
+	return h
+}
 
 // -----------------------------------------------------------------------------
