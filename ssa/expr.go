@@ -243,7 +243,7 @@ func (b Builder) Const(v constant.Value, typ Type) Expr {
 			v, _ := constant.Float64Val(constant.ToFloat(v))
 			return prog.FloatVal(v, typ)
 		case kind == types.String:
-			return b.Str(constant.StringVal(v))
+			return Expr{b.Str(constant.StringVal(v)).impl, typ}
 		case kind == types.Complex128 || kind == types.Complex64:
 			v = constant.ToComplex(v)
 			re, _ := constant.Float64Val(constant.Real(v))
