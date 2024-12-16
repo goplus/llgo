@@ -224,6 +224,40 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 	return ret
 }
 
+func NewNamedInterface(pkgPath, name string) *InterfaceType {
+	ret := &struct {
+		abi.InterfaceType
+		u abi.UncommonType
+	}{
+		abi.InterfaceType{
+			Type: Type{
+				Size_:       unsafe.Sizeof(eface{}),
+				PtrBytes:    2 * pointerSize,
+				Hash:        uint32(abi.Interface), // TODO(xsw): hash
+				Align_:      uint8(pointerAlign),
+				FieldAlign_: uint8(pointerAlign),
+				Kind_:       uint8(abi.Interface),
+				Str_:        name,
+				TFlag:       abi.TFlagNamed | abi.TFlagUncommon,
+			},
+			PkgPath_: pkgPath,
+		},
+		abi.UncommonType{
+			PkgPath_: pkgPath,
+		},
+	}
+	return &ret.InterfaceType
+}
+
+func InitNamedInterface(ret *InterfaceType, methods []Imethod) {
+	ret.Methods = methods
+	if len(methods) == 0 {
+		ret.Equal = nilinterequal
+	} else {
+		ret.Equal = interequal
+	}
+}
+
 // Interface returns an interface type.
 // Don't call NewNamed for named interface type.
 func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
