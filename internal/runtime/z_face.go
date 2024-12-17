@@ -225,6 +225,12 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 }
 
 func NewNamedInterface(pkgPath, name string) *InterfaceType {
+	named := pkgPath + "." + name
+	for _, typ := range rtypeList {
+		if typ.named == named {
+			return typ.InterfaceType()
+		}
+	}
 	ret := &struct {
 		abi.InterfaceType
 		u abi.UncommonType
@@ -246,6 +252,7 @@ func NewNamedInterface(pkgPath, name string) *InterfaceType {
 			PkgPath_: pkgPath,
 		},
 	}
+	rtypeList = append(rtypeList, &rtype{Type: &ret.Type, named: named})
 	return &ret.InterfaceType
 }
 
