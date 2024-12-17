@@ -61,13 +61,12 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 	case *types.Struct:
 		return b.abiStructOf(t)
 	case *types.Named:
-		if iface, ok := t.Underlying().(*types.Interface); ok {
-			obj := t.Obj()
-			return b.abiInterfaceOf(abi.PathOf(obj.Pkg()), abi.TypeName(obj), iface)
+		if _, ok := t.Underlying().(*types.Interface); ok {
+			return b.abiNamedInterfaceOf(t)
 		}
 		return b.abiNamedOf(t)
 	case *types.Interface:
-		return b.abiInterfaceOf("", "", t)
+		return b.abiInterfaceOf(t)
 	case *types.Signature:
 		return b.abiFuncOf(t)
 	case *types.Slice:
@@ -166,7 +165,7 @@ func (b Builder) abiMthd(mPkg *types.Package, mName string, mSig *types.Signatur
 }
 
 // func Interface(pkgPath, name string, methods []abi.Imethod)
-func (b Builder) abiInterfaceOf(pkgPath string, name string, t *types.Interface) func() Expr {
+func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 	n := t.NumMethods()
 	typs := make([]Expr, n)
 	for i := 0; i < n; i++ {
@@ -186,12 +185,34 @@ func (b Builder) abiInterfaceOf(pkgPath string, name string, t *types.Interface)
 		}
 		pkg := b.Pkg
 		fn := pkg.rtFunc("Interface")
-		if pkgPath == "" {
-			pkgPath = pkg.Path()
-		}
 		tSlice := lastParamType(prog, fn)
 		methodSlice := b.SliceLit(tSlice, methods...)
-		return b.Call(fn, b.Str(pkgPath), b.Str(name), methodSlice)
+		return b.Call(fn, b.Str(pkg.Path()), b.Str(""), methodSlice)
+	}
+}
+
+func (b Builder) abiInitNamedInterface(ret Expr, t *types.Interface) func() Expr {
+	n := t.NumMethods()
+	typs := make([]Expr, n)
+	for i := 0; i < n; i++ {
+		m := t.Method(i)
+		typs[i] = b.abiType(m.Type())
+	}
+	return func() Expr {
+		prog := b.Prog
+		methods := make([]Expr, n)
+		for i := 0; i < n; i++ {
+			m := t.Method(i)
+			mName := m.Name()
+			if !token.IsExported(mName) {
+				mName = abi.FullName(m.Pkg(), mName)
+			}
+			methods[i] = b.abiImethodOf(mName, typs[i])
+		}
+		fn := b.Pkg.rtFunc("InitNamedInterface")
+		tSlice := lastParamType(prog, fn)
+		methodSlice := b.SliceLit(tSlice, methods...)
+		return b.Call(fn, ret, methodSlice)
 	}
 }
 
@@ -212,6 +233,15 @@ func (b Builder) abiNamed(t *types.Named) Expr {
 	newNamed := pkg.rtFunc("NewNamed")
 	expr := b.Call(newNamed, b.Str(NameOf(t)), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
 	return expr
+}
+
+func (b Builder) abiNamedInterfaceOf(t *types.Named) func() Expr {
+	obj := t.Obj()
+	fn := b.Pkg.rtFunc("NewNamedInterface")
+	expr := b.Call(fn, b.Str(abi.PathOf(obj.Pkg())), b.Str(abi.TypeName(obj)))
+	return func() Expr {
+		return expr
+	}
 }
 
 func (b Builder) sizeof(t types.Type) int64 {
@@ -385,11 +415,11 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	}
 
 	if t, ok := t.(*types.Named); ok {
-		// skip interface
-		if _, ok := t.Underlying().(*types.Interface); ok {
-			return
+		if iface, ok := t.Underlying().(*types.Interface); ok {
+			tabi = b.abiInitNamedInterface(vexpr, iface)
+		} else {
+			tabi = b.abiInitNamed(vexpr, t)
 		}
-		tabi = b.abiInitNamed(vexpr, t)
 		if pub {
 			blks = b.Func.MakeBlocks(2)
 			b.If(eq, blks[0], blks[1])
