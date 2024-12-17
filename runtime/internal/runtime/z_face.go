@@ -21,6 +21,7 @@ import (
 
 	"github.com/goplus/llgo/runtime/abi"
 	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 )
 
 type eface struct {
@@ -306,10 +307,49 @@ func Interface(pkgPath string, methods []Imethod) *InterfaceType {
 	return ret
 }
 
+var itabTable struct {
+	mutex
+	entries []*Itab
+}
+
+type mutex sync.Mutex
+
+func (m *mutex) Lock() {
+	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
+		(*sync.Mutex)(m).Init(nil)
+	}
+	(*sync.Mutex)(m).Lock()
+}
+
+func (m *mutex) Unlock() {
+	(*sync.Mutex)(m).Unlock()
+}
+
+func findItab(inter *InterfaceType, typ *Type) *Itab {
+	itabTable.Lock()
+	for _, i := range itabTable.entries {
+		if i.inter == inter && i._type == typ {
+			itabTable.Unlock()
+			return i
+		}
+	}
+	itabTable.Unlock()
+	return nil
+}
+
+func addItab(i *Itab) {
+	itabTable.Lock()
+	itabTable.entries = append(itabTable.entries, i)
+	itabTable.Unlock()
+}
+
 // NewItab returns a new itab.
 func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	if typ == nil {
 		return nil
+	}
+	if i := findItab(inter, typ); i != nil {
+		return i
 	}
 	n := len(inter.Methods)
 	size := itabHdrSize + uintptr(n)*pointerSize
@@ -334,6 +374,9 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 			}
 			*c.Advance(data, i) = uintptr(fn)
 		}
+	}
+	if ret.fun[0] != 0 {
+		addItab(ret)
 	}
 	return ret
 }
@@ -630,6 +673,43 @@ func shallowHashTuple(tuple []*Type) uint32 {
 		hash += 53471161 * shallowHash(tuple[i])
 	}
 	return hash
+}
+
+func assertE2I(inter *interfacetype, t *_type) *itab {
+	if t == nil {
+		// explicit conversions require non-nil interface value.
+		panic(&TypeAssertionError{nil, nil, &inter.Type, ""})
+	}
+	return getitab(inter, t, false)
+}
+
+func IfaceE2I(inter *interfacetype, e eface, dst *iface) {
+	*dst = iface{assertE2I(inter, e._type), e.data}
+}
+
+func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {
+	if len(inter.Methods) == 0 {
+		panic("internal error - misuse of itab")
+	}
+
+	// easy case
+	if typ.TFlag&abi.TFlagUncommon == 0 {
+		if canfail {
+			return nil
+		}
+		name := inter.Methods[0].Name()
+		panic(&TypeAssertionError{nil, typ, &inter.Type, name})
+	}
+
+	m := NewItab(inter, typ)
+
+	if m.fun[0] != 0 {
+		return m
+	}
+	if canfail {
+		return nil
+	}
+	panic(&TypeAssertionError{concrete: typ, asserted: &inter.Type, missingMethod: ""})
 }
 
 // -----------------------------------------------------------------------------
