@@ -2609,7 +2609,7 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 			panic("reflect: " + op + " of method on nil interface value")
 		}
 		rcvrtype = iface.itab.typ
-		fn = unsafe.Pointer(&iface.itab.fun[i])
+		fn = unsafe.Pointer(iface.itab.fun[i])
 		t = (*funcType)(unsafe.Pointer(m.Typ_))
 	} else {
 		rcvrtype = v.typ()
@@ -3058,6 +3058,5 @@ func MakeMapWithSize(typ Type, n int) Value {
 	return Value{t, m, flag(Map)}
 }
 
-func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer) {
-	panic("todo: reflect.ifaceE2I")
-}
+//go:linkname ifaceE2I github.com/goplus/llgo/runtime/internal/runtime.IfaceE2I
+func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer)
