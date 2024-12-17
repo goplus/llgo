@@ -64,6 +64,14 @@ type Int16T = int16
 type Int32T = int32
 type Int64T = int64
 
+type Uint8T = uint8
+type Uint16T = uint16
+type Uint32T = uint32
+type Uint64T = uint64
+
+type IntmaxT = LongLong
+type UintmaxT = UlongLong
+
 //go:linkname Str llgo.cstr
 func Str(string) *Char
 
