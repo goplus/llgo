@@ -2213,11 +2213,9 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			tin = append([]*abi.Type{rcvrtype}, ft.In...)
 			tout = ft.Out
 			ioff = 1
-			if v.flag&flagIndir != 0 {
-				args = append(args, v.ptr)
-			} else {
-				args = append(args, unsafe.Pointer(&v.ptr))
-			}
+			var ptr unsafe.Pointer
+			storeRcvr(v, unsafe.Pointer(&ptr))
+			args = append(args, unsafe.Pointer(&ptr))
 		} else {
 			if v.flag&flagIndir != 0 {
 				fn = *(*unsafe.Pointer)(v.ptr)
@@ -2312,6 +2310,23 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		}
 	}
 	return
+}
+
+// v is a method receiver. Store at p the word which is used to
+// encode that receiver at the start of the argument list.
+// Reflect uses the "interface" calling convention for
+// methods, which always uses one word to record the receiver.
+func storeRcvr(v Value, p unsafe.Pointer) {
+	t := v.typ()
+	if t.Kind() == abi.Interface {
+		// the interface data word becomes the receiver word
+		iface := (*nonEmptyInterface)(v.ptr)
+		*(*unsafe.Pointer)(p) = iface.word
+	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
+		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
+	} else {
+		*(*unsafe.Pointer)(p) = v.ptr
+	}
 }
 
 var stringType = rtypeOf("")
