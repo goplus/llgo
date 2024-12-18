@@ -107,23 +107,14 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 	}
 }
 
-type rtype struct {
-	*abi.Type
-	named string
-}
-
-var rtypeList []*rtype
-
 // NewNamed returns an uninitialized named type.
 func NewNamed(name string, kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
-	for _, typ := range rtypeList {
-		if typ.named == name {
-			return typ.Type
-		}
+	if t := rtypeList.findNamed(name); t != nil {
+		return t
 	}
 	ret := newUninitedNamed(kind, size, methods)
 	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, pointerSize, ptrMethods)
-	rtypeList = append(rtypeList, &rtype{Type: ret, named: name})
+	rtypeList.addNamed(ret, name)
 	return ret
 }
 
@@ -206,6 +197,9 @@ func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods 
 
 // Func returns a function type.
 func Func(in, out []*Type, variadic bool) *FuncType {
+	if t := rtypeList.findFunc(in, out, variadic); t != nil {
+		return t
+	}
 	ret := &FuncType{
 		Type: Type{
 			Size_:       2 * unsafe.Sizeof(uintptr(0)),
@@ -222,15 +216,14 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 	if variadic {
 		ret.TFlag |= abi.TFlagVariadic
 	}
+	rtypeList.addType(&ret.Type)
 	return ret
 }
 
 func NewNamedInterface(pkgPath, name string) *InterfaceType {
 	named := pkgPath + "." + name
-	for _, typ := range rtypeList {
-		if typ.named == named {
-			return typ.InterfaceType()
-		}
+	if t := rtypeList.findNamed(named); t != nil {
+		return t.InterfaceType()
 	}
 	ret := &struct {
 		abi.InterfaceType
@@ -253,7 +246,7 @@ func NewNamedInterface(pkgPath, name string) *InterfaceType {
 			PkgPath_: pkgPath,
 		},
 	}
-	rtypeList = append(rtypeList, &rtype{Type: &ret.Type, named: named})
+	rtypeList.addNamed(&ret.Type, named)
 	return &ret.InterfaceType
 }
 
@@ -269,6 +262,9 @@ func InitNamedInterface(ret *InterfaceType, methods []Imethod) {
 // Interface returns an interface type.
 // Don't call NewNamed for named interface type.
 func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
+	if t := rtypeList.findInterface(pkgPath, name, methods); t != nil {
+		return t
+	}
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(eface{}),
@@ -287,6 +283,7 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 	} else {
 		ret.Equal = interequal
 	}
+	rtypeList.addType(&ret.Type)
 	return ret
 }
 

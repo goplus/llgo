@@ -148,6 +148,9 @@ func StructField(name string, typ *Type, off uintptr, tag string, embedded bool)
 
 // Struct returns a struct type.
 func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
+	if t := rtypeList.findStruct(pkgPath, size, fields); t != nil {
+		return t
+	}
 	ret := &abi.StructType{
 		Type: Type{
 			Size_: size,
@@ -194,6 +197,7 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	if len(fields) == 1 && isDirectIface(fields[0].Typ) {
 		ret.Kind_ |= abi.KindDirectIface
 	}
+	rtypeList.addType(&ret.Type)
 	return &ret.Type
 }
 
@@ -212,6 +216,9 @@ func PointerTo(elem *Type) *Type {
 const pointerAlign = uint8(unsafe.Alignof(uintptr(0)))
 
 func newPointer(elem *Type) *Type {
+	if t := rtypeList.findElem(abi.Pointer, elem, 0); t != nil {
+		return t
+	}
 	ptr := &abi.PtrType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(uintptr(0)),
@@ -231,11 +238,15 @@ func newPointer(elem *Type) *Type {
 		ptr.TFlag |= abi.TFlagExtraStar
 		ptr.Str_ = elem.Str_
 	}
+	rtypeList.addType(&ptr.Type)
 	return &ptr.Type
 }
 
 // SliceOf returns the slice type with element elem.
 func SliceOf(elem *Type) *Type {
+	if t := rtypeList.findElem(abi.Slice, elem, 0); t != nil {
+		return t
+	}
 	ret := &abi.SliceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof([]int{}),
@@ -248,11 +259,15 @@ func SliceOf(elem *Type) *Type {
 		},
 		Elem: elem,
 	}
+	rtypeList.addType(&ret.Type)
 	return &ret.Type
 }
 
 // ArrayOf returns the array type with element elem and length.
 func ArrayOf(length uintptr, elem *Type) *Type {
+	if t := rtypeList.findElem(abi.Array, elem, length); t != nil {
+		return t
+	}
 	ret := &abi.ArrayType{
 		Type: Type{
 			Size_:       length * elem.Size_,
@@ -292,10 +307,14 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 	if ret.Len == 1 && isDirectIface(ret.Elem) {
 		ret.Kind_ |= abi.KindDirectIface
 	}
+	rtypeList.addType(&ret.Type)
 	return &ret.Type
 }
 
 func ChanOf(dir int, strChan string, elem *Type) *Type {
+	if t := rtypeList.findElem(abi.Chan, elem, uintptr(dir)); t != nil {
+		return t
+	}
 	ret := &abi.ChanType{
 		Type: Type{
 			Size_:       pointerSize,
@@ -311,10 +330,14 @@ func ChanOf(dir int, strChan string, elem *Type) *Type {
 		Elem: elem,
 		Dir:  abi.ChanDir(dir),
 	}
+	rtypeList.addType(&ret.Type)
 	return &ret.Type
 }
 
 func MapOf(key, elem *Type, bucket *Type, flags int) *Type {
+	if t := rtypeList.findMap(key, elem); t != nil {
+		return t
+	}
 	ret := &abi.MapType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(uintptr(0)),
@@ -336,6 +359,7 @@ func MapOf(key, elem *Type, bucket *Type, flags int) *Type {
 	ret.Hasher = func(p unsafe.Pointer, seed uintptr) uintptr {
 		return typehash(key, p, seed)
 	}
+	rtypeList.addType(&ret.Type)
 	return &ret.Type
 }
 
@@ -389,5 +413,138 @@ func ispaddedfield(st *structtype, i int) bool {
 	fd := st.Fields[i]
 	return fd.Offset+fd.Typ.Size_ != end
 }
+
+type rtype struct {
+	*abi.Type
+	named string
+}
+
+type rtypes struct {
+	list []*rtype
+}
+
+func (r *rtypes) findNamed(name string) *Type {
+	for _, typ := range r.list {
+		if typ.HasName() && typ.named == name {
+			return typ.Type
+		}
+	}
+	return nil
+}
+
+func (r *rtypes) addNamed(typ *Type, name string) {
+	r.list = append(r.list, &rtype{Type: typ, named: name})
+}
+
+func (r *rtypes) findElem(kind abi.Kind, elem *Type, extra uintptr) *Type {
+	for _, typ := range r.list {
+		if typ.Kind() == kind && typ.Elem() == elem {
+			switch kind {
+			case abi.Chan:
+				if uintptr(typ.ChanDir()) == extra {
+					return typ.Type
+				}
+			case abi.Array:
+				if uintptr(typ.Len()) == extra {
+					return typ.Type
+				}
+			default:
+				return typ.Type
+			}
+		}
+	}
+	return nil
+}
+
+func (r *rtypes) findMap(key, elem *Type) *Type {
+	for _, typ := range r.list {
+		if typ.Kind() == abi.Map {
+			if mt := typ.MapType(); mt.Key == key && mt.Elem == elem {
+				return typ.Type
+			}
+		}
+	}
+	return nil
+}
+
+func eqFields(s1, s2 []abi.StructField) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		f1, f2 := s1[i], s2[i]
+		if f1.Name_ != f2.Name_ || f1.Embedded_ != f2.Embedded_ || f1.Typ != f2.Typ {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *rtypes) findStruct(pkgPath string, size uintptr, fields []abi.StructField) *Type {
+	for _, typ := range r.list {
+		if typ.Kind() == abi.Struct && typ.Size() == size {
+			if st := typ.StructType(); st.PkgPath_ == pkgPath && eqFields(st.Fields, fields) {
+				return typ.Type
+			}
+		}
+	}
+	return nil
+}
+
+func eqImethods(s1, s2 []Imethod) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		f1, f2 := s1[i], s2[i]
+		if f1.Name_ != f2.Name_ || f1.Typ_ != f2.Typ_ {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *rtypes) findInterface(pkgPath string, name string, methods []Imethod) *abi.InterfaceType {
+	for _, typ := range r.list {
+		if typ.Kind() == abi.Interface && typ.Str_ == name {
+			if it := typ.InterfaceType(); it.PkgPath_ == pkgPath && eqImethods(it.Methods, methods) {
+				return it
+			}
+		}
+	}
+	return nil
+}
+
+func eqTypes(s1, s2 []*Type) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		if s1[i] != s2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *rtypes) findFunc(in, out []*Type, variadic bool) *abi.FuncType {
+	for _, typ := range r.list {
+		if typ.Kind() == abi.Func {
+			if ft := typ.FuncType(); ft.Variadic() == variadic && eqTypes(ft.In, in) && eqTypes(ft.Out, out) {
+				return ft
+			}
+		}
+	}
+	return nil
+}
+
+func (r *rtypes) addType(typ *Type) {
+	r.list = append(r.list, &rtype{Type: typ})
+}
+
+var rtypeList rtypes
 
 // -----------------------------------------------------------------------------
