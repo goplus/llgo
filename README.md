@@ -341,8 +341,8 @@ Here are the Go packages that can be imported correctly:
 
 - [Go 1.20+](https://go.dev)
 - [LLVM 18](https://llvm.org)
-- [LLD 18](https://lld.llvm.org)
 - [Clang 18](https://clang.llvm.org)
+- [LLD 18](https://lld.llvm.org)
 - [pkg-config 0.29+](https://www.freedesktop.org/wiki/Software/pkg-config/)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
 - [OpenSSL 3.0+](https://www.openssl.org/)
@@ -366,7 +366,9 @@ go install -v github.com/goplus/llgo/cmd/llgo@latest
 
 ```
 
-### on Linux (Debian/Ubuntu)
+### on Linux
+
+#### Debian/Ubuntu
 
 <!-- embedme doc/_readme/scripts/install_ubuntu.sh#L2-L1000 -->
 
@@ -377,6 +379,19 @@ sudo apt-get update
 sudo apt-get install -y llvm-18-dev clang-18 libclang-18-dev lld-18 pkg-config libgc-dev libssl-dev zlib1g-dev libcjson-dev libsqlite3-dev
 sudo apt-get install -y python3.12-dev # optional
 go install -v github.com/goplus/llgo/cmd/llgo@latest
+```
+
+#### Alpine Linux
+
+```sh
+apk add go llvm18-dev clang18-dev lld18 pkgconf gc-dev openssl-dev zlib-dev
+apk add python3-dev # optional
+apk add g++ # build only
+export LLVM_CONFIG=/usr/lib/llvm18/bin/llvm-config
+export CGO_CPPFLAGS="$($LLVM_CONFIG --cppflags)"
+export CGO_CXXFLAGS=-std=c++17
+export CGO_LDFLAGS="$($LLVM_CONFIG --ldflags) $($LLVM_CONFIG --libs all)"
+go install -v -tags=byollvm -ldflags="-X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=$LLVM_CONFIG" github.com/goplus/llgo/cmd/llgo@latest
 ```
 
 ### on Windows
