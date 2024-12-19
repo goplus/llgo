@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/pthread/sync"
 	"github.com/goplus/llgo/internal/abi"
 )
 
@@ -106,23 +107,14 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 	}
 }
 
-type rtype struct {
-	*abi.Type
-	named string
-}
-
-var rtypeList []*rtype
-
 // NewNamed returns an uninitialized named type.
 func NewNamed(name string, kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
-	for _, typ := range rtypeList {
-		if typ.named == name {
-			return typ.Type
-		}
+	if t := rtypeList.findNamed(name); t != nil {
+		return t
 	}
 	ret := newUninitedNamed(kind, size, methods)
 	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, pointerSize, ptrMethods)
-	rtypeList = append(rtypeList, &rtype{Type: ret, named: name})
+	rtypeList.addNamed(ret, name)
 	return ret
 }
 
@@ -152,7 +144,7 @@ func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMe
 	doInitNamed(ret, pkgPath, name, underlying, methods)
 	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
 	ret.PtrToThis_ = ptr
-	ptr.TFlag |= abi.TFlagExtraStar
+	ptr.TFlag = ptr.TFlag&^abi.TFlagNamed | abi.TFlagExtraStar
 }
 
 func newUninitedNamed(kind abi.Kind, size uintptr, methods int) *Type {
@@ -205,6 +197,9 @@ func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods 
 
 // Func returns a function type.
 func Func(in, out []*Type, variadic bool) *FuncType {
+	if t := rtypeList.findFunc(in, out, variadic); t != nil {
+		return t
+	}
 	ret := &FuncType{
 		Type: Type{
 			Size_:       2 * unsafe.Sizeof(uintptr(0)),
@@ -221,10 +216,15 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 	if variadic {
 		ret.TFlag |= abi.TFlagVariadic
 	}
+	rtypeList.addType(&ret.Type)
 	return ret
 }
 
 func NewNamedInterface(pkgPath, name string) *InterfaceType {
+	named := pkgPath + "." + name
+	if t := rtypeList.findNamed(named); t != nil {
+		return t.InterfaceType()
+	}
 	ret := &struct {
 		abi.InterfaceType
 		u abi.UncommonType
@@ -246,6 +246,7 @@ func NewNamedInterface(pkgPath, name string) *InterfaceType {
 			PkgPath_: pkgPath,
 		},
 	}
+	rtypeList.addNamed(&ret.Type, named)
 	return &ret.InterfaceType
 }
 
@@ -261,6 +262,9 @@ func InitNamedInterface(ret *InterfaceType, methods []Imethod) {
 // Interface returns an interface type.
 // Don't call NewNamed for named interface type.
 func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
+	if t := rtypeList.findInterface(pkgPath, name, methods); t != nil {
+		return t
+	}
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(eface{}),
@@ -279,13 +283,53 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 	} else {
 		ret.Equal = interequal
 	}
+	rtypeList.addType(&ret.Type)
 	return ret
+}
+
+var itabTable struct {
+	mutex
+	entries []*Itab
+}
+
+type mutex sync.Mutex
+
+func (m *mutex) Lock() {
+	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
+		(*sync.Mutex)(m).Init(nil)
+	}
+	(*sync.Mutex)(m).Lock()
+}
+
+func (m *mutex) Unlock() {
+	(*sync.Mutex)(m).Unlock()
+}
+
+func findItab(inter *InterfaceType, typ *Type) *Itab {
+	itabTable.Lock()
+	for _, i := range itabTable.entries {
+		if i.inter == inter && i._type == typ {
+			itabTable.Unlock()
+			return i
+		}
+	}
+	itabTable.Unlock()
+	return nil
+}
+
+func addItab(i *Itab) {
+	itabTable.Lock()
+	itabTable.entries = append(itabTable.entries, i)
+	itabTable.Unlock()
 }
 
 // NewItab returns a new itab.
 func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	if typ == nil {
 		return nil
+	}
+	if i := findItab(inter, typ); i != nil {
+		return i
 	}
 	n := len(inter.Methods)
 	size := itabHdrSize + uintptr(n)*pointerSize
@@ -310,6 +354,9 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 			}
 			*c.Advance(data, i) = uintptr(fn)
 		}
+	}
+	if ret.fun[0] != 0 {
+		addItab(ret)
 	}
 	return ret
 }
@@ -475,6 +522,43 @@ func isDirectIface(t *_type) bool {
 
 func SetClosure(t *abi.Type) {
 	t.TFlag |= abi.TFlagClosure
+}
+
+func assertE2I(inter *interfacetype, t *_type) *itab {
+	if t == nil {
+		// explicit conversions require non-nil interface value.
+		panic(&TypeAssertionError{nil, nil, &inter.Type, ""})
+	}
+	return getitab(inter, t, false)
+}
+
+func IfaceE2I(inter *interfacetype, e eface, dst *iface) {
+	*dst = iface{assertE2I(inter, e._type), e.data}
+}
+
+func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {
+	if len(inter.Methods) == 0 {
+		panic("internal error - misuse of itab")
+	}
+
+	// easy case
+	if typ.TFlag&abi.TFlagUncommon == 0 {
+		if canfail {
+			return nil
+		}
+		name := inter.Methods[0].Name()
+		panic(&TypeAssertionError{nil, typ, &inter.Type, name})
+	}
+
+	m := NewItab(inter, typ)
+
+	if m.fun[0] != 0 {
+		return m
+	}
+	if canfail {
+		return nil
+	}
+	panic(&TypeAssertionError{concrete: typ, asserted: &inter.Type, missingMethod: ""})
 }
 
 // -----------------------------------------------------------------------------
