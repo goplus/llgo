@@ -153,7 +153,7 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 			Size_: size,
 			Hash:  uint32(abi.Struct), // TODO(xsw): hash
 			Kind_: uint8(abi.Struct),
-			Str_:  "struct {...}",
+			Str_:  structStr(fields),
 		},
 		PkgPath_: pkgPath,
 		Fields:   fields,
@@ -399,6 +399,27 @@ func ispaddedfield(st *structtype, i int) bool {
 	}
 	fd := st.Fields[i]
 	return fd.Offset+fd.Typ.Size_ != end
+}
+
+func structStr(fields []abi.StructField) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "struct {"...)
+	for i, st := range fields {
+		if i > 0 {
+			repr = append(repr, ';')
+		}
+		repr = append(repr, ' ')
+		if !st.Embedded_ {
+			repr = append(repr, st.Name_...)
+			repr = append(repr, ' ')
+		}
+		repr = append(repr, st.Typ.String()...)
+	}
+	if len(fields) > 0 {
+		repr = append(repr, ' ')
+	}
+	repr = append(repr, '}')
+	return string(repr)
 }
 
 type rtypes struct {

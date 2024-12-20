@@ -487,7 +487,7 @@ func interfaceStr(ft *abi.InterfaceType) string {
 	repr = append(repr, "interface {"...)
 	for i, t := range ft.Methods {
 		if i > 0 {
-			repr = append(repr, "; "...)
+			repr = append(repr, ';')
 		}
 		repr = append(repr, ' ')
 		repr = append(repr, t.Name_...)
