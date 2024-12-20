@@ -203,6 +203,9 @@ func setUncommon(ret *Type, methods []Method) {
 
 // Func returns a function type.
 func Func(in, out []*Type, variadic bool) *FuncType {
+	if t := rtypeList.findFunc(in, out, variadic); t != nil {
+		return t
+	}
 	ret := &FuncType{
 		Type: Type{
 			Size_:       2 * unsafe.Sizeof(uintptr(0)),
@@ -219,6 +222,7 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 		ret.TFlag |= abi.TFlagVariadic
 	}
 	ret.Str_ = funcStr(ret)
+	rtypeList.addType(&ret.Type)
 	return ret
 }
 
@@ -266,6 +270,9 @@ func InitNamedInterface(ret *InterfaceType, methods []Imethod) {
 }
 
 func Interface(pkgPath string, methods []Imethod) *InterfaceType {
+	if t := rtypeList.findInterface(pkgPath, methods); t != nil {
+		return t
+	}
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(eface{}),
@@ -284,6 +291,7 @@ func Interface(pkgPath string, methods []Imethod) *InterfaceType {
 		ret.Equal = interequal
 	}
 	ret.Str_ = interfaceStr(ret)
+	rtypeList.addType(&ret.Type)
 	return ret
 }
 
