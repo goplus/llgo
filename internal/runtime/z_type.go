@@ -272,7 +272,7 @@ func ArrayOf(length uintptr, elem *Type) *Type {
 			Align_:      elem.Align_,
 			FieldAlign_: elem.FieldAlign_,
 			Kind_:       uint8(abi.Array),
-			Str_:        "[...]" + elem.String(), // TODO(xsw): itoa
+			Str_:        "[" + string(itoa(make([]byte, 20), uint64(length))) + "]" + elem.String(),
 		},
 		Elem:  elem,
 		Slice: SliceOf(elem),

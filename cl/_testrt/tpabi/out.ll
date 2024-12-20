@@ -286,7 +286,7 @@ _llgo_13:                                         ; preds = %_llgo_12
   %66 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %64, 0
   %67 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %66, i64 1, 1
   %68 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %67, i64 1, 2
-  %69 = call ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %68)
+  %69 = call ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/internal/runtime.Slice" %68)
   store ptr %69, ptr @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs", align 8
   br label %_llgo_14
 
@@ -320,7 +320,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.Slice")
+declare ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr, ptr)
 

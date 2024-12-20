@@ -211,7 +211,6 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 			Align_:      uint8(pointerAlign),
 			FieldAlign_: uint8(pointerAlign),
 			Kind_:       uint8(abi.Func),
-			Str_:        "func(...)",
 		},
 		In:  in,
 		Out: out,
@@ -219,9 +218,12 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 	if variadic {
 		ret.TFlag |= abi.TFlagVariadic
 	}
+	ret.Str_ = funcStr(ret)
 	return ret
 }
 
+// NewNamedInterface returns an interface type.
+// Don't call NewNamed for named interface type.
 func NewNamedInterface(pkgPath, name string) *InterfaceType {
 	if pkgPath != "" {
 		name = pkgName(pkgPath) + "." + name
@@ -263,9 +265,7 @@ func InitNamedInterface(ret *InterfaceType, methods []Imethod) {
 	}
 }
 
-// Interface returns an interface type.
-// Don't call NewNamed for named interface type.
-func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
+func Interface(pkgPath string, methods []Imethod) *InterfaceType {
 	ret := &abi.InterfaceType{
 		Type: Type{
 			Size_:       unsafe.Sizeof(eface{}),
@@ -274,7 +274,6 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 			Align_:      uint8(pointerAlign),
 			FieldAlign_: uint8(pointerAlign),
 			Kind_:       uint8(abi.Interface),
-			Str_:        name,
 		},
 		PkgPath_: pkgPath,
 		Methods:  methods,
@@ -284,6 +283,7 @@ func Interface(pkgPath, name string, methods []Imethod) *InterfaceType {
 	} else {
 		ret.Equal = interequal
 	}
+	ret.Str_ = interfaceStr(ret)
 	return ret
 }
 
@@ -480,6 +480,57 @@ func isDirectIface(t *_type) bool {
 
 func SetClosure(t *abi.Type) {
 	t.TFlag |= abi.TFlagClosure
+}
+
+func interfaceStr(ft *abi.InterfaceType) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "interface {"...)
+	for i, t := range ft.Methods {
+		if i > 0 {
+			repr = append(repr, "; "...)
+		}
+		repr = append(repr, ' ')
+		repr = append(repr, t.Name_...)
+		repr = append(repr, t.Typ_.String()[4:]...)
+	}
+	if len(ft.Methods) > 0 {
+		repr = append(repr, ' ')
+	}
+	repr = append(repr, '}')
+	return string(repr)
+}
+
+func funcStr(ft *abi.FuncType) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "func("...)
+	for i, t := range ft.In {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		if ft.Variadic() && i == len(ft.In)-1 {
+			repr = append(repr, "..."...)
+			repr = append(repr, (*abi.SliceType)(unsafe.Pointer(t)).Elem.String()...)
+		} else {
+			repr = append(repr, t.String()...)
+		}
+	}
+	repr = append(repr, ')')
+	out := ft.Out
+	if len(out) == 1 {
+		repr = append(repr, ' ')
+	} else if len(out) > 1 {
+		repr = append(repr, " ("...)
+	}
+	for i, t := range out {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		repr = append(repr, t.String()...)
+	}
+	if len(out) > 1 {
+		repr = append(repr, ')')
+	}
+	return string(repr)
 }
 
 // -----------------------------------------------------------------------------

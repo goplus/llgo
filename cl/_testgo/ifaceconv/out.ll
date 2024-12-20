@@ -556,7 +556,7 @@ _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
   %35 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %33, 0
   %36 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %35, i64 1, 1
   %37 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %36, i64 1, 2
-  %38 = call ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %37)
+  %38 = call ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.Slice" %37)
   store ptr %38, ptr @"main.iface$brpgdLtIeRlPi8QUoTgPCXzlehUkncg7v9aITo-GsF4", align 8
   %39 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @6, i64 2 })
   %40 = load ptr, ptr @_llgo_main.I2, align 8
@@ -599,7 +599,7 @@ _llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
   %59 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %56, 0
   %60 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %59, i64 2, 1
   %61 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %60, i64 2, 2
-  %62 = call ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/internal/runtime.Slice" %61)
+  %62 = call ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.Slice" %61)
   store ptr %62, ptr @"main.iface$gZBF8fFlqIMZ9M6lT2VWPyc3eu5Co6j0WoKGIEgDPAw", align 8
   %63 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @9, i64 2 }, i64 25, i64 0, i64 1, i64 1)
   %64 = load ptr, ptr @_llgo_main.C1, align 8
@@ -721,7 +721,7 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Func"(%"github.com/goplus/
 
 declare void @"github.com/goplus/llgo/internal/runtime.SetDirectIface"(ptr)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.Slice")
+declare ptr @"github.com/goplus/llgo/internal/runtime.Interface"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.NewItab"(ptr, ptr)
 

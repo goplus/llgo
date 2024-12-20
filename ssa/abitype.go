@@ -187,7 +187,7 @@ func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 		fn := pkg.rtFunc("Interface")
 		tSlice := lastParamType(prog, fn)
 		methodSlice := b.SliceLit(tSlice, methods...)
-		return b.Call(fn, b.Str(pkg.Path()), b.Str(""), methodSlice)
+		return b.Call(fn, b.Str(pkg.Path()), methodSlice)
 	}
 }
 
