@@ -18,11 +18,10 @@ source_filename = "main"
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
 @_llgo_main._Ctype_int = linkonce global ptr null, align 8
-@0 = private unnamed_addr constant [15 x i8] c"main._Ctype_int", align 1
+@0 = private unnamed_addr constant [4 x i8] c"main", align 1
+@1 = private unnamed_addr constant [10 x i8] c"_Ctype_int", align 1
 @_llgo_int32 = linkonce global ptr null, align 8
-@1 = private unnamed_addr constant [4 x i8] c"main", align 1
-@2 = private unnamed_addr constant [10 x i8] c"_Ctype_int", align 1
-@3 = private unnamed_addr constant [19 x i8] c"test_structs failed", align 1
+@2 = private unnamed_addr constant [19 x i8] c"test_structs failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
 define i32 @main._Cfunc_test_structs(ptr %0, ptr %1, ptr %2, ptr %3, ptr %4) {
@@ -120,7 +119,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %35 = load ptr, ptr @_llgo_string, align 8
   %36 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @3, i64 19 }, ptr %36, align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 19 }, ptr %36, align 8
   %37 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %35, 0
   %38 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %37, ptr %36, 1
   call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %38)
@@ -140,7 +139,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 15 }, i64 5, i64 4, i64 0, i64 0)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 10 }, i64 5, i64 4, i64 0, i64 0)
   store ptr %0, ptr @_llgo_main._Ctype_int, align 8
   %1 = load ptr, ptr @_llgo_int32, align 8
   %2 = icmp eq ptr %1, null
@@ -153,7 +152,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   %4 = load ptr, ptr @_llgo_int32, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 10 }, ptr %4, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, ptr %4, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   %5 = load ptr, ptr @_llgo_string, align 8
   %6 = icmp eq ptr %5, null
   br i1 %6, label %_llgo_3, label %_llgo_4
@@ -167,11 +166,11 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
+declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare { i64, %"github.com/goplus/llgo/internal/runtime.iface" } @fmt.Println(%"github.com/goplus/llgo/internal/runtime.Slice")
 

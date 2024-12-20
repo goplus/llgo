@@ -130,11 +130,11 @@ func makeMethodValue(op string, v Value) Value {
 	// v.Type returns the actual type of the method value.
 	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
 	ptyp := rtypeOf(unsafe.Pointer(uintptr(0)))
-	typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
-		Name_: "llgo_ctx",
+	typ := runtime.Struct(v.typ().Uncommon().PkgPath_, 2*unsafe.Sizeof(0), abi.StructField{
+		Name_: "f",
 		Typ:   &ftyp.Type,
 	}, abi.StructField{
-		Name_:  "f",
+		Name_:  "data",
 		Typ:    ptyp,
 		Offset: unsafe.Sizeof(0),
 	})
