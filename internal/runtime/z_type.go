@@ -234,6 +234,18 @@ func newPointer(elem *Type) *Type {
 	return &ptr.Type
 }
 
+func setPointer(ptr *abi.PtrType, elem *Type) {
+	ptr.PtrBytes = pointerSize
+	ptr.Hash = uint32(abi.Pointer) // TODO(xsw): hash
+	ptr.Align_ = pointerAlign
+	ptr.FieldAlign_ = pointerAlign
+	ptr.Kind_ = uint8(abi.Pointer)
+	ptr.Equal = memequalptr
+	ptr.Elem = elem
+	ptr.Str_ = elem.Str_
+	ptr.TFlag |= abi.TFlagRegularMemory | abi.TFlagExtraStar
+}
+
 // SliceOf returns the slice type with element elem.
 func SliceOf(elem *Type) *Type {
 	ret := &abi.SliceType{
@@ -388,5 +400,25 @@ func ispaddedfield(st *structtype, i int) bool {
 	fd := st.Fields[i]
 	return fd.Offset+fd.Typ.Size_ != end
 }
+
+type rtypes struct {
+	types []*abi.Type
+}
+
+func (r *rtypes) findNamed(pkgPath string, name string) *Type {
+	for _, typ := range r.types {
+		if typ.TFlag&(abi.TFlagNamed|abi.TFlagUncommon) != 0 &&
+			typ.Str_ == name && typ.Uncommon().PkgPath_ == pkgPath {
+			return typ
+		}
+	}
+	return nil
+}
+
+func (r *rtypes) addType(typ *Type) {
+	r.types = append(r.types, typ)
+}
+
+var rtypeList rtypes
 
 // -----------------------------------------------------------------------------

@@ -231,14 +231,15 @@ func (b Builder) abiNamed(t *types.Named) Expr {
 	size := b.sizeof(tunder)
 	numMethods, numPtrMethods := b.abiMethods(t)
 	newNamed := pkg.rtFunc("NewNamed")
-	expr := b.Call(newNamed, b.Str(NameOf(t)), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
+	obj := t.Obj()
+	expr := b.Call(newNamed, b.Str(abi.PathOf(obj.Pkg())), b.Str(obj.Name()), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
 	return expr
 }
 
 func (b Builder) abiNamedInterfaceOf(t *types.Named) func() Expr {
 	obj := t.Obj()
 	fn := b.Pkg.rtFunc("NewNamedInterface")
-	expr := b.Call(fn, b.Str(abi.PathOf(obj.Pkg())), b.Str(abi.TypeName(obj)))
+	expr := b.Call(fn, b.Str(abi.PathOf(obj.Pkg())), b.Str(obj.Name()))
 	return func() Expr {
 		return expr
 	}
@@ -255,9 +256,6 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 	return func() Expr {
 		pkg := b.Pkg
 		prog := b.Prog
-		path := abi.PathOf(t.Obj().Pkg())
-		name := abi.NamedName(t)
-		//targs := abi.NamedTypeArgs(t)
 		var initNamed = pkg.rtFunc("InitNamed")
 		var tSlice = lastParamType(prog, initNamed)
 		mset := typeutil.IntuitiveMethodSet(t, nil)
@@ -295,7 +293,7 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 			}
 			ptrMethods = b.SliceLit(tSlice, ptrMthds...)
 		}
-		return b.Call(initNamed, ret, b.Str(path), b.Str(name), under, methods, ptrMethods)
+		return b.Call(initNamed, ret, under, methods, ptrMethods)
 	}
 }
 

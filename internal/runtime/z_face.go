@@ -106,23 +106,23 @@ func hdrSizeOf(kind abi.Kind) uintptr {
 	}
 }
 
-type rtype struct {
-	*abi.Type
-	named string
-}
-
-var rtypeList []*rtype
-
 // NewNamed returns an uninitialized named type.
-func NewNamed(name string, kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
-	for _, typ := range rtypeList {
-		if typ.named == name {
-			return typ.Type
-		}
+func NewNamed(pkgPath string, name string, kind abi.Kind, size uintptr, methods, ptrMethods int) *Type {
+	if pkgPath != "" {
+		name = pkgName(pkgPath) + "." + name
 	}
-	ret := newUninitedNamed(kind, size, methods)
-	ret.PtrToThis_ = newUninitedNamed(abi.Pointer, pointerSize, ptrMethods)
-	rtypeList = append(rtypeList, &rtype{Type: ret, named: name})
+	if t := rtypeList.findNamed(pkgPath, name); t != nil {
+		return t
+	}
+	ret := allocUncommonType(kind, size, methods, abi.TFlagUninited|abi.TFlagNamed|abi.TFlagUncommon, pkgPath)
+	ret.Str_ = name
+	if ptrMethods == 0 {
+		ret.PtrToThis_ = newPointer(ret)
+	} else {
+		ret.PtrToThis_ = allocUncommonType(abi.Pointer, pointerSize, ptrMethods, abi.TFlagUncommon, pkgPath)
+		setPointer((*abi.PtrType)(unsafe.Pointer(ret.PtrToThis_)), ret)
+	}
+	rtypeList.addType(ret)
 	return ret
 }
 
@@ -140,49 +140,48 @@ func pkgName(path string) string {
 }
 
 // InitNamed initializes an uninitialized named type.
-func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method) {
+func InitNamed(ret *Type, underlying *Type, methods, ptrMethods []Method) {
 	// skip initialized
-	if ret.TFlag != abi.TFlagUninited {
+	if ret.TFlag&abi.TFlagUninited == 0 {
 		return
 	}
-	ptr := ret.PtrToThis_
-	if pkgPath != "" {
-		name = pkgName(pkgPath) + "." + name
+	setUnderlying(ret, underlying)
+	if len(methods) > 0 {
+		setUncommon(ret, methods)
 	}
-	doInitNamed(ret, pkgPath, name, underlying, methods)
-	doInitNamed(ptr, pkgPath, name, newPointer(ret), ptrMethods)
-	ret.PtrToThis_ = ptr
-	ptr.TFlag |= abi.TFlagExtraStar
+	if len(ptrMethods) > 0 {
+		setUncommon(ret.PtrToThis_, ptrMethods)
+	}
 }
 
-func newUninitedNamed(kind abi.Kind, size uintptr, methods int) *Type {
-	allocSize := hdrSizeOf(kind) + uncommonTypeHdrSize + uintptr(methods)*methodSize
+func allocUncommonType(kind abi.Kind, size uintptr, methods int, tflag abi.TFlag, pkgPath string) *Type {
+	baseSize := hdrSizeOf(kind)
+	allocSize := baseSize + uncommonTypeHdrSize + uintptr(methods)*methodSize
 	ret := (*Type)(AllocU(allocSize))
 	ret.Size_ = size
 	ret.Kind_ = uint8(kind)
-	ret.TFlag = abi.TFlagUninited
+	ret.TFlag = tflag
+	uncommon := (*abi.UncommonType)(c.Advance(unsafe.Pointer(ret), int(baseSize)))
+	uncommon.PkgPath_ = pkgPath
+	uncommon.Moff = uint32(uncommonTypeHdrSize)
 	return ret
 }
 
-func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods []Method) {
-	tflag := underlying.TFlag
-	if tflag&abi.TFlagUncommon != 0 {
-		panic("runtime: underlying type is already named")
-	}
+func setUnderlying(ret *Type, underlying *Type) {
+	str := ret.Str_
+	ptr := ret.PtrToThis_
 
-	kind := ret.Kind()
-	if ret.TFlag != abi.TFlagUninited || kind != underlying.Kind() {
-		panic("initNamed: unexpected named type")
-	}
+	baseSize := hdrSizeOf(ret.Kind())
+	c.Memcpy(unsafe.Pointer(ret), unsafe.Pointer(underlying), baseSize)
 
+	ret.Str_ = str
+	ret.PtrToThis_ = ptr
+	ret.TFlag = underlying.TFlag | abi.TFlagNamed | abi.TFlagUncommon
+}
+
+func setUncommon(ret *Type, methods []Method) {
 	ptr := unsafe.Pointer(ret)
-	baseSize := hdrSizeOf(kind)
-	c.Memcpy(ptr, unsafe.Pointer(underlying), baseSize)
-
-	ret.TFlag = tflag | abi.TFlagNamed | abi.TFlagUncommon
-	ret.Str_ = fullName
-	ret.Equal = underlying.Equal
-	ret.Size_ = underlying.Size_
+	baseSize := hdrSizeOf(ret.Kind())
 
 	n := len(methods)
 	xcount := uint16(0)
@@ -193,7 +192,6 @@ func doInitNamed(ret *Type, pkgPath, fullName string, underlying *Type, methods 
 		xcount++
 	}
 	uncommon := (*abi.UncommonType)(c.Advance(ptr, int(baseSize)))
-	uncommon.PkgPath_ = pkgPath
 	uncommon.Mcount = uint16(n)
 	uncommon.Xcount = xcount
 	uncommon.Moff = uint32(uncommonTypeHdrSize)
@@ -225,11 +223,11 @@ func Func(in, out []*Type, variadic bool) *FuncType {
 }
 
 func NewNamedInterface(pkgPath, name string) *InterfaceType {
-	named := pkgPath + "." + name
-	for _, typ := range rtypeList {
-		if typ.named == named {
-			return typ.InterfaceType()
-		}
+	if pkgPath != "" {
+		name = pkgName(pkgPath) + "." + name
+	}
+	if t := rtypeList.findNamed(pkgPath, name); t != nil {
+		return t.InterfaceType()
 	}
 	ret := &struct {
 		abi.InterfaceType
@@ -252,7 +250,7 @@ func NewNamedInterface(pkgPath, name string) *InterfaceType {
 			PkgPath_: pkgPath,
 		},
 	}
-	rtypeList = append(rtypeList, &rtype{Type: &ret.Type, named: named})
+	rtypeList.addType(&ret.Type)
 	return &ret.InterfaceType
 }
 

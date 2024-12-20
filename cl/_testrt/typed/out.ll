@@ -10,16 +10,14 @@ source_filename = "main"
 @__llgo_argv = global ptr null, align 8
 @0 = private unnamed_addr constant [5 x i8] c"hello", align 1
 @_llgo_main.T = linkonce global ptr null, align 8
-@1 = private unnamed_addr constant [6 x i8] c"main.T", align 1
+@1 = private unnamed_addr constant [4 x i8] c"main", align 1
+@2 = private unnamed_addr constant [1 x i8] c"T", align 1
 @_llgo_string = linkonce global ptr null, align 8
-@2 = private unnamed_addr constant [4 x i8] c"main", align 1
-@3 = private unnamed_addr constant [1 x i8] c"T", align 1
-@4 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@3 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
 @_llgo_main.A = linkonce global ptr null, align 8
-@5 = private unnamed_addr constant [6 x i8] c"main.A", align 1
+@4 = private unnamed_addr constant [1 x i8] c"A", align 1
 @_llgo_int = linkonce global ptr null, align 8
 @"[2]_llgo_int" = linkonce global ptr null, align 8
-@6 = private unnamed_addr constant [1 x i8] c"A", align 1
 
 define void @main.init() {
 _llgo_0:
@@ -64,7 +62,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %14 = load ptr, ptr @_llgo_string, align 8
   %15 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @4, i64 21 }, ptr %15, align 8
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @3, i64 21 }, ptr %15, align 8
   %16 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %14, 0
   %17 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %16, ptr %15, 1
   call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %17)
@@ -139,7 +137,7 @@ declare void @"github.com/goplus/llgo/internal/runtime.init"()
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 6 }, i64 24, i64 16, i64 0, i64 0)
+  %0 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 1 }, i64 24, i64 16, i64 0, i64 0)
   %1 = load ptr, ptr @_llgo_main.T, align 8
   %2 = icmp eq ptr %1, null
   br i1 %2, label %_llgo_1, label %_llgo_2
@@ -163,11 +161,11 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   br i1 %2, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, %"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @3, i64 1 }, ptr %6, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %0, ptr %6, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @5, i64 6 }, i64 17, i64 16, i64 0, i64 0)
+  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @4, i64 1 }, i64 17, i64 16, i64 0, i64 0)
   %8 = load ptr, ptr @_llgo_main.A, align 8
   %9 = icmp eq ptr %8, null
   br i1 %9, label %_llgo_7, label %_llgo_8
@@ -203,18 +201,18 @@ _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
   br i1 %9, label %_llgo_13, label %_llgo_14
 
 _llgo_13:                                         ; preds = %_llgo_12
-  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %7, %"github.com/goplus/llgo/internal/runtime.String" { ptr @2, i64 4 }, %"github.com/goplus/llgo/internal/runtime.String" { ptr @6, i64 1 }, ptr %18, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
+  call void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr %7, ptr %18, { ptr, i64, i64 } zeroinitializer, { ptr, i64, i64 } zeroinitializer)
   br label %_llgo_14
 
 _llgo_14:                                         ; preds = %_llgo_13, %_llgo_12
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String", i64, i64, i64, i64)
+declare ptr @"github.com/goplus/llgo/internal/runtime.NewNamed"(%"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", i64, i64, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.Basic"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, %"github.com/goplus/llgo/internal/runtime.String", %"github.com/goplus/llgo/internal/runtime.String", ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
+declare void @"github.com/goplus/llgo/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/internal/runtime.Slice", %"github.com/goplus/llgo/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
 
