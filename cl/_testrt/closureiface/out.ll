@@ -56,7 +56,7 @@ _llgo_0:
   %12 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %11, ptr %10, 1
   %13 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %12, 0
   %14 = load ptr, ptr @"main.struct$0F5MIVpixVnQ6IoIDrJI9hTk70oCWg1odzb2q0E2rJ0", align 8
-  %15 = icmp eq ptr %13, %14
+  %15 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %14, ptr %13)
   br i1 %15, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
@@ -208,6 +208,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplu
 declare %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1)
 
 declare void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr)
+
+declare i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
 

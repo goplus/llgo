@@ -127,7 +127,7 @@ _llgo_0:
   %39 = call %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %11)
   %40 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %39, 0
   %41 = load ptr, ptr @"main.struct$0F5MIVpixVnQ6IoIDrJI9hTk70oCWg1odzb2q0E2rJ0", align 8
-  %42 = icmp eq ptr %40, %41
+  %42 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %41, ptr %40)
   br i1 %42, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
@@ -223,7 +223,7 @@ _llgo_0:
   %32 = call %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %4)
   %33 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %32, 0
   %34 = load ptr, ptr @"main.struct$0F5MIVpixVnQ6IoIDrJI9hTk70oCWg1odzb2q0E2rJ0", align 8
-  %35 = icmp eq ptr %33, %34
+  %35 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %34, ptr %33)
   br i1 %35, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
@@ -322,28 +322,63 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %41)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   %42 = call %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %14)
-  %43 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %42)
-  %44 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
-  %45 = getelementptr inbounds %reflect.Value, ptr %44, i64 0
-  %46 = load ptr, ptr @_llgo_int, align 8
-  %47 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %46, 0
-  %48 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %47, ptr inttoptr (i64 100 to ptr), 1
-  %49 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %48)
-  store %reflect.Value %49, ptr %45, align 8
-  %50 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %44, 0
-  %51 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %50, i64 1, 1
-  %52 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %51, i64 1, 2
-  %53 = call %"github.com/goplus/llgo/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %43, %"github.com/goplus/llgo/internal/runtime.Slice" %52)
-  %54 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %53, 0
-  %55 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %53, 1
-  %56 = icmp sge i64 0, %55
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %56)
-  %57 = getelementptr inbounds %reflect.Value, ptr %54, i64 0
-  %58 = load %reflect.Value, ptr %57, align 8
-  %59 = call i64 @reflect.Value.Int(%reflect.Value %58)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %59)
+  %43 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %42, 0
+  %44 = load ptr, ptr @"main.struct$0F5MIVpixVnQ6IoIDrJI9hTk70oCWg1odzb2q0E2rJ0", align 8
+  %45 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %44, ptr %43)
+  br i1 %45, label %_llgo_3, label %_llgo_4
+
+_llgo_1:                                          ; preds = %_llgo_5
+  %46 = load ptr, ptr @_llgo_string, align 8
+  %47 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @5, i64 5 }, ptr %47, align 8
+  %48 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %46, 0
+  %49 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %48, ptr %47, 1
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %49)
+  unreachable
+
+_llgo_2:                                          ; preds = %_llgo_5
+  %50 = extractvalue { ptr, ptr } %76, 1
+  %51 = extractvalue { ptr, ptr } %76, 0
+  %52 = call i64 %51(ptr %50, i64 1)
+  %53 = call %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %14)
+  %54 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %53)
+  %55 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
+  %56 = getelementptr inbounds %reflect.Value, ptr %55, i64 0
+  %57 = load ptr, ptr @_llgo_int, align 8
+  %58 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %57, 0
+  %59 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %58, ptr inttoptr (i64 100 to ptr), 1
+  %60 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %59)
+  store %reflect.Value %60, ptr %56, align 8
+  %61 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %55, 0
+  %62 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %61, i64 1, 1
+  %63 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %62, i64 1, 2
+  %64 = call %"github.com/goplus/llgo/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %54, %"github.com/goplus/llgo/internal/runtime.Slice" %63)
+  %65 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %64, 0
+  %66 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %64, 1
+  %67 = icmp sge i64 0, %66
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %67)
+  %68 = getelementptr inbounds %reflect.Value, ptr %65, i64 0
+  %69 = load %reflect.Value, ptr %68, align 8
+  %70 = call i64 @reflect.Value.Int(%reflect.Value %69)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %70)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret void
+
+_llgo_3:                                          ; preds = %_llgo_0
+  %71 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %42, 1
+  %72 = load { ptr, ptr }, ptr %71, align 8
+  %73 = insertvalue { { ptr, ptr }, i1 } undef, { ptr, ptr } %72, 0
+  %74 = insertvalue { { ptr, ptr }, i1 } %73, i1 true, 1
+  br label %_llgo_5
+
+_llgo_4:                                          ; preds = %_llgo_0
+  br label %_llgo_5
+
+_llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
+  %75 = phi { { ptr, ptr }, i1 } [ %74, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %76 = extractvalue { { ptr, ptr }, i1 } %75, 0
+  %77 = extractvalue { { ptr, ptr }, i1 } %75, 1
+  br i1 %77, label %_llgo_2, label %_llgo_1
 }
 
 define void @main.callMethod() {
@@ -394,28 +429,63 @@ _llgo_0:
   call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %33)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   %34 = call %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %6)
-  %35 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %34)
-  %36 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
-  %37 = getelementptr inbounds %reflect.Value, ptr %36, i64 0
-  %38 = load ptr, ptr @_llgo_int, align 8
-  %39 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %38, 0
-  %40 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %39, ptr inttoptr (i64 100 to ptr), 1
-  %41 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %40)
-  store %reflect.Value %41, ptr %37, align 8
-  %42 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %36, 0
-  %43 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %42, i64 1, 1
-  %44 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %43, i64 1, 2
-  %45 = call %"github.com/goplus/llgo/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %35, %"github.com/goplus/llgo/internal/runtime.Slice" %44)
-  %46 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %45, 0
-  %47 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %45, 1
-  %48 = icmp sge i64 0, %47
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %48)
-  %49 = getelementptr inbounds %reflect.Value, ptr %46, i64 0
-  %50 = load %reflect.Value, ptr %49, align 8
-  %51 = call i64 @reflect.Value.Int(%reflect.Value %50)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %51)
+  %35 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %34, 0
+  %36 = load ptr, ptr @"main.struct$0F5MIVpixVnQ6IoIDrJI9hTk70oCWg1odzb2q0E2rJ0", align 8
+  %37 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %36, ptr %35)
+  br i1 %37, label %_llgo_3, label %_llgo_4
+
+_llgo_1:                                          ; preds = %_llgo_5
+  %38 = load ptr, ptr @_llgo_string, align 8
+  %39 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @5, i64 5 }, ptr %39, align 8
+  %40 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %38, 0
+  %41 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %40, ptr %39, 1
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %41)
+  unreachable
+
+_llgo_2:                                          ; preds = %_llgo_5
+  %42 = extractvalue { ptr, ptr } %68, 1
+  %43 = extractvalue { ptr, ptr } %68, 0
+  %44 = call i64 %43(ptr %42, i64 1)
+  %45 = call %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %6)
+  %46 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %45)
+  %47 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 24)
+  %48 = getelementptr inbounds %reflect.Value, ptr %47, i64 0
+  %49 = load ptr, ptr @_llgo_int, align 8
+  %50 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %49, 0
+  %51 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %50, ptr inttoptr (i64 100 to ptr), 1
+  %52 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/internal/runtime.eface" %51)
+  store %reflect.Value %52, ptr %48, align 8
+  %53 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" undef, ptr %47, 0
+  %54 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %53, i64 1, 1
+  %55 = insertvalue %"github.com/goplus/llgo/internal/runtime.Slice" %54, i64 1, 2
+  %56 = call %"github.com/goplus/llgo/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %46, %"github.com/goplus/llgo/internal/runtime.Slice" %55)
+  %57 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %56, 0
+  %58 = extractvalue %"github.com/goplus/llgo/internal/runtime.Slice" %56, 1
+  %59 = icmp sge i64 0, %58
+  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %59)
+  %60 = getelementptr inbounds %reflect.Value, ptr %57, i64 0
+  %61 = load %reflect.Value, ptr %60, align 8
+  %62 = call i64 @reflect.Value.Int(%reflect.Value %61)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %62)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret void
+
+_llgo_3:                                          ; preds = %_llgo_0
+  %63 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %34, 1
+  %64 = load { ptr, ptr }, ptr %63, align 8
+  %65 = insertvalue { { ptr, ptr }, i1 } undef, { ptr, ptr } %64, 0
+  %66 = insertvalue { { ptr, ptr }, i1 } %65, i1 true, 1
+  br label %_llgo_5
+
+_llgo_4:                                          ; preds = %_llgo_0
+  br label %_llgo_5
+
+_llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
+  %67 = phi { { ptr, ptr }, i1 } [ %66, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %68 = extractvalue { { ptr, ptr }, i1 } %67, 0
+  %69 = extractvalue { { ptr, ptr }, i1 } %67, 1
+  br i1 %69, label %_llgo_2, label %_llgo_1
 }
 
 define void @main.callSlice() {
@@ -1375,6 +1445,8 @@ declare i64 @reflect.Value.Int(%reflect.Value)
 declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
 
 declare %"github.com/goplus/llgo/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value)
+
+declare i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
