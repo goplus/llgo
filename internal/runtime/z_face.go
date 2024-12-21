@@ -490,6 +490,11 @@ func SetClosure(t *abi.Type) {
 	t.TFlag |= abi.TFlagClosure
 }
 
+func ClosureEqual(c *abi.Type, t *abi.Type) bool {
+	return c == t || (t.IsClosure() &&
+		(*abi.StructType)(unsafe.Pointer(c)).Fields[0].Typ == (*abi.StructType)(unsafe.Pointer(t)).Fields[0].Typ)
+}
+
 func interfaceStr(ft *abi.InterfaceType) string {
 	repr := make([]byte, 0, 64)
 	repr = append(repr, "interface {"...)

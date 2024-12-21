@@ -39,7 +39,7 @@ _llgo_0:
   %10 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %9, ptr %8, 1
   %11 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %6, 0
   %12 = load ptr, ptr @"main.struct$MYJJzV_XnHHne2yABOrxrKaJAnHA7CUbHXWeamxO-48", align 8
-  %13 = icmp eq ptr %11, %12
+  %13 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %12, ptr %11)
   br i1 %13, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
@@ -47,7 +47,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %15 = load { ptr, ptr }, ptr %14, align 8
   %16 = extractvalue %"github.com/goplus/llgo/internal/runtime.eface" %10, 0
   %17 = load ptr, ptr @"main.struct$MYJJzV_XnHHne2yABOrxrKaJAnHA7CUbHXWeamxO-48", align 8
-  %18 = icmp eq ptr %16, %17
+  %18 = call i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr %17, ptr %16)
   br i1 %18, label %_llgo_3, label %_llgo_4
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -224,6 +224,8 @@ declare ptr @"github.com/goplus/llgo/internal/runtime.Struct"(%"github.com/goplu
 declare %"github.com/goplus/llgo/internal/abi.StructField" @"github.com/goplus/llgo/internal/runtime.StructField"(%"github.com/goplus/llgo/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/internal/runtime.String", i1)
 
 declare void @"github.com/goplus/llgo/internal/runtime.SetClosure"(ptr)
+
+declare i1 @"github.com/goplus/llgo/internal/runtime.ClosureEqual"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface")
 
