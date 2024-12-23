@@ -486,10 +486,6 @@ func isDirectIface(t *_type) bool {
 	return t.Kind_&abi.KindDirectIface != 0
 }
 
-func SetClosure(t *abi.Type) {
-	t.TFlag |= abi.TFlagClosure
-}
-
 func interfaceStr(ft *abi.InterfaceType) string {
 	repr := make([]byte, 0, 64)
 	repr = append(repr, "interface {"...)

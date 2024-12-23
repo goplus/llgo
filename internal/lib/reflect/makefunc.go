@@ -129,14 +129,12 @@ func makeMethodValue(op string, v Value) Value {
 
 	// v.Type returns the actual type of the method value.
 	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
-	ptyp := rtypeOf(unsafe.Pointer(uintptr(0)))
-	typ := runtime.Struct(v.typ().Uncommon().PkgPath_, 2*unsafe.Sizeof(0), abi.StructField{
-		Name_: "f",
+	typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
+		Name_: "$f",
 		Typ:   &ftyp.Type,
 	}, abi.StructField{
-		Name_:  "data",
-		Typ:    ptyp,
-		Offset: unsafe.Sizeof(0),
+		Name_: "$data",
+		Typ:   unsafePointerType,
 	})
 	typ.TFlag |= abi.TFlagClosure
 	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
@@ -149,6 +147,8 @@ func makeMethodValue(op string, v Value) Value {
 	// but we want Interface() and other operations to fail early.
 	return Value{typ, unsafe.Pointer(fv), v.flag&flagRO | flagIndir | flag(Func)}
 }
+
+var unsafePointerType = rtypeOf(unsafe.Pointer(nil))
 
 /*
 func methodValueCallCodePtr() uintptr {

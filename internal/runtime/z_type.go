@@ -197,6 +197,10 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	if len(fields) == 1 && isDirectIface(fields[0].Typ) {
 		ret.Kind_ |= abi.KindDirectIface
 	}
+	if len(fields) == 2 && fields[0].Name_ == "$f" && fields[0].Typ.Kind() == abi.Func &&
+		fields[1].Name_ == "$data" && fields[1].Typ.Kind() == abi.UnsafePointer {
+		ret.TFlag |= abi.TFlagClosure
+	}
 	rtypeList.addType(&ret.Type)
 	return &ret.Type
 }
@@ -504,7 +508,7 @@ func eqFields(s1, s2 []abi.StructField) bool {
 func (r *rtypes) findStruct(pkgPath string, size uintptr, fields []abi.StructField) *Type {
 	for _, typ := range r.types {
 		if typ.Kind() == abi.Struct && typ.Size() == size {
-			if st := typ.StructType(); st.PkgPath_ == pkgPath && eqFields(st.Fields, fields) {
+			if st := typ.StructType(); (st.IsClosure() || st.PkgPath_ == pkgPath) && eqFields(st.Fields, fields) {
 				return typ
 			}
 		}
