@@ -99,7 +99,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("MakeInterface %v, %v\n", rawIntf, x.impl)
 	}
-	if x.kind == vkFuncDecl {
+	if x.kind() == vkFuncDecl {
 		typ := b.Prog.Type(x.raw.Type, InGo)
 		x = checkExpr(x, typ.raw.Type, b)
 	}
@@ -324,7 +324,7 @@ func (b Builder) faceItab(x llvm.Value) llvm.Value {
 }
 
 func (b Builder) faceAbiType(x Expr) Expr {
-	if x.kind == vkIface {
+	if x.kind() == vkIface {
 		return b.InlineCall(b.Pkg.rtFunc("IfaceType"), x)
 	}
 	typ := llvm.CreateExtractValue(b.impl, x.impl, 0)

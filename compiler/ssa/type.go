@@ -59,6 +59,11 @@ const (
 	vkChan
 )
 
+const (
+	KindCFunc = 1 << 5
+	KindMask  = (1 << 5) - 1
+)
+
 // -----------------------------------------------------------------------------
 
 func indexType(t types.Type) types.Type {
@@ -156,9 +161,9 @@ type rawType struct {
 }
 
 type aType struct {
-	ll   llvm.Type
-	raw  rawType
-	kind valueKind // value kind of llvm.Type
+	ll    llvm.Type
+	raw   rawType
+	_kind valueKind // value kind of llvm.Type
 }
 
 type Type = *aType
@@ -166,6 +171,18 @@ type Type = *aType
 // RawType returns the raw type.
 func (t Type) RawType() types.Type {
 	return t.raw.Type
+}
+
+func (t Type) SetKindMask(mask int) {
+	t._kind |= mask
+}
+
+func (t Type) kind() valueKind {
+	return t._kind & KindMask
+}
+
+func (t Type) IsCFunc() bool {
+	return t._kind&KindCFunc != 0
 }
 
 // TypeSizes returns the sizes of the types.
@@ -511,7 +528,7 @@ func (p Program) toNamed(raw *types.Named) Type {
 		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, kind}
 	default:
 		typ := p.rawType(t)
-		return &aType{typ.ll, rawType{raw}, typ.kind}
+		return &aType{typ.ll, rawType{raw}, typ.kind()}
 	}
 }
 

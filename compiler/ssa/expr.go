@@ -84,7 +84,7 @@ func (p builtinTy) String() string {
 
 // Builtin returns a builtin function expression.
 func Builtin(name string) Expr {
-	tbi := &aType{raw: rawType{&builtinTy{name}}, kind: vkBuiltin}
+	tbi := &aType{raw: rawType{&builtinTy{name}}, _kind: vkBuiltin}
 	return Expr{Type: tbi}
 }
 
@@ -104,7 +104,7 @@ func (p pyVarTy) String() string {
 }
 
 func pyVarExpr(mod Expr, name string) Expr {
-	tvar := &aType{raw: rawType{&pyVarTy{mod, name}}, kind: vkPyVarRef}
+	tvar := &aType{raw: rawType{&pyVarTy{mod, name}}, _kind: vkPyVarRef}
 	return Expr{Type: tvar}
 }
 
@@ -449,7 +449,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	}
 	switch {
 	case isMathOp(op): // op: + - * / %
-		kind := x.kind
+		kind := x.kind()
 		switch kind {
 		case vkString:
 			if op == token.ADD {
@@ -528,7 +528,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				rhs := llvm.CreateShl(b.impl, x.impl, y.impl)
 				return Expr{llvm.CreateSelect(b.impl, overflows, xzero, rhs), x.Type}
 			} else {
-				if x.kind == vkSigned {
+				if x.kind() == vkSigned {
 					rhs := llvm.CreateSelect(b.impl, overflows, llvm.ConstInt(y.ll, 8*xsize-1, false), y.impl)
 					return Expr{llvm.CreateAShr(b.impl, x.impl, rhs), x.Type}
 				} else {
@@ -543,7 +543,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	case isPredOp(op): // op: == != < <= > >=
 		prog := b.Prog
 		tret := prog.Bool()
-		kind := x.kind
+		kind := x.kind()
 		switch kind {
 		case vkSigned:
 			pred := intPredOpToLLVM[op-predOpBase]
@@ -598,12 +598,12 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			}
 		case vkClosure:
 			x = b.Field(x, 0)
-			if y.kind == vkClosure {
+			if y.kind() == vkClosure {
 				y = b.Field(y, 0)
 			}
 			fallthrough
 		case vkFuncPtr, vkFuncDecl, vkChan, vkMap:
-			if y.kind == vkClosure {
+			if y.kind() == vkClosure {
 				y = b.Field(y, 0)
 			}
 			switch op {
@@ -661,9 +661,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			}
 			switch op {
 			case token.EQL:
-				return b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind == vkEface), toEface(y, y.kind == vkEface))
+				return b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind() == vkEface), toEface(y, y.kind() == vkEface))
 			case token.NEQ:
-				ret := b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind == vkEface), toEface(y, y.kind == vkEface))
+				ret := b.InlineCall(b.Pkg.rtFunc("EfaceEqual"), toEface(x, x.kind() == vkEface), toEface(y, y.kind() == vkEface))
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
@@ -744,8 +744,8 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
-	if t.kind == vkClosure {
-		switch x.kind {
+	if t.kind() == vkClosure {
+		switch x.kind() {
 		case vkFuncDecl:
 			ret.impl = checkExpr(x, t.raw.Type, b).impl
 		case vkClosure:
@@ -881,7 +881,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 				}
 			}
 		}
-		if x.kind == vkComplex && t.kind == vkComplex {
+		if x.kind() == vkComplex && t.kind() == vkComplex {
 			ft := b.Prog.Float64()
 			if t.raw.Type.Underlying().(*types.Basic).Kind() == types.Complex64 {
 				ft = b.Prog.Float32()
@@ -895,7 +895,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 		ret.impl = castPtr(b.impl, x.impl, t.ll)
 		return
 	case *types.Slice:
-		if x.kind == vkString {
+		if x.kind() == vkString {
 			if etyp, ok := typ.Elem().Underlying().(*types.Basic); ok {
 				switch etyp.Kind() {
 				case types.Byte:
@@ -923,7 +923,7 @@ func castInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	size := b.Prog.td.TypeAllocSize(typ.ll)
 	if xsize > size {
 		return llvm.CreateTrunc(b.impl, x, typ.ll)
-	} else if typ.kind == vkUnsigned {
+	} else if typ.kind() == vkUnsigned {
 		return llvm.CreateZExt(b.impl, x, typ.ll)
 	} else {
 		return llvm.CreateSExt(b.impl, x, typ.ll)
@@ -1002,7 +1002,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
 		logCall("Call", fn, args)
 	}
-	var kind = fn.kind
+	var kind = fn.kind()
 	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
 	}
@@ -1035,7 +1035,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 }
 
 func logCall(da string, fn Expr, args []Expr) {
-	if fn.kind == vkBuiltin {
+	if fn.kind() == vkBuiltin {
 		return
 	}
 	var b bytes.Buffer
@@ -1043,7 +1043,7 @@ func logCall(da string, fn Expr, args []Expr) {
 	if name == "" {
 		name = "closure"
 	}
-	fmt.Fprint(&b, da, " ", fn.kind, " ", fn.raw.Type, " ", name)
+	fmt.Fprint(&b, da, " ", fn.kind(), " ", fn.raw.Type, " ", name)
 	sep := ": "
 	for _, arg := range args {
 		fmt.Fprint(&b, sep, arg.impl)
@@ -1130,7 +1130,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "len":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.kind {
+			switch arg.kind() {
 			case vkSlice:
 				return b.SliceLen(arg)
 			case vkString:
@@ -1144,7 +1144,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "cap":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.kind {
+			switch arg.kind() {
 			case vkSlice:
 				return b.SliceCap(arg)
 			case vkChan:
@@ -1154,9 +1154,9 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "append":
 		if len(args) == 2 {
 			src := args[0]
-			if src.kind == vkSlice {
+			if src.kind() == vkSlice {
 				elem := args[1]
-				switch elem.kind {
+				switch elem.kind() {
 				case vkSlice:
 					etSize := b.Prog.SizeOf(b.Prog.Elem(elem.Type))
 					ret.Type = src.Type
@@ -1175,11 +1175,11 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "copy":
 		if len(args) == 2 {
 			dst := args[0]
-			if dst.kind == vkSlice {
+			if dst.kind() == vkSlice {
 				src := args[1]
 				prog := b.Prog
 				etSize := prog.Val(int(prog.SizeOf(prog.Elem(dst.Type))))
-				switch src.kind {
+				switch src.kind() {
 				case vkSlice:
 					return b.InlineCall(b.Pkg.rtFunc("SliceCopy"), dst, b.SliceData(src), b.SliceLen(src), etSize)
 				case vkString:
@@ -1190,7 +1190,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "close":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.kind {
+			switch arg.kind() {
 			case vkChan:
 				return b.InlineCall(b.Pkg.rtFunc("ChanClose"), arg)
 			}
@@ -1215,7 +1215,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "SliceData":
 		return b.SliceData(args[0]) // TODO(xsw): check return type
 	case "delete":
-		if len(args) == 2 && args[0].kind == vkMap {
+		if len(args) == 2 && args[0].kind() == vkMap {
 			m := args[0]
 			t := b.abiType(m.raw.Type)
 			ptr := b.mapKeyPtr(args[1])
@@ -1225,7 +1225,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "clear":
 		if len(args) == 1 {
 			arg := args[0]
-			switch arg.kind {
+			switch arg.kind() {
 			case vkMap:
 				m := arg
 				t := b.abiType(m.raw.Type)
@@ -1269,7 +1269,7 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 		}
 		var fn string
 		typ := arg.Type
-		switch arg.kind {
+		switch arg.kind() {
 		case vkBool:
 			fn = "PrintBool"
 		case vkSigned:
@@ -1322,7 +1322,7 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if st, ok := t.Underlying().(*types.Struct); ok && isClosure(st) {
-		if v.kind != vkClosure {
+		if v.kind() != vkClosure {
 			return b.Pkg.closureStub(b, t, v)
 		}
 	}
@@ -1330,7 +1330,7 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 }
 
 func needsNegativeCheck(x Expr) bool {
-	if x.kind == vkSigned {
+	if x.kind() == vkSigned {
 		if rv := x.impl.IsAConstantInt(); !rv.IsNil() && rv.SExtValue() >= 0 {
 			return false
 		}
