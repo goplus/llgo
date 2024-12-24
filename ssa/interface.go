@@ -126,7 +126,11 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		u = llvm.CreateIntCast(b.impl, ximpl, tu.ll)
 	case abi.BitCast:
 		tu := prog.Uintptr()
-		u = llvm.CreateBitCast(b.impl, ximpl, tu.ll)
+		if b.Prog.td.TypeAllocSize(typ.ll) < b.Prog.td.TypeAllocSize(tu.ll) {
+			u = llvm.CreateBitCast(b.impl, ximpl, prog.Uint32().ll)
+		} else {
+			u = llvm.CreateBitCast(b.impl, ximpl, tu.ll)
+		}
 	default:
 		panic("todo")
 	}
