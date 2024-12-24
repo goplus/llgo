@@ -201,7 +201,7 @@ func isConstantUint(x Expr) (v uint64, ok bool) {
 }
 
 func checkRange(idx Expr, max Expr) (checkMin, checkMax bool) {
-	if idx.kind == vkSigned {
+	if idx.kind() == vkSigned {
 		if v, ok := isConstantInt(idx); ok {
 			if v < 0 {
 				checkMin = true
@@ -240,7 +240,7 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 	checkMin, checkMax := checkRange(idx, max)
 	// fit size
 	var typ Type
-	if idx.kind == vkSigned {
+	if idx.kind() == vkSigned {
 		typ = prog.Int()
 	} else {
 		typ = prog.Uint()
@@ -536,7 +536,7 @@ func (b Builder) mapKeyPtr(x Expr) Expr {
 //
 //	t0 = range "hello":string
 func (b Builder) Range(x Expr) Expr {
-	switch x.kind {
+	switch x.kind() {
 	case vkString:
 		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
 	case vkMap:

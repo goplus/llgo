@@ -330,7 +330,7 @@ func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
 		log.Printf("Load %v\n", ptr.impl)
 	}
-	if ptr.kind == vkPyVarRef {
+	if ptr.kind() == vkPyVarRef {
 		return b.pyLoad(ptr)
 	}
 	telem := b.Prog.Elem(ptr.Type)
