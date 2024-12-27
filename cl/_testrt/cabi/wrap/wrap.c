@@ -29,3 +29,4 @@ void big2(info_big b, int *n) {
         *n += b.a[i];
 }
 
+

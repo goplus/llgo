@@ -1041,16 +1041,19 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 				vars[i] = sig.Params().At(i)
 			}
 		}
+		loadFn := func(name string, params *types.Tuple) Expr {
+			return b.Pkg.cFunc("llgo_wrapabi_"+name, types.NewSignature(nil, params, nil, false))
+		}
 		if ret.kind() == vkInvalid {
 			params := types.NewTuple(vars...)
-			nf := b.Pkg.cFunc("llgo_wrapabi_"+fn.Name(), types.NewSignature(nil, params, nil, false))
+			nf := loadFn(fn.Name(), params)
 			ret.impl = llvm.CreateCall(b.impl, nf.ll, nf.impl, llvmParamsEx(data, args, params, b))
 		} else {
 			r := b.Alloc(ret.Type, false)
 			args = append(args, r)
 			vars = append(vars, types.NewVar(token.NoPos, nil, "r", r.Type.RawType()))
 			params := types.NewTuple(vars...)
-			nf := b.Pkg.cFunc("llgo_wrapabi_"+fn.Name(), types.NewSignature(nil, params, nil, false))
+			nf := loadFn(fn.Name(), params)
 			llvm.CreateCall(b.impl, nf.ll, nf.impl, llvmParamsEx(data, args, params, b))
 			ret.impl = b.Load(r).impl
 		}
