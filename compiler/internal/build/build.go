@@ -562,21 +562,18 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 	return
 }
 
-func buildWrapCode(ctx *context, pkg *aPackage, code string, verbose bool) (string, error) {
-	tmpFile, err := os.CreateTemp("", "-wrap-*.c")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp file: %v", err)
+func buildWrapCode(ctx *context, pkg *aPackage, code string, verbose bool) (llFile string, err error) {
+	cFile := pkg.ExportFile + "-wrapabi.c"
+	if err = os.WriteFile(cFile, []byte(code), 0644); err != nil {
+		return
 	}
-	tmpName := tmpFile.Name()
-	//defer os.Remove(tmpName)
-	if err := os.WriteFile(tmpName, []byte(code), 0644); err != nil {
-		return "", err
+	llFile = cFile + ".ll"
+	args := []string{"-emit-llvm", "-S", "-o", llFile, "-c", cFile}
+	if verbose {
+		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	var file string
-	clFile(ctx, nil, tmpName, pkg.ExportFile, func(linkFile string) {
-		file = linkFile
-	}, verbose)
-	return file, nil
+	err = ctx.env.Clang().Exec(args...)
+	return
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (err error, msg string) {
