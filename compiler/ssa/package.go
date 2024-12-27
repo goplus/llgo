@@ -380,6 +380,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
 	wrapCType := make(map[types.Type]string)
+	wrapCFunc := make(map[string]bool)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
@@ -387,7 +388,8 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
 		pyobjs: pyobjs, pymods: pymods, strs: strs, goStrs: goStrs,
 		chkabi: chkabi, Prog: p,
-		di: nil, cu: nil, glbDbgVars: glbDbgVars, wrapCType: wrapCType,
+		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+		wrapCType: wrapCType, wrapCFunc: wrapCFunc,
 	}
 	ret.abi.Init(pkgPath)
 	return ret
@@ -643,6 +645,7 @@ type aPackage struct {
 	fnlink func(string) string
 
 	wrapCType map[types.Type]string
+	wrapCFunc map[string]bool
 	wrapCode  []string
 
 	iRoutine int

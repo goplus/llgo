@@ -34,6 +34,14 @@ func big1(infoBig, c.Int) infoBig
 //go:linkname big2 C.big2
 func big2(infoBig, *c.Int)
 
+//llgo:type C
+type bigArr [128]int32
+
+//llgo:link bigArr.scale C.big1
+func (bigArr) scale(n int32) (v bigArr) {
+	return
+}
+
 func main() {
 	i := demo1(info{[2]c.Int{1, 2}, 3}, 4)
 	if i.a[0] != 4 || i.a[1] != 8 || i.b != 12 {
@@ -55,6 +63,12 @@ func main() {
 	big2(infoBig{[128]c.Int{0: 1, 1: 2, 127: 3}}, &n)
 	if n != 6 {
 		println(n)
+		panic("bad abi")
+	}
+	b1 := bigArr{0: 1, 1: 2, 127: 4}
+	b2 := b1.scale(4)
+	if b2[0] != 4 || b2[1] != 8 || b2[127] != 16 {
+		println(b2[0], b2[1], b2[127])
 		panic("bad abi")
 	}
 }

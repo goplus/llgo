@@ -19,6 +19,7 @@ package ssa
 import (
 	"crypto/md5"
 	"fmt"
+	"go/token"
 	"go/types"
 	"strconv"
 	"strings"
@@ -70,7 +71,7 @@ func isWrapABI(prog Program, i int, typ types.Type) bool {
 
 func wrapParam(pkg Package, typ types.Type, param string) string {
 	switch t := typ.Underlying().(type) {
-	case *types.Struct, *types.Array:
+	case *types.Struct:
 		name, ok := pkg.wrapCType[t]
 		if !ok {
 			hash := md5.Sum([]byte(t.String()))
@@ -79,12 +80,26 @@ func wrapParam(pkg Package, typ types.Type, param string) string {
 			pkg.wrapCode = append(pkg.wrapCode, toCType(t, name)+";")
 		}
 		return name + " " + param
+	case *types.Array:
+		name, ok := pkg.wrapCType[t]
+		if !ok {
+			st := types.NewStruct([]*types.Var{types.NewVar(token.NoPos, nil, "", t)}, nil)
+			hash := md5.Sum([]byte(t.String()))
+			name = "typ_" + fmt.Sprintf("%x", hash[:])
+			pkg.wrapCType[t] = name
+			pkg.wrapCode = append(pkg.wrapCode, toCType(st, name)+";")
+		}
+		return name + " " + param
 	default:
 		return toCType(t, param)
 	}
 }
 
 func wrapCFunc(pkg Package, fn Function) {
+	if pkg.wrapCFunc[fn.Name()] {
+		return
+	}
+	pkg.wrapCFunc[fn.Name()] = true
 	sig := fn.RawType().(*types.Signature)
 	var cext string = fn.Name() + "("
 	var csig = "void llgo_wrapabi_" + fn.Name() + "("
