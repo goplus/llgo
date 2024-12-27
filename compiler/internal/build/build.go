@@ -542,6 +542,11 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 	check(err)
 	aPkg.LPkg = ret
 	cgoLdflags, err = buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
+	if code := ret.WrapCode(); len(code) > 0 {
+		linkfile, err := buildWrapCode(ctx, aPkg, code, verbose)
+		check(err)
+		cgoLdflags = append(cgoLdflags, linkfile)
+	}
 	if needLLFile(ctx.mode) {
 		pkg.ExportFile += ".ll"
 		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
@@ -555,6 +560,23 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 		}
 	}
 	return
+}
+
+func buildWrapCode(ctx *context, pkg *aPackage, code string, verbose bool) (string, error) {
+	tmpFile, err := os.CreateTemp("", "-wrap-*.c")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %v", err)
+	}
+	tmpName := tmpFile.Name()
+	//defer os.Remove(tmpName)
+	if err := os.WriteFile(tmpName, []byte(code), 0644); err != nil {
+		return "", err
+	}
+	var file string
+	clFile(ctx, nil, tmpName, pkg.ExportFile, func(linkFile string) {
+		file = linkFile
+	}, verbose)
+	return file, nil
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (err error, msg string) {

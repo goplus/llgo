@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/compiler/internal/env"
@@ -378,6 +379,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	goStrs := make(map[string]llvm.Value)
 	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
+	wrapCType := make(map[types.Type]string)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
@@ -385,7 +387,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
 		pyobjs: pyobjs, pymods: pymods, strs: strs, goStrs: goStrs,
 		chkabi: chkabi, Prog: p,
-		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+		di: nil, cu: nil, glbDbgVars: glbDbgVars, wrapCType: wrapCType,
 	}
 	ret.abi.Init(pkgPath)
 	return ret
@@ -640,7 +642,17 @@ type aPackage struct {
 	patch  func(types.Type) types.Type
 	fnlink func(string) string
 
+	wrapCType map[types.Type]string
+	wrapCode  []string
+
 	iRoutine int
+}
+
+func (p Package) WrapCode() string {
+	if len(p.wrapCode) > 0 {
+		return wrapHead + strings.Join(p.wrapCode, "\n")
+	}
+	return ""
 }
 
 type Package = *aPackage

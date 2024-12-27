@@ -1030,7 +1030,33 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
 	ret.Type = b.Prog.retType(sig)
-	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
+	if fn.IsWrapABI() {
+		vars := make([]*types.Var, sig.Params().Len())
+		for i, a := range args {
+			if isWrapABI(b.Prog, i, a.Type.RawType()) {
+				args[i] = b.toPtr(a)
+				v := sig.Params().At(i)
+				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.NewPointer(v.Type()))
+			} else {
+				vars[i] = sig.Params().At(i)
+			}
+		}
+		if ret.kind() == vkInvalid {
+			params := types.NewTuple(vars...)
+			nf := b.Pkg.cFunc("llgo_wrapabi_"+fn.Name(), types.NewSignature(nil, params, nil, false))
+			ret.impl = llvm.CreateCall(b.impl, nf.ll, nf.impl, llvmParamsEx(data, args, params, b))
+		} else {
+			r := b.Alloc(ret.Type, false)
+			args = append(args, r)
+			vars = append(vars, types.NewVar(token.NoPos, nil, "r", r.Type.RawType()))
+			params := types.NewTuple(vars...)
+			nf := b.Pkg.cFunc("llgo_wrapabi_"+fn.Name(), types.NewSignature(nil, params, nil, false))
+			llvm.CreateCall(b.impl, nf.ll, nf.impl, llvmParamsEx(data, args, params, b))
+			ret.impl = b.Load(r).impl
+		}
+	} else {
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
+	}
 	return
 }
 

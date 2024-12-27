@@ -60,8 +60,9 @@ const (
 )
 
 const (
-	KindCFunc = 1 << 5
-	KindMask  = (1 << 5) - 1
+	kindCFunc   = 1 << 5 // is c func
+	kindWrapABI = 1 << 6 // wrap abi
+	kindMask    = (1 << 5) - 1
 )
 
 // -----------------------------------------------------------------------------
@@ -173,16 +174,16 @@ func (t Type) RawType() types.Type {
 	return t.raw.Type
 }
 
-func (t Type) SetKindMask(mask int) {
-	t._kind |= mask
-}
-
 func (t Type) kind() valueKind {
-	return t._kind & KindMask
+	return t._kind & kindMask
 }
 
 func (t Type) IsCFunc() bool {
-	return t._kind&KindCFunc != 0
+	return t._kind&kindCFunc != 0
+}
+
+func (t Type) IsWrapABI() bool {
+	return t._kind&kindWrapABI != 0
 }
 
 // TypeSizes returns the sizes of the types.
