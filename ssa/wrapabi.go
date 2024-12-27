@@ -27,20 +27,17 @@ import (
 
 func CheckCFunc(fn Function) {
 	fn._kind |= kindCFunc
-	if checkWrapAbi(fn.Prog, fn.Type) {
+	if checkWrapAbi(fn) {
 		fn._kind |= kindWrapABI
 		wrapCFunc(fn.Pkg, fn)
 	}
 }
 
-func checkWrapAbi(prog Program, typ Type) bool {
-	sig, ok := typ.RawType().(*types.Signature)
-	if !ok {
-		return false
-	}
+func checkWrapAbi(fn Function) bool {
+	sig := fn.RawType().(*types.Signature)
 	n := sig.Params().Len()
 	for i := 0; i < n; i++ {
-		if isWrapABI(prog, i, sig.Params().At(i).Type()) {
+		if isWrapABI(fn.Prog, i, sig.Params().At(i).Type()) {
 			return true
 		}
 	}
@@ -175,8 +172,7 @@ func toCType(typ types.Type, name string) string {
 	panic("toCType unsupport " + typ.String())
 }
 
-var wrapHead = `
-#include <stddef.h>
+var wrapHead = `#include <stddef.h>
 
 typedef signed char Int8;
 typedef unsigned char Uint8;
@@ -211,4 +207,5 @@ typedef double _Complex Complex128;
 typedef struct { const char *data; Int len; } String;
 typedef struct { char *data; Int len; Int cap; } Slice;
 typedef struct { void *type; void *data; } Interface;
+
 `
