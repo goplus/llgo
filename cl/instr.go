@@ -426,10 +426,10 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
 		case cFunc:
+			llssa.CheckCFunc(aFn)
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			aFn.Expr.Type.SetKindMask(llssa.KindCFunc)
 			ret = b.Do(act, aFn.Expr, args...)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
