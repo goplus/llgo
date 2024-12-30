@@ -27,17 +27,16 @@ import (
 
 func CheckCFunc(fn Function) {
 	fn._kind |= kindCFunc
-	if checkWrapAbi(fn) {
+	if checkWrapAbi(fn.Prog, fn.RawType().(*types.Signature)) {
 		fn._kind |= kindWrapABI
 		wrapCFunc(fn.Pkg, fn)
 	}
 }
 
-func checkWrapAbi(fn Function) bool {
-	sig := fn.RawType().(*types.Signature)
+func checkWrapAbi(prog Program, sig *types.Signature) bool {
 	n := sig.Params().Len()
 	for i := 0; i < n; i++ {
-		if isWrapABI(fn.Prog, i, sig.Params().At(i).Type()) {
+		if wrap, _ := isWrapABI(prog, i, sig.Params().At(i).Type()); wrap {
 			return true
 		}
 	}
@@ -59,11 +58,16 @@ func elemOfType(typ types.Type) int {
 	}
 }
 
-func isWrapABI(prog Program, i int, typ types.Type) bool {
-	if elemOfType(typ) > 2 {
-		return true
+func isWrapABI(prog Program, i int, typ types.Type) (bool, bool) {
+	switch typ := typ.Underlying().(type) {
+	case *types.Struct, *types.Array:
+		if elemOfType(typ) > 2 {
+			return true, false
+		}
+	case *types.Signature:
+		return checkWrapAbi(prog, typ), true
 	}
-	return false
+	return false, false
 }
 
 func wrapParam(pkg Package, typ types.Type, param string) string {
@@ -99,7 +103,7 @@ func wrapCFunc(pkg Package, fn Function) {
 	pkg.wrapCFunc[fn.Name()] = true
 	sig := fn.RawType().(*types.Signature)
 	var cext string = fn.Name() + "("
-	var csig = "void llgo_wrapabi_" + fn.Name() + "("
+	var csig = "static void llgo_wrapabi_" + fn.Name() + "("
 	var cbody string
 	if sig.Results().Len() == 1 {
 		cbody = "*r = "
@@ -114,7 +118,7 @@ func wrapCFunc(pkg Package, fn Function) {
 		param := "p" + strconv.Itoa(i)
 		t := sig.Params().At(i).Type()
 		cext += wrapParam(pkg, t, param)
-		if isWrapABI(pkg.Prog, i, t) {
+		if wrap, issig := isWrapABI(pkg.Prog, i, t); wrap && !issig {
 			param = "*" + param
 		}
 		cbody += param
