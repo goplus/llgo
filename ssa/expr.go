@@ -1033,7 +1033,8 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	if fn.IsWrapABI() {
 		vars := make([]*types.Var, sig.Params().Len())
 		for i, a := range args {
-			if isWrapABI(b.Prog, i, a.Type.RawType()) {
+			atyp := a.Type.RawType()
+			if wrap, issig := isWrapABI(b.Prog, i, atyp); wrap && !issig {
 				args[i] = b.toPtr(a)
 				v := sig.Params().At(i)
 				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.NewPointer(v.Type()))
