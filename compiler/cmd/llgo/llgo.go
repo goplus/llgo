@@ -31,6 +31,7 @@ import (
 	"github.com/goplus/llgo/compiler/cmd/internal/help"
 	"github.com/goplus/llgo/compiler/cmd/internal/install"
 	"github.com/goplus/llgo/compiler/cmd/internal/run"
+	"github.com/goplus/llgo/compiler/cmd/internal/test"
 	"github.com/goplus/llgo/compiler/cmd/internal/version"
 	"github.com/goplus/llgo/compiler/internal/mockable"
 )
@@ -47,6 +48,7 @@ func init() {
 		get.Cmd,
 		run.Cmd,
 		run.CmpTestCmd,
+		test.Cmd,
 		clean.Cmd,
 		version.Cmd,
 	}

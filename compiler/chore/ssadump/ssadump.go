@@ -148,7 +148,7 @@ func doMain() error {
 
 	for i, p := range pkgs {
 		if p == nil {
-			return fmt.Errorf("cannot build SSA for package %s", initial[i])
+			return fmt.Errorf("cannot build SSA for package %s", initial[i].ID)
 		}
 	}
 

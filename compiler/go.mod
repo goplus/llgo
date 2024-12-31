@@ -1,6 +1,6 @@
 module github.com/goplus/llgo/compiler
 
-go 1.22.0
+go 1.22.4
 
 require (
 	github.com/goplus/gogen v1.16.6
