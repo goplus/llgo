@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/runtime/math"
 )
 
@@ -139,6 +140,10 @@ func panicmakeslicelen() {
 
 func panicmakeslicecap() {
 	panic(errorString("makeslice: cap out of range"))
+}
+
+func SliceClear(t *abi.SliceType, s Slice) {
+	c.Memset(s.data, 0, uintptr(s.len)*t.Elem.Size())
 }
 
 // -----------------------------------------------------------------------------
