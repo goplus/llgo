@@ -636,8 +636,8 @@ func ignoreName(name string) bool {
 
 func supportedInternal(name string) bool {
 	return strings.HasPrefix(name, "abi.") || strings.HasPrefix(name, "bytealg.") ||
-		strings.HasPrefix(name, "itoa.") || strings.HasPrefix(name, "oserror.") ||
-		strings.HasPrefix(name, "race.") || strings.HasPrefix(name, "reflectlite.") || strings.HasPrefix(name, "stringslite.") ||
+		strings.HasPrefix(name, "itoa.") || strings.HasPrefix(name, "oserror.") || strings.HasPrefix(name, "race.") ||
+		strings.HasPrefix(name, "reflectlite.") || strings.HasPrefix(name, "stringslite.") || strings.HasPrefix(name, "filepathlite.") ||
 		strings.HasPrefix(name, "syscall/unix.") || strings.HasPrefix(name, "syscall/execenv.")
 }
 

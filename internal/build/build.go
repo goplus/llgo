@@ -823,6 +823,7 @@ var hasAltPkg = map[string]none{
 	"internal/abi":             {},
 	"internal/bytealg":         {},
 	"internal/itoa":            {},
+	"internal/filepathlite":    {},
 	"internal/oserror":         {},
 	"internal/race":            {},
 	"internal/reflectlite":     {},
