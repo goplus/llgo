@@ -3,7 +3,7 @@ module github.com/goplus/llgo
 go 1.20
 
 require (
-	github.com/goplus/gogen v1.16.3
+	github.com/goplus/gogen v1.16.4
 	github.com/goplus/llvm v0.8.0
 	github.com/goplus/mod v0.13.13
 	github.com/qiniu/x v1.13.10
