@@ -64,14 +64,14 @@ func CountString(s string, c byte) (n int) {
 // Requires 2 <= len(b) <= MaxLen.
 func Index(a, b []byte) int {
 	for i := 0; i <= len(a)-len(b); i++ {
-		if equal(a[i:i+len(b)], b) {
+		if Equal(a[i:i+len(b)], b) {
 			return i
 		}
 	}
 	return -1
 }
 
-func equal(a, b []byte) bool {
+func Equal(a, b []byte) bool {
 	if n := len(a); n == len(b) {
 		return c.Memcmp(unsafe.Pointer(unsafe.SliceData(a)), unsafe.Pointer(unsafe.SliceData(b)), uintptr(n)) == 0
 	}

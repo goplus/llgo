@@ -24,3 +24,10 @@ import (
 )
 
 type InterfaceType = abi.InterfaceType
+type Type = abi.Type
+type UncommonType = abi.UncommonType
+type StructType = abi.StructType
+type SliceType = abi.SliceType
+type ArrayType = abi.ArrayType
+type MapType = abi.MapType
+type FuncType = abi.FuncType
