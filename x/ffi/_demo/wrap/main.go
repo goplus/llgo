@@ -18,6 +18,9 @@ func demo2wrap(fn unsafe.Pointer) c.Int
 //go:linkname demo3wrap C.demo3
 func demo3wrap(fn unsafe.Pointer) c.Int
 
+//go:linkname demo4call C.demo4
+func demo4call(fn unsafe.Pointer) c.Int
+
 //llgo:type C
 type array struct {
 	x c.Int
@@ -40,6 +43,8 @@ func main() {
 	wrap()
 	c.Printf(c.Str("\n"))
 	wrapNoRet()
+	c.Printf(c.Str("\n"))
+	call()
 }
 
 func wrap() {
@@ -55,5 +60,15 @@ func wrapNoRet() {
 		callback3(*a, *r)
 	})
 	ret := demo3wrap(fn)
+	c.Printf(c.Str("ret: %d\n"), ret)
+}
+
+func call() {
+	var n c.Int = 1
+	fn := ffi.MakeFunc(func(a *array) c.Int {
+		c.Printf(c.Str("go.closure %d %d %d %d\n"), a.x, a.y, a.z, a.k)
+		return a.x + a.y + a.z + a.k + n
+	})
+	ret := demo4call(fn)
 	c.Printf(c.Str("ret: %d\n"), ret)
 }

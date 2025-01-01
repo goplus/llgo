@@ -36,6 +36,27 @@ func rtypeOf(i any) *abi.Type {
 	return e.typ
 }
 
+// MakeFunc make go func/closure to c func ptr
+func MakeFunc(fn interface{}) unsafe.Pointer {
+	e := (*eface)(unsafe.Pointer(&fn))
+	if !e.typ.IsClosure() {
+		panic("invalid func")
+	}
+	ftyp := e.typ.StructType().Fields[0].Typ.FuncType()
+	sig, err := toFFISig(ftyp.In, ftyp.Out)
+	if err != nil {
+		panic(err)
+	}
+	wf := newWrapFunc(fn)
+	c := NewClosure()
+	c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+		wf := (*wrapFunc)(userdata)
+		wf.Call(ret, args)
+	}, unsafe.Pointer(wf))
+	return c.Fn
+}
+
+// WrapFunc make go func/closure to c func ptr use wrap params pointer mode
 func WrapFunc(fn interface{}, wrap interface{}) unsafe.Pointer {
 	e := (*eface)(unsafe.Pointer(&fn))
 	if !e.typ.IsClosure() {
@@ -51,12 +72,12 @@ func WrapFunc(fn interface{}, wrap interface{}) unsafe.Pointer {
 	if len(ftyp.Out) == 0 {
 		c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 			wf := (*wrapFunc)(userdata)
-			wf.CallNoRet(args)
+			wf.CallWrapNoRet(args)
 		}, unsafe.Pointer(wf))
 	} else {
 		c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 			wf := (*wrapFunc)(userdata)
-			wf.Call(ret, args)
+			wf.CallWrap(ret, args)
 		}, unsafe.Pointer(wf))
 	}
 	return c.Fn
@@ -71,6 +92,12 @@ type wrapFunc struct {
 }
 
 func (p *wrapFunc) Call(ret unsafe.Pointer, pargs *unsafe.Pointer) {
+	args := unsafe.Slice(pargs, p.n-1)
+	copy(p.args[1:], args)
+	Call(p.sig, p.fn, ret, p.args...)
+}
+
+func (p *wrapFunc) CallWrap(ret unsafe.Pointer, pargs *unsafe.Pointer) {
 	args := unsafe.Slice(pargs, p.n-2)
 	for i := 0; i < p.n-2; i++ {
 		p.args[i+1] = unsafe.Pointer(&args[i])
@@ -79,7 +106,7 @@ func (p *wrapFunc) Call(ret unsafe.Pointer, pargs *unsafe.Pointer) {
 	Call(p.sig, p.fn, nil, p.args...)
 }
 
-func (p *wrapFunc) CallNoRet(pargs *unsafe.Pointer) {
+func (p *wrapFunc) CallWrapNoRet(pargs *unsafe.Pointer) {
 	args := unsafe.Slice(pargs, p.n-1)
 	for i := 0; i < p.n-1; i++ {
 		p.args[i+1] = unsafe.Pointer(&args[i])
