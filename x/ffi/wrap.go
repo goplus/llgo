@@ -36,33 +36,68 @@ func rtypeOf(i any) *abi.Type {
 	return e.typ
 }
 
-func WrapFunc(fn interface{}, wrap interface{}) unsafe.Pointer {
+// MakeFunc make go func/closure to c func ptr
+func MakeFunc(fn interface{}) unsafe.Pointer {
 	e := (*eface)(unsafe.Pointer(&fn))
-	if !e.typ.IsClosure() {
+	var ftyp *abi.FuncType
+	if e.typ.Kind() == abi.Func {
+		ftyp = e.typ.FuncType()
+	} else if e.typ.IsClosure() {
+		ftyp = e.typ.StructType().Fields[0].Typ.FuncType()
+	} else {
 		panic("invalid func")
 	}
-	ftyp := e.typ.StructType().Fields[0].Typ.FuncType()
 	sig, err := toFFISig(ftyp.In, ftyp.Out)
 	if err != nil {
 		panic(err)
 	}
-	wf := newWrapFunc(wrap)
+	wf := newMakeFunc(fn)
 	c := NewClosure()
-	if len(ftyp.Out) == 0 {
-		c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			wf := (*wrapFunc)(userdata)
-			wf.CallNoRet(args)
-		}, unsafe.Pointer(wf))
-	} else {
-		c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			wf := (*wrapFunc)(userdata)
-			wf.Call(ret, args)
-		}, unsafe.Pointer(wf))
-	}
+	c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+		wf := (*makeFunc)(userdata)
+		wf.Call(ret, args)
+	}, unsafe.Pointer(wf))
 	return c.Fn
 }
 
+// WrapFunc wrap go func to c func ptr by fn type
+func WrapFunc(fn interface{}, wrap WrapperFunc) unsafe.Pointer {
+	e := (*eface)(unsafe.Pointer(&fn))
+	var ftyp *abi.FuncType
+	if e.typ.Kind() == abi.Func {
+		ftyp = e.typ.FuncType()
+	} else if e.typ.IsClosure() {
+		ftyp = e.typ.StructType().Fields[0].Typ.FuncType()
+	} else {
+		panic("invalid func")
+	}
+	return WrapFuncType(ftyp, wrap)
+}
+
+// WrapFuncType wrap go func to c func ptr by ftyp
+func WrapFuncType(ftyp *abi.FuncType, wrap WrapperFunc) unsafe.Pointer {
+	sig, err := toFFISig(ftyp.In, ftyp.Out)
+	if err != nil {
+		panic(err)
+	}
+	wf := &wrapFunc{wrap, len(ftyp.In)}
+	c := NewClosure()
+	c.Bind(sig, func(cif *Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+		wf := (*wrapFunc)(userdata)
+		wf.fn(ret, unsafe.Slice(args, wf.nargs))
+	}, unsafe.Pointer(wf))
+	return c.Fn
+}
+
+// llgo:type C
+type WrapperFunc func(ret unsafe.Pointer, args []unsafe.Pointer)
+
 type wrapFunc struct {
+	fn    WrapperFunc
+	nargs int
+}
+
+type makeFunc struct {
 	sig  *Signature
 	ftyp *abi.FuncType
 	fn   unsafe.Pointer
@@ -70,27 +105,16 @@ type wrapFunc struct {
 	n    int
 }
 
-func (p *wrapFunc) Call(ret unsafe.Pointer, pargs *unsafe.Pointer) {
-	args := unsafe.Slice(pargs, p.n-2)
-	for i := 0; i < p.n-2; i++ {
-		p.args[i+1] = unsafe.Pointer(&args[i])
-	}
-	p.args[p.n-1] = unsafe.Pointer(&ret)
-	Call(p.sig, p.fn, nil, p.args...)
-}
-
-func (p *wrapFunc) CallNoRet(pargs *unsafe.Pointer) {
+func (p *makeFunc) Call(ret unsafe.Pointer, pargs *unsafe.Pointer) {
 	args := unsafe.Slice(pargs, p.n-1)
-	for i := 0; i < p.n-1; i++ {
-		p.args[i+1] = unsafe.Pointer(&args[i])
-	}
-	Call(p.sig, p.fn, nil, p.args...)
+	copy(p.args[1:], args)
+	Call(p.sig, p.fn, ret, p.args...)
 }
 
-func newWrapFunc(fn interface{}) *wrapFunc {
+func newMakeFunc(fn interface{}) *makeFunc {
 	e := (*eface)(unsafe.Pointer(&fn))
 	if !e.typ.IsClosure() {
-		panic("invalid wrap func")
+		panic("invalid make func")
 	}
 	ftyp := e.typ.StructType().Fields[0].Typ.FuncType()
 	sig, err := toFFISig(append([]*abi.Type{unsafePointerType}, ftyp.In...), ftyp.Out)
@@ -104,7 +128,7 @@ func newWrapFunc(fn interface{}) *wrapFunc {
 	n := len(ftyp.In) + 1
 	args := make([]unsafe.Pointer, n)
 	args[0] = unsafe.Pointer(&c.env)
-	return &wrapFunc{sig, ftyp, c.fn, args, n}
+	return &makeFunc{sig, ftyp, c.fn, args, n}
 }
 
 var (
