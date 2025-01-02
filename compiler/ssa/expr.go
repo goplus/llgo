@@ -1029,36 +1029,10 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	default:
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
-	ret.Type = b.Prog.retType(sig)
 	if fn.IsWrapABI() {
-		vars := make([]*types.Var, sig.Params().Len())
-		for i, a := range args {
-			atyp := a.Type.RawType()
-			if wrap, issig := isWrapABI(b.Prog, i, atyp); wrap && !issig {
-				args[i] = b.toPtr(a)
-				v := sig.Params().At(i)
-				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.NewPointer(v.Type()))
-			} else {
-				vars[i] = sig.Params().At(i)
-			}
-		}
-		loadFn := func(name string, params *types.Tuple) Expr {
-			return b.Pkg.cFunc("llgo_wrapabi_"+name, types.NewSignature(nil, params, nil, false))
-		}
-		if ret.kind() == vkInvalid {
-			params := types.NewTuple(vars...)
-			nf := loadFn(fn.Name(), params)
-			ret.impl = llvm.CreateCall(b.impl, nf.ll, nf.impl, llvmParamsEx(data, args, params, b))
-		} else {
-			r := b.Alloc(ret.Type, false)
-			args = append(args, r)
-			vars = append(vars, types.NewVar(token.NoPos, nil, "r", r.Type.RawType()))
-			params := types.NewTuple(vars...)
-			nf := loadFn(fn.Name(), params)
-			llvm.CreateCall(b.impl, nf.ll, nf.impl, llvmParamsEx(data, args, params, b))
-			ret.impl = b.Load(r).impl
-		}
+		return callWrapABI(b, fn, sig, data, args)
 	} else {
+		ret.Type = b.Prog.retType(sig)
 		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	}
 	return
