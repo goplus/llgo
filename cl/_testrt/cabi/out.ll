@@ -379,6 +379,42 @@ _llgo_17:                                         ; preds = %_llgo_14
   unreachable
 
 _llgo_18:                                         ; preds = %_llgo_14
+  %169 = alloca %main.info, align 8
+  call void @llvm.memset(ptr %169, i8 0, i64 12, i1 false)
+  %170 = getelementptr inbounds %main.info, ptr %169, i32 0, i32 0
+  %171 = getelementptr inbounds i32, ptr %170, i64 0
+  %172 = getelementptr inbounds i32, ptr %170, i64 1
+  %173 = getelementptr inbounds %main.info, ptr %169, i32 0, i32 1
+  store i32 1, ptr %171, align 4
+  store i32 2, ptr %172, align 4
+  store i32 3, ptr %173, align 4
+  %174 = load %main.info, ptr %169, align 4
+  %175 = alloca %main.info, align 8
+  call void @llvm.memset(ptr %175, i8 0, i64 12, i1 false)
+  store %main.info %174, ptr %175, align 4
+  %176 = alloca i32, align 4
+  call void @llvm.memset(ptr %176, i8 0, i64 4, i1 false)
+  call void @llgo_wrapabi_callback(ptr %175, i32 101, ptr @demo3, ptr %176)
+  %177 = load i32, ptr %176, align 4
+  store i32 %177, ptr %31, align 4
+  %178 = load i32, ptr %31, align 4
+  %179 = icmp ne i32 %178, 107
+  br i1 %179, label %_llgo_19, label %_llgo_20
+
+_llgo_19:                                         ; preds = %_llgo_18
+  %180 = load i32, ptr %31, align 4
+  %181 = sext i32 %180 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %181)
+  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %182 = load ptr, ptr @_llgo_string, align 8
+  %183 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/internal/runtime.String" { ptr @9, i64 16 }, ptr %183, align 8
+  %184 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" undef, ptr %182, 0
+  %185 = insertvalue %"github.com/goplus/llgo/internal/runtime.eface" %184, ptr %183, 1
+  call void @"github.com/goplus/llgo/internal/runtime.Panic"(%"github.com/goplus/llgo/internal/runtime.eface" %185)
+  unreachable
+
+_llgo_20:                                         ; preds = %_llgo_18
   ret i32 0
 }
 
@@ -696,5 +732,7 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/internal/runtime.PointerTo"(ptr)
 
 declare void @llgo_wrapabi_callback(ptr, i32, ptr, ptr)
+
+declare i32 @demo3(%main.info, i32)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

@@ -72,13 +72,6 @@ func isWrapABI(prog Program, i int, typ types.Type) (bool, bool) {
 	return false, false
 }
 
-func isWrapSig(prog Program, typ types.Type) bool {
-	if sig, ok := typ.Underlying().(*types.Signature); ok {
-		return checkWrapAbi(prog, sig)
-	}
-	return false
-}
-
 func wrapParam(pkg Package, typ types.Type, param string) string {
 	switch t := typ.Underlying().(type) {
 	case *types.Struct:
@@ -167,18 +160,18 @@ func toCType(typ types.Type, name string) string {
 		case types.UnsafePointer:
 			return "void *" + name
 		default:
-			return strings.Title(t.Name()) + " " + name
+			return "Go" + strings.Title(t.Name()) + " " + name
 		}
 	case *types.Pointer:
 		return toCType(t.Elem(), "") + "*" + name
 	case *types.Slice:
-		return "Slice " + name
+		return "GoSlice " + name
 	case *types.Map:
 		return "void *" + name
 	case *types.Chan:
 		return "void *" + name
 	case *types.Interface:
-		return "Interface " + name
+		return "GoInterface " + name
 	case *types.Signature:
 		return "void *" + name
 	}
@@ -187,39 +180,40 @@ func toCType(typ types.Type, name string) string {
 
 var wrapHead = `#include <stddef.h>
 
-typedef signed char Int8;
-typedef unsigned char Uint8;
-typedef short Int16;
-typedef unsigned short Uint16;
-typedef int Int32;
-typedef unsigned int Uint32;
-typedef long long Int64;
-typedef unsigned long long Uint64;
+typedef _Bool GoBool;
+typedef signed char GoInt8;
+typedef unsigned char GoUint8;
+typedef short GoInt16;
+typedef unsigned short GoUint16;
+typedef int GoInt32;
+typedef unsigned int GoUint32;
+typedef long long GoInt64;
+typedef unsigned long long GoUint64;
 
 #ifdef __LP64__
-typedef Int64 Int;
-typedef Uint64 Uint;
+typedef GoInt64 GoInt;
+typedef GoUint64 GoUint;
 #else
-typedef Int32 Int;
-typedef Uint32 Uint;
+typedef GoInt32 GoInt;
+typedef GoUint32 GoUint;
 #endif
 
-typedef size_t Uintptr;
-typedef float Float32;
-typedef double Float64;
+typedef size_t GoUintptr;
+typedef float GoFloat32;
+typedef double GoFloat64;
 
 #ifdef _MSC_VER
 #include <complex.h>
-typedef _Fcomplex Complex64;
-typedef _Dcomplex Complex128;
+typedef _Fcomplex GoComplex64;
+typedef _Dcomplex GoComplex128;
 #else
-typedef float _Complex Complex64;
-typedef double _Complex Complex128;
+typedef float _Complex GoComplex64;
+typedef double _Complex GoComplex128;
 #endif
 
-typedef struct { const char *data; Int len; } String;
-typedef struct { char *data; Int len; Int cap; } Slice;
-typedef struct { void *type; void *data; } Interface;
+typedef struct { const char *data; GoInt len; } GoString;
+typedef struct { char *data; GoInt len; GoInt cap; } GoSlice;
+typedef struct { void *type; void *data; } GoInterface;
 
 `
 
@@ -231,8 +225,12 @@ func callWrapABI(b Builder, fn Expr, sig *types.Signature, data Expr, args []Exp
 		v := sig.Params().At(i)
 		if wrap, issig := isWrapABI(b.Prog, i, atyp); wrap {
 			if issig {
-				args[i] = wrapCallback(b, a)
-				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.Typ[types.UnsafePointer])
+				if args[i].IsCFunc() {
+					vars[i] = v
+				} else {
+					args[i] = wrapCallback(b, a)
+					vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.Typ[types.UnsafePointer])
+				}
 			} else {
 				args[i] = b.toPtr(a)
 				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.NewPointer(v.Type()))

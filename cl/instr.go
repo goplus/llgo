@@ -351,6 +351,9 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			if debugSymbols {
 				aFn.Inline(llssa.NoInline)
 			}
+			if ftype == cFunc {
+				llssa.CheckCFunc(aFn)
+			}
 		}
 	}
 	return
@@ -426,7 +429,6 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
 		case cFunc:
-			llssa.CheckCFunc(aFn)
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
