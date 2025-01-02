@@ -72,6 +72,13 @@ func isWrapABI(prog Program, i int, typ types.Type) (bool, bool) {
 	return false, false
 }
 
+func isWrapSig(prog Program, typ types.Type) bool {
+	if sig, ok := typ.Underlying().(*types.Signature); ok {
+		return checkWrapAbi(prog, sig)
+	}
+	return false
+}
+
 func wrapParam(pkg Package, typ types.Type, param string) string {
 	switch t := typ.Underlying().(type) {
 	case *types.Struct:
@@ -221,12 +228,17 @@ func callWrapABI(b Builder, fn Expr, sig *types.Signature, data Expr, args []Exp
 	vars := make([]*types.Var, sig.Params().Len())
 	for i, a := range args {
 		atyp := a.Type.RawType()
-		if wrap, issig := isWrapABI(b.Prog, i, atyp); wrap && !issig {
-			args[i] = b.toPtr(a)
-			v := sig.Params().At(i)
-			vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.NewPointer(v.Type()))
+		v := sig.Params().At(i)
+		if wrap, issig := isWrapABI(b.Prog, i, atyp); wrap {
+			if issig {
+				args[i] = wrapCallback(b, a)
+				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.Typ[types.UnsafePointer])
+			} else {
+				args[i] = b.toPtr(a)
+				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), types.NewPointer(v.Type()))
+			}
 		} else {
-			vars[i] = sig.Params().At(i)
+			vars[i] = v
 		}
 	}
 	loadFn := func(name string, params *types.Tuple) Expr {
@@ -246,4 +258,41 @@ func callWrapABI(b Builder, fn Expr, sig *types.Signature, data Expr, args []Exp
 		ret.impl = b.Load(r).impl
 	}
 	return
+}
+
+const (
+	wrapStub = "__llgo_wrap_callback."
+)
+
+func wrapCallback(b Builder, v Expr) Expr {
+	name := v.impl.Name()
+	if fn, ok := b.Pkg.wrapCallback[name]; ok {
+		return fn.Expr
+	}
+	sig := v.raw.Type.Underlying().(*types.Signature)
+	n := sig.Params().Len()
+	nret := sig.Results().Len()
+	vars := make([]*types.Var, n+nret)
+	for i := 0; i < n; i++ {
+		param := sig.Params().At(i)
+		vars[i] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
+	}
+	for i := 0; i < nret; i++ {
+		param := sig.Results().At(i)
+		vars[i+n] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
+	}
+	fn := b.Pkg.NewFunc(wrapStub+name, types.NewSignature(nil, types.NewTuple(vars...), nil, false), InC)
+	fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	fb := fn.MakeBody(1)
+	args := make([]Expr, n)
+	for i := 0; i < n; i++ {
+		args[i] = fb.Load(fn.Param(i))
+	}
+	fr := fb.Call(v, args...)
+	if nret != 0 {
+		fb.Store(fn.Param(n), fr)
+	}
+	fb.impl.CreateRetVoid()
+	b.Pkg.wrapCallback[name] = fn
+	return b.Call(b.Pkg.rtFunc("WrapFunc"), b.MakeInterface(b.Prog.Any(), v), b.MakeInterface(b.Prog.Any(), fn.Expr))
 }

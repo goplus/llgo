@@ -24,6 +24,7 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 	"github.com/goplus/llgo/runtime/internal/clite/signal"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	"github.com/goplus/llgo/runtime/internal/ffi"
 )
 
 // -----------------------------------------------------------------------------
@@ -131,6 +132,10 @@ func init() {
 			panic(errorString("unexpected signal value: " + string(itoa(buf[:], uint64(v)))))
 		}
 	})
+}
+
+func WrapFunc(fn interface{}, wrap ffi.WrapFuncType) unsafe.Pointer {
+	return ffi.WrapFunc(fn, wrap)
 }
 
 // -----------------------------------------------------------------------------
