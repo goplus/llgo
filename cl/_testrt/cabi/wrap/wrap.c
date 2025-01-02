@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 typedef struct {
     int a[2];
     int b;
@@ -16,6 +18,10 @@ info demo1(info i, int n) {
 
 void demo2(info i, int *n) {
     *n = i.a[0]+i.a[1]+i.b;
+}
+
+int demo3(info i, int n) {
+    return i.a[0]+i.a[1]+i.b+n;
 }
 
 info_big big1(info_big b, int n) {

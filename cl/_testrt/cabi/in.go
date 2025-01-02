@@ -28,6 +28,9 @@ func demo1(info, c.Int) info
 //go:linkname demo2 C.demo2
 func demo2(info, *c.Int)
 
+//go:linkname demo3 C.demo3
+func demo3(info, c.Int) c.Int
+
 //go:linkname big1 C.big1
 func big1(infoBig, c.Int) infoBig
 
@@ -74,10 +77,17 @@ func main() {
 		println(b2[0], b2[1], b2[127])
 		panic("bad abi")
 	}
+	// callback go func
 	n = callback(info{[2]c.Int{1, 2}, 3}, 100, func(i info, n c.Int) c.Int {
 		return i.a[0] + i.a[1] + i.b + n
 	})
 	if n != 106 {
+		panic("bad callback abi")
+	}
+	// callback c func
+	n = callback(info{[2]c.Int{1, 2}, 3}, 101, demo3)
+	if n != 107 {
+		println(n)
 		panic("bad callback abi")
 	}
 }
