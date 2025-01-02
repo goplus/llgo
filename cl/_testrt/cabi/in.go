@@ -42,6 +42,9 @@ func (bigArr) scale(n int32) (v bigArr) {
 	return
 }
 
+//go:linkname callback C.callback
+func callback(info, c.Int, func(info, c.Int) c.Int) c.Int
+
 func main() {
 	i := demo1(info{[2]c.Int{1, 2}, 3}, 4)
 	if i.a[0] != 4 || i.a[1] != 8 || i.b != 12 {
@@ -70,5 +73,11 @@ func main() {
 	if b2[0] != 4 || b2[1] != 8 || b2[127] != 16 {
 		println(b2[0], b2[1], b2[127])
 		panic("bad abi")
+	}
+	n = callback(info{[2]c.Int{1, 2}, 3}, 100, func(i info, n c.Int) c.Int {
+		return i.a[0] + i.a[1] + i.b + n
+	})
+	if n != 106 {
+		panic("bad callback abi")
 	}
 }
