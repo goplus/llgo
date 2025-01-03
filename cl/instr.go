@@ -351,6 +351,9 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			if debugSymbols {
 				aFn.Inline(llssa.NoInline)
 			}
+			if ftype == cFunc {
+				llssa.CheckCFunc(aFn)
+			}
 		}
 	}
 	return
