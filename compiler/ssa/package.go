@@ -198,6 +198,7 @@ type aProgram struct {
 
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
+	wrapFunc     map[string]bool   // wrap abi funcs
 
 	ptrSize int
 
@@ -234,7 +235,7 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string),
+		linkname: make(map[string]string), wrapFunc: make(map[string]bool),
 	}
 }
 
