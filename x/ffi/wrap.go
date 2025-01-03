@@ -59,10 +59,14 @@ func MakeFunc(fn interface{}) unsafe.Pointer {
 // WrapFunc make go func/closure to c func ptr use wrap params pointer mode
 func WrapFunc(fn interface{}, wrap interface{}) unsafe.Pointer {
 	e := (*eface)(unsafe.Pointer(&fn))
-	if !e.typ.IsClosure() {
+	var ftyp *abi.FuncType
+	if e.typ.Kind() == abi.Func {
+		ftyp = e.typ.FuncType()
+	} else if e.typ.IsClosure() {
+		ftyp = e.typ.StructType().Fields[0].Typ.FuncType()
+	} else {
 		panic("invalid func")
 	}
-	ftyp := e.typ.StructType().Fields[0].Typ.FuncType()
 	sig, err := toFFISig(ftyp.In, ftyp.Out)
 	if err != nil {
 		panic(err)
