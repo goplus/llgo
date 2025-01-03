@@ -99,10 +99,6 @@ func wrapParam(pkg Package, typ types.Type, param string) string {
 }
 
 func wrapCFunc(pkg Package, fn Function) {
-	if pkg.wrapCFunc[fn.Name()] {
-		return
-	}
-	pkg.wrapCFunc[fn.Name()] = true
 	sig := fn.RawType().(*types.Signature)
 	var cext string = fn.Name() + "("
 	var csig = "void llgo_wrapabi_" + fn.Name() + "("
@@ -163,7 +159,7 @@ func toCType(typ types.Type, name string) string {
 			return "Go" + strings.Title(t.Name()) + " " + name
 		}
 	case *types.Pointer:
-		return toCType(t.Elem(), "") + "*" + name
+		return "void *" + name
 	case *types.Slice:
 		return "GoSlice " + name
 	case *types.Map:
@@ -264,33 +260,33 @@ const (
 
 func wrapCallback(b Builder, v Expr) Expr {
 	name := v.impl.Name()
-	if fn, ok := b.Pkg.wrapCallback[name]; ok {
-		return fn.Expr
+	fn, ok := b.Pkg.wrapCallback[name]
+	if !ok {
+		sig := v.raw.Type.Underlying().(*types.Signature)
+		n := sig.Params().Len()
+		nret := sig.Results().Len()
+		vars := make([]*types.Var, n+nret)
+		for i := 0; i < n; i++ {
+			param := sig.Params().At(i)
+			vars[i] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
+		}
+		for i := 0; i < nret; i++ {
+			param := sig.Results().At(i)
+			vars[i+n] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
+		}
+		fn = b.Pkg.NewFunc(wrapStub+name, types.NewSignature(nil, types.NewTuple(vars...), nil, false), InC)
+		fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+		fb := fn.MakeBody(1)
+		args := make([]Expr, n)
+		for i := 0; i < n; i++ {
+			args[i] = fb.Load(fn.Param(i))
+		}
+		fr := fb.Call(v, args...)
+		if nret != 0 {
+			fb.Store(fn.Param(n), fr)
+		}
+		fb.impl.CreateRetVoid()
+		b.Pkg.wrapCallback[name] = fn
 	}
-	sig := v.raw.Type.Underlying().(*types.Signature)
-	n := sig.Params().Len()
-	nret := sig.Results().Len()
-	vars := make([]*types.Var, n+nret)
-	for i := 0; i < n; i++ {
-		param := sig.Params().At(i)
-		vars[i] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
-	}
-	for i := 0; i < nret; i++ {
-		param := sig.Results().At(i)
-		vars[i+n] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
-	}
-	fn := b.Pkg.NewFunc(wrapStub+name, types.NewSignature(nil, types.NewTuple(vars...), nil, false), InC)
-	fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-	fb := fn.MakeBody(1)
-	args := make([]Expr, n)
-	for i := 0; i < n; i++ {
-		args[i] = fb.Load(fn.Param(i))
-	}
-	fr := fb.Call(v, args...)
-	if nret != 0 {
-		fb.Store(fn.Param(n), fr)
-	}
-	fb.impl.CreateRetVoid()
-	b.Pkg.wrapCallback[name] = fn
 	return b.Call(b.Pkg.rtFunc("WrapFunc"), b.MakeInterface(b.Prog.Any(), v), b.MakeInterface(b.Prog.Any(), fn.Expr))
 }
