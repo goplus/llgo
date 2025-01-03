@@ -1031,10 +1031,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	}
 	if fn.IsWrapABI() {
 		return callWrapABI(b, fn, sig, data, args)
-	} else {
-		ret.Type = b.Prog.retType(sig)
-		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	}
+	ret.Type = b.Prog.retType(sig)
+	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
 }
 
