@@ -1,0 +1,7 @@
+coverage:
+  ignore:
+    - "c"
+    - "py"
+    - "x"
+    - "cmd"
+    - "cpp"

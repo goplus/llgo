@@ -142,15 +142,9 @@ jobs:
       - name: Show test result
         run: cat result.md
 
-      - name: PR comment with test result
-        uses: thollander/actions-comment-pull-request@v3
-        if: false
-        with:
-          filePath: result.md
-          comment_tag: test-result-on-${{matrix.os}}-with-llvm-${{matrix.llvm}}
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           slug: goplus/llgo
+          codecov_yml_path: .github/ci-config/codecov.yml
