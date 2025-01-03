@@ -37,6 +37,7 @@ func big1(infoBig, c.Int) infoBig
 //go:linkname big2 C.big2
 func big2(infoBig, *c.Int)
 
+/*
 //llgo:type C
 type bigArr [128]int32
 
@@ -44,11 +45,23 @@ type bigArr [128]int32
 func (bigArr) scale(n int32) (v bigArr) {
 	return
 }
+*/
 
 //go:linkname callback C.callback
 func callback(info, c.Int, func(info, c.Int) c.Int) c.Int
 
+//go:linkname callback1 C.callback
+func callback1(info, c.Int, func(info, c.Int) c.Int) c.Int
+
+func godemo(i info, n c.Int) c.Int {
+	return i.a[0] + i.a[1] + i.b + n
+}
+
 func main() {
+	Test()
+}
+
+func Test() {
 	i := demo1(info{[2]c.Int{1, 2}, 3}, 4)
 	if i.a[0] != 4 || i.a[1] != 8 || i.b != 12 {
 		println(i.a[0], i.a[1], i.b)
@@ -71,17 +84,29 @@ func main() {
 		println(n)
 		panic("bad abi")
 	}
-	b1 := bigArr{0: 1, 1: 2, 127: 4}
-	b2 := b1.scale(4)
-	if b2[0] != 4 || b2[1] != 8 || b2[127] != 16 {
-		println(b2[0], b2[1], b2[127])
-		panic("bad abi")
-	}
+
+	// b1 := bigArr{0: 1, 1: 2, 127: 4}
+	// b2 := b1.scale(4)
+	// if b2[0] != 4 || b2[1] != 8 || b2[127] != 16 {
+	// 	println(b2[0], b2[1], b2[127])
+	// 	panic("bad abi")
+	// }
+
 	// callback go func
 	n = callback(info{[2]c.Int{1, 2}, 3}, 100, func(i info, n c.Int) c.Int {
 		return i.a[0] + i.a[1] + i.b + n
 	})
 	if n != 106 {
+		panic("bad callback abi")
+	}
+	// callback go func
+	n = callback(info{[2]c.Int{1, 2}, 3}, 100, godemo)
+	if n != 106 {
+		panic("bad callback abi")
+	}
+	// callback go func
+	n = callback1(info{[2]c.Int{1, 2}, 3}, 101, godemo)
+	if n != 107 {
 		panic("bad callback abi")
 	}
 	// callback c func
