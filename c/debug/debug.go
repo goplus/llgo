@@ -1,5 +1,9 @@
 package debug
 
+/*
+#cgo linux LDFLAGS: -lunwind
+*/
+import "C"
 import (
 	"unsafe"
 
