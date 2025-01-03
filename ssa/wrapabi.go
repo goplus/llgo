@@ -99,14 +99,19 @@ func wrapParam(pkg Package, typ types.Type, param string) string {
 }
 
 func wrapCFunc(pkg Package, fn Function) {
+	fname := fn.Name()
+	if pkg.Prog.wrapFunc[fname] {
+		return
+	}
+	pkg.Prog.wrapFunc[fname] = true
 	sig := fn.RawType().(*types.Signature)
-	var cext string = fn.Name() + "("
-	var csig = "void llgo_wrapabi_" + fn.Name() + "("
+	var cext string = fname + "("
+	var csig = "void llgo_wrapabi_" + fname + "("
 	var cbody string
 	if sig.Results().Len() == 1 {
 		cbody = "*r = "
 	}
-	cbody += fn.Name() + "("
+	cbody += fname + "("
 	for i := 0; i < sig.Params().Len(); i++ {
 		if i > 0 {
 			cext += ", "
