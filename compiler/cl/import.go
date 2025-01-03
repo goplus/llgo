@@ -617,7 +617,7 @@ func pkgKindByPath(pkgPath string) int {
 func replaceGoName(v string, pos int) string {
 	switch v[:pos] {
 	case "runtime":
-		return "github.com/goplus/compiler/internal/runtime" + v[pos:]
+		return "github.com/goplus/llgo/internal/runtime" + v[pos:]
 	}
 	return v
 }

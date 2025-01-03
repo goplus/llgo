@@ -5,7 +5,7 @@ import (
 	"go/types"
 	"log"
 
-	"github.com/goplus/compiler/internal/abi"
+	"github.com/goplus/llgo/abi"
 )
 
 // Builds a type representing a Bucket structure for

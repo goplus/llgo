@@ -30,7 +30,7 @@ import (
 
 const (
 	PkgPython  = "github.com/goplus/llgo/py"
-	PkgRuntime = "github.com/goplus/compiler/internal/runtime"
+	PkgRuntime = "github.com/goplus/llgo/internal/runtime"
 )
 
 // -----------------------------------------------------------------------------
