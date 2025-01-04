@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/runtime"
+	"github.com/goplus/compiler/internal/runtime"
 )
 
 const (
