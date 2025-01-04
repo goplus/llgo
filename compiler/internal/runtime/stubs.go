@@ -7,9 +7,9 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/runtime/math"
 	"github.com/goplus/llgo/c/sync/atomic"
 	"github.com/goplus/llgo/c/time"
+	"github.com/goplus/llgo/compiler/internal/runtime/math"
 )
 
 //go:linkname fastrand C.rand

@@ -20,8 +20,8 @@ package bytealg
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/runtime"
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/compiler/internal/runtime"
 )
 
 func IndexByte(b []byte, ch byte) int {

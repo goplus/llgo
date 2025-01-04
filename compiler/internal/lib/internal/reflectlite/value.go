@@ -7,8 +7,8 @@ package reflectlite
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/abi"
-	_ "github.com/goplus/compiler/internal/runtime"
+	"github.com/goplus/llgo/compiler/internal/abi"
+	_ "github.com/goplus/llgo/compiler/internal/runtime"
 )
 
 // Value is the reflection interface to a Go value.
@@ -402,7 +402,7 @@ func (v Value) Type() Type {
  * constructors
  */
 
-//go:linkname unsafe_New github.com/goplus/compiler/internal/runtime.New
+//go:linkname unsafe_New github.com/goplus/llgo/compiler/internal/runtime.New
 func unsafe_New(*abi.Type) unsafe.Pointer
 
 // ValueOf returns a new Value initialized to the concrete value
@@ -473,5 +473,5 @@ func arrayAt(p unsafe.Pointer, i int, eltSize uintptr, whySafe string) unsafe.Po
 
 // typedmemmove copies a value of type t to dst from src.
 //
-//go:linkname typedmemmove github.com/goplus/compiler/internal/runtime.Typedmemmove
+//go:linkname typedmemmove github.com/goplus/llgo/compiler/internal/runtime.Typedmemmove
 func typedmemmove(t *abi.Type, dst, src unsafe.Pointer)

@@ -28,7 +28,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/goplus/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/cmd/internal/base"
 )
 
 // Help implements the 'help' command.

@@ -28,9 +28,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/goplus/compiler/chore/llpyg/pysig"
-	"github.com/goplus/compiler/ssa"
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/compiler/chore/llpyg/pysig"
+	"github.com/goplus/llgo/compiler/ssa"
 )
 
 type symbol struct {

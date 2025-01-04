@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"go/types"
 
-	"github.com/goplus/compiler/ssa/abi"
+	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
 )
 

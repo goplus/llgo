@@ -30,7 +30,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/goplus/compiler/internal/lib/internal/syscall/execenv"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/syscall/execenv"
 )
 
 // Error is returned by LookPath when it fails to classify a file as an

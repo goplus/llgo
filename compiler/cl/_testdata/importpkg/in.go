@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/compiler/cl/internal/stdio"
+import "github.com/goplus/llgo/compiler/cl/internal/stdio"
 
 var hello = [...]int8{'H', 'e', 'l', 'l', 'o', '\n', 0}
 

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goplus/compiler/internal/env/llvm"
+	"github.com/goplus/llgo/compiler/internal/env/llvm"
 	"github.com/goplus/llgo/xtool/nm/nmindex"
 )
 

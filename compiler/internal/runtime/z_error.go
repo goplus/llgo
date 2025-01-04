@@ -19,8 +19,8 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/abi"
 	"github.com/goplus/llgo/c/bitcast"
+	"github.com/goplus/llgo/compiler/internal/abi"
 )
 
 type errorString string

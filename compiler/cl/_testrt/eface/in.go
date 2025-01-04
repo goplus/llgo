@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/abi"
+	"github.com/goplus/llgo/compiler/internal/abi"
 )
 
 type T string

@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/goplus/compiler/internal/lib/internal/itoa"
-	"github.com/goplus/compiler/internal/lib/internal/syscall/execenv"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/itoa"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/syscall/execenv"
 )
 
 // The only signal values guaranteed to be present in the os package on all

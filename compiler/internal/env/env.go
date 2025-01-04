@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/goplus/compiler/internal/safesplit"
+	"github.com/goplus/llgo/compiler/internal/safesplit"
 )
 
 var (

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/compiler/cl/internal/foo"
+import "github.com/goplus/llgo/compiler/cl/internal/foo"
 
 func Foo() any {
 	return struct{ v int }{1}

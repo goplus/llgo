@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goplus/compiler/internal/build"
+	"github.com/goplus/llgo/compiler/internal/build"
 )
 
 func GenFrom(fileOrPkg string) string {

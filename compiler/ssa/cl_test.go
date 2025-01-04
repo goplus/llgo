@@ -20,9 +20,9 @@ import (
 	"go/types"
 	"testing"
 
-	"github.com/goplus/compiler/cl/cltest"
-	"github.com/goplus/compiler/ssa"
-	"github.com/goplus/compiler/ssa/ssatest"
+	"github.com/goplus/llgo/compiler/cl/cltest"
+	"github.com/goplus/llgo/compiler/ssa"
+	"github.com/goplus/llgo/compiler/ssa/ssatest"
 )
 
 func init() {

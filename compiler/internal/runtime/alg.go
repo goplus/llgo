@@ -7,8 +7,8 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/abi"
-	"github.com/goplus/compiler/internal/runtime/goarch"
+	"github.com/goplus/llgo/compiler/internal/abi"
+	"github.com/goplus/llgo/compiler/internal/runtime/goarch"
 )
 
 const (

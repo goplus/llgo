@@ -3,21 +3,21 @@ package main
 import (
 	_ "unsafe"
 
-	_ "github.com/goplus/compiler/cl/internal/linktarget"
 	"github.com/goplus/llgo/c"
+	_ "github.com/goplus/llgo/compiler/cl/internal/linktarget"
 )
 
-//go:linkname print github.com/goplus/compiler/cl/internal/linktarget.F
+//go:linkname print github.com/goplus/llgo/compiler/cl/internal/linktarget.F
 func print(a, b, c, d *c.Char)
 
 type m struct {
 	s string
 }
 
-//go:linkname setInfo github.com/goplus/compiler/cl/internal/linktarget.(*m).setInfo
+//go:linkname setInfo github.com/goplus/llgo/compiler/cl/internal/linktarget.(*m).setInfo
 func setInfo(*m, string)
 
-//go:linkname info github.com/goplus/compiler/cl/internal/linktarget.m.info
+//go:linkname info github.com/goplus/llgo/compiler/cl/internal/linktarget.m.info
 func info(m) string
 
 func main() {

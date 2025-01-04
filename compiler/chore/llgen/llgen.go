@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goplus/compiler/internal/llgen"
+	"github.com/goplus/llgo/compiler/internal/llgen"
 )
 
 func main() {

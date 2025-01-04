@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/goplus/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/cmd/internal/base"
 	"github.com/goplus/llgo/x/env"
 )
 

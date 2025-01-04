@@ -7,9 +7,9 @@
 package os
 
 import (
-	"github.com/goplus/compiler/internal/lib/syscall"
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/llgo/compiler/internal/lib/syscall"
 )
 
 // Stat returns the FileInfo structure describing file.

@@ -9,7 +9,7 @@ package reflectlite
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/abi"
+	"github.com/goplus/llgo/compiler/internal/abi"
 )
 
 // Type is the representation of a Go type.

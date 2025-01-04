@@ -27,11 +27,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/goplus/compiler/cl/blocks"
-	"github.com/goplus/compiler/internal/typepatch"
+	"github.com/goplus/llgo/compiler/cl/blocks"
+	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 )
 
 // -----------------------------------------------------------------------------

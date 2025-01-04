@@ -33,7 +33,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 )
 
 func TestTestdefer(t *testing.T) {

@@ -23,7 +23,7 @@ import (
 	"testing"
 	"unsafe"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 	"golang.org/x/tools/go/ssa"
 )
 

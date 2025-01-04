@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/goplus/compiler/internal/lib/internal/syscall/unix"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/syscall/unix"
 )
 
 // Fd returns the integer Unix file descriptor referencing the open file.

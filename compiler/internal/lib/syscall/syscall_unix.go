@@ -9,9 +9,9 @@ package syscall
 import (
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/lib/internal/oserror"
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/syscall"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/oserror"
 )
 
 var (

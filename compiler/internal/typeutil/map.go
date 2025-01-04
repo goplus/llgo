@@ -12,8 +12,8 @@ import (
 	"go/types"
 	"reflect"
 
-	"github.com/goplus/compiler/internal/aliases"
-	"github.com/goplus/compiler/internal/typeparams"
+	"github.com/goplus/llgo/compiler/internal/aliases"
+	"github.com/goplus/llgo/compiler/internal/typeparams"
 )
 
 // Map is a hash-table-based mapping from types (types.Type) to

@@ -23,8 +23,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/goplus/compiler/cmd/internal/base"
-	"github.com/goplus/compiler/internal/build"
+	"github.com/goplus/llgo/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/internal/build"
 )
 
 var (

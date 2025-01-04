@@ -28,7 +28,7 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 )
 
 // -----------------------------------------------------------------------------
@@ -617,7 +617,7 @@ func pkgKindByPath(pkgPath string) int {
 func replaceGoName(v string, pos int) string {
 	switch v[:pos] {
 	case "runtime":
-		return "github.com/goplus/compiler/internal/runtime" + v[pos:]
+		return "github.com/goplus/llgo/compiler/internal/runtime" + v[pos:]
 	}
 	return v
 }

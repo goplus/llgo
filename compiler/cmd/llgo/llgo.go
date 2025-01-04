@@ -24,14 +24,14 @@ import (
 
 	"github.com/qiniu/x/log"
 
-	"github.com/goplus/compiler/cmd/internal/base"
-	"github.com/goplus/compiler/cmd/internal/build"
-	"github.com/goplus/compiler/cmd/internal/clean"
-	"github.com/goplus/compiler/cmd/internal/get"
-	"github.com/goplus/compiler/cmd/internal/help"
-	"github.com/goplus/compiler/cmd/internal/install"
-	"github.com/goplus/compiler/cmd/internal/run"
-	"github.com/goplus/compiler/cmd/internal/version"
+	"github.com/goplus/llgo/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/cmd/internal/build"
+	"github.com/goplus/llgo/compiler/cmd/internal/clean"
+	"github.com/goplus/llgo/compiler/cmd/internal/get"
+	"github.com/goplus/llgo/compiler/cmd/internal/help"
+	"github.com/goplus/llgo/compiler/cmd/internal/install"
+	"github.com/goplus/llgo/compiler/cmd/internal/run"
+	"github.com/goplus/llgo/compiler/cmd/internal/version"
 )
 
 func mainUsage() {

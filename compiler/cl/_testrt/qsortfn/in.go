@@ -3,8 +3,8 @@ package main
 import (
 	"unsafe"
 
-	q "github.com/goplus/compiler/cl/internal/qsort"
 	"github.com/goplus/llgo/c"
+	q "github.com/goplus/llgo/compiler/cl/internal/qsort"
 )
 
 //llgo:type C

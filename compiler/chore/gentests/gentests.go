@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/goplus/compiler/internal/llgen"
+	"github.com/goplus/llgo/compiler/internal/llgen"
 	"github.com/goplus/mod"
 )
 

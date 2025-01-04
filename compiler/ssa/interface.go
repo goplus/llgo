@@ -21,7 +21,7 @@ import (
 	"go/types"
 	"log"
 
-	"github.com/goplus/compiler/ssa/abi"
+	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
 )
 

@@ -21,7 +21,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/goplus/compiler/internal/env/llvm"
+	"github.com/goplus/llgo/compiler/internal/env/llvm"
 	nmtool "github.com/goplus/llgo/xtool/nm"
 )
 

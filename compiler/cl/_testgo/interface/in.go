@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/compiler/cl/internal/foo"
+	"github.com/goplus/llgo/compiler/cl/internal/foo"
 )
 
 type Game1 struct {

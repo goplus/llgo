@@ -31,14 +31,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/compiler/cl"
-	"github.com/goplus/compiler/internal/llgen"
-	"github.com/goplus/compiler/ssa/ssatest"
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/compiler/cl"
+	"github.com/goplus/llgo/compiler/internal/llgen"
+	"github.com/goplus/llgo/compiler/ssa/ssatest"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 )
 
 func init() {

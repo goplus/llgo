@@ -36,14 +36,14 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
-	"github.com/goplus/compiler/cl"
-	"github.com/goplus/compiler/internal/env"
-	"github.com/goplus/compiler/internal/env/llvm"
-	"github.com/goplus/compiler/internal/packages"
-	"github.com/goplus/compiler/internal/typepatch"
-	"github.com/goplus/compiler/ssa/abi"
+	"github.com/goplus/llgo/compiler/cl"
+	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/env/llvm"
+	"github.com/goplus/llgo/compiler/internal/packages"
+	"github.com/goplus/llgo/compiler/internal/typepatch"
+	"github.com/goplus/llgo/compiler/ssa/abi"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 	clangCheck "github.com/goplus/llgo/xtool/clang/check"
 )
 

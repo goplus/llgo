@@ -23,14 +23,14 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/goplus/compiler/ssa/abi"
+	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
 )
 
 const (
 	PkgPython  = "github.com/goplus/llgo/py"
-	PkgRuntime = "github.com/goplus/compiler/internal/runtime"
+	PkgRuntime = "github.com/goplus/llgo/compiler/internal/runtime"
 )
 
 // -----------------------------------------------------------------------------

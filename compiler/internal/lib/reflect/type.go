@@ -24,10 +24,10 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/goplus/compiler/internal/abi"
-	"github.com/goplus/compiler/internal/lib/sync"
-	"github.com/goplus/compiler/internal/runtime"
-	"github.com/goplus/compiler/internal/runtime/goarch"
+	"github.com/goplus/llgo/compiler/internal/abi"
+	"github.com/goplus/llgo/compiler/internal/lib/sync"
+	"github.com/goplus/llgo/compiler/internal/runtime"
+	"github.com/goplus/llgo/compiler/internal/runtime/goarch"
 )
 
 // Type is the representation of a Go type.
@@ -1136,7 +1136,7 @@ func (t *rtype) Comparable() bool {
 
 // implements reports whether the type V implements the interface type T.
 //
-//go:linkname implements github.com/goplus/compiler/internal/runtime.Implements
+//go:linkname implements github.com/goplus/llgo/compiler/internal/runtime.Implements
 func implements(T, V *abi.Type) bool
 
 // specialChannelAssignability reports whether a value x of channel type V

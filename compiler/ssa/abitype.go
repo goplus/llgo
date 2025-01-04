@@ -20,7 +20,7 @@ import (
 	"go/token"
 	"go/types"
 
-	"github.com/goplus/compiler/ssa/abi"
+	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
 )

@@ -21,8 +21,8 @@ import (
 	"go/types"
 	"testing"
 
-	"github.com/goplus/compiler/ssa"
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/compiler/ssa"
 )
 
 func NewProgram(t *testing.T, target *ssa.Target) ssa.Program {

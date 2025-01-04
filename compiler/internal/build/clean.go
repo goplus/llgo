@@ -22,7 +22,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/goplus/compiler/internal/packages"
+	"github.com/goplus/llgo/compiler/internal/packages"
 )
 
 var (

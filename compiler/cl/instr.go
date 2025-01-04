@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
-	llssa "github.com/goplus/compiler/ssa"
+	llssa "github.com/goplus/llgo/compiler/ssa"
 )
 
 // -----------------------------------------------------------------------------

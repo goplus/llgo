@@ -7,9 +7,9 @@ package os
 import (
 	"errors"
 
-	"github.com/goplus/compiler/internal/lib/internal/bytealg"
-	"github.com/goplus/compiler/internal/lib/internal/itoa"
 	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/bytealg"
+	"github.com/goplus/llgo/compiler/internal/lib/internal/itoa"
 )
 
 func nextRandom() string {

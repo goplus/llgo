@@ -19,9 +19,9 @@ package cl_test
 import (
 	"testing"
 
-	"github.com/goplus/compiler/cl"
-	"github.com/goplus/compiler/cl/cltest"
-	"github.com/goplus/compiler/internal/build"
+	"github.com/goplus/llgo/compiler/cl"
+	"github.com/goplus/llgo/compiler/cl/cltest"
+	"github.com/goplus/llgo/compiler/internal/build"
 )
 
 func testCompile(t *testing.T, src, expected string) {
