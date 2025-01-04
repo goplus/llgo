@@ -40,7 +40,7 @@ _llgo_0:
 
 declare void @runtime.cgoUse(%"github.com/goplus/llgo/internal/runtime.eface")
 
-declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @main._cgoCheckResult(%"github.com/goplus/llgo/internal/runtime.eface")
 
 define void @main.init() {
 _llgo_0:

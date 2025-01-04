@@ -8,11 +8,11 @@
 10: loop
  8: loop
  9: cond
-13: loop
 11: loop
-12: cond
+12: loop
+13: cond
 14: cond
  2: cond
-17: loop
 15: loop
-16: always
+16: loop
+17: always

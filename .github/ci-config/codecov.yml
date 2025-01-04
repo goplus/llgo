@@ -1,0 +1,9 @@
+coverage:
+  ignore:
+    - "c"
+    - "py"
+    - "x"
+    - "cmd"
+    - "cpp"
+    - "internal/lib"
+    - "internal/runtime"

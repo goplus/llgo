@@ -113,6 +113,8 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 		}
 	case *types.Tuple:
 		return p.cvtTuple(t)
+	case *types.TypeParam:
+		return typ.Underlying(), false
 	default:
 		panic(fmt.Sprintf("cvtType: unexpected type - %T", typ))
 	}

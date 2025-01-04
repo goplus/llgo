@@ -155,9 +155,6 @@ func loadFromExportData(ld *loader, lpkg *loaderPackage) error
 //go:linkname parseFiles golang.org/x/tools/go/packages.(*loader).parseFiles
 func parseFiles(ld *loader, filenames []string) ([]*ast.File, []error)
 
-//go:linkname versionsInitFileVersions golang.org/x/tools/internal/versions.InitFileVersions
-func versionsInitFileVersions(*types.Info)
-
 //go:linkname typesinternalSetUsesCgo golang.org/x/tools/internal/typesinternal.SetUsesCgo
 func typesinternalSetUsesCgo(conf *types.Config) bool
 
@@ -354,7 +351,6 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		Scopes:     make(map[ast.Node]*types.Scope),
 		Selections: make(map[*ast.SelectorExpr]*types.Selection),
 	}
-	versionsInitFileVersions(lpkg.TypesInfo)
 	lpkg.TypesSizes = ld.sizes
 
 	importer := importerFunc(func(path string) (*types.Package, error) {

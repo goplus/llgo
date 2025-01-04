@@ -49,30 +49,30 @@ _llgo_0:
   store ptr %1, ptr @__llgo_argv, align 8
   call void @"github.com/goplus/llgo/internal/runtime.init"()
   call void @main.init()
-  br label %_llgo_3
+  br label %_llgo_1
 
-_llgo_1:                                          ; preds = %_llgo_3
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 7 }, i64 %10, i64 7)
-  %3 = call { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String" %2)
-  %4 = extractvalue { i32, i64 } %3, 0
-  %5 = extractvalue { i32, i64 } %3, 1
-  %6 = add i64 %10, %5
-  %7 = sext i32 %4 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %7)
+_llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
+  %2 = phi i64 [ 0, %_llgo_0 ], [ %8, %_llgo_2 ]
+  %3 = icmp slt i64 %2, 7
+  br i1 %3, label %_llgo_2, label %_llgo_3
+
+_llgo_2:                                          ; preds = %_llgo_1
+  %4 = call %"github.com/goplus/llgo/internal/runtime.String" @"github.com/goplus/llgo/internal/runtime.StringSlice"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 7 }, i64 %2, i64 7)
+  %5 = call { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/internal/runtime.String" %4)
+  %6 = extractvalue { i32, i64 } %5, 0
+  %7 = extractvalue { i32, i64 } %5, 1
+  %8 = add i64 %2, %7
+  %9 = sext i32 %6 to i64
+  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %9)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
-  br label %_llgo_3
+  br label %_llgo_1
 
-_llgo_2:                                          ; preds = %_llgo_3
-  %8 = call i8 @main.index(i8 2)
-  %9 = icmp eq i8 %8, 3
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %9)
+_llgo_3:                                          ; preds = %_llgo_1
+  %10 = call i8 @main.index(i8 2)
+  %11 = icmp eq i8 %10, 3
+  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %11)
   call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
   ret i32 0
-
-_llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %10 = phi i64 [ 0, %_llgo_0 ], [ %6, %_llgo_1 ]
-  %11 = icmp slt i64 %10, 7
-  br i1 %11, label %_llgo_1, label %_llgo_2
 }
 
 declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
