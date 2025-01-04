@@ -19,7 +19,7 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/abi"
 )
 
 // Map represents a Go map.

@@ -7,7 +7,7 @@ package reflectlite
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/abi"
 	_ "github.com/goplus/llgo/internal/runtime"
 )
 

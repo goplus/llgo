@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/abi"
 	"github.com/goplus/llgo/internal/lib/sync"
 	"github.com/goplus/llgo/internal/runtime"
 	"github.com/goplus/llgo/internal/runtime/goarch"

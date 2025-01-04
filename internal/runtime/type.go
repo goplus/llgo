@@ -7,7 +7,7 @@
 package runtime
 
 import (
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/abi"
 )
 
 type _type = abi.Type

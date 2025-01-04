@@ -19,8 +19,8 @@ package runtime
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/abi"
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/internal/abi"
 )
 
 type eface struct {

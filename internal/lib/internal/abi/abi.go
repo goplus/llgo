@@ -20,7 +20,7 @@ package abi
 import (
 	_ "unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/abi"
 )
 
 type InterfaceType = abi.InterfaceType
