@@ -37,10 +37,11 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
-	"github.com/goplus/llgo/xtool/env"
+	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
 
 	llssa "github.com/goplus/llgo/ssa"
@@ -175,6 +176,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
+	cfg.Dir = env.LLGoROOT()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
 
@@ -316,7 +318,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if strings.ContainsRune(param, '$') {
-						expdArgs = append(expdArgs, env.ExpandEnvToArgs(param)...)
+						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
 					} else {
 						fields := strings.Fields(param)
@@ -748,7 +750,7 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	args := make([]string, 0, 16)
 	if strings.HasPrefix(files, "$") { // has cflags
 		if pos := strings.IndexByte(files, ':'); pos > 0 {
-			cflags := env.ExpandEnvToArgs(files[:pos])
+			cflags := xenv.ExpandEnvToArgs(files[:pos])
 			files = files[pos+1:]
 			args = append(args, cflags...)
 		}
