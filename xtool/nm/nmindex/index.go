@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goplus/compiler/xtool/nm"
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 type IndexBuilder struct {

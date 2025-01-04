@@ -25,10 +25,10 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/goplus/compiler/xtool/clang/types/scanner"
 	"github.com/goplus/gogen"
+	"github.com/goplus/llgo/xtool/clang/types/scanner"
 
-	ctypes "github.com/goplus/compiler/xtool/clang/types"
+	ctypes "github.com/goplus/llgo/xtool/clang/types"
 )
 
 const (

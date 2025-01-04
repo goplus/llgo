@@ -21,8 +21,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/goplus/compiler/xtool/env/llvm"
-	nmtool "github.com/goplus/compiler/xtool/nm"
+	"github.com/goplus/compiler/internal/env/llvm"
+	nmtool "github.com/goplus/llgo/xtool/nm"
 )
 
 func main() {

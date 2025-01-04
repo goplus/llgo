@@ -22,10 +22,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goplus/compiler/xtool/clang"
-	"github.com/goplus/compiler/xtool/llvm/install_name_tool"
-	"github.com/goplus/compiler/xtool/llvm/llvmlink"
-	"github.com/goplus/compiler/xtool/nm"
+	"github.com/goplus/llgo/xtool/clang"
+	"github.com/goplus/llgo/xtool/llvm/install_name_tool"
+	"github.com/goplus/llgo/xtool/llvm/llvmlink"
+	"github.com/goplus/llgo/xtool/nm"
 )
 
 // -----------------------------------------------------------------------------

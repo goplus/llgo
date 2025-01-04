@@ -37,14 +37,14 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/compiler/cl"
+	"github.com/goplus/compiler/internal/env"
+	"github.com/goplus/compiler/internal/env/llvm"
 	"github.com/goplus/compiler/internal/packages"
 	"github.com/goplus/compiler/internal/typepatch"
 	"github.com/goplus/compiler/ssa/abi"
-	"github.com/goplus/compiler/xtool/env"
-	"github.com/goplus/compiler/xtool/env/llvm"
 
 	llssa "github.com/goplus/compiler/ssa"
-	clangCheck "github.com/goplus/compiler/xtool/clang/check"
+	clangCheck "github.com/goplus/llgo/xtool/clang/check"
 )
 
 type Mode int
