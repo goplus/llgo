@@ -25,8 +25,8 @@ import (
 	"math"
 	"unsafe"
 
+	"github.com/goplus/llgo/abi"
 	"github.com/goplus/llgo/c/bitcast"
-	"github.com/goplus/llgo/internal/abi"
 	"github.com/goplus/llgo/internal/runtime"
 	"github.com/goplus/llgo/internal/runtime/goarch"
 	"github.com/goplus/llgo/x/ffi"

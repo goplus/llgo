@@ -25,7 +25,7 @@ package reflect
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/internal/abi"
+	"github.com/goplus/llgo/abi"
 	"github.com/goplus/llgo/internal/runtime"
 )
 
