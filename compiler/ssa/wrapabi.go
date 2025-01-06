@@ -27,7 +27,7 @@ import (
 	"github.com/goplus/llvm"
 )
 
-func CheckCFunc(fn Function) {
+func checkCFunc(fn Function) {
 	fn._kind |= kindCFunc
 	if checkWrapAbi(fn.Prog, fn.RawType().(*types.Signature)) {
 		fn._kind |= kindWrapABI
@@ -283,12 +283,12 @@ func wrapCallback(b Builder, v Expr) Expr {
 		param := fn.Param(1)
 		for i := 0; i < n; i++ {
 			ptr := b.Load(b.IndexAddr(param, b.Prog.Val(i)))
-			typ := b.Prog.Type(types.NewPointer(sig.Params().At(i).Type()), InGo)
+			typ := b.Prog.Type(types.NewPointer(sig.Params().At(i).Type()), InC)
 			args[i] = b.Load(Expr{ptr.impl, typ})
 		}
 		fr := b.Call(v, args...)
 		if sig.Results().Len() != 0 {
-			typ := b.Prog.Type(types.NewPointer(sig.Results().At(0).Type()), InGo)
+			typ := b.Prog.Type(types.NewPointer(sig.Results().At(0).Type()), InC)
 			b.Store(Expr{fn.Param(0).impl, typ}, fr)
 		}
 		b.impl.CreateRetVoid()
