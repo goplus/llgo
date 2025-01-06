@@ -19,6 +19,7 @@ package runtime
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/runtime/abi"
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/debug"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
@@ -134,8 +135,12 @@ func init() {
 	})
 }
 
-func WrapFunc(fn interface{}, wrap ffi.WrapFuncType) unsafe.Pointer {
+func WrapFunc(fn interface{}, wrap ffi.WrapperFunc) unsafe.Pointer {
 	return ffi.WrapFunc(fn, wrap)
+}
+
+func WrapFuncType(ftyp *abi.FuncType, wrap ffi.WrapperFunc) unsafe.Pointer {
+	return ffi.WrapFuncType(ftyp, wrap)
 }
 
 // -----------------------------------------------------------------------------

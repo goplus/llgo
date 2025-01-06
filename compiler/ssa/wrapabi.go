@@ -263,35 +263,36 @@ const (
 	wrapStub = "__llgo_wrap_callback."
 )
 
+var (
+	wrapSig = types.NewSignature(nil, types.NewTuple(
+		types.NewVar(token.NoPos, nil, "ret", types.Typ[types.UnsafePointer]),
+		types.NewVar(token.NoPos, nil, "args", types.NewSlice(types.Typ[types.UnsafePointer])),
+	), nil, false)
+)
+
 func wrapCallback(b Builder, v Expr) Expr {
 	name := v.impl.Name()
 	fn, ok := b.Pkg.wrapCallback[name]
 	if !ok {
-		sig := v.raw.Type.Underlying().(*types.Signature)
-		n := sig.Params().Len()
-		nret := sig.Results().Len()
-		vars := make([]*types.Var, n+nret)
-		for i := 0; i < n; i++ {
-			param := sig.Params().At(i)
-			vars[i] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
-		}
-		for i := 0; i < nret; i++ {
-			param := sig.Results().At(i)
-			vars[i+n] = types.NewVar(param.Pos(), param.Pkg(), param.Name(), types.NewPointer(param.Type()))
-		}
-		fn = b.Pkg.NewFunc(wrapStub+name, types.NewSignature(nil, types.NewTuple(vars...), nil, false), InC)
+		sig := v.RawType().Underlying().(*types.Signature)
+		fn = b.Pkg.NewFunc(wrapStub+name, wrapSig, InC)
 		fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		fb := fn.MakeBody(1)
-		args := make([]Expr, n)
+		b := fn.MakeBody(1)
+		n := sig.Params().Len()
+		args := make([]Expr, sig.Params().Len())
+		param := fn.Param(1)
 		for i := 0; i < n; i++ {
-			args[i] = fb.Load(fn.Param(i))
+			ptr := b.Load(b.IndexAddr(param, b.Prog.Val(i)))
+			typ := b.Prog.Type(types.NewPointer(sig.Params().At(i).Type()), InGo)
+			args[i] = b.Load(Expr{ptr.impl, typ})
 		}
-		fr := fb.Call(v, args...)
-		if nret != 0 {
-			fb.Store(fn.Param(n), fr)
+		fr := b.Call(v, args...)
+		if sig.Results().Len() != 0 {
+			typ := b.Prog.Type(types.NewPointer(sig.Results().At(0).Type()), InGo)
+			b.Store(Expr{fn.Param(0).impl, typ}, fr)
 		}
-		fb.impl.CreateRetVoid()
+		b.impl.CreateRetVoid()
 		b.Pkg.wrapCallback[name] = fn
 	}
-	return b.Call(b.Pkg.rtFunc("WrapFunc"), b.MakeInterface(b.Prog.Any(), v), b.MakeInterface(b.Prog.Any(), fn.Expr))
+	return b.Call(b.Pkg.rtFunc("WrapFunc"), b.MakeInterface(b.Prog.Any(), v), fn.Expr)
 }
