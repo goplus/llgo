@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/goplus/llgo/compiler/internal/env"
 	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -30,7 +31,7 @@ import (
 
 const (
 	PkgPython  = "github.com/goplus/llgo/py"
-	PkgRuntime = "github.com/goplus/llgo/compiler/internal/runtime"
+	PkgRuntime = env.LLGoRuntimePkg + "/internal/runtime"
 )
 
 // -----------------------------------------------------------------------------
@@ -279,9 +280,16 @@ func (p Program) runtime() *types.Package {
 }
 
 func (p Program) rtNamed(name string) *types.Named {
-	t := p.runtime().Scope().Lookup(name).Type().(*types.Named)
-	t, _ = p.gocvt.cvtNamed(t)
-	return t
+	t := p.runtime().Scope().Lookup(name).Type()
+	for {
+		if alias, ok := t.(*types.Alias); ok {
+			t = alias.Rhs()
+		} else {
+			break
+		}
+	}
+	tyNamed, _ := p.gocvt.cvtNamed(t.(*types.Named))
+	return tyNamed
 }
 
 func (p Program) rtType(name string) Type {

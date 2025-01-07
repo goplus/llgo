@@ -7,8 +7,18 @@ import (
 )
 
 const (
-	LLGoCompilerPkg = "github.com/goplus/llgo"
+	LLGoCompilerPkg    = "github.com/goplus/llgo"
+	LLGoRuntimePkgName = "runtime"
+	LLGoRuntimePkg     = LLGoCompilerPkg + "/" + LLGoRuntimePkgName
 )
+
+func LLGoRuntimeDir() string {
+	root := LLGoROOT()
+	if root != "" {
+		return filepath.Join(root, LLGoRuntimePkgName)
+	}
+	return ""
+}
 
 func LLGoROOT() string {
 	if root, ok := isLLGoRoot(os.Getenv("LLGO_ROOT")); ok {
@@ -46,12 +56,12 @@ func isLLGoRoot(root string) (string, bool) {
 		return "", false
 	}
 	// Check for go.mod
-	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	data, err := os.ReadFile(filepath.Join(root, LLGoRuntimePkgName, "go.mod"))
 	if err != nil {
 		return "", false
 	}
 	// Check module name
-	if !strings.Contains(string(data), "module "+LLGoCompilerPkg+"\n") {
+	if !strings.Contains(string(data), "module "+LLGoRuntimePkg+"\n") {
 		return "", false
 	}
 	return root, true

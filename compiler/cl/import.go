@@ -28,6 +28,7 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
+	"github.com/goplus/llgo/compiler/internal/env"
 	llssa "github.com/goplus/llgo/compiler/ssa"
 )
 
@@ -617,7 +618,7 @@ func pkgKindByPath(pkgPath string) int {
 func replaceGoName(v string, pos int) string {
 	switch v[:pos] {
 	case "runtime":
-		return "github.com/goplus/llgo/compiler/internal/runtime" + v[pos:]
+		return env.LLGoRuntimePkg + "/internal/runtime" + v[pos:]
 	}
 	return v
 }

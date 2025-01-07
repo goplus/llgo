@@ -191,8 +191,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	//    updates. Since `github.com/goplus/llgo/c/*` contains many application libraries
 	//    that may change frequently, a possible solution is to have both depend on a
 	//    stable and limited c core API.
-	if !llgoPkgImported(initial) {
-		cfg.Dir = env.LLGoROOT()
+	if !llgoRuntimeImported(initial) {
+		cfg.Dir = env.LLGoRuntimeDir()
 	}
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
@@ -251,10 +251,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	return dpkg, nil
 }
 
-func llgoPkgImported(pkgs []*packages.Package) bool {
+func llgoRuntimeImported(pkgs []*packages.Package) bool {
 	for _, pkg := range pkgs {
 		for _, imp := range pkg.Imports {
-			if imp.Module != nil && imp.Module.Path == env.LLGoCompilerPkg {
+			if imp.Module != nil && imp.Module.Path == env.LLGoRuntimePkg {
 				return true
 			}
 		}

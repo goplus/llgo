@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/compiler/internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 )
 
 func Basic(kind abi.Kind) *abi.Type {

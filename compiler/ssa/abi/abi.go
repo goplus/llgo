@@ -25,7 +25,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/goplus/llgo/compiler/internal/abi"
+	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/runtime/abi"
 )
 
 // -----------------------------------------------------------------------------
@@ -215,7 +216,7 @@ func TypeArgs(typeArgs []types.Type) string {
 }
 
 const (
-	PatchPathPrefix = "github.com/goplus/llgo/compiler/internal/lib/"
+	PatchPathPrefix = env.LLGoRuntimePkg + "/internal/lib/"
 )
 
 // PathOf returns the package path of the specified package.
