@@ -5,7 +5,7 @@ import (
 
 	"github.com/goplus/llgo/c"
 	"github.com/goplus/llgo/c/clang"
-	"github.com/goplus/llgo/chore/_xtool/llcppsymg/clangutils"
+	"github.com/goplus/llgo/compiler/chore/_xtool/llcppsymg/clangutils"
 )
 
 func main() {
