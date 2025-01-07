@@ -688,8 +688,8 @@ func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string
 		if strings.HasPrefix(arg, "-") {
 			checkFlag(arg, &i, &verbose, swflags)
 		} else {
-			patterns = args[i:]
-			flags = args[:i]
+			patterns = append([]string{}, args[i:]...)
+			flags = append([]string{}, args[:i]...)
 			return
 		}
 	}
