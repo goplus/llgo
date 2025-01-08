@@ -1,7 +1,7 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -26,20 +26,20 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
-  %2 = call %"github.com/goplus/llgo/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 4 })
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" %2)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
 declare void @"net/textproto.init"()
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare %"github.com/goplus/llgo/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/internal/runtime.String")
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)

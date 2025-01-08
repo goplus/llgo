@@ -22,46 +22,46 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   %2 = call i32 @main.mask(i8 1)
   %3 = sext i32 %2 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %4 = call i64 @main.mask_shl(i64 127, i64 5)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %4)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %5 = call i8 @main.mask_shl8(i8 127, i64 5)
   %6 = sext i8 %5 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %6)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %7 = call i8 @main.mask_shl8u(i8 127, i64 5)
   %8 = zext i8 %7 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %8)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %9 = call i8 @main.mask_shl8(i8 127, i64 16)
   %10 = sext i8 %9 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %10)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %11 = call i8 @main.mask_shl8u(i8 127, i64 16)
   %12 = zext i8 %11 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %12)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %13 = call i64 @main.mask_shr(i64 127, i64 5)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %13)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %14 = call i8 @main.mask_shr8(i8 127, i64 5)
   %15 = sext i8 %14 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %15)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %16 = call i8 @main.mask_shr8u(i8 127, i64 5)
   %17 = zext i8 %16 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 %17)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %18 = call i8 @main.mask_shr8(i8 127, i64 16)
   %19 = sext i8 %18 to i64
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %19)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %19)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
@@ -77,7 +77,7 @@ _llgo_0:
 define i64 @main.mask_shl(i64 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
   %3 = icmp uge i64 %1, 64
   %4 = shl i64 %0, %1
   %5 = select i1 %3, i64 0, i64 %4
@@ -87,7 +87,7 @@ _llgo_0:
 define i8 @main.mask_shl8(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
   %3 = trunc i64 %1 to i8
   %4 = icmp uge i8 %3, 8
   %5 = shl i8 %0, %3
@@ -98,7 +98,7 @@ _llgo_0:
 define i8 @main.mask_shl8u(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
   %3 = trunc i64 %1 to i8
   %4 = icmp uge i8 %3, 8
   %5 = shl i8 %0, %3
@@ -109,7 +109,7 @@ _llgo_0:
 define i64 @main.mask_shr(i64 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
   %3 = icmp uge i64 %1, 64
   %4 = select i1 %3, i64 63, i64 %1
   %5 = ashr i64 %0, %4
@@ -119,7 +119,7 @@ _llgo_0:
 define i8 @main.mask_shr8(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
   %3 = trunc i64 %1 to i8
   %4 = icmp uge i8 %3, 8
   %5 = select i1 %4, i8 7, i8 %3
@@ -130,7 +130,7 @@ _llgo_0:
 define i8 @main.mask_shr8u(i8 %0, i64 %1) {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
-  call void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
   %3 = trunc i64 %1 to i8
   %4 = icmp uge i8 %3, 8
   %5 = lshr i8 %0, %3
@@ -138,12 +138,12 @@ _llgo_0:
   ret i8 %6
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.AssertNegativeShift"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1)

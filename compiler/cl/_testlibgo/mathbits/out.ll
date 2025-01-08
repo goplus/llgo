@@ -23,25 +23,25 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   %2 = call i64 @"math/bits.Len8"(i8 20)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %2)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %3 = call i64 @"math/bits.OnesCount"(i64 20)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
 declare void @"math/bits.init"()
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 declare i64 @"math/bits.Len8"(i8)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare i64 @"math/bits.OnesCount"(i64)

@@ -1,7 +1,7 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -25,11 +25,11 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 1, ptr %2, align 4
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
   store ptr %2, ptr %4, align 8
   %5 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %3, 1
@@ -46,7 +46,7 @@ define { ptr, ptr } @"main.main$1"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
-  %4 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %5 = getelementptr inbounds { ptr }, ptr %4, i32 0, i32 0
   store ptr %3, ptr %5, align 8
   %6 = insertvalue { ptr, ptr } { ptr @"main.main$1$1", ptr undef }, ptr %4, 1
@@ -58,23 +58,23 @@ _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String" { ptr @0, i64 7 })
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %1)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %4)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 7 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintString"(%"github.com/goplus/llgo/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)

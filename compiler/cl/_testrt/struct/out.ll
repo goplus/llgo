@@ -2,9 +2,9 @@
 source_filename = "main"
 
 %main.Foo = type { i32, i1 }
-%"github.com/goplus/llgo/internal/runtime.eface" = type { ptr, ptr }
+%"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
-@"github.com/goplus/llgo/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
+@"github.com/goplus/llgo/runtime/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
 @main.format = global [10 x i8] zeroinitializer, align 1
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
@@ -41,9 +41,9 @@ _llgo_0:
   ret ptr %0
 }
 
-declare void @runtime.cgoUse(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-declare void @main._cgoCheckResult(%"github.com/goplus/llgo/internal/runtime.eface")
+declare void @main._cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define void @main.init() {
 _llgo_0:
@@ -73,7 +73,7 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   %2 = alloca %main.Foo, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 8, i1 false)
@@ -93,6 +93,6 @@ declare void @printf(ptr, ...)
 
 declare void @syscall.init()
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

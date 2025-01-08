@@ -13,7 +13,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/internal/stdio.init"()
+  call void @"github.com/goplus/llgo/compiler/cl/internal/stdio.init"()
   store i8 72, ptr @main.hello, align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @main.hello, i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @main.hello, i64 2), align 1
@@ -31,17 +31,17 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
-  %2 = call i64 @"github.com/goplus/llgo/cl/internal/stdio.Max"(i64 2, i64 100)
+  %2 = call i64 @"github.com/goplus/llgo/compiler/cl/internal/stdio.Max"(i64 2, i64 100)
   call void (ptr, ...) @printf(ptr @main.hello)
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/cl/internal/stdio.init"()
+declare void @"github.com/goplus/llgo/compiler/cl/internal/stdio.init"()
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare i64 @"github.com/goplus/llgo/cl/internal/stdio.Max"(i64, i64)
+declare i64 @"github.com/goplus/llgo/compiler/cl/internal/stdio.Max"(i64, i64)
 
 declare void @printf(ptr, ...)

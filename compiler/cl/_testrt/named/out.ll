@@ -27,16 +27,16 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 64)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
   store ptr %3, ptr %2, align 8
   %4 = load ptr, ptr %2, align 8
   %5 = getelementptr inbounds %main.mspan, ptr %4, i32 0, i32 4
   store i64 100, ptr %5, align 4
   %6 = load ptr, ptr %2, align 8
-  %7 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 64)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
   %8 = getelementptr inbounds %main.mspan, ptr %6, i32 0, i32 0
   store ptr %7, ptr %8, align 8
   %9 = load ptr, ptr %2, align 8
@@ -45,13 +45,13 @@ _llgo_0:
   %12 = getelementptr inbounds %main.mspan, ptr %11, i32 0, i32 4
   store i64 200, ptr %12, align 4
   %13 = load ptr, ptr %2, align 8
-  %14 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %15 = getelementptr inbounds %main.mspan, ptr %13, i32 0, i32 2
   store ptr %14, ptr %15, align 8
   %16 = load ptr, ptr %2, align 8
   %17 = getelementptr inbounds %main.mspan, ptr %16, i32 0, i32 2
   %18 = load ptr, ptr %17, align 8
-  %19 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 64)
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
   %20 = getelementptr inbounds %main.mSpanList, ptr %18, i32 0, i32 1
   store ptr %19, ptr %20, align 8
   %21 = load ptr, ptr %2, align 8
@@ -71,7 +71,7 @@ _llgo_0:
   %33 = getelementptr inbounds %main.minfo, ptr %31, i32 0, i32 0
   store ptr %32, ptr %33, align 8
   %34 = load ptr, ptr %2, align 8
-  %35 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %35 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %36 = getelementptr inbounds { ptr }, ptr %35, i32 0, i32 0
   store ptr %2, ptr %36, align 8
   %37 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %35, 1
@@ -129,10 +129,10 @@ _llgo_0:
   ret i64 %7
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare i32 @printf(ptr, ...)

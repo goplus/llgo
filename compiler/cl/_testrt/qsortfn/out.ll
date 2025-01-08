@@ -42,7 +42,7 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   call void @main.sort1a()
   call void @main.sort1b()
@@ -60,7 +60,7 @@ _llgo_0:
 define void @main.sort1a() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @0)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -86,7 +86,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @1, i64 %16)
@@ -108,7 +108,7 @@ _llgo_0:
 define void @main.sort1b() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @2)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -134,7 +134,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @3, i64 %16)
@@ -156,7 +156,7 @@ _llgo_0:
 define void @main.sort2a() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @4)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -182,7 +182,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @5, i64 %16)
@@ -204,7 +204,7 @@ _llgo_0:
 define void @main.sort2b() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @6)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -230,7 +230,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @7, i64 %16)
@@ -252,7 +252,7 @@ _llgo_0:
 define void @main.sort3a() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @8)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -278,7 +278,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @9, i64 %16)
@@ -300,7 +300,7 @@ _llgo_0:
 define void @main.sort3b() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @10)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -326,7 +326,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @11, i64 %16)
@@ -348,7 +348,7 @@ _llgo_0:
 define void @main.sort4a() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @12)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -374,7 +374,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @13, i64 %16)
@@ -396,7 +396,7 @@ _llgo_0:
 define void @main.sort4b() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @14)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -422,7 +422,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @15, i64 %16)
@@ -444,7 +444,7 @@ _llgo_0:
 define void @main.sort5a() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @16)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -470,7 +470,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @17, i64 %16)
@@ -492,7 +492,7 @@ _llgo_0:
 define void @main.sort5b() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @18)
-  %1 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 40)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
   %4 = getelementptr inbounds i64, ptr %1, i64 2
@@ -518,7 +518,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %10, 0
   %13 = icmp sge i64 %10, 5
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
   %17 = call i32 (ptr, ...) @printf(ptr @19, i64 %16)
@@ -537,12 +537,12 @@ _llgo_0:
   ret i32 %5
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 declare i32 @printf(ptr, ...)
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare void @qsort(ptr, i64, i64, ptr)
 
-declare void @"github.com/goplus/llgo/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)

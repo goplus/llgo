@@ -28,26 +28,26 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store ptr @main.add, ptr %2, align 8
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 8)
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store ptr @"main.main$1", ptr %3, align 8
   %4 = load ptr, ptr %2, align 8
   %5 = icmp eq ptr @main.add, %4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %5)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %6 = load ptr, ptr %2, align 8
   %7 = load ptr, ptr %2, align 8
   %8 = icmp eq ptr %6, %7
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %8)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %9 = load ptr, ptr %3, align 8
   %10 = load ptr, ptr %3, align 8
   %11 = icmp eq ptr %9, %10
-  call void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1 %11)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
@@ -57,10 +57,10 @@ _llgo_0:
   ret i64 %2
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintBool"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)

@@ -22,42 +22,42 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 16)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 8)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64 8)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 16)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
 define void @"main.main$1"(ptr %0) {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %1)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 define void @"main.main$2"(ptr %0) {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %1)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 define void @"main.main$3"(ptr %0) {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64 %1)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 define linkonce void @"__llgo_stub.main.main$1"(ptr %0, ptr %1) {
 _llgo_0:
@@ -65,8 +65,8 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintUint"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintInt"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)

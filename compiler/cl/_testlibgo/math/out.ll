@@ -23,29 +23,29 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   %2 = call double @sqrt(double 2.000000e+00)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %2)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %3 = call double @math.Abs(double -1.200000e+00)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %3)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %4 = call double @math.Ldexp(double 1.200000e+00, i64 3)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double %4)
-  call void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i32 0
 }
 
 declare void @math.init()
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 declare double @sqrt(double)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintFloat"(double)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
 
-declare void @"github.com/goplus/llgo/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare double @math.Abs(double)
 

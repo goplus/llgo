@@ -2,9 +2,9 @@
 source_filename = "main"
 
 %"main.IO[error]" = type { ptr, ptr }
-%"github.com/goplus/llgo/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"main.Future[error]" = type { ptr, ptr }
-%"github.com/goplus/llgo/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 %"main.IO[[0]byte]" = type { ptr, ptr }
 %"main.Future[[0]byte]" = type { ptr, ptr }
 
@@ -12,7 +12,7 @@ source_filename = "main"
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
 
-define %"main.IO[error]" @main.WriteFile(%"github.com/goplus/llgo/internal/runtime.String" %0) {
+define %"main.IO[error]" @main.WriteFile(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
   ret %"main.IO[error]" { ptr @"__llgo_stub.main.WriteFile$1", ptr null }
 }
@@ -22,9 +22,9 @@ _llgo_0:
   ret %"main.Future[error]" { ptr @"__llgo_stub.main.WriteFile$1$1", ptr null }
 }
 
-define %"github.com/goplus/llgo/internal/runtime.iface" @"main.WriteFile$1$1"() {
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"main.WriteFile$1$1"() {
 _llgo_0:
-  ret %"github.com/goplus/llgo/internal/runtime.iface" zeroinitializer
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 }
 
 define void @main.init() {
@@ -44,7 +44,7 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   %2 = call [0 x i8] @"main.RunIO[[0]byte]"(%"main.IO[[0]byte]" { ptr @"__llgo_stub.main.main$1", ptr null })
   ret i32 0
@@ -66,13 +66,13 @@ _llgo_0:
   ret %"main.Future[error]" %1
 }
 
-define linkonce %"github.com/goplus/llgo/internal/runtime.iface" @"__llgo_stub.main.WriteFile$1$1"(ptr %0) {
+define linkonce %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"__llgo_stub.main.WriteFile$1$1"(ptr %0) {
 _llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/internal/runtime.iface" @"main.WriteFile$1$1"()
-  ret %"github.com/goplus/llgo/internal/runtime.iface" %1
+  %1 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"main.WriteFile$1$1"()
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 define linkonce %"main.Future[[0]byte]" @"__llgo_stub.main.main$1"(ptr %0) {
 _llgo_0:

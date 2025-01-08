@@ -24,12 +24,12 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   call void @"main.main$1"(i64 100, i64 200)
-  %2 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64 16)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store { ptr, ptr } { ptr @"__llgo_stub.main.main$2", ptr null }, ptr %2, align 8
-  %3 = call ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64 8)
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
   store ptr %2, ptr %4, align 8
   %5 = insertvalue { ptr, ptr } { ptr @"main.main$3", ptr undef }, ptr %3, 1
@@ -62,9 +62,9 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define linkonce void @"__llgo_stub.main.main$2"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
@@ -72,6 +72,6 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare i32 @printf(ptr, ...)

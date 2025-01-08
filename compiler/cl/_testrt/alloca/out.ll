@@ -24,7 +24,7 @@ define i32 @main(i32 %0, ptr %1) {
 _llgo_0:
   store i32 %0, ptr @__llgo_argc, align 4
   store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/internal/runtime.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
   call void @main.init()
   %2 = alloca i8, i64 4, align 1
   %3 = call ptr @memcpy(ptr %2, ptr @0, i64 4)
@@ -32,7 +32,7 @@ _llgo_0:
   ret i32 0
 }
 
-declare void @"github.com/goplus/llgo/internal/runtime.init"()
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 declare ptr @memcpy(ptr, ptr, i64)
 
