@@ -1,9 +1,8 @@
 coverage:
   ignore:
-    - "c"
+    - "compiler/chore"
+    - "chore"
     - "py"
     - "x"
-    - "cmd"
     - "cpp"
-    - "internal/lib"
-    - "internal/runtime"
+    - "runtime"
