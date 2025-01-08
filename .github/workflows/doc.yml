@@ -65,6 +65,7 @@ jobs:
             fi
           }
           source doc/_readme/scripts/install_llgo.sh
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Test doc code blocks
         run: |
