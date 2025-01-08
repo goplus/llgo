@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 )
 
@@ -87,7 +86,6 @@ func (c *Command) Usage(w io.Writer) {
 	c.Flag.SetOutput(w)
 	c.Flag.PrintDefaults()
 	fmt.Fprintln(w)
-	os.Exit(2)
 }
 
 // Runnable reports whether the command can be run; otherwise

@@ -36,7 +36,6 @@ import (
 
 func mainUsage() {
 	help.PrintUsage(os.Stderr, base.Llgo)
-	os.Exit(2)
 }
 
 func init() {
