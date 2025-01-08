@@ -1,0 +1,30 @@
+name: Format Check
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Check formatting
+        run: |
+          for dir in . compiler runtime; do
+            pushd $dir
+            if [ -n "$(go fmt ./...)" ]; then
+              echo "Some files are not properly formatted. Please run 'go fmt ./...'"
+              exit 1
+            fi
+            popd
+          done
+          echo "All files are properly formatted."

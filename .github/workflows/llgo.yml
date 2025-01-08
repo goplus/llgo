@@ -1,0 +1,95 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-24.04
+        llvm: [18]
+        go: ['1.20', '1.21', '1.22', '1.23']
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
+      - name: Install further optional dependencies for demos
+        run: |
+          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+          py_deps=(
+            numpy # for github.com/goplus/llgo/py/numpy
+            torch # for github.com/goplus/llgo/py/torch
+          )
+          pip3.12 install --break-system-packages "${py_deps[@]}"
+
+      - name: Set up Go for build
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install
+        working-directory: compiler
+        run: |
+          go install ./...
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Set up Go for testing
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{matrix.go}}
+
+      - name: Verify Go version
+        run: |
+          go_version=$(go version | cut -d' ' -f3 | sed 's/go//')
+          if [[ "$go_version" != "${{matrix.go}}"* ]]; then
+            echo "Expected Go version ${{matrix.go}}, but got $go_version"
+            exit 1
+          fi
+          echo "Using Go version: $go_version"
+
+      - name: chore/_xtool build tests
+        working-directory: compiler
+        run: |
+          cd chore/_xtool
+          llgo build -v ./...
+
+      - name: LLDB tests
+        if: ${{startsWith(matrix.os, 'macos')}}
+        working-directory: compiler
+        run: |
+          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
+          bash _lldb/runtest.sh -v
+
+      - name: LLGO tests
+        if: ${{!startsWith(matrix.os, 'ubuntu')}}
+        run: |
+          echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
+          bash ./.github/workflows/test_llgo.sh
+
+      - name: Test demos
+        run: |
+          # TODO(lijie): force python3-embed to be linked with python-3.12-embed
+          # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
+          # Will remove this after pytorch is fixed.
+          pcdir=$HOME/pc
+          mkdir -p $pcdir
+          libdir=$(pkg-config --variable=libdir python-3.12-embed)
+          echo "libdir: $libdir"
+          ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
+          export PKG_CONFIG_PATH=$pcdir
+          bash .github/workflows/test_demo.sh
+
+      - name: Show test result
+        run: cat result.md
