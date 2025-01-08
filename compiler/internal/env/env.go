@@ -1,7 +1,9 @@
 package env
 
 import (
+	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -11,6 +13,21 @@ const (
 	LLGoRuntimePkgName = "runtime"
 	LLGoRuntimePkg     = LLGoCompilerPkg + "/" + LLGoRuntimePkgName
 )
+
+func GOROOT() string {
+	root := os.Getenv("GOROOT")
+	if root != "" {
+		return root
+	}
+	cmd := exec.Command("go", "env", "GOROOT")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err == nil {
+		return strings.TrimSpace(out.String())
+	}
+	panic("cannot get GOROOT: " + err.Error())
+}
 
 func LLGoRuntimeDir() string {
 	root := LLGoROOT()

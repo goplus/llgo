@@ -135,7 +135,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cfg.Overlay = make(map[string][]byte)
 		for file, src := range overlayFiles {
 			overlay := unsafe.Slice(unsafe.StringData(src), len(src))
-			cfg.Overlay[filepath.Join(runtime.GOROOT(), "src", file)] = overlay
+			cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
 		}
 	}
 
