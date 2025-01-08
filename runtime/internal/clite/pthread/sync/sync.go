@@ -36,7 +36,7 @@ const (
 // Once is an object that will perform exactly one action.
 type Once C.pthread_once_t
 
-//go:linkname OnceInit llgoSyncOnceInitVal
+//go:linkname OnceInit cliteSyncOnceInitVal
 var OnceInit Once
 
 // llgo:link (*Once).Do C.pthread_once
@@ -79,10 +79,10 @@ func (m *Mutex) Destroy() {}
 // llgo:link (*Mutex).TryLock C.pthread_mutex_trylock
 func (m *Mutex) TryLock() c.Int { return 0 }
 
-// llgo:link (*Mutex).Lock C.wrap_pthread_mutex_lock
+// llgo:link (*Mutex).Lock C.clite_wrap_pthread_mutex_lock
 func (m *Mutex) Lock() {}
 
-// llgo:link (*Mutex).Unlock C.wrap_pthread_mutex_unlock
+// llgo:link (*Mutex).Unlock C.clite_wrap_pthread_mutex_unlock
 func (m *Mutex) Unlock() {}
 
 // -----------------------------------------------------------------------------

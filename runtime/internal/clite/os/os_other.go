@@ -25,5 +25,5 @@ const (
 	LLGoPackage = "link"
 )
 
-//go:linkname Clearenv C.llgoClearenv
+//go:linkname Clearenv C.cliteClearenv
 func Clearenv()

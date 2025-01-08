@@ -1,12 +1,14 @@
 #include <stdlib.h>
 #include <errno.h>
 
-int llgoClearenv() {
+int cliteClearenv()
+{
 	extern char **environ;
-	if (environ != NULL) {
+	if (environ != NULL)
+	{
 		*environ = NULL;
 	}
 	return 0;
 }
 
-int llgoErrno() { return errno; }
+int cliteErrno() { return errno; }

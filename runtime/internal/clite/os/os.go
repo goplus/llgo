@@ -70,7 +70,7 @@ type (
 	StatT = syscall.Stat_t
 )
 
-//go:linkname Errno C.llgoErrno
+//go:linkname Errno C.cliteErrno
 func Errno() c.Int
 
 //go:linkname Umask C.umask
