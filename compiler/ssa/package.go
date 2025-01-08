@@ -283,7 +283,7 @@ func (p Program) rtNamed(name string) *types.Named {
 	t := p.runtime().Scope().Lookup(name).Type()
 	for {
 		if alias, ok := t.(*types.Alias); ok {
-			t = alias.Rhs()
+			t = types.Unalias(alias)
 		} else {
 			break
 		}

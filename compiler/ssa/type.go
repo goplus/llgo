@@ -388,6 +388,8 @@ func (p Program) toType(raw types.Type) Type {
 		return &aType{llvm.ArrayType(elem.ll, int(t.Len())), typ, vkArray}
 	case *types.Chan:
 		return &aType{llvm.PointerType(p.rtChan(), 0), typ, vkChan}
+	case *types.Alias:
+		return p.toType(types.Unalias(t))
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
