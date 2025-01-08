@@ -42,19 +42,19 @@ result_file="/tmp/lldb_exit_code"
 
 # Prepare LLDB commands
 lldb_commands=(
-    "command script import _lldb/llgo_plugin.py"
-    "command script import _lldb/test.py"
-    "script test.run_tests_with_result('${package_path}/debug.out', ['${package_path}/in.go'], $verbose, $interactive, $plugin_path, '$result_file')"
+    "command script import ../llgo_plugin.py"
+    "command script import ../test.py"
+    "script test.run_tests_with_result('./debug.out', ['main.go'], $verbose, $interactive, $plugin_path, '$result_file')"
     "quit"
 )
 
-# Run LLDB with prepared commands 
+# Run LLDB with prepared commands
 lldb_command_string=""
 for cmd in "${lldb_commands[@]}"; do
     lldb_command_string+=" -o \"$cmd\""
 done
 
-
+cd "$package_path"
 # Run LLDB with the test script
 eval "$LLDB_PATH $lldb_command_string"
 

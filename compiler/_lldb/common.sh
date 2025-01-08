@@ -31,10 +31,24 @@ $LLDB_PATH --version
 export LLDB_PATH
 
 # Default package path
-export DEFAULT_PACKAGE_PATH="./cl/_testdata/debug"
+export DEFAULT_PACKAGE_PATH="./_lldb/lldbtest"
 
 # Function to build the project
 build_project() {
-    local package_path="$1"
-    LLGO_DEBUG=1 go run ./cmd/llgo build -o "${package_path}/debug.out" "${package_path}"
+    # package_path parameter is kept for backward compatibility
+    local current_dir
+    current_dir=$(pwd) || return
+
+    if ! cd "${DEFAULT_PACKAGE_PATH}"; then
+        echo "Failed to change directory to ${DEFAULT_PACKAGE_PATH}" >&2
+        return 1
+    fi
+
+    LLGO_DEBUG=1 llgo build -o "debug.out" . || {
+        local ret=$?
+        cd "$current_dir" || return
+        return $ret
+    }
+
+    cd "$current_dir" || return
 }
