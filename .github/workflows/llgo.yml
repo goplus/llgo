@@ -64,13 +64,6 @@ jobs:
           cd _xtool
           llgo build -v ./...
 
-      - name: LLDB tests
-        if: ${{startsWith(matrix.os, 'macos')}}
-        working-directory: compiler
-        run: |
-          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash _lldb/runtest.sh -v
-
       - name: LLGO tests
         if: ${{!startsWith(matrix.os, 'ubuntu')}}
         run: |
@@ -92,3 +85,10 @@ jobs:
 
       - name: Show test result
         run: cat result.md
+
+      - name: LLDB tests
+        if: ${{startsWith(matrix.os, 'macos')}}
+        working-directory: compiler
+        run: |
+          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
+          bash _lldb/runtest.sh -v
