@@ -503,7 +503,7 @@ func callRuntimeInit(b llssa.Builder, pkg llssa.Package) {
 }
 
 func isAny(t types.Type) bool {
-	if t, ok := t.(*types.Interface); ok {
+	if t, ok := t.Underlying().(*types.Interface); ok {
 		return t.Empty()
 	}
 	return false
