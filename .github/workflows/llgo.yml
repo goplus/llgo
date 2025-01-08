@@ -59,10 +59,9 @@ jobs:
           fi
           echo "Using Go version: $go_version"
 
-      - name: chore/_xtool build tests
-        working-directory: compiler
+      - name: _xtool build tests
         run: |
-          cd chore/_xtool
+          cd _xtool
           llgo build -v ./...
 
       - name: LLDB tests
