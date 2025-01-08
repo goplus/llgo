@@ -4,7 +4,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/c"
-	q "github.com/goplus/llgo/compiler/cl/internal/qsort"
+	q "github.com/goplus/llgo/compiler/cl/_testrt/qsortfn/qsort"
 )
 
 //llgo:type C

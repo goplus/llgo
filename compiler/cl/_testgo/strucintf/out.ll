@@ -42,7 +42,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"github.com/goplus/llgo/compiler/cl/internal/foo.init"()
+  call void @"github.com/goplus/llgo/compiler/cl/_testdata/foo.init"()
   call void @"main.init$after"()
   br label %_llgo_2
 
@@ -72,7 +72,7 @@ _llgo_1:                                          ; preds = %_llgo_12
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
-  %9 = call %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/internal/foo.Bar"()
+  %9 = call %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/_testdata/foo.Bar"()
   %10 = alloca { i64 }, align 8
   call void @llvm.memset(ptr %10, i8 0, i64 8, i1 false)
   %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, 0
@@ -95,7 +95,7 @@ _llgo_4:                                          ; preds = %_llgo_15
 _llgo_5:                                          ; preds = %_llgo_6, %_llgo_4
   %16 = alloca { i64 }, align 8
   call void @llvm.memset(ptr %16, i8 0, i64 8, i1 false)
-  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/internal/foo.F"()
+  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/_testdata/foo.F"()
   %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %17, 0
   %19 = load ptr, ptr @"main.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88", align 8
   %20 = icmp eq ptr %18, %19
@@ -230,7 +230,7 @@ declare %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/ll
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/compiler/cl/internal/foo.init"()
+declare void @"github.com/goplus/llgo/compiler/cl/_testdata/foo.init"()
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
@@ -240,8 +240,8 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/internal/foo.Bar"()
+declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/_testdata/foo.Bar"()
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/internal/foo.F"()
+declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/compiler/cl/_testdata/foo.F"()
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

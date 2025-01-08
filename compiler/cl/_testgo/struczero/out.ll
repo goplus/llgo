@@ -1,7 +1,7 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-%"github.com/goplus/llgo/compiler/cl/internal/foo.Foo" = type { ptr, float }
+%"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" = type { ptr, float }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %main.bar = type { ptr, float }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
@@ -10,8 +10,8 @@ source_filename = "main"
 %"github.com/goplus/llgo/runtime/abi.Method" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, ptr, ptr }
 
 @"main.init$guard" = global i1 false, align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/internal/foo.Foo" = linkonce global ptr null, align 8
-@0 = private unnamed_addr constant [47 x i8] c"github.com/goplus/llgo/compiler/cl/internal/foo", align 1
+@"_llgo_github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" = linkonce global ptr null, align 8
+@0 = private unnamed_addr constant [48 x i8] c"github.com/goplus/llgo/compiler/cl/_testdata/foo", align 1
 @1 = private unnamed_addr constant [3 x i8] c"Foo", align 1
 @_llgo_byte = linkonce global ptr null, align 8
 @"*_llgo_byte" = linkonce global ptr null, align 8
@@ -30,30 +30,30 @@ source_filename = "main"
 @__llgo_argv = global ptr null, align 8
 @8 = private unnamed_addr constant [6 x i8] c"notOk:", align 1
 
-define { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/internal/foo.Foo", align 8
+  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", align 8
   %3 = icmp eq ptr %1, %2
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 1
-  %5 = load %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", ptr %4, align 8
-  %6 = insertvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } undef, %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo" %5, 0
-  %7 = insertvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %6, i1 true, 1
+  %5 = load %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", ptr %4, align 8
+  %6 = insertvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } undef, %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" %5, 0
+  %7 = insertvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %6, i1 true, 1
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_0
   br label %_llgo_3
 
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
-  %8 = phi { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } [ %7, %_llgo_1 ], [ zeroinitializer, %_llgo_2 ]
-  %9 = extractvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %8, 0
-  %10 = extractvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %8, 1
-  %11 = insertvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } undef, %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo" %9, 0
-  %12 = insertvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %11, i1 %10, 1
-  ret { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %12
+  %8 = phi { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } [ %7, %_llgo_1 ], [ zeroinitializer, %_llgo_2 ]
+  %9 = extractvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %8, 0
+  %10 = extractvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %8, 1
+  %11 = insertvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } undef, %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" %9, 0
+  %12 = insertvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %11, i1 %10, 1
+  ret { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %12
 }
 
 define { %main.bar, i1 } @main.Foo(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
@@ -89,7 +89,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"main.init$guard", align 1
-  call void @"github.com/goplus/llgo/compiler/cl/internal/foo.init"()
+  call void @"github.com/goplus/llgo/compiler/cl/_testdata/foo.init"()
   call void @"main.init$after"()
   br label %_llgo_2
 
@@ -123,20 +123,20 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %12 = alloca %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", align 8
+  %12 = alloca %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", align 8
   call void @llvm.memset(ptr %12, i8 0, i64 16, i1 false)
-  %13 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/internal/foo.Foo", align 8
+  %13 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", align 8
   %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo" zeroinitializer, ptr %14, align 8
+  store %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" zeroinitializer, ptr %14, align 8
   %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %13, 0
   %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %15, ptr %14, 1
-  %17 = call { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %16)
-  %18 = extractvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %17, 0
-  store %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo" %18, ptr %12, align 8
-  %19 = extractvalue { %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", i1 } %17, 1
-  %20 = load %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", ptr %12, align 8
-  %21 = call ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.Foo.Pb"(%"github.com/goplus/llgo/compiler/cl/internal/foo.Foo" %20)
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/internal/foo.Foo", ptr %12, i32 0, i32 1
+  %17 = call { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } @main.Bar(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %16)
+  %18 = extractvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %17, 0
+  store %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" %18, ptr %12, align 8
+  %19 = extractvalue { %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", i1 } %17, 1
+  %20 = load %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", ptr %12, align 8
+  %21 = call ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo" %20)
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", ptr %12, i32 0, i32 1
   %23 = load float, ptr %22, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %21)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -150,13 +150,13 @@ _llgo_0:
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 47 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 3 }, i64 25, i64 16, i64 1, i64 1)
-  %1 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/internal/foo.Foo", align 8
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 3 }, i64 25, i64 16, i64 1, i64 1)
+  %1 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", align 8
   %2 = icmp eq ptr %1, null
   br i1 %2, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/internal/foo.Foo", align 8
+  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -262,11 +262,11 @@ _llgo_11:                                         ; preds = %_llgo_9
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_9
   %58 = load ptr, ptr @"_llgo_func$NfGSLZ1QiKRoFkKeqYSXE5hUU5bpeteSJKrbMNUzYRE", align 8
   %59 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 2 }, ptr undef, ptr undef, ptr undef }, ptr %58, 1
-  %60 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %59, ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.(*Foo).Pb", 2
-  %61 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %60, ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.(*Foo).Pb", 3
+  %60 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %59, ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.(*Foo).Pb", 2
+  %61 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %60, ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.(*Foo).Pb", 3
   %62 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 2 }, ptr undef, ptr undef, ptr undef }, ptr %58, 1
-  %63 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %62, ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.(*Foo).Pb", 2
-  %64 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %63, ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.Foo.Pb", 3
+  %63 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %62, ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.(*Foo).Pb", 2
+  %64 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %63, ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo.Pb", 3
   %65 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 40)
   %66 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %65, i64 0
   store %"github.com/goplus/llgo/runtime/abi.Method" %64, ptr %66, align 8
@@ -301,11 +301,11 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, p
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1)
 
-declare ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.(*Foo).Pb"(ptr)
+declare ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.(*Foo).Pb"(ptr)
 
-declare ptr @"github.com/goplus/llgo/compiler/cl/internal/foo.Foo.Pb"(%"github.com/goplus/llgo/compiler/cl/internal/foo.Foo")
+declare ptr @"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/compiler/cl/_testdata/foo.Foo")
 
-declare void @"github.com/goplus/llgo/compiler/cl/internal/foo.init"()
+declare void @"github.com/goplus/llgo/compiler/cl/_testdata/foo.init"()
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
