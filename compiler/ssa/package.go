@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"runtime"
@@ -280,16 +281,23 @@ func (p Program) runtime() *types.Package {
 }
 
 func (p Program) rtNamed(name string) *types.Named {
-	t := p.runtime().Scope().Lookup(name).Type()
-	for {
-		if alias, ok := t.(*types.Alias); ok {
-			t = types.Unalias(alias)
-		} else {
-			break
+	if rt := p.runtime(); rt != nil {
+		if rtScope := rt.Scope(); rtScope != nil {
+			if obj := rtScope.Lookup(name); obj != nil {
+				t := obj.Type()
+				for {
+					if alias, ok := t.(*types.Alias); ok {
+						t = types.Unalias(alias)
+					} else {
+						break
+					}
+				}
+				t, _ = p.gocvt.cvtNamed(t.(*types.Named))
+				return t.(*types.Named)
+			}
 		}
 	}
-	tyNamed, _ := p.gocvt.cvtNamed(t.(*types.Named))
-	return tyNamed
+	panic(fmt.Errorf("runtime type (%s) not found, install from pre-built package or set LLGO_ROOT", name))
 }
 
 func (p Program) rtType(name string) Type {
