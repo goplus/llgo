@@ -190,6 +190,8 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 			s = "<-chan"
 		}
 		return fmt.Sprintf("%s %s", s, elem), pub
+	case *types.Alias:
+		return b.TypeName(types.Unalias(t))
 	}
 	log.Panicf("todo: %T\n", t)
 	return

@@ -77,6 +77,8 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 		return b.abiChanOf(t)
 	case *types.Map:
 		return b.abiMapOf(t)
+	case *types.Alias:
+		return b.abiTypeOf(types.Unalias(t))
 	}
 	panic("todo")
 }
