@@ -27,14 +27,6 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
-      - name: Install further optional dependencies for demos
-        run: |
-          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
-          py_deps=(
-            numpy # for github.com/goplus/llgo/py/numpy
-            torch # for github.com/goplus/llgo/py/torch
-          )
-          pip3.12 install --break-system-packages "${py_deps[@]}"
 
       - name: Clang information
         run: |
