@@ -176,24 +176,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
-	// Use LLGoROOT as default implementation if `github.com/goplus/llgo` is not
-	// imported in user's go.mod. This ensures compilation works without import
-	// while allowing `github.com/goplus/llgo` upgrades via go.mod.
-	//
-	// WARNING(lijie): This approach cannot guarantee compatibility between `llgo`
-	// executable and runtime. This is a known design limitation that needs to be
-	// addressed in future improvements. The runtime should be:
-	// 1. Released and fully tested with the `llgo` compiler across different Go
-	//    compiler versions and user-specified go versions in go.mod
-	// 2. Not be dependent on `github.com/goplus/llgo/c` library. Current runtime directly
-	//    depends on it, causing version conflicts: using LLGoROOT makes user's specified
-	//    version ineffective, while not using it leaves runtime unable to follow compiler
-	//    updates. Since `github.com/goplus/llgo/c/*` contains many application libraries
-	//    that may change frequently, a possible solution is to have both depend on a
-	//    stable and limited c core API.
-	if !llgoRuntimeImported(initial) {
-		cfg.Dir = env.LLGoRuntimeDir()
-	}
+	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
 
