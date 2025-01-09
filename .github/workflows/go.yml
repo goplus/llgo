@@ -10,23 +10,6 @@ on:
     branches: [ "**" ]
 
 jobs:
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.20'
-
-      - name: Check formatting
-        run: |
-          if [ -n "$(go fmt ./...)" ]; then
-            echo "Some files are not properly formatted. Please run 'go fmt ./...'"
-            exit 1
-          fi
-
   test:
     strategy:
       matrix:
@@ -35,54 +18,15 @@ jobs:
           - ubuntu-24.04
         llvm: [18]
     runs-on: ${{matrix.os}}
+    defaults:
+      run:
+        working-directory: compiler
     steps:
       - uses: actions/checkout@v4
-
       - name: Install dependencies
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          brew update
-          brew install llvm@${{matrix.llvm}} bdw-gc openssl libffi
-          brew link --force libffi
-          echo "$(brew --prefix llvm@${{matrix.llvm}})/bin" >> $GITHUB_PATH
-
-          # Install optional deps for demos.
-          #
-          # NOTE: Keep this list updated as new deps are introduced.
-          opt_deps=(
-            cjson       # for github.com/goplus/llgo/c/cjson
-            sqlite      # for github.com/goplus/llgo/c/sqlite
-            python@3.12 # for github.com/goplus/llgo/py
-          )
-          brew install "${opt_deps[@]}"
-
-      - name: Install dependencies
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{matrix.llvm}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-get update
-          sudo apt-get install -y llvm-${{matrix.llvm}}-dev clang-${{matrix.llvm}} libclang-${{matrix.llvm}}-dev lld-${{matrix.llvm}} pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libunwind-dev
-          echo "/usr/lib/llvm-${{matrix.llvm}}/bin" >> $GITHUB_PATH
-
-          # Install optional deps for demos.
-          #
-          # NOTE: Keep this list updated as new deps are introduced.
-          opt_deps=(
-            libcjson-dev   # for github.com/goplus/llgo/c/cjson
-            libsqlite3-dev # for github.com/goplus/llgo/c/sqlite
-            python3.12-dev # for github.com/goplus/llgo/py
-          )
-          sudo apt-get install -y "${opt_deps[@]}"
-
-      - name: Install further optional dependencies for demos
-        run: |
-          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
-          py_deps=(
-            numpy # for github.com/goplus/llgo/py/numpy
-            torch # for github.com/goplus/llgo/py/torch
-          )
-          pip3.12 install --break-system-packages "${py_deps[@]}"
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
 
       - name: Clang information
         run: |
@@ -93,13 +37,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.23'
 
       - name: Build
         run: go build -v ./...
-
-      - name: Install
-        run: go install ./...
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
@@ -109,48 +50,9 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
 
-      - name: LLGO tests
-        if: ${{!startsWith(matrix.os, 'ubuntu')}}
-        run: |
-          echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
-          bash .github/workflows/test_llgo.sh
-
-      - name: chore/_xtool build tests
-        run: |
-          cd chore/_xtool
-          llgo build -v ./...
-
-      - name: LLDB tests
-        if: ${{startsWith(matrix.os, 'macos')}}
-        run: |
-          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash _lldb/runtest.sh -v
-
-      - name: Test demos
-        run: |
-          # TODO(lijie): force python3-embed to be linked with python-3.12-embed
-          # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
-          # Will remove this after pytorch is fixed.
-          pcdir=$HOME/pc
-          mkdir -p $pcdir
-          libdir=$(pkg-config --variable=libdir python-3.12-embed)
-          echo "libdir: $libdir"
-          ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
-          export PKG_CONFIG_PATH=$pcdir
-          bash .github/workflows/test_demo.sh
-
-      - name: Show test result
-        run: cat result.md
-
-      - name: PR comment with test result
-        uses: thollander/actions-comment-pull-request@v3
-        if: false
-        with:
-          filePath: result.md
-          comment_tag: test-result-on-${{matrix.os}}-with-llvm-${{matrix.llvm}}
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           slug: goplus/llgo
+          codecov_yml_path: .github/ci-config/codecov.yml

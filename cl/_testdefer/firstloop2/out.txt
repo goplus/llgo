@@ -1,4 +1,0 @@
- 0: always
- 3: loop
- 1: loop
- 2: always

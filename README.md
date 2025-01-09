@@ -413,10 +413,11 @@ How do I generate these tools?
 
 ```sh
 git clone https://github.com/goplus/llgo.git
-cd llgo
+cd llgo/compiler
 go install -v ./cmd/...
 go install -v ./chore/...  # compile all tools except pydump
-cd chore/_xtool
+export LLGO_ROOT=$PWD/..
+cd ../_xtool
 llgo install ./...   # compile pydump
 go install github.com/goplus/hdq/chore/pysigfetch@v0.8.1  # compile pysigfetch
 ```

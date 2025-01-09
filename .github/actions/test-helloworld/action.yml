@@ -1,0 +1,35 @@
+name: 'Test Hello World'
+description: 'Test Hello World with specific Go and module versions'
+inputs:
+  go-version:
+    description: 'Go version being tested'
+    required: true
+  mod-version:
+    description: 'Go module version to use'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Test Hello World
+      shell: bash
+      run: |
+        echo "Testing with Go ${{ inputs.go-version }} and go.mod ${{ inputs.mod-version }}"
+        mkdir -p _test/helloworld && cd _test/helloworld
+        cat > go.mod << 'EOL'
+        module hello
+        go ${{ inputs.mod-version }}
+        EOL
+        cat > main.go << 'EOL'
+        package main
+        import (
+          "fmt"
+          "github.com/goplus/llgo/c"
+        )
+        func main() {
+            fmt.Println("Hello, LLGo!")
+            println("Hello, LLGo!")
+            c.Printf(c.Str("Hello, LLGo!\n"))
+        }
+        EOL
+        go mod tidy
+        llgo run .
