@@ -56,6 +56,7 @@ func main() {
 	args := flag.Args()
 	if len(args) < 1 {
 		flag.Usage()
+		return
 	}
 	log.SetFlags(log.Ldefault &^ log.LstdFlags)
 
