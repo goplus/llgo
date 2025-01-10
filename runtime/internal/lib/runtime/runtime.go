@@ -16,10 +16,12 @@
 
 package runtime
 
-// llgo:skipall
 import (
 	_ "unsafe"
 )
+
+// llgo:skipall
+type _runtime struct{}
 
 // GOROOT returns the root of the Go tree. It uses the
 // GOROOT environment variable, if set at process start,
