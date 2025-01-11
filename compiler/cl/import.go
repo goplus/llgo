@@ -236,31 +236,43 @@ func (p *context) collectSkip(line string, prefix int) {
 
 func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
 	if doc != nil {
-		if n := len(doc.List); n > 0 {
-			line := doc.List[n-1].Text
-			p.initLinkname(line, func(name string) (_ string, _, ok bool) {
+		for n := len(doc.List) - 1; n >= 0; n-- {
+			line := doc.List[n].Text
+			found := p.initLinkname(line, func(name string) (_ string, _, ok bool) {
 				return fullName, isVar, name == inPkgName
 			})
+			if !found {
+				break
+			}
 		}
 	}
 }
 
-func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
 	const (
 		linkname   = "//go:linkname "
 		llgolink   = "//llgo:link "
 		llgolink2  = "// llgo:link "
 		exportName = "//export "
+		directive  = "//go:"
 	)
 	if strings.HasPrefix(line, linkname) {
 		p.initLink(line, len(linkname), f)
+		return true
 	} else if strings.HasPrefix(line, llgolink2) {
 		p.initLink(line, len(llgolink2), f)
+		return true
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
+		return true
 	} else if strings.HasPrefix(line, exportName) {
 		p.initCgoExport(line, len(exportName), f)
+		return true
+	} else if strings.HasPrefix(line, directive) {
+		// skip unknown annotation but continue to parse the next annotation
+		return true
 	}
+	return false
 }
 
 func (p *context) initCgoExport(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
@@ -279,7 +291,7 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
 				p.prog.SetLinkname(fullName, link)
 			} else {
-				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
+				p.prog.SetLinkname(fullName, "C."+link)
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "==>", line)
@@ -381,6 +393,7 @@ var cgoIgnoredNames = map[string]none{
 	"_Cgo_ptr":        {},
 	"_Cgo_use":        {},
 	"_cgoCheckResult": {},
+	"cgoCheckResult":  {},
 }
 
 func cgoIgnored(fnName string) bool {
@@ -499,14 +512,17 @@ const (
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
 	name := llssa.FullName(pkg, v.Name())
-	if v, ok := p.prog.Linkname(name); ok {
-		if pos := strings.IndexByte(v, '.'); pos >= 0 {
-			if pos == 2 && v[0] == 'p' && v[1] == 'y' {
-				return v[3:], pyVar, false
+	// TODO(lijie): need a bettery way to process linkname (maybe alias)
+	if !isCgoCfpvar(v.Name()) && !isCgoVar(v.Name()) {
+		if v, ok := p.prog.Linkname(name); ok {
+			if pos := strings.IndexByte(v, '.'); pos >= 0 {
+				if pos == 2 && v[0] == 'p' && v[1] == 'y' {
+					return v[3:], pyVar, false
+				}
+				return replaceGoName(v, pos), goVar, false
 			}
-			return replaceGoName(v, pos), goVar, false
+			return v, cVar, false
 		}
-		return v, cVar, false
 	}
 	return name, goVar, true
 }
