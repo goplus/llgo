@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/token"
 	"go/types"
 	"testing"
 )
@@ -38,6 +39,25 @@ func TestCType(t *testing.T) {
 	for _, test := range tests {
 		if ctyp := toCType(test.typ, test.name); ctyp != test.ctyp {
 			t.Fatalf("got %v, want %v", ctyp, test.ctyp)
+		}
+	}
+}
+
+func TestCTypeName(t *testing.T) {
+	st := types.NewStruct([]*types.Var{types.NewVar(token.NoPos, nil, "v", types.Typ[types.Int32])}, nil)
+	ar := types.NewArray(types.Typ[types.Int32], 128)
+	var tests = []struct {
+		typ  types.Type
+		name string
+	}{
+		{types.NewNamed(types.NewTypeName(token.NoPos, nil, "Info", nil), st, nil), "Info"},
+		{types.NewNamed(types.NewTypeName(token.NoPos, nil, "Array", nil), ar, nil), "Array"},
+		{st, "T_cebf5235330d7edcaa1d4978344aeca5"},
+		{ar, "T_085c4553affe27d57830441b4da93948"},
+	}
+	for _, test := range tests {
+		if name := ctypName(test.typ); name != test.name {
+			t.Fatalf("got %v, want %v", name, test.name)
 		}
 	}
 }
