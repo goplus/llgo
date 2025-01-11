@@ -376,6 +376,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	args = append(
 		args,
 		"-o", app,
+		"-Wl,--error-limit=0",
 		"-fuse-ld=lld",
 		"-Wno-override-module",
 		// "-O2", // FIXME: This will cause TestFinalizer in _test/bdwgc.go to fail on macOS.
