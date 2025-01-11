@@ -17,3 +17,13 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/compiler/" # Location of package manifests
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/runtime/" # Location of package manifests
+    schedule:
+      interval: "daily"
