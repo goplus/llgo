@@ -20,6 +20,7 @@ import (
 	"go/types"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -213,6 +214,9 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 	}
 	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
 	p.fns[name] = ret
+	if !strings.Contains(name, ".") {
+		checkCFunc(ret)
+	}
 	return ret
 }
 
