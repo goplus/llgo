@@ -1,0 +1,4 @@
+coverage:
+  ignore:
+    - "compiler/chore"
+    - "compiler/cmd"

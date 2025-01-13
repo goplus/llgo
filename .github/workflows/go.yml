@@ -54,5 +54,3 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}}
-          slug: goplus/llgo
-          codecov_yml_path: .github/ci-config/codecov.yml
