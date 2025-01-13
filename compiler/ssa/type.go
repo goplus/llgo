@@ -554,9 +554,6 @@ func FuncName(pkg *types.Package, name string, recv *types.Var, org bool) string
 		return PathOf(pkg) + "." + tName + "." + name
 	}
 	ret := FullName(pkg, name)
-	if ret == "main.main" {
-		ret = "main"
-	}
 	return ret
 }
 

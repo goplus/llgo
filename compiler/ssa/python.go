@@ -231,18 +231,6 @@ func (p Program) tyGetAttrString() *types.Signature {
 	return p.getAttrStr
 }
 
-// PyInit initializes Python for a main package.
-func (p Package) PyInit() bool {
-	if fn := p.FuncOf("main"); fn != nil {
-		b := fn.NewBuilder()
-		b.SetBlockEx(fn.Block(0), AtStart, false)
-		b.callPyInit()
-		b.Dispose()
-		return true
-	}
-	return false
-}
-
 // PyNewModVar creates a new global variable for a Python module.
 func (p Package) PyNewModVar(name string, doInit bool) Global {
 	if v, ok := p.pymods[name]; ok {
