@@ -429,11 +429,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 			}
 		}
 	})
-	main, err := genMainModuleFile(llssa.PkgRuntime, pkg.PkgPath, needRuntime, needPyInit)
+	entryLLFile, err := genMainModuleFile(llssa.PkgRuntime, pkg.PkgPath, needRuntime, needPyInit)
 	if err != nil {
 		panic(err)
 	}
-	args = append(args, main)
+	defer os.Remove(entryLLFile)
+	args = append(args, entryLLFile)
 
 	var aPkg *aPackage
 	for _, v := range pkgs {
