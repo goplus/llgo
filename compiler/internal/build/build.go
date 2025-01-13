@@ -429,6 +429,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 			}
 		}
 	})
+	main, err := genMainModuleFile(llssa.PkgRuntime, pkg.PkgPath, needRuntime, needPyInit)
+	if err != nil {
+		panic(err)
+	}
+	args = append(args, main)
 
 	var aPkg *aPackage
 	for _, v := range pkgs {
@@ -438,19 +443,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		}
 	}
 
-	dirty := false
-	if needRuntime {
-		args = append(args, linkArgs...)
-	} else {
-		dirty = true
-		fn := aPkg.LPkg.FuncOf(cl.RuntimeInit)
-		fn.MakeBody(1).Return()
-	}
-	if needPyInit {
-		dirty = aPkg.LPkg.PyInit()
-	}
+	args = append(args, linkArgs...)
 
-	if dirty && needLLFile(mode) {
+	if needLLFile(mode) {
 		lpkg := aPkg.LPkg
 		os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
 	}
@@ -483,7 +478,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err := ctx.env.Clang().Exec(args...)
+	err = ctx.env.Clang().Exec(args...)
 	check(err)
 
 	if runtime.GOOS == "darwin" {
@@ -512,6 +507,60 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
 	return
+}
+
+func genMainModuleFile(rtPkgPath, mainPkgPath string, needRuntime, needPyInit bool) (path string, err error) {
+	var (
+		pyInitDecl string
+		pyInit     string
+		rtInitDecl string
+		rtInit     string
+	)
+	if needRuntime {
+		rtInit = "call void @\"" + rtPkgPath + ".init\"()"
+		rtInitDecl = "declare void @\"" + rtPkgPath + ".init\"()"
+	}
+	if needPyInit {
+		pyInit = "call void @Py_Initialize()"
+		pyInitDecl = "declare void @Py_Initialize()"
+	}
+	mainCode := fmt.Sprintf(`; ModuleID = 'main'
+source_filename = "main"
+
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+
+%s
+%s
+declare void @"%s.init"()
+declare void @"%s.main"()
+
+define i32 @main(i32 %%0, ptr %%1) {
+_llgo_0:
+  %s
+  store i32 %%0, ptr @__llgo_argc, align 4
+  store ptr %%1, ptr @__llgo_argv, align 8
+  %s
+  call void @"%s.init"()
+  call void @"%s.main"()
+  ret i32 0
+}
+`, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		pyInit, rtInit, mainPkgPath, mainPkgPath)
+
+	f, err := os.CreateTemp("", "main*.ll")
+	if err != nil {
+		return "", err
+	}
+	_, err = f.Write([]byte(mainCode))
+	if err != nil {
+		return "", err
+	}
+	err = f.Close()
+	if err != nil {
+		return "", err
+	}
+	return f.Name(), nil
 }
 
 func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, err error) {
