@@ -1,47 +1,39 @@
-; ModuleID = 'main'
-source_filename = "main"
+; ModuleID = 'github.com/goplus/llgo/compiler/cl/_testrt/panic'
+source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/panic"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
-@"main.init$guard" = global i1 false, align 1
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
+@"github.com/goplus/llgo/compiler/cl/_testrt/panic.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [13 x i8] c"panic message", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
-define void @main.init() {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/panic.init"() {
 _llgo_0:
-  %0 = load i1, ptr @"main.init$guard", align 1
+  %0 = load i1, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/panic.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"main.init$guard", align 1
-  call void @"main.init$after"()
+  store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/panic.init$guard", align 1
+  call void @"github.com/goplus/llgo/compiler/cl/_testrt/panic.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i32 @main(i32 %0, ptr %1) {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/panic.main"() {
 _llgo_0:
-  store i32 %0, ptr @__llgo_argc, align 4
-  store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-  call void @main.init()
-  %2 = load ptr, ptr @_llgo_string, align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 13 }, ptr %3, align 8
-  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %2, 0
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %4, ptr %3, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %5)
+  %0 = load ptr, ptr @_llgo_string, align 8
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 13 }, ptr %1, align 8
+  %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %0, 0
+  %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %2, ptr %1, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %3)
   unreachable
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-
-define void @"main.init$after"() {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/panic.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null

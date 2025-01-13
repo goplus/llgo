@@ -1,20 +1,18 @@
-; ModuleID = 'main'
-source_filename = "main"
+; ModuleID = 'github.com/goplus/llgo/compiler/cl/_testrt/float2any'
+source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/float2any"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"main.init$guard" = global i1 false, align 1
+@"github.com/goplus/llgo/compiler/cl/_testrt/float2any.init$guard" = global i1 false, align 1
 @_llgo_float32 = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [9 x i8] c"error f32", align 1
 @_llgo_float64 = linkonce global ptr null, align 8
 @2 = private unnamed_addr constant [9 x i8] c"error f64", align 1
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
 
-define void @main.check32(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = load ptr, ptr @_llgo_float32, align 8
@@ -51,7 +49,7 @@ _llgo_4:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define void @main.check64(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.check64"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = load ptr, ptr @_llgo_float64, align 8
@@ -87,54 +85,50 @@ _llgo_4:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define float @main.f32() {
+define float @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.f32"() {
 _llgo_0:
   ret float 0x400921FB60000000
 }
 
-define double @main.f64() {
+define double @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.f64"() {
 _llgo_0:
   ret double 0x400921FB53C8D4F1
 }
 
-define void @main.init() {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.init"() {
 _llgo_0:
-  %0 = load i1, ptr @"main.init$guard", align 1
+  %0 = load i1, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"main.init$guard", align 1
-  call void @"main.init$after"()
+  store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.init$guard", align 1
+  call void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i32 @main(i32 %0, ptr %1) {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.main"() {
 _llgo_0:
-  store i32 %0, ptr @__llgo_argc, align 4
-  store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-  call void @main.init()
-  %2 = call float @main.f32()
-  %3 = load ptr, ptr @_llgo_float32, align 8
-  %4 = bitcast float %2 to i32
-  %5 = inttoptr i32 %4 to ptr
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %3, 0
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @main.check32(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
-  %8 = call double @main.f64()
-  %9 = load ptr, ptr @_llgo_float64, align 8
-  %10 = bitcast double %8 to i64
-  %11 = inttoptr i64 %10 to ptr
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %9, 0
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %11, 1
-  call void @main.check64(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %13)
-  ret i32 0
+  %0 = call float @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.f32"()
+  %1 = load ptr, ptr @_llgo_float32, align 8
+  %2 = bitcast float %0 to i32
+  %3 = inttoptr i32 %2 to ptr
+  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %1, 0
+  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %4, ptr %3, 1
+  call void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %5)
+  %6 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.f64"()
+  %7 = load ptr, ptr @_llgo_float64, align 8
+  %8 = bitcast double %6 to i64
+  %9 = inttoptr i64 %8 to ptr
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
+  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %10, ptr %9, 1
+  call void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.check64"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %11)
+  ret void
 }
 
-define void @"main.init$after"() {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/float2any.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_float32, align 8
   %1 = icmp eq ptr %0, null
@@ -174,5 +168,3 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
