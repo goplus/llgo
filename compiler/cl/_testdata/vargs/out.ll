@@ -1,62 +1,56 @@
-; ModuleID = 'main'
-source_filename = "main"
+; ModuleID = 'github.com/goplus/llgo/compiler/cl/_testdata/vargs'
+source_filename = "github.com/goplus/llgo/compiler/cl/_testdata/vargs"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"main.init$guard" = global i1 false, align 1
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
+@"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init$guard" = global i1 false, align 1
 @_llgo_int = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @1 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
-define void @main.init() {
+define void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init"() {
 _llgo_0:
-  %0 = load i1, ptr @"main.init$guard", align 1
+  %0 = load i1, ptr @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"main.init$guard", align 1
-  call void @"main.init$after"()
+  store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init$guard", align 1
+  call void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i32 @main(i32 %0, ptr %1) {
+define void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.main"() {
 _llgo_0:
-  store i32 %0, ptr @__llgo_argc, align 4
-  store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-  call void @main.init()
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %2, i64 0
-  %4 = load ptr, ptr @_llgo_int, align 8
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, ptr inttoptr (i64 1 to ptr), 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %3, align 8
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %2, i64 1
-  %8 = load ptr, ptr @_llgo_int, align 8
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %8, 0
-  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, ptr inttoptr (i64 2 to ptr), 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %10, ptr %7, align 8
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %2, i64 2
-  %12 = load ptr, ptr @_llgo_int, align 8
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %12, 0
-  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %13, ptr inttoptr (i64 3 to ptr), 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %14, ptr %11, align 8
-  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %2, 0
-  %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %15, i64 3, 1
-  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %16, i64 3, 2
-  call void @main.test(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17)
-  ret i32 0
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
+  %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 0
+  %2 = load ptr, ptr @_llgo_int, align 8
+  %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %2, 0
+  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %3, ptr inttoptr (i64 1 to ptr), 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %4, ptr %1, align 8
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 1
+  %6 = load ptr, ptr @_llgo_int, align 8
+  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %6, 0
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr inttoptr (i64 2 to ptr), 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %8, ptr %5, align 8
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 2
+  %10 = load ptr, ptr @_llgo_int, align 8
+  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %10, 0
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %11, ptr inttoptr (i64 3 to ptr), 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %9, align 8
+  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 3, 1
+  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14, i64 3, 2
+  call void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.test"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %15)
+  ret void
 }
 
-define void @main.test(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+define void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.test"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
@@ -100,11 +94,9 @@ _llgo_5:                                          ; preds = %_llgo_2
   unreachable
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-define void @"main.init$after"() {
+define void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int, align 8
   %1 = icmp eq ptr %0, null

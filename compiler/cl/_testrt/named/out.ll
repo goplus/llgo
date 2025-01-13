@@ -1,135 +1,127 @@
-; ModuleID = 'main'
-source_filename = "main"
+; ModuleID = 'github.com/goplus/llgo/compiler/cl/_testrt/named'
+source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/named"
 
-%main.mspan = type { ptr, ptr, ptr, %main.minfo, i64, { ptr, ptr } }
-%main.minfo = type { ptr, i64 }
-%main.mSpanList = type { ptr, ptr }
+%"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan" = type { ptr, ptr, ptr, %"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo", i64, { ptr, ptr } }
+%"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo" = type { ptr, i64 }
+%"github.com/goplus/llgo/compiler/cl/_testrt/named.mSpanList" = type { ptr, ptr }
 
-@"main.init$guard" = global i1 false, align 1
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
+@"github.com/goplus/llgo/compiler/cl/_testrt/named.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [19 x i8] c"%d %d %d %d %d %d\0A\00", align 1
 
-define void @main.init() {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/named.init"() {
 _llgo_0:
-  %0 = load i1, ptr @"main.init$guard", align 1
+  %0 = load i1, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/named.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"main.init$guard", align 1
+  store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/named.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i32 @main(i32 %0, ptr %1) {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/named.main"() {
 _llgo_0:
-  store i32 %0, ptr @__llgo_argc, align 4
-  store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-  call void @main.init()
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
-  store ptr %3, ptr %2, align 8
-  %4 = load ptr, ptr %2, align 8
-  %5 = getelementptr inbounds %main.mspan, ptr %4, i32 0, i32 4
-  store i64 100, ptr %5, align 4
-  %6 = load ptr, ptr %2, align 8
-  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
-  %8 = getelementptr inbounds %main.mspan, ptr %6, i32 0, i32 0
-  store ptr %7, ptr %8, align 8
-  %9 = load ptr, ptr %2, align 8
-  %10 = getelementptr inbounds %main.mspan, ptr %9, i32 0, i32 0
-  %11 = load ptr, ptr %10, align 8
-  %12 = getelementptr inbounds %main.mspan, ptr %11, i32 0, i32 4
-  store i64 200, ptr %12, align 4
-  %13 = load ptr, ptr %2, align 8
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %15 = getelementptr inbounds %main.mspan, ptr %13, i32 0, i32 2
-  store ptr %14, ptr %15, align 8
-  %16 = load ptr, ptr %2, align 8
-  %17 = getelementptr inbounds %main.mspan, ptr %16, i32 0, i32 2
-  %18 = load ptr, ptr %17, align 8
-  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
-  %20 = getelementptr inbounds %main.mSpanList, ptr %18, i32 0, i32 1
-  store ptr %19, ptr %20, align 8
-  %21 = load ptr, ptr %2, align 8
-  %22 = getelementptr inbounds %main.mspan, ptr %21, i32 0, i32 2
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
+  store ptr %1, ptr %0, align 8
+  %2 = load ptr, ptr %0, align 8
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %2, i32 0, i32 4
+  store i64 100, ptr %3, align 4
+  %4 = load ptr, ptr %0, align 8
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %4, i32 0, i32 0
+  store ptr %5, ptr %6, align 8
+  %7 = load ptr, ptr %0, align 8
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %7, i32 0, i32 0
+  %9 = load ptr, ptr %8, align 8
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %9, i32 0, i32 4
+  store i64 200, ptr %10, align 4
+  %11 = load ptr, ptr %0, align 8
+  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %11, i32 0, i32 2
+  store ptr %12, ptr %13, align 8
+  %14 = load ptr, ptr %0, align 8
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %14, i32 0, i32 2
+  %16 = load ptr, ptr %15, align 8
+  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
+  %18 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mSpanList", ptr %16, i32 0, i32 1
+  store ptr %17, ptr %18, align 8
+  %19 = load ptr, ptr %0, align 8
+  %20 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %19, i32 0, i32 2
+  %21 = load ptr, ptr %20, align 8
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mSpanList", ptr %21, i32 0, i32 1
   %23 = load ptr, ptr %22, align 8
-  %24 = getelementptr inbounds %main.mSpanList, ptr %23, i32 0, i32 1
-  %25 = load ptr, ptr %24, align 8
-  %26 = getelementptr inbounds %main.mspan, ptr %25, i32 0, i32 4
-  store i64 300, ptr %26, align 4
-  %27 = load ptr, ptr %2, align 8
-  %28 = getelementptr inbounds %main.mspan, ptr %27, i32 0, i32 3
-  %29 = getelementptr inbounds %main.minfo, ptr %28, i32 0, i32 1
-  store i64 10, ptr %29, align 4
-  %30 = load ptr, ptr %2, align 8
-  %31 = getelementptr inbounds %main.mspan, ptr %30, i32 0, i32 3
-  %32 = load ptr, ptr %2, align 8
-  %33 = getelementptr inbounds %main.minfo, ptr %31, i32 0, i32 0
-  store ptr %32, ptr %33, align 8
-  %34 = load ptr, ptr %2, align 8
-  %35 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %36 = getelementptr inbounds { ptr }, ptr %35, i32 0, i32 0
-  store ptr %2, ptr %36, align 8
-  %37 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %35, 1
-  %38 = getelementptr inbounds %main.mspan, ptr %34, i32 0, i32 5
-  store { ptr, ptr } %37, ptr %38, align 8
-  %39 = load ptr, ptr %2, align 8
-  %40 = getelementptr inbounds %main.mspan, ptr %39, i32 0, i32 0
-  %41 = load ptr, ptr %40, align 8
-  %42 = getelementptr inbounds %main.mspan, ptr %41, i32 0, i32 4
-  %43 = load i64, ptr %42, align 4
-  %44 = load ptr, ptr %2, align 8
-  %45 = getelementptr inbounds %main.mspan, ptr %44, i32 0, i32 2
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %23, i32 0, i32 4
+  store i64 300, ptr %24, align 4
+  %25 = load ptr, ptr %0, align 8
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %25, i32 0, i32 3
+  %27 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo", ptr %26, i32 0, i32 1
+  store i64 10, ptr %27, align 4
+  %28 = load ptr, ptr %0, align 8
+  %29 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %28, i32 0, i32 3
+  %30 = load ptr, ptr %0, align 8
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo", ptr %29, i32 0, i32 0
+  store ptr %30, ptr %31, align 8
+  %32 = load ptr, ptr %0, align 8
+  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %34 = getelementptr inbounds { ptr }, ptr %33, i32 0, i32 0
+  store ptr %0, ptr %34, align 8
+  %35 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/compiler/cl/_testrt/named.main$1", ptr undef }, ptr %33, 1
+  %36 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %32, i32 0, i32 5
+  store { ptr, ptr } %35, ptr %36, align 8
+  %37 = load ptr, ptr %0, align 8
+  %38 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %37, i32 0, i32 0
+  %39 = load ptr, ptr %38, align 8
+  %40 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %39, i32 0, i32 4
+  %41 = load i64, ptr %40, align 4
+  %42 = load ptr, ptr %0, align 8
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %42, i32 0, i32 2
+  %44 = load ptr, ptr %43, align 8
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mSpanList", ptr %44, i32 0, i32 1
   %46 = load ptr, ptr %45, align 8
-  %47 = getelementptr inbounds %main.mSpanList, ptr %46, i32 0, i32 1
-  %48 = load ptr, ptr %47, align 8
-  %49 = getelementptr inbounds %main.mspan, ptr %48, i32 0, i32 4
-  %50 = load i64, ptr %49, align 4
-  %51 = load ptr, ptr %2, align 8
-  %52 = getelementptr inbounds %main.mspan, ptr %51, i32 0, i32 3
-  %53 = getelementptr inbounds %main.minfo, ptr %52, i32 0, i32 1
-  %54 = load i64, ptr %53, align 4
-  %55 = load ptr, ptr %2, align 8
-  %56 = getelementptr inbounds %main.mspan, ptr %55, i32 0, i32 3
-  %57 = getelementptr inbounds %main.minfo, ptr %56, i32 0, i32 0
-  %58 = load ptr, ptr %57, align 8
-  %59 = getelementptr inbounds %main.mspan, ptr %58, i32 0, i32 4
-  %60 = load i64, ptr %59, align 4
-  %61 = load ptr, ptr %2, align 8
-  %62 = getelementptr inbounds %main.mspan, ptr %61, i32 0, i32 5
-  %63 = load { ptr, ptr }, ptr %62, align 8
-  %64 = extractvalue { ptr, ptr } %63, 1
-  %65 = extractvalue { ptr, ptr } %63, 0
-  %66 = call i64 %65(ptr %64, i64 -2)
-  %67 = load ptr, ptr %2, align 8
-  %68 = getelementptr inbounds %main.mspan, ptr %67, i32 0, i32 3
-  %69 = getelementptr inbounds %main.minfo, ptr %68, i32 0, i32 0
-  %70 = load ptr, ptr %69, align 8
-  %71 = getelementptr inbounds %main.mspan, ptr %70, i32 0, i32 5
-  %72 = load { ptr, ptr }, ptr %71, align 8
-  %73 = extractvalue { ptr, ptr } %72, 1
-  %74 = extractvalue { ptr, ptr } %72, 0
-  %75 = call i64 %74(ptr %73, i64 -3)
-  %76 = call i32 (ptr, ...) @printf(ptr @0, i64 %43, i64 %50, i64 %54, i64 %60, i64 %66, i64 %75)
-  ret i32 0
+  %47 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %46, i32 0, i32 4
+  %48 = load i64, ptr %47, align 4
+  %49 = load ptr, ptr %0, align 8
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %49, i32 0, i32 3
+  %51 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo", ptr %50, i32 0, i32 1
+  %52 = load i64, ptr %51, align 4
+  %53 = load ptr, ptr %0, align 8
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %53, i32 0, i32 3
+  %55 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo", ptr %54, i32 0, i32 0
+  %56 = load ptr, ptr %55, align 8
+  %57 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %56, i32 0, i32 4
+  %58 = load i64, ptr %57, align 4
+  %59 = load ptr, ptr %0, align 8
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %59, i32 0, i32 5
+  %61 = load { ptr, ptr }, ptr %60, align 8
+  %62 = extractvalue { ptr, ptr } %61, 1
+  %63 = extractvalue { ptr, ptr } %61, 0
+  %64 = call i64 %63(ptr %62, i64 -2)
+  %65 = load ptr, ptr %0, align 8
+  %66 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %65, i32 0, i32 3
+  %67 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.minfo", ptr %66, i32 0, i32 0
+  %68 = load ptr, ptr %67, align 8
+  %69 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %68, i32 0, i32 5
+  %70 = load { ptr, ptr }, ptr %69, align 8
+  %71 = extractvalue { ptr, ptr } %70, 1
+  %72 = extractvalue { ptr, ptr } %70, 0
+  %73 = call i64 %72(ptr %71, i64 -3)
+  %74 = call i32 (ptr, ...) @printf(ptr @0, i64 %41, i64 %48, i64 %52, i64 %58, i64 %64, i64 %73)
+  ret void
 }
 
-define i64 @"main.main$1"(ptr %0, i64 %1) {
+define i64 @"github.com/goplus/llgo/compiler/cl/_testrt/named.main$1"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load ptr, ptr %3, align 8
-  %5 = getelementptr inbounds %main.mspan, ptr %4, i32 0, i32 4
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/compiler/cl/_testrt/named.mspan", ptr %4, i32 0, i32 4
   %6 = load i64, ptr %5, align 4
   %7 = mul i64 %6, %1
   ret i64 %7
 }
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
