@@ -231,17 +231,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	return dpkg, nil
 }
 
-func llgoRuntimeImported(pkgs []*packages.Package) bool {
-	for _, pkg := range pkgs {
-		for _, imp := range pkg.Imports {
-			if imp.Module != nil && imp.Module.Path == env.LLGoRuntimePkg {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func setNeedRuntimeOrPyInit(pkg *packages.Package, needRuntime, needPyInit bool) {
 	v := []byte{'0', '0'}
 	if needRuntime {
