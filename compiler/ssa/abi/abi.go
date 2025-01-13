@@ -237,11 +237,6 @@ func FullName(pkg *types.Package, name string) string {
 	return PathOf(pkg) + "." + name
 }
 
-// TypeName returns the ABI type name for the specified named type.
-func TypeName(o *types.TypeName) string {
-	return FullName(o.Pkg(), o.Name())
-}
-
 // BasicName returns the ABI type name for the specified basic type.
 func BasicName(t *types.Basic) string {
 	return "_llgo_" + t.Name()
