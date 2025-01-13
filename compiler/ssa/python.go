@@ -375,12 +375,6 @@ func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
 	return b.Call(fn, fltVal)
 }
 
-// callPyInit calls Py_Initialize.
-func (b Builder) callPyInit() (ret Expr) {
-	fn := b.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
-	return b.Call(fn)
-}
-
 // PyStr returns a py-style string constant expression.
 func (b Builder) PyStr(v string) Expr {
 	fn := b.Pkg.pyFunc("PyUnicode_FromString", b.Prog.tyPyUnicodeFromString())
