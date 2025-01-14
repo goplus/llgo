@@ -1,21 +1,61 @@
 package main
 
 import (
-	"bytes"
-	"flag"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/compiler/cmd/internal/base"
-	"github.com/goplus/llgo/compiler/cmd/internal/build"
-	"github.com/goplus/llgo/compiler/cmd/internal/help"
-	"github.com/goplus/llgo/compiler/cmd/internal/install"
-	"github.com/goplus/llgo/compiler/cmd/internal/run"
-	"github.com/goplus/llgo/compiler/cmd/internal/version"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 )
+
+var origWd string
+
+func init() {
+	var err error
+	origWd, err = os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+}
+
+type testContext struct {
+	origLLGORoot string
+	tmpDir       string
+}
+
+func setupTest(t *testing.T) *testContext {
+	ctx := &testContext{}
+
+	// Save original state
+	ctx.origLLGORoot = os.Getenv("LLGO_ROOT")
+
+	// Create temporary LLGO_ROOT
+	tmpDir, err := os.MkdirTemp("", "llgo-root-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	ctx.tmpDir = tmpDir
+
+	// Set LLGO_ROOT
+	llgoRoot := filepath.Join(origWd, "../../..")
+	if err := os.Setenv("LLGO_ROOT", llgoRoot); err != nil {
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to set LLGO_ROOT: %v", err)
+	}
+	t.Logf("LLGO_ROOT set to: %s", llgoRoot)
+	mockable.EnableMock()
+
+	return ctx
+}
+
+func teardownTest(ctx *testContext) {
+	os.Chdir(origWd)
+	os.Setenv("LLGO_ROOT", ctx.origLLGORoot)
+	if ctx.tmpDir != "" {
+		os.RemoveAll(ctx.tmpDir)
+	}
+}
 
 func setupTestProject(t *testing.T) string {
 	// Create a temporary directory for the test project
@@ -58,12 +98,8 @@ func TestProjectCommands(t *testing.T) {
 	tmpDir := setupTestProject(t)
 	defer os.RemoveAll(tmpDir)
 
-	// Save original working directory and environment
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Failed to get current directory: %v", err)
-	}
-	defer os.Chdir(origWd)
+	ctx := setupTest(t)
+	defer teardownTest(ctx)
 
 	// Change to test project directory
 	if err := os.Chdir(tmpDir); err != nil {
@@ -72,150 +108,53 @@ func TestProjectCommands(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		cmd     *base.Command
 		args    []string
 		wantErr bool
 	}{
 		{
 			name:    "build command",
-			cmd:     build.Cmd,
-			args:    []string{"."},
+			args:    []string{"llgo", "build", "."},
 			wantErr: false,
 		},
 		{
 			name:    "install command",
-			cmd:     install.Cmd,
-			args:    []string{"."},
+			args:    []string{"llgo", "install", "."},
 			wantErr: false,
 		},
 		{
 			name:    "run command",
-			cmd:     run.Cmd,
-			args:    []string{"main.go"},
+			args:    []string{"llgo", "run", "."},
+			wantErr: false,
+		},
+		{
+			name:    "run command",
+			args:    []string{"llgo", "run", "main.go"},
 			wantErr: false,
 		},
 	}
 
-	// Save original args and flags
-	oldArgs := os.Args
-	oldFlagCommandLine := flag.CommandLine
-	oldStdout := os.Stdout
-	oldStderr := os.Stderr
-	defer func() {
-		os.Args = oldArgs
-		flag.CommandLine = oldFlagCommandLine
-		os.Stdout = oldStdout
-		os.Stderr = oldStderr
-	}()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset flag.CommandLine for each test
-			flag.CommandLine = flag.NewFlagSet("llgo", flag.ContinueOnError)
-
-			// Setup command arguments
-			args := append([]string{"llgo", tt.cmd.Name()}, tt.args...)
-			os.Args = args
-
-			// Capture output
-			outR, outW, err := os.Pipe()
-			if err != nil {
-				t.Fatalf("Failed to create stdout pipe: %v", err)
-			}
-			errR, errW, err := os.Pipe()
-			if err != nil {
-				t.Fatalf("Failed to create stderr pipe: %v", err)
-			}
-
-			os.Stdout = outW
-			os.Stderr = errW
-
-			// Run command
-			done := make(chan struct{})
-			var outBuf, errBuf bytes.Buffer
-			go func() {
-				_, _ = io.Copy(&outBuf, outR)
-				done <- struct{}{}
-			}()
-			go func() {
-				_, _ = io.Copy(&errBuf, errR)
-				done <- struct{}{}
+			defer func() {
+				if r := recover(); r != nil {
+					if r != "exit" {
+						t.Errorf("unexpected panic: %v", r)
+					}
+					exitCode := mockable.ExitCode()
+					if (exitCode != 0) != tt.wantErr {
+						t.Errorf("got exit code %d, wantErr %v", exitCode, tt.wantErr)
+					}
+				}
 			}()
 
-			panicked := false
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						panicked = true
-						t.Logf("%s: Command panicked: %v", tt.name, r)
-					}
-					outW.Close()
-					errW.Close()
-				}()
+			os.Args = tt.args
+			main()
 
-				flag.Parse()
-				base.CmdName = tt.cmd.Name()
-
-				if !tt.cmd.Runnable() {
-					t.Fatalf("%s: Command is not runnable", tt.name)
-				}
-
-				// Print current working directory and files for debugging
-				if cwd, err := os.Getwd(); err == nil {
-					t.Logf("%s: Current working directory: %s", tt.name, cwd)
-					if files, err := os.ReadDir("."); err == nil {
-						t.Log("Files in current directory:")
-						for _, f := range files {
-							t.Logf("  %s", f.Name())
-						}
-					}
-				}
-
-				// Run the command
-				tt.cmd.Run(tt.cmd, tt.args)
-			}()
-
-			<-done
-			<-done
-
-			// Check output
-			outStr := outBuf.String()
-			errStr := errBuf.String()
-
-			if outStr == "" && errStr == "" && !panicked {
-				t.Logf("%s: Command completed with no output", tt.name)
-			} else {
-				if outStr != "" {
-					t.Logf("%s stdout:\n%s", tt.name, outStr)
-				}
-				if errStr != "" {
-					t.Logf("%s stderr:\n%s", tt.name, errStr)
-				}
-			}
-
-			// Check if the command succeeded
-			if !tt.wantErr {
-				// For build/install commands, check if binary was created
-				if tt.cmd == build.Cmd || tt.cmd == install.Cmd {
-					binName := "testproject"
-					if _, err := os.Stat(binName); os.IsNotExist(err) {
-						t.Logf("%s: Binary %s was not created", tt.name, binName)
-					}
-				}
-
-				// For run command, check if output contains expected string
-				if tt.cmd == run.Cmd {
-					if !strings.Contains(outStr, "Hello, LLGO!") {
-						t.Logf("%s: Expected output to contain 'Hello, LLGO!', got:\n%s", tt.name, outStr)
-					}
-				}
-
-				// Check for common error indicators, but don't fail the test
-				if strings.Contains(errStr, "error:") || strings.Contains(errStr, "failed") {
-					// Ignore LLVM reexported library warning
-					if !strings.Contains(errStr, "ld: warning: reexported library") {
-						t.Logf("%s: Command produced error output:\n%s", tt.name, errStr)
-					}
+			// For build/install commands, check if binary was created
+			if strings.HasPrefix(tt.name, "build") || strings.HasPrefix(tt.name, "install") {
+				binName := "testproject"
+				if _, err := os.Stat(binName); os.IsNotExist(err) {
+					t.Errorf("Binary %s was not created", binName)
 				}
 			}
 		})
@@ -223,82 +162,8 @@ func TestProjectCommands(t *testing.T) {
 }
 
 func TestCommandHandling(t *testing.T) {
-	// Save original args and flags
-	oldArgs := os.Args
-	oldFlagCommandLine := flag.CommandLine
-	defer func() {
-		os.Args = oldArgs
-		flag.CommandLine = oldFlagCommandLine
-	}()
-
-	tests := []struct {
-		name     string
-		args     []string
-		wantErr  bool
-		commands []*base.Command
-	}{
-		{
-			name:    "version command",
-			args:    []string{"llgo", "version"},
-			wantErr: false,
-			commands: []*base.Command{
-				version.Cmd,
-			},
-		},
-		{
-			name:    "build command",
-			args:    []string{"llgo", "build"},
-			wantErr: false,
-			commands: []*base.Command{
-				build.Cmd,
-			},
-		},
-		{
-			name:    "unknown command",
-			args:    []string{"llgo", "unknowncommand"},
-			wantErr: true,
-		},
-		{
-			name:    "help command",
-			args:    []string{"llgo", "help"},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset flag.CommandLine for each test
-			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ExitOnError)
-			os.Args = tt.args
-
-			if tt.commands != nil {
-				base.Llgo.Commands = tt.commands
-			}
-
-			// Capture panic that would normally exit
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						t.Errorf("unexpected panic: %v", r)
-					}
-				}
-			}()
-
-			flag.Parse()
-			if len(tt.args) > 1 {
-				base.CmdName = tt.args[1]
-			}
-		})
-	}
-}
-
-func TestHelpCommand(t *testing.T) {
-	oldArgs := os.Args
-	oldFlagCommandLine := flag.CommandLine
-	defer func() {
-		os.Args = oldArgs
-		flag.CommandLine = oldFlagCommandLine
-	}()
+	ctx := setupTest(t)
+	defer teardownTest(ctx)
 
 	tests := []struct {
 		name    string
@@ -306,36 +171,84 @@ func TestHelpCommand(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "help without subcommand",
+			name:    "version command",
+			args:    []string{"llgo", "version"},
+			wantErr: false,
+		},
+		{
+			name:    "help command",
 			args:    []string{"llgo", "help"},
 			wantErr: false,
 		},
 		{
-			name:    "help with subcommand",
-			args:    []string{"llgo", "help", "build"},
-			wantErr: false,
+			name:    "invalid command",
+			args:    []string{"llgo", "invalid"},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ExitOnError)
-			os.Args = tt.args
-
-			var buf bytes.Buffer
 			defer func() {
 				if r := recover(); r != nil {
-					if !tt.wantErr {
+					if r != "exit" {
 						t.Errorf("unexpected panic: %v", r)
+					}
+					exitCode := mockable.ExitCode()
+					if (exitCode != 0) != tt.wantErr {
+						t.Errorf("got exit code %d, wantErr %v", exitCode, tt.wantErr)
 					}
 				}
 			}()
 
-			flag.Parse()
-			args := flag.Args()
-			if len(args) > 0 && args[0] == "help" {
-				help.Help(&buf, args[1:])
-			}
+			os.Args = tt.args
+			main()
+		})
+	}
+}
+
+func TestHelpCommand(t *testing.T) {
+	ctx := setupTest(t)
+	defer teardownTest(ctx)
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "help build",
+			args: []string{"llgo", "help", "build"},
+		},
+		{
+			name: "help install",
+			args: []string{"llgo", "help", "install"},
+		},
+		{
+			name: "help run",
+			args: []string{"llgo", "help", "run"},
+		},
+		{
+			name: "help version",
+			args: []string{"llgo", "help", "version"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if r != "exit" {
+						t.Errorf("unexpected panic: %v", r)
+					}
+					exitCode := mockable.ExitCode()
+					if exitCode != 0 {
+						t.Errorf("got exit code %d, want 0", exitCode)
+					}
+				}
+			}()
+
+			os.Args = tt.args
+			main()
 		})
 	}
 }

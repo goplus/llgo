@@ -29,6 +29,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
 // Help implements the 'help' command.
@@ -49,7 +50,7 @@ Args:
 			helpSuccess += " " + strings.Join(args[:i], " ")
 		}
 		fmt.Fprintf(os.Stderr, "llgo help %s: unknown help topic. Run '%s'.\n", strings.Join(args, " "), helpSuccess)
-		os.Exit(2)
+		mockable.Exit(2)
 	}
 
 	if len(cmd.Commands) > 0 {
@@ -98,7 +99,7 @@ func tmpl(w io.Writer, text string, data interface{}) {
 	if ew.err != nil {
 		// I/O error writing. Ignore write on closed pipe.
 		if strings.Contains(ew.err.Error(), "pipe") {
-			os.Exit(1)
+			mockable.Exit(1)
 		}
 		log.Fatalf("writing output: %v", ew.err)
 	}
