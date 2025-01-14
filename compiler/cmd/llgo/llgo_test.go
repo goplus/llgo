@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,84 +10,67 @@ import (
 	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
-var origWd string
-
 func init() {
-	var err error
-	origWd, err = os.Getwd()
+	origWd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-}
 
-type testContext struct {
-	origLLGORoot string
-	tmpDir       string
-}
-
-func setupTest(t *testing.T) *testContext {
-	ctx := &testContext{}
-
-	// Save original state
-	ctx.origLLGORoot = os.Getenv("LLGO_ROOT")
-
-	// Create temporary LLGO_ROOT
-	tmpDir, err := os.MkdirTemp("", "llgo-root-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	ctx.tmpDir = tmpDir
-
-	// Set LLGO_ROOT
+	// Set LLGO_ROOT to project root
 	llgoRoot := filepath.Join(origWd, "../../..")
 	if err := os.Setenv("LLGO_ROOT", llgoRoot); err != nil {
-		os.RemoveAll(tmpDir)
-		t.Fatalf("Failed to set LLGO_ROOT: %v", err)
-	}
-	t.Logf("LLGO_ROOT set to: %s", llgoRoot)
-	mockable.EnableMock()
-
-	return ctx
-}
-
-func teardownTest(ctx *testContext) {
-	os.Chdir(origWd)
-	os.Setenv("LLGO_ROOT", ctx.origLLGORoot)
-	if ctx.tmpDir != "" {
-		os.RemoveAll(ctx.tmpDir)
+		panic(fmt.Sprintf("Failed to set LLGO_ROOT: %v", err))
 	}
 }
 
 func setupTestProject(t *testing.T) string {
-	// Create a temporary directory for the test project
-	tmpDir, err := os.MkdirTemp("", "llgo-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpDir := t.TempDir()
 
-	// Create a simple Go program
-	mainFile := filepath.Join(tmpDir, "main.go")
-	err = os.WriteFile(mainFile, []byte(`package main
+	// Create main.go
+	mainGo := filepath.Join(tmpDir, "main.go")
+	err := os.WriteFile(mainGo, []byte(`package main
 
 import "fmt"
+import "os"
 
 func main() {
-	fmt.Println("Hello, LLGO!")
+	var arg string = "LLGO"
+	if len(os.Args) > 1 {
+		arg = os.Args[1]
+	}
+	switch arg {
+	case "stderr":
+		fmt.Fprintln(os.Stderr, "Hello, World!")
+	case "exit":
+		os.Exit(1)
+	default:
+		fmt.Println("Hello, " + arg + "!")
+	}
 }
 `), 0644)
 	if err != nil {
-		os.RemoveAll(tmpDir)
-		t.Fatalf("Failed to write main.go: %v", err)
+		t.Fatalf("Failed to create main.go: %v", err)
+	}
+
+	// Create llgo.expect for cmptest
+	expectFile := filepath.Join(tmpDir, "llgo.expect")
+	err = os.WriteFile(expectFile, []byte(`#stdout
+Hello, LLGO!
+
+#stderr
+
+#exit 0
+`), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create llgo.expect: %v", err)
 	}
 
 	// Create a go.mod file
-	goMod := filepath.Join(tmpDir, "go.mod")
-	err = os.WriteFile(goMod, []byte(`module testproject
+	err = os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(`module testproject
 
 go 1.20
 `), 0644)
 	if err != nil {
-		os.RemoveAll(tmpDir)
 		t.Fatalf("Failed to write go.mod: %v", err)
 	}
 
@@ -94,22 +78,11 @@ go 1.20
 }
 
 func TestProjectCommands(t *testing.T) {
-	// Setup test project
-	tmpDir := setupTestProject(t)
-	defer os.RemoveAll(tmpDir)
-
-	ctx := setupTest(t)
-	defer teardownTest(ctx)
-
-	// Change to test project directory
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("Failed to change to test directory: %v", err)
-	}
-
 	tests := []struct {
 		name    string
 		args    []string
 		wantErr bool
+		setup   func(dir string) error
 	}{
 		{
 			name:    "build command",
@@ -127,27 +100,145 @@ func TestProjectCommands(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "run command",
+			name:    "run command with file",
 			args:    []string{"llgo", "run", "main.go"},
 			wantErr: false,
 		},
 		{
-			name:    "run command",
+			name:    "run command verbose",
 			args:    []string{"llgo", "run", "-v", "."},
 			wantErr: false,
+		},
+		{
+			name:    "clean command",
+			args:    []string{"llgo", "clean"},
+			wantErr: false,
+		},
+		{
+			name:    "cmptest command",
+			args:    []string{"llgo", "cmptest", "."},
+			wantErr: false,
+		},
+		{
+			name:    "cmptest command with gen",
+			args:    []string{"llgo", "cmptest", "-gen", "."},
+			wantErr: false,
+			setup: func(dir string) error {
+				return os.Remove(filepath.Join(dir, "llgo.expect"))
+			},
+		},
+		{
+			name:    "cmptest command with args",
+			args:    []string{"llgo", "cmptest", ".", "World"},
+			wantErr: true,
+			setup: func(dir string) error {
+				return os.WriteFile(filepath.Join(dir, "llgo.expect"), []byte(`#stdout
+Hello, World!
+
+#stderr
+
+#exit 0
+`), 0644)
+			},
+		},
+		{
+			name:    "cmptest command with different stderr",
+			args:    []string{"llgo", "cmptest", ".", "stderr"},
+			wantErr: true,
+		},
+		{
+			name:    "cmptest command with different exit code",
+			args:    []string{"llgo", "cmptest", ".", "exit"},
+			wantErr: true,
+			setup: func(dir string) error {
+				// Create llgo.expect with different exit code
+				return os.WriteFile(filepath.Join(dir, "llgo.expect"), []byte(`#stdout
+Hello, LLGO!
+
+#stderr
+
+#exit 1
+`), 0644)
+			},
+		},
+		{
+			name:    "cmptest command without llgo.expect to compare with go run",
+			args:    []string{"llgo", "cmptest", "."},
+			wantErr: false,
+			setup: func(dir string) error {
+				return os.Remove(filepath.Join(dir, "llgo.expect"))
+			},
+		},
+		{
+			name:    "cmptest command with different go run output",
+			args:    []string{"llgo", "cmptest", "."},
+			wantErr: true,
+			setup: func(dir string) error {
+				// Remove llgo.expect file
+				if err := os.Remove(filepath.Join(dir, "llgo.expect")); err != nil && !os.IsNotExist(err) {
+					return err
+				}
+
+				// Create main_llgo.go for llgo
+				if err := os.WriteFile(filepath.Join(dir, "main_llgo.go"), []byte(`//go:build llgo
+// +build llgo
+
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, LLGO!")
+}
+`), 0644); err != nil {
+					return err
+				}
+
+				// Create main_go.go for go
+				return os.WriteFile(filepath.Join(dir, "main.go"), []byte(`//go:build !llgo
+// +build !llgo
+
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, Go!")
+}
+`), 0644)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a new test directory for each test case
+			tmpDir := setupTestProject(t)
+			defer os.RemoveAll(tmpDir)
+
+			// Change to test project directory
+			if err := os.Chdir(tmpDir); err != nil {
+				t.Fatalf("Failed to change directory: %v", err)
+			}
+
+			if tt.setup != nil {
+				if err := tt.setup(tmpDir); err != nil {
+					t.Fatalf("Failed to setup test: %v", err)
+				}
+			}
+
+			mockable.EnableMock()
 			defer func() {
 				if r := recover(); r != nil {
 					if r != "exit" {
-						t.Errorf("unexpected panic: %v", r)
-					}
-					exitCode := mockable.ExitCode()
-					if (exitCode != 0) != tt.wantErr {
-						t.Errorf("got exit code %d, wantErr %v", exitCode, tt.wantErr)
+						if !tt.wantErr {
+							t.Errorf("unexpected panic: %v", r)
+						}
+					} else {
+						exitCode := mockable.ExitCode()
+						if (exitCode != 0) != tt.wantErr {
+							t.Errorf("got exit code %d, wantErr %v", exitCode, tt.wantErr)
+						}
 					}
 				}
 			}()
@@ -158,8 +249,24 @@ func TestProjectCommands(t *testing.T) {
 			// For build/install commands, check if binary was created
 			if strings.HasPrefix(tt.name, "build") || strings.HasPrefix(tt.name, "install") {
 				binName := "testproject"
-				if _, err := os.Stat(binName); os.IsNotExist(err) {
-					t.Errorf("Binary %s was not created", binName)
+				var binPath string
+				if strings.HasPrefix(tt.name, "install") {
+					// For install command, binary should be in GOBIN or GOPATH/bin
+					gobin := os.Getenv("GOBIN")
+					if gobin == "" {
+						gopath := os.Getenv("GOPATH")
+						if gopath == "" {
+							gopath = filepath.Join(os.Getenv("HOME"), "go")
+						}
+						gobin = filepath.Join(gopath, "bin")
+					}
+					binPath = filepath.Join(gobin, binName)
+				} else {
+					// For build command, binary should be in current directory
+					binPath = filepath.Join(tmpDir, binName)
+				}
+				if _, err := os.Stat(binPath); os.IsNotExist(err) {
+					t.Errorf("Binary %s was not created at %s", binName, binPath)
 				}
 			}
 		})
@@ -167,9 +274,6 @@ func TestProjectCommands(t *testing.T) {
 }
 
 func TestCommandHandling(t *testing.T) {
-	ctx := setupTest(t)
-	defer teardownTest(ctx)
-
 	tests := []struct {
 		name    string
 		args    []string
@@ -213,9 +317,6 @@ func TestCommandHandling(t *testing.T) {
 }
 
 func TestHelpCommand(t *testing.T) {
-	ctx := setupTest(t)
-	defer teardownTest(ctx)
-
 	tests := []struct {
 		name string
 		args []string
@@ -235,6 +336,14 @@ func TestHelpCommand(t *testing.T) {
 		{
 			name: "help version",
 			args: []string{"llgo", "help", "version"},
+		},
+		{
+			name: "help clean",
+			args: []string{"llgo", "help", "clean"},
+		},
+		{
+			name: "help cmptest",
+			args: []string{"llgo", "help", "cmptest"},
 		},
 	}
 
