@@ -131,6 +131,11 @@ func TestProjectCommands(t *testing.T) {
 			args:    []string{"llgo", "run", "main.go"},
 			wantErr: false,
 		},
+		{
+			name:    "run command",
+			args:    []string{"llgo", "run", "-v", "."},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
