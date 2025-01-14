@@ -38,6 +38,7 @@ import (
 
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 	"github.com/goplus/llgo/compiler/internal/packages"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"github.com/goplus/llgo/compiler/ssa/abi"
@@ -221,14 +222,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	if mode != ModeBuild {
-		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				nErr += linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
+				linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
 			}
-		}
-		if nErr > 0 {
-			os.Exit(nErr)
 		}
 	}
 	return dpkg, nil
@@ -290,7 +287,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	if len(errPkgs) > 0 {
-		os.Exit(1)
+		mockable.Exit(1)
 	}
 	built := ctx.built
 	for _, aPkg := range pkgs {
@@ -372,7 +369,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 	return
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs []string, conf *Config, mode Mode, verbose bool) (nErr int) {
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs []string, conf *Config, mode Mode, verbose bool) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -458,11 +455,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if verbose || mode != ModeRun {
 		fmt.Fprintln(os.Stderr, "#", pkgPath)
 	}
-	defer func() {
-		if e := recover(); e != nil {
-			nErr = 1
-		}
-	}()
 
 	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
@@ -506,12 +498,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		cmd.Stderr = os.Stderr
 		cmd.Run()
 		if s := cmd.ProcessState; s != nil {
-			os.Exit(s.ExitCode())
+			mockable.Exit(s.ExitCode())
 		}
 	case ModeCmpTest:
 		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
-	return
 }
 
 func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, err error) {
