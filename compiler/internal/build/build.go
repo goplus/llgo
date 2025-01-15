@@ -591,7 +591,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 	if aPkg.AltPkg != nil {
 		altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, verbose)
 		if e != nil {
-			return nil, e
+			return nil, fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
 		cgoLdflags = append(cgoLdflags, altLdflags...)
 	}
