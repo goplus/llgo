@@ -183,6 +183,9 @@ func Dup(fd c.Int) c.Int
 //go:linkname Dup2 C.dup2
 func Dup2(oldfd c.Int, newfd c.Int) c.Int
 
+//go:linkname Dup3 C.dup3
+func Dup3(oldfd c.Int, newfd c.Int, flags c.Int) c.Int
+
 /* TODO(xsw):
 On Alpha, IA-64, MIPS, SuperH, and SPARC/SPARC64, pipe() has the following prototype:
 struct fd_pair {
