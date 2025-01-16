@@ -532,6 +532,11 @@ source_filename = "main"
 declare void @"%s.init"()
 declare void @"%s.main"()
 
+; TODO(lijie): workaround for syscall patch
+define weak void @"syscall.init"() {
+  ret void
+}
+
 define i32 @main(i32 %%0, ptr %%1) {
 _llgo_0:
   %s
