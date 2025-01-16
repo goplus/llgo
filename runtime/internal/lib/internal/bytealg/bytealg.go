@@ -16,17 +16,26 @@
 
 package bytealg
 
-// llgo:skip init CompareString
+/*
+#include <string.h>
+*/
+import "C"
+
 import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/runtime"
 )
+
+type Slice struct {
+	Data unsafe.Pointer
+	Len  int
+	Cap  int
+}
 
 func IndexByte(b []byte, ch byte) int {
 	ptr := unsafe.Pointer(unsafe.SliceData(b))
-	ret := c.Memchr(ptr, c.Int(ch), uintptr(len(b)))
+	ret := C.memchr(ptr, C.int(ch), C.size_t(len(b)))
 	if ret != nil {
 		return int(uintptr(ret) - uintptr(ptr))
 	}
@@ -89,40 +98,29 @@ func IndexString(a, b string) int {
 	return -1
 }
 
-// MakeNoZero makes a slice of length and capacity n without zeroing the bytes.
-// It is the caller's responsibility to ensure uninitialized bytes
-// do not leak to the end user.
-func MakeNoZero(n int) (r []byte) {
-	s := (*sliceHead)(unsafe.Pointer(&r))
-	s.data = runtime.AllocU(uintptr(n))
-	s.len = n
-	s.cap = n
-	return
-}
+// type sliceHead struct {
+// 	data unsafe.Pointer
+// 	len  int
+// 	cap  int
+// }
 
-type sliceHead struct {
-	data unsafe.Pointer
-	len  int
-	cap  int
-}
+// func LastIndexByte(s []byte, c byte) int {
+// 	for i := len(s) - 1; i >= 0; i-- {
+// 		if s[i] == c {
+// 			return i
+// 		}
+// 	}
+// 	return -1
+// }
 
-func LastIndexByte(s []byte, c byte) int {
-	for i := len(s) - 1; i >= 0; i-- {
-		if s[i] == c {
-			return i
-		}
-	}
-	return -1
-}
-
-func LastIndexByteString(s string, c byte) int {
-	for i := len(s) - 1; i >= 0; i-- {
-		if s[i] == c {
-			return i
-		}
-	}
-	return -1
-}
+// func LastIndexByteString(s string, c byte) int {
+// 	for i := len(s) - 1; i >= 0; i-- {
+// 		if s[i] == c {
+// 			return i
+// 		}
+// 	}
+// 	return -1
+// }
 
 func CompareString(a, b string) int {
 	l := len(a)

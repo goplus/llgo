@@ -588,9 +588,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 	if altPkg := aPkg.AltPkg; altPkg != nil {
 		syntax = append(syntax, altPkg.Syntax...)
 	}
-	showDetail := verbose && pkgExists(ctx.initial, pkg)
+	showDetail := verbose //&& pkgExists(ctx.initial, pkg)
 	if showDetail {
-		llssa.SetDebug(llssa.DbgFlagAll)
+		// llssa.SetDebug(llssa.DbgFlagAll)
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
@@ -653,9 +653,9 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if typs := p.Types; typs != nil && !p.IllTyped {
-			if debugBuild || verbose {
-				log.Println("==> BuildSSA", p.ID)
-			}
+			// if debugBuild || verbose {
+			log.Println("==> BuildSSA", p.ID)
+			// }
 			pkgSSA := prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.ID, altPkgPathPrefix) {
 				path := p.ID[len(altPkgPathPrefix):]
@@ -707,9 +707,9 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
 	pkgSSA := prog.ImportedPackage(p.ID)
 	if pkgSSA == nil {
-		if debugBuild || verbose {
-			log.Println("==> BuildSSA", p.ID)
-		}
+		// if debugBuild || verbose {
+		log.Println("==> BuildSSA", p.ID)
+		// }
 		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 		pkgSSA.Build() // TODO(xsw): build concurrently
 	}
@@ -885,39 +885,24 @@ func findDylibDep(exe, lib string) string {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"crypto/hmac":              {},
-	"crypto/md5":               {},
-	"crypto/rand":              {},
-	"crypto/sha1":              {},
-	"crypto/sha256":            {},
-	"crypto/sha512":            {},
-	"crypto/subtle":            {},
-	"fmt":                      {},
-	"go/parser":                {},
-	"hash/crc32":               {},
-	"internal/abi":             {},
-	"internal/bytealg":         {},
-	"internal/itoa":            {},
-	"internal/filepathlite":    {},
-	"internal/oserror":         {},
-	"internal/race":            {},
-	"internal/reflectlite":     {},
-	"internal/stringslite":     {},
-	"internal/syscall/execenv": {},
-	"internal/syscall/unix":    {},
-	"math":                     {},
-	"math/big":                 {},
-	"math/cmplx":               {},
-	"math/rand":                {},
-	"reflect":                  {},
-	"sync":                     {},
-	"sync/atomic":              {},
-	"syscall":                  {},
-	"time":                     {},
-	"os":                       {},
-	"os/exec":                  {},
-	"runtime":                  {},
-	"io":                       {},
+	"crypto/internal/boring/sig": {},
+	"crypto/sha256":              {},
+	"crypto/subtle":              {},
+	"hash/crc32":                 {},
+	"internal/abi":               {},
+	"internal/bytealg":           {},
+	"internal/chacha8rand":       {},
+	"internal/cpu":               {},
+	"internal/atomic":            {}, // under go 1.22
+	"internal/runtime/atomic":    {}, // go 1.23+
+	"internal/runtime/syscall":   {},
+	"internal/syscall/unix":      {},
+	"math":                       {},
+	"reflect":                    {},
+	"sync":                       {},
+	"sync/atomic":                {},
+	"syscall":                    {},
+	"runtime":                    {},
 }
 
 func check(err error) {

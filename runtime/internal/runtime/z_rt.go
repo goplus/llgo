@@ -17,13 +17,13 @@
 package runtime
 
 import (
+	"syscall"
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/debug"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 	"github.com/goplus/llgo/runtime/internal/clite/signal"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // -----------------------------------------------------------------------------

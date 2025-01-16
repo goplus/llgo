@@ -16,7 +16,10 @@
 
 package reflect
 
-// llgo:skipall
-import (
-	_ "unsafe"
-)
+func makeFuncStub() {
+	panic("todo: reflect.makeFuncStub")
+}
+
+func methodValueCall() {
+	panic("todo: reflect.methodValueCall")
+}

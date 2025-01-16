@@ -239,5 +239,4 @@ func osinit_hack() {
 	if runtime.GOOS == "darwin" { // not ios
 		C.os_init_hack(0)
 	}
-	return
 }
