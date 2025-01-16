@@ -135,9 +135,6 @@ func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tnName := tn.Name()
 	typ := tn.Type()
 	name := llssa.FullName(tn.Pkg(), tnName)
-	if ignoreName(name) {
-		return
-	}
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
@@ -160,7 +157,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
-	if vtype == pyVar || ignoreName(name) {
+	if vtype == pyVar {
 		return
 	}
 	if debugInstr {

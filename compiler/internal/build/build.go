@@ -854,13 +854,7 @@ func canSkipToBuild(pkgPath string) bool {
 	if _, ok := hasAltPkg[pkgPath]; ok {
 		return false
 	}
-	switch pkgPath {
-	case "unsafe":
-		return true
-	default:
-		return strings.HasPrefix(pkgPath, "internal/") ||
-			strings.HasPrefix(pkgPath, "runtime/internal/")
-	}
+	return pkgPath == "unsafe"
 }
 
 // findDylibDep finds the dylib dependency in the executable. It returns empty

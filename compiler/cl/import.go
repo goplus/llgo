@@ -516,9 +516,6 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		}
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn, false)
-		if ignore && ignoreName(orgName) {
-			return nil, orgName, ignoredFunc
-		}
 	}
 	if v, ok := p.prog.Linkname(orgName); ok {
 		if strings.HasPrefix(v, "C.") {
@@ -669,25 +666,6 @@ func replaceGoName(v string, pos int) string {
 		return env.LLGoRuntimePkg + "/internal/runtime" + v[pos:]
 	}
 	return v
-}
-
-func ignoreName(name string) bool {
-	/* TODO(xsw): confirm this is not needed more
-	if name == "unsafe.init" {
-		return true
-	}
-	*/
-	const internal = "internal/"
-	return (strings.HasPrefix(name, internal) && !supportedInternal(name[len(internal):])) ||
-		strings.HasPrefix(name, "runtime/") || strings.HasPrefix(name, "arena.") ||
-		strings.HasPrefix(name, "maps.") || strings.HasPrefix(name, "plugin.")
-}
-
-func supportedInternal(name string) bool {
-	return strings.HasPrefix(name, "abi.") || strings.HasPrefix(name, "bytealg.") ||
-		strings.HasPrefix(name, "itoa.") || strings.HasPrefix(name, "oserror.") || strings.HasPrefix(name, "race.") ||
-		strings.HasPrefix(name, "reflectlite.") || strings.HasPrefix(name, "stringslite.") || strings.HasPrefix(name, "filepathlite.") ||
-		strings.HasPrefix(name, "syscall/unix.") || strings.HasPrefix(name, "syscall/execenv.")
 }
 
 // -----------------------------------------------------------------------------
