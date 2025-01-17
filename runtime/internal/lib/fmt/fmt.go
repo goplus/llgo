@@ -16,7 +16,9 @@
 
 package fmt
 
-// llgo:skipall
 import (
 	_ "unsafe"
 )
+
+// // llgo:skipall
+type _fmt struct{}

@@ -190,11 +190,18 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 							p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 						}
 					}
+				case token.CONST:
+					fallthrough
+				case token.TYPE:
+					p.collectSkipNamesByDoc(decl.Doc)
 				case token.IMPORT:
 					if doc := decl.Doc; doc != nil {
 						if n := len(doc.List); n > 0 {
 							line := doc.List[n-1].Text
-							p.collectSkipNames(line)
+							if p.collectSkipNames(line) {
+								// Deprecate on import since conflict with cgo
+								fmt.Fprintf(os.Stderr, "DEPRECATED: llgo:skip on import is deprecated %v\n", line)
+							}
 						}
 					}
 				}
@@ -203,17 +210,42 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
+// Collect skip names and skip other annotations, such as go: and llgo:
 // llgo:skip symbol1 symbol2 ...
 // llgo:skipall
-func (p *context) collectSkipNames(line string) {
+func (p *context) collectSkipNames(line string) bool {
 	const (
-		skip  = "//llgo:skip"
-		skip2 = "// llgo:skip"
+		llgo1   = "//llgo:"
+		llgo2   = "// llgo:"
+		go1     = "//go:"
+		skip    = "skip"
+		skipAll = "skipall"
 	)
-	if strings.HasPrefix(line, skip2) {
-		p.collectSkip(line, len(skip2))
-	} else if strings.HasPrefix(line, skip) {
-		p.collectSkip(line, len(skip))
+	if strings.HasPrefix(line, go1) {
+		return true
+	}
+	var skipLine string
+	if strings.HasPrefix(line, llgo1) {
+		skipLine = line[len(llgo1):]
+	} else if strings.HasPrefix(line, llgo2) {
+		skipLine = line[len(llgo2):]
+	} else {
+		return false
+	}
+	if strings.HasPrefix(skipLine, skip) {
+		p.collectSkip(skipLine, len(skip))
+	}
+	return true
+}
+
+func (p *context) collectSkipNamesByDoc(doc *ast.CommentGroup) {
+	if doc != nil {
+		for n := len(doc.List) - 1; n >= 0; n-- {
+			line := doc.List[n].Text
+			if !p.collectSkipNames(line) {
+				break
+			}
+		}
 	}
 }
 

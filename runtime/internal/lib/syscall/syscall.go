@@ -16,7 +16,6 @@
 
 package syscall
 
-// llgo:skipall
 import (
 	"unsafe"
 
@@ -24,6 +23,9 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/os"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
+
+// llgo:skipall
+type _syscall struct{}
 
 type Timespec syscall.Timespec
 type Timeval syscall.Timeval

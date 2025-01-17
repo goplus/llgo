@@ -20,6 +20,7 @@ import (
 	"go/ast"
 	"go/constant"
 	"go/types"
+	"strings"
 	"testing"
 	"unsafe"
 
@@ -44,6 +45,106 @@ func TestCollectSkipNames(t *testing.T) {
 	ctx.collectSkipNames("//llgo:skipall")
 	ctx.collectSkipNames("//llgo:skip")
 	ctx.collectSkipNames("//llgo:skip abs")
+}
+
+func TestCollectSkipNamesByDoc(t *testing.T) {
+	ftest := func(comments string, wantSkips []string, wantAll bool) {
+		t.Helper()
+		ctx := &context{skips: make(map[string]none)}
+		doc := parseComments(t, comments)
+		ctx.collectSkipNamesByDoc(doc)
+
+		// Check skipall
+		if wantAll != ctx.skipall {
+			t.Errorf("skipall = %v, want %v", ctx.skipall, wantAll)
+		}
+
+		// Check collected symbols
+		var gotSkips []string
+		for sym := range ctx.skips {
+			gotSkips = append(gotSkips, sym)
+		}
+		if len(gotSkips) != len(wantSkips) {
+			t.Errorf("got %d skips %v, want %d skips %v", len(gotSkips), gotSkips, len(wantSkips), wantSkips)
+			return
+		}
+		// Check each expected symbol exists
+		for _, want := range wantSkips {
+			if _, ok := ctx.skips[want]; !ok {
+				t.Errorf("missing expected symbol %q", want)
+			}
+		}
+	}
+
+	// Multiple llgo:skip mixed - stops at first non-directive
+	ftest(`
+				//llgo:skip sym1 sym2
+				//llgo:skip sym3
+				//llgo:skipall
+				// normal comment
+				// llgo:skip sym4
+				//llgo:skip sym5
+			`,
+		[]string{"sym4", "sym5"},
+		false,
+	)
+
+	// llgo:skip and go: mixed - processes until non-directive
+	ftest(`
+				//llgo:skip sym1
+				//llgo:skipall
+				//go:generate
+				// normal comment
+				//go:build linux
+				//llgo:skip sym2
+			`,
+		[]string{"sym2"},
+		false,
+	)
+
+	// Only directives - processes all
+	ftest(`
+				// llgo:skip sym1
+				//go:generate
+				// llgo:skip sym2 sym3
+				// llgo:skipall
+			`,
+		[]string{"sym1", "sym2", "sym3"},
+		true,
+	)
+
+	// Starts with non-directive - stops immediately
+	ftest(`
+				//llgo:skip sym1
+				// normal comment
+				//llgo:skip sym2
+				//llgo:skipall
+			`,
+		[]string{"sym2"},
+		true,
+	)
+
+	// Only normal comments
+	ftest(`
+				// normal comment 1
+				// normal comment 2
+			`,
+		[]string{},
+		false,
+	)
+}
+
+func parseComments(t *testing.T, text string) *ast.CommentGroup {
+	t.Helper()
+	var comments []*ast.Comment
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		comments = append(comments, &ast.Comment{Text: line})
+	}
+	return &ast.CommentGroup{List: comments}
 }
 
 func TestReplaceGoName(t *testing.T) {

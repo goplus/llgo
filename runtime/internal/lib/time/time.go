@@ -16,13 +16,15 @@
 
 package time
 
-// llgo:skipall
 import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/time"
 )
+
+// llgo:skipall
+type _time struct{}
 
 type Time struct {
 	// wall and ext encode the wall time seconds, wall time nanoseconds,

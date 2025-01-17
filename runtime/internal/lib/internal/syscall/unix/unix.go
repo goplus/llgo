@@ -16,7 +16,9 @@
 
 package unix
 
-// llgo:skipall
 import (
 	_ "unsafe"
 )
+
+// llgo:skipall
+type _unix struct{}

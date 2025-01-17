@@ -16,7 +16,9 @@
 
 package reflectlite
 
-// llgo:skipall
 import (
 	_ "unsafe"
 )
+
+// llgo:skipall
+type _reflectlite struct{}
