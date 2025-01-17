@@ -109,6 +109,8 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
+	fnsCompiled map[string]bool
+
 	rt    *types.Package
 	rtget func() *types.Package
 
@@ -218,6 +220,7 @@ func NewProgram(target *Target) Program {
 	}
 	ctx := llvm.NewContext()
 	td := target.targetData() // TODO(xsw): target config
+	fnsCompiled := make(map[string]bool)
 	/*
 		arch := target.GOARCH
 		if arch == "" {
@@ -230,7 +233,7 @@ func NewProgram(target *Target) Program {
 	*/
 	is32Bits := (td.PointerSize() == 4 || target.GOARCH == "x86") // TODO(xsw): remove temp code
 	return &aProgram{
-		ctx: ctx, gocvt: newGoTypes(),
+		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string),
@@ -278,6 +281,16 @@ func (p Program) runtime() *types.Package {
 	}
 	p.NeedRuntime = true
 	return p.rt
+}
+
+// check generic function instantiation
+func (p Program) FuncCompiled(name string) bool {
+	_, ok := p.fnsCompiled[name]
+	return ok
+}
+
+func (p Program) SetFuncCompiled(name string) {
+	p.fnsCompiled[name] = true
 }
 
 func (p Program) rtNamed(name string) *types.Named {

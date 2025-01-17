@@ -260,6 +260,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
+	// set compiled to check generic function global instantiation
+	pkg.Prog.SetFuncCompiled(name)
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false

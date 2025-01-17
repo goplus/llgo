@@ -155,6 +155,11 @@ func (b Builder) abiMethodOf(mPkg *types.Package, mName string, mSig *types.Sign
 
 func (b Builder) abiMthd(mPkg *types.Package, mName string, mSig *types.Signature, name, abiTyp, ifn llvm.Value) (ret Expr, tfn llvm.Value) {
 	fullName := FuncName(mPkg, mName, mSig.Recv(), false)
+	if mSig.TypeParams().Len() > 0 || mSig.RecvTypeParams().Len() > 0 {
+		if !b.Pkg.Prog.FuncCompiled(fullName) {
+			return
+		}
+	}
 	if b.Pkg.fnlink != nil {
 		fullName = b.Pkg.fnlink(fullName)
 	}
@@ -286,14 +291,20 @@ func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
 				if !mthd.IsNil() {
 					mthds = append(mthds, mthd)
 				}
-				ptrMthds = append(ptrMthds, ptrMthd)
+				if !ptrMthd.IsNil() {
+					ptrMthds = append(ptrMthds, ptrMthd)
+				}
 			}
 			if len(mthds) > 0 {
 				methods = b.SliceLit(tSlice, mthds...)
 			} else {
 				methods = prog.Zero(tSlice)
 			}
-			ptrMethods = b.SliceLit(tSlice, ptrMthds...)
+			if len(ptrMthds) > 0 {
+				ptrMethods = b.SliceLit(tSlice, ptrMthds...)
+			} else {
+				ptrMethods = prog.Zero(tSlice)
+			}
 		}
 		return b.Call(initNamed, ret, under, methods, ptrMethods)
 	}
