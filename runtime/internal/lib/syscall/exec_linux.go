@@ -132,13 +132,12 @@ func runtime_AfterForkInChild()
 func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
 	// Set up and fork. This returns immediately in the parent or
 	// if there's an error.
-	upid, err, _, locked := forkAndExecInChild1(argv0, argv, envv, chroot, dir, attr, sys, pipe)
+	upid, err, _, _ := forkAndExecInChild1(argv0, argv, envv, chroot, dir, attr, sys, pipe)
+	/**
 	if locked {
-		/**
 		runtime_AfterFork()
-		*/
-		panic("todo: syscall.forkAndExecInChild - locked")
 	}
+	*/
 	if err != 0 {
 		return 0, err
 	}
@@ -283,7 +282,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 
 	// Record parent PID so child can test if it has died.
 	/**
-	ppid, _ := rawSyscallNoError(syscall.SYS_GETPID, 0, 0, 0)
+	ppid, _ := rawSyscallNoError(SYS_GETPID, 0, 0, 0)
 	*/
 
 	// Guard against side effects of shuffling fds below.
@@ -313,7 +312,11 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 
 	flags = sys.Cloneflags
 	if sys.Cloneflags&CLONE_NEWUSER == 0 && sys.Unshareflags&CLONE_NEWUSER == 0 {
-		flags |= CLONE_VFORK | CLONE_VM
+		// The Go origin implement is:
+		// flags |= CLONE_VFORK | CLONE_VM
+		// llgo use CLONE_VFORK only.
+		// https://www.man7.org/linux/man-pages/man2/clone.2.html
+		flags |= CLONE_VFORK
 	}
 	// Whether to use clone3.
 	if sys.UseCgroupFD {
@@ -332,19 +335,6 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// About to call fork.
 	// No more allocation or calls of non-assembly functions.
 	// runtime_BeforeFork()
-	var r1 uintptr
-	r1, err1 = fork()
-	if err1 != 0 {
-		// runtime_AfterFork()
-		return 0, err1, mapPipe, locked
-	}
-
-	if r1 != 0 {
-		// parent; return PID
-		// runtime_AfterFork()
-		return r1, 0, mapPipe, locked
-	}
-
 	locked = true
 	if clone3 != nil {
 		/**
@@ -356,8 +346,16 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 		if runtime.GOARCH == "s390x" {
 			// On Linux/s390, the first two arguments of clone(2) are swapped.
 			// pid, err1 = rawVforkSyscall(syscall.SYS_CLONE, 0, flags)
+			panic("todo: syscall.forkAndExecInChild1 - GOARCH == s390x")
 		} else {
-			// pid, err1 = rawVforkSyscall(syscall.SYS_CLONE, flags, 0)
+			ret := os.Syscall(syscall.SYS_CLONE, flags, 0)
+			if ret >= 0 {
+				pid = uintptr(ret)
+				err1 = Errno(0)
+			} else {
+				pid = 0
+				err1 = Errno(os.Errno())
+			}
 		}
 	}
 	if err1 != 0 || pid != 0 {
@@ -671,11 +669,9 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// started with, so if len(fd) < 3, close 0, 1, 2 as needed.
 	// Programs that know they inherit fds >= 3 will need
 	// to set them close-on-exec.
-	/**
 	for i = len(fd); i < 3; i++ {
-		RawSyscall(syscall.SYS_CLOSE, uintptr(i), 0, 0)
+		os.Close(c.Int(i))
 	}
-	*/
 
 	// Detach fd 0 from tty
 	if sys.Noctty {
