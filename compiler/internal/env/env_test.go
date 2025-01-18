@@ -58,8 +58,10 @@ func TestLLGoRuntimeDir(t *testing.T) {
 		defer os.Setenv("LLGO_ROOT", origLLGoRoot)
 
 		os.Setenv("LLGO_ROOT", "/nonexistent/path")
-		if got := LLGoRuntimeDir(); got != "" {
-			t.Errorf("LLGoRuntimeDir() = %v, want empty string", got)
+		wd, _ := os.Getwd()
+		expected, _ := filepath.Abs(filepath.Join(wd, "../../../runtime"))
+		if got := LLGoRuntimeDir(); got != expected {
+			t.Errorf("LLGoRuntimeDir() = %v, want %v", got, expected)
 		}
 	})
 }
