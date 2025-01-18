@@ -17,6 +17,8 @@
 package cl_test
 
 import (
+	"io"
+	"log"
 	"testing"
 
 	"github.com/goplus/llgo/compiler/cl"
@@ -46,6 +48,7 @@ func TestFromTestlibc(t *testing.T) {
 }
 
 func TestFromTestrt(t *testing.T) {
+	log.SetOutput(io.Discard)
 	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt")
 	cl.SetDebug(0)
