@@ -16,7 +16,13 @@
 
 package env
 
-import "runtime/debug"
+import (
+	"runtime/debug"
+)
+
+const (
+	devel = "(devel)"
+)
 
 // buildVersion is the LLGo tree's version string at build time. It should be
 // set by the linker.
@@ -30,12 +36,12 @@ func Version() string {
 		return buildVersion
 	}
 	info, ok := debug.ReadBuildInfo()
-	if ok {
+	if ok && info.Main.Version != "" {
 		return info.Main.Version
 	}
-	return "(devel)"
+	return devel
 }
 
 func Devel() bool {
-	return Version() == "(devel)"
+	return Version() == devel
 }
