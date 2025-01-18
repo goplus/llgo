@@ -17,12 +17,22 @@
 package cl_test
 
 import (
+	"io"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/cl/cltest"
 	"github.com/goplus/llgo/compiler/internal/build"
 )
+
+func init() {
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	os.Stderr = devNull
+	os.Stdout = devNull
+	log.SetOutput(io.Discard)
+}
 
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
