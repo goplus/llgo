@@ -41,8 +41,12 @@ func LLGoRuntimeDir() string {
 }
 
 func LLGoROOT() string {
-	if root, ok := isLLGoRoot(os.Getenv("LLGO_ROOT")); ok {
-		return root
+	llgoRootEnv := os.Getenv("LLGO_ROOT")
+	if llgoRootEnv != "" {
+		if root, ok := isLLGoRoot(llgoRootEnv); ok {
+			return root
+		}
+		fmt.Fprintf(os.Stderr, "WARNING: LLGO_ROOT is not a valid LLGO root: %s\n", llgoRootEnv)
 	}
 	// Get executable path
 	exe, err := os.Executable()
