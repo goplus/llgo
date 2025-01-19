@@ -391,6 +391,8 @@ func (p Program) toType(raw types.Type) Type {
 		return &aType{llvm.PointerType(p.rtChan(), 0), typ, vkChan}
 	case *types.Alias:
 		return p.toType(types.Unalias(t))
+	case *types.TypeParam:
+		return p.toType(t.Constraint())
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
