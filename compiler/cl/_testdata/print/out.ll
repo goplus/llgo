@@ -22,7 +22,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testdata/print"
 @_llgo_int16 = linkonce global ptr null, align 8
 @_llgo_int64 = linkonce global ptr null, align 8
 @_llgo_int = linkonce global ptr null, align 8
-@_llgo_byte = linkonce global ptr null, align 8
+@_llgo_uint8 = linkonce global ptr null, align 8
 @_llgo_uint16 = linkonce global ptr null, align 8
 @_llgo_uint32 = linkonce global ptr null, align 8
 @_llgo_uint64 = linkonce global ptr null, align 8
@@ -237,7 +237,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_3, 
   %76 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %75, ptr inttoptr (i64 5 to ptr), 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %76, ptr %73, align 8
   %77 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %36, i64 10
-  %78 = load ptr, ptr @_llgo_byte, align 8
+  %78 = load ptr, ptr @_llgo_uint8, align 8
   %79 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %78, 0
   %80 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %79, ptr inttoptr (i64 1 to ptr), 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %80, ptr %77, align 8
@@ -383,7 +383,7 @@ _llgo_14:                                         ; preds = %_llgo_55
 
 _llgo_15:                                         ; preds = %_llgo_55
   %25 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %26 = load ptr, ptr @_llgo_byte, align 8
+  %26 = load ptr, ptr @_llgo_uint8, align 8
   %27 = icmp eq ptr %25, %26
   br i1 %27, label %_llgo_56, label %_llgo_57
 
@@ -1265,13 +1265,13 @@ _llgo_17:                                         ; preds = %_llgo_16
   br label %_llgo_18
 
 _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
-  %27 = load ptr, ptr @_llgo_byte, align 8
+  %27 = load ptr, ptr @_llgo_uint8, align 8
   %28 = icmp eq ptr %27, null
   br i1 %28, label %_llgo_19, label %_llgo_20
 
 _llgo_19:                                         ; preds = %_llgo_18
   %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 40)
-  store ptr %29, ptr @_llgo_byte, align 8
+  store ptr %29, ptr @_llgo_uint8, align 8
   br label %_llgo_20
 
 _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18

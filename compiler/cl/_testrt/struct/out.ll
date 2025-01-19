@@ -41,7 +41,7 @@ _llgo_0:
 
 declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-declare void @"github.com/goplus/llgo/compiler/cl/_testrt/struct._cgoCheckResult"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define void @"github.com/goplus/llgo/compiler/cl/_testrt/struct.init"() {
 _llgo_0:
@@ -50,7 +50,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/struct.init$guard", align 1
-  call void @syscall.init()
   store i8 72, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/struct.format", align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/struct.format", i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/compiler/cl/_testrt/struct.format", i64 2), align 1
@@ -84,7 +83,5 @@ _llgo_0:
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare void @printf(ptr, ...)
-
-declare void @syscall.init()
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

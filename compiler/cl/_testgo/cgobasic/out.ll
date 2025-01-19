@@ -96,7 +96,7 @@ _llgo_0:
 
 declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-declare void @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic._cgoCheckResult"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define void @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic.init"() {
 _llgo_0:
@@ -105,7 +105,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic.init$guard", align 1
-  call void @syscall.init()
   call void @fmt.init()
   call void @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic.init$after"()
   store ptr @_cgo_217b74f897b2_Cfunc_cos, ptr @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic._cgo_217b74f897b2_Cfunc_cos", align 8
@@ -317,8 +316,6 @@ _llgo_0:
 declare void @runtime.throw(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
-
-declare void @syscall.init()
 
 declare void @fmt.init()
 
