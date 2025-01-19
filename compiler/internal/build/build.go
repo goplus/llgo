@@ -531,6 +531,14 @@ source_filename = "main"
 declare void @"%s.init"()
 declare void @"%s.main"()
 
+define weak void @runtime.args(i32, ptr) {
+  ret void
+}
+
+define weak  void @runtime.osinit() {
+  ret void
+}
+
 ; TODO(lijie): workaround for syscall patch
 define weak void @"syscall.init"() {
   ret void
@@ -541,6 +549,8 @@ _llgo_0:
   %s
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
+  call void @runtime.args(i32 %%0, ptr %%1)
+  call void @runtime.osinit()
   %s
   call void @"%s.init"()
   call void @"%s.main"()
