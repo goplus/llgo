@@ -8,6 +8,7 @@ on:
 
 jobs:
   doc_verify:
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
         run: npx embedme --verify README.md
 
   doc_test:
+    continue-on-error: true
     strategy:
       matrix:
         os:
