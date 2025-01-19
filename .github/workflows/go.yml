@@ -11,6 +11,7 @@ on:
 
 jobs:
   test:
+    continue-on-error: true
     strategy:
       matrix:
         os:

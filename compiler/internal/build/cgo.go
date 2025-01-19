@@ -124,10 +124,10 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 		code := cgoHeader + "\n\n" + preamble.src
 		externDecls, err := genExternDeclsByClang(pkg, code, cflags, cgoSymbols)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to generate extern decls: %v", err)
 		}
 		if err = os.WriteFile(tmpName, []byte(code+"\n\n"+externDecls), 0644); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to write temp file: %v", err)
 		}
 		clFile(ctx, cflags, tmpName, pkg.ExportFile, func(linkFile string) {
 			cgoLdflags = append(cgoLdflags, linkFile)
@@ -149,19 +149,19 @@ type clangASTNode struct {
 func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbols map[string]string) (string, error) {
 	tmpSrc, err := os.CreateTemp("", "cgo-src-*.c")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create temp file: %v", err)
 	}
 	defer os.Remove(tmpSrc.Name())
 	if err := os.WriteFile(tmpSrc.Name(), []byte(src), 0644); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to write temp file: %v", err)
 	}
 	symbolNames := make(map[string]bool)
 	if err := getFuncNames(tmpSrc.Name(), cflags, symbolNames); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get func names: %v", err)
 	}
 	macroNames := make(map[string]bool)
 	if err := getMacroNames(tmpSrc.Name(), cflags, macroNames); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get macro names: %v", err)
 	}
 
 	b := strings.Builder{}
@@ -237,13 +237,26 @@ func getFuncNames(file string, cflags []string, symbolNames map[string]bool) err
 	args := append([]string{"-Xclang", "-ast-dump=json", "-fsyntax-only"}, cflags...)
 	args = append(args, file)
 	cmd := exec.Command("clang", args...)
+	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return err
+		dump := "dump failed"
+		if tmpFile, err := os.CreateTemp("", "llgo-clang-ast-dump*.log"); err == nil {
+			dump = "dump saved to " + tmpFile.Name()
+			tmpFile.Write(output)
+			tmpFile.Close()
+		}
+		return fmt.Errorf("failed to run clang: %v, %s", err, dump)
 	}
 	var astRoot clangASTNode
 	if err := json.Unmarshal(output, &astRoot); err != nil {
-		return err
+		dump := "dump failed"
+		if tmpFile, err := os.CreateTemp("", "llgo-clang-ast-dump*.log"); err == nil {
+			dump = "dump saved to " + tmpFile.Name()
+			tmpFile.Write(output)
+			tmpFile.Close()
+		}
+		return fmt.Errorf("failed to unmarshal AST: %v, %s", err, dump)
 	}
 
 	extractFuncNames(&astRoot, symbolNames)

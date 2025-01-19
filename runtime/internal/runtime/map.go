@@ -1450,8 +1450,6 @@ var zeroVal [maxZero]byte
 //func mapinitnoop()
 
 // mapclone for implementing maps.Clone
-//
-//go:linkname mapclone maps.clone
 func mapclone(m any) any {
 	e := efaceOf(&m)
 	e.data = unsafe.Pointer(mapclone2((*maptype)(unsafe.Pointer(e._type)), (*hmap)(e.data)))
@@ -1598,8 +1596,6 @@ func mapclone2(t *maptype, src *hmap) *hmap {
 }
 
 // keys for implementing maps.keys
-//
-//go:linkname keys maps.keys
 func keys(m any, p unsafe.Pointer) {
 	e := efaceOf(&m)
 	t := (*maptype)(unsafe.Pointer(e._type))
@@ -1661,9 +1657,6 @@ func copyKeys(t *maptype, h *hmap, b *bmap, s *slice, offset uint8) {
 	}
 }
 
-// values for implementing maps.values
-//
-//go:linkname values maps.values
 func values(m any, p unsafe.Pointer) {
 	e := efaceOf(&m)
 	t := (*maptype)(unsafe.Pointer(e._type))
