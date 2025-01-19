@@ -205,7 +205,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := mode != ModeBuild || conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -226,7 +226,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	if ctx.output {
 		for _, pkg := range initial {
-			if pkg.Name == "main" {
+			if needLink(pkg, mode) {
 				linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
 			}
 		}
@@ -234,21 +234,21 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	return dpkg, nil
 }
 
-func setNeedRuntimeOrPyInit(pkg *packages.Package, needRuntime, needPyInit bool) {
-	v := []byte{'0', '0'}
-	if needRuntime {
-		v[0] = '1'
+func needLink(pkg *packages.Package, mode Mode) bool {
+	if mode == ModeTest {
+		return strings.HasSuffix(pkg.ID, ".test")
 	}
-	if needPyInit {
-		v[1] = '1'
-	}
-	pkg.ID = string(v) // just use pkg.ID to mark it needs runtime
+	return pkg.Name == "main"
 }
 
-func isNeedRuntimeOrPyInit(pkg *packages.Package) (needRuntime, needPyInit bool) {
-	if len(pkg.ID) == 2 {
-		return pkg.ID[0] == '1', pkg.ID[1] == '1'
-	}
+func setNeedRuntimeOrPyInit(ctx *context, pkg *packages.Package, needRuntime, needPyInit bool) {
+	ctx.needRt[pkg] = needRuntime
+	ctx.needPyInit[pkg] = needPyInit
+}
+
+func isNeedRuntimeOrPyInit(ctx *context, pkg *packages.Package) (needRuntime, needPyInit bool) {
+	needRuntime = ctx.needRt[pkg]
+	needPyInit = ctx.needPyInit[pkg]
 	return
 }
 
@@ -268,6 +268,9 @@ type context struct {
 	mode    Mode
 	nLibdir int
 	output  bool
+
+	needRt     map[*packages.Package]bool
+	needPyInit map[*packages.Package]bool
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -356,7 +359,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				panic(err)
 			}
 			aPkg.LinkArgs = append(cgoLdflags, pkg.ExportFile)
-			setNeedRuntimeOrPyInit(pkg, prog.NeedRuntime, prog.NeedPyInit)
+			setNeedRuntimeOrPyInit(ctx, pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
 	return
@@ -410,7 +413,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		if p.ExportFile != "" { // skip packages that only contain declarations
 			aPkg := pkgsMap[p]
 			args = append(args, aPkg.LinkArgs...)
-			need1, need2 := isNeedRuntimeOrPyInit(p)
+			need1, need2 := isNeedRuntimeOrPyInit(ctx, p)
 			if !needRuntime {
 				needRuntime = need1
 			}
@@ -480,6 +483,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	}
 
 	switch mode {
+	case ModeTest:
+		cmd := exec.Command(app, conf.RunArgs...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+		if s := cmd.ProcessState; s != nil {
+			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, s.ExitCode())
+		}
 	case ModeRun:
 		cmd := exec.Command(app, conf.RunArgs...)
 		cmd.Stdin = os.Stdin
