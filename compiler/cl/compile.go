@@ -314,7 +314,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
 	if f.Object() != nil {
-		return p.goProg.Fset.Position(f.Object().(*types.Func).Scope().Pos())
+		if fn, ok := f.Object().(*types.Func); ok && fn.Scope() != nil {
+			return p.goProg.Fset.Position(fn.Scope().Pos())
+		}
 	}
 	return p.goProg.Fset.Position(f.Pos())
 }
@@ -755,6 +757,9 @@ func (p *context) getDebugLocScope(v *ssa.Function, pos token.Pos) *types.Scope 
 		return nil
 	}
 	funcScope := v.Object().(*types.Func).Scope()
+	if funcScope == nil {
+		return nil
+	}
 	return funcScope.Innermost(pos)
 }
 
