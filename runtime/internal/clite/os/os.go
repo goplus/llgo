@@ -183,6 +183,9 @@ func Dup(fd c.Int) c.Int
 //go:linkname Dup2 C.dup2
 func Dup2(oldfd c.Int, newfd c.Int) c.Int
 
+//go:linkname Dup3 C.dup3
+func Dup3(oldfd c.Int, newfd c.Int, flags c.Int) c.Int
+
 /* TODO(xsw):
 On Alpha, IA-64, MIPS, SuperH, and SPARC/SPARC64, pipe() has the following prototype:
 struct fd_pair {
@@ -272,6 +275,20 @@ func Getpid() PidT
 
 //go:linkname Getppid C.getppid
 func Getppid() PidT
+
+// Invoke `system call' number SYSNO, passing it the remaining arguments.
+// This is completely system-dependent, and not often useful.
+
+// In Unix, `syscall' sets `errno' for all errors and most calls return -1
+// for errors; in many systems you cannot pass arguments or get return
+// values for all system calls (`pipe', `fork', and `getppid' typically
+// among them).
+
+// In Mach, all system calls take normal arguments and always return an
+// error code (zero for success).
+//
+//go:linkname Syscall C.syscall
+func Syscall(sysno c.Long, __llgo_va_list ...any) c.Long
 
 //go:linkname Kill C.kill
 func Kill(pid PidT, sig c.Int) c.Int
