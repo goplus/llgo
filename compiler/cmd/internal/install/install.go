@@ -23,6 +23,7 @@ import (
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
 	"github.com/goplus/llgo/compiler/internal/build"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
 // llgo install
@@ -40,6 +41,6 @@ func runCmd(cmd *base.Command, args []string) {
 	_, err := build.Do(args, conf)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		mockable.Exit(1)
 	}
 }

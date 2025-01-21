@@ -18,6 +18,8 @@ package ssa_test
 
 import (
 	"go/types"
+	"io"
+	"log"
 	"testing"
 
 	"github.com/goplus/llgo/compiler/cl/cltest"
@@ -27,6 +29,7 @@ import (
 
 func init() {
 	ssa.SetDebug(ssa.DbgFlagAll)
+	log.SetOutput(io.Discard)
 }
 
 func TestFromTestlibgo(t *testing.T) {

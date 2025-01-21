@@ -32,6 +32,7 @@ import (
 	"github.com/goplus/llgo/compiler/cmd/internal/install"
 	"github.com/goplus/llgo/compiler/cmd/internal/run"
 	"github.com/goplus/llgo/compiler/cmd/internal/version"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
 func mainUsage() {
@@ -77,7 +78,7 @@ BigCmdLoop:
 				bigCmd = cmd
 				if len(args) == 0 {
 					help.PrintUsage(os.Stderr, bigCmd)
-					os.Exit(2)
+					mockable.Exit(2)
 				}
 				if args[0] == "help" {
 					help.Help(os.Stderr, append(strings.Split(base.CmdName, " "), args[1:]...))
@@ -97,6 +98,6 @@ BigCmdLoop:
 			helpArg = " " + base.CmdName[:i]
 		}
 		fmt.Fprintf(os.Stderr, "llgo %s: unknown command\nRun 'llgo help%s' for usage.\n", base.CmdName, helpArg)
-		os.Exit(2)
+		mockable.Exit(2)
 	}
 }

@@ -38,6 +38,7 @@ import (
 
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 	"github.com/goplus/llgo/compiler/internal/packages"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"github.com/goplus/llgo/compiler/ssa/abi"
@@ -221,28 +222,13 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	if mode != ModeBuild {
-		nErr := 0
 		for _, pkg := range initial {
 			if pkg.Name == "main" {
-				nErr += linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
+				linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
 			}
-		}
-		if nErr > 0 {
-			os.Exit(nErr)
 		}
 	}
 	return dpkg, nil
-}
-
-func llgoRuntimeImported(pkgs []*packages.Package) bool {
-	for _, pkg := range pkgs {
-		for _, imp := range pkg.Imports {
-			if imp.Module != nil && imp.Module.Path == env.LLGoRuntimePkg {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func setNeedRuntimeOrPyInit(pkg *packages.Package, needRuntime, needPyInit bool) {
@@ -290,7 +276,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 	}
 	if len(errPkgs) > 0 {
-		os.Exit(1)
+		mockable.Exit(1)
 	}
 	built := ctx.built
 	for _, aPkg := range pkgs {
@@ -372,7 +358,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 	return
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs []string, conf *Config, mode Mode, verbose bool) (nErr int) {
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs []string, conf *Config, mode Mode, verbose bool) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -429,6 +415,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 			}
 		}
 	})
+	entryLLFile, err := genMainModuleFile(llssa.PkgRuntime, pkg.PkgPath, needRuntime, needPyInit)
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(entryLLFile)
+	args = append(args, entryLLFile)
 
 	var aPkg *aPackage
 	for _, v := range pkgs {
@@ -438,19 +430,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		}
 	}
 
-	dirty := false
-	if needRuntime {
-		args = append(args, linkArgs...)
-	} else {
-		dirty = true
-		fn := aPkg.LPkg.FuncOf(cl.RuntimeInit)
-		fn.MakeBody(1).Return()
-	}
-	if needPyInit {
-		dirty = aPkg.LPkg.PyInit()
-	}
+	args = append(args, linkArgs...)
 
-	if dirty && needLLFile(mode) {
+	if needLLFile(mode) {
 		lpkg := aPkg.LPkg
 		os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
 	}
@@ -458,11 +440,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if verbose || mode != ModeRun {
 		fmt.Fprintln(os.Stderr, "#", pkgPath)
 	}
-	defer func() {
-		if e := recover(); e != nil {
-			nErr = 1
-		}
-	}()
 
 	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
@@ -483,7 +460,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err := ctx.env.Clang().Exec(args...)
+	err = ctx.env.Clang().Exec(args...)
 	check(err)
 
 	if runtime.GOOS == "darwin" {
@@ -506,12 +483,65 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		cmd.Stderr = os.Stderr
 		cmd.Run()
 		if s := cmd.ProcessState; s != nil {
-			os.Exit(s.ExitCode())
+			mockable.Exit(s.ExitCode())
 		}
 	case ModeCmpTest:
 		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
-	return
+}
+
+func genMainModuleFile(rtPkgPath, mainPkgPath string, needRuntime, needPyInit bool) (path string, err error) {
+	var (
+		pyInitDecl string
+		pyInit     string
+		rtInitDecl string
+		rtInit     string
+	)
+	if needRuntime {
+		rtInit = "call void @\"" + rtPkgPath + ".init\"()"
+		rtInitDecl = "declare void @\"" + rtPkgPath + ".init\"()"
+	}
+	if needPyInit {
+		pyInit = "call void @Py_Initialize()"
+		pyInitDecl = "declare void @Py_Initialize()"
+	}
+	mainCode := fmt.Sprintf(`; ModuleID = 'main'
+source_filename = "main"
+
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+
+%s
+%s
+declare void @"%s.init"()
+declare void @"%s.main"()
+
+define i32 @main(i32 %%0, ptr %%1) {
+_llgo_0:
+  %s
+  store i32 %%0, ptr @__llgo_argc, align 4
+  store ptr %%1, ptr @__llgo_argv, align 8
+  %s
+  call void @"%s.init"()
+  call void @"%s.main"()
+  ret i32 0
+}
+`, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		pyInit, rtInit, mainPkgPath, mainPkgPath)
+
+	f, err := os.CreateTemp("", "main*.ll")
+	if err != nil {
+		return "", err
+	}
+	_, err = f.Write([]byte(mainCode))
+	if err != nil {
+		return "", err
+	}
+	err = f.Close()
+	if err != nil {
+		return "", err
+	}
+	return f.Name(), nil
 }
 
 func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, err error) {

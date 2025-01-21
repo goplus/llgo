@@ -25,6 +25,7 @@ import (
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
 	"github.com/goplus/llgo/compiler/internal/build"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
 var (
@@ -68,7 +69,7 @@ func runCmdEx(_ *base.Command, args []string, mode build.Mode) {
 	_, err = build.Do(args, conf)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		mockable.Exit(1)
 	}
 }
 
