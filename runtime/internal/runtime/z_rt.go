@@ -19,11 +19,13 @@ package runtime
 import (
 	"unsafe"
 
+	"github.com/goplus/llgo/runtime/abi"
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/debug"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 	"github.com/goplus/llgo/runtime/internal/clite/signal"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	"github.com/goplus/llgo/runtime/internal/ffi"
 )
 
 // -----------------------------------------------------------------------------
@@ -131,6 +133,14 @@ func init() {
 			panic(errorString("unexpected signal value: " + string(itoa(buf[:], uint64(v)))))
 		}
 	})
+}
+
+func WrapFunc(fn interface{}, wrap ffi.WrapperFunc) unsafe.Pointer {
+	return ffi.WrapFunc(fn, wrap)
+}
+
+func WrapFuncType(ftyp *abi.FuncType, wrap ffi.WrapperFunc) unsafe.Pointer {
+	return ffi.WrapFuncType(ftyp, wrap)
 }
 
 // -----------------------------------------------------------------------------

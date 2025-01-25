@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/compiler/internal/env"
@@ -199,6 +200,7 @@ type aProgram struct {
 
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
+	wrapFunc     map[string]bool   // wrap abi funcs
 
 	ptrSize int
 
@@ -236,7 +238,7 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string),
+		linkname: make(map[string]string), wrapFunc: make(map[string]bool),
 	}
 }
 
@@ -391,6 +393,8 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	goStrs := make(map[string]llvm.Value)
 	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
+	wrapCType := make(map[types.Type]string)
+	wrapCallback := make(map[string]Function)
 	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
@@ -399,6 +403,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		pyobjs: pyobjs, pymods: pymods, strs: strs, goStrs: goStrs,
 		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+		wrapCType: wrapCType, wrapCallback: wrapCallback,
 	}
 	ret.abi.Init(pkgPath)
 	return ret
@@ -653,7 +658,18 @@ type aPackage struct {
 	patch  func(types.Type) types.Type
 	fnlink func(string) string
 
+	wrapCType    map[types.Type]string
+	wrapCallback map[string]Function
+	wrapCode     []string
+
 	iRoutine int
+}
+
+func (p Package) WrapCode() string {
+	if len(p.wrapCode) > 0 {
+		return wrapHead + strings.Join(p.wrapCode, "\n")
+	}
+	return ""
 }
 
 type Package = *aPackage
