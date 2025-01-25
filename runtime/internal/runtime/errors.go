@@ -4,6 +4,12 @@
 
 package runtime
 
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/runtime/abi"
+)
+
 // A boundsError represents an indexing or slicing operation gone wrong.
 type boundsError struct {
 	x int64
@@ -113,4 +119,55 @@ func itoa(buf []byte, val uint64) []byte {
 // failures in the conversion ([x]T)(s) or (*[x]T)(s), 0 <= x <= y, y == len(s)
 func PanicSliceConvert(x int, y int) {
 	panic(boundsError{x: int64(x), signed: true, y: y, code: boundsConvert})
+}
+
+// A TypeAssertionError explains a failed type assertion.
+type TypeAssertionError struct {
+	_interface    *_type
+	concrete      *_type
+	asserted      *_type
+	missingMethod string // one method needed by Interface, missing from Concrete
+}
+
+func (*TypeAssertionError) RuntimeError() {}
+
+func (e *TypeAssertionError) Error() string {
+	inter := "interface"
+	if e._interface != nil {
+		inter = e._interface.String()
+	}
+	as := e.asserted.String()
+	if e.concrete == nil {
+		return "interface conversion: " + inter + " is nil, not " + as
+	}
+	cs := e.concrete.String()
+	if e.missingMethod == "" {
+		msg := "interface conversion: " + inter + " is " + cs + ", not " + as
+		if cs == as {
+			// provide slightly clearer error message
+			if pkgpath(e.concrete) != pkgpath(e.asserted) {
+				msg += " (types from different packages)"
+			} else {
+				msg += " (types from different scopes)"
+			}
+		}
+		return msg
+	}
+	return "interface conversion: " + cs + " is not " + as +
+		": missing method " + e.missingMethod
+}
+
+func pkgpath(t *_type) string {
+	if u := t.Uncommon(); u != nil {
+		return u.PkgPath_
+	}
+	switch t.Kind() {
+	case abi.Struct:
+		st := (*structtype)(unsafe.Pointer(t))
+		return st.PkgPath_
+	case abi.Interface:
+		it := (*interfacetype)(unsafe.Pointer(t))
+		return it.PkgPath_
+	}
+	return ""
 }
