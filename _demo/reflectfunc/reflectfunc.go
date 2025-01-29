@@ -22,8 +22,7 @@ func main() {
 			println("closure", i)
 		}
 	}
-	// TODO(lijie): WORKAROUND for reflect problem on go1.23
-	_ = any(reflect.Value{})
+
 	fns := []any{add, fn, fn1, fn2}
 	for _, fn := range fns {
 		v := reflect.ValueOf(fn)
