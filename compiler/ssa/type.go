@@ -19,6 +19,7 @@ package ssa
 import (
 	"fmt"
 	"go/types"
+	"unsafe"
 
 	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
@@ -96,7 +97,7 @@ func (p *goProgram) Alignof(T types.Type) int64 {
 // Offsetsof must implement the offset guarantees required by the spec.
 // A negative entry in the result indicates that the struct is too large.
 func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
-	prog := Program(p)
+	prog := Program(unsafe.Pointer(p))
 	ptrSize := int64(prog.PointerSize())
 	extra := int64(0)
 	ret = p.sizes.Offsetsof(fields)
@@ -111,7 +112,7 @@ func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
 // Sizeof must implement the size guarantees required by the spec.
 // A negative result indicates that T is too large.
 func (p *goProgram) Sizeof(T types.Type) int64 {
-	prog := Program(p)
+	prog := Program(unsafe.Pointer(p))
 	ptrSize := int64(prog.PointerSize())
 	baseSize := prog.sizes.Sizeof(T) + p.extraSize(T, ptrSize)
 	switch T.Underlying().(type) {
@@ -171,7 +172,7 @@ func (t Type) RawType() types.Type {
 // TypeSizes returns the sizes of the types.
 func (p Program) TypeSizes(sizes types.Sizes) types.Sizes {
 	p.sizes = sizes
-	return (*goProgram)(p)
+	return (*goProgram)(unsafe.Pointer(p))
 }
 
 // TODO(xsw):

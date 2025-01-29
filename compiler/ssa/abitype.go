@@ -19,6 +19,7 @@ package ssa
 import (
 	"go/token"
 	"go/types"
+	"unsafe"
 
 	"github.com/goplus/llgo/compiler/ssa/abi"
 	"github.com/goplus/llvm"
@@ -248,7 +249,7 @@ func (b Builder) abiNamedInterfaceOf(t *types.Named) func() Expr {
 }
 
 func (b Builder) sizeof(t types.Type) int64 {
-	sizes := (*goProgram)(b.Prog)
+	sizes := (*goProgram)(unsafe.Pointer(b.Prog))
 	return sizes.Sizeof(t)
 }
 
@@ -332,7 +333,7 @@ func (b Builder) abiChanOf(t *types.Chan) func() Expr {
 func (b Builder) abiMapOf(t *types.Map) func() Expr {
 	key := b.abiTypeOf(t.Key())
 	elem := b.abiTypeOf(t.Elem())
-	sizes := (*goProgram)(b.Prog)
+	sizes := (*goProgram)(unsafe.Pointer(b.Prog))
 	bucket := b.abiTypeOf(abi.MapBucketType(t, sizes))
 	flags := abi.MapTypeFlags(t, sizes)
 	return func() Expr {
