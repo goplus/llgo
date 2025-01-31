@@ -207,6 +207,7 @@ func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	if len(fields) == 2 && fields[0].Name_ == "$f" && fields[0].Typ.Kind() == abi.Func &&
 		fields[1].Name_ == "$data" && fields[1].Typ.Kind() == abi.UnsafePointer {
 		ret.TFlag |= abi.TFlagClosure
+		ret.Str_ = funcStr(fields[0].Typ.FuncType())
 	}
 	rtypeList.addType(&ret.Type)
 	return &ret.Type
