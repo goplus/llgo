@@ -21,7 +21,7 @@ import (
 	"runtime"
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
-	"github.com/goplus/llgo/x/env"
+	"github.com/goplus/llgo/compiler/internal/env"
 )
 
 // llgo version

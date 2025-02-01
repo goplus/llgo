@@ -2,9 +2,11 @@ package env
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -12,6 +14,7 @@ const (
 	LLGoCompilerPkg    = "github.com/goplus/llgo"
 	LLGoRuntimePkgName = "runtime"
 	LLGoRuntimePkg     = LLGoCompilerPkg + "/" + LLGoRuntimePkgName
+	envFileName        = "/compiler/internal/env/env.go"
 )
 
 func GOROOT() string {
@@ -38,8 +41,12 @@ func LLGoRuntimeDir() string {
 }
 
 func LLGoROOT() string {
-	if root, ok := isLLGoRoot(os.Getenv("LLGO_ROOT")); ok {
-		return root
+	llgoRootEnv := os.Getenv("LLGO_ROOT")
+	if llgoRootEnv != "" {
+		if root, ok := isLLGoRoot(llgoRootEnv); ok {
+			return root
+		}
+		fmt.Fprintf(os.Stderr, "WARNING: LLGO_ROOT is not a valid LLGO root: %s\n", llgoRootEnv)
 	}
 	// Get executable path
 	exe, err := os.Executable()
@@ -53,13 +60,22 @@ func LLGoROOT() string {
 	}
 	// Check if parent directory is bin
 	dir := filepath.Dir(exe)
-	if filepath.Base(dir) != "bin" {
-		return ""
+	if filepath.Base(dir) == "bin" {
+		// Get parent directory of bin
+		root := filepath.Dir(dir)
+		if root, ok := isLLGoRoot(root); ok {
+			return root
+		}
 	}
-	// Get parent directory of bin
-	root := filepath.Dir(dir)
-	if root, ok := isLLGoRoot(root); ok {
-		return root
+	if Devel() {
+		root, err := getRuntimePkgDirByCaller()
+		if err != nil {
+			return ""
+		}
+		if root, ok := isLLGoRoot(root); ok {
+			fmt.Fprintln(os.Stderr, "WARNING: Using LLGO root for devel: "+root)
+			return root
+		}
 	}
 	return ""
 }
@@ -82,4 +98,23 @@ func isLLGoRoot(root string) (string, bool) {
 		return "", false
 	}
 	return root, true
+}
+
+func getRuntimePkgDirByCaller() (string, error) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return "", fmt.Errorf("cannot get caller")
+	}
+	if !strings.HasSuffix(file, envFileName) {
+		return "", fmt.Errorf("wrong caller")
+	}
+	// check file exists
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return "", fmt.Errorf("file %s not exists", file)
+	}
+	modPath := strings.TrimSuffix(file, envFileName)
+	if st, err := os.Stat(modPath); os.IsNotExist(err) || !st.IsDir() {
+		return "", fmt.Errorf("not llgo compiler root: %s", modPath)
+	}
+	return modPath, nil
 }

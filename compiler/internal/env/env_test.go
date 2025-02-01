@@ -58,8 +58,28 @@ func TestLLGoRuntimeDir(t *testing.T) {
 		defer os.Setenv("LLGO_ROOT", origLLGoRoot)
 
 		os.Setenv("LLGO_ROOT", "/nonexistent/path")
-		if got := LLGoRuntimeDir(); got != "" {
-			t.Errorf("LLGoRuntimeDir() = %v, want empty string", got)
+		wd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+		runtimeDir := filepath.Join(wd, "../../../runtime")
+		if got := LLGoRuntimeDir(); got != runtimeDir {
+			t.Errorf("LLGoRuntimeDir() = %v, want %v", got, runtimeDir)
+		}
+	})
+
+	t.Run("devel runtime dir", func(t *testing.T) {
+		origLLGoRoot := os.Getenv("LLGO_ROOT")
+		defer os.Setenv("LLGO_ROOT", origLLGoRoot)
+
+		os.Setenv("LLGO_ROOT", "")
+		wd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+		runtimeDir := filepath.Join(wd, "../../../runtime")
+		if got := LLGoRuntimeDir(); got != runtimeDir {
+			t.Errorf("LLGoRuntimeDir() = %v, want %v", got, runtimeDir)
 		}
 	})
 }
@@ -90,8 +110,13 @@ func TestLLGoROOT(t *testing.T) {
 		defer os.Setenv("LLGO_ROOT", origLLGoRoot)
 
 		os.Setenv("LLGO_ROOT", "/nonexistent/path")
-		if got := LLGoROOT(); got != "" {
-			t.Errorf("LLGoROOT() = %v, want empty string", got)
+		wd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootDir := filepath.Join(wd, "../../..")
+		if got := LLGoROOT(); got != rootDir {
+			t.Errorf("LLGoROOT() = %v, want %v", got, rootDir)
 		}
 	})
 
