@@ -24,7 +24,7 @@ How can these be achieved?
 LLGo := Go + C + Python
 ```
 
-LLGo is compatible with C and Python through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**.
+LLGo is compatible with C and Python through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**. And here C doesn't just include C, but all languages that are ABI compatible with C, including C/C++, Objective-C, Swift, etc.
 
 
 ## C/C++ standard libary support
@@ -75,7 +75,7 @@ llgo run .
 ```
 
 
-## How support C/C++ and Python
+## How to support C/C++ and Python
 
 LLGo use `go:linkname` to link an extern symbol througth its ABI:
 
