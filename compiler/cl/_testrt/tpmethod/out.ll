@@ -16,9 +16,9 @@ source_filename = "main"
 @0 = private unnamed_addr constant [7 x i8] c"foo.txt", align 1
 @"_llgo_main.future[main.Tuple[error]]" = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [4 x i8] c"main", align 1
-@2 = private unnamed_addr constant [6 x i8] c"future", align 1
+@2 = private unnamed_addr constant [25 x i8] c"future[main.Tuple[error]]", align 1
 @"_llgo_main.Tuple[error]" = linkonce global ptr null, align 8
-@3 = private unnamed_addr constant [5 x i8] c"Tuple", align 1
+@3 = private unnamed_addr constant [12 x i8] c"Tuple[error]", align 1
 @_llgo_error = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [5 x i8] c"error", align 1
 @_llgo_string = linkonce global ptr null, align 8
@@ -172,9 +172,9 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define void @"main.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 6 }, i64 25, i64 24, i64 0, i64 1)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 25 }, i64 25, i64 24, i64 0, i64 1)
   store ptr %0, ptr @"_llgo_main.future[main.Tuple[error]]", align 8
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 }, i64 25, i64 16, i64 1, i64 1)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 12 }, i64 25, i64 16, i64 1, i64 1)
   %2 = load ptr, ptr @"_llgo_main.Tuple[error]", align 8
   %3 = icmp eq ptr %2, null
   br i1 %3, label %_llgo_1, label %_llgo_2
@@ -460,7 +460,7 @@ _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
   %186 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %185, i64 1, 1
   %187 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %186, i64 1, 2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr %0, ptr %176, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %187)
-  %188 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 6 }, i64 25, i64 24, i64 0, i64 1)
+  %188 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 25 }, i64 25, i64 24, i64 0, i64 1)
   %189 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %188)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %189)
   store ptr %189, ptr @"*_llgo_main.future[main.Tuple[error]]", align 8
