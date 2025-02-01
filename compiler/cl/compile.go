@@ -1112,7 +1112,7 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		}
 	}
 	sort.Slice(typs, func(i, j int) bool {
-		return typs[i].Obj().Name() < typs[j].Obj().Name()
+		return typs[i].String() < typs[j].String()
 	})
 	for _, typ := range typs {
 		ctx.compileMethods(ret, typ)
