@@ -240,7 +240,7 @@ func (b Builder) abiNamed(t *types.Named) Expr {
 	numMethods, numPtrMethods := b.abiMethods(t)
 	newNamed := pkg.rtFunc("NewNamed")
 	obj := t.Obj()
-	expr := b.Call(newNamed, b.Str(abi.PathOf(obj.Pkg())), b.Str(obj.Name()), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
+	expr := b.Call(newNamed, b.Str(abi.PathOf(obj.Pkg())), b.Str(abi.NamedName(t)), b.Prog.Val(kind), b.Prog.IntVal(uint64(size), b.Prog.Uintptr()), b.Prog.Val(numMethods), b.Prog.Val(numPtrMethods))
 	return expr
 }
 
