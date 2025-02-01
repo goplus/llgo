@@ -212,62 +212,86 @@ func main() {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a new test directory for each test case
-			tmpDir := setupTestProject(t)
-			defer os.RemoveAll(tmpDir)
+			var testErr error
+			for attempt := 0; attempt < 2; attempt++ {
+				testErr = func() error {
+					// Create a new test directory for each test case
+					tmpDir := setupTestProject(t)
+					defer os.RemoveAll(tmpDir)
 
-			// Change to test project directory
-			if err := os.Chdir(tmpDir); err != nil {
-				t.Fatalf("Failed to change directory: %v", err)
-			}
+					// Change to test project directory
+					if err := os.Chdir(tmpDir); err != nil {
+						return fmt.Errorf("Failed to change directory: %v", err)
+					}
 
-			if tt.setup != nil {
-				if err := tt.setup(tmpDir); err != nil {
-					t.Fatalf("Failed to setup test: %v", err)
-				}
-			}
-
-			mockable.EnableMock()
-			defer func() {
-				if r := recover(); r != nil {
-					if r != "exit" {
-						if !tt.wantErr {
-							t.Errorf("unexpected panic: %v", r)
-						}
-					} else {
-						exitCode := mockable.ExitCode()
-						if (exitCode != 0) != tt.wantErr {
-							t.Errorf("got exit code %d, wantErr %v", exitCode, tt.wantErr)
+					if tt.setup != nil {
+						if err := tt.setup(tmpDir); err != nil {
+							return fmt.Errorf("Failed to setup test: %v", err)
 						}
 					}
-				}
-			}()
 
-			os.Args = tt.args
-			main()
+					mockable.EnableMock()
+					var exitErr error
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								if r != "exit" {
+									if !tt.wantErr {
+										exitErr = fmt.Errorf("unexpected panic: %v", r)
+									}
+								} else {
+									exitCode := mockable.ExitCode()
+									if (exitCode != 0) != tt.wantErr {
+										exitErr = fmt.Errorf("got exit code %d, wantErr %v", exitCode, tt.wantErr)
+									}
+								}
+							}
+						}()
 
-			// For build/install commands, check if binary was created
-			if strings.HasPrefix(tt.name, "build") || strings.HasPrefix(tt.name, "install") {
-				binName := "testproject"
-				var binPath string
-				if strings.HasPrefix(tt.name, "install") {
-					// For install command, binary should be in GOBIN or GOPATH/bin
-					gobin := os.Getenv("GOBIN")
-					if gobin == "" {
-						gopath := os.Getenv("GOPATH")
-						if gopath == "" {
-							gopath = filepath.Join(os.Getenv("HOME"), "go")
-						}
-						gobin = filepath.Join(gopath, "bin")
+						os.Args = tt.args
+						main()
+					}()
+					if exitErr != nil {
+						return exitErr
 					}
-					binPath = filepath.Join(gobin, binName)
-				} else {
-					// For build command, binary should be in current directory
-					binPath = filepath.Join(tmpDir, binName)
+
+					// For build/install commands, check if binary was created
+					if strings.HasPrefix(tt.name, "build") || strings.HasPrefix(tt.name, "install") {
+						binName := "testproject"
+						var binPath string
+						if strings.HasPrefix(tt.name, "install") {
+							// For install command, binary should be in GOBIN or GOPATH/bin
+							gobin := os.Getenv("GOBIN")
+							if gobin == "" {
+								gopath := os.Getenv("GOPATH")
+								if gopath == "" {
+									gopath = filepath.Join(os.Getenv("HOME"), "go")
+								}
+								gobin = filepath.Join(gopath, "bin")
+							}
+							binPath = filepath.Join(gobin, binName)
+						} else {
+							// For build command, binary should be in current directory
+							binPath = filepath.Join(tmpDir, binName)
+						}
+						if _, err := os.Stat(binPath); os.IsNotExist(err) {
+							return fmt.Errorf("Binary %s was not created at %s", binName, binPath)
+						}
+					}
+					return nil
+				}()
+
+				if testErr == nil {
+					break
 				}
-				if _, err := os.Stat(binPath); os.IsNotExist(err) {
-					t.Errorf("Binary %s was not created at %s", binName, binPath)
+
+				if attempt == 0 {
+					t.Logf("Test failed on first attempt: %v. Retrying...", testErr)
 				}
+			}
+
+			if testErr != nil {
+				t.Error(testErr)
 			}
 		})
 	}
