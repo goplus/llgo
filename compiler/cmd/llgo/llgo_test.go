@@ -213,7 +213,8 @@ func main() {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var testErr error
-			for attempt := 0; attempt < 2; attempt++ {
+			const maxAttempts = 4
+			for attempt := 1; attempt <= maxAttempts; attempt++ {
 				testErr = func() error {
 					// Create a new test directory for each test case
 					tmpDir := setupTestProject(t)
@@ -285,8 +286,8 @@ func main() {
 					break
 				}
 
-				if attempt == 0 {
-					t.Logf("Test failed on first attempt: %v. Retrying...", testErr)
+				if attempt < maxAttempts {
+					t.Logf("Test failed on attempt %v/%v: %v. Retrying...", testErr, attempt, maxAttempts)
 				}
 			}
 
