@@ -691,6 +691,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			max = p.compileValue(b, v.Max)
 		}
 		ret = b.Slice(x, low, high, max)
+		ret.Type = b.Prog.Type(v.Type(), llssa.InGo)
 	case *ssa.MakeInterface:
 		if refs := *v.Referrers(); len(refs) == 1 {
 			switch ref := refs[0].(type) {
