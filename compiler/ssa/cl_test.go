@@ -17,7 +17,10 @@
 package ssa_test
 
 import (
+	"flag"
 	"go/types"
+	"io"
+	"log"
 	"testing"
 
 	"github.com/goplus/llgo/compiler/cl/cltest"
@@ -25,8 +28,13 @@ import (
 	"github.com/goplus/llgo/compiler/ssa/ssatest"
 )
 
-func init() {
+func TestMain(m *testing.M) {
+	flag.Parse()
 	ssa.SetDebug(ssa.DbgFlagAll)
+	if !testing.Verbose() {
+		log.SetOutput(io.Discard)
+	}
+	m.Run()
 }
 
 func TestFromTestlibgo(t *testing.T) {
