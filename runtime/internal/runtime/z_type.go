@@ -235,7 +235,7 @@ func newPointer(elem *Type) *Type {
 			Hash:        9067 + 2*elem.Hash,
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
-			Kind_:       uint8(abi.Pointer),
+			Kind_:       uint8(abi.Pointer) | abi.KindDirectIface,
 			Equal:       memequalptr,
 			TFlag:       abi.TFlagRegularMemory,
 		},
@@ -255,7 +255,7 @@ func setPointer(ptr *abi.PtrType, elem *Type) {
 	ptr.Hash = uint32(abi.Pointer) // TODO(xsw): hash
 	ptr.Align_ = pointerAlign
 	ptr.FieldAlign_ = pointerAlign
-	ptr.Kind_ = uint8(abi.Pointer)
+	ptr.Kind_ = uint8(abi.Pointer) | abi.KindDirectIface
 	ptr.Equal = memequalptr
 	ptr.Elem = elem
 	ptr.Str_ = elem.Str_

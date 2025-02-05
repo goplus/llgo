@@ -28,6 +28,7 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 	"github.com/goplus/llgo/runtime/internal/clite/bitcast"
 	"github.com/goplus/llgo/runtime/internal/ffi"
+	"github.com/goplus/llgo/runtime/internal/lib/internal/itoa"
 	"github.com/goplus/llgo/runtime/internal/runtime"
 	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
@@ -622,7 +623,7 @@ func (v Value) CanFloat() bool {
 // It panics if v's Kind is not Float32 or Float64
 func (v Value) Float() float64 {
 	k := v.kind()
-	if v.flag&flagAddr != 0 {
+	if v.flag&flagIndir != 0 {
 		switch k {
 		case Float32:
 			return float64(*(*float32)(v.ptr))
@@ -634,7 +635,11 @@ func (v Value) Float() float64 {
 		case Float32:
 			return float64(bitcast.ToFloat32(uintptr(v.ptr)))
 		case Float64:
-			return bitcast.ToFloat64(uintptr(v.ptr))
+			if is64bit {
+				return bitcast.ToFloat64(uintptr(v.ptr))
+			} else {
+				return *(*float64)(v.ptr)
+			}
 		}
 	}
 	panic(&ValueError{"reflect.Value.Float", v.kind()})
@@ -704,7 +709,7 @@ func (v Value) Int() int64 {
 	f := v.flag
 	k := f.kind()
 	p := v.ptr
-	if f&flagAddr != 0 {
+	if f&flagIndir != 0 {
 		switch k {
 		case Int:
 			return int64(*(*int)(p))
@@ -717,16 +722,16 @@ func (v Value) Int() int64 {
 		case Int64:
 			return *(*int64)(p)
 		}
-	} else if unsafe.Sizeof(uintptr(0)) == 8 {
-		if k >= Int && k <= Int64 {
-			return int64(uintptr(p))
-		}
 	} else {
-		if k >= Int && k <= Int32 {
+		switch k {
+		case Int, Int8, Int16, Int32:
 			return int64(uintptr(p))
-		}
-		if k == Int64 {
-			return *(*int64)(p)
+		case Int64:
+			if is64bit {
+				return int64(uintptr(p))
+			} else {
+				return *(*int64)(p)
+			}
 		}
 	}
 	panic(&ValueError{"reflect.Value.Int", v.kind()})
@@ -1557,7 +1562,7 @@ func (v Value) Uint() uint64 {
 	f := v.flag
 	k := v.kind()
 	p := v.ptr
-	if f&flagAddr != 0 {
+	if f&flagIndir != 0 {
 		switch k {
 		case Uint:
 			return uint64(*(*uint)(p))
@@ -1572,16 +1577,16 @@ func (v Value) Uint() uint64 {
 		case Uintptr:
 			return uint64(*(*uintptr)(p))
 		}
-	} else if unsafe.Sizeof(uintptr(0)) == 8 {
-		if k >= Uint && k <= Uintptr {
-			return uint64(uintptr(p))
-		}
 	} else {
-		if k >= Uint && k <= Uint32 {
+		switch k {
+		case Uint, Uint8, Uint16, Uint32:
 			return uint64(uintptr(p))
-		}
-		if k == Uint64 || k == Uintptr {
-			return *(*uint64)(p)
+		case Uint64, Uintptr:
+			if is64bit {
+				return uint64(uintptr(p))
+			} else {
+				return *(*uint64)(p)
+			}
 		}
 	}
 	panic(&ValueError{"reflect.Value.Uint", v.kind()})
@@ -1854,6 +1859,48 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 
 	// Failed.
 	panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(dst))
+}
+
+// Convert returns the value v converted to type t.
+// If the usual Go conversion rules do not allow conversion
+// of the value v to type t, or if converting v to type t panics, Convert panics.
+func (v Value) Convert(t Type) Value {
+	if v.flag&flagMethod != 0 {
+		v = makeMethodValue("Convert", v)
+	}
+	var op func(Value, Type) Value
+	if kind := v.Kind(); kind == Func && kind == t.Kind() {
+		op = convertOp(t.common(), v.Type().common())
+	} else {
+		op = convertOp(t.common(), v.typ())
+	}
+	if op == nil {
+		panic("reflect.Value.Convert: value of type " + stringFor(v.typ()) + " cannot be converted to type " + t.String())
+	}
+	return op(v, t)
+}
+
+// CanConvert reports whether the value v can be converted to type t.
+// If v.CanConvert(t) returns true then v.Convert(t) will not panic.
+func (v Value) CanConvert(t Type) bool {
+	vt := v.Type()
+	if !vt.ConvertibleTo(t) {
+		return false
+	}
+	// Converting from slice to array or to pointer-to-array can panic
+	// depending on the value.
+	switch {
+	case vt.Kind() == Slice && t.Kind() == Array:
+		if t.Len() > v.Len() {
+			return false
+		}
+	case vt.Kind() == Slice && t.Kind() == Pointer && t.Elem().Kind() == Array:
+		n := t.Elem().Len()
+		if n > v.Len() {
+			return false
+		}
+	}
+	return true
 }
 
 // memmove copies size bytes to dst from src. No write barriers are used.
@@ -2166,11 +2213,9 @@ func (v Value) call(op string, in []Value) (out []Value) {
 			tin = append([]*abi.Type{rcvrtype}, ft.In...)
 			tout = ft.Out
 			ioff = 1
-			if v.flag&flagIndir != 0 {
-				args = append(args, v.ptr)
-			} else {
-				args = append(args, unsafe.Pointer(&v.ptr))
-			}
+			var ptr unsafe.Pointer
+			storeRcvr(v, unsafe.Pointer(&ptr))
+			args = append(args, unsafe.Pointer(&ptr))
 		} else {
 			if v.flag&flagIndir != 0 {
 				fn = *(*unsafe.Pointer)(v.ptr)
@@ -2265,6 +2310,23 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		}
 	}
 	return
+}
+
+// v is a method receiver. Store at p the word which is used to
+// encode that receiver at the start of the argument list.
+// Reflect uses the "interface" calling convention for
+// methods, which always uses one word to record the receiver.
+func storeRcvr(v Value, p unsafe.Pointer) {
+	t := v.typ()
+	if t.Kind() == abi.Interface {
+		// the interface data word becomes the receiver word
+		iface := (*nonEmptyInterface)(v.ptr)
+		*(*unsafe.Pointer)(p) = iface.word
+	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
+		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
+	} else {
+		*(*unsafe.Pointer)(p) = v.ptr
+	}
 }
 
 var stringType = rtypeOf("")
@@ -2562,7 +2624,7 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 			panic("reflect: " + op + " of method on nil interface value")
 		}
 		rcvrtype = iface.itab.typ
-		fn = unsafe.Pointer(&iface.itab.fun[i])
+		fn = unsafe.Pointer(iface.itab.fun[i])
 		t = (*funcType)(unsafe.Pointer(m.Typ_))
 	} else {
 		rcvrtype = v.typ()
@@ -2579,6 +2641,340 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 		t = (*funcType)(unsafe.Pointer(m.Mtyp_))
 	}
 	return
+}
+
+// convertOp returns the function to convert a value of type src
+// to a value of type dst. If the conversion is illegal, convertOp returns nil.
+func convertOp(dst, src *abi.Type) func(Value, Type) Value {
+	switch Kind(src.Kind()) {
+	case Int, Int8, Int16, Int32, Int64:
+		switch Kind(dst.Kind()) {
+		case Int, Int8, Int16, Int32, Int64, Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
+			return cvtInt
+		case Float32, Float64:
+			return cvtIntFloat
+		case String:
+			return cvtIntString
+		}
+
+	case Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
+		switch Kind(dst.Kind()) {
+		case Int, Int8, Int16, Int32, Int64, Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
+			return cvtUint
+		case Float32, Float64:
+			return cvtUintFloat
+		case String:
+			return cvtUintString
+		}
+
+	case Float32, Float64:
+		switch Kind(dst.Kind()) {
+		case Int, Int8, Int16, Int32, Int64:
+			return cvtFloatInt
+		case Uint, Uint8, Uint16, Uint32, Uint64, Uintptr:
+			return cvtFloatUint
+		case Float32, Float64:
+			return cvtFloat
+		}
+
+	case Complex64, Complex128:
+		switch Kind(dst.Kind()) {
+		case Complex64, Complex128:
+			return cvtComplex
+		}
+
+	case String:
+		if dst.Kind() == abi.Slice && pkgPathFor(dst.Elem()) == "" {
+			switch Kind(dst.Elem().Kind()) {
+			case Uint8:
+				return cvtStringBytes
+			case Int32:
+				return cvtStringRunes
+			}
+		}
+
+	case Slice:
+		if dst.Kind() == abi.String && pkgPathFor(src.Elem()) == "" {
+			switch Kind(src.Elem().Kind()) {
+			case Uint8:
+				return cvtBytesString
+			case Int32:
+				return cvtRunesString
+			}
+		}
+		// "x is a slice, T is a pointer-to-array type,
+		// and the slice and array types have identical element types."
+		if dst.Kind() == abi.Pointer && dst.Elem().Kind() == abi.Array && src.Elem() == dst.Elem().Elem() {
+			return cvtSliceArrayPtr
+		}
+		// "x is a slice, T is an array type,
+		// and the slice and array types have identical element types."
+		if dst.Kind() == abi.Array && src.Elem() == dst.Elem() {
+			return cvtSliceArray
+		}
+
+	case Chan:
+		if dst.Kind() == abi.Chan && specialChannelAssignability(dst, src) {
+			return cvtDirect
+		}
+	}
+
+	// dst and src have same underlying type.
+	if haveIdenticalUnderlyingType(dst, src, false) {
+		return cvtDirect
+	}
+
+	// dst and src are non-defined pointer types with same underlying base type.
+	if dst.Kind() == abi.Pointer && nameFor(dst) == "" &&
+		src.Kind() == abi.Pointer && nameFor(src) == "" &&
+		haveIdenticalUnderlyingType(elem(dst), elem(src), false) {
+		return cvtDirect
+	}
+
+	if implements(dst, src) {
+		if src.Kind() == abi.Interface {
+			return cvtI2I
+		}
+		return cvtT2I
+	}
+
+	return nil
+}
+
+// _64bit = true on 64-bit systems, false on 32-bit systems
+const is64bit = (1 << (^uintptr(0) >> 63) / 2) == 1
+
+// makeInt returns a Value of type t equal to bits (possibly truncated),
+// where t is a signed or unsigned int type.
+func makeInt(f flag, bits uint64, t Type) Value {
+	typ := t.common()
+	var ptr unsafe.Pointer
+	switch typ.Size() {
+	case 1, 2, 4:
+		ptr = unsafe.Pointer(uintptr(bits))
+	case 8:
+		if is64bit {
+			ptr = unsafe.Pointer(uintptr(bits))
+		} else {
+			ptr = unsafe_New(typ)
+			*(*uint64)(ptr) = bits
+			f |= flagIndir
+		}
+	}
+	return Value{typ, ptr, f | flag(typ.Kind())}
+}
+
+// makeFloat returns a Value of type t equal to v (possibly truncated to float32),
+// where t is a float32 or float64 type.
+func makeFloat(f flag, v float64, t Type) Value {
+	typ := t.common()
+	var ptr unsafe.Pointer
+	switch typ.Size() {
+	case 4:
+		ptr = unsafe.Pointer(bitcast.FromFloat32(float32(v)))
+	case 8:
+		if is64bit {
+			ptr = unsafe.Pointer(bitcast.FromFloat64(v))
+		} else {
+			ptr = unsafe_New(typ)
+			*(*float64)(ptr) = v
+			f |= flagIndir
+		}
+	}
+	return Value{typ, ptr, f | flag(typ.Kind())}
+}
+
+// makeFloat32 returns a Value of type t equal to v, where t is a float32 type.
+func makeFloat32(f flag, ptr unsafe.Pointer, t Type) Value {
+	typ := t.common()
+	return Value{typ, ptr, f | flag(typ.Kind())}
+}
+
+// makeComplex returns a Value of type t equal to v (possibly truncated to complex64),
+// where t is a complex64 or complex128 type.
+func makeComplex(f flag, v complex128, t Type) Value {
+	typ := t.common()
+	ptr := unsafe_New(typ)
+	switch typ.Size() {
+	case 8:
+		*(*complex64)(ptr) = complex64(v)
+	case 16:
+		*(*complex128)(ptr) = v
+	}
+	return Value{typ, ptr, f | flagIndir | flag(typ.Kind())}
+}
+
+func makeString(f flag, v string, t Type) Value {
+	ret := New(t).Elem()
+	ret.SetString(v)
+	ret.flag = ret.flag&^flagAddr | f
+	return ret
+}
+
+func makeBytes(f flag, v []byte, t Type) Value {
+	ret := New(t).Elem()
+	ret.SetBytes(v)
+	ret.flag = ret.flag&^flagAddr | f
+	return ret
+}
+
+func makeRunes(f flag, v []rune, t Type) Value {
+	ret := New(t).Elem()
+	ret.setRunes(v)
+	ret.flag = ret.flag&^flagAddr | f
+	return ret
+}
+
+// These conversion functions are returned by convertOp
+// for classes of conversions. For example, the first function, cvtInt,
+// takes any value v of signed int type and returns the value converted
+// to type t, where t is any signed or unsigned int type.
+
+// convertOp: intXX -> [u]intXX
+func cvtInt(v Value, t Type) Value {
+	return makeInt(v.flag.ro(), uint64(v.Int()), t)
+}
+
+// convertOp: uintXX -> [u]intXX
+func cvtUint(v Value, t Type) Value {
+	return makeInt(v.flag.ro(), v.Uint(), t)
+}
+
+// convertOp: floatXX -> intXX
+func cvtFloatInt(v Value, t Type) Value {
+	return makeInt(v.flag.ro(), uint64(int64(v.Float())), t)
+}
+
+// convertOp: floatXX -> uintXX
+func cvtFloatUint(v Value, t Type) Value {
+	return makeInt(v.flag.ro(), uint64(v.Float()), t)
+}
+
+// convertOp: intXX -> floatXX
+func cvtIntFloat(v Value, t Type) Value {
+	return makeFloat(v.flag.ro(), float64(v.Int()), t)
+}
+
+// convertOp: uintXX -> floatXX
+func cvtUintFloat(v Value, t Type) Value {
+	return makeFloat(v.flag.ro(), float64(v.Uint()), t)
+}
+
+// convertOp: floatXX -> floatXX
+func cvtFloat(v Value, t Type) Value {
+	if v.Type().Kind() == Float32 && t.Kind() == Float32 {
+		// Don't do any conversion if both types have underlying type float32.
+		// This avoids converting to float64 and back, which will
+		// convert a signaling NaN to a quiet NaN. See issue 36400.
+		return makeFloat32(v.flag.ro(), v.ptr, t)
+	}
+	return makeFloat(v.flag.ro(), v.Float(), t)
+}
+
+// convertOp: complexXX -> complexXX
+func cvtComplex(v Value, t Type) Value {
+	return makeComplex(v.flag.ro(), v.Complex(), t)
+}
+
+// convertOp: intXX -> string
+func cvtIntString(v Value, t Type) Value {
+	s := "\uFFFD"
+	if x := v.Int(); int64(rune(x)) == x {
+		s = string(rune(x))
+	}
+	return makeString(v.flag.ro(), s, t)
+}
+
+// convertOp: uintXX -> string
+func cvtUintString(v Value, t Type) Value {
+	s := "\uFFFD"
+	if x := v.Uint(); uint64(rune(x)) == x {
+		s = string(rune(x))
+	}
+	return makeString(v.flag.ro(), s, t)
+}
+
+// convertOp: []byte -> string
+func cvtBytesString(v Value, t Type) Value {
+	return makeString(v.flag.ro(), string(v.Bytes()), t)
+}
+
+// convertOp: string -> []byte
+func cvtStringBytes(v Value, t Type) Value {
+	return makeBytes(v.flag.ro(), []byte(v.String()), t)
+}
+
+// convertOp: []rune -> string
+func cvtRunesString(v Value, t Type) Value {
+	return makeString(v.flag.ro(), string(v.runes()), t)
+}
+
+// convertOp: string -> []rune
+func cvtStringRunes(v Value, t Type) Value {
+	return makeRunes(v.flag.ro(), []rune(v.String()), t)
+}
+
+// convertOp: []T -> *[N]T
+func cvtSliceArrayPtr(v Value, t Type) Value {
+	n := t.Elem().Len()
+	if n > v.Len() {
+		panic("reflect: cannot convert slice with length " + itoa.Itoa(v.Len()) + " to pointer to array with length " + itoa.Itoa(n))
+	}
+	h := (*unsafeheaderSlice)(v.ptr)
+	return Value{t.common(), h.Data, v.flag&^(flagIndir|flagAddr|flagKindMask) | flag(Pointer)}
+}
+
+// convertOp: []T -> [N]T
+func cvtSliceArray(v Value, t Type) Value {
+	n := t.Len()
+	if n > v.Len() {
+		panic("reflect: cannot convert slice with length " + itoa.Itoa(v.Len()) + " to array with length " + itoa.Itoa(n))
+	}
+	h := (*unsafeheaderSlice)(v.ptr)
+	typ := t.common()
+	ptr := h.Data
+	c := unsafe_New(typ)
+	typedmemmove(typ, c, ptr)
+	ptr = c
+
+	return Value{typ, ptr, v.flag&^(flagAddr|flagKindMask) | flag(Array)}
+}
+
+// convertOp: direct copy
+func cvtDirect(v Value, typ Type) Value {
+	f := v.flag
+	t := typ.common()
+	ptr := v.ptr
+	if f&flagAddr != 0 {
+		// indirect, mutable word - make a copy
+		c := unsafe_New(t)
+		typedmemmove(t, c, ptr)
+		ptr = c
+		f &^= flagAddr
+	}
+	return Value{t, ptr, v.flag.ro() | f} // v.flag.ro()|f == f?
+}
+
+// convertOp: concrete -> interface
+func cvtT2I(v Value, typ Type) Value {
+	target := unsafe_New(typ.common())
+	x := valueInterface(v, false)
+	if typ.NumMethod() == 0 {
+		*(*any)(target) = x
+	} else {
+		ifaceE2I(typ.common(), x, target)
+	}
+	return Value{typ.common(), target, v.flag.ro() | flagIndir | flag(Interface)}
+}
+
+// convertOp: interface -> interface
+func cvtI2I(v Value, typ Type) Value {
+	if v.IsNil() {
+		ret := Zero(typ)
+		ret.flag |= v.flag.ro()
+		return ret
+	}
+	return cvtT2I(v.Elem(), typ)
 }
 
 //go:linkname chancap github.com/goplus/llgo/runtime/internal/runtime.ChanCap
@@ -2677,6 +3073,5 @@ func MakeMapWithSize(typ Type, n int) Value {
 	return Value{t, m, flag(Map)}
 }
 
-func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer) {
-	panic("todo: reflect.ifaceE2I")
-}
+//go:linkname ifaceE2I github.com/goplus/llgo/runtime/internal/runtime.IfaceE2I
+func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer)

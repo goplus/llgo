@@ -924,13 +924,10 @@ func (t *rtype) AssignableTo(u Type) bool {
 }
 
 func (t *rtype) ConvertibleTo(u Type) bool {
-	/*
-		if u == nil {
-			panic("reflect: nil type passed to Type.ConvertibleTo")
-		}
-		return convertOp(u.common(), t.common()) != nil
-	*/
-	panic("todo: reflect.rtype.ConvertibleTo")
+	if u == nil {
+		panic("reflect: nil type passed to Type.ConvertibleTo")
+	}
+	return convertOp(u.common(), t.common()) != nil
 }
 
 func (t *rtype) Comparable() bool {
@@ -947,14 +944,11 @@ func implements(T, V *abi.Type) bool
 // https://golang.org/doc/go_spec.html#Assignability
 // T and V must be both of Chan kind.
 func specialChannelAssignability(T, V *abi.Type) bool {
-	/*
-		// Special case:
-		// x is a bidirectional channel value, T is a channel type,
-		// x's type V and T have identical element types,
-		// and at least one of V or T is not a defined type.
-		return V.ChanDir() == abi.BothDir && (nameFor(T) == "" || nameFor(V) == "") && haveIdenticalType(T.Elem(), V.Elem(), true)
-	*/
-	panic("todo: reflect.specialChannelAssignability")
+	// Special case:
+	// x is a bidirectional channel value, T is a channel type,
+	// x's type V and T have identical element types,
+	// and at least one of V or T is not a defined type.
+	return V.ChanDir() == abi.BothDir && (nameFor(T) == "" || nameFor(V) == "") && haveIdenticalType(T.Elem(), V.Elem(), true)
 }
 
 // directlyAssignable reports whether a value x of type V can be directly
