@@ -44,11 +44,11 @@ jobs:
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test -v ./...
+        run: go test ./...
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
-        run: go test -v -coverprofile="coverage.txt" -covermode=atomic ./...
+        run: go test -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
