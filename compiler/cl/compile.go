@@ -26,6 +26,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/goplus/llgo/compiler/cl/blocks"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
@@ -85,8 +86,31 @@ type pkgInfo struct {
 
 type none = struct{}
 
+type Context struct {
+	prog       llssa.Program
+	skipLines  sync.Map // pkgPath => skip lines
+	patches    Patches
+	kinds      map[string]int
+	cgoExports map[string]string
+}
+
+func NewContext(prog llssa.Program) *Context {
+	return &Context{
+		prog: prog,
+		kinds: map[string]int{
+			"unsafe":      PkgDeclOnly,
+			"runtime/cgo": PkgDeclOnly,
+		},
+		cgoExports: make(map[string]string),
+	}
+}
+
+func (p *Context) SetPatches(patches Patches) {
+	p.patches = patches
+}
+
 type context struct {
-	prog   llssa.Program
+	*Context
 	pkg    llssa.Package
 	fn     llssa.Function
 	fset   *token.FileSet
@@ -99,7 +123,6 @@ type context struct {
 	bvals  map[ssa.Value]llssa.Expr    // block values
 	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
 
-	patches  Patches
 	blkInfos []blocks.Info
 
 	inits     []func()
@@ -114,7 +137,6 @@ type context struct {
 	cgoArgs    []llssa.Expr
 	cgoRet     llssa.Expr
 	cgoSymbols []string
-	cgoExports map[string]string
 }
 
 type pkgState byte
@@ -985,17 +1007,20 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	ret, _, err = NewPackageEx(prog, nil, pkg, files)
+	bctx := NewContext(prog)
+	bctx.ParsePkgSyntax(pkg.Pkg, files, false)
+	ret, _, err = NewPackageEx(bctx, pkg)
 	return
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
+func NewPackageEx(bctx *Context, pkg *ssa.Package) (ret llssa.Package, externs []string, err error) {
+	prog := bctx.prog
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
-	patch, hasPatch := patches[pkgPath]
+	patch, hasPatch := bctx.patches[pkgPath]
 	if hasPatch {
 		pkgTypes = patch.Types
 		pkg.Pkg = pkgTypes
@@ -1010,28 +1035,29 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 	}
 
 	ctx := &context{
-		prog:    prog,
+		Context: bctx,
 		pkg:     ret,
 		fset:    pkgProg.Fset,
 		goProg:  pkgProg,
 		goTyps:  pkgTypes,
 		goPkg:   pkg,
-		patches: patches,
 		skips:   make(map[string]none),
 		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
-		cgoExports: make(map[string]string),
 		cgoSymbols: make([]string, 0, 128),
 	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files)
-	ctx.prog.SetPatch(ctx.patchType)
 	ret.SetPatch(ctx.patchType)
-	ret.SetResolveLinkname(ctx.resolveLinkname)
+	ret.SetResolveLinkname(bctx.resolveLinkname)
 
 	if hasPatch {
+		if v, ok := bctx.skipLines.Load(pkgPath); ok {
+			for _, line := range v.([]string) {
+				ctx.parseSkip(line)
+			}
+		}
 		skips := ctx.skips
 		typepatch.Merge(pkgTypes, oldTypes, skips, ctx.skipall)
 		ctx.skips = nil
@@ -1134,11 +1160,11 @@ func globalType(gbl *ssa.Global) types.Type {
 	return t
 }
 
-func (p *context) type_(typ types.Type, bg llssa.Background) llssa.Type {
+func (p *Context) type_(typ types.Type, bg llssa.Background) llssa.Type {
 	return p.prog.Type(p.patchType(typ), bg)
 }
 
-func (p *context) patchType(typ types.Type) types.Type {
+func (p *Context) patchType(typ types.Type) types.Type {
 	if t, ok := typ.(*types.Named); ok {
 		o := t.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
@@ -1157,7 +1183,7 @@ func instantiate(orig types.Type, t *types.Named) (typ types.Type) {
 	return
 }
 
-func (p *context) resolveLinkname(name string) string {
+func (p *Context) resolveLinkname(name string) string {
 	if link, ok := p.prog.Linkname(name); ok {
 		prefix, ltarget, _ := strings.Cut(link, ".")
 		if prefix != "C" {
