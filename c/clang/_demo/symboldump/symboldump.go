@@ -36,13 +36,16 @@ var context = newContext()
 func printCursorLocation(cursor clang.Cursor) {
 	loc := cursor.Location()
 	var file clang.File
-	var line, column c.Uint
+	var line, column, presumedLine, presumedColumn c.Uint
+	var presumedFilename clang.String
 
 	loc.SpellingLocation(&file, &line, &column, nil)
+	loc.PresumedLocation(&presumedFilename, &presumedLine, &presumedColumn)
 	filename := file.FileName()
 	defer filename.Dispose()
 
-	c.Printf(c.Str("%s:%d:%d\n"), filename.CStr(), line, column)
+	c.Printf(c.Str("Location: %s:%d:%d\n"), filename.CStr(), line, column)
+	c.Printf(c.Str("Presumed Location: %s:%d:%d\n"), presumedFilename.CStr(), presumedLine, presumedColumn)
 }
 
 func printMarcoInfo(cursor clang.Cursor) {
@@ -107,20 +110,26 @@ func printFuncInfo(cursor clang.Cursor) {
 }
 
 func visit(cursor, parent clang.Cursor, clientData c.Pointer) clang.ChildVisitResult {
-	if cursor.Kind == clang.CursorMacroDefinition {
+	switch cursor.Kind {
+	case clang.CursorMacroDefinition:
 		printMarcoInfo(cursor)
-	} else if cursor.Kind == clang.CursorNamespace {
+	case clang.CursorNamespace:
 		nameStr := cursor.String()
 		context.setNamespaceName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
 		context.setNamespaceName("")
-	} else if cursor.Kind == clang.CursorClassDecl {
+	case clang.CursorClassDecl:
 		nameStr := cursor.String()
 		context.setClassName(c.GoString(nameStr.CStr()))
 		clang.VisitChildren(cursor, visit, nil)
 		context.setClassName("")
-	} else if cursor.Kind == clang.CursorCXXMethod || cursor.Kind == clang.CursorFunctionDecl {
+	case clang.CursorCXXMethod, clang.CursorFunctionDecl:
 		printFuncInfo(cursor)
+	case clang.CursorEnumDecl, clang.CursorStructDecl, clang.CursorUnionDecl, clang.CursorTypedefDecl:
+		nameStr := cursor.String()
+		printCursorLocation(cursor)
+		c.Printf(c.Str("Name: %s\n"), nameStr.CStr())
+		println("--------------------------------")
 	}
 
 	return clang.ChildVisit_Continue
