@@ -213,6 +213,10 @@ void wrap_clang_getSpellingLocation(CXSourceLocation *loc, CXFile *file, unsigne
     clang_getSpellingLocation(*loc, file, line, column, offset);
 }
 
+void wrap_clang_getPresumedLocation(CXSourceLocation *loc, CXString *filename, unsigned *line, unsigned *column) {
+    clang_getPresumedLocation(*loc, filename, line, column);
+}
+
 void wrap_clang_getRangeStart(CXSourceRange *range, CXSourceLocation *loc) { *loc = clang_getRangeStart(*range); }
 
 void wrap_clang_getRangeEnd(CXSourceRange *range, CXSourceLocation *loc) { *loc = clang_getRangeEnd(*range); }
