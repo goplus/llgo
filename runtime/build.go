@@ -8,7 +8,7 @@ func SkipToBuild(pkgPath string) bool {
 	if _, ok := hasAltPkg[pkgPath]; ok {
 		return false
 	}
-	if _, ok := supportInternal[pkgPath]; ok {
+	if _, ok := supportedInternal[pkgPath]; ok {
 		return false
 	}
 	switch pkgPath {
@@ -27,13 +27,14 @@ func IgnoreName(name string) bool {
 	}
 	*/
 	const internal = "internal/"
-	return (strings.HasPrefix(name, internal) && IsSupportInternal(name)) ||
+	return (strings.HasPrefix(name, internal) && !IsSupportedInternal(name)) ||
 		strings.HasPrefix(name, "runtime/") || strings.HasPrefix(name, "arena.") ||
 		strings.HasPrefix(name, "maps.") || strings.HasPrefix(name, "plugin.")
 }
 
-func IsSupportInternal(path string) (b bool) {
-	_, b = supportInternal[path]
+func IsSupportedInternal(name string) (b bool) {
+	paths := strings.Split(name, ".")
+	_, b = supportedInternal[paths[0]]
 	return
 }
 
@@ -75,7 +76,7 @@ var hasAltPkg = map[string]none{
 	"io":                       {},
 }
 
-var supportInternal = map[string]none{
+var supportedInternal = map[string]none{
 	"internal/abi":             {},
 	"internal/bytealg":         {},
 	"internal/itoa":            {},

@@ -134,9 +134,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cfg.Mode |= packages.NeedForTest
 	}
 
-	if len(overlayFiles) > 0 {
+	if len(llruntime.OverlayFiles) > 0 {
 		cfg.Overlay = make(map[string][]byte)
-		for file, src := range overlayFiles {
+		for file, src := range llruntime.OverlayFiles {
 			overlay := unsafe.Slice(unsafe.StringData(src), len(src))
 			cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
 		}
