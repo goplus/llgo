@@ -12,8 +12,8 @@ source_filename = "main"
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
 @"github.com/goplus/llgo/runtime/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
-@_cgo_023ff89410ef_Cfunc_test_structs = external global i8, align 1
-@main._cgo_023ff89410ef_Cfunc_test_structs = global ptr null, align 8
+@_cgo_3f9fbfdd5713_Cfunc_test_structs = external global i8, align 1
+@main._cgo_3f9fbfdd5713_Cfunc_test_structs = global ptr null, align 8
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
@@ -27,7 +27,7 @@ source_filename = "main"
 define i32 @main._Cfunc_test_structs(ptr %0, ptr %1, ptr %2, ptr %3, ptr %4) {
 _llgo_0:
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %6 = load ptr, ptr @main._cgo_023ff89410ef_Cfunc_test_structs, align 8
+  %6 = load ptr, ptr @main._cgo_3f9fbfdd5713_Cfunc_test_structs, align 8
   %7 = load ptr, ptr %6, align 8
   %8 = call i32 %7(ptr %0, ptr %1, ptr %2, ptr %3, ptr %4)
   ret i32 %8
@@ -52,7 +52,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @syscall.init()
   call void @fmt.init()
   call void @"main.init$after"()
-  store ptr @_cgo_023ff89410ef_Cfunc_test_structs, ptr @main._cgo_023ff89410ef_Cfunc_test_structs, align 8
+  store ptr @_cgo_3f9fbfdd5713_Cfunc_test_structs, ptr @main._cgo_3f9fbfdd5713_Cfunc_test_structs, align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0

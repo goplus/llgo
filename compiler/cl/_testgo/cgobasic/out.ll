@@ -7,20 +7,20 @@ source_filename = "main"
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/runtime/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
-@_cgo_217b74f897b2_Cfunc__Cmalloc = external global i8, align 1
-@_cgo_217b74f897b2_Cfunc_cos = external global i8, align 1
-@_cgo_217b74f897b2_Cfunc_free = external global i8, align 1
-@_cgo_217b74f897b2_Cfunc_log = external global i8, align 1
-@_cgo_217b74f897b2_Cfunc_puts = external global i8, align 1
-@_cgo_217b74f897b2_Cfunc_sin = external global i8, align 1
-@_cgo_217b74f897b2_Cfunc_sqrt = external global i8, align 1
-@main._cgo_217b74f897b2_Cfunc__Cmalloc = global ptr null, align 8
-@main._cgo_217b74f897b2_Cfunc_cos = global ptr null, align 8
-@main._cgo_217b74f897b2_Cfunc_free = global ptr null, align 8
-@main._cgo_217b74f897b2_Cfunc_log = global ptr null, align 8
-@main._cgo_217b74f897b2_Cfunc_puts = global ptr null, align 8
-@main._cgo_217b74f897b2_Cfunc_sin = global ptr null, align 8
-@main._cgo_217b74f897b2_Cfunc_sqrt = global ptr null, align 8
+@_cgo_cd28ed2d63c7_Cfunc__Cmalloc = external global i8, align 1
+@_cgo_cd28ed2d63c7_Cfunc_cos = external global i8, align 1
+@_cgo_cd28ed2d63c7_Cfunc_free = external global i8, align 1
+@_cgo_cd28ed2d63c7_Cfunc_log = external global i8, align 1
+@_cgo_cd28ed2d63c7_Cfunc_puts = external global i8, align 1
+@_cgo_cd28ed2d63c7_Cfunc_sin = external global i8, align 1
+@_cgo_cd28ed2d63c7_Cfunc_sqrt = external global i8, align 1
+@main._cgo_cd28ed2d63c7_Cfunc__Cmalloc = global ptr null, align 8
+@main._cgo_cd28ed2d63c7_Cfunc_cos = global ptr null, align 8
+@main._cgo_cd28ed2d63c7_Cfunc_free = global ptr null, align 8
+@main._cgo_cd28ed2d63c7_Cfunc_log = global ptr null, align 8
+@main._cgo_cd28ed2d63c7_Cfunc_puts = global ptr null, align 8
+@main._cgo_cd28ed2d63c7_Cfunc_sin = global ptr null, align 8
+@main._cgo_cd28ed2d63c7_Cfunc_sqrt = global ptr null, align 8
 @"main.init$guard" = global i1 false, align 1
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
@@ -40,7 +40,7 @@ source_filename = "main"
 define double @main._Cfunc_cos(double %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %2 = load ptr, ptr @main._cgo_217b74f897b2_Cfunc_cos, align 8
+  %2 = load ptr, ptr @main._cgo_cd28ed2d63c7_Cfunc_cos, align 8
   %3 = load ptr, ptr %2, align 8
   %4 = call double %3(double %0)
   ret double %4
@@ -49,7 +49,7 @@ _llgo_0:
 define [0 x i8] @main._Cfunc_free(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %2 = load ptr, ptr @main._cgo_217b74f897b2_Cfunc_free, align 8
+  %2 = load ptr, ptr @main._cgo_cd28ed2d63c7_Cfunc_free, align 8
   %3 = load ptr, ptr %2, align 8
   %4 = call [0 x i8] %3(ptr %0)
   ret [0 x i8] %4
@@ -58,7 +58,7 @@ _llgo_0:
 define double @main._Cfunc_log(double %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %2 = load ptr, ptr @main._cgo_217b74f897b2_Cfunc_log, align 8
+  %2 = load ptr, ptr @main._cgo_cd28ed2d63c7_Cfunc_log, align 8
   %3 = load ptr, ptr %2, align 8
   %4 = call double %3(double %0)
   ret double %4
@@ -67,7 +67,7 @@ _llgo_0:
 define i32 @main._Cfunc_puts(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %2 = load ptr, ptr @main._cgo_217b74f897b2_Cfunc_puts, align 8
+  %2 = load ptr, ptr @main._cgo_cd28ed2d63c7_Cfunc_puts, align 8
   %3 = load ptr, ptr %2, align 8
   %4 = call i32 %3(ptr %0)
   ret i32 %4
@@ -76,7 +76,7 @@ _llgo_0:
 define double @main._Cfunc_sin(double %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %2 = load ptr, ptr @main._cgo_217b74f897b2_Cfunc_sin, align 8
+  %2 = load ptr, ptr @main._cgo_cd28ed2d63c7_Cfunc_sin, align 8
   %3 = load ptr, ptr %2, align 8
   %4 = call double %3(double %0)
   ret double %4
@@ -85,7 +85,7 @@ _llgo_0:
 define double @main._Cfunc_sqrt(double %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %2 = load ptr, ptr @main._cgo_217b74f897b2_Cfunc_sqrt, align 8
+  %2 = load ptr, ptr @main._cgo_cd28ed2d63c7_Cfunc_sqrt, align 8
   %3 = load ptr, ptr %2, align 8
   %4 = call double %3(double %0)
   ret double %4
@@ -110,13 +110,13 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @syscall.init()
   call void @fmt.init()
   call void @"main.init$after"()
-  store ptr @_cgo_217b74f897b2_Cfunc_cos, ptr @main._cgo_217b74f897b2_Cfunc_cos, align 8
-  store ptr @_cgo_217b74f897b2_Cfunc_free, ptr @main._cgo_217b74f897b2_Cfunc_free, align 8
-  store ptr @_cgo_217b74f897b2_Cfunc_log, ptr @main._cgo_217b74f897b2_Cfunc_log, align 8
-  store ptr @_cgo_217b74f897b2_Cfunc_puts, ptr @main._cgo_217b74f897b2_Cfunc_puts, align 8
-  store ptr @_cgo_217b74f897b2_Cfunc_sin, ptr @main._cgo_217b74f897b2_Cfunc_sin, align 8
-  store ptr @_cgo_217b74f897b2_Cfunc_sqrt, ptr @main._cgo_217b74f897b2_Cfunc_sqrt, align 8
-  store ptr @_cgo_217b74f897b2_Cfunc__Cmalloc, ptr @main._cgo_217b74f897b2_Cfunc__Cmalloc, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc_cos, ptr @main._cgo_cd28ed2d63c7_Cfunc_cos, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc_free, ptr @main._cgo_cd28ed2d63c7_Cfunc_free, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc_log, ptr @main._cgo_cd28ed2d63c7_Cfunc_log, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc_puts, ptr @main._cgo_cd28ed2d63c7_Cfunc_puts, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc_sin, ptr @main._cgo_cd28ed2d63c7_Cfunc_sin, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc_sqrt, ptr @main._cgo_cd28ed2d63c7_Cfunc_sqrt, align 8
+  store ptr @_cgo_cd28ed2d63c7_Cfunc__Cmalloc, ptr @main._cgo_cd28ed2d63c7_Cfunc__Cmalloc, align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
