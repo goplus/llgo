@@ -118,28 +118,20 @@ jobs:
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
-      - name: Set up Go for testing
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{matrix.go}}
-
       - name: Test Hello World with go.mod 1.20
         if: matrix.go == '1.20' || matrix.go == '1.21' || matrix.go == '1.22' || matrix.go == '1.23'
         uses: ./.github/actions/test-helloworld
         with:
-          go-version: ${{matrix.go}}
           mod-version: '1.20'
 
       - name: Test Hello World with go.mod 1.21
         if: matrix.go == '1.21' || matrix.go == '1.22' || matrix.go == '1.23'
         uses: ./.github/actions/test-helloworld
         with:
-          go-version: ${{matrix.go}}
           mod-version: '1.21'
 
       - name: Test Hello World with go.mod 1.22
         if: matrix.go == '1.22' || matrix.go == '1.23'
         uses: ./.github/actions/test-helloworld
         with:
-          go-version: ${{matrix.go}}
           mod-version: '1.22'

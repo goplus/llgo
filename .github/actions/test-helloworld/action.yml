@@ -1,11 +1,8 @@
-name: 'Test Hello World'
-description: 'Test Hello World with specific Go and module versions'
+name: "Test Hello World"
+description: "Test Hello World with specific Go module versions"
 inputs:
-  go-version:
-    description: 'Go version being tested'
-    required: true
   mod-version:
-    description: 'Go module version to use'
+    description: "Go module version to use"
     required: true
 runs:
   using: "composite"
@@ -13,7 +10,7 @@ runs:
     - name: Test Hello World
       shell: bash
       run: |
-        echo "Testing with Go ${{ inputs.go-version }} and go.mod ${{ inputs.mod-version }}"
+        echo "Testing with go.mod ${{ inputs.mod-version }}"
         mkdir -p _test/helloworld && cd _test/helloworld
         cat > go.mod << 'EOL'
         module hello
