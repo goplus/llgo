@@ -18,7 +18,7 @@ jobs:
           - macos-latest
           - ubuntu-24.04
         llvm: [18]
-        go: ['1.20', '1.21', '1.22', '1.23', '1.24']
+        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6', '1.24rc3']
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -36,9 +36,9 @@ jobs:
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
       - name: Set up Go for build
-        uses: actions/setup-go@v5
+        uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0-rc3'
+          go-version: '1.24rc3'
 
       - name: Install
         working-directory: compiler
@@ -47,7 +47,7 @@ jobs:
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
-        uses: actions/setup-go@v5
+        uses: ./.github/actions/setup-go
         with:
           go-version: ${{matrix.go}}
 
@@ -110,9 +110,9 @@ jobs:
           llvm-version: ${{matrix.llvm}}
 
       - name: Set up Go for building llgo
-        uses: actions/setup-go@v5
+        uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0-rc3'
+          go-version: '1.24rc3'
 
       - name: Install llgo
         working-directory: compiler
