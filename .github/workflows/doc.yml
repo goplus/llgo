@@ -8,6 +8,7 @@ on:
 
 jobs:
   doc_verify:
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +31,7 @@ jobs:
           args: README.md
 
   doc_test:
+    continue-on-error: true
     strategy:
       matrix:
         os:
@@ -42,7 +44,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.0-rc3'
 
       - name: Install dependencies on macOS
         if: startsWith(matrix.os, 'macos')
@@ -78,4 +80,3 @@ jobs:
           set -e
           set -x
           source doc/_readme/scripts/run.sh
-

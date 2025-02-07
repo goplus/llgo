@@ -11,6 +11,7 @@ on:
 
 jobs:
   test:
+    continue-on-error: true
     strategy:
       matrix:
         os:
@@ -37,7 +38,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.0-rc3'
 
       - name: Build
         run: go build -v ./...

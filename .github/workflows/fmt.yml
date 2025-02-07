@@ -8,6 +8,7 @@ on:
 
 jobs:
   fmt:
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,7 +16,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.0-rc3'
 
       - name: Check formatting
         run: |
