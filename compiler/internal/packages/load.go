@@ -106,6 +106,7 @@ type loader struct {
 }
 
 type Cached struct {
+	*packages.Package
 	Types     *types.Package
 	TypesInfo *types.Info
 	Syntax    []*ast.File
@@ -189,6 +190,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		defer func() {
 			if !lpkg.IllTyped && lpkg.needtypes && lpkg.needsrc {
 				dedup.set(lpkg.PkgPath, &Cached{
+					Package:   lpkg.Package,
 					Types:     lpkg.Types,
 					TypesInfo: lpkg.TypesInfo,
 					Syntax:    lpkg.Syntax,

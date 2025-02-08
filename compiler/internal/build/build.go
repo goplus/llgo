@@ -359,6 +359,10 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				panic(err)
 			}
 			aPkg.LinkArgs = append(cgoLdflags, pkg.ExportFile)
+			aPkg.LinkArgs = append(aPkg.LinkArgs, concatPkgLinkFiles(ctx, pkg, verbose)...)
+			if aPkg.AltPkg != nil {
+				aPkg.LinkArgs = append(aPkg.LinkArgs, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
+			}
 			setNeedRuntimeOrPyInit(ctx, pkg, prog.NeedRuntime, prog.NeedPyInit)
 		}
 	}
