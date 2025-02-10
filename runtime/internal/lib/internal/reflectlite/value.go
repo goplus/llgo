@@ -9,6 +9,7 @@ import (
 
 	"github.com/goplus/llgo/runtime/abi"
 	_ "github.com/goplus/llgo/runtime/internal/runtime"
+	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
 
 // Value is the reflection interface to a Go value.
@@ -89,16 +90,13 @@ func (f flag) ro() flag {
 // pointer returns the underlying pointer represented by v.
 // v.Kind() must be Pointer, Map, Chan, Func, or UnsafePointer
 func (v Value) pointer() unsafe.Pointer {
-	/*
-		if v.typ.Size() != goarch.PtrSize || !v.typ.Pointers() {
-			panic("can't call pointer on a non-pointer Value")
-		}
-		if v.flag&flagIndir != 0 {
-			return *(*unsafe.Pointer)(v.ptr)
-		}
-		return v.ptr
-	*/
-	panic("todo: reflectlite.Value.pointer")
+	if v.typ.Size() != goarch.PtrSize || !v.typ.Pointers() {
+		panic("can't call pointer on a non-pointer Value")
+	}
+	if v.flag&flagIndir != 0 {
+		return *(*unsafe.Pointer)(v.ptr)
+	}
+	return v.ptr
 }
 
 // packEface converts v to the empty interface.
@@ -147,6 +145,9 @@ func unpackEface(i any) Value {
 		return Value{}
 	}
 	f := flag(t.Kind())
+	if t.IsClosure() {
+		f = flag(abi.Func)
+	}
 	if ifaceIndir(t) {
 		f |= flagIndir
 	}
@@ -229,41 +230,38 @@ func (v Value) CanSet() bool {
 // It panics if v's Kind is not Interface or Pointer.
 // It returns the zero Value if v is nil.
 func (v Value) Elem() Value {
-	/*
-		k := v.kind()
-		switch k {
-		case abi.Interface:
-			var eface any
-			if v.typ.NumMethod() == 0 {
-				eface = *(*any)(v.ptr)
-			} else {
-				eface = (any)(*(*interface {
-					M()
-				})(v.ptr))
-			}
-			x := unpackEface(eface)
-			if x.flag != 0 {
-				x.flag |= v.flag.ro()
-			}
-			return x
-		case abi.Pointer:
-			ptr := v.ptr
-			if v.flag&flagIndir != 0 {
-				ptr = *(*unsafe.Pointer)(ptr)
-			}
-			// The returned value's address is v's value.
-			if ptr == nil {
-				return Value{}
-			}
-			tt := (*ptrType)(unsafe.Pointer(v.typ))
-			typ := tt.Elem
-			fl := v.flag&flagRO | flagIndir | flagAddr
-			fl |= flag(typ.Kind())
-			return Value{typ, ptr, fl}
+	k := v.kind()
+	switch k {
+	case abi.Interface:
+		var eface any
+		if v.typ.NumMethod() == 0 {
+			eface = *(*any)(v.ptr)
+		} else {
+			eface = (any)(*(*interface {
+				M()
+			})(v.ptr))
 		}
-		panic(&ValueError{"reflectlite.Value.Elem", v.kind()})
-	*/
-	panic("todo: reflectlite.Value.Elem")
+		x := unpackEface(eface)
+		if x.flag != 0 {
+			x.flag |= v.flag.ro()
+		}
+		return x
+	case abi.Pointer:
+		ptr := v.ptr
+		if v.flag&flagIndir != 0 {
+			ptr = *(*unsafe.Pointer)(ptr)
+		}
+		// The returned value's address is v's value.
+		if ptr == nil {
+			return Value{}
+		}
+		tt := (*ptrType)(unsafe.Pointer(v.typ))
+		typ := tt.Elem
+		fl := v.flag&flagRO | flagIndir | flagAddr
+		fl |= flag(typ.Kind())
+		return Value{typ, ptr, fl}
+	}
+	panic(&ValueError{"reflectlite.Value.Elem", v.kind()})
 }
 
 func valueInterface(v Value) any {
@@ -329,11 +327,11 @@ func (v Value) Kind() Kind {
 	return v.kind()
 }
 
-/* TODO(xsw):
-// implemented in runtime:
-func chanlen(unsafe.Pointer) int
-func maplen(unsafe.Pointer) int
-*/
+//go:linkname chanlen github.com/goplus/llgo/runtime/internal/runtime.ChanLen
+func chanlen(ch unsafe.Pointer) int
+
+//go:linkname maplen github.com/goplus/llgo/runtime/internal/runtime.MapLen
+func maplen(ch unsafe.Pointer) int
 
 // Len returns v's length.
 // It panics if v's Kind is not Array, Chan, Map, Slice, or String.
@@ -349,25 +347,20 @@ func (v Value) Len() int {
 	case abi.Array:
 		tt := (*arrayType)(unsafe.Pointer(v.typ))
 		return int(tt.Len)
-		/* TODO(xsw):
-		case abi.Chan:
-			return chanlen(v.pointer())
-		case abi.Map:
-			return maplen(v.pointer())
-		*/
+	case abi.Chan:
+		return chanlen(v.pointer())
+	case abi.Map:
+		return maplen(v.pointer())
 	}
 	panic(&ValueError{"reflect.Value.Len", v.kind()})
 }
 
 // NumMethod returns the number of exported methods in the value's method set.
 func (v Value) numMethod() int {
-	/*
-		if v.typ == nil {
-			panic(&ValueError{"reflectlite.Value.NumMethod", abi.Invalid})
-		}
-		return v.typ.NumMethod()
-	*/
-	panic("todo: reflectlite.Value.numMethod")
+	if v.typ == nil {
+		panic(&ValueError{"reflectlite.Value.NumMethod", abi.Invalid})
+	}
+	return v.typ.NumMethod()
 }
 
 // Set assigns x to the value v.
@@ -394,8 +387,16 @@ func (v Value) Type() Type {
 	if f == 0 {
 		panic(&ValueError{"reflectlite.Value.Type", abi.Invalid})
 	}
+	// closure func
+	if v.typ.IsClosure() {
+		return toRType(&v.closureFunc().Type)
+	}
 	// Method values not supported.
 	return toRType(v.typ)
+}
+
+func (v Value) closureFunc() *abi.FuncType {
+	return v.typ.StructType().Fields[0].Typ.FuncType()
 }
 
 /*
@@ -441,7 +442,6 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 			// Avoid the panic by returning a nil dst (e.g., Reader) explicitly.
 			return Value{dst, nil, flag(abi.Interface)}
 		}
-		/* TODO(xsw):
 		x := valueInterface(v)
 		if dst.NumMethod() == 0 {
 			*(*any)(target) = x
@@ -449,13 +449,10 @@ func (v Value) assignTo(context string, dst *abi.Type, target unsafe.Pointer) Va
 			ifaceE2I(dst, x, target)
 		}
 		return Value{dst, target, flagIndir | flag(abi.Interface)}
-		*/
 	}
 
 	// Failed.
-	// TODO(xsw):
-	// panic(context + ": value of type " + toRType(v.typ).String() + " is not assignable to type " + toRType(dst).String())
-	panic("todo: reflectlite.Value.assignTo")
+	panic(context + ": value of type " + toRType(v.typ).String() + " is not assignable to type " + toRType(dst).String())
 }
 
 // arrayAt returns the i-th element of p,
@@ -469,7 +466,8 @@ func arrayAt(p unsafe.Pointer, i int, eltSize uintptr, whySafe string) unsafe.Po
 	return add(p, uintptr(i)*eltSize, "i < len")
 }
 
-// func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer)
+//go:linkname ifaceE2I github.com/goplus/llgo/runtime/internal/runtime.IfaceE2I
+func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer)
 
 // typedmemmove copies a value of type t to dst from src.
 //

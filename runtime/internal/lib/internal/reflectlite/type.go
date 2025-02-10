@@ -150,50 +150,41 @@ func (t rtype) exportedMethods() []abi.Method {
 }
 
 func (t rtype) NumMethod() int {
-	/*
-		tt := t.Type.InterfaceType()
-		if tt != nil {
-			return tt.NumMethod()
-		}
-		return len(t.exportedMethods())
-	*/
-	panic("todo: reflectlite.rtype.NumMethod")
+	tt := t.Type.InterfaceType()
+	if tt != nil {
+		return tt.NumMethod()
+	}
+	return len(t.exportedMethods())
 }
 
 func (t rtype) PkgPath() string {
-	/*
-		if t.TFlag&abi.TFlagNamed == 0 {
-			return ""
-		}
-		ut := t.uncommon()
-		if ut == nil {
-			return ""
-		}
-		return t.nameOff(ut.PkgPath).Name()
-	*/
-	panic("todo: reflectlite.rtype.PkgPath")
+	if t.TFlag&abi.TFlagNamed == 0 {
+		return ""
+	}
+	ut := t.uncommon()
+	if ut == nil {
+		return ""
+	}
+	return ut.PkgPath_
 }
 
 func (t rtype) Name() string {
-	/*
-		if !t.HasName() {
-			return ""
+	if !t.HasName() {
+		return ""
+	}
+	s := t.String()
+	i := len(s) - 1
+	sqBrackets := 0
+	for i >= 0 && (s[i] != '.' || sqBrackets != 0) {
+		switch s[i] {
+		case ']':
+			sqBrackets++
+		case '[':
+			sqBrackets--
 		}
-		s := t.String()
-		i := len(s) - 1
-		sqBrackets := 0
-		for i >= 0 && (s[i] != '.' || sqBrackets != 0) {
-			switch s[i] {
-			case ']':
-				sqBrackets++
-			case '[':
-				sqBrackets--
-			}
-			i--
-		}
-		return s[i+1:]
-	*/
-	panic("todo: reflectlite.rtype.Name")
+		i--
+	}
+	return s[i+1:]
 }
 
 func toRType(t *abi.Type) rtype {
@@ -213,14 +204,11 @@ func (t rtype) Elem() Type {
 }
 
 func (t rtype) In(i int) Type {
-	/*
-		tt := t.Type.FuncType()
-		if tt == nil {
-			panic("reflect: In of non-func type")
-		}
-		return toType(tt.InSlice()[i])
-	*/
-	panic("todo: reflectlite.rtype.In")
+	tt := t.Type.FuncType()
+	if tt == nil {
+		panic("reflect: In of non-func type")
+	}
+	return toType(tt.In[i])
 }
 
 func (t rtype) Key() Type {
@@ -248,36 +236,27 @@ func (t rtype) NumField() int {
 }
 
 func (t rtype) NumIn() int {
-	/*
-		tt := t.Type.FuncType()
-		if tt == nil {
-			panic("reflect: NumIn of non-func type")
-		}
-		return int(tt.InCount)
-	*/
-	panic("todo: reflectlite.rtype.NumIn")
+	tt := t.Type.FuncType()
+	if tt == nil {
+		panic("reflect: NumIn of non-func type")
+	}
+	return len(tt.In)
 }
 
 func (t rtype) NumOut() int {
-	/*
-		tt := t.Type.FuncType()
-		if tt == nil {
-			panic("reflect: NumOut of non-func type")
-		}
-		return tt.NumOut()
-	*/
-	panic("todo: reflectlite.rtype.NumOut")
+	tt := t.Type.FuncType()
+	if tt == nil {
+		panic("reflect: NumOut of non-func type")
+	}
+	return len(tt.Out)
 }
 
 func (t rtype) Out(i int) Type {
-	/*
-		tt := t.Type.FuncType()
-		if tt == nil {
-			panic("reflect: Out of non-func type")
-		}
-		return toType(tt.OutSlice()[i])
-	*/
-	panic("todo: reflectlite.rtype.Out")
+	tt := t.Type.FuncType()
+	if tt == nil {
+		panic("reflect: Out of non-func type")
+	}
+	return toType(tt.Out[i])
 }
 
 // add returns p+x.
@@ -322,94 +301,9 @@ func (t rtype) Comparable() bool {
 }
 
 // implements reports whether the type V implements the interface type T.
-func implements(T, V *abi.Type) bool {
-	/*
-		t := T.InterfaceType()
-		if t == nil {
-			return false
-		}
-		if len(t.Methods) == 0 {
-			return true
-		}
-		rT := toRType(T)
-		rV := toRType(V)
-
-		// The same algorithm applies in both cases, but the
-		// method tables for an interface type and a concrete type
-		// are different, so the code is duplicated.
-		// In both cases the algorithm is a linear scan over the two
-		// lists - T's methods and V's methods - simultaneously.
-		// Since method tables are stored in a unique sorted order
-		// (alphabetical, with no duplicate method names), the scan
-		// through V's methods must hit a match for each of T's
-		// methods along the way, or else V does not implement T.
-		// This lets us run the scan in overall linear time instead of
-		// the quadratic time  a naive search would require.
-		// See also ../runtime/iface.go.
-		if V.Kind() == Interface {
-			v := (*interfaceType)(unsafe.Pointer(V))
-			i := 0
-			for j := 0; j < len(v.Methods); j++ {
-				tm := &t.Methods[i]
-				tmName := rT.nameOff(tm.Name)
-				vm := &v.Methods[j]
-				vmName := rV.nameOff(vm.Name)
-				if vmName.Name() == tmName.Name() && rV.typeOff(vm.Typ) == rT.typeOff(tm.Typ) {
-					if !tmName.IsExported() {
-						tmPkgPath := pkgPath(tmName)
-						if tmPkgPath == "" {
-							tmPkgPath = t.PkgPath.Name()
-						}
-						vmPkgPath := pkgPath(vmName)
-						if vmPkgPath == "" {
-							vmPkgPath = v.PkgPath.Name()
-						}
-						if tmPkgPath != vmPkgPath {
-							continue
-						}
-					}
-					if i++; i >= len(t.Methods) {
-						return true
-					}
-				}
-			}
-			return false
-		}
-
-		v := V.Uncommon()
-		if v == nil {
-			return false
-		}
-		i := 0
-		vmethods := v.Methods()
-		for j := 0; j < int(v.Mcount); j++ {
-			tm := &t.Methods[i]
-			tmName := rT.nameOff(tm.Name)
-			vm := vmethods[j]
-			vmName := rV.nameOff(vm.Name)
-			if vmName.Name() == tmName.Name() && rV.typeOff(vm.Mtyp) == rT.typeOff(tm.Typ) {
-				if !tmName.IsExported() {
-					tmPkgPath := pkgPath(tmName)
-					if tmPkgPath == "" {
-						tmPkgPath = t.PkgPath.Name()
-					}
-					vmPkgPath := pkgPath(vmName)
-					if vmPkgPath == "" {
-						vmPkgPath = rV.nameOff(v.PkgPath).Name()
-					}
-					if tmPkgPath != vmPkgPath {
-						continue
-					}
-				}
-				if i++; i >= len(t.Methods) {
-					return true
-				}
-			}
-		}
-		return false
-	*/
-	panic("todo: reflectlite.implements")
-}
+//
+//go:linkname implements github.com/goplus/llgo/runtime/internal/runtime.Implements
+func implements(T, V *abi.Type) bool
 
 // directlyAssignable reports whether a value x of type V can be directly
 // assigned (using memmove) to a value of type T.
@@ -460,91 +354,88 @@ func haveIdenticalUnderlyingType(T, V *abi.Type, cmpTags bool) bool {
 		return true
 	}
 
-	/*
-		// Composite types.
-		switch kind {
-		case abi.Array:
-			return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+	// Composite types.
+	switch kind {
+	case abi.Array:
+		return T.Len() == V.Len() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
 
-		case abi.Chan:
-			// Special case:
-			// x is a bidirectional channel value, T is a channel type,
-			// and x's type V and T have identical element types.
-			if V.ChanDir() == abi.BothDir && haveIdenticalType(T.Elem(), V.Elem(), cmpTags) {
-				return true
-			}
-
-			// Otherwise continue test for identical underlying type.
-			return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case abi.Func:
-			t := (*funcType)(unsafe.Pointer(T))
-			v := (*funcType)(unsafe.Pointer(V))
-			if t.OutCount != v.OutCount || t.InCount != v.InCount {
-				return false
-			}
-			for i := 0; i < t.NumIn(); i++ {
-				if !haveIdenticalType(t.In(i), v.In(i), cmpTags) {
-					return false
-				}
-			}
-			for i := 0; i < t.NumOut(); i++ {
-				if !haveIdenticalType(t.Out(i), v.Out(i), cmpTags) {
-					return false
-				}
-			}
-			return true
-
-		case Interface:
-			t := (*interfaceType)(unsafe.Pointer(T))
-			v := (*interfaceType)(unsafe.Pointer(V))
-			if len(t.Methods) == 0 && len(v.Methods) == 0 {
-				return true
-			}
-			// Might have the same methods but still
-			// need a run time conversion.
-			return false
-
-		case abi.Map:
-			return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case Ptr, abi.Slice:
-			return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
-
-		case abi.Struct:
-			t := (*structType)(unsafe.Pointer(T))
-			v := (*structType)(unsafe.Pointer(V))
-			if len(t.Fields) != len(v.Fields) {
-				return false
-			}
-			if t.PkgPath.Name() != v.PkgPath.Name() {
-				return false
-			}
-			for i := range t.Fields {
-				tf := &t.Fields[i]
-				vf := &v.Fields[i]
-				if tf.Name.Name() != vf.Name.Name() {
-					return false
-				}
-				if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
-					return false
-				}
-				if cmpTags && tf.Name.Tag() != vf.Name.Tag() {
-					return false
-				}
-				if tf.Offset != vf.Offset {
-					return false
-				}
-				if tf.Embedded() != vf.Embedded() {
-					return false
-				}
-			}
+	case abi.Chan:
+		// Special case:
+		// x is a bidirectional channel value, T is a channel type,
+		// and x's type V and T have identical element types.
+		if V.ChanDir() == abi.BothDir && haveIdenticalType(T.Elem(), V.Elem(), cmpTags) {
 			return true
 		}
 
+		// Otherwise continue test for identical underlying type.
+		return V.ChanDir() == T.ChanDir() && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case abi.Func:
+		t := (*funcType)(unsafe.Pointer(T))
+		v := (*funcType)(unsafe.Pointer(V))
+		if len(t.Out) != len(v.Out) || len(t.In) != len(v.In) {
+			return false
+		}
+		for i := 0; i < len(t.In); i++ {
+			if !haveIdenticalType(t.In[i], v.In[i], cmpTags) {
+				return false
+			}
+		}
+		for i := 0; i < len(t.Out); i++ {
+			if !haveIdenticalType(t.Out[i], v.Out[i], cmpTags) {
+				return false
+			}
+		}
+		return true
+
+	case Interface:
+		t := (*interfaceType)(unsafe.Pointer(T))
+		v := (*interfaceType)(unsafe.Pointer(V))
+		if len(t.Methods) == 0 && len(v.Methods) == 0 {
+			return true
+		}
+		// Might have the same methods but still
+		// need a run time conversion.
 		return false
-	*/
-	panic("todo: reflectlite.haveIdenticalUnderlyingType")
+
+	case abi.Map:
+		return haveIdenticalType(T.Key(), V.Key(), cmpTags) && haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case Ptr, abi.Slice:
+		return haveIdenticalType(T.Elem(), V.Elem(), cmpTags)
+
+	case abi.Struct:
+		t := (*structType)(unsafe.Pointer(T))
+		v := (*structType)(unsafe.Pointer(V))
+		if len(t.Fields) != len(v.Fields) {
+			return false
+		}
+		if t.PkgPath_ != v.PkgPath_ {
+			return false
+		}
+		for i := range t.Fields {
+			tf := &t.Fields[i]
+			vf := &v.Fields[i]
+			if tf.Name_ != vf.Name_ {
+				return false
+			}
+			if !haveIdenticalType(tf.Typ, vf.Typ, cmpTags) {
+				return false
+			}
+			if cmpTags && tf.Tag_ != vf.Tag_ {
+				return false
+			}
+			if tf.Offset != vf.Offset {
+				return false
+			}
+			if tf.Embedded() != vf.Embedded() {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
 }
 
 // toType converts from a *rtype to a Type that can be returned

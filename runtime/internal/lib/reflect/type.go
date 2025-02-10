@@ -903,16 +903,13 @@ func fnv1(x uint32, list ...byte) uint32 {
 }
 
 func (t *rtype) Implements(u Type) bool {
-	/*
-		if u == nil {
-			panic("reflect: nil type passed to Type.Implements")
-		}
-		if u.Kind() != Interface {
-			panic("reflect: non-interface type passed to Type.Implements")
-		}
-		return implements(u.common(), t.common())
-	*/
-	panic("todo: reflect.rtype.Implements")
+	if u == nil {
+		panic("reflect: nil type passed to Type.Implements")
+	}
+	if u.Kind() != Interface {
+		panic("reflect: non-interface type passed to Type.Implements")
+	}
+	return implements(u.common(), t.common())
 }
 
 func (t *rtype) AssignableTo(u Type) bool {
