@@ -22,8 +22,8 @@ builds:
     flags:
       - -tags=darwin,amd64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/x/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/x/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/local/opt/llvm@18/bin/llvm-config
     env:
       - CC=o64-clang
@@ -40,8 +40,8 @@ builds:
     flags:
       - -tags=darwin,arm64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/x/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/x/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/opt/homebrew/opt/llvm@18/bin/llvm-config
     env:
       - CC=oa64-clang
@@ -58,8 +58,8 @@ builds:
     flags:
       - -tags=linux,amd64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/x/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/x/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/lib/llvm-18/bin/llvm-config
     env:
       - CC=x86_64-linux-gnu-gcc
@@ -76,8 +76,8 @@ builds:
     flags:
       - -tags=linux,arm64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/x/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/x/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/lib/llvm-18/bin/llvm-config
     env:
       - CC=aarch64-linux-gnu-gcc
