@@ -8,7 +8,7 @@ require (
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
 	github.com/goplus/llvm v0.8.1
 	github.com/goplus/mod v0.13.16
-	github.com/qiniu/x v1.13.11
+	github.com/qiniu/x v1.13.12
 	golang.org/x/tools v0.29.0
 )
 
