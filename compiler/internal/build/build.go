@@ -142,6 +142,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	cl.EnableDebugSymbols(IsDebugEnabled())
+	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
@@ -731,6 +732,7 @@ var (
 )
 
 const llgoDebug = "LLGO_DEBUG"
+const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
 
@@ -740,6 +742,10 @@ func isEnvOn(env string, defVal bool) bool {
 		return defVal
 	}
 	return envVal == "1" || envVal == "true" || envVal == "on"
+}
+
+func IsTraceEnabled() bool {
+	return isEnvOn(llgoTrace, false)
 }
 
 func IsDebugEnabled() bool {

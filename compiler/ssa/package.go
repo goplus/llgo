@@ -197,6 +197,8 @@ type aProgram struct {
 	sigsetjmpTy *types.Signature
 	sigljmpTy   *types.Signature
 
+	printfTy *types.Signature
+
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
 

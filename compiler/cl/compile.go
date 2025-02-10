@@ -49,6 +49,7 @@ var (
 	debugInstr   bool
 	debugGoSSA   bool
 	debugSymbols bool
+	debugTrace   bool
 )
 
 // SetDebug sets debug flags.
@@ -59,6 +60,10 @@ func SetDebug(dbgFlags dbgFlags) {
 
 func EnableDebugSymbols(b bool) {
 	debugSymbols = b
+}
+
+func EnableTrace(b bool) {
+	debugTrace = b
 }
 
 // -----------------------------------------------------------------------------
@@ -380,6 +385,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
+	if block.Index == 0 && debugTrace && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
+		b.Printf("call " + fn.Name() + "\n\x00")
+	}
 	// place here to avoid wrong current-block
 	if debugSymbols && block.Index == 0 {
 		p.debugParams(b, block.Parent())

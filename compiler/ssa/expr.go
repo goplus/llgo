@@ -1254,6 +1254,21 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	panic("todo: " + fn)
 }
 
+func (p Program) tyPrintf() *types.Signature {
+	if p.printfTy == nil {
+		pchar := types.NewPointer(types.Typ[types.Int8])
+		params := types.NewTuple(types.NewVar(0, nil, "format", pchar), VArg())
+		rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
+		p.printfTy = types.NewSignatureType(nil, nil, nil, params, rets, true)
+	}
+	return p.printfTy
+}
+
+func (b Builder) Printf(fmt string, args ...Expr) Expr {
+	fn := b.Pkg.cFunc("printf", b.Prog.tyPrintf())
+	return b.Call(fn, append([]Expr{b.CStr(fmt)}, args...)...)
+}
+
 // Println prints the arguments to stderr, followed by a newline.
 func (b Builder) Println(args ...Expr) (ret Expr) {
 	return b.PrintEx(true, args...)
