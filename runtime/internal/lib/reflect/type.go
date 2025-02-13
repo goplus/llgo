@@ -811,7 +811,11 @@ func (t *structType) FieldByName(name string) (f StructField, present bool) {
 // If i is a nil interface value, TypeOf returns nil.
 func TypeOf(i any) Type {
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
-	// closure type
+	// check nil
+	if eface.typ == nil {
+		return nil
+	}
+	// check closure type
 	if eface.typ.IsClosure() {
 		ft := eface.typ.StructType().Fields[0].Typ.FuncType()
 		return toType(&ft.Type)
