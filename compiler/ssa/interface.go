@@ -278,7 +278,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	blks := b.Func.MakeBlocks(2)
 	b.If(eq, blks[0], blks[1])
 	b.SetBlockEx(blks[1], AtEnd, false)
-	b.Panic(b.MakeInterface(b.Prog.Any(), b.Str("type assertion failed")))
+	b.Panic(b.MakeInterface(b.Prog.Any(), b.Str("type assertion "+x.RawType().String()+" -> "+assertedTyp.RawType().String()+" failed")))
 	b.SetBlockEx(blks[0], AtEnd, false)
 	b.blk.last = blks[0].last
 	return val()
