@@ -1,3 +1,5 @@
+//go:build byollvm
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -14,43 +16,11 @@
  * limitations under the License.
  */
 
-package main
+// The word "byollvm" stands for "Bring Your Own LLVM" and is a build tag used
+// to indicate that the package is being built with a custom LLVM installation.
 
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
+package llvm
 
-	"github.com/goplus/llgo/compiler/xtool/ar"
-)
-
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: ardump xxx.a")
-		return
-	}
-
-	f, err := os.Open(os.Args[1])
-	check(err)
-	defer f.Close()
-
-	r, err := ar.NewReader(f)
-	check(err)
-	for {
-		hdr, err := r.Next()
-		if err != nil {
-			if err != io.EOF {
-				log.Println(err)
-			}
-			break
-		}
-		fmt.Println(hdr.Name)
-	}
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
+// ldLLVMConfigBin is the path to the llvm-config binary. It shoud be set via
+// -ldflags when building the package.
+var ldLLVMConfigBin string

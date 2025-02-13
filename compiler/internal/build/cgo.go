@@ -29,8 +29,8 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/compiler/internal/buildtags"
+	"github.com/goplus/llgo/compiler/internal/safesplit"
 	llssa "github.com/goplus/llgo/compiler/ssa"
-	"github.com/goplus/llgo/xtool/safesplit"
 )
 
 type cgoDecl struct {

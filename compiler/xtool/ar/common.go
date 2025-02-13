@@ -14,43 +14,47 @@
  * limitations under the License.
  */
 
-package main
+package ar
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-
-	"github.com/goplus/llgo/compiler/xtool/ar"
+	"errors"
+	"time"
 )
 
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: ardump xxx.a")
-		return
-	}
+var (
+	errInvalidHeader = errors.New("ar: invalid header")
+	errWriteTooLong  = errors.New("ar: write too long")
+)
 
-	f, err := os.Open(os.Args[1])
-	check(err)
-	defer f.Close()
+const (
+	globalHeader    = "!<arch>\n"
+	globalHeaderLen = len(globalHeader)
+	headerByteSize  = 60
+)
 
-	r, err := ar.NewReader(f)
-	check(err)
-	for {
-		hdr, err := r.Next()
-		if err != nil {
-			if err != io.EOF {
-				log.Println(err)
-			}
-			break
-		}
-		fmt.Println(hdr.Name)
-	}
+type recHeader struct {
+	name    [16]byte
+	modTime [12]byte
+	uid     [6]byte
+	gid     [6]byte
+	mode    [8]byte
+	size    [10]byte
+	eol     [2]byte
 }
 
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
+type Header struct {
+	Name    string
+	ModTime time.Time
+	Uid     int
+	Gid     int
+	Mode    int64
+	Size    int64
+}
+
+type slicer []byte
+
+func (sp *slicer) next(n int) (b []byte) {
+	s := *sp
+	b, *sp = s[0:n], s[n:]
+	return
 }

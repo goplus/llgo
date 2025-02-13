@@ -1,3 +1,5 @@
+//go:build !byollvm && darwin && amd64 && llvm16
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -14,43 +16,6 @@
  * limitations under the License.
  */
 
-package main
+package llvm
 
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-
-	"github.com/goplus/llgo/compiler/xtool/ar"
-)
-
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: ardump xxx.a")
-		return
-	}
-
-	f, err := os.Open(os.Args[1])
-	check(err)
-	defer f.Close()
-
-	r, err := ar.NewReader(f)
-	check(err)
-	for {
-		hdr, err := r.Next()
-		if err != nil {
-			if err != io.EOF {
-				log.Println(err)
-			}
-			break
-		}
-		fmt.Println(hdr.Name)
-	}
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
+const ldLLVMConfigBin = "/usr/local/opt/llvm@16/bin/llvm-config"

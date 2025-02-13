@@ -14,43 +14,37 @@
  * limitations under the License.
  */
 
-package main
+package llvmlink
 
 import (
-	"fmt"
 	"io"
-	"log"
 	"os"
-
-	"github.com/goplus/llgo/compiler/xtool/ar"
+	"os/exec"
 )
 
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: ardump xxx.a")
-		return
-	}
+// -----------------------------------------------------------------------------
 
-	f, err := os.Open(os.Args[1])
-	check(err)
-	defer f.Close()
+// Cmd represents a llvm-link command.
+type Cmd struct {
+	app string
 
-	r, err := ar.NewReader(f)
-	check(err)
-	for {
-		hdr, err := r.Next()
-		if err != nil {
-			if err != io.EOF {
-				log.Println(err)
-			}
-			break
-		}
-		fmt.Println(hdr.Name)
-	}
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
-func check(err error) {
-	if err != nil {
-		panic(err)
+// New creates a new llvm-link command.
+func New(app string) *Cmd {
+	if app == "" {
+		app = "llvm-link"
 	}
+	return &Cmd{app, os.Stdout, os.Stderr}
 }
+
+func (p *Cmd) Exec(args ...string) error {
+	cmd := exec.Command(p.app, args...)
+	cmd.Stdout = p.Stdout
+	cmd.Stderr = p.Stderr
+	return cmd.Run()
+}
+
+// -----------------------------------------------------------------------------

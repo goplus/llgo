@@ -19,6 +19,7 @@ package cl_test
 import (
 	"testing"
 
+	_ "github.com/goplus/llgo/c" // for testing
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/cl/cltest"
 	"github.com/goplus/llgo/compiler/internal/build"

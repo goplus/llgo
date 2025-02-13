@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
+ * Copyright (c) 2022 The GoPlus Authors (goplus.org). All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,43 +14,15 @@
  * limitations under the License.
  */
 
-package main
+package pathutil
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-
-	"github.com/goplus/llgo/compiler/xtool/ar"
+	"path/filepath"
 )
 
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: ardump xxx.a")
-		return
+func Canonical(baseDir string, uri string) string {
+	if filepath.IsAbs(uri) {
+		return filepath.Clean(uri)
 	}
-
-	f, err := os.Open(os.Args[1])
-	check(err)
-	defer f.Close()
-
-	r, err := ar.NewReader(f)
-	check(err)
-	for {
-		hdr, err := r.Next()
-		if err != nil {
-			if err != io.EOF {
-				log.Println(err)
-			}
-			break
-		}
-		fmt.Println(hdr.Name)
-	}
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
+	return filepath.Join(baseDir, uri)
 }

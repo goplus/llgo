@@ -391,7 +391,7 @@ export LLVM_CONFIG=/usr/lib/llvm18/bin/llvm-config
 export CGO_CPPFLAGS="$($LLVM_CONFIG --cppflags)"
 export CGO_CXXFLAGS=-std=c++17
 export CGO_LDFLAGS="$($LLVM_CONFIG --ldflags) $($LLVM_CONFIG --libs all)"
-go install -v -tags=byollvm -ldflags="-X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=$LLVM_CONFIG" github.com/goplus/llgo/cmd/llgo@latest
+go install -v -tags=byollvm -ldflags="-X github.com/goplus/llgo/compiler/internal/env/llvm.ldLLVMConfigBin=$LLVM_CONFIG" github.com/goplus/llgo/cmd/llgo@latest
 ```
 
 ### on Windows
