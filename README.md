@@ -398,6 +398,15 @@ curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | 
 
 TODO
 
+### Install from source
+
+<!-- embedme doc/_readme/scripts/install_llgo.sh#L2-L1000 -->
+
+```sh
+git clone https://github.com/goplus/llgo.git
+cd llgo
+./install.sh
+```
 
 ## Development tools
 
@@ -409,7 +418,7 @@ TODO
 
 How do I generate these tools?
 
-<!-- embedme doc/_readme/scripts/install_llgo.sh#L2-L1000 -->
+<!-- embedme doc/_readme/scripts/install_full.sh#L2-L1000 -->
 
 ```sh
 git clone https://github.com/goplus/llgo.git

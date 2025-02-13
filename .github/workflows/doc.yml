@@ -29,7 +29,7 @@ jobs:
         with:
           args: README.md
 
-  doc_test:
+  remote_install:
     strategy:
       matrix:
         os:
@@ -58,7 +58,42 @@ jobs:
           set -x
           source doc/_readme/scripts/install_ubuntu.sh
 
-      - name: Install llgo
+      - name: Test doc code blocks
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/run.sh
+
+  local_install:
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-24.04
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install dependencies on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_macos.sh
+
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_ubuntu.sh
+
+      - name: Install llgo with tools
         run: |
           set -e
           set -x
@@ -79,3 +114,52 @@ jobs:
           set -x
           source doc/_readme/scripts/run.sh
 
+  local_install_full:
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-24.04
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install dependencies on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_macos.sh
+
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/install_ubuntu.sh
+
+      - name: Install llgo with tools
+        run: |
+          set -e
+          set -x
+          git() {
+            if [ "$1" = "clone" ]; then
+              # do nothing because we already have the branch
+              cd ..
+            else
+              command git "$@"
+            fi
+          }
+          source doc/_readme/scripts/install_full.sh
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Test doc code blocks
+        run: |
+          set -e
+          set -x
+          source doc/_readme/scripts/run.sh
