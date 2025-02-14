@@ -86,7 +86,7 @@ func TestProjectCommands(t *testing.T) {
 	}{
 		{
 			name:    "build command",
-			args:    []string{"llgo", "build", "."},
+			args:    []string{"llgo", "build", "-o", "testproject", "."},
 			wantErr: false,
 		},
 		{
