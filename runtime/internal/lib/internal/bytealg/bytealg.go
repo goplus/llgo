@@ -16,13 +16,15 @@
 
 package bytealg
 
-// llgo:skip init CompareString
 import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/runtime"
 )
+
+// llgo:skip init CompareString
+type _bytealg struct{}
 
 func IndexByte(b []byte, ch byte) int {
 	ptr := unsafe.Pointer(unsafe.SliceData(b))

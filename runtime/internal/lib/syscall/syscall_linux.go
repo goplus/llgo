@@ -12,6 +12,7 @@
 package syscall
 
 import (
+	origSyscall "syscall"
 	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
@@ -126,3 +127,11 @@ func Faccessat(dirfd int, path string, mode uint32, flags int) (err error) {
 func faccessat(dirfd c.Int, path *c.Char, mode c.Int, flags c.Int) c.Int
 
 // -----------------------------------------------------------------------------
+
+func Accept4(fd int, flags int) (nfd int, sa origSyscall.Sockaddr, err error) {
+	panic("todo: syscall.Accept4")
+}
+
+func Uname(buf *origSyscall.Utsname) (err error) {
+	panic("todo: syscall.Uname")
+}

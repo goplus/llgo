@@ -7,3 +7,7 @@ package runtime
 func Caller(skip int) (pc uintptr, file string, line int, ok bool) {
 	panic("todo: runtime.Caller")
 }
+
+func Callers(skip int, pc []uintptr) int {
+	panic("todo: runtime.Callers")
+}

@@ -16,13 +16,15 @@
 
 package crc32
 
-// llgo:skipall
 import (
 	"hash"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/zlib"
 )
+
+// llgo:skipall
+type _crc32 struct{}
 
 // The size of a CRC-32 checksum in bytes.
 const Size = 4

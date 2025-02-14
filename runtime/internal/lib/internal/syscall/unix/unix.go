@@ -17,8 +17,10 @@
 package unix
 
 import (
+	"syscall"
 	_ "unsafe"
 )
 
-// llgo:skipall
-type _unix struct{}
+func HasNonblockFlag(flag int) bool {
+	return flag&syscall.O_NONBLOCK != 0
+}

@@ -8,11 +8,13 @@
 // that are valid map keys.
 package fmtsort
 
-// llgo:skipall
 import (
 	"reflect"
 	"sort"
 )
+
+// llgo:skipall
+type _fmtsort struct{}
 
 // Note: Throughout this package we avoid calling reflect.Value.Interface as
 // it is not always legal to do so and it's easier to avoid the issue than to face it.

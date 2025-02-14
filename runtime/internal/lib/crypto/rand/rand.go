@@ -16,7 +16,6 @@
 
 package rand
 
-// llgo:skipall
 import (
 	"io"
 
@@ -24,6 +23,9 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/openssl"
 	"github.com/qiniu/x/errors"
 )
+
+// llgo:skipall
+type _rand struct{}
 
 type rndReader struct{}
 

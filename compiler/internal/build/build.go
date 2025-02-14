@@ -536,6 +536,9 @@ source_filename = "main"
 %s
 declare void @"%s.init"()
 declare void @"%s.main"()
+define weak void @runtime.init() {
+  ret void
+}
 
 ; TODO(lijie): workaround for syscall patch
 define weak void @"syscall.init"() {
@@ -548,6 +551,7 @@ _llgo_0:
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
   %s
+  call void @runtime.init()
   call void @"%s.init"()
   call void @"%s.main"()
   ret i32 0
@@ -893,14 +897,16 @@ var hasAltPkg = map[string]none{
 	"crypto/sha256":            {},
 	"crypto/sha512":            {},
 	"crypto/subtle":            {},
-	"fmt":                      {},
 	"go/parser":                {},
 	"hash/crc32":               {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
+	"internal/cpu":             {},
 	"internal/itoa":            {},
 	"internal/filepathlite":    {},
+	"internal/godebug":         {},
 	"internal/oserror":         {},
+	"internal/poll":            {},
 	"internal/race":            {},
 	"internal/reflectlite":     {},
 	"internal/stringslite":     {},
@@ -917,7 +923,12 @@ var hasAltPkg = map[string]none{
 	"time":                     {},
 	"os":                       {},
 	"os/exec":                  {},
+	"os/signal":                {},
 	"runtime":                  {},
+	"runtime/debug":            {},
+	"runtime/pprof":            {},
+	"runtime/trace":            {},
+	"runtime/internal/syscall": {},
 	"io":                       {},
 }
 

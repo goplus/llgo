@@ -16,7 +16,6 @@
 
 package md5
 
-// llgo:skipall
 import (
 	"crypto"
 	"hash"
@@ -25,6 +24,9 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/openssl"
 )
+
+// llgo:skipall
+type _md5 struct{}
 
 func init() {
 	crypto.RegisterHash(crypto.MD5, New)

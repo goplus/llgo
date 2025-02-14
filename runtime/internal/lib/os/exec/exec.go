@@ -16,7 +16,6 @@
 
 package exec
 
-// llgo:skipall
 import (
 	"bytes"
 	"context"
@@ -32,6 +31,9 @@ import (
 
 	"github.com/goplus/llgo/runtime/internal/lib/internal/syscall/execenv"
 )
+
+// llgo:skipall
+type _exec struct{}
 
 // Error is returned by LookPath when it fails to classify a file as an
 // executable.

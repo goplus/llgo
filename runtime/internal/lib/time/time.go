@@ -187,6 +187,10 @@ func (t Time) Compare(u Time) int {
 	return 0
 }
 
+func (t Time) UnixNano() int64 {
+	return (t.unixSec())*1e9 + int64(t.nsec())
+}
+
 // Equal reports whether t and u represent the same time instant.
 // Two times can be equal even if they are in different locations.
 // For example, 6:00 +0200 and 4:00 UTC are Equal.

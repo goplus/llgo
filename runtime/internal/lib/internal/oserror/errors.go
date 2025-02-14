@@ -7,8 +7,10 @@
 // These types are defined here to permit the syscall package to reference them.
 package oserror
 
-// llgo:skipall
 import "errors"
+
+// llgo:skipall
+type _oserror struct{}
 
 var (
 	ErrInvalid    = errors.New("invalid argument")
