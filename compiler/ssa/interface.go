@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/constant"
 	"go/token"
 	"go/types"
 	"log"
@@ -243,12 +244,17 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 
 	var eq Expr
 	var val func() Expr
-	if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
-		eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
-		val = func() Expr { return Expr{b.unsafeInterface(rawIntf, tx, b.faceData(x.impl)), assertedTyp} }
+	if x.RawType() == assertedTyp.RawType() {
+		eq = b.Const(constant.MakeBool(true), b.Prog.Bool())
+		val = func() Expr { return x }
 	} else {
-		eq = b.BinOp(token.EQL, tx, tabi)
-		val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
+		if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
+			eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
+			val = func() Expr { return Expr{b.unsafeInterface(rawIntf, tx, b.faceData(x.impl)), assertedTyp} }
+		} else {
+			eq = b.BinOp(token.EQL, tx, tabi)
+			val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
+		}
 	}
 
 	if commaOk {
