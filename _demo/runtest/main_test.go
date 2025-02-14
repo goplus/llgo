@@ -7,3 +7,7 @@ func TestZoo(t *testing.T) {
 		t.Fatal("Zoo() != 3")
 	}
 }
+
+func TestFalse(t *testing.T) {
+	// t.Fatal("false")
+}

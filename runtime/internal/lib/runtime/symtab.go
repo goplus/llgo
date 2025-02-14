@@ -4,11 +4,20 @@
 
 package runtime
 
+import (
+	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/debug"
+)
+
 // Frames may be used to get function/file/line information for a
 // slice of PC values returned by Callers.
 type Frames struct {
 	// callers is a slice of PCs that have not yet been expanded to frames.
 	callers []uintptr
+
+	nextPC uintptr
 
 	// frames is a slice of Frames that have yet to be returned.
 	frames     []Frame
@@ -62,15 +71,68 @@ type Frame struct {
 	funcInfo funcInfo
 }
 
+func safeGoString(s *c.Char, defaultStr string) string {
+	if s == nil {
+		return defaultStr
+	}
+	return c.GoString(s)
+}
+
 func (ci *Frames) Next() (frame Frame, more bool) {
-	panic("todo: runtime.Frames.Next")
+	for len(ci.frames) < 2 {
+		// Find the next frame.
+		// We need to look for 2 frames so we know what
+		// to return for the "more" result.
+		if len(ci.callers) == 0 {
+			break
+		}
+		var pc uintptr
+		if ci.nextPC != 0 {
+			pc, ci.nextPC = ci.nextPC, 0
+		} else {
+			pc, ci.callers = ci.callers[0], ci.callers[1:]
+		}
+		info := &debug.Info{}
+		if debug.Addrinfo(unsafe.Pointer(pc), info) == 0 {
+			break
+		}
+		ci.frames = append(ci.frames, Frame{
+			PC:        pc,
+			Function:  safeGoString(info.Fname, "<unknown function>"),
+			File:      safeGoString(info.Sname, "<unknown file>"),
+			Line:      0,
+			startLine: 0,
+			Entry:     uintptr(info.Saddr),
+		})
+	}
+
+	// Pop one frame from the frame list. Keep the rest.
+	// Avoid allocation in the common case, which is 1 or 2 frames.
+	switch len(ci.frames) {
+	case 0: // In the rare case when there are no frames at all, we return Frame{}.
+		return
+	case 1:
+		frame = ci.frames[0]
+		ci.frames = ci.frameStore[:0]
+	case 2:
+		frame = ci.frames[0]
+		ci.frameStore[0] = ci.frames[1]
+		ci.frames = ci.frameStore[:1]
+	default:
+		frame = ci.frames[0]
+		ci.frames = ci.frames[1:]
+	}
+	more = len(ci.frames) > 0
+	return
 }
 
 // CallersFrames takes a slice of PC values returned by Callers and
 // prepares to return function/file/line information.
 // Do not change the slice until you are done with the Frames.
 func CallersFrames(callers []uintptr) *Frames {
-	panic("todo: runtime.CallersFrames")
+	f := &Frames{callers: callers}
+	f.frames = f.frameStore[:0]
+	return f
 }
 
 // A Func represents a Go function in the running binary.
