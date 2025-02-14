@@ -34,7 +34,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testgo/tpinst"
 @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/tpinst.M[float64]" = linkonce global ptr null, align 8
 @"_llgo_iface$2dxw6yZ6V86Spb7J0dTDIoWqg7ba7UDXlAlpJv3-HLk" = linkonce global ptr null, align 8
 @"github.com/goplus/llgo/compiler/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww" = linkonce global ptr null, align 8
-@8 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@8 = private unnamed_addr constant [104 x i8] c"type assertion github.com/goplus/llgo/compiler/cl/_testgo/tpinst.I[int] -> interface{value() int} failed", align 1
 
 define void @"github.com/goplus/llgo/compiler/cl/_testgo/tpinst.demo"() {
 _llgo_0:
@@ -141,7 +141,7 @@ _llgo_7:                                          ; preds = %_llgo_4
 _llgo_8:                                          ; preds = %_llgo_4
   %69 = load ptr, ptr @_llgo_string, align 8
   %70 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 21 }, ptr %70, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 104 }, ptr %70, align 8
   %71 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %69, 0
   %72 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %71, ptr %70, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %72)

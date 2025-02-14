@@ -7,11 +7,12 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/any"
 @"github.com/goplus/llgo/compiler/cl/_testrt/any.init$guard" = global i1 false, align 1
 @_llgo_int8 = linkonce global ptr null, align 8
 @"*_llgo_int8" = linkonce global ptr null, align 8
-@0 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@0 = private unnamed_addr constant [42 x i8] c"type assertion interface{} -> *int8 failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @_llgo_int = linkonce global ptr null, align 8
-@1 = private unnamed_addr constant [7 x i8] c"%s %d\0A\00", align 1
-@2 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
+@1 = private unnamed_addr constant [40 x i8] c"type assertion interface{} -> int failed", align 1
+@2 = private unnamed_addr constant [7 x i8] c"%s %d\0A\00", align 1
+@3 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
 
 define ptr @"github.com/goplus/llgo/compiler/cl/_testrt/any.hi"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
@@ -28,7 +29,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %6 = load ptr, ptr @_llgo_string, align 8
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 21 }, ptr %7, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 42 }, ptr %7, align 8
   %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %6, 0
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %8, ptr %7, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %9)
@@ -51,7 +52,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %7 = load ptr, ptr @_llgo_string, align 8
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 21 }, ptr %8, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, ptr %8, align 8
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
   %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, ptr %8, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %10)
@@ -76,13 +77,13 @@ define void @"github.com/goplus/llgo/compiler/cl/_testrt/any.main"() {
 _llgo_0:
   %0 = load ptr, ptr @"*_llgo_int8", align 8
   %1 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %0, 0
-  %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, ptr @2, 1
+  %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, ptr @3, 1
   %3 = call ptr @"github.com/goplus/llgo/compiler/cl/_testrt/any.hi"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   %4 = load ptr, ptr @_llgo_int, align 8
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, ptr inttoptr (i64 100 to ptr), 1
   %7 = call i64 @"github.com/goplus/llgo/compiler/cl/_testrt/any.incVal"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
-  %8 = call i32 (ptr, ...) @printf(ptr @1, ptr %3, i64 %7)
+  %8 = call i32 (ptr, ...) @printf(ptr @2, ptr %3, i64 %7)
   ret void
 }
 

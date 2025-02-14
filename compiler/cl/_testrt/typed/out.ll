@@ -11,7 +11,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/typed"
 @1 = private unnamed_addr constant [48 x i8] c"github.com/goplus/llgo/compiler/cl/_testrt/typed", align 1
 @2 = private unnamed_addr constant [1 x i8] c"T", align 1
 @_llgo_string = linkonce global ptr null, align 8
-@3 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@3 = private unnamed_addr constant [79 x i8] c"type assertion any -> github.com/goplus/llgo/compiler/cl/_testrt/typed.T failed", align 1
 @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/typed.A" = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [1 x i8] c"A", align 1
 @_llgo_int = linkonce global ptr null, align 8
@@ -56,7 +56,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %12 = load ptr, ptr @_llgo_string, align 8
   %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %13, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 79 }, ptr %13, align 8
   %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %12, 0
   %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %14, ptr %13, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %15)

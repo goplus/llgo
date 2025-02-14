@@ -14,7 +14,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/funcdecl"
 @0 = private unnamed_addr constant [2 x i8] c"$f", align 1
 @1 = private unnamed_addr constant [5 x i8] c"$data", align 1
 @2 = private unnamed_addr constant [51 x i8] c"github.com/goplus/llgo/compiler/cl/_testrt/funcdecl", align 1
-@3 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@3 = private unnamed_addr constant [68 x i8] c"type assertion any -> struct{$f func(); $data unsafe.Pointer} failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [4 x i8] c"demo", align 1
 @5 = private unnamed_addr constant [5 x i8] c"hello", align 1
@@ -49,7 +49,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %19 = load ptr, ptr @_llgo_string, align 8
   %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %20, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 68 }, ptr %20, align 8
   %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %19, 0
   %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %21, ptr %20, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %22)
@@ -83,7 +83,7 @@ _llgo_3:                                          ; preds = %_llgo_1
 _llgo_4:                                          ; preds = %_llgo_1
   %31 = load ptr, ptr @_llgo_string, align 8
   %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %32, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 68 }, ptr %32, align 8
   %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %31, 0
   %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %33, ptr %32, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %34)

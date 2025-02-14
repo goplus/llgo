@@ -82,7 +82,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testgo/reader"
 @"github.com/goplus/llgo/compiler/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ" = linkonce global ptr null, align 8
 @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reader.errorString" = linkonce global ptr null, align 8
 @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = linkonce global ptr null, align 8
-@30 = private unnamed_addr constant [21 x i8] c"type assertion failed", align 1
+@30 = private unnamed_addr constant [140 x i8] c"type assertion github.com/goplus/llgo/compiler/cl/_testgo/reader.Reader -> github.com/goplus/llgo/compiler/cl/_testgo/reader.WriterTo failed", align 1
 @31 = private unnamed_addr constant [37 x i8] c"stringsReader.ReadAt: negative offset", align 1
 @32 = private unnamed_addr constant [34 x i8] c"stringsReader.Seek: invalid whence", align 1
 @33 = private unnamed_addr constant [37 x i8] c"stringsReader.Seek: negative position", align 1
@@ -475,7 +475,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %26 = load ptr, ptr @_llgo_string, align 8
   %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 21 }, ptr %27, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 140 }, ptr %27, align 8
   %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %26, 0
   %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %28, ptr %27, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %29)

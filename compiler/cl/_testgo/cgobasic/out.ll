@@ -96,7 +96,7 @@ _llgo_0:
 
 declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-declare void @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic._cgoCheckResult"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define void @"github.com/goplus/llgo/compiler/cl/_testgo/cgobasic.init"() {
 _llgo_0:
