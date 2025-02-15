@@ -16,21 +16,48 @@
 
 package runtime
 
-// llgo:skipall
+/*
+#include <unistd.h>
+
+int llgo_maxprocs() {
+	#ifdef _SC_NPROCESSORS_ONLN
+		return (int)sysconf(_SC_NPROCESSORS_ONLN);
+	#else
+		return 1;
+	#endif
+}
+*/
+import "C"
 import (
-	_ "unsafe"
+	"unsafe"
+
+	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 )
+
+// llgo:skipall
+type _runtime struct{}
 
 // GOROOT returns the root of the Go tree. It uses the
 // GOROOT environment variable, if set at process start,
 // or else the root used during the Go build.
 func GOROOT() string {
-	/*
-		s := gogetenv("GOROOT")
-		if s != "" {
-			return s
-		}
-		return defaultGOROOT
-	*/
-	panic("todo: GOROOT")
+	return ""
+}
+
+//go:linkname c_maxprocs C.llgo_maxprocs
+func c_maxprocs() int32
+
+func GOMAXPROCS(n int) int {
+	return int(c_maxprocs())
+}
+
+func Goexit() {
+	pthread.Exit(nil)
+}
+
+func KeepAlive(x any) {
+}
+
+func write(fd uintptr, p unsafe.Pointer, n int32) int32 {
+	return int32(C.write(C.int(fd), p, C.size_t(n)))
 }

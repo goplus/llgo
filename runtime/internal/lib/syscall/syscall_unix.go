@@ -22,6 +22,8 @@ var (
 
 type Errno uintptr
 
+type Dirent = syscall.Dirent
+
 func (e Errno) Error() string {
 	ret := c.Strerror(c.Int(e))
 	return unsafe.String((*byte)(unsafe.Pointer(ret)), c.Strlen(ret))
@@ -68,4 +70,12 @@ func (s Signal) String() string {
 		return "signal " + itoa.Itoa(int(s))
 	*/
 	panic("todo: syscall.Signal.String")
+}
+
+func Mmap(fd int, offset int64, length int, prot int, flags int) (data []byte, err error) {
+	panic("todo: syscall.Mmap")
+}
+
+func Munmap(b []byte) (err error) {
+	panic("todo: syscall.Munmap")
 }

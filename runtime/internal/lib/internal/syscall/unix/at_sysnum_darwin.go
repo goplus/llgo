@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build js && wasm
-
 package unix
 
-func IsNonblock(fd int) (nonblocking bool, err error) {
-	return false, nil
-}
+const (
+	AT_EACCESS          = 0x10
+	AT_FDCWD            = -0x2
+	AT_REMOVEDIR        = 0x80
+	AT_SYMLINK_NOFOLLOW = 0x0020
 
-func HasNonblockFlag(flag int) bool {
-	return false
-}
+	UTIME_OMIT = -0x2
+)

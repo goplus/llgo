@@ -16,13 +16,13 @@
 
 package math
 
-// llgo:skip sin cos
 import (
 	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
+// llgo:skip sin cos
 const (
 	LLGoPackage = true
 )

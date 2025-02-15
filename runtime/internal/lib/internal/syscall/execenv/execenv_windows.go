@@ -6,12 +6,14 @@
 
 package execenv
 
-// llgo:skipall
 import (
 	"internal/syscall/windows"
 	"syscall"
 	"unsafe"
 )
+
+// llgo:skipall
+type _execenv struct{}
 
 // Default will return the default environment
 // variables based on the process attributes

@@ -231,18 +231,6 @@ func (p Program) tyGetAttrString() *types.Signature {
 	return p.getAttrStr
 }
 
-// PyInit initializes Python for a main package.
-func (p Package) PyInit() bool {
-	if fn := p.FuncOf("main"); fn != nil {
-		b := fn.NewBuilder()
-		b.SetBlockEx(fn.Block(0), AtStart, false)
-		b.callPyInit()
-		b.Dispose()
-		return true
-	}
-	return false
-}
-
 // PyNewModVar creates a new global variable for a Python module.
 func (p Package) PyNewModVar(name string, doInit bool) Global {
 	if v, ok := p.pymods[name]; ok {
@@ -385,12 +373,6 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
 	fn := b.Pkg.pyFunc("PyFloat_FromDouble", b.Prog.tyFloatFromDouble())
 	return b.Call(fn, fltVal)
-}
-
-// callPyInit calls Py_Initialize.
-func (b Builder) callPyInit() (ret Expr) {
-	fn := b.Pkg.pyFunc("Py_Initialize", NoArgsNoRet)
-	return b.Call(fn)
 }
 
 // PyStr returns a py-style string constant expression.

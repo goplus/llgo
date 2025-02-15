@@ -16,13 +16,15 @@
 
 package big
 
-// llgo:skipall
 import (
 	"math/rand"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/openssl"
 )
+
+// llgo:skipall
+type _big struct{}
 
 // A Word represents a single digit of a multi-precision unsigned integer.
 type Word openssl.BN_ULONG

@@ -16,7 +16,9 @@
 
 package subtle
 
-// llgo:skip XORBytes
 import (
 	_ "unsafe"
 )
+
+// llgo:skip XORBytes
+type _xor struct{}

@@ -53,3 +53,7 @@ func MkdirAll(path string, perm FileMode) error {
 	}
 	return nil
 }
+
+func RemoveAll(path string) error {
+	return removeAll(path)
+}

@@ -190,11 +190,18 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 							p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 						}
 					}
+				case token.CONST:
+					fallthrough
+				case token.TYPE:
+					p.collectSkipNamesByDoc(decl.Doc)
 				case token.IMPORT:
 					if doc := decl.Doc; doc != nil {
 						if n := len(doc.List); n > 0 {
 							line := doc.List[n-1].Text
-							p.collectSkipNames(line)
+							if p.collectSkipNames(line) {
+								// Deprecate on import since conflict with cgo
+								fmt.Fprintf(os.Stderr, "DEPRECATED: llgo:skip on import is deprecated %v\n", line)
+							}
 						}
 					}
 				}
@@ -203,17 +210,42 @@ func (p *context) initFiles(pkgPath string, files []*ast.File) {
 	}
 }
 
+// Collect skip names and skip other annotations, such as go: and llgo:
 // llgo:skip symbol1 symbol2 ...
 // llgo:skipall
-func (p *context) collectSkipNames(line string) {
+func (p *context) collectSkipNames(line string) bool {
 	const (
-		skip  = "//llgo:skip"
-		skip2 = "// llgo:skip"
+		llgo1   = "//llgo:"
+		llgo2   = "// llgo:"
+		go1     = "//go:"
+		skip    = "skip"
+		skipAll = "skipall"
 	)
-	if strings.HasPrefix(line, skip2) {
-		p.collectSkip(line, len(skip2))
-	} else if strings.HasPrefix(line, skip) {
-		p.collectSkip(line, len(skip))
+	if strings.HasPrefix(line, go1) {
+		return true
+	}
+	var skipLine string
+	if strings.HasPrefix(line, llgo1) {
+		skipLine = line[len(llgo1):]
+	} else if strings.HasPrefix(line, llgo2) {
+		skipLine = line[len(llgo2):]
+	} else {
+		return false
+	}
+	if strings.HasPrefix(skipLine, skip) {
+		p.collectSkip(skipLine, len(skip))
+	}
+	return true
+}
+
+func (p *context) collectSkipNamesByDoc(doc *ast.CommentGroup) {
+	if doc != nil {
+		for n := len(doc.List) - 1; n >= 0; n-- {
+			line := doc.List[n].Text
+			if !p.collectSkipNames(line) {
+				break
+			}
+		}
 	}
 }
 
@@ -236,31 +268,43 @@ func (p *context) collectSkip(line string, prefix int) {
 
 func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
 	if doc != nil {
-		if n := len(doc.List); n > 0 {
-			line := doc.List[n-1].Text
-			p.initLinkname(line, func(name string) (_ string, _, ok bool) {
+		for n := len(doc.List) - 1; n >= 0; n-- {
+			line := doc.List[n].Text
+			found := p.initLinkname(line, func(name string) (_ string, _, ok bool) {
 				return fullName, isVar, name == inPkgName
 			})
+			if !found {
+				break
+			}
 		}
 	}
 }
 
-func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
 	const (
 		linkname   = "//go:linkname "
 		llgolink   = "//llgo:link "
 		llgolink2  = "// llgo:link "
 		exportName = "//export "
+		directive  = "//go:"
 	)
 	if strings.HasPrefix(line, linkname) {
 		p.initLink(line, len(linkname), f)
+		return true
 	} else if strings.HasPrefix(line, llgolink2) {
 		p.initLink(line, len(llgolink2), f)
+		return true
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
+		return true
 	} else if strings.HasPrefix(line, exportName) {
 		p.initCgoExport(line, len(exportName), f)
+		return true
+	} else if strings.HasPrefix(line, directive) {
+		// skip unknown annotation but continue to parse the next annotation
+		return true
 	}
+	return false
 }
 
 func (p *context) initCgoExport(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
@@ -279,7 +323,7 @@ func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fu
 			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
 				p.prog.SetLinkname(fullName, link)
 			} else {
-				panic(line + ": no specified call convention. eg. //go:linkname Printf C.printf")
+				p.prog.SetLinkname(fullName, "C."+link)
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "==>", line)
@@ -381,6 +425,7 @@ var cgoIgnoredNames = map[string]none{
 	"_Cgo_ptr":        {},
 	"_Cgo_use":        {},
 	"_cgoCheckResult": {},
+	"cgoCheckResult":  {},
 }
 
 func cgoIgnored(fnName string) bool {
@@ -471,9 +516,6 @@ func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, strin
 		}
 		p.ensureLoaded(pkg)
 		orgName = funcName(pkg, fn, false)
-		if ignore && ignoreName(orgName) {
-			return nil, orgName, ignoredFunc
-		}
 	}
 	if v, ok := p.prog.Linkname(orgName); ok {
 		if strings.HasPrefix(v, "C.") {
@@ -499,14 +541,17 @@ const (
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
 	name := llssa.FullName(pkg, v.Name())
-	if v, ok := p.prog.Linkname(name); ok {
-		if pos := strings.IndexByte(v, '.'); pos >= 0 {
-			if pos == 2 && v[0] == 'p' && v[1] == 'y' {
-				return v[3:], pyVar, false
+	// TODO(lijie): need a bettery way to process linkname (maybe alias)
+	if !isCgoCfpvar(v.Name()) && !isCgoVar(v.Name()) {
+		if v, ok := p.prog.Linkname(name); ok {
+			if pos := strings.IndexByte(v, '.'); pos >= 0 {
+				if pos == 2 && v[0] == 'p' && v[1] == 'y' {
+					return v[3:], pyVar, false
+				}
+				return replaceGoName(v, pos), goVar, false
 			}
-			return replaceGoName(v, pos), goVar, false
+			return v, cVar, false
 		}
-		return v, cVar, false
 	}
 	return name, goVar, true
 }
@@ -621,25 +666,6 @@ func replaceGoName(v string, pos int) string {
 		return env.LLGoRuntimePkg + "/internal/runtime" + v[pos:]
 	}
 	return v
-}
-
-func ignoreName(name string) bool {
-	/* TODO(xsw): confirm this is not needed more
-	if name == "unsafe.init" {
-		return true
-	}
-	*/
-	const internal = "internal/"
-	return (strings.HasPrefix(name, internal) && !supportedInternal(name[len(internal):])) ||
-		strings.HasPrefix(name, "runtime/") || strings.HasPrefix(name, "arena.") ||
-		strings.HasPrefix(name, "maps.") || strings.HasPrefix(name, "plugin.")
-}
-
-func supportedInternal(name string) bool {
-	return strings.HasPrefix(name, "abi.") || strings.HasPrefix(name, "bytealg.") ||
-		strings.HasPrefix(name, "itoa.") || strings.HasPrefix(name, "oserror.") || strings.HasPrefix(name, "race.") ||
-		strings.HasPrefix(name, "reflectlite.") || strings.HasPrefix(name, "stringslite.") || strings.HasPrefix(name, "filepathlite.") ||
-		strings.HasPrefix(name, "syscall/unix.") || strings.HasPrefix(name, "syscall/execenv.")
 }
 
 // -----------------------------------------------------------------------------

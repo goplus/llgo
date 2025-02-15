@@ -59,8 +59,12 @@ func startProcess(name string, argv []string, attr *ProcAttr) (p *Process, err e
 	// runtime.KeepAlive(attr)
 
 	if e != nil {
-		return nil, &PathError{Op: "fork/exec", Path: name, Err: e}
+		// TODO(lijie): workaround with type assertion
+		if r, ok := e.(syscall.Errno); !ok || r != 0 {
+			return nil, &PathError{Op: "fork/exec", Path: name, Err: e}
+		}
 	}
+	println("StartProcess", pid, h, e)
 
 	return newProcess(pid, h), nil
 }

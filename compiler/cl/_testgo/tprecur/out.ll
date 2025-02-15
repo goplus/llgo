@@ -1,43 +1,37 @@
-; ModuleID = 'main'
-source_filename = "main"
+; ModuleID = 'github.com/goplus/llgo/compiler/cl/_testgo/tprecur'
+source_filename = "github.com/goplus/llgo/compiler/cl/_testgo/tprecur"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
-@"main.init$guard" = global i1 false, align 1
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
+@"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"error", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
-define void @main.init() {
+define void @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.init"() {
 _llgo_0:
-  %0 = load i1, ptr @"main.init$guard", align 1
+  %0 = load i1, ptr @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"main.init$guard", align 1
-  call void @"main.init$after"()
+  store i1 true, ptr @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.init$guard", align 1
+  call void @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define i32 @main(i32 %0, ptr %1) {
+define void @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.main"() {
 _llgo_0:
-  store i32 %0, ptr @__llgo_argc, align 4
-  store ptr %1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-  call void @main.init()
-  call void @main.recursive()
-  ret i32 0
+  call void @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recursive"()
+  ret void
 }
 
-define void @main.recursive() {
+define void @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recursive"() {
 _llgo_0:
-  %0 = call i64 @"main.recur1[main.T]"(i64 5)
+  %0 = call i64 @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/compiler/cl/_testgo/tprecur.T]"(i64 5)
   %1 = icmp ne i64 %0, 110
   br i1 %1, label %_llgo_1, label %_llgo_2
 
@@ -54,9 +48,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.init"()
-
-define linkonce i64 @"main.recur1[main.T]"(i64 %0) {
+define linkonce i64 @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/compiler/cl/_testgo/tprecur.T]"(i64 %0) {
 _llgo_0:
   %1 = icmp eq i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -66,7 +58,7 @@ _llgo_1:                                          ; preds = %_llgo_3, %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_3
   %2 = sub i64 %0, 1
-  %3 = call i64 @"main.recur2[main.T]"(i64 %2)
+  %3 = call i64 @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/compiler/cl/_testgo/tprecur.T]"(i64 %2)
   %4 = mul i64 %0, %3
   ret i64 %4
 
@@ -75,7 +67,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %5, label %_llgo_1, label %_llgo_2
 }
 
-define void @"main.init$after"() {
+define void @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null
@@ -96,7 +88,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-define linkonce i64 @"main.recur2[main.T]"(i64 %0) {
+define linkonce i64 @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/compiler/cl/_testgo/tprecur.T]"(i64 %0) {
 _llgo_0:
   %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 8)
   %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 1
@@ -145,7 +137,7 @@ _llgo_5:                                          ; preds = %_llgo_4
 
 _llgo_6:                                          ; preds = %_llgo_4
   %26 = sub i64 %0, 1
-  %27 = call i64 @"main.recur1[main.T]"(i64 %26)
+  %27 = call i64 @"github.com/goplus/llgo/compiler/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/compiler/cl/_testgo/tprecur.T]"(i64 %26)
   %28 = add i64 %14, %27
   ret i64 %28
 }

@@ -94,6 +94,9 @@ func Readlink(path *c.Char, buf c.Pointer, bufsize uintptr) int
 //go:linkname Unlink C.unlink
 func Unlink(path *c.Char) c.Int
 
+//go:linkname Unlinkat C.unlinkat
+func Unlinkat(dirfd c.Int, path *c.Char, flags c.Int) c.Int
+
 //go:linkname Remove C.remove
 func Remove(path *c.Char) c.Int
 

@@ -1,6 +1,5 @@
 package hmac
 
-// llgo:skipall
 import (
 	"crypto/sha256"
 	"crypto/subtle"
@@ -10,6 +9,9 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/openssl"
 )
+
+// llgo:skipall
+type _hmac struct{}
 
 type eface struct {
 	_type   unsafe.Pointer

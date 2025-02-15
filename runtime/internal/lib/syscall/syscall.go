@@ -16,14 +16,20 @@
 
 package syscall
 
-// llgo:skipall
 import (
+	origSyscall "syscall"
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	"github.com/goplus/llgo/runtime/internal/lib/internal/bytealg"
 )
+
+// llgo:skipall
+type _syscall struct{}
+
+type Iovec syscall.Iovec
 
 type Timespec syscall.Timespec
 type Timeval syscall.Timeval
@@ -189,4 +195,25 @@ func setrlimit(which int, lim *Rlimit) (err error) {
 		return nil
 	}
 	return Errno(ret)
+}
+
+func BytePtrFromString(s string) (*byte, error) {
+	a, err := ByteSliceFromString(s)
+	if err != nil {
+		return nil, err
+	}
+	return &a[0], nil
+}
+
+func ByteSliceFromString(s string) ([]byte, error) {
+	if bytealg.IndexByteString(s, 0) != -1 {
+		return nil, Errno(syscall.EINVAL)
+	}
+	a := make([]byte, len(s)+1)
+	copy(a, s)
+	return a, nil
+}
+
+func Accept(fd int) (nfd int, sa origSyscall.Sockaddr, err error) {
+	panic("todo: syscall.Accept")
 }

@@ -16,16 +16,28 @@
 
 package abi
 
-// llgo:skipall
 import (
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
 )
 
+// llgo:skipall
+type _abi struct{}
+
 type InterfaceType = abi.InterfaceType
 
 func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
 	return unsafe.Pointer(x ^ 0)
+}
+
+func FuncPCABI0(f interface{}) uintptr {
+	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
+	return *(*uintptr)(unsafe.Pointer(words[1]))
+}
+
+func FuncPCABIInternal(f interface{}) uintptr {
+	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
+	return *(*uintptr)(unsafe.Pointer(words[1]))
 }

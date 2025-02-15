@@ -4,23 +4,27 @@
 
 package time
 
+import (
+	"sync"
+	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/libuv"
+)
+
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
 func Sleep(d Duration) {
-	panic("todo: time.Sleep")
+	c.Usleep(c.Uint(d.Nanoseconds()))
 }
 
 // Interface to timers implemented in package runtime.
 // Must be in sync with ../runtime/time.go:/^type timer
 type runtimeTimer struct {
-	pp       uintptr
-	when     int64
-	period   int64
-	f        func(any, uintptr) // NOTE: must not be closure
-	arg      any
-	seq      uintptr
-	nextwhen int64
-	status   uint32
+	libuv.Timer
+	when int64
+	f    func(any, uintptr)
+	arg  any
 }
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.
@@ -39,10 +43,6 @@ func when(d Duration) int64 {
 	}
 	return t
 }
-
-func startTimer(*runtimeTimer)             { panic("todo: time.startTimer") }
-func stopTimer(*runtimeTimer) bool         { panic("todo: time.stopTimer") }
-func resetTimer(*runtimeTimer, int64) bool { panic("todo: time.resetTimer") }
 
 /* TODO(xsw):
 func modTimer(t *runtimeTimer, when, period int64, f func(any, uintptr), arg any, seq uintptr) {
@@ -82,9 +82,6 @@ type Timer struct {
 // If the caller needs to know whether f is completed, it must coordinate
 // with f explicitly.
 func (t *Timer) Stop() bool {
-	if t.r.f == nil {
-		panic("time: Stop called on uninitialized Timer")
-	}
 	return stopTimer(&t.r)
 }
 
@@ -139,9 +136,6 @@ func NewTimer(d Duration) *Timer {
 // one. If the caller needs to know whether the prior execution of
 // f is completed, it must coordinate with f explicitly.
 func (t *Timer) Reset(d Duration) bool {
-	if t.r.f == nil {
-		panic("time: Reset called on uninitialized Timer")
-	}
 	w := when(d)
 	return resetTimer(&t.r, w)
 }
@@ -181,4 +175,65 @@ func AfterFunc(d Duration, f func()) *Timer {
 
 func goFunc(arg any, seq uintptr) {
 	go arg.(func())()
+}
+
+var (
+	timerLoop *libuv.Loop
+	timerOnce sync.Once
+)
+
+func init() {
+	timerOnce.Do(func() {
+		timerLoop = libuv.LoopNew()
+	})
+	go func() {
+		timerLoop.Run(libuv.RUN_DEFAULT)
+	}()
+}
+
+// cross thread
+func timerEvent(async *libuv.Async) {
+	a := (*asyncTimerEvent)(unsafe.Pointer(async))
+	a.cb()
+	a.Close(nil)
+}
+
+type asyncTimerEvent struct {
+	libuv.Async
+	cb func()
+}
+
+func timerCallback(t *libuv.Timer) {
+}
+
+func startTimer(r *runtimeTimer) {
+	asyncTimer := &asyncTimerEvent{
+		cb: func() {
+			libuv.InitTimer(timerLoop, &r.Timer)
+			r.Start(timerCallback, uint64(r.when), 0)
+		},
+	}
+	timerLoop.Async(&asyncTimer.Async, timerEvent)
+	asyncTimer.Send()
+}
+
+func stopTimer(r *runtimeTimer) bool {
+	asyncTimer := &asyncTimerEvent{
+		cb: func() {
+			r.Stop()
+		},
+	}
+	timerLoop.Async(&asyncTimer.Async, timerEvent)
+	return asyncTimer.Send() == 0
+}
+
+func resetTimer(r *runtimeTimer, when int64) bool {
+	asyncTimer := &asyncTimerEvent{
+		cb: func() {
+			r.Stop()
+			r.Start(timerCallback, uint64(when), 0)
+		},
+	}
+	timerLoop.Async(&asyncTimer.Async, timerEvent)
+	return asyncTimer.Send() == 0
 }

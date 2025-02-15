@@ -49,6 +49,7 @@ var (
 	debugInstr   bool
 	debugGoSSA   bool
 	debugSymbols bool
+	debugTrace   bool
 )
 
 // SetDebug sets debug flags.
@@ -59,6 +60,10 @@ func SetDebug(dbgFlags dbgFlags) {
 
 func EnableDebugSymbols(b bool) {
 	debugSymbols = b
+}
+
+func EnableTrace(b bool) {
+	debugTrace = b
 }
 
 // -----------------------------------------------------------------------------
@@ -127,10 +132,6 @@ const (
 	pkgFNoOldInit = 0x80 // flag if no initFnNameOld
 )
 
-func (p *context) inMain(instr ssa.Instruction) bool {
-	return p.fn.Name() == "main"
-}
-
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
 	if tn.IsAlias() { // don't need to compile alias type
@@ -139,9 +140,6 @@ func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tnName := tn.Name()
 	typ := tn.Type()
 	name := llssa.FullName(tn.Pkg(), tnName)
-	if ignoreName(name) {
-		return
-	}
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
@@ -164,7 +162,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	typ := globalType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
-	if vtype == pyVar || ignoreName(name) {
+	if vtype == pyVar {
 		return
 	}
 	if debugInstr {
@@ -186,13 +184,13 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
 }
 
-var (
-	argvTy = types.NewPointer(types.NewPointer(types.Typ[types.Int8]))
-)
-
 func isCgoExternSymbol(f *ssa.Function) bool {
 	name := f.Name()
 	return isCgoCfunc(name) || isCgoCmacro(name)
+}
+
+func isCgoCfpvar(name string) bool {
+	return strings.HasPrefix(name, "_Cfpvar_")
 }
 
 func isCgoCfunc(name string) bool {
@@ -247,14 +245,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	if fn == nil {
-		if name == "main" {
-			argc := types.NewParam(token.NoPos, pkgTypes, "", types.Typ[types.Int32])
-			argv := types.NewParam(token.NoPos, pkgTypes, "", argvTy)
-			params := types.NewTuple(argc, argv)
-			ret := types.NewParam(token.NoPos, pkgTypes, "", p.prog.CInt().RawType())
-			results := types.NewTuple(ret)
-			sig = types.NewSignatureType(nil, nil, nil, params, results, false)
-		}
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
 		if debugSymbols {
 			fn.Inline(llssa.NoInline)
@@ -309,9 +299,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			i := 0
 			for {
 				block := f.Blocks[i]
-				doMainInit := (i == 0 && name == "main")
 				doModInit := (i == 1 && isInit)
-				p.compileBlock(b, block, off[i], doMainInit, doModInit)
+				p.compileBlock(b, block, off[i], doModInit)
 				if isCgo {
 					// just process first block for performance
 					break
@@ -334,7 +323,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
 	if f.Object() != nil {
-		return p.goProg.Fset.Position(f.Object().(*types.Func).Scope().Pos())
+		if fn, ok := f.Object().(*types.Func); ok && fn.Scope() != nil {
+			return p.goProg.Fset.Position(fn.Scope().Pos())
+		}
 	}
 	return p.goProg.Fset.Position(f.Pos())
 }
@@ -385,7 +376,7 @@ func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 	}
 }
 
-func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doMainInit, doModInit bool) llssa.BasicBlock {
+func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, doModInit bool) llssa.BasicBlock {
 	var last int
 	var pyModInit bool
 	var prog = p.prog
@@ -394,6 +385,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
+	if block.Index == 0 && debugTrace && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
+		b.Printf("call " + fn.Name() + "\n\x00")
+	}
 	// place here to avoid wrong current-block
 	if debugSymbols && block.Index == 0 {
 		p.debugParams(b, block.Parent())
@@ -408,15 +402,6 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 				pkg.AfterInit(b, ret)
 			}
 		}
-	} else if doMainInit {
-		argc := pkg.NewVar("__llgo_argc", types.NewPointer(types.Typ[types.Int32]), llssa.InC)
-		argv := pkg.NewVar("__llgo_argv", types.NewPointer(argvTy), llssa.InC)
-		argc.InitNil()
-		argv.InitNil()
-		b.Store(argc.Expr, fn.Param(0))
-		b.Store(argv.Expr, fn.Param(1))
-		callRuntimeInit(b, pkg)
-		b.Call(pkg.FuncOf("main.init").Expr)
 	}
 	fnName := block.Parent().Name()
 	cgoReturned := false
@@ -498,11 +483,6 @@ end:
 const (
 	RuntimeInit = llssa.PkgRuntime + ".init"
 )
-
-func callRuntimeInit(b llssa.Builder, pkg llssa.Package) {
-	fn := pkg.NewFunc(RuntimeInit, llssa.NoArgsNoRet, llssa.InC) // don't need to convert runtime.init
-	b.Call(fn.Expr)
-}
 
 func isAny(t types.Type) bool {
 	if t, ok := t.Underlying().(*types.Interface); ok {
@@ -790,6 +770,9 @@ func (p *context) getDebugLocScope(v *ssa.Function, pos token.Pos) *types.Scope 
 		return nil
 	}
 	funcScope := v.Object().(*types.Func).Scope()
+	if funcScope == nil {
+		return nil
+	}
 	return funcScope.Innermost(pos)
 }
 
@@ -833,10 +816,6 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 			for i, r := range v.Results {
 				results[i] = p.compileValue(b, r)
 			}
-		}
-		if p.inMain(instr) {
-			results = make([]llssa.Expr, 1)
-			results[0] = p.prog.IntVal(0, p.prog.CInt())
 		}
 		b.Return(results...)
 	case *ssa.If:
@@ -1101,7 +1080,9 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
-			ctx.compileGlobal(ret, member)
+			if !isCgoVar(member.Name()) {
+				ctx.compileGlobal(ret, member)
+			}
 		}
 	}
 

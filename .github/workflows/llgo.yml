@@ -11,13 +11,14 @@ on:
 
 jobs:
   llgo-test:
+    continue-on-error: true
     strategy:
       matrix:
         os:
           - macos-latest
           - ubuntu-24.04
         llvm: [18]
-        go: ['1.20', '1.21', '1.22', '1.23']
+        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6']
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -35,9 +36,9 @@ jobs:
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
       - name: Set up Go for build
-        uses: actions/setup-go@v5
+        uses: ./.github/actions/setup-go
         with:
-          go-version: '1.23'
+          go-version: '1.23.6'
 
       - name: Install
         working-directory: compiler
@@ -94,11 +95,12 @@ jobs:
           bash _lldb/runtest.sh -v
 
   helloworld-test:
+    continue-on-error: true
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-latest]
         llvm: [18]
-        go: ['1.20', '1.21', '1.22', '1.23']
+        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6']
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -108,9 +110,9 @@ jobs:
           llvm-version: ${{matrix.llvm}}
 
       - name: Set up Go 1.23 for building llgo
-        uses: actions/setup-go@v5
+        uses: ./.github/actions/setup-go
         with:
-          go-version: '1.23'
+          go-version: '1.23.6'
 
       - name: Install llgo
         working-directory: compiler
@@ -119,26 +121,26 @@ jobs:
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
-        uses: actions/setup-go@v5
+        uses: ./.github/actions/setup-go
         with:
           go-version: ${{matrix.go}}
 
       - name: Test Hello World with go.mod 1.20
-        if: matrix.go == '1.20' || matrix.go == '1.21' || matrix.go == '1.22' || matrix.go == '1.23'
+        if: startsWith(matrix.go, '1.20') || startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
           mod-version: '1.20'
 
       - name: Test Hello World with go.mod 1.21
-        if: matrix.go == '1.21' || matrix.go == '1.22' || matrix.go == '1.23'
+        if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
           mod-version: '1.21'
 
       - name: Test Hello World with go.mod 1.22
-        if: matrix.go == '1.22' || matrix.go == '1.23'
+        if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}

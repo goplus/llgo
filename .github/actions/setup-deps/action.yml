@@ -14,7 +14,7 @@ runs:
       shell: bash
       run: |
         brew update
-        brew install llvm@${{inputs.llvm-version}} bdw-gc openssl libffi
+        brew install llvm@${{inputs.llvm-version}} bdw-gc openssl libffi libuv
         brew link --force libffi
         echo "$(brew --prefix llvm@${{inputs.llvm-version}})/bin" >> $GITHUB_PATH
 
@@ -34,7 +34,7 @@ runs:
         echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{inputs.llvm-version}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo apt-get update
-        sudo apt-get install -y llvm-${{inputs.llvm-version}}-dev clang-${{inputs.llvm-version}} libclang-${{inputs.llvm-version}}-dev lld-${{inputs.llvm-version}} pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libunwind-dev
+        sudo apt-get install -y llvm-${{inputs.llvm-version}}-dev clang-${{inputs.llvm-version}} libclang-${{inputs.llvm-version}}-dev lld-${{inputs.llvm-version}} pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libunwind-dev libuv1-dev
         echo "/usr/lib/llvm-${{inputs.llvm-version}}/bin" >> $GITHUB_PATH
 
         # Install optional deps for demos.

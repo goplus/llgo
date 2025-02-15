@@ -17,7 +17,6 @@
 // crypto/rand package.
 package rand
 
-// llgo:skipall
 import (
 	"sync"
 	"sync/atomic"
@@ -27,6 +26,9 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/math/rand"
 	"github.com/goplus/llgo/runtime/internal/clite/time"
 )
+
+// llgo:skipall
+type _rand struct{}
 
 // A Source represents a source of uniformly-distributed
 // pseudo-random int64 values in the range [0, 1<<63).

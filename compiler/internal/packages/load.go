@@ -58,6 +58,8 @@ const (
 	NeedTypesSizes = packages.NeedTypesSizes
 	NeedTypesInfo  = packages.NeedTypesInfo
 
+	NeedForTest = packages.NeedForTest
+
 	typecheckCgo = NeedModule - 1 // TODO(xsw): how to check
 )
 
@@ -104,6 +106,7 @@ type loader struct {
 }
 
 type Cached struct {
+	*packages.Package
 	Types     *types.Package
 	TypesInfo *types.Info
 	Syntax    []*ast.File
@@ -129,18 +132,18 @@ func (p Deduper) SetPkgPath(fn func(path, name string) string) {
 	p.setpath = fn
 }
 
-func (p Deduper) Check(pkgPath string) *Cached {
-	if v, ok := p.cache.Load(pkgPath); ok {
+func (p Deduper) Check(id string) *Cached {
+	if v, ok := p.cache.Load(id); ok {
 		return v.(*Cached)
 	}
 	return nil
 }
 
-func (p Deduper) set(pkgPath string, cp *Cached) {
+func (p Deduper) set(id string, cp *Cached) {
 	if DebugPackagesLoad {
-		log.Println("==> Import", pkgPath)
+		log.Println("==> Import", id)
 	}
-	p.cache.Store(pkgPath, cp)
+	p.cache.Store(id, cp)
 }
 
 //go:linkname defaultDriver golang.org/x/tools/go/packages.defaultDriver
@@ -176,7 +179,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	}
 
 	if dedup != nil {
-		if cp := dedup.Check(lpkg.PkgPath); cp != nil {
+		if cp := dedup.Check(lpkg.ID); cp != nil {
 			lpkg.Types = cp.Types
 			lpkg.Fset = ld.Fset
 			lpkg.TypesInfo = cp.TypesInfo
@@ -187,6 +190,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		defer func() {
 			if !lpkg.IllTyped && lpkg.needtypes && lpkg.needsrc {
 				dedup.set(lpkg.PkgPath, &Cached{
+					Package:   lpkg.Package,
 					Types:     lpkg.Types,
 					TypesInfo: lpkg.TypesInfo,
 					Syntax:    lpkg.Syntax,

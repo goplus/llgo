@@ -226,9 +226,6 @@ func PathOf(pkg *types.Package) string {
 	if pkg == nil {
 		return ""
 	}
-	if pkg.Name() == "main" {
-		return "main"
-	}
 	return strings.TrimPrefix(pkg.Path(), PatchPathPrefix)
 }
 
@@ -238,11 +235,6 @@ func FullName(pkg *types.Package, name string) string {
 		return name
 	}
 	return PathOf(pkg) + "." + name
-}
-
-// TypeName returns the ABI type name for the specified named type.
-func TypeName(o *types.TypeName) string {
-	return FullName(o.Pkg(), o.Name())
 }
 
 // BasicName returns the ABI type name for the specified basic type.

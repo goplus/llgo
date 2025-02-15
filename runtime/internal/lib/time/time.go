@@ -16,13 +16,15 @@
 
 package time
 
-// llgo:skipall
 import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/time"
 )
+
+// llgo:skipall
+type _time struct{}
 
 type Time struct {
 	// wall and ext encode the wall time seconds, wall time nanoseconds,
@@ -183,6 +185,10 @@ func (t Time) Compare(u Time) int {
 		return +1
 	}
 	return 0
+}
+
+func (t Time) UnixNano() int64 {
+	return (t.unixSec())*1e9 + int64(t.nsec())
 }
 
 // Equal reports whether t and u represent the same time instant.

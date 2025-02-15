@@ -4,8 +4,10 @@
 
 // Simple conversions to avoid depending on strconv.
 
-// llgo:skipall
 package itoa
+
+// llgo:skipall
+type _itoa struct{}
 
 // Itoa converts val to a decimal string.
 func Itoa(val int) string {

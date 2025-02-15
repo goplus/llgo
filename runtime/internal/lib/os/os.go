@@ -16,7 +16,6 @@
 
 package os
 
-// llgo:skipall
 import (
 	"errors"
 	"runtime"
@@ -26,6 +25,9 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
 )
+
+// llgo:skipall
+type _os struct{}
 
 const (
 	LLGoPackage = true

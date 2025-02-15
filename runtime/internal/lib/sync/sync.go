@@ -16,7 +16,6 @@
 
 package sync
 
-// llgo:skipall
 import (
 	gosync "sync"
 	"unsafe"
@@ -24,6 +23,9 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 )
+
+// llgo:skipall
+type _sync struct{}
 
 // -----------------------------------------------------------------------------
 

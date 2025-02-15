@@ -391,6 +391,8 @@ func (p Program) toType(raw types.Type) Type {
 		return &aType{llvm.PointerType(p.rtChan(), 0), typ, vkChan}
 	case *types.Alias:
 		return p.toType(types.Unalias(t))
+	case *types.TypeParam:
+		return p.toType(t.Constraint())
 	}
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
@@ -554,9 +556,6 @@ func FuncName(pkg *types.Package, name string, recv *types.Var, org bool) string
 		return PathOf(pkg) + "." + tName + "." + name
 	}
 	ret := FullName(pkg, name)
-	if ret == "main.main" {
-		ret = "main"
-	}
 	return ret
 }
 

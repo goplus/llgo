@@ -6,8 +6,10 @@
 
 package execenv
 
-// llgo:skipall
 import "syscall"
+
+// llgo:skipall
+type _execenv struct{}
 
 // Default will return the default environment
 // variables based on the process attributes

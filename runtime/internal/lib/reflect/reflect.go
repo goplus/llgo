@@ -16,7 +16,9 @@
 
 package reflect
 
-// llgo:skipall
 import (
 	_ "unsafe"
 )
+
+// llgo:skipall
+type _reflect struct{}
