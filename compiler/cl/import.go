@@ -30,7 +30,6 @@ import (
 
 	"github.com/goplus/llgo/compiler/internal/env"
 	llssa "github.com/goplus/llgo/compiler/ssa"
-	llruntime "github.com/goplus/llgo/runtime"
 )
 
 // -----------------------------------------------------------------------------
@@ -667,10 +666,6 @@ func replaceGoName(v string, pos int) string {
 		return env.LLGoRuntimePkg + "/internal/runtime" + v[pos:]
 	}
 	return v
-}
-
-func ignoreName(name string) bool {
-	return llruntime.IgnoreName(name)
 }
 
 // -----------------------------------------------------------------------------

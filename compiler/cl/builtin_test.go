@@ -329,12 +329,6 @@ func TestIntVal(t *testing.T) {
 	intVal(&ssa.Parameter{})
 }
 
-func TestIgnoreName(t *testing.T) {
-	if !ignoreName("runtime/foo.bar") || ignoreName("internal/abi.Type") {
-		t.Fatal("ignoreName failed")
-	}
-}
-
 func TestErrImport(t *testing.T) {
 	var ctx context
 	pkg := types.NewPackage("foo", "foo")

@@ -20,24 +20,6 @@ func SkipToBuild(pkgPath string) bool {
 	}
 }
 
-func IgnoreName(name string) bool {
-	/* TODO(xsw): confirm this is not needed more
-	if name == "unsafe.init" {
-		return true
-	}
-	*/
-	const internal = "internal/"
-	return (strings.HasPrefix(name, internal) && !IsSupportedInternal(name)) ||
-		strings.HasPrefix(name, "runtime/") || strings.HasPrefix(name, "arena.") ||
-		strings.HasPrefix(name, "maps.") || strings.HasPrefix(name, "plugin.")
-}
-
-func IsSupportedInternal(name string) (b bool) {
-	paths := strings.Split(name, ".")
-	_, b = supportedInternal[paths[0]]
-	return
-}
-
 func HasAltPkg(path string) (b bool) {
 	_, b = hasAltPkg[path]
 	return
@@ -53,11 +35,15 @@ var hasAltPkg = map[string]none{
 	"crypto/sha256":            {},
 	"crypto/sha512":            {},
 	"crypto/subtle":            {},
+	"go/parser":                {},
 	"hash/crc32":               {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
+	"internal/cpu":             {},
 	"internal/itoa":            {},
+	"internal/godebug":         {},
 	"internal/oserror":         {},
+	"internal/poll":            {},
 	"internal/reflectlite":     {},
 	"internal/syscall/execenv": {},
 	"internal/syscall/unix":    {},
@@ -72,20 +58,18 @@ var hasAltPkg = map[string]none{
 	"time":                     {},
 	"os":                       {},
 	"os/exec":                  {},
+	"os/signal":                {},
 	"runtime":                  {},
+	"runtime/debug":            {},
+	"runtime/pprof":            {},
+	"runtime/trace":            {},
+	"runtime/internal/syscall": {},
 	"io":                       {},
 }
 
 var supportedInternal = map[string]none{
-	"internal/abi":             {},
-	"internal/bytealg":         {},
-	"internal/itoa":            {},
-	"internal/oserror":         {},
-	"internal/race":            {},
-	"internal/reflectlite":     {},
-	"internal/stringslite":     {},
-	"internal/filepathlite":    {},
-	"internal/syscall/unix":    {},
-	"internal/syscall/execenv": {},
-	"internal/fmtsort":         {},
+	"internal/race":         {},
+	"internal/stringslite":  {},
+	"internal/filepathlite": {},
+	"internal/fmtsort":      {},
 }
