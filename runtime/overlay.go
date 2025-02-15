@@ -1,4 +1,4 @@
-package build
+package runtime
 
 import (
 	_ "embed"
@@ -13,7 +13,7 @@ var testing_testing string
 //go:embed _overlay/net/textproto/textproto.go
 var net_textproto string
 
-var overlayFiles = map[string]string{
+var OverlayFiles = map[string]string{
 	"math/exp_amd64.go":          "package math;",
 	"go/parser/resolver.go":      go_parser_resolver,
 	"testing/testing.go":         testing_testing,
