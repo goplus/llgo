@@ -1,23 +1,10 @@
 package runtime
 
-import (
-	"strings"
-)
-
 func SkipToBuild(pkgPath string) bool {
 	if _, ok := hasAltPkg[pkgPath]; ok {
 		return false
 	}
-	if _, ok := supportedInternal[pkgPath]; ok {
-		return false
-	}
-	switch pkgPath {
-	case "unsafe":
-		return true
-	default:
-		return strings.HasPrefix(pkgPath, "internal/") ||
-			strings.HasPrefix(pkgPath, "runtime/internal/")
-	}
+	return pkgPath == "unsafe"
 }
 
 func HasAltPkg(path string) (b bool) {
@@ -65,11 +52,4 @@ var hasAltPkg = map[string]none{
 	"runtime/trace":            {},
 	"runtime/internal/syscall": {},
 	"io":                       {},
-}
-
-var supportedInternal = map[string]none{
-	"internal/race":         {},
-	"internal/stringslite":  {},
-	"internal/filepathlite": {},
-	"internal/fmtsort":      {},
 }
