@@ -362,7 +362,7 @@ brew update
 brew install llvm@18 bdw-gc openssl cjson libffi libuv pkg-config
 brew install python@3.12 # optional
 brew link --force libffi
-go install -v github.com/goplus/llgo/cmd/llgo@latest
+curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
 
 ```
 
@@ -378,7 +378,7 @@ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install -y llvm-18-dev clang-18 libclang-18-dev lld-18 pkg-config libgc-dev libssl-dev zlib1g-dev libcjson-dev libsqlite3-dev libunwind-dev libuv1-dev
 sudo apt-get install -y python3.12-dev # optional
-go install -v github.com/goplus/llgo/cmd/llgo@latest
+curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
 ```
 
 #### Alpine Linux
@@ -391,13 +391,22 @@ export LLVM_CONFIG=/usr/lib/llvm18/bin/llvm-config
 export CGO_CPPFLAGS="$($LLVM_CONFIG --cppflags)"
 export CGO_CXXFLAGS=-std=c++17
 export CGO_LDFLAGS="$($LLVM_CONFIG --ldflags) $($LLVM_CONFIG --libs all)"
-go install -v -tags=byollvm -ldflags="-X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=$LLVM_CONFIG" github.com/goplus/llgo/cmd/llgo@latest
+curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
 ```
 
 ### on Windows
 
 TODO
 
+### Install from source
+
+<!-- embedme doc/_readme/scripts/install_llgo.sh#L2-L1000 -->
+
+```sh
+git clone https://github.com/goplus/llgo.git
+cd llgo
+./install.sh
+```
 
 ## Development tools
 
@@ -409,7 +418,7 @@ TODO
 
 How do I generate these tools?
 
-<!-- embedme doc/_readme/scripts/install_llgo.sh#L2-L1000 -->
+<!-- embedme doc/_readme/scripts/install_full.sh#L2-L1000 -->
 
 ```sh
 git clone https://github.com/goplus/llgo.git
