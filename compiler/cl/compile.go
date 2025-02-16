@@ -160,7 +160,7 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
-	typ := globalType(gbl)
+	typ := p.patchType(gbl.Type())
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
 	if vtype == pyVar {
 		return
@@ -1102,30 +1102,20 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 	}
 }
 
-func globalType(gbl *ssa.Global) types.Type {
-	t := gbl.Type()
-	if t, ok := t.(*types.Named); ok {
-		o := t.Obj()
-		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
-			if patch := gbl.Pkg.Pkg.Scope().Lookup(o.Name()); patch != nil {
-				return patch.Type()
-			}
-		}
-	}
-	return t
-}
-
 func (p *context) type_(typ types.Type, bg llssa.Background) llssa.Type {
 	return p.prog.Type(p.patchType(typ), bg)
 }
 
 func (p *context) patchType(typ types.Type) types.Type {
-	if t, ok := typ.(*types.Named); ok {
-		o := t.Obj()
+	switch typ := typ.(type) {
+	case *types.Pointer:
+		return types.NewPointer(p.patchType(typ.Elem()))
+	case *types.Named:
+		o := typ.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					return p.prog.Type(instantiate(obj.Type(), t), llssa.InGo).RawType()
+					return p.prog.Type(instantiate(obj.Type(), typ), llssa.InGo).RawType()
 				}
 			}
 		}
