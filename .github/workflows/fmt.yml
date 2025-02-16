@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.23.6'
+          go-version: '1.24.0'
 
       - name: Check formatting
         run: |
