@@ -139,5 +139,8 @@ populate_linux_sysroot() {
 		debian:bullseye \
 		/populate_linux_sysroot.sh
 }
-populate_linux_sysroot amd64 "${LINUX_AMD64_PREFIX}"
-populate_linux_sysroot arm64 "${LINUX_ARM64_PREFIX}"
+populate_linux_sysroot amd64 "${LINUX_AMD64_PREFIX}" &
+populate_linux_sysroot arm64 "${LINUX_ARM64_PREFIX}" &
+
+# Wait for both background processes to complete
+wait

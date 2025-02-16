@@ -11,18 +11,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Cache Darwin sysroot
-        id: cache-sysroot
-        uses: actions/cache@v4
-        with:
-          path: |
-            .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ runner.os }}-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}
       - name: Populate Darwin sysroot
-        if: steps.cache-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_darwin_sysroot.sh
       - name: Create Darwin sysroot tarball
-        if: steps.cache-sysroot.outputs.cache-hit != 'true'
         run: tar -czvf .sysroot/darwin.tar.gz -C .sysroot darwin
       - name: Upload Darwin sysroot tarball
         uses: actions/upload-artifact@v4
@@ -44,6 +35,8 @@ jobs:
           go-version: 1.23.x
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
       - name: Download Darwin sysroot tarball
         uses: actions/download-artifact@v4
         with:
