@@ -239,7 +239,11 @@ func FullName(pkg *types.Package, name string) string {
 
 // BasicName returns the ABI type name for the specified basic type.
 func BasicName(t *types.Basic) string {
-	return "_llgo_" + t.Name()
+	name := t.Name()
+	if name == "byte" {
+		name = "uint8"
+	}
+	return "_llgo_" + name
 }
 
 // FuncName returns the ABI type name for the specified function type.
