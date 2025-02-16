@@ -56,6 +56,20 @@ func Exit(retval c.Pointer)
 //go:linkname Cancel C.pthread_cancel
 func Cancel(thread Thread) c.Int
 
+// The pthread_self() function returns the ID of the calling thread.
+// This is the same value that is returned in *thread in the
+// pthread_create(3) call that created this thread.
+//
+//go:linkname Self C.pthread_self
+func Self() Thread
+
+// The pthread_equal() function compares two thread identifiers.
+// If the two thread IDs are equal, pthread_equal() returns a nonzero
+// value; otherwise, it returns 0.
+//
+//go:linkname Equal C.pthread_equal
+func Equal(t1, t2 Thread) c.Int
+
 // -----------------------------------------------------------------------------
 
 // Attr represents a POSIX thread attributes.
