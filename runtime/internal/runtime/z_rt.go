@@ -74,21 +74,29 @@ func Rethrow(link *Defer) {
 		} else {
 			c.Siglongjmp(link.Addr, 1)
 		}
+	} else if link == nil && goexitKey.Get() != nil {
+		if pthread.Equal(mainThread, pthread.Self()) != 0 {
+			fatal("no goroutines (main called runtime.Goexit) - deadlock!")
+			c.Exit(2)
+		}
+		pthread.Exit(nil)
 	}
 }
 
 var (
 	excepKey   pthread.Key
+	goexitKey  pthread.Key
 	mainThread pthread.Thread
-	goexit     struct{}
 )
 
 func Goexit() {
-	panic(goexit)
+	goexitKey.Set(unsafe.Pointer(&goexitKey))
+	Rethrow((*Defer)(c.GoDeferData()))
 }
 
 func init() {
 	excepKey.Create(nil)
+	goexitKey.Create(nil)
 	mainThread = pthread.Self()
 }
 
@@ -96,13 +104,6 @@ func init() {
 
 // TracePanic prints panic message.
 func TracePanic(v any) {
-	if v == goexit {
-		if pthread.Equal(mainThread, pthread.Self()) != 0 {
-			fatal("no goroutines (main called runtime.Goexit) - deadlock!")
-			c.Exit(2)
-		}
-		pthread.Exit(nil)
-	}
 	print("panic: ")
 	printany(v)
 	println("\n")
