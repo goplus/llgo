@@ -41,8 +41,11 @@ type Defer struct {
 func Recover() (ret any) {
 	ptr := excepKey.Get()
 	if ptr != nil {
-		excepKey.Set(nil)
 		ret = *(*any)(ptr)
+		if ret == goexit {
+			return nil
+		}
+		excepKey.Set(nil)
 		c.Free(ptr)
 	}
 	return
@@ -61,7 +64,15 @@ func Panic(v any) {
 func Rethrow(link *Defer) {
 	if ptr := excepKey.Get(); ptr != nil {
 		if link == nil {
-			TracePanic(*(*any)(ptr))
+			v := (*(*any)(ptr))
+			if v == goexit {
+				if pthread.Equal(mainThread, pthread.Self()) != 0 {
+					fatal("no goroutines (main called runtime.Goexit) - deadlock!")
+					c.Exit(2)
+				}
+				pthread.Exit(nil)
+			}
+			TracePanic(v)
 			debug.StackTrace(0, func(fr *debug.Frame) bool {
 				var info debug.Info
 				debug.Addrinfo(unsafe.Pointer(fr.PC), &info)
@@ -84,7 +95,7 @@ var (
 )
 
 func Goexit() {
-	panic(goexit)
+	Panic(goexit)
 }
 
 func init() {
@@ -96,13 +107,6 @@ func init() {
 
 // TracePanic prints panic message.
 func TracePanic(v any) {
-	if v == goexit {
-		if pthread.Equal(mainThread, pthread.Self()) != 0 {
-			fatal("no goroutines (main called runtime.Goexit) - deadlock!")
-			c.Exit(2)
-		}
-		pthread.Exit(nil)
-	}
 	print("panic: ")
 	printany(v)
 	println("\n")
