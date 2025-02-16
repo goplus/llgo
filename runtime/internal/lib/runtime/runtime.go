@@ -31,7 +31,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/internal/clite/pthread"
+	"github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 // llgo:skipall
@@ -52,7 +52,7 @@ func GOMAXPROCS(n int) int {
 }
 
 func Goexit() {
-	pthread.Exit(nil)
+	runtime.Goexit()
 }
 
 func KeepAlive(x any) {

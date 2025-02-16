@@ -78,17 +78,31 @@ func Rethrow(link *Defer) {
 }
 
 var (
-	excepKey pthread.Key
+	excepKey   pthread.Key
+	mainThread pthread.Thread
+	goexit     struct{}
 )
+
+func Goexit() {
+	panic(goexit)
+}
 
 func init() {
 	excepKey.Create(nil)
+	mainThread = pthread.Self()
 }
 
 // -----------------------------------------------------------------------------
 
 // TracePanic prints panic message.
 func TracePanic(v any) {
+	if v == goexit {
+		if pthread.Equal(mainThread, pthread.Self()) != 0 {
+			fatal("no goroutines (main called runtime.Goexit) - deadlock!")
+			c.Exit(2)
+		}
+		pthread.Exit(nil)
+	}
 	print("panic: ")
 	printany(v)
 	println("\n")
