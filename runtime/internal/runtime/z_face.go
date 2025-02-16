@@ -312,12 +312,13 @@ var itabTable struct {
 	entries []*Itab
 }
 
+func init() {
+	(*sync.Mutex)(&itabTable.mutex).Init(nil)
+}
+
 type mutex sync.Mutex
 
 func (m *mutex) Lock() {
-	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
-		(*sync.Mutex)(m).Init(nil)
-	}
 	(*sync.Mutex)(m).Lock()
 }
 
