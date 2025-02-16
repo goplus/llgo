@@ -15,7 +15,7 @@ import (
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
 func Sleep(d Duration) {
-	c.Usleep(c.Uint(d.Nanoseconds()))
+	c.Usleep(c.Uint(d.Microseconds()))
 }
 
 // Interface to timers implemented in package runtime.
