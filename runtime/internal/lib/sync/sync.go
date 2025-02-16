@@ -17,32 +17,49 @@
 package sync
 
 import (
+	"runtime"
 	gosync "sync"
-	"unsafe"
 
-	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	"github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
 )
 
 // llgo:skipall
 type _sync struct{}
 
+const (
+	uninited     = 0
+	initializing = 1
+	inited       = 2
+)
+
 // -----------------------------------------------------------------------------
 
-type Mutex sync.Mutex
+type Mutex struct {
+	sync.Mutex
+	init int32
+}
+
+func (m *Mutex) ensureInit() {
+	for atomic.LoadInt32(&m.init) != inited {
+		if atomic.CompareAndSwapInt32(&m.init, uninited, initializing) {
+			(*sync.Mutex)(&m.Mutex).Init(nil)
+			atomic.StoreInt32(&m.init, inited)
+			runtime.SetFinalizer(m, func(m *Mutex) {
+				m.Mutex.Destroy()
+			})
+		}
+	}
+}
 
 func (m *Mutex) Lock() {
-	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
-		(*sync.Mutex)(m).Init(nil) // TODO(xsw): finalize
-	}
-	(*sync.Mutex)(m).Lock()
+	m.ensureInit()
+	(*sync.Mutex)(&m.Mutex).Lock()
 }
 
 func (m *Mutex) TryLock() bool {
-	if *(*c.Long)(unsafe.Pointer(m)) == 0 {
-		(*sync.Mutex)(m).Init(nil)
-	}
-	return (*sync.Mutex)(m).TryLock() == 0
+	m.ensureInit()
+	return (*sync.Mutex)(&m.Mutex).TryLock() == 0
 }
 
 // llgo:link (*Mutex).Unlock C.pthread_mutex_unlock
@@ -50,37 +67,44 @@ func (m *Mutex) Unlock() {}
 
 // -----------------------------------------------------------------------------
 
-type RWMutex sync.RWLock
+type RWMutex struct {
+	sync.RWLock
+	init int32
+}
+
+func (m *RWMutex) ensureInit() {
+	for atomic.LoadInt32(&m.init) != inited {
+		if atomic.CompareAndSwapInt32(&m.init, uninited, initializing) {
+			(*sync.RWLock)(&m.RWLock).Init(nil)
+			atomic.StoreInt32(&m.init, inited)
+			runtime.SetFinalizer(m, func(m *RWMutex) {
+				m.RWLock.Destroy()
+			})
+		}
+	}
+}
 
 func (rw *RWMutex) RLock() {
-	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
-		(*sync.RWLock)(rw).Init(nil)
-	}
-	(*sync.RWLock)(rw).RLock()
+	rw.ensureInit()
+	(*sync.RWLock)(&rw.RWLock).RLock()
 }
 
 func (rw *RWMutex) TryRLock() bool {
-	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
-		(*sync.RWLock)(rw).Init(nil)
-	}
-	return (*sync.RWLock)(rw).TryRLock() == 0
+	rw.ensureInit()
+	return (*sync.RWLock)(&rw.RWLock).TryRLock() == 0
 }
 
 // llgo:link (*RWMutex).RUnlock C.pthread_rwlock_unlock
 func (rw *RWMutex) RUnlock() {}
 
 func (rw *RWMutex) Lock() {
-	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
-		(*sync.RWLock)(rw).Init(nil)
-	}
-	(*sync.RWLock)(rw).Lock()
+	rw.ensureInit()
+	(*sync.RWLock)(&rw.RWLock).Lock()
 }
 
 func (rw *RWMutex) TryLock() bool {
-	if *(*c.Long)(unsafe.Pointer(rw)) == 0 {
-		(*sync.RWLock)(rw).Init(nil)
-	}
-	return (*sync.RWLock)(rw).TryLock() == 0
+	rw.ensureInit()
+	return (*sync.RWLock)(&rw.RWLock).TryLock() == 0
 }
 
 // llgo:link (*RWMutex).Unlock C.pthread_rwlock_unlock
@@ -113,7 +137,10 @@ type Cond struct {
 
 func NewCond(l gosync.Locker) *Cond {
 	ret := &Cond{m: l.(*sync.Mutex)}
-	ret.cond.Init(nil) // TODO(xsw): finalize
+	ret.cond.Init(nil)
+	runtime.SetFinalizer(ret, func(ret *Cond) {
+		ret.cond.Destroy()
+	})
 	return ret
 }
 
@@ -133,17 +160,29 @@ type WaitGroup struct {
 	mutex sync.Mutex
 	cond  sync.Cond
 	count int
+	init  int32
+}
+
+func (wg *WaitGroup) ensureInit() {
+	for atomic.LoadInt32(&wg.init) != inited {
+		if atomic.CompareAndSwapInt32(&wg.init, uninited, initializing) {
+			wg.doInit()
+			atomic.StoreInt32(&wg.init, inited)
+		}
+	}
 }
 
 func (wg *WaitGroup) doInit() {
 	wg.mutex.Init(nil)
-	wg.cond.Init(nil) // TODO(xsw): finalize
+	wg.cond.Init(nil)
+	runtime.SetFinalizer(wg, func(wg *WaitGroup) {
+		wg.cond.Destroy()
+		wg.mutex.Destroy()
+	})
 }
 
 func (wg *WaitGroup) Add(delta int) {
-	if *(*c.Long)(unsafe.Pointer(wg)) == 0 {
-		wg.doInit()
-	}
+	wg.ensureInit()
 	wg.mutex.Lock()
 	wg.count += delta
 	if wg.count <= 0 {
@@ -157,9 +196,7 @@ func (wg *WaitGroup) Done() {
 }
 
 func (wg *WaitGroup) Wait() {
-	if *(*c.Long)(unsafe.Pointer(wg)) == 0 {
-		wg.doInit()
-	}
+	wg.ensureInit()
 	wg.mutex.Lock()
 	for wg.count > 0 {
 		wg.cond.Wait(&wg.mutex)

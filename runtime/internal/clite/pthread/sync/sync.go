@@ -142,11 +142,11 @@ func (a *CondAttr) Init(attr *CondAttr) c.Int { return 0 }
 // llgo:link (*CondAttr).Destroy C.pthread_condattr_destroy
 func (a *CondAttr) Destroy() {}
 
-// llgo:link (*CondAttr).SetClock C.pthread_condattr_setclock
-func (a *CondAttr) SetClock(clock time.ClockidT) c.Int { return 0 }
+// // llgo:link (*CondAttr).SetClock C.pthread_condattr_setclock
+// func (a *CondAttr) SetClock(clock time.ClockidT) c.Int { return 0 }
 
-// llgo:link (*CondAttr).GetClock C.pthread_condattr_getclock
-func (a *CondAttr) GetClock(clock *time.ClockidT) c.Int { return 0 }
+// // llgo:link (*CondAttr).GetClock C.pthread_condattr_getclock
+// func (a *CondAttr) GetClock(clock *time.ClockidT) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
