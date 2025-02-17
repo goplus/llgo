@@ -16,9 +16,9 @@ import (
 
 func TestASTRewriter(t *testing.T) {
 	mockRewriter := &NodeRewriter{
-		post: func(c *astutil.Cursor) bool {
+		Rewrite: func(c *astutil.Cursor) bool {
 			if lit, ok := c.Node().(*ast.BasicLit); ok && lit.Kind == token.INT {
-				c.Replace(&ast.BasicLit{ValuePos: lit.Pos(), Kind: token.INT, Value: "42"})
+				lit.Value = "42"
 			}
 			return true
 		},
@@ -47,18 +47,18 @@ func main() {
 
 func TestMultipleRewriters(t *testing.T) {
 	intRewriter := &NodeRewriter{
-		post: func(c *astutil.Cursor) bool {
+		Rewrite: func(c *astutil.Cursor) bool {
 			if lit, ok := c.Node().(*ast.BasicLit); ok && lit.Kind == token.INT {
-				c.Replace(&ast.BasicLit{ValuePos: lit.Pos(), Kind: token.INT, Value: "42"})
+				lit.Value = "42"
 			}
 			return true
 		},
 	}
 
 	stringRewriter := &NodeRewriter{
-		post: func(c *astutil.Cursor) bool {
+		Rewrite: func(c *astutil.Cursor) bool {
 			if lit, ok := c.Node().(*ast.BasicLit); ok && lit.Kind == token.STRING {
-				c.Replace(&ast.BasicLit{ValuePos: lit.Pos(), Kind: token.STRING, Value: `"rewritten"`})
+				lit.Value = `"rewritten"`
 			}
 			return true
 		},
@@ -90,9 +90,9 @@ func main() {
 
 func TestRewritePkg(t *testing.T) {
 	mockRewriter := &NodeRewriter{
-		post: func(c *astutil.Cursor) bool {
+		Rewrite: func(c *astutil.Cursor) bool {
 			if lit, ok := c.Node().(*ast.BasicLit); ok && lit.Kind == token.INT {
-				c.Replace(&ast.BasicLit{ValuePos: lit.Pos(), Kind: token.INT, Value: "42"})
+				lit.Value = "42"
 			}
 			return true
 		},
@@ -152,6 +152,8 @@ func Multiply(x int) int {
 	// Type check the package
 	info := &types.Info{
 		Types: make(map[ast.Expr]types.TypeAndValue),
+		Defs:  make(map[*ast.Ident]types.Object),
+		Uses:  make(map[*ast.Ident]types.Object),
 	}
 	conf := types.Config{Importer: importer.Default()}
 	pkg, err := conf.Check("test", fset, pkgFiles, info)

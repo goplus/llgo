@@ -658,6 +658,11 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 			if debugBuild || verbose {
 				log.Println("==> BuildSSA", p.ID)
 			}
+			if isWhiteListed(p) {
+				if err := rewrite(p); err != nil {
+					panic(err)
+				}
+			}
 			pkgSSA := prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.ID, altPkgPathPrefix) {
 				path := p.ID[len(altPkgPathPrefix):]
@@ -714,11 +719,12 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 func isWhiteListed(pkg *packages.Package) bool {
 	pkgPath := pkg.PkgPath
 	pkgs := []string{
+		"net",
 		"testing",
 		"go/parser",
 	}
 	for _, p := range pkgs {
-		if strings.HasPrefix(pkgPath, p) {
+		if p == pkgPath || strings.HasPrefix(pkgPath, p+"/") {
 			return true
 		}
 	}
