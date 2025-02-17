@@ -18,6 +18,7 @@ package env
 
 import (
 	"runtime/debug"
+	"strings"
 )
 
 const (
@@ -36,7 +37,7 @@ func Version() string {
 		return buildVersion
 	}
 	info, ok := debug.ReadBuildInfo()
-	if ok && info.Main.Version != "" {
+	if ok && info.Main.Version != "" && !strings.HasSuffix(info.Main.Version, "+dirty") {
 		return info.Main.Version
 	}
 	return devel
