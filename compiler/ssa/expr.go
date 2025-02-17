@@ -1169,6 +1169,12 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 					ret.impl = b.InlineCall(b.Pkg.rtFunc("SliceAppend"),
 						src, b.StringData(elem), b.StringLen(elem), b.Prog.Val(int(etSize))).impl
 					return
+				default:
+					etSize := b.Prog.SizeOf(elem.Type)
+					ret.Type = src.Type
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("SliceAppend"),
+						src, elem, b.Const(constant.MakeInt64(1), b.Prog.Int()), b.Prog.Val(int(etSize))).impl
+					return
 				}
 			}
 		}
