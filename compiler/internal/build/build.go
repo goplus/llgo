@@ -275,7 +275,6 @@ type context struct {
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
-	prog := ctx.prog
 	pkgs, errPkgs := allPkgs(ctx, initial, verbose)
 	for _, errPkg := range errPkgs {
 		for _, err := range errPkg.Errors {
@@ -364,7 +363,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			if aPkg.AltPkg != nil {
 				aPkg.LinkArgs = append(aPkg.LinkArgs, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
 			}
-			setNeedRuntimeOrPyInit(ctx, pkg, prog.NeedRuntime, prog.NeedPyInit)
+			setNeedRuntimeOrPyInit(ctx, pkg, aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
 		}
 	}
 	return

@@ -234,7 +234,7 @@ source_filename = "foo/bar"
 
 @a = external global {}, align 1
 `)
-	if prog.NeedRuntime {
+	if pkg.NeedRuntime {
 		t.Fatal("NeedRuntime?")
 	}
 }

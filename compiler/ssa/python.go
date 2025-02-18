@@ -71,7 +71,7 @@ func (p Program) SetPython(py any) {
 // -----------------------------------------------------------------------------
 
 func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {
-	p.Prog.NeedPyInit = true
+	p.NeedPyInit = true
 	return p.NewFunc(fullName, sig, InC).Expr
 }
 
@@ -420,7 +420,7 @@ func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObj
 	prog := p.Prog
 	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
 	if doInit {
-		prog.NeedPyInit = true
+		p.NeedPyInit = true
 		obj.InitNil()
 		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
