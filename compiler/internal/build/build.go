@@ -692,8 +692,10 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				return
 			}
 			var altPkg *packages.Cached
-			if err := rewrite(p); err != nil {
-				panic(err)
+			if isWhiteListed(p) {
+				if err := rewrite(p); err != nil {
+					panic(err)
+				}
 			}
 			var ssaPkg = createSSAPkg(prog, p, verbose)
 			if llruntime.HasAltPkg(pkgPath) {
@@ -707,6 +709,20 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 		}
 	})
 	return
+}
+
+func isWhiteListed(pkg *packages.Package) bool {
+	pkgPath := pkg.PkgPath
+	pkgs := []string{
+		"testing",
+		"go/parser",
+	}
+	for _, p := range pkgs {
+		if strings.HasPrefix(pkgPath, p) {
+			return true
+		}
+	}
+	return false
 }
 
 func rewrite(pkg *packages.Package) error {
