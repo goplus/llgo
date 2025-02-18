@@ -206,7 +206,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	output := mode != ModeBuild || conf.OutFile != ""
+	output := conf.OutFile != ""
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
@@ -226,13 +226,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		linkArgs = append(linkArgs, pkg.LinkArgs...)
 	}
 
-	if ctx.output {
-		for _, pkg := range initial {
-			if needLink(pkg, mode) {
-				linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
-			}
+	for _, pkg := range initial {
+		if needLink(pkg, mode) {
+			linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
 		}
 	}
+
 	return dpkg, nil
 }
 
@@ -610,16 +609,14 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 		}
 		cgoLdflags = append(cgoLdflags, altLdflags...)
 	}
-	if ctx.output {
-		pkg.ExportFile += ".ll"
-		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
-		if debugBuild || verbose {
-			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
-		}
-		if IsCheckEnable() {
-			if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
-				fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
-			}
+	pkg.ExportFile += ".ll"
+	os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+	if debugBuild || verbose {
+		fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
+	}
+	if IsCheckEnable() {
+		if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
+			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
 		}
 	}
 	return
