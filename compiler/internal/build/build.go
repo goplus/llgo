@@ -450,10 +450,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
 	}
 
-	if verbose || mode != ModeRun {
-		fmt.Fprintln(os.Stderr, "#", pkgPath)
-	}
-
 	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
 	libs := make([]string, 0, ctx.nLibdir*3)
