@@ -375,7 +375,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	name := path.Base(pkgPath)
 	app := conf.OutFile
 	if app == "" {
-		app = filepath.Join(conf.BinPath, name+conf.AppExt)
+		if mode == ModeBuild && len(ctx.initial) > 1 {
+			// For multiple packages in ModeBuild mode, use temporary file
+			tmpFile, err := os.CreateTemp("", name+"*"+conf.AppExt)
+			check(err)
+			app = tmpFile.Name()
+			tmpFile.Close()
+		} else {
+			app = filepath.Join(conf.BinPath, name+conf.AppExt)
+		}
 	}
 	args := make([]string, 0, len(pkg.Imports)+len(linkArgs)+16)
 	args = append(
