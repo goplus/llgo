@@ -247,13 +247,28 @@ _llgo_0:
   %88 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %87, ptr @1, i64 3, i64 1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %88)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %89 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %90 = load ptr, ptr @_llgo_int, align 8
-  %91 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %90, 0
-  %92 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %91, ptr inttoptr (i64 100 to ptr), 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %92, ptr %89, align 8
-  %93 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %89, align 8
-  %94 = ptrtoint ptr %89 to i64
+  %89 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 0)
+  %90 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %89, 0
+  %91 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %90, i64 0, 1
+  %92 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %91, i64 0, 2
+  %93 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %94 = getelementptr inbounds { ptr, ptr }, ptr %93, i64 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$1", ptr null }, ptr %94, align 8
+  %95 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %93, 0
+  %96 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %95, i64 1, 1
+  %97 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %96, i64 1, 2
+  %98 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %97, 0
+  %99 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %97, 1
+  %100 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %92, ptr %98, i64 %99, i64 16)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %100)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %101 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %102 = load ptr, ptr @_llgo_int, align 8
+  %103 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %102, 0
+  %104 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, ptr inttoptr (i64 100 to ptr), 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %104, ptr %101, align 8
+  %105 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %101, align 8
+  %106 = ptrtoint ptr %101 to i64
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 true)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 0)
@@ -270,48 +285,27 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double 1.005000e+02)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintEface"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %93)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintEface"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %105)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %89)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %101)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %94)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %106)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %95 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 3)
-  %96 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %97 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %95, 0
-  %98 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %97, i64 3, 1
-  %99 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %98, i64 3, 2
-  %100 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %88, 0
-  %101 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %88, 1
-  %102 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %99, ptr %100, i64 %101, i64 1)
-  store i64 %102, ptr %96, align 4
-  %103 = load i64, ptr %96, align 4
-  %104 = getelementptr inbounds i8, ptr %95, i64 0
-  %105 = load i8, ptr %104, align 1
-  %106 = getelementptr inbounds i8, ptr %95, i64 1
-  %107 = load i8, ptr %106, align 1
-  %108 = getelementptr inbounds i8, ptr %95, i64 2
-  %109 = load i8, ptr %108, align 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %103)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %110 = zext i8 %105 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %110)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %111 = zext i8 %107 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %111)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %112 = zext i8 %109 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %112)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %113 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %95, i64 1, i64 3, i64 1, i64 3, i64 3)
-  %114 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %113, ptr @2, i64 4, i64 1)
-  store i64 %114, ptr %96, align 4
-  %115 = load i64, ptr %96, align 4
-  %116 = getelementptr inbounds i8, ptr %95, i64 0
+  %107 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 3)
+  %108 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %109 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %107, 0
+  %110 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %109, i64 3, 1
+  %111 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %110, i64 3, 2
+  %112 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %88, 0
+  %113 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %88, 1
+  %114 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %111, ptr %112, i64 %113, i64 1)
+  store i64 %114, ptr %108, align 4
+  %115 = load i64, ptr %108, align 4
+  %116 = getelementptr inbounds i8, ptr %107, i64 0
   %117 = load i8, ptr %116, align 1
-  %118 = getelementptr inbounds i8, ptr %95, i64 1
+  %118 = getelementptr inbounds i8, ptr %107, i64 1
   %119 = load i8, ptr %118, align 1
-  %120 = getelementptr inbounds i8, ptr %95, i64 2
+  %120 = getelementptr inbounds i8, ptr %107, i64 2
   %121 = load i8, ptr %120, align 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %115)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -324,120 +318,146 @@ _llgo_0:
   %124 = zext i8 %121 to i64
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %124)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %125 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %126 = getelementptr inbounds { ptr }, ptr %125, i32 0, i32 0
-  store ptr %96, ptr %126, align 8
-  %127 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$2", ptr undef }, ptr %125, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.demo")
+  %125 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %107, i64 1, i64 3, i64 1, i64 3, i64 3)
+  %126 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %125, ptr @2, i64 4, i64 1)
+  store i64 %126, ptr %108, align 4
+  %127 = load i64, ptr %108, align 4
+  %128 = getelementptr inbounds i8, ptr %107, i64 0
+  %129 = load i8, ptr %128, align 1
+  %130 = getelementptr inbounds i8, ptr %107, i64 1
+  %131 = load i8, ptr %130, align 1
+  %132 = getelementptr inbounds i8, ptr %107, i64 2
+  %133 = load i8, ptr %132, align 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %127)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.demo")
+  %134 = zext i8 %129 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %134)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$1")
+  %135 = zext i8 %131 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %135)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %128 = extractvalue { ptr, ptr } %127, 0
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %128)
+  %136 = zext i8 %133 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %136)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %129 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
+  %137 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %138 = getelementptr inbounds { ptr }, ptr %137, i32 0, i32 0
+  store ptr %108, ptr %138, align 8
+  %139 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$3", ptr undef }, ptr %137, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.demo")
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.demo")
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$2")
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  %140 = extractvalue { ptr, ptr } %139, 0
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %140)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %141 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %130 = call { i1, i64, i32 } @"github.com/goplus/llgo/runtime/internal/runtime.StringIterNext"(ptr %129)
-  %131 = extractvalue { i1, i64, i32 } %130, 0
-  br i1 %131, label %_llgo_2, label %_llgo_3
+  %142 = call { i1, i64, i32 } @"github.com/goplus/llgo/runtime/internal/runtime.StringIterNext"(ptr %141)
+  %143 = extractvalue { i1, i64, i32 } %142, 0
+  br i1 %143, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %132 = extractvalue { i1, i64, i32 } %130, 1
-  %133 = extractvalue { i1, i64, i32 } %130, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %132)
+  %144 = extractvalue { i1, i64, i32 } %142, 1
+  %145 = extractvalue { i1, i64, i32 } %142, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %144)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %134 = sext i32 %133 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %134)
+  %146 = sext i32 %145 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %146)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %135 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.Inf"(i64 1)
-  %136 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.Inf"(i64 -1)
-  %137 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.NaN"()
-  %138 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.NaN"()
-  %139 = call i1 @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.IsNaN"(double %138)
-  %140 = call i1 @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.IsNaN"(double 1.000000e+00)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %135)
+  %147 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.Inf"(i64 1)
+  %148 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.Inf"(i64 -1)
+  %149 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.NaN"()
+  %150 = call double @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.NaN"()
+  %151 = call i1 @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.IsNaN"(double %150)
+  %152 = call i1 @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.IsNaN"(double 1.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %147)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %136)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %148)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %137)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %149)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %139)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %151)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %140)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %152)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %141 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
-  %142 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %141)
+  %153 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
+  %154 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %153)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %142)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %154)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %143 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %141)
-  %144 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %142)
-  %145 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %141, 0
-  %146 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %141, 1
-  %147 = icmp sge i64 3, %146
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %147)
-  %148 = getelementptr inbounds i8, ptr %145, i64 3
-  %149 = load i8, ptr %148, align 1
-  %150 = sext i8 %149 to i32
-  %151 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %150)
-  %152 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %142, 0
-  %153 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %142, 1
-  %154 = icmp sge i64 0, %153
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %154)
-  %155 = getelementptr inbounds i32, ptr %152, i64 0
-  %156 = load i32, ptr %155, align 4
-  %157 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %156)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %143)
+  %155 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %153)
+  %156 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %154)
+  %157 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %153, 0
+  %158 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %153, 1
+  %159 = icmp sge i64 3, %158
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %159)
+  %160 = getelementptr inbounds i8, ptr %157, i64 3
+  %161 = load i8, ptr %160, align 1
+  %162 = sext i8 %161 to i32
+  %163 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %162)
+  %164 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %154, 0
+  %165 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %154, 1
+  %166 = icmp sge i64 0, %165
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %166)
+  %167 = getelementptr inbounds i32, ptr %164, i64 0
+  %168 = load i32, ptr %167, align 4
+  %169 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %168)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %155)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %144)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %156)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %151)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %163)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %157)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %169)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %158 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 })
-  %159 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
-  %160 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
-  %161 = xor i1 %160, true
-  %162 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
-  %163 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 })
-  %164 = xor i1 %163, true
-  %165 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 })
-  %166 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
-  %167 = xor i1 %166, true
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %158)
+  %170 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 })
+  %171 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
+  %172 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
+  %173 = xor i1 %172, true
+  %174 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
+  %175 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 })
+  %176 = xor i1 %175, true
+  %177 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 })
+  %178 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 3 })
+  %179 = xor i1 %178, true
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %170)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %159)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %171)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %161)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %173)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %162)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %174)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %164)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %176)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %165)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %177)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %167)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %179)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 define void @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$1"() {
 _llgo_0:
+  ret void
+}
+
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$2"() {
+_llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 2 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-define void @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$2"(ptr %0) {
+define void @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$3"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
@@ -462,6 +482,12 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/g
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64)
+
+define linkonce void @"__llgo_stub.github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$1"(ptr %0) {
+_llgo_0:
+  tail call void @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.main$1"()
+  ret void
+}
 
 define void @"github.com/goplus/llgo/compiler/cl/_testrt/builtin.init$after"() {
 _llgo_0:
