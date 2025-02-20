@@ -24,6 +24,9 @@ func main() {
 	data := []byte{'a', 'b', 'c'}
 	data = append(data, "def"...)
 	println(data)
+	fns := []func(){}
+	fns = append(fns, func() {})
+	println(fns)
 	var i any = 100
 	println(true, 0, 100, -100, uint(255), int32(-100), 0.0, 100.5, i, &i, uintptr(unsafe.Pointer(&i)))
 	var dst [3]byte

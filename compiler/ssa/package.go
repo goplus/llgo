@@ -204,9 +204,7 @@ type aProgram struct {
 
 	ptrSize int
 
-	NeedRuntime bool
-	NeedPyInit  bool
-	is32Bits    bool
+	is32Bits bool
 }
 
 // A Program presents a program.
@@ -281,7 +279,6 @@ func (p Program) runtime() *types.Package {
 	if p.rt == nil {
 		p.rt = p.rtget()
 	}
-	p.NeedRuntime = true
 	return p.rt
 }
 
@@ -393,7 +390,6 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	goStrs := make(map[string]llvm.Value)
 	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
-	p.NeedRuntime = false
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
@@ -656,11 +652,15 @@ type aPackage struct {
 	fnlink func(string) string
 
 	iRoutine int
+
+	NeedRuntime bool
+	NeedPyInit  bool
 }
 
 type Package = *aPackage
 
 func (p Package) rtFunc(fnName string) Expr {
+	p.NeedRuntime = true
 	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)

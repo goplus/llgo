@@ -206,7 +206,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
-	output := mode != ModeBuild || conf.OutFile != ""
+	output := conf.OutFile != ""
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
@@ -226,13 +226,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		linkArgs = append(linkArgs, pkg.LinkArgs...)
 	}
 
-	if ctx.output {
-		for _, pkg := range initial {
-			if needLink(pkg, mode) {
-				linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
-			}
+	for _, pkg := range initial {
+		if needLink(pkg, mode) {
+			linkMainPkg(ctx, pkg, pkgs, linkArgs, conf, mode, verbose)
 		}
 	}
+
 	return dpkg, nil
 }
 
@@ -276,7 +275,6 @@ type context struct {
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
-	prog := ctx.prog
 	pkgs, errPkgs := allPkgs(ctx, initial, verbose)
 	for _, errPkg := range errPkgs {
 		for _, err := range errPkg.Errors {
@@ -365,7 +363,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			if aPkg.AltPkg != nil {
 				aPkg.LinkArgs = append(aPkg.LinkArgs, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
 			}
-			setNeedRuntimeOrPyInit(ctx, pkg, prog.NeedRuntime, prog.NeedPyInit)
+			setNeedRuntimeOrPyInit(ctx, pkg, aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
 		}
 	}
 	return
@@ -376,7 +374,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	name := path.Base(pkgPath)
 	app := conf.OutFile
 	if app == "" {
-		app = filepath.Join(conf.BinPath, name+conf.AppExt)
+		if mode == ModeBuild && len(ctx.initial) > 1 {
+			// For multiple packages in ModeBuild mode, use temporary file
+			tmpFile, err := os.CreateTemp("", name+"*"+conf.AppExt)
+			check(err)
+			app = tmpFile.Name()
+			tmpFile.Close()
+		} else {
+			app = filepath.Join(conf.BinPath, name+conf.AppExt)
+		}
 	}
 	args := make([]string, 0, len(pkg.Imports)+len(linkArgs)+16)
 	args = append(
@@ -449,10 +455,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if ctx.output {
 		lpkg := aPkg.LPkg
 		os.WriteFile(pkg.ExportFile, []byte(lpkg.String()), 0644)
-	}
-
-	if verbose || mode != ModeRun {
-		fmt.Fprintln(os.Stderr, "#", pkgPath)
 	}
 
 	// add rpath and find libs
@@ -610,16 +612,14 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 		}
 		cgoLdflags = append(cgoLdflags, altLdflags...)
 	}
-	if ctx.output {
-		pkg.ExportFile += ".ll"
-		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
-		if debugBuild || verbose {
-			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
-		}
-		if IsCheckEnable() {
-			if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
-				fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
-			}
+	pkg.ExportFile += ".ll"
+	os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+	if debugBuild || verbose {
+		fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
+	}
+	if IsCheckEnable() {
+		if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
+			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
 		}
 	}
 	return

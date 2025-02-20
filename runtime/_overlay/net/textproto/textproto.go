@@ -24,6 +24,11 @@
 // with a single network connection.
 package textproto
 
+/*
+#include <stdint.h>
+*/
+import "C"
+
 import (
 	"bufio"
 	"errors"
@@ -33,11 +38,116 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
-
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/net"
-	"github.com/goplus/llgo/c/os"
 )
+
+const (
+	AF_UNSPEC          = 0       // unspecified
+	AF_UNIX            = 1       // local to host (pipes)
+	AF_LOCAL           = AF_UNIX // backward compatibility
+	AF_INET            = 2       // internetwork: UDP, TCP, etc.
+	AF_IMPLINK         = 3       // arpanet imp addresses
+	AF_PUP             = 4       // pup protocols: e.g. BSP
+	AF_CHAOS           = 5       // mit CHAOS protocols
+	AF_NS              = 6       // XEROX NS protocols
+	AF_ISO             = 7       // ISO protocols
+	AF_OSI             = AF_ISO
+	AF_ECMA            = 8       // European computer manufacturers
+	AF_DATAKIT         = 9       // datakit protocols
+	AF_CCITT           = 10      // CCITT protocols, X.25 etc
+	AF_SNA             = 11      // IBM SNA
+	AF_DECnet          = 12      // DECnet
+	AF_DLI             = 13      // DEC Direct data link interface
+	AF_LAT             = 14      // LAT
+	AF_HYLINK          = 15      // NSC Hyperchannel
+	AF_APPLETALK       = 16      // Apple Talk
+	AF_ROUTE           = 17      // Internal Routing Protocol
+	AF_LINK            = 18      // Link layer interface
+	pseudo_AF_XTP      = 19      // eXpress Transfer Protocol (no AF)
+	AF_COIP            = 20      // connection-oriented IP, aka ST II
+	AF_CNT             = 21      // Computer Network Technology
+	pseudo_AF_RTIP     = 22      // Help Identify RTIP packets
+	AF_IPX             = 23      // Novell Internet Protocol
+	AF_SIP             = 24      // Simple Internet Protocol
+	pseudo_AF_PIP      = 25      // Help Identify PIP packets
+	AF_NDRV            = 27      // Network Driver 'raw' access
+	AF_ISDN            = 28      // Integrated Services Digital Network
+	AF_E164            = AF_ISDN // CCITT E.164 recommendation
+	pseudo_AF_KEY      = 29      // Internal key-management function
+	AF_INET6           = 30      // IPv6
+	AF_NATM            = 31      // native ATM access
+	AF_SYSTEM          = 32      // Kernel event messages
+	AF_NETBIOS         = 33      // NetBIOS
+	AF_PPP             = 34      // PPP communication protocol
+	pseudo_AF_HDRCMPLT = 35      // Used by BPF to not rewrite headers in interface output routine
+	AF_RESERVED_36     = 36      // Reserved for internal usage
+	AF_IEEE80211       = 37      // IEEE 802.11 protocol
+	AF_UTUN            = 38
+	AF_VSOCK           = 40 // VM Sockets
+	AF_MAX             = 41
+)
+
+const (
+	SOCK_STREAM    = 1 // stream socket
+	SOCK_DGRAM     = 2 // datagram socket
+	SOCK_RAW       = 3 // raw-protocol interface
+	SOCK_RDM       = 4 // reliably-delivered message
+	SOCK_SEQPACKET = 5 // sequenced packet stream
+)
+
+type SockAddr struct {
+	Len    uint8
+	Family uint8
+	Data   [14]C.char
+}
+
+type AddrInfo struct {
+	Flags     C.int
+	Family    C.int
+	SockType  C.int
+	Protocol  C.int
+	AddrLen   C.uint
+	CanOnName *C.char
+	Addr      *SockAddr
+	Next      *AddrInfo
+}
+
+//go:linkname Getaddrinfo C.getaddrinfo
+func Getaddrinfo(host *C.char, port *C.char, addrInfo *AddrInfo, result **AddrInfo) C.int
+
+//go:linkname Freeaddrinfo C.freeaddrinfo
+func Freeaddrinfo(addrInfo *AddrInfo) C.int
+
+//go:linkname GoString llgo.string
+func GoString(cstr *C.char, __llgo_va_list /* n */ ...any) string
+
+//go:linkname AllocaCStr llgo.allocaCStr
+func AllocaCStr(s string) *C.char
+
+//go:linkname Memset C.memset
+func Memset(s unsafe.Pointer, c C.int, n uintptr) unsafe.Pointer
+
+//go:linkname Read C.read
+func Read(fd C.int, buf unsafe.Pointer, count uintptr) int
+
+//go:linkname Write C.write
+func Write(fd C.int, buf unsafe.Pointer, count uintptr) int
+
+//go:linkname Close C.close
+func Close(fd C.int) C.int
+
+//go:linkname Strerror strerror
+func Strerror(errnum C.int) *C.char
+
+//go:linkname Errno C.cliteErrno
+func Errno() C.int
+
+//go:linkname Socket C.socket
+func Socket(domain C.int, typ C.int, protocol C.int) C.int
+
+//go:linkname Connect C.connect
+func Connect(sockfd C.int, addr *SockAddr, addrlen C.uint) C.int
+
+// -----------------------------------------------------------------------------
 
 // An Error represents a numeric error response from a server.
 type Error struct {
@@ -94,7 +204,7 @@ func Dial(network, addr string) (*Conn, error) {
 }
 
 type cConn struct {
-	socketFd c.Int
+	socketFd C.int
 	closed   bool
 }
 
@@ -106,9 +216,9 @@ func (conn *cConn) Read(p []byte) (n int, err error) {
 		return 0, nil
 	}
 	for n < len(p) {
-		result := os.Read(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
+		result := Read(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
 		if result < 0 {
-			if os.Errno() == c.Int(syscall.EINTR) {
+			if Errno() == C.int(syscall.EINTR) {
 				continue
 			}
 			return n, errors.New("read error")
@@ -126,9 +236,9 @@ func (conn *cConn) Write(p []byte) (n int, err error) {
 		return 0, fs.ErrClosed
 	}
 	for n < len(p) {
-		result := os.Write(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
+		result := Write(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
 		if result < 0 {
-			if os.Errno() == c.Int(syscall.EINTR) {
+			if Errno() == C.int(syscall.EINTR) {
 				continue
 			}
 			return n, errors.New("write error")
@@ -149,9 +259,9 @@ func (conn *cConn) Close() error {
 		return fs.ErrClosed
 	}
 	conn.closed = true
-	result := os.Close(conn.socketFd)
+	result := Close(conn.socketFd)
 	if result < 0 {
-		return errors.New(c.GoString(c.Strerror(os.Errno())))
+		return errors.New(GoString(Strerror(Errno())))
 	}
 	return nil
 }
@@ -161,29 +271,29 @@ func dialNetWork(network, addr string) (*cConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	var hints net.AddrInfo
-	var res *net.AddrInfo
-	c.Memset(unsafe.Pointer(&hints), 0, unsafe.Sizeof(hints))
-	hints.Family = net.AF_UNSPEC
-	hints.SockType = net.SOCK_STREAM
-	status := net.Getaddrinfo(c.AllocaCStr(host), c.AllocaCStr(port), &hints, &res)
+	var hints AddrInfo
+	var res *AddrInfo
+	Memset(unsafe.Pointer(&hints), 0, unsafe.Sizeof(hints))
+	hints.Family = AF_UNSPEC
+	hints.SockType = SOCK_STREAM
+	status := Getaddrinfo(AllocaCStr(host), AllocaCStr(port), &hints, &res)
 	if status != 0 {
 		return nil, errors.New("getaddrinfo error")
 	}
 
-	socketFd := net.Socket(res.Family, res.SockType, res.Protocol)
+	socketFd := Socket(res.Family, res.SockType, res.Protocol)
 	if socketFd == -1 {
-		net.Freeaddrinfo(res)
+		Freeaddrinfo(res)
 		return nil, errors.New("socket error")
 	}
 
-	if net.Connect(socketFd, res.Addr, res.AddrLen) == -1 {
-		os.Close(socketFd)
-		net.Freeaddrinfo(res)
+	if Connect(socketFd, res.Addr, res.AddrLen) == -1 {
+		Close(socketFd)
+		Freeaddrinfo(res)
 		return nil, errors.New("connect error")
 	}
 
-	net.Freeaddrinfo(res)
+	Freeaddrinfo(res)
 	return &cConn{
 		socketFd: socketFd,
 	}, nil

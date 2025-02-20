@@ -136,6 +136,7 @@ var convertTests = []struct {
 			}
 		}
 	*/
+	{V(byte(0)), V(byte(0))},
 	{V(int8(1)), V(int8(1))},
 	{V(int8(2)), V(uint8(2))},
 	{V(uint8(3)), V(int8(3))},
