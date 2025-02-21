@@ -1,0 +1,17 @@
+unsafe.Pointer Pointer
+*FILE FilePtr
+FILE FILE
+uintptr SizeT
+uintptr IntptrT
+uintptr UintptrT
+int8 Int8T
+int16 Int16T
+int32 Int32T
+int64 Int64T
+uint8 Uint8T
+uint16 Uint16T
+uint32 Uint32T
+uint64 Uint64T
+LongLong IntmaxT
+UlongLong UintmaxT
+Option Option

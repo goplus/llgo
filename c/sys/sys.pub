@@ -1,0 +1,2 @@
+syscall.FdSet FdSet
+syscall.Timeval Timeval
