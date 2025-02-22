@@ -1,2 +1,2 @@
-C.jmp_buf JmpBuf
-C.sigjmp_buf SigjmpBuf
+todo:C.jmp_buf JmpBuf at positon:../../c/setjmp/setjmp.go:33:2
+todo:C.sigjmp_buf SigjmpBuf at positon:../../c/setjmp/setjmp.go:34:2

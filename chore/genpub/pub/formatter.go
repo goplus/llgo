@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 	"log"
+	"regexp"
 	"strings"
 )
 
@@ -37,6 +38,15 @@ func (p *TypeFormatter) FormatStarExprType(expr *ast.StarExpr) string {
 		return "*" + xType
 	}
 	return ""
+}
+
+func LowerCamelCase(name string) string {
+	if strings.HasPrefix(name, "X") {
+		name = strings.Replace(name, "X", "_", 1)
+	}
+	m1 := regexp.MustCompile(`[A-Z]`)
+	str := strings.ToLower(m1.ReplaceAllString(name, "_$0"))
+	return strings.TrimPrefix(str, "_")
 }
 
 func (p *TypeFormatter) FormatIdentType(expr *ast.Ident) string {
@@ -81,7 +91,7 @@ func (p *TypeFormatter) FormatExpr(expr ast.Expr) string {
 	case *ast.StarExpr:
 		return p.FormatStarExprType(t)
 	case *ast.StructType:
-		return p.name
+		return p.FormatStructType(t)
 	case *ast.FuncType:
 		return p.FormatFuncType(t)
 	default:

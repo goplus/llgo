@@ -1,13 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,9 +11,10 @@ import (
 )
 
 func main() {
-
-	help := false
+	help, r, clean := false, false, false
 	flag.BoolVar(&help, "h", false, "print help infomation")
+	flag.BoolVar(&r, "r", true, "true if generate .pub recursively")
+	flag.BoolVar(&clean, "clean", false, "clean all generaged .pub file for dir and it's subdir")
 	flag.Parse()
 	flag.Usage = func() {
 		fmt.Println(`genpub is used to generate a .pub file for dir path
@@ -30,51 +26,34 @@ func main() {
 		return
 	}
 	dir := "."
-	path := ""
 	if len(flag.Args()) > 0 {
 		dir = flag.Args()[0]
 	}
-	fullpath, _ := filepath.Abs(dir)
-	_, splitFile := filepath.Split(fullpath)
-	path = filepath.Join(dir, splitFile+".pub")
-	if len(path) <= 0 {
-		panic("fatal error")
-	}
-	_, err := os.Stat(dir)
-	if err != nil {
-		panic(err)
-	}
-	f, err := os.Create(path)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	defer func() {
-		if w.Buffered() <= 0 {
-			log.Println("write empty file, remove it")
-			os.Remove(path)
-		} else {
-			w.Flush()
-		}
-	}()
-	fset := token.NewFileSet()
-	pkgMap, err := parser.ParseDir(fset, dir, func(fi fs.FileInfo) bool {
-		return true
-	}, 0)
-	if err != nil {
-		panic(err)
-	}
-	pubWriter := pub.NewPubWriter(w, fset)
-	for _, v := range pkgMap {
-		for _, f := range v.Files {
-			if ast.IsGenerated(f) {
-				continue
+	if clean {
+		pub.DoDirRecursively(dir, func(d string) {
+			path, err := filepath.Abs(d)
+			if err != nil {
+				log.Panicln(err)
 			}
-			if !ast.FileExports(f) {
-				continue
+			_, file := filepath.Split(path)
+			pubfile := filepath.Join(path, file+".pub")
+			_, err = os.Stat(pubfile)
+			if !os.IsNotExist(err) {
+				err = os.Remove(pubfile)
+				if err != nil {
+					log.Panicln(err)
+				} else {
+					fmt.Println("remove", pubfile, "successfully")
+				}
 			}
-			pubWriter.WriteFile(f)
-		}
+		})
+		return
+	}
+	if r {
+		pub.DoDirRecursively(dir, func(d string) {
+			pub.WriteDir(d)
+		})
+	} else {
+		pub.WriteDir(dir)
 	}
 }

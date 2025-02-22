@@ -1,0 +1,21 @@
+String
+StringSet
+todo:c.Pointer ClientData at positon:../../c/clang/clang.go:1132:6
+UnsavedFile
+Index
+TranslationUnit
+todo:c.Int CursorKind at positon:../../c/clang/clang.go:1314:6
+Cursor
+todo:c.Int TypeKind at positon:../../c/clang/clang.go:1346:6
+Type
+todo:uintptr File at positon:../../c/clang/clang.go:1519:6
+SourceLocation
+SourceRange
+todo:c.Int TokenKind at positon:../../c/clang/clang.go:1548:6
+Token
+todo:c.Int LayoutError at positon:../../c/clang/clang.go:2159:6
+todo:c.Int CXXAccessSpecifier at positon:../../c/clang/clang.go:2236:6
+todo:c.Int StorageClass at positon:../../c/clang/clang.go:2261:6
+todo:c.Int ChildVisitResult at positon:../../c/clang/clang.go:2699:6
+todo:func(Cursor, ClientData)ChildVisitResult Visitor at positon:../../c/clang/clang.go:2767:6
+todo:func(File, *SourceLocation, c.Uint, ClientData) InclusionVisitor at positon:../../c/clang/clang.go:2781:6

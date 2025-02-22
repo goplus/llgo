@@ -1,0 +1,7 @@
+todo:C.mode_t ModeT at positon:../../c/os/os.go:62:2
+todo:C.uid_t UidT at positon:../../c/os/os.go:63:2
+todo:C.gid_t GidT at positon:../../c/os/os.go:64:2
+todo:C.off_t OffT at positon:../../c/os/os.go:65:2
+todo:C.dev_t DevT at positon:../../c/os/os.go:66:2
+todo:syscall.Stat_t StatT at positon:../../c/os/os.go:70:2
+todo:c.Int PidT at positon:../../c/os/os.go:265:6

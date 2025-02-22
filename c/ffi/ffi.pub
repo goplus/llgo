@@ -1,0 +1,3 @@
+Type
+Cif
+todo:func(*Cif, unsafe.Pointer, *unsafe.Pointer, unsafe.Pointer) ClosureFunc at positon:../../c/ffi/ffi.go:121:6

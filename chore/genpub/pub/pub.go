@@ -1,10 +1,18 @@
 package pub
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
 	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
 )
 
 var builtinTypes = []string{"Void", "Bool", "Char", "Int16", "Int32",
@@ -37,7 +45,11 @@ func (p *PubWriter) WriteSepc(spec ast.Spec) bool {
 	name := typSpec.Name.Name
 	if !IsBuiltinType(name) {
 		format := NewTypeFormatter(name, typSpec.Type, p.fileset)
-		fmt.Fprintf(p.w, "%s %s\n", format.FormatExpr(typSpec.Type), format.name)
+		if _, ok := typSpec.Type.(*ast.StructType); ok {
+			fmt.Fprintln(p.w, name)
+		} else {
+			fmt.Fprintf(p.w, "todo:%s %s at positon:%v\n", format.FormatExpr(typSpec.Type), format.name, p.fileset.Position(typSpec.Pos()))
+		}
 	}
 	return true
 }
@@ -60,4 +72,102 @@ func (p *PubWriter) WriteFile(file *ast.File) {
 	for _, decl := range file.Decls {
 		p.WriteDecl(decl)
 	}
+}
+
+func doWriteDir(w io.Writer, dir string) {
+	fset := token.NewFileSet()
+	pkgMap, err := parser.ParseDir(fset, dir, func(fi fs.FileInfo) bool {
+		return true
+	}, 0)
+	if err != nil {
+		panic(err)
+	}
+	pubWriter := NewPubWriter(w, fset)
+	for _, v := range pkgMap {
+		for _, f := range v.Files {
+			if ast.IsGenerated(f) {
+				continue
+			}
+			if !ast.FileExports(f) {
+				continue
+			}
+			pubWriter.WriteFile(f)
+		}
+	}
+}
+
+func GenDirs(quit <-chan int, dir string) <-chan string {
+	dirs := make(chan string)
+	go func() {
+		defer close(dirs)
+		fnIgnore := func(dir string) bool {
+			paths := strings.Split(dir, string(filepath.Separator))
+			for _, path := range paths {
+				if strings.HasPrefix(path, "_") {
+					return true
+				}
+			}
+			return false
+		}
+		filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() && !fnIgnore(path) {
+				select {
+				case dirs <- path:
+				case <-quit:
+					return errors.New("force finished")
+				}
+			}
+			return nil
+		})
+	}()
+	return dirs
+}
+
+func WriteDir(dir string) {
+	fmt.Println("start handle =>", dir)
+	path := ""
+	fullpath, _ := filepath.Abs(dir)
+	_, splitFile := filepath.Split(fullpath)
+	path = filepath.Join(dir, splitFile+".pub")
+	if len(path) <= 0 {
+		panic("fatal error")
+	}
+	_, err := os.Stat(dir)
+	if err != nil {
+		panic(err)
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	defer func() {
+		if w.Buffered() <= 0 {
+			fmt.Println("write empty file for", dir+",", "remove it")
+			os.Remove(path)
+		} else {
+			w.Flush()
+		}
+		fmt.Println("handle finished =>", dir)
+	}()
+	doWriteDir(w, dir)
+}
+
+func DoDirRecursively(dir string, fn func(d string)) {
+	quit := make(chan int)
+	defer close(quit)
+	dirs := GenDirs(quit, dir)
+	wg := sync.WaitGroup{}
+	for d := range dirs {
+		wg.Add(1)
+		go func(path string) {
+			defer wg.Done()
+			fn(path)
+		}(d)
+	}
+	wg.Wait()
 }

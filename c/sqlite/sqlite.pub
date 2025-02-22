@@ -1,5 +1,5 @@
-Sqlite3 Sqlite3
-Stmt Stmt
-c.Int Errno
-c.Int OpenFlags
-c.Int PrepareFlags
+Sqlite3
+Stmt
+todo:c.Int Errno at positon:../../c/sqlite/sqlite.go:41:6
+todo:c.Int OpenFlags at positon:../../c/sqlite/sqlite.go:100:6
+todo:c.Int PrepareFlags at positon:../../c/sqlite/sqlite.go:170:6

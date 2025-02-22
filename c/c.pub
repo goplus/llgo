@@ -1,17 +1,17 @@
-unsafe.Pointer Pointer
-*FILE FilePtr
-FILE FILE
-uintptr SizeT
-uintptr IntptrT
-uintptr UintptrT
-int8 Int8T
-int16 Int16T
-int32 Int32T
-int64 Int64T
-uint8 Uint8T
-uint16 Uint16T
-uint32 Uint32T
-uint64 Uint64T
-LongLong IntmaxT
-UlongLong UintmaxT
-Option Option
+todo:unsafe.Pointer Pointer at positon:../../c/c.go:35:2
+todo:*FILE FilePtr at positon:../../c/c.go:36:2
+FILE
+todo:uintptr SizeT at positon:../../c/c.go:58:6
+todo:uintptr IntptrT at positon:../../c/c.go:60:6
+todo:uintptr UintptrT at positon:../../c/c.go:61:6
+todo:int8 Int8T at positon:../../c/c.go:62:6
+todo:int16 Int16T at positon:../../c/c.go:63:6
+todo:int32 Int32T at positon:../../c/c.go:64:6
+todo:int64 Int64T at positon:../../c/c.go:65:6
+todo:uint8 Uint8T at positon:../../c/c.go:67:6
+todo:uint16 Uint16T at positon:../../c/c.go:68:6
+todo:uint32 Uint32T at positon:../../c/c.go:69:6
+todo:uint64 Uint64T at positon:../../c/c.go:70:6
+todo:LongLong IntmaxT at positon:../../c/c.go:72:6
+todo:UlongLong UintmaxT at positon:../../c/c.go:73:6
+Option

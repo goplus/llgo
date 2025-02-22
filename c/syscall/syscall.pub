@@ -1,1448 +1,1448 @@
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
- Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
- Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Sysctlnode Sysctlnode
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-Mclpool Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timeval32 Timeval32
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Fstore_t Fstore_t
-Radvisory_t Radvisory_t
-Fbootstraptransfer_t Fbootstraptransfer_t
-Log2phys_t Log2phys_t
-Fsid Fsid
-Dirent Dirent
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfmaMsghdr2 IfmaMsghdr2
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfZbuf BpfZbuf
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfZbufHeader BpfZbufHeader
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int32 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfZbuf BpfZbuf
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfZbufHeader BpfZbufHeader
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
- Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
- Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Sysctlnode Sysctlnode
-uintptr Errno
-int Signal
-Timespec Timespec
-Timeval Timeval
-Timeval32 Timeval32
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Fstore_t Fstore_t
-Radvisory_t Radvisory_t
-Fbootstraptransfer_t Fbootstraptransfer_t
-Log2phys_t Log2phys_t
-Fsid Fsid
-Dirent Dirent
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfmaMsghdr2 IfmaMsghdr2
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfZbuf BpfZbuf
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfZbufHeader BpfZbufHeader
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfZbuf BpfZbuf
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfZbufHeader BpfZbufHeader
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
- Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
- Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Sysctlnode Sysctlnode
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int32 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timeval32 Timeval32
-Timezone Timezone
-Rusage Rusage
-Rlimit Rlimit
-Flock_t Flock_t
-Stat_t Stat_t
-Statfs_t Statfs_t
-Fsid64_t Fsid64_t
-StTimespec_t StTimespec_t
-Dirent Dirent
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Cmsghdr Cmsghdr
-ICMPv6Filter ICMPv6Filter
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Linger Linger
-Msghdr Msghdr
-IfMsgHdr IfMsgHdr
-Utsname Utsname
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-PtracePsw PtracePsw
-PtraceFpregs PtraceFpregs
-PtracePer PtracePer
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-Mclpool Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-Mclpool Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-Mclpool Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int32 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfmaMsghdr IfmaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfZbuf BpfZbuf
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfZbufHeader BpfZbufHeader
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timeval32 Timeval32
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Flock_t Flock_t
-Dirent Dirent
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfTimeval BpfTimeval
-BpfHdr BpfHdr
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int32 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Timex Timex
-int64 Time_t
-Tms Tms
-Utimbuf Utimbuf
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Dirent Dirent
-Fsid Fsid
-Flock_t Flock_t
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrLinklayer RawSockaddrLinklayer
-RawSockaddrNetlink RawSockaddrNetlink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPMreqn IPMreqn
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet4Pktinfo Inet4Pktinfo
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Ucred Ucred
-TCPInfo TCPInfo
-NlMsghdr NlMsghdr
-NlMsgerr NlMsgerr
-RtGenmsg RtGenmsg
-NlAttr NlAttr
-RtAttr RtAttr
-IfInfomsg IfInfomsg
-IfAddrmsg IfAddrmsg
-RtMsg RtMsg
-RtNexthop RtNexthop
-SockFilter SockFilter
-SockFprog SockFprog
-InotifyEvent InotifyEvent
-PtraceRegs PtraceRegs
-FdSet FdSet
-Sysinfo_t Sysinfo_t
-Utsname Utsname
-Ustat_t Ustat_t
-EpollEvent EpollEvent
-Termios Termios
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
- Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
- Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
-Sysctlnode Sysctlnode
-Timespec Timespec
-Timeval Timeval
-Rusage Rusage
-Rlimit Rlimit
-Stat_t Stat_t
-Statfs_t Statfs_t
-Flock_t Flock_t
-Dirent Dirent
-Fsid Fsid
-RawSockaddrInet4 RawSockaddrInet4
-RawSockaddrInet6 RawSockaddrInet6
-RawSockaddrUnix RawSockaddrUnix
-RawSockaddrDatalink RawSockaddrDatalink
-RawSockaddr RawSockaddr
-RawSockaddrAny RawSockaddrAny
-Linger Linger
-Iovec Iovec
-IPMreq IPMreq
-IPv6Mreq IPv6Mreq
-Msghdr Msghdr
-Cmsghdr Cmsghdr
-Inet6Pktinfo Inet6Pktinfo
-IPv6MTUInfo IPv6MTUInfo
-ICMPv6Filter ICMPv6Filter
-Kevent_t Kevent_t
-FdSet FdSet
-IfMsghdr IfMsghdr
-IfData IfData
-IfaMsghdr IfaMsghdr
-IfAnnounceMsghdr IfAnnounceMsghdr
-RtMsghdr RtMsghdr
-RtMetrics RtMetrics
-Mclpool Mclpool
-BpfVersion BpfVersion
-BpfStat BpfStat
-BpfProgram BpfProgram
-BpfInsn BpfInsn
-BpfHdr BpfHdr
-BpfTimeval BpfTimeval
-Termios Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfZbuf
+BpfProgram
+BpfInsn
+BpfHdr
+BpfZbufHeader
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_mips64.go:59:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+Mclpool
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_arm64.go:61:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_ppc64le.go:61:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_s390x.go:59:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+PtracePsw
+PtraceFpregs
+PtracePer
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timeval32
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Fstore_t
+Radvisory_t
+Fbootstraptransfer_t
+Log2phys_t
+Fsid
+Dirent
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfmaMsghdr2
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+Termios
+Timespec
+Timeval
+Timex
+todo:int32 Time_t at positon:../../c/syscall/ztypes_linux_arm.go:58:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timeval32
+Timezone
+Rusage
+Rlimit
+Flock_t
+Stat_t
+Statfs_t
+Fsid64_t
+StTimespec_t
+Dirent
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Cmsghdr
+ICMPv6Filter
+Iovec
+IPMreq
+IPv6Mreq
+Linger
+Msghdr
+IfMsgHdr
+Utsname
+Termios
+Timespec
+Timeval
+Timeval32
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Fstore_t
+Radvisory_t
+Fbootstraptransfer_t
+Log2phys_t
+Fsid
+Dirent
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfmaMsghdr2
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+Mclpool
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+Mclpool
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_amd64.go:61:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+Mclpool
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_loong64.go:56:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+Mclpool
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+todo: Statfs_t at positon:../../c/syscall/ztypes_netbsd_386.go:79:6
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+todo: Mclpool at positon:../../c/syscall/ztypes_netbsd_386.go:332:6
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Sysctlnode
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+todo: Statfs_t at positon:../../c/syscall/ztypes_netbsd_amd64.go:83:6
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+todo: Mclpool at positon:../../c/syscall/ztypes_netbsd_amd64.go:338:6
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Sysctlnode
+Timespec
+Timeval
+Timex
+todo:int32 Time_t at positon:../../c/syscall/ztypes_linux_386.go:58:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_mips64le.go:59:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_ppc64.go:61:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+todo: Statfs_t at positon:../../c/syscall/ztypes_netbsd_arm.go:84:6
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+todo: Mclpool at positon:../../c/syscall/ztypes_netbsd_arm.go:337:6
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Sysctlnode
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+todo: Statfs_t at positon:../../c/syscall/ztypes_netbsd_arm64.go:83:6
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+todo: Mclpool at positon:../../c/syscall/ztypes_netbsd_arm64.go:338:6
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+BpfTimeval
+Termios
+Sysctlnode
+todo:uintptr Errno at positon:../../c/syscall/syscall.go:23:6
+todo:int Signal at positon:../../c/syscall/syscall.go:27:6
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfHdr
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfZbuf
+BpfProgram
+BpfInsn
+BpfHdr
+BpfZbufHeader
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfZbuf
+BpfProgram
+BpfInsn
+BpfHdr
+BpfZbufHeader
+Termios
+Timespec
+Timeval
+Timex
+todo:int64 Time_t at positon:../../c/syscall/ztypes_linux_riscv64.go:56:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Timex
+todo:int32 Time_t at positon:../../c/syscall/ztypes_linux_mipsle.go:56:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfZbuf
+BpfProgram
+BpfInsn
+BpfHdr
+BpfZbufHeader
+Termios
+Timespec
+Timeval
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Flock_t
+Dirent
+Fsid
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Kevent_t
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+IfmaMsghdr
+IfAnnounceMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfZbuf
+BpfProgram
+BpfInsn
+BpfHdr
+BpfZbufHeader
+Termios
+Timespec
+Timeval
+Timeval32
+Rusage
+Rlimit
+Stat_t
+Flock_t
+Dirent
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrDatalink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+FdSet
+IfMsghdr
+IfData
+IfaMsghdr
+RtMsghdr
+RtMetrics
+BpfVersion
+BpfStat
+BpfProgram
+BpfInsn
+BpfTimeval
+BpfHdr
+Termios
+Timespec
+Timeval
+Timex
+todo:int32 Time_t at positon:../../c/syscall/ztypes_linux_mips.go:56:6
+Tms
+Utimbuf
+Rusage
+Rlimit
+Stat_t
+Statfs_t
+Dirent
+Fsid
+Flock_t
+RawSockaddrInet4
+RawSockaddrInet6
+RawSockaddrUnix
+RawSockaddrLinklayer
+RawSockaddrNetlink
+RawSockaddr
+RawSockaddrAny
+Linger
+Iovec
+IPMreq
+IPMreqn
+IPv6Mreq
+Msghdr
+Cmsghdr
+Inet4Pktinfo
+Inet6Pktinfo
+IPv6MTUInfo
+ICMPv6Filter
+Ucred
+TCPInfo
+NlMsghdr
+NlMsgerr
+RtGenmsg
+NlAttr
+RtAttr
+IfInfomsg
+IfAddrmsg
+RtMsg
+RtNexthop
+SockFilter
+SockFprog
+InotifyEvent
+PtraceRegs
+FdSet
+Sysinfo_t
+Utsname
+Ustat_t
+EpollEvent
+Termios

@@ -1,0 +1,4 @@
+todo:func(c.Pointer)c.Pointer RoutineFunc at positon:../../c/pthread/pthread.go:36:6
+todo:*aThread Thread at positon:../../c/pthread/pthread.go:39:6
+Attr
+todo:c.Uint Key at positon:../../c/pthread/pthread.go:95:6

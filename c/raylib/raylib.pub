@@ -1,0 +1,11 @@
+Vector2
+Vector3
+Vector4
+todo:Vector4 Quaternion at positon:../../c/raylib/raylib.go:53:6
+todo:uint32 Color at positon:../../c/raylib/shape.go:29:6
+Image
+Camera3D
+todo:Camera3D Camera at positon:../../c/raylib/shape.go:80:6
+Camera2D
+Shader
+todo:c.Int BlendMode at positon:../../c/raylib/shape.go:154:6
