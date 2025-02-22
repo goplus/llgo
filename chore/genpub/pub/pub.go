@@ -9,6 +9,7 @@ import (
 	"go/token"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,10 @@ import (
 var builtinTypes = []string{"Void", "Bool", "Char", "Int16", "Int32",
 	"Uint16", "Int", "Uint", "Long", "Ulong", "LongLong",
 	"UlongLong", "Float", "Double", "Complex64", "Complex128"}
+
+var ignoreTypes = []string{
+	"Pointer",
+}
 
 type PubWriter struct {
 	w       io.Writer
@@ -37,18 +42,47 @@ func IsBuiltinType(typ string) bool {
 	return false
 }
 
+func IsIgnoreType(typ string) bool {
+	for _, name := range ignoreTypes {
+		if name == typ {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *PubWriter) cnameFromTypSpec(spec ast.TypeSpec) string {
+	if spec.Comment == nil {
+		return ""
+	}
+	if spec.Comment.List == nil {
+		return ""
+	}
+	for _, c := range spec.Comment.List {
+		if strings.HasPrefix(c.Text, "//cname:") {
+			return strings.TrimPrefix(c.Text, "//cname:")
+		}
+	}
+	return ""
+}
+
 func (p *PubWriter) WriteSepc(spec ast.Spec) bool {
 	typSpec, ok := spec.(*ast.TypeSpec)
 	if !ok {
 		return false
 	}
 	name := typSpec.Name.Name
-	if !IsBuiltinType(name) {
+	if !IsBuiltinType(name) && !IsIgnoreType(name) {
 		format := NewTypeFormatter(name, typSpec.Type, p.fileset)
 		if _, ok := typSpec.Type.(*ast.StructType); ok {
 			fmt.Fprintln(p.w, name)
 		} else {
-			fmt.Fprintf(p.w, "todo:%s %s at positon:%v\n", format.FormatExpr(typSpec.Type), format.name, p.fileset.Position(typSpec.Pos()))
+			cname := p.cnameFromTypSpec(*typSpec)
+			if len(cname) > 0 {
+				fmt.Fprintf(p.w, "%s %s\n", cname, format.name)
+			} else {
+				fmt.Fprintf(p.w, "todo:%s %s at positon:%v\n", format.FormatExpr(typSpec.Type), format.name, p.fileset.Position(typSpec.Pos()))
+			}
 		}
 	}
 	return true
@@ -77,8 +111,10 @@ func (p *PubWriter) WriteFile(file *ast.File) {
 func doWriteDir(w io.Writer, dir string) {
 	fset := token.NewFileSet()
 	pkgMap, err := parser.ParseDir(fset, dir, func(fi fs.FileInfo) bool {
-		return true
-	}, 0)
+		return !strings.HasPrefix(fi.Name(), "_") &&
+			!strings.HasPrefix(fi.Name(), ".") &&
+			strings.HasSuffix(fi.Name(), ".go")
+	}, parser.ParseComments)
 	if err != nil {
 		panic(err)
 	}
@@ -128,10 +164,7 @@ func GenDirs(quit <-chan int, dir string) <-chan string {
 
 func WriteDir(dir string) {
 	fmt.Println("start handle =>", dir)
-	path := ""
-	fullpath, _ := filepath.Abs(dir)
-	_, splitFile := filepath.Split(fullpath)
-	path = filepath.Join(dir, splitFile+".pub")
+	path := PubFilenameForDir(dir)
 	if len(path) <= 0 {
 		panic("fatal error")
 	}
@@ -155,6 +188,20 @@ func WriteDir(dir string) {
 		fmt.Println("handle finished =>", dir)
 	}()
 	doWriteDir(w, dir)
+}
+
+func PubFilenameForDir(dir string) string {
+	info, err := os.Stat(dir)
+	if !info.IsDir() || err != nil {
+		return ""
+	}
+	path, err := filepath.Abs(dir)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	_, file := filepath.Split(path)
+	return filepath.Join(path, file+".pub")
 }
 
 func DoDirRecursively(dir string, fn func(d string)) {

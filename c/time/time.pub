@@ -1,5 +1,5 @@
-todo:C.time_t TimeT at positon:../../c/time/time.go:34:6
+time_t TimeT
 Tm
-todo:C.clock_t ClockT at positon:../../c/time/time.go:75:6
-todo:C.clockid_t ClockidT at positon:../../c/time/time.go:82:6
+clock_t ClockT
+clockid_t ClockidT
 Timespec

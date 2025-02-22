@@ -33,7 +33,7 @@ type (
 	Float   = float32
 	Double  = float64
 	Pointer = unsafe.Pointer
-	FilePtr = *FILE
+	FilePtr = *FILE //cname:*FILE
 )
 
 type FILE struct {
@@ -55,10 +55,10 @@ type integer interface {
 	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64
 }
 
-type SizeT = uintptr
+type SizeT = uintptr //cname:size_t
 type SsizeT = Long
 
-type IntptrT = uintptr
+type IntptrT = uintptr //cname:intptr_t
 type UintptrT = uintptr
 type Int8T = int8
 type Int16T = int16

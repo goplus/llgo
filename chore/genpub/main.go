@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/goplus/llgo/chore/genpub/pub"
 )
@@ -13,12 +12,12 @@ import (
 func main() {
 	help, r, clean := false, false, false
 	flag.BoolVar(&help, "h", false, "print help infomation")
-	flag.BoolVar(&r, "r", true, "true if generate .pub recursively")
+	flag.BoolVar(&r, "r", false, "true if generate .pub recursively")
 	flag.BoolVar(&clean, "clean", false, "clean all generaged .pub file for dir and it's subdir")
 	flag.Parse()
 	flag.Usage = func() {
-		fmt.Println(`genpub is used to generate a .pub file for dir path
-		genpub [path to dir]`)
+		fmt.Println(`genpub is used to generate a .pub file for a dir of c standard lib.
+usage:genpub [path to dir]`)
 		flag.PrintDefaults()
 	}
 	if help {
@@ -31,13 +30,8 @@ func main() {
 	}
 	if clean {
 		pub.DoDirRecursively(dir, func(d string) {
-			path, err := filepath.Abs(d)
-			if err != nil {
-				log.Panicln(err)
-			}
-			_, file := filepath.Split(path)
-			pubfile := filepath.Join(path, file+".pub")
-			_, err = os.Stat(pubfile)
+			pubfile := pub.PubFilenameForDir(d)
+			_, err := os.Stat(pubfile)
 			if !os.IsNotExist(err) {
 				err = os.Remove(pubfile)
 				if err != nil {

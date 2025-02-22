@@ -1,2 +1,0 @@
-todo:syscall.FdSet FdSet at positon:../../c/sys/select.go:18:2
-todo:syscall.Timeval Timeval at positon:../../c/sys/select.go:19:2
