@@ -46,10 +46,13 @@ const (
 )
 
 var (
-	debugInstr   bool
-	debugGoSSA   bool
-	debugSymbols bool
-	debugTrace   bool
+	debugInstr bool
+	debugGoSSA bool
+
+	enableCallTracing bool
+	enableDbg         bool
+	enableDbgSyms     bool
+	disableInline     bool
 )
 
 // SetDebug sets debug flags.
@@ -58,12 +61,16 @@ func SetDebug(dbgFlags dbgFlags) {
 	debugGoSSA = (dbgFlags & DbgFlagGoSSA) != 0
 }
 
-func EnableDebugSymbols(b bool) {
-	debugSymbols = b
+func EnableDebug(b bool) {
+	enableDbg = b
+}
+
+func EnableDbgSyms(b bool) {
+	enableDbgSyms = b
 }
 
 func EnableTrace(b bool) {
-	debugTrace = b
+	enableCallTracing = b
 }
 
 // -----------------------------------------------------------------------------
@@ -246,7 +253,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	if fn == nil {
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
-		if debugSymbols {
+		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
 	}
@@ -278,7 +285,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
-			if debugSymbols {
+			if enableDbg {
 				pos := p.goProg.Fset.Position(f.Pos())
 				bodyPos := p.getFuncBodyPos(f)
 				b.DebugFunction(fn, pos, bodyPos)
@@ -385,11 +392,11 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
-	if block.Index == 0 && debugTrace && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
+	if block.Index == 0 && enableCallTracing && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
 		b.Printf("call " + fn.Name() + "\n\x00")
 	}
 	// place here to avoid wrong current-block
-	if debugSymbols && block.Index == 0 {
+	if enableDbgSyms && block.Index == 0 {
 		p.debugParams(b, block.Parent())
 	}
 	if doModInit {
@@ -781,7 +788,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		p.compileInstrOrValue(b, iv, false)
 		return
 	}
-	if debugSymbols {
+	if enableDbg {
 		scope := p.getDebugLocScope(instr.Parent(), instr.Pos())
 		if scope != nil {
 			diScope := b.DIScope(p.fn, scope)
@@ -844,7 +851,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
-		if debugSymbols {
+		if enableDbgSyms {
 			p.debugRef(b, v)
 		}
 	default:
@@ -901,7 +908,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		if isCgoVar(varName) {
 			p.cgoSymbols = append(p.cgoSymbols, val.Name())
 		}
-		if debugSymbols {
+		if enableDbgSyms {
 			pos := p.fset.Position(v.Pos())
 			b.DIGlobal(val, v.Name(), pos)
 		}
@@ -984,8 +991,8 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		prog.SetRuntime(pkgTypes)
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
-	if debugSymbols {
-		ret.InitDebugSymbols(pkgName, pkgPath, pkgProg.Fset)
+	if enableDbg {
+		ret.InitDebug(pkgName, pkgPath, pkgProg.Fset)
 	}
 
 	ctx := &context{
