@@ -306,7 +306,9 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				}
 				linkParts := concatPkgLinkFiles(ctx, pkg, verbose)
 				allParts := append(linkParts, cgoLdflags...)
-				allParts = append(allParts, pkg.ExportFile)
+				if pkg.ExportFile != "" {
+					allParts = append(allParts, pkg.ExportFile)
+				}
 				aPkg.LinkArgs = allParts
 			} else {
 				// panic("todo")
@@ -358,7 +360,9 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			if err != nil {
 				panic(err)
 			}
-			aPkg.LinkArgs = append(cgoLdflags, pkg.ExportFile)
+			if pkg.ExportFile != "" {
+				aPkg.LinkArgs = append(cgoLdflags, pkg.ExportFile)
+			}
 			aPkg.LinkArgs = append(aPkg.LinkArgs, concatPkgLinkFiles(ctx, pkg, verbose)...)
 			if aPkg.AltPkg != nil {
 				aPkg.LinkArgs = append(aPkg.LinkArgs, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
@@ -612,14 +616,16 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, 
 		}
 		cgoLdflags = append(cgoLdflags, altLdflags...)
 	}
-	pkg.ExportFile += ".ll"
-	os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
-	if debugBuild || verbose {
-		fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
-	}
-	if IsCheckEnable() {
-		if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
-			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
+	if pkg.ExportFile != "" {
+		pkg.ExportFile += ".ll"
+		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		if debugBuild || verbose {
+			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
+		}
+		if IsCheckEnable() {
+			if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
+				fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
+			}
 		}
 	}
 	return
