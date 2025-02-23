@@ -218,3 +218,56 @@ func DoDirRecursively(dir string, fn func(d string)) {
 	}
 	wg.Wait()
 }
+
+func CleanPubfile(dir string) {
+	pubfile := PubFilenameForDir(dir)
+	_, err := os.Stat(pubfile)
+	if !os.IsNotExist(err) {
+		err = os.Remove(pubfile)
+		if err != nil {
+			log.Panicln(err)
+		} else {
+			fmt.Println("remove", pubfile, "successfully")
+		}
+	}
+}
+
+func CleanPubfileRecursively(dir string) {
+	DoDirRecursively(dir, func(d string) {
+		CleanPubfile(d)
+	})
+}
+
+func MergePubfiles(llcppgPubFileName string, dir string) {
+	f, err := os.Create(llcppgPubFileName)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	defer func() {
+		if w.Buffered() > 0 {
+			w.Flush()
+		} else {
+			fmt.Println("no pub files to merge! remove it!")
+			os.Remove(llcppgPubFileName)
+		}
+	}()
+	quit := make(chan int)
+	defer close(quit)
+	dirs := GenDirs(quit, dir)
+	for d := range dirs {
+		pubfile := PubFilenameForDir(d)
+		_, err := os.Stat(pubfile)
+		if !os.IsNotExist(err) {
+			b, err := os.ReadFile(pubfile)
+			if err != nil {
+				panic(err)
+			}
+			_, err = w.Write(b)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
