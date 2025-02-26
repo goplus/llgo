@@ -1,0 +1,57 @@
+FILE
+size_t SizeT
+intptr_t IntptrT
+uintptr_t UintptrT
+int8_t Int8T
+int16_t Int16T
+int32_t Int32T
+int64_t Int64T
+uint8_t Uint8T
+uint16_t Uint16T
+uint32_t Uint32T
+uint64_t Uint64T
+intmax_t IntmaxT
+uintmax_t UintmaxT
+Option
+TokenIndex
+Tokenizer
+Config
+TransformerWeights
+RunState
+Transformer
+ProbIndex
+Sampler
+SockaddrIn
+SockaddrIn6
+SockaddrStorage
+InAddr
+In6Addr
+SockAddr
+Hostent
+AddrInfo
+mode_t ModeT
+uid_t UidT
+gid_t GidT
+off_t OffT
+dev_t DevT
+Stat_t StatT
+pid_t PidT
+pthread_t Thread
+Attr
+pthread_key_t Key
+pthread_once_t Once
+pthread_mutexattr_t MutexAttr
+pthread_mutex_t Mutex
+pthread_rwlockattr_t RWLockAttr
+pthread_rwlock_t RWLock
+pthread_condattr_t CondAttr
+pthread_cond_t Cond
+jmp_buf JmpBuf
+sigjmp_buf SigjmpBuf
+FdSet FdSet
+Timeval Timeval
+time_t TimeT
+Tm
+clock_t ClockT
+clockid_t ClockidT
+Timespec
