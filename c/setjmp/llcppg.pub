@@ -1,2 +1,0 @@
-jmp_buf JmpBuf
-sigjmp_buf SigjmpBuf
