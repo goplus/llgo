@@ -1,0 +1,5 @@
+time_t TimeT
+tm Tm
+clock_t ClockT
+clockid_t ClockidT
+timespec Timespec
