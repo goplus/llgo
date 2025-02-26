@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/goplus/llgo/chore/genpub/pub"
 )
@@ -26,8 +27,8 @@ usage: genpub clean dir`)
 	}
 	flagsetMap[mergeSubcmd] = flag.NewFlagSet(mergeSubcmd, flag.ExitOnError)
 	flagsetMap[mergeSubcmd].Usage = func() {
-		fmt.Println(`merge all .pub files to llcppg.pub.
-usage: genpub merge [-dir] llcppg.pub`)
+		fmt.Println(`merge all pub files in the directory into one llcppg.pub file.
+usage: genpub merge dir`)
 	}
 	flagsetMap[helpSubcmd] = flag.NewFlagSet(helpSubcmd, flag.ExitOnError)
 	flagsetMap[helpSubcmd].Usage = func() {
@@ -36,8 +37,8 @@ usage: genpub help or genpub help [clean|merge]`)
 	}
 	flagsetMap[genpubCommand] = flag.NewFlagSet(genpubCommand, flag.ExitOnError)
 	flagsetMap[genpubCommand].Usage = func() {
-		fmt.Println(`genpub is a tool for handling pub files.
-usage:genpub help [clean|merge] or genpub [-r] dir`)
+		fmt.Println(`genpub is a tool for generate、clean、merge pub files for c lib of llgo. 
+usage:genpub help [clean|merge] or genpub [-r|-dirs] dir`)
 	}
 	return flagsetMap
 }
@@ -47,15 +48,20 @@ func main() {
 	flagsetMap := makeFlagsetMap()
 
 	clean := func(do bool, args ...string) {
+		fs := flagsetMap[cleanSubcmd]
+		if err := fs.Parse(args); err != nil {
+			log.Printf("error: %s", err)
+			return
+		}
 		if !do {
 			return
 		}
-		if len(args) > 0 {
+		if fs.NArg() > 0 {
 			defer func() {
 				fmt.Println("clean finished!")
 			}()
-			fmt.Printf("starting clean all .pub files for %s\n", args[0])
-			pub.CleanPubfileRecursively(args[0])
+			fmt.Printf("starting clean all .pub files for %s\n", fs.Arg(0))
+			pub.CleanPubfileRecursively(fs.Arg(0))
 		} else {
 			log.Println("please specify a directory where you want to clean up .pub files.")
 			flagsetMap[cleanSubcmd].Usage()
@@ -65,7 +71,6 @@ func main() {
 
 	merge := func(do bool, args ...string) {
 		fs := flagsetMap[mergeSubcmd]
-		pDir := fs.String("dir", ".", "merge all .pub files of the dir recursively to llcppg.pub")
 		if err := fs.Parse(args); err != nil {
 			log.Printf("error: %s", err)
 			return
@@ -73,33 +78,23 @@ func main() {
 		if !do {
 			return
 		}
-		if pDir == nil {
-			log.Println("Please specify a directory where you want to merge .pub files")
+		if fs.NArg() < 1 {
 			fs.Usage()
 			fs.PrintDefaults()
 			return
 		}
-		var llcppgPubFileName string
-		if len(fs.Args()) > 0 {
-			llcppgPubFileName = fs.Args()[0]
-		} else {
-			pubfile, err := filepath.Abs("./llcppg.pub")
-			if err != nil {
-				log.Printf("error: %s", err)
-				return
-			}
-			llcppgPubFileName = pubfile
-		}
+		dir := fs.Arg(0)
 		defer func() {
 			fmt.Println("merge finished!")
 		}()
-		fmt.Printf("starting merge all .pub files for %s to %s\n", *pDir, llcppgPubFileName)
-		pub.MergePubfiles(llcppgPubFileName, *pDir)
+		fmt.Printf("starting merge all .pub files for %s to llcppg.pub\n", dir)
+		pub.MergePubfilesForDir(dir)
 	}
 
 	genpub := func(do bool, args ...string) {
 		fs := flagsetMap[genpubCommand]
-		pR := flag.Bool("r", false, "true if generate .pub recursively")
+		pR := fs.Bool("r", false, "true if generate .pub recursively")
+		pDirs := fs.String("dirs", "c,math,net,os,pthread,time,", "list of subdirectories where llcppg.pub needs to be generated")
 		if err := fs.Parse(args); err != nil {
 			log.Printf("error: %s", err)
 			return
@@ -107,9 +102,14 @@ func main() {
 		if !do {
 			return
 		}
+		if *pDirs != "" {
+			pub.SubDirs = strings.FieldsFunc(*pDirs, func(r rune) bool {
+				return !unicode.IsLetter(r)
+			})
+		}
 		var dir string
-		if len(fs.Args()) > 0 {
-			dir = fs.Args()[0]
+		if fs.NArg() > 0 {
+			dir = fs.Arg(fs.NArg() - 1)
 		} else {
 			dir = "."
 		}
@@ -122,8 +122,8 @@ func main() {
 			} else {
 				fmt.Println("starting generate .pub files recursively for working dir")
 			}
-			pub.DoDirRecursively(dir, func(d string) {
-				pub.WriteDir(d)
+			pub.DoDirRecursively(dir, func(pubFile string) {
+				pub.WritePubfile(pubFile)
 			})
 		} else {
 			if dir != "." {
@@ -131,12 +131,17 @@ func main() {
 			} else {
 				fmt.Println("starting generate .pub file for working dir")
 			}
-			pub.WriteDir(dir)
+			pub.WritePubfile(pub.PubFilenameForDir(dir, "llcppg.pub"))
 		}
 	}
 
 	help := func(args []string) {
-		if len(args) > 0 {
+		fs := flagsetMap[helpSubcmd]
+		if err := fs.Parse(args); err != nil {
+			log.Printf("error: %s", err)
+			return
+		}
+		if fs.NArg() > 0 {
 			switch args[0] {
 			case cleanSubcmd:
 				clean(false)

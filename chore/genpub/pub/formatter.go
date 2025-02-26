@@ -40,6 +40,10 @@ func (p *TypeFormatter) FormatStarExprType(expr *ast.StarExpr) string {
 	return ""
 }
 
+func (p *TypeFormatter) ignoreFormatExprType(expr ast.Expr) string {
+	return ""
+}
+
 func LowerCamelCase(name string) string {
 	if strings.HasPrefix(name, "X") {
 		name = strings.Replace(name, "X", "_", 1)
@@ -89,11 +93,15 @@ func (p *TypeFormatter) FormatExpr(expr ast.Expr) string {
 	case *ast.Ident:
 		return p.FormatIdentType(t)
 	case *ast.StarExpr:
-		return p.FormatStarExprType(t)
+		return p.ignoreFormatExprType(t)
+	case *ast.ArrayType:
+		return p.ignoreFormatExprType(t)
+	case *ast.SliceExpr:
+		return p.ignoreFormatExprType(t)
 	case *ast.StructType:
 		return p.FormatStructType(t)
 	case *ast.FuncType:
-		return p.FormatFuncType(t)
+		return p.ignoreFormatExprType(t)
 	default:
 		position := p.fset.Position(t.Pos())
 		log.Printf("unknown %T at position: %s\n", t, position)

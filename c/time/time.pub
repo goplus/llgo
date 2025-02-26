@@ -1,5 +1,0 @@
-time_t TimeT
-Tm
-clock_t ClockT
-clockid_t ClockidT
-Timespec

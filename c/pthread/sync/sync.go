@@ -34,7 +34,7 @@ const (
 // -----------------------------------------------------------------------------
 
 // Once is an object that will perform exactly one action.
-type Once C.pthread_once_t
+type Once C.pthread_once_t //cname:pthread_once_t
 
 //go:linkname OnceInit llgoSyncOnceInitVal
 var OnceInit Once
@@ -44,7 +44,7 @@ func (o *Once) Do(f func()) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
-type MutexType c.Int
+type MutexType c.Int //cname:_
 
 const (
 	MUTEX_NORMAL     MutexType = C.PTHREAD_MUTEX_NORMAL
@@ -54,7 +54,7 @@ const (
 )
 
 // MutexAttr is a mutex attribute object.
-type MutexAttr C.pthread_mutexattr_t
+type MutexAttr C.pthread_mutexattr_t //cname:pthread_mutexattr_t
 
 // llgo:link (*MutexAttr).Init C.pthread_mutexattr_init
 func (a *MutexAttr) Init(attr *MutexAttr) c.Int { return 0 }
@@ -68,7 +68,7 @@ func (a *MutexAttr) SetType(typ MutexType) c.Int { return 0 }
 // -----------------------------------------------------------------------------
 
 // Mutex is a mutual exclusion lock.
-type Mutex C.pthread_mutex_t
+type Mutex C.pthread_mutex_t //cname:pthread_mutex_t
 
 // llgo:link (*Mutex).Init C.pthread_mutex_init
 func (m *Mutex) Init(attr *MutexAttr) c.Int { return 0 }
@@ -88,7 +88,7 @@ func (m *Mutex) Unlock() {}
 // -----------------------------------------------------------------------------
 
 // RWLockAttr is a read-write lock attribute object.
-type RWLockAttr C.pthread_rwlockattr_t
+type RWLockAttr C.pthread_rwlockattr_t //cname:pthread_rwlockattr_t
 
 // llgo:link (*RWLockAttr).Init C.pthread_rwlockattr_init
 func (a *RWLockAttr) Init(attr *RWLockAttr) c.Int { return 0 }
@@ -105,7 +105,7 @@ func (a *RWLockAttr) GetPShared(pshared *c.Int) c.Int { return 0 }
 // -----------------------------------------------------------------------------
 
 // RWLock is a read-write lock.
-type RWLock C.pthread_rwlock_t
+type RWLock C.pthread_rwlock_t //cname:pthread_rwlock_t
 
 // llgo:link (*RWLock).Init C.pthread_rwlock_init
 func (rw *RWLock) Init(attr *RWLockAttr) c.Int { return 0 }
@@ -134,7 +134,7 @@ func (rw *RWLock) Unlock() {}
 // -----------------------------------------------------------------------------
 
 // CondAttr is a condition variable attribute object.
-type CondAttr C.pthread_condattr_t
+type CondAttr C.pthread_condattr_t //cname:pthread_condattr_t
 
 // llgo:link (*CondAttr).Init C.pthread_condattr_init
 func (a *CondAttr) Init(attr *CondAttr) c.Int { return 0 }
@@ -151,7 +151,7 @@ func (a *CondAttr) GetClock(clock *time.ClockidT) c.Int { return 0 }
 // -----------------------------------------------------------------------------
 
 // Cond is a condition variable.
-type Cond C.pthread_cond_t
+type Cond C.pthread_cond_t //cname:pthread_cond_t
 
 // llgo:link (*Cond).Init C.pthread_cond_init
 func (c *Cond) Init(attr *CondAttr) c.Int { return 0 }
