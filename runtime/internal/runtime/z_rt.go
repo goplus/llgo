@@ -35,6 +35,7 @@ type Defer struct {
 	Link *Defer
 	Reth unsafe.Pointer // block address after Rethrow
 	Rund unsafe.Pointer // block address after RunDefers
+	Args unsafe.Pointer // defer func and args links
 }
 
 // Recover recovers a panic.
