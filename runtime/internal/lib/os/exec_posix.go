@@ -64,7 +64,6 @@ func startProcess(name string, argv []string, attr *ProcAttr) (p *Process, err e
 			return nil, &PathError{Op: "fork/exec", Path: name, Err: e}
 		}
 	}
-	println("StartProcess", pid, h, e)
 
 	return newProcess(pid, h), nil
 }
