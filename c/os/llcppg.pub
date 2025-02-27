@@ -1,0 +1,7 @@
+mode_t ModeT
+uid_t UidT
+gid_t GidT
+off_t OffT
+dev_t DevT
+Stat_t StatT
+pid_t PidT

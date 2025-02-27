@@ -1,0 +1,7 @@
+pthread_once_t Once
+pthread_mutexattr_t MutexAttr
+pthread_mutex_t Mutex
+pthread_rwlockattr_t RWLockAttr
+pthread_rwlock_t RWLock
+pthread_condattr_t CondAttr
+pthread_cond_t Cond
