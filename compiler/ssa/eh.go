@@ -294,10 +294,11 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 		b.Call(fn, args...)
 		return
 	}
+	prog := b.Prog
 	ptr := b.Load(self.argsPtr)
-	data := b.Load(Expr{ptr.impl, b.Prog.Pointer(typ)})
+	data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
 	offset := 1
-	b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, b.Prog.VoidPtr()})
+	b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
 	if fn.kind == vkClosure {
 		fn = b.getField(data, 1)
 		offset++
