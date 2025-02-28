@@ -97,6 +97,7 @@ type aDefer struct {
 	bitsPtr   Expr         // pointer to defer bits
 	rethPtr   Expr         // next block of Rethrow
 	rundPtr   Expr         // next block of RunDefers
+	argsPtr   Expr         // func and args links
 	procBlk   BasicBlock   // deferProc block
 	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
 	rundsNext []BasicBlock // next blocks of RunDefers
@@ -133,11 +134,13 @@ const (
 	// 2: link *Defer
 	// 3: reth voidptr: block address after Rethrow
 	// 4: rund voidptr: block address after RunDefers
+	// 5: func and args links
 	deferSigjmpbuf = iota
 	deferBits
 	deferLink
 	deferRethrow
 	deferRunDefers
+	deferArgs
 )
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
@@ -167,6 +170,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rethPtr := b.FieldAddr(deferData, deferRethrow)
 		rundPtr := b.FieldAddr(deferData, deferRunDefers)
+		argsPtr := b.FieldAddr(deferData, deferArgs)
 
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
@@ -184,6 +188,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			bitsPtr:   bitsPtr,
 			rethPtr:   rethPtr,
 			rundPtr:   rundPtr,
+			argsPtr:   argsPtr,
 			procBlk:   procBlk,
 			panicBlk:  panicBlk,
 			rundsNext: []BasicBlock{rethrowBlk},
@@ -228,18 +233,81 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	default:
 		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
 	}
+	typ := b.saveDeferArgs(self, fn, args)
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
 		case DeferInCond:
 			zero := prog.Val(uintptr(0))
 			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
 			b.IfThen(has, func() {
-				b.Call(fn, args...)
+				b.callDefer(self, typ, fn, args)
 			})
 		case DeferAlways:
-			b.Call(fn, args...)
+			b.callDefer(self, typ, fn, args)
 		}
 	})
+}
+
+/*
+type node struct {
+	prev *node
+	fn   func()
+	args ...
+}
+// push
+defer.Args = &node{defer.Args,fn,args...}
+// pop
+node := defer.Args
+defer.Args = node.prev
+free(node)
+*/
+
+func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
+	if fn.kind != vkClosure && len(args) == 0 {
+		return nil
+	}
+	prog := b.Prog
+	offset := 1
+	if fn.kind == vkClosure {
+		offset++
+	}
+	typs := make([]Type, len(args)+offset)
+	flds := make([]llvm.Value, len(args)+offset)
+	typs[0] = prog.VoidPtr()
+	flds[0] = b.Load(self.argsPtr).impl
+	if offset == 2 {
+		typs[1] = fn.Type
+		flds[1] = fn.impl
+	}
+	for i, arg := range args {
+		typs[i+offset] = arg.Type
+		flds[i+offset] = arg.impl
+	}
+	typ := prog.Struct(typs...)
+	ptr := Expr{b.aggregateMalloc(typ, flds...), prog.VoidPtr()}
+	b.Store(self.argsPtr, ptr)
+	return typ
+}
+
+func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
+	if typ == nil {
+		b.Call(fn, args...)
+		return
+	}
+	prog := b.Prog
+	ptr := b.Load(self.argsPtr)
+	data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
+	offset := 1
+	b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
+	if fn.kind == vkClosure {
+		fn = b.getField(data, 1)
+		offset++
+	}
+	for i := 0; i < len(args); i++ {
+		args[i] = b.getField(data, i+offset)
+	}
+	b.Call(fn, args...)
+	b.free(ptr)
 }
 
 // RunDefers emits instructions to run deferred instructions.
