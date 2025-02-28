@@ -1,5 +1,6 @@
 FILE
 size_t SizeT
+ssize_t SsizeT
 intptr_t IntptrT
 uintptr_t UintptrT
 int8_t Int8T
@@ -12,4 +13,7 @@ uint32_t Uint32T
 uint64_t Uint64T
 intmax_t IntmaxT
 uintmax_t UintmaxT
+va_list VaList
+iconv_t IconvT
+locale_t LocaleT
 option Option
