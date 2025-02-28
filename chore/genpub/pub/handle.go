@@ -222,8 +222,22 @@ func MergePubfiles(llcppgPubFileName string, dir string) {
 				os.Remove(fileName)
 			}
 		}()
+		var prev, next chan int
 		for b := range input {
-			w.Write(b)
+			next = make(chan int)
+			go func(wr io.Writer, prev, next chan int) {
+				if prev != nil {
+					<-prev
+				}
+				wr.Write(b)
+				if next != nil {
+					close(next)
+				}
+			}(w, prev, next)
+			prev = next
+		}
+		if next != nil {
+			<-next
 		}
 	}(llcppgPubFileName, pubFileBytes)
 	wg.Wait()
@@ -260,33 +274,6 @@ func GenAstFiles(quit chan int, dir string, fset *token.FileSet) <-chan *ast.Fil
 	return output
 }
 
-func writeAstFiles(quit chan int, fset *token.FileSet, files <-chan *ast.File) <-chan string {
-	output := make(chan string)
-	go func() {
-		defer close(output)
-		for file := range files {
-			temp, err := os.CreateTemp(os.TempDir(), "file*.pub")
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer temp.Close()
-			w := bufio.NewWriter(temp)
-			defer func() {
-				if w.Buffered() > 0 {
-					w.Flush()
-					output <- temp.Name()
-				} else {
-					os.Remove(temp.Name())
-				}
-			}()
-			pubWriter := NewPubWriter(w, fset)
-			pubWriter.WriteFile(file)
-		}
-	}()
-	return output
-}
-
 func DoWritePubFile(w io.Writer, pubFile string) {
 	quit := make(chan int)
 	defer func() {
@@ -295,21 +282,22 @@ func DoWritePubFile(w io.Writer, pubFile string) {
 	fset := token.NewFileSet()
 	dir := filepath.Dir(pubFile)
 	astFiles := GenAstFiles(quit, dir, fset)
-	files := writeAstFiles(quit, fset, astFiles)
-	wg := sync.WaitGroup{}
-	for file := range files {
-		wg.Add(1)
-		go func(fileName string) {
-			defer func() {
-				os.Remove(fileName)
-				wg.Done()
-			}()
-			b, err := os.ReadFile(fileName)
-			if err != nil {
-				panic(err)
+	var prev, next chan int
+	for astFile := range astFiles {
+		next = make(chan int)
+		go func(wr io.Writer, file *ast.File, prev, next chan int) {
+			if prev != nil {
+				<-prev
 			}
-			w.Write(b)
-		}(file)
+			pubWriter := NewPubWriter(wr, fset)
+			pubWriter.WriteFile(file)
+			if next != nil {
+				close(next)
+			}
+		}(w, astFile, prev, next)
+		prev = next
 	}
-	wg.Wait()
+	if next != nil {
+		<-next
+	}
 }

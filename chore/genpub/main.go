@@ -94,7 +94,8 @@ func main() {
 	genpub := func(do bool, args ...string) {
 		fs := flagsetMap[genpubCommand]
 		pR := fs.Bool("r", false, "true if generate .pub recursively")
-		pDirs := fs.String("dirs", "c,math,net,os,pthread,time,", "list of subdirectories where llcppg.pub needs to be generated")
+		deflib := "c,math,net,os,pthread,time,"
+		pDirs := fs.String("dirs", deflib, "list of subdirectories where llcppg.pub needs to be generated")
 		if err := fs.Parse(args); err != nil {
 			log.Printf("error: %s", err)
 			return
