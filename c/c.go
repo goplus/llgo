@@ -56,6 +56,7 @@ type integer interface {
 }
 
 type SizeT = uintptr
+type SsizeT = Long
 
 type IntptrT = uintptr
 type UintptrT = uintptr
@@ -71,6 +72,8 @@ type Uint64T = uint64
 
 type IntmaxT = LongLong
 type UintmaxT = UlongLong
+
+type VaList = Pointer
 
 //go:linkname Str llgo.cstr
 func Str(string) *Char
@@ -254,6 +257,14 @@ func Fclose(fp FilePtr) Int
 
 //go:linkname Perror C.perror
 func Perror(s *Char)
+
+// -----------------------------------------------------------------------------
+
+type IconvT = Pointer
+
+// -----------------------------------------------------------------------------
+
+type LocaleT = Pointer
 
 // -----------------------------------------------------------------------------
 

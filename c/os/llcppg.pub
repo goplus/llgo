@@ -3,5 +3,5 @@ uid_t UidT
 gid_t GidT
 off_t OffT
 dev_t DevT
-Stat_t StatT
+stat StatT
 pid_t PidT
