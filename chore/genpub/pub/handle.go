@@ -110,7 +110,7 @@ func WritePubfile(pubFile string) {
 		}
 		fmt.Println("handle finished =>", pubFile)
 	}()
-	doWritePubfile(w, pubFile)
+	DoWritePubFile(w, pubFile)
 }
 
 func PubFilenameForDir(dir string, pubFile string) string {
@@ -229,27 +229,87 @@ func MergePubfiles(llcppgPubFileName string, dir string) {
 	wg.Wait()
 }
 
-func doWritePubfile(w io.Writer, pubfile string) {
-	fset := token.NewFileSet()
-	dir := filepath.Dir(pubfile)
-	pkgMap, err := parser.ParseDir(fset, dir, func(fi fs.FileInfo) bool {
-		return !strings.HasPrefix(fi.Name(), "_") &&
-			!strings.HasPrefix(fi.Name(), ".") &&
-			strings.HasSuffix(fi.Name(), ".go")
-	}, parser.ParseComments)
-	if err != nil {
-		panic(err)
-	}
-	pubWriter := NewPubWriter(w, fset)
-	for _, v := range pkgMap {
-		for _, f := range v.Files {
-			if ast.IsGenerated(f) {
-				continue
-			}
-			if !ast.FileExports(f) {
-				continue
-			}
-			pubWriter.WriteFile(f)
+func GenAstFiles(quit chan int, dir string, fset *token.FileSet) <-chan *ast.File {
+	output := make(chan *ast.File)
+	go func() {
+		defer close(output)
+		pkgMap, err := parser.ParseDir(fset, dir, func(fi fs.FileInfo) bool {
+			return !strings.HasPrefix(fi.Name(), "_") &&
+				!strings.HasPrefix(fi.Name(), ".") &&
+				strings.HasSuffix(fi.Name(), ".go")
+		}, parser.ParseComments)
+		if err != nil {
+			panic(err)
 		}
+		for _, v := range pkgMap {
+			for _, f := range v.Files {
+				if ast.IsGenerated(f) {
+					continue
+				}
+				if !ast.FileExports(f) {
+					continue
+				}
+				select {
+				case output <- f:
+				case <-quit:
+					return
+				}
+			}
+		}
+	}()
+	return output
+}
+
+func writeAstFiles(quit chan int, fset *token.FileSet, files <-chan *ast.File) <-chan string {
+	output := make(chan string)
+	go func() {
+		defer close(output)
+		for file := range files {
+			temp, err := os.CreateTemp(os.TempDir(), "file*.pub")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer temp.Close()
+			w := bufio.NewWriter(temp)
+			defer func() {
+				if w.Buffered() > 0 {
+					w.Flush()
+					output <- temp.Name()
+				} else {
+					os.Remove(temp.Name())
+				}
+			}()
+			pubWriter := NewPubWriter(w, fset)
+			pubWriter.WriteFile(file)
+		}
+	}()
+	return output
+}
+
+func DoWritePubFile(w io.Writer, pubFile string) {
+	quit := make(chan int)
+	defer func() {
+		close(quit)
+	}()
+	fset := token.NewFileSet()
+	dir := filepath.Dir(pubFile)
+	astFiles := GenAstFiles(quit, dir, fset)
+	files := writeAstFiles(quit, fset, astFiles)
+	wg := sync.WaitGroup{}
+	for file := range files {
+		wg.Add(1)
+		go func(fileName string) {
+			defer func() {
+				os.Remove(fileName)
+				wg.Done()
+			}()
+			b, err := os.ReadFile(fileName)
+			if err != nil {
+				panic(err)
+			}
+			w.Write(b)
+		}(file)
 	}
+	wg.Wait()
 }

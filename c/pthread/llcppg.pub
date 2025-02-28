@@ -1,3 +1,0 @@
-pthread_t Thread
-attr Attr
-pthread_key_t Key
