@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	LLGoPackage = "link"
-	LLGoFiles   = "_wrap/debug.c"
+	LLGoPackage = "link: $(llvm-config --ldflags --libs); -lunwind"
+	LLGoFiles   = "$(llvm-config --cflags): _wrap/debug.c"
 )
 
 type Info struct {
