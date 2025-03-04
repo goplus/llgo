@@ -10,7 +10,23 @@ on:
     branches: [ "**" ]
 
 jobs:
+  download-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download model file
+        run: |
+          mkdir -p ./_demo/llama2-c
+          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+
+      - name: Upload model as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama2-model
+          path: ./_demo/llama2-c/stories15M.bin
+          retention-days: 1
+
   llgo:
+    needs: download-model
     continue-on-error: true
     strategy:
       matrix:
@@ -26,9 +42,13 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: llama2-model
+          path: ./_demo/llama2-c/
       - name: Install further optional dependencies for demos
         run: |
-          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
           py_deps=(
             numpy # for github.com/goplus/llgo/py/numpy
             torch # for github.com/goplus/llgo/py/torch
@@ -112,7 +132,6 @@ jobs:
           llvm-version: ${{matrix.llvm}}
       - name: Install further optional dependencies for demos
         run: |
-          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
           py_deps=(
             numpy # for github.com/goplus/llgo/py/numpy
             torch # for github.com/goplus/llgo/py/torch
