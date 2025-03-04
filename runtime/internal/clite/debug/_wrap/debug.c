@@ -1,6 +1,8 @@
 #if defined(__linux__)
 #define UNW_LOCAL_ONLY
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <features.h>
 #endif
 
