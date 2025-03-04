@@ -113,7 +113,7 @@ type SockaddrIn struct {
 	Port   uint16
 	Addr   InAddr
 	Zero   [8]c.Char
-}
+} //cname:_
 
 type SockaddrIn6 struct {
 	Len      uint8
@@ -122,7 +122,7 @@ type SockaddrIn6 struct {
 	Flowinfo c.Uint
 	Addr     In6Addr
 	ScopeId  c.Uint
-}
+} //cname:_
 
 type SockaddrStorage struct {
 	Len    uint8
@@ -130,21 +130,21 @@ type SockaddrStorage struct {
 	pad1   [PAD1_SIZE]c.Char
 	align  c.LongLong
 	pad2   [PAD2_SIZE]c.Char
-}
+} //cname:_
 
 type InAddr struct {
 	Addr c.Uint
-}
+} //cname:_
 
 type In6Addr struct {
 	U6Addr [16]uint8
-}
+} //cname:_
 
 type SockAddr struct {
 	Len    uint8
 	Family uint8
 	Data   [14]c.Char
-}
+} //cname:sockaddr
 
 type Hostent struct {
 	Name     *c.Char  // official name of host
@@ -152,7 +152,7 @@ type Hostent struct {
 	AddrType c.Int    // host address type
 	Length   c.Int    // length of address
 	AddrList **c.Char // null-terminated array of addresses for the host
-}
+} //cname:hostent
 
 //go:linkname Socket C.socket
 func Socket(domain c.Int, typ c.Int, protocol c.Int) c.Int
@@ -212,7 +212,7 @@ type AddrInfo struct {
 	CanOnName *c.Char
 	Addr      *SockAddr
 	Next      *AddrInfo
-}
+} //cname:addrinfo
 
 //go:linkname Getaddrinfo C.getaddrinfo
 func Getaddrinfo(host *c.Char, port *c.Char, addrInfo *AddrInfo, result **AddrInfo) c.Int
