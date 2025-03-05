@@ -16,7 +16,7 @@ package list
 
 // TODO：在llpkg.goplus.org中添加 Rsync 服务，用于同步 llpkgstore.json 文件
 
-// 将上面的注释翻译成英文
+// English Ver
 
 // All network requests are proxied through llpkg.goplus.org
 // Fallback to github.com/goplus/llpkgstore when necessary
