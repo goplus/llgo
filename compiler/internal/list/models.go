@@ -13,29 +13,47 @@ package list
 //     }
 // }
 
+import (
+	"time"
+)
+
 type Store struct {
-	Packages map[string]*Package
+	Packages map[string]*Package `json:"packages"`
 }
 
 type Package struct {
-	Name     string
-	Versions []VersionMapping
+	Name     string           `json:"name"`
+	Versions []VersionMapping `json:"versions"`
 }
 
 type VersionMapping struct {
-	CVersion   string
-	GoVersions []string
+	CVersion   string   `json:"c"`
+	GoVersions []string `json:"go"`
 }
 
 type LLPkgInfo struct {
 	Upstream struct {
 		Installer struct {
-			Name   string
-			Config map[string]string
-		}
+			Name   string            `json:"name"`
+			Config map[string]string `json:"config"`
+		} `json:"installer"`
 		Package struct {
-			Name    string
-			Version string
-		}
-	}
+			Name    string `json:"name"`
+			Version string `json:"version"`
+		} `json:"package"`
+	} `json:"upstream"`
+}
+
+type CacheInfo struct {
+	ETag       string    `json:"etag"`
+	LastUpdate time.Time `json:"last_update"`
+}
+
+type ModuleInfo struct {
+	Path      string     `json:"path"`
+	Version   string     `json:"version"`
+	Time      time.Time  `json:"time,omitempty"`
+	Indirect  bool       `json:"indirect,omitempty"`
+	GoVersion string     `json:"go_version,omitempty"`
+	LLPkg     *LLPkgInfo `json:"llpkg,omitempty"`
 }
