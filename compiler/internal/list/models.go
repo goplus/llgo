@@ -17,12 +17,9 @@ import (
 	"time"
 )
 
-type Store struct {
-	Packages map[string]*Package `json:"packages"`
-}
+type Store map[string]*Package
 
 type Package struct {
-	Name     string           `json:"name"`
 	Versions []VersionMapping `json:"versions"`
 }
 

@@ -185,7 +185,7 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 		return fmt.Errorf("llpkgstore access error: %w", err)
 	}
 
-	if len(store.Packages) == 0 {
+	if len(*store) == 0 {
 		fmt.Fprintln(os.Stderr, "Warning: The package store contains no packages")
 		if !jsonOutput {
 			fmt.Fprintln(os.Stdout, "No packages available")
@@ -199,7 +199,7 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 	if len(args) == 0 {
 		// 列出所有模块
 		var modules []*ModuleInfo
-		for name, pkg := range store.Packages {
+		for name, pkg := range *store {
 			if len(pkg.Versions) > 0 {
 				latestMapping := pkg.Versions[len(pkg.Versions)-1]
 				latestGoVersion := mapper.GetLatestVersion(latestMapping.GoVersions)

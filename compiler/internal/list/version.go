@@ -11,13 +11,13 @@ import (
 
 // VersionMapper 处理版本映射查询
 type VersionMapper struct {
-	store *Store
+	store Store
 }
 
 // NewVersionMapper 创建新的VersionMapper实例
 func NewVersionMapper(store *Store) *VersionMapper {
 	return &VersionMapper{
-		store: store,
+		store: *store,
 	}
 }
 
@@ -27,7 +27,7 @@ func (v *VersionMapper) ResolveCVersion(clib, cversion string) (modulePath strin
 	modulePath = fmt.Sprintf("github.com/goplus/llpkg/%s", clib)
 
 	// 查找包信息
-	pkg, ok := v.store.Packages[clib]
+	pkg, ok := v.store[clib]
 	if !ok {
 		return modulePath, nil, fmt.Errorf("'%s' not found in the package store - please check spelling or contact package maintainers", clib)
 	}
@@ -69,7 +69,7 @@ func (v *VersionMapper) ResolveCVersion(clib, cversion string) (modulePath strin
 
 // GetAllVersionMappings 获取指定C库的所有版本映射
 func (v *VersionMapper) GetAllVersionMappings(clib string) ([]VersionMapping, error) {
-	pkg, ok := v.store.Packages[clib]
+	pkg, ok := v.store[clib]
 	if !ok {
 		return nil, errors.New("C library not found: " + clib)
 	}
