@@ -91,3 +91,35 @@ func (f *Formatter) FormatModuleWithVersions(w io.Writer, modulePath string, ver
 	_, err := fmt.Fprintln(w, builder.String())
 	return err
 }
+
+// FormatModuleWithVersions 格式化带有一个版本信息的模块
+func (f *Formatter) FormatModuleWithOneVersion(w io.Writer, modulePath, version string, llpkgInfo *LLPkgInfo) error {
+	// 使用StringBuilder提高性能
+	var builder strings.Builder
+	builder.WriteString(modulePath)
+	builder.WriteString(" ")
+	builder.WriteString(version)
+
+	// 添加上游信息
+	if llpkgInfo != nil {
+		installer := llpkgInfo.Upstream.Installer.Name
+		pkgName := llpkgInfo.Upstream.Package.Name
+		pkgVersion := llpkgInfo.Upstream.Package.Version
+
+		if installer != "" && pkgName != "" && pkgVersion != "" {
+			builder.WriteString(fmt.Sprintf("[%s:%s/%s]", installer, pkgName, pkgVersion))
+		}
+	}
+
+	_, err := fmt.Fprintln(w, builder.String())
+	return err
+}
+
+func FormatByteToLLPkgInfo(data []byte) (*LLPkgInfo, error) {
+	var llpkgInfo LLPkgInfo
+	if err := json.Unmarshal(data, &llpkgInfo); err != nil {
+		return nil, err
+	}
+
+	return &llpkgInfo, nil
+}

@@ -3,6 +3,7 @@ package list
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -24,7 +25,7 @@ func NewVersionMapper(store *Store) *VersionMapper {
 // ResolveCVersion 将C库版本解析为Go模块版本
 func (v *VersionMapper) ResolveCVersion(clib, cversion string) (modulePath string, versions []string, err error) {
 	// 构造标准模块路径
-	modulePath = fmt.Sprintf("github.com/goplus/llpkg/%s", clib)
+	modulePath = fmt.Sprintf("github.com/NEKO-CwC/llpkgstore/%s", clib)
 
 	// 查找包信息
 	pkg, ok := v.store[clib]
@@ -105,8 +106,9 @@ func (v *VersionMapper) GetLatestVersion(versions []string) string {
 
 // IsCLibrary 判断给定的字符串是否是C库引用
 func (v *VersionMapper) IsCLibrary(ref string) bool {
-	// 不包含斜杠和域名的应该是C库
-	return !strings.Contains(ref, "/") && !strings.Contains(ref, ".")
+	// 不包含斜杠和域名的应该是C库,用正则表达式判断
+	var regex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	return regex.MatchString(ref)
 }
 
 // ParseModuleReference 解析模块引用（形如"name@version"）

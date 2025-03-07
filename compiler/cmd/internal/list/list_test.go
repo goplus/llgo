@@ -74,7 +74,7 @@ func TestVersionMapper(t *testing.T) {
 		if err != nil {
 			t.Errorf("ResolveCVersion() error = %v", err)
 		} else {
-			expectedPath := "github.com/goplus/llpkg/testlib"
+			expectedPath := "github.com/NEKO-CwC/llpkgstore/testlib"
 			if modulePath != expectedPath {
 				t.Errorf("modulePath = %v, want %v", modulePath, expectedPath)
 			}
@@ -233,7 +233,7 @@ func TestFormatter(t *testing.T) {
 		// 创建测试模块信息
 		modules := []*list.ModuleInfo{
 			{
-				Path:    "github.com/goplus/llpkg/testlib",
+				Path:    "github.com/NEKO-CwC/llpkgstore/testlib",
 				Version: "v1.0.0",
 				LLPkg: &list.LLPkgInfo{
 					Upstream: struct {
@@ -272,7 +272,7 @@ func TestFormatter(t *testing.T) {
 			return
 		}
 
-		expected := "github.com/goplus/llpkg/testlib v1.0.0[conan:testlib/1.0.0]\n"
+		expected := "github.com/NEKO-CwC/llpkgstore/testlib v1.0.0[conan:testlib/1.0.0]\n"
 		if buf.String() != expected {
 			t.Errorf("FormatTextOutput() = %q, want %q", buf.String(), expected)
 		}
@@ -281,7 +281,7 @@ func TestFormatter(t *testing.T) {
 	t.Run("FormatJSONOutput", func(t *testing.T) {
 		modules := []*list.ModuleInfo{
 			{
-				Path:    "github.com/goplus/llpkg/testlib",
+				Path:    "github.com/NEKO-CwC/llpkgstore/testlib",
 				Version: "v1.0.0",
 			},
 		}
@@ -302,7 +302,7 @@ func TestFormatter(t *testing.T) {
 			return
 		}
 
-		if decodedModule.Path != "github.com/goplus/llpkg/testlib" || decodedModule.Version != "v1.0.0" {
+		if decodedModule.Path != "github.com/NEKO-CwC/llpkgstore/testlib" || decodedModule.Version != "v1.0.0" {
 			t.Errorf("JSON output path/version mismatch: got %s/%s", decodedModule.Path, decodedModule.Version)
 		}
 	})

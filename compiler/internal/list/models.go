@@ -14,6 +14,8 @@ package list
 // }
 
 import (
+	"fmt"
+	"slices"
 	"time"
 )
 
@@ -21,6 +23,41 @@ type Store map[string]*Package
 
 type Package struct {
 	Versions []VersionMapping `json:"versions"`
+}
+
+func (p *Package) GetLatestVersion() string {
+	if len(p.Versions) == 0 {
+		return ""
+	}
+	return p.Versions[len(p.Versions)-1].GoVersions[0]
+}
+
+func (p *Package) GetCVersionFromGoVersion(goVersion string) string {
+	for _, mapping := range p.Versions {
+		if slices.Index(mapping.GoVersions, goVersion) != -1 {
+			return mapping.CVersion
+		}
+	}
+	return ""
+}
+
+// 调试版本
+func (p *Package) GetLatestGoVersionFromCVersion(cVersion string) string {
+	fmt.Printf("寻找C版本: %s\n", cVersion)
+	for i, mapping := range p.Versions {
+		fmt.Printf("  检查映射[%d]: C版本=%s, Go版本=%v\n",
+			i, mapping.CVersion, mapping.GoVersions)
+		if mapping.CVersion == cVersion {
+			result := ""
+			if len(mapping.GoVersions) > 0 {
+				result = mapping.GoVersions[len(mapping.GoVersions)-1]
+			}
+			fmt.Printf("  找到匹配! 返回: %s\n", result)
+			return result
+		}
+	}
+	fmt.Println("  未找到匹配")
+	return ""
 }
 
 type VersionMapping struct {

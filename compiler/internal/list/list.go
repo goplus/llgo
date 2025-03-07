@@ -204,11 +204,19 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 				latestMapping := pkg.Versions[len(pkg.Versions)-1]
 				latestGoVersion := mapper.GetLatestVersion(latestMapping.GoVersions)
 
+				llpkgInfoData, err := c.fetcher.FetchMetaInfo(name, store)
+				if err != nil {
+					return err
+				}
+				llpkgInfo, err := FormatByteToLLPkgInfo(llpkgInfoData)
+				if err != nil {
+					return err
+				}
 				// 构造模块信息
 				modules = append(modules, &ModuleInfo{
-					Path:    fmt.Sprintf("github.com/goplus/llpkg/%s", name),
+					Path:    fmt.Sprintf("github.com/NEKO-CwC/llpkgstore/%s", name),
 					Version: latestGoVersion,
-					LLPkg:   &LLPkgInfo{},
+					LLPkg:   llpkgInfo,
 				})
 			}
 		}
@@ -216,56 +224,42 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 		return formatter.FormatOutput(os.Stdout, modules)
 	}
 
+	fmt.Println("args:", args)
 	// 处理指定的参数
 	for _, arg := range args {
-		name, version := mapper.ParseModuleReference(arg)
+		modulePath, _, goVersion, _ := c.fetcher.normalizeInput(arg, store)
+		name := ""
+		inputVersion := ""
+		infoList := strings.Split(arg, "@")
+		if len(infoList) == 2 {
+			name = infoList[0]
+			inputVersion = infoList[1]
+		} else {
+			name = arg
+		}
 
-		if mapper.IsCLibrary(name) {
-			// 处理C库引用
-			modulePath, versions, err := mapper.ResolveCVersion(name, version)
-			if err != nil {
-				return err
-			}
+		if inputVersion == "" {
 
-			if includeVersions {
-				// 获取所有版本信息
-				allMappings, err := mapper.GetAllVersionMappings(name)
+			return errors.New("local version reference not implemented yet")
+		} else {
+
+			if mapper.IsCLibrary(name) {
+				metaInfoData, err := c.fetcher.FetchMetaInfo(arg, store)
+				if err != nil {
+					return err
+				}
+				llpkgInfo, err := FormatByteToLLPkgInfo(metaInfoData)
 				if err != nil {
 					return err
 				}
 
-				// 构造所有版本的信息
-				var allVersions []string
-				var llpkgInfos []*LLPkgInfo
+				formatter.FormatModuleWithOneVersion(os.Stdout, modulePath, goVersion, llpkgInfo)
 
-				for _, mapping := range allMappings {
-					for _, goVersion := range mapping.GoVersions {
-						allVersions = append(allVersions, goVersion)
-						llpkgInfos = append(llpkgInfos, &LLPkgInfo{})
-					}
-				}
-
-				if err := formatter.FormatModuleWithVersions(os.Stdout, modulePath, allVersions, llpkgInfos); err != nil {
-					return err
-				}
 			} else {
-				// 只展示选定的版本
-				if len(versions) > 0 {
-					moduleInfo := &ModuleInfo{
-						Path:    modulePath,
-						Version: versions[0],
-						LLPkg:   &LLPkgInfo{},
-					}
-
-					if err := formatter.FormatOutput(os.Stdout, []*ModuleInfo{moduleInfo}); err != nil {
-						return err
-					}
-				}
+				// 处理Go模块引用
+				// 目前不支持直接的模块引用
+				return errors.New("direct module path reference not implemented yet")
 			}
-		} else {
-			// 处理Go模块引用
-			// 目前不支持直接的模块引用
-			return errors.New("direct module path reference not implemented yet")
 		}
 	}
 
