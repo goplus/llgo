@@ -227,23 +227,16 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 	fmt.Println("args:", args)
 	// 处理指定的参数
 	for _, arg := range args {
-		modulePath, _, goVersion, _ := c.fetcher.normalizeInput(arg, store)
-		name := ""
-		inputVersion := ""
-		infoList := strings.Split(arg, "@")
-		if len(infoList) == 2 {
-			name = infoList[0]
-			inputVersion = infoList[1]
-		} else {
-			name = arg
-		}
+		// 使用normalizeInput解析参数
+		modulePath, clib, goVersion, _ := c.fetcher.normalizeInput(arg, store)
 
-		if inputVersion == "" {
+		hasVersion := strings.Contains(arg, "@")
 
+		if !hasVersion {
+			// 没有指定版本
 			return errors.New("local version reference not implemented yet")
 		} else {
-
-			if mapper.IsCLibrary(name) {
+			if mapper.IsCLibrary(clib) {
 				metaInfoData, err := c.fetcher.FetchMetaInfo(arg, store)
 				if err != nil {
 					return err
@@ -254,7 +247,6 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 				}
 
 				formatter.FormatModuleWithOneVersion(os.Stdout, modulePath, goVersion, llpkgInfo)
-
 			} else {
 				// 处理Go模块引用
 				// 目前不支持直接的模块引用
@@ -262,7 +254,6 @@ func (c *Client) ListModules(args []string, includeVersions, jsonOutput bool) er
 			}
 		}
 	}
-
 	return nil
 }
 
