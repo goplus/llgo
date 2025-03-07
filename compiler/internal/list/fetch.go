@@ -9,13 +9,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
-)
-
-const (
-	primaryURLPath  = "https://llpkg.goplus.org/llpkgstore.json"
-	fallbackURLPath = "https://raw.githubusercontent.com/NEKO-CwC/llpkgstore/main/llpkgstore.json"
-	defaultTimeout  = 10 * time.Second
 )
 
 // Fetcher 负责从不同来源获取llpkgstore.json

@@ -1,17 +1,18 @@
-// Package list implements the "llgo list" command.
+// cmd/internal/list/list.go
 package list
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
-	"github.com/goplus/llgo/compiler/internal/list"
+	listpkg "github.com/goplus/llgo/compiler/internal/list"
 	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
-// Command represents the list command
+// Cmd represents the list command
 var Cmd = &base.Command{
 	UsageLine: "llgo list [-m] [-versions] [-json] [packages]",
 	Short:     "List information about packages and their dependencies.",
@@ -31,7 +32,6 @@ func runCmd(cmd *base.Command, args []string) {
 		if !strings.HasPrefix(arg, "-") {
 			// 不是标志，是包模式
 			patterns = append(patterns, args[i:]...)
-			fmt.Println("patterns:", patterns)
 			break
 		}
 
@@ -75,11 +75,24 @@ func runCmd(cmd *base.Command, args []string) {
 		}
 	}
 
-	// 创建客户端并执行列表操作
-	client := list.NewClient()
+	// 创建日志记录器
+	logger := listpkg.NewLogger(listpkg.LogInfo, os.Stdout, os.Stderr)
 
-	// 列出模块
-	err := client.ListModules(patterns, versionsFlag, jsonFlag)
+	// 创建HTTP客户端
+	httpClient := &http.Client{Timeout: 0}
+
+	// 创建存储库
+	cacheDir := os.Getenv("LLGOCACHE")
+	repo := listpkg.NewStoreRepository(cacheDir, httpClient, logger)
+
+	// 创建服务
+	versionService := listpkg.NewVersionService(repo, logger)
+	metaService := listpkg.NewMetaInfoService(httpClient, logger)
+	formatterService := listpkg.NewFormatterService(versionsFlag, jsonFlag, logger)
+
+	// 创建应用并执行
+	app := listpkg.NewListApplication(versionService, metaService, formatterService, repo, logger)
+	err := app.ListModules(patterns, os.Stdout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "llgo list: %v\n", err)
 		mockable.Exit(1)

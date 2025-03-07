@@ -8,11 +8,6 @@ import (
 	"time"
 )
 
-const (
-	storeFileName     = "llpkgstore.json"
-	cacheInfoFileName = "llpkgstore.json.info"
-)
-
 // CacheManager 处理缓存文件的存储、验证和更新
 type CacheManager struct {
 	cacheDir string

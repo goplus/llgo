@@ -1,4 +1,4 @@
-// 创建logger.go文件
+// logger.go
 package list
 
 import (
@@ -19,19 +19,24 @@ const (
 )
 
 // Logger 提供统一的日志接口
-type Logger struct {
+type Logger interface {
+	Debug(format string, args ...interface{})
+	Info(format string, args ...interface{})
+	Warning(format string, args ...interface{})
+	Error(format string, args ...interface{})
+}
+
+// SimpleLogger 是Logger接口的简单实现
+type SimpleLogger struct {
 	level     LogLevel
 	output    io.Writer
 	errOutput io.Writer
 	mu        sync.Mutex
 }
 
-// 全局默认logger实例
-var DefaultLogger = NewLogger(LogInfo, os.Stdout, os.Stderr)
-
 // NewLogger 创建新的Logger实例
-func NewLogger(level LogLevel, output, errOutput io.Writer) *Logger {
-	return &Logger{
+func NewLogger(level LogLevel, output, errOutput io.Writer) Logger {
+	return &SimpleLogger{
 		level:     level,
 		output:    output,
 		errOutput: errOutput,
@@ -39,7 +44,7 @@ func NewLogger(level LogLevel, output, errOutput io.Writer) *Logger {
 }
 
 // Debug 输出调试信息
-func (l *Logger) Debug(format string, args ...interface{}) {
+func (l *SimpleLogger) Debug(format string, args ...interface{}) {
 	if l.level <= LogDebug {
 		l.mu.Lock()
 		defer l.mu.Unlock()
@@ -48,7 +53,7 @@ func (l *Logger) Debug(format string, args ...interface{}) {
 }
 
 // Info 输出信息
-func (l *Logger) Info(format string, args ...interface{}) {
+func (l *SimpleLogger) Info(format string, args ...interface{}) {
 	if l.level <= LogInfo {
 		l.mu.Lock()
 		defer l.mu.Unlock()
@@ -57,7 +62,7 @@ func (l *Logger) Info(format string, args ...interface{}) {
 }
 
 // Warning 输出警告
-func (l *Logger) Warning(format string, args ...interface{}) {
+func (l *SimpleLogger) Warning(format string, args ...interface{}) {
 	if l.level <= LogWarning {
 		l.mu.Lock()
 		defer l.mu.Unlock()
@@ -66,7 +71,7 @@ func (l *Logger) Warning(format string, args ...interface{}) {
 }
 
 // Error 输出错误
-func (l *Logger) Error(format string, args ...interface{}) {
+func (l *SimpleLogger) Error(format string, args ...interface{}) {
 	if l.level <= LogError {
 		l.mu.Lock()
 		defer l.mu.Unlock()
@@ -74,7 +79,10 @@ func (l *Logger) Error(format string, args ...interface{}) {
 	}
 }
 
-// 全局快捷函数
+// 全局默认logger实例
+var DefaultLogger = NewLogger(LogInfo, os.Stdout, os.Stderr)
+
+// 全局快捷函数保持向后兼容
 func Debug(format string, args ...interface{}) {
 	DefaultLogger.Debug(format, args...)
 }
@@ -93,5 +101,7 @@ func Error(format string, args ...interface{}) {
 
 // SetLevel 设置日志级别
 func SetLevel(level LogLevel) {
-	DefaultLogger.level = level
+	if logger, ok := DefaultLogger.(*SimpleLogger); ok {
+		logger.level = level
+	}
 }
