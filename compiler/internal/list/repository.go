@@ -71,32 +71,13 @@ func (r *StoreRepository) GetStore() (*Store, error) {
 
 	r.logger.Info("检查llpkgstore缓存...")
 
-	// 检查缓存有效性
-	valid, err := r.cacheManager.IsCacheValid()
-	if err != nil {
-		r.logger.Warning("检查缓存有效性失败: %v", err)
-	} else if valid {
-		r.logger.Info("找到有效缓存，尝试使用...")
-		store, err := r.cacheManager.GetCachedStore()
-		if err == nil {
-			r.logger.Info("成功从缓存加载数据")
-			r.store = store
-			return store, nil
-		}
-		r.logger.Warning("读取缓存失败: %v，获取最新数据", err)
-	} else {
-		r.logger.Info("未找到有效缓存，获取最新数据...")
-	}
-
-	// 获取缓存的ETag
-	etag, _, err := r.cacheManager.GetCacheInfo()
-	if err != nil {
-		etag = ""
-		r.logger.Warning("无法获取ETag: %v", err)
-	}
-
+	// // 检查缓存有效性
+	// exist, err := r.cacheManager.IsCacheExist()
+	// if err != nil {
+	// 	r.logger.Warning("检查缓存有效性失败: %v", err)
+	// }
 	// 获取最新数据
-	data, newETag, notModified, err := r.fetcher.FetchStore(etag)
+	data, _, notModified, err := r.fetcher.FetchStore(r.cacheManager.CacheInfo.LastModified)
 	if err != nil {
 		return nil, fmt.Errorf("获取数据失败: %w", err)
 	}
@@ -119,7 +100,7 @@ func (r *StoreRepository) GetStore() (*Store, error) {
 
 	// 更新缓存
 	r.logger.Info("更新缓存...")
-	if err := r.cacheManager.UpdateCache(data, newETag); err != nil {
+	if err := r.cacheManager.UpdateCache(data); err != nil {
 		r.logger.Warning("更新缓存失败: %v", err)
 	} else {
 		r.logger.Info("缓存更新成功")

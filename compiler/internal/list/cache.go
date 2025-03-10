@@ -4,19 +4,39 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 // CacheManager 处理缓存文件的存储、验证和更新
 type CacheManager struct {
-	cacheDir string
+	cacheDir  string
+	CacheInfo CacheInfo
+}
+
+type CacheInfo struct {
+	LastModified string
 }
 
 // NewCacheManager 创建新的CacheManager实例
 func NewCacheManager(cacheDir string) *CacheManager {
+
+	cacheInfo := CacheInfo{}
+
+	data, err := os.Stat(path.Join(cacheDir, storeFileName))
+	if err != nil {
+		cacheInfo.LastModified = ""
+	}
+
+	// 格式化为 GMT
+	UTCParts := strings.Split(data.ModTime().UTC().Format(time.RFC1123), " ")
+	cacheInfo.LastModified = strings.Join(UTCParts[0:len(UTCParts)-1], " ") + " GMT"
+
 	return &CacheManager{
-		cacheDir: cacheDir,
+		cacheDir:  cacheDir,
+		CacheInfo: cacheInfo,
 	}
 }
 
@@ -40,7 +60,7 @@ func (c *CacheManager) GetCachedStore() (*Store, error) {
 }
 
 // UpdateCache 基于HTTP响应更新缓存
-func (c *CacheManager) UpdateCache(data []byte, etag string) error {
+func (c *CacheManager) UpdateCache(data []byte) error {
 	// 确保缓存目录存在
 	if err := os.MkdirAll(c.cacheDir, 0755); err != nil {
 		return fmt.Errorf("failed to create cache directory %s: %w", c.cacheDir, err)
@@ -63,8 +83,7 @@ func (c *CacheManager) UpdateCache(data []byte, etag string) error {
 
 	// 更新缓存元信息
 	info := CacheInfo{
-		ETag:       etag,
-		LastUpdate: time.Now(),
+		LastModified: time.Now().Format(time.RFC1123),
 	}
 
 	infoData, err := json.Marshal(info)
@@ -97,11 +116,15 @@ func (c *CacheManager) GetCacheInfo() (etag string, exists bool, err error) {
 		return "", true, err
 	}
 
-	return info.ETag, true, nil
+	return info.LastModified, true, nil
 }
 
-// IsCacheValid 检查缓存是否存在且有效
-func (c *CacheManager) IsCacheValid() (bool, error) {
+func (c *CacheManager) GetCacheLastModified() string {
+	return c.CacheInfo.LastModified
+}
+
+// IsCacheExist 检查缓存是否存在且有效
+func (c *CacheManager) IsCacheExist() (bool, error) {
 	storeFile := filepath.Join(c.cacheDir, storeFileName)
 
 	// 检查文件是否存在
@@ -113,13 +136,15 @@ func (c *CacheManager) IsCacheValid() (bool, error) {
 	}
 
 	// 检查缓存元信息是否存在
-	infoFile := filepath.Join(c.cacheDir, cacheInfoFileName)
-	if _, err := os.Stat(infoFile); err != nil {
+	info, err := os.Stat(filepath.Join(c.cacheDir, cacheInfoFileName))
+	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
 		}
 		return false, err
 	}
+	c.CacheInfo.LastModified = info.ModTime().Format(time.RFC1123)
+	fmt.Println("Cache Last Modified: ", c.CacheInfo.LastModified)
 
 	return true, nil
 }

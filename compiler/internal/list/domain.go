@@ -78,11 +78,6 @@ type LLPkgInfo struct {
 	} `json:"upstream"`
 }
 
-type CacheInfo struct {
-	ETag       string    `json:"etag"`
-	LastUpdate time.Time `json:"last_update"`
-}
-
 type ModuleInfo struct {
 	Path      string     `json:"path"`
 	Version   string     `json:"version"`
