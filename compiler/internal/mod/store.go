@@ -58,6 +58,7 @@ func (f *StoreService) FetchStore(currentModified string) (data []byte, newModif
 	return nil, "", false, fmt.Errorf("failed to fetch store: primary: %v, fallback: %v", err, fallbackErr)
 }
 
+// TODO：验证 Last-Modified 是否可行
 // fetchFromURLWithModified 从指定URL通过 Last Modified 获取数据
 func (f *StoreService) fetchFromURLWithModified(url, lastModified string) (data []byte, newModified string, notModified bool, err error) {
 	// 创建带有If-None-Match头的请求
@@ -113,4 +114,44 @@ func (f *StoreService) fetchFromURLWithModified(url, lastModified string) (data 
 
 	fmt.Fprintf(os.Stderr, "Downloaded %d bytes from %s\n", len(data), url)
 	return data, resp.Header.Get("Last-Modified"), false, nil
+}
+
+// fetchFromURLWithETag 从指定URL通过 etag 获取数据
+func (f *StoreService) fetchFromURLWithETag(url, etag string) (data []byte, newETag string, notModified bool, err error) {
+	// 创建带有If-None-Match头的请求
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+
+	// 输出获取提示
+	fmt.Fprintf(os.Stderr, "Downloading %s...\n", url)
+
+	// 执行HTTP请求
+	resp, err := f.httpClient.Do(req)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("failed to fetch data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotModified {
+		fmt.Fprintln(os.Stderr, "Resource not modified, using cached version")
+		return nil, etag, true, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", false, fmt.Errorf("server returned HTTP %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	data, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Downloaded %d bytes from %s\n", len(data), url)
+	return data, resp.Header.Get("ETag"), false, nil
 }
