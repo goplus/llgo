@@ -30,8 +30,8 @@ func NewMetaInfoService(httpClient *http.Client, logger Logger) *MetaInfoService
 	}
 }
 
-// FetchMetaInfo 获取模块的元信息
-func (m *MetaInfoService) FetchMetaInfo(ref *ModuleRef) ([]byte, error) {
+// FetchCfgMetaInfo 获取模块的元信息
+func (m *MetaInfoService) FetchCfgMetaInfo(ref *ModuleRef) ([]byte, error) {
 	// 构建GitHub URL
 	url := m.buildCfgURL(ref)
 	m.logger.Info("从 %s 获取元信息", url)
@@ -56,8 +56,8 @@ func (m *MetaInfoService) FetchMetaInfo(ref *ModuleRef) ([]byte, error) {
 	return data, nil
 }
 
-// ParseLLPkgInfo 解析llpkg元信息
-func (m *MetaInfoService) ParseLLPkgInfo(data []byte) (*LLPkgInfo, error) {
+// ParseLLPkgCfgInfo 解析llpkg.cfg元信息
+func (m *MetaInfoService) ParseLLPkgCfgInfo(data []byte) (*LLPkgInfo, error) {
 	var info LLPkgInfo
 	if err := json.Unmarshal(data, &info); err != nil {
 		return nil, fmt.Errorf("解析元信息失败: %w", err)

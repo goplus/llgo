@@ -70,13 +70,13 @@ func (a *ListApplication) ListModule(input string, writer io.Writer) error {
 	}
 
 	// 获取元信息
-	metaData, err := a.metaService.FetchMetaInfo(ref)
+	metaData, err := a.metaService.FetchCfgMetaInfo(ref)
 	if err != nil {
 		return err
 	}
 
 	// 解析元信息
-	llpkgInfo, err := a.metaService.ParseLLPkgInfo(metaData)
+	llpkgInfo, err := a.metaService.ParseLLPkgCfgInfo(metaData)
 	if err != nil {
 		return err
 	}
@@ -100,14 +100,14 @@ func (a *ListApplication) ListAllModules(writer io.Writer) error {
 			ref.GoVersion = latestGoVersion
 
 			// 获取元信息
-			metaData, err := a.metaService.FetchMetaInfo(ref)
+			metaData, err := a.metaService.FetchCfgMetaInfo(ref)
 			if err != nil {
 				a.logger.Warning("获取 %s 的元信息失败: %v", name, err)
 				continue
 			}
 
 			// 解析元信息
-			llpkgInfo, err := a.metaService.ParseLLPkgInfo(metaData)
+			llpkgInfo, err := a.metaService.ParseLLPkgCfgInfo(metaData)
 			if err != nil {
 				a.logger.Warning("解析 %s 的元信息失败: %v", name, err)
 				continue
