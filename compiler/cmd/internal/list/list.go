@@ -84,10 +84,10 @@ func runCmd(_ *base.Command, args []string) {
 
 	// 创建存储库
 	cacheDir := os.Getenv("LLGOCACHE")
-	repo := listpkg.NewStoreRepository(cacheDir, httpClient, logger)
+	repo := listpkg.NewRunningRepository(cacheDir, httpClient, logger)
 
 	// 创建服务
-	versionService := listpkg.NewVersionService(repo, logger)
+	versionService := listpkg.NewVersionService(repo.Store, logger)
 	metaService := mod.NewMetaInfoService(httpClient, logger)
 	formatterService := listpkg.NewFormatterService(versionsFlag, jsonFlag, logger)
 

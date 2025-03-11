@@ -9,12 +9,24 @@ import (
 	"path/filepath"
 )
 
+type RunningRepository struct {
+	Store *StoreRepository
+}
+
+func NewRunningRepository(cacheDir string, httpClient *http.Client, logger mod.Logger) *RunningRepository {
+	store := NewStoreRepository(cacheDir, httpClient, logger)
+
+	return &RunningRepository{
+		Store: store,
+	}
+}
+
 // StoreRepository 实现 ModuleStore 接口，负责存储层逻辑
 type StoreRepository struct {
 	cacheDir     string
 	httpClient   *http.Client
 	cacheManager *mod.CacheManager
-	fetcher      *mod.Fetcher
+	storeService *mod.StoreService
 	logger       mod.Logger
 	store        *mod.Store
 }
@@ -42,13 +54,13 @@ func NewStoreRepository(cacheDir string, httpClient *http.Client, logger mod.Log
 	}
 
 	cacheManager := mod.NewCacheManager(cacheDir)
-	fetcher := mod.NewFetcher(httpClient)
+	fetcher := mod.NewStoreService(httpClient)
 
 	return &StoreRepository{
 		cacheDir:     cacheDir,
 		httpClient:   httpClient,
 		cacheManager: cacheManager,
-		fetcher:      fetcher,
+		storeService: fetcher,
 		logger:       logger,
 	}
 }
@@ -68,7 +80,7 @@ func (r *StoreRepository) GetStore() (*mod.Store, error) {
 	// 	r.logger.Warning("检查缓存有效性失败: %v", err)
 	// }
 	// 获取最新数据
-	data, _, notModified, err := r.fetcher.FetchStore(r.cacheManager.CacheInfo.LastModified)
+	data, _, notModified, err := r.storeService.FetchStore(r.cacheManager.CacheInfo.LastModified)
 	if err != nil {
 		return nil, fmt.Errorf("获取数据失败: %w", err)
 	}

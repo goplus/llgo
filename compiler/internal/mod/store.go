@@ -16,15 +16,15 @@ const (
 	DefaultTimeout  = 10 * time.Second
 )
 
-// Fetcher 负责从不同来源获取llpkgstore.json
-type Fetcher struct {
+// StoreService 负责从不同来源获取llpkgstore.json
+type StoreService struct {
 	httpClient  *http.Client
 	primaryURL  string
 	fallbackURL string
 }
 
-// NewFetcher 创建新的Fetcher实例
-func NewFetcher(httpClient *http.Client) *Fetcher {
+// NewStoreService 创建新的Fetcher实例
+func NewStoreService(httpClient *http.Client) *StoreService {
 	// 确保HTTP客户端有合理的超时设置
 	if httpClient == nil {
 		httpClient = &http.Client{
@@ -32,7 +32,7 @@ func NewFetcher(httpClient *http.Client) *Fetcher {
 		}
 	}
 
-	return &Fetcher{
+	return &StoreService{
 		httpClient:  httpClient,
 		primaryURL:  PrimaryURLPath,
 		fallbackURL: FallbackURLPath,
@@ -40,7 +40,7 @@ func NewFetcher(httpClient *http.Client) *Fetcher {
 }
 
 // FetchStore 尝试获取最新的llpkgstore.json
-func (f *Fetcher) FetchStore(currentModified string) (data []byte, newModified string, notModified bool, err error) {
+func (f *StoreService) FetchStore(currentModified string) (data []byte, newModified string, notModified bool, err error) {
 	// 首先尝试主URL
 	fmt.Println(currentModified)
 	data, newModified, notModified, err = f.fetchFromURLWithModified(f.primaryURL, currentModified)
@@ -58,8 +58,8 @@ func (f *Fetcher) FetchStore(currentModified string) (data []byte, newModified s
 	return nil, "", false, fmt.Errorf("failed to fetch store: primary: %v, fallback: %v", err, fallbackErr)
 }
 
-// fetchFromURLWithModified 从指定URL获取数据
-func (f *Fetcher) fetchFromURLWithModified(url, lastModified string) (data []byte, newModified string, notModified bool, err error) {
+// fetchFromURLWithModified 从指定URL通过 Last Modified 获取数据
+func (f *StoreService) fetchFromURLWithModified(url, lastModified string) (data []byte, newModified string, notModified bool, err error) {
 	// 创建带有If-None-Match头的请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

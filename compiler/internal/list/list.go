@@ -13,7 +13,7 @@ type ListApplication struct {
 	versionService   *VersionService
 	metaService      *mod.MetaInfoService
 	formatterService *FormatterService
-	store            mod.ModuleStore
+	repo             *RunningRepository
 	logger           mod.Logger
 }
 
@@ -22,7 +22,7 @@ func NewListApplication(
 	versionService *VersionService,
 	metaService *mod.MetaInfoService,
 	formatterService *FormatterService,
-	store mod.ModuleStore,
+	repo *RunningRepository,
 	logger mod.Logger,
 ) *ListApplication {
 	if logger == nil {
@@ -33,7 +33,7 @@ func NewListApplication(
 		versionService:   versionService,
 		metaService:      metaService,
 		formatterService: formatterService,
-		store:            store,
+		repo:             repo,
 		logger:           logger,
 	}
 }
@@ -87,7 +87,7 @@ func (a *ListApplication) ListModule(input string, writer io.Writer) error {
 
 // ListAllModules 列出所有模块的信息
 func (a *ListApplication) ListAllModules(writer io.Writer) error {
-	packages := a.store.GetAllPackages()
+	packages := a.repo.Store.GetAllPackages()
 	var modules []*mod.ModuleInfo
 
 	for name, pkg := range *packages {
