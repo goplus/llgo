@@ -3,6 +3,7 @@ package list
 
 import (
 	"fmt"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"regexp"
 	"sort"
 	"strings"
@@ -12,14 +13,14 @@ import (
 
 // VersionService 负责处理版本相关的逻辑
 type VersionService struct {
-	store  ModuleStore
-	logger Logger
+	store  mod.ModuleStore
+	logger mod.Logger
 }
 
 // NewVersionService 创建一个新的VersionService
-func NewVersionService(store ModuleStore, logger Logger) *VersionService {
+func NewVersionService(store mod.ModuleStore, logger mod.Logger) *VersionService {
 	if logger == nil {
-		logger = DefaultLogger
+		logger = mod.DefaultLogger
 	}
 
 	return &VersionService{
@@ -29,7 +30,7 @@ func NewVersionService(store ModuleStore, logger Logger) *VersionService {
 }
 
 // EnrichModuleRef 填充ModuleRef的信息
-func (v *VersionService) EnrichModuleRef(ref *ModuleRef) error {
+func (v *VersionService) EnrichModuleRef(ref *mod.ModuleRef) error {
 	// 设置模块路径
 	if ref.IsCLib {
 		ref.ModulePath = fmt.Sprintf("github.com/NEKO-CwC/llpkgstore/%s", ref.Name)
@@ -43,7 +44,7 @@ func (v *VersionService) EnrichModuleRef(ref *ModuleRef) error {
 	}
 
 	// 获取包信息
-	var pkg *Package
+	var pkg *mod.Package
 	var exists bool
 
 	if ref.IsCLib {
@@ -131,7 +132,7 @@ func (v *VersionService) IsCLibrary(ref string) bool {
 }
 
 // getLatestVersion 获取包的最新版本
-func (v *VersionService) getLatestVersion(pkg *Package) string {
+func (v *VersionService) getLatestVersion(pkg *mod.Package) string {
 	if len(pkg.Versions) == 0 {
 		return ""
 	}

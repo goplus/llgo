@@ -1,4 +1,4 @@
-package list
+package mod
 
 import (
 	"encoding/json"
@@ -25,14 +25,14 @@ func NewCacheManager(cacheDir string) *CacheManager {
 
 	cacheInfo := CacheInfo{}
 
-	data, err := os.Stat(path.Join(cacheDir, storeFileName))
+	data, err := os.Stat(path.Join(cacheDir, StoreFileName))
 	if err != nil {
 		cacheInfo.LastModified = ""
+	} else {
+		// 格式化为 GMT
+		UTCParts := strings.Split(data.ModTime().UTC().Format(time.RFC1123), " ")
+		cacheInfo.LastModified = strings.Join(UTCParts[0:len(UTCParts)-1], " ") + " GMT"
 	}
-
-	// 格式化为 GMT
-	UTCParts := strings.Split(data.ModTime().UTC().Format(time.RFC1123), " ")
-	cacheInfo.LastModified = strings.Join(UTCParts[0:len(UTCParts)-1], " ") + " GMT"
 
 	return &CacheManager{
 		cacheDir:  cacheDir,
@@ -42,7 +42,7 @@ func NewCacheManager(cacheDir string) *CacheManager {
 
 // GetCachedStore 获取缓存的llpkgstore.json内容
 func (c *CacheManager) GetCachedStore() (*Store, error) {
-	storeFile := filepath.Join(c.cacheDir, storeFileName)
+	storeFile := filepath.Join(c.cacheDir, StoreFileName)
 
 	// 一次性读取整个文件到内存
 	data, err := os.ReadFile(storeFile)
@@ -76,7 +76,7 @@ func (c *CacheManager) UpdateCache(data []byte) error {
 	os.Remove(testFile)
 
 	// 写入主数据文件
-	storeFile := filepath.Join(c.cacheDir, storeFileName)
+	storeFile := filepath.Join(c.cacheDir, StoreFileName)
 	if err := os.WriteFile(storeFile, data, 0644); err != nil {
 		return fmt.Errorf("failed to write cache file %s: %w", storeFile, err)
 	}
@@ -91,7 +91,7 @@ func (c *CacheManager) UpdateCache(data []byte) error {
 		return fmt.Errorf("failed to serialize cache info: %w", err)
 	}
 
-	infoFile := filepath.Join(c.cacheDir, cacheInfoFileName)
+	infoFile := filepath.Join(c.cacheDir, CacheInfoFileName)
 	if err := os.WriteFile(infoFile, infoData, 0644); err != nil {
 		return fmt.Errorf("failed to write cache info file %s: %w", infoFile, err)
 	}
@@ -101,7 +101,7 @@ func (c *CacheManager) UpdateCache(data []byte) error {
 
 // GetCacheInfo 获取缓存的元信息
 func (c *CacheManager) GetCacheInfo() (etag string, exists bool, err error) {
-	infoFile := filepath.Join(c.cacheDir, cacheInfoFileName)
+	infoFile := filepath.Join(c.cacheDir, CacheInfoFileName)
 
 	data, err := os.ReadFile(infoFile)
 	if err != nil {
@@ -125,7 +125,7 @@ func (c *CacheManager) GetCacheLastModified() string {
 
 // IsCacheExist 检查缓存是否存在且有效
 func (c *CacheManager) IsCacheExist() (bool, error) {
-	storeFile := filepath.Join(c.cacheDir, storeFileName)
+	storeFile := filepath.Join(c.cacheDir, StoreFileName)
 
 	// 检查文件是否存在
 	if _, err := os.Stat(storeFile); err != nil {
@@ -136,7 +136,7 @@ func (c *CacheManager) IsCacheExist() (bool, error) {
 	}
 
 	// 检查缓存元信息是否存在
-	info, err := os.Stat(filepath.Join(c.cacheDir, cacheInfoFileName))
+	info, err := os.Stat(filepath.Join(c.cacheDir, CacheInfoFileName))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -148,3 +148,7 @@ func (c *CacheManager) IsCacheExist() (bool, error) {
 
 	return true, nil
 }
+
+const StoreFileName = "llpkgstore.json"
+
+const CacheInfoFileName = "llpkgstore.json.info"

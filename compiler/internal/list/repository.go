@@ -1,42 +1,33 @@
-// repository.go
 package list
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 )
 
-const (
-	storeFileName     = "llpkgstore.json"
-	cacheInfoFileName = "llpkgstore.json.info"
-	primaryURLPath    = "https://llpkg.goplus.org/llpkgstore.json"
-	fallbackURLPath   = "https://raw.githubusercontent.com/NEKO-CwC/llpkgstore/main/llpkgstore.json"
-	defaultTimeout    = 10 * time.Second
-)
-
-// StoreRepository 实现ModuleStore接口，负责存储层逻辑
+// StoreRepository 实现 ModuleStore 接口，负责存储层逻辑
 type StoreRepository struct {
 	cacheDir     string
 	httpClient   *http.Client
-	cacheManager *CacheManager
-	fetcher      *Fetcher
-	logger       Logger
-	store        *Store
+	cacheManager *mod.CacheManager
+	fetcher      *mod.Fetcher
+	logger       mod.Logger
+	store        *mod.Store
 }
 
-// NewStoreRepository 创建新的StoreRepository实例
-func NewStoreRepository(cacheDir string, httpClient *http.Client, logger Logger) *StoreRepository {
+// NewStoreRepository 创建新的 StoreRepository 实例
+func NewStoreRepository(cacheDir string, httpClient *http.Client, logger mod.Logger) *StoreRepository {
 	// 默认值处理
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: defaultTimeout}
+		httpClient = &http.Client{Timeout: mod.DefaultTimeout}
 	}
 
 	if logger == nil {
-		logger = DefaultLogger
+		logger = mod.DefaultLogger
 	}
 
 	// 确保缓存目录存在
@@ -50,8 +41,8 @@ func NewStoreRepository(cacheDir string, httpClient *http.Client, logger Logger)
 		logger.Warning("缓存目录未指定，使用默认目录: %s", cacheDir)
 	}
 
-	cacheManager := NewCacheManager(cacheDir)
-	fetcher := NewFetcher(httpClient)
+	cacheManager := mod.NewCacheManager(cacheDir)
+	fetcher := mod.NewFetcher(httpClient)
 
 	return &StoreRepository{
 		cacheDir:     cacheDir,
@@ -62,8 +53,8 @@ func NewStoreRepository(cacheDir string, httpClient *http.Client, logger Logger)
 	}
 }
 
-// GetStore 获取完整的llpkgstore数据，实现ModuleStore接口
-func (r *StoreRepository) GetStore() (*Store, error) {
+// GetStore 获取完整的 llpkgstore 数据，实现 ModuleStore 接口
+func (r *StoreRepository) GetStore() (*mod.Store, error) {
 	// 如果已经加载过，直接返回
 	if r.store != nil {
 		return r.store, nil
@@ -93,7 +84,7 @@ func (r *StoreRepository) GetStore() (*Store, error) {
 	}
 
 	r.logger.Info("解析接收的数据...")
-	var store Store
+	var store mod.Store
 	if err := json.Unmarshal(data, &store); err != nil {
 		return nil, fmt.Errorf("解析数据失败: %w", err)
 	}
@@ -111,7 +102,7 @@ func (r *StoreRepository) GetStore() (*Store, error) {
 }
 
 // GetPackage 获取特定的包
-func (r *StoreRepository) GetPackage(name string) (*Package, bool) {
+func (r *StoreRepository) GetPackage(name string) (*mod.Package, bool) {
 	store, err := r.GetStore()
 	if err != nil {
 		r.logger.Error("获取存储失败: %v", err)
@@ -123,7 +114,7 @@ func (r *StoreRepository) GetPackage(name string) (*Package, bool) {
 }
 
 // GetAllPackages 获取所有包
-func (r *StoreRepository) GetAllPackages() *Store {
+func (r *StoreRepository) GetAllPackages() *mod.Store {
 	store, err := r.GetStore()
 	if err != nil {
 		r.logger.Error("获取存储失败: %v", err)

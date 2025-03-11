@@ -1,5 +1,5 @@
 // domain.go
-package list
+package mod
 
 import (
 	"fmt"

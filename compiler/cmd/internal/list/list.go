@@ -3,6 +3,7 @@ package list
 
 import (
 	"fmt"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"net/http"
 	"os"
 	"strings"
@@ -22,7 +23,7 @@ func init() {
 	Cmd.Run = runCmd
 }
 
-func runCmd(cmd *base.Command, args []string) {
+func runCmd(_ *base.Command, args []string) {
 	// 手动解析参数
 	var modulesFlag, versionsFlag, jsonFlag bool
 	var patterns []string
@@ -76,7 +77,7 @@ func runCmd(cmd *base.Command, args []string) {
 	}
 
 	// 创建日志记录器
-	logger := listpkg.NewLogger(listpkg.LogInfo, os.Stdout, os.Stderr)
+	logger := mod.NewLogger(mod.LogInfo, os.Stdout, os.Stderr)
 
 	// 创建HTTP客户端
 	httpClient := &http.Client{Timeout: 0}
@@ -87,7 +88,7 @@ func runCmd(cmd *base.Command, args []string) {
 
 	// 创建服务
 	versionService := listpkg.NewVersionService(repo, logger)
-	metaService := listpkg.NewMetaInfoService(httpClient, logger)
+	metaService := mod.NewMetaInfoService(httpClient, logger)
 	formatterService := listpkg.NewFormatterService(versionsFlag, jsonFlag, logger)
 
 	// 创建应用并执行

@@ -1,5 +1,5 @@
 // logger.go
-package list
+package mod
 
 import (
 	"fmt"
@@ -81,27 +81,3 @@ func (l *SimpleLogger) Error(format string, args ...interface{}) {
 
 // 全局默认logger实例
 var DefaultLogger = NewLogger(LogInfo, os.Stdout, os.Stderr)
-
-// 全局快捷函数保持向后兼容
-func Debug(format string, args ...interface{}) {
-	DefaultLogger.Debug(format, args...)
-}
-
-func Info(format string, args ...interface{}) {
-	DefaultLogger.Info(format, args...)
-}
-
-func Warning(format string, args ...interface{}) {
-	DefaultLogger.Warning(format, args...)
-}
-
-func Error(format string, args ...interface{}) {
-	DefaultLogger.Error(format, args...)
-}
-
-// SetLevel 设置日志级别
-func SetLevel(level LogLevel) {
-	if logger, ok := DefaultLogger.(*SimpleLogger); ok {
-		logger.level = level
-	}
-}

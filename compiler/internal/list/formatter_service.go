@@ -4,6 +4,7 @@ package list
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"io"
 	"strings"
 )
@@ -12,13 +13,13 @@ import (
 type FormatterService struct {
 	includeVersions bool
 	jsonOutput      bool
-	logger          Logger
+	logger          mod.Logger
 }
 
 // NewFormatterService 创建一个新的FormatterService
-func NewFormatterService(includeVersions, jsonOutput bool, logger Logger) *FormatterService {
+func NewFormatterService(includeVersions, jsonOutput bool, logger mod.Logger) *FormatterService {
 	if logger == nil {
-		logger = DefaultLogger
+		logger = mod.DefaultLogger
 	}
 
 	return &FormatterService{
@@ -29,7 +30,7 @@ func NewFormatterService(includeVersions, jsonOutput bool, logger Logger) *Forma
 }
 
 // FormatModuleRef 格式化单个ModuleRef的输出
-func (f *FormatterService) FormatModuleRef(w io.Writer, ref *ModuleRef, llpkgInfo *LLPkgInfo) error {
+func (f *FormatterService) FormatModuleRef(w io.Writer, ref *mod.ModuleRef, llpkgInfo *mod.LLPkgInfo) error {
 	if f.jsonOutput {
 		return f.formatJSONOutput(w, ref, llpkgInfo)
 	}
@@ -38,7 +39,7 @@ func (f *FormatterService) FormatModuleRef(w io.Writer, ref *ModuleRef, llpkgInf
 }
 
 // FormatModuleInfoList 格式化ModuleInfo列表的输出
-func (f *FormatterService) FormatModuleInfoList(w io.Writer, modules []*ModuleInfo) error {
+func (f *FormatterService) FormatModuleInfoList(w io.Writer, modules []*mod.ModuleInfo) error {
 	if f.jsonOutput {
 		return f.formatJSONList(w, modules)
 	}
@@ -61,7 +62,7 @@ func (f *FormatterService) FormatModuleInfoList(w io.Writer, modules []*ModuleIn
 }
 
 // formatTextOutput 生成文本格式输出
-func (f *FormatterService) formatTextOutput(w io.Writer, ref *ModuleRef, llpkgInfo *LLPkgInfo) error {
+func (f *FormatterService) formatTextOutput(w io.Writer, ref *mod.ModuleRef, llpkgInfo *mod.LLPkgInfo) error {
 	var upstreamInfo string
 	if llpkgInfo != nil && llpkgInfo.Upstream.Package.Name != "" {
 		upstreamInfo = fmt.Sprintf("[%s:%s/%s]",
@@ -95,8 +96,8 @@ func (f *FormatterService) formatTextOutput(w io.Writer, ref *ModuleRef, llpkgIn
 }
 
 // formatJSONOutput 生成JSON格式输出
-func (f *FormatterService) formatJSONOutput(w io.Writer, ref *ModuleRef, llpkgInfo *LLPkgInfo) error {
-	moduleInfo := &ModuleInfo{
+func (f *FormatterService) formatJSONOutput(w io.Writer, ref *mod.ModuleRef, llpkgInfo *mod.LLPkgInfo) error {
+	moduleInfo := &mod.ModuleInfo{
 		Path:    ref.ModulePath,
 		Version: ref.GoVersion,
 		LLPkg:   llpkgInfo,
@@ -108,7 +109,7 @@ func (f *FormatterService) formatJSONOutput(w io.Writer, ref *ModuleRef, llpkgIn
 }
 
 // formatJSONList 生成JSON格式列表输出
-func (f *FormatterService) formatJSONList(w io.Writer, modules []*ModuleInfo) error {
+func (f *FormatterService) formatJSONList(w io.Writer, modules []*mod.ModuleInfo) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 

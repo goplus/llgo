@@ -1,4 +1,4 @@
-package list
+package mod
 
 import (
 	"errors"
@@ -7,6 +7,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
+)
+
+const (
+	PrimaryURLPath  = "https://llpkg.goplus.org/llpkgstore.json"
+	FallbackURLPath = "https://raw.githubusercontent.com/NEKO-CwC/llpkgstore/main/llpkgstore.json"
+	DefaultTimeout  = 10 * time.Second
 )
 
 // Fetcher 负责从不同来源获取llpkgstore.json
@@ -21,14 +28,14 @@ func NewFetcher(httpClient *http.Client) *Fetcher {
 	// 确保HTTP客户端有合理的超时设置
 	if httpClient == nil {
 		httpClient = &http.Client{
-			Timeout: defaultTimeout,
+			Timeout: DefaultTimeout,
 		}
 	}
 
 	return &Fetcher{
 		httpClient:  httpClient,
-		primaryURL:  primaryURLPath,
-		fallbackURL: fallbackURLPath,
+		primaryURL:  PrimaryURLPath,
+		fallbackURL: FallbackURLPath,
 	}
 }
 
@@ -36,13 +43,13 @@ func NewFetcher(httpClient *http.Client) *Fetcher {
 func (f *Fetcher) FetchStore(currentModified string) (data []byte, newModified string, notModified bool, err error) {
 	// 首先尝试主URL
 	fmt.Println(currentModified)
-	data, newModified, notModified, err = f.fetchFromURL(f.primaryURL, currentModified)
+	data, newModified, notModified, err = f.fetchFromURLWithModified(f.primaryURL, currentModified)
 	if err == nil {
 		return data, newModified, notModified, nil
 	}
 
 	// 如果主URL失败，尝试备用URL
-	data, newModified, notModified, fallbackErr := f.fetchFromURL(f.fallbackURL, currentModified)
+	data, newModified, notModified, fallbackErr := f.fetchFromURLWithModified(f.fallbackURL, currentModified)
 	if fallbackErr == nil {
 		return data, newModified, notModified, nil
 	}
@@ -51,8 +58,8 @@ func (f *Fetcher) FetchStore(currentModified string) (data []byte, newModified s
 	return nil, "", false, fmt.Errorf("failed to fetch store: primary: %v, fallback: %v", err, fallbackErr)
 }
 
-// fetchFromURL 从指定URL获取数据
-func (f *Fetcher) fetchFromURL(url, lastModified string) (data []byte, newModified string, notModified bool, err error) {
+// fetchFromURLWithModified 从指定URL获取数据
+func (f *Fetcher) fetchFromURLWithModified(url, lastModified string) (data []byte, newModified string, notModified bool, err error) {
 	// 创建带有If-None-Match头的请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -65,9 +72,6 @@ func (f *Fetcher) fetchFromURL(url, lastModified string) (data []byte, newModifi
 
 	// 输出获取提示
 	fmt.Fprintf(os.Stderr, "Downloading %s...\n", url)
-
-	// 打印请求头信息，方便构建调试代码
-	fmt.Fprintf(os.Stderr, "Request headers: %v\n", req.Header)
 
 	// 执行HTTP请求
 	resp, err := f.httpClient.Do(req)
@@ -89,7 +93,6 @@ func (f *Fetcher) fetchFromURL(url, lastModified string) (data []byte, newModifi
 		return nil, "", false, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
-
 	// 处理304 Not Modified
 	fmt.Println(resp.StatusCode)
 	if resp.StatusCode == http.StatusNotModified {

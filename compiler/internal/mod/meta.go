@@ -1,5 +1,4 @@
-// meta_service.go
-package list
+package mod
 
 import (
 	"encoding/json"
@@ -18,7 +17,7 @@ type MetaInfoService struct {
 // NewMetaInfoService 创建一个新的MetaInfoService
 func NewMetaInfoService(httpClient *http.Client, logger Logger) *MetaInfoService {
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: defaultTimeout}
+		httpClient = &http.Client{Timeout: DefaultTimeout}
 	}
 
 	if logger == nil {
@@ -34,7 +33,7 @@ func NewMetaInfoService(httpClient *http.Client, logger Logger) *MetaInfoService
 // FetchMetaInfo 获取模块的元信息
 func (m *MetaInfoService) FetchMetaInfo(ref *ModuleRef) ([]byte, error) {
 	// 构建GitHub URL
-	url := m.buildGitHubURL(ref)
+	url := m.buildCfgURL(ref)
 	m.logger.Info("从 %s 获取元信息", url)
 
 	// 发送HTTP请求
@@ -67,8 +66,8 @@ func (m *MetaInfoService) ParseLLPkgInfo(data []byte) (*LLPkgInfo, error) {
 	return &info, nil
 }
 
-// buildGitHubURL 构建GitHub URL
-func (m *MetaInfoService) buildGitHubURL(ref *ModuleRef) string {
+// buildCfgURL 构建GitHub URL
+func (m *MetaInfoService) buildCfgURL(ref *ModuleRef) string {
 	// 解析模块路径
 	parts := strings.SplitN(ref.ModulePath, "/", 4)
 	if len(parts) < 3 || parts[0] != "github.com" {

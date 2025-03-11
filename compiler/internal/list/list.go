@@ -3,6 +3,7 @@ package list
 
 import (
 	"fmt"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"io"
 	"strings"
 )
@@ -10,22 +11,22 @@ import (
 // ListApplication 应用协调者
 type ListApplication struct {
 	versionService   *VersionService
-	metaService      *MetaInfoService
+	metaService      *mod.MetaInfoService
 	formatterService *FormatterService
-	store            ModuleStore
-	logger           Logger
+	store            mod.ModuleStore
+	logger           mod.Logger
 }
 
 // NewListApplication 创建一个新的ListApplication实例
 func NewListApplication(
 	versionService *VersionService,
-	metaService *MetaInfoService,
+	metaService *mod.MetaInfoService,
 	formatterService *FormatterService,
-	store ModuleStore,
-	logger Logger,
+	store mod.ModuleStore,
+	logger mod.Logger,
 ) *ListApplication {
 	if logger == nil {
-		logger = DefaultLogger
+		logger = mod.DefaultLogger
 	}
 
 	return &ListApplication{
@@ -63,7 +64,7 @@ func (a *ListApplication) ListModule(input string, writer io.Writer) error {
 	}
 
 	// 创建并填充ModuleRef
-	ref := NewModuleRef(name, versionSpec)
+	ref := mod.NewModuleRef(name, versionSpec)
 	if err := a.versionService.EnrichModuleRef(ref); err != nil {
 		return err
 	}
@@ -87,7 +88,7 @@ func (a *ListApplication) ListModule(input string, writer io.Writer) error {
 // ListAllModules 列出所有模块的信息
 func (a *ListApplication) ListAllModules(writer io.Writer) error {
 	packages := a.store.GetAllPackages()
-	var modules []*ModuleInfo
+	var modules []*mod.ModuleInfo
 
 	for name, pkg := range *packages {
 		if len(pkg.Versions) > 0 {
@@ -95,7 +96,7 @@ func (a *ListApplication) ListAllModules(writer io.Writer) error {
 			latestGoVersion := a.versionService.getLatestGoVersion(latestMapping.GoVersions)
 
 			// 创建参考以获取元信息
-			ref := NewModuleRef(name, "latest")
+			ref := mod.NewModuleRef(name, "latest")
 			ref.GoVersion = latestGoVersion
 
 			// 获取元信息
@@ -113,7 +114,7 @@ func (a *ListApplication) ListAllModules(writer io.Writer) error {
 			}
 
 			// 构造模块信息
-			modules = append(modules, &ModuleInfo{
+			modules = append(modules, &mod.ModuleInfo{
 				Path:    fmt.Sprintf("github.com/NEKO-CwC/llpkgstore/%s", name),
 				Version: latestGoVersion,
 				LLPkg:   llpkgInfo,
