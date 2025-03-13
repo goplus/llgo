@@ -483,7 +483,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	err = ctx.env.Clang().Exec(args...)
 	check(err)
 
-	if runtime.GOOS == "darwin" {
+	if IsRpathChangeEnabled() && runtime.GOOS == "darwin" {
 		dylibDeps := make([]string, 0, len(libs))
 		for _, lib := range libs {
 			dylibDep := findDylibDep(app, lib)
@@ -746,6 +746,7 @@ const llgoDebug = "LLGO_DEBUG"
 const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
+const llgoRpathChange = "LLGO_RPATH_CHANGE"
 
 func isEnvOn(env string, defVal bool) bool {
 	envVal := strings.ToLower(os.Getenv(env))
@@ -769,6 +770,10 @@ func IsOptimizeEnabled() bool {
 
 func IsCheckEnable() bool {
 	return isEnvOn(llgoCheck, false)
+}
+
+func IsRpathChangeEnabled() bool {
+	return isEnvOn(llgoRpathChange, false)
 }
 
 func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
