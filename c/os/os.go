@@ -59,15 +59,15 @@ const (
 )
 
 type (
-	ModeT C.mode_t
-	UidT  C.uid_t
-	GidT  C.gid_t
-	OffT  C.off_t
-	DevT  C.dev_t
+	ModeT C.mode_t //cname:mode_t
+	UidT  C.uid_t  //cname:uid_t
+	GidT  C.gid_t  //cname:gid_t
+	OffT  C.off_t  //cname:off_t
+	DevT  C.dev_t  //cname:dev_t
 )
 
 type (
-	StatT = syscall.Stat_t
+	StatT = syscall.Stat_t //cname:stat
 )
 
 //go:linkname Errno C.llgoErrno
@@ -262,7 +262,7 @@ func Execvp(file *c.Char, argv **c.Char) c.Int
 
 // -----------------------------------------------------------------------------
 
-type PidT c.Int
+type PidT c.Int //cname:pid_t
 
 //go:linkname Fork C.fork
 func Fork() PidT

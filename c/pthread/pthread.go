@@ -36,7 +36,7 @@ type aThread struct {
 type RoutineFunc func(c.Pointer) c.Pointer
 
 // Thread represents a POSIX thread.
-type Thread = *aThread
+type Thread = *aThread //cname:pthread_t
 
 // The pthread_exit() function terminates the calling thread and
 // returns a value via retval that (if the thread is joinable) is
@@ -63,7 +63,7 @@ type Attr struct {
 	Detached byte
 	SsSp     *c.Char
 	SsSize   uintptr
-}
+} //cname:attr
 
 // llgo:link (*Attr).Init C.pthread_attr_init
 func (attr *Attr) Init() c.Int { return 0 }
@@ -92,7 +92,7 @@ func (attr *Attr) SetStackAddr(stackAddr c.Pointer) c.Int { return 0 }
 // -----------------------------------------------------------------------------
 // Thread Local Storage
 
-type Key c.Uint
+type Key c.Uint //cname:pthread_key_t
 
 // llgo:link (*Key).Create C.pthread_key_create
 func (key *Key) Create(destructor func(c.Pointer)) c.Int { return 0 }
