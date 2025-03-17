@@ -165,6 +165,7 @@ jobs:
 
       - name: run llgo test
         run: |
+          llgo test ./test/... # TODO(lijie): fix unneeded pkgs compilation in llgo test
           cd _demo
           llgo test -v ./runtest
 

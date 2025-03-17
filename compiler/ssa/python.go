@@ -376,9 +376,9 @@ func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
 }
 
 // PyStr returns a py-style string constant expression.
-func (b Builder) PyStr(v string) Expr {
+func (b Builder) PyStr(str Expr) Expr {
 	fn := b.Pkg.pyFunc("PyUnicode_FromString", b.Prog.tyPyUnicodeFromString())
-	return b.Call(fn, b.CStr(v))
+	return b.Call(fn, str)
 }
 
 // -----------------------------------------------------------------------------

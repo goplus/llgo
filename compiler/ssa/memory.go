@@ -200,6 +200,17 @@ func (b Builder) AllocaCStrs(strs Expr, endWithNil bool) (cstrs Expr) {
 	return
 }
 
+func (b Builder) AllocCStr(gostr Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("AllocaCStr %v\n", gostr.impl)
+	}
+	n := b.StringLen(gostr)
+	n1 := b.BinOp(token.ADD, n, b.Prog.Val(1))
+	cstr := b.allocUninited(n1)
+	cstr.Type = b.Prog.CStr()
+	return b.InlineCall(b.Pkg.rtFunc("CStrCopy"), cstr, gostr)
+}
+
 // -----------------------------------------------------------------------------
 
 func (p Program) tyMalloc() *types.Signature {

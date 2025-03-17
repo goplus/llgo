@@ -47,23 +47,27 @@ func constBool(v ssa.Value) (ret bool, ok bool) {
 }
 
 // func pystr(string) *py.Object
-func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+func (p *context) pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
 		if sv, ok := constStr(args[0]); ok {
-			return b.PyStr(sv)
+			return b.PyStr(b.CStr(sv))
+		} else {
+			return b.PyStr(p.allocCStr(b, args))
 		}
 	}
-	panic("pystr(<string-literal>): invalid arguments")
+	panic("pystr(<string>): invalid arguments")
 }
 
 // func cstr(string) *int8
-func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+func (p *context) cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
 		if sv, ok := constStr(args[0]); ok {
 			return b.CStr(sv)
+		} else {
+			return p.allocCStr(b, args)
 		}
 	}
-	panic("cstr(<string-literal>): invalid arguments")
+	panic("cstr(<string>): invalid arguments")
 }
 
 // -----------------------------------------------------------------------------
@@ -176,6 +180,15 @@ func (p *context) allocaCStrs(b llssa.Builder, args []ssa.Value) (ret llssa.Expr
 		return b.AllocaCStrs(strs, endWithNil)
 	}
 	panic("allocaCStrs(strs []string, endWithNil bool): invalid arguments")
+}
+
+// func allocCStr(s string) *int8
+func (p *context) allocCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		s := p.compileValue(b, args[0])
+		return b.AllocCStr(s)
+	}
+	panic("allocCStr(s string): invalid arguments")
 }
 
 // func string(cstr *int8, n ...int) *int8
@@ -443,9 +456,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyTuple(args...)
 		case llgoPyStr:
-			ret = pystr(b, args)
+			ret = p.pystr(b, args)
 		case llgoCstr:
-			ret = cstr(b, args)
+			ret = p.cstr(b, args)
 		case llgoCgoCString:
 			ret = p.cgoCString(b, args)
 		case llgoCgoCBytes:
