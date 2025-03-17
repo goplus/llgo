@@ -387,14 +387,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
-	goStrs := make(map[string]llvm.Value)
 	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, vars: gbls, fns: fns, stubs: stubs,
-		pyobjs: pyobjs, pymods: pymods, strs: strs, goStrs: goStrs,
+		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
 	}
