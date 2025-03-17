@@ -3,7 +3,7 @@ package mod
 import "time"
 
 type ModuleStore interface {
-	GetStore() (*Store, error)
+	GetLatestStore() (*Store, error)
 	GetPackage(name string) (*Package, bool)
 	GetAllPackages() *Store
 }

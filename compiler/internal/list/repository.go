@@ -66,7 +66,7 @@ func NewStoreRepository(cacheDir string, httpClient *http.Client, logger mod.Log
 }
 
 // GetStore 获取完整的 llpkgstore 数据，实现 ModuleStore 接口
-func (r *StoreRepository) GetStore() (*mod.Store, error) {
+func (r *StoreRepository) GetLatestStore() (*mod.Store, error) {
 	// 如果已经加载过，直接返回
 	if r.store != nil {
 		return r.store, nil
@@ -74,11 +74,6 @@ func (r *StoreRepository) GetStore() (*mod.Store, error) {
 
 	r.logger.Info("检查llpkgstore缓存...")
 
-	// // 检查缓存有效性
-	// exist, err := r.cacheManager.IsCacheExist()
-	// if err != nil {
-	// 	r.logger.Warning("检查缓存有效性失败: %v", err)
-	// }
 	// 获取最新数据
 	data, _, notModified, err := r.storeService.FetchStore(r.cacheManager.CacheInfo.LastModified)
 	if err != nil {
@@ -115,7 +110,7 @@ func (r *StoreRepository) GetStore() (*mod.Store, error) {
 
 // GetPackage 获取特定的包
 func (r *StoreRepository) GetPackage(name string) (*mod.Package, bool) {
-	store, err := r.GetStore()
+	store, err := r.GetLatestStore()
 	if err != nil {
 		r.logger.Error("获取存储失败: %v", err)
 		return nil, false
@@ -127,7 +122,7 @@ func (r *StoreRepository) GetPackage(name string) (*mod.Package, bool) {
 
 // GetAllPackages 获取所有包
 func (r *StoreRepository) GetAllPackages() *mod.Store {
-	store, err := r.GetStore()
+	store, err := r.GetLatestStore()
 	if err != nil {
 		r.logger.Error("获取存储失败: %v", err)
 		return nil
