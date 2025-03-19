@@ -175,6 +175,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			}
 		case ModeRun:
 			return nil, fmt.Errorf("cannot run multiple packages")
+		case ModeTest:
+			newInitial := make([]*packages.Package, 0, len(initial))
+			for _, pkg := range initial {
+				if needLink(pkg, mode) {
+					newInitial = append(newInitial, pkg)
+				}
+			}
+			initial = newInitial
 		}
 	}
 
