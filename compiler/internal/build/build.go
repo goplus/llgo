@@ -488,7 +488,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err = ctx.env.Clang().Exec(args...)
+	err = ctx.env.Clang().Link(args...)
 	check(err)
 
 	if IsRpathChangeEnabled() && runtime.GOOS == "darwin" {
@@ -870,7 +870,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err := ctx.env.Clang().Exec(args...)
+	err := ctx.env.Clang().Compile(args...)
 	check(err)
 	procFile(llFile)
 }
