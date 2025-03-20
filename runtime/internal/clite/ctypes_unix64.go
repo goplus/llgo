@@ -1,4 +1,6 @@
-//go:build linux
+//go:build (linux || darwin || freebsd || netbsd || openbsd || solaris) && (amd64 || arm64 || ppc64 || ppc64le || mips64 || mips64le || s390x || riscv64)
+// +build linux darwin freebsd netbsd openbsd solaris
+// +build amd64 arm64 ppc64 ppc64le mips64 mips64le s390x riscv64
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -16,14 +18,10 @@
  * limitations under the License.
  */
 
-package os
+package c
 
-import _ "unsafe"
-
-const (
-	LLGoFiles   = "_os/os.c"
-	LLGoPackage = "link"
+// For 64-bit Unix/Linux/macOS, Long is 64-bit
+type (
+	Long  = int64
+	Ulong = uint64
 )
-
-//go:linkname Clearenv C.clearenv
-func Clearenv()

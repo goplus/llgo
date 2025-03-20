@@ -18,7 +18,7 @@
 
 package os
 
-import "C"
+import _ "unsafe"
 
 const (
 	LLGoFiles   = "_os/os.c"

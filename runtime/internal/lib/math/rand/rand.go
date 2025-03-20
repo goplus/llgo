@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	_ "unsafe" // for go:linkname
 
-	"github.com/goplus/llgo/runtime/internal/clite"
+	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/math/rand"
 	"github.com/goplus/llgo/runtime/internal/clite/time"
 )
@@ -348,7 +348,7 @@ func fastrand64() uint64 {
 }
 
 func init() {
-	rand.Srandom(clite.Uint(time.Time(nil)))
+	rand.Srandom(c.Uint(time.Time(nil)))
 }
 
 // fastSource is an implementation of Source64 that uses the runtime
