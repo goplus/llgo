@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // -----------------------------------------------------------------------------
@@ -38,6 +39,32 @@ func New(app string) *Cmd {
 		app = "clang"
 	}
 	return &Cmd{app, os.Stdout, os.Stderr}
+}
+
+func (p *Cmd) Compile(args ...string) error {
+	// Parse CFLAGS environment variable into separate arguments
+	cflags := strings.Fields(os.Getenv("CFLAGS"))
+	if len(cflags) > 0 {
+		// Create a new slice with capacity for all arguments
+		newArgs := make([]string, 0, len(cflags)+len(args))
+		newArgs = append(newArgs, cflags...)
+		newArgs = append(newArgs, args...)
+		args = newArgs
+	}
+	return p.Exec(args...)
+}
+
+func (p *Cmd) Link(args ...string) error {
+	// Parse LDFLAGS environment variable into separate arguments
+	ldflags := strings.Fields(os.Getenv("LDFLAGS"))
+	if len(ldflags) > 0 {
+		// Create a new slice with capacity for all arguments
+		newArgs := make([]string, 0, len(ldflags)+len(args))
+		newArgs = append(newArgs, ldflags...)
+		newArgs = append(newArgs, args...)
+		args = newArgs
+	}
+	return p.Exec(args...)
 }
 
 // Exec executes a clang command.
