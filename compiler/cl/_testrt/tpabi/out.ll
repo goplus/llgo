@@ -23,7 +23,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testrt/tpabi"
 @5 = private unnamed_addr constant [4 x i8] c"Demo", align 1
 @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac" = linkonce global ptr null, align 8
 @6 = private unnamed_addr constant [4 x i8] c"Info", align 1
-@7 = private unnamed_addr constant [100 x i8] c"type assertion interface{} -> github.com/goplus/llgo/compiler/cl/_testrt/tpabi.T[string, int] failed", align 1
+@7 = private unnamed_addr constant [92 x i8] c"type assertion any -> github.com/goplus/llgo/compiler/cl/_testrt/tpabi.T[string, int] failed", align 1
 @8 = private unnamed_addr constant [5 x i8] c"hello", align 1
 @"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpabi.T[string,int]" = linkonce global ptr null, align 8
 @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs" = linkonce global ptr null, align 8
@@ -107,7 +107,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %38 = load ptr, ptr @_llgo_string, align 8
   %39 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 100 }, ptr %39, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 92 }, ptr %39, align 8
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %38, 0
   %41 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %40, ptr %39, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %41)
