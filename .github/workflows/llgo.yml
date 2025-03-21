@@ -166,8 +166,10 @@ jobs:
       - name: run llgo test
         run: |
           llgo test ./...
-          cd _demo
-          llgo test -v ./runtest
+          cd runtime
+          llgo test ./...
+          cd ../_demo
+          llgo test ./runtest
 
   hello:
     continue-on-error: true
