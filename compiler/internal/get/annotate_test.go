@@ -67,6 +67,22 @@ require github.com/test/module v1.0.0 // indirect; any_comments; mypkg 1.2.3
 `,
 		},
 		{
+			name: "already_exists_case",
+			modContent: `module example.com/test
+
+require github.com/test/module v1.0.0 // mypkg 1.2.3
+`,
+			module: module.Version{Path: "github.com/test/module", Version: "v1.0.0"},
+			pkg: config.PackageConfig{
+				Name:    "mypkg",
+				Version: "1.2.3",
+			},
+			expected: `module example.com/test
+
+require github.com/test/module v1.0.0 // mypkg 1.2.3
+`,
+		},
+		{
 			name: "module_not_found",
 			modContent: `module example.com/test
 

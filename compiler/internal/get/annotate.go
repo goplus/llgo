@@ -3,6 +3,8 @@ package get
 import (
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/goplus/llpkgstore/config"
 	"golang.org/x/mod/modfile"
@@ -37,7 +39,22 @@ func AnnotateModFile(targetModFilePath string, module module.Version, pkg config
 						Token:  token,
 					})
 			} else {
-				token := fmt.Sprintf("%s; %s", req.Syntax.Comments.Suffix[0].Token, annotation)
+				comment := req.Syntax.Comments.Suffix[0].Token
+				commentParts := strings.Split(comment, "; ")
+
+				// If contains, skip
+				switch {
+				case len(commentParts) == 1:
+					if comment == "// "+annotation {
+						continue
+					}
+				case len(commentParts) > 1:
+					if slices.Contains(commentParts, annotation) || slices.Contains(commentParts, "// "+annotation) {
+						continue
+					}
+				}
+
+				token := fmt.Sprintf("%s; %s", comment, annotation)
 				req.Syntax.Comments.Suffix[0].Token = token
 			}
 		}
