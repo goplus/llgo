@@ -30,8 +30,8 @@ const (
 )
 
 type (
-	JmpBuf    = C.jmp_buf
-	SigjmpBuf = C.sigjmp_buf
+	JmpBuf    = C.jmp_buf    //cname:jmp_buf
+	SigjmpBuf = C.sigjmp_buf //cname:sigjmp_buf
 )
 
 // -----------------------------------------------------------------------------
