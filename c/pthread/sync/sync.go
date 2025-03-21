@@ -16,9 +16,6 @@
 
 package sync
 
-// #include <pthread.h>
-import "C"
-
 import (
 	_ "unsafe"
 
@@ -31,12 +28,32 @@ const (
 	LLGoPackage = "link"
 )
 
+const (
+	PthreadOnceSize       = 16
+	PthreadMutexSize      = 64
+	PthreadMutexAttrSize  = 16
+	PthreadCondSize       = 48
+	PthreadCondAttrSize   = 16
+	PthreadRWLockSize     = 200
+	PthreadRWLockAttrSize = 24
+)
+
+const (
+	PTHREAD_MUTEX_NORMAL     = 0
+	PTHREAD_MUTEX_ERRORCHECK = 1
+	PTHREAD_MUTEX_RECURSIVE  = 2
+	PTHREAD_MUTEX_DEFAULT    = PTHREAD_MUTEX_NORMAL
+)
+
 // -----------------------------------------------------------------------------
 
 // Once is an object that will perform exactly one action.
-type Once C.pthread_once_t
+// pthread_once_t
+type Once struct {
+	Unused [PthreadOnceSize]c.Char
+}
 
-//go:linkname OnceInit llgoSyncOnceInitVal
+//go:linkname OnceInit once_control
 var OnceInit Once
 
 // llgo:link (*Once).Do C.pthread_once
@@ -47,14 +64,17 @@ func (o *Once) Do(f func()) c.Int { return 0 }
 type MutexType c.Int
 
 const (
-	MUTEX_NORMAL     MutexType = C.PTHREAD_MUTEX_NORMAL
-	MUTEX_ERRORCHECK MutexType = C.PTHREAD_MUTEX_ERRORCHECK
-	MUTEX_RECURSIVE  MutexType = C.PTHREAD_MUTEX_RECURSIVE
-	MUTEX_DEFAULT    MutexType = C.PTHREAD_MUTEX_DEFAULT
+	MUTEX_NORMAL     MutexType = PTHREAD_MUTEX_NORMAL
+	MUTEX_ERRORCHECK MutexType = PTHREAD_MUTEX_ERRORCHECK
+	MUTEX_RECURSIVE  MutexType = PTHREAD_MUTEX_RECURSIVE
+	MUTEX_DEFAULT    MutexType = PTHREAD_MUTEX_DEFAULT
 )
 
 // MutexAttr is a mutex attribute object.
-type MutexAttr C.pthread_mutexattr_t
+// pthread_mutexattr_t
+type MutexAttr struct {
+	Unused [PthreadMutexAttrSize]c.Char
+}
 
 // llgo:link (*MutexAttr).Init C.pthread_mutexattr_init
 func (a *MutexAttr) Init(attr *MutexAttr) c.Int { return 0 }
@@ -68,7 +88,10 @@ func (a *MutexAttr) SetType(typ MutexType) c.Int { return 0 }
 // -----------------------------------------------------------------------------
 
 // Mutex is a mutual exclusion lock.
-type Mutex C.pthread_mutex_t
+// pthread_mutex_t
+type Mutex struct {
+	Unused [PthreadMutexSize]c.Char
+}
 
 // llgo:link (*Mutex).Init C.pthread_mutex_init
 func (m *Mutex) Init(attr *MutexAttr) c.Int { return 0 }
@@ -88,7 +111,10 @@ func (m *Mutex) Unlock() {}
 // -----------------------------------------------------------------------------
 
 // RWLockAttr is a read-write lock attribute object.
-type RWLockAttr C.pthread_rwlockattr_t
+// pthread_rwlockattr_t
+type RWLockAttr struct {
+	Unused [PthreadRWLockAttrSize]c.Char
+}
 
 // llgo:link (*RWLockAttr).Init C.pthread_rwlockattr_init
 func (a *RWLockAttr) Init(attr *RWLockAttr) c.Int { return 0 }
@@ -105,7 +131,10 @@ func (a *RWLockAttr) GetPShared(pshared *c.Int) c.Int { return 0 }
 // -----------------------------------------------------------------------------
 
 // RWLock is a read-write lock.
-type RWLock C.pthread_rwlock_t
+// pthread_rwlock_t
+type RWLock struct {
+	Unused [PthreadRWLockSize]c.Char
+}
 
 // llgo:link (*RWLock).Init C.pthread_rwlock_init
 func (rw *RWLock) Init(attr *RWLockAttr) c.Int { return 0 }
@@ -134,7 +163,10 @@ func (rw *RWLock) Unlock() {}
 // -----------------------------------------------------------------------------
 
 // CondAttr is a condition variable attribute object.
-type CondAttr C.pthread_condattr_t
+// pthread_condattr_t
+type CondAttr struct {
+	Unused [PthreadCondAttrSize]c.Char
+}
 
 // llgo:link (*CondAttr).Init C.pthread_condattr_init
 func (a *CondAttr) Init(attr *CondAttr) c.Int { return 0 }
@@ -142,16 +174,19 @@ func (a *CondAttr) Init(attr *CondAttr) c.Int { return 0 }
 // llgo:link (*CondAttr).Destroy C.pthread_condattr_destroy
 func (a *CondAttr) Destroy() {}
 
-// llgo:link (*CondAttr).SetClock C.pthread_condattr_setclock
-func (a *CondAttr) SetClock(clock time.ClockidT) c.Int { return 0 }
+// // llgo:link (*CondAttr).SetClock C.pthread_condattr_setclock
+// func (a *CondAttr) SetClock(clock time.ClockidT) c.Int { return 0 }
 
-// llgo:link (*CondAttr).GetClock C.pthread_condattr_getclock
-func (a *CondAttr) GetClock(clock *time.ClockidT) c.Int { return 0 }
+// // llgo:link (*CondAttr).GetClock C.pthread_condattr_getclock
+// func (a *CondAttr) GetClock(clock *time.ClockidT) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
 // Cond is a condition variable.
-type Cond C.pthread_cond_t
+// pthread_cond_t
+type Cond struct {
+	Unused [PthreadCondSize]c.Char
+}
 
 // llgo:link (*Cond).Init C.pthread_cond_init
 func (c *Cond) Init(attr *CondAttr) c.Int { return 0 }
