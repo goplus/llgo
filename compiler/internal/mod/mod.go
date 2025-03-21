@@ -24,7 +24,7 @@ const (
 func NewModuleVersionPair(name, version string) (module.Version, error) {
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
-		metadataMgr, err := NewMetadataMgr("") // build a metadata manager for version query
+		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
 		if err != nil {
 			return module.Version{}, err
 		}

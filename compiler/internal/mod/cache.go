@@ -36,7 +36,7 @@ func NewCache[T any](cacheFilePath, remoteUrl string) (*Cache[T], error) {
 	err := cache.loadFromDisk()
 	if err != nil {
 		// local cache missing or invalid, fetch from remote
-		err = cache.fetch()
+		err = cache.Update()
 		if err != nil {
 			return nil, fmt.Errorf("error building cache: %v", err)
 		}
