@@ -19,7 +19,7 @@ package setjmp
 import (
 	_ "unsafe"
 
-	"github.com/goplus/llgo/c"
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
 const (
