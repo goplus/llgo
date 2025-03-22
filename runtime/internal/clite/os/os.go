@@ -16,19 +16,11 @@
 
 package os
 
-// #include <sys/stat.h>
-// #include <limits.h>
-import "C"
-
 import (
 	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
-)
-
-const (
-	PATH_MAX = C.PATH_MAX
 )
 
 const (
@@ -56,14 +48,6 @@ const (
 
 const (
 	EAGAIN = 35
-)
-
-type (
-	ModeT C.mode_t
-	UidT  C.uid_t
-	GidT  C.gid_t
-	OffT  C.off_t
-	DevT  C.dev_t
 )
 
 type (
