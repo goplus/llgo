@@ -3,11 +3,31 @@ package test
 import (
 	"runtime"
 	"testing"
+	"unsafe"
 
+	"github.com/goplus/llgo/runtime/internal/clite/os"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 	"github.com/goplus/llgo/runtime/internal/clite/setjmp"
 	"github.com/goplus/llgo/runtime/internal/clite/time"
 )
+
+func TestOSTypes(t *testing.T) {
+	if unsafe.Sizeof(mode) != unsafe.Sizeof(os.ModeT(0)) {
+		t.Fatalf("mode size mismatch: %d != %d", unsafe.Sizeof(mode), unsafe.Sizeof(os.ModeT(0)))
+	}
+	if unsafe.Sizeof(uid) != unsafe.Sizeof(os.UidT(0)) {
+		t.Fatalf("uid size mismatch: %d != %d", unsafe.Sizeof(uid), unsafe.Sizeof(os.UidT(0)))
+	}
+	if unsafe.Sizeof(gid) != unsafe.Sizeof(os.GidT(0)) {
+		t.Fatalf("gid size mismatch: %d != %d", unsafe.Sizeof(gid), unsafe.Sizeof(os.GidT(0)))
+	}
+	if unsafe.Sizeof(off) != unsafe.Sizeof(os.OffT(0)) {
+		t.Fatalf("off size mismatch: %d != %d", unsafe.Sizeof(off), unsafe.Sizeof(os.OffT(0)))
+	}
+	if unsafe.Sizeof(dev) != unsafe.Sizeof(os.DevT(0)) {
+		t.Fatalf("dev size mismatch: %d != %d", unsafe.Sizeof(dev), unsafe.Sizeof(os.DevT(0)))
+	}
+}
 
 func TestTypeSizes(t *testing.T) {
 	// Test platform-specific sizes based on OS and architecture

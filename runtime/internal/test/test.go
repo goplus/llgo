@@ -4,12 +4,19 @@ package test
 #include <time.h>
 #include <pthread.h>
 #include <setjmp.h>
+#include <sys/types.h>
 */
 import "C"
 import (
 	"runtime"
 	"unsafe"
 )
+
+var mode C.mode_t
+var uid C.uid_t
+var gid C.gid_t
+var off C.off_t
+var dev C.dev_t
 
 var once C.pthread_once_t
 var mutex C.pthread_mutex_t
