@@ -24,11 +24,6 @@
 // with a single network connection.
 package textproto
 
-/*
-#include <stdint.h>
-*/
-import "C"
-
 import (
 	"bufio"
 	"errors"
@@ -97,55 +92,55 @@ const (
 type SockAddr struct {
 	Len    uint8
 	Family uint8
-	Data   [14]C.char
+	Data   [14]uint8
 }
 
 type AddrInfo struct {
-	Flags     C.int
-	Family    C.int
-	SockType  C.int
-	Protocol  C.int
-	AddrLen   C.uint
-	CanOnName *C.char
+	Flags     int32
+	Family    int32
+	SockType  int32
+	Protocol  int32
+	AddrLen   uint32
+	CanOnName *uint8
 	Addr      *SockAddr
 	Next      *AddrInfo
 }
 
 //go:linkname Getaddrinfo C.getaddrinfo
-func Getaddrinfo(host *C.char, port *C.char, addrInfo *AddrInfo, result **AddrInfo) C.int
+func Getaddrinfo(host *uint8, port *uint8, addrInfo *AddrInfo, result **AddrInfo) int32
 
 //go:linkname Freeaddrinfo C.freeaddrinfo
-func Freeaddrinfo(addrInfo *AddrInfo) C.int
+func Freeaddrinfo(addrInfo *AddrInfo) int32
 
 //go:linkname GoString llgo.string
-func GoString(cstr *C.char, __llgo_va_list /* n */ ...any) string
+func GoString(cstr *uint8, __llgo_va_list /* n */ ...any) string
 
 //go:linkname AllocaCStr llgo.allocaCStr
-func AllocaCStr(s string) *C.char
+func AllocaCStr(s string) *uint8
 
 //go:linkname Memset C.memset
-func Memset(s unsafe.Pointer, c C.int, n uintptr) unsafe.Pointer
+func Memset(s unsafe.Pointer, c int32, n uintptr) unsafe.Pointer
 
 //go:linkname Read C.read
-func Read(fd C.int, buf unsafe.Pointer, count uintptr) int
+func Read(fd int32, buf unsafe.Pointer, count uintptr) int
 
 //go:linkname Write C.write
-func Write(fd C.int, buf unsafe.Pointer, count uintptr) int
+func Write(fd int32, buf unsafe.Pointer, count uintptr) int
 
 //go:linkname Close C.close
-func Close(fd C.int) C.int
+func Close(fd int32) int32
 
 //go:linkname Strerror strerror
-func Strerror(errnum C.int) *C.char
+func Strerror(errnum int32) *uint8
 
 //go:linkname Errno C.cliteErrno
-func Errno() C.int
+func Errno() int32
 
 //go:linkname Socket C.socket
-func Socket(domain C.int, typ C.int, protocol C.int) C.int
+func Socket(domain int32, typ int32, protocol int32) int32
 
 //go:linkname Connect C.connect
-func Connect(sockfd C.int, addr *SockAddr, addrlen C.uint) C.int
+func Connect(sockfd int32, addr *SockAddr, addrlen uint32) int32
 
 // -----------------------------------------------------------------------------
 
@@ -204,7 +199,7 @@ func Dial(network, addr string) (*Conn, error) {
 }
 
 type cConn struct {
-	socketFd C.int
+	socketFd int32
 	closed   bool
 }
 
@@ -218,7 +213,7 @@ func (conn *cConn) Read(p []byte) (n int, err error) {
 	for n < len(p) {
 		result := Read(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
 		if result < 0 {
-			if Errno() == C.int(syscall.EINTR) {
+			if Errno() == int32(syscall.EINTR) {
 				continue
 			}
 			return n, errors.New("read error")
@@ -238,7 +233,7 @@ func (conn *cConn) Write(p []byte) (n int, err error) {
 	for n < len(p) {
 		result := Write(conn.socketFd, unsafe.Pointer(&p[n:][0]), uintptr(len(p)-n))
 		if result < 0 {
-			if Errno() == C.int(syscall.EINTR) {
+			if Errno() == int32(syscall.EINTR) {
 				continue
 			}
 			return n, errors.New("write error")

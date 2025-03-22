@@ -16,9 +16,6 @@
 
 package setjmp
 
-// #include <setjmp.h>
-import "C"
-
 import (
 	_ "unsafe"
 
@@ -30,8 +27,8 @@ const (
 )
 
 type (
-	JmpBuf    = C.jmp_buf
-	SigjmpBuf = C.sigjmp_buf
+	SigjmpBuf [SigjmpBufSize]byte
+	JmpBuf    [JmpBufSize]byte
 )
 
 // -----------------------------------------------------------------------------

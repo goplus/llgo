@@ -5,7 +5,6 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
-import "C"
 
 const (
 	LLGoPackage = "link"

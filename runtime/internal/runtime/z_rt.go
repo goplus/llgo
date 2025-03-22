@@ -22,6 +22,7 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/debug"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
+	"github.com/goplus/llgo/runtime/internal/clite/setjmp"
 	"github.com/goplus/llgo/runtime/internal/clite/signal"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
@@ -148,5 +149,9 @@ func init() {
 		}
 	})
 }
+
+// -----------------------------------------------------------------------------
+
+type SigjmpBuf [setjmp.SigjmpBufSize]byte
 
 // -----------------------------------------------------------------------------

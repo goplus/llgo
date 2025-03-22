@@ -16,11 +16,6 @@
 
 package c
 
-// typedef unsigned int uint;
-// typedef unsigned long ulong;
-// typedef unsigned long long ulonglong;
-// typedef long long longlong;
-import "C"
 import "unsafe"
 
 const (
@@ -41,14 +36,16 @@ type FILE struct {
 }
 
 type (
-	Int  C.int
-	Uint C.uint
+	Int  = int32
+	Uint = uint32
 
-	Long  C.long
-	Ulong C.ulong
+	// Long and Ulong are defined in platform-specific files
+	// Windows (both 32-bit and 64-bit): int32/uint32
+	// Unix/Linux/macOS 32-bit: int32/uint32
+	// Unix/Linux/macOS 64-bit: int64/uint64
 
-	LongLong  C.longlong
-	UlongLong C.ulonglong
+	LongLong  = int64
+	UlongLong = uint64
 )
 
 type integer interface {
@@ -308,6 +305,3 @@ func GetoptLong(argc Int, argv **Char, optstring *Char, longopts *Option, longin
 func GetoptLongOnly(argc Int, argv **Char, optstring *Char, longopts *Option, longindex *Int) Int
 
 // -----------------------------------------------------------------------------
-
-//go:linkname Sysconf C.sysconf
-func Sysconf(name Int) Long

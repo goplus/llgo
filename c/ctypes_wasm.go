@@ -1,4 +1,5 @@
-//go:build linux
+//go:build wasip1 || js
+// +build wasip1 js
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -16,14 +17,10 @@
  * limitations under the License.
  */
 
-package os
+package c
 
-import "C"
-
-const (
-	LLGoFiles   = "_os/os.c"
-	LLGoPackage = "link"
+// For WebAssembly targets, Long is 32-bit per the spec
+type (
+	Long  = int32
+	Ulong = uint32
 )
-
-//go:linkname Clearenv C.clearenv
-func Clearenv()

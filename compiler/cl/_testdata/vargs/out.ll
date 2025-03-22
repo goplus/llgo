@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/compiler/cl/_testdata/vargs"
 @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init$guard" = global i1 false, align 1
 @_llgo_int = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
-@1 = private unnamed_addr constant [40 x i8] c"type assertion interface{} -> int failed", align 1
+@1 = private unnamed_addr constant [32 x i8] c"type assertion any -> int failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
 define void @"github.com/goplus/llgo/compiler/cl/_testdata/vargs.init"() {
@@ -87,7 +87,7 @@ _llgo_4:                                          ; preds = %_llgo_2
 _llgo_5:                                          ; preds = %_llgo_2
   %18 = load ptr, ptr @_llgo_string, align 8
   %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, ptr %19, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 32 }, ptr %19, align 8
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %18, 0
   %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %20, ptr %19, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)

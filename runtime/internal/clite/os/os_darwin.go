@@ -1,5 +1,3 @@
-//go:build !darwin
-
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -26,16 +24,16 @@ const (
 )
 
 const (
-	PATH_MAX = 4096
+	PATH_MAX = 1024
 )
 
 type (
-	ModeT uint32
+	ModeT uint16
 	UidT  uint32
 	GidT  uint32
 	OffT  int64
-	DevT  uint64
+	DevT  int32
 )
 
-//go:linkname Clearenv C.clearenv
+//go:linkname Clearenv C.cliteClearenv
 func Clearenv()

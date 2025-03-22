@@ -5,7 +5,6 @@ import (
 
 	"github.com/goplus/llgo/c"
 )
-import "C"
 
 const (
 	LLGoPackage = "link"

@@ -1,5 +1,5 @@
-//go:build !linux
-// +build !linux
+//go:build windows
+// +build windows
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -19,13 +19,8 @@
 
 package c
 
-import _ "unsafe"
-
-//go:linkname Stdin __stdinp
-var Stdin FilePtr
-
-//go:linkname Stdout __stdoutp
-var Stdout FilePtr
-
-//go:linkname Stderr __stderrp
-var Stderr FilePtr
+// For Windows (LLP64 model), Long is 32-bit, regardless of architecture
+type (
+	Long  = int32
+	Ulong = uint32
+)

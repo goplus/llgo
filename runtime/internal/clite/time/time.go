@@ -16,9 +16,6 @@
 
 package time
 
-// #include <time.h>
-import "C"
-
 import (
 	_ "unsafe"
 
@@ -31,7 +28,12 @@ const (
 
 // -----------------------------------------------------------------------------
 
-type TimeT C.time_t
+const (
+	ClockTSize = 8
+)
+
+// time_t
+type TimeT c.IntptrT
 
 //go:linkname Time C.time
 func Time(timer *TimeT) TimeT
@@ -72,28 +74,31 @@ func Strftime(buf *c.Char, bufSize uintptr, format *c.Char, timeptr *Tm) uintptr
 
 // -----------------------------------------------------------------------------
 
-type ClockT C.clock_t
+// clock_t
+type ClockT struct {
+	Unused [ClockTSize]c.Char
+}
 
 //go:linkname Clock C.clock
 func Clock() ClockT
 
 // -----------------------------------------------------------------------------
 
-type ClockidT C.clockid_t
+type ClockidT c.Int
 
 const (
 	// the system's real time (i.e. wall time) clock, expressed as the amount of time since the Epoch.
 	// This is the same as the value returned by gettimeofday
-	CLOCK_REALTIME = ClockidT(C.CLOCK_REALTIME)
+	CLOCK_REALTIME = ClockidT(0x0)
 
 	// clock that increments monotonically, tracking the time since an arbitrary point, and will continue
 	// to increment while the system is asleep.
-	CLOCK_MONOTONIC = ClockidT(C.CLOCK_MONOTONIC)
+	CLOCK_MONOTONIC = ClockidT(0x6)
 
 	// clock that increments monotonically, tracking the time since an arbitrary point like CLOCK_MONOTONIC.
 	// However, this clock is unaffected by frequency or time adjustments.  It should not be compared to
 	// other system time sources.
-	CLOCK_MONOTONIC_RAW = ClockidT(C.CLOCK_MONOTONIC_RAW)
+	CLOCK_MONOTONIC_RAW = ClockidT(0x6)
 
 	// like CLOCK_MONOTONIC_RAW, but reads a value cached by the system at context switch. This can be
 	// read faster, but at a loss of accuracy as it may return values that are milliseconds old.
@@ -109,10 +114,10 @@ const (
 	// CLOCK_UPTIME_RAW_APPROX = ClockidT(C.CLOCK_UPTIME_RAW_APPROX)
 
 	// clock that tracks the amount of CPU (in user- or kernel-mode) used by the calling process.
-	CLOCK_PROCESS_CPUTIME_ID = ClockidT(C.CLOCK_PROCESS_CPUTIME_ID)
+	CLOCK_PROCESS_CPUTIME_ID = ClockidT(0xc)
 
 	// clock that tracks the amount of CPU (in user- or kernel-mode) used by the calling thread.
-	CLOCK_THREAD_CPUTIME_ID = ClockidT(C.CLOCK_THREAD_CPUTIME_ID)
+	CLOCK_THREAD_CPUTIME_ID = ClockidT(0x10)
 )
 
 type Timespec struct {

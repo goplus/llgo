@@ -16,9 +16,6 @@
 
 package sync
 
-// #include <semaphore.h>
-import "C"
-
 import (
 	_ "unsafe"
 
