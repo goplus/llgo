@@ -451,7 +451,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if err != nil {
 		panic(err)
 	}
-	defer os.Remove(entryLLFile)
+	// defer os.Remove(entryLLFile)
 	args = append(args, entryLLFile)
 
 	var aPkg *aPackage
