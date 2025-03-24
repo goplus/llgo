@@ -1,4 +1,5 @@
-//go:build !darwin
+//go:build darwin
+// +build darwin
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -16,26 +17,15 @@
  * limitations under the License.
  */
 
-package os
+package c
 
 import _ "unsafe"
 
-const (
-	LLGoFiles   = "_os/os.c"
-	LLGoPackage = "link"
-)
+//go:linkname Stdin __stdinp
+var Stdin FilePtr
 
-const (
-	PATH_MAX = 4096
-)
+//go:linkname Stdout __stdoutp
+var Stdout FilePtr
 
-type (
-	ModeT uint32
-	UidT  uint32
-	GidT  uint32
-	OffT  int64
-	DevT  uint64
-)
-
-//go:linkname Clearenv C.clearenv
-func Clearenv()
+//go:linkname Stderr __stderrp
+var Stderr FilePtr

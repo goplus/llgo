@@ -1,9 +1,5 @@
 package debug
 
-/*
-#cgo linux LDFLAGS: -lunwind
-*/
-import "C"
 import (
 	"unsafe"
 
@@ -11,8 +7,7 @@ import (
 )
 
 const (
-	LLGoPackage = "link"
-	LLGoFiles   = "_wrap/debug.c"
+	LLGoFiles = "_wrap/debug.c"
 )
 
 type Info struct {

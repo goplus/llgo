@@ -16,21 +16,15 @@
 
 package ssa
 
-// #include <setjmp.h>
-import "C"
-
 import (
 	"go/token"
 	"go/types"
 	"log"
-	"unsafe"
 
 	"github.com/goplus/llvm"
 )
 
 // -----------------------------------------------------------------------------
-
-type sigjmpbuf = C.sigjmp_buf
 
 // func(env unsafe.Pointer, savemask c.Int) c.Int
 func (p Program) tySigsetjmp() *types.Signature {
@@ -57,9 +51,8 @@ func (p Program) tySiglongjmp() *types.Signature {
 
 func (b Builder) AllocaSigjmpBuf() Expr {
 	prog := b.Prog
-	n := unsafe.Sizeof(sigjmpbuf{})
-	size := prog.IntVal(uint64(n), prog.Uintptr())
-	return b.Alloca(size)
+	ty := prog.rtType("SigjmpBuf")
+	return b.AllocaT(ty)
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
