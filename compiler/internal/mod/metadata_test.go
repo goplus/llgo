@@ -13,11 +13,8 @@ import (
 
 var testMetadata = MetadataMap{
 	"example-module": &Metadata{
-		VersionMappings: []*VersionMapping{
-			{
-				CVersion:   "v1.0",
-				GoVersions: []string{"go1.20"},
-			},
+		Versions: map[CVersion][]GoVersion{
+			"1.7.18": []GoVersion{"v1.2.0"},
 		},
 	},
 }

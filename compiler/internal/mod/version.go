@@ -41,7 +41,7 @@ func (m *metadataMgr) LatestGoVer(name string) (string, error) {
 // Gets the latest Go version based on the module name and C version
 func (m *metadataMgr) LatestGoVerFromCVer(name, cVer string) (string, error) {
 	// Build the flat key
-	cKey := flatKey(name, cVer)
+	cKey := flatKey{name, cVer}
 
 	// Search for the latest Go version
 	goVersions, ok := m.flatCToGo[cKey]
@@ -72,7 +72,7 @@ func (m *metadataMgr) LatestGoVerFromCVer(name, cVer string) (string, error) {
 // Gets Go versions based on the module name and C version
 func (m *metadataMgr) GoVersFromCVer(name, cVer string) ([]string, error) {
 	// Build the flat key
-	cKey := flatKey(name, cVer)
+	cKey := flatKey{name, cVer}
 
 	// Search for the Go versions
 	versions, ok := m.flatCToGo[cKey]
@@ -100,7 +100,7 @@ func (m *metadataMgr) GoVersFromCVer(name, cVer string) ([]string, error) {
 // Gets the C version based on the module name and Go version
 func (m *metadataMgr) CVerFromGoVer(name, goVer string) (string, error) {
 	// Build the flat key
-	goKey := flatKey(name, goVer)
+	goKey := flatKey{name, goVer}
 
 	// Search for the C version in the cached flat hash
 	cVersion, ok := m.flatGoToC[goKey]
@@ -123,16 +123,10 @@ func (m *metadataMgr) CVerFromGoVer(name, goVer string) (string, error) {
 
 // Gets all Go versions for the given module name
 func (m *metadataMgr) AllGoVersFromName(name string) ([]string, error) {
-	// Get the version mappings for the module
-	versionMappings, err := m.AllVersionMappingsFromName(name)
-	if err != nil {
-		return nil, err
-	}
-
 	// Extract Go versions
-	goVersions := make([]string, 0, len(versionMappings))
-	for _, mapping := range versionMappings {
-		goVersions = append(goVersions, mapping.GoVersions...)
+	goVersions := make([]string, 0, len(m.flatGoToC))
+	for goVersionKey, _ := range m.flatGoToC {
+		goVersions = append(goVersions, goVersionKey.version)
 	}
 
 	return goVersions, nil
@@ -140,49 +134,19 @@ func (m *metadataMgr) AllGoVersFromName(name string) ([]string, error) {
 
 // Gets all C versions for the given module name
 func (m *metadataMgr) AllCVersFromName(name string) ([]string, error) {
-	// Get the version mappings for the module
-	versionMappings, err := m.AllVersionMappingsFromName(name)
-	if err != nil {
-		return nil, err
-	}
-
 	// Extract C versions
-	cVersions := make([]string, 0, len(versionMappings))
-	for _, mapping := range versionMappings {
-		cVersions = append(cVersions, mapping.CVersion)
+	cVersions := make([]string, 0, len(m.flatCToGo))
+	for cVersionKey, _ := range m.flatCToGo {
+		cVersions = append(cVersions, cVersionKey.version)
 	}
 
 	return cVersions, nil
 }
 
-// Returns the original version mappings for the module name
-func (m *metadataMgr) AllVersionMappingsFromName(name string) ([]VersionMapping, error) {
-	// First try to find the metadata in the cache
-	metadata, ok := m.allCachedMetadata()[name]
-	if !ok {
-		// If the metadata are not in the cache, update the cache
-		err := m.update()
-		if err != nil {
-			return nil, err
-		}
-
-		// Find the version mappings again
-		metadata, ok = m.allCachedMetadata()[name]
-		if !ok {
-			return nil, ErrMetadataNotInCache
-		}
-	}
-
-	// Return a copy to avoid modifying the internal data
-	versionMappings := make([]VersionMapping, len(metadata.VersionMappings))
-	for i, mapping := range metadata.VersionMappings {
-		versionMappings[i] = *mapping
-	}
-
-	return versionMappings, nil
+type flatKey struct {
+	name, version string
 }
 
-// Build the flat key for query
-func flatKey(name, version string) string {
-	return fmt.Sprintf("%s/%s", name, version)
+func (m *flatKey) String(name, version string) string {
+	return fmt.Sprintf("%s/%s", m.name, m.version)
 }

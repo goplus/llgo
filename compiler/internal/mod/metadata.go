@@ -14,17 +14,18 @@ var (
 )
 
 type (
-	Metadata       = metadata.Metadata
-	MetadataMap    = metadata.MetadataMap
-	VersionMapping = metadata.VersionMapping
+	Metadata    = metadata.Metadata
+	MetadataMap = metadata.MetadataMap
+	CVersion    = metadata.CVersion
+	GoVersion   = metadata.GoVersion
 )
 
 type metadataMgr struct {
 	cache *Cache[MetadataMap]
 
 	// Add flat hash for optimization
-	flatCToGo map[string][]string // "name/cversion" -> []goversion
-	flatGoToC map[string]string   // "name/goversion" -> cversion
+	flatCToGo map[flatKey][]string // "name/cversion" -> []goversion
+	flatGoToC map[flatKey]string   // "name/goversion" -> cversion
 }
 
 // NewMetadataMgr returns a new metadata manager
@@ -37,8 +38,8 @@ func NewMetadataMgr(cacheDir string) (*metadataMgr, error) {
 
 	mgr := &metadataMgr{
 		cache:     cache,
-		flatCToGo: make(map[string][]string),
-		flatGoToC: make(map[string]string),
+		flatCToGo: make(map[flatKey][]string),
+		flatGoToC: make(map[flatKey]string),
 	}
 
 	err = mgr.buildVersionsHash()
@@ -124,21 +125,21 @@ func (m *metadataMgr) update() error {
 
 func (m *metadataMgr) buildVersionsHash() error {
 	// Reset flat hash
-	m.flatCToGo = make(map[string][]string)
-	m.flatGoToC = make(map[string]string)
+	m.flatCToGo = make(map[flatKey][]string)
+	m.flatGoToC = make(map[flatKey]string)
 
 	allCachedMetadata := m.allCachedMetadata()
 
 	for name, metadata := range allCachedMetadata {
-		versionMappings := metadata.VersionMappings
-		for _, versionMapping := range versionMappings {
+		versions := metadata.Versions
+		for cVersion, goVersions := range versions {
 			// Build flat hash
-			cKey := flatKey(name, versionMapping.CVersion)
-			m.flatCToGo[cKey] = versionMapping.GoVersions
+			cKey := flatKey{name, cVersion}
+			m.flatCToGo[cKey] = goVersions
 
-			for _, goVersion := range versionMapping.GoVersions {
-				goKey := flatKey(name, goVersion)
-				m.flatGoToC[goKey] = versionMapping.CVersion
+			for _, goVersion := range goVersions {
+				goKey := flatKey{name, goVersion}
+				m.flatGoToC[goKey] = cVersion
 			}
 		}
 	}

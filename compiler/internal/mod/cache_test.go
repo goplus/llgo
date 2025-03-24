@@ -14,11 +14,8 @@ import (
 // Test data
 var testCacheData = MetadataMap{
 	"example-module": &Metadata{
-		VersionMappings: []*VersionMapping{
-			{
-				CVersion:   "v1.0",
-				GoVersions: []string{"go1.20"},
-			},
+		Versions: map[CVersion][]GoVersion{
+			"1.7.18": []GoVersion{"v1.2.0"},
 		},
 	},
 }
@@ -53,7 +50,7 @@ func TestCache_LoadFromDisk(t *testing.T) {
 	cachePath := filepath.Join(tmpDir, "existing_cache.json")
 
 	// Manually write cache file
-	err := os.WriteFile(cachePath, []byte(`{"example-module": {"versions": [{"c":"v1.0","go":["go1.20"]}]}}`), 0644)
+	err := os.WriteFile(cachePath, []byte(`{"example-module":{"versions":{"1.7.18":["v1.2.0"]}}}`), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}

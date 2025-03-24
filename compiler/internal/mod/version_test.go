@@ -11,13 +11,13 @@ import (
 // Define more enriched test data
 var enhancedTestVersionData = MetadataMap{
 	"test-module": &Metadata{
-		VersionMappings: []*VersionMapping{
-			{CVersion: "1.7.18", GoVersions: []string{"v1.2.0", "v1.2.1"}},
-			{CVersion: "1.7.19", GoVersions: []string{"v1.3.0"}},
-			{CVersion: "1.8.0", GoVersions: []string{"v1.4.0", "v1.4.1"}},
+		Versions: map[CVersion][]GoVersion{
+			"1.7.18": []string{"v1.2.0", "v1.2.1"},
+			"1.7.19": []string{"v1.3.0"},
+			"1.8.0":  []string{"v1.4.0", "v1.4.1"},
 		},
 	},
-	"empty-module": &Metadata{VersionMappings: []*VersionMapping{}},
+	"empty-module": &Metadata{Versions: map[CVersion][]GoVersion{}},
 }
 
 // Set up test environment
@@ -236,36 +236,6 @@ func TestAllCVersFromName(t *testing.T) {
 
 	// Test non-existent module
 	_, err = mgr.AllCVersFromName("non-existent-module")
-	if err == nil {
-		t.Fatal("Expected error for non-existent module")
-	}
-}
-
-// TestAllVersionMappingsFromName tests the implementation of the AllVersionMappingsFromName function
-func TestAllVersionMappingsFromName(t *testing.T) {
-	mgr, cleanup := setupTestEnv(t, enhancedTestVersionData)
-	defer cleanup()
-
-	// Test normal case
-	mappings, err := mgr.AllVersionMappingsFromName("test-module")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(mappings) != 3 {
-		t.Errorf("Expected 3 mappings, got %d", len(mappings))
-	}
-
-	// Test empty module
-	mappings, err = mgr.AllVersionMappingsFromName("empty-module")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(mappings) != 0 {
-		t.Errorf("Expected empty mappings, got %d", len(mappings))
-	}
-
-	// Test non-existent module
-	_, err = mgr.AllVersionMappingsFromName("non-existent-module")
 	if err == nil {
 		t.Fatal("Expected error for non-existent module")
 	}
