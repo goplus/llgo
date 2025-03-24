@@ -33,11 +33,16 @@ func GenFrom(fileOrPkg string) string {
 
 func genFrom(pkgPath string) (build.Package, error) {
 	oldDbg := os.Getenv("LLGO_DEBUG")
+	oldDbgSyms := os.Getenv("LLGO_DEBUG_SYMBOLS")
 	dbg := isDbgSymEnabled(filepath.Join(pkgPath, "flags.txt"))
 	if dbg {
 		os.Setenv("LLGO_DEBUG", "1")
+		os.Setenv("LLGO_DEBUG_SYMBOLS", "1")
 	}
-	defer os.Setenv("LLGO_DEBUG", oldDbg)
+	defer func() {
+		os.Setenv("LLGO_DEBUG", oldDbg)
+		os.Setenv("LLGO_DEBUG_SYMBOLS", oldDbgSyms)
+	}()
 
 	conf := &build.Config{
 		Mode:   build.ModeGen,

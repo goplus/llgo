@@ -142,7 +142,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 	}
 
-	cl.EnableDebugSymbols(IsDebugEnabled())
+	cl.EnableDebug(IsDbgEnabled())
+	cl.EnableDbgSyms(IsDbgSymsEnabled())
 	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
@@ -201,7 +202,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	})
 
 	buildMode := ssaBuildMode
-	if IsDebugEnabled() {
+	if IsDbgEnabled() {
 		buildMode |= ssa.GlobalDebug
 	}
 	if !IsOptimizeEnabled() {
@@ -451,7 +452,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if err != nil {
 		panic(err)
 	}
-	defer os.Remove(entryLLFile)
+	// defer os.Remove(entryLLFile)
 	args = append(args, entryLLFile)
 
 	var aPkg *aPackage
@@ -480,7 +481,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		}
 	}
 	args = append(args, exargs...)
-	if IsDebugEnabled() {
+	if IsDbgSymsEnabled() {
 		args = append(args, "-gdwarf-4")
 	}
 
@@ -751,6 +752,7 @@ var (
 )
 
 const llgoDebug = "LLGO_DEBUG"
+const llgoDbgSyms = "LLGO_DEBUG_SYMBOLS"
 const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
@@ -768,8 +770,12 @@ func IsTraceEnabled() bool {
 	return isEnvOn(llgoTrace, false)
 }
 
-func IsDebugEnabled() bool {
-	return isEnvOn(llgoDebug, false)
+func IsDbgEnabled() bool {
+	return isEnvOn(llgoDebug, false) || isEnvOn(llgoDbgSyms, false)
+}
+
+func IsDbgSymsEnabled() bool {
+	return isEnvOn(llgoDbgSyms, false)
 }
 
 func IsOptimizeEnabled() bool {

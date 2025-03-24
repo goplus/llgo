@@ -44,7 +44,7 @@ build_project() {
         return 1
     fi
 
-    LLGO_DEBUG=1 llgo build -o "debug.out" . || {
+    LLGO_DEBUG_SYMBOLS=1 llgo build -o "debug.out" . || {
         local ret=$?
         cd "$current_dir" || return
         return $ret

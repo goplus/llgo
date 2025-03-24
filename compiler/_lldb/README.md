@@ -3,7 +3,7 @@
 ### Build with debug info
 
 ```shell
-LLGO_DEBUG=1 llgo build -o cl/_testdata/debug/out ./cl/_testdata/debug
+LLGO_DEBUG_SYMBOLS=1 llgo build -o cl/_testdata/debug/out ./cl/_testdata/debug
 ```
 
 ### Debug with lldb
