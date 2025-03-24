@@ -1,3 +1,5 @@
+//go:build !wasm
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *

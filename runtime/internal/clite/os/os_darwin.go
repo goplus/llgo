@@ -16,7 +16,11 @@
 
 package os
 
-import _ "unsafe"
+import (
+	_ "unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
+)
 
 const (
 	LLGoFiles   = "_os/os.c"
@@ -36,4 +40,4 @@ type (
 )
 
 //go:linkname Clearenv C.cliteClearenv
-func Clearenv()
+func Clearenv() c.Int

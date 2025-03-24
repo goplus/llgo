@@ -23,8 +23,6 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/debug"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 	"github.com/goplus/llgo/runtime/internal/clite/setjmp"
-	"github.com/goplus/llgo/runtime/internal/clite/signal"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // -----------------------------------------------------------------------------
@@ -138,20 +136,22 @@ const MaxZero = 1024
 
 var ZeroVal [MaxZero]byte
 
-func init() {
-	signal.Signal(c.Int(syscall.SIGSEGV), func(v c.Int) {
-		switch syscall.Signal(v) {
-		case syscall.SIGSEGV:
-			panic(errorString("invalid memory address or nil pointer dereference"))
-		default:
-			var buf [20]byte
-			panic(errorString("unexpected signal value: " + string(itoa(buf[:], uint64(v)))))
-		}
-	})
-}
+// func init() {
+// 	signal.Signal(c.Int(syscall.SIGSEGV), func(v c.Int) {
+// 		switch syscall.Signal(v) {
+// 		case syscall.SIGSEGV:
+// 			panic(errorString("invalid memory address or nil pointer dereference"))
+// 		default:
+// 			var buf [20]byte
+// 			panic(errorString("unexpected signal value: " + string(itoa(buf[:], uint64(v)))))
+// 		}
+// 	})
+// }
 
 // -----------------------------------------------------------------------------
 
-type SigjmpBuf [setjmp.SigjmpBufSize]byte
+type SigjmpBuf struct {
+	Unused [setjmp.SigjmpBufSize]byte
+}
 
 // -----------------------------------------------------------------------------

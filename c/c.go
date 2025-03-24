@@ -16,7 +16,11 @@
 
 package c
 
-import "unsafe"
+import (
+	"unsafe"
+
+	_ "github.com/cpunion/clibs/wasi-libc/v25"
+)
 
 const (
 	LLGoPackage = "decl"

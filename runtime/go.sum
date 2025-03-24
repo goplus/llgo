@@ -1,2 +1,4 @@
+github.com/cpunion/clibs/wasi-libc/v25 v25.0.11 h1:3ORnz4VCkDHZGVsVBa/0o1jBKmdeblZEVVHdrw+fB3E=
+github.com/cpunion/clibs/wasi-libc/v25 v25.0.11/go.mod h1:AIjPRN3Jlz3BsyjfaZvGaAhQ8/Y5vkEeLUbjgo6L7+Q=
 github.com/qiniu/x v1.13.12 h1:UyAwja6dgKUOYWZMzzc02wLodwnZ7wmK/0XzRd0e78g=
 github.com/qiniu/x v1.13.12/go.mod h1:INZ2TSWSJVWO/RuELQROERcslBwVgFG7MkTfEdaQz9E=

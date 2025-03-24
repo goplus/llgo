@@ -32,9 +32,6 @@ const (
 	ClockTSize = 8
 )
 
-// time_t
-type TimeT c.IntptrT
-
 //go:linkname Time C.time
 func Time(timer *TimeT) TimeT
 

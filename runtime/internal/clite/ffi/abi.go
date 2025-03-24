@@ -1,4 +1,4 @@
-//go:build ((freebsd || linux || darwin) && arm64) || (windows && (amd64 || arm64))
+//go:build !amd64 && !wasm
 
 package ffi
 

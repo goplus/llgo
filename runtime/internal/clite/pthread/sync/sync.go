@@ -77,26 +77,46 @@ func (a *MutexAttr) SetType(typ MutexType) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
+//go:linkname c_pthread_mutex_init C.pthread_mutex_init
+func c_pthread_mutex_init(m *Mutex, attr *MutexAttr) c.Int
+
+//go:linkname c_pthread_mutex_destroy C.pthread_mutex_destroy
+func c_pthread_mutex_destroy(m *Mutex) c.Int
+
+//go:linkname c_pthread_mutex_lock C.pthread_mutex_lock
+func c_pthread_mutex_lock(m *Mutex) c.Int
+
+//go:linkname c_pthread_mutex_unlock C.pthread_mutex_unlock
+func c_pthread_mutex_unlock(m *Mutex) c.Int
+
+//go:linkname c_pthread_mutex_trylock C.pthread_mutex_trylock
+func c_pthread_mutex_trylock(m *Mutex) c.Int
+
 // Mutex is a mutual exclusion lock.
 // pthread_mutex_t
 type Mutex struct {
 	Unused [PthreadMutexSize]c.Char
 }
 
-// llgo:link (*Mutex).Init C.pthread_mutex_init
-func (m *Mutex) Init(attr *MutexAttr) c.Int { return 0 }
+func (m *Mutex) Init(attr *MutexAttr) c.Int {
+	return c_pthread_mutex_init(m, attr)
+}
 
-// llgo:link (*Mutex).Destroy C.pthread_mutex_destroy
-func (m *Mutex) Destroy() {}
+func (m *Mutex) Destroy() {
+	c_pthread_mutex_destroy(m)
+}
 
-// llgo:link (*Mutex).TryLock C.pthread_mutex_trylock
-func (m *Mutex) TryLock() c.Int { return 0 }
+func (m *Mutex) TryLock() c.Int {
+	return c_pthread_mutex_trylock(m)
+}
 
-// llgo:link (*Mutex).Lock C.clite_wrap_pthread_mutex_lock
-func (m *Mutex) Lock() {}
+func (m *Mutex) Lock() {
+	c_pthread_mutex_lock(m)
+}
 
-// llgo:link (*Mutex).Unlock C.clite_wrap_pthread_mutex_unlock
-func (m *Mutex) Unlock() {}
+func (m *Mutex) Unlock() {
+	c_pthread_mutex_unlock(m)
+}
 
 // -----------------------------------------------------------------------------
 
@@ -120,6 +140,27 @@ func (a *RWLockAttr) GetPShared(pshared *c.Int) c.Int { return 0 }
 
 // -----------------------------------------------------------------------------
 
+//go:linkname c_pthread_rwlock_init C.pthread_rwlock_init
+func c_pthread_rwlock_init(rw *RWLock, attr *RWLockAttr) c.Int
+
+//go:linkname c_pthread_rwlock_destroy C.pthread_rwlock_destroy
+func c_pthread_rwlock_destroy(rw *RWLock) c.Int
+
+//go:linkname c_pthread_rwlock_rdlock C.pthread_rwlock_rdlock
+func c_pthread_rwlock_rdlock(rw *RWLock) c.Int
+
+//go:linkname c_pthread_rwlock_wrlock C.pthread_rwlock_wrlock
+func c_pthread_rwlock_wrlock(rw *RWLock) c.Int
+
+//go:linkname c_pthread_rwlock_unlock C.pthread_rwlock_unlock
+func c_pthread_rwlock_unlock(rw *RWLock) c.Int
+
+//go:linkname c_pthread_rwlock_tryrdlock C.pthread_rwlock_tryrdlock
+func c_pthread_rwlock_tryrdlock(rw *RWLock) c.Int
+
+//go:linkname c_pthread_rwlock_trywrlock C.pthread_rwlock_trywrlock
+func c_pthread_rwlock_trywrlock(rw *RWLock) c.Int
+
 // RWLock is a read-write lock.
 // pthread_rwlock_t
 type RWLock struct {
@@ -129,26 +170,31 @@ type RWLock struct {
 // llgo:link (*RWLock).Init C.pthread_rwlock_init
 func (rw *RWLock) Init(attr *RWLockAttr) c.Int { return 0 }
 
-// llgo:link (*RWLock).Destroy C.pthread_rwlock_destroy
-func (rw *RWLock) Destroy() {}
+func (rw *RWLock) Destroy() {
+	c_pthread_rwlock_destroy(rw)
+}
 
-// llgo:link (*RWLock).RLock C.pthread_rwlock_rdlock
-func (rw *RWLock) RLock() {}
+func (rw *RWLock) RLock() {
+	c_pthread_rwlock_rdlock(rw)
+}
 
 // llgo:link (*RWLock).TryRLock C.pthread_rwlock_tryrdlock
 func (rw *RWLock) TryRLock() c.Int { return 0 }
 
-// llgo:link (*RWLock).RUnlock C.pthread_rwlock_unlock
-func (rw *RWLock) RUnlock() {}
+func (rw *RWLock) RUnlock() {
+	c_pthread_rwlock_unlock(rw)
+}
 
-// llgo:link (*RWLock).Lock C.pthread_rwlock_wrlock
-func (rw *RWLock) Lock() {}
+func (rw *RWLock) Lock() {
+	c_pthread_rwlock_wrlock(rw)
+}
 
 // llgo:link (*RWLock).TryLock C.pthread_rwlock_trywrlock
 func (rw *RWLock) TryLock() c.Int { return 0 }
 
-// llgo:link (*RWLock).Unlock C.pthread_rwlock_unlock
-func (rw *RWLock) Unlock() {}
+func (rw *RWLock) Unlock() {
+	c_pthread_rwlock_unlock(rw)
+}
 
 // -----------------------------------------------------------------------------
 
@@ -172,28 +218,52 @@ func (a *CondAttr) Destroy() {}
 
 // -----------------------------------------------------------------------------
 
+//go:linkname c_pthread_cond_init C.pthread_cond_init
+func c_pthread_cond_init(c *Cond, attr *CondAttr) c.Int
+
+//go:linkname c_pthread_cond_destroy C.pthread_cond_destroy
+func c_pthread_cond_destroy(c *Cond) c.Int
+
+//go:linkname c_pthread_cond_signal C.pthread_cond_signal
+func c_pthread_cond_signal(c *Cond) c.Int
+
+//go:linkname c_pthread_cond_broadcast C.pthread_cond_broadcast
+func c_pthread_cond_broadcast(c *Cond) c.Int
+
+//go:linkname c_pthread_cond_wait C.pthread_cond_wait
+func c_pthread_cond_wait(c *Cond, m *Mutex) c.Int
+
+//go:linkname c_pthread_cond_timedwait C.pthread_cond_timedwait
+func c_pthread_cond_timedwait(c *Cond, m *Mutex, abstime *time.Timespec) c.Int
+
 // Cond is a condition variable.
 // pthread_cond_t
 type Cond struct {
 	Unused [PthreadCondSize]c.Char
 }
 
-// llgo:link (*Cond).Init C.pthread_cond_init
-func (c *Cond) Init(attr *CondAttr) c.Int { return 0 }
+func (c *Cond) Init(attr *CondAttr) c.Int {
+	return c_pthread_cond_init(c, attr)
+}
 
-// llgo:link (*Cond).Destroy C.pthread_cond_destroy
-func (c *Cond) Destroy() {}
+func (c *Cond) Destroy() {
+	c_pthread_cond_destroy(c)
+}
 
-// llgo:link (*Cond).Signal C.pthread_cond_signal
-func (c *Cond) Signal() c.Int { return 0 }
+func (c *Cond) Signal() c.Int {
+	return c_pthread_cond_signal(c)
+}
 
-// llgo:link (*Cond).Broadcast C.pthread_cond_broadcast
-func (c *Cond) Broadcast() c.Int { return 0 }
+func (c *Cond) Broadcast() c.Int {
+	return c_pthread_cond_broadcast(c)
+}
 
-// llgo:link (*Cond).Wait C.pthread_cond_wait
-func (c *Cond) Wait(m *Mutex) c.Int { return 0 }
+func (c *Cond) Wait(m *Mutex) c.Int {
+	return c_pthread_cond_wait(c, m)
+}
 
-// llgo:link (*Cond).TimedWait C.pthread_cond_timedwait
-func (c *Cond) TimedWait(m *Mutex, abstime *time.Timespec) c.Int { return 0 }
+func (c *Cond) TimedWait(m *Mutex, abstime *time.Timespec) c.Int {
+	return c_pthread_cond_timedwait(c, m, abstime)
+}
 
 // -----------------------------------------------------------------------------
