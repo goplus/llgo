@@ -14,7 +14,7 @@ func TestAnnotateModFile(t *testing.T) {
 		name       string
 		modContent string
 		module     module.Version
-		pkg        config.PackageConfig
+		upstream   config.UpstreamConfig
 		wantErr    bool
 		expected   string
 	}{
@@ -25,13 +25,16 @@ func TestAnnotateModFile(t *testing.T) {
 require github.com/test/module v1.0.0
 `,
 			module: module.Version{Path: "github.com/test/module", Version: "v1.0.0"},
-			pkg: config.PackageConfig{
-				Name:    "mypkg",
-				Version: "1.2.3",
+			upstream: config.UpstreamConfig{
+				Installer: config.InstallerConfig{Name: "ghrelease"},
+				Package: config.PackageConfig{
+					Name:    "mypkg",
+					Version: "1.2.3",
+				},
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // mypkg 1.2.3
+require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
 `,
 		},
 		{
@@ -41,13 +44,16 @@ require github.com/test/module v1.0.0 // mypkg 1.2.3
 require github.com/test/module v1.0.0 // any_comments
 `,
 			module: module.Version{Path: "github.com/test/module", Version: "v1.0.0"},
-			pkg: config.PackageConfig{
-				Name:    "mypkg",
-				Version: "1.2.3",
+			upstream: config.UpstreamConfig{
+				Installer: config.InstallerConfig{Name: "ghrelease"},
+				Package: config.PackageConfig{
+					Name:    "mypkg",
+					Version: "1.2.3",
+				},
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // any_comments; mypkg 1.2.3
+require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
 `,
 		},
 		{
@@ -57,29 +63,35 @@ require github.com/test/module v1.0.0 // any_comments; mypkg 1.2.3
 require github.com/test/module v1.0.0 // indirect; any_comments
 `,
 			module: module.Version{Path: "github.com/test/module", Version: "v1.0.0"},
-			pkg: config.PackageConfig{
-				Name:    "mypkg",
-				Version: "1.2.3",
+			upstream: config.UpstreamConfig{
+				Installer: config.InstallerConfig{Name: "ghrelease"},
+				Package: config.PackageConfig{
+					Name:    "mypkg",
+					Version: "1.2.3",
+				},
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // indirect; any_comments; mypkg 1.2.3
+require github.com/test/module v1.0.0 // indirect; ghrelease:mypkg/1.2.3
 `,
 		},
 		{
 			name: "already_exists_case",
 			modContent: `module example.com/test
 
-require github.com/test/module v1.0.0 // mypkg 1.2.3
+require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
 `,
 			module: module.Version{Path: "github.com/test/module", Version: "v1.0.0"},
-			pkg: config.PackageConfig{
-				Name:    "mypkg",
-				Version: "1.2.3",
+			upstream: config.UpstreamConfig{
+				Installer: config.InstallerConfig{Name: "ghrelease"},
+				Package: config.PackageConfig{
+					Name:    "mypkg",
+					Version: "1.2.3",
+				},
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // mypkg 1.2.3
+require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
 `,
 		},
 		{
@@ -106,7 +118,7 @@ require github.com/other/module v1.0.0
 				t.Fatal(err)
 			}
 
-			err = AnnotateModFile(modPath, tc.module, tc.pkg)
+			err = AnnotateModFile(modPath, tc.module, tc.upstream)
 			if tc.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")

@@ -66,7 +66,7 @@ func Do(name, version string) error {
 	}
 
 	// 5. Annotate go.mod
-	return AnnotateModFile(targetModFilePath, declaredModule, cfg.Upstream.Package)
+	return AnnotateModFile(targetModFilePath, declaredModule, cfg.Upstream)
 }
 
 func fetchUpstream(cfg config.LLPkgConfig, module module.Version) error {

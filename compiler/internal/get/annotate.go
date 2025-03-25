@@ -3,7 +3,6 @@ package get
 import (
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/goplus/llpkgstore/config"
@@ -11,10 +10,39 @@ import (
 	"golang.org/x/mod/module"
 )
 
+type Annotation struct {
+	InstallerName, PackageName, PackageVersion string
+}
+
+func AnnotationFromString(s string) Annotation {
+	parts := strings.Split(s, ":")
+	installerName := parts[0]
+
+	parts = strings.Split(parts[1], "/")
+	packageName := parts[0]
+	packageVersion := parts[1]
+
+	return Annotation{
+		InstallerName:  installerName,
+		PackageName:    packageName,
+		PackageVersion: packageVersion,
+	}
+}
+
+func (a Annotation) String() string {
+	return fmt.Sprintf("%s:%s/%s", a.InstallerName, a.PackageName, a.PackageVersion)
+}
+
 // Add annotation of original version to go.mod by appending comment
 // to the module path.
-func AnnotateModFile(targetModFilePath string, module module.Version, pkg config.PackageConfig) error {
-	annotation := fmt.Sprintf("%s %s", pkg.Name, pkg.Version)
+//
+// Warning: Any old comments, except the "indirect" one, will be lost.
+func AnnotateModFile(targetModFilePath string, module module.Version, pkg config.UpstreamConfig) error {
+	annotation := Annotation{
+		InstallerName:  pkg.Installer.Name,
+		PackageName:    pkg.Package.Name,
+		PackageVersion: pkg.Package.Version,
+	}
 
 	modFileData, err := os.ReadFile(targetModFilePath)
 	if err != nil {
@@ -31,30 +59,21 @@ func AnnotateModFile(targetModFilePath string, module module.Version, pkg config
 	for _, req := range modFile.Require {
 		if req.Mod == module {
 			found = true
+			var token string
+
+			if req.Indirect {
+				token = fmt.Sprintf("// indirect; %s", annotation.String())
+			} else {
+				token = fmt.Sprintf("// %s", annotation.String())
+			}
+
 			if len(req.Syntax.Comments.Suffix) == 0 {
-				token := fmt.Sprintf("// %s", annotation)
 				req.Syntax.Comments.Suffix = append(req.Syntax.Comments.Suffix,
 					modfile.Comment{
 						Suffix: true,
 						Token:  token,
 					})
 			} else {
-				comment := req.Syntax.Comments.Suffix[0].Token
-				commentParts := strings.Split(comment, "; ")
-
-				// If contains, skip
-				switch {
-				case len(commentParts) == 1:
-					if comment == "// "+annotation {
-						continue
-					}
-				case len(commentParts) > 1:
-					if slices.Contains(commentParts, annotation) || slices.Contains(commentParts, "// "+annotation) {
-						continue
-					}
-				}
-
-				token := fmt.Sprintf("%s; %s", comment, annotation)
 				req.Syntax.Comments.Suffix[0].Token = token
 			}
 		}
