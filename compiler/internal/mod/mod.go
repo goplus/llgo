@@ -73,16 +73,16 @@ func GoModFilePath(mod module.Version) (string, error) {
 	return filepath.Join(cachePath, GoModFileName), nil
 }
 
-func PkgConfigFilesDir(mod module.Version) (string, error) {
+func LLPkgCacheDirByModule(mod module.Version) (string, error) {
 	encPath, err := module.EscapePath(mod.Path)
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(pkgConfigCacheDir(), encPath+"@"+mod.Version), nil
+	return filepath.Join(LLPkgCacheDir(), encPath+"@"+mod.Version), nil
 }
 
-func pkgConfigCacheDir() string {
+func LLPkgCacheDir() string {
 	return filepath.Join(env.LLGOCACHE(), "pkg-config")
 }
 

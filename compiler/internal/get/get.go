@@ -75,12 +75,12 @@ func fetchUpstream(cfg config.LLPkgConfig, module module.Version) error {
 		return err
 	}
 
-	pcCacheDir, err := mod.PkgConfigFilesDir(module)
+	cacheDir, err := mod.LLPkgCacheDirByModule(module)
 	if err != nil {
 		return err
 	}
 
-	return upstream.Installer.Install(upstream.Pkg, pcCacheDir)
+	return upstream.Installer.Install(upstream.Pkg, cacheDir)
 }
 
 func fetchModule(mod module.Version) error {
