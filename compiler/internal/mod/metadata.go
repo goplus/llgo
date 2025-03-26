@@ -42,7 +42,7 @@ func NewMetadataMgr(cacheDir string) (*metadataMgr, error) {
 		flatGoToC: make(map[flatKey]string),
 	}
 
-	err = mgr.buildVersionsHash()
+	err = mgr.buildFlatVersionMaps()
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (m *metadataMgr) update() error {
 		return err
 	}
 
-	err = m.buildVersionsHash()
+	err = m.buildFlatVersionMaps()
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (m *metadataMgr) update() error {
 	return nil
 }
 
-func (m *metadataMgr) buildVersionsHash() error {
+func (m *metadataMgr) buildFlatVersionMaps() error {
 	// Reset flat hash
 	m.flatCToGo = make(map[flatKey][]string)
 	m.flatGoToC = make(map[flatKey]string)
