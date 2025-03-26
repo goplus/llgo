@@ -121,6 +121,6 @@ func doPathCompletion(name, goVer string) (string, error) {
 	} else if major == "v0" || major == "v1" {
 		return fmt.Sprintf("%s/%s", LLPkgPathPrefix, name), nil
 	} else {
-		return fmt.Sprintf("%s/%s/v%s", LLPkgPathPrefix, name, major), nil
+		return fmt.Sprintf("%s/%s/%s", LLPkgPathPrefix, name, major), nil
 	}
 }
