@@ -1,7 +1,7 @@
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/goplus/gogen v1.16.8 h1:idakC+4OZIAvDSi3wkPGHlhpNEd7xkmvodXDMDvfn4s=
-github.com/goplus/gogen v1.16.8/go.mod h1:6TQYbabXDF9LCdDkOOzHmfg1R4ENfXQ3XpHa9RhTSD8=
+github.com/goplus/gogen v1.16.9 h1:BRNAsRzdyMcLBOLUe6+suVMmOe+D2HLfF7mAkS4/QW4=
+github.com/goplus/gogen v1.16.9/go.mod h1:6TQYbabXDF9LCdDkOOzHmfg1R4ENfXQ3XpHa9RhTSD8=
 github.com/goplus/llvm v0.8.1 h1:Wrc9S8bKDhLjxjPuhnrgDYLRaFfKotOGt3zpId3LBmI=
 github.com/goplus/llvm v0.8.1/go.mod h1:PeVK8GgzxwAYCiMiUAJb5wJR6xbhj989tu9oulKLLT4=
 github.com/goplus/mod v0.13.17 h1:aWp14xosENrh7t0/0qcIejDmQEiTgI3ou2+KoLDlSlE=
