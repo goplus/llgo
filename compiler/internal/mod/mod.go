@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llpkgstore/metadata"
 	"github.com/goplus/mod/modcache"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
@@ -24,7 +25,7 @@ const (
 func NewModuleVersionPair(name, version string) (module.Version, error) {
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
-		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
+		metadataMgr, err := metadata.NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
 		if err != nil {
 			return module.Version{}, err
 		}

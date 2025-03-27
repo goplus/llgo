@@ -80,7 +80,12 @@ func fetchUpstream(cfg config.LLPkgConfig, module module.Version) error {
 		return err
 	}
 
-	return upstream.Installer.Install(upstream.Pkg, cacheDir)
+	_, err = upstream.Installer.Install(upstream.Pkg, cacheDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func fetchModule(mod module.Version) error {
