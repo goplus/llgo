@@ -10,6 +10,8 @@ import (
 	"golang.org/x/mod/module"
 )
 
+const AnnotationPrefix = "(llpkg)"
+
 type Annotation struct {
 	InstallerName, PackageName, PackageVersion string
 }
@@ -30,7 +32,7 @@ func AnnotationFromString(s string) Annotation {
 }
 
 func (a Annotation) String() string {
-	return fmt.Sprintf("%s:%s/%s", a.InstallerName, a.PackageName, a.PackageVersion)
+	return fmt.Sprintf("%s%s:%s/%s", AnnotationPrefix, a.InstallerName, a.PackageName, a.PackageVersion)
 }
 
 // Add annotation of original version to go.mod by appending comment

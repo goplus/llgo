@@ -34,7 +34,7 @@ require github.com/test/module v1.0.0
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
+require github.com/test/module v1.0.0 // (llpkg)ghrelease:mypkg/1.2.3
 `,
 		},
 		{
@@ -53,7 +53,7 @@ require github.com/test/module v1.0.0 // any_comments
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
+require github.com/test/module v1.0.0 // (llpkg)ghrelease:mypkg/1.2.3
 `,
 		},
 		{
@@ -72,14 +72,14 @@ require github.com/test/module v1.0.0 // indirect; any_comments
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // indirect; ghrelease:mypkg/1.2.3
+require github.com/test/module v1.0.0 // indirect; (llpkg)ghrelease:mypkg/1.2.3
 `,
 		},
 		{
 			name: "already_exists_case",
 			modContent: `module example.com/test
 
-require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
+require github.com/test/module v1.0.0 // (llpkg)ghrelease:mypkg/1.2.3
 `,
 			module: module.Version{Path: "github.com/test/module", Version: "v1.0.0"},
 			upstream: config.UpstreamConfig{
@@ -91,7 +91,7 @@ require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
 			},
 			expected: `module example.com/test
 
-require github.com/test/module v1.0.0 // ghrelease:mypkg/1.2.3
+require github.com/test/module v1.0.0 // (llpkg)ghrelease:mypkg/1.2.3
 `,
 		},
 		{

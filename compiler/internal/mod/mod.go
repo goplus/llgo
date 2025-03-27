@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/packages"
 	"github.com/goplus/llpkgstore/metadata"
 	"github.com/goplus/mod/modcache"
 	"golang.org/x/mod/module"
@@ -91,6 +92,14 @@ func LLPkgCacheDir() string {
 func IsModulePath(path string) bool {
 	err := module.CheckPath(path)
 	return err == nil
+}
+
+func InLLPkg(pkg *packages.Package) (bool, error) {
+	if pkg.Module == nil {
+		return false, nil
+	}
+
+	return IsLLPkg(module.Version{Path: pkg.Module.Path, Version: pkg.Module.Version})
 }
 
 func IsLLPkg(mod module.Version) (bool, error) {
