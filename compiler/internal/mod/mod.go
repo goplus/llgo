@@ -84,7 +84,7 @@ func LLPkgCacheDirByModule(mod module.Version) (string, error) {
 }
 
 func LLPkgCacheDir() string {
-	return filepath.Join(env.LLGOCACHE(), "pkg-config")
+	return filepath.Join(env.LLGOCACHE(), "llpkg")
 }
 
 // Returns true if the path is a valid module path, false otherwise
