@@ -17,8 +17,14 @@ const (
 // NewPathVersionPair will automatically identify if the name is a clib or a module
 // path, and convert clib@cversion to modulePath@mappedVersion if possible.
 //
-// Returns a valid module.Version and any error encountered.
+// Returns a module.Version and any error encountered.
+//
+// Note: version can be empty, which indicates the latest version
 func NewModuleVersionPair(name, version string) (module.Version, error) {
+	if version == "latest" {
+		version = ""
+	}
+
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
 		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
@@ -37,12 +43,6 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 		}
 	}
 
-	// Check
-	err := module.Check(name, version)
-	if err != nil {
-		return module.Version{}, err
-	}
-
 	return module.Version{Path: name, Version: version}, nil
 }
 
@@ -53,13 +53,16 @@ func IsModulePath(path string) bool {
 }
 
 func doPathCompletion(name, goVer string) (string, error) {
+	if !semver.IsValid(goVer) && goVer != "" {
+		return "", fmt.Errorf("not a semver: %s", goVer)
+	}
+
 	major := semver.Major(goVer)
 
-	if major == "" {
-		return "", fmt.Errorf("not a semver: %s", goVer)
-	} else if major == "v0" || major == "v1" {
+	switch major {
+	case "", "v0", "v1":
 		return fmt.Sprintf("%s/%s", LLPkgPathPrefix, name), nil
-	} else {
+	default:
 		return fmt.Sprintf("%s/%s/%s", LLPkgPathPrefix, name, major), nil
 	}
 }
