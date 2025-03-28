@@ -18,12 +18,18 @@
 package get
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/internal/get"
+	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
 // llgo get
 var Cmd = &base.Command{
-	UsageLine: "llgo get [-t -u -v] [build flags] [packages]",
+	UsageLine: "llgo get [clibs/packages]",
 	Short:     "Add dependencies to current module and install them",
 }
 
@@ -32,5 +38,33 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	panic("todo")
+	if len(args) == 0 || len(args) >= 2 {
+		mockable.Exit(1)
+	}
+
+	// Extract the name/path and version from the first argument
+	name, version := parse(args[0])
+	if name == "" {
+		fmt.Fprintln(os.Stderr, "missing module path")
+		mockable.Exit(1)
+	}
+
+	// Get the module
+	err := get.Do(name, version)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+	}
+}
+
+func parse(s string) (path, version string) {
+	index := strings.Index(s, "@")
+	if index >= 0 {
+		path = s[:index]
+		version = s[(index + 1):]
+	} else {
+		path = s
+	}
+
+	return path, version
 }
