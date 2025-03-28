@@ -2,11 +2,14 @@
 package list
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/goplus/llgo/compiler/internal/mod"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
+
+	"github.com/goplus/llgo/compiler/internal/mod"
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
 	listpkg "github.com/goplus/llgo/compiler/internal/list"
