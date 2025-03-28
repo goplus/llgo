@@ -16,7 +16,7 @@ const (
 	FormatJSON
 )
 
-// FormatModuleOutput 格式化模块输出
+// FormatModuleOutput format the module output
 func FormatModuleOutput(w io.Writer, modulePath string, version string, cfg *config.LLPkgConfig, format Format) error {
 	switch format {
 	case FormatText:
@@ -61,11 +61,11 @@ func FormatModuleOutput(w io.Writer, modulePath string, version string, cfg *con
 		return err
 
 	default:
-		return fmt.Errorf("未知的输出格式")
+		return fmt.Errorf("unknown output format")
 	}
 }
 
-// FormatModuleVersionsOutput 格式化模块版本输出
+// FormatModuleVersionsOutput format the module versions output
 func FormatModuleVersionsOutput(w io.Writer, modulePath string, versions []VersionInfo, format Format) error {
 	switch format {
 	case FormatText:
@@ -92,7 +92,7 @@ func FormatModuleVersionsOutput(w io.Writer, modulePath string, versions []Versi
 		return err
 
 	case FormatJSON:
-		// 构建JSON结构
+		// Build the JSON structure
 		info := struct {
 			Path     string        `json:"Path"`
 			Versions []VersionInfo `json:"Versions"`
@@ -110,11 +110,11 @@ func FormatModuleVersionsOutput(w io.Writer, modulePath string, versions []Versi
 		return err
 
 	default:
-		return fmt.Errorf("未知的输出格式")
+		return fmt.Errorf("unknown output format")
 	}
 }
 
-// VersionInfo 表示版本信息
+// VersionInfo represents the version information
 type VersionInfo struct {
 	GoVersion     string `json:"GoVersion"`
 	CVersion      string `json:"CVersion,omitempty"`

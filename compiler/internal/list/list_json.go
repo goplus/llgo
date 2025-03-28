@@ -9,7 +9,7 @@ import (
 	"github.com/goplus/llpkgstore/config"
 )
 
-// ModuleInfo 表示模块信息的JSON结构
+// ModuleInfo represents the JSON structure of module information
 type ModuleInfo struct {
 	Path      string     `json:"Path"`
 	Version   string     `json:"Version,omitempty"`
@@ -19,7 +19,7 @@ type ModuleInfo struct {
 	LLPkg     *LLPkgInfo `json:"LLPkg,omitempty"`
 }
 
-// LLPkgInfo 表示LLPkg信息的JSON结构
+// LLPkgInfo represents the JSON structure of LLPkg information
 type LLPkgInfo struct {
 	Upstream UpstreamInfo `json:"Upstream"`
 }
@@ -39,9 +39,9 @@ type PackageInfo struct {
 	Version string `json:"Version"`
 }
 
-// listJSON 处理JSON格式输出
+// listJSON handle the JSON format output
 func listJSON(opts ListOptions, args []string) error {
-	// 执行go list命令获取原始JSON输出
+	// Execute the go list command to get the original JSON output
 	cmdArgs := []string{"list", "-json"}
 	if opts.ModulesFlag {
 		cmdArgs = append(cmdArgs, "-m")
@@ -57,24 +57,24 @@ func listJSON(opts ListOptions, args []string) error {
 		return err
 	}
 
-	// 解析JSON输出
+	// Parse the JSON output
 	var modules []ModuleInfo
 	decoder := json.NewDecoder(strings.NewReader(string(output)))
 
-	// 检查输出是数组还是单个对象
+	// Check if the output is an array or a single object
 	var firstChar byte
 	if len(output) > 0 {
 		firstChar = output[0]
 	}
 
 	if firstChar == '[' {
-		// 数组格式
+		// Array format
 		err = decoder.Decode(&modules)
 		if err != nil {
 			return err
 		}
 	} else {
-		// 单个对象格式
+		// Single object format
 		var module ModuleInfo
 		err = decoder.Decode(&module)
 		if err != nil {
@@ -83,7 +83,7 @@ func listJSON(opts ListOptions, args []string) error {
 		modules = []ModuleInfo{module}
 	}
 
-	// 为每个模块添加LLPkg信息
+	// Add LLPkg information to each module
 	for i := range modules {
 		if modules[i].Path != "" {
 			isLLPkg, llpkgConfig, err := checkIsLLPkg(modules[i].Path)
@@ -93,13 +93,13 @@ func listJSON(opts ListOptions, args []string) error {
 		}
 	}
 
-	// 输出修改后的JSON
+	// Output the modified JSON
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(modules)
 }
 
-// convertToLLPkgInfo 将LLPkgConfig转换为LLPkgInfo
+// convertToLLPkgInfo convert the LLPkgConfig to LLPkgInfo
 func convertToLLPkgInfo(cfg config.LLPkgConfig) *LLPkgInfo {
 	return &LLPkgInfo{
 		Upstream: UpstreamInfo{

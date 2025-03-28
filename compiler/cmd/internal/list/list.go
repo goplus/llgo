@@ -1,4 +1,3 @@
-// compiler/cmd/internal/list/list.go
 package list
 
 import (
@@ -11,10 +10,10 @@ import (
 	"github.com/goplus/llgo/compiler/internal/mockable"
 )
 
-// Cmd 定义list命令
+// Cmd define the list command
 var Cmd = &base.Command{
 	UsageLine: "llgo list [-m] [-versions] [-json] [packages]",
-	Short:     "列出包、模块及其依赖的信息",
+	Short:     "list packages, modules and their dependencies",
 }
 
 func init() {
@@ -22,36 +21,36 @@ func init() {
 }
 
 func runCmd(_ *base.Command, args []string) {
-	// 定义标志变量
+	// Define the flag variables
 	var (
-		modulesFlag   bool   // -m 标志
-		jsonFlag      bool   // -json 标志
-		versionsFlag  bool   // -versions 标志
-		updatesFlag   bool   // -u 标志
-		retractedFlag bool   // -retracted 标志
-		reuseFlag     string // -reuse 标志的值
-		formatFlag    string // -f 标志的值
+		modulesFlag   bool   // -m flag
+		jsonFlag      bool   // -json flag
+		versionsFlag  bool   // -versions flag
+		updatesFlag   bool   // -u flag
+		retractedFlag bool   // -retracted flag
+		reuseFlag     string // -reuse flag's value
+		formatFlag    string // -f flag's value
 
-		// 其他支持的标志
-		findFlag     bool // -find 标志
-		depsFlag     bool // -deps 标志
-		testFlag     bool // -test 标志
-		compiledFlag bool // -compiled 标志
-		exportFlag   bool // -export 标志
+		// other supported flags
+		findFlag     bool // -find flag
+		depsFlag     bool // -deps flag
+		testFlag     bool // -test flag
+		compiledFlag bool // -compiled flag
+		exportFlag   bool // -export flag
 	)
 
-	// 解析参数中的标志
+	// Parse the flags in the arguments
 	var patterns []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 
-		// 如果不是标志，则是包模式
+		// If it is not a flag, it is a package pattern
 		if !strings.HasPrefix(arg, "-") {
 			patterns = append(patterns, args[i:]...)
 			break
 		}
 
-		// 处理 name=value 格式的标志
+		// Handle the name=value format flag
 		if strings.Contains(arg, "=") {
 			parts := strings.SplitN(arg, "=", 2)
 			flag, value := parts[0], parts[1]
@@ -62,18 +61,18 @@ func runCmd(_ *base.Command, args []string) {
 			case "-reuse":
 				reuseFlag = value
 			default:
-				fmt.Fprintf(os.Stderr, "llgo list: 未知标志 %s\n", flag)
-				fmt.Fprintf(os.Stderr, "运行 'llgo help list' 查看使用说明。\n")
+				fmt.Fprintf(os.Stderr, "llgo list: unknown flag %s\n", flag)
+				fmt.Fprintf(os.Stderr, "Run 'llgo help list' for usage.\n")
 				mockable.Exit(2)
 				return
 			}
 			continue
 		}
 
-		// 处理需要单独参数的标志
+		// Handle the flags that need a separate parameter
 		if arg == "-f" || arg == "-reuse" {
 			if i+1 >= len(args) {
-				fmt.Fprintf(os.Stderr, "llgo list: %s 标志缺少参数\n", arg)
+				fmt.Fprintf(os.Stderr, "llgo list: %s flag missing parameter\n", arg)
 				mockable.Exit(2)
 				return
 			}
@@ -88,7 +87,7 @@ func runCmd(_ *base.Command, args []string) {
 			continue
 		}
 
-		// 处理布尔类型标志
+		// Handle the boolean type flags
 		switch arg {
 		case "-m":
 			modulesFlag = true
@@ -111,59 +110,59 @@ func runCmd(_ *base.Command, args []string) {
 		case "-export":
 			exportFlag = true
 		default:
-			fmt.Fprintf(os.Stderr, "llgo list: 未知标志 %s\n", arg)
-			fmt.Fprintf(os.Stderr, "运行 'llgo help list' 查看使用说明。\n")
+			fmt.Fprintf(os.Stderr, "llgo list: unknown flag %s\n", arg)
+			fmt.Fprintf(os.Stderr, "Run 'llgo help list' for usage.\n")
 			mockable.Exit(2)
 			return
 		}
 	}
 
-	// 检查标志兼容性
+	// Check the flag compatibility
 	incompatibleFlags := []string{}
 
-	// 互斥标志检查
+	// Mutually exclusive flag checks
 	if jsonFlag && formatFlag != "" {
-		incompatibleFlags = append(incompatibleFlags, "-json 不能与 -f 一起使用")
+		incompatibleFlags = append(incompatibleFlags, "-json flag cannot be used with -f flag")
 	}
 
 	if modulesFlag {
 		if depsFlag {
-			incompatibleFlags = append(incompatibleFlags, "-m 不能与 -deps 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-m flag cannot be used with -deps flag")
 		}
 		if findFlag {
-			incompatibleFlags = append(incompatibleFlags, "-m 不能与 -find 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-m flag cannot be used with -find flag")
 		}
 		if exportFlag {
-			incompatibleFlags = append(incompatibleFlags, "-m 不能与 -export 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-m flag cannot be used with -export flag")
 		}
 		if compiledFlag {
-			incompatibleFlags = append(incompatibleFlags, "-m 不能与 -compiled 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-m flag cannot be used with -compiled flag")
 		}
 	}
 
 	if findFlag {
 		if depsFlag {
-			incompatibleFlags = append(incompatibleFlags, "-find 不能与 -deps 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-find flag cannot be used with -deps flag")
 		}
 		if testFlag {
-			incompatibleFlags = append(incompatibleFlags, "-find 不能与 -test 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-find flag cannot be used with -test flag")
 		}
 		if exportFlag {
-			incompatibleFlags = append(incompatibleFlags, "-find 不能与 -export 一起使用")
+			incompatibleFlags = append(incompatibleFlags, "-find flag cannot be used with -export flag")
 		}
 	}
 
-	// 报告不兼容的标志
+	// Report the incompatible flags
 	if len(incompatibleFlags) > 0 {
 		for _, msg := range incompatibleFlags {
 			fmt.Fprintf(os.Stderr, "llgo list: %s\n", msg)
 		}
-		fmt.Fprintf(os.Stderr, "运行 'llgo help list' 查看使用说明。\n")
+		fmt.Fprintf(os.Stderr, "Run 'llgo help list' for usage.\n")
 		mockable.Exit(2)
 		return
 	}
 
-	// 创建选项对象
+	// Create the options object
 	opts := list.ListOptions{
 		ModulesFlag:   modulesFlag,
 		JSONFlag:      jsonFlag,
@@ -174,7 +173,7 @@ func runCmd(_ *base.Command, args []string) {
 		FormatFlag:    formatFlag,
 	}
 
-	// 调用内部实现
+	// Call the internal implementation
 	err := list.ListModules(opts, patterns)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "llgo list: %v\n", err)

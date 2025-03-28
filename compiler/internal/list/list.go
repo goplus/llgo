@@ -13,36 +13,36 @@ import (
 	"golang.org/x/mod/module"
 )
 
-// ListOptions 定义list命令的选项
+// ListOptions define the options for the list command
 type ListOptions struct {
-	ModulesFlag   bool   // -m 标志
-	JSONFlag      bool   // -json 标志
-	VersionsFlag  bool   // -versions 标志
-	UpdatesFlag   bool   // -u 标志
-	RetractedFlag bool   // -retracted 标志
-	ReuseFlag     string // -reuse 标志的值
-	FormatFlag    string // -f 标志的值
+	ModulesFlag   bool   // -m flag
+	JSONFlag      bool   // -json flag
+	VersionsFlag  bool   // -versions flag
+	UpdatesFlag   bool   // -u flag
+	RetractedFlag bool   // -retracted flag
+	ReuseFlag     string // -reuse flag's value
+	FormatFlag    string // -f flag's value
 }
 
-// ListModules 处理list命令的主入口函数
+// ListModules is the main entry function for the list command
 func ListModules(opts ListOptions, args []string) error {
-	// 如果没有特殊标志，直接fallback到go list
+	// If there are no special flags, fallback to go list
 	if !opts.ModulesFlag && !opts.JSONFlag {
 		return fallbackToGoList(args)
 	}
 
-	// 处理模块模式
+	// Process the module pattern
 	if opts.ModulesFlag {
-		// 当同时指定-m和-versions时
+		// When both -m and -versions are specified
 		if opts.VersionsFlag {
 			return listModuleVersions(opts, args)
 		}
 
-		// 仅指定-m时
+		// When only -m is specified
 		return listModules(opts, args)
 	}
 
-	// 处理JSON模式
+	// Process the JSON mode
 	if opts.JSONFlag {
 		return listJSON(opts, args)
 	}
@@ -50,20 +50,20 @@ func ListModules(opts ListOptions, args []string) error {
 	return nil
 }
 
-// resolveModulePath 将简略输入转换为完整module路径
+// resolveModulePath convert the brief input to the complete module path
 func resolveModulePath(input string) (string, error) {
-	// 如果输入已经是一个完整的模块路径，直接返回
+	// If the input is already a complete module path, return it directly
 	if mod.IsModulePath(input) {
 		return input, nil
 	}
 
-	// 初始化元数据管理器
+	// Initialize the metadata manager
 	metadataMgr, err := metadata.NewMetadataMgr(env.LLGOCACHE())
 	if err != nil {
-		return "", fmt.Errorf("初始化元数据管理器失败: %v", err)
+		return "", fmt.Errorf("failed to initialize metadata manager: %v", err)
 	}
 
-	// 检查是否为clib
+	// Check if it is a clib
 	exists, err := metadataMgr.ModuleExists(input)
 	if err != nil {
 		return "", err
@@ -73,22 +73,22 @@ func resolveModulePath(input string) (string, error) {
 		return "", fmt.Errorf("未找到模块: %s", input)
 	}
 
-	// 获取最新版本
+	// Get the latest version
 	latestVer, err := metadataMgr.LatestGoVer(input)
 	if err != nil {
-		return "", fmt.Errorf("获取最新版本失败: %v", err)
+		return "", fmt.Errorf("failed to get the latest version: %v", err)
 	}
 
-	// 构建完整路径
+	// Build the complete path
 	completePath, err := mod.NewModuleVersionPair(input, latestVer)
 	if err != nil {
-		return "", fmt.Errorf("构建模块路径失败: %v", err)
+		return "", fmt.Errorf("failed to build the complete path: %v", err)
 	}
 
 	return completePath.Path, nil
 }
 
-// listModules 处理模块列表显示
+// listModules resolve the module path and print the result
 func listModules(opts ListOptions, args []string) error {
 	for _, arg := range args {
 		modulePath, err := resolveModulePath(arg)
@@ -96,21 +96,21 @@ func listModules(opts ListOptions, args []string) error {
 			return err
 		}
 
-		// 检查是否为LLPkg
+		// Check if it is a LLPkg
 		isLLPkg, llpkgInfo, err := checkIsLLPkg(modulePath)
 		if err != nil {
 			return err
 		}
 
 		if isLLPkg {
-			// 输出LLPkg信息
+			// Print the LLPkg information
 			fmt.Printf("%s [%s:%s/%s]\n",
 				modulePath,
 				llpkgInfo.Upstream.Installer.Name,
 				llpkgInfo.Upstream.Package.Name,
 				llpkgInfo.Upstream.Package.Version)
 		} else {
-			// 如果不是LLPkg，回退到标准go list输出
+			// If it is not a LLPkg, fallback to the standard go list output
 			cmd := exec.Command("go", append([]string{"list", "-m"}, modulePath)...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -123,18 +123,18 @@ func listModules(opts ListOptions, args []string) error {
 	return nil
 }
 
-// checkIsLLPkg 检查给定模块是否为LLPkg
+// checkIsLLPkg check if the given module is a LLPkg
 func checkIsLLPkg(modulePath string) (bool, *config.LLPkgConfig, error) {
-	// 获取模块路径
+	// Get the module path
 	mod := module.Version{Path: modulePath}
 
-	// 查找llpkg.cfg文件
+	// Find the llpkg.cfg file
 	cfgPath, err := findLLPkgCfgFile(mod)
 	if err != nil || cfgPath == "" {
 		return false, nil, nil
 	}
 
-	// 解析llpkg.cfg文件
+	// Parse the llpkg.cfg file
 	cfg, err := config.ParseLLPkgConfig(cfgPath)
 	if err != nil {
 		return false, nil, err
@@ -143,9 +143,9 @@ func checkIsLLPkg(modulePath string) (bool, *config.LLPkgConfig, error) {
 	return true, &cfg, nil
 }
 
-// findLLPkgCfgFile 查找模块的llpkg.cfg文件
+// findLLPkgCfgFile find the llpkg.cfg file for the module
 func findLLPkgCfgFile(mod module.Version) (string, error) {
-	// 尝试在模块缓存中查找
+	// Try to find the llpkg.cfg file in the module cache
 	modPath, err := filepath.Abs(filepath.Join(env.LLGOCACHE(), "pkg/mod", mod.Path))
 	if err != nil {
 		return "", err
@@ -156,13 +156,10 @@ func findLLPkgCfgFile(mod module.Version) (string, error) {
 		return cfgPath, nil
 	}
 
-	// 如果在缓存中找不到，尝试其他位置
-	// ...
-
 	return "", nil
 }
 
-// fallbackToGoList 回退到原生go list命令
+// fallbackToGoList fallback to the native go list command
 func fallbackToGoList(args []string) error {
 	cmd := exec.Command("go", append([]string{"list"}, args...)...)
 	cmd.Stdout = os.Stdout
