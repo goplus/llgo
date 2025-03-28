@@ -7,6 +7,5 @@ import (
 )
 
 func main() {
-	env := env.New(nil)
 	fmt.Println(env.ExpandEnv("$(pkg-config --libs bdw-gc)"))
 }

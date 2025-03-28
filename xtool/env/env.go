@@ -31,16 +31,8 @@ var (
 	reFlag   = regexp.MustCompile(`[^ \t\n]+`)
 )
 
-type Env struct {
-	cmdEnvMap map[string]string
-}
-
-func New(cmdEnvMap map[string]string) *Env {
-	return &Env{cmdEnvMap: cmdEnvMap}
-}
-
-func (e *Env) ExpandEnvToArgs(s string) []string {
-	r, config := e.expandEnvWithCmd(s)
+func ExpandEnvToArgs(s string) []string {
+	r, config := expandEnvWithCmd(s)
 	if r == "" {
 		return nil
 	}
@@ -50,12 +42,12 @@ func (e *Env) ExpandEnvToArgs(s string) []string {
 	return []string{r}
 }
 
-func (e *Env) ExpandEnv(s string) string {
-	r, _ := e.expandEnvWithCmd(s)
+func ExpandEnv(s string) string {
+	r, _ := expandEnvWithCmd(s)
 	return r
 }
 
-func (e *Env) expandEnvWithCmd(s string) (string, bool) {
+func expandEnvWithCmd(s string) (string, bool) {
 	var config bool
 	expanded := reSubcmd.ReplaceAllStringFunc(s, func(m string) string {
 		subcmd := strings.TrimSpace(m[2 : len(m)-1])
@@ -70,12 +62,7 @@ func (e *Env) expandEnvWithCmd(s string) (string, bool) {
 		var out []byte
 		var err error
 
-		execCmd := exec.Command(cmd, args[1:]...)
-		for name, value := range e.cmdEnvMap {
-			execCmd.Env = append(execCmd.Env, fmt.Sprintf(`%s=%s`, name, value))
-		}
-
-		out, err = execCmd.Output()
+		out, err = exec.Command(cmd, args[1:]...).Output()
 
 		if err != nil {
 			// TODO(kindy): log in verbose mode

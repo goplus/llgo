@@ -34,13 +34,11 @@ import (
 	"strings"
 	"unsafe"
 
-	"golang.org/x/mod/module"
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/internal/env"
 	"github.com/goplus/llgo/compiler/internal/mockable"
-	"github.com/goplus/llgo/compiler/internal/mod"
 	"github.com/goplus/llgo/compiler/internal/packages"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"github.com/goplus/llgo/compiler/ssa/abi"
@@ -218,7 +216,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), nil}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -283,8 +281,6 @@ type context struct {
 
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
-
-	xenv *xenv.Env
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -306,13 +302,6 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			continue
 		}
 		built[pkg.ID] = none{}
-
-		llpkgEnvMap, err := llpkgEnvMap(pkg)
-		if err != nil {
-			panic(err)
-		}
-		ctx.xenv = xenv.New(llpkgEnvMap)
-
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
@@ -344,7 +333,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if strings.ContainsRune(param, '$') {
-						expdArgs = append(expdArgs, ctx.xenv.ExpandEnvToArgs(param)...)
+						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
 					} else {
 						fields := strings.Fields(param)
@@ -870,7 +859,7 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	args := make([]string, 0, 16)
 	if strings.HasPrefix(files, "$") { // has cflags
 		if pos := strings.IndexByte(files, ':'); pos > 0 {
-			cflags := ctx.xenv.ExpandEnvToArgs(files[:pos])
+			cflags := xenv.ExpandEnvToArgs(files[:pos])
 			files = files[pos+1:]
 			args = append(args, cflags...)
 		}
@@ -915,30 +904,6 @@ func findDylibDep(exe, lib string) string {
 		}
 	}
 	return ""
-}
-
-// llpkgEnvMap checks go.mod that used by the package, and determine env
-// variables (mostly PKG_CONFIG_PATH) that should be loaded from LLGOCACHE.
-//
-// Returns a map of environment variables that should be set before executing
-// correspond commands (pkg-config).
-func llpkgEnvMap(pkg *packages.Package) (map[string]string, error) {
-	in, err := mod.InLLPkg(pkg)
-	if err != nil {
-		return nil, err
-	}
-	if !in {
-		return nil, nil
-	}
-
-	envMap := make(map[string]string)
-	LLPkgCacheDir, err := mod.LLPkgCacheDirByModule(module.Version{Path: pkg.Module.Path, Version: pkg.Module.Version})
-	if err != nil {
-		return nil, err
-	}
-	envMap["PKG_CONFIG_PATH"] = LLPkgCacheDir
-
-	return envMap, nil
 }
 
 type none struct{}

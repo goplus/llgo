@@ -2,13 +2,9 @@ package mod
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/goplus/llgo/compiler/internal/env"
-	"github.com/goplus/llgo/compiler/internal/packages"
 	"github.com/goplus/llpkgstore/metadata"
-	"github.com/goplus/mod/modcache"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 )
@@ -57,70 +53,10 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 	return module.Version{Path: name, Version: version}, nil
 }
 
-func LLPkgCfgFilePath(mod module.Version) (string, error) {
-	cachePath, err := modcache.Path(mod)
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(cachePath, LLPkgConfigFileName), nil
-}
-
-func GoModFilePath(mod module.Version) (string, error) {
-	cachePath, err := modcache.Path(mod)
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(cachePath, GoModFileName), nil
-}
-
-func LLPkgCacheDirByModule(mod module.Version) (string, error) {
-	encPath, err := module.EscapePath(mod.Path)
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(LLPkgCacheDir(), encPath+"@"+mod.Version), nil
-}
-
-func LLPkgCacheDir() string {
-	return filepath.Join(env.LLGOCACHE(), "llpkg")
-}
-
 // Returns true if the path is a valid module path, false otherwise
 func IsModulePath(path string) bool {
 	err := module.CheckPath(path)
 	return err == nil
-}
-
-func InLLPkg(pkg *packages.Package) (bool, error) {
-	if pkg.Module == nil {
-		return false, nil
-	}
-
-	return IsLLPkg(module.Version{Path: pkg.Module.Path, Version: pkg.Module.Version})
-}
-
-func IsLLPkg(mod module.Version) (bool, error) {
-	cfgPath, err := LLPkgCfgFilePath(mod)
-	if err != nil {
-		return false, err
-	}
-
-	println(cfgPath)
-
-	_, err = os.Stat(cfgPath)
-	if err != nil {
-		switch {
-		case os.IsNotExist(err):
-			return false, nil
-		default:
-			return false, err
-		}
-	}
-
-	return true, nil
 }
 
 func doPathCompletion(name, goVer string) (string, error) {

@@ -1,8 +1,6 @@
 package mod
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -22,18 +20,6 @@ func TestIsModulePath(t *testing.T) {
 				t.Errorf("IsModulePath(%q) = %v; want %v", tc.path, got, tc.valid)
 			}
 		})
-	}
-}
-
-func TestLLPkgCacheDir(t *testing.T) {
-	orig := os.Getenv("LLGOCACHE")
-	defer os.Setenv("LLGOCACHE", orig)
-	testCache := t.TempDir()
-	os.Setenv("LLGOCACHE", testCache)
-
-	expected := filepath.Join(testCache, "llpkg")
-	if got := LLPkgCacheDir(); got != expected {
-		t.Errorf("LLPkgCacheDir() = %q; want %q", got, expected)
 	}
 }
 
