@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/goplus/llgo/compiler/internal/env"
-	"github.com/goplus/llpkgstore/metadata"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 )
@@ -18,29 +17,17 @@ const (
 // NewPathVersionPair will automatically identify if the name is a clib or a module
 // path, and convert clib@cversion to modulePath@mappedVersion if possible.
 //
-// Returns a module.Version and any error encountered.
+// Returns a valid module.Version and any error encountered.
 func NewModuleVersionPair(name, version string) (module.Version, error) {
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
-		metadataMgr, err := metadata.NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
+		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
 		if err != nil {
 			return module.Version{}, err
 		}
-
-		if version == "latest" || version == "" {
-			version, err = metadataMgr.LatestGoVer(name)
-			if err != nil {
-				return module.Version{}, err
-			}
-		} else {
-			version, err = metadataMgr.LatestGoVerFromCVer(name, version)
-			if err != nil {
-				return module.Version{}, err
-			}
-		}
-
-		if !semver.IsValid(version) {
-			return module.Version{}, fmt.Errorf("invalid mapped version: %s", version)
+		version, err = metadataMgr.LatestGoVerFromCVer(name, version)
+		if err != nil {
+			return module.Version{}, err
 		}
 
 		// 2. Prepend path prefix, and suffix with major version
@@ -48,6 +35,12 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 		if err != nil {
 			return module.Version{}, err
 		}
+	}
+
+	// Check
+	err := module.Check(name, version)
+	if err != nil {
+		return module.Version{}, err
 	}
 
 	return module.Version{Path: name, Version: version}, nil
