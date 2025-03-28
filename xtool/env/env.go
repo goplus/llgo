@@ -61,7 +61,6 @@ func expandEnvWithCmd(s string) (string, bool) {
 
 		var out []byte
 		var err error
-
 		out, err = exec.Command(cmd, args[1:]...).Output()
 
 		if err != nil {
