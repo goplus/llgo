@@ -3,7 +3,6 @@ module github.com/goplus/llgo/compiler
 go 1.22.0
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/goplus/gogen v1.16.9
 	github.com/goplus/llgo v0.9.9
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
