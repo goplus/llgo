@@ -36,6 +36,7 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
+	clibsBuild "github.com/cpunion/clibs/build"
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/internal/env"
 	"github.com/goplus/llgo/compiler/internal/mockable"
@@ -190,6 +191,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
+
+	//
+	clibs, err := clibsBuild.ListLibs(patterns...)
+	check(err)
+	for _, lib := range clibs {
+		fmt.Println(lib.ModName)
+	}
+	clibsBuild.Build(clibsBuild.BuildConfig{}, clibs)
 
 	noRt := 1
 	prog.SetRuntime(func() *types.Package {

@@ -13,8 +13,10 @@ require (
 )
 
 require (
+	github.com/cpunion/clibs/build v0.0.0-20250328022709-48234c458d49 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/goplus/llgo => ../
