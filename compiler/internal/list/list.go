@@ -70,7 +70,7 @@ func resolveModulePath(input string) (string, error) {
 	}
 
 	if !exists {
-		return "", fmt.Errorf("未找到模块: %s", input)
+		return "", fmt.Errorf("failed to find module: %s", input)
 	}
 
 	// Get the latest version
