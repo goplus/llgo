@@ -21,7 +21,6 @@ import (
 	"debug/macho"
 	"fmt"
 	"go/ast"
-	"go/build"
 	"go/constant"
 	"go/token"
 	"go/types"
@@ -67,6 +66,8 @@ const (
 )
 
 type Config struct {
+	Goos      string
+	Goarch    string
 	BinPath   string
 	AppExt    string   // ".exe" on Windows, empty on Unix
 	OutFile   string   // only valid for ModeBuild when len(pkgs) == 1
@@ -87,10 +88,19 @@ func NewDefaultConf(mode Mode) *Config {
 	if err := os.MkdirAll(bin, 0755); err != nil {
 		panic(fmt.Errorf("cannot create bin directory: %v", err))
 	}
+	goos, goarch := os.Getenv("GOOS"), os.Getenv("GOARCH")
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
 	conf := &Config{
+		Goos:    goos,
+		Goarch:  goarch,
 		BinPath: bin,
 		Mode:    mode,
-		AppExt:  DefaultAppExt(),
+		AppExt:  DefaultAppExt(goos),
 	}
 	return conf
 }
@@ -106,9 +116,12 @@ func envGOPATH() (string, error) {
 	return filepath.Join(home, "go"), nil
 }
 
-func DefaultAppExt() string {
-	if runtime.GOOS == "windows" {
+func DefaultAppExt(goos string) string {
+	switch goos {
+	case "windows":
 		return ".exe"
+	case "wasi", "wasip1", "js":
+		return ".wasm"
 	}
 	return ""
 }
@@ -198,8 +211,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
-		GOOS:   build.Default.GOOS,
-		GOARCH: build.Default.GOARCH,
+		GOOS:   conf.Goos,
+		GOARCH: conf.Goarch,
 	}
 
 	prog := llssa.NewProgram(target)

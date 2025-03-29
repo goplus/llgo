@@ -1,28 +1,34 @@
-typedef union {
+typedef union
+{
     double d;
-    float  f;
-    long   v;
+    float f;
+    long v;
+    long long ll;
 } castUnion;
 
-double llgoToFloat64(long v) {
+double llgoToFloat64(long long v)
+{
     castUnion k;
-    k.v = v;
+    k.ll = v;
     return k.d;
 }
 
-float llgoToFloat32(long v) {
+float llgoToFloat32(int v)
+{
     castUnion k;
     k.v = v;
     return k.f;
 }
 
-long llgoFromFloat64(double v) {
+long long llgoFromFloat64(double v)
+{
     castUnion k;
     k.d = v;
-    return k.v;
+    return k.ll;
 }
 
-long llgoFromFloat32(float v) {
+int llgoFromFloat32(float v)
+{
     castUnion k;
     k.f = v;
     return k.v;
