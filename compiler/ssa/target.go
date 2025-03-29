@@ -17,6 +17,8 @@
 package ssa
 
 import (
+	"runtime"
+
 	"github.com/goplus/llvm"
 )
 
@@ -68,12 +70,6 @@ type targetSpec struct {
 	features string
 }
 
-// TODO config
-func (p *Target) toSpec() (spec targetSpec) {
-	return
-}
-
-/*
 func (p *Target) toSpec() (spec targetSpec) {
 	// Configure based on GOOS/GOARCH environment variables (falling back to
 	// runtime.GOOS/runtime.GOARCH), and generate a LLVM target based on it.
@@ -163,6 +159,5 @@ func (p *Target) toSpec() (spec targetSpec) {
 	}
 	return
 }
-*/
 
 // -----------------------------------------------------------------------------
