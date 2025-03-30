@@ -122,9 +122,59 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
+func mergeFlags(flags, extraFlags []string) []string {
+	// Combine all flags
+	allFlags := append([]string{}, flags...)
+	allFlags = append(allFlags, extraFlags...)
+
+	// Find all -tags flags and extract their values
+	tagValues := []string{}
+	newFlags := []string{}
+
+	for i := 0; i < len(allFlags); i++ {
+		flag := allFlags[i]
+		// Handle -tags=value format
+		if strings.HasPrefix(flag, "-tags=") {
+			value := strings.TrimPrefix(flag, "-tags=")
+			if value != "" {
+				tagValues = append(tagValues, strings.Split(value, ",")...)
+			}
+			continue
+		}
+		// Handle -tags value format
+		if flag == "-tags" && i+1 < len(allFlags) {
+			i++
+			value := allFlags[i]
+			if value != "" {
+				tagValues = append(tagValues, strings.Split(value, ",")...)
+			}
+			continue
+		}
+		// Keep other flags
+		newFlags = append(newFlags, flag)
+	}
+	// Add combined -tags flag if we found any tag values
+	if len(tagValues) > 0 {
+		// Remove duplicates
+		uniqueTags := make([]string, 0, len(tagValues))
+		seen := make(map[string]bool)
+		for _, tag := range tagValues {
+			tag = strings.TrimSpace(tag)
+			if tag != "" && !seen[tag] {
+				seen[tag] = true
+				uniqueTags = append(uniqueTags, tag)
+			}
+		}
+		if len(uniqueTags) > 0 {
+			newFlags = append(newFlags, "-tags", strings.Join(uniqueTags, ","))
+		}
+	}
+	return newFlags
+}
+
 func Do(args []string, conf *Config) ([]Package, error) {
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
-	flags = append(flags, "-tags", "llgo")
+	flags = mergeFlags(flags, []string{"-tags", "llgo"})
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
