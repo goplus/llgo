@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -27,8 +28,9 @@ import (
 
 // Cmd represents a clang command.
 type Cmd struct {
-	app string
-
+	app    string
+	Env    []string
+	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
 }
@@ -38,33 +40,52 @@ func New(app string) *Cmd {
 	if app == "" {
 		app = "clang"
 	}
-	return &Cmd{app, os.Stdout, os.Stderr}
+	return &Cmd{app, nil, nil, os.Stdout, os.Stderr}
 }
 
 func (p *Cmd) Compile(args ...string) error {
-	// Parse CFLAGS environment variable into separate arguments
-	cflags := strings.Fields(os.Getenv("CFLAGS"))
-	if len(cflags) > 0 {
-		// Create a new slice with capacity for all arguments
-		newArgs := make([]string, 0, len(cflags)+len(args))
-		newArgs = append(newArgs, cflags...)
-		newArgs = append(newArgs, args...)
-		args = newArgs
-	}
-	return p.Exec(args...)
+	return p.execWithFlags([]string{"CFLAGS", "CCFLAGS"}, args...)
 }
 
 func (p *Cmd) Link(args ...string) error {
-	// Parse LDFLAGS environment variable into separate arguments
-	ldflags := strings.Fields(os.Getenv("LDFLAGS"))
-	if len(ldflags) > 0 {
-		// Create a new slice with capacity for all arguments
-		newArgs := make([]string, 0, len(ldflags)+len(args))
-		newArgs = append(newArgs, ldflags...)
-		newArgs = append(newArgs, args...)
-		args = newArgs
+	return p.execWithFlags([]string{"LDFLAGS", "CCFLAGS"}, args...)
+}
+
+// execWithFlags executes a clang command with flags from environment variables.
+func (p *Cmd) execWithFlags(flags []string, args ...string) error {
+	var allFlags []string
+	if p.Env != nil {
+		for _, env := range p.Env {
+			parts := strings.SplitN(env, "=", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			key, value := parts[0], parts[1]
+			for _, flagName := range flags {
+				if key == flagName {
+					allFlags = append(allFlags, strings.Fields(value)...)
+					break
+				}
+			}
+		}
+	} else {
+		for _, flagName := range flags {
+			envValue := os.Getenv(flagName)
+			if envValue != "" {
+				allFlags = append(allFlags, strings.Fields(envValue)...)
+			}
+		}
 	}
-	return p.Exec(args...)
+	cmdArgs := make([]string, 0, len(allFlags)+len(args))
+	cmdArgs = append(cmdArgs, allFlags...)
+	cmdArgs = append(cmdArgs, args...)
+	cmd := exec.Command(p.app, cmdArgs...)
+	cmd.Stdout = p.Stdout
+	cmd.Stderr = p.Stderr
+	if p.Env != nil {
+		cmd.Env = p.Env
+	}
+	return cmd.Run()
 }
 
 // Exec executes a clang command.
@@ -72,7 +93,22 @@ func (p *Cmd) Exec(args ...string) error {
 	cmd := exec.Command(p.app, args...)
 	cmd.Stdout = p.Stdout
 	cmd.Stderr = p.Stderr
+	if p.Env != nil {
+		cmd.Env = p.Env
+	}
 	return cmd.Run()
+}
+
+func (p *Cmd) CheckLinkArgs(cmdArgs []string) error {
+	nul := "/dev/null"
+	if runtime.GOOS == "windows" {
+		nul = "NUL"
+	}
+	args := append([]string{"-x", "c", "-o", nul, "-"}, cmdArgs...)
+	src := "int main() {return 0;}"
+	srcIn := strings.NewReader(src)
+	p.Stdin = srcIn
+	return p.execWithFlags([]string{"LDFLAGS", "CCFLAGS"}, args...)
 }
 
 // -----------------------------------------------------------------------------

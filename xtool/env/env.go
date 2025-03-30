@@ -31,8 +31,19 @@ var (
 	reFlag   = regexp.MustCompile(`[^ \t\n]+`)
 )
 
+func ExpandToArgs(env []string, s string) []string {
+	r, config := expandEnvWithCmd(env, s)
+	if r == "" {
+		return nil
+	}
+	if config {
+		return safesplit.SplitPkgConfigFlags(r)
+	}
+	return []string{r}
+}
+
 func ExpandEnvToArgs(s string) []string {
-	r, config := expandEnvWithCmd(s)
+	r, config := expandEnvWithCmd(nil, s)
 	if r == "" {
 		return nil
 	}
@@ -43,11 +54,11 @@ func ExpandEnvToArgs(s string) []string {
 }
 
 func ExpandEnv(s string) string {
-	r, _ := expandEnvWithCmd(s)
+	r, _ := expandEnvWithCmd(nil, s)
 	return r
 }
 
-func expandEnvWithCmd(s string) (string, bool) {
+func expandEnvWithCmd(env []string, s string) (string, bool) {
 	var config bool
 	expanded := reSubcmd.ReplaceAllStringFunc(s, func(m string) string {
 		subcmd := strings.TrimSpace(m[2 : len(m)-1])
@@ -61,7 +72,9 @@ func expandEnvWithCmd(s string) (string, bool) {
 
 		var out []byte
 		var err error
-		out, err = exec.Command(cmd, args[1:]...).Output()
+		execCmd := exec.Command(cmd, args[1:]...)
+		execCmd.Env = env
+		out, err = execCmd.Output()
 
 		if err != nil {
 			// TODO(kindy): log in verbose mode
@@ -70,6 +83,23 @@ func expandEnvWithCmd(s string) (string, bool) {
 
 		return strings.Replace(strings.TrimSpace(string(out)), "\n", " ", -1)
 	})
+
+	// Use custom environment variables if provided
+	if env != nil {
+		// Create a lookup function for environment variables
+		expandFunc := func(key string) string {
+			for _, e := range env {
+				parts := strings.SplitN(e, "=", 2)
+				if len(parts) == 2 && parts[0] == key {
+					return parts[1]
+				}
+			}
+			// Fall back to system environment if not found in custom env
+			return os.Getenv(key)
+		}
+		return strings.TrimSpace(os.Expand(expanded, expandFunc)), config
+	}
+	// Use system environment variables
 	return strings.TrimSpace(os.Expand(expanded, os.Getenv)), config
 }
 

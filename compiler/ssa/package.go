@@ -395,6 +395,9 @@ func (p Program) tyComplex128() llvm.Type {
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
+	// if p.target.GOARCH != runtime.GOARCH && p.target.GOOS != runtime.GOOS {
+	// 	mod.SetTarget(p.target.toSpec().triple)
+	// }
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// mod.Finalize()
 	gbls := make(map[string]Global)
