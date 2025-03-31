@@ -132,7 +132,3 @@ func LLGOCACHE() string {
 	}
 	return filepath.Join(userCacheDir, "llgo")
 }
-
-func LLPkgCache() string {
-	return filepath.Join(LLGOCACHE(), "llpkg")
-}
