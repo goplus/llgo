@@ -2,27 +2,33 @@ package get
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/goplus/llgo/compiler/internal/mod"
 	"golang.org/x/mod/module"
 )
 
-func Do(name, version string) error {
+func Do(name, version string, flags []string) error {
 	// NewModuleVersionPair will automatically convert clib@cversion to modulePath@mappedVersion
 	module, err := mod.NewModuleVersionPair(name, version)
 	if err != nil {
 		return err
 	}
 
-	return fetchModule(module)
+	return fetchModule(module, flags)
 }
 
-func fetchModule(mod module.Version) error {
-	cmd := exec.Command("go", "get", mod.String())
-	out, err := cmd.CombinedOutput()
+func fetchModule(mod module.Version, flags []string) error {
+	args := []string{"get"}
+	args = append(args, flags...)
+	args = append(args, mod.String())
+
+	cmd := exec.Command("go", args...)
+	cmd.Stderr = os.Stderr
+	_, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("failed to get module: %s %s", out, err)
+		return fmt.Errorf("failed to get module: %s", err)
 	}
 	return nil
 }
