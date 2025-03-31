@@ -5,9 +5,9 @@ name: LLGo
 
 on:
   push:
-    branches: [ "**" ]
+    branches: ["**"]
   pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
   download-model:
@@ -34,7 +34,7 @@ jobs:
           - macos-latest
           - ubuntu-24.04
         llvm: [18]
-        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6', '1.24.0']
+        go: ["1.20.14", "1.21.13", "1.22.12", "1.23.6", "1.24.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0'
+          go-version: "1.24.0"
 
       - name: Install
         working-directory: compiler
@@ -122,7 +122,7 @@ jobs:
           - macos-latest
           - ubuntu-24.04
         llvm: [18]
-        go: ['1.24.0']
+        go: ["1.24.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -141,7 +141,7 @@ jobs:
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0'
+          go-version: "1.24.0"
 
       - name: Install
         working-directory: compiler
@@ -175,7 +175,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-latest]
         llvm: [18]
-        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6', '1.24.0']
+        go: ["1.20.14", "1.21.13", "1.22.12", "1.23.6", "1.24.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -187,7 +187,7 @@ jobs:
       - name: Set up Go 1.23 for building llgo
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0'
+          go-version: "1.24.0"
 
       - name: Install llgo
         working-directory: compiler
@@ -205,32 +205,91 @@ jobs:
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.20'
+          mod-version: "1.20"
 
       - name: Test Hello World with go.mod 1.21
         if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.21'
+          mod-version: "1.21"
 
       - name: Test Hello World with go.mod 1.22
         if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.22'
+          mod-version: "1.22"
 
       - name: Test Hello World with go.mod 1.23
         if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.23'
+          mod-version: "1.23"
 
       - name: Test Hello World with go.mod 1.24
         if: startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.24'
+          mod-version: "1.24"
+
+  cross-compile:
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: 18
+
+      - name: Set up Go for building llgo
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.0"
+
+      - name: Install llgo
+        working-directory: compiler
+        run: |
+          go install ./...
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Install QEMU for 386 emulation
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user
+
+      - name: Test Cross Compilation (amd64 to 386)
+        shell: bash
+        run: |
+          echo "Testing cross-compilation from amd64 to 386 with Go 1.24.0"
+          mkdir -p _test/cross-compile && cd _test/cross-compile
+          cat > go.mod << 'EOL'
+          module hello
+          go 1.24
+          EOL
+          cat > main.go << 'EOL'
+          package main
+          import (
+            "fmt"
+            "github.com/goplus/llgo/c"
+            "runtime"
+          )
+          func main() {
+              fmt.Println("Hello from LLGo cross-compilation!")
+              fmt.Printf("GOARCH: %s\n", runtime.GOARCH)
+              c.Printf(c.Str("Hello from C printf on %s architecture!\n"), c.Str(runtime.GOARCH))
+          }
+          EOL
+          go mod tidy
+
+          # Compile for 386 architecture
+          GOARCH=386 llgo build -o hello_386 .
+
+          # Check file type
+          file hello_386
+
+          # Run the 386 binary using qemu
+          qemu-i386 ./hello_386
