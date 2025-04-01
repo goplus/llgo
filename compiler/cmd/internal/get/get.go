@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
-	"github.com/goplus/llgo/compiler/internal/get"
 	"github.com/goplus/llgo/compiler/internal/mockable"
+	"github.com/goplus/llgo/compiler/internal/modget"
 )
 
 // llgo get
@@ -69,7 +69,7 @@ func runCmd(cmd *base.Command, args []string) {
 		}
 
 		// Get the module
-		err := get.Do(name, version, flags)
+		err := modget.Do(name, version, flags)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
