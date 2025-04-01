@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	remoteMetadataURL      = "https://llpkg.goplus.org/llpkgstore.json" // change only for testing
+	remoteMetadataURL      = "https://goplus.github.io/llpkg/llpkgstore.json" // change only for testing
 	cachedMetadataFileName = "llpkgstore.json"
 	ErrMetadataNotInCache  = errors.New("metadata not in cache")
 )
