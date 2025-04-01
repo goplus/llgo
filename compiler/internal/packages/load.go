@@ -705,7 +705,7 @@ func refineEx(dedup Deduper, ld *loader, response *packages.DriverResponse) ([]*
 // return an error. Clients may need to handle such errors before
 // proceeding with further analysis. The PrintErrors function is
 // provided for convenient display of all errors.
-func LoadEx(dedup Deduper, sizes func(types.Sizes) types.Sizes, cfg *Config, patterns ...string) ([]*Package, error) {
+func LoadEx(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) types.Sizes, cfg *Config, patterns ...string) ([]*Package, error) {
 	ld := newLoader(cfg)
 	response, external, err := defaultDriver(&ld.Config, patterns...)
 	if err != nil {
@@ -732,7 +732,7 @@ func LoadEx(dedup Deduper, sizes func(types.Sizes) types.Sizes, cfg *Config, pat
 	}
 
 	if sizes != nil {
-		ld.sizes = sizes(ld.sizes)
+		ld.sizes = sizes(ld.sizes, response.Compiler, response.Arch)
 	}
 	return refineEx(dedup, ld, response)
 }

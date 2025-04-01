@@ -153,7 +153,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	prog := llssa.NewProgram(target)
-	sizes := prog.TypeSizes
+	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
+		if arch == "wasm" && os.Getenv("LLGO_WASM32") == "1" {
+			sizes = &types.StdSizes{4, 4}
+		}
+		return prog.TypeSizes(sizes)
+	}
 	dedup := packages.NewDeduper()
 	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
 		if llruntime.SkipToBuild(pkg.Path()) {
