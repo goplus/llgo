@@ -316,16 +316,18 @@ func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbos
 	if err != nil {
 		return err
 	}
-	if err = os.MkdirAll(dir, 0777); err != nil {
-		return err
-	}
 
-	if verbose {
-		fmt.Printf("installing %s to %s", ver.String(), dir)
-
-	}
-	if _, err = ctx.installer.Install(llpkg, dir); err != nil {
-		return err
+	_, err = os.Stat(dir)
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0777); err != nil {
+			return err
+		}
+		if verbose {
+			fmt.Printf("installing %s to %s", ver.String(), dir)
+		}
+		if _, err = ctx.installer.Install(llpkg, dir); err != nil {
+			return err
+		}
 	}
 
 	pkgConfigPath := filepath.Join(dir, "lib", "pkgconfig")
