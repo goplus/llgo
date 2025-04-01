@@ -31,7 +31,7 @@ const (
 
 // -----------------------------------------------------------------------------
 
-type TimeT C.time_t
+type TimeT C.time_t //cname:time_t
 
 //go:linkname Time C.time
 func Time(timer *TimeT) TimeT
@@ -59,7 +59,7 @@ type Tm struct {
 	Isdst  c.Int
 	Gmtoff c.Long
 	Zone   *c.Char
-}
+} //cname:tm
 
 //go:linkname Gmtime C.gmtime
 func Gmtime(timer *TimeT) *Tm
@@ -72,14 +72,14 @@ func Strftime(buf *c.Char, bufSize uintptr, format *c.Char, timeptr *Tm) uintptr
 
 // -----------------------------------------------------------------------------
 
-type ClockT C.clock_t
+type ClockT C.clock_t //cname:clock_t
 
 //go:linkname Clock C.clock
 func Clock() ClockT
 
 // -----------------------------------------------------------------------------
 
-type ClockidT C.clockid_t
+type ClockidT C.clockid_t //cname:clockid_t
 
 const (
 	// the system's real time (i.e. wall time) clock, expressed as the amount of time since the Epoch.
@@ -118,7 +118,7 @@ const (
 type Timespec struct {
 	Sec  TimeT  // seconds
 	Nsec c.Long // and nanoseconds
-}
+} //cname:timespec
 
 //go:linkname ClockGettime C.clock_gettime
 func ClockGettime(clkId ClockidT, tp *Timespec) c.Int

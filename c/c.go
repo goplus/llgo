@@ -55,25 +55,25 @@ type integer interface {
 	~int | ~uint | ~uintptr | ~int32 | ~uint32 | ~int64 | ~uint64
 }
 
-type SizeT = uintptr
-type SsizeT = Long
+type SizeT = uintptr //cname:size_t
+type SsizeT = Long   //cname:ssize_t
 
-type IntptrT = uintptr
-type UintptrT = uintptr
-type Int8T = int8
-type Int16T = int16
-type Int32T = int32
-type Int64T = int64
+type IntptrT = uintptr  //cname:intptr_t
+type UintptrT = uintptr //cname:uintptr_t
+type Int8T = int8       //cname:int8_t
+type Int16T = int16     //cname:int16_t
+type Int32T = int32     //cname:int32_t
+type Int64T = int64     //cname:int64_t
 
-type Uint8T = uint8
-type Uint16T = uint16
-type Uint32T = uint32
-type Uint64T = uint64
+type Uint8T = uint8   //cname:uint8_t
+type Uint16T = uint16 //cname:uint16_t
+type Uint32T = uint32 //cname:uint32_t
+type Uint64T = uint64 //cname:uint64_t
 
-type IntmaxT = LongLong
-type UintmaxT = UlongLong
+type IntmaxT = LongLong   //cname:intmax_t
+type UintmaxT = UlongLong //cname:uintmax_t
 
-type VaList = Pointer
+type VaList = Pointer //cname:va_list
 
 //go:linkname Str llgo.cstr
 func Str(string) *Char
@@ -260,11 +260,11 @@ func Perror(s *Char)
 
 // -----------------------------------------------------------------------------
 
-type IconvT = Pointer
+type IconvT = Pointer //cname:iconv_t
 
 // -----------------------------------------------------------------------------
 
-type LocaleT = Pointer
+type LocaleT = Pointer //cname:locale_t
 
 // -----------------------------------------------------------------------------
 
@@ -272,13 +272,12 @@ type LocaleT = Pointer
 func Usleep(useconds Uint) Int
 
 // -----------------------------------------------------------------------------
-
 type Option struct {
 	Name   *Char
 	HasArg Int
 	Flag   *Int
 	Val    Int
-}
+} //cname:option
 
 //go:linkname Argc __llgo_argc
 var Argc Int

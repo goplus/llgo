@@ -15,8 +15,8 @@ const (
 // -----------------------------------------------------------------------------
 
 type (
-	FdSet   = syscall.FdSet
-	Timeval = syscall.Timeval
+	FdSet   = syscall.FdSet   //cname:FdSet
+	Timeval = syscall.Timeval //cname:Timeval
 )
 
 //go:linkname FD_ZERO C.llgo_FD_ZERO
