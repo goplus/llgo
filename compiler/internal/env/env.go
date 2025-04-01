@@ -118,3 +118,17 @@ func getRuntimePkgDirByCaller() (string, error) {
 	}
 	return modPath, nil
 }
+
+func LLGOCACHE() string {
+	// Check if LLGOCACHE is set
+	if llgoCache := os.Getenv("LLGOCACHE"); llgoCache != "" {
+		return llgoCache
+	}
+
+	// If not set, LLGOCACHE defaults to {UserCacheDir}/llgo/
+	userCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		panic("Can not get user cache dir: " + err.Error())
+	}
+	return filepath.Join(userCacheDir, "llgo")
+}
