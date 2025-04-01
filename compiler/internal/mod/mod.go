@@ -2,11 +2,36 @@ package mod
 
 import (
 	"fmt"
+	"path/filepath"
+	"sync"
 
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/installer"
+	"github.com/goplus/llgo/compiler/internal/installer/config"
+	"github.com/goplus/mod/modcache"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 )
+
+var (
+	globalMetadataMgrMu sync.Mutex
+	globalMetadataMgr   *metadataMgr
+)
+
+func metadata() *metadataMgr {
+	globalMetadataMgrMu.Lock()
+	defer globalMetadataMgrMu.Unlock()
+
+	if globalMetadataMgr != nil {
+		return globalMetadataMgr
+	}
+	var err error
+	globalMetadataMgr, err = NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
+	if err != nil {
+		fmt.Println(err)
+	}
+	return globalMetadataMgr
+}
 
 const (
 	LLPkgConfigFileName = "llpkg.cfg"
@@ -27,11 +52,8 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
-		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
-		if err != nil {
-			return module.Version{}, err
-		}
-		version, err = metadataMgr.LatestGoVerFromCVer(name, version)
+		metadataMgr := metadata()
+		version, err := metadataMgr.LatestGoVerFromCVer(name, version)
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -44,6 +66,44 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 	}
 
 	return module.Version{Path: name, Version: version}, nil
+}
+
+func LLPkgCfgFilePath(mod module.Version) (string, error) {
+	cachePath, err := modcache.Path(mod)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(cachePath, LLPkgConfigFileName), nil
+}
+
+func LLPkgCacheDirByModule(mod module.Version) (string, error) {
+	encPath, err := module.EscapePath(mod.Path)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(LLPkgCacheDir(), encPath+"@"+mod.Version), nil
+}
+
+func LLPkgCacheDir() string {
+	return filepath.Join(env.LLGOCACHE(), "llpkg")
+}
+
+func ParseLLPkg(mod module.Version) (installer.Package, error) {
+	cfgPath, err := LLPkgCfgFilePath(mod)
+	if err != nil {
+		return installer.Package{}, err
+	}
+
+	cfg, err := config.ParseLLPkgConfig(cfgPath)
+	if err != nil {
+		return installer.Package{}, err
+	}
+	return installer.Package{
+		Name:    cfg.Upstream.Package.Name,
+		Version: mod.Version,
+	}, nil
 }
 
 // Returns true if the path is a valid module path, false otherwise

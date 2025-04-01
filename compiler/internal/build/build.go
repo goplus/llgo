@@ -34,12 +34,17 @@ import (
 	"strings"
 	"unsafe"
 
+	"golang.org/x/mod/module"
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/installer"
+	"github.com/goplus/llgo/compiler/internal/installer/githubreleases"
 	"github.com/goplus/llgo/compiler/internal/mockable"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"github.com/goplus/llgo/compiler/internal/packages"
+	"github.com/goplus/llgo/compiler/internal/pc"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"github.com/goplus/llgo/compiler/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
@@ -62,6 +67,9 @@ const (
 )
 
 const (
+	defaultLLPkgOwner = "goplus"
+	defaultLLPkgRepo  = "llpkg"
+
 	debugBuild = packages.DebugPackagesLoad
 )
 
@@ -110,6 +118,15 @@ func DefaultAppExt() string {
 		return ".exe"
 	}
 	return ""
+}
+
+func defaultInstaller() installer.Installer {
+	return githubreleases.NewGHReleasesInstaller(map[string]string{
+		"owner":    defaultLLPkgOwner,
+		"repo":     defaultLLPkgRepo,
+		"platform": runtime.GOOS,
+		"arch":     runtime.GOARCH,
+	})
 }
 
 // -----------------------------------------------------------------------------
@@ -215,8 +232,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
+	installer := defaultInstaller()
+
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), installer}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -281,6 +300,61 @@ type context struct {
 
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
+
+	installer installer.Installer
+}
+
+func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbose bool) error {
+	cmd := exec.Command("llgo", "get", ver.String())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	dir, err := mod.LLPkgCacheDirByModule(ver)
+	if err != nil {
+		return err
+	}
+	if err = os.MkdirAll(dir, 0777); err != nil {
+		return err
+	}
+
+	if verbose {
+		fmt.Printf("installing %s to %s", ver.String(), dir)
+
+	}
+	if _, err = ctx.installer.Install(llpkg, dir); err != nil {
+		return err
+	}
+
+	pkgConfigPath := filepath.Join(dir, "lib", "pkgconfig")
+
+	// too many command, hard to use temporary environment
+	os.Setenv("PKG_CONFIG_PATH", pc.AppendPCPath(pkgConfigPath))
+
+	return nil
+}
+
+func buildLLPkg(ctx *context, pkg *packages.Package, verbose bool) (err error) {
+	// a standard lib, skip
+	if pkg.Module == nil {
+		return
+	}
+	ver := module.Version{
+		Path:    pkg.Module.Path,
+		Version: pkg.Module.Version,
+	}
+	llpkg, err := mod.ParseLLPkg(ver)
+	if err != nil {
+		// this is just not a llpkg, not an error
+		err = nil
+		return
+	}
+
+	err = getModule(ctx, ver, llpkg, verbose)
+
+	return
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -302,6 +376,10 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			continue
 		}
 		built[pkg.ID] = none{}
+
+		err := buildLLPkg(ctx, pkg, verbose)
+		check(err)
+
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
