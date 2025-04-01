@@ -128,7 +128,7 @@ func LLGOCACHE() string {
 	// If not set, LLGOCACHE defaults to {UserCacheDir}/llgo/
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
-		panic("Can not get user cache dir: " + err.Error())
+		panic(fmt.Errorf("can not get user cache dir: %w", err))
 	}
 	return filepath.Join(userCacheDir, "llgo")
 }
