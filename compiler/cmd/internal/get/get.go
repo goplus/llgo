@@ -62,7 +62,7 @@ func runCmd(cmd *base.Command, args []string) {
 
 	for _, m := range modules {
 		// Extract the name/path and version from the first argument
-		name, version := parse(m)
+		name, version, _ := strings.Cut(m, "@")
 		if name == "" {
 			fmt.Fprintln(os.Stderr, "invalid module path:", m)
 			continue
@@ -74,16 +74,4 @@ func runCmd(cmd *base.Command, args []string) {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
-}
-
-func parse(s string) (path, version string) {
-	index := strings.Index(s, "@")
-	if index >= 0 {
-		path = s[:index]
-		version = s[(index + 1):]
-	} else {
-		path = s
-	}
-
-	return path, version
 }
