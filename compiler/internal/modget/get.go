@@ -25,8 +25,9 @@ func fetchModule(mod module.Version, flags []string) error {
 	args = append(args, mod.String())
 
 	cmd := exec.Command("go", args...)
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	_, err := cmd.Output()
+	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to get module: %s", err)
 	}
