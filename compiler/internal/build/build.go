@@ -154,7 +154,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	prog := llssa.NewProgram(target)
 	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
-		if arch == "wasm" && os.Getenv("LLGO_WASM32") == "1" {
+		if arch == "wasm" {
 			sizes = &types.StdSizes{4, 4}
 		}
 		return prog.TypeSizes(sizes)
