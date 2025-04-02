@@ -757,7 +757,9 @@ func fetchLLPkg(ctx *context, ver module.Version, verbose bool) string {
 	dir, err := mod.LLPkgCacheDirByModule(ver)
 	check(err)
 
-	_, err = os.Stat(dir)
+	pkgConfigDir := filepath.Join(dir, "lib", "pkgconfig")
+
+	_, err = os.Stat(pkgConfigDir)
 	if os.IsNotExist(err) {
 		if verbose {
 			fmt.Printf("installing %s to %s\n", ver.String(), dir)
@@ -768,7 +770,7 @@ func fetchLLPkg(ctx *context, ver module.Version, verbose bool) string {
 		check(err)
 	}
 
-	return filepath.Join(dir, "lib", "pkgconfig")
+	return pkgConfigDir
 }
 
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
@@ -785,7 +787,9 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 					Path:    p.Module.Path,
 					Version: p.Module.Version,
 				}
-				ctx.llpkgMod[ver] = fetchLLPkg(ctx, ver, verbose)
+				if _, ok := ctx.llpkgMod[ver]; !ok {
+					ctx.llpkgMod[ver] = fetchLLPkg(ctx, ver, verbose)
+				}
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
