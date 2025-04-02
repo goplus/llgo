@@ -13,7 +13,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/funcdecl"
 @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [2 x i8] c"$f", align 1
 @1 = private unnamed_addr constant [5 x i8] c"$data", align 1
-@2 = private unnamed_addr constant [51 x i8] c"github.com/goplus/llgo/cl/_testrt/funcdecl", align 1
+@2 = private unnamed_addr constant [42 x i8] c"github.com/goplus/llgo/cl/_testrt/funcdecl", align 1
 @3 = private unnamed_addr constant [68 x i8] c"type assertion any -> struct{$f func(); $data unsafe.Pointer} failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [4 x i8] c"demo", align 1
@@ -188,7 +188,7 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %26, 0
   %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %29, i64 2, 1
   %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30, i64 2, 2
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 51 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31)
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 42 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31)
   store ptr %32, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %33 = load ptr, ptr @_llgo_string, align 8
   %34 = icmp eq ptr %33, null

@@ -19,7 +19,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/reflect"
 @"github.com/goplus/llgo/cl/_testgo/reflect.struct$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk" = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [2 x i8] c"$f", align 1
 @2 = private unnamed_addr constant [5 x i8] c"$data", align 1
-@3 = private unnamed_addr constant [50 x i8] c"github.com/goplus/llgo/cl/_testgo/reflect", align 1
+@3 = private unnamed_addr constant [41 x i8] c"github.com/goplus/llgo/cl/_testgo/reflect", align 1
 @4 = private unnamed_addr constant [7 x i8] c"closure", align 1
 @5 = private unnamed_addr constant [5 x i8] c"error", align 1
 @_llgo_string = linkonce global ptr null, align 8
@@ -88,7 +88,7 @@ _llgo_0:
   %13 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %11)
   %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %13)
   %15 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13, 0
-  %16 = getelementptr ptr, ptr %15, i64 37
+  %16 = getelementptr ptr, ptr %15, i64 31
   %17 = load ptr, ptr %16, align 8
   %18 = insertvalue { ptr, ptr } undef, ptr %17, 0
   %19 = insertvalue { ptr, ptr } %18, ptr %14, 1
@@ -183,7 +183,7 @@ _llgo_0:
   %6 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %4)
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %6)
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 0
-  %9 = getelementptr ptr, ptr %8, i64 37
+  %9 = getelementptr ptr, ptr %8, i64 31
   %10 = load ptr, ptr %9, align 8
   %11 = insertvalue { ptr, ptr } undef, ptr %10, 0
   %12 = insertvalue { ptr, ptr } %11, ptr %7, 1
@@ -284,7 +284,7 @@ _llgo_0:
   %16 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %14)
   %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %16)
   %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %16, 0
-  %19 = getelementptr ptr, ptr %18, i64 37
+  %19 = getelementptr ptr, ptr %18, i64 31
   %20 = load ptr, ptr %19, align 8
   %21 = insertvalue { ptr, ptr } undef, ptr %20, 0
   %22 = insertvalue { ptr, ptr } %21, ptr %17, 1
@@ -391,7 +391,7 @@ _llgo_0:
   %8 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %6)
   %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %8)
   %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 0
-  %11 = getelementptr ptr, ptr %10, i64 37
+  %11 = getelementptr ptr, ptr %10, i64 31
   %12 = load ptr, ptr %11, align 8
   %13 = insertvalue { ptr, ptr } undef, ptr %12, 0
   %14 = insertvalue { ptr, ptr } %13, ptr %9, 1
@@ -821,7 +821,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %60 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %11)
   %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %60)
   %62 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %60, 0
-  %63 = getelementptr ptr, ptr %62, i64 20
+  %63 = getelementptr ptr, ptr %62, i64 18
   %64 = load ptr, ptr %63, align 8
   %65 = insertvalue { ptr, ptr } undef, ptr %64, 0
   %66 = insertvalue { ptr, ptr } %65, ptr %61, 1
@@ -833,7 +833,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %72 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %11)
   %73 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %72)
   %74 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %72, 0
-  %75 = getelementptr ptr, ptr %74, i64 11
+  %75 = getelementptr ptr, ptr %74, i64 9
   %76 = load ptr, ptr %75, align 8
   %77 = insertvalue { ptr, ptr } undef, ptr %76, 0
   %78 = insertvalue { ptr, ptr } %77, ptr %73, 1
@@ -1003,7 +1003,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %77 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %10)
   %78 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %77)
   %79 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %77, 0
-  %80 = getelementptr ptr, ptr %79, i64 20
+  %80 = getelementptr ptr, ptr %79, i64 18
   %81 = load ptr, ptr %80, align 8
   %82 = insertvalue { ptr, ptr } undef, ptr %81, 0
   %83 = insertvalue { ptr, ptr } %82, ptr %78, 1
@@ -1015,7 +1015,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %89 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.Value.Type(%reflect.Value %10)
   %90 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %89)
   %91 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %89, 0
-  %92 = getelementptr ptr, ptr %91, i64 11
+  %92 = getelementptr ptr, ptr %91, i64 9
   %93 = load ptr, ptr %92, align 8
   %94 = insertvalue { ptr, ptr } undef, ptr %93, 0
   %95 = insertvalue { ptr, ptr } %94, ptr %90, 1
@@ -1145,7 +1145,7 @@ _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %37, 0
   %41 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40, i64 2, 1
   %42 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %41, i64 2, 2
-  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %42)
+  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %42)
   store ptr %43, ptr @"github.com/goplus/llgo/cl/_testgo/reflect.struct$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk", align 8
   %44 = load ptr, ptr @_llgo_string, align 8
   %45 = icmp eq ptr %44, null
@@ -1157,7 +1157,7 @@ _llgo_7:                                          ; preds = %_llgo_6
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
-  %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 8, i64 0, i64 1)
+  %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 8, i64 0, i64 1)
   %48 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   %49 = icmp eq ptr %48, null
   br i1 %49, label %_llgo_9, label %_llgo_10
@@ -1175,7 +1175,7 @@ _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   %54 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %52, 0
   %55 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %54, i64 1, 1
   %56 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %55, i64 1, 2
-  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %56)
+  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %56)
   store ptr %57, ptr @"github.com/goplus/llgo/cl/_testgo/reflect.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U", align 8
   %58 = load ptr, ptr @"github.com/goplus/llgo/cl/_testgo/reflect.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U", align 8
   br i1 %49, label %_llgo_11, label %_llgo_12
@@ -1195,7 +1195,7 @@ _llgo_11:                                         ; preds = %_llgo_10
   br label %_llgo_12
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
-  %68 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 8, i64 0, i64 1)
+  %68 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 8, i64 0, i64 1)
   %69 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   %70 = icmp eq ptr %69, null
   br i1 %70, label %_llgo_13, label %_llgo_14
@@ -1220,7 +1220,7 @@ _llgo_15:                                         ; preds = %_llgo_14
   %78 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %76, 0
   %79 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %78, i64 1, 1
   %80 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %79, i64 1, 2
-  %81 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %80)
+  %81 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %80)
   store ptr %81, ptr @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", align 8
   br label %_llgo_16
 
@@ -1234,7 +1234,7 @@ _llgo_17:                                         ; preds = %_llgo_16
   %85 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %84, 0
   %86 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %85, i64 0, 1
   %87 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %86, i64 0, 2
-  %88 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %87)
+  %88 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %87)
   store ptr %88, ptr @_llgo_any, align 8
   br label %_llgo_18
 
@@ -1248,7 +1248,7 @@ _llgo_19:                                         ; preds = %_llgo_18
   %92 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %91, 0
   %93 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %92, i64 0, 1
   %94 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %93, i64 0, 2
-  %95 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %94)
+  %95 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %94)
   %96 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceOf"(ptr %95)
   store ptr %96, ptr @"[]_llgo_any", align 8
   br label %_llgo_20
@@ -1365,7 +1365,7 @@ _llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
   %171 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %168, 0
   %172 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %171, i64 2, 1
   %173 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %172, i64 2, 2
-  %174 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %173)
+  %174 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %173)
   store ptr %174, ptr @"github.com/goplus/llgo/cl/_testgo/reflect.struct$FjMjjQr3-2iTiWyZP1IIQFOz0hUCa0OS6pEm5uVV6Pk", align 8
   %175 = load ptr, ptr @"map[_llgo_int]_llgo_string", align 8
   %176 = icmp eq ptr %175, null
@@ -1397,7 +1397,7 @@ _llgo_23:                                         ; preds = %_llgo_22
   %195 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %190, 0
   %196 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %195, i64 4, 1
   %197 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %196, i64 4, 2
-  %198 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, i64 208, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %197)
+  %198 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 41 }, i64 208, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %197)
   %199 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapOf"(ptr %177, ptr %178, ptr %198, i64 4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %199)
   store ptr %199, ptr @"map[_llgo_int]_llgo_string", align 8

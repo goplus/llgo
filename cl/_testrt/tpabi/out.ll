@@ -13,7 +13,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpabi"
 @"github.com/goplus/llgo/cl/_testrt/tpabi.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [1 x i8] c"a", align 1
 @"_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]" = linkonce global ptr null, align 8
-@1 = private unnamed_addr constant [48 x i8] c"github.com/goplus/llgo/cl/_testrt/tpabi", align 1
+@1 = private unnamed_addr constant [39 x i8] c"github.com/goplus/llgo/cl/_testrt/tpabi", align 1
 @2 = private unnamed_addr constant [13 x i8] c"T[string,int]", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @_llgo_int = linkonce global ptr null, align 8
@@ -23,7 +23,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpabi"
 @5 = private unnamed_addr constant [4 x i8] c"Demo", align 1
 @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac" = linkonce global ptr null, align 8
 @6 = private unnamed_addr constant [4 x i8] c"Info", align 1
-@7 = private unnamed_addr constant [100 x i8] c"type assertion interface{} -> github.com/goplus/llgo/cl/_testrt/tpabi.T[string, int] failed", align 1
+@7 = private unnamed_addr constant [91 x i8] c"type assertion interface{} -> github.com/goplus/llgo/cl/_testrt/tpabi.T[string, int] failed", align 1
 @8 = private unnamed_addr constant [5 x i8] c"hello", align 1
 @"*_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]" = linkonce global ptr null, align 8
 @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs" = linkonce global ptr null, align 8
@@ -107,7 +107,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %38 = load ptr, ptr @_llgo_string, align 8
   %39 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 100 }, ptr %39, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 91 }, ptr %39, align 8
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %38, 0
   %41 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %40, ptr %39, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %41)
@@ -155,7 +155,7 @@ declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpabi.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 13 }, i64 25, i64 24, i64 1, i64 2)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 39 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 13 }, i64 25, i64 24, i64 1, i64 2)
   %1 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]", align 8
   %2 = icmp eq ptr %1, null
   br i1 %2, label %_llgo_1, label %_llgo_2
@@ -199,7 +199,7 @@ _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
   %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %15, 0
   %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18, i64 2, 1
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %19, i64 2, 2
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 48 }, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %20)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 39 }, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %20)
   store ptr %21, ptr @"github.com/goplus/llgo/cl/_testrt/tpabi.struct$A2OTYqQyUOqOQ-i_F5iXeAKWtxeWGEuyeN7HCfULCDk", align 8
   %22 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/tpabi.struct$A2OTYqQyUOqOQ-i_F5iXeAKWtxeWGEuyeN7HCfULCDk", align 8
   br i1 %2, label %_llgo_7, label %_llgo_8
@@ -210,7 +210,7 @@ _llgo_7:                                          ; preds = %_llgo_6
   br i1 %24, label %_llgo_9, label %_llgo_10
 
 _llgo_8:                                          ; preds = %_llgo_10, %_llgo_6
-  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 13 }, i64 25, i64 24, i64 1, i64 2)
+  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 39 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 13 }, i64 25, i64 24, i64 1, i64 2)
   %26 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]", align 8
   %27 = icmp eq ptr %26, null
   br i1 %27, label %_llgo_11, label %_llgo_12
@@ -278,7 +278,7 @@ _llgo_13:                                         ; preds = %_llgo_12
   %66 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %64, 0
   %67 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %66, i64 1, 1
   %68 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %67, i64 1, 2
-  %69 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %68)
+  %69 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 39 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %68)
   store ptr %69, ptr @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs", align 8
   br label %_llgo_14
 

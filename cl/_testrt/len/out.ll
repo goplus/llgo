@@ -14,7 +14,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/len"
 @1 = private unnamed_addr constant [4 x i8] c"keys", align 1
 @2 = private unnamed_addr constant [5 x i8] c"elems", align 1
 @3 = private unnamed_addr constant [8 x i8] c"overflow", align 1
-@4 = private unnamed_addr constant [46 x i8] c"github.com/goplus/llgo/cl/_testrt/len", align 1
+@4 = private unnamed_addr constant [37 x i8] c"github.com/goplus/llgo/cl/_testrt/len", align 1
 @5 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
 define void @"github.com/goplus/llgo/cl/_testrt/len.init"() {
@@ -192,7 +192,7 @@ _llgo_5:                                          ; preds = %_llgo_4
   %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %21, 0
   %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %26, i64 4, 1
   %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %27, i64 4, 2
-  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 46 }, i64 208, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %28)
+  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 37 }, i64 208, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %28)
   %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapOf"(ptr %8, ptr %9, ptr %29, i64 4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %30)
   store ptr %30, ptr @"map[_llgo_int]_llgo_string", align 8

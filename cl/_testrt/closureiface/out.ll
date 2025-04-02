@@ -13,7 +13,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/closureiface"
 @"github.com/goplus/llgo/cl/_testrt/closureiface.struct$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [2 x i8] c"$f", align 1
 @1 = private unnamed_addr constant [5 x i8] c"$data", align 1
-@2 = private unnamed_addr constant [55 x i8] c"github.com/goplus/llgo/cl/_testrt/closureiface", align 1
+@2 = private unnamed_addr constant [46 x i8] c"github.com/goplus/llgo/cl/_testrt/closureiface", align 1
 @3 = private unnamed_addr constant [5 x i8] c"error", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
@@ -173,7 +173,7 @@ _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %37, 0
   %41 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40, i64 2, 1
   %42 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %41, i64 2, 2
-  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 55 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %42)
+  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 46 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %42)
   store ptr %43, ptr @"github.com/goplus/llgo/cl/_testrt/closureiface.struct$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk", align 8
   %44 = load ptr, ptr @_llgo_string, align 8
   %45 = icmp eq ptr %44, null

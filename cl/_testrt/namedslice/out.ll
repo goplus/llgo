@@ -7,7 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/namedslice"
 
 @"github.com/goplus/llgo/cl/_testrt/namedslice.init$guard" = global i1 false, align 1
 @"_llgo_github.com/goplus/llgo/cl/_testrt/namedslice.MyBytes" = linkonce global ptr null, align 8
-@0 = private unnamed_addr constant [53 x i8] c"github.com/goplus/llgo/cl/_testrt/namedslice", align 1
+@0 = private unnamed_addr constant [44 x i8] c"github.com/goplus/llgo/cl/_testrt/namedslice", align 1
 @1 = private unnamed_addr constant [7 x i8] c"MyBytes", align 1
 @_llgo_uint8 = linkonce global ptr null, align 8
 @"[]_llgo_uint8" = linkonce global ptr null, align 8
@@ -77,7 +77,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define void @"github.com/goplus/llgo/cl/_testrt/namedslice.init$after"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 53 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 7 }, i64 23, i64 24, i64 0, i64 0)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 44 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 7 }, i64 23, i64 24, i64 0, i64 0)
   %1 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/namedslice.MyBytes", align 8
   %2 = icmp eq ptr %1, null
   br i1 %2, label %_llgo_1, label %_llgo_2
