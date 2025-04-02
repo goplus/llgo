@@ -235,7 +235,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	installer := defaultInstaller()
 
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), installer}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), installer, map[string]*module.Version{}}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -301,7 +301,8 @@ type context struct {
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
 
-	installer installer.Installer
+	installer     installer.Installer
+	moduleVersion map[string]*module.Version
 }
 
 func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbose bool) (string, error) {
@@ -326,24 +327,9 @@ func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbos
 	return filepath.Join(dir, "lib", "pkgconfig"), nil
 }
 
-func buildAllLLPkg(ctx *context, allPkgs []*aPackage, verbose bool) {
-	installed := map[string]*module.Version{}
+func buildAllLLPkg(ctx *context, verbose bool) {
 	var pcDir []string
-	for _, p := range allPkgs {
-		// a standard lib, skip
-		if p.Module == nil {
-			return
-		}
-		if _, ok := installed[p.PkgPath]; ok {
-			return
-		}
-		installed[p.PkgPath] = &module.Version{
-			Path:    p.Module.Path,
-			Version: p.Module.Version,
-		}
-	}
-
-	for _, ver := range installed {
+	for _, ver := range ctx.moduleVersion {
 		llpkg, err := mod.ParseLLPkg(*ver)
 		if err != nil {
 			continue
@@ -371,7 +357,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		return nil, fmt.Errorf("cannot build SSA for packages")
 	}
 
-	buildAllLLPkg(ctx, pkgs, verbose)
+	buildAllLLPkg(ctx, verbose)
 
 	built := ctx.built
 	for _, aPkg := range pkgs {
@@ -784,6 +770,12 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 			pkgPath := p.PkgPath
 			if _, ok := built[pkgPath]; ok || strings.HasPrefix(pkgPath, altPkgPathPrefix) {
 				return
+			}
+			if p.Module != nil {
+				ctx.moduleVersion[pkgPath] = &module.Version{
+					Path:    p.Module.Path,
+					Version: p.Module.Version,
+				}
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
