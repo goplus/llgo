@@ -235,7 +235,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	installer := defaultInstaller()
 
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), installer, map[string]*module.Version{}}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), make(map[string]*module.Version), installer}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -301,8 +301,8 @@ type context struct {
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
 
-	installer     installer.Installer
-	moduleVersion map[string]*module.Version
+	mod       map[string]*module.Version
+	installer installer.Installer
 }
 
 func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbose bool) (string, error) {
@@ -329,7 +329,7 @@ func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbos
 
 func buildAllLLPkg(ctx *context, verbose bool) {
 	var pcDir []string
-	for _, ver := range ctx.moduleVersion {
+	for _, ver := range ctx.mod {
 		llpkg, err := mod.ParseLLPkg(*ver)
 		if err != nil {
 			continue
@@ -762,6 +762,10 @@ type aPackage struct {
 
 type Package = *aPackage
 
+func isLLPkg(pkg *packages.Package) bool {
+	return pkg.Module != nil && strings.HasPrefix(mod.LLPkgPathPrefix, pkg.Module.Path)
+}
+
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA
 	built := ctx.built
@@ -771,11 +775,12 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 			if _, ok := built[pkgPath]; ok || strings.HasPrefix(pkgPath, altPkgPathPrefix) {
 				return
 			}
-			if p.Module != nil {
-				ctx.moduleVersion[pkgPath] = &module.Version{
+			if isLLPkg(p) {
+				ver := &module.Version{
 					Path:    p.Module.Path,
 					Version: p.Module.Version,
 				}
+				ctx.mod[ver.String()] = ver
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
