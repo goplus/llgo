@@ -235,7 +235,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	installer := defaultInstaller()
 
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), make(map[string]*module.Version), installer}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), make(map[module.Version]string), installer}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -301,45 +301,27 @@ type context struct {
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
 
-	mod       map[string]*module.Version
+	llpkgMod  map[module.Version]string
 	installer installer.Installer
 }
 
-func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbose bool) (string, error) {
-	dir, err := mod.LLPkgCacheDirByModule(ver)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = os.Stat(dir)
-	if os.IsNotExist(err) {
-		if verbose {
-			fmt.Printf("installing %s to %s\n", ver.String(), dir)
-		}
-		if err = os.MkdirAll(dir, 0777); err != nil {
-			return "", err
-		}
-		if _, err = ctx.installer.Install(llpkg, dir); err != nil {
-			return "", err
-		}
-	}
-
-	return filepath.Join(dir, "lib", "pkgconfig"), nil
-}
-
-func buildAllLLPkg(ctx *context, verbose bool) {
+// the pc for the deps of each package should be unique
+// consider duplicate clib but different version
+// exmaple: A requires zlib/1.3.1, B requires zlib/1.3.0
+func setDepsPC(ctx *context, p *packages.Package) {
 	var pcDir []string
-	for _, ver := range ctx.mod {
-		llpkg, err := mod.ParseLLPkg(*ver)
-		if err != nil {
+	for _, pkg := range p.Imports {
+		if !isLLPkg(pkg) {
 			continue
 		}
-		dir, err := getModule(ctx, *ver, llpkg, verbose)
-		check(err)
-
-		pcDir = append(pcDir, dir)
+		ver := module.Version{
+			Path:    pkg.Module.Path,
+			Version: pkg.Module.Version,
+		}
+		if dir := ctx.llpkgMod[ver]; dir != "" {
+			pcDir = append(pcDir, dir)
+		}
 	}
-
 	if len(pcDir) > 0 {
 		os.Setenv("PKG_CONFIG_PATH", pc.AppendPCPath(strings.Join(pcDir, ":")))
 	}
@@ -357,8 +339,6 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		return nil, fmt.Errorf("cannot build SSA for packages")
 	}
 
-	buildAllLLPkg(ctx, verbose)
-
 	built := ctx.built
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
@@ -367,6 +347,8 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			continue
 		}
 		built[pkg.ID] = none{}
+
+		setDepsPC(ctx, pkg)
 
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
@@ -766,6 +748,29 @@ func isLLPkg(pkg *packages.Package) bool {
 	return pkg.Module != nil && strings.HasPrefix(pkg.Module.Path, mod.LLPkgPathPrefix)
 }
 
+func fetchLLPkg(ctx *context, ver module.Version, verbose bool) string {
+	llpkg, err := mod.ParseLLPkg(ver)
+	if err != nil {
+		return ""
+	}
+
+	dir, err := mod.LLPkgCacheDirByModule(ver)
+	check(err)
+
+	_, err = os.Stat(dir)
+	if os.IsNotExist(err) {
+		if verbose {
+			fmt.Printf("installing %s to %s\n", ver.String(), dir)
+		}
+		err = os.MkdirAll(dir, 0777)
+		check(err)
+		_, err = ctx.installer.Install(llpkg, dir)
+		check(err)
+	}
+
+	return filepath.Join(dir, "lib", "pkgconfig")
+}
+
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA
 	built := ctx.built
@@ -776,11 +781,11 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				return
 			}
 			if isLLPkg(p) {
-				ver := &module.Version{
+				ver := module.Version{
 					Path:    p.Module.Path,
 					Version: p.Module.Version,
 				}
-				ctx.mod[ver.String()] = ver
+				ctx.llpkgMod[ver] = fetchLLPkg(ctx, ver, verbose)
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
