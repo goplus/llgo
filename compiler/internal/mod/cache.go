@@ -76,7 +76,6 @@ func (c *cache[T]) fetch() error {
 
 	switch resp.StatusCode {
 	case http.StatusNotModified:
-		log.Println("not")
 		return nil
 	case http.StatusOK:
 		// Read and parse the response body
