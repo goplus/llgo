@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	PkgPython  = "github.com/goplus/llgo/py"
+	PkgPython  = "github.com/goplus/lib/py"
 	PkgRuntime = env.LLGoRuntimePkg + "/internal/runtime"
 )
 

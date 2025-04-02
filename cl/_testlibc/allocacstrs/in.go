@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/c"
+import "github.com/goplus/lib/c"
 
 func main() {
 	cstrs := c.AllocaCStrs([]string{"a", "b", "c"}, true)

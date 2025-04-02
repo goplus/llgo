@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py/math"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/py/math"
 )
 
 func main() {

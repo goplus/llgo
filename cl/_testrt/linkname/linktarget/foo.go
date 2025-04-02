@@ -1,7 +1,7 @@
 package linktarget
 
 import (
-	"github.com/goplus/llgo/c"
+	"github.com/goplus/lib/c"
 )
 
 func F(a, b *c.Char) {

@@ -50,8 +50,8 @@ jobs:
       - name: Install further optional dependencies for demos
         run: |
           py_deps=(
-            numpy # for github.com/goplus/llgo/py/numpy
-            torch # for github.com/goplus/llgo/py/torch
+            numpy # for github.com/goplus/lib/py/numpy
+            torch # for github.com/goplus/lib/py/torch
           )
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
@@ -133,8 +133,8 @@ jobs:
       - name: Install further optional dependencies for demos
         run: |
           py_deps=(
-            numpy # for github.com/goplus/llgo/py/numpy
-            torch # for github.com/goplus/llgo/py/torch
+            numpy # for github.com/goplus/lib/py/numpy
+            torch # for github.com/goplus/lib/py/torch
           )
           pip3.12 install --break-system-packages "${py_deps[@]}"
 

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/py"
-	"github.com/goplus/llgo/py/numpy"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/py"
+	"github.com/goplus/lib/py/numpy"
 )
 
 func main() {

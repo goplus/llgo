@@ -14,7 +14,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c"
+	"github.com/goplus/lib/c"
 )
 
 func main() {

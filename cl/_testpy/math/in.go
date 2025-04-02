@@ -3,7 +3,7 @@ package math
 import (
 	_ "unsafe"
 
-	"github.com/goplus/llgo/py"
+	"github.com/goplus/lib/py"
 )
 
 const (

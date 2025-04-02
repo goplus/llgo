@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/math/cmplx"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/math/cmplx"
 )
 
 func f(c, z complex64, addr c.Pointer) {

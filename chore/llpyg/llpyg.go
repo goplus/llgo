@@ -82,8 +82,8 @@ func main() {
 		os.Exit(1)
 	}
 	pkg := gogen.NewPackage("", pkgName(pyLib), nil)
-	pkg.Import("unsafe").MarkForceUsed(pkg)       // import _ "unsafe"
-	py := pkg.Import("github.com/goplus/llgo/py") // import "github.com/goplus/llgo/py"
+	pkg.Import("unsafe").MarkForceUsed(pkg)      // import _ "unsafe"
+	py := pkg.Import("github.com/goplus/lib/py") // import "github.com/goplus/lib/py"
 
 	f := func(cb *gogen.CodeBuilder) int {
 		cb.Val("py." + mod.Name)

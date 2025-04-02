@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/sync/atomic"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/sync/atomic"
 )
 
 func main() {

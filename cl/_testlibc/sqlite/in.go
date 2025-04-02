@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/sqlite"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/sqlite"
 )
 
 func main() {

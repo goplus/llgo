@@ -35,7 +35,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.main"() {
 _llgo_0:
-  %0 = call { ptr, i32 } @"github.com/goplus/llgo/c/sqlite.OpenV2"(ptr @1, i32 130, ptr null)
+  %0 = call { ptr, i32 } @"github.com/goplus/lib/c/sqlite.OpenV2"(ptr @1, i32 130, ptr null)
   %1 = extractvalue { ptr, i32 } %0, 0
   %2 = extractvalue { ptr, i32 } %0, 1
   call void @"github.com/goplus/llgo/cl/_testlibc/sqlite.check"(i32 %2)
@@ -49,6 +49,6 @@ declare i32 @printf(ptr, ...)
 
 declare void @exit(i32)
 
-declare { ptr, i32 } @"github.com/goplus/llgo/c/sqlite.OpenV2"(ptr, i32, ptr)
+declare { ptr, i32 } @"github.com/goplus/lib/c/sqlite.OpenV2"(ptr, i32, ptr)
 
 declare i32 @sqlite3_close(ptr)

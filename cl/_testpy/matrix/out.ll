@@ -16,7 +16,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard", align 1
-  call void @"github.com/goplus/llgo/py/numpy.init"()
+  call void @"github.com/goplus/lib/py/numpy.init"()
   %1 = load ptr, ptr @__llgo_py.numpy, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @3, ptr @__llgo_py.numpy.add, ptr null)
   br label %_llgo_2
@@ -91,7 +91,7 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/py/numpy.init"()
+declare void @"github.com/goplus/lib/py/numpy.init"()
 
 declare ptr @PyList_New(i64)
 

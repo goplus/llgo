@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/c/time"
+import "github.com/goplus/lib/c/time"
 
 func main() {
 	var tv time.Timespec

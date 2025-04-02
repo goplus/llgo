@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/goplus/gogen v1.16.9
+	github.com/goplus/lib v0.1.0
 	github.com/goplus/llvm v0.8.1
 	github.com/goplus/mod v0.13.17
 	github.com/qiniu/x v1.13.12

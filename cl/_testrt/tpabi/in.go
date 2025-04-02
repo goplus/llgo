@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/c"
+import "github.com/goplus/lib/c"
 
 type T[M, N any] struct {
 	m M

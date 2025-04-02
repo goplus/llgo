@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/os"
 	"unsafe"
+
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/os"
 )
 
 func main() {
@@ -44,8 +45,6 @@ func main() {
 		return
 	}
 	c.Printf(c.Str("set file status successfully\n"))
-
-
 
 	c.Printf(c.Str("111"))
 	// Close file

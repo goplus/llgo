@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/c"
+import "github.com/goplus/lib/c"
 
 func test(a ...any) {
 	for _, v := range a {

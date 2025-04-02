@@ -14,7 +14,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/gcd.init$guard", align 1
-  call void @"github.com/goplus/llgo/py/math.init"()
+  call void @"github.com/goplus/lib/py/math.init"()
   %1 = load ptr, ptr @__llgo_py.math, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @1, ptr @__llgo_py.math.gcd, ptr null)
   br label %_llgo_2
@@ -35,7 +35,7 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/py/math.init"()
+declare void @"github.com/goplus/lib/py/math.init"()
 
 declare ptr @PyLong_FromLong(i64)
 

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/goplus/llgo/py"
-	"github.com/goplus/llgo/py/std"
-	"github.com/goplus/llgo/py/torch"
+	"github.com/goplus/lib/py"
+	"github.com/goplus/lib/py/std"
+	"github.com/goplus/lib/py/torch"
 )
 
 func main() {

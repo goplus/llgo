@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/pthread/sync"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/pthread/sync"
 )
 
 var once sync.Once = sync.OnceInit

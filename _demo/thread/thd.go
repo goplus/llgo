@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/pthread"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/pthread"
 )
 
 var key pthread.Key

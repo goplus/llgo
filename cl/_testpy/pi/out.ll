@@ -13,7 +13,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/pi.init$guard", align 1
-  call void @"github.com/goplus/llgo/py/math.init"()
+  call void @"github.com/goplus/lib/py/math.init"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -29,7 +29,7 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/py/math.init"()
+declare void @"github.com/goplus/lib/py/math.init"()
 
 declare ptr @PyObject_GetAttrString(ptr, ptr)
 

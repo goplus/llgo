@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c"
+	"github.com/goplus/lib/c"
 	q "github.com/goplus/llgo/cl/_testrt/qsortfn/qsort"
 )
 
