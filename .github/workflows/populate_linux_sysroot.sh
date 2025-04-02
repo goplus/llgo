@@ -106,7 +106,6 @@ do-sync() {
 	args+=(-d)
 	args+=(-h)
 	args+=(--keep-dirlinks)
-	args+=("--info=progress2")
 	args+=(--delete)
 	args+=(--prune-empty-dirs)
 	args+=(--sparse)
