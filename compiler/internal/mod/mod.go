@@ -35,7 +35,7 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 		if err != nil {
 			return module.Version{}, err
 		}
-		version, err := metadataMgr.LatestGoVerFromCVer(name, version)
+		version, err = metadataMgr.LatestGoVerFromCVer(name, version)
 		if err != nil {
 			return module.Version{}, err
 		}
