@@ -44,7 +44,6 @@ import (
 	"github.com/goplus/llgo/compiler/internal/mockable"
 	"github.com/goplus/llgo/compiler/internal/mod"
 	"github.com/goplus/llgo/compiler/internal/packages"
-	"github.com/goplus/llgo/compiler/internal/pc"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"github.com/goplus/llgo/compiler/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
@@ -308,22 +307,19 @@ type context struct {
 // the pc for the deps of each package should be unique
 // consider duplicate clib but different version
 // exmaple: A requires zlib/1.3.1, B requires zlib/1.3.0
-func setDepsPC(ctx *context, p *packages.Package) {
+func setDepsPC(ctx *context, pkg *packages.Package) {
 	var pcDir []string
-	for _, pkg := range p.Imports {
-		if !isLLPkg(pkg) {
-			continue
-		}
-		ver := module.Version{
-			Path:    pkg.Module.Path,
-			Version: pkg.Module.Version,
-		}
-		if dir := ctx.llpkgMod[ver]; dir != "" {
-			pcDir = append(pcDir, dir)
-		}
+	ver := module.Version{
+		Path:    pkg.Module.Path,
+		Version: pkg.Module.Version,
 	}
+	if dir := ctx.llpkgMod[ver]; dir != "" {
+		pcDir = append(pcDir, dir)
+	}
+
 	if len(pcDir) > 0 {
-		os.Setenv("PKG_CONFIG_PATH", pc.AppendPCPath(strings.Join(pcDir, ":")))
+		pcDir = append(pcDir, os.Getenv("PKG_CONFIG_PATH"))
+		os.Setenv("PKG_CONFIG_PATH", strings.Join(pcDir, ":"))
 	}
 }
 
@@ -348,7 +344,9 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		}
 		built[pkg.ID] = none{}
 
-		setDepsPC(ctx, pkg)
+		if isLLPkg(pkg) {
+			setDepsPC(ctx, pkg)
+		}
 
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
