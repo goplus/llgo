@@ -25,15 +25,18 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 		version = ""
 	}
 
+	var err error
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
-		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
-		if err != nil {
-			return module.Version{}, err
-		}
-		version, err = metadataMgr.LatestGoVerFromCVer(name, version)
-		if err != nil {
-			return module.Version{}, err
+		if version != "" {
+			metadataMgr, err := NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
+			if err != nil {
+				return module.Version{}, err
+			}
+			version, err = metadataMgr.LatestGoVerFromCVer(name, version)
+			if err != nil {
+				return module.Version{}, err
+			}
 		}
 
 		// 2. Prepend path prefix, and suffix with major version
