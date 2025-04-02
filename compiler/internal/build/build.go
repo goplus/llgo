@@ -326,10 +326,10 @@ func getModule(ctx *context, ver module.Version, llpkg installer.Package, verbos
 	return filepath.Join(dir, "lib", "pkgconfig"), nil
 }
 
-func buildAllLLPkg(ctx *context, pkg []*packages.Package, verbose bool) {
-	installed := map[string]none{}
+func buildAllLLPkg(ctx *context, allPkgs []*aPackage, verbose bool) {
+	installed := map[string]*module.Version{}
 	var pcDir []string
-	packages.Visit(pkg, nil, func(p *packages.Package) {
+	for _, p := range allPkgs {
 		// a standard lib, skip
 		if p.Module == nil {
 			return
@@ -337,24 +337,22 @@ func buildAllLLPkg(ctx *context, pkg []*packages.Package, verbose bool) {
 		if _, ok := installed[p.PkgPath]; ok {
 			return
 		}
-		installed[p.PkgPath] = none{}
-
-		ver := module.Version{
+		installed[p.PkgPath] = &module.Version{
 			Path:    p.Module.Path,
 			Version: p.Module.Version,
 		}
+	}
 
-		llpkg, err := mod.ParseLLPkg(ver)
+	for _, ver := range installed {
+		llpkg, err := mod.ParseLLPkg(*ver)
 		if err != nil {
-			// not an llpkg, skip.
-			return
+			continue
 		}
-
-		dir, err := getModule(ctx, ver, llpkg, verbose)
+		dir, err := getModule(ctx, *ver, llpkg, verbose)
 		check(err)
 
 		pcDir = append(pcDir, dir)
-	})
+	}
 
 	if len(pcDir) > 0 {
 		os.Setenv("PKG_CONFIG_PATH", pc.AppendPCPath(strings.Join(pcDir, ":")))
@@ -373,7 +371,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 		return nil, fmt.Errorf("cannot build SSA for packages")
 	}
 
-	buildAllLLPkg(ctx, initial, verbose)
+	buildAllLLPkg(ctx, pkgs, verbose)
 
 	built := ctx.built
 	for _, aPkg := range pkgs {
