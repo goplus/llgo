@@ -28,8 +28,8 @@ builds:
     env:
       - CC=o64-clang
       - CXX=o64-clang++
-      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_AMD64}}/usr/local/opt/llvm@19/include -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_AMD64}}/usr/local/opt/llvm@19/lib -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
+      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_AMD64}}/usr/local/opt/llvm@19/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_AMD64}}/usr/local/opt/llvm@19/lib -mmacosx-version-min=10.13 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
     targets:
       - darwin_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
@@ -46,8 +46,8 @@ builds:
     env:
       - CC=oa64-clang
       - CXX=oa64-clang++
-      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_ARM64}}/opt/homebrew/opt/llvm@19/include -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_ARM64}}/opt/homebrew/opt/llvm@19/lib -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
+      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_ARM64}}/opt/homebrew/opt/llvm@19/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_ARM64}}/opt/homebrew/opt/llvm@19/lib -mmacosx-version-min=10.13 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
     targets:
       - darwin_arm64
     mod_timestamp: "{{.CommitTimestamp}}"
