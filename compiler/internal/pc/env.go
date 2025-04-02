@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-func AppendPCPath(path string) string {
+func appendPCPath(path string) string {
 	if env, ok := os.LookupEnv("PKG_CONFIG_PATH"); ok {
 		return path + ":" + env
 	}
@@ -14,6 +14,6 @@ func AppendPCPath(path string) string {
 }
 
 func SetPath(cmd *exec.Cmd, path string) {
-	pcPath := fmt.Sprintf("PKG_CONFIG_PATH=%s", AppendPCPath(path))
+	pcPath := fmt.Sprintf("PKG_CONFIG_PATH=%s", appendPCPath(path))
 	cmd.Env = append(os.Environ(), pcPath)
 }

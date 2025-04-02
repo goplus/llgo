@@ -318,7 +318,9 @@ func setDepsPC(ctx *context, pkg *packages.Package) {
 	}
 
 	if len(pcDir) > 0 {
-		pcDir = append(pcDir, os.Getenv("PKG_CONFIG_PATH"))
+		if pkgPath, ok := os.LookupEnv("PKG_CONFIG_PATH"); ok {
+			pcDir = append(pcDir, pkgPath)
+		}
 		os.Setenv("PKG_CONFIG_PATH", strings.Join(pcDir, ":"))
 	}
 }
