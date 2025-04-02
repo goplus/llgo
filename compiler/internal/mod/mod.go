@@ -3,7 +3,6 @@ package mod
 import (
 	"fmt"
 	"path/filepath"
-	"sync"
 
 	"github.com/goplus/llgo/compiler/internal/env"
 	"github.com/goplus/llgo/compiler/internal/installer"
@@ -12,26 +11,6 @@ import (
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 )
-
-var (
-	globalMetadataMgrMu sync.Mutex
-	globalMetadataMgr   *metadataMgr
-)
-
-func metadata() *metadataMgr {
-	globalMetadataMgrMu.Lock()
-	defer globalMetadataMgrMu.Unlock()
-
-	if globalMetadataMgr != nil {
-		return globalMetadataMgr
-	}
-	var err error
-	globalMetadataMgr, err = NewMetadataMgr(env.LLGOCACHE()) // build a metadata manager for version query
-	if err != nil {
-		fmt.Println(err)
-	}
-	return globalMetadataMgr
-}
 
 const (
 	LLPkgConfigFileName = "llpkg.cfg"
@@ -52,7 +31,10 @@ func NewModuleVersionPair(name, version string) (module.Version, error) {
 
 	if !IsModulePath(name) {
 		// 1. Convert cversion to the latest semantic version by version mappings
-		metadataMgr := metadata()
+		metadataMgr, err := NewMetadataMgr(env.LLGOCACHE())
+		if err != nil {
+			return module.Version{}, err
+		}
 		version, err := metadataMgr.LatestGoVerFromCVer(name, version)
 		if err != nil {
 			return module.Version{}, err

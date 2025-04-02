@@ -334,14 +334,15 @@ func buildAllLLPkg(ctx *context, pkg []*packages.Package, verbose bool) {
 		if p.Module == nil {
 			return
 		}
+		if _, ok := installed[p.PkgPath]; ok {
+			return
+		}
+		installed[p.PkgPath] = none{}
+
 		ver := module.Version{
 			Path:    p.Module.Path,
 			Version: p.Module.Version,
 		}
-		if _, ok := installed[ver.String()]; ok {
-			return
-		}
-		installed[ver.String()] = none{}
 
 		llpkg, err := mod.ParseLLPkg(ver)
 		if err != nil {
