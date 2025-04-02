@@ -26,31 +26,31 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/makemap"
 @11 = private unnamed_addr constant [7 x i8] c"bad len", align 1
 @_llgo_any = linkonce global ptr null, align 8
 @"map[_llgo_any]_llgo_int" = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1" = linkonce global ptr null, align 8
 @12 = private unnamed_addr constant [2 x i8] c"N1", align 1
 @"[1]_llgo_int" = linkonce global ptr null, align 8
 @13 = private unnamed_addr constant [90 x i8] c"type assertion interface{} -> github.com/goplus/llgo/cl/_testrt/makemap.N1 failed", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K" = linkonce global ptr null, align 8
 @14 = private unnamed_addr constant [1 x i8] c"K", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
 @15 = private unnamed_addr constant [1 x i8] c"N", align 1
 @_llgo_int8 = linkonce global ptr null, align 8
 @"github.com/goplus/llgo/cl/_testrt/makemap.struct$e65EDK9vxC36Nz3YTgO1ulssLlNH03Bva_WWaCjH-4A" = linkonce global ptr null, align 8
 @16 = private unnamed_addr constant [2 x i8] c"n1", align 1
 @17 = private unnamed_addr constant [2 x i8] c"n2", align 1
-@"[1]_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
+@"[1]_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
 @18 = private unnamed_addr constant [89 x i8] c"type assertion interface{} -> github.com/goplus/llgo/cl/_testrt/makemap.K failed", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2" = linkonce global ptr null, align 8
 @19 = private unnamed_addr constant [2 x i8] c"K2", align 1
-@"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
-@"[1]*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
+@"[1]*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N" = linkonce global ptr null, align 8
 @20 = private unnamed_addr constant [90 x i8] c"type assertion interface{} -> github.com/goplus/llgo/cl/_testrt/makemap.K2 failed", align 1
 @"chan _llgo_int" = linkonce global ptr null, align 8
 @21 = private unnamed_addr constant [4 x i8] c"chan", align 1
 @"map[chan _llgo_int]_llgo_int" = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.M" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M" = linkonce global ptr null, align 8
 @22 = private unnamed_addr constant [1 x i8] c"M", align 1
-@"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string" = linkonce global ptr null, align 8
+@"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string" = linkonce global ptr null, align 8
 
 define void @"github.com/goplus/llgo/cl/_testrt/makemap.init"() {
 _llgo_0:
@@ -306,7 +306,7 @@ _llgo_0:
   %10 = getelementptr inbounds i64, ptr %9, i64 0
   store i64 1, ptr %10, align 4
   %11 = load [1 x i64], ptr %9, align 4
-  %12 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  %12 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   %13 = extractvalue [1 x i64] %11, 0
   %14 = inttoptr i64 %13 to ptr
   %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %12, 0
@@ -321,7 +321,7 @@ _llgo_0:
   %21 = getelementptr inbounds i64, ptr %20, i64 0
   store i64 2, ptr %21, align 4
   %22 = load [1 x i64], ptr %20, align 4
-  %23 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  %23 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   %24 = extractvalue [1 x i64] %22, 0
   %25 = inttoptr i64 %24 to ptr
   %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %23, 0
@@ -336,7 +336,7 @@ _llgo_0:
   %32 = getelementptr inbounds i64, ptr %31, i64 0
   store i64 3, ptr %32, align 4
   %33 = load [1 x i64], ptr %31, align 4
-  %34 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  %34 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   %35 = extractvalue [1 x i64] %33, 0
   %36 = inttoptr i64 %35 to ptr
   %37 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %34, 0
@@ -351,7 +351,7 @@ _llgo_0:
   %43 = getelementptr inbounds i64, ptr %42, i64 0
   store i64 2, ptr %43, align 4
   %44 = load [1 x i64], ptr %42, align 4
-  %45 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  %45 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   %46 = extractvalue [1 x i64] %44, 0
   %47 = inttoptr i64 %46 to ptr
   %48 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %45, 0
@@ -374,7 +374,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %57 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %68, 1
   %58 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %68, 2
   %59 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %57, 0
-  %60 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  %60 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   %61 = icmp eq ptr %59, %60
   br i1 %61, label %_llgo_7, label %_llgo_8
 
@@ -427,7 +427,7 @@ _llgo_0:
   store i8 1, ptr %2, align 1
   store i8 2, ptr %3, align 1
   %4 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %0, align 1
-  %5 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  %5 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
   store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %4, ptr %6, align 1
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %5, 0
@@ -440,7 +440,7 @@ _llgo_0:
   store i8 1, ptr %11, align 1
   store i8 2, ptr %12, align 1
   %13 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %9, align 1
-  %14 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  %14 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
   store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %13, ptr %15, align 1
   %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %14, 0
@@ -458,7 +458,7 @@ _llgo_0:
   store i8 1, ptr %23, align 1
   store i8 2, ptr %24, align 1
   %25 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %21, align 1
-  %26 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  %26 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
   store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %25, ptr %27, align 1
   %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %26, 0
@@ -476,7 +476,7 @@ _llgo_0:
   store i8 3, ptr %35, align 1
   store i8 4, ptr %36, align 1
   %37 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %33, align 1
-  %38 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  %38 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   %39 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
   store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %37, ptr %39, align 1
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %38, 0
@@ -499,7 +499,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %49 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %60, 1
   %50 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %60, 2
   %51 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %49, 0
-  %52 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  %52 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   %53 = icmp eq ptr %51, %52
   br i1 %53, label %_llgo_7, label %_llgo_8
 
@@ -561,7 +561,7 @@ _llgo_0:
   store i8 2, ptr %4, align 1
   store ptr %2, ptr %1, align 8
   %5 = load [1 x ptr], ptr %0, align 8
-  %6 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  %6 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   %7 = extractvalue [1 x ptr] %5, 0
   %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %6, 0
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %8, ptr %7, 1
@@ -575,7 +575,7 @@ _llgo_0:
   store i8 2, ptr %14, align 1
   store ptr %12, ptr %11, align 8
   %15 = load [1 x ptr], ptr %10, align 8
-  %16 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  %16 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   %17 = extractvalue [1 x ptr] %15, 0
   %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %16, 0
   %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %18, ptr %17, 1
@@ -594,7 +594,7 @@ _llgo_0:
   store i8 2, ptr %27, align 1
   store ptr %25, ptr %24, align 8
   %28 = load [1 x ptr], ptr %23, align 8
-  %29 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  %29 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   %30 = extractvalue [1 x ptr] %28, 0
   %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %29, 0
   %32 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %31, ptr %30, 1
@@ -613,7 +613,7 @@ _llgo_0:
   store i8 4, ptr %40, align 1
   store ptr %38, ptr %37, align 8
   %41 = load [1 x ptr], ptr %36, align 8
-  %42 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  %42 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   %43 = extractvalue [1 x ptr] %41, 0
   %44 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %42, 0
   %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %44, ptr %43, 1
@@ -635,7 +635,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %53 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %64, 1
   %54 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %64, 2
   %55 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %53, 0
-  %56 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  %56 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   %57 = icmp eq ptr %55, %56
   br i1 %57, label %_llgo_7, label %_llgo_8
 
@@ -748,12 +748,12 @@ define void @"github.com/goplus/llgo/cl/_testrt/makemap.make6"() {
 _llgo_0:
   %0 = load ptr, ptr @"map[_llgo_int]_llgo_string", align 8
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr %0, i64 0)
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.M", align 8
+  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M", align 8
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 1, ptr %3, align 4
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr %2, ptr %1, ptr %3)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 5 }, ptr %4, align 8
-  %5 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.M", align 8
+  %5 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M", align 8
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr %5, ptr %1)
   br label %_llgo_1
 
@@ -794,20 +794,20 @@ _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
 
 define void @"github.com/goplus/llgo/cl/_testrt/makemap.make7"() {
 _llgo_0:
-  %0 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
-  %1 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  %0 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
+  %1 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr %1, i64 2)
-  %3 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  %3 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 1, ptr %4, align 4
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr %3, ptr %2, ptr %4)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 5 }, ptr %5, align 8
-  %6 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  %6 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 2, ptr %7, align 4
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr %6, ptr %2, ptr %7)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 5 }, ptr %8, align 8
-  %9 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  %9 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr %9, ptr %2)
   br label %_llgo_1
 
@@ -826,7 +826,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_6
-  %15 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  %15 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 1, ptr %16, align 4
   %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr %15, ptr %2, ptr %16)
@@ -1009,12 +1009,12 @@ _llgo_11:                                         ; preds = %_llgo_10
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
   %96 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 2 }, i64 17, i64 8, i64 0, i64 0)
-  %97 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  %97 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   %98 = icmp eq ptr %97, null
   br i1 %98, label %_llgo_13, label %_llgo_14
 
 _llgo_13:                                         ; preds = %_llgo_12
-  store ptr %96, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N1", align 8
+  store ptr %96, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", align 8
   br label %_llgo_14
 
 _llgo_14:                                         ; preds = %_llgo_13, %_llgo_12
@@ -1038,22 +1038,22 @@ _llgo_17:                                         ; preds = %_llgo_16
 
 _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
   %104 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 1 }, i64 17, i64 2, i64 0, i64 0)
-  %105 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  %105 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   %106 = icmp eq ptr %105, null
   br i1 %106, label %_llgo_19, label %_llgo_20
 
 _llgo_19:                                         ; preds = %_llgo_18
-  store ptr %104, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K", align 8
+  store ptr %104, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", align 8
   br label %_llgo_20
 
 _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
   %107 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 1 }, i64 25, i64 2, i64 0, i64 0)
-  %108 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %108 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   %109 = icmp eq ptr %108, null
   br i1 %109, label %_llgo_21, label %_llgo_22
 
 _llgo_21:                                         ; preds = %_llgo_20
-  store ptr %107, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  store ptr %107, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   br label %_llgo_22
 
 _llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
@@ -1090,19 +1090,19 @@ _llgo_25:                                         ; preds = %_llgo_24
   br label %_llgo_26
 
 _llgo_26:                                         ; preds = %_llgo_25, %_llgo_24
-  %126 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %126 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   %127 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 1 }, i64 25, i64 2, i64 0, i64 0)
-  %128 = load ptr, ptr @"[1]_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %128 = load ptr, ptr @"[1]_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   %129 = icmp eq ptr %128, null
   br i1 %129, label %_llgo_27, label %_llgo_28
 
 _llgo_27:                                         ; preds = %_llgo_26
   %130 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ArrayOf"(i64 1, ptr %127)
-  store ptr %130, ptr @"[1]_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  store ptr %130, ptr @"[1]_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   br label %_llgo_28
 
 _llgo_28:                                         ; preds = %_llgo_27, %_llgo_26
-  %131 = load ptr, ptr @"[1]_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %131 = load ptr, ptr @"[1]_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   br i1 %106, label %_llgo_29, label %_llgo_30
 
 _llgo_29:                                         ; preds = %_llgo_28
@@ -1111,31 +1111,31 @@ _llgo_29:                                         ; preds = %_llgo_28
 
 _llgo_30:                                         ; preds = %_llgo_29, %_llgo_28
   %132 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 2 }, i64 17, i64 8, i64 0, i64 0)
-  %133 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  %133 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   %134 = icmp eq ptr %133, null
   br i1 %134, label %_llgo_31, label %_llgo_32
 
 _llgo_31:                                         ; preds = %_llgo_30
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %132)
-  store ptr %132, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.K2", align 8
+  store ptr %132, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", align 8
   br label %_llgo_32
 
 _llgo_32:                                         ; preds = %_llgo_31, %_llgo_30
   %135 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 1 }, i64 25, i64 2, i64 0, i64 0)
-  %136 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %136 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   %137 = icmp eq ptr %136, null
   br i1 %137, label %_llgo_33, label %_llgo_34
 
 _llgo_33:                                         ; preds = %_llgo_32
   %138 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %135)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %138)
-  store ptr %138, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  store ptr %138, ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   br label %_llgo_34
 
 _llgo_34:                                         ; preds = %_llgo_33, %_llgo_32
-  %139 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %139 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   %140 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 1 }, i64 25, i64 2, i64 0, i64 0)
-  %141 = load ptr, ptr @"[1]*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %141 = load ptr, ptr @"[1]*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   %142 = icmp eq ptr %141, null
   br i1 %142, label %_llgo_35, label %_llgo_36
 
@@ -1143,11 +1143,11 @@ _llgo_35:                                         ; preds = %_llgo_34
   %143 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %140)
   %144 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ArrayOf"(i64 1, ptr %143)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %144)
-  store ptr %144, ptr @"[1]*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  store ptr %144, ptr @"[1]*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   br label %_llgo_36
 
 _llgo_36:                                         ; preds = %_llgo_35, %_llgo_34
-  %145 = load ptr, ptr @"[1]*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N", align 8
+  %145 = load ptr, ptr @"[1]*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N", align 8
   br i1 %134, label %_llgo_37, label %_llgo_38
 
 _llgo_37:                                         ; preds = %_llgo_36
@@ -1207,13 +1207,13 @@ _llgo_41:                                         ; preds = %_llgo_40
 
 _llgo_42:                                         ; preds = %_llgo_41, %_llgo_40
   %177 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 1 }, i64 21, i64 8, i64 0, i64 0)
-  %178 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.M", align 8
+  %178 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M", align 8
   %179 = icmp eq ptr %178, null
   br i1 %179, label %_llgo_43, label %_llgo_44
 
 _llgo_43:                                         ; preds = %_llgo_42
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %177)
-  store ptr %177, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.M", align 8
+  store ptr %177, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M", align 8
   br label %_llgo_44
 
 _llgo_44:                                         ; preds = %_llgo_43, %_llgo_42
@@ -1227,7 +1227,7 @@ _llgo_45:                                         ; preds = %_llgo_44
 _llgo_46:                                         ; preds = %_llgo_45, %_llgo_44
   %181 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 1 }, i64 2, i64 8, i64 0, i64 0)
   %182 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 1 }, i64 2, i64 8, i64 0, i64 0)
-  %183 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  %183 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   %184 = icmp eq ptr %183, null
   br i1 %184, label %_llgo_47, label %_llgo_48
 
@@ -1258,7 +1258,7 @@ _llgo_47:                                         ; preds = %_llgo_46
   %204 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 50 }, i64 208, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %203)
   %205 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapOf"(ptr %181, ptr %185, ptr %204, i64 4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %205)
-  store ptr %205, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/makemap.N]_llgo_string", align 8
+  store ptr %205, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string", align 8
   br label %_llgo_48
 
 _llgo_48:                                         ; preds = %_llgo_47, %_llgo_46

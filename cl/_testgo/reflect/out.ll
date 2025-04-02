@@ -26,12 +26,12 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/reflect"
 @6 = private unnamed_addr constant [12 x i8] c"call.closure", align 1
 @7 = private unnamed_addr constant [4 x i8] c"func", align 1
 @8 = private unnamed_addr constant [9 x i8] c"call.func", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T" = linkonce global ptr null, align 8
 @9 = private unnamed_addr constant [1 x i8] c"T", align 1
 @"github.com/goplus/llgo/cl/_testgo/reflect.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U" = linkonce global ptr null, align 8
 @10 = private unnamed_addr constant [1 x i8] c"n", align 1
 @11 = private unnamed_addr constant [3 x i8] c"Add", align 1
-@"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T" = linkonce global ptr null, align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T" = linkonce global ptr null, align 8
 @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A" = linkonce global ptr null, align 8
 @12 = private unnamed_addr constant [7 x i8] c"imethod", align 1
 @13 = private unnamed_addr constant [6 x i8] c"method", align 1
@@ -267,8 +267,8 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflect.T", ptr %0, i32 0, i32 0
   store i64 1, ptr %1, align 4
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
-  %3 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
+  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
+  %3 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   %4 = load ptr, ptr @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU", align 8
   %5 = load ptr, ptr @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", align 8
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %5, ptr %3)
@@ -382,7 +382,7 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflect.T", ptr %0, i32 0, i32 0
   store i64 1, ptr %1, align 4
-  %2 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
+  %2 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %2, 0
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %3, ptr %0, 1
   %5 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %4)
@@ -1158,12 +1158,12 @@ _llgo_7:                                          ; preds = %_llgo_6
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
   %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 8, i64 0, i64 1)
-  %48 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
+  %48 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   %49 = icmp eq ptr %48, null
   br i1 %49, label %_llgo_9, label %_llgo_10
 
 _llgo_9:                                          ; preds = %_llgo_8
-  store ptr %47, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
+  store ptr %47, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   br label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
@@ -1196,14 +1196,14 @@ _llgo_11:                                         ; preds = %_llgo_10
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
   %68 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 50 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 8, i64 0, i64 1)
-  %69 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
+  %69 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   %70 = icmp eq ptr %69, null
   br i1 %70, label %_llgo_13, label %_llgo_14
 
 _llgo_13:                                         ; preds = %_llgo_12
   %71 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %68)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %71)
-  store ptr %71, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/reflect.T", align 8
+  store ptr %71, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", align 8
   br label %_llgo_14
 
 _llgo_14:                                         ; preds = %_llgo_13, %_llgo_12

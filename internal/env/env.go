@@ -14,7 +14,7 @@ const (
 	LLGoCompilerPkg    = "github.com/goplus/llgo"
 	LLGoRuntimePkgName = "runtime"
 	LLGoRuntimePkg     = LLGoCompilerPkg + "/" + LLGoRuntimePkgName
-	envFileName        = "/compiler/internal/env/env.go"
+	envFileName        = "/internal/env/env.go"
 )
 
 func GOROOT() string {

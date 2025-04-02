@@ -10,17 +10,17 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpmap"
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"github.com/goplus/llgo/cl/_testrt/tpmap.init$guard" = global i1 false, align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [48 x i8] c"github.com/goplus/llgo/cl/_testrt/tpmap", align 1
 @1 = private unnamed_addr constant [8 x i8] c"cacheKey", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T1" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T1" = linkonce global ptr null, align 8
 @2 = private unnamed_addr constant [2 x i8] c"T1", align 1
 @_llgo_int = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T2" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T2" = linkonce global ptr null, align 8
 @3 = private unnamed_addr constant [2 x i8] c"T2", align 1
 @"github.com/goplus/llgo/cl/_testrt/tpmap.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88" = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [1 x i8] c"v", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T3[any]" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T3[any]" = linkonce global ptr null, align 8
 @5 = private unnamed_addr constant [7 x i8] c"T3[any]", align 1
 @_llgo_any = linkonce global ptr null, align 8
 @"github.com/goplus/llgo/cl/_testrt/tpmap.struct$op7q0963ur0ih9ul6OteH-C75UVydPxwKOVpX1hUjzo" = linkonce global ptr null, align 8
@@ -33,7 +33,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpmap"
 @9 = private unnamed_addr constant [2 x i8] c"t4", align 1
 @10 = private unnamed_addr constant [2 x i8] c"t5", align 1
 @_llgo_string = linkonce global ptr null, align 8
-@"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey]_llgo_string" = linkonce global ptr null, align 8
+@"map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string" = linkonce global ptr null, align 8
 @11 = private unnamed_addr constant [7 x i8] c"topbits", align 1
 @12 = private unnamed_addr constant [4 x i8] c"keys", align 1
 @13 = private unnamed_addr constant [5 x i8] c"elems", align 1
@@ -56,9 +56,9 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpmap.main"() {
 _llgo_0:
-  %0 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey", align 8
+  %0 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey", align 8
   %1 = load ptr, ptr @_llgo_string, align 8
-  %2 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
+  %2 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr %2, i64 0)
   %4 = alloca %"github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey", align 8
   call void @llvm.memset(ptr %4, i8 0, i64 48, i1 false)
@@ -78,7 +78,7 @@ _llgo_0:
   store ptr null, ptr %10, align 8
   store i64 0, ptr %11, align 4
   %15 = load %"github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey", ptr %4, align 8
-  %16 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
+  %16 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
   %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
   store %"github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey" %15, ptr %17, align 8
   %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr %16, ptr %3, ptr %17)
@@ -101,7 +101,7 @@ _llgo_0:
   store ptr null, ptr %25, align 8
   store i64 0, ptr %26, align 4
   %30 = load %"github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey", ptr %19, align 8
-  %31 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
+  %31 = load ptr, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
   %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
   store %"github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey" %30, ptr %32, align 8
   %33 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr %31, ptr %3, ptr %32)
@@ -122,14 +122,14 @@ _llgo_0:
 define void @"github.com/goplus/llgo/cl/_testrt/tpmap.init$after"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 8 }, i64 25, i64 48, i64 0, i64 0)
-  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey", align 8
+  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey", align 8
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 }, i64 2, i64 8, i64 0, i64 0)
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T1", align 8
+  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T1", align 8
   %3 = icmp eq ptr %2, null
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store ptr %1, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T1", align 8
+  store ptr %1, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T1", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -151,14 +151,14 @@ _llgo_5:                                          ; preds = %_llgo_4
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %8 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T1", align 8
+  %8 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T1", align 8
   %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 2 }, i64 25, i64 8, i64 0, i64 0)
-  %10 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T2", align 8
+  %10 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T2", align 8
   %11 = icmp eq ptr %10, null
   br i1 %11, label %_llgo_7, label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_6
-  store ptr %9, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T2", align 8
+  store ptr %9, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T2", align 8
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
@@ -180,14 +180,14 @@ _llgo_9:                                          ; preds = %_llgo_8
   br label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
-  %21 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T2", align 8
+  %21 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T2", align 8
   %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 7 }, i64 25, i64 16, i64 0, i64 0)
-  %23 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T3[any]", align 8
+  %23 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T3[any]", align 8
   %24 = icmp eq ptr %23, null
   br i1 %24, label %_llgo_11, label %_llgo_12
 
 _llgo_11:                                         ; preds = %_llgo_10
-  store ptr %22, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T3[any]", align 8
+  store ptr %22, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T3[any]", align 8
   br label %_llgo_12
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
@@ -228,7 +228,7 @@ _llgo_15:                                         ; preds = %_llgo_14
   br label %_llgo_16
 
 _llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
-  %46 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.T3[any]", align 8
+  %46 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T3[any]", align 8
   %47 = load ptr, ptr @"*_llgo_int", align 8
   %48 = icmp eq ptr %47, null
   br i1 %48, label %_llgo_17, label %_llgo_18
@@ -320,7 +320,7 @@ _llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
   %102 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, i64 528, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %101)
   %103 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapOf"(ptr %81, ptr %83, ptr %102, i64 24)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %103)
-  store ptr %103, ptr @"map[_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
+  store ptr %103, ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string", align 8
   ret void
 }
 

@@ -412,9 +412,9 @@ cd llgo
 
 * [pydump](_xtool/pydump): It's the first program compiled by `llgo` (NOT `go`) in a production environment. It outputs symbol information (functions, variables, and constants) from a Python library in JSON format, preparing for the generation of corresponding packages in `llgo`.
 * [pysigfetch](https://github.com/goplus/hdq/tree/main/chore/pysigfetch): It generates symbol information by extracting information from Python's documentation site. This tool is not part of the `llgo` project, but we depend on it.
-* [llpyg](compiler/chore/llpyg): It is used to automatically convert Python libraries into Go packages that `llgo` can import. It depends on `pydump` and `pysigfetch` to accomplish the task.
-* [llgen](compiler/chore/llgen): It is used to compile Go packages into LLVM IR files (*.ll).
-* [ssadump](compiler/chore/ssadump): It is a Go SSA builder and interpreter.
+* [llpyg](chore/llpyg): It is used to automatically convert Python libraries into Go packages that `llgo` can import. It depends on `pydump` and `pysigfetch` to accomplish the task.
+* [llgen](chore/llgen): It is used to compile Go packages into LLVM IR files (*.ll).
+* [ssadump](chore/ssadump): It is a Go SSA builder and interpreter.
 
 How do I generate these tools?
 
@@ -422,11 +422,11 @@ How do I generate these tools?
 
 ```sh
 git clone https://github.com/goplus/llgo.git
-cd llgo/compiler
+cd llgo
 go install -v ./cmd/...
 go install -v ./chore/...  # compile all tools except pydump
 export LLGO_ROOT=$PWD/..
-cd ../_xtool
+cd ./_xtool
 llgo install ./...   # compile pydump
 go install github.com/goplus/hdq/chore/pysigfetch@v0.8.1  # compile pysigfetch
 ```

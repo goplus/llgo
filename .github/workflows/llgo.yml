@@ -61,7 +61,6 @@ jobs:
           go-version: '1.24.0'
 
       - name: Install
-        working-directory: compiler
         run: |
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -109,7 +108,6 @@ jobs:
 
       - name: LLDB tests
         if: ${{startsWith(matrix.os, 'macos')}}
-        working-directory: compiler
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
           bash _lldb/runtest.sh -v
@@ -144,7 +142,6 @@ jobs:
           go-version: '1.24.0'
 
       - name: Install
-        working-directory: compiler
         run: |
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -190,7 +187,6 @@ jobs:
           go-version: '1.24.0'
 
       - name: Install llgo
-        working-directory: compiler
         run: |
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV

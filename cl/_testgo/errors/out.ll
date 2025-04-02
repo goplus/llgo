@@ -10,7 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/errors"
 %"github.com/goplus/llgo/runtime/abi.Imethod" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 
 @"github.com/goplus/llgo/cl/_testgo/errors.init$guard" = global i1 false, align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/errors.errorString" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [49 x i8] c"github.com/goplus/llgo/cl/_testgo/errors", align 1
 @1 = private unnamed_addr constant [11 x i8] c"errorString", align 1
 @_llgo_string = linkonce global ptr null, align 8
@@ -18,7 +18,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/errors"
 @2 = private unnamed_addr constant [1 x i8] c"s", align 1
 @3 = private unnamed_addr constant [5 x i8] c"Error", align 1
 @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" = linkonce global ptr null, align 8
-@"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/errors.errorString" = linkonce global ptr null, align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString" = linkonce global ptr null, align 8
 @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [8 x i8] c"an error", align 1
 
@@ -27,8 +27,8 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/errors.errorString", ptr %1, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, ptr %2, align 8
-  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/errors.errorString", align 8
-  %4 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/errors.errorString", align 8
+  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString", align 8
+  %4 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString", align 8
   %5 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
   %6 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %6, ptr %4)
@@ -82,7 +82,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 define void @"github.com/goplus/llgo/cl/_testgo/errors.init$after"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 49 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 11 }, i64 25, i64 16, i64 0, i64 1)
-  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/errors.errorString", align 8
+  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString", align 8
   %1 = load ptr, ptr @_llgo_string, align 8
   %2 = icmp eq ptr %1, null
   br i1 %2, label %_llgo_1, label %_llgo_2
@@ -141,7 +141,7 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 49 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 11 }, i64 25, i64 16, i64 0, i64 1)
   %37 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %36)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %37)
-  store ptr %37, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testgo/errors.errorString", align 8
+  store ptr %37, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString", align 8
   %38 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
   %39 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
   %40 = icmp eq ptr %39, null

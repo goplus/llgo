@@ -43,7 +43,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/eface"
 @7 = private unnamed_addr constant [1 x i8] c"x", align 1
 @8 = private unnamed_addr constant [1 x i8] c"y", align 1
 @9 = private unnamed_addr constant [1 x i8] c"z", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/eface.T" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T" = linkonce global ptr null, align 8
 @10 = private unnamed_addr constant [1 x i8] c"T", align 1
 @11 = private unnamed_addr constant [6 x i8] c"Invoke", align 1
 
@@ -272,7 +272,7 @@ _llgo_0:
   %69 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %67, 0
   %70 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %69, ptr %68, 1
   call void @"github.com/goplus/llgo/cl/_testrt/eface.dump"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %70)
-  %71 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/eface.T", align 8
+  %71 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T", align 8
   %72 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %72, align 8
   %73 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %71, 0
@@ -565,12 +565,12 @@ _llgo_40:                                         ; preds = %_llgo_39, %_llgo_38
   %103 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 48 }, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %102)
   store ptr %103, ptr @"github.com/goplus/llgo/cl/_testrt/eface.struct$RKbUG45GE4henGMAdmt0Rju0JptyR8NsX7IZLsOI0OM", align 8
   %104 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 1 }, i64 24, i64 16, i64 0, i64 1)
-  %105 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/eface.T", align 8
+  %105 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T", align 8
   %106 = icmp eq ptr %105, null
   br i1 %106, label %_llgo_41, label %_llgo_42
 
 _llgo_41:                                         ; preds = %_llgo_40
-  store ptr %104, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/eface.T", align 8
+  store ptr %104, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T", align 8
   br label %_llgo_42
 
 _llgo_42:                                         ; preds = %_llgo_41, %_llgo_40

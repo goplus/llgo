@@ -16,7 +16,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/equal"
 @2 = private unnamed_addr constant [2 x i8] c"ok", align 1
 @"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw" = linkonce global ptr null, align 8
 @3 = private unnamed_addr constant [48 x i8] c"github.com/goplus/llgo/cl/_testgo/equal", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.T" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T" = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [1 x i8] c"T", align 1
 @_llgo_any = linkonce global ptr null, align 8
 @"_llgo_struct$5D_KhR3tDEp-wpx9caTiVZca43wS-XW6slE9Bsr8rsk" = linkonce global ptr null, align 8
@@ -24,7 +24,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/equal"
 @6 = private unnamed_addr constant [1 x i8] c"Y", align 1
 @7 = private unnamed_addr constant [1 x i8] c"Z", align 1
 @8 = private unnamed_addr constant [1 x i8] c"V", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.N" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N" = linkonce global ptr null, align 8
 @9 = private unnamed_addr constant [1 x i8] c"N", align 1
 @"map[_llgo_int]_llgo_string" = linkonce global ptr null, align 8
 @10 = private unnamed_addr constant [7 x i8] c"topbits", align 1
@@ -330,7 +330,7 @@ _llgo_0:
   %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %13, ptr inttoptr (i64 1 to ptr), 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %14, ptr %11, align 8
   %15 = load %"github.com/goplus/llgo/cl/_testgo/equal.T", ptr %7, align 8
-  %16 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.T", align 8
+  %16 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T", align 8
   %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
   store %"github.com/goplus/llgo/cl/_testgo/equal.T" %15, ptr %17, align 8
   %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %16, 0
@@ -375,7 +375,7 @@ _llgo_0:
   %44 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %43, ptr %42, 1
   %45 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %44)
   call void @"github.com/goplus/llgo/cl/_testgo/equal.assert"(i1 %45)
-  %46 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.N", align 8
+  %46 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N", align 8
   %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
   store %"github.com/goplus/llgo/cl/_testgo/equal.N" zeroinitializer, ptr %47, align 1
   %48 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %46, 0
@@ -384,7 +384,7 @@ _llgo_0:
   %51 = xor i1 %50, true
   call void @"github.com/goplus/llgo/cl/_testgo/equal.assert"(i1 %51)
   %52 = load %"github.com/goplus/llgo/cl/_testgo/equal.T", ptr %20, align 8
-  %53 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.T", align 8
+  %53 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T", align 8
   %54 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
   store %"github.com/goplus/llgo/cl/_testgo/equal.T" %52, ptr %54, align 8
   %55 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %53, 0
@@ -392,7 +392,7 @@ _llgo_0:
   %57 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %19, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %56)
   call void @"github.com/goplus/llgo/cl/_testgo/equal.assert"(i1 %57)
   %58 = load %"github.com/goplus/llgo/cl/_testgo/equal.T", ptr %28, align 8
-  %59 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.T", align 8
+  %59 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T", align 8
   %60 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
   store %"github.com/goplus/llgo/cl/_testgo/equal.T" %58, ptr %60, align 8
   %61 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %59, 0
@@ -465,12 +465,12 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 48 }, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9)
   store ptr %10, ptr @"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw", align 8
   %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 1 }, i64 25, i64 48, i64 0, i64 0)
-  %12 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.T", align 8
+  %12 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T", align 8
   %13 = icmp eq ptr %12, null
   br i1 %13, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
-  store ptr %11, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.T", align 8
+  store ptr %11, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T", align 8
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
@@ -524,12 +524,12 @@ _llgo_9:                                          ; preds = %_llgo_8
 
 _llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
   %44 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 1 }, i64 25, i64 0, i64 0, i64 0)
-  %45 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.N", align 8
+  %45 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N", align 8
   %46 = icmp eq ptr %45, null
   br i1 %46, label %_llgo_11, label %_llgo_12
 
 _llgo_11:                                         ; preds = %_llgo_10
-  store ptr %44, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testgo/equal.N", align 8
+  store ptr %44, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N", align 8
   br label %_llgo_12
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_10

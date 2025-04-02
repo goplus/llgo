@@ -16,7 +16,6 @@ before:
 
 builds:
   - id: llgo-darwin-amd64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
@@ -34,7 +33,6 @@ builds:
       - darwin_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-darwin-arm64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
@@ -52,7 +50,6 @@ builds:
       - darwin_arm64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-linux-amd64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
@@ -70,7 +67,6 @@ builds:
       - linux_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-linux-arm64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:

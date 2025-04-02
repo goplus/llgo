@@ -12,10 +12,10 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpmethod"
 
 @"github.com/goplus/llgo/cl/_testrt/tpmethod.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [7 x i8] c"foo.txt", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]" = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [51 x i8] c"github.com/goplus/llgo/cl/_testrt/tpmethod", align 1
 @2 = private unnamed_addr constant [72 x i8] c"future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 1
-@"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.Tuple[error]" = linkonce global ptr null, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" = linkonce global ptr null, align 8
 @3 = private unnamed_addr constant [12 x i8] c"Tuple[error]", align 1
 @_llgo_error = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [5 x i8] c"error", align 1
@@ -36,7 +36,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpmethod"
 @"github.com/goplus/llgo/cl/_testrt/tpmethod.struct$sZkgOwzwSVW5_7o2czBO4vd0Y6GnzBmlznPz4599nqg" = linkonce global ptr null, align 8
 @10 = private unnamed_addr constant [2 x i8] c"fn", align 1
 @11 = private unnamed_addr constant [4 x i8] c"Then", align 1
-@"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]" = linkonce global ptr null, align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]" = linkonce global ptr null, align 8
 @"_llgo_iface$vZQIEKY9NTKV50wpjIW4TLdy5d2nWtc2Lxm3TTPFcc0" = linkonce global ptr null, align 8
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
@@ -127,8 +127,8 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", ptr %1, i32 0, i32 0
   store { ptr, ptr } %0, ptr %2, align 8
-  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
-  %4 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
+  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
+  %4 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
   %5 = load ptr, ptr @"_llgo_func$JEZg2HNYvw8IAggzDgQI9QLqcvOvX0DMdttkifcZmV0", align 8
   %6 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.struct$mkld3EWqBOn-24FyZ5FtegwU8xiSpI84vxQJqk56Bi4", align 8
   %7 = load ptr, ptr @"_llgo_func$7nUTt2YVMXCmrXEy9bAXGeGHQ2qjM-ltFZOTJ7kc2oc", align 8
@@ -165,14 +165,14 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 define void @"github.com/goplus/llgo/cl/_testrt/tpmethod.init$after"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 51 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 72 }, i64 25, i64 24, i64 0, i64 1)
-  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
+  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 51 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 12 }, i64 25, i64 16, i64 1, i64 1)
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.Tuple[error]", align 8
+  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", align 8
   %3 = icmp eq ptr %2, null
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store ptr %1, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.Tuple[error]", align 8
+  store ptr %1, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -255,8 +255,8 @@ _llgo_11:                                         ; preds = %_llgo_10
   br i1 %43, label %_llgo_13, label %_llgo_14
 
 _llgo_12:                                         ; preds = %_llgo_14, %_llgo_10
-  %44 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.Tuple[error]", align 8
-  %45 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.Tuple[error]", align 8
+  %44 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", align 8
+  %45 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", align 8
   %46 = load ptr, ptr @"_llgo_func$JEZg2HNYvw8IAggzDgQI9QLqcvOvX0DMdttkifcZmV0", align 8
   %47 = icmp eq ptr %46, null
   br i1 %47, label %_llgo_15, label %_llgo_16
@@ -330,7 +330,7 @@ _llgo_17:                                         ; preds = %_llgo_16
 
 _llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
   %89 = load ptr, ptr @_llgo_Pointer, align 8
-  %90 = load ptr, ptr @"_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.Tuple[error]", align 8
+  %90 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", align 8
   %91 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %92 = getelementptr ptr, ptr %91, i64 0
   store ptr %90, ptr %92, align 8
@@ -455,7 +455,7 @@ _llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
   %188 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 51 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 72 }, i64 25, i64 24, i64 0, i64 1)
   %189 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %188)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %189)
-  store ptr %189, ptr @"*_llgo_github.com/goplus/llgo/compiler/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
+  store ptr %189, ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", align 8
   %190 = load ptr, ptr @"_llgo_func$7nUTt2YVMXCmrXEy9bAXGeGHQ2qjM-ltFZOTJ7kc2oc", align 8
   %191 = load ptr, ptr @"_llgo_iface$vZQIEKY9NTKV50wpjIW4TLdy5d2nWtc2Lxm3TTPFcc0", align 8
   %192 = icmp eq ptr %191, null
