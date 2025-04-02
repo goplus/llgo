@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -66,7 +65,6 @@ func (c *cache[T]) fetch() error {
 	}
 	if !c.modTime.IsZero() {
 		req.Header.Set("If-Modified-Since", c.modTime.Format(http.TimeFormat))
-		log.Println(req.Header.Get("If-Modified-Since"))
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
