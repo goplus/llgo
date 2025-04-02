@@ -14,8 +14,8 @@ runs:
       shell: bash
       run: |
         brew update
-        brew install llvm@${{inputs.llvm-version}} bdw-gc openssl libffi libuv
-        brew link --force libffi
+        brew install llvm@${{inputs.llvm-version}} lld@${{inputs.llvm-version}} bdw-gc openssl libffi libuv
+        brew link --overwrite lld@${{inputs.llvm-version}} libffi
         echo "$(brew --prefix llvm@${{inputs.llvm-version}})/bin" >> $GITHUB_PATH
 
         # Install optional deps for demos.
