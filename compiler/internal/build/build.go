@@ -763,7 +763,7 @@ type aPackage struct {
 type Package = *aPackage
 
 func isLLPkg(pkg *packages.Package) bool {
-	return pkg.Module != nil && strings.HasPrefix(mod.LLPkgPathPrefix, pkg.Module.Path)
+	return pkg.Module != nil && strings.HasPrefix(pkg.Module.Path, mod.LLPkgPathPrefix)
 }
 
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
