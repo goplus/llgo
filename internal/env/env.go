@@ -89,12 +89,12 @@ func isLLGoRoot(root string) (string, bool) {
 		return "", false
 	}
 	// Check for go.mod
-	data, err := os.ReadFile(filepath.Join(root, LLGoRuntimePkgName, "go.mod"))
+	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
 	if err != nil {
 		return "", false
 	}
 	// Check module name
-	if !strings.Contains(string(data), "module "+LLGoRuntimePkg+"\n") {
+	if !strings.Contains(string(data), "module "+LLGoCompilerPkg+"\n") {
 		return "", false
 	}
 	return root, true
