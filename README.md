@@ -105,7 +105,7 @@ func main() {
 }
 ```
 
-Or put it into a package (see [c/math](https://github.com/goplus/lib/c/math/math.go)):
+Or put it into a package (see [c/math](https://github.com/goplus/lib/tree/main/c/math/math.go)):
 
 <!-- embedme doc/_readme/llgo_call_cmath/call_cmath.go -->
 
@@ -243,9 +243,9 @@ The currently supported libraries include:
 Here are some examples related to them:
 
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
-* [mkjson](https://github.com/goplus/lib/c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
-* [sqlitedemo](https://github.com/goplus/lib/c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
-* [tetris](https://github.com/goplus/lib/c/raylib/_demo/tetris/tetris.go): a tetris game based on raylib
+* [mkjson](https://github.com/goplus/lib/tree/main/c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
+* [sqlitedemo](https://github.com/goplus/lib/tree/main/c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
+* [tetris](https://github.com/goplus/lib/tree/main/c/raylib/_demo/tetris/tetris.go): a tetris game based on raylib
 
 
 ## Go syntax support
