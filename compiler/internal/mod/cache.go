@@ -64,7 +64,7 @@ func (c *cache[T]) fetch() error {
 		return err
 	}
 	if !c.modTime.IsZero() {
-		req.Header.Set("If-Modified-Since", c.modTime.Format(http.TimeFormat))
+		req.Header.Set("If-Modified-Since", c.modTime.UTC().Format(http.TimeFormat))
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
