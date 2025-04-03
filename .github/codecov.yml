@@ -1,9 +1,9 @@
 coverage:
   ignore:
-    - "compiler/chore"
-    - "compiler/cmd/internal"
-    - "compiler/internal/build"
-    - "compiler/internal/llgen"
-    - "compiler/internal/mockable"
-    - "compiler/internal/packages"
-    - "compiler/internal/typepatch"
+    - "chore"
+    - "cmd/internal"
+    - "internal/build"
+    - "internal/llgen"
+    - "internal/mockable"
+    - "internal/packages"
+    - "internal/typepatch"

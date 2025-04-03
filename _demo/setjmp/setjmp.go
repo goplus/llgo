@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c/setjmp"
+	"github.com/goplus/lib/c/setjmp"
 )
 
 func main() {

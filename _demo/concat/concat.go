@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
+	"github.com/goplus/lib/c"
 )
 
 func concat(args ...string) (ret string) {

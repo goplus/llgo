@@ -4,4 +4,5 @@ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install -y llvm-19-dev clang-19 libclang-19-dev lld-19 pkg-config libgc-dev libssl-dev zlib1g-dev libcjson-dev libsqlite3-dev libunwind-dev libuv1-dev
 sudo apt-get install -y python3.12-dev # optional
-curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+#curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+cat ../../../install.sh | bash

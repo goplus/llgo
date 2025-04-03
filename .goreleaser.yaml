@@ -16,14 +16,13 @@ before:
 
 builds:
   - id: llgo-darwin-amd64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
       - -tags=darwin,amd64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/local/opt/llvm@19/bin/llvm-config
     env:
       - CC=o64-clang
@@ -34,14 +33,13 @@ builds:
       - darwin_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-darwin-arm64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
       - -tags=darwin,arm64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/opt/homebrew/opt/llvm@19/bin/llvm-config
     env:
       - CC=oa64-clang
@@ -52,14 +50,13 @@ builds:
       - darwin_arm64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-linux-amd64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
       - -tags=linux,amd64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/lib/llvm-19/bin/llvm-config
     env:
       - CC=x86_64-linux-gnu-gcc
@@ -70,14 +67,13 @@ builds:
       - linux_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-linux-arm64
-    dir: compiler
     main: ./cmd/llgo
     binary: bin/llgo
     flags:
       - -tags=linux,arm64,byollvm
     ldflags:
-      - -X github.com/goplus/llgo/compiler/internal/env.buildVersion=v{{.Version}}
-      - -X github.com/goplus/llgo/compiler/internal/env.buildTime={{.Date}}
+      - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
+      - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
       - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=/usr/lib/llvm-19/bin/llvm-config
     env:
       - CC=aarch64-linux-gnu-gcc

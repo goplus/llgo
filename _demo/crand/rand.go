@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/math/rand"
-	"github.com/goplus/llgo/c/time"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/math/rand"
+	"github.com/goplus/lib/c/time"
 )
 
 func fastrand64() uint64 {

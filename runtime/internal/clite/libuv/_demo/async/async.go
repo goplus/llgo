@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/libuv"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/libuv"
 )
 
 func ensure(b bool, msg string) {

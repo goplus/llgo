@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/math"
 	"github.com/goplus/llgo/_demo/cppintf/foo"
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/math"
 )
 
 type Bar struct {

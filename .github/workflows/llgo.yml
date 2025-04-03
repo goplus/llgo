@@ -34,7 +34,7 @@ jobs:
           - macos-latest
           - ubuntu-24.04
         llvm: [19]
-        go: ["1.20.14", "1.21.13", "1.22.12", "1.23.6", "1.24.0"]
+        go: ['1.21.13', '1.22.12', '1.23.6', '1.24.0']
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -50,8 +50,8 @@ jobs:
       - name: Install further optional dependencies for demos
         run: |
           py_deps=(
-            numpy # for github.com/goplus/llgo/py/numpy
-            torch # for github.com/goplus/llgo/py/torch
+            numpy # for github.com/goplus/lib/py/numpy
+            torch # for github.com/goplus/lib/py/torch
           )
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
@@ -61,7 +61,6 @@ jobs:
           go-version: "1.24.0"
 
       - name: Install
-        working-directory: compiler
         run: |
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -71,25 +70,10 @@ jobs:
         with:
           go-version: ${{matrix.go}}
 
-      - name: Verify Go version
-        run: |
-          go_version=$(go version | cut -d' ' -f3 | sed 's/go//')
-          if [[ "$go_version" != "${{matrix.go}}"* ]]; then
-            echo "Expected Go version ${{matrix.go}}, but got $go_version"
-            exit 1
-          fi
-          echo "Using Go version: $go_version"
-
       - name: _xtool build tests
         run: |
           cd _xtool
           llgo build -v ./...
-
-      - name: LLGO tests
-        if: ${{!startsWith(matrix.os, 'ubuntu')}}
-        run: |
-          echo "Test result on ${{matrix.os}} with LLVM ${{matrix.llvm}}" > result.md
-          bash ./.github/workflows/test_llgo.sh
 
       - name: Test demos
         run: |
@@ -109,7 +93,6 @@ jobs:
 
       - name: LLDB tests
         if: ${{startsWith(matrix.os, 'macos')}}
-        working-directory: compiler
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
           bash _lldb/runtest.sh -v
@@ -133,8 +116,8 @@ jobs:
       - name: Install further optional dependencies for demos
         run: |
           py_deps=(
-            numpy # for github.com/goplus/llgo/py/numpy
-            torch # for github.com/goplus/llgo/py/torch
+            numpy # for github.com/goplus/lib/py/numpy
+            torch # for github.com/goplus/lib/py/torch
           )
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
@@ -144,7 +127,6 @@ jobs:
           go-version: "1.24.0"
 
       - name: Install
-        working-directory: compiler
         run: |
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -153,15 +135,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{matrix.go}}
-
-      - name: Verify Go version
-        run: |
-          go_version=$(go version | cut -d' ' -f3 | sed 's/go//')
-          if [[ "$go_version" != "${{matrix.go}}"* ]]; then
-            echo "Expected Go version ${{matrix.go}}, but got $go_version"
-            exit 1
-          fi
-          echo "Using Go version: $go_version"
 
       - name: run llgo test
         run: |
@@ -175,7 +148,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-latest]
         llvm: [19]
-        go: ["1.20.14", "1.21.13", "1.22.12", "1.23.6", "1.24.0"]
+        go: ['1.21.13', '1.22.12', '1.23.6', '1.24.0']
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -190,7 +163,6 @@ jobs:
           go-version: "1.24.0"
 
       - name: Install llgo
-        working-directory: compiler
         run: |
           go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -199,13 +171,6 @@ jobs:
         uses: ./.github/actions/setup-go
         with:
           go-version: ${{matrix.go}}
-
-      - name: Test Hello World with go.mod 1.20
-        if: startsWith(matrix.go, '1.20') || startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.20"
 
       - name: Test Hello World with go.mod 1.21
         if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')

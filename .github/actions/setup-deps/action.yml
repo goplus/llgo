@@ -22,9 +22,9 @@ runs:
         #
         # NOTE: Keep this list updated as new deps are introduced.
         opt_deps=(
-          cjson       # for github.com/goplus/llgo/c/cjson
-          sqlite      # for github.com/goplus/llgo/c/sqlite
-          python@3.12 # for github.com/goplus/llgo/py
+          cjson       # for github.com/goplus/lib/c/cjson
+          sqlite      # for github.com/goplus/lib/c/sqlite
+          python@3.12 # for github.com/goplus/lib/py
         )
         brew install "${opt_deps[@]}"
     - name: Install Ubuntu dependencies
@@ -41,8 +41,8 @@ runs:
         #
         # NOTE: Keep this list updated as new deps are introduced.
         opt_deps=(
-          libcjson-dev   # for github.com/goplus/llgo/c/cjson
-          libsqlite3-dev # for github.com/goplus/llgo/c/sqlite
-          python3.12-dev # for github.com/goplus/llgo/py
+          libcjson-dev   # for github.com/goplus/lib/c/cjson
+          libsqlite3-dev # for github.com/goplus/lib/c/sqlite
+          python3.12-dev # for github.com/goplus/lib/py
         )
         sudo apt-get install -y "${opt_deps[@]}"
