@@ -362,8 +362,8 @@ brew update
 brew install llvm@19 lld@19 bdw-gc openssl cjson libffi libuv pkg-config
 brew install python@3.12 # optional
 brew link --overwrite lld@19 libffi
-curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
-
+# curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+./install.sh
 ```
 
 ### on Linux
@@ -378,8 +378,8 @@ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install -y llvm-19-dev clang-19 libclang-19-dev lld-19 pkg-config libgc-dev libssl-dev zlib1g-dev libcjson-dev libsqlite3-dev libunwind-dev libuv1-dev
 sudo apt-get install -y python3.12-dev # optional
-curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
-
+#curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+./install.sh
 ```
 
 #### Alpine Linux
@@ -427,9 +427,10 @@ cd llgo
 go install -v ./cmd/...
 go install -v ./chore/...  # compile all tools except pydump
 export LLGO_ROOT=$PWD
-cd ./_xtool
+cd _xtool
 llgo install ./...   # compile pydump
 go install github.com/goplus/hdq/chore/pysigfetch@v0.8.1  # compile pysigfetch
+
 ```
 
 ## Key modules
