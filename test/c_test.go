@@ -6,7 +6,7 @@ package test
 import (
 	"testing"
 
-	"github.com/goplus/llgo/c"
+	"github.com/goplus/lib/c"
 )
 
 // Can't put it in c/ package because it is marked as 'decl'

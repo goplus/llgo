@@ -31,19 +31,19 @@ LLGo is compatible with C and Python through the language's **Application Binary
 
 You can import a C/C++ standard library in LLGo!
 
-* [c](https://pkg.go.dev/github.com/goplus/llgo/c)
-* [c/syscall](https://pkg.go.dev/github.com/goplus/llgo/c/syscall)
-* [c/sys](https://pkg.go.dev/github.com/goplus/llgo/c/sys)
-* [c/os](https://pkg.go.dev/github.com/goplus/llgo/c/os)
-* [c/math](https://pkg.go.dev/github.com/goplus/llgo/c/math)
-* [c/math/cmplx](https://pkg.go.dev/github.com/goplus/llgo/c/math/cmplx)
-* [c/math/rand](https://pkg.go.dev/github.com/goplus/llgo/c/math/rand)
-* [c/pthread](https://pkg.go.dev/github.com/goplus/llgo/c/pthread)
-* [c/pthread/sync](https://pkg.go.dev/github.com/goplus/llgo/c/pthread/sync)
-* [c/sync/atomic](https://pkg.go.dev/github.com/goplus/llgo/c/sync/atomic)
-* [c/time](https://pkg.go.dev/github.com/goplus/llgo/c/time)
-* [c/net](https://pkg.go.dev/github.com/goplus/llgo/c/net)
-* [cpp/std](https://pkg.go.dev/github.com/goplus/llgo/cpp/std)
+* [c](https://pkg.go.dev/github.com/goplus/lib/c)
+* [c/syscall](https://pkg.go.dev/github.com/goplus/lib/c/syscall)
+* [c/sys](https://pkg.go.dev/github.com/goplus/lib/c/sys)
+* [c/os](https://pkg.go.dev/github.com/goplus/lib/c/os)
+* [c/math](https://pkg.go.dev/github.com/goplus/lib/c/math)
+* [c/math/cmplx](https://pkg.go.dev/github.com/goplus/lib/c/math/cmplx)
+* [c/math/rand](https://pkg.go.dev/github.com/goplus/lib/c/math/rand)
+* [c/pthread](https://pkg.go.dev/github.com/goplus/lib/c/pthread)
+* [c/pthread/sync](https://pkg.go.dev/github.com/goplus/lib/c/pthread/sync)
+* [c/sync/atomic](https://pkg.go.dev/github.com/goplus/lib/c/sync/atomic)
+* [c/time](https://pkg.go.dev/github.com/goplus/lib/c/time)
+* [c/net](https://pkg.go.dev/github.com/goplus/lib/c/net)
+* [cpp/std](https://pkg.go.dev/github.com/goplus/lib/cpp/std)
 
 Here is a simple example:
 
@@ -52,7 +52,7 @@ Here is a simple example:
 ```go
 package main
 
-import "github.com/goplus/llgo/c"
+import "github.com/goplus/lib/c"
 
 func main() {
 	c.Printf(c.Str("Hello world\n"))
@@ -105,14 +105,14 @@ func main() {
 }
 ```
 
-Or put it into a package (see [c/math](c/math/math.go)):
+Or put it into a package (see [c/math](https://github.com/goplus/lib/c/math/math.go)):
 
 <!-- embedme doc/_readme/llgo_call_cmath/call_cmath.go -->
 
 ```go
 package main
 
-import "github.com/goplus/llgo/c/math"
+import "github.com/goplus/lib/c/math"
 
 func main() {
 	println("sqrt(2) =", math.Sqrt(2))
@@ -126,18 +126,18 @@ You can import a Python library in LLGo!
 
 And you can import any Python library into `llgo` through a program called `llpyg` (see [Development tools](#development-tools)). The following libraries have been included in `llgo`:
 
-* [py](https://pkg.go.dev/github.com/goplus/llgo/py) (abi)
-* [py/std](https://pkg.go.dev/github.com/goplus/llgo/py/std) (builtins)
-* [py/sys](https://pkg.go.dev/github.com/goplus/llgo/py/sys)
-* [py/os](https://pkg.go.dev/github.com/goplus/llgo/py/os)
-* [py/math](https://pkg.go.dev/github.com/goplus/llgo/py/math)
-* [py/json](https://pkg.go.dev/github.com/goplus/llgo/py/json)
-* [py/inspect](https://pkg.go.dev/github.com/goplus/llgo/py/inspect)
-* [py/statistics](https://pkg.go.dev/github.com/goplus/llgo/py/statistics)
-* [py/numpy](https://pkg.go.dev/github.com/goplus/llgo/py/numpy)
-* [py/pandas](https://pkg.go.dev/github.com/goplus/llgo/py/pandas)
-* [py/torch](https://pkg.go.dev/github.com/goplus/llgo/py/torch)
-* [py/matplotlib](https://pkg.go.dev/github.com/goplus/llgo/py/matplotlib)
+* [py](https://pkg.go.dev/github.com/goplus/lib/py) (abi)
+* [py/std](https://pkg.go.dev/github.com/goplus/lib/py/std) (builtins)
+* [py/sys](https://pkg.go.dev/github.com/goplus/lib/py/sys)
+* [py/os](https://pkg.go.dev/github.com/goplus/lib/py/os)
+* [py/math](https://pkg.go.dev/github.com/goplus/lib/py/math)
+* [py/json](https://pkg.go.dev/github.com/goplus/lib/py/json)
+* [py/inspect](https://pkg.go.dev/github.com/goplus/lib/py/inspect)
+* [py/statistics](https://pkg.go.dev/github.com/goplus/lib/py/statistics)
+* [py/numpy](https://pkg.go.dev/github.com/goplus/lib/py/numpy)
+* [py/pandas](https://pkg.go.dev/github.com/goplus/lib/py/pandas)
+* [py/torch](https://pkg.go.dev/github.com/goplus/lib/py/torch)
+* [py/matplotlib](https://pkg.go.dev/github.com/goplus/lib/py/matplotlib)
 
 Note: For third-party libraries (such as pandas and pytorch), you still need to install the library files.
 
@@ -149,9 +149,9 @@ Here is an example:
 package main
 
 import (
-	"github.com/goplus/llgo/py"
-	"github.com/goplus/llgo/py/math"
-	"github.com/goplus/llgo/py/std"
+	"github.com/goplus/lib/py"
+	"github.com/goplus/lib/py/math"
+	"github.com/goplus/lib/py/std"
 )
 
 func main() {
@@ -181,9 +181,9 @@ Let's look at a slightly more complex example. For example, we use `numpy` to ca
 package main
 
 import (
-	"github.com/goplus/llgo/py"
-	"github.com/goplus/llgo/py/numpy"
-	"github.com/goplus/llgo/py/std"
+	"github.com/goplus/lib/py"
+	"github.com/goplus/lib/py/numpy"
+	"github.com/goplus/lib/py/std"
 )
 
 func main() {
@@ -225,27 +225,27 @@ LLGo can easily import any libraries from the C ecosystem. Currently, this impor
 
 The currently supported libraries include:
 
-* [c/bdwgc](https://pkg.go.dev/github.com/goplus/llgo/c/bdwgc)
-* [c/cjson](https://pkg.go.dev/github.com/goplus/llgo/c/cjson)
-* [c/clang](https://pkg.go.dev/github.com/goplus/llgo/c/clang)
-* [c/ffi](https://pkg.go.dev/github.com/goplus/llgo/c/ffi)
-* [c/libuv](https://pkg.go.dev/github.com/goplus/llgo/c/libuv)
-* [c/llama2](https://pkg.go.dev/github.com/goplus/llgo/c/llama2)
-* [c/lua](https://pkg.go.dev/github.com/goplus/llgo/c/lua)
-* [c/neco](https://pkg.go.dev/github.com/goplus/llgo/c/neco)
-* [c/openssl](https://pkg.go.dev/github.com/goplus/llgo/c/openssl)
-* [c/raylib](https://pkg.go.dev/github.com/goplus/llgo/c/raylib)
-* [c/sqlite](https://pkg.go.dev/github.com/goplus/llgo/c/sqlite)
-* [c/zlib](https://pkg.go.dev/github.com/goplus/llgo/c/zlib)
-* [cpp/inih](https://pkg.go.dev/github.com/goplus/llgo/cpp/inih)
-* [cpp/llvm](https://pkg.go.dev/github.com/goplus/llgo/cpp/llvm)
+* [c/bdwgc](https://pkg.go.dev/github.com/goplus/lib/c/bdwgc)
+* [c/cjson](https://pkg.go.dev/github.com/goplus/lib/c/cjson)
+* [c/clang](https://pkg.go.dev/github.com/goplus/lib/c/clang)
+* [c/ffi](https://pkg.go.dev/github.com/goplus/lib/c/ffi)
+* [c/libuv](https://pkg.go.dev/github.com/goplus/lib/c/libuv)
+* [c/llama2](https://pkg.go.dev/github.com/goplus/lib/c/llama2)
+* [c/lua](https://pkg.go.dev/github.com/goplus/lib/c/lua)
+* [c/neco](https://pkg.go.dev/github.com/goplus/lib/c/neco)
+* [c/openssl](https://pkg.go.dev/github.com/goplus/lib/c/openssl)
+* [c/raylib](https://pkg.go.dev/github.com/goplus/lib/c/raylib)
+* [c/sqlite](https://pkg.go.dev/github.com/goplus/lib/c/sqlite)
+* [c/zlib](https://pkg.go.dev/github.com/goplus/lib/c/zlib)
+* [cpp/inih](https://pkg.go.dev/github.com/goplus/lib/cpp/inih)
+* [cpp/llvm](https://pkg.go.dev/github.com/goplus/lib/cpp/llvm)
 
 Here are some examples related to them:
 
 * [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
-* [mkjson](c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
-* [sqlitedemo](c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
-* [tetris](c/raylib/_demo/tetris/tetris.go): a tetris game based on raylib
+* [mkjson](https://github.com/goplus/lib/c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
+* [sqlitedemo](https://github.com/goplus/lib/c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
+* [tetris](https://github.com/goplus/lib/c/raylib/_demo/tetris/tetris.go): a tetris game based on raylib
 
 
 ## Go syntax support
@@ -339,7 +339,7 @@ Here are the Go packages that can be imported correctly:
 
 ## Dependencies
 
-- [Go 1.20+](https://go.dev)
+- [Go 1.21+](https://go.dev)
 - [LLVM 18](https://llvm.org)
 - [Clang 18](https://clang.llvm.org)
 - [LLD 18](https://lld.llvm.org)
@@ -347,7 +347,7 @@ Here are the Go packages that can be imported correctly:
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
 - [OpenSSL 3.0+](https://www.openssl.org/)
 - [zlib 1.2+](https://www.zlib.net)
-- [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/llgo/py](https://pkg.go.dev/github.com/goplus/llgo/py))
+- [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/lib/py](https://pkg.go.dev/github.com/goplus/lib/py))
 
 ## How to install
 
@@ -362,8 +362,8 @@ brew update
 brew install llvm@19 lld@19 bdw-gc openssl cjson libffi libuv pkg-config
 brew install python@3.12 # optional
 brew link --overwrite lld@19 libffi
-curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
-
+# curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+./install.sh
 ```
 
 ### on Linux
@@ -378,8 +378,8 @@ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install -y llvm-19-dev clang-19 libclang-19-dev lld-19 pkg-config libgc-dev libssl-dev zlib1g-dev libcjson-dev libsqlite3-dev libunwind-dev libuv1-dev
 sudo apt-get install -y python3.12-dev # optional
-curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
-
+#curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+./install.sh
 ```
 
 #### Alpine Linux
@@ -413,9 +413,9 @@ cd llgo
 
 * [pydump](_xtool/pydump): It's the first program compiled by `llgo` (NOT `go`) in a production environment. It outputs symbol information (functions, variables, and constants) from a Python library in JSON format, preparing for the generation of corresponding packages in `llgo`.
 * [pysigfetch](https://github.com/goplus/hdq/tree/main/chore/pysigfetch): It generates symbol information by extracting information from Python's documentation site. This tool is not part of the `llgo` project, but we depend on it.
-* [llpyg](compiler/chore/llpyg): It is used to automatically convert Python libraries into Go packages that `llgo` can import. It depends on `pydump` and `pysigfetch` to accomplish the task.
-* [llgen](compiler/chore/llgen): It is used to compile Go packages into LLVM IR files (*.ll).
-* [ssadump](compiler/chore/ssadump): It is a Go SSA builder and interpreter.
+* [llpyg](chore/llpyg): It is used to automatically convert Python libraries into Go packages that `llgo` can import. It depends on `pydump` and `pysigfetch` to accomplish the task.
+* [llgen](chore/llgen): It is used to compile Go packages into LLVM IR files (*.ll).
+* [ssadump](chore/ssadump): It is a Go SSA builder and interpreter.
 
 How do I generate these tools?
 
@@ -423,19 +423,20 @@ How do I generate these tools?
 
 ```sh
 git clone https://github.com/goplus/llgo.git
-cd llgo/compiler
+cd llgo
 go install -v ./cmd/...
 go install -v ./chore/...  # compile all tools except pydump
-export LLGO_ROOT=$PWD/..
-cd ../_xtool
+export LLGO_ROOT=$PWD
+cd _xtool
 llgo install ./...   # compile pydump
 go install github.com/goplus/hdq/chore/pysigfetch@v0.8.1  # compile pysigfetch
+
 ```
 
 ## Key modules
 
 Below are the key modules for understanding the implementation principles of `llgo`:
 
-* [ssa](https://pkg.go.dev/github.com/goplus/llgo/compiler/ssa): It generates LLVM IR files (LLVM SSA) using the semantics (interfaces) of Go SSA. Although `LLVM SSA` and `Go SSA` are both IR languages, they work at completely different levels. `LLVM SSA` is closer to machine code, which abstracts different instruction sets. While `Go SSA` is closer to a high-level language. We can think of it as the instruction set of the `Go computer`. `llgo/ssa` is not just limited to the `llgo` compiler. If we view it as the high-level expressive power of `LLVM`, you'll find it very useful. Prior to `llgo/ssa`, you had to operate `LLVM` using machine code semantics. But now, with the advanced SSA form (in the semantics of Go SSA), you can conveniently utilize `LLVM`.
-* [cl](https://pkg.go.dev/github.com/goplus/llgo/compiler/cl): It is the core of the llgo compiler. It converts a Go package into LLVM IR files. It depends on `llgo/ssa`.
-* [internal/build](https://pkg.go.dev/github.com/goplus/llgo/compiler/internal/build): It strings together the entire compilation process of `llgo`. It depends on `llgo/ssa` and `llgo/cl`.
+* [ssa](https://pkg.go.dev/github.com/goplus/llgo/ssa): It generates LLVM IR files (LLVM SSA) using the semantics (interfaces) of Go SSA. Although `LLVM SSA` and `Go SSA` are both IR languages, they work at completely different levels. `LLVM SSA` is closer to machine code, which abstracts different instruction sets. While `Go SSA` is closer to a high-level language. We can think of it as the instruction set of the `Go computer`. `llgo/ssa` is not just limited to the `llgo` compiler. If we view it as the high-level expressive power of `LLVM`, you'll find it very useful. Prior to `llgo/ssa`, you had to operate `LLVM` using machine code semantics. But now, with the advanced SSA form (in the semantics of Go SSA), you can conveniently utilize `LLVM`.
+* [cl](https://pkg.go.dev/github.com/goplus/llgo/cl): It is the core of the llgo compiler. It converts a Go package into LLVM IR files. It depends on `llgo/ssa`.
+* [internal/build](https://pkg.go.dev/github.com/goplus/llgo/internal/build): It strings together the entire compilation process of `llgo`. It depends on `llgo/ssa` and `llgo/cl`.

@@ -40,7 +40,6 @@ get_system_info() {
 # Function to install from local source
 install_local() {
     echo "Installing llgo from local source..."
-    cd compiler
     go install ./cmd/llgo
     echo "Local installation complete."
     echo "llgo is now available in your GOPATH."

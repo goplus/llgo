@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/llama2"
-	"github.com/goplus/llgo/c/time"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/llama2"
+	"github.com/goplus/lib/c/time"
 )
 
 func main() {

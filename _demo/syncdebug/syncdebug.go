@@ -6,7 +6,7 @@ import (
 	"sync"
 	"unsafe"
 
-	llsync "github.com/goplus/llgo/c/pthread/sync"
+	llsync "github.com/goplus/lib/c/pthread/sync"
 )
 
 type L struct {

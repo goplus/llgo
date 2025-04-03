@@ -3,9 +3,9 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/net"
-	"github.com/goplus/llgo/c/os"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/net"
+	"github.com/goplus/lib/c/os"
 )
 
 func main() {

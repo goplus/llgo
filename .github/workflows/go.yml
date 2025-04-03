@@ -19,9 +19,6 @@ jobs:
           - ubuntu-24.04
         llvm: [19]
     runs-on: ${{matrix.os}}
-    defaults:
-      run:
-        working-directory: compiler
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies

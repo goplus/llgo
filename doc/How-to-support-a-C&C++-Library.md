@@ -80,8 +80,8 @@ func Parse(filename *c.Char, handler func(user c.Pointer, section *c.Char, name 
 package main
 
 import (
-"github.com/goplus/llgo/c"
-"github.com/goplus/llgo/cpp/inih"
+"github.com/goplus/lib/c"
+"github.com/goplus/lib/cpp/inih"
 )
 
 func main() {
@@ -223,8 +223,8 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/ptrtest"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/ptrtest"
 )
 
 func main() {
@@ -409,9 +409,9 @@ LLGoPackage = "link: $(pkg-config --libs spdlog); -lspdlog -pthread -lfmt")
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/cpp/inih"
-	"github.com/goplus/llgo/cpp/std"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/cpp/inih"
+	"github.com/goplus/lib/cpp/std"
 )
 
 func demoFromBuffer() {
