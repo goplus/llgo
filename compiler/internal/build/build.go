@@ -761,13 +761,14 @@ func fetchLLPkg(ctx *context, ver module.Version, verbose bool) string {
 
 	_, err = os.Stat(pkgConfigDir)
 	if os.IsNotExist(err) {
-		if verbose {
-			fmt.Printf("installing %s to %s\n", ver.String(), dir)
-		}
+		fmt.Printf("installing %s to %s\n", ver.String(), dir)
+
 		err = os.MkdirAll(dir, 0777)
 		check(err)
 		_, err = ctx.installer.Install(llpkg, dir)
-		check(err)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: installing %s fail: %v\n", ver.String(), err)
+		}
 	}
 
 	return pkgConfigDir
