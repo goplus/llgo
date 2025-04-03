@@ -1,6 +1,6 @@
 module github.com/goplus/llgo
 
-go 1.22.0
+go 1.22
 
 require (
 	github.com/goplus/gogen v1.16.9
