@@ -18,7 +18,7 @@ import (
 func TestGHInstaller(t *testing.T) {
 	ghr := &ghReleasesInstaller{
 		config: map[string]string{
-			"owner":    `MeteorsLiu`,
+			"owner":    `goplus`,
 			"repo":     `llpkg`,
 			"platform": runtime.GOOS,
 			"arch":     runtime.GOARCH,
