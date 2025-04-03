@@ -43,6 +43,9 @@ install_local() {
     go install ./cmd/llgo
     echo "Local installation complete."
     echo "llgo is now available in your GOPATH."
+    if [ -n "$GITHUB_ENV" ]; then
+        echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+    fi
 }
 
 # Function to install from remote release
