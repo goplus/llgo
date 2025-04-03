@@ -5,5 +5,9 @@ go install -v ./cmd/...
 go install -v ./chore/...  # compile all tools except pydump
 export LLGO_ROOT=$PWD
 cd _xtool
+clang --version
+which clang
+which llvm-config
+llvm-config --cflags
 llgo install ./...   # compile pydump
 go install github.com/goplus/hdq/chore/pysigfetch@v0.8.1  # compile pysigfetch
