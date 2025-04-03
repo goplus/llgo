@@ -1,6 +1,6 @@
 #!/bin/bash
-cd ./doc/_readme/ || exit 1
-llgo build -v ./...
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$DIR" || exit 1
 
 python3 -m venv .venv
 # shellcheck source=/dev/null
@@ -11,9 +11,10 @@ PYTHONPATH=""
 PYTHONPATH=$(python -c "import sys; print(':'.join(sys.path))")
 export PYTHONPATH
 
-for dir in ./*/; do
-  if grep -q "func main()" "$dir"/*.go 2>/dev/null; then
-    echo "Running examples in $dir"
-    llgo run "$dir"
+for sub in ./*/; do
+  if grep -q "func main()" "$DIR/$sub"/*.go 2>/dev/null; then
+    echo "Running examples in $sub"
+    cd "$DIR/$sub" || exit 1
+    llgo run .
   fi
 done
