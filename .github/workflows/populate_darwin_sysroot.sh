@@ -6,12 +6,12 @@ TMPDIR="$(mktemp -d)"
 export TMPDIR
 trap 'rm -rf "${TMPDIR}"' EXIT
 
-DARWIN_AMD64_LLVM_PREFIX=.sysroot/darwin/amd64/usr/local/opt/llvm@18
-DARWIN_ARM64_LLVM_PREFIX=.sysroot/darwin/arm64/opt/homebrew/opt/llvm@18
+DARWIN_AMD64_LLVM_PREFIX=.sysroot/darwin/amd64/usr/local/opt/llvm@19
+DARWIN_ARM64_LLVM_PREFIX=.sysroot/darwin/arm64/opt/homebrew/opt/llvm@19
 mkdir -p "${DARWIN_AMD64_LLVM_PREFIX}" "${DARWIN_ARM64_LLVM_PREFIX}"
 
 BREW_LLVM_FORMULA_JSON="$(mktemp)"
-curl -fsSL https://formulae.brew.sh/api/formula/llvm@18.json > "${BREW_LLVM_FORMULA_JSON}"
+curl -fsSL https://formulae.brew.sh/api/formula/llvm@19.json > "${BREW_LLVM_FORMULA_JSON}"
 BREW_LLVM_AMD64_BOTTLE_URL=$(jq -r '.bottle.stable.files.sonoma.url' "${BREW_LLVM_FORMULA_JSON}")
 BREW_LLVM_ARM64_BOTTLE_URL=$(jq -r '.bottle.stable.files.arm64_sonoma.url' "${BREW_LLVM_FORMULA_JSON}")
 curl -fsSL -H "Authorization: Bearer QQ==" "${BREW_LLVM_AMD64_BOTTLE_URL}" | tar -xzf - --strip-components=2 -C "${DARWIN_AMD64_LLVM_PREFIX}"

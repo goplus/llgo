@@ -19,10 +19,10 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y lsb-release gnupg2 wget rsync
 
-echo "deb http://apt.llvm.org/\$(lsb_release -cs)/ llvm-toolchain-\$(lsb_release -cs)-18 main" | tee /etc/apt/sources.list.d/llvm.list
+echo "deb http://apt.llvm.org/\$(lsb_release -cs)/ llvm-toolchain-\$(lsb_release -cs)-19 main" | tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 apt-get update
-apt-get install -y llvm-18-dev
+apt-get install -y llvm-19-dev
 
 error() {
 	echo -e "\$1" >&2
@@ -106,7 +106,6 @@ do-sync() {
 	args+=(-d)
 	args+=(-h)
 	args+=(--keep-dirlinks)
-	args+=("--info=progress2")
 	args+=(--delete)
 	args+=(--prune-empty-dirs)
 	args+=(--sparse)

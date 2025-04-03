@@ -5,9 +5,9 @@ name: LLGo
 
 on:
   push:
-    branches: [ "**" ]
+    branches: ["**"]
   pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
   download-model:
@@ -33,8 +33,8 @@ jobs:
         os:
           - macos-latest
           - ubuntu-24.04
-        llvm: [18]
-        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6', '1.24.0']
+        llvm: [19]
+        go: ["1.20.14", "1.21.13", "1.22.12", "1.23.6", "1.24.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0'
+          go-version: "1.24.0"
 
       - name: Install
         working-directory: compiler
@@ -121,8 +121,8 @@ jobs:
         os:
           - macos-latest
           - ubuntu-24.04
-        llvm: [18]
-        go: ['1.24.0']
+        llvm: [19]
+        go: ["1.24.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -141,7 +141,7 @@ jobs:
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0'
+          go-version: "1.24.0"
 
       - name: Install
         working-directory: compiler
@@ -174,8 +174,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-latest]
-        llvm: [18]
-        go: ['1.20.14', '1.21.13', '1.22.12', '1.23.6', '1.24.0']
+        llvm: [19]
+        go: ["1.20.14", "1.21.13", "1.22.12", "1.23.6", "1.24.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -187,7 +187,7 @@ jobs:
       - name: Set up Go 1.23 for building llgo
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.24.0'
+          go-version: "1.24.0"
 
       - name: Install llgo
         working-directory: compiler
@@ -205,32 +205,32 @@ jobs:
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.20'
+          mod-version: "1.20"
 
       - name: Test Hello World with go.mod 1.21
         if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.21'
+          mod-version: "1.21"
 
       - name: Test Hello World with go.mod 1.22
         if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.22'
+          mod-version: "1.22"
 
       - name: Test Hello World with go.mod 1.23
         if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.23'
+          mod-version: "1.23"
 
       - name: Test Hello World with go.mod 1.24
         if: startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
-          mod-version: '1.24'
+          mod-version: "1.24"
