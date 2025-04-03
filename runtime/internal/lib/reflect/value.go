@@ -707,10 +707,10 @@ func (v Value) Float() float64 {
 	} else {
 		switch k {
 		case Float32:
-			return float64(bitcast.ToFloat32(uintptr(v.ptr)))
+			return float64(bitcast.ToFloat32(int32(uintptr(v.ptr))))
 		case Float64:
 			if is64bit {
-				return bitcast.ToFloat64(uintptr(v.ptr))
+				return bitcast.ToFloat64(int64(uintptr(v.ptr)))
 			} else {
 				return *(*float64)(v.ptr)
 			}
@@ -2845,10 +2845,10 @@ func makeFloat(f flag, v float64, t Type) Value {
 	var ptr unsafe.Pointer
 	switch typ.Size() {
 	case 4:
-		ptr = unsafe.Pointer(bitcast.FromFloat32(float32(v)))
+		ptr = unsafe.Pointer(uintptr(bitcast.FromFloat32(float32(v))))
 	case 8:
 		if is64bit {
-			ptr = unsafe.Pointer(bitcast.FromFloat64(v))
+			ptr = unsafe.Pointer(uintptr(bitcast.FromFloat64(v)))
 		} else {
 			ptr = unsafe_New(typ)
 			*(*float64)(ptr) = v

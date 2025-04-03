@@ -3,9 +3,9 @@ package main
 import (
 	"unsafe"
 
-	"github.com/goplus/lib/c"
-	"github.com/goplus/lib/c/libuv"
-	"github.com/goplus/lib/c/os"
+	"github.com/goplus/llgo/c"
+	"github.com/goplus/llgo/c/libuv"
+	"github.com/goplus/llgo/c/os"
 )
 
 const BUFFER_SIZE = 1024

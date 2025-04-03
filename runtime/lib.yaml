@@ -1,0 +1,26 @@
+name: wasi-sdk
+version: v25.0.1
+
+build:
+  command: |
+    if [ "$CLIBS_BUILD_GOARCH" != "wasm" ]; then
+      exit 0
+    fi
+
+    wget -P $CLIBS_DOWNLOAD_DIR -c https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz
+
+    rm -rf "$CLIBS_BUILD_DIR/libclang"
+
+    tar -zxf $CLIBS_DOWNLOAD_DIR/wasi-sdk-25.0-x86_64-macos.tar.gz -C $CLIBS_DOWNLOAD_DIR/
+    mv $CLIBS_DOWNLOAD_DIR/wasi-sdk-25.0-x86_64-macos/lib/clang/19 $CLIBS_BUILD_DIR/libclang
+
+    rm -rf "$CLIBS_BUILD_DIR/sysroot"
+    mv $CLIBS_DOWNLOAD_DIR/wasi-sdk-25.0-x86_64-macos/share/wasi-sysroot $CLIBS_BUILD_DIR/sysroot
+
+export: |
+  if [ "$CLIBS_BUILD_GOARCH" = "wasm" ]; then
+    echo "CCFLAGS=--sysroot=$CLIBS_BUILD_DIR/sysroot -resource-dir=$CLIBS_BUILD_DIR/libclang/"
+    echo "CXXFLAGS=--sysroot=$CLIBS_BUILD_DIR/sysroot"
+    echo "CFLAGS=-I$CLIBS_BUILD_DIR/sysroot/include/wasm32-wasip1"
+    echo "CLIBS_WASI_SYSROOT=$CLIBS_BUILD_DIR/sysroot"
+  fi

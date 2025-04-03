@@ -2,39 +2,28 @@
 
 package cpu
 
-/*
-#if defined(__GNUC__) || defined(__clang__)
-    static void getcpuid(unsigned int eax, unsigned int ecx,
-                        unsigned int *a, unsigned int *b,
-                        unsigned int *c, unsigned int *d) {
-    #if defined(__i386__) || defined(__x86_64__)
-        __asm__ __volatile__(
-            "pushq %%rbp\n\t"
-            "movq %%rsp, %%rbp\n\t"
-            "andq $-16, %%rsp\n\t"  // 16-byte align stack
-            "cpuid\n\t"
-            "movq %%rbp, %%rsp\n\t"
-            "popq %%rbp\n\t"
-            : "=a"(*a), "=b"(*b), "=c"(*c), "=d"(*d)
-            : "a"(eax), "c"(ecx)
-            : "memory"
-        );
-    #endif
-    }
-#else
-    #error This code requires GCC or Clang
-#endif
-*/
-import "C"
+import (
+	_ "unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
+)
+
+const (
+	LLGoPackage = "link"
+	LLGoFiles   = "_wrap/cpu_x86.c"
+)
+
+//go:linkname c_getcpuid C.llgo_getcpuid
+func c_getcpuid(eaxArg, ecxArg uint32, eax, ebx, ecx, edx *c.Uint)
 
 func cpuid(eaxArg, ecxArg uint32) (eax, ebx, ecx, edx uint32) {
-	C.getcpuid(
-		C.uint(eaxArg),
-		C.uint(ecxArg),
-		(*C.uint)(&eax),
-		(*C.uint)(&ebx),
-		(*C.uint)(&ecx),
-		(*C.uint)(&edx),
+	c_getcpuid(
+		c.Uint(eaxArg),
+		c.Uint(ecxArg),
+		(*c.Uint)(&eax),
+		(*c.Uint)(&ebx),
+		(*c.Uint)(&ecx),
+		(*c.Uint)(&edx),
 	)
 	return
 }

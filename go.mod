@@ -12,6 +12,7 @@ require (
 	github.com/goplus/mod v0.13.17
 	github.com/qiniu/x v1.13.12
 	golang.org/x/tools v0.30.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -1,5 +1,3 @@
-//go:build linux
-
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -16,14 +14,34 @@
  * limitations under the License.
  */
 
-package os
+package setjmp
 
-import "C"
+import (
+	_ "unsafe"
 
-const (
-	LLGoFiles   = "_os/os.c"
-	LLGoPackage = "link"
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
-//go:linkname Clearenv C.clearenv
-func Clearenv()
+const (
+	LLGoPackage = "decl"
+)
+
+type (
+	SigjmpBuf [SigjmpBufSize]byte
+	JmpBuf    [JmpBufSize]byte
+)
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Setjmp C.setjmp
+func Setjmp(env *JmpBuf) c.Int
+
+//go:linkname Longjmp C.longjmp
+func Longjmp(env *JmpBuf, val c.Int)
+
+// -----------------------------------------------------------------------------
+
+//go:linkname Siglongjmp C.siglongjmp
+func Siglongjmp(env *SigjmpBuf, val c.Int)
+
+// -----------------------------------------------------------------------------
