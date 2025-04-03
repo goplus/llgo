@@ -18,12 +18,18 @@
 package get
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/goplus/llgo/compiler/cmd/internal/base"
+	"github.com/goplus/llgo/compiler/internal/mockable"
+	"github.com/goplus/llgo/compiler/internal/modget"
 )
 
 // llgo get
 var Cmd = &base.Command{
-	UsageLine: "llgo get [-t -u -v] [build flags] [packages]",
+	UsageLine: "llgo get [-t -u -v] [build flags] [clibs/packages]",
 	Short:     "Add dependencies to current module and install them",
 }
 
@@ -32,5 +38,40 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	panic("todo")
+	if len(args) == 0 {
+		mockable.Exit(1)
+	}
+
+	flags := []string{}
+	flagEndIndex := -1
+	for idx, arg := range args {
+		if strings.HasPrefix(arg, "-") {
+			flags = append(flags, arg)
+			flagEndIndex = idx
+		} else {
+			break
+		}
+	}
+
+	modules := []string{}
+	if flagEndIndex >= 0 {
+		modules = args[flagEndIndex+1:]
+	} else {
+		modules = args
+	}
+
+	for _, m := range modules {
+		// Extract the name/path and version from the first argument
+		name, version, _ := strings.Cut(m, "@")
+		if name == "" {
+			fmt.Fprintln(os.Stderr, "invalid module path:", m)
+			continue
+		}
+
+		// Get the module
+		err := modget.Do(name, version, flags)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
 }
