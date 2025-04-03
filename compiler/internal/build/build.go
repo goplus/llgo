@@ -34,11 +34,15 @@ import (
 	"strings"
 	"unsafe"
 
+	"golang.org/x/mod/module"
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/compiler/cl"
 	"github.com/goplus/llgo/compiler/internal/env"
+	"github.com/goplus/llgo/compiler/internal/installer"
+	"github.com/goplus/llgo/compiler/internal/installer/githubreleases"
 	"github.com/goplus/llgo/compiler/internal/mockable"
+	"github.com/goplus/llgo/compiler/internal/mod"
 	"github.com/goplus/llgo/compiler/internal/packages"
 	"github.com/goplus/llgo/compiler/internal/typepatch"
 	"github.com/goplus/llgo/compiler/ssa/abi"
@@ -62,6 +66,9 @@ const (
 )
 
 const (
+	defaultLLPkgOwner = "goplus"
+	defaultLLPkgRepo  = "llpkg"
+
 	debugBuild = packages.DebugPackagesLoad
 )
 
@@ -110,6 +117,15 @@ func DefaultAppExt() string {
 		return ".exe"
 	}
 	return ""
+}
+
+func defaultInstaller() installer.Installer {
+	return githubreleases.NewGHReleasesInstaller(map[string]string{
+		"owner":    defaultLLPkgOwner,
+		"repo":     defaultLLPkgRepo,
+		"platform": runtime.GOOS,
+		"arch":     runtime.GOARCH,
+	})
 }
 
 // -----------------------------------------------------------------------------
@@ -220,8 +236,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
+	installer := defaultInstaller()
+
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), make(map[module.Version]string), installer}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -286,6 +304,30 @@ type context struct {
 
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
+
+	llpkgMod  map[module.Version]string
+	installer installer.Installer
+}
+
+// the pc for the deps of each package should be unique
+// consider duplicate clib but different version
+// exmaple: A requires zlib/1.3.1, B requires zlib/1.3.0
+func setDepsPC(ctx *context, pkg *packages.Package) {
+	var pcDir []string
+	ver := module.Version{
+		Path:    pkg.Module.Path,
+		Version: pkg.Module.Version,
+	}
+	if dir := ctx.llpkgMod[ver]; dir != "" {
+		pcDir = append(pcDir, dir)
+	}
+
+	if len(pcDir) > 0 {
+		if pkgPath, ok := os.LookupEnv("PKG_CONFIG_PATH"); ok {
+			pcDir = append(pcDir, pkgPath)
+		}
+		os.Setenv("PKG_CONFIG_PATH", strings.Join(pcDir, ":"))
+	}
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -299,6 +341,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 	if len(errPkgs) > 0 {
 		return nil, fmt.Errorf("cannot build SSA for packages")
 	}
+
 	built := ctx.built
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
@@ -307,6 +350,11 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			continue
 		}
 		built[pkg.ID] = none{}
+
+		if isLLPkg(pkg) {
+			setDepsPC(ctx, pkg)
+		}
+
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
 			// skip packages that only contain declarations
@@ -701,6 +749,36 @@ type aPackage struct {
 
 type Package = *aPackage
 
+func isLLPkg(pkg *packages.Package) bool {
+	return pkg.Module != nil && strings.HasPrefix(pkg.Module.Path, mod.LLPkgPathPrefix)
+}
+
+func fetchLLPkg(ctx *context, ver module.Version, verbose bool) string {
+	llpkg, err := mod.ParseLLPkg(ver)
+	if err != nil {
+		return ""
+	}
+
+	dir, err := mod.LLPkgCacheDirByModule(ver)
+	check(err)
+
+	pkgConfigDir := filepath.Join(dir, "lib", "pkgconfig")
+
+	_, err = os.Stat(pkgConfigDir)
+	if os.IsNotExist(err) {
+		fmt.Printf("installing %s to %s\n", ver.String(), dir)
+
+		err = os.MkdirAll(dir, 0777)
+		check(err)
+		_, err = ctx.installer.Install(llpkg, dir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: installing %s fail: %v\n", ver.String(), err)
+		}
+	}
+
+	return pkgConfigDir
+}
+
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA
 	built := ctx.built
@@ -709,6 +787,15 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 			pkgPath := p.PkgPath
 			if _, ok := built[pkgPath]; ok || strings.HasPrefix(pkgPath, altPkgPathPrefix) {
 				return
+			}
+			if isLLPkg(p) {
+				ver := module.Version{
+					Path:    p.Module.Path,
+					Version: p.Module.Version,
+				}
+				if _, ok := ctx.llpkgMod[ver]; !ok {
+					ctx.llpkgMod[ver] = fetchLLPkg(ctx, ver, verbose)
+				}
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(prog, p, verbose)
