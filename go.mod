@@ -1,7 +1,6 @@
 module github.com/goplus/llgo
 
 go 1.22.0
-
 toolchain go1.24.1
 
 require (
@@ -11,12 +10,12 @@ require (
 	github.com/goplus/llvm v0.8.3
 	github.com/goplus/mod v0.13.17
 	github.com/qiniu/x v1.13.12
-	golang.org/x/tools v0.30.0
+	golang.org/x/tools v0.31.0
 )
 
 require (
-	golang.org/x/mod v0.23.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 )
 
 replace github.com/goplus/llgo/runtime => ./runtime
