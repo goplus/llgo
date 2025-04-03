@@ -1,5 +1,4 @@
-//go:build !linux
-// +build !linux
+//go:build !byollvm && darwin && amd64 && llvm17
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -17,15 +16,6 @@
  * limitations under the License.
  */
 
-package clite
+package llvm
 
-import _ "unsafe"
-
-//go:linkname Stdin __stdinp
-var Stdin FilePtr
-
-//go:linkname Stdout __stdoutp
-var Stdout FilePtr
-
-//go:linkname Stderr __stderrp
-var Stderr FilePtr
+const ldLLVMConfigBin = "/usr/local/opt/llvm@17/bin/llvm-config"

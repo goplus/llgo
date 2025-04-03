@@ -2,10 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build wasip1
+package syscall
 
-package os
-
-// supportsCloseOnExec reports whether the platform supports the
-// O_CLOEXEC flag.
-const supportsCloseOnExec = false
+//go:wasmimport wasi_snapshot_preview1 proc_exit
+func ProcExit(code int32)

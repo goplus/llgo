@@ -16,21 +16,39 @@
 
 package syscall
 
+import (
+	errorsPkg "errors"
+)
+
 const (
 	LLGoPackage = "noinit"
 )
 
-type Errno uintptr
+var (
+	ErrInvalid     = errorsPkg.New("invalid argument")
+	ErrPermission  = errorsPkg.New("permission denied")
+	ErrExist       = errorsPkg.New("file already exists")
+	ErrNotExist    = errorsPkg.New("file does not exist")
+	ErrClosed      = errorsPkg.New("file already closed")
+	ErrUnsupported = errorsPkg.New("operation not supported")
+)
 
-// A Signal is a number describing a process signal.
-// It implements the os.Signal interface.
-type Signal = int
+// Nano returns the time stored in ts as nanoseconds.
+func (ts *Timespec) Nano() int64 {
+	return int64(ts.Sec)*1e9 + int64(ts.Nsec)
+}
+
+// Nano returns the time stored in tv as nanoseconds.
+func (tv *Timeval) Nano() int64 {
+	return int64(tv.Sec)*1e9 + int64(tv.Usec)*1000
+}
 
 // Unix returns the time stored in ts as seconds plus nanoseconds.
 func (ts *Timespec) Unix() (sec int64, nsec int64) {
 	return int64(ts.Sec), int64(ts.Nsec)
 }
 
-func (iov *Iovec) SetLen(length int) {
-	iov.Len = uint64(length)
+// Unix returns the time stored in tv as seconds plus nanoseconds.
+func (tv *Timeval) Unix() (sec int64, nsec int64) {
+	return int64(tv.Sec), int64(tv.Usec) * 1000
 }

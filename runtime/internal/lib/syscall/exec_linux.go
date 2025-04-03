@@ -724,7 +724,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 
 childerror:
 	// send error code on pipe
-	os.Write(c.Int(pipe), unsafe.Pointer(&err1), unsafe.Sizeof(err1))
+	os.Write(c.Int(pipe), unsafe.Pointer(&err1), c.SizeT(unsafe.Sizeof(err1)))
 	for {
 		os.Exit(253)
 	}

@@ -23,6 +23,7 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"os"
 	"testing"
 	"unsafe"
 
@@ -40,6 +41,12 @@ func TestEndDefer(t *testing.T) {
 }
 
 func TestUnsafeString(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Chdir("../../runtime")
+	defer os.Chdir(wd)
 	prog := NewProgram(nil)
 	prog.SetRuntime(func() *types.Package {
 		fset := token.NewFileSet()

@@ -15,7 +15,7 @@ runs:
       run: |
         brew update
         brew install llvm@${{inputs.llvm-version}} lld@${{inputs.llvm-version}} bdw-gc openssl libffi libuv
-        brew link --overwrite lld@${{inputs.llvm-version}} libffi
+        brew link --overwrite llvm@${{inputs.llvm-version}} lld@${{inputs.llvm-version}} libffi
         echo "$(brew --prefix llvm@${{inputs.llvm-version}})/bin" >> $GITHUB_PATH
 
         # Install optional deps for demos.
@@ -35,7 +35,7 @@ runs:
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo apt-get update
         sudo apt-get install -y llvm-${{inputs.llvm-version}}-dev clang-${{inputs.llvm-version}} libclang-${{inputs.llvm-version}}-dev lld-${{inputs.llvm-version}} pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libunwind-dev libuv1-dev
-        echo "/usr/lib/llvm-${{inputs.llvm-version}}/bin" >> $GITHUB_PATH
+        echo "PATH=/usr/lib/llvm-${{inputs.llvm-version}}/bin:$PATH" >> $GITHUB_ENV
 
         # Install optional deps for demos.
         #

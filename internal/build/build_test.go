@@ -58,9 +58,15 @@ func TestRun(t *testing.T) {
 }
 
 func TestTest(t *testing.T) {
-	mockRun([]string{"-v", "../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
+	wd, _ := os.Getwd()
+	os.Chdir("../../cl/_testgo/runtest")
+	defer os.Chdir(wd)
+	mockRun([]string{"-v", "."}, &Config{Mode: ModeTest})
 }
 
 func TestCmpTest(t *testing.T) {
-	mockRun([]string{"-v", "../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
+	wd, _ := os.Getwd()
+	os.Chdir("../../cl/_testgo/runtest")
+	defer os.Chdir(wd)
+	mockRun([]string{"-v", "."}, &Config{Mode: ModeCmpTest})
 }

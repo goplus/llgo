@@ -210,6 +210,22 @@ type aProgram struct {
 // A Program presents a program.
 type Program = *aProgram
 
+var arch32 = map[string]bool{
+	"386":    true,
+	"arm":    true,
+	"mips":   true,
+	"mipsle": true,
+	"s390x":  true,
+	"wasm":   true,
+}
+
+func is32Bits(arch string) bool {
+	if v, ok := arch32[arch]; ok {
+		return v
+	}
+	return false
+}
+
 // NewProgram creates a new program.
 func NewProgram(target *Target) Program {
 	if target == nil {
@@ -231,7 +247,7 @@ func NewProgram(target *Target) Program {
 		// TODO(xsw): Finalize may cause panic, so comment it.
 		ctx.Finalize()
 	*/
-	is32Bits := (td.PointerSize() == 4 || target.GOARCH == "x86") // TODO(xsw): remove temp code
+	is32Bits := (td.PointerSize() == 4 || is32Bits(target.GOARCH))
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
 		target: target, td: td, is32Bits: is32Bits,
@@ -379,6 +395,12 @@ func (p Program) tyComplex128() llvm.Type {
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
+	// TODO(lijie): enable target output will check module override, but can't
+	// pass the snapshot test, so disable it for now
+	// if p.target.GOARCH != runtime.GOARCH && p.target.GOOS != runtime.GOOS {
+	// 	mod.SetTarget(p.target.Spec().Triple)
+	// }
+
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// mod.Finalize()
 	gbls := make(map[string]Global)

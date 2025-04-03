@@ -301,7 +301,7 @@ func main() {
 	}
 }
 
-func _TestCommandHandling(t *testing.T) {
+func TestCommandHandling(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string

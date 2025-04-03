@@ -2,9 +2,9 @@ name: Docs
 
 on:
   push:
-    branches: [ "**" ]
+    branches: ["**"]
   pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
   doc_verify:
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install embedme
         run: npm install -g embedme
@@ -43,7 +43,7 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
-          go-version: '1.23.6'
+          go-version: "1.23.6"
 
       - name: Install dependencies on macOS
         if: startsWith(matrix.os, 'macos')
@@ -79,7 +79,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: "1.23"
 
       - name: Install dependencies on macOS
         if: startsWith(matrix.os, 'macos')
@@ -130,7 +130,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: "1.23"
 
       - name: Install dependencies on macOS
         if: startsWith(matrix.os, 'macos')
@@ -145,6 +145,7 @@ jobs:
           set -e
           set -x
           source doc/_readme/scripts/install_ubuntu.sh
+          echo "PATH=/usr/lib/llvm-19/bin:$PATH" >> $GITHUB_ENV
 
       - name: Install llgo with tools
         run: |

@@ -8,8 +8,8 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
+	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 	"github.com/goplus/llgo/runtime/internal/lib/internal/bytealg"
-	"github.com/goplus/llgo/runtime/internal/lib/syscall"
 )
 
 type readdirMode int
@@ -39,7 +39,7 @@ func (f *File) Readdirnames(n int) (names []string, err error) {
 }
 
 func open(path string, flag int, perm uint32) (int, error) {
-	fd, err := syscall.Open(path, flag, perm)
+	fd, err := origSyscall.Open(path, flag, perm)
 	return fd, err
 }
 
@@ -100,10 +100,29 @@ func closedir(dir uintptr) error {
 }
 
 //go:linkname c_readdir C.readdir
-func c_readdir(dir uintptr) ([]syscall.Dirent, error)
+func c_readdir(dir uintptr) *syscall.Dirent
 
 func readdir(dir uintptr) ([]syscall.Dirent, error) {
-	return c_readdir(dir)
+	var entries []syscall.Dirent
+	for {
+		dirent := c_readdir(dir)
+		if dirent == nil {
+			break
+		}
+		entries = append(entries, *dirent)
+	}
+	return entries, nil
+}
+
+func direntNamePtr(name any) *byte {
+	switch name := name.(type) {
+	case *byte:
+		return name
+	case []byte:
+		return &name[0]
+	default:
+		panic("invalid type")
+	}
 }
 
 func (f *File) ReadDir(n int) (dirents []DirEntry, err error) {
@@ -133,26 +152,26 @@ func (f *File) ReadDir(n int) (dirents []DirEntry, err error) {
 
 		for _, entry := range entries {
 			// Convert syscall.Dirent to fs.DirEntry
-			name := bytesToString((*[1024]byte)(unsafe.Pointer(&entry.Name[0]))[:])
+			name := bytesToString((*[1024]byte)(unsafe.Pointer(direntNamePtr(entry.Name)))[:])
 			if name == "." || name == ".." {
 				continue
 			}
 
 			typ := fs.FileMode(0)
 			switch entry.Type {
-			case origSyscall.DT_REG:
+			case syscall.DT_REG:
 				typ = 0
-			case origSyscall.DT_DIR:
+			case syscall.DT_DIR:
 				typ = fs.ModeDir
-			case origSyscall.DT_LNK:
+			case syscall.DT_LNK:
 				typ = fs.ModeSymlink
-			case origSyscall.DT_SOCK:
+			case syscall.DT_SOCK:
 				typ = fs.ModeSocket
-			case origSyscall.DT_FIFO:
+			case syscall.DT_FIFO:
 				typ = fs.ModeNamedPipe
-			case origSyscall.DT_CHR:
+			case syscall.DT_CHR:
 				typ = fs.ModeCharDevice
-			case origSyscall.DT_BLK:
+			case syscall.DT_BLK:
 				typ = fs.ModeDevice
 			}
 

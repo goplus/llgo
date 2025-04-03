@@ -603,7 +603,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
-		log.Panicln("unreachable:", iv)
+		log.Panicf("unreachable: %T(%s)", iv, iv.String())
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:

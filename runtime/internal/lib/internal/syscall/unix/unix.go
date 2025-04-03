@@ -17,10 +17,5 @@
 package unix
 
 import (
-	"syscall"
 	_ "unsafe"
 )
-
-func HasNonblockFlag(flag int) bool {
-	return flag&syscall.O_NONBLOCK != 0
-}
