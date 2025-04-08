@@ -32,6 +32,14 @@ func GOROOT() string {
 	panic("cannot get GOROOT: " + err.Error())
 }
 
+func LLGoCacheDir() string {
+	userCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		panic(err)
+	}
+	return filepath.Join(userCacheDir, "llgo")
+}
+
 func LLGoRuntimeDir() string {
 	root := LLGoROOT()
 	if root != "" {

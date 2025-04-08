@@ -37,6 +37,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
@@ -291,7 +292,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf}
+	export, err := crosscompile.UseCrossCompileSDK(conf.Goos, conf.Goarch)
+	check(err)
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf, export}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -357,7 +360,8 @@ type context struct {
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
 
-	buildConf *Config
+	buildConf    *Config
+	crossCompile crosscompile.Export
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -542,6 +546,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	if IsDbgSymsEnabled() {
 		args = append(args, "-gdwarf-4")
 	}
+
+	args = append(args, ctx.crossCompile.CCFLAGS...)
+	args = append(args, ctx.crossCompile.LDFLAGS...)
 
 	cmd := ctx.env.Clang()
 	cmd.Verbose = verbose
@@ -1022,6 +1029,8 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	cflags := buildCflags(ctx.buildConf.Goos, ctx.buildConf.Goarch, targetTriple)
 	args = append(cflags, args...)
 	args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
+	args = append(args, ctx.crossCompile.CCFLAGS...)
+	args = append(args, ctx.crossCompile.CFLAGS...)
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
