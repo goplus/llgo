@@ -136,13 +136,13 @@ func printanycustomtype(i any) {
 		}
 	case abi.Float32:
 		if isDirectIface(e._type) {
-			print(typestring, "(", bitcast.ToFloat32((uintptr(e.data))), ")")
+			print(typestring, "(", bitcast.ToFloat32(int32(uintptr(e.data))), ")")
 		} else {
 			print(typestring, "(", *(*float32)(e.data), ")")
 		}
 	case abi.Float64:
 		if isDirectIface(e._type) {
-			print(typestring, "(", bitcast.ToFloat64(uintptr(e.data)), ")")
+			print(typestring, "(", bitcast.ToFloat64(int64(uintptr(e.data))), ")")
 		} else {
 			print(typestring, "(", *(*float64)(e.data), ")")
 		}

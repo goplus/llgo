@@ -205,12 +205,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cfg.Mode |= packages.NeedForTest
 	}
 
-	if len(llruntime.OverlayFiles) > 0 {
-		cfg.Overlay = make(map[string][]byte)
-		for file, src := range llruntime.OverlayFiles {
-			overlay := unsafe.Slice(unsafe.StringData(src), len(src))
-			cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
-		}
+	cfg.Overlay = make(map[string][]byte)
+	clearRuntime(cfg.Overlay, filepath.Join(env.GOROOT(), "src", "runtime"))
+	for file, src := range llruntime.OverlayFiles {
+		overlay := unsafe.Slice(unsafe.StringData(src), len(src))
+		cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
 	}
 
 	cl.EnableDebug(IsDbgEnabled())
@@ -320,6 +319,23 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	return dpkg, nil
+}
+
+func clearRuntime(overlay map[string][]byte, runtimePath string) {
+	files, err := filepath.Glob(runtimePath + "/*.go")
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range files {
+		overlay[file] = []byte("package runtime\n")
+	}
+	files, err = filepath.Glob(runtimePath + "/*.s")
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range files {
+		overlay[file] = []byte("\n")
+	}
 }
 
 func needLink(pkg *packages.Package, mode Mode) bool {

@@ -19,7 +19,9 @@ package sync
 import (
 	"runtime"
 	gosync "sync"
+	_ "unsafe"
 
+	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 	"github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
 )
@@ -62,8 +64,12 @@ func (m *Mutex) TryLock() bool {
 	return (*sync.Mutex)(&m.Mutex).TryLock() == 0
 }
 
-// llgo:link (*Mutex).Unlock C.pthread_mutex_unlock
-func (m *Mutex) Unlock() {}
+//go:linkname c_pthread_mutex_unlock C.pthread_mutex_unlock
+func c_pthread_mutex_unlock(m *Mutex) c.Int
+
+func (m *Mutex) Unlock() {
+	c_pthread_mutex_unlock(m)
+}
 
 // -----------------------------------------------------------------------------
 
@@ -94,8 +100,12 @@ func (rw *RWMutex) TryRLock() bool {
 	return (*sync.RWLock)(&rw.RWLock).TryRLock() == 0
 }
 
-// llgo:link (*RWMutex).RUnlock C.pthread_rwlock_unlock
-func (rw *RWMutex) RUnlock() {}
+//go:linkname c_pthread_rwlock_unlock C.pthread_rwlock_unlock
+func c_pthread_rwlock_unlock(rw *RWMutex) c.Int
+
+func (rw *RWMutex) RUnlock() {
+	c_pthread_rwlock_unlock(rw)
+}
 
 func (rw *RWMutex) Lock() {
 	rw.ensureInit()
@@ -107,8 +117,9 @@ func (rw *RWMutex) TryLock() bool {
 	return (*sync.RWLock)(&rw.RWLock).TryLock() == 0
 }
 
-// llgo:link (*RWMutex).Unlock C.pthread_rwlock_unlock
-func (rw *RWMutex) Unlock() {}
+func (rw *RWMutex) Unlock() {
+	c_pthread_rwlock_unlock(rw)
+}
 
 // -----------------------------------------------------------------------------
 
@@ -144,11 +155,19 @@ func NewCond(l gosync.Locker) *Cond {
 	return ret
 }
 
-// llgo:link (*Cond).Signal C.pthread_cond_signal
-func (c *Cond) Signal() {}
+//go:linkname c_pthread_cond_signal C.pthread_cond_signal
+func c_pthread_cond_signal(c *Cond) c.Int
 
-// llgo:link (*Cond).Broadcast C.pthread_cond_broadcast
-func (c *Cond) Broadcast() {}
+//go:linkname c_pthread_cond_broadcast C.pthread_cond_broadcast
+func c_pthread_cond_broadcast(c *Cond) c.Int
+
+func (c *Cond) Signal() {
+	c_pthread_cond_signal(c)
+}
+
+func (c *Cond) Broadcast() {
+	c_pthread_cond_broadcast(c)
+}
 
 func (c *Cond) Wait() {
 	c.cond.Wait(c.m)
