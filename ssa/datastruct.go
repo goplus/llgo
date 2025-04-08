@@ -245,7 +245,7 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 	} else {
 		typ = prog.Uint()
 	}
-	if prog.SizeOf(idx.Type) < prog.SizeOf(typ) {
+	if prog.SizeOf(idx.Type) != prog.SizeOf(typ) {
 		idx.Type = typ
 		idx.impl = castUintptr(b, idx.impl, typ)
 	}

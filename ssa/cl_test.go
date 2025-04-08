@@ -24,6 +24,8 @@ import (
 	"go/types"
 	"io"
 	"log"
+	"os"
+	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
@@ -65,7 +67,13 @@ func TestFromTestdata(t *testing.T) {
 }
 
 func TestMakeInterface(t *testing.T) {
-	prog := ssatest.NewProgram(t, &ssa.Target{GOARCH: "x86"})
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Chdir("../runtime")
+	defer os.Chdir(wd)
+	prog := ssatest.NewProgram(t, &ssa.Target{GOARCH: runtime.GOARCH})
 	pkg := prog.NewPackage("foo", "foo")
 	fn := pkg.NewFunc("main", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.InC)
 	b := fn.MakeBody(1)

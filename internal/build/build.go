@@ -21,7 +21,6 @@ import (
 	"debug/macho"
 	"fmt"
 	"go/ast"
-	"go/build"
 	"go/constant"
 	"go/token"
 	"go/types"
@@ -31,6 +30,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"unsafe"
 
@@ -41,13 +41,13 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
+	llvmTarget "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
-	clangCheck "github.com/goplus/llgo/xtool/clang/check"
 )
 
 type Mode int
@@ -66,6 +66,8 @@ const (
 )
 
 type Config struct {
+	Goos      string
+	Goarch    string
 	BinPath   string
 	AppExt    string   // ".exe" on Windows, empty on Unix
 	OutFile   string   // only valid for ModeBuild when len(pkgs) == 1
@@ -86,10 +88,19 @@ func NewDefaultConf(mode Mode) *Config {
 	if err := os.MkdirAll(bin, 0755); err != nil {
 		panic(fmt.Errorf("cannot create bin directory: %v", err))
 	}
+	goos, goarch := os.Getenv("GOOS"), os.Getenv("GOARCH")
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
 	conf := &Config{
+		Goos:    goos,
+		Goarch:  goarch,
 		BinPath: bin,
 		Mode:    mode,
-		AppExt:  DefaultAppExt(),
+		AppExt:  DefaultAppExt(goos),
 	}
 	return conf
 }
@@ -105,9 +116,12 @@ func envGOPATH() (string, error) {
 	return filepath.Join(home, "go"), nil
 }
 
-func DefaultAppExt() string {
-	if runtime.GOOS == "windows" {
+func DefaultAppExt(goos string) string {
+	switch goos {
+	case "windows":
 		return ".exe"
+	case "wasi", "wasip1", "js":
+		return ".wasm"
 	}
 	return ""
 }
@@ -121,9 +135,65 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
+func mergeFlags(flags, extraFlags []string) (newFlags []string, tags []string) {
+	// Combine all flags
+	allFlags := append([]string{}, flags...)
+	allFlags = append(allFlags, extraFlags...)
+
+	// Find all -tags flags and extract their values
+	tagValues := []string{}
+
+	for i := 0; i < len(allFlags); i++ {
+		flag := allFlags[i]
+		// Handle -tags=value format
+		if strings.HasPrefix(flag, "-tags=") {
+			value := strings.TrimPrefix(flag, "-tags=")
+			if value != "" {
+				tagValues = append(tagValues, strings.Split(value, ",")...)
+			}
+			continue
+		}
+		// Handle -tags value format
+		if flag == "-tags" && i+1 < len(allFlags) {
+			i++
+			value := allFlags[i]
+			if value != "" {
+				tagValues = append(tagValues, strings.Split(value, ",")...)
+			}
+			continue
+		}
+		// Keep other flags
+		newFlags = append(newFlags, flag)
+	}
+	// Add combined -tags flag if we found any tag values
+	if len(tagValues) > 0 {
+		// Remove duplicates
+		uniqueTags := make([]string, 0, len(tagValues))
+		seen := make(map[string]bool)
+		for _, tag := range tagValues {
+			tag = strings.TrimSpace(tag)
+			if tag != "" && !seen[tag] {
+				seen[tag] = true
+				uniqueTags = append(uniqueTags, tag)
+			}
+		}
+		if len(uniqueTags) > 0 {
+			newFlags = append(newFlags, "-tags", strings.Join(uniqueTags, ","))
+			tags = []string{"-tags", strings.Join(uniqueTags, ",")}
+		}
+	}
+	return newFlags, tags
+}
+
 func Do(args []string, conf *Config) ([]Package, error) {
+	if conf.Goos == "" {
+		conf.Goos = runtime.GOOS
+	}
+	if conf.Goarch == "" {
+		conf.Goarch = runtime.GOARCH
+	}
 	flags, patterns, verbose := ParseArgs(args, buildFlags)
-	flags = append(flags, "-tags", "llgo")
+	flags, _ = mergeFlags(flags, []string{"-tags", "llgo"})
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: flags,
@@ -148,8 +218,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
-		GOOS:   build.Default.GOOS,
-		GOARCH: build.Default.GOARCH,
+		GOOS:   conf.Goos,
+		GOARCH: conf.Goarch,
 	}
 
 	prog := llssa.NewProgram(target)
@@ -221,7 +291,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool)}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -286,6 +356,8 @@ type context struct {
 
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
+
+	buildConf *Config
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -364,7 +436,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
-				if err := clangCheck.CheckLinkArgs(pkgLinkArgs); err != nil {
+				if err := ctx.env.Clang().CheckLinkArgs(pkgLinkArgs); err != nil {
 					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
 				}
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
@@ -401,39 +473,18 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		} else {
 			app = filepath.Join(conf.BinPath, name+conf.AppExt)
 		}
+	} else if !strings.HasSuffix(app, conf.AppExt) {
+		app += conf.AppExt
 	}
+
+	// Start with output file argument
 	args := make([]string, 0, len(pkg.Imports)+len(linkArgs)+16)
-	args = append(
-		args,
-		"-o", app,
-		"-Wl,--error-limit=0",
-		"-fuse-ld=lld",
-		"-Wno-override-module",
-		// "-O2", // FIXME: This will cause TestFinalizer in _test/bdwgc.go to fail on macOS.
-	)
-	switch runtime.GOOS {
-	case "darwin": // ld64.lld (macOS)
-		args = append(
-			args,
-			"-rpath", "@loader_path",
-			"-rpath", "@loader_path/../lib",
-			"-Xlinker", "-dead_strip",
-		)
-	case "windows": // lld-link (Windows)
-		// TODO: Add options for Windows.
-	default: // ld.lld (Unix), wasm-ld (WebAssembly)
-		args = append(
-			args,
-			"-rpath", "$ORIGIN",
-			"-rpath", "$ORIGIN/../lib",
-			"-fdata-sections",
-			"-ffunction-sections",
-			"-Xlinker", "--gc-sections",
-			"-lm",
-			"-latomic",
-			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
-		)
-	}
+	args = append(args, "-o", app)
+
+	// Add common linker arguments based on target OS and architecture
+	targetTriple := llvmTarget.GetTargetTriple(conf.Goos, conf.Goarch)
+	args = append(args, buildLdflags(conf.Goos, conf.Goarch, targetTriple)...)
+
 	needRuntime := false
 	needPyInit := false
 	pkgsMap := make(map[*packages.Package]*aPackage, len(pkgs))
@@ -453,7 +504,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 			}
 		}
 	})
-	entryLLFile, err := genMainModuleFile(llssa.PkgRuntime, pkg.PkgPath, needRuntime, needPyInit)
+	entryLLFile, err := genMainModuleFile(conf, llssa.PkgRuntime, pkg.PkgPath, needRuntime, needPyInit)
 	if err != nil {
 		panic(err)
 	}
@@ -478,11 +529,13 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
 	libs := make([]string, 0, ctx.nLibdir*3)
-	for _, arg := range args {
-		if strings.HasPrefix(arg, "-L") {
-			exargs = append(exargs, "-rpath", arg[2:])
-		} else if strings.HasPrefix(arg, "-l") {
-			libs = append(libs, arg[2:])
+	if IsRpathChangeEnabled() {
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "-L") {
+				exargs = append(exargs, "-rpath", arg[2:])
+			} else if strings.HasPrefix(arg, "-l") {
+				libs = append(libs, arg[2:])
+			}
 		}
 	}
 	args = append(args, exargs...)
@@ -490,14 +543,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		args = append(args, "-gdwarf-4")
 	}
 
-	// TODO(xsw): show work
-	if verbose {
-		fmt.Fprintln(os.Stderr, "clang", args)
-	}
-	err = ctx.env.Clang().Link(args...)
+	cmd := ctx.env.Clang()
+	cmd.Verbose = verbose
+	err = cmd.Link(args...)
 	check(err)
 
-	if IsRpathChangeEnabled() && runtime.GOOS == "darwin" {
+	if IsRpathChangeEnabled() && conf.Goos == "darwin" {
 		dylibDeps := make([]string, 0, len(libs))
 		for _, lib := range libs {
 			dylibDep := findDylibDep(app, lib)
@@ -519,7 +570,16 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, s.ExitCode())
 		}
 	case ModeRun:
-		cmd := exec.Command(app, conf.RunArgs...)
+		args := make([]string, 0, len(conf.RunArgs)+1)
+		copy(args, conf.RunArgs)
+		if isWasmTarget(conf.Goos) {
+			args = append(args, app, "--wasm", "multi-memory=true")
+			args = append(args, conf.RunArgs...)
+			app = "wasmtime"
+		} else {
+			args = conf.RunArgs
+		}
+		cmd := exec.Command(app, args...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -532,7 +592,84 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 	}
 }
 
-func genMainModuleFile(rtPkgPath, mainPkgPath string, needRuntime, needPyInit bool) (path string, err error) {
+func buildCflags(goos, goarch, targetTriple string) []string {
+	args := []string{}
+	if goarch == "wasm" {
+		args = append(args, "-target", targetTriple)
+	}
+	return args
+}
+
+// buildLdflags builds the common linker arguments based on target OS and architecture
+func buildLdflags(goos, goarch, targetTriple string) []string {
+	args := []string{
+		"-target", targetTriple,
+		"-Wno-override-module",
+	}
+	if goos == runtime.GOOS {
+		// Non-cross-compile
+		args = append(args,
+			"-Wl,--error-limit=0",
+			"-fuse-ld=lld",
+			"-Wno-override-module",
+		)
+	}
+
+	switch goos {
+	case "darwin": // ld64.lld (macOS)
+		if IsRpathChangeEnabled() {
+			args = append(
+				args,
+				"-rpath", "@loader_path",
+				"-rpath", "@loader_path/../lib",
+			)
+		}
+		args = append(
+			args,
+			"-Xlinker", "-dead_strip",
+		)
+	case "windows": // lld-link (Windows)
+		// TODO(xsw): Add options for Windows.
+	case "wasi", "wasip1", "js": // wasm-ld (WebAssembly)
+		args = append(
+			args,
+			"-fdata-sections",
+			"-ffunction-sections",
+			// "-nostdlib",
+			// "-Wl,--no-entry",
+			"-Wl,--export-all",
+			"-Wl,--allow-undefined",
+			// "-Wl,--import-memory,",
+			"-Wl,--export-memory",
+			"-Wl,--initial-memory=16777216", // 16MB
+			// "-pthread",
+			// "-matomics",
+			// "-mbulk-memory",
+			// "-mmultimemory",
+		)
+	default: // ld.lld (Unix)
+		args = append(
+			args,
+			// "-rpath", "$ORIGIN",
+			// "-rpath", "$ORIGIN/../lib",
+			"-fdata-sections",
+			"-ffunction-sections",
+			"-Xlinker",
+			"--gc-sections",
+			"-lm",
+			"-latomic",
+			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+		)
+	}
+
+	return args
+}
+
+func isWasmTarget(goos string) bool {
+	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
+}
+
+func genMainModuleFile(conf *Config, rtPkgPath, mainPkgPath string, needRuntime, needPyInit bool) (path string, err error) {
 	var (
 		pyInitDecl string
 		pyInit     string
@@ -546,6 +683,10 @@ func genMainModuleFile(rtPkgPath, mainPkgPath string, needRuntime, needPyInit bo
 	if needPyInit {
 		pyInit = "call void @Py_Initialize()"
 		pyInitDecl = "declare void @Py_Initialize()"
+	}
+	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
+	if isWasmTarget(conf.Goos) {
+		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
@@ -566,7 +707,7 @@ define weak void @"syscall.init"() {
   ret void
 }
 
-define i32 @main(i32 %%0, ptr %%1) {
+%s {
 _llgo_0:
   %s
   store i32 %%0, ptr @__llgo_argc, align 4
@@ -577,7 +718,7 @@ _llgo_0:
   call void @"%s.main"()
   ret i32 0
 }
-`, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+`, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath, mainDefine,
 		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	f, err := os.CreateTemp("", "main*.ll")
@@ -877,11 +1018,15 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 
 func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
 	llFile := expFile + filepath.Base(cFile) + ".ll"
+	targetTriple := llvmTarget.GetTargetTriple(ctx.buildConf.Goos, ctx.buildConf.Goarch)
+	cflags := buildCflags(ctx.buildConf.Goos, ctx.buildConf.Goarch, targetTriple)
+	args = append(cflags, args...)
 	args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	err := ctx.env.Clang().Compile(args...)
+	cmd := ctx.env.Clang()
+	err := cmd.Compile(args...)
 	check(err)
 	procFile(llFile)
 }
