@@ -361,7 +361,7 @@ Follow these steps to generate the `llgo` command (its usage is the same as the 
 brew update
 brew install llvm@19 lld@19 bdw-gc openssl cjson libffi libuv pkg-config
 brew install python@3.12 # optional
-brew link --overwrite lld@19 libffi
+brew link --overwrite llvm@19 lld@19 libffi
 # curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
 ./install.sh
 ```
