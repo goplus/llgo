@@ -620,11 +620,11 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 	args := []string{
 		"-target", targetTriple,
 		"-Wno-override-module",
+		"-Wl,--error-limit=0",
 	}
 	if goos == runtime.GOOS {
 		// Non-cross-compile
 		args = append(args,
-			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
 			"-Wno-override-module",
 		)
@@ -648,19 +648,33 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 	case "wasi", "wasip1", "js": // wasm-ld (WebAssembly)
 		args = append(
 			args,
-			"-fdata-sections",
-			"-ffunction-sections",
+			// "-fdata-sections",
+			// "-ffunction-sections",
 			// "-nostdlib",
 			// "-Wl,--no-entry",
 			"-Wl,--export-all",
 			"-Wl,--allow-undefined",
-			// "-Wl,--import-memory,",
+			// "-Wl,--import-memory,", // unknown import: `env::memory` has not been defined
 			"-Wl,--export-memory",
 			"-Wl,--initial-memory=16777216", // 16MB
-			// "-pthread",
-			// "-matomics",
-			// "-mbulk-memory",
-			// "-mmultimemory",
+			// "-pthread", "-matomics", // undefined symbol: __atomic_load
+			"-mbulk-memory",
+			"-mmultimemory",
+			"-lc",
+			"-lcrypt",
+			"-lm",
+			"-lrt",
+			"-lutil",
+			// "-lxnet",
+			// "-lresolv",
+			"-lsetjmp",
+			// "-lpthread",
+			"-lwasi-emulated-mman",
+			"-lwasi-emulated-getpid",
+			// "-lwasi-emulated-pthread",
+			"-lwasi-emulated-process-clocks",
+			"-lwasi-emulated-signal",
+			"-mllvm", "-wasm-enable-sjlj",
 		)
 	default: // ld.lld (Unix)
 		args = append(
