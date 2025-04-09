@@ -291,7 +291,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	export, err := crosscompile.UseCrossCompileSDK(conf.Goos, conf.Goarch)
+	export, err := crosscompile.UseCrossCompileSDK(conf.Goos, conf.Goarch, IsWasiThreadsEnabled())
 	check(err)
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf, export}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
@@ -673,7 +673,6 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 			// "-Wl,--import-memory,", // unknown import: `env::memory` has not been defined
 			"-Wl,--export-memory",
 			"-Wl,--initial-memory=16777216", // 16MB
-			// "-pthread", "-matomics", // undefined symbol: __atomic_load
 			"-mbulk-memory",
 			"-mmultimemory",
 			"-lc",
@@ -684,14 +683,23 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 			// "-lxnet",
 			// "-lresolv",
 			"-lsetjmp",
-			// "-lpthread",
 			"-lwasi-emulated-mman",
 			"-lwasi-emulated-getpid",
-			// "-lwasi-emulated-pthread",
 			"-lwasi-emulated-process-clocks",
 			"-lwasi-emulated-signal",
+			"-fwasm-exceptions",
 			"-mllvm", "-wasm-enable-sjlj",
+			// "-mllvm", "-wasm-enable-eh",
 		)
+		if IsWasiThreadsEnabled() {
+			args = append(
+				args,
+				"-lwasi-emulated-pthread",
+				"-lpthread",
+				"-pthread",
+				"-matomics", // undefined symbol: __atomic_load
+			)
+		}
 	default: // ld.lld (Unix)
 		args = append(
 			args,
@@ -949,6 +957,7 @@ const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
 const llgoRpathChange = "LLGO_RPATH_CHANGE"
 const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
+const llgoWasiThreads = "LLGO_WASI_THREADS"
 
 const defaultWasmRuntime = "wasmtime"
 
@@ -990,6 +999,10 @@ func IsCheckEnable() bool {
 
 func IsRpathChangeEnabled() bool {
 	return isEnvOn(llgoRpathChange, false)
+}
+
+func IsWasiThreadsEnabled() bool {
+	return isEnvOn(llgoWasiThreads, true)
 }
 
 func WasmRuntime() string {
