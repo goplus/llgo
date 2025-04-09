@@ -580,9 +580,17 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		args := make([]string, 0, len(conf.RunArgs)+1)
 		copy(args, conf.RunArgs)
 		if isWasmTarget(conf.Goos) {
-			args = append(args, app, "--wasm", "multi-memory=true")
-			args = append(args, conf.RunArgs...)
-			app = "wasmtime"
+			wasmer := WasmRuntime()
+			switch wasmer {
+			case "wasmtime":
+				args = append(args, app, "--wasm", "multi-memory=true")
+				args = append(args, conf.RunArgs...)
+				app = "wasmtime"
+			default:
+				args = append(args, app)
+				args = append(args, conf.RunArgs...)
+				app = wasmer
+			}
 		} else {
 			args = conf.RunArgs
 		}
@@ -910,6 +918,17 @@ const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
 const llgoRpathChange = "LLGO_RPATH_CHANGE"
+const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
+
+const defaultWasmRuntime = "wasmtime"
+
+func defaultEnv(env string, defVal string) string {
+	envVal := strings.ToLower(os.Getenv(env))
+	if envVal == "" {
+		return defVal
+	}
+	return envVal
+}
 
 func isEnvOn(env string, defVal bool) bool {
 	envVal := strings.ToLower(os.Getenv(env))
@@ -941,6 +960,10 @@ func IsCheckEnable() bool {
 
 func IsRpathChangeEnabled() bool {
 	return isEnvOn(llgoRpathChange, false)
+}
+
+func WasmRuntime() string {
+	return defaultEnv(llgoWasmRuntime, defaultWasmRuntime)
 }
 
 func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
