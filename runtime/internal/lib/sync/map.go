@@ -380,7 +380,7 @@ func (m *Map) CompareAndSwap(key, old, new any) bool {
 	}
 
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	//TODO(lijie): workaround for defer crash on wasm
 	read = m.loadReadOnly()
 	swapped := false
 	if e, ok := read.m[key]; ok {
@@ -395,6 +395,7 @@ func (m *Map) CompareAndSwap(key, old, new any) bool {
 		// more efficient steady state.
 		m.missLocked()
 	}
+	m.mu.Unlock()
 	return swapped
 }
 
