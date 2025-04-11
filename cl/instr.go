@@ -165,6 +165,15 @@ func (p *context) allocaCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	panic("allocaCStr(s string): invalid arguments")
 }
 
+// func allocCStr(s string) *int8
+func (p *context) allocCStr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		s := p.compileValue(b, args[0])
+		return b.AllocCStr(s)
+	}
+	panic("allocCStr(s string): invalid arguments")
+}
+
 // func allocaCStrs(strs []string, endWithNil bool) **int8
 func (p *context) allocaCStrs(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 2 {
@@ -281,6 +290,7 @@ var llgoInstrs = map[string]int{
 	"advance":     llgoAdvance,
 	"index":       llgoIndex,
 	"alloca":      llgoAlloca,
+	"allocCStr":   llgoAllocCStr,
 	"allocaCStr":  llgoAllocaCStr,
 	"allocaCStrs": llgoAllocaCStrs,
 	"string":      llgoString,
@@ -470,6 +480,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.alloca(b, args)
 		case llgoAllocaCStr:
 			ret = p.allocaCStr(b, args)
+		case llgoAllocCStr:
+			ret = p.allocCStr(b, args)
 		case llgoAllocaCStrs:
 			ret = p.allocaCStrs(b, args)
 		case llgoString:
