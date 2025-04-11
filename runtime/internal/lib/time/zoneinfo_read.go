@@ -577,7 +577,7 @@ func readFile(name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer closefd(f)
+	//TODO(lijie): workaround for defer crash on wasm
 	var (
 		buf [4096]byte
 		ret []byte
@@ -592,9 +592,11 @@ func readFile(name string) ([]byte, error) {
 			break
 		}
 		if len(ret) > maxFileSize {
+			closefd(f)
 			return nil, fileSizeError(name)
 		}
 	}
+	closefd(f)
 	return ret, err
 }
 
