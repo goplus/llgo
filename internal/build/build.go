@@ -737,16 +737,40 @@ func genMainModuleFile(conf *Config, rtPkgPath, mainPkgPath string, needRuntime,
 		pyInit = "call void @Py_Initialize()"
 		pyInitDecl = "declare void @Py_Initialize()"
 	}
+	declSizeT := "%size_t = type i64"
+	if is32Bits(conf.Goarch) {
+		declSizeT = "%size_t = type i32"
+	}
+	stdioDecl := ""
+	stdioNobuf := ""
+	if IsStdioNobuf() {
+		stdioDecl = `
+@stdout = external global ptr
+@stderr = external global ptr
+@__stdout = external global ptr
+@__stderr = external global ptr
+declare i32 @setvbuf(ptr, ptr, i32, %size_t)
+	`
+		stdioNobuf = `
+; Set stdout with no buffer
+%stdout_is_null = icmp eq ptr @stdout, null
+%stdout_ptr = select i1 %stdout_is_null, ptr @__stdout, ptr @stdout
+call i32 @setvbuf(ptr %stdout_ptr, ptr null, i32 2, %size_t 0)
+; Set stderr with no buffer
+%stderr_ptr = select i1 %stdout_is_null, ptr @__stderr, ptr @stderr
+call i32 @setvbuf(ptr %stderr_ptr, ptr null, i32 2, %size_t 0)
+	`
+	}
 	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	if isWasmTarget(conf.Goos) {
 		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
-
+%s
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
-
+%s
 %s
 %s
 declare void @"%s.init"()
@@ -762,16 +786,19 @@ define weak void @"syscall.init"() {
 
 %s {
 _llgo_0:
-  %s
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
+  %s
+  %s
   %s
   call void @runtime.init()
   call void @"%s.init"()
   call void @"%s.main"()
   ret i32 0
 }
-`, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath, mainDefine,
+`, declSizeT, stdioDecl,
+		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		mainDefine, stdioNobuf,
 		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	f, err := os.CreateTemp("", "main*.ll")
@@ -787,6 +814,10 @@ _llgo_0:
 		return "", err
 	}
 	return f.Name(), nil
+}
+
+func is32Bits(goarch string) bool {
+	return goarch == "386" || goarch == "arm" || goarch == "mips" || goarch == "wasm"
 }
 
 func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, err error) {
@@ -958,6 +989,7 @@ const llgoCheck = "LLGO_CHECK"
 const llgoRpathChange = "LLGO_RPATH_CHANGE"
 const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
 const llgoWasiThreads = "LLGO_WASI_THREADS"
+const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 
 const defaultWasmRuntime = "wasmtime"
 
@@ -979,6 +1011,10 @@ func isEnvOn(env string, defVal bool) bool {
 
 func IsTraceEnabled() bool {
 	return isEnvOn(llgoTrace, false)
+}
+
+func IsStdioNobuf() bool {
+	return isEnvOn(llgoStdioNobuf, false)
 }
 
 func IsDbgEnabled() bool {
