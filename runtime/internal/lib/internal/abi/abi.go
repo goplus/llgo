@@ -22,9 +22,6 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 )
 
-// llgo:skipall
-type _abi struct{}
-
 type InterfaceType = abi.InterfaceType
 
 func NoEscape(p unsafe.Pointer) unsafe.Pointer {

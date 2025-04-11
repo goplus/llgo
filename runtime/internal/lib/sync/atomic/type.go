@@ -101,3 +101,37 @@ func OrInt64(addr *int64, mask int64) (old int64) {
 func OrUint64(addr *uint64, mask uint64) (old uint64) {
 	panic("implement by llgo instruction")
 }
+
+// ----------------------------------------------------------------------------
+
+// llgo:link AndInt32 llgo.atomicAnd
+func AndInt32(addr *int32, mask int32) (old int32) {
+	panic("implement by llgo instruction")
+}
+
+// llgo:link AndUint32 llgo.atomicAnd
+func AndUint32(addr *uint32, mask uint32) (old uint32) {
+	panic("implement by llgo instruction")
+}
+
+// llgo:link OrInt32 llgo.atomicOr
+func OrInt32(addr *int32, mask int32) (old int32) {
+	panic("implement by llgo instruction")
+}
+
+// llgo:link OrUint32 llgo.atomicOr
+func OrUint32(addr *uint32, mask uint32) (old uint32) {
+	panic("implement by llgo instruction")
+}
+
+// ----------------------------------------------------------------------------
+
+// llgo:link AndUintptr llgo.atomicAnd
+func AndUintptr(addr *uintptr, mask uintptr) (old uintptr) {
+	panic("implement by llgo instruction")
+}
+
+// llgo:link OrUintptr llgo.atomicOr
+func OrUintptr(addr *uintptr, mask uintptr) (old uintptr) {
+	panic("implement by llgo instruction")
+}

@@ -23,7 +23,7 @@ func cacheDir() string {
 	return filepath.Join(env.LLGoCacheDir(), "crosscompile")
 }
 
-func UseCrossCompileSDK(goos, goarch string) (export Export, err error) {
+func UseCrossCompileSDK(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
 		// not cross compile
 		return
@@ -38,12 +38,16 @@ func UseCrossCompileSDK(goos, goarch string) (export Export, err error) {
 				return
 			}
 		}
+		triple := "wasm32-wasip1"
+		if wasiThreads {
+			triple = "wasm32-wasip1-threads"
+		}
 		// Set up flags for the SDK
 		wasiSdkRoot := filepath.Join(sdkDir, "wasi-sdk-25.0-x86_64-macos")
 		sysrootDir := filepath.Join(wasiSdkRoot, "share", "wasi-sysroot")
 		libclangDir := filepath.Join(wasiSdkRoot, "lib", "clang", "19")
-		includeDir := filepath.Join(sysrootDir, "include", "wasm32-wasip1")
-		libDir := filepath.Join(sysrootDir, "lib", "wasm32-wasip1")
+		includeDir := filepath.Join(sysrootDir, "include", triple)
+		libDir := filepath.Join(sysrootDir, "lib", triple)
 
 		export.CCFLAGS = []string{
 			"--sysroot=" + sysrootDir,

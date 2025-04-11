@@ -16,26 +16,20 @@
 
 package runtime
 
-/*
-#include <unistd.h>
-
-int llgo_maxprocs() {
-	#ifdef _SC_NPROCESSORS_ONLN
-		return (int)sysconf(_SC_NPROCESSORS_ONLN);
-	#else
-		return 1;
-	#endif
-}
-*/
-import "C"
 import (
 	"unsafe"
 
+	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 // llgo:skipall
 type _runtime struct{}
+
+const (
+	LLGoPackage = "link"
+	LLGoFiles   = "_wrap/runtime.c"
+)
 
 // GOROOT returns the root of the Go tree. It uses the
 // GOROOT environment variable, if set at process start,
@@ -58,6 +52,11 @@ func Goexit() {
 func KeepAlive(x any) {
 }
 
+//go:linkname c_write C.write
+func c_write(fd c.Int, p unsafe.Pointer, n c.SizeT) int32
+
 func write(fd uintptr, p unsafe.Pointer, n int32) int32 {
-	return int32(C.write(C.int(fd), p, C.size_t(n)))
+	return int32(c_write(c.Int(fd), p, c.SizeT(n)))
 }
+
+const heapArenaBytes = 1024 * 1024

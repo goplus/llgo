@@ -24,13 +24,13 @@ const (
 )
 
 //go:linkname ToFloat64 C.llgoToFloat64
-func ToFloat64(v uintptr) float64
+func ToFloat64(v int64) float64
 
 //go:linkname ToFloat32 C.llgoToFloat32
-func ToFloat32(v uintptr) float32
+func ToFloat32(v int32) float32
 
 //go:linkname FromFloat64 C.llgoFromFloat64
-func FromFloat64(v float64) uintptr
+func FromFloat64(v float64) int64
 
 //go:linkname FromFloat32 C.llgoFromFloat32
-func FromFloat32(v float32) uintptr
+func FromFloat32(v float32) int32

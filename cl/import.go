@@ -446,17 +446,18 @@ const (
 	llgoAlloca      = llgoInstrBase + 2
 	llgoAllocaCStr  = llgoInstrBase + 3
 	llgoAllocaCStrs = llgoInstrBase + 4
-	llgoAdvance     = llgoInstrBase + 5
-	llgoIndex       = llgoInstrBase + 6
-	llgoStringData  = llgoInstrBase + 7
-	llgoString      = llgoInstrBase + 8
-	llgoDeferData   = llgoInstrBase + 9
+	llgoAllocCStr   = llgoInstrBase + 5
+	llgoAdvance     = llgoInstrBase + 6
+	llgoIndex       = llgoInstrBase + 7
+	llgoStringData  = llgoInstrBase + 8
+	llgoString      = llgoInstrBase + 9
+	llgoDeferData   = llgoInstrBase + 0xa
 
-	llgoSigjmpbuf  = llgoInstrBase + 0xa
-	llgoSigsetjmp  = llgoInstrBase + 0xb
-	llgoSiglongjmp = llgoInstrBase + 0xc
+	llgoSigjmpbuf  = llgoInstrBase + 0xb
+	llgoSigsetjmp  = llgoInstrBase + 0xc
+	llgoSiglongjmp = llgoInstrBase + 0xd
 
-	llgoFuncAddr = llgoInstrBase + 0xd
+	llgoFuncAddr = llgoInstrBase + 0xe
 
 	llgoPyList  = llgoInstrBase + 0x10
 	llgoPyStr   = llgoInstrBase + 0x11

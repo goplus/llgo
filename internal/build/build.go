@@ -205,12 +205,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cfg.Mode |= packages.NeedForTest
 	}
 
-	if len(llruntime.OverlayFiles) > 0 {
-		cfg.Overlay = make(map[string][]byte)
-		for file, src := range llruntime.OverlayFiles {
-			overlay := unsafe.Slice(unsafe.StringData(src), len(src))
-			cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
-		}
+	cfg.Overlay = make(map[string][]byte)
+	clearRuntime(cfg.Overlay, filepath.Join(env.GOROOT(), "src", "runtime"))
+	for file, src := range llruntime.OverlayFiles {
+		overlay := unsafe.Slice(unsafe.StringData(src), len(src))
+		cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
 	}
 
 	cl.EnableDebug(IsDbgEnabled())
@@ -292,7 +291,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	export, err := crosscompile.UseCrossCompileSDK(conf.Goos, conf.Goarch)
+	export, err := crosscompile.UseCrossCompileSDK(conf.Goos, conf.Goarch, IsWasiThreadsEnabled())
 	check(err)
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf, export}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
@@ -320,6 +319,23 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	return dpkg, nil
+}
+
+func clearRuntime(overlay map[string][]byte, runtimePath string) {
+	files, err := filepath.Glob(runtimePath + "/*.go")
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range files {
+		overlay[file] = []byte("package runtime\n")
+	}
+	files, err = filepath.Glob(runtimePath + "/*.s")
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range files {
+		overlay[file] = []byte("\n")
+	}
 }
 
 func needLink(pkg *packages.Package, mode Mode) bool {
@@ -580,9 +596,17 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, linkArgs
 		args := make([]string, 0, len(conf.RunArgs)+1)
 		copy(args, conf.RunArgs)
 		if isWasmTarget(conf.Goos) {
-			args = append(args, app, "--wasm", "multi-memory=true")
-			args = append(args, conf.RunArgs...)
-			app = "wasmtime"
+			wasmer := WasmRuntime()
+			switch wasmer {
+			case "wasmtime":
+				args = append(args, app, "--wasm", "multi-memory=true")
+				args = append(args, conf.RunArgs...)
+				app = "wasmtime"
+			default:
+				args = append(args, app)
+				args = append(args, conf.RunArgs...)
+				app = wasmer
+			}
 		} else {
 			args = conf.RunArgs
 		}
@@ -612,11 +636,11 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 	args := []string{
 		"-target", targetTriple,
 		"-Wno-override-module",
+		"-Wl,--error-limit=0",
 	}
 	if goos == runtime.GOOS {
 		// Non-cross-compile
 		args = append(args,
-			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
 			"-Wno-override-module",
 		)
@@ -640,20 +664,45 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 	case "wasi", "wasip1", "js": // wasm-ld (WebAssembly)
 		args = append(
 			args,
-			"-fdata-sections",
-			"-ffunction-sections",
+			// "-fdata-sections",
+			// "-ffunction-sections",
 			// "-nostdlib",
 			// "-Wl,--no-entry",
 			"-Wl,--export-all",
 			"-Wl,--allow-undefined",
-			// "-Wl,--import-memory,",
+			"-Wl,--import-memory,", // unknown import: `env::memory` has not been defined
 			"-Wl,--export-memory",
-			"-Wl,--initial-memory=16777216", // 16MB
-			// "-pthread",
-			// "-matomics",
-			// "-mbulk-memory",
-			// "-mmultimemory",
+			"-Wl,--initial-memory=67108864", // 64MB
+			"-mbulk-memory",
+			"-mmultimemory",
+			"-z", "stack-size=10485760", // 10MB
+			"-Wl,--export=malloc", "-Wl,--export=free",
+			"-lc",
+			"-lcrypt",
+			"-lm",
+			"-lrt",
+			"-lutil",
+			// "-lxnet",
+			// "-lresolv",
+			"-lsetjmp",
+			"-lwasi-emulated-mman",
+			"-lwasi-emulated-getpid",
+			"-lwasi-emulated-process-clocks",
+			"-lwasi-emulated-signal",
+			"-fwasm-exceptions",
+			"-mllvm", "-wasm-enable-sjlj",
+			// "-mllvm", "-wasm-enable-eh", // unreachable error if enabled
+			// "-mllvm", "-wasm-disable-explicit-locals", // WASM module load failed: type mismatch: expect data but stack was empty if enabled
 		)
+		if IsWasiThreadsEnabled() {
+			args = append(
+				args,
+				"-lwasi-emulated-pthread",
+				"-lpthread",
+				"-pthread", // global is immutable if -pthread is not specified
+				// "-matomics", // undefined symbol: __atomic_load
+			)
+		}
 	default: // ld.lld (Unix)
 		args = append(
 			args,
@@ -691,16 +740,40 @@ func genMainModuleFile(conf *Config, rtPkgPath, mainPkgPath string, needRuntime,
 		pyInit = "call void @Py_Initialize()"
 		pyInitDecl = "declare void @Py_Initialize()"
 	}
+	declSizeT := "%size_t = type i64"
+	if is32Bits(conf.Goarch) {
+		declSizeT = "%size_t = type i32"
+	}
+	stdioDecl := ""
+	stdioNobuf := ""
+	if IsStdioNobuf() {
+		stdioDecl = `
+@stdout = external global ptr
+@stderr = external global ptr
+@__stdout = external global ptr
+@__stderr = external global ptr
+declare i32 @setvbuf(ptr, ptr, i32, %size_t)
+	`
+		stdioNobuf = `
+; Set stdout with no buffer
+%stdout_is_null = icmp eq ptr @stdout, null
+%stdout_ptr = select i1 %stdout_is_null, ptr @__stdout, ptr @stdout
+call i32 @setvbuf(ptr %stdout_ptr, ptr null, i32 2, %size_t 0)
+; Set stderr with no buffer
+%stderr_ptr = select i1 %stdout_is_null, ptr @__stderr, ptr @stderr
+call i32 @setvbuf(ptr %stderr_ptr, ptr null, i32 2, %size_t 0)
+	`
+	}
 	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	if isWasmTarget(conf.Goos) {
 		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
-
+%s
 @__llgo_argc = global i32 0, align 4
 @__llgo_argv = global ptr null, align 8
-
+%s
 %s
 %s
 declare void @"%s.init"()
@@ -716,16 +789,19 @@ define weak void @"syscall.init"() {
 
 %s {
 _llgo_0:
-  %s
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
+  %s
+  %s
   %s
   call void @runtime.init()
   call void @"%s.init"()
   call void @"%s.main"()
   ret i32 0
 }
-`, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath, mainDefine,
+`, declSizeT, stdioDecl,
+		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		mainDefine, stdioNobuf,
 		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	f, err := os.CreateTemp("", "main*.ll")
@@ -741,6 +817,10 @@ _llgo_0:
 		return "", err
 	}
 	return f.Name(), nil
+}
+
+func is32Bits(goarch string) bool {
+	return goarch == "386" || goarch == "arm" || goarch == "mips" || goarch == "wasm"
 }
 
 func buildPkg(ctx *context, aPkg *aPackage, verbose bool) (cgoLdflags []string, err error) {
@@ -910,6 +990,19 @@ const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
 const llgoRpathChange = "LLGO_RPATH_CHANGE"
+const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
+const llgoWasiThreads = "LLGO_WASI_THREADS"
+const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
+
+const defaultWasmRuntime = "wasmtime"
+
+func defaultEnv(env string, defVal string) string {
+	envVal := strings.ToLower(os.Getenv(env))
+	if envVal == "" {
+		return defVal
+	}
+	return envVal
+}
 
 func isEnvOn(env string, defVal bool) bool {
 	envVal := strings.ToLower(os.Getenv(env))
@@ -921,6 +1014,10 @@ func isEnvOn(env string, defVal bool) bool {
 
 func IsTraceEnabled() bool {
 	return isEnvOn(llgoTrace, false)
+}
+
+func IsStdioNobuf() bool {
+	return isEnvOn(llgoStdioNobuf, false)
 }
 
 func IsDbgEnabled() bool {
@@ -941,6 +1038,14 @@ func IsCheckEnable() bool {
 
 func IsRpathChangeEnabled() bool {
 	return isEnvOn(llgoRpathChange, false)
+}
+
+func IsWasiThreadsEnabled() bool {
+	return isEnvOn(llgoWasiThreads, true)
+}
+
+func WasmRuntime() string {
+	return defaultEnv(llgoWasmRuntime, defaultWasmRuntime)
 }
 
 func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {

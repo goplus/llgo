@@ -16,19 +16,11 @@
 
 package os
 
-// #include <sys/stat.h>
-// #include <limits.h>
-import "C"
-
 import (
 	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
-)
-
-const (
-	PATH_MAX = C.PATH_MAX
 )
 
 const (
@@ -56,14 +48,6 @@ const (
 
 const (
 	EAGAIN = 35
-)
-
-type (
-	ModeT C.mode_t
-	UidT  C.uid_t
-	GidT  C.gid_t
-	OffT  C.off_t
-	DevT  C.dev_t
 )
 
 type (
@@ -114,12 +98,6 @@ func Truncate(path *c.Char, length OffT) c.Int
 
 //go:linkname Chmod C.chmod
 func Chmod(path *c.Char, mode ModeT) c.Int
-
-//go:linkname Chown C.chown
-func Chown(path *c.Char, owner UidT, group GidT) c.Int
-
-//go:linkname Lchown C.lchown
-func Lchown(path *c.Char, owner UidT, group GidT) c.Int
 
 // -----------------------------------------------------------------------------
 
@@ -188,16 +166,6 @@ func Dup2(oldfd c.Int, newfd c.Int) c.Int
 
 //go:linkname Dup3 C.dup3
 func Dup3(oldfd c.Int, newfd c.Int, flags c.Int) c.Int
-
-/* TODO(xsw):
-On Alpha, IA-64, MIPS, SuperH, and SPARC/SPARC64, pipe() has the following prototype:
-struct fd_pair {
-	long fd[2];
-};
-struct fd_pair pipe(void);
-*/
-//go:linkname Pipe C.pipe
-func Pipe(fds *[2]c.Int) c.Int
 
 //go:linkname Mkfifo C.mkfifo
 func Mkfifo(path *c.Char, mode ModeT) c.Int
@@ -270,9 +238,6 @@ func Execvp(file *c.Char, argv **c.Char) c.Int
 
 type PidT c.Int
 
-//go:linkname Fork C.fork
-func Fork() PidT
-
 //go:linkname Getpid C.getpid
 func Getpid() PidT
 
@@ -293,9 +258,6 @@ func Getppid() PidT
 //go:linkname Syscall C.syscall
 func Syscall(sysno c.Long, __llgo_va_list ...any) c.Long
 
-//go:linkname Kill C.kill
-func Kill(pid PidT, sig c.Int) c.Int
-
 // If wait() returns due to a stopped or terminated child process, the process ID
 // of the child is returned to the calling process.  Otherwise, a value of -1 is
 // returned and errno is set to indicate the error.
@@ -313,9 +275,6 @@ func Wait(statLoc *c.Int) PidT
 //go:linkname Wait3 C.wait3
 func Wait3(statLoc *c.Int, options c.Int, rusage *syscall.Rusage) PidT
 
-//go:linkname Wait4 C.wait4
-func Wait4(pid PidT, statLoc *c.Int, options c.Int, rusage *syscall.Rusage) PidT
-
 //go:linkname Waitpid C.waitpid
 func Waitpid(pid PidT, statLoc *c.Int, options c.Int) PidT
 
@@ -323,26 +282,6 @@ func Waitpid(pid PidT, statLoc *c.Int, options c.Int) PidT
 
 //go:linkname Exit C.exit
 func Exit(c.Int)
-
-//go:linkname Getuid C.getuid
-func Getuid() UidT
-
-//go:linkname Geteuid C.geteuid
-func Geteuid() UidT
-
-//go:linkname Getgid C.getgid
-func Getgid() GidT
-
-//go:linkname Getegid C.getegid
-func Getegid() GidT
-
-// -----------------------------------------------------------------------------
-
-//go:linkname Getrlimit C.getrlimit
-func Getrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
-
-//go:linkname Setrlimit C.setrlimit
-func Setrlimit(resource c.Int, rlp *syscall.Rlimit) c.Int
 
 // -----------------------------------------------------------------------------
 

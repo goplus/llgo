@@ -163,12 +163,13 @@ func Clearenv() {
 func Environ() []string {
 	envOnce.Do(copyenv)
 	envLock.RLock()
-	defer envLock.RUnlock()
+	//TODO(lijie): workaround for defer crash on wasm
 	a := make([]string, 0, len(envs))
 	for _, env := range envs {
 		if env != "" {
 			a = append(a, env)
 		}
 	}
+	envLock.RUnlock()
 	return a
 }

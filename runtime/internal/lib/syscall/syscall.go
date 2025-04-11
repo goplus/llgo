@@ -83,30 +83,6 @@ func Getpid() (pid int) {
 	return int(os.Getpid())
 }
 
-func Kill(pid int, signum Signal) (err error) {
-	ret := os.Kill(os.PidT(pid), c.Int(signum))
-	if ret == 0 {
-		return nil
-	}
-	return Errno(ret)
-}
-
-func fork() (uintptr, Errno) {
-	ret := os.Fork()
-	if ret >= 0 {
-		return uintptr(ret), Errno(0)
-	}
-	return 0, Errno(os.Errno())
-}
-
-func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid int, err error) {
-	ret := os.Wait4(os.PidT(pid), wstatus, c.Int(options), rusage)
-	if ret >= 0 {
-		return int(ret), nil
-	}
-	return 0, Errno(os.Errno())
-}
-
 func Open(path string, mode int, perm uint32) (fd int, err error) {
 	ret := os.Open(c.AllocaCStr(path), c.Int(mode), os.ModeT(perm))
 	if ret >= 0 {
@@ -165,38 +141,6 @@ func Stat(path string, stat *Stat_t) (err error) {
 	return Errno(os.Errno())
 }
 
-func Pipe(p []int) (err error) {
-	if len(p) != 2 {
-		return Errno(syscall.EINVAL)
-	}
-	var q [2]c.Int
-	ret := os.Pipe(&q)
-	if ret == 0 {
-		p[0] = int(q[0])
-		p[1] = int(q[1])
-		return nil
-	}
-	return Errno(ret)
-}
-
-type Rlimit syscall.Rlimit
-
-func Getrlimit(which int, lim *Rlimit) (err error) {
-	ret := os.Getrlimit(c.Int(which), (*syscall.Rlimit)(lim))
-	if ret == 0 {
-		return nil
-	}
-	return Errno(ret)
-}
-
-func setrlimit(which int, lim *Rlimit) (err error) {
-	ret := os.Setrlimit(c.Int(which), (*syscall.Rlimit)(lim))
-	if ret == 0 {
-		return nil
-	}
-	return Errno(ret)
-}
-
 func BytePtrFromString(s string) (*byte, error) {
 	a, err := ByteSliceFromString(s)
 	if err != nil {
@@ -216,4 +160,8 @@ func ByteSliceFromString(s string) ([]byte, error) {
 
 func Accept(fd int) (nfd int, sa origSyscall.Sockaddr, err error) {
 	panic("todo: syscall.Accept")
+}
+
+func Kill(pid int, signum Signal) error {
+	return syscall.Kill(pid, syscall.Signal(signum))
 }

@@ -32,6 +32,29 @@ import (
 
 type sigjmpbuf = C.sigjmp_buf
 
+// func setjmp(env unsafe.Pointer) c.Int
+func (p Program) tySetjmp() *types.Signature {
+	if p.setjmpTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		params := types.NewTuple(paramPtr)
+		results := types.NewTuple(paramCInt)
+		p.setjmpTy = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.setjmpTy
+}
+
+// func longjmp(env unsafe.Pointer, retval c.Int)
+func (p Program) tyLongjmp() *types.Signature {
+	if p.longjmpTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		paramCInt := types.NewParam(token.NoPos, nil, "", p.CInt().raw.Type)
+		params := types.NewTuple(paramPtr, paramCInt)
+		p.longjmpTy = types.NewSignatureType(nil, nil, nil, params, nil, false)
+	}
+	return p.longjmpTy
+}
+
 // func(env unsafe.Pointer, savemask c.Int) c.Int
 func (p Program) tySigsetjmp() *types.Signature {
 	if p.sigsetjmpTy == nil {
@@ -63,6 +86,9 @@ func (b Builder) AllocaSigjmpBuf() Expr {
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
+	if b.Prog.target.GOARCH == "wasm" {
+		return b.Setjmp(jb)
+	}
 	fname := "sigsetjmp"
 	if b.Prog.target.GOOS == "linux" {
 		fname = "__sigsetjmp"
@@ -72,7 +98,22 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 }
 
 func (b Builder) Siglongjmp(jb, retval Expr) {
+	if b.Prog.target.GOARCH == "wasm" {
+		b.Longjmp(jb, retval)
+		return
+	}
 	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
+	b.Call(fn, jb, retval)
+	// b.Unreachable()
+}
+
+func (b Builder) Setjmp(jb Expr) Expr {
+	fn := b.Pkg.cFunc("setjmp", b.Prog.tySetjmp())
+	return b.Call(fn, jb)
+}
+
+func (b Builder) Longjmp(jb, retval Expr) {
+	fn := b.Pkg.cFunc("longjmp", b.Prog.tyLongjmp())
 	b.Call(fn, jb, retval)
 	// b.Unreachable()
 }
