@@ -691,7 +691,7 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 			"-lwasi-emulated-signal",
 			"-fwasm-exceptions",
 			"-mllvm", "-wasm-enable-sjlj",
-			"-mllvm", "-wasm-enable-eh",
+			// "-mllvm", "-wasm-enable-eh", // unreachable error if enabled
 			// "-mllvm", "-wasm-disable-explicit-locals", // WASM module load failed: type mismatch: expect data but stack was empty if enabled
 		)
 		if IsWasiThreadsEnabled() {
