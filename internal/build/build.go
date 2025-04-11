@@ -670,11 +670,13 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 			// "-Wl,--no-entry",
 			"-Wl,--export-all",
 			"-Wl,--allow-undefined",
-			// "-Wl,--import-memory,", // unknown import: `env::memory` has not been defined
+			"-Wl,--import-memory,", // unknown import: `env::memory` has not been defined
 			"-Wl,--export-memory",
-			"-Wl,--initial-memory=16777216", // 16MB
+			"-Wl,--initial-memory=67108864", // 64MB
 			"-mbulk-memory",
 			"-mmultimemory",
+			"-z", "stack-size=10485760", // 10MB
+			"-Wl,--export=malloc", "-Wl,--export=free",
 			"-lc",
 			"-lcrypt",
 			"-lm",
@@ -689,15 +691,16 @@ func buildLdflags(goos, goarch, targetTriple string) []string {
 			"-lwasi-emulated-signal",
 			"-fwasm-exceptions",
 			"-mllvm", "-wasm-enable-sjlj",
-			// "-mllvm", "-wasm-enable-eh",
+			"-mllvm", "-wasm-enable-eh",
+			// "-mllvm", "-wasm-disable-explicit-locals", // WASM module load failed: type mismatch: expect data but stack was empty if enabled
 		)
 		if IsWasiThreadsEnabled() {
 			args = append(
 				args,
 				"-lwasi-emulated-pthread",
 				"-lpthread",
-				"-pthread",
-				"-matomics", // undefined symbol: __atomic_load
+				"-pthread", // global is immutable if -pthread is not specified
+				// "-matomics", // undefined symbol: __atomic_load
 			)
 		}
 	default: // ld.lld (Unix)
