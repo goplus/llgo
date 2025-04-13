@@ -53,7 +53,7 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
-func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, verbose bool) (cgoLdflags []string, err error) {
+func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, verbose bool) (llfiles, cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
 		return
@@ -87,7 +87,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 	}
 	for _, cfile := range cfiles {
 		clFile(ctx, cflags, cfile, pkg.ExportFile, func(linkFile string) {
-			cgoLdflags = append(cgoLdflags, linkFile)
+			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
 	re := regexp.MustCompile(`^(_cgo_[^_]+_(Cfunc|Cmacro)_)(.*)$`)
@@ -117,20 +117,20 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 	for _, preamble := range preambles {
 		tmpFile, err := os.CreateTemp("", "-cgo-*.c")
 		if err != nil {
-			return nil, fmt.Errorf("failed to create temp file: %v", err)
+			return nil, nil, fmt.Errorf("failed to create temp file: %v", err)
 		}
 		tmpName := tmpFile.Name()
 		defer os.Remove(tmpName)
 		code := cgoHeader + "\n\n" + preamble.src
 		externDecls, err := genExternDeclsByClang(pkg, code, cflags, cgoSymbols)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate extern decls: %v", err)
+			return nil, nil, fmt.Errorf("failed to generate extern decls: %v", err)
 		}
 		if err = os.WriteFile(tmpName, []byte(code+"\n\n"+externDecls), 0644); err != nil {
-			return nil, fmt.Errorf("failed to write temp file: %v", err)
+			return nil, nil, fmt.Errorf("failed to write temp file: %v", err)
 		}
 		clFile(ctx, cflags, tmpName, pkg.ExportFile, func(linkFile string) {
-			cgoLdflags = append(cgoLdflags, linkFile)
+			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
 	for _, ldflag := range ldflags {
