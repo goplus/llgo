@@ -595,6 +595,9 @@ func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string,
 	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
 	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
 	buildArgs = append(buildArgs, llFiles...)
+	if verbose {
+		buildArgs = append(buildArgs, "-v")
+	}
 
 	cmd := ctx.env.Clang()
 	cmd.Verbose = verbose
