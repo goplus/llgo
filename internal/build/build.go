@@ -553,17 +553,23 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 		args := make([]string, 0, len(conf.RunArgs)+1)
 		copy(args, conf.RunArgs)
 		if isWasmTarget(conf.Goos) {
-			wasmer := WasmRuntime()
+			wasmer := os.ExpandEnv(WasmRuntime())
+			wasmerArgs := strings.Split(wasmer, " ")
+			wasmerCmd := wasmerArgs[0]
+			wasmerArgs = wasmerArgs[1:]
 			switch wasmer {
 			case "wasmtime":
-				args = append(args, app, "--wasm", "multi-memory=true")
+				args = append(args, "--wasm", "multi-memory=true", app)
 				args = append(args, conf.RunArgs...)
-				app = "wasmtime"
+			case "iwasm":
+				args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
+				args = append(args, conf.RunArgs...)
 			default:
+				args = append(args, wasmerArgs...)
 				args = append(args, app)
 				args = append(args, conf.RunArgs...)
-				app = wasmer
 			}
+			app = wasmerCmd
 		} else {
 			args = conf.RunArgs
 		}
@@ -571,7 +577,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		cmd.Run()
+		err = cmd.Run()
+		if err != nil {
+			panic(err)
+		}
 		if s := cmd.ProcessState; s != nil {
 			mockable.Exit(s.ExitCode())
 		}
@@ -988,7 +997,7 @@ const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const defaultWasmRuntime = "wasmtime"
 
 func defaultEnv(env string, defVal string) string {
-	envVal := strings.ToLower(os.Getenv(env))
+	envVal := os.Getenv(env)
 	if envVal == "" {
 		return defVal
 	}
