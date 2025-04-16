@@ -350,7 +350,7 @@ const (
 )
 
 func SetNonblock(fd int, nonblocking bool) error {
-	panic("todo: syscall.SetNonblock")
+	return nil
 }
 
 const (
