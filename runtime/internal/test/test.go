@@ -10,8 +10,6 @@ import "C"
 import (
 	"runtime"
 	"unsafe"
-
-	_ "github.com/goplus/llgo/c"
 )
 
 var mode C.mode_t

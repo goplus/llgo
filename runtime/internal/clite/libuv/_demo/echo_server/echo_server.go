@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/goplus/llgo/c"
-	"github.com/goplus/llgo/c/libuv"
-	"github.com/goplus/llgo/c/net"
+	"github.com/goplus/lib/c"
+	"github.com/goplus/lib/c/libuv"
+	"github.com/goplus/lib/c/net"
 )
 
 var DEFAULT_PORT c.Int = 8080
