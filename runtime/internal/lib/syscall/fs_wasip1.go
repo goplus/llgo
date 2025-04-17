@@ -190,14 +190,6 @@ type prestat struct {
 	dir prestatDir
 }
 
-//go:wasmimport wasi_snapshot_preview1 fd_prestat_get
-//go:noescape
-func fd_prestat_get(fd int32, prestat *prestat) Errno
-
-//go:wasmimport wasi_snapshot_preview1 fd_prestat_dir_name
-//go:noescape
-func fd_prestat_dir_name(fd int32, path *byte, pathLen size) Errno
-
 type opendir struct {
 	fd   int32
 	name string
