@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build wasip1
+package time
 
-package os
+// in wasip1 zoneinfo is managed by the runtime.
+var platformZoneSources = []string{}
 
-// supportsCloseOnExec reports whether the platform supports the
-// O_CLOEXEC flag.
-const supportsCloseOnExec = false
+func initLocal() {
+	localLoc.name = "Local"
+}

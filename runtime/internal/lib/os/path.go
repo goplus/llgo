@@ -57,3 +57,14 @@ func MkdirAll(path string, perm FileMode) error {
 func RemoveAll(path string) error {
 	return removeAll(path)
 }
+
+// endsWithDot reports whether the final component of path is ".".
+func endsWithDot(path string) bool {
+	if path == "." {
+		return true
+	}
+	if len(path) >= 2 && path[len(path)-1] == '.' && IsPathSeparator(path[len(path)-2]) {
+		return true
+	}
+	return false
+}

@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package clite
+package c
 
-// typedef unsigned int uint;
-// typedef unsigned long ulong;
-// typedef unsigned long long ulonglong;
-// typedef long long longlong;
-import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
 const (
 	LLGoPackage = "decl"
@@ -41,14 +38,16 @@ type FILE struct {
 }
 
 type (
-	Int  C.int
-	Uint C.uint
+	Int  = int32
+	Uint = uint32
 
-	Long  C.long
-	Ulong C.ulong
+	// Long and Ulong are defined in platform-specific files
+	// Windows (both 32-bit and 64-bit): int32/uint32
+	// Unix/Linux/macOS 32-bit: int32/uint32
+	// Unix/Linux/macOS 64-bit: int64/uint64
 
-	LongLong  C.longlong
-	UlongLong C.ulonglong
+	LongLong  = int64
+	UlongLong = uint64
 )
 
 type integer interface {
@@ -56,6 +55,7 @@ type integer interface {
 }
 
 type SizeT = uintptr
+type SsizeT = Long
 
 type IntptrT = uintptr
 type UintptrT = uintptr
@@ -71,6 +71,8 @@ type Uint64T = uint64
 
 type IntmaxT = LongLong
 type UintmaxT = UlongLong
+
+type VaList = Pointer
 
 //go:linkname Str llgo.cstr
 func Str(string) *Char
@@ -89,6 +91,9 @@ func Alloca(size uintptr) Pointer
 
 //go:linkname AllocaCStr llgo.allocaCStr
 func AllocaCStr(s string) *Char
+
+//go:linkname AllocCStr llgo.allocCStr
+func AllocCStr(s string) *Char
 
 //go:linkname AllocaCStrs llgo.allocaCStrs
 func AllocaCStrs(strs []string, endWithNil bool) **Char
@@ -257,6 +262,14 @@ func Perror(s *Char)
 
 // -----------------------------------------------------------------------------
 
+type IconvT = Pointer
+
+// -----------------------------------------------------------------------------
+
+type LocaleT = Pointer
+
+// -----------------------------------------------------------------------------
+
 //go:linkname Usleep C.usleep
 func Usleep(useconds Uint) Int
 
@@ -297,6 +310,3 @@ func GetoptLong(argc Int, argv **Char, optstring *Char, longopts *Option, longin
 func GetoptLongOnly(argc Int, argv **Char, optstring *Char, longopts *Option, longindex *Int) Int
 
 // -----------------------------------------------------------------------------
-
-//go:linkname Sysconf C.sysconf
-func Sysconf(name Int) Long

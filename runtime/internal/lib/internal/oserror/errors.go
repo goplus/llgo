@@ -7,15 +7,17 @@
 // These types are defined here to permit the syscall package to reference them.
 package oserror
 
-import "errors"
+import (
+	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+)
 
 // llgo:skipall
 type _oserror struct{}
 
 var (
-	ErrInvalid    = errors.New("invalid argument")
-	ErrPermission = errors.New("permission denied")
-	ErrExist      = errors.New("file already exists")
-	ErrNotExist   = errors.New("file does not exist")
-	ErrClosed     = errors.New("file already closed")
+	ErrInvalid    = syscall.ErrInvalid
+	ErrPermission = syscall.ErrPermission
+	ErrExist      = syscall.ErrExist
+	ErrNotExist   = syscall.ErrNotExist
+	ErrClosed     = syscall.ErrClosed
 )

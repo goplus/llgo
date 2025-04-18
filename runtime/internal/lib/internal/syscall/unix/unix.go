@@ -17,10 +17,8 @@
 package unix
 
 import (
-	"syscall"
 	_ "unsafe"
 )
 
-func HasNonblockFlag(flag int) bool {
-	return flag&syscall.O_NONBLOCK != 0
-}
+// llgo:skip path_filestat_get path_create_directory path_readlink path_unlink_file path_remove_directory Fstatat Mkdirat Readlinkat Unlinkat
+type _unix struct{}

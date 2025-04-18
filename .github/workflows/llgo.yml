@@ -217,13 +217,14 @@ jobs:
         with:
           go-version: "1.24.2"
 
-      - name: Install wasmtime and wasi-libc
+      - name: Install wamr
         run: |
-          brew install wasmtime
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/libclang_rt.builtins-wasm32-wasi-25.0.tar.gz
-          tar -xvf libclang_rt.builtins-wasm32-wasi-25.0.tar.gz
-          mkdir -p `llvm-config --libdir`/clang/19/lib/wasi/
-          mv libclang_rt.builtins-wasm32-wasi-25.0/libclang_rt.builtins-wasm32.a `llvm-config --libdir`/clang/19/lib/wasi/
+          git clone https://github.com/bytecodealliance/wasm-micro-runtime.git
+          mkdir wasm-micro-runtime/product-mini/platforms/darwin/build
+          cd wasm-micro-runtime/product-mini/platforms/darwin/build
+          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
+          make -j8
+          echo "$PWD" >> $GITHUB_PATH
 
       - name: Install llgo
         run: |
@@ -237,10 +238,10 @@ jobs:
           echo "Testing cross-compilation wasm with Go 1.24.2"
 
           # Compile for wasm architecture
-          GOOS=wasip1 GOARCH=wasm llgo build -o hello -v ./helloc
+          GOOS=wasip1 GOARCH=wasm llgo build -o hello -tags=nogc -v ./helloc
 
           # Check file type
           file hello.wasm
 
           # Run the wasm binary using llgo_wasm
-          wasmtime hello.wasm
+          iwasm --stack-size=819200000 --heap-size=800000000 hello.wasm

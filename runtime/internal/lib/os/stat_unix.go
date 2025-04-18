@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix || (js && wasm) || wasip1
+//go:build unix || wasm
 
 package os
 
@@ -23,7 +23,6 @@ func (f *File) Stat() (FileInfo, error) {
 	if err != 0 {
 		return nil, &PathError{Op: "stat", Path: f.name, Err: syscall.Errno(err)}
 	}
-	fillFileStatFromSys(&fs, f.name)
 	return &fs, nil
 }
 
@@ -36,7 +35,6 @@ func statNolog(name string) (FileInfo, error) {
 	if err != nil {
 		return nil, &PathError{Op: "stat", Path: name, Err: err}
 	}
-	fillFileStatFromSys(&fs, name)
 	return &fs, nil
 }
 
@@ -49,6 +47,5 @@ func lstatNolog(name string) (FileInfo, error) {
 	if err != nil {
 		return nil, &PathError{Op: "lstat", Path: name, Err: err}
 	}
-	fillFileStatFromSys(&fs, name)
 	return &fs, nil
 }

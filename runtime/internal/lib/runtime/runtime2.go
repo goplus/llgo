@@ -4,9 +4,7 @@
 
 package runtime
 
-import (
-	"runtime"
-)
+import "runtime"
 
 // Layout of in-memory per-function information prepared by linker
 // See https://golang.org/s/go12symtab.

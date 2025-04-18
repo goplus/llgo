@@ -80,7 +80,7 @@ func (p *pipe) write(b []byte) (n int, err error) {
 		return 0, p.writeCloseError()
 	default:
 		p.wrMu.Lock()
-		defer p.wrMu.Unlock()
+		//TODO(lijie): workaround for defer crash on wasm
 	}
 
 	for once := true; once || len(b) > 0; once = false {
@@ -90,9 +90,11 @@ func (p *pipe) write(b []byte) (n int, err error) {
 			b = b[nw:]
 			n += nw
 		case <-p.done:
+			p.wrMu.Unlock()
 			return n, p.writeCloseError()
 		}
 	}
+	p.wrMu.Unlock()
 	return n, nil
 }
 

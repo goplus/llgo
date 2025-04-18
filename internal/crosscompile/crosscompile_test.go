@@ -75,7 +75,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := UseCrossCompileSDK(tc.goos, tc.goarch)
+			export, err := UseCrossCompileSDK(tc.goos, tc.goarch, false)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)

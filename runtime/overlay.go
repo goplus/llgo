@@ -4,6 +4,9 @@ import (
 	_ "embed"
 )
 
+//go:embed _overlay/runtime/runtime.go
+var fakeRuntime string
+
 //go:embed _overlay/go/parser/resolver.go
 var go_parser_resolver string
 
@@ -26,4 +29,5 @@ var OverlayFiles = map[string]string{
 	"testing/testing_go123.go":   testing_testing_go123,
 	"testing/testing_go124.go":   testing_testing_go124,
 	"net/textproto/textproto.go": net_textproto,
+	"runtime/runtime.go":         fakeRuntime,
 }
