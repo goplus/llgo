@@ -54,13 +54,13 @@ func mockRun(args []string, cfg *Config) {
 }
 
 func TestRun(t *testing.T) {
-	mockRun([]string{"-v", "../../cl/_testgo/print"}, &Config{Mode: ModeRun})
+	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeRun})
 }
 
 func TestTest(t *testing.T) {
-	mockRun([]string{"-v", "../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
+	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
 }
 
 func TestCmpTest(t *testing.T) {
-	mockRun([]string{"-v", "../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
+	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
 }

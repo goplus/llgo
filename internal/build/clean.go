@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/goplus/llgo/internal/packages"
 )
@@ -32,11 +33,20 @@ var (
 	}
 )
 
-func Clean(args []string, conf *Config) {
-	flags, patterns, verbose := ParseArgs(args, cleanFlags)
+func Clean(patterns []string, conf *Config) {
+	if conf.Goos == "" {
+		conf.Goos = runtime.GOOS
+	}
+	if conf.Goarch == "" {
+		conf.Goarch = runtime.GOARCH
+	}
+	tags := "llgo"
+	if conf.Tags != "" {
+		tags += "," + conf.Tags
+	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedExportFile,
-		BuildFlags: flags,
+		BuildFlags: []string{"-tags=" + tags},
 	}
 
 	if patterns == nil {
@@ -45,11 +55,11 @@ func Clean(args []string, conf *Config) {
 	initial, err := packages.LoadEx(nil, nil, cfg, patterns...)
 	check(err)
 
-	cleanPkgs(initial, verbose)
+	cleanPkgs(initial, conf.Verbose)
 
 	for _, pkg := range initial {
 		if pkg.Name == "main" {
-			cleanMainPkg(pkg, conf, verbose)
+			cleanMainPkg(pkg, conf, conf.Verbose)
 		}
 	}
 }

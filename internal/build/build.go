@@ -75,6 +75,8 @@ type Config struct {
 	RunArgs   []string // only valid for ModeRun
 	Mode      Mode
 	GenExpect bool // only valid for ModeCmpTest
+	Verbose   bool
+	Tags      string
 }
 
 func NewDefaultConf(mode Mode) *Config {
@@ -136,56 +138,6 @@ const (
 	loadSyntax  = loadTypes | packages.NeedSyntax | packages.NeedTypesInfo
 )
 
-func mergeFlags(flags, extraFlags []string) (newFlags []string, tags []string) {
-	// Combine all flags
-	allFlags := append([]string{}, flags...)
-	allFlags = append(allFlags, extraFlags...)
-
-	// Find all -tags flags and extract their values
-	tagValues := []string{}
-
-	for i := 0; i < len(allFlags); i++ {
-		flag := allFlags[i]
-		// Handle -tags=value format
-		if strings.HasPrefix(flag, "-tags=") {
-			value := strings.TrimPrefix(flag, "-tags=")
-			if value != "" {
-				tagValues = append(tagValues, strings.Split(value, ",")...)
-			}
-			continue
-		}
-		// Handle -tags value format
-		if flag == "-tags" && i+1 < len(allFlags) {
-			i++
-			value := allFlags[i]
-			if value != "" {
-				tagValues = append(tagValues, strings.Split(value, ",")...)
-			}
-			continue
-		}
-		// Keep other flags
-		newFlags = append(newFlags, flag)
-	}
-	// Add combined -tags flag if we found any tag values
-	if len(tagValues) > 0 {
-		// Remove duplicates
-		uniqueTags := make([]string, 0, len(tagValues))
-		seen := make(map[string]bool)
-		for _, tag := range tagValues {
-			tag = strings.TrimSpace(tag)
-			if tag != "" && !seen[tag] {
-				seen[tag] = true
-				uniqueTags = append(uniqueTags, tag)
-			}
-		}
-		if len(uniqueTags) > 0 {
-			newFlags = append(newFlags, "-tags", strings.Join(uniqueTags, ","))
-			tags = []string{"-tags", strings.Join(uniqueTags, ",")}
-		}
-	}
-	return newFlags, tags
-}
-
 func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Goos == "" {
 		conf.Goos = runtime.GOOS
@@ -193,11 +145,15 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Goarch == "" {
 		conf.Goarch = runtime.GOARCH
 	}
-	flags, patterns, verbose := ParseArgs(args, buildFlags)
-	flags, _ = mergeFlags(flags, []string{"-tags", "llgo"})
+	verbose := conf.Verbose
+	patterns := args
+	tags := "llgo"
+	if conf.Tags != "" {
+		tags += "," + conf.Tags
+	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
-		BuildFlags: flags,
+		BuildFlags: []string{"-tags=" + tags},
 		Fset:       token.NewFileSet(),
 		Tests:      conf.Mode == ModeTest,
 	}
@@ -1046,50 +1002,6 @@ func IsWasiThreadsEnabled() bool {
 
 func WasmRuntime() string {
 	return defaultEnv(llgoWasmRuntime, defaultWasmRuntime)
-}
-
-func ParseArgs(args []string, swflags map[string]bool) (flags, patterns []string, verbose bool) {
-	n := len(args)
-	for i := 0; i < n; i++ {
-		arg := args[i]
-		if strings.HasPrefix(arg, "-") {
-			checkFlag(arg, &i, &verbose, swflags)
-		} else {
-			patterns = append([]string{}, args[i:]...)
-			flags = append([]string{}, args[:i]...)
-			return
-		}
-	}
-	return
-}
-
-func SkipFlagArgs(args []string) int {
-	n := len(args)
-	for i := 0; i < n; i++ {
-		arg := args[i]
-		if strings.HasPrefix(arg, "-") {
-			checkFlag(arg, &i, nil, buildFlags)
-		} else {
-			return i
-		}
-	}
-	return -1
-}
-
-func checkFlag(arg string, i *int, verbose *bool, swflags map[string]bool) {
-	if pos := strings.IndexByte(arg, '='); pos > 0 {
-		if verbose != nil && arg == "-v=true" {
-			*verbose = true
-		}
-	} else if hasarg, ok := swflags[arg]; ok {
-		if hasarg {
-			*i++
-		} else if verbose != nil && arg == "-v" {
-			*verbose = true
-		}
-	} else {
-		panic("unknown flag: " + arg)
-	}
 }
 
 func concatPkgLinkFiles(ctx *context, pkg *packages.Package, verbose bool) (parts []string) {
