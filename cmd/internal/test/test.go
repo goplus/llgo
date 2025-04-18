@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/cmd/internal/base"
+	"github.com/goplus/llgo/cmd/internal/flags"
 	"github.com/goplus/llgo/internal/build"
 )
 
@@ -16,15 +17,19 @@ var Cmd = &base.Command{
 
 func init() {
 	Cmd.Run = runCmd
+	flags.AddBuildFlags(&Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	runCmdEx(cmd, args, build.ModeRun)
-}
+	if err := cmd.Flag.Parse(args); err != nil {
+		panic(err)
+	}
 
-func runCmdEx(_ *base.Command, args []string, mode build.Mode) {
-	conf := build.NewDefaultConf(mode)
-	conf.Mode = build.ModeTest
+	conf := build.NewDefaultConf(build.ModeTest)
+	conf.Tags = flags.Tags
+	conf.Verbose = flags.Verbose
+
+	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/goplus/llgo/cmd/internal/base"
+	"github.com/goplus/llgo/cmd/internal/flags"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/mockable"
 )
@@ -34,14 +35,22 @@ var Cmd = &base.Command{
 
 func init() {
 	Cmd.Run = runCmd
+	flags.AddBuildFlags(&Cmd.Flag)
+	flags.AddOutputFlags(&Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	conf := build.NewDefaultConf(build.ModeBuild)
-	if len(args) >= 2 && args[0] == "-o" {
-		conf.OutFile = args[1]
-		args = args[2:]
+	if err := cmd.Flag.Parse(args); err != nil {
+		panic(err)
 	}
+
+	conf := build.NewDefaultConf(build.ModeBuild)
+	conf.Tags = flags.Tags
+	conf.Verbose = flags.Verbose
+	conf.OutFile = flags.OutputFile
+
+	args = cmd.Flag.Args()
+
 	_, err := build.Do(args, conf)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

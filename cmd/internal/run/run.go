@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/goplus/llgo/cmd/internal/base"
+	"github.com/goplus/llgo/cmd/internal/flags"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/mockable"
 )
@@ -47,6 +47,9 @@ var CmpTestCmd = &base.Command{
 func init() {
 	Cmd.Run = runCmd
 	CmpTestCmd.Run = runCmpTest
+	flags.AddBuildFlags(&Cmd.Flag)
+	flags.AddBuildFlags(&CmpTestCmd.Flag)
+	flags.AddCmpTestFlags(&CmpTestCmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
@@ -57,12 +60,17 @@ func runCmpTest(cmd *base.Command, args []string) {
 	runCmdEx(cmd, args, build.ModeCmpTest)
 }
 
-func runCmdEx(_ *base.Command, args []string, mode build.Mode) {
-	conf := build.NewDefaultConf(mode)
-	if mode == build.ModeCmpTest && len(args) > 0 && args[0] == "-gen" {
-		conf.GenExpect = true
-		args = args[1:]
+func runCmdEx(cmd *base.Command, args []string, mode build.Mode) {
+	if err := cmd.Flag.Parse(args); err != nil {
+		panic(err)
 	}
+
+	conf := build.NewDefaultConf(mode)
+	conf.Tags = flags.Tags
+	conf.Verbose = flags.Verbose
+	conf.GenExpect = flags.Gen
+
+	args = cmd.Flag.Args()
 	args, runArgs, err := parseRunArgs(args)
 	check(err)
 	conf.RunArgs = runArgs
@@ -74,24 +82,11 @@ func runCmdEx(_ *base.Command, args []string, mode build.Mode) {
 }
 
 func parseRunArgs(args []string) ([]string, []string, error) {
-	n := build.SkipFlagArgs(args)
-	if n < 0 {
+	if len(args) == 0 {
 		return nil, nil, errNoProj
 	}
 
-	arg := args[n]
-	if isGoFile(arg) {
-		n++
-		for n < len(args) && isGoFile(args[n]) {
-			n++
-		}
-		return args[:n], args[n:], nil
-	}
-	return args[:n+1], args[n+1:], nil
-}
-
-func isGoFile(fname string) bool {
-	return filepath.Ext(fname) == ".go"
+	return args[:1], args[1:], nil
 }
 
 func check(err error) {

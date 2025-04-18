@@ -19,6 +19,7 @@ package clean
 
 import (
 	"github.com/goplus/llgo/cmd/internal/base"
+	"github.com/goplus/llgo/cmd/internal/flags"
 	"github.com/goplus/llgo/internal/build"
 )
 
@@ -30,9 +31,18 @@ var Cmd = &base.Command{
 
 func init() {
 	Cmd.Run = runCmd
+	flags.AddBuildFlags(&Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
+	if err := cmd.Flag.Parse(args); err != nil {
+		panic(err)
+	}
+
 	conf := build.NewDefaultConf(0)
+	conf.Tags = flags.Tags
+	conf.Verbose = flags.Verbose
+
+	args = cmd.Flag.Args()
 	build.Clean(args, conf)
 }
