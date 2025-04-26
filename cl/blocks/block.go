@@ -60,17 +60,25 @@ func findLoop(states []*blockState, path []int, from, iblk int) []int {
 	path = append(path, iblk)
 	self := states[iblk]
 	for _, succ := range self.succs {
-		if states[succ].fdel {
+		if s := states[succ]; s.fdel || s.loop {
 			continue
 		}
 		if pos := find(path, succ); pos >= 0 {
 			if pos > 0 {
+				for _, i := range path[pos:] { // mark inner loop
+					states[i].loop = true
+				}
 				continue
 			}
 			for _, i := range path {
 				s := states[i]
 				s.loop = true
 				s.fdel = true
+			}
+			for _, s := range states { // clear inner loop mark
+				if !s.fdel {
+					s.loop = false
+				}
 			}
 			return path
 		}

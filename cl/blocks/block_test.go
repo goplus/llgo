@@ -44,6 +44,9 @@ func TestTestdefer(t *testing.T) {
 		if strings.HasPrefix(name, "firstloop") {
 			return "Loop"
 		}
+		if strings.HasPrefix(name, "gobuild") {
+			return "Import"
+		}
 		return "main"
 	})
 }
