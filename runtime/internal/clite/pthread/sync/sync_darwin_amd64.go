@@ -2,7 +2,7 @@ package sync
 
 const (
 	PthreadOnceSize       = 16
-	PthreadMutexSize      = 56
+	PthreadMutexSize      = 64
 	PthreadMutexAttrSize  = 8
 	PthreadCondSize       = 40
 	PthreadCondAttrSize   = 8
