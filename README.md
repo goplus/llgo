@@ -335,6 +335,7 @@ Here are the Go packages that can be imported correctly:
 * [regexp/syntax](https://pkg.go.dev/regexp/syntax)
 * [go/token](https://pkg.go.dev/go/token)
 * [go/scanner](https://pkg.go.dev/go/scanner)
+* [go/parser](https://pkg.go.dev/go/parser)
 
 
 ## Dependencies
