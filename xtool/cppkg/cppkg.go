@@ -25,9 +25,9 @@ const (
 	DefaultFlags = IndexAutoUpdate | ToolQuietInstall
 )
 
-// Main is the main entry point for the cppkg package.
+// Install installs a package with the given name and version.
 // pkgAndVer: 7bitcoder/7bitconf@1.2.0
-func Main(pkgAndVer string, flags int) {
+func Install(pkgAndVer string, flags int) {
 	pkgPath, ver := parsePkgVer(pkgAndVer)
 	if ver == "" {
 		panic("TODO: get latest version")
