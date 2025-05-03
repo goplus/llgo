@@ -8,3 +8,4 @@ coverage:
     - "internal/packages"
     - "internal/typepatch"
     - "internal/github"
+    - "xtool/cppkg"

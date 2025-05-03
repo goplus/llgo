@@ -15,7 +15,8 @@ require (
 )
 
 require (
-	golang.org/x/mod v0.23.0 // indirect
+	github.com/goccy/go-yaml v1.17.1
+	golang.org/x/mod v0.23.0
 	golang.org/x/sync v0.11.0 // indirect
 )
 
