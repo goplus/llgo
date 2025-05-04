@@ -1,0 +1,11 @@
+import (
+	"runtime"
+
+	"github.com/goplus/llgo/internal/env"
+)
+
+short "print LLGo version"
+
+run => {
+	echo "llgo ${env.version} ${runtime.GOOS}/${runtime.GOARCH}"
+}
