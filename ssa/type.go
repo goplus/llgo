@@ -538,25 +538,32 @@ func PathOf(pkg *types.Package) string {
 // - method: pkg.T.name, pkg.(*T).name
 func FuncName(pkg *types.Package, name string, recv *types.Var, org bool) string {
 	if recv != nil {
+		named, ptr := recvNamed(recv.Type())
 		var tName string
-		t := recv.Type()
 		if org {
-			if tp, ok := t.(*types.Pointer); ok {
-				tName = "(*" + tp.Elem().(*types.Named).Obj().Name() + ")"
-			} else {
-				tName = t.(*types.Named).Obj().Name()
-			}
+			tName = named.Obj().Name()
 		} else {
-			if tp, ok := t.(*types.Pointer); ok {
-				tName = "(*" + abi.NamedName(tp.Elem().(*types.Named)) + ")"
-			} else {
-				tName = abi.NamedName(t.(*types.Named))
-			}
+			tName = abi.NamedName(named)
+		}
+		if ptr {
+			tName = "(*" + tName + ")"
 		}
 		return PathOf(pkg) + "." + tName + "." + name
 	}
 	ret := FullName(pkg, name)
 	return ret
+}
+
+func recvNamed(t types.Type) (typ *types.Named, ptr bool) {
+	if tp, ok := t.(*types.Pointer); ok {
+		t = tp.Elem()
+		ptr = true
+	}
+	if _, ok := t.(*types.Alias); ok {
+		t = types.Unalias(t)
+	}
+	typ, _ = t.(*types.Named)
+	return
 }
 
 func TypeArgs(typeArgs []types.Type) string {

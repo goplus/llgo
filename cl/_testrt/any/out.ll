@@ -7,7 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/any"
 @"github.com/goplus/llgo/cl/_testrt/any.init$guard" = global i1 false, align 1
 @_llgo_int8 = linkonce global ptr null, align 8
 @"*_llgo_int8" = linkonce global ptr null, align 8
-@0 = private unnamed_addr constant [34 x i8] c"type assertion any -> *int8 failed", align 1
+@0 = private unnamed_addr constant [58 x i8] c"type assertion any -> *github.com/goplus/lib/c.Char failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @_llgo_int = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [32 x i8] c"type assertion any -> int failed", align 1
@@ -29,7 +29,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   %6 = load ptr, ptr @_llgo_string, align 8
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 34 }, ptr %7, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 58 }, ptr %7, align 8
   %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %6, 0
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %8, ptr %7, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %9)
