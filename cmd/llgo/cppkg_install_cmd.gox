@@ -14,8 +14,6 @@
  */
 
 import (
-	"runtime"
-
 	self "github.com/goplus/llgo/xtool/cppkg"
 )
 
