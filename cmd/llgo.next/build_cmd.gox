@@ -14,13 +14,13 @@
  */
 
 import (
-	"runtime"
-
-	"github.com/goplus/llgo/internal/env"
+	self "github.com/goplus/llgo/cmd/internal/build"
 )
 
-short "Print LLGo version"
+short "Compile packages and dependencies"
 
-run => {
-	echo "llgo ${env.version} ${runtime.GOOS}/${runtime.GOARCH}"
+flagOff
+
+run args => {
+	self.Cmd.Run self.Cmd, args
 }
