@@ -13,12 +13,6 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-import (
-	"runtime"
-
-	self "github.com/goplus/llgo/xtool/cppkg"
-)
-
 short "Manage C/C++ packages"
 
 run => {
