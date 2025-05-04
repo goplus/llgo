@@ -75,7 +75,10 @@ type githubRelease struct {
 
 func getRelease(pkg *Package, tagPattern string) (ret *githubRelease, err error) {
 	if tagPattern == "" {
-		return nil, errors.New("dynamic tag")
+		return nil, ErrDynamicTag
+	}
+	if pkg.gr != nil {
+		return &githubRelease{PublishedAt: pkg.gr.PublishedAt}, nil
 	}
 	ver := strings.Replace(tagPattern, "*", pkg.Version, 1)
 	gr, err := github.GetRelease(pkg.Path, ver)

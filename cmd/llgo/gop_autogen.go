@@ -146,17 +146,19 @@ func (this *cppkg_install) Main(_gop_arg0 string) {
 	this.Long(`Installs a C/C++ package with the given name and version. For example:
 
 llgo cppkg install davegamble/cjson@1.7.18
+llgo cppkg install davegamble/cjson@latest
+llgo cppkg install davegamble/cjson
 `)
-//line cmd/llgo/cppkg_install_cmd.gox:27:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/cppkg_install_cmd.gox:28:1
-		if len(args) < 1 {
 //line cmd/llgo/cppkg_install_cmd.gox:29:1
-			this.Help()
+	this.Run__1(func(args []string) {
 //line cmd/llgo/cppkg_install_cmd.gox:30:1
+		if len(args) < 1 {
+//line cmd/llgo/cppkg_install_cmd.gox:31:1
+			this.Help()
+//line cmd/llgo/cppkg_install_cmd.gox:32:1
 			return
 		}
-//line cmd/llgo/cppkg_install_cmd.gox:33:1
+//line cmd/llgo/cppkg_install_cmd.gox:35:1
 		cppkg1.Install(args[0], cppkg1.DefaultFlags)
 	})
 }

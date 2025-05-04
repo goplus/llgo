@@ -22,6 +22,8 @@ short "Install a C/C++ package from github.com/goplus/cppkg"
 long `Installs a C/C++ package with the given name and version. For example:
 
 llgo cppkg install davegamble/cjson@1.7.18
+llgo cppkg install davegamble/cjson@latest
+llgo cppkg install davegamble/cjson
 `
 
 run args => {
