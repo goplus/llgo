@@ -14,13 +14,13 @@
  */
 
 import (
-	"runtime"
-
-	"github.com/goplus/llgo/internal/env"
+	self "github.com/goplus/llgo/cmd/internal/run"
 )
 
-short "Print LLGo version"
+short "Compile and run with llgo, compare result (stdout/stderr/exitcode) with go or llgo.expect; generate llgo.expect file if -gen is specified"
 
-run => {
-	echo "llgo ${env.version} ${runtime.GOOS}/${runtime.GOARCH}"
+flagOff
+
+run args => {
+	self.CmpTestCmd.Run self.CmpTestCmd, args
 }
