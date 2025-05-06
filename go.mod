@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/goccy/go-yaml v1.17.1
-	github.com/goplus/cobra v1.9.8 //gop:class
+	github.com/goplus/cobra v1.9.9 //gop:class
 	github.com/goplus/gogen v1.17.3
 	github.com/goplus/lib v0.2.0
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
