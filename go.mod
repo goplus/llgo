@@ -12,7 +12,7 @@ require (
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
 	github.com/goplus/llvm v0.8.3
 	github.com/goplus/mod v0.16.0
-	github.com/qiniu/x v1.13.19
+	github.com/qiniu/x v1.14.0
 	golang.org/x/mod v0.23.0
 	golang.org/x/tools v0.30.0
 )
