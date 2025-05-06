@@ -29,9 +29,6 @@ const (
 // pkgAndVer: 7bitcoder/7bitconf@1.2.0
 func Install(pkgAndVer string, flags int) {
 	pkgPath, ver := parsePkgVer(pkgAndVer)
-	if ver == "" {
-		panic("TODO: get latest version")
-	}
 
 	m, err := New("")
 	check(err)

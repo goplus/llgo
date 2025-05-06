@@ -1,7 +1,7 @@
 coverage:
   ignore:
     - "chore"
-    - "cmd/internal"
+    - "cmd"
     - "internal/build"
     - "internal/llgen"
     - "internal/mockable"

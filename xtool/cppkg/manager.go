@@ -19,8 +19,10 @@ package cppkg
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/goccy/go-yaml"
+	"github.com/goplus/llgo/internal/github"
 	"golang.org/x/mod/semver"
 )
 
@@ -73,11 +75,16 @@ type Package struct {
 	Version  string
 	Folder   string
 	Template *Template
+
+	gr *github.Release // optional
 }
 
 var (
 	// ErrVersionNotFound is returned when the specified version is not found.
 	ErrVersionNotFound = errors.New("version not found")
+
+	// ErrDynamicTag is returned when the tag is dynamic.
+	ErrDynamicTag = errors.New("dynamic tag")
 )
 
 const (
@@ -109,15 +116,32 @@ func (p *Manager) Lookup(pkgPath, ver string, flags int) (_ *Package, err error)
 	if err != nil {
 		return
 	}
+
+	if ver == "" || ver == "latest" {
+		if conf.Template.Tag == "" {
+			return nil, ErrDynamicTag
+		}
+		gr, e := github.GetRelease(pkgPath, "")
+		if e != nil {
+			return nil, e
+		}
+		ver, err = verByTag(gr.TagName, conf.Template.Tag)
+		if err != nil {
+			return
+		}
+		templ := conf.Template
+		return &Package{conf.PkgName, pkgPath, ver, templ.Folder, &templ, gr}, nil
+	}
+
 	if v, ok := conf.Versions[ver]; ok {
-		return &Package{conf.PkgName, pkgPath, ver, v.Folder, nil}, nil
+		return &Package{conf.PkgName, pkgPath, ver, v.Folder, nil, nil}, nil
 	}
 	if compareVer(ver, conf.Template.FromVer) < 0 {
 		err = ErrVersionNotFound
 		return
 	}
-	folder := conf.Template.Folder
-	return &Package{conf.PkgName, pkgPath, ver, folder, &conf.Template}, nil
+	templ := conf.Template
+	return &Package{conf.PkgName, pkgPath, ver, templ.Folder, &templ, nil}, nil
 }
 
 func (p *Manager) indexRoot() string {
@@ -157,4 +181,16 @@ func indexInit(root string, flags int) (err error) {
 
 func compareVer(v1, v2 string) int {
 	return semver.Compare("v"+v1, "v"+v2)
+}
+
+func verByTag(tag, tagPattern string) (ver string, err error) {
+	if pos := strings.IndexByte(tagPattern, '*'); pos >= 0 {
+		prefix := tagPattern[:pos]
+		suffix := tagPattern[pos+1:]
+		if strings.HasPrefix(tag, prefix) && strings.HasSuffix(tag, suffix) {
+			ver = tag[pos : len(tag)-len(suffix)]
+			return
+		}
+	}
+	return "", errors.New("tag not match: " + tag + " with " + tagPattern)
 }

@@ -21,7 +21,7 @@ jobs:
         run: |
           for dir in . runtime; do
             pushd $dir
-            if [ -n "$(go fmt ./...)" ]; then
+            if [ -n "$(go fmt ./... | grep -v gop_autogen.go)" ]; then
               echo "Some files are not properly formatted. Please run 'go fmt ./...'"
               exit 1
             fi
