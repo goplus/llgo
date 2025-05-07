@@ -46,6 +46,9 @@ type install struct {
 	xcmd.Command
 	*App
 }
+type App struct {
+	xcmd.App
+}
 type run struct {
 	xcmd.Command
 	*App
@@ -58,10 +61,11 @@ type version struct {
 	xcmd.Command
 	*App
 }
-type App struct {
-	xcmd.App
+//line cmd/llgo/main_cmd.gox:1
+func (this *App) MainEntry() {
+//line cmd/llgo/main_cmd.gox:1:1
+	this.Short(`llgo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python.`)
 }
-
 func (this *App) Main() {
 	_gop_obj0 := &build{App: this}
 	_gop_obj1 := &clean{App: this}
@@ -242,6 +246,5 @@ func (this *version) Classfname() string {
 	return "version"
 }
 func main() {
-//line cmd/llgo/version_cmd.gox:24:1
 	new(App).Main()
 }
