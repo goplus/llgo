@@ -18,6 +18,7 @@ package cppkg
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goplus/llgo/internal/github"
+	"github.com/qiniu/x/byteutil"
 	"github.com/qiniu/x/httputil"
 )
 
@@ -98,9 +100,9 @@ func getRelease(pkg *Package, tagPattern string) (ret *githubRelease, err error)
 }
 
 // Install installs the specified package using Conan.
-func (p *Manager) Install(pkg *Package, flags int) (err error) {
-	outDir := p.outDir(pkg)
-	os.MkdirAll(outDir, os.ModePerm)
+func (p *Manager) Install(pkg *Package, options []string, flags int) (buildDir string, err error) {
+	buildDir = p.BuildDir(pkg, options)
+	os.MkdirAll(buildDir, os.ModePerm)
 
 	var rev string
 	var gr *githubRelease
@@ -115,17 +117,17 @@ func (p *Manager) Install(pkg *Package, flags int) (err error) {
 			return
 		}
 
-		err = copyDirR(conanfileDir, outDir)
+		err = copyDirR(conanfileDir, buildDir)
 		if err != nil {
 			return
 		}
 
-		conanfilePy, err = os.ReadFile(outDir + "/conanfile.py")
+		conanfilePy, err = os.ReadFile(buildDir + "/conanfile.py")
 		if err != nil {
 			return
 		}
 
-		conandataFile := outDir + "/conandata.yml"
+		conandataFile := buildDir + "/conandata.yml"
 		conandataYml, err = os.ReadFile(conandataFile)
 		if err != nil {
 			return
@@ -138,7 +140,7 @@ func (p *Manager) Install(pkg *Package, flags int) (err error) {
 		fromVer := template.FromVer
 		source, ok := cd.Sources[fromVer]
 		if !ok {
-			return ErrVersionNotFound
+			return "", ErrVersionNotFound
 		}
 		cd.Sources = map[string]any{
 			pkgVer: replaceVer(source, fromVer, pkgVer),
@@ -152,10 +154,10 @@ func (p *Manager) Install(pkg *Package, flags int) (err error) {
 			return
 		}
 		rev = recipeRevision(pkg, gr, conandataYml)
-		conanfileDir = outDir
+		conanfileDir = buildDir
 	}
 
-	outFile := outDir + "/out.json"
+	outFile := buildDir + "/out.json"
 	out, err := os.Create(outFile)
 	if err == nil {
 		defer out.Close()
@@ -165,15 +167,16 @@ func (p *Manager) Install(pkg *Package, flags int) (err error) {
 
 	nameAndVer := pkg.Name + "/" + pkgVer
 	if template == nil {
-		return conanInstall(nameAndVer, outDir, conanfileDir, out, flags)
+		err = conanInstall(nameAndVer, buildDir, conanfileDir, out, options, flags)
+		return
 	}
 
 	logFile := ""
 	if flags&LogRevertProxy != 0 {
-		logFile = outDir + "/rp.log"
+		logFile = buildDir + "/rp.log"
 	}
-	return remoteProxy(flags, logFile, func() error {
-		return conanInstall(nameAndVer, outDir, conanfileDir, out, flags)
+	err = remoteProxy(flags, logFile, func() error {
+		return conanInstall(nameAndVer, buildDir, conanfileDir, out, options, flags)
 	}, func(mux *http.ServeMux) {
 		base := "/v2/conans/" + nameAndVer
 		revbase := base + "/_/_/revisions/" + rev
@@ -217,7 +220,7 @@ func (p *Manager) Install(pkg *Package, flags int) (err error) {
 			httputil.ReplyWithStream(w, http.StatusOK, "text/plain", strings.NewReader(data), int64(len(data)))
 		})
 		mux.HandleFunc(revbase+"/files/conan_export.tgz", func(w http.ResponseWriter, r *http.Request) {
-			conanExportTgz, err := tgzOfConandata(outDir)
+			conanExportTgz, err := tgzOfConandata(buildDir)
 			if err != nil {
 				replyError(w, err)
 				return
@@ -228,19 +231,31 @@ func (p *Manager) Install(pkg *Package, flags int) (err error) {
 			httputil.ReplyWith(w, http.StatusOK, "application/x-gzip", conanExportTgz)
 		})
 	})
+	return
 }
 
-func (p *Manager) outDir(pkg *Package) string {
-	return p.cacheDir + "/build/" + pkg.Name + "@" + pkg.Version
+func (p *Manager) BuildDir(pkg *Package, options []string) string {
+	dir := p.cacheDir + "/build/" + pkg.Name + "@" + pkg.Version
+	if options != nil {
+		h := md5.New()
+		for _, opt := range options {
+			h.Write(byteutil.Bytes(opt))
+		}
+		hash := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+		dir += "/" + hash
+	} else {
+		dir += "/static"
+	}
+	return dir
 }
 
 func (p *Manager) conanfileDir(pkgPath, pkgFolder string) string {
-	root := p.indexRoot()
+	root := p.IndexRoot()
 	return root + "/" + pkgPath + "/" + pkgFolder
 }
 
-func conanInstall(pkg, outDir, conanfileDir string, out io.Writer, flags int) (err error) {
-	args := make([]string, 0, 12)
+func conanInstall(pkg, outDir, conanfileDir string, out io.Writer, options []string, flags int) (err error) {
+	args := make([]string, 0, 16)
 	args = append(args, "install",
 		"--requires", pkg,
 		"--generator", "PkgConfigDeps",
@@ -248,6 +263,9 @@ func conanInstall(pkg, outDir, conanfileDir string, out io.Writer, flags int) (e
 		"--format", "json",
 		"--output-folder", outDir,
 	)
+	for _, opt := range options {
+		args = append(args, "--options", opt)
+	}
 	quietInstall := flags&ToolQuietInstall != 0
 	cmd, err := conanCmd.New(quietInstall, args...)
 	if err != nil {
