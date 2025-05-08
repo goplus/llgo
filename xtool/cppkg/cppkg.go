@@ -29,15 +29,21 @@ const (
 // pkgAndVer: 7bitcoder/7bitconf@1.2.0
 func Install(pkgAndVer string, flags int) {
 	pkgPath, ver := parsePkgVer(pkgAndVer)
+	_, _, err := InstallPkg(pkgPath, ver, nil, flags)
+	check(err)
+}
 
+// InstallPkg installs a package with the given package path and version.
+func InstallPkg(pkgPath, ver string, options []string, flags int) (pkg *Package, buildDir string, err error) {
 	m, err := New("")
-	check(err)
-
-	pkg, err := m.Lookup(pkgPath, ver, flags)
-	check(err)
-
-	err = m.Install(pkg, flags)
-	check(err)
+	if err != nil {
+		return
+	}
+	pkg, err = m.Lookup(pkgPath, ver, flags)
+	if err == nil {
+		buildDir, err = m.Install(pkg, options, flags)
+	}
+	return
 }
 
 func parsePkgVer(pkg string) (string, string) {

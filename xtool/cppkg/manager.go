@@ -36,19 +36,25 @@ type Manager struct {
 	cacheDir string
 }
 
+// New creates a new package manager.
 func New(cacheDir string) (ret *Manager, err error) {
 	if cacheDir == "" {
-		cacheDir, err = os.UserCacheDir()
-		if err != nil {
-			return
-		}
-		cacheDir += "/cppkg"
+		cacheDir = CacheDir()
 	}
 	os.MkdirAll(cacheDir, os.ModePerm)
 	ret = &Manager{
 		cacheDir: cacheDir,
 	}
 	return
+}
+
+// CacheDir returns the cache directory to manage C/C++ packages.
+func CacheDir() string {
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		panic(err)
+	}
+	return cacheDir + "/cppkg"
 }
 
 type version struct {
@@ -66,6 +72,17 @@ type config struct {
 	PkgName  string             `yaml:"name"`
 	Versions map[string]version `yaml:"versions"`
 	Template Template           `yaml:"template"`
+}
+
+// getKnownLatestVer returns the latest known version and its details.
+// It returns empty version if no known version is found.
+func (p *config) getKnownLatestVer() (ver string, v version) {
+	for ver1, v1 := range p.Versions {
+		if ver == "" || compareVer(ver1, ver) > 0 {
+			ver, v = ver1, v1
+		}
+	}
+	return
 }
 
 // Package represents a C/C++ package.
@@ -96,11 +113,14 @@ const (
 
 	// LogRevertProxy is a flag to log revert proxy.
 	LogRevertProxy
+
+	// KnownLatestVersion is a flag to use the known latest version.
+	KnownLatestVersion
 )
 
 // Lookup looks up a package by its path and version.
 func (p *Manager) Lookup(pkgPath, ver string, flags int) (_ *Package, err error) {
-	root := p.indexRoot()
+	root := p.IndexRoot()
 	err = indexUpate(root, flags)
 	if err != nil {
 		return
@@ -118,6 +138,11 @@ func (p *Manager) Lookup(pkgPath, ver string, flags int) (_ *Package, err error)
 	}
 
 	if ver == "" || ver == "latest" {
+		if flags&KnownLatestVersion != 0 {
+			if ver, v := conf.getKnownLatestVer(); ver != "" {
+				return &Package{conf.PkgName, pkgPath, ver, v.Folder, nil, nil}, nil
+			}
+		}
 		if conf.Template.Tag == "" {
 			return nil, ErrDynamicTag
 		}
@@ -144,7 +169,7 @@ func (p *Manager) Lookup(pkgPath, ver string, flags int) (_ *Package, err error)
 	return &Package{conf.PkgName, pkgPath, ver, templ.Folder, &templ, nil}, nil
 }
 
-func (p *Manager) indexRoot() string {
+func (p *Manager) IndexRoot() string {
 	return p.cacheDir + "/index"
 }
 
