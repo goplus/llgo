@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
+use "get [flags] [packages]"
+
 short "Add dependencies to current module and install them"
 
 run args => {
