@@ -272,11 +272,16 @@ func conanInstall(pkg, outDir, conanfileDir string, out io.Writer, options []str
 		return
 	}
 	cmd.Dir = conanfileDir
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = ConanStderr
 	cmd.Stdout = out
 	err = cmd.Run()
 	return
 }
+
+var (
+	// ConanStderr is the standard error output for command conan.
+	ConanStderr = os.Stderr
+)
 
 func recipeRevision(_ *Package, _ *githubRelease, conandataYml []byte) string {
 	return md5Of(conandataYml)
