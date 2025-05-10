@@ -37,7 +37,7 @@ import (
 
 var conanCmd = NewTool("conan", []string{
 	"brew install conan",
-	"apt-get install conan",
+	"pipx install conan",
 })
 
 type conandata struct {
