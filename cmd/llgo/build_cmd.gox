@@ -17,6 +17,8 @@ import (
 	self "github.com/goplus/llgo/cmd/internal/build"
 )
 
+use "build [flags] [packages]"
+
 short "Compile packages and dependencies"
 
 flagOff

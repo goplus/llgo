@@ -83,12 +83,14 @@ func (this *App) Main() {
 func (this *Cmd_build) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/build_cmd.gox:20:1
-	this.Short("Compile packages and dependencies")
+	this.Use("build [flags] [packages]")
 //line cmd/llgo/build_cmd.gox:22:1
-	this.FlagOff()
+	this.Short("Compile packages and dependencies")
 //line cmd/llgo/build_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/build_cmd.gox:26:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/build_cmd.gox:25:1
+//line cmd/llgo/build_cmd.gox:27:1
 		build.Cmd.Run(build.Cmd, args)
 	})
 }
@@ -99,12 +101,14 @@ func (this *Cmd_build) Classfname() string {
 func (this *Cmd_clean) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/clean_cmd.gox:20:1
-	this.Short("Remove object files and cached files")
+	this.Use("clean [flags] [packages]")
 //line cmd/llgo/clean_cmd.gox:22:1
-	this.FlagOff()
+	this.Short("Remove object files and cached files")
 //line cmd/llgo/clean_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/clean_cmd.gox:26:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/clean_cmd.gox:25:1
+//line cmd/llgo/clean_cmd.gox:27:1
 		clean.Cmd.Run(clean.Cmd, args)
 	})
 }
@@ -115,12 +119,14 @@ func (this *Cmd_clean) Classfname() string {
 func (this *Cmd_cmptest) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/cmptest_cmd.gox:20:1
-	this.Short("Compile and run with llgo, compare result (stdout/stderr/exitcode) with go or llgo.expect; generate llgo.expect file if -gen is specified")
+	this.Use("cmptest [flags] package [arguments...]")
 //line cmd/llgo/cmptest_cmd.gox:22:1
-	this.FlagOff()
+	this.Short("Compile and run with llgo, compare result (stdout/stderr/exitcode) with go or llgo.expect; generate llgo.expect file if -gen is specified")
 //line cmd/llgo/cmptest_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/cmptest_cmd.gox:26:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/cmptest_cmd.gox:25:1
+//line cmd/llgo/cmptest_cmd.gox:27:1
 		run.CmpTestCmd.Run(run.CmpTestCmd, args)
 	})
 }
@@ -145,24 +151,26 @@ func (this *Cmd_cppkg) Classfname() string {
 func (this *Cmd_cppkg_install) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/cppkg_install_cmd.gox:20:1
-	this.Short("Install a C/C++ package from github.com/goplus/cppkg")
+	this.Use("install [flags] [packages]")
 //line cmd/llgo/cppkg_install_cmd.gox:22:1
+	this.Short("Install a C/C++ package from github.com/goplus/cppkg")
+//line cmd/llgo/cppkg_install_cmd.gox:24:1
 	this.Long(`Installs a C/C++ package with the given name and version. For example:
 
 llgo cppkg install davegamble/cjson@1.7.18
 llgo cppkg install davegamble/cjson@latest
 llgo cppkg install davegamble/cjson
 `)
-//line cmd/llgo/cppkg_install_cmd.gox:29:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/cppkg_install_cmd.gox:30:1
-		if len(args) < 1 {
 //line cmd/llgo/cppkg_install_cmd.gox:31:1
-			this.Help()
+	this.Run__1(func(args []string) {
 //line cmd/llgo/cppkg_install_cmd.gox:32:1
+		if len(args) < 1 {
+//line cmd/llgo/cppkg_install_cmd.gox:33:1
+			this.Help()
+//line cmd/llgo/cppkg_install_cmd.gox:34:1
 			return
 		}
-//line cmd/llgo/cppkg_install_cmd.gox:35:1
+//line cmd/llgo/cppkg_install_cmd.gox:37:1
 		cppkg.Install(args[0], cppkg.DefaultFlags)
 	})
 }
@@ -173,10 +181,12 @@ func (this *Cmd_cppkg_install) Classfname() string {
 func (this *Cmd_get) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/get_cmd.gox:16:1
-	this.Short("Add dependencies to current module and install them")
+	this.Use("get [flags] [packages]")
 //line cmd/llgo/get_cmd.gox:18:1
+	this.Short("Add dependencies to current module and install them")
+//line cmd/llgo/get_cmd.gox:20:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/get_cmd.gox:19:1
+//line cmd/llgo/get_cmd.gox:21:1
 		panic("todo")
 	})
 }
@@ -187,12 +197,14 @@ func (this *Cmd_get) Classfname() string {
 func (this *Cmd_install) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/install_cmd.gox:20:1
-	this.Short("Compile and install packages and dependencies")
+	this.Use("install [flags] [packages]")
 //line cmd/llgo/install_cmd.gox:22:1
-	this.FlagOff()
+	this.Short("Compile and install packages and dependencies")
 //line cmd/llgo/install_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/install_cmd.gox:26:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/install_cmd.gox:25:1
+//line cmd/llgo/install_cmd.gox:27:1
 		install.Cmd.Run(install.Cmd, args)
 	})
 }
@@ -203,12 +215,14 @@ func (this *Cmd_install) Classfname() string {
 func (this *Cmd_run) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/run_cmd.gox:20:1
-	this.Short("Compile and run Go program")
+	this.Use("run [flags] package [arguments...]")
 //line cmd/llgo/run_cmd.gox:22:1
-	this.FlagOff()
+	this.Short("Compile and run Go program")
 //line cmd/llgo/run_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/run_cmd.gox:26:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/run_cmd.gox:25:1
+//line cmd/llgo/run_cmd.gox:27:1
 		run.Cmd.Run(run.Cmd, args)
 	})
 }
@@ -219,12 +233,14 @@ func (this *Cmd_run) Classfname() string {
 func (this *Cmd_test) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/test_cmd.gox:20:1
-	this.Short("Compile and run Go test")
+	this.Use("test [flags] package [arguments...]")
 //line cmd/llgo/test_cmd.gox:22:1
-	this.FlagOff()
+	this.Short("Compile and run Go test")
 //line cmd/llgo/test_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/test_cmd.gox:26:1
 	this.Run__1(func(args []string) {
-//line cmd/llgo/test_cmd.gox:25:1
+//line cmd/llgo/test_cmd.gox:27:1
 		test.Cmd.Run(test.Cmd, args)
 	})
 }
@@ -235,10 +251,12 @@ func (this *Cmd_test) Classfname() string {
 func (this *Cmd_version) Main(_gop_arg0 string) {
 	this.Command.Main(_gop_arg0)
 //line cmd/llgo/version_cmd.gox:22:1
-	this.Short("Print LLGo version")
+	this.Use("version")
 //line cmd/llgo/version_cmd.gox:24:1
+	this.Short("Print LLGo version")
+//line cmd/llgo/version_cmd.gox:26:1
 	this.Run__0(func() {
-//line cmd/llgo/version_cmd.gox:25:1
+//line cmd/llgo/version_cmd.gox:27:1
 		fmt.Println(stringutil.Concat("llgo ", env.Version(), " ", runtime.GOOS, "/", runtime.GOARCH))
 	})
 }

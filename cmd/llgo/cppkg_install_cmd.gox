@@ -17,6 +17,8 @@ import (
 	self "github.com/goplus/llgo/xtool/cppkg"
 )
 
+use "install [flags] [packages]"
+
 short "Install a C/C++ package from github.com/goplus/cppkg"
 
 long `Installs a C/C++ package with the given name and version. For example:

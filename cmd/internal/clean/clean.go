@@ -35,8 +35,9 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
+
 	if err := cmd.Flag.Parse(args); err != nil {
-		panic(err)
+		return
 	}
 
 	conf := build.NewDefaultConf(0)

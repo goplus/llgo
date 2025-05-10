@@ -19,6 +19,8 @@ import (
 	"github.com/goplus/llgo/internal/env"
 )
 
+use "version"
+
 short "Print LLGo version"
 
 run => {

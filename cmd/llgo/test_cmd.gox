@@ -17,6 +17,8 @@ import (
 	self "github.com/goplus/llgo/cmd/internal/test"
 )
 
+use "test [flags] package [arguments...]"
+
 short "Compile and run Go test"
 
 flagOff

@@ -17,6 +17,8 @@ import (
 	self "github.com/goplus/llgo/cmd/internal/run"
 )
 
+use "cmptest [flags] package [arguments...]"
+
 short "Compile and run with llgo, compare result (stdout/stderr/exitcode) with go or llgo.expect; generate llgo.expect file if -gen is specified"
 
 flagOff

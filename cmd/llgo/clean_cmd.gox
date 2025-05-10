@@ -17,6 +17,8 @@ import (
 	self "github.com/goplus/llgo/cmd/internal/clean"
 )
 
+use "clean [flags] [packages]"
+
 short "Remove object files and cached files"
 
 flagOff
