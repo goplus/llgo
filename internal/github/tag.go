@@ -72,11 +72,7 @@ func EnumTags(pkgPath string, page int, pager func(tags []*Tag, page, total int)
 	ubase := tagsURL(pkgPath)
 
 loop:
-	u := ubase
-	if page > 0 {
-		vals := url.Values{"page": []string{strconv.Itoa(page + 1)}}
-		u += "?" + vals.Encode()
-	}
+	u := ubase + "?per_page=100&page=" + strconv.Itoa(page+1)
 	resp, err := http.Get(u)
 	if err != nil {
 		return
