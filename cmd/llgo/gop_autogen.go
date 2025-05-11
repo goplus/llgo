@@ -11,7 +11,6 @@ import (
 	"github.com/goplus/llgo/cmd/internal/run"
 	"github.com/goplus/llgo/cmd/internal/test"
 	"github.com/goplus/llgo/internal/env"
-	"github.com/goplus/llgo/xtool/cppkg"
 	"github.com/qiniu/x/stringutil"
 	"runtime"
 )
@@ -27,14 +26,6 @@ type Cmd_clean struct {
 	*App
 }
 type Cmd_cmptest struct {
-	xcmd.Command
-	*App
-}
-type Cmd_cppkg struct {
-	xcmd.Command
-	*App
-}
-type Cmd_cppkg_install struct {
 	xcmd.Command
 	*App
 }
@@ -70,14 +61,12 @@ func (this *App) Main() {
 	_gop_obj0 := &Cmd_build{App: this}
 	_gop_obj1 := &Cmd_clean{App: this}
 	_gop_obj2 := &Cmd_cmptest{App: this}
-	_gop_obj3 := &Cmd_cppkg{App: this}
-	_gop_obj4 := &Cmd_cppkg_install{App: this}
-	_gop_obj5 := &Cmd_get{App: this}
-	_gop_obj6 := &Cmd_install{App: this}
-	_gop_obj7 := &Cmd_run{App: this}
-	_gop_obj8 := &Cmd_test{App: this}
-	_gop_obj9 := &Cmd_version{App: this}
-	xcmd.Gopt_App_Main(this, _gop_obj0, _gop_obj1, _gop_obj2, _gop_obj3, _gop_obj4, _gop_obj5, _gop_obj6, _gop_obj7, _gop_obj8, _gop_obj9)
+	_gop_obj3 := &Cmd_get{App: this}
+	_gop_obj4 := &Cmd_install{App: this}
+	_gop_obj5 := &Cmd_run{App: this}
+	_gop_obj6 := &Cmd_test{App: this}
+	_gop_obj7 := &Cmd_version{App: this}
+	xcmd.Gopt_App_Main(this, _gop_obj0, _gop_obj1, _gop_obj2, _gop_obj3, _gop_obj4, _gop_obj5, _gop_obj6, _gop_obj7)
 }
 //line cmd/llgo/build_cmd.gox:20
 func (this *Cmd_build) Main(_gop_arg0 string) {
@@ -132,50 +121,6 @@ func (this *Cmd_cmptest) Main(_gop_arg0 string) {
 }
 func (this *Cmd_cmptest) Classfname() string {
 	return "cmptest"
-}
-//line cmd/llgo/cppkg_cmd.gox:16
-func (this *Cmd_cppkg) Main(_gop_arg0 string) {
-	this.Command.Main(_gop_arg0)
-//line cmd/llgo/cppkg_cmd.gox:16:1
-	this.Short("Manage C/C++ packages")
-//line cmd/llgo/cppkg_cmd.gox:18:1
-	this.Run__0(func() {
-//line cmd/llgo/cppkg_cmd.gox:19:1
-		this.Help()
-	})
-}
-func (this *Cmd_cppkg) Classfname() string {
-	return "cppkg"
-}
-//line cmd/llgo/cppkg_install_cmd.gox:20
-func (this *Cmd_cppkg_install) Main(_gop_arg0 string) {
-	this.Command.Main(_gop_arg0)
-//line cmd/llgo/cppkg_install_cmd.gox:20:1
-	this.Use("install [flags] [packages]")
-//line cmd/llgo/cppkg_install_cmd.gox:22:1
-	this.Short("Install a C/C++ package from github.com/goplus/cppkg")
-//line cmd/llgo/cppkg_install_cmd.gox:24:1
-	this.Long(`Installs a C/C++ package with the given name and version. For example:
-
-llgo cppkg install davegamble/cjson@1.7.18
-llgo cppkg install davegamble/cjson@latest
-llgo cppkg install davegamble/cjson
-`)
-//line cmd/llgo/cppkg_install_cmd.gox:31:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/cppkg_install_cmd.gox:32:1
-		if len(args) < 1 {
-//line cmd/llgo/cppkg_install_cmd.gox:33:1
-			this.Help()
-//line cmd/llgo/cppkg_install_cmd.gox:34:1
-			return
-		}
-//line cmd/llgo/cppkg_install_cmd.gox:37:1
-		cppkg.Install(args[0], cppkg.DefaultFlags)
-	})
-}
-func (this *Cmd_cppkg_install) Classfname() string {
-	return "cppkg_install"
 }
 //line cmd/llgo/get_cmd.gox:16
 func (this *Cmd_get) Main(_gop_arg0 string) {
