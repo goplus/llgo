@@ -17,7 +17,6 @@
 package cppkg
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -78,14 +77,12 @@ func (p *Tool) Get(quietInstall bool) (app string, err error) {
 }
 
 func (p *Tool) getAppManager() (amPath string, install []string, err error) {
-	var notFoundMgs []string
 	for _, install = range p.installs {
 		am := install[0]
 		if amPath, err = exec.LookPath(am); err == nil {
 			return
 		}
-		notFoundMgs = append(notFoundMgs, am)
 	}
-	err = fmt.Errorf("app managers not found: %s: %w", strings.Join(notFoundMgs, ", "), ErrNotFound)
+	err = ErrNotFound
 	return
 }
