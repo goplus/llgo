@@ -24,7 +24,7 @@ import (
 // ReleaseAsset represents a GitHub release asset.
 type ReleaseAsset struct {
 	URL                string `json:"url"`                  // https://api.github.com/repos/flintlib/flint/releases/assets/242245930
-	ID                 int    `json:"id"`                   // 242245930
+	ID                 int64  `json:"id"`                   // 242245930
 	NodeID             string `json:"node_id"`              // RA_kwDOAC8YHs4OcGEq
 	Name               string `json:"name"`                 // flint-3.2.2.tar.gz
 	ContentType        string `json:"content_type"`         // application/x-gtar
@@ -38,7 +38,7 @@ type ReleaseAsset struct {
 // Release represents a GitHub release.
 type Release struct {
 	URL             string          `json:"url"`              // https://api.github.com/repos/flintlib/flint/releases/209285187
-	ID              int             `json:"id"`               // 209285187
+	ID              int64           `json:"id"`               // 209285187
 	NodeID          string          `json:"node_id"`          // RE_kwDOAC8YHs4MeXBD
 	TagName         string          `json:"tag_name"`         // v3.2.2
 	TargetCommitish string          `json:"target_commitish"` // b8223680e38ad048355a421bf7f617bb6c5d5e12
