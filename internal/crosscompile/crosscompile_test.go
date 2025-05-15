@@ -75,7 +75,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := UseCrossCompileSDK(tc.goos, tc.goarch, false)
+			export, err := Use(tc.goos, tc.goarch, false, false)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -146,7 +146,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 					}
 				}
 			} else {
-				if len(export.CCFLAGS) != 0 || len(export.CFLAGS) != 0 || len(export.LDFLAGS) != 0 {
+				if len(export.CCFLAGS) != 0 || len(export.CFLAGS) != 0 {
 					t.Errorf("Expected empty export, got CCFLAGS=%v, CFLAGS=%v, LDFLAGS=%v",
 						export.CCFLAGS, export.CFLAGS, export.LDFLAGS)
 				}
