@@ -35,6 +35,7 @@ var Cmd = &base.Command{
 
 func init() {
 	Cmd.Run = runCmd
+	base.PassBuildFlags(Cmd)
 	flags.AddBuildFlags(&Cmd.Flag)
 	flags.AddOutputFlags(&Cmd.Flag)
 }

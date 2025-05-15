@@ -47,6 +47,7 @@ var CmpTestCmd = &base.Command{
 func init() {
 	Cmd.Run = runCmd
 	CmpTestCmd.Run = runCmpTest
+	base.PassBuildFlags(Cmd)
 	flags.AddBuildFlags(&Cmd.Flag)
 	flags.AddBuildFlags(&CmpTestCmd.Flag)
 	flags.AddCmpTestFlags(&CmpTestCmd.Flag)
