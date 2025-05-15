@@ -29,7 +29,7 @@ _llgo_0:
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
   store ptr %1, ptr %4, align 8
-  %5 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.add$bound", ptr undef }, ptr %3, 1
+  %5 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound", ptr undef }, ptr %3, 1
   %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 0
   %7 = alloca %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", align 8
   store { ptr, ptr } %5, ptr %7, align 8
@@ -46,7 +46,7 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %2 = getelementptr inbounds { ptr }, ptr %1, i32 0, i32 0
   store ptr %0, ptr %2, align 8
-  %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.add$bound", ptr undef }, ptr %1, 1
+  %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound", ptr undef }, ptr %1, 1
   %4 = alloca %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", align 8
   store { ptr, ptr } %3, ptr %4, align 8
   %5 = load %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", ptr %4, align 8
@@ -158,7 +158,7 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.add$bound"(ptr %0, i64 %1, i64 %2) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
   %3 = load { ptr }, ptr %0, align 8
   %4 = extractvalue { ptr } %3, 0
