@@ -87,12 +87,6 @@ func Remove(path *c.Char) c.Int
 //go:linkname Rename C.rename
 func Rename(oldpath *c.Char, newpath *c.Char) c.Int
 
-//go:linkname Stat C.stat
-func Stat(path *c.Char, buf *StatT) c.Int
-
-//go:linkname Lstat C.lstat
-func Lstat(path *c.Char, buf *StatT) c.Int
-
 //go:linkname Truncate C.truncate
 func Truncate(path *c.Char, length OffT) c.Int
 
@@ -285,7 +279,7 @@ func Exit(c.Int)
 
 // -----------------------------------------------------------------------------
 
-// Upon successful completion, the value 0 is returned; otherwise the value -1
+// Upon successful completion, the value 0 is returned; otherwise the value -1
 // is returned and the global variable errno is set to indicate the error.
 //
 //go:linkname Sysctl C.sysctl
