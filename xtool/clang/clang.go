@@ -105,16 +105,33 @@ func (p *Cmd) Exec(args ...string) error {
 	return cmd.Run()
 }
 
-func (p *Cmd) CheckLinkArgs(cmdArgs []string) error {
-	nul := "/dev/null"
-	if runtime.GOOS == "windows" {
-		nul = "NUL"
+func (p *Cmd) CheckLinkArgs(cmdArgs []string, wasm bool) error {
+	// Create a temporary file with appropriate extension
+	extension := ""
+	if wasm {
+		extension = ".wasm"
+	} else if runtime.GOOS == "windows" {
+		extension = ".exe"
 	}
+
+	tmpFile, err := os.CreateTemp("", "llgo_check*"+extension)
+	if err != nil {
+		return fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	tmpFile.Close()
+	tmpPath := tmpFile.Name()
+
+	// Make sure to delete the temporary file when done
+	defer os.Remove(tmpPath)
+
+	// Set up compilation arguments
 	args := append([]string{}, cmdArgs...)
-	args = append(args, []string{"-x", "c", "-o", nul, "-"}...)
+	args = append(args, []string{"-x", "c", "-o", tmpPath, "-"}...)
 	src := "int main() {return 0;}"
 	srcIn := strings.NewReader(src)
 	p.Stdin = srcIn
+
+	// Execute the command
 	return p.execWithFlags([]string{"LDFLAGS", "CCFLAGS"}, args...)
 }
 
