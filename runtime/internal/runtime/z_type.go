@@ -72,13 +72,13 @@ func Basic(_kind Kind) *Type {
 	kind := _kind & abi.KindMask
 	if tyBasic[kind] == nil {
 		name, size, align := basicTypeInfo(kind)
-		var bytes uintptr
-		if kind == abi.String {
-			bytes = pointerSize
+		var ptrBytes uintptr
+		if kind == abi.String || kind == abi.UnsafePointer {
+			ptrBytes = pointerSize
 		}
 		tyBasic[kind] = &Type{
 			Size_:       size,
-			PtrBytes:    bytes,
+			PtrBytes:    ptrBytes,
 			Hash:        uint32(kind),
 			Align_:      uint8(align),
 			FieldAlign_: uint8(align),
