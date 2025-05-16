@@ -402,6 +402,10 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 		recv = parent.Signature.Recv()
 	} else {
 		recv = fn.Signature.Recv()
+		// check $bound
+		if recv == nil && strings.HasSuffix(fn.Name(), "$bound") && len(fn.FreeVars) == 1 {
+			recv = types.NewVar(token.NoPos, nil, "", fn.FreeVars[0].Type())
+		}
 	}
 	var fnName string
 	if org := fn.Origin(); org != nil {

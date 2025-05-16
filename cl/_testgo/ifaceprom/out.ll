@@ -319,7 +319,7 @@ _llgo_17:                                         ; preds = %_llgo_4
   %108 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   %109 = getelementptr inbounds { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %108, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %43, ptr %109, align 8
-  %110 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.one$bound", ptr undef }, ptr %108, 1
+  %110 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound", ptr undef }, ptr %108, 1
   %111 = extractvalue { ptr, ptr } %110, 1
   %112 = extractvalue { ptr, ptr } %110, 0
   %113 = call i64 %112(ptr %111)
@@ -339,7 +339,7 @@ _llgo_19:                                         ; preds = %_llgo_6
   %119 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   %120 = getelementptr inbounds { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %119, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %51, ptr %120, align 8
-  %121 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.one$bound", ptr undef }, ptr %119, 1
+  %121 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound", ptr undef }, ptr %119, 1
   %122 = extractvalue { ptr, ptr } %121, 1
   %123 = extractvalue { ptr, ptr } %121, 0
   %124 = call i64 %123(ptr %122)
@@ -359,7 +359,7 @@ _llgo_21:                                         ; preds = %_llgo_12
   %130 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   %131 = getelementptr inbounds { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %130, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %93, ptr %131, align 8
-  %132 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.two$bound", ptr undef }, ptr %130, 1
+  %132 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound", ptr undef }, ptr %130, 1
   %133 = extractvalue { ptr, ptr } %132, 1
   %134 = extractvalue { ptr, ptr } %132, 0
   %135 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %134(ptr %133)
@@ -380,7 +380,7 @@ _llgo_23:                                         ; preds = %_llgo_14
   %142 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   %143 = getelementptr inbounds { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %142, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %101, ptr %143, align 8
-  %144 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.two$bound", ptr undef }, ptr %142, 1
+  %144 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound", ptr undef }, ptr %142, 1
   %145 = extractvalue { ptr, ptr } %144, 1
   %146 = extractvalue { ptr, ptr } %144, 0
   %147 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %146(ptr %145)
@@ -585,7 +585,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/ifaceprom.one$bound"(ptr %0) {
+define i64 @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound"(ptr %0) {
 _llgo_0:
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
@@ -603,7 +603,7 @@ _llgo_0:
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/ifaceprom.two$bound"(ptr %0) {
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound"(ptr %0) {
 _llgo_0:
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0

@@ -124,7 +124,7 @@ _llgo_6:                                          ; preds = %_llgo_4
   %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %33 = getelementptr inbounds { ptr }, ptr %32, i32 0, i32 0
   store ptr %30, ptr %33, align 8
-  %34 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.next$bound", ptr undef }, ptr %32, 1
+  %34 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound", ptr undef }, ptr %32, 1
   %35 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %34)
   %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
   br label %_llgo_7
@@ -182,7 +182,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.next$bound"(ptr %0) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
