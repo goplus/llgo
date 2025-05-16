@@ -124,6 +124,9 @@ func (v Value) typ() *abi.Type {
 // v.Kind() must be Pointer, Map, Chan, Func, or UnsafePointer
 // if v.Kind() == Pointer, the base type must not be not-in-heap.
 func (v Value) pointer() unsafe.Pointer {
+	if v.typ_.IsClosure() {
+		return v.ptr
+	}
 	if v.typ().Size() != goarch.PtrSize || !v.typ().Pointers() {
 		panic("can't call pointer on a non-pointer Value")
 	}
