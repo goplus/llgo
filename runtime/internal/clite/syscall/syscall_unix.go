@@ -2,8 +2,6 @@
 
 package syscall
 
-import "strconv"
-
 type Errno uintptr
 
 func (e Errno) Error() string {
@@ -13,7 +11,7 @@ func (e Errno) Error() string {
 			return s
 		}
 	}
-	return "errno " + strconv.Itoa(int(e))
+	return "errno " + utoa(uint64(e))
 }
 
 func (e Errno) Is(target error) bool {
@@ -51,5 +49,5 @@ func (s Signal) String() string {
 			return str
 		}
 	}
-	return "signal " + strconv.Itoa(int(s))
+	return "signal " + itoa(int64(s))
 }
