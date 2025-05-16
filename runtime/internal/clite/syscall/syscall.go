@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	LLGoPackage = "noinit"
+	LLGoPackage = true
 )
 
 var (
@@ -73,4 +73,26 @@ func Kill(pid int, signum Signal) error {
 
 func ProcExit(code int32) {
 	panic("not implemented")
+}
+
+func _utoa(buf []byte, val uint64) []byte {
+	i := len(buf) - 1
+	for val >= 10 {
+		buf[i] = byte(val%10 + '0')
+		i--
+		val /= 10
+	}
+	buf[i] = byte(val + '0')
+	return buf[i:]
+}
+
+func utoa(val uint64) string {
+	return string(_utoa(make([]byte, 20), val))
+}
+
+func itoa(val int64) string {
+	if val < 0 {
+		return "-" + string(_utoa(make([]byte, 20), uint64(-val)))
+	}
+	return string(_utoa(make([]byte, 20), uint64(val)))
 }

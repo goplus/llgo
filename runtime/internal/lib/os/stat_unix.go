@@ -35,6 +35,7 @@ func statNolog(name string) (FileInfo, error) {
 	if err != nil {
 		return nil, &PathError{Op: "stat", Path: name, Err: err}
 	}
+	fillFileStatFromSys(&fs, name)
 	return &fs, nil
 }
 
@@ -47,5 +48,6 @@ func lstatNolog(name string) (FileInfo, error) {
 	if err != nil {
 		return nil, &PathError{Op: "lstat", Path: name, Err: err}
 	}
+	fillFileStatFromSys(&fs, name)
 	return &fs, nil
 }

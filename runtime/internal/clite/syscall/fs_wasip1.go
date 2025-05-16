@@ -7,7 +7,6 @@
 package syscall
 
 import (
-	"strings"
 	"structs"
 	"unsafe"
 )
@@ -297,11 +296,19 @@ func joinPath(dir, file string) string {
 }
 
 func isAbs(path string) bool {
-	return strings.HasPrefix(path, "/")
+	return hasPrefix(path, "/")
 }
 
 func isDir(path string) bool {
-	return strings.HasSuffix(path, "/")
+	return hasSuffix(path, "/")
+}
+
+func hasPrefix(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+}
+
+func hasSuffix(s, suffix string) bool {
+	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
 
 type Stat_t struct {
