@@ -42,8 +42,8 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
-	llvmTarget "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
+	"github.com/goplus/llgo/xtool/clang"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
 
@@ -247,7 +247,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	export, err := crosscompile.UseCrossCompileSDK(conf.Goos, conf.Goarch, IsWasiThreadsEnabled())
+	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), IsRpathChangeEnabled())
 	check(err)
 	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf, export}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
@@ -334,6 +334,15 @@ type context struct {
 	crossCompile crosscompile.Export
 }
 
+func (c *context) compiler() *clang.Cmd {
+	cmd := c.env.Clang()
+	if c.crossCompile.CC != "" {
+		cmd = clang.New(c.crossCompile.CC)
+	}
+	cmd.Verbose = c.buildConf.Verbose
+	return cmd
+}
+
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
 	pkgs, errPkgs := allPkgs(ctx, initial, verbose)
 	for _, errPkg := range errPkgs {
@@ -404,7 +413,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
-				if err := ctx.env.Clang().CheckLinkArgs(pkgLinkArgs); err != nil {
+				if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
 					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
 				}
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
@@ -434,7 +443,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 		} else {
 			app = filepath.Join(conf.BinPath, name+conf.AppExt)
 		}
-	} else if !strings.HasSuffix(app, conf.AppExt) {
+	} else if filepath.Ext(app) == "" {
 		app += conf.AppExt
 	}
 
@@ -550,121 +559,21 @@ func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string,
 	buildArgs = append(buildArgs, linkArgs...)
 
 	// Add common linker arguments based on target OS and architecture
-	targetTriple := llvmTarget.GetTargetTriple(ctx.buildConf.Goos, ctx.buildConf.Goarch)
-	buildArgs = append(buildArgs, buildLdflags(ctx.buildConf.Goos, ctx.buildConf.Goarch, targetTriple)...)
-
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
 	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
 	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
+	buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
 	buildArgs = append(buildArgs, llFiles...)
 	if verbose {
 		buildArgs = append(buildArgs, "-v")
 	}
 
-	cmd := ctx.env.Clang()
+	cmd := ctx.compiler()
 	cmd.Verbose = verbose
 	return cmd.Link(buildArgs...)
-}
-
-func buildCflags(goos, goarch, targetTriple string) []string {
-	args := []string{}
-	if goarch == "wasm" {
-		args = append(args, "-target", targetTriple)
-	}
-	return args
-}
-
-// buildLdflags builds the common linker arguments based on target OS and architecture
-func buildLdflags(goos, goarch, targetTriple string) []string {
-	args := []string{
-		"-target", targetTriple,
-		"-Wno-override-module",
-		"-Wl,--error-limit=0",
-	}
-	if goos == runtime.GOOS {
-		// Non-cross-compile
-		args = append(args,
-			"-fuse-ld=lld",
-			"-Wno-override-module",
-		)
-	}
-
-	switch goos {
-	case "darwin": // ld64.lld (macOS)
-		if IsRpathChangeEnabled() {
-			args = append(
-				args,
-				"-rpath", "@loader_path",
-				"-rpath", "@loader_path/../lib",
-			)
-		}
-		args = append(
-			args,
-			"-Xlinker", "-dead_strip",
-		)
-	case "windows": // lld-link (Windows)
-		// TODO(xsw): Add options for Windows.
-	case "wasi", "wasip1", "js": // wasm-ld (WebAssembly)
-		args = append(
-			args,
-			// "-fdata-sections",
-			// "-ffunction-sections",
-			// "-nostdlib",
-			// "-Wl,--no-entry",
-			"-Wl,--export-all",
-			"-Wl,--allow-undefined",
-			"-Wl,--import-memory,", // unknown import: `env::memory` has not been defined
-			"-Wl,--export-memory",
-			"-Wl,--initial-memory=67108864", // 64MB
-			"-mbulk-memory",
-			"-mmultimemory",
-			"-z", "stack-size=10485760", // 10MB
-			"-Wl,--export=malloc", "-Wl,--export=free",
-			"-lc",
-			"-lcrypt",
-			"-lm",
-			"-lrt",
-			"-lutil",
-			// "-lxnet",
-			// "-lresolv",
-			"-lsetjmp",
-			"-lwasi-emulated-mman",
-			"-lwasi-emulated-getpid",
-			"-lwasi-emulated-process-clocks",
-			"-lwasi-emulated-signal",
-			"-fwasm-exceptions",
-			"-mllvm", "-wasm-enable-sjlj",
-			// "-mllvm", "-wasm-enable-eh", // unreachable error if enabled
-			// "-mllvm", "-wasm-disable-explicit-locals", // WASM module load failed: type mismatch: expect data but stack was empty if enabled
-		)
-		if IsWasiThreadsEnabled() {
-			args = append(
-				args,
-				"-lwasi-emulated-pthread",
-				"-lpthread",
-				"-pthread", // global is immutable if -pthread is not specified
-				// "-matomics", // undefined symbol: __atomic_load
-			)
-		}
-	default: // ld.lld (Unix)
-		args = append(
-			args,
-			// "-rpath", "$ORIGIN",
-			// "-rpath", "$ORIGIN/../lib",
-			"-fdata-sections",
-			"-ffunction-sections",
-			"-Xlinker",
-			"--gc-sections",
-			"-lm",
-			"-latomic",
-			"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
-		)
-	}
-
-	return args
 }
 
 func isWasmTarget(goos string) bool {
@@ -1042,16 +951,13 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 
 func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
 	llFile := expFile + filepath.Base(cFile) + ".ll"
-	targetTriple := llvmTarget.GetTargetTriple(ctx.buildConf.Goos, ctx.buildConf.Goarch)
-	cflags := buildCflags(ctx.buildConf.Goos, ctx.buildConf.Goarch, targetTriple)
-	args = append(cflags, args...)
 	args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	args = append(args, ctx.crossCompile.CFLAGS...)
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	cmd := ctx.env.Clang()
+	cmd := ctx.compiler()
 	err := cmd.Compile(args...)
 	check(err)
 	procFile(llFile)
