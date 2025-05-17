@@ -1,5 +1,10 @@
 package runtime
 
+import (
+	"internal/goarch"
+	"internal/goos"
+)
+
 func Goexit() {
 	panic("todo")
 }
@@ -12,8 +17,21 @@ func SetFinalizer(obj any, finalizer any) {
 	panic("todo")
 }
 
-const GOOS = ""
-const GOARCH = ""
+// GOOS is the running program's operating system target:
+// one of darwin, freebsd, linux, and so on.
+// To view possible combinations of GOOS and GOARCH, run "go tool dist list".
+const GOOS string = goos.GOOS
+
+// GOARCH is the running program's architecture target:
+// one of 386, amd64, arm, s390x, and so on.
+const GOARCH string = goarch.GOARCH
+
+// Compiler is the name of the compiler toolchain that built the
+// running binary. Known toolchains are:
+//
+//	gc      Also known as cmd/compile.
+//	gccgo   The gccgo front end, part of the GCC compiler suite.
+const Compiler = "llgo"
 
 func GOMAXPROCS(n int) int {
 	panic("todo")
