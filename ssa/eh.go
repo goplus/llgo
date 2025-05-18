@@ -16,7 +16,20 @@
 
 package ssa
 
-// #include <setjmp.h>
+/*
+#include <setjmp.h>
+#ifdef WIN32
+#if defined(__MINGW64__) && !defined(_UCRT)
+typedef intptr_t sigjmp_buf[5];
+#define sigsetjmp(x,y) __builtin_setjmp(x)
+#define siglongjmp __builtin_longjmp
+#else
+#define sigjmp_buf jmp_buf
+#define sigsetjmp(x,y) setjmp(x)
+#define siglongjmp longjmp
+#endif
+#endif
+*/
 import "C"
 
 import (
