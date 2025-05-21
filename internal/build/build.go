@@ -513,6 +513,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 		cmd.Run()
 		if s := cmd.ProcessState; s != nil {
 			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, s.ExitCode())
+			mockable.Exit(s.ExitCode())
 		}
 	case ModeRun:
 		args := make([]string, 0, len(conf.RunArgs)+1)
