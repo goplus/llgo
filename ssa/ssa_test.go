@@ -557,3 +557,65 @@ _llgo_0:
 }
 `)
 }
+
+func TestGlobalStrings(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	typ := types.NewPointer(types.Typ[types.String])
+	a := pkg.NewVar("foo/bar.a", typ, InGo)
+	if pkg.NewVar("foo/bar.a", typ, InGo) != a {
+		t.Fatal("NewVar(a) failed")
+	}
+	a.InitNil()
+	pkg.NewVarEx("foo/bar.a", prog.Type(typ, InGo))
+	b := pkg.NewVar("foo/bar.b", typ, InGo)
+	b.InitNil()
+	c := pkg.NewVar("foo/bar.c", types.NewPointer(types.Typ[types.Int]), InGo)
+	c.Init(prog.Val(100))
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
+
+@"foo/bar.a" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, align 8
+@"foo/bar.b" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, align 8
+@"foo/bar.c" = global i64 100, align 8
+`)
+	err := pkg.Undefined("foo/bar.a", "foo/bar.b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg.Undefined("foo.bar.d")
+	err = pkg.Undefined("foo/bar.c")
+	if err == nil {
+		t.Fatal("must err")
+	}
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
+
+@"foo/bar.c" = global i64 100, align 8
+@"foo/bar.a" = external global %"github.com/goplus/llgo/runtime/internal/runtime.String"
+@"foo/bar.b" = external global %"github.com/goplus/llgo/runtime/internal/runtime.String"
+`)
+	global := prog.NewPackage("", "global")
+	global.AddGlobalString("foo/bar.a", "1.0")
+	global.AddGlobalString("foo/bar.b", "info")
+	assertPkg(t, global, `; ModuleID = 'global'
+source_filename = "global"
+
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
+
+@0 = private unnamed_addr constant [3 x i8] c"1.0", align 1
+@"foo/bar.a" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, align 8
+@1 = private unnamed_addr constant [4 x i8] c"info", align 1
+@"foo/bar.b" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, align 8
+`)
+}

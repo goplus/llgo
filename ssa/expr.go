@@ -301,30 +301,9 @@ func (b Builder) CMalloc(n Expr) Expr {
 // Str returns a Go string constant expression.
 func (b Builder) Str(v string) Expr {
 	prog := b.Prog
-	data := b.createGlobalStr(v)
+	data := b.Pkg.createGlobalStr(v)
 	size := llvm.ConstInt(prog.tyInt(), uint64(len(v)), false)
 	return Expr{aggregateValue(b.impl, prog.rtString(), data, size), prog.String()}
-}
-
-func (b Builder) createGlobalStr(v string) (ret llvm.Value) {
-	if ret, ok := b.Pkg.strs[v]; ok {
-		return ret
-	}
-	prog := b.Prog
-	if v != "" {
-		typ := llvm.ArrayType(prog.tyInt8(), len(v))
-		global := llvm.AddGlobal(b.Pkg.mod, typ, "")
-		global.SetInitializer(b.Prog.ctx.ConstString(v, false))
-		global.SetLinkage(llvm.PrivateLinkage)
-		global.SetGlobalConstant(true)
-		global.SetUnnamedAddr(true)
-		global.SetAlignment(1)
-		ret = llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
-	} else {
-		ret = llvm.ConstNull(prog.CStr().ll)
-	}
-	b.Pkg.strs[v] = ret
-	return
 }
 
 // unsafeString(data *byte, size int) string
