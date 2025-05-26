@@ -782,6 +782,12 @@ func (b Builder) DebugFunction(f Function, pos token.Position, bodyPos token.Pos
 
 func (b Builder) Param(idx int) Expr {
 	p := b.Func.Param(idx)
+	param := b.Func.params[idx]
+	_, cvt := b.Prog.cabiCvtType(param)
+	if cvt {
+		p.Type = b.Prog.Pointer(p.Type)
+		p = b.Load(p)
+	}
 	if v, ok := b.dbgVars[p]; ok {
 		return v.val
 	}

@@ -183,7 +183,13 @@ func (b Builder) Return(results ...Expr) {
 	case 1:
 		raw := b.Func.raw.Type.(*types.Signature).Results().At(0).Type()
 		ret := checkExpr(results[0], raw, b)
-		b.impl.CreateRet(ret.impl)
+		retTy, cvt := b.Prog.cabiCvtType(ret.Type)
+		if cvt {
+			b.Store(Expr{b.Func.impl.Param(0), retTy}, ret)
+			b.impl.CreateRet(Nil.impl)
+		} else {
+			b.impl.CreateRet(ret.impl)
+		}
 	default:
 		tret := b.Func.raw.Type.(*types.Signature).Results()
 		n := tret.Len()
@@ -192,8 +198,14 @@ func (b Builder) Return(results ...Expr) {
 			typs[i] = b.Prog.Type(tret.At(i).Type(), InC)
 		}
 		typ := b.Prog.Struct(typs...)
-		expr := b.aggregateValue(typ, llvmParams(0, results, tret, b)...)
-		b.impl.CreateRet(expr.impl)
+		expr := b.aggregateValue(typ, llvmParams(0, results, tret, false, b)...)
+		retTy, cvt := b.Prog.cabiCvtType(typ)
+		if cvt {
+			b.Store(Expr{b.Func.impl.Param(0), retTy}, expr)
+			b.impl.CreateRet(Nil.impl)
+		} else {
+			b.impl.CreateRet(expr.impl)
+		}
 	}
 }
 
