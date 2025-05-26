@@ -48,6 +48,7 @@ func NewChan(eltSize, cap int) *Chan {
 		ret.data = AllocU(uintptr(cap * eltSize))
 		ret.cap = cap
 	}
+	ret.mutex.Init(nil)
 	ret.cond.Init(nil)
 	return ret
 }
