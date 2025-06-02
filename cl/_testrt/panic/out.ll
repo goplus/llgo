@@ -29,7 +29,9 @@ _llgo_0:
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 13 }, ptr %1, align 8
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %0, 0
   %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %2, ptr %1, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %3)
+  %4 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %3, ptr %4, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %4)
   unreachable
 }
 
@@ -52,4 +54,4 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr)

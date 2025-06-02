@@ -28,49 +28,67 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store atomic i64 100, ptr %0 seq_cst, align 4
   %1 = load atomic i64, ptr %0 seq_cst, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 6 })
+  %2 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 6 }, ptr %2, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %2 = call i64 @"sync/atomic.AddInt64"(ptr %0, i64 1)
-  %3 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %2)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 })
+  %3 = call i64 @"sync/atomic.AddInt64"(ptr %0, i64 1)
+  %4 = load i64, ptr %0, align 4
+  %5 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, ptr %5, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  %6 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 }, ptr %6, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %4 = call i1 @"sync/atomic.CompareAndSwapInt64"(ptr %0, i64 100, i64 102)
-  %5 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 4 })
+  %7 = call i1 @"sync/atomic.CompareAndSwapInt64"(ptr %0, i64 100, i64 102)
+  %8 = load i64, ptr %0, align 4
+  %9 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 4 }, ptr %9, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %6 = call i1 @"sync/atomic.CompareAndSwapInt64"(ptr %0, i64 101, i64 102)
-  %7 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 4 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %6)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %8 = call i64 @"sync/atomic.AddInt64"(ptr %0, i64 -1)
-  %9 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 })
+  %10 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 }, ptr %10, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %11 = call i1 @"sync/atomic.CompareAndSwapInt64"(ptr %0, i64 101, i64 102)
+  %12 = load i64, ptr %0, align 4
+  %13 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 4 }, ptr %13, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %11)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %9)
+  %14 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 }, ptr %14, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %15 = call i64 @"sync/atomic.AddInt64"(ptr %0, i64 -1)
+  %16 = load i64, ptr %0, align 4
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, ptr %17, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  %18 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 2 }, ptr %18, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %18)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -79,7 +97,7 @@ declare void @"sync/atomic.init"()
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 

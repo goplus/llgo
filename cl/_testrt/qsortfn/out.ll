@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testrt/qsortfn'
 source_filename = "github.com/goplus/llgo/cl/_testrt/qsortfn"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testrt/qsortfn.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [14 x i8] c"Comp => Comp\0A\00", align 1
 @1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
@@ -53,7 +55,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @0)
+  %0 = call i32 @printf(ptr @0)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -83,7 +85,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @1, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @1, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -101,7 +105,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @2)
+  %0 = call i32 @printf(ptr @2)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -131,7 +135,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @3, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @3, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -149,7 +155,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @4)
+  %0 = call i32 @printf(ptr @4)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -179,7 +185,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @5, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @5, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -197,7 +205,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @6)
+  %0 = call i32 @printf(ptr @6)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -227,7 +235,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @7, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @7, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -245,7 +255,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @8)
+  %0 = call i32 @printf(ptr @8)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -275,7 +285,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @9, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @9, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -293,7 +305,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @10)
+  %0 = call i32 @printf(ptr @10)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -323,7 +335,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @11, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @11, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -341,7 +355,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @12)
+  %0 = call i32 @printf(ptr @12)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -371,7 +385,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @13, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @13, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -389,7 +405,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @14)
+  %0 = call i32 @printf(ptr @14)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -419,7 +435,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @15, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @15, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -437,7 +455,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @16)
+  %0 = call i32 @printf(ptr @16)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -467,7 +485,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @17, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @17, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -485,7 +505,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @18)
+  %0 = call i32 @printf(ptr @18)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %2 = getelementptr inbounds i64, ptr %1, i64 0
   %3 = getelementptr inbounds i64, ptr %1, i64 1
@@ -515,7 +535,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i64, ptr %1, i64 %10
   %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @19, i64 %16)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %16, ptr %17, align 4
+  %18 = call i32 @printf(ptr @19, ptr %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -531,7 +553,7 @@ _llgo_0:
   ret i32 %5
 }
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

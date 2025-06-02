@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpy/pi'
 source_filename = "github.com/goplus/llgo/cl/_testpy/pi"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testpy/pi.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [9 x i8] c"pi = %f\0A\00", align 1
 @__llgo_py.math = external global ptr, align 8
@@ -25,7 +27,9 @@ _llgo_0:
   %0 = load ptr, ptr @__llgo_py.math, align 8
   %1 = call ptr @PyObject_GetAttrString(ptr %0, ptr @1)
   %2 = call double @PyFloat_AsDouble(ptr %1)
-  %3 = call i32 (ptr, ...) @printf(ptr @0, double %2)
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store double %2, ptr %3, align 8
+  %4 = call i32 @printf(ptr @0, ptr %3)
   ret void
 }
 
@@ -35,4 +39,4 @@ declare ptr @PyObject_GetAttrString(ptr, ptr)
 
 declare double @PyFloat_AsDouble(ptr)
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

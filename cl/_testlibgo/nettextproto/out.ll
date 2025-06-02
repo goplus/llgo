@@ -22,16 +22,22 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/nettextproto.main"() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
+  %0 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  %1 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 }, ptr %1, align 8
+  call void @"net/textproto.CanonicalMIMEHeaderKey"(ptr %0, ptr %1)
+  %2 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %0, align 8
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %2, ptr %3, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 declare void @"net/textproto.init"()
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"net/textproto.CanonicalMIMEHeaderKey"(ptr, ptr)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)

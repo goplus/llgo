@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testdata/printval'
 source_filename = "github.com/goplus/llgo/cl/_testdata/printval"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testdata/printval.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/printval.init$guard" = global i1 false, align 1
 
@@ -29,8 +31,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testdata/printval.main"() {
 _llgo_0:
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/printval.format", i64 100)
+  %0 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 100, ptr %0, align 4
+  call void @printf(ptr @"github.com/goplus/llgo/cl/_testdata/printval.format", ptr %0)
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

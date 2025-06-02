@@ -44,24 +44,29 @@ _llgo_0:
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 1 })
+  %13 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 1 }, ptr %13, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %13)
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %13 = load i1, ptr %0, align 1
-  br i1 %13, label %_llgo_2, label %_llgo_1
+  %14 = load i1, ptr %0, align 1
+  br i1 %14, label %_llgo_2, label %_llgo_1
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(ptr %0, ptr %1) {
 _llgo_0:
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %2 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %1, align 8
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %2, ptr %3, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  store i1 true, ptr %3, align 1
+  %4 = load { ptr }, ptr %0, align 8
+  %5 = extractvalue { ptr } %4, 0
+  store i1 true, ptr %5, align 1
   ret void
 }
 
@@ -73,13 +78,15 @@ define ptr @"github.com/goplus/llgo/cl/_testgo/goroutine._llgo_routine$1"(ptr %0
 _llgo_0:
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.String" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String" } %1, 0
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2)
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %2, ptr %3, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   call void @free(ptr %0)
   ret ptr null
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
@@ -96,7 +103,9 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  call void %5(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
+  %6 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %3, ptr %6, align 8
+  call void %5(ptr %4, ptr %6)
   call void @free(ptr %0)
   ret ptr null
 }

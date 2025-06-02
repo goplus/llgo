@@ -11,27 +11,35 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/complex"
 
 define void @"github.com/goplus/llgo/cl/_testlibc/complex.f"({ float, float } %0, { float, float } %1, ptr %2) {
 _llgo_0:
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %3, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %3 = call float @cabsf({ float, float } %0)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 10 })
+  %4 = call float @cabsf({ float, float } %0)
+  %5 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 10 }, ptr %5, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %4 = fpext float %3 to double
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %4)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %5 = extractvalue { float, float } %1, 0
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 11 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %6 = fpext float %5 to double
+  %6 = fpext float %4 to double
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %7 = extractvalue { float, float } %1, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 11 })
+  %7 = extractvalue { float, float } %1, 0
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 11 }, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %8 = fpext float %7 to double
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %8)
+  %9 = fpext float %7 to double
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %10 = extractvalue { float, float } %1, 1
+  %11 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 11 }, ptr %11, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  %12 = fpext float %10 to double
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %12)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -55,7 +63,7 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 

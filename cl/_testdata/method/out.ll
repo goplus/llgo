@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testdata/method'
 source_filename = "github.com/goplus/llgo/cl/_testdata/method"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testdata/method.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/method.init$guard" = global i1 false, align 1
 
@@ -43,8 +45,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testdata/method.main"() {
 _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 1, i64 2)
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/method.format", i64 %0)
+  %1 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %0, ptr %1, align 4
+  call void @printf(ptr @"github.com/goplus/llgo/cl/_testdata/method.format", ptr %1)
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testrt/qsort'
 source_filename = "github.com/goplus/llgo/cl/_testrt/qsort"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testrt/qsort.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
@@ -48,7 +50,9 @@ _llgo_2:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %13)
   %14 = getelementptr inbounds i64, ptr %0, i64 %9
   %15 = load i64, ptr %14, align 4
-  %16 = call i32 (ptr, ...) @printf(ptr @0, i64 %15)
+  %16 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %15, ptr %16, align 4
+  %17 = call i32 @printf(ptr @0, ptr %16)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -70,4 +74,4 @@ declare void @qsort(ptr, i64, i64, ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpy/matrix'
 source_filename = "github.com/goplus/llgo/cl/_testpy/matrix"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard" = global i1 false, align 1
 @__llgo_py.numpy.add = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [8 x i8] c"a = %s\0A\00", align 1
@@ -18,7 +20,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard", align 1
   call void @"github.com/goplus/lib/py/numpy.init"()
   %1 = load ptr, ptr @__llgo_py.numpy, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @3, ptr @__llgo_py.numpy.add, ptr null)
+  %2 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr @3, ptr %2, align 8
+  call void @llgoLoadPyModSyms(ptr %1, ptr %2, ptr @__llgo_py.numpy.add, ptr null)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -78,16 +82,24 @@ _llgo_0:
   %48 = call i32 @PyList_SetItem(ptr %46, i64 1, ptr %32)
   %49 = call i32 @PyList_SetItem(ptr %46, i64 2, ptr %39)
   %50 = load ptr, ptr @__llgo_py.numpy.add, align 8
-  %51 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %50, ptr %21, ptr %46, ptr null)
-  %52 = call ptr @PyObject_Str(ptr %21)
-  %53 = call ptr @PyUnicode_AsUTF8(ptr %52)
-  %54 = call i32 (ptr, ...) @printf(ptr @0, ptr %53)
-  %55 = call ptr @PyObject_Str(ptr %46)
-  %56 = call ptr @PyUnicode_AsUTF8(ptr %55)
-  %57 = call i32 (ptr, ...) @printf(ptr @1, ptr %56)
-  %58 = call ptr @PyObject_Str(ptr %51)
-  %59 = call ptr @PyUnicode_AsUTF8(ptr %58)
-  %60 = call i32 (ptr, ...) @printf(ptr @2, ptr %59)
+  %51 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr %21, ptr %51, align 8
+  %52 = call ptr @PyObject_CallFunctionObjArgs(ptr %50, ptr %51, ptr %46, ptr null)
+  %53 = call ptr @PyObject_Str(ptr %21)
+  %54 = call ptr @PyUnicode_AsUTF8(ptr %53)
+  %55 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr %54, ptr %55, align 8
+  %56 = call i32 @printf(ptr @0, ptr %55)
+  %57 = call ptr @PyObject_Str(ptr %46)
+  %58 = call ptr @PyUnicode_AsUTF8(ptr %57)
+  %59 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr %58, ptr %59, align 8
+  %60 = call i32 @printf(ptr @1, ptr %59)
+  %61 = call ptr @PyObject_Str(ptr %52)
+  %62 = call ptr @PyUnicode_AsUTF8(ptr %61)
+  %63 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr %62, ptr %63, align 8
+  %64 = call i32 @printf(ptr @2, ptr %63)
   ret void
 }
 
@@ -99,12 +111,12 @@ declare ptr @PyFloat_FromDouble(double)
 
 declare i32 @PyList_SetItem(ptr, i64, ptr)
 
-declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
+declare ptr @PyObject_CallFunctionObjArgs(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare ptr @PyObject_Str(ptr)
 
 declare ptr @PyUnicode_AsUTF8(ptr)
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
-declare void @llgoLoadPyModSyms(ptr, ...)
+declare void @llgoLoadPyModSyms(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

@@ -6,10 +6,11 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/allocinloop"
 @"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+define i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(ptr %0) {
 _llgo_0:
-  %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, 1
-  ret i64 %1
+  %1 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %0, align 8
+  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %1, 1
+  ret i64 %2
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"() {
@@ -17,15 +18,17 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %0 = phi i64 [ 0, %_llgo_0 ], [ %4, %_llgo_2 ]
-  %1 = phi i64 [ 0, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %0 = phi i64 [ 0, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %1 = phi i64 [ 0, %_llgo_0 ], [ %6, %_llgo_2 ]
   %2 = icmp slt i64 %1, 10000000
   br i1 %2, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
-  %4 = add i64 %0, %3
-  %5 = add i64 %1, 1
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %3, align 8
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(ptr %3)
+  %5 = add i64 %0, %4
+  %6 = add i64 %1, 1
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1

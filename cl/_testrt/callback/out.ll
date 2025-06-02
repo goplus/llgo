@@ -1,15 +1,18 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testrt/callback'
 source_filename = "github.com/goplus/llgo/cl/_testrt/callback"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testrt/callback.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [7 x i8] c"Hello\0A\00", align 1
 @1 = private unnamed_addr constant [10 x i8] c"callback\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, { ptr, ptr } %1) {
+define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = extractvalue { ptr, ptr } %1, 1
-  %3 = extractvalue { ptr, ptr } %1, 0
-  call void %3(ptr %2, ptr %0)
+  %2 = load { ptr, ptr }, ptr %1, align 8
+  %3 = extractvalue { ptr, ptr } %2, 1
+  %4 = extractvalue { ptr, ptr } %2, 0
+  call void %4(ptr %3, ptr %0)
   ret void
 }
 
@@ -28,14 +31,18 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/callback.main"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @0, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
-  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @1, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
+  %0 = alloca { ptr, ptr }, align 8
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null }, ptr %0, align 8
+  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @0, ptr %0)
+  %1 = alloca { ptr, ptr }, align 8
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null }, ptr %1, align 8
+  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @1, ptr %1)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %0) {
 _llgo_0:
-  %1 = call i32 (ptr, ...) @printf(ptr %0)
+  %1 = call i32 @printf(ptr %0)
   ret void
 }
 
@@ -45,4 +52,4 @@ _llgo_0:
   ret void
 }
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
