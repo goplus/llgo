@@ -707,17 +707,21 @@ func (p Package) closureStub(b Builder, t types.Type, v Expr) Expr {
 		v = fn.Expr
 	} else {
 		sig := v.raw.Type.(*types.Signature)
-		n := sig.Params().Len()
-		nret := sig.Results().Len()
 		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-		sig = FuncAddCtx(ctx, sig)
-		fn := p.NewFunc(closureStub+name, sig, InC)
+		sigWithCtx := FuncAddCtx(ctx, sig)
+		n := sig.Params().Len()
+		cabiSig := p.Prog.cabiCvtDeclSig(sig)
+		nret := cabiSig.Results().Len()
+		cabiSig = FuncAddCtx(ctx, cabiSig)
+		fn := p.NewFunc(closureStub+name, cabiSig, InC)
 		fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		args := make([]Expr, n)
 		for i := 0; i < n; i++ {
-			args[i] = fn.Param(i + 1)
+			param := fn.Param(i + 1)
+			args[i] = param
 		}
 		b := fn.MakeBody(1)
+		v.Type = prog.rawType(sigWithCtx)
 		call := b.Call(v, args...)
 		call.impl.SetTailCall(true)
 		switch nret {
