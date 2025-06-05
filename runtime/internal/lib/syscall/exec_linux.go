@@ -582,13 +582,10 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 
 	// Chdir
 	if dir != nil {
-		/**
-		_, _, err1 = RawSyscall(syscall.SYS_CHDIR, uintptr(unsafe.Pointer(dir)), 0, 0)
-		if err1 != 0 {
+		if ret := os.Chdir(dir); ret < 0 {
+			err1 = Errno(os.Errno())
 			goto childerror
 		}
-		*/
-		panic("todo: syscall.forkAndExecInChild1 - dir")
 	}
 
 	// Parent death signal

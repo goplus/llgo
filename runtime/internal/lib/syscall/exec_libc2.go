@@ -199,13 +199,10 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 
 	// Chdir
 	if dir != nil {
-		/* TODO(xsw):
-		_, _, err1 = rawSyscall(abi.FuncPCABI0(libc_chdir_trampoline), uintptr(unsafe.Pointer(dir)), 0, 0)
-		if err1 != 0 {
+		if ret := os.Chdir(dir); ret < 0 {
+			err1 = Errno(os.Errno())
 			goto childerror
 		}
-		*/
-		panic("todo: syscall.forkAndExecInChild - dir")
 	}
 
 	// Pass 1: look for fd[i] < i and move those up above len(fd)
