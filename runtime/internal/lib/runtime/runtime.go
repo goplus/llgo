@@ -31,11 +31,16 @@ const (
 	LLGoFiles   = "_wrap/runtime.c"
 )
 
-// GOROOT returns the root of the Go tree. It uses the
-// GOROOT environment variable, if set at process start,
-// or else the root used during the Go build.
+var defaultGOROOT string // set by cmd/link
+
 func GOROOT() string {
-	return ""
+	return defaultGOROOT
+}
+
+var buildVersion string
+
+func Version() string {
+	return buildVersion
 }
 
 //go:linkname c_maxprocs C.llgo_maxprocs
