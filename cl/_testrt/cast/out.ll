@@ -20,7 +20,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -39,7 +41,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -58,7 +62,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -77,7 +83,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -96,7 +104,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -115,7 +125,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -134,7 +146,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -153,7 +167,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -172,7 +188,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -191,7 +209,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -210,7 +230,9 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -229,21 +251,25 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7)
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, ptr %8, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %8)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %8 = trunc i64 %1 to i32
-  %9 = icmp ne i32 %8, %0
-  br i1 %9, label %_llgo_3, label %_llgo_4
+  %9 = trunc i64 %1 to i32
+  %10 = icmp ne i32 %9, %0
+  br i1 %10, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %10 = load ptr, ptr @_llgo_string, align 8
-  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %11, align 8
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %10, 0
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %11, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %13)
+  %11 = load ptr, ptr @_llgo_string, align 8
+  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %12, align 8
+  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %11, 0
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %13, ptr %12, 1
+  %15 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.eface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %14, ptr %15, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr %15)
   unreachable
 
 _llgo_4:                                          ; preds = %_llgo_2
@@ -340,4 +366,4 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(ptr)

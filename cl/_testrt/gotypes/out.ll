@@ -5,7 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/gotypes"
 
 @"github.com/goplus/llgo/cl/_testrt/gotypes.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/gotypes.foo"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/gotypes.foo"(ptr %0) {
 _llgo_0:
   ret void
 }
@@ -25,6 +25,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/gotypes.main"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testrt/gotypes.foo"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
+  %0 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.iface", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer, ptr %0, align 8
+  call void @"github.com/goplus/llgo/cl/_testrt/gotypes.foo"(ptr %0)
   ret void
 }

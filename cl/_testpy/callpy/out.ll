@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpy/callpy'
 source_filename = "github.com/goplus/llgo/cl/_testpy/callpy"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testpy/callpy.init$guard" = global i1 false, align 1
 @__llgo_py.math.sqrt = linkonce global ptr null, align 8
 @__llgo_py.os.getcwd = linkonce global ptr null, align 8
@@ -25,11 +27,17 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/lib/py/os.init"()
   call void @"github.com/goplus/lib/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
-  %2 = load ptr, ptr @__llgo_py.math, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %2, ptr @3, ptr @__llgo_py.math.sqrt, ptr null)
-  %3 = load ptr, ptr @__llgo_py.os, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %3, ptr @4, ptr @__llgo_py.os.getcwd, ptr null)
+  %2 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr @2, ptr %2, align 8
+  call void @llgoLoadPyModSyms(ptr %1, ptr %2, ptr @__llgo_py.builtins.print, ptr null)
+  %3 = load ptr, ptr @__llgo_py.math, align 8
+  %4 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr @3, ptr %4, align 8
+  call void @llgoLoadPyModSyms(ptr %3, ptr %4, ptr @__llgo_py.math.sqrt, ptr null)
+  %5 = load ptr, ptr @__llgo_py.os, align 8
+  %6 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr @4, ptr %6, align 8
+  call void @llgoLoadPyModSyms(ptr %5, ptr %6, ptr @__llgo_py.os.getcwd, ptr null)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -44,10 +52,14 @@ _llgo_0:
   %3 = load ptr, ptr @__llgo_py.os.getcwd, align 8
   %4 = call ptr @PyObject_CallNoArgs(ptr %3)
   %5 = call double @PyFloat_AsDouble(ptr %2)
-  %6 = call i32 (ptr, ...) @printf(ptr @0, double %5)
-  %7 = call ptr @PyUnicode_FromString(ptr @1)
-  %8 = load ptr, ptr @__llgo_py.builtins.print, align 8
-  %9 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %8, ptr %7, ptr %4, ptr null)
+  %6 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store double %5, ptr %6, align 8
+  %7 = call i32 @printf(ptr @0, ptr %6)
+  %8 = call ptr @PyUnicode_FromString(ptr @1)
+  %9 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %10 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store ptr %8, ptr %10, align 8
+  %11 = call ptr @PyObject_CallFunctionObjArgs(ptr %9, ptr %10, ptr %4, ptr null)
   ret void
 }
 
@@ -65,10 +77,10 @@ declare ptr @PyObject_CallNoArgs(ptr)
 
 declare double @PyFloat_AsDouble(ptr)
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare ptr @PyUnicode_FromString(ptr)
 
-declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
+declare ptr @PyObject_CallFunctionObjArgs(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
-declare void @llgoLoadPyModSyms(ptr, ...)
+declare void @llgoLoadPyModSyms(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

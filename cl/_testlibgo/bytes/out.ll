@@ -29,21 +29,55 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testlibgo/bytes.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 6 })
-  %2 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %3 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 5 })
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr %0)
-  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr %0)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 3 })
+  %1 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  %2 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 6 }, ptr %2, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(ptr %1, ptr %2)
+  %3 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %1, align 8
+  %4 = alloca { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, align 8
+  %5 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, ptr %5, align 8
+  call void @"bytes.(*Buffer).Write"(ptr %4, ptr %0, ptr %5)
+  %6 = load { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %4, align 8
+  %7 = alloca { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, align 8
+  %8 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 5 }, ptr %8, align 8
+  call void @"bytes.(*Buffer).WriteString"(ptr %7, ptr %0, ptr %8)
+  %9 = load { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %7, align 8
+  %10 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  call void @"bytes.(*Buffer).Bytes"(ptr %10, ptr %0)
+  %11 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %10, align 8
+  %12 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  call void @"bytes.(*Buffer).String"(ptr %12, ptr %0)
+  %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %12, align 8
+  %14 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 3 }, ptr %14, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4)
+  %15 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, ptr %15, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(ptr %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %5)
+  %16 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %13, ptr %16, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %6 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 2 })
-  %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 })
-  %8 = call i1 @bytes.EqualFold(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %8)
+  %17 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  %18 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 2 }, ptr %18, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(ptr %17, ptr %18)
+  %19 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %17, align 8
+  %20 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  %21 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr %21, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(ptr %20, ptr %21)
+  %22 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %20, align 8
+  %23 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %19, ptr %23, align 8
+  %24 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %22, ptr %24, align 8
+  %25 = call i1 @bytes.EqualFold(ptr %23, ptr %24)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %25)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -52,22 +86,22 @@ declare void @bytes.init()
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(ptr, ptr)
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+declare void @"bytes.(*Buffer).Write"(ptr, ptr, ptr)
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"bytes.(*Buffer).WriteString"(ptr, ptr, ptr)
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr)
+declare void @"bytes.(*Buffer).Bytes"(ptr, ptr)
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr)
+declare void @"bytes.(*Buffer).String"(ptr, ptr)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(ptr)
 
-declare i1 @bytes.EqualFold(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+declare i1 @bytes.EqualFold(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)

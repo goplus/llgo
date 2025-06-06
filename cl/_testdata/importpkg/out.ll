@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testdata/importpkg'
 source_filename = "github.com/goplus/llgo/cl/_testdata/importpkg"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testdata/importpkg.hello" = global [7 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/importpkg.init$guard" = global i1 false, align 1
 
@@ -28,7 +30,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testdata/importpkg.main"() {
 _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64 2, i64 100)
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello")
+  call void @printf(ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello")
   ret void
 }
 
@@ -36,4 +38,4 @@ declare void @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.init"()
 
 declare i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64, i64)
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

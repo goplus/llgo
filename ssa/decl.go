@@ -182,10 +182,14 @@ type aFunction struct {
 	defer_ *aDefer
 	recov  BasicBlock
 
-	params   []Type
-	freeVars Expr
-	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+	ret           Type
+	params        []Type
+	freeVars      Expr
+	paramBase     int // += 1 if hasFreeVars; += 1 if hasSret; = 0 otherwise
+	paramTypeBase int // += 1 if hasFreeVars; += 1 = 0 otherwise
+	hasVArg       bool
+	hasSret       bool
+	hasFreeVars   bool
 
 	diFunc DIFunction
 }
@@ -211,7 +215,8 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 	if instantiated {
 		fn.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
-	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
+	_, hasSret := p.Prog.cabiCvtType(p.Prog.retType(t.RawType().(*types.Signature)))
+	ret := newFunction(fn, t, p, p.Prog, hasFreeVars, hasSret)
 	p.fns[name] = ret
 	return ret
 }
@@ -221,23 +226,32 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
-func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool) Function {
-	params, hasVArg := newParams(t, prog)
-	base := 0
+func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars, hasSret bool) Function {
+	ret, params, hasVArg := newParams(t, prog)
+	paramBase := 0
+	paramTypeBase := 0
 	if hasFreeVars {
-		base = 1
+		paramBase++
+		paramTypeBase++
+	}
+	if hasSret {
+		paramBase++
 	}
 	return &aFunction{
-		Expr:    Expr{fn, t},
-		Pkg:     pkg,
-		Prog:    prog,
-		params:  params,
-		base:    base,
-		hasVArg: hasVArg,
+		Expr:          Expr{fn, t},
+		Pkg:           pkg,
+		Prog:          prog,
+		ret:           ret,
+		params:        params,
+		paramBase:     paramBase,
+		paramTypeBase: paramTypeBase,
+		hasVArg:       hasVArg,
+		hasSret:       hasSret,
+		hasFreeVars:   hasFreeVars,
 	}
 }
 
-func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
+func newParams(fn Type, prog Program) (ret Type, params []Type, hasVArg bool) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
@@ -249,6 +263,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 			params[i] = prog.rawType(in.At(i).Type())
 		}
 	}
+	ret = prog.rawType(sig.Results())
 	return
 }
 
@@ -259,13 +274,15 @@ func (p Function) Name() string {
 
 // Params returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
-	i += p.base // skip if hasFreeVars
-	return Expr{p.impl.Param(i), p.params[i]}
+	paramIdx := i + p.paramBase         // skip if hasFreeVars and hasSret
+	paramTypeIdx := i + p.paramTypeBase // skip if hasFreeVars
+	paramType := p.params[paramTypeIdx]
+	return Expr{p.impl.Param(paramIdx), paramType}
 }
 
 func (p Function) closureCtx(b Builder) Expr {
 	if p.freeVars.IsNil() {
-		if p.base == 0 {
+		if p.paramBase == 0 {
 			panic("ssa: function has no free variables")
 		}
 		ptr := Expr{p.impl.Param(0), p.params[0]}

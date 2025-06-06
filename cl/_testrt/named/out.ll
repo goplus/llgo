@@ -4,6 +4,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/named"
 %"github.com/goplus/llgo/cl/_testrt/named.mspan" = type { ptr, ptr, ptr, %"github.com/goplus/llgo/cl/_testrt/named.minfo", i64, { ptr, ptr } }
 %"github.com/goplus/llgo/cl/_testrt/named.minfo" = type { ptr, i64 }
 %"github.com/goplus/llgo/cl/_testrt/named.mSpanList" = type { ptr, ptr }
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"github.com/goplus/llgo/cl/_testrt/named.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [19 x i8] c"%d %d %d %d %d %d\0A\00", align 1
@@ -108,7 +109,9 @@ _llgo_0:
   %71 = extractvalue { ptr, ptr } %70, 1
   %72 = extractvalue { ptr, ptr } %70, 0
   %73 = call i64 %72(ptr %71, i64 -3)
-  %74 = call i32 (ptr, ...) @printf(ptr @0, i64 %41, i64 %48, i64 %52, i64 %58, i64 %64, i64 %73)
+  %74 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %41, ptr %74, align 4
+  %75 = call i32 @printf(ptr @0, ptr %74, i64 %48, i64 %52, i64 %58, i64 %64, i64 %73)
   ret void
 }
 
@@ -127,4 +130,4 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

@@ -1,6 +1,8 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testrt/structsize'
 source_filename = "github.com/goplus/llgo/cl/_testrt/structsize"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testrt/structsize.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [3 x i8] c"%d\00", align 1
 
@@ -19,8 +21,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/structsize.main"() {
 _llgo_0:
-  %0 = call i32 (ptr, ...) @printf(ptr @0, i64 14)
+  %0 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 14, ptr %0, align 4
+  %1 = call i32 @printf(ptr @0, ptr %0)
   ret void
 }
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")

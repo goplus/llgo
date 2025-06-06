@@ -15,7 +15,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/linkname"
 @7 = private unnamed_addr constant [2 x i8] c"4\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info"(%"github.com/goplus/llgo/cl/_testrt/linkname.m")
+declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info"(ptr, ptr)
 
 define void @"github.com/goplus/llgo/cl/_testrt/linkname.init"() {
 _llgo_0:
@@ -36,22 +36,30 @@ _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.F"(ptr @0, ptr @1, ptr @2, ptr @3)
   call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.F"(ptr @4, ptr @5, ptr @6, ptr @7)
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.(*m).setInfo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 5 })
-  %1 = load %"github.com/goplus/llgo/cl/_testrt/linkname.m", ptr %0, align 8
-  %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info"(%"github.com/goplus/llgo/cl/_testrt/linkname.m" %1)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2)
+  %1 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 5 }, ptr %1, align 8
+  call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.(*m).setInfo"(ptr %0, ptr %1)
+  %2 = load %"github.com/goplus/llgo/cl/_testrt/linkname.m", ptr %0, align 8
+  %3 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  %4 = alloca %"github.com/goplus/llgo/cl/_testrt/linkname.m", align 8
+  store %"github.com/goplus/llgo/cl/_testrt/linkname.m" %2, ptr %4, align 8
+  call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info"(ptr %3, ptr %4)
+  %5 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %3, align 8
+  %6 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %5, ptr %6, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.F"(ptr, ptr, ptr, ptr)
 
-declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.(*m).setInfo"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.(*m).setInfo"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.init"()
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)

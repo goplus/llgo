@@ -1029,8 +1029,19 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	default:
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
-	ret.Type = b.Prog.retType(sig)
-	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
+	retType := b.Prog.retType(sig)
+	_, cvtSret := b.Prog.cabiCvtType(retType)
+	var retRef Expr
+	if cvtSret {
+		retRef = b.AllocaT(retType)
+		args = append([]Expr{retRef}, args...)
+		sig = b.Prog.cabiCvtCallSig(sig)
+		llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), true, b))
+		ret = b.Load(retRef)
+	} else {
+		ret.Type = retType
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), true, b))
+	}
 	return
 }
 
@@ -1360,23 +1371,33 @@ func needsNegativeCheck(x Expr) bool {
 	return false
 }
 
-func llvmParamsEx(data Expr, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+func llvmParamsEx(data Expr, vals []Expr, params *types.Tuple, cabi bool, b Builder) (ret []llvm.Value) {
 	if data.IsNil() {
-		return llvmParams(0, vals, params, b)
+		return llvmParams(0, vals, params, cabi, b)
 	}
-	ret = llvmParams(1, vals, params, b)
+	ret = llvmParams(1, vals, params, cabi, b)
 	ret[0] = data.impl
 	return
 }
 
-func llvmParams(base int, vals []Expr, params *types.Tuple, b Builder) (ret []llvm.Value) {
+func llvmParams(base int, vals []Expr, params *types.Tuple, cabi bool, b Builder) (ret []llvm.Value) {
 	n := params.Len()
 	if n > 0 {
 		ret = make([]llvm.Value, len(vals)+base)
 		for idx, v := range vals {
 			i := base + idx
 			if i < n {
-				v = checkExpr(v, params.At(i).Type(), b)
+				ty := params.At(i).Type()
+				v = checkExpr(v, ty, b)
+				if cabi {
+					tyParam := b.Prog.toType(ty)
+					if t, cvt := b.Prog.cabiCvtType(tyParam); cvt {
+						p := b.AllocaT(tyParam)
+						p.Type = t
+						b.Store(p, v)
+						v = p
+					}
+				}
 			}
 			ret[i] = v.impl
 		}

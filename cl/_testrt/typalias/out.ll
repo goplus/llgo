@@ -1,7 +1,7 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testrt/typalias'
 source_filename = "github.com/goplus/llgo/cl/_testrt/typalias"
 
-%"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"github.com/goplus/llgo/runtime/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
 @"github.com/goplus/llgo/cl/_testrt/typalias.format" = global [10 x i8] zeroinitializer, align 1
@@ -16,7 +16,9 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %3 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
   %4 = load i32, ptr %3, align 4
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i32 %4)
+  %5 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i32 %4, ptr %5, align 4
+  call void @printf(ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", ptr %5)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -28,9 +30,9 @@ _llgo_0:
   ret ptr %0
 }
 
-declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoUse(ptr)
 
-declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoCheckResult(ptr)
 
 define void @"github.com/goplus/llgo/cl/_testrt/typalias.init"() {
 _llgo_0:
@@ -67,7 +69,7 @@ _llgo_0:
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare void @syscall.init()
 

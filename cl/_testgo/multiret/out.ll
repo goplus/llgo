@@ -4,12 +4,13 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/multiret"
 @"github.com/goplus/llgo/cl/_testgo/multiret.a" = global i64 0, align 8
 @"github.com/goplus/llgo/cl/_testgo/multiret.init$guard" = global i1 false, align 1
 
-define { i64, double } @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(double %0) {
+define void @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(ptr %0, double %1) {
 _llgo_0:
-  %1 = load i64, ptr @"github.com/goplus/llgo/cl/_testgo/multiret.a", align 4
-  %2 = insertvalue { i64, double } undef, i64 %1, 0
-  %3 = insertvalue { i64, double } %2, double %0, 1
-  ret { i64, double } %3
+  %2 = load i64, ptr @"github.com/goplus/llgo/cl/_testgo/multiret.a", align 4
+  %3 = insertvalue { i64, double } undef, i64 %2, 0
+  %4 = insertvalue { i64, double } %3, double %1, 1
+  store { i64, double } %4, ptr %0, align 8
+  ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/multiret.init"() {
@@ -28,12 +29,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/multiret.main"() {
 _llgo_0:
-  %0 = call { i64, double } @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(double 2.000000e+00)
-  %1 = extractvalue { i64, double } %0, 0
-  %2 = extractvalue { i64, double } %0, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  %0 = alloca { i64, double }, align 8
+  call void @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(ptr %0, double 2.000000e+00)
+  %1 = load { i64, double }, ptr %0, align 8
+  %2 = extractvalue { i64, double } %1, 0
+  %3 = extractvalue { i64, double } %1, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }

@@ -1,12 +1,16 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testdata/ptrmthd'
 source_filename = "github.com/goplus/llgo/cl/_testdata/ptrmthd"
 
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+
 @"github.com/goplus/llgo/cl/_testdata/ptrmthd.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/ptrmthd.init$guard" = global i1 false, align 1
 
 define void @"github.com/goplus/llgo/cl/_testdata/ptrmthd.(*T).Print"(ptr %0, i64 %1) {
 _llgo_0:
-  call void (ptr, ...) @printf(ptr %0, i64 %1)
+  %2 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice", align 8
+  store i64 %1, ptr %2, align 4
+  call void @printf(ptr %0, ptr %2)
   ret void
 }
 
@@ -39,4 +43,4 @@ _llgo_0:
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
