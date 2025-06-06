@@ -310,14 +310,3 @@ func hasPrefix(s, prefix string) bool {
 func hasSuffix(s, suffix string) bool {
 	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
-
-type Stat_t struct {
-	Dev      uint64
-	Ino      uint64
-	Filetype uint8
-	Nlink    uint64
-	Size     uint64
-	Atime    uint64
-	Mtime    uint64
-	Ctime    uint64
-}
