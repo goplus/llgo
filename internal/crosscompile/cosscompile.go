@@ -172,7 +172,7 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 			// "-Wl,--export=malloc", "-Wl,--export=free",
 		}
 		export.EXTRAFLAGS = []string{
-			"-sENVIRONMENT=web",
+			"-sENVIRONMENT=web,worker",
 			"-DPLATFORM_WEB",
 			"-sEXPORT_KEEPALIVE=1",
 			"-sEXPORT_ES6=1",
