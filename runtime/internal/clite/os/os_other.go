@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	LLGoFiles   = "_os/os.c"
+	LLGoFiles   = "_os/os.cpp"
 	LLGoPackage = "link"
 )
 

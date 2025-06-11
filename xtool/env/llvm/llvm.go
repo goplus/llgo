@@ -50,7 +50,6 @@ func defaultLLVMConfigBin() string {
 // Env represents an LLVM installation.
 type Env struct {
 	binDir string
-	cflags string
 }
 
 // New creates a new [Env] instance.
@@ -63,20 +62,13 @@ func New(llvmConfigBin string) *Env {
 	// executables are assumed to be in PATH.
 	binDir, _ := exec.Command(llvmConfigBin, "--bindir").Output()
 
-	cflags, _ := exec.Command(llvmConfigBin, "--cflags").Output()
-
-	e := &Env{
-		binDir: strings.TrimSpace(string(binDir)),
-		cflags: strings.TrimSpace(string(cflags)),
-	}
+	e := &Env{binDir: strings.TrimSpace(string(binDir))}
 	return e
 }
 
 // BinDir returns the directory containing LLVM executables. An empty string
 // means LLVM executables are assumed to be in PATH.
 func (e *Env) BinDir() string { return e.binDir }
-
-func (e *Env) Cflags() string { return e.cflags }
 
 // Clang returns a new [clang.Cmd] instance.
 func (e *Env) Clang() *clang.Cmd {
