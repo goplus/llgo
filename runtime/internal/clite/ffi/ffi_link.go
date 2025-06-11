@@ -1,5 +1,3 @@
-//go:build !wasm
-
 package ffi
 
 import (
