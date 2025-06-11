@@ -1,3 +1,6 @@
+
+extern "C" {
+
 #if defined(__GNUC__) || defined(__clang__)
 void llgo_getcpuid(unsigned int eax, unsigned int ecx,
                    unsigned int *a, unsigned int *b,
@@ -19,3 +22,5 @@ void llgo_getcpuid(unsigned int eax, unsigned int ecx,
 #else
 #error This code requires GCC or Clang
 #endif
+
+}

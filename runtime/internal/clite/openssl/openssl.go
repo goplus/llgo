@@ -25,7 +25,7 @@ import (
 // -----------------------------------------------------------------------------
 
 const (
-	LLGoFiles   = "$(pkg-config --cflags openssl): _wrap/openssl.c"
+	LLGoFiles   = "$(pkg-config --cflags openssl): _wrap/openssl.cpp"
 	LLGoPackage = "link: $(pkg-config --libs openssl); -lssl -lcrypto"
 )
 

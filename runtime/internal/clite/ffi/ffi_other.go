@@ -10,7 +10,7 @@ import (
 
 const (
 	LLGoPackage = "link: $(pkg-config --libs libffi); -lffi"
-	LLGoFiles   = "$(pkg-config --cflags libffi): _wrap/libffi.c"
+	LLGoFiles   = "$(pkg-config --cflags libffi): _wrap/libffi.cpp"
 )
 
 /*
