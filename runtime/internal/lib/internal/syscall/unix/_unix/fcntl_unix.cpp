@@ -9,6 +9,8 @@ struct fcntl_ret
     int32_t err; // Error code
 };
 
+extern "C" {
+
 // llgo_fcntl implements the fcntl system call wrapper for Go
 // fd: file descriptor
 // cmd: fcntl command
@@ -30,4 +32,6 @@ struct fcntl_ret llgo_fcntl2(int32_t fd, int32_t cmd, int32_t arg)
     }
 
     return ret;
+}
+
 }

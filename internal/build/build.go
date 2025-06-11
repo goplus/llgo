@@ -490,8 +490,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 	}
 	linkArgs = append(linkArgs, exargs...)
 
-	fmt.Fprintf(os.Stderr, "linkArgs: %v\n", linkArgs)
-
 	err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
 	check(err)
 
