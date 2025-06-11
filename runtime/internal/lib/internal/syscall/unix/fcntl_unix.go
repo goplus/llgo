@@ -8,7 +8,7 @@ import (
 // llgo:skip fcntl
 const (
 	LLGoPackage = "link"
-	LLGoFiles   = "_unix/fcntl_unix.c"
+	LLGoFiles   = "_unix/fcntl_unix.cpp"
 )
 
 //go:linkname llgo_fcntl2 C.llgo_fcntl2
