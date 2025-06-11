@@ -26,8 +26,102 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
+	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/ffi"
 	"github.com/goplus/llgo/runtime/internal/runtime"
 )
+
+type funcData struct {
+	ftyp *funcType
+	fn   func(args []Value) (results []Value)
+	nin  int
+}
+
+func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
+	if typ.Kind() != Func {
+		panic("reflect: call of MakeFunc with non-Func type")
+	}
+
+	t := typ.common()
+	ftyp := (*funcType)(unsafe.Pointer(t))
+	sig, err := toFFISig(append([]*abi.Type{unsafePointerType}, ftyp.In...), ftyp.Out)
+	if err != nil {
+		panic(err)
+	}
+	closure := ffi.NewClosure()
+
+	switch len(ftyp.Out) {
+	case 0:
+		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+			fd := (*funcData)(userdata)
+			ins := make([]Value, fd.nin)
+			for i := 0; i < fd.nin; i++ {
+				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+			}
+			fd.fn(ins)
+		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+	case 1:
+		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+			fd := (*funcData)(userdata)
+			ins := make([]Value, fd.nin)
+			for i := 0; i < fd.nin; i++ {
+				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+			}
+			out := fd.fn(ins)
+			if fd.ftyp.Out[0].IfaceIndir() {
+				c.Memmove(ret, out[0].ptr, fd.ftyp.Out[0].Size_)
+			} else {
+				*(*unsafe.Pointer)(ret) = unsafe.Pointer(out[0].ptr)
+			}
+		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+	default:
+		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+			fd := (*funcData)(userdata)
+			ins := make([]Value, fd.nin)
+			for i := 0; i < fd.nin; i++ {
+				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+			}
+			outs := fd.fn(ins)
+			var offset uintptr = 0
+			for i, out := range outs {
+				if fd.ftyp.Out[i].IfaceIndir() {
+					c.Memmove(add(ret, offset, ""), out.ptr, fd.ftyp.Out[i].Size_)
+				} else {
+					*(*unsafe.Pointer)(add(ret, offset, "")) = unsafe.Pointer(out.ptr)
+				}
+				offset += fd.ftyp.Out[i].Size_
+			}
+		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+	}
+	if err != nil {
+		panic("libffi error: " + err.Error())
+	}
+	styp := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
+		Name_: "$f",
+		Typ:   &ftyp.Type,
+	}, abi.StructField{
+		Name_: "$data",
+		Typ:   unsafePointerType,
+	})
+	fv := &struct {
+		fn  unsafe.Pointer
+		env unsafe.Pointer
+	}{closure.Fn, unsafe.Pointer(&fn)}
+	return Value{styp, unsafe.Pointer(fv), flagIndir | flag(Func)}
+}
+
+func ffiToValue(ptr unsafe.Pointer, typ *abi.Type) (v Value) {
+	kind := typ.Kind()
+	v.typ_ = typ
+	v.flag = flag(kind)
+	if typ.IfaceIndir() {
+		v.flag |= flagIndir
+		v.ptr = ptr
+	} else {
+		v.ptr = *(*unsafe.Pointer)(ptr)
+	}
+	return
+}
 
 /*
 import (
