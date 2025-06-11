@@ -70,11 +70,6 @@ jobs:
         with:
           go-version: ${{matrix.go}}
 
-      - name: _xtool build tests
-        run: |
-          cd _xtool
-          llgo build -v ./...
-
       - name: Test demos
         run: |
           # TODO(lijie): force python3-embed to be linked with python-3.12-embed
@@ -87,6 +82,11 @@ jobs:
           ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
           export PKG_CONFIG_PATH=$pcdir
           bash .github/workflows/test_demo.sh
+
+      - name: _xtool build tests
+        run: |
+          cd _xtool
+          llgo build -v ./...
 
       - name: Show test result
         run: cat result.md
