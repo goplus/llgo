@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/xtool/llvm"
+	envllvm "github.com/goplus/llgo/xtool/env/llvm"
 )
 
 type Export struct {
@@ -66,6 +68,10 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 				"-latomic",
 				"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
 			)
+			llvmEnv := envllvm.New("")
+			if cflags := llvmEnv.Cflags(); cflags != "" {
+				export.CFLAGS = append(export.CFLAGS, strings.Fields(cflags)...)
+			}
 		}
 		return
 	}
