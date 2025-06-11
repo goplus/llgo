@@ -19,7 +19,7 @@ package bitcast
 import _ "unsafe"
 
 const (
-	LLGoFiles   = "_cast/cast.c"
+	LLGoFiles   = "_cast/cast.cpp"
 	LLGoPackage = "link"
 )
 

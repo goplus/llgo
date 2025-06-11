@@ -91,6 +91,7 @@ func (p *Cmd) execWithFlags(flags []string, args ...string) error {
 	if p.Env != nil {
 		cmd.Env = p.Env
 	}
+	fmt.Fprintln(os.Stderr, cmd.String())
 	return cmd.Run()
 }
 
@@ -130,6 +131,8 @@ func (p *Cmd) CheckLinkArgs(cmdArgs []string, wasm bool) error {
 	src := "int main() {return 0;}"
 	srcIn := strings.NewReader(src)
 	p.Stdin = srcIn
+
+	fmt.Fprintf(os.Stderr, "args: %v\n", args)
 
 	// Execute the command
 	return p.execWithFlags([]string{"LDFLAGS", "CCFLAGS"}, args...)
