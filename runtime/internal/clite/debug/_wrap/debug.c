@@ -9,8 +9,6 @@
 #include <dlfcn.h>
 #include <libunwind.h>
 
-extern "C" {
-
 void *llgo_address() {
     return __builtin_return_address(0);
 }
@@ -40,6 +38,4 @@ void llgo_stacktrace(int skip, void *ctx, int (*fn)(void *ctx, void *pc, void *o
             }
         }
     }
-}
-
 }

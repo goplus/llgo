@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	LLGoFiles = "$(llvm-config --cflags): _wrap/debug.cpp"
+	LLGoFiles = "$(llvm-config --cflags): _wrap/debug.c"
 )
 
 type Info struct {

@@ -10,7 +10,7 @@ import (
 
 const (
 	LLGoPackage = "link"
-	LLGoFiles   = "_wrap/cpu_x86.cpp"
+	LLGoFiles   = "_wrap/cpu_x86.c"
 )
 
 //go:linkname c_getcpuid C.llgo_getcpuid

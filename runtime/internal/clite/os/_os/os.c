@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-extern "C" {
-
 int cliteClearenv()
 {
 	extern char **environ;
@@ -14,5 +12,3 @@ int cliteClearenv()
 }
 
 int cliteErrno() { return errno; }
-
-}

@@ -28,7 +28,7 @@ type _runtime struct{}
 
 const (
 	LLGoPackage = "link"
-	LLGoFiles   = "_wrap/runtime.cpp"
+	LLGoFiles   = "_wrap/runtime.c"
 )
 
 // GOROOT returns the root of the Go tree. It uses the

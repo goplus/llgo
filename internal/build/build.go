@@ -953,6 +953,13 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 
 func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
 	llFile := expFile + filepath.Base(cFile) + ".ll"
+	ext := filepath.Ext(cFile)
+
+	// default clang++ will use c++ to compile c file,will cause symbol be mangled
+	if ext == ".c" {
+		args = append(args, "-x", "c")
+	}
+
 	args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	args = append(args, ctx.crossCompile.CFLAGS...)

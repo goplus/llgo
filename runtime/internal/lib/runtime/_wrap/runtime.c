@@ -1,7 +1,5 @@
 #include <unistd.h>
 
-extern "C" {
-
 int llgo_maxprocs()
 {
 #ifdef _SC_NPROCESSORS_ONLN
@@ -9,6 +7,4 @@ int llgo_maxprocs()
 #else
     return 1;
 #endif
-}
-
 }

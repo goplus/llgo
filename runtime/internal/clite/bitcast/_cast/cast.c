@@ -6,8 +6,6 @@ typedef union
     long long ll;
 } castUnion;
 
-extern "C" { 
-
 double llgoToFloat64(long long v)
 {
     castUnion k;
@@ -34,6 +32,4 @@ int llgoFromFloat32(float v)
     castUnion k;
     k.f = v;
     return k.v;
-}
-
 }
