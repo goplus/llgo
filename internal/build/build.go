@@ -508,6 +508,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 	switch mode {
 	case ModeTest:
 		cmd := exec.Command(app, conf.RunArgs...)
+		cmd.Dir = pkg.Dir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Run()
