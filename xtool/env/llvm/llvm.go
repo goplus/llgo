@@ -72,7 +72,7 @@ func (e *Env) BinDir() string { return e.binDir }
 
 // Clang returns a new [clang.Cmd] instance.
 func (e *Env) Clang() *clang.Cmd {
-	bin := filepath.Join(e.BinDir(), "clang")
+	bin := filepath.Join(e.BinDir(), "clang++")
 	return clang.New(bin)
 }
 
