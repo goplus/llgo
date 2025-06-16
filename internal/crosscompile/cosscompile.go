@@ -177,6 +177,7 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 			"-sEXPORT_KEEPALIVE=1",
 			"-sEXPORT_ES6=1",
 			"-sALLOW_MEMORY_GROWTH=1",
+			"-sRESERVED_FUNCTION_POINTERS=1",
 			"-sEXPORTED_RUNTIME_METHODS=cwrap,allocateUTF8,stringToUTF8,UTF8ToString,FS,setValue,getValue",
 			"-sWASM=1",
 			"-sEXPORT_ALL=1",
