@@ -38,7 +38,7 @@ jobs:
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test ./internal/build/...
+        run: go test ./...
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
