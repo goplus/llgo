@@ -497,6 +497,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 		dylibDeps := make([]string, 0, len(libs))
 		for _, lib := range libs {
 			dylibDep := findDylibDep(app, lib)
+			_, err := os.Stat(dylibDep)
+			// in macos, system dylib path like /usr/lib/libc++.1.dylib is in cache,we can't find it in physical path
+			// so we not change it to rpath
+			if err != nil {
+				if debugBuild || verbose {
+					fmt.Fprintf(os.Stderr, "dylib %s havn't physical path\n", dylibDep)
+				}
+				continue
+			}
 			if dylibDep != "" {
 				dylibDeps = append(dylibDeps, dylibDep)
 			}
