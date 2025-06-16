@@ -1220,7 +1220,9 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	// Populate the remaining fields of ft and store in cache.
 	ft.Str_ = str
 	ft.PtrToThis_ = nil
-	return addToCache(&ft.Type)
+
+	rt := runtime.Func(ft.In, ft.Out, variadic)
+	return addToCache(&rt.Type)
 }
 
 func stringFor(t *abi.Type) string {
