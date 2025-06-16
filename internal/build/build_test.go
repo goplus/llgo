@@ -57,6 +57,11 @@ func TestRun(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeRun})
 }
 
+func TestRunWithRpath(t *testing.T) {
+	t.Setenv("LLGO_RPATH_CHANGE", "on")
+	mockRun([]string{"../../cl/_testlibc/cppstr"}, &Config{Mode: ModeRun})
+}
+
 func TestTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
 }
