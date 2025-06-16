@@ -20,7 +20,12 @@ runs:
           ARCH="arm64"
         else
           OS="linux"
-          ARCH="amd64"
+          # Check if running on ARM64 Linux
+          if [[ "$RUNNER_ARCH" == "ARM64" ]]; then
+            ARCH="arm64"
+          else
+            ARCH="amd64"
+          fi
         fi
 
         DOWNLOAD_URL="https://go.dev/dl/go${GO_VERSION}.${OS}-${ARCH}.tar.gz"

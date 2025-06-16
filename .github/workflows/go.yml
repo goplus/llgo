@@ -16,6 +16,7 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
+          - ubuntu-24.04-arm
         llvm: [19]
     runs-on: ${{matrix.os}}
     steps:
