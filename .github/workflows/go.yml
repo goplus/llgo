@@ -47,6 +47,19 @@ jobs:
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
         run: go test -coverprofile="coverage.txt" -covermode=atomic ./...
+      - name: Get Go cache directory
+        id: go-cache
+        run: echo "dir=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Upload Logs to Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{matrix.os}}-log
+          # go env GOCACHE is the cache dir of go test
+          path: ${{ steps.go-cache.outputs.dir }}
+          retention-days: 1
+          include-hidden-files: true
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
