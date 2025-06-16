@@ -788,6 +788,27 @@ func (p Package) InitDebug(name, pkgPath string, positioner Positioner) {
 	p.cu = p.di.createCompileUnit(name, pkgPath)
 }
 
+func (p Package) createGlobalStr(v string) (ret llvm.Value) {
+	if ret, ok := p.strs[v]; ok {
+		return ret
+	}
+	prog := p.Prog
+	if v != "" {
+		typ := llvm.ArrayType(prog.tyInt8(), len(v))
+		global := llvm.AddGlobal(p.mod, typ, "")
+		global.SetInitializer(prog.ctx.ConstString(v, false))
+		global.SetLinkage(llvm.PrivateLinkage)
+		global.SetGlobalConstant(true)
+		global.SetUnnamedAddr(true)
+		global.SetAlignment(1)
+		ret = llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
+	} else {
+		ret = llvm.ConstNull(prog.CStr().ll)
+	}
+	p.strs[v] = ret
+	return
+}
+
 // -----------------------------------------------------------------------------
 
 /*
