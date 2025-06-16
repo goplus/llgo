@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         os:
-          - macos-latest
           - ubuntu-24.04
         llvm: [19]
     runs-on: ${{matrix.os}}
