@@ -77,3 +77,9 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}}
+
+      - name: Check disk space after codecov
+        if: always()
+        run: |
+          echo "Disk space after codecov:"
+          df -h
