@@ -31,6 +31,11 @@ jobs:
           uname -a
           lsb_release -a
 
+      - name: Check disk space after deps
+        run: |
+          echo "Disk space after installing dependencies:"
+          df -h
+
       - name: Clang information
         run: |
           echo $PATH
@@ -52,6 +57,11 @@ jobs:
       - name: Get Go cache directory
         id: go-cache
         run: echo "dir=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Check disk space after go test
+        run: |
+          echo "Disk space after go test:"
+          df -h
 
       - name: Upload Logs to Artifacts
         uses: actions/upload-artifact@v4
