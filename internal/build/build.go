@@ -725,7 +725,10 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	if pkg.ExportFile != "" {
 		pkg.ExportFile += ".ll"
-		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		// avoid write dirty data
+		if _, err := os.Stat(pkg.ExportFile); err != nil {
+			os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		}
 		aPkg.LLFiles = append(aPkg.LLFiles, pkg.ExportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
