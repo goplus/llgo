@@ -51,7 +51,7 @@ jobs:
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: |
           count=1
-          max_runs=5
+          max_runs=10
           while [ $count -le $max_runs ] && go test -count=1 ./...; do 
             echo "=== Run #$((count++)) completed ==="
           done
