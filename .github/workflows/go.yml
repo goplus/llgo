@@ -42,7 +42,10 @@ jobs:
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test ./...
+        run: go test -p 1 ./...
+        # https://github.com/goplus/llgo/issues/1158
+        # -p 1 is temp use to avoid parallel test
+        # currently without -p 1, the test will fail on linux,the clang will throw error randomly
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
