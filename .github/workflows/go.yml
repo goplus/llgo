@@ -49,7 +49,19 @@ jobs:
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test ./...
+        run: |
+          count=1
+          max_runs=100
+          while [ $count -le $max_runs ] && go test -count=1 ./...; do 
+            echo "=== Run #$((count++)) completed ==="
+          done
+          if [ $count -gt $max_runs ]; then
+            echo "Reached maximum of $max_runs test runs without failure"
+            exit 0
+          else
+            echo "Test failed on run #$count"
+            exit 1
+          fi
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
