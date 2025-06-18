@@ -57,9 +57,9 @@ func TestRun(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeRun})
 }
 
-// func TestTest(t *testing.T) {
-// 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
-// }
+func TestTest(t *testing.T) {
+	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeTest, Verbose: true})
+}
 
 func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
