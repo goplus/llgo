@@ -725,7 +725,8 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	if pkg.ExportFile != "" {
 		pkg.ExportFile += ".ll"
-		os.WriteFile(pkg.ExportFile, []byte(ret.String()), 0644)
+		err := writeLLFile(pkg.ExportFile, []byte(ret.String()))
+		check(err)
 		aPkg.LLFiles = append(aPkg.LLFiles, pkg.ExportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
@@ -995,6 +996,35 @@ func findDylibDep(exe, lib string) string {
 		}
 	}
 	return ""
+}
+
+func writeLLFile(llFile string, data []byte) error {
+	info, err := os.Stat(llFile)
+	if err == nil && info.Size() == int64(len(data)) {
+		if existingContent, err := os.ReadFile(llFile); err == nil {
+			if bytes.Equal(existingContent, data) {
+				return nil
+			}
+		}
+	}
+
+	tempFile, err := os.CreateTemp(filepath.Dir(llFile), "llfile-*.tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write(data)
+	if err != nil {
+		return err
+	}
+
+	err = tempFile.Close()
+	if err != nil {
+		return err
+	}
+
+	return os.Rename(tempFile.Name(), llFile)
 }
 
 type none struct{}
