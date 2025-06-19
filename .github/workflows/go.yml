@@ -18,6 +18,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-24.04-arm
         llvm: [19]
+        instance: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -75,23 +76,7 @@ jobs:
           echo "Disk space after go test:"
           df -h
 
-      - name: Upload Logs to Artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{matrix.os}}-log
-          # go env GOCACHE is the cache dir of go test
-          path: /home/runner/.cache/go-build
-          retention-days: 1
-          include-hidden-files: true
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}}
-
-      - name: Check disk space after codecov
-        if: always()
-        run: |
-          echo "Disk space after codecov:"
-          df -h
