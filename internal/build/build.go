@@ -47,6 +47,7 @@ import (
 	"github.com/goplus/llgo/xtool/clang"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
+	"github.com/goplus/llgo/xtool/llvm/llvmlink"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -61,6 +62,7 @@ const (
 	ModeTest
 	ModeCmpTest
 	ModeGen
+	ModeCArchive
 )
 
 const (
@@ -353,6 +355,11 @@ func (c *context) compiler() *clang.Cmd {
 	return cmd
 }
 
+func (c *context) link() *llvmlink.Cmd {
+	cmd := c.env.Link()
+	return cmd
+}
+
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
 	pkgs, errPkgs := allPkgs(ctx, initial, verbose)
 	for _, errPkg := range errPkgs {
@@ -628,7 +635,45 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 }
 
+func compileAndLinkCArchive(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
+	tmpDir, err := os.MkdirTemp("", "llgo-c-archive-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+	llfile := filepath.Join(tmpDir, "main.ll")
+	args := []string{"-S", "-o", llfile}
+	args = append(args, "--suppress-warnings") //disable warning: Linking two modules of different data layouts
+	args = append(args, llFiles...)
+	err = ctx.link().Exec(args...)
+	if err != nil {
+		return err
+	}
+	ofile := filepath.Join(tmpDir, "main.o")
+	buildArgs := []string{"-c", "-o", ofile}
+	buildArgs = append(buildArgs, "-Wno-unused-command-line-argument")
+	buildArgs = append(buildArgs, linkArgs...)
+	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
+	//buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
+	//buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
+	buildArgs = append(buildArgs, llfile)
+	if verbose {
+		buildArgs = append(buildArgs, "-v")
+	}
+	cmd := ctx.compiler()
+	cmd.Verbose = verbose
+	err = cmd.Link(buildArgs...)
+	if err != nil {
+		return err
+	}
+	return clang.New("ar").Exec("rcs", app, ofile)
+}
+
 func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
+	if ctx.mode == ModeCArchive {
+		return compileAndLinkCArchive(ctx, app, llFiles, linkArgs, verbose)
+	}
+
 	buildArgs := []string{"-o", app}
 	buildArgs = append(buildArgs, linkArgs...)
 
@@ -733,6 +778,29 @@ _llgo_0:
 		mainDefine, stdioNobuf,
 		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
+	if conf.Mode == ModeCArchive {
+		mainCode = fmt.Sprintf(`; ModuleID = 'main'
+source_filename = "main"
+%s
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+%s
+%s
+%s
+declare void @"%s.init"()
+declare void @"%s.main"()
+define weak void @runtime.init() {
+  ret void
+}
+
+; TODO(lijie): workaround for syscall patch
+define weak void @"syscall.init"() {
+  ret void
+}
+`, declSizeT, stdioDecl,
+			pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath)
+	}
+
 	f, err := os.CreateTemp("", "main*.ll")
 	if err != nil {
 		return "", err
@@ -778,6 +846,10 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		cl.SetDebug(0)
 	}
 	check(err)
+	if ctx.mode == ModeCArchive && aPkg.Name == "main" {
+		ret.BuildExport()
+	}
+
 	aPkg.LPkg = ret
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {

@@ -851,4 +851,27 @@ func (p *Package) WriteFile(file string) (err error) {
 }
 */
 
+// BuildExport add export funcs first instr call @pkg.init
+func (p Package) BuildExport() {
+	init := p.fns[p.Path()+".init"]
+	if init != nil {
+		for _, fn := range p.fns {
+			if fn.export {
+				if entry := fn.impl.EntryBasicBlock(); !entry.IsNil() {
+					first := entry.FirstInstruction()
+					for !first.IsNil() {
+						if first.IsAPHINode().IsNil() {
+							b := p.Prog.ctx.NewBuilder()
+							b.SetInsertPoint(entry, first)
+							b.CreateCall(init.Type.ll, init.impl, nil, "")
+							break
+						}
+						first = llvm.NextInstruction(first)
+					}
+				}
+			}
+		}
+	}
+}
+
 // -----------------------------------------------------------------------------

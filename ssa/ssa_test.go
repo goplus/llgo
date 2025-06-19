@@ -619,3 +619,36 @@ source_filename = "global"
 @"foo/bar.b" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, align 8
 `)
 }
+
+func TestBuildExport(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("main", "foo/bar")
+	params := types.NewTuple(
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	pkg.NewFunc("foo/bar.init", types.NewSignature(nil, nil, nil, false), InGo)
+	pkg.NewFunc("foo/bar.fn1", sig, InGo).MakeBody(1).Return(prog.Val(1))
+	fn := pkg.NewFunc("foo/bar.fn2", sig, InGo)
+	fn.MakeBody(1).Return(prog.Val(1))
+	fn.SetName("demo")
+	fn.SetExport(true)
+	pkg.BuildExport()
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+declare void @"foo/bar.init"()
+
+define i64 @"foo/bar.fn1"(i64 %0, double %1) {
+_llgo_0:
+  ret i64 1
+}
+
+define i64 @demo(i64 %0, double %1) {
+_llgo_0:
+  call void @"foo/bar.init"()
+  ret i64 1
+}
+`)
+}
