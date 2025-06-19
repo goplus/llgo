@@ -33,20 +33,30 @@ var Cmd = &base.Command{
 	Short:     "Compile packages and dependencies",
 }
 
+var passArgs *base.PassArgs
+
 func init() {
 	Cmd.Run = runCmd
-	base.PassBuildFlags(Cmd)
+	passArgs = base.PassBuildFlags(Cmd)
 	flags.AddBuildFlags(&Cmd.Flag)
 	flags.AddOutputFlags(&Cmd.Flag)
 }
 
-func runCmd(cmd *base.Command, args []string) {
+func buildMode(mode string) build.Mode {
+	switch mode {
+	case "c-archive":
+		return build.ModeCArchive
+	}
+	return build.ModeBuild
+}
 
+func runCmd(cmd *base.Command, args []string) {
 	if err := cmd.Flag.Parse(args); err != nil {
 		return
 	}
+	mode := passArgs.GetVar("buildmode")
 
-	conf := build.NewDefaultConf(build.ModeBuild)
+	conf := build.NewDefaultConf(buildMode(mode))
 	conf.Tags = flags.Tags
 	conf.Verbose = flags.Verbose
 	conf.OutFile = flags.OutputFile
