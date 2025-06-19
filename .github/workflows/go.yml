@@ -15,9 +15,10 @@ jobs:
     strategy:
       matrix:
         os:
-          - macos-latest
           - ubuntu-24.04
+          - ubuntu-24.04-arm
         llvm: [19]
+        instance: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +26,16 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+
+      - name: system information
+        run: |
+          uname -a
+          lsb_release -a
+
+      - name: Check disk space after deps
+        run: |
+          echo "Disk space after installing dependencies:"
+          df -h
 
       - name: Clang information
         run: |
@@ -37,16 +48,33 @@ jobs:
         with:
           go-version: "1.24.2"
 
-      - name: Build
-        run: go build -v ./...
-
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test ./...
+        run: |
+          count=1
+          max_runs=10
+          while [ $count -le $max_runs ] && go test -count=1 ./...; do 
+            echo "=== Run #$((count++)) completed ==="
+          done
+          if [ $count -gt $max_runs ]; then
+            echo "Reached maximum of $max_runs test runs without failure"
+            exit 0
+          else
+            echo "Test failed on run #$count"
+            exit 1
+          fi
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
         run: go test -coverprofile="coverage.txt" -covermode=atomic ./...
+      - name: Get Go cache directory
+        id: go-cache
+        run: echo "dir=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Check disk space after go test
+        run: |
+          echo "Disk space after go test:"
+          df -h
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
