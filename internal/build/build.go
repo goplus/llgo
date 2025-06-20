@@ -774,6 +774,10 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		cl.SetDebug(0)
 	}
 	check(err)
+	if ctx.mode == ModeCArchive && aPkg.Name == "main" {
+		ret.BuildExport()
+	}
+
 	aPkg.LPkg = ret
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {
