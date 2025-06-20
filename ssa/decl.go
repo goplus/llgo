@@ -186,6 +186,7 @@ type aFunction struct {
 	freeVars Expr
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
 	hasVArg  bool
+	export   bool
 
 	diFunc DIFunction
 }
@@ -250,6 +251,10 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 		}
 	}
 	return
+}
+
+func (p Function) SetExport(b bool) {
+	p.export = b
 }
 
 // Name returns the function's name.

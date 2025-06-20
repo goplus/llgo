@@ -52,6 +52,16 @@ func (p *PassArgs) Tags() string {
 	return ""
 }
 
+func (p *PassArgs) GetVar(name string) string {
+	prefix := "-" + name + "="
+	for _, v := range p.Args {
+		if strings.HasPrefix(v, prefix) {
+			return v[len(prefix):]
+		}
+	}
+	return ""
+}
+
 func (p *PassArgs) Var(names ...string) {
 	for _, name := range names {
 		p.Flag.Var(&stringValue{p: p, name: name}, name, "")

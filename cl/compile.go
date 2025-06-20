@@ -1048,6 +1048,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		fn := ret.FuncOf(fnName)
 		if fn != nil {
 			fn.SetName(exportName)
+			fn.SetExport(true)
 		}
 	}
 	return
