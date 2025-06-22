@@ -19,6 +19,7 @@ package build
 import (
 	"bytes"
 	"debug/macho"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -67,16 +68,18 @@ const (
 )
 
 type Config struct {
-	Goos      string
-	Goarch    string
-	BinPath   string
-	AppExt    string   // ".exe" on Windows, empty on Unix
-	OutFile   string   // only valid for ModeBuild when len(pkgs) == 1
-	RunArgs   []string // only valid for ModeRun
-	Mode      Mode
-	GenExpect bool // only valid for ModeCmpTest
-	Verbose   bool
-	Tags      string
+	Goos        string
+	Goarch      string
+	BinPath     string
+	AppExt      string   // ".exe" on Windows, empty on Unix
+	OutFile     string   // only valid for ModeBuild when len(pkgs) == 1
+	RunArgs     []string // only valid for ModeRun
+	Mode        Mode
+	GenExpect   bool // only valid for ModeCmpTest
+	Verbose     bool
+	Tags        string
+	GlobalNames map[string][]string // pkg => names
+	GlobalDatas map[string]string   // pkg.name => data
 }
 
 func NewDefaultConf(mode Mode) *Config {
@@ -266,9 +269,16 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, dpkg...)
 
+	// update globals importpath.name=value
+	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
+	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
+
+	global, err := createGlobals(conf, ctx.prog, pkgs)
+	check(err)
+
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
-			linkMainPkg(ctx, pkg, allPkgs, conf, mode, verbose)
+			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
 		}
 	}
 
@@ -429,7 +439,62 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 	return
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Config, mode Mode, verbose bool) {
+var (
+	errXflags = errors.New("-X flag requires argument of the form importpath.name=value")
+)
+
+func addGlobalString(conf *Config, arg string, mainPkgs []string) {
+	eq := strings.Index(arg, "=")
+	dot := strings.LastIndex(arg[:eq+1], ".")
+	if eq < 0 || dot < 0 {
+		panic(errXflags)
+	}
+	pkg := arg[:dot]
+	pkgs := []string{pkg}
+	if pkg == "main" {
+		pkgs = mainPkgs
+	}
+	if conf.GlobalNames == nil {
+		conf.GlobalNames = make(map[string][]string)
+	}
+	if conf.GlobalDatas == nil {
+		conf.GlobalDatas = make(map[string]string)
+	}
+	for _, pkg := range pkgs {
+		name := pkg + arg[dot:eq]
+		value := arg[eq+1:]
+		if _, ok := conf.GlobalDatas[name]; !ok {
+			conf.GlobalNames[pkg] = append(conf.GlobalNames[pkg], name)
+		}
+		conf.GlobalDatas[name] = value
+	}
+}
+
+func createGlobals(conf *Config, prog llssa.Program, pkgs []*aPackage) (llssa.Package, error) {
+	if len(conf.GlobalDatas) == 0 {
+		return nil, nil
+	}
+	for _, pkg := range pkgs {
+		if pkg.ExportFile == "" {
+			continue
+		}
+		if names, ok := conf.GlobalNames[pkg.PkgPath]; ok {
+			err := pkg.LPkg.Undefined(names...)
+			if err != nil {
+				return nil, err
+			}
+			pkg.ExportFile = pkg.ExportFile + "-global.ll"
+			os.WriteFile(pkg.ExportFile, []byte(pkg.LPkg.String()), 0644)
+		}
+	}
+	global := prog.NewPackage("", "global")
+	for name, value := range conf.GlobalDatas {
+		global.AddGlobalString(name, value)
+	}
+	return global, nil
+}
+
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	app := conf.OutFile
@@ -462,6 +527,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			llFiles = append(llFiles, aPkg.LLFiles...)
+			llFiles = append(llFiles, aPkg.ExportFile)
 			need1, need2 := isNeedRuntimeOrPyInit(ctx, p)
 			if !needRuntime {
 				needRuntime = need1
@@ -475,6 +541,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, conf *Co
 	check(err)
 	// defer os.Remove(entryLLFile)
 	llFiles = append(llFiles, entryLLFile)
+
+	if global != nil {
+		export := pkg.ExportFile + "-global.ll"
+		os.WriteFile(export, []byte(global.String()), 0666)
+		llFiles = append(llFiles, export)
+	}
 
 	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
