@@ -26,12 +26,14 @@ import (
 	"github.com/goplus/llgo/internal/packages"
 )
 
+/*
 var (
 	// TODO(xsw): complete clean flags
 	cleanFlags = map[string]bool{
 		"-v": false, // -v: print the paths of packages as they are clean
 	}
 )
+*/
 
 func Clean(patterns []string, conf *Config) {
 	if conf.Goos == "" {

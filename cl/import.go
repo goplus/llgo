@@ -174,13 +174,18 @@ start:
 	syms.initLinknames(p)
 }
 
-func (p *context) initFiles(pkgPath string, files []*ast.File) {
+func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false)
+				if !p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false) && cPkg {
+					// package C (https://github.com/goplus/llgo/issues/1165)
+					if decl.Recv == nil && token.IsExported(inPkgName) {
+						p.prog.SetLinkname(fullName, strings.TrimPrefix(inPkgName, "X"))
+					}
+				}
 			case *ast.GenDecl:
 				switch decl.Tok {
 				case token.VAR:
@@ -266,51 +271,58 @@ func (p *context) collectSkip(line string, prefix int) {
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
+func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
 	if doc != nil {
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
-			found := p.initLinkname(line, func(name string) (_ string, _, ok bool) {
+			ret := p.initLinkname(line, func(name string) (_ string, _, ok bool) {
 				return fullName, isVar, name == inPkgName
 			})
-			if !found {
-				break
+			if ret != unknownDirective {
+				return ret == hasLinkname
 			}
 		}
 	}
+	return false
 }
 
-func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) bool {
+const (
+	noDirective = iota
+	hasLinkname
+	unknownDirective = -1
+)
+
+func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) int {
 	const (
-		linkname   = "//go:linkname "
-		llgolink   = "//llgo:link "
-		llgolink2  = "// llgo:link "
-		exportName = "//export "
-		directive  = "//go:"
+		linkname  = "//go:linkname "
+		llgolink  = "//llgo:link "
+		llgolink2 = "// llgo:link "
+		export    = "//export "
+		directive = "//go:"
 	)
 	if strings.HasPrefix(line, linkname) {
 		p.initLink(line, len(linkname), f)
-		return true
+		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink2) {
 		p.initLink(line, len(llgolink2), f)
-		return true
+		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), f)
-		return true
-	} else if strings.HasPrefix(line, exportName) {
-		p.initCgoExport(line, len(exportName), f)
-		return true
+		return hasLinkname
+	} else if strings.HasPrefix(line, export) {
+		p.initCgoExport(line, len(export), f)
+		return hasLinkname
 	} else if strings.HasPrefix(line, directive) {
 		// skip unknown annotation but continue to parse the next annotation
-		return true
+		return unknownDirective
 	}
-	return false
+	return noDirective
 }
 
 func (p *context) initCgoExport(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	name := strings.TrimSpace(line[prefix:])
 	if fullName, _, ok := f(name); ok {
-		p.cgoExports[fullName] = name
+		p.cgoExports[fullName] = name // TODO(xsw): why not use prog.SetLinkname?
 	}
 }
 
@@ -497,7 +509,7 @@ const (
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 
-func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
+func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 	var pkg *types.Package
 	var orgName string
 	if origin := fn.Origin(); origin != nil {

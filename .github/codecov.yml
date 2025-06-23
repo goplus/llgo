@@ -2,6 +2,7 @@ coverage:
   ignore:
     - "chore"
     - "cmd"
+    - "cl/cltest"
     - "internal/build"
     - "internal/llgen"
     - "internal/mockable"

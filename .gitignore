@@ -15,6 +15,7 @@ stories*.bin
 .DS_Store
 err.log
 numpy.txt
+result.txt
 
 _go/
 _runtime/

@@ -213,15 +213,8 @@ func isCgoVar(name string) bool {
 }
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
-	pkgTypes, name, ftype := p.funcName(f, true)
+	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
-		/*
-			if ftype == pyFunc {
-				// TODO(xsw): pyMod == ""
-				fnName := pysymPrefix + p.pyMod + "." + name
-				return nil, pkg.NewPyFunc(fnName, f.Signature, call), pyFunc
-			}
-		*/
 		return nil, nil, ignoredFunc
 	}
 	sig := f.Signature
@@ -1012,7 +1005,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		cgoSymbols: make([]string, 0, 128),
 	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files)
+	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
 	ret.SetPatch(ctx.patchType)
 	ret.SetResolveLinkname(ctx.resolveLinkname)

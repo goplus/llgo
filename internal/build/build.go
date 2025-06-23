@@ -184,7 +184,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	prog := llssa.NewProgram(target)
 	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
 		if arch == "wasm" {
-			sizes = &types.StdSizes{4, 4}
+			sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
 		}
 		return prog.TypeSizes(sizes)
 	}
@@ -803,7 +803,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
 		if IsCheckEnable() {
-			if err, msg := llcCheck(ctx.env, pkg.ExportFile); err != nil {
+			if msg, err := llcCheck(ctx.env, pkg.ExportFile); err != nil {
 				fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkg.PkgPath, pkg.ExportFile, msg)
 			}
 		}
@@ -811,7 +811,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	return nil
 }
 
-func llcCheck(env *llvm.Env, exportFile string) (err error, msg string) {
+func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
@@ -904,6 +904,7 @@ func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Pac
 	return pkgSSA
 }
 
+/*
 var (
 	// TODO(xsw): complete build flags
 	buildFlags = map[string]bool{
@@ -922,6 +923,7 @@ var (
 		"-ldflags":   true,  // --ldflags 'flag list': arguments to pass on each go tool link invocation
 	}
 )
+*/
 
 const llgoDebug = "LLGO_DEBUG"
 const llgoDbgSyms = "LLGO_DEBUG_SYMBOLS"
