@@ -772,8 +772,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		llssa.SetDebug(llssa.DbgFlagAll)
 		cl.SetDebug(cl.DbgFlagAll)
 	}
-
-	ret, externs, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+	ret, externs, err := cl.NewPackage(ctx.prog, aPkg.SSA, syntax, &cl.Config{Patches: ctx.patches})
 	if showDetail {
 		llssa.SetDebug(0)
 		cl.SetDebug(0)

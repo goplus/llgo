@@ -123,7 +123,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	}
 }
 
-func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
+func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool, exportInit bool) {
 	t.Helper()
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fname, src, parser.ParseComments)
@@ -147,7 +147,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
 	prog := ssatest.NewProgramEx(t, nil, imp)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
 
-	ret, err := cl.NewPackage(prog, foo, files)
+	ret, _, err := cl.NewPackage(prog, foo, files, &cl.Config{ExportInit: exportInit})
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}

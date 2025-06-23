@@ -27,9 +27,9 @@ import (
 	"github.com/goplus/llgo/internal/build"
 )
 
-func testCompile(t *testing.T, src, expected string) {
+func testCompile(t *testing.T, src, expected string, exportinit bool) {
 	t.Helper()
-	cltest.TestCompileEx(t, src, "foo.go", expected, false)
+	cltest.TestCompileEx(t, src, "foo.go", expected, false, exportinit)
 }
 
 func TestFromTestgo(t *testing.T) {
@@ -88,7 +88,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
-`)
+`, false)
 }
 
 func TestBasicFunc(t *testing.T) {
@@ -119,5 +119,38 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
-`)
+`, false)
+}
+
+func TestExportFunc(t *testing.T) {
+	testCompile(t, `package foo
+
+//export fn
+func fn(a int32, b float64) int32 {
+	return 1
+}
+`, `; ModuleID = 'foo'
+source_filename = "foo"
+
+@"foo.init$guard" = global i1 false, align 1
+
+define i32 @fn(i32 %0, double %1) {
+_llgo_0:
+  call void @foo.init()
+  ret i32 1
+}
+
+define void @foo.init() {
+_llgo_0:
+  %0 = load i1, ptr @"foo.init$guard", align 1
+  br i1 %0, label %_llgo_2, label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  store i1 true, ptr @"foo.init$guard", align 1
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
+`, true)
 }

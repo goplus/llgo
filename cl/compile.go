@@ -969,19 +969,18 @@ type Patch struct {
 // Patches is patches of some packages.
 type Patches = map[string]Patch
 
-// NewPackage compiles a Go package to LLVM IR package.
-func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	ret, _, err = NewPackageEx(prog, nil, pkg, files)
-	return
+type Config struct {
+	Patches    Patches // patches of packages
+	ExportInit bool    // export func insert pkg.init
 }
 
-// NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
+// NewPackage compiles a Go package to LLVM IR package.
+func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File, conf *Config) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
-	patch, hasPatch := patches[pkgPath]
+	patch, hasPatch := conf.Patches[pkgPath]
 	if hasPatch {
 		pkgTypes = patch.Types
 		pkg.Pkg = pkgTypes
@@ -1002,7 +1001,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		goProg:  pkgProg,
 		goTyps:  pkgTypes,
 		goPkg:   pkg,
-		patches: patches,
+		patches: conf.Patches,
 		skips:   make(map[string]none),
 		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
 		loaded: map[*types.Package]*pkgInfo{
@@ -1044,10 +1043,16 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		fn()
 	}
 	externs = ctx.cgoSymbols
+
+	init := pkgPath + ".init"
+	fnInit := ret.FuncOf(init)
 	for fnName, exportName := range ctx.cgoExports {
 		fn := ret.FuncOf(fnName)
 		if fn != nil {
 			fn.SetName(exportName)
+			if fnInit != nil && init != fnName {
+				fn.InsertInitial(fnInit.Expr)
+			}
 		}
 	}
 	return
