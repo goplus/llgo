@@ -367,4 +367,19 @@ func (p Function) Inline(inline inlineAttr) {
 	p.impl.AddFunctionAttr(inlineAttr)
 }
 
+func (p Function) InsertInitial(fn Expr, args ...Expr) {
+	if entry := p.impl.EntryBasicBlock(); !entry.IsNil() {
+		first := entry.FirstInstruction()
+		for !first.IsNil() {
+			if first.IsAPHINode().IsNil() {
+				b := p.NewBuilder()
+				b.impl.SetInsertPoint(entry, first)
+				b.Call(fn, args...)
+				return
+			}
+			first = llvm.NextInstruction(first)
+		}
+	}
+}
+
 // -----------------------------------------------------------------------------
