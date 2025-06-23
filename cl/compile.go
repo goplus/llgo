@@ -1005,7 +1005,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		cgoSymbols: make([]string, 0, 128),
 	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files)
+	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
 	ret.SetPatch(ctx.patchType)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
