@@ -497,7 +497,7 @@ const (
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 
-func (p *context) funcName(fn *ssa.Function, ignore bool) (*types.Package, string, int) {
+func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 	var pkg *types.Package
 	var orgName string
 	if origin := fn.Origin(); origin != nil {

@@ -213,15 +213,8 @@ func isCgoVar(name string) bool {
 }
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
-	pkgTypes, name, ftype := p.funcName(f, true)
+	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
-		/*
-			if ftype == pyFunc {
-				// TODO(xsw): pyMod == ""
-				fnName := pysymPrefix + p.pyMod + "." + name
-				return nil, pkg.NewPyFunc(fnName, f.Signature, call), pyFunc
-			}
-		*/
 		return nil, nil, ignoredFunc
 	}
 	sig := f.Signature

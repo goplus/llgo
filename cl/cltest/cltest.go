@@ -18,6 +18,7 @@ package cltest
 
 import (
 	"archive/zip"
+	"bytes"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -35,6 +36,7 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/ssa/ssatest"
+	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
@@ -112,14 +114,13 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 		return
 	}
 	log.Println("Parsing", pkgDir)
+	v := llgen.GenFrom(pkgDir)
 	out := pkgDir + "/out.ll"
-	b, err := os.ReadFile(out)
-	if err != nil {
-		t.Fatal("ReadFile failed:", err)
-	}
-	expected := string(b)
-	if v := llgen.GenFrom(pkgDir); v != expected && expected != ";" { // expected == ";" means skipping out.ll
-		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+	b, _ := os.ReadFile(out)
+	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
+		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
+			t.Fatal("llgen.GenFrom: unexpect result")
+		}
 	}
 }
 
