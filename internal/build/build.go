@@ -252,7 +252,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	output := conf.OutFile != ""
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), IsRpathChangeEnabled())
 	check(err)
-	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf, export}
+	ctx := &context{env, cfg, progSSA, prog, dedup, patches, make(map[string]none), initial, mode, 0, output, make(map[*packages.Package]bool), make(map[*packages.Package]bool), conf, export, false}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -280,6 +280,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		if needLink(pkg, mode) {
 			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
 		}
+	}
+
+	if mode == ModeTest && ctx.testFail {
+		mockable.Exit(1)
 	}
 
 	return dpkg, nil
@@ -342,6 +346,8 @@ type context struct {
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
+
+	testFail bool
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -587,7 +593,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		if s := cmd.ProcessState; s != nil {
 			exitCode := s.ExitCode()
 			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
-			mockable.Exit(exitCode)
+			if !ctx.testFail && exitCode != 0 {
+				ctx.testFail = true
+			}
 		}
 	case ModeRun:
 		args := make([]string, 0, len(conf.RunArgs)+1)
