@@ -58,6 +58,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestTest(t *testing.T) {
+	// fixme:with builtin package test in a llgo test ./... will cause duplicate symbol error
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
 }
 

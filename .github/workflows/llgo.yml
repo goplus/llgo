@@ -137,8 +137,7 @@ jobs:
           go-version: ${{matrix.go}}
 
       - name: run llgo test
-        run: |
-          llgo test ./...
+        run: bash .github/workflows/llgo_test.sh
 
   hello:
     continue-on-error: true
