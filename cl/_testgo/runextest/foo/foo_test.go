@@ -3,7 +3,7 @@ package foo_test
 import (
 	"testing"
 
-	"github.com/goplus/llgo/test/foo"
+	"github.com/goplus/llgo/cl/_testgo/runextest/foo"
 )
 
 func TestFoo(t *testing.T) {
