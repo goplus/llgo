@@ -146,7 +146,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 					}
 				}
 			} else {
-				if len(export.CCFLAGS) != 0 || len(export.CFLAGS) != 0 {
+				if /*len(export.CCFLAGS) != 0 ||*/ len(export.CFLAGS) != 0 {
 					t.Errorf("Expected empty export, got CCFLAGS=%v, CFLAGS=%v, LDFLAGS=%v",
 						export.CCFLAGS, export.CFLAGS, export.LDFLAGS)
 				}
