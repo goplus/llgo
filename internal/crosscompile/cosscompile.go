@@ -36,7 +36,6 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 			"-Wno-override-module",
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
-			"-Wno-override-module",
 		}
 
 		// Add OS-specific flags
@@ -56,6 +55,11 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 		case "windows": // lld-link (Windows)
 			// TODO(lijie): Add options for Windows.
 		default: // ld.lld (Unix)
+			export.CCFLAGS = append(
+				export.CCFLAGS,
+				"-fdata-sections",
+				"-ffunction-sections",
+			)
 			export.LDFLAGS = append(
 				export.LDFLAGS,
 				"-fdata-sections",
@@ -105,6 +109,8 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 			"-target", targetTriple,
 			"--sysroot=" + sysrootDir,
 			"-resource-dir=" + libclangDir,
+			"-matomics",
+			"-mbulk-memory",
 		}
 		export.CFLAGS = []string{
 			"-I" + includeDir,
@@ -138,6 +144,10 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 		}
 		// Add thread support if enabled
 		if wasiThreads {
+			export.CCFLAGS = append(
+				export.CCFLAGS,
+				"-pthread",
+			)
 			export.LDFLAGS = append(
 				export.LDFLAGS,
 				"-lwasi-emulated-pthread",

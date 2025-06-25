@@ -21,6 +21,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/callpy.init$guard", align 1
+  call void @"github.com/goplus/lib/py.init"()
   call void @"github.com/goplus/lib/py/math.init"()
   call void @"github.com/goplus/lib/py/os.init"()
   call void @"github.com/goplus/lib/py/std.init"()
@@ -50,6 +51,8 @@ _llgo_0:
   %9 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %8, ptr %7, ptr %4, ptr null)
   ret void
 }
+
+declare void @"github.com/goplus/lib/py.init"()
 
 declare void @"github.com/goplus/lib/py/math.init"()
 

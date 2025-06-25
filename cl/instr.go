@@ -394,10 +394,31 @@ func (p *context) funcKind(vfn ssa.Value) int {
 	return fnNormal
 }
 
+func usingCgo(pkg *types.Package) bool {
+	var n int
+	for _, im := range pkg.Imports() {
+		switch im.Path() {
+		case "syscall", "runtime/cgo":
+			n++
+			if n == 2 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (p *context) pkgNoInit(pkg *types.Package) bool {
 	p.ensureLoaded(pkg)
 	if i, ok := p.loaded[pkg]; ok {
-		return i.kind >= PkgNoInit
+		switch i.kind {
+		case PkgNoInit, PkgDeclOnly:
+			return true
+		case PkgLinkIR, PkgLinkExtern:
+			if usingCgo(pkg) {
+				return true
+			}
+		}
 	}
 	return false
 }
