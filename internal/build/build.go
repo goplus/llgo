@@ -251,7 +251,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), IsRpathChangeEnabled())
+	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled())
 	check(err)
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
@@ -568,34 +568,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		llFiles = append(llFiles, export)
 	}
 
-	// add rpath and find libs
-	exargs := make([]string, 0, ctx.nLibdir<<1)
-	libs := make([]string, 0, ctx.nLibdir*3)
-	if IsRpathChangeEnabled() {
-		for _, arg := range linkArgs {
-			if strings.HasPrefix(arg, "-L") {
-				exargs = append(exargs, "-rpath", arg[2:])
-			} else if strings.HasPrefix(arg, "-l") {
-				libs = append(libs, arg[2:])
-			}
-		}
-	}
-	linkArgs = append(linkArgs, exargs...)
-
 	err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
 	check(err)
-
-	if IsRpathChangeEnabled() && ctx.buildConf.Goos == "darwin" {
-		dylibDeps := make([]string, 0, len(libs))
-		for _, lib := range libs {
-			dylibDep := findDylibDep(app, lib)
-			if dylibDep != "" {
-				dylibDeps = append(dylibDeps, dylibDep)
-			}
-		}
-		err := ctx.env.InstallNameTool().ChangeToRpath(app, dylibDeps...)
-		check(err)
-	}
 
 	switch mode {
 	case ModeTest:
@@ -971,7 +945,6 @@ const llgoDbgSyms = "LLGO_DEBUG_SYMBOLS"
 const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
 const llgoCheck = "LLGO_CHECK"
-const llgoRpathChange = "LLGO_RPATH_CHANGE"
 const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
 const llgoWasiThreads = "LLGO_WASI_THREADS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
@@ -1016,10 +989,6 @@ func IsOptimizeEnabled() bool {
 
 func IsCheckEnable() bool {
 	return isEnvOn(llgoCheck, false)
-}
-
-func IsRpathChangeEnabled() bool {
-	return isEnvOn(llgoRpathChange, false)
 }
 
 func IsWasiThreadsEnabled() bool {

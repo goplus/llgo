@@ -25,7 +25,7 @@ func cacheDir() string {
 	return filepath.Join(env.LLGoCacheDir(), "crosscompile")
 }
 
-func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err error) {
+func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	targetTriple := llvm.GetTargetTriple(goos, goarch)
 
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
@@ -41,13 +41,6 @@ func Use(goos, goarch string, wasiThreads, changeRpath bool) (export Export, err
 		// Add OS-specific flags
 		switch goos {
 		case "darwin": // ld64.lld (macOS)
-			if changeRpath {
-				export.LDFLAGS = append(
-					export.LDFLAGS,
-					"-rpath", "@loader_path",
-					"-rpath", "@loader_path/../lib",
-				)
-			}
 			export.LDFLAGS = append(
 				export.LDFLAGS,
 				"-Xlinker", "-dead_strip",
