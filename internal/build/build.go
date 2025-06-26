@@ -571,13 +571,16 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	// add rpath and find libs
 	exargs := make([]string, 0, ctx.nLibdir<<1)
 	libs := make([]string, 0, ctx.nLibdir*3)
-	if IsRpathChangeEnabled() {
-		for _, arg := range linkArgs {
-			if strings.HasPrefix(arg, "-L") {
-				exargs = append(exargs, "-rpath", arg[2:])
-			} else if strings.HasPrefix(arg, "-l") {
-				libs = append(libs, arg[2:])
-			}
+
+	// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
+	// This is to ensure the final executable can locate libraries with a relocatable install_name
+	// (e.g., "@rpath/libfoo.dylib") at runtime.
+	for _, arg := range linkArgs {
+		if strings.HasPrefix(arg, "-L") {
+			exargs = append(exargs, "-rpath", arg[2:])
+		} else if strings.HasPrefix(arg, "-l") {
+			// need remove the libs collect when rpath mode is removed
+			libs = append(libs, arg[2:])
 		}
 	}
 	linkArgs = append(linkArgs, exargs...)
