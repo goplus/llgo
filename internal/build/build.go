@@ -38,6 +38,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
@@ -842,8 +843,37 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		}
 		return exportFile, os.Rename(f.Name(), exportFile)
 	}
+
+	// Apply CABI transformation before compiling
+	tempIR, err := os.CreateTemp("", "cabi_temp-*.ll")
+	if err != nil {
+		return "", err
+	}
+	tempIRPath := tempIR.Name()
+	err = tempIR.Close()
+	if err != nil {
+		return exportFile, err
+	}
+	defer os.Remove(tempIRPath)
+
+	// Apply CABI transformation
+	threshold := cabi.DefaultThreshold(ctx.buildConf.Goos, ctx.buildConf.Goarch)
+	opts := cabi.TransformOptions{
+		LargeTypeThreshold: threshold,
+		Verbose:            ctx.buildConf.Verbose,
+	}
+
+	err = cabi.TransformIR(ctx.env, f.Name(), tempIRPath, opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "CABI transformation failed for %s: %v\n", pkgPath, err)
+		// Fall back to original file if transformation fails
+		tempIRPath = f.Name()
+	} else if ctx.buildConf.Verbose {
+		fmt.Fprintf(os.Stderr, "CABI transformation completed for %s\n", pkgPath)
+	}
+
 	exportFile += ".o"
-	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
+	args := []string{"-o", exportFile, "-c", tempIRPath, "-Wno-override-module"}
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
