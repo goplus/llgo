@@ -6,6 +6,10 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
+const (
+	LLGoFiles = "_wrap/debug_wasm.c"
+)
+
 type Info struct {
 	Fname *c.Char
 	Fbase c.Pointer
@@ -31,3 +35,10 @@ type Frame struct {
 func StackTrace(skip int, fn func(fr *Frame) bool) {
 	panic("not implemented")
 }
+
+func PrintStack(skip int) {
+	print_stack(c.Int(skip + 4))
+}
+
+//go:linkname print_stack C.llgo_print_stack
+func print_stack(skip c.Int)
