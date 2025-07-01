@@ -62,13 +62,7 @@ func Rethrow(link *Defer) {
 	if ptr := excepKey.Get(); ptr != nil {
 		if link == nil {
 			TracePanic(*(*any)(ptr))
-			debug.StackTrace(0, func(fr *debug.Frame) bool {
-				var info debug.Info
-				debug.Addrinfo(unsafe.Pointer(fr.PC), &info)
-				c.Fprintf(c.Stderr, c.Str("[0x%08X %s+0x%x, SP = 0x%x]\n"), fr.PC, fr.Name, fr.Offset, fr.SP)
-				return true
-			})
-
+			debug.PrintStack(2)
 			c.Free(ptr)
 			c.Exit(2)
 		} else {

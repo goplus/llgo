@@ -44,3 +44,12 @@ func StackTrace(skip int, fn func(fr *Frame) bool) {
 		return 1
 	})
 }
+
+func PrintStack(skip int) {
+	StackTrace(skip+1, func(fr *Frame) bool {
+		var info Info
+		Addrinfo(unsafe.Pointer(fr.PC), &info)
+		c.Fprintf(c.Stderr, c.Str("[0x%08X %s+0x%x, SP = 0x%x]\n"), fr.PC, fr.Name, fr.Offset, fr.SP)
+		return true
+	})
+}
