@@ -122,17 +122,14 @@ bool llgo_emval_equals(EM_VAL first, EM_VAL second) {
 EM_VAL llgo_emval_method_call(EM_VAL object, const char* name, EM_VAL args[], int nargs, int *error) {
     std::vector<TYPEID> arr;
     arr.resize(nargs+1);
-    std::vector<val> _args;
-    _args.resize(nargs);
     std::vector<GenericWireType> elements;
     elements.resize(nargs);
     GenericWireType *cursor = elements.data();
     arr[0] = typeid_val;
     for (int i = 0; i < nargs; i++) {
         arr[i+1] = typeid_val;
-        val v = val::take_ownership(args[i]);
-        _args[i] = v;
-        writeGenericWireTypes(cursor, v); 
+        _emval_incref(args[i]);
+        writeGenericWireTypes(cursor, args[i]);
     }
     EM_METHOD_CALLER caller = _emval_get_method_caller(nargs+1,&arr[0],EM_METHOD_CALLER_KIND::FUNCTION);
     EM_GENERIC_WIRE_TYPE ret;
@@ -141,7 +138,7 @@ EM_VAL llgo_emval_method_call(EM_VAL object, const char* name, EM_VAL args[], in
         ret = _emval_call_method(caller, object, name, &destructors, elements.data());        
     } catch(const emscripten::val& jsErr) {
         printf("error\n");
-        *error = 1; 
+        *error = 1;
         return EM_VAL(internal::_EMVAL_UNDEFINED);
     }
     return fromGenericWireType<val>(ret).release_ownership();   
@@ -153,30 +150,27 @@ FUNCTION = 0,
 CONSTRUCTOR = 1,
 */
 EM_VAL llgo_emval_call(EM_VAL fn, EM_VAL args[], int nargs, int kind, int *error) {
-    std::vector<TYPEID> arr;
-    arr.resize(nargs+1);
-    std::vector<val> _args;
-    _args.resize(nargs);
-    std::vector<GenericWireType> elements;
-    elements.resize(nargs);
-    GenericWireType *cursor = elements.data();
-    arr[0] = typeid_val;
-    for (int i = 0; i < nargs; i++) {
-        arr[i+1] = typeid_val;
-        val v = val::take_ownership(args[i]);
-        _args[i] = v;
-        writeGenericWireTypes(cursor, v); 
-    }
-    EM_METHOD_CALLER caller = _emval_get_method_caller(nargs+1,&arr[0],EM_METHOD_CALLER_KIND(kind));
-    EM_GENERIC_WIRE_TYPE ret;
-    try {
-        EM_DESTRUCTORS destructors = nullptr;
-        ret = _emval_call(caller, fn, &destructors, elements.data());
-    } catch(const emscripten::val& jsErr) {
-       *error = 1; 
-        return EM_VAL(internal::_EMVAL_UNDEFINED);
-    }
-    return fromGenericWireType<val>(ret).release_ownership();
+   std::vector<TYPEID> arr;
+   arr.resize(nargs+1);
+   std::vector<GenericWireType> elements;
+   elements.resize(nargs);
+   GenericWireType *cursor = elements.data();
+   arr[0] = typeid_val;
+   for (int i = 0; i < nargs; i++) {
+       arr[i+1] = typeid_val;
+       _emval_incref(args[i]);
+       writeGenericWireTypes(cursor, args[i]);
+   }
+   EM_METHOD_CALLER caller = _emval_get_method_caller(nargs+1,&arr[0],EM_METHOD_CALLER_KIND(kind));
+   EM_GENERIC_WIRE_TYPE ret;
+   try {
+       EM_DESTRUCTORS destructors = nullptr;
+       ret = _emval_call(caller, fn, &destructors, elements.data());
+   } catch(const emscripten::val& jsErr) {
+       *error = 1;
+       return EM_VAL(internal::_EMVAL_UNDEFINED);
+   }
+   return fromGenericWireType<val>(ret).release_ownership();
 }
 
 /*
