@@ -173,25 +173,13 @@ EM_VAL llgo_emval_call(EM_VAL fn, EM_VAL args[], int nargs, int kind, int *error
    return fromGenericWireType<val>(ret).release_ownership();
 }
 
-/*
-TYPEID llgo_emval_typeid_void() {
-    return take_typeid<void>();
+EM_VAL llgo_emval_memory_view_uint8(size_t length, uint8_t *data) {
+    val view{ typed_memory_view<uint8_t>(length,data) };
+    return view.release_ownership();
 }
-
-TYPEID llgo_emval_typeid_double() {
-    return take_typeid<double>();
-}
-
-TYPEID llgo_emval_typeid_string() {
-    return take_typeid<std::string>();
-}
-
-TYPEID llgo_emval_typeid_val() {
-    return take_typeid<val>();
-}
-*/
 
 void llgo_emval_dump(EM_VAL v) {
+    _emval_incref(v);
     val console = val::global("console");
     console.call<void>("log", val::take_ownership(v));
 }
