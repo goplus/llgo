@@ -76,23 +76,30 @@ func ensurePassLibrary(env *llvm.Env) (string, error) {
 	buildMutex.Lock()
 	defer buildMutex.Unlock()
 
-	// Check if the library already exists
+	// Get the path to the pass source code
+	srcPath := filepath.Join(passDir(), "InPlaceCABITransformPass.cpp")
+	if _, err := os.Stat(srcPath); err != nil {
+		return "", fmt.Errorf("CABI transform pass source not found at %s: %w", srcPath, err)
+	}
+
+	// Check if the library already exists and is up-to-date
 	libPath := passLibPath()
-	if _, err := os.Stat(libPath); err == nil {
-		return libPath, nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return "", err
+	libStat, libErr := os.Stat(libPath)
+	srcStat, srcErr := os.Stat(srcPath)
+	
+	if libErr == nil && srcErr == nil {
+		// Both files exist, check if library is newer than source
+		if libStat.ModTime().After(srcStat.ModTime()) {
+			return libPath, nil
+		}
+		// Source is newer, need to rebuild
+	} else if !errors.Is(libErr, fs.ErrNotExist) {
+		return "", libErr
 	}
 
 	// Create build directory
 	if err := os.MkdirAll(buildDir(), 0755); err != nil {
 		return "", fmt.Errorf("failed to create build directory: %w", err)
-	}
-
-	// Get the path to the pass source code
-	srcPath := filepath.Join(passDir(), "InPlaceCABITransformPass.cpp")
-	if _, err := os.Stat(srcPath); err != nil {
-		return "", fmt.Errorf("CABI transform pass source not found at %s: %w", srcPath, err)
 	}
 
 	// Compile the pass
