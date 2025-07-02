@@ -49,13 +49,11 @@ struct InPlaceCABITransformPass
       }
     }
 
-    // Skip actual transformation for now
-    // TODO: Re-enable after debugging
-    // for (Function *F : FunctionsToTransform) {
-    //   if (transformFunctionInPlace(*F, M)) {
-    //     Changed = true;
-    //   }
-    // }
+    for (Function *F : FunctionsToTransform) {
+      if (transformFunctionInPlace(*F, M)) {
+        Changed = true;
+      }
+    }
 
     return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
@@ -240,10 +238,6 @@ private:
 
       OldCall->eraseFromParent();
     }
-
-    // For now, skip updating non-call references to avoid crashes
-    // TODO: Implement proper handling of function pointer references
-    errs() << "  Skipping non-call reference updates for safety\n";
 
     // Replace old function with new function (same name)
     std::string OriginalName = F.getName().str();
