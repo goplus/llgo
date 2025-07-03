@@ -217,7 +217,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	if ftype != goFunc {
 		return nil, nil, ignoredFunc
 	}
-	sig := f.Signature
+	sig := p.patchType(f.Signature).(*types.Signature)
 	state := p.state
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
 	if isInit && state == pkgHasPatch {
@@ -1106,21 +1106,50 @@ func (p *context) type_(typ types.Type, bg llssa.Background) llssa.Type {
 	return p.prog.Type(p.patchType(typ), bg)
 }
 
-func (p *context) patchType(typ types.Type) types.Type {
+func (p *context) patchType(typ types.Type) (r types.Type) {
+	r, _ = p._patchType(typ)
+	return
+}
+
+func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 	switch typ := typ.(type) {
 	case *types.Pointer:
-		return types.NewPointer(p.patchType(typ.Elem()))
+		if t, ok := p._patchType(typ.Elem()); ok {
+			return types.NewPointer(t), true
+		}
 	case *types.Named:
 		o := typ.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					return p.prog.Type(instantiate(obj.Type(), typ), llssa.InGo).RawType()
+					raw := p.prog.Type(instantiate(obj.Type(), typ), llssa.InGo).RawType()
+					return raw, typ != raw
 				}
 			}
 		}
+	case *types.Tuple:
+		var patched bool
+		vars := make([]*types.Var, typ.Len())
+		for i := 0; i < typ.Len(); i++ {
+			v := typ.At(i)
+			if t, ok := p._patchType(v.Type()); ok {
+				vars[i] = types.NewVar(v.Pos(), v.Pkg(), v.Name(), t)
+				patched = true
+			} else {
+				vars[i] = v
+			}
+		}
+		if patched {
+			return types.NewTuple(vars...), true
+		}
+	case *types.Signature:
+		params, ok1 := p._patchType(typ.Params())
+		results, ok2 := p._patchType(typ.Results())
+		if ok1 || ok2 {
+			return types.NewSignature(typ.Recv(), params.(*types.Tuple), results.(*types.Tuple), typ.Variadic()), true
+		}
 	}
-	return typ
+	return typ, false
 }
 
 func instantiate(orig types.Type, t *types.Named) (typ types.Type) {
