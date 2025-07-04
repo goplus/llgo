@@ -666,7 +666,13 @@ func (e *ValueError) Error() string {
 // It panics if src is not a Uint8Array or Uint8ClampedArray.
 // It returns the number of bytes copied, which will be the minimum of the lengths of src and dst.
 func CopyBytesToGo(dst []byte, src Value) int {
-	return 0
+	if !(emval_instanceof(src, uint8Array) || emval_instanceof(src, uint8ClampedArray)) {
+		return 0
+	}
+	toCopy := src.Call("subarray", 0, len(dst))
+	view := emval_memory_view_uint8(uintptr(len(dst)), *(**byte)(unsafe.Pointer(&dst)))
+	view.Call("set", toCopy)
+	return toCopy.Length()
 	// n, ok := copyBytesToGo(dst, src.ref)
 	// runtime.KeepAlive(src)
 	// if !ok {
@@ -674,6 +680,23 @@ func CopyBytesToGo(dst []byte, src Value) int {
 	// }
 	// return n
 }
+
+/*
+	// func copyBytesToGo(dst []byte, src ref) (int, bool)
+	"syscall/js.copyBytesToGo": (sp) => {
+		sp >>>= 0;
+		const dst = loadSlice(sp + 8);
+		const src = loadValue(sp + 32);
+		if (!(src instanceof Uint8Array || src instanceof Uint8ClampedArray)) {
+			this.mem.setUint8(sp + 48, 0);
+			return;
+		}
+		const toCopy = src.subarray(0, dst.length);
+		dst.set(toCopy);
+		setInt64(sp + 40, toCopy.length);
+		this.mem.setUint8(sp + 48, 1);
+	},
+*/
 
 // copyBytesToGo copies bytes from src to dst.
 //
@@ -688,7 +711,13 @@ func CopyBytesToGo(dst []byte, src Value) int {
 // It panics if dst is not a Uint8Array or Uint8ClampedArray.
 // It returns the number of bytes copied, which will be the minimum of the lengths of src and dst.
 func CopyBytesToJS(dst Value, src []byte) int {
-	return 0
+	if !(emval_instanceof(dst, uint8Array) || emval_instanceof(dst, uint8ClampedArray)) {
+		return 0
+	}
+	view := emval_memory_view_uint8(uintptr(len(src)), *(**byte)(unsafe.Pointer(&src)))
+	toCopy := view.Call("subarray", 0, dst.Length())
+	dst.Call("set", toCopy)
+	return toCopy.Length()
 	// n, ok := copyBytesToJS(dst.ref, src)
 	// runtime.KeepAlive(dst)
 	// if !ok {
@@ -696,6 +725,28 @@ func CopyBytesToJS(dst Value, src []byte) int {
 	// }
 	// return n
 }
+
+/*
+	// func copyBytesToJS(dst ref, src []byte) (int, bool)
+	"syscall/js.copyBytesToJS": (sp) => {
+		sp >>>= 0;
+		const dst = loadValue(sp + 8);
+		const src = loadSlice(sp + 16);
+		if (!(dst instanceof Uint8Array || dst instanceof Uint8ClampedArray)) {
+			this.mem.setUint8(sp + 48, 0);
+			return;
+		}
+		const toCopy = src.subarray(0, dst.length);
+		dst.set(toCopy);
+		setInt64(sp + 40, toCopy.length);
+		this.mem.setUint8(sp + 48, 1);
+	},
+*/
+
+var (
+	uint8Array        = emval_get_global(c.Str("Uint8Array"))
+	uint8ClampedArray = emval_get_global(c.Str("Uint8ClampedArray"))
+)
 
 // copyBytesToJS copies bytes from src to dst.
 //

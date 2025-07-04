@@ -8,7 +8,6 @@
 package js
 
 import (
-	"strconv"
 	"sync"
 )
 
@@ -48,7 +47,8 @@ func FuncOf(fn func(this Value, args []Value) any) Func {
 	nextFuncID++
 	funcs[id] = fn
 	funcsMu.Unlock()
-	sid := strconv.Itoa(int(id))
+	var buf [20]byte
+	sid := string(itoa(buf[:], uint64(id)))
 	wrap := functionConstructor.New(ValueOf(`
 		const event = { id:` + sid + `, this: this, args: arguments };
 		Module._llgo_invoke(event);
@@ -58,6 +58,17 @@ func FuncOf(fn func(this Value, args []Value) any) Func {
 		id:    id,
 		Value: wrap,
 	}
+}
+
+func itoa(buf []byte, val uint64) []byte {
+	i := len(buf) - 1
+	for val >= 10 {
+		buf[i] = byte(val%10 + '0')
+		i--
+		val /= 10
+	}
+	buf[i] = byte(val + '0')
+	return buf[i:]
 }
 
 // Release frees up resources allocated for the function.

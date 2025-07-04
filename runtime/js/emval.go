@@ -83,6 +83,9 @@ func emval_method_call(object Value, name *c.Char, args *Value, nargs c.Int, err
 //go:linkname emval_call C.llgo_emval_call
 func emval_call(fn Value, args *Value, nargs c.Int, kind c.Int, err *c.Int) Value
 
+//go:linkname emval_memory_view_uint8 C.llgo_emval_memory_view_uint8
+func emval_memory_view_uint8(length c.SizeT, data *c.Uint8T) Value
+
 //go:linkname emval_dump C.llgo_emval_dump
 func emval_dump(v Value)
 
