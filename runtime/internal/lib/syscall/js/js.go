@@ -18,6 +18,9 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
+//llgo:skipall
+type _js struct{}
+
 // Value represents a JavaScript value. The zero value is the JavaScript value "undefined".
 // Values can be checked for equality with the Equal method.
 type Value struct {
