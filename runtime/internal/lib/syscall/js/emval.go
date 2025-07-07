@@ -7,7 +7,7 @@ import (
 	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
-	_ "github.com/goplus/llgo/runtime/js/embind"
+	_ "github.com/goplus/llgo/runtime/internal/embind"
 )
 
 var (
