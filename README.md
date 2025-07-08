@@ -8,7 +8,7 @@ llgo - A Go compiler based on LLVM
 [![GoDoc](https://pkg.go.dev/badge/github.com/goplus/llgo.svg)](https://pkg.go.dev/github.com/goplus/llgo)
 [![Language](https://img.shields.io/badge/language-XGo-blue.svg)](https://github.com/goplus/gop)
 
-LLGo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python. It's a subproject of [the XGo project](https://github.com/goplus/gop).
+LLGo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python and JavaScript. It's a subproject of [the XGo project](https://github.com/goplus/gop).
 
 LLGo aims to expand the boundaries of Go/XGo, providing limitless possibilities such as:
 
