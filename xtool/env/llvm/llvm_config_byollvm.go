@@ -21,6 +21,12 @@
 
 package llvm
 
+import "fmt"
+
 // ldLLVMConfigBin is the path to the llvm-config binary. It shoud be set via
 // -ldflags when building the package.
 var ldLLVMConfigBin string
+
+func init() {
+	fmt.Println("Using custom LLVM configuration:", ldLLVMConfigBin)
+}

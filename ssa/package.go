@@ -399,9 +399,9 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
 	// TODO(lijie): enable target output will check module override, but can't
 	// pass the snapshot test, so disable it for now
-	// if p.target.GOARCH != runtime.GOARCH && p.target.GOOS != runtime.GOOS {
-	// 	mod.SetTarget(p.target.Spec().Triple)
-	// }
+
+	// temp for llgo-esp32 demo
+	// mod.SetTarget("xtensa")
 
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// mod.Finalize()

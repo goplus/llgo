@@ -568,61 +568,87 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		llFiles = append(llFiles, export)
 	}
 
-	err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
-	check(err)
+	bindLL(app, llFiles)
+	return
+	// err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
+	// check(err)
 
-	switch mode {
-	case ModeTest:
-		cmd := exec.Command(app, conf.RunArgs...)
-		cmd.Dir = pkg.Dir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Run()
-		if s := cmd.ProcessState; s != nil {
-			exitCode := s.ExitCode()
-			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
-			if !ctx.testFail && exitCode != 0 {
-				ctx.testFail = true
-			}
-		}
-	case ModeRun:
-		args := make([]string, 0, len(conf.RunArgs)+1)
-		copy(args, conf.RunArgs)
-		if isWasmTarget(conf.Goos) {
-			wasmer := os.ExpandEnv(WasmRuntime())
-			wasmerArgs := strings.Split(wasmer, " ")
-			wasmerCmd := wasmerArgs[0]
-			wasmerArgs = wasmerArgs[1:]
-			switch wasmer {
-			case "wasmtime":
-				args = append(args, "--wasm", "multi-memory=true", app)
-				args = append(args, conf.RunArgs...)
-			case "iwasm":
-				args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
-				args = append(args, conf.RunArgs...)
-			default:
-				args = append(args, wasmerArgs...)
-				args = append(args, app)
-				args = append(args, conf.RunArgs...)
-			}
-			app = wasmerCmd
-		} else {
-			args = conf.RunArgs
-		}
-		cmd := exec.Command(app, args...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-		if s := cmd.ProcessState; s != nil {
-			mockable.Exit(s.ExitCode())
-		}
-	case ModeCmpTest:
-		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
+	// switch mode {
+	// case ModeTest:
+	// 	cmd := exec.Command(app, conf.RunArgs...)
+	// 	cmd.Dir = pkg.Dir
+	// 	cmd.Stdout = os.Stdout
+	// 	cmd.Stderr = os.Stderr
+	// 	cmd.Run()
+	// 	if s := cmd.ProcessState; s != nil {
+	// 		exitCode := s.ExitCode()
+	// 		fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
+	// 		if !ctx.testFail && exitCode != 0 {
+	// 			ctx.testFail = true
+	// 		}
+	// 	}
+	// case ModeRun:
+	// 	args := make([]string, 0, len(conf.RunArgs)+1)
+	// 	copy(args, conf.RunArgs)
+	// 	if isWasmTarget(conf.Goos) {
+	// 		wasmer := os.ExpandEnv(WasmRuntime())
+	// 		wasmerArgs := strings.Split(wasmer, " ")
+	// 		wasmerCmd := wasmerArgs[0]
+	// 		wasmerArgs = wasmerArgs[1:]
+	// 		switch wasmer {
+	// 		case "wasmtime":
+	// 			args = append(args, "--wasm", "multi-memory=true", app)
+	// 			args = append(args, conf.RunArgs...)
+	// 		case "iwasm":
+	// 			args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
+	// 			args = append(args, conf.RunArgs...)
+	// 		default:
+	// 			args = append(args, wasmerArgs...)
+	// 			args = append(args, app)
+	// 			args = append(args, conf.RunArgs...)
+	// 		}
+	// 		app = wasmerCmd
+	// 	} else {
+	// 		args = conf.RunArgs
+	// 	}
+	// 	cmd := exec.Command(app, args...)
+	// 	cmd.Stdin = os.Stdin
+	// 	cmd.Stdout = os.Stdout
+	// 	cmd.Stderr = os.Stderr
+	// 	err = cmd.Run()
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	if s := cmd.ProcessState; s != nil {
+	// 		mockable.Exit(s.ExitCode())
+	// 	}
+	// case ModeCmpTest:
+	// 	cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
+	// }
+}
+
+func bindLL(app string, objFiles []string) {
+	// Use ld.lld -r to merge all .o files into a single .o file
+	outputFile := strings.TrimSuffix(app, filepath.Ext(app)) + ".o"
+
+	fmt.Printf("Merging %d .o files into: %s\n", len(objFiles), outputFile)
+
+	// Use ld.lld -r to create a relocatable object file
+	fmt.Println("Using ld.lld -r to merge object files...")
+	ldArgs := []string{"-r", "-o", outputFile}
+	ldArgs = append(ldArgs, objFiles...)
+
+	ldCmd := exec.Command("ld.lld", ldArgs...)
+	var ldStderr bytes.Buffer
+	ldCmd.Stderr = &ldStderr
+	ldErr := ldCmd.Run()
+	if ldErr != nil {
+		fmt.Printf("ld.lld failed: %v\n", ldErr)
+		fmt.Printf("ld.lld stderr: %s\n", ldStderr.String())
+		panic(fmt.Errorf("ld.lld failed"))
 	}
+
+	fmt.Printf("Successfully merged .o files into: %s\n", outputFile)
 }
 
 func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
@@ -818,6 +844,8 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	exportFile += ".o"
 	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
+	// Add ESP32 target for xtensa architecture
+	args = append(args, "-target", "xtensa-esp32-elf")
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
@@ -1048,7 +1076,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 	} else {
 		llFile += ".o"
-		args = append(args, "-o", llFile, "-c", cFile)
+		args = append(args, "-o", "-target", "xtensa-esp32-elf", llFile, "-c", cFile)
 	}
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	args = append(args, ctx.crossCompile.CFLAGS...)
