@@ -568,136 +568,117 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		llFiles = append(llFiles, export)
 	}
 
-	// bindLL(app, llFiles)
-	// return
 	err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
 	check(err)
 
-	fmt.Println(app)
-
-	// switch mode {
-	// case ModeTest:
-	// 	cmd := exec.Command(app, conf.RunArgs...)
-	// 	cmd.Dir = pkg.Dir
-	// 	cmd.Stdout = os.Stdout
-	// 	cmd.Stderr = os.Stderr
-	// 	cmd.Run()
-	// 	if s := cmd.ProcessState; s != nil {
-	// 		exitCode := s.ExitCode()
-	// 		fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
-	// 		if !ctx.testFail && exitCode != 0 {
-	// 			ctx.testFail = true
-	// 		}
-	// 	}
-	// case ModeRun:
-	// 	args := make([]string, 0, len(conf.RunArgs)+1)
-	// 	copy(args, conf.RunArgs)
-	// 	if isWasmTarget(conf.Goos) {
-	// 		wasmer := os.ExpandEnv(WasmRuntime())
-	// 		wasmerArgs := strings.Split(wasmer, " ")
-	// 		wasmerCmd := wasmerArgs[0]
-	// 		wasmerArgs = wasmerArgs[1:]
-	// 		switch wasmer {
-	// 		case "wasmtime":
-	// 			args = append(args, "--wasm", "multi-memory=true", app)
-	// 			args = append(args, conf.RunArgs...)
-	// 		case "iwasm":
-	// 			args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
-	// 			args = append(args, conf.RunArgs...)
-	// 		default:
-	// 			args = append(args, wasmerArgs...)
-	// 			args = append(args, app)
-	// 			args = append(args, conf.RunArgs...)
-	// 		}
-	// 		app = wasmerCmd
-	// 	} else {
-	// 		args = conf.RunArgs
-	// 	}
-	// 	cmd := exec.Command(app, args...)
-	// 	cmd.Stdin = os.Stdin
-	// 	cmd.Stdout = os.Stdout
-	// 	cmd.Stderr = os.Stderr
-	// 	err = cmd.Run()
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	if s := cmd.ProcessState; s != nil {
-	// 		mockable.Exit(s.ExitCode())
-	// 	}
-	// case ModeCmpTest:
-	// 	cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
-	// }
-}
-
-func bindLL(app string, objFiles []string) {
-	// Use ld.lld -r to merge all .o files into a single .o file
-	outputFile := strings.TrimSuffix(app, filepath.Ext(app)) + ".o"
-
-	fmt.Printf("Merging %d .o files into: %s\n", len(objFiles), outputFile)
-
-	// Use ld.lld -r to create a relocatable object file
-	fmt.Println("Using ld.lld -r to merge object files...")
-	ldArgs := []string{"-r", "-o", outputFile}
-	ldArgs = append(ldArgs, objFiles...)
-
-	ldCmd := exec.Command("ld.lld", ldArgs...)
-	var ldStderr bytes.Buffer
-	ldCmd.Stderr = &ldStderr
-	ldErr := ldCmd.Run()
-	if ldErr != nil {
-		fmt.Printf("ld.lld failed: %v\n", ldErr)
-		fmt.Printf("ld.lld stderr: %s\n", ldStderr.String())
-		panic(fmt.Errorf("ld.lld failed"))
+	switch mode {
+	case ModeTest:
+		cmd := exec.Command(app, conf.RunArgs...)
+		cmd.Dir = pkg.Dir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+		if s := cmd.ProcessState; s != nil {
+			exitCode := s.ExitCode()
+			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
+			if !ctx.testFail && exitCode != 0 {
+				ctx.testFail = true
+			}
+		}
+	case ModeRun:
+		args := make([]string, 0, len(conf.RunArgs)+1)
+		copy(args, conf.RunArgs)
+		if isWasmTarget(conf.Goos) {
+			wasmer := os.ExpandEnv(WasmRuntime())
+			wasmerArgs := strings.Split(wasmer, " ")
+			wasmerCmd := wasmerArgs[0]
+			wasmerArgs = wasmerArgs[1:]
+			switch wasmer {
+			case "wasmtime":
+				args = append(args, "--wasm", "multi-memory=true", app)
+				args = append(args, conf.RunArgs...)
+			case "iwasm":
+				args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
+				args = append(args, conf.RunArgs...)
+			default:
+				args = append(args, wasmerArgs...)
+				args = append(args, app)
+				args = append(args, conf.RunArgs...)
+			}
+			app = wasmerCmd
+		} else {
+			args = conf.RunArgs
+		}
+		cmd := exec.Command(app, args...)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			panic(err)
+		}
+		if s := cmd.ProcessState; s != nil {
+			mockable.Exit(s.ExitCode())
+		}
+	case ModeCmpTest:
+		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
-
-	fmt.Printf("Successfully merged .o files into: %s\n", outputFile)
 }
 
 func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
-	// ESP32 target: merge object files only, no linking with standard libraries
-	return mergeObjectFiles(ctx, app, llFiles, verbose)
+	if true {
+		// ESP32 target: merge object files only, no linking with standard libraries
+		return mergeObjectFiles(ctx, app, llFiles, verbose)
+	}
+	buildArgs := []string{"-o", app}
+	buildArgs = append(buildArgs, linkArgs...)
+
+	// Add common linker arguments based on target OS and architecture
+	if IsDbgSymsEnabled() {
+		buildArgs = append(buildArgs, "-gdwarf-4")
+	}
+
+	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
+	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
+	buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
+	buildArgs = append(buildArgs, llFiles...)
+	if verbose {
+		buildArgs = append(buildArgs, "-v")
+	}
+
+	cmd := ctx.compiler()
+	cmd.Verbose = verbose
+	return cmd.Link(buildArgs...)
 }
 
 func isWasmTarget(goos string) bool {
 	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
 }
 
-func mergeObjectFiles(ctx *context, app string, llFiles []string, verbose bool) error {
-	// Since llFiles are already .o files, we just need to merge them
-	objFiles := llFiles
-	
-	// Change output extension to .o if it's not already
+func mergeObjectFiles(ctx *context, app string, objFiles []string, verbose bool) error {
 	outputFile := app
 	if !strings.HasSuffix(outputFile, ".o") {
 		outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
 	}
-	
-	// Use ld.lld -r to merge all .o files into a single relocatable object file
-	if len(objFiles) == 1 {
-		// Single object file, just copy/rename it
-		return os.Rename(objFiles[0], outputFile)
-	}
-	
-	// Multiple object files, merge them
+
+	// merge object files
 	ldArgs := []string{"-r", "-o", outputFile}
 	ldArgs = append(ldArgs, objFiles...)
-	
+
 	if verbose {
 		fmt.Fprintf(os.Stderr, "ld.lld %v\n", ldArgs)
 	}
-	
+
 	ldCmd := exec.Command("ld.lld", ldArgs...)
-	var ldStderr bytes.Buffer
-	ldCmd.Stderr = &ldStderr
+	ldCmd.Stderr = os.Stderr
 	err := ldCmd.Run()
 	if err != nil {
-		return fmt.Errorf("ld.lld failed: %v\nstderr: %s", err, ldStderr.String())
+		return fmt.Errorf("ld.lld failed: %v", err)
 	}
-	
+
 	if verbose {
 		fmt.Printf("Successfully created ESP32 object file: %s\n", outputFile)
 	}
-	
 	return nil
 }
 
