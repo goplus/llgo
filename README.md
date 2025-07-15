@@ -21,10 +21,10 @@ LLGo aims to expand the boundaries of Go/XGo, providing limitless possibilities 
 How can these be achieved?
 
 ```
-LLGo := Go + C + Python
+LLGo := Go * C ecosystem
 ```
 
-LLGo is compatible with C and Python through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**. And here C doesn't just include C, but all languages that are ABI compatible with C, including C/C++, Objective-C, Swift, etc.
+LLGo is compatible with C ecosystem through the language's **Application Binary Interface (ABI)**, while LLGo is compatible with Go through its **syntax (source code)**. C ecosystem includes all languages that are ABI compatible with C (eg. C/C++, Python, JavaScript, Objective-C, Swift, etc).
 
 
 ## C/C++ standard libary support
