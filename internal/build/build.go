@@ -568,10 +568,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		llFiles = append(llFiles, export)
 	}
 
-	bindLL(app, llFiles)
-	return
-	// err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
-	// check(err)
+	// bindLL(app, llFiles)
+	// return
+	err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
+	check(err)
+
+	fmt.Println(app)
 
 	// switch mode {
 	// case ModeTest:
@@ -652,29 +654,51 @@ func bindLL(app string, objFiles []string) {
 }
 
 func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
-	buildArgs := []string{"-o", app}
-	buildArgs = append(buildArgs, linkArgs...)
-
-	// Add common linker arguments based on target OS and architecture
-	if IsDbgSymsEnabled() {
-		buildArgs = append(buildArgs, "-gdwarf-4")
-	}
-
-	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
-	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
-	buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
-	buildArgs = append(buildArgs, llFiles...)
-	if verbose {
-		buildArgs = append(buildArgs, "-v")
-	}
-
-	cmd := ctx.compiler()
-	cmd.Verbose = verbose
-	return cmd.Link(buildArgs...)
+	// ESP32 target: merge object files only, no linking with standard libraries
+	return mergeObjectFiles(ctx, app, llFiles, verbose)
 }
 
 func isWasmTarget(goos string) bool {
 	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
+}
+
+func mergeObjectFiles(ctx *context, app string, llFiles []string, verbose bool) error {
+	// Since llFiles are already .o files, we just need to merge them
+	objFiles := llFiles
+	
+	// Change output extension to .o if it's not already
+	outputFile := app
+	if !strings.HasSuffix(outputFile, ".o") {
+		outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
+	}
+	
+	// Use ld.lld -r to merge all .o files into a single relocatable object file
+	if len(objFiles) == 1 {
+		// Single object file, just copy/rename it
+		return os.Rename(objFiles[0], outputFile)
+	}
+	
+	// Multiple object files, merge them
+	ldArgs := []string{"-r", "-o", outputFile}
+	ldArgs = append(ldArgs, objFiles...)
+	
+	if verbose {
+		fmt.Fprintf(os.Stderr, "ld.lld %v\n", ldArgs)
+	}
+	
+	ldCmd := exec.Command("ld.lld", ldArgs...)
+	var ldStderr bytes.Buffer
+	ldCmd.Stderr = &ldStderr
+	err := ldCmd.Run()
+	if err != nil {
+		return fmt.Errorf("ld.lld failed: %v\nstderr: %s", err, ldStderr.String())
+	}
+	
+	if verbose {
+		fmt.Printf("Successfully created ESP32 object file: %s\n", outputFile)
+	}
+	
+	return nil
 }
 
 func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (path string, err error) {
