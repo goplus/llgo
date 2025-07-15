@@ -626,6 +626,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 }
 
 func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
+	if true {
+		// ESP32 target: merge object files only, no linking with standard libraries
+		return mergeObjectFiles(ctx, app, llFiles, verbose)
+	}
 	buildArgs := []string{"-o", app}
 	buildArgs = append(buildArgs, linkArgs...)
 
@@ -649,6 +653,33 @@ func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string,
 
 func isWasmTarget(goos string) bool {
 	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
+}
+
+func mergeObjectFiles(ctx *context, app string, objFiles []string, verbose bool) error {
+	outputFile := app
+	if !strings.HasSuffix(outputFile, ".o") {
+		outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
+	}
+
+	// merge object files
+	ldArgs := []string{"-r", "-o", outputFile}
+	ldArgs = append(ldArgs, objFiles...)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "ld.lld %v\n", ldArgs)
+	}
+
+	ldCmd := exec.Command("ld.lld", ldArgs...)
+	ldCmd.Stderr = os.Stderr
+	err := ldCmd.Run()
+	if err != nil {
+		return fmt.Errorf("ld.lld failed: %v", err)
+	}
+
+	if verbose {
+		fmt.Printf("Successfully created ESP32 object file: %s\n", outputFile)
+	}
+	return nil
 }
 
 func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (path string, err error) {
@@ -818,6 +849,8 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	exportFile += ".o"
 	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
+	// Add ESP32 target for xtensa architecture
+	args = append(args, "-target", "xtensa-esp32-elf")
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
@@ -1048,7 +1081,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 	} else {
 		llFile += ".o"
-		args = append(args, "-o", llFile, "-c", cFile)
+		args = append(args, "-o", "-target", "xtensa-esp32-elf", llFile, "-c", cFile)
 	}
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	args = append(args, ctx.crossCompile.CFLAGS...)
