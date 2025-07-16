@@ -1,12 +1,14 @@
 package cabi
 
 import (
+	"github.com/goplus/llgo/ssa"
 	"github.com/goplus/llvm"
 )
 
-func NewTransform(td llvm.TargetData, isCFunc func(name string) bool) *Transform {
+func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
 	return &Transform{
-		td:        td,
+		prog:      prog,
+		td:        prog.TargetData(),
 		isCFunc:   isCFunc,
 		elements:  2,
 		threshold: 16,
@@ -14,6 +16,7 @@ func NewTransform(td llvm.TargetData, isCFunc func(name string) bool) *Transform
 }
 
 type Transform struct {
+	prog      ssa.Program
 	td        llvm.TargetData
 	isCFunc   func(name string) bool
 	elements  int
@@ -176,8 +179,8 @@ func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type) *TypeInfo {
 		info.Kind = AttrVoid
 		return info
 	}
-	info.Size = int(p.td.TypeAllocSize(typ))
-	info.Align = int(p.td.ABITypeAlignment(typ))
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
 	if n := elementTypesCount(typ); n >= p.elements {
 		if info.Size > p.threshold {
 			info.Kind = AttrPointer
@@ -234,6 +237,10 @@ func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type) *TypeInfo {
 
 func (p *Transform) Sizeof(typ llvm.Type) int {
 	return int(p.td.TypeAllocSize(typ))
+}
+
+func (p *Transform) Alignof(typ llvm.Type) int {
+	return int(p.td.ABITypeAlignment(typ))
 }
 
 func (p *Transform) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
