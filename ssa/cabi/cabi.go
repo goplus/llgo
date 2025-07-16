@@ -66,6 +66,18 @@ type FuncInfo struct {
 	Params []*TypeInfo // params info
 }
 
+func (p *FuncInfo) HasWrap() bool {
+	if p.Return.Kind > AttrVoid {
+		return true
+	}
+	for _, t := range p.Params {
+		if t.Kind > AttrVoid {
+			return true
+		}
+	}
+	return false
+}
+
 type TypeInfo struct {
 	Type  llvm.Type
 	Kind  AttrKind
@@ -110,6 +122,25 @@ func elementSizes(td llvm.TargetData, typ llvm.Type) (sizes []int) {
 	return
 }
 
+func elementTypes(td llvm.TargetData, typ llvm.Type) (types []llvm.Type) {
+	switch typ.TypeKind() {
+	case llvm.VoidTypeKind:
+	case llvm.StructTypeKind:
+		for _, t := range typ.StructElementTypes() {
+			types = append(types, elementTypes(td, t)...)
+		}
+	case llvm.ArrayTypeKind:
+		sub := elementTypes(td, typ.ElementType())
+		n := typ.ArrayLength()
+		for i := 0; i < n; i++ {
+			types = append(types, sub...)
+		}
+	default:
+		types = append(types, typ)
+	}
+	return
+}
+
 func (p *Transform) isLargeFunction(fn llvm.Value) bool {
 	if !p.isCFunc(fn.Name()) {
 		return false
@@ -137,19 +168,6 @@ func sretAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
 	return ctx.CreateTypeAttribute(id, typ)
 }
 
-func (p *Transform) GetTypeAttr(typ llvm.Type) AttrKind {
-	if elementTypesCount(typ) >= p.elements {
-		size := p.td.TypeAllocSize(typ)
-		if size > uint64(p.threshold) {
-			return AttrPointer
-		} else if size <= 8 {
-			return AttrWidthType
-		}
-		return AttrWidthType2
-	}
-	return AttrNone
-}
-
 func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
@@ -158,32 +176,52 @@ func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type) *TypeInfo {
 		info.Kind = AttrVoid
 		return info
 	}
-	info.Kind = p.GetTypeAttr(typ)
 	info.Size = int(p.td.TypeAllocSize(typ))
 	info.Align = int(p.td.ABITypeAlignment(typ))
-	if elementTypesCount(typ) >= p.elements {
+	if n := elementTypesCount(typ); n >= p.elements {
 		if info.Size > p.threshold {
 			info.Kind = AttrPointer
 			info.Type1 = llvm.PointerType(typ, 0)
 		} else if info.Size <= 8 {
 			info.Kind = AttrWidthType
 			info.Type1 = ctx.IntType(info.Size * 8)
+			types := elementTypes(p.td, typ)
+			if types[0] == ctx.FloatType() && types[1] == ctx.FloatType() {
+				info.Type1 = llvm.VectorType(ctx.FloatType(), 2)
+			}
 		} else {
+			types := elementTypes(p.td, typ)
+			if n == 2 {
+				// skip (float32,float32)
+				if types[0] == ctx.FloatType() && types[1] == ctx.FloatType() {
+					return info
+				}
+				// skip (i64|double,*) (*,i64/double)
+				if p.Sizeof(types[0]) == 8 || p.Sizeof(types[1]) == 8 {
+					return info
+				}
+			}
 			info.Kind = AttrWidthType2
-			sizes := elementSizes(p.td, typ)
 			var count int
-			for i, sz := range sizes {
-				count += sz
-				if count == 8 {
-					info.Type1 = ctx.Int64Type()
-					info.Type2 = ctx.IntType((info.Size - 8) * 8)
-					break
-				} else if count > 8 {
-					if i == 1 {
-						info.Type1 = ctx.IntType(sizes[0] * 8)
-						info.Type2 = ctx.Int64Type()
+			for i, et := range types {
+				count += p.Sizeof(et)
+				if count >= 8 {
+					if i == 0 {
+						info.Type1 = et
+					} else if i == 1 && types[0] == ctx.FloatType() && types[1] == ctx.FloatType() {
+						info.Type1 = llvm.VectorType(ctx.FloatType(), 2)
 					} else {
 						info.Type1 = ctx.Int64Type()
+					}
+					right := len(types) - i
+					if count == 8 {
+						right--
+					}
+					if right == 1 {
+						info.Type2 = types[len(types)-1]
+					} else if right == 2 && types[len(types)-1] == ctx.FloatType() && types[len(types)-2] == ctx.FloatType() {
+						info.Type2 = llvm.VectorType(ctx.FloatType(), 2)
+					} else {
 						info.Type2 = ctx.IntType((info.Size - 8) * 8)
 					}
 					break
@@ -192,6 +230,10 @@ func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type) *TypeInfo {
 		}
 	}
 	return info
+}
+
+func (p *Transform) Sizeof(typ llvm.Type) int {
+	return int(p.td.TypeAllocSize(typ))
 }
 
 func (p *Transform) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
@@ -211,6 +253,10 @@ func (p *Transform) transformFunc(m llvm.Module, fn llvm.Value) {
 	attrs := make(map[int]llvm.Attribute)
 	ctx := m.Context()
 	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
+	if !info.HasWrap() {
+		return
+	}
+
 	switch info.Return.Kind {
 	case AttrPointer:
 		returnType = ctx.VoidType()
