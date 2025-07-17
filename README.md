@@ -341,9 +341,9 @@ Here are the Go packages that can be imported correctly:
 ## Dependencies
 
 - [Go 1.21+](https://go.dev)
-- [LLVM 18](https://llvm.org)
-- [Clang 18](https://clang.llvm.org)
-- [LLD 18](https://lld.llvm.org)
+- [LLVM 19](https://llvm.org)
+- [Clang 19](https://clang.llvm.org)
+- [LLD 19](https://lld.llvm.org)
 - [pkg-config 0.29+](https://www.freedesktop.org/wiki/Software/pkg-config/)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
 - [OpenSSL 3.0+](https://www.openssl.org/)
