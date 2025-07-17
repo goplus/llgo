@@ -7,46 +7,40 @@ import (
 
 func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
 	return &Transform{
-		prog:      prog,
-		td:        prog.TargetData(),
-		isCFunc:   isCFunc,
-		elements:  2,
-		threshold: 16,
+		prog:    prog,
+		td:      prog.TargetData(),
+		isCFunc: isCFunc,
+		GOARCH:  prog.Target().GOARCH,
 	}
 }
 
 type Transform struct {
-	prog      ssa.Program
-	td        llvm.TargetData
-	isCFunc   func(name string) bool
-	elements  int
-	threshold int
+	prog    ssa.Program
+	td      llvm.TargetData
+	isCFunc func(name string) bool
+	GOARCH  string
 }
 
 func (p *Transform) TransformModule(m llvm.Module) {
 	var fns []llvm.Value
 	fn := m.FirstFunction()
 	for !fn.IsNil() {
-		if p.isLargeFunction(fn) {
+		if p.isLargeFunction(m, fn) {
 			fns = append(fns, fn)
 		}
 		fn = llvm.NextFunction(fn)
 	}
 	for _, fn := range fns {
-		p.transformFunc(m, fn)
+		p.transformCFunc(m, fn)
 	}
 }
 
-func (p *Transform) isLargeType(typ llvm.Type) bool {
-	return elementTypesCount(typ) >= p.elements
-}
-
-func (p *Transform) isLargeFunctionType(fn llvm.Type) bool {
-	if p.isLargeType(fn.ReturnType()) {
+func (p *Transform) isLargeFunctionType(ft llvm.Type) bool {
+	if p.isLargeType(ft.ReturnType(), true) {
 		return true
 	}
-	for _, typ := range fn.ParamTypes() {
-		if p.isLargeType(typ) {
+	for _, typ := range ft.ParamTypes() {
+		if p.isLargeType(typ, false) {
 			return true
 		}
 	}
@@ -144,21 +138,51 @@ func elementTypes(td llvm.TargetData, typ llvm.Type) (types []llvm.Type) {
 	return
 }
 
-func (p *Transform) isLargeFunction(fn llvm.Value) bool {
+func (p *Transform) isLargeFunction(m llvm.Module, fn llvm.Value) bool {
 	if !p.isCFunc(fn.Name()) {
 		return false
 	}
 	if !fn.IsDeclaration() {
 		return false
 	}
+	p.transformUses(m, fn)
+
 	return p.isLargeFunctionType(fn.GlobalValueType())
 }
 
+func (p *Transform) transformUses(m llvm.Module, fn llvm.Value) {
+	u := fn.FirstUse()
+	for !u.IsNil() {
+		if call := u.User().IsACallInst(); !call.IsNil() {
+			n := call.OperandsCount()
+			for i := 0; i < n; i++ {
+				op := call.Operand(i)
+				if op == fn {
+					continue
+				}
+				if gv := op.IsAGlobalValue(); !gv.IsNil() {
+					if ft := gv.GlobalValueType(); ft.TypeKind() == llvm.FunctionTypeKind {
+						if p.isCFunc(gv.Name()) {
+							continue
+						}
+						if p.isLargeFunctionType(ft) {
+							if wrap, ok := p.transformGoFunc(m, gv); ok {
+								call.SetOperand(i, wrap)
+							}
+						}
+					}
+				}
+			}
+		}
+		u = u.NextUse()
+	}
+}
+
 func (p *Transform) TransformFunc(m llvm.Module, fn llvm.Value) {
-	if !p.isLargeFunction(fn) {
+	if !p.isLargeFunction(m, fn) {
 		return
 	}
-	p.transformFunc(m, fn)
+	p.transformCFunc(m, fn)
 }
 
 func byvalAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
@@ -171,18 +195,49 @@ func sretAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
 	return ctx.CreateTypeAttribute(id, typ)
 }
 
-func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type) *TypeInfo {
+func (p *Transform) isLargeType(typ llvm.Type, bret bool) bool {
+	switch p.GOARCH {
+	case "amd64":
+		return elementTypesCount(typ) >= 2
+	case "arm64":
+	}
+	return false
+}
+
+func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
+	arch := p.prog.Target().GOARCH
+	switch arch {
+	case "amd64":
+		return p.GetTypeInfoAmd64(ctx, typ, isret)
+	case "arm64":
+		return p.GetTypeInfoArm64(ctx, typ, isret)
+	default:
+		panic("not implment: " + arch)
+	}
+}
+
+func (p *Transform) GetTypeInfoArm64(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	return info
+}
+
+func (p *Transform) GetTypeInfoAmd64(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
 	if typ.TypeKind() == llvm.VoidTypeKind {
 		info.Kind = AttrVoid
 		return info
+	} else if typ.TypeKind() == llvm.PointerTypeKind {
 	}
 	info.Size = p.Sizeof(typ)
 	info.Align = p.Alignof(typ)
-	if n := elementTypesCount(typ); n >= p.elements {
-		if info.Size > p.threshold {
+	if n := elementTypesCount(typ); n >= 2 {
+		if info.Size > 16 {
 			info.Kind = AttrPointer
 			info.Type1 = llvm.PointerType(typ, 0)
 		} else if info.Size <= 8 {
@@ -245,23 +300,23 @@ func (p *Transform) Alignof(typ llvm.Type) int {
 
 func (p *Transform) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
 	info.Type = typ
-	info.Return = p.GetTypeInfo(ctx, typ.ReturnType())
+	info.Return = p.GetTypeInfo(ctx, typ.ReturnType(), true)
 	params := typ.ParamTypes()
 	info.Params = make([]*TypeInfo, len(params))
 	for i, t := range params {
-		info.Params[i] = p.GetTypeInfo(ctx, t)
+		info.Params[i] = p.GetTypeInfo(ctx, t, false)
 	}
 	return
 }
 
-func (p *Transform) transformFunc(m llvm.Module, fn llvm.Value) {
+func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
 	var paramTypes []llvm.Type
 	var returnType llvm.Type
 	attrs := make(map[int]llvm.Attribute)
 	ctx := m.Context()
 	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
 	if !info.HasWrap() {
-		return
+		return fn, false
 	}
 
 	switch info.Return.Kind {
@@ -290,17 +345,17 @@ func (p *Transform) transformFunc(m llvm.Module, fn llvm.Value) {
 	}
 
 	fname := fn.Name()
-	fn.SetName("")
 	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
+	wrapFunc := llvm.AddFunction(m, "__llgo_cwrap$"+fname, info.Type)
+	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
+
+	fn.SetName("")
+
 	nfn := llvm.AddFunction(m, fname, nft)
 	for i, attr := range attrs {
 		nfn.AddAttributeAtIndex(i, attr)
 	}
 	nfn.SetLinkage(fn.Linkage())
-
-	wrapFunc := llvm.AddFunction(m, "__llgo_cwrap."+fname, info.Type)
-	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
-
 	fn.ReplaceAllUsesWith(wrapFunc)
 	fn.EraseFromParentAsFunction()
 
@@ -342,10 +397,9 @@ func (p *Transform) transformFunc(m llvm.Module, fn llvm.Value) {
 		llvm.CreateCall(b, nft, nfn, append([]llvm.Value{ret}, nparams...))
 		b.CreateRet(b.CreateLoad(info.Return.Type, ret, ""))
 	case AttrWidthType, AttrWidthType2:
-		call := llvm.CreateCall(b, nft, nfn, nparams)
-		call.SetTailCall(true)
+		ret := llvm.CreateCall(b, nft, nfn, nparams)
 		ptr := llvm.CreateAlloca(b, returnType)
-		b.CreateStore(call, ptr)
+		b.CreateStore(ret, ptr)
 		pret := b.CreateBitCast(ptr, llvm.PointerType(info.Return.Type, 0), "")
 		b.CreateRet(b.CreateLoad(info.Return.Type, pret, ""))
 	default:
@@ -353,4 +407,107 @@ func (p *Transform) transformFunc(m llvm.Module, fn llvm.Value) {
 		call.SetTailCall(true)
 		b.CreateRet(call)
 	}
+	return wrapFunc, true
+}
+
+func (p *Transform) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
+	var paramTypes []llvm.Type
+	var returnType llvm.Type
+	attrs := make(map[int]llvm.Attribute)
+	ctx := m.Context()
+	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
+	if !info.HasWrap() {
+		return fn, false
+	}
+
+	switch info.Return.Kind {
+	case AttrPointer:
+		returnType = ctx.VoidType()
+		paramTypes = append(paramTypes, info.Return.Type1)
+		attrs[1] = sretAttribute(ctx, info.Return.Type)
+	case AttrWidthType:
+		returnType = info.Return.Type1
+	case AttrWidthType2:
+		returnType = llvm.StructType([]llvm.Type{info.Return.Type1, info.Return.Type2}, false)
+	default:
+		returnType = info.Return.Type1
+	}
+
+	for _, ti := range info.Params {
+		switch ti.Kind {
+		case AttrNone, AttrWidthType:
+			paramTypes = append(paramTypes, ti.Type1)
+		case AttrPointer:
+			paramTypes = append(paramTypes, ti.Type1)
+			attrs[len(paramTypes)] = byvalAttribute(ctx, ti.Type)
+		case AttrWidthType2:
+			paramTypes = append(paramTypes, ti.Type1, ti.Type2)
+		}
+	}
+
+	fname := fn.Name()
+	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
+	wrapName := "__llgo_gowrap$" + fname
+	if wrapFunc := m.NamedFunction(wrapName); !wrapFunc.IsNil() {
+		return wrapFunc, true
+	}
+	wrapFunc := llvm.AddFunction(m, wrapName, nft)
+	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
+
+	for i, attr := range attrs {
+		wrapFunc.AddAttributeAtIndex(i, attr)
+	}
+
+	b := ctx.NewBuilder()
+	block := llvm.AddBasicBlock(wrapFunc, "entry")
+	b.SetInsertPointAtEnd(block)
+
+	var nparams []llvm.Value
+	params := wrapFunc.Params()
+	index := 0
+	if info.Return.Kind == AttrPointer {
+		index++
+	}
+	for _, ti := range info.Params {
+		switch ti.Kind {
+		default:
+		case AttrPointer:
+			nparams = append(nparams, b.CreateLoad(ti.Type, params[index], ""))
+		case AttrWidthType:
+			iptr := llvm.CreateAlloca(b, ti.Type1)
+			b.CreateStore(params[index], iptr)
+			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
+			nparams = append(nparams, b.CreateLoad(ti.Type, ptr, ""))
+		case AttrWidthType2:
+			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
+			iptr := llvm.CreateAlloca(b, typ)
+			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 0, ""))
+			index++
+			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 1, ""))
+			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
+			nparams = append(nparams, b.CreateLoad(ti.Type, ptr, ""))
+		}
+		index++
+	}
+
+	switch info.Return.Kind {
+	case AttrVoid:
+		llvm.CreateCall(b, info.Type, fn, nparams)
+		b.CreateRetVoid()
+	case AttrPointer:
+		ret := llvm.CreateCall(b, info.Type, fn, nparams)
+		b.CreateStore(ret, params[0])
+		b.CreateRetVoid()
+	case AttrWidthType, AttrWidthType2:
+		ret := llvm.CreateCall(b, info.Type, fn, nparams)
+		ptr := llvm.CreateAlloca(b, info.Return.Type)
+		b.CreateStore(ret, ptr)
+		iptr := b.CreateBitCast(ptr, llvm.PointerType(returnType, 0), "")
+		b.CreateRet(b.CreateLoad(returnType, iptr, ""))
+	default:
+		call := llvm.CreateCall(b, info.Type, fn, nparams)
+		call.SetTailCall(true)
+		b.CreateRet(call)
+	}
+	return wrapFunc, true
 }
