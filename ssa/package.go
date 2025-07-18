@@ -258,6 +258,18 @@ func NewProgram(target *Target) Program {
 	}
 }
 
+func (p Program) Target() *Target {
+	return p.target
+}
+
+func (p Program) TargetData() llvm.TargetData {
+	return p.td
+}
+
+func (p Program) Is32Bits() bool {
+	return p.is32Bits
+}
+
 func (p Program) SetPatch(patchType func(types.Type) types.Type) {
 	p.patchType = patchType
 }
@@ -681,6 +693,10 @@ type aPackage struct {
 }
 
 type Package = *aPackage
+
+func (p Package) Module() llvm.Module {
+	return p.mod
+}
 
 func (p Package) rtFunc(fnName string) Expr {
 	p.NeedRuntime = true

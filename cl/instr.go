@@ -351,6 +351,9 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			panic("unknown llgo instruction: " + name)
 		}
 	default:
+		if ftype == cFunc {
+			p.cfuncSymbol[name] = true
+		}
 		pkg := p.pkg
 		if aFn = pkg.FuncOf(name); aFn == nil {
 			if len(fn.FreeVars) > 0 {
