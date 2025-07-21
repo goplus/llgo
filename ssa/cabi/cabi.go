@@ -1,6 +1,8 @@
 package cabi
 
 import (
+	"strings"
+
 	"github.com/goplus/llgo/ssa"
 	"github.com/goplus/llvm"
 )
@@ -356,6 +358,25 @@ func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Valu
 		nfn.AddAttributeAtIndex(i, attr)
 	}
 	nfn.SetLinkage(fn.Linkage())
+
+	use := fn.FirstUse()
+	for !use.IsNil() {
+		if call := use.User().IsACallInst(); !call.IsNil() {
+			// call in other cfunc params use nfn
+			if cv := call.CalledValue(); cv != fn {
+				if name := cv.Name(); strings.HasPrefix(name, "__llgo_cwrap$") || p.isCFunc(name) {
+					n := call.OperandsCount()
+					for i := 0; i < n; i++ {
+						if call.Operand(i) == fn {
+							call.SetOperand(i, nfn)
+						}
+					}
+				}
+			}
+		}
+		use = use.NextUse()
+	}
+
 	fn.ReplaceAllUsesWith(wrapFunc)
 	fn.EraseFromParentAsFunction()
 
