@@ -8,11 +8,13 @@ import (
 )
 
 func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
+	target := prog.Target()
 	return &Transform{
 		prog:    prog,
 		td:      prog.TargetData(),
 		isCFunc: isCFunc,
-		GOARCH:  prog.Target().GOARCH,
+		GOOS:    target.GOOS,
+		GOARCH:  target.GOARCH,
 	}
 }
 
@@ -20,6 +22,7 @@ type Transform struct {
 	prog    ssa.Program
 	td      llvm.TargetData
 	isCFunc func(name string) bool
+	GOOS    string
 	GOARCH  string
 }
 
@@ -37,12 +40,12 @@ func (p *Transform) TransformModule(m llvm.Module) {
 	}
 }
 
-func (p *Transform) isLargeFunctionType(ft llvm.Type) bool {
-	if p.isLargeType(ft.ReturnType(), true) {
+func (p *Transform) isLargeFunctionType(ctx llvm.Context, ft llvm.Type) bool {
+	if p.isLargeType(ctx, ft.ReturnType(), true) {
 		return true
 	}
 	for _, typ := range ft.ParamTypes() {
-		if p.isLargeType(typ, false) {
+		if p.isLargeType(ctx, typ, false) {
 			return true
 		}
 	}
@@ -149,11 +152,12 @@ func (p *Transform) isLargeFunction(m llvm.Module, fn llvm.Value) bool {
 	}
 	p.transformUses(m, fn)
 
-	return p.isLargeFunctionType(fn.GlobalValueType())
+	return p.isLargeFunctionType(m.Context(), fn.GlobalValueType())
 }
 
 func (p *Transform) transformUses(m llvm.Module, fn llvm.Value) {
 	u := fn.FirstUse()
+	ctx := m.Context()
 	for !u.IsNil() {
 		if call := u.User().IsACallInst(); !call.IsNil() {
 			n := call.OperandsCount()
@@ -167,7 +171,7 @@ func (p *Transform) transformUses(m llvm.Module, fn llvm.Value) {
 						if p.isCFunc(gv.Name()) {
 							continue
 						}
-						if p.isLargeFunctionType(ft) {
+						if p.isLargeFunctionType(ctx, ft) {
 							if wrap, ok := p.transformGoFunc(m, gv); ok {
 								call.SetOperand(i, wrap)
 							}
@@ -197,9 +201,11 @@ func sretAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
 	return ctx.CreateTypeAttribute(id, typ)
 }
 
-func (p *Transform) isLargeType(typ llvm.Type, bret bool) bool {
+func (p *Transform) isLargeType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	switch p.GOARCH {
 	case "amd64":
+		return elementTypesCount(typ) >= 2
+	case "wasm":
 		return elementTypesCount(typ) >= 2
 	case "arm64":
 	}
@@ -207,15 +213,32 @@ func (p *Transform) isLargeType(typ llvm.Type, bret bool) bool {
 }
 
 func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
-	arch := p.prog.Target().GOARCH
-	switch arch {
+	switch p.GOARCH {
 	case "amd64":
 		return p.GetTypeInfoAmd64(ctx, typ, isret)
+	case "wasm":
+		return p.GetTypeInfoWasm32(ctx, typ, isret)
 	case "arm64":
 		return p.GetTypeInfoArm64(ctx, typ, isret)
-	default:
-		panic("not implment: " + arch)
 	}
+	panic("not implment: " + p.GOARCH)
+}
+
+func (p *Transform) GetTypeInfoWasm32(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	if typ.TypeKind() == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	if n := elementTypesCount(typ); n >= 2 {
+		info.Kind = AttrPointer
+		info.Type1 = llvm.PointerType(typ, 0)
+	}
+	return info
 }
 
 func (p *Transform) GetTypeInfoArm64(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
