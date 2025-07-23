@@ -10,20 +10,22 @@ import (
 func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
 	target := prog.Target()
 	return &Transform{
-		prog:    prog,
-		td:      prog.TargetData(),
-		isCFunc: isCFunc,
-		GOOS:    target.GOOS,
-		GOARCH:  target.GOARCH,
+		prog:           prog,
+		td:             prog.TargetData(),
+		isCFunc:        isCFunc,
+		GOOS:           target.GOOS,
+		GOARCH:         target.GOARCH,
+		UnsupportByVal: target.GOARCH == "arm64",
 	}
 }
 
 type Transform struct {
-	prog    ssa.Program
-	td      llvm.TargetData
-	isCFunc func(name string) bool
-	GOOS    string
-	GOARCH  string
+	prog           ssa.Program
+	td             llvm.TargetData
+	isCFunc        func(name string) bool
+	GOOS           string
+	GOARCH         string
+	UnsupportByVal bool // unsupport byval
 }
 
 func (p *Transform) TransformModule(m llvm.Module) {
@@ -208,6 +210,15 @@ func (p *Transform) isLargeType(ctx llvm.Context, typ llvm.Type, bret bool) bool
 	case "wasm":
 		return elementTypesCount(typ) >= 2
 	case "arm64":
+		switch typ.TypeKind() {
+		case llvm.StructTypeKind, llvm.ArrayTypeKind:
+			if bret && elementTypesCount(typ) == 1 {
+				return false
+			}
+			return true
+		default:
+			return false
+		}
 	}
 	return false
 }
@@ -241,12 +252,64 @@ func (p *Transform) GetTypeInfoWasm32(ctx llvm.Context, typ llvm.Type, isret boo
 	return info
 }
 
+func checkTypes(typs []llvm.Type, typ llvm.Type) bool {
+	for _, t := range typs {
+		if t != typ {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *Transform) GetTypeInfoArm64(ctx llvm.Context, typ llvm.Type, isret bool) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
+	kind := typ.TypeKind()
+	if kind == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
 	info.Size = p.Sizeof(typ)
 	info.Align = p.Alignof(typ)
+	switch kind {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		if isret && elementTypesCount(typ) == 1 {
+			return info
+		}
+		types := elementTypes(p.td, typ)
+		switch len(types) {
+		case 2:
+			// skip (i64/ptr/double,i64/ptr)
+			if (types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int64Type()) &&
+				(types[1].TypeKind() == llvm.PointerTypeKind || types[1] == ctx.Int64Type()) {
+				return info
+			}
+			fallthrough
+		case 3, 4:
+			if checkTypes(types, ctx.FloatType()) {
+				return info
+			}
+			if checkTypes(types, ctx.DoubleType()) {
+				return info
+			}
+		}
+		if info.Size > 16 {
+			info.Kind = AttrPointer
+			info.Type1 = llvm.PointerType(typ, 0)
+		} else if info.Size <= 8 {
+			info.Kind = AttrWidthType
+			if isret {
+				info.Type1 = ctx.IntType(info.Size * 8)
+			} else {
+				info.Type1 = ctx.Int64Type()
+			}
+		} else {
+			info.Kind = AttrWidthType
+			info.Type1 = llvm.ArrayType(ctx.Int64Type(), 2)
+		}
+	}
+
 	return info
 }
 
@@ -363,7 +426,9 @@ func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Valu
 			paramTypes = append(paramTypes, ti.Type1)
 		case AttrPointer:
 			paramTypes = append(paramTypes, ti.Type1)
-			attrs[len(paramTypes)] = byvalAttribute(ctx, ti.Type)
+			if !p.UnsupportByVal {
+				attrs[len(paramTypes)] = byvalAttribute(ctx, ti.Type)
+			}
 		case AttrWidthType2:
 			paramTypes = append(paramTypes, ti.Type1, ti.Type2)
 		}
@@ -483,7 +548,9 @@ func (p *Transform) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Val
 			paramTypes = append(paramTypes, ti.Type1)
 		case AttrPointer:
 			paramTypes = append(paramTypes, ti.Type1)
-			attrs[len(paramTypes)] = byvalAttribute(ctx, ti.Type)
+			if !p.UnsupportByVal {
+				attrs[len(paramTypes)] = byvalAttribute(ctx, ti.Type)
+			}
 		case AttrWidthType2:
 			paramTypes = append(paramTypes, ti.Type1, ti.Type2)
 		}
