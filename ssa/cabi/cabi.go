@@ -21,8 +21,9 @@ func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
 		tr.sys = &TypeInfoArm64{tr}
-	case "wasm":
-		tr.sys = &TypeInfoWasm32{tr}
+	case "arm":
+	case "wasm", "i386":
+		tr.sys = &TypeInfo32{tr}
 	}
 	return tr
 }
@@ -63,7 +64,6 @@ func (p *Transform) isLargeFunctionType(ctx llvm.Context, ft llvm.Type) bool {
 }
 
 type TypeInfoSys interface {
-	GOARCH() string
 	SupportByVal() bool
 	IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool
 	GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo

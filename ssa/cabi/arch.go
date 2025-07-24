@@ -50,10 +50,6 @@ type TypeInfoAmd64 struct {
 	*Transform
 }
 
-func (p *TypeInfoAmd64) GOARCH() string {
-	return "amd64"
-}
-
 func (p *TypeInfoAmd64) SupportByVal() bool {
 	return true
 }
@@ -131,10 +127,6 @@ type TypeInfoArm64 struct {
 	*Transform
 }
 
-func (p *TypeInfoArm64) GOARCH() string {
-	return "arm64"
-}
-
 func (p *TypeInfoArm64) SupportByVal() bool {
 	return false
 }
@@ -203,23 +195,19 @@ func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 	return info
 }
 
-type TypeInfoWasm32 struct {
+type TypeInfo32 struct {
 	*Transform
 }
 
-func (p *TypeInfoWasm32) GOARCH() string {
-	return "wasm"
-}
-
-func (p *TypeInfoWasm32) SupportByVal() bool {
+func (p *TypeInfo32) SupportByVal() bool {
 	return true
 }
 
-func (p *TypeInfoWasm32) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfo32) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	return elementTypesCount(typ) >= 2
 }
 
-func (p *TypeInfoWasm32) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfo32) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
