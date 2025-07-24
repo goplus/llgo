@@ -312,9 +312,8 @@ func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Valu
 		pret := b.CreateBitCast(ptr, llvm.PointerType(info.Return.Type, 0), "")
 		b.CreateRet(b.CreateLoad(info.Return.Type, pret, ""))
 	default:
-		call := llvm.CreateCall(b, nft, nfn, nparams)
-		call.SetTailCall(true)
-		b.CreateRet(call)
+		ret := llvm.CreateCall(b, nft, nfn, nparams)
+		b.CreateRet(ret)
 	}
 	return wrapFunc, true
 }
@@ -416,9 +415,8 @@ func (p *Transform) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Val
 		iptr := b.CreateBitCast(ptr, llvm.PointerType(returnType, 0), "")
 		b.CreateRet(b.CreateLoad(returnType, iptr, ""))
 	default:
-		call := llvm.CreateCall(b, info.Type, fn, nparams)
-		call.SetTailCall(true)
-		b.CreateRet(call)
+		ret := llvm.CreateCall(b, info.Type, fn, nparams)
+		b.CreateRet(ret)
 	}
 	return wrapFunc, true
 }
