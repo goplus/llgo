@@ -273,10 +273,6 @@ func (p Program) TargetData() llvm.TargetData {
 	return p.td
 }
 
-func (p Program) Is32Bits() bool {
-	return p.is32Bits
-}
-
 func (p Program) SetPatch(patchType func(types.Type) types.Type) {
 	p.patchType = patchType
 }
