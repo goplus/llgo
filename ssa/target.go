@@ -35,11 +35,11 @@ func (p *Target) targetData() llvm.TargetData {
 	if spec.Triple == "" {
 		spec.Triple = llvm.DefaultTargetTriple()
 	}
-	t, err := llvm.GetTargetFromTriple(spec.Triple)
+	t, err := llvm.GetTargetFromTriple("xtensa")
 	if err != nil {
 		panic(err)
 	}
-	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
+	machine := t.CreateTargetMachine("xtensa", "esp32", "+atomctl,+bool,+clamps,+coprocessor,+debug,+density,+dfpaccel,+div32,+exception,+fp,+highpriinterrupts,+interrupt,+loop,+mac16,+memctl,+minmax,+miscsr,+mul32,+mul32high,+nsa,+prid,+regprotect,+rvector,+s32c1i,+sext,+threadptr,+timerint,+windowed", llvm.CodeGenLevelDefault, llvm.RelocStatic, llvm.CodeModelDefault)
 	return machine.CreateTargetData()
 }
 

@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	LLGoPackage = "decl"
+	LLGoPackage = "link"
 )
 
 type (
@@ -204,8 +204,7 @@ func AllocaSigjmpBuf() Pointer
 //go:linkname Sigsetjmp llgo.sigsetjmp
 func Sigsetjmp(jb Pointer, savemask Int) Int
 
-//go:linkname Siglongjmp llgo.siglongjmp
-func Siglongjmp(jb Pointer, retval Int)
+func Siglongjmp(jb Pointer, retval Int) {}
 
 //go:linkname Unreachable llgo.unreachable
 func Unreachable()
@@ -229,6 +228,9 @@ func Qsort(base Pointer, count, elem uintptr, compar func(a, b Pointer) Int)
 func Atoi(s *Char) Int
 
 // -----------------------------------------------------------------------------
+
+//go:linkname Fdopen C.fdopen
+func Fdopen(fd Int, mode *Char) FilePtr
 
 //go:linkname Printf C.printf
 func Printf(format *Char, __llgo_va_list ...any) Int

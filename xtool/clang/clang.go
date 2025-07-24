@@ -40,7 +40,7 @@ type Cmd struct {
 // New creates a new clang command.
 func New(app string) *Cmd {
 	if app == "" {
-		app = "clang"
+		app = "clang++"
 	}
 	return &Cmd{app, nil, false, nil, os.Stdout, os.Stderr}
 }
@@ -80,8 +80,11 @@ func (p *Cmd) execWithFlags(flags []string, args ...string) error {
 	}
 	cmdArgs := make([]string, 0, len(allFlags)+len(args))
 	cmdArgs = append(cmdArgs, allFlags...)
+
 	cmdArgs = append(cmdArgs, args...)
+
 	cmd := exec.Command(p.app, cmdArgs...)
+
 	if p.Verbose {
 		fmt.Fprintf(os.Stderr, "%v\n", cmd)
 	}
@@ -130,7 +133,7 @@ func (p *Cmd) CheckLinkArgs(cmdArgs []string, wasm bool) error {
 	src := "int main() {return 0;}"
 	srcIn := strings.NewReader(src)
 	p.Stdin = srcIn
-
+	fmt.Println(args)
 	// Execute the command
 	return p.execWithFlags([]string{"LDFLAGS", "CCFLAGS"}, args...)
 }
