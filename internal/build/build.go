@@ -632,8 +632,9 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 
 	args := []string{"-o", app}
 	args = append(args, linkArgs...)
-	args = append(args, "-O3", "-nostdlib", "-ferror-limit=0", "-target", "xtensa-esp32-elf", "--target=xtensa-esp-unknown-elf", "-mcpu=esp32", "-I", "/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/include", "-L/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/lib/esp32/no-rtti", "-lc", "-lm", "-lnosys")
-	args = append(args, "-Wl,--Map=ttt.map", "-L/Users/haolan/esp/esp-idf/components/xtensa/esp32", "-lxt_hal", "-L/Users/haolan/esp/esp-idf/components/esp_phy/lib/esp32", "-lphy", "-lrtc")
+	args = append(args, "-fuse-ld=/Users/haolan/Downloads/esp-clang/bin/ld.lld", "-O3", "-nostdlib", "-ferror-limit=0", "-target", "xtensa-esp32-elf", "--target=xtensa-esp-unknown-elf", "-mcpu=esp32", "-I", "/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/include", "-L/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/lib/esp32/no-rtti", "-L/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32/no-rtti", "-lgcc", "-lc", "-lm", "-lnosys")
+	args = append(args,
+		"-Wl,--Map=ttt.map", "-L/Users/haolan/esp/esp-idf/components/bootloader/subproject/main/ld/esp32", "-L/Users/haolan/esp/esp-idf/components/xtensa/esp32", "-lxt_hal", "-L/Users/haolan/esp/esp-idf/components/esp_phy/lib/esp32", "-lphy", "-lrtc")
 	args = append(args, "-Wl,--defsym=IDF_TARGET_ESP32=0", "-Wl,-L/Users/haolan/esp/esp-idf/components/soc/esp32/ld", "-Wl,-L/Users/haolan/esp/esp-idf/components/esp_rom/esp32/ld", "-Wl,-L/Users/haolan/esp/esp-idf/examples/get-started/hello_world/build/esp-idf/esp_system/ld")
 	args = append(args, "-fno-jump-tables", "-Wl,--cref", "-mlongcalls", "-fno-rtti", "-fno-lto", "-Wl,--gc-sections")
 	args = append(args,
@@ -720,8 +721,8 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 
 	fmt.Println(args)
 
-	if err := ctx.compiler().Link(args...); err != nil {
-		panic(err)
+	if ret, err := exec.Command("clang", args...).CombinedOutput(); err != nil {
+		panic(string(ret))
 	}
 	return nil
 }
