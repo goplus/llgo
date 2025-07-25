@@ -1045,6 +1045,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		fn := ret.FuncOf(fnName)
 		if fn != nil {
 			fn.SetName(exportName)
+			ctx.cfuncSymbol[exportName] = true
 		}
 	}
 	transform := cabi.NewTransform(prog, func(name string) bool {
