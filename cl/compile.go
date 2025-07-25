@@ -32,6 +32,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/ssa/cabi"
 )
 
 // -----------------------------------------------------------------------------
@@ -127,6 +128,8 @@ type context struct {
 	cgoRet     llssa.Expr
 	cgoSymbols []string
 	cgoExports map[string]string
+
+	cfuncSymbol map[string]bool
 }
 
 type pkgState byte
@@ -1001,8 +1004,9 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
-		cgoExports: make(map[string]string),
-		cgoSymbols: make([]string, 0, 128),
+		cgoExports:  make(map[string]string),
+		cgoSymbols:  make([]string, 0, 128),
+		cfuncSymbol: make(map[string]bool),
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")
@@ -1041,8 +1045,14 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		fn := ret.FuncOf(fnName)
 		if fn != nil {
 			fn.SetName(exportName)
+			ctx.cfuncSymbol[exportName] = true
 		}
 	}
+	transform := cabi.NewTransform(prog, func(name string) bool {
+		return ctx.cfuncSymbol[name]
+	})
+	transform.TransformModule(ret.Module())
+
 	return
 }
 
