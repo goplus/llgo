@@ -16,6 +16,11 @@ func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
 		GOOS:    target.GOOS,
 		GOARCH:  target.GOARCH,
 	}
+	if tr.isCFunc == nil {
+		tr.isCFunc = func(name string) bool {
+			return !strings.Contains(name, ".")
+		}
+	}
 	switch target.GOARCH {
 	case "amd64":
 		tr.sys = &TypeInfoAmd64{tr}
@@ -38,20 +43,35 @@ type Transform struct {
 }
 
 func (p *Transform) TransformModule(m llvm.Module) {
-	var fns []llvm.Value
+	var cfns []llvm.Value
+	var exports []llvm.Value
 	fn := m.FirstFunction()
 	for !fn.IsNil() {
-		if p.isLargeFunction(m, fn) {
-			fns = append(fns, fn)
+		if p.isCFunc(fn.Name()) {
+			p.TransformFuncCall(m, fn)
+			if p.isWrapFunctionType(m.Context(), fn.GlobalValueType()) {
+				if fn.IsDeclaration() {
+					cfns = append(cfns, fn)
+				} else {
+					exports = append(exports, fn)
+				}
+			}
 		}
 		fn = llvm.NextFunction(fn)
 	}
-	for _, fn := range fns {
+	for _, fn := range cfns {
 		p.transformCFunc(m, fn)
+	}
+	for _, fn := range exports {
+		if wrap, ok := p.transformGoFunc(m, fn); ok {
+			fname := fn.Name()
+			fn.SetName("__llgo_goexport$" + fname)
+			wrap.SetName(fname)
+		}
 	}
 }
 
-func (p *Transform) isLargeFunctionType(ctx llvm.Context, ft llvm.Type) bool {
+func (p *Transform) isWrapFunctionType(ctx llvm.Context, ft llvm.Type) bool {
 	if p.IsWrapType(ctx, ft.ReturnType(), true) {
 		return true
 	}
@@ -106,19 +126,7 @@ type TypeInfo struct {
 	Align int
 }
 
-func (p *Transform) isLargeFunction(m llvm.Module, fn llvm.Value) bool {
-	if !p.isCFunc(fn.Name()) {
-		return false
-	}
-	if !fn.IsDeclaration() {
-		return false
-	}
-	p.transformUses(m, fn)
-
-	return p.isLargeFunctionType(m.Context(), fn.GlobalValueType())
-}
-
-func (p *Transform) transformUses(m llvm.Module, fn llvm.Value) {
+func (p *Transform) TransformFuncCall(m llvm.Module, fn llvm.Value) {
 	u := fn.FirstUse()
 	ctx := m.Context()
 	for !u.IsNil() {
@@ -134,7 +142,7 @@ func (p *Transform) transformUses(m llvm.Module, fn llvm.Value) {
 						if p.isCFunc(gv.Name()) {
 							continue
 						}
-						if p.isLargeFunctionType(ctx, ft) {
+						if p.isWrapFunctionType(ctx, ft) {
 							if wrap, ok := p.transformGoFunc(m, gv); ok {
 								call.SetOperand(i, wrap)
 							}
@@ -145,13 +153,6 @@ func (p *Transform) transformUses(m llvm.Module, fn llvm.Value) {
 		}
 		u = u.NextUse()
 	}
-}
-
-func (p *Transform) TransformFunc(m llvm.Module, fn llvm.Value) {
-	if !p.isLargeFunction(m, fn) {
-		return
-	}
-	p.transformCFunc(m, fn)
 }
 
 func byvalAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
