@@ -40,7 +40,7 @@ type Cmd struct {
 // New creates a new clang command.
 func New(app string) *Cmd {
 	if app == "" {
-		app = "clang++"
+		app = "clang"
 	}
 	return &Cmd{app, nil, false, nil, os.Stdout, os.Stderr}
 }

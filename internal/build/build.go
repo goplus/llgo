@@ -630,13 +630,47 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
 	}
 
-	args := []string{"-o", app}
-	args = append(args, linkArgs...)
-	args = append(args, "-fuse-ld=/Users/haolan/Downloads/esp-clang/bin/ld.lld", "-O3", "-nostdlib", "-ferror-limit=0", "-target", "xtensa-esp32-elf", "--target=xtensa-esp-unknown-elf", "-mcpu=esp32", "-I", "/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/include", "-L/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/lib/esp32/no-rtti", "-L/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32/no-rtti", "-lgcc", "-lc", "-lm", "-lnosys")
+	// combine symbol first
+	tempArchive, err := os.CreateTemp("", fmt.Sprintf("%s*.a", app))
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tempArchive.Name())
+
+	combineArgs := []string{"-r", "-o", tempArchive.Name()}
+	combineArgs = append(combineArgs, objFiles...)
+
+	err = exec.Command("xtensa-esp32-elf-clang-ld", combineArgs...).Run()
+	if err != nil {
+		panic(err)
+	}
+
+	args := []string{}
+	args = append(args, "--target=xtensa-esp-elf", "-mcpu=esp32")
 	args = append(args,
-		"-Wl,--Map=ttt.map", "-L/Users/haolan/esp/esp-idf/components/bootloader/subproject/main/ld/esp32", "-L/Users/haolan/esp/esp-idf/components/xtensa/esp32", "-lxt_hal", "-L/Users/haolan/esp/esp-idf/components/esp_phy/lib/esp32", "-lphy", "-lrtc")
-	args = append(args, "-Wl,--defsym=IDF_TARGET_ESP32=0", "-Wl,-L/Users/haolan/esp/esp-idf/components/soc/esp32/ld", "-Wl,-L/Users/haolan/esp/esp-idf/components/esp_rom/esp32/ld", "-Wl,-L/Users/haolan/esp/esp-idf/examples/get-started/hello_world/build/esp-idf/esp_system/ld")
-	args = append(args, "-fno-jump-tables", "-Wl,--cref", "-mlongcalls", "-fno-rtti", "-fno-lto", "-Wl,--gc-sections")
+		"-nostdlib",
+		"-Os",
+		"-Wl,--allow-multiple-definition",
+		"--ld-path=xtensa-esp32-elf-clang-ld",
+		"-z", "noexecstack",
+		"-Wl,--cref",
+		"-Wl,--defsym=IDF_TARGET_ESP32=0",
+		"-Wl,--Map=ttt.map",
+		"-Wl,--no-warn-rwx-segments",
+		"-Wl,--orphan-handling=warn",
+		"-fno-rtti",
+		"-fno-lto",
+		"-fdata-sections",
+		"-ffunction-sections",
+		"-Wl,--gc-sections",
+		"-Wl,--warn-common",
+	)
+
+	args = append(args,
+		"-L/Users/haolan/esp/esp-idf/components/soc/esp32/ld",
+		"-L/Users/haolan/esp/esp-idf/components/esp_rom/esp32/ld",
+		"-L/Users/haolan/esp/esp-idf/examples/get-started/hello_world/build/esp-idf/esp_system/ld",
+	)
 	args = append(args,
 		"-T", "esp32.peripherals.ld",
 		"-T", "esp32.rom.ld",
@@ -645,7 +679,12 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-T", "esp32.rom.newlib-data.ld",
 		"-T", "esp32.rom.syscalls.ld",
 		"-T", "esp32.rom.newlib-funcs.ld",
-		"-T", "memory.ld", "-T", "sections.ld")
+		"-T", "memory.ld",
+		"-T", "sections.ld",
+	)
+
+	args = append(args, linkArgs...)
+	args = append(args, "-L/Users/haolan/esp/esp-idf/components/xtensa/esp32", "-lxt_hal")
 
 	args = append(args,
 		"-u", "esp_app_desc",
@@ -660,9 +699,8 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-u", "esp_dport_access_reg_read",
 		"-u", "esp_security_init_include_impl",
 		"-Wl,--undefined=FreeRTOS_openocd_params",
-		"-u", "_impure_data",
-		"-u", "__sglue",
 		"-u", "app_main",
+		"-lm",
 		"-u", "newlib_include_heap_impl",
 		"-u", "newlib_include_syscalls_impl",
 		"-u", "newlib_include_pthread_impl",
@@ -704,6 +742,9 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-Wl,--wrap=__gxx_personality_v0",
 		"-Wl,--wrap=__cxa_throw",
 		"-Wl,--wrap=__cxa_allocate_exception",
+		"-u", "__cxa_guard_dummy",
+		"-u", "__cxx_init_dummy",
+		"-lc", "-lclang_rt.builtins",
 		"-u", "__cxx_fatal_exception",
 		"-u", "esp_timer_init_include_func",
 		"-u", "uart_vfs_include_dev_init",
@@ -712,18 +753,17 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-u", "vfs_include_syscalls_impl",
 		"-u", "esp_vfs_include_nullfs_register",
 	)
-	args = append(args, "/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32/no-rtti/crti.o", "/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/lib/esp32/no-rtti/crt0.o",
-		"/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32/no-rtti/crtn.o",
-		"/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32/no-rtti/crtbegin.o",
-		"/Users/haolan/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32/no-rtti/crtend.o",
-	)
-	args = append(args, objFiles...)
 
-	fmt.Println(args)
+	compileArgs := append([]string{"-o", app + ".elf"}, args...)
+	combineArgs = append(combineArgs, tempArchive.Name())
+	// compileArgs = append(compileArgs, ctx.crossCompile.CCFLAGS...)
+	// compileArgs = append(compileArgs, ctx.crossCompile.LDFLAGS...)
+	// compileArgs = append(compileArgs, ctx.crossCompile.EXTRAFLAGS...)
 
-	if ret, err := exec.Command("clang", args...).CombinedOutput(); err != nil {
-		panic(string(ret))
+	if err := ctx.compiler().Link(compileArgs...); err != nil {
+		panic(err)
 	}
+
 	return nil
 }
 
