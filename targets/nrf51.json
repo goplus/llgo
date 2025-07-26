@@ -1,0 +1,16 @@
+{
+	"inherits": ["cortex-m0"],
+	"build-tags": ["nrf51822", "nrf51", "nrf"],
+	"cflags": [
+		"-DNRF51",
+		"-I{root}/lib/CMSIS/CMSIS/Include",
+		"-I{root}/lib/nrfx/mdk"
+	],
+	"linkerscript": "targets/nrf51.ld",
+	"extra-files": [
+		"lib/nrfx/mdk/system_nrf51.c",
+		"src/device/nrf/nrf51.s"
+	],
+	"openocd-transport": "swd",
+	"openocd-target": "nrf51"
+}

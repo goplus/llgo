@@ -1,0 +1,13 @@
+{
+    "inherits": [
+        "rp2040"
+    ],
+    "serial-port": ["1b4f:0026"],
+    "build-tags": ["thingplus_rp2040"],
+    "ldflags": [
+        "--defsym=__flash_size=16M"
+    ],
+    "extra-files": [
+        "targets/pico-boot-stage2.S"
+    ]
+}
