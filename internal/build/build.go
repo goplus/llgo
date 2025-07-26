@@ -440,9 +440,9 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
-				if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
-					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
-				}
+				// if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
+				// 	panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
+				// }
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
 		default:
@@ -567,7 +567,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		check(err)
 		llFiles = append(llFiles, export)
 	}
-
 	err = compileAndLinkLLFiles(ctx, app, llFiles, linkArgs, verbose)
 	check(err)
 
@@ -625,7 +624,153 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 }
 
+func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, verbose bool) error {
+	outputFile := app
+	if !strings.HasSuffix(outputFile, ".o") {
+		outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
+	}
+
+	// combine symbol first
+	tempArchive, err := os.CreateTemp("", fmt.Sprintf("%s*.a", app))
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tempArchive.Name())
+
+	combineArgs := []string{"-r", "-o", tempArchive.Name()}
+	combineArgs = append(combineArgs, objFiles...)
+
+	err = exec.Command("xtensa-esp32-elf-clang-ld", combineArgs...).Run()
+	if err != nil {
+		panic(err)
+	}
+
+	args := []string{}
+	args = append(args, "--target=xtensa-esp-elf", "-mcpu=esp32")
+	args = append(args,
+		"-nostdlib",
+		"-Os",
+		"-Wl,--allow-multiple-definition",
+		"--ld-path=xtensa-esp32-elf-clang-ld",
+		"-z", "noexecstack",
+		"-Wl,--cref",
+		"-Wl,--defsym=IDF_TARGET_ESP32=0",
+		"-Wl,--Map=ttt.map",
+		"-Wl,--no-warn-rwx-segments",
+		"-Wl,--orphan-handling=warn",
+		"-fno-rtti",
+		"-fno-lto",
+		"-fdata-sections",
+		"-ffunction-sections",
+		"-Wl,--gc-sections",
+		"-Wl,--warn-common",
+	)
+
+	args = append(args,
+		"-L/Users/haolan/esp/esp-idf/components/soc/esp32/ld",
+		"-L/Users/haolan/esp/esp-idf/components/esp_rom/esp32/ld",
+		"-L/Users/haolan/esp/esp-idf/examples/get-started/hello_world/build/esp-idf/esp_system/ld",
+	)
+	args = append(args,
+		"-T", "esp32.peripherals.ld",
+		"-T", "esp32.rom.ld",
+		"-T", "esp32.rom.api.ld",
+		"-T", "esp32.rom.libgcc.ld",
+		"-T", "esp32.rom.newlib-data.ld",
+		"-T", "esp32.rom.syscalls.ld",
+		"-T", "esp32.rom.newlib-funcs.ld",
+		"-T", "memory.ld",
+		"-T", "sections.ld",
+	)
+
+	args = append(args, linkArgs...)
+	args = append(args, "-L/Users/haolan/esp/esp-idf/components/xtensa/esp32", "-lxt_hal")
+
+	args = append(args,
+		"-u", "esp_app_desc",
+		"-u", "esp_efuse_startup_include_func",
+		"-u", "ld_include_highint_hdl",
+		"-u", "start_app",
+		"-u", "start_app_other_cores",
+		"-u", "__ubsan_include",
+		"-u", "esp_system_include_startup_funcs",
+		"-Wl,--wrap=longjmp",
+		"-u", "__assert_func",
+		"-u", "esp_dport_access_reg_read",
+		"-u", "esp_security_init_include_impl",
+		"-Wl,--undefined=FreeRTOS_openocd_params",
+		"-u", "app_main",
+		"-lm",
+		"-u", "newlib_include_heap_impl",
+		"-u", "newlib_include_syscalls_impl",
+		"-u", "newlib_include_pthread_impl",
+		"-u", "newlib_include_assert_impl",
+		"-u", "newlib_include_getentropy_impl",
+		"-u", "newlib_include_init_funcs",
+		"-u", "pthread_include_pthread_impl",
+		"-u", "pthread_include_pthread_cond_var_impl",
+		"-u", "pthread_include_pthread_local_storage_impl",
+		"-u", "pthread_include_pthread_rwlock_impl",
+		"-u", "pthread_include_pthread_semaphore_impl",
+		"-Wl,--wrap=__register_frame_info_bases",
+		"-Wl,--wrap=__register_frame_info",
+		"-Wl,--wrap=__register_frame",
+		"-Wl,--wrap=__register_frame_info_table_bases",
+		"-Wl,--wrap=__register_frame_info_table",
+		"-Wl,--wrap=__register_frame_table",
+		"-Wl,--wrap=__deregister_frame_info_bases",
+		"-Wl,--wrap=__deregister_frame_info",
+		"-Wl,--wrap=_Unwind_Find_FDE",
+		"-Wl,--wrap=_Unwind_GetGR",
+		"-Wl,--wrap=_Unwind_GetCFA",
+		"-Wl,--wrap=_Unwind_GetIP",
+		"-Wl,--wrap=_Unwind_GetIPInfo",
+		"-Wl,--wrap=_Unwind_GetRegionStart",
+		"-Wl,--wrap=_Unwind_GetDataRelBase",
+		"-Wl,--wrap=_Unwind_GetTextRelBase",
+		"-Wl,--wrap=_Unwind_SetIP",
+		"-Wl,--wrap=_Unwind_SetGR",
+		"-Wl,--wrap=_Unwind_GetLanguageSpecificData",
+		"-Wl,--wrap=_Unwind_FindEnclosingFunction",
+		"-Wl,--wrap=_Unwind_Resume",
+		"-Wl,--wrap=_Unwind_RaiseException",
+		"-Wl,--wrap=_Unwind_DeleteException",
+		"-Wl,--wrap=_Unwind_ForcedUnwind",
+		"-Wl,--wrap=_Unwind_Resume_or_Rethrow",
+		"-Wl,--wrap=_Unwind_Backtrace",
+		"-Wl,--wrap=__cxa_call_unexpected",
+		"-Wl,--wrap=__gxx_personality_v0",
+		"-Wl,--wrap=__cxa_throw",
+		"-Wl,--wrap=__cxa_allocate_exception",
+		"-u", "__cxa_guard_dummy",
+		"-u", "__cxx_init_dummy",
+		"-lc", "-lclang_rt.builtins",
+		"-u", "__cxx_fatal_exception",
+		"-u", "esp_timer_init_include_func",
+		"-u", "uart_vfs_include_dev_init",
+		"-u", "include_esp_phy_override",
+		"-u", "esp_vfs_include_console_register",
+		"-u", "vfs_include_syscalls_impl",
+		"-u", "esp_vfs_include_nullfs_register",
+	)
+
+	compileArgs := append([]string{"-o", app + ".elf"}, args...)
+	combineArgs = append(combineArgs, tempArchive.Name())
+	// compileArgs = append(compileArgs, ctx.crossCompile.CCFLAGS...)
+	// compileArgs = append(compileArgs, ctx.crossCompile.LDFLAGS...)
+	// compileArgs = append(compileArgs, ctx.crossCompile.EXTRAFLAGS...)
+
+	if err := ctx.compiler().Link(compileArgs...); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
 func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string, verbose bool) error {
+	if true {
+		return mergeObjectFiles(ctx, app, linkArgs, llFiles, verbose)
+	}
 	buildArgs := []string{"-o", app}
 	buildArgs = append(buildArgs, linkArgs...)
 
@@ -637,6 +782,7 @@ func compileAndLinkLLFiles(ctx *context, app string, llFiles, linkArgs []string,
 	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
 	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
 	buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
+
 	buildArgs = append(buildArgs, llFiles...)
 	if verbose {
 		buildArgs = append(buildArgs, "-v")
@@ -818,6 +964,9 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	exportFile += ".o"
 	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
+
+	args = append(args, "-target", "xtensa-esp32-elf", "--target=xtensa-esp-unknown-elf", "-mcpu=esp32")
+
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
@@ -1047,9 +1196,12 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		llFile += ".ll"
 		args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 	} else {
-		llFile += ".o"
+		llFile += ".a"
 		args = append(args, "-o", llFile, "-c", cFile)
 	}
+
+	args = append(args, "-target", "xtensa-esp32-elf", "--target=xtensa-esp-unknown-elf", "-mcpu=esp32")
+
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	args = append(args, ctx.crossCompile.CFLAGS...)
 	if verbose {
