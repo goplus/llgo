@@ -70,6 +70,7 @@ const (
 type Config struct {
 	Goos        string
 	Goarch      string
+	Target      string   // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
 	BinPath     string
 	AppExt      string   // ".exe" on Windows, empty on Unix
 	OutFile     string   // only valid for ModeBuild when len(pkgs) == 1
@@ -251,7 +252,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled())
+	export, err := crosscompile.UseWithTarget(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), conf.Target)
 	check(err)
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
