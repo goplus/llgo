@@ -165,6 +165,10 @@ func sretAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
 	return ctx.CreateTypeAttribute(id, typ)
 }
 
+func funcInlineHint(ctx llvm.Context) llvm.Attribute {
+	return ctx.CreateEnumAttribute(llvm.AttributeKindID("inlinehint"), 0)
+}
+
 func (p *Transform) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	if p.sys != nil {
 		return p.sys.IsWrapType(ctx, typ, bret)
@@ -239,6 +243,7 @@ func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Valu
 	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
 	wrapFunc := llvm.AddFunction(m, "__llgo_cwrap$"+fname, info.Type)
 	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
+	wrapFunc.AddFunctionAttr(funcInlineHint(ctx))
 
 	fn.SetName("")
 
@@ -364,6 +369,7 @@ func (p *Transform) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Val
 	}
 	wrapFunc := llvm.AddFunction(m, wrapName, nft)
 	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
+	wrapFunc.AddFunctionAttr(funcInlineHint(ctx))
 
 	for i, attr := range attrs {
 		wrapFunc.AddAttributeAtIndex(i, attr)
