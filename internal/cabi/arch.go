@@ -47,7 +47,7 @@ func checkTypes(typs []llvm.Type, typ llvm.Type) bool {
 }
 
 type TypeInfoAmd64 struct {
-	*Transform
+	*Transformer
 }
 
 func (p *TypeInfoAmd64) SupportByVal() bool {
@@ -124,7 +124,7 @@ func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 }
 
 type TypeInfoArm64 struct {
-	*Transform
+	*Transformer
 }
 
 func (p *TypeInfoArm64) SupportByVal() bool {
@@ -196,7 +196,7 @@ func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 }
 
 type TypeInfo32 struct {
-	*Transform
+	*Transformer
 }
 
 func (p *TypeInfo32) SupportByVal() bool {

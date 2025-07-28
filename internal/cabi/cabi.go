@@ -7,19 +7,13 @@ import (
 	"github.com/goplus/llvm"
 )
 
-func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
+func NewTransformer(prog ssa.Program) *Transformer {
 	target := prog.Target()
-	tr := &Transform{
-		prog:    prog,
-		td:      prog.TargetData(),
-		isCFunc: isCFunc,
-		GOOS:    target.GOOS,
-		GOARCH:  target.GOARCH,
-	}
-	if tr.isCFunc == nil {
-		tr.isCFunc = func(name string) bool {
-			return !strings.Contains(name, ".")
-		}
+	tr := &Transformer{
+		prog:   prog,
+		td:     prog.TargetData(),
+		GOOS:   target.GOOS,
+		GOARCH: target.GOARCH,
 	}
 	switch target.GOARCH {
 	case "amd64":
@@ -33,16 +27,19 @@ func NewTransform(prog ssa.Program, isCFunc func(name string) bool) *Transform {
 	return tr
 }
 
-type Transform struct {
-	prog    ssa.Program
-	td      llvm.TargetData
-	isCFunc func(name string) bool
-	GOOS    string
-	GOARCH  string
-	sys     TypeInfoSys
+type Transformer struct {
+	prog   ssa.Program
+	td     llvm.TargetData
+	GOOS   string
+	GOARCH string
+	sys    TypeInfoSys
 }
 
-func (p *Transform) TransformModule(m llvm.Module) {
+func (p *Transformer) isCFunc(name string) bool {
+	return !strings.Contains(name, ".")
+}
+
+func (p *Transformer) TransformModule(m llvm.Module) {
 	var cfns []llvm.Value
 	var exports []llvm.Value
 	fn := m.FirstFunction()
@@ -65,13 +62,13 @@ func (p *Transform) TransformModule(m llvm.Module) {
 	for _, fn := range exports {
 		if wrap, ok := p.transformGoFunc(m, fn); ok {
 			fname := fn.Name()
-			fn.SetName("__llgo_goexport$" + fname)
+			fn.SetName("__llgo_godecl$" + fname)
 			wrap.SetName(fname)
 		}
 	}
 }
 
-func (p *Transform) isWrapFunctionType(ctx llvm.Context, ft llvm.Type) bool {
+func (p *Transformer) isWrapFunctionType(ctx llvm.Context, ft llvm.Type) bool {
 	if p.IsWrapType(ctx, ft.ReturnType(), true) {
 		return true
 	}
@@ -126,7 +123,7 @@ type TypeInfo struct {
 	Align int
 }
 
-func (p *Transform) TransformFuncCall(m llvm.Module, fn llvm.Value) {
+func (p *Transformer) TransformFuncCall(m llvm.Module, fn llvm.Value) {
 	u := fn.FirstUse()
 	ctx := m.Context()
 	for !u.IsNil() {
@@ -169,29 +166,29 @@ func funcInlineHint(ctx llvm.Context) llvm.Attribute {
 	return ctx.CreateEnumAttribute(llvm.AttributeKindID("inlinehint"), 0)
 }
 
-func (p *Transform) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *Transformer) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	if p.sys != nil {
 		return p.sys.IsWrapType(ctx, typ, bret)
 	}
 	return false
 }
 
-func (p *Transform) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *Transformer) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
 	if p.sys != nil {
 		return p.sys.GetTypeInfo(ctx, typ, bret)
 	}
 	panic("not implment: " + p.GOARCH)
 }
 
-func (p *Transform) Sizeof(typ llvm.Type) int {
+func (p *Transformer) Sizeof(typ llvm.Type) int {
 	return int(p.td.TypeAllocSize(typ))
 }
 
-func (p *Transform) Alignof(typ llvm.Type) int {
+func (p *Transformer) Alignof(typ llvm.Type) int {
 	return int(p.td.ABITypeAlignment(typ))
 }
 
-func (p *Transform) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
+func (p *Transformer) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
 	info.Type = typ
 	info.Return = p.GetTypeInfo(ctx, typ.ReturnType(), true)
 	params := typ.ParamTypes()
@@ -202,7 +199,7 @@ func (p *Transform) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo)
 	return
 }
 
-func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
+func (p *Transformer) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
 	var paramTypes []llvm.Type
 	var returnType llvm.Type
 	attrs := make(map[int]llvm.Attribute)
@@ -241,7 +238,7 @@ func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Valu
 
 	fname := fn.Name()
 	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
-	wrapFunc := llvm.AddFunction(m, "__llgo_cwrap$"+fname, info.Type)
+	wrapFunc := llvm.AddFunction(m, "__llgo_godecl$"+fname, info.Type)
 	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
 	wrapFunc.AddFunctionAttr(funcInlineHint(ctx))
 
@@ -324,7 +321,7 @@ func (p *Transform) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Valu
 	return wrapFunc, true
 }
 
-func (p *Transform) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
+func (p *Transformer) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
 	var paramTypes []llvm.Type
 	var returnType llvm.Type
 	attrs := make(map[int]llvm.Attribute)
@@ -363,7 +360,7 @@ func (p *Transform) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Val
 
 	fname := fn.Name()
 	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
-	wrapName := "__llgo_gowrap$" + fname
+	wrapName := "__llgo_cdecl$" + fname
 	if wrapFunc := m.NamedFunction(wrapName); !wrapFunc.IsNil() {
 		return wrapFunc, true
 	}
