@@ -186,6 +186,18 @@ func (p Program) tyNewTuple() *types.Signature {
 	return p.pyNewTuple
 }
 
+// func(int32) *Object
+func (p Program) tyBoolFromLong() *types.Signature {
+	if p.pyBoolFromInt32 == nil {
+		paramObjPtr := p.paramObjPtr()
+		paramFloat := types.NewParam(token.NoPos, nil, "", p.Int32().raw.Type)
+		params := types.NewTuple(paramFloat)
+		results := types.NewTuple(paramObjPtr)
+		p.pyBoolFromInt32 = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyBoolFromInt32
+}
+
 // func(float64) *Object
 func (p Program) tyFloatFromDouble() *types.Signature {
 	if p.floatFromDbl == nil {
@@ -196,6 +208,30 @@ func (p Program) tyFloatFromDouble() *types.Signature {
 		p.floatFromDbl = types.NewSignatureType(nil, nil, nil, params, results, false)
 	}
 	return p.floatFromDbl
+}
+
+// func(int64) *Object
+func (p Program) tyLongFromInt64() *types.Signature {
+	if p.pyLongFromInt64 == nil {
+		paramObjPtr := p.paramObjPtr()
+		paramInt := types.NewParam(token.NoPos, nil, "", p.Int64().raw.Type)
+		params := types.NewTuple(paramInt)
+		results := types.NewTuple(paramObjPtr)
+		p.pyLongFromInt64 = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyLongFromInt64
+}
+
+// func(uint64) *Object
+func (p Program) tyLongFromUint64() *types.Signature {
+	if p.pyLongFromUint64 == nil {
+		paramObjPtr := p.paramObjPtr()
+		paramInt := types.NewParam(token.NoPos, nil, "", p.Uint64().raw.Type)
+		params := types.NewTuple(paramInt)
+		results := types.NewTuple(paramObjPtr)
+		p.pyLongFromUint64 = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyLongFromUint64
 }
 
 // func(*Object, ...)
@@ -217,6 +253,38 @@ func (p Program) tyPyUnicodeFromString() *types.Signature {
 		p.pyUniStr = types.NewSignatureType(nil, nil, nil, params, results, false)
 	}
 	return p.pyUniStr
+}
+
+// func(*char, int) *Object
+func (p Program) tyPyUnicodeFromStringAndSize() *types.Signature {
+	if p.pyUniFromStrAndSize == nil {
+		charPtr := types.NewPointer(types.Typ[types.Int8])
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", charPtr), types.NewParam(token.NoPos, nil, "", types.Typ[types.Int]))
+		results := types.NewTuple(p.paramObjPtr())
+		p.pyUniFromStrAndSize = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyUniFromStrAndSize
+}
+
+// func(float64, float64) *Object
+func (p Program) tyPyComplexFromDoubles() *types.Signature {
+	if p.pyComplexFromDbs == nil {
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Float64]), types.NewParam(token.NoPos, nil, "", types.Typ[types.Float64]))
+		results := types.NewTuple(p.paramObjPtr())
+		p.pyComplexFromDbs = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyComplexFromDbs
+}
+
+// func(*char, int) *Object
+func (p Program) tyPyByteArrayFromStringAndSize() *types.Signature {
+	if p.pyBytesFromStrAndSize == nil {
+		charPtr := types.NewPointer(types.Typ[types.Int8])
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", charPtr), types.NewParam(token.NoPos, nil, "", types.Typ[types.Int]))
+		results := types.NewTuple(p.paramObjPtr())
+		p.pyBytesFromStrAndSize = types.NewSignatureType(nil, nil, nil, params, results, false)
+	}
+	return p.pyBytesFromStrAndSize
 }
 
 // func(*Objecg, *char) *Object
@@ -356,17 +424,54 @@ func (b Builder) PyTuple(args ...Expr) (ret Expr) {
 
 // PyVal(v any) *Object
 func (b Builder) PyVal(v Expr) (ret Expr) {
-	switch t := v.raw.Type.(type) {
+	switch t := v.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		switch t.Kind() {
+		case types.Bool:
+			return b.PyBool(v)
+		case types.Float32:
+			typ := b.Prog.Float64()
+			return b.PyFloat(Expr{castFloat(b, v.impl, typ), typ})
 		case types.Float64:
 			return b.PyFloat(v)
-		default:
-			panic("PyVal: todo")
+		case types.Int, types.Int8, types.Int16, types.Int32, types.Int64:
+			typ := b.Prog.Int64().ll
+			if b.Prog.td.TypeAllocSize(v.ll) < b.Prog.td.TypeAllocSize(typ) {
+				v.impl = llvm.CreateSExt(b.impl, v.impl, typ)
+				v.ll = typ
+			}
+			return b.PyInt64(v)
+		case types.Uint, types.Uint8, types.Uint16, types.Uint32, types.Uint64, types.Uintptr:
+			typ := b.Prog.Uint64().ll
+			if b.Prog.td.TypeAllocSize(v.ll) < b.Prog.td.TypeAllocSize(typ) {
+				v.impl = llvm.CreateZExt(b.impl, v.impl, typ)
+				v.ll = typ
+			}
+			return b.PyUint64(v)
+		case types.String:
+			return b.PyStrExpr(v)
+		case types.Complex64:
+			return b.PyComplex64(v)
+		case types.Complex128:
+			return b.PyComplex128(v)
 		}
-	default:
-		return v
+	case *types.Slice:
+		if elem, ok := t.Elem().(*types.Basic); ok && elem.Kind() == types.Byte {
+			return b.PyByteArray(v)
+		}
+	case *types.Pointer:
+		if v.Type == b.Prog.PyObjectPtr() {
+			return v
+		}
 	}
+	panic("PyVal: todo " + v.raw.Type.String())
+}
+
+// PyBool(bVal bool) *Object
+func (b Builder) PyBool(bVal Expr) (ret Expr) {
+	fn := b.Pkg.pyFunc("PyBool_FromLong", b.Prog.tyBoolFromLong())
+	typ := b.Prog.Int32()
+	return b.Call(fn, Expr{castInt(b, bVal.impl, typ), typ})
 }
 
 // PyFloat(fltVal float64) *Object
@@ -375,10 +480,47 @@ func (b Builder) PyFloat(fltVal Expr) (ret Expr) {
 	return b.Call(fn, fltVal)
 }
 
+// PyInt64(val int64) *Object
+func (b Builder) PyInt64(intVal Expr) (ret Expr) {
+	fn := b.Pkg.pyFunc("PyLong_FromLongLong", b.Prog.tyLongFromInt64())
+	return b.Call(fn, intVal)
+}
+
+// PyUint64(val uint64) *Object
+func (b Builder) PyUint64(uintVal Expr) (ret Expr) {
+	fn := b.Pkg.pyFunc("PyLong_FromUnsignedLongLong", b.Prog.tyLongFromUint64())
+	return b.Call(fn, uintVal)
+}
+
 // PyStr returns a py-style string constant expression.
 func (b Builder) PyStr(v string) Expr {
 	fn := b.Pkg.pyFunc("PyUnicode_FromString", b.Prog.tyPyUnicodeFromString())
 	return b.Call(fn, b.CStr(v))
+}
+
+// PyStrExpr(str string) *Object
+func (b Builder) PyStrExpr(v Expr) Expr {
+	fn := b.Pkg.pyFunc("PyUnicode_FromStringAndSize", b.Prog.tyPyUnicodeFromStringAndSize())
+	return b.Call(fn, b.StringData(v), b.StringLen(v))
+}
+
+// PyComplex128(val complex128) *Object
+func (b Builder) PyComplex128(v Expr) Expr {
+	fn := b.Pkg.pyFunc("PyComplex_FromDoubles", b.Prog.tyPyComplexFromDoubles())
+	return b.Call(fn, b.getField(v, 0), b.getField(v, 1))
+}
+
+// PyComplex64(val complex64) *Object
+func (b Builder) PyComplex64(v Expr) Expr {
+	fn := b.Pkg.pyFunc("PyComplex_FromDoubles", b.Prog.tyPyComplexFromDoubles())
+	typ := b.Prog.Float64()
+	return b.Call(fn, Expr{castFloat(b, b.getField(v, 0).impl, typ), typ}, Expr{castFloat(b, b.getField(v, 1).impl, typ), typ})
+}
+
+// PyByteArray(val []byte) *Object
+func (b Builder) PyByteArray(v Expr) Expr {
+	fn := b.Pkg.pyFunc("PyByteArray_FromStringAndSize", b.Prog.tyPyByteArrayFromStringAndSize())
+	return b.Call(fn, b.SliceData(v), b.SliceLen(v))
 }
 
 // -----------------------------------------------------------------------------

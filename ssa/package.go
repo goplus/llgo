@@ -185,6 +185,13 @@ type aProgram struct {
 	getAttrStr   *types.Signature
 	pyUniStr     *types.Signature
 
+	pyBoolFromInt32       *types.Signature
+	pyLongFromInt64       *types.Signature
+	pyLongFromUint64      *types.Signature
+	pyUniFromStrAndSize   *types.Signature
+	pyComplexFromDbs      *types.Signature
+	pyBytesFromStrAndSize *types.Signature
+
 	mallocTy       *types.Signature
 	freeTy         *types.Signature
 	memsetInlineTy *types.Signature
