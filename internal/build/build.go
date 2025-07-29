@@ -655,6 +655,7 @@ func isWasmTarget(goos string) bool {
 	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
 }
 
+// bind to a .o in to esp-idf build system
 func mergeObjectFiles(ctx *context, app string, objFiles []string, verbose bool) error {
 	outputFile := app
 	if !strings.HasSuffix(outputFile, ".o") {
