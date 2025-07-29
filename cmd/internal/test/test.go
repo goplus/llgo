@@ -11,7 +11,7 @@ import (
 
 // llgo test
 var Cmd = &base.Command{
-	UsageLine: "llgo test [build flags] package [arguments...]",
+	UsageLine: "llgo test [-target platform] [build flags] package [arguments...]",
 	Short:     "Compile and run Go test",
 }
 
@@ -29,6 +29,7 @@ func runCmd(cmd *base.Command, args []string) {
 	conf := build.NewDefaultConf(build.ModeTest)
 	conf.Tags = flags.Tags
 	conf.Verbose = flags.Verbose
+	conf.Target = flags.Target
 
 	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)

@@ -34,7 +34,7 @@ var (
 
 // llgo run
 var Cmd = &base.Command{
-	UsageLine: "llgo run [build flags] package [arguments...]",
+	UsageLine: "llgo run [-target platform] [build flags] package [arguments...]",
 	Short:     "Compile and run Go program",
 }
 
@@ -54,11 +54,11 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	runCmdEx(cmd, args, build.ModeRun)
+	runCmdEx(cmd, args, build.ModeRun) // support target
 }
 
 func runCmpTest(cmd *base.Command, args []string) {
-	runCmdEx(cmd, args, build.ModeCmpTest)
+	runCmdEx(cmd, args, build.ModeCmpTest) // no target support
 }
 
 func runCmdEx(cmd *base.Command, args []string, mode build.Mode) {
@@ -71,6 +71,7 @@ func runCmdEx(cmd *base.Command, args []string, mode build.Mode) {
 	conf.Tags = flags.Tags
 	conf.Verbose = flags.Verbose
 	conf.GenExpect = flags.Gen
+	conf.Target = flags.Target
 
 	args = cmd.Flag.Args()
 	args, runArgs, err := parseRunArgs(args)
