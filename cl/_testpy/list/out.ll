@@ -7,9 +7,13 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/list"
 @"github.com/goplus/llgo/cl/_testpy/list.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"world", align 1
 @1 = private unnamed_addr constant [5 x i8] c"hello", align 1
+@__llgo_py.math = external global ptr, align 8
+@2 = private unnamed_addr constant [3 x i8] c"pi\00", align 1
+@__llgo_py.builtins.abs = linkonce global ptr null, align 8
 @__llgo_py.builtins.print = linkonce global ptr null, align 8
 @__llgo_py.builtins = external global ptr, align 8
-@2 = private unnamed_addr constant [6 x i8] c"print\00", align 1
+@3 = private unnamed_addr constant [4 x i8] c"abs\00", align 1
+@4 = private unnamed_addr constant [6 x i8] c"print\00", align 1
 
 define void @"github.com/goplus/llgo/cl/_testpy/list.init"() {
 _llgo_0:
@@ -18,9 +22,10 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/list.init$guard", align 1
+  call void @"github.com/goplus/lib/py/math.init"()
   call void @"github.com/goplus/lib/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
+  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @3, ptr @__llgo_py.builtins.abs, ptr @4, ptr @__llgo_py.builtins.print, ptr null)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -53,10 +58,20 @@ _llgo_0:
   %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   %22 = call ptr @PyByteArray_FromStringAndSize(ptr %20, i64 %21)
   %23 = call i32 @PyList_SetItem(ptr %1, i64 9, ptr %22)
-  %24 = load ptr, ptr @__llgo_py.builtins.print, align 8
-  %25 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %24, ptr %1, ptr null)
+  %24 = load ptr, ptr @__llgo_py.math, align 8
+  %25 = call ptr @PyObject_GetAttrString(ptr %24, ptr @2)
+  %26 = call ptr @PyList_New(i64 3)
+  %27 = load ptr, ptr @__llgo_py.builtins.abs, align 8
+  %28 = call i32 @PyList_SetItem(ptr %26, i64 0, ptr %27)
+  %29 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %30 = call i32 @PyList_SetItem(ptr %26, i64 1, ptr %29)
+  %31 = call i32 @PyList_SetItem(ptr %26, i64 2, ptr %25)
+  %32 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %33 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %32, ptr %1, ptr %26, ptr null)
   ret void
 }
+
+declare void @"github.com/goplus/lib/py/math.init"()
 
 declare void @"github.com/goplus/lib/py/std.init"()
 
@@ -79,6 +94,8 @@ declare ptr @PyComplex_FromDoubles(double, double)
 declare ptr @PyUnicode_FromStringAndSize(ptr, i64)
 
 declare ptr @PyByteArray_FromStringAndSize(ptr, i64)
+
+declare ptr @PyObject_GetAttrString(ptr, ptr)
 
 declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 

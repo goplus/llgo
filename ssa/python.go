@@ -463,6 +463,9 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 		if v.Type == b.Prog.PyObjectPtr() {
 			return v
 		}
+		if v.kind == vkPyFuncRef {
+			return b.Load(v)
+		}
 	}
 	panic("PyVal: todo " + v.raw.Type.String())
 }
