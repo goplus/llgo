@@ -630,27 +630,11 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
 	}
 
-	// combine symbol first
-	tempArchive, err := os.CreateTemp("", fmt.Sprintf("%s*.a", app))
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tempArchive.Name())
-
-	combineArgs := []string{"-r", "-o", tempArchive.Name()}
-	combineArgs = append(combineArgs, objFiles...)
-
-	err = exec.Command("xtensa-esp32-elf-clang-ld", combineArgs...).Run()
-	if err != nil {
-		panic(err)
-	}
-
 	args := []string{}
 	args = append(args, "--target=xtensa-esp-elf", "-mcpu=esp32")
 	args = append(args,
-		"-nostdlib",
 		"-Os",
-		"-Wl,--allow-multiple-definition",
+		"-Wl,-s",
 		"--ld-path=xtensa-esp32-elf-clang-ld",
 		"-z", "noexecstack",
 		"-Wl,--cref",
@@ -660,8 +644,8 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-Wl,--orphan-handling=warn",
 		"-fno-rtti",
 		"-fno-lto",
-		"-fdata-sections",
-		"-ffunction-sections",
+		// "-fdata-sections",
+		// "-ffunction-sections",
 		"-Wl,--gc-sections",
 		"-Wl,--warn-common",
 	)
@@ -700,7 +684,6 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-u", "esp_security_init_include_impl",
 		"-Wl,--undefined=FreeRTOS_openocd_params",
 		"-u", "app_main",
-		"-lm",
 		"-u", "newlib_include_heap_impl",
 		"-u", "newlib_include_syscalls_impl",
 		"-u", "newlib_include_pthread_impl",
@@ -744,7 +727,6 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-Wl,--wrap=__cxa_allocate_exception",
 		"-u", "__cxa_guard_dummy",
 		"-u", "__cxx_init_dummy",
-		"-lc", "-lclang_rt.builtins",
 		"-u", "__cxx_fatal_exception",
 		"-u", "esp_timer_init_include_func",
 		"-u", "uart_vfs_include_dev_init",
@@ -752,10 +734,13 @@ func mergeObjectFiles(ctx *context, app string, linkArgs, objFiles []string, ver
 		"-u", "esp_vfs_include_console_register",
 		"-u", "vfs_include_syscalls_impl",
 		"-u", "esp_vfs_include_nullfs_register",
+		"-lm", "-lc", "-lnosys",
+		"-lclang_rt.builtins",
 	)
 
 	compileArgs := append([]string{"-o", app + ".elf"}, args...)
-	combineArgs = append(combineArgs, tempArchive.Name())
+	compileArgs = append(compileArgs, objFiles...)
+
 	// compileArgs = append(compileArgs, ctx.crossCompile.CCFLAGS...)
 	// compileArgs = append(compileArgs, ctx.crossCompile.LDFLAGS...)
 	// compileArgs = append(compileArgs, ctx.crossCompile.EXTRAFLAGS...)
