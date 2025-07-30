@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/constant"
 	"go/token"
 	"go/types"
 	"sort"
@@ -456,8 +457,12 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 			return b.PyComplex128(v)
 		}
 	case *types.Slice:
-		if elem, ok := t.Elem().(*types.Basic); ok && elem.Kind() == types.Byte {
+		if elem, ok := t.Elem().Underlying().(*types.Basic); ok && elem.Kind() == types.Byte {
 			return b.PyByteArray(v)
+		}
+	case *types.Array:
+		if elem, ok := t.Elem().Underlying().(*types.Basic); ok && elem.Kind() == types.Byte {
+			return b.PyBytes(v)
 		}
 	case *types.Pointer:
 		if v.Type == b.Prog.PyObjectPtr() {
@@ -524,6 +529,20 @@ func (b Builder) PyComplex64(v Expr) Expr {
 func (b Builder) PyByteArray(v Expr) Expr {
 	fn := b.Pkg.pyFunc("PyByteArray_FromStringAndSize", b.Prog.tyPyByteArrayFromStringAndSize())
 	return b.Call(fn, b.SliceData(v), b.SliceLen(v))
+}
+
+// PyBytes(val [...]byte) *Object
+func (b Builder) PyBytes(v Expr) Expr {
+	fn := b.Pkg.pyFunc("PyBytes_FromStringAndSize", b.Prog.tyPyByteArrayFromStringAndSize())
+	n := v.raw.Type.Underlying().(*types.Array).Len()
+	typ := b.Prog.Pointer(b.Prog.Byte())
+	if n == 0 {
+		return b.Call(fn, Expr{llvm.ConstNull(typ.ll), typ}, b.Prog.Zero(b.Prog.Int()))
+	}
+	ptr := b.Alloc(v.Type, false)
+	b.impl.CreateStore(v.impl, ptr.impl)
+	p := llvm.CreateInBoundsGEP(b.impl, typ.ll, ptr.impl, []llvm.Value{b.Prog.Zero(b.Prog.Int()).impl})
+	return b.Call(fn, Expr{p, typ}, b.Const(constant.MakeInt64(n), b.Prog.Int()))
 }
 
 // -----------------------------------------------------------------------------

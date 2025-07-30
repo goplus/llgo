@@ -35,39 +35,56 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testpy/list.main"() {
 _llgo_0:
   %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
-  %1 = call ptr @PyList_New(i64 10)
-  %2 = call ptr @PyBool_FromLong(i32 -1)
-  %3 = call i32 @PyList_SetItem(ptr %1, i64 0, ptr %2)
-  %4 = call ptr @PyBool_FromLong(i32 0)
-  %5 = call i32 @PyList_SetItem(ptr %1, i64 1, ptr %4)
-  %6 = call ptr @PyLong_FromLongLong(i64 1)
-  %7 = call i32 @PyList_SetItem(ptr %1, i64 2, ptr %6)
-  %8 = call ptr @PyFloat_FromDouble(double 0x4000CCCCC0000000)
-  %9 = call i32 @PyList_SetItem(ptr %1, i64 3, ptr %8)
-  %10 = call ptr @PyFloat_FromDouble(double 3.100000e+00)
-  %11 = call i32 @PyList_SetItem(ptr %1, i64 4, ptr %10)
-  %12 = call ptr @PyLong_FromUnsignedLongLong(i64 4)
-  %13 = call i32 @PyList_SetItem(ptr %1, i64 5, ptr %12)
-  %14 = call ptr @PyComplex_FromDoubles(double 1.000000e+00, double 2.000000e+00)
-  %15 = call i32 @PyList_SetItem(ptr %1, i64 6, ptr %14)
-  %16 = call ptr @PyComplex_FromDoubles(double 3.000000e+00, double 4.000000e+00)
-  %17 = call i32 @PyList_SetItem(ptr %1, i64 7, ptr %16)
-  %18 = call ptr @PyUnicode_FromStringAndSize(ptr @1, i64 5)
-  %19 = call i32 @PyList_SetItem(ptr %1, i64 8, ptr %18)
-  %20 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
-  %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
-  %22 = call ptr @PyByteArray_FromStringAndSize(ptr %20, i64 %21)
-  %23 = call i32 @PyList_SetItem(ptr %1, i64 9, ptr %22)
-  %24 = load ptr, ptr @__llgo_py.math, align 8
-  %25 = call ptr @PyObject_GetAttrString(ptr %24, ptr @2)
-  %26 = call ptr @PyList_New(i64 3)
-  %27 = load ptr, ptr @__llgo_py.builtins.abs, align 8
-  %28 = call i32 @PyList_SetItem(ptr %26, i64 0, ptr %27)
-  %29 = load ptr, ptr @__llgo_py.builtins.print, align 8
-  %30 = call i32 @PyList_SetItem(ptr %26, i64 1, ptr %29)
-  %31 = call i32 @PyList_SetItem(ptr %26, i64 2, ptr %25)
-  %32 = load ptr, ptr @__llgo_py.builtins.print, align 8
-  %33 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %32, ptr %1, ptr %26, ptr null)
+  %1 = alloca [3 x i8], align 1
+  call void @llvm.memset(ptr %1, i8 0, i64 3, i1 false)
+  %2 = getelementptr inbounds i8, ptr %1, i64 0
+  %3 = getelementptr inbounds i8, ptr %1, i64 1
+  %4 = getelementptr inbounds i8, ptr %1, i64 2
+  store i8 1, ptr %2, align 1
+  store i8 2, ptr %3, align 1
+  store i8 3, ptr %4, align 1
+  %5 = load [3 x i8], ptr %1, align 1
+  %6 = call ptr @PyList_New(i64 12)
+  %7 = call ptr @PyBool_FromLong(i32 -1)
+  %8 = call i32 @PyList_SetItem(ptr %6, i64 0, ptr %7)
+  %9 = call ptr @PyBool_FromLong(i32 0)
+  %10 = call i32 @PyList_SetItem(ptr %6, i64 1, ptr %9)
+  %11 = call ptr @PyLong_FromLongLong(i64 1)
+  %12 = call i32 @PyList_SetItem(ptr %6, i64 2, ptr %11)
+  %13 = call ptr @PyFloat_FromDouble(double 0x4000CCCCC0000000)
+  %14 = call i32 @PyList_SetItem(ptr %6, i64 3, ptr %13)
+  %15 = call ptr @PyFloat_FromDouble(double 3.100000e+00)
+  %16 = call i32 @PyList_SetItem(ptr %6, i64 4, ptr %15)
+  %17 = call ptr @PyLong_FromUnsignedLongLong(i64 4)
+  %18 = call i32 @PyList_SetItem(ptr %6, i64 5, ptr %17)
+  %19 = call ptr @PyComplex_FromDoubles(double 1.000000e+00, double 2.000000e+00)
+  %20 = call i32 @PyList_SetItem(ptr %6, i64 6, ptr %19)
+  %21 = call ptr @PyComplex_FromDoubles(double 3.000000e+00, double 4.000000e+00)
+  %22 = call i32 @PyList_SetItem(ptr %6, i64 7, ptr %21)
+  %23 = call ptr @PyUnicode_FromStringAndSize(ptr @1, i64 5)
+  %24 = call i32 @PyList_SetItem(ptr %6, i64 8, ptr %23)
+  %25 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
+  %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
+  %27 = call ptr @PyByteArray_FromStringAndSize(ptr %25, i64 %26)
+  %28 = call i32 @PyList_SetItem(ptr %6, i64 9, ptr %27)
+  %29 = alloca [3 x i8], align 1
+  call void @llvm.memset(ptr %29, i8 0, i64 3, i1 false)
+  store [3 x i8] %5, ptr %29, align 1
+  %30 = getelementptr inbounds ptr, ptr %29, i64 0
+  %31 = call ptr @PyBytes_FromStringAndSize(ptr %30, i64 3)
+  %32 = call i32 @PyList_SetItem(ptr %6, i64 10, ptr %31)
+  %33 = call ptr @PyBytes_FromStringAndSize(ptr null, i64 0)
+  %34 = call i32 @PyList_SetItem(ptr %6, i64 11, ptr %33)
+  %35 = load ptr, ptr @__llgo_py.math, align 8
+  %36 = call ptr @PyObject_GetAttrString(ptr %35, ptr @2)
+  %37 = call ptr @PyList_New(i64 3)
+  %38 = load ptr, ptr @__llgo_py.builtins.abs, align 8
+  %39 = call i32 @PyList_SetItem(ptr %37, i64 0, ptr %38)
+  %40 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %41 = call i32 @PyList_SetItem(ptr %37, i64 1, ptr %40)
+  %42 = call i32 @PyList_SetItem(ptr %37, i64 2, ptr %36)
+  %43 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %44 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %43, ptr %6, ptr %37, ptr null)
   ret void
 }
 
@@ -76,6 +93,9 @@ declare void @"github.com/goplus/lib/py/math.init"()
 declare void @"github.com/goplus/lib/py/std.init"()
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare ptr @PyList_New(i64)
 
@@ -95,8 +115,12 @@ declare ptr @PyUnicode_FromStringAndSize(ptr, i64)
 
 declare ptr @PyByteArray_FromStringAndSize(ptr, i64)
 
+declare ptr @PyBytes_FromStringAndSize(ptr, i64)
+
 declare ptr @PyObject_GetAttrString(ptr, ptr)
 
 declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
