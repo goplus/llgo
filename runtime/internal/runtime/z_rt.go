@@ -65,9 +65,10 @@ func Rethrow(link *Defer) {
 			debug.PrintStack(2)
 			c.Free(ptr)
 			c.Exit(2)
-		} else {
-			c.Siglongjmp(link.Addr, 1)
 		}
+		// else {
+		// 	c.Siglongjmp(link.Addr, 1)
+		// }
 	} else if link == nil && goexitKey.Get() != nil {
 		if pthread.Equal(mainThread, pthread.Self()) != 0 {
 			fatal("no goroutines (main called runtime.Goexit) - deadlock!")
