@@ -558,7 +558,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 	entryLLFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
-	fmt.Println(entryLLFile)
 	check(err)
 	// defer os.Remove(entryLLFile)
 	llFiles = append(llFiles, entryLLFile)
@@ -658,15 +657,8 @@ func isWasmTarget(goos string) bool {
 }
 
 func constructMain(ctx *context, app string, objFiles []string, verbose bool) error {
-	// outputFile := app
-	// if !strings.HasSuffix(outputFile, ".o") {
-	// 	outputFile = strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + ".o"
-	// }
 	args := []string{}
-	// target
 	args = append(args, "--target=xtensa-esp-elf", "-mcpu=esp32")
-	// ld script
-	// args = append(args, strings.Fields("--ld-path=xtensa-esp32-elf-clang-ld -z noexecstack  -Wl,--cref -Wl,--defsym=IDF_TARGET_ESP32=0 -Wl,--Map=/Users/zhangzhiyang/Documents/Code/goplus/llgo-esp32/esp-example/get-started/hello_world/build/hello_world.map -Wl,--no-warn-rwx-segments -Wl,--orphan-handling=warn -fno-rtti -fno-lto -Wl,--gc-sections -Wl,--warn-common -T esp32.peripherals.ld -T esp32.rom.ld -T esp32.rom.api.ld -T esp32.rom.libgcc.ld -T esp32.rom.newlib-data.ld -T esp32.rom.syscalls.ld -T esp32.rom.newlib-funcs.ld -T memory.ld -T sections.ld -L/Users/zhangzhiyang/esp/esp-idf/components/soc/esp32/ld   -L/Users/zhangzhiyang/esp/esp-idf/components/esp_rom/esp32/ld   -L/Users/zhangzhiyang/Documents/Code/goplus/llgo-esp32/esp-example/get-started/hello_world/build/esp-idf/esp_system/ld   -L/Users/zhangzhiyang/esp/esp-idf/components/esp_phy/lib/esp32   -L/Users/zhangzhiyang/esp/esp-idf/components/esp_wifi/lib/esp32")...)
 
 	args = append(args,
 		"-Os",
@@ -675,7 +667,8 @@ func constructMain(ctx *context, app string, objFiles []string, verbose bool) er
 		"-z", "noexecstack",
 		"-Wl,--cref",
 		"-Wl,--defsym=IDF_TARGET_ESP32=0",
-		"-Wl,--Map=ttt.map",
+		// use to generate memory map file
+		// "-Wl,--Map=ttt.map",
 		"-Wl,--no-warn-rwx-segments",
 		"-Wl,--orphan-handling=warn",
 		"-fno-rtti",
@@ -709,8 +702,6 @@ func constructMain(ctx *context, app string, objFiles []string, verbose bool) er
 	args = append(args, objFiles...)
 
 	args = append(args, "-o", app+".elf")
-
-	// args = append(args, "-L/Users/haolan/esp/esp-idf/examples/get-started/hello_world/build/esp-idf/esp_rom", "-lesp_rom")
 
 	if err := ctx.compiler().Link(args...); err != nil {
 		panic(err)
@@ -834,11 +825,6 @@ _llgo_0:
 		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
 		mainDefine, mainParam, stdioNobuf,
 		pyInit, rtInit, mainPkgPath, mainPkgPath, mainReturn)
-
-	fmt.Println("mainPkgPath:", mainPkgPath)
-
-	os.WriteFile("main.ll", []byte(mainCode), 0644)
-
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
 }
 
