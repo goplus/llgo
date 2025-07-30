@@ -658,7 +658,6 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	buildArgs = append(buildArgs, ctx.crossCompile.CCFLAGS...)
 	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
 	buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
 	buildArgs = append(buildArgs, objFiles...)
@@ -712,9 +711,23 @@ call i32 @setvbuf(ptr %stdout_ptr, ptr null, i32 2, %size_t 0)
 call i32 @setvbuf(ptr %stderr_ptr, ptr null, i32 2, %size_t 0)
 	`
 	}
+	// TODO(lijie): workaround for libc-free
+	// Remove main/_start when -buildmode and libc are ready
+	startDefine := `
+define weak void @_start() {
+  ; argc = 0
+  %argc_val = icmp eq i32 0, 0
+  %argc = zext i1 %argc_val to i32
+  ; argv = null
+  %argv = inttoptr i64 0 to i8**
+  call i32 @main(i32 %argc, i8** %argv)
+  ret void
+}
+`
 	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	if isWasmTarget(ctx.buildConf.Goos) {
 		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
+		startDefine = ""
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
@@ -735,6 +748,8 @@ define weak void @"syscall.init"() {
   ret void
 }
 
+%s
+
 %s {
 _llgo_0:
   store i32 %%0, ptr @__llgo_argc, align 4
@@ -749,7 +764,7 @@ _llgo_0:
 }
 `, declSizeT, stdioDecl,
 		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
-		mainDefine, stdioNobuf,
+		startDefine, mainDefine, stdioNobuf,
 		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
