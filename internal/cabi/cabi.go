@@ -237,88 +237,80 @@ func (p *Transformer) transformCFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Va
 	}
 
 	fname := fn.Name()
-	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
-	wrapFunc := llvm.AddFunction(m, "__llgo_godecl$"+fname, info.Type)
-	wrapFunc.SetLinkage(llvm.LinkOnceAnyLinkage)
-	wrapFunc.AddFunctionAttr(funcInlineHint(ctx))
-
 	fn.SetName("")
-
+	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
 	nfn := llvm.AddFunction(m, fname, nft)
 	for i, attr := range attrs {
 		nfn.AddAttributeAtIndex(i, attr)
 	}
 	nfn.SetLinkage(fn.Linkage())
 
+	p.replaceCallInstrs(ctx, &info, fn, nfn, nft)
+
+	fn.ReplaceAllUsesWith(nfn)
+	fn.EraseFromParentAsFunction()
+	return nfn, true
+}
+
+func (p *Transformer) replaceCallInstrs(ctx llvm.Context, info *FuncInfo, fn llvm.Value, nfn llvm.Value, nft llvm.Type) {
+	var callInsts []llvm.Value
 	use := fn.FirstUse()
 	for !use.IsNil() {
-		if call := use.User().IsACallInst(); !call.IsNil() {
-			// call in other cfunc params use nfn
-			if cv := call.CalledValue(); cv != fn {
-				if name := cv.Name(); strings.HasPrefix(name, "__llgo_cwrap$") || p.isCFunc(name) {
-					n := call.OperandsCount()
-					for i := 0; i < n; i++ {
-						if call.Operand(i) == fn {
-							call.SetOperand(i, nfn)
-						}
-					}
-				}
-			}
+		if call := use.User().IsACallInst(); !call.IsNil() && call.CalledValue() == fn {
+			callInsts = append(callInsts, call)
 		}
 		use = use.NextUse()
 	}
 
-	fn.ReplaceAllUsesWith(wrapFunc)
-	fn.EraseFromParentAsFunction()
-
-	b := ctx.NewBuilder()
-	block := llvm.AddBasicBlock(wrapFunc, "entry")
-	b.SetInsertPointAtEnd(block)
-
-	var nparams []llvm.Value
-	for i, param := range wrapFunc.Params() {
-		ti := info.Params[i]
-		switch ti.Kind {
-		default:
-			nparams = append(nparams, param)
-		case AttrPointer:
-			ptr := llvm.CreateAlloca(b, ti.Type)
-			b.CreateStore(param, ptr)
-			nparams = append(nparams, ptr)
-		case AttrWidthType:
-			ptr := llvm.CreateAlloca(b, ti.Type)
-			b.CreateStore(param, ptr)
-			iptr := b.CreateBitCast(ptr, llvm.PointerType(ti.Type1, 0), "")
-			nparams = append(nparams, b.CreateLoad(ti.Type1, iptr, ""))
-		case AttrWidthType2:
-			ptr := llvm.CreateAlloca(b, ti.Type)
-			b.CreateStore(param, ptr)
-			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false) // {i8,i64}
-			iptr := b.CreateBitCast(ptr, llvm.PointerType(typ, 0), "")
-			nparams = append(nparams, b.CreateLoad(ti.Type1, b.CreateStructGEP(typ, iptr, 0, ""), ""))
-			nparams = append(nparams, b.CreateLoad(ti.Type2, b.CreateStructGEP(typ, iptr, 1, ""), ""))
+	for _, call := range callInsts {
+		b := ctx.NewBuilder()
+		b.SetInsertPointBefore(call)
+		operandCount := fn.ParamsCount()
+		var nparams []llvm.Value
+		for i := 0; i < operandCount; i++ {
+			param := call.Operand(i)
+			ti := info.Params[i]
+			switch ti.Kind {
+			default:
+				nparams = append(nparams, param)
+			case AttrPointer:
+				ptr := llvm.CreateAlloca(b, ti.Type)
+				b.CreateStore(param, ptr)
+				nparams = append(nparams, ptr)
+			case AttrWidthType:
+				ptr := llvm.CreateAlloca(b, ti.Type)
+				b.CreateStore(param, ptr)
+				iptr := b.CreateBitCast(ptr, llvm.PointerType(ti.Type1, 0), "")
+				nparams = append(nparams, b.CreateLoad(ti.Type1, iptr, ""))
+			case AttrWidthType2:
+				ptr := llvm.CreateAlloca(b, ti.Type)
+				b.CreateStore(param, ptr)
+				typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false) // {i8,i64}
+				iptr := b.CreateBitCast(ptr, llvm.PointerType(typ, 0), "")
+				nparams = append(nparams, b.CreateLoad(ti.Type1, b.CreateStructGEP(typ, iptr, 0, ""), ""))
+				nparams = append(nparams, b.CreateLoad(ti.Type2, b.CreateStructGEP(typ, iptr, 1, ""), ""))
+			}
 		}
+		var instr llvm.Value
+		switch info.Return.Kind {
+		case AttrVoid:
+			instr = llvm.CreateCall(b, nft, nfn, nparams)
+		case AttrPointer:
+			ret := llvm.CreateAlloca(b, info.Return.Type)
+			llvm.CreateCall(b, nft, nfn, append([]llvm.Value{ret}, nparams...))
+			instr = b.CreateLoad(info.Return.Type, ret, "")
+		case AttrWidthType, AttrWidthType2:
+			ret := llvm.CreateCall(b, nft, nfn, nparams)
+			ptr := llvm.CreateAlloca(b, nft.ReturnType())
+			b.CreateStore(ret, ptr)
+			pret := b.CreateBitCast(ptr, llvm.PointerType(info.Return.Type, 0), "")
+			instr = b.CreateLoad(info.Return.Type, pret, "")
+		default:
+			instr = llvm.CreateCall(b, nft, nfn, nparams)
+		}
+		call.ReplaceAllUsesWith(instr)
+		call.RemoveFromParentAsInstruction()
 	}
-
-	switch info.Return.Kind {
-	case AttrVoid:
-		llvm.CreateCall(b, nft, nfn, nparams)
-		b.CreateRetVoid()
-	case AttrPointer:
-		ret := llvm.CreateAlloca(b, info.Return.Type)
-		llvm.CreateCall(b, nft, nfn, append([]llvm.Value{ret}, nparams...))
-		b.CreateRet(b.CreateLoad(info.Return.Type, ret, ""))
-	case AttrWidthType, AttrWidthType2:
-		ret := llvm.CreateCall(b, nft, nfn, nparams)
-		ptr := llvm.CreateAlloca(b, returnType)
-		b.CreateStore(ret, ptr)
-		pret := b.CreateBitCast(ptr, llvm.PointerType(info.Return.Type, 0), "")
-		b.CreateRet(b.CreateLoad(info.Return.Type, pret, ""))
-	default:
-		ret := llvm.CreateCall(b, nft, nfn, nparams)
-		b.CreateRet(ret)
-	}
-	return wrapFunc, true
 }
 
 func (p *Transformer) transformGoFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
