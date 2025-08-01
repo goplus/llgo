@@ -1,0 +1,10 @@
+{
+	"inherits": ["fe310"],
+	"build-tags": ["hifive1b"],
+	"serial": "uart",
+	"linkerscript": "targets/hifive1b.ld",
+	"flash-method": "msd",
+	"msd-volume-name": ["HiFive"],
+	"msd-firmware-name": "firmware.hex",
+	"jlink-device": "fe310"
+}

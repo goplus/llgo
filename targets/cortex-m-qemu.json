@@ -1,0 +1,10 @@
+{
+	"inherits": ["cortex-m3"],
+	"build-tags": ["qemu", "lm3s6965"],
+	"linkerscript": "targets/lm3s6965.ld",
+        "default-stack-size": 4096,
+	"extra-files": [
+		"targets/cortex-m-qemu.s"
+	],
+	"emulator": "qemu-system-arm -machine lm3s6965evb -semihosting -nographic -kernel {}"
+}

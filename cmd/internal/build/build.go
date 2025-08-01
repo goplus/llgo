@@ -29,7 +29,7 @@ import (
 
 // llgo build
 var Cmd = &base.Command{
-	UsageLine: "llgo build [-o output] [build flags] [packages]",
+	UsageLine: "llgo build [-o output] [-target platform] [build flags] [packages]",
 	Short:     "Compile packages and dependencies",
 }
 
@@ -50,6 +50,7 @@ func runCmd(cmd *base.Command, args []string) {
 	conf.Tags = flags.Tags
 	conf.Verbose = flags.Verbose
 	conf.OutFile = flags.OutputFile
+	conf.Target = flags.Target
 
 	args = cmd.Flag.Args()
 

@@ -1,0 +1,9 @@
+{
+	"inherits": ["nrf51"],
+	"build-tags": ["microbit"],
+	"serial": "uart",
+	"flash-method": "msd",
+	"openocd-interface": "cmsis-dap",
+	"msd-volume-name": ["MICROBIT"],
+	"msd-firmware-name": "firmware.hex"
+}

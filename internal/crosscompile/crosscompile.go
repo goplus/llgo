@@ -2,12 +2,15 @@ package crosscompile
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
 )
 
@@ -17,6 +20,15 @@ type Export struct {
 	CFLAGS     []string
 	LDFLAGS    []string
 	EXTRAFLAGS []string
+
+	// Additional fields from target configuration
+	LLVMTarget string
+	CPU        string
+	Features   string
+	BuildTags  []string
+	GOOS       string
+	GOARCH     string
+	Linker     string // Linker to use (e.g., "ld.lld", "avr-ld")
 }
 
 const wasiSdkUrl = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
@@ -109,8 +121,8 @@ func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			"-I" + includeDir,
 		}
 		// Add WebAssembly linker flags
-		export.LDFLAGS = []string{
-			"-target", targetTriple,
+		export.LDFLAGS = append(export.LDFLAGS, export.CCFLAGS...)
+		export.LDFLAGS = append(export.LDFLAGS, []string{
 			"-Wno-override-module",
 			"-Wl,--error-limit=0",
 			"-L" + libDir,
@@ -134,18 +146,18 @@ func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			"-lwasi-emulated-signal",
 			"-fwasm-exceptions",
 			"-mllvm", "-wasm-enable-sjlj",
-		}
+		}...)
 		// Add thread support if enabled
 		if wasiThreads {
 			export.CCFLAGS = append(
 				export.CCFLAGS,
 				"-pthread",
 			)
+			export.LDFLAGS = append(export.LDFLAGS, export.CCFLAGS...)
 			export.LDFLAGS = append(
 				export.LDFLAGS,
 				"-lwasi-emulated-pthread",
 				"-lpthread",
-				"-pthread", // global is immutable if -pthread is not specified
 			)
 		}
 
@@ -193,4 +205,115 @@ func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		return
 	}
 	return
+}
+
+// useTarget loads configuration from a target name (e.g., "rp2040", "wasi")
+func useTarget(targetName string) (export Export, err error) {
+	resolver := targets.NewDefaultResolver()
+
+	config, err := resolver.Resolve(targetName)
+	if err != nil {
+		return export, fmt.Errorf("failed to resolve target %s: %w", targetName, err)
+	}
+
+	// Convert target config to Export - only export necessary fields
+	export.BuildTags = config.BuildTags
+	export.GOOS = config.GOOS
+	export.GOARCH = config.GOARCH
+
+	// Convert LLVMTarget, CPU, Features to CCFLAGS/LDFLAGS
+	var ccflags []string
+	var ldflags []string
+
+	target := config.LLVMTarget
+	if target == "" {
+		target = llvm.GetTargetTriple(config.GOOS, config.GOARCH)
+	}
+
+	ccflags = append(ccflags, "-Wno-override-module", "--target="+config.LLVMTarget)
+
+	// Inspired by tinygo
+	cpu := config.CPU
+	if cpu != "" {
+		if strings.HasPrefix(target, "i386") || strings.HasPrefix(target, "x86_64") {
+			ccflags = append(ccflags, "-march="+cpu)
+		} else if strings.HasPrefix(target, "avr") {
+			ccflags = append(ccflags, "-mmcu="+cpu)
+		} else {
+			ccflags = append(ccflags, "-mcpu="+cpu)
+		}
+		// Only add -mllvm flags for non-WebAssembly linkers
+		if config.Linker == "ld.lld" {
+			ldflags = append(ldflags, "-mllvm", "-mcpu="+cpu)
+		}
+	}
+
+	// Handle Features
+	if config.Features != "" {
+		// Only add -mllvm flags for non-WebAssembly linkers
+		if config.Linker == "ld.lld" {
+			ldflags = append(ldflags, "-mllvm", "-mattr="+config.Features)
+		}
+	}
+
+	// Handle Linker - keep it for external usage
+	export.Linker = config.Linker
+
+	// Combine with config flags
+	export.CFLAGS = config.CFlags
+	export.CCFLAGS = ccflags
+	export.LDFLAGS = append(ldflags, filterCompatibleLDFlags(config.LDFlags)...)
+	export.EXTRAFLAGS = []string{}
+
+	return export, nil
+}
+
+// UseWithTarget extends the original Use function to support target-based configuration
+// If targetName is provided, it takes precedence over goos/goarch
+func UseWithTarget(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
+	if targetName != "" {
+		return useTarget(targetName)
+	}
+	return Use(goos, goarch, wasiThreads)
+}
+
+// filterCompatibleLDFlags filters out linker flags that are incompatible with clang/lld
+func filterCompatibleLDFlags(ldflags []string) []string {
+	if len(ldflags) == 0 {
+		return ldflags
+	}
+
+	var filtered []string
+
+	incompatiblePrefixes := []string{
+		"--defsym=", // Use -Wl,--defsym= instead
+		"-T",        // Linker script, needs special handling
+	}
+
+	i := 0
+	for i < len(ldflags) {
+		flag := ldflags[i]
+
+		// Check incompatible prefixes
+		skip := false
+		for _, prefix := range incompatiblePrefixes {
+			if strings.HasPrefix(flag, prefix) {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			// Skip -T and its argument if separate
+			if flag == "-T" && i+1 < len(ldflags) {
+				i += 2 // Skip both -T and the script path
+			} else {
+				i++
+			}
+			continue
+		}
+		filtered = append(filtered, flag)
+		i++
+	}
+
+	return filtered
 }
