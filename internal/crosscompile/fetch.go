@@ -11,36 +11,37 @@ import (
 	"strings"
 )
 
-func downloadAndExtract(url, dir string) (err error) {
+func downloadAndExtract(url, dir string) (wasiSdkRoot string, err error) {
 	if _, err = os.Stat(dir); err == nil {
 		os.RemoveAll(dir)
 	}
 	tempDir := dir + ".temp"
 	os.RemoveAll(tempDir)
-	if err = os.MkdirAll(tempDir, 0755); err != nil {
-		return fmt.Errorf("failed to create temporary directory: %w", err)
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
 	urlPath := strings.Split(url, "/")
 	filename := urlPath[len(urlPath)-1]
 	localFile := filepath.Join(tempDir, filename)
 	if err = downloadFile(url, localFile); err != nil {
-		return fmt.Errorf("failed to download file: %w", err)
+		return "", fmt.Errorf("failed to download file: %w", err)
 	}
 	defer os.Remove(localFile)
 
 	if strings.HasSuffix(filename, ".tar.gz") || strings.HasSuffix(filename, ".tgz") {
 		err = extractTarGz(localFile, tempDir)
 	} else {
-		return fmt.Errorf("unsupported archive format: %s", filename)
+		return "", fmt.Errorf("unsupported archive format: %s", filename)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to extract archive: %w", err)
+		return "", fmt.Errorf("failed to extract archive: %w", err)
 	}
 	if err = os.Rename(tempDir, dir); err != nil {
-		return fmt.Errorf("failed to rename directory: %w", err)
+		return "", fmt.Errorf("failed to rename directory: %w", err)
 	}
-	return nil
+	wasiSdkRoot = filepath.Join(dir, "wasi-sdk-25.0-x86_64-macos")
+	return
 }
 
 func downloadFile(url, filepath string) error {

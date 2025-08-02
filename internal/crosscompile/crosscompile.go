@@ -85,14 +85,21 @@ func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	// Configure based on GOOS
 	switch goos {
 	case "wasip1":
-		sdkDir := filepath.Join(cacheDir(), llvm.GetTargetTriple(goos, goarch))
-		if _, err = os.Stat(sdkDir); err != nil {
-			if !errors.Is(err, fs.ErrNotExist) {
-				return
-			}
+		// Set wasiSdkRoot path
+		llgoRoot := env.LLGoROOT()
+		wasiSdkRoot := filepath.Join(llgoRoot, "crosscompile", "wasi-libc")
 
-			if err = downloadAndExtract(wasiSdkUrl, sdkDir); err != nil {
-				return
+		// If not exists in LLGoROOT, download and use cached wasiSdkRoot
+		if _, err = os.Stat(wasiSdkRoot); err != nil {
+			sdkDir := filepath.Join(cacheDir(), llvm.GetTargetTriple(goos, goarch))
+			if _, err = os.Stat(sdkDir); err != nil {
+				if !errors.Is(err, fs.ErrNotExist) {
+					return
+				}
+
+				if wasiSdkRoot, err = downloadAndExtract(wasiSdkUrl, sdkDir); err != nil {
+					return
+				}
 			}
 		}
 		// WASI-SDK configuration
@@ -101,8 +108,7 @@ func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			triple = "wasm32-wasip1-threads"
 		}
 
-		// Set up flags for the WASI-SDK
-		wasiSdkRoot := filepath.Join(sdkDir, "wasi-sdk-25.0-x86_64-macos")
+		// Set up flags for the WASI-SDK or wasi-libc
 		sysrootDir := filepath.Join(wasiSdkRoot, "share", "wasi-sysroot")
 		libclangDir := filepath.Join(wasiSdkRoot, "lib", "clang", "19")
 		includeDir := filepath.Join(sysrootDir, "include", triple)
