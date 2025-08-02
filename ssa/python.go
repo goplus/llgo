@@ -455,6 +455,9 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 			return b.PyComplex64(v)
 		case types.Complex128:
 			return b.PyComplex128(v)
+		case types.UnsafePointer:
+			typ := b.Prog.Uint64()
+			return b.PyUint64(Expr{llvm.CreatePtrToInt(b.impl, v.impl, typ.ll), typ})
 		}
 	case *types.Slice:
 		if elem, ok := t.Elem().Underlying().(*types.Basic); ok && elem.Kind() == types.Byte {
@@ -471,6 +474,8 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 		if v.kind == vkPyFuncRef {
 			return b.Load(v)
 		}
+		typ := b.Prog.Uint64()
+		return b.PyUint64(Expr{llvm.CreatePtrToInt(b.impl, v.impl, typ.ll), typ})
 	}
 	panic("PyVal: todo " + v.raw.Type.String())
 }
