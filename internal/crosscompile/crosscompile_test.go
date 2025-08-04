@@ -76,7 +76,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := Use(tc.goos, tc.goarch, false)
+			export, err := use(tc.goos, tc.goarch, false)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -255,7 +255,7 @@ func TestUseTarget(t *testing.T) {
 
 func TestUseWithTarget(t *testing.T) {
 	// Test target-based configuration takes precedence
-	export, err := UseWithTarget("linux", "amd64", false, "wasi")
+	export, err := Use("linux", "amd64", false, "wasi")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -267,7 +267,7 @@ func TestUseWithTarget(t *testing.T) {
 	}
 
 	// Test fallback to goos/goarch when no target specified
-	export, err = UseWithTarget(runtime.GOOS, runtime.GOARCH, false, "")
+	export, err = Use(runtime.GOOS, runtime.GOARCH, false, "")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

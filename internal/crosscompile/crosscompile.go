@@ -22,23 +22,59 @@ type Export struct {
 	EXTRAFLAGS []string
 
 	// Additional fields from target configuration
-	LLVMTarget string
-	CPU        string
-	Features   string
-	BuildTags  []string
-	GOOS       string
-	GOARCH     string
-	Linker     string // Linker to use (e.g., "ld.lld", "avr-ld")
+	LLVMTarget   string
+	CPU          string
+	Features     string
+	BuildTags    []string
+	GOOS         string
+	GOARCH       string
+	Linker       string // Linker to use (e.g., "ld.lld", "avr-ld")
+	ClangRoot    string // Root directory of custom clang installation
+	ClangBinPath string // Path to clang binary directory
 }
 
 const wasiSdkUrl = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
+
+const (
+	espClangBaseUrl = "https://github.com/espressif/llvm-project/releases/download/esp-19.1.2_20250312"
+	espClangVersion = "esp-19.1.2_20250312"
+)
 
 func cacheDir() string {
 	return filepath.Join(env.LLGoCacheDir(), "crosscompile")
 }
 
-func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
+// getESPClangPlatform returns the platform suffix for ESP Clang downloads
+func getESPClangPlatform(goos, goarch string) string {
+	switch goos {
+	case "darwin":
+		switch goarch {
+		case "amd64":
+			return "x86_64-apple-darwin"
+		case "arm64":
+			return "aarch64-apple-darwin"
+		}
+	case "linux":
+		switch goarch {
+		case "amd64":
+			return "x86_64-linux-gnu"
+		case "arm64":
+			return "aarch64-linux-gnu"
+		case "arm":
+			return "arm-linux-gnueabihf"
+		}
+	case "windows":
+		switch goarch {
+		case "amd64":
+			return "x86_64-w64-mingw32"
+		}
+	}
+	return ""
+}
+
+func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	targetTriple := llvm.GetTargetTriple(goos, goarch)
+	llgoRoot := env.LLGoROOT()
 
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
 		// not cross compile
@@ -86,7 +122,6 @@ func Use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	switch goos {
 	case "wasip1":
 		// Set wasiSdkRoot path
-		llgoRoot := env.LLGoROOT()
 		wasiSdkRoot := filepath.Join(llgoRoot, "crosscompile", "wasi-libc")
 
 		// If not exists in LLGoROOT, download and use cached wasiSdkRoot
@@ -222,6 +257,38 @@ func useTarget(targetName string) (export Export, err error) {
 		return export, fmt.Errorf("failed to resolve target %s: %w", targetName, err)
 	}
 
+	// Check for ESP Clang support for target-based builds
+	llgoRoot := env.LLGoROOT()
+	var clangRoot string
+
+	// First check if clang exists in LLGoROOT
+	espClangRoot := filepath.Join(llgoRoot, "crosscompile", "clang")
+	if _, err = os.Stat(espClangRoot); err == nil {
+		clangRoot = espClangRoot
+	} else {
+		// Try to download ESP Clang if platform is supported
+		platformSuffix := getESPClangPlatform(runtime.GOOS, runtime.GOARCH)
+		if platformSuffix != "" {
+			cacheClangDir := filepath.Join(env.LLGoCacheDir(), "crosscompile", "clang")
+			if _, err = os.Stat(cacheClangDir); err != nil {
+				if !errors.Is(err, fs.ErrNotExist) {
+					return
+				}
+				if err = downloadAndExtractESPClang(platformSuffix, cacheClangDir); err != nil {
+					return
+				}
+			}
+			clangRoot = cacheClangDir
+		} else {
+			err = fmt.Errorf("ESP Clang not found in LLGoROOT and platform %s/%s is not supported for download", runtime.GOOS, runtime.GOARCH)
+			return
+		}
+	}
+
+	// Set ClangRoot and CC if clang is available
+	export.ClangRoot = clangRoot
+	export.CC = filepath.Join(clangRoot, "bin", "clang++")
+
 	// Convert target config to Export - only export necessary fields
 	export.BuildTags = config.BuildTags
 	export.GOOS = config.GOOS
@@ -274,13 +341,13 @@ func useTarget(targetName string) (export Export, err error) {
 	return export, nil
 }
 
-// UseWithTarget extends the original Use function to support target-based configuration
+// Use extends the original Use function to support target-based configuration
 // If targetName is provided, it takes precedence over goos/goarch
-func UseWithTarget(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
+func Use(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
 	if targetName != "" {
 		return useTarget(targetName)
 	}
-	return Use(goos, goarch, wasiThreads)
+	return use(goos, goarch, wasiThreads)
 }
 
 // filterCompatibleLDFlags filters out linker flags that are incompatible with clang/lld

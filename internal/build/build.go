@@ -151,7 +151,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		conf.Goarch = runtime.GOARCH
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
-	export, err := crosscompile.UseWithTarget(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), conf.Target)
+	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), conf.Target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
 	}
@@ -385,7 +385,7 @@ func (c *context) compiler() *clang.Cmd {
 }
 
 func (c *context) linker() *clang.Cmd {
-	cmd := c.env.Clang()
+	cmd := c.compiler()
 	if c.crossCompile.Linker != "" {
 		cmd = clang.New(c.crossCompile.Linker)
 	}

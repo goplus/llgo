@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -31,6 +32,8 @@ func downloadAndExtract(url, dir string) (wasiSdkRoot string, err error) {
 
 	if strings.HasSuffix(filename, ".tar.gz") || strings.HasSuffix(filename, ".tgz") {
 		err = extractTarGz(localFile, tempDir)
+	} else if strings.HasSuffix(filename, ".tar.xz") {
+		err = extractTarXz(localFile, tempDir)
 	} else {
 		return "", fmt.Errorf("unsupported archive format: %s", filename)
 	}
@@ -105,6 +108,64 @@ func extractTarGz(tarGzFile, dest string) error {
 			}
 			f.Close()
 		}
+	}
+	return nil
+}
+
+func extractTarXz(tarXzFile, dest string) error {
+	// Use external tar command to extract .tar.xz files
+	cmd := exec.Command("tar", "-xf", tarXzFile, "-C", dest)
+	return cmd.Run()
+}
+
+// downloadAndExtractESPClang downloads and extracts ESP Clang binaries and libraries
+func downloadAndExtractESPClang(platformSuffix, dir string) error {
+	if _, err := os.Stat(dir); err == nil {
+		os.RemoveAll(dir)
+	}
+
+	// Create download temp directory
+	downloadDir := dir + "-download"
+	os.RemoveAll(downloadDir)
+	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+		return fmt.Errorf("failed to create download directory: %w", err)
+	}
+	defer os.RemoveAll(downloadDir)
+
+	// Download clang binary package
+	clangUrl := fmt.Sprintf("%s/clang-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
+	clangFile := filepath.Join(downloadDir, fmt.Sprintf("clang-%s-%s.tar.xz", espClangVersion, platformSuffix))
+	if err := downloadFile(clangUrl, clangFile); err != nil {
+		return fmt.Errorf("failed to download clang: %w", err)
+	}
+
+	// Download libs package
+	libsUrl := fmt.Sprintf("%s/libs-clang-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
+	libsFile := filepath.Join(downloadDir, fmt.Sprintf("libs-clang-%s-%s.tar.xz", espClangVersion, platformSuffix))
+	if err := downloadFile(libsUrl, libsFile); err != nil {
+		return fmt.Errorf("failed to download libs: %w", err)
+	}
+
+	// Create extract temp directory
+	extractDir := dir + "-extract"
+	os.RemoveAll(extractDir)
+	if err := os.MkdirAll(extractDir, 0755); err != nil {
+		return fmt.Errorf("failed to create extract directory: %w", err)
+	}
+	defer os.RemoveAll(extractDir)
+
+	// Extract both packages to extract directory
+	if err := extractTarXz(clangFile, extractDir); err != nil {
+		return fmt.Errorf("failed to extract clang: %w", err)
+	}
+	if err := extractTarXz(libsFile, extractDir); err != nil {
+		return fmt.Errorf("failed to extract libs: %w", err)
+	}
+
+	// Rename esp-clang directory to final destination
+	espClangDir := filepath.Join(extractDir, "esp-clang")
+	if err := os.Rename(espClangDir, dir); err != nil {
+		return fmt.Errorf("failed to rename esp-clang directory: %w", err)
 	}
 	return nil
 }
