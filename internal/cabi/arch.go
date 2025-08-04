@@ -223,3 +223,57 @@ func (p *TypeInfo32) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *Ty
 	}
 	return info
 }
+
+type TypeInfoRiscv64 struct {
+	*Transformer
+}
+
+func (p *TypeInfoRiscv64) SupportByVal() bool {
+	return true
+}
+
+func (p *TypeInfoRiscv64) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		return true
+	}
+	return false
+}
+
+func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	if typ.TypeKind() == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		types := elementTypes(p.td, typ)
+		switch len(types) {
+		case 1:
+			if types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int64Type() {
+				return info
+			}
+		case 2:
+			if (types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int64Type()) &&
+				(types[1].TypeKind() == llvm.PointerTypeKind || types[1] == ctx.Int64Type()) {
+				return info
+			}
+		}
+		if info.Size > 16 {
+			info.Kind = AttrPointer
+			info.Type1 = llvm.PointerType(typ, 0)
+		} else if info.Size <= 8 {
+			info.Kind = AttrWidthType
+			info.Type1 = ctx.Int64Type()
+		} else {
+			info.Kind = AttrWidthType
+			info.Type1 = llvm.ArrayType(ctx.Int64Type(), 2)
+		}
+	}
+	return info
+}
