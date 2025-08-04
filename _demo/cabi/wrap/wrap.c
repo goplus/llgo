@@ -157,11 +157,50 @@ struct data3 fn3(struct data3 pt) {
 
 struct fdata1 {
     float x;
-    int   y;
 };
 
 struct fdata1 ff1(struct fdata1 pt) {
-    printf("ff1: %f %d\n",pt.x,pt.y);
+    printf("ff1: %f\n",pt.x);
+    return pt;
+}
+
+struct ddata1 {
+    double x;
+};
+
+struct ddata1 dd1(struct ddata1 pt) {
+    printf("dd1: %f\n",pt.x);
+    return pt;
+}
+
+struct ddata2 {
+    double x;
+    double y;
+};
+
+struct ddata2 dd2(struct ddata2 pt) {
+    printf("dd2: %f %f\n",pt.x,pt.y);
+    return pt;
+}
+
+struct ddata3 {
+    double x;
+    double y;
+    double z;
+};
+
+struct ddata3 dd3(struct ddata3 pt) {
+    printf("dd3: %f %f %f\n",pt.x,pt.y,pt.z);
+    return pt;
+}
+
+struct fdata2i {
+    float x;
+    int   y;
+};
+
+struct fdata2i ff2i(struct fdata2i pt) {
+    printf("ff2i: %f %d\n",pt.x,pt.y);
     return pt;
 }
 

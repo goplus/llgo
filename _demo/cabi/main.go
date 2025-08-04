@@ -115,7 +115,6 @@ func fn3(data3) data3
 
 type fdata1 struct {
 	x float32
-	y int32
 }
 
 //go:linkname ff1 C.ff1
@@ -128,6 +127,14 @@ type fdata2 struct {
 
 //go:linkname ff2 C.ff2
 func ff2(fdata2) fdata2
+
+type fdata2i struct {
+	x float32
+	y int32
+}
+
+//go:linkname ff2i C.ff2i
+func ff2i(fdata2i) fdata2i
 
 type fdata3 struct {
 	x float32
@@ -217,6 +224,30 @@ func demo(a array) array
 //go:linkname demo2 C.demo2
 func demo2(x int32) array
 
+type ddata1 struct {
+	x float64
+}
+
+//go:linkname dd1 C.dd1
+func dd1(d ddata1) ddata1
+
+type ddata2 struct {
+	x float64
+	y float64
+}
+
+//go:linkname dd2 C.dd2
+func dd2(d ddata2) ddata2
+
+type ddata3 struct {
+	x float64
+	y float64
+	z float64
+}
+
+//go:linkname dd3 C.dd3
+func dd3(d ddata3) ddata3
+
 //llgo:type C
 type Callback func(array, point, point1) array
 
@@ -237,12 +268,20 @@ func myfn1(ar array, pt point, pt1 point1) point {
 	return point{100, 200}
 }
 
+//export export_demo
+func export_demo(ar array) array {
+	println("=> export", ar.x[0], ar.x[1], ar.x[7])
+	return ar
+}
+
 func main() {
 	cabi_demo()
 	callback_demo()
 }
 
 func callback_demo() {
+	export_demo(array{x: [8]int32{1, 2, 3, 4, 5, 6, 7, 8}})
+
 	callback(func(ar array, pt point, pt1 point1) array {
 		println("=> callback", ar.x[0], ar.x[1], ar.x[7], pt.x, pt.y, pt1.x, pt1.y, pt1.z)
 		return array{x: [8]int32{8, 7, 6, 5, 4, 3, 2, 1}}
@@ -303,22 +342,26 @@ func cabi_demo() {
 	println("=> pt7", p7.x, p7.y, p7.z, p7.m, p7.n, p7.k, p7.o)
 
 	// skip wrap
-	d1 := fn1(data1{1, 2})
-	println("=> d1", d1.x, d1.y)
+	fd1 := fn1(data1{1, 2})
+	println("=> fd1", fd1.x, fd1.y)
 
-	d2 := fn2(data2{1, 2})
-	println("=> d2", d2.x, d2.y)
+	fd2 := fn2(data2{1, 2})
+	println("=> fd2", fd2.x, fd2.y)
 
-	d3 := fn3(data3{1, 2})
-	println("=> d3", d3.x, d3.y)
+	fd3 := fn3(data3{1, 2})
+	println("=> fd3", fd3.x, fd3.y)
 
 	// float
-	f1 := ff1(fdata1{1.1, 2})
-	println("=> f1", f1.x, f1.y)
+	f1 := ff1(fdata1{1.1})
+	println("=> f1", f1.x)
 
 	// float
 	f2 := ff2(fdata2{1.1, 2.1})
 	println("=> f2", f2.x, f2.y)
+
+	// float
+	f2i := ff2i(fdata2i{1.1, 2})
+	println("=> f2i", f2i.x, f2i.y)
 
 	// float
 	f3 := ff3(fdata3{1.1, 2.1, 3.1})
@@ -340,4 +383,13 @@ func cabi_demo() {
 
 	f4if := ff4if(fdata4if{1.1, 2, 3.1, 4.1})
 	println("=> f4if", f4if.x, f4if.y, f4if.z, f4if.m)
+
+	d1 := dd1(ddata1{1.1})
+	println("=> dd1", d1.x)
+
+	d2 := dd2(ddata2{1.1, 2.1})
+	println("=> dd2", d2.x, d2.y)
+
+	d3 := dd3(ddata3{1.1, 2.1, 3.1})
+	println("=> dd3", d3.x, d3.y, d3.z)
 }
