@@ -44,6 +44,38 @@ func cacheDir() string {
 	return filepath.Join(env.LLGoCacheDir(), "crosscompile")
 }
 
+// getESPClangRoot returns the ESP Clang root directory, checking LLGoROOT first,
+// then downloading if needed and platform is supported
+func getESPClangRoot() (clangRoot string, err error) {
+	llgoRoot := env.LLGoROOT()
+
+	// First check if clang exists in LLGoROOT
+	espClangRoot := filepath.Join(llgoRoot, "crosscompile", "clang")
+	if _, err = os.Stat(espClangRoot); err == nil {
+		clangRoot = espClangRoot
+		return
+	}
+
+	// Try to download ESP Clang if platform is supported
+	platformSuffix := getESPClangPlatform(runtime.GOOS, runtime.GOARCH)
+	if platformSuffix != "" {
+		cacheClangDir := filepath.Join(env.LLGoCacheDir(), "crosscompile", "clang-"+espClangVersion)
+		if _, err = os.Stat(cacheClangDir); err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				return
+			}
+			if err = downloadAndExtractESPClang(platformSuffix, cacheClangDir); err != nil {
+				return
+			}
+		}
+		clangRoot = cacheClangDir
+		return
+	}
+
+	err = fmt.Errorf("ESP Clang not found in LLGoROOT and platform %s/%s is not supported for download", runtime.GOOS, runtime.GOARCH)
+	return
+}
+
 // getESPClangPlatform returns the platform suffix for ESP Clang downloads
 func getESPClangPlatform(goos, goarch string) string {
 	switch goos {
@@ -258,36 +290,14 @@ func useTarget(targetName string) (export Export, err error) {
 	}
 
 	// Check for ESP Clang support for target-based builds
-	llgoRoot := env.LLGoROOT()
-	var clangRoot string
-
-	// First check if clang exists in LLGoROOT
-	espClangRoot := filepath.Join(llgoRoot, "crosscompile", "clang")
-	if _, err = os.Stat(espClangRoot); err == nil {
-		clangRoot = espClangRoot
-	} else {
-		// Try to download ESP Clang if platform is supported
-		platformSuffix := getESPClangPlatform(runtime.GOOS, runtime.GOARCH)
-		if platformSuffix != "" {
-			cacheClangDir := filepath.Join(env.LLGoCacheDir(), "crosscompile", "clang")
-			if _, err = os.Stat(cacheClangDir); err != nil {
-				if !errors.Is(err, fs.ErrNotExist) {
-					return
-				}
-				if err = downloadAndExtractESPClang(platformSuffix, cacheClangDir); err != nil {
-					return
-				}
-			}
-			clangRoot = cacheClangDir
-		} else {
-			err = fmt.Errorf("ESP Clang not found in LLGoROOT and platform %s/%s is not supported for download", runtime.GOOS, runtime.GOARCH)
-			return
-		}
+	clangRoot, err := getESPClangRoot()
+	if err != nil {
+		return
 	}
 
 	// Set ClangRoot and CC if clang is available
 	export.ClangRoot = clangRoot
-	export.CC = filepath.Join(clangRoot, "bin", "clang++")
+	export.CC = filepath.Join(clangRoot, "bin", "clang")
 
 	// Convert target config to Export - only export necessary fields
 	export.BuildTags = config.BuildTags
