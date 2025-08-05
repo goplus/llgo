@@ -133,17 +133,10 @@ func downloadAndExtractESPClang(platformSuffix, dir string) error {
 	defer os.RemoveAll(downloadDir)
 
 	// Download clang binary package
-	clangUrl := fmt.Sprintf("%s/clang-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
+	clangUrl := fmt.Sprintf("%s/clang-esp-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
 	clangFile := filepath.Join(downloadDir, fmt.Sprintf("clang-%s-%s.tar.xz", espClangVersion, platformSuffix))
 	if err := downloadFile(clangUrl, clangFile); err != nil {
-		return fmt.Errorf("failed to download clang: %w", err)
-	}
-
-	// Download libs package
-	libsUrl := fmt.Sprintf("%s/libs-clang-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
-	libsFile := filepath.Join(downloadDir, fmt.Sprintf("libs-clang-%s-%s.tar.xz", espClangVersion, platformSuffix))
-	if err := downloadFile(libsUrl, libsFile); err != nil {
-		return fmt.Errorf("failed to download libs: %w", err)
+		return fmt.Errorf("failed to download clang from %s: %w", clangUrl, err)
 	}
 
 	// Create extract temp directory
@@ -157,9 +150,6 @@ func downloadAndExtractESPClang(platformSuffix, dir string) error {
 	// Extract both packages to extract directory
 	if err := extractTarXz(clangFile, extractDir); err != nil {
 		return fmt.Errorf("failed to extract clang: %w", err)
-	}
-	if err := extractTarXz(libsFile, extractDir); err != nil {
-		return fmt.Errorf("failed to extract libs: %w", err)
 	}
 
 	// Rename esp-clang directory to final destination
