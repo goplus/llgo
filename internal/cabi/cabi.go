@@ -20,6 +20,8 @@ func NewTransformer(prog ssa.Program) *Transformer {
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
 		tr.sys = &TypeInfoArm64{tr}
+	case "arm":
+		tr.sys = &TypeInfoArm{tr}
 	case "wasm", "i386":
 		tr.sys = &TypeInfo32{tr}
 	case "riscv64":

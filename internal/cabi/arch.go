@@ -1,6 +1,8 @@
 package cabi
 
-import "github.com/goplus/llvm"
+import (
+	"github.com/goplus/llvm"
+)
 
 func elementTypesCount(typ llvm.Type) int {
 	switch typ.TypeKind() {
@@ -44,6 +46,15 @@ func checkTypes(typs []llvm.Type, typ llvm.Type) bool {
 		}
 	}
 	return true
+}
+
+func hasTypes(typs []llvm.Type, typ llvm.Type) bool {
+	for _, t := range typs {
+		if t == typ {
+			return true
+		}
+	}
+	return false
 }
 
 type TypeInfoAmd64 struct {
@@ -162,7 +173,7 @@ func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 			return info
 		}
 		if n == 2 {
-			// skip (i64/ptr/double,i64/ptr)
+			// skip (i64/ptr,i64/ptr)
 			if (types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int64Type()) &&
 				(types[1].TypeKind() == llvm.PointerTypeKind || types[1] == ctx.Int64Type()) {
 				return info
@@ -186,6 +197,75 @@ func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 		} else {
 			info.Kind = AttrWidthType
 			info.Type1 = llvm.ArrayType(ctx.Int64Type(), 2)
+		}
+	}
+
+	return info
+}
+
+type TypeInfoArm struct {
+	*Transformer
+}
+
+func (p *TypeInfoArm) SupportByVal() bool {
+	return false
+}
+
+func (p *TypeInfoArm) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		if bret && elementTypesCount(typ) == 1 {
+			return false
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	kind := typ.TypeKind()
+	if kind == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	switch kind {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		types := elementTypes(p.td, typ)
+		n := len(types)
+		if bret && n == 1 {
+			return info
+		}
+		if n <= 4 {
+			if checkTypes(types, ctx.FloatType()) || checkTypes(types, ctx.DoubleType()) {
+				return info
+			}
+		}
+		if bret {
+			if info.Size > 4 {
+				info.Kind = AttrPointer
+				info.Type1 = llvm.PointerType(typ, 0)
+			} else {
+				info.Kind = AttrWidthType
+				info.Type1 = ctx.Int32Type()
+			}
+		} else {
+			if info.Size > 64 {
+				info.Kind = AttrPointer
+				info.Type1 = llvm.PointerType(typ, 0)
+			} else {
+				info.Kind = AttrWidthType
+				if hasTypes(types, ctx.Int64Type()) || hasTypes(types, ctx.DoubleType()) {
+					info.Type1 = llvm.ArrayType(ctx.Int64Type(), info.Size/8)
+				} else {
+					info.Type1 = llvm.ArrayType(ctx.Int32Type(), info.Size/4)
+				}
+			}
 		}
 	}
 
