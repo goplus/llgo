@@ -592,7 +592,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
-	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
 
 	switch mode {
