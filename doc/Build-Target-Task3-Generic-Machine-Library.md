@@ -51,6 +51,59 @@ for bus.GetID_REG_UPDATE() > 0 {
 }
 ```
 
+**特殊字段**
+
+`//go:extern` 关键字，用于链接动态库，静态库中的变量符号内存地址
+
+例子：
+
+```go
+//go:extern __flash_data_start
+var flashDataStart [0]byte
+
+//go:extern __flash_data_end
+var flashDataEnd [0]byte
+```
+
+需要验证：可以直接替换成 `//go:linkname`
+
+`//go:inline` 强制函数inline
+例子：
+```go
+//go:inline
+func ceil(num uint64, denom uint64) uint64 {
+	return (num + denom - 1) / denom
+}
+```
+
+`//go:align` 强制内存对齐
+
+例子：
+
+```go
+//go:align 4
+var udd_ep_control_cache_buffer [256]uint8
+```
+
+
+**中断库**
+
+tinygo中断库为：`runtime/interrupt`
+
+大量asm代码，需要重写
+
+新建中断：id为中断id，这个id一般是硬件相关的，不同硬件的中断id往往是根据芯片来指定的
+
+```go
+// New is a compiler intrinsic that creates a new Interrupt object. You may call
+// it only once, and must pass constant parameters to it. That means that the
+// interrupt ID must be a Go constant and that the handler must be a simple
+// function: closures are not supported.
+func New(id int, handler func(Interrupt)) Interrupt
+```
+
+
+
 **已经处理的内容**
 `goplus/lib/emb/runtime/volatile`
 将原先的存储和加载指令，直接映射为llgo的指令
