@@ -22,8 +22,8 @@ const deviceName = esp.Device
 * device 作为 TinyGo 的硬件相关库，需要迁移到 goplus/lib
 * machine 包对 device 包有强依赖
 
-**runtime/interrupt**
-* 被device包依赖
+**runtime/interrupt(中断库)**
+* 被device包直接依赖
 ```go
 // emb/device/esp32.go
 // Pseudo function call that is replaced by the compiler with the actual
@@ -37,6 +37,17 @@ func HandleInterrupt(num int) {
 		callHandlers(IRQ_WIFI_MAC)
 	case IRQ_WIFI_NMI:
 		callHandlers(IRQ_WIFI_NMI)
+```
+* 大量asm代码，需要重写
+
+* 新建中断：id为中断id，这个id一般是硬件相关的，不同硬件的中断id往往是根据芯片来指定的
+
+```go
+// New is a compiler intrinsic that creates a new Interrupt object. You may call
+// it only once, and must pass constant parameters to it. That means that the
+// interrupt ID must be a Go constant and that the handler must be a simple
+// function: closures are not supported.
+func New(id int, handler func(Interrupt)) Interrupt
 ```
 
 **汇编代码适配**
@@ -84,25 +95,6 @@ func ceil(num uint64, denom uint64) uint64 {
 //go:align 4
 var udd_ep_control_cache_buffer [256]uint8
 ```
-
-
-**中断库**
-
-tinygo中断库为：`runtime/interrupt`
-
-大量asm代码，需要重写
-
-新建中断：id为中断id，这个id一般是硬件相关的，不同硬件的中断id往往是根据芯片来指定的
-
-```go
-// New is a compiler intrinsic that creates a new Interrupt object. You may call
-// it only once, and must pass constant parameters to it. That means that the
-// interrupt ID must be a Go constant and that the handler must be a simple
-// function: closures are not supported.
-func New(id int, handler func(Interrupt)) Interrupt
-```
-
-
 
 **已经处理的内容**
 `goplus/lib/emb/runtime/volatile`
