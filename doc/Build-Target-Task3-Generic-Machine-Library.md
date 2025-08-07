@@ -22,6 +22,23 @@ const deviceName = esp.Device
 * device 作为 TinyGo 的硬件相关库，需要迁移到 goplus/lib
 * machine 包对 device 包有强依赖
 
+**runtime/interrupt**
+* 被device包依赖
+```go
+// emb/device/esp32.go
+// Pseudo function call that is replaced by the compiler with the actual
+// functions registered through interrupt.New.
+//
+//go:linkname callHandlers runtime/interrupt.callHandlers
+func callHandlers(num int)
+func HandleInterrupt(num int) {
+	switch num {
+	case IRQ_WIFI_MAC:
+		callHandlers(IRQ_WIFI_MAC)
+	case IRQ_WIFI_NMI:
+		callHandlers(IRQ_WIFI_NMI)
+```
+
 **汇编代码适配**
 
 TinyGo 允许手写汇编，存在于 device、machine 包中
@@ -47,6 +64,8 @@ func StoreUint64(addr *uint64, val uint64)
 //go:linkname StoreUint64 llgo.atomicStore
 func StoreUint64(addr *uint64, val uint64)
 ```
+
+
 
 TODO
 1.迁移device到lib仓库，修改module path
