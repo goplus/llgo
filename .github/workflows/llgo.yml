@@ -43,7 +43,7 @@ jobs:
         with:
           llvm-version: ${{matrix.llvm}}
       - name: Download model artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: llama2-model
           path: ./_demo/llama2-c/
