@@ -24,15 +24,16 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/build"
+	"github.com/goplus/llgo/internal/cabi"
 )
 
 func GenFrom(fileOrPkg string) string {
-	pkg, err := genFrom(fileOrPkg)
+	pkg, err := genFrom(fileOrPkg, 0)
 	check(err)
 	return pkg.LPkg.String()
 }
 
-func genFrom(pkgPath string) (build.Package, error) {
+func genFrom(pkgPath string, mode cabi.Mode) (build.Package, error) {
 	oldDbg := os.Getenv("LLGO_DEBUG")
 	oldDbgSyms := os.Getenv("LLGO_DEBUG_SYMBOLS")
 	dbg := isDbgSymEnabled(filepath.Join(pkgPath, "flags.txt"))
@@ -46,8 +47,9 @@ func genFrom(pkgPath string) (build.Package, error) {
 	}()
 
 	conf := &build.Config{
-		Mode:   build.ModeGen,
-		AppExt: build.DefaultAppExt(runtime.GOOS),
+		Mode:    build.ModeGen,
+		AbiMode: mode,
+		AppExt:  build.DefaultAppExt(runtime.GOOS),
 	}
 	pkgs, err := build.Do([]string{pkgPath}, conf)
 	if err != nil {
@@ -77,7 +79,11 @@ func isDbgSymEnabled(flagsFile string) bool {
 }
 
 func SmartDoFile(pkgPath string) {
-	pkg, err := genFrom(pkgPath)
+	SmartDoFileEx(pkgPath, 0)
+}
+
+func SmartDoFileEx(pkgPath string, mode cabi.Mode) {
+	pkg, err := genFrom(pkgPath, mode)
 	check(err)
 
 	const autgenFile = "llgo_autogen.ll"

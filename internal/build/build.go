@@ -77,6 +77,7 @@ type Config struct {
 	OutFile     string   // only valid for ModeBuild when len(pkgs) == 1
 	RunArgs     []string // only valid for ModeRun
 	Mode        Mode
+	AbiMode     cabi.Mode
 	GenExpect   bool // only valid for ModeCmpTest
 	Verbose     bool
 	GenLL       bool // generate pkg .ll files
@@ -109,6 +110,7 @@ func NewDefaultConf(mode Mode) *Config {
 		Goarch:  goarch,
 		BinPath: bin,
 		Mode:    mode,
+		AbiMode: cabi.ModeCFunc,
 		AppExt:  DefaultAppExt(goos),
 	}
 	return conf
@@ -277,7 +279,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		crossCompile:           export,
 		isCheckEnabled:         IsCheckEnabled(),
 		isCheckLinkArgsEnabled: IsCheckLinkArgsEnabled(),
-		cTransformer:           cabi.NewTransformer(prog, cabi.ModeCFunc),
+		cTransformer:           cabi.NewTransformer(prog, conf.AbiMode),
 	}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)

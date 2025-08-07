@@ -69,11 +69,10 @@ func (p *Transformer) TransformModule(m llvm.Module) {
 			fn = llvm.NextFunction(fn)
 		}
 	case ModeAllFunc:
-		var cfns []llvm.Value
 		fn := m.FirstFunction()
 		for !fn.IsNil() {
 			if p.isWrapFunctionType(m.Context(), fn.GlobalValueType()) {
-				cfns = append(cfns, fn)
+				fns = append(fns, fn)
 			}
 			fn = llvm.NextFunction(fn)
 		}
