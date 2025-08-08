@@ -52,9 +52,11 @@ func New(id int, handler func(Interrupt)) Interrupt
 
 
 **空export函数**
-当前编译改段内容会导致missing body，需调查作用(TODO)
+该种函数仅存在于 `!baremetal` 的情况，即非裸机编程,对于ESP32以及RICV均有`baremetal`的build tag
 ```go
 // machine/machine_generic.go
+//go:build !baremetal
+// .....
 //export __tinygo_spi_configure
 func spiConfigure(bus uint8, sck Pin, SDO Pin, SDI Pin)
 
