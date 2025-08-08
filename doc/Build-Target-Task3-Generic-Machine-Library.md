@@ -50,6 +50,21 @@ func HandleInterrupt(num int) {
 func New(id int, handler func(Interrupt)) Interrupt
 ```
 
+
+**空export函数**
+当前编译改段内容会导致missing body，需调查作用(TODO)
+```go
+// machine/machine_generic.go
+//export __tinygo_spi_configure
+func spiConfigure(bus uint8, sck Pin, SDO Pin, SDI Pin)
+
+//export __tinygo_spi_transfer
+func spiTransfer(bus uint8, w uint8) uint8
+
+//export __tinygo_spi_tx
+func spiTX(bus uint8, wptr *byte, wlen int, rptr *byte, rlen int) uint8
+```
+
 **汇编代码适配**
 
 TinyGo 允许手写汇编，存在于 device、machine 包中
