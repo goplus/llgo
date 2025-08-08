@@ -52,7 +52,10 @@ func New(id int, handler func(Interrupt)) Interrupt
 
 
 **空export函数**
-该种函数仅存在于 `!baremetal` 的情况，即非裸机编程,对于ESP32以及RICV均有`baremetal`的build tag
+该种函数仅存在于 `!baremetal` 的情况，即非裸机编程,以下平台为非裸机平台
+- WASM相关: wasi, wasm-unknown, wasm, wasip2, wasip1
+- Nordic nRF52系列软设备配置: nrf52-s132v6, nrf52840-s140v7, nrf52833-s113v7, nrf52840-s140v7-uf2, nrf52833-s140v7, nrf52840-s140v6-uf2, nrf51-s110v8
+- 游戏机: nintendoswitch
 ```go
 // machine/machine_generic.go
 //go:build !baremetal
