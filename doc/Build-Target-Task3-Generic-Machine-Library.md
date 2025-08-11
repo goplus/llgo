@@ -50,6 +50,72 @@ func HandleInterrupt(num int) {
 func New(id int, handler func(Interrupt)) Interrupt
 ```
 
+**中断编译器处理过程**
+
+
+#### 前端部分
+编译时会去查找 `interrupt.New` 符号，如果检索到了，会生成 `interrupt.handle` 全局结构体，其全局符号名称如下：
+
+`{Package Path}.$interrupt{Interrupt ID}`
+
+例如：
+在 `runtime` 下调用 `interruput.New`
+`interrupt.New(2, ...)`
+
+会生成
+
+`runtime/interrupt.$interrupt2`，结构体为 `interrupt.handle`:
+
+```go
+type handle struct {
+	context unsafe.Pointer
+	funcPtr uintptr
+	Interrupt
+}
+```
+
+其内容如下：
+```
+ptr @machine.UART0
+i32 ptrtoint (ptr @"(*machine.UART).handleInterrupt$bound" to i32)
+%"runtime/interrupt.Interrupt" { i32 2 }
+```
+
+`funcPtr` 为 `interrupt.New(2, func(){})` 为 `New`函数第二个参数闭包函数指针, `Interrupt`则是新生成的 `interrupt.Interrupt` 结构体
+
+```go
+type Interrupt struct {
+	// Make this number unexported so it cannot be set directly. This provides
+	// some encapsulation.
+	num int
+}
+```
+
+#### 后端部分
+
+Pass会查找所有存在 `interrupt.handle` 的符号，获得 funcPtr 和 中断id，
+
+例如：`runtime/interrupt.$interrupt2`，解析得到：`runtime/interrupt` 和 中断id为 2
+
+并进行如下替换
+
+```
+runtime/interrupt.callHandlers => funcPtr
+```
+
+
+```
+  call void @"device/arm.SetPriority"(i32 ptrtoint (ptr @"runtime/interrupt.$interrupt2" to i32), i32 192, ptr undef)
+```
+
+=>
+
+```
+  call void @"device/arm.SetPriority"(i32 2, i32 192, ptr undef)
+```
+
+其中，`i32 ptrtoint (ptr @"runtime/interrupt.$interrupt2" to i32)` => `2`
+
 
 **空export函数**
 该种函数仅存在于 `!baremetal` 的情况，即非裸机编程,以下平台为非裸机平台
