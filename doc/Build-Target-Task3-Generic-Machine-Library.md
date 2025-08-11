@@ -117,52 +117,167 @@ var udd_ep_control_cache_buffer [256]uint8
 ```
 
 
+更多函数：
+```go
+	case "//export", "//go:export":
+		if len(parts) != 2 {
+			continue
+		}
+		if hasWasmExport {
+			// //go:wasmexport overrides //export.
+			continue
+		}
+
+		info.linkName = parts[1]
+		info.wasmName = info.linkName
+		info.exported = true
+	case "//go:interrupt":
+		if hasUnsafeImport(f.Pkg.Pkg) {
+			info.interrupt = true
+		}
+	case "//go:wasm-module":
+		// Alternative comment for setting the import module.
+		// This is deprecated, use //go:wasmimport instead.
+		if len(parts) != 2 {
+			continue
+		}
+		info.wasmModule = parts[1]
+	case "//go:wasmimport":
+		// Import a WebAssembly function, for example a WASI function.
+		// Original proposal: https://github.com/golang/go/issues/38248
+		// Allow globally: https://github.com/golang/go/issues/59149
+		if len(parts) != 3 {
+			continue
+		}
+		if f.Blocks != nil {
+			// Defined functions cannot be exported.
+			c.addError(f.Pos(), "can only use //go:wasmimport on declarations")
+			continue
+		}
+		c.checkWasmImportExport(f, comment.Text)
+		info.exported = true
+		info.wasmModule = parts[1]
+		info.wasmName = parts[2]
+	case "//go:wasmexport":
+		if f.Blocks == nil {
+			c.addError(f.Pos(), "can only use //go:wasmexport on definitions")
+			continue
+		}
+		if len(parts) != 2 {
+			c.addError(f.Pos(), fmt.Sprintf("expected one parameter to //go:wasmexport, not %d", len(parts)-1))
+			continue
+		}
+		name := parts[1]
+		if name == "_start" || name == "_initialize" {
+			c.addError(f.Pos(), fmt.Sprintf("//go:wasmexport does not allow %#v", name))
+			continue
+		}
+		if c.BuildMode != "c-shared" && f.RelString(nil) == "main.main" {
+			c.addError(f.Pos(), fmt.Sprintf("//go:wasmexport does not allow main.main to be exported with -buildmode=%s", c.BuildMode))
+			continue
+		}
+		if c.archFamily() != "wasm32" {
+			c.addError(f.Pos(), "//go:wasmexport is only supported on wasm")
+		}
+		c.checkWasmImportExport(f, comment.Text)
+		info.wasmExport = name
+		info.wasmExportPos = comment.Slash
+	case "//go:inline":
+		info.inline = inlineHint
+	case "//go:noinline":
+		info.inline = inlineNone
+	case "//go:linkname":
+		if len(parts) != 3 || parts[1] != f.Name() {
+			continue
+		}
+		// Only enable go:linkname when the package imports "unsafe".
+		// This is a slightly looser requirement than what gc uses: gc
+		// requires the file to import "unsafe", not the package as a
+		// whole.
+		if hasUnsafeImport(f.Pkg.Pkg) {
+			info.linkName = parts[2]
+		}
+	case "//go:section":
+		// Only enable go:section when the package imports "unsafe".
+		// go:section also implies go:noinline since inlining could
+		// move the code to a different section than that requested.
+		if len(parts) == 2 && hasUnsafeImport(f.Pkg.Pkg) {
+			info.section = parts[1]
+			info.inline = inlineNone
+		}
+	case "//go:nobounds":
+		// Skip bounds checking in this function. Useful for some
+		// runtime functions.
+		// This is somewhat dangerous and thus only imported in packages
+		// that import unsafe.
+		if hasUnsafeImport(f.Pkg.Pkg) {
+			info.nobounds = true
+		}
+	case "//go:noescape":
+		// Don't let pointer parameters escape.
+		// Following the upstream Go implementation, we only do this for
+		// declarations, not definitions.
+		if len(f.Blocks) == 0 {
+			info.noescape = true
+		}
+	case "//go:variadic":
+		// The //go:variadic pragma is emitted by the CGo preprocessing
+		// pass for C variadic functions. This includes both explicit
+		// (with ...) and implicit (no parameters in signature)
+		// functions.
+		if strings.HasPrefix(f.Name(), "_Cgo_") {
+			// This prefix was created as a result of CGo preprocessing.
+			info.variadic = true
+		}
+```
+
 **特殊处理函数**
 
 ```go
-		case name == "device.Asm" || name == "device/arm.Asm" || name == "device/arm64.Asm" || name == "device/avr.Asm" || name == "device/riscv.Asm":
-			return b.createInlineAsm(instr.Args)
-		case name == "device.AsmFull" || name == "device/arm.AsmFull" || name == "device/arm64.AsmFull" || name == "device/avr.AsmFull" || name == "device/riscv.AsmFull":
-			return b.createInlineAsmFull(instr)
-		case strings.HasPrefix(name, "device/arm.SVCall"):
-			return b.emitSVCall(instr.Args, getPos(instr))
-		case strings.HasPrefix(name, "device/arm64.SVCall"):
-			return b.emitSV64Call(instr.Args, getPos(instr))
-		case strings.HasPrefix(name, "(device/riscv.CSR)."):
-			return b.emitCSROperation(instr)
-		case strings.HasPrefix(name, "syscall.Syscall") || strings.HasPrefix(name, "syscall.RawSyscall") || strings.HasPrefix(name, "golang.org/x/sys/unix.Syscall") || strings.HasPrefix(name, "golang.org/x/sys/unix.RawSyscall"):
-			if b.GOOS != "darwin" {
-				return b.createSyscall(instr)
-			}
-		case strings.HasPrefix(name, "syscall.rawSyscallNoError") || strings.HasPrefix(name, "golang.org/x/sys/unix.RawSyscallNoError"):
-			return b.createRawSyscallNoError(instr)
-		case name == "runtime.supportsRecover":
-			supportsRecover := uint64(0)
-			if b.supportsRecover() {
-				supportsRecover = 1
-			}
-			return llvm.ConstInt(b.ctx.Int1Type(), supportsRecover, false), nil
-		case name == "runtime.panicStrategy":
-			panicStrategy := map[string]uint64{
-				"print": tinygo.PanicStrategyPrint,
-				"trap":  tinygo.PanicStrategyTrap,
-			}[b.Config.PanicStrategy]
-			return llvm.ConstInt(b.ctx.Int8Type(), panicStrategy, false), nil
-		case name == "runtime/interrupt.New":
-			return b.createInterruptGlobal(instr)
-		case name == "runtime.exportedFuncPtr":
-			_, ptr := b.getFunction(instr.Args[0].(*ssa.Function))
-			return b.CreatePtrToInt(ptr, b.uintptrType, ""), nil
-		case name == "(*runtime/interrupt.Checkpoint).Save":
-			return b.createInterruptCheckpoint(instr.Args[0]), nil
-		case name == "internal/abi.FuncPCABI0":
-			retval := b.createDarwinFuncPCABI0Call(instr)
-			if !retval.IsNil() {
-				return retval, nil
-			}
+	case name == "device.Asm" || name == "device/arm.Asm" || name == "device/arm64.Asm" || name == "device/avr.Asm" || name == "device/riscv.Asm":
+		return b.createInlineAsm(instr.Args)
+	case name == "device.AsmFull" || name == "device/arm.AsmFull" || name == "device/arm64.AsmFull" || name == "device/avr.AsmFull" || name == "device/riscv.AsmFull":
+		return b.createInlineAsmFull(instr)
+	case strings.HasPrefix(name, "device/arm.SVCall"):
+		return b.emitSVCall(instr.Args, getPos(instr))
+	case strings.HasPrefix(name, "device/arm64.SVCall"):
+		return b.emitSV64Call(instr.Args, getPos(instr))
+	case strings.HasPrefix(name, "(device/riscv.CSR)."):
+		return b.emitCSROperation(instr)
+	case strings.HasPrefix(name, "syscall.Syscall") || strings.HasPrefix(name, "syscall.RawSyscall") || strings.HasPrefix(name, "golang.org/x/sys/unix.Syscall") || strings.HasPrefix(name, "golang.org/x/sys/unix.RawSyscall"):
+		if b.GOOS != "darwin" {
+			return b.createSyscall(instr)
+		}
+	case strings.HasPrefix(name, "syscall.rawSyscallNoError") || strings.HasPrefix(name, "golang.org/x/sys/unix.RawSyscallNoError"):
+		return b.createRawSyscallNoError(instr)
+	case name == "runtime.supportsRecover":
+		supportsRecover := uint64(0)
+		if b.supportsRecover() {
+			supportsRecover = 1
+		}
+		return llvm.ConstInt(b.ctx.Int1Type(), supportsRecover, false), nil
+	case name == "runtime.panicStrategy":
+		panicStrategy := map[string]uint64{
+			"print": tinygo.PanicStrategyPrint,
+			"trap":  tinygo.PanicStrategyTrap,
+		}[b.Config.PanicStrategy]
+		return llvm.ConstInt(b.ctx.Int8Type(), panicStrategy, false), nil
+	case name == "runtime/interrupt.New":
+		return b.createInterruptGlobal(instr)
+	case name == "runtime.exportedFuncPtr":
+		_, ptr := b.getFunction(instr.Args[0].(*ssa.Function))
+		return b.CreatePtrToInt(ptr, b.uintptrType, ""), nil
+	case name == "(*runtime/interrupt.Checkpoint).Save":
+		return b.createInterruptCheckpoint(instr.Args[0]), nil
+	case name == "internal/abi.FuncPCABI0":
+		retval := b.createDarwinFuncPCABI0Call(instr)
+		if !retval.IsNil() {
+			return retval, nil
 		}
 	}
 ```
+
+
 
 **已经处理的内容**
 `goplus/lib/emb/runtime/volatile`
