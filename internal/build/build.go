@@ -40,8 +40,10 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/llpkg"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/taskqueue"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llgo/xtool/clang"
@@ -434,6 +436,13 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// need to be linked with external library
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
+				if llpkg.IsGithubHosted(aPkg.PkgPath) {
+					moduleDir, err := llpkg.ModuleDirOf(aPkg.Module.Path, aPkg.Module.Version)
+					if err == nil {
+						pkgPCPath := filepath.Join(moduleDir, "lib", "pkgconfig")
+						os.Setenv("PKG_CONFIG_PATH", pkgPCPath+":"+os.Getenv("PKG_CONFIG_PATH"))
+					}
+				}
 				altParts := strings.Split(param, ";")
 				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
@@ -926,6 +935,10 @@ type Package = *aPackage
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA
 	built := ctx.built
+
+	queue := taskqueue.NewTaskQueue(runtime.GOMAXPROCS(0))
+	defer queue.Close()
+
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
@@ -940,10 +953,33 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				}
 			}
 			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil, nil})
+
+			if llpkg.IsGithubHosted(pkgPath) {
+				moduleDir, err := llpkg.ModuleDirOf(p.Module.Path, p.Module.Version)
+				if err != nil {
+					return
+				}
+				// if this llpkg is Github hosted, check if we need to fetch it
+				if llpkg.CanSkipFetch(moduleDir) {
+					return
+				}
+				cfg, err := llpkg.ParseConfigFile(filepath.Join(moduleDir, "llpkg.cfg"))
+				if err != nil {
+					return
+				}
+				queue.Push(func() {
+					// check again
+					if !llpkg.CanSkipFetch(moduleDir) {
+						llpkg.Fetch(cfg, moduleDir)
+					}
+				})
+			}
 		} else {
 			errs = append(errs, p)
 		}
 	})
+
+	queue.Wait()
 	return
 }
 
