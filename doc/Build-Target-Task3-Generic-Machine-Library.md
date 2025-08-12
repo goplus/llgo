@@ -52,6 +52,9 @@ func New(id int, handler func(Interrupt)) Interrupt
 
 **中断编译器处理过程**
 
+具体流程为：
+
+`machine` 部分通过 `interrupt.New` 新建中断，编译器收集 中断id 形成中断表，并替换代码里面的的 `callHandlers` 为具体中断回调函数
 
 #### 前端部分
 编译时会去查找 `interrupt.New` 符号，如果检索到了，会生成 `interrupt.handle` 全局结构体，其全局符号名称如下：
