@@ -1,4 +1,13 @@
 ### goplus/lib/emb
+
+#### Build Tags
+
+需要将在构建Go包时携带 targets 中的 build-tags,目前来说会因为libc的一些依赖而导致panic
+```bash
+/Users/zhangzhiyang/Documents/Code/goplus/llgo/runtime/internal/clite/debug/_wrap/debug.c:9:10: fatal error: 'dlfcn.h' file not found
+    9 | #include <dlfcn.h>
+```
+
 #### machine
 
 goplus/lib (commit bc42bc75) 的 emb package 已从 TinyGo 直接搬迁，但仍需额外适配：
