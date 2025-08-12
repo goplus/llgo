@@ -52,8 +52,7 @@ func (p *Transformer) isCFunc(name string) bool {
 	return !strings.Contains(name, ".")
 }
 
-func (p *Transformer) TransformModule(pkg ssa.Package) {
-	m := pkg.Module()
+func (p *Transformer) TransformModule(path string, m llvm.Module) {
 	ctx := m.Context()
 	var fns []llvm.Value
 	var callInstrs []llvm.Value
@@ -67,6 +66,13 @@ func (p *Transformer) TransformModule(pkg ssa.Package) {
 				p.transformFuncCall(m, fn)
 				if p.isWrapFunctionType(m.Context(), fn.GlobalValueType()) {
 					fns = append(fns, fn)
+					use := fn.FirstUse()
+					for !use.IsNil() {
+						if call := use.User().IsACallInst(); !call.IsNil() && call.CalledValue() == fn {
+							callInstrs = append(callInstrs, call)
+						}
+						use = use.NextUse()
+					}
 				}
 			}
 			fn = llvm.NextFunction(fn)

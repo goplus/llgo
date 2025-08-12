@@ -812,7 +812,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	check(err)
 
-	ctx.cTransformer.TransformModule(ret)
+	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
 	aPkg.LPkg = ret
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
