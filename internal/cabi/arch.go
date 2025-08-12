@@ -272,19 +272,19 @@ func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *T
 	return info
 }
 
-type TypeInfo32 struct {
+type TypeInfoWasm struct {
 	*Transformer
 }
 
-func (p *TypeInfo32) SupportByVal() bool {
+func (p *TypeInfoWasm) SupportByVal() bool {
 	return true
 }
 
-func (p *TypeInfo32) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfoWasm) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	return elementTypesCount(typ) >= 2
 }
 
-func (p *TypeInfo32) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfoWasm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
