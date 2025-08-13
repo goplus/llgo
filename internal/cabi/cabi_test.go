@@ -28,7 +28,7 @@ func TestBuild(t *testing.T) {
 			conf.AbiMode = mode
 			conf.Goarch = arch
 			conf.Goos = "linux"
-			_, err := build.Do([]string{"./_testdata/demo/main.go"}, conf)
+			_, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
 			if err != nil {
 				t.Fatalf("build error: %v-%v %v", arch, mode, err)
 			}
@@ -105,23 +105,23 @@ func testFunc(t *testing.T, ctx context, td llvm.TargetData, fn llvm.Value, cfn 
 	pts := ft.ParamTypes()
 	cpts := cft.ParamTypes()
 	if len(pts) != len(cpts) {
-		t.Fatalf("%v %v: bad param types count %v != %v", ctx, fn.Name(), len(pts), len(cpts))
+		t.Fatalf("%v %v: bad param type %v != %v", ctx, fn.Name(), ft, cft)
 	}
 	for i, pt := range pts {
 		if !checkType(td, pt, cpts[i]) {
-			t.Fatalf("%v %v: bad param type %v != %v", ctx, fn.Name(), pt, cpts[i])
+			t.Fatalf("%v %v: bad param type %v != %v", ctx, fn.Name(), ft, cft)
 		}
 		if i == 0 {
 			if fn.GetStringAttributeAtIndex(1, "sret") != cfn.GetStringAttributeAtIndex(1, "sret") {
-				t.Fatalf("%v %v: bad sret attr", ctx, fn.Name())
+				t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 			}
 		}
 		if fn.GetStringAttributeAtIndex(1, "byval") != cfn.GetStringAttributeAtIndex(1, "byval") {
-			t.Fatalf("%v %v: bad byval attr %v", ctx, fn.Name(), i)
+			t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 		}
 	}
 	if !checkType(td, ft.ReturnType(), cft.ReturnType()) {
-		t.Fatalf("%v %v: bad return type %v != %v", ctx, fn.Name(), ft.ReturnType(), cft.ReturnType())
+		t.Fatalf("%v %v: bad return type %v != %v", ctx, fn.Name(), ft, cft)
 	}
 }
 

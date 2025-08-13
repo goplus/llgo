@@ -4,6 +4,8 @@ import (
 	"github.com/goplus/llvm"
 )
 
+const skip_same_type = false
+
 func elementTypesCount(typ llvm.Type) int {
 	switch typ.TypeKind() {
 	case llvm.VoidTypeKind:
@@ -93,7 +95,7 @@ func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 			}
 		} else {
 			types := elementTypes(p.td, typ)
-			if n == 2 {
+			if n == 2 && skip_same_type {
 				// skip (float32,float32)
 				if types[0] == ctx.FloatType() && types[1] == ctx.FloatType() {
 					return info
@@ -214,9 +216,6 @@ func (p *TypeInfoArm) SupportByVal() bool {
 func (p *TypeInfoArm) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	switch typ.TypeKind() {
 	case llvm.StructTypeKind, llvm.ArrayTypeKind:
-		if bret && elementTypesCount(typ) == 1 {
-			return false
-		}
 		return true
 	default:
 		return false
@@ -238,9 +237,6 @@ func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *T
 	case llvm.StructTypeKind, llvm.ArrayTypeKind:
 		types := elementTypes(p.td, typ)
 		n := len(types)
-		if bret && n == 1 {
-			return info
-		}
 		if n <= 4 {
 			if checkTypes(types, ctx.FloatType()) || checkTypes(types, ctx.DoubleType()) {
 				return info
@@ -252,7 +248,7 @@ func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *T
 				info.Type1 = llvm.PointerType(typ, 0)
 			} else {
 				info.Kind = AttrWidthType
-				info.Type1 = ctx.Int32Type()
+				info.Type1 = ctx.IntType(info.Size * 8)
 			}
 		} else {
 			if info.Size > 64 {
@@ -261,9 +257,11 @@ func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *T
 			} else {
 				info.Kind = AttrWidthType
 				if hasTypes(types, ctx.Int64Type()) || hasTypes(types, ctx.DoubleType()) {
-					info.Type1 = llvm.ArrayType(ctx.Int64Type(), info.Size/8)
+					size := (info.Size + 7) &^ 7
+					info.Type1 = llvm.ArrayType(ctx.Int64Type(), size/8)
 				} else {
-					info.Type1 = llvm.ArrayType(ctx.Int32Type(), info.Size/4)
+					size := (info.Size + 3) &^ 3
+					info.Type1 = llvm.ArrayType(ctx.Int32Type(), size/4)
 				}
 			}
 		}
