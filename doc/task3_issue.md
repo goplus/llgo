@@ -155,20 +155,49 @@ for bus.GetID_REG_UPDATE() > 0 {
 - **Special function recognition**: Compiler needs to recognize and handle assembly calls like `device.Asm`, `device/riscv.Asm`
 - **Inline assembly conversion**: Convert to LLGO-supported inline assembly syntax
 
-### 3. Build System Integration
-#### 3.1 Build-Tags Integration
-#### 3.2 Target-Specific Compilation
+### 3. Build-Tags Integration
 
-### 4. Hardware Abstraction Interfaces
-#### 4.1 GPIO Interface
-#### 4.2 SPI Interface
-#### 4.3 I2C Interface
-#### 4.4 UART Interface
+**Core Requirement**: Need to correctly carry build-tags from targets when building Go packages.
 
-### 5. Special Pragma Support
-#### 5.1 Memory Layout Pragmas
-#### 5.2 Export Function Pragmas
-#### 5.3 Inline Assembly Adaptation
+**Importance**: The HAL (Hardware Abstraction Layer) libraries depend on target-specific build-tags to compile the correct hardware drivers for each platform.
+
+**Build-Tags Sources**:
+- **Target configuration files**: `build-tags` field defined in each `targets/*.json` file
+- **Platform-specific tags**: Such as `baremetal`, `cortex_m`, `esp32c3`, `rp2040`, etc.
+- **Architecture tags**: Such as `arm`, `riscv`, `wasm`, etc.
+
+**Integration Requirements**:
+- **Tag propagation**: Correctly propagate build-tags from target configuration to Go compilation process
+- **Conditional compilation**: Ensure platform-specific code is conditionally compiled based on correct tags
+
+**Related Implementation**: [PR #1214](https://github.com/goplus/llgo/pull/1214) - Build-tags integration for HAL libraries
+
+### 4. Special Pragma Support
+#### 4.1 Memory Layout Pragmas
+
+**Core Challenge**: TinyGo uses special pragma directives for memory management and layout control, LLGO needs to provide equivalent support.
+
+**Key Pragma Directives**:
+
+**`//go:extern` - External Symbol Linking**:
+```go
+//go:extern __flash_data_start
+var flashDataStart [0]byte
+//go:extern __flash_data_end
+var flashDataEnd [0]byte
+```
+- **Purpose**: Link variable symbol memory addresses from dynamic/static libraries
+- **LLGO Adaptation**: Verify if it can be directly replaced with `//go:linkname`
+
+**`//go:align` - Memory Alignment**:
+```go
+//go:align 4
+var udd_ep_control_cache_buffer [256]uint8
+```
+- **Purpose**: Force variable memory alignment, ensuring hardware access requirements
+- **Importance**: Critical requirement for hardware register access in embedded systems
+#### 4.2 Export Function Pragmas
+#### 4.3 Inline Assembly Adaptation
 
 
 ## Dependencies
