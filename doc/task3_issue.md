@@ -1,15 +1,15 @@
 ## Overview
 This issue tracks the implementation of Task 3 from the overall cross-platform compilation design (#1176): Generic Machine Library providing cross-platform hardware abstraction interfaces for GPIO, SPI, I2C, UART based on TinyGo's hardware abstraction design.
 
-The `goplus/lib/emb` package (commit bc42bc75) has been migrated from TinyGo but requires significant adaptation for LLGO compiler integration. Key challenges include missing `device` package dependencies, complex interrupt system requiring compiler frontend/backend cooperation, and extensive use of TinyGo-specific pragmas and inline assembly that need LLGO adaptation.
+The `goplus/lib/emb` package (commit bc42bc75) has been migrated from TinyGo but requires significant adaptation for LLGo compiler integration. Key challenges include missing `device` package dependencies, complex interrupt system requiring compiler frontend/backend cooperation, and extensive use of TinyGo-specific pragmas and inline assembly that need LLGo adaptation.
 
-Unlike TinyGo's approach, we can build the generic machine library together with Task 4: Hardware-Specific Machine Library, similar to LLGO's current method to implement Go system library.
+Unlike TinyGo's approach, we can build the generic machine library together with Task 4: Hardware-Specific Machine Library, similar to LLGo's current method to implement Go system library.
 
 ## Scope
 Generic hardware abstraction layer implementation including:
 
 - **Package Migration**: TinyGo `device` package migration to `goplus/lib/emb` and `machine` package adaptation
-- **Runtime Integration**: Interrupt system adaptation and assembly code conversion for LLGO compiler
+- **Runtime Integration**: Interrupt system adaptation and assembly code conversion for LLGo compiler
 - **Build System Integration**: Build-tags integration and target-specific compilation support
 - **Hardware Abstraction Interfaces**: Cross-platform GPIO, SPI, I2C, UART interfaces
 - **Special Pragma Support**: TinyGo-specific pragma adaptation (`//go:extern`, `//go:align`, `//export`, etc.)
@@ -51,7 +51,7 @@ const deviceName = esp.Device  // Directly uses hardware definitions from device
 // Before (TinyGo)
 import "device/esp"
 
-// After (LLGO)
+// After (LLGo)
 import "github.com/goplus/lib/emb/device/esp"
 ```
 
@@ -62,7 +62,7 @@ import "github.com/goplus/lib/emb/device/esp"
 - **HAL integrity**: As the HAL foundation, any missing components will affect the entire hardware abstraction layer
 #### 1.2 Machine Package Adaptation
 
-**Current Status**: The `machine` package has been migrated from TinyGo to `goplus/lib/emb`, but still requires resolution of `device` package dependencies and LLGO compiler adaptation.
+**Current Status**: The `machine` package has been migrated from TinyGo to `goplus/lib/emb`, but still requires resolution of `device` package dependencies and LLGo compiler adaptation.
 
 **Core Functionality**:
 - **Hardware abstraction interfaces**: Cross-platform hardware interfaces for GPIO, SPI, I2C, UART, etc.
@@ -75,7 +75,7 @@ import "github.com/goplus/lib/emb/device/esp"
 package machine
 
 import (
-    "device/esp"        // TinyGo system package, missing in LLGO
+    "device/esp"        // TinyGo system package, missing in LLGo
     "errors"
     "runtime/volatile"  // Already adapted: goplus/lib/emb/runtime/volatile
     "unsafe"
@@ -89,10 +89,10 @@ const deviceName = esp.Device  // Depends on hardware constants from device pack
 - **Volatile operations integration**: Utilize the already adapted `goplus/lib/emb/runtime/volatile`:
   ```go
   // Completed volatile operation adaptation
-  //go:linkname StoreUint64 llgo.atomicStore
+  //go:linkname StoreUint64 LLGo.atomicStore
   func StoreUint64(addr *uint64, val uint64)
   
-  //go:linkname LoadUint64 llgo.atomicLoad  
+  //go:linkname LoadUint64 LLGo.atomicLoad  
   func LoadUint64(addr *uint64) uint64
   ```
 - **Platform compatibility**: Maintain consistency with TinyGo, supporting the same embedded target platforms
@@ -100,7 +100,7 @@ const deviceName = esp.Device  // Depends on hardware constants from device pack
 ### 2. Runtime Integration
 #### 2.1 Interrupt System Adaptation
 
-**Core Challenge**: TinyGo's interrupt system requires deep integration between compiler frontend and backend, LLGO needs to implement equivalent compiler support.
+**Core Challenge**: TinyGo's interrupt system requires deep integration between compiler frontend and backend, LLGo needs to implement equivalent compiler support.
 
 **Compiler Frontend Processing**:
 - **Interrupt registration detection**: Scan source code for `interrupt.New` function calls
@@ -141,7 +141,7 @@ call void @"device/arm.SetPriority"(i32 2, i32 192, ptr undef)  // Optimized to 
 
 #### 2.2 Assembly Code Conversion
 
-**Core Challenge**: TinyGo contains extensive platform-specific inline assembly code that needs to be converted to LLGO-supported inline assembly syntax.
+**Core Challenge**: TinyGo contains extensive platform-specific inline assembly code that needs to be converted to LLGo-supported inline assembly syntax.
 
 **TinyGo Assembly Code Example**:
 ```go
@@ -151,9 +151,9 @@ for bus.GetID_REG_UPDATE() > 0 {
 }
 ```
 
-**LLGO Compiler Processing**:
+**LLGo Compiler Processing**:
 - **Special function recognition**: Compiler needs to recognize and handle assembly calls like `device.Asm`, `device/riscv.Asm`
-- **Inline assembly conversion**: Convert to LLGO-supported inline assembly syntax
+- **Inline assembly conversion**: Convert to LLGo-supported inline assembly syntax
 
 ### 3. Build-Tags Integration
 
@@ -170,12 +170,12 @@ for bus.GetID_REG_UPDATE() > 0 {
 - **Tag propagation**: Correctly propagate build-tags from target configuration to Go compilation process
 - **Conditional compilation**: Ensure platform-specific code is conditionally compiled based on correct tags
 
-**Related Implementation**: [PR #1214](https://github.com/goplus/llgo/pull/1214) - Build-tags integration for HAL libraries
+**Related Implementation**: [PR #1214](https://github.com/goplus/LLGo/pull/1214) - Build-tags integration for HAL libraries
 
 ### 4. Special Pragma Support
 #### 4.1 Memory Layout Pragmas
 
-**Core Challenge**: TinyGo uses special pragma directives for memory management and layout control, LLGO needs to provide equivalent support.
+**Core Challenge**: TinyGo uses special pragma directives for memory management and layout control, LLGo needs to provide equivalent support.
 
 **Key Pragma Directives**:
 
@@ -187,7 +187,7 @@ var flashDataStart [0]byte
 var flashDataEnd [0]byte
 ```
 - **Purpose**: Link variable symbol memory addresses from dynamic/static libraries
-- **LLGO Adaptation**: Verify if it can be directly replaced with `//go:linkname`
+- **LLGo Adaptation**: Verify if it can be directly replaced with `//go:linkname`
 
 **`//go:align` - Memory Alignment**:
 ```go
@@ -224,7 +224,7 @@ func spiTransfer(bus uint8, w uint8) uint8
 ```
 #### 4.3 Inline Assembly Adaptation
 
-**Core Challenge**: Adapt TinyGo's inline assembly syntax to LLGO compiler's inline assembly support.
+**Core Challenge**: Adapt TinyGo's inline assembly syntax to LLGo compiler's inline assembly support.
 
 **TinyGo Supported Pragmas**:
 
@@ -247,4 +247,4 @@ func ceil(num uint64, denom uint64) uint64 {
 
 **External Dependencies:**
 - **goplus/lib repository** - Host repository for `emb` package
-- **LLGO compiler support** - Special pragma and interrupt handling capabilities
+- **LLGo compiler support** - Special pragma and interrupt handling capabilities
