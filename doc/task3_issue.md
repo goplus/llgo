@@ -92,7 +92,7 @@ const deviceName = esp.Device  // Depends on hardware constants from device pack
   //go:linkname StoreUint64 llgo.atomicStore
   func StoreUint64(addr *uint64, val uint64)
   
-  //go:linkname LoadUint64 LLGo.atomicLoad  
+  //go:linkname LoadUint64 llgo.atomicLoad  
   func LoadUint64(addr *uint64) uint64
   ```
 - **Platform compatibility**: Maintain consistency with TinyGo, supporting the same embedded target platforms
