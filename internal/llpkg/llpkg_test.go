@@ -114,10 +114,10 @@ func TestModuleDirOf(t *testing.T) {
 		},
 		{
 			name:          "module with special chars",
-			modulePath:    "example.com/module!test",
+			modulePath:    "example.com/moduleTest",
 			moduleVersion: "v2.0.0",
 			expectError:   false,
-			expectSuffix:  "example.com/module\\!test@v2.0.0",
+			expectSuffix:  `example.com/module\!test@v2.0.0`,
 		},
 	}
 

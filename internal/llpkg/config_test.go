@@ -66,6 +66,12 @@ func TestUpstreamConfig(t *testing.T) {
 	if upstream.Package.Version != "v2.0.0" {
 		t.Errorf("expected package version 'v2.0.0', got %s", upstream.Package.Version)
 	}
+
+	upstream.Package.SetModuleVersion("v1.0.0")
+
+	if upstream.Package.ModuleVersion() != "v1.0.0" {
+		t.Errorf("expected package version 'v1.0.0', got %s", upstream.Package.ModuleVersion())
+	}
 }
 
 func TestInstallerConfig(t *testing.T) {

@@ -57,7 +57,7 @@ func Unzip(zipFilePath, outputDir string) error {
 			return err
 		}
 		// if this is a nested zip, unzip it.
-		if strings.HasSuffix(file.Name, ".zip") {
+		if strings.HasSuffix(path, ".zip") {
 			if err := Unzip(path, outputDir); err != nil {
 				return err
 			}
