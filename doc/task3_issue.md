@@ -196,9 +196,45 @@ var udd_ep_control_cache_buffer [256]uint8
 ```
 - **Purpose**: Force variable memory alignment, ensuring hardware access requirements
 - **Importance**: Critical requirement for hardware register access in embedded systems
+
 #### 4.2 Export Function Pragmas
+
+**Core Requirement**: Support exporting Go functions as C-callable functions for interoperability with the C ecosystem.
+
+**Main Pragma Directives**:
+
+**`//export` - Function Export**:
+```go
+//export __tinygo_spi_configure
+func spiConfigure(bus uint8, sck Pin, SDO Pin, SDI Pin)
+
+//export __tinygo_spi_transfer
+func spiTransfer(bus uint8, w uint8) uint8
+```
+- **Purpose**: Create C-callable functions with simple function names
+- **Use case**: Empty export functions for non-baremetal platforms (`!baremetal`)
+
+**Platform Conditional Compilation**:
+```go
+//go:build !baremetal
+// Non-baremetal platforms include:
+// - WASM: wasi, wasm-unknown, wasm, wasip2, wasip1
+// - Nordic nRF52: nrf52-s132v6, nrf52840-s140v7, etc.
+// - Gaming consoles: nintendoswitch
+```
 #### 4.3 Inline Assembly Adaptation
 
+**Core Challenge**: Adapt TinyGo's inline assembly syntax to LLGO compiler's inline assembly support.
+
+**TinyGo Supported Pragmas**:
+
+**`//go:inline` - Force Inline**:
+```go
+//go:inline
+func ceil(num uint64, denom uint64) uint64 {
+    return (num + denom - 1) / denom
+}
+```
 
 ## Dependencies
 
