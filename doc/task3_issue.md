@@ -4,3 +4,12 @@ This issue tracks the implementation of Task 3 from the overall cross-platform c
 The `goplus/lib/emb` package (commit bc42bc75) has been migrated from TinyGo but requires significant adaptation for LLGO compiler integration. Key challenges include missing `device` package dependencies, complex interrupt system requiring compiler frontend/backend cooperation, and extensive use of TinyGo-specific pragmas and inline assembly that need LLGO adaptation.
 
 Unlike TinyGo's approach, we can build the generic machine library together with Task 4: Hardware-Specific Machine Library, similar to LLGO's current method to implement Go system library.
+
+## Scope
+Generic hardware abstraction layer implementation including:
+
+- **Package Migration**: TinyGo `device` package migration to `goplus/lib/emb` and `machine` package adaptation
+- **Runtime Integration**: Interrupt system adaptation and assembly code conversion for LLGO compiler
+- **Build System Integration**: Build-tags integration and target-specific compilation support
+- **Hardware Abstraction Interfaces**: Cross-platform GPIO, SPI, I2C, UART interfaces
+- **Special Pragma Support**: TinyGo-specific pragma adaptation (`//go:extern`, `//go:align`, `//export`, etc.)
