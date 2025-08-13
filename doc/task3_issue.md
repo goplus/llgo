@@ -99,7 +99,61 @@ const deviceName = esp.Device  // Depends on hardware constants from device pack
 
 ### 2. Runtime Integration
 #### 2.1 Interrupt System Adaptation
+
+**Core Challenge**: TinyGo's interrupt system requires deep integration between compiler frontend and backend, LLGO needs to implement equivalent compiler support.
+
+**Compiler Frontend Processing**:
+- **Interrupt registration detection**: Scan source code for `interrupt.New` function calls
+- **Global symbol generation**: Create `{PackagePath}.$interrupt{InterruptID}` symbols for each interrupt
+- **Struct generation**: Create `interrupt.handle` structs to store interrupt information
+
+**Interrupt Registration Flow**:
+```go
+// Source code example
+interrupt.New(2, handlerFunc)
+
+// Compiler-generated global symbol
+runtime/interrupt.$interrupt2
+
+// Generated struct content
+type handle struct {
+    context unsafe.Pointer
+    funcPtr uintptr      // Function pointer to handlerFunc
+    Interrupt           // { num: 2 }
+}
+```
+
+**Compiler Backend Processing**:
+- **Symbol lookup**: Scan all `interrupt.handle` symbols, extract interrupt IDs and function pointers
+- **Function replacement**: Replace `runtime/interrupt.callHandlers` with specific interrupt handler function calls
+- **Parameter optimization**: Optimize symbol address conversions to direct interrupt ID constants
+
+**Code Transformation Example**:
+```go
+// Before transformation
+call void @"runtime/interrupt.callHandlers"(i32 %interrupt_num)
+call void @"device/arm.SetPriority"(i32 ptrtoint (ptr @"runtime/interrupt.$interrupt2" to i32), i32 192, ptr undef)
+
+// After transformation
+call void @handlerFunc(ptr %context)  // Direct handler function call
+call void @"device/arm.SetPriority"(i32 2, i32 192, ptr undef)  // Optimized to constant
+```
+
 #### 2.2 Assembly Code Conversion
+
+**Core Challenge**: TinyGo contains extensive platform-specific inline assembly code that needs to be converted to LLGO-supported inline assembly syntax.
+
+**TinyGo Assembly Code Example**:
+```go
+// wait for Core Clock to ready for configuration
+for bus.GetID_REG_UPDATE() > 0 {
+    riscv.Asm("nop")
+}
+```
+
+**LLGO Compiler Processing**:
+- **Special function recognition**: Compiler needs to recognize and handle assembly calls like `device.Asm`, `device/riscv.Asm`
+- **Inline assembly conversion**: Convert to LLGO-supported inline assembly syntax
 
 ### 3. Build System Integration
 #### 3.1 Build-Tags Integration
