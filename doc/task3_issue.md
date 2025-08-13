@@ -38,3 +38,17 @@ Generic hardware abstraction layer implementation including:
 #### 5.1 Memory Layout Pragmas
 #### 5.2 Export Function Pragmas
 #### 5.3 Inline Assembly Adaptation
+
+
+## Dependencies
+
+**Prerequisites:**
+- **Task 1 (#1194) - Basic Target Parameter Support** ✅ (Completed)
+- **Task 2 (TBD) - Multi-Platform LLVM Support** (Required for embedded target compilation support)
+
+**Related Issues:**
+- **#1214 - Build-tags integration** (Build system integration for target-specific compilation)
+
+**External Dependencies:**
+- **goplus/lib repository** - Host repository for `emb` package
+- **LLGO compiler support** - Special pragma and interrupt handling capabilities
