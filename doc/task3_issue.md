@@ -89,7 +89,7 @@ const deviceName = esp.Device  // Depends on hardware constants from device pack
 - **Volatile operations integration**: Utilize the already adapted `goplus/lib/emb/runtime/volatile`:
   ```go
   // Completed volatile operation adaptation
-  //go:linkname StoreUint64 LLGo.atomicStore
+  //go:linkname StoreUint64 llgo.atomicStore
   func StoreUint64(addr *uint64, val uint64)
   
   //go:linkname LoadUint64 LLGo.atomicLoad  
