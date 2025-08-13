@@ -17,12 +17,12 @@ func IsGithubHosted(modulePath string) bool {
 	return strings.HasPrefix(modulePath, "github.com/goplus/llpkg")
 }
 
-func CanSkipFetch(moduleDir string) bool {
-	_, err := os.Stat(filepath.Join(moduleDir, "lib", "pkgconfig"))
+func IsInstalled(moduleDir string) bool {
+	_, err := os.Stat(filepath.Join(moduleDir, "lib"))
 	return os.IsExist(err)
 }
 
-func ModuleDirOf(modulePath, moduleVersion string) (string, error) {
+func LLGoModuleDirOf(modulePath, moduleVersion string) (string, error) {
 	escapedPath, err := module.EscapePath(modulePath)
 	if err != nil {
 		return "", err
@@ -30,10 +30,14 @@ func ModuleDirOf(modulePath, moduleVersion string) (string, error) {
 	// NOTE(MeteorsLiu): In unix-like system, -L cannot recognize the path with !
 	escapedPath = strings.ReplaceAll(escapedPath, "!", `\!`)
 
-	return filepath.Join(env.LLGoCacheDir(), escapedPath+"@"+moduleVersion), nil
+	dir := filepath.Join(env.LLGoCacheDir(), escapedPath+"@"+moduleVersion)
+
+	err = os.MkdirAll(dir, 0700)
+
+	return dir, err
 }
 
-func Fetch(llpkgConfig LLPkgConfig, outputDir string) error {
+func InstallBinary(llpkgConfig LLPkgConfig, outputDir string) error {
 	return _defaultInstaller.Install(llpkgConfig.Upstream.Package, outputDir)
 }
 

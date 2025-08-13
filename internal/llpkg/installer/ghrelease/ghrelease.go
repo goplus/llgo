@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/goplus/llgo/internal/llpkg/installer"
+	"github.com/goplus/llgo/internal/llpkg/installer/pcgen"
 )
 
 type ghReleasesInstaller struct {
@@ -20,7 +21,8 @@ func New(owner, repo string) installer.Installer {
 // assertUrl returns the URL for the specified package.
 // The URL is constructed based on the package name, version, and the installer configuration.
 func (c *ghReleasesInstaller) assertUrl(pkg installer.Package) string {
-	releaseName := fmt.Sprintf("%s/%s", pkg.Name, pkg.Version)
+	// NOTE(MeteorsLiu): release binary url requires mapped version, aka module version for llpkg here.
+	releaseName := fmt.Sprintf("%s/%s", pkg.Name, pkg.ModuleVersion())
 	fileName := fmt.Sprintf("%s_%s.zip", pkg.Name, runtime.GOOS+"_"+runtime.GOARCH)
 	return fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", c.owner, c.repo, releaseName, fileName)
 }
@@ -34,12 +36,12 @@ func (c *ghReleasesInstaller) Install(pkg installer.Package, outputDir string) e
 	if err != nil {
 		return err
 	}
+	defer os.Remove(zipFilePath)
+
 	err = installer.Unzip(zipFilePath, absOutputDir)
 	if err != nil {
 		return fmt.Errorf("failed to unzip llpkg: %w", err)
 	}
-	defer os.Remove(zipFilePath)
-
 	// generate actual pc files from pc.tmpl files
-	return installer.GeneratePC(filepath.Join(outputDir, "lib", "pkgconfig"), absOutputDir)
+	return pcgen.GeneratePC(filepath.Join(outputDir, "lib", "pkgconfig"), absOutputDir)
 }

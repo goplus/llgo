@@ -68,7 +68,7 @@ func TestCanSkipFetch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		result := CanSkipFetch(moduleDir)
+		result := IsInstalled(moduleDir)
 		if !result {
 			t.Error("expected true when pkgconfig directory exists")
 		}
@@ -81,7 +81,7 @@ func TestCanSkipFetch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		result := CanSkipFetch(moduleDir)
+		result := IsInstalled(moduleDir)
 		if result {
 			t.Error("expected false when pkgconfig directory does not exist")
 		}
@@ -90,7 +90,7 @@ func TestCanSkipFetch(t *testing.T) {
 	t.Run("module dir does not exist", func(t *testing.T) {
 		nonexistentDir := filepath.Join(tempDir, "nonexistent")
 
-		result := CanSkipFetch(nonexistentDir)
+		result := IsInstalled(nonexistentDir)
 		if result {
 			t.Error("expected false when module directory does not exist")
 		}
@@ -123,7 +123,7 @@ func TestModuleDirOf(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ModuleDirOf(tt.modulePath, tt.moduleVersion)
+			result, err := LLGoModuleDirOf(tt.modulePath, tt.moduleVersion)
 
 			if tt.expectError {
 				if err == nil {

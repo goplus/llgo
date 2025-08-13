@@ -437,9 +437,10 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
 				if llpkg.IsGithubHosted(aPkg.PkgPath) {
-					moduleDir, err := llpkg.ModuleDirOf(aPkg.Module.Path, aPkg.Module.Version)
+					moduleDir, err := llpkg.LLGoModuleDirOf(aPkg.Module.Path, aPkg.Module.Version)
 					if err == nil {
 						pkgPCPath := filepath.Join(moduleDir, "lib", "pkgconfig")
+						// TODO(MeteorsLiu): support Windows
 						os.Setenv("PKG_CONFIG_PATH", pkgPCPath+":"+os.Getenv("PKG_CONFIG_PATH"))
 					}
 				}
@@ -936,8 +937,8 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 	prog := ctx.progSSA
 	built := ctx.built
 
-	queue := taskqueue.NewTaskQueue(runtime.GOMAXPROCS(0))
-	defer queue.Close()
+	taskQueue := taskqueue.NewTaskQueue(runtime.GOMAXPROCS(0))
+	defer taskQueue.Close()
 
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
@@ -955,22 +956,38 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil, nil})
 
 			if llpkg.IsGithubHosted(pkgPath) {
-				moduleDir, err := llpkg.ModuleDirOf(p.Module.Path, p.Module.Version)
+				moduleDir, err := llpkg.LLGoModuleDirOf(p.Module.Path, p.Module.Version)
 				if err != nil {
 					return
 				}
 				// if this llpkg is Github hosted, check if we need to fetch it
-				if llpkg.CanSkipFetch(moduleDir) {
+				if llpkg.IsInstalled(moduleDir) {
+					if verbose {
+						fmt.Printf("skip installing llpkg binary to %s\n", moduleDir)
+					}
 					return
 				}
-				cfg, err := llpkg.ParseConfigFile(filepath.Join(moduleDir, "llpkg.cfg"))
+
+				cfg, err := llpkg.ParseConfigFile(filepath.Join(p.Dir, "llpkg.cfg"))
 				if err != nil {
 					return
 				}
-				queue.Push(func() {
+				cfg.Upstream.Package.SetModuleVersion(p.Module.Version)
+
+				taskQueue.Push(func() {
 					// check again
-					if !llpkg.CanSkipFetch(moduleDir) {
-						llpkg.Fetch(cfg, moduleDir)
+					if !llpkg.IsInstalled(moduleDir) {
+						if verbose {
+							fmt.Printf("Installing llpkg binary %s to %s\n", cfg.Upstream.Package.Name, moduleDir)
+						}
+						err := llpkg.InstallBinary(cfg, moduleDir)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "failed to installing llpkg binary: %v\n", err)
+						}
+						return
+					}
+					if verbose {
+						fmt.Printf("skip installing llpkg binary to %s\n", moduleDir)
 					}
 				})
 			}
@@ -979,7 +996,7 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 		}
 	})
 
-	queue.Wait()
+	taskQueue.Wait()
 	return
 }
 

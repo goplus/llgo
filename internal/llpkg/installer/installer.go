@@ -11,4 +11,16 @@ type Installer interface {
 type Package struct {
 	Name    string
 	Version string
+	// mapped version, aka module version, in llpkg design, we call it mapped version
+	// this field isn't a part of design, aims to help installer like ghrelease get the mapped version quickly
+	// so we cannot export it
+	mappedVersion string
+}
+
+func (p *Package) ModuleVersion() string {
+	return p.mappedVersion
+}
+
+func (p *Package) SetModuleVersion(ver string) {
+	p.mappedVersion = ver
 }
