@@ -4,7 +4,7 @@
 
 需要将在构建Go包时携带 targets 中的 build-tags,目前来说会因为libc的一些依赖而导致panic
 ```bash
-/Users/zhangzhiyang/Documents/Code/goplus/llgo/runtime/internal/clite/debug/_wrap/debug.c:9:10: fatal error: 'dlfcn.h' file not found
+/Users/zhangzhiyang/Documents/Code/goplus/LLGo/runtime/internal/clite/debug/_wrap/debug.c:9:10: fatal error: 'dlfcn.h' file not found
     9 | #include <dlfcn.h>
 ```
 
@@ -18,7 +18,7 @@ goplus/lib (commit bc42bc75) 的 emb package 已从 TinyGo 直接搬迁，但仍
 package machine
 
 import (
-  "device/esp"        // TinyGo 中的系统包，LLGO 中不存在
+  "device/esp"        // TinyGo 中的系统包，LLGo 中不存在
   "errors"
   "runtime/volatile"
   "unsafe"
@@ -359,7 +359,7 @@ var udd_ep_control_cache_buffer [256]uint8
 
 **已经处理的内容**
 `goplus/lib/emb/runtime/volatile`
-将原先的存储和加载指令，直接映射为llgo的指令
+将原先的存储和加载指令，直接映射为LLGo的指令
 ```go
 // StoreUint64 stores val to the volatile value *addr.
 func StoreUint64(addr *uint64, val uint64)
@@ -367,7 +367,7 @@ func StoreUint64(addr *uint64, val uint64)
 ```go
 // StoreUint64 stores val to the volatile value *addr.
 //
-//go:linkname StoreUint64 llgo.atomicStore
+//go:linkname StoreUint64 LLGo.atomicStore
 func StoreUint64(addr *uint64, val uint64)
 ```
 
@@ -375,7 +375,7 @@ func StoreUint64(addr *uint64, val uint64)
 
 TODO
 1.迁移device到lib仓库，修改module path
-2.cgo部分代码更改为llgo wrapper形式
+2.cgo部分代码更改为LLGo wrapper形式
 
 
 tinygo
