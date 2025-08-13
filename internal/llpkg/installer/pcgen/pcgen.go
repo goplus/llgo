@@ -9,6 +9,10 @@ import (
 	"text/template"
 )
 
+// GeneratePC generates pkg-config (.pc) files from template files (.pc.tmpl) in the specified directory.
+// It processes all .pc.tmpl files found in pkgConfigPath, replaces template variables with actual values,
+// and creates corresponding .pc files. The template files are removed after successful generation.
+// The absOutputDir parameter is used as the "Prefix" value in template substitution.
 func GeneratePC(pkgConfigPath, absOutputDir string) error {
 	pcTmpls, err := filepath.Glob(filepath.Join(pkgConfigPath, "*.pc.tmpl"))
 	if err != nil {

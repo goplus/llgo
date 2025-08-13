@@ -17,10 +17,14 @@ type Package struct {
 	mappedVersion string
 }
 
+// ModuleVersion returns the mapped version of the package.
+// This is used internally to retrieve the module version that corresponds to the package version.
 func (p *Package) ModuleVersion() string {
 	return p.mappedVersion
 }
 
+// SetModuleVersion sets the mapped version for the package.
+// This method is used internally to store the module version that maps to the package version.
 func (p *Package) SetModuleVersion(ver string) {
 	p.mappedVersion = ver
 }

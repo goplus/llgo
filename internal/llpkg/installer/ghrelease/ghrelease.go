@@ -14,6 +14,8 @@ type ghReleasesInstaller struct {
 	owner, repo string
 }
 
+// New creates a new GitHub releases installer for the specified owner and repository.
+// It returns an installer that can download and install packages from GitHub releases.
 func New(owner, repo string) installer.Installer {
 	return &ghReleasesInstaller{owner: owner, repo: repo}
 }
@@ -27,6 +29,9 @@ func (c *ghReleasesInstaller) assertUrl(pkg installer.Package) string {
 	return fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", c.owner, c.repo, releaseName, fileName)
 }
 
+// Install downloads and installs a package from GitHub releases to the specified output directory.
+// It downloads the package zip file, extracts it, and generates pkg-config files from templates.
+// The installation process includes cleanup of temporary files and proper error handling.
 func (c *ghReleasesInstaller) Install(pkg installer.Package, outputDir string) error {
 	absOutputDir, err := filepath.Abs(outputDir)
 	if err != nil {

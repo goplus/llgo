@@ -669,6 +669,11 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	// Add common linker arguments based on target OS and architecture
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
+		if runtime.GOOS == "darwin" {
+			buildArgs = append(buildArgs, "-Wl,-t", "-Wl,-map,symbol.map")
+		} else {
+			buildArgs = append(buildArgs, "-Wl,--Map=symbol.map")
+		}
 	}
 
 	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)

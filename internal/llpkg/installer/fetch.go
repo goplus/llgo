@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+// wrapDownloadError wraps an error with a descriptive message for download failures.
+// It returns nil if the input error is nil, otherwise returns a wrapped error with context.
 func wrapDownloadError(err error) error {
 	if err == nil {
 		return nil
@@ -17,6 +19,9 @@ func wrapDownloadError(err error) error {
 	return fmt.Errorf("failed to download llpkg binary files: %w", err)
 }
 
+// Unzip extracts a zip file to the specified output directory.
+// It creates the output directory if it doesn't exist, handles nested directories,
+// and recursively unzips any nested zip files found within the archive.
 func Unzip(zipFilePath, outputDir string) error {
 	// make sure path exists
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
@@ -69,6 +74,9 @@ func Unzip(zipFilePath, outputDir string) error {
 	return err
 }
 
+// DownloadFile downloads a file from the given URL and saves it to a temporary file.
+// It creates the output directory if needed and returns the path to the downloaded temporary file.
+// The caller is responsible for cleaning up the temporary file when no longer needed.
 func DownloadFile(url, outputDir string) (fileName string, err error) {
 	// make sure path exists
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
