@@ -16,9 +16,86 @@ Generic hardware abstraction layer implementation including:
 
 ## Implementation Details
 
+## Implementation Details
+
 ### 1. Package Migration
 #### 1.1 Device Package Migration
+
+**Current Status**: TinyGo `device` package needs to be migrated to `goplus/lib/emb` with module path changes.
+
+**Importance**: The `device` package is the core component of the Hardware Abstraction Layer (HAL), heavily depended upon by the `machine` package, and serves as the foundation of the entire embedded ecosystem.
+
+**Key Components**:
+- **Hardware register definitions**: Platform-specific memory-mapped I/O registers
+- **Interrupt definitions**: Hardware interrupt ID constants and handlers
+- **Assembly functions**: Low-level hardware access routines
+
+**Dependency Relationship**:
+```go
+// machine package's strong dependency on device package
+// machine/machine_esp32.go
+package machine
+
+import (
+    "device/esp"        // Required dependency: hardware constants and register definitions
+    "errors"
+    "runtime/volatile"
+    "unsafe"
+)
+
+const deviceName = esp.Device  // Directly uses hardware definitions from device package
+```
+
+**Migration Steps**:
+```go
+// Before (TinyGo)
+import "device/esp"
+
+// After (LLGO)
+import "github.com/goplus/lib/emb/device/esp"
+```
+
+**Challenges**:
+- **Module path updates**: All imports need to change from `device/*` to `github.com/goplus/lib/emb/device/*`
+- **Symbol dependencies**: Device-specific constants and registers must be preserved to ensure machine package functionality
+- **Platform coverage**: Support for 100+ embedded targets from existing `targets/` directory
+- **HAL integrity**: As the HAL foundation, any missing components will affect the entire hardware abstraction layer
 #### 1.2 Machine Package Adaptation
+
+**Current Status**: The `machine` package has been migrated from TinyGo to `goplus/lib/emb`, but still requires resolution of `device` package dependencies and LLGO compiler adaptation.
+
+**Core Functionality**:
+- **Hardware abstraction interfaces**: Cross-platform hardware interfaces for GPIO, SPI, I2C, UART, etc.
+- **Platform-specific implementations**: Concrete functionality based on hardware definitions provided by the `device` package
+- **Volatile memory operations**: Hardware register access through `runtime/volatile`
+
+**Current Dependency Issues**:
+```go
+// machine/machine_esp32.go - Current existing issues
+package machine
+
+import (
+    "device/esp"        // TinyGo system package, missing in LLGO
+    "errors"
+    "runtime/volatile"  // Already adapted: goplus/lib/emb/runtime/volatile
+    "unsafe"
+)
+
+const deviceName = esp.Device  // Depends on hardware constants from device package
+```
+
+**Adaptation Strategy**:
+- **Dependency path updates**: Update all `device/*` imports to `github.com/goplus/lib/emb/device/*`
+- **Volatile operations integration**: Utilize the already adapted `goplus/lib/emb/runtime/volatile`:
+  ```go
+  // Completed volatile operation adaptation
+  //go:linkname StoreUint64 llgo.atomicStore
+  func StoreUint64(addr *uint64, val uint64)
+  
+  //go:linkname LoadUint64 llgo.atomicLoad  
+  func LoadUint64(addr *uint64) uint64
+  ```
+- **Platform compatibility**: Maintain consistency with TinyGo, supporting the same embedded target platforms
 
 ### 2. Runtime Integration
 #### 2.1 Interrupt System Adaptation
