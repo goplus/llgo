@@ -4,7 +4,7 @@ import (
 	"github.com/goplus/llvm"
 )
 
-const skip_same_type = false
+const skip_same_size = false
 
 func elementTypesCount(typ llvm.Type) int {
 	switch typ.TypeKind() {
@@ -95,42 +95,49 @@ func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 			}
 		} else {
 			types := elementTypes(p.td, typ)
-			if n == 2 && skip_same_type {
-				// skip (float32,float32)
-				if types[0] == ctx.FloatType() && types[1] == ctx.FloatType() {
-					return info
-				}
+			if n == 2 {
 				// skip (i64|double,*) (*,i64/double)
 				if p.Sizeof(types[0]) == 8 || p.Sizeof(types[1]) == 8 {
+					info.Kind = AttrWidthType2
+					info.Type1 = types[0]
+					info.Type2 = types[1]
 					return info
 				}
 			}
-			info.Kind = AttrWidthType2
-			var count int
+			var offset int
+			var index int
 			for i, et := range types {
-				count += p.Sizeof(et)
-				if count >= 8 {
-					if i == 0 {
-						info.Type1 = et
-					} else if i == 1 && types[0] == ctx.FloatType() && types[1] == ctx.FloatType() {
-						info.Type1 = llvm.VectorType(ctx.FloatType(), 2)
-					} else {
-						info.Type1 = ctx.Int64Type()
-					}
-					right := len(types) - i
-					if count == 8 {
-						right--
-					}
-					if right == 1 {
-						info.Type2 = types[len(types)-1]
-					} else if right == 2 && types[len(types)-1] == ctx.FloatType() && types[len(types)-2] == ctx.FloatType() {
-						info.Type2 = llvm.VectorType(ctx.FloatType(), 2)
-					} else {
-						info.Type2 = ctx.IntType((info.Size - 8) * 8)
-					}
-					break
+				align := p.Alignof(et)
+				offset = (offset + p.Sizeof(et) + align - 1) &^ (align - 1)
+				if offset < 8 {
+					continue
+				} else if offset > 8 {
+					index = i
+				} else {
+					index = i + 1
 				}
+				break
 			}
+			subType := func(subs []llvm.Type, left bool) llvm.Type {
+				if len(subs) == 1 {
+					return subs[0]
+				} else if len(subs) == 2 && subs[0] == ctx.FloatType() && subs[1] == ctx.FloatType() {
+					return llvm.VectorType(ctx.FloatType(), 2)
+				}
+				if left {
+					return ctx.Int64Type()
+				}
+				var n int
+				for _, sub := range subs {
+					align := p.Alignof(sub)
+					n = (n + p.Sizeof(sub) + align - 1) &^ (align - 1)
+				}
+				n = (n + info.Align - 1) &^ (info.Align - 1)
+				return ctx.IntType(n * 8)
+			}
+			info.Kind = AttrWidthType2
+			info.Type1 = subType(types[0:index], true)
+			info.Type2 = subType(types[index:], false)
 		}
 	}
 	return info

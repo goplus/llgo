@@ -129,8 +129,8 @@ type AttrKind int
 
 const (
 	AttrNone       AttrKind = iota
-	AttrVoid                // param type void
-	AttrPointer             // param type => type*
+	AttrVoid                // return type void
+	AttrPointer             // type => type*
 	AttrWidthType           // type => width int i16/i24/i32/i40/i48/i56/i64 float/double
 	AttrWidthType2          // type => width two int {i64,i16} float/double
 )

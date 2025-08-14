@@ -44,12 +44,14 @@ func TestABI(t *testing.T) {
 	var files []string
 	for _, f := range dirs {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), ".go") {
+			if f.Name() == "demo.go" {
+				continue
+			}
 			files = append(files, f.Name())
 		}
 	}
 	for i, arch := range archs {
 		t.Run(arch, func(t *testing.T) {
-			t.Parallel()
 			testArch(t, arch, archDir[i], files)
 		})
 	}
