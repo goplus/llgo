@@ -6,6 +6,7 @@ package cabi_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -21,6 +22,14 @@ var (
 	archDir = []string{"amd64", "arm64", "riscv64", "armv6"}
 )
 
+func init() {
+	// crosscompile
+	if runtime.GOOS == "darwin" {
+		archs = append(archs, "wasm")
+		archDir = append(archDir, "wasm32")
+	}
+}
+
 func TestBuild(t *testing.T) {
 	for _, mode := range modes {
 		for _, arch := range archs {
@@ -28,6 +37,9 @@ func TestBuild(t *testing.T) {
 			conf.AbiMode = mode
 			conf.Goarch = arch
 			conf.Goos = "linux"
+			if arch == "wasm" {
+				conf.Goos = "wasip1"
+			}
 			_, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
 			if err != nil {
 				t.Fatalf("build error: %v-%v %v", arch, mode, err)
@@ -62,6 +74,9 @@ func testArch(t *testing.T, arch string, archDir string, files []string) {
 	conf.AbiMode = cabi.ModeAllFunc
 	conf.Goarch = arch
 	conf.Goos = "linux"
+	if arch == "wasm" {
+		conf.Goos = "wasip1"
+	}
 	for _, file := range files {
 		pkgs, err := build.Do([]string{filepath.Join("./_testdata/demo", file)}, conf)
 		if err != nil {
@@ -97,7 +112,10 @@ func testModule(t *testing.T, ctx context, td llvm.TargetData, m llvm.Module, c 
 		fn = llvm.NextFunction(fn)
 	}
 	for _, fn := range fns {
+		// check c linkname
 		testFunc(t, ctx, td, m.NamedFunction(fn.Name()), fn)
+		// check go
+		testFunc(t, ctx, td, m.NamedFunction("command-line-arguments."+fn.Name()), fn)
 	}
 }
 
