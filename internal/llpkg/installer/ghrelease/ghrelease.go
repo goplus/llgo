@@ -37,7 +37,7 @@ func (c *ghReleasesInstaller) Install(pkg installer.Package, outputDir string) e
 	if err != nil {
 		return err
 	}
-	zipFilePath, err := installer.DownloadFile(c.assertUrl(pkg), absOutputDir)
+	zipFilePath, err := installer.DownloadFile(c.assertUrl(pkg))
 	if err != nil {
 		return err
 	}

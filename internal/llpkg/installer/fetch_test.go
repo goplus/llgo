@@ -296,9 +296,8 @@ func TestDownloadFile(t *testing.T) {
 
 	t.Run("download real file", func(t *testing.T) {
 		url := "https://github.com/goplus/llpkg/releases/download/libxslt%2Fv1.0.3/libxslt_darwin_amd64.zip"
-		outputDir := filepath.Join(tempDir, "download")
 
-		absFilename, err := DownloadFile(url, outputDir)
+		absFilename, err := DownloadFile(url)
 		if err != nil {
 			t.Skipf("skipping download test due to network error: %v", err)
 		}
@@ -328,28 +327,10 @@ func TestDownloadFile(t *testing.T) {
 
 	t.Run("invalid url", func(t *testing.T) {
 		invalidURL := "invalid-url"
-		outputDir := filepath.Join(tempDir, "invalid")
 
-		_, err := DownloadFile(invalidURL, outputDir)
+		_, err := DownloadFile(invalidURL)
 		if err == nil {
 			t.Error("expected error for invalid URL")
-		}
-		if !strings.Contains(err.Error(), "failed to download llpkg binary files") {
-			t.Errorf("expected wrapped error message, got %s", err.Error())
-		}
-	})
-
-	t.Run("mkdir failure", func(t *testing.T) {
-		// Create a file with the same name as the output directory to cause mkdir failure
-		outputDir := filepath.Join(tempDir, "mkdir_fail")
-		if err := os.WriteFile(outputDir, []byte("blocking file"), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		url := "https://example.com/test.zip"
-		_, err := DownloadFile(url, outputDir)
-		if err == nil {
-			t.Error("expected error when output directory creation fails")
 		}
 		if !strings.Contains(err.Error(), "failed to download llpkg binary files") {
 			t.Errorf("expected wrapped error message, got %s", err.Error())
@@ -359,9 +340,8 @@ func TestDownloadFile(t *testing.T) {
 	t.Run("http status not ok", func(t *testing.T) {
 		// Use a URL that returns 404
 		notFoundURL := "https://httpbin.org/status/404"
-		outputDir := filepath.Join(tempDir, "not_found")
 
-		_, err := DownloadFile(notFoundURL, outputDir)
+		_, err := DownloadFile(notFoundURL)
 		if err == nil {
 			t.Error("expected error for 404 status")
 		}
@@ -386,9 +366,8 @@ func TestDownloadFile_CreateTempFailure(t *testing.T) {
 	os.Setenv("TMPDIR", nonExistentTmpDir)
 
 	url := "https://httpbin.org/get"
-	outputDir := filepath.Join(tempDir, "output")
 
-	_, err = DownloadFile(url, outputDir)
+	_, err = DownloadFile(url)
 	if err == nil {
 		t.Error("expected error when CreateTemp fails")
 	}

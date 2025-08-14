@@ -75,13 +75,9 @@ func Unzip(zipFilePath, outputDir string) error {
 }
 
 // DownloadFile downloads a file from the given URL and saves it to a temporary file.
-// It creates the output directory if needed and returns the path to the downloaded temporary file.
+// It returns the path to the downloaded temporary file.
 // The caller is responsible for cleaning up the temporary file when no longer needed.
-func DownloadFile(url, outputDir string) (fileName string, err error) {
-	// make sure path exists
-	if err := os.MkdirAll(outputDir, 0700); err != nil {
-		return "", wrapDownloadError(err)
-	}
+func DownloadFile(url string) (fileName string, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", wrapDownloadError(err)
