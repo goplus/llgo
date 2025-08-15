@@ -128,7 +128,7 @@ func testFunc(t *testing.T, ctx context, td llvm.TargetData, fn llvm.Value, cfn 
 		t.Fatalf("%v %v: bad param type %v != %v", ctx, fn.Name(), ft, cft)
 	}
 	for i, pt := range pts {
-		if !checkType(td, pt, cpts[i]) {
+		if !checkType(td, pt, cpts[i], false) {
 			t.Fatalf("%v %v: bad param type %v != %v", ctx, fn.Name(), ft, cft)
 		}
 		if i == 0 {
@@ -140,18 +140,25 @@ func testFunc(t *testing.T, ctx context, td llvm.TargetData, fn llvm.Value, cfn 
 			t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 		}
 	}
-	if !checkType(td, ft.ReturnType(), cft.ReturnType()) {
+	if !checkType(td, ft.ReturnType(), cft.ReturnType(), true) {
 		t.Fatalf("%v %v: bad return type %v != %v", ctx, fn.Name(), ft, cft)
 	}
 }
 
-func checkType(td llvm.TargetData, ft llvm.Type, cft llvm.Type) bool {
+func checkType(td llvm.TargetData, ft llvm.Type, cft llvm.Type, bret bool) bool {
 	if ft == cft {
 		return true
 	}
-	if ft.TypeKind() == llvm.VoidTypeKind && cft.TypeKind() == llvm.VoidTypeKind {
+	if bret {
+		if ft.TypeKind() == llvm.VoidTypeKind && (cft.TypeKind() == llvm.VoidTypeKind || td.TypeAllocSize(cft) == 0) {
+			return true
+		} else if cft.TypeKind() == llvm.VoidTypeKind && (ft.TypeKind() == llvm.VoidTypeKind || td.TypeAllocSize(ft) == 0) {
+			return true
+		}
+	} else if ft.TypeKind() == llvm.VoidTypeKind && cft.TypeKind() == llvm.VoidTypeKind {
 		return true
-	} else if ft.TypeKind() == llvm.VoidTypeKind || cft.TypeKind() == llvm.VoidTypeKind {
+	}
+	if ft.TypeKind() == llvm.VoidTypeKind || cft.TypeKind() == llvm.VoidTypeKind {
 		return false
 	}
 	if td.ABITypeAlignment(ft) != td.ABITypeAlignment(cft) {
@@ -169,7 +176,7 @@ func checkType(td llvm.TargetData, ft llvm.Type, cft llvm.Type) bool {
 		return true
 	}
 	for i, t := range et {
-		if !checkType(td, t, cet[i]) {
+		if !checkType(td, t, cet[i], bret) {
 			return false
 		}
 	}

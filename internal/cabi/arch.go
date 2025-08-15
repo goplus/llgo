@@ -78,7 +78,6 @@ func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) 
 	if typ.TypeKind() == llvm.VoidTypeKind {
 		info.Kind = AttrVoid
 		return info
-	} else if typ.TypeKind() == llvm.PointerTypeKind {
 	}
 	info.Size = p.Sizeof(typ)
 	info.Align = p.Alignof(typ)

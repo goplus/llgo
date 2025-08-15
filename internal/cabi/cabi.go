@@ -128,11 +128,11 @@ type TypeInfoSys interface {
 type AttrKind int
 
 const (
-	AttrNone       AttrKind = iota
-	AttrVoid                // return type void
-	AttrPointer             // type => type*
-	AttrWidthType           // type => width int i16/i24/i32/i40/i48/i56/i64 float/double
-	AttrWidthType2          // type => width two int {i64,i16} float/double
+	AttrNone       AttrKind = iota // keep org type
+	AttrVoid                       // return type void / param type void (size == 0) skip
+	AttrPointer                    // type => type*
+	AttrWidthType                  // type => width int i16/i24/i32/i40/i48/i56/i64 float/double
+	AttrWidthType2                 // type => width two int {i64,i16} float/double
 )
 
 type FuncInfo struct {
@@ -146,7 +146,7 @@ func (p *FuncInfo) HasWrap() bool {
 		return true
 	}
 	for _, t := range p.Params {
-		if t.Kind > AttrVoid {
+		if t.Kind > AttrNone {
 			return true
 		}
 	}
@@ -178,6 +178,9 @@ func funcInlineHint(ctx llvm.Context) llvm.Attribute {
 
 func (p *Transformer) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
 	if p.sys != nil {
+		if !bret && (typ.TypeKind() == llvm.VoidTypeKind || p.Sizeof(typ) == 0) {
+			return true
+		}
 		return p.sys.IsWrapType(ctx, typ, bret)
 	}
 	return false
@@ -185,6 +188,14 @@ func (p *Transformer) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) boo
 
 func (p *Transformer) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
 	if p.sys != nil {
+		if typ.TypeKind() == llvm.VoidTypeKind {
+			return &TypeInfo{Type: typ, Kind: AttrVoid, Type1: ctx.VoidType()}
+		} else if p.Sizeof(typ) == 0 {
+			if bret {
+				return &TypeInfo{Type: typ, Kind: AttrNone, Type1: typ}
+			}
+			return &TypeInfo{Type: typ, Kind: AttrVoid, Type1: ctx.VoidType()}
+		}
 		return p.sys.GetTypeInfo(ctx, typ, bret)
 	}
 	panic("not implment: " + p.GOARCH)
@@ -228,6 +239,8 @@ func (p *Transformer) transformFuncType(ctx llvm.Context, info *FuncInfo) (llvm.
 
 	for _, ti := range info.Params {
 		switch ti.Kind {
+		case AttrVoid:
+			// skip
 		case AttrNone, AttrWidthType:
 			paramTypes = append(paramTypes, ti.Type1)
 		case AttrPointer:
@@ -294,9 +307,15 @@ func (p *Transformer) transformFuncBody(ctx llvm.Context, info *FuncInfo, fn llv
 		index++
 	}
 	for i, ti := range info.Params {
-		nv := params[index]
+		var nv llvm.Value
 		switch ti.Kind {
 		default:
+			nv = params[index]
+		case AttrVoid:
+			nv = llvm.ConstNull(ti.Type)
+			fn.Param(i).ReplaceAllUsesWith(nv)
+			// skip
+			continue
 		case AttrPointer:
 			nv = b.CreateLoad(ti.Type, params[index], "")
 		case AttrWidthType:
@@ -366,6 +385,8 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 		switch ti.Kind {
 		default:
 			nparams = append(nparams, param)
+		case AttrVoid:
+			// none
 		case AttrPointer:
 			ptr := llvm.CreateAlloca(b, ti.Type)
 			b.CreateStore(param, ptr)
@@ -510,6 +531,8 @@ func (p *Transformer) transformCallbackFunc(m llvm.Module, fn llvm.Value) (wrap 
 	for _, ti := range info.Params {
 		switch ti.Kind {
 		default:
+		case AttrVoid:
+			// none
 		case AttrPointer:
 			nparams = append(nparams, b.CreateLoad(ti.Type, params[index], ""))
 		case AttrWidthType:
