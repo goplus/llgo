@@ -180,14 +180,8 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		// If not exists in LLGoROOT, download and use cached wasiSdkRoot
 		if _, err = os.Stat(wasiSdkRoot); err != nil {
 			sdkDir := filepath.Join(cacheDir(), llvm.GetTargetTriple(goos, goarch))
-			if _, err = os.Stat(sdkDir); err != nil {
-				if !errors.Is(err, fs.ErrNotExist) {
-					return
-				}
-
-				if wasiSdkRoot, err = downloadAndExtract(wasiSdkUrl, sdkDir); err != nil {
-					return
-				}
+			if wasiSdkRoot, err = checkDownloadAndExtract(wasiSdkUrl, sdkDir); err != nil {
+				return
 			}
 		}
 		// WASI-SDK configuration
