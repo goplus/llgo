@@ -16,11 +16,10 @@ import (
 )
 
 type Export struct {
-	CC         string // Compiler to use
-	CCFLAGS    []string
-	CFLAGS     []string
-	LDFLAGS    []string
-	EXTRAFLAGS []string
+	CC      string // Compiler to use
+	CCFLAGS []string
+	CFLAGS  []string
+	LDFLAGS []string
 
 	// Additional fields from target configuration
 	LLVMTarget   string
@@ -133,6 +132,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		// not cross compile
 		// Set up basic flags for non-cross-compile
 		export.LDFLAGS = []string{
+			"-L" + filepath.Join(clangRoot, "lib"),
 			"-target", targetTriple,
 			"-Wno-override-module",
 			"-Wl,--error-limit=0",
@@ -146,7 +146,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 				err = fmt.Errorf("failed to get macOS SDK path: %w", sysrootErr)
 				return
 			}
-			export.LDFLAGS = append([]string{"--sysroot=" + sysrootPath}, export.LDFLAGS...)
+			export.CCFLAGS = append(export.CCFLAGS, []string{"--sysroot=" + sysrootPath}...)
 		}
 
 		// Add OS-specific flags
@@ -284,7 +284,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			// "-z", "stack-size=10485760", // 10MB
 			// "-Wl,--export=malloc", "-Wl,--export=free",
 		}
-		export.EXTRAFLAGS = []string{
+		export.LDFLAGS = append(export.LDFLAGS, []string{
 			"-sENVIRONMENT=web,worker",
 			"-DPLATFORM_WEB",
 			"-sEXPORT_KEEPALIVE=1",
@@ -296,7 +296,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			"-sEXPORT_ALL=1",
 			"-sASYNCIFY=1",
 			"-sSTACK_SIZE=5242880", // 50MB
-		}
+		}...)
 
 	default:
 		err = errors.New("unsupported GOOS for WebAssembly: " + goos)
@@ -377,7 +377,6 @@ func useTarget(targetName string) (export Export, err error) {
 	export.CFLAGS = config.CFlags
 	export.CCFLAGS = ccflags
 	export.LDFLAGS = append(ldflags, config.LDFlags...)
-	export.EXTRAFLAGS = []string{}
 
 	return export, nil
 }

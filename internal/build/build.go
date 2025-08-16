@@ -38,13 +38,13 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
-	"github.com/goplus/llgo/xtool/clang"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
 
@@ -376,19 +376,13 @@ type context struct {
 }
 
 func (c *context) compiler() *clang.Cmd {
-	cmd := c.env.Clang()
-	if c.crossCompile.CC != "" {
-		cmd = clang.New(c.crossCompile.CC)
-	}
+	cmd := clang.NewCompiler(c.crossCompile)
 	cmd.Verbose = c.buildConf.Verbose
 	return cmd
 }
 
 func (c *context) linker() *clang.Cmd {
-	cmd := c.compiler()
-	if c.crossCompile.Linker != "" {
-		cmd = clang.New(c.crossCompile.Linker)
-	}
+	cmd := clang.NewLinker(c.crossCompile)
 	cmd.Verbose = c.buildConf.Verbose
 	return cmd
 }
@@ -658,8 +652,6 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
-	buildArgs = append(buildArgs, ctx.crossCompile.EXTRAFLAGS...)
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()
@@ -854,8 +846,6 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	exportFile += ".o"
 	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
-	args = append(args, ctx.crossCompile.CCFLAGS...)
-	args = append(args, ctx.crossCompile.CFLAGS...)
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
@@ -1087,8 +1077,6 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		llFile += ".o"
 		args = append(args, "-o", llFile, "-c", cFile)
 	}
-	args = append(args, ctx.crossCompile.CCFLAGS...)
-	args = append(args, ctx.crossCompile.CFLAGS...)
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
