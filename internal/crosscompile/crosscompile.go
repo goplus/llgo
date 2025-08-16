@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -42,6 +43,16 @@ const (
 
 func cacheDir() string {
 	return filepath.Join(env.LLGoCacheDir(), "crosscompile")
+}
+
+// getMacOSSysroot returns the macOS SDK path using xcrun
+func getMacOSSysroot() (string, error) {
+	cmd := exec.Command("xcrun", "--sdk", "macosx", "--show-sdk-path")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // getESPClangRoot returns the ESP Clang root directory, checking LLGoROOT first,
@@ -116,6 +127,16 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			"-Wno-override-module",
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
+		}
+
+		// Add sysroot for macOS only
+		if goos == "darwin" {
+			sysrootPath, sysrootErr := getMacOSSysroot()
+			if sysrootErr != nil {
+				err = fmt.Errorf("failed to get macOS SDK path: %w", sysrootErr)
+				return
+			}
+			export.LDFLAGS = append([]string{"--sysroot=" + sysrootPath}, export.LDFLAGS...)
 		}
 
 		// Add OS-specific flags
