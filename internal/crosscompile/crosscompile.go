@@ -70,7 +70,7 @@ func getESPClangRoot() (clangRoot string, err error) {
 	// Try to download ESP Clang if platform is supported
 	platformSuffix := getESPClangPlatform(runtime.GOOS, runtime.GOARCH)
 	if platformSuffix != "" {
-		cacheClangDir := filepath.Join(env.LLGoCacheDir(), "crosscompile", "clang-"+espClangVersion)
+		cacheClangDir := filepath.Join(env.LLGoCacheDir(), "crosscompile", "esp-clang-"+espClangVersion)
 		if _, err = os.Stat(cacheClangDir); err != nil {
 			if !errors.Is(err, fs.ErrNotExist) {
 				return
@@ -118,6 +118,16 @@ func getESPClangPlatform(goos, goarch string) string {
 func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	targetTriple := llvm.GetTargetTriple(goos, goarch)
 	llgoRoot := env.LLGoROOT()
+
+	// Check for ESP Clang support for target-based builds
+	clangRoot, err := getESPClangRoot()
+	if err != nil {
+		return
+	}
+
+	// Set ClangRoot and CC if clang is available
+	export.ClangRoot = clangRoot
+	export.CC = filepath.Join(clangRoot, "bin", "clang++")
 
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
 		// not cross compile
@@ -312,7 +322,7 @@ func useTarget(targetName string) (export Export, err error) {
 
 	// Set ClangRoot and CC if clang is available
 	export.ClangRoot = clangRoot
-	export.CC = filepath.Join(clangRoot, "bin", "clang")
+	export.CC = filepath.Join(clangRoot, "bin", "clang++")
 
 	// Convert target config to Export - only export necessary fields
 	export.BuildTags = config.BuildTags
