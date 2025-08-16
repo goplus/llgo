@@ -16,9 +16,10 @@ type Config struct {
 	GOARCH    string   `json:"goarch"`
 
 	// Compiler and linker configuration
-	Linker  string   `json:"linker"`
-	CFlags  []string `json:"cflags"`
-	LDFlags []string `json:"ldflags"`
+	Linker       string   `json:"linker"`
+	LinkerScript string   `json:"linkerscript"`
+	CFlags       []string `json:"cflags"`
+	LDFlags      []string `json:"ldflags"`
 }
 
 // RawConfig represents the raw JSON configuration before inheritance resolution

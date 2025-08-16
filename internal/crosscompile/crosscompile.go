@@ -361,12 +361,18 @@ func useTarget(targetName string) (export Export, err error) {
 	}
 
 	// Handle Linker - keep it for external usage
-	export.Linker = config.Linker
+	if config.Linker != "" {
+		export.Linker = filepath.Join(clangRoot, "bin", config.Linker)
+	}
+	if config.LinkerScript != "" {
+		ldflags = append(ldflags, "-T", config.LinkerScript)
+	}
+	ldflags = append(ldflags, "-L", env.LLGoROOT()) // search targets/*.ld
 
 	// Combine with config flags
 	export.CFLAGS = config.CFlags
 	export.CCFLAGS = ccflags
-	export.LDFLAGS = append(ldflags, filterCompatibleLDFlags(config.LDFlags)...)
+	export.LDFLAGS = append(ldflags, config.LDFlags...)
 	export.EXTRAFLAGS = []string{}
 
 	return export, nil

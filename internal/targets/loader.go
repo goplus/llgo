@@ -148,6 +148,9 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	if len(src.LDFlags) > 0 {
 		dst.LDFlags = append(dst.LDFlags, src.LDFlags...)
 	}
+	if src.LinkerScript != "" {
+		dst.LinkerScript = src.LinkerScript
+	}
 }
 
 // GetTargetsDir returns the targets directory path
