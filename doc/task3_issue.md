@@ -155,6 +155,9 @@ for bus.GetID_REG_UPDATE() > 0 {
 - **Special function recognition**: Compiler needs to recognize and handle assembly calls like `device.Asm`, `device/riscv.Asm`
 - **Inline assembly conversion**: Convert to LLGo-supported inline assembly syntax
 
+**LLGo Process**
+- Implement `llgo.asm` instruction https://github.com/goplus/llgo/issues/1216
+
 ### 3. Build-Tags Integration
 
 **Core Requirement**: Need to correctly carry build-tags from targets when building Go packages.
