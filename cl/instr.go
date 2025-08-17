@@ -66,6 +66,17 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	panic("cstr(<string-literal>): invalid arguments")
 }
 
+// func asm(string)
+func asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 1 {
+		if sv, ok := constStr(args[0]); ok {
+			b.InlineAsm(sv)
+			return llssa.Expr{Type: b.Prog.Void()}
+		}
+	}
+	panic("asm(<string-literal>): invalid arguments")
+}
+
 // -----------------------------------------------------------------------------
 
 // func _Cfunc_CString(s string) *int8
@@ -329,6 +340,8 @@ var llgoInstrs = map[string]int{
 	"_Cfunc__CMalloc":      llgoCgoCMalloc,
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
+
+	"asm": llgoAsm,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -456,6 +469,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = pystr(b, args)
 		case llgoCstr:
 			ret = cstr(b, args)
+		case llgoAsm:
+			ret = asm(b, args)
 		case llgoCgoCString:
 			ret = p.cgoCString(b, args)
 		case llgoCgoCBytes:

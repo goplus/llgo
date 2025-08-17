@@ -506,6 +506,9 @@ const (
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
 	llgoCgoCgocall      = llgoCgoBase + 0x7
 
+	llgoAsmBase = llgoInstrBase + 0x40
+	llgoAsm     = llgoAsmBase + 0x0
+
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 

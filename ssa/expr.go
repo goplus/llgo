@@ -275,6 +275,17 @@ func (b Builder) CBytes(v Expr) Expr {
 	return b.Call(fn, v)
 }
 
+// InlineAsm generates inline assembly instruction
+func (b Builder) InlineAsm(instruction string) {
+	if debugInstr {
+		log.Printf("InlineAsm %s\n", instruction)
+	}
+
+	typ := llvm.FunctionType(b.Prog.tyVoid(), nil, false)
+	asm := llvm.InlineAsm(typ, instruction, "", true, false, llvm.InlineAsmDialectATT, false)
+	b.impl.CreateCall(typ, asm, nil, "")
+}
+
 // GoString returns a Go string
 func (b Builder) GoString(v Expr) Expr {
 	fn := b.Pkg.rtFunc("GoString")
