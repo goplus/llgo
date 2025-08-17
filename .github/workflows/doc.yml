@@ -10,7 +10,7 @@ jobs:
   doc_verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -38,7 +38,7 @@ jobs:
           - ubuntu-24.04
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Go
         uses: ./.github/actions/setup-go
@@ -74,7 +74,7 @@ jobs:
           - ubuntu-24.04
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -125,7 +125,7 @@ jobs:
           - ubuntu-24.04
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v5
