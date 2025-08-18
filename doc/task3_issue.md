@@ -156,7 +156,8 @@ for bus.GetID_REG_UPDATE() > 0 {
 - **Inline assembly conversion**: Convert to LLGo-supported inline assembly syntax
 
 **LLGo Process**
-- Implement `llgo.asm` instruction https://github.com/goplus/llgo/issues/1216
+- Implement `tinygo.Asm` at `llgo.ASm` instruction https://github.com/goplus/llgo/issues/1216
+- Implement `tinygo.AsmFull` at `llgo.ASm` instruction https://github.com/goplus/llgo/issues/1218
 
 ### 3. Build-Tags Integration
 
