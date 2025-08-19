@@ -606,6 +606,19 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		objFiles = append(objFiles, export)
 	}
 
+	if IsFullRpathEnabled() {
+		exargs := make([]string, 0, ctx.nLibdir<<1)
+		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
+		// This is to ensure the final executable can locate libraries with a relocatable install_name
+		// (e.g., "@rpath/libfoo.dylib") at runtime.
+		for _, arg := range linkArgs {
+			if strings.HasPrefix(arg, "-L") {
+				exargs = append(exargs, "-rpath", arg[2:])
+			}
+		}
+		linkArgs = append(linkArgs, exargs...)
+	}
+
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
 
@@ -1002,6 +1015,7 @@ const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
 const llgoWasiThreads = "LLGO_WASI_THREADS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const llgoCheckLinkArgs = "LLGO_CHECK_LINKARGS"
+const llgoFullRpath = "LLGO_FULL_RPATH"
 
 const defaultWasmRuntime = "wasmtime"
 
@@ -1051,6 +1065,10 @@ func IsWasiThreadsEnabled() bool {
 
 func IsCheckLinkArgsEnabled() bool {
 	return isEnvOn(llgoCheckLinkArgs, false)
+}
+
+func IsFullRpathEnabled() bool {
+	return isEnvOn(llgoFullRpath, true)
 }
 
 func WasmRuntime() string {

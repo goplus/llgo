@@ -47,6 +47,27 @@ jobs:
         with:
           name: llama2-model
           path: ./_demo/llama2-c/
+      - name: Download platform-specific demo libs
+        run: |
+          if ${{ startsWith(matrix.os, 'macos') }}; then
+            DEMO_PKG="cargs_darwin_arm64.zip"
+          else
+            DEMO_PKG="cargs_linux_amd64.zip"  
+          fi
+
+          mkdir -p ./_demo/cargs/libs
+          cd ./_demo/cargs/libs
+          wget https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/${DEMO_PKG}
+          unzip ${DEMO_PKG}
+
+          # Process pc template files - replace {{.Prefix}} with actual path
+          ACTUAL_PREFIX="$(pwd)"
+          for tmpl in lib/pkgconfig/*.pc.tmpl; do
+            pc_file="${tmpl%.tmpl}"
+            sed "s|{{.Prefix}}|${ACTUAL_PREFIX}|g" "$tmpl" > "$pc_file"
+          done
+
+          echo "PKG_CONFIG_PATH=${ACTUAL_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}" >> $GITHUB_ENV
       - name: Install further optional dependencies for demos
         run: |
           py_deps=(
@@ -70,6 +91,18 @@ jobs:
         with:
           go-version: ${{matrix.go}}
 
+      - name: Test demo without RPATH (expect failure)
+        run: |
+          echo "Testing demo without RPATH (should fail)..."
+          export LLGO_FULL_RPATH=false
+          pkg-config --libs cargs
+          if (cd ./_demo/cargs && llgo run .); then
+            echo "ERROR: cargs demo should have failed without RPATH!"
+            exit 1
+          else
+            echo "✓ cargs demo correctly failed without RPATH"
+          fi
+
       - name: Test demos
         run: |
           # TODO(lijie): force python3-embed to be linked with python-3.12-embed
@@ -80,7 +113,8 @@ jobs:
           libdir=$(pkg-config --variable=libdir python-3.12-embed)
           echo "libdir: $libdir"
           ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
-          export PKG_CONFIG_PATH=$pcdir
+          export PKG_CONFIG_PATH=$pcdir:${PKG_CONFIG_PATH}
+          export LLGO_FULL_RPATH=true
           bash .github/workflows/test_demo.sh
 
       - name: _xtool build tests
