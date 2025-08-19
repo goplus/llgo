@@ -20,16 +20,28 @@ func main() {}
 type empty struct {
 }
 
-//go:linkname cdemo1 C.demo1
-func cdemo1(empty) empty
+//go:linkname cdemo0 C.demo0
+func cdemo0(empty) empty
 
-func demo1(a empty) empty {
+func demo0(a empty) empty {
 	return a
 }
 
 func init() {
-	assert("cdemo1", cdemo1(empty{}) == empty{})
-	assert("demo1", demo1(empty{}) == empty{})
+	assert("cdemo0", cdemo0(empty{}) == empty{})
+	assert("demo0", demo0(empty{}) == empty{})
+}
+
+//go:linkname cdemo1 C.demo1
+func cdemo1(empty, int32) empty
+
+func demo1(a empty, b int32) empty {
+	return a
+}
+
+func init() {
+	assert("cdemo1", cdemo1(empty{}, 1) == empty{})
+	assert("demo1", demo1(empty{}, 2) == empty{})
 }
 
 //go:linkname cdemo2 C.demo2

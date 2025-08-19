@@ -1,7 +1,11 @@
 struct empty {
 };
 
-struct empty demo1(struct empty a) {
+struct empty demo0(struct empty a) {
+    return a;
+}
+
+struct empty demo1(struct empty a, int v) {
     return a;
 }
 
