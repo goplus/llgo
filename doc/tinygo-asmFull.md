@@ -1,6 +1,6 @@
 TinyGo provides two inline assembly interfaces:
 - `device.Asm(asm string)` - Simple control instructions, no return value https://github.com/goplus/llgo/issues/1216
-- `device.AsmFull(asm string, regs map[string]interface{}) uintptr` - Advanced assembly, supports operands and return values
+- `device.AsmFull(asm string, regs map[string]any) uintptr` - Advanced assembly, supports operands and return values
 
 This document focuses on designing the implementation of the advanced assembly form `asmFull`:
 
@@ -11,7 +11,7 @@ User declares the advanced assembly function and maps it to the `llgo.asm` compi
 ```go
 // Advanced assembly function declaration (corresponding to TinyGo device.AsmFull)  
 //go:linkname asmFull llgo.asm
-func asmFull(instruction string, regs map[string]interface{}) uintptr
+func asmFull(instruction string, regs map[string]any) uintptr
 ```
 
 **Compiler mapping**: Both `asm(string)` and `asmFull(string, map)` map to the same `llgo.asm` directive, distinguished by parameter count (1 vs 2 parameters).
@@ -22,7 +22,7 @@ Design based on TinyGo, supporting:
 
 **Parameters:**
 - `instruction string` - Assembly instruction template with placeholder support
-- `regs map[string]interface{}` - Input operand mapping (key: placeholder name, value: actual value)
+- `regs map[string]any` - Input operand mapping (key: placeholder name, value: actual value)
 - `return uintptr` - Output register value when instruction contains output placeholder
 
 **Supported features:**
@@ -48,7 +48,7 @@ func examples() {
     pc := asmFull("mov {}, sp", nil)                    // Read stack pointer
     
     // Advanced assembly - with input parameters
-    asmFull("msr tpidr_el0, {value}", map[string]interface{}{
+    asmFull("msr tpidr_el0, {value}", map[string]any{
         "value": 0x12345678,
     })
 }
@@ -60,7 +60,7 @@ Consistent interface and transformation approach with TinyGo, our expected trans
 
 **Rule 1: Input parameters only** *(no return value, for control instructions)*
 ```go
-asmFull("mov r0, {value}", map[string]interface{}{
+asmFull("mov r0, {value}", map[string]any{
     "value": uint32(42),
 })
 ```
@@ -71,7 +71,7 @@ call void asm sideeffect "mov r0, ${0}", "r"(i32 42)
 
 **Rule 2: Output + input parameters** *(with return value, for data transfer)*  
 ```go
-result := asmFull("mov {}, {value}", map[string]interface{}{
+result := asmFull("mov {}, {value}", map[string]any{
     "value": uint32(42),
 })
 // {} placeholder effect: allocate output register, return register content as result
