@@ -170,6 +170,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
 	}
+	if len(export.BuildTags) > 0 {
+		tags += "," + strings.Join(export.BuildTags, ",")
+	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: []string{"-tags=" + tags},
