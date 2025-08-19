@@ -38,6 +38,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
@@ -63,6 +64,8 @@ const (
 	ModeGen
 )
 
+type AbiMode = cabi.Mode
+
 const (
 	debugBuild = packages.DebugPackagesLoad
 )
@@ -76,6 +79,7 @@ type Config struct {
 	OutFile     string   // only valid for ModeBuild when len(pkgs) == 1
 	RunArgs     []string // only valid for ModeRun
 	Mode        Mode
+	AbiMode     AbiMode
 	GenExpect   bool // only valid for ModeCmpTest
 	Verbose     bool
 	GenLL       bool // generate pkg .ll files
@@ -108,6 +112,7 @@ func NewDefaultConf(mode Mode) *Config {
 		Goarch:  goarch,
 		BinPath: bin,
 		Mode:    mode,
+		AbiMode: cabi.ModeAllFunc,
 		AppExt:  DefaultAppExt(goos),
 	}
 	return conf
@@ -279,6 +284,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		crossCompile:           export,
 		isCheckEnabled:         IsCheckEnabled(),
 		isCheckLinkArgsEnabled: IsCheckLinkArgsEnabled(),
+		cTransformer:           cabi.NewTransformer(prog, conf.AbiMode),
 	}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
@@ -376,6 +382,8 @@ type context struct {
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
+
+	cTransformer *cabi.Transformer
 
 	testFail bool
 }
@@ -805,6 +813,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		cl.SetDebug(0)
 	}
 	check(err)
+
+	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+
 	aPkg.LPkg = ret
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {

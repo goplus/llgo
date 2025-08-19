@@ -30,6 +30,7 @@ func runCmd(cmd *base.Command, args []string) {
 	conf.Tags = flags.Tags
 	conf.Verbose = flags.Verbose
 	conf.Target = flags.Target
+	conf.AbiMode = build.AbiMode(flags.AbiMode)
 
 	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)
