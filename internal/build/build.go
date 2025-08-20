@@ -38,6 +38,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
@@ -63,6 +64,8 @@ const (
 	ModeGen
 )
 
+type AbiMode = cabi.Mode
+
 const (
 	debugBuild = packages.DebugPackagesLoad
 )
@@ -76,6 +79,7 @@ type Config struct {
 	OutFile     string   // only valid for ModeBuild when len(pkgs) == 1
 	RunArgs     []string // only valid for ModeRun
 	Mode        Mode
+	AbiMode     AbiMode
 	GenExpect   bool // only valid for ModeCmpTest
 	Verbose     bool
 	GenLL       bool // generate pkg .ll files
@@ -108,6 +112,7 @@ func NewDefaultConf(mode Mode) *Config {
 		Goarch:  goarch,
 		BinPath: bin,
 		Mode:    mode,
+		AbiMode: cabi.ModeAllFunc,
 		AppExt:  DefaultAppExt(goos),
 	}
 	return conf
@@ -169,6 +174,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	tags := "llgo"
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
+	}
+	if len(export.BuildTags) > 0 {
+		tags += "," + strings.Join(export.BuildTags, ",")
 	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -269,12 +277,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	output := conf.OutFile != ""
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
-		output:        output,
-		needRt:        make(map[*packages.Package]bool),
-		needPyInit:    make(map[*packages.Package]bool),
-		buildConf:     conf,
-		crossCompile:  export,
-		isCheckEnable: IsCheckEnable(),
+		output:                 output,
+		needRt:                 make(map[*packages.Package]bool),
+		needPyInit:             make(map[*packages.Package]bool),
+		buildConf:              conf,
+		crossCompile:           export,
+		isCheckEnabled:         IsCheckEnabled(),
+		isCheckLinkArgsEnabled: IsCheckLinkArgsEnabled(),
+		cTransformer:           cabi.NewTransformer(prog, conf.AbiMode),
 	}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
@@ -364,13 +374,16 @@ type context struct {
 	nLibdir int
 	output  bool
 
-	isCheckEnable bool
+	isCheckEnabled         bool
+	isCheckLinkArgsEnabled bool
 
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
+
+	cTransformer *cabi.Transformer
 
 	testFail bool
 }
@@ -463,8 +476,10 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
-				if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
-					panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
+				if ctx.isCheckLinkArgsEnabled {
+					if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
+						panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
+					}
 				}
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
@@ -592,7 +607,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
-	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
 
 	switch mode {
@@ -716,8 +730,7 @@ call i32 @setvbuf(ptr %stderr_ptr, ptr null, i32 2, %size_t 0)
 	startDefine := `
 define weak void @_start() {
   ; argc = 0
-  %argc_val = icmp eq i32 0, 0
-  %argc = zext i1 %argc_val to i32
+  %argc = add i32 0, 0
   ; argv = null
   %argv = inttoptr i64 0 to i8**
   call i32 @main(i32 %argc, i8** %argv)
@@ -800,6 +813,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		cl.SetDebug(0)
 	}
 	check(err)
+
+	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+
 	aPkg.LPkg = ret
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {
@@ -839,7 +855,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	if err != nil {
 		return exportFile, err
 	}
-	if ctx.isCheckEnable {
+	if ctx.isCheckEnabled {
 		if msg, err := llcCheck(ctx.env, f.Name()); err != nil {
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
@@ -985,6 +1001,7 @@ const llgoCheck = "LLGO_CHECK"
 const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
 const llgoWasiThreads = "LLGO_WASI_THREADS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
+const llgoCheckLinkArgs = "LLGO_CHECK_LINKARGS"
 
 const defaultWasmRuntime = "wasmtime"
 
@@ -1024,12 +1041,16 @@ func IsOptimizeEnabled() bool {
 	return isEnvOn(llgoOptimize, true)
 }
 
-func IsCheckEnable() bool {
+func IsCheckEnabled() bool {
 	return isEnvOn(llgoCheck, false)
 }
 
 func IsWasiThreadsEnabled() bool {
 	return isEnvOn(llgoWasiThreads, true)
+}
+
+func IsCheckLinkArgsEnabled() bool {
+	return isEnvOn(llgoCheckLinkArgs, false)
 }
 
 func WasmRuntime() string {

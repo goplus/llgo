@@ -51,6 +51,7 @@ func runCmd(cmd *base.Command, args []string) {
 	conf.Verbose = flags.Verbose
 	conf.OutFile = flags.OutputFile
 	conf.Target = flags.Target
+	conf.AbiMode = build.AbiMode(flags.AbiMode)
 
 	args = cmd.Flag.Args()
 

@@ -21,7 +21,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
+)
+
+var (
+	abi = flag.Int("abi", 0, "ABI mode (default 0). 0 = none, 1 = cfunc, 2 = allfunc.")
 )
 
 func main() {
@@ -30,5 +35,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Usage: llgen [flags] <pkg>")
 		return
 	}
-	llgen.SmartDoFile(flag.Args()[0])
+	llgen.SmartDoFileEx(flag.Args()[0], build.AbiMode(*abi))
 }

@@ -120,6 +120,14 @@ func direntNamePtr(name any) *byte {
 		return name
 	case []byte:
 		return &name[0]
+	case [1024]int8:
+		return (*byte)(unsafe.Pointer(&name[0]))
+	case [512]int8:
+		return (*byte)(unsafe.Pointer(&name[0]))
+	case [256]int8:
+		return (*byte)(unsafe.Pointer(&name[0]))
+	case [256]uint8:
+		return (*byte)(unsafe.Pointer(&name[0]))
 	default:
 		panic("invalid type")
 	}

@@ -393,48 +393,49 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/cl/_testgo/invoke.invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %124)
   %125 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 0
   %126 = load ptr, ptr @_llgo_any, align 8
+  %127 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 1
   br i1 true, label %_llgo_3, label %_llgo_4
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %127 = load ptr, ptr @_llgo_string, align 8
-  %128 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 71 }, ptr %128, align 8
-  %129 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %127, 0
-  %130 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %129, ptr %128, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %130)
+  %128 = load ptr, ptr @_llgo_string, align 8
+  %129 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 71 }, ptr %129, align 8
+  %130 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %128, 0
+  %131 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %130, ptr %129, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %131)
   unreachable
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %131 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 0
-  %132 = load ptr, ptr @"_llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0", align 8
-  %133 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr %132, ptr %131)
-  br i1 %133, label %_llgo_5, label %_llgo_6
+  %132 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 0
+  %133 = load ptr, ptr @"_llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0", align 8
+  %134 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr %133, ptr %132)
+  br i1 %134, label %_llgo_5, label %_llgo_6
 
 _llgo_4:                                          ; preds = %_llgo_1
-  %134 = load ptr, ptr @_llgo_string, align 8
-  %135 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 32 }, ptr %135, align 8
-  %136 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %134, 0
-  %137 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, ptr %135, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %137)
+  %135 = load ptr, ptr @_llgo_string, align 8
+  %136 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 32 }, ptr %136, align 8
+  %137 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %135, 0
+  %138 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %137, ptr %136, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %138)
   unreachable
 
 _llgo_5:                                          ; preds = %_llgo_3
-  %138 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 1
-  %139 = load ptr, ptr @"_llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0", align 8
-  %140 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %139, ptr %131)
-  %141 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %140, 0
-  %142 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %141, ptr %138, 1
-  call void @"github.com/goplus/llgo/cl/_testgo/invoke.invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %142)
+  %139 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 1
+  %140 = load ptr, ptr @"_llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0", align 8
+  %141 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %140, ptr %132)
+  %142 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %141, 0
+  %143 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %142, ptr %139, 1
+  call void @"github.com/goplus/llgo/cl/_testgo/invoke.invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %143)
   ret void
 
 _llgo_6:                                          ; preds = %_llgo_3
-  %143 = load ptr, ptr @_llgo_string, align 8
-  %144 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 52 }, ptr %144, align 8
-  %145 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %143, 0
-  %146 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %145, ptr %144, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %146)
+  %144 = load ptr, ptr @_llgo_string, align 8
+  %145 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 52 }, ptr %145, align 8
+  %146 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %144, 0
+  %147 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %146, ptr %145, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %147)
   unreachable
 }
 
