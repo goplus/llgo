@@ -37,8 +37,8 @@ type Export struct {
 const wasiSdkUrl = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
 
 const (
-	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250805"
-	espClangVersion = "19.1.2_20250805"
+	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250819"
+	espClangVersion = "19.1.2_20250819"
 )
 
 func cacheDir() string {
