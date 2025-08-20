@@ -67,14 +67,18 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 }
 
 // func asm(string)
+// func asmFull(string, map[string]any) uintptr
 func asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
 		if sv, ok := constStr(args[0]); ok {
 			b.InlineAsm(sv)
 			return llssa.Expr{Type: b.Prog.Void()}
 		}
+	} else if len(args) == 2 {
+		// todo(zzy): Implement asmFull logic here
+		panic("asmFull: not implemented yet")
 	}
-	panic("asm(<string-literal>): invalid arguments")
+	panic("asm: invalid arguments - expected asm(<string-literal>) or asm(<string-literal>, <map-literal>)")
 }
 
 // -----------------------------------------------------------------------------
