@@ -116,8 +116,6 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	var inputValues []llssa.Expr
 	var constraints []string
 	registerNumbers := map[string]int{}
-	// todo(zzy):output type
-	_ = hasOutput
 
 	if strings.Contains(finalAsm, "{}") {
 		finalAsm = strings.ReplaceAll(finalAsm, "{}", "$0")
@@ -147,8 +145,7 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		log.Printf("asmFull: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
 	}
 
-	// todo(zzy): call b.InlineAsmFull
-	return b.Const(constant.MakeInt64(0x1234), b.Prog.Uintptr())
+	return b.InlineAsmFull(finalAsm, constraintStr, hasOutput, inputValues)
 }
 
 // -----------------------------------------------------------------------------

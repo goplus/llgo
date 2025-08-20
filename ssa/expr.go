@@ -286,6 +286,28 @@ func (b Builder) InlineAsm(instruction string) {
 	b.impl.CreateCall(typ, asm, nil, "")
 }
 
+func (b Builder) InlineAsmFull(instruction, constraints string, output bool, exprs []Expr) (ret Expr) {
+	var rtType llvm.Type
+	if output {
+		rtType = b.Prog.Uintptr().ll
+	} else {
+		rtType = b.Prog.tyVoid()
+	}
+
+	typs := make([]llvm.Type, len(exprs))
+	vals := make([]llvm.Value, len(exprs))
+	for i, expr := range exprs {
+		typs[i] = expr.Type.ll
+		vals[i] = expr.impl
+	}
+
+	typ := llvm.FunctionType(rtType, typs, false)
+	asm := llvm.InlineAsm(typ, instruction, constraints, true, false, llvm.InlineAsmDialectATT, false)
+	ret.Type = b.Prog.Uintptr()
+	ret.impl = b.impl.CreateCall(typ, asm, vals, "")
+	return
+}
+
 // GoString returns a Go string
 func (b Builder) GoString(v Expr) Expr {
 	fn := b.Pkg.rtFunc("GoString")
