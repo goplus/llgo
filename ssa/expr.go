@@ -286,26 +286,16 @@ func (b Builder) InlineAsm(instruction string) {
 	b.impl.CreateCall(typ, asm, nil, "")
 }
 
-func (b Builder) InlineAsmFull(instruction, constraints string, output bool, exprs []Expr) (ret Expr) {
-	var rtType llvm.Type
-	if output {
-		rtType = b.Prog.Uintptr().ll
-	} else {
-		rtType = b.Prog.tyVoid()
-	}
-
+func (b Builder) InlineAsmFull(instruction, constraints string, retType Type, exprs []Expr) Expr {
 	typs := make([]llvm.Type, len(exprs))
 	vals := make([]llvm.Value, len(exprs))
 	for i, expr := range exprs {
-		typs[i] = expr.Type.ll
-		vals[i] = expr.impl
+		typs[i], vals[i] = expr.Type.ll, expr.impl
 	}
 
-	typ := llvm.FunctionType(rtType, typs, false)
-	asm := llvm.InlineAsm(typ, instruction, constraints, true, false, llvm.InlineAsmDialectATT, false)
-	ret.Type = b.Prog.Uintptr()
-	ret.impl = b.impl.CreateCall(typ, asm, vals, "")
-	return
+	ftype := llvm.FunctionType(retType.ll, typs, false)
+	asm := llvm.InlineAsm(ftype, instruction, constraints, true, false, llvm.InlineAsmDialectATT, false)
+	return Expr{b.impl.CreateCall(ftype, asm, vals, ""), retType}
 }
 
 // GoString returns a Go string
