@@ -18,6 +18,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/asmfull"
 @_llgo_int = linkonce global ptr null, align 8
 @5 = private unnamed_addr constant [5 x i8] c"value", align 1
 @6 = private unnamed_addr constant [7 x i8] c"Result:", align 1
+@7 = private unnamed_addr constant [1 x i8] c"x", align 1
+@8 = private unnamed_addr constant [1 x i8] c"y", align 1
 
 define void @"github.com/goplus/llgo/cl/_testrt/asmfull.init"() {
 _llgo_0:
@@ -35,6 +37,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/asmfull.main"() {
 _llgo_0:
+  call void asm sideeffect "nop", ""()
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = load ptr, ptr @_llgo_any, align 8
   %2 = load ptr, ptr @"map[_llgo_string]_llgo_any", align 8
@@ -62,6 +65,29 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %18)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %19 = load ptr, ptr @"map[_llgo_string]_llgo_any", align 8
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr %19, i64 2)
+  %21 = load ptr, ptr @_llgo_int, align 8
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %21, 0
+  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, ptr inttoptr (i64 25 to ptr), 1
+  %24 = load ptr, ptr @"map[_llgo_string]_llgo_any", align 8
+  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 1 }, ptr %25, align 8
+  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr %24, ptr %20, ptr %25)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %23, ptr %26, align 8
+  %27 = load ptr, ptr @_llgo_int, align 8
+  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %27, 0
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %28, ptr inttoptr (i64 17 to ptr), 1
+  %30 = load ptr, ptr @"map[_llgo_string]_llgo_any", align 8
+  %31 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 1 }, ptr %31, align 8
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr %30, ptr %20, ptr %31)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %29, ptr %32, align 8
+  %33 = call i64 asm sideeffect "# calc ${1} + ${2} -> $0", "=&r,r,r"(i64 25, i64 17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %33)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
