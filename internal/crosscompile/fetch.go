@@ -133,6 +133,7 @@ func downloadAndExtractESPClang(platformSuffix, dir string) error {
 	defer os.RemoveAll(downloadDir)
 
 	// Download clang binary package
+	fmt.Fprintf(os.Stderr, "Downloading ESP Clang %s-%s...\n", espClangVersion, platformSuffix)
 	clangUrl := fmt.Sprintf("%s/clang-esp-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
 	clangFile := filepath.Join(downloadDir, fmt.Sprintf("clang-%s-%s.tar.xz", espClangVersion, platformSuffix))
 	if err := downloadFile(clangUrl, clangFile); err != nil {
@@ -148,6 +149,7 @@ func downloadAndExtractESPClang(platformSuffix, dir string) error {
 	defer os.RemoveAll(extractDir)
 
 	// Extract both packages to extract directory
+	fmt.Fprintln(os.Stderr, "Extracting ESP Clang...")
 	if err := extractTarXz(clangFile, extractDir); err != nil {
 		return fmt.Errorf("failed to extract clang: %w", err)
 	}
@@ -157,5 +159,6 @@ func downloadAndExtractESPClang(platformSuffix, dir string) error {
 	if err := os.Rename(espClangDir, dir); err != nil {
 		return fmt.Errorf("failed to rename esp-clang directory: %w", err)
 	}
+	fmt.Fprintln(os.Stderr, "ESP Clang downloaded and extracted successfully.")
 	return nil
 }

@@ -74,6 +74,7 @@ func getESPClangRoot() (clangRoot string, err error) {
 			if !errors.Is(err, fs.ErrNotExist) {
 				return
 			}
+			fmt.Fprintln(os.Stderr, "ESP Clang not found in LLGO_ROOT or cache, will download.")
 			if err = downloadAndExtractESPClang(platformSuffix, cacheClangDir); err != nil {
 				return
 			}
