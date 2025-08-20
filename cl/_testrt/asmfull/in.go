@@ -6,6 +6,7 @@ import _ "unsafe"
 func asmFull(instruction string, regs map[string]any) uintptr
 
 func main() {
+	asmFull("# test value {value}", map[string]any{"value": 42})
 	result := asmFull("mov {}, {value}", map[string]any{
 		"value": 42,
 	})
