@@ -17,9 +17,12 @@
 package cl
 
 import (
+	"fmt"
 	"go/constant"
 	"go/types"
 	"log"
+	"regexp"
+	"strings"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -67,18 +70,85 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 }
 
 // func asm(string)
-// func asmFull(string, map[string]any) uintptr
-func asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+// func asmFull(string, map[string]any)
+func (p *context) asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
 		if sv, ok := constStr(args[0]); ok {
 			b.InlineAsm(sv)
 			return llssa.Expr{Type: b.Prog.Void()}
 		}
 	} else if len(args) == 2 {
-		// todo(zzy): Implement asmFull logic here
-		panic("asmFull: not implemented yet")
+		return p.asmFull(b, args)
 	}
 	panic("asm: invalid arguments - expected asm(<string-literal>) or asm(<string-literal>, <map-literal>)")
+}
+
+// asmFull is a compiler builtin which emits inline assembly.
+func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	asmString, ok := constStr(args[0])
+	if !ok {
+		panic("asmFull: inline assembly requires a constant string")
+	}
+
+	registers := make(map[string]llssa.Expr)
+	if registerMap, ok := args[1].(*ssa.MakeMap); ok {
+		referrers := registerMap.Referrers()
+		for _, r := range *referrers {
+			switch r := r.(type) {
+			case *ssa.MapUpdate:
+				if r.Block() != registerMap.Block() {
+					panic("asmFull: register value map must be created in the same basic block")
+				}
+
+				key, ok := constStr(r.Key)
+				if !ok {
+					panic("asmFull: register key must be a string constant")
+				}
+
+				llvmValue := p.compileValue(b, r.Value.(*ssa.MakeInterface).X)
+				registers[key] = llvmValue
+			}
+		}
+	}
+
+	finalAsm := asmString
+	var hasOutput bool
+	var inputValues []llssa.Expr
+	var constraints []string
+	registerNumbers := map[string]int{}
+	// todo(zzy):output type
+	_ = hasOutput
+
+	if strings.Contains(finalAsm, "{}") {
+		finalAsm = strings.ReplaceAll(finalAsm, "{}", "$0")
+		constraints = append(constraints, "=&r")
+		registerNumbers[""] = 0
+		hasOutput = true
+	}
+
+	finalAsm = regexp.MustCompile(`\{[a-zA-Z]+\}`).ReplaceAllStringFunc(finalAsm, func(s string) string {
+		// TODO: skip strings like {r4} etc. that look like ARM push/pop
+		// instructions.
+		name := s[1 : len(s)-1]
+		value, ok := registers[name]
+		if !ok {
+			panic("asmFull: register not found: " + name)
+		}
+		if _, ok := registerNumbers[name]; !ok {
+			registerNumbers[name] = len(registerNumbers)
+			inputValues = append(inputValues, value)
+			constraints = append(constraints, "r")
+		}
+		return fmt.Sprintf("${%v}", registerNumbers[name])
+	})
+
+	constraintStr := strings.Join(constraints, ",")
+	if debugInstr {
+		log.Printf("asmFull: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
+	}
+
+	// todo(zzy): call b.InlineAsmFull
+	return b.Const(constant.MakeInt64(0x1234), b.Prog.Uintptr())
 }
 
 // -----------------------------------------------------------------------------
@@ -474,7 +544,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoCstr:
 			ret = cstr(b, args)
 		case llgoAsm:
-			ret = asm(b, args)
+			ret = p.asm(b, args)
 		case llgoCgoCString:
 			ret = p.cgoCString(b, args)
 		case llgoCgoCBytes:
