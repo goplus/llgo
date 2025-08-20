@@ -2,6 +2,8 @@ package flags
 
 import (
 	"flag"
+
+	"github.com/goplus/llgo/internal/buildenv"
 )
 
 var OutputFile string
@@ -21,7 +23,11 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	fs.StringVar(&Target, "target", "", "Target platform (e.g., rp2040, wasi)")
-	fs.IntVar(&AbiMode, "abi", 2, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
+	if buildenv.Dev {
+		fs.IntVar(&AbiMode, "abi", 2, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
+	} else {
+		AbiMode = 2
+	}
 }
 
 var Gen bool
