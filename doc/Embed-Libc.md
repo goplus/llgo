@@ -11,6 +11,14 @@ const LLGoPackage = "-L{{libc dir}}; -nostdinc -lc"
 
 ## `picolibc` 编译
 
+```
+mkdir build
+cd build
+../scripts/do-esp32-configure
+ninja
+ninja install
+```
+
 
 
 ## 启动入口 `_start` 与 初始化
