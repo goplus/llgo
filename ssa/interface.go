@@ -241,11 +241,10 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	}
 	tx := b.faceAbiType(x)
 	tabi := b.abiType(assertedTyp.raw.Type)
-
 	var eq Expr
 	var val func() Expr
 	if x.RawType() == assertedTyp.RawType() {
-		eq = b.Const(constant.MakeBool(true), b.Prog.Bool())
+		eq = b.Const(constant.MakeBool(!b.faceData(x.impl).IsNull()), b.Prog.Bool())
 		val = func() Expr { return x }
 	} else {
 		if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {

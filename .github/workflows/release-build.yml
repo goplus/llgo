@@ -10,7 +10,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Populate Darwin sysroot
         run: bash .github/workflows/populate_darwin_sysroot.sh
       - name: Create Darwin sysroot tarball
@@ -26,7 +26,7 @@ jobs:
     needs: populate-darwin-sysroot
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Set up Go
@@ -38,7 +38,7 @@ jobs:
         with:
           image: tonistiigi/binfmt:qemu-v7.0.0-28
       - name: Download Darwin sysroot tarball
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: darwin-sysroot-tarball
           path: .sysroot
