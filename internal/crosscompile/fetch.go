@@ -10,9 +10,53 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
+// acquireLock creates and locks a file to prevent concurrent operations
+func acquireLock(lockPath string) (*os.File, error) {
+	// Ensure the parent directory exists
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create lock directory: %w", err)
+	}
+
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lock file: %w", err)
+	}
+	if err := syscall.Flock(int(lockFile.Fd()), syscall.LOCK_EX); err != nil {
+		lockFile.Close()
+		return nil, fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	return lockFile, nil
+}
+
+// releaseLock unlocks and removes the lock file
+func releaseLock(lockFile *os.File) error {
+	if lockFile == nil {
+		return nil
+	}
+	lockPath := lockFile.Name()
+	syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN)
+	lockFile.Close()
+	os.Remove(lockPath)
+	return nil
+}
+
 func checkDownloadAndExtract(url, dir string) (wasiSdkRoot string, err error) {
+	wasiSdkRoot = filepath.Join(dir, "wasi-sdk-25.0-x86_64-macos")
+	if _, err := os.Stat(dir); err == nil {
+		return wasiSdkRoot, nil
+	}
+
+	// Create lock file path
+	lockPath := dir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
 	if _, err = os.Stat(dir); err != nil {
 		os.RemoveAll(dir)
 		tempDir := dir + ".temp"
@@ -43,7 +87,6 @@ func checkDownloadAndExtract(url, dir string) (wasiSdkRoot string, err error) {
 			return "", fmt.Errorf("failed to rename directory: %w", err)
 		}
 	}
-	wasiSdkRoot = filepath.Join(dir, "wasi-sdk-25.0-x86_64-macos")
 	return
 }
 
@@ -118,10 +161,19 @@ func extractTarXz(tarXzFile, dest string) error {
 	return cmd.Run()
 }
 
-// downloadAndExtractESPClang downloads and extracts ESP Clang binaries and libraries
-func downloadAndExtractESPClang(platformSuffix, dir string) error {
+// checkDownloadAndExtractESPClang downloads and extracts ESP Clang binaries and libraries
+func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
+	// Create lock file path
+	lockPath := dir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
+	// Check again after acquiring lock (double-check pattern)
 	if _, err := os.Stat(dir); err == nil {
-		os.RemoveAll(dir)
+		return nil // Already exists, nothing to do
 	}
 
 	// Create download temp directory
