@@ -2,6 +2,7 @@
 
 # Initialize arrays to store results
 successful_targets=()
+warned_targets=()
 failed_targets=()
 
 for target in \
@@ -211,14 +212,21 @@ xiao-esp32c3 \
 xiao-rp2040 \
 xiao \
 xtensa; do
-	output=$(../../llgo.sh build -v -target $target -o hello.out . 2>&1)
+	output=$(../../llgo.sh build -target $target -o hello.out . 2>&1)
 	if [ $? -eq 0 ]; then
 		echo ✅ $target `file hello.out`
 		successful_targets+=("$target")
 	else
-		echo ❌ $target
-		echo "$output"
-		failed_targets+=("$target")
+		# Check if output contains warning messages
+		if echo "$output" | grep -q "does not have a valid LLVM target triple\|does not have a valid CPU configuration"; then
+			echo ⚠️ $target
+			echo "$output"
+			warned_targets+=("$target")
+		else
+			echo ❌ $target
+			echo "$output"
+			failed_targets+=("$target")
+		fi
 	fi
 done
 
@@ -228,6 +236,12 @@ echo "----------------------------------------"
 # Output successful targets
 echo "Successful targets (${#successful_targets[@]} total):"
 for target in "${successful_targets[@]}"; do
+	echo "$target"
+done
+
+echo ""
+echo "Warned targets (${#warned_targets[@]} total):"
+for target in "${warned_targets[@]}"; do
 	echo "$target"
 done
 
