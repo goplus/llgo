@@ -450,7 +450,7 @@ func useTarget(targetName string) (export Export, err error) {
 	var ccflags []string
 	var ldflags []string
 
-	cflags := []string{"-Wno-override-module"}
+	cflags := []string{"-Wno-override-module", "-Qunused-arguments"}
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
