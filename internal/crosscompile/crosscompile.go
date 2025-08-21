@@ -121,6 +121,21 @@ func buildEnvMap(llgoRoot string) map[string]string {
 	return envs
 }
 
+// getCanonicalArchName returns the canonical architecture name for a target triple
+func getCanonicalArchName(triple string) string {
+	arch := strings.Split(triple, "-")[0]
+	if arch == "arm64" {
+		return "aarch64"
+	}
+	if strings.HasPrefix(arch, "arm") || strings.HasPrefix(arch, "thumb") {
+		return "arm"
+	}
+	if arch == "mipsel" {
+		return "mips"
+	}
+	return arch
+}
+
 // getMacOSSysroot returns the macOS SDK path using xcrun
 func getMacOSSysroot() (string, error) {
 	cmd := exec.Command("xcrun", "--sdk", "macosx", "--show-sdk-path")
@@ -445,17 +460,60 @@ func useTarget(targetName string) (export Export, err error) {
 	expandedCFlags := expandEnvSlice(config.CFlags, envs)
 	cflags = append(cflags, expandedCFlags...)
 
-	// Inspired by tinygo
+	// The following parameters are inspired by tinygo/builder/library.go
+	// Handle CPU configuration
 	cpu := config.CPU
 	if cpu != "" {
-		if config.Linker == "ld.lld" {
-			ldflags = append(ldflags, "-mllvm", "-mcpu="+cpu)
-		} else if strings.HasPrefix(target, "i386") || strings.HasPrefix(target, "x86_64") {
+		// X86 has deprecated the -mcpu flag, so we need to use -march instead.
+		// However, ARM has not done this.
+		if strings.HasPrefix(target, "i386") || strings.HasPrefix(target, "x86_64") {
 			ccflags = append(ccflags, "-march="+cpu)
 		} else if strings.HasPrefix(target, "avr") {
 			ccflags = append(ccflags, "-mmcu="+cpu)
 		} else {
 			ccflags = append(ccflags, "-mcpu="+cpu)
+		}
+
+		// For ld.lld linker, also add CPU info to linker flags
+		if config.Linker == "ld.lld" {
+			ldflags = append(ldflags, "-mllvm", "-mcpu="+cpu)
+		}
+	}
+
+	// Handle architecture-specific flags
+	canonicalArch := getCanonicalArchName(target)
+	switch canonicalArch {
+	case "arm":
+		if strings.Split(target, "-")[2] == "linux" {
+			ccflags = append(ccflags, "-fno-unwind-tables", "-fno-asynchronous-unwind-tables")
+		} else {
+			ccflags = append(ccflags, "-fshort-enums", "-fomit-frame-pointer", "-mfloat-abi=soft", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables")
+		}
+	case "avr":
+		// AVR defaults to C float and double both being 32-bit. This deviates
+		// from what most code (and certainly compiler-rt) expects. So we need
+		// to force the compiler to use 64-bit floating point numbers for
+		// double.
+		ccflags = append(ccflags, "-mdouble=64")
+	case "riscv32":
+		ccflags = append(ccflags, "-march=rv32imac", "-fforce-enable-int128")
+	case "riscv64":
+		ccflags = append(ccflags, "-march=rv64gc")
+	case "mips":
+		ccflags = append(ccflags, "-fno-pic")
+	}
+
+	// Handle soft float
+	if strings.Contains(config.Features, "soft-float") || strings.Contains(strings.Join(config.CFlags, " "), "soft-float") {
+		// Use softfloat instead of floating point instructions. This is
+		// supported on many architectures.
+		ccflags = append(ccflags, "-msoft-float")
+	} else {
+		if strings.HasPrefix(target, "armv5") {
+			// On ARMv5 we need to explicitly enable hardware floating point
+			// instructions: Clang appears to assume the hardware doesn't have a
+			// FPU otherwise.
+			ccflags = append(ccflags, "-mfpu=vfpv2")
 		}
 	}
 
