@@ -96,46 +96,46 @@ func (c *Cmd) Link(args ...string) error {
 // mergeCompilerFlags merges environment CCFLAGS/CFLAGS with crossCompile flags.
 func (c *Cmd) mergeCompilerFlags() []string {
 	var flags []string
-	
+
 	// Add environment CCFLAGS
 	if envCCFlags := os.Getenv("CCFLAGS"); envCCFlags != "" {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envCCFlags)...)
 	}
-	
+
 	// Add environment CFLAGS
 	if envCFlags := os.Getenv("CFLAGS"); envCFlags != "" {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envCFlags)...)
 	}
-	
+
 	// Add crossCompile CCFLAGS
 	flags = append(flags, c.crossCompile.CCFLAGS...)
-	
+
 	// Add crossCompile CFLAGS
 	flags = append(flags, c.crossCompile.CFLAGS...)
-	
+
 	return flags
 }
 
 // mergeLinkerFlags merges environment CCFLAGS/LDFLAGS with crossCompile flags.
 func (c *Cmd) mergeLinkerFlags() []string {
 	var flags []string
-	
+
 	// Add environment CCFLAGS (for linker)
 	if envCCFlags := os.Getenv("CCFLAGS"); envCCFlags != "" {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envCCFlags)...)
 	}
-	
+
 	// Add environment LDFLAGS
 	if envLDFlags := os.Getenv("LDFLAGS"); envLDFlags != "" {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envLDFlags)...)
 	}
-	
+
 	// Add crossCompile CCFLAGS (for linker)
 	flags = append(flags, c.crossCompile.CCFLAGS...)
-	
+
 	// Add crossCompile LDFLAGS
 	flags = append(flags, c.crossCompile.LDFLAGS...)
-	
+
 	return flags
 }
 

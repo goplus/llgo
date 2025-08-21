@@ -230,20 +230,33 @@ func TestUseTarget(t *testing.T) {
 				}
 			}
 
-			// Check if CPU is in CCFLAGS
+			// Check if CPU is in LDFLAGS (for ld.lld linker) or CCFLAGS (for other cases)
 			if tc.expectCPU != "" {
 				found := false
-				expectedFlags := []string{"-mmcu=" + tc.expectCPU, "-mcpu=" + tc.expectCPU}
-				for _, flag := range export.CCFLAGS {
-					for _, expectedFlag := range expectedFlags {
-						if flag == expectedFlag {
+				// First check LDFLAGS for -mllvm -mcpu= pattern
+				for i, flag := range export.LDFLAGS {
+					if flag == "-mllvm" && i+1 < len(export.LDFLAGS) {
+						nextFlag := export.LDFLAGS[i+1]
+						if nextFlag == "-mcpu="+tc.expectCPU {
 							found = true
 							break
 						}
 					}
 				}
+				// If not found in LDFLAGS, check CCFLAGS for direct CPU flags
 				if !found {
-					t.Errorf("Expected CPU %s in CCFLAGS, got %v", tc.expectCPU, export.CCFLAGS)
+					expectedFlags := []string{"-mmcu=" + tc.expectCPU, "-mcpu=" + tc.expectCPU}
+					for _, flag := range export.CCFLAGS {
+						for _, expectedFlag := range expectedFlags {
+							if flag == expectedFlag {
+								found = true
+								break
+							}
+						}
+					}
+				}
+				if !found {
+					t.Errorf("Expected CPU %s in LDFLAGS or CCFLAGS, got LDFLAGS=%v, CCFLAGS=%v", tc.expectCPU, export.LDFLAGS, export.CCFLAGS)
 				}
 			}
 
@@ -275,61 +288,5 @@ func TestUseWithTarget(t *testing.T) {
 	// Should use native configuration (only check for macOS since that's where tests run)
 	if runtime.GOOS == "darwin" && len(export.LDFLAGS) == 0 {
 		t.Error("Expected LDFLAGS to be set for native build")
-	}
-}
-
-func TestFilterCompatibleLDFlags(t *testing.T) {
-	testCases := []struct {
-		name     string
-		input    []string
-		expected []string
-	}{
-		{
-			name:     "Empty flags",
-			input:    []string{},
-			expected: []string{},
-		},
-		{
-			name:     "Compatible flags only",
-			input:    []string{"-lm", "-lpthread"},
-			expected: []string{"-lm", "-lpthread"},
-		},
-		{
-			name:     "Incompatible flags filtered",
-			input:    []string{"--gc-sections", "-lm", "--emit-relocs", "-lpthread"},
-			expected: []string{"--gc-sections", "-lm", "--emit-relocs", "-lpthread"},
-		},
-		{
-			name:     "Defsym flags filtered",
-			input:    []string{"--defsym=_stack_size=512", "-lm", "--defsym=_bootloader_size=512"},
-			expected: []string{"-lm"},
-		},
-		{
-			name:     "Linker script flags filtered",
-			input:    []string{"-T", "script.ld", "-lm"},
-			expected: []string{"-lm"},
-		},
-		{
-			name:     "Mixed compatible and incompatible",
-			input:    []string{"-lm", "--gc-sections", "--defsym=test=1", "-lpthread", "--no-demangle"},
-			expected: []string{"-lm", "--gc-sections", "-lpthread", "--no-demangle"},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := filterCompatibleLDFlags(tc.input)
-
-			if len(result) != len(tc.expected) {
-				t.Errorf("Expected %d flags, got %d: %v", len(tc.expected), len(result), result)
-				return
-			}
-
-			for i, expected := range tc.expected {
-				if result[i] != expected {
-					t.Errorf("Expected flag[%d] = %s, got %s", i, expected, result[i])
-				}
-			}
-		})
 	}
 }

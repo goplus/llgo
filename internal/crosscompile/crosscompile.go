@@ -339,21 +339,27 @@ func useTarget(targetName string) (export Export, err error) {
 		target = llvm.GetTargetTriple(config.GOOS, config.GOARCH)
 	}
 
-	ccflags = append(ccflags, "-Wno-override-module", "--target="+config.LLVMTarget)
+	cflags := []string{"-Wno-override-module"}
+	if config.LLVMTarget != "" {
+		cflags = append(cflags, "--target="+config.LLVMTarget)
+		ccflags = append(ccflags, "--target="+config.LLVMTarget)
+	}
+	cflags = append(cflags, config.CFlags...)
 
 	// Inspired by tinygo
 	cpu := config.CPU
 	if cpu != "" {
+		if config.Linker == "ld.lld" {
+			ldflags = append(ldflags, "-mllvm", "-mcpu="+cpu)
+		}
+
+		// Always add CPU to CCFLAGS for proper compilation
 		if strings.HasPrefix(target, "i386") || strings.HasPrefix(target, "x86_64") {
 			ccflags = append(ccflags, "-march="+cpu)
 		} else if strings.HasPrefix(target, "avr") {
 			ccflags = append(ccflags, "-mmcu="+cpu)
 		} else {
 			ccflags = append(ccflags, "-mcpu="+cpu)
-		}
-		// Only add -mllvm flags for non-WebAssembly linkers
-		if config.Linker == "ld.lld" {
-			ldflags = append(ldflags, "-mllvm", "-mcpu="+cpu)
 		}
 	}
 
@@ -375,7 +381,7 @@ func useTarget(targetName string) (export Export, err error) {
 	ldflags = append(ldflags, "-L", env.LLGoROOT()) // search targets/*.ld
 
 	// Combine with config flags
-	export.CFLAGS = config.CFlags
+	export.CFLAGS = cflags
 	export.CCFLAGS = ccflags
 	export.LDFLAGS = append(ldflags, config.LDFlags...)
 
@@ -389,45 +395,4 @@ func Use(goos, goarch string, wasiThreads bool, targetName string) (export Expor
 		return useTarget(targetName)
 	}
 	return use(goos, goarch, wasiThreads)
-}
-
-// filterCompatibleLDFlags filters out linker flags that are incompatible with clang/lld
-func filterCompatibleLDFlags(ldflags []string) []string {
-	if len(ldflags) == 0 {
-		return ldflags
-	}
-
-	var filtered []string
-
-	incompatiblePrefixes := []string{
-		"--defsym=", // Use -Wl,--defsym= instead
-		"-T",        // Linker script, needs special handling
-	}
-
-	i := 0
-	for i < len(ldflags) {
-		flag := ldflags[i]
-
-		// Check incompatible prefixes
-		skip := false
-		for _, prefix := range incompatiblePrefixes {
-			if strings.HasPrefix(flag, prefix) {
-				skip = true
-				break
-			}
-		}
-		if skip {
-			// Skip -T and its argument if separate
-			if flag == "-T" && i+1 < len(ldflags) {
-				i += 2 // Skip both -T and the script path
-			} else {
-				i++
-			}
-			continue
-		}
-		filtered = append(filtered, flag)
-		i++
-	}
-
-	return filtered
 }
