@@ -193,7 +193,7 @@ func TestUseTarget(t *testing.T) {
 		{
 			name:        "Cortex-M Target",
 			targetName:  "cortex-m",
-			expectError: false,
+			expectError: true,
 			expectLLVM:  "",
 			expectCPU:   "",
 		},

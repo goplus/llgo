@@ -422,6 +422,11 @@ func useTarget(targetName string) (export Export, err error) {
 		return export, fmt.Errorf("failed to resolve target %s: %w", targetName, err)
 	}
 
+	target := config.LLVMTarget
+	if target == "" {
+		return export, fmt.Errorf("target '%s' does not have a valid LLVM target triple", targetName)
+	}
+
 	// Check for ESP Clang support for target-based builds
 	clangRoot, err := getESPClangRoot()
 	if err != nil {
@@ -444,11 +449,6 @@ func useTarget(targetName string) (export Export, err error) {
 	// Convert LLVMTarget, CPU, Features to CCFLAGS/LDFLAGS
 	var ccflags []string
 	var ldflags []string
-
-	target := config.LLVMTarget
-	if target == "" {
-		target = llvm.GetTargetTriple(config.GOOS, config.GOARCH)
-	}
 
 	cflags := []string{"-Wno-override-module"}
 	if config.LLVMTarget != "" {
