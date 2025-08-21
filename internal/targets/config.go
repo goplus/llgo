@@ -20,6 +20,7 @@ type Config struct {
 	LinkerScript string   `json:"linkerscript"`
 	CFlags       []string `json:"cflags"`
 	LDFlags      []string `json:"ldflags"`
+	ExtraFiles   []string `json:"extra-files"`
 
 	// Code generation configuration
 	CodeModel       string `json:"code-model"`

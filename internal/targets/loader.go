@@ -160,6 +160,9 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	if len(src.LDFlags) > 0 {
 		dst.LDFlags = append(dst.LDFlags, src.LDFlags...)
 	}
+	if len(src.ExtraFiles) > 0 {
+		dst.ExtraFiles = append(dst.ExtraFiles, src.ExtraFiles...)
+	}
 }
 
 // GetTargetsDir returns the targets directory path

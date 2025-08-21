@@ -546,6 +546,83 @@ func createGlobals(ctx *context, prog llssa.Program, pkgs []*aPackage) (llssa.Pa
 	return global, nil
 }
 
+// compileExtraFiles compiles extra files (.s/.c) from target configuration and returns object files
+func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
+	if len(ctx.crossCompile.ExtraFiles) == 0 {
+		return nil, nil
+	}
+
+	var objFiles []string
+	llgoRoot := env.LLGoROOT()
+
+	for _, extraFile := range ctx.crossCompile.ExtraFiles {
+		// Resolve the file path relative to llgo root
+		srcFile := filepath.Join(llgoRoot, extraFile)
+
+		// Check if file exists
+		if _, err := os.Stat(srcFile); os.IsNotExist(err) {
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Warning: extra file not found: %s\n", srcFile)
+			}
+			continue
+		}
+
+		// Generate output file name
+		objFile, err := os.CreateTemp("", "extra-*"+filepath.Base(extraFile))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create temp file for %s: %w", extraFile, err)
+		}
+		objFile.Close()
+
+		var outputFile string
+		ext := filepath.Ext(srcFile)
+
+		if ctx.buildConf.GenLL {
+			outputFile = objFile.Name() + ".ll"
+		} else {
+			outputFile = objFile.Name() + ".o"
+		}
+
+		// Prepare compilation arguments
+		var args []string
+
+		// Add target-specific flags if available
+		if len(ctx.crossCompile.CCFLAGS) > 0 {
+			args = append(args, ctx.crossCompile.CCFLAGS...)
+		}
+
+		// Handle different file types
+		switch ext {
+		case ".c":
+			args = append(args, "-x", "c")
+		case ".S", ".s":
+			args = append(args, "-x", "assembler-with-cpp")
+		}
+
+		// Add output flags
+		if ctx.buildConf.GenLL {
+			args = append(args, "-emit-llvm", "-S", "-o", outputFile, "-c", srcFile)
+		} else {
+			args = append(args, "-o", outputFile, "-c", srcFile)
+		}
+
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(args, " "))
+		}
+
+		// Compile the file
+		cmd := ctx.compiler()
+		if err := cmd.Compile(args...); err != nil {
+			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
+		}
+
+		objFiles = append(objFiles, outputFile)
+		os.Remove(objFile.Name()) // Remove the temp file we created for naming
+	}
+
+	return objFiles, nil
+}
+
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
@@ -593,6 +670,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	check(err)
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
+
+	// Compile extra files from target configuration
+	extraObjFiles, err := compileExtraFiles(ctx, verbose)
+	check(err)
+	objFiles = append(objFiles, extraObjFiles...)
 
 	if global != nil {
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
