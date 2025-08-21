@@ -78,6 +78,7 @@ m5stack \
 m5stamp-c3 \
 m5stick-c \
 macropad-rp2040 \
+maixbit \
 makerfabs-esp32c3spi35 \
 matrixportal-m4 \
 mch2022 \

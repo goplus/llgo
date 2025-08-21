@@ -20,6 +20,11 @@ type Config struct {
 	LinkerScript string   `json:"linkerscript"`
 	CFlags       []string `json:"cflags"`
 	LDFlags      []string `json:"ldflags"`
+
+	// Code generation configuration
+	CodeModel       string `json:"code-model"`
+	TargetABI       string `json:"target-abi"`
+	RelocationModel string `json:"relocation-model"`
 }
 
 // RawConfig represents the raw JSON configuration before inheritance resolution

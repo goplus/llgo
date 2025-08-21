@@ -137,6 +137,18 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	if src.Linker != "" {
 		dst.Linker = src.Linker
 	}
+	if src.LinkerScript != "" {
+		dst.LinkerScript = src.LinkerScript
+	}
+	if src.CodeModel != "" {
+		dst.CodeModel = src.CodeModel
+	}
+	if src.TargetABI != "" {
+		dst.TargetABI = src.TargetABI
+	}
+	if src.RelocationModel != "" {
+		dst.RelocationModel = src.RelocationModel
+	}
 
 	// Merge slices (append, don't replace)
 	if len(src.BuildTags) > 0 {
@@ -147,9 +159,6 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	}
 	if len(src.LDFlags) > 0 {
 		dst.LDFlags = append(dst.LDFlags, src.LDFlags...)
-	}
-	if src.LinkerScript != "" {
-		dst.LinkerScript = src.LinkerScript
 	}
 }
 

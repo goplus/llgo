@@ -22,9 +22,6 @@ type Export struct {
 	LDFLAGS []string
 
 	// Additional fields from target configuration
-	LLVMTarget   string
-	CPU          string
-	Features     string
 	BuildTags    []string
 	GOOS         string
 	GOARCH       string
@@ -522,6 +519,22 @@ func useTarget(targetName string) (export Export, err error) {
 		// Only add -mllvm flags for non-WebAssembly linkers
 		if config.Linker == "ld.lld" {
 			ldflags = append(ldflags, "-mllvm", "-mattr="+config.Features)
+		}
+	}
+
+	// Handle code generation configuration
+	if config.CodeModel != "" {
+		ccflags = append(ccflags, "-mcmodel="+config.CodeModel)
+	}
+	if config.TargetABI != "" {
+		ccflags = append(ccflags, "-mabi="+config.TargetABI)
+	}
+	if config.RelocationModel != "" {
+		switch config.RelocationModel {
+		case "pic":
+			ccflags = append(ccflags, "-fPIC")
+		case "static":
+			ccflags = append(ccflags, "-fno-pic")
 		}
 	}
 
