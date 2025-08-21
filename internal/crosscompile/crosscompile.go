@@ -131,6 +131,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
 		clangLib := filepath.Join(clangRoot, "lib")
+		clangInc := filepath.Join(clangRoot, "include")
 		// not cross compile
 		// Set up basic flags for non-cross-compile
 		export.LDFLAGS = []string{
@@ -140,6 +141,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
 		}
+		export.CFLAGS = append(export.CFLAGS, "-I"+clangInc)
 
 		// Add platform-specific rpath flags
 		switch goos {
