@@ -586,11 +586,6 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		// Prepare compilation arguments
 		var args []string
 
-		// Add target-specific flags if available
-		if len(ctx.crossCompile.CCFLAGS) > 0 {
-			args = append(args, ctx.crossCompile.CCFLAGS...)
-		}
-
 		// Handle different file types
 		switch ext {
 		case ".c":
