@@ -133,9 +133,24 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 			panic("asmFull: register not found: " + name)
 		}
 		if _, ok := registerNumbers[name]; !ok {
-			registerNumbers[name] = len(registerNumbers)
-			inputValues = append(inputValues, value)
-			constraints = append(constraints, "r")
+			// Type checking based on Go types - similar to TinyGo's implementation
+			rawType := value.Type.RawType()
+			switch typ := rawType.Underlying().(type) {
+			case *types.Basic:
+				if typ.Info()&types.IsInteger != 0 {
+					registerNumbers[name] = len(registerNumbers)
+					inputValues = append(inputValues, value)
+					constraints = append(constraints, "r")
+				} else {
+					panic("asmFull: unsupported basic type in inline assembly for operand: " + name + ", only integer types are supported")
+				}
+			case *types.Pointer:
+				// Pointer operands support was dropped, following TinyGo 0.23
+				panic("asmFull: not support for pointer operands: " + name + ", only integer types are supported")
+			default:
+				panic("asmFull: unsupported type in inline assembly for operand: " + name + ", only integer types are supported")
+			}
+
 		}
 		return fmt.Sprintf("${%v}", registerNumbers[name])
 	})
