@@ -134,10 +134,11 @@ wioterminal \
 xiao-esp32c3 \
 xiao-rp2040 \
 xiao; do
-        ../../llgo.sh build -v -target $target -o hello.out . >/dev/null 2>&1
+        output=$(../../llgo.sh build -v -target $target -o hello.out . 2>&1)
         if [ $? -eq 0 ]; then
             echo ✅ $target `file hello.out`
         else
             echo ❌ $target
+            echo "$output"
         fi
     done
