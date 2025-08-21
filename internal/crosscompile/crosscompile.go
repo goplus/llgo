@@ -162,6 +162,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 				return
 			}
 			export.CCFLAGS = append(export.CCFLAGS, []string{"--sysroot=" + sysrootPath}...)
+			export.LDFLAGS = append(export.LDFLAGS, []string{"--sysroot=" + sysrootPath}...)
 		}
 
 		// Add OS-specific flags
