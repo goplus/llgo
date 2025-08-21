@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && amd64
 
 package main
 
@@ -22,7 +22,7 @@ func verify() {
 	})
 	check(41, int(res1))
 
-	res2 := asmFull("movq {a}, {}; addq {b}, {}", map[string]any{
+	res2 := asmFull("leaq ({a},{b}), {}", map[string]any{
 		"a": 25,
 		"b": 17,
 	})
