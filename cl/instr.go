@@ -97,18 +97,20 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		referrers := registerMap.Referrers()
 		for _, r := range *referrers {
 			switch r := r.(type) {
+			case *ssa.DebugRef, *ssa.Call:
+				// ignore
 			case *ssa.MapUpdate:
 				if r.Block() != registerMap.Block() {
 					panic("asmFull: register value map must be created in the same basic block")
 				}
-
 				key, ok := constStr(r.Key)
 				if !ok {
 					panic("asmFull: register key must be a string constant")
 				}
-
 				llvmValue := p.compileValue(b, r.Value.(*ssa.MakeInterface).X)
 				registers[key] = llvmValue
+			default:
+				panic("asmFull: don't know how to handle argument to inline assembly: " + r.String())
 			}
 		}
 	}
@@ -135,24 +137,16 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 			panic("asmFull: register not found: " + name)
 		}
 		if _, ok := registerNumbers[name]; !ok {
-			// Type checking based on Go types - similar to TinyGo's implementation
+			// Type checking - only allow integer basic types
 			rawType := value.Type.RawType()
-			switch typ := rawType.Underlying().(type) {
-			case *types.Basic:
-				if typ.Info()&types.IsInteger != 0 {
-					registerNumbers[name] = len(registerNumbers)
-					inputValues = append(inputValues, value)
-					constraints = append(constraints, "r")
-				} else {
-					panic("asmFull: unsupported basic type in inline assembly for operand: " + name + ", only integer types are supported")
-				}
-			case *types.Pointer:
+			if basic, ok := rawType.Underlying().(*types.Basic); ok && basic.Info()&types.IsInteger != 0 {
+				registerNumbers[name] = len(registerNumbers)
+				inputValues = append(inputValues, value)
+				constraints = append(constraints, "r")
+			} else {
 				// Pointer operands support was dropped, following TinyGo 0.23
-				panic("asmFull: not support for pointer operands: " + name + ", only integer types are supported")
-			default:
 				panic("asmFull: unsupported type in inline assembly for operand: " + name + ", only integer types are supported")
 			}
-
 		}
 		return fmt.Sprintf("${%v}", registerNumbers[name])
 	})
