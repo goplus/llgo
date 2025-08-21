@@ -9,18 +9,6 @@ libc将采用以下方式进行：
 const LLGoPackage = "-L{{libc dir}}; -nostdinc -lc"
 ```
 
-## `picolibc` 编译
-
-```
-mkdir build
-cd build
-../scripts/do-esp32-configure
-ninja
-ninja install
-```
-
-
-
 ## 启动入口 `_start` 与 初始化
 
 `picolibc` 只是简单将内存分为 `flash` 和 `ram`，
@@ -75,3 +63,15 @@ static FILE __stdio = FDEV_SETUP_STREAM(sample_putc,
 如果需要 `malloc`， `sbrk` 是必须要实现的，然而，如果我们不使用 `picolibc` ，我们缺少 `__heap_start` 和 `__heap_end` 常量。
 
 `tinygo`: tinygo并不需要 `malloc`, 而它使用的 `bdwgc` 是被修改过的，`tinygo` 修改了里面的函数为自定义的 `tiny_sbrk`
+
+## `picolibc` 编译
+
+```
+mkdir build
+cd build
+../scripts/do-esp32-configure
+ninja
+ninja install
+```
+
+这默认会包含 `_start` 和 `picolibc.ld`， 如果不需要这两者，需要像 `tinygo` 一样根据不同芯片编译
