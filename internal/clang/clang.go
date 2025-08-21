@@ -130,9 +130,6 @@ func (c *Cmd) mergeLinkerFlags() []string {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envLDFlags)...)
 	}
 
-	// Add crossCompile CCFLAGS (for linker)
-	flags = append(flags, c.crossCompile.CCFLAGS...)
-
 	// Add crossCompile LDFLAGS
 	flags = append(flags, c.crossCompile.LDFLAGS...)
 
