@@ -41,8 +41,10 @@ import (
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/llpkg"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/taskqueue"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llgo/xtool/clang"
@@ -445,6 +447,14 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// need to be linked with external library
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
+				if llpkg.IsGithubHosted(aPkg.PkgPath) {
+					moduleDir, err := llpkg.LLGoModuleDirOf(aPkg.Module.Path, aPkg.Module.Version)
+					if err == nil {
+						pkgPCPath := filepath.Join(moduleDir, "lib", "pkgconfig")
+						// TODO(MeteorsLiu): support Windows
+						os.Setenv("PKG_CONFIG_PATH", pkgPCPath+":"+os.Getenv("PKG_CONFIG_PATH"))
+					}
+				}
 				altParts := strings.Split(param, ";")
 				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
@@ -683,6 +693,11 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	// Add common linker arguments based on target OS and architecture
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
+		if runtime.GOOS == "darwin" {
+			buildArgs = append(buildArgs, "-Wl,-t", "-Wl,-map,symbol.map")
+		} else {
+			buildArgs = append(buildArgs, "-Wl,--Map=symbol.map")
+		}
 	}
 
 	buildArgs = append(buildArgs, ctx.crossCompile.LDFLAGS...)
@@ -952,6 +967,10 @@ type Package = *aPackage
 func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
 	prog := ctx.progSSA
 	built := ctx.built
+
+	taskQueue := taskqueue.NewTaskQueue(runtime.GOMAXPROCS(0))
+	defer taskQueue.Close()
+
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
@@ -966,10 +985,49 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				}
 			}
 			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil, nil})
+
+			if llpkg.IsGithubHosted(pkgPath) {
+				moduleDir, err := llpkg.LLGoModuleDirOf(p.Module.Path, p.Module.Version)
+				if err != nil {
+					return
+				}
+				// if this llpkg is Github hosted, check if we need to fetch it
+				if llpkg.IsInstalled(moduleDir) {
+					if verbose {
+						fmt.Printf("skip installing llpkg binary to %s\n", moduleDir)
+					}
+					return
+				}
+
+				cfg, err := llpkg.ParseConfigFile(filepath.Join(p.Dir, "llpkg.cfg"))
+				if err != nil {
+					return
+				}
+				cfg.Upstream.Package.SetModuleVersion(p.Module.Version)
+
+				taskQueue.Push(func() {
+					// check again
+					if !llpkg.IsInstalled(moduleDir) {
+						if verbose {
+							fmt.Printf("Installing llpkg binary %s to %s\n", cfg.Upstream.Package.Name, moduleDir)
+						}
+						err := llpkg.InstallBinary(cfg, moduleDir)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "failed to installing llpkg binary: %v\n", err)
+						}
+						return
+					}
+					if verbose {
+						fmt.Printf("skip installing llpkg binary to %s\n", moduleDir)
+					}
+				})
+			}
 		} else {
 			errs = append(errs, p)
 		}
 	})
+
+	taskQueue.Wait()
 	return
 }
 
