@@ -75,7 +75,7 @@ func getESPClangRoot() (clangRoot string, err error) {
 				return
 			}
 			fmt.Fprintln(os.Stderr, "ESP Clang not found in LLGO_ROOT or cache, will download.")
-			if err = downloadAndExtractESPClang(platformSuffix, cacheClangDir); err != nil {
+			if err = checkDownloadAndExtractESPClang(platformSuffix, cacheClangDir); err != nil {
 				return
 			}
 		}
@@ -130,14 +130,28 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	export.CC = filepath.Join(clangRoot, "bin", "clang++")
 
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
+		clangLib := filepath.Join(clangRoot, "lib")
 		// not cross compile
 		// Set up basic flags for non-cross-compile
 		export.LDFLAGS = []string{
-			"-L" + filepath.Join(clangRoot, "lib"),
+			"-L" + clangLib,
 			"-target", targetTriple,
 			"-Wno-override-module",
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
+		}
+
+		// Add platform-specific rpath flags
+		switch goos {
+		case "darwin":
+			export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
+		case "linux":
+			export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
+		case "windows":
+			// Windows doesn't support rpath, DLLs should be in PATH or same directory
+		default:
+			// For other Unix-like systems, try the generic rpath
+			export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
 		}
 
 		// Add sysroot for macOS only
@@ -351,10 +365,7 @@ func useTarget(targetName string) (export Export, err error) {
 	if cpu != "" {
 		if config.Linker == "ld.lld" {
 			ldflags = append(ldflags, "-mllvm", "-mcpu="+cpu)
-		}
-
-		// Always add CPU to CCFLAGS for proper compilation
-		if strings.HasPrefix(target, "i386") || strings.HasPrefix(target, "x86_64") {
+		} else if strings.HasPrefix(target, "i386") || strings.HasPrefix(target, "x86_64") {
 			ccflags = append(ccflags, "-march="+cpu)
 		} else if strings.HasPrefix(target, "avr") {
 			ccflags = append(ccflags, "-mmcu="+cpu)
