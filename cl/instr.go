@@ -29,6 +29,8 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 )
 
+var asmRegisterRegex = regexp.MustCompile(`\{[a-zA-Z]+\}`)
+
 // -----------------------------------------------------------------------------
 
 func constStr(v ssa.Value) (ret string, ok bool) {
@@ -124,7 +126,7 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		hasOutput = true
 	}
 
-	finalAsm = regexp.MustCompile(`\{[a-zA-Z]+\}`).ReplaceAllStringFunc(finalAsm, func(s string) string {
+	finalAsm = asmRegisterRegex.ReplaceAllStringFunc(finalAsm, func(s string) string {
 		// TODO: skip strings like {r4} etc. that look like ARM push/pop
 		// instructions.
 		name := s[1 : len(s)-1]
