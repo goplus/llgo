@@ -427,6 +427,11 @@ func useTarget(targetName string) (export Export, err error) {
 		return export, fmt.Errorf("target '%s' does not have a valid LLVM target triple", targetName)
 	}
 
+	cpu := config.CPU
+	if cpu == "" {
+		return export, fmt.Errorf("target '%s' does not have a valid CPU configuration", targetName)
+	}
+
 	// Check for ESP Clang support for target-based builds
 	clangRoot, err := getESPClangRoot()
 	if err != nil {
@@ -461,7 +466,6 @@ func useTarget(targetName string) (export Export, err error) {
 
 	// The following parameters are inspired by tinygo/builder/library.go
 	// Handle CPU configuration
-	cpu := config.CPU
 	if cpu != "" {
 		// X86 has deprecated the -mcpu flag, so we need to use -march instead.
 		// However, ARM has not done this.
