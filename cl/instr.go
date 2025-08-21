@@ -72,24 +72,19 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 }
 
 // func asm(string)
-// func asmFull(string, map[string]any)
+// func asm(string, map[string]any)
 func (p *context) asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
-	if len(args) == 1 {
-		if sv, ok := constStr(args[0]); ok {
-			b.InlineAsm(sv)
-			return llssa.Expr{Type: b.Prog.Void()}
-		}
-	} else if len(args) == 2 {
-		return p.asmFull(b, args)
+	if len(args) == 0 || len(args) > 2 {
+		panic("asm: invalid arguments - expected asm(<string-literal>) or asm(<string-literal>, <map-literal>)")
 	}
-	panic("asm: invalid arguments - expected asm(<string-literal>) or asm(<string-literal>, <map-literal>)")
-}
 
-// asmFull is a compiler builtin which emits inline assembly.
-func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	asmString, ok := constStr(args[0])
 	if !ok {
-		panic("asmFull: inline assembly requires a constant string")
+		panic("asm: inline assembly requires a constant string")
+	}
+	if len(args) == 1 {
+		b.InlineAsm(asmString)
+		return llssa.Expr{Type: b.Prog.Void()}
 	}
 
 	registers := make(map[string]llssa.Expr)
@@ -101,16 +96,16 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 				// ignore
 			case *ssa.MapUpdate:
 				if r.Block() != registerMap.Block() {
-					panic("asmFull: register value map must be created in the same basic block")
+					panic("asm: register value map must be created in the same basic block")
 				}
 				key, ok := constStr(r.Key)
 				if !ok {
-					panic("asmFull: register key must be a string constant")
+					panic("asm: register key must be a string constant")
 				}
 				llvmValue := p.compileValue(b, r.Value.(*ssa.MakeInterface).X)
 				registers[key] = llvmValue
 			default:
-				panic("asmFull: don't know how to handle argument to inline assembly: " + r.String())
+				panic(fmt.Sprintf("asm: don't know how to handle argument to inline assembly: %s", r.String()))
 			}
 		}
 	}
@@ -134,7 +129,7 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		name := s[1 : len(s)-1]
 		value, ok := registers[name]
 		if !ok {
-			panic("asmFull: register not found: " + name)
+			panic(fmt.Sprintf("asm: register not found: %s", name))
 		}
 		if _, ok := registerNumbers[name]; !ok {
 			// Type checking - only allow integer basic types
@@ -145,7 +140,7 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 				constraints = append(constraints, "r")
 			} else {
 				// Pointer operands support was dropped, following TinyGo 0.23
-				panic("asmFull: unsupported type in inline assembly for operand: " + name + ", only integer types are supported")
+				panic(fmt.Sprintf("asm: unsupported type in inline assembly for operand: %s, only integer types are supported", name))
 			}
 		}
 		return fmt.Sprintf("${%v}", registerNumbers[name])
@@ -153,7 +148,7 @@ func (p *context) asmFull(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 
 	constraintStr := strings.Join(constraints, ",")
 	if debugInstr {
-		log.Printf("asmFull: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
+		log.Printf("asm: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
 	}
 
 	var retType llssa.Type
