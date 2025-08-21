@@ -43,6 +43,7 @@ import (
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/pyenv"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llgo/xtool/clang"
@@ -160,7 +161,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
 	}
-
 	// Update GOOS/GOARCH from export if target was used
 	if conf.Target != "" && export.GOOS != "" {
 		conf.Goos = export.GOOS
@@ -251,6 +251,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
 
+	rootDir := filepath.Dir(env.LLGoRuntimeDir())
+	cfgExt := *cfg
+	cfgExt.Dir = rootDir
+	altExtPkgs, err := packages.LoadEx(dedup, sizes, &cfgExt, "github.com/goplus/llgo/runtimeext/pyenvrt")
+	check(err)
+
+	altPkgs = append(altPkgs, altExtPkgs...)
+
 	noRt := 1
 	prog.SetRuntime(func() *types.Package {
 		noRt = 0
@@ -286,6 +294,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		isCheckLinkArgsEnabled: IsCheckLinkArgsEnabled(),
 		cTransformer:           cabi.NewTransformer(prog, conf.AbiMode),
 	}
+
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -308,7 +317,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	global, err := createGlobals(ctx, ctx.prog, pkgs)
 	check(err)
-
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
 			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
@@ -449,6 +457,11 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
+					if param == "$LLGO_LIB_PYTHON" {
+						_ = pyenv.EnsureWithFetch("")
+						_ = pyenv.EnsureBuildEnv()
+						_ = pyenv.Verify()
+					}
 					if strings.ContainsRune(param, '$') {
 						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
@@ -595,6 +608,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			}
 		}
 	})
+
+	// Ensure python runtime cache when python initialization is needed
+	if needPyInit {
+
+	}
+
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	check(err)
 	// defer os.Remove(entryLLFile)
@@ -687,17 +706,22 @@ func isWasmTarget(goos string) bool {
 
 func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (path string, err error) {
 	var (
+		pyEnvDecl  string
+		pyEnvInit  string
 		pyInitDecl string
 		pyInit     string
 		rtInitDecl string
 		rtInit     string
 	)
+	fmt.Print(rtPkgPath)
 	mainPkgPath := pkg.PkgPath
 	if needRuntime {
 		rtInit = "call void @\"" + rtPkgPath + ".init\"()"
 		rtInitDecl = "declare void @\"" + rtPkgPath + ".init\"()"
 	}
 	if needPyInit {
+		pyEnvDecl = "declare void @\"github.com/goplus/llgo/runtimeext/pyenvrt.init\"()"
+		pyEnvInit = "call void @\"github.com/goplus/llgo/runtimeext/pyenvrt.init\"()"
 		pyInit = "call void @Py_Initialize()"
 		pyInitDecl = "declare void @Py_Initialize()"
 	}
@@ -750,6 +774,7 @@ source_filename = "main"
 %s
 %s
 %s
+%s
 declare void @"%s.init"()
 declare void @"%s.main"()
 define weak void @runtime.init() {
@@ -770,15 +795,16 @@ _llgo_0:
   %s
   %s
   %s
+  %s
   call void @runtime.init()
   call void @"%s.init"()
   call void @"%s.main"()
   ret i32 0
 }
 `, declSizeT, stdioDecl,
-		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		pyEnvDecl, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
 		startDefine, mainDefine, stdioNobuf,
-		pyInit, rtInit, mainPkgPath, mainPkgPath)
+		pyEnvInit, pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
 }
