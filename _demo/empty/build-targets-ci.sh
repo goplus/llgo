@@ -51,14 +51,12 @@ esp32c3-12f \
 esp32c3-supermini \
 esp32c3 \
 esp8266 \
-fe310 \
 feather-m0-express \
 feather-m0 \
 feather-m4-can \
 feather-m4 \
 feather-rp2040 \
 feather-stm32f405 \
-gameboy-advance \
 gemma-m0 \
 gnse \
 gobadge \
@@ -68,7 +66,6 @@ grandcentral-m4 \
 hifive1b \
 itsybitsy-m0 \
 itsybitsy-m4 \
-k210 \
 kb2040 \
 lgt92 \
 lorae5 \
@@ -85,14 +82,12 @@ mch2022 \
 metro-m4-airlift \
 mksnanov3 \
 nano-rp2040 \
-nintendoswitch \
 nodemcu \
 nucleo-f103rb \
 nucleo-f722ze \
 nucleo-l031k6 \
 nucleo-l432kc \
 nucleo-l476rg \
-nucleo-l552ze \
 nucleo-wl55jc \
 p1am-100 \
 pga2350 \
@@ -108,8 +103,6 @@ qtpy-esp32c3 \
 qtpy-rp2040 \
 qtpy \
 riscv-qemu \
-riscv32 \
-riscv64 \
 rp2350 \
 rp2350b \
 simavr \
