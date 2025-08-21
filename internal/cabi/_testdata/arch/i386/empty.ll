@@ -6,7 +6,7 @@ target triple = "i386-unknown-linux-gnu"
 %struct.empty = type {}
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define dso_local void @demo1(%struct.empty* noalias sret(%struct.empty) align 1 %0) #0 {
+define dso_local void @demo0(%struct.empty* noalias sret(%struct.empty) align 1 %0) #0 {
   %2 = alloca i8*, align 4
   %3 = alloca %struct.empty, align 1
   %4 = bitcast %struct.empty* %0 to i8*
@@ -19,6 +19,20 @@ define dso_local void @demo1(%struct.empty* noalias sret(%struct.empty) align 1 
 
 ; Function Attrs: argmemonly nofree nounwind willreturn
 declare void @llvm.memcpy.p0i8.p0i8.i32(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i32, i1 immarg) #1
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo1(%struct.empty* noalias sret(%struct.empty) align 1 %0, i32 noundef %1) #0 {
+  %3 = alloca i8*, align 4
+  %4 = alloca %struct.empty, align 1
+  %5 = alloca i32, align 4
+  %6 = bitcast %struct.empty* %0 to i8*
+  store i8* %6, i8** %3, align 4
+  store i32 %1, i32* %5, align 4
+  %7 = bitcast %struct.empty* %0 to i8*
+  %8 = bitcast %struct.empty* %4 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* align 1 %7, i8* align 1 %8, i32 0, i1 false)
+  ret void
+}
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define dso_local i32 @demo2(i32 noundef %0) #0 {
