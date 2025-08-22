@@ -126,3 +126,25 @@ func applyEnv(pyHome string) error {
 	_ = os.Unsetenv("PYTHONPATH")
 	return nil
 }
+
+// InstallPackages 安装到当前 PythonHome 的 site-packages
+func InstallPackages(pkgs ...string) error {
+	pyHome := PythonHome()
+	if pyHome == "" || len(pkgs) == 0 {
+		return nil
+	}
+	py := filepath.Join(pyHome, "bin", "python3")
+	site := filepath.Join(pyHome, "lib", "python3.12", "site-packages") // 注意跟随实际版本
+	args := []string{"-m", "pip", "install", "--target", site}
+	args = append(args, pkgs...)
+	cmd := exec.Command(py, args...)
+	return cmd.Run()
+}
+
+// PipInstall 兼容“单一 spec”调用，例如 "numpy==1.26.4"
+func PipInstall(spec string) error {
+	if spec == "" {
+		return nil
+	}
+	return InstallPackages(spec)
+}

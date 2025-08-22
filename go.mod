@@ -21,5 +21,3 @@ require (
 )
 
 replace github.com/goplus/llgo/runtime => ./runtime
-
-replace github.com/goplus/llgo/runtimeext/pyenvrt => ./runtimeext/pyenvrt

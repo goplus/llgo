@@ -251,14 +251,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
 
-	rootDir := filepath.Dir(env.LLGoRuntimeDir())
-	cfgExt := *cfg
-	cfgExt.Dir = rootDir
-	altExtPkgs, err := packages.LoadEx(dedup, sizes, &cfgExt, "github.com/goplus/llgo/runtimeext/pyenvrt")
-	check(err)
-
-	altPkgs = append(altPkgs, altExtPkgs...)
-
 	noRt := 1
 	prog.SetRuntime(func() *types.Package {
 		noRt = 0
@@ -458,9 +450,16 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
 					if param == "$LLGO_LIB_PYTHON" {
-						_ = pyenv.EnsureWithFetch("")
-						_ = pyenv.EnsureBuildEnv()
-						_ = pyenv.Verify()
+						err := pyenv.EnsureWithFetch("")
+						if err != nil {
+							panic(fmt.Sprintf("failed to prepare Python cache: %v\n\tLLGO_CACHE_DIR=%s\n\thint: set LLPYG_PYHOME or check network/permissions", err, env.LLGoCacheDir()))
+						}
+						if err = pyenv.EnsureBuildEnv(); err != nil {
+							panic(fmt.Sprintf("failed to set up Python build env: %v\n\tPYTHONHOME=%s", err, pyenv.PythonHome()))
+						}
+						if err = pyenv.Verify(); err != nil {
+							panic(fmt.Sprintf("failed to verify Python: %v\n\tpython=%s", err, filepath.Join(pyenv.PythonHome(), "bin", "python3")))
+						}
 					}
 					if strings.ContainsRune(param, '$') {
 						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
@@ -496,6 +495,13 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 					}
 				}
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
+			}
+			if kind == cl.PkgPyModule {
+				if param != "" && param != "builtins" {
+					if err := pyenv.PipInstall(param); err != nil {
+						panic(fmt.Sprintf("pip install failed for '%s': %v\n\tPYTHONHOME=%s\n\thint: ensure pip is available and network reachable, or pin a version in LLGoPackage (e.g. py.numpy==1.26.4)", param, pyenv.PythonHome(), err))
+					}
+				}
 			}
 		default:
 			err := buildPkg(ctx, aPkg, verbose)
@@ -620,38 +626,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	}
 
-	// Ensure python runtime cache when python initialization is needed
-	if needPyInit {
-		// Prepare Python environment for build/link
-		_ = pyenv.Ensure()
-		_ = pyenv.EnsureBuildEnv()
-		_ = pyenv.Verify()
-		// On macOS, avoid absolute rpath: copy libpython near the executable and use @executable_path
-		if ctx.buildConf.Goos == "darwin" {
-			if pyHome := pyenv.PythonHome(); pyHome != "" {
-				// Place copied libs next to the binary: <appDir>/.llgo/lib
-				appDir := filepath.Dir(app)
-				appLibDir := filepath.Join(appDir, ".llgo", "lib")
-				_ = os.MkdirAll(appLibDir, 0755)
-				// Copy libpython*.dylib into appLibDir
-				if matches, _ := filepath.Glob(filepath.Join(pyHome, "lib", "libpython*.dylib")); len(matches) > 0 {
-					src := matches[0]
-					dst := filepath.Join(appLibDir, filepath.Base(src))
-					if data, err := os.ReadFile(src); err == nil {
-						_ = os.WriteFile(dst, data, 0644)
-					}
-					// Normalize copied lib's install name to @rpath/<basename>
-					_ = exec.Command("install_name_tool", "-id", "@rpath/"+filepath.Base(dst), dst).Run()
-				}
-				// Add relative rpath
-				relRPath := "-Wl,-rpath,@executable_path/.llgo/lib"
-				if !slices.Contains(linkArgs, relRPath) {
-					linkArgs = append(linkArgs, relRPath)
-				}
-			}
-		}
-	}
-
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	check(err)
 	// defer os.Remove(entryLLFile)
@@ -752,22 +726,17 @@ func isWasmTarget(goos string) bool {
 
 func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (path string, err error) {
 	var (
-		pyEnvDecl  string
-		pyEnvInit  string
 		pyInitDecl string
 		pyInit     string
 		rtInitDecl string
 		rtInit     string
 	)
-	fmt.Print(rtPkgPath)
 	mainPkgPath := pkg.PkgPath
 	if needRuntime {
 		rtInit = "call void @\"" + rtPkgPath + ".init\"()"
 		rtInitDecl = "declare void @\"" + rtPkgPath + ".init\"()"
 	}
 	if needPyInit {
-		pyEnvDecl = "declare void @\"github.com/goplus/llgo/runtimeext/pyenvrt.init\"()"
-		pyEnvInit = "call void @\"github.com/goplus/llgo/runtimeext/pyenvrt.init\"()"
 		pyInit = "call void @Py_Initialize()"
 		pyInitDecl = "declare void @Py_Initialize()"
 	}
@@ -820,7 +789,6 @@ source_filename = "main"
 %s
 %s
 %s
-%s
 declare void @"%s.init"()
 declare void @"%s.main"()
 define weak void @runtime.init() {
@@ -841,16 +809,15 @@ _llgo_0:
   %s
   %s
   %s
-  %s
   call void @runtime.init()
   call void @"%s.init"()
   call void @"%s.main"()
   ret i32 0
 }
 `, declSizeT, stdioDecl,
-		pyEnvDecl, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
 		startDefine, mainDefine, stdioNobuf,
-		pyEnvInit, pyInit, rtInit, mainPkgPath, mainPkgPath)
+		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
 }
