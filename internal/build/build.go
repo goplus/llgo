@@ -561,10 +561,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 
 		// Check if file exists
 		if _, err := os.Stat(srcFile); os.IsNotExist(err) {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Warning: extra file not found: %s\n", srcFile)
-			}
-			continue
+			return nil, fmt.Errorf("extra file not found: %s", srcFile)
 		}
 
 		// Generate output file name
