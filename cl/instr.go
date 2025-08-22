@@ -151,14 +151,13 @@ func (p *context) asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 		log.Printf("asm: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
 	}
 
-	var retType llssa.Type
-	if hasOutput {
-		retType = b.Prog.Uintptr()
-	} else {
-		retType = b.Prog.Void()
+	if !hasOutput {
+		// Make sure we return something valid
+		b.InlineAsmFull(finalAsm, constraintStr, b.Prog.Void(), inputValues)
+		return b.Prog.Val((uintptr(0)))
 	}
 
-	return b.InlineAsmFull(finalAsm, constraintStr, retType, inputValues)
+	return b.InlineAsmFull(finalAsm, constraintStr, b.Prog.Uintptr(), inputValues)
 }
 
 // -----------------------------------------------------------------------------
