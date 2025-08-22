@@ -4,6 +4,12 @@ package pyenvrt
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__APPLE__)
+static int llgo_is_darwin() { return 1; }
+#else
+static int llgo_is_darwin() { return 0; }
+#endif
+
 static void set_env(const char* k, const char* v) { if (k && v) setenv(k, v, 1); }
 static void unset_env(const char* k) { if (k) unsetenv(k); }
 static const char* get_env(const char* k) { return k ? getenv(k) : NULL; }
@@ -27,20 +33,15 @@ func init() {
 
 	pyHome := getenv("LLPYG_PYHOME")
 	if pyHome == "" {
-		if cache := getenv("LLGO_CACHE_DIR"); cache != "" {
-			pyHome = cache + "/python_env/python"
+		if base := cacheBase(); base != "" {
+			pyHome = base + "/python_env/python"
 		}
 	}
 	if pyHome == "" {
 		return
 	}
-	setenv("DYLD_LIBRARY_PATH", pyHome+"/lib")
 	setenv("PYTHONHOME", pyHome)
-	// setenv("PATH", pyHome+"/bin")
-	// setenv("LD_LIBRARY_PATH", pyHome+"/lib")
-	// setenv("DYLD_LIBRARY_PATH", pyHome+"/lib")
-	// setenv("PKG_CONFIG_PATH", pyHome+"/lib/pkgconfig")
-	// unsetenv("PYTHONPATH")
+	prependPath("PATH", pyHome+"/bin")
 }
 
 func getenv(k string) string {
@@ -71,4 +72,17 @@ func prependPath(k, v string) {
 	C.prepend_path(ck, cv)
 	C.free(unsafe.Pointer(ck))
 	C.free(unsafe.Pointer(cv))
+}
+
+func cacheBase() string {
+	if v := getenv("LLGO_CACHE_DIR"); v != "" {
+		return v
+	}
+	if home := getenv("HOME"); home != "" {
+		return home + "/Library/Caches/llgo"
+	}
+	if xdg := getenv("XDG_CACHE_HOME"); xdg != "" {
+		return xdg + "/llgo"
+	}
+	return ""
 }

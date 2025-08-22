@@ -489,6 +489,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
+
 				if ctx.isCheckLinkArgsEnabled {
 					if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
 						panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
@@ -609,9 +610,46 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 
+	// Heuristic: if link args reference python libs, force python init
+	if !needPyInit {
+		for _, arg := range linkArgs {
+			if strings.Contains(arg, "python") {
+				needPyInit = true
+				break
+			}
+		}
+	}
+
 	// Ensure python runtime cache when python initialization is needed
 	if needPyInit {
-
+		// Prepare Python environment for build/link
+		_ = pyenv.Ensure()
+		_ = pyenv.EnsureBuildEnv()
+		_ = pyenv.Verify()
+		// On macOS, avoid absolute rpath: copy libpython near the executable and use @executable_path
+		if ctx.buildConf.Goos == "darwin" {
+			if pyHome := pyenv.PythonHome(); pyHome != "" {
+				// Place copied libs next to the binary: <appDir>/.llgo/lib
+				appDir := filepath.Dir(app)
+				appLibDir := filepath.Join(appDir, ".llgo", "lib")
+				_ = os.MkdirAll(appLibDir, 0755)
+				// Copy libpython*.dylib into appLibDir
+				if matches, _ := filepath.Glob(filepath.Join(pyHome, "lib", "libpython*.dylib")); len(matches) > 0 {
+					src := matches[0]
+					dst := filepath.Join(appLibDir, filepath.Base(src))
+					if data, err := os.ReadFile(src); err == nil {
+						_ = os.WriteFile(dst, data, 0644)
+					}
+					// Normalize copied lib's install name to @rpath/<basename>
+					_ = exec.Command("install_name_tool", "-id", "@rpath/"+filepath.Base(dst), dst).Run()
+				}
+				// Add relative rpath
+				relRPath := "-Wl,-rpath,@executable_path/.llgo/lib"
+				if !slices.Contains(linkArgs, relRPath) {
+					linkArgs = append(linkArgs, relRPath)
+				}
+			}
+		}
 	}
 
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
@@ -627,6 +665,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
+
+	// After linking, ensure the executable references libpython via @rpath
+	if needPyInit && ctx.buildConf.Goos == "darwin" {
+		if dep := findDylibDep(app, "python3"); dep != "" && !strings.HasPrefix(dep, "@rpath") {
+			base := filepath.Base(dep)
+			_ = exec.Command("install_name_tool", "-change", dep, "@rpath/"+base, app).Run()
+		}
+	}
 
 	switch mode {
 	case ModeTest:
