@@ -389,13 +389,27 @@ type context struct {
 }
 
 func (c *context) compiler() *clang.Cmd {
-	cmd := clang.NewCompiler(c.crossCompile)
+	config := clang.NewConfig(
+		c.crossCompile.CC,
+		c.crossCompile.CCFLAGS,
+		c.crossCompile.CFLAGS,
+		c.crossCompile.LDFLAGS,
+		c.crossCompile.Linker,
+	)
+	cmd := clang.NewCompiler(config)
 	cmd.Verbose = c.buildConf.Verbose
 	return cmd
 }
 
 func (c *context) linker() *clang.Cmd {
-	cmd := clang.NewLinker(c.crossCompile)
+	config := clang.NewConfig(
+		c.crossCompile.CC,
+		c.crossCompile.CCFLAGS,
+		c.crossCompile.CFLAGS,
+		c.crossCompile.LDFLAGS,
+		c.crossCompile.Linker,
+	)
+	cmd := clang.NewLinker(config)
 	cmd.Verbose = c.buildConf.Verbose
 	return cmd
 }

@@ -24,55 +24,74 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/xtool/safesplit"
 )
 
-// Cmd represents a clang command with environment and crosscompile support.
-type Cmd struct {
-	app          string
-	Env          []string
-	Verbose      bool
-	Stdin        io.Reader
-	Stdout       io.Writer
-	Stderr       io.Writer
-	crossCompile crosscompile.Export
+// Config represents clang configuration parameters.
+type Config struct {
+	CC      string   // Compiler to use (e.g., "clang", "clang++")
+	CCFLAGS []string // Compiler flags for C/C++ compilation
+	CFLAGS  []string // C-specific flags
+	LDFLAGS []string // Linker flags
+	Linker  string   // Linker to use (e.g., "ld.lld", "avr-ld")
 }
 
-// New creates a new clang command with crosscompile configuration.
-func New(app string, crossCompile crosscompile.Export) *Cmd {
+// NewConfig creates a new Config with the specified parameters.
+func NewConfig(cc string, ccflags, cflags, ldflags []string, linker string) Config {
+	return Config{
+		CC:      cc,
+		CCFLAGS: ccflags,
+		CFLAGS:  cflags,
+		LDFLAGS: ldflags,
+		Linker:  linker,
+	}
+}
+
+// Cmd represents a clang command with environment and configuration support.
+type Cmd struct {
+	app     string
+	config  Config
+	Env     []string
+	Verbose bool
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+}
+
+// New creates a new clang command with configuration.
+func New(app string, config Config) *Cmd {
 	if app == "" {
 		app = "clang"
 	}
 	return &Cmd{
-		app:          app,
-		Env:          nil,
-		Verbose:      false,
-		Stdin:        nil,
-		Stdout:       os.Stdout,
-		Stderr:       os.Stderr,
-		crossCompile: crossCompile,
+		app:     app,
+		config:  config,
+		Env:     nil,
+		Verbose: false,
+		Stdin:   nil,
+		Stdout:  os.Stdout,
+		Stderr:  os.Stderr,
 	}
 }
 
 // NewCompiler creates a compiler command with proper flag merging.
-func NewCompiler(crossCompile crosscompile.Export) *Cmd {
+func NewCompiler(config Config) *Cmd {
 	app := "clang"
-	if crossCompile.CC != "" {
-		app = crossCompile.CC
+	if config.CC != "" {
+		app = config.CC
 	}
-	return New(app, crossCompile)
+	return New(app, config)
 }
 
 // NewLinker creates a linker command with proper flag merging.
-func NewLinker(crossCompile crosscompile.Export) *Cmd {
+func NewLinker(config Config) *Cmd {
 	app := "clang"
-	if crossCompile.Linker != "" {
-		app = crossCompile.Linker
-	} else if crossCompile.CC != "" {
-		app = crossCompile.CC
+	if config.Linker != "" {
+		app = config.Linker
+	} else if config.CC != "" {
+		app = config.CC
 	}
-	return New(app, crossCompile)
+	return New(app, config)
 }
 
 // Compile executes a compilation command with merged flags.
@@ -93,7 +112,7 @@ func (c *Cmd) Link(args ...string) error {
 	return c.exec(allArgs...)
 }
 
-// mergeCompilerFlags merges environment CCFLAGS/CFLAGS with crossCompile flags.
+// mergeCompilerFlags merges environment CCFLAGS/CFLAGS with config flags.
 func (c *Cmd) mergeCompilerFlags() []string {
 	var flags []string
 
@@ -107,16 +126,16 @@ func (c *Cmd) mergeCompilerFlags() []string {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envCFlags)...)
 	}
 
-	// Add crossCompile CCFLAGS
-	flags = append(flags, c.crossCompile.CCFLAGS...)
+	// Add config CCFLAGS
+	flags = append(flags, c.config.CCFLAGS...)
 
-	// Add crossCompile CFLAGS
-	flags = append(flags, c.crossCompile.CFLAGS...)
+	// Add config CFLAGS
+	flags = append(flags, c.config.CFLAGS...)
 
 	return flags
 }
 
-// mergeLinkerFlags merges environment CCFLAGS/LDFLAGS with crossCompile flags.
+// mergeLinkerFlags merges environment CCFLAGS/LDFLAGS with config flags.
 func (c *Cmd) mergeLinkerFlags() []string {
 	var flags []string
 
@@ -130,8 +149,8 @@ func (c *Cmd) mergeLinkerFlags() []string {
 		flags = append(flags, safesplit.SplitPkgConfigFlags(envLDFlags)...)
 	}
 
-	// Add crossCompile LDFLAGS
-	flags = append(flags, c.crossCompile.LDFLAGS...)
+	// Add config LDFLAGS
+	flags = append(flags, c.config.LDFLAGS...)
 
 	return flags
 }
