@@ -37,4 +37,4 @@ jobs:
       - name: Build targets
         run: |
           cd _demo/targetsbuild
-          bash build-targets-ci.sh
+          bash build.sh
