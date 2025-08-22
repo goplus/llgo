@@ -8,7 +8,6 @@
 	],
 	"linkerscript": "targets/nrf52840.ld",
 	"extra-files": [
-		"lib/nrfx/mdk/system_nrf52840.c",
 		"targets/device/nrf/nrf52840.s"
 	],
 	"openocd-transport": "swd",

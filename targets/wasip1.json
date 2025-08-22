@@ -22,9 +22,5 @@
 		"--stack-first",
 		"--no-demangle"
 	],
-	"extra-files": [
-		"src/runtime/asm_tinygowasm.S",
-		"src/runtime/gc_boehm.c"
-	],
 	"emulator":      "wasmtime run --dir={tmpDir}::/tmp {}"
 }

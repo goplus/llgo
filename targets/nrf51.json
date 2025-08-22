@@ -8,7 +8,6 @@
 	],
 	"linkerscript": "targets/nrf51.ld",
 	"extra-files": [
-		"lib/nrfx/mdk/system_nrf51.c",
 		"targets/device/nrf/nrf51.s"
 	],
 	"openocd-transport": "swd",
