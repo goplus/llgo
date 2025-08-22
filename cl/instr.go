@@ -139,7 +139,8 @@ func (p *context) asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 				inputValues = append(inputValues, value)
 				constraints = append(constraints, "r")
 			} else {
-				// Pointer operands support was dropped, following TinyGo 0.23
+				// Pointer operands support was dropped, following TinyGo
+				// NOTE(tinygo): Memory references require a type starting with LLVM 14, probably as a preparation for opaque pointers.
 				panic(fmt.Sprintf("asm: unsupported type in inline assembly for operand: %s, only integer types are supported", name))
 			}
 		}
