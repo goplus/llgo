@@ -112,7 +112,7 @@ func NewDefaultConf(mode Mode) *Config {
 		Goarch:  goarch,
 		BinPath: bin,
 		Mode:    mode,
-		AbiMode: cabi.ModeAllFunc,
+		AbiMode: cabi.ModeNone,
 		AppExt:  DefaultAppExt(goos),
 	}
 	return conf

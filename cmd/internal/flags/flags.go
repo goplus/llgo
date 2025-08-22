@@ -24,9 +24,9 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	fs.StringVar(&Target, "target", "", "Target platform (e.g., rp2040, wasi)")
 	if buildenv.Dev {
-		fs.IntVar(&AbiMode, "abi", 2, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
+		fs.IntVar(&AbiMode, "abi", 0, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
 	} else {
-		AbiMode = 2
+		AbiMode = 0
 	}
 }
 
