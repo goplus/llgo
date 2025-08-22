@@ -29,6 +29,8 @@ type Export struct {
 	ExtraFiles   []string // Extra files to compile and link (e.g., .s, .c files)
 	ClangRoot    string   // Root directory of custom clang installation
 	ClangBinPath string   // Path to clang binary directory
+
+	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
 }
 
 const wasiSdkUrl = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
@@ -447,6 +449,7 @@ func useTarget(targetName string) (export Export, err error) {
 	export.GOOS = config.GOOS
 	export.GOARCH = config.GOARCH
 	export.ExtraFiles = config.ExtraFiles
+	export.BinaryFormat = config.BinaryFormat
 
 	// Build environment map for template variable expansion
 	envs := buildEnvMap(env.LLGoROOT())

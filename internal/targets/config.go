@@ -26,6 +26,33 @@ type Config struct {
 	CodeModel       string `json:"code-model"`
 	TargetABI       string `json:"target-abi"`
 	RelocationModel string `json:"relocation-model"`
+
+	// Binary and firmware configuration
+	BinaryFormat string `json:"binary-format"`
+
+	// Flash and deployment configuration
+	FlashCommand      string `json:"flash-command"`
+	FlashMethod       string `json:"flash-method"`
+	Flash1200BpsReset string `json:"flash-1200-bps-reset"`
+
+	// Mass storage device configuration
+	MSDVolumeName   []string `json:"msd-volume-name"`
+	MSDFirmwareName string   `json:"msd-firmware-name"`
+
+	// UF2 configuration
+	UF2FamilyID string `json:"uf2-family-id"`
+
+	// Device-specific configuration
+	RP2040BootPatch bool `json:"rp2040-boot-patch"`
+
+	// Debug and emulation configuration
+	Emulator string   `json:"emulator"`
+	GDB      []string `json:"gdb"`
+
+	// OpenOCD configuration
+	OpenOCDInterface string `json:"openocd-interface"`
+	OpenOCDTransport string `json:"openocd-transport"`
+	OpenOCDTarget    string `json:"openocd-target"`
 }
 
 // RawConfig represents the raw JSON configuration before inheritance resolution

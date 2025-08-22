@@ -42,6 +42,7 @@ import (
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
@@ -629,23 +630,76 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 	return objFiles, nil
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) {
-	pkgPath := pkg.PkgPath
-	name := path.Base(pkgPath)
-	app := conf.OutFile
-	if app == "" {
-		if mode == ModeBuild && len(ctx.initial) > 1 {
+// generateOutputFilenames generates the final output filename (app) and intermediate filename (orgApp)
+// based on configuration and build context.
+func generateOutputFilenames(outFile, binPath, appExt, binExt, pkgName string, mode Mode, isMultiplePkgs bool) (app, orgApp string, err error) {
+	if outFile == "" {
+		if mode == ModeBuild && isMultiplePkgs {
 			// For multiple packages in ModeBuild mode, use temporary file
-			tmpFile, err := os.CreateTemp("", name+"*"+conf.AppExt)
-			check(err)
+			name := pkgName
+			if binExt != "" {
+				name += "*" + binExt
+			} else {
+				name += "*" + appExt
+			}
+			tmpFile, err := os.CreateTemp("", name)
+			if err != nil {
+				return "", "", err
+			}
 			app = tmpFile.Name()
 			tmpFile.Close()
 		} else {
-			app = filepath.Join(conf.BinPath, name+conf.AppExt)
+			app = filepath.Join(binPath, pkgName+appExt)
 		}
-	} else if filepath.Ext(app) == "" {
-		app += conf.AppExt
+		orgApp = app
+	} else {
+		// outFile is not empty, use it as base part
+		base := outFile
+		if binExt != "" {
+			// If binExt has value, use temporary file as orgApp for firmware conversion
+			tmpFile, err := os.CreateTemp("", "llgo-*"+appExt)
+			if err != nil {
+				return "", "", err
+			}
+			orgApp = tmpFile.Name()
+			tmpFile.Close()
+			// Check if base already ends with binExt, if so, don't add it again
+			if strings.HasSuffix(base, binExt) {
+				app = base
+			} else {
+				app = base + binExt
+			}
+		} else {
+			// No binExt, use base + AppExt directly
+			if filepath.Ext(base) == "" {
+				app = base + appExt
+			} else {
+				app = base
+			}
+			orgApp = app
+		}
 	}
+	return app, orgApp, nil
+}
+
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) {
+	pkgPath := pkg.PkgPath
+	name := path.Base(pkgPath)
+	binFmt := ctx.crossCompile.BinaryFormat
+	binExt := firmware.BinaryExt(binFmt)
+
+	// app: converted firmware output file or executable file
+	// orgApp: before converted output file
+	app, orgApp, err := generateOutputFilenames(
+		conf.OutFile,
+		conf.BinPath,
+		conf.AppExt,
+		binExt,
+		name,
+		mode,
+		len(ctx.initial) > 1,
+	)
+	check(err)
 
 	needRuntime := false
 	needPyInit := false
@@ -701,8 +755,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		linkArgs = append(linkArgs, exargs...)
 	}
 
-	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
+	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
 	check(err)
+
+	if orgApp != app {
+		fmt.Printf("cross compile: %#v\n", ctx.crossCompile)
+		err = firmware.MakeFirmwareImage(orgApp, app, ctx.crossCompile.BinaryFormat)
+		check(err)
+	}
 
 	switch mode {
 	case ModeTest:
