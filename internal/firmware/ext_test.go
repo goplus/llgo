@@ -11,10 +11,10 @@ func TestBinaryExt(t *testing.T) {
 		{"ESP32", "esp32", ".bin"},
 		{"ESP8266", "esp8266", ".bin"},
 		{"ESP32C3", "esp32c3", ".bin"},
-		{"UF2", "uf2", ""},
+		{"UF2", "uf2", ".uf2"},
 		{"ELF", "elf", ""},
 		{"Empty", "", ""},
-		{"NRF-DFU", "nrf-dfu", ""},
+		{"NRF-DFU", "nrf-dfu", ".zip"},
 	}
 
 	for _, tt := range tests {

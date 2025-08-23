@@ -29,6 +29,8 @@ type Config struct {
 
 	// Binary and firmware configuration
 	BinaryFormat string `json:"binary-format"`
+	// UF2 configuration
+	UF2FamilyID string `json:"uf2-family-id"`
 
 	// Flash and deployment configuration
 	FlashCommand      string `json:"flash-command"`
@@ -38,9 +40,6 @@ type Config struct {
 	// Mass storage device configuration
 	MSDVolumeName   []string `json:"msd-volume-name"`
 	MSDFirmwareName string   `json:"msd-firmware-name"`
-
-	// UF2 configuration
-	UF2FamilyID string `json:"uf2-family-id"`
 
 	// Device-specific configuration
 	RP2040BootPatch bool `json:"rp2040-boot-patch"`
@@ -64,6 +63,13 @@ type RawConfig struct {
 // IsEmpty returns true if the config appears to be uninitialized
 func (c *Config) IsEmpty() bool {
 	return c.Name == "" && c.LLVMTarget == "" && c.GOOS == "" && c.GOARCH == ""
+}
+
+func (c *Config) FormatDetail() string {
+	if c.BinaryFormat == "uf2" {
+		return c.UF2FamilyID
+	}
+	return ""
 }
 
 // HasInheritance returns true if this config inherits from other configs

@@ -760,7 +760,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 
 	if orgApp != app {
 		fmt.Printf("cross compile: %#v\n", ctx.crossCompile)
-		err = firmware.MakeFirmwareImage(orgApp, app, ctx.crossCompile.BinaryFormat)
+		err = firmware.MakeFirmwareImage(orgApp, app, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
 		check(err)
 	}
 

@@ -31,6 +31,7 @@ type Export struct {
 	ClangBinPath string   // Path to clang binary directory
 
 	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
+	FormatDetail string // For uf2, it's uf2FamilyID
 }
 
 const (
@@ -462,6 +463,7 @@ func useTarget(targetName string) (export Export, err error) {
 	export.GOARCH = config.GOARCH
 	export.ExtraFiles = config.ExtraFiles
 	export.BinaryFormat = config.BinaryFormat
+	export.FormatDetail = config.FormatDetail()
 
 	// Build environment map for template variable expansion
 	envs := buildEnvMap(env.LLGoROOT())

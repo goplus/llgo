@@ -1,3 +1,5 @@
+// From tinygo/builder/esp.go
+
 package firmware
 
 import (
@@ -10,8 +12,6 @@ import (
 	"sort"
 	"strings"
 )
-
-// From tinygo/builder/esp.go
 
 type espImageSegment struct {
 	addr uint32
