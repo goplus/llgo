@@ -13,6 +13,71 @@ import (
 	"syscall"
 )
 
+// checkDownloadAndExtractWasiSDK downloads and extracts WASI SDK
+func checkDownloadAndExtractWasiSDK(dir string) (wasiSdkRoot string, err error) {
+	wasiSdkRoot = filepath.Join(dir, wasiMacosSubdir)
+
+	// Check if already exists
+	if _, err := os.Stat(wasiSdkRoot); err == nil {
+		return wasiSdkRoot, nil
+	}
+
+	// Create lock file path for the parent directory (dir) since that's what we're operating on
+	lockPath := dir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
+	// Double-check after acquiring lock
+	if _, err := os.Stat(wasiSdkRoot); err == nil {
+		return wasiSdkRoot, nil
+	}
+
+	err = downloadAndExtractArchive(wasiSdkUrl, dir, "WASI SDK")
+	return wasiSdkRoot, err
+}
+
+// checkDownloadAndExtractESPClang downloads and extracts ESP Clang binaries and libraries
+func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
+	// Check if already exists
+	if _, err := os.Stat(dir); err == nil {
+		return nil
+	}
+
+	// Create lock file path for the final destination
+	lockPath := dir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
+	// Double-check after acquiring lock
+	if _, err := os.Stat(dir); err == nil {
+		return nil
+	}
+
+	clangUrl := fmt.Sprintf("%s/clang-esp-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
+	description := fmt.Sprintf("ESP Clang %s-%s", espClangVersion, platformSuffix)
+
+	// Use temporary extraction directory for ESP Clang special handling
+	tempExtractDir := dir + ".extract"
+	if err := downloadAndExtractArchive(clangUrl, tempExtractDir, description); err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempExtractDir)
+
+	// ESP Clang needs special handling: move esp-clang subdirectory to final destination
+	espClangDir := filepath.Join(tempExtractDir, "esp-clang")
+	if err := os.Rename(espClangDir, dir); err != nil {
+		return fmt.Errorf("failed to rename esp-clang directory: %w", err)
+	}
+
+	return nil
+}
+
 // acquireLock creates and locks a file to prevent concurrent operations
 func acquireLock(lockPath string) (*os.File, error) {
 	// Ensure the parent directory exists
@@ -43,51 +108,49 @@ func releaseLock(lockFile *os.File) error {
 	return nil
 }
 
-func checkDownloadAndExtract(url, dir string) (wasiSdkRoot string, err error) {
-	wasiSdkRoot = filepath.Join(dir, "wasi-sdk-25.0-x86_64-macos")
-	if _, err := os.Stat(dir); err == nil {
-		return wasiSdkRoot, nil
+// downloadAndExtractArchive downloads and extracts an archive to the destination directory (without locking)
+func downloadAndExtractArchive(url, destDir, description string) error {
+	fmt.Fprintf(os.Stderr, "Downloading %s...\n", description)
+
+	// Use temporary extraction directory
+	tempDir := destDir + ".temp"
+	os.RemoveAll(tempDir)
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Download the archive
+	urlPath := strings.Split(url, "/")
+	filename := urlPath[len(urlPath)-1]
+	localFile := filepath.Join(tempDir, filename)
+	if err := downloadFile(url, localFile); err != nil {
+		return fmt.Errorf("failed to download %s from %s: %w", description, url, err)
 	}
 
-	// Create lock file path
-	lockPath := dir + ".lock"
-	lockFile, err := acquireLock(lockPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	defer releaseLock(lockFile)
-
-	if _, err = os.Stat(dir); err != nil {
-		os.RemoveAll(dir)
-		tempDir := dir + ".temp"
-		os.RemoveAll(tempDir)
-		if err := os.MkdirAll(tempDir, 0755); err != nil {
-			return "", fmt.Errorf("failed to create temporary directory: %w", err)
-		}
-
-		urlPath := strings.Split(url, "/")
-		filename := urlPath[len(urlPath)-1]
-		localFile := filepath.Join(tempDir, filename)
-		if err = downloadFile(url, localFile); err != nil {
-			return "", fmt.Errorf("failed to download file: %w", err)
-		}
-		defer os.Remove(localFile)
-
-		if strings.HasSuffix(filename, ".tar.gz") || strings.HasSuffix(filename, ".tgz") {
-			err = extractTarGz(localFile, tempDir)
-		} else if strings.HasSuffix(filename, ".tar.xz") {
-			err = extractTarXz(localFile, tempDir)
-		} else {
-			return "", fmt.Errorf("unsupported archive format: %s", filename)
-		}
+	// Extract the archive
+	fmt.Fprintf(os.Stderr, "Extracting %s...\n", description)
+	if strings.HasSuffix(filename, ".tar.gz") || strings.HasSuffix(filename, ".tgz") {
+		err := extractTarGz(localFile, tempDir)
 		if err != nil {
-			return "", fmt.Errorf("failed to extract archive: %w", err)
+			return fmt.Errorf("failed to extract %s archive: %w", description, err)
 		}
-		if err = os.Rename(tempDir, dir); err != nil {
-			return "", fmt.Errorf("failed to rename directory: %w", err)
+	} else if strings.HasSuffix(filename, ".tar.xz") {
+		err := extractTarXz(localFile, tempDir)
+		if err != nil {
+			return fmt.Errorf("failed to extract %s archive: %w", description, err)
 		}
+	} else {
+		return fmt.Errorf("unsupported archive format: %s", filename)
 	}
-	return
+
+	// Rename temp directory to target directory
+	if err := os.Rename(tempDir, destDir); err != nil {
+		return fmt.Errorf("failed to rename directory: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "%s downloaded and extracted successfully.\n", description)
+	return nil
 }
 
 func downloadFile(url, filepath string) error {
@@ -159,58 +222,4 @@ func extractTarXz(tarXzFile, dest string) error {
 	// Use external tar command to extract .tar.xz files
 	cmd := exec.Command("tar", "-xf", tarXzFile, "-C", dest)
 	return cmd.Run()
-}
-
-// checkDownloadAndExtractESPClang downloads and extracts ESP Clang binaries and libraries
-func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
-	// Create lock file path
-	lockPath := dir + ".lock"
-	lockFile, err := acquireLock(lockPath)
-	if err != nil {
-		return fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	defer releaseLock(lockFile)
-
-	// Check again after acquiring lock (double-check pattern)
-	if _, err := os.Stat(dir); err == nil {
-		return nil // Already exists, nothing to do
-	}
-
-	// Create download temp directory
-	downloadDir := dir + "-download"
-	os.RemoveAll(downloadDir)
-	if err := os.MkdirAll(downloadDir, 0755); err != nil {
-		return fmt.Errorf("failed to create download directory: %w", err)
-	}
-	defer os.RemoveAll(downloadDir)
-
-	// Download clang binary package
-	fmt.Fprintf(os.Stderr, "Downloading ESP Clang %s-%s...\n", espClangVersion, platformSuffix)
-	clangUrl := fmt.Sprintf("%s/clang-esp-%s-%s.tar.xz", espClangBaseUrl, espClangVersion, platformSuffix)
-	clangFile := filepath.Join(downloadDir, fmt.Sprintf("clang-%s-%s.tar.xz", espClangVersion, platformSuffix))
-	if err := downloadFile(clangUrl, clangFile); err != nil {
-		return fmt.Errorf("failed to download clang from %s: %w", clangUrl, err)
-	}
-
-	// Create extract temp directory
-	extractDir := dir + "-extract"
-	os.RemoveAll(extractDir)
-	if err := os.MkdirAll(extractDir, 0755); err != nil {
-		return fmt.Errorf("failed to create extract directory: %w", err)
-	}
-	defer os.RemoveAll(extractDir)
-
-	// Extract both packages to extract directory
-	fmt.Fprintln(os.Stderr, "Extracting ESP Clang...")
-	if err := extractTarXz(clangFile, extractDir); err != nil {
-		return fmt.Errorf("failed to extract clang: %w", err)
-	}
-
-	// Rename esp-clang directory to final destination
-	espClangDir := filepath.Join(extractDir, "esp-clang")
-	if err := os.Rename(espClangDir, dir); err != nil {
-		return fmt.Errorf("failed to rename esp-clang directory: %w", err)
-	}
-	fmt.Fprintln(os.Stderr, "ESP Clang downloaded and extracted successfully.")
-	return nil
 }

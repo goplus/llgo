@@ -33,7 +33,10 @@ type Export struct {
 	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
 }
 
-const wasiSdkUrl = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
+const (
+	wasiSdkUrl      = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
+	wasiMacosSubdir = "wasi-sdk-25.0-x86_64-macos"
+)
 
 const (
 	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250820"
@@ -305,7 +308,7 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		// If not exists in LLGoROOT, download and use cached wasiSdkRoot
 		if _, err = os.Stat(wasiSdkRoot); err != nil {
 			sdkDir := filepath.Join(cacheDir(), llvm.GetTargetTriple(goos, goarch))
-			if wasiSdkRoot, err = checkDownloadAndExtract(wasiSdkUrl, sdkDir); err != nil {
+			if wasiSdkRoot, err = checkDownloadAndExtractWasiSDK(sdkDir); err != nil {
 				return
 			}
 		}
