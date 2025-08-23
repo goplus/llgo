@@ -229,11 +229,16 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		export.LDFLAGS = []string{
 			"-L" + clangLib,
 			"-target", targetTriple,
-			"-Wno-override-module",
+			"-Qunused-arguments",
+			"-Wno-unused-command-line-argument",
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
 		}
 		export.CFLAGS = append(export.CFLAGS, "-I"+clangInc)
+		export.CCFLAGS = []string{
+			"-Qunused-arguments",
+			"-Wno-unused-command-line-argument",
+		}
 
 		// Add platform-specific rpath flags
 		switch goos {
@@ -327,6 +332,8 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		}
 		export.CFLAGS = []string{
 			"-I" + includeDir,
+			"-Qunused-arguments",
+			"-Wno-unused-command-line-argument",
 		}
 		// Add WebAssembly linker flags
 		export.LDFLAGS = append(export.LDFLAGS, export.CCFLAGS...)
@@ -377,6 +384,8 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 		// Add compiler flags
 		export.CCFLAGS = []string{
 			"-target", targetTriple,
+			"-Qunused-arguments",
+			"-Wno-unused-command-line-argument",
 		}
 		export.CFLAGS = []string{}
 		// Add WebAssembly linker flags for Emscripten
@@ -458,7 +467,7 @@ func useTarget(targetName string) (export Export, err error) {
 	var ccflags []string
 	var ldflags []string
 
-	cflags := []string{"-Wno-override-module", "-Qunused-arguments"}
+	cflags := []string{"-Wno-override-module", "-Qunused-arguments", "-Wno-unused-command-line-argument"}
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
