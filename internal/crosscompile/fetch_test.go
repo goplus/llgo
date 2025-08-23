@@ -364,3 +364,129 @@ func TestESPClangExtractionLogic(t *testing.T) {
 		t.Error("ESP Clang binary should exist")
 	}
 }
+
+// Test WASI SDK download and extraction when directory doesn't exist
+func TestWasiSDKDownloadWhenNotExists(t *testing.T) {
+	// Create fake WASI SDK archive with proper structure
+	files := map[string]string{
+		"wasi-sdk-25.0-x86_64-macos/bin/clang":       "fake wasi clang binary",
+		"wasi-sdk-25.0-x86_64-macos/lib/libm.a":      "fake math library",
+		"wasi-sdk-25.0-x86_64-macos/include/stdio.h": "#include <stdio.h>",
+	}
+
+	archivePath := createTestTarGz(t, files)
+	defer os.Remove(archivePath)
+
+	// Create test server to serve the archive
+	archiveContent, err := os.ReadFile(archivePath)
+	if err != nil {
+		t.Fatalf("Failed to read test archive: %v", err)
+	}
+
+	server := createTestServer(t, map[string]string{
+		"wasi-sdk-25.0-x86_64-macos.tar.gz": string(archiveContent),
+	})
+	defer server.Close()
+
+	// Override cacheRoot to use a temporary directory
+	tempCacheRoot := t.TempDir()
+	originalCacheRoot := cacheRoot
+	cacheRoot = func() string { return tempCacheRoot }
+	defer func() { cacheRoot = originalCacheRoot }()
+
+	// Override wasiSdkUrl to use our test server
+	originalWasiSdkUrl := wasiSdkUrl
+	wasiSdkUrl = server.URL + "/wasi-sdk-25.0-x86_64-macos.tar.gz"
+	defer func() { wasiSdkUrl = originalWasiSdkUrl }()
+
+	// Use the cache directory structure
+	extractDir := filepath.Join(tempCacheRoot, "crosscompile", "wasi")
+
+	// Test download and extract when directory doesn't exist
+	sdkRoot, err := checkDownloadAndExtractWasiSDK(extractDir)
+	if err != nil {
+		t.Fatalf("checkDownloadAndExtractWasiSDK failed: %v", err)
+	}
+
+	expectedRoot := filepath.Join(extractDir, wasiMacosSubdir)
+	if sdkRoot != expectedRoot {
+		t.Errorf("Expected SDK root %q, got %q", expectedRoot, sdkRoot)
+	}
+
+	// Check that files were extracted correctly
+	for name, expectedContent := range files {
+		filePath := filepath.Join(extractDir, name)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Errorf("Failed to read extracted file %s: %v", name, err)
+			continue
+		}
+		if string(content) != expectedContent {
+			t.Errorf("File %s: expected content %q, got %q", name, expectedContent, string(content))
+		}
+	}
+}
+
+// Test ESP Clang download and extraction when directory doesn't exist
+func TestESPClangDownloadWhenNotExists(t *testing.T) {
+	// Create fake ESP Clang archive with proper structure
+	files := map[string]string{
+		"esp-clang/bin/clang":       "fake esp clang binary",
+		"esp-clang/lib/libc.a":      "fake c library",
+		"esp-clang/include/esp32.h": "#define ESP32 1",
+	}
+
+	archivePath := createTestTarGz(t, files)
+	defer os.Remove(archivePath)
+
+	// Read the archive content
+	archiveContent, err := os.ReadFile(archivePath)
+	if err != nil {
+		t.Fatalf("Failed to read test archive: %v", err)
+	}
+
+	server := createTestServer(t, map[string]string{
+		"clang-esp-19.1.2_20250820-linux.tar.xz": string(archiveContent),
+	})
+	defer server.Close()
+
+	// Override cacheRoot to use a temporary directory
+	tempCacheRoot := t.TempDir()
+	originalCacheRoot := cacheRoot
+	cacheRoot = func() string { return tempCacheRoot }
+	defer func() { cacheRoot = originalCacheRoot }()
+
+	// Override espClangBaseUrl to use our test server
+	originalEspClangBaseUrl := espClangBaseUrl
+	espClangBaseUrl = server.URL
+	defer func() { espClangBaseUrl = originalEspClangBaseUrl }()
+
+	// Use a fresh temp directory that doesn't have ESP Clang
+	espClangDir := filepath.Join(tempCacheRoot, "esp-clang-test")
+
+	// Test download and extract when directory doesn't exist
+	err = checkDownloadAndExtractESPClang("linux", espClangDir)
+	if err != nil {
+		t.Fatalf("checkDownloadAndExtractESPClang failed: %v", err)
+	}
+
+	// Check that the target directory exists
+	if _, err := os.Stat(espClangDir); os.IsNotExist(err) {
+		t.Error("ESP Clang directory should exist after extraction")
+	}
+
+	// Check that files were extracted correctly to the final destination
+	for name, expectedContent := range files {
+		// Remove "esp-clang/" prefix since it gets moved to the final destination
+		relativePath := strings.TrimPrefix(name, "esp-clang/")
+		filePath := filepath.Join(espClangDir, relativePath)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Errorf("Failed to read extracted file %s: %v", relativePath, err)
+			continue
+		}
+		if string(content) != expectedContent {
+			t.Errorf("File %s: expected content %q, got %q", relativePath, expectedContent, string(content))
+		}
+	}
+}

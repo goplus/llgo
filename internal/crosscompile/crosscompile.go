@@ -34,18 +34,22 @@ type Export struct {
 	FormatDetail string // For uf2, it's uf2FamilyID
 }
 
-const (
+// URLs and configuration that can be overridden for testing
+var (
 	wasiSdkUrl      = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos.tar.gz"
 	wasiMacosSubdir = "wasi-sdk-25.0-x86_64-macos"
 )
 
-const (
+var (
 	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250820"
 	espClangVersion = "19.1.2_20250820"
 )
 
+// cacheRoot can be overridden for testing
+var cacheRoot = env.LLGoCacheDir
+
 func cacheDir() string {
-	return filepath.Join(env.LLGoCacheDir(), "crosscompile")
+	return filepath.Join(cacheRoot(), "crosscompile")
 }
 
 // expandEnv expands template variables in a string
@@ -165,7 +169,7 @@ func getESPClangRoot() (clangRoot string, err error) {
 	// Try to download ESP Clang if platform is supported
 	platformSuffix := getESPClangPlatform(runtime.GOOS, runtime.GOARCH)
 	if platformSuffix != "" {
-		cacheClangDir := filepath.Join(env.LLGoCacheDir(), "crosscompile", "esp-clang-"+espClangVersion)
+		cacheClangDir := filepath.Join(cacheRoot(), "crosscompile", "esp-clang-"+espClangVersion)
 		if _, err = os.Stat(cacheClangDir); err != nil {
 			if !errors.Is(err, fs.ErrNotExist) {
 				return
