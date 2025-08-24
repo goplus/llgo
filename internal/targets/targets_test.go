@@ -61,7 +61,8 @@ func TestLoaderLoadRaw(t *testing.T) {
 		"goarch": "arm",
 		"build-tags": ["test", "embedded"],
 		"cflags": ["-Os", "-g"],
-		"ldflags": ["--gc-sections"]
+		"ldflags": ["--gc-sections"],
+		"binary-format": "uf2"
 	}`
 
 	configPath := filepath.Join(tempDir, "test-target.json")
@@ -87,6 +88,9 @@ func TestLoaderLoadRaw(t *testing.T) {
 	if len(config.BuildTags) != 2 || config.BuildTags[0] != "test" || config.BuildTags[1] != "embedded" {
 		t.Errorf("Expected build-tags [test, embedded], got %v", config.BuildTags)
 	}
+	if config.BinaryFormat != "uf2" {
+		t.Errorf("Expected binary-format 'uf2', got '%s'", config.BinaryFormat)
+	}
 }
 
 func TestLoaderInheritance(t *testing.T) {
@@ -99,7 +103,8 @@ func TestLoaderInheritance(t *testing.T) {
 		"goos": "linux",
 		"goarch": "arm",
 		"cflags": ["-Os"],
-		"ldflags": ["--gc-sections"]
+		"ldflags": ["--gc-sections"],
+		"binary-format": "elf"
 	}`
 
 	// Create child config that inherits from parent
@@ -108,7 +113,8 @@ func TestLoaderInheritance(t *testing.T) {
 		"cpu": "cortex-m4",
 		"build-tags": ["child"],
 		"cflags": ["-O2"],
-		"ldflags": ["-g"]
+		"ldflags": ["-g"],
+		"binary-format": "uf2"
 	}`
 
 	parentPath := filepath.Join(tempDir, "parent.json")
@@ -141,6 +147,11 @@ func TestLoaderInheritance(t *testing.T) {
 	// Check overridden values
 	if config.CPU != "cortex-m4" {
 		t.Errorf("Expected overridden cpu 'cortex-m4', got '%s'", config.CPU)
+	}
+
+	// Check binary-format override
+	if config.BinaryFormat != "uf2" {
+		t.Errorf("Expected overridden binary-format 'uf2', got '%s'", config.BinaryFormat)
 	}
 
 	// Check merged arrays

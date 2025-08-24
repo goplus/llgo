@@ -11,7 +11,7 @@
     "uf2-family-id": "0xe48bff56",
     "rp2040-boot-patch": true,
     "extra-files": [
-        "src/device/rp/rp2040.s"
+        "targets/device/rp/rp2040.s"
     ],
     "ldflags": [
         "--defsym=__num_stacks=2"

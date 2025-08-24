@@ -3,9 +3,9 @@
 	"cpu": "atmega328p",
 	"build-tags": ["atmega328p", "atmega", "avr5"],
 	"serial": "uart",
-	"linkerscript": "src/device/avr/atmega328p.ld",
+	"linkerscript": "targets/device/avr/atmega328p.ld",
 	"extra-files": [
 		"targets/avr.S",
-		"src/device/avr/atmega328p.s"
+		"targets/device/avr/atmega328p.s"
 	]
 }

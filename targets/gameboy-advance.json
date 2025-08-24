@@ -20,8 +20,7 @@
 	],
 	"linkerscript": "targets/gameboy-advance.ld",
 	"extra-files": [
-		"targets/gameboy-advance.s",
-		"src/runtime/asm_arm.S"
+		"targets/gameboy-advance.s"
 	],
 	"gdb": ["gdb-multiarch"],
 	"emulator": "mgba -3 {}"

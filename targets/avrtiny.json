@@ -17,8 +17,6 @@
 		"--gc-sections"
 	],
 	"extra-files": [
-		"src/internal/task/task_stack_avr.S",
-		"src/runtime/asm_avr.S",
 		"targets/avrtiny.S"
 	],
 	"gdb": ["avr-gdb"]

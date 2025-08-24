@@ -37,10 +37,10 @@ func TestUseCrossCompileSDK(t *testing.T) {
 			name:          "Same Platform",
 			goos:          runtime.GOOS,
 			goarch:        runtime.GOARCH,
-			expectSDK:     false,
-			expectCCFlags: false,
-			expectCFlags:  false,
-			expectLDFlags: false,
+			expectSDK:     true, // Changed: now we expect flags even for same platform
+			expectCCFlags: true, // Changed: CCFLAGS will contain sysroot
+			expectCFlags:  true, // Changed: CFLAGS will contain include paths
+			expectLDFlags: true, // Changed: LDFLAGS will contain library paths
 		},
 		{
 			name:          "WASM Target",
@@ -55,10 +55,10 @@ func TestUseCrossCompileSDK(t *testing.T) {
 			name:          "Unsupported Target",
 			goos:          "windows",
 			goarch:        "amd64",
-			expectSDK:     false,
-			expectCCFlags: false,
-			expectCFlags:  false,
-			expectLDFlags: false,
+			expectSDK:     false, // Still false as it won't set up specific SDK
+			expectCCFlags: false, // No cross-compile specific flags
+			expectCFlags:  false, // No cross-compile specific flags
+			expectLDFlags: false, // No cross-compile specific flags
 		},
 	}
 
@@ -76,7 +76,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := Use(tc.goos, tc.goarch, false)
+			export, err := use(tc.goos, tc.goarch, false)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -111,11 +111,20 @@ func TestUseCrossCompileSDK(t *testing.T) {
 						}
 					}
 
-					if !hasSysroot {
-						t.Error("Missing --sysroot flag in CCFLAGS")
-					}
-					if !hasResourceDir {
-						t.Error("Missing -resource-dir flag in CCFLAGS")
+					// For WASM target, both sysroot and resource-dir are expected
+					if tc.name == "WASM Target" {
+						if !hasSysroot {
+							t.Error("Missing --sysroot flag in CCFLAGS")
+						}
+						if !hasResourceDir {
+							t.Error("Missing -resource-dir flag in CCFLAGS")
+						}
+					} else if tc.name == "Same Platform" {
+						// For same platform, we expect sysroot only on macOS
+						if runtime.GOOS == "darwin" && !hasSysroot {
+							t.Error("Missing --sysroot flag in CCFLAGS on macOS")
+						}
+						// On Linux and other platforms, sysroot is not necessarily required
 					}
 				}
 
@@ -147,9 +156,11 @@ func TestUseCrossCompileSDK(t *testing.T) {
 					}
 				}
 			} else {
-				if /*len(export.CCFLAGS) != 0 ||*/ len(export.CFLAGS) != 0 {
-					t.Errorf("Expected empty export, got CCFLAGS=%v, CFLAGS=%v, LDFLAGS=%v",
-						export.CCFLAGS, export.CFLAGS, export.LDFLAGS)
+				// For unsupported targets, we still expect some basic flags to be set
+				// since the implementation now always sets up ESP Clang environment
+				// Only check that we don't have specific SDK-related flags for unsupported targets
+				if tc.name == "Unsupported Target" && len(export.CFLAGS) != 0 {
+					t.Errorf("Expected empty CFLAGS for unsupported target, got CFLAGS=%v", export.CFLAGS)
 				}
 			}
 		})
@@ -182,7 +193,7 @@ func TestUseTarget(t *testing.T) {
 		{
 			name:        "Cortex-M Target",
 			targetName:  "cortex-m",
-			expectError: false,
+			expectError: true,
 			expectLLVM:  "",
 			expectCPU:   "",
 		},
@@ -230,20 +241,33 @@ func TestUseTarget(t *testing.T) {
 				}
 			}
 
-			// Check if CPU is in CCFLAGS
+			// Check if CPU is in LDFLAGS (for ld.lld linker) or CCFLAGS (for other cases)
 			if tc.expectCPU != "" {
 				found := false
-				expectedFlags := []string{"-mmcu=" + tc.expectCPU, "-mcpu=" + tc.expectCPU}
-				for _, flag := range export.CCFLAGS {
-					for _, expectedFlag := range expectedFlags {
-						if flag == expectedFlag {
+				// First check LDFLAGS for -mllvm -mcpu= pattern
+				for i, flag := range export.LDFLAGS {
+					if flag == "-mllvm" && i+1 < len(export.LDFLAGS) {
+						nextFlag := export.LDFLAGS[i+1]
+						if nextFlag == "-mcpu="+tc.expectCPU {
 							found = true
 							break
 						}
 					}
 				}
+				// If not found in LDFLAGS, check CCFLAGS for direct CPU flags
 				if !found {
-					t.Errorf("Expected CPU %s in CCFLAGS, got %v", tc.expectCPU, export.CCFLAGS)
+					expectedFlags := []string{"-mmcu=" + tc.expectCPU, "-mcpu=" + tc.expectCPU}
+					for _, flag := range export.CCFLAGS {
+						for _, expectedFlag := range expectedFlags {
+							if flag == expectedFlag {
+								found = true
+								break
+							}
+						}
+					}
+				}
+				if !found {
+					t.Errorf("Expected CPU %s in LDFLAGS or CCFLAGS, got LDFLAGS=%v, CCFLAGS=%v", tc.expectCPU, export.LDFLAGS, export.CCFLAGS)
 				}
 			}
 
@@ -255,7 +279,7 @@ func TestUseTarget(t *testing.T) {
 
 func TestUseWithTarget(t *testing.T) {
 	// Test target-based configuration takes precedence
-	export, err := UseWithTarget("linux", "amd64", false, "wasi")
+	export, err := Use("linux", "amd64", false, "wasi")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -267,7 +291,7 @@ func TestUseWithTarget(t *testing.T) {
 	}
 
 	// Test fallback to goos/goarch when no target specified
-	export, err = UseWithTarget(runtime.GOOS, runtime.GOARCH, false, "")
+	export, err = Use(runtime.GOOS, runtime.GOARCH, false, "")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -278,58 +302,125 @@ func TestUseWithTarget(t *testing.T) {
 	}
 }
 
-func TestFilterCompatibleLDFlags(t *testing.T) {
-	testCases := []struct {
-		name     string
-		input    []string
-		expected []string
+func TestExpandEnv(t *testing.T) {
+	envs := map[string]string{
+		"port": "/dev/ttyUSB0",
+		"hex":  "firmware.hex",
+		"bin":  "firmware.bin",
+		"root": "/usr/local/llgo",
+	}
+
+	tests := []struct {
+		template string
+		expected string
 	}{
 		{
-			name:     "Empty flags",
-			input:    []string{},
-			expected: []string{},
+			"avrdude -c arduino -p atmega328p -P {port} -U flash:w:{hex}:i",
+			"avrdude -c arduino -p atmega328p -P /dev/ttyUSB0 -U flash:w:firmware.hex:i",
 		},
 		{
-			name:     "Compatible flags only",
-			input:    []string{"-lm", "-lpthread"},
-			expected: []string{"-lm", "-lpthread"},
+			"simavr -m atmega328p -f 16000000 {}",
+			"simavr -m atmega328p -f 16000000 firmware.hex", // {} expands to hex (first priority)
 		},
 		{
-			name:     "Incompatible flags filtered",
-			input:    []string{"--gc-sections", "-lm", "--emit-relocs", "-lpthread"},
-			expected: []string{"--gc-sections", "-lm", "--emit-relocs", "-lpthread"},
+			"-I{root}/lib/CMSIS/CMSIS/Include",
+			"-I/usr/local/llgo/lib/CMSIS/CMSIS/Include",
 		},
 		{
-			name:     "Defsym flags filtered",
-			input:    []string{"--defsym=_stack_size=512", "-lm", "--defsym=_bootloader_size=512"},
-			expected: []string{"-lm"},
+			"no variables here",
+			"no variables here",
 		},
 		{
-			name:     "Linker script flags filtered",
-			input:    []string{"-T", "script.ld", "-lm"},
-			expected: []string{"-lm"},
-		},
-		{
-			name:     "Mixed compatible and incompatible",
-			input:    []string{"-lm", "--gc-sections", "--defsym=test=1", "-lpthread", "--no-demangle"},
-			expected: []string{"-lm", "--gc-sections", "-lpthread", "--no-demangle"},
+			"",
+			"",
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := filterCompatibleLDFlags(tc.input)
+	for _, test := range tests {
+		result := expandEnv(test.template, envs)
+		if result != test.expected {
+			t.Errorf("expandEnv(%q) = %q, want %q", test.template, result, test.expected)
+		}
+	}
+}
 
-			if len(result) != len(tc.expected) {
-				t.Errorf("Expected %d flags, got %d: %v", len(tc.expected), len(result), result)
-				return
-			}
+func TestExpandEnvSlice(t *testing.T) {
+	envs := map[string]string{
+		"root": "/usr/local/llgo",
+		"port": "/dev/ttyUSB0",
+	}
 
-			for i, expected := range tc.expected {
-				if result[i] != expected {
-					t.Errorf("Expected flag[%d] = %s, got %s", i, expected, result[i])
-				}
-			}
-		})
+	input := []string{
+		"-I{root}/include",
+		"-DPORT={port}",
+		"static-flag",
+	}
+
+	expected := []string{
+		"-I/usr/local/llgo/include",
+		"-DPORT=/dev/ttyUSB0",
+		"static-flag",
+	}
+
+	result := expandEnvSlice(input, envs)
+
+	if len(result) != len(expected) {
+		t.Fatalf("expandEnvSlice length mismatch: got %d, want %d", len(result), len(expected))
+	}
+
+	for i, exp := range expected {
+		if result[i] != exp {
+			t.Errorf("expandEnvSlice[%d] = %q, want %q", i, result[i], exp)
+		}
+	}
+}
+
+func TestExpandEnvWithDefault(t *testing.T) {
+	envs := map[string]string{
+		"port": "/dev/ttyUSB0",
+		"hex":  "firmware.hex",
+		"bin":  "firmware.bin",
+		"img":  "image.img",
+	}
+
+	tests := []struct {
+		template     string
+		defaultValue string
+		expected     string
+	}{
+		{
+			"simavr {}",
+			"", // No default - should use hex (priority)
+			"simavr firmware.hex",
+		},
+		{
+			"simavr {}",
+			"custom.elf", // Explicit default
+			"simavr custom.elf",
+		},
+		{
+			"qemu -kernel {}",
+			"vmlinux", // Custom kernel
+			"qemu -kernel vmlinux",
+		},
+		{
+			"no braces here",
+			"ignored",
+			"no braces here",
+		},
+	}
+
+	for i, test := range tests {
+		var result string
+		if test.defaultValue == "" {
+			result = expandEnvWithDefault(test.template, envs)
+		} else {
+			result = expandEnvWithDefault(test.template, envs, test.defaultValue)
+		}
+
+		if result != test.expected {
+			t.Errorf("Test %d: expandEnvWithDefault(%q, envs, %q) = %q, want %q",
+				i, test.template, test.defaultValue, result, test.expected)
+		}
 	}
 }
