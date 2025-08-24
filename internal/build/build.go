@@ -72,21 +72,23 @@ const (
 )
 
 type Config struct {
-	Goos        string
-	Goarch      string
-	Target      string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath     string
-	AppExt      string   // ".exe" on Windows, empty on Unix
-	OutFile     string   // only valid for ModeBuild when len(pkgs) == 1
-	RunArgs     []string // only valid for ModeRun
-	Mode        Mode
-	AbiMode     AbiMode
-	GenExpect   bool // only valid for ModeCmpTest
-	Verbose     bool
-	GenLL       bool // generate pkg .ll files
-	Tags        string
-	GlobalNames map[string][]string // pkg => names
-	GlobalDatas map[string]string   // pkg.name => data
+	Goos          string
+	Goarch        string
+	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath       string
+	AppExt        string   // ".exe" on Windows, empty on Unix
+	OutFile       string   // only valid for ModeBuild when len(pkgs) == 1
+	RunArgs       []string // only valid for ModeRun
+	Mode          Mode
+	AbiMode       AbiMode
+	GenExpect     bool // only valid for ModeCmpTest
+	Verbose       bool
+	GenLL         bool // generate pkg .ll files
+	CheckLLFiles  bool // check .ll files valid
+	CheckLinkArgs bool // check linkargs valid
+	Tags          string
+	GlobalNames   map[string][]string // pkg => names
+	GlobalDatas   map[string]string   // pkg.name => data
 }
 
 func NewDefaultConf(mode Mode) *Config {
@@ -278,14 +280,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	output := conf.OutFile != ""
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
-		output:                 output,
-		needRt:                 make(map[*packages.Package]bool),
-		needPyInit:             make(map[*packages.Package]bool),
-		buildConf:              conf,
-		crossCompile:           export,
-		isCheckEnabled:         IsCheckEnabled(),
-		isCheckLinkArgsEnabled: IsCheckLinkArgsEnabled(),
-		cTransformer:           cabi.NewTransformer(prog, conf.AbiMode),
+		output:       output,
+		needRt:       make(map[*packages.Package]bool),
+		needPyInit:   make(map[*packages.Package]bool),
+		buildConf:    conf,
+		crossCompile: export,
+		cTransformer: cabi.NewTransformer(prog, conf.AbiMode),
 	}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
@@ -374,9 +374,6 @@ type context struct {
 	mode    Mode
 	nLibdir int
 	output  bool
-
-	isCheckEnabled         bool
-	isCheckLinkArgsEnabled bool
 
 	needRt     map[*packages.Package]bool
 	needPyInit map[*packages.Package]bool
@@ -485,7 +482,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
-				if ctx.isCheckLinkArgsEnabled {
+				if ctx.buildConf.CheckLinkArgs {
 					if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
 						panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
 					}
@@ -1022,7 +1019,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	if err != nil {
 		return exportFile, err
 	}
-	if ctx.isCheckEnabled {
+	if ctx.buildConf.CheckLLFiles {
 		if msg, err := llcCheck(ctx.env, f.Name()); err != nil {
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
@@ -1162,11 +1159,9 @@ const llgoDebug = "LLGO_DEBUG"
 const llgoDbgSyms = "LLGO_DEBUG_SYMBOLS"
 const llgoTrace = "LLGO_TRACE"
 const llgoOptimize = "LLGO_OPTIMIZE"
-const llgoCheck = "LLGO_CHECK"
 const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
 const llgoWasiThreads = "LLGO_WASI_THREADS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
-const llgoCheckLinkArgs = "LLGO_CHECK_LINKARGS"
 const llgoFullRpath = "LLGO_FULL_RPATH"
 
 const defaultWasmRuntime = "wasmtime"
@@ -1207,16 +1202,8 @@ func IsOptimizeEnabled() bool {
 	return isEnvOn(llgoOptimize, true)
 }
 
-func IsCheckEnabled() bool {
-	return isEnvOn(llgoCheck, false)
-}
-
 func IsWasiThreadsEnabled() bool {
 	return isEnvOn(llgoWasiThreads, true)
-}
-
-func IsCheckLinkArgsEnabled() bool {
-	return isEnvOn(llgoCheckLinkArgs, false)
 }
 
 func IsFullRpathEnabled() bool {
