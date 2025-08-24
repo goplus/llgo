@@ -54,10 +54,15 @@ func (p *Transformer) isCFunc(name string) bool {
 	return !strings.Contains(name, ".")
 }
 
+type CallInstr struct {
+	call llvm.Value
+	fn   llvm.Value
+}
+
 func (p *Transformer) TransformModule(path string, m llvm.Module) {
 	ctx := m.Context()
 	var fns []llvm.Value
-	var callInstrs []llvm.Value
+	var callInstrs []CallInstr
 	switch p.mode {
 	case ModeNone:
 		return
@@ -66,16 +71,22 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 		for !fn.IsNil() {
 			if p.isCFunc(fn.Name()) {
 				p.transformFuncCall(m, fn)
-				if p.isWrapFunctionType(m.Context(), fn.GlobalValueType()) {
+				if p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
 					fns = append(fns, fn)
-					use := fn.FirstUse()
-					for !use.IsNil() {
-						if call := use.User().IsACallInst(); !call.IsNil() && call.CalledValue() == fn {
-							callInstrs = append(callInstrs, call)
-						}
-						use = use.NextUse()
-					}
 				}
+			}
+			bb := fn.FirstBasicBlock()
+			for !bb.IsNil() {
+				instr := bb.FirstInstruction()
+				for !instr.IsNil() {
+					if call := instr.IsACallInst(); !call.IsNil() && p.isCFunc(call.CalledValue().Name()) {
+						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
+							callInstrs = append(callInstrs, CallInstr{call, fn})
+						}
+					}
+					instr = llvm.NextInstruction(instr)
+				}
+				bb = llvm.NextBasicBlock(bb)
 			}
 			fn = llvm.NextFunction(fn)
 		}
@@ -91,7 +102,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 				for !instr.IsNil() {
 					if call := instr.IsACallInst(); !call.IsNil() {
 						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
-							callInstrs = append(callInstrs, call)
+							callInstrs = append(callInstrs, CallInstr{call, fn})
 						}
 					}
 					instr = llvm.NextInstruction(instr)
@@ -102,7 +113,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 		}
 	}
 	for _, call := range callInstrs {
-		p.transformCallInstr(ctx, call)
+		p.transformCallInstr(ctx, call.call, call.fn)
 	}
 	for _, fn := range fns {
 		p.transformFunc(m, fn)
@@ -369,6 +380,7 @@ func (p *Transformer) transformFuncBody(ctx llvm.Context, info *FuncInfo, fn llv
 		fn.Param(i).ReplaceAllUsesWith(nv)
 		index++
 	}
+
 	if info.Return.Kind >= AttrPointer {
 		var retInstrs []llvm.Value
 		bb := nfn.FirstBasicBlock()
@@ -402,7 +414,7 @@ func (p *Transformer) transformFuncBody(ctx llvm.Context, info *FuncInfo, fn llv
 	}
 }
 
-func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool {
+func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
 	nfn := call.CalledValue()
 	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
 	if !info.HasWrap() {
@@ -411,6 +423,15 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 	nft, attrs := p.transformFuncType(ctx, &info)
 	b := ctx.NewBuilder()
 	b.SetInsertPointBefore(call)
+
+	first := fn.EntryBasicBlock().FirstInstruction()
+	createAlloca := func(t llvm.Type) (ret llvm.Value) {
+		b.SetInsertPointBefore(first)
+		ret = llvm.CreateAlloca(b, t)
+		b.SetInsertPointBefore(call)
+		return
+	}
+
 	operandCount := len(info.Params)
 	var nparams []llvm.Value
 	for i := 0; i < operandCount; i++ {
@@ -422,16 +443,16 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 		case AttrVoid:
 			// none
 		case AttrPointer:
-			ptr := llvm.CreateAlloca(b, ti.Type)
+			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			nparams = append(nparams, ptr)
 		case AttrWidthType:
-			ptr := llvm.CreateAlloca(b, ti.Type)
+			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(ti.Type1, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type1, iptr, ""))
 		case AttrWidthType2:
-			ptr := llvm.CreateAlloca(b, ti.Type)
+			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false) // {i8,i64}
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(typ, 0), "")
@@ -457,14 +478,14 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 		instr = llvm.CreateCall(b, nft, nfn, nparams)
 		updateCallAttr(instr)
 	case AttrPointer:
-		ret := llvm.CreateAlloca(b, info.Return.Type)
+		ret := createAlloca(info.Return.Type)
 		call := llvm.CreateCall(b, nft, nfn, append([]llvm.Value{ret}, nparams...))
 		updateCallAttr(call)
 		instr = b.CreateLoad(info.Return.Type, ret, "")
 	case AttrWidthType, AttrWidthType2:
 		ret := llvm.CreateCall(b, nft, nfn, nparams)
 		updateCallAttr(ret)
-		ptr := llvm.CreateAlloca(b, nft.ReturnType())
+		ptr := createAlloca(nft.ReturnType())
 		b.CreateStore(ret, ptr)
 		pret := b.CreateBitCast(ptr, llvm.PointerType(info.Return.Type, 0), "")
 		instr = b.CreateLoad(info.Return.Type, pret, "")
