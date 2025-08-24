@@ -386,14 +386,21 @@ sudo apt-get install -y python3.12-dev # optional
 #### Alpine Linux
 
 ```sh
-apk add go llvm18-dev clang18-dev lld18 pkgconf gc-dev openssl-dev zlib-dev
+apk add go llvm19-dev clang19-dev lld19 pkgconf gc-dev libunwind-dev openssl-dev zlib-dev
 apk add python3-dev # optional
 apk add g++ # build only
-export LLVM_CONFIG=/usr/lib/llvm18/bin/llvm-config
+export LLVM_CONFIG=/usr/lib/llvm19/bin/llvm-config
 export CGO_CPPFLAGS="$($LLVM_CONFIG --cppflags)"
 export CGO_CXXFLAGS=-std=c++17
 export CGO_LDFLAGS="$($LLVM_CONFIG --ldflags) $($LLVM_CONFIG --libs all)"
 curl https://raw.githubusercontent.com/goplus/llgo/refs/heads/main/install.sh | bash
+```
+
+docker alpine 386 llgo environment
+```
+export GCC_ROOT_DIR=$(gcc -print-search-dirs | grep 'install:' | awk -F': ' '{print $2}')
+export LDFLAGS="-L$GCC_ROOT_DIR -B$GCC_ROOT_DIR -Wl,-dynamic-linker,/lib/ld-musl-i386.so.1"
+llgo run .
 ```
 
 ### on Windows
