@@ -86,6 +86,7 @@ type Config struct {
 	GenLL         bool // generate pkg .ll files
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
+	ForceEspClang bool // force to use esp-clang
 	Tags          string
 	GlobalNames   map[string][]string // pkg => names
 	GlobalDatas   map[string]string   // pkg.name => data
@@ -159,7 +160,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		conf.Goarch = runtime.GOARCH
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
-	forceEspClang := conf.Target != ""
+	forceEspClang := conf.ForceEspClang || conf.Target != ""
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
