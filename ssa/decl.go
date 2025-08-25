@@ -28,6 +28,7 @@ import (
 
 const (
 	NameValist = "__llgo_va_list"
+	NameKwargs = "__llgo_kwargs"
 )
 
 func VArg() *types.Var {
@@ -36,7 +37,8 @@ func VArg() *types.Var {
 
 func hasNameValist(sig *types.Signature) bool {
 	if sig.Variadic() {
-		if params := sig.Params(); params.At(params.Len()-1).Name() == NameValist {
+		params := sig.Params()
+		if name := params.At(params.Len() - 1).Name(); name == NameValist || name == NameKwargs {
 			return true
 		}
 	}

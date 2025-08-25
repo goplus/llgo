@@ -399,7 +399,7 @@ func (p *context) funcKind(vfn ssa.Value) int {
 			}
 		} else {
 			last := params.At(n - 1)
-			if last.Name() == llssa.NameValist {
+			if last.Name() == llssa.NameValist || last.Name() == llssa.NameKwargs {
 				return fnHasVArg
 			}
 		}
