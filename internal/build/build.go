@@ -497,9 +497,14 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
 			if kind == cl.PkgPyModule {
-				if param != "" && param != "builtins" {
-					if err := pyenv.PipInstall(param); err != nil {
-						panic(fmt.Sprintf("pip install failed for '%s': %v\n\tPYTHONHOME=%s\n\thint: ensure pip is available and network reachable, or pin a version in LLGoPackage (e.g. py.numpy==1.26.4)", param, pyenv.PythonHome(), err))
+				if name := strings.TrimSpace(param); name != "" {
+					base := strings.Split(name, "@")[0]
+					base = strings.Split(base, "==")[0]
+					if !pyenv.IsStdOrPresent(base) {
+						if err := pyenv.PipInstall(param); err != nil {
+							panic(fmt.Sprintf("pip install failed for '%s': %v\n\tPYTHONHOME=%s\n\thint: ensure pip/network or pin version (e.g. py.numpy==1.26.4)",
+								param, err, pyenv.PythonHome()))
+						}
 					}
 				}
 			}

@@ -1,6 +1,7 @@
 package pyenv
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -128,6 +129,8 @@ func InstallPackages(pkgs ...string) error {
 	site := filepath.Join(pyHome, "lib", "python3.12", "site-packages")
 	args := []string{"-m", "pip", "install", "--target", site}
 	args = append(args, pkgs...)
+	fmt.Println("py", py)
+	fmt.Println("args", args)
 	cmd := exec.Command(py, args...)
 	return cmd.Run()
 }
@@ -137,4 +140,11 @@ func PipInstall(spec string) error {
 		return nil
 	}
 	return InstallPackages(spec)
+}
+
+func IsStdOrPresent(mod string) bool {
+	py := filepath.Join(PythonHome(), "bin", "python3")
+	code := fmt.Sprintf(`import importlib.util,sys; sys.exit(0 if importlib.util.find_spec(%q) else 1)`, mod)
+	cmd := exec.Command(py, "-c", code)
+	return cmd.Run() == nil
 }

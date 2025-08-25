@@ -38,7 +38,7 @@ func EnsureWithFetch(url string) error {
 
 	if empty {
 		if url == "" {
-			return fmt.Errorf("python_env at %q is empty and no download URL provided; set LLPYG_PYHOME or provide a valid URL", root)
+			return fmt.Errorf("python_env at %q is empty and no download URL provided", root)
 		}
 		fmt.Println("downloading python assets from", url)
 		if err := downloadAndExtract(url, root); err != nil {
