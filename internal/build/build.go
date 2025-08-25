@@ -621,16 +621,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 
-	// Heuristic: if link args reference python libs, force python init
-	if !needPyInit {
-		for _, arg := range linkArgs {
-			if strings.Contains(arg, "python") {
-				needPyInit = true
-				break
-			}
-		}
-	}
-
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	check(err)
 	// defer os.Remove(entryLLFile)
@@ -644,14 +634,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
-
-	// After linking, ensure the executable references libpython via @rpath
-	if needPyInit && ctx.buildConf.Goos == "darwin" {
-		if dep := findDylibDep(app, "python3"); dep != "" && !strings.HasPrefix(dep, "@rpath") {
-			base := filepath.Base(dep)
-			_ = exec.Command("install_name_tool", "-change", dep, "@rpath/"+base, app).Run()
-		}
-	}
 
 	switch mode {
 	case ModeTest:

@@ -129,8 +129,6 @@ func InstallPackages(pkgs ...string) error {
 	site := filepath.Join(pyHome, "lib", "python3.12", "site-packages")
 	args := []string{"-m", "pip", "install", "--target", site}
 	args = append(args, pkgs...)
-	fmt.Println("py", py)
-	fmt.Println("args", args)
 	cmd := exec.Command(py, args...)
 	return cmd.Run()
 }
