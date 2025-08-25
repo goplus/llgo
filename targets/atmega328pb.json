@@ -7,9 +7,9 @@
 		"--defsym=_stack_size=512"
 	],
 	"serial": "uart",
-	"linkerscript": "src/device/avr/atmega328pb.ld",
+	"linkerscript": "targets/device/avr/atmega328pb.ld",
 	"extra-files": [
 		"targets/avr.S",
-		"src/device/avr/atmega328pb.s"
+		"targets/device/avr/atmega328pb.s"
 	]
 }

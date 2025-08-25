@@ -4,8 +4,6 @@ import (
 	"github.com/goplus/llvm"
 )
 
-const skip_same_size = false
-
 func elementTypesCount(typ llvm.Type) int {
 	switch typ.TypeKind() {
 	case llvm.VoidTypeKind:
@@ -67,11 +65,15 @@ func (p *TypeInfoAmd64) SupportByVal() bool {
 	return true
 }
 
-func (p *TypeInfoAmd64) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfoAmd64) SkipEmptyParams() bool {
+	return true
+}
+
+func (p *TypeInfoAmd64) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
 	return elementTypesCount(typ) >= 2
 }
 
-func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
@@ -150,7 +152,12 @@ func (p *TypeInfoArm64) SupportByVal() bool {
 	return false
 }
 
-func (p *TypeInfoArm64) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfoArm64) SkipEmptyParams() bool {
+	return true
+}
+
+func (p *TypeInfoArm64) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
+	bret := index == 0
 	switch typ.TypeKind() {
 	case llvm.StructTypeKind, llvm.ArrayTypeKind:
 		if bret && elementTypesCount(typ) == 1 {
@@ -162,7 +169,8 @@ func (p *TypeInfoArm64) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) b
 	}
 }
 
-func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	bret := index == 0
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
@@ -219,7 +227,11 @@ func (p *TypeInfoArm) SupportByVal() bool {
 	return false
 }
 
-func (p *TypeInfoArm) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfoArm) SkipEmptyParams() bool {
+	return true
+}
+
+func (p *TypeInfoArm) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
 	switch typ.TypeKind() {
 	case llvm.StructTypeKind, llvm.ArrayTypeKind:
 		return true
@@ -228,7 +240,8 @@ func (p *TypeInfoArm) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) boo
 	}
 }
 
-func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfoArm) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	bret := index == 0
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
@@ -284,11 +297,15 @@ func (p *TypeInfoWasm) SupportByVal() bool {
 	return true
 }
 
-func (p *TypeInfoWasm) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfoWasm) SkipEmptyParams() bool {
+	return true
+}
+
+func (p *TypeInfoWasm) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
 	return elementTypesCount(typ) >= 2
 }
 
-func (p *TypeInfoWasm) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfoWasm) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
@@ -313,7 +330,11 @@ func (p *TypeInfoRiscv64) SupportByVal() bool {
 	return true
 }
 
-func (p *TypeInfoRiscv64) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *TypeInfoRiscv64) SkipEmptyParams() bool {
+	return true
+}
+
+func (p *TypeInfoRiscv64) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
 	switch typ.TypeKind() {
 	case llvm.StructTypeKind, llvm.ArrayTypeKind:
 		return true
@@ -321,7 +342,7 @@ func (p *TypeInfoRiscv64) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool)
 	return false
 }
 
-func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
+func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
 	info := &TypeInfo{}
 	info.Type = typ
 	info.Type1 = typ
@@ -355,6 +376,91 @@ func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool
 			info.Kind = AttrWidthType
 			info.Type1 = llvm.ArrayType(ctx.Int64Type(), 2)
 		}
+	}
+	return info
+}
+
+type TypeInfo386 struct {
+	*Transformer
+}
+
+func (p *TypeInfo386) SupportByVal() bool {
+	return true
+}
+
+func (p *TypeInfo386) SkipEmptyParams() bool {
+	return false
+}
+
+func (p *TypeInfo386) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
+	switch typ.TypeKind() {
+	case llvm.ArrayTypeKind, llvm.StructTypeKind:
+		return true
+	}
+	return false
+}
+
+func (p *TypeInfo386) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	bret := index == 0
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	if typ.TypeKind() == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	if info.Size == 0 {
+		if bret {
+			return info
+		}
+		if index == 1 {
+			info.Kind = AttrPointer
+			info.Type1 = llvm.PointerType(typ, 0)
+			return info
+		}
+		info.Kind = AttrVoid
+		info.Type1 = ctx.VoidType()
+		return info
+	}
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind:
+		if !bret && info.Size <= 16 {
+			var extract bool
+			subs := typ.StructElementTypes()
+		loop:
+			for _, sub := range subs {
+				switch sub.TypeKind() {
+				case llvm.FloatTypeKind, llvm.DoubleTypeKind, llvm.PointerTypeKind:
+					extract = true
+				case llvm.IntegerTypeKind:
+					if width := sub.IntTypeWidth(); width == 32 || width == 64 {
+						extract = true
+					} else {
+						extract = false
+						break loop
+					}
+				default:
+					extract = false
+					break loop
+				}
+			}
+			if extract {
+				if len(subs) == 1 {
+					info.Kind = AttrWidthType
+					info.Type1 = subs[0]
+				} else {
+					info.Kind = AttrExtract
+				}
+				return info
+			}
+		}
+		info.Kind = AttrPointer
+		info.Type1 = llvm.PointerType(typ, 0)
+	case llvm.ArrayTypeKind:
+		info.Kind = AttrPointer
+		info.Type1 = llvm.PointerType(typ, 0)
 	}
 	return info
 }

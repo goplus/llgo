@@ -27,10 +27,7 @@ func runCmd(cmd *base.Command, args []string) {
 	}
 
 	conf := build.NewDefaultConf(build.ModeTest)
-	conf.Tags = flags.Tags
-	conf.Verbose = flags.Verbose
-	conf.Target = flags.Target
-	conf.AbiMode = build.AbiMode(flags.AbiMode)
+	flags.UpdateConfig(conf)
 
 	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)

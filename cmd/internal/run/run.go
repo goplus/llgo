@@ -68,11 +68,7 @@ func runCmdEx(cmd *base.Command, args []string, mode build.Mode) {
 	}
 
 	conf := build.NewDefaultConf(mode)
-	conf.Tags = flags.Tags
-	conf.Verbose = flags.Verbose
-	conf.GenExpect = flags.Gen
-	conf.Target = flags.Target
-	conf.AbiMode = build.AbiMode(flags.AbiMode)
+	flags.UpdateConfig(conf)
 
 	args = cmd.Flag.Args()
 	args, runArgs, err := parseRunArgs(args)

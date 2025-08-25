@@ -15,6 +15,8 @@ require (
 	golang.org/x/tools v0.36.0
 )
 
+require github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1
+
 require (
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect

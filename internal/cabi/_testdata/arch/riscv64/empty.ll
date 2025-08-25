@@ -6,7 +6,7 @@ target triple = "riscv64-unknown-unknown-elf"
 %struct.empty = type {}
 
 ; Function Attrs: noinline nounwind optnone
-define dso_local void @demo1() #0 {
+define dso_local void @demo0() #0 {
   %1 = alloca %struct.empty, align 1
   %2 = alloca %struct.empty, align 1
   %3 = bitcast %struct.empty* %1 to i8*
@@ -17,6 +17,18 @@ define dso_local void @demo1() #0 {
 
 ; Function Attrs: argmemonly nofree nounwind willreturn
 declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: noinline nounwind optnone
+define dso_local void @demo1(i32 noundef signext %0) #0 {
+  %2 = alloca %struct.empty, align 1
+  %3 = alloca %struct.empty, align 1
+  %4 = alloca i32, align 4
+  store i32 %0, i32* %4, align 4
+  %5 = bitcast %struct.empty* %2 to i8*
+  %6 = bitcast %struct.empty* %3 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %5, i8* align 1 %6, i64 0, i1 false)
+  ret void
+}
 
 ; Function Attrs: noinline nounwind optnone
 define dso_local signext i32 @demo2(i32 noundef signext %0) #0 {

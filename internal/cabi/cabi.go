@@ -35,6 +35,8 @@ func NewTransformer(prog ssa.Program, mode Mode) *Transformer {
 		tr.sys = &TypeInfoWasm{tr}
 	case "riscv64":
 		tr.sys = &TypeInfoRiscv64{tr}
+	case "386":
+		tr.sys = &TypeInfo386{tr}
 	}
 	return tr
 }
@@ -52,10 +54,15 @@ func (p *Transformer) isCFunc(name string) bool {
 	return !strings.Contains(name, ".")
 }
 
+type CallInstr struct {
+	call llvm.Value
+	fn   llvm.Value
+}
+
 func (p *Transformer) TransformModule(path string, m llvm.Module) {
 	ctx := m.Context()
 	var fns []llvm.Value
-	var callInstrs []llvm.Value
+	var callInstrs []CallInstr
 	switch p.mode {
 	case ModeNone:
 		return
@@ -64,16 +71,22 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 		for !fn.IsNil() {
 			if p.isCFunc(fn.Name()) {
 				p.transformFuncCall(m, fn)
-				if p.isWrapFunctionType(m.Context(), fn.GlobalValueType()) {
+				if p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
 					fns = append(fns, fn)
-					use := fn.FirstUse()
-					for !use.IsNil() {
-						if call := use.User().IsACallInst(); !call.IsNil() && call.CalledValue() == fn {
-							callInstrs = append(callInstrs, call)
-						}
-						use = use.NextUse()
-					}
 				}
+			}
+			bb := fn.FirstBasicBlock()
+			for !bb.IsNil() {
+				instr := bb.FirstInstruction()
+				for !instr.IsNil() {
+					if call := instr.IsACallInst(); !call.IsNil() && p.isCFunc(call.CalledValue().Name()) {
+						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
+							callInstrs = append(callInstrs, CallInstr{call, fn})
+						}
+					}
+					instr = llvm.NextInstruction(instr)
+				}
+				bb = llvm.NextBasicBlock(bb)
 			}
 			fn = llvm.NextFunction(fn)
 		}
@@ -89,7 +102,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 				for !instr.IsNil() {
 					if call := instr.IsACallInst(); !call.IsNil() {
 						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
-							callInstrs = append(callInstrs, call)
+							callInstrs = append(callInstrs, CallInstr{call, fn})
 						}
 					}
 					instr = llvm.NextInstruction(instr)
@@ -100,7 +113,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 		}
 	}
 	for _, call := range callInstrs {
-		p.transformCallInstr(ctx, call)
+		p.transformCallInstr(ctx, call.call, call.fn)
 	}
 	for _, fn := range fns {
 		p.transformFunc(m, fn)
@@ -108,11 +121,11 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 }
 
 func (p *Transformer) isWrapFunctionType(ctx llvm.Context, ft llvm.Type) bool {
-	if p.IsWrapType(ctx, ft.ReturnType(), true) {
+	if p.IsWrapType(ctx, ft, ft.ReturnType(), 0) {
 		return true
 	}
-	for _, typ := range ft.ParamTypes() {
-		if p.IsWrapType(ctx, typ, false) {
+	for i, typ := range ft.ParamTypes() {
+		if p.IsWrapType(ctx, ft, typ, i+1) {
 			return true
 		}
 	}
@@ -121,8 +134,9 @@ func (p *Transformer) isWrapFunctionType(ctx llvm.Context, ft llvm.Type) bool {
 
 type TypeInfoSys interface {
 	SupportByVal() bool
-	IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool
-	GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo
+	SkipEmptyParams() bool
+	IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool
+	GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo
 }
 
 type AttrKind int
@@ -133,6 +147,7 @@ const (
 	AttrPointer                    // type => type*
 	AttrWidthType                  // type => width int i16/i24/i32/i40/i48/i56/i64 float/double
 	AttrWidthType2                 // type => width two int {i64,i16} float/double
+	AttrExtract                    // extract struct type
 )
 
 type FuncInfo struct {
@@ -176,27 +191,45 @@ func funcInlineHint(ctx llvm.Context) llvm.Attribute {
 	return ctx.CreateEnumAttribute(llvm.AttributeKindID("inlinehint"), 0)
 }
 
-func (p *Transformer) IsWrapType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+func (p *Transformer) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
 	if p.sys != nil {
-		if !bret && (typ.TypeKind() == llvm.VoidTypeKind || p.Sizeof(typ) == 0) {
+		bret := index == 0
+		if p.sys.SkipEmptyParams() && p.isWrapEmptyType(ctx, typ, bret) {
 			return true
 		}
-		return p.sys.IsWrapType(ctx, typ, bret)
+		return p.sys.IsWrapType(ctx, ftyp, typ, index)
 	}
 	return false
 }
 
-func (p *Transformer) GetTypeInfo(ctx llvm.Context, typ llvm.Type, bret bool) *TypeInfo {
-	if p.sys != nil {
-		if typ.TypeKind() == llvm.VoidTypeKind {
-			return &TypeInfo{Type: typ, Kind: AttrVoid, Type1: ctx.VoidType()}
-		} else if p.Sizeof(typ) == 0 {
-			if bret {
-				return &TypeInfo{Type: typ, Kind: AttrNone, Type1: typ}
-			}
-			return &TypeInfo{Type: typ, Kind: AttrVoid, Type1: ctx.VoidType()}
+func (p *Transformer) isWrapEmptyType(ctx llvm.Context, typ llvm.Type, bret bool) bool {
+	if !bret && (typ.TypeKind() == llvm.VoidTypeKind || p.Sizeof(typ) == 0) {
+		return true
+	}
+	return false
+}
+
+func (p *Transformer) getEmptyType(ctx llvm.Context, typ llvm.Type, bret bool) (*TypeInfo, bool) {
+	if typ.TypeKind() == llvm.VoidTypeKind {
+		return &TypeInfo{Type: typ, Kind: AttrVoid, Type1: ctx.VoidType()}, true
+	} else if p.Sizeof(typ) == 0 {
+		if bret {
+			return &TypeInfo{Type: typ, Kind: AttrNone, Type1: typ}, true
 		}
-		return p.sys.GetTypeInfo(ctx, typ, bret)
+		return &TypeInfo{Type: typ, Kind: AttrVoid, Type1: ctx.VoidType()}, true
+	}
+	return nil, false
+}
+
+func (p *Transformer) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	if p.sys != nil {
+		bret := index == 0
+		if p.sys.SkipEmptyParams() {
+			if info, ok := p.getEmptyType(ctx, typ, bret); ok {
+				return info
+			}
+		}
+		return p.sys.GetTypeInfo(ctx, ftyp, typ, index)
 	}
 	panic("not implment: " + p.GOARCH)
 }
@@ -211,11 +244,11 @@ func (p *Transformer) Alignof(typ llvm.Type) int {
 
 func (p *Transformer) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
 	info.Type = typ
-	info.Return = p.GetTypeInfo(ctx, typ.ReturnType(), true)
+	info.Return = p.GetTypeInfo(ctx, typ, typ.ReturnType(), 0)
 	params := typ.ParamTypes()
 	info.Params = make([]*TypeInfo, len(params))
 	for i, t := range params {
-		info.Params[i] = p.GetTypeInfo(ctx, t, false)
+		info.Params[i] = p.GetTypeInfo(ctx, typ, t, i+1)
 	}
 	return
 }
@@ -250,6 +283,9 @@ func (p *Transformer) transformFuncType(ctx llvm.Context, info *FuncInfo) (llvm.
 			}
 		case AttrWidthType2:
 			paramTypes = append(paramTypes, ti.Type1, ti.Type2)
+		case AttrExtract:
+			subs := ti.Type.StructElementTypes()
+			paramTypes = append(paramTypes, subs...)
 		}
 	}
 	return llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg()), attrs
@@ -331,10 +367,20 @@ func (p *Transformer) transformFuncBody(ctx llvm.Context, info *FuncInfo, fn llv
 			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 1, ""))
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nv = b.CreateLoad(ti.Type, ptr, "")
+		case AttrExtract:
+			nsubs := ti.Type.StructElementTypesCount()
+			nv = llvm.Undef(ti.Type)
+			for i := 0; i < nsubs; i++ {
+				nv = b.CreateInsertValue(nv, params[index], i, "")
+				index++
+			}
+			fn.Param(i).ReplaceAllUsesWith(nv)
+			continue
 		}
 		fn.Param(i).ReplaceAllUsesWith(nv)
 		index++
 	}
+
 	if info.Return.Kind >= AttrPointer {
 		var retInstrs []llvm.Value
 		bb := nfn.FirstBasicBlock()
@@ -368,7 +414,7 @@ func (p *Transformer) transformFuncBody(ctx llvm.Context, info *FuncInfo, fn llv
 	}
 }
 
-func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool {
+func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
 	nfn := call.CalledValue()
 	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
 	if !info.HasWrap() {
@@ -377,6 +423,15 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 	nft, attrs := p.transformFuncType(ctx, &info)
 	b := ctx.NewBuilder()
 	b.SetInsertPointBefore(call)
+
+	first := fn.EntryBasicBlock().FirstInstruction()
+	createAlloca := func(t llvm.Type) (ret llvm.Value) {
+		b.SetInsertPointBefore(first)
+		ret = llvm.CreateAlloca(b, t)
+		b.SetInsertPointBefore(call)
+		return
+	}
+
 	operandCount := len(info.Params)
 	var nparams []llvm.Value
 	for i := 0; i < operandCount; i++ {
@@ -388,21 +443,26 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 		case AttrVoid:
 			// none
 		case AttrPointer:
-			ptr := llvm.CreateAlloca(b, ti.Type)
+			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			nparams = append(nparams, ptr)
 		case AttrWidthType:
-			ptr := llvm.CreateAlloca(b, ti.Type)
+			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(ti.Type1, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type1, iptr, ""))
 		case AttrWidthType2:
-			ptr := llvm.CreateAlloca(b, ti.Type)
+			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false) // {i8,i64}
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(typ, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type1, b.CreateStructGEP(typ, iptr, 0, ""), ""))
 			nparams = append(nparams, b.CreateLoad(ti.Type2, b.CreateStructGEP(typ, iptr, 1, ""), ""))
+		case AttrExtract:
+			nsubs := ti.Type.StructElementTypesCount()
+			for i := 0; i < nsubs; i++ {
+				nparams = append(nparams, b.CreateExtractValue(param, i, ""))
+			}
 		}
 	}
 
@@ -418,14 +478,14 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value) bool
 		instr = llvm.CreateCall(b, nft, nfn, nparams)
 		updateCallAttr(instr)
 	case AttrPointer:
-		ret := llvm.CreateAlloca(b, info.Return.Type)
+		ret := createAlloca(info.Return.Type)
 		call := llvm.CreateCall(b, nft, nfn, append([]llvm.Value{ret}, nparams...))
 		updateCallAttr(call)
 		instr = b.CreateLoad(info.Return.Type, ret, "")
 	case AttrWidthType, AttrWidthType2:
 		ret := llvm.CreateCall(b, nft, nfn, nparams)
 		updateCallAttr(ret)
-		ptr := llvm.CreateAlloca(b, nft.ReturnType())
+		ptr := createAlloca(nft.ReturnType())
 		b.CreateStore(ret, ptr)
 		pret := b.CreateBitCast(ptr, llvm.PointerType(info.Return.Type, 0), "")
 		instr = b.CreateLoad(info.Return.Type, pret, "")
@@ -468,44 +528,15 @@ func (p *Transformer) transformFuncCall(m llvm.Module, fn llvm.Value) {
 }
 
 func (p *Transformer) transformCallbackFunc(m llvm.Module, fn llvm.Value) (wrap llvm.Value, ok bool) {
-	var paramTypes []llvm.Type
-	var returnType llvm.Type
-	attrs := make(map[int]llvm.Attribute)
 	ctx := m.Context()
 	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
 	if !info.HasWrap() {
 		return fn, false
 	}
 
-	switch info.Return.Kind {
-	case AttrPointer:
-		returnType = ctx.VoidType()
-		paramTypes = append(paramTypes, info.Return.Type1)
-		attrs[1] = sretAttribute(ctx, info.Return.Type)
-	case AttrWidthType:
-		returnType = info.Return.Type1
-	case AttrWidthType2:
-		returnType = llvm.StructType([]llvm.Type{info.Return.Type1, info.Return.Type2}, false)
-	default:
-		returnType = info.Return.Type1
-	}
-
-	for _, ti := range info.Params {
-		switch ti.Kind {
-		case AttrNone, AttrWidthType:
-			paramTypes = append(paramTypes, ti.Type1)
-		case AttrPointer:
-			paramTypes = append(paramTypes, ti.Type1)
-			if p.sys.SupportByVal() {
-				attrs[len(paramTypes)] = byvalAttribute(ctx, ti.Type)
-			}
-		case AttrWidthType2:
-			paramTypes = append(paramTypes, ti.Type1, ti.Type2)
-		}
-	}
+	nft, attrs := p.transformFuncType(ctx, &info)
 
 	fname := fn.Name()
-	nft := llvm.FunctionType(returnType, paramTypes, info.Type.IsFunctionVarArg())
 	wrapName := "__llgo_cdecl$" + fname
 	if wrapFunc := m.NamedFunction(wrapName); !wrapFunc.IsNil() {
 		return wrapFunc, true
@@ -548,6 +579,15 @@ func (p *Transformer) transformCallbackFunc(m llvm.Module, fn llvm.Value) (wrap 
 			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 1, ""))
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type, ptr, ""))
+		case AttrExtract:
+			nsubs := ti.Type.StructElementTypesCount()
+			nv := llvm.Undef(ti.Type)
+			for i := 0; i < nsubs; i++ {
+				nv = b.CreateInsertValue(nv, params[index], i, "")
+				index++
+			}
+			nparams = append(nparams, nv)
+			continue
 		}
 		index++
 	}
@@ -564,6 +604,7 @@ func (p *Transformer) transformCallbackFunc(m llvm.Module, fn llvm.Value) (wrap 
 		ret := llvm.CreateCall(b, info.Type, fn, nparams)
 		ptr := llvm.CreateAlloca(b, info.Return.Type)
 		b.CreateStore(ret, ptr)
+		returnType := nft.ReturnType()
 		iptr := b.CreateBitCast(ptr, llvm.PointerType(returnType, 0), "")
 		b.CreateRet(b.CreateLoad(returnType, iptr, ""))
 	default:
