@@ -26,12 +26,15 @@ func defaultPythonURL() string {
 			return base + prefix + "aarch64-apple-darwin-install_only.tar.gz"
 		}
 	case "linux":
-		switch runtime.GOARCH {
-		case "amd64":
-			return base + prefix + "x86_64-unknown-linux-gnu-install_only.tar.gz"
-		case "arm64":
-			return base + prefix + "aarch64-unknown-linux-gnu-install_only.tar.gz"
-		}
+		panic(fmt.Sprintf("todo: unsupported linux arch %s", runtime.GOARCH))
+		// switch runtime.GOARCH {
+		// case "amd64":
+		// 	return base + prefix + "x86_64-unknown-linux-gnu-install_only.tar.gz"
+		// case "arm64":
+		// 	return base + prefix + "aarch64-unknown-linux-gnu-install_only.tar.gz"
+		// }
+	default:
+		panic(fmt.Sprintf("todo: unsupported os %s", runtime.GOOS))
 	}
 	return ""
 }
