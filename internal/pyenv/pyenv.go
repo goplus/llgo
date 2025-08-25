@@ -4,11 +4,37 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/goplus/llgo/internal/env"
 )
 
-const pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20250808/cpython-3.12.11+20250808-x86_64-apple-darwin-install_only.tar.gz"
+const (
+	pyStandaloneTag = "20250808"
+	pyVersion       = "3.12.11"
+)
+
+func defaultPythonURL() string {
+	base := "https://github.com/astral-sh/python-build-standalone/releases/download/" + pyStandaloneTag + "/"
+	prefix := "cpython-" + pyVersion + "+" + pyStandaloneTag + "-"
+	switch runtime.GOOS {
+	case "darwin":
+		switch runtime.GOARCH {
+		case "amd64":
+			return base + prefix + "x86_64-apple-darwin-install_only.tar.gz"
+		case "arm64":
+			return base + prefix + "aarch64-apple-darwin-install_only.tar.gz"
+		}
+	case "linux":
+		switch runtime.GOARCH {
+		case "amd64":
+			return base + prefix + "x86_64-unknown-linux-gnu-install_only.tar.gz"
+		case "arm64":
+			return base + prefix + "aarch64-unknown-linux-gnu-install_only.tar.gz"
+		}
+	}
+	return ""
+}
 
 // Ensure makes sure the Python runtime cache directory exists under
 // {LLGoCacheDir()}/python_env using an atomic temp-dir rename pattern.
@@ -23,7 +49,7 @@ func Ensure() error {
 // assets from the given url into the cache directory.
 func EnsureWithFetch(url string) error {
 	if url == "" {
-		url = pythonUrl
+		url = defaultPythonURL()
 	}
 	root := filepath.Join(env.LLGoCacheDir(), "python_env")
 
