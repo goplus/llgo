@@ -26,16 +26,24 @@ func EnsureWithFetch(url string) error {
 		url = pythonUrl
 	}
 	root := filepath.Join(env.LLGoCacheDir(), "python_env")
+
 	if err := ensureDirAtomic(root); err != nil {
-		return err
+		return fmt.Errorf("failed to prepare python_env at %q: %w", root, err)
 	}
+
 	empty, err := isDirEmpty(root)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check python_env directory %q: %w", root, err)
 	}
-	if empty && url != "" {
+
+	if empty {
+		if url == "" {
+			return fmt.Errorf("python_env at %q is empty and no download URL provided; set LLPYG_PYHOME or provide a valid URL", root)
+		}
 		fmt.Println("downloading python assets from", url)
-		return downloadAndExtract(url, root)
+		if err := downloadAndExtract(url, root); err != nil {
+			return fmt.Errorf("failed to download/extract python assets from %q to %q: %w", url, root, err)
+		}
 	}
 	return nil
 }

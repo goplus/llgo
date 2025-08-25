@@ -18,7 +18,7 @@ func EnsureBuildEnv() error {
 	if err := Ensure(); err != nil {
 		return err
 	}
-	pyHome := getPyHome(filepath.Join(env.LLGoCacheDir(), "python_env", "python"))
+	pyHome := filepath.Join(env.LLGoCacheDir(), "python_env", "python")
 	return applyEnv(pyHome)
 }
 
@@ -37,7 +37,7 @@ func Verify() error {
 // PythonHome returns the path that should be used as PYTHONHOME,
 // preferring LLPYG_PYHOME if set; otherwise defaulting to the llgo cache path.
 func PythonHome() string {
-	return getPyHome(filepath.Join(env.LLGoCacheDir(), "python_env", "python"))
+	return filepath.Join(env.LLGoCacheDir(), "python_env", "python")
 }
 
 func findPythonExec() (string, error) {
@@ -49,14 +49,6 @@ func findPythonExec() (string, error) {
 	}
 	return "", exec.ErrNotFound
 }
-
-func getPyHome(defaultPath string) string {
-	if v := os.Getenv("LLPYG_PYHOME"); v != "" {
-		return v
-	}
-	return defaultPath
-}
-
 func applyEnv(pyHome string) error {
 	if pyHome == "" {
 		return nil
@@ -127,21 +119,19 @@ func applyEnv(pyHome string) error {
 	return nil
 }
 
-// InstallPackages 安装到当前 PythonHome 的 site-packages
 func InstallPackages(pkgs ...string) error {
 	pyHome := PythonHome()
 	if pyHome == "" || len(pkgs) == 0 {
 		return nil
 	}
 	py := filepath.Join(pyHome, "bin", "python3")
-	site := filepath.Join(pyHome, "lib", "python3.12", "site-packages") // 注意跟随实际版本
+	site := filepath.Join(pyHome, "lib", "python3.12", "site-packages")
 	args := []string{"-m", "pip", "install", "--target", site}
 	args = append(args, pkgs...)
 	cmd := exec.Command(py, args...)
 	return cmd.Run()
 }
 
-// PipInstall 兼容“单一 spec”调用，例如 "numpy==1.26.4"
 func PipInstall(spec string) error {
 	if spec == "" {
 		return nil
