@@ -8,7 +8,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
+
+	"github.com/goplus/llgo/internal/clang"
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/targets"
@@ -213,6 +216,70 @@ func getESPClangPlatform(goos, goarch string) string {
 		}
 	}
 	return ""
+}
+
+func getOrCompileLibc(cc, linkerName, libcName string, ccflags, exportLdFlags []string) (ldflags []string, err error) {
+	baseDir := filepath.Join(cacheRoot(), "crosscompile")
+	libcDir := filepath.Join(baseDir, libcName)
+	libcArchive := filepath.Join(libcDir, "libc.a")
+	// fast-path: compiled already
+	if _, err = os.Stat(libcArchive); !os.IsNotExist(err) {
+		ldflags = append(ldflags, "-nostdlib", "-L", libcDir, "-lc")
+		return ldflags, nil
+	}
+	compileConfig, err := getCompileLibcConfigByName(baseDir, libcName)
+	if err != nil {
+		return
+	}
+	tempDir, err := os.MkdirTemp("", "compile*")
+	if err != nil {
+		return
+	}
+	defer os.RemoveAll(tempDir)
+
+	fmt.Fprintf(os.Stderr, "%s not found in LLGO_ROOT or cache, will download and compile.\n", libcDir)
+	if err = checkDownloadAndExtractLibc(compileConfig.Url, libcDir, compileConfig.ArchiveSrcDir); err != nil {
+		return
+	}
+	compileLDFlags := append(slices.Clone(exportLdFlags), compileConfig.LDFlags...)
+
+	cfg := clang.NewConfig(cc, ccflags, compileConfig.CFlags, compileLDFlags, linkerName)
+
+	var objFiles []string
+
+	compiler := clang.NewCompiler(cfg)
+	linker := clang.NewLinker(cfg)
+
+	compiler.Verbose = true
+	linker.Verbose = true
+	fmt.Fprintf(os.Stderr, "Start to compile libc %s to %s...\n", libcName, libcArchive)
+
+	for _, file := range compileConfig.Files {
+		var tempObjFile *os.File
+		tempObjFile, err = os.CreateTemp(tempDir, "libc*.o")
+		if err != nil {
+			return
+		}
+		fmt.Fprintf(os.Stderr, "Compile libc file %s to %s...\n", file, tempObjFile.Name())
+
+		err = compiler.Compile("-o", tempObjFile.Name(), "-x", "c", "-c", file)
+		if err != nil {
+			return
+		}
+
+		objFiles = append(objFiles, tempObjFile.Name())
+	}
+
+	args := []string{"-o", libcArchive}
+	args = append(args, objFiles...)
+
+	err = linker.Link(args...)
+	if err != nil {
+		return
+	}
+	ldflags = append(ldflags, "-nostdlib", "-L", libcDir, "-lc")
+
+	return
 }
 
 func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
@@ -573,6 +640,15 @@ func useTarget(targetName string) (export Export, err error) {
 		ldflags = append(ldflags, "-T", config.LinkerScript)
 	}
 	ldflags = append(ldflags, "-L", env.LLGoROOT()) // search targets/*.ld
+
+	if config.Libc != "" {
+		var libcLDFlags []string
+		libcLDFlags, err = getOrCompileLibc(export.CC, export.Linker, config.Libc, ccflags, ldflags)
+		if err != nil {
+			return
+		}
+		ldflags = append(ldflags, libcLDFlags...)
+	}
 
 	// Combine with config flags and expand template variables
 	export.CFLAGS = cflags

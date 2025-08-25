@@ -97,14 +97,6 @@ _heap_end = ORIGIN(DRAM) + LENGTH(DRAM);
 
 _stack_size = 4K;
 
-/* From ESP-IDF:
- * components/esp_rom/esp32/ld/esp32.rom.newlib-funcs.ld
- * This is the subset that is sometimes used by LLVM during codegen, and thus
- * must always be present.
- */
-memcpy  = 0x4000c2c8;
-memmove = 0x4000c3c0;
-memset  = 0x4000c44c;
 
 /* From ESP-IDF:
  * components/esp_rom/esp32/ld/esp32.rom.libgcc.ld
@@ -200,3 +192,9 @@ __umodsi3      = 0x4000c7d0;
 __umulsidi3    = 0x4000c7d8;
 __unorddf2     = 0x400637f4;
 __unordsf2     = 0x40063478;
+
+INCLUDE "targets/esp32.rom.newlib-data.ld";
+INCLUDE "targets/esp32.rom.newlib-funcs.ld";
+INCLUDE "targets/esp32.rom.newlib-locale.ld";
+INCLUDE "targets/esp32.rom.newlib-nano.ld";
+INCLUDE "targets/esp32.rom.newlib-time.ld";

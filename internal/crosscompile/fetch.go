@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -73,6 +74,47 @@ func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
 	espClangDir := filepath.Join(tempExtractDir, "esp-clang")
 	if err := os.Rename(espClangDir, dir); err != nil {
 		return fmt.Errorf("failed to rename esp-clang directory: %w", err)
+	}
+
+	return nil
+}
+
+func checkDownloadAndExtractLibc(url, dstDir, internalArchiveSrcDir string) error {
+	// Check if already exists
+	if _, err := os.Stat(dstDir); err == nil {
+		return nil
+	}
+
+	// Create lock file path for the final destination
+	lockPath := dstDir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
+	// Double-check after acquiring lock
+	if _, err := os.Stat(dstDir); err == nil {
+		return nil
+	}
+
+	description := fmt.Sprintf("Libc %s", path.Base(url))
+
+	// Use temporary extraction directory
+	tempExtractDir := dstDir + ".extract"
+	if err := downloadAndExtractArchive(url, tempExtractDir, description); err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempExtractDir)
+
+	srcDir := tempExtractDir
+
+	if internalArchiveSrcDir != "" {
+		srcDir = filepath.Join(tempExtractDir, internalArchiveSrcDir)
+	}
+
+	if err := os.Rename(srcDir, dstDir); err != nil {
+		return fmt.Errorf("failed to rename libc directory: %w", err)
 	}
 
 	return nil
