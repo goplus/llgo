@@ -135,9 +135,6 @@ func Fchmodat(dirfd c.Int, path *c.Char, mode ModeT, flags c.Int) c.Int
 //go:linkname Fchownat C.fchownat
 func Fchownat(dirfd c.Int, path *c.Char, owner UidT, group GidT, flags c.Int) c.Int
 
-//go:linkname Fstatat C.fstatat
-func Fstatat(dirfd c.Int, path *c.Char, buf *StatT, flags c.Int) c.Int
-
 // -----------------------------------------------------------------------------
 
 //go:linkname Open C.open
@@ -190,9 +187,6 @@ func Fchmod(fd c.Int, mode ModeT) c.Int
 
 //go:linkname Fchown C.fchown
 func Fchown(fd c.Int, owner UidT, group GidT) c.Int
-
-//go:linkname Fstat C.fstat
-func Fstat(fd c.Int, buf *StatT) c.Int
 
 //go:linkname Isatty C.isatty
 func Isatty(fd c.Int) c.Int

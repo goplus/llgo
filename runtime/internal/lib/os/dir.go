@@ -82,30 +82,10 @@ func ReadDir(name string) ([]DirEntry, error) {
 	return dirs, err
 }
 
-//go:linkname c_fdopendir C.fdopendir
-func c_fdopendir(fd c.Int) uintptr
-
-func fdopendir(fd int) (dir uintptr, err error) {
-	return c_fdopendir(c.Int(fd)), nil
-}
-
-//go:linkname c_closedir C.closedir
-func c_closedir(dir uintptr) c.Int
-
-func closedir(dir uintptr) error {
-	if c_closedir(dir) != 0 {
-		return syscall.Errno(os.Errno())
-	}
-	return nil
-}
-
-//go:linkname c_readdir C.readdir
-func c_readdir(dir uintptr) *syscall.Dirent
-
-func readdir(dir uintptr) ([]syscall.Dirent, error) {
+func readdir(dir *os.DIR) ([]syscall.Dirent, error) {
 	var entries []syscall.Dirent
 	for {
-		dirent := c_readdir(dir)
+		dirent := os.Readdir(dir)
 		if dirent == nil {
 			break
 		}
@@ -139,11 +119,11 @@ func (f *File) ReadDir(n int) (dirents []DirEntry, err error) {
 	}
 
 	// Open directory using file descriptor
-	dir, err := fdopendir(int(f.fd))
-	if err != nil {
-		return nil, err
+	dir := os.Fdopendir(c.Int(f.fd))
+	if dir == nil {
+		return nil, syscall.Errno(os.Errno())
 	}
-	defer closedir(dir)
+	defer os.Closedir(dir)
 
 	// Match Readdir and Readdirnames: don't return nil slices.
 	dirents = []DirEntry{}
