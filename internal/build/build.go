@@ -740,16 +740,20 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	if IsFullRpathEnabled() {
-		exargs := make([]string, 0, ctx.nLibdir<<1)
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
 		// This is to ensure the final executable can locate libraries with a relocatable install_name
 		// (e.g., "@rpath/libfoo.dylib") at runtime.
+		rpaths := make(map[string]none)
 		for _, arg := range linkArgs {
 			if strings.HasPrefix(arg, "-L") {
-				exargs = append(exargs, "-rpath", arg[2:])
+				path := arg[2:]
+				if _, ok := rpaths[path]; ok {
+					continue
+				}
+				rpaths[path] = none{}
+				linkArgs = append(linkArgs, "-rpath", path)
 			}
 		}
-		linkArgs = append(linkArgs, exargs...)
 	}
 
 	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
