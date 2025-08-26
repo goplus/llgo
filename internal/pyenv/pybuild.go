@@ -55,7 +55,7 @@ func applyEnv(pyHome string) error {
 		return nil
 	}
 	bin := filepath.Join(pyHome, "bin")
-	lib := filepath.Join(pyHome, "lib")
+	// lib := filepath.Join(pyHome, "lib")
 
 	// PATH: prepend pyHome/bin if not present
 	path := os.Getenv("PATH")
@@ -82,19 +82,19 @@ func applyEnv(pyHome string) error {
 		return err
 	}
 
-	// macOS: DYLD_LIBRARY_PATH append lib if missing
-	if runtime.GOOS == "darwin" {
-		dyld := os.Getenv("DYLD_LIBRARY_PATH")
-		if dyld == "" {
-			if err := os.Setenv("DYLD_LIBRARY_PATH", lib); err != nil {
-				return err
-			}
-		} else if !strings.Contains(dyld, lib) {
-			if err := os.Setenv("DYLD_LIBRARY_PATH", lib+string(os.PathListSeparator)+dyld); err != nil {
-				return err
-			}
-		}
-	}
+	// // macOS: DYLD_LIBRARY_PATH append lib if missing
+	// if runtime.GOOS == "darwin" {
+	// 	dyld := os.Getenv("DYLD_LIBRARY_PATH")
+	// 	if dyld == "" {
+	// 		if err := os.Setenv("DYLD_LIBRARY_PATH", lib); err != nil {
+	// 			return err
+	// 		}
+	// 	} else if !strings.Contains(dyld, lib) {
+	// 		if err := os.Setenv("DYLD_LIBRARY_PATH", lib+string(os.PathListSeparator)+dyld); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 
 	// PKG_CONFIG_PATH: add pyHome/lib/pkgconfig
 	pkgcfg := filepath.Join(pyHome, "lib", "pkgconfig")
@@ -146,3 +146,57 @@ func IsStdOrPresent(mod string) bool {
 	cmd := exec.Command(py, "-c", code)
 	return cmd.Run() == nil
 }
+
+func EnsurePcRpath(pyHome string) error {
+	pc := filepath.Join(pyHome, "lib", "pkgconfig", "python3-embed.pc")
+	b, err := os.ReadFile(pc)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(b), "\n")
+	rpath := "-Wl,-rpath," + filepath.Join(pyHome, "lib")
+	changed := false
+	for i, ln := range lines {
+		if strings.HasPrefix(ln, "Libs:") && !strings.Contains(ln, rpath) {
+			lines[i] = ln + " " + rpath
+			changed = true
+			break
+		}
+	}
+	if !changed {
+		return nil
+	}
+	return os.WriteFile(pc, []byte(strings.Join(lines, "\n")), 0644)
+}
+
+func FixLibpythonInstallName(pyHome string) error {
+	if runtime.GOOS != "darwin" {
+		return nil
+	}
+	libDir := filepath.Join(pyHome, "lib")
+	candidates := []string{
+		filepath.Join(libDir, "libpython3.12.dylib"),
+		filepath.Join(libDir, "libpython3.12m.dylib"),
+	}
+	var target string
+	for _, p := range candidates {
+		if _, err := exec.Command("bash", "-lc", "test -f "+quote(p)).CombinedOutput(); err == nil {
+			target = p
+			break
+		}
+	}
+	if target == "" {
+		return nil
+	}
+	if real, err := filepath.EvalSymlinks(target); err == nil && real != "" {
+		target = real
+	}
+	newID := target
+	cmd := exec.Command("install_name_tool", "-id", newID, target)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("install_name_tool -id failed: %v, out=%s", err, string(out))
+	}
+	return nil
+}
+
+func quote(s string) string { return "'" + s + "'" }
