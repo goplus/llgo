@@ -56,7 +56,7 @@ func Main(args []string) error {
 	return firstErr
 }
 
-const llpkgPrefix = "github.com/Bigdata-shiyang/test/"
+const llpkgPrefix = "github.com/PengPengPeng717/llpkg/"
 
 func processModuleArg(arg string, flags []string) error {
 	name, version, _ := strings.Cut(arg, "@")
@@ -89,11 +89,19 @@ func runGoGetWithFlags(flags []string, spec string) error {
 	args = append(args, spec)
 	cmd := exec.Command("go", args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Env = append(os.Environ(),
+		"GOSUMDB=off",
+		"GOPROXY=direct",
+	)
 	return cmd.Run()
 }
 
 func runGoModTidy() error {
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Env = append(os.Environ(),
+		"GOSUMDB=off",
+		"GOPROXY=direct",
+	)
 	return cmd.Run()
 }
