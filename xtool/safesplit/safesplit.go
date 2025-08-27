@@ -49,6 +49,13 @@ func SplitPkgConfigFlags(s string) []string {
 		for i < len(s) && (s[i] == ' ' || s[i] == '\t') {
 			i++
 		}
+
+		// Check if next character is another flag (short flag with no argument)
+		if i < len(s) && s[i] == '-' {
+			// This is a short flag with no argument, finish current flag
+			continue
+		}
+
 		// Read content until next space
 		for i < len(s) {
 			if s[i] == '\\' && i+1 < len(s) && (s[i+1] == ' ' || s[i+1] == '\t') {
