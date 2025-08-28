@@ -8,10 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
-
-	"github.com/goplus/llgo/internal/clang"
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/targets"
@@ -218,67 +215,33 @@ func getESPClangPlatform(goos, goarch string) string {
 	return ""
 }
 
-func getOrCompileLibc(cc, linkerName, libcName string, ccflags, exportLdFlags []string) (ldflags []string, err error) {
+func ldFlagsFromFileName(fileName string) string {
+	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
+}
+
+func getOrCompileLibc(cc, linkerName, libcName string, exportCCFlags, exportLDFlags []string) (ldflags []string, err error) {
 	baseDir := filepath.Join(cacheRoot(), "crosscompile")
-	libcDir := filepath.Join(baseDir, libcName)
-	libcArchive := filepath.Join(libcDir, "libc.a")
-	// fast-path: compiled already
-	if _, err = os.Stat(libcArchive); !os.IsNotExist(err) {
-		ldflags = append(ldflags, "-nostdlib", "-L", libcDir, "-lc")
-		return ldflags, nil
-	}
+	outputDir := filepath.Join(baseDir, libcName)
+
 	compileConfig, err := getCompileLibcConfigByName(baseDir, libcName)
 	if err != nil {
 		return
 	}
-	tempDir, err := os.MkdirTemp("", "compile*")
-	if err != nil {
+	if err = checkDownloadAndExtractLibc(compileConfig, compileConfig.Url, outputDir, compileConfig.ArchiveSrcDir); err != nil {
 		return
 	}
-	defer os.RemoveAll(tempDir)
+	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
 
-	fmt.Fprintf(os.Stderr, "%s not found in LLGO_ROOT or cache, will download and compile.\n", libcDir)
-	if err = checkDownloadAndExtractLibc(compileConfig.Url, libcDir, compileConfig.ArchiveSrcDir); err != nil {
-		return
-	}
-	compileLDFlags := append(slices.Clone(exportLdFlags), compileConfig.LDFlags...)
-
-	cfg := clang.NewConfig(cc, ccflags, compileConfig.CFlags, compileLDFlags, linkerName)
-
-	var objFiles []string
-
-	compiler := clang.NewCompiler(cfg)
-	linker := clang.NewLinker(cfg)
-
-	compiler.Verbose = true
-	linker.Verbose = true
-	fmt.Fprintf(os.Stderr, "Start to compile libc %s to %s...\n", libcName, libcArchive)
-
-	for _, file := range compileConfig.Files {
-		var tempObjFile *os.File
-		tempObjFile, err = os.CreateTemp(tempDir, "libc*.o")
+	for _, group := range compileConfig.Groups {
+		err = group.Compile(outputDir, cc, linkerName, exportCCFlags, exportLDFlags)
 		if err != nil {
-			return
+			break
 		}
-		fmt.Fprintf(os.Stderr, "Compile libc file %s to %s...\n", file, tempObjFile.Name())
-
-		err = compiler.Compile("-o", tempObjFile.Name(), "-x", "c", "-c", file)
-		if err != nil {
-			return
+		if filepath.Ext(group.OutputFileName) == ".o" {
+			continue
 		}
-
-		objFiles = append(objFiles, tempObjFile.Name())
+		ldflags = append(ldflags, "-l"+ldFlagsFromFileName(group.OutputFileName))
 	}
-
-	args := []string{"-o", libcArchive}
-	args = append(args, objFiles...)
-
-	err = linker.Link(args...)
-	if err != nil {
-		return
-	}
-	ldflags = append(ldflags, "-nostdlib", "-L", libcDir, "-lc")
-
 	return
 }
 
