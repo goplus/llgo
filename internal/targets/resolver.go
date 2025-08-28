@@ -3,7 +3,8 @@ package targets
 import (
 	"fmt"
 	"path/filepath"
-	"runtime"
+
+	"github.com/goplus/llgo/internal/env"
 )
 
 // Resolver provides high-level interface for target configuration resolution
@@ -20,10 +21,8 @@ func NewResolver(targetsDir string) *Resolver {
 
 // NewDefaultResolver creates a resolver with default targets directory
 func NewDefaultResolver() *Resolver {
-	// Assume targets directory is relative to this package
-	_, filename, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filename)))
-	targetsDir := filepath.Join(projectRoot, "targets")
+	llgoRoot := env.LLGoROOT()
+	targetsDir := filepath.Join(llgoRoot, "targets")
 
 	return NewResolver(targetsDir)
 }
