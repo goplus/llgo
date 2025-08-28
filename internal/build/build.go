@@ -776,6 +776,29 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
 		check(err)
 		objFiles = append(objFiles, export)
+
+		addRpath := func(args *[]string, dir string) {
+			if dir == "" {
+				return
+			}
+			flag := "-Wl,-rpath," + dir
+			for _, a := range *args {
+				if a == flag {
+					return
+				}
+			}
+			*args = append(*args, flag)
+		}
+
+		// 动态计算 Python rpath
+		for _, dir := range pyenv.FindPythonRpaths(pyenv.PythonHome()) {
+			addRpath(&linkArgs, dir)
+		}
+		// 可选兜底
+		addRpath(&linkArgs, "/usr/local/lib")
+
+		err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
+		check(err)
 	}
 
 	if IsFullRpathEnabled() {
