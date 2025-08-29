@@ -26,11 +26,6 @@ import (
 // llgo:skipall
 type _runtime struct{}
 
-const (
-	LLGoPackage = "link"
-	LLGoFiles   = "_wrap/runtime.c"
-)
-
 var defaultGOROOT string // set by cmd/link
 
 func GOROOT() string {
@@ -42,9 +37,6 @@ var buildVersion string
 func Version() string {
 	return buildVersion
 }
-
-//go:linkname c_maxprocs C.llgo_maxprocs
-func c_maxprocs() int32
 
 func GOMAXPROCS(n int) int {
 	return int(c_maxprocs())

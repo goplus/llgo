@@ -176,6 +176,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
 	}
+	if export.Libc != "" {
+		tags += "," + "baremental"
+	}
 	if len(export.BuildTags) > 0 {
 		tags += "," + strings.Join(export.BuildTags, ",")
 	}
@@ -826,6 +829,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
+	buildArgs = append(buildArgs, "--cref", "--Map=t.map")
 
 	buildArgs = append(buildArgs, objFiles...)
 
