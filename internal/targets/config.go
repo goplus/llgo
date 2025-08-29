@@ -17,6 +17,7 @@ type Config struct {
 
 	// Compiler and linker configuration
 	Libc         string   `json:"libc"`
+	RTLib        string   `json:"rtlib"`
 	Linker       string   `json:"linker"`
 	LinkerScript string   `json:"linkerscript"`
 	CFlags       []string `json:"cflags"`

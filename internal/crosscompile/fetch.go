@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
 // checkDownloadAndExtractWasiSDK downloads and extracts WASI SDK
@@ -80,7 +82,7 @@ func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
 	return nil
 }
 
-func checkDownloadAndExtractLibc(cfg *compileLibcConfig, url, dstDir, internalArchiveSrcDir string) error {
+func checkDownloadAndExtractLib(cfg *compile.CompileConfig, url, dstDir, internalArchiveSrcDir string) error {
 	// Check if already exists
 	if cfg.IsCompiled(dstDir) {
 		return nil
@@ -107,7 +109,7 @@ func checkDownloadAndExtractLibc(cfg *compileLibcConfig, url, dstDir, internalAr
 	if err := downloadAndExtractArchive(url, tempExtractDir, description); err != nil {
 		return err
 	}
-	// defer os.RemoveAll(tempExtractDir)
+	defer os.RemoveAll(tempExtractDir)
 
 	srcDir := tempExtractDir
 
@@ -115,6 +117,7 @@ func checkDownloadAndExtractLibc(cfg *compileLibcConfig, url, dstDir, internalAr
 		srcDir = filepath.Join(tempExtractDir, internalArchiveSrcDir)
 	}
 
+	os.RemoveAll(dstDir)
 	if err := os.Rename(srcDir, dstDir); err != nil {
 		return fmt.Errorf("failed to rename libc directory: %w", err)
 	}

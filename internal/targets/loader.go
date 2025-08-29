@@ -137,6 +137,9 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	if src.Libc != "" {
 		dst.Libc = src.Libc
 	}
+	if src.RTLib != "" {
+		dst.RTLib = src.RTLib
+	}
 	if src.Linker != "" {
 		dst.Linker = src.Linker
 	}

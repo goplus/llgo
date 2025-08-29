@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/goplus/llgo/internal/crosscompile/compile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
@@ -219,15 +220,8 @@ func ldFlagsFromFileName(fileName string) string {
 	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
 }
 
-func getOrCompileLibc(cc, linkerName, libcName string, exportCCFlags, exportLDFlags []string) (ldflags []string, err error) {
-	baseDir := filepath.Join(cacheRoot(), "crosscompile")
-	outputDir := filepath.Join(baseDir, libcName)
-
-	compileConfig, err := getCompileLibcConfigByName(baseDir, libcName)
-	if err != nil {
-		return
-	}
-	if err = checkDownloadAndExtractLibc(compileConfig, compileConfig.Url, outputDir, compileConfig.ArchiveSrcDir); err != nil {
+func getOrCompileWithConfig(compileConfig *compile.CompileConfig, outputDir, cc, linkerName, libName string, exportCCFlags, exportLDFlags []string) (ldflags []string, err error) {
+	if err = checkDownloadAndExtractLib(compileConfig, compileConfig.Url, outputDir, compileConfig.ArchiveSrcDir); err != nil {
 		return
 	}
 	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
@@ -606,11 +600,36 @@ func useTarget(targetName string) (export Export, err error) {
 
 	if config.Libc != "" {
 		var libcLDFlags []string
-		libcLDFlags, err = getOrCompileLibc(export.CC, export.Linker, config.Libc, ccflags, ldflags)
+		var compileConfig *compile.CompileConfig
+		baseDir := filepath.Join(cacheRoot(), "crosscompile")
+		outputDir := filepath.Join(baseDir, config.Libc)
+
+		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc)
+		if err != nil {
+			return
+		}
+		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, config.Libc, ccflags, ldflags)
 		if err != nil {
 			return
 		}
 		ldflags = append(ldflags, libcLDFlags...)
+	}
+
+	if config.RTLib != "" {
+		var rtLibLDFlags []string
+		var compileConfig *compile.CompileConfig
+		baseDir := filepath.Join(cacheRoot(), "crosscompile")
+		outputDir := filepath.Join(baseDir, config.RTLib)
+
+		compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib)
+		if err != nil {
+			return
+		}
+		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, config.RTLib, ccflags, ldflags)
+		if err != nil {
+			return
+		}
+		ldflags = append(ldflags, rtLibLDFlags...)
 	}
 
 	// Combine with config flags and expand template variables

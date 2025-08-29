@@ -1,20 +1,22 @@
-package crosscompile
+package libc
 
 import (
 	"path/filepath"
+
+	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
 // getNewlibESP32Config returns configuration for newlib esp32
-func getNewlibESP32Config(baseDir, arch string) *compileLibcConfig {
+func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
 	// headerFile, _ := os.Create(filepath.Join(baseDir, "picolibc.h"))
 	// headerFile.Close()
 
-	return &compileLibcConfig{
+	return &compile.CompileConfig{
 		Url:  "https://github.com/MeteorsLiu/newlib-esp32/archive/refs/heads/esp-4.3.0.zip",
 		Name: "newlib-esp32",
-		Groups: []compileGroup{
+		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: "libcrt0.a",
 				Files: []string{
@@ -23,7 +25,6 @@ func getNewlibESP32Config(baseDir, arch string) *compileLibcConfig {
 					filepath.Join(baseDir, "libgloss", "xtensa", "boards", "esp32", "board.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "crt1-boards.S"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "sleep.S"),
-					filepath.Join(baseDir, "libgloss", "xtensa", "window-vectors.S"),
 				},
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
@@ -974,7 +975,7 @@ func getNewlibESP32Config(baseDir, arch string) *compileLibcConfig {
 					"-I" + filepath.Join(libcDir, "posix"),
 					"-I" + filepath.Join(libcDir, "stdlib"),
 				},
-				LDFlags: []string{"-nostdlib", "-L" + baseDir, "-lgloss"},
+				LDFlags: []string{"-nostdlib"},
 				CCFlags: []string{
 					"-Oz",
 					"-fno-builtin",

@@ -907,7 +907,7 @@ define weak void @_start() {
 	if !needStart(ctx.buildConf) && isWasmTarget(ctx.buildConf.Goos) {
 		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	}
-	if !needStart(ctx.buildConf) {
+	if true {
 		startDefine = ""
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'
