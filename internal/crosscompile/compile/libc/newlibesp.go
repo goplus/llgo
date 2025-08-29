@@ -1,13 +1,14 @@
 package libc
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
 // getNewlibESP32Config returns configuration for newlib esp32
-func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
+func GetNewlibESP32Config(baseDir, target string) *compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
 	return &compile.CompileConfig{
@@ -15,7 +16,7 @@ func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 		Name: "newlib-esp32",
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: "libcrt0.a",
+				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
 				Files: []string{
 					filepath.Join(baseDir, "libgloss", "xtensa", "clibrary_init.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "syscalls.c"),
@@ -39,7 +40,7 @@ func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 				},
 			},
 			{
-				OutputFileName: "libgloss.a",
+				OutputFileName: fmt.Sprintf("libgloss-%s.a", target),
 				Files: []string{
 					filepath.Join(baseDir, "libgloss", "libnosys", "chown.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "close.c"),
@@ -236,7 +237,7 @@ func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 				},
 			},
 			{
-				OutputFileName: "libc.a",
+				OutputFileName: fmt.Sprintf("libc-%s.a", target),
 				Files: []string{
 					filepath.Join(libcDir, "argz", "argz_add.c"),
 					filepath.Join(libcDir, "argz", "argz_add_sep.c"),

@@ -227,7 +227,6 @@ func getOrCompileWithConfig(
 	exportCCFlags, exportLDFlags []string,
 ) (ldflags []string, err error) {
 	if err = checkDownloadAndExtractLib(
-		compileConfig,
 		compileConfig.Url, outputDir,
 		compileConfig.ArchiveSrcDir,
 	); err != nil {
@@ -613,7 +612,7 @@ func useTarget(targetName string) (export Export, err error) {
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
 		outputDir := filepath.Join(baseDir, config.Libc)
 
-		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc)
+		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget)
 		if err != nil {
 			return
 		}
@@ -632,7 +631,7 @@ func useTarget(targetName string) (export Export, err error) {
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
 		outputDir := filepath.Join(baseDir, config.RTLib)
 
-		compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib)
+		compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib, config.LLVMTarget)
 		if err != nil {
 			return
 		}

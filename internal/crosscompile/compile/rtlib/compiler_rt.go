@@ -1,18 +1,19 @@
 package rtlib
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
-func GetCompilerRTConfig(baseDir, arch string) *compile.CompileConfig {
+func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
 	return &compile.CompileConfig{
 		Url:           "https://github.com/goplus/compiler-rt/archive/refs/tags/v0.1.0.tar.gz",
 		ArchiveSrcDir: "compiler-rt-0.1.0",
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: "libclang_builtins.a",
+				OutputFileName: fmt.Sprintf("libclang_builtins-%s.a", target),
 				Files: []string{
 					filepath.Join(baseDir, "lib", "builtins", "xtensa/ieee754_sqrtf.S"),
 					filepath.Join(baseDir, "lib", "builtins", "absvdi2.c"),

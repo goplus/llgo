@@ -1,6 +1,7 @@
 package libc
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -8,7 +9,7 @@ import (
 )
 
 // getPicolibcConfig returns configuration for picolibc
-func GetPicolibcConfig(baseDir string) *compile.CompileConfig {
+func GetPicolibcConfig(baseDir, target string) *compile.CompileConfig {
 	libcIncludeDir := filepath.Join(baseDir, "libc", "include")
 	libmIncludeDir := filepath.Join(baseDir, "libm", "common")
 	localeIncludeDir := filepath.Join(baseDir, "libc", "locale")
@@ -23,7 +24,7 @@ func GetPicolibcConfig(baseDir string) *compile.CompileConfig {
 		Name: "picolibc",
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: "libc.a",
+				OutputFileName: fmt.Sprintf("libc-%s.a", target),
 				Files: []string{
 					filepath.Join(baseDir, "libc", "string", "bcmp.c"),
 					filepath.Join(baseDir, "libc", "string", "bcopy.c"),
