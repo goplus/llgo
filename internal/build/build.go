@@ -826,7 +826,6 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
-	buildArgs = append(buildArgs, "--cref", "--Map=t.map")
 
 	buildArgs = append(buildArgs, objFiles...)
 
