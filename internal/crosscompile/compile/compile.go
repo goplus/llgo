@@ -43,7 +43,7 @@ func (g CompileGroup) Compile(outputDir, cc, linkerName string, extraCCFlags, ex
 
 	compiler := clang.NewCompiler(cfg)
 
-	compiler.Verbose = true
+	compiler.Verbose = false
 
 	archive := filepath.Join(outputDir, g.OutputFileName)
 	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, archive)
@@ -75,8 +75,9 @@ func (g CompileGroup) Compile(outputDir, cc, linkerName string, extraCCFlags, ex
 	llvmAr := filepath.Join(ccDir, "llvm-ar")
 
 	cmd := exec.Command(llvmAr, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// TODO(MeteorsLiu): support verbose
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	return
 }

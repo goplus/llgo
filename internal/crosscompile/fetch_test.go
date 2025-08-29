@@ -287,7 +287,7 @@ func TestDownloadAndExtractArchive(t *testing.T) {
 
 func TestDownloadAndExtractArchiveUnsupportedFormat(t *testing.T) {
 	server := createTestServer(t, map[string]string{
-		"test.zip": "fake zip content",
+		"test.7z": "fake zip content",
 	})
 	defer server.Close()
 
