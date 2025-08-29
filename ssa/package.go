@@ -178,6 +178,7 @@ type aProgram struct {
 	pyNewTuple   *types.Signature
 	pyTupleSetI  *types.Signature
 	floatFromDbl *types.Signature
+	callArgs     *types.Signature
 	callNoArgs   *types.Signature
 	callOneArg   *types.Signature
 	callFOArgs   *types.Signature
