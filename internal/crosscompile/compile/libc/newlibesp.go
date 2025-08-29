@@ -25,6 +25,7 @@ func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "xtensa", "boards", "esp32", "board.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "crt1-boards.S"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "sleep.S"),
+					filepath.Join(baseDir, "libgloss", "xtensa", "window-vectors.S"),
 				},
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
