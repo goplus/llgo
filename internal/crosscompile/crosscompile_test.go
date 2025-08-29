@@ -37,10 +37,10 @@ func TestUseCrossCompileSDK(t *testing.T) {
 			name:          "Same Platform",
 			goos:          runtime.GOOS,
 			goarch:        runtime.GOARCH,
-			expectSDK:     true, // Changed: now we expect flags even for same platform
-			expectCCFlags: true, // Changed: CCFLAGS will contain sysroot
-			expectCFlags:  true, // Changed: CFLAGS will contain include paths
-			expectLDFlags: true, // Changed: LDFLAGS will contain library paths
+			expectSDK:     true,  // Changed: now we expect flags even for same platform
+			expectCCFlags: true,  // Changed: CCFLAGS will contain sysroot
+			expectCFlags:  false, // Changed: CFLAGS will not contain include paths
+			expectLDFlags: false, // Changed: LDFLAGS will not contain library paths
 		},
 		{
 			name:          "WASM Target",
@@ -76,7 +76,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := use(tc.goos, tc.goarch, false)
+			export, err := use(tc.goos, tc.goarch, false, false)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -279,7 +279,7 @@ func TestUseTarget(t *testing.T) {
 
 func TestUseWithTarget(t *testing.T) {
 	// Test target-based configuration takes precedence
-	export, err := Use("linux", "amd64", false, "wasi")
+	export, err := Use("linux", "amd64", "wasi", false, true)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -291,7 +291,7 @@ func TestUseWithTarget(t *testing.T) {
 	}
 
 	// Test fallback to goos/goarch when no target specified
-	export, err = Use(runtime.GOOS, runtime.GOARCH, false, "")
+	export, err = Use(runtime.GOOS, runtime.GOARCH, "", false, false)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
