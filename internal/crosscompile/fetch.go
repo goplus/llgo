@@ -102,7 +102,7 @@ func checkDownloadAndExtractLib(cfg *compile.CompileConfig, url, dstDir, interna
 	}
 	fmt.Fprintf(os.Stderr, "%s not found in LLGO_ROOT or cache, will download and compile.\n", dstDir)
 
-	description := fmt.Sprintf("Libc %s", path.Base(url))
+	description := fmt.Sprintf("Lib %s", path.Base(url))
 
 	// Use temporary extraction directory
 	tempExtractDir := dstDir + ".extract"

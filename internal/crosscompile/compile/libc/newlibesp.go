@@ -10,11 +10,8 @@ import (
 func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
-	// headerFile, _ := os.Create(filepath.Join(baseDir, "picolibc.h"))
-	// headerFile.Close()
-
 	return &compile.CompileConfig{
-		Url:  "https://github.com/MeteorsLiu/newlib-esp32/archive/refs/heads/esp-4.3.0.zip",
+		Url:  "https://github.com/goplus/newlib/archive/refs/tags/v0.1.0.tar.gz",
 		Name: "newlib-esp32",
 		Groups: []compile.CompileGroup{
 			{
@@ -987,6 +984,6 @@ func GetNewlibESP32Config(baseDir, arch string) *compile.CompileConfig {
 				},
 			},
 		},
-		ArchiveSrcDir: "newlib-esp32-esp-4.3.0",
+		ArchiveSrcDir: "newlib-0.1.0",
 	}
 }

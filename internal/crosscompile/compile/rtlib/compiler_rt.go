@@ -8,8 +8,8 @@ import (
 
 func GetCompilerRTConfig(baseDir, arch string) *compile.CompileConfig {
 	return &compile.CompileConfig{
-		Url:           "https://github.com/MeteorsLiu/llvm-project/archive/refs/heads/compiler-rt.zip",
-		ArchiveSrcDir: "llvm-project-compiler-rt",
+		Url:           "https://github.com/goplus/compiler-rt/archive/refs/tags/v0.1.0.tar.gz",
+		ArchiveSrcDir: "compiler-rt-0.1.0",
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: "libclang_builtins.a",

@@ -26,6 +26,7 @@ type Export struct {
 	BuildTags    []string
 	GOOS         string
 	GOARCH       string
+	Libc         string
 	Linker       string   // Linker to use (e.g., "ld.lld", "avr-ld")
 	ExtraFiles   []string // Extra files to compile and link (e.g., .s, .c files)
 	ClangRoot    string   // Root directory of custom clang installation
@@ -220,8 +221,16 @@ func ldFlagsFromFileName(fileName string) string {
 	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
 }
 
-func getOrCompileWithConfig(compileConfig *compile.CompileConfig, outputDir, cc, linkerName, libName string, exportCCFlags, exportLDFlags []string) (ldflags []string, err error) {
-	if err = checkDownloadAndExtractLib(compileConfig, compileConfig.Url, outputDir, compileConfig.ArchiveSrcDir); err != nil {
+func getOrCompileWithConfig(
+	compileConfig *compile.CompileConfig,
+	outputDir, cc, linkerName string,
+	exportCCFlags, exportLDFlags []string,
+) (ldflags []string, err error) {
+	if err = checkDownloadAndExtractLib(
+		compileConfig,
+		compileConfig.Url, outputDir,
+		compileConfig.ArchiveSrcDir,
+	); err != nil {
 		return
 	}
 	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
@@ -608,11 +617,13 @@ func useTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, config.Libc, ccflags, ldflags)
+		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, ccflags, ldflags)
 		if err != nil {
 			return
 		}
 		ldflags = append(ldflags, libcLDFlags...)
+
+		export.Libc = config.Libc
 	}
 
 	if config.RTLib != "" {
@@ -625,7 +636,7 @@ func useTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, config.RTLib, ccflags, ldflags)
+		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, ccflags, ldflags)
 		if err != nil {
 			return
 		}
