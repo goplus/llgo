@@ -178,6 +178,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
 	}
+	if export.Libc != "" {
+		tags += "," + "baremental"
+	}
 	if len(export.BuildTags) > 0 {
 		tags += "," + strings.Join(export.BuildTags, ",")
 	}
@@ -827,6 +830,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
+	buildArgs = append(buildArgs, "--cref", "--Map=t.map")
 
 	buildArgs = append(buildArgs, objFiles...)
 
@@ -839,15 +843,16 @@ func isWasmTarget(goos string) bool {
 	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
 }
 
-func needStart(conf *Config) bool {
-	if conf.Target == "" {
-		return !isWasmTarget(conf.Goos)
+func needStart(ctx *context) bool {
+	if ctx.buildConf.Target == "" {
+		return !isWasmTarget(ctx.buildConf.Goos)
 	}
-	switch conf.Target {
+	switch ctx.buildConf.Target {
 	case "wasip2":
 		return false
 	default:
-		return true
+		// since newlib-esp32 provides _start, we don't need to provide a fake _start function
+		return ctx.crossCompile.Libc != "newlib-esp32"
 	}
 }
 
@@ -904,10 +909,10 @@ define weak void @_start() {
 }
 `
 	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
-	if !needStart(ctx.buildConf) && isWasmTarget(ctx.buildConf.Goos) {
+	if !needStart(ctx) && isWasmTarget(ctx.buildConf.Goos) {
 		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	}
-	if !needStart(ctx.buildConf) {
+	if !needStart(ctx) {
 		startDefine = ""
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'

@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	LLGoPackage = "decl"
+	LLGoPackage = "link"
 )
 
 type (
