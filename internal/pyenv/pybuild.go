@@ -295,10 +295,10 @@ func FindPythonRpaths(pyHome string) []string {
 
 	var rpaths []string
 
-	pyLib := filepath.Join(pyHome, "lib")
-	if hasLibpython(pyLib) {
-		rpaths = append(rpaths, pyLib)
-	}
+	// pyLib := filepath.Join(pyHome, "lib")
+	// if hasLibpython(pyLib) {
+	// 	rpaths = append(rpaths, pyLib)
+	// }
 
 	names := []string{"python-3.12-embed", "python3-embed", "python-3.12", "python3"}
 	for _, name := range names {

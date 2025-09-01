@@ -508,7 +508,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 						ctx.nLibdir++
 					}
 				}
-				if ctx.isCheckLinkArgsEnabled {
+				if ctx.buildConf.CheckLinkArgs {
 					if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
 						panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
 					}
@@ -794,13 +794,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		for _, dir := range pyenv.FindPythonRpaths(pyenv.PythonHome()) {
 			addRpath(&linkArgs, dir)
 		}
-		// 可选兜底
-		addRpath(&linkArgs, "/usr/local/lib")
-
-		err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
-		check(err)
 	}
-
 	if IsFullRpathEnabled() {
 		exargs := make([]string, 0, ctx.nLibdir<<1)
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
@@ -813,7 +807,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 		linkArgs = append(linkArgs, exargs...)
 	}
-
 	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
 	check(err)
 
