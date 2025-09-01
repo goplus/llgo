@@ -317,12 +317,12 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			export.CCFLAGS = append(
 				export.CCFLAGS,
 				"-fdata-sections",
-				// "-ffunction-sections",
+				"-ffunction-sections",
 			)
 			export.LDFLAGS = append(
 				export.LDFLAGS,
 				"-fdata-sections",
-				// "-ffunction-sections",
+				"-ffunction-sections",
 				"-Xlinker",
 				"--gc-sections",
 				"-lm",

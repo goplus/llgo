@@ -1073,7 +1073,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) *compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
 	return &compile.CompileConfig{
-		Url:  "https://github.com/goplus/newlib/archive/refs/tags/v0.1.0.tar.gz",
+		Url:  "https://github.com/goplus/newlib/archive/refs/tags/v0.2.0.tar.gz",
 		Name: "newlib-esp32",
 		Groups: []compile.CompileGroup{
 			{
@@ -2053,7 +2053,6 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) *compile.CompileConfig {
 // getNewlibESP32Config returns configuration for newlib esp32
 func GetNewlibESP32Config(baseDir, target, mcpu string) *compile.CompileConfig {
 	if strings.Contains(target, "riscv32") {
-		fmt.Println(target)
 		return getNewlibESP32ConfigRISCV(baseDir, target)
 	}
 	return getNewlibESP32ConfigXtensa(baseDir, target)
