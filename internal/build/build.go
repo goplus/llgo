@@ -790,7 +790,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			*args = append(*args, flag)
 		}
 
-		// 动态计算 Python rpath
 		for _, dir := range pyenv.FindPythonRpaths(pyenv.PythonHome()) {
 			addRpath(&linkArgs, dir)
 		}
