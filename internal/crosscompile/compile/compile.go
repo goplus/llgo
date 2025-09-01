@@ -54,7 +54,6 @@ func (g CompileGroup) Compile(outputDir, cc, linkerName string, extraCCFlags, ex
 		if err != nil {
 			return
 		}
-		fmt.Fprintf(os.Stderr, "Compile file %s to %s...\n", file, tempObjFile.Name())
 
 		lang := "c"
 		if filepath.Ext(file) == ".S" {

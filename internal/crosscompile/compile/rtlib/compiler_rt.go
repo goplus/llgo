@@ -8,6 +8,11 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
+// Builtins needed specifically for windows/386.
+var windowsI386Builtins = []string{
+	"i386/chkstk.S", // also _alloca
+}
+
 func platformSpecifiedFiles(builtinsDir, target string) []string {
 	switch {
 	case strings.Contains(target, "riscv32"):
@@ -17,6 +22,73 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 			filepath.Join(builtinsDir, "riscv", "save.S"),
 			filepath.Join(builtinsDir, "riscv", "restore.S"),
 		}
+	case strings.Contains(target, "riscv64"):
+		return []string{
+			"addtf3.c",
+			"comparetf2.c",
+			"divtc3.c",
+			"divtf3.c",
+			"extenddftf2.c",
+			"extendhftf2.c",
+			"extendsftf2.c",
+			"fixtfdi.c",
+			"fixtfsi.c",
+			"fixtfti.c",
+			"fixunstfdi.c",
+			"fixunstfsi.c",
+			"fixunstfti.c",
+			"floatditf.c",
+			"floatsitf.c",
+			"floattitf.c",
+			"floatunditf.c",
+			"floatunsitf.c",
+			"floatuntitf.c",
+			"multc3.c",
+			"multf3.c",
+			"powitf2.c",
+			"subtf3.c",
+			"trunctfdf2.c",
+			"trunctfhf2.c",
+			"trunctfsf2.c",
+		}
+	case strings.Contains(target, "arm"):
+		return []string{
+			filepath.Join(builtinsDir, "arm", "aeabi_cdcmp.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_cdcmpeq_check_nan.c"),
+			filepath.Join(builtinsDir, "arm", "aeabi_cfcmp.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_cfcmpeq_check_nan.c"),
+			filepath.Join(builtinsDir, "arm", "aeabi_dcmp.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_div0.c"),
+			filepath.Join(builtinsDir, "arm", "aeabi_drsub.c"),
+			filepath.Join(builtinsDir, "arm", "aeabi_fcmp.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_frsub.c"),
+			filepath.Join(builtinsDir, "arm", "aeabi_idivmod.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_ldivmod.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_memcmp.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_memcpy.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_memmove.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_memset.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_uidivmod.S"),
+			filepath.Join(builtinsDir, "arm", "aeabi_uldivmod.S"),
+
+			// These two are not technically EABI builtins but are used by them and only
+			// seem to be used on ARM. LLVM seems to use __divsi3 and __modsi3 on most
+			// other architectures.
+			// Most importantly, they have a different calling convention on AVR so
+			// should not be used on AVR.
+			filepath.Join(builtinsDir, "divmodsi4.c"),
+			filepath.Join(builtinsDir, "udivmodsi4.c"),
+		}
+	case strings.Contains(target, "avr"):
+		return []string{
+			filepath.Join("avr", "divmodhi4.S"),
+			filepath.Join("avr", "divmodqi4.S"),
+			filepath.Join("avr", "mulhi3.S"),
+			filepath.Join("avr", "mulqi3.S"),
+			filepath.Join("avr", "udivmodhi4.S"),
+			filepath.Join("avr", "udivmodqi4.S"),
+		}
+
 	case target == "xtensa":
 		return []string{
 			filepath.Join(builtinsDir, "xtensa", "ieee754_sqrtf.S"),
