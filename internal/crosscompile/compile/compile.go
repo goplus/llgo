@@ -11,6 +11,14 @@ import (
 	"github.com/goplus/llgo/internal/clang"
 )
 
+type CompileOptions struct {
+	CC      string // Compiler to use
+	Linker  string
+	CCFLAGS []string
+	CFLAGS  []string
+	LDFLAGS []string
+}
+
 type CompileGroup struct {
 	OutputFileName string
 	Files          []string // List of source files to compile
@@ -25,7 +33,9 @@ func (g CompileGroup) IsCompiled(outputDir string) bool {
 	return !os.IsNotExist(err)
 }
 
-func (g CompileGroup) Compile(outputDir, cc, linkerName string, extraCCFlags, extraLDFlags []string) (err error) {
+func (g CompileGroup) Compile(
+	outputDir string, options CompileOptions,
+) (err error) {
 	if g.IsCompiled(outputDir) {
 		return
 	}
@@ -35,15 +45,17 @@ func (g CompileGroup) Compile(outputDir, cc, linkerName string, extraCCFlags, ex
 	}
 	defer os.RemoveAll(tmpCompileDir)
 
-	compileLDFlags := append(slices.Clone(extraLDFlags), g.LDFlags...)
-	compileCCFlags := append(slices.Clone(extraCCFlags), g.CCFlags...)
-	cfg := clang.NewConfig(cc, compileCCFlags, g.CFlags, compileLDFlags, linkerName)
+	compileLDFlags := append(slices.Clone(options.LDFLAGS), g.LDFlags...)
+	compileCCFlags := append(slices.Clone(options.CCFLAGS), g.CCFlags...)
+	compileCFFlags := append(slices.Clone(options.CFLAGS), g.CFlags...)
+
+	cfg := clang.NewConfig(options.CC, compileCCFlags, compileCFFlags, compileLDFlags, options.Linker)
 
 	var objFiles []string
 
 	compiler := clang.NewCompiler(cfg)
 
-	compiler.Verbose = false
+	compiler.Verbose = true
 
 	archive := filepath.Join(outputDir, g.OutputFileName)
 	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, archive)
@@ -70,7 +82,7 @@ func (g CompileGroup) Compile(outputDir, cc, linkerName string, extraCCFlags, ex
 	args := []string{"rcs", archive}
 	args = append(args, objFiles...)
 
-	ccDir := filepath.Dir(cc)
+	ccDir := filepath.Dir(options.CC)
 	llvmAr := filepath.Join(ccDir, "llvm-ar")
 
 	cmd := exec.Command(llvmAr, args...)
@@ -87,13 +99,5 @@ type CompileConfig struct {
 	Name          string // compile name (e.g., "picolibc", "musl", "glibc")
 	Groups        []CompileGroup
 	ArchiveSrcDir string
-}
-
-func (c CompileConfig) IsCompiled(outputDir string) bool {
-	for _, group := range c.Groups {
-		if !group.IsCompiled(outputDir) {
-			return false
-		}
-	}
-	return true
+	LibcCFlags    []string
 }

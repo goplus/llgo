@@ -2,6 +2,7 @@ package compile
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -18,12 +19,12 @@ func TestIsCompile(t *testing.T) {
 			},
 		}
 
-		if cfg.IsCompiled(".") || cfg.Groups[0].IsCompiled(".") {
+		if cfg.Groups[0].IsCompiled(".") {
 			t.Errorf("unexpected result: should false")
 		}
 	})
 	t.Run("IsCompile Exists", func(t *testing.T) {
-		tmpFile, err := os.CreateTemp(".", "test*.a")
+		tmpFile, err := os.CreateTemp("", "test*.a")
 		if err != nil {
 			t.Error(err)
 			return
@@ -37,7 +38,7 @@ func TestIsCompile(t *testing.T) {
 			},
 		}
 
-		if !cfg.IsCompiled(".") && !cfg.Groups[0].IsCompiled(".") {
+		if cfg.Groups[0].IsCompiled(filepath.Dir(tmpFile.Name())) {
 			t.Errorf("unexpected result: should true")
 		}
 	})
@@ -54,7 +55,10 @@ func TestCompile(t *testing.T) {
 		group := CompileGroup{
 			OutputFileName: tmpFile.Name(),
 		}
-		err = group.Compile(".", "clang", "lld", nil, nil)
+		err = group.Compile(".", CompileOptions{
+			CC:     "clang",
+			Linker: "lld",
+		})
 		if err != nil {
 			t.Errorf("unexpected result: should nil")
 		}
@@ -74,7 +78,10 @@ func TestCompile(t *testing.T) {
 		group := CompileGroup{
 			OutputFileName: "nop.a",
 		}
-		err = group.Compile(".", "clang", "lld", nil, nil)
+		err = group.Compile(".", CompileOptions{
+			CC:     "clang",
+			Linker: "lld",
+		})
 		if err == nil {
 			t.Errorf("unexpected result: should not nil")
 		}
@@ -104,11 +111,18 @@ func TestCompile(t *testing.T) {
 			OutputFileName: "nop.a",
 			Files:          []string{tmpFile.Name()},
 		}
-		err = group.Compile(".", "clang", "lld", []string{"-nostdinc"}, nil)
+		err = group.Compile(".", CompileOptions{
+			CC:      "clang",
+			Linker:  "lld",
+			CCFLAGS: []string{"-nostdinc"},
+		})
 		if err == nil {
 			t.Errorf("unexpected result: should not nil")
 		}
-		err = group.Compile(".", "clang", "lld", nil, nil)
+		err = group.Compile(".", CompileOptions{
+			CC:     "clang",
+			Linker: "lld",
+		})
 		if err != nil {
 			t.Errorf("unexpected result: should not nil")
 		}

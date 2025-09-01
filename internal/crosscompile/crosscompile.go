@@ -223,8 +223,7 @@ func ldFlagsFromFileName(fileName string) string {
 
 func getOrCompileWithConfig(
 	compileConfig *compile.CompileConfig,
-	outputDir, cc, linkerName string,
-	exportCCFlags, exportLDFlags []string,
+	outputDir string, options compile.CompileOptions,
 ) (ldflags []string, err error) {
 	if err = checkDownloadAndExtractLib(
 		compileConfig.Url, outputDir,
@@ -235,7 +234,7 @@ func getOrCompileWithConfig(
 	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
 
 	for _, group := range compileConfig.Groups {
-		err = group.Compile(outputDir, cc, linkerName, exportCCFlags, exportLDFlags)
+		err = group.Compile(outputDir, options)
 		if err != nil {
 			break
 		}
@@ -606,6 +605,8 @@ func useTarget(targetName string) (export Export, err error) {
 	}
 	ldflags = append(ldflags, "-L", env.LLGoROOT()) // search targets/*.ld
 
+	var libcIncludeDir []string
+
 	if config.Libc != "" {
 		var libcLDFlags []string
 		var compileConfig *compile.CompileConfig
@@ -616,12 +617,19 @@ func useTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, ccflags, ldflags)
+		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+			CC:      export.CC,
+			Linker:  export.Linker,
+			CCFLAGS: ccflags,
+			LDFLAGS: ldflags,
+		})
 		if err != nil {
 			return
 		}
+		cflags = append(cflags, compileConfig.LibcCFlags...)
 		ldflags = append(ldflags, libcLDFlags...)
 
+		libcIncludeDir = compileConfig.LibcCFlags
 		export.Libc = config.Libc
 	}
 
@@ -635,7 +643,13 @@ func useTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, export.CC, export.Linker, ccflags, ldflags)
+		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+			CC:      export.CC,
+			Linker:  export.Linker,
+			CCFLAGS: ccflags,
+			LDFLAGS: ldflags,
+			CFLAGS:  libcIncludeDir,
+		})
 		if err != nil {
 			return
 		}
@@ -654,7 +668,7 @@ func useTarget(targetName string) (export Export, err error) {
 // Use extends the original Use function to support target-based configuration
 // If targetName is provided, it takes precedence over goos/goarch
 func Use(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
-	if targetName != "" {
+	if targetName != "" && !strings.HasPrefix(targetName, "wasm") && !strings.HasPrefix(targetName, "wasi") {
 		return useTarget(targetName)
 	}
 	return use(goos, goarch, wasiThreads)

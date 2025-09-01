@@ -294,7 +294,7 @@ func TestDownloadAndExtractArchiveUnsupportedFormat(t *testing.T) {
 	tempDir := t.TempDir()
 	destDir := filepath.Join(tempDir, "extracted")
 
-	err := downloadAndExtractArchive(server.URL+"/test.zip", destDir, "Test Archive")
+	err := downloadAndExtractArchive(server.URL+"/test.7z", destDir, "Test Archive")
 	if err == nil {
 		t.Error("Expected error for unsupported format, got nil")
 	}

@@ -16,6 +16,7 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 			filepath.Join(builtinsDir, "riscv", "fp_mode.c"),
 			filepath.Join(builtinsDir, "riscv", "save.S"),
 			filepath.Join(builtinsDir, "riscv", "restore.S"),
+			filepath.Join(builtinsDir, "atomic.c"),
 		}
 	case strings.Contains(target, "riscv64"):
 		return []string{
@@ -45,6 +46,7 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 			filepath.Join(builtinsDir, "trunctfdf2.c"),
 			filepath.Join(builtinsDir, "trunctfhf2.c"),
 			filepath.Join(builtinsDir, "trunctfsf2.c"),
+			filepath.Join(builtinsDir, "atomic.c"),
 		}
 	case strings.Contains(target, "arm"):
 		return []string{
@@ -87,6 +89,7 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 	case target == "xtensa":
 		return []string{
 			filepath.Join(builtinsDir, "xtensa", "ieee754_sqrtf.S"),
+			filepath.Join(builtinsDir, "atomic.c"),
 		}
 	}
 	return nil
@@ -252,7 +255,6 @@ func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
 					filepath.Join(baseDir, "lib", "builtins", "trunctfdf2.c"),
 					filepath.Join(baseDir, "lib", "builtins", "trunctfhf2.c"),
 					filepath.Join(baseDir, "lib", "builtins", "trunctfsf2.c"),
-					filepath.Join(baseDir, "lib", "builtins", "atomic.c"),
 				}),
 				CFlags: []string{
 					"-DNDEBUG",
