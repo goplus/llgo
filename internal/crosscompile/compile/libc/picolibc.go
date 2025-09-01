@@ -2,7 +2,6 @@ package libc
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
@@ -14,13 +13,8 @@ func GetPicolibcConfig(baseDir, target string) *compile.CompileConfig {
 	libmIncludeDir := filepath.Join(baseDir, "libm", "common")
 	localeIncludeDir := filepath.Join(baseDir, "libc", "locale")
 
-	os.MkdirAll(baseDir, 0700)
-
-	headerFile, _ := os.Create(filepath.Join(baseDir, "picolibc.h"))
-	headerFile.Close()
-
 	return &compile.CompileConfig{
-		Url:  "https://github.com/picolibc/picolibc/releases/download/1.8.10/picolibc-1.8.10.tar.xz",
+		Url:  "https://github.com/goplus/picolibc/archive/refs/heads/main.zip",
 		Name: "picolibc",
 		Groups: []compile.CompileGroup{
 			{
@@ -164,6 +158,6 @@ func GetPicolibcConfig(baseDir, target string) *compile.CompileConfig {
 				},
 			},
 		},
-		ArchiveSrcDir: filepath.Join("picolibc-1.8.10", "newlib"),
+		ArchiveSrcDir: filepath.Join("picolibc-main", "newlib"),
 	}
 }
