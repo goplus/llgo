@@ -8,11 +8,6 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
-// Builtins needed specifically for windows/386.
-var windowsI386Builtins = []string{
-	"i386/chkstk.S", // also _alloca
-}
-
 func platformSpecifiedFiles(builtinsDir, target string) []string {
 	switch {
 	case strings.Contains(target, "riscv32"):
@@ -24,32 +19,32 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 		}
 	case strings.Contains(target, "riscv64"):
 		return []string{
-			"addtf3.c",
-			"comparetf2.c",
-			"divtc3.c",
-			"divtf3.c",
-			"extenddftf2.c",
-			"extendhftf2.c",
-			"extendsftf2.c",
-			"fixtfdi.c",
-			"fixtfsi.c",
-			"fixtfti.c",
-			"fixunstfdi.c",
-			"fixunstfsi.c",
-			"fixunstfti.c",
-			"floatditf.c",
-			"floatsitf.c",
-			"floattitf.c",
-			"floatunditf.c",
-			"floatunsitf.c",
-			"floatuntitf.c",
-			"multc3.c",
-			"multf3.c",
-			"powitf2.c",
-			"subtf3.c",
-			"trunctfdf2.c",
-			"trunctfhf2.c",
-			"trunctfsf2.c",
+			filepath.Join(builtinsDir, "addtf3.c"),
+			filepath.Join(builtinsDir, "comparetf2.c"),
+			filepath.Join(builtinsDir, "divtc3.c"),
+			filepath.Join(builtinsDir, "divtf3.c"),
+			filepath.Join(builtinsDir, "extenddftf2.c"),
+			filepath.Join(builtinsDir, "extendhftf2.c"),
+			filepath.Join(builtinsDir, "extendsftf2.c"),
+			filepath.Join(builtinsDir, "fixtfdi.c"),
+			filepath.Join(builtinsDir, "fixtfsi.c"),
+			filepath.Join(builtinsDir, "fixtfti.c"),
+			filepath.Join(builtinsDir, "fixunstfdi.c"),
+			filepath.Join(builtinsDir, "fixunstfsi.c"),
+			filepath.Join(builtinsDir, "fixunstfti.c"),
+			filepath.Join(builtinsDir, "floatditf.c"),
+			filepath.Join(builtinsDir, "floatsitf.c"),
+			filepath.Join(builtinsDir, "floattitf.c"),
+			filepath.Join(builtinsDir, "floatunditf.c"),
+			filepath.Join(builtinsDir, "floatunsitf.c"),
+			filepath.Join(builtinsDir, "floatuntitf.c"),
+			filepath.Join(builtinsDir, "multc3.c"),
+			filepath.Join(builtinsDir, "multf3.c"),
+			filepath.Join(builtinsDir, "powitf2.c"),
+			filepath.Join(builtinsDir, "subtf3.c"),
+			filepath.Join(builtinsDir, "trunctfdf2.c"),
+			filepath.Join(builtinsDir, "trunctfhf2.c"),
+			filepath.Join(builtinsDir, "trunctfsf2.c"),
 		}
 	case strings.Contains(target, "arm"):
 		return []string{
@@ -81,12 +76,12 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 		}
 	case strings.Contains(target, "avr"):
 		return []string{
-			filepath.Join("avr", "divmodhi4.S"),
-			filepath.Join("avr", "divmodqi4.S"),
-			filepath.Join("avr", "mulhi3.S"),
-			filepath.Join("avr", "mulqi3.S"),
-			filepath.Join("avr", "udivmodhi4.S"),
-			filepath.Join("avr", "udivmodqi4.S"),
+			filepath.Join(builtinsDir, "avr", "divmodhi4.S"),
+			filepath.Join(builtinsDir, "avr", "divmodqi4.S"),
+			filepath.Join(builtinsDir, "avr", "mulhi3.S"),
+			filepath.Join(builtinsDir, "avr", "mulqi3.S"),
+			filepath.Join(builtinsDir, "avr", "udivmodhi4.S"),
+			filepath.Join(builtinsDir, "avr", "udivmodqi4.S"),
 		}
 
 	case target == "xtensa":
