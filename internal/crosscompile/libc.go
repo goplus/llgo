@@ -11,7 +11,7 @@ import (
 
 // GetCompileConfigByName retrieves libc compilation configuration by name
 // Returns compilation file lists and corresponding cflags
-func getLibcCompileConfigByName(baseDir, libcName, target string) (*compile.CompileConfig, error) {
+func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (*compile.CompileConfig, error) {
 	if libcName == "" {
 		return nil, fmt.Errorf("libc name cannot be empty")
 	}
@@ -21,7 +21,7 @@ func getLibcCompileConfigByName(baseDir, libcName, target string) (*compile.Comp
 	case "picolibc":
 		return libc.GetPicolibcConfig(libcDir, target), nil
 	case "newlib-esp32":
-		return libc.GetNewlibESP32Config(libcDir, target), nil
+		return libc.GetNewlibESP32Config(libcDir, target, mcpu), nil
 	default:
 		return nil, fmt.Errorf("unsupported libc: %s", libcName)
 	}

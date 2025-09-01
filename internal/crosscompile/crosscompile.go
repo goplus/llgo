@@ -317,12 +317,12 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 			export.CCFLAGS = append(
 				export.CCFLAGS,
 				"-fdata-sections",
-				"-ffunction-sections",
+				// "-ffunction-sections",
 			)
 			export.LDFLAGS = append(
 				export.LDFLAGS,
 				"-fdata-sections",
-				"-ffunction-sections",
+				// "-ffunction-sections",
 				"-Xlinker",
 				"--gc-sections",
 				"-lm",
@@ -612,7 +612,7 @@ func useTarget(targetName string) (export Export, err error) {
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
 		outputDir := filepath.Join(baseDir, config.Libc)
 
-		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget)
+		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget, config.CPU)
 		if err != nil {
 			return
 		}

@@ -3,9 +3,32 @@ package rtlib
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
+
+func platformSpecifiedFiles(builtinsDir, target string) []string {
+	switch {
+	case strings.Contains(target, "riscv32"):
+		return []string{
+			filepath.Join(builtinsDir, "riscv", "mulsi3.S"),
+			filepath.Join(builtinsDir, "riscv", "fp_mode.c"),
+			filepath.Join(builtinsDir, "riscv", "save.S"),
+			filepath.Join(builtinsDir, "riscv", "restore.S"),
+		}
+	case target == "xtensa":
+		return []string{
+			filepath.Join(builtinsDir, "xtensa", "ieee754_sqrtf.S"),
+		}
+	}
+	return nil
+}
+
+func withPlatformSpecifiedFiles(baseDir, target string, files []string) []string {
+	builtinsDir := filepath.Join(baseDir, "lib", "builtins")
+	return append(files, platformSpecifiedFiles(builtinsDir, target)...)
+}
 
 func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
 	return &compile.CompileConfig{
@@ -14,8 +37,7 @@ func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: fmt.Sprintf("libclang_builtins-%s.a", target),
-				Files: []string{
-					filepath.Join(baseDir, "lib", "builtins", "xtensa/ieee754_sqrtf.S"),
+				Files: withPlatformSpecifiedFiles(baseDir, target, []string{
 					filepath.Join(baseDir, "lib", "builtins", "absvdi2.c"),
 					filepath.Join(baseDir, "lib", "builtins", "absvsi2.c"),
 					filepath.Join(baseDir, "lib", "builtins", "absvti2.c"),
@@ -163,7 +185,8 @@ func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
 					filepath.Join(baseDir, "lib", "builtins", "trunctfdf2.c"),
 					filepath.Join(baseDir, "lib", "builtins", "trunctfhf2.c"),
 					filepath.Join(baseDir, "lib", "builtins", "trunctfsf2.c"),
-				},
+					filepath.Join(baseDir, "lib", "builtins", "atomic.c"),
+				}),
 				CFlags: []string{
 					"-DNDEBUG",
 					"-DVISIBILITY_HIDDEN",
