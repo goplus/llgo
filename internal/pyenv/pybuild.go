@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/goplus/llgo/internal/env"
@@ -113,14 +114,7 @@ func applyEnv(pyHome string) error {
 		_ = os.Setenv("PKG_CONFIG_PATH", pkgcfg)
 	} else {
 		parts := strings.Split(pcp, string(os.PathListSeparator))
-		found := false
-		for _, p := range parts {
-			if p == pkgcfg {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(parts, pkgcfg) {
 			_ = os.Setenv("PKG_CONFIG_PATH", pkgcfg+string(os.PathListSeparator)+pcp)
 		}
 	}
