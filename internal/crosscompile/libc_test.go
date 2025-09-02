@@ -1,3 +1,5 @@
+//go:build !llgo
+
 package crosscompile
 
 import (
