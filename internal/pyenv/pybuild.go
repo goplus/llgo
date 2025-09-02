@@ -231,83 +231,121 @@ func FixLibpythonInstallName(pyHome string) error {
 func quote(s string) string { return "'" + s + "'" }
 
 func FindPythonRpaths(pyHome string) []string {
-	dedup := func(ss []string) []string {
-		m := make(map[string]struct{}, len(ss))
-		var out []string
-		for _, s := range ss {
-			if s == "" {
-				continue
-			}
-			if _, ok := m[s]; ok {
-				continue
-			}
-			m[s] = struct{}{}
-			out = append(out, s)
-		}
-		return out
-	}
-	hasLibpython := func(dir string) bool {
-		if dir == "" {
-			return false
-		}
-		ents, err := os.ReadDir(dir)
-		if err != nil {
-			return false
-		}
-		for _, e := range ents {
-			name := e.Name()
-			if strings.HasPrefix(name, "libpython") && strings.HasSuffix(name, ".dylib") {
-				return true
-			}
-		}
-		return false
-	}
-	parseLFlags := func(out string) []string {
-		var dirs []string
-		for _, f := range strings.Fields(out) {
-			if strings.HasPrefix(f, "-L") && len(f) > 2 {
-				dirs = append(dirs, f[2:])
-			}
-		}
-		return dirs
-	}
-	runPkgConfigDefault := func(args ...string) (string, error) {
-		cmd := exec.Command("pkg-config", args...)
-		env := os.Environ()
-		var filtered []string
-		for _, kv := range env {
-			if strings.HasPrefix(kv, "PKG_CONFIG_PATH=") || strings.HasPrefix(kv, "PKG_CONFIG_LIBDIR=") {
-				continue
-			}
-			filtered = append(filtered, kv)
-		}
-		cmd.Env = filtered
-		b, err := cmd.CombinedOutput()
-		return strings.TrimSpace(string(b)), err
-	}
+	return []string{filepath.Join(pyHome, "lib")}
+	// dedup := func(ss []string) []string {
+	// 	m := make(map[string]struct{}, len(ss))
+	// 	var out []string
+	// 	for _, s := range ss {
+	// 		if s == "" {
+	// 			continue
+	// 		}
+	// 		if _, ok := m[s]; ok {
+	// 			continue
+	// 		}
+	// 		m[s] = struct{}{}
+	// 		out = append(out, s)
+	// 	}
+	// 	return out
+	// }
+	// hasLibpython := func(dir string) bool {
+	// 	if dir == "" {
+	// 		return false
+	// 	}
+	// 	ents, err := os.ReadDir(dir)
+	// 	if err != nil {
+	// 		return false
+	// 	}
+	// 	for _, e := range ents {
+	// 		name := e.Name()
+	// 		if strings.HasPrefix(name, "libpython") && strings.HasSuffix(name, ".dylib") {
+	// 			return true
+	// 		}
+	// 	}
+	// 	return false
+	// }
+	// parseLFlags := func(out string) []string {
+	// 	var dirs []string
+	// 	for _, f := range strings.Fields(out) {
+	// 		if strings.HasPrefix(f, "-L") && len(f) > 2 {
+	// 			dirs = append(dirs, f[2:])
+	// 		}
+	// 	}
+	// 	return dirs
+	// }
+	// runPkgConfigDefault := func(args ...string) (string, error) {
+	// 	cmd := exec.Command("pkg-config", args...)
+	// 	env := os.Environ()
+	// 	var filtered []string
+	// 	for _, kv := range env {
+	// 		if strings.HasPrefix(kv, "PKG_CONFIG_PATH=") || strings.HasPrefix(kv, "PKG_CONFIG_LIBDIR=") {
+	// 			continue
+	// 		}
+	// 		filtered = append(filtered, kv)
+	// 	}
+	// 	cmd.Env = filtered
+	// 	b, err := cmd.CombinedOutput()
+	// 	return strings.TrimSpace(string(b)), err
+	// }
 
-	var rpaths []string
+	// var rpaths []string
 
-	pyLib := filepath.Join(pyHome, "lib")
-	if hasLibpython(pyLib) {
-		rpaths = append(rpaths, pyLib)
-	}
+	// pyLib := filepath.Join(pyHome, "lib")
+	// if hasLibpython(pyLib) {
+	// 	rpaths = append(rpaths, pyLib)
+	// }
 
-	names := []string{"python-3.12-embed", "python3-embed", "python-3.12", "python3"}
-	for _, name := range names {
-		if out, err := runPkgConfigDefault("--libs", name); err == nil && out != "" {
-			for _, d := range parseLFlags(out) {
-				if hasLibpython(d) || d != "" {
-					rpaths = append(rpaths, d)
-				}
-			}
-			if ld, err := runPkgConfigDefault("--variable=libdir", name); err == nil && ld != "" {
-				if hasLibpython(ld) || ld != "" {
-					rpaths = append(rpaths, ld)
-				}
-			}
-			break
-		}
-	}
-	return dedup(rpaths)
+	// names := []string{"python-3.12-embed", "python3-embed", "python-3.12", "python3"}
+	// for _, name := range names {
+	// 	if out, err := runPkgConfigDefault("--libs", name); err == nil && out != "" {
+	// 		for _, d := range parseLFlags(out) {
+	// 			if hasLibpython(d) || d != "" {
+	// 				rpaths = append(rpaths, d)
+	// 			}
+	// 		}
+	// 		if ld, err := runPkgConfigDefault("--variable=libdir", name); err == nil && ld != "" {
+	// 			if hasLibpython(ld) || ld != "" {
+	// 				rpaths = append(rpaths, ld)
+	// 			}
+	// 		}
+	// 		break
+	// 	}
+	// }
+	// return dedup(rpaths)
+}
+
+func PyInitFromExeDirCSource() string {
+	return `#include <Python.h>
+#include <dlfcn.h>
+#include <libgen.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+
+void __llgo_py_init_from_exedir(void) {
+    Dl_info info;
+    if (dladdr((void*)Py_Initialize, &info) == 0 || !info.dli_fname) return;
+
+    char p[PATH_MAX]; strncpy(p, info.dli_fname, sizeof(p)-1); p[sizeof(p)-1]='\0';
+    char frameworks[PATH_MAX]; strncpy(frameworks, p, sizeof(frameworks)-1); frameworks[sizeof(frameworks)-1]='\0';
+    if (dirname(frameworks) == NULL) return;    // .../Frameworks
+    char exe_dir[PATH_MAX]; strncpy(exe_dir, frameworks, sizeof(exe_dir)-1); exe_dir[sizeof(exe_dir)-1]='\0';
+    if (dirname(exe_dir) == NULL) return;       // <exe_dir>
+
+    char home[PATH_MAX]; snprintf(home, sizeof(home), "%s/../../", exe_dir);
+
+    wchar_t *wHome = Py_DecodeLocale(home, NULL);
+    if (!wHome) return;
+
+    PyStatus st;
+    PyConfig cfg; PyConfig_InitPythonConfig(&cfg);
+    cfg.module_search_paths_set = 0;
+    st = PyConfig_SetString(&cfg, &cfg.home, wHome);
+    PyMem_RawFree(wHome);
+    if (PyStatus_Exception(st)) { PyConfig_Clear(&cfg); return; }
+
+    st = Py_InitializeFromConfig(&cfg);
+    PyConfig_Clear(&cfg);
+    (void)st;
+}
+`
 }

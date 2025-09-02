@@ -628,6 +628,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
 
+	if needPyInit {
+		initObj, err := genPyInitFromExeDirObj(ctx)
+		check(err)
+		objFiles = append(objFiles, initObj)
+	}
+
 	if global != nil {
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
 		check(err)
@@ -645,15 +651,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			}
 			*args = append(*args, flag)
 		}
-		// 动态计算 Python rpath
 		for _, dir := range pyenv.FindPythonRpaths(pyenv.PythonHome()) {
 			addRpath(&linkArgs, dir)
 		}
-		// 可选兜底
-		addRpath(&linkArgs, "/usr/local/lib")
 
-		err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
-		check(err)
+		addRpath(&linkArgs, "@executable_path/../Frameworks")
+
 	}
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
@@ -713,6 +716,39 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 }
 
+func genPyInitFromExeDirObj(ctx *context) (string, error) {
+	csrc := pyenv.PyInitFromExeDirCSource()
+	tmp, err := os.CreateTemp("", "llgo-pyinit-*.c")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(tmp.Name())
+	if _, err = tmp.WriteString(csrc); err != nil {
+		_ = tmp.Close()
+		return "", err
+	}
+	if err = tmp.Close(); err != nil {
+		return "", err
+	}
+
+	out := tmp.Name() + ".o"
+	args := []string{
+		"-x", "c",
+		"-o", out, "-c", tmp.Name(),
+	}
+	args = append(args, ctx.crossCompile.CCFLAGS...)
+	args = append(args, ctx.crossCompile.CFLAGS...)
+
+	inc := filepath.Join(pyenv.PythonHome(), "include", "python3.12")
+	args = append(args, "-I"+inc)
+
+	cmd := ctx.compiler()
+	if err := cmd.Compile(args...); err != nil {
+		return "", err
+	}
+	return out, nil
+}
+
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	buildArgs := []string{"-o", app}
 	buildArgs = append(buildArgs, linkArgs...)
@@ -748,8 +784,8 @@ func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, ne
 		rtInitDecl = "declare void @\"" + rtPkgPath + ".init\"()"
 	}
 	if needPyInit {
-		pyInit = "call void @Py_Initialize()"
-		pyInitDecl = "declare void @Py_Initialize()"
+		pyInit = "call void @__llgo_py_init_from_exedir()"
+		pyInitDecl = "declare void @__llgo_py_init_from_exedir()"
 	}
 	declSizeT := "%size_t = type i64"
 	if is32Bits(ctx.buildConf.Goarch) {
