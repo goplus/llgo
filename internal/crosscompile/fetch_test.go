@@ -5,6 +5,7 @@ package crosscompile
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"compress/gzip"
 	"fmt"
 	"net/http"
@@ -646,5 +647,132 @@ func TestESPClangDownloadWhenNotExists(t *testing.T) {
 		if string(content) != expectedContent {
 			t.Errorf("File %s: expected content %q, got %q", relativePath, expectedContent, string(content))
 		}
+	}
+}
+
+func TestExtractZip(t *testing.T) {
+	// Create temporary test directory
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "test.zip")
+	destDir := filepath.Join(tempDir, "extracted")
+
+	// 1. Test successful extraction
+	t.Run("SuccessfulExtraction", func(t *testing.T) {
+		// Create test ZIP file
+		if err := createTestZip(zipPath); err != nil {
+			t.Fatalf("Failed to create test zip: %v", err)
+		}
+
+		// Execute extraction
+		if err := extractZip(zipPath, destDir); err != nil {
+			t.Fatalf("extractZip failed: %v", err)
+		}
+
+		// Verify extraction results
+		verifyExtraction(t, destDir)
+	})
+
+	// 2. Test invalid ZIP file
+	t.Run("InvalidZipFile", func(t *testing.T) {
+		// Create invalid ZIP file (actually a text file)
+		if err := os.WriteFile(zipPath, []byte("not a zip file"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Execute extraction and expect error
+		if err := extractZip(zipPath, destDir); err == nil {
+			t.Error("Expected error for invalid zip file, got nil")
+		}
+	})
+
+	// 3. Test non-writable destination
+	t.Run("UnwritableDestination", func(t *testing.T) {
+		// Create test ZIP file
+		if err := createTestZip(zipPath); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create read-only destination directory
+		readOnlyDir := filepath.Join(tempDir, "readonly")
+		if err := os.MkdirAll(readOnlyDir, 0400); err != nil {
+			t.Fatal(err)
+		}
+
+		// Execute extraction and expect error
+		if err := extractZip(zipPath, readOnlyDir); err == nil {
+			t.Error("Expected error for unwritable destination, got nil")
+		}
+	})
+}
+
+// Create test ZIP file
+func createTestZip(zipPath string) error {
+	// Create ZIP file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	// Add directory
+	dirHeader := &zip.FileHeader{
+		Name:     "testdir/",
+		Method:   zip.Deflate,
+		Modified: time.Now(),
+	}
+	dirHeader.SetMode(os.ModeDir | 0755)
+	if _, err := zipWriter.CreateHeader(dirHeader); err != nil {
+		return err
+	}
+
+	// Add file1
+	file1, err := zipWriter.Create("file1.txt")
+	if err != nil {
+		return err
+	}
+	if _, err := file1.Write([]byte("Hello from file1")); err != nil {
+		return err
+	}
+
+	// Add nested file
+	nestedFile, err := zipWriter.Create("testdir/nested.txt")
+	if err != nil {
+		return err
+	}
+	if _, err := nestedFile.Write([]byte("Nested content")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Verify extraction results
+func verifyExtraction(t *testing.T, destDir string) {
+	// Verify directory exists
+	if _, err := os.Stat(filepath.Join(destDir, "testdir")); err != nil {
+		t.Errorf("Directory not extracted: %v", err)
+	}
+
+	// Verify file1 content
+	file1Path := filepath.Join(destDir, "file1.txt")
+	content, err := os.ReadFile(file1Path)
+	if err != nil {
+		t.Errorf("Failed to read file1: %v", err)
+	}
+	if string(content) != "Hello from file1" {
+		t.Errorf("File1 content mismatch. Got: %s", content)
+	}
+
+	// Verify nested file content
+	nestedPath := filepath.Join(destDir, "testdir", "nested.txt")
+	content, err = os.ReadFile(nestedPath)
+	if err != nil {
+		t.Errorf("Failed to read nested file: %v", err)
+	}
+	if string(content) != "Nested content" {
+		t.Errorf("Nested file content mismatch. Got: %s", content)
 	}
 }
