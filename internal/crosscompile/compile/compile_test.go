@@ -38,7 +38,7 @@ func TestIsCompile(t *testing.T) {
 			},
 		}
 
-		if cfg.Groups[0].IsCompiled(filepath.Dir(tmpFile.Name())) {
+		if !cfg.Groups[0].IsCompiled(filepath.Dir(tmpFile.Name())) {
 			t.Errorf("unexpected result: should true")
 		}
 	})
@@ -46,39 +46,48 @@ func TestIsCompile(t *testing.T) {
 
 func TestCompile(t *testing.T) {
 	t.Run("Skip compile", func(t *testing.T) {
-		tmpFile, err := os.CreateTemp(".", "test*.a")
+		tmpDir, err := os.MkdirTemp("", "test-compile*")
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		defer os.Remove(tmpFile.Name())
+		defer os.RemoveAll(tmpDir)
+
+		tmpFile, err := os.CreateTemp(tmpDir, "test*.a")
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		group := CompileGroup{
 			OutputFileName: tmpFile.Name(),
 		}
-		err = group.Compile(".", CompileOptions{
+		err = group.Compile(tmpDir, CompileOptions{
 			CC:     "clang",
 			Linker: "lld",
 		})
 		if err != nil {
-			t.Errorf("unexpected result: should nil")
+			t.Errorf("unexpected result: should nil: %v", err)
 		}
 	})
 
 	t.Run("TmpDir Fail", func(t *testing.T) {
-		err := os.Mkdir("test-compile", 0)
+		tmpDir := filepath.Join(t.TempDir(), "test-compile")
+		os.RemoveAll(tmpDir)
+
+		err := os.Mkdir(tmpDir, 0)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		defer os.RemoveAll("test-compile")
+		defer os.RemoveAll(tmpDir)
 
-		os.Setenv("TMPDIR", "test-compile")
+		os.Setenv("TMPDIR", tmpDir)
 		defer os.Unsetenv("TMPDIR")
 
 		group := CompileGroup{
 			OutputFileName: "nop.a",
 		}
-		err = group.Compile(".", CompileOptions{
+		err = group.Compile(tmpDir, CompileOptions{
 			CC:     "clang",
 			Linker: "lld",
 		})
@@ -88,20 +97,26 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("Compile", func(t *testing.T) {
-		tmpFile, err := os.CreateTemp("", "test*.c")
+		tmpDir, err := os.MkdirTemp("", "test-compile*")
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		defer os.Remove(tmpFile.Name())
+		defer os.RemoveAll(tmpDir)
+
+		tmpFile, err := os.CreateTemp(tmpDir, "test*.c")
+		if err != nil {
+			t.Error(err)
+			return
+		}
 
 		_, err = tmpFile.Write([]byte(`#include <math.h>
-		void Foo() {
-			double x = 2.0;
-			double y = sqrt(x);
-			(void) y ;
-		}
-		`))
+			void Foo() {
+				double x = 2.0;
+				double y = sqrt(x);
+				(void) y ;
+			}
+			`))
 		if err != nil {
 			t.Error(err)
 			return
@@ -111,7 +126,7 @@ func TestCompile(t *testing.T) {
 			OutputFileName: "nop.a",
 			Files:          []string{tmpFile.Name()},
 		}
-		err = group.Compile(".", CompileOptions{
+		err = group.Compile(tmpDir, CompileOptions{
 			CC:      "clang",
 			Linker:  "lld",
 			CCFLAGS: []string{"-nostdinc"},
@@ -119,20 +134,19 @@ func TestCompile(t *testing.T) {
 		if err == nil {
 			t.Errorf("unexpected result: should not nil")
 		}
-		err = group.Compile(".", CompileOptions{
+		err = group.Compile(tmpDir, CompileOptions{
 			CC:     "clang",
 			Linker: "lld",
 		})
 		if err != nil {
 			t.Errorf("unexpected result: should not nil")
 		}
-		if _, err := os.Stat("nop.a"); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(tmpDir, "nop.a")); os.IsNotExist(err) {
 			t.Error("unexpected result: compiled nop.a not found")
 			return
 		}
-		defer os.Remove("nop.a")
 
-		items, err := nm.New("").List("nop.a")
+		items, err := nm.New("").List(filepath.Join(tmpDir, "nop.a"))
 		if err != nil {
 			t.Error(err)
 			return
@@ -151,6 +165,43 @@ func TestCompile(t *testing.T) {
 		}
 		if !found {
 			t.Errorf("cannot find symbol Foo")
+		}
+	})
+
+	t.Run("Compile Asm", func(t *testing.T) {
+		tmpDir, err := os.MkdirTemp("", "test-compile*")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer os.RemoveAll(tmpDir)
+		tmpFile, err := os.CreateTemp(tmpDir, "test*.S")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer os.Remove(tmpFile.Name())
+
+		_, err = tmpFile.Write([]byte(`
+	.text
+	.globl	_test
+			`))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		group := CompileGroup{
+			OutputFileName: "nop.a",
+			Files:          []string{tmpFile.Name()},
+		}
+		err = group.Compile(tmpDir, CompileOptions{
+			CC:      "clang",
+			Linker:  "lld",
+			CCFLAGS: []string{"--target=x86_64-linux-gnu"},
+		})
+		if err != nil {
+			t.Errorf("unexpected result: should nil %v", err)
 		}
 	})
 }

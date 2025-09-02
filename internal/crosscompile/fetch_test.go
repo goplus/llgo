@@ -6,9 +6,11 @@ package crosscompile
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -301,6 +303,162 @@ func TestDownloadAndExtractArchiveUnsupportedFormat(t *testing.T) {
 	if !strings.Contains(err.Error(), "unsupported archive format") {
 		t.Errorf("Expected 'unsupported archive format' error, got: %v", err)
 	}
+}
+
+func TestCheckDownloadAndExtractLib(t *testing.T) {
+	files := map[string]string{
+		"lib-src/file1.c":       "int func1() { return 1; }",
+		"lib-src/file2.c":       "int func2() { return 2; }",
+		"lib-src/include/lib.h": "#define LIB_VERSION 1",
+	}
+
+	archivePath := createTestTarGz(t, files)
+	defer os.Remove(archivePath)
+
+	archiveContent, err := os.ReadFile(archivePath)
+	if err != nil {
+		t.Fatalf("Failed to read test archive: %v", err)
+	}
+
+	server := createTestServer(t, map[string]string{
+		"test-lib.tar.gz": string(archiveContent),
+	})
+	defer server.Close()
+
+	tempDir := t.TempDir()
+	destDir := filepath.Join(tempDir, "test-lib")
+
+	t.Run("LibAlreadyExists", func(t *testing.T) {
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			t.Fatalf("Failed to create existing lib dir: %v", err)
+		}
+
+		err := checkDownloadAndExtractLib(server.URL+"/test-lib.tar.gz", destDir, "")
+		if err != nil {
+			t.Errorf("Expected no error when lib exists, got: %v", err)
+		}
+	})
+
+	t.Run("DownloadAndExtractWithoutInternalDir", func(t *testing.T) {
+		os.RemoveAll(destDir)
+
+		err := checkDownloadAndExtractLib(server.URL+"/test-lib.tar.gz", destDir, "lib-src")
+		if err != nil {
+			t.Fatalf("Failed to download and extract lib: %v", err)
+		}
+		cmd := exec.Command("ls", destDir)
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+
+		for name, expectedContent := range files {
+			relPath := strings.TrimPrefix(name, "lib-src/")
+			filePath := filepath.Join(destDir, relPath)
+
+			fmt.Println(filePath, destDir)
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Errorf("Failed to read extracted file %s: %v", relPath, err)
+				continue
+			}
+			if string(content) != expectedContent {
+				t.Errorf("File %s: expected content %q, got %q", relPath, expectedContent, string(content))
+			}
+		}
+	})
+
+	t.Run("DownloadAndExtractWithInternalDir", func(t *testing.T) {
+		os.RemoveAll(destDir)
+
+		err := checkDownloadAndExtractLib(server.URL+"/test-lib.tar.gz", destDir, "lib-src")
+		if err != nil {
+			t.Fatalf("Failed to download and extract lib: %v", err)
+		}
+
+		for name, expectedContent := range files {
+			relPath := strings.TrimPrefix(name, "lib-src/")
+			filePath := filepath.Join(destDir, relPath)
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Errorf("Failed to read extracted file %s: %v", relPath, err)
+				continue
+			}
+			if string(content) != expectedContent {
+				t.Errorf("File %s: expected content %q, got %q", relPath, expectedContent, string(content))
+			}
+		}
+	})
+
+	t.Run("DownloadFailure", func(t *testing.T) {
+		os.RemoveAll(destDir)
+
+		err := checkDownloadAndExtractLib(server.URL+"/nonexistent.tar.gz", destDir, "")
+		if err == nil {
+			t.Error("Expected error for non-existent archive, got nil")
+		}
+	})
+
+	t.Run("RenameFailure", func(t *testing.T) {
+		os.RemoveAll(destDir)
+
+		err := checkDownloadAndExtractLib(server.URL+"/test-lib.tar.gz", destDir, "lib-src222")
+		if err == nil {
+			t.Error("Expected error for rename failure, got nil")
+		}
+	})
+}
+
+func TestCheckDownloadAndExtractLibInternalDir(t *testing.T) {
+	files := map[string]string{
+		"project-1.0.0/src/file1.c":   "int func1() { return 1; }",
+		"project-1.0.0/include/lib.h": "#define LIB_VERSION 1",
+		"project-1.0.0/README.md":     "Project documentation",
+	}
+
+	archivePath := createTestTarGz(t, files)
+	defer os.Remove(archivePath)
+
+	archiveContent, err := os.ReadFile(archivePath)
+	if err != nil {
+		t.Fatalf("Failed to read test archive: %v", err)
+	}
+
+	server := createTestServer(t, map[string]string{
+		"project.tar.gz": string(archiveContent),
+	})
+	defer server.Close()
+
+	tempDir := t.TempDir()
+	destDir := filepath.Join(tempDir, "project-lib")
+
+	t.Run("CorrectInternalDir", func(t *testing.T) {
+		err := checkDownloadAndExtractLib(server.URL+"/project.tar.gz", destDir, "project-1.0.0")
+		if err != nil {
+			t.Fatalf("Failed to download and extract lib: %v", err)
+		}
+
+		for name, expectedContent := range files {
+			relPath := strings.TrimPrefix(name, "project-1.0.0/")
+			filePath := filepath.Join(destDir, relPath)
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Errorf("Failed to read extracted file %s: %v", relPath, err)
+				continue
+			}
+			if string(content) != expectedContent {
+				t.Errorf("File %s: expected content %q, got %q", relPath, expectedContent, string(content))
+			}
+		}
+	})
+
+	t.Run("IncorrectInternalDir", func(t *testing.T) {
+		os.RemoveAll(destDir)
+
+		err := checkDownloadAndExtractLib(server.URL+"/project.tar.gz", destDir, "wrong-dir")
+		if err == nil {
+			t.Error("Expected error for missing internal dir, got nil")
+		}
+	})
 }
 
 // Mock test for WASI SDK (without actual download)

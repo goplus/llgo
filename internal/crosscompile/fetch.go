@@ -100,7 +100,7 @@ func checkDownloadAndExtractLib(url, dstDir, internalArchiveSrcDir string) error
 	}
 	fmt.Fprintf(os.Stderr, "%s not found in LLGO_ROOT or cache, will download and compile.\n", dstDir)
 
-	description := fmt.Sprintf("Lib %s", path.Base(url))
+	description := fmt.Sprintf("lib %s", path.Base(url))
 
 	// Use temporary extraction directory
 	tempExtractDir := dstDir + ".extract"
@@ -115,7 +115,9 @@ func checkDownloadAndExtractLib(url, dstDir, internalArchiveSrcDir string) error
 		srcDir = filepath.Join(tempExtractDir, internalArchiveSrcDir)
 	}
 
-	os.Rename(srcDir, dstDir)
+	if err := os.Rename(srcDir, dstDir); err != nil {
+		return fmt.Errorf("failed to rename lib directory: %w", err)
+	}
 
 	return nil
 }

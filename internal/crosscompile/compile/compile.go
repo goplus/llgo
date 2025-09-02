@@ -28,9 +28,9 @@ type CompileGroup struct {
 }
 
 func (g CompileGroup) IsCompiled(outputDir string) bool {
-	archive := filepath.Join(outputDir, g.OutputFileName)
+	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
 	_, err := os.Stat(archive)
-	return !os.IsNotExist(err)
+	return err == nil
 }
 
 func (g CompileGroup) Compile(
@@ -57,7 +57,7 @@ func (g CompileGroup) Compile(
 
 	compiler.Verbose = true
 
-	archive := filepath.Join(outputDir, g.OutputFileName)
+	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
 	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, archive)
 
 	for _, file := range g.Files {
