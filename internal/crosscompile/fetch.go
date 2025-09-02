@@ -2,12 +2,14 @@ package crosscompile
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -78,6 +80,48 @@ func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
 	return nil
 }
 
+func checkDownloadAndExtractLib(url, dstDir, internalArchiveSrcDir string) error {
+	// Check if already exists
+	if _, err := os.Stat(dstDir); err == nil {
+		return nil
+	}
+
+	// Create lock file path for the final destination
+	lockPath := dstDir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
+	// Double-check after acquiring lock
+	if _, err := os.Stat(dstDir); err == nil {
+		return nil
+	}
+	fmt.Fprintf(os.Stderr, "%s not found in LLGO_ROOT or cache, will download and compile.\n", dstDir)
+
+	description := fmt.Sprintf("lib %s", path.Base(url))
+
+	// Use temporary extraction directory
+	tempExtractDir := dstDir + ".extract"
+	if err := downloadAndExtractArchive(url, tempExtractDir, description); err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempExtractDir)
+
+	srcDir := tempExtractDir
+
+	if internalArchiveSrcDir != "" {
+		srcDir = filepath.Join(tempExtractDir, internalArchiveSrcDir)
+	}
+
+	if err := os.Rename(srcDir, dstDir); err != nil {
+		return fmt.Errorf("failed to rename lib directory: %w", err)
+	}
+
+	return nil
+}
+
 // acquireLock creates and locks a file to prevent concurrent operations
 func acquireLock(lockPath string) (*os.File, error) {
 	// Ensure the parent directory exists
@@ -140,10 +184,14 @@ func downloadAndExtractArchive(url, destDir, description string) error {
 		if err != nil {
 			return fmt.Errorf("failed to extract %s archive: %w", description, err)
 		}
+	} else if strings.HasSuffix(filename, ".zip") {
+		err := extractZip(localFile, tempDir)
+		if err != nil {
+			return fmt.Errorf("failed to extract %s archive: %w", description, err)
+		}
 	} else {
 		return fmt.Errorf("unsupported archive format: %s", filename)
 	}
-
 	// Rename temp directory to target directory
 	if err := os.Rename(tempDir, destDir); err != nil {
 		return fmt.Errorf("failed to rename directory: %w", err)
@@ -222,4 +270,45 @@ func extractTarXz(tarXzFile, dest string) error {
 	// Use external tar command to extract .tar.xz files
 	cmd := exec.Command("tar", "-xf", tarXzFile, "-C", dest)
 	return cmd.Run()
+}
+
+func extractZip(zipFile, dest string) error {
+	r, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	decompress := func(file *zip.File) error {
+		path := filepath.Join(dest, file.Name)
+
+		if file.FileInfo().IsDir() {
+			return os.MkdirAll(path, 0700)
+		}
+
+		fs, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer fs.Close()
+
+		w, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(w, fs); err != nil {
+			w.Close()
+			return err
+		}
+		if err := w.Close(); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	for _, file := range r.File {
+		if err = decompress(file); err != nil {
+			break
+		}
+	}
+	return err
 }

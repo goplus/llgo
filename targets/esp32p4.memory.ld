@@ -1,0 +1,23 @@
+# Memory layout obtained from IDF linker files.
+
+L2_CACHE_SIZE = 0x40000;
+
+SRAM_START_ADDRESS = 0x4FF00000;
+SRAM_LEN = 0xC0000 - L2_CACHE_SIZE;
+
+CPU_FREQUENCY = 40000000;
+UART0_BAUD = 115200;
+
+UART0_CLKDIV_REG = 0x500CA014;
+UART0_CLKDIV_VAL = CPU_FREQUENCY / UART0_BAUD;
+UART0_STATUS = 0x500CA01C;
+UART0_TX_ADDR = 0x500CA000;
+
+MEMORY
+{
+  sram_seg  (RWX) : org = SRAM_START_ADDRESS, len = SRAM_LEN
+}
+
+REGION_ALIAS("iram_seg", sram_seg);
+REGION_ALIAS("dram_seg", sram_seg);
+INCLUDE "targets/esp32-riscv.app.elf.ld";

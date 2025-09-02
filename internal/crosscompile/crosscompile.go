@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/goplus/llgo/internal/crosscompile/compile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
@@ -25,6 +26,7 @@ type Export struct {
 	BuildTags    []string
 	GOOS         string
 	GOARCH       string
+	Libc         string
 	Linker       string   // Linker to use (e.g., "ld.lld", "avr-ld")
 	ExtraFiles   []string // Extra files to compile and link (e.g., .s, .c files)
 	ClangRoot    string   // Root directory of custom clang installation
@@ -213,6 +215,35 @@ func getESPClangPlatform(goos, goarch string) string {
 		}
 	}
 	return ""
+}
+
+func ldFlagsFromFileName(fileName string) string {
+	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
+}
+
+func getOrCompileWithConfig(
+	compileConfig *compile.CompileConfig,
+	outputDir string, options compile.CompileOptions,
+) (ldflags []string, err error) {
+	if err = checkDownloadAndExtractLib(
+		compileConfig.Url, outputDir,
+		compileConfig.ArchiveSrcDir,
+	); err != nil {
+		return
+	}
+	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
+
+	for _, group := range compileConfig.Groups {
+		err = group.Compile(outputDir, options)
+		if err != nil {
+			break
+		}
+		if filepath.Ext(group.OutputFileName) == ".o" {
+			continue
+		}
+		ldflags = append(ldflags, "-l"+ldFlagsFromFileName(group.OutputFileName))
+	}
+	return
 }
 
 func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
@@ -574,6 +605,57 @@ func useTarget(targetName string) (export Export, err error) {
 	}
 	ldflags = append(ldflags, "-L", env.LLGoROOT()) // search targets/*.ld
 
+	var libcIncludeDir []string
+
+	if config.Libc != "" {
+		var libcLDFlags []string
+		var compileConfig *compile.CompileConfig
+		baseDir := filepath.Join(cacheRoot(), "crosscompile")
+		outputDir := filepath.Join(baseDir, config.Libc)
+
+		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget, config.CPU)
+		if err != nil {
+			return
+		}
+		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+			CC:      export.CC,
+			Linker:  export.Linker,
+			CCFLAGS: ccflags,
+			LDFLAGS: ldflags,
+		})
+		if err != nil {
+			return
+		}
+		cflags = append(cflags, compileConfig.LibcCFlags...)
+		ldflags = append(ldflags, libcLDFlags...)
+
+		libcIncludeDir = compileConfig.LibcCFlags
+		export.Libc = config.Libc
+	}
+
+	if config.RTLib != "" {
+		var rtLibLDFlags []string
+		var compileConfig *compile.CompileConfig
+		baseDir := filepath.Join(cacheRoot(), "crosscompile")
+		outputDir := filepath.Join(baseDir, config.RTLib)
+
+		compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib, config.LLVMTarget)
+		if err != nil {
+			return
+		}
+		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+			CC:      export.CC,
+			Linker:  export.Linker,
+			CCFLAGS: ccflags,
+			LDFLAGS: ldflags,
+			CFLAGS:  libcIncludeDir,
+		})
+		if err != nil {
+			return
+		}
+		ldflags = append(ldflags, rtLibLDFlags...)
+	}
+
 	// Combine with config flags and expand template variables
 	export.CFLAGS = cflags
 	export.CCFLAGS = ccflags
@@ -586,7 +668,7 @@ func useTarget(targetName string) (export Export, err error) {
 // Use extends the original Use function to support target-based configuration
 // If targetName is provided, it takes precedence over goos/goarch
 func Use(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
-	if targetName != "" {
+	if targetName != "" && !strings.HasPrefix(targetName, "wasm") && !strings.HasPrefix(targetName, "wasi") {
 		return useTarget(targetName)
 	}
 	return use(goos, goarch, wasiThreads)
