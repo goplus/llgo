@@ -62,10 +62,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.24.x
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          image: tonistiigi/binfmt:qemu-v7.0.0-28
       - name: Restore Macos sysroot cache
         id: cache-macos-sysroot
         uses: actions/cache/restore@v4
@@ -78,6 +74,13 @@ jobs:
         with:
           path: .sysroot/linux
           key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.1
+      - name: Check .sysroot
+        run: |
+          ls -la .sysroot
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
       - name: Run GoReleaser (Build & Test)
         env:
           GITHUB_TOKEN: ${{github.token}}
