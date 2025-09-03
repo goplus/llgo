@@ -88,23 +88,6 @@ jobs:
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
             release --skip=publish,nfpm,snapcraft --snapshot --clean
 
-      - name: Debug - Check Generated Files
-        run: |
-          echo "=== Listing .dist/ directory ==="
-          find .dist/ -name "*.tar.gz" -type f
-          echo ""
-          echo "=== Looking for darwin-amd64 files ==="
-          find .dist/ -name "*darwin-amd64*" -type f
-          echo ""
-          echo "=== Looking for darwin-arm64 files ==="
-          find .dist/ -name "*darwin-arm64*" -type f
-          echo ""
-          echo "=== Looking for linux files ==="
-          find .dist/ -name "*linux*" -type f
-          echo ""
-          echo "=== All files in .dist/ ==="
-          ls -la .dist/
-
       - name: Upload Darwin AMD64 Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -153,20 +136,32 @@ jobs:
           - os: macos-13
             goos: darwin
             goarch: amd64
+            go-version: "1.24.2"
+            go-mod-version: "1.24"
           - os: macos-latest
             goos: darwin
             goarch: arm64
+            go-version: "1.24.2"
+            go-mod-version: "1.24"
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
+            go-version: "1.24.2"
+            go-mod-version: "1.24"
           - os: ubuntu-24.04-arm
             goos: linux
             goarch: arm64
+            go-version: "1.24.2"
+            go-mod-version: "1.24"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
+      - name: Set up Go for building llgo
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
       - name: Download Platform Artifact
         uses: actions/download-artifact@v5
         with:
@@ -176,40 +171,17 @@ jobs:
       - name: Extract LLGO Archive
         run: |
           echo "Looking for ${{ matrix.goos }}_${{ matrix.goarch }} archive..."
-          ls -la
-
-          # Find the tar.gz file (should be only one)
           ARCHIVE=$(ls *.tar.gz | head -n1)
-          if [ -z "$ARCHIVE" ]; then
-            echo "No archive found for platform ${{ matrix.goos }}_${{ matrix.goarch }}"
-            exit 1
-          fi
+          mkdir -p release-llgo
+          tar -xzf "$ARCHIVE" -C release-llgo
+          ls -la release-llgo/
+          echo "${{ github.workspace }}/release-llgo/bin/" >> $GITHUB_PATH
 
-          echo "Found archive: $ARCHIVE"
-          mkdir -p extracted
-          tar -xzf "$ARCHIVE" -C extracted
-          ls -la extracted/
-
-      - name: Test LLGO Binary
-        run: |
-          # Find the llgo binary in the extracted files
-          LLGO_BIN=$(find extracted/ -name "llgo" -type f | head -n1)
-          if [ -z "$LLGO_BIN" ]; then
-            echo "llgo binary not found"
-            exit 1
-          fi
-
-          echo "Found llgo binary: $LLGO_BIN"
-          chmod +x "$LLGO_BIN"
-
-          # Test basic functionality
-          echo "Testing llgo version..."
-          "$LLGO_BIN" version
-
-          echo "Testing llgo help..."  
-          "$LLGO_BIN" --help
-
-          echo "LLGO binary test passed for ${{ matrix.goos }}_${{ matrix.goarch }}"
+      - name: Test Hello World with go.mod 1.21
+        uses: ./.github/actions/test-helloworld
+        with:
+          go-version: ${{matrix.go-version}}
+          mod-version: ${{ matrix.go-mod-version }}
 
   release:
     needs: [build, test-artifacts]
