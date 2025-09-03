@@ -270,6 +270,52 @@ func TestErrBuiltin(t *testing.T) {
 	test("atomicCmpXchg", func(ctx *context) { ctx.atomicCmpXchg(nil, nil) })
 }
 
+func TestErrAsm(t *testing.T) {
+	test := func(testName string, fn func(ctx *context)) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Fatal(testName, ": no error?")
+			}
+		}()
+		var ctx context
+		fn(&ctx)
+	}
+
+	test("asm(NoArgs)", func(ctx *context) { ctx.asm(nil, []ssa.Value{}) })
+	test("asm(Nonconst)", func(ctx *context) { ctx.asm(nil, []ssa.Value{&ssa.Parameter{}}) })
+	test("asmFull(Nonconst)", func(ctx *context) { ctx.asm(nil, []ssa.Value{&ssa.Parameter{}, &ssa.Parameter{}}) })
+	test("asmFull(NonConstKey)", func(ctx *context) {
+		makeMap := &ssa.MakeMap{}
+		nonConstKey := &ssa.Parameter{}
+		mapUpdate := &ssa.MapUpdate{Key: nonConstKey}
+		referrers := []ssa.Instruction{mapUpdate}
+		setRefs(unsafe.Pointer(makeMap), referrers...)
+		strConst := &ssa.Const{
+			Value: constant.MakeString("nop"),
+		}
+		ctx.asm(nil, []ssa.Value{strConst, makeMap})
+	})
+	test("asmFull(RegisterNotFound)", func(ctx *context) {
+		makeMap := &ssa.MakeMap{}
+		referrers := []ssa.Instruction{}
+		setRefs(unsafe.Pointer(makeMap), referrers...)
+		strConst := &ssa.Const{
+			Value: constant.MakeString("test {missing}"),
+		}
+		ctx.asm(nil, []ssa.Value{strConst, makeMap})
+	})
+	test("asmFull(UnknownReferrer)", func(ctx *context) {
+		makeMap := &ssa.MakeMap{}
+		unknownRef := &ssa.Return{}
+		referrers := []ssa.Instruction{unknownRef}
+		setRefs(unsafe.Pointer(makeMap), referrers...)
+		strConst := &ssa.Const{
+			Value: constant.MakeString("test"),
+		}
+		ctx.asm(nil, []ssa.Value{strConst, makeMap})
+	})
+}
+
 func TestPkgNoInit(t *testing.T) {
 	pkg := types.NewPackage("foo", "foo")
 	ctx := &context{

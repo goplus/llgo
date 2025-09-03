@@ -742,16 +742,20 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	if IsFullRpathEnabled() {
-		exargs := make([]string, 0, ctx.nLibdir<<1)
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
 		// This is to ensure the final executable can locate libraries with a relocatable install_name
 		// (e.g., "@rpath/libfoo.dylib") at runtime.
+		rpaths := make(map[string]none)
 		for _, arg := range linkArgs {
 			if strings.HasPrefix(arg, "-L") {
-				exargs = append(exargs, "-rpath", arg[2:])
+				path := arg[2:]
+				if _, ok := rpaths[path]; ok {
+					continue
+				}
+				rpaths[path] = none{}
+				linkArgs = append(linkArgs, "-rpath", path)
 			}
 		}
-		linkArgs = append(linkArgs, exargs...)
 	}
 
 	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
@@ -836,15 +840,16 @@ func isWasmTarget(goos string) bool {
 	return slices.Contains([]string{"wasi", "js", "wasip1"}, goos)
 }
 
-func needStart(conf *Config) bool {
-	if conf.Target == "" {
-		return !isWasmTarget(conf.Goos)
+func needStart(ctx *context) bool {
+	if ctx.buildConf.Target == "" {
+		return !isWasmTarget(ctx.buildConf.Goos)
 	}
-	switch conf.Target {
+	switch ctx.buildConf.Target {
 	case "wasip2":
 		return false
 	default:
-		return true
+		// since newlib-esp32 provides _start, we don't need to provide a fake _start function
+		return ctx.crossCompile.Libc != "newlib-esp32"
 	}
 }
 
@@ -901,10 +906,10 @@ define weak void @_start() {
 }
 `
 	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
-	if !needStart(ctx.buildConf) && isWasmTarget(ctx.buildConf.Goos) {
+	if !needStart(ctx) && isWasmTarget(ctx.buildConf.Goos) {
 		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
 	}
-	if !needStart(ctx.buildConf) {
+	if !needStart(ctx) {
 		startDefine = ""
 	}
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'

@@ -17,14 +17,19 @@
 package cl
 
 import (
+	"fmt"
 	"go/constant"
 	"go/types"
 	"log"
+	"regexp"
+	"strings"
 
 	"golang.org/x/tools/go/ssa"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
+
+var asmRegisterRegex = regexp.MustCompile(`\{[a-zA-Z]+\}`)
 
 // -----------------------------------------------------------------------------
 
@@ -67,14 +72,93 @@ func cstr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 }
 
 // func asm(string)
-func asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+// func asm(string, map[string]any)
+func (p *context) asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	if len(args) == 0 || len(args) > 2 {
+		panic("asm: invalid arguments - expected asm(<string-literal>) or asm(<string-literal>, <map-literal>)")
+	}
+
+	asmString, ok := constStr(args[0])
+	if !ok {
+		panic("asm: inline assembly requires a constant string")
+	}
 	if len(args) == 1 {
-		if sv, ok := constStr(args[0]); ok {
-			b.InlineAsm(sv)
-			return llssa.Expr{Type: b.Prog.Void()}
+		b.InlineAsm(asmString)
+		return llssa.Expr{Type: b.Prog.Void()}
+	}
+
+	registers := make(map[string]llssa.Expr)
+	if registerMap, ok := args[1].(*ssa.MakeMap); ok {
+		referrers := registerMap.Referrers()
+		for _, r := range *referrers {
+			switch r := r.(type) {
+			case *ssa.DebugRef, *ssa.Call:
+				// ignore
+			case *ssa.MapUpdate:
+				if r.Block() != registerMap.Block() {
+					panic("asm: register value map must be created in the same basic block")
+				}
+				key, ok := constStr(r.Key)
+				if !ok {
+					panic("asm: register key must be a string constant")
+				}
+				llvmValue := p.compileValue(b, r.Value.(*ssa.MakeInterface).X)
+				registers[key] = llvmValue
+			default:
+				panic(fmt.Sprintf("asm: don't know how to handle argument to inline assembly: %s", r.String()))
+			}
 		}
 	}
-	panic("asm(<string-literal>): invalid arguments")
+
+	finalAsm := asmString
+	var hasOutput bool
+	var inputValues []llssa.Expr
+	var constraints []string
+	registerNumbers := map[string]int{}
+
+	if strings.Contains(finalAsm, "{}") {
+		finalAsm = strings.ReplaceAll(finalAsm, "{}", "$0")
+		constraints = append(constraints, "=&r")
+		registerNumbers[""] = 0
+		hasOutput = true
+	}
+
+	finalAsm = asmRegisterRegex.ReplaceAllStringFunc(finalAsm, func(s string) string {
+		// TODO: skip strings like {r4} etc. that look like ARM push/pop
+		// instructions.
+		name := s[1 : len(s)-1]
+		value, ok := registers[name]
+		if !ok {
+			panic(fmt.Sprintf("asm: register not found: %s", name))
+		}
+		if _, ok := registerNumbers[name]; !ok {
+			// Type checking - only allow integer basic types
+			rawType := value.Type.RawType()
+			if basic, ok := rawType.Underlying().(*types.Basic); ok && basic.Info()&types.IsInteger != 0 {
+				registerNumbers[name] = len(registerNumbers)
+				inputValues = append(inputValues, value)
+				constraints = append(constraints, "r")
+			} else {
+				// Pointer operands support was dropped, following TinyGo
+				// NOTE(tinygo): Memory references require a type starting with LLVM 14, probably as a preparation for opaque pointers.
+				panic(fmt.Sprintf("asm: unsupported type in inline assembly for operand: %s, only integer types are supported", name))
+			}
+		}
+		return fmt.Sprintf("${%v}", registerNumbers[name])
+	})
+
+	constraintStr := strings.Join(constraints, ",")
+	if debugInstr {
+		log.Printf("asm: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
+	}
+
+	if !hasOutput {
+		// Make sure we return something valid
+		b.InlineAsmFull(finalAsm, constraintStr, b.Prog.Void(), inputValues)
+		return b.Prog.Val((uintptr(0)))
+	}
+
+	return b.InlineAsmFull(finalAsm, constraintStr, b.Prog.Uintptr(), inputValues)
 }
 
 // -----------------------------------------------------------------------------
@@ -470,7 +554,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoCstr:
 			ret = cstr(b, args)
 		case llgoAsm:
-			ret = asm(b, args)
+			ret = p.asm(b, args)
 		case llgoCgoCString:
 			ret = p.cgoCString(b, args)
 		case llgoCgoCBytes:

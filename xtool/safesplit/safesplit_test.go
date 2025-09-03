@@ -50,8 +50,8 @@ func TestSplitPkgConfigFlags(t *testing.T) {
 	})
 
 	t.Run("consecutive_flags", func(t *testing.T) {
-		ftest("-I -L", `["-I-L"]`)
-		ftest("-I -L /usr/lib", `["-I-L /usr/lib"]`)
+		ftest("-I -L", `["-I" "-L"]`)
+		ftest("-I -L /usr/lib", `["-I" "-L/usr/lib"]`)
 	})
 
 	t.Run("edge_cases", func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestSplitPkgConfigFlags(t *testing.T) {
 		ftest("   ", "[]")
 		ftest("-", `["-"]`)
 		ftest("-I", `["-I"]`)
-		ftest("-I -", `["-I-"]`)
+		ftest("-I -", `["-I" "-"]`)
 	})
 
 	t.Run("escaped_spaces", func(t *testing.T) {
@@ -76,6 +76,12 @@ func TestSplitPkgConfigFlags(t *testing.T) {
 		ftest("-D _DEBUG -D _UNICODE -D WIN32", `["-D_DEBUG" "-D_UNICODE" "-DWIN32"]`)
 		ftest("-DVERSION=2.1 -DDEBUG=1", `["-DVERSION=2.1" "-DDEBUG=1"]`)
 		ftest("-D VERSION=2.1 -D DEBUG=1", `["-DVERSION=2.1" "-DDEBUG=1"]`)
+	})
+
+	// case for https://github.com/goplus/llgo/issues/1244
+	t.Run("w_pipe", func(t *testing.T) {
+		ftest("-w -pipe", `["-w" "-pipe"]`)
+		ftest("-Os -w -pipe", `["-Os" "-w" "-pipe"]`)
 	})
 }
 
