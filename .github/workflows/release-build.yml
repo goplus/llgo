@@ -88,6 +88,23 @@ jobs:
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
             release --skip=publish,nfpm,snapcraft --snapshot --clean
 
+      - name: Debug - Check Generated Files
+        run: |
+          echo "=== Listing .dist/ directory ==="
+          find .dist/ -name "*.tar.gz" -type f
+          echo ""
+          echo "=== Looking for darwin-amd64 files ==="
+          find .dist/ -name "*darwin-amd64*" -type f
+          echo ""
+          echo "=== Looking for darwin-arm64 files ==="
+          find .dist/ -name "*darwin-arm64*" -type f
+          echo ""
+          echo "=== Looking for linux files ==="
+          find .dist/ -name "*linux*" -type f
+          echo ""
+          echo "=== All files in .dist/ ==="
+          ls -la .dist/
+
       - name: Upload Darwin AMD64 Artifacts
         uses: actions/upload-artifact@v4
         with:
