@@ -111,6 +111,7 @@ jobs:
           name: llgo-darwin-amd64
           path: .dist/*darwin-amd64.tar.gz
           retention-days: 3
+          include-hidden-files: true
 
       - name: Upload Darwin ARM64 Artifacts
         uses: actions/upload-artifact@v4
@@ -118,6 +119,7 @@ jobs:
           name: llgo-darwin-arm64
           path: .dist/*darwin-arm64.tar.gz
           retention-days: 3
+          include-hidden-files: true
 
       - name: Upload Linux AMD64 Artifacts
         uses: actions/upload-artifact@v4
@@ -125,6 +127,7 @@ jobs:
           name: llgo-linux-amd64
           path: .dist/*linux-amd64.tar.gz
           retention-days: 3
+          include-hidden-files: true
 
       - name: Upload Linux ARM64 Artifacts
         uses: actions/upload-artifact@v4
@@ -132,13 +135,15 @@ jobs:
           name: llgo-linux-arm64
           path: .dist/*linux-arm64.tar.gz
           retention-days: 3
+          include-hidden-files: true
 
       - name: Upload Checksums
         uses: actions/upload-artifact@v4
         with:
           name: llgo-checksums
-          path: .dist/checksums.txt
+          path: .dist/*checksums.txt
           retention-days: 3
+          include-hidden-files: true
 
   test-artifacts:
     needs: build
