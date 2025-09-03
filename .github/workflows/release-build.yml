@@ -13,27 +13,35 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v5
-      - name: Check sysroot cache
-        id: cache-darwin-sysroot
-        uses: actions/cache/restore@v4
-        with:
-          path: .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.3
-          lookup-only: true
+        # - name: Restore Darwin sysroot cache
+        #   id: cache-darwin-sysroot
+        #   uses: actions/cache/restore@v4
+        #   with:
+        #     path: .sysroot/darwin.tar.gz
+        #     key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}
+        # - name: Populate Darwin sysroot
+        #   if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
+        # run: bash .github/workflows/populate_darwin_sysroot.sh
       - name: Populate Darwin sysroot
-        if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
-        run: |
-          bash .github/workflows/populate_darwin_sysroot.sh
-          tar -czvf .sysroot/darwin.tar.gz -C .sysroot darwin
+        run: bash .github/workflows/populate_darwin_sysroot.sh
+      - name: Create Darwin sysroot tarball
+        # if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
+        run: tar -czvf .sysroot/darwin.tar.gz -C .sysroot darwin
       - name: Save Darwin sysroot cache
-        if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
+        # if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: .sysroot/darwin.tar.gz
-          key: ${{ steps.cache-darwin-sysroot.outputs.cache-primary-key }}
+          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+      # - name: Upload Darwin sysroot tarball
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: darwin-sysroot-tarball
+      #     path: .sysroot/darwin.tar.gz
+      #     compression-level: 0
   build:
     runs-on: ubuntu-latest
-    needs: [populate-darwin-sysroot]
+    needs: populate-darwin-sysroot
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -43,23 +51,40 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.24.x
-      - name: Restore Macos sysroot cache
-        id: cache-macos-sysroot
-        uses: actions/cache/restore@v4
-        with:
-          path: .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.3
-      - name: Extract sysroots
-        run: |
-          tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
-      - name: Populate Linux sysroot
-        run: |
-          bash .github/workflows/populate_linux_sysroot.sh
-          tree .sysroot
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:qemu-v7.0.0-28
+      # - name: Download Darwin sysroot tarball
+      #   uses: actions/download-artifact@v5
+      #   with:
+      #     name: darwin-sysroot-tarball
+      #     path: .sysroot
+      - name: Restore Darwin sysroot cache
+        id: cache-darwin-sysroot
+        uses: actions/cache/restore@v4
+        with:
+          path: .sysroot/darwin.tar.gz
+          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+      - name: Populate Darwin sysroot
+        run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
+      - name: Populate Linux sysroot
+        run: bash .github/workflows/populate_linux_sysroot.sh
+      # - name: Restore Linux sysroot cache
+      #   id: cache-linux-sysroot
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     path: .sysroot
+      #     key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}
+
+      # - name: Save Linux sysroot cache
+      #   if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+      #   uses: actions/cache/save@v4
+      #   with:
+      #     path: .sysroot
+      #     key: ${{ steps.cache-linux-sysroot.outputs.cache-primary-key }}
+      - name: Check file
+        run: tree .sysroot
       - name: Run GoReleaser (Build & Test)
         env:
           GITHUB_TOKEN: ${{github.token}}
@@ -158,7 +183,7 @@ jobs:
           echo "Looking for ${{ matrix.goos }}_${{ matrix.goarch }} archive..."
           ARCHIVE=$(ls *.tar.gz | head -n1)
           mkdir -p release-llgo
-          tar -xzvf "$ARCHIVE" -C release-llgo
+          tar -xzf "$ARCHIVE" -C release-llgo
           ls -la release-llgo/
           echo "${{ github.workspace }}/release-llgo/bin/" >> $GITHUB_PATH
 
@@ -185,13 +210,12 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:qemu-v7.0.0-28
-      - name: Restore Macos sysroot cache
-        id: cache-macos-sysroot
-        uses: actions/cache/restore@v4
+      - name: Download Darwin sysroot tarball
+        uses: actions/download-artifact@v5
         with:
-          path: .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.3
-      - name: Extract sysroots
+          name: darwin-sysroot-tarball
+          path: .sysroot
+      - name: Populate Darwin sysroot
         run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
       - name: Populate Linux sysroot
         run: bash .github/workflows/populate_linux_sysroot.sh
