@@ -150,7 +150,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest-large
+          - os: macos-13
             goos: darwin
             goarch: amd64
           - os: macos-latest
