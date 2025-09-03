@@ -13,10 +13,24 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v5
+      - name: Restore Darwin sysroot cache
+        id: cache-darwin-sysroot
+        uses: actions/cache/restore@v4
+        with:
+          path: .sysroot/darwin.tar.gz
+          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}
       - name: Populate Darwin sysroot
+        if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_darwin_sysroot.sh
       - name: Create Darwin sysroot tarball
+        if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
         run: tar -czvf .sysroot/darwin.tar.gz -C .sysroot darwin
+      - name: Save Darwin sysroot cache
+        if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .sysroot/darwin.tar.gz
+          key: ${{ steps.cache-darwin-sysroot.outputs.cache-primary-key }}
       - name: Upload Darwin sysroot tarball
         uses: actions/upload-artifact@v4
         with:
@@ -46,8 +60,21 @@ jobs:
           path: .sysroot
       - name: Populate Darwin sysroot
         run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
+      - name: Restore Linux sysroot cache
+        id: cache-linux-sysroot
+        uses: actions/cache/restore@v4
+        with:
+          path: .sysroot
+          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}
       - name: Populate Linux sysroot
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_linux_sysroot.sh
+      - name: Save Linux sysroot cache
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .sysroot
+          key: ${{ steps.cache-linux-sysroot.outputs.cache-primary-key }}
       - name: Run GoReleaser (Build & Test)
         env:
           GITHUB_TOKEN: ${{github.token}}
