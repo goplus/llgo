@@ -31,9 +31,52 @@ jobs:
         with:
           path: .sysroot/darwin.tar.gz
           key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+  populate-linux-sysroot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+      - name: Restore Linux sysroot cache
+        id: cache-linux-sysroot
+        uses: actions/cache/restore@v4
+        with:
+          path: .sysroot/linux.tar.gz
+          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
+      - name: Populate Linux sysroot
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+        run: bash .github/workflows/populate_linux_sysroot.sh
+      - name: Create Linux sysroot tarball
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+        run: tar -czvf .sysroot/linux.tar.gz -C .sysroot linux
+      - name: Verify Linux sysroot contents
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+        run: |
+          echo "验证 AMD64 sysroot..."
+          if [ ! -d ".sysroot/linux/amd64/usr/include/llvm-19" ]; then
+            echo "错误：AMD64 sysroot 缺少 LLVM 头文件"
+            exit 1
+          fi
+
+          echo "验证 ARM64 sysroot..."
+          if [ ! -d ".sysroot/linux/arm64/usr/include/llvm-19" ]; then
+            echo "错误：ARM64 sysroot 缺少 LLVM 头文件"
+            exit 1
+          fi
+
+          echo "检查关键文件..."
+          ls -la .sysroot/linux/amd64/usr/include/llvm-c/Core.h || echo "AMD64 Core.h 缺失"
+          ls -la .sysroot/linux/arm64/usr/include/llvm-c/Core.h || echo "ARM64 Core.h 缺失"
+
+          echo "sysroot 验证通过！"
+      - name: Save Linux sysroot cache
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .sysroot/linux.tar.gz
+          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
   build:
     runs-on: ubuntu-latest
-    needs: populate-darwin-sysroot
+    needs: [populate-darwin-sysroot, populate-linux-sysroot]
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -53,10 +96,16 @@ jobs:
         with:
           path: .sysroot/darwin.tar.gz
           key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+      - name: Restore Linux sysroot cache
+        id: cache-linux-sysroot
+        uses: actions/cache/restore@v4
+        with:
+          path: .sysroot/linux.tar.gz
+          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
       - name: Populate Darwin sysroot
         run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
       - name: Populate Linux sysroot
-        run: bash .github/workflows/populate_linux_sysroot.sh
+        run: tar -xzvf .sysroot/linux.tar.gz -C .sysroot
       - name: Check file
         run: tree .sysroot
       - name: Run GoReleaser (Build & Test)
