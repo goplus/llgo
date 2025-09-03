@@ -357,7 +357,20 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			// skip
 			continue
 		case AttrPointer:
+			// void @fn(%typ %0)
+			// %1 = alloca %typ, align 8
+			// call void @llvm.memset(ptr %1, i8 0, i64 36, i1 false)
+			// store %typ %0, ptr %1, align 4
+			//
+			// void @fn(ptr byval(%typ) %0)
+			// %1 = load %typ, ptr %0, align 4
+			// %2 = alloca %typ, align 8
+			// call void @llvm.memset(ptr %2, i8 0, i64 36, i1 false)
+			// store %typ %1, ptr %2, align 4
 			nv = b.CreateLoad(ti.Type, params[index], "")
+			if p.sys.SupportByVal() {
+				replaceParamAlloc(fn.Param(i), params[index])
+			}
 		case AttrWidthType:
 			iptr := llvm.CreateAlloca(b, ti.Type1)
 			b.CreateStore(params[index], iptr)
@@ -653,4 +666,41 @@ func (p *Transformer) getMemcpy(m llvm.Module, ctx llvm.Context) llvm.Value {
 	memcpy.SetFunctionCallConv(llvm.CCallConv)
 	memcpy.AddFunctionAttr(funcNoUnwind(ctx))
 	return memcpy
+}
+
+func replaceParamAlloc(param llvm.Value, nv llvm.Value) {
+	u := param.FirstUse()
+	var storeInstrs []llvm.Value
+	for !u.IsNil() {
+		if user := u.User().IsAStoreInst(); !user.IsNil() && user.Operand(0) == param {
+			storeInstrs = append(storeInstrs, user)
+		}
+		u = u.NextUse()
+	}
+	for _, instr := range storeInstrs {
+		if alloc := instr.Operand(1).IsAAllocaInst(); !alloc.IsNil() {
+			skips := make(map[llvm.Value]bool)
+			next := llvm.NextInstruction(alloc)
+			for !next.IsNil() && next != instr {
+				skips[next] = true
+				next = llvm.NextInstruction(next)
+			}
+			var uses []llvm.Value
+			u := alloc.FirstUse()
+			for !u.IsNil() {
+				if v := u.User(); !skips[v] {
+					uses = append(uses, v)
+				}
+				u = u.NextUse()
+			}
+			for _, use := range uses {
+				n := use.OperandsCount()
+				for i := 0; i < n; i++ {
+					if use.Operand(i) == alloc {
+						use.SetOperand(i, nv)
+					}
+				}
+			}
+		}
+	}
 }
