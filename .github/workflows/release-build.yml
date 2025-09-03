@@ -59,14 +59,14 @@ jobs:
             -v $(pwd):/go/src/llgo \
             -w /go/src/llgo \
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
-            release --skip=publish,nfpm,snapcraft --clean
+            release --skip=publish,nfpm,snapcraft --snapshot --clean
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llgo-build-artifacts
           path: dist
-          retention-days: 7
+          retention-days: 3
 
       - name: Run GoReleaser (Release)
         if: startsWith(github.ref, 'refs/tags/')
