@@ -18,7 +18,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.2
+          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.3
           lookup-only: true
       - name: Populate Darwin sysroot
         if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
@@ -31,34 +31,9 @@ jobs:
         with:
           path: .sysroot/darwin.tar.gz
           key: ${{ steps.cache-darwin-sysroot.outputs.cache-primary-key }}
-
-  populate-linux-sysroot:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v5
-      - name: Check sysroot cache
-        id: cache-linux-sysroot
-        uses: actions/cache/restore@v4
-        with:
-          path: .sysroot/linux.tar.gz
-          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.2
-          lookup-only: true
-      - name: Populate Linux sysroot
-        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
-        run: |
-          bash .github/workflows/populate_linux_sysroot.sh
-          tar -czvf .sysroot/linux.tar.gz -C .sysroot linux
-      - name: Save Linux sysroot cache
-        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .sysroot/linux.tar.gz
-          key: ${{ steps.cache-linux-sysroot.outputs.cache-primary-key }}
-
   build:
     runs-on: ubuntu-latest
-    needs: [populate-darwin-sysroot, populate-linux-sysroot]
+    needs: [populate-darwin-sysroot]
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -73,19 +48,13 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.2
-      - name: Restore Linux sysroot cache
-        id: cache-linux-sysroot
-        uses: actions/cache/restore@v4
-        with:
-          path: .sysroot/linux.tar.gz
-          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.2
+          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.3
       - name: Extract sysroots
         run: |
-          mkdir -p .sysroot
-          if [ -f .sysroot/darwin.tar.gz ]; then tar -xzvf .sysroot/darwin.tar.gz -C .sysroot; fi
-          if [ -f .sysroot/linux.tar.gz ]; then tar -xzvf .sysroot/linux.tar.gz -C .sysroot; fi
-          ls -la .sysroot
+          tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
+      - name: Populate Linux sysroot
+        run: |
+          bash .github/workflows/populate_linux_sysroot.sh
           tree .sysroot
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -221,18 +190,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .sysroot/darwin.tar.gz
-          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.2
-      - name: Restore Linux sysroot cache
-        id: cache-linux-sysroot
-        uses: actions/cache/restore@v4
-        with:
-          path: .sysroot/linux.tar.gz
-          key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.2
+          key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.3
       - name: Extract sysroots
-        run: |
-          mkdir -p .sysroot
-          if [ -f .sysroot/darwin.tar.gz ]; then tar -xzvf .sysroot/darwin.tar.gz -C .sysroot; fi
-          if [ -f .sysroot/linux.tar.gz ]; then tar -xzvf .sysroot/linux.tar.gz -C .sysroot; fi
+        run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
+      - name: Populate Linux sysroot
+        run: bash .github/workflows/populate_linux_sysroot.sh
       - name: Run GoReleaser (Release)
         env:
           GITHUB_TOKEN: ${{github.token}}
