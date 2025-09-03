@@ -150,7 +150,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-latest-large
             goos: darwin
             goarch: amd64
           - os: macos-latest
@@ -159,7 +159,7 @@ jobs:
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             goos: linux
             goarch: arm64
     runs-on: ${{ matrix.os }}
