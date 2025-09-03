@@ -2,8 +2,10 @@ name: Release Build
 
 on:
   push:
-    tags:
-      - "*"
+    branches: ["**"]
+    tags: ["*"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
   populate-darwin-sysroot:
@@ -46,10 +48,32 @@ jobs:
         run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
       - name: Populate Linux sysroot
         run: bash .github/workflows/populate_linux_sysroot.sh
-      - name: Run GoReleaser
+      - name: Run GoReleaser (Build & Test)
         env:
           GITHUB_TOKEN: ${{github.token}}
         run: |
+          docker run \
+            --rm \
+            -e GITHUB_TOKEN=${GITHUB_TOKEN} \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $(pwd):/go/src/llgo \
+            -w /go/src/llgo \
+            ghcr.io/goreleaser/goreleaser-cross:v1.22 \
+            release --skip=publish,nfpm,snapcraft --clean
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llgo-build-artifacts
+          path: dist
+          retention-days: 7
+
+      - name: Run GoReleaser (Release)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{github.token}}
+        run: |
+          echo "Publishing release for tag: ${{ github.ref }}"
           docker run \
             --rm \
             -e GITHUB_TOKEN=${GITHUB_TOKEN} \
