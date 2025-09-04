@@ -27,7 +27,7 @@ jobs:
         if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
         run: tar -czvf .sysroot/darwin.tar.gz -C .sysroot darwin
       - name: Save Darwin sysroot cache
-        # if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
+        if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: .sysroot/darwin.tar.gz
@@ -171,7 +171,7 @@ jobs:
           ls -la release-llgo/
           echo "${{ github.workspace }}/release-llgo/bin/" >> $GITHUB_PATH
 
-      - name: Test Hello World with go.mod 1.21
+      - name: Test Hello World
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go-version}}
