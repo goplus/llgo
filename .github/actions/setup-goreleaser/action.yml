@@ -1,5 +1,12 @@
 name: "Setup GoReleaser"
 description: "Setup GoReleaser environment"
+inputs:
+  darwin-cache-key:
+    description: "Darwin sysroot cache key"
+    required: true
+  linux-cache-key:
+    description: "Linux sysroot cache key"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -12,13 +19,13 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: .sysroot/darwin.tar.gz
-        key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+        key: ${{ inputs.darwin-cache-key }}
     - name: Restore Linux sysroot cache
       id: cache-linux-sysroot
       uses: actions/cache/restore@v4
       with:
         path: .sysroot/linux.tar.gz
-        key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
+        key: ${{ inputs.linux-cache-key }}
     - name: Populate Darwin sysroot
       run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
       shell: bash
