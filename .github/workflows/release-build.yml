@@ -13,12 +13,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v5
-      - name: Restore Darwin sysroot cache
+      - name: Check Darwin sysroot cache
         id: cache-darwin-sysroot
         uses: actions/cache/restore@v4
         with:
           path: .sysroot/darwin.tar.gz
           key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+          lookup-only: true
       - name: Populate Darwin sysroot
         if: steps.cache-darwin-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_darwin_sysroot.sh
@@ -36,12 +37,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v5
-      - name: Restore Linux sysroot cache
+      - name: Check Linux sysroot cache
         id: cache-linux-sysroot
         uses: actions/cache/restore@v4
         with:
           path: .sysroot/linux.tar.gz
           key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
+          lookup-only: true
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
