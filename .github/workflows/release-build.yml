@@ -42,6 +42,11 @@ jobs:
         with:
           path: .sysroot/linux.tar.gz
           key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
+        with:
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
       - name: Populate Linux sysroot
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_linux_sysroot.sh
