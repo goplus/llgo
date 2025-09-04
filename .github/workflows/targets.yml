@@ -1,0 +1,40 @@
+
+name: Targets
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  llgo:
+    continue-on-error: true
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-24.04
+        llvm: [19]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
+
+      - name: Set up Go for build
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
+
+      - name: Install
+        run: |
+          go install ./...
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Build targets
+        run: |
+          cd _demo/targetsbuild
+          bash build.sh
