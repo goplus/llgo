@@ -113,7 +113,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 		}
 	}
 	for _, call := range callInstrs {
-		p.transformCallInstr(ctx, call.call, call.fn)
+		p.transformCallInstr(m, ctx, call.call, call.fn)
 	}
 	for _, fn := range fns {
 		p.transformFunc(m, fn)
@@ -368,9 +368,8 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			// call void @llvm.memset(ptr %2, i8 0, i64 36, i1 false)
 			// store %typ %1, ptr %2, align 4
 			nv = b.CreateLoad(ti.Type, params[index], "")
-			if p.sys.SupportByVal() {
-				replaceParamAlloc(fn.Param(i), params[index])
-			}
+			// replace %0 to %2
+			replaceParamAlloc(fn.Param(i), params[index])
 		case AttrWidthType:
 			iptr := llvm.CreateAlloca(b, ti.Type1)
 			b.CreateStore(params[index], iptr)
@@ -443,7 +442,7 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 	}
 }
 
-func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
+func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
 	nfn := call.CalledValue()
 	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
 	if !info.HasWrap() {
@@ -472,9 +471,21 @@ func (p *Transformer) transformCallInstr(ctx llvm.Context, call llvm.Value, fn l
 		case AttrVoid:
 			// none
 		case AttrPointer:
-			ptr := createAlloca(ti.Type)
-			b.CreateStore(param, ptr)
-			nparams = append(nparams, ptr)
+			// check ptr
+			if rv := param.IsALoadInst(); !rv.IsNil() {
+				ptr := rv.Operand(0)
+				if p.sys.SupportByVal() {
+					nparams = append(nparams, ptr)
+				} else {
+					nptr := createAlloca(ti.Type)
+					p.callMemcpy(m, ctx, b, nptr, ptr, ti.Size)
+					nparams = append(nparams, nptr)
+				}
+			} else {
+				ptr := createAlloca(ti.Type)
+				b.CreateStore(param, ptr)
+				nparams = append(nparams, ptr)
+			}
 		case AttrWidthType:
 			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
