@@ -1,0 +1,30 @@
+name: "Setup GoReleaser"
+description: "Setup GoReleaser environment"
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.24.x
+    - name: Restore Darwin sysroot cache
+      id: cache-darwin-sysroot
+      uses: actions/cache/restore@v4
+      with:
+        path: .sysroot/darwin.tar.gz
+        key: darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh') }}-0.0.5
+    - name: Restore Linux sysroot cache
+      id: cache-linux-sysroot
+      uses: actions/cache/restore@v4
+      with:
+        path: .sysroot/linux.tar.gz
+        key: linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh') }}-0.0.7
+    - name: Populate Darwin sysroot
+      run: tar -xzvf .sysroot/darwin.tar.gz -C .sysroot
+      shell: bash
+    - name: Populate Linux sysroot
+      run: tar -xzvf .sysroot/linux.tar.gz -C .sysroot
+      shell: bash
+    - name: Check file
+      run: tree .sysroot
+      shell: bash
