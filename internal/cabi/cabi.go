@@ -369,12 +369,13 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			// store %typ %1, ptr %2, align 4
 			nv = b.CreateLoad(ti.Type, params[index], "")
 			// replace %0 to %2
-			replaceParamAlloc(fn.Param(i), params[index])
+			replaceAllocaInstrs(fn.Param(i), params[index])
 		case AttrWidthType:
 			iptr := llvm.CreateAlloca(b, ti.Type1)
 			b.CreateStore(params[index], iptr)
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nv = b.CreateLoad(ti.Type, ptr, "")
+			replaceAllocaInstrs(fn.Param(i), ptr)
 		case AttrWidthType2:
 			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
 			iptr := llvm.CreateAlloca(b, typ)
@@ -383,6 +384,7 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 1, ""))
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nv = b.CreateLoad(ti.Type, ptr, "")
+			replaceAllocaInstrs(fn.Param(i), ptr)
 		case AttrExtract:
 			nsubs := ti.Type.StructElementTypesCount()
 			nv = llvm.Undef(ti.Type)
@@ -431,10 +433,15 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				}
 				rv = b.CreateRetVoid()
 			case AttrWidthType, AttrWidthType2:
-				ptr := llvm.CreateAlloca(b, info.Return.Type)
-				b.CreateStore(ret, ptr)
-				iptr := b.CreateBitCast(ptr, llvm.PointerType(nft.ReturnType(), 0), "")
-				rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
+				if load := ret.IsALoadInst(); !load.IsNil() {
+					iptr := b.CreateBitCast(ret.Operand(0), llvm.PointerType(nft.ReturnType(), 0), "")
+					rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
+				} else {
+					ptr := llvm.CreateAlloca(b, info.Return.Type)
+					b.CreateStore(ret, ptr)
+					iptr := b.CreateBitCast(ptr, llvm.PointerType(nft.ReturnType(), 0), "")
+					rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
+				}
 			}
 			instr.ReplaceAllUsesWith(rv)
 			instr.EraseFromParentAsInstruction()
@@ -679,7 +686,7 @@ func (p *Transformer) getMemcpy(m llvm.Module, ctx llvm.Context) llvm.Value {
 	return memcpy
 }
 
-func replaceParamAlloc(param llvm.Value, nv llvm.Value) {
+func replaceAllocaInstrs(param llvm.Value, nv llvm.Value) {
 	u := param.FirstUse()
 	var storeInstrs []llvm.Value
 	for !u.IsNil() {
