@@ -207,3 +207,60 @@ func TestCompile(t *testing.T) {
 		}
 	})
 }
+
+func TestLibConfig_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   LibConfig
+		expected string
+	}{
+		{
+			name: "Normal name and version",
+			config: LibConfig{
+				Name:    "picolibc",
+				Version: "1.0",
+			},
+			expected: "picolibc-1.0",
+		},
+		{
+			name: "Empty name",
+			config: LibConfig{
+				Name:    "",
+				Version: "2.5",
+			},
+			expected: "-2.5",
+		},
+		{
+			name: "Empty version",
+			config: LibConfig{
+				Name:    "musl",
+				Version: "",
+			},
+			expected: "musl-",
+		},
+		{
+			name: "Both empty",
+			config: LibConfig{
+				Name:    "",
+				Version: "",
+			},
+			expected: "-",
+		},
+		{
+			name: "Special characters",
+			config: LibConfig{
+				Name:    "glibc++",
+				Version: "v3.2.1",
+			},
+			expected: "glibc++-v3.2.1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.config.String(); got != tt.expected {
+				t.Errorf("String() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}

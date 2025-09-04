@@ -7,16 +7,22 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
-// getPicolibcConfig returns configuration for picolibc
-func GetPicolibcConfig(baseDir, target string) *compile.CompileConfig {
-	return &compile.CompileConfig{
-		Url:  "https://github.com/goplus/picolibc/archive/refs/heads/main.zip",
-		Name: "picolibc",
-		LibcCFlags: []string{
+func GetPicolibcConfig() compile.LibConfig {
+	return compile.LibConfig{
+		Name:          "picolibc",
+		Version:       "v0.1.0",
+		Url:           "https://github.com/goplus/picolibc/archive/refs/heads/main.zip",
+		ArchiveSrcDir: "picolibc-main",
+	}
+}
+
+// GetPicolibcCompileConfig returns configuration for picolibc
+func GetPicolibcCompileConfig(baseDir, target string) compile.CompileConfig {
+	return compile.CompileConfig{
+		ExportCFlags: []string{
 			"-I" + baseDir,
 			"-isystem" + filepath.Join(baseDir, "newlib", "libc", "include"),
 		},
-
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: fmt.Sprintf("libc-%s.a", target),
@@ -158,6 +164,5 @@ func GetPicolibcConfig(baseDir, target string) *compile.CompileConfig {
 				CCFlags: _libcCCFlags,
 			},
 		},
-		ArchiveSrcDir: "picolibc-main",
 	}
 }

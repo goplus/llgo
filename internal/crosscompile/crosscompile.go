@@ -171,16 +171,10 @@ func ldFlagsFromFileName(fileName string) string {
 	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
 }
 
-func getOrCompileWithConfig(
-	compileConfig *compile.CompileConfig,
+func compileWithConfig(
+	compileConfig compile.CompileConfig,
 	outputDir string, options compile.CompileOptions,
 ) (ldflags []string, err error) {
-	if err = checkDownloadAndExtractLib(
-		compileConfig.Url, outputDir,
-		compileConfig.ArchiveSrcDir,
-	); err != nil {
-		return
-	}
 	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
 
 	for _, group := range compileConfig.Groups {
@@ -586,16 +580,16 @@ func UseTarget(targetName string) (export Export, err error) {
 	var libcIncludeDir []string
 
 	if config.Libc != "" {
+		var outputDir string
 		var libcLDFlags []string
-		var compileConfig *compile.CompileConfig
+		var compileConfig compile.CompileConfig
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
-		outputDir := filepath.Join(baseDir, config.Libc)
 
-		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget, config.CPU)
+		outputDir, compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget, config.CPU)
 		if err != nil {
 			return
 		}
-		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+		libcLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
 			CC:      export.CC,
 			Linker:  export.Linker,
 			CCFLAGS: ccflags,
@@ -604,24 +598,24 @@ func UseTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		cflags = append(cflags, compileConfig.LibcCFlags...)
+		cflags = append(cflags, compileConfig.ExportCFlags...)
 		ldflags = append(ldflags, libcLDFlags...)
 
-		libcIncludeDir = compileConfig.LibcCFlags
+		libcIncludeDir = compileConfig.ExportCFlags
 		export.Libc = config.Libc
 	}
 
 	if config.RTLib != "" {
+		var outputDir string
 		var rtLibLDFlags []string
-		var compileConfig *compile.CompileConfig
+		var compileConfig compile.CompileConfig
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
-		outputDir := filepath.Join(baseDir, config.RTLib)
 
-		compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib, config.LLVMTarget)
+		outputDir, compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib, config.LLVMTarget)
 		if err != nil {
 			return
 		}
-		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+		rtLibLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
 			CC:      export.CC,
 			Linker:  export.Linker,
 			CCFLAGS: ccflags,

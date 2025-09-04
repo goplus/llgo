@@ -9,27 +9,20 @@ func TestGetPicolibcConfig(t *testing.T) {
 	baseDir := "/test/base"
 	target := "test-target"
 
-	config := GetPicolibcConfig(baseDir, target)
-
-	if config.Name != "picolibc" {
-		t.Errorf("Expected Name 'picolibc', got '%s'", config.Name)
-	}
-	if config.ArchiveSrcDir != "picolibc-main" {
-		t.Errorf("Expected ArchiveSrcDir 'picolibc-main', got '%s'", config.ArchiveSrcDir)
-	}
+	config := GetPicolibcCompileConfig(baseDir, target)
 
 	// Test LibcCFlags
-	if len(config.LibcCFlags) != 2 {
-		t.Errorf("Expected 2 LibcCFlags, got %d", len(config.LibcCFlags))
+	if len(config.ExportCFlags) != 2 {
+		t.Errorf("Expected 2 LibcCFlags, got %d", len(config.ExportCFlags))
 	} else {
 		expected := "-I" + baseDir
-		if config.LibcCFlags[0] != expected {
-			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.LibcCFlags[0])
+		if config.ExportCFlags[0] != expected {
+			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.ExportCFlags[0])
 		}
 
 		expected = "-isystem" + filepath.Join(baseDir, "newlib", "libc", "include")
-		if config.LibcCFlags[1] != expected {
-			t.Errorf("Expected LibcCFlags[1] to be '%s', got '%s'", expected, config.LibcCFlags[1])
+		if config.ExportCFlags[1] != expected {
+			t.Errorf("Expected LibcCFlags[1] to be '%s', got '%s'", expected, config.ExportCFlags[1])
 		}
 	}
 
@@ -113,22 +106,22 @@ func TestGetPicolibcConfig(t *testing.T) {
 
 func TestGetPicolibcConfig_EdgeCases(t *testing.T) {
 	t.Run("EmptyBaseDir", func(t *testing.T) {
-		config := GetPicolibcConfig("", "test-target")
+		config := GetPicolibcCompileConfig("", "test-target")
 
 		// Check that paths are constructed correctly even with empty baseDir
 		expected := "-I"
-		if config.LibcCFlags[0] != expected {
-			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.LibcCFlags[0])
+		if config.ExportCFlags[0] != expected {
+			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.ExportCFlags[0])
 		}
 
 		expected = "-isystem" + filepath.Join("", "newlib", "libc", "include")
-		if config.LibcCFlags[1] != expected {
-			t.Errorf("Expected LibcCFlags[1] to be '%s', got '%s'", expected, config.LibcCFlags[1])
+		if config.ExportCFlags[1] != expected {
+			t.Errorf("Expected LibcCFlags[1] to be '%s', got '%s'", expected, config.ExportCFlags[1])
 		}
 	})
 
 	t.Run("EmptyTarget", func(t *testing.T) {
-		config := GetPicolibcConfig("/test/base", "")
+		config := GetPicolibcCompileConfig("/test/base", "")
 
 		// Check output file name formatting
 		expectedOutput := "libc-.a"
@@ -144,17 +137,6 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 
 	config := getNewlibESP32ConfigRISCV(baseDir, target)
 
-	// Test basic configuration
-	if config.Url != _newlibUrl {
-		t.Errorf("Expected URL '%s', got '%s'", _newlibUrl, config.Url)
-	}
-	if config.Name != "newlib-esp32" {
-		t.Errorf("Expected Name 'newlib-esp32', got '%s'", config.Name)
-	}
-	if config.ArchiveSrcDir != _archiveInternalSrcDir {
-		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", _archiveInternalSrcDir, config.ArchiveSrcDir)
-	}
-
 	// Test LibcCFlags
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 	expectedCFlags := []string{
@@ -162,12 +144,12 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 		"-I" + filepath.Join(baseDir, "newlib"),
 		"-I" + libcDir,
 	}
-	if len(config.LibcCFlags) != len(expectedCFlags) {
-		t.Errorf("Expected %d LibcCFlags, got %d", len(expectedCFlags), len(config.LibcCFlags))
+	if len(config.ExportCFlags) != len(expectedCFlags) {
+		t.Errorf("Expected %d LibcCFlags, got %d", len(expectedCFlags), len(config.ExportCFlags))
 	} else {
 		for i, expected := range expectedCFlags {
-			if config.LibcCFlags[i] != expected {
-				t.Errorf("LibcCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.LibcCFlags[i])
+			if config.ExportCFlags[i] != expected {
+				t.Errorf("LibcCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportCFlags[i])
 			}
 		}
 	}
@@ -288,17 +270,6 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 
 	config := getNewlibESP32ConfigXtensa(baseDir, target)
 
-	// Test basic configuration
-	if config.Url != _newlibUrl {
-		t.Errorf("Expected URL '%s', got '%s'", _newlibUrl, config.Url)
-	}
-	if config.Name != "newlib-esp32" {
-		t.Errorf("Expected Name 'newlib-esp32', got '%s'", config.Name)
-	}
-	if config.ArchiveSrcDir != _archiveInternalSrcDir {
-		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", _archiveInternalSrcDir, config.ArchiveSrcDir)
-	}
-
 	// Test LibcCFlags
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 	expectedCFlags := []string{
@@ -306,12 +277,12 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 		"-I" + filepath.Join(baseDir, "newlib"),
 		"-I" + libcDir,
 	}
-	if len(config.LibcCFlags) != len(expectedCFlags) {
-		t.Errorf("Expected %d LibcCFlags, got %d", len(expectedCFlags), len(config.LibcCFlags))
+	if len(config.ExportCFlags) != len(expectedCFlags) {
+		t.Errorf("Expected %d LibcCFlags, got %d", len(expectedCFlags), len(config.ExportCFlags))
 	} else {
 		for i, expected := range expectedCFlags {
-			if config.LibcCFlags[i] != expected {
-				t.Errorf("LibcCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.LibcCFlags[i])
+			if config.ExportCFlags[i] != expected {
+				t.Errorf("LibcCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportCFlags[i])
 			}
 		}
 	}
@@ -407,8 +378,8 @@ func TestEdgeCases(t *testing.T) {
 
 		// Check that paths are constructed correctly
 		expected := "-isystem" + filepath.Join(libcDir, "include")
-		if config.LibcCFlags[0] != expected {
-			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.LibcCFlags[0])
+		if config.ExportCFlags[0] != expected {
+			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.ExportCFlags[0])
 		}
 	})
 
@@ -428,8 +399,8 @@ func TestEdgeCases(t *testing.T) {
 
 		// Check that paths are constructed correctly
 		expected := "-I" + filepath.Join(libcDir, "include")
-		if config.LibcCFlags[0] != expected {
-			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.LibcCFlags[0])
+		if config.ExportCFlags[0] != expected {
+			t.Errorf("Expected LibcCFlags[0] to be '%s', got '%s'", expected, config.ExportCFlags[0])
 		}
 	})
 

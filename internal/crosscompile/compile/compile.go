@@ -95,9 +95,17 @@ func (g CompileGroup) Compile(
 
 // CompileConfig represents compilation configuration
 type CompileConfig struct {
+	Groups       []CompileGroup
+	ExportCFlags []string
+}
+
+type LibConfig struct {
 	Url           string
 	Name          string // compile name (e.g., "picolibc", "musl", "glibc")
-	Groups        []CompileGroup
+	Version       string
 	ArchiveSrcDir string
-	LibcCFlags    []string
+}
+
+func (cfg LibConfig) String() string {
+	return fmt.Sprintf("%s-%s", cfg.Name, cfg.Version)
 }
