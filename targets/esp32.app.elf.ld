@@ -5,23 +5,6 @@ ENTRY(_start)
 SECTIONS
 {
   . = SEGMENT_START("iram_seg", 0);
-  .vectors    :
-  {
-    _vector_table = ABSOLUTE(.);
-    KEEP(*(.WindowVectors.text));
-    KEEP(*(.Level2InterruptVector.text));
-    KEEP(*(.Level3InterruptVector.text));
-    KEEP(*(.Level4InterruptVector.text));
-    KEEP(*(.Level5InterruptVector.text));
-    KEEP(*(.DebugExceptionVector.text));
-    KEEP(*(.NMIExceptionVector.text));
-    KEEP(*(.KernelExceptionVector.text));
-    KEEP(*(.UserExceptionVector.text));
-    KEEP(*(.DoubleExceptionVector.text));
-    KEEP(*(.ResetVector.text));
-    *(.*Vector.literal)
-    . = ALIGN (16);
-  } > iram_seg
 
   text    :
   {
