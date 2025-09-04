@@ -331,7 +331,7 @@ void __llgo_py_init_from_exedir(void) {
     char exe_dir[PATH_MAX]; strncpy(exe_dir, frameworks, sizeof(exe_dir)-1); exe_dir[sizeof(exe_dir)-1]='\0';
     if (dirname(exe_dir) == NULL) return;       // <exe_dir>
 
-    char home[PATH_MAX]; snprintf(home, sizeof(home), "%s/../../", exe_dir);
+    char home[PATH_MAX]; snprintf(home, sizeof(home), "%s/../python", exe_dir);
 
     wchar_t *wHome = Py_DecodeLocale(home, NULL);
     if (!wHome) return;
