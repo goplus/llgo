@@ -60,7 +60,7 @@ func TestGetCompilerRTConfig(t *testing.T) {
 	baseDir := "/test/base"
 	target := "riscv32-unknown-elf"
 
-	config := GetCompilerRTConfig(baseDir, target)
+	config := GetCompilerRTCompileConfig(baseDir, target)
 
 	// Test groups configuration
 	if len(config.Groups) != 1 {
@@ -101,15 +101,8 @@ func TestGetCompilerRTConfig_DifferentTargets(t *testing.T) {
 	baseDir := "/test/base"
 	for _, target := range targets {
 		t.Run(target, func(t *testing.T) {
-			config := GetCompilerRTConfig(baseDir, target)
+			config := GetCompilerRTCompileConfig(baseDir, target)
 
-			// Basic validation
-			if config.Url == "" {
-				t.Error("URL should not be empty")
-			}
-			if config.ArchiveSrcDir == "" {
-				t.Error("ArchiveSrcDir should not be empty")
-			}
 			if len(config.Groups) == 0 {
 				t.Error("Should have at least one group")
 			}
