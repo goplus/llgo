@@ -1,4 +1,4 @@
-//go:build !darwin && !baremental
+//go:build !darwin && !baremetal
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.

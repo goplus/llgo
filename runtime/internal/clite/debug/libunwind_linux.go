@@ -1,4 +1,4 @@
-//go:build linux && !baremental
+//go:build linux && !baremetal
 
 package debug
 

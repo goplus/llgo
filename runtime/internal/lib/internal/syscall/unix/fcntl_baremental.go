@@ -1,4 +1,4 @@
-//go:build baremental
+//go:build baremetal
 
 package unix
 
