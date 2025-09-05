@@ -103,9 +103,9 @@ func withPlatformSpecifiedFiles(baseDir, target string, files []string) []string
 func GetCompilerRTConfig() compile.LibConfig {
 	return compile.LibConfig{
 		Name:          "compiler-rt",
-		Url:           "https://github.com/goplus/compiler-rt/archive/refs/tags/v0.1.0.tar.gz",
-		Version:       "v0.1.0",
-		ArchiveSrcDir: "compiler-rt-0.1.0",
+		Url:           "https://github.com/goplus/compiler-rt/archive/refs/tags/xtensa_release_19.1.2.tar.gz",
+		Version:       "xtensa_release_19.1.2",
+		ArchiveSrcDir: "compiler-rt-xtensa_release_19.1.2",
 	}
 }
 
