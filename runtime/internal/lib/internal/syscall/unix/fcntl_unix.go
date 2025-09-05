@@ -1,5 +1,3 @@
-//go:build !baremental
-
 package unix
 
 import (
