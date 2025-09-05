@@ -16,6 +16,7 @@ concurrency:
 jobs:
   download-model:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Download model file
         run: |
@@ -32,6 +33,7 @@ jobs:
   llgo:
     needs: download-model
     continue-on-error: true
+    timeout-minutes: 30
     strategy:
       matrix:
         os:
@@ -137,6 +139,7 @@ jobs:
 
   test:
     continue-on-error: true
+    timeout-minutes: 30
     strategy:
       matrix:
         os:
@@ -180,6 +183,7 @@ jobs:
 
   hello:
     continue-on-error: true
+    timeout-minutes: 30
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-latest]
@@ -238,6 +242,7 @@ jobs:
 
   cross-compile:
     continue-on-error: true
+    timeout-minutes: 30
     strategy:
       matrix:
         os: [macos-latest]

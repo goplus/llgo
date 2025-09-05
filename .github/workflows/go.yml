@@ -16,6 +16,7 @@ concurrency:
 jobs:
   test:
     continue-on-error: true
+    timeout-minutes: 30
     strategy:
       matrix:
         os:
