@@ -10,29 +10,29 @@ import (
 	"strings"
 )
 
-// BundleOnedir 仅拷贝 libpython 与标准库（排除 site-packages），布局：
-// <exe_dir>/Frameworks/libpython3.x.{dylib|so}
-// <exe_dir>/python/lib/python3.12/**（含 lib-dynload/，不含 site-packages/）
+// BundleOnedir 拷贝 libpython 与标准库（包含 site-packages），布局：
+// <exe_dir>/python/lib/libpython3.x.{dylib|so}
+// <exe_dir>/python/lib/python3.12/**（含 lib-dynload/ 与 site-packages/）
 func BundleOnedir(app string) error {
 	exeDir := filepath.Dir(app)
 	pyHome := PythonHome()
 
 	// 1) 目录
-	fwDir := filepath.Join(exeDir, "Frameworks")
+	libDstDir := filepath.Join(exeDir, "python", "lib")
 	stdDst := filepath.Join(exeDir, "python", "lib", "python3.12")
-	if err := os.MkdirAll(fwDir, 0755); err != nil {
+	if err := os.MkdirAll(libDstDir, 0755); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(stdDst, 0755); err != nil {
 		return err
 	}
 
-	// 2) libpython → Frameworks，并在 macOS 上设置 @rpath
+	// 2) libpython → <exe_dir>/python/lib，并在 macOS 上设置 @rpath
 	libSrc, err := findLibpython(filepath.Join(pyHome, "lib"))
 	if err != nil {
 		return err
 	}
-	libDst := filepath.Join(fwDir, filepath.Base(libSrc))
+	libDst := filepath.Join(libDstDir, filepath.Base(libSrc))
 	if err := copyFile(libSrc, libDst); err != nil {
 		return err
 	}
@@ -49,9 +49,9 @@ func BundleOnedir(app string) error {
 		if base == "__pycache__" {
 			return false
 		}
-		if strings.HasPrefix(r, "site-packages/") || r == "site-packages" {
-			return false
-		}
+		// if strings.HasPrefix(r, "site-packages/") || r == "site-packages" {
+		// 	return false
+		// }
 		// 可选进一步裁剪（放开注释即可）
 		if r == "test" || strings.HasPrefix(r, "test/") {
 			return false

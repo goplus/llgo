@@ -655,7 +655,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			addRpath(&linkArgs, dir)
 		}
 
-		addRpath(&linkArgs, "@executable_path/Frameworks")
+		addRpath(&linkArgs, "@executable_path/python/lib")
 
 	}
 
@@ -778,8 +778,6 @@ func isWasmTarget(goos string) bool {
 
 func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (path string, err error) {
 	var (
-		pyInitDecl    string
-		pyInit        string
 		rtInitDecl    string
 		rtInit        string
 		pyEnvInitDecl string
@@ -793,8 +791,6 @@ func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, ne
 	if needPyInit {
 		pyEnvInit = "call void @__llgo_py_init_from_exedir()"
 		pyEnvInitDecl = "declare void @__llgo_py_init_from_exedir()"
-		pyInit = "call void @Py_Initialize()"
-		pyInitDecl = "declare void @Py_Initialize()"
 	}
 	declSizeT := "%size_t = type i64"
 	if is32Bits(ctx.buildConf.Goarch) {
@@ -846,7 +842,6 @@ source_filename = "main"
 %s
 %s
 %s
-%s
 declare void @"%s.init"()
 declare void @"%s.main"()
 define weak void @runtime.init() {
@@ -867,16 +862,15 @@ _llgo_0:
   %s
   %s
   %s
-  %s
   call void @runtime.init()
   call void @"%s.init"()
   call void @"%s.main"()
   ret i32 0
 }
 `, declSizeT, stdioDecl,
-		pyEnvInitDecl, pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+		pyEnvInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
 		startDefine, mainDefine, stdioNobuf,
-		pyEnvInit, pyInit, rtInit, mainPkgPath, mainPkgPath)
+		pyEnvInit, rtInit, mainPkgPath, mainPkgPath)
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
 }
