@@ -662,7 +662,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
 
-	// 默认打包（onedir，排除 site-packages）
+	// Default bundling (onedir; exclude site-packages)
 	if needPyInit {
 		check(pyenv.BundleOnedir(app))
 	}

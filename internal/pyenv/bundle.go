@@ -10,14 +10,14 @@ import (
 	"strings"
 )
 
-// BundleOnedir 拷贝 libpython 与标准库（包含 site-packages），布局：
+// BundleOnedir copies libpython and the standard library (including site-packages). Layout:
 // <exe_dir>/python/lib/libpython3.x.{dylib|so}
 // <exe_dir>/python/lib/python3.12/**（含 lib-dynload/ 与 site-packages/）
 func BundleOnedir(app string) error {
 	exeDir := filepath.Dir(app)
 	pyHome := PythonHome()
 
-	// 1) 目录
+	// 1) Directories
 	libDstDir := filepath.Join(exeDir, "python", "lib")
 	stdDst := filepath.Join(exeDir, "python", "lib", "python3.12")
 	if err := os.MkdirAll(libDstDir, 0755); err != nil {
@@ -27,7 +27,7 @@ func BundleOnedir(app string) error {
 		return err
 	}
 
-	// 2) libpython → <exe_dir>/python/lib，并在 macOS 上设置 @rpath
+	// 2) libpython → <exe_dir>/python/lib, and set @rpath on macOS
 	libSrc, err := findLibpython(filepath.Join(pyHome, "lib"))
 	if err != nil {
 		return err
@@ -40,10 +40,10 @@ func BundleOnedir(app string) error {
 		_ = exec.Command("install_name_tool", "-id", "@rpath/"+filepath.Base(libDst), libDst).Run()
 	}
 
-	// 3) 标准库（排除 site-packages、__pycache__、test/idlelib/tkinter 可按需裁剪）
+	// 3) Standard library (exclude __pycache__, test/idlelib/tkinter as needed)
 	stdSrc := filepath.Join(pyHome, "lib", "python3.12")
 	return copyTree(stdSrc, stdDst, func(rel string, d fs.DirEntry) bool {
-		// 统一使用正斜杠判断子路径
+		// Always use forward-slash to check subpaths
 		r := filepath.ToSlash(rel)
 		base := strings.ToLower(filepath.Base(r))
 		if base == "__pycache__" {
@@ -52,7 +52,7 @@ func BundleOnedir(app string) error {
 		// if strings.HasPrefix(r, "site-packages/") || r == "site-packages" {
 		// 	return false
 		// }
-		// 可选进一步裁剪（放开注释即可）
+		// Optional further pruning
 		if r == "test" || strings.HasPrefix(r, "test/") {
 			return false
 		}
