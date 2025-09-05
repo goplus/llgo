@@ -809,7 +809,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 				}
 			}()
 		}
-		fmt.Printf("cross compile: %#v\n", ctx.crossCompile)
 	}
 
 	// Step 2: File format conversion if needed
