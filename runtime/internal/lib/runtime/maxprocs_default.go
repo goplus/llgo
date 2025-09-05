@@ -2,6 +2,10 @@
 
 package runtime
 
+import (
+	_ "unsafe"
+)
+
 const (
 	LLGoPackage = "link"
 	LLGoFiles   = "_wrap/runtime.c"

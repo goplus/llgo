@@ -20,10 +20,7 @@ package c
 
 import _ "unsafe"
 
-//go:linkname Stdin stdin
+// initialized by z_print because LLGoPackage skips calling init()
 var Stdin FilePtr
-
-//go:linkname Stdout stdout
 var Stdout FilePtr
-
-var Stderr FilePtr = Fopen(Str("/dev/stderr"), Str("w"))
+var Stderr FilePtr
