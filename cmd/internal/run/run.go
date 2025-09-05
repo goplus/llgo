@@ -50,6 +50,7 @@ func init() {
 	base.PassBuildFlags(Cmd)
 	flags.AddBuildFlags(&Cmd.Flag)
 	flags.AddBuildFlags(&CmpTestCmd.Flag)
+	flags.AddRunFlags(&Cmd.Flag)
 	flags.AddCmpTestFlags(&CmpTestCmd.Flag)
 }
 

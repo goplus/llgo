@@ -34,6 +34,7 @@ type Export struct {
 
 	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
 	FormatDetail string // For uf2, it's uf2FamilyID
+	Emulator     string // Emulator command template (e.g., "qemu-system-arm -M {} -kernel {}")
 }
 
 // URLs and configuration that can be overridden for testing
@@ -499,6 +500,7 @@ func useTarget(targetName string) (export Export, err error) {
 	export.ExtraFiles = config.ExtraFiles
 	export.BinaryFormat = config.BinaryFormat
 	export.FormatDetail = config.FormatDetail()
+	export.Emulator = config.Emulator
 
 	// Build environment map for template variable expansion
 	envs := buildEnvMap(env.LLGoROOT())

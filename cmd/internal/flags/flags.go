@@ -19,6 +19,7 @@ var Verbose bool
 var BuildEnv string
 var Tags string
 var Target string
+var Emulator bool
 var AbiMode int
 var CheckLinkArgs bool
 var CheckLLFiles bool
@@ -39,6 +40,10 @@ func AddBuildFlags(fs *flag.FlagSet) {
 
 var Gen bool
 
+func AddRunFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&Emulator, "emulator", false, "Run in emulator mode")
+}
+
 func AddCmpTestFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Gen, "gen", false, "Generate llgo.expect file")
 }
@@ -51,6 +56,8 @@ func UpdateConfig(conf *build.Config) {
 	case build.ModeBuild:
 		conf.OutFile = OutputFile
 		conf.FileFormat = FileFormat
+	case build.ModeRun:
+		conf.Emulator = Emulator
 	case build.ModeCmpTest:
 		conf.GenExpect = Gen
 	}

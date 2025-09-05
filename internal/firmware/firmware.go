@@ -20,6 +20,18 @@ func MakeFirmwareImage(infile, outfile, format, fmtDetail string) error {
 	return fmt.Errorf("unsupported firmware format: %s", format)
 }
 
+// ExtractFileFormatFromEmulator extracts file format from emulator command template
+// Returns the format if found (e.g. "bin", "hex", "zip", "img"), empty string if not found
+func ExtractFileFormatFromEmulator(emulatorCmd string) string {
+	formats := []string{"bin", "hex", "zip", "img", "uf2"}
+	for _, format := range formats {
+		if strings.Contains(emulatorCmd, "{"+format+"}") {
+			return format
+		}
+	}
+	return ""
+}
+
 // GetFileExtFromFormat converts file format to file extension
 func GetFileExtFromFormat(format string) string {
 	switch format {
@@ -33,6 +45,8 @@ func GetFileExtFromFormat(format string) string {
 		return ".uf2"
 	case "zip":
 		return ".zip"
+	case "img":
+		return ".img"
 	default:
 		return ""
 	}
@@ -47,7 +61,7 @@ func ConvertOutput(infile, outfile, binaryFormat, fileFormat string) error {
 		return nil
 	}
 
-	// Only support conversion to hex format
+	// Only support conversion to hex and format
 	if fileFormat == "hex" {
 		return convertToHex(infile, outfile)
 	}
