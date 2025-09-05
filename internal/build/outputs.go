@@ -110,7 +110,10 @@ func genBuildOutputs(conf *Config, pkgName string, multiPkg bool, cfg OutputCfg)
 		}
 	} else {
 		// Direct output
-		cfg.OutPath = baseName + conf.AppExt
+		cfg.OutPath = baseName
+		if filepath.Ext(cfg.OutPath) != conf.AppExt {
+			cfg.OutPath += conf.AppExt
+		}
 		cfg.IntPath = cfg.OutPath
 	}
 

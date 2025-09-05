@@ -18,6 +18,8 @@ var Cmd = &base.Command{
 func init() {
 	Cmd.Run = runCmd
 	flags.AddBuildFlags(&Cmd.Flag)
+	flags.AddEmulatorFlags(&Cmd.Flag)
+	flags.AddEmbeddedFlags(&Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {

@@ -79,7 +79,8 @@ type Config struct {
 	AppExt        string   // ".exe" on Windows, empty on Unix
 	OutFile       string   // only valid for ModeBuild when len(pkgs) == 1
 	FileFormat    string   // File format override (e.g., "bin", "hex", "elf", "uf2", "zip") - takes precedence over target's default
-	Emulator      bool     // only valid for ModeRun - run in emulator mode
+	Emulator      bool     // only valid for ModeRun/ModeTest - run in emulator mode
+	Port          string   // only valid for ModeRun/ModeTest/ModeInstall/ModeCmpTest - target port for flashing
 	RunArgs       []string // only valid for ModeRun
 	Mode          Mode
 	AbiMode       AbiMode
@@ -314,7 +315,25 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
-			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
+			app, err := linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
+			if err != nil {
+				return nil, err
+			}
+
+			if slices.Contains([]Mode{ModeRun, ModeCmpTest, ModeTest, ModeInstall}, mode) {
+				// Flash to device if needed (for embedded targets)
+				if !conf.Emulator && conf.Target != "" {
+					err = flash(ctx, app, verbose)
+					if err != nil {
+						return nil, err
+					}
+				} else if mode != ModeInstall {
+					err = run(ctx, app, pkg.PkgPath, pkg.Dir, conf, mode, verbose)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
 	}
 
@@ -629,14 +648,16 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 	return objFiles, nil
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) {
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) (string, error) {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	binFmt := ctx.crossCompile.BinaryFormat
 
 	// Generate output configuration using the centralized function
 	outputCfg, err := GenOutputs(conf, name, len(ctx.initial) > 1, ctx.crossCompile.Emulator, binFmt)
-	check(err)
+	if err != nil {
+		return "", err
+	}
 
 	app := outputCfg.OutPath
 	orgApp := outputCfg.IntPath
@@ -667,18 +688,24 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
-	check(err)
+	if err != nil {
+		return "", err
+	}
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
 
 	// Compile extra files from target configuration
 	extraObjFiles, err := compileExtraFiles(ctx, verbose)
-	check(err)
+	if err != nil {
+		return "", err
+	}
 	objFiles = append(objFiles, extraObjFiles...)
 
 	if global != nil {
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
-		check(err)
+		if err != nil {
+			return "", err
+		}
 		objFiles = append(objFiles, export)
 	}
 
@@ -700,18 +727,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
-	check(err)
+	if err != nil {
+		return "", err
+	}
 
 	// Handle firmware conversion and file format conversion
 	currentApp := orgApp
-
-	useEmulator := false
-	if mode == ModeRun && conf.Emulator {
-		if ctx.crossCompile.Emulator == "" {
-			panic(fmt.Errorf("target %s does not have emulator configured", conf.Target))
-		}
-		useEmulator = true
-	}
 
 	// Step 1: Firmware conversion if needed
 	if outputCfg.NeedFwGen {
@@ -721,13 +742,17 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 				fmt.Fprintf(os.Stderr, "Converting to firmware format: %s (%s -> %s)\n", outputCfg.BinFmt, currentApp, app)
 			}
 			err = firmware.MakeFirmwareImage(currentApp, app, outputCfg.BinFmt, ctx.crossCompile.FormatDetail)
-			check(err)
+			if err != nil {
+				return "", err
+			}
 			currentApp = app
 		} else {
 			// Convert to intermediate file first
 			binExt := firmware.BinaryExt(ctx.crossCompile.BinaryFormat)
 			tmpFile, err := os.CreateTemp("", "llgo-*"+binExt)
-			check(err)
+			if err != nil {
+				return "", err
+			}
 			tmpFile.Close()
 			intermediateApp := tmpFile.Name()
 
@@ -735,7 +760,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 				fmt.Fprintf(os.Stderr, "Converting to firmware format: %s (%s -> %s)\n", ctx.crossCompile.BinaryFormat, currentApp, intermediateApp)
 			}
 			err = firmware.MakeFirmwareImage(currentApp, intermediateApp, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
-			check(err)
+			if err != nil {
+				return "", err
+			}
 			currentApp = intermediateApp
 			defer func() {
 				// Only remove if the intermediate file still exists (wasn't moved)
@@ -754,29 +781,52 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 				fmt.Fprintf(os.Stderr, "Converting to file format: %s (%s -> %s)\n", outputCfg.FileFmt, currentApp, app)
 			}
 			err = firmware.ConvertOutput(currentApp, app, binFmt, outputCfg.FileFmt)
-			check(err)
+			if err != nil {
+				return "", err
+			}
 		} else {
 			// Just move/copy the file
 			if verbose {
 				fmt.Fprintf(os.Stderr, "Moving file: %s -> %s\n", currentApp, app)
 			}
 			err = os.Rename(currentApp, app)
-			check(err)
+			if err != nil {
+				return "", err
+			}
 		}
+	}
+
+	return app, nil
+}
+
+func run(ctx *context, app string, pkgPath, pkgDir string, conf *Config, mode Mode, verbose bool) error {
+	useEmulator := false
+	if mode == ModeRun && conf.Emulator {
+		if ctx.crossCompile.Emulator == "" {
+			return fmt.Errorf("target %s does not have emulator configured", conf.Target)
+		}
+		useEmulator = true
 	}
 
 	switch mode {
 	case ModeTest:
 		cmd := exec.Command(app, conf.RunArgs...)
-		cmd.Dir = pkg.Dir
+		cmd.Dir = pkgDir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		cmd.Run()
-		if s := cmd.ProcessState; s != nil {
-			exitCode := s.ExitCode()
-			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
-			if !ctx.testFail && exitCode != 0 {
-				ctx.testFail = true
+		if err := cmd.Run(); err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				// The command ran and exited with a non-zero status.
+				fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitErr.ExitCode())
+				if !ctx.testFail {
+					ctx.testFail = true
+				}
+			} else {
+				// The command failed to start or other error.
+				fmt.Fprintf(os.Stderr, "failed to run test %s: %v\n", app, err)
+				if !ctx.testFail {
+					ctx.testFail = true
+				}
 			}
 		}
 	case ModeRun:
@@ -784,7 +834,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			if verbose {
 				fmt.Fprintf(os.Stderr, "Using emulator: %s\n", ctx.crossCompile.Emulator)
 			}
-			runInEmulator(app, ctx.crossCompile.Emulator, conf.RunArgs, verbose)
+			err := runInEmulator(app, ctx.crossCompile.Emulator, conf.RunArgs, verbose)
+			if err != nil {
+				return err
+			}
 		} else {
 			args := make([]string, 0, len(conf.RunArgs)+1)
 			copy(args, conf.RunArgs)
@@ -813,17 +866,28 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
-			err = cmd.Run()
+			err := cmd.Run()
 			if err != nil {
-				panic(err)
+				return err
 			}
 			if s := cmd.ProcessState; s != nil {
 				mockable.Exit(s.ExitCode())
 			}
 		}
 	case ModeCmpTest:
-		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
+		cmpTest(pkgDir, pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
+	return nil
+}
+
+func flash(ctx *context, app string, verbose bool) error {
+	// TODO: Implement device flashing logic
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Flashing %s to port %s\n", app, ctx.buildConf.Port)
+	}
+	fmt.Printf("conf: %#v\n", ctx.buildConf)
+	fmt.Printf("crosscompile: %#v\n", ctx.crossCompile)
+	return nil
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
@@ -1314,7 +1378,7 @@ func findDylibDep(exe, lib string) string {
 type none struct{}
 
 // runInEmulator runs the application in emulator by formatting the emulator command template
-func runInEmulator(appPath, emulatorTemplate string, runArgs []string, verbose bool) {
+func runInEmulator(appPath, emulatorTemplate string, runArgs []string, verbose bool) error {
 	// Build environment map for template variable expansion
 	envs := map[string]string{
 		"":    appPath, // {} expands to app path
@@ -1357,11 +1421,12 @@ func runInEmulator(appPath, emulatorTemplate string, runArgs []string, verbose b
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if s := cmd.ProcessState; s != nil {
 		mockable.Exit(s.ExitCode())
 	}
+	return nil
 }
 
 func check(err error) {

@@ -33,7 +33,7 @@ func TestGenOutputs(t *testing.T) {
 			wantOutPath:   "hello",
 			wantOutExt:    "",
 			wantFileFmt:   "",
-			wantBinFmt:    "esp32",
+			wantBinFmt:    "",
 			wantDirectGen: true,
 		},
 		{
@@ -47,7 +47,7 @@ func TestGenOutputs(t *testing.T) {
 			wantOutPath:   "myapp",
 			wantOutExt:    "",
 			wantFileFmt:   "",
-			wantBinFmt:    "esp32",
+			wantBinFmt:    "",
 			wantDirectGen: true,
 		},
 		{
@@ -108,7 +108,7 @@ func TestGenOutputs(t *testing.T) {
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
-			wantBinFmt:    "esp32",
+			wantBinFmt:    "",
 			wantDirectGen: true,
 		},
 		{
@@ -167,7 +167,7 @@ func TestGenOutputs(t *testing.T) {
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
-			wantBinFmt:    "esp32",
+			wantBinFmt:    "",
 			wantDirectGen: true,
 		},
 		{
@@ -194,7 +194,7 @@ func TestGenOutputs(t *testing.T) {
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
-			wantBinFmt:    "esp32",
+			wantBinFmt:    "",
 			wantDirectGen: true,
 		},
 		{

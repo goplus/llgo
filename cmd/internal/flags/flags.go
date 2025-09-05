@@ -20,6 +20,7 @@ var BuildEnv string
 var Tags string
 var Target string
 var Emulator bool
+var Port string
 var AbiMode int
 var CheckLinkArgs bool
 var CheckLLFiles bool
@@ -40,8 +41,12 @@ func AddBuildFlags(fs *flag.FlagSet) {
 
 var Gen bool
 
-func AddRunFlags(fs *flag.FlagSet) {
+func AddEmulatorFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Emulator, "emulator", false, "Run in emulator mode")
+}
+
+func AddEmbeddedFlags(fs *flag.FlagSet) {
+	fs.StringVar(&Port, "port", "", "Target port for flashing")
 }
 
 func AddCmpTestFlags(fs *flag.FlagSet) {
@@ -56,9 +61,14 @@ func UpdateConfig(conf *build.Config) {
 	case build.ModeBuild:
 		conf.OutFile = OutputFile
 		conf.FileFormat = FileFormat
-	case build.ModeRun:
+	case build.ModeRun, build.ModeTest:
 		conf.Emulator = Emulator
+		conf.Port = Port
+	case build.ModeInstall:
+		conf.Port = Port
 	case build.ModeCmpTest:
+		conf.Emulator = Emulator
+		conf.Port = Port
 		conf.GenExpect = Gen
 	}
 	if buildenv.Dev {

@@ -7,7 +7,7 @@
 - `-file-format <format>` - Convert to specified format (**requires `-target`**)
   - Supported: `elf` (default), `bin`, `hex`, `uf2`, `zip`, `img`
 - `-emulator` - Run using emulator (auto-detects required format)
-- `-d <device>` - Target device for flashing or testing
+- `-port <port>` - Target port for flashing or testing
 
 ## Commands
 
@@ -16,7 +16,7 @@ Compile program to output file.
 - No `-target`: Native executable
 - With `-target`: ELF executable (or `-file-format` if specified)
 
-### llgo run  
+### llgo run
 Compile and run program.
 - No `-target`: Run locally
 - With `-target`: Run on device or emulator
@@ -25,12 +25,12 @@ Compile and run program.
 Compile and run tests.
 - No `-target`: Run tests locally
 - With `-target`: Run tests on device or emulator
-- Supports `-emulator` and `-d` flags
+- Supports `-emulator` and `-port` flags
 
 ### llgo install
 Install program or flash to device.
 - No `-target`: Install to `$GOPATH/bin`
-- With `-target`: Flash to device (use `-d` to specify device)
+- With `-target`: Flash to device (use `-port` to specify port)
 
 ## Examples
 
@@ -46,7 +46,7 @@ llgo build -target esp32 hello.go                # -> hello (ELF)
 llgo build -target esp32 -file-format bin hello.go  # -> hello.bin
 llgo run -target esp32 hello.go                  # run on ESP32
 llgo run -target esp32 -emulator hello.go        # run in emulator
-llgo test -target esp32 -d /dev/ttyUSB0          # run tests on device
-llgo test -target esp32 -emulator                # run tests in emulator
-llgo install -target esp32 -d /dev/ttyUSB0 hello.go  # flash to specific device
+llgo test -target esp32 -port /dev/ttyUSB0 .        # run tests on device
+llgo test -target esp32 -emulator .              # run tests in emulator
+llgo install -target esp32 -port /dev/ttyUSB0 hello.go  # flash to specific port
 ```
