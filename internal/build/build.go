@@ -264,8 +264,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	})
 
 	buildMode := ssaBuildMode
+	cabiOptimate := true
 	if IsDbgEnabled() {
 		buildMode |= ssa.GlobalDebug
+		cabiOptimate = false
 	}
 	if !IsOptimizeEnabled() {
 		buildMode |= ssa.NaiveForm
@@ -285,7 +287,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		needPyInit:   make(map[*packages.Package]bool),
 		buildConf:    conf,
 		crossCompile: export,
-		cTransformer: cabi.NewTransformer(prog, conf.AbiMode),
+		cTransformer: cabi.NewTransformer(prog, conf.AbiMode, cabiOptimate),
 	}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
