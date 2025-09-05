@@ -15,14 +15,15 @@ const (
 	ModeAllFunc
 )
 
-func NewTransformer(prog ssa.Program, mode Mode) *Transformer {
+func NewTransformer(prog ssa.Program, mode Mode, optimize bool) *Transformer {
 	target := prog.Target()
 	tr := &Transformer{
-		prog:   prog,
-		td:     prog.TargetData(),
-		GOOS:   target.GOOS,
-		GOARCH: target.GOARCH,
-		mode:   mode,
+		prog:     prog,
+		td:       prog.TargetData(),
+		GOOS:     target.GOOS,
+		GOARCH:   target.GOARCH,
+		mode:     mode,
+		optimize: optimize,
 	}
 	switch target.GOARCH {
 	case "amd64":
@@ -42,12 +43,13 @@ func NewTransformer(prog ssa.Program, mode Mode) *Transformer {
 }
 
 type Transformer struct {
-	prog   ssa.Program
-	td     llvm.TargetData
-	GOOS   string
-	GOARCH string
-	sys    TypeInfoSys
-	mode   Mode
+	prog     ssa.Program
+	td       llvm.TargetData
+	GOOS     string
+	GOARCH   string
+	sys      TypeInfoSys
+	mode     Mode
+	optimize bool
 }
 
 func (p *Transformer) isCFunc(name string) bool {
@@ -369,13 +371,17 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			// store %typ %1, ptr %2, align 4
 			nv = b.CreateLoad(ti.Type, params[index], "")
 			// replace %0 to %2
-			replaceAllocaInstrs(fn.Param(i), params[index])
+			if p.optimize {
+				replaceAllocaInstrs(fn.Param(i), params[index])
+			}
 		case AttrWidthType:
 			iptr := llvm.CreateAlloca(b, ti.Type1)
 			b.CreateStore(params[index], iptr)
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nv = b.CreateLoad(ti.Type, ptr, "")
-			replaceAllocaInstrs(fn.Param(i), ptr)
+			if p.optimize {
+				replaceAllocaInstrs(fn.Param(i), ptr)
+			}
 		case AttrWidthType2:
 			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
 			iptr := llvm.CreateAlloca(b, typ)
@@ -384,7 +390,9 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 1, ""))
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nv = b.CreateLoad(ti.Type, ptr, "")
-			replaceAllocaInstrs(fn.Param(i), ptr)
+			if p.optimize {
+				replaceAllocaInstrs(fn.Param(i), ptr)
+			}
 		case AttrExtract:
 			nsubs := ti.Type.StructElementTypesCount()
 			nv = llvm.Undef(ti.Type)
@@ -426,22 +434,27 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				// %2 = load %typ, ptr %1
 				// store %typ %2, ptr %0 # llvm.memcpy(ptr %0, ptr %1, i64 size, i1 false)
 				// ret void
-				if load := ret.IsALoadInst(); !load.IsNil() {
-					p.callMemcpy(m, ctx, b, params[0], ret.Operand(0), info.Return.Size)
-				} else {
-					b.CreateStore(ret, params[0])
+				if p.optimize {
+					if load := ret.IsALoadInst(); !load.IsNil() {
+						p.callMemcpy(m, ctx, b, params[0], ret.Operand(0), info.Return.Size)
+						rv = b.CreateRetVoid()
+						break
+					}
 				}
+				b.CreateStore(ret, params[0])
 				rv = b.CreateRetVoid()
 			case AttrWidthType, AttrWidthType2:
-				if load := ret.IsALoadInst(); !load.IsNil() {
-					iptr := b.CreateBitCast(ret.Operand(0), llvm.PointerType(nft.ReturnType(), 0), "")
-					rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
-				} else {
-					ptr := llvm.CreateAlloca(b, info.Return.Type)
-					b.CreateStore(ret, ptr)
-					iptr := b.CreateBitCast(ptr, llvm.PointerType(nft.ReturnType(), 0), "")
-					rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
+				if p.optimize {
+					if load := ret.IsALoadInst(); !load.IsNil() {
+						iptr := b.CreateBitCast(ret.Operand(0), llvm.PointerType(nft.ReturnType(), 0), "")
+						rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
+						break
+					}
 				}
+				ptr := llvm.CreateAlloca(b, info.Return.Type)
+				b.CreateStore(ret, ptr)
+				iptr := b.CreateBitCast(ptr, llvm.PointerType(nft.ReturnType(), 0), "")
+				rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
 			}
 			instr.ReplaceAllUsesWith(rv)
 			instr.EraseFromParentAsInstruction()
@@ -478,21 +491,22 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 		case AttrVoid:
 			// none
 		case AttrPointer:
-			// check ptr
-			if rv := param.IsALoadInst(); !rv.IsNil() {
-				ptr := rv.Operand(0)
-				if p.sys.SupportByVal() {
-					nparams = append(nparams, ptr)
-				} else {
-					nptr := createAlloca(ti.Type)
-					p.callMemcpy(m, ctx, b, nptr, ptr, ti.Size)
-					nparams = append(nparams, nptr)
+			if p.optimize {
+				if rv := param.IsALoadInst(); !rv.IsNil() {
+					ptr := rv.Operand(0)
+					if p.sys.SupportByVal() {
+						nparams = append(nparams, ptr)
+					} else {
+						nptr := createAlloca(ti.Type)
+						p.callMemcpy(m, ctx, b, nptr, ptr, ti.Size)
+						nparams = append(nparams, nptr)
+					}
+					break
 				}
-			} else {
-				ptr := createAlloca(ti.Type)
-				b.CreateStore(param, ptr)
-				nparams = append(nparams, ptr)
 			}
+			ptr := createAlloca(ti.Type)
+			b.CreateStore(param, ptr)
+			nparams = append(nparams, ptr)
 		case AttrWidthType:
 			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
