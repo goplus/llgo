@@ -1,4 +1,4 @@
-//go:build !darwin && !baremental
+//go:build baremental
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -26,5 +26,4 @@ var Stdin FilePtr
 //go:linkname Stdout stdout
 var Stdout FilePtr
 
-//go:linkname Stderr stderr
-var Stderr FilePtr
+var Stderr FilePtr = Fopen(Str("/dev/stderr"), Str("w"))
