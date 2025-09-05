@@ -8,9 +8,11 @@ import (
 )
 
 var OutputFile string
+var FileFormat string
 
 func AddOutputFlags(fs *flag.FlagSet) {
 	fs.StringVar(&OutputFile, "o", "", "Output file")
+	fs.StringVar(&FileFormat, "file-format", "", "File format for target output (e.g., bin, hex, elf, uf2, zip)")
 }
 
 var Verbose bool
@@ -48,6 +50,7 @@ func UpdateConfig(conf *build.Config) {
 	switch conf.Mode {
 	case build.ModeBuild:
 		conf.OutFile = OutputFile
+		conf.FileFormat = FileFormat
 	case build.ModeCmpTest:
 		conf.GenExpect = Gen
 	}

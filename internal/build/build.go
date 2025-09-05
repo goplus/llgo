@@ -78,6 +78,7 @@ type Config struct {
 	BinPath       string
 	AppExt        string   // ".exe" on Windows, empty on Unix
 	OutFile       string   // only valid for ModeBuild when len(pkgs) == 1
+	FileFormat    string   // File format override (e.g., "bin", "hex", "elf", "uf2", "zip") - takes precedence over target's default
 	RunArgs       []string // only valid for ModeRun
 	Mode          Mode
 	AbiMode       AbiMode
@@ -685,13 +686,19 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	binFmt := ctx.crossCompile.BinaryFormat
 	binExt := firmware.BinaryExt(binFmt)
 
+	// Determine final output extension from user-specified file format
+	outExt := binExt
+	if conf.FileFormat != "" {
+		outExt = firmware.GetFileExtFromFormat(conf.FileFormat)
+	}
+
 	// app: converted firmware output file or executable file
 	// orgApp: before converted output file
 	app, orgApp, err := generateOutputFilenames(
 		conf.OutFile,
 		conf.BinPath,
 		conf.AppExt,
-		binExt,
+		outExt,
 		name,
 		mode,
 		len(ctx.initial) > 1,
@@ -759,10 +766,69 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
 	check(err)
 
-	if orgApp != app {
+	// Handle firmware conversion and file format conversion
+	currentApp := orgApp
+
+	// Determine if firmware conversion is needed based on mode
+	needFirmwareConversion := false
+	if mode == ModeBuild {
+		// For build command, do firmware conversion if file-format is specified
+		needFirmwareConversion = conf.FileFormat != ""
+	} else {
+		// For run and install commands, do firmware conversion if binExt is set
+		needFirmwareConversion = binExt != ""
+	}
+
+	// Step 1: Firmware conversion if needed
+	if needFirmwareConversion {
+		if outExt == binExt {
+			// Direct conversion to final output
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Converting to firmware format: %s (%s -> %s)\n", ctx.crossCompile.BinaryFormat, currentApp, app)
+			}
+			err = firmware.MakeFirmwareImage(currentApp, app, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
+			check(err)
+			currentApp = app
+		} else {
+			// Convert to intermediate file first
+			tmpFile, err := os.CreateTemp("", "llgo-*"+binExt)
+			check(err)
+			tmpFile.Close()
+			intermediateApp := tmpFile.Name()
+
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Converting to firmware format: %s (%s -> %s)\n", ctx.crossCompile.BinaryFormat, currentApp, intermediateApp)
+			}
+			err = firmware.MakeFirmwareImage(currentApp, intermediateApp, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
+			check(err)
+			currentApp = intermediateApp
+			defer func() {
+				// Only remove if the intermediate file still exists (wasn't moved)
+				if _, err := os.Stat(intermediateApp); err == nil {
+					os.Remove(intermediateApp)
+				}
+			}()
+		}
 		fmt.Printf("cross compile: %#v\n", ctx.crossCompile)
-		err = firmware.MakeFirmwareImage(orgApp, app, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
-		check(err)
+	}
+
+	// Step 2: File format conversion if needed
+	if currentApp != app {
+		if conf.FileFormat != "" {
+			// File format conversion
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Converting to file format: %s (%s -> %s)\n", conf.FileFormat, currentApp, app)
+			}
+			err = firmware.ConvertOutput(currentApp, app, binFmt, conf.FileFormat)
+			check(err)
+		} else {
+			// Just move/copy the file
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Moving file: %s -> %s\n", currentApp, app)
+			}
+			err = os.Rename(currentApp, app)
+			check(err)
+		}
 	}
 
 	switch mode {
