@@ -27,10 +27,10 @@ func withDefaultCCFlags(ccflags []string) []string {
 
 func GetNewlibESP32Config() compile.LibConfig {
 	return compile.LibConfig{
-		Url:           "https://github.com/goplus/newlib/archive/refs/tags/v0.3.0.tar.gz",
+		Url:           "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch2.tar.gz",
 		Name:          "newlib-esp32",
-		Version:       "v0.3.0",
-		ArchiveSrcDir: "newlib-0.3.0",
+		Version:       "esp-4.3.0_20250211-patch2",
+		ArchiveSrcDir: "newlib-esp-4.3.0_20250211-patch2",
 	}
 }
 

@@ -5,6 +5,37 @@ import (
 	"testing"
 )
 
+func TestGetNewlibESP32Config_LibConfig(t *testing.T) {
+	config := GetCompilerRTConfig()
+
+	// Test basic configuration fields
+	expectedName := "compiler-rt"
+	if config.Name != expectedName {
+		t.Errorf("Expected Name '%s', got '%s'", expectedName, config.Name)
+	}
+
+	expectedVersion := "xtensa_release_19.1.2"
+	if config.Version != expectedVersion {
+		t.Errorf("Expected Version '%s', got '%s'", expectedVersion, config.Version)
+	}
+
+	expectedUrl := "https://github.com/goplus/compiler-rt/archive/refs/tags/xtensa_release_19.1.2.tar.gz"
+	if config.Url != expectedUrl {
+		t.Errorf("Expected Url '%s', got '%s'", expectedUrl, config.Url)
+	}
+
+	expectedArchiveSrcDir := "compiler-rt-xtensa_release_19.1.2"
+	if config.ArchiveSrcDir != expectedArchiveSrcDir {
+		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", expectedArchiveSrcDir, config.ArchiveSrcDir)
+	}
+
+	// Test String() method
+	expectedString := "compiler-rt-xtensa_release_19.1.2"
+	if config.String() != expectedString {
+		t.Errorf("Expected String() '%s', got '%s'", expectedString, config.String())
+	}
+}
+
 func TestPlatformSpecifiedFiles(t *testing.T) {
 	tests := []struct {
 		target   string

@@ -2,10 +2,73 @@ package libc
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-func TestGetPicolibcConfig(t *testing.T) {
+func TestGetNewlibESP32Config_LibConfig(t *testing.T) {
+	config := GetNewlibESP32Config()
+
+	// Test basic configuration fields
+	expectedName := "newlib-esp32"
+	if config.Name != expectedName {
+		t.Errorf("Expected Name '%s', got '%s'", expectedName, config.Name)
+	}
+
+	expectedVersion := "esp-4.3.0_20250211-patch2"
+	if config.Version != expectedVersion {
+		t.Errorf("Expected Version '%s', got '%s'", expectedVersion, config.Version)
+	}
+
+	expectedUrl := "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch2.tar.gz"
+	if config.Url != expectedUrl {
+		t.Errorf("Expected Url '%s', got '%s'", expectedUrl, config.Url)
+	}
+
+	expectedArchiveSrcDir := "newlib-esp-4.3.0_20250211-patch2"
+	if config.ArchiveSrcDir != expectedArchiveSrcDir {
+		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", expectedArchiveSrcDir, config.ArchiveSrcDir)
+	}
+
+	// Test String() method
+	expectedString := "newlib-esp32-esp-4.3.0_20250211-patch2"
+	if config.String() != expectedString {
+		t.Errorf("Expected String() '%s', got '%s'", expectedString, config.String())
+	}
+}
+
+func TestGetPicolibcConfig_LibConfig(t *testing.T) {
+	config := GetPicolibcConfig()
+
+	// Test basic configuration fields
+	expectedName := "picolibc"
+	if config.Name != expectedName {
+		t.Errorf("Expected Name '%s', got '%s'", expectedName, config.Name)
+	}
+
+	expectedVersion := "v0.1.0"
+	if config.Version != expectedVersion {
+		t.Errorf("Expected Version '%s', got '%s'", expectedVersion, config.Version)
+	}
+
+	expectedUrl := "https://github.com/goplus/picolibc/archive/refs/heads/main.zip"
+	if config.Url != expectedUrl {
+		t.Errorf("Expected Url '%s', got '%s'", expectedUrl, config.Url)
+	}
+
+	expectedArchiveSrcDir := "picolibc-main"
+	if config.ArchiveSrcDir != expectedArchiveSrcDir {
+		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", expectedArchiveSrcDir, config.ArchiveSrcDir)
+	}
+
+	// Test String() method
+	expectedString := "picolibc-v0.1.0"
+	if config.String() != expectedString {
+		t.Errorf("Expected String() '%s', got '%s'", expectedString, config.String())
+	}
+}
+
+func TestGetPicolibcCompileConfig(t *testing.T) {
 	baseDir := "/test/base"
 	target := "test-target"
 
@@ -129,6 +192,119 @@ func TestGetPicolibcConfig_EdgeCases(t *testing.T) {
 			t.Errorf("Expected OutputFileName '%s', got '%s'", expectedOutput, config.Groups[0].OutputFileName)
 		}
 	})
+}
+
+func TestPicolibcFileStructure(t *testing.T) {
+	baseDir := "/test/base"
+	target := "test-target"
+
+	config := GetPicolibcCompileConfig(baseDir, target)
+	group := config.Groups[0]
+
+	// Test that all files have .c extension (no assembly files in picolibc config)
+	for _, file := range group.Files {
+		if !strings.HasSuffix(file, ".c") {
+			t.Errorf("File '%s' does not have .c extension", file)
+		}
+	}
+
+	// Test that files are from expected directories
+	stringFiles := 0
+	stdlibFiles := 0
+	tinystdioFiles := 0
+
+	for _, file := range group.Files {
+		if strings.Contains(file, "/string/") {
+			stringFiles++
+		} else if strings.Contains(file, "/stdlib/") {
+			stdlibFiles++
+		} else if strings.Contains(file, "/tinystdio/") {
+			tinystdioFiles++
+		}
+	}
+
+	if stringFiles < 50 {
+		t.Errorf("Expected at least 50 string files, got %d", stringFiles)
+	}
+	if stdlibFiles < 5 {
+		t.Errorf("Expected at least 5 stdlib files, got %d", stdlibFiles)
+	}
+	if tinystdioFiles < 3 {
+		t.Errorf("Expected at least 3 tinystdio files, got %d", tinystdioFiles)
+	}
+
+	// Test that all files have correct base directory
+	for _, file := range group.Files {
+		if !strings.HasPrefix(file, baseDir) {
+			t.Errorf("File '%s' does not have expected base directory '%s'", file, baseDir)
+		}
+	}
+}
+
+func TestPicolibcCompilerFlags(t *testing.T) {
+	baseDir := "/test/base"
+	target := "test-target"
+
+	config := GetPicolibcCompileConfig(baseDir, target)
+	group := config.Groups[0]
+
+	// Test that required preprocessor definitions are present
+	requiredDefines := []string{
+		"-D_COMPILING_NEWLIB",
+		"-D_HAVE_ALIAS_ATTRIBUTE",
+		"-DTINY_STDIO",
+		"-DPOSIX_IO",
+		"-DFORMAT_DEFAULT_INTEGER",
+		"-D_IEEE_LIBM",
+		"-D_WANT_IO_C99_FORMATS",
+	}
+
+	for _, define := range requiredDefines {
+		found := false
+		for _, flag := range group.CFlags {
+			if flag == define {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Required define '%s' not found in CFlags", define)
+		}
+	}
+
+	// Test that required include paths are present
+	requiredIncludes := []string{
+		"-I" + baseDir,
+		"-isystem" + filepath.Join(baseDir, "newlib", "libc", "include"),
+		"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
+		"-I" + filepath.Join(baseDir, "newlib", "libc", "locale"),
+		"-I" + filepath.Join(baseDir, "newlib", "libc", "tinystdio"),
+	}
+
+	for _, include := range requiredIncludes {
+		found := false
+		for _, flag := range group.CFlags {
+			if flag == include {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Required include '%s' not found in CFlags", include)
+		}
+	}
+
+	// Test that nostdlib is present
+	found := false
+	for _, flag := range group.CFlags {
+		if flag == "-nostdlib" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Required flag '-nostdlib' not found in CFlags")
+	}
 }
 
 func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
