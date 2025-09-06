@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/flash"
 	"github.com/mattn/go-tty"
 	"go.bug.st/serial"
 )
@@ -39,20 +39,12 @@ func Monitor(config MonitorConfig, verbose bool) error {
 		config.WaitTime = 300
 	}
 
-	// If target is specified, try to get port from crosscompile config
-	if config.Target != "" && config.Port == "" {
-		port, err := getPortFromTarget(config.Target)
-		if err != nil && verbose {
-			fmt.Fprintf(os.Stderr, "Warning: could not get port from target: %v\n", err)
-		}
-		if port != "" {
-			config.Port = port
-		}
+	// Resolve port using flash.GetPort
+	port, err := flash.GetPort(config.Port, nil)
+	if err != nil {
+		return fmt.Errorf("failed to find port: %w", err)
 	}
-
-	if config.Port == "" {
-		return fmt.Errorf("port not specified and could not determine from target")
-	}
+	config.Port = port
 
 	if verbose {
 		fmt.Fprintf(os.Stderr, "Connecting to %s at %d baud\n", config.Port, config.BaudRate)
@@ -60,7 +52,6 @@ func Monitor(config MonitorConfig, verbose bool) error {
 
 	// Open serial port with retry
 	var serialConn serial.Port
-	var err error
 	for i := 0; i <= config.WaitTime; i++ {
 		serialConn, err = serial.Open(config.Port, &serial.Mode{BaudRate: config.BaudRate})
 		if err != nil {
@@ -136,21 +127,6 @@ func Monitor(config MonitorConfig, verbose bool) error {
 	case err := <-errCh:
 		return err
 	}
-}
-
-// getPortFromTarget tries to get serial port from target configuration
-func getPortFromTarget(target string) (string, error) {
-	export, err := crosscompile.Use("", "", false, target)
-	if err != nil {
-		return "", err
-	}
-
-	// Try to get port from serial port list
-	if len(export.Flash.SerialPort) > 0 {
-		return export.Flash.SerialPort[0], nil
-	}
-
-	return "", fmt.Errorf("no serial port found in target configuration")
 }
 
 var addressMatch = regexp.MustCompile(`^panic: runtime error at 0x([0-9a-f]+): `)
