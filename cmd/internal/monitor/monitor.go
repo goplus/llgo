@@ -22,6 +22,7 @@ import (
 
 	"github.com/goplus/llgo/cmd/internal/base"
 	"github.com/goplus/llgo/cmd/internal/flags"
+	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/monitor"
 )
 
@@ -32,6 +33,7 @@ var Cmd = &base.Command{
 }
 
 func init() {
+	flags.AddCommonFlags(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag)
 	Cmd.Run = runMonitor
 }
@@ -45,14 +47,19 @@ func runMonitor(cmd *base.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if flags.Port == "" && flags.Target == "" {
-		fmt.Fprintf(os.Stderr, "llgo monitor: must specify either -port or -target\n")
-		return
-	}
-
 	var executable string
 	if len(args) == 1 {
 		executable = args[0]
+	}
+
+	var serialPort []string
+	if flags.Target != "" {
+		conf, err := crosscompile.UseTarget(flags.Target)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "llgo monitor: %v\n", err)
+			os.Exit(1)
+		}
+		serialPort = conf.Flash.SerialPort
 	}
 
 	config := monitor.MonitorConfig{
@@ -60,9 +67,10 @@ func runMonitor(cmd *base.Command, args []string) {
 		Target:     flags.Target,
 		BaudRate:   flags.BaudRate,
 		Executable: executable,
+		SerialPort: serialPort,
 	}
 
-	if err := monitor.Monitor(config, true); err != nil {
+	if err := monitor.Monitor(config, flags.Verbose); err != nil {
 		fmt.Fprintf(os.Stderr, "llgo monitor: %v\n", err)
 		os.Exit(1)
 	}

@@ -27,8 +27,11 @@ var CheckLinkArgs bool
 var CheckLLFiles bool
 var GenLLFiles bool
 
+func AddCommonFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&Verbose, "v", false, "Verbose output")
+}
+
 func AddBuildFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&Verbose, "v", false, "Verbose mode")
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	if buildenv.Dev {

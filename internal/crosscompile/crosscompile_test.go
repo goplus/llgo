@@ -214,7 +214,7 @@ func TestUseTarget(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := useTarget(tc.targetName)
+			export, err := UseTarget(tc.targetName)
 
 			if tc.expectError {
 				if err == nil {

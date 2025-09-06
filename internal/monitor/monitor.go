@@ -22,11 +22,12 @@ import (
 
 // MonitorConfig contains configuration for the monitor
 type MonitorConfig struct {
-	Port       string // Serial port device
-	Target     string // Target name for crosscompile config
-	BaudRate   int    // Baudrate of serial monitor
-	Executable string // Optional path to executable for debug info
-	WaitTime   int    // Wait time for port connection (ms)
+	Port       string   // Serial port device
+	Target     string   // Target name for crosscompile config
+	BaudRate   int      // Baudrate of serial monitor
+	Executable string   // Optional path to executable for debug info
+	WaitTime   int      // Wait time for port connection (ms)
+	SerialPort []string // List of serial ports to use
 }
 
 // Monitor starts serial monitoring with the given configuration
@@ -40,7 +41,7 @@ func Monitor(config MonitorConfig, verbose bool) error {
 	}
 
 	// Resolve port using flash.GetPort
-	port, err := flash.GetPort(config.Port, nil)
+	port, err := flash.GetPort(config.Port, config.SerialPort)
 	if err != nil {
 		return fmt.Errorf("failed to find port: %w", err)
 	}

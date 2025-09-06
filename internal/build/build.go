@@ -360,12 +360,16 @@ func Do(args []string, conf *Config) ([]Package, error) {
 					if err != nil {
 						return nil, err
 					}
-					err = monitor.Monitor(monitor.MonitorConfig{
+					monitorConfig := monitor.MonitorConfig{
 						Port:       ctx.buildConf.Port,
 						Target:     conf.Target,
 						Executable: finalApp,
 						BaudRate:   conf.BaudRate,
-					}, verbose)
+					}
+					if ctx.crossCompile.Flash.Method != "openocd" {
+						monitorConfig.SerialPort = ctx.crossCompile.Flash.SerialPort
+					}
+					err = monitor.Monitor(monitorConfig, verbose)
 				}
 				if err != nil {
 					return nil, err
