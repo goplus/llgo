@@ -52,6 +52,7 @@ type Cmd_version struct {
 	xcmd.Command
 	*App
 }
+
 //line cmd/llgo/main_app.gox:1
 func (this *App) MainEntry() {
 //line cmd/llgo/main_app.gox:1:1
@@ -68,6 +69,7 @@ func (this *App) Main() {
 	_xgo_obj7 := &Cmd_version{App: this}
 	xcmd.Gopt_App_Main(this, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7)
 }
+
 //line cmd/llgo/build_cmd.gox:20
 func (this *Cmd_build) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -86,6 +88,7 @@ func (this *Cmd_build) Main(_xgo_arg0 string) {
 func (this *Cmd_build) Classfname() string {
 	return "build"
 }
+
 //line cmd/llgo/clean_cmd.gox:20
 func (this *Cmd_clean) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -104,6 +107,7 @@ func (this *Cmd_clean) Main(_xgo_arg0 string) {
 func (this *Cmd_clean) Classfname() string {
 	return "clean"
 }
+
 //line cmd/llgo/cmptest_cmd.gox:20
 func (this *Cmd_cmptest) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -122,6 +126,7 @@ func (this *Cmd_cmptest) Main(_xgo_arg0 string) {
 func (this *Cmd_cmptest) Classfname() string {
 	return "cmptest"
 }
+
 //line cmd/llgo/get_cmd.gox:16
 func (this *Cmd_get) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -138,6 +143,7 @@ func (this *Cmd_get) Main(_xgo_arg0 string) {
 func (this *Cmd_get) Classfname() string {
 	return "get"
 }
+
 //line cmd/llgo/install_cmd.gox:20
 func (this *Cmd_install) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -156,6 +162,7 @@ func (this *Cmd_install) Main(_xgo_arg0 string) {
 func (this *Cmd_install) Classfname() string {
 	return "install"
 }
+
 //line cmd/llgo/run_cmd.gox:20
 func (this *Cmd_run) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -174,6 +181,7 @@ func (this *Cmd_run) Main(_xgo_arg0 string) {
 func (this *Cmd_run) Classfname() string {
 	return "run"
 }
+
 //line cmd/llgo/test_cmd.gox:20
 func (this *Cmd_test) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -192,6 +200,7 @@ func (this *Cmd_test) Main(_xgo_arg0 string) {
 func (this *Cmd_test) Classfname() string {
 	return "test"
 }
+
 //line cmd/llgo/version_cmd.gox:22
 func (this *Cmd_version) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)

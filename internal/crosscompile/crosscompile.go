@@ -18,6 +18,7 @@ import (
 
 // Flash contains configuration for device flashing
 type Flash struct {
+	Method            string   // Flash method: "command", "openocd", "msd", "bmp"
 	Command           string   // Flash command template
 	Serial            string   // Serial communication settings
 	SerialPort        []string // Available serial ports
@@ -530,6 +531,7 @@ func useTarget(targetName string) (export Export, err error) {
 
 	// Set flashing/debugging configuration
 	export.Flash = Flash{
+		Method:            config.FlashMethod,
 		Command:           config.FlashCommand,
 		Serial:            config.Serial,
 		SerialPort:        config.SerialPort,

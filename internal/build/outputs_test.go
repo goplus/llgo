@@ -5,6 +5,8 @@ package build
 
 import (
 	"testing"
+
+	"github.com/goplus/llgo/internal/crosscompile"
 )
 
 func TestGenOutputs(t *testing.T) {
@@ -13,7 +15,7 @@ func TestGenOutputs(t *testing.T) {
 		conf          *Config
 		pkgName       string
 		multiPkg      bool
-		emulator      string
+		crossCompile  *crosscompile.Export
 		wantOutPath   string // use empty string to indicate temp file
 		wantIntPath   string // use empty string to indicate same as outPath
 		wantOutExt    string
@@ -28,7 +30,10 @@ func TestGenOutputs(t *testing.T) {
 				BinPath: "/go/bin",
 				AppExt:  "",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "",
+			},
 			wantOutPath:   "hello",
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -42,7 +47,10 @@ func TestGenOutputs(t *testing.T) {
 				OutFile: "myapp",
 				AppExt:  "",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "",
+			},
 			wantOutPath:   "myapp",
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -58,7 +66,10 @@ func TestGenOutputs(t *testing.T) {
 				FileFormat: "bin",
 				Target:     "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "hello.bin",
 			wantOutExt:    ".bin",
 			wantFileFmt:   "bin",
@@ -74,7 +85,10 @@ func TestGenOutputs(t *testing.T) {
 				FileFormat: "hex",
 				Target:     "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "myapp.hex",
 			wantOutExt:    ".hex",
 			wantFileFmt:   "hex",
@@ -90,7 +104,10 @@ func TestGenOutputs(t *testing.T) {
 				FileFormat: "hex",
 				Target:     "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "myapp.hex",
 			wantOutExt:    ".hex",
 			wantFileFmt:   "hex",
@@ -103,7 +120,10 @@ func TestGenOutputs(t *testing.T) {
 				Mode:   ModeRun,
 				AppExt: "",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "",
+			},
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -117,7 +137,10 @@ func TestGenOutputs(t *testing.T) {
 				AppExt: "",
 				Target: "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -132,8 +155,11 @@ func TestGenOutputs(t *testing.T) {
 				Target:   "esp32",
 				Emulator: true,
 			},
-			pkgName:       "hello",
-			emulator:      "qemu-system-xtensa -machine esp32 -drive file={hex},if=mtd,format=raw",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+				Emulator:     "qemu-system-xtensa -machine esp32 -drive file={hex},if=mtd,format=raw",
+			},
 			wantOutPath:   "", // temp file
 			wantOutExt:    ".hex",
 			wantFileFmt:   "hex",
@@ -149,7 +175,10 @@ func TestGenOutputs(t *testing.T) {
 				FileFormat: "img",
 				Target:     "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "hello.img",
 			wantOutExt:    ".img",
 			wantFileFmt:   "img",
@@ -162,7 +191,10 @@ func TestGenOutputs(t *testing.T) {
 				Mode:   ModeTest,
 				AppExt: "",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "",
+			},
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -176,7 +208,10 @@ func TestGenOutputs(t *testing.T) {
 				AppExt: "",
 				Target: "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -189,7 +224,10 @@ func TestGenOutputs(t *testing.T) {
 				Mode:   ModeCmpTest,
 				AppExt: "",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "",
+			},
 			wantOutPath:   "", // temp file
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -203,7 +241,10 @@ func TestGenOutputs(t *testing.T) {
 				BinPath: "/go/bin",
 				AppExt:  "",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "",
+			},
 			wantOutPath:   "/go/bin/hello",
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -218,7 +259,10 @@ func TestGenOutputs(t *testing.T) {
 				AppExt:  "",
 				Target:  "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "", // temp file for flashing
 			wantOutExt:    "",
 			wantFileFmt:   "",
@@ -234,11 +278,136 @@ func TestGenOutputs(t *testing.T) {
 				FileFormat: "hex",
 				Target:     "esp32",
 			},
-			pkgName:       "hello",
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
 			wantOutPath:   "", // temp file for flashing
 			wantOutExt:    ".hex",
 			wantFileFmt:   "hex",
 			wantBinFmt:    "esp32",
+			wantDirectGen: false,
+		},
+		{
+			name: "run with target non-emulator (should use .bin from binary format)",
+			conf: &Config{
+				Mode:   ModeRun,
+				AppExt: "",
+				Target: "esp32",
+			},
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+			},
+			wantOutPath:   "", // temp file
+			wantOutExt:    "",
+			wantFileFmt:   "",
+			wantBinFmt:    "esp32",
+			wantDirectGen: true,
+		},
+		{
+			name: "run with flash method command - extract hex from command",
+			conf: &Config{
+				Mode:   ModeRun,
+				AppExt: "",
+				Target: "esp32",
+			},
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+				Flash: crosscompile.Flash{
+					Method:  "command",
+					Command: "esptool.py --chip esp32 write_flash 0x10000 {hex}",
+				},
+			},
+			wantOutPath:   "", // temp file
+			wantOutExt:    ".hex",
+			wantFileFmt:   "hex",
+			wantBinFmt:    "esp32",
+			wantDirectGen: false,
+		},
+		{
+			name: "run with flash method command - extract bin from command",
+			conf: &Config{
+				Mode:   ModeRun,
+				AppExt: "",
+				Target: "esp32",
+			},
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "esp32",
+				Flash: crosscompile.Flash{
+					Method:  "command",
+					Command: "esptool.py --chip esp32 write_flash 0x10000 {bin}",
+				},
+			},
+			wantOutPath:   "", // temp file
+			wantOutExt:    ".bin",
+			wantFileFmt:   "bin",
+			wantBinFmt:    "esp32",
+			wantDirectGen: true,
+		},
+		{
+			name: "run with flash method openocd - should use .hex",
+			conf: &Config{
+				Mode:   ModeRun,
+				AppExt: "",
+				Target: "stm32",
+			},
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "arm",
+				Flash: crosscompile.Flash{
+					Method: "openocd",
+				},
+			},
+			wantOutPath:   "", // temp file
+			wantOutExt:    ".hex",
+			wantFileFmt:   "hex",
+			wantBinFmt:    "arm",
+			wantDirectGen: false,
+		},
+		{
+			name: "run with flash method msd - extract extension from firmware name",
+			conf: &Config{
+				Mode:   ModeRun,
+				AppExt: "",
+				Target: "rp2040",
+			},
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "uf2",
+				Flash: crosscompile.Flash{
+					Method: "msd",
+				},
+				MSD: crosscompile.MSD{
+					FirmwareName: "firmware.uf2",
+				},
+			},
+			wantOutPath:   "", // temp file
+			wantOutExt:    ".uf2",
+			wantFileFmt:   "uf2",
+			wantBinFmt:    "uf2",
+			wantDirectGen: true,
+		},
+		{
+			name: "run with flash method bmp - should use .elf",
+			conf: &Config{
+				Mode:   ModeRun,
+				AppExt: "",
+				Target: "stm32",
+			},
+			pkgName: "hello",
+			crossCompile: &crosscompile.Export{
+				BinaryFormat: "arm",
+				Flash: crosscompile.Flash{
+					Method: "bmp",
+				},
+			},
+			wantOutPath:   "", // temp file
+			wantOutExt:    ".elf",
+			wantFileFmt:   "elf",
+			wantBinFmt:    "arm",
 			wantDirectGen: false,
 		},
 	}
@@ -315,36 +484,100 @@ func TestGenOutputs(t *testing.T) {
 
 func TestDetermineFormat(t *testing.T) {
 	tests := []struct {
-		name     string
-		conf     *Config
-		emulator string
-		wantFmt  string
-		wantExt  string
+		name         string
+		conf         *Config
+		crossCompile *crosscompile.Export
+		wantFmt      string
+		wantExt      string
 	}{
 		{
-			name:    "user specified format",
-			conf:    &Config{FileFormat: "hex"},
+			name:         "user specified format",
+			conf:         &Config{FileFormat: "hex"},
+			crossCompile: &crosscompile.Export{},
+			wantFmt:      "hex",
+			wantExt:      ".hex",
+		},
+		{
+			name: "emulator format extraction",
+			conf: &Config{Mode: ModeRun, Emulator: true},
+			crossCompile: &crosscompile.Export{
+				Emulator: "qemu-system-xtensa -machine esp32 -drive file={bin},if=mtd,format=raw",
+			},
+			wantFmt: "bin",
+			wantExt: ".bin",
+		},
+		{
+			name: "flash method command - extract hex",
+			conf: &Config{Mode: ModeRun, Target: "esp32"},
+			crossCompile: &crosscompile.Export{
+				Flash: crosscompile.Flash{
+					Method:  "command",
+					Command: "esptool.py --chip esp32 write_flash 0x10000 {hex}",
+				},
+			},
 			wantFmt: "hex",
 			wantExt: ".hex",
 		},
 		{
-			name:     "emulator format extraction",
-			conf:     &Config{Mode: ModeRun, Emulator: true},
-			emulator: "qemu-system-xtensa -machine esp32 -drive file={bin},if=mtd,format=raw",
-			wantFmt:  "bin",
-			wantExt:  ".bin",
+			name: "flash method command - extract bin",
+			conf: &Config{Mode: ModeRun, Target: "esp32"},
+			crossCompile: &crosscompile.Export{
+				Flash: crosscompile.Flash{
+					Method:  "command",
+					Command: "esptool.py --chip esp32 write_flash 0x10000 {bin}",
+				},
+			},
+			wantFmt: "bin",
+			wantExt: ".bin",
 		},
 		{
-			name:    "no format",
-			conf:    &Config{},
-			wantFmt: "",
-			wantExt: "",
+			name: "flash method openocd",
+			conf: &Config{Mode: ModeRun, Target: "stm32"},
+			crossCompile: &crosscompile.Export{
+				Flash: crosscompile.Flash{
+					Method: "openocd",
+				},
+			},
+			wantFmt: "hex",
+			wantExt: ".hex",
+		},
+		{
+			name: "flash method msd - extract from firmware name",
+			conf: &Config{Mode: ModeRun, Target: "rp2040"},
+			crossCompile: &crosscompile.Export{
+				Flash: crosscompile.Flash{
+					Method: "msd",
+				},
+				MSD: crosscompile.MSD{
+					FirmwareName: "firmware.uf2",
+				},
+			},
+			wantFmt: "uf2",
+			wantExt: ".uf2",
+		},
+		{
+			name: "flash method bmp",
+			conf: &Config{Mode: ModeRun, Target: "stm32"},
+			crossCompile: &crosscompile.Export{
+				Flash: crosscompile.Flash{
+					Method: "bmp",
+				},
+			},
+			wantFmt: "elf",
+			wantExt: ".elf",
+		},
+		{
+			name:         "no format",
+			conf:         &Config{},
+			crossCompile: &crosscompile.Export{},
+			wantFmt:      "",
+			wantExt:      "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotFmt, gotExt := determineFormat(tt.conf, tt.emulator)
+			gotFmt, gotExt := determineFormat(tt.conf, tt.crossCompile)
 			if gotFmt != tt.wantFmt {
 				t.Errorf("determineFormat() format = %v, want %v", gotFmt, tt.wantFmt)
 			}

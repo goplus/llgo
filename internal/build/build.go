@@ -315,9 +315,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
 			name := path.Base(pkg.PkgPath)
-			binFmt := ctx.crossCompile.BinaryFormat
 
-			outputCfg, err := genOutputs(conf, name, len(ctx.initial) > 1, ctx.crossCompile.Emulator, binFmt)
+			outputCfg, err := genOutputs(conf, name, len(ctx.initial) > 1, &ctx.crossCompile)
 			if err != nil {
 				return nil, err
 			}
