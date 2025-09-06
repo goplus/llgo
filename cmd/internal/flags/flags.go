@@ -21,6 +21,7 @@ var Tags string
 var Target string
 var Emulator bool
 var Port string
+var BaudRate int
 var AbiMode int
 var CheckLinkArgs bool
 var CheckLLFiles bool
@@ -30,7 +31,6 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose mode")
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
-	fs.StringVar(&Target, "target", "", "Target platform (e.g., rp2040, wasi)")
 	if buildenv.Dev {
 		fs.IntVar(&AbiMode, "abi", 2, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
 		fs.BoolVar(&CheckLinkArgs, "check-linkargs", false, "check link args valid")
@@ -46,7 +46,9 @@ func AddEmulatorFlags(fs *flag.FlagSet) {
 }
 
 func AddEmbeddedFlags(fs *flag.FlagSet) {
+	fs.StringVar(&Target, "target", "", "Target platform (e.g., rp2040, wasi)")
 	fs.StringVar(&Port, "port", "", "Target port for flashing")
+	fs.IntVar(&BaudRate, "baudrate", 115200, "Baudrate for serial communication")
 }
 
 func AddCmpTestFlags(fs *flag.FlagSet) {
