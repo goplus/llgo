@@ -42,11 +42,11 @@ llgo run hello.go                                # run locally
 llgo install hello.go                            # install to bin
 
 # Cross-compilation
-llgo build -target esp32 hello.go                # -> hello (ELF)
-llgo build -target esp32 -file-format bin hello.go  # -> hello.bin
-llgo run -target esp32 hello.go                  # run on ESP32
-llgo run -target esp32 -emulator hello.go        # run in emulator
-llgo test -target esp32 -port /dev/ttyUSB0 .        # run tests on device
+llgo build -target esp32 .                       # -> hello (ELF)
+llgo build -target esp32 -file-format bin ,      # -> hello.bin
+llgo run -target esp32 .                         # run on ESP32 (guess a port)
+llgo run -target esp32 -emulator .               # run in emulator
+llgo test -target esp32 -port /dev/ttyUSB0 .     # run tests on device
 llgo test -target esp32 -emulator .              # run tests in emulator
-llgo install -target esp32 -port /dev/ttyUSB0 hello.go  # flash to specific port
+llgo install -target esp32 -port /dev/ttyUSB0 .  # flash to specific port
 ```

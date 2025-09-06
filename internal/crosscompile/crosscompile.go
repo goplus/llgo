@@ -16,6 +16,27 @@ import (
 	"github.com/goplus/llgo/internal/xtool/llvm"
 )
 
+// Flash contains configuration for device flashing
+type Flash struct {
+	Command           string   // Flash command template
+	Serial            string   // Serial communication settings
+	SerialPort        []string // Available serial ports
+	Flash1200BpsReset bool     // Whether to use 1200bps reset
+}
+
+// MSD contains configuration for Mass Storage Device flashing
+type MSD struct {
+	VolumeName   []string // Names of the volumes
+	FirmwareName string   // Firmware file name pattern
+}
+
+// OpenOCD contains configuration for OpenOCD debugging/flashing
+type OpenOCD struct {
+	Interface string // Interface configuration (e.g., "stlink")
+	Transport string // Transport protocol (e.g., "swd", "jtag")
+	Target    string // Target configuration (e.g., "stm32f4x")
+}
+
 type Export struct {
 	CC      string // Compiler to use
 	CCFLAGS []string
@@ -35,6 +56,11 @@ type Export struct {
 	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
 	FormatDetail string // For uf2, it's uf2FamilyID
 	Emulator     string // Emulator command template (e.g., "qemu-system-arm -M {} -kernel {}")
+
+	// Flashing/Debugging configuration
+	Flash   Flash   // Flash configuration for device programming
+	MSD     MSD     // Mass Storage Device configuration
+	OpenOCD OpenOCD // OpenOCD configuration for debugging/flashing
 }
 
 // URLs and configuration that can be overridden for testing
@@ -501,6 +527,23 @@ func useTarget(targetName string) (export Export, err error) {
 	export.BinaryFormat = config.BinaryFormat
 	export.FormatDetail = config.FormatDetail()
 	export.Emulator = config.Emulator
+
+	// Set flashing/debugging configuration
+	export.Flash = Flash{
+		Command:           config.FlashCommand,
+		Serial:            config.Serial,
+		SerialPort:        config.SerialPort,
+		Flash1200BpsReset: config.Flash1200BpsReset == "true",
+	}
+	export.MSD = MSD{
+		VolumeName:   config.MSDVolumeName,
+		FirmwareName: config.MSDFirmwareName,
+	}
+	export.OpenOCD = OpenOCD{
+		Interface: config.OpenOCDInterface,
+		Transport: config.OpenOCDTransport,
+		Target:    config.OpenOCDTarget,
+	}
 
 	// Build environment map for template variable expansion
 	envs := buildEnvMap(env.LLGoROOT())
