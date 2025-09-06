@@ -19,7 +19,7 @@ Compile program to output file.
 ### llgo run
 Compile and run program.
 - No `-target`: Run locally
-- With `-target`: Run on device or emulator
+- With `-target`: Run on device or emulator (equivalent to `install` + `monitor`)
 
 ### llgo test
 Compile and run tests.
