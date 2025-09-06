@@ -18,7 +18,6 @@ package build
 
 import (
 	"bytes"
-	"debug/macho"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -43,7 +42,9 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
+	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
@@ -76,9 +77,13 @@ type Config struct {
 	Goarch        string
 	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
 	BinPath       string
-	AppExt        string   // ".exe" on Windows, empty on Unix
-	OutFile       string   // only valid for ModeBuild when len(pkgs) == 1
-	RunArgs       []string // only valid for ModeRun
+	AppExt        string // ".exe" on Windows, empty on Unix
+	OutFile       string // only valid for ModeBuild when len(pkgs) == 1
+	FileFormat    string // File format override (e.g., "bin", "hex", "elf", "uf2", "zip") - takes precedence over target's default
+	Emulator      bool   // run in emulator mode
+	Port          string // target port for flashing
+	BaudRate      int    // baudrate for serial communication
+	RunArgs       []string
 	Mode          Mode
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
@@ -312,7 +317,64 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
-			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
+			name := path.Base(pkg.PkgPath)
+
+			outputCfg, err := genOutputs(conf, name, len(ctx.initial) > 1, &ctx.crossCompile)
+			if err != nil {
+				return nil, err
+			}
+
+			err = linkMainPkg(ctx, pkg, allPkgs, global, outputCfg.IntPath, verbose)
+			if err != nil {
+				return nil, err
+			}
+
+			finalApp := outputCfg.IntPath
+			if outputCfg.NeedFwGen || outputCfg.FileFmt != "" {
+				finalApp, err = convertFormat(ctx, finalApp, &outputCfg)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			switch mode {
+			case ModeBuild:
+				// Do nothing
+
+			case ModeInstall:
+				// Native already installed in linkMainPkg
+				if conf.Target != "" {
+					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+			case ModeRun, ModeTest, ModeCmpTest:
+				if conf.Target == "" {
+					err = runNative(ctx, finalApp, pkg.Dir, pkg.PkgPath, conf, mode)
+				} else if conf.Emulator {
+					err = runInEmulator(ctx.crossCompile.Emulator, finalApp, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
+				} else {
+					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
+					if err != nil {
+						return nil, err
+					}
+					monitorConfig := monitor.MonitorConfig{
+						Port:       ctx.buildConf.Port,
+						Target:     conf.Target,
+						Executable: finalApp,
+						BaudRate:   conf.BaudRate,
+					}
+					if ctx.crossCompile.Flash.Method != "openocd" {
+						monitorConfig.SerialPort = ctx.crossCompile.Flash.SerialPort
+					}
+					err = monitor.Monitor(monitorConfig, verbose)
+				}
+				if err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 
@@ -627,76 +689,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 	return objFiles, nil
 }
 
-// generateOutputFilenames generates the final output filename (app) and intermediate filename (orgApp)
-// based on configuration and build context.
-func generateOutputFilenames(outFile, binPath, appExt, binExt, pkgName string, mode Mode, isMultiplePkgs bool) (app, orgApp string, err error) {
-	if outFile == "" {
-		if mode == ModeBuild && isMultiplePkgs {
-			// For multiple packages in ModeBuild mode, use temporary file
-			name := pkgName
-			if binExt != "" {
-				name += "*" + binExt
-			} else {
-				name += "*" + appExt
-			}
-			tmpFile, err := os.CreateTemp("", name)
-			if err != nil {
-				return "", "", err
-			}
-			app = tmpFile.Name()
-			tmpFile.Close()
-		} else {
-			app = filepath.Join(binPath, pkgName+appExt)
-		}
-		orgApp = app
-	} else {
-		// outFile is not empty, use it as base part
-		base := outFile
-		if binExt != "" {
-			// If binExt has value, use temporary file as orgApp for firmware conversion
-			tmpFile, err := os.CreateTemp("", "llgo-*"+appExt)
-			if err != nil {
-				return "", "", err
-			}
-			orgApp = tmpFile.Name()
-			tmpFile.Close()
-			// Check if base already ends with binExt, if so, don't add it again
-			if strings.HasSuffix(base, binExt) {
-				app = base
-			} else {
-				app = base + binExt
-			}
-		} else {
-			// No binExt, use base + AppExt directly
-			if filepath.Ext(base) == "" {
-				app = base + appExt
-			} else {
-				app = base
-			}
-			orgApp = app
-		}
-	}
-	return app, orgApp, nil
-}
-
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) {
-	pkgPath := pkg.PkgPath
-	name := path.Base(pkgPath)
-	binFmt := ctx.crossCompile.BinaryFormat
-	binExt := firmware.BinaryExt(binFmt)
-
-	// app: converted firmware output file or executable file
-	// orgApp: before converted output file
-	app, orgApp, err := generateOutputFilenames(
-		conf.OutFile,
-		conf.BinPath,
-		conf.AppExt,
-		binExt,
-		name,
-		mode,
-		len(ctx.initial) > 1,
-	)
-	check(err)
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, outputPath string, verbose bool) error {
 
 	needRuntime := false
 	needPyInit := false
@@ -724,18 +717,24 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
-	check(err)
+	if err != nil {
+		return err
+	}
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
 
 	// Compile extra files from target configuration
 	extraObjFiles, err := compileExtraFiles(ctx, verbose)
-	check(err)
+	if err != nil {
+		return err
+	}
 	objFiles = append(objFiles, extraObjFiles...)
 
 	if global != nil {
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
-		check(err)
+		if err != nil {
+			return err
+		}
 		objFiles = append(objFiles, export)
 	}
 
@@ -756,67 +755,61 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	}
 
-	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
-	check(err)
+	return linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
+}
 
-	if orgApp != app {
-		fmt.Printf("cross compile: %#v\n", ctx.crossCompile)
-		err = firmware.MakeFirmwareImage(orgApp, app, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
-		check(err)
+func convertFormat(ctx *context, inputFile string, outputCfg *OutputCfg) (string, error) {
+	app := outputCfg.OutPath
+	currentApp := inputFile
+	if ctx.buildConf.Verbose {
+		fmt.Fprintf(os.Stderr, "Converting output format: %s -> %s\n", currentApp, app)
 	}
 
-	switch mode {
-	case ModeTest:
-		cmd := exec.Command(app, conf.RunArgs...)
-		cmd.Dir = pkg.Dir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Run()
-		if s := cmd.ProcessState; s != nil {
-			exitCode := s.ExitCode()
-			fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitCode)
-			if !ctx.testFail && exitCode != 0 {
-				ctx.testFail = true
+	if outputCfg.NeedFwGen {
+		if outputCfg.DirectGen {
+			err := firmware.MakeFirmwareImage(currentApp, app, outputCfg.BinFmt, ctx.crossCompile.FormatDetail)
+			if err != nil {
+				return "", err
 			}
-		}
-	case ModeRun:
-		args := make([]string, 0, len(conf.RunArgs)+1)
-		copy(args, conf.RunArgs)
-		if isWasmTarget(conf.Goos) {
-			wasmer := os.ExpandEnv(WasmRuntime())
-			wasmerArgs := strings.Split(wasmer, " ")
-			wasmerCmd := wasmerArgs[0]
-			wasmerArgs = wasmerArgs[1:]
-			switch wasmer {
-			case "wasmtime":
-				args = append(args, "--wasm", "multi-memory=true", app)
-				args = append(args, conf.RunArgs...)
-			case "iwasm":
-				args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
-				args = append(args, conf.RunArgs...)
-			default:
-				args = append(args, wasmerArgs...)
-				args = append(args, app)
-				args = append(args, conf.RunArgs...)
-			}
-			app = wasmerCmd
+			currentApp = app
 		} else {
-			args = conf.RunArgs
+			binExt := firmware.BinaryExt(ctx.crossCompile.BinaryFormat)
+			tmpFile, err := os.CreateTemp("", "llgo-*"+binExt)
+			if err != nil {
+				return "", err
+			}
+			tmpFile.Close()
+			intermediateApp := tmpFile.Name()
+
+			err = firmware.MakeFirmwareImage(currentApp, intermediateApp, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
+			if err != nil {
+				return "", err
+			}
+			currentApp = intermediateApp
+			defer func() {
+				if _, err := os.Stat(intermediateApp); err == nil {
+					os.Remove(intermediateApp)
+				}
+			}()
 		}
-		cmd := exec.Command(app, args...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-		if s := cmd.ProcessState; s != nil {
-			mockable.Exit(s.ExitCode())
-		}
-	case ModeCmpTest:
-		cmpTest(filepath.Dir(pkg.GoFiles[0]), pkgPath, app, conf.GenExpect, conf.RunArgs)
 	}
+
+	if currentApp != app {
+		if outputCfg.FileFmt != "" {
+			binFmt := ctx.crossCompile.BinaryFormat
+			err := firmware.ConvertOutput(currentApp, app, binFmt, outputCfg.FileFmt)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			err := os.Rename(currentApp, app)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return app, nil
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
@@ -1286,22 +1279,6 @@ func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
 		}
 	}
 	return false
-}
-
-// findDylibDep finds the dylib dependency in the executable. It returns empty
-// string if not found.
-func findDylibDep(exe, lib string) string {
-	file, err := macho.Open(exe)
-	check(err)
-	defer file.Close()
-	for _, load := range file.Loads {
-		if dylib, ok := load.(*macho.Dylib); ok {
-			if strings.HasPrefix(filepath.Base(dylib.Name), fmt.Sprintf("lib%s.", lib)) {
-				return dylib.Name
-			}
-		}
-	}
-	return ""
 }
 
 type none struct{}

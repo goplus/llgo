@@ -167,6 +167,9 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	if src.Flash1200BpsReset != "" {
 		dst.Flash1200BpsReset = src.Flash1200BpsReset
 	}
+	if src.Serial != "" {
+		dst.Serial = src.Serial
+	}
 	if src.MSDFirmwareName != "" {
 		dst.MSDFirmwareName = src.MSDFirmwareName
 	}
@@ -201,6 +204,9 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	}
 	if len(src.ExtraFiles) > 0 {
 		dst.ExtraFiles = append(dst.ExtraFiles, src.ExtraFiles...)
+	}
+	if len(src.SerialPort) > 0 {
+		dst.SerialPort = append(dst.SerialPort, src.SerialPort...)
 	}
 	if len(src.MSDVolumeName) > 0 {
 		dst.MSDVolumeName = append(dst.MSDVolumeName, src.MSDVolumeName...)

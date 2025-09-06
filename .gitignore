@@ -44,3 +44,11 @@ go.work*
 # GoReleaser
 .dist/
 .sysroot/
+
+# Embedded firmware files
+*.bin
+*.hex
+*.elf
+*.uf2
+*.img
+*.zip

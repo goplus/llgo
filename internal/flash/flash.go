@@ -1,0 +1,440 @@
+package flash
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/env"
+	"go.bug.st/serial"
+	"go.bug.st/serial/enumerator"
+)
+
+// From tinygo/main.go getDefaultPort
+// GetPort returns the default serial port depending on the operating system and USB interfaces.
+func GetPort(portFlag string, usbInterfaces []string) (string, error) {
+	portCandidates := strings.FieldsFunc(portFlag, func(c rune) bool { return c == ',' })
+	if len(portCandidates) == 1 {
+		return portCandidates[0], nil
+	}
+
+	var ports []string
+	var err error
+	switch runtime.GOOS {
+	case "freebsd":
+		ports, err = filepath.Glob("/dev/cuaU*")
+	case "darwin", "linux", "windows":
+		var portsList []*enumerator.PortDetails
+		portsList, err = enumerator.GetDetailedPortsList()
+		if err != nil {
+			return "", err
+		}
+
+		var preferredPortIDs [][2]uint16
+		for _, s := range usbInterfaces {
+			parts := strings.Split(s, ":")
+			if len(parts) != 2 {
+				return "", fmt.Errorf("could not parse USB VID/PID pair %q", s)
+			}
+			vid, err := strconv.ParseUint(parts[0], 16, 16)
+			if err != nil {
+				return "", fmt.Errorf("could not parse USB vendor ID %q: %w", parts[0], err)
+			}
+			pid, err := strconv.ParseUint(parts[1], 16, 16)
+			if err != nil {
+				return "", fmt.Errorf("could not parse USB product ID %q: %w", parts[1], err)
+			}
+			preferredPortIDs = append(preferredPortIDs, [2]uint16{uint16(vid), uint16(pid)})
+		}
+
+		var primaryPorts []string   // ports picked from preferred USB VID/PID
+		var secondaryPorts []string // other ports (as a fallback)
+		for _, p := range portsList {
+			if !p.IsUSB {
+				continue
+			}
+			if p.VID != "" && p.PID != "" {
+				foundPort := false
+				vid, vidErr := strconv.ParseUint(p.VID, 16, 16)
+				pid, pidErr := strconv.ParseUint(p.PID, 16, 16)
+				if vidErr == nil && pidErr == nil {
+					for _, id := range preferredPortIDs {
+						if uint16(vid) == id[0] && uint16(pid) == id[1] {
+							primaryPorts = append(primaryPorts, p.Name)
+							foundPort = true
+							break
+						}
+					}
+				}
+				if foundPort {
+					continue
+				}
+			}
+
+			secondaryPorts = append(secondaryPorts, p.Name)
+		}
+		if len(primaryPorts) == 1 {
+			return primaryPorts[0], nil
+		} else if len(primaryPorts) > 1 {
+			ports = primaryPorts
+		} else {
+			ports = secondaryPorts
+		}
+	default:
+		return "", errors.New("unable to search for a default USB device to be flashed on this OS")
+	}
+
+	if err != nil {
+		return "", err
+	} else if ports == nil {
+		return "", errors.New("unable to locate a serial port")
+	} else if len(ports) == 0 {
+		return "", errors.New("no serial ports available")
+	}
+
+	if len(portCandidates) == 0 {
+		if len(usbInterfaces) > 0 {
+			return "", errors.New("unable to search for a default USB device - use -port flag, available ports are " + strings.Join(ports, ", "))
+		} else if len(ports) == 1 {
+			return ports[0], nil
+		} else {
+			return "", errors.New("multiple serial ports available - use -port flag, available ports are " + strings.Join(ports, ", "))
+		}
+	}
+
+	for _, ps := range portCandidates {
+		for _, p := range ports {
+			if p == ps {
+				return p, nil
+			}
+		}
+	}
+
+	return "", errors.New("port you specified '" + strings.Join(portCandidates, ",") + "' does not exist, available ports are " + strings.Join(ports, ", "))
+}
+
+// From tinygo/main.go touchSerialPortAt1200bps
+// touchSerialPortAt1200bps triggers Arduino-compatible devices to enter bootloader mode.
+// This function implements the Arduino auto-reset mechanism used before flashing firmware.
+//
+// Working principle:
+// 1. Opens serial port at 1200 baud rate (special reset baudrate for Arduino)
+// 2. Sets DTR (Data Terminal Ready) signal to false
+// 3. This triggers the device to reset and enter bootloader mode for firmware upload
+//
+// Usage scenarios:
+// - Required for Arduino Uno, Leonardo, Micro and other compatible devices
+// - Executed when target config has "flash-1200-bps-reset": "true"
+// - Ensures device is in correct state to receive new firmware
+//
+// Retry mechanism:
+// - Retries up to 3 times due to potential temporary serial port access issues
+// - Windows special handling: InvalidSerialPort error during bootloader transition is normal
+func touchSerialPortAt1200bps(port string) (err error) {
+	retryCount := 3
+	for i := 0; i < retryCount; i++ {
+		// Open port at 1200bps to trigger Arduino reset
+		p, e := serial.Open(port, &serial.Mode{BaudRate: 1200})
+		if e != nil {
+			if runtime.GOOS == `windows` {
+				se, ok := e.(*serial.PortError)
+				if ok && se.Code() == serial.InvalidSerialPort {
+					// InvalidSerialPort error occurs when transitioning to boot
+					return nil
+				}
+			}
+			time.Sleep(1 * time.Second)
+			err = e
+			continue
+		}
+		defer p.Close()
+
+		// Set DTR to false to trigger reset
+		p.SetDTR(false)
+		return nil
+	}
+	return fmt.Errorf("opening port: %s", err)
+}
+
+// Flash flashes firmware to a device based on the crosscompile configuration
+func Flash(crossCompile crosscompile.Export, app string, port string, verbose bool) error {
+	method := crossCompile.Flash.Method
+	if method == "" {
+		method = "command"
+	}
+
+	// Resolve port for methods that need it (all except openocd)
+	if method != "openocd" {
+		var err error
+		port, err = GetPort(port, crossCompile.Flash.SerialPort)
+		if err != nil {
+			return fmt.Errorf("failed to find port: %w", err)
+		}
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Flashing %s using method: %s\n", app, method)
+		fmt.Fprintf(os.Stderr, "Using port: %s\n", port)
+	}
+
+	// Execute 1200bps reset before flashing if needed (except for openocd)
+	if method != "openocd" && crossCompile.Flash.Flash1200BpsReset {
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Triggering 1200bps reset on port: %s\n", port)
+		}
+		if err := touchSerialPortAt1200bps(port); err != nil {
+			return fmt.Errorf("failed to trigger 1200bps reset: %w", err)
+		}
+		// Wait a bit for device to enter bootloader mode
+		time.Sleep(2 * time.Second)
+	}
+
+	switch method {
+	case "command":
+		return flashCommand(crossCompile.Flash, app, port, verbose)
+	case "openocd":
+		return flashOpenOCD(crossCompile.OpenOCD, app, verbose)
+	case "msd":
+		return flashMSD(crossCompile.MSD, app, verbose)
+	case "bmp":
+		return flashBMP(app, verbose)
+	default:
+		return fmt.Errorf("unsupported flash method: %s", method)
+	}
+}
+
+// flashCommand handles command-based flashing
+func flashCommand(flash crosscompile.Flash, app string, port string, verbose bool) error {
+	if flash.Command == "" {
+		return fmt.Errorf("flash command not specified")
+	}
+
+	// Build environment map for template variable expansion
+	envs := buildFlashEnvMap(app, port)
+
+	// Expand template variables in command
+	expandedCommand := expandEnv(flash.Command, envs)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Flash command: %s\n", expandedCommand)
+	}
+
+	// Split command into parts for exec
+	parts := strings.Fields(expandedCommand)
+	if len(parts) == 0 {
+		return fmt.Errorf("empty flash command after expansion")
+	}
+
+	// Execute flash command
+	cmd := exec.Command(parts[0], parts[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// flashOpenOCD handles OpenOCD-based flashing
+func flashOpenOCD(openocd crosscompile.OpenOCD, app string, verbose bool) error {
+	if openocd.Interface == "" {
+		return fmt.Errorf("OpenOCD interface not specified")
+	}
+
+	args := []string{
+		"-f", "interface/" + openocd.Interface + ".cfg",
+	}
+
+	if openocd.Transport != "" {
+		args = append(args, "-c", "transport select "+openocd.Transport)
+	}
+
+	if openocd.Target != "" {
+		args = append(args, "-f", "target/"+openocd.Target+".cfg")
+	}
+
+	// Add programming commands
+	args = append(args,
+		"-c", "init",
+		"-c", "reset init",
+		"-c", fmt.Sprintf("flash write_image erase %s", app),
+		"-c", "reset",
+		"-c", "shutdown",
+	)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "OpenOCD command: openocd %s\n", strings.Join(args, " "))
+	}
+
+	cmd := exec.Command("openocd", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// flashMSD handles Mass Storage Device flashing
+func flashMSD(msd crosscompile.MSD, app string, verbose bool) error {
+	if len(msd.VolumeName) == 0 {
+		return fmt.Errorf("MSD volume names not specified")
+	}
+
+	if msd.FirmwareName == "" {
+		return fmt.Errorf("MSD firmware name not specified")
+	}
+
+	// Find the MSD volume
+	var mountPoint string
+	for _, volumeName := range msd.VolumeName {
+		// Try platform-specific mount points
+		var candidates []string
+		switch runtime.GOOS {
+		case "darwin":
+			candidates = []string{
+				filepath.Join("/Volumes", volumeName),
+			}
+		case "linux":
+			candidates = []string{
+				filepath.Join("/media", os.Getenv("USER"), volumeName),
+				filepath.Join("/mnt", volumeName),
+			}
+		case "windows":
+			candidates = []string{
+				volumeName + ":",
+			}
+		default:
+			candidates = []string{
+				filepath.Join("/Volumes", volumeName),                  // macOS
+				filepath.Join("/media", os.Getenv("USER"), volumeName), // Linux
+				filepath.Join("/mnt", volumeName),                      // Linux alternative
+				volumeName + ":",                                       // Windows
+			}
+		}
+
+		for _, candidate := range candidates {
+			if _, err := os.Stat(candidate); err == nil {
+				mountPoint = candidate
+				break
+			}
+		}
+		if mountPoint != "" {
+			break
+		}
+	}
+
+	if mountPoint == "" {
+		return fmt.Errorf("MSD volume not found. Expected volumes: %v", msd.VolumeName)
+	}
+
+	// Copy firmware to MSD
+	destPath := filepath.Join(mountPoint, msd.FirmwareName)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Copying %s to %s\n", app, destPath)
+	}
+
+	return copyFile(app, destPath)
+}
+
+// flashBMP handles Black Magic Probe flashing
+func flashBMP(app string, verbose bool) error {
+	// BMP typically uses GDB for flashing
+	args := []string{
+		"-ex", "target extended-remote /dev/ttyACM0", // Default BMP port
+		"-ex", "monitor swdp_scan",
+		"-ex", "attach 1",
+		"-ex", "load",
+		"-ex", "compare-sections",
+		"-ex", "kill",
+		"-ex", "quit",
+		app,
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "BMP command: arm-none-eabi-gdb %s\n", strings.Join(args, " "))
+	}
+
+	cmd := exec.Command("arm-none-eabi-gdb", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// buildFlashEnvMap creates environment map for template expansion
+func buildFlashEnvMap(app string, port string) map[string]string {
+	envs := make(map[string]string)
+
+	// Basic paths
+	envs["root"] = env.LLGoROOT()
+	envs["tmpDir"] = os.TempDir()
+
+	// Port information
+	if port != "" {
+		envs["port"] = port
+	}
+
+	// File paths based on extension
+	ext := strings.ToLower(filepath.Ext(app))
+	switch ext {
+	case ".hex":
+		envs["hex"] = app
+	case ".bin":
+		envs["bin"] = app
+	case ".elf":
+		envs["elf"] = app
+	case ".uf2":
+		envs["uf2"] = app
+	case ".zip":
+		envs["zip"] = app
+	case ".img":
+		envs["img"] = app
+	default:
+		// Default to binary for unknown extensions
+		envs["bin"] = app
+	}
+
+	return envs
+}
+
+// expandEnv expands template variables in a string
+// Supports variables like {port}, {hex}, {bin}, {root}, {tmpDir}, etc.
+func expandEnv(template string, envs map[string]string) string {
+	if template == "" {
+		return ""
+	}
+
+	result := template
+
+	// Replace named variables
+	for key, value := range envs {
+		if key != "" {
+			result = strings.ReplaceAll(result, "{"+key+"}", value)
+		}
+	}
+
+	return result
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = destFile.ReadFrom(sourceFile)
+	return err
+}

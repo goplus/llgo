@@ -48,8 +48,16 @@ func init() {
 	Cmd.Run = runCmd
 	CmpTestCmd.Run = runCmpTest
 	base.PassBuildFlags(Cmd)
+	flags.AddCommonFlags(&Cmd.Flag)
 	flags.AddBuildFlags(&Cmd.Flag)
+	flags.AddEmulatorFlags(&Cmd.Flag)
+	flags.AddEmbeddedFlags(&Cmd.Flag) // for -target support
+
+	base.PassBuildFlags(CmpTestCmd)
+	flags.AddCommonFlags(&CmpTestCmd.Flag)
 	flags.AddBuildFlags(&CmpTestCmd.Flag)
+	flags.AddEmulatorFlags(&CmpTestCmd.Flag)
+	flags.AddEmbeddedFlags(&CmpTestCmd.Flag) // for -target support
 	flags.AddCmpTestFlags(&CmpTestCmd.Flag)
 }
 
