@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -133,12 +134,29 @@ func flashMSD(msd crosscompile.MSD, app string, verbose bool) error {
 	// Find the MSD volume
 	var mountPoint string
 	for _, volumeName := range msd.VolumeName {
-		// Try common mount points on different platforms
-		candidates := []string{
-			filepath.Join("/Volumes", volumeName),                  // macOS
-			filepath.Join("/media", os.Getenv("USER"), volumeName), // Linux
-			filepath.Join("/mnt", volumeName),                      // Linux alternative
-			volumeName + ":",                                       // Windows (assuming drive letter)
+		// Try platform-specific mount points
+		var candidates []string
+		switch runtime.GOOS {
+		case "darwin":
+			candidates = []string{
+				filepath.Join("/Volumes", volumeName),
+			}
+		case "linux":
+			candidates = []string{
+				filepath.Join("/media", os.Getenv("USER"), volumeName),
+				filepath.Join("/mnt", volumeName),
+			}
+		case "windows":
+			candidates = []string{
+				volumeName + ":",
+			}
+		default:
+			candidates = []string{
+				filepath.Join("/Volumes", volumeName),                  // macOS
+				filepath.Join("/media", os.Getenv("USER"), volumeName), // Linux
+				filepath.Join("/mnt", volumeName),                      // Linux alternative
+				volumeName + ":",                                       // Windows
+			}
 		}
 
 		for _, candidate := range candidates {
