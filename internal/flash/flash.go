@@ -1,31 +1,143 @@
 package flash
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
+	"go.bug.st/serial/enumerator"
 )
+
+// From tinygo/main.go getDefaultPort
+// GetPort returns the default serial port depending on the operating system and USB interfaces.
+func GetPort(portFlag string, usbInterfaces []string) (string, error) {
+	portCandidates := strings.FieldsFunc(portFlag, func(c rune) bool { return c == ',' })
+	if len(portCandidates) == 1 {
+		return portCandidates[0], nil
+	}
+
+	var ports []string
+	var err error
+	switch runtime.GOOS {
+	case "freebsd":
+		ports, err = filepath.Glob("/dev/cuaU*")
+	case "darwin", "linux", "windows":
+		var portsList []*enumerator.PortDetails
+		portsList, err = enumerator.GetDetailedPortsList()
+		if err != nil {
+			return "", err
+		}
+
+		var preferredPortIDs [][2]uint16
+		for _, s := range usbInterfaces {
+			parts := strings.Split(s, ":")
+			if len(parts) != 2 {
+				return "", fmt.Errorf("could not parse USB VID/PID pair %q", s)
+			}
+			vid, err := strconv.ParseUint(parts[0], 16, 16)
+			if err != nil {
+				return "", fmt.Errorf("could not parse USB vendor ID %q: %w", parts[0], err)
+			}
+			pid, err := strconv.ParseUint(parts[1], 16, 16)
+			if err != nil {
+				return "", fmt.Errorf("could not parse USB product ID %q: %w", parts[1], err)
+			}
+			preferredPortIDs = append(preferredPortIDs, [2]uint16{uint16(vid), uint16(pid)})
+		}
+
+		var primaryPorts []string   // ports picked from preferred USB VID/PID
+		var secondaryPorts []string // other ports (as a fallback)
+		for _, p := range portsList {
+			if !p.IsUSB {
+				continue
+			}
+			if p.VID != "" && p.PID != "" {
+				foundPort := false
+				vid, vidErr := strconv.ParseUint(p.VID, 16, 16)
+				pid, pidErr := strconv.ParseUint(p.PID, 16, 16)
+				if vidErr == nil && pidErr == nil {
+					for _, id := range preferredPortIDs {
+						if uint16(vid) == id[0] && uint16(pid) == id[1] {
+							primaryPorts = append(primaryPorts, p.Name)
+							foundPort = true
+							break
+						}
+					}
+				}
+				if foundPort {
+					continue
+				}
+			}
+
+			secondaryPorts = append(secondaryPorts, p.Name)
+		}
+		if len(primaryPorts) == 1 {
+			return primaryPorts[0], nil
+		} else if len(primaryPorts) > 1 {
+			ports = primaryPorts
+		} else {
+			ports = secondaryPorts
+		}
+	default:
+		return "", errors.New("unable to search for a default USB device to be flashed on this OS")
+	}
+
+	if err != nil {
+		return "", err
+	} else if ports == nil {
+		return "", errors.New("unable to locate a serial port")
+	} else if len(ports) == 0 {
+		return "", errors.New("no serial ports available")
+	}
+
+	if len(portCandidates) == 0 {
+		if len(usbInterfaces) > 0 {
+			return "", errors.New("unable to search for a default USB device - use -port flag, available ports are " + strings.Join(ports, ", "))
+		} else if len(ports) == 1 {
+			return ports[0], nil
+		} else {
+			return "", errors.New("multiple serial ports available - use -port flag, available ports are " + strings.Join(ports, ", "))
+		}
+	}
+
+	for _, ps := range portCandidates {
+		for _, p := range ports {
+			if p == ps {
+				return p, nil
+			}
+		}
+	}
+
+	return "", errors.New("port you specified '" + strings.Join(portCandidates, ",") + "' does not exist, available ports are " + strings.Join(ports, ", "))
+}
 
 // Flash flashes firmware to a device based on the crosscompile configuration
 func Flash(crossCompile crosscompile.Export, app string, port string, verbose bool) error {
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Flashing %s to port %s\n", app, port)
-	}
-
 	method := crossCompile.Flash.Method
 	if method == "" {
 		method = "command"
 	}
 
+	// Resolve port for methods that need it (all except openocd)
+	if method != "openocd" {
+		var err error
+		port, err = GetPort(port, crossCompile.Flash.SerialPort)
+		if err != nil {
+			return fmt.Errorf("failed to find port: %w", err)
+		}
+	}
+
 	if verbose {
 		fmt.Fprintf(os.Stderr, "Flashing %s using method: %s\n", app, method)
+		fmt.Fprintf(os.Stderr, "Using port: %s\n", port)
 	}
 
 	switch method {
