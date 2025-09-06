@@ -7,7 +7,8 @@
 - `-file-format <format>` - Convert to specified format (**requires `-target`**)
   - Supported: `elf` (default), `bin`, `hex`, `uf2`, `zip`, `img`
 - `-emulator` - Run using emulator (auto-detects required format)
-- `-port <port>` - Target port for flashing or testing
+- `-port <port>` - Target port for flashing, testing, or monitoring
+- `-baudrate <rate>` - Baudrate for serial communication (default: 115200)
 
 ## Commands
 
@@ -32,6 +33,20 @@ Install program or flash to device.
 - No `-target`: Install to `$GOPATH/bin`
 - With `-target`: Flash to device (use `-port` to specify port)
 
+### llgo monitor
+Monitor serial output from embedded device.
+- `-port <device>`: Serial port device (e.g., `/dev/ttyUSB0`, `COM3`)
+- `-target <platform>`: Auto-detect port from target configuration
+- `-baudrate <rate>`: Communication speed (default: 115200)
+- `[executable]`: Optional ELF file for debug info (panic address resolution)
+
+Features:
+- Real-time bidirectional serial communication
+- Automatic port detection from target configuration
+- Debug info integration for panic address resolution
+- Cross-platform support (Linux, macOS, Windows)
+- Graceful exit with Ctrl-C
+
 ## Examples
 
 ```bash
@@ -43,10 +58,16 @@ llgo install hello.go                            # install to bin
 
 # Cross-compilation
 llgo build -target esp32 .                       # -> hello (ELF)
-llgo build -target esp32 -file-format bin ,      # -> hello.bin
+llgo build -target esp32 -file-format bin .      # -> hello.bin
 llgo run -target esp32 .                         # run on ESP32 (guess a port)
 llgo run -target esp32 -emulator .               # run in emulator
 llgo test -target esp32 -port /dev/ttyUSB0 .     # run tests on device
 llgo test -target esp32 -emulator .              # run tests in emulator
 llgo install -target esp32 -port /dev/ttyUSB0 .  # flash to specific port
+
+# Monitor device output
+llgo monitor -port /dev/ttyUSB0                  # monitor with specific port
+llgo monitor -target esp32                       # monitor with auto-detected port
+llgo monitor -target esp32 -baudrate 9600        # custom baudrate
+llgo monitor -port /dev/ttyUSB0 ./firmware.elf   # with debug info for panic resolution
 ```
