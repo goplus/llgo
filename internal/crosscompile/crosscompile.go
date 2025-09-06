@@ -491,8 +491,8 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	return
 }
 
-// useTarget loads configuration from a target name (e.g., "rp2040", "wasi")
-func useTarget(targetName string) (export Export, err error) {
+// UseTarget loads configuration from a target name (e.g., "rp2040", "wasi")
+func UseTarget(targetName string) (export Export, err error) {
 	resolver := targets.NewDefaultResolver()
 
 	config, err := resolver.Resolve(targetName)
@@ -716,7 +716,7 @@ func useTarget(targetName string) (export Export, err error) {
 // If targetName is provided, it takes precedence over goos/goarch
 func Use(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
 	if targetName != "" && !strings.HasPrefix(targetName, "wasm") && !strings.HasPrefix(targetName, "wasi") {
-		return useTarget(targetName)
+		return UseTarget(targetName)
 	}
 	return use(goos, goarch, wasiThreads)
 }
