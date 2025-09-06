@@ -93,7 +93,7 @@ jobs:
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{matrix.go}}
 
@@ -173,7 +173,7 @@ jobs:
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{matrix.go}}
 
