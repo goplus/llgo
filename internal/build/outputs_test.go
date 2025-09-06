@@ -4,7 +4,6 @@
 package build
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -246,12 +245,7 @@ func TestGenOutputs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Determine input binFmt - remove -img suffix if present as it will be added by the code
-			inputBinFmt := tt.wantBinFmt
-			if strings.HasSuffix(inputBinFmt, "-img") && tt.wantFileFmt == "img" {
-				inputBinFmt = strings.TrimSuffix(inputBinFmt, "-img")
-			}
-			result, err := GenOutputs(tt.conf, tt.pkgName, tt.multiPkg, tt.emulator, inputBinFmt)
+			result, err := genOutputs(tt.conf, tt.pkgName, tt.multiPkg, tt.crossCompile)
 			if err != nil {
 				t.Fatalf("GenOutputs() error = %v", err)
 			}

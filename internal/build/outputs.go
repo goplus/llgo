@@ -18,8 +18,8 @@ type OutputCfg struct {
 	DirectGen bool   // True if can generate firmware directly without intermediate file
 }
 
-// GenOutputs generates appropriate output paths based on the configuration
-func GenOutputs(conf *Config, pkgName string, multiPkg bool, emulator, binFmt string) (OutputCfg, error) {
+// genOutputs generates appropriate output paths based on the configuration
+func genOutputs(conf *Config, pkgName string, multiPkg bool, emulator, binFmt string) (OutputCfg, error) {
 	var cfg OutputCfg
 
 	// Calculate binary extension and set up format info

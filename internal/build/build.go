@@ -18,7 +18,6 @@ package build
 
 import (
 	"bytes"
-	"debug/macho"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -315,23 +314,50 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
-			app, err := linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
+			name := path.Base(pkg.PkgPath)
+			binFmt := ctx.crossCompile.BinaryFormat
+
+			outputCfg, err := genOutputs(conf, name, len(ctx.initial) > 1, ctx.crossCompile.Emulator, binFmt)
 			if err != nil {
 				return nil, err
 			}
 
-			if slices.Contains([]Mode{ModeRun, ModeCmpTest, ModeTest, ModeInstall}, mode) {
-				// Flash to device if needed (for embedded targets)
-				if !conf.Emulator && conf.Target != "" {
-					err = flash(ctx, app, verbose)
+			err = linkMainPkg(ctx, pkg, allPkgs, global, outputCfg.IntPath, verbose)
+			if err != nil {
+				return nil, err
+			}
+
+			finalApp := outputCfg.IntPath
+			if outputCfg.NeedFwGen || outputCfg.FileFmt != "" {
+				finalApp, err = convertFormat(ctx, finalApp, &outputCfg)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			switch mode {
+			case ModeBuild:
+				// Do nothing
+
+			case ModeInstall:
+				// Native already installed in linkMainPkg
+				if conf.Target != "" {
+					err = flash(ctx, finalApp, verbose)
 					if err != nil {
 						return nil, err
 					}
-				} else if mode != ModeInstall {
-					err = run(ctx, app, pkg.PkgPath, pkg.Dir, conf, mode, verbose)
-					if err != nil {
-						return nil, err
-					}
+				}
+
+			case ModeRun, ModeTest, ModeCmpTest:
+				if conf.Target == "" {
+					err = runNative(ctx, finalApp, pkg.Dir, pkg.PkgPath, conf, mode)
+				} else if conf.Emulator {
+					err = runInEmulator(ctx.crossCompile.Emulator, finalApp, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
+				} else {
+					err = flash(ctx, finalApp, verbose)
+				}
+				if err != nil {
+					return nil, err
 				}
 			}
 		}
@@ -648,19 +674,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 	return objFiles, nil
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, conf *Config, mode Mode, verbose bool) (string, error) {
-	pkgPath := pkg.PkgPath
-	name := path.Base(pkgPath)
-	binFmt := ctx.crossCompile.BinaryFormat
-
-	// Generate output configuration using the centralized function
-	outputCfg, err := GenOutputs(conf, name, len(ctx.initial) > 1, ctx.crossCompile.Emulator, binFmt)
-	if err != nil {
-		return "", err
-	}
-
-	app := outputCfg.OutPath
-	orgApp := outputCfg.IntPath
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, outputPath string, verbose bool) error {
 
 	needRuntime := false
 	needPyInit := false
@@ -689,7 +703,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	})
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	if err != nil {
-		return "", err
+		return err
 	}
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
@@ -697,14 +711,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	// Compile extra files from target configuration
 	extraObjFiles, err := compileExtraFiles(ctx, verbose)
 	if err != nil {
-		return "", err
+		return err
 	}
 	objFiles = append(objFiles, extraObjFiles...)
 
 	if global != nil {
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
 		if err != nil {
-			return "", err
+			return err
 		}
 		objFiles = append(objFiles, export)
 	}
@@ -726,28 +740,24 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	}
 
-	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
-	if err != nil {
-		return "", err
+	return linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
+}
+
+func convertFormat(ctx *context, inputFile string, outputCfg *OutputCfg) (string, error) {
+	app := outputCfg.OutPath
+	currentApp := inputFile
+	if ctx.buildConf.Verbose {
+		fmt.Fprintf(os.Stderr, "Converting output format: %s -> %s\n", currentApp, app)
 	}
 
-	// Handle firmware conversion and file format conversion
-	currentApp := orgApp
-
-	// Step 1: Firmware conversion if needed
 	if outputCfg.NeedFwGen {
 		if outputCfg.DirectGen {
-			// Direct conversion to final output (including .img case)
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Converting to firmware format: %s (%s -> %s)\n", outputCfg.BinFmt, currentApp, app)
-			}
-			err = firmware.MakeFirmwareImage(currentApp, app, outputCfg.BinFmt, ctx.crossCompile.FormatDetail)
+			err := firmware.MakeFirmwareImage(currentApp, app, outputCfg.BinFmt, ctx.crossCompile.FormatDetail)
 			if err != nil {
 				return "", err
 			}
 			currentApp = app
 		} else {
-			// Convert to intermediate file first
 			binExt := firmware.BinaryExt(ctx.crossCompile.BinaryFormat)
 			tmpFile, err := os.CreateTemp("", "llgo-*"+binExt)
 			if err != nil {
@@ -756,16 +766,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			tmpFile.Close()
 			intermediateApp := tmpFile.Name()
 
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Converting to firmware format: %s (%s -> %s)\n", ctx.crossCompile.BinaryFormat, currentApp, intermediateApp)
-			}
 			err = firmware.MakeFirmwareImage(currentApp, intermediateApp, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
 			if err != nil {
 				return "", err
 			}
 			currentApp = intermediateApp
 			defer func() {
-				// Only remove if the intermediate file still exists (wasn't moved)
 				if _, err := os.Stat(intermediateApp); err == nil {
 					os.Remove(intermediateApp)
 				}
@@ -773,23 +779,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	}
 
-	// Step 2: File format conversion if needed
 	if currentApp != app {
 		if outputCfg.FileFmt != "" {
-			// File format conversion
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Converting to file format: %s (%s -> %s)\n", outputCfg.FileFmt, currentApp, app)
-			}
-			err = firmware.ConvertOutput(currentApp, app, binFmt, outputCfg.FileFmt)
+			binFmt := ctx.crossCompile.BinaryFormat
+			err := firmware.ConvertOutput(currentApp, app, binFmt, outputCfg.FileFmt)
 			if err != nil {
 				return "", err
 			}
 		} else {
-			// Just move/copy the file
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Moving file: %s -> %s\n", currentApp, app)
-			}
-			err = os.Rename(currentApp, app)
+			err := os.Rename(currentApp, app)
 			if err != nil {
 				return "", err
 			}
@@ -797,87 +795,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	return app, nil
-}
-
-func run(ctx *context, app string, pkgPath, pkgDir string, conf *Config, mode Mode, verbose bool) error {
-	useEmulator := false
-	if mode == ModeRun && conf.Emulator {
-		if ctx.crossCompile.Emulator == "" {
-			return fmt.Errorf("target %s does not have emulator configured", conf.Target)
-		}
-		useEmulator = true
-	}
-
-	switch mode {
-	case ModeTest:
-		cmd := exec.Command(app, conf.RunArgs...)
-		cmd.Dir = pkgDir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				// The command ran and exited with a non-zero status.
-				fmt.Fprintf(os.Stderr, "%s: exit code %d\n", app, exitErr.ExitCode())
-				if !ctx.testFail {
-					ctx.testFail = true
-				}
-			} else {
-				// The command failed to start or other error.
-				fmt.Fprintf(os.Stderr, "failed to run test %s: %v\n", app, err)
-				if !ctx.testFail {
-					ctx.testFail = true
-				}
-			}
-		}
-	case ModeRun:
-		if useEmulator {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Using emulator: %s\n", ctx.crossCompile.Emulator)
-			}
-			err := runInEmulator(app, ctx.crossCompile.Emulator, conf.RunArgs, verbose)
-			if err != nil {
-				return err
-			}
-		} else {
-			args := make([]string, 0, len(conf.RunArgs)+1)
-			copy(args, conf.RunArgs)
-			if isWasmTarget(conf.Goos) {
-				wasmer := os.ExpandEnv(WasmRuntime())
-				wasmerArgs := strings.Split(wasmer, " ")
-				wasmerCmd := wasmerArgs[0]
-				wasmerArgs = wasmerArgs[1:]
-				switch wasmer {
-				case "wasmtime":
-					args = append(args, "--wasm", "multi-memory=true", app)
-					args = append(args, conf.RunArgs...)
-				case "iwasm":
-					args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
-					args = append(args, conf.RunArgs...)
-				default:
-					args = append(args, wasmerArgs...)
-					args = append(args, app)
-					args = append(args, conf.RunArgs...)
-				}
-				app = wasmerCmd
-			} else {
-				args = conf.RunArgs
-			}
-			cmd := exec.Command(app, args...)
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err := cmd.Run()
-			if err != nil {
-				return err
-			}
-			if s := cmd.ProcessState; s != nil {
-				mockable.Exit(s.ExitCode())
-			}
-		}
-	case ModeCmpTest:
-		cmpTest(pkgDir, pkgPath, app, conf.GenExpect, conf.RunArgs)
-	}
-	return nil
 }
 
 func flash(ctx *context, app string, verbose bool) error {
@@ -1359,75 +1276,7 @@ func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
 	return false
 }
 
-// findDylibDep finds the dylib dependency in the executable. It returns empty
-// string if not found.
-func findDylibDep(exe, lib string) string {
-	file, err := macho.Open(exe)
-	check(err)
-	defer file.Close()
-	for _, load := range file.Loads {
-		if dylib, ok := load.(*macho.Dylib); ok {
-			if strings.HasPrefix(filepath.Base(dylib.Name), fmt.Sprintf("lib%s.", lib)) {
-				return dylib.Name
-			}
-		}
-	}
-	return ""
-}
-
 type none struct{}
-
-// runInEmulator runs the application in emulator by formatting the emulator command template
-func runInEmulator(appPath, emulatorTemplate string, runArgs []string, verbose bool) error {
-	// Build environment map for template variable expansion
-	envs := map[string]string{
-		"":    appPath, // {} expands to app path
-		"bin": appPath,
-		"hex": appPath,
-		"zip": appPath,
-		"img": appPath,
-		"uf2": appPath,
-	}
-
-	// Expand the emulator command template
-	emulatorCmd := emulatorTemplate
-	for placeholder, path := range envs {
-		var target string
-		if placeholder == "" {
-			target = "{}"
-		} else {
-			target = "{" + placeholder + "}"
-		}
-		emulatorCmd = strings.ReplaceAll(emulatorCmd, target, path)
-	}
-
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Running in emulator: %s\n", emulatorCmd)
-	}
-
-	// Parse command and arguments
-	cmdParts := strings.Fields(emulatorCmd)
-	if len(cmdParts) == 0 {
-		panic(fmt.Errorf("empty emulator command"))
-	}
-
-	// Add run arguments to the end
-	cmdParts = append(cmdParts, runArgs...)
-
-	// Execute the emulator command
-	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-	if s := cmd.ProcessState; s != nil {
-		mockable.Exit(s.ExitCode())
-	}
-	return nil
-}
 
 func check(err error) {
 	if err != nil {
