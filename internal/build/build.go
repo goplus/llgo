@@ -44,6 +44,7 @@ import (
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
@@ -76,12 +77,13 @@ type Config struct {
 	Goarch        string
 	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
 	BinPath       string
-	AppExt        string   // ".exe" on Windows, empty on Unix
-	OutFile       string   // only valid for ModeBuild when len(pkgs) == 1
-	FileFormat    string   // File format override (e.g., "bin", "hex", "elf", "uf2", "zip") - takes precedence over target's default
-	Emulator      bool     // only valid for ModeRun/ModeTest - run in emulator mode
-	Port          string   // only valid for ModeRun/ModeTest/ModeInstall/ModeCmpTest - target port for flashing
-	RunArgs       []string // only valid for ModeRun
+	AppExt        string // ".exe" on Windows, empty on Unix
+	OutFile       string // only valid for ModeBuild when len(pkgs) == 1
+	FileFormat    string // File format override (e.g., "bin", "hex", "elf", "uf2", "zip") - takes precedence over target's default
+	Emulator      bool   // run in emulator mode
+	Port          string // target port for flashing
+	BaudRate      int    // baudrate for serial communication
+	RunArgs       []string
 	Mode          Mode
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
@@ -355,6 +357,15 @@ func Do(args []string, conf *Config) ([]Package, error) {
 					err = runInEmulator(ctx.crossCompile.Emulator, finalApp, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
 				} else {
 					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
+					if err != nil {
+						return nil, err
+					}
+					err = monitor.Monitor(monitor.MonitorConfig{
+						Port:       ctx.buildConf.Port,
+						Target:     conf.Target,
+						Executable: finalApp,
+						BaudRate:   conf.BaudRate,
+					}, verbose)
 				}
 				if err != nil {
 					return nil, err
