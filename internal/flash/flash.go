@@ -13,6 +13,7 @@ import (
 
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
+	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
 )
 
@@ -119,6 +120,49 @@ func GetPort(portFlag string, usbInterfaces []string) (string, error) {
 	return "", errors.New("port you specified '" + strings.Join(portCandidates, ",") + "' does not exist, available ports are " + strings.Join(ports, ", "))
 }
 
+// From tinygo/main.go touchSerialPortAt1200bps
+// touchSerialPortAt1200bps triggers Arduino-compatible devices to enter bootloader mode.
+// This function implements the Arduino auto-reset mechanism used before flashing firmware.
+//
+// Working principle:
+// 1. Opens serial port at 1200 baud rate (special reset baudrate for Arduino)
+// 2. Sets DTR (Data Terminal Ready) signal to false
+// 3. This triggers the device to reset and enter bootloader mode for firmware upload
+//
+// Usage scenarios:
+// - Required for Arduino Uno, Leonardo, Micro and other compatible devices
+// - Executed when target config has "flash-1200-bps-reset": "true"
+// - Ensures device is in correct state to receive new firmware
+//
+// Retry mechanism:
+// - Retries up to 3 times due to potential temporary serial port access issues
+// - Windows special handling: InvalidSerialPort error during bootloader transition is normal
+func touchSerialPortAt1200bps(port string) (err error) {
+	retryCount := 3
+	for i := 0; i < retryCount; i++ {
+		// Open port at 1200bps to trigger Arduino reset
+		p, e := serial.Open(port, &serial.Mode{BaudRate: 1200})
+		if e != nil {
+			if runtime.GOOS == `windows` {
+				se, ok := e.(*serial.PortError)
+				if ok && se.Code() == serial.InvalidSerialPort {
+					// InvalidSerialPort error occurs when transitioning to boot
+					return nil
+				}
+			}
+			time.Sleep(1 * time.Second)
+			err = e
+			continue
+		}
+		defer p.Close()
+
+		// Set DTR to false to trigger reset
+		p.SetDTR(false)
+		return nil
+	}
+	return fmt.Errorf("opening port: %s", err)
+}
+
 // Flash flashes firmware to a device based on the crosscompile configuration
 func Flash(crossCompile crosscompile.Export, app string, port string, verbose bool) error {
 	method := crossCompile.Flash.Method
@@ -138,6 +182,18 @@ func Flash(crossCompile crosscompile.Export, app string, port string, verbose bo
 	if verbose {
 		fmt.Fprintf(os.Stderr, "Flashing %s using method: %s\n", app, method)
 		fmt.Fprintf(os.Stderr, "Using port: %s\n", port)
+	}
+
+	// Execute 1200bps reset before flashing if needed (except for openocd)
+	if method != "openocd" && crossCompile.Flash.Flash1200BpsReset {
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Triggering 1200bps reset on port: %s\n", port)
+		}
+		if err := touchSerialPortAt1200bps(port); err != nil {
+			return fmt.Errorf("failed to trigger 1200bps reset: %w", err)
+		}
+		// Wait a bit for device to enter bootloader mode
+		time.Sleep(2 * time.Second)
 	}
 
 	switch method {
@@ -174,17 +230,6 @@ func flashCommand(flash crosscompile.Flash, app string, port string, verbose boo
 	parts := strings.Fields(expandedCommand)
 	if len(parts) == 0 {
 		return fmt.Errorf("empty flash command after expansion")
-	}
-
-	// Handle 1200bps reset if required
-	if flash.Flash1200BpsReset && port != "" {
-		if err := reset1200bps(port, verbose); err != nil {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Warning: 1200bps reset failed: %v\n", err)
-			}
-		}
-		// Wait for bootloader
-		time.Sleep(2 * time.Second)
 	}
 
 	// Execute flash command
@@ -374,19 +419,6 @@ func expandEnv(template string, envs map[string]string) string {
 	}
 
 	return result
-}
-
-// reset1200bps performs 1200bps reset for Arduino-compatible boards
-func reset1200bps(port string, verbose bool) error {
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Performing 1200bps reset on %s\n", port)
-	}
-
-	// This is a simplified implementation
-	// In practice, this would need platform-specific serial port handling
-	// For now, just try to touch the port to trigger reset
-	_, err := os.Stat(port)
-	return err
 }
 
 // copyFile copies a file from src to dst
