@@ -42,6 +42,7 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
+	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
@@ -341,7 +342,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			case ModeInstall:
 				// Native already installed in linkMainPkg
 				if conf.Target != "" {
-					err = flash(ctx, finalApp, verbose)
+					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
 					if err != nil {
 						return nil, err
 					}
@@ -353,7 +354,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 				} else if conf.Emulator {
 					err = runInEmulator(ctx.crossCompile.Emulator, finalApp, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
 				} else {
-					err = flash(ctx, finalApp, verbose)
+					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
 				}
 				if err != nil {
 					return nil, err
@@ -794,16 +795,6 @@ func convertFormat(ctx *context, inputFile string, outputCfg *OutputCfg) (string
 	}
 
 	return app, nil
-}
-
-func flash(ctx *context, app string, verbose bool) error {
-	// TODO: Implement device flashing logic
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Flashing %s to port %s\n", app, ctx.buildConf.Port)
-	}
-	fmt.Printf("conf: %#v\n", ctx.buildConf)
-	fmt.Printf("crosscompile: %#v\n", ctx.crossCompile)
-	return nil
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
