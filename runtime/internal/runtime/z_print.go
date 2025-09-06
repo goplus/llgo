@@ -22,6 +22,18 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
+func init() {
+	if c.Stdin == nil {
+		c.Stdin = c.Fopen(c.Str("/dev/stdin"), c.Str("r"))
+	}
+	if c.Stdout == nil {
+		c.Stdout = c.Fopen(c.Str("/dev/stdout"), c.Str("w"))
+	}
+	if c.Stderr == nil {
+		c.Stderr = c.Stdout
+	}
+}
+
 func boolCStr(v bool) *c.Char {
 	if v {
 		return c.Str("true")

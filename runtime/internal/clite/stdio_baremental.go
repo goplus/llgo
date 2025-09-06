@@ -1,4 +1,4 @@
-//go:build !darwin && !baremetal
+//go:build baremetal
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -20,11 +20,7 @@ package c
 
 import _ "unsafe"
 
-//go:linkname Stdin stdin
+// initialized by z_print because LLGoPackage skips calling init()
 var Stdin FilePtr
-
-//go:linkname Stdout stdout
 var Stdout FilePtr
-
-//go:linkname Stderr stderr
 var Stderr FilePtr
