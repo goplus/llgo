@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/shellparse"
 )
 
 func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mode) error {
@@ -123,10 +124,13 @@ func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []stri
 		fmt.Fprintf(os.Stderr, "Running in emulator: %s\n", emulatorCmd)
 	}
 
-	// Parse command and arguments
-	cmdParts := strings.Fields(emulatorCmd)
+	// Parse command and arguments safely handling quoted strings
+	cmdParts, err := shellparse.Parse(emulatorCmd)
+	if err != nil {
+		return fmt.Errorf("failed to parse emulator command: %w", err)
+	}
 	if len(cmdParts) == 0 {
-		panic(fmt.Errorf("empty emulator command"))
+		return fmt.Errorf("empty emulator command")
 	}
 
 	// Add run arguments to the end
@@ -137,7 +141,7 @@ func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []stri
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}

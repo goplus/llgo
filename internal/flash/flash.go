@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/shellparse"
 	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
 )
@@ -254,8 +255,11 @@ func flashCommand(flash Flash, envMap map[string]string, port string, verbose bo
 		fmt.Fprintf(os.Stderr, "Flash command: %s\n", expandedCommand)
 	}
 
-	// Split command into parts for exec
-	parts := strings.Fields(expandedCommand)
+	// Split command into parts for exec - safely handling quoted arguments
+	parts, err := shellparse.Parse(expandedCommand)
+	if err != nil {
+		return fmt.Errorf("failed to parse flash command: %w", err)
+	}
 	if len(parts) == 0 {
 		return fmt.Errorf("empty flash command after expansion")
 	}
