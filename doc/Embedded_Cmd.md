@@ -4,8 +4,11 @@
 
 - `-o <file>` - Specify output file name
 - `-target <platform>` - Specify target platform for cross-compilation
-- `-file-format <format>` - Convert to specified format (**requires `-target`**)
-  - Supported: `elf` (default), `bin`, `hex`, `uf2`, `zip`, `img`
+- `-obin` - Generate binary format output (requires `-target`)
+- `-ohex` - Generate Intel HEX format output (requires `-target`)
+- `-oimg` - Generate firmware image format output (requires `-target`)
+- `-ouf2` - Generate UF2 format output (requires `-target`)
+- `-ozip` - Generate ZIP/DFU format output (requires `-target`)
 - `-emulator` - Run using emulator (auto-detects required format)
 - `-port <port>` - Target port for flashing, testing, or monitoring
 - `-baudrate <rate>` - Baudrate for serial communication (default: 115200)
@@ -15,7 +18,7 @@
 ### llgo build
 Compile program to output file.
 - No `-target`: Native executable
-- With `-target`: ELF executable (or `-file-format` if specified)
+- With `-target`: ELF executable (and additional formats if specified with `-obin`, `-ohex`, etc.)
 
 ### llgo run
 Compile and run program.
@@ -57,8 +60,10 @@ llgo run hello.go                                # run locally
 llgo install hello.go                            # install to bin
 
 # Cross-compilation
-llgo build -target esp32 .                       # -> hello (ELF)
-llgo build -target esp32 -file-format bin .      # -> hello.bin
+llgo build -target esp32 .                       # -> hello.elf
+llgo build -target esp32 -obin .                 # -> hello.elf + hello.bin
+llgo build -target esp32 -ohex .                 # -> hello.elf + hello.bin + hello.hex
+llgo build -target esp32 -obin -ohex -oimg .     # -> hello.elf + hello.bin + hello.hex + hello.img
 llgo run -target esp32 .                         # run on ESP32 (guess a port)
 llgo run -target esp32 -emulator .               # run in emulator
 llgo test -target esp32 -port /dev/ttyUSB0 .     # run tests on device
