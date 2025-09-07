@@ -11,11 +11,39 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
 	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
 )
+
+// Device contains all flashing/debugging configuration for a device
+type Device struct {
+	Serial     string   // Serial communication settings
+	SerialPort []string // Available serial ports
+	Flash      Flash    // Flash configuration for device programming
+	MSD        MSD      // Mass Storage Device configuration
+	OpenOCD    OpenOCD  // OpenOCD configuration for debugging/flashing
+}
+
+// Flash contains configuration for device flashing
+type Flash struct {
+	Method            string // Flash method: "command", "openocd", "msd", "bmp"
+	Command           string // Flash command template
+	Flash1200BpsReset bool   // Whether to use 1200bps reset
+}
+
+// MSD contains configuration for Mass Storage Device flashing
+type MSD struct {
+	VolumeName   []string // Names of the volumes
+	FirmwareName string   // Firmware file name pattern
+}
+
+// OpenOCD contains configuration for OpenOCD debugging/flashing
+type OpenOCD struct {
+	Interface string // Interface configuration (e.g., "stlink")
+	Transport string // Transport protocol (e.g., "swd", "jtag")
+	Target    string // Target configuration (e.g., "stm32f4x")
+}
 
 // From tinygo/main.go getDefaultPort
 // GetPort returns the default serial port depending on the operating system and USB interfaces.
@@ -163,9 +191,9 @@ func touchSerialPortAt1200bps(port string) (err error) {
 	return fmt.Errorf("opening port: %s", err)
 }
 
-// Flash flashes firmware to a device based on the crosscompile configuration
-func Flash(crossCompile crosscompile.Export, app string, port string, verbose bool) error {
-	method := crossCompile.Flash.Method
+// FlashDevice flashes firmware to a device based on the device configuration
+func FlashDevice(device Device, app string, port string, verbose bool) error {
+	method := device.Flash.Method
 	if method == "" {
 		method = "command"
 	}
@@ -173,7 +201,7 @@ func Flash(crossCompile crosscompile.Export, app string, port string, verbose bo
 	// Resolve port for methods that need it (all except openocd)
 	if method != "openocd" {
 		var err error
-		port, err = GetPort(port, crossCompile.Flash.SerialPort)
+		port, err = GetPort(port, device.SerialPort)
 		if err != nil {
 			return fmt.Errorf("failed to find port: %w", err)
 		}
@@ -185,7 +213,7 @@ func Flash(crossCompile crosscompile.Export, app string, port string, verbose bo
 	}
 
 	// Execute 1200bps reset before flashing if needed (except for openocd)
-	if method != "openocd" && crossCompile.Flash.Flash1200BpsReset {
+	if method != "openocd" && device.Flash.Flash1200BpsReset {
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Triggering 1200bps reset on port: %s\n", port)
 		}
@@ -198,11 +226,11 @@ func Flash(crossCompile crosscompile.Export, app string, port string, verbose bo
 
 	switch method {
 	case "command":
-		return flashCommand(crossCompile.Flash, app, port, verbose)
+		return flashCommand(device.Flash, app, port, verbose)
 	case "openocd":
-		return flashOpenOCD(crossCompile.OpenOCD, app, verbose)
+		return flashOpenOCD(device.OpenOCD, app, verbose)
 	case "msd":
-		return flashMSD(crossCompile.MSD, app, verbose)
+		return flashMSD(device.MSD, app, verbose)
 	case "bmp":
 		return flashBMP(app, verbose)
 	default:
@@ -211,7 +239,7 @@ func Flash(crossCompile crosscompile.Export, app string, port string, verbose bo
 }
 
 // flashCommand handles command-based flashing
-func flashCommand(flash crosscompile.Flash, app string, port string, verbose bool) error {
+func flashCommand(flash Flash, app string, port string, verbose bool) error {
 	if flash.Command == "" {
 		return fmt.Errorf("flash command not specified")
 	}
@@ -241,7 +269,7 @@ func flashCommand(flash crosscompile.Flash, app string, port string, verbose boo
 }
 
 // flashOpenOCD handles OpenOCD-based flashing
-func flashOpenOCD(openocd crosscompile.OpenOCD, app string, verbose bool) error {
+func flashOpenOCD(openocd OpenOCD, app string, verbose bool) error {
 	if openocd.Interface == "" {
 		return fmt.Errorf("OpenOCD interface not specified")
 	}
@@ -279,7 +307,7 @@ func flashOpenOCD(openocd crosscompile.OpenOCD, app string, verbose bool) error 
 }
 
 // flashMSD handles Mass Storage Device flashing
-func flashMSD(msd crosscompile.MSD, app string, verbose bool) error {
+func flashMSD(msd MSD, app string, verbose bool) error {
 	if len(msd.VolumeName) == 0 {
 		return fmt.Errorf("MSD volume names not specified")
 	}

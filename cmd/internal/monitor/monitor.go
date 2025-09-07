@@ -59,7 +59,7 @@ func runMonitor(cmd *base.Command, args []string) {
 			fmt.Fprintf(os.Stderr, "llgo monitor: %v\n", err)
 			os.Exit(1)
 		}
-		serialPort = conf.Flash.SerialPort
+		serialPort = conf.Device.SerialPort
 	}
 
 	config := monitor.MonitorConfig{

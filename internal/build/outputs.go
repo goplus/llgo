@@ -84,11 +84,11 @@ func determineFlashFormat(crossCompile *crosscompile.Export) string {
 		return ""
 	}
 
-	flashMethod := crossCompile.Flash.Method
+	flashMethod := crossCompile.Device.Flash.Method
 	switch flashMethod {
 	case "command", "":
 		// Extract format from flash command tokens
-		flashCommand := crossCompile.Flash.Command
+		flashCommand := crossCompile.Device.Flash.Command
 		switch {
 		case strings.Contains(flashCommand, "{hex}"):
 			return ".hex"
@@ -106,10 +106,10 @@ func determineFlashFormat(crossCompile *crosscompile.Export) string {
 			return ""
 		}
 	case "msd":
-		if crossCompile.MSD.FirmwareName == "" {
+		if crossCompile.Device.MSD.FirmwareName == "" {
 			return ""
 		}
-		return filepath.Ext(crossCompile.MSD.FirmwareName)
+		return filepath.Ext(crossCompile.Device.MSD.FirmwareName)
 	case "openocd":
 		return ".hex"
 	case "bmp":

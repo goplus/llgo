@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/flash"
 )
 
 func TestGenOutputs(t *testing.T) {
@@ -315,9 +316,11 @@ func TestGenOutputs(t *testing.T) {
 			pkgName: "hello",
 			crossCompile: &crosscompile.Export{
 				BinaryFormat: "esp32",
-				Flash: crosscompile.Flash{
-					Method:  "command",
-					Command: "esptool.py --chip esp32 write_flash 0x10000 {hex}",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method:  "command",
+						Command: "esptool.py --chip esp32 write_flash 0x10000 {hex}",
+					},
 				},
 			},
 			wantOutPath:   "", // temp file
@@ -336,9 +339,11 @@ func TestGenOutputs(t *testing.T) {
 			pkgName: "hello",
 			crossCompile: &crosscompile.Export{
 				BinaryFormat: "esp32",
-				Flash: crosscompile.Flash{
-					Method:  "command",
-					Command: "esptool.py --chip esp32 write_flash 0x10000 {bin}",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method:  "command",
+						Command: "esptool.py --chip esp32 write_flash 0x10000 {bin}",
+					},
 				},
 			},
 			wantOutPath:   "", // temp file
@@ -357,8 +362,10 @@ func TestGenOutputs(t *testing.T) {
 			pkgName: "hello",
 			crossCompile: &crosscompile.Export{
 				BinaryFormat: "arm",
-				Flash: crosscompile.Flash{
-					Method: "openocd",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method: "openocd",
+					},
 				},
 			},
 			wantOutPath:   "", // temp file
@@ -377,11 +384,13 @@ func TestGenOutputs(t *testing.T) {
 			pkgName: "hello",
 			crossCompile: &crosscompile.Export{
 				BinaryFormat: "uf2",
-				Flash: crosscompile.Flash{
-					Method: "msd",
-				},
-				MSD: crosscompile.MSD{
-					FirmwareName: "firmware.uf2",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method: "msd",
+					},
+					MSD: flash.MSD{
+						FirmwareName: "firmware.uf2",
+					},
 				},
 			},
 			wantOutPath:   "", // temp file
@@ -400,8 +409,10 @@ func TestGenOutputs(t *testing.T) {
 			pkgName: "hello",
 			crossCompile: &crosscompile.Export{
 				BinaryFormat: "arm",
-				Flash: crosscompile.Flash{
-					Method: "bmp",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method: "bmp",
+					},
 				},
 			},
 			wantOutPath:   "", // temp file
@@ -510,9 +521,11 @@ func TestDetermineFormat(t *testing.T) {
 			name: "flash method command - extract hex",
 			conf: &Config{Mode: ModeRun, Target: "esp32"},
 			crossCompile: &crosscompile.Export{
-				Flash: crosscompile.Flash{
-					Method:  "command",
-					Command: "esptool.py --chip esp32 write_flash 0x10000 {hex}",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method:  "command",
+						Command: "esptool.py --chip esp32 write_flash 0x10000 {hex}",
+					},
 				},
 			},
 			wantFmt: "hex",
@@ -522,9 +535,11 @@ func TestDetermineFormat(t *testing.T) {
 			name: "flash method command - extract bin",
 			conf: &Config{Mode: ModeRun, Target: "esp32"},
 			crossCompile: &crosscompile.Export{
-				Flash: crosscompile.Flash{
-					Method:  "command",
-					Command: "esptool.py --chip esp32 write_flash 0x10000 {bin}",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method:  "command",
+						Command: "esptool.py --chip esp32 write_flash 0x10000 {bin}",
+					},
 				},
 			},
 			wantFmt: "bin",
@@ -534,8 +549,10 @@ func TestDetermineFormat(t *testing.T) {
 			name: "flash method openocd",
 			conf: &Config{Mode: ModeRun, Target: "stm32"},
 			crossCompile: &crosscompile.Export{
-				Flash: crosscompile.Flash{
-					Method: "openocd",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method: "openocd",
+					},
 				},
 			},
 			wantFmt: "hex",
@@ -545,11 +562,13 @@ func TestDetermineFormat(t *testing.T) {
 			name: "flash method msd - extract from firmware name",
 			conf: &Config{Mode: ModeRun, Target: "rp2040"},
 			crossCompile: &crosscompile.Export{
-				Flash: crosscompile.Flash{
-					Method: "msd",
-				},
-				MSD: crosscompile.MSD{
-					FirmwareName: "firmware.uf2",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method: "msd",
+					},
+					MSD: flash.MSD{
+						FirmwareName: "firmware.uf2",
+					},
 				},
 			},
 			wantFmt: "uf2",
@@ -559,8 +578,10 @@ func TestDetermineFormat(t *testing.T) {
 			name: "flash method bmp",
 			conf: &Config{Mode: ModeRun, Target: "stm32"},
 			crossCompile: &crosscompile.Export{
-				Flash: crosscompile.Flash{
-					Method: "bmp",
+				Device: flash.Device{
+					Flash: flash.Flash{
+						Method: "bmp",
+					},
 				},
 			},
 			wantFmt: "elf",

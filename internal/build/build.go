@@ -344,7 +344,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			case ModeInstall:
 				// Native already installed in linkMainPkg
 				if conf.Target != "" {
-					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
+					err = flash.FlashDevice(ctx.crossCompile.Device, finalApp, ctx.buildConf.Port, verbose)
 					if err != nil {
 						return nil, err
 					}
@@ -356,7 +356,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 				} else if conf.Emulator {
 					err = runInEmulator(ctx.crossCompile.Emulator, finalApp, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
 				} else {
-					err = flash.Flash(ctx.crossCompile, finalApp, ctx.buildConf.Port, verbose)
+					err = flash.FlashDevice(ctx.crossCompile.Device, finalApp, ctx.buildConf.Port, verbose)
 					if err != nil {
 						return nil, err
 					}
@@ -365,9 +365,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 						Target:     conf.Target,
 						Executable: finalApp,
 						BaudRate:   conf.BaudRate,
-					}
-					if ctx.crossCompile.Flash.Method != "openocd" {
-						monitorConfig.SerialPort = ctx.crossCompile.Flash.SerialPort
+						SerialPort: ctx.crossCompile.Device.SerialPort,
 					}
 					err = monitor.Monitor(monitorConfig, verbose)
 				}
