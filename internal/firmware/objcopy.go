@@ -5,7 +5,6 @@ package firmware
 import (
 	"debug/elf"
 	"io"
-	"os"
 	"sort"
 )
 
@@ -102,32 +101,5 @@ func extractROM(path string) (uint64, []byte, error) {
 		return startAddr, rom[startAddr-progs[0].Paddr:], nil
 	} else {
 		return progs[0].Paddr, rom, nil
-	}
-}
-
-// objcopy converts an ELF file to a different (simpler) output file format:
-// .bin or .hex. It extracts only the .text section.
-func objcopy(infile, outfile, binaryFormat string) error {
-	f, err := os.OpenFile(outfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	// Read the .text segment.
-	_, data, err := extractROM(infile)
-	if err != nil {
-		return err
-	}
-
-	// Write to the file, in the correct format.
-	switch binaryFormat {
-	case "bin":
-		// The start address is not stored in raw firmware files (therefore you
-		// should use .hex files in most cases).
-		_, err := f.Write(data)
-		return err
-	default:
-		panic("unreachable")
 	}
 }

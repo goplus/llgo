@@ -68,6 +68,8 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 		return details, nil
 	}
 
+	needRun := slices.Contains([]Mode{ModeRun, ModeTest, ModeCmpTest, ModeInstall}, conf.Mode)
+
 	if multiPkg {
 		details.Out, err = genTempOutputFile(pkgName, conf.AppExt)
 		if err != nil {
@@ -87,13 +89,15 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 
 	// Check emulator format if emulator mode is enabled
 	outFmt := ""
-	if conf.Emulator {
-		if crossCompile.Emulator != "" {
-			outFmt = firmware.ExtractFileFormatFromCommand(crossCompile.Emulator)
-		}
-	} else {
-		if crossCompile.Device.Flash.Method == "command" {
-			outFmt = firmware.ExtractFileFormatFromCommand(crossCompile.Device.Flash.Command)
+	if needRun {
+		if conf.Emulator {
+			if crossCompile.Emulator != "" {
+				outFmt = firmware.ExtractFileFormatFromCommand(crossCompile.Emulator)
+			}
+		} else {
+			if crossCompile.Device.Flash.Method == "command" {
+				outFmt = firmware.ExtractFileFormatFromCommand(crossCompile.Device.Flash.Command)
+			}
 		}
 	}
 	if outFmt != "" {
@@ -101,7 +105,7 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 	}
 
 	// Check binary format and set corresponding format
-	if crossCompile.BinaryFormat != "" && slices.Contains([]Mode{ModeRun, ModeTest, ModeCmpTest, ModeInstall}, conf.Mode) {
+	if crossCompile.BinaryFormat != "" && needRun {
 		envName := firmware.BinaryFormatToEnvName(crossCompile.BinaryFormat)
 		if envName != "" {
 			setOutFmt(conf, envName)
@@ -112,15 +116,13 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 	if details.Out != "" {
 		base := strings.TrimSuffix(details.Out, filepath.Ext(details.Out))
 
-		if conf.OutFmts.Bin || conf.OutFmts.Img {
+		if conf.OutFmts.Bin || conf.OutFmts.Img || conf.OutFmts.Hex {
 			details.Bin = base + ".bin"
 		}
 		if conf.OutFmts.Hex {
-			details.Bin = base + ".bin" // hex depends on bin
 			details.Hex = base + ".hex"
 		}
 		if conf.OutFmts.Img {
-			details.Bin = base + ".bin" // img depends on bin
 			details.Img = base + ".img"
 		}
 		if conf.OutFmts.Uf2 {

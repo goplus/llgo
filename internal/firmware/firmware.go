@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-// MakeFirmwareImage creates a firmware image from the given input file.
-func MakeFirmwareImage(infile, outfile, format, fmtDetail string) error {
+// makeFirmwareImage creates a firmware image from the given input file.
+func makeFirmwareImage(infile, outfile, format, fmtDetail string) error {
+	fmt.Fprintf(os.Stderr, "Generating firmware image: %s -> %s (format: %s, detail: %s)\n", infile, outfile, format, fmtDetail)
 	if strings.HasPrefix(format, "esp") {
 		return makeESPFirmareImage(infile, outfile, format)
 	} else if format == "uf2" {
@@ -32,34 +33,11 @@ func ExtractFileFormatFromCommand(cmd string) string {
 	return ""
 }
 
-// GetFileExtFromFormat converts file format to file extension
-func GetFileExtFromFormat(format string) string {
-	switch format {
-	case "bin":
-		return ".bin"
-	case "hex":
-		return ".hex"
-	case "elf":
-		return ""
-	case "uf2":
-		return ".uf2"
-	case "zip":
-		return ".zip"
-	case "img":
-		return ".img"
-	default:
-		return ""
-	}
-}
-
 // ConvertFormats processes format conversions for embedded targets only
 func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
-	fmt.Printf("Converting formats based on binary format: %s\n", binFmt)
-	fmt.Printf("Format details: %s\n", fmtDetail)
-	fmt.Printf("Environment map: %+v\n", envMap)
 	// Convert to bin format first (needed for img)
 	if envMap["bin"] != "" {
-		err := MakeFirmwareImage(envMap["out"], envMap["bin"], binFmt, fmtDetail)
+		err := makeFirmwareImage(envMap["out"], envMap["bin"], binFmt, fmtDetail)
 		if err != nil {
 			return fmt.Errorf("failed to convert to bin format: %w", err)
 		}
@@ -67,15 +45,15 @@ func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
 
 	// Convert to hex format
 	if envMap["hex"] != "" {
-		err := MakeFirmwareImage(envMap["out"], envMap["hex"], binFmt, fmtDetail)
+		err := makeFirmwareImage(envMap["out"], envMap["hex"], binFmt, fmtDetail)
 		if err != nil {
 			return fmt.Errorf("failed to convert to hex format: %w", err)
 		}
 	}
 
-	// Convert to img format (depends on bin)
+	// Convert to img format
 	if envMap["img"] != "" {
-		err := MakeFirmwareImage(envMap["out"], envMap["img"], binFmt+"-img", fmtDetail)
+		err := makeFirmwareImage(envMap["out"], envMap["img"], binFmt+"-img", fmtDetail)
 		if err != nil {
 			return fmt.Errorf("failed to convert to img format: %w", err)
 		}
@@ -83,7 +61,7 @@ func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
 
 	// Convert to uf2 format
 	if envMap["uf2"] != "" {
-		err := MakeFirmwareImage(envMap["out"], envMap["uf2"], binFmt, fmtDetail)
+		err := makeFirmwareImage(envMap["out"], envMap["uf2"], binFmt, fmtDetail)
 		if err != nil {
 			return fmt.Errorf("failed to convert to uf2 format: %w", err)
 		}
@@ -91,7 +69,7 @@ func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
 
 	// Convert to zip format
 	if envMap["zip"] != "" {
-		err := MakeFirmwareImage(envMap["out"], envMap["zip"], binFmt, fmtDetail)
+		err := makeFirmwareImage(envMap["out"], envMap["zip"], binFmt, fmtDetail)
 		if err != nil {
 			return fmt.Errorf("failed to convert to zip format: %w", err)
 		}
