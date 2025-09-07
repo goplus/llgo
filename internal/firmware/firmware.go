@@ -2,7 +2,6 @@ package firmware
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 )
@@ -35,9 +34,14 @@ func ExtractFileFormatFromCommand(cmd string) string {
 
 // ConvertFormats processes format conversions for embedded targets only
 func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
+	var err error
 	// Convert to bin format first (needed for img)
 	if envMap["bin"] != "" {
-		err := makeFirmwareImage(envMap["out"], envMap["bin"], binFmt, fmtDetail)
+		if strings.HasPrefix(binFmt, "esp") {
+			err = makeFirmwareImage(envMap["out"], envMap["bin"], binFmt, fmtDetail)
+		} else {
+			err = objcopy(envMap["out"], envMap["bin"], "bin")
+		}
 		if err != nil {
 			return fmt.Errorf("failed to convert to bin format: %w", err)
 		}
@@ -45,7 +49,7 @@ func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
 
 	// Convert to hex format
 	if envMap["hex"] != "" {
-		err := makeFirmwareImage(envMap["out"], envMap["hex"], binFmt, fmtDetail)
+		err := objcopy(envMap["out"], envMap["hex"], "hex")
 		if err != nil {
 			return fmt.Errorf("failed to convert to hex format: %w", err)
 		}
@@ -53,7 +57,7 @@ func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
 
 	// Convert to img format
 	if envMap["img"] != "" {
-		err := makeFirmwareImage(envMap["out"], envMap["img"], binFmt+"-img", fmtDetail)
+		err = makeFirmwareImage(envMap["out"], envMap["img"], binFmt+"-img", fmtDetail)
 		if err != nil {
 			return fmt.Errorf("failed to convert to img format: %w", err)
 		}
@@ -75,40 +79,5 @@ func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
 		}
 	}
 
-	return nil
-}
-
-// convertToHex converts binary file to hex format (each byte as two hex characters)
-func convertToHex(infile, outfile string) error {
-	srcFile, err := os.Open(infile)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.Create(outfile)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	// Read input file and convert each byte to two hex characters
-	buf := make([]byte, 4096) // Read in chunks
-	for {
-		n, err := srcFile.Read(buf)
-		if n > 0 {
-			for i := 0; i < n; i++ {
-				if _, writeErr := fmt.Fprintf(dstFile, "%02x", buf[i]); writeErr != nil {
-					return writeErr
-				}
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }

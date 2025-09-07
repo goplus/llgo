@@ -4,8 +4,12 @@ package firmware
 
 import (
 	"debug/elf"
+	"fmt"
 	"io"
+	"os"
 	"sort"
+
+	"github.com/marcinbor85/gohex"
 )
 
 // maxPadBytes is the maximum allowed bytes to be padded in a rom extraction
@@ -101,5 +105,43 @@ func extractROM(path string) (uint64, []byte, error) {
 		return startAddr, rom[startAddr-progs[0].Paddr:], nil
 	} else {
 		return progs[0].Paddr, rom, nil
+	}
+}
+
+// From tinygo/builder/builder/objcopy.go objcopy
+// objcopy converts an ELF file to a different (simpler) output file format:
+// .bin or .hex. It extracts only the .text section.
+func objcopy(infile, outfile, binaryFormat string) error {
+	f, err := os.OpenFile(outfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Read the .text segment.
+	addr, data, err := extractROM(infile)
+	if err != nil {
+		return err
+	}
+
+	// Write to the file, in the correct format.
+	switch binaryFormat {
+	case "hex":
+		fmt.Fprintf(os.Stderr, "Converting firmware format: %s -> %s (intel hex format: %s)\n", infile, outfile, binaryFormat)
+		// Intel hex file, includes the firmware start address.
+		mem := gohex.NewMemory()
+		err := mem.AddBinary(uint32(addr), data)
+		if err != nil {
+			return objcopyError{"failed to create .hex file", err}
+		}
+		return mem.DumpIntelHex(f, 16)
+	case "bin":
+		fmt.Fprintf(os.Stderr, "Converting firmware format: %s -> %s (format: %s)\n", infile, outfile, binaryFormat)
+		// The start address is not stored in raw firmware files (therefore you
+		// should use .hex files in most cases).
+		_, err := f.Write(data)
+		return err
+	default:
+		panic("unreachable")
 	}
 }

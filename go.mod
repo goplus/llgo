@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/marcinbor85/gohex v0.0.0-20210308104911-55fb1c624d84
 	github.com/mattn/go-tty v0.0.7
 	github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1
 	go.bug.st/serial v1.6.4
