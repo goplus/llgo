@@ -59,65 +59,6 @@ func cacheDir() string {
 	return filepath.Join(cacheRoot(), "crosscompile")
 }
 
-// expandEnv expands template variables in a string
-// Supports variables like {port}, {hex}, {bin}, {root}, {tmpDir}, etc.
-// Special case: {} expands to the first available file variable (hex, bin, img, zip)
-func expandEnv(template string, envs map[string]string) string {
-	return expandEnvWithDefault(template, envs)
-}
-
-// expandEnvWithDefault expands template variables with optional default for {}
-func expandEnvWithDefault(template string, envs map[string]string, defaultValue ...string) string {
-	if template == "" {
-		return ""
-	}
-
-	result := template
-
-	// Handle special case of {} - use provided default or first available file variable
-	if strings.Contains(result, "{}") {
-		defaultVal := ""
-		if len(defaultValue) > 0 && defaultValue[0] != "" {
-			defaultVal = defaultValue[0]
-		} else {
-			// Priority order: hex, bin, img, zip
-			for _, key := range []string{"hex", "bin", "img", "zip"} {
-				if value, exists := envs[key]; exists && value != "" {
-					defaultVal = value
-					break
-				}
-			}
-		}
-		result = strings.ReplaceAll(result, "{}", defaultVal)
-	}
-
-	// Replace named variables
-	for key, value := range envs {
-		if key != "" { // Skip empty key used for {} default
-			result = strings.ReplaceAll(result, "{"+key+"}", value)
-		}
-	}
-	return result
-}
-
-// expandEnvSlice expands template variables in a slice of strings
-func expandEnvSlice(templates []string, envs map[string]string) []string {
-	return expandEnvSliceWithDefault(templates, envs)
-}
-
-// expandEnvSliceWithDefault expands template variables in a slice with optional default for {}
-func expandEnvSliceWithDefault(templates []string, envs map[string]string, defaultValue ...string) []string {
-	if len(templates) == 0 {
-		return templates
-	}
-
-	result := make([]string, len(templates))
-	for i, template := range templates {
-		result[i] = expandEnvWithDefault(template, envs, defaultValue...)
-	}
-	return result
-}
-
 // buildEnvMap creates a map of template variables for the current context
 func buildEnvMap(llgoRoot string) map[string]string {
 	envs := make(map[string]string)
@@ -539,7 +480,7 @@ func UseTarget(targetName string) (export Export, err error) {
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
 	}
 	// Expand template variables in cflags
-	expandedCFlags := expandEnvSlice(config.CFlags, envs)
+	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)
 	cflags = append(cflags, expandedCFlags...)
 
 	// The following parameters are inspired by tinygo/builder/library.go
@@ -685,7 +626,7 @@ func UseTarget(targetName string) (export Export, err error) {
 	// Combine with config flags and expand template variables
 	export.CFLAGS = cflags
 	export.CCFLAGS = ccflags
-	expandedLDFlags := expandEnvSlice(config.LDFlags, envs)
+	expandedLDFlags := env.ExpandEnvSlice(config.LDFlags, envs)
 	export.LDFLAGS = append(ldflags, expandedLDFlags...)
 
 	return export, nil

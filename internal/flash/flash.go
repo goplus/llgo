@@ -248,7 +248,7 @@ func flashCommand(flash Flash, envMap map[string]string, port string, verbose bo
 	envs := buildFlashEnvMap(envMap, port)
 
 	// Expand template variables in command
-	expandedCommand := expandEnv(flash.Command, envs)
+	expandedCommand := env.ExpandEnvWithDefault(flash.Command, envs)
 
 	if verbose {
 		fmt.Fprintf(os.Stderr, "Flash command: %s\n", expandedCommand)
@@ -415,26 +415,6 @@ func buildFlashEnvMap(envMap map[string]string, port string) map[string]string {
 	}
 
 	return envs
-}
-
-// expandEnv expands template variables in a string
-// Supports variables like {port}, {hex}, {bin}, {root}, {tmpDir}, etc.
-func expandEnv(template string, envs map[string]string) string {
-	fmt.Fprintf(os.Stderr, "Expanding template: %s with envs: %v\n", template, envs)
-	if template == "" {
-		return ""
-	}
-
-	result := template
-
-	// Replace named variables
-	for key, value := range envs {
-		if key != "" {
-			result = strings.ReplaceAll(result, "{"+key+"}", value)
-		}
-	}
-
-	return result
 }
 
 // copyFile copies a file from src to dst
