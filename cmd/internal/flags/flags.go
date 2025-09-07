@@ -8,11 +8,19 @@ import (
 )
 
 var OutputFile string
-var FileFormat string
+var OutBin bool
+var OutHex bool
+var OutImg bool
+var OutUf2 bool
+var OutZip bool
 
 func AddOutputFlags(fs *flag.FlagSet) {
 	fs.StringVar(&OutputFile, "o", "", "Output file")
-	fs.StringVar(&FileFormat, "file-format", "", "File format for target output (e.g., bin, hex, elf, uf2, zip)")
+	fs.BoolVar(&OutBin, "obin", false, "Generate binary output (.bin)")
+	fs.BoolVar(&OutHex, "ohex", false, "Generate Intel hex output (.hex)")
+	fs.BoolVar(&OutImg, "oimg", false, "Generate image output (.img)")
+	fs.BoolVar(&OutUf2, "ouf2", false, "Generate UF2 output (.uf2)")
+	fs.BoolVar(&OutZip, "ozip", false, "Generate ZIP/DFU output (.zip)")
 }
 
 var Verbose bool
@@ -67,7 +75,13 @@ func UpdateConfig(conf *build.Config) {
 	switch conf.Mode {
 	case build.ModeBuild:
 		conf.OutFile = OutputFile
-		conf.FileFormat = FileFormat
+		conf.OutFmts = build.OutFmts{
+			Bin: OutBin,
+			Hex: OutHex,
+			Img: OutImg,
+			Uf2: OutUf2,
+			Zip: OutZip,
+		}
 	case build.ModeRun, build.ModeTest:
 		conf.Emulator = Emulator
 	case build.ModeInstall:

@@ -85,7 +85,7 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 	return nil
 }
 
-func runInEmulator(emulator, app, pkgDir, pkgName string, conf *Config, mode Mode, verbose bool) error {
+func runInEmulator(emulator string, envMap map[string]string, pkgDir, pkgName string, conf *Config, mode Mode, verbose bool) error {
 	if emulator == "" {
 		return fmt.Errorf("target %s does not have emulator configured", conf.Target)
 	}
@@ -95,31 +95,21 @@ func runInEmulator(emulator, app, pkgDir, pkgName string, conf *Config, mode Mod
 
 	switch mode {
 	case ModeRun:
-		return runEmuCmd(app, emulator, conf.RunArgs, verbose)
+		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose)
 	case ModeTest:
-		return runEmuCmd(app, emulator, conf.RunArgs, verbose)
+		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose)
 	case ModeCmpTest:
-		cmpTest(pkgDir, pkgName, app, conf.GenExpect, conf.RunArgs)
+		cmpTest(pkgDir, pkgName, envMap["out"], conf.GenExpect, conf.RunArgs)
 		return nil
 	}
 	return nil
 }
 
 // runEmuCmd runs the application in emulator by formatting the emulator command template
-func runEmuCmd(appPath, emulatorTemplate string, runArgs []string, verbose bool) error {
-	// Build environment map for template variable expansion
-	envs := map[string]string{
-		"":    appPath, // {} expands to app path
-		"bin": appPath,
-		"hex": appPath,
-		"zip": appPath,
-		"img": appPath,
-		"uf2": appPath,
-	}
-
+func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []string, verbose bool) error {
 	// Expand the emulator command template
 	emulatorCmd := emulatorTemplate
-	for placeholder, path := range envs {
+	for placeholder, path := range envMap {
 		var target string
 		if placeholder == "" {
 			target = "{}"

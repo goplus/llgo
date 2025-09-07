@@ -192,7 +192,7 @@ func touchSerialPortAt1200bps(port string) (err error) {
 }
 
 // FlashDevice flashes firmware to a device based on the device configuration
-func FlashDevice(device Device, app string, port string, verbose bool) error {
+func FlashDevice(device Device, envMap map[string]string, port string, verbose bool) error {
 	method := device.Flash.Method
 	if method == "" {
 		method = "command"
@@ -208,7 +208,7 @@ func FlashDevice(device Device, app string, port string, verbose bool) error {
 	}
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "Flashing %s using method: %s\n", app, method)
+		fmt.Fprintf(os.Stderr, "Flashing using method: %s\n", method)
 		fmt.Fprintf(os.Stderr, "Using port: %s\n", port)
 	}
 
@@ -226,26 +226,26 @@ func FlashDevice(device Device, app string, port string, verbose bool) error {
 
 	switch method {
 	case "command":
-		return flashCommand(device.Flash, app, port, verbose)
+		return flashCommand(device.Flash, envMap, port, verbose)
 	case "openocd":
-		return flashOpenOCD(device.OpenOCD, app, verbose)
+		return flashOpenOCD(device.OpenOCD, envMap, verbose)
 	case "msd":
-		return flashMSD(device.MSD, app, verbose)
+		return flashMSD(device.MSD, envMap, verbose)
 	case "bmp":
-		return flashBMP(app, verbose)
+		return flashBMP(envMap, port, verbose)
 	default:
 		return fmt.Errorf("unsupported flash method: %s", method)
 	}
 }
 
 // flashCommand handles command-based flashing
-func flashCommand(flash Flash, app string, port string, verbose bool) error {
+func flashCommand(flash Flash, envMap map[string]string, port string, verbose bool) error {
 	if flash.Command == "" {
 		return fmt.Errorf("flash command not specified")
 	}
 
 	// Build environment map for template variable expansion
-	envs := buildFlashEnvMap(app, port)
+	envs := buildFlashEnvMap(envMap, port)
 
 	// Expand template variables in command
 	expandedCommand := expandEnv(flash.Command, envs)
@@ -269,7 +269,7 @@ func flashCommand(flash Flash, app string, port string, verbose bool) error {
 }
 
 // flashOpenOCD handles OpenOCD-based flashing
-func flashOpenOCD(openocd OpenOCD, app string, verbose bool) error {
+func flashOpenOCD(openocd OpenOCD, envMap map[string]string, verbose bool) error {
 	if openocd.Interface == "" {
 		return fmt.Errorf("OpenOCD interface not specified")
 	}
@@ -290,7 +290,7 @@ func flashOpenOCD(openocd OpenOCD, app string, verbose bool) error {
 	args = append(args,
 		"-c", "init",
 		"-c", "reset init",
-		"-c", fmt.Sprintf("flash write_image erase %s", app),
+		"-c", fmt.Sprintf("flash write_image erase %s", envMap["elf"]),
 		"-c", "reset",
 		"-c", "shutdown",
 	)
@@ -307,7 +307,7 @@ func flashOpenOCD(openocd OpenOCD, app string, verbose bool) error {
 }
 
 // flashMSD handles Mass Storage Device flashing
-func flashMSD(msd MSD, app string, verbose bool) error {
+func flashMSD(msd MSD, envMap map[string]string, verbose bool) error {
 	if len(msd.VolumeName) == 0 {
 		return fmt.Errorf("MSD volume names not specified")
 	}
@@ -363,24 +363,24 @@ func flashMSD(msd MSD, app string, verbose bool) error {
 	destPath := filepath.Join(mountPoint, msd.FirmwareName)
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "Copying %s to %s\n", app, destPath)
+		fmt.Fprintf(os.Stderr, "Copying %s to %s\n", envMap["uf2"], destPath)
 	}
 
-	return copyFile(app, destPath)
+	return copyFile(envMap["uf2"], destPath)
 }
 
 // flashBMP handles Black Magic Probe flashing
-func flashBMP(app string, verbose bool) error {
+func flashBMP(envMap map[string]string, port string, verbose bool) error {
 	// BMP typically uses GDB for flashing
 	args := []string{
-		"-ex", "target extended-remote /dev/ttyACM0", // Default BMP port
+		"-ex", "target extended-remote " + port,
 		"-ex", "monitor swdp_scan",
 		"-ex", "attach 1",
 		"-ex", "load",
 		"-ex", "compare-sections",
 		"-ex", "kill",
 		"-ex", "quit",
-		app,
+		envMap["elf"],
 	}
 
 	if verbose {
@@ -395,7 +395,7 @@ func flashBMP(app string, verbose bool) error {
 }
 
 // buildFlashEnvMap creates environment map for template expansion
-func buildFlashEnvMap(app string, port string) map[string]string {
+func buildFlashEnvMap(envMap map[string]string, port string) map[string]string {
 	envs := make(map[string]string)
 
 	// Basic paths
@@ -407,24 +407,11 @@ func buildFlashEnvMap(app string, port string) map[string]string {
 		envs["port"] = port
 	}
 
-	// File paths based on extension
-	ext := strings.ToLower(filepath.Ext(app))
-	switch ext {
-	case ".hex":
-		envs["hex"] = app
-	case ".bin":
-		envs["bin"] = app
-	case ".elf":
-		envs["elf"] = app
-	case ".uf2":
-		envs["uf2"] = app
-	case ".zip":
-		envs["zip"] = app
-	case ".img":
-		envs["img"] = app
-	default:
-		// Default to binary for unknown extensions
-		envs["bin"] = app
+	// Copy all format paths from envMap
+	for key, value := range envMap {
+		if value != "" {
+			envs[key] = value
+		}
 	}
 
 	return envs
@@ -433,6 +420,7 @@ func buildFlashEnvMap(app string, port string) map[string]string {
 // expandEnv expands template variables in a string
 // Supports variables like {port}, {hex}, {bin}, {root}, {tmpDir}, etc.
 func expandEnv(template string, envs map[string]string) string {
+	fmt.Fprintf(os.Stderr, "Expanding template: %s with envs: %v\n", template, envs)
 	if template == "" {
 		return ""
 	}

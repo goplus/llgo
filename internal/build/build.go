@@ -72,17 +72,36 @@ const (
 	debugBuild = packages.DebugPackagesLoad
 )
 
+// OutFmts contains output format specifications for embedded targets
+type OutFmts struct {
+	Bin bool // Generate binary output (.bin)
+	Hex bool // Generate Intel hex output (.hex)
+	Img bool // Generate image output (.img)
+	Uf2 bool // Generate UF2 output (.uf2)
+	Zip bool // Generate ZIP/DFU output (.zip)
+}
+
+// OutFmtDetails contains detailed output file paths for each format
+type OutFmtDetails struct {
+	Out string // Base output file path
+	Bin string // Binary output file path (.bin)
+	Hex string // Intel hex output file path (.hex)
+	Img string // Image output file path (.img)
+	Uf2 string // UF2 output file path (.uf2)
+	Zip string // ZIP/DFU output file path (.zip)
+}
+
 type Config struct {
 	Goos          string
 	Goarch        string
 	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
 	BinPath       string
-	AppExt        string // ".exe" on Windows, empty on Unix
-	OutFile       string // only valid for ModeBuild when len(pkgs) == 1
-	FileFormat    string // File format override (e.g., "bin", "hex", "elf", "uf2", "zip") - takes precedence over target's default
-	Emulator      bool   // run in emulator mode
-	Port          string // target port for flashing
-	BaudRate      int    // baudrate for serial communication
+	AppExt        string  // ".exe" on Windows, empty on Unix
+	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts       OutFmts // Output format specifications (only for Target != "")
+	Emulator      bool    // run in emulator mode
+	Port          string  // target port for flashing
+	BaudRate      int     // baudrate for serial communication
 	RunArgs       []string
 	Mode          Mode
 	AbiMode       AbiMode
@@ -121,7 +140,6 @@ func NewDefaultConf(mode Mode) *Config {
 		BinPath: bin,
 		Mode:    mode,
 		AbiMode: cabi.ModeAllFunc,
-		AppExt:  DefaultAppExt(goos),
 	}
 	return conf
 }
@@ -137,8 +155,15 @@ func envGOPATH() (string, error) {
 	return filepath.Join(home, "go"), nil
 }
 
-func DefaultAppExt(goos string) string {
-	switch goos {
+func defaultAppExt(conf *Config) string {
+	if conf.Target != "" {
+		if strings.HasPrefix(conf.Target, "wasi") || strings.HasPrefix(conf.Target, "wasm") {
+			return ".wasm"
+		}
+		return ".elf"
+	}
+
+	switch conf.Goos {
 	case "windows":
 		return ".exe"
 	case "wasi", "wasip1", "js":
@@ -162,6 +187,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if conf.Goarch == "" {
 		conf.Goarch = runtime.GOARCH
+	}
+	if conf.AppExt == "" {
+		conf.AppExt = defaultAppExt(conf)
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), conf.Target)
@@ -241,6 +269,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			if conf.OutFile != "" {
 				return nil, fmt.Errorf("cannot build multiple packages with -o")
 			}
+		case ModeInstall:
+			if conf.Target != "" {
+				return nil, fmt.Errorf("cannot install multiple packages to embedded target")
+			}
 		case ModeRun:
 			return nil, fmt.Errorf("cannot run multiple packages")
 		case ModeTest:
@@ -319,19 +351,24 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		if needLink(pkg, mode) {
 			name := path.Base(pkg.PkgPath)
 
-			outputCfg, err := genOutputs(conf, name, len(ctx.initial) > 1, &ctx.crossCompile)
+			// Create output format details
+			outFmts, err := buildOutFmts(name, conf, len(ctx.initial) > 1, &ctx.crossCompile)
 			if err != nil {
 				return nil, err
 			}
 
-			err = linkMainPkg(ctx, pkg, allPkgs, global, outputCfg.IntPath, verbose)
+			// Link main package using the base output path
+			err = linkMainPkg(ctx, pkg, allPkgs, global, outFmts.Out, verbose)
 			if err != nil {
 				return nil, err
 			}
 
-			finalApp := outputCfg.IntPath
-			if outputCfg.NeedFwGen || outputCfg.FileFmt != "" {
-				finalApp, err = convertFormat(ctx, finalApp, &outputCfg)
+			envMap := outFmts.ToEnvMap()
+
+			// Only convert formats when Target is specified
+			if conf.Target != "" {
+				// Process format conversions for embedded targets
+				err = firmware.ConvertFormats(ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail, envMap)
 				if err != nil {
 					return nil, err
 				}
@@ -344,7 +381,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			case ModeInstall:
 				// Native already installed in linkMainPkg
 				if conf.Target != "" {
-					err = flash.FlashDevice(ctx.crossCompile.Device, finalApp, ctx.buildConf.Port, verbose)
+					err = flash.FlashDevice(ctx.crossCompile.Device, envMap, ctx.buildConf.Port, verbose)
 					if err != nil {
 						return nil, err
 					}
@@ -352,18 +389,18 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 			case ModeRun, ModeTest, ModeCmpTest:
 				if conf.Target == "" {
-					err = runNative(ctx, finalApp, pkg.Dir, pkg.PkgPath, conf, mode)
+					err = runNative(ctx, outFmts.Out, pkg.Dir, pkg.PkgPath, conf, mode)
 				} else if conf.Emulator {
-					err = runInEmulator(ctx.crossCompile.Emulator, finalApp, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
+					err = runInEmulator(ctx.crossCompile.Emulator, envMap, pkg.Dir, pkg.PkgPath, conf, mode, verbose)
 				} else {
-					err = flash.FlashDevice(ctx.crossCompile.Device, finalApp, ctx.buildConf.Port, verbose)
+					err = flash.FlashDevice(ctx.crossCompile.Device, envMap, ctx.buildConf.Port, verbose)
 					if err != nil {
 						return nil, err
 					}
 					monitorConfig := monitor.MonitorConfig{
 						Port:       ctx.buildConf.Port,
 						Target:     conf.Target,
-						Executable: finalApp,
+						Executable: outFmts.Out,
 						BaudRate:   conf.BaudRate,
 						SerialPort: ctx.crossCompile.Device.SerialPort,
 					}
@@ -754,60 +791,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 
 	return linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
-}
-
-func convertFormat(ctx *context, inputFile string, outputCfg *OutputCfg) (string, error) {
-	app := outputCfg.OutPath
-	currentApp := inputFile
-	if ctx.buildConf.Verbose {
-		fmt.Fprintf(os.Stderr, "Converting output format: %s -> %s\n", currentApp, app)
-	}
-
-	if outputCfg.NeedFwGen {
-		if outputCfg.DirectGen {
-			err := firmware.MakeFirmwareImage(currentApp, app, outputCfg.BinFmt, ctx.crossCompile.FormatDetail)
-			if err != nil {
-				return "", err
-			}
-			currentApp = app
-		} else {
-			binExt := firmware.BinaryExt(ctx.crossCompile.BinaryFormat)
-			tmpFile, err := os.CreateTemp("", "llgo-*"+binExt)
-			if err != nil {
-				return "", err
-			}
-			tmpFile.Close()
-			intermediateApp := tmpFile.Name()
-
-			err = firmware.MakeFirmwareImage(currentApp, intermediateApp, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
-			if err != nil {
-				return "", err
-			}
-			currentApp = intermediateApp
-			defer func() {
-				if _, err := os.Stat(intermediateApp); err == nil {
-					os.Remove(intermediateApp)
-				}
-			}()
-		}
-	}
-
-	if currentApp != app {
-		if outputCfg.FileFmt != "" {
-			binFmt := ctx.crossCompile.BinaryFormat
-			err := firmware.ConvertOutput(currentApp, app, binFmt, outputCfg.FileFmt)
-			if err != nil {
-				return "", err
-			}
-		} else {
-			err := os.Rename(currentApp, app)
-			if err != nil {
-				return "", err
-			}
-		}
-	}
-
-	return app, nil
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {

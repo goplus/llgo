@@ -20,12 +20,12 @@ func MakeFirmwareImage(infile, outfile, format, fmtDetail string) error {
 	return fmt.Errorf("unsupported firmware format: %s", format)
 }
 
-// ExtractFileFormatFromEmulator extracts file format from emulator command template
+// ExtractFileFormatFromCommand extracts file format from command template
 // Returns the format if found (e.g. "bin", "hex", "zip", "img"), empty string if not found
-func ExtractFileFormatFromEmulator(emulatorCmd string) string {
+func ExtractFileFormatFromCommand(cmd string) string {
 	formats := []string{"bin", "hex", "zip", "img", "uf2"}
 	for _, format := range formats {
-		if strings.Contains(emulatorCmd, "{"+format+"}") {
+		if strings.Contains(cmd, "{"+format+"}") {
 			return format
 		}
 	}
@@ -52,21 +52,52 @@ func GetFileExtFromFormat(format string) string {
 	}
 }
 
-// ConvertOutput converts a binary file to the specified format.
-// If binaryFormat == fileFormat, no conversion is needed.
-// Otherwise, only hex format conversion is supported.
-func ConvertOutput(infile, outfile, binaryFormat, fileFormat string) error {
-	// If formats match, no conversion needed
-	if binaryFormat == fileFormat {
-		return nil
+// ConvertFormats processes format conversions for embedded targets only
+func ConvertFormats(binFmt, fmtDetail string, envMap map[string]string) error {
+	fmt.Printf("Converting formats based on binary format: %s\n", binFmt)
+	fmt.Printf("Format details: %s\n", fmtDetail)
+	fmt.Printf("Environment map: %+v\n", envMap)
+	// Convert to bin format first (needed for img)
+	if envMap["bin"] != "" {
+		err := MakeFirmwareImage(envMap["out"], envMap["bin"], binFmt, fmtDetail)
+		if err != nil {
+			return fmt.Errorf("failed to convert to bin format: %w", err)
+		}
 	}
 
-	// Only support conversion to hex and format
-	if fileFormat == "hex" {
-		return convertToHex(infile, outfile)
+	// Convert to hex format
+	if envMap["hex"] != "" {
+		err := MakeFirmwareImage(envMap["out"], envMap["hex"], binFmt, fmtDetail)
+		if err != nil {
+			return fmt.Errorf("failed to convert to hex format: %w", err)
+		}
 	}
 
-	return fmt.Errorf("unsupported format conversion from %s to %s", binaryFormat, fileFormat)
+	// Convert to img format (depends on bin)
+	if envMap["img"] != "" {
+		err := MakeFirmwareImage(envMap["out"], envMap["img"], binFmt+"-img", fmtDetail)
+		if err != nil {
+			return fmt.Errorf("failed to convert to img format: %w", err)
+		}
+	}
+
+	// Convert to uf2 format
+	if envMap["uf2"] != "" {
+		err := MakeFirmwareImage(envMap["out"], envMap["uf2"], binFmt, fmtDetail)
+		if err != nil {
+			return fmt.Errorf("failed to convert to uf2 format: %w", err)
+		}
+	}
+
+	// Convert to zip format
+	if envMap["zip"] != "" {
+		err := MakeFirmwareImage(envMap["out"], envMap["zip"], binFmt, fmtDetail)
+		if err != nil {
+			return fmt.Errorf("failed to convert to zip format: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // convertToHex converts binary file to hex format (each byte as two hex characters)

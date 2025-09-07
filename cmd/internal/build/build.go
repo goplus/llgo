@@ -39,6 +39,8 @@ func init() {
 
 	flags.AddCommonFlags(&Cmd.Flag)
 	flags.AddBuildFlags(&Cmd.Flag)
+	flags.AddEmulatorFlags(&Cmd.Flag)
+	flags.AddEmbeddedFlags(&Cmd.Flag)
 	flags.AddOutputFlags(&Cmd.Flag)
 }
 
