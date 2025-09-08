@@ -43,8 +43,8 @@ var (
 )
 
 var (
-	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250820"
-	espClangVersion = "19.1.2_20250820"
+	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250905-3"
+	espClangVersion = "19.1.2_20250905-3"
 )
 
 // cacheRoot can be overridden for testing
