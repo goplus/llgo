@@ -23,8 +23,8 @@ jobs:
       - name: Calculate cache keys
         id: cache-keys
         run: |
-          DARWIN_KEY="darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh', '.github/workflows/release-build.yml') }}"
-          LINUX_KEY="linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh', '.github/workflows/release-build.yml') }}"
+          DARWIN_KEY="darwin-sysroot-${{ hashFiles('.github/workflows/populate_darwin_sysroot.sh', '.github/workflows/release-build.yml') }}-v1.0.0"
+          LINUX_KEY="linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh', '.github/workflows/release-build.yml') }}-v1.0.0"
           echo "darwin-key=$DARWIN_KEY" >> $GITHUB_OUTPUT
           echo "linux-key=$LINUX_KEY" >> $GITHUB_OUTPUT
 
