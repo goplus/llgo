@@ -45,6 +45,7 @@ import (
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/pyenv"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
@@ -163,7 +164,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
 	}
-
 	// Update GOOS/GOARCH from export if target was used
 	if conf.Target != "" && export.GOOS != "" {
 		conf.Goos = export.GOOS
@@ -287,6 +287,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		crossCompile: export,
 		cTransformer: cabi.NewTransformer(prog, conf.AbiMode),
 	}
+
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -309,7 +310,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	global, err := createGlobals(ctx, ctx.prog, pkgs)
 	check(err)
-
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
 			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
@@ -455,6 +455,32 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
+					if param == "$(pkg-config --libs python3-embed)" {
+						if err := func() error {
+							pyHome := pyenv.PythonHome()
+							steps := []struct {
+								name string
+								run  func() error
+							}{
+								{"prepare Python cache", func() error { return pyenv.EnsureWithFetch("") }},
+								{"setup Python build env", pyenv.EnsureBuildEnv},
+								{"verify Python", pyenv.Verify},
+								{"fix install_name", func() error { return pyenv.FixLibpythonInstallName(pyHome) }},
+							}
+							for _, s := range steps {
+								if e := s.run(); e != nil {
+									return fmt.Errorf("%s: %w", s.name, e)
+								}
+							}
+							return nil
+						}(); err != nil {
+							panic(fmt.Sprintf("python toolchain init failed: %v\n\tLLGO_CACHE_DIR=%s\n\tPYTHONHOME=%s\n\thint: set LLPYG_PYHOME or check network/permissions",
+								err, env.LLGoCacheDir(), pyenv.PythonHome()))
+						}
+						// if err = pyenv.EnsurePcRpath(pyenv.PythonHome()); err != nil {
+						// 	panic(fmt.Sprintf("failed to inject rpath into python3-embed.pc: %v", err))
+						// }
+					}
 					if strings.ContainsRune(param, '$') {
 						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
@@ -488,6 +514,18 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 					}
 				}
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
+			}
+			if kind == cl.PkgPyModule {
+				if name := strings.TrimSpace(param); name != "" {
+					base := strings.Split(name, "@")[0]
+					base = strings.Split(base, "==")[0]
+					if !pyenv.IsStdOrPresent(base) {
+						if err := pyenv.PipInstall(param); err != nil {
+							panic(fmt.Sprintf("pip install failed for '%s': %v\n\tPYTHONHOME=%s\n\thint: ensure pip/network or pin version (e.g. py.numpy==1.26.4)",
+								param, err, pyenv.PythonHome()))
+						}
+					}
+				}
 			}
 		default:
 			err := buildPkg(ctx, aPkg, verbose)
@@ -723,6 +761,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			}
 		}
 	})
+
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	check(err)
 	// defer os.Remove(entryLLFile)
@@ -737,8 +776,24 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
 		check(err)
 		objFiles = append(objFiles, export)
-	}
 
+		addRpath := func(args *[]string, dir string) {
+			if dir == "" {
+				return
+			}
+			flag := "-Wl,-rpath," + dir
+			for _, a := range *args {
+				if a == flag {
+					return
+				}
+			}
+			*args = append(*args, flag)
+		}
+
+		for _, dir := range pyenv.FindPythonRpaths(pyenv.PythonHome()) {
+			addRpath(&linkArgs, dir)
+		}
+	}
 	if IsFullRpathEnabled() {
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
 		// This is to ensure the final executable can locate libraries with a relocatable install_name
@@ -755,7 +810,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			}
 		}
 	}
-
 	err = linkObjFiles(ctx, orgApp, objFiles, linkArgs, verbose)
 	check(err)
 
