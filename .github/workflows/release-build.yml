@@ -96,6 +96,8 @@ jobs:
         with:
           darwin-cache-key: ${{ needs.setup.outputs.darwin-cache-key }}
           linux-cache-key: ${{ needs.setup.outputs.linux-cache-key }}
+      - name: Before Build Check
+        run: ls -la .sysroot
       - name: Run GoReleaser (Build & Test)
         env:
           GITHUB_TOKEN: ${{github.token}}
