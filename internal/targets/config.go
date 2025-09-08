@@ -35,9 +35,13 @@ type Config struct {
 	UF2FamilyID string `json:"uf2-family-id"`
 
 	// Flash and deployment configuration
-	FlashCommand      string `json:"flash-command"`
-	FlashMethod       string `json:"flash-method"`
+	FlashMethod       string `json:"flash-method"`  // values: command, openocd, msd
+	FlashCommand      string `json:"flash-command"` // used when FlashMethod == "command"
 	Flash1200BpsReset string `json:"flash-1200-bps-reset"`
+
+	// Serial configuration
+	Serial     string   `json:"serial"`      // Serial communication type (e.g., "usb")
+	SerialPort []string `json:"serial-port"` // Serial port identifiers (e.g., vendor:product IDs)
 
 	// Mass storage device configuration
 	MSDVolumeName   []string `json:"msd-volume-name"`

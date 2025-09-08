@@ -1,15 +1,16 @@
-package targets_test
+//go:build !llgo
+// +build !llgo
+
+package targets
 
 import (
 	"fmt"
 	"log"
 	"sort"
-
-	"github.com/goplus/llgo/internal/targets"
 )
 
 func ExampleResolver_Resolve() {
-	resolver := targets.NewDefaultResolver()
+	resolver := NewDefaultResolver()
 
 	// Resolve a specific target
 	config, err := resolver.Resolve("rp2040")
@@ -34,7 +35,7 @@ func ExampleResolver_Resolve() {
 }
 
 func ExampleResolver_ListAvailableTargets() {
-	resolver := targets.NewDefaultResolver()
+	resolver := NewDefaultResolver()
 
 	targets, err := resolver.ListAvailableTargets()
 	if err != nil {
@@ -50,7 +51,7 @@ func ExampleResolver_ListAvailableTargets() {
 }
 
 func ExampleResolver_ResolveAll() {
-	resolver := targets.NewDefaultResolver()
+	resolver := NewDefaultResolver()
 
 	configs, err := resolver.ResolveAll()
 	if err != nil {

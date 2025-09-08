@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/goplus/llgo/internal/build"
@@ -48,7 +47,6 @@ func genFrom(pkgPath string, abiMode build.AbiMode) (build.Package, error) {
 	conf := &build.Config{
 		Mode:    build.ModeGen,
 		AbiMode: abiMode,
-		AppExt:  build.DefaultAppExt(runtime.GOOS),
 	}
 	pkgs, err := build.Do([]string{pkgPath}, conf)
 	if err != nil {

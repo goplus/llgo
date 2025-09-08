@@ -10,4 +10,6 @@ coverage:
     - "internal/typepatch"
     - "internal/github"
     - "internal/firmware"
+    - "internal/flash"
+    - "internal/monitor"
     - "xtool"
