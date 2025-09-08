@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: ["**"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -26,6 +30,7 @@ jobs:
 
   populate-darwin-sysroot:
     runs-on: macos-latest
+    timeout-minutes: 30
     needs: setup
     steps:
       - name: Check out code
@@ -52,6 +57,7 @@ jobs:
   populate-linux-sysroot:
     runs-on: ubuntu-latest
     needs: setup
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v5
