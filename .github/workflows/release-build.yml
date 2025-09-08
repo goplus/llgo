@@ -27,7 +27,6 @@ jobs:
           LINUX_KEY="linux-sysroot-${{ hashFiles('.github/workflows/populate_linux_sysroot.sh', '.github/workflows/release-build.yml') }}-v1.0.0"
           echo "darwin-key=$DARWIN_KEY" >> $GITHUB_OUTPUT
           echo "linux-key=$LINUX_KEY" >> $GITHUB_OUTPUT
-
   populate-darwin-sysroot:
     runs-on: macos-latest
     timeout-minutes: 30
@@ -107,7 +106,7 @@ jobs:
             -v $(pwd):/go/src/llgo \
             -w /go/src/llgo \
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
-            release --skip=publish,nfpm,snapcraft --snapshot --clean
+            release --verbose --parallelism=1 --skip=publish,nfpm,snapcraft --snapshot --clean
 
       - name: Upload Darwin AMD64 Artifacts
         uses: actions/upload-artifact@v4
@@ -205,7 +204,7 @@ jobs:
           mod-version: ${{ matrix.go-mod-version }}
 
   release:
-    needs: [setup, build, test-artifacts]
+    needs: [setup, test-artifacts]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
@@ -231,4 +230,4 @@ jobs:
             -v $(pwd):/go/src/llgo \
             -w /go/src/llgo \
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
-            release --clean --skip nfpm,snapcraft
+            release --parallelism=1 --clean --verbose --skip nfpm,snapcraft
