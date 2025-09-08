@@ -86,6 +86,7 @@ type Config struct {
 	GenLL         bool // generate pkg .ll files
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
+	ForceEspClang bool // force to use esp-clang
 	Tags          string
 	GlobalNames   map[string][]string // pkg => names
 	GlobalDatas   map[string]string   // pkg.name => data
@@ -159,7 +160,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		conf.Goarch = runtime.GOARCH
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
-	export, err := crosscompile.Use(conf.Goos, conf.Goarch, IsWasiThreadsEnabled(), conf.Target)
+	forceEspClang := conf.ForceEspClang || conf.Target != ""
+	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
 	}
@@ -760,7 +762,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	check(err)
 
 	if orgApp != app {
-		fmt.Printf("cross compile: %#v\n", ctx.crossCompile)
 		err = firmware.MakeFirmwareImage(orgApp, app, ctx.crossCompile.BinaryFormat, ctx.crossCompile.FormatDetail)
 		check(err)
 	}

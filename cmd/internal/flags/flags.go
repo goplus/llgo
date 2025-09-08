@@ -21,6 +21,7 @@ var AbiMode int
 var CheckLinkArgs bool
 var CheckLLFiles bool
 var GenLLFiles bool
+var ForceEspClang bool
 
 func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose mode")
@@ -32,6 +33,7 @@ func AddBuildFlags(fs *flag.FlagSet) {
 		fs.BoolVar(&CheckLinkArgs, "check-linkargs", false, "check link args valid")
 		fs.BoolVar(&CheckLLFiles, "check-llfiles", false, "check .ll files valid")
 		fs.BoolVar(&GenLLFiles, "gen-llfiles", false, "generate .ll files for pkg export")
+		fs.BoolVar(&ForceEspClang, "force-espclang", false, "force to use esp-clang")
 	}
 }
 
@@ -56,5 +58,6 @@ func UpdateConfig(conf *build.Config) {
 		conf.CheckLinkArgs = CheckLinkArgs
 		conf.CheckLLFiles = CheckLLFiles
 		conf.GenLL = GenLLFiles
+		conf.ForceEspClang = ForceEspClang
 	}
 }
