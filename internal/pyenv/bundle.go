@@ -16,10 +16,10 @@ import (
 func BundleOnedir(app string) error {
 	exeDir := filepath.Dir(app)
 	pyHome := PythonHome()
-
+	exelibDir := filepath.Join(exeDir, "lib")
 	// 1) Directories
-	libDstDir := filepath.Join(exeDir, "python", "lib")
-	stdDst := filepath.Join(exeDir, "python", "lib", "python3.12")
+	libDstDir := filepath.Join(exelibDir, "python", "lib")
+	stdDst := filepath.Join(exelibDir, "python", "lib", "python3.12")
 	if err := os.MkdirAll(libDstDir, 0755); err != nil {
 		return err
 	}

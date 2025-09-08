@@ -656,7 +656,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 
 		addRpath(&linkArgs, "@executable_path/python/lib")
-
+		addRpath(&linkArgs, "@executable_path/lib/python/lib")
 	}
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)

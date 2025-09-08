@@ -22,7 +22,7 @@ We need a Python packaging approach that enables llgo-compiled Go–Python binar
        '/Users/mac/xgo/test/.venv/lib/python3.12/site-packages/numpy/.dylibs/libgfortran.5.dylib',
        'BINARY')]
     ```
-  - PYZ-00.toc lists pure-Python modules; PKG-00.toc lists binary extensions
+  - PYZ-00.toc lists pure-Python modules; PKG-00.toc lists binary extensions(table of contents)
   - EXE-00.toc describes the final assembly steps
   - hook = import analysis + hook-*.py files
     - hook-*.py are maintained by PyInstaller under site-packages/PyInstaller/hooks/
@@ -70,3 +70,7 @@ Copy required components next to the executable after the build:
 - Optimized approach
   - Borrow PyInstaller’s workflow or reuse its intermediate .toc files
   - Parse Python dependencies, but still use the “embed-then-extract” runtime strategy after embedding the resources
+
+## todo list
+- site-package downloading
+- release content
