@@ -8,6 +8,7 @@ import (
 	"github.com/goplus/llgo/cmd/internal/build"
 	"github.com/goplus/llgo/cmd/internal/clean"
 	"github.com/goplus/llgo/cmd/internal/install"
+	"github.com/goplus/llgo/cmd/internal/monitor"
 	"github.com/goplus/llgo/cmd/internal/run"
 	"github.com/goplus/llgo/cmd/internal/test"
 	"github.com/goplus/llgo/internal/env"
@@ -40,6 +41,10 @@ type Cmd_install struct {
 type App struct {
 	xcmd.App
 }
+type Cmd_monitor struct {
+	xcmd.Command
+	*App
+}
 type Cmd_run struct {
 	xcmd.Command
 	*App
@@ -52,6 +57,7 @@ type Cmd_version struct {
 	xcmd.Command
 	*App
 }
+
 //line cmd/llgo/main_app.gox:1
 func (this *App) MainEntry() {
 //line cmd/llgo/main_app.gox:1:1
@@ -63,11 +69,13 @@ func (this *App) Main() {
 	_xgo_obj2 := &Cmd_cmptest{App: this}
 	_xgo_obj3 := &Cmd_get{App: this}
 	_xgo_obj4 := &Cmd_install{App: this}
-	_xgo_obj5 := &Cmd_run{App: this}
-	_xgo_obj6 := &Cmd_test{App: this}
-	_xgo_obj7 := &Cmd_version{App: this}
-	xcmd.Gopt_App_Main(this, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7)
+	_xgo_obj5 := &Cmd_monitor{App: this}
+	_xgo_obj6 := &Cmd_run{App: this}
+	_xgo_obj7 := &Cmd_test{App: this}
+	_xgo_obj8 := &Cmd_version{App: this}
+	xcmd.Gopt_App_Main(this, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7, _xgo_obj8)
 }
+
 //line cmd/llgo/build_cmd.gox:20
 func (this *Cmd_build) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -86,6 +94,7 @@ func (this *Cmd_build) Main(_xgo_arg0 string) {
 func (this *Cmd_build) Classfname() string {
 	return "build"
 }
+
 //line cmd/llgo/clean_cmd.gox:20
 func (this *Cmd_clean) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -104,6 +113,7 @@ func (this *Cmd_clean) Main(_xgo_arg0 string) {
 func (this *Cmd_clean) Classfname() string {
 	return "clean"
 }
+
 //line cmd/llgo/cmptest_cmd.gox:20
 func (this *Cmd_cmptest) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -122,6 +132,7 @@ func (this *Cmd_cmptest) Main(_xgo_arg0 string) {
 func (this *Cmd_cmptest) Classfname() string {
 	return "cmptest"
 }
+
 //line cmd/llgo/get_cmd.gox:16
 func (this *Cmd_get) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -138,6 +149,7 @@ func (this *Cmd_get) Main(_xgo_arg0 string) {
 func (this *Cmd_get) Classfname() string {
 	return "get"
 }
+
 //line cmd/llgo/install_cmd.gox:20
 func (this *Cmd_install) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -156,6 +168,26 @@ func (this *Cmd_install) Main(_xgo_arg0 string) {
 func (this *Cmd_install) Classfname() string {
 	return "install"
 }
+
+//line cmd/llgo/monitor_cmd.gox:21
+func (this *Cmd_monitor) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/monitor_cmd.gox:21:1
+	this.Use("monitor [flags] [executable]")
+//line cmd/llgo/monitor_cmd.gox:23:1
+	this.Short("Monitor serial output from device")
+//line cmd/llgo/monitor_cmd.gox:25:1
+	this.FlagOff()
+//line cmd/llgo/monitor_cmd.gox:27:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/monitor_cmd.gox:28:1
+		monitor.Cmd.Run(monitor.Cmd, args)
+	})
+}
+func (this *Cmd_monitor) Classfname() string {
+	return "monitor"
+}
+
 //line cmd/llgo/run_cmd.gox:20
 func (this *Cmd_run) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -174,6 +206,7 @@ func (this *Cmd_run) Main(_xgo_arg0 string) {
 func (this *Cmd_run) Classfname() string {
 	return "run"
 }
+
 //line cmd/llgo/test_cmd.gox:20
 func (this *Cmd_test) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -192,6 +225,7 @@ func (this *Cmd_test) Main(_xgo_arg0 string) {
 func (this *Cmd_test) Classfname() string {
 	return "test"
 }
+
 //line cmd/llgo/version_cmd.gox:22
 func (this *Cmd_version) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)

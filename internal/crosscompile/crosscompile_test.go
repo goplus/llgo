@@ -37,10 +37,10 @@ func TestUseCrossCompileSDK(t *testing.T) {
 			name:          "Same Platform",
 			goos:          runtime.GOOS,
 			goarch:        runtime.GOARCH,
-			expectSDK:     true, // Changed: now we expect flags even for same platform
-			expectCCFlags: true, // Changed: CCFLAGS will contain sysroot
-			expectCFlags:  true, // Changed: CFLAGS will contain include paths
-			expectLDFlags: true, // Changed: LDFLAGS will contain library paths
+			expectSDK:     true,  // Changed: now we expect flags even for same platform
+			expectCCFlags: true,  // Changed: CCFLAGS will contain sysroot
+			expectCFlags:  false, // Changed: CFLAGS will not contain include paths
+			expectLDFlags: false, // Changed: LDFLAGS will not contain library paths
 		},
 		{
 			name:          "WASM Target",
@@ -76,7 +76,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := use(tc.goos, tc.goarch, false)
+			export, err := use(tc.goos, tc.goarch, false, false)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -214,7 +214,7 @@ func TestUseTarget(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := useTarget(tc.targetName)
+			export, err := UseTarget(tc.targetName)
 
 			if tc.expectError {
 				if err == nil {
@@ -280,7 +280,7 @@ func TestUseTarget(t *testing.T) {
 
 func TestUseWithTarget(t *testing.T) {
 	// Test target-based configuration takes precedence
-	export, err := Use("linux", "amd64", false, "esp32")
+	export, err := Use("linux", "amd64", "esp32", false, true)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -292,7 +292,7 @@ func TestUseWithTarget(t *testing.T) {
 	}
 
 	// Test fallback to goos/goarch when no target specified
-	export, err = Use(runtime.GOOS, runtime.GOARCH, false, "")
+	export, err = Use(runtime.GOOS, runtime.GOARCH, "", false, false)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -300,128 +300,5 @@ func TestUseWithTarget(t *testing.T) {
 	// Should use native configuration (only check for macOS since that's where tests run)
 	if runtime.GOOS == "darwin" && len(export.LDFLAGS) == 0 {
 		t.Error("Expected LDFLAGS to be set for native build")
-	}
-}
-
-func TestExpandEnv(t *testing.T) {
-	envs := map[string]string{
-		"port": "/dev/ttyUSB0",
-		"hex":  "firmware.hex",
-		"bin":  "firmware.bin",
-		"root": "/usr/local/llgo",
-	}
-
-	tests := []struct {
-		template string
-		expected string
-	}{
-		{
-			"avrdude -c arduino -p atmega328p -P {port} -U flash:w:{hex}:i",
-			"avrdude -c arduino -p atmega328p -P /dev/ttyUSB0 -U flash:w:firmware.hex:i",
-		},
-		{
-			"simavr -m atmega328p -f 16000000 {}",
-			"simavr -m atmega328p -f 16000000 firmware.hex", // {} expands to hex (first priority)
-		},
-		{
-			"-I{root}/lib/CMSIS/CMSIS/Include",
-			"-I/usr/local/llgo/lib/CMSIS/CMSIS/Include",
-		},
-		{
-			"no variables here",
-			"no variables here",
-		},
-		{
-			"",
-			"",
-		},
-	}
-
-	for _, test := range tests {
-		result := expandEnv(test.template, envs)
-		if result != test.expected {
-			t.Errorf("expandEnv(%q) = %q, want %q", test.template, result, test.expected)
-		}
-	}
-}
-
-func TestExpandEnvSlice(t *testing.T) {
-	envs := map[string]string{
-		"root": "/usr/local/llgo",
-		"port": "/dev/ttyUSB0",
-	}
-
-	input := []string{
-		"-I{root}/include",
-		"-DPORT={port}",
-		"static-flag",
-	}
-
-	expected := []string{
-		"-I/usr/local/llgo/include",
-		"-DPORT=/dev/ttyUSB0",
-		"static-flag",
-	}
-
-	result := expandEnvSlice(input, envs)
-
-	if len(result) != len(expected) {
-		t.Fatalf("expandEnvSlice length mismatch: got %d, want %d", len(result), len(expected))
-	}
-
-	for i, exp := range expected {
-		if result[i] != exp {
-			t.Errorf("expandEnvSlice[%d] = %q, want %q", i, result[i], exp)
-		}
-	}
-}
-
-func TestExpandEnvWithDefault(t *testing.T) {
-	envs := map[string]string{
-		"port": "/dev/ttyUSB0",
-		"hex":  "firmware.hex",
-		"bin":  "firmware.bin",
-		"img":  "image.img",
-	}
-
-	tests := []struct {
-		template     string
-		defaultValue string
-		expected     string
-	}{
-		{
-			"simavr {}",
-			"", // No default - should use hex (priority)
-			"simavr firmware.hex",
-		},
-		{
-			"simavr {}",
-			"custom.elf", // Explicit default
-			"simavr custom.elf",
-		},
-		{
-			"qemu -kernel {}",
-			"vmlinux", // Custom kernel
-			"qemu -kernel vmlinux",
-		},
-		{
-			"no braces here",
-			"ignored",
-			"no braces here",
-		},
-	}
-
-	for i, test := range tests {
-		var result string
-		if test.defaultValue == "" {
-			result = expandEnvWithDefault(test.template, envs)
-		} else {
-			result = expandEnvWithDefault(test.template, envs, test.defaultValue)
-		}
-
-		if result != test.expected {
-			t.Errorf("Test %d: expandEnvWithDefault(%q, envs, %q) = %q, want %q",
-				i, test.template, test.defaultValue, result, test.expected)
-		}
 	}
 }

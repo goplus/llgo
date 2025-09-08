@@ -5,13 +5,20 @@ name: Go
 
 on:
   push:
-    branches: ["**"]
+    branches: 
+      - "**"
+      - "!dependabot/**"
   pull_request:
     branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     continue-on-error: true
+    timeout-minutes: 30
     strategy:
       matrix:
         os:

@@ -12,6 +12,7 @@ import (
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
 )
@@ -34,6 +35,10 @@ type Export struct {
 
 	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
 	FormatDetail string // For uf2, it's uf2FamilyID
+	Emulator     string // Emulator command template (e.g., "qemu-system-arm -M {} -kernel {}")
+
+	// Flashing/Debugging configuration
+	Device flash.Device // Device configuration for flashing/debugging
 }
 
 // URLs and configuration that can be overridden for testing
@@ -52,65 +57,6 @@ var cacheRoot = env.LLGoCacheDir
 
 func cacheDir() string {
 	return filepath.Join(cacheRoot(), "crosscompile")
-}
-
-// expandEnv expands template variables in a string
-// Supports variables like {port}, {hex}, {bin}, {root}, {tmpDir}, etc.
-// Special case: {} expands to the first available file variable (hex, bin, img, zip)
-func expandEnv(template string, envs map[string]string) string {
-	return expandEnvWithDefault(template, envs)
-}
-
-// expandEnvWithDefault expands template variables with optional default for {}
-func expandEnvWithDefault(template string, envs map[string]string, defaultValue ...string) string {
-	if template == "" {
-		return ""
-	}
-
-	result := template
-
-	// Handle special case of {} - use provided default or first available file variable
-	if strings.Contains(result, "{}") {
-		defaultVal := ""
-		if len(defaultValue) > 0 && defaultValue[0] != "" {
-			defaultVal = defaultValue[0]
-		} else {
-			// Priority order: hex, bin, img, zip
-			for _, key := range []string{"hex", "bin", "img", "zip"} {
-				if value, exists := envs[key]; exists && value != "" {
-					defaultVal = value
-					break
-				}
-			}
-		}
-		result = strings.ReplaceAll(result, "{}", defaultVal)
-	}
-
-	// Replace named variables
-	for key, value := range envs {
-		if key != "" { // Skip empty key used for {} default
-			result = strings.ReplaceAll(result, "{"+key+"}", value)
-		}
-	}
-	return result
-}
-
-// expandEnvSlice expands template variables in a slice of strings
-func expandEnvSlice(templates []string, envs map[string]string) []string {
-	return expandEnvSliceWithDefault(templates, envs)
-}
-
-// expandEnvSliceWithDefault expands template variables in a slice with optional default for {}
-func expandEnvSliceWithDefault(templates []string, envs map[string]string, defaultValue ...string) []string {
-	if len(templates) == 0 {
-		return templates
-	}
-
-	result := make([]string, len(templates))
-	for i, template := range templates {
-		result[i] = expandEnvWithDefault(template, envs, defaultValue...)
-	}
-	return result
 }
 
 // buildEnvMap creates a map of template variables for the current context
@@ -158,7 +104,7 @@ func getMacOSSysroot() (string, error) {
 
 // getESPClangRoot returns the ESP Clang root directory, checking LLGoROOT first,
 // then downloading if needed and platform is supported
-func getESPClangRoot() (clangRoot string, err error) {
+func getESPClangRoot(forceEspClang bool) (clangRoot string, err error) {
 	llgoRoot := env.LLGoROOT()
 
 	// First check if clang exists in LLGoROOT
@@ -166,6 +112,10 @@ func getESPClangRoot() (clangRoot string, err error) {
 	if _, err = os.Stat(espClangRoot); err == nil {
 		clangRoot = espClangRoot
 		return
+	}
+
+	if !forceEspClang {
+		return "", nil
 	}
 
 	// Try to download ESP Clang if platform is supported
@@ -246,50 +196,55 @@ func getOrCompileWithConfig(
 	return
 }
 
-func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
+func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, err error) {
 	targetTriple := llvm.GetTargetTriple(goos, goarch)
 	llgoRoot := env.LLGoROOT()
 
 	// Check for ESP Clang support for target-based builds
-	clangRoot, err := getESPClangRoot()
+	clangRoot, err := getESPClangRoot(forceEspClang)
 	if err != nil {
 		return
 	}
 
 	// Set ClangRoot and CC if clang is available
 	export.ClangRoot = clangRoot
-	export.CC = filepath.Join(clangRoot, "bin", "clang++")
+	if clangRoot != "" {
+		export.CC = filepath.Join(clangRoot, "bin", "clang++")
+	} else {
+		export.CC = "clang++"
+	}
 
 	if runtime.GOOS == goos && runtime.GOARCH == goarch {
-		clangLib := filepath.Join(clangRoot, "lib")
-		clangInc := filepath.Join(clangRoot, "include")
 		// not cross compile
 		// Set up basic flags for non-cross-compile
 		export.LDFLAGS = []string{
-			"-L" + clangLib,
 			"-target", targetTriple,
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
 		}
-		export.CFLAGS = append(export.CFLAGS, "-I"+clangInc)
+		if clangRoot != "" {
+			clangLib := filepath.Join(clangRoot, "lib")
+			clangInc := filepath.Join(clangRoot, "include")
+			export.CFLAGS = append(export.CFLAGS, "-I"+clangInc)
+			export.LDFLAGS = append(export.LDFLAGS, "-L"+clangLib)
+			// Add platform-specific rpath flags
+			switch goos {
+			case "darwin":
+				export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
+			case "linux":
+				export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
+			case "windows":
+				// Windows doesn't support rpath, DLLs should be in PATH or same directory
+			default:
+				// For other Unix-like systems, try the generic rpath
+				export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
+			}
+		}
 		export.CCFLAGS = []string{
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
-		}
-
-		// Add platform-specific rpath flags
-		switch goos {
-		case "darwin":
-			export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
-		case "linux":
-			export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
-		case "windows":
-			// Windows doesn't support rpath, DLLs should be in PATH or same directory
-		default:
-			// For other Unix-like systems, try the generic rpath
-			export.LDFLAGS = append(export.LDFLAGS, "-Wl,-rpath,"+clangLib)
 		}
 
 		// Add sysroot for macOS only
@@ -326,7 +281,9 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 				"--gc-sections",
 				"-lm",
 				"-latomic",
-				"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+				// libpthread & libdl is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+				"-lpthread",
+				"-ldl",
 			)
 		}
 		return
@@ -463,8 +420,8 @@ func use(goos, goarch string, wasiThreads bool) (export Export, err error) {
 	return
 }
 
-// useTarget loads configuration from a target name (e.g., "rp2040", "wasi")
-func useTarget(targetName string) (export Export, err error) {
+// UseTarget loads configuration from a target name (e.g., "rp2040", "wasi")
+func UseTarget(targetName string) (export Export, err error) {
 	resolver := targets.NewDefaultResolver()
 
 	config, err := resolver.Resolve(targetName)
@@ -483,7 +440,7 @@ func useTarget(targetName string) (export Export, err error) {
 	}
 
 	// Check for ESP Clang support for target-based builds
-	clangRoot, err := getESPClangRoot()
+	clangRoot, err := getESPClangRoot(true)
 	if err != nil {
 		return
 	}
@@ -499,6 +456,27 @@ func useTarget(targetName string) (export Export, err error) {
 	export.ExtraFiles = config.ExtraFiles
 	export.BinaryFormat = config.BinaryFormat
 	export.FormatDetail = config.FormatDetail()
+	export.Emulator = config.Emulator
+
+	// Set flashing/debugging configuration
+	export.Device = flash.Device{
+		Serial:     config.Serial,
+		SerialPort: config.SerialPort,
+		Flash: flash.Flash{
+			Method:            config.FlashMethod,
+			Command:           config.FlashCommand,
+			Flash1200BpsReset: config.Flash1200BpsReset == "true",
+		},
+		MSD: flash.MSD{
+			VolumeName:   config.MSDVolumeName,
+			FirmwareName: config.MSDFirmwareName,
+		},
+		OpenOCD: flash.OpenOCD{
+			Interface: config.OpenOCDInterface,
+			Transport: config.OpenOCDTransport,
+			Target:    config.OpenOCDTarget,
+		},
+	}
 
 	// Build environment map for template variable expansion
 	envs := buildEnvMap(env.LLGoROOT())
@@ -513,7 +491,7 @@ func useTarget(targetName string) (export Export, err error) {
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
 	}
 	// Expand template variables in cflags
-	expandedCFlags := expandEnvSlice(config.CFlags, envs)
+	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)
 	cflags = append(cflags, expandedCFlags...)
 
 	// The following parameters are inspired by tinygo/builder/library.go
@@ -659,7 +637,7 @@ func useTarget(targetName string) (export Export, err error) {
 	// Combine with config flags and expand template variables
 	export.CFLAGS = cflags
 	export.CCFLAGS = ccflags
-	expandedLDFlags := expandEnvSlice(config.LDFlags, envs)
+	expandedLDFlags := env.ExpandEnvSlice(config.LDFlags, envs)
 	export.LDFLAGS = append(ldflags, expandedLDFlags...)
 
 	return export, nil
@@ -667,9 +645,9 @@ func useTarget(targetName string) (export Export, err error) {
 
 // Use extends the original Use function to support target-based configuration
 // If targetName is provided, it takes precedence over goos/goarch
-func Use(goos, goarch string, wasiThreads bool, targetName string) (export Export, err error) {
+func Use(goos, goarch, targetName string, wasiThreads, forceEspClang bool) (export Export, err error) {
 	if targetName != "" && !strings.HasPrefix(targetName, "wasm") && !strings.HasPrefix(targetName, "wasi") {
-		return useTarget(targetName)
+		return UseTarget(targetName)
 	}
-	return use(goos, goarch, wasiThreads)
+	return use(goos, goarch, wasiThreads, forceEspClang)
 }
