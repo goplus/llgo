@@ -335,7 +335,9 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 				"--gc-sections",
 				"-lm",
 				"-latomic",
-				"-lpthread", // libpthread is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+				// libpthread & libdl is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
+				"-lpthread",
+				"-ldl",
 			)
 		}
 		return
