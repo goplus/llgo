@@ -18,10 +18,6 @@ builds:
   - id: llgo-darwin-amd64
     main: ./cmd/llgo
     binary: bin/llgo
-    hooks:
-      pre:
-        - rm -rf crosscompile
-        - cp -r .sysroot/darwin/amd64/crosscompile .
     flags:
       - -tags=darwin,amd64,byollvm
     ldflags:
@@ -30,18 +26,14 @@ builds:
     env:
       - CC=o64-clang
       - CXX=o64-clang++
-      - CGO_CPPFLAGS=-I{{.Env.PWD}}/crosscompile/clang/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=-L{{.Env.PWD}}/crosscompile/clang/lib -mmacosx-version-min=10.13 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
+      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_AMD64}}/crosscompile/clang/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_AMD64}}/crosscompile/clang/lib -mmacosx-version-min=10.13 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
     targets:
       - darwin_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-darwin-arm64
     main: ./cmd/llgo
     binary: bin/llgo
-    hooks:
-      pre:
-        - rm -rf crosscompile
-        - cp -r .sysroot/darwin/arm64/crosscompile .
     flags:
       - -tags=darwin,arm64,byollvm
     ldflags:
@@ -50,18 +42,14 @@ builds:
     env:
       - CC=oa64-clang
       - CXX=oa64-clang++
-      - CGO_CPPFLAGS=-I{{.Env.PWD}}/crosscompile/clang/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=-L{{.Env.PWD}}/crosscompile/clang/lib -mmacosx-version-min=10.13 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
+      - CGO_CPPFLAGS=-I{{.Env.SYSROOT_DARWIN_ARM64}}/crosscompile/clang/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=-L{{.Env.SYSROOT_DARWIN_ARM64}}/crosscompile/clang/lib -mmacosx-version-min=10.13 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -lLLVM-19 -lz -lm
     targets:
       - darwin_arm64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-linux-amd64
     main: ./cmd/llgo
     binary: bin/llgo
-    hooks:
-      pre:
-        - rm -rf crosscompile
-        - cp -r .sysroot/linux/amd64/crosscompile .
     flags:
       - -tags=linux,amd64,byollvm
     ldflags:
@@ -70,18 +58,14 @@ builds:
     env:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
-      - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -I{{.Env.PWD}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -L{{.Env.PWD}}/crosscompile/clang/lib -lLLVM-19
+      - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -I{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -L{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/lib -lLLVM-19
     targets:
       - linux_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
   - id: llgo-linux-arm64
     main: ./cmd/llgo
     binary: bin/llgo
-    hooks:
-      pre:
-        - rm -rf crosscompile
-        - cp -r .sysroot/linux/arm64/crosscompile .
     flags:
       - -tags=linux,arm64,byollvm
     ldflags:
@@ -90,8 +74,8 @@ builds:
     env:
       - CC=aarch64-linux-gnu-gcc
       - CXX=aarch64-linux-gnu-g++
-      - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -I{{.Env.PWD}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -L{{.Env.PWD}}/crosscompile/clang/lib -lLLVM-19
+      - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -I{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -L{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/lib -lLLVM-19
     targets:
       - linux_arm64
     mod_timestamp: "{{.CommitTimestamp}}"
@@ -105,8 +89,11 @@ archives:
       - LICENSE
       - README.md
       - runtime
-      - crosscompile
-
+      - src: ".sysroot/{{.Os}}/{{.Arch}}/crosscompile/clang/**/*"
+        dst: crosscompile/clang
+        strip_parent: true
+        info:
+          mode: 0755
 checksum:
   name_template: "{{.ProjectName}}{{.Version}}.checksums.txt"
 

@@ -106,7 +106,7 @@ jobs:
             -v $(pwd):/go/src/llgo \
             -w /go/src/llgo \
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
-            release --verbose --parallelism=1 --skip=publish,nfpm,snapcraft --snapshot --clean
+            release --verbose --skip=publish,nfpm,snapcraft --snapshot --clean
 
       - name: Upload Darwin AMD64 Artifacts
         uses: actions/upload-artifact@v4
@@ -230,4 +230,4 @@ jobs:
             -v $(pwd):/go/src/llgo \
             -w /go/src/llgo \
             ghcr.io/goreleaser/goreleaser-cross:v1.22 \
-            release --parallelism=1 --clean --verbose --skip nfpm,snapcraft
+            release --clean --verbose --skip nfpm,snapcraft
