@@ -195,6 +195,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.AppExt == "" {
 		conf.AppExt = defaultAppExt(conf)
 	}
+	if conf.BuildMode == "" {
+		conf.BuildMode = BuildModeExe
+	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)

@@ -113,8 +113,6 @@ func UpdateBuildConfig(conf *build.Config) error {
 	if err := UpdateConfig(conf); err != nil {
 		return err
 	}
-
-	// Validate and set build mode
 	if err := build.ValidateBuildMode(BuildMode); err != nil {
 		return err
 	}
