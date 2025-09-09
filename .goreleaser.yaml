@@ -91,6 +91,7 @@ archives:
       - LICENSE
       - README.md
       - runtime
+      - targets
       - src: ".sysroot/{{.Os}}/{{.Arch}}/crosscompile/clang"
         dst: crosscompile/clang
         info:
