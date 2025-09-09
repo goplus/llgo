@@ -767,6 +767,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			}
 		}
 	})
+	// Generate main module file (needed for global variables even in library modes)
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	if err != nil {
 		return err
@@ -978,7 +979,18 @@ define weak void @_start() {
 	if !needStart(ctx) {
 		startDefine = ""
 	}
-	mainCode := fmt.Sprintf(`; ModuleID = 'main'
+
+	var mainCode string
+	// For library modes (c-archive, c-shared), only generate global variables
+	if ctx.buildConf.BuildMode != BuildModeExe {
+		mainCode = `; ModuleID = 'main'
+source_filename = "main"
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+`
+	} else {
+		// For executable mode, generate full main function
+		mainCode = fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
 %s
 @__llgo_argc = global i32 0, align 4
@@ -1012,9 +1024,10 @@ _llgo_0:
   ret i32 0
 }
 `, declSizeT, stdioDecl,
-		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
-		startDefine, mainDefine, stdioNobuf,
-		pyInit, rtInit, mainPkgPath, mainPkgPath)
+			pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+			startDefine, mainDefine, stdioNobuf,
+			pyInit, rtInit, mainPkgPath, mainPkgPath)
+	}
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
 }
