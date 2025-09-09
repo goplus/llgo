@@ -111,7 +111,7 @@ if [ $# -eq 1 ]; then
 	done < "$target_file"
 else
 	# Use targets from *.json files
-	for target_file in ../../targets/*.json; do
+	for target_file in ../../../targets/*.json; do
 		# Extract target name from filename (remove path and .json extension)
 		target=$(basename "$target_file" .json)
 		targets_to_build+=("$target")
@@ -127,9 +127,9 @@ for target in "${targets_to_build[@]}"; do
 		continue
 	fi
 
-	output=$(../../llgo.sh build -target $target -o hello.out . 2>&1)
+	output=$(../../../llgo.sh build -target $target -o hello.elf . 2>&1)
 	if [ $? -eq 0 ]; then
-		echo ✅ $target `file hello.out`
+		echo ✅ $target `file hello.elf`
 		successful_targets+=("$target")
 	else
 		# Check if output contains warning messages
