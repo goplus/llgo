@@ -206,7 +206,8 @@ jobs:
           mod-version: ${{ matrix.go-mod-version }}
 
   release:
-    needs: [setup, test-artifacts]
+    needs:
+      [setup, test-artifacts, populate-darwin-sysroot, populate-linux-sysroot]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
