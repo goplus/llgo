@@ -38,7 +38,7 @@ runs:
         Hello, LLGo!
         Hello, LLGo!
         Hello LLGo by cpp/std.Str"
-        OUTPUT=$(llgo run . 2>&1)
+        OUTPUT=$(llgo run . 2>&1 | tee /dev/stderr)
         if echo "$OUTPUT" | grep -qF "$EXPECTED"; then
             echo "Basic test passed"
         else
