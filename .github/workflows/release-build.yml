@@ -180,7 +180,7 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
       - name: Download Platform Artifact
