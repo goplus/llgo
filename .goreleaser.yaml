@@ -89,9 +89,8 @@ archives:
       - LICENSE
       - README.md
       - runtime
-      - src: ".sysroot/{{.Os}}/{{.Arch}}/crosscompile/clang/**/*"
+      - src: ".sysroot/{{.Os}}/{{.Arch}}/crosscompile/clang"
         dst: crosscompile/clang
-        strip_parent: true
         info:
           mode: 0755
 checksum:
