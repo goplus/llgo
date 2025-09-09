@@ -13,7 +13,7 @@ import (
 var needSkipDownload = false
 
 // getLibcCompileConfigByName retrieves libc compilation configuration by name
-// Returns compilation file lists and corresponding cflags
+// Returns the actual libc output dir, compilation config and err
 func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (outputDir string, cfg compile.CompileConfig, err error) {
 	if libcName == "" {
 		err = fmt.Errorf("libc name cannot be empty")
@@ -48,7 +48,7 @@ func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (outputD
 }
 
 // getRTCompileConfigByName retrieves runtime library compilation configuration by name
-// Returns compilation file lists and corresponding flags for the specified runtime library
+// Returns the actual libc output dir, compilation config and err
 func getRTCompileConfigByName(baseDir, rtName, target string) (outputDir string, cfg compile.CompileConfig, err error) {
 	if rtName == "" {
 		err = fmt.Errorf("rt name cannot be empty")

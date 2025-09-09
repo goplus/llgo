@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGetNewlibESP32Config_LibConfig(t *testing.T) {
+func TestGetCompilerRTConfig_LibConfig(t *testing.T) {
 	config := GetCompilerRTConfig()
 
 	// Test basic configuration fields

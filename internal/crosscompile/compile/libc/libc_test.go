@@ -325,7 +325,7 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 	} else {
 		for i, expected := range expectedCFlags {
 			if config.ExportCFlags[i] != expected {
-				t.Errorf("LibcCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportCFlags[i])
+				t.Errorf("ExportCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportCFlags[i])
 			}
 		}
 	}
@@ -458,7 +458,7 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 	} else {
 		for i, expected := range expectedCFlags {
 			if config.ExportCFlags[i] != expected {
-				t.Errorf("LibcCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportCFlags[i])
+				t.Errorf("ExportCFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportCFlags[i])
 			}
 		}
 	}
