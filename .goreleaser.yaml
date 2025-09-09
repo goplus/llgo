@@ -60,6 +60,7 @@ builds:
       - CXX=x86_64-linux-gnu-g++
       - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -I{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
       - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -L{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/lib -Wl,-rpath,\$ORIGIN/../crosscompile/clang/lib -lLLVM-19
+      - CGO_LDFLAGS_ALLOW=--sysroot.*
     targets:
       - linux_amd64
     mod_timestamp: "{{.CommitTimestamp}}"
@@ -76,6 +77,7 @@ builds:
       - CXX=aarch64-linux-gnu-g++
       - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -I{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
       - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -L{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/lib -lLLVM-19
+      - CGO_LDFLAGS_ALLOW=--sysroot.*
     targets:
       - linux_arm64
     mod_timestamp: "{{.CommitTimestamp}}"
