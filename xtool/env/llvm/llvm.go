@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/xtool/clang"
 	"github.com/goplus/llgo/xtool/llvm/install_name_tool"
 	"github.com/goplus/llgo/xtool/llvm/llvmlink"
@@ -30,9 +31,13 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// defaultLLVMConfigBin returns the default path to the llvm-config binary. It
-// checks the LLVM_CONFIG environment variable first, then searches in PATH. If
-// not found, it returns [ldLLVMConfigBin] as a last resort.
+const (
+	// CrosscompileClangPath is the relative path from LLGO_ROOT to the clang installation
+	CrosscompileClangPath = "crosscompile/clang"
+)
+
+// -----------------------------------------------------------------------------
+
 func defaultLLVMConfigBin() string {
 	bin := os.Getenv("LLVM_CONFIG")
 	if bin != "" {
@@ -41,6 +46,13 @@ func defaultLLVMConfigBin() string {
 	bin, _ = exec.LookPath("llvm-config")
 	if bin != "" {
 		return bin
+	}
+
+	llgoRoot := env.LLGoROOT()
+	// Check LLGO_ROOT/crosscompile/clang for llvm-config
+	crossLLVMConfigBin := filepath.Join(llgoRoot, CrosscompileClangPath, "bin", "llvm-config")
+	if _, err := os.Stat(crossLLVMConfigBin); err == nil {
+		return crossLLVMConfigBin
 	}
 	return ldLLVMConfigBin
 }

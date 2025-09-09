@@ -27,7 +27,6 @@ builds:
     ldflags:
       - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
       - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
-      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=../crosscompile/clang/bin/llvm-config
     env:
       - CC=o64-clang
       - CXX=o64-clang++
@@ -48,7 +47,6 @@ builds:
     ldflags:
       - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
       - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
-      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=../crosscompile/clang/bin/llvm-config
     env:
       - CC=oa64-clang
       - CXX=oa64-clang++
@@ -69,7 +67,6 @@ builds:
     ldflags:
       - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
       - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
-      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=../crosscompile/clang/bin/llvm-config
     env:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
@@ -90,7 +87,6 @@ builds:
     ldflags:
       - -X github.com/goplus/llgo/internal/env.buildVersion=v{{.Version}}
       - -X github.com/goplus/llgo/internal/env.buildTime={{.Date}}
-      - -X github.com/goplus/llgo/xtool/env/llvm.ldLLVMConfigBin=../crosscompile/clang/bin/llvm-config
     env:
       - CC=aarch64-linux-gnu-gcc
       - CXX=aarch64-linux-gnu-g++
