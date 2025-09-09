@@ -935,6 +935,8 @@ func (p *context) compileVArg(ret []llssa.Expr, b llssa.Builder, v ssa.Value) []
 		if v.Value == nil {
 			return ret
 		}
+	case *ssa.Parameter:
+		return ret
 	}
 	panic(fmt.Sprintf("compileVArg: unknown value - %T\n", v))
 }
