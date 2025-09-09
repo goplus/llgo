@@ -126,7 +126,13 @@ func copyFile(src, dst string) error {
 	}
 	defer out.Close()
 	_, err = io.Copy(out, in)
-	return err
+	if err != nil {
+		return err
+	}
+	if info, statErr := os.Stat(src); statErr == nil {
+		_ = os.Chmod(dst, info.Mode())
+	}
+	return nil
 }
 
 func copyTree(src, dst string, keep func(rel string, d fs.DirEntry) bool) error {
