@@ -1,6 +1,9 @@
 package pyenv
 
 import (
+	"archive/zip"
+	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -66,6 +69,29 @@ func BundleOnedir(app string) error {
 	})
 }
 
+// BundleOnedirApp bundles python alongside the given executable and places
+// a copy of the executable into <exe_dir>/bin/<name>. On macOS it also tries
+// to add an rpath pointing to ../lib/python/lib.
+func BundleOnedirApp(exe string) error {
+	if err := BundleOnedir(exe); err != nil {
+		return err
+	}
+	exeDir := filepath.Dir(exe)
+	binDir := filepath.Join(exeDir, "bin")
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		return err
+	}
+	newExe := filepath.Join(binDir, filepath.Base(exe))
+	if err := copyFile(exe, newExe); err != nil {
+		return err
+	}
+	if runtime.GOOS == "darwin" {
+		rpath := "@executable_path/../lib/python/lib"
+		_ = exec.Command("install_name_tool", "-add_rpath", rpath, newExe).Run()
+	}
+	return nil
+}
+
 func findLibpython(dir string) (string, error) {
 	ents, err := os.ReadDir(dir)
 	if err != nil {
@@ -124,4 +150,215 @@ func copyTree(src, dst string, keep func(rel string, d fs.DirEntry) bool) error 
 		}
 		return copyFile(p, to)
 	})
+}
+
+// BuildPyBundleZip builds a zip payload from cache python with onedir layout inside.
+func BuildPyBundleZip() ([]byte, error) {
+	pyHome := PythonHome()
+	libSrc, err := findLibpython(filepath.Join(pyHome, "lib"))
+	if err != nil {
+		return nil, err
+	}
+	stdSrc := filepath.Join(pyHome, "lib", "python3.12")
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	// libpython
+	{
+		dst := filepath.ToSlash(filepath.Join("lib", "python", "lib", filepath.Base(libSrc)))
+		if err := addFileToZip(zw, libSrc, dst, 0644); err != nil {
+			_ = zw.Close()
+			return nil, err
+		}
+	}
+	// stdlib
+	if err := filepath.WalkDir(stdSrc, func(p string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, _ := filepath.Rel(stdSrc, p)
+		if rel == "." {
+			return nil
+		}
+		r := filepath.ToSlash(rel)
+		base := strings.ToLower(filepath.Base(r))
+		if base == "__pycache__" {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if r == "test" || strings.HasPrefix(r, "test/") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if r == "idlelib" || strings.HasPrefix(r, "idlelib/") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if r == "tkinter" || strings.HasPrefix(r, "tkinter/") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		dst := filepath.ToSlash(filepath.Join("lib", "python", "lib", "python3.12", rel))
+		return addFileToZip(zw, p, dst, 0644)
+	}); err != nil {
+		_ = zw.Close()
+		return nil, err
+	}
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// BuildOnefileBinary builds a self-extracting executable embedding payload.zip and app binary.
+func BuildOnefileBinary(exe string, out string) error {
+	if exe == "" || out == "" {
+		return os.ErrInvalid
+	}
+	payload, err := BuildPyBundleZip()
+	if err != nil {
+		return err
+	}
+	appBin, err := os.ReadFile(exe)
+	if err != nil {
+		return err
+	}
+	tmpDir, err := os.MkdirTemp("", "pybundle-onefile-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+	if err := os.WriteFile(filepath.Join(tmpDir, "payload.zip"), payload, 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "app.bin"), appBin, 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte(onefileBootMain()), 0644); err != nil {
+		return err
+	}
+	cmd := exec.Command("go", "build", "-o", out, "main.go")
+	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "GO111MODULE=off")
+	if outb, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("go build: %v\n%s", err, string(outb))
+	}
+	return nil
+}
+
+func addFileToZip(zw *zip.Writer, src string, dst string, mode os.FileMode) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	hdr, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+	hdr.Name = dst
+	hdr.Method = zip.Deflate
+	hdr.SetMode(mode)
+	w, err := zw.CreateHeader(hdr)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, f)
+	return err
+}
+
+func onefileBootMain() string {
+	return `package main
+
+import (
+    _ "embed"
+    "archive/zip"
+    "bytes"
+    "crypto/sha256"
+    "encoding/hex"
+    "fmt"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "runtime"
+)
+
+//go:embed payload.zip
+var payload []byte
+
+//go:embed app.bin
+var appBin []byte
+
+func main() {
+    root, err := extractPayload(payload)
+    if err != nil {
+        fmt.Fprintln(os.Stderr, "extract failed:", err)
+        os.Exit(1)
+    }
+    appPath := filepath.Join(root, "bin", "app")
+    if err := os.MkdirAll(filepath.Dir(appPath), 0755); err != nil { panic(err) }
+    if err := os.WriteFile(appPath, appBin, 0755); err != nil { panic(err) }
+
+    libdir := filepath.Join(root, "lib", "python", "lib")
+    if runtime.GOOS == "darwin" {
+        prependEnv("DYLD_LIBRARY_PATH", libdir)
+    } else if runtime.GOOS == "linux" {
+        prependEnv("LD_LIBRARY_PATH", libdir)
+    }
+    os.Setenv("PYTHONHOME", filepath.Join(root, "lib", "python"))
+
+    cmd := exec.Command(appPath)
+    cmd.Stdin = os.Stdin
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    if err := cmd.Run(); err != nil {
+        if cmd.ProcessState != nil {
+            os.Exit(cmd.ProcessState.ExitCode())
+        }
+        panic(err)
+    }
+}
+
+func extractPayload(p []byte) (string, error) {
+    sum := sha256.Sum256(p)
+    tag := hex.EncodeToString(sum[:8])
+    base, err := os.UserCacheDir()
+    if err != nil { return "", err }
+    root := filepath.Join(base, "llgo", "pybundle", tag)
+    if st, err := os.Stat(root); err == nil && st.IsDir() { return root, nil }
+    if err := os.MkdirAll(root, 0755); err != nil { return "", err }
+    zr, err := zip.NewReader(bytes.NewReader(p), int64(len(p)))
+    if err != nil { return "", err }
+    for _, f := range zr.File {
+        dst := filepath.Join(root, f.Name)
+        if f.FileInfo().IsDir() { if err := os.MkdirAll(dst, 0755); err != nil { return "", err }; continue }
+        if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil { return "", err }
+        rc, err := f.Open(); if err != nil { return "", err }
+        w, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644); if err != nil { rc.Close(); return "", err }
+        if _, err = w.ReadFrom(rc); err != nil { w.Close(); rc.Close(); return "", err }
+        w.Close(); rc.Close()
+    }
+    return root, nil
+}
+
+func prependEnv(key, dir string) {
+    cur := os.Getenv(key)
+    if cur == "" { os.Setenv(key, dir); return }
+    os.Setenv(key, dir+string(os.PathListSeparator)+cur)
+}
+`
 }
