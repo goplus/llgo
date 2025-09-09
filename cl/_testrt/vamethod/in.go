@@ -2,7 +2,6 @@ package main
 
 import (
 	"unsafe"
-	_ "unsafe"
 
 	"github.com/goplus/lib/c"
 )
