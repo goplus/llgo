@@ -537,6 +537,9 @@ func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 			default:
 				return false
 			}
+			if call.IsInvoke() {
+				return llssa.HasNameValist(call.Signature())
+			}
 			return ctx.funcKind(call.Value) == fnHasVArg
 		}
 	}
@@ -936,7 +939,9 @@ func (p *context) compileVArg(ret []llssa.Expr, b llssa.Builder, v ssa.Value) []
 			return ret
 		}
 	case *ssa.Parameter:
-		return ret
+		if llssa.HasNameValist(v.Parent().Signature) {
+			return ret
+		}
 	}
 	panic(fmt.Sprintf("compileVArg: unknown value - %T\n", v))
 }

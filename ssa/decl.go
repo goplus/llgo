@@ -34,7 +34,7 @@ func VArg() *types.Var {
 	return types.NewParam(0, nil, NameValist, types.NewSlice(tyAny))
 }
 
-func hasNameValist(sig *types.Signature) bool {
+func HasNameValist(sig *types.Signature) bool {
 	if sig.Variadic() {
 		if params := sig.Params(); params.At(params.Len()-1).Name() == NameValist {
 			return true
@@ -241,7 +241,7 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
-		if hasVArg = hasNameValist(sig); hasVArg {
+		if hasVArg = HasNameValist(sig); hasVArg {
 			n--
 		}
 		params = make([]Type, n)

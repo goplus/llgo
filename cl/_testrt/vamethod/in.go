@@ -19,14 +19,27 @@ type CFmt struct {
 	*T
 }
 
-func (f *CFmt) SetFormat(fmt string) {
-	f.T = (*T)(unsafe.Pointer(c.AllocaCStr(fmt)))
+func (f *CFmt) SetFormat(fmt *c.Char) {
+	f.T = (*T)(unsafe.Pointer(fmt))
+}
+
+type IFmt interface {
+	SetFormat(fmt *c.Char)
+	Printf(__llgo_va_list ...any) c.Int
 }
 
 func main() {
 	cfmt := &CFmt{}
-	cfmt.SetFormat("%s (%d)\n")
+	cfmt.SetFormat(c.Str("%s (%d)\n"))
 	cfmt.Printf(c.Str("hello"), 100)
-	cfmt.SetFormat("(%d) %s\n")
+	cfmt.SetFormat(c.Str("(%d) %s\n"))
 	cfmt.Printf(200, c.Str("world"))
+
+	var i any = &CFmt{}
+	ifmt, ok := i.(IFmt)
+	if !ok {
+		panic("error")
+	}
+	ifmt.SetFormat(c.Str("%s (%d,%d)\n"))
+	ifmt.Printf(c.Str("ifmt"), 100, 200)
 }
