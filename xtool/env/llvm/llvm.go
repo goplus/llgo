@@ -38,6 +38,9 @@ const (
 
 // -----------------------------------------------------------------------------
 
+// defaultLLVMConfigBin returns the default path to the llvm-config binary. It
+// checks the LLVM_CONFIG environment variable first, then searches in PATH. If
+// not found, it returns [ldLLVMConfigBin] as a last resort.
 func defaultLLVMConfigBin() string {
 	bin := os.Getenv("LLVM_CONFIG")
 	if bin != "" {
