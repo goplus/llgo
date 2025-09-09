@@ -11,8 +11,8 @@ import (
 	"github.com/goplus/llgo/xtool/nm"
 )
 
-func TestIsCompile(t *testing.T) {
-	t.Run("IsCompile Not Exists", func(t *testing.T) {
+func TestIsCompiled(t *testing.T) {
+	t.Run("IsCompiled Not Exists", func(t *testing.T) {
 		cfg := CompileConfig{
 			Groups: []CompileGroup{
 				{
@@ -25,7 +25,7 @@ func TestIsCompile(t *testing.T) {
 			t.Errorf("unexpected result: should false")
 		}
 	})
-	t.Run("IsCompile Exists", func(t *testing.T) {
+	t.Run("IsCompiled Exists", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "test*.a")
 		if err != nil {
 			t.Error(err)

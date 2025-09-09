@@ -167,10 +167,14 @@ func getESPClangPlatform(goos, goarch string) string {
 	return ""
 }
 
+// ldFlagsFromFileName extracts the library name from a filename for use in linker flags
+// For example, "libmath.a" becomes "math" for use with "-lmath"
 func ldFlagsFromFileName(fileName string) string {
 	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
 }
 
+// compileWithConfig compiles libraries according to the provided configuration
+// and returns the necessary linker flags for linking against the compiled libraries
 func compileWithConfig(
 	compileConfig compile.CompileConfig,
 	outputDir string, options compile.CompileOptions,

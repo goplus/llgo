@@ -7,6 +7,7 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
+// GetPicolibcConfig returns the configuration for downloading and building picolibc
 func GetPicolibcConfig() compile.LibConfig {
 	return compile.LibConfig{
 		Name:          "picolibc",

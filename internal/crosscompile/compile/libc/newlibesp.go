@@ -21,10 +21,12 @@ var _libcCCFlags = []string{
 	"-ffreestanding",
 }
 
+// withDefaultCCFlags appends default C compiler flags to the provided flags
 func withDefaultCCFlags(ccflags []string) []string {
 	return append(ccflags, _libcCCFlags...)
 }
 
+// GetNewlibESP32Config returns the configuration for downloading and building newlib for ESP32
 func GetNewlibESP32Config() compile.LibConfig {
 	return compile.LibConfig{
 		Url:           "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch3.tar.gz",

@@ -12,7 +12,7 @@ import (
 // for testing, in testing env, we use fake path, it will cause downloading failure
 var needSkipDownload = false
 
-// GetCompileConfigByName retrieves libc compilation configuration by name
+// getLibcCompileConfigByName retrieves libc compilation configuration by name
 // Returns compilation file lists and corresponding cflags
 func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (outputDir string, cfg compile.CompileConfig, err error) {
 	if libcName == "" {
@@ -47,6 +47,8 @@ func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (outputD
 	return libcDir, compileConfig, nil
 }
 
+// getRTCompileConfigByName retrieves runtime library compilation configuration by name
+// Returns compilation file lists and corresponding flags for the specified runtime library
 func getRTCompileConfigByName(baseDir, rtName, target string) (outputDir string, cfg compile.CompileConfig, err error) {
 	if rtName == "" {
 		err = fmt.Errorf("rt name cannot be empty")
