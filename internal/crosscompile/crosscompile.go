@@ -15,6 +15,7 @@ import (
 	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
+	envllvm "github.com/goplus/llgo/xtool/env/llvm"
 )
 
 type Export struct {
@@ -48,8 +49,8 @@ var (
 )
 
 var (
-	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250820"
-	espClangVersion = "19.1.2_20250820"
+	espClangBaseUrl = "https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250905-3"
+	espClangVersion = "19.1.2_20250905-3"
 )
 
 // cacheRoot can be overridden for testing
@@ -108,7 +109,7 @@ func getESPClangRoot(forceEspClang bool) (clangRoot string, err error) {
 	llgoRoot := env.LLGoROOT()
 
 	// First check if clang exists in LLGoROOT
-	espClangRoot := filepath.Join(llgoRoot, "crosscompile", "clang")
+	espClangRoot := filepath.Join(llgoRoot, envllvm.CrosscompileClangPath)
 	if _, err = os.Stat(espClangRoot); err == nil {
 		clangRoot = espClangRoot
 		return
@@ -167,20 +168,18 @@ func getESPClangPlatform(goos, goarch string) string {
 	return ""
 }
 
+// ldFlagsFromFileName extracts the library name from a filename for use in linker flags
+// For example, "libmath.a" becomes "math" for use with "-lmath"
 func ldFlagsFromFileName(fileName string) string {
 	return strings.TrimPrefix(strings.TrimSuffix(fileName, ".a"), "lib")
 }
 
-func getOrCompileWithConfig(
-	compileConfig *compile.CompileConfig,
+// compileWithConfig compiles libraries according to the provided configuration
+// and returns the necessary linker flags for linking against the compiled libraries
+func compileWithConfig(
+	compileConfig compile.CompileConfig,
 	outputDir string, options compile.CompileOptions,
 ) (ldflags []string, err error) {
-	if err = checkDownloadAndExtractLib(
-		compileConfig.Url, outputDir,
-		compileConfig.ArchiveSrcDir,
-	); err != nil {
-		return
-	}
 	ldflags = append(ldflags, "-nostdlib", "-L"+outputDir)
 
 	for _, group := range compileConfig.Groups {
@@ -586,16 +585,16 @@ func UseTarget(targetName string) (export Export, err error) {
 	var libcIncludeDir []string
 
 	if config.Libc != "" {
+		var outputDir string
 		var libcLDFlags []string
-		var compileConfig *compile.CompileConfig
+		var compileConfig compile.CompileConfig
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
-		outputDir := filepath.Join(baseDir, config.Libc)
 
-		compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget, config.CPU)
+		outputDir, compileConfig, err = getLibcCompileConfigByName(baseDir, config.Libc, config.LLVMTarget, config.CPU)
 		if err != nil {
 			return
 		}
-		libcLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+		libcLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
 			CC:      export.CC,
 			Linker:  export.Linker,
 			CCFLAGS: ccflags,
@@ -604,24 +603,24 @@ func UseTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		cflags = append(cflags, compileConfig.LibcCFlags...)
+		cflags = append(cflags, compileConfig.ExportCFlags...)
 		ldflags = append(ldflags, libcLDFlags...)
 
-		libcIncludeDir = compileConfig.LibcCFlags
+		libcIncludeDir = compileConfig.ExportCFlags
 		export.Libc = config.Libc
 	}
 
 	if config.RTLib != "" {
+		var outputDir string
 		var rtLibLDFlags []string
-		var compileConfig *compile.CompileConfig
+		var compileConfig compile.CompileConfig
 		baseDir := filepath.Join(cacheRoot(), "crosscompile")
-		outputDir := filepath.Join(baseDir, config.RTLib)
 
-		compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib, config.LLVMTarget)
+		outputDir, compileConfig, err = getRTCompileConfigByName(baseDir, config.RTLib, config.LLVMTarget)
 		if err != nil {
 			return
 		}
-		rtLibLDFlags, err = getOrCompileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+		rtLibLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
 			CC:      export.CC,
 			Linker:  export.Linker,
 			CCFLAGS: ccflags,

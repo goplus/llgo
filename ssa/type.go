@@ -458,7 +458,7 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
 	tParams := sig.Params()
 	n := tParams.Len()
-	hasVArg := hasNameValist(sig)
+	hasVArg := HasNameValist(sig)
 	if hasVArg {
 		n--
 	}

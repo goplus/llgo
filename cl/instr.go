@@ -506,7 +506,11 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	if mthd := call.Method; mthd != nil {
 		o := p.compileValue(b, cv)
 		fn := b.Imethod(o, mthd)
-		args := p.compileValues(b, call.Args, fnNormal)
+		hasVArg := fnNormal
+		if llssa.HasNameValist(call.Signature()) {
+			hasVArg = fnHasVArg
+		}
+		args := p.compileValues(b, call.Args, hasVArg)
 		ret = b.Do(act, fn, args...)
 		return
 	}

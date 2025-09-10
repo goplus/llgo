@@ -139,7 +139,10 @@ populate_linux_sysroot() {
 		/populate_linux_sysroot.sh
 }
 populate_linux_sysroot amd64 "${LINUX_AMD64_PREFIX}" &
+PID1=$!
 populate_linux_sysroot arm64 "${LINUX_ARM64_PREFIX}" &
+PID2=$!
 
 # Wait for both background processes to complete
-wait
+wait $PID1 || exit $?
+wait $PID2 || exit $?
