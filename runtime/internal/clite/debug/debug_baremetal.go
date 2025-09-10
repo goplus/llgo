@@ -1,4 +1,4 @@
-//go:build wasm
+//go:build baremetal
 
 package debug
 
@@ -6,10 +6,6 @@ import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
-)
-
-const (
-	LLGoFiles = "_wrap/debug_wasm.c"
 )
 
 type Info struct {
@@ -39,8 +35,6 @@ func StackTrace(skip int, fn func(fr *Frame) bool) {
 }
 
 func PrintStack(skip int) {
-	print_stack(c.Int(skip + 4))
-}
+	panic("not implemented")
 
-//go:linkname print_stack C.llgo_print_stack
-func print_stack(skip c.Int)
+}

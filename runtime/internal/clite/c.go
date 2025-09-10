@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	LLGoPackage = "decl"
+	// we want to execute init(), link / decl skips executing init()
+	LLGoPackage = true
 )
 
 type (
