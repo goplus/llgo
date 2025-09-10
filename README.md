@@ -63,14 +63,14 @@ This is a simple example of calling the C `printf` function to print `Hello worl
 
 The `_demo` directory contains some C standard libary related demos (it start with `_` to prevent the `go` command from compiling it):
 
-* [hello](_demo/hello/hello.go): call C `printf` to print `Hello world`
-* [concat](_demo/concat/concat.go): call C `fprintf` with `stderr`
-* [qsort](_demo/qsort/qsort.go): call C function with a callback (eg. `qsort`)
+* [hello](_demo/c/hello/hello.go): call C `printf` to print `Hello world`
+* [concat](_demo/c/concat/concat.go): call C `fprintf` with `stderr`
+* [qsort](_demo/c/qsort/qsort.go): call C function with a callback (eg. `qsort`)
 
 To run these demos (If you haven't installed `llgo` yet, please refer to [How to install](#how-to-install)):
 
 ```sh
-cd <demo-directory>  # eg. cd _demo/hello
+cd <demo-directory>  # eg. cd _demo/c/hello
 llgo run .
 ```
 
@@ -88,7 +88,7 @@ import _ "unsafe" // for go:linkname
 func Sqrt(x float64) float64
 ```
 
-You can directly integrate it into [your own code](_demo/linkname/linkname.go):
+You can directly integrate it into [your own code](_demo/c/linkname/linkname.go):
 
 <!-- embedme doc/_readme/llgo_call_c/call_c.go -->
 
@@ -204,17 +204,17 @@ func main() {
 
 Here we define two 3x3 matrices a and b, add them to get x, and then print the result.
 
-The `_pydemo` directory contains some python related demos:
+The `_demo/py/` directory contains some python related demos:
 
-* [callpy](_pydemo/callpy/callpy.go): call Python standard library function `math.sqrt`
-* [pi](_pydemo/pi/pi.go): print python constants `math.pi`
-* [statistics](_pydemo/statistics/statistics.go): define a python list and call `statistics.mean` to get the mean
-* [matrix](_pydemo/matrix/matrix.go): a basic `numpy` demo
+* [callpy](_demo/py/callpy/callpy.go): call Python standard library function `math.sqrt`
+* [pi](_demo/py/pi/pi.go): print python constants `math.pi`
+* [statistics](_demo/py/statistics/statistics.go): define a python list and call `statistics.mean` to get the mean
+* [matrix](_demo/py/matrix/matrix.go): a basic `numpy` demo
 
 To run these demos (If you haven't installed `llgo` yet, please refer to [How to install](#how-to-install)):
 
 ```sh
-cd <demo-directory>  # eg. cd _pydemo/callpy
+cd <demo-directory>  # eg. cd _demo/py/callpy
 llgo run .
 ```
 
@@ -242,7 +242,7 @@ The currently supported libraries include:
 
 Here are some examples related to them:
 
-* [llama2-c](_demo/llama2-c): inference Llama 2 (It's the first llgo AI example)
+* [llama2-c](_demo/c/llama2-c): inference Llama 2 (It's the first llgo AI example)
 * [mkjson](https://github.com/goplus/lib/tree/main/c/cjson/_demo/mkjson/mkjson.go): create a json object and print it
 * [sqlitedemo](https://github.com/goplus/lib/tree/main/c/sqlite/_demo/sqlitedemo/demo.go): a basic sqlite demo
 * [tetris](https://github.com/goplus/lib/tree/main/c/raylib/_demo/tetris/tetris.go): a tetris game based on raylib
@@ -252,11 +252,11 @@ Here are some examples related to them:
 
 All Go syntax (including `cgo`) is already supported. Here are some examples:
 
-* [concat](_demo/concat/concat.go): define a variadic function
-* [genints](_demo/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
+* [concat](_demo/c/concat/concat.go): define a variadic function
+* [genints](_demo/c/genints/genints.go): various forms of closure usage (including C function, recv.method and anonymous function)
 * [errors](_cmptest/errors/errors.go): demo to implement error interface
 * [defer](_cmptest/defer/defer.go): defer demo
-* [goroutine](_demo/goroutine/goroutine.go): goroutine demo
+* [goroutine](_demo/go/goroutine/goroutine.go): goroutine demo
 
 
 ### Defer

@@ -3,7 +3,7 @@ name: Targets
 
 on:
   push:
-    branches: 
+    branches:
       - "**"
       - "!dependabot/**"
   pull_request:
@@ -43,5 +43,5 @@ jobs:
 
       - name: Build targets
         run: |
-          cd _demo/targetsbuild
+          cd _demo/embed/targetsbuild
           bash build.sh

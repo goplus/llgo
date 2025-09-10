@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/goplus/llgo/_demo/async/async"
-	"github.com/goplus/llgo/_demo/async/timeout"
+	"github.com/goplus/llgo/_demo/go/async/async"
+	"github.com/goplus/llgo/_demo/go/async/timeout"
 )
 
 func Sleep(i int, d time.Duration) async.Future[int] {

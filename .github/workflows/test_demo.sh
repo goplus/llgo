@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# llgo run subdirectories under _demo and _pydemo that contain *.go files
+# llgo run subdirectories under _demo that contain *.go files
 total=0
 failed=0
 failed_cases=""
-for d in ./_demo/* ./_pydemo/*; do
+for d in ./_demo/go/* ./_demo/py/* ./_demo/c/*; do
   if [ -d "$d" ] && [ -n "$(ls "$d"/*.go 2>/dev/null)" ]; then
     total=$((total+1))
     echo "Testing $d"
