@@ -9,34 +9,70 @@ import (
 	"github.com/goplus/llgo/internal/crosscompile/compile/rtlib"
 )
 
-// GetCompileConfigByName retrieves libc compilation configuration by name
-// Returns compilation file lists and corresponding cflags
-func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (*compile.CompileConfig, error) {
+// for testing, in testing env, we use fake path, it will cause downloading failure
+var needSkipDownload = false
+
+// getLibcCompileConfigByName retrieves libc compilation configuration by name
+// Returns the actual libc output dir, compilation config and err
+func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (outputDir string, cfg compile.CompileConfig, err error) {
 	if libcName == "" {
-		return nil, fmt.Errorf("libc name cannot be empty")
+		err = fmt.Errorf("libc name cannot be empty")
+		return
 	}
-	libcDir := filepath.Join(baseDir, libcName)
+	var libcDir string
+	var config compile.LibConfig
+	var compileConfig compile.CompileConfig
 
 	switch libcName {
 	case "picolibc":
-		return libc.GetPicolibcConfig(libcDir, target), nil
+		config = libc.GetPicolibcConfig()
+		libcDir = filepath.Join(baseDir, config.String())
+		compileConfig = libc.GetPicolibcCompileConfig(libcDir, target)
 	case "newlib-esp32":
-		return libc.GetNewlibESP32Config(libcDir, target, mcpu), nil
+		config = libc.GetNewlibESP32Config()
+		libcDir = filepath.Join(baseDir, config.String())
+		compileConfig = libc.GetNewlibESP32CompileConfig(libcDir, target, mcpu)
 	default:
-		return nil, fmt.Errorf("unsupported libc: %s", libcName)
+		err = fmt.Errorf("unsupported libc: %s", libcName)
+		return
 	}
+	if needSkipDownload {
+		return libcDir, compileConfig, err
+	}
+
+	if err = checkDownloadAndExtractLib(config.Url, libcDir, config.ResourceSubDir); err != nil {
+		return
+	}
+
+	return libcDir, compileConfig, nil
 }
 
-func getRTCompileConfigByName(baseDir, rtName, target string) (*compile.CompileConfig, error) {
+// getRTCompileConfigByName retrieves runtime library compilation configuration by name
+// Returns the actual libc output dir, compilation config and err
+func getRTCompileConfigByName(baseDir, rtName, target string) (outputDir string, cfg compile.CompileConfig, err error) {
 	if rtName == "" {
-		return nil, fmt.Errorf("rt name cannot be empty")
+		err = fmt.Errorf("rt name cannot be empty")
+		return
 	}
-	rtDir := filepath.Join(baseDir, rtName)
+	var rtDir string
+	var config compile.LibConfig
+	var compileConfig compile.CompileConfig
 
 	switch rtName {
 	case "compiler-rt":
-		return rtlib.GetCompilerRTConfig(rtDir, target), nil
+		config = rtlib.GetCompilerRTConfig()
+		rtDir = filepath.Join(baseDir, config.String())
+		compileConfig = rtlib.GetCompilerRTCompileConfig(rtDir, target)
 	default:
-		return nil, fmt.Errorf("unsupported rt: %s", rtName)
+		err = fmt.Errorf("unsupported rt: %s", rtName)
 	}
+	if needSkipDownload {
+		return rtDir, compileConfig, err
+	}
+
+	if err = checkDownloadAndExtractLib(config.Url, rtDir, config.ResourceSubDir); err != nil {
+		return
+	}
+
+	return rtDir, compileConfig, nil
 }

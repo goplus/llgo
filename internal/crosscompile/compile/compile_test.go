@@ -11,8 +11,8 @@ import (
 	"github.com/goplus/llgo/xtool/nm"
 )
 
-func TestIsCompile(t *testing.T) {
-	t.Run("IsCompile Not Exists", func(t *testing.T) {
+func TestIsCompiled(t *testing.T) {
+	t.Run("IsCompiled Not Exists", func(t *testing.T) {
 		cfg := CompileConfig{
 			Groups: []CompileGroup{
 				{
@@ -25,7 +25,7 @@ func TestIsCompile(t *testing.T) {
 			t.Errorf("unexpected result: should false")
 		}
 	})
-	t.Run("IsCompile Exists", func(t *testing.T) {
+	t.Run("IsCompiled Exists", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "test*.a")
 		if err != nil {
 			t.Error(err)
@@ -206,4 +206,61 @@ func TestCompile(t *testing.T) {
 			t.Errorf("unexpected result: should nil %v", err)
 		}
 	})
+}
+
+func TestLibConfig_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   LibConfig
+		expected string
+	}{
+		{
+			name: "Normal name and version",
+			config: LibConfig{
+				Name:    "picolibc",
+				Version: "1.0",
+			},
+			expected: "picolibc-1.0",
+		},
+		{
+			name: "Empty name",
+			config: LibConfig{
+				Name:    "",
+				Version: "2.5",
+			},
+			expected: "-2.5",
+		},
+		{
+			name: "Empty version",
+			config: LibConfig{
+				Name:    "musl",
+				Version: "",
+			},
+			expected: "musl-",
+		},
+		{
+			name: "Both empty",
+			config: LibConfig{
+				Name:    "",
+				Version: "",
+			},
+			expected: "-",
+		},
+		{
+			name: "Special characters",
+			config: LibConfig{
+				Name:    "glibc++",
+				Version: "v3.2.1",
+			},
+			expected: "glibc++-v3.2.1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.config.String(); got != tt.expected {
+				t.Errorf("String() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
 }

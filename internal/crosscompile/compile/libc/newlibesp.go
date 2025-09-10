@@ -21,16 +21,22 @@ var _libcCCFlags = []string{
 	"-ffreestanding",
 }
 
-const (
-	_newlibUrl             = "https://github.com/goplus/newlib/archive/refs/tags/v0.2.0.tar.gz"
-	_archiveInternalSrcDir = "newlib-0.2.0"
-)
-
+// withDefaultCCFlags appends default C compiler flags to the provided flags
 func withDefaultCCFlags(ccflags []string) []string {
 	return append(ccflags, _libcCCFlags...)
 }
 
-func getNewlibESP32ConfigRISCV(baseDir, target string) *compile.CompileConfig {
+// GetNewlibESP32Config returns the configuration for downloading and building newlib for ESP32
+func GetNewlibESP32Config() compile.LibConfig {
+	return compile.LibConfig{
+		Url:            "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch3.tar.gz",
+		Name:           "newlib-esp32",
+		Version:        "esp-4.3.0_20250211-patch3",
+		ResourceSubDir: "newlib-esp-4.3.0_20250211-patch3",
+	}
+}
+
+func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
 	libcIncludeDir := []string{
@@ -39,11 +45,8 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) *compile.CompileConfig {
 		"-I" + libcDir,
 	}
 
-	return &compile.CompileConfig{
-		Url:           _newlibUrl,
-		Name:          "newlib-esp32",
-		LibcCFlags:    libcIncludeDir,
-		ArchiveSrcDir: _archiveInternalSrcDir,
+	return compile.CompileConfig{
+		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
@@ -1092,7 +1095,7 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) *compile.CompileConfig {
 	}
 }
 
-func getNewlibESP32ConfigXtensa(baseDir, target string) *compile.CompileConfig {
+func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
 	libcIncludeDir := []string{
@@ -1101,11 +1104,8 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) *compile.CompileConfig {
 		"-I" + libcDir,
 	}
 
-	return &compile.CompileConfig{
-		Url:           _newlibUrl,
-		Name:          "newlib-esp32",
-		ArchiveSrcDir: _archiveInternalSrcDir,
-		LibcCFlags:    libcIncludeDir,
+	return compile.CompileConfig{
+		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
@@ -2075,7 +2075,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) *compile.CompileConfig {
 }
 
 // getNewlibESP32Config returns configuration for newlib esp32
-func GetNewlibESP32Config(baseDir, target, mcpu string) *compile.CompileConfig {
+func GetNewlibESP32CompileConfig(baseDir, target, mcpu string) compile.CompileConfig {
 	if strings.Contains(target, "riscv32") {
 		return getNewlibESP32ConfigRISCV(baseDir, target)
 	}

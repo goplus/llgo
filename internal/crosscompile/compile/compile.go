@@ -27,12 +27,16 @@ type CompileGroup struct {
 	LDFlags        []string // Linker flags
 }
 
+// IsCompiled checks if the compile group has already been compiled by verifying
+// if the output archive file exists in the specified directory
 func (g CompileGroup) IsCompiled(outputDir string) bool {
 	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
 	_, err := os.Stat(archive)
 	return err == nil
 }
 
+// Compile compiles all source files in the group into a static library archive
+// If the archive already exists, compilation is skipped
 func (g CompileGroup) Compile(
 	outputDir string, options CompileOptions,
 ) (err error) {
@@ -95,9 +99,19 @@ func (g CompileGroup) Compile(
 
 // CompileConfig represents compilation configuration
 type CompileConfig struct {
-	Url           string
-	Name          string // compile name (e.g., "picolibc", "musl", "glibc")
-	Groups        []CompileGroup
-	ArchiveSrcDir string
-	LibcCFlags    []string
+	Groups       []CompileGroup
+	ExportCFlags []string
+}
+
+type LibConfig struct {
+	Url            string
+	Name           string // Library name (e.g., "picolibc", "musl", "glibc")
+	Version        string
+	ResourceSubDir string
+}
+
+// String returns a string representation of the library configuration
+// in the format "name-version"
+func (cfg LibConfig) String() string {
+	return fmt.Sprintf("%s-%s", cfg.Name, cfg.Version)
 }

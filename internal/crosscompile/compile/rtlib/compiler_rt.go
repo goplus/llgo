@@ -100,10 +100,17 @@ func withPlatformSpecifiedFiles(baseDir, target string, files []string) []string
 	return append(files, platformSpecifiedFiles(builtinsDir, target)...)
 }
 
-func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
-	return &compile.CompileConfig{
-		Url:           "https://github.com/goplus/compiler-rt/archive/refs/tags/v0.1.0.tar.gz",
-		ArchiveSrcDir: "compiler-rt-0.1.0",
+func GetCompilerRTConfig() compile.LibConfig {
+	return compile.LibConfig{
+		Name:           "compiler-rt",
+		Url:            "https://github.com/goplus/compiler-rt/archive/refs/tags/xtensa_release_19.1.2.tar.gz",
+		Version:        "xtensa_release_19.1.2",
+		ResourceSubDir: "compiler-rt-xtensa_release_19.1.2",
+	}
+}
+
+func GetCompilerRTCompileConfig(baseDir, target string) compile.CompileConfig {
+	return compile.CompileConfig{
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: fmt.Sprintf("libclang_builtins-%s.a", target),
@@ -277,7 +284,8 @@ func GetCompilerRTConfig(baseDir, target string) *compile.CompileConfig {
 					"-Werror=return-stack-address",
 					"-Werror=sizeof-array-decay",
 					"-Werror=format-insufficient-args",
-					"-Wformat -std=c11",
+					"-Wformat",
+					"-std=c11",
 					"-fno-builtin",
 					"-fvisibility=hidden",
 					"-fomit-frame-pointer",

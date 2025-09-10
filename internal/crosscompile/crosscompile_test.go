@@ -37,10 +37,10 @@ func TestUseCrossCompileSDK(t *testing.T) {
 			name:          "Same Platform",
 			goos:          runtime.GOOS,
 			goarch:        runtime.GOARCH,
-			expectSDK:     true,  // Changed: now we expect flags even for same platform
-			expectCCFlags: true,  // Changed: CCFLAGS will contain sysroot
-			expectCFlags:  false, // Changed: CFLAGS will not contain include paths
-			expectLDFlags: false, // Changed: LDFLAGS will not contain library paths
+			expectSDK:     true,  // We expect flags even for same platform
+			expectCCFlags: true,  // CCFLAGS will contain sysroot
+			expectCFlags:  false, // CFLAGS will not contain include paths
+			expectLDFlags: false, // LDFLAGS will not contain library paths
 		},
 		{
 			name:          "WASM Target",
