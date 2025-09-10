@@ -26,8 +26,8 @@ func TestGetNewlibESP32Config_LibConfig(t *testing.T) {
 	}
 
 	expectedArchiveSrcDir := "newlib-esp-4.3.0_20250211-patch3"
-	if config.ArchiveSrcDir != expectedArchiveSrcDir {
-		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", expectedArchiveSrcDir, config.ArchiveSrcDir)
+	if config.ResourceSubDir != expectedArchiveSrcDir {
+		t.Errorf("Expected ResourceSubDir '%s', got '%s'", expectedArchiveSrcDir, config.ResourceSubDir)
 	}
 
 	// Test String() method
@@ -57,8 +57,8 @@ func TestGetPicolibcConfig_LibConfig(t *testing.T) {
 	}
 
 	expectedArchiveSrcDir := "picolibc-main"
-	if config.ArchiveSrcDir != expectedArchiveSrcDir {
-		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", expectedArchiveSrcDir, config.ArchiveSrcDir)
+	if config.ResourceSubDir != expectedArchiveSrcDir {
+		t.Errorf("Expected ResourceSubDir '%s', got '%s'", expectedArchiveSrcDir, config.ResourceSubDir)
 	}
 
 	// Test String() method

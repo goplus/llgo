@@ -10,10 +10,10 @@ import (
 // GetPicolibcConfig returns the configuration for downloading and building picolibc
 func GetPicolibcConfig() compile.LibConfig {
 	return compile.LibConfig{
-		Name:          "picolibc",
-		Version:       "v0.1.0",
-		Url:           "https://github.com/goplus/picolibc/archive/refs/heads/main.zip",
-		ArchiveSrcDir: "picolibc-main",
+		Name:           "picolibc",
+		Version:        "v0.1.0",
+		Url:            "https://github.com/goplus/picolibc/archive/refs/heads/main.zip",
+		ResourceSubDir: "picolibc-main",
 	}
 }
 

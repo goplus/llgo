@@ -40,7 +40,7 @@ func getLibcCompileConfigByName(baseDir, libcName, target, mcpu string) (outputD
 		return libcDir, compileConfig, err
 	}
 
-	if err = checkDownloadAndExtractLib(config.Url, libcDir, config.ArchiveSrcDir); err != nil {
+	if err = checkDownloadAndExtractLib(config.Url, libcDir, config.ResourceSubDir); err != nil {
 		return
 	}
 
@@ -70,7 +70,7 @@ func getRTCompileConfigByName(baseDir, rtName, target string) (outputDir string,
 		return rtDir, compileConfig, err
 	}
 
-	if err = checkDownloadAndExtractLib(config.Url, rtDir, config.ArchiveSrcDir); err != nil {
+	if err = checkDownloadAndExtractLib(config.Url, rtDir, config.ResourceSubDir); err != nil {
 		return
 	}
 

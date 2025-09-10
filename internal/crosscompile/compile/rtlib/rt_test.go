@@ -25,8 +25,8 @@ func TestGetCompilerRTConfig_LibConfig(t *testing.T) {
 	}
 
 	expectedArchiveSrcDir := "compiler-rt-xtensa_release_19.1.2"
-	if config.ArchiveSrcDir != expectedArchiveSrcDir {
-		t.Errorf("Expected ArchiveSrcDir '%s', got '%s'", expectedArchiveSrcDir, config.ArchiveSrcDir)
+	if config.ResourceSubDir != expectedArchiveSrcDir {
+		t.Errorf("Expected ResourceSubDir '%s', got '%s'", expectedArchiveSrcDir, config.ResourceSubDir)
 	}
 
 	// Test String() method

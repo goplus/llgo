@@ -104,10 +104,10 @@ type CompileConfig struct {
 }
 
 type LibConfig struct {
-	Url           string
-	Name          string // Library name (e.g., "picolibc", "musl", "glibc")
-	Version       string
-	ArchiveSrcDir string
+	Url            string
+	Name           string // Library name (e.g., "picolibc", "musl", "glibc")
+	Version        string
+	ResourceSubDir string
 }
 
 // String returns a string representation of the library configuration
