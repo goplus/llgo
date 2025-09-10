@@ -18,9 +18,12 @@
 
 package c
 
-import _ "unsafe"
+import (
+	_ "unsafe"
 
-// initialized by z_print because LLGoPackage skips calling init()
-var Stdin FilePtr
-var Stdout FilePtr
-var Stderr FilePtr
+	"github.com/goplus/lib/c"
+)
+
+var Stdin FilePtr = c.Fopen(c.Str("/dev/stdin"), c.Str("r"))
+var Stdout FilePtr = c.Fopen(c.Str("/dev/stdout"), c.Str("w"))
+var Stderr FilePtr = Stdout
