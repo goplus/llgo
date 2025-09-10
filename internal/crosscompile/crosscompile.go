@@ -15,6 +15,7 @@ import (
 	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
+	envllvm "github.com/goplus/llgo/xtool/env/llvm"
 )
 
 type Export struct {
@@ -108,7 +109,7 @@ func getESPClangRoot(forceEspClang bool) (clangRoot string, err error) {
 	llgoRoot := env.LLGoROOT()
 
 	// First check if clang exists in LLGoROOT
-	espClangRoot := filepath.Join(llgoRoot, "crosscompile", "clang")
+	espClangRoot := filepath.Join(llgoRoot, envllvm.CrosscompileClangPath)
 	if _, err = os.Stat(espClangRoot); err == nil {
 		clangRoot = espClangRoot
 		return

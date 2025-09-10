@@ -38,7 +38,7 @@ runs:
         Hello, LLGo!
         Hello, LLGo!
         Hello LLGo by cpp/std.Str"
-        OUTPUT=$(llgo run . 2>&1)
+        OUTPUT=$(llgo run . 2>&1 | tee /dev/stderr)
         if echo "$OUTPUT" | grep -qF "$EXPECTED"; then
             echo "Basic test passed"
         else
@@ -50,4 +50,14 @@ runs:
             exit 1
         fi
 
-        #TODO(zzy): Test embed targets, need dispatch target dir
+        cd ../..
+        mkdir -p _test/emb && cd _test/emb
+        cat > main.go << 'EOL'
+        package main
+
+        func main() {
+        }
+        EOL
+        llgo build -v -target esp32-coreboard-v2 -o demo.out .
+        test -f demo.out.elf && echo "ESP32 cross-compilation test passed: demo.out.elf generated"
+        exit $?

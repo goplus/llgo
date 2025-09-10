@@ -35,3 +35,6 @@ runs:
     - name: Check file
       run: tree .sysroot
       shell: bash
+    - name: Get Esp clang
+      run: bash .github/workflows/download_esp_clang.sh
+      shell: bash
