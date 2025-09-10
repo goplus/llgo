@@ -256,7 +256,7 @@ func testDivisionFunctions() {
 
 	// Test udivdi3 - unsigned 64-bit division
 	assertEqualUint64("udivdi3", udivdi3(100, 5), 20)
-	assertEqualUint64("udivdi3", udivdi3(18446744073709551615, 3), 6148914691236517205) // uint64最大值除以3
+	assertEqualUint64("udivdi3", udivdi3(18446744073709551615, 3), 6148914691236517205)
 	assertEqualUint64("udivdi3", udivdi3(0, 123456789), 0)
 
 	// Test divdi3 - signed 64-bit division
@@ -346,7 +346,7 @@ func testShiftFunctions() {
 
 	// Test lshrdi3 - logical shift right
 	assertEqualUint64("lshrdi3", lshrdi3(1024, 10), 1)
-	assertEqualUint64("lshrdi3", lshrdi3(0x8000000000000000, 63), 1) // 无符号移位
+	assertEqualUint64("lshrdi3", lshrdi3(0x8000000000000000, 63), 1)
 }
 
 func testBitManipulationFunctions() {

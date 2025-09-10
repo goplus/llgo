@@ -140,7 +140,6 @@ func strerror_r(errnum c.Int, buf *c.Char, buflen c.SizeT) c.Int
 //go:linkname strverscmp C.strverscmp
 func strverscmp(s1, s2 *c.Char) c.Int
 
-// 内存分配函数
 //
 //go:linkname malloc C.malloc
 func malloc(size c.SizeT) unsafe.Pointer
@@ -190,7 +189,6 @@ func malloc_info(options c.Int, stream c.FilePtr) c.Int
 //go:linkname mallopt C.mallopt
 func mallopt(param, value c.Int) c.Int
 
-// 标准I/O函数
 //
 //go:linkname fopen C.fopen
 func fopen(pathname, mode *c.Char) c.FilePtr
