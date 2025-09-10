@@ -605,7 +605,7 @@ func TestESPClangDownloadWhenNotExists(t *testing.T) {
 	}
 
 	server := createTestServer(t, map[string]string{
-		"clang-esp-19.1.2_20250820-linux.tar.xz": string(archiveContent),
+		fmt.Sprintf("clang-esp-%s-linux.tar.xz", espClangVersion): string(archiveContent),
 	})
 	defer server.Close()
 
