@@ -20,10 +20,8 @@ package c
 
 import (
 	_ "unsafe"
-
-	"github.com/goplus/lib/c"
 )
 
-var Stdin FilePtr = c.Fopen(c.Str("/dev/stdin"), c.Str("r"))
-var Stdout FilePtr = c.Fopen(c.Str("/dev/stdout"), c.Str("w"))
+var Stdin FilePtr = Fopen(Str("/dev/stdin"), Str("r"))
+var Stdout FilePtr = Fopen(Str("/dev/stdout"), Str("w"))
 var Stderr FilePtr = Stdout
