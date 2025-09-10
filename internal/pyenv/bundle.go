@@ -43,6 +43,19 @@ func BundleOnedir(app string) error {
 		_ = exec.Command("install_name_tool", "-id", "@rpath/"+filepath.Base(libDst), libDst).Run()
 	}
 
+	// 2.1) 复制 PYHOME/lib 下其它所有动态库到 <exe_dir>/lib/python/lib
+	if all, err := listDynLibs(filepath.Join(pyHome, "lib")); err == nil {
+		for _, f := range all {
+			if filepath.Base(f) == filepath.Base(libSrc) {
+				continue
+			}
+			dst := filepath.Join(libDstDir, filepath.Base(f))
+			if err := copyFile(f, dst); err != nil {
+				return err
+			}
+		}
+	}
+
 	// 3) Standard library (exclude __pycache__, test/idlelib/tkinter as needed)
 	stdSrc := filepath.Join(pyHome, "lib", "python3.12")
 	return copyTree(stdSrc, stdDst, func(rel string, d fs.DirEntry) bool {
@@ -59,12 +72,12 @@ func BundleOnedir(app string) error {
 		if r == "test" || strings.HasPrefix(r, "test/") {
 			return false
 		}
-		if r == "idlelib" || strings.HasPrefix(r, "idlelib/") {
-			return false
-		}
-		if r == "tkinter" || strings.HasPrefix(r, "tkinter/") {
-			return false
-		}
+		// if r == "idlelib" || strings.HasPrefix(r, "idlelib/") {
+		// 	return false
+		// }
+		// if r == "tkinter" || strings.HasPrefix(r, "tkinter/") {
+		// 	return false
+		// }
 		return true
 	})
 }
@@ -77,7 +90,24 @@ func BundleOnedirApp(exe string) error {
 		return err
 	}
 	exeDir := filepath.Dir(exe)
-	binDir := filepath.Join(exeDir, "bin")
+	distDir := filepath.Join(exeDir, "dist")
+	if err := os.MkdirAll(distDir, 0755); err != nil {
+		return err
+	}
+
+	srcLib := filepath.Join(exeDir, "lib")
+	dstLib := filepath.Join(distDir, "lib")
+	if err := os.Rename(srcLib, dstLib); err != nil {
+		if err := os.MkdirAll(dstLib, 0755); err != nil {
+			return err
+		}
+		if err := copyTree(srcLib, dstLib, func(rel string, d fs.DirEntry) bool { return true }); err != nil {
+			return err
+		}
+		_ = os.RemoveAll(srcLib)
+	}
+
+	binDir := filepath.Join(distDir, "bin")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return err
 	}
@@ -88,6 +118,10 @@ func BundleOnedirApp(exe string) error {
 	if runtime.GOOS == "darwin" {
 		rpath := "@executable_path/../lib/python/lib"
 		_ = exec.Command("install_name_tool", "-add_rpath", rpath, newExe).Run()
+	}
+
+	if err := os.Remove(exe); err != nil && !os.IsNotExist(err) {
+		return err
 	}
 	return nil
 }
@@ -176,6 +210,18 @@ func BuildPyBundleZip() ([]byte, error) {
 			return nil, err
 		}
 	}
+	if all, err := listDynLibs(filepath.Join(pyHome, "lib")); err == nil {
+		for _, f := range all {
+			if filepath.Base(f) == filepath.Base(libSrc) {
+				continue
+			}
+			dst := filepath.ToSlash(filepath.Join("lib", "python", "lib", filepath.Base(f)))
+			if err := addFileToZip(zw, f, dst, 0644); err != nil {
+				_ = zw.Close()
+				return nil, err
+			}
+		}
+	}
 	// stdlib
 	if err := filepath.WalkDir(stdSrc, func(p string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -199,18 +245,18 @@ func BuildPyBundleZip() ([]byte, error) {
 			}
 			return nil
 		}
-		if r == "idlelib" || strings.HasPrefix(r, "idlelib/") {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if r == "tkinter" || strings.HasPrefix(r, "tkinter/") {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
+		// if r == "idlelib" || strings.HasPrefix(r, "idlelib/") {
+		// 	if d.IsDir() {
+		// 		return filepath.SkipDir
+		// 	}
+		// 	return nil
+		// }
+		// if r == "tkinter" || strings.HasPrefix(r, "tkinter/") {
+		// 	if d.IsDir() {
+		// 		return filepath.SkipDir
+		// 	}
+		// 	return nil
+		// }
 		if d.IsDir() {
 			return nil
 		}
@@ -300,7 +346,6 @@ import (
     "os"
     "os/exec"
     "path/filepath"
-    "runtime"
 )
 
 //go:embed payload.zip
@@ -319,15 +364,10 @@ func main() {
     if err := os.MkdirAll(filepath.Dir(appPath), 0755); err != nil { panic(err) }
     if err := os.WriteFile(appPath, appBin, 0755); err != nil { panic(err) }
 
-    libdir := filepath.Join(root, "lib", "python", "lib")
-    if runtime.GOOS == "darwin" {
-        prependEnv("DYLD_LIBRARY_PATH", libdir)
-    } else if runtime.GOOS == "linux" {
-        prependEnv("LD_LIBRARY_PATH", libdir)
-    }
     os.Setenv("PYTHONHOME", filepath.Join(root, "lib", "python"))
 
-    cmd := exec.Command(appPath)
+    args := os.Args[1:]
+    cmd := exec.Command(appPath, args...)
     cmd.Stdin = os.Stdin
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
@@ -367,4 +407,30 @@ func prependEnv(key, dir string) {
     os.Setenv(key, dir+string(os.PathListSeparator)+cur)
 }
 `
+}
+
+func isDynLib(name string) bool {
+	if runtime.GOOS == "darwin" {
+		return strings.HasSuffix(name, ".dylib")
+	}
+	// Linux / others
+	return strings.HasSuffix(name, ".so") || strings.Contains(name, ".so.")
+}
+
+func listDynLibs(dir string) ([]string, error) {
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, e := range ents {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if isDynLib(name) {
+			out = append(out, filepath.Join(dir, name))
+		}
+	}
+	return out, nil
 }

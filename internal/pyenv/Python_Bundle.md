@@ -57,6 +57,7 @@ Copy required components next to the executable after the build:
 
 - `<exe_dir>/your_app`
 - `<exe_dir>/python/lib/libpython3.12.dylib` (install_name: `@rpath/libpython3.12.dylib`)
+- `<exe_dir>/python/lib/libxxx.dylib`
 - `<exe_dir>/python/lib/python3.12/` (with `lib-dynload/`, `site-packages/`)
 
 ### onefile

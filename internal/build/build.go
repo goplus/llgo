@@ -663,10 +663,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
 
-	// Default bundling (onedir; exclude site-packages)
-	if needPyInit {
-		check(pyenv.BundleOnedir(app))
-	}
+	// // Default bundling (onedir; exclude site-packages)
+	// if needPyInit {
+	// 	check(pyenv.BundleOnedir(app))
+	// }
 
 	switch mode {
 	case ModeTest:
