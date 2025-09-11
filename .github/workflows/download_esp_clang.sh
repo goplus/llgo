@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-ESP_CLANG_VERSION="19.1.2_20250905-3"
-BASE_URL="https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/${ESP_CLANG_VERSION}"
-
+ESP_CLANG_VERSION="v0.0.1-llvm20-test.1"
+BASE_URL="https://github.com/luoliwoshang/espressif-llvm-project-prebuilt/releases/download/${ESP_CLANG_VERSION}"
+# https://github.com/luoliwoshang/espressif-llvm-project-prebuilt/releases/download/v0.0.1-llvm20-test.1/clang-esp-esp-20.1.1_20250903-aarch64-apple-darwin.tar.xz
 get_esp_clang_platform() {
     local platform="$1"
     local os="${platform%-*}"
@@ -34,7 +34,7 @@ get_esp_clang_platform() {
 get_filename() {
     local platform="$1"
     local platform_suffix=$(get_esp_clang_platform "${platform}")
-    echo "clang-esp-${ESP_CLANG_VERSION}-${platform_suffix}.tar.xz"
+    echo "clang-esp-esp-20.1.1_20250903-${platform_suffix}.tar.xz"
 }
 
 download_and_extract() {
