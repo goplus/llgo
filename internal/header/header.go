@@ -151,7 +151,6 @@ func (hw *cheaderWriter) processSignatureTypes(sig *types.Signature, visiting ma
 		}
 	}
 	return nil
-	return nil
 }
 
 // goCTypeName returns the C type name for a Go type
