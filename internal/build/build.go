@@ -805,6 +805,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
+	buildArgs = append(buildArgs, "--cref", "--Map=t.map")
 
 	buildArgs = append(buildArgs, objFiles...)
 
@@ -899,6 +900,7 @@ source_filename = "main"
 %s
 declare void @"%s.init"()
 declare void @"%s.main"()
+declare void @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap"()
 define weak void @runtime.init() {
   ret void
 }
@@ -914,6 +916,7 @@ define weak void @"syscall.init"() {
 _llgo_0:
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap"()
   %s
   %s
   %s
