@@ -55,6 +55,17 @@ runs:
         cat > main.go << 'EOL'
         package main
 
+        func direntNamePtr(name any) {
+          switch name.(type) {
+          case [1024]int8:
+            return
+          case [256]int8:
+            return
+          case [256]uint8:
+            return
+          }
+        }
+
         func main() {
         }
         EOL
