@@ -11,6 +11,12 @@ var _heapStart [0]byte
 //go:linkname _heapEnd _heapEnd
 var _heapEnd [0]byte
 
+//go:linkname _stackEnd __stack_end
+var _stackEnd [0]byte
+
+//go:linkname _stackStart __stack
+var _stackStart [0]byte
+
 //go:linkname _globals_start _globals_start
 var _globals_start [0]byte
 
@@ -23,6 +29,8 @@ var (
 	HeapEnd       uintptr
 	GlobalsStart  uintptr
 	GlobalsEnd    uintptr
+	StackStart    uintptr
+	StackEnd      uintptr
 	MetadataStart unsafe.Pointer
 	EndBlock      uintptr
 
@@ -93,6 +101,8 @@ func initHeap() {
 	MetadataStart = unsafe.Pointer(HeapEnd - metadataSize)
 	EndBlock = (uintptr(MetadataStart) - HeapStart) / bytesPerBlock
 	ZeroSizedAlloc = unsafe.Pointer(&zeroSizedAlloc)
+	StackStart = uintptr(unsafe.Pointer(&_stackStart))
+	StackEnd = uintptr(unsafe.Pointer(&_stackEnd))
 
 	memset(MetadataStart, 0, metadataSize)
 }

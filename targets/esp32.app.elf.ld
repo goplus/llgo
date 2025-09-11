@@ -27,9 +27,10 @@ SECTIONS
 
   .stack (NOLOAD) :
   {
-      . = ALIGN(16);
-      . += 16K;
-      __stack = .;
+    __stack_end = .;
+    . = ALIGN(16);
+    . += 16K;
+    __stack = .;
   }
 
 

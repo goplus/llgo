@@ -165,6 +165,11 @@ func isOnHeap(ptr uintptr) bool {
 	return ptr >= heap.HeapStart && ptr < uintptr(heap.MetadataStart)
 }
 
+//export malloc
+func malloc(size uintptr) unsafe.Pointer {
+	return Alloc(size)
+}
+
 // alloc tries to find some free space on the heap, possibly doing a garbage
 // collection cycle if needed. If no space is free, it panics.
 //
@@ -480,10 +485,11 @@ func growHeap() bool {
 }
 
 func findGlobals(found func(start, end uintptr)) {
-	found(heap.HeapStart, heap.HeapEnd)
+	found(heap.GlobalsStart, heap.GlobalsEnd)
 }
 
 func gcMarkReachable() {
+	markRoots(heap.StackEnd, heap.StackStart)
 	findGlobals(markRoots)
 }
 func gcResumeWorld() {
