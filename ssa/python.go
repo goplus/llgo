@@ -593,6 +593,9 @@ func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObj
 		obj.InitNil()
 		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
+	if recv := sig.Recv(); recv != nil {
+		sig = FuncAddCtx(recv, sig)
+	}
 	ty := &aType{obj.ll, rawType{types.NewPointer(sig)}, vkPyFuncRef}
 	expr := Expr{obj.impl, ty}
 	ret := &aPyObjRef{expr, obj}
@@ -637,7 +640,7 @@ func (p Package) pyLoadModSyms(b Builder) {
 }
 
 func modOf(name string) string {
-	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
+	if pos := strings.IndexByte(name, '$'); pos > 0 {
 		return name[:pos]
 	}
 	panic("unreachable")
