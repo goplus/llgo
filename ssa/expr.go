@@ -1344,7 +1344,7 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 // -----------------------------------------------------------------------------
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
-	if st, ok := t.Underlying().(*types.Struct); ok && isClosure(st) {
+	if st, ok := t.Underlying().(*types.Struct); ok && IsClosure(st) {
 		if v.kind != vkClosure {
 			return b.Pkg.closureStub(b, t, v)
 		}

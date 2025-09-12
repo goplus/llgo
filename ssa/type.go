@@ -411,7 +411,7 @@ func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {
 func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind) {
 	fields := p.toLLVMFields(raw)
 	ret = p.ctx.StructType(fields, false)
-	if isClosure(raw) {
+	if IsClosure(raw) {
 		kind = vkClosure
 	} else {
 		kind = vkStruct
@@ -419,7 +419,7 @@ func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind)
 	return
 }
 
-func isClosure(raw *types.Struct) bool {
+func IsClosure(raw *types.Struct) bool {
 	n := raw.NumFields()
 	if n == 2 {
 		f1, f2 := raw.Field(0), raw.Field(1)
@@ -508,7 +508,7 @@ func (p Program) toNamed(raw *types.Named) Type {
 	case *types.Struct:
 		name := p.llvmNameOf(raw)
 		kind := vkStruct
-		if isClosure(t) {
+		if IsClosure(t) {
 			kind = vkClosure
 		}
 		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, kind}

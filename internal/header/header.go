@@ -113,6 +113,9 @@ func (hw *cheaderWriter) processDependentTypes(t types.Type, visiting map[string
 		// For named types, handle the underlying type dependencies
 		underlying := typ.Underlying()
 		if structType, ok := underlying.(*types.Struct); ok {
+			if ssa.IsClosure(structType) {
+				return fmt.Errorf("closure type %s can't export to C header", typ.Obj().Name())
+			}
 			// For named struct types, handle field dependencies directly
 			for i := 0; i < structType.NumFields(); i++ {
 				field := structType.Field(i)
@@ -216,6 +219,9 @@ func (hw *cheaderWriter) goCTypeName(t types.Type) string {
 	case *types.Interface:
 		return "GoInterface"
 	case *types.Struct:
+		if ssa.IsClosure(typ) {
+			panic("closure type can't export to C header")
+		}
 		// For anonymous structs, generate a descriptive name
 		var fields []string
 		for i := 0; i < typ.NumFields(); i++ {
@@ -230,10 +236,39 @@ func (hw *cheaderWriter) goCTypeName(t types.Type) string {
 		return fmt.Sprintf("%s_%s", pkg.Name(), typ.Obj().Name())
 	case *types.Signature:
 		// Function types are represented as function pointers in C
-		// For simplicity, we use void* to represent function pointers
-		return "void*"
+		// Generate proper function pointer syntax
+		return hw.generateFunctionPointerType(typ)
 	}
 	panic(fmt.Errorf("unsupported type: %v", t))
+}
+
+// generateFunctionPointerType generates C function pointer type for Go function signatures
+func (hw *cheaderWriter) generateFunctionPointerType(sig *types.Signature) string {
+	// Generate return type
+	var returnType string
+	results := sig.Results()
+	if results == nil || results.Len() == 0 {
+		returnType = "void"
+	} else if results.Len() == 1 {
+		returnType = hw.goCTypeName(results.At(0).Type())
+	} else {
+		panic("multiple return values can't export to C header")
+	}
+
+	// Generate parameter types
+	var paramTypes []string
+	params := sig.Params()
+	if params == nil || params.Len() == 0 {
+		paramTypes = []string{"void"}
+	} else {
+		for i := 0; i < params.Len(); i++ {
+			paramType := hw.goCTypeName(params.At(i).Type())
+			paramTypes = append(paramTypes, paramType)
+		}
+	}
+
+	// Return function pointer type: returnType (*)(paramType1, paramType2, ...)
+	return fmt.Sprintf("%s (*)(%s)", returnType, strings.Join(paramTypes, ", "))
 }
 
 // generateTypedef generates C typedef declaration for complex types
@@ -248,10 +283,41 @@ func (hw *cheaderWriter) generateTypedef(t types.Type) string {
 			// For named struct types, generate the typedef directly
 			return hw.generateNamedStructTypedef(typ, structType)
 		}
+
+		cTypeName := hw.goCTypeName(typ)
+
+		// Special handling for function types
+		if sig, ok := underlying.(*types.Signature); ok {
+			// Generate return type
+			var returnType string
+			results := sig.Results()
+			if results == nil || results.Len() == 0 {
+				returnType = "void"
+			} else if results.Len() == 1 {
+				returnType = hw.goCTypeName(results.At(0).Type())
+			} else {
+				panic("multiple return values can't export to C header")
+			}
+
+			// Generate parameter types
+			var paramTypes []string
+			params := sig.Params()
+			if params == nil || params.Len() == 0 {
+				paramTypes = []string{"void"}
+			} else {
+				for i := 0; i < params.Len(); i++ {
+					paramType := hw.goCTypeName(params.At(i).Type())
+					paramTypes = append(paramTypes, paramType)
+				}
+			}
+
+			// Generate proper function pointer typedef: typedef returnType (*typeName)(params);
+			return fmt.Sprintf("typedef %s (*%s)(%s);", returnType, cTypeName, strings.Join(paramTypes, ", "))
+		}
+
 		// For other named types, create a typedef to the underlying type
 		underlyingCType := hw.goCTypeName(underlying)
 		if underlyingCType != "" {
-			cTypeName := hw.goCTypeName(typ)
 			return fmt.Sprintf("typedef %s %s;", underlyingCType, cTypeName)
 		}
 	}
@@ -310,6 +376,75 @@ func (hw *cheaderWriter) ensureArrayStruct(arr *types.Array) string {
 	}
 
 	return structName
+}
+
+// generateParameterDeclaration generates C parameter declaration for function parameters
+func (hw *cheaderWriter) generateParameterDeclaration(paramType types.Type, paramName string) string {
+	var cType string
+
+	switch typ := paramType.(type) {
+	case *types.Array:
+		// Handle multidimensional arrays by collecting all dimensions
+		var dimensions []int64
+		baseType := types.Type(typ)
+
+		// Traverse all array dimensions
+		for {
+			if arr, ok := baseType.(*types.Array); ok {
+				dimensions = append(dimensions, arr.Len())
+				baseType = arr.Elem()
+			} else {
+				break
+			}
+		}
+
+		// Get base element type
+		elemType := hw.goCTypeName(baseType)
+
+		// For parameters, preserve all array dimensions
+		// In C, array parameters need special handling for syntax
+		cType = elemType
+
+		// Store dimensions for later use with parameter name
+		var dimStr strings.Builder
+		for _, dim := range dimensions {
+			dimStr.WriteString(fmt.Sprintf("[%d]", dim))
+		}
+
+		// For single dimension, we can use pointer syntax
+		if len(dimensions) == 1 {
+			cType = elemType + "*"
+		} else {
+			// For multi-dimensional, we need to handle it when adding parameter name
+			// Store the dimension info in a special way
+			cType = elemType + "ARRAY_DIMS" + dimStr.String()
+		}
+	case *types.Pointer:
+		pointeeType := hw.goCTypeName(typ.Elem())
+		cType = pointeeType + "*"
+	default:
+		// Regular types
+		cType = hw.goCTypeName(paramType)
+	}
+
+	// Handle special array dimension syntax
+	if strings.Contains(cType, "ARRAY_DIMS") {
+		parts := strings.Split(cType, "ARRAY_DIMS")
+		elemType := parts[0]
+		dimStr := parts[1]
+
+		if paramName == "" {
+			// For unnamed parameters, keep dimension info: type[dim1][dim2]
+			return elemType + dimStr
+		}
+		// For named parameters, use proper array syntax: type name[dim1][dim2]
+		return elemType + " " + paramName + dimStr
+	}
+
+	if paramName == "" {
+		return cType
+	}
+	return cType + " " + paramName
 }
 
 // generateFieldDeclaration generates C field declaration with correct array syntax
@@ -461,15 +596,9 @@ func (hw *cheaderWriter) writeFunctionDecl(fullName, linkName string, fn ssa.Fun
 		}
 
 		paramName := param.Name()
-		if paramName == "" {
-			paramName = fmt.Sprintf("param%d", i)
-		}
 
-		// Use generateFieldDeclaration logic for consistent parameter syntax
-		paramDecl := hw.generateFieldDeclaration(paramType, paramName)
-		// Remove the leading spaces and semicolon to get just the declaration
-		paramDecl = strings.TrimSpace(paramDecl)
-		paramDecl = strings.TrimSuffix(paramDecl, ";")
+		// Generate parameter declaration
+		paramDecl := hw.generateParameterDeclaration(paramType, paramName)
 		params = append(params, paramDecl)
 	}
 
@@ -571,7 +700,7 @@ func genHeader(p ssa.Program, pkgs []ssa.Package, w io.Writer) error {
 			link := exports[name] // link is cName
 			fn := pkg.FuncOf(link)
 			if fn == nil {
-				continue
+				return fmt.Errorf("function %s not found", link)
 			}
 
 			// Write function declaration with proper C types

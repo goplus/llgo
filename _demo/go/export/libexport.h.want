@@ -84,6 +84,12 @@ typedef intptr_t main_MyInt;
 
 typedef GoString main_MyString;
 
+typedef intptr_t (*main_IntCallback)(intptr_t);
+
+typedef GoString (*main_StringCallback)(GoString);
+
+typedef void (*main_VoidCallback)(void);
+
 GoString
 Concat(GoString a, GoString b);
 
@@ -129,11 +135,14 @@ CreateXType(int32_t id, GoString name, double value, _Bool flag);
 void
 HelloWorld(void);
 
-void
+intptr_t
 LinkNodes(main_Node* first, main_Node* second);
 
 GoString
 MultipleParams(int8_t a, uint16_t b, int32_t c, uint64_t d, float e, double f, GoString g, _Bool h);
+
+int32_t
+NoParamNames(int8_t, int16_t, _Bool);
 
 intptr_t
 NoParams(void);
@@ -175,7 +184,7 @@ int8_t
 ProcessInt8(int8_t x);
 
 intptr_t
-ProcessIntArray(intptr_t arr[5]);
+ProcessIntArray(intptr_t* arr);
 
 intptr_t
 ProcessIntChannel(GoChan ch);
@@ -216,6 +225,9 @@ ProcessString(GoString s);
 intptr_t
 ProcessStringMap(GoMap m);
 
+double
+ProcessThreeUnnamedParams(intptr_t a, GoString s, _Bool b);
+
 uintptr_t
 ProcessUint(uintptr_t x);
 
@@ -236,6 +248,15 @@ ProcessUintptr(uintptr_t x);
 
 void*
 ProcessUnsafePointer(void* p);
+
+intptr_t
+ProcessWithIntCallback(intptr_t x, main_IntCallback callback);
+
+GoString
+ProcessWithStringCallback(GoString s, main_StringCallback callback);
+
+intptr_t
+ProcessWithVoidCallback(main_VoidCallback callback);
 
 C_XType
 ProcessXType(C_XType x);

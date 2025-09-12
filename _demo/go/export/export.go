@@ -6,6 +6,17 @@ import (
 	C "github.com/goplus/llgo/_demo/go/export/c"
 )
 
+// assert helper function for testing
+func assert[T comparable](got, expected T, message string) {
+	if got != expected {
+		println("ASSERTION FAILED:", message)
+		println("  Expected:", expected)
+		println("  Got:     ", got)
+		panic("assertion failed: " + message)
+	}
+	println("✓", message)
+}
+
 // Small struct
 type SmallStruct struct {
 	ID   int8 `json:"id"`
@@ -35,6 +46,17 @@ type Node struct {
 // Named types
 type MyInt int
 type MyString string
+
+// Function types for callbacks
+//
+//llgo:type C
+type IntCallback func(int) int
+
+//llgo:type C
+type StringCallback func(string) string
+
+//llgo:type C
+type VoidCallback func()
 
 // Complex struct with mixed arrays and slices
 type ComplexData struct {
@@ -124,10 +146,15 @@ func CreateNode(data int) *Node {
 }
 
 //export LinkNodes
-func LinkNodes(first, second *Node) {
-	if first != nil {
+func LinkNodes(first, second *Node) int {
+	if first != nil && second != nil {
 		first.Next = second
+		return first.Data + second.Data  // Return sum for verification
 	}
+	if first != nil {
+		return first.Data + 1000  // Return data + offset if only first exists
+	}
+	return 2000  // Return fixed value if both are nil
 }
 
 //export TraverseNodes
@@ -193,12 +220,12 @@ func ProcessUint64(x uint64) uint64 {
 
 //export ProcessInt
 func ProcessInt(x int) int {
-	return x + 100
+	return x * 11
 }
 
 //export ProcessUint
 func ProcessUint(x uint) uint {
-	return x + 200
+	return x * 21
 }
 
 //export ProcessUintptr
@@ -374,17 +401,53 @@ func ProcessIntChannel(ch chan int) int {
 	}
 }
 
+// Functions with function callbacks
+
+//export ProcessWithIntCallback
+func ProcessWithIntCallback(x int, callback IntCallback) int {
+	if callback != nil {
+		return callback(x)
+	}
+	return x
+}
+
+//export ProcessWithStringCallback
+func ProcessWithStringCallback(s string, callback StringCallback) string {
+	if callback != nil {
+		return callback(s)
+	}
+	return s
+}
+
+//export ProcessWithVoidCallback
+func ProcessWithVoidCallback(callback VoidCallback) int {
+	if callback != nil {
+		callback()
+		return 123  // Return non-zero to indicate callback was called
+	}
+	return 456  // Return different value if callback is nil
+}
+
+//export ProcessThreeUnnamedParams
+func ProcessThreeUnnamedParams(a int, s string, b bool) float64 {
+	result := float64(a) + float64(len(s))
+	if b {
+		result *= 1.5
+	}
+	return result
+}
+
 // Functions with interface
 
 //export ProcessInterface
 func ProcessInterface(i interface{}) int {
 	switch v := i.(type) {
 	case int:
-		return v
+		return v + 100
 	case string:
-		return len(v)
+		return len(v) * 10
 	default:
-		return 0
+		return 999  // Non-zero default to avoid false positives
 	}
 }
 
@@ -416,7 +479,16 @@ func ThreeParams(a int32, b float64, c bool) float64 {
 
 //export MultipleParams
 func MultipleParams(a int8, b uint16, c int32, d uint64, e float32, f float64, g string, h bool) string {
-	return g + "_processed"
+	result := g + "_" + string(rune('A'+a)) + string(rune('0'+b%10)) + string(rune('0'+c%10))
+	if h {
+		result += "_true"
+	}
+	return result + "_" + string(rune('0'+int(d%10))) + "_" + string(rune('0'+int(e)%10)) + "_" + string(rune('0'+int(f)%10))
+}
+
+//export NoParamNames
+func NoParamNames(int8, int16, bool) int32 {
+	return 789  // Return non-zero value for testing, params are unnamed by design
 }
 
 // Functions returning no value
@@ -463,27 +535,52 @@ func main() {
 
 	// Test small struct
 	small := CreateSmallStruct(5, true)
+	assert(small.ID, int8(5), "CreateSmallStruct ID should be 5")
+	assert(small.Flag, true, "CreateSmallStruct Flag should be true")
 	println("Small struct:", small.ID, small.Flag)
 
 	processed := ProcessSmallStruct(small)
+	assert(processed.ID, int8(6), "ProcessSmallStruct should increment ID to 6")
+	assert(processed.Flag, false, "ProcessSmallStruct should flip Flag to false")
 	println("Processed small:", processed.ID, processed.Flag)
 
 	// Test large struct
 	large := CreateLargeStruct(12345, "test")
+	assert(large.ID, int64(12345), "CreateLargeStruct ID should be 12345")
+	assert(large.Name, "test", "CreateLargeStruct Name should be 'test'")
 	println("Large struct ID:", large.ID, "Name:", large.Name)
 
 	total := ProcessLargeStruct(large)
+	// Expected calculation:
+	// ID: 12345, Name len: 4, Values: 1+2+3+4+5+6+7+8+9+10=55, Children len: 2
+	// Extra1: 12345, Extra2: 67890, Extra3: 3, Extra4: +1000, Extra5: 4096
+	expectedTotal := int64(12345 + 4 + 55 + 2 + 12345 + 67890 + 3 + 1000 + 4096)
+	assert(total, expectedTotal, "ProcessLargeStruct total should match expected calculation")
 	println("Large struct total:", total)
 
 	// Test self-referential struct
 	node1 := CreateNode(100)
 	node2 := CreateNode(200)
-	LinkNodes(node1, node2)
+	linkResult := LinkNodes(node1, node2)
+	assert(linkResult, 300, "LinkNodes should return sum of node data (100 + 200)")
 
 	count := TraverseNodes(node1)
+	assert(count, 2, "TraverseNodes should count 2 linked nodes")
 	println("Node count:", count)
 
-	// Test basic types
+	// Test basic types with assertions
+	assert(ProcessBool(true), false, "ProcessBool(true) should return false")
+	assert(ProcessInt8(10), int8(11), "ProcessInt8(10) should return 11")
+	f32Result := ProcessFloat32(3.14)
+	// Float comparison with tolerance
+	if f32Result < 4.7 || f32Result > 4.72 {
+		println("ASSERTION FAILED: ProcessFloat32(3.14) should return ~4.71, got:", f32Result)
+		panic("float assertion failed")
+	}
+	println("✓ ProcessFloat32(3.14) returns ~4.71")
+	
+	assert(ProcessString("hello"), "processed_hello", "ProcessString should prepend 'processed_'")
+	
 	println("Bool:", ProcessBool(true))
 	println("Int8:", ProcessInt8(10))
 	println("Float32:", ProcessFloat32(3.14))
@@ -491,43 +588,66 @@ func main() {
 
 	// Test named types
 	myInt := ProcessMyInt(MyInt(42))
+	assert(myInt, MyInt(420), "ProcessMyInt(42) should return 420")
 	println("MyInt:", int(myInt))
 
 	myStr := ProcessMyString(MyString("world"))
+	assert(myStr, MyString("modified_world"), "ProcessMyString should prepend 'modified_'")
 	println("MyString:", string(myStr))
 
 	// Test collections
 	arr := [5]int{1, 2, 3, 4, 5}
-	println("Array sum:", ProcessIntArray(arr))
+	arrSum := ProcessIntArray(arr)
+	assert(arrSum, 15, "ProcessIntArray([1,2,3,4,5]) should return 15")
+	println("Array sum:", arrSum)
 
 	slice := []int{10, 20, 30}
-	println("Slice sum:", ProcessIntSlice(slice))
+	sliceSum := ProcessIntSlice(slice)
+	assert(sliceSum, 60, "ProcessIntSlice([10,20,30]) should return 60")
+	println("Slice sum:", sliceSum)
 
 	m := make(map[string]int)
 	m["a"] = 100
 	m["b"] = 200
-	println("Map sum:", ProcessStringMap(m))
+	mapSum := ProcessStringMap(m)
+	assert(mapSum, 300, "ProcessStringMap({'a':100,'b':200}) should return 300")
+	println("Map sum:", mapSum)
 
 	// Test multidimensional arrays
 	matrix2d := CreateMatrix2D()
-	println("Matrix2D sum:", ProcessMatrix2D(matrix2d))
+	matrix2dSum := ProcessMatrix2D(matrix2d)
+	assert(matrix2dSum, int32(78), "ProcessMatrix2D should return 78 (sum of 1+2+...+12)")
+	println("Matrix2D sum:", matrix2dSum)
 
 	matrix3d := CreateMatrix3D()
-	println("Matrix3D sum:", ProcessMatrix3D(matrix3d))
+	matrix3dSum := ProcessMatrix3D(matrix3d)
+	assert(matrix3dSum, uint32(300), "ProcessMatrix3D should return 300")
+	println("Matrix3D sum:", matrix3dSum)
 
 	grid5x4 := CreateGrid5x4()
-	println("Grid5x4 sum:", ProcessGrid5x4(grid5x4))
+	gridSum := ProcessGrid5x4(grid5x4)
+	assert(gridSum, 115.0, "ProcessGrid5x4 should return 115.0")
+	println("Grid5x4 sum:", gridSum)
 
 	// Test complex data with multidimensional arrays
 	complexData := CreateComplexData()
-	println("ComplexData matrix sum:", ProcessComplexData(complexData))
+	complexSum := ProcessComplexData(complexData)
+	assert(complexSum, int32(78), "ProcessComplexData should return 78")
+	println("ComplexData matrix sum:", complexSum)
 
 	// Test various parameter counts
+	assert(NoParams(), 42, "NoParams should return 42")
+	assert(OneParam(5), 10, "OneParam(5) should return 10")
+	assert(TwoParams(65, "_test"), "A_test", "TwoParams should return 'A_test'")
+	assert(ThreeParams(10, 2.5, true), 25.0, "ThreeParams should return 25.0")
+	assert(NoParamNames(1, 2, false), int32(789), "NoParamNames should return 789")
+	
 	println("NoParams:", NoParams())
 	println("OneParam:", OneParam(5))
 	println("TwoParams:", TwoParams(65, "_test"))
 	println("ThreeParams:", ThreeParams(10, 2.5, true))
 	println("MultipleParams:", MultipleParams(1, 2, 3, 4, 5.0, 6.0, "result", true))
+	println("NoParamNames:", NoParamNames(1, 2, false))
 
 	// Test XType from c package
 	xtype := CreateXType(42, "test", 3.14, true)
@@ -540,6 +660,15 @@ func main() {
 	if ptrX != nil {
 		println("Ptr XType:", ptrX.ID, ptrX.Name, ptrX.Value, ptrX.Flag)
 	}
+
+	// Test callback functions
+	intResult := ProcessWithIntCallback(10, func(x int) int { return x * 3 })
+	println("IntCallback result:", intResult)
+
+	stringResult := ProcessWithStringCallback("hello", func(s string) string { return s + "_callback" })
+	println("StringCallback result:", stringResult)
+
+	ProcessWithVoidCallback(func() { println("VoidCallback executed") })
 
 	NoReturn("demo completed")
 }

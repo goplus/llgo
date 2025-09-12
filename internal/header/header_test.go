@@ -235,7 +235,7 @@ func TestGoCTypeName(t *testing.T) {
 		{
 			name:     "signature type",
 			goType:   types.NewSignature(nil, nil, nil, false),
-			expected: "void*",
+			expected: "void (*)(void)",
 		},
 	}
 
@@ -503,6 +503,153 @@ func TestProcessDependentTypesEdgeCases(t *testing.T) {
 	err = hw.processSignatureTypes(noResultsSig, make(map[string]bool))
 	if err != nil {
 		t.Errorf("processSignatureTypes(no results) error = %v", err)
+	}
+
+	// Test function type (callback) parameters - IntCallback
+	intCallbackParams := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	intCallbackResults := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	intCallbackSig := types.NewSignatureType(nil, nil, nil, intCallbackParams, intCallbackResults, false)
+	err = hw.writeTypedefRecursive(intCallbackSig, make(map[string]bool))
+	if err != nil {
+		t.Errorf("writeTypedefRecursive(IntCallback) error = %v", err)
+	}
+
+	// Test function type (callback) parameters - StringCallback
+	stringCallbackParams := types.NewTuple(types.NewVar(0, nil, "s", types.Typ[types.String]))
+	stringCallbackResults := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.String]))
+	stringCallbackSig := types.NewSignatureType(nil, nil, nil, stringCallbackParams, stringCallbackResults, false)
+	err = hw.writeTypedefRecursive(stringCallbackSig, make(map[string]bool))
+	if err != nil {
+		t.Errorf("writeTypedefRecursive(StringCallback) error = %v", err)
+	}
+
+	// Test function type (callback) parameters - VoidCallback
+	voidCallbackSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	err = hw.writeTypedefRecursive(voidCallbackSig, make(map[string]bool))
+	if err != nil {
+		t.Errorf("writeTypedefRecursive(VoidCallback) error = %v", err)
+	}
+
+	// Test Named function type - this should trigger the function typedef generation
+	pkg := types.NewPackage("test", "test")
+	callbackParams := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	callbackSig := types.NewSignatureType(nil, nil, nil, callbackParams, nil, false)
+	callbackTypeName := types.NewTypeName(0, pkg, "Callback", nil)
+	namedCallback := types.NewNamed(callbackTypeName, callbackSig, nil)
+
+	// Test Named function type with no parameters - NoParamCallback func() int
+	noParamCallbackResults := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	noParamCallbackSig := types.NewSignatureType(nil, nil, nil, nil, noParamCallbackResults, false)
+	noParamCallbackTypeName := types.NewTypeName(0, pkg, "NoParamCallback", nil)
+	namedNoParamCallback := types.NewNamed(noParamCallbackTypeName, noParamCallbackSig, nil)
+
+	err = hw.writeTypedef(namedCallback)
+	if err != nil {
+		t.Errorf("writeTypedef(named function) error = %v", err)
+	}
+
+	err = hw.writeTypedef(namedNoParamCallback)
+	if err != nil {
+		t.Errorf("writeTypedef(no param callback) error = %v", err)
+	}
+
+	// Verify the generated typedef contains function pointer syntax
+	output := hw.typeBuf.String()
+	if !strings.Contains(output, "test_Callback") {
+		t.Errorf("Expected named function typedef in output")
+	}
+	if !strings.Contains(output, "(*test_Callback)") {
+		t.Errorf("Expected function pointer syntax in typedef: %s", output)
+	}
+	if !strings.Contains(output, "test_NoParamCallback") {
+		t.Errorf("Expected no-param callback typedef in output")
+	}
+	if !strings.Contains(output, "(*test_NoParamCallback)(void)") {
+		t.Errorf("Expected no-param function pointer syntax in typedef: %s", output)
+	}
+
+	// Test function signature with unnamed parameters (like //export ProcessThreeUnnamedParams)
+	unnamedParams := types.NewTuple(
+		types.NewVar(0, nil, "", types.Typ[types.Int]),
+		types.NewVar(0, nil, "", types.Typ[types.String]),
+		types.NewVar(0, nil, "", types.Typ[types.Bool]),
+	)
+	unnamedResults := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Float64]))
+	unnamedSig := types.NewSignatureType(nil, nil, nil, unnamedParams, unnamedResults, false)
+	err = hw.writeTypedefRecursive(unnamedSig, make(map[string]bool))
+	if err != nil {
+		t.Errorf("writeTypedefRecursive(unnamed params) error = %v", err)
+	}
+}
+
+// Test generateParameterDeclaration function
+func TestGenerateParameterDeclaration(t *testing.T) {
+	prog := ssa.NewProgram(nil)
+	hw := newCHeaderWriter(prog)
+
+	tests := []struct {
+		name      string
+		paramType types.Type
+		paramName string
+		expected  string
+	}{
+		{
+			name:      "basic type with name",
+			paramType: types.Typ[types.Int],
+			paramName: "x",
+			expected:  "intptr_t x",
+		},
+		{
+			name:      "basic type without name",
+			paramType: types.Typ[types.Int],
+			paramName: "",
+			expected:  "intptr_t",
+		},
+		{
+			name:      "array type with name",
+			paramType: types.NewArray(types.Typ[types.Int], 5),
+			paramName: "arr",
+			expected:  "intptr_t* arr",
+		},
+		{
+			name:      "array type without name",
+			paramType: types.NewArray(types.Typ[types.Int], 5),
+			paramName: "",
+			expected:  "intptr_t*",
+		},
+		{
+			name:      "multidimensional array with name",
+			paramType: types.NewArray(types.NewArray(types.Typ[types.Int], 4), 3),
+			paramName: "matrix",
+			expected:  "intptr_t matrix[3][4]",
+		},
+		{
+			name:      "multidimensional array without name",
+			paramType: types.NewArray(types.NewArray(types.Typ[types.Int], 4), 3),
+			paramName: "",
+			expected:  "intptr_t[3][4]",
+		},
+		{
+			name:      "pointer type with name",
+			paramType: types.NewPointer(types.Typ[types.Int]),
+			paramName: "ptr",
+			expected:  "intptr_t* ptr",
+		},
+		{
+			name:      "pointer type without name",
+			paramType: types.NewPointer(types.Typ[types.Int]),
+			paramName: "",
+			expected:  "intptr_t*",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hw.generateParameterDeclaration(tt.paramType, tt.paramName)
+			if got != tt.expected {
+				t.Errorf("generateParameterDeclaration() = %q, want %q", got, tt.expected)
+			}
+		})
 	}
 }
 

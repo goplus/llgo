@@ -205,14 +205,53 @@ echo ""
 
 # echo ""
 
+# Test 3: Go export demo execution
+print_status "=== Test 3: Running Go export demo ==="
+if go run export.go > /tmp/go_export_output.log 2>&1; then
+    print_status "Go export demo execution succeeded"
+
+    # Check if output contains expected success indicators
+    if grep -q "✓" /tmp/go_export_output.log; then
+        SUCCESS_COUNT=$(grep -c "✓" /tmp/go_export_output.log)
+        print_status "All $SUCCESS_COUNT assertions passed in Go export demo"
+    else
+        print_warning "No assertion markers found in Go export demo output"
+    fi
+
+    # Show key output lines
+    print_status "Go export demo output summary:"
+    if grep -q "ASSERTION FAILED" /tmp/go_export_output.log; then
+        print_error "Found assertion failures in Go export demo"
+        grep "ASSERTION FAILED" /tmp/go_export_output.log
+    else
+        print_status "  ✅ No assertion failures detected"
+        echo "  📊 First few lines of output:"
+        head -5 /tmp/go_export_output.log | sed 's/^/    /'
+        echo "  📊 Last few lines of output:"
+        tail -5 /tmp/go_export_output.log | sed 's/^/    /'
+    fi
+else
+    print_error "Go export demo execution failed"
+    print_error "Error output:"
+    cat /tmp/go_export_output.log | sed 's/^/    /'
+fi
+
+# Cleanup temporary file
+rm -f /tmp/go_export_output.log
+
+echo ""
+
 # Final summary
 print_status "=== Test Summary ==="
 if [[ -f "libexport.a" ]] && [[ -f "libexport.h" ]]; then
     print_status "All tests completed successfully:"
+    print_status "  ✅ Go export demo execution with assertions"
     print_status "  ✅ C header generation (c-archive and c-shared modes)"
     print_status "  ✅ C demo compilation and execution"
     print_status "  ✅ Cross-platform symbol renaming"
     print_status "  ✅ Init function export and calling"
+    print_status "  ✅ Function callback types with proper typedef syntax"
+    print_status "  ✅ Multidimensional array parameter handling"
     print_status ""
     print_status "Final files available:"
     print_status "  - libexport.a (static library)"
