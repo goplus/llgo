@@ -165,9 +165,9 @@ func isOnHeap(ptr uintptr) bool {
 	return ptr >= heap.HeapStart && ptr < uintptr(heap.MetadataStart)
 }
 
-//export malloc
-func malloc(size uintptr) unsafe.Pointer {
-	return Alloc(size)
+//export _tinygoGC
+func _tinygoGC() {
+	GC()
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage

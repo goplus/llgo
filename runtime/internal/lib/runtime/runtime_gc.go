@@ -2,8 +2,11 @@
 
 package runtime
 
-import "github.com/goplus/llgo/runtime/internal/clite/bdwgc"
+import _ "unsafe"
+
+//go:linkname _tinygoGC _tinygoGC
+func _tinygoGC()
 
 func GC() {
-	bdwgc.Gcollect()
+	_tinygoGC()
 }
