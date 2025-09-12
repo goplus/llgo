@@ -364,3 +364,241 @@ func TestBuildOutFmtsNativeTarget(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildOutFmtsBuildModes(t *testing.T) {
+	tests := []struct {
+		name        string
+		pkgName     string
+		buildMode   BuildMode
+		outFile     string
+		mode        Mode
+		target      string
+		goos        string
+		appExt      string
+		expectedOut string
+	}{
+		// C-Archive tests
+		{
+			name:        "c_archive_build_linux",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCArchive,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "linux",
+			appExt:      ".a",
+			expectedOut: "libmylib.a",
+		},
+		{
+			name:        "c_archive_build_with_outfile",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCArchive,
+			outFile:     "custom.a",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "linux",
+			appExt:      ".a",
+			expectedOut: "libcustom.a",
+		},
+		{
+			name:        "c_archive_build_with_path",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCArchive,
+			outFile:     "build/custom.a",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "linux",
+			appExt:      ".a",
+			expectedOut: "build/libcustom.a",
+		},
+
+		// C-Shared tests
+		{
+			name:        "c_shared_build_linux",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCShared,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "linux",
+			appExt:      ".so",
+			expectedOut: "libmylib.so",
+		},
+		{
+			name:        "c_shared_build_windows",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCShared,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "windows",
+			appExt:      ".dll",
+			expectedOut: "mylib.dll",
+		},
+		{
+			name:        "c_shared_build_darwin",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCShared,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "darwin",
+			appExt:      ".dylib",
+			expectedOut: "libmylib.dylib",
+		},
+		{
+			name:        "c_shared_embedded_target",
+			pkgName:     "mylib",
+			buildMode:   BuildModeCShared,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "rp2040",
+			goos:        "windows",
+			appExt:      ".so", // embedded follows linux rules
+			expectedOut: "libmylib.so",
+		},
+
+		// Executable tests
+		{
+			name:        "exe_build_linux",
+			pkgName:     "myapp",
+			buildMode:   BuildModeExe,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "linux",
+			appExt:      "",
+			expectedOut: "myapp",
+		},
+		{
+			name:        "exe_build_windows",
+			pkgName:     "myapp",
+			buildMode:   BuildModeExe,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "windows",
+			appExt:      ".exe",
+			expectedOut: "myapp.exe",
+		},
+		{
+			name:        "exe_remove_lib_prefix",
+			pkgName:     "libmyapp",
+			buildMode:   BuildModeExe,
+			outFile:     "",
+			mode:        ModeBuild,
+			target:      "",
+			goos:        "linux",
+			appExt:      "",
+			expectedOut: "myapp",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := &Config{
+				Mode:      tt.mode,
+				BuildMode: tt.buildMode,
+				Target:    tt.target,
+				Goos:      tt.goos,
+				OutFile:   tt.outFile,
+				AppExt:    tt.appExt,
+			}
+
+			crossCompile := &crosscompile.Export{}
+			result, err := buildOutFmts(tt.pkgName, conf, false, crossCompile)
+
+			if err != nil {
+				t.Fatalf("buildOutFmts failed: %v", err)
+			}
+
+			if result.Out != tt.expectedOut {
+				t.Errorf("buildOutFmts(%q, buildMode=%v, target=%q, goos=%q) = %q, want %q",
+					tt.pkgName, tt.buildMode, tt.target, tt.goos, result.Out, tt.expectedOut)
+			}
+		})
+	}
+}
+
+func TestApplyBuildModeNaming(t *testing.T) {
+	tests := []struct {
+		name      string
+		baseName  string
+		buildMode BuildMode
+		target    string
+		goos      string
+		expected  string
+	}{
+		// Executable tests
+		{
+			name:      "exe_linux",
+			baseName:  "myapp",
+			buildMode: BuildModeExe,
+			target:    "",
+			goos:      "linux",
+			expected:  "myapp",
+		},
+		{
+			name:      "exe_remove_lib_prefix",
+			baseName:  "libmyapp",
+			buildMode: BuildModeExe,
+			target:    "",
+			goos:      "linux",
+			expected:  "myapp",
+		},
+
+		// C-Archive tests
+		{
+			name:      "c_archive_linux",
+			baseName:  "mylib",
+			buildMode: BuildModeCArchive,
+			target:    "",
+			goos:      "linux",
+			expected:  "libmylib",
+		},
+		{
+			name:      "c_archive_existing_prefix",
+			baseName:  "libmylib",
+			buildMode: BuildModeCArchive,
+			target:    "",
+			goos:      "linux",
+			expected:  "libmylib",
+		},
+
+		// C-Shared tests
+		{
+			name:      "c_shared_linux",
+			baseName:  "mylib",
+			buildMode: BuildModeCShared,
+			target:    "",
+			goos:      "linux",
+			expected:  "libmylib",
+		},
+		{
+			name:      "c_shared_windows",
+			baseName:  "mylib",
+			buildMode: BuildModeCShared,
+			target:    "",
+			goos:      "windows",
+			expected:  "mylib", // Windows doesn't use lib prefix
+		},
+		{
+			name:      "c_shared_embedded_rp2040",
+			baseName:  "mylib",
+			buildMode: BuildModeCShared,
+			target:    "rp2040",
+			goos:      "darwin",
+			expected:  "libmylib", // embedded follows linux rules
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := applyPrefix(tt.baseName, tt.buildMode, tt.target, tt.goos)
+			if result != tt.expected {
+				t.Errorf("applyBuildModeNaming(%q, %v, %q, %q) = %q, want %q",
+					tt.baseName, tt.buildMode, tt.target, tt.goos, result, tt.expected)
+			}
+		})
+	}
+}

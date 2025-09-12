@@ -183,7 +183,9 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 				if !p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false) && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
 					if decl.Recv == nil && token.IsExported(inPkgName) {
-						p.prog.SetLinkname(fullName, strings.TrimPrefix(inPkgName, "X"))
+						exportName := strings.TrimPrefix(inPkgName, "X")
+						p.prog.SetLinkname(fullName, exportName)
+						p.pkg.SetExport(fullName, exportName)
 					}
 				}
 			case *ast.GenDecl:
@@ -301,16 +303,19 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 		directive = "//go:"
 	)
 	if strings.HasPrefix(line, linkname) {
-		p.initLink(line, len(linkname), f)
+		p.initLink(line, len(linkname), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink2) {
-		p.initLink(line, len(llgolink2), f)
+		p.initLink(line, len(llgolink2), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink) {
-		p.initLink(line, len(llgolink), f)
+		p.initLink(line, len(llgolink), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, export) {
-		p.initCgoExport(line, len(export), f)
+		// rewrite //export FuncName to //export FuncName FuncName
+		funcName := strings.TrimSpace(line[len(export):])
+		line = line + " " + funcName
+		p.initLink(line, len(export), true, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, directive) {
 		// skip unknown annotation but continue to parse the next annotation
@@ -319,23 +324,15 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 	return noDirective
 }
 
-func (p *context) initCgoExport(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
-	name := strings.TrimSpace(line[prefix:])
-	if fullName, _, ok := f(name); ok {
-		p.cgoExports[fullName] = name // TODO(xsw): why not use prog.SetLinkname?
-	}
-}
-
-func (p *context) initLink(line string, prefix int, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *context) initLink(line string, prefix int, export bool, f func(inPkgName string) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
 		inPkgName := text[:idx]
-		if fullName, isVar, ok := f(inPkgName); ok {
+		if fullName, _, ok := f(inPkgName); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
-			if isVar || strings.Contains(link, ".") { // eg. C.printf, C.strlen, llgo.cstr
-				p.prog.SetLinkname(fullName, link)
-			} else {
-				p.prog.SetLinkname(fullName, "C."+link)
+			p.prog.SetLinkname(fullName, link)
+			if export {
+				p.pkg.SetExport(fullName, link)
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "==>", line)
@@ -522,6 +519,9 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		fname := fn.Name()
 		if checkCgo(fname) && !cgoIgnored(fname) {
 			return nil, fname, llgoInstr
+		}
+		if strings.HasPrefix(fname, "_cgoexp_") {
+			return nil, fname, ignoredFunc
 		}
 		if isCgoExternSymbol(fn) {
 			if _, ok := llgoInstrs[fname]; ok {

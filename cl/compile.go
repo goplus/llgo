@@ -126,7 +126,6 @@ type context struct {
 	cgoArgs    []llssa.Expr
 	cgoRet     llssa.Expr
 	cgoSymbols []string
-	cgoExports map[string]string
 }
 
 type pkgState byte
@@ -1008,7 +1007,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
-		cgoExports: make(map[string]string),
 		cgoSymbols: make([]string, 0, 128),
 	}
 	ctx.initPyModule()
@@ -1044,12 +1042,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 		fn()
 	}
 	externs = ctx.cgoSymbols
-	for fnName, exportName := range ctx.cgoExports {
-		fn := ret.FuncOf(fnName)
-		if fn != nil {
-			fn.SetName(exportName)
-		}
-	}
 	return
 }
 

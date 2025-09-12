@@ -47,45 +47,93 @@ func setOutFmt(conf *Config, formatName string) {
 }
 
 // buildOutFmts creates OutFmtDetails based on package, configuration and multi-package status
+// determineBaseNameAndDir extracts the base name and directory from configuration
+func determineBaseNameAndDir(pkgName string, conf *Config, multiPkg bool) (baseName, dir string) {
+	switch conf.Mode {
+	case ModeInstall:
+		return pkgName, conf.BinPath
+	case ModeBuild:
+		if !multiPkg && conf.OutFile != "" {
+			dir = filepath.Dir(conf.OutFile)
+			baseName = strings.TrimSuffix(filepath.Base(conf.OutFile), conf.AppExt)
+			if dir == "." {
+				dir = ""
+			}
+			return baseName, dir
+		}
+		return pkgName, ""
+	}
+	// Other modes (run, test, etc.)
+	return pkgName, ""
+}
+
+// applyPrefix applies build mode specific naming conventions
+func applyPrefix(baseName string, buildMode BuildMode, target string, goos string) string {
+	// Determine the effective OS for naming conventions
+	effectiveGoos := goos
+	if target != "" {
+		// Embedded targets follow Linux conventions
+		effectiveGoos = "linux"
+	}
+
+	switch buildMode {
+	case BuildModeCArchive:
+		// Static libraries: libname.a (add lib prefix if missing)
+		if !strings.HasPrefix(baseName, "lib") {
+			return "lib" + baseName
+		}
+		return baseName
+
+	case BuildModeCShared:
+		// Shared libraries: libname.so/libname.dylib (add lib prefix if missing, except on Windows)
+		if effectiveGoos != "windows" && !strings.HasPrefix(baseName, "lib") {
+			return "lib" + baseName
+		}
+		return baseName
+
+	case BuildModeExe:
+		// Executables: name or name.exe (no lib prefix)
+		if strings.HasPrefix(baseName, "lib") {
+			return strings.TrimPrefix(baseName, "lib")
+		}
+		return baseName
+	}
+
+	return baseName
+}
+
+// buildOutputPath creates the final output path from baseName, dir and other parameters
+func buildOutputPath(baseName, dir string, conf *Config, multiPkg bool, appExt string) (string, error) {
+	baseName = applyPrefix(baseName, conf.BuildMode, conf.Target, conf.Goos)
+
+	if dir != "" {
+		return filepath.Join(dir, baseName+appExt), nil
+	} else if (conf.Mode == ModeBuild && multiPkg) || (conf.Mode != ModeBuild && conf.Mode != ModeInstall) {
+		return genTempOutputFile(baseName, appExt)
+	} else {
+		return baseName + appExt, nil
+	}
+}
+
 func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *crosscompile.Export) (*OutFmtDetails, error) {
 	details := &OutFmtDetails{}
-	var err error
+
+	// Determine base name and directory
+	baseName, dir := determineBaseNameAndDir(pkgName, conf, multiPkg)
+
+	// Build output path
+	outputPath, err := buildOutputPath(baseName, dir, conf, multiPkg, conf.AppExt)
+	if err != nil {
+		return nil, err
+	}
+	details.Out = outputPath
+
 	if conf.Target == "" {
-		// Native target
-		if conf.Mode == ModeInstall {
-			details.Out = filepath.Join(conf.BinPath, pkgName+conf.AppExt)
-		} else if conf.Mode == ModeBuild && !multiPkg && conf.OutFile != "" {
-			base := strings.TrimSuffix(conf.OutFile, conf.AppExt)
-			details.Out = base + conf.AppExt
-		} else if conf.Mode == ModeBuild && !multiPkg {
-			details.Out = pkgName + conf.AppExt
-		} else {
-			details.Out, err = genTempOutputFile(pkgName, conf.AppExt)
-			if err != nil {
-				return nil, err
-			}
-		}
+		// Native target - we're done
 		return details, nil
 	}
 
 	needRun := slices.Contains([]Mode{ModeRun, ModeTest, ModeCmpTest, ModeInstall}, conf.Mode)
-
-	if multiPkg {
-		details.Out, err = genTempOutputFile(pkgName, conf.AppExt)
-		if err != nil {
-			return nil, err
-		}
-	} else if conf.OutFile != "" {
-		base := strings.TrimSuffix(conf.OutFile, conf.AppExt)
-		details.Out = base + conf.AppExt
-	} else if conf.Mode == ModeBuild {
-		details.Out = pkgName + conf.AppExt
-	} else {
-		details.Out, err = genTempOutputFile(pkgName, conf.AppExt)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	// Check emulator format if emulator mode is enabled
 	outFmt := ""
@@ -162,4 +210,40 @@ func (details *OutFmtDetails) ToEnvMap() map[string]string {
 	}
 
 	return envMap
+}
+
+func defaultAppExt(conf *Config) string {
+	// Handle build mode specific extensions first
+	switch conf.BuildMode {
+	case BuildModeCArchive:
+		return ".a"
+	case BuildModeCShared:
+		switch conf.Goos {
+		case "windows":
+			return ".dll"
+		case "darwin":
+			return ".dylib"
+		default:
+			return ".so"
+		}
+	case BuildModeExe:
+		// For executable mode, handle target-specific logic
+		if conf.Target != "" {
+			if strings.HasPrefix(conf.Target, "wasi") || strings.HasPrefix(conf.Target, "wasm") {
+				return ".wasm"
+			}
+			return ".elf"
+		}
+
+		switch conf.Goos {
+		case "windows":
+			return ".exe"
+		case "wasi", "wasip1", "js":
+			return ".wasm"
+		}
+		return ""
+	}
+
+	// This should not be reached, but kept for safety
+	return ""
 }

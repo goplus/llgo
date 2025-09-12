@@ -92,7 +92,7 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 			return types.NewMap(key, elem), true
 		}
 	case *types.Struct:
-		if isClosure(t) {
+		if IsClosure(t) {
 			return typ, false
 		}
 		return p.cvtStruct(t)

@@ -47,7 +47,10 @@ func runCmd(cmd *base.Command, args []string) {
 	}
 
 	conf := build.NewDefaultConf(build.ModeInstall)
-	flags.UpdateConfig(conf)
+	if err := flags.UpdateConfig(conf); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+	}
 
 	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)

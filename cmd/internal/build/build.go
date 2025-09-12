@@ -39,6 +39,7 @@ func init() {
 
 	flags.AddCommonFlags(&Cmd.Flag)
 	flags.AddBuildFlags(&Cmd.Flag)
+	flags.AddBuildModeFlags(&Cmd.Flag)
 	flags.AddEmulatorFlags(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag)
 	flags.AddOutputFlags(&Cmd.Flag)
@@ -51,7 +52,10 @@ func runCmd(cmd *base.Command, args []string) {
 	}
 
 	conf := build.NewDefaultConf(build.ModeBuild)
-	flags.UpdateConfig(conf)
+	if err := flags.UpdateBuildConfig(conf); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+	}
 
 	args = cmd.Flag.Args()
 

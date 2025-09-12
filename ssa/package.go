@@ -435,6 +435,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+		export: make(map[string]string),
 	}
 	ret.abi.Init(pkgPath)
 	return ret
@@ -693,12 +694,22 @@ type aPackage struct {
 
 	NeedRuntime bool
 	NeedPyInit  bool
+
+	export map[string]string // pkgPath.nameInPkg => exportname
 }
 
 type Package = *aPackage
 
 func (p Package) Module() llvm.Module {
 	return p.mod
+}
+
+func (p Package) SetExport(name, export string) {
+	p.export[name] = export
+}
+
+func (p Package) ExportFuncs() map[string]string {
+	return p.export
 }
 
 func (p Package) rtFunc(fnName string) Expr {
