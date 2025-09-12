@@ -151,6 +151,7 @@ jobs:
   test-artifacts:
     needs: build
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-13
