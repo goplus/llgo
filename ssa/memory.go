@@ -263,6 +263,12 @@ func (b Builder) memset(ptr, val, len, isvolatile Expr) Expr {
 	return ptr
 }
 
+func (b Builder) stacksave() Expr {
+	sig := types.NewTuple(types.NewParam(token.NoPos, nil, "", b.Prog.Uintptr().raw.Type))
+	fn := b.Pkg.cFunc("llvm.stacksave", types.NewSignatureType(nil, nil, nil, nil, sig, false))
+	return b.Call(fn)
+}
+
 func (b Builder) zeroinit(ptr, size Expr) Expr {
 	return b.memset(ptr, b.Prog.IntVal(0, b.Prog.Byte()), size, b.Prog.Val(false))
 }

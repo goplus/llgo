@@ -45,7 +45,7 @@ const blockStateByteAllTails = 0 |
 // might not be heap-aligned).
 func blockFromAddr(addr uintptr) uintptr {
 	if false && (addr < heap.HeapStart || addr >= uintptr(heap.MetadataStart)) {
-		c.Printf(c.Str("gc: trying to get block from invalid address"))
+		println("gc: trying to get block from invalid address")
 	}
 	return (addr - heap.HeapStart) / bytesPerBlock
 }
@@ -59,7 +59,7 @@ func gcPointerOf(blockAddr uintptr) unsafe.Pointer {
 func gcAddressOf(blockAddr uintptr) uintptr {
 	addr := heap.HeapStart + blockAddr*bytesPerBlock
 	if false && addr > uintptr(heap.MetadataStart) {
-		c.Printf(c.Str("gc: block pointing inside metadata"))
+		println("gc: block pointing inside metadata")
 	}
 	return addr
 }
@@ -91,7 +91,7 @@ func gcFindHead(blockAddr uintptr) uintptr {
 	}
 	if true {
 		if gcStateOf(blockAddr) != blockStateHead && gcStateOf(blockAddr) != blockStateMark {
-			c.Printf(c.Str("gc: found tail without head"))
+			println("gc: found tail without head")
 		}
 	}
 	return blockAddr
@@ -131,7 +131,7 @@ func gcSetState(blockAddr uintptr, newState uint8) {
 	stateBytePtr := (*uint8)(unsafe.Add(heap.MetadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr |= uint8(newState << ((blockAddr % blocksPerStateByte) * stateBits))
 	if false && gcStateOf(blockAddr) != newState {
-		c.Printf(c.Str("gc: setState() was not successful"))
+		println("gc: setState() was not successful")
 	}
 }
 
@@ -140,7 +140,7 @@ func gcMarkFree(blockAddr uintptr) {
 	stateBytePtr := (*uint8)(unsafe.Add(heap.MetadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr &^= uint8(blockStateMask << ((blockAddr % blocksPerStateByte) * stateBits))
 	if false && gcStateOf(blockAddr) != blockStateFree {
-		c.Printf(c.Str("gc: markFree() was not successful"))
+		println("gc: markFree() was not successful")
 	}
 	if true {
 		*(*[wordsPerBlock]uintptr)(unsafe.Pointer(gcAddressOf(blockAddr))) = [wordsPerBlock]uintptr{}
@@ -151,13 +151,13 @@ func gcMarkFree(blockAddr uintptr) {
 // before calling this function.
 func gcUnmark(blockAddr uintptr) {
 	if false && gcStateOf(blockAddr) != blockStateMark {
-		c.Printf(c.Str("gc: unmark() on a block that is not marked"))
+		println("gc: unmark() on a block that is not marked")
 	}
 	clearMask := blockStateMask ^ blockStateHead // the bits to clear from the state
 	stateBytePtr := (*uint8)(unsafe.Add(heap.MetadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr &^= uint8(clearMask << ((blockAddr % blocksPerStateByte) * stateBits))
 	if false && gcStateOf(blockAddr) != blockStateHead {
-		c.Printf(c.Str("gc: unmark() was not successful"))
+		println("gc: unmark() was not successful")
 	}
 }
 
@@ -219,7 +219,7 @@ func Alloc(size uintptr) unsafe.Pointer {
 					// Unfortunately the heap could not be increased. This
 					// happens on baremetal systems for example (where all
 					// available RAM has already been dedicated to the heap).
-					c.Printf(c.Str("out of memory"))
+					println("out of memory")
 				}
 			}
 		}
@@ -301,7 +301,7 @@ func free(ptr unsafe.Pointer) {
 // free bytes in the heap after the GC is finished.
 func GC() (freeBytes uintptr) {
 	if gcDebug {
-		c.Printf(c.Str("running collection cycle..."))
+		println("running collection cycle...")
 	}
 
 	// Mark phase: mark all reachable objects, recursively.
@@ -328,13 +328,13 @@ func markRoots(start, end uintptr) {
 
 	if true {
 		if start >= end {
-			c.Printf(c.Str("gc: unexpected range to mark"))
+			println("gc: unexpected range to mark")
 		}
 		if start%unsafe.Alignof(start) != 0 {
-			c.Printf(c.Str("gc: unaligned start pointer"))
+			println("gc: unaligned start pointer")
 		}
 		if end%unsafe.Alignof(end) != 0 {
-			c.Printf(c.Str("gc: unaligned end pointer"))
+			println("gc: unaligned end pointer")
 		}
 	}
 
@@ -391,12 +391,14 @@ func startMark(root uintptr) {
 
 			gcSetState(referencedBlock, blockStateMark)
 
+			println("mark: %lx from %lx", gcPointerOf(referencedBlock), gcPointerOf(root))
+
 			if stackLen == len(stack) {
 				// The stack is full.
 				// It is necessary to rescan all marked blocks once we are done.
 				heap.GCStackOverflow = true
 				if gcDebug {
-					c.Printf(c.Str("gc stack overflowed"))
+					println("gc stack overflowed")
 				}
 				continue
 			}
@@ -428,6 +430,7 @@ func finishMark() {
 // mark a GC root at the address addr.
 func markRoot(addr, root uintptr) {
 	if isOnHeap(root) {
+		println("on the heap: %lx", gcPointerOf(root))
 		block := blockFromAddr(root)
 		if gcStateOf(block) == blockStateFree {
 			// The to-be-marked object doesn't actually exist.
@@ -436,6 +439,7 @@ func markRoot(addr, root uintptr) {
 			return
 		}
 		head := gcFindHead(block)
+
 		if gcStateOf(head) != blockStateMark {
 			startMark(head)
 		}
@@ -484,15 +488,16 @@ func growHeap() bool {
 	return false
 }
 
-func findGlobals(found func(start, end uintptr)) {
-	found(heap.GlobalsStart, heap.GlobalsEnd)
-}
+//go:linkname getsp llgo.getSP
+func getsp() uintptr { return 0 }
 
 func gcMarkReachable() {
-	println("scan stack", heap.StackEnd, heap.StackStart)
-	markRoots(heap.StackEnd, heap.StackStart)
-	findGlobals(markRoots)
+	// a compiler trick to get current SP
+	println("scan stack", unsafe.Pointer(getsp()), c.Pointer(heap.StackTop))
+	markRoots(getsp(), heap.StackTop)
+	markRoots(heap.GlobalsStart, heap.GlobalsEnd)
 }
+
 func gcResumeWorld() {
 	// Nothing to do here (single threaded).
 }

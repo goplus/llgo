@@ -11,9 +11,6 @@ var _heapStart [0]byte
 //go:linkname _heapEnd _heapEnd
 var _heapEnd [0]byte
 
-//go:linkname _stackEnd __stack_end
-var _stackEnd [0]byte
-
 //go:linkname _stackStart __stack
 var _stackStart [0]byte
 
@@ -29,8 +26,7 @@ var (
 	HeapEnd       uintptr
 	GlobalsStart  uintptr
 	GlobalsEnd    uintptr
-	StackStart    uintptr
-	StackEnd      uintptr
+	StackTop      uintptr
 	MetadataStart unsafe.Pointer
 	EndBlock      uintptr
 
@@ -55,35 +51,6 @@ const (
 	markStackSize      = 8 * unsafe.Sizeof((*int)(nil)) // number of to-be-marked blocks to queue before forcing a rescan
 )
 
-//go:linkname WriteByte C.board_uart_write_char
-func WriteByte(b byte)
-
-func hexDigitToChar(digit uint8) uint8 {
-	if digit < 10 {
-		return 0x30 + digit // '0' = 0x30
-	}
-	return 0x41 + (digit - 10) // 'A' = 0x41
-}
-
-// 将int32转换为16进制字符串并按byte输出到UART
-func PrintInt32Hex(value int32) {
-	// 转换为uint32以便进行位操作
-	uvalue := uint32(value)
-
-	// 输出"0x"前缀
-	WriteByte(0x30) // '0'
-	WriteByte(0x78) // 'x'
-
-	// 从最高位开始，每4位转换为一个十六进制字符
-	for i := uint32(0); i < 8; i++ {
-		// 提取第i个十六进制位（从高位开始）
-		digit := uint8((uvalue >> ((7 - i) * 4)) & 0xF)
-		WriteByte(hexDigitToChar(digit))
-	}
-
-	WriteByte('\n')
-}
-
 // zeroSizedAlloc is just a sentinel that gets returned when allocating 0 bytes.
 var zeroSizedAlloc uint8
 
@@ -92,7 +59,8 @@ func memset(unsafe.Pointer, int, uintptr)
 
 // this function MUST be initalized first, which means it's required to be initalized before runtime
 func initHeap() {
-	HeapStart = uintptr(unsafe.Pointer(&_heapStart))
+	// reserve 2K blocks for malloc
+	HeapStart = uintptr(unsafe.Pointer(&_heapStart)) + 2048
 	HeapEnd = uintptr(unsafe.Pointer(&_heapEnd))
 	GlobalsStart = uintptr(unsafe.Pointer(&_globals_start))
 	GlobalsEnd = uintptr(unsafe.Pointer(&_globals_end))
@@ -101,8 +69,7 @@ func initHeap() {
 	MetadataStart = unsafe.Pointer(HeapEnd - metadataSize)
 	EndBlock = (uintptr(MetadataStart) - HeapStart) / bytesPerBlock
 	ZeroSizedAlloc = unsafe.Pointer(&zeroSizedAlloc)
-	StackStart = uintptr(unsafe.Pointer(&_stackStart))
-	StackEnd = uintptr(unsafe.Pointer(&_stackEnd))
+	StackTop = uintptr(unsafe.Pointer(&_stackStart))
 
 	memset(MetadataStart, 0, metadataSize)
 }

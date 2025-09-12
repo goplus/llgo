@@ -275,6 +275,11 @@ func (b Builder) CBytes(v Expr) Expr {
 	return b.Call(fn, v)
 }
 
+func (b Builder) InlineStackSave() (ret Expr) {
+	ret = b.stacksave()
+	return
+}
+
 // InlineAsm generates inline assembly instruction
 func (b Builder) InlineAsm(instruction string) {
 	if debugInstr {
