@@ -27,19 +27,29 @@ func init() {
 	if runtime.GOOS == "darwin" {
 		archs = append(archs, "wasm")
 		archDir = append(archDir, "wasm32")
+		archs = append(archs, "esp32")
+		archDir = append(archDir, "esp32")
 	}
+}
+
+func buildConf(mode cabi.Mode, arch string) *build.Config {
+	conf := build.NewDefaultConf(build.ModeGen)
+	conf.AbiMode = mode
+	conf.Goarch = arch
+	conf.Goos = "linux"
+	switch arch {
+	case "wasm":
+		conf.Goos = "wasip1"
+	case "esp32":
+		conf.Target = "esp32"
+	}
+	return conf
 }
 
 func TestBuild(t *testing.T) {
 	for _, mode := range modes {
 		for _, arch := range archs {
-			conf := build.NewDefaultConf(build.ModeGen)
-			conf.AbiMode = mode
-			conf.Goarch = arch
-			conf.Goos = "linux"
-			if arch == "wasm" {
-				conf.Goos = "wasip1"
-			}
+			conf := buildConf(mode, arch)
 			_, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
 			if err != nil {
 				t.Fatalf("build error: %v-%v %v", arch, mode, err)
@@ -70,13 +80,7 @@ func TestABI(t *testing.T) {
 }
 
 func testArch(t *testing.T, arch string, archDir string, files []string) {
-	conf := build.NewDefaultConf(build.ModeGen)
-	conf.AbiMode = cabi.ModeAllFunc
-	conf.Goarch = arch
-	conf.Goos = "linux"
-	if arch == "wasm" {
-		conf.Goos = "wasip1"
-	}
+	conf := buildConf(cabi.ModeAllFunc, arch)
 	for _, file := range files {
 		pkgs, err := build.Do([]string{filepath.Join("./_testdata/demo", file)}, conf)
 		if err != nil {

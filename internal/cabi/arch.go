@@ -464,3 +464,69 @@ func (p *TypeInfo386) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Typ
 	}
 	return info
 }
+
+type TypeInfoEsp32 struct {
+	*Transformer
+}
+
+func (p *TypeInfoEsp32) SupportByVal() bool {
+	return true
+}
+
+func (p *TypeInfoEsp32) SkipEmptyParams() bool {
+	return false
+}
+
+func (p *TypeInfoEsp32) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
+	switch typ.TypeKind() {
+	case llvm.ArrayTypeKind, llvm.StructTypeKind:
+		return true
+	}
+	return false
+}
+
+func (p *TypeInfoEsp32) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	bret := index == 0
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	if typ.TypeKind() == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	if info.Size == 0 {
+		if bret {
+			return info
+		}
+		if index == 1 {
+			info.Kind = AttrPointer
+			info.Type1 = llvm.PointerType(typ, 0)
+			return info
+		}
+		info.Kind = AttrVoid
+		info.Type1 = ctx.VoidType()
+		return info
+	}
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		types := elementTypes(p.td, typ)
+		if (bret && (info.Size > 16 ||
+			(info.Size <= 4 && info.Align < 4) || (info.Size < 8 && info.Align >= 4))) ||
+			(info.Size > 24) {
+			info.Kind = AttrPointer
+			info.Type1 = llvm.PointerType(typ, 0)
+			return info
+		}
+		info.Kind = AttrWidthType
+		if hasTypes(types, ctx.Int64Type()) || hasTypes(types, ctx.DoubleType()) {
+			size := (info.Size + 7) &^ 7
+			info.Type1 = llvm.ArrayType(ctx.Int64Type(), size/8)
+		} else {
+			size := (info.Size + 3) &^ 3
+			info.Type1 = llvm.ArrayType(ctx.Int32Type(), size/4)
+		}
+	}
+	return info
+}
