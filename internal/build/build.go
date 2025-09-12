@@ -890,6 +890,18 @@ define weak void @_start() {
 	if !needStart(ctx) {
 		startDefine = ""
 	}
+	heapDefine := `
+define void @maybe_call_heap_init() {
+  %1 = load ptr, ptr @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap", align 8
+  %2 = icmp ne ptr %1, null
+  br i1 %2, label %3, label %4
+3:
+  call void @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap"()
+  br label %4
+4:
+  ret void
+}
+	`
 	mainCode := fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
 %s
@@ -900,10 +912,12 @@ source_filename = "main"
 %s
 declare void @"%s.init"()
 declare void @"%s.main"()
-declare void @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap"()
+declare extern_weak void @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap"()
 define weak void @runtime.init() {
   ret void
 }
+
+%s
 
 ; TODO(lijie): workaround for syscall patch
 define weak void @"syscall.init"() {
@@ -916,7 +930,7 @@ define weak void @"syscall.init"() {
 _llgo_0:
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/tinygogc/heap.initHeap"()
+  call void @maybe_call_heap_init()
   %s
   %s
   %s
@@ -927,7 +941,7 @@ _llgo_0:
 }
 `, declSizeT, stdioDecl,
 		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
-		startDefine, mainDefine, stdioNobuf,
+		heapDefine, startDefine, mainDefine, stdioNobuf,
 		pyInit, rtInit, mainPkgPath, mainPkgPath)
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))

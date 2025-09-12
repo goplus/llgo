@@ -489,6 +489,7 @@ func findGlobals(found func(start, end uintptr)) {
 }
 
 func gcMarkReachable() {
+	println("scan stack", heap.StackEnd, heap.StackStart)
 	markRoots(heap.StackEnd, heap.StackStart)
 	findGlobals(markRoots)
 }
