@@ -425,7 +425,8 @@ var llgoInstrs = map[string]int{
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
 
-	"asm": llgoAsm,
+	"asm":   llgoAsm,
+	"getSP": llgoGetSP,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -559,6 +560,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = cstr(b, args)
 		case llgoAsm:
 			ret = p.asm(b, args)
+		case llgoGetSP:
+			ret = b.InlineStackSave()
 		case llgoCgoCString:
 			ret = p.cgoCString(b, args)
 		case llgoCgoCBytes:

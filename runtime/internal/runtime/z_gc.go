@@ -21,18 +21,21 @@ package runtime
 
 import (
 	"unsafe"
-
-	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
 )
+
+//go:linkname memset C.memset
+func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
+
+//go:linkname memcpy C.memcpy
+func memcpy(dst, src unsafe.Pointer, n uintptr)
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
-	return bdwgc.Malloc(size)
+	return Alloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
-	ret := bdwgc.Malloc(size)
-	return c.Memset(ret, 0, size)
+	ret := Alloc(size)
+	return memset(ret, 0, size)
 }
