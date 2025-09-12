@@ -51,7 +51,6 @@ install_local() {
 # Function to install from local source with ESP Clang
 install_local_with_esp() {
     echo "Installing llgo from local source with ESP Clang toolchain..."
-    go install ./cmd/llgo
     
     # Download ESP Clang toolchain for current platform
     echo "Downloading ESP Clang toolchain for current platform..."
@@ -64,8 +63,34 @@ install_local_with_esp() {
         exit 1
     fi
     
+    # Build llgo with byollvm tag and proper rpath
+    echo "Building llgo with bundled LLVM..."
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m)
+    case $ARCH in
+        x86_64) ARCH="amd64" ;;
+        aarch64) ARCH="arm64" ;;
+    esac
+    
+    # Set build environment similar to goreleaser
+    export CGO_ENABLED=1
+    export CGO_CXXFLAGS=-std=c++17
+    
+    if [ "$OS" = "darwin" ]; then
+        export CGO_CPPFLAGS="-I$(pwd)/crosscompile/clang/include -mmacosx-version-min=10.13 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS"
+        export CGO_LDFLAGS="-L$(pwd)/crosscompile/clang/lib -mmacosx-version-min=10.13 -lLLVM-19 -lz -lm -Wl,-rpath,@executable_path/../crosscompile/clang/lib"
+        go install -tags="${OS},${ARCH},byollvm" ./cmd/llgo
+    elif [ "$OS" = "linux" ]; then
+        export CGO_CPPFLAGS="-I$(pwd)/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS"
+        export CGO_LDFLAGS="-L$(pwd)/crosscompile/clang/lib -lLLVM-19"
+        go install -tags="${OS},${ARCH},byollvm" -ldflags='-extldflags=-Wl,-rpath,$ORIGIN/../crosscompile/clang/lib' ./cmd/llgo
+    else
+        echo "Error: Unsupported OS: ${OS}"
+        exit 1
+    fi
+    
     echo "Local installation with ESP Clang complete."
-    echo "llgo is now available in your GOPATH."
+    echo "llgo is now available in your GOPATH with bundled LLVM."
     echo "ESP Clang toolchain is available in crosscompile/clang/"
     if [ -n "$GITHUB_ENV" ]; then
         echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
