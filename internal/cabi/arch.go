@@ -327,7 +327,7 @@ type TypeInfoRiscv64 struct {
 }
 
 func (p *TypeInfoRiscv64) SupportByVal() bool {
-	return true
+	return false
 }
 
 func (p *TypeInfoRiscv64) SkipEmptyParams() bool {
@@ -375,6 +375,76 @@ func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm
 		} else {
 			info.Kind = AttrWidthType
 			info.Type1 = llvm.ArrayType(ctx.Int64Type(), 2)
+		}
+	}
+	return info
+}
+
+const (
+	MABI_LP64  = "lp64"
+	MABI_LP64D = "lp64d"
+)
+
+const (
+	MABI_ILP32  = "ilp32"
+	MABI_ILP32F = "ilp32f"
+	MABI_ILP32D = "ilp32d"
+)
+
+type TypeInfoRiscv32 struct {
+	*Transformer
+	mabi string
+}
+
+func (p *TypeInfoRiscv32) SupportByVal() bool {
+	return false
+}
+
+func (p *TypeInfoRiscv32) SkipEmptyParams() bool {
+	return true
+}
+
+func (p *TypeInfoRiscv32) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		return true
+	}
+	return false
+}
+
+func (p *TypeInfoRiscv32) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	info := &TypeInfo{}
+	info.Type = typ
+	info.Type1 = typ
+	if typ.TypeKind() == llvm.VoidTypeKind {
+		info.Kind = AttrVoid
+		return info
+	}
+	info.Size = p.Sizeof(typ)
+	info.Align = p.Alignof(typ)
+	switch typ.TypeKind() {
+	case llvm.StructTypeKind, llvm.ArrayTypeKind:
+		types := elementTypes(p.td, typ)
+		switch len(types) {
+		case 1:
+			if types[0] == ctx.Int64Type() {
+				return info
+			}
+			if types[0] == ctx.DoubleType() {
+				info.Kind = AttrWidthType
+				info.Type1 = ctx.Int64Type()
+				return info
+			}
+		}
+		if info.Size > 8 {
+			info.Kind = AttrPointer
+			info.Type1 = llvm.PointerType(typ, 0)
+		} else if info.Size <= 4 {
+			info.Kind = AttrWidthType
+			info.Type1 = ctx.Int32Type()
+		} else {
+			info.Kind = AttrWidthType
+			info.Type1 = llvm.ArrayType(ctx.Int32Type(), 2)
 		}
 	}
 	return info

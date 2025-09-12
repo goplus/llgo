@@ -29,6 +29,8 @@ func init() {
 		archDir = append(archDir, "wasm32")
 		archs = append(archs, "esp32")
 		archDir = append(archDir, "esp32")
+		archs = append(archs, "esp32c3")
+		archDir = append(archDir, "esp32c3")
 	}
 }
 
@@ -42,6 +44,8 @@ func buildConf(mode cabi.Mode, arch string) *build.Config {
 		conf.Goos = "wasip1"
 	case "esp32":
 		conf.Target = "esp32"
+	case "esp32c3":
+		conf.Target = "esp32c3"
 	}
 	return conf
 }
@@ -141,7 +145,7 @@ func testFunc(t *testing.T, ctx context, td llvm.TargetData, fn llvm.Value, cfn 
 				t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 			}
 		}
-		if fn.GetStringAttributeAtIndex(1, "byval") != cfn.GetStringAttributeAtIndex(1, "byval") {
+		if fn.GetStringAttributeAtIndex(i+1, "byval") != cfn.GetStringAttributeAtIndex(i+1, "byval") {
 			t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 		}
 	}

@@ -15,7 +15,7 @@ const (
 	ModeAllFunc
 )
 
-func NewTransformer(prog ssa.Program, targetName string, mode Mode, optimize bool) *Transformer {
+func NewTransformer(prog ssa.Program, targetName string, targetAbi string, mode Mode, optimize bool) *Transformer {
 	target := prog.Target()
 	tr := &Transformer{
 		prog:     prog,
@@ -28,6 +28,9 @@ func NewTransformer(prog ssa.Program, targetName string, mode Mode, optimize boo
 	switch targetName {
 	case "esp32":
 		tr.sys = &TypeInfoEsp32{tr}
+		return tr
+	case "esp32c3":
+		tr.sys = &TypeInfoRiscv32{tr, targetAbi}
 		return tr
 	}
 	switch target.GOARCH {
