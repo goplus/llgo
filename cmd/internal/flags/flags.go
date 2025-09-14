@@ -25,6 +25,7 @@ func AddOutputFlags(fs *flag.FlagSet) {
 
 var Verbose bool
 var BuildEnv string
+var BuildMode string
 var Tags string
 var Target string
 var Emulator bool
@@ -52,6 +53,10 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	}
 }
 
+func AddBuildModeFlags(fs *flag.FlagSet) {
+	fs.StringVar(&BuildMode, "buildmode", "exe", "Build mode (exe, c-archive, c-shared)")
+}
+
 var Gen bool
 
 func AddEmulatorFlags(fs *flag.FlagSet) {
@@ -68,12 +73,13 @@ func AddCmpTestFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Gen, "gen", false, "Generate llgo.expect file")
 }
 
-func UpdateConfig(conf *build.Config) {
+func UpdateConfig(conf *build.Config) error {
 	conf.Tags = Tags
 	conf.Verbose = Verbose
 	conf.Target = Target
 	conf.Port = Port
 	conf.BaudRate = BaudRate
+
 	switch conf.Mode {
 	case build.ModeBuild:
 		conf.OutFile = OutputFile
@@ -99,4 +105,18 @@ func UpdateConfig(conf *build.Config) {
 		conf.GenLL = GenLLFiles
 		conf.ForceEspClang = ForceEspClang
 	}
+	return nil
+}
+
+func UpdateBuildConfig(conf *build.Config) error {
+	// First apply common config
+	if err := UpdateConfig(conf); err != nil {
+		return err
+	}
+	if err := build.ValidateBuildMode(BuildMode); err != nil {
+		return err
+	}
+	conf.BuildMode = build.BuildMode(BuildMode)
+
+	return nil
 }

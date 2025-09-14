@@ -43,6 +43,7 @@ import (
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
+	"github.com/goplus/llgo/internal/header"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
@@ -65,6 +66,24 @@ const (
 	ModeCmpTest
 	ModeGen
 )
+
+type BuildMode string
+
+const (
+	BuildModeExe      BuildMode = "exe"
+	BuildModeCArchive BuildMode = "c-archive"
+	BuildModeCShared  BuildMode = "c-shared"
+)
+
+// ValidateBuildMode checks if the build mode is valid
+func ValidateBuildMode(mode string) error {
+	switch BuildMode(mode) {
+	case BuildModeExe, BuildModeCArchive, BuildModeCShared:
+		return nil
+	default:
+		return fmt.Errorf("invalid build mode %q, must be one of: exe, c-archive, c-shared", mode)
+	}
+}
 
 type AbiMode = cabi.Mode
 
@@ -104,6 +123,7 @@ type Config struct {
 	BaudRate      int     // baudrate for serial communication
 	RunArgs       []string
 	Mode          Mode
+	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
@@ -136,11 +156,12 @@ func NewDefaultConf(mode Mode) *Config {
 		goarch = runtime.GOARCH
 	}
 	conf := &Config{
-		Goos:    goos,
-		Goarch:  goarch,
-		BinPath: bin,
-		Mode:    mode,
-		AbiMode: cabi.ModeAllFunc,
+		Goos:      goos,
+		Goarch:    goarch,
+		BinPath:   bin,
+		Mode:      mode,
+		BuildMode: BuildModeExe,
+		AbiMode:   cabi.ModeAllFunc,
 	}
 	return conf
 }
@@ -154,23 +175,6 @@ func envGOPATH() (string, error) {
 		return "", err
 	}
 	return filepath.Join(home, "go"), nil
-}
-
-func defaultAppExt(conf *Config) string {
-	if conf.Target != "" {
-		if strings.HasPrefix(conf.Target, "wasi") || strings.HasPrefix(conf.Target, "wasm") {
-			return ".wasm"
-		}
-		return ".elf"
-	}
-
-	switch conf.Goos {
-	case "windows":
-		return ".exe"
-	case "wasi", "wasip1", "js":
-		return ".wasm"
-	}
-	return ""
 }
 
 // -----------------------------------------------------------------------------
@@ -191,6 +195,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if conf.AppExt == "" {
 		conf.AppExt = defaultAppExt(conf)
+	}
+	if conf.BuildMode == "" {
+		conf.BuildMode = BuildModeExe
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
@@ -361,10 +368,27 @@ func Do(args []string, conf *Config) ([]Package, error) {
 				return nil, err
 			}
 
-			// Link main package using the base output path
+			// Link main package using the output path from buildOutFmts
 			err = linkMainPkg(ctx, pkg, allPkgs, global, outFmts.Out, verbose)
 			if err != nil {
 				return nil, err
+			}
+
+			// Generate C headers for c-archive and c-shared modes before linking
+			if ctx.buildConf.BuildMode == BuildModeCArchive || ctx.buildConf.BuildMode == BuildModeCShared {
+				libname := strings.TrimSuffix(filepath.Base(outFmts.Out), conf.AppExt)
+				headerPath := filepath.Join(filepath.Dir(outFmts.Out), libname) + ".h"
+				pkgs := make([]llssa.Package, 0, len(allPkgs))
+				for _, p := range allPkgs {
+					if p.LPkg != nil {
+						pkgs = append(pkgs, p.LPkg)
+					}
+				}
+				headerErr := header.GenHeaderFile(prog, pkgs, libname, headerPath, verbose)
+				if headerErr != nil {
+					return nil, headerErr
+				}
+				continue
 			}
 
 			envMap := outFmts.ToEnvMap()
@@ -755,6 +779,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 			}
 		}
 	})
+	// Generate main module file (needed for global variables even in library modes)
 	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	if err != nil {
 		return err
@@ -794,12 +819,30 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	}
 
-	return linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
+	err = linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
+	// Handle c-archive mode differently - use ar tool instead of linker
+	if ctx.buildConf.BuildMode == BuildModeCArchive {
+		return createStaticArchive(ctx, app, objFiles, verbose)
+	}
+
 	buildArgs := []string{"-o", app}
 	buildArgs = append(buildArgs, linkArgs...)
+
+	// Add build mode specific linker arguments
+	switch ctx.buildConf.BuildMode {
+	case BuildModeCShared:
+		buildArgs = append(buildArgs, "-shared", "-fPIC")
+	case BuildModeExe:
+		// Default executable mode, no additional flags needed
+	}
 
 	// Add common linker arguments based on target OS and architecture
 	if IsDbgSymsEnabled() {
@@ -811,6 +854,27 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	cmd := ctx.linker()
 	cmd.Verbose = verbose
 	return cmd.Link(buildArgs...)
+}
+
+func createStaticArchive(ctx *context, archivePath string, objFiles []string, verbose bool) error {
+	// Use ar tool to create static archive
+	args := []string{"rcs", archivePath}
+	args = append(args, objFiles...)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "ar %s\n", strings.Join(args, " "))
+	}
+
+	cmd := exec.Command("ar", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if verbose && len(output) > 0 {
+			fmt.Fprintf(os.Stderr, "ar output: %s\n", output)
+		}
+		return fmt.Errorf("ar command failed: %w", err)
+	}
+
+	return nil
 }
 
 func isWasmTarget(goos string) bool {
@@ -889,7 +953,18 @@ define weak void @_start() {
 	if !needStart(ctx) {
 		startDefine = ""
 	}
-	mainCode := fmt.Sprintf(`; ModuleID = 'main'
+
+	var mainCode string
+	// For library modes (c-archive, c-shared), only generate global variables
+	if ctx.buildConf.BuildMode != BuildModeExe {
+		mainCode = `; ModuleID = 'main'
+source_filename = "main"
+@__llgo_argc = global i32 0, align 4
+@__llgo_argv = global ptr null, align 8
+`
+	} else {
+		// For executable mode, generate full main function
+		mainCode = fmt.Sprintf(`; ModuleID = 'main'
 source_filename = "main"
 %s
 @__llgo_argc = global i32 0, align 4
@@ -923,9 +998,10 @@ _llgo_0:
   ret i32 0
 }
 `, declSizeT, stdioDecl,
-		pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
-		startDefine, mainDefine, stdioNobuf,
-		pyInit, rtInit, mainPkgPath, mainPkgPath)
+			pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
+			startDefine, mainDefine, stdioNobuf,
+			pyInit, rtInit, mainPkgPath, mainPkgPath)
+	}
 
 	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
 }

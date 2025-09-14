@@ -125,6 +125,13 @@ jobs:
           export LLGO_FULL_RPATH=true
           bash .github/workflows/test_demo.sh
 
+      - name: Test C header generation
+        run: |
+          echo "Testing C header generation in different build modes..."
+          cd _demo/go/export
+          chmod +x test.sh
+          ./test.sh
+
       - name: _xtool build tests
         run: |
           cd _xtool

@@ -75,7 +75,7 @@ func PassBuildFlags(cmd *Command) *PassArgs {
 	p.Bool("a")
 	p.Bool("linkshared", "race", "msan", "asan",
 		"trimpath", "work")
-	p.Var("p", "asmflags", "compiler", "buildmode",
+	p.Var("p", "asmflags", "compiler",
 		"gcflags", "gccgoflags", "installsuffix",
 		"ldflags", "pkgdir", "toolexec", "buildvcs")
 	return p

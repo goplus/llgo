@@ -7,6 +7,7 @@ import (
 	"github.com/goplus/llgo/cmd/internal/base"
 	"github.com/goplus/llgo/cmd/internal/flags"
 	"github.com/goplus/llgo/internal/build"
+	"github.com/goplus/llgo/internal/mockable"
 )
 
 // llgo test
@@ -30,12 +31,15 @@ func runCmd(cmd *base.Command, args []string) {
 	}
 
 	conf := build.NewDefaultConf(build.ModeTest)
-	flags.UpdateConfig(conf)
+	if err := flags.UpdateConfig(conf); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+	}
 
 	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		mockable.Exit(1)
 	}
 }
