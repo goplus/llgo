@@ -22,14 +22,14 @@ jobs:
     steps:
       - name: Download model file
         run: |
-          mkdir -p ./_demo/llama2-c
-          wget -P ./_demo/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+          mkdir -p ./_demo/c/llama2-c
+          wget -P ./_demo/c/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
 
       - name: Upload model as artifact
         uses: actions/upload-artifact@v4
         with:
           name: llama2-model
-          path: ./_demo/llama2-c/stories15M.bin
+          path: ./_demo/c/llama2-c/stories15M.bin
           retention-days: 1
 
   llgo:
@@ -54,7 +54,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: llama2-model
-          path: ./_demo/llama2-c/
+          path: ./_demo/c/llama2-c/
       - name: Download platform-specific demo libs
         run: |
           if ${{ startsWith(matrix.os, 'macos') }}; then
@@ -63,8 +63,8 @@ jobs:
             DEMO_PKG="cargs_linux_amd64.zip"  
           fi
 
-          mkdir -p ./_demo/cargs/libs
-          cd ./_demo/cargs/libs
+          mkdir -p ./_demo/c/cargs/libs
+          cd ./_demo/c/cargs/libs
           wget https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/${DEMO_PKG}
           unzip ${DEMO_PKG}
 
@@ -104,7 +104,7 @@ jobs:
           echo "Testing demo without RPATH (should fail)..."
           export LLGO_FULL_RPATH=false
           pkg-config --libs cargs
-          if (cd ./_demo/cargs && llgo run .); then
+          if (cd ./_demo/c/cargs && llgo run .); then
             echo "ERROR: cargs demo should have failed without RPATH!"
             exit 1
           else
@@ -278,7 +278,7 @@ jobs:
 
       - name: Test Cross Compilation (wasm)
         shell: bash
-        working-directory: _demo
+        working-directory: _demo/c
         run: |
           echo "Testing cross-compilation wasm with Go 1.24.2"
 

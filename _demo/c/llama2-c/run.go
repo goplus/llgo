@@ -36,7 +36,6 @@ loop: // parse command line arguments
 	// build the Tokenizer via the tokenizer .bin file
 	var tokenizer llama2.Tokenizer
 	llama2.BuildTokenizer(&tokenizer, tokenizerPath, transformer.Config.VocabSize)
-
 	// build the Sampler
 	var sampler llama2.Sampler
 	llama2.BuildSampler(&sampler, transformer.Config.VocabSize, temperature, topp, rngSeed)

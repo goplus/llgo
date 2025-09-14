@@ -3,7 +3,7 @@ package timeout
 import (
 	"time"
 
-	"github.com/goplus/llgo/_demo/async/async"
+	"github.com/goplus/llgo/_demo/go/async/async"
 )
 
 func Timeout(d time.Duration) async.Future[async.Void] {
