@@ -58,15 +58,15 @@ func PrintComplex(v complex128) {
 }
 
 func PrintUint(v uint64) {
-	c.Fprintf(c.Stderr, c.Str("%llu"), v)
+	c.Fprintf(c.Stderr, printFormatPrefixUInt, v)
 }
 
 func PrintInt(v int64) {
-	c.Fprintf(c.Stderr, c.Str("%lld"), v)
+	c.Fprintf(c.Stderr, printFormatPrefixInt, v)
 }
 
 func PrintHex(v uint64) {
-	c.Fprintf(c.Stderr, c.Str("%llx"), v)
+	c.Fprintf(c.Stderr, printFormatPrefixHex, v)
 }
 
 func PrintPointer(p unsafe.Pointer) {

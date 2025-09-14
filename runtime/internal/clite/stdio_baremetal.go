@@ -1,4 +1,4 @@
-//go:build !darwin && !baremetal
+//go:build baremetal
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -18,13 +18,10 @@
 
 package c
 
-import _ "unsafe"
+import (
+	_ "unsafe"
+)
 
-//go:linkname Stdin stdin
-var Stdin FilePtr
-
-//go:linkname Stdout stdout
-var Stdout FilePtr
-
-//go:linkname Stderr stderr
-var Stderr FilePtr
+var Stdin FilePtr = Fopen(Str("/dev/stdin"), Str("r"))
+var Stdout FilePtr = Fopen(Str("/dev/stdout"), Str("w"))
+var Stderr FilePtr = Stdout
