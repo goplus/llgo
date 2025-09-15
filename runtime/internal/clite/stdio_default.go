@@ -20,6 +20,10 @@ package c
 
 import _ "unsafe"
 
+const (
+	LLGoPackage = "decl"
+)
+
 //go:linkname Stdin stdin
 var Stdin FilePtr
 
