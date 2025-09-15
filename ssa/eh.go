@@ -91,7 +91,7 @@ func (p Program) tySiglongjmp() *types.Signature {
 	return p.sigljmpTy
 }
 
-// func() uintptr
+// func() unsafe.Pointer
 func (p Program) tyStacksave() *types.Signature {
 	if p.stackSaveTy == nil {
 		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
