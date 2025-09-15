@@ -3,7 +3,7 @@ package main
 import (
 	_ "unsafe"
 
-	"github.com/goplus/llgo/_embdemo/esp32/watchdog"
+	"github.com/goplus/llgo/_demo/embed/esp32/watchdog"
 )
 
 //
@@ -278,7 +278,7 @@ func testMultiplicationFunctions() {
 
 	// Test muldi3 - signed 64-bit multiplication
 	assertEqualInt64("muldi3", muldi3(5, 4), 20)
-	assertEqualInt64("mul极3", muldi3(-5, 4), -20)
+	assertEqualInt64("muldi3", muldi3(-5, 4), -20)
 	assertEqualInt64("muldi3", muldi3(5, -4), -20)
 
 	// Test muldf3 - double precision multiplication
