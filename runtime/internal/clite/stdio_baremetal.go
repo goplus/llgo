@@ -22,6 +22,11 @@ import (
 	_ "unsafe"
 )
 
+const (
+	// we want to execute init(), link / decl skips executing init()
+	LLGoPackage = true
+)
+
 var Stdin FilePtr = Fopen(Str("/dev/stdin"), Str("r"))
 var Stdout FilePtr = Fopen(Str("/dev/stdout"), Str("w"))
 var Stderr FilePtr = Stdout

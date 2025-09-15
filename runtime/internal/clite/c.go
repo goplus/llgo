@@ -20,10 +20,7 @@ import (
 	"unsafe"
 )
 
-const (
-	// we want to execute init(), link / decl skips executing init()
-	LLGoPackage = true
-)
+// LLGoPackage is declared in stdio_xxx.go
 
 type (
 	Void    = [0]byte
