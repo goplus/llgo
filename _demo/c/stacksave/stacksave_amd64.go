@@ -14,13 +14,9 @@ func getsp() unsafe.Pointer
 func asmFull(instruction string, regs map[string]any) uintptr { return 0 }
 
 func main() {
-	var spPtr uintptr
+	sp := asmFull("movq %rsp, {}", nil)
 
-	asmFull("movq sp, {{addr}}", map[string]any{
-		"addr": unsafe.Pointer(&spPtr),
-	})
-
-	if spPtr != uintptr(getsp()) {
+	if sp != uintptr(getsp()) {
 		panic("invalid stack pointer")
 	}
 }
