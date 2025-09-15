@@ -1,0 +1,216 @@
+; ModuleID = '../../wrap/struct_pointer.c'
+source_filename = "../../wrap/struct_pointer.c"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "amd64-unknown-linux-gnu"
+
+%struct.point1 = type { i8* }
+%struct.point2 = type { i8*, i8* }
+%struct.point3 = type { i8*, i8*, i8* }
+%struct.point4 = type { i8*, i8*, i8*, i8* }
+%struct.point5 = type { i8*, i8*, i8*, i8*, i8* }
+%struct.point6 = type { i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point7 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point8 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point9 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point10 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point11 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point12 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point13 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point14 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point15 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point16 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point17 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point18 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point19 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+%struct.point20 = type { i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8* }
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i8* @demo1(i8* %0) #0 {
+  %2 = alloca %struct.point1, align 8
+  %3 = alloca %struct.point1, align 8
+  %4 = getelementptr inbounds %struct.point1, %struct.point1* %3, i32 0, i32 0
+  store i8* %0, i8** %4, align 8
+  %5 = bitcast %struct.point1* %2 to i8*
+  %6 = bitcast %struct.point1* %3 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %5, i8* align 8 %6, i64 8, i1 false)
+  %7 = getelementptr inbounds %struct.point1, %struct.point1* %2, i32 0, i32 0
+  %8 = load i8*, i8** %7, align 8
+  ret i8* %8
+}
+
+; Function Attrs: argmemonly nofree nounwind willreturn
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #1
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local { i8*, i8* } @demo2(i8* %0, i8* %1) #0 {
+  %3 = alloca %struct.point2, align 8
+  %4 = alloca %struct.point2, align 8
+  %5 = bitcast %struct.point2* %4 to { i8*, i8* }*
+  %6 = getelementptr inbounds { i8*, i8* }, { i8*, i8* }* %5, i32 0, i32 0
+  store i8* %0, i8** %6, align 8
+  %7 = getelementptr inbounds { i8*, i8* }, { i8*, i8* }* %5, i32 0, i32 1
+  store i8* %1, i8** %7, align 8
+  %8 = bitcast %struct.point2* %3 to i8*
+  %9 = bitcast %struct.point2* %4 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %8, i8* align 8 %9, i64 16, i1 false)
+  %10 = bitcast %struct.point2* %3 to { i8*, i8* }*
+  %11 = load { i8*, i8* }, { i8*, i8* }* %10, align 8
+  ret { i8*, i8* } %11
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo3(%struct.point3* noalias sret(%struct.point3) align 8 %0, %struct.point3* noundef byval(%struct.point3) align 8 %1) #0 {
+  %3 = bitcast %struct.point3* %0 to i8*
+  %4 = bitcast %struct.point3* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 24, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo4(%struct.point4* noalias sret(%struct.point4) align 8 %0, %struct.point4* noundef byval(%struct.point4) align 8 %1) #0 {
+  %3 = bitcast %struct.point4* %0 to i8*
+  %4 = bitcast %struct.point4* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 32, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo5(%struct.point5* noalias sret(%struct.point5) align 8 %0, %struct.point5* noundef byval(%struct.point5) align 8 %1) #0 {
+  %3 = bitcast %struct.point5* %0 to i8*
+  %4 = bitcast %struct.point5* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 40, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo6(%struct.point6* noalias sret(%struct.point6) align 8 %0, %struct.point6* noundef byval(%struct.point6) align 8 %1) #0 {
+  %3 = bitcast %struct.point6* %0 to i8*
+  %4 = bitcast %struct.point6* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 48, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo7(%struct.point7* noalias sret(%struct.point7) align 8 %0, %struct.point7* noundef byval(%struct.point7) align 8 %1) #0 {
+  %3 = bitcast %struct.point7* %0 to i8*
+  %4 = bitcast %struct.point7* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 56, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo8(%struct.point8* noalias sret(%struct.point8) align 8 %0, %struct.point8* noundef byval(%struct.point8) align 8 %1) #0 {
+  %3 = bitcast %struct.point8* %0 to i8*
+  %4 = bitcast %struct.point8* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 64, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo9(%struct.point9* noalias sret(%struct.point9) align 8 %0, %struct.point9* noundef byval(%struct.point9) align 8 %1) #0 {
+  %3 = bitcast %struct.point9* %0 to i8*
+  %4 = bitcast %struct.point9* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 72, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo10(%struct.point10* noalias sret(%struct.point10) align 8 %0, %struct.point10* noundef byval(%struct.point10) align 8 %1) #0 {
+  %3 = bitcast %struct.point10* %0 to i8*
+  %4 = bitcast %struct.point10* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 80, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo11(%struct.point11* noalias sret(%struct.point11) align 8 %0, %struct.point11* noundef byval(%struct.point11) align 8 %1) #0 {
+  %3 = bitcast %struct.point11* %0 to i8*
+  %4 = bitcast %struct.point11* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 88, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo12(%struct.point12* noalias sret(%struct.point12) align 8 %0, %struct.point12* noundef byval(%struct.point12) align 8 %1) #0 {
+  %3 = bitcast %struct.point12* %0 to i8*
+  %4 = bitcast %struct.point12* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 96, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo13(%struct.point13* noalias sret(%struct.point13) align 8 %0, %struct.point13* noundef byval(%struct.point13) align 8 %1) #0 {
+  %3 = bitcast %struct.point13* %0 to i8*
+  %4 = bitcast %struct.point13* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 104, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo14(%struct.point14* noalias sret(%struct.point14) align 8 %0, %struct.point14* noundef byval(%struct.point14) align 8 %1) #0 {
+  %3 = bitcast %struct.point14* %0 to i8*
+  %4 = bitcast %struct.point14* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 112, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo15(%struct.point15* noalias sret(%struct.point15) align 8 %0, %struct.point15* noundef byval(%struct.point15) align 8 %1) #0 {
+  %3 = bitcast %struct.point15* %0 to i8*
+  %4 = bitcast %struct.point15* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 120, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo16(%struct.point16* noalias sret(%struct.point16) align 8 %0, %struct.point16* noundef byval(%struct.point16) align 8 %1) #0 {
+  %3 = bitcast %struct.point16* %0 to i8*
+  %4 = bitcast %struct.point16* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 128, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo17(%struct.point17* noalias sret(%struct.point17) align 8 %0, %struct.point17* noundef byval(%struct.point17) align 8 %1) #0 {
+  %3 = bitcast %struct.point17* %0 to i8*
+  %4 = bitcast %struct.point17* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 136, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo18(%struct.point18* noalias sret(%struct.point18) align 8 %0, %struct.point18* noundef byval(%struct.point18) align 8 %1) #0 {
+  %3 = bitcast %struct.point18* %0 to i8*
+  %4 = bitcast %struct.point18* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 144, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo19(%struct.point19* noalias sret(%struct.point19) align 8 %0, %struct.point19* noundef byval(%struct.point19) align 8 %1) #0 {
+  %3 = bitcast %struct.point19* %0 to i8*
+  %4 = bitcast %struct.point19* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 152, i1 false)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @demo20(%struct.point20* noalias sret(%struct.point20) align 8 %0, %struct.point20* noundef byval(%struct.point20) align 8 %1) #0 {
+  %3 = bitcast %struct.point20* %0 to i8*
+  %4 = bitcast %struct.point20* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %3, i8* align 8 %4, i64 160, i1 false)
+  ret void
+}
+
+attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { argmemonly nofree nounwind willreturn }
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4}
+!llvm.ident = !{!5}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 7, !"PIE Level", i32 2}
+!3 = !{i32 7, !"uwtable", i32 2}
+!4 = !{i32 7, !"frame-pointer", i32 2}
+!5 = !{!"Apple clang version 14.0.3 (clang-1403.0.22.14.1)"}

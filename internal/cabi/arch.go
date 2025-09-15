@@ -57,6 +57,15 @@ func hasTypes(typs []llvm.Type, typ llvm.Type) bool {
 	return false
 }
 
+func hasTypesKind(typs []llvm.Type, kind llvm.TypeKind) bool {
+	for _, t := range typs {
+		if t.TypeKind() == kind {
+			return true
+		}
+	}
+	return false
+}
+
 type TypeInfoAmd64 struct {
 	*Transformer
 }
@@ -324,6 +333,7 @@ func (p *TypeInfoWasm) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Ty
 
 type TypeInfoRiscv64 struct {
 	*Transformer
+	mabi string
 }
 
 func (p *TypeInfoRiscv64) SupportByVal() bool {
@@ -360,10 +370,32 @@ func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm
 			if types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int64Type() {
 				return info
 			}
+			switch p.mabi {
+			case MABI_LP64F, MABI_LP64D:
+				if types[0] == ctx.FloatType() {
+					return info
+				}
+			}
 		case 2:
 			if (types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int64Type()) &&
 				(types[1].TypeKind() == llvm.PointerTypeKind || types[1] == ctx.Int64Type()) {
 				return info
+			}
+			switch p.mabi {
+			case MABI_LP64F:
+				if hasTypes(types, ctx.FloatType()) && !hasTypes(types, ctx.DoubleType()) && !hasTypesKind(types, llvm.PointerTypeKind) {
+					info.Kind = AttrWidthType2
+					info.Type1 = types[0]
+					info.Type2 = types[1]
+					return info
+				}
+			case MABI_LP64D:
+				if (hasTypes(types, ctx.FloatType()) || hasTypes(types, ctx.DoubleType())) && !hasTypesKind(types, llvm.PointerTypeKind) {
+					info.Kind = AttrWidthType2
+					info.Type1 = types[0]
+					info.Type2 = types[1]
+					return info
+				}
 			}
 		}
 		if info.Size > 16 {
@@ -382,6 +414,7 @@ func (p *TypeInfoRiscv64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm
 
 const (
 	MABI_LP64  = "lp64"
+	MABI_LP64F = "lp64f"
 	MABI_LP64D = "lp64d"
 )
 
@@ -434,6 +467,24 @@ func (p *TypeInfoRiscv32) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm
 				info.Kind = AttrWidthType
 				info.Type1 = ctx.Int64Type()
 				return info
+			}
+		case 2:
+			switch p.mabi {
+			case MABI_ILP32F:
+				if info.Align != 8 && hasTypes(types, ctx.FloatType()) && !hasTypesKind(types, llvm.PointerTypeKind) {
+					info.Kind = AttrWidthType2
+					info.Type1 = types[0]
+					info.Type2 = types[1]
+					return info
+				}
+			case MABI_ILP32D:
+				if (hasTypes(types, ctx.FloatType()) || hasTypes(types, ctx.DoubleType())) &&
+					!hasTypesKind(types, llvm.PointerTypeKind) && !hasTypes(types, ctx.Int64Type()) {
+					info.Kind = AttrWidthType2
+					info.Type1 = types[0]
+					info.Type2 = types[1]
+					return info
+				}
 			}
 		}
 		if info.Size > 8 {

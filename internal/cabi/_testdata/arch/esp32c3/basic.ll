@@ -52,7 +52,7 @@ define dso_local double @basic_float64(double noundef %0) #0 {
 }
 
 ; Function Attrs: noinline nounwind optnone
-define dso_local ptr @basic_uintptr(ptr noundef %0) #0 {
+define dso_local ptr @basic_pointer(ptr noundef %0) #0 {
   %2 = alloca ptr, align 4
   store ptr %0, ptr %2, align 4
   %3 = load ptr, ptr %2, align 4

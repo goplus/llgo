@@ -15,25 +15,31 @@ const (
 	ModeAllFunc
 )
 
-func NewTransformer(prog ssa.Program, targetName string, targetAbi string, mode Mode, optimize bool) *Transformer {
+func targetArch(llvmTarget string) string {
+	if pos := strings.Index(llvmTarget, "-"); pos != -1 {
+		return llvmTarget[:pos]
+	}
+	return llvmTarget
+}
+
+func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, mode Mode, optimize bool) *Transformer {
 	target := prog.Target()
+	arch := target.GOARCH
+	if llvmTarget != "" {
+		arch = targetArch(llvmTarget)
+	}
 	tr := &Transformer{
 		prog:     prog,
 		td:       prog.TargetData(),
-		GOOS:     target.GOOS,
-		GOARCH:   target.GOARCH,
+		arch:     arch,
 		mode:     mode,
 		optimize: optimize,
 	}
-	switch targetName {
-	case "esp32":
+	switch arch {
+	case "xtensa":
 		tr.sys = &TypeInfoEsp32{tr}
-		return tr
-	case "esp32c3":
+	case "riscv32":
 		tr.sys = &TypeInfoRiscv32{tr, targetAbi}
-		return tr
-	}
-	switch target.GOARCH {
 	case "amd64":
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
@@ -43,7 +49,7 @@ func NewTransformer(prog ssa.Program, targetName string, targetAbi string, mode 
 	case "wasm":
 		tr.sys = &TypeInfoWasm{tr}
 	case "riscv64":
-		tr.sys = &TypeInfoRiscv64{tr}
+		tr.sys = &TypeInfoRiscv64{tr, targetAbi}
 	case "386":
 		tr.sys = &TypeInfo386{tr}
 	}
@@ -53,8 +59,7 @@ func NewTransformer(prog ssa.Program, targetName string, targetAbi string, mode 
 type Transformer struct {
 	prog     ssa.Program
 	td       llvm.TargetData
-	GOOS     string
-	GOARCH   string
+	arch     string
 	sys      TypeInfoSys
 	mode     Mode
 	optimize bool
@@ -245,7 +250,7 @@ func (p *Transformer) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Typ
 		}
 		return p.sys.GetTypeInfo(ctx, ftyp, typ, index)
 	}
-	panic("not implment: " + p.GOARCH)
+	panic("not implment: " + p.arch)
 }
 
 func (p *Transformer) Sizeof(typ llvm.Type) int {
