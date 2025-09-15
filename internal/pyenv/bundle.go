@@ -1,8 +1,10 @@
 package pyenv
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/fs"
@@ -381,7 +383,7 @@ func main() {
 
 func extractPayload(p []byte) (string, error) {
     sum := sha256.Sum256(p)
-    tag := hex.EncodeToString(sum[:8])
+    tag := hex.EncodeToString(sum[:])
     base, err := os.UserCacheDir()
     if err != nil { return "", err }
     root := filepath.Join(base, "llgo", "pybundle", tag)
@@ -433,4 +435,125 @@ func listDynLibs(dir string) ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// ArchiveDir packs the given directory (including the top-level folder) into dst.
+// format: "zip" (built-in), "tar" (built-in), "rar" (requires `rar` command).
+func ArchiveDir(dir, dst, format string) error {
+	switch strings.ToLower(format) {
+	case "zip":
+		return archiveZip(dir, dst)
+	case "tar", "tar.gz":
+		return archiveTarGz(dir, dst)
+	case "rar":
+		return archiveRar(dir, dst)
+	default:
+		return fmt.Errorf("unsupported archive format: %s", format)
+	}
+}
+
+func archiveZip(root, dst string) error {
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	zw := zip.NewWriter(f)
+	defer zw.Close()
+
+	parent := filepath.Dir(root)
+	return filepath.WalkDir(root, func(p string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, _ := filepath.Rel(parent, p) // include top dir name
+		rel = filepath.ToSlash(rel)
+		if d.IsDir() {
+			h := &zip.FileHeader{
+				Name:   rel + "/",
+				Method: zip.Deflate,
+			}
+			h.SetMode(0755)
+			_, err := zw.CreateHeader(h)
+			return err
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		h, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+		h.Name = rel
+		h.Method = zip.Deflate
+		w, err := zw.CreateHeader(h)
+		if err != nil {
+			return err
+		}
+		in, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+		_, err = io.Copy(w, in)
+		return err
+	})
+}
+
+func archiveTarGz(root, dst string) error {
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	gw := gzip.NewWriter(f)
+	defer gw.Close()
+
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	parent := filepath.Dir(root)
+	return filepath.WalkDir(root, func(p string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, _ := filepath.Rel(parent, p) // include top dir name
+		rel = filepath.ToSlash(rel)
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		hdr, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+		hdr.Name = rel
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		in, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+		_, err = io.Copy(tw, in)
+		return err
+	})
+}
+
+func archiveRar(root, dst string) error {
+	top := filepath.Base(root)
+	cmd := exec.Command("rar", "a", "-r", dst, top)
+	cmd.Dir = filepath.Dir(root)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("rar not available or failed: %w", err)
+	}
+	return nil
 }
