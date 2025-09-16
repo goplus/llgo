@@ -19,6 +19,8 @@ const (
 	LLGoFiles = "../wrap/basic.c"
 )
 
+type pointer = *int8
+
 //go:linkname printf C.printf
 func printf(format *byte, __llgo_va_list ...any) int32
 
@@ -43,6 +45,21 @@ func basic(a int) int {
 func init() {
 	assert("cbasic\000", cbasic(100) == 100)
 	assert("basic\000", basic(100) == 100)
+}
+`
+
+var gbasic_pointer = `
+//go:linkname cbasic_pointer C.basic_pointer
+func cbasic_pointer(a pointer) pointer
+
+func basic_pointer(a pointer) pointer {
+	return a
+}
+
+func init() {
+	var p int8
+	assert("cbasic_pointer\000", cbasic_pointer(&p) == &p)
+	assert("basic_pointer\000", basic_pointer(&p) == &p)
 }
 `
 
@@ -120,7 +137,7 @@ func main() {
 	// 1 2 3 4 5 6 7 8
 
 	types := []string{"char", "short", "int", "long long", "float", "double", "void*"}
-	ids := []string{"int8", "int16", "int32", "int64", "float32", "float64", "uintptr"}
+	ids := []string{"int8", "int16", "int32", "int64", "float32", "float64", "pointer"}
 	idTypes := make(map[string]string)
 	for i, id := range ids {
 		idTypes[id] = types[i]
@@ -139,6 +156,9 @@ func main() {
 	buf.WriteString(ghead_basic)
 	for _, id := range ids {
 		data := strings.NewReplacer("int", id, "basic", "basic_"+id).Replace(gbasic)
+		if id == "pointer" {
+			data = gbasic_pointer
+		}
 		buf.WriteString(data)
 	}
 	os.WriteFile("./demo/basic.go", buf.Bytes(), 0666)
@@ -181,8 +201,14 @@ func main() {
 		for i := 0; i < 20; i++ {
 			N := strconv.Itoa(i + 1)
 			M := make([]string, i+1)
-			for j := 0; j < i+1; j++ {
-				M[j] = strconv.Itoa(j + 1)
+			if id == "pointer" {
+				for j := 0; j < i+1; j++ {
+					M[j] = "func() pointer { var a int8 = " + strconv.Itoa(j+1) + "; return &a}()"
+				}
+			} else {
+				for j := 0; j < i+1; j++ {
+					M[j] = strconv.Itoa(j + 1)
+				}
 			}
 			data := strings.NewReplacer("int", id, "N", N, "M", strings.Join(M, ", "),
 				"array", "array"+N, "demo", "demo"+N).Replace(garray)
@@ -199,8 +225,14 @@ func main() {
 		for i := 0; i < 20; i++ {
 			N := strconv.Itoa(i + 1)
 			M := make([]string, i+1)
-			for j := 0; j < i+1; j++ {
-				M[j] = strconv.Itoa(j + 1)
+			if id == "pointer" {
+				for j := 0; j < i+1; j++ {
+					M[j] = "func() pointer { var a int8 = " + strconv.Itoa(j+1) + "; return &a}()"
+				}
+			} else {
+				for j := 0; j < i+1; j++ {
+					M[j] = strconv.Itoa(j + 1)
+				}
 			}
 			ar := make([]string, i+1)
 			for j := 0; j < i+1; j++ {
@@ -273,7 +305,11 @@ func main() {
 		}
 		M := make([]string, len(ids))
 		for j := 0; j < len(ids); j++ {
-			M[j] = strconv.Itoa(j + 1)
+			if ids[j] == "pointer" {
+				M[j] = "func() pointer { var a int8 = " + strconv.Itoa(j+1) + "; return &a}()"
+			} else {
+				M[j] = strconv.Itoa(j + 1)
+			}
 		}
 		data := strings.NewReplacer("x int", strings.Join(ar, "\n\t"), "N", N, "M", strings.Join(M, ", "),
 			"point", "point"+N, "demo", "demo"+N).Replace(gstruct)

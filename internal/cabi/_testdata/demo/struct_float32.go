@@ -6,6 +6,8 @@ const (
 	LLGoFiles = "../wrap/struct_float32.c"
 )
 
+type pointer = *int8
+
 //go:linkname printf C.printf
 func printf(format *byte, __llgo_va_list ...any) int32
 

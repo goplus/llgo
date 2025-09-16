@@ -6,6 +6,8 @@ const (
 	LLGoFiles = "../wrap/basic.c"
 )
 
+type pointer = *int8
+
 //go:linkname printf C.printf
 func printf(format *byte, __llgo_va_list ...any) int32
 
@@ -90,14 +92,15 @@ func init() {
 	assert("basic_float64\000", basic_float64(100) == 100)
 }
 
-//go:linkname cbasic_uintptr C.basic_uintptr
-func cbasic_uintptr(a uintptr) uintptr
+//go:linkname cbasic_pointer C.basic_pointer
+func cbasic_pointer(a pointer) pointer
 
-func basic_uintptr(a uintptr) uintptr {
+func basic_pointer(a pointer) pointer {
 	return a
 }
 
 func init() {
-	assert("cbasic_uintptr\000", cbasic_uintptr(100) == 100)
-	assert("basic_uintptr\000", basic_uintptr(100) == 100)
+	var p int8
+	assert("cbasic_pointer\000", cbasic_pointer(&p) == &p)
+	assert("basic_pointer\000", basic_pointer(&p) == &p)
 }

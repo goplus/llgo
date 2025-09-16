@@ -52,7 +52,7 @@ define dso_local double @basic_float64(double noundef %0) #0 {
 }
 
 ; Function Attrs: noinline nounwind optnone
-define dso_local i8* @basic_uintptr(i8* noundef %0) #0 {
+define dso_local i8* @basic_pointer(i8* noundef %0) #0 {
   %2 = alloca i8*, align 8
   store i8* %0, i8** %2, align 8
   %3 = load i8*, i8** %2, align 8
