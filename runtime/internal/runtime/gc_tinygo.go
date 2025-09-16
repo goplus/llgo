@@ -22,6 +22,7 @@ import (
 	"unsafe"
 	_ "unsafe"
 
+	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/runtime/tinygogc/memory"
 )
 
@@ -321,7 +322,7 @@ func realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
 	}
 
 	newAlloc := alloc(size)
-	memcpy(newAlloc, ptr, oldSize)
+	c.Memcpy(newAlloc, ptr, oldSize)
 	free(ptr)
 
 	return newAlloc

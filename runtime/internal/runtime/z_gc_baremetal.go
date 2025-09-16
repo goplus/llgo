@@ -20,15 +20,9 @@ package runtime
 
 import (
 	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
-
-// don't import clite here, because gc may not be initalized
-
-//go:linkname memset C.memset
-func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
-
-//go:linkname memcpy C.memcpy
-func memcpy(unsafe.Pointer, unsafe.Pointer, uintptr)
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
@@ -38,5 +32,5 @@ func AllocU(size uintptr) unsafe.Pointer {
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
 	ptr := alloc(size)
-	return memset(ptr, 0, size)
+	return c.Memset(ptr, 0, size)
 }

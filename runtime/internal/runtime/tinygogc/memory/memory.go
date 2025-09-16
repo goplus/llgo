@@ -46,6 +46,9 @@ const (
 // zeroSizedAlloc is just a sentinel that gets returned when allocating 0 bytes.
 var zeroSizedAlloc uint8
 
+// when executing initGC(), we must ensure there's no any allocations.
+// use linking here to avoid import clite
+//
 //go:linkname memset C.memset
 func memset(unsafe.Pointer, int, uintptr)
 
