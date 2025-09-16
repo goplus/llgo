@@ -26,6 +26,11 @@ const (
 	LLGoPackage = "link: $(pkg-config --libs bdw-gc); -lgc"
 )
 
+//export initGC
+func initGC() {
+	Init()
+}
+
 // -----------------------------------------------------------------------------
 
 //go:linkname Init C.GC_init
