@@ -21,16 +21,15 @@ package runtime
 import (
 	"unsafe"
 
-	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/runtime/tinygogc"
 )
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
-	return alloc(size)
+	return tinygogc.Alloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
-	ptr := alloc(size)
-	return c.Memset(ptr, 0, size)
+	return tinygogc.Alloc(size)
 }

@@ -16,28 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package runtime
+package tinygogc
 
 import (
 	"unsafe"
 	_ "unsafe"
-
-	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/runtime/tinygogc/memory"
 )
 
 const gcDebug = false
 const needsStaticHeap = true
-
-// Some globals + constants for the entire GC.
-
-const (
-	wordsPerBlock      = 4 // number of pointers in an allocated block
-	bytesPerBlock      = wordsPerBlock * unsafe.Sizeof(memory.HeapStart)
-	stateBits          = 2 // how many bits a block state takes (see blockState type)
-	blocksPerStateByte = 8 / stateBits
-	markStackSize      = 8 * unsafe.Sizeof((*int)(nil)) // number of to-be-marked blocks to queue before forcing a rescan
-)
 
 // Provide some abc.Straction over heap blocks.
 
@@ -52,17 +39,52 @@ const (
 	blockStateMask uint8 = 3 // 11
 )
 
+// The byte value of a block where every block is a 'tail' block.
+const blockStateByteAllTails = 0 |
+	uint8(blockStateTail<<(stateBits*3)) |
+	uint8(blockStateTail<<(stateBits*2)) |
+	uint8(blockStateTail<<(stateBits*1)) |
+	uint8(blockStateTail<<(stateBits*0))
+
 //go:linkname getsp llgo.stackSave
 func getsp() unsafe.Pointer
 
-func printlnAndPanic(c string) {
-	println(c)
-	panic("")
-}
+// when executing initGC(), we must ensure there's no any allocations.
+// use linking here to avoid import clite
+//
+//go:linkname memset C.memset
+func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
 
+//go:linkname memcpy C.memcpy
+func memcpy(unsafe.Pointer, unsafe.Pointer, uintptr)
+
+//go:linkname _heapStart _heapStart
+var _heapStart [0]byte
+
+//go:linkname _heapEnd _heapEnd
+var _heapEnd [0]byte
+
+//go:linkname _stackStart _stack_top
+var _stackStart [0]byte
+
+//go:linkname _globals_start _globals_start
+var _globals_start [0]byte
+
+//go:linkname _globals_end _globals_end
+var _globals_end [0]byte
+
+// since we don't have an init() function, these should be initalized by initHeap(), which is called by <main> entry
 var (
+	heapStart     uintptr        // start address of heap area
+	heapEnd       uintptr        // end address of heap area
+	globalsStart  uintptr        // start address of global variable area
+	globalsEnd    uintptr        // end address of global variable area
+	stackTop      uintptr        // the top of stack
+	endBlock      uintptr        // GC end block index
+	metadataStart unsafe.Pointer // start address of GC metadata
+	isGCInit      bool
+
 	nextAlloc     uintptr // the next block that should be tried by the allocator
-	endBlock      uintptr // the block just past the end of the available space
 	gcTotalAlloc  uint64  // total number of bytes allocated
 	gcTotalBlocks uint64  // total number of allocated blocks
 	gcMallocs     uint64  // total number of allocations
@@ -77,24 +99,61 @@ var (
 	zeroSizedAlloc uint8
 )
 
-// blockState stores the four states in which a block can be. It is two bits in
-// size.
-type blockState uint8
+// Some globals + constants for the entire GC.
 
-// The byte value of a block where every block is a 'tail' block.
-const blockStateByteAllTails = 0 |
-	uint8(blockStateTail<<(stateBits*3)) |
-	uint8(blockStateTail<<(stateBits*2)) |
-	uint8(blockStateTail<<(stateBits*1)) |
-	uint8(blockStateTail<<(stateBits*0))
+const (
+	wordsPerBlock      = 4 // number of pointers in an allocated block
+	bytesPerBlock      = wordsPerBlock * unsafe.Sizeof(heapStart)
+	stateBits          = 2 // how many bits a block state takes (see blockState type)
+	blocksPerStateByte = 8 / stateBits
+	markStackSize      = 8 * unsafe.Sizeof((*int)(nil)) // number of to-be-marked blocks to queue before forcing a rescan
+)
+
+//export __wrap_malloc
+func __wrap_malloc(size uintptr) unsafe.Pointer {
+	return Alloc(size)
+}
+
+//export __wrap_calloc
+func __wrap_calloc(size uintptr) unsafe.Pointer {
+	return Alloc(size)
+}
+
+//export __wrap_realloc
+func __wrap_realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
+	return Realloc(ptr, size)
+}
+
+// this function MUST be initalized first, which means it's required to be initalized before runtime
+func initGC() {
+	// reserve 2K blocks for libc internal malloc, we cannot wrap that function
+	heapStart = uintptr(unsafe.Pointer(&_heapStart)) + 2048
+	heapEnd = uintptr(unsafe.Pointer(&_heapEnd))
+	globalsStart = uintptr(unsafe.Pointer(&_globals_start))
+	globalsEnd = uintptr(unsafe.Pointer(&_globals_end))
+	totalSize := heapEnd - heapStart
+	metadataSize := (totalSize + blocksPerStateByte*bytesPerBlock) / (1 + blocksPerStateByte*bytesPerBlock)
+	metadataStart = unsafe.Pointer(heapEnd - metadataSize)
+	endBlock = (uintptr(metadataStart) - heapStart) / bytesPerBlock
+	stackTop = uintptr(unsafe.Pointer(&_stackStart))
+
+	memset(metadataStart, 0, metadataSize)
+}
+
+func lazyInit() {
+	if !isGCInit {
+		initGC()
+		isGCInit = true
+	}
+}
 
 // blockFromAddr returns a block given an address somewhere in the heap (which
 // might not be heap-aligned).
 func blockFromAddr(addr uintptr) uintptr {
-	if addr < memory.HeapStart || addr >= uintptr(memory.MetadataStart) {
-		printlnAndPanic("gc: trying to get block from invalid address")
+	if addr < heapStart || addr >= uintptr(metadataStart) {
+		println("gc: trying to get block from invalid address")
 	}
-	return (addr - memory.HeapStart) / bytesPerBlock
+	return (addr - heapStart) / bytesPerBlock
 }
 
 // Return a pointer to the start of the allocated object.
@@ -104,9 +163,9 @@ func gcPointerOf(blockAddr uintptr) unsafe.Pointer {
 
 // Return the address of the start of the allocated object.
 func gcAddressOf(blockAddr uintptr) uintptr {
-	addr := memory.HeapStart + blockAddr*bytesPerBlock
-	if addr > uintptr(memory.MetadataStart) {
-		printlnAndPanic("gc: block pointing inside metadata")
+	addr := heapStart + blockAddr*bytesPerBlock
+	if addr > uintptr(metadataStart) {
+		println("gc: block pointing inside metadata")
 	}
 	return addr
 }
@@ -137,7 +196,7 @@ func gcFindHead(blockAddr uintptr) uintptr {
 		blockAddr--
 	}
 	if gcStateOf(blockAddr) != blockStateHead && gcStateOf(blockAddr) != blockStateMark {
-		printlnAndPanic("gc: found tail without head")
+		println("gc: found tail without head")
 	}
 	return blockAddr
 }
@@ -148,14 +207,14 @@ func gcFindNext(blockAddr uintptr) uintptr {
 	if gcStateOf(blockAddr) == blockStateHead || gcStateOf(blockAddr) == blockStateMark {
 		blockAddr++
 	}
-	for gcAddressOf(blockAddr) < uintptr(memory.MetadataStart) && gcStateOf(blockAddr) == blockStateTail {
+	for gcAddressOf(blockAddr) < uintptr(metadataStart) && gcStateOf(blockAddr) == blockStateTail {
 		blockAddr++
 	}
 	return blockAddr
 }
 
 func gcStateByteOf(blockAddr uintptr) byte {
-	return *(*uint8)(unsafe.Add(memory.MetadataStart, blockAddr/blocksPerStateByte))
+	return *(*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 }
 
 // Return the block state given a state byte. The state byte must have been
@@ -173,19 +232,19 @@ func gcStateOf(blockAddr uintptr) uint8 {
 // bits than the current state. Allowed transitions: from free to any state and
 // from head to mark.
 func gcSetState(blockAddr uintptr, newState uint8) {
-	stateBytePtr := (*uint8)(unsafe.Add(memory.MetadataStart, blockAddr/blocksPerStateByte))
+	stateBytePtr := (*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr |= uint8(newState << ((blockAddr % blocksPerStateByte) * stateBits))
 	if gcStateOf(blockAddr) != newState {
-		printlnAndPanic("gc: setState() was not successful")
+		println("gc: setState() was not successful")
 	}
 }
 
 // markFree sets the block state to free, no matter what state it was in before.
 func gcMarkFree(blockAddr uintptr) {
-	stateBytePtr := (*uint8)(unsafe.Add(memory.MetadataStart, blockAddr/blocksPerStateByte))
+	stateBytePtr := (*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr &^= uint8(blockStateMask << ((blockAddr % blocksPerStateByte) * stateBits))
 	if gcStateOf(blockAddr) != blockStateFree {
-		printlnAndPanic("gc: markFree() was not successful")
+		println("gc: markFree() was not successful")
 	}
 	*(*[wordsPerBlock]uintptr)(unsafe.Pointer(gcAddressOf(blockAddr))) = [wordsPerBlock]uintptr{}
 }
@@ -194,25 +253,27 @@ func gcMarkFree(blockAddr uintptr) {
 // before calling this function.
 func gcUnmark(blockAddr uintptr) {
 	if gcStateOf(blockAddr) != blockStateMark {
-		printlnAndPanic("gc: unmark() on a block that is not marked")
+		println("gc: unmark() on a block that is not marked")
 	}
 	clearMask := blockStateMask ^ blockStateHead // the bits to clear from the state
-	stateBytePtr := (*uint8)(unsafe.Add(memory.MetadataStart, blockAddr/blocksPerStateByte))
+	stateBytePtr := (*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr &^= uint8(clearMask << ((blockAddr % blocksPerStateByte) * stateBits))
 	if gcStateOf(blockAddr) != blockStateHead {
-		printlnAndPanic("gc: unmark() was not successful")
+		println("gc: unmark() was not successful")
 	}
 }
 
 func isOnHeap(ptr uintptr) bool {
-	return ptr >= memory.HeapStart && ptr < uintptr(memory.MetadataStart)
+	return ptr >= heapStart && ptr < uintptr(metadataStart)
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage
 // collection cycle if needed. If no space is free, it panics.
 //
 //go:noinline
-func alloc(size uintptr) unsafe.Pointer {
+func Alloc(size uintptr) unsafe.Pointer {
+	lazyInit()
+
 	if size == 0 {
 		return unsafe.Pointer(&zeroSizedAlloc)
 	}
@@ -237,7 +298,7 @@ func alloc(size uintptr) unsafe.Pointer {
 				// free memory and try again.
 				heapScanCount = 2
 				freeBytes := GC()
-				heapSize := uintptr(memory.MetadataStart) - memory.HeapStart
+				heapSize := uintptr(metadataStart) - heapStart
 				if freeBytes < heapSize/3 {
 					// Ensure there is at least 33% headroom.
 					// This percentage was arbitrarily chosen, and may need to
@@ -254,13 +315,13 @@ func alloc(size uintptr) unsafe.Pointer {
 					// Unfortunately the heap could not be increased. This
 					// happens on baremetal systems for example (where all
 					// available RAM has already been dedicated to the heap).
-					printlnAndPanic("out of memory")
+					println("out of memory")
 				}
 			}
 		}
 
 		// Wrap around the end of the heap.
-		if index == memory.EndBlock {
+		if index == endBlock {
 			index = 0
 			// Reset numFreeBlocks as allocations cannot wrap.
 			numFreeBlocks = 0
@@ -296,14 +357,15 @@ func alloc(size uintptr) unsafe.Pointer {
 			}
 
 			// Return a pointer to this allocation.
-			return gcPointerOf(thisAlloc)
+			return memset(gcPointerOf(thisAlloc), 0, size)
 		}
 	}
 }
 
-func realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
+func Realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
+	lazyInit()
 	if ptr == nil {
-		return alloc(size)
+		return Alloc(size)
 	}
 
 	ptrAddress := uintptr(ptr)
@@ -316,8 +378,8 @@ func realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
 		return ptr
 	}
 
-	newAlloc := alloc(size)
-	c.Memcpy(newAlloc, ptr, oldSize)
+	newAlloc := Alloc(size)
+	memcpy(newAlloc, ptr, oldSize)
 	free(ptr)
 
 	return newAlloc
@@ -331,6 +393,8 @@ func free(ptr unsafe.Pointer) {
 // of the runtime.GC() function. The difference is that it returns the number of
 // free bytes in the heap after the GC is finished.
 func GC() (freeBytes uintptr) {
+	lazyInit()
+
 	if gcDebug {
 		println("running collection cycle...")
 	}
@@ -356,19 +420,9 @@ func GC() (freeBytes uintptr) {
 // well (recursively). The start and end parameters must be valid pointers and
 // must be aligned.
 func markRoots(start, end uintptr) {
-
-	if true {
-		if start >= end {
-			printlnAndPanic("gc: unexpected range to mark")
-		}
-		if start%unsafe.Alignof(start) != 0 {
-			printlnAndPanic("gc: unaligned start pointer")
-		}
-		if end%unsafe.Alignof(end) != 0 {
-			printlnAndPanic("gc: unaligned end pointer")
-		}
+	if start >= end {
+		println("gc: unexpected range to mark")
 	}
-
 	// Reduce the end bound to avoid reading too far on platforms where pointer alignment is smaller than pointer size.
 	// If the size of the range is 0, then end will be slightly below start after this.
 	end -= unsafe.Sizeof(end) - unsafe.Alignof(end)
@@ -419,10 +473,7 @@ func startMark(root uintptr) {
 			}
 
 			// Mark block.
-
 			gcSetState(referencedBlock, blockStateMark)
-
-			println("mark: %lx from %lx", gcPointerOf(referencedBlock), gcPointerOf(root))
 
 			if stackLen == len(stack) {
 				// The stack is full.
@@ -446,7 +497,7 @@ func finishMark() {
 	for markStackOverflow {
 		// Re-mark all blocks.
 		markStackOverflow = false
-		for block := uintptr(0); block < memory.EndBlock; block++ {
+		for block := uintptr(0); block < endBlock; block++ {
 			if gcStateOf(block) != blockStateMark {
 				// Block is not marked, so we do not need to rescan it.
 				continue
@@ -461,7 +512,6 @@ func finishMark() {
 // mark a GC root at the address addr.
 func markRoot(addr, root uintptr) {
 	if isOnHeap(root) {
-		println("on the heap: %lx", gcPointerOf(root))
 		block := blockFromAddr(root)
 		if gcStateOf(block) == blockStateFree {
 			// The to-be-marked object doesn't actually exist.
@@ -477,14 +527,13 @@ func markRoot(addr, root uintptr) {
 	}
 }
 
-// Sweep goes through all memory and frees unmarked memory.
+// Sweep goes through all memory and frees unmarked
 // It returns how many bytes are free in the heap after the sweep.
 func sweep() (freeBytes uintptr) {
 	freeCurrentObject := false
 	var freed uint64
 
-	var from uintptr
-	for block := uintptr(0); block < memory.EndBlock; block++ {
+	for block := uintptr(0); block < endBlock; block++ {
 		switch gcStateOf(block) {
 		case blockStateHead:
 			// Unmarked head. Free it, including all tail blocks following it.
@@ -492,7 +541,6 @@ func sweep() (freeBytes uintptr) {
 			freeCurrentObject = true
 			gcFrees++
 			freed++
-			from = block
 		case blockStateTail:
 			if freeCurrentObject {
 				// This is a tail object following an unmarked head.
@@ -500,7 +548,6 @@ func sweep() (freeBytes uintptr) {
 				gcMarkFree(block)
 				freed++
 			}
-			println("free from %lx to %lx", gcPointerOf(from), gcPointerOf(block))
 		case blockStateMark:
 			// This is a marked object. The next tail blocks must not be freed,
 			// but the mark bit must be removed so the next GC cycle will
@@ -524,12 +571,9 @@ func growHeap() bool {
 }
 
 func gcMarkReachable() {
-	// a compiler trick to get current SP
-	println("scan stack", unsafe.Pointer(getsp()), unsafe.Pointer(memory.StackTop))
-	markRoots(uintptr(getsp()), memory.StackTop)
-	println("scan global", unsafe.Pointer(memory.GlobalsStart), unsafe.Pointer(memory.GlobalsEnd))
-
-	markRoots(memory.GlobalsStart, memory.GlobalsEnd)
+	println("scan stack", getsp(), unsafe.Pointer(stackTop))
+	markRoots(uintptr(getsp()), stackTop)
+	markRoots(globalsStart, globalsEnd)
 }
 
 func gcResumeWorld() {
