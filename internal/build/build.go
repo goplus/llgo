@@ -977,10 +977,6 @@ define weak void @runtime.init() {
   ret void
 }
 
-define weak void @initGC() {
-  ret void
-}
-
 ; TODO(lijie): workaround for syscall patch
 define weak void @"syscall.init"() {
   ret void
@@ -992,7 +988,6 @@ define weak void @"syscall.init"() {
 _llgo_0:
   store i32 %%0, ptr @__llgo_argc, align 4
   store ptr %%1, ptr @__llgo_argv, align 8
-  call void @initGC()
   %s
   %s
   %s
