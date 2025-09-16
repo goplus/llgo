@@ -13,7 +13,7 @@ var _heapStart [0]byte
 //go:linkname _heapEnd _heapEnd
 var _heapEnd [0]byte
 
-//go:linkname _stackStart __stack
+//go:linkname _stackStart _stack_top
 var _stackStart [0]byte
 
 //go:linkname _globals_start _globals_start
