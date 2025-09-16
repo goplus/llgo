@@ -1,4 +1,4 @@
-//go:build baremetal
+//go:build baremetal || testGC
 
 /*
  * Copyright (c) 2018-2025 The TinyGo Authors. All rights reserved.
@@ -20,17 +20,12 @@ package tinygogc
 
 import (
 	"unsafe"
-	_ "unsafe"
 )
 
 const gcDebug = false
-const needsStaticHeap = true
-
-// Provide some abc.Straction over heap blocks.
 
 // blockState stores the four states in which a block can be. It is two bits in
 // size.
-
 const (
 	blockStateFree uint8 = 0 // 00
 	blockStateHead uint8 = 1 // 01
@@ -45,33 +40,6 @@ const blockStateByteAllTails = 0 |
 	uint8(blockStateTail<<(stateBits*2)) |
 	uint8(blockStateTail<<(stateBits*1)) |
 	uint8(blockStateTail<<(stateBits*0))
-
-//go:linkname getsp llgo.stackSave
-func getsp() unsafe.Pointer
-
-// when executing initGC(), we must ensure there's no any allocations.
-// use linking here to avoid import clite
-//
-//go:linkname memset C.memset
-func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
-
-//go:linkname memcpy C.memcpy
-func memcpy(unsafe.Pointer, unsafe.Pointer, uintptr)
-
-//go:linkname _heapStart _heapStart
-var _heapStart [0]byte
-
-//go:linkname _heapEnd _heapEnd
-var _heapEnd [0]byte
-
-//go:linkname _stackStart _stack_top
-var _stackStart [0]byte
-
-//go:linkname _globals_start _globals_start
-var _globals_start [0]byte
-
-//go:linkname _globals_end _globals_end
-var _globals_end [0]byte
 
 // since we don't have an init() function, these should be initalized by initHeap(), which is called by <main> entry
 var (
@@ -109,24 +77,9 @@ const (
 	markStackSize      = 8 * unsafe.Sizeof((*int)(nil)) // number of to-be-marked blocks to queue before forcing a rescan
 )
 
-//export __wrap_malloc
-func __wrap_malloc(size uintptr) unsafe.Pointer {
-	return Alloc(size)
-}
-
-//export __wrap_calloc
-func __wrap_calloc(size uintptr) unsafe.Pointer {
-	return Alloc(size)
-}
-
-//export __wrap_realloc
-func __wrap_realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
-	return Realloc(ptr, size)
-}
-
 // this function MUST be initalized first, which means it's required to be initalized before runtime
 func initGC() {
-	// reserve 2K blocks for libc internal malloc, we cannot wrap that function
+	// reserve 2K blocks for libc internal malloc, we cannot wrap those internal functions
 	heapStart = uintptr(unsafe.Pointer(&_heapStart)) + 2048
 	heapEnd = uintptr(unsafe.Pointer(&_heapEnd))
 	globalsStart = uintptr(unsafe.Pointer(&_globals_start))
@@ -571,7 +524,6 @@ func growHeap() bool {
 }
 
 func gcMarkReachable() {
-	println("scan stack", getsp(), unsafe.Pointer(stackTop))
 	markRoots(uintptr(getsp()), stackTop)
 	markRoots(globalsStart, globalsEnd)
 }
