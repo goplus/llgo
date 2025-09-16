@@ -1,4 +1,4 @@
-//go:build !nogc
+//go:build !nogc && !baremetal
 
 package runtime
 

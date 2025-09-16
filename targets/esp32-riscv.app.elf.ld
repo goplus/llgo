@@ -1,6 +1,4 @@
-__stack = ORIGIN(dram_seg) + LENGTH(dram_seg);
-__MIN_STACK_SIZE = 0x1000;
-_stack_top = __stack;
+_heapEnd = ORIGIN(dram_seg) + LENGTH(dram_seg);
 
 /* Default entry point */
 ENTRY(_start)
@@ -104,6 +102,14 @@ SECTIONS
     . += ORIGIN(iram_seg) == ORIGIN(dram_seg) ? 0 : _iram_end - _iram_start;
   } > dram_seg
 
+  .stack (NOLOAD) :
+  {
+    __stack_end = .;
+    . = ALIGN(16);
+    . += 16K;
+    __stack = .;
+  }
+
   .data          :
   {
     _data_start = .;
@@ -148,7 +154,7 @@ SECTIONS
   } > dram_seg
 
   /* Check if data + heap + stack exceeds RAM limit */
-  ASSERT(_end <= __stack - __MIN_STACK_SIZE, "region DRAM overflowed by .data and .bss sections")
+  ASSERT(_end <= _heapEnd, "region DRAM overflowed by .data and .bss sections")
 
   /* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }
@@ -193,3 +199,8 @@ SECTIONS
   .gnu.attributes 0 : { KEEP (*(.gnu.attributes)) }
   /DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }
 }
+
+_globals_start = _data_start;
+_globals_end = _end;
+_heapStart = _end;
+_stack_top = __stack;

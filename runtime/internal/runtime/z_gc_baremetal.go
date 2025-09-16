@@ -1,4 +1,4 @@
-//go:build !nogc && !baremetal
+//go:build !nogc && baremetal
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
@@ -22,16 +22,15 @@ import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
 )
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
-	return bdwgc.Malloc(size)
+	return alloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
-	ret := bdwgc.Malloc(size)
-	return c.Memset(ret, 0, size)
+	ptr := alloc(size)
+	return c.Memset(ptr, 0, size)
 }
