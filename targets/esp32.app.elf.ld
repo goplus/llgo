@@ -30,7 +30,7 @@ SECTIONS
     __stack_end = .;
     . = ALIGN(16);
     . += 16K;
-    _stack_top = .;
+    __stack = .;
   }
 
 
@@ -175,3 +175,4 @@ _ebss = _end;
 _globals_start = _data_start;
 _globals_end = _end;
 _heapStart = _end;
+_stack_top = __stack;

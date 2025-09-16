@@ -208,11 +208,6 @@ func isOnHeap(ptr uintptr) bool {
 	return ptr >= memory.HeapStart && ptr < uintptr(memory.MetadataStart)
 }
 
-//export _tinygoGC
-func _tinygoGC() {
-	GC()
-}
-
 // alloc tries to find some free space on the heap, possibly doing a garbage
 // collection cycle if needed. If no space is free, it panics.
 //
