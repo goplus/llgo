@@ -1,5 +1,4 @@
-//go:build nogc
-// +build nogc
+//go:build nogc || baremetal
 
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
