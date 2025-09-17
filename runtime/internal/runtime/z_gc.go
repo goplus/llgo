@@ -23,7 +23,6 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
-	_ "github.com/goplus/llgo/runtime/internal/runtime/bdwgc"
 )
 
 // AllocU allocates uninitialized memory.
