@@ -51,6 +51,7 @@ import (
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
+	ll "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -849,10 +850,26 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
+	llctx := ll.NewContext()
+	mainMod := llctx.NewModule("main")
 	if ctx.buildConf.GenLL {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
 			if strings.HasSuffix(objFile, ".ll") {
+				buf, err := ll.NewMemoryBufferFromFile(objFile)
+				if err != nil {
+					panic("failed to read ll file: " + err.Error())
+				}
+				pkgMod, err := llctx.ParseIR(buf)
+				if err != nil {
+					panic("failed to parse ll file: " + err.Error())
+				}
+				err = ll.LinkModules(mainMod, pkgMod)
+				if err != nil {
+					panic("failed to link ll module: " + err.Error())
+				}
+				fmt.Printf("Successfully linked: %s\n", objFile)
+
 				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
 				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
 				if verbose {
@@ -867,6 +884,19 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			}
 		}
 		objFiles = compiledObjFiles
+	}
+
+	irString := mainMod.String()
+
+	file, err := os.Create("./temp.all.ll")
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(irString)
+	if err != nil {
+		return fmt.Errorf("failed to write IR: %v", err)
 	}
 
 	buildArgs = append(buildArgs, objFiles...)
