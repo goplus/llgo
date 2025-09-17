@@ -1,3 +1,5 @@
+//go:build baremetal && !testGC
+
 package tinygogc
 
 import "unsafe"

@@ -5,7 +5,7 @@ name: Go
 
 on:
   push:
-    branches: 
+    branches:
       - "**"
       - "!dependabot/**"
   pull_request:
@@ -50,6 +50,10 @@ jobs:
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test ./...
+
+      - name: Test Baremetal GC
+        if: ${{!startsWith(matrix.os, 'macos')}}
+        run: go test -tags testGC ./...
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')

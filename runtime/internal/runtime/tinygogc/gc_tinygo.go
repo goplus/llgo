@@ -1,4 +1,4 @@
-//go:build baremetal
+//go:build baremetal || testGC
 
 /*
  * Copyright (c) 2018-2025 The TinyGo Authors. All rights reserved.
@@ -20,7 +20,6 @@ package tinygogc
 
 import (
 	"unsafe"
-	_ "unsafe"
 )
 
 const gcDebug = false
@@ -41,33 +40,6 @@ const blockStateByteAllTails = 0 |
 	uint8(blockStateTail<<(stateBits*2)) |
 	uint8(blockStateTail<<(stateBits*1)) |
 	uint8(blockStateTail<<(stateBits*0))
-
-// when executing initGC(), we must ensure there's no any allocations.
-// use linking here to avoid import clite
-//
-//go:linkname memset C.memset
-func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
-
-//go:linkname getsp llgo.stackSave
-func getsp() unsafe.Pointer
-
-//go:linkname memcpy C.memcpy
-func memcpy(unsafe.Pointer, unsafe.Pointer, uintptr)
-
-//go:linkname _heapStart _heapStart
-var _heapStart [0]byte
-
-//go:linkname _heapEnd _heapEnd
-var _heapEnd [0]byte
-
-//go:linkname _stackStart _stack_top
-var _stackStart [0]byte
-
-//go:linkname _globals_start _globals_start
-var _globals_start [0]byte
-
-//go:linkname _globals_end _globals_end
-var _globals_end [0]byte
 
 // since we don't have an init() function, these should be initalized by initHeap(), which is called by <main> entry
 var (
