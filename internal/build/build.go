@@ -849,6 +849,26 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
+	if ctx.buildConf.GenLL {
+		var compiledObjFiles []string
+		for _, objFile := range objFiles {
+			if strings.HasSuffix(objFile, ".ll") {
+				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
+				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+				if verbose {
+					fmt.Fprintln(os.Stderr, "clang", args)
+				}
+				if err := ctx.compiler().Compile(args...); err != nil {
+					return fmt.Errorf("failed to compile %s: %v", objFile, err)
+				}
+				compiledObjFiles = append(compiledObjFiles, oFile)
+			} else {
+				compiledObjFiles = append(compiledObjFiles, objFile)
+			}
+		}
+		objFiles = compiledObjFiles
+	}
+
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()
