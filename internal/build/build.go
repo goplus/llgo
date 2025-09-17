@@ -835,6 +835,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	}
 
 	buildArgs := []string{"-o", app}
+	if ctx.buildConf.GenLL {
+		buildArgs = append(buildArgs, "--lto-O2", "--thinlto-cache-dir=/tmp/thinlto-cache") // 启用ThinLTO链接时优化
+	}
 	buildArgs = append(buildArgs, linkArgs...)
 
 	// Add build mode specific linker arguments
@@ -850,9 +853,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	llctx := ll.NewContext()
-	mainMod := llctx.NewModule("main")
 	if ctx.buildConf.GenLL {
+		llctx := ll.NewContext()
+		mainMod := llctx.NewModule("main")
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
 			if strings.HasSuffix(objFile, ".ll") {
@@ -870,33 +873,83 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				}
 				fmt.Printf("Successfully linked: %s\n", objFile)
 
-				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
-				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-				if verbose {
-					fmt.Fprintln(os.Stderr, "clang", args)
-				}
-				if err := ctx.compiler().Compile(args...); err != nil {
-					return fmt.Errorf("failed to compile %s: %v", objFile, err)
-				}
-				compiledObjFiles = append(compiledObjFiles, oFile)
+				// oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
+				// args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+				// if verbose {
+				// 	fmt.Fprintln(os.Stderr, "clang", args)
+				// }
+				// if err := ctx.compiler().Compile(args...); err != nil {
+				// 	return fmt.Errorf("failed to compile %s: %v", objFile, err)
+				// }
+				// compiledObjFiles = append(compiledObjFiles, oFile)
 			} else {
 				compiledObjFiles = append(compiledObjFiles, objFile)
 			}
 		}
+
+		// After linking, functions should (as far as possible) be set to
+		// private linkage or internal linkage. The compiler package marks
+		// non-exported functions by setting the visibility to hidden or
+		// (for thunks) to linkonce_odr linkage. Change the linkage here to
+		// internal to benefit much more from interprocedural optimizations.
+		// for fn := mainMod.FirstFunction(); !fn.IsNil(); fn = ll.NextFunction(fn) {
+		// 	if fn.Visibility() == ll.HiddenVisibility {
+		// 		fn.SetVisibility(ll.DefaultVisibility)
+		// 		fn.SetLinkage(ll.InternalLinkage)
+		// 	} else if fn.Linkage() == ll.LinkOnceODRLinkage {
+		// 		fn.SetLinkage(ll.InternalLinkage)
+		// 	}
+		// }
+		po := ll.NewPassBuilderOptions()
+		defer po.Dispose()
+		passes := fmt.Sprintf("thinlto-pre-link<%s>", "Oz")
+		err := mainMod.RunPasses(passes, ll.TargetMachine{}, po)
+		if err != nil {
+			panic("failed to run passes: " + err.Error())
+		}
+
+		// err = mainMod.RunPasses("globaldce", ll.TargetMachine{}, po)
+		// if err != nil {
+		// 	panic("failed to run globaldce pass: " + err.Error())
+		// }
+
+		irString := mainMod.String()
+		file, err := os.CreateTemp("", "linked-*.ll")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer file.Close()
+
+		_, err = file.WriteString(irString)
+		if err != nil {
+			return fmt.Errorf("failed to write IR: %v", err)
+		}
+		// compiledObjFiles = append(compiledObjFiles, file.Name())
+
+		fmt.Println(file.Name())
+
+		oFile, err := os.CreateTemp("", "linked-*.o")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer oFile.Close()
+
+		// args := []string{"-o", oFile.Name(), "-c", file.Name(), "-Wno-override-module", "-flto=thin", "-O3"}
+		// // if verbose {
+		// // 	fmt.Fprintln(os.Stderr, "clang", args)
+		// // }
+		// if err := ctx.compiler().Compile(args...); err != nil {
+		// 	return fmt.Errorf("failed to compile %s: %v", file.Name(), err)
+		// }
+		llvmBuf := ll.WriteThinLTOBitcodeToMemoryBuffer(mainMod)
+		defer llvmBuf.Dispose()
+		err = os.WriteFile(oFile.Name(), llvmBuf.Bytes(), 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write bitcode: %v", err)
+		}
+		compiledObjFiles = append(compiledObjFiles, oFile.Name())
+
 		objFiles = compiledObjFiles
-	}
-
-	irString := mainMod.String()
-
-	file, err := os.Create("./temp.all.ll")
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %v", err)
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(irString)
-	if err != nil {
-		return fmt.Errorf("failed to write IR: %v", err)
 	}
 
 	buildArgs = append(buildArgs, objFiles...)
