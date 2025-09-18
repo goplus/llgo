@@ -439,32 +439,32 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
-					if param == "$(pkg-config --libs python3-embed)" {
-						if err := func() error {
-							pyHome := pyenv.PythonHome()
-							steps := []struct {
-								name string
-								run  func() error
-							}{
-								{"prepare Python cache", func() error { return pyenv.EnsureWithFetch("") }},
-								{"setup Python build env", pyenv.EnsureBuildEnv},
-								{"verify Python", pyenv.Verify},
-								{"fix install_name", func() error { return pyenv.FixLibpythonInstallName(pyHome) }},
-							}
-							for _, s := range steps {
-								if e := s.run(); e != nil {
-									return fmt.Errorf("%s: %w", s.name, e)
-								}
-							}
-							return nil
-						}(); err != nil {
-							panic(fmt.Sprintf("python toolchain init failed: %v\n\tLLGO_CACHE_DIR=%s\n\tPYTHONHOME=%s\n\thint: set LLPYG_PYHOME or check network/permissions",
-								err, env.LLGoCacheDir(), pyenv.PythonHome()))
-						}
-						// if err = pyenv.EnsurePcRpath(pyenv.PythonHome()); err != nil {
-						// 	panic(fmt.Sprintf("failed to inject rpath into python3-embed.pc: %v", err))
-						// }
-					}
+					// if param == "$(pkg-config --libs python3-embed)" {
+					// 	if err := func() error {
+					// 		pyHome := pyenv.PythonHome()
+					// 		steps := []struct {
+					// 			name string
+					// 			run  func() error
+					// 		}{
+					// 			{"prepare Python cache", func() error { return pyenv.EnsureWithFetch("") }},
+					// 			{"setup Python build env", pyenv.EnsureBuildEnv},
+					// 			{"verify Python", pyenv.Verify},
+					// 			{"fix install_name", func() error { return pyenv.FixLibpythonInstallName(pyHome) }},
+					// 		}
+					// 		for _, s := range steps {
+					// 			if e := s.run(); e != nil {
+					// 				return fmt.Errorf("%s: %w", s.name, e)
+					// 			}
+					// 		}
+					// 		return nil
+					// 	}(); err != nil {
+					// 		panic(fmt.Sprintf("python toolchain init failed: %v\n\tLLGO_CACHE_DIR=%s\n\tPYTHONHOME=%s\n\thint: set LLPYG_PYHOME or check network/permissions",
+					// 			err, env.LLGoCacheDir(), pyenv.PythonHome()))
+					// 	}
+					// 	// if err = pyenv.EnsurePcRpath(pyenv.PythonHome()); err != nil {
+					// 	// 	panic(fmt.Sprintf("failed to inject rpath into python3-embed.pc: %v", err))
+					// 	// }。
+					// }
 					if strings.ContainsRune(param, '$') {
 						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
@@ -628,36 +628,42 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
 
-	if needPyInit {
-		initObj, err := genPyInitFromExeDirObj(ctx)
+	// Assemble contributors (e.g., Python) and aggregate their contributions
+	pyExtern := hasPythonExtern(pkgs)
+	contributors := collectContributors(needPyInit, pyExtern)
+
+	for _, c := range contributors {
+		check(c.Prepare(ctx))
+	}
+
+	for _, c := range contributors {
+		extras, err := c.InitObjects(ctx)
 		check(err)
-		objFiles = append(objFiles, initObj)
+		if len(extras) > 0 {
+			objFiles = append(objFiles, extras...)
+		}
+	}
+
+	for _, c := range contributors {
+		args, err := c.LinkArgs(ctx)
+		check(err)
+		if len(args) > 0 {
+			linkArgs = append(linkArgs, args...)
+		}
+	}
+
+	for _, c := range contributors {
+		rp, err := c.Rpaths(ctx)
+		check(err)
+		if len(rp) > 0 {
+			appendRpaths(&linkArgs, rp)
+		}
 	}
 
 	if global != nil {
 		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
 		check(err)
 		objFiles = append(objFiles, export)
-
-		addRpath := func(args *[]string, dir string) {
-			if dir == "" {
-				return
-			}
-			flag := "-Wl,-rpath," + dir
-			for _, a := range *args {
-				if a == flag {
-					return
-				}
-			}
-			*args = append(*args, flag)
-		}
-		for _, dir := range pyenv.FindPythonRpaths(pyenv.PythonHome()) {
-			addRpath(&linkArgs, dir)
-		}
-
-		addRpath(&linkArgs, "@executable_path/python/lib")
-		addRpath(&linkArgs, "@executable_path/lib/python/lib")
-		addRpath(&linkArgs, "@executable_path/../lib/python/lib")
 	}
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
