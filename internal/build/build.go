@@ -834,7 +834,6 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	}
 
 	buildArgs := []string{"-o", app}
-	buildArgs = append(buildArgs, "-s")
 	buildArgs = append(buildArgs, linkArgs...)
 
 	// Add build mode specific linker arguments

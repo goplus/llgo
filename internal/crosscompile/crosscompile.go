@@ -481,7 +481,7 @@ func UseTarget(targetName string) (export Export, err error) {
 	envs := buildEnvMap(env.LLGoROOT())
 
 	// Convert LLVMTarget, CPU, Features to CCFLAGS/LDFLAGS
-	var ldflags []string
+	ldflags := []string{"-S"}
 	ccflags := []string{"-Oz"}
 	cflags := []string{"-Wno-override-module", "-Qunused-arguments", "-Wno-unused-command-line-argument"}
 	if config.LLVMTarget != "" {
