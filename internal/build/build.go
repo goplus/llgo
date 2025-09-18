@@ -51,6 +51,7 @@ import (
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
+	ll "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -373,6 +374,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			fmt.Println("LinkMainPkg end")
 
 			// Generate C headers for c-archive and c-shared modes before linking
 			if ctx.buildConf.BuildMode == BuildModeCArchive || ctx.buildConf.BuildMode == BuildModeCShared {
@@ -834,6 +837,8 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	}
 
 	buildArgs := []string{"-o", app}
+	buildArgs = append(buildArgs, "-s")
+	buildArgs = append(buildArgs, "-Map=linker.map")
 	buildArgs = append(buildArgs, linkArgs...)
 
 	// Add build mode specific linker arguments
@@ -849,10 +854,128 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
+	if ctx.buildConf.GenLL {
+		llctx := ll.NewContext()
+		mainMod := llctx.NewModule("main")
+		var compiledObjFiles []string
+		for _, objFile := range objFiles {
+			if strings.HasSuffix(objFile, ".ll") {
+				buf, err := ll.NewMemoryBufferFromFile(objFile)
+				if err != nil {
+					panic("failed to read ll file: " + err.Error())
+				}
+				pkgMod, err := llctx.ParseIR(buf)
+				if err != nil {
+					panic("failed to parse ll file: " + err.Error())
+				}
+				err = ll.LinkModules(mainMod, pkgMod)
+				if err != nil {
+					panic("failed to link ll module: " + err.Error())
+				}
+				fmt.Printf("Successfully linked: %s\n", objFile)
+
+				// oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
+				// args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+				// if verbose {
+				// 	fmt.Fprintln(os.Stderr, "clang", args)
+				// }
+				// if err := ctx.compiler().Compile(args...); err != nil {
+				// 	return fmt.Errorf("failed to compile %s: %v", objFile, err)
+				// }
+				// compiledObjFiles = append(compiledObjFiles, oFile)
+			} else {
+				compiledObjFiles = append(compiledObjFiles, objFile)
+			}
+		}
+
+		// After linking, functions should (as far as possible) be set to
+		// private linkage or internal linkage. The compiler package marks
+		// non-exported functions by setting the visibility to hidden or
+		// (for thunks) to linkonce_odr linkage. Change the linkage here to
+		// internal to benefit much more from interprocedural optimizations.
+		for fn := mainMod.FirstFunction(); !fn.IsNil(); fn = ll.NextFunction(fn) {
+			// Only set internal linkage for functions that are actually defined (not declarations)
+			// and not the main function
+			if fn.Name() != "main" && !fn.IsDeclaration() {
+				fn.SetLinkage(ll.InternalLinkage)
+				fmt.Println("Not Inernal Function:", fn.Name(), "Linkage:", fn.Linkage(), "Visibility:", fn.Visibility(), "IsDeclaration:", fn.IsDeclaration())
+			}
+		}
+		fmt.Println("Running ThinLTO optimizations...")
+		filepath, err := os.CreateTemp("", "before-pass-linked-*.ll")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer filepath.Close()
+		_, err = filepath.WriteString(mainMod.String())
+		if err != nil {
+			return fmt.Errorf("failed to write IR: %v", err)
+		}
+		fmt.Println("Before passes IR written to:", filepath.Name())
+
+		po := ll.NewPassBuilderOptions()
+		defer po.Dispose()
+		passes := fmt.Sprintf("thinlto-pre-link<%s>", "Oz")
+		err = mainMod.RunPasses(passes, ll.TargetMachine{}, po)
+		if err != nil {
+			panic("failed to run passes: " + err.Error())
+		}
+
+		// err = mainMod.RunPasses("globaldce", ll.TargetMachine{}, po)
+		// if err != nil {
+		// 	panic("failed to run globaldce pass: " + err.Error())
+		// }
+		if err := ll.VerifyModule(mainMod, ll.PrintMessageAction); err != nil {
+			return errors.New("verification failure after LLVM optimization passes")
+		}
+
+		irString := mainMod.String()
+		file, err := os.CreateTemp("", "linked-*.ll")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer file.Close()
+
+		_, err = file.WriteString(irString)
+		if err != nil {
+			return fmt.Errorf("failed to write IR: %v", err)
+		}
+		// compiledObjFiles = append(compiledObjFiles, file.Name())
+
+		fmt.Println("After Pass", file.Name())
+
+		oFile, err := os.CreateTemp("", "linked-*.o")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer oFile.Close()
+
+		// args := []string{"-o", oFile.Name(), "-c", file.Name(), "-Wno-override-module", "-flto=thin", "-O3"}
+		// // if verbose {
+		// // 	fmt.Fprintln(os.Stderr, "clang", args)
+		// // }
+		// if err := ctx.compiler().Compile(args...); err != nil {
+		// 	return fmt.Errorf("failed to compile %s: %v", file.Name(), err)
+		// }
+		// llvmBuf := ll.WriteBitcodeToMemoryBuffer(mainMod)
+		llvmBuf := ll.WriteThinLTOBitcodeToMemoryBuffer(mainMod)
+		fmt.Println("Write BitCode end ")
+		defer llvmBuf.Dispose()
+		err = os.WriteFile(oFile.Name(), llvmBuf.Bytes(), 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write bitcode: %v", err)
+		}
+		fmt.Println("Bitcode written to:", oFile.Name())
+		compiledObjFiles = append(compiledObjFiles, oFile.Name())
+
+		objFiles = compiledObjFiles
+	}
+
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()
 	cmd.Verbose = verbose
+	fmt.Println("Linking command: clang", strings.Join(buildArgs, " "))
 	return cmd.Link(buildArgs...)
 }
 

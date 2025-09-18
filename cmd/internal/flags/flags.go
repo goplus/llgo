@@ -102,7 +102,7 @@ func UpdateConfig(conf *build.Config) error {
 		conf.AbiMode = build.AbiMode(AbiMode)
 		conf.CheckLinkArgs = CheckLinkArgs
 		conf.CheckLLFiles = CheckLLFiles
-		conf.GenLL = GenLLFiles
+		conf.GenLL = true
 		conf.ForceEspClang = ForceEspClang
 	}
 	return nil
