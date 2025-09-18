@@ -375,6 +375,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 				return nil, err
 			}
 
+			fmt.Println("LinkMainPkg end")
+
 			// Generate C headers for c-archive and c-shared modes before linking
 			if ctx.buildConf.BuildMode == BuildModeCArchive || ctx.buildConf.BuildMode == BuildModeCShared {
 				libname := strings.TrimSuffix(filepath.Base(outFmts.Out), conf.AppExt)
@@ -835,9 +837,8 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	}
 
 	buildArgs := []string{"-o", app}
-	if ctx.buildConf.GenLL {
-		buildArgs = append(buildArgs, "--lto-O2", "--thinlto-cache-dir=/tmp/thinlto-cache") // 启用ThinLTO链接时优化
-	}
+	buildArgs = append(buildArgs, "-s")
+	buildArgs = append(buildArgs, "-Map=linker.map")
 	buildArgs = append(buildArgs, linkArgs...)
 
 	// Add build mode specific linker arguments
@@ -892,18 +893,30 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		// non-exported functions by setting the visibility to hidden or
 		// (for thunks) to linkonce_odr linkage. Change the linkage here to
 		// internal to benefit much more from interprocedural optimizations.
-		// for fn := mainMod.FirstFunction(); !fn.IsNil(); fn = ll.NextFunction(fn) {
-		// 	if fn.Visibility() == ll.HiddenVisibility {
-		// 		fn.SetVisibility(ll.DefaultVisibility)
-		// 		fn.SetLinkage(ll.InternalLinkage)
-		// 	} else if fn.Linkage() == ll.LinkOnceODRLinkage {
-		// 		fn.SetLinkage(ll.InternalLinkage)
-		// 	}
-		// }
+		for fn := mainMod.FirstFunction(); !fn.IsNil(); fn = ll.NextFunction(fn) {
+			// Only set internal linkage for functions that are actually defined (not declarations)
+			// and not the main function
+			if fn.Name() != "main" && !fn.IsDeclaration() {
+				fn.SetLinkage(ll.InternalLinkage)
+				fmt.Println("Not Inernal Function:", fn.Name(), "Linkage:", fn.Linkage(), "Visibility:", fn.Visibility(), "IsDeclaration:", fn.IsDeclaration())
+			}
+		}
+		fmt.Println("Running ThinLTO optimizations...")
+		filepath, err := os.CreateTemp("", "before-pass-linked-*.ll")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer filepath.Close()
+		_, err = filepath.WriteString(mainMod.String())
+		if err != nil {
+			return fmt.Errorf("failed to write IR: %v", err)
+		}
+		fmt.Println("Before passes IR written to:", filepath.Name())
+
 		po := ll.NewPassBuilderOptions()
 		defer po.Dispose()
 		passes := fmt.Sprintf("thinlto-pre-link<%s>", "Oz")
-		err := mainMod.RunPasses(passes, ll.TargetMachine{}, po)
+		err = mainMod.RunPasses(passes, ll.TargetMachine{}, po)
 		if err != nil {
 			panic("failed to run passes: " + err.Error())
 		}
@@ -912,6 +925,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		// if err != nil {
 		// 	panic("failed to run globaldce pass: " + err.Error())
 		// }
+		if err := ll.VerifyModule(mainMod, ll.PrintMessageAction); err != nil {
+			return errors.New("verification failure after LLVM optimization passes")
+		}
 
 		irString := mainMod.String()
 		file, err := os.CreateTemp("", "linked-*.ll")
@@ -926,7 +942,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		}
 		// compiledObjFiles = append(compiledObjFiles, file.Name())
 
-		fmt.Println(file.Name())
+		fmt.Println("After Pass", file.Name())
 
 		oFile, err := os.CreateTemp("", "linked-*.o")
 		if err != nil {
@@ -941,12 +957,15 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		// if err := ctx.compiler().Compile(args...); err != nil {
 		// 	return fmt.Errorf("failed to compile %s: %v", file.Name(), err)
 		// }
+		// llvmBuf := ll.WriteBitcodeToMemoryBuffer(mainMod)
 		llvmBuf := ll.WriteThinLTOBitcodeToMemoryBuffer(mainMod)
+		fmt.Println("Write BitCode end ")
 		defer llvmBuf.Dispose()
 		err = os.WriteFile(oFile.Name(), llvmBuf.Bytes(), 0666)
 		if err != nil {
 			return fmt.Errorf("failed to write bitcode: %v", err)
 		}
+		fmt.Println("Bitcode written to:", oFile.Name())
 		compiledObjFiles = append(compiledObjFiles, oFile.Name())
 
 		objFiles = compiledObjFiles
@@ -956,6 +975,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 
 	cmd := ctx.linker()
 	cmd.Verbose = verbose
+	fmt.Println("Linking command: clang", strings.Join(buildArgs, " "))
 	return cmd.Link(buildArgs...)
 }
 
