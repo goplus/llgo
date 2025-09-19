@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/goplus/cobra/xcmd"
 	"github.com/goplus/llgo/cmd/internal/build"
-	"github.com/goplus/llgo/cmd/internal/bundle"
 	"github.com/goplus/llgo/cmd/internal/clean"
 	"github.com/goplus/llgo/cmd/internal/install"
 	"github.com/goplus/llgo/cmd/internal/run"
@@ -19,10 +18,6 @@ import (
 const _ = true
 
 type Cmd_build struct {
-	xcmd.Command
-	*App
-}
-type Cmd_bundle struct {
 	xcmd.Command
 	*App
 }
@@ -64,15 +59,14 @@ func (this *App) MainEntry() {
 }
 func (this *App) Main() {
 	_xgo_obj0 := &Cmd_build{App: this}
-	_xgo_obj1 := &Cmd_bundle{App: this}
-	_xgo_obj2 := &Cmd_clean{App: this}
-	_xgo_obj3 := &Cmd_cmptest{App: this}
-	_xgo_obj4 := &Cmd_get{App: this}
-	_xgo_obj5 := &Cmd_install{App: this}
-	_xgo_obj6 := &Cmd_run{App: this}
-	_xgo_obj7 := &Cmd_test{App: this}
-	_xgo_obj8 := &Cmd_version{App: this}
-	xcmd.Gopt_App_Main(this, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7, _xgo_obj8)
+	_xgo_obj1 := &Cmd_clean{App: this}
+	_xgo_obj2 := &Cmd_cmptest{App: this}
+	_xgo_obj3 := &Cmd_get{App: this}
+	_xgo_obj4 := &Cmd_install{App: this}
+	_xgo_obj5 := &Cmd_run{App: this}
+	_xgo_obj6 := &Cmd_test{App: this}
+	_xgo_obj7 := &Cmd_version{App: this}
+	xcmd.Gopt_App_Main(this, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7)
 }
 //line cmd/llgo/build_cmd.gox:20
 func (this *Cmd_build) Main(_xgo_arg0 string) {
@@ -91,24 +85,6 @@ func (this *Cmd_build) Main(_xgo_arg0 string) {
 }
 func (this *Cmd_build) Classfname() string {
 	return "build"
-}
-//line cmd/llgo/bundle_cmd.gox:19
-func (this *Cmd_bundle) Main(_xgo_arg0 string) {
-	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/bundle_cmd.gox:19:1
-	this.Use("bundle [flags] [packages]")
-//line cmd/llgo/bundle_cmd.gox:21:1
-	this.Short("Package executable with embedded Python runtime")
-//line cmd/llgo/bundle_cmd.gox:23:1
-	this.FlagOff()
-//line cmd/llgo/bundle_cmd.gox:25:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/bundle_cmd.gox:26:1
-		bundle.Cmd.Run(bundle.Cmd, args)
-	})
-}
-func (this *Cmd_bundle) Classfname() string {
-	return "bundle"
 }
 //line cmd/llgo/clean_cmd.gox:20
 func (this *Cmd_clean) Main(_xgo_arg0 string) {
