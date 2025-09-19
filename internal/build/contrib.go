@@ -8,9 +8,9 @@ import (
 	xenv "github.com/goplus/llgo/xtool/env"
 )
 
-// LinkContributor is a unified extension point that abstracts
+// PkgProvider is a unified extension point that abstracts
 // feature-specific contributions to the build/link pipeline.
-type LinkContributor interface {
+type PkgProvider interface {
 	// Prepare phase: e.g., toolchain download, env injection,
 	// version verification, install_name fixups, etc.
 	Prepare(ctx *context) error
@@ -103,8 +103,8 @@ func (p PythonContributor) Rpaths(ctx *context) ([]string, error) {
 // and whether Python init/external linkage is needed.
 // hasPyExtern: whether Python external linkage is detected
 // (e.g., cl.PkgLinkExtern expands to python3-embed).
-func collectContributors(needPyInit bool, hasPyExtern bool) []LinkContributor {
-	contribs := []LinkContributor{NoopContributor{}}
+func collectContributors(needPyInit bool, hasPyExtern bool) []PkgProvider {
+	contribs := []PkgProvider{NoopContributor{}}
 	if needPyInit || hasPyExtern {
 		contribs = append(contribs, PythonContributor{
 			NeedInit:      needPyInit,

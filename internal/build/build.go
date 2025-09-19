@@ -645,7 +645,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	objFiles = append(objFiles, entryObjFile)
 
 	// Assemble contributors (unified Python contributor instance)
-	var contributors []LinkContributor
+	var contributors []PkgProvider
 	contributors = append(contributors, NoopContributor{})
 	if ctx.py != nil {
 		// propagate needPyInit into contributor
