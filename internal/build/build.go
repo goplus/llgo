@@ -376,6 +376,10 @@ type context struct {
 	crossCompile crosscompile.Export
 
 	testFail bool
+
+	// unified Python contributor instance (lazily initialized)
+	py         *PythonContributor
+	pyPrepared bool
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -394,6 +398,23 @@ func (c *context) linker() *clang.Cmd {
 	}
 	cmd.Verbose = c.buildConf.Verbose
 	return cmd
+}
+
+func (c *context) ensurePyContrib() *PythonContributor {
+	if c.py == nil {
+		c.py = &PythonContributor{}
+	}
+	return c.py
+}
+
+func (c *context) ensurePyPrepared() {
+	if c.py == nil {
+		c.py = &PythonContributor{}
+	}
+	if !c.pyPrepared {
+		check(c.py.Prepare(c))
+		c.pyPrepared = true
+	}
 }
 
 func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
@@ -436,70 +457,65 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
 				altParts := strings.Split(param, ";")
-				expdArgs := make([]string, 0, len(altParts))
-				for _, param := range altParts {
-					param = strings.TrimSpace(param)
-					if param == "$(pkg-config --libs python3-embed)" {
-						if err := func() error {
-							pyHome := pyenv.PythonHome()
-							steps := []struct {
-								name string
-								run  func() error
-							}{
-								{"prepare Python cache", func() error { return pyenv.EnsureWithFetch("") }},
-								{"setup Python build env", pyenv.EnsureBuildEnv},
-								{"verify Python", pyenv.Verify},
-								{"fix install_name", func() error { return pyenv.FixLibpythonInstallName(pyHome) }},
-							}
-							for _, s := range steps {
-								if e := s.run(); e != nil {
-									return fmt.Errorf("%s: %w", s.name, e)
-								}
-							}
-							return nil
-						}(); err != nil {
-							panic(fmt.Sprintf("python toolchain init failed: %v\n\tLLGO_CACHE_DIR=%s\n\tPYTHONHOME=%s\n\thint: set LLPYG_PYHOME or check network/permissions",
-								err, env.LLGoCacheDir(), pyenv.PythonHome()))
-						}
-						// if err = pyenv.EnsurePcRpath(pyenv.PythonHome()); err != nil {
-						// 	panic(fmt.Sprintf("failed to inject rpath into python3-embed.pc: %v", err))
-						// }。
-					}
-					if strings.ContainsRune(param, '$') {
-						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
-						ctx.nLibdir++
-					} else {
-						fields := strings.Fields(param)
-						expdArgs = append(expdArgs, fields...)
-					}
-					if len(expdArgs) > 0 {
+				// detect python extern and defer link arg expansion to contributor
+				isPyExtern := false
+				for _, p := range altParts {
+					t := strings.TrimSpace(p)
+					if t == "$(pkg-config --libs python3-embed)" || strings.Contains(strings.ToLower(t), "python") {
+						isPyExtern = true
 						break
 					}
 				}
-				if len(expdArgs) == 0 {
-					panic(fmt.Sprintf("'%s' cannot locate the external library", param))
-				}
-
-				pkgLinkArgs := make([]string, 0, 3)
-				if expdArgs[0][0] == '-' {
-					pkgLinkArgs = append(pkgLinkArgs, expdArgs...)
+				if isPyExtern {
+					py := ctx.ensurePyContrib()
+					py.NeedToolchain = true
+					py.HasExtern = true
+					// prepare once so pip and pkg-config are available
+					ctx.ensurePyPrepared()
 				} else {
-					linkFile := expdArgs[0]
-					dir, lib := filepath.Split(linkFile)
-					pkgLinkArgs = append(pkgLinkArgs, "-l"+lib)
-					if dir != "" {
-						pkgLinkArgs = append(pkgLinkArgs, "-L"+dir)
-						ctx.nLibdir++
+					expdArgs := make([]string, 0, len(altParts))
+					for _, p := range altParts {
+						p = strings.TrimSpace(p)
+						if strings.ContainsRune(p, '$') {
+							expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(p)...)
+							ctx.nLibdir++
+						} else {
+							fields := strings.Fields(p)
+							expdArgs = append(expdArgs, fields...)
+						}
+						if len(expdArgs) > 0 {
+							break
+						}
 					}
-				}
-				if ctx.isCheckLinkArgsEnabled {
-					if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
-						panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
+					if len(expdArgs) == 0 {
+						panic(fmt.Sprintf("'%s' cannot locate the external library", param))
 					}
+
+					pkgLinkArgs := make([]string, 0, 3)
+					if expdArgs[0][0] == '-' {
+						pkgLinkArgs = append(pkgLinkArgs, expdArgs...)
+					} else {
+						linkFile := expdArgs[0]
+						dir, lib := filepath.Split(linkFile)
+						pkgLinkArgs = append(pkgLinkArgs, "-l"+lib)
+						if dir != "" {
+							pkgLinkArgs = append(pkgLinkArgs, "-L"+dir)
+							ctx.nLibdir++
+						}
+					}
+					if ctx.isCheckLinkArgsEnabled {
+						if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
+							panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
+						}
+					}
+					aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 				}
-				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
 			if kind == cl.PkgPyModule {
+				// ensure python is prepared before pip install
+				py := ctx.ensurePyContrib()
+				py.NeedToolchain = true
+				ctx.ensurePyPrepared()
 				if name := strings.TrimSpace(param); name != "" {
 					base := strings.Split(name, "@")[0]
 					base = strings.Split(base, "==")[0]
@@ -628,9 +644,16 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
 
-	// Assemble contributors (e.g., Python) and aggregate their contributions
-	pyExtern := hasPythonExtern(pkgs)
-	contributors := collectContributors(needPyInit, pyExtern)
+	// Assemble contributors (unified Python contributor instance)
+	var contributors []LinkContributor
+	contributors = append(contributors, NoopContributor{})
+	if ctx.py != nil {
+		// propagate needPyInit into contributor
+		if needPyInit && !ctx.py.NeedInit {
+			ctx.py.NeedInit = true
+		}
+		contributors = append(contributors, ctx.py)
+	}
 
 	for _, c := range contributors {
 		check(c.Prepare(ctx))

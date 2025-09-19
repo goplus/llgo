@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/pyenv"
+	xenv "github.com/goplus/llgo/xtool/env"
 )
 
 // LinkContributor is a unified extension point that abstracts
@@ -38,6 +39,7 @@ func (NoopContributor) Rpaths(*context) ([]string, error)      { return nil, nil
 type PythonContributor struct {
 	NeedInit      bool // whether __llgo_py_init_from_exedir should be injected (decided by needPyInit)
 	NeedToolchain bool // whether CPython toolchain must be prepared/fixed (e.g., python3-embed linkage)
+	HasExtern     bool // whether python extern linkage detected; triggers pkg-config expansion
 }
 
 func (p PythonContributor) Prepare(ctx *context) error {
@@ -74,10 +76,14 @@ func (p PythonContributor) InitObjects(ctx *context) ([]string, error) {
 }
 
 func (p PythonContributor) LinkArgs(ctx *context) ([]string, error) {
-	// Python related -l/-L parsing is already performed in
-	// buildPkg via cl.PkgLinkExtern and appended to aPkg.LinkArgs.
-	// Keep this empty to avoid duplication.
-	return nil, nil
+	if !p.HasExtern {
+		return nil, nil
+	}
+	if !p.NeedToolchain {
+		return nil, nil
+	}
+	args := xenv.ExpandEnvToArgs("$(pkg-config --libs python3-embed)")
+	return args, nil
 }
 
 func (p PythonContributor) Rpaths(ctx *context) ([]string, error) {
