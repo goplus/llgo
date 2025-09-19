@@ -352,10 +352,11 @@ func free(ptr unsafe.Pointer) {
 	// TODO: free blocks on request, when the compiler knows they're unused.
 }
 
-func GC() {
+func GC() uintptr {
 	lock(&gcMutex)
-	gc()
+	freeBytes := gc()
 	unlock(&gcMutex)
+	return freeBytes
 }
 
 // runGC performs a garbage collection cycle. It is the internal implementation
