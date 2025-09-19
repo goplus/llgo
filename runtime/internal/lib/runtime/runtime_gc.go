@@ -2,7 +2,15 @@
 
 package runtime
 
-import "github.com/goplus/llgo/runtime/internal/clite/bdwgc"
+import (
+	"runtime"
+
+	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
+)
+
+func ReadMemStats(m *runtime.MemStats) {
+	panic("todo: runtime.ReadMemStats")
+}
 
 func GC() {
 	bdwgc.Gcollect()

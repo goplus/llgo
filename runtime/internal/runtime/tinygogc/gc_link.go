@@ -28,6 +28,9 @@ var _heapEnd [0]byte
 //go:linkname _stackStart _stack_top
 var _stackStart [0]byte
 
+//go:linkname _stackEnd _stack_end
+var _stackEnd [0]byte
+
 //go:linkname _globals_start _globals_start
 var _globals_start [0]byte
 
