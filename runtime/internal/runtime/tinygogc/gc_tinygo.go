@@ -50,7 +50,6 @@ var (
 	stackTop      uintptr        // the top of stack
 	endBlock      uintptr        // GC end block index
 	metadataStart unsafe.Pointer // start address of GC metadata
-	isGCInit      bool
 
 	nextAlloc     uintptr // the next block that should be tried by the allocator
 	gcTotalAlloc  uint64  // total number of bytes allocated
@@ -65,6 +64,9 @@ var (
 
 	// zeroSizedAlloc is just a sentinel that gets returned when allocating 0 bytes.
 	zeroSizedAlloc uint8
+
+	gcMutex  mutex // gcMutex protects GC related variables
+	isGCInit bool  // isGCInit indicates GC initialization state
 )
 
 // Some globals + constants for the entire GC.
@@ -220,16 +222,22 @@ func isOnHeap(ptr uintptr) bool {
 	return ptr >= heapStart && ptr < uintptr(metadataStart)
 }
 
+func isPointer(ptr uintptr) bool {
+	// TODO: implement precise GC
+	return isOnHeap(ptr)
+}
+
 // alloc tries to find some free space on the heap, possibly doing a garbage
 // collection cycle if needed. If no space is free, it panics.
 //
 //go:noinline
 func Alloc(size uintptr) unsafe.Pointer {
-	lazyInit()
-
 	if size == 0 {
 		return unsafe.Pointer(&zeroSizedAlloc)
 	}
+	lock(&gcMutex)
+	lazyInit()
+
 	gcTotalAlloc += uint64(size)
 	gcMallocs++
 
@@ -250,7 +258,7 @@ func Alloc(size uintptr) unsafe.Pointer {
 				// could be found. Run a garbage collection cycle to reclaim
 				// free memory and try again.
 				heapScanCount = 2
-				freeBytes := GC()
+				freeBytes := gc()
 				heapSize := uintptr(metadataStart) - heapStart
 				if freeBytes < heapSize/3 {
 					// Ensure there is at least 33% headroom.
@@ -308,7 +316,7 @@ func Alloc(size uintptr) unsafe.Pointer {
 			for i := thisAlloc + 1; i != nextAlloc; i++ {
 				gcSetState(i, blockStateTail)
 			}
-
+			unlock(&gcMutex)
 			// Return a pointer to this allocation.
 			return memset(gcPointerOf(thisAlloc), 0, size)
 		}
@@ -316,10 +324,12 @@ func Alloc(size uintptr) unsafe.Pointer {
 }
 
 func Realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
-	lazyInit()
 	if ptr == nil {
 		return Alloc(size)
 	}
+	lock(&gcMutex)
+	lazyInit()
+	unlock(&gcMutex)
 
 	ptrAddress := uintptr(ptr)
 	endOfTailAddress := gcAddressOf(gcFindNext(blockFromAddr(ptrAddress)))
@@ -342,10 +352,16 @@ func free(ptr unsafe.Pointer) {
 	// TODO: free blocks on request, when the compiler knows they're unused.
 }
 
+func GC() {
+	lock(&gcMutex)
+	gc()
+	unlock(&gcMutex)
+}
+
 // runGC performs a garbage collection cycle. It is the internal implementation
 // of the runtime.GC() function. The difference is that it returns the number of
 // free bytes in the heap after the GC is finished.
-func GC() (freeBytes uintptr) {
+func gc() (freeBytes uintptr) {
 	lazyInit()
 
 	if gcDebug {
@@ -403,7 +419,7 @@ func startMark(root uintptr) {
 			// Load the word.
 			word := *(*uintptr)(unsafe.Pointer(addr))
 
-			if !isOnHeap(word) {
+			if !isPointer(word) {
 				// Not a heap pointer.
 				continue
 			}
