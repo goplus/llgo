@@ -238,7 +238,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			initial = newInitial
 		}
 	}
-
 	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
@@ -293,14 +292,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	check(err)
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, dpkg...)
-
 	// update globals importpath.name=value
 	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
 	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
 
 	global, err := createGlobals(ctx, ctx.prog, pkgs)
 	check(err)
-
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
 			linkMainPkg(ctx, pkg, allPkgs, global, conf, mode, verbose)
@@ -435,36 +432,36 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// need to be linked with external library
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
+				if pkg.Name == "py" {
+					if err := func() error {
+						pyHome := pyenv.PythonHome()
+						steps := []struct {
+							name string
+							run  func() error
+						}{
+							{"prepare Python cache", func() error { return pyenv.EnsureWithFetch("") }},
+							{"setup Python build env", func() error { return pyenv.EnsureBuildEnv() }},
+							{"verify Python", func() error { return pyenv.Verify() }},
+							{"fix install_name", func() error { return pyenv.FixLibpythonInstallName(pyHome) }},
+						}
+						for _, s := range steps {
+							if e := s.run(); e != nil {
+								return fmt.Errorf("%s: %w", s.name, e)
+							}
+						}
+						return nil
+					}(); err != nil {
+						panic(fmt.Sprintf("python toolchain init failed: %v\n\tLLGO_CACHE_DIR=%s\n\tPYTHONHOME=%s\n\thint: set LLPYG_PYHOME or check network/permissions",
+							err, env.LLGoCacheDir(), pyenv.PythonHome()))
+					}
+					// if err = pyenv.EnsurePcRpath(pyenv.PythonHome()); err != nil {
+					// 	panic(fmt.Sprintf("failed to inject rpath into python3-embed.pc: %v", err))
+					// }
+				}
 				altParts := strings.Split(param, ";")
 				expdArgs := make([]string, 0, len(altParts))
 				for _, param := range altParts {
 					param = strings.TrimSpace(param)
-					if param == "$(pkg-config --libs python3-embed)" {
-						if err := func() error {
-							pyHome := pyenv.PythonHome()
-							steps := []struct {
-								name string
-								run  func() error
-							}{
-								{"prepare Python cache", func() error { return pyenv.EnsureWithFetch("") }},
-								{"setup Python build env", pyenv.EnsureBuildEnv},
-								{"verify Python", pyenv.Verify},
-								{"fix install_name", func() error { return pyenv.FixLibpythonInstallName(pyHome) }},
-							}
-							for _, s := range steps {
-								if e := s.run(); e != nil {
-									return fmt.Errorf("%s: %w", s.name, e)
-								}
-							}
-							return nil
-						}(); err != nil {
-							panic(fmt.Sprintf("python toolchain init failed: %v\n\tLLGO_CACHE_DIR=%s\n\tPYTHONHOME=%s\n\thint: set LLPYG_PYHOME or check network/permissions",
-								err, env.LLGoCacheDir(), pyenv.PythonHome()))
-						}
-						// if err = pyenv.EnsurePcRpath(pyenv.PythonHome()); err != nil {
-						// 	panic(fmt.Sprintf("failed to inject rpath into python3-embed.pc: %v", err))
-						// }
-					}
 					if strings.ContainsRune(param, '$') {
 						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
 						ctx.nLibdir++
