@@ -17,7 +17,7 @@ cat > "${POPULATE_LINUX_SYSROOT_SCRIPT}" << EOF
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get install -y build-essential zlib1g-dev
+apt-get install -y build-essential
 apt-get install -y lsb-release gnupg2 wget rsync
 
 echo "deb http://apt.llvm.org/\$(lsb_release -cs)/ llvm-toolchain-\$(lsb_release -cs)-19 main" | tee /etc/apt/sources.list.d/llvm.list
