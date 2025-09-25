@@ -17,7 +17,6 @@ runs:
       with:
         path: .sysroot/linux.tar.gz
         key: ${{ inputs.linux-cache-key }}
-      shell: bash
     - name: Populate Linux sysroot
       run: tar -xzvf .sysroot/linux.tar.gz -C .sysroot
       shell: bash
