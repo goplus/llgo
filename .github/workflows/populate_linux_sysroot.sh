@@ -18,6 +18,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
 apt-get install -y lsb-release gnupg2 wget rsync
+apt-get install -y build-essential
 
 echo "deb http://apt.llvm.org/\$(lsb_release -cs)/ llvm-toolchain-\$(lsb_release -cs)-19 main" | tee /etc/apt/sources.list.d/llvm.list
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
