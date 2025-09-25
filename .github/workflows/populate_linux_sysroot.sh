@@ -123,12 +123,6 @@ do-sync() {
 	exit \$?
 }
 
-# Create missing symlinks for development libraries
-ln -sf libz.so.1 /lib/x86_64-linux-gnu/libz.so 2>/dev/null || true
-ln -sf libz.so.1 /usr/lib/x86_64-linux-gnu/libz.so 2>/dev/null || true
-ln -sf libz.so.1 /lib/aarch64-linux-gnu/libz.so 2>/dev/null || true
-ln -sf libz.so.1 /usr/lib/aarch64-linux-gnu/libz.so 2>/dev/null || true
-
 do-sync / /sysroot/
 EOF
 chmod +x "${POPULATE_LINUX_SYSROOT_SCRIPT}"
