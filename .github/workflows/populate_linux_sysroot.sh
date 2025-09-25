@@ -17,7 +17,7 @@ cat > "${POPULATE_LINUX_SYSROOT_SCRIPT}" << EOF
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get install -y build-essential
+apt-get install -y build-essential zlib1g-dev
 apt-get install -y lsb-release gnupg2 wget rsync
 
 echo "deb http://apt.llvm.org/\$(lsb_release -cs)/ llvm-toolchain-\$(lsb_release -cs)-19 main" | tee /etc/apt/sources.list.d/llvm.list
@@ -122,6 +122,12 @@ do-sync() {
 
 	exit \$?
 }
+
+# Create missing symlinks for development libraries
+ln -sf libz.so.1 /lib/x86_64-linux-gnu/libz.so 2>/dev/null || true
+ln -sf libz.so.1 /usr/lib/x86_64-linux-gnu/libz.so 2>/dev/null || true
+ln -sf libz.so.1 /lib/aarch64-linux-gnu/libz.so 2>/dev/null || true
+ln -sf libz.so.1 /usr/lib/aarch64-linux-gnu/libz.so 2>/dev/null || true
 
 do-sync / /sysroot/
 EOF
