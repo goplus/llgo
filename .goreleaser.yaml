@@ -60,7 +60,7 @@ builds:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
       - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -I{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -L{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/lib -L{{.Env.SYSROOT_LINUX_AMD64}}/usr/lib/x86_64-linux-gnu -lLLVM-19 -lz
+      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_AMD64}} -L{{.Env.SYSROOT_LINUX_AMD64}}/crosscompile/clang/lib -L{{.Env.SYSROOT_LINUX_AMD64}}/lib/x86_64-linux-gnu -lLLVM-19 -lz
       - CGO_LDFLAGS_ALLOW=--sysroot.*
     targets:
       - linux_amd64
@@ -78,7 +78,7 @@ builds:
       - CC=aarch64-linux-gnu-gcc
       - CXX=aarch64-linux-gnu-g++
       - CGO_CPPFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -I{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
-      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -L{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/lib -L{{.Env.SYSROOT_LINUX_ARM64}}/usr/lib/aarch64-linux-gnu -lLLVM-19 -lz
+      - CGO_LDFLAGS=--sysroot={{.Env.SYSROOT_LINUX_ARM64}} -L{{.Env.SYSROOT_LINUX_ARM64}}/crosscompile/clang/lib -L{{.Env.SYSROOT_LINUX_ARM64}}/lib/aarch64-linux-gnu -lLLVM-19 -lz
       - CGO_LDFLAGS_ALLOW=--sysroot.*
     targets:
       - linux_arm64
