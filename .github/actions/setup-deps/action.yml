@@ -18,14 +18,14 @@ runs:
       shell: bash
       run: |
         brew update
-        
+
         # Install LLVM if requested
         if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
           brew install llvm@${{inputs.llvm-version}} lld@${{inputs.llvm-version}}
           brew link --overwrite llvm@${{inputs.llvm-version}} lld@${{inputs.llvm-version}}
           echo "$(brew --prefix llvm@${{inputs.llvm-version}})/bin" >> $GITHUB_PATH
         fi
-        
+
         # Install common dependencies
         brew install bdw-gc openssl libffi libuv
         brew link --overwrite libffi
@@ -36,9 +36,11 @@ runs:
         opt_deps=(
           cjson       # for github.com/goplus/lib/c/cjson
           sqlite      # for github.com/goplus/lib/c/sqlite
-          python@3.12 # for github.com/goplus/lib/py
         )
         brew install "${opt_deps[@]}"
+
+        brew install python@3.12 || true # for github.com/goplus/lib/py
+        brew link --overwrite python@3.12
     - name: Install Ubuntu dependencies
       if: runner.os == 'Linux'
       shell: bash
@@ -53,7 +55,7 @@ runs:
         else
           sudo apt-get update
         fi
-        
+
         # Install common dependencies
         sudo apt-get install -y pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libuv1-dev
 
