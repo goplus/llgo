@@ -323,23 +323,16 @@ func (b Builder) PyImportMod(path string) Expr {
 }
 
 // PyLoadModSyms loads python objects from specified module.
-func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) Expr {
+func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) {
 	pkg := b.Pkg
-	fnLoad := pkg.pyFunc("llgoLoadPyModSyms", b.Prog.tyLoadPyModSyms())
 	modPtr := pkg.PyNewModVar(modName, false).Expr
 	mod := b.Load(modPtr)
-	args := make([]Expr, 1, len(objs)*2+2)
-	args[0] = mod
 	nbase := len(modName) + 1
 	for _, o := range objs {
 		fullName := o.impl.Name()
-		name := fullName[nbase:]
-		args = append(args, b.CStr(name))
-		args = append(args, o.Expr)
+		ret := b.pyLoadAttrs(mod, fullName[nbase:])
+		b.Store(o.Expr, ret)
 	}
-	prog := b.Prog
-	args = append(args, prog.Nil(prog.CStr()))
-	return b.Call(fnLoad, args...)
 }
 
 func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
@@ -565,10 +558,18 @@ func (b Builder) PyNewVar(modName, name string) PyGlobal {
 	return &aPyGlobal{pyVarExpr(mod, name)}
 }
 
-func (b Builder) pyLoad(ptr Expr) Expr {
+func (b Builder) pyLoad(ptr Expr) (ret Expr) {
 	t := ptr.raw.Type.(*pyVarTy)
+	return b.pyLoadAttrs(t.mod, t.name)
+}
+
+func (b Builder) pyLoadAttrs(obj Expr, name string) Expr {
+	attrs := strings.Split(name, ".")
 	fn := b.Pkg.pyFunc("PyObject_GetAttrString", b.Prog.tyGetAttrString())
-	return b.Call(fn, t.mod, b.CStr(t.name))
+	for _, attr := range attrs {
+		obj = b.Call(fn, obj, b.CStr(attr))
+	}
+	return obj
 }
 
 // -----------------------------------------------------------------------------
@@ -592,6 +593,9 @@ func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObj
 		p.NeedPyInit = true
 		obj.InitNil()
 		obj.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	}
+	if recv := sig.Recv(); recv != nil {
+		sig = FuncAddCtx(recv, sig)
 	}
 	ty := &aType{obj.ll, rawType{types.NewPointer(sig)}, vkPyFuncRef}
 	expr := Expr{obj.impl, ty}
@@ -637,7 +641,7 @@ func (p Package) pyLoadModSyms(b Builder) {
 }
 
 func modOf(name string) string {
-	if pos := strings.LastIndexByte(name, '.'); pos > 0 {
+	if pos := strings.IndexByte(name, '$'); pos > 0 {
 		return name[:pos]
 	}
 	panic("unreachable")
