@@ -153,7 +153,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-13
+          - os: macos-15-intel
             goos: darwin
             goarch: amd64
             go-version: "1.24.2"
