@@ -45,6 +45,14 @@ func (p Program) PyObjectPtr() Type {
 	return p.pyObjPtr
 }
 
+func (p Program) PyKwargs() Type {
+	if p.pyKwargs == nil {
+		typ := types.NewMap(types.Typ[types.String], p.PyObjectPtr().RawType())
+		p.pyKwargs = p.rawType(typ)
+	}
+	return p.pyKwargs
+}
+
 func (p Program) pyNamed(name string) *types.Named {
 	// TODO(xsw): does python type need to convert?
 	t := p.python().Scope().Lookup(name).Type().(*types.Named)
@@ -74,6 +82,14 @@ func (p Program) SetPython(py any) {
 func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {
 	p.NeedPyInit = true
 	return p.NewFunc(fullName, sig, InC).Expr
+}
+
+func (p Package) pyGoFunc(fnName string) Expr {
+	p.NeedPyInit = true
+	fn := p.Prog.python().Scope().Lookup(fnName).(*types.Func)
+	name := FullName(fn.Pkg(), fnName)
+	sig := fn.Type().(*types.Signature)
+	return p.NewFunc(name, sig, InGo).Expr
 }
 
 func (p Program) paramObjPtr() *types.Var {
@@ -126,7 +142,6 @@ func (p Program) tyCallFunctionObjArgs() *types.Signature {
 	return p.callFOArgs
 }
 
-/*
 // func(*Object, *Object, *Object) *Object
 func (p Program) tyCall() *types.Signature {
 	if p.callArgs == nil {
@@ -137,7 +152,6 @@ func (p Program) tyCall() *types.Signature {
 	}
 	return p.callArgs
 }
-*/
 
 // func(*Object, uintptr, *Object) cint
 func (p Program) tyListSetItem() *types.Signature {
@@ -360,6 +374,16 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 		}
 		fallthrough
 	default:
+		if sig.Variadic() {
+			if params := sig.Params(); params.At(params.Len()-1).Name() == NameValist &&
+				len(args) >= params.Len() && args[len(args)-1].Type == b.Prog.PyKwargs() {
+				kwargs := b.Call(b.Pkg.pyGoFunc("KwargsToDict"), args[len(args)-1])
+				call := pkg.pyFunc("PyObject_Call", prog.tyCall())
+				ret = b.Call(call, fn, b.PyTuple(args[:len(args)-1]...), kwargs)
+				return
+			}
+		}
+
 		call := pkg.pyFunc("PyObject_CallFunctionObjArgs", prog.tyCallFunctionObjArgs())
 		n = len(args)
 		callargs := make([]Expr, n+2)
