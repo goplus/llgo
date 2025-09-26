@@ -333,7 +333,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		needPyInit:   make(map[*packages.Package]bool),
 		buildConf:    conf,
 		crossCompile: export,
-		cTransformer: cabi.NewTransformer(prog, conf.Target, conf.AbiMode, cabiOptimize),
+		cTransformer: cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
 	}
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
