@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-ESP_CLANG_VERSION="19.1.2_20250905-3"
-BASE_URL="https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/${ESP_CLANG_VERSION}"
+ESP_CLANG_VERSION="20.x_20250911-1"
+BASE_URL="https://github.com/luoliwoshang/espressif-llvm-project-prebuilt/releases/download/${ESP_CLANG_VERSION}"
 
 get_esp_clang_platform() {
     local platform="$1"
