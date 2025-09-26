@@ -36,10 +36,12 @@ runs:
         opt_deps=(
           cjson       # for github.com/goplus/lib/c/cjson
           sqlite      # for github.com/goplus/lib/c/sqlite
-          python@3.12 # for github.com/goplus/lib/py
         )
         brew install "${opt_deps[@]}"
+        
+        brew install python@3.12 || true # for github.com/goplus/lib/py
         brew link --overwrite python@3.12
+
     - name: Install Ubuntu dependencies
       if: runner.os == 'Linux'
       shell: bash
