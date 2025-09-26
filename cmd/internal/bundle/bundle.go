@@ -20,7 +20,7 @@ var (
 
 // llgo bundle
 var Cmd = &base.Command{
-	UsageLine: "llgo bundle [-mode onedir|onefile] [-out output] [-archive zip|rar|tar] [-archiveOut file] [packages]",
+	UsageLine: "llgo bundle [-mode dir|exe] [-out output] [-archive zip|rar|tar] [-archiveOut file] [packages]",
 	Short:     "Package executable with embedded Python runtime",
 }
 

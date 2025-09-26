@@ -238,6 +238,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			initial = newInitial
 		}
 	}
+
 	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
@@ -432,7 +433,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				// need to be linked with external library
 				// format: ';' separated alternative link methods. e.g.
 				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
-				if pkg.Name == "py" {
+				if pkg.PkgPath == "github.com/goplus/lib/py" {
 					if err := func() error {
 						pyHome := pyenv.PythonHome()
 						steps := []struct {
