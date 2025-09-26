@@ -17,39 +17,64 @@ import (
 )
 
 var (
-	modes   = []cabi.Mode{cabi.ModeNone, cabi.ModeCFunc, cabi.ModeAllFunc}
-	archs   = []string{"amd64", "arm64", "riscv64", "arm", "386"}
-	archDir = []string{"amd64", "arm64", "riscv64", "armv6", "i386"}
+	modes = []cabi.Mode{cabi.ModeNone, cabi.ModeCFunc, cabi.ModeAllFunc}
+	archs = []string{"amd64", "arm64", "riscv64", "armv6", "i386"}
 )
 
 func init() {
 	// crosscompile
 	if runtime.GOOS == "darwin" {
-		archs = append(archs, "wasm")
-		archDir = append(archDir, "wasm32")
+		archs = append(archs, "wasm32")
 		archs = append(archs, "esp32")
-		archDir = append(archDir, "esp32")
+		archs = append(archs, "esp32c3")
+		archs = append(archs, "riscv64_lp64f")
+		archs = append(archs, "riscv64_lp64d")
+		archs = append(archs, "riscv32_ilp32")
+		archs = append(archs, "riscv32_ilp32f")
+		archs = append(archs, "riscv32_ilp32d")
 	}
 }
 
-func buildConf(mode cabi.Mode, arch string) *build.Config {
-	conf := build.NewDefaultConf(build.ModeGen)
+func buildConf(mode cabi.Mode, arch string) (conf *build.Config, targetAbi string) {
+	conf = build.NewDefaultConf(build.ModeGen)
 	conf.AbiMode = mode
 	conf.Goarch = arch
 	conf.Goos = "linux"
 	switch arch {
-	case "wasm":
+	case "wasm32":
+		conf.Goarch = "wasm"
 		conf.Goos = "wasip1"
+	case "armv6":
+		conf.Goarch = "arm"
+	case "i386":
+		conf.Goarch = "386"
 	case "esp32":
 		conf.Target = "esp32"
+	case "esp32c3":
+		conf.Target = "esp32c3"
+	case "riscv64_lp64f":
+		conf.Goarch = "riscv64"
+		targetAbi = "lp64f"
+	case "riscv64_lp64d":
+		conf.Goarch = "riscv64"
+		targetAbi = "lp64d"
+	case "riscv32_ilp32":
+		conf.Target = "riscv32"
+		targetAbi = "ilp32"
+	case "riscv32_ilp32f":
+		conf.Target = "riscv32"
+		targetAbi = "ilp32f"
+	case "riscv32_ilp32d":
+		conf.Target = "riscv32"
+		targetAbi = "ilp32d"
 	}
-	return conf
+	return
 }
 
 func TestBuild(t *testing.T) {
 	for _, mode := range modes {
 		for _, arch := range archs {
-			conf := buildConf(mode, arch)
+			conf, _ := buildConf(mode, arch)
 			_, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
 			if err != nil {
 				t.Fatalf("build error: %v-%v %v", arch, mode, err)
@@ -72,15 +97,18 @@ func TestABI(t *testing.T) {
 			files = append(files, f.Name())
 		}
 	}
-	for i, arch := range archs {
+	for _, arch := range archs {
 		t.Run(arch, func(t *testing.T) {
-			testArch(t, arch, archDir[i], files)
+			testArch(t, arch, arch, files)
 		})
 	}
 }
 
 func testArch(t *testing.T, arch string, archDir string, files []string) {
-	conf := buildConf(cabi.ModeAllFunc, arch)
+	conf, targetAbi := buildConf(cabi.ModeAllFunc, arch)
+	if targetAbi != "" {
+		conf.AbiMode = cabi.ModeNone
+	}
 	for _, file := range files {
 		pkgs, err := build.Do([]string{filepath.Join("./_testdata/demo", file)}, conf)
 		if err != nil {
@@ -97,6 +125,10 @@ func testArch(t *testing.T, arch string, archDir string, files []string) {
 			t.Fatalf("parser IR error %v", arch)
 		}
 		pkg := pkgs[0].LPkg
+		if targetAbi != "" {
+			tr := cabi.NewTransformer(pkg.Prog, conf.Target, targetAbi, cabi.ModeAllFunc, false)
+			tr.TransformModule(file, pkg.Module())
+		}
 		testModule(t, context{arch: arch, file: file}, pkg.Prog.TargetData(), pkg.Module(), m)
 	}
 }
@@ -141,7 +173,7 @@ func testFunc(t *testing.T, ctx context, td llvm.TargetData, fn llvm.Value, cfn 
 				t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 			}
 		}
-		if fn.GetStringAttributeAtIndex(1, "byval") != cfn.GetStringAttributeAtIndex(1, "byval") {
+		if fn.GetStringAttributeAtIndex(i+1, "byval") != cfn.GetStringAttributeAtIndex(i+1, "byval") {
 			t.Fatalf("%v %v: bad param attr type %v != %v", ctx, fn.Name(), ft, cft)
 		}
 	}

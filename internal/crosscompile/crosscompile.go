@@ -34,6 +34,8 @@ type Export struct {
 	ClangRoot    string   // Root directory of custom clang installation
 	ClangBinPath string   // Path to clang binary directory
 
+	LLVMTarget   string // LLVM Target
+	TargetABI    string // RISC-V Target ABI (e.g., "lp64", "lp64d")
 	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
 	FormatDetail string // For uf2, it's uf2FamilyID
 	Emulator     string // Emulator command template (e.g., "qemu-system-arm -M {} -kernel {}")
@@ -453,6 +455,8 @@ func UseTarget(targetName string) (export Export, err error) {
 	export.GOOS = config.GOOS
 	export.GOARCH = config.GOARCH
 	export.ExtraFiles = config.ExtraFiles
+	export.LLVMTarget = config.LLVMTarget
+	export.TargetABI = config.TargetABI
 	export.BinaryFormat = config.BinaryFormat
 	export.FormatDetail = config.FormatDetail()
 	export.Emulator = config.Emulator
@@ -481,9 +485,8 @@ func UseTarget(targetName string) (export Export, err error) {
 	envs := buildEnvMap(env.LLGoROOT())
 
 	// Convert LLVMTarget, CPU, Features to CCFLAGS/LDFLAGS
-	var ccflags []string
-	var ldflags []string
-
+	ldflags := []string{"-S"}
+	ccflags := []string{"-Oz"}
 	cflags := []string{"-Wno-override-module", "-Qunused-arguments", "-Wno-unused-command-line-argument"}
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)

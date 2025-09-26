@@ -23,6 +23,6 @@ double basic_float64(double a) {
 	return a;
 }
 
-void* basic_uintptr(void* a) {
+void* basic_pointer(void* a) {
 	return a;
 }

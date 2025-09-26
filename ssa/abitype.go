@@ -86,14 +86,18 @@ func (b Builder) abiTypeOf(t types.Type) func() Expr {
 
 func (b Builder) abiTupleOf(t *types.Tuple) func() Expr {
 	n := t.Len()
-	tuple := make([]Expr, n)
+	tuple := make([]func() Expr, n)
 	for i := 0; i < n; i++ {
-		tuple[i] = b.abiType(t.At(i).Type())
+		tuple[i] = b.abiTypeOf(t.At(i).Type())
 	}
 	return func() Expr {
 		prog := b.Prog
 		tSlice := prog.Slice(prog.AbiTypePtr())
-		return b.SliceLit(tSlice, tuple...)
+		elts := make([]Expr, n)
+		for i := 0; i < n; i++ {
+			elts[i] = tuple[i]()
+		}
+		return b.SliceLit(tSlice, elts...)
 	}
 }
 

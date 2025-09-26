@@ -61,7 +61,7 @@ define dso_local i64 @basic_float64(i64 noundef %0) #0 {
 }
 
 ; Function Attrs: noinline nounwind optnone
-define dso_local ptr @basic_uintptr(i32 noundef %0) #0 {
+define dso_local ptr @basic_pointer(i32 noundef %0) #0 {
   %2 = alloca ptr, align 4
   %3 = alloca ptr, align 4
   %4 = inttoptr i32 %0 to ptr
