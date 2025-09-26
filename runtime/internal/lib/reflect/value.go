@@ -600,8 +600,13 @@ func (v Value) Field(i int) Value {
 	field := &tt.Fields[i]
 	typ := field.Typ
 
+	// Check closure to func
+	kind := typ.Kind()
+	if typ.IsClosure() {
+		kind = abi.Func
+	}
 	// Inherit permission bits from v, but clear flagEmbedRO.
-	fl := v.flag&(flagStickyRO|flagIndir|flagAddr) | flag(typ.Kind())
+	fl := v.flag&(flagStickyRO|flagIndir|flagAddr) | flag(kind)
 	// Using an unexported field forces flagRO.
 	if !field.Exported() {
 		if field.Embedded() {

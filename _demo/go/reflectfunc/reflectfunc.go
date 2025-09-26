@@ -39,4 +39,12 @@ func main() {
 			panic(fmt.Sprintf("not func: %T", fn))
 		}
 	}
+	v := reflect.ValueOf(T{})
+	if v.Field(0).Kind() != reflect.Func {
+		panic("must func")
+	}
+}
+
+type T struct {
+	fn func(int)
 }
