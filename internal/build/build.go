@@ -216,7 +216,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	verbose := conf.Verbose
 	patterns := args
-	tags := "llgo"
+	tags := "llgo,math_big_pure_go"
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
 	}
