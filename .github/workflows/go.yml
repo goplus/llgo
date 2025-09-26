@@ -5,7 +5,7 @@ name: Go
 
 on:
   push:
-    branches: 
+    branches:
       - "**"
       - "!dependabot/**"
   pull_request:
@@ -23,7 +23,7 @@ jobs:
       matrix:
         os:
           - macos-latest
-          - ubuntu-24.04
+          - ubuntu-latest
         llvm: [19]
     runs-on: ${{matrix.os}}
     steps:
