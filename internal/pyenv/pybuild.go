@@ -137,9 +137,9 @@ func InstallPackages(pkgs ...string) error {
 	fmt.Printf("[pip] Packages   : %v\n", pkgs)
 	fmt.Printf("[pip] Target     : %s\n", site)
 	fmt.Printf("[pip] Interpreter: %s\n", py)
-	fmt.Printf("[pip] Tip: if the network is slow, set a mirror, e.g.\n")
-	fmt.Printf("       export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple\n")
-	fmt.Printf("       %s -m pip install -i $PIP_INDEX_URL --target %s %v\n", py, site, pkgs)
+	// fmt.Printf("[pip] Tip: if the network is slow, set a mirror, e.g.\n")
+	// fmt.Printf("       export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple\n")
+	// fmt.Printf("       %s -m pip install -i $PIP_INDEX_URL --target %s %v\n", py, site, pkgs)
 
 	cmd := exec.Command(py, args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
