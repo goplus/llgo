@@ -40,6 +40,7 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/llpkg"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/pyenv"
@@ -498,13 +499,25 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 			}
 			if kind == cl.PkgPyModule {
-				if name := strings.TrimSpace(param); name != "" {
-					base := strings.Split(name, "@")[0]
-					base = strings.Split(base, "==")[0]
+				spec := ""
+				cfgPath := filepath.Join(aPkg.Dir, "llpkg.cfg")
+				if cfg, err := llpkg.ParseConfigFile(cfgPath); err == nil && cfg.Upstream.Package.Name != "" {
+					name := strings.TrimSpace(cfg.Upstream.Package.Name)
+					ver := strings.TrimSpace(cfg.Upstream.Package.Version)
+					if ver != "" {
+						spec = name + "==" + ver
+					} else {
+						spec = name
+					}
+				} else if p := strings.TrimSpace(param); p != "" {
+					spec = p
+				}
+				if spec != "" {
+					base := strings.Split(spec, "==")[0]
 					if !pyenv.IsStdOrPresent(base) {
-						if err := pyenv.PipInstall(param); err != nil {
-							panic(fmt.Sprintf("pip install failed for '%s': %v\n\tPYTHONHOME=%s\n\thint: ensure pip/network or pin version (e.g. py.numpy==1.26.4)",
-								param, err, pyenv.PythonHome()))
+						if err := pyenv.PipInstall(spec); err != nil {
+							panic(fmt.Sprintf("pip install failed for '%s': %v\n\tPYTHONHOME=%s",
+								spec, err, pyenv.PythonHome()))
 						}
 					}
 				}
