@@ -1,6 +1,7 @@
 package pyenv
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -133,16 +134,24 @@ func InstallPackages(pkgs ...string) error {
 	args := []string{"-m", "pip", "install", "--target", site}
 	args = append(args, pkgs...)
 
-	// pre-run info
-	fmt.Printf("[pip] Packages   : %v\n", pkgs)
-	fmt.Printf("[pip] Target     : %s\n", site)
-	fmt.Printf("[pip] Interpreter: %s\n", py)
+	// pre-run info (verbose only)
+	if isVerbose() {
+		fmt.Printf("[pip] Packages   : %v\n", pkgs)
+		fmt.Printf("[pip] Target     : %s\n", site)
+		fmt.Printf("[pip] Interpreter: %s\n", py)
+	}
 	// fmt.Printf("[pip] Tip: if the network is slow, set a mirror, e.g.\n")
 	// fmt.Printf("       export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple\n")
 	// fmt.Printf("       %s -m pip install -i $PIP_INDEX_URL --target %s %v\n", py, site, pkgs)
 
 	cmd := exec.Command(py, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if isVerbose() {
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	} else {
+		// Suppress pip outputs when not verbose; still show error message below if failed
+		var discard bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &discard, &discard
+	}
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "\n[pip] Install failed: %v\n", err)
 		fmt.Fprintf(os.Stderr, "[pip] Troubleshooting:\n")
@@ -153,11 +162,13 @@ func InstallPackages(pkgs ...string) error {
 		return err
 	}
 
-	// post-run notice and separation from following output
-	fmt.Println("\n[pip] Install completed successfully.")
-	fmt.Printf("[pip] Installed to: %s\n", site)
-	fmt.Println("------------------------------------------------------------")
-	fmt.Println()
+	// post-run notice (verbose only)
+	if isVerbose() {
+		fmt.Println("\n[pip] Install completed successfully.")
+		fmt.Printf("[pip] Installed to: %s\n", site)
+		fmt.Println("------------------------------------------------------------")
+		fmt.Println()
+	}
 	return nil
 }
 

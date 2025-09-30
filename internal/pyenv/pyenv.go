@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/goplus/llgo/internal/env"
 )
@@ -69,12 +70,31 @@ func EnsureWithFetch(url string) error {
 		if url == "" {
 			return fmt.Errorf("python_env at %q is empty and no download URL provided", root)
 		}
-		fmt.Println("downloading python assets from", url)
+		if isVerbose() {
+			fmt.Println("downloading python assets from", url)
+		}
 		if err := downloadAndExtract(url, root); err != nil {
 			return fmt.Errorf("failed to download/extract python assets from %q to %q: %w", url, root, err)
 		}
 	}
 	return nil
+}
+
+// isVerbose returns whether pyenv should output verbose logs.
+// It is controlled by environment variables to avoid tight coupling
+// to the build config. Truthy values: 1, true, on, yes (case-insensitive).
+func isVerbose() bool {
+	v := os.Getenv("LLGO_VERBOSE")
+	if v == "" {
+		v = os.Getenv("LLGO_DEBUG")
+	}
+	v = strings.ToLower(v)
+	switch v {
+	case "1", "true", "on", "yes":
+		return true
+	default:
+		return false
+	}
 }
 
 func ensureDirAtomic(dir string) error {
