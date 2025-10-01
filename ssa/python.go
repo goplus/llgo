@@ -349,7 +349,8 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 	case 1:
 		if !sig.Variadic() {
 			call := pkg.pyFunc("PyObject_CallOneArg", prog.tyCallOneArg())
-			return b.Call(call, fn, args[0])
+			ret = b.Call(call, fn, args[0])
+			break
 		}
 		fallthrough
 	default:
@@ -360,6 +361,9 @@ func (b Builder) pyCall(fn Expr, args []Expr) (ret Expr) {
 		copy(callargs[1:], args)
 		callargs[n+1] = prog.Nil(prog.PyObjectPtr())
 		ret = b.Call(call, callargs...)
+	}
+	if res := fn.RawType().(*types.Signature).Results(); res.Len() == 1 {
+		ret.Type = b.Prog.Type(res.At(0).Type(), InGo)
 	}
 	return
 }
