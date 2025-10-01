@@ -261,7 +261,7 @@ All Go syntax (including `cgo`) is already supported. Here are some examples:
 
 ### Defer
 
-LLGo `defer` does not support usage in loops. This is not a bug but a feature, because we think that using `defer` in a loop is a very unrecommended practice.
+LLGo now supports `defer` within loops, matching Go's semantics of executing defers in LIFO order for every iteration. The usual caveat from Go still applies: be mindful of loop-heavy defer usage because it allocates per iteration.
 
 
 ### Garbage Collection (GC)

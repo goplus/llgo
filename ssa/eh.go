@@ -225,6 +225,9 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		rethPtr := b.FieldAddr(deferData, deferRethrow)
 		rundPtr := b.FieldAddr(deferData, deferRunDefers)
 		argsPtr := b.FieldAddr(deferData, deferArgs)
+		// Initialize args list to nil so later guards (DeferAlways/DeferInLoop)
+		// can safely detect an empty chain via argsPtr == nil.
+		b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
 
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
@@ -284,8 +287,11 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 		b.Store(self.bitsPtr, b.BinOp(token.OR, bits, nextbit))
 	case DeferAlways:
 		// nothing to do
+	case DeferInLoop:
+		// Build a loop that drains argsPtr until the list becomes nil, ensuring
+		// defers recorded inside the user loop execute in strict LIFO order.
 	default:
-		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
+		panic("unexpected defer kind - " + b.Func.Name())
 	}
 	typ := b.saveDeferArgs(self, fn, args)
 	self.stmts = append(self.stmts, func(bits Expr) {
@@ -297,7 +303,32 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 				b.callDefer(self, typ, fn, args)
 			})
 		case DeferAlways:
+			zero := b.Prog.Nil(b.Prog.VoidPtr())
+			list := b.Load(self.argsPtr)
+			has := b.BinOp(token.NEQ, list, zero)
+			b.IfThen(has, func() {
+				b.callDefer(self, typ, fn, args)
+			})
+		case DeferInLoop:
+			prog := b.Prog
+			condBlk := b.Func.MakeBlock()
+			bodyBlk := b.Func.MakeBlock()
+			exitBlk := b.Func.MakeBlock()
+
+			// jump to condition check before executing
+			b.Jump(condBlk)
+			b.SetBlockEx(condBlk, AtEnd, true)
+			list := b.Load(self.argsPtr)
+			has := b.BinOp(token.NEQ, list, prog.Nil(prog.VoidPtr()))
+			b.If(has, bodyBlk, exitBlk)
+
+			b.SetBlockEx(bodyBlk, AtEnd, true)
 			b.callDefer(self, typ, fn, args)
+			b.Jump(condBlk)
+
+			b.SetBlockEx(exitBlk, AtEnd, true)
+		default:
+			panic("unknown defer kind")
 		}
 	})
 }
@@ -349,19 +380,25 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 		return
 	}
 	prog := b.Prog
-	ptr := b.Load(self.argsPtr)
-	data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
-	offset := 1
-	b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
-	if fn.kind == vkClosure {
-		fn = b.getField(data, 1)
-		offset++
-	}
-	for i := 0; i < len(args); i++ {
-		args[i] = b.getField(data, i+offset)
-	}
-	b.Call(fn, args...)
-	b.free(ptr)
+	zero := prog.Nil(prog.VoidPtr())
+	list := b.Load(self.argsPtr)
+	has := b.BinOp(token.NEQ, list, zero)
+	b.IfThen(has, func() {
+		ptr := b.Load(self.argsPtr)
+		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
+		offset := 1
+		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
+		callFn := fn
+		if callFn.kind == vkClosure {
+			callFn = b.getField(data, 1)
+			offset++
+		}
+		for i := 0; i < len(args); i++ {
+			args[i] = b.getField(data, i+offset)
+		}
+		b.Call(callFn, args...)
+		b.free(ptr)
+	})
 }
 
 // RunDefers emits instructions to run deferred instructions.
