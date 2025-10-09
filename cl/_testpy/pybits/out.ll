@@ -19,9 +19,12 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/pybits.init$guard", align 1
   call void @"github.com/goplus/llgo/cl/_testpy/pybits/bits.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  %2 = call ptr @PyObject_GetAttrString(ptr %1, ptr @0)
-  %3 = call ptr @PyObject_GetAttrString(ptr %2, ptr @1)
-  store ptr %3, ptr @"__llgo_py.builtins$int.bit_length", align 8
+  %2 = load ptr, ptr @"__llgo_py.builtins$int.bit_length", align 8
+  %3 = icmp eq ptr %2, null
+  %4 = call ptr @PyObject_GetAttrString(ptr %1, ptr @0)
+  %5 = call ptr @PyObject_GetAttrString(ptr %4, ptr @1)
+  %6 = select i1 %3, ptr %5, ptr %2
+  store ptr %6, ptr @"__llgo_py.builtins$int.bit_length", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0

@@ -19,12 +19,21 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
   call void @"github.com/goplus/lib/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  %2 = call ptr @PyObject_GetAttrString(ptr %1, ptr @0)
-  store ptr %2, ptr @"__llgo_py.builtins$iter", align 8
-  %3 = call ptr @PyObject_GetAttrString(ptr %1, ptr @1)
-  store ptr %3, ptr @"__llgo_py.builtins$max", align 8
-  %4 = call ptr @PyObject_GetAttrString(ptr %1, ptr @2)
-  store ptr %4, ptr @"__llgo_py.builtins$print", align 8
+  %2 = load ptr, ptr @"__llgo_py.builtins$iter", align 8
+  %3 = icmp eq ptr %2, null
+  %4 = call ptr @PyObject_GetAttrString(ptr %1, ptr @0)
+  %5 = select i1 %3, ptr %4, ptr %2
+  store ptr %5, ptr @"__llgo_py.builtins$iter", align 8
+  %6 = load ptr, ptr @"__llgo_py.builtins$max", align 8
+  %7 = icmp eq ptr %6, null
+  %8 = call ptr @PyObject_GetAttrString(ptr %1, ptr @1)
+  %9 = select i1 %7, ptr %8, ptr %6
+  store ptr %9, ptr @"__llgo_py.builtins$max", align 8
+  %10 = load ptr, ptr @"__llgo_py.builtins$print", align 8
+  %11 = icmp eq ptr %10, null
+  %12 = call ptr @PyObject_GetAttrString(ptr %1, ptr @2)
+  %13 = select i1 %11, ptr %12, ptr %10
+  store ptr %13, ptr @"__llgo_py.builtins$print", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0

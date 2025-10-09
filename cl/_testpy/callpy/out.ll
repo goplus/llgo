@@ -25,14 +25,23 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/lib/py/os.init"()
   call void @"github.com/goplus/lib/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  %2 = call ptr @PyObject_GetAttrString(ptr %1, ptr @2)
-  store ptr %2, ptr @"__llgo_py.builtins$print", align 8
-  %3 = load ptr, ptr @__llgo_py.math, align 8
-  %4 = call ptr @PyObject_GetAttrString(ptr %3, ptr @3)
-  store ptr %4, ptr @"__llgo_py.math$sqrt", align 8
-  %5 = load ptr, ptr @__llgo_py.os, align 8
-  %6 = call ptr @PyObject_GetAttrString(ptr %5, ptr @4)
-  store ptr %6, ptr @"__llgo_py.os$getcwd", align 8
+  %2 = load ptr, ptr @"__llgo_py.builtins$print", align 8
+  %3 = icmp eq ptr %2, null
+  %4 = call ptr @PyObject_GetAttrString(ptr %1, ptr @2)
+  %5 = select i1 %3, ptr %4, ptr %2
+  store ptr %5, ptr @"__llgo_py.builtins$print", align 8
+  %6 = load ptr, ptr @__llgo_py.math, align 8
+  %7 = load ptr, ptr @"__llgo_py.math$sqrt", align 8
+  %8 = icmp eq ptr %7, null
+  %9 = call ptr @PyObject_GetAttrString(ptr %6, ptr @3)
+  %10 = select i1 %8, ptr %9, ptr %7
+  store ptr %10, ptr @"__llgo_py.math$sqrt", align 8
+  %11 = load ptr, ptr @__llgo_py.os, align 8
+  %12 = load ptr, ptr @"__llgo_py.os$getcwd", align 8
+  %13 = icmp eq ptr %12, null
+  %14 = call ptr @PyObject_GetAttrString(ptr %11, ptr @4)
+  %15 = select i1 %13, ptr %14, ptr %12
+  store ptr %15, ptr @"__llgo_py.os$getcwd", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0

@@ -329,9 +329,23 @@ func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) {
 	mod := b.Load(modPtr)
 	nbase := len(modName) + 1
 	for _, o := range objs {
+		// Check if the function pointer is already initialized (non-null)
+		currentVal := b.Load(o.Expr)
+		nilPtr := b.Prog.Nil(currentVal.Type)
+		isNull := b.BinOp(token.EQL, currentVal, nilPtr)
+
+		// Load the attribute from Python
 		fullName := o.impl.Name()
-		ret := b.pyLoadAttrs(mod, fullName[nbase:])
-		b.Store(o.Expr, ret)
+		newVal := b.pyLoadAttrs(mod, fullName[nbase:])
+
+		// Use select instruction to choose between current value and new value
+		// If currentVal is null, use newVal; otherwise keep currentVal
+		selectedVal := Expr{
+			impl: llvm.CreateSelect(b.impl, isNull.impl, newVal.impl, currentVal.impl),
+			Type: currentVal.Type,
+		}
+
+		b.Store(o.Expr, selectedVal)
 	}
 }
 
