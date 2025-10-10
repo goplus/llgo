@@ -33,6 +33,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"time"
 	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
@@ -639,10 +640,18 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	// defer os.Remove(entryLLFile)
 	objFiles = append(objFiles, entryObjFile)
 
+	// if needPyInit {
+	// 	initObj, err := genPyInitFromExeDirObj(ctx)
+	// 	check(err)
+	// 	objFiles = append(objFiles, initObj)
+	// }
+
 	if needPyInit {
-		initObj, err := genPyInitFromExeDirObj(ctx)
-		check(err)
-		objFiles = append(objFiles, initObj)
+		if ll, err := compilePyInitC(ctx, verbose); err == nil && ll != "" {
+			objFiles = append(objFiles, ll)
+		} else if err != nil {
+			panic(fmt.Errorf("compile py_init.c failed: %v", err))
+		}
 	}
 
 	if global != nil {
@@ -673,11 +682,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 
 	err = linkObjFiles(ctx, app, objFiles, linkArgs, verbose)
 	check(err)
-
-	// // Default bundling (onedir; exclude site-packages)
-	// if needPyInit {
-	// 	check(pyenv.BundleOnedir(app))
-	// }
 
 	switch mode {
 	case ModeTest:
@@ -733,37 +737,41 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	}
 }
 
-func genPyInitFromExeDirObj(ctx *context) (string, error) {
-	csrc := pyenv.PyInitFromExeDirCSource()
-	tmp, err := os.CreateTemp("", "llgo-pyinit-*.c")
+// compilePyInitC compiles llgo/internal/pyenv/_wrap/py_init.c into an object file and returns its path.
+func compilePyInitC(ctx *context, verbose bool) (string, error) {
+	// locate source file via runtime path of pyenv package (same directory as pyenv sources)
+	_, thisFile, _, _ := runtime.Caller(0)
+	// thisFile is .../internal/build/build.go; move to pyenv/_wrap/py_init.c
+	root := filepath.Dir(filepath.Dir(thisFile)) // .../internal
+	pyenvDir := filepath.Join(root, "pyenv")
+	cFile := filepath.Join(pyenvDir, "_wrap", "py_init.c")
+	if _, err := os.Stat(cFile); err != nil {
+		return "", err
+	}
+
+	// produce object under temp dir with a deterministic name
+	tmpDir, err := os.MkdirTemp("", "llgo-pyinit-*")
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(tmp.Name())
-	if _, err = tmp.WriteString(csrc); err != nil {
-		_ = tmp.Close()
-		return "", err
-	}
-	if err = tmp.Close(); err != nil {
-		return "", err
-	}
 
-	out := tmp.Name() + ".o"
-	args := []string{
-		"-x", "c",
-		"-o", out, "-c", tmp.Name(),
-	}
+	outObj := filepath.Join(tmpDir, fmt.Sprintf("py_init-%d.o", time.Now().UnixNano()))
+	args := []string{"-x", "c", "-o", outObj, "-c", cFile}
 	args = append(args, ctx.crossCompile.CCFLAGS...)
 	args = append(args, ctx.crossCompile.CFLAGS...)
-
+	// add python include if present
 	inc := filepath.Join(pyenv.PythonHome(), "include", "python3.12")
-	args = append(args, "-I"+inc)
-
+	if st, err := os.Stat(inc); err == nil && st.IsDir() {
+		args = append(args, "-I"+inc)
+	}
+	if ctx.buildConf.Verbose {
+		fmt.Fprintln(os.Stderr, "clang", args)
+	}
 	cmd := ctx.compiler()
 	if err := cmd.Compile(args...); err != nil {
 		return "", err
 	}
-	return out, nil
+	return outObj, nil
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
@@ -803,6 +811,8 @@ func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, ne
 	if needPyInit {
 		pyEnvInit = "call void @__llgo_py_init_from_exedir()"
 		pyEnvInitDecl = "declare void @__llgo_py_init_from_exedir()"
+		// pyEnvInit = "call void @Py_Initialize()"
+		// pyEnvInitDecl = "declare void @Py_Initialize()"
 	}
 	declSizeT := "%size_t = type i64"
 	if is32Bits(ctx.buildConf.Goarch) {

@@ -10,6 +10,13 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/env"
+
+	_ "unsafe"
+)
+
+const (
+	LLGoFiles   = "_wrap/py_init.c"
+	LLGoPackage = "link"
 )
 
 // EnsureBuildEnv ensures the Python build environment by:
@@ -85,20 +92,6 @@ func applyEnv(pyHome string) error {
 	if err := os.Setenv("PYTHONHOME", pyHome); err != nil {
 		return err
 	}
-
-	// // macOS: DYLD_LIBRARY_PATH append lib if missing
-	// if runtime.GOOS == "darwin" {
-	// 	dyld := os.Getenv("DYLD_LIBRARY_PATH")
-	// 	if dyld == "" {
-	// 		if err := os.Setenv("DYLD_LIBRARY_PATH", lib); err != nil {
-	// 			return err
-	// 		}
-	// 	} else if !strings.Contains(dyld, lib) {
-	// 		if err := os.Setenv("DYLD_LIBRARY_PATH", lib+string(os.PathListSeparator)+dyld); err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// }
 
 	// PKG_CONFIG_PATH: add pyHome/lib/pkgconfig
 	pkgcfg := filepath.Join(pyHome, "lib", "pkgconfig")
@@ -239,56 +232,6 @@ func FixLibpythonInstallName(pyHome string) error {
 	return nil
 }
 
-func quote(s string) string { return "'" + s + "'" }
-
 func FindPythonRpaths(pyHome string) []string {
 	return []string{filepath.Join(pyHome, "lib")}
-}
-
-func PyInitFromExeDirCSource() string {
-	return `#include <Python.h>
-#include <dlfcn.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
-static void parent_dir(char* path) {
-	size_t n = strlen(path);
-	while (n > 0 && path[n-1] == '/') path[--n] = '\0';
-	char* s = strrchr(path, '/');
-	if (!s) { path[0]='.'; path[1]='\0'; return; }
-	if (s == path) s[1] = '\0';
-	else *s = '\0';
-}
-
-void __llgo_py_init_from_exedir(void) {
-	Dl_info info;
-	if (dladdr((void*)Py_Initialize, &info) == 0 || !info.dli_fname) return;
-
-	char p[PATH_MAX]; strncpy(p, info.dli_fname, sizeof(p)-1); p[sizeof(p)-1]='\0';
-
-	char d1[PATH_MAX]; strncpy(d1, p, sizeof(d1)-1); d1[sizeof(d1)-1]='\0';
-	parent_dir(d1); // d1 = dirname(p)
-
-	char d2[PATH_MAX]; strncpy(d2, d1, sizeof(d1)-1); d2[sizeof(d1)-1]='\0';
-	parent_dir(d2); // d2 = dirname(d1)
-
-	char home[PATH_MAX]; snprintf(home, sizeof(home), "%s", d2);
-
-	wchar_t *wHome = Py_DecodeLocale(home, NULL);
-	if (!wHome) return;
-
-	PyStatus st;
-	PyConfig cfg; PyConfig_InitPythonConfig(&cfg);
-	cfg.module_search_paths_set = 0;
-	st = PyConfig_SetString(&cfg, &cfg.home, wHome);
-	PyMem_RawFree(wHome);
-	if (PyStatus_Exception(st)) { PyConfig_Clear(&cfg); return; }
-
-	st = Py_InitializeFromConfig(&cfg);
-	PyConfig_Clear(&cfg);
-	(void)st;
-}
-`
 }
