@@ -808,7 +808,11 @@ func (p Package) AfterInit(b Builder, ret BasicBlock) {
 			b.Call(afterb.Func.Expr)
 		}
 		if doPyLoadModSyms {
-			p.pyLoadModSyms(b)
+			fn := p.NewFunc(p.Path()+".init$python", NoArgsNoRet, InC)
+			fnb := fn.MakeBody(1)
+			p.pyLoadModSyms(fnb)
+			fnb.Return()
+			b.Call(fn.Expr)
 		}
 	}
 }

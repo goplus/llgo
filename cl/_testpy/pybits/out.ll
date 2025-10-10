@@ -18,10 +18,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/pybits.init$guard", align 1
   call void @"github.com/goplus/llgo/cl/_testpy/pybits/bits.init"()
-  %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  %2 = call ptr @PyObject_GetAttrString(ptr %1, ptr @0)
-  %3 = call ptr @PyObject_GetAttrString(ptr %2, ptr @1)
-  store ptr %3, ptr @"__llgo_py.builtins$int.bit_length", align 8
+  call void @"github.com/goplus/llgo/cl/_testpy/pybits.init$python"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -54,5 +51,22 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare ptr @PyObject_CallOneArg(ptr, ptr)
+
+define void @"github.com/goplus/llgo/cl/_testpy/pybits.init$python"() {
+_llgo_0:
+  %0 = load ptr, ptr @__llgo_py.builtins, align 8
+  %1 = load ptr, ptr @"__llgo_py.builtins$int.bit_length", align 8
+  %2 = icmp eq ptr %1, null
+  br i1 %2, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %3 = call ptr @PyObject_GetAttrString(ptr %0, ptr @0)
+  %4 = call ptr @PyObject_GetAttrString(ptr %3, ptr @1)
+  store ptr %4, ptr @"__llgo_py.builtins$int.bit_length", align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
 
 declare ptr @PyObject_GetAttrString(ptr, ptr)

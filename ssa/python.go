@@ -329,9 +329,13 @@ func (b Builder) PyLoadModSyms(modName string, objs ...PyObjRef) {
 	mod := b.Load(modPtr)
 	nbase := len(modName) + 1
 	for _, o := range objs {
-		fullName := o.impl.Name()
-		ret := b.pyLoadAttrs(mod, fullName[nbase:])
-		b.Store(o.Expr, ret)
+		sym := b.Load(o.Expr)
+		isNull := b.BinOp(token.EQL, sym, b.Prog.Nil(sym.Type))
+		b.IfThen(isNull, func() {
+			fullName := o.impl.Name()
+			ret := b.pyLoadAttrs(mod, fullName[nbase:])
+			b.Store(o.Expr, ret)
+		})
 	}
 }
 
