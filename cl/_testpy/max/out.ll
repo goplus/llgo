@@ -18,22 +18,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
   call void @"github.com/goplus/lib/py/std.init"()
-  %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  %2 = load ptr, ptr @"__llgo_py.builtins$iter", align 8
-  %3 = icmp eq ptr %2, null
-  %4 = call ptr @PyObject_GetAttrString(ptr %1, ptr @0)
-  %5 = select i1 %3, ptr %4, ptr %2
-  store ptr %5, ptr @"__llgo_py.builtins$iter", align 8
-  %6 = load ptr, ptr @"__llgo_py.builtins$max", align 8
-  %7 = icmp eq ptr %6, null
-  %8 = call ptr @PyObject_GetAttrString(ptr %1, ptr @1)
-  %9 = select i1 %7, ptr %8, ptr %6
-  store ptr %9, ptr @"__llgo_py.builtins$max", align 8
-  %10 = load ptr, ptr @"__llgo_py.builtins$print", align 8
-  %11 = icmp eq ptr %10, null
-  %12 = call ptr @PyObject_GetAttrString(ptr %1, ptr @2)
-  %13 = select i1 %11, ptr %12, ptr %10
-  store ptr %13, ptr @"__llgo_py.builtins$print", align 8
+  call void @"github.com/goplus/llgo/cl/_testpy/max.init$python"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -96,5 +81,41 @@ declare ptr @PyObject_CallOneArg(ptr, ptr)
 declare ptr @PyTuple_New(i64)
 
 declare i32 @PyTuple_SetItem(ptr, i64, ptr)
+
+define void @"github.com/goplus/llgo/cl/_testpy/max.init$python"() {
+_llgo_0:
+  %0 = load ptr, ptr @__llgo_py.builtins, align 8
+  %1 = load ptr, ptr @"__llgo_py.builtins$iter", align 8
+  %2 = icmp eq ptr %1, null
+  br i1 %2, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %3 = call ptr @PyObject_GetAttrString(ptr %0, ptr @0)
+  store ptr %3, ptr @"__llgo_py.builtins$iter", align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %4 = load ptr, ptr @"__llgo_py.builtins$max", align 8
+  %5 = icmp eq ptr %4, null
+  br i1 %5, label %_llgo_3, label %_llgo_4
+
+_llgo_3:                                          ; preds = %_llgo_2
+  %6 = call ptr @PyObject_GetAttrString(ptr %0, ptr @1)
+  store ptr %6, ptr @"__llgo_py.builtins$max", align 8
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
+  %7 = load ptr, ptr @"__llgo_py.builtins$print", align 8
+  %8 = icmp eq ptr %7, null
+  br i1 %8, label %_llgo_5, label %_llgo_6
+
+_llgo_5:                                          ; preds = %_llgo_4
+  %9 = call ptr @PyObject_GetAttrString(ptr %0, ptr @2)
+  store ptr %9, ptr @"__llgo_py.builtins$print", align 8
+  br label %_llgo_6
+
+_llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
+  ret void
+}
 
 declare ptr @PyObject_GetAttrString(ptr, ptr)
