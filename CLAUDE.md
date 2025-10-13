@@ -153,9 +153,31 @@ For testing purposes, you can disable GC:
 LLGO_ROOT=/path/to/llgo llgo run -tags nogc .
 ```
 
+## Validation Workflow
+
+When fixing bugs or implementing features, follow this workflow:
+
+1. **Make your code changes**
+2. **Write or update tests** - All bug fixes and features MUST include tests
+3. **Run the test suite**: `go test ./...`
+4. **Build the project**: `go build -v ./...`
+5. **Test with examples**: Run relevant demos from `_demo/` directory
+6. **Format code**: `go fmt ./...`
+7. **Run static analysis**: `go vet ./...`
+
+## LLGO_ROOT Environment Variable
+
+**CRITICAL:** Always set `LLGO_ROOT` to the repository root when running llgo during development:
+
+```bash
+export LLGO_ROOT=/path/to/llgo
+# or
+LLGO_ROOT=/path/to/llgo llgo run .
+```
+
 ## Important Notes
 
-1. **LLGO_ROOT:** Always set `LLGO_ROOT` to the repository root when running llgo during development
+1. **Testing Requirement:** All bug fixes and features MUST include tests
 2. **Demo Directory:** Examples in `_demo` are prefixed with `_` to prevent standard `go` command from trying to compile them
 3. **Defer in Loops:** LLGo intentionally does not support `defer` in loops (considered bad practice)
 4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
