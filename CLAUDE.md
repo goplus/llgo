@@ -21,23 +21,6 @@ LLGo is a Go compiler based on LLVM designed to better integrate Go with the C e
 
 For detailed dependency requirements and installation instructions, see the [Dependencies](README.md#dependencies) and [How to install](README.md#how-to-install) sections in the README.
 
-## Build Commands
-
-### Build the entire project
-```bash
-go build -v ./...
-```
-
-### Build llgo command specifically
-```bash
-go build -o llgo ./cmd/llgo
-```
-
-### Check llgo version
-```bash
-llgo version
-```
-
 ## Testing & Validation
 
 The following commands and workflows are essential when fixing bugs or implementing features in the LLGo project:
@@ -89,6 +72,11 @@ go vet ./...
 
 ## Common Development Tasks
 
+### Build the project
+```bash
+go build -v ./...
+```
+
 ### Install llgo for system-wide use
 ```bash
 ./install.sh
@@ -113,18 +101,6 @@ For testing purposes, you can disable GC:
 ```bash
 LLGO_ROOT=/path/to/llgo llgo run -tags nogc .
 ```
-
-## Validation Workflow
-
-When fixing bugs or implementing features, follow this workflow:
-
-1. **Make your code changes**
-2. **Write or update tests** - All bug fixes and features MUST include tests
-3. **Run the test suite**: `go test ./...`
-4. **Build the project**: `go build -v ./...`
-5. **Test with examples**: Run relevant demos from `_demo/` directory
-6. **Format code**: `go fmt ./...`
-7. **Run static analysis**: `go vet ./...`
 
 ## LLGO_ROOT Environment Variable
 
