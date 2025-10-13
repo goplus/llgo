@@ -38,7 +38,9 @@ go build -o llgo ./cmd/llgo
 llgo version
 ```
 
-## Testing
+## Testing & Validation
+
+The following commands and workflows are essential when fixing bugs or implementing features in the LLGo project:
 
 ### Run all tests
 ```bash
@@ -58,6 +60,32 @@ LLGO_ROOT=/path/to/llgo llgo run .
 ```
 
 **Important:** The `LLGO_ROOT` environment variable must be set to the repository root when running llgo commands during development.
+
+### Validated Commands and Expected Outputs
+
+#### Build Validation
+- `go build -v ./...` - Successfully builds all packages without errors
+- `go build -o llgo ./cmd/llgo` - Builds the llgo command
+- `llgo version` - Output: `llgo v0.11.6-0.20251012014242-7e1abf1486b7 linux/amd64`
+
+#### Code Quality Validation
+- `go fmt ./...` - Runs successfully with no output (all files properly formatted)
+- `go vet ./...` - Reports known issues in `ssa/type_cvt.go` and `cl/builtin_test.go`
+
+#### Testing Validation
+- `go test ./...` - Runs test suite (some tests require Python dependencies)
+- `LLGO_ROOT=/workspace llgo run .` in `_demo/c/hello` - Output:
+  ```
+  hello world by println
+  hello world by fmt.Println
+  Hello world by c.Printf
+  ```
+
+#### Environment
+- Go: 1.24.5 linux/amd64
+- Operating System: Linux 5.4.0-164-generic
+
+All failures or limitations are documented in the relevant sections above.
 
 ## Code Quality
 
@@ -133,30 +161,3 @@ LLGO_ROOT=/path/to/llgo llgo run -tags nogc .
 4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
 5. **Python Integration:** Third-party Python libraries require separate installation of library files
 
-## Validation
-
-The following commands and workflows have been validated in the development environment:
-
-### Build Validation
-- `go build -v ./...` - Successfully builds all packages without errors
-- `go build -o llgo ./cmd/llgo` - Builds the llgo command
-- `llgo version` - Output: `llgo v0.11.6-0.20251012014242-7e1abf1486b7 linux/amd64`
-
-### Code Quality Validation
-- `go fmt ./...` - Runs successfully with no output (all files properly formatted)
-- `go vet ./...` - Reports known issues in `ssa/type_cvt.go` and `cl/builtin_test.go`
-
-### Testing Validation
-- `go test ./...` - Runs test suite (some tests require Python dependencies)
-- `LLGO_ROOT=/workspace llgo run .` in `_demo/c/hello` - Output:
-  ```
-  hello world by println
-  hello world by fmt.Println
-  Hello world by c.Printf
-  ```
-
-### Environment
-- Go: 1.24.5 linux/amd64
-- Operating System: Linux 5.4.0-164-generic
-
-All failures or limitations are documented in the relevant sections above.
