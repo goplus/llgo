@@ -70,10 +70,14 @@ go test ./...
 
 ## Code Quality
 
+Before submitting any code updates, you must run the following formatting and validation commands:
+
 ### Format code
 ```bash
 go fmt ./...
 ```
+
+**Important:** Always run `go fmt ./...` before committing code changes. This ensures consistent code formatting across the project.
 
 ### Run static analysis
 ```bash
