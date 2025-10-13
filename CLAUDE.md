@@ -15,7 +15,7 @@ LLGo is a Go compiler based on LLVM designed to better integrate Go with the C e
 - `runtime/` - LLGo runtime library
 - `chore/` - Development tools (llgen, llpyg, ssadump, etc.)
 - `_demo/` - Example programs (prefixed with `_` to prevent standard `go` command compilation)
-- `_cmptest/` - Comparison tests
+- `_cmptest/` - Comparison tests to verify the same program gets the same output with Go and LLGo
 
 ## Development Environment
 
@@ -41,8 +41,6 @@ LLGo is a Go compiler based on LLVM designed to better integrate Go with the C e
 go build -v ./...
 ```
 
-**Verified output:** Successfully builds all packages without errors.
-
 ### Build llgo command specifically
 ```bash
 go build -o llgo ./cmd/llgo
@@ -51,11 +49,6 @@ go build -o llgo ./cmd/llgo
 ### Check llgo version
 ```bash
 llgo version
-```
-
-**Verified output:**
-```
-llgo v0.11.6-0.20251012014242-7e1abf1486b7 linux/amd64
 ```
 
 ## Testing
@@ -77,13 +70,6 @@ cd _demo/c/hello
 LLGO_ROOT=/path/to/llgo llgo run .
 ```
 
-**Verified output:**
-```
-hello world by println
-hello world by fmt.Println
-Hello world by c.Printf
-```
-
 **Important:** The `LLGO_ROOT` environment variable must be set to the repository root when running llgo commands during development.
 
 ## Code Quality
@@ -92,8 +78,6 @@ Hello world by c.Printf
 ```bash
 go fmt ./...
 ```
-
-**Verified:** Runs successfully with no output (indicating all files are properly formatted).
 
 ### Run static analysis
 ```bash
@@ -169,6 +153,30 @@ LLGO_ROOT=/path/to/llgo llgo run -tags nogc .
 4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
 5. **Python Integration:** Third-party Python libraries require separate installation of library files
 
-## Verification Approach
+## Validation
 
-All commands and examples in this document have been executed and verified in the actual LLGo development environment. Any failures or limitations have been documented.
+The following commands and workflows have been validated in the development environment:
+
+### Build Validation
+- `go build -v ./...` - Successfully builds all packages without errors
+- `go build -o llgo ./cmd/llgo` - Builds the llgo command
+- `llgo version` - Output: `llgo v0.11.6-0.20251012014242-7e1abf1486b7 linux/amd64`
+
+### Code Quality Validation
+- `go fmt ./...` - Runs successfully with no output (all files properly formatted)
+- `go vet ./...` - Reports known issues in `ssa/type_cvt.go` and `cl/builtin_test.go`
+
+### Testing Validation
+- `go test ./...` - Runs test suite (some tests require Python dependencies)
+- `LLGO_ROOT=/workspace llgo run .` in `_demo/c/hello` - Output:
+  ```
+  hello world by println
+  hello world by fmt.Println
+  Hello world by c.Printf
+  ```
+
+### Environment
+- Go: 1.24.5 linux/amd64
+- Operating System: Linux 5.4.0-164-generic
+
+All failures or limitations are documented in the relevant sections above.
