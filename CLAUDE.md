@@ -19,20 +19,7 @@ LLGo is a Go compiler based on LLVM designed to better integrate Go with the C e
 
 ## Development Environment
 
-**Verified Environment:**
-- Go: 1.24.5 linux/amd64
-- Operating System: Linux 5.4.0-164-generic
-
-**Dependencies:**
-- Go 1.21+
-- LLVM 18+
-- Clang 18+
-- LLD 18+
-- pkg-config 0.29+
-- bdwgc/libgc 8.0+
-- OpenSSL 3.0+
-- zlib 1.2+
-- Python 3.12+ (optional, for Python integration)
+For detailed dependency requirements and installation instructions, see the [Dependencies](README.md#dependencies) and [How to install](README.md#how-to-install) sections in the README.
 
 ## Build Commands
 
@@ -122,13 +109,6 @@ Other Python examples:
 ```bash
 go install -v ./cmd/...
 go install -v ./chore/...
-```
-
-### Build pydump (requires llgo)
-```bash
-export LLGO_ROOT=$PWD
-cd _xtool
-llgo install ./...
 ```
 
 ## Key Modules for Understanding
