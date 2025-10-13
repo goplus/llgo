@@ -72,9 +72,19 @@ go vet ./...
 
 ## Common Development Tasks
 
-### Build the project
+### Build the entire project
 ```bash
 go build -v ./...
+```
+
+### Build llgo command specifically
+```bash
+go build -o llgo ./cmd/llgo
+```
+
+### Check llgo version
+```bash
+llgo version
 ```
 
 ### Install llgo for system-wide use
