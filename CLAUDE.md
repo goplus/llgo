@@ -14,7 +14,7 @@ LLGo is a Go compiler based on LLVM designed to better integrate Go with the C e
 - `internal/build/` - Build process orchestration
 - `runtime/` - LLGo runtime library
 - `chore/` - Development tools (llgen, llpyg, ssadump, etc.)
-- `_demo/` - Example programs (prefixed with `_` to prevent standard `go` command compilation)
+- `_demo/` - Example programs demonstrating C/C++ interop (`c/hello`, `c/qsort`) and Python integration (`py/callpy`, `py/numpy`)
 - `_cmptest/` - Comparison tests to verify the same program gets the same output with Go and LLGo
 
 ## Development Environment
@@ -53,10 +53,17 @@ go test ./...
 - C interop
 - Python integration (requires Python development headers)
 
-### Test a simple example
+### Write and run tests for your changes
+
+When adding new functionality or fixing bugs, create appropriate test cases:
+
 ```bash
-cd _demo/c/hello
-LLGO_ROOT=/path/to/llgo llgo run .
+# Add your test to the relevant package's *_test.go file
+# Then run tests for that package
+go test ./path/to/package
+
+# Or run all tests
+go test ./...
 ```
 
 **Important:** The `LLGO_ROOT` environment variable must be set to the repository root when running llgo commands during development.
@@ -101,30 +108,6 @@ go vet ./...
 
 **Note:** Currently reports some issues related to lock passing by value in `ssa/type_cvt.go` and a possible unsafe.Pointer misuse in `cl/builtin_test.go`. These are known issues.
 
-## Running Examples
-
-The `_demo` directory contains working examples:
-
-### C Standard Library Examples
-```bash
-cd _demo/c/hello
-LLGO_ROOT=/path/to/llgo llgo run .
-```
-
-Other C examples:
-- `_demo/c/concat` - Variadic function with fprintf
-- `_demo/c/qsort` - C function callbacks
-
-### Python Integration Examples
-```bash
-cd _demo/py/callpy
-LLGO_ROOT=/path/to/llgo llgo run .
-```
-
-Other Python examples:
-- `_demo/py/pi` - Python constants
-- `_demo/py/statistics` - Python list and statistics
-- `_demo/py/matrix` - NumPy demo
 
 ## Common Development Tasks
 
