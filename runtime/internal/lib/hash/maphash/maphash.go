@@ -18,9 +18,6 @@ package maphash
 
 import "unsafe"
 
-// llgo:skipall
-type _maphash struct{}
-
 //go:linkname runtime_rand github.com/goplus/llgo/runtime/internal/runtime.fastrand64
 func runtime_rand() uint64
 
