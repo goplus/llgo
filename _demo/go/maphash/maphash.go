@@ -64,14 +64,14 @@ func testSetSeed() {
 	seed := maphash.MakeSeed()
 	
 	h1.SetSeed(seed)
-	n, err := h1.WriteString("test")
+	_, err := h1.WriteString("test")
 	if err != nil {
 		panic(fmt.Sprintf("WriteString failed: %v", err))
 	}
 	hash1 := h1.Sum64()
 	
 	h2.SetSeed(seed)
-	n, err = h2.WriteString("test")
+	_, err = h2.WriteString("test")
 	if err != nil {
 		panic(fmt.Sprintf("WriteString failed: %v", err))
 	}
@@ -99,7 +99,7 @@ func testWriteMethods() {
 	fmt.Printf("Hash after Write: 0x%x\n", hash1)
 	
 	h.Reset()
-	n, err = h.WriteByte('A')
+	err = h.WriteByte('A')
 	if err != nil {
 		panic(fmt.Sprintf("WriteByte failed: %v", err))
 	}
