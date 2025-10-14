@@ -24,6 +24,7 @@ var hasAltPkg = map[string]none{
 	"crypto/subtle":            {},
 	"go/parser":                {},
 	"hash/crc32":               {},
+	"hash/maphash":             {},
 	"internal/abi":             {},
 	"internal/bytealg":         {},
 	"internal/chacha8rand":     {},
