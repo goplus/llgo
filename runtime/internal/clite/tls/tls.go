@@ -12,27 +12,25 @@ import (
 
 const slotRegistered = 1 << iota
 
-type descriptor[T any] struct {
+type slot[T any] struct {
+	value      T
+	state      uintptr
 	destructor func(*T)
 }
 
-type slot[T any] struct {
-	value T
-	state uintptr
-	desc  *descriptor[T]
-}
-
 type Handle[T any] struct {
-	key  pthread.Key
-	desc *descriptor[T]
+	key        pthread.Key
+	destructor func(*T)
 }
 
 // Alloc creates a TLS handle whose storage is visible to the Boehm GC.
 func Alloc[T any](destructor func(*T)) Handle[T] {
-	d := &descriptor[T]{destructor: destructor}
 	var key pthread.Key
-	key.Create(slotDestructor[T])
-	return Handle[T]{key: key, desc: d}
+	if ret := key.Create(slotDestructor[T]); ret != 0 {
+		c.Fprintf(c.Stderr, c.Str("tls: pthread_key_create failed (errno=%d)\n"), ret)
+		panic("tls: failed to create thread local storage key")
+	}
+	return Handle[T]{key: key, destructor: destructor}
 }
 
 // Get returns the value stored in the current thread's slot.
@@ -64,20 +62,22 @@ func (h Handle[T]) ensureSlot() *slot[T] {
 		return (*slot[T])(ptr)
 	}
 	size := unsafe.Sizeof(slot[T]{})
-	mem := c.Malloc(size)
+	mem := c.Calloc(1, size)
 	if mem == nil {
 		panic("tls: failed to allocate thread slot")
 	}
-	c.Memset(mem, 0, size)
 	s := (*slot[T])(mem)
-	s.desc = h.desc
-	registerSlot(s)
+	s.destructor = h.destructor
 	if existing := h.key.Get(); existing != nil {
-		deregisterSlot(s)
 		c.Free(mem)
 		return (*slot[T])(existing)
 	}
-	h.key.Set(mem)
+	if ret := h.key.Set(mem); ret != 0 {
+		c.Free(mem)
+		c.Fprintf(c.Stderr, c.Str("tls: pthread_setspecific failed (errno=%d)\n"), ret)
+		panic("tls: failed to set thread local storage value")
+	}
+	registerSlot(s)
 	return s
 }
 
@@ -86,13 +86,13 @@ func slotDestructor[T any](ptr c.Pointer) {
 	if s == nil {
 		return
 	}
-	deregisterSlot(s)
-	if s.desc != nil && s.desc.destructor != nil {
-		s.desc.destructor(&s.value)
+	if s.destructor != nil {
+		s.destructor(&s.value)
 	}
+	deregisterSlot(s)
 	var zero T
 	s.value = zero
-	s.desc = nil
+	s.destructor = nil
 	c.Free(ptr)
 }
 
@@ -101,7 +101,9 @@ func registerSlot[T any](s *slot[T]) {
 		return
 	}
 	start, end := s.rootRange()
-	bdwgc.AddRoots(start, end)
+	if uintptr(end) > uintptr(start) {
+		bdwgc.AddRoots(start, end)
+	}
 	s.state |= slotRegistered
 }
 
@@ -110,12 +112,14 @@ func deregisterSlot[T any](s *slot[T]) {
 		return
 	}
 	start, end := s.rootRange()
-	bdwgc.RemoveRoots(start, end)
+	if uintptr(end) > uintptr(start) {
+		bdwgc.RemoveRoots(start, end)
+	}
 	s.state &^= slotRegistered
 }
 
 func (s *slot[T]) rootRange() (start, end c.Pointer) {
-	head := unsafe.Pointer(&s.value)
-	endPtr := unsafe.Pointer(uintptr(head) + unsafe.Sizeof(s.value))
-	return c.Pointer(head), c.Pointer(endPtr)
+	begin := unsafe.Pointer(s)
+	endPtr := unsafe.Pointer(uintptr(begin) + unsafe.Sizeof(*s))
+	return c.Pointer(begin), c.Pointer(endPtr)
 }
