@@ -23,3 +23,7 @@ func runtime_rand() uint64
 
 //go:linkname runtime_memhash github.com/goplus/llgo/runtime/internal/runtime.memhash
 func runtime_memhash(p unsafe.Pointer, seed, s uintptr) uintptr
+
+func randUint64() uint64 {
+	return runtime_rand()
+}
