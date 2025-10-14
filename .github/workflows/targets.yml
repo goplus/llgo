@@ -6,6 +6,7 @@ on:
     branches:
       - "**"
       - "!dependabot/**"
+      - "!xgopilot/**"
   pull_request:
     branches: ["**"]
 
