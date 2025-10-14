@@ -56,18 +56,4 @@ func write(fd uintptr, p unsafe.Pointer, n int32) int32 {
 	return int32(c_write(c.Int(fd), p, c.SizeT(n)))
 }
 
-//go:linkname llgo_fastrand64 github.com/goplus/llgo/runtime/internal/runtime.fastrand64
-func llgo_fastrand64() uint64
-
-//go:linkname llgo_memhash github.com/goplus/llgo/runtime/internal/runtime.memhash
-func llgo_memhash(p unsafe.Pointer, seed, s uintptr) uintptr
-
-func rand() uint64 {
-	return llgo_fastrand64()
-}
-
-func memhash(p unsafe.Pointer, seed, s uintptr) uintptr {
-	return llgo_memhash(p, seed, s)
-}
-
 const heapArenaBytes = 1024 * 1024
