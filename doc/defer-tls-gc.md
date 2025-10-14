@@ -8,17 +8,17 @@ Prior experiments (`test-defer-dont-free` branch) confirmed the crash disappeare
 
 ## Solution Overview
 
-1. **GC-aware TLS slot**
-   - Introduced `SetThreadDefer`/`ClearThreadDefer` in `runtime/internal/runtime` (`z_defer_gc.go`) that wrap a per-thread `deferSlot`.
-   - On first use we allocate a tiny slot via `c.Malloc`, register the `slot.head` field as a Boehm root (`GC_add_roots`), and persist the slot in the existing pthread TLS key with a destructor.
-   - The destructor (`deferSlotDestructor`) removes the root (`GC_remove_roots`) and frees the slot so exited threads do not leave stale roots.
+1. **GC-aware TLS slot helper**
+   - Added `runtime/internal/clite/tls`, which exposes `tls.Alloc` to create per-thread storage that is automatically registered as a Boehm GC root.
+   - `SetThreadDefer`/`ClearThreadDefer` now delegate to this helper so every thread reuses the same GC-safe slot without bespoke plumbing.
+   - The package handles TLS key creation, root registration/removal, and invokes an optional destructor when a thread exits.
 
 2. **SSA codegen synchronization**
    - `ssa/eh.go` now calls `runtime.SetThreadDefer` whenever it updates the TLS pointer (on first allocation and when restoring the previous link during unwind).
    - Defer argument nodes and the `runtime.Defer` struct itself are allocated with `aggregateAllocU`, ensuring new memory comes from GC-managed heaps, and nodes are released via `runtime.FreeDeferNode`.
 
 3. **Non-GC builds**
-   - Added `z_defer_nogc.go` with no-op `SetThreadDefer`/`ClearThreadDefer`, but still freeing nodes through `c.Free` to avoid leaks when building with `-tags nogc`.
+   - The `tls` helper falls back to a malloc-backed TLS slot without GC registration, while `FreeDeferNode` continues to release nodes via `c.Free` when building with `-tags nogc`.
 
 ## Testing
 
