@@ -124,7 +124,7 @@ func TestDeferComplexOrder(t *testing.T) {
 }
 
 func TestDeferLoopStress(t *testing.T) {
-	const n = 10_000
+	const n = 1_000_000
 	if got := runLoopDeferCount(n); got != n {
 		t.Fatalf("unexpected count: got %d, want %d", got, n)
 	}

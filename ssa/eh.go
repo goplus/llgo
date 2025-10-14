@@ -218,15 +218,16 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		zero := prog.Val(uintptr(0))
 		link := Expr{b.pthreadGetspecific(key).impl, prog.DeferPtr()}
 		jb := b.AllocaSigjmpBuf()
-		ptr := b.aggregateAlloca(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
+		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
+		b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rethPtr := b.FieldAddr(deferData, deferRethrow)
 		rundPtr := b.FieldAddr(deferData, deferRunDefers)
 		argsPtr := b.FieldAddr(deferData, deferArgs)
-		// Initialize args list to nil so later guards (DeferAlways/DeferInLoop)
-		// can safely detect an empty chain via argsPtr == nil.
+		// Initialize the args list so later guards (e.g. DeferAlways/DeferInLoop)
+		// can safely detect an empty chain without a prior push.
 		b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
 
 		czero := prog.IntVal(0, prog.CInt())
@@ -288,8 +289,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	case DeferAlways:
 		// nothing to do
 	case DeferInLoop:
-		// Build a loop that drains argsPtr until the list becomes nil, ensuring
-		// defers recorded inside the user loop execute in strict LIFO order.
+		// Loop defers rely on a dedicated drain loop inserted below.
 	default:
 		panic("unexpected defer kind - " + b.Func.Name())
 	}
@@ -314,6 +314,11 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 			condBlk := b.Func.MakeBlock()
 			bodyBlk := b.Func.MakeBlock()
 			exitBlk := b.Func.MakeBlock()
+			// Control flow:
+			//   condBlk: check argsPtr for non-nil to see if there's work to drain.
+			//   bodyBlk: execute a single defer node, then jump back to condBlk.
+			//   exitBlk: reached when the list is empty (argsPtr == nil).
+			// This mirrors runtime's linked-list unwinding semantics for loop defers.
 
 			// jump to condition check before executing
 			b.Jump(condBlk)
@@ -369,7 +374,7 @@ func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 		flds[i+offset] = arg.impl
 	}
 	typ := prog.Struct(typs...)
-	ptr := Expr{b.aggregateMalloc(typ, flds...), prog.VoidPtr()}
+	ptr := Expr{b.aggregateAllocU(typ, flds...), prog.VoidPtr()}
 	b.Store(self.argsPtr, ptr)
 	return typ
 }
@@ -383,6 +388,9 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 	zero := prog.Nil(prog.VoidPtr())
 	list := b.Load(self.argsPtr)
 	has := b.BinOp(token.NEQ, list, zero)
+	// The guard is required because callDefer is reused by endDefer() after the
+	// list has been drained. Without this check we would dereference a nil
+	// pointer when no loop defers were recorded.
 	b.IfThen(has, func() {
 		ptr := b.Load(self.argsPtr)
 		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
@@ -397,7 +405,7 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 			args[i] = b.getField(data, i+offset)
 		}
 		b.Call(callFn, args...)
-		b.free(ptr)
+		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
 	})
 }
 
@@ -453,6 +461,7 @@ func (p Function) endDefer(b Builder) {
 	}
 	link := b.getField(b.Load(self.data), deferLink)
 	b.pthreadSetspecific(self.key, link)
+	b.Call(b.Pkg.rtFunc("SetThreadDefer"), link)
 	b.IndirectJump(b.Load(rundPtr), nexts)
 
 	b.SetBlockEx(panicBlk, AtEnd, false) // panicBlk: exec runDefers and rethrow
