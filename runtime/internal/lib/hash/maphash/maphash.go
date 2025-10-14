@@ -18,6 +18,11 @@ package maphash
 
 import "unsafe"
 
+// NOTE: The following functions are not yet implemented and will panic with "intrinsic":
+// - Comparable(seed Seed, v any) uint64
+// - (*Hash).WriteComparable(v any) (int, error)
+// These functions require runtime intrinsic support that is not currently available.
+
 //go:linkname runtime_rand github.com/goplus/llgo/runtime/internal/runtime.fastrand64
 func runtime_rand() uint64
 
