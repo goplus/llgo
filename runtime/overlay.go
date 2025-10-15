@@ -22,7 +22,7 @@ var testing_testing_go124 string
 //go:embed _overlay/net/textproto/textproto.go
 var net_textproto string
 
-//go:embed internal/go/build/build.go
+//go:embed _overlay/go/build/build.go
 var go_build_build string
 
 var OverlayFiles = map[string]string{
