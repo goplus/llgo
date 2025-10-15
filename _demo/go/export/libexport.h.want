@@ -298,6 +298,9 @@ void
 github_com_goplus_llgo_runtime_internal_clite_pthread_sync_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/internal/clite/pthread/sync.init")
 
 void
+github_com_goplus_llgo_runtime_internal_clite_tls_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/internal/clite/tls.init")
+
+void
 github_com_goplus_llgo_runtime_internal_runtime_goarch_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/internal/runtime/goarch.init")
 
 void
