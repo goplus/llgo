@@ -29,6 +29,11 @@ func SetThreadDefer(head *Defer) {
 	deferTLS.Set(head)
 }
 
+// GetThreadDefer returns the current thread's defer chain head.
+func GetThreadDefer() *Defer {
+	return deferTLS.Get()
+}
+
 // ClearThreadDefer resets the current thread's defer chain to nil.
 func ClearThreadDefer() {
 	deferTLS.Clear()
