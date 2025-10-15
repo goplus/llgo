@@ -1,0 +1,125 @@
+//go:build llgo
+
+package tls_test
+
+import (
+	"fmt"
+	"sync"
+	"testing"
+
+	"github.com/goplus/llgo/runtime/internal/clite/tls"
+)
+
+func TestAllocReadWrite(t *testing.T) {
+	h := tls.Alloc[int](nil)
+	if got := h.Get(); got != 0 {
+		t.Fatalf("zero slot = %d, want 0", got)
+	}
+	h.Set(42)
+	if got := h.Get(); got != 42 {
+		t.Fatalf("Set/Get mismatch: got %d", got)
+	}
+	h.Clear()
+	if got := h.Get(); got != 0 {
+		t.Fatalf("Clear() did not reset slot, got %d", got)
+	}
+}
+
+func TestAllocThreadLocalIsolation(t *testing.T) {
+	h := tls.Alloc[int](nil)
+	h.Set(7)
+
+	const want = 99
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if got := h.Get(); got != 0 {
+			t.Errorf("new goroutine initial value = %d, want 0", got)
+		}
+		h.Set(want)
+		if got := h.Get(); got != want {
+			t.Errorf("goroutine value = %d, want %d", got, want)
+		}
+	}()
+	wg.Wait()
+
+	if got := h.Get(); got != 7 {
+		t.Fatalf("main goroutine value changed to %d", got)
+	}
+}
+
+func TestDestructorRuns(t *testing.T) {
+	var mu sync.Mutex
+	var calls int
+	values := make([]int, 0, 1)
+
+	h := tls.Alloc[*int](func(p **int) {
+		mu.Lock()
+		defer mu.Unlock()
+		if p != nil && *p != nil {
+			calls++
+			values = append(values, **p)
+		}
+	})
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		val := new(int)
+		*val = 123
+		h.Set(val)
+	}()
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if calls == 0 {
+		t.Fatalf("expected destructor to be invoked")
+	}
+	if len(values) != 1 || values[0] != 123 {
+		t.Fatalf("destructor saw unexpected values: %v", values)
+	}
+}
+
+func TestAllocStress(t *testing.T) {
+	const sequentialIterations = 200_000
+
+	h := tls.Alloc[int](nil)
+	for i := 0; i < sequentialIterations; i++ {
+		h.Set(i)
+		if got := h.Get(); got != i {
+			t.Fatalf("stress iteration %d: got %d want %d", i, got, i)
+		}
+	}
+
+	var wg sync.WaitGroup
+	const (
+		goroutines             = 32
+		iterationsPerGoroutine = 1_000
+	)
+	errs := make(chan error, goroutines)
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func(offset int) {
+			defer wg.Done()
+			local := tls.Alloc[int](nil)
+			for i := 0; i < iterationsPerGoroutine; i++ {
+				v := offset*iterationsPerGoroutine + i
+				local.Set(v)
+				if got := local.Get(); got != v {
+					errs <- fmt.Errorf("goroutine %d iteration %d: got %d want %d", offset, i, got, v)
+					return
+				}
+			}
+		}(g)
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}

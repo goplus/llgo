@@ -40,6 +40,12 @@ func Realloc(ptr c.Pointer, size uintptr) c.Pointer
 //go:linkname Free C.GC_free
 func Free(ptr c.Pointer)
 
+//go:linkname AddRoots C.GC_add_roots
+func AddRoots(start, end c.Pointer)
+
+//go:linkname RemoveRoots C.GC_remove_roots
+func RemoveRoots(start, end c.Pointer)
+
 // -----------------------------------------------------------------------------
 
 //go:linkname RegisterFinalizer C.GC_register_finalizer
