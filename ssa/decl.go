@@ -294,7 +294,7 @@ func (p Function) NewBuilder() Builder {
 	// TODO(xsw): Finalize may cause panic, so comment it.
 	// b.Finalize()
 	return &aBuilder{b, nil, p, p.Pkg, prog,
-		make(map[Expr]dbgExpr), make(map[*types.Scope]DIScope)}
+		make(map[*types.Scope]DIScope)}
 }
 
 // HasBody reports whether the function has a body.

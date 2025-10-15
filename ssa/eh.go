@@ -234,13 +234,17 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		zero := prog.Val(uintptr(0))
 		link := Expr{b.pthreadGetspecific(key).impl, prog.DeferPtr()}
 		jb := b.AllocaSigjmpBuf()
-		ptr := b.aggregateAlloca(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
+		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.pthreadSetspecific(key, deferData)
+		b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rethPtr := b.FieldAddr(deferData, deferRethrow)
 		rundPtr := b.FieldAddr(deferData, deferRunDefers)
 		argsPtr := b.FieldAddr(deferData, deferArgs)
+		// Initialize the args list so later guards (e.g. DeferAlways/DeferInLoop)
+		// can safely detect an empty chain without a prior push.
+		b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
 
 		czero := prog.IntVal(0, prog.CInt())
 		retval := b.Sigsetjmp(jb, czero)
@@ -300,8 +304,10 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 		b.Store(self.bitsPtr, b.BinOp(token.OR, bits, nextbit))
 	case DeferAlways:
 		// nothing to do
+	case DeferInLoop:
+		// Loop defers rely on a dedicated drain loop inserted below.
 	default:
-		panic("todo: DeferInLoop is not supported - " + b.Func.Name())
+		panic("unknown defer kind")
 	}
 	typ := b.saveDeferArgs(self, fn, args)
 	self.stmts = append(self.stmts, func(bits Expr) {
@@ -313,7 +319,37 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 				b.callDefer(self, typ, fn, args)
 			})
 		case DeferAlways:
+			zero := b.Prog.Nil(b.Prog.VoidPtr())
+			list := b.Load(self.argsPtr)
+			has := b.BinOp(token.NEQ, list, zero)
+			b.IfThen(has, func() {
+				b.callDefer(self, typ, fn, args)
+			})
+		case DeferInLoop:
+			prog := b.Prog
+			condBlk := b.Func.MakeBlock()
+			bodyBlk := b.Func.MakeBlock()
+			exitBlk := b.Func.MakeBlock()
+			// Control flow:
+			//   condBlk: check argsPtr for non-nil to see if there's work to drain.
+			//   bodyBlk: execute a single defer node, then jump back to condBlk.
+			//   exitBlk: reached when the list is empty (argsPtr == nil).
+			// This mirrors runtime's linked-list unwinding semantics for loop defers.
+
+			// jump to condition check before executing
+			b.Jump(condBlk)
+			b.SetBlockEx(condBlk, AtEnd, true)
+			list := b.Load(self.argsPtr)
+			has := b.BinOp(token.NEQ, list, prog.Nil(prog.VoidPtr()))
+			b.If(has, bodyBlk, exitBlk)
+
+			b.SetBlockEx(bodyBlk, AtEnd, true)
 			b.callDefer(self, typ, fn, args)
+			b.Jump(condBlk)
+
+			b.SetBlockEx(exitBlk, AtEnd, true)
+		default:
+			panic("unknown defer kind")
 		}
 	})
 }
@@ -354,7 +390,7 @@ func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 		flds[i+offset] = arg.impl
 	}
 	typ := prog.Struct(typs...)
-	ptr := Expr{b.aggregateMalloc(typ, flds...), prog.VoidPtr()}
+	ptr := Expr{b.aggregateAllocU(typ, flds...), prog.VoidPtr()}
 	b.Store(self.argsPtr, ptr)
 	return typ
 }
@@ -365,19 +401,28 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 		return
 	}
 	prog := b.Prog
-	ptr := b.Load(self.argsPtr)
-	data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
-	offset := 1
-	b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
-	if fn.kind == vkClosure {
-		fn = b.getField(data, 1)
-		offset++
-	}
-	for i := 0; i < len(args); i++ {
-		args[i] = b.getField(data, i+offset)
-	}
-	b.Call(fn, args...)
-	b.free(ptr)
+	zero := prog.Nil(prog.VoidPtr())
+	list := b.Load(self.argsPtr)
+	has := b.BinOp(token.NEQ, list, zero)
+	// The guard is required because callDefer is reused by endDefer() after the
+	// list has been drained. Without this check we would dereference a nil
+	// pointer when no loop defers were recorded.
+	b.IfThen(has, func() {
+		ptr := b.Load(self.argsPtr)
+		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
+		offset := 1
+		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
+		callFn := fn
+		if callFn.kind == vkClosure {
+			callFn = b.getField(data, 1)
+			offset++
+		}
+		for i := 0; i < len(args); i++ {
+			args[i] = b.getField(data, i+offset)
+		}
+		b.Call(callFn, args...)
+		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
+	})
 }
 
 // RunDefers emits instructions to run deferred instructions.
@@ -432,6 +477,7 @@ func (p Function) endDefer(b Builder) {
 	}
 	link := b.getField(b.Load(self.data), deferLink)
 	b.pthreadSetspecific(self.key, link)
+	b.Call(b.Pkg.rtFunc("SetThreadDefer"), link)
 	b.IndirectJump(b.Load(rundPtr), nexts)
 
 	b.SetBlockEx(panicBlk, AtEnd, false) // panicBlk: exec runDefers and rethrow
