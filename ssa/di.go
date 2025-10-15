@@ -69,7 +69,9 @@ func hasTypeParam(typ types.Type) bool {
 			return true
 		case *types.Named:
 			if tp := t.TypeParams(); tp != nil && tp.Len() > 0 {
-				return true
+				if ta := t.TypeArgs(); ta == nil || ta.Len() == 0 {
+					return true
+				}
 			}
 			if ta := t.TypeArgs(); ta != nil {
 				for i := 0; i < ta.Len(); i++ {
