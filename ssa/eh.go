@@ -236,7 +236,6 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		jb := b.AllocaSigjmpBuf()
 		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
-		b.pthreadSetspecific(key, deferData)
 		b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
 		bitsPtr := b.FieldAddr(deferData, deferBits)
 		rethPtr := b.FieldAddr(deferData, deferRethrow)
@@ -298,6 +297,9 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	case DeferInCond:
 		prog = b.Prog
 		next := self.nextBit
+		if uintptr(next) >= unsafe.Sizeof(uintptr(0))*8 {
+			panic("too many conditional defers")
+		}
 		self.nextBit++
 		bits := b.Load(self.bitsPtr)
 		nextbit = prog.Val(uintptr(1 << next))
@@ -319,12 +321,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 				b.callDefer(self, typ, fn, args)
 			})
 		case DeferAlways:
-			zero := b.Prog.Nil(b.Prog.VoidPtr())
-			list := b.Load(self.argsPtr)
-			has := b.BinOp(token.NEQ, list, zero)
-			b.IfThen(has, func() {
-				b.callDefer(self, typ, fn, args)
-			})
+			b.callDefer(self, typ, fn, args)
 		case DeferInLoop:
 			prog := b.Prog
 			condBlk := b.Func.MakeBlock()
@@ -476,7 +473,6 @@ func (p Function) endDefer(b Builder) {
 		}
 	}
 	link := b.getField(b.Load(self.data), deferLink)
-	b.pthreadSetspecific(self.key, link)
 	b.Call(b.Pkg.rtFunc("SetThreadDefer"), link)
 	b.IndirectJump(b.Load(rundPtr), nexts)
 
