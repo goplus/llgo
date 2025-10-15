@@ -149,10 +149,6 @@ func (b Builder) Longjmp(jb, retval Expr) {
 
 // -----------------------------------------------------------------------------
 
-const (
-	deferKey = "__llgo_defer"
-)
-
 func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 	b = p.NewBuilder()
 	next = b.setBlockMoveLast(p.blks[0])
@@ -162,7 +158,6 @@ func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 
 type aDefer struct {
 	nextBit   int          // next defer bit
-	key       Expr         // pthread TLS key
 	data      Expr         // pointer to runtime.Defer
 	bitsPtr   Expr         // pointer to defer bits
 	rethPtr   Expr         // next block of Rethrow
@@ -172,30 +167,6 @@ type aDefer struct {
 	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
 	rundsNext []BasicBlock // next blocks of RunDefers
 	stmts     []func(bits Expr)
-}
-
-func (p Package) keyInit(name string) {
-	keyVar := p.VarOf(name)
-	if keyVar == nil {
-		return
-	}
-	prog := p.Prog
-	keyVar.InitNil()
-	keyVar.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-
-	b := p.afterBuilder()
-	eq := b.BinOp(token.EQL, b.Load(keyVar.Expr), prog.IntVal(0, prog.CInt()))
-	b.IfThen(eq, func() {
-		b.pthreadKeyCreate(keyVar.Expr, prog.Nil(prog.VoidPtr()))
-	})
-}
-
-func (p Package) newKey(name string) Global {
-	return p.NewVarEx(name, p.Prog.CIntPtr())
-}
-
-func (b Builder) deferKey() Expr {
-	return b.Load(b.Pkg.newKey(deferKey).Expr)
 }
 
 const (
@@ -230,9 +201,8 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		blks := self.MakeBlocks(2)
 		procBlk, rethrowBlk := blks[0], blks[1]
 
-		key := b.deferKey()
 		zero := prog.Val(uintptr(0))
-		link := Expr{b.pthreadGetspecific(key).impl, prog.DeferPtr()}
+		link := b.Call(b.Pkg.rtFunc("GetThreadDefer"))
 		jb := b.AllocaSigjmpBuf()
 		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
@@ -256,7 +226,6 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		b.If(b.BinOp(token.EQL, retval, czero), next, panicBlk)
 
 		self.defer_ = &aDefer{
-			key:       key,
 			data:      deferData,
 			bitsPtr:   bitsPtr,
 			rethPtr:   rethPtr,
@@ -281,8 +250,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 
 // DeferData returns the defer data (*runtime.Defer).
 func (b Builder) DeferData() Expr {
-	key := b.deferKey()
-	return Expr{b.pthreadGetspecific(key).impl, b.Prog.DeferPtr()}
+	return b.Call(b.Pkg.rtFunc("GetThreadDefer"))
 }
 
 // Defer emits a defer instruction.
