@@ -22,9 +22,13 @@ var testing_testing_go124 string
 //go:embed _overlay/net/textproto/textproto.go
 var net_textproto string
 
+//go:embed _overlay/go/build/build.go
+var go_build_build string
+
 var OverlayFiles = map[string]string{
 	"math/exp_amd64.go":          "package math;",
 	"go/parser/resolver.go":      go_parser_resolver,
+	"go/build/build.go":          go_build_build,
 	"testing/testing.go":         testing_testing,
 	"testing/testing_go123.go":   testing_testing_go123,
 	"testing/testing_go124.go":   testing_testing_go124,
