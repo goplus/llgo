@@ -30,6 +30,11 @@ func TestHasTypeParam(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Instantiate: %v", err)
 	}
+	partialArg := newTypeParam("PartialArg")
+	partialInstance, err := types.Instantiate(types.NewContext(), generic, []types.Type{partialArg}, false)
+	if err != nil {
+		t.Fatalf("Instantiate partial: %v", err)
+	}
 
 	arrayType := func() types.Type {
 		tp := newTypeParam("ArrayElem")
@@ -61,6 +66,16 @@ func TestHasTypeParam(t *testing.T) {
 		results := types.NewTuple(types.NewVar(token.NoPos, nil, "res", tp))
 		return types.NewSignatureType(nil, nil, []*types.TypeParam{tp}, types.NewTuple(), results, false)
 	}()
+	signatureParamWithoutDecl := func() types.Type {
+		tp := newTypeParam("SigParamExternal")
+		params := types.NewTuple(types.NewVar(token.NoPos, nil, "x", tp))
+		return types.NewSignatureType(nil, nil, nil, params, types.NewTuple(), false)
+	}()
+	signatureResultWithoutDecl := func() types.Type {
+		tp := newTypeParam("SigResultExternal")
+		results := types.NewTuple(types.NewVar(token.NoPos, nil, "res", tp))
+		return types.NewSignatureType(nil, nil, nil, types.NewTuple(), results, false)
+	}()
 
 	interfaceWithParam := func() types.Type {
 		tp := newTypeParam("IfaceParam")
@@ -76,6 +91,12 @@ func TestHasTypeParam(t *testing.T) {
 		tp := newTypeParam("EmbedParam")
 		embedMethod := types.NewFunc(token.NoPos, nil, "Run", types.NewSignatureType(nil, nil, []*types.TypeParam{tp}, types.NewTuple(), types.NewTuple(), false))
 		iface := types.NewInterfaceType([]*types.Func{embedMethod}, []types.Type{base})
+		iface.Complete()
+		return iface
+	}()
+	interfaceWithEmbeddedOnly := func() types.Type {
+		embedded := interfaceWithParam
+		iface := types.NewInterfaceType(nil, []types.Type{embedded})
 		iface.Complete()
 		return iface
 	}()
@@ -95,6 +116,7 @@ func TestHasTypeParam(t *testing.T) {
 		typ  types.Type
 		want bool
 	}{
+		{"nilType", nil, false},
 		{"basic", types.Typ[types.Int], false},
 		{"typeParam", newTypeParam("T"), true},
 		{"pointerToTypeParam", types.NewPointer(newTypeParam("PtrT")), true},
@@ -106,10 +128,14 @@ func TestHasTypeParam(t *testing.T) {
 		{"structWithTypeParam", structWithParam, true},
 		{"signatureWithTypeParam", signatureWithParam, true},
 		{"signatureWithResultTypeParam", signatureWithResult, true},
+		{"signatureParamWithoutDecl", signatureParamWithoutDecl, true},
+		{"signatureResultWithoutDecl", signatureResultWithoutDecl, true},
 		{"interfaceWithTypeParam", interfaceWithParam, true},
 		{"interfaceWithEmbeddedTypeParam", interfaceWithEmbed, true},
+		{"interfaceWithEmbeddedOnlyTypeParam", interfaceWithEmbeddedOnly, true},
 		{"namedGeneric", generic, true},
 		{"pointerToNamedGeneric", types.NewPointer(generic), true},
+		{"namedInstanceWithTypeParamArg", partialInstance, true},
 		{"namedInstanceNoParam", instantiated, false},
 		{"selfRecursiveStruct", selfRecursive, false},
 	}
