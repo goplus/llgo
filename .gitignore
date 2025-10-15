@@ -53,3 +53,4 @@ go.work*
 *.uf2
 *.img
 *.zip
+/llgo
