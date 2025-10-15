@@ -40,9 +40,17 @@ func Realloc(ptr c.Pointer, size uintptr) c.Pointer
 //go:linkname Free C.GC_free
 func Free(ptr c.Pointer)
 
+// AddRoots registers a memory region [start, end) as a GC root. The caller
+// must ensure that the range remains valid until RemoveRoots is invoked with
+// the same boundaries. This is typically used for TLS slots that store Go
+// pointers.
+//
 //go:linkname AddRoots C.GC_add_roots
 func AddRoots(start, end c.Pointer)
 
+// RemoveRoots unregisters a region previously registered with AddRoots. The
+// start and end pointers must exactly match the earlier AddRoots call.
+//
 //go:linkname RemoveRoots C.GC_remove_roots
 func RemoveRoots(start, end c.Pointer)
 
