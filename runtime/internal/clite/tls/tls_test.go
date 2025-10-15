@@ -1,5 +1,4 @@
 //go:build llgo
-// +build llgo
 
 package tls_test
 

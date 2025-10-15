@@ -1,5 +1,4 @@
 //go:build nogc
-// +build nogc
 
 package runtime
 
