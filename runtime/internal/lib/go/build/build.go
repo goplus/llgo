@@ -80,6 +80,11 @@ func defaultContext() Context {
 	defaultToolTags = append([]string{}, c.ToolTags...)
 
 	goVersion := parseGoVersion()
+	// all releases >= Go 1.x. Code that requires Go 1.x or later
+	// should say "go:build go1.x", and code that should only be
+	// built before Go 1.x (perhaps it is the stub to use in that
+	// case) should say "go:build !go1.x".
+	// The last element in ReleaseTags is the current release.
 	for i := 1; i <= goVersion; i++ {
 		c.ReleaseTags = append(c.ReleaseTags, "go1."+strconv.Itoa(i))
 	}
