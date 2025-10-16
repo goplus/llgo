@@ -52,16 +52,14 @@ var defaultReleaseTags []string
 // e.g., "go1.24" or "go1.24.1" -> 24
 func parseGoVersion() int {
 	v := runtime.Version()
-	if strings.HasPrefix(v, "go") {
-		v = v[2:]
-	}
+	v = strings.TrimPrefix(v, "go")
 	parts := strings.Split(v, ".")
 	if len(parts) >= 2 {
 		if minor, err := strconv.Atoi(parts[1]); err == nil {
 			return minor
 		}
 	}
-	return 24
+	panic("failed to parse Go version from runtime.Version(): " + runtime.Version())
 }
 
 // defaultContext returns the default Context for builds.
