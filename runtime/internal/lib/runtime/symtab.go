@@ -135,6 +135,7 @@ func CallersFrames(callers []uintptr) *Frames {
 	return f
 }
 
+// A Func represents a Go function in the running binary.
 type Func struct {
 	opaque struct{} // unexported field to disallow conversions
 }

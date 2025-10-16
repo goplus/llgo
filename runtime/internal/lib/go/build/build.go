@@ -75,7 +75,7 @@ func defaultContext() Context {
 	c.GOPATH = envOr("GOPATH", defaultGOPATH())
 	// LLGO PATCH: Use "gc" instead of runtime.Compiler to avoid "unknown compiler" error
 	c.Compiler = "gc"
-	c.ToolTags = append(c.ToolTags, buildToolTags()...)
+	c.ToolTags = append(c.ToolTags, toolTags...)
 
 	defaultToolTags = append([]string{}, c.ToolTags...)
 
@@ -129,9 +129,4 @@ func defaultGOPATH() string {
 		return def
 	}
 	return ""
-}
-
-// buildToolTags returns the tool tags for the current build configuration.
-func buildToolTags() []string {
-	return toolTags
 }
