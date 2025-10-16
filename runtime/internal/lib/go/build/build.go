@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"strings"
 	_ "unsafe"
-
-	"github.com/goplus/llgo/runtime/internal/lib/internal/buildcfg"
 )
 
 // Type aliases to reference standard library types
@@ -63,7 +61,7 @@ func parseGoVersion() int {
 			return minor
 		}
 	}
-	return 24
+	panic("parseGoVersion: cannot parse go version from runtime.Version(): " + runtime.Version())
 }
 
 // defaultContext returns the default Context for builds.
@@ -95,7 +93,7 @@ func defaultContext() Context {
 
 	env := os.Getenv("CGO_ENABLED")
 	if env == "" {
-		env = buildcfg.DefaultCGO_ENABLED
+		env = defaultCGO_ENABLED
 	}
 	switch env {
 	case "1":
