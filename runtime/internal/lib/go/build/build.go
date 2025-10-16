@@ -20,26 +20,8 @@ import (
 // Type aliases to reference standard library types
 type Context = build.Context
 
-// parseGoVersion extracts the minor version number from runtime.Version()
-// e.g., "go1.24" or "go1.24.1" -> 24
-func parseGoVersion() int {
-	v := runtime.Version()
-	// Strip "go" prefix
-	if strings.HasPrefix(v, "go") {
-		v = v[2:]
-	}
-	// Extract version like "1.24" or "1.24.1"
-	parts := strings.Split(v, ".")
-	if len(parts) >= 2 {
-		if minor, err := strconv.Atoi(parts[1]); err == nil {
-			return minor
-		}
-	}
-	// Fallback to a reasonable default if parsing fails
-	return 24
-}
-
-var goVersion = parseGoVersion()
+//go:linkname cgoSupported internal/platform.CgoSupported
+func cgoSupported(goos, goarch string) bool
 
 // defaultToolTags should be an internal detail,
 // but widely used packages access it using linkname.
@@ -63,6 +45,22 @@ var defaultToolTags []string
 //go:linkname defaultReleaseTags
 var defaultReleaseTags []string
 
+// parseGoVersion extracts the minor version number from runtime.Version()
+// e.g., "go1.24" or "go1.24.1" -> 24
+func parseGoVersion() int {
+	v := runtime.Version()
+	if strings.HasPrefix(v, "go") {
+		v = v[2:]
+	}
+	parts := strings.Split(v, ".")
+	if len(parts) >= 2 {
+		if minor, err := strconv.Atoi(parts[1]); err == nil {
+			return minor
+		}
+	}
+	return 24
+}
+
 // defaultContext returns the default Context for builds.
 // LLGO PATCH: Sets Compiler = "gc" instead of runtime.Compiler
 func defaultContext() Context {
@@ -80,6 +78,7 @@ func defaultContext() Context {
 
 	defaultToolTags = append([]string{}, c.ToolTags...)
 
+	goVersion := parseGoVersion()
 	for i := 1; i <= goVersion; i++ {
 		c.ReleaseTags = append(c.ReleaseTags, "go1."+strconv.Itoa(i))
 	}
@@ -135,11 +134,7 @@ func defaultGOPATH() string {
 // This is a simplified version that returns basic tags.
 func buildToolTags() []string {
 	return []string{
-		// Standard tool tags
 		"gc",
-		"goexperiment.boringcrypto", // Default boring crypto experiment
+		"goexperiment.boringcrypto",
 	}
 }
-
-//go:linkname cgoSupported internal/platform.CgoSupported
-func cgoSupported(goos, goarch string) bool
