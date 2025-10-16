@@ -195,6 +195,7 @@ type aProgram struct {
 	mallocTy       *types.Signature
 	freeTy         *types.Signature
 	memsetInlineTy *types.Signature
+	stackSaveTy    *types.Signature
 
 	createKeyTy *types.Signature
 	getSpecTy   *types.Signature
