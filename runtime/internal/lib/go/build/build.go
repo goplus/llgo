@@ -77,9 +77,11 @@ func defaultContext() Context {
 	c.Compiler = "gc"
 	c.ToolTags = append(c.ToolTags, toolTags...)
 
-	defaultToolTags = append([]string{}, c.ToolTags...)
+	defaultToolTags = append([]string{}, c.ToolTags...) // our own private copy
 
 	goVersion := parseGoVersion()
+	// Each major Go release in the Go 1.x series adds a new
+	// "go1.x" release tag. That is, the go1.x tag is present in
 	// all releases >= Go 1.x. Code that requires Go 1.x or later
 	// should say "go:build go1.x", and code that should only be
 	// built before Go 1.x (perhaps it is the stub to use in that
