@@ -14,6 +14,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/goplus/llgo/runtime/internal/lib/internal/platform"
 )
 
 // Type aliases to reference standard library types
@@ -77,7 +79,7 @@ func defaultContext() Context {
 		c.CgoEnabled = false
 	default:
 		if runtime.GOARCH == c.GOARCH && runtime.GOOS == c.GOOS {
-			c.CgoEnabled = cgoSupported(c.GOOS, c.GOARCH)
+			c.CgoEnabled = platform.CgoSupported(c.GOOS, c.GOARCH)
 			break
 		}
 		c.CgoEnabled = false
@@ -119,24 +121,4 @@ func buildToolTags() []string {
 		"gc",
 		"goexperiment.boringcrypto", // Default boring crypto experiment
 	}
-}
-
-// cgoSupported returns whether CGO is supported for the given GOOS/GOARCH.
-// This is a simplified version of internal/platform.CgoSupported.
-func cgoSupported(goos, goarch string) bool {
-	// Most common platforms support CGO
-	switch goos + "/" + goarch {
-	case "darwin/amd64", "darwin/arm64",
-		"linux/386", "linux/amd64", "linux/arm", "linux/arm64",
-		"windows/386", "windows/amd64", "windows/arm64",
-		"freebsd/386", "freebsd/amd64", "freebsd/arm", "freebsd/arm64",
-		"openbsd/386", "openbsd/amd64", "openbsd/arm", "openbsd/arm64",
-		"netbsd/386", "netbsd/amd64", "netbsd/arm", "netbsd/arm64",
-		"android/386", "android/amd64", "android/arm", "android/arm64",
-		"illumos/amd64",
-		"solaris/amd64",
-		"linux/ppc64le", "linux/riscv64", "linux/s390x":
-		return true
-	}
-	return false
 }
