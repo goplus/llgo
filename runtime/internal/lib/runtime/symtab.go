@@ -140,6 +140,10 @@ type Func struct {
 	opaque struct{} // unexported field to disallow conversions
 }
 
+func (f *Func) Name() string {
+	panic("todo")
+}
+
 // moduledata records information about the layout of the executable
 // image. It is written by the linker. Any changes here must be
 // matched changes to the code in cmd/link/internal/ld/symtab.go:symtab.
