@@ -436,7 +436,7 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 	case pyFunc:
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
 			pkg := p.pkg
-			fnName := pysymPrefix + mod + "." + name
+			fnName := pysymPrefix + mod + "$" + name
 			if pyFn = pkg.PyObjOf(fnName); pyFn == nil {
 				pyFn = pkg.PyNewFunc(fnName, fn.Signature, true)
 			}

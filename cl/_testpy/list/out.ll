@@ -9,8 +9,8 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/list"
 @1 = private unnamed_addr constant [5 x i8] c"hello", align 1
 @__llgo_py.math = external global ptr, align 8
 @2 = private unnamed_addr constant [3 x i8] c"pi\00", align 1
-@__llgo_py.builtins.abs = linkonce global ptr null, align 8
-@__llgo_py.builtins.print = linkonce global ptr null, align 8
+@"__llgo_py.builtins$abs" = linkonce global ptr null, align 8
+@"__llgo_py.builtins$print" = linkonce global ptr null, align 8
 @__llgo_py.builtins = external global ptr, align 8
 @3 = private unnamed_addr constant [4 x i8] c"abs\00", align 1
 @4 = private unnamed_addr constant [6 x i8] c"print\00", align 1
@@ -24,8 +24,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/list.init$guard", align 1
   call void @"github.com/goplus/lib/py/math.init"()
   call void @"github.com/goplus/lib/py/std.init"()
-  %1 = load ptr, ptr @__llgo_py.builtins, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @3, ptr @__llgo_py.builtins.abs, ptr @4, ptr @__llgo_py.builtins.print, ptr null)
+  call void @"github.com/goplus/llgo/cl/_testpy/list.init$python"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -86,12 +85,12 @@ _llgo_0:
   %42 = load ptr, ptr @__llgo_py.math, align 8
   %43 = call ptr @PyObject_GetAttrString(ptr %42, ptr @2)
   %44 = call ptr @PyList_New(i64 3)
-  %45 = load ptr, ptr @__llgo_py.builtins.abs, align 8
+  %45 = load ptr, ptr @"__llgo_py.builtins$abs", align 8
   %46 = call i32 @PyList_SetItem(ptr %44, i64 0, ptr %45)
-  %47 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %47 = load ptr, ptr @"__llgo_py.builtins$print", align 8
   %48 = call i32 @PyList_SetItem(ptr %44, i64 1, ptr %47)
   %49 = call i32 @PyList_SetItem(ptr %44, i64 2, ptr %43)
-  %50 = load ptr, ptr @__llgo_py.builtins.print, align 8
+  %50 = load ptr, ptr @"__llgo_py.builtins$print", align 8
   %51 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %50, ptr %7, ptr %44, ptr null)
   ret void
 }
@@ -131,6 +130,30 @@ declare ptr @PyObject_GetAttrString(ptr, ptr)
 
 declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 
-declare void @llgoLoadPyModSyms(ptr, ...)
+define void @"github.com/goplus/llgo/cl/_testpy/list.init$python"() {
+_llgo_0:
+  %0 = load ptr, ptr @__llgo_py.builtins, align 8
+  %1 = load ptr, ptr @"__llgo_py.builtins$abs", align 8
+  %2 = icmp eq ptr %1, null
+  br i1 %2, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %3 = call ptr @PyObject_GetAttrString(ptr %0, ptr @3)
+  store ptr %3, ptr @"__llgo_py.builtins$abs", align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %4 = load ptr, ptr @"__llgo_py.builtins$print", align 8
+  %5 = icmp eq ptr %4, null
+  br i1 %5, label %_llgo_3, label %_llgo_4
+
+_llgo_3:                                          ; preds = %_llgo_2
+  %6 = call ptr @PyObject_GetAttrString(ptr %0, ptr @4)
+  store ptr %6, ptr @"__llgo_py.builtins$print", align 8
+  br label %_llgo_4
+
+_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
+  ret void
+}
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
