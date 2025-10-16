@@ -8,22 +8,58 @@ package platform
 // llgo:skipall
 type _platform struct{}
 
-// CgoSupported returns whether CGO is supported for the given GOOS/GOARCH.
-// This is a simplified version of internal/platform.CgoSupported.
+// An OSArch is a pair of GOOS and GOARCH values indicating a platform.
+type OSArch struct {
+	GOOS, GOARCH string
+}
+
+func (p OSArch) String() string {
+	return p.GOOS + "/" + p.GOARCH
+}
+
+// osArchInfo describes information about an OSArch.
+type osArchInfo struct {
+	CgoSupported bool
+	FirstClass   bool
+	Broken       bool
+}
+
+// distInfo maps OSArch to information about cgo support.
+// This is a simplified version covering the most common platforms.
+var distInfo = map[OSArch]osArchInfo{
+	{"darwin", "amd64"}:   {CgoSupported: true, FirstClass: true},
+	{"darwin", "arm64"}:   {CgoSupported: true, FirstClass: true},
+	{"linux", "386"}:      {CgoSupported: true, FirstClass: true},
+	{"linux", "amd64"}:    {CgoSupported: true, FirstClass: true},
+	{"linux", "arm"}:      {CgoSupported: true, FirstClass: true},
+	{"linux", "arm64"}:    {CgoSupported: true, FirstClass: true},
+	{"linux", "ppc64le"}:  {CgoSupported: true},
+	{"linux", "riscv64"}:  {CgoSupported: true},
+	{"linux", "s390x"}:    {CgoSupported: true},
+	{"windows", "386"}:    {CgoSupported: true, FirstClass: true},
+	{"windows", "amd64"}:  {CgoSupported: true, FirstClass: true},
+	{"windows", "arm64"}:  {CgoSupported: true},
+	{"freebsd", "386"}:    {CgoSupported: true},
+	{"freebsd", "amd64"}:  {CgoSupported: true},
+	{"freebsd", "arm"}:    {CgoSupported: true},
+	{"freebsd", "arm64"}:  {CgoSupported: true},
+	{"openbsd", "386"}:    {CgoSupported: true},
+	{"openbsd", "amd64"}:  {CgoSupported: true},
+	{"openbsd", "arm"}:    {CgoSupported: true},
+	{"openbsd", "arm64"}:  {CgoSupported: true},
+	{"netbsd", "386"}:     {CgoSupported: true},
+	{"netbsd", "amd64"}:   {CgoSupported: true},
+	{"netbsd", "arm"}:     {CgoSupported: true},
+	{"netbsd", "arm64"}:   {CgoSupported: true},
+	{"android", "386"}:    {CgoSupported: true},
+	{"android", "amd64"}:  {CgoSupported: true},
+	{"android", "arm"}:    {CgoSupported: true},
+	{"android", "arm64"}:  {CgoSupported: true},
+	{"illumos", "amd64"}:  {CgoSupported: true},
+	{"solaris", "amd64"}:  {CgoSupported: true},
+}
+
+// CgoSupported reports whether goos/goarch supports cgo.
 func CgoSupported(goos, goarch string) bool {
-	// Most common platforms support CGO
-	switch goos + "/" + goarch {
-	case "darwin/amd64", "darwin/arm64",
-		"linux/386", "linux/amd64", "linux/arm", "linux/arm64",
-		"windows/386", "windows/amd64", "windows/arm64",
-		"freebsd/386", "freebsd/amd64", "freebsd/arm", "freebsd/arm64",
-		"openbsd/386", "openbsd/amd64", "openbsd/arm", "openbsd/arm64",
-		"netbsd/386", "netbsd/amd64", "netbsd/arm", "netbsd/arm64",
-		"android/386", "android/amd64", "android/arm", "android/arm64",
-		"illumos/amd64",
-		"solaris/amd64",
-		"linux/ppc64le", "linux/riscv64", "linux/s390x":
-		return true
-	}
-	return false
+	return distInfo[OSArch{goos, goarch}].CgoSupported
 }
