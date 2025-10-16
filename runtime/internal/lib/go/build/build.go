@@ -9,19 +9,11 @@ package build
 
 import (
 	"go/build"
-	"runtime"
-	_ "unsafe"
 )
-
-//go:linkname buildDefault go/build.Default
-var buildDefault build.Context
 
 func init() {
 	// LLGO PATCH: Override build.Default.Compiler to be "gc" instead of "llgo"
 	// This prevents "unknown compiler" errors when user code uses go/build package
 	// Even though runtime.Compiler = "llgo", we set build.Default.Compiler = "gc"
-	buildDefault.Compiler = "gc"
-	
-	// Verify that runtime.Compiler is still "llgo" (unchanged)
-	_ = runtime.Compiler
+	build.Default.Compiler = "gc"
 }
