@@ -135,4 +135,3 @@ func defaultGOPATH() string {
 	}
 	return ""
 }
-
