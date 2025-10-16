@@ -88,6 +88,9 @@ func defaultContext() Context {
 
 	env := os.Getenv("CGO_ENABLED")
 	if env == "" {
+		env = defaultCGO_ENABLED
+	}
+	if env == "" {
 		env = "1"
 	}
 	switch env {
