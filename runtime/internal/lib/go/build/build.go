@@ -23,6 +23,9 @@ type Context = build.Context
 //go:linkname cgoSupported internal/platform.CgoSupported
 func cgoSupported(goos, goarch string) bool
 
+//go:linkname toolTags internal/buildcfg.ToolTags
+var toolTags []string
+
 // defaultToolTags should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -131,10 +134,6 @@ func defaultGOPATH() string {
 }
 
 // buildToolTags returns the tool tags for the current build configuration.
-// This is a simplified version that returns basic tags.
 func buildToolTags() []string {
-	return []string{
-		"gc",
-		"goexperiment.boringcrypto",
-	}
+	return toolTags
 }
