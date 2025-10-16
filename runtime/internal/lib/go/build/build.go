@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	_ "unsafe"
+
+	"github.com/goplus/llgo/runtime/internal/lib/internal/buildcfg"
 )
 
 // Type aliases to reference standard library types
@@ -77,10 +79,13 @@ func defaultContext() Context {
 	c.GOPATH = envOr("GOPATH", defaultGOPATH())
 	// LLGO PATCH: Use "gc" instead of runtime.Compiler to avoid "unknown compiler" error
 	c.Compiler = "gc"
-	c.ToolTags = append(c.ToolTags, buildToolTags()...)
+	c.ToolTags = append(c.ToolTags, toolTags...)
 
 	defaultToolTags = append([]string{}, c.ToolTags...)
 
+	// Each major Go release in the Go 1.x series adds a new
+	// "go1.x" release tag. That is, the go1.x tag is present in
+	// all releases >= Go 1.x.
 	goVersion := parseGoVersion()
 	for i := 1; i <= goVersion; i++ {
 		c.ReleaseTags = append(c.ReleaseTags, "go1."+strconv.Itoa(i))
@@ -90,7 +95,7 @@ func defaultContext() Context {
 
 	env := os.Getenv("CGO_ENABLED")
 	if env == "" {
-		env = "1"
+		env = buildcfg.DefaultCGO_ENABLED
 	}
 	switch env {
 	case "1":
@@ -133,7 +138,3 @@ func defaultGOPATH() string {
 	return ""
 }
 
-// buildToolTags returns the tool tags for the current build configuration.
-func buildToolTags() []string {
-	return toolTags
-}
