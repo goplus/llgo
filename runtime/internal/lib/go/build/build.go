@@ -14,8 +14,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	"github.com/goplus/llgo/runtime/internal/lib/internal/platform"
+	_ "unsafe"
 )
 
 // Type aliases to reference standard library types
@@ -79,7 +78,7 @@ func defaultContext() Context {
 		c.CgoEnabled = false
 	default:
 		if runtime.GOARCH == c.GOARCH && runtime.GOOS == c.GOOS {
-			c.CgoEnabled = platform.CgoSupported(c.GOOS, c.GOARCH)
+			c.CgoEnabled = cgoSupported(c.GOOS, c.GOARCH)
 			break
 		}
 		c.CgoEnabled = false
@@ -122,3 +121,6 @@ func buildToolTags() []string {
 		"goexperiment.boringcrypto", // Default boring crypto experiment
 	}
 }
+
+//go:linkname cgoSupported internal/platform.CgoSupported
+func cgoSupported(goos, goarch string) bool
