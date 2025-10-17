@@ -20,6 +20,7 @@ package test
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -44,6 +45,51 @@ func runLoopDeferCount(n int) (count int) {
 	return
 }
 
+func runDeferRecover() (recovered any, ran bool) {
+	defer func() {
+		recovered = recover()
+		ran = true
+	}()
+	panic("defer recover sentinel")
+}
+
+func runNestedLoopDeferOrder() (order []string) {
+	outerNestedLoop(&order)
+	return
+}
+
+func outerNestedLoop(order *[]string) {
+	for i := 0; i < 3; i++ {
+		v := i
+		label := "outer:" + strconv.Itoa(v)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+	}
+	middleNestedLoop(order)
+}
+
+func middleNestedLoop(order *[]string) {
+	for i := 0; i < 2; i++ {
+		v := i
+		label := "middle:" + strconv.Itoa(v)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+	}
+	innerNestedLoop(order)
+}
+
+func innerNestedLoop(order *[]string) {
+	for i := 0; i < 4; i++ {
+		v := i
+		label := "inner:" + strconv.Itoa(v)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+	}
+}
+
 func TestDeferInLoopOrder(t *testing.T) {
 	got := runLoopDefers()
 	want := []int{2, 1, 0}
@@ -56,5 +102,32 @@ func TestDeferLoopStress(t *testing.T) {
 	const n = 1_000_000
 	if got := runLoopDeferCount(n); got != n {
 		t.Fatalf("unexpected count: got %d, want %d", got, n)
+	}
+}
+
+func TestDeferRecoverHandlesPanic(t *testing.T) {
+	got, ran := runDeferRecover()
+	want := "defer recover sentinel"
+	if !ran {
+		t.Fatalf("recover defer not executed")
+	}
+	str, ok := got.(string)
+	if !ok {
+		t.Fatalf("recover returned %T, want string", got)
+	}
+	if str != want {
+		t.Fatalf("unexpected recover value: got %q, want %q", str, want)
+	}
+}
+
+func TestNestedDeferLoops(t *testing.T) {
+	got := runNestedLoopDeferOrder()
+	want := []string{
+		"inner:3", "inner:2", "inner:1", "inner:0",
+		"middle:1", "middle:0",
+		"outer:2", "outer:1", "outer:0",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected nested order: got %v, want %v", got, want)
 	}
 }
