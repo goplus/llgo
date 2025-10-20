@@ -27,5 +27,23 @@ func main() {
 		panic("Nil pointer test failed: expected invalid Value")
 	}
 
+	// Test 4: Struct value - should return same value
+	type Person struct {
+		Name string
+		Age  int
+	}
+	person := Person{Name: "Alice", Age: 30}
+	v4 := reflect.Indirect(reflect.ValueOf(person))
+	if !v4.IsValid() || v4.Interface().(Person).Name != "Alice" || v4.Interface().(Person).Age != 30 {
+		panic("Struct value test failed: expected Person{Name: Alice, Age: 30}")
+	}
+
+	// Test 5: Struct pointer - should dereference
+	personPtr := &Person{Name: "Bob", Age: 25}
+	v5 := reflect.Indirect(reflect.ValueOf(personPtr))
+	if !v5.IsValid() || v5.Interface().(Person).Name != "Bob" || v5.Interface().(Person).Age != 25 {
+		panic("Struct pointer test failed: expected Person{Name: Bob, Age: 25}")
+	}
+
 	println("PASS")
 }
