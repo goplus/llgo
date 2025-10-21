@@ -7,8 +7,8 @@ This file tracks the status of standard library package test coverage for llgo.
 Run these commands before updating progress:
 
 - `go test ./test/std/...`
-- `go run ./chore/check_std_symbols -pkg math=test/std/math`
-- `./llgo.sh test ./test/std/math`
+- `go run ./chore/check_std_symbols -pkg math=test/std/math -pkg strings=test/std/strings`
+- `./llgo.sh test ./test/std/math ./test/std/strings`
 
 ## Legend
 
@@ -23,7 +23,7 @@ Run these commands before updating progress:
 | Package | Progress |
 |---------|----------|
 | `math` | ✅ 97/97 |
-| `strings` | ⬜ 0/? |
+| `strings` | ✅ 80/80 |
 | `bytes` | ⬜ 0/? |
 | `strconv` | ⬜ 0/? |
 | `sort` | ⬜ 0/? |

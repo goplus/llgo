@@ -3,11 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"golang.org/x/tools/go/packages"
 )
 
 type pkgSpec struct {
@@ -45,6 +49,22 @@ func (p *pkgSpecs) Set(value string) error {
 	*p = append(*p, pkgSpec{pkgPath: pkgPath, testDir: testDir})
 	return nil
 }
+
+type symbolKind string
+
+type symbol struct {
+	kind     symbolKind
+	name     string
+	receiver string
+}
+
+const (
+	kindConst  symbolKind = "const"
+	kindVar    symbolKind = "var"
+	kindFunc   symbolKind = "func"
+	kindType   symbolKind = "type"
+	kindMethod symbolKind = "method"
+)
 
 func main() {
 	var specs pkgSpecs
@@ -80,12 +100,7 @@ func main() {
 			continue
 		}
 
-		var missing []string
-		for _, name := range symbols {
-			if !used[name] {
-				missing = append(missing, name)
-			}
-		}
+		missing := unmatchedSymbols(symbols, used)
 		if len(missing) > 0 {
 			sort.Strings(missing)
 			fmt.Fprintf(os.Stderr, "package %s missing coverage for %d exported identifiers:\n", spec.pkgPath, len(missing))
@@ -104,7 +119,25 @@ func main() {
 	}
 }
 
-func exportedSymbols(pkgPath string) ([]string, error) {
+func unmatchedSymbols(symbols []symbol, used map[string]bool) []string {
+	var missing []string
+	for _, sym := range symbols {
+		key := symbolKey(sym)
+		if !used[key] {
+			missing = append(missing, key)
+		}
+	}
+	return missing
+}
+
+func symbolKey(sym symbol) string {
+	if sym.kind == kindMethod {
+		return fmt.Sprintf("%s.%s", sym.receiver, sym.name)
+	}
+	return sym.name
+}
+
+func exportedSymbols(pkgPath string) ([]symbol, error) {
 	cmd := exec.Command("go", "doc", "-all", pkgPath)
 	cmd.Env = os.Environ()
 	out, err := cmd.Output()
@@ -114,8 +147,23 @@ func exportedSymbols(pkgPath string) ([]string, error) {
 
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	seen := make(map[string]struct{})
-	var symbols []string
+	var symbols []symbol
+
+	section := ""
 	inConstBlock := false
+	inVarBlock := false
+
+	add := func(sym symbol) {
+		key := symbolKey(sym)
+		if key == "" {
+			return
+		}
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		symbols = append(symbols, sym)
+	}
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -123,96 +171,199 @@ func exportedSymbols(pkgPath string) ([]string, error) {
 			continue
 		}
 
-		if strings.HasPrefix(line, "const ") {
-			rest := strings.TrimSpace(strings.TrimPrefix(line, "const "))
-			if rest == "" {
-				continue
-			}
-			if strings.HasPrefix(rest, "(") {
+		switch line {
+		case "CONSTANTS":
+			section = "const"
+			inConstBlock = false
+			inVarBlock = false
+			continue
+		case "VARIABLES":
+			section = "var"
+			inConstBlock = false
+			inVarBlock = false
+			continue
+		case "FUNCTIONS":
+			section = "func"
+			inConstBlock = false
+			inVarBlock = false
+			continue
+		case "TYPES":
+			section = "type"
+			inConstBlock = false
+			inVarBlock = false
+			continue
+		}
+
+		switch section {
+		case "const":
+			if strings.HasPrefix(line, "const (") {
 				inConstBlock = true
 				continue
 			}
-
-			if name := parseIdentifier(rest); addSymbol(seen, &symbols, name) {
+			if strings.HasPrefix(line, "const ") {
+				name := parseIdentifier(strings.TrimSpace(strings.TrimPrefix(line, "const ")))
+				if exportedName(name) {
+					add(symbol{kind: kindConst, name: name})
+				}
 				continue
 			}
-		}
-
-		if inConstBlock {
-			if line == ")" {
-				inConstBlock = false
+			if inConstBlock {
+				if line == ")" {
+					inConstBlock = false
+					continue
+				}
+				name := parseIdentifier(line)
+				if exportedName(name) {
+					add(symbol{kind: kindConst, name: name})
+				}
+			}
+		case "var":
+			if strings.HasPrefix(line, "var (") {
+				inVarBlock = true
 				continue
 			}
-			if strings.HasPrefix(line, "//") {
+			if strings.HasPrefix(line, "var ") {
+				name := parseIdentifier(strings.TrimSpace(strings.TrimPrefix(line, "var ")))
+				if exportedName(name) {
+					add(symbol{kind: kindVar, name: name})
+				}
 				continue
 			}
-			if name := parseIdentifier(line); addSymbol(seen, &symbols, name) {
+			if inVarBlock {
+				if line == ")" {
+					inVarBlock = false
+					continue
+				}
+				name := parseIdentifier(line)
+				if exportedName(name) {
+					add(symbol{kind: kindVar, name: name})
+				}
+			}
+		case "func":
+			if !strings.HasPrefix(line, "func ") {
 				continue
 			}
+			rest := strings.TrimSpace(strings.TrimPrefix(line, "func "))
+			if strings.HasPrefix(rest, "(") {
+				// methods are documented under TYPES
+				continue
+			}
+			name := parseIdentifier(rest)
+			if exportedName(name) {
+				add(symbol{kind: kindFunc, name: name})
+			}
+		case "type":
+			if strings.HasPrefix(line, "type ") {
+				rest := strings.TrimSpace(strings.TrimPrefix(line, "type "))
+				name := parseIdentifier(rest)
+				if exportedName(name) {
+					add(symbol{kind: kindType, name: name})
+				}
+				continue
+			}
+			if strings.HasPrefix(line, "func (") {
+				rest := strings.TrimSpace(strings.TrimPrefix(line, "func "))
+				recvEnd := strings.Index(rest, ")")
+				if recvEnd == -1 {
+					continue
+				}
+				recvPart := rest[1:recvEnd]
+				methodPart := strings.TrimSpace(rest[recvEnd+1:])
+				methodName := parseIdentifier(methodPart)
+				if !exportedName(methodName) {
+					continue
+				}
+				receiver := receiverTypeName(recvPart)
+				if receiver == "" || !exportedName(receiver) {
+					continue
+				}
+				add(symbol{kind: kindMethod, name: methodName, receiver: receiver})
+			}
 		}
-
-		if !strings.HasPrefix(line, "func ") {
-			continue
-		}
-		rest := strings.TrimSpace(strings.TrimPrefix(line, "func "))
-		if rest == "" {
-			continue
-		}
-		if strings.HasPrefix(rest, "(") {
-			// Method, not a package-level function.
-			continue
-		}
-
-		name := parseIdentifier(rest)
-		if name == "" {
-			continue
-		}
-		if !unicode.IsUpper([]rune(name)[0]) {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			continue
-		}
-
-		seen[name] = struct{}{}
-		symbols = append(symbols, name)
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scan go doc output: %w", err)
 	}
 
-	sort.Strings(symbols)
+	sort.Slice(symbols, func(i, j int) bool {
+		return symbolKey(symbols[i]) < symbolKey(symbols[j])
+	})
 	return symbols, nil
 }
 
-func addSymbol(seen map[string]struct{}, symbols *[]string, name string) bool {
+func exportedName(name string) bool {
 	if name == "" {
 		return false
 	}
-	if !unicode.IsUpper([]rune(name)[0]) {
-		return false
-	}
-	if _, ok := seen[name]; ok {
-		return true
-	}
-	seen[name] = struct{}{}
-	*symbols = append(*symbols, name)
-	return true
+	r := rune(name[0])
+	return unicode.IsUpper(r)
 }
 
 func parseIdentifier(input string) string {
 	for i, r := range input {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r)) {
+			if i == 0 {
+				return ""
+			}
 			return input[:i]
 		}
 	}
 	return input
 }
 
-func usedSymbols(testDir, pkgPath string) (map[string]bool, error) {
-	info := make(map[string]bool)
+func receiverTypeName(recv string) string {
+	fields := strings.Fields(recv)
+	if len(fields) == 0 {
+		return ""
+	}
+	typ := fields[len(fields)-1]
+	typ = strings.TrimPrefix(typ, "*")
+	return parseIdentifier(typ)
+}
 
+func usedSymbols(testDir, targetPkg string) (map[string]bool, error) {
+	if err := ensureNoDotImports(testDir, targetPkg); err != nil {
+		return nil, err
+	}
+
+	cfg := &packages.Config{
+		Mode:  packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedImports,
+		Dir:   testDir,
+		Tests: true,
+	}
+	pkgs, err := packages.Load(cfg, ".")
+	if err != nil {
+		return nil, fmt.Errorf("packages.Load: %w", err)
+	}
+	if packages.PrintErrors(pkgs) > 0 {
+		return nil, errors.New("packages.Load reported errors")
+	}
+
+	used := make(map[string]bool)
+
+	for _, pkg := range pkgs {
+		fset := pkg.Fset
+		if pkg.TypesInfo == nil {
+			continue
+		}
+		for ident, obj := range pkg.TypesInfo.Uses {
+			if obj == nil {
+				continue
+			}
+			if !isIdentifierInDir(fset, ident, testDir) {
+				continue
+			}
+			markIfFromTarget(used, obj, targetPkg)
+		}
+	}
+
+	return used, nil
+}
+
+func ensureNoDotImports(testDir, targetPkg string) error {
+	fset := token.NewFileSet()
+	var dotImports []string
 	err := filepath.WalkDir(testDir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -223,73 +374,112 @@ func usedSymbols(testDir, pkgPath string) (map[string]bool, error) {
 		if !strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
-
-		fset := token.NewFileSet()
-		file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+		file, err := parser.ParseFile(fset, path, nil, parser.ImportsOnly)
 		if err != nil {
-			return fmt.Errorf("parse %s: %w", path, err)
+			return err
 		}
-
-		aliases, dotImport, err := collectAliases(file, pkgPath)
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-		if dotImport {
-			return fmt.Errorf("%s: dot imports of %s are not supported", path, pkgPath)
-		}
-		if len(aliases) == 0 {
-			return nil
-		}
-
-		ast.Inspect(file, func(n ast.Node) bool {
-			sel, ok := n.(*ast.SelectorExpr)
-			if !ok {
-				return true
+		for _, imp := range file.Imports {
+			if imp.Name != nil && imp.Name.Name == "." {
+				importPath, err := strconv.Unquote(imp.Path.Value)
+				if err != nil {
+					return err
+				}
+				if importPath == targetPkg {
+					dotImports = append(dotImports, path)
+				}
 			}
-			ident, ok := sel.X.(*ast.Ident)
-			if !ok {
-				return true
-			}
-			if aliases[ident.Name] {
-				info[sel.Sel.Name] = true
-			}
-			return true
-		})
-
+		}
 		return nil
 	})
-
-	return info, err
+	if err != nil {
+		return err
+	}
+	if len(dotImports) > 0 {
+		return fmt.Errorf("dot imports of %s are not supported (found in %s)", targetPkg, strings.Join(dotImports, ", "))
+	}
+	return nil
 }
 
-func collectAliases(file *ast.File, target string) (map[string]bool, bool, error) {
-	aliases := make(map[string]bool)
-	var dotImport bool
+func isIdentifierInDir(fset *token.FileSet, ident *ast.Ident, dir string) bool {
+	pos := fset.PositionFor(ident.Pos(), false)
+	if pos.Filename == "" {
+		return false
+	}
+	filename, err := filepath.Abs(pos.Filename)
+	if err != nil {
+		return false
+	}
+	dirAbs, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+	if !strings.HasPrefix(filename, dirAbs) {
+		return false
+	}
+	return strings.HasSuffix(filename, "_test.go")
+}
 
-	for _, imp := range file.Imports {
-		path, err := strconv.Unquote(imp.Path.Value)
-		if err != nil {
-			return nil, false, fmt.Errorf("unquote import path: %w", err)
+func markIfFromTarget(used map[string]bool, obj types.Object, targetPkg string) {
+	pkg := obj.Pkg()
+	if pkg == nil {
+		// For methods, package is obtained from the receiver type.
+		if fn, ok := obj.(*types.Func); ok {
+			markMethodUsage(used, fn, targetPkg)
 		}
-		if path != target {
-			continue
+		return
+	}
+	if pkg.Path() != targetPkg {
+		return
+	}
+	switch obj := obj.(type) {
+	case *types.Const:
+		used[obj.Name()] = true
+	case *types.Var:
+		if obj.IsField() {
+			return
 		}
-
-		if imp.Name != nil {
-			switch imp.Name.Name {
-			case ".":
-				dotImport = true
-				continue
-			case "_":
-				continue
-			default:
-				aliases[imp.Name.Name] = true
-				continue
+		used[obj.Name()] = true
+	case *types.TypeName:
+		used[obj.Name()] = true
+	case *types.Func:
+		sig := obj.Type().(*types.Signature)
+		if sig.Recv() == nil {
+			used[obj.Name()] = true
+		} else {
+			recv := receiverFromType(sig.Recv().Type(), targetPkg)
+			if recv != "" {
+				used[recv] = true
+				used[fmt.Sprintf("%s.%s", recv, obj.Name())] = true
 			}
 		}
-
-		aliases[filepath.Base(path)] = true
 	}
+}
 
-	return aliases, dotImport, nil
+func markMethodUsage(used map[string]bool, fn *types.Func, targetPkg string) {
+	sig, ok := fn.Type().(*types.Signature)
+	if !ok || sig.Recv() == nil {
+		return
+	}
+	recv := receiverFromType(sig.Recv().Type(), targetPkg)
+	if recv == "" {
+		return
+	}
+	obj := fn
+	if obj.Pkg() != nil && obj.Pkg().Path() != targetPkg {
+		return
+	}
+	used[recv] = true
+	used[fmt.Sprintf("%s.%s", recv, fn.Name())] = true
+}
+
+func receiverFromType(t types.Type, targetPkg string) string {
+	switch tt := t.(type) {
+	case *types.Pointer:
+		return receiverFromType(tt.Elem(), targetPkg)
+	case *types.Named:
+		if tt.Obj() != nil && tt.Obj().Pkg() != nil && tt.Obj().Pkg().Path() == targetPkg {
+			return tt.Obj().Name()
+		}
+	}
+	return ""
 }
