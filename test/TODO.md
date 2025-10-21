@@ -81,7 +81,7 @@ Before updating progress, also run the aggregate sweeps:
 - ⬜ `encoding/asn1` — 0/?
 - ✅ `encoding/base64` — 21/21
 - ⬜ `encoding/binary` — 0/?
-- ⬜ `encoding/csv` — 0/?
+- ✅ `encoding/csv` — 17/17
 - ⬜ `encoding/hex` — 0/?
 - ⬜ `encoding/json` — 0/?
 - ⬜ `encoding/pem` — 0/?
