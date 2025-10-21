@@ -56,10 +56,10 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Containers & Utilities
 
-| Package         | Progress |
-| --------------- | -------- |
-| `container/heap` | ⬜ 0/?  |
-| `container/list` | ⬜ 0/?  |
+| Package          | Progress |
+| ---------------- | -------- |
+| `container/heap` | ✅ 6/6  |
+| `container/list` | ⬜ 0/?   |
 
 ### Archives & Compression
 
