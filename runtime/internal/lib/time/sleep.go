@@ -6,8 +6,10 @@ package time
 
 import (
 	"sync"
+	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/libuv"
 )
 
 // Sleep pauses the current goroutine for at least the duration d.
@@ -19,10 +21,14 @@ func Sleep(d Duration) {
 // Interface to timers implemented in package runtime.
 // Must be in sync with ../runtime/time.go:/^type timer
 type runtimeTimer struct {
-	// libuv.Timer
-	when int64
-	f    func(any, uintptr)
-	arg  any
+	when   int64
+	period int64
+	f      func(any, uintptr)
+	arg    any
+
+	handle     libuv.Timer
+	handleInit bool
+	active     bool
 }
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.
@@ -90,9 +96,10 @@ func NewTimer(d Duration) *Timer {
 	t := &Timer{
 		C: c,
 		r: runtimeTimer{
-			when: when(d),
-			f:    sendTime,
-			arg:  c,
+			when:   when(d),
+			period: 0,
+			f:      sendTime,
+			arg:    c,
 		},
 	}
 	startTimer(&t.r)
@@ -135,7 +142,7 @@ func NewTimer(d Duration) *Timer {
 // f is completed, it must coordinate with f explicitly.
 func (t *Timer) Reset(d Duration) bool {
 	w := when(d)
-	return resetTimer(&t.r, w)
+	return resetTimer(&t.r, w, 0)
 }
 
 // sendTime does a non-blocking send of the current time on c.
@@ -162,9 +169,10 @@ func After(d Duration) <-chan Time {
 func AfterFunc(d Duration, f func()) *Timer {
 	t := &Timer{
 		r: runtimeTimer{
-			when: when(d),
-			f:    goFunc,
-			arg:  f,
+			when:   when(d),
+			period: 0,
+			f:      goFunc,
+			arg:    f,
 		},
 	}
 	startTimer(&t.r)
@@ -175,66 +183,209 @@ func goFunc(arg any, seq uintptr) {
 	go arg.(func())()
 }
 
-var (
-	// timerLoop *libuv.Loop
-	timerOnce sync.Once
+type timerOpType int
+
+const (
+	timerOpStart timerOpType = iota
+	timerOpStop
+	timerOpReset
 )
 
-// func init() {
-// 	timerOnce.Do(func() {
-// 		timerLoop = libuv.LoopNew()
-// 	})
-// 	go func() {
-// 		timerLoop.Run(libuv.RUN_DEFAULT)
-// 	}()
-// }
-
-// cross thread
-// func timerEvent(async *libuv.Async) {
-// 	a := (*asyncTimerEvent)(unsafe.Pointer(async))
-// 	a.cb()
-// 	a.Close(nil)
-// }
-
-type asyncTimerEvent struct {
-	// libuv.Async
-	cb func()
+type timerOp struct {
+	typ    timerOpType
+	timer  *runtimeTimer
+	when   int64
+	period int64
+	done   chan bool
+	result bool
 }
 
-// func timerCallback(t *libuv.Timer) {
-// }
+var (
+	timerOnce sync.Once
+
+	timerLoop  *libuv.Loop
+	timerAsync *libuv.Async
+
+	timerReady chan struct{}
+
+	timerOpsMu sync.Mutex
+	timerOps   []*timerOp
+)
+
+func ensureTimerLoop() {
+	timerOnce.Do(func() {
+		timerReady = make(chan struct{})
+		go runTimerLoop()
+		<-timerReady
+	})
+}
+
+func runTimerLoop() {
+	loop := libuv.DefaultLoop()
+	timerLoop = loop
+
+	async := &libuv.Async{}
+	if loop.Async(async, timerAsyncCallback) != 0 {
+		panic("time: failed to initialize async timer loop")
+	}
+	timerAsync = async
+	close(timerReady)
+
+	loop.Run(libuv.RUN_DEFAULT)
+}
+
+func timerAsyncCallback(_ *libuv.Async) {
+	drainTimerOps()
+}
+
+func drainTimerOps() {
+	for {
+		timerOpsMu.Lock()
+		if len(timerOps) == 0 {
+			timerOpsMu.Unlock()
+			return
+		}
+		ops := timerOps
+		timerOps = nil
+		timerOpsMu.Unlock()
+
+		for _, op := range ops {
+			switch op.typ {
+			case timerOpStart:
+				op.result = timerLoopStart(op.timer, op.when, op.period)
+			case timerOpStop:
+				op.result = timerLoopStop(op.timer)
+			case timerOpReset:
+				op.result = timerLoopReset(op.timer, op.when, op.period)
+			}
+			if op.done != nil {
+				op.done <- op.result
+			}
+		}
+	}
+}
+
+func submitTimerOp(op *timerOp) {
+	ensureTimerLoop()
+	timerOpsMu.Lock()
+	timerOps = append(timerOps, op)
+	timerOpsMu.Unlock()
+	if timerAsync != nil {
+		timerAsync.Send()
+	}
+}
 
 func startTimer(r *runtimeTimer) {
-	panic("not implemented")
-	// asyncTimer := &asyncTimerEvent{
-	// 	cb: func() {
-	// 		libuv.InitTimer(timerLoop, &r.Timer)
-	// 		r.Start(timerCallback, uint64(r.when), 0)
-	// 	},
-	// }
-	// timerLoop.Async(&asyncTimer.Async, timerEvent)
-	// asyncTimer.Send()
+	op := &timerOp{
+		typ:    timerOpStart,
+		timer:  r,
+		when:   r.when,
+		period: r.period,
+		done:   make(chan bool, 1),
+	}
+	submitTimerOp(op)
+	<-op.done
 }
 
 func stopTimer(r *runtimeTimer) bool {
-	panic("not implemented")
-	// asyncTimer := &asyncTimerEvent{
-	// 	cb: func() {
-	// 		r.Stop()
-	// 	},
-	// }
-	// timerLoop.Async(&asyncTimer.Async, timerEvent)
-	// return asyncTimer.Send() == 0
+	op := &timerOp{
+		typ:   timerOpStop,
+		timer: r,
+		done:  make(chan bool, 1),
+	}
+	submitTimerOp(op)
+	return <-op.done
 }
 
-func resetTimer(r *runtimeTimer, when int64) bool {
-	panic("not implemented")
-	// asyncTimer := &asyncTimerEvent{
-	// 	cb: func() {
-	// 		r.Stop()
-	// 		r.Start(timerCallback, uint64(when), 0)
-	// 	},
-	// }
-	// timerLoop.Async(&asyncTimer.Async, timerEvent)
-	// return asyncTimer.Send() == 0
+func resetTimer(r *runtimeTimer, when, period int64) bool {
+	op := &timerOp{
+		typ:    timerOpReset,
+		timer:  r,
+		when:   when,
+		period: period,
+		done:   make(chan bool, 1),
+	}
+	submitTimerOp(op)
+	return <-op.done
+}
+
+func timerLoopStart(r *runtimeTimer, when, period int64) bool {
+	if timerLoop == nil {
+		return false
+	}
+	if period < 0 {
+		period = 0
+	}
+	delay := when - runtimeNano()
+	if delay < 0 {
+		delay = 0
+	}
+	timeout := nanosToMillis(delay)
+	repeat := nanosToMillis(period)
+	if period > 0 && repeat == 0 {
+		repeat = 1
+	}
+	if !r.handleInit {
+		if libuv.InitTimer(timerLoop, &r.handle) != 0 {
+			return false
+		}
+		handle := (*libuv.Handle)(unsafe.Pointer(&r.handle))
+		handle.SetData(c.Pointer(unsafe.Pointer(r)))
+		r.handleInit = true
+	} else {
+		r.handle.Stop()
+	}
+	if timeout == 0 && delay > 0 {
+		timeout = 1
+	}
+	if rc := r.handle.Start(timerCallback, timeout, repeat); rc != 0 {
+		return false
+	}
+	r.when = when
+	r.period = period
+	r.active = true
+	return true
+}
+
+func timerLoopStop(r *runtimeTimer) bool {
+	if !r.handleInit || !r.active {
+		return false
+	}
+	r.handle.Stop()
+	r.active = false
+	r.period = 0
+	return true
+}
+
+func timerLoopReset(r *runtimeTimer, when, period int64) bool {
+	wasActive := r.active
+	timerLoopStart(r, when, period)
+	return wasActive
+}
+
+func timerCallback(t *libuv.Timer) {
+	handle := (*libuv.Handle)(unsafe.Pointer(t))
+	data := handle.GetData()
+	if data == nil {
+		return
+	}
+	r := (*runtimeTimer)(unsafe.Pointer(data))
+	if r.period == 0 {
+		r.active = false
+	} else {
+		r.when += r.period
+	}
+	r.f(r.arg, 0)
+}
+
+func nanosToMillis(ns int64) uint64 {
+	if ns <= 0 {
+		return 0
+	}
+	const milli = int64(Millisecond)
+	ms := ns / milli
+	if ns%milli != 0 {
+		ms++
+	}
+	return uint64(ms)
 }

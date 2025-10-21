@@ -31,19 +31,4 @@ jobs:
           go-version: "1.24.2"
 
       - name: Check stdlib function coverage
-        run: |
-          pkgs=(
-            math=test/std/math
-            strings=test/std/strings
-            slices=test/std/slices
-            sort=test/std/sort
-            path=test/std/path
-            text/scanner=test/std/text/scanner
-            text/tabwriter=test/std/text/tabwriter
-            text/template=test/std/text/template
-          )
-          args=""
-          for spec in "${pkgs[@]}"; do
-            args+=" -pkg ${spec}"
-          done
-          go run ./chore/check_std_symbols ${args}
+        run: doc/_readme/scripts/check_std_cover.sh

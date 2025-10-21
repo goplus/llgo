@@ -71,22 +71,13 @@ After multiple suites are healthy, spot-check the cumulative set before sending 
 go test ./test/std/...
 
 # Verify exported symbol coverage for the enabled stdlib suites
-go run ./chore/check_std_symbols \
-  -pkg math=test/std/math \
-  -pkg strings=test/std/strings \
-  -pkg slices=test/std/slices \
-  -pkg sort=test/std/sort \
-  -pkg path=test/std/path \
-  -pkg text/scanner=test/std/text/scanner \
-  -pkg text/tabwriter=test/std/text/tabwriter \
-  -pkg text/template=test/std/text/template \
-  -pkg time=test/std/time
+bash doc/_readme/scripts/check_std_cover.sh
 
 # Execute the suites under llgo (ensures runtime support)
 ./llgo.sh test ./test/std/...
 ```
 
-Add any new package suites to the `check_std_symbols` invocation and llgo command before submitting.
+The coverage script automatically discovers packages beneath `test/std`; ensure new suites build cleanly so `go list ./test/std/...` picks them up.
 
 ## Code Quality
 

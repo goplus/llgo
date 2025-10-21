@@ -17,6 +17,7 @@
 package time
 
 import (
+	"errors"
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
@@ -189,6 +190,24 @@ func (t Time) Compare(u Time) int {
 
 func (t Time) UnixNano() int64 {
 	return (t.unixSec())*1e9 + int64(t.nsec())
+}
+
+// Unix returns t as a Unix time, the number of seconds elapsed since
+// January 1, 1970 UTC.
+func (t Time) Unix() int64 {
+	return t.unixSec()
+}
+
+// UnixMilli returns t as a Unix time, the number of milliseconds elapsed since
+// January 1, 1970 UTC.
+func (t Time) UnixMilli() int64 {
+	return t.unixSec()*1e3 + int64(t.nsec())/1e6
+}
+
+// UnixMicro returns t as a Unix time, the number of microseconds elapsed since
+// January 1, 1970 UTC.
+func (t Time) UnixMicro() int64 {
+	return t.unixSec()*1e6 + int64(t.nsec())/1e3
 }
 
 // Equal reports whether t and u represent the same time instant.
@@ -412,7 +431,7 @@ func now() (sec int64, nsec int32, mono int64) {
 func runtimeNano() int64 {
 	tv := (*time.Timespec)(c.Alloca(unsafe.Sizeof(time.Timespec{})))
 	time.ClockGettime(time.CLOCK_MONOTONIC, tv)
-	return int64(tv.Sec)<<nsecShift | int64(tv.Nsec)
+	return int64(tv.Sec)*int64(Second) + int64(tv.Nsec)
 }
 
 // Monotonic times are reported as offsets from startNano.
@@ -447,6 +466,59 @@ func (t Time) UTC() Time {
 func (t Time) Local() Time {
 	t.setLoc(Local)
 	return t
+}
+
+// In returns a copy of t representing the same time instant with
+// the location information set to loc for display purposes.
+// It panics if loc is nil.
+func (t Time) In(loc *Location) Time {
+	if loc == nil {
+		panic("time: missing Location in call to Time.In")
+	}
+	t.setLoc(loc)
+	return t
+}
+
+// Location returns the time zone information associated with t.
+func (t Time) Location() *Location {
+	l := t.loc
+	if l == nil {
+		return UTC
+	}
+	return l.get()
+}
+
+// Zone returns the abbreviated name and offset seconds east of UTC of the
+// time zone in effect at time t.
+func (t Time) Zone() (name string, offset int) {
+	l := t.loc
+	if l == nil {
+		l = UTC
+	}
+	name, offset, _, _, _ = l.lookup(t.unixSec())
+	return
+}
+
+// ZoneBounds returns the bounds of the time zone in effect at time t. The
+// zone begins at start and the next zone begins at end. If the zone begins at
+// the beginning of time, start will be returned as the zero Time. If the zone
+// extends forever, end will be returned as the zero Time. The returned Times
+// use the same Location as t.
+func (t Time) ZoneBounds() (start, end Time) {
+	l := t.loc
+	if l == nil {
+		l = UTC
+	}
+	_, _, startSec, endSec, _ := l.lookup(t.unixSec())
+	if startSec != alpha {
+		start = unixTime(startSec, 0)
+		start.setLoc(l)
+	}
+	if endSec != omega {
+		end = unixTime(endSec, 0)
+		end.setLoc(l)
+	}
+	return
 }
 
 const (
@@ -951,6 +1023,15 @@ func Until(t Time) Duration {
 	return t.Sub(now)
 }
 
+// AddDate returns the time corresponding to adding the given number of years,
+// months, and days to t.
+// For example, AddDate(-1, 2, 3) applied to January 1, 2011 returns March 4, 2010.
+func (t Time) AddDate(years int, months int, days int) Time {
+	year, month, day := t.Date()
+	hour, min, sec := t.Clock()
+	return Date(year+years, month+Month(months), day+days, hour, min, sec, int(t.nsec()), t.Location())
+}
+
 // Date returns the Time corresponding to
 //
 //	yyyy-mm-dd hh:mm:ss + nsec nanoseconds
@@ -1057,6 +1138,187 @@ func UnixMicro(usec int64) Time {
 	return Unix(usec/1e6, (usec%1e6)*1e3)
 }
 
+const (
+	timeBinaryVersionV1 byte = iota + 1
+	timeBinaryVersionV2
+)
+
+// AppendBinary appends the binary encoding of t to b and returns the extended buffer.
+func (t Time) AppendBinary(b []byte) ([]byte, error) {
+	var offsetMin int16
+	var offsetSec int8
+	version := timeBinaryVersionV1
+
+	if t.Location() == UTC {
+		offsetMin = -1
+	} else {
+		_, offset := t.Zone()
+		if offset%60 != 0 {
+			version = timeBinaryVersionV2
+			offsetSec = int8(offset % 60)
+		}
+
+		offset /= 60
+		if offset < -32768 || offset == -1 || offset > 32767 {
+			return b, errors.New("Time.MarshalBinary: unexpected zone offset")
+		}
+		offsetMin = int16(offset)
+	}
+
+	sec := t.sec()
+	nsec := t.nsec()
+	b = append(b,
+		version,
+		byte(sec>>56),
+		byte(sec>>48),
+		byte(sec>>40),
+		byte(sec>>32),
+		byte(sec>>24),
+		byte(sec>>16),
+		byte(sec>>8),
+		byte(sec),
+		byte(nsec>>24),
+		byte(nsec>>16),
+		byte(nsec>>8),
+		byte(nsec),
+		byte(offsetMin>>8),
+		byte(offsetMin),
+	)
+	if version == timeBinaryVersionV2 {
+		b = append(b, byte(offsetSec))
+	}
+	return b, nil
+}
+
+// MarshalBinary returns the binary encoding of t.
+func (t Time) MarshalBinary() ([]byte, error) {
+	return t.AppendBinary(make([]byte, 0, 16))
+}
+
+// UnmarshalBinary decodes a binary representation into t.
+func (t *Time) UnmarshalBinary(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("Time.UnmarshalBinary: no data")
+	}
+
+	version := data[0]
+	if version != timeBinaryVersionV1 && version != timeBinaryVersionV2 {
+		return errors.New("Time.UnmarshalBinary: unsupported version")
+	}
+
+	wantLen := 1 + 8 + 4 + 2
+	if version == timeBinaryVersionV2 {
+		wantLen++
+	}
+	if len(data) != wantLen {
+		return errors.New("Time.UnmarshalBinary: invalid length")
+	}
+
+	buf := data[1:]
+	sec := int64(buf[7]) | int64(buf[6])<<8 | int64(buf[5])<<16 | int64(buf[4])<<24 |
+		int64(buf[3])<<32 | int64(buf[2])<<40 | int64(buf[1])<<48 | int64(buf[0])<<56
+	buf = buf[8:]
+	nsec := int32(buf[3]) | int32(buf[2])<<8 | int32(buf[1])<<16 | int32(buf[0])<<24
+	buf = buf[4:]
+
+	offset := int(int16(buf[1])|int16(buf[0])<<8) * 60
+	if version == timeBinaryVersionV2 {
+		offset += int(buf[2])
+	}
+
+	*t = Time{}
+	t.wall = uint64(nsec)
+	t.ext = sec
+
+	switch {
+	case offset == -60:
+		t.setLoc(&utcLoc)
+	default:
+		if _, localoff, _, _, _ := Local.lookup(t.unixSec()); offset == localoff {
+			t.setLoc(Local)
+		} else {
+			t.setLoc(FixedZone("", offset))
+		}
+	}
+	return nil
+}
+
+// GobEncode encodes t for gob serialization.
+func (t Time) GobEncode() ([]byte, error) {
+	return t.MarshalBinary()
+}
+
+// GobDecode decodes a gob-serialized time into t.
+func (t *Time) GobDecode(data []byte) error {
+	return t.UnmarshalBinary(data)
+}
+
+// MarshalJSON returns the JSON encoding of t.
+func (t Time) MarshalJSON() ([]byte, error) {
+	b := make([]byte, 0, len(RFC3339Nano)+2)
+	b = append(b, '"')
+	b, err := t.appendStrictRFC3339(b)
+	b = append(b, '"')
+	if err != nil {
+		return nil, errors.New("Time.MarshalJSON: " + err.Error())
+	}
+	return b, nil
+}
+
+// UnmarshalJSON parses a JSON-encoded time.
+func (t *Time) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	if len(data) < 2 || data[0] != '"' || data[len(data)-1] != '"' {
+		return errors.New("Time.UnmarshalJSON: input is not a JSON string")
+	}
+	parsed, err := parseStrictRFC3339(data[1 : len(data)-1])
+	if err != nil {
+		return err
+	}
+	*t = parsed
+	return nil
+}
+
+func (t Time) appendTo(b []byte, prefix string) ([]byte, error) {
+	out, err := t.appendStrictRFC3339(b)
+	if err != nil {
+		return nil, errors.New(prefix + err.Error())
+	}
+	return out, nil
+}
+
+// AppendText appends the RFC 3339 representation of t to b.
+func (t Time) AppendText(b []byte) ([]byte, error) {
+	return t.appendTo(b, "Time.AppendText: ")
+}
+
+// MarshalText returns the RFC 3339 representation of t.
+func (t Time) MarshalText() ([]byte, error) {
+	return t.appendTo(make([]byte, 0, len(RFC3339Nano)), "Time.MarshalText: ")
+}
+
+// UnmarshalText parses an RFC 3339 formatted time into t.
+func (t *Time) UnmarshalText(data []byte) error {
+	parsed, err := parseStrictRFC3339(data)
+	if err != nil {
+		return err
+	}
+	*t = parsed
+	return nil
+}
+
+// IsDST reports whether the time in the configured location observes daylight saving time.
+func (t Time) IsDST() bool {
+	l := t.loc
+	if l == nil {
+		l = UTC
+	}
+	_, _, _, _, isDST := l.lookup(t.unixSec())
+	return isDST
+}
+
 func isLeap(year int) bool {
 	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }
@@ -1079,14 +1341,20 @@ func norm(hi, lo, base int) (nhi, nlo int) {
 	return hi, lo
 }
 
+// Truncate returns the result of rounding t down to a multiple of d (since the zero time).
+// If d <= 0, Truncate returns t stripped of any monotonic clock reading but otherwise unchanged.
+func (t Time) Truncate(d Duration) Time {
+	t.stripMono()
+	if d <= 0 {
+		return t
+	}
+	_, r := div(t, d)
+	return t.Add(-r)
+}
+
 // Round returns the result of rounding t to the nearest multiple of d (since the zero time).
 // The rounding behavior for halfway values is to round up.
 // If d <= 0, Round returns t stripped of any monotonic clock reading but otherwise unchanged.
-//
-// Round operates on the time as an absolute duration since the
-// zero time; it does not operate on the presentation form of the
-// time. Thus, Round(Hour) may return a time with a non-zero
-// minute, depending on the time's Location.
 func (t Time) Round(d Duration) Time {
 	t.stripMono()
 	if d <= 0 {

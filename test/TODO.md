@@ -19,7 +19,7 @@ Before updating progress, also run the aggregate sweeps:
 
 - `go test ./test/std/...`
 - `./llgo.sh test ./test/std/...`
-- `go run ./chore/check_std_symbols -pkg math=test/std/math -pkg strings=test/std/strings -pkg slices=test/std/slices -pkg sort=test/std/sort -pkg path=test/std/path -pkg text/scanner=test/std/text/scanner -pkg text/tabwriter=test/std/text/tabwriter -pkg text/template=test/std/text/template -pkg time=test/std/time`
+- `bash doc/_readme/scripts/check_std_cover.sh`
 
 ## Legend
 
