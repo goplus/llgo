@@ -1,0 +1,44 @@
+name: Stdlib Coverage
+
+on:
+  push:
+    branches:
+      - "**"
+      - "!dependabot/**"
+      - "!xgopilot/**"
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: stdlib-coverage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
+
+      - name: Check stdlib function coverage
+        run: |
+          pkgs=(
+            math=test/std/math
+            strings=test/std/strings
+            slices=test/std/slices
+          )
+          args=""
+          for spec in "${pkgs[@]}"; do
+            args+=" -pkg ${spec}"
+          done
+          go run ./chore/check_std_symbols ${args}
