@@ -36,7 +36,7 @@ Before updating progress, also run the aggregate sweeps:
 | Package   | Progress |
 | --------- | -------- |
 | `bytes`   | ✅ 95/95 |
-| `cmp`     | ⬜ 0/?   |
+| `cmp`     | ✅ 4/4   |
 | `iter`    | ✅ 4/4   |
 | `maps`    | ✅ 10/10 |
 | `slices`  | ✅ 40/40 |
