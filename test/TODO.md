@@ -49,7 +49,7 @@ Before updating progress, also run the aggregate sweeps:
 | Package        | Progress |
 | -------------- | -------- |
 | `math`         | ✅ 97/97 |
-| `math/big`     | ⬜ 0/?   |
+| `math/big`     | ✅ 154/154 |
 | `math/bits`    | ✅ 50/50 |
 | `math/rand`    | ⬜ 0/?   |
 | `math/rand/v2` | ⬜ 0/?   |
