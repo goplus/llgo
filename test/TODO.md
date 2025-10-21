@@ -31,16 +31,16 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Core Collections & Strings
 
-| Package   | Progress |
-| --------- | -------- |
-| `bytes`   | ✅ 95/95 |
-| `cmp`     | ✅ 4/4   |
-| `iter`    | ✅ 4/4   |
-| `maps`    | ✅ 10/10 |
-| `slices`  | ✅ 40/40 |
-| `sort`    | ✅ 36/36 |
-| `strings` | ✅ 80/80 |
-| `strconv` | ✅ 40/40 |
+| Package   | Progress                                         |
+| --------- | ------------------------------------------------ |
+| `bytes`   | ✅ 95/95                                         |
+| `cmp`     | ✅ 4/4                                           |
+| `iter`    | 🟡 0/4 (fails under llgo runtime - depens coro ) |
+| `maps`    | ✅ 10/10                                         |
+| `slices`  | ✅ 40/40                                         |
+| `sort`    | ✅ 36/36                                         |
+| `strings` | ✅ 80/80                                         |
+| `strconv` | ✅ 40/40                                         |
 
 ### Math & Numerics
 
