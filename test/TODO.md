@@ -2,6 +2,14 @@
 
 This file tracks the status of standard library package test coverage for llgo.
 
+## Validation Steps
+
+Run these commands before updating progress:
+
+- `go test ./test/std/...`
+- `go run ./chore/check_std_symbols -pkg math=test/std/math`
+- `./llgo.sh test ./test/std/math`
+
 ## Legend
 
 - ✅ Comprehensive coverage (>80% of package API tested)
@@ -12,63 +20,63 @@ This file tracks the status of standard library package test coverage for llgo.
 
 ## Priority 1: Core Packages
 
-| Package | Status | Functions Tested | Benchmarks | Notes | Owner |
-|---------|--------|------------------|------------|-------|-------|
-| `math` | ✅ | 10 core functions (Sin, Cos, Tan, Sqrt, Exp, Log, Pow, Abs, Mod, Frexp) | ✅ 10 benchmarks | Initial implementation complete | - |
-| `strings` | ⬜ | - | - | High priority | - |
-| `bytes` | ⬜ | - | - | High priority | - |
-| `strconv` | ⬜ | - | - | Format/parse functions | - |
-| `sort` | ⬜ | - | - | Sorting algorithms | - |
+| Package | Progress |
+|---------|----------|
+| `math` | ✅ 97/97 |
+| `strings` | ⬜ 0/? |
+| `bytes` | ⬜ 0/? |
+| `strconv` | ⬜ 0/? |
+| `sort` | ⬜ 0/? |
 
 ## Priority 2: I/O Packages
 
-| Package | Status | Functions Tested | Benchmarks | Notes | Owner |
-|---------|--------|------------------|------------|-------|-------|
-| `io` | ⬜ | - | - | Core interfaces | - |
-| `bufio` | ⬜ | - | - | Buffered I/O | - |
-| `io/fs` | ⬜ | - | - | Filesystem interfaces | - |
-| `os` | ⬜ | - | - | Partial support documented | - |
-| `path` | ⬜ | - | - | Path manipulation | - |
-| `path/filepath` | ⬜ | - | - | OS-specific paths | - |
+| Package | Progress |
+|---------|----------|
+| `io` | ⬜ 0/? |
+| `bufio` | ⬜ 0/? |
+| `io/fs` | ⬜ 0/? |
+| `os` | ⬜ 0/? |
+| `path` | ⬜ 0/? |
+| `path/filepath` | ⬜ 0/? |
 
 ## Priority 3: Encoding Packages
 
-| Package | Status | Functions Tested | Benchmarks | Notes | Owner |
-|---------|--------|------------------|------------|-------|-------|
-| `encoding/json` | ⬜ | - | - | JSON encoding/decoding | - |
-| `encoding/base64` | ⬜ | - | - | Base64 encoding | - |
-| `encoding/hex` | ⬜ | - | - | Hex encoding | - |
-| `encoding/csv` | ⬜ | - | - | CSV parsing | - |
-| `encoding/binary` | ⬜ | - | - | Binary encoding | - |
+| Package | Progress |
+|---------|----------|
+| `encoding/json` | ⬜ 0/? |
+| `encoding/base64` | ⬜ 0/? |
+| `encoding/hex` | ⬜ 0/? |
+| `encoding/csv` | ⬜ 0/? |
+| `encoding/binary` | ⬜ 0/? |
 
 ## Priority 4: Crypto & Hashing
 
-| Package | Status | Functions Tested | Benchmarks | Notes | Owner |
-|---------|--------|------------------|------------|-------|-------|
-| `hash` | ⬜ | - | - | Hash interfaces | - |
-| `crypto/md5` | ⬜ | - | - | MD5 hashing | - |
-| `crypto/sha1` | ⬜ | - | - | SHA1 hashing | - |
-| `crypto/sha256` | ⬜ | - | - | SHA256 hashing | - |
-| `crypto/sha512` | ⬜ | - | - | Partial support | - |
+| Package | Progress |
+|---------|----------|
+| `hash` | ⬜ 0/? |
+| `crypto/md5` | ⬜ 0/? |
+| `crypto/sha1` | ⬜ 0/? |
+| `crypto/sha256` | ⬜ 0/? |
+| `crypto/sha512` | ⬜ 0/? |
 
 ## Priority 5: Concurrency & Sync
 
-| Package | Status | Functions Tested | Benchmarks | Notes | Owner |
-|---------|--------|------------------|------------|-------|-------|
-| `sync` | ⬜ | - | - | Partial support | - |
-| `sync/atomic` | ⬜ | - | - | Atomic operations | - |
-| `context` | ⬜ | - | - | Context handling | - |
+| Package | Progress |
+|---------|----------|
+| `sync` | ⬜ 0/? |
+| `sync/atomic` | ⬜ 0/? |
+| `context` | ⬜ 0/? |
 
 ## Priority 6: Other Important Packages
 
-| Package | Status | Functions Tested | Benchmarks | Notes | Owner |
-|---------|--------|------------------|------------|-------|-------|
-| `fmt` | ⬜ | - | - | Partial support | - |
-| `errors` | ⬜ | - | - | Error handling | - |
-| `time` | ⬜ | - | - | Partial support | - |
-| `regexp` | ⬜ | - | - | Regular expressions | - |
-| `flag` | ⬜ | - | - | Command-line flags | - |
-| `log` | ⬜ | - | - | Logging | - |
+| Package | Progress |
+|---------|----------|
+| `fmt` | ⬜ 0/? |
+| `errors` | ⬜ 0/? |
+| `time` | ⬜ 0/? |
+| `regexp` | ⬜ 0/? |
+| `flag` | ⬜ 0/? |
+| `log` | ⬜ 0/? |
 
 ## Deferred / Low Priority
 
