@@ -83,7 +83,7 @@ Before updating progress, also run the aggregate sweeps:
 | `os/signal`     | ⬜ 0/?   |
 | `os/user`       | ⬜ 0/?   |
 | `path`          | ✅ 9/9   |
-| `path/filepath` | ⬜ 0/?   |
+| `path/filepath` | 🟡 0/27  |
 
 ### Encoding & Serialization
 
