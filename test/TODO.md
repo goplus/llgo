@@ -77,7 +77,7 @@ Before updating progress, also run the aggregate sweeps:
 | `embed`         | ⬜ 0/?   |
 | `io`            | 🟡 0/59  |
 | `io/fs`         | ⬜ 0/?   |
-| `io/ioutil`     | ⬜ 0/?   |
+| `io/ioutil`     | 🟡 0/8   |
 | `os`            | ⬜ 0/?   |
 | `os/exec`       | ⬜ 0/?   |
 | `os/signal`     | ⬜ 0/?   |
