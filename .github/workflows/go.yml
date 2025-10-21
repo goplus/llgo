@@ -50,6 +50,7 @@ jobs:
           pkgs=(
             math=test/std/math
             strings=test/std/strings
+            slices=test/std/slices
           )
           args=""
           for spec in "${pkgs[@]}"; do
