@@ -5,6 +5,11 @@ import (
 	"internal/goos"
 )
 
+type Error interface {
+	error
+	RuntimeError()
+}
+
 func Goexit() {
 	panic("todo")
 }

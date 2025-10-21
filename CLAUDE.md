@@ -59,11 +59,16 @@ When working on the `test/std` suites, keep both Go and llgo test runners in syn
 # Run all stdlib compatibility tests with the Go toolchain
 go test ./test/std/...
 
-# Verify exported symbol coverage (math, strings, slices today)
+# Verify exported symbol coverage for the enabled stdlib suites
 go run ./chore/check_std_symbols \
   -pkg math=test/std/math \
   -pkg strings=test/std/strings \
-  -pkg slices=test/std/slices
+  -pkg slices=test/std/slices \
+  -pkg sort=test/std/sort \
+  -pkg path=test/std/path \
+  -pkg text/scanner=test/std/text/scanner \
+  -pkg text/tabwriter=test/std/text/tabwriter \
+  -pkg text/template=test/std/text/template
 
 # Execute the suites under llgo (ensures runtime support)
 ./llgo.sh test ./test/std/...

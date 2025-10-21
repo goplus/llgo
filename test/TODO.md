@@ -8,7 +8,7 @@ Run these commands before updating progress:
 
 - `go test ./test/std/...`
 - `./llgo.sh test ./test/std/...`
-- `go run ./chore/check_std_symbols -pkg math=test/std/math -pkg strings=test/std/strings -pkg slices=test/std/slices`
+- `go run ./chore/check_std_symbols -pkg math=test/std/math -pkg strings=test/std/strings -pkg slices=test/std/slices -pkg sort=test/std/sort -pkg path=test/std/path -pkg text/scanner=test/std/text/scanner -pkg text/tabwriter=test/std/text/tabwriter -pkg text/template=test/std/text/template`
 
 ## Legend
 
@@ -27,7 +27,7 @@ Run these commands before updating progress:
 | `slices`  | ✅ 40/40 |
 | `bytes`   | ⬜ 0/?   |
 | `strconv` | ⬜ 0/?   |
-| `sort`    | ⬜ 0/?   |
+| `sort`    | ✅ 36/36 |
 
 ## Priority 2: I/O Packages
 
@@ -37,7 +37,7 @@ Run these commands before updating progress:
 | `bufio`         | ⬜ 0/?   |
 | `io/fs`         | ⬜ 0/?   |
 | `os`            | ⬜ 0/?   |
-| `path`          | ⬜ 0/?   |
+| `path`          | ✅ 9/9   |
 | `path/filepath` | ⬜ 0/?   |
 
 ## Priority 3: Encoding Packages
@@ -79,6 +79,14 @@ Run these commands before updating progress:
 | `flag`   | ⬜ 0/?   |
 | `log`    | ⬜ 0/?   |
 
+## Priority 7: Text Packages
+
+| Package          | Progress |
+| ---------------- | -------- |
+| `text/scanner`   | 🟡 29/29 (fails under llgo runtime) |
+| `text/tabwriter` | ✅ 11/11 |
+| `text/template`  | ⏭️ blocked (runtime unique) |
+
 ## Deferred / Low Priority
 
 | Package        | Status | Reason                                         |
@@ -88,6 +96,7 @@ Run these commands before updating progress:
 | `database/sql` | ⏭️     | Requires database drivers                      |
 | `reflect`      | ⏭️     | Partial support, complex runtime integration   |
 | `runtime`      | ⏭️     | Partial support, llgo-specific implementation  |
+| `text/template` | ⏭️     | Blocked by unique package runtime support gap  |
 
 ## How to Contribute
 

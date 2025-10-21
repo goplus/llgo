@@ -433,7 +433,8 @@ func newDocParser(out []byte) *docParser {
 
 func (p *docParser) parse() error {
 	for p.scanner.Scan() {
-		line := strings.TrimSpace(p.scanner.Text())
+		raw := p.scanner.Text()
+		line := strings.TrimSpace(raw)
 		if line == "" {
 			continue
 		}
@@ -446,9 +447,9 @@ func (p *docParser) parse() error {
 		case sectionVar:
 			p.handleVar(line)
 		case sectionFunc:
-			p.handleFunc(line)
+			p.handleFunc(line, raw)
 		case sectionType:
-			p.handleType(line)
+			p.handleType(line, raw)
 		}
 	}
 	if err := p.scanner.Err(); err != nil {
@@ -513,9 +514,14 @@ func (p *docParser) handleVar(line string) {
 	}
 }
 
-func (p *docParser) handleFunc(line string) {
+func (p *docParser) handleFunc(line, raw string) {
 	if !strings.HasPrefix(line, "func ") {
 		return
+	}
+	if len(raw) > 0 {
+		if first := raw[0]; first == ' ' || first == '\t' {
+			return
+		}
 	}
 	rest := strings.TrimSpace(strings.TrimPrefix(line, "func "))
 	if strings.HasPrefix(rest, "(") {
@@ -525,13 +531,18 @@ func (p *docParser) handleFunc(line string) {
 	p.addSymbol(symbol{kind: kindFunc, name: name})
 }
 
-func (p *docParser) handleType(line string) {
+func (p *docParser) handleType(line, raw string) {
 	switch {
 	case strings.HasPrefix(line, "type "):
 		rest := strings.TrimSpace(strings.TrimPrefix(line, "type "))
 		name := parseIdentifier(rest)
 		p.addSymbol(symbol{kind: kindType, name: name})
 	case strings.HasPrefix(line, "func ("):
+		if len(raw) > 0 {
+			if first := raw[0]; first == ' ' || first == '\t' {
+				return
+			}
+		}
 		rest := strings.TrimSpace(strings.TrimPrefix(line, "func "))
 		recvEnd := strings.Index(rest, ")")
 		if recvEnd == -1 {
