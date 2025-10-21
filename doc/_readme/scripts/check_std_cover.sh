@@ -7,7 +7,10 @@ cd "${ROOT_DIR}"
 
 module_path="$(go list -m)"
 
-mapfile -t packages < <(go list ./test/std/... | sort)
+packages=()
+while IFS= read -r pkg; do
+  packages+=("${pkg}")
+done < <(go list ./test/std/... | sort)
 
 if [ "${#packages[@]}" -eq 0 ]; then
   echo "No stdlib test packages discovered under test/std" >&2
