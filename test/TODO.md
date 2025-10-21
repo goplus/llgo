@@ -42,7 +42,7 @@ Before updating progress, also run the aggregate sweeps:
 | `slices`  | ✅ 40/40 |
 | `sort`    | ✅ 36/36 |
 | `strings` | ✅ 80/80 |
-| `strconv` | ⬜ 0/?   |
+| `strconv` | ✅ 40/40 |
 
 ### Math & Numerics
 
