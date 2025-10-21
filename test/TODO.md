@@ -4,22 +4,26 @@ This file tracks the status of standard library package test coverage for llgo.
 
 ## Validation Steps
 
-Use this loop for every `test/std/<pkg>` suite:
+Every suite under `test/std/<pkg>` **must** stay green under all three commands below. A package is not considered ready until each command succeeds:
 
-1. **Build coverage with Go (repeat until stable)**
-   - `go test ./test/std/<pkg>`
-   - `go run ./chore/check_std_symbols -pkg <pkg>`
-2. **Freeze tests and port llgo runtime behavior (repeat until it passes)**
-   - `./llgo.sh test ./test/std/<pkg>`
-   - Fix `runtime/internal/lib/<pkg>` (and any overlays) until llgo matches Go.
-3. **Update this tracker**
-   - Record totals, blockers, and ownership notes below.
+1. `go test ./test/std/<pkg>` — validate behavior with the upstream Go toolchain.
+2. `go run ./chore/check_std_symbols -pkg <pkg>` — enforce exported symbol coverage.
+3. `./llgo.sh test ./test/std/<pkg>` — confirm the llgo runtime matches Go.
 
-Before updating progress, also run the aggregate sweeps:
+Use this loop to keep a suite healthy:
+
+1. **Author coverage with Go (repeat until stable)**
+   - Grow or refine tests under `test/std/<pkg>` until both `go test` and the symbol check pass.
+2. **Port llgo runtime behavior (repeat until green)**
+   - Run `./llgo.sh test ./test/std/<pkg>` and patch `runtime/internal/lib/<pkg>` (plus any shims) until it matches the Go results.
+3. **Record progress**
+   - Capture totals, blockers, and ownership notes below once all three commands pass.
+
+When changes affect multiple suites, finish with the aggregate sweeps before updating this tracker:
 
 - `go test ./test/std/...`
-- `./llgo.sh test ./test/std/...`
 - `bash doc/_readme/scripts/check_std_cover.sh`
+- `./llgo.sh test ./test/std/...`
 
 ## Legend
 

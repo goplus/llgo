@@ -51,9 +51,9 @@ go test ./...
 
 **Important:** The `LLGO_ROOT` environment variable must be set to the repository root when running llgo commands during development.
 
-### Standard Library Compatibility Tests
+### Mandatory stdlib suite pipeline
 
-Use this three-phase workflow for each `test/std/<pkg>` suite:
+Use this workflow for each `test/std/<pkg>` suite:
 
 1. **Author coverage and host checks** — iterate until the Go harness is green:
    - Write or extend tests under `test/std/<pkg>`.
@@ -64,20 +64,15 @@ Use this three-phase workflow for each `test/std/<pkg>` suite:
    - Patch `runtime/internal/lib/<pkg>` (and any required shims) until the llgo run succeeds.
 3. **Record progress** — update `test/TODO.md` with the new totals, blockers, and ownership notes.
 
-After multiple suites are healthy, spot-check the cumulative set before sending a PR:
+After multiple suites are healthy, run the aggregated checks to prevent regressions:
 
 ```bash
-# Run all stdlib compatibility tests with the Go toolchain
 go test ./test/std/...
-
-# Verify exported symbol coverage for the enabled stdlib suites
 bash doc/_readme/scripts/check_std_cover.sh
-
-# Execute the suites under llgo (ensures runtime support)
 ./llgo.sh test ./test/std/...
 ```
 
-The coverage script automatically discovers packages beneath `test/std`; ensure new suites build cleanly so `go list ./test/std/...` picks them up.
+The coverage script automatically discovers packages beneath `test/std`; ensure new suites build cleanly so `go list ./test/std/...` can enumerate them.
 
 ## Code Quality
 
