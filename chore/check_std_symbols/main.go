@@ -66,9 +66,12 @@ const (
 	kindMethod symbolKind = "method"
 )
 
+var verbose bool
+
 func main() {
 	var specs pkgSpecs
 	flag.Var(&specs, "pkg", "package coverage check in the form <import path>=<test dir>")
+	flag.BoolVar(&verbose, "v", false, "display coverage status for each exported symbol")
 	flag.Parse()
 
 	if len(specs) == 0 {
@@ -100,7 +103,7 @@ func main() {
 			continue
 		}
 
-		missing := unmatchedSymbols(symbols, used)
+		missing := collectMissing(symbols, used, spec.pkgPath)
 		if len(missing) > 0 {
 			sort.Strings(missing)
 			fmt.Fprintf(os.Stderr, "package %s missing coverage for %d exported identifiers:\n", spec.pkgPath, len(missing))
@@ -119,22 +122,35 @@ func main() {
 	}
 }
 
-func unmatchedSymbols(symbols []symbol, used map[string]bool) []string {
-	var missing []string
-	for _, sym := range symbols {
-		key := symbolKey(sym)
-		if !used[key] {
-			missing = append(missing, key)
-		}
-	}
-	return missing
-}
-
 func symbolKey(sym symbol) string {
 	if sym.kind == kindMethod {
 		return fmt.Sprintf("%s.%s", sym.receiver, sym.name)
 	}
 	return sym.name
+}
+
+func collectMissing(symbols []symbol, used map[string]bool, pkgPath string) []string {
+	var missing []string
+	if verbose && len(symbols) > 0 {
+		fmt.Printf("package %s symbols:\n", pkgPath)
+	}
+	for _, sym := range symbols {
+		key := symbolKey(sym)
+		if used[key] {
+			if verbose {
+				fmt.Printf("  OK   %s\n", key)
+			}
+			continue
+		}
+		missing = append(missing, key)
+		if verbose {
+			fmt.Printf("  MISS %s\n", key)
+		}
+	}
+	if verbose && len(symbols) > 0 {
+		fmt.Println()
+	}
+	return missing
 }
 
 func exportedSymbols(pkgPath string) ([]symbol, error) {
