@@ -51,7 +51,7 @@ Before updating progress, also run the aggregate sweeps:
 ### Containers & Utilities
 
 - ✅ `container/heap` — 6/6
-- ⬜ `container/list` — 0/?
+- ✅ `container/list` — 19/19
 
 ### Archives & Compression
 
