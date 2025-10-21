@@ -44,19 +44,19 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Math & Numerics
 
-| Package        | Progress |
-| -------------- | -------- |
-| `math`         | ✅ 97/97 |
+| Package        | Progress   |
+| -------------- | ---------- |
+| `math`         | ✅ 97/97   |
 | `math/big`     | ✅ 154/154 |
-| `math/bits`    | ✅ 50/50 |
-| `math/rand`    | ⬜ 0/?   |
-| `math/rand/v2` | ⬜ 0/?   |
+| `math/bits`    | ✅ 50/50   |
+| `math/rand`    | ⬜ 0/?     |
+| `math/rand/v2` | ⬜ 0/?     |
 
 ### Containers & Utilities
 
 | Package          | Progress |
 | ---------------- | -------- |
-| `container/heap` | ✅ 6/6  |
+| `container/heap` | ✅ 6/6   |
 | `container/list` | ⬜ 0/?   |
 
 ### Archives & Compression
@@ -87,62 +87,62 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Encoding & Serialization
 
-| Package             | Progress |
-| ------------------- | -------- |
-| `encoding`          | ⬜ 0/?   |
-| `encoding/asn1`     | ⬜ 0/?   |
-| `encoding/base64`   | ⬜ 0/?   |
-| `encoding/binary`   | ⬜ 0/?   |
-| `encoding/csv`      | ⬜ 0/?   |
-| `encoding/hex`      | ⬜ 0/?   |
-| `encoding/json`     | ⬜ 0/?   |
-| `encoding/pem`      | ⬜ 0/?   |
+| Package           | Progress |
+| ----------------- | -------- |
+| `encoding`        | ⬜ 0/?   |
+| `encoding/asn1`   | ⬜ 0/?   |
+| `encoding/base64` | ⬜ 0/?   |
+| `encoding/binary` | ⬜ 0/?   |
+| `encoding/csv`    | ⬜ 0/?   |
+| `encoding/hex`    | ⬜ 0/?   |
+| `encoding/json`   | ⬜ 0/?   |
+| `encoding/pem`    | ⬜ 0/?   |
 
 ### Text & Unicode
 
-| Package                 | Progress |
-| ----------------------- | -------- |
-| `text/scanner`          | 🟡 29/29 (fails under llgo runtime — see #1366) |
-| `text/tabwriter`        | ✅ 11/11 |
-| `text/template`         | ⏭️ blocked (unique runtime gap — see #1358) |
-| `text/template/parse`   | ⬜ 0/?   |
-| `unicode`               | ⬜ 0/?   |
-| `unicode/utf16`         | ⬜ 0/?   |
-| `unicode/utf8`          | ⬜ 0/?   |
-| `unique`                | ⏭️ blocked (depends on runtime unique support — see #1358) |
+| Package               | Progress                                                   |
+| --------------------- | ---------------------------------------------------------- |
+| `text/scanner`        | 🟡 29/29 (fails under llgo runtime — see #1366)            |
+| `text/tabwriter`      | ✅ 11/11                                                   |
+| `text/template`       | 🟡 blocked (unique runtime gap — see #1358)                |
+| `text/template/parse` | ⬜ 0/?                                                     |
+| `unicode`             | ⬜ 0/?                                                     |
+| `unicode/utf16`       | ⬜ 0/?                                                     |
+| `unicode/utf8`        | ⬜ 0/?                                                     |
+| `unique`              | ⏭️ blocked (depends on runtime unique support — see #1358) |
 
 ### Time & Scheduling
 
-| Package | Progress |
-| ------- | -------- |
+| Package | Progress   |
+| ------- | ---------- |
 | `time`  | ✅ 101/101 |
 
 ### Crypto & Security
 
-| Package             | Progress |
-| ------------------- | -------- |
-| `crypto`            | ⬜ 0/?   |
-| `crypto/aes`        | ⬜ 0/?   |
-| `crypto/cipher`     | ⬜ 0/?   |
-| `crypto/des`        | ⬜ 0/?   |
-| `crypto/dsa`        | ⬜ 0/?   |
-| `crypto/ecdh`       | ⬜ 0/?   |
-| `crypto/ecdsa`      | ⬜ 0/?   |
-| `crypto/ed25519`    | ⬜ 0/?   |
-| `crypto/elliptic`   | ⬜ 0/?   |
-| `crypto/hmac`       | ⬜ 0/?   |
-| `crypto/md5`        | ⬜ 0/?   |
-| `crypto/rand`       | ⬜ 0/?   |
-| `crypto/rc4`        | ⬜ 0/?   |
-| `crypto/rsa`        | ⬜ 0/?   |
-| `crypto/sha1`       | ⬜ 0/?   |
-| `crypto/sha256`     | ⬜ 0/?   |
-| `crypto/sha3`       | ⬜ 0/?   |
-| `crypto/sha512`     | ⬜ 0/?   |
-| `crypto/subtle`     | ⬜ 0/?   |
-| `crypto/tls`        | ⬜ 0/?   |
-| `crypto/x509`       | ⬜ 0/?   |
-| `crypto/x509/pkix`  | ⬜ 0/?   |
+| Package            | Progress |
+| ------------------ | -------- |
+| `crypto`           | ⬜ 0/?   |
+| `crypto/aes`       | ⬜ 0/?   |
+| `crypto/cipher`    | ⬜ 0/?   |
+| `crypto/des`       | ⬜ 0/?   |
+| `crypto/dsa`       | ⬜ 0/?   |
+| `crypto/ecdh`      | ⬜ 0/?   |
+| `crypto/ecdsa`     | ⬜ 0/?   |
+| `crypto/ed25519`   | ⬜ 0/?   |
+| `crypto/elliptic`  | ⬜ 0/?   |
+| `crypto/hmac`      | ⬜ 0/?   |
+| `crypto/md5`       | ⬜ 0/?   |
+| `crypto/rand`      | ⬜ 0/?   |
+| `crypto/rc4`       | ⬜ 0/?   |
+| `crypto/rsa`       | ⬜ 0/?   |
+| `crypto/sha1`      | ⬜ 0/?   |
+| `crypto/sha256`    | ⬜ 0/?   |
+| `crypto/sha3`      | ⬜ 0/?   |
+| `crypto/sha512`    | ⬜ 0/?   |
+| `crypto/subtle`    | ⬜ 0/?   |
+| `crypto/tls`       | ⬜ 0/?   |
+| `crypto/x509`      | ⬜ 0/?   |
+| `crypto/x509/pkix` | ⬜ 0/?   |
 
 ### Hashing
 
@@ -155,15 +155,15 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Networking & HTTP
 
-| Package               | Progress |
-| --------------------- | -------- |
-| `net`                 | ⬜ 0/?   |
-| `net/http`            | ⬜ 0/?   |
-| `net/http/httptest`   | ⬜ 0/?   |
-| `net/http/httptrace`  | ⬜ 0/?   |
-| `net/netip`           | ⬜ 0/?   |
-| `net/textproto`       | ⬜ 0/?   |
-| `net/url`             | ⬜ 0/?   |
+| Package              | Progress |
+| -------------------- | -------- |
+| `net`                | ⬜ 0/?   |
+| `net/http`           | ⬜ 0/?   |
+| `net/http/httptest`  | ⬜ 0/?   |
+| `net/http/httptrace` | ⬜ 0/?   |
+| `net/netip`          | ⬜ 0/?   |
+| `net/textproto`      | ⬜ 0/?   |
+| `net/url`            | ⬜ 0/?   |
 
 ### Concurrency & Context
 
@@ -175,20 +175,20 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Language Tooling
 
-| Package                | Progress |
-| ---------------------- | -------- |
-| `go/ast`               | ⬜ 0/?   |
-| `go/build`             | ⬜ 0/?   |
-| `go/build/constraint`  | ⬜ 0/?   |
-| `go/constant`          | ⬜ 0/?   |
-| `go/doc`               | ⬜ 0/?   |
-| `go/doc/comment`       | ⬜ 0/?   |
-| `go/importer`          | ⬜ 0/?   |
-| `go/parser`            | ⬜ 0/?   |
-| `go/scanner`           | ⬜ 0/?   |
-| `go/token`             | ⬜ 0/?   |
-| `go/types`             | ⬜ 0/?   |
-| `go/version`           | ⬜ 0/?   |
+| Package               | Progress |
+| --------------------- | -------- |
+| `go/ast`              | ⬜ 0/?   |
+| `go/build`            | ⬜ 0/?   |
+| `go/build/constraint` | ⬜ 0/?   |
+| `go/constant`         | ⬜ 0/?   |
+| `go/doc`              | ⬜ 0/?   |
+| `go/doc/comment`      | ⬜ 0/?   |
+| `go/importer`         | ⬜ 0/?   |
+| `go/parser`           | ⬜ 0/?   |
+| `go/scanner`          | ⬜ 0/?   |
+| `go/token`            | ⬜ 0/?   |
+| `go/types`            | ⬜ 0/?   |
+| `go/version`          | ⬜ 0/?   |
 
 ### Runtime & System
 
@@ -204,26 +204,26 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Testing & Benchmarks
 
-| Package           | Progress |
-| ----------------- | -------- |
-| `testing`         | ⬜ 0/?   |
-| `testing/fstest`  | ⬜ 0/?   |
-| `testing/iotest`  | ⬜ 0/?   |
+| Package          | Progress |
+| ---------------- | -------- |
+| `testing`        | ⬜ 0/?   |
+| `testing/fstest` | ⬜ 0/?   |
+| `testing/iotest` | ⬜ 0/?   |
 
 ### Application & Formatting
 
-| Package                 | Progress |
-| ----------------------- | -------- |
-| `errors`                | ⬜ 0/?   |
-| `flag`                  | ⬜ 0/?   |
-| `fmt`                   | ⬜ 0/?   |
-| `log`                   | ⬜ 0/?   |
-| `mime`                  | ⬜ 0/?   |
-| `mime/multipart`        | ⬜ 0/?   |
-| `mime/quotedprintable`  | ⬜ 0/?   |
-| `reflect`               | ⬜ 0/?   |
-| `regexp`                | ⬜ 0/?   |
-| `regexp/syntax`         | ⬜ 0/?   |
+| Package                | Progress |
+| ---------------------- | -------- |
+| `errors`               | ⬜ 0/?   |
+| `flag`                 | ⬜ 0/?   |
+| `fmt`                  | ⬜ 0/?   |
+| `log`                  | ⬜ 0/?   |
+| `mime`                 | ⬜ 0/?   |
+| `mime/multipart`       | ⬜ 0/?   |
+| `mime/quotedprintable` | ⬜ 0/?   |
+| `reflect`              | ⬜ 0/?   |
+| `regexp`               | ⬜ 0/?   |
+| `regexp/syntax`        | ⬜ 0/?   |
 
 ## How to Contribute
 
