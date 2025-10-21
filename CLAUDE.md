@@ -137,7 +137,7 @@ go install -v ./chore/...
 Standard-library shims under `runtime/internal/lib` should follow these principles:
 
 1. Prefer reuse of upstream Go implementations; only diverge when necessary.
-2. When only a handful of symbols are incompatible (e.g., goroutine or timer internals), apply `//llgo:skip sym1 sym2` in the original package and patch just the affected pieces under `runtime/internal/lib`.
+2. When only a handful of symbols are incompatible (e.g., goroutine or timer internals), add `//llgo:skip sym1 sym2` in the patched package to suppress the upstream definitions, then provide replacements under `runtime/internal/lib`.
 3. If an entire package is fundamentally incompatible, apply `//llgo:skipall` and reimplement it in `runtime/internal/lib`.
 4. When patching, lean on existing helpers in `runtime/internal/clite` or other `runtime/` subpackages instead of introducing ad-hoc glue.
 
