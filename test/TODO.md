@@ -4,11 +4,22 @@ This file tracks the status of standard library package test coverage for llgo.
 
 ## Validation Steps
 
-Run these commands before updating progress:
+Use this loop for every `test/std/<pkg>` suite:
+
+1. **Build coverage with Go (repeat until stable)**
+   - `go test ./test/std/<pkg>`
+   - `go run ./chore/check_std_symbols -pkg <pkg>=test/std/<pkg>`
+2. **Freeze tests and port llgo runtime behavior (repeat until it passes)**
+   - `./llgo.sh test ./test/std/<pkg>`
+   - Fix `runtime/internal/lib/<pkg>` (and any overlays) until llgo matches Go.
+3. **Update this tracker**
+   - Record totals, blockers, and ownership notes below.
+
+Before updating progress, also run the aggregate sweeps:
 
 - `go test ./test/std/...`
 - `./llgo.sh test ./test/std/...`
-- `go run ./chore/check_std_symbols -pkg math=test/std/math -pkg strings=test/std/strings -pkg slices=test/std/slices -pkg sort=test/std/sort -pkg path=test/std/path -pkg text/scanner=test/std/text/scanner -pkg text/tabwriter=test/std/text/tabwriter -pkg text/template=test/std/text/template`
+- `go run ./chore/check_std_symbols -pkg math=test/std/math -pkg strings=test/std/strings -pkg slices=test/std/slices -pkg sort=test/std/sort -pkg path=test/std/path -pkg text/scanner=test/std/text/scanner -pkg text/tabwriter=test/std/text/tabwriter -pkg text/template=test/std/text/template -pkg time=test/std/time`
 
 ## Legend
 
@@ -74,7 +85,7 @@ Run these commands before updating progress:
 | -------- | -------- |
 | `fmt`    | ⬜ 0/?   |
 | `errors` | ⬜ 0/?   |
-| `time`   | ⬜ 0/?   |
+| `time`   | ✅ 62/62 |
 | `regexp` | ⬜ 0/?   |
 | `flag`   | ⬜ 0/?   |
 | `log`    | ⬜ 0/?   |

@@ -53,7 +53,18 @@ go test ./...
 
 ### Standard Library Compatibility Tests
 
-When working on the `test/std` suites, keep both Go and llgo test runners in sync:
+Use this three-phase workflow for each `test/std/<pkg>` suite:
+
+1. **Author coverage and host checks** — iterate until the Go harness is green:
+   - Write or extend tests under `test/std/<pkg>`.
+   - Run `go test ./test/std/<pkg>`.
+   - Run `go run ./chore/check_std_symbols -pkg <pkg>=test/std/<pkg>`.
+2. **Freeze the suite and port runtime behavior** — loop until llgo matches Go:
+   - Run `./llgo.sh test ./test/std/<pkg>`.
+   - Patch `runtime/internal/lib/<pkg>` (and any required shims) until the llgo run succeeds.
+3. **Record progress** — update `test/TODO.md` with the new totals, blockers, and ownership notes.
+
+After multiple suites are healthy, spot-check the cumulative set before sending a PR:
 
 ```bash
 # Run all stdlib compatibility tests with the Go toolchain
@@ -68,13 +79,14 @@ go run ./chore/check_std_symbols \
   -pkg path=test/std/path \
   -pkg text/scanner=test/std/text/scanner \
   -pkg text/tabwriter=test/std/text/tabwriter \
-  -pkg text/template=test/std/text/template
+  -pkg text/template=test/std/text/template \
+  -pkg time=test/std/time
 
 # Execute the suites under llgo (ensures runtime support)
 ./llgo.sh test ./test/std/...
 ```
 
-If you add another stdlib package suite, include it in the `check_std_symbols` invocation and the llgo test command before submitting.
+Add any new package suites to the `check_std_symbols` invocation and llgo command before submitting.
 
 ## Code Quality
 
