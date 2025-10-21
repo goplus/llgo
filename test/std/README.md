@@ -77,7 +77,7 @@ func TestNewGo124API(t *testing.T) {
 
 ### llgo-Specific Tests
 
-Tests that require llgo-specific runtime features belong in `test/c/` or `test/py/`, not here. Those directories use `//go:build llgo` tags.
+Tests that require llgo-specific runtime features belong in `test/c/` (and other language-specific directories as they are added), not here. Those tests use `//go:build llgo` tags.
 
 ## Documenting Unsupported Features
 
@@ -174,7 +174,6 @@ Focus on:
 ## Related Directories
 
 - **`test/c/`**: llgo-specific C interop tests (uses `//go:build llgo`)
-- **`test/py/`**: llgo-specific Python interop tests (uses `//go:build llgo`)
 - **`_cmptest/`**: Comparison tests ensuring Go/llgo output equivalence
 
 The `test/std/` suite focuses on validating standard library API conformance, while `_cmptest/` validates behavioral equivalence through end-to-end comparison.

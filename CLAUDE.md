@@ -51,6 +51,26 @@ go test ./...
 
 **Important:** The `LLGO_ROOT` environment variable must be set to the repository root when running llgo commands during development.
 
+### Standard Library Compatibility Tests
+
+When working on the `test/std` suites, keep both Go and llgo test runners in sync:
+
+```bash
+# Run all stdlib compatibility tests with the Go toolchain
+go test ./test/std/...
+
+# Verify exported symbol coverage (math, strings, slices today)
+go run ./chore/check_std_symbols \
+  -pkg math=test/std/math \
+  -pkg strings=test/std/strings \
+  -pkg slices=test/std/slices
+
+# Execute the suites under llgo (ensures runtime support)
+./llgo.sh test ./test/std/...
+```
+
+If you add another stdlib package suite, include it in the `check_std_symbols` invocation and the llgo test command before submitting.
+
 ## Code Quality
 
 Before submitting any code updates, you must run the following formatting and validation commands:
@@ -129,4 +149,3 @@ LLGO_ROOT=/path/to/llgo llgo run .
 3. **Defer in Loops:** LLGo intentionally does not support `defer` in loops (considered bad practice)
 4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
 5. **Python Integration:** Third-party Python libraries require separate installation of library files
-
