@@ -75,7 +75,7 @@ Before updating progress, also run the aggregate sweeps:
 
 | Package         | Progress |
 | --------------- | -------- |
-| `bufio`         | ⬜ 0/?   |
+| `bufio`         | ✅ 51/51 |
 | `embed`         | ⬜ 0/?   |
 | `io`            | ⬜ 0/?   |
 | `io/fs`         | ⬜ 0/?   |
