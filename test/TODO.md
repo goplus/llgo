@@ -38,7 +38,7 @@ Before updating progress, also run the aggregate sweeps:
 | `bytes`   | ✅ 95/95 |
 | `cmp`     | ⬜ 0/?   |
 | `iter`    | ⬜ 0/?   |
-| `maps`    | ⬜ 0/?   |
+| `maps`    | ✅ 10/10 |
 | `slices`  | ✅ 40/40 |
 | `sort`    | ✅ 36/36 |
 | `strings` | ✅ 80/80 |
