@@ -37,14 +37,22 @@ func (p *pkgSpecs) String() string {
 }
 
 func (p *pkgSpecs) Set(value string) error {
-	parts := strings.SplitN(value, "=", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid pkg specification %q (want pkg=path)", value)
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fmt.Errorf("invalid pkg specification %q (empty)", value)
 	}
-	pkgPath := strings.TrimSpace(parts[0])
-	testDir := strings.TrimSpace(parts[1])
-	if pkgPath == "" || testDir == "" {
-		return fmt.Errorf("invalid pkg specification %q (empty component)", value)
+
+	var pkgPath, testDir string
+	if strings.Contains(value, "=") {
+		parts := strings.SplitN(value, "=", 2)
+		pkgPath = strings.TrimSpace(parts[0])
+		testDir = strings.TrimSpace(parts[1])
+		if pkgPath == "" || testDir == "" {
+			return fmt.Errorf("invalid pkg specification %q (empty component)", value)
+		}
+	} else {
+		pkgPath = value
+		testDir = filepath.Join("test", "std", value)
 	}
 	*p = append(*p, pkgSpec{pkgPath: pkgPath, testDir: testDir})
 	return nil
@@ -76,7 +84,7 @@ func main() {
 	flag.Parse()
 
 	if len(specs) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: go run ./chore/check_std_symbols -pkg math=test/std/math")
+		fmt.Fprintln(os.Stderr, "usage: go run ./chore/check_std_symbols -pkg math [-pkg strings ...]")
 		os.Exit(2)
 	}
 

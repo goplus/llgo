@@ -24,7 +24,7 @@ for pkg in "${packages[@]}"; do
     continue
   fi
   stdlib_pkg="${rel_path#test/std/}"
-  args+=("-pkg" "${stdlib_pkg}=${rel_path}")
+  args+=("-pkg" "${stdlib_pkg}")
 done
 
 printf '+ go run ./chore/check_std_symbols'

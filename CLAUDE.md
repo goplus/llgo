@@ -58,7 +58,7 @@ Use this three-phase workflow for each `test/std/<pkg>` suite:
 1. **Author coverage and host checks** — iterate until the Go harness is green:
    - Write or extend tests under `test/std/<pkg>`.
    - Run `go test ./test/std/<pkg>`.
-   - Run `go run ./chore/check_std_symbols -pkg <pkg>=test/std/<pkg>`.
+   - Run `go run ./chore/check_std_symbols -pkg <pkg>`.
 2. **Freeze the suite and port runtime behavior** — loop until llgo matches Go:
    - Run `./llgo.sh test ./test/std/<pkg>`.
    - Patch `runtime/internal/lib/<pkg>` (and any required shims) until the llgo run succeeds.

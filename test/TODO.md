@@ -8,7 +8,7 @@ Use this loop for every `test/std/<pkg>` suite:
 
 1. **Build coverage with Go (repeat until stable)**
    - `go test ./test/std/<pkg>`
-   - `go run ./chore/check_std_symbols -pkg <pkg>=test/std/<pkg>`
+   - `go run ./chore/check_std_symbols -pkg <pkg>`
 2. **Freeze tests and port llgo runtime behavior (repeat until it passes)**
    - `./llgo.sh test ./test/std/<pkg>`
    - Fix `runtime/internal/lib/<pkg>` (and any overlays) until llgo matches Go.
