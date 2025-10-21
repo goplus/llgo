@@ -3,11 +3,23 @@ package math_test
 import (
 	"math"
 	"testing"
-
-	"github.com/goplus/llgo/test/std/common"
 )
 
 const tolerance = 1e-10
+
+func assertFloatNear(t *testing.T, got, want, tol float64) {
+	t.Helper()
+	if math.IsNaN(got) && math.IsNaN(want) {
+		return
+	}
+	if math.IsInf(got, 0) && math.IsInf(want, 0) && math.Signbit(got) == math.Signbit(want) {
+		return
+	}
+	diff := math.Abs(got - want)
+	if diff > tol {
+		t.Errorf("got %v, want %v (diff %v > tolerance %v)", got, want, diff, tol)
+	}
+}
 
 func TestSin(t *testing.T) {
 	testCases := []struct {
@@ -23,7 +35,7 @@ func TestSin(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Sin(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -41,7 +53,7 @@ func TestCos(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Cos(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -58,7 +70,7 @@ func TestTan(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Tan(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -77,7 +89,7 @@ func TestSqrt(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Sqrt(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -94,7 +106,7 @@ func TestExp(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Exp(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -111,7 +123,7 @@ func TestLog(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Log(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -133,7 +145,7 @@ func TestPow(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Pow(tc.base, tc.exponent)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -152,7 +164,7 @@ func TestAbs(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Abs(tc.input)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -171,7 +183,7 @@ func TestMod(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := math.Mod(tc.x, tc.y)
-		common.AssertFloatNear(t, result, tc.expected, tolerance)
+		assertFloatNear(t, result, tc.expected, tolerance)
 	}
 }
 
@@ -192,7 +204,7 @@ func TestFrexp(t *testing.T) {
 
 	for _, tc := range testCases {
 		frac, exp := math.Frexp(tc.input)
-		common.AssertFloatNear(t, frac, tc.wantFrac, tolerance)
+		assertFloatNear(t, frac, tc.wantFrac, tolerance)
 		if exp != tc.wantExp {
 			t.Errorf("Frexp(%v) exp = %v, want %v", tc.input, exp, tc.wantExp)
 		}
