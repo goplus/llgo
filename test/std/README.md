@@ -7,8 +7,6 @@ This directory contains compatibility tests for the Go standard library on llgo.
 ```
 test/std/
 ├── README.md           # This file
-├── common/
-│   └── testing.go      # Shared test utilities
 ├── math/
 │   ├── math_test.go         # Core math tests (no build tags)
 │   ├── math_go124_test.go   # Go 1.24+ specific tests
@@ -80,27 +78,6 @@ func TestNewGo124API(t *testing.T) {
 ### llgo-Specific Tests
 
 Tests that require llgo-specific runtime features belong in `test/c/` or `test/py/`, not here. Those directories use `//go:build llgo` tags.
-
-## Common Test Utilities
-
-The `test/std/common/testing.go` package provides shared helpers:
-
-- **`AssertFloatNear(t, got, want, tolerance)`**: Compare floating-point values with tolerance
-- **`SkipIfShort(t)`**: Skip test in short mode (`go test -short`)
-- **`SkipIfNoFS(t)`**: Skip test if filesystem access is unavailable
-- **`DeterministicRand(seed)`**: Create reproducible random source for tests
-- **`RunTableTests(t, name, cases, testFn)`**: Helper for table-driven tests
-
-Example usage:
-
-```go
-import "github.com/goplus/llgo/test/std/common"
-
-func TestSin(t *testing.T) {
-	result := math.Sin(math.Pi / 2)
-	common.AssertFloatNear(t, result, 1.0, 1e-10)
-}
-```
 
 ## Documenting Unsupported Features
 
@@ -179,13 +156,11 @@ llgo test ./test/std/math/
 
 4. **Handle version differences**: If needed, create `<package>_go1XX_test.go` files
 
-5. **Use common helpers**: Import `github.com/goplus/llgo/test/std/common` for utilities
+5. **Document gaps**: Use `t.Skip("TODO: ...")` for unsupported features
 
-6. **Document gaps**: Use `t.Skip("TODO: ...")` for unsupported features
+6. **Update tracking**: Add entry to `test/TODO.md`
 
-7. **Update tracking**: Add entry to `test/TODO.md`
-
-8. **Validate**: Ensure tests pass with both `go test` and `llgo test`
+7. **Validate**: Ensure tests pass with both `go test` and `llgo test`
 
 ## Test Coverage Goals
 
