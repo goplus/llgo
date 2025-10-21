@@ -31,199 +31,167 @@ Before updating progress, also run the aggregate sweeps:
 
 ### Core Collections & Strings
 
-| Package   | Progress                                         |
-| --------- | ------------------------------------------------ |
-| `bytes`   | ✅ 95/95                                         |
-| `cmp`     | ✅ 4/4                                           |
-| `iter`    | 🟡 0/4 (fails under llgo runtime - depens coro ) |
-| `maps`    | ✅ 10/10                                         |
-| `slices`  | ✅ 40/40                                         |
-| `sort`    | ✅ 36/36                                         |
-| `strings` | ✅ 80/80                                         |
-| `strconv` | ✅ 40/40                                         |
+- ✅ `bytes` — 95/95
+- ✅ `cmp` — 4/4
+- 🟡 `iter` — 0/4 (fails under llgo runtime - depens coro )
+- ✅ `maps` — 10/10
+- ✅ `slices` — 40/40
+- ✅ `sort` — 36/36
+- ✅ `strings` — 80/80
+- ✅ `strconv` — 40/40
 
 ### Math & Numerics
 
-| Package        | Progress   |
-| -------------- | ---------- |
-| `math`         | ✅ 97/97   |
-| `math/big`     | ✅ 154/154 |
-| `math/bits`    | ✅ 50/50   |
-| `math/rand`    | ⬜ 0/?     |
-| `math/rand/v2` | ⬜ 0/?     |
+- ✅ `math` — 97/97
+- ✅ `math/big` — 154/154
+- ✅ `math/bits` — 50/50
+- ⬜ `math/rand` — 0/?
+- ⬜ `math/rand/v2` — 0/?
 
 ### Containers & Utilities
 
-| Package          | Progress |
-| ---------------- | -------- |
-| `container/heap` | ✅ 6/6   |
-| `container/list` | ⬜ 0/?   |
+- ✅ `container/heap` — 6/6
+- ⬜ `container/list` — 0/?
 
 ### Archives & Compression
 
-| Package          | Progress |
-| ---------------- | -------- |
-| `archive/tar`    | ⬜ 0/?   |
-| `archive/zip`    | ⬜ 0/?   |
-| `compress/flate` | ⬜ 0/?   |
-| `compress/gzip`  | ⬜ 0/?   |
-| `compress/zlib`  | ⬜ 0/?   |
+- ⬜ `archive/tar` — 0/?
+- ⬜ `archive/zip` — 0/?
+- ⬜ `compress/flate` — 0/?
+- ⬜ `compress/gzip` — 0/?
+- ⬜ `compress/zlib` — 0/?
 
 ### I/O & Filesystems
 
-| Package         | Progress |
-| --------------- | -------- |
-| `bufio`         | ✅ 51/51 |
-| `embed`         | ⬜ 0/?   |
-| `io`            | 🟡 0/59  |
-| `io/fs`         | ⬜ 0/?   |
-| `io/ioutil`     | 🟡 0/8   |
-| `os`            | ⬜ 0/?   |
-| `os/exec`       | ⬜ 0/?   |
-| `os/signal`     | ⬜ 0/?   |
-| `os/user`       | ⬜ 0/?   |
-| `path`          | ✅ 9/9   |
-| `path/filepath` | 🟡 0/27  |
+- ✅ `bufio` — 51/51
+- ⬜ `embed` — 0/?
+- 🟡 `io` — 0/59
+- ⬜ `io/fs` — 0/?
+- 🟡 `io/ioutil` — 0/8
+- ⬜ `os` — 0/?
+- ⬜ `os/exec` — 0/?
+- ⬜ `os/signal` — 0/?
+- ⬜ `os/user` — 0/?
+- ✅ `path` — 9/9
+- 🟡 `path/filepath` — 0/27
 
 ### Encoding & Serialization
 
-| Package           | Progress |
-| ----------------- | -------- |
-| `encoding`        | ⬜ 0/?   |
-| `encoding/asn1`   | ⬜ 0/?   |
-| `encoding/base64` | ⬜ 0/?   |
-| `encoding/binary` | ⬜ 0/?   |
-| `encoding/csv`    | ⬜ 0/?   |
-| `encoding/hex`    | ⬜ 0/?   |
-| `encoding/json`   | ⬜ 0/?   |
-| `encoding/pem`    | ⬜ 0/?   |
+- ⬜ `encoding` — 0/?
+- ⬜ `encoding/asn1` — 0/?
+- ✅ `encoding/base64` — 21/21
+- ⬜ `encoding/binary` — 0/?
+- ⬜ `encoding/csv` — 0/?
+- ⬜ `encoding/hex` — 0/?
+- ⬜ `encoding/json` — 0/?
+- ⬜ `encoding/pem` — 0/?
 
 ### Text & Unicode
 
-| Package               | Progress                                                   |
-| --------------------- | ---------------------------------------------------------- |
-| `text/scanner`        | 🟡 29/29 (fails under llgo runtime — see #1366)            |
-| `text/tabwriter`      | ✅ 11/11                                                   |
-| `text/template`       | 🟡 blocked (unique runtime gap — see #1358)                |
-| `text/template/parse` | ⬜ 0/?                                                     |
-| `unicode`             | ⬜ 0/?                                                     |
-| `unicode/utf16`       | ⬜ 0/?                                                     |
-| `unicode/utf8`        | ⬜ 0/?                                                     |
-| `unique`              | ⏭️ blocked (depends on runtime unique support — see #1358) |
+- 🟡 `text/scanner` — 29/29 (fails under llgo runtime — see #1366)
+- ✅ `text/tabwriter` — 11/11
+- 🟡 `text/template` — blocked (unique runtime gap — see #1358)
+- ⬜ `text/template/parse` — 0/?
+- ⬜ `unicode` — 0/?
+- ⬜ `unicode/utf16` — 0/?
+- ⬜ `unicode/utf8` — 0/?
+- ⏭️ `unique` — blocked (depends on runtime unique support — see #1358)
 
 ### Time & Scheduling
 
-| Package | Progress   |
-| ------- | ---------- |
-| `time`  | ✅ 101/101 |
+- ✅ `time` — 101/101
 
 ### Crypto & Security
 
-| Package            | Progress |
-| ------------------ | -------- |
-| `crypto`           | ⬜ 0/?   |
-| `crypto/aes`       | ⬜ 0/?   |
-| `crypto/cipher`    | ⬜ 0/?   |
-| `crypto/des`       | ⬜ 0/?   |
-| `crypto/dsa`       | ⬜ 0/?   |
-| `crypto/ecdh`      | ⬜ 0/?   |
-| `crypto/ecdsa`     | ⬜ 0/?   |
-| `crypto/ed25519`   | ⬜ 0/?   |
-| `crypto/elliptic`  | ⬜ 0/?   |
-| `crypto/hmac`      | ⬜ 0/?   |
-| `crypto/md5`       | ⬜ 0/?   |
-| `crypto/rand`      | ⬜ 0/?   |
-| `crypto/rc4`       | ⬜ 0/?   |
-| `crypto/rsa`       | ⬜ 0/?   |
-| `crypto/sha1`      | ⬜ 0/?   |
-| `crypto/sha256`    | ⬜ 0/?   |
-| `crypto/sha3`      | ⬜ 0/?   |
-| `crypto/sha512`    | ⬜ 0/?   |
-| `crypto/subtle`    | ⬜ 0/?   |
-| `crypto/tls`       | ⬜ 0/?   |
-| `crypto/x509`      | ⬜ 0/?   |
-| `crypto/x509/pkix` | ⬜ 0/?   |
+- ⬜ `crypto` — 0/?
+- ⬜ `crypto/aes` — 0/?
+- ⬜ `crypto/cipher` — 0/?
+- ⬜ `crypto/des` — 0/?
+- ⬜ `crypto/dsa` — 0/?
+- ⬜ `crypto/ecdh` — 0/?
+- ⬜ `crypto/ecdsa` — 0/?
+- ⬜ `crypto/ed25519` — 0/?
+- ⬜ `crypto/elliptic` — 0/?
+- ⬜ `crypto/hmac` — 0/?
+- ⬜ `crypto/md5` — 0/?
+- ⬜ `crypto/rand` — 0/?
+- ⬜ `crypto/rc4` — 0/?
+- ⬜ `crypto/rsa` — 0/?
+- ⬜ `crypto/sha1` — 0/?
+- ⬜ `crypto/sha256` — 0/?
+- ⬜ `crypto/sha3` — 0/?
+- ⬜ `crypto/sha512` — 0/?
+- ⬜ `crypto/subtle` — 0/?
+- ⬜ `crypto/tls` — 0/?
+- ⬜ `crypto/x509` — 0/?
+- ⬜ `crypto/x509/pkix` — 0/?
 
 ### Hashing
 
-| Package        | Progress |
-| -------------- | -------- |
-| `hash`         | ⬜ 0/?   |
-| `hash/adler32` | ⬜ 0/?   |
-| `hash/crc32`   | ⬜ 0/?   |
-| `hash/maphash` | ⬜ 0/?   |
+- ⬜ `hash` — 0/?
+- ⬜ `hash/adler32` — 0/?
+- ⬜ `hash/crc32` — 0/?
+- ⬜ `hash/maphash` — 0/?
 
 ### Networking & HTTP
 
-| Package              | Progress |
-| -------------------- | -------- |
-| `net`                | ⬜ 0/?   |
-| `net/http`           | ⬜ 0/?   |
-| `net/http/httptest`  | ⬜ 0/?   |
-| `net/http/httptrace` | ⬜ 0/?   |
-| `net/netip`          | ⬜ 0/?   |
-| `net/textproto`      | ⬜ 0/?   |
-| `net/url`            | ⬜ 0/?   |
+- ⬜ `net` — 0/?
+- ⬜ `net/http` — 0/?
+- ⬜ `net/http/httptest` — 0/?
+- ⬜ `net/http/httptrace` — 0/?
+- ⬜ `net/netip` — 0/?
+- ⬜ `net/textproto` — 0/?
+- ⬜ `net/url` — 0/?
 
 ### Concurrency & Context
 
-| Package       | Progress |
-| ------------- | -------- |
-| `context`     | ⬜ 0/?   |
-| `sync`        | ⬜ 0/?   |
-| `sync/atomic` | ⬜ 0/?   |
+- ⬜ `context` — 0/?
+- ⬜ `sync` — 0/?
+- ⬜ `sync/atomic` — 0/?
 
 ### Language Tooling
 
-| Package               | Progress |
-| --------------------- | -------- |
-| `go/ast`              | ⬜ 0/?   |
-| `go/build`            | ⬜ 0/?   |
-| `go/build/constraint` | ⬜ 0/?   |
-| `go/constant`         | ⬜ 0/?   |
-| `go/doc`              | ⬜ 0/?   |
-| `go/doc/comment`      | ⬜ 0/?   |
-| `go/importer`         | ⬜ 0/?   |
-| `go/parser`           | ⬜ 0/?   |
-| `go/scanner`          | ⬜ 0/?   |
-| `go/token`            | ⬜ 0/?   |
-| `go/types`            | ⬜ 0/?   |
-| `go/version`          | ⬜ 0/?   |
+- ⬜ `go/ast` — 0/?
+- ⬜ `go/build` — 0/?
+- ⬜ `go/build/constraint` — 0/?
+- ⬜ `go/constant` — 0/?
+- ⬜ `go/doc` — 0/?
+- ⬜ `go/doc/comment` — 0/?
+- ⬜ `go/importer` — 0/?
+- ⬜ `go/parser` — 0/?
+- ⬜ `go/scanner` — 0/?
+- ⬜ `go/token` — 0/?
+- ⬜ `go/types` — 0/?
+- ⬜ `go/version` — 0/?
 
 ### Runtime & System
 
-| Package         | Progress |
-| --------------- | -------- |
-| `runtime`       | ⬜ 0/?   |
-| `runtime/debug` | ⬜ 0/?   |
-| `runtime/pprof` | ⬜ 0/?   |
-| `runtime/trace` | ⬜ 0/?   |
-| `syscall`       | ⬜ 0/?   |
-| `unsafe`        | ⬜ 0/?   |
-| `weak`          | ⬜ 0/?   |
+- ⬜ `runtime` — 0/?
+- ⬜ `runtime/debug` — 0/?
+- ⬜ `runtime/pprof` — 0/?
+- ⬜ `runtime/trace` — 0/?
+- ⬜ `syscall` — 0/?
+- ⬜ `unsafe` — 0/?
+- ⬜ `weak` — 0/?
 
 ### Testing & Benchmarks
 
-| Package          | Progress |
-| ---------------- | -------- |
-| `testing`        | ⬜ 0/?   |
-| `testing/fstest` | ⬜ 0/?   |
-| `testing/iotest` | ⬜ 0/?   |
+- ⬜ `testing` — 0/?
+- ⬜ `testing/fstest` — 0/?
+- ⬜ `testing/iotest` — 0/?
 
 ### Application & Formatting
 
-| Package                | Progress |
-| ---------------------- | -------- |
-| `errors`               | ⬜ 0/?   |
-| `flag`                 | ⬜ 0/?   |
-| `fmt`                  | ⬜ 0/?   |
-| `log`                  | ⬜ 0/?   |
-| `mime`                 | ⬜ 0/?   |
-| `mime/multipart`       | ⬜ 0/?   |
-| `mime/quotedprintable` | ⬜ 0/?   |
-| `reflect`              | ⬜ 0/?   |
-| `regexp`               | ⬜ 0/?   |
-| `regexp/syntax`        | ⬜ 0/?   |
+- ⬜ `errors` — 0/?
+- ⬜ `flag` — 0/?
+- ⬜ `fmt` — 0/?
+- ⬜ `log` — 0/?
+- ⬜ `mime` — 0/?
+- ⬜ `mime/multipart` — 0/?
+- ⬜ `mime/quotedprintable` — 0/?
+- ⬜ `reflect` — 0/?
+- ⬜ `regexp` — 0/?
+- ⬜ `regexp/syntax` — 0/?
 
 ## How to Contribute
 
