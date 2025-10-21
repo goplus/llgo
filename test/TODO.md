@@ -24,10 +24,8 @@ Before updating progress, also run the aggregate sweeps:
 ## Legend
 
 - ✅ Comprehensive coverage (>80% of package API tested)
-- 🟡 Partial coverage (basic tests exist, gaps remain)
-- 📝 Planned (directory structure exists, minimal tests)
 - ⬜ Not started
-- ⏭️ Deferred (low priority or blocked)
+- 🟡 Deferred (low priority or blocked)
 
 ## Coverage Roadmap
 
@@ -77,7 +75,7 @@ Before updating progress, also run the aggregate sweeps:
 | --------------- | -------- |
 | `bufio`         | ✅ 51/51 |
 | `embed`         | ⬜ 0/?   |
-| `io`            | ⬜ 0/?   |
+| `io`            | 🟡 0/59  |
 | `io/fs`         | ⬜ 0/?   |
 | `io/ioutil`     | ⬜ 0/?   |
 | `os`            | ⬜ 0/?   |
