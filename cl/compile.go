@@ -343,9 +343,6 @@ func isGlobal(v *types.Var) bool {
 }
 
 func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
-	if !enableDbgSyms || v.Parent().Origin() != nil {
-		return
-	}
 	object := v.Object()
 	variable, ok := object.(*types.Var)
 	if !ok {
@@ -375,9 +372,6 @@ func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
 }
 
 func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
-	if !enableDbgSyms || f.Origin() != nil {
-		return
-	}
 	for i, param := range f.Params {
 		variable := param.Object().(*types.Var)
 		pos := p.goProg.Fset.Position(param.Pos())
@@ -879,16 +873,6 @@ func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.V
 	}
 	pos := p.fset.Position(v.Pos())
 	t := p.type_(v.Type(), llssa.InGo)
-	for i, param := range fn.Params {
-		if param.Object().(*types.Var) == v {
-			argNo := i + 1
-			div := b.DIVarParam(p.fn, pos, v.Name(), t, argNo)
-			if p.paramDIVars != nil {
-				p.paramDIVars[v] = div
-			}
-			return div
-		}
-	}
 	scope := b.DIScope(p.fn, v.Parent())
 	return b.DIVarAuto(scope, pos, v.Name(), t)
 }
