@@ -60,7 +60,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Archives & Compression
 
 - 🟡 `archive/tar` — 33/33 (expected ErrInsecurePath, got <nil>)
-- ⬜ `archive/zip` — 0/?
+- 🟡 `archive/zip` — 36/36 (exit code -1)
 - ⬜ `compress/flate` — 0/?
 - ⬜ `compress/gzip` — 0/?
 - ⬜ `compress/zlib` — 0/?
