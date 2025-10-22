@@ -37,7 +37,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - ✅ `bytes` — 95/95
 - ✅ `cmp` — 4/4
-- 🟡 `iter` — 0/4 (fails under llgo runtime - depens coro )
+- 🟡 `iter` — 4/4 (fails under llgo runtime - depens coro )
 - ✅ `maps` — 10/10
 - ✅ `slices` — 40/40
 - ✅ `sort` — 36/36
@@ -67,24 +67,24 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### I/O & Filesystems
 
-- 🟡 `bufio` — 51/51 (ReadString should hit EOF, got <nil>)
+- 🟡 `bufio` — 51/51 (amd64 linux: ReadString should hit EOF, got <nil>)
 - ⬜ `embed` — 0/?
-- 🟡 `io` — 0/59
+- 🟡 `io` — 59/59
 - ⬜ `io/fs` — 0/?
-- 🟡 `io/ioutil` — 0/8
+- 🟡 `io/ioutil` — 8/8
 - ⬜ `os` — 0/?
 - ⬜ `os/exec` — 0/?
 - ⬜ `os/signal` — 0/?
 - ⬜ `os/user` — 0/?
 - ✅ `path` — 9/9
-- 🟡 `path/filepath` — 0/27
+- 🟡 `path/filepath` — 27/27
 
 ### Encoding & Serialization
 
 - ⬜ `encoding` — 0/?
 - ⬜ `encoding/asn1` — 0/?
 - ✅ `encoding/base64` — 21/21
-- 🟡 `encoding/binary` — 0/22 blocked (undefined symbol: reflect.Indirect see #1355)
+- 🟡 `encoding/binary` — 22/22 blocked (undefined symbol: reflect.Indirect see #1355)
 - ✅ `encoding/csv` — 17/17
 - ⬜ `encoding/hex` — 0/?
 - ⬜ `encoding/json` — 0/?
@@ -94,12 +94,12 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - 🟡 `text/scanner` — 29/29 (fails under llgo runtime — see #1366)
 - ✅ `text/tabwriter` — 11/11
-- 🟡 `text/template` — blocked (unique runtime gap — see #1358)
+- 🟡 `text/template` — 29/29 blocked (unique runtime gap — see #1358)
 - ⬜ `text/template/parse` — 0/?
 - ⬜ `unicode` — 0/?
 - ⬜ `unicode/utf16` — 0/?
 - ⬜ `unicode/utf8` — 0/?
-- ⏭️ `unique` — blocked (depends on runtime unique support — see #1358)
+- 🟡 `unique` — blocked (depends on runtime unique support — see #1358)
 
 ### Time & Scheduling
 
