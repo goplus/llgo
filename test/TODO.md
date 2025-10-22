@@ -134,7 +134,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - ⬜ `hash` — 0/?
 - ⬜ `hash/adler32` — 0/?
-- ⬜ `hash/crc32` — 0/?
+- ✅ `hash/crc32` — 11/11
 - ⬜ `hash/maphash` — 0/?
 
 ### Networking & HTTP
