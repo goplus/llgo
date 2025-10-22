@@ -49,8 +49,8 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `math` — 97/97
 - ✅ `math/big` — 154/154
 - ✅ `math/bits` — 50/50
-- ⬜ `math/rand` — 0/?
-- ⬜ `math/rand/v2` — 0/?
+- ✅ `math/rand` — 37/37
+- ✅ `math/rand/v2` — 54/54
 
 ### Containers & Utilities
 
