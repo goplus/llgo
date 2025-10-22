@@ -224,3 +224,88 @@ func TestIntToFloatPrecisionLoss(t *testing.T) {
 		t.Logf("int32(16777217) -> float32 preserves precision (unexpected but valid)")
 	}
 }
+
+// TestIssue961Examples tests the exact code examples from issue #961
+// This ensures LLGo produces the same results as standard Go
+func TestIssue961Examples(t *testing.T) {
+	t.Run("int8 overflow example", func(t *testing.T) {
+		var i8max int8 = 127
+		result := i8max + 1
+		expected := int8(-128)
+		if result != expected {
+			t.Errorf("Max int8 + 1: got %d, want %d (should wrap to -128)", result, expected)
+		}
+	})
+
+	t.Run("uint32 to float to int32 example", func(t *testing.T) {
+		var bigUint32 uint32 = 0xFFFFFFFF
+		result := int32(float64(bigUint32))
+		// This conversion has undefined behavior in Go
+		t.Logf("uint32 max -> float64 -> int32: %d (undefined behavior)", result)
+	})
+
+	t.Run("untyped constant with typed variable", func(t *testing.T) {
+		const untypedInt = 42
+		var i32 int32 = 70000
+		result := untypedInt + i32
+		expected := int32(70042)
+		if result != expected {
+			t.Errorf("untypedInt + i32: got %d (type %T), want %d (type int32)", result, result, expected)
+		}
+	})
+
+	t.Run("int8 arithmetic edge cases", func(t *testing.T) {
+		var a int8 = 100
+		var b int8 = 50
+		result := a + b
+		expected := int8(-106)
+		if result != expected {
+			t.Errorf("int8(100) + int8(50): got %d, want %d", result, expected)
+		}
+	})
+
+	t.Run("int8 multiplication overflow", func(t *testing.T) {
+		var m int8 = 64
+		result := m * 2
+		expected := int8(-128)
+		if result != expected {
+			t.Errorf("int8(64) * 2: got %d, want %d", result, expected)
+		}
+	})
+
+	t.Run("signed to unsigned conversion", func(t *testing.T) {
+		var negInt int32 = -1
+		result := uint32(negInt)
+		expected := uint32(0xFFFFFFFF)
+		if result != expected {
+			t.Errorf("uint32(int32(-1)): got 0x%X, want 0x%X", result, expected)
+		}
+	})
+
+	t.Run("unsigned to signed conversion", func(t *testing.T) {
+		var bigUint uint32 = 0xFFFFFFFF
+		result := int32(bigUint)
+		expected := int32(-1)
+		if result != expected {
+			t.Errorf("int32(uint32(0xFFFFFFFF)): got %d, want %d", result, expected)
+		}
+	})
+
+	t.Run("sign extension", func(t *testing.T) {
+		var i8 int8 = -1
+		result := int32(i8)
+		expected := int32(-1)
+		if result != expected {
+			t.Errorf("int32(int8(-1)): got %d, want %d (sign extension)", result, expected)
+		}
+	})
+
+	t.Run("truncation", func(t *testing.T) {
+		var i64 int64 = 0x123456789ABC
+		result := int32(i64)
+		expected := int32(0x56789ABC)
+		if result != expected {
+			t.Errorf("int32(int64(0x123456789ABC)): got 0x%X, want 0x%X (truncation)", uint32(result), uint32(expected))
+		}
+	})
+}
