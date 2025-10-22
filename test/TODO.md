@@ -29,7 +29,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - ✅ Comprehensive coverage (>80% of package API tested)
 - ⬜ Not started
-- 🟡 Deferred (low priority or blocked)
+- 🟡 Blocked
 
 ## Coverage Roadmap
 
@@ -48,7 +48,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - ✅ `math` — 97/97
 - ✅ `math/big` — 154/154
-- ✅ `math/bits` — 50/50
+- 🟡 `math/bits` — 50/50 (expected panic on division by zero)
 - ✅ `math/rand` — 37/37
 - ✅ `math/rand/v2` — 54/54
 
@@ -59,7 +59,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Archives & Compression
 
-- ✅ `archive/tar` — 33/33
+- 🟡 `archive/tar` — 33/33 (expected ErrInsecurePath, got <nil>)
 - ⬜ `archive/zip` — 0/?
 - ⬜ `compress/flate` — 0/?
 - ⬜ `compress/gzip` — 0/?
@@ -67,7 +67,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### I/O & Filesystems
 
-- ✅ `bufio` — 51/51
+- 🟡 `bufio` — 51/51 (ReadString should hit EOF, got <nil>)
 - ⬜ `embed` — 0/?
 - 🟡 `io` — 0/59
 - ⬜ `io/fs` — 0/?

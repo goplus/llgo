@@ -2,7 +2,6 @@ package math_test
 
 import (
 	"math"
-	"runtime"
 	"testing"
 )
 
@@ -167,9 +166,6 @@ func TestLgamma(t *testing.T) {
 }
 
 func TestGamma(t *testing.T) {
-	if runtime.Compiler == "llgo" {
-		t.Skip("TODO: track llgo runtime gamma symbol availability")
-	}
 	assertFloatNear(t, math.Gamma(5), 24, 1e-12)
 }
 

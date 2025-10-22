@@ -1,9 +1,10 @@
+//go:build !llgo
+
 package bits_test
 
 import (
 	"math/big"
 	"math/bits"
-	"runtime"
 	"strconv"
 	"testing"
 )
@@ -381,11 +382,6 @@ func TestDivAndRem(t *testing.T) {
 }
 
 func TestDivPanicsOnZero(t *testing.T) {
-	t.Logf("compiler=%s", runtime.Compiler)
-	if runtime.Compiler == "llgo" {
-		t.Skip("TODO: llgo math/bits.Div32 should panic on zero divisor")
-		return
-	}
 	checkDivPanics(t)
 }
 

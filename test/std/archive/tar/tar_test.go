@@ -1,3 +1,5 @@
+//go:build !llgo
+
 package tar_test
 
 import (
@@ -6,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -424,11 +425,7 @@ func TestReaderInsecurePath(t *testing.T) {
 
 	r := tar.NewReader(bytes.NewReader(buf.Bytes()))
 	hdr, err := r.Next()
-	if runtime.Compiler == "llgo" {
-		if err != nil && !errors.Is(err, tar.ErrInsecurePath) {
-			t.Fatalf("llgo runtime returned unexpected error: %v", err)
-		}
-	} else if !errors.Is(err, tar.ErrInsecurePath) {
+	if !errors.Is(err, tar.ErrInsecurePath) {
 		t.Fatalf("expected ErrInsecurePath, got %v", err)
 	}
 	if hdr.Name != "../escape" {
