@@ -150,7 +150,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Concurrency & Context
 
 - ⬜ `context` — 0/?
-- ⬜ `sync` — 0/?
+- 🟡 `sync` — 40/40 (failed tests)
 - 🟡 `sync/atomic` — 94/94 (skip tests in atomic_bitwise_methods_test.go)
 
 ### Language Tooling
