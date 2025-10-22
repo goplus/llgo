@@ -84,7 +84,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `encoding` — 0/?
 - ⬜ `encoding/asn1` — 0/?
 - ✅ `encoding/base64` — 21/21
-- ⬜ `encoding/binary` — 0/?
+- 🟡 `encoding/binary` — 0/22 blocked (undefined symbol: reflect.Indirect see #1355)
 - ✅ `encoding/csv` — 17/17
 - ⬜ `encoding/hex` — 0/?
 - ⬜ `encoding/json` — 0/?
