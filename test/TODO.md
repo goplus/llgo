@@ -151,7 +151,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - ⬜ `context` — 0/?
 - ⬜ `sync` — 0/?
-- ⬜ `sync/atomic` — 0/?
+- 🟡 `sync/atomic` — 94/94 (skip tests in atomic_bitwise_methods_test.go)
 
 ### Language Tooling
 
