@@ -1,8 +1,9 @@
 package runtime
 
 import (
-	"sync/atomic"
 	"unsafe"
+
+	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
 const (
@@ -23,12 +24,13 @@ func init() {
 //go:linkname rand
 func rand() uint64 {
 	for {
-		old := atomic.LoadUint64(&randState)
+		old := atomic.Load(&randState)
 		new := old*randMultiplier + randIncrement
 		if new == 0 {
 			new = randIncrement
 		}
-		if atomic.CompareAndSwapUint64(&randState, old, new) {
+		_, b := atomic.CompareAndExchange(&randState, old, new)
+		if b {
 			return new
 		}
 	}
