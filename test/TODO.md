@@ -133,7 +133,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Hashing
 
 - ⬜ `hash` — 0/?
-- ⬜ `hash/adler32` — 0/?
+- ✅ `hash/adler32` — 10/10
 - ✅ `hash/crc32` — 11/11
 - 🟡 `hash/maphash` — 16/16 (panic: intrinsic, should implement escapeForHash intrinsic)
 
