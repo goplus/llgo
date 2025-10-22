@@ -59,7 +59,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Archives & Compression
 
-- ⬜ `archive/tar` — 0/?
+- ✅ `archive/tar` — 33/33
 - ⬜ `archive/zip` — 0/?
 - ⬜ `compress/flate` — 0/?
 - ⬜ `compress/gzip` — 0/?
