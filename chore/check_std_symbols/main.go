@@ -632,6 +632,12 @@ func (p *docParser) handleFunc(line, raw string) {
 func (p *docParser) handleType(line, raw string) {
 	switch {
 	case strings.HasPrefix(line, "type "):
+		// Only parse type definitions that are not indented (not in doc comments)
+		if len(raw) > 0 {
+			if first := raw[0]; first == ' ' || first == '\t' {
+				return
+			}
+		}
 		rest := strings.TrimSpace(strings.TrimPrefix(line, "type "))
 		name := parseIdentifier(rest)
 		p.addSymbol(symbol{kind: kindType, name: name})
