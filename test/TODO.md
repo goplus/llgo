@@ -107,7 +107,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Crypto & Security
 
-- ⬜ `crypto` — 0/?
+- 🟡 `crypto` — 13/13 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/aes` — 4/4 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/cipher` — 9/9 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/des` — 5/5 (timeout with llgo - skipped for llgo)
