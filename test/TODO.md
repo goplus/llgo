@@ -95,7 +95,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `text/scanner` — 29/29 (fails under llgo runtime — see #1366)
 - ✅ `text/tabwriter` — 11/11
 - 🟡 `text/template` — 29/29 blocked (unique runtime gap — see #1358)
-- ⬜ `text/template/parse` — 0/?
+- 🟡 `text/template/parse` — 82/82 (stack overflow in llgo type recursion)
 - ⬜ `unicode` — 0/?
 - ⬜ `unicode/utf16` — 0/?
 - ⬜ `unicode/utf8` — 0/?
