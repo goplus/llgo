@@ -118,7 +118,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `crypto/elliptic` — 0/?
 - 🟡 `crypto/hmac` — 2/2 (panic: todo: hmac.New: unsupported hash function)
 - ✅ `crypto/md5` — 4/4
-- ⬜ `crypto/rand` — 0/?
+- 🟡 `crypto/rand` — 5/5 (timeout with llgo - skipped for llgo)
 - ⬜ `crypto/rc4` — 0/?
 - ⬜ `crypto/rsa` — 0/?
 - ✅ `crypto/sha1` — 4/4
