@@ -189,7 +189,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `errors` — 6/6
 - ⬜ `flag` — 0/?
 - ✅ `fmt` — 29/29
-- ⬜ `log` — 0/?
+- ✅ `log` — 41/41
 - ⬜ `mime` — 0/?
 - ⬜ `mime/multipart` — 0/?
 - ⬜ `mime/quotedprintable` — 0/?
