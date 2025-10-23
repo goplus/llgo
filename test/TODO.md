@@ -140,7 +140,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Networking & HTTP
 
 - ⬜ `net` — 0/?
-- ⬜ `net/http` — 0/?
+- 🟡 `net/http` — 238/238 (unique runtime gap — see #1358)
 - ⬜ `net/http/httptest` — 0/?
 - ⬜ `net/http/httptrace` — 0/?
 - ⬜ `net/netip` — 0/?
