@@ -73,7 +73,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `io/fs` — 22/22 (fails under llgo runtime - skipped for llgo)
 - 🟡 `io/ioutil` — 8/8
 - ⬜ `os` — 0/?
-- ⬜ `os/exec` — 0/?
+- 🟡 `os/exec` — 7/7 (panic: todo: os.(\*File).WriteString)
 - ⬜ `os/signal` — 0/?
 - ⬜ `os/user` — 0/?
 - ✅ `path` — 9/9
