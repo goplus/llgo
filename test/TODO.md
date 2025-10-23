@@ -187,7 +187,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Application & Formatting
 
 - ✅ `errors` — 6/6
-- ⬜ `flag` — 0/?
+- ✅ `flag` — 74/74
 - ✅ `fmt` — 29/29
 - ✅ `log` — 41/41
 - ⬜ `mime` — 0/?
