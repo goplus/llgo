@@ -116,7 +116,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `crypto/ecdsa` — 0/?
 - ⬜ `crypto/ed25519` — 0/?
 - ⬜ `crypto/elliptic` — 0/?
-- ⬜ `crypto/hmac` — 0/?
+- 🟡 `crypto/hmac` — 2/2 (panic: todo: hmac.New: unsupported hash function)
 - ✅ `crypto/md5` — 4/4
 - ⬜ `crypto/rand` — 0/?
 - ⬜ `crypto/rc4` — 0/?
