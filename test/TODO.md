@@ -96,7 +96,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `text/tabwriter` — 11/11
 - 🟡 `text/template` — 29/29 blocked (unique runtime gap — see #1358)
 - 🟡 `text/template/parse` — 82/82 (stack overflow in llgo type recursion)
-- ⬜ `unicode` — 0/?
+- ✅ `unicode` — 292/292
 - 🟡 `unicode/utf16` — 7/7 (Decode fails for emoji and certain characters)
 - 🟡 `unicode/utf8` — 19/19 (DecodeLastRune/DecodeLastRuneInString return incorrect runes)
 - 🟡 `unique` — blocked (depends on runtime unique support — see #1358)
