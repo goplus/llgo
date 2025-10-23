@@ -113,7 +113,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `crypto/des` — 5/5 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/dsa` — 9/9 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/ecdh` — 12/12 (timeout with llgo - skipped for llgo)
-- ⬜ `crypto/ecdsa` — 0/?
+- 🟡 `crypto/ecdsa` — 12/12 (timeout with llgo - skipped for llgo)
 - ⬜ `crypto/ed25519` — 0/?
 - ⬜ `crypto/elliptic` — 0/?
 - 🟡 `crypto/hmac` — 2/2 (panic: todo: hmac.New: unsupported hash function)
