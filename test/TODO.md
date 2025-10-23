@@ -72,7 +72,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `io` — 59/59
 - 🟡 `io/fs` — 22/22 (fails under llgo runtime - skipped for llgo)
 - 🟡 `io/ioutil` — 8/8
-- ⬜ `os` — 0/?
+- 🟡 `os` — 157/157 (timeout with llgo - skipped for llgo)
 - 🟡 `os/exec` — 7/7 (panic: todo: os.(\*File).WriteString)
 - 🟡 `os/signal` — 6/6 (panic: signal_enable not implemented)
 - 🟡 `os/user` — 11/11 (exit code -1)
