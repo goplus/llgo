@@ -120,7 +120,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `crypto/md5` — 4/4
 - 🟡 `crypto/rand` — 5/5 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/rc4` — 5/5 (timeout with llgo - skipped for llgo)
-- ⬜ `crypto/rsa` — 0/?
+- 🟡 `crypto/rsa` — 30/30 (timeout with llgo - skipped for llgo)
 - ✅ `crypto/sha1` — 4/4
 - 🟡 `crypto/sha256` — 7/7 (hash length = 32, want 28)
 - 🟡 `crypto/sha3` — 23/23 (undefined symbol: crypto/internal/fips140.fatal crypto/internal/fips140.setIndicator crypto/internal/fips140.getIndicator crypto/internal/fips140/subtle.xorBytes)
