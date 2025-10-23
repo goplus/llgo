@@ -81,14 +81,14 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Encoding & Serialization
 
-- 🟡 `encoding` — 6/6 (fails under llgo runtime - skipped for llgo)
+- ✅ `encoding` — 6/6
 - ⬜ `encoding/asn1` — 0/?
 - ✅ `encoding/base64` — 21/21
 - 🟡 `encoding/binary` — 22/22 blocked (undefined symbol: reflect.Indirect see #1355)
 - ✅ `encoding/csv` — 17/17
 - 🟡 `encoding/hex` — 15/15
 - 🟡 `encoding/json` — 48/48 (fails under llgo runtime - skipped for llgo)
-- 🟡 `encoding/pem` — 3/3 (fails under llgo runtime - skipped for llgo)
+- ✅ `encoding/pem` — 3/3
 
 ### Text & Unicode
 
@@ -190,7 +190,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `flag` — 74/74
 - ✅ `fmt` — 29/29
 - ✅ `log` — 41/41
-- 🟡 `mime` — 13/13 (fails under llgo runtime - skipped for llgo)
+- ✅ `mime` — 13/13
 - ⬜ `mime/multipart` — 0/?
 - ⬜ `mime/quotedprintable` — 0/?
 - 🟡 `reflect` — 106/106 (blocked: missing ChanDir.String, Copy, Indirect, Select, Swapper, Value.Comparable, Value.Clear, and others)

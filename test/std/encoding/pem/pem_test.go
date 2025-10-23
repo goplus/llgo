@@ -1,5 +1,3 @@
-//go:build !llgo
-
 package pem_test
 
 import (
