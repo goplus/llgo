@@ -128,7 +128,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `crypto/subtle` — 8/8 (undefined symbol: runtime.UnlockOSThread, internal/runtime/sys.EnableDIT, runtime.LockOSThread, internal/runtime/sys.DisableDIT, crypto/subtle.XORBytes)
 - ⬜ `crypto/tls` — 0/?
 - ⬜ `crypto/x509` — 0/?
-- ⬜ `crypto/x509/pkix` — 0/?
+- 🟡 `crypto/x509/pkix` — 15/15 (timeout with llgo - skipped for llgo)
 
 ### Hashing
 
