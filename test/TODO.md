@@ -108,7 +108,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Crypto & Security
 
 - ⬜ `crypto` — 0/?
-- ⬜ `crypto/aes` — 0/?
+- 🟡 `crypto/aes` — 4/4 (timeout with llgo - skipped for llgo)
 - ⬜ `crypto/cipher` — 0/?
 - ⬜ `crypto/des` — 0/?
 - ⬜ `crypto/dsa` — 0/?
