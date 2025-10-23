@@ -195,7 +195,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `mime/quotedprintable` — 5/5
 - 🟡 `reflect` — 106/106 (blocked: missing ChanDir.String, Copy, Indirect, Select, Swapper, Value.Comparable, Value.Clear, and others)
 - ✅ `regexp` — 45/45
-- ⬜ `regexp/syntax` — 0/?
+- 🟡 `regexp/syntax` — 10/10 (fails under llgo runtime - skipped for llgo)
 
 ## How to Contribute
 
