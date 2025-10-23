@@ -87,7 +87,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `encoding/binary` — 22/22 blocked (undefined symbol: reflect.Indirect see #1355)
 - ✅ `encoding/csv` — 17/17
 - 🟡 `encoding/hex` — 15/15
-- ⬜ `encoding/json` — 0/?
+- 🟡 `encoding/json` — 48/48 (fails under llgo runtime - skipped for llgo)
 - ⬜ `encoding/pem` — 0/?
 
 ### Text & Unicode
