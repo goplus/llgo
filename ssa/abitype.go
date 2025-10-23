@@ -187,19 +187,28 @@ func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 	return func() Expr {
 		prog := b.Prog
 		methods := make([]Expr, n)
+		pkgPath := ""
 		for i := 0; i < n; i++ {
 			m := t.Method(i)
 			mName := m.Name()
 			if !token.IsExported(mName) {
+				if pkgPath == "" {
+					if mPkg := m.Pkg(); mPkg != nil {
+						pkgPath = mPkg.Path()
+					}
+				}
 				mName = abi.FullName(m.Pkg(), mName)
 			}
 			methods[i] = b.abiImethodOf(mName, typs[i])
 		}
 		pkg := b.Pkg
+		if pkgPath == "" {
+			pkgPath = pkg.Path()
+		}
 		fn := pkg.rtFunc("Interface")
 		tSlice := lastParamType(prog, fn)
 		methodSlice := b.SliceLit(tSlice, methods...)
-		return b.Call(fn, b.Str(pkg.Path()), methodSlice)
+		return b.Call(fn, b.Str(pkgPath), methodSlice)
 	}
 }
 
