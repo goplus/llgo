@@ -145,7 +145,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `net/http/httptrace` — 6/6 (unique runtime gap — see #1358)
 - ⬜ `net/netip` — 0/?
 - ⬜ `net/textproto` — 0/?
-- ⬜ `net/url` — 0/?
+- 🟡 `net/url` — 41/41 (timeout with llgo - skipped for llgo)
 
 ### Concurrency & Context
 
