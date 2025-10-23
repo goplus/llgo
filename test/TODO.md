@@ -190,7 +190,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `flag` — 74/74
 - ✅ `fmt` — 29/29
 - ✅ `log` — 41/41
-- ⬜ `mime` — 0/?
+- 🟡 `mime` — 13/13 (fails under llgo runtime - skipped for llgo)
 - ⬜ `mime/multipart` — 0/?
 - ⬜ `mime/quotedprintable` — 0/?
 - 🟡 `reflect` — 106/106 (blocked: missing ChanDir.String, Copy, Indirect, Select, Swapper, Value.Comparable, Value.Clear, and others)
