@@ -171,7 +171,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Runtime & System
 
 - ⬜ `runtime` — 0/?
-- ⬜ `runtime/debug` — 0/?
+- 🟡 `runtime/debug` — 18/18 (timeout with llgo - skipped for llgo)
 - ⬜ `runtime/pprof` — 0/?
 - ⬜ `runtime/trace` — 0/?
 - ⬜ `syscall` — 0/?
