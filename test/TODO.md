@@ -126,7 +126,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `crypto/sha3` — 23/23 (undefined symbol: crypto/internal/fips140.fatal crypto/internal/fips140.setIndicator crypto/internal/fips140.getIndicator crypto/internal/fips140/subtle.xorBytes)
 - 🟡 `crypto/sha512` — 13/13 (hash length = 64, want 48)
 - 🟡 `crypto/subtle` — 8/8 (undefined symbol: runtime.UnlockOSThread, internal/runtime/sys.EnableDIT, runtime.LockOSThread, internal/runtime/sys.DisableDIT, crypto/subtle.XORBytes)
-- ⬜ `crypto/tls` — 0/?
+- 🟡 `crypto/tls` — 113/113 blocked (unique runtime gap — see #1358)
 - ⬜ `crypto/x509` — 0/?
 - 🟡 `crypto/x509/pkix` — 15/15 (timeout with llgo - skipped for llgo)
 
