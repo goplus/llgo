@@ -139,7 +139,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Networking & HTTP
 
-- ⬜ `net` — 0/?
+- 🟡 `net` — 167/266 (timeout with llgo - skipped for llgo)
 - 🟡 `net/http` — 238/238 (unique runtime gap — see #1358)
 - 🟡 `net/http/httptest` — 17/17 (unique runtime gap — see #1358)
 - 🟡 `net/http/httptrace` — 6/6 (unique runtime gap — see #1358)
