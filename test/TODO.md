@@ -123,7 +123,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `crypto/rsa` — 0/?
 - ✅ `crypto/sha1` — 4/4
 - 🟡 `crypto/sha256` — 7/7 (hash length = 32, want 28)
-- ⬜ `crypto/sha3` — 0/?
+- 🟡 `crypto/sha3` — 23/23 (undefined symbol: crypto/internal/fips140.fatal crypto/internal/fips140.setIndicator crypto/internal/fips140.getIndicator crypto/internal/fips140/subtle.xorBytes)
 - 🟡 `crypto/sha512` — 13/13 (hash length = 64, want 48)
 - 🟡 `crypto/subtle` — 8/8 (undefined symbol: runtime.UnlockOSThread, internal/runtime/sys.EnableDIT, runtime.LockOSThread, internal/runtime/sys.DisableDIT, crypto/subtle.XORBytes)
 - ⬜ `crypto/tls` — 0/?
