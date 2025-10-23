@@ -316,6 +316,25 @@ func markIfFromTarget(used map[string]bool, obj types.Object, targetPkg string) 
 		}
 		return
 	}
+
+	// Check if it's a method (even if from different package)
+	if fn, ok := obj.(*types.Func); ok {
+		sig, isSig := fn.Type().(*types.Signature)
+		if isSig && sig.Recv() != nil {
+			// Try to find which type from targetPkg this method belongs to
+			// This handles embedded methods
+			recv := sig.Recv().Type()
+			recvNames := findReceiversInPackage(recv, fn.Name(), targetPkg)
+			for _, recvName := range recvNames {
+				used[recvName] = true
+				used[fmt.Sprintf("%s.%s", recvName, fn.Name())] = true
+			}
+			if len(recvNames) > 0 {
+				return
+			}
+		}
+	}
+
 	if pkg.Path() != targetPkg {
 		return
 	}
@@ -343,6 +362,58 @@ func markIfFromTarget(used map[string]bool, obj types.Object, targetPkg string) 
 	}
 }
 
+// findReceiversInPackage finds all types in targetPkg that have the given method
+// This handles both direct methods and methods from embedded types
+func findReceiversInPackage(recvType types.Type, methodName string, targetPkg string) []string {
+	var result []string
+
+	// Get the actual receiver type (unwrap pointer)
+	actualRecv := recvType
+	if ptr, ok := recvType.(*types.Pointer); ok {
+		actualRecv = ptr.Elem()
+	}
+
+	named, ok := actualRecv.(*types.Named)
+	if !ok {
+		return nil
+	}
+
+	// Check if the method exists on types from targetPkg
+	// We need to check the package that defines the receiver
+	obj := named.Obj()
+	if obj == nil || obj.Pkg() == nil {
+		return nil
+	}
+
+	recvPkg := obj.Pkg().Path()
+
+	// If the receiver is directly from targetPkg
+	if recvPkg == targetPkg {
+		recvName := obj.Name()
+		// Special case for testing package: common is embedded in T, B, F
+		if recvPkg == "testing" && recvName == "common" {
+			result = append(result, "T", "B", "F")
+		} else if exportedName(recvName) {
+			result = append(result, recvName)
+		}
+		return result
+	}
+
+	// Otherwise, the method might be embedded in types from targetPkg
+	// We need to load the target package and check which types embed this receiver
+	// For now, let's check if it's an internal package of targetPkg
+	if strings.HasPrefix(recvPkg, targetPkg+"/") || strings.HasSuffix(recvPkg, "/"+targetPkg) {
+		// It's an internal type, check which exported types from targetPkg might use it
+		// This is a simplified check for nested packages
+		recvName := obj.Name()
+		if exportedName(recvName) {
+			result = append(result, recvName)
+		}
+	}
+
+	return result
+}
+
 func markMethodUsage(used map[string]bool, fn *types.Func, targetPkg string) {
 	sig, ok := fn.Type().(*types.Signature)
 	if !ok || sig.Recv() == nil {
@@ -353,11 +424,30 @@ func markMethodUsage(used map[string]bool, fn *types.Func, targetPkg string) {
 		return
 	}
 	obj := fn
+	// Accept methods from target package or builtin (pkg == nil)
 	if obj.Pkg() != nil && obj.Pkg().Path() != targetPkg {
 		return
 	}
+	// Also mark usage if receiver type is from target package, even if method pkg is nil
+	if obj.Pkg() == nil {
+		// For methods with nil package, verify the receiver is from target package
+		recvObj := getReceiverTypeObj(sig.Recv().Type())
+		if recvObj == nil || recvObj.Pkg() == nil || recvObj.Pkg().Path() != targetPkg {
+			return
+		}
+	}
 	used[recv] = true
 	used[fmt.Sprintf("%s.%s", recv, fn.Name())] = true
+}
+
+func getReceiverTypeObj(t types.Type) *types.TypeName {
+	switch tt := t.(type) {
+	case *types.Pointer:
+		return getReceiverTypeObj(tt.Elem())
+	case *types.Named:
+		return tt.Obj()
+	}
+	return nil
 }
 
 func receiverFromType(t types.Type, targetPkg string) string {
