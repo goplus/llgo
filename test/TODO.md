@@ -88,7 +88,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `encoding/csv` — 17/17
 - 🟡 `encoding/hex` — 15/15
 - 🟡 `encoding/json` — 48/48 (fails under llgo runtime - skipped for llgo)
-- ⬜ `encoding/pem` — 0/?
+- 🟡 `encoding/pem` — 3/3 (fails under llgo runtime - skipped for llgo)
 
 ### Text & Unicode
 
