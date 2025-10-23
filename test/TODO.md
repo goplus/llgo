@@ -121,7 +121,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `crypto/rand` — 0/?
 - ⬜ `crypto/rc4` — 0/?
 - ⬜ `crypto/rsa` — 0/?
-- ⬜ `crypto/sha1` — 0/?
+- ✅ `crypto/sha1` — 4/4
 - ⬜ `crypto/sha256` — 0/?
 - ⬜ `crypto/sha3` — 0/?
 - ⬜ `crypto/sha512` — 0/?
