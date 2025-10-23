@@ -125,7 +125,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `crypto/sha256` — 7/7 (hash length = 32, want 28)
 - ⬜ `crypto/sha3` — 0/?
 - 🟡 `crypto/sha512` — 13/13 (hash length = 64, want 48)
-- ⬜ `crypto/subtle` — 0/?
+- 🟡 `crypto/subtle` — 8/8 (undefined symbol: runtime.UnlockOSThread, internal/runtime/sys.EnableDIT, runtime.LockOSThread, internal/runtime/sys.DisableDIT, crypto/subtle.XORBytes)
 - ⬜ `crypto/tls` — 0/?
 - ⬜ `crypto/x509` — 0/?
 - ⬜ `crypto/x509/pkix` — 0/?
