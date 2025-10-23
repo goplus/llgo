@@ -623,9 +623,15 @@ func TestTCPConnRead(t *testing.T) {
 	defer ln.Close()
 
 	go func() {
-		conn, _ := ln.Accept()
-		conn.Write([]byte("hello"))
-		conn.Close()
+		conn, err := ln.Accept()
+		if err != nil {
+			t.Errorf("Accept error: %v", err)
+			return
+		}
+		defer conn.Close()
+		if _, err := conn.Write([]byte("hello")); err != nil {
+			t.Errorf("server Write error: %v", err)
+		}
 	}()
 
 	conn, err := net.Dial("tcp", ln.Addr().String())
@@ -652,10 +658,16 @@ func TestTCPConnWrite(t *testing.T) {
 	defer ln.Close()
 
 	go func() {
-		conn, _ := ln.Accept()
+		conn, err := ln.Accept()
+		if err != nil {
+			t.Errorf("Accept error: %v", err)
+			return
+		}
+		defer conn.Close()
 		buf := make([]byte, 5)
-		conn.Read(buf)
-		conn.Close()
+		if _, err := conn.Read(buf); err != nil {
+			t.Errorf("server Read error: %v", err)
+		}
 	}()
 
 	conn, err := net.Dial("tcp", ln.Addr().String())
@@ -808,7 +820,17 @@ func TestDialUDP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveUDPAddr error: %v", err)
 	}
-	conn, err := net.DialUDP("udp", nil, addr)
+	server, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		t.Fatalf("ListenUDP error: %v", err)
+	}
+	defer server.Close()
+	serverAddr, ok := server.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		t.Fatalf("LocalAddr type = %T, want *net.UDPAddr", server.LocalAddr())
+	}
+
+	conn, err := net.DialUDP("udp", nil, serverAddr)
 	if err != nil {
 		t.Fatalf("DialUDP error: %v", err)
 	}

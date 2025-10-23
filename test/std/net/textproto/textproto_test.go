@@ -1,5 +1,3 @@
-//go:build !llgo
-
 package textproto_test
 
 import (

@@ -139,13 +139,13 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Networking & HTTP
 
-- 🟡 `net` — 167/266 (timeout with llgo - skipped for llgo)
+- 🟡 `net` — 167/266 (unique runtime gap — see #1358)
 - 🟡 `net/http` — 238/238 (unique runtime gap — see #1358)
 - 🟡 `net/http/httptest` — 17/17 (unique runtime gap — see #1358)
 - 🟡 `net/http/httptrace` — 6/6 (unique runtime gap — see #1358)
-- 🟡 `net/netip` — 63/63 (timeout with llgo - skipped for llgo)
-- 🟡 `net/textproto` — 36/36 (timeout with llgo - skipped for llgo)
-- 🟡 `net/url` — 41/41 (timeout with llgo - skipped for llgo)
+- 🟡 `net/netip` — 63/63 (unique runtime gap — see #1358)
+- ✅ `net/textproto` — 36/36
+- 🟡 `net/url` — 41/41 (unique runtime gap — see #1358)
 
 ### Concurrency & Context
 
