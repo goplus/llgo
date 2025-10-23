@@ -182,7 +182,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 - ⬜ `testing` — 0/?
 - 🟡 `testing/fstest` — 9/9 (fails under llgo runtime - skipped for llgo)
-- ⬜ `testing/iotest` — 0/?
+- ✅ `testing/iotest` — 10/10
 
 ### Application & Formatting
 
