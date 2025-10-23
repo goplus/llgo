@@ -98,7 +98,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `text/template/parse` — 82/82 (stack overflow in llgo type recursion)
 - ⬜ `unicode` — 0/?
 - ⬜ `unicode/utf16` — 0/?
-- ⬜ `unicode/utf8` — 0/?
+- 🟡 `unicode/utf8` — 19/19 (DecodeLastRune/DecodeLastRuneInString return incorrect runes)
 - 🟡 `unique` — blocked (depends on runtime unique support — see #1358)
 
 ### Time & Scheduling
