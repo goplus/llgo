@@ -77,9 +77,9 @@ func TestMapFSReadFile(t *testing.T) {
 
 func TestMapFSReadDir(t *testing.T) {
 	mfs := fstest.MapFS{
-		"a.txt": {Data: []byte("a")},
-		"b.txt": {Data: []byte("b")},
-		"dir/c.txt": {Data: []byte("c")},
+		"a.txt":            {Data: []byte("a")},
+		"b.txt":            {Data: []byte("b")},
+		"dir/c.txt":        {Data: []byte("c")},
 		"dir/subdir/d.txt": {Data: []byte("d")},
 	}
 
@@ -118,9 +118,9 @@ func TestMapFSReadDir(t *testing.T) {
 
 func TestMapFSGlob(t *testing.T) {
 	mfs := fstest.MapFS{
-		"file1.txt": {Data: []byte("1")},
-		"file2.txt": {Data: []byte("2")},
-		"data.log": {Data: []byte("log")},
+		"file1.txt":     {Data: []byte("1")},
+		"file2.txt":     {Data: []byte("2")},
+		"data.log":      {Data: []byte("log")},
 		"dir/file3.txt": {Data: []byte("3")},
 	}
 
@@ -143,8 +143,8 @@ func TestMapFSGlob(t *testing.T) {
 
 func TestMapFSSub(t *testing.T) {
 	mfs := fstest.MapFS{
-		"root.txt": {Data: []byte("root")},
-		"subdir/file.txt": {Data: []byte("sub")},
+		"root.txt":               {Data: []byte("root")},
+		"subdir/file.txt":        {Data: []byte("sub")},
 		"subdir/nested/deep.txt": {Data: []byte("deep")},
 	}
 
@@ -277,8 +277,8 @@ func TestMapFSErrors(t *testing.T) {
 
 func TestFSWithTestFS(t *testing.T) {
 	mfs := fstest.MapFS{
-		"file1.txt": {Data: []byte("content1")},
-		"file2.txt": {Data: []byte("content2")},
+		"file1.txt":     {Data: []byte("content1")},
+		"file2.txt":     {Data: []byte("content2")},
 		"dir/file3.txt": {Data: []byte("content3")},
 	}
 

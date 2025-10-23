@@ -180,7 +180,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Testing & Benchmarks
 
-- ⬜ `testing` — 0/?
+- 🟡 `testing` — 108/108 (fails under llgo runtime - skipped for llgo)
 - 🟡 `testing/fstest` — 9/9 (fails under llgo runtime - skipped for llgo)
 - ✅ `testing/iotest` — 10/10
 
