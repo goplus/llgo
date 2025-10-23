@@ -193,7 +193,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `mime` — 0/?
 - ⬜ `mime/multipart` — 0/?
 - ⬜ `mime/quotedprintable` — 0/?
-- ⬜ `reflect` — 0/?
+- 🟡 `reflect` — 106/106 (blocked: missing ChanDir.String, Copy, Indirect, Select, Swapper, Value.Comparable, Value.Clear, and others)
 - ⬜ `regexp` — 0/?
 - ⬜ `regexp/syntax` — 0/?
 
