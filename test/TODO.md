@@ -70,7 +70,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `bufio` — 51/51 (amd64 linux: ReadString should hit EOF, got <nil>)
 - ⬜ `embed` — 0/?
 - 🟡 `io` — 59/59
-- ⬜ `io/fs` — 0/?
+- 🟡 `io/fs` — 22/22 (fails under llgo runtime - skipped for llgo)
 - 🟡 `io/ioutil` — 8/8
 - ⬜ `os` — 0/?
 - ⬜ `os/exec` — 0/?
