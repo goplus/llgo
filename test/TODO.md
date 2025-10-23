@@ -112,7 +112,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `crypto/cipher` — 9/9 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/des` — 5/5 (timeout with llgo - skipped for llgo)
 - 🟡 `crypto/dsa` — 9/9 (timeout with llgo - skipped for llgo)
-- ⬜ `crypto/ecdh` — 0/?
+- 🟡 `crypto/ecdh` — 12/12 (timeout with llgo - skipped for llgo)
 - ⬜ `crypto/ecdsa` — 0/?
 - ⬜ `crypto/ed25519` — 0/?
 - ⬜ `crypto/elliptic` — 0/?
