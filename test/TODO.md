@@ -81,7 +81,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Encoding & Serialization
 
-- ⬜ `encoding` — 0/?
+- 🟡 `encoding` — 6/6 (fails under llgo runtime - skipped for llgo)
 - ⬜ `encoding/asn1` — 0/?
 - ✅ `encoding/base64` — 21/21
 - 🟡 `encoding/binary` — 22/22 blocked (undefined symbol: reflect.Indirect see #1355)
