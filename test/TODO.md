@@ -74,7 +74,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `io/ioutil` — 8/8
 - ⬜ `os` — 0/?
 - 🟡 `os/exec` — 7/7 (panic: todo: os.(\*File).WriteString)
-- ⬜ `os/signal` — 0/?
+- 🟡 `os/signal` — 6/6 (panic: signal_enable not implemented)
 - ⬜ `os/user` — 0/?
 - ✅ `path` — 9/9
 - 🟡 `path/filepath` — 27/27
