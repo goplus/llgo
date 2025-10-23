@@ -117,7 +117,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `crypto/ed25519` — 0/?
 - ⬜ `crypto/elliptic` — 0/?
 - ⬜ `crypto/hmac` — 0/?
-- ⬜ `crypto/md5` — 0/?
+- ✅ `crypto/md5` — 4/4
 - ⬜ `crypto/rand` — 0/?
 - ⬜ `crypto/rc4` — 0/?
 - ⬜ `crypto/rsa` — 0/?
