@@ -9,7 +9,16 @@ import (
 )
 
 func Caller(skip int) (pc uintptr, file string, line int, ok bool) {
-	panic("todo: runtime.Caller")
+	found := false
+	debug.StackTrace(skip+1, func(fr *debug.Frame) bool {
+		pc = fr.PC
+		file = fr.Name
+		line = 0 // Line number not available from current debug info
+		ok = true
+		found = true
+		return false // Stop after first frame
+	})
+	return pc, file, line, found
 }
 
 func Callers(skip int, pc []uintptr) int {
