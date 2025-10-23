@@ -62,7 +62,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - 🟡 `archive/tar` — 33/33 (expected ErrInsecurePath, got <nil>)
 - 🟡 `archive/zip` — 36/36 (exit code -1)
 - ⬜ `compress/flate` — 0/?
-- ⬜ `compress/gzip` — 0/?
+- 🟡 `compress/gzip` — 18/18 (fails under llgo runtime - skipped for llgo)
 - ⬜ `compress/zlib` — 0/?
 
 ### I/O & Filesystems
