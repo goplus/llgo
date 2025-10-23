@@ -173,7 +173,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `runtime` — 0/?
 - 🟡 `runtime/debug` — 18/18 (timeout with llgo - skipped for llgo)
 - 🟡 `runtime/pprof` — 15/15 (timeout with llgo - skipped for llgo)
-- ⬜ `runtime/trace` — 0/?
+- 🟡 `runtime/trace` — 10/10 (timeout with llgo - skipped for llgo)
 - ⬜ `syscall` — 0/?
 - ⬜ `unsafe` — 0/?
 - ⬜ `weak` — 0/?
