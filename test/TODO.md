@@ -166,7 +166,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ✅ `go/scanner` — 18/18
 - 🟡 `go/token` — 45/45 blocked (undefined symbol: reflect.Indirect see #1355)
 - ⬜ `go/types` — 0/?
-- ⬜ `go/version` — 0/?
+- ✅ `go/version` — 3/3
 
 ### Runtime & System
 
