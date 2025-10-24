@@ -156,7 +156,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 ### Language Tooling
 
 - ⬜ `go/ast` — 0/?
-- ⬜ `go/build` — 0/?
+- 🟡 `go/build` — 16/16 (hang up)
 - 🟡 `go/build/constraint` — 19/19 (exit code -1)
 - ✅ `go/constant` — 14/14
 - ⬜ `go/doc` — 0/?
