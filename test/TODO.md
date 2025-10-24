@@ -158,7 +158,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `go/ast` — 0/?
 - ⬜ `go/build` — 0/?
 - ⬜ `go/build/constraint` — 0/?
-- ⬜ `go/constant` — 0/?
+- ✅ `go/constant` — 14/14
 - ⬜ `go/doc` — 0/?
 - ⬜ `go/doc/comment` — 0/?
 - ⬜ `go/importer` — 0/?
