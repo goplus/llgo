@@ -163,7 +163,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `go/doc/comment` — 0/?
 - ⬜ `go/importer` — 0/?
 - ⬜ `go/parser` — 0/?
-- ⬜ `go/scanner` — 0/?
+- ✅ `go/scanner` — 18/18
 - ⬜ `go/token` — 0/?
 - ⬜ `go/types` — 0/?
 - ⬜ `go/version` — 0/?
