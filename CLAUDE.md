@@ -51,6 +51,29 @@ go test ./...
 
 **Important:** The `LLGO_ROOT` environment variable must be set to the repository root when running llgo commands during development.
 
+### Mandatory stdlib suite pipeline
+
+Use this workflow for each `test/std/<pkg>` suite:
+
+1. **Author coverage and host checks** — iterate until the Go harness is green:
+   - Write or extend tests under `test/std/<pkg>`.
+   - Run `go test ./test/std/<pkg>`.
+   - Run `go run ./chore/check_std_symbols -pkg <pkg>`.
+2. **Freeze the suite and port runtime behavior** — loop until llgo matches Go:
+   - Run `./llgo.sh test ./test/std/<pkg>`.
+   - Patch `runtime/internal/lib/<pkg>` (and any required shims) until the llgo run succeeds.
+3. **Record progress** — update `test/TODO.md` with the new totals, blockers, and ownership notes.
+
+After multiple suites are healthy, run the aggregated checks to prevent regressions:
+
+```bash
+go test ./test/std/...
+bash doc/_readme/scripts/check_std_cover.sh
+./llgo.sh test ./test/std/...
+```
+
+The coverage script automatically discovers packages beneath `test/std`; ensure new suites build cleanly so `go list ./test/std/...` can enumerate them.
+
 ## Code Quality
 
 Before submitting any code updates, you must run the following formatting and validation commands:
@@ -104,6 +127,15 @@ go install -v ./chore/...
 - `cl` - Core compiler converting Go to LLVM IR
 - `internal/build` - Orchestrates the compilation process
 
+### Runtime Library Patch Policy
+
+Standard-library shims under `runtime/internal/lib` should follow these principles:
+
+1. Prefer reuse of upstream Go implementations; only diverge when necessary.
+2. When only a handful of symbols are incompatible (e.g., goroutine or timer internals), add `//llgo:skip sym1 sym2` in the patched package to suppress the upstream definitions, then provide replacements under `runtime/internal/lib`.
+3. If an entire package is fundamentally incompatible, apply `//llgo:skipall` and reimplement it in `runtime/internal/lib`.
+4. When patching, lean on existing helpers in `runtime/internal/clite` or other `runtime/` subpackages instead of introducing ad-hoc glue.
+
 ## Debugging
 
 ### Disable Garbage Collection
@@ -129,4 +161,3 @@ LLGO_ROOT=/path/to/llgo llgo run .
 3. **Defer in Loops:** LLGo intentionally does not support `defer` in loops (considered bad practice)
 4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
 5. **Python Integration:** Third-party Python libraries require separate installation of library files
-

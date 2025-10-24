@@ -56,6 +56,9 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: go test -coverprofile="coverage.txt" -covermode=atomic ./...
 
+      - name: Check std symbol coverage
+        run: bash doc/_readme/scripts/check_std_cover.sh
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:

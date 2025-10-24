@@ -105,7 +105,7 @@ func Frexp(f float64) (float64, int) {
 	return ret, int(exp)
 }
 
-//go:linkname Gamma C.gamma
+//go:linkname Gamma C.tgamma
 func Gamma(x float64) float64
 
 //go:linkname Hypot C.hypot
@@ -195,8 +195,8 @@ func Tan(x float64) float64
 //go:linkname Tanh C.tanh
 func Tanh(x float64) float64
 
-//-go:linkname Tgamma C.tgamma
-//func Tgamma(x float64) float64
+//go:linkname Gammaf C.tgammaf
+func Gammaf(x float32) float32
 
 //go:linkname Trunc C.trunc
 func Trunc(x float64) float64

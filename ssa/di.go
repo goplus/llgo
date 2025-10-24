@@ -662,14 +662,8 @@ func (b diBuilder) createExpression(ops []uint64) DIExpression {
 
 // Copy to alloca'd memory to get declareable address.
 func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, exists bool) {
-	if v, ok := b.dbgVars[v]; ok {
-		return v.ptr, v.val, true
-	}
 	t := v.Type.RawType().Underlying()
 	dbgPtr, dbgVal = b.doConstructDebugAddr(v, t)
-	dbgExpr := dbgExpr{dbgPtr, dbgVal}
-	b.dbgVars[v] = dbgExpr
-	b.dbgVars[dbgVal] = dbgExpr
 	return dbgPtr, dbgVal, false
 }
 
@@ -874,11 +868,7 @@ func (b Builder) DebugFunction(f Function, pos token.Position, bodyPos token.Pos
 }
 
 func (b Builder) Param(idx int) Expr {
-	p := b.Func.Param(idx)
-	if v, ok := b.dbgVars[p]; ok {
-		return v.val
-	}
-	return p
+	return b.Func.Param(idx)
 }
 
 // -----------------------------------------------------------------------------

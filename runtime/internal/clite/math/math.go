@@ -100,7 +100,7 @@ func Fmod(x, y float64) float64
 //go:linkname Frexp C.frexp
 func Frexp(x float64, exp *c.Int) float64
 
-//go:linkname Gamma C.gamma
+//go:linkname Gamma C.tgamma
 func Gamma(x float64) float64
 
 //go:linkname Hypot C.hypot
@@ -252,7 +252,7 @@ func Fmodf(x, y float32) float32
 //go:linkname Frexpf C.frexpf
 func Frexpf(x float32, exp *c.Int) float32
 
-//go:linkname Gammaf C.gammaf
+//go:linkname Gammaf C.tgamma
 func Gammaf(x float32) float32
 
 //go:linkname Hypotf C.hypotf
