@@ -83,6 +83,8 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "display coverage status for each exported symbol")
 	flag.Parse()
 
+	debugUsed := os.Getenv("DEBUG_USED_SYMBOLS") != ""
+
 	if len(specs) == 0 {
 		fmt.Fprintln(os.Stderr, "usage: go run ./chore/check_std_symbols -pkg math [-pkg strings ...]")
 		os.Exit(2)
@@ -121,6 +123,17 @@ func main() {
 			fmt.Fprintf(os.Stderr, "failed to inspect tests in %s: %v\n", spec.testDir, err)
 			failures++
 			continue
+		}
+		if debugUsed {
+			fmt.Println("-- used symbols for", spec.pkgPath)
+			var keys []string
+			for k := range used {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				fmt.Println("used:", k)
+			}
 		}
 
 		missing := collectMissing(symbols, used, spec.pkgPath, verbose)
@@ -260,6 +273,12 @@ func usedSymbols(testDir, targetPkg string) (map[string]bool, error) {
 			}
 			markIfFromTarget(used, obj, targetPkg)
 		}
+		for selExpr, sel := range pkg.TypesInfo.Selections {
+			if !isSelectorInDir(fset, selExpr, dirAbs) {
+				continue
+			}
+			markSelectionUsage(used, sel, targetPkg)
+		}
 	}
 
 	return used, nil
@@ -298,6 +317,20 @@ func rejectDotImports(pkgs []*packages.Package, targetPkg, dirAbs string) error 
 
 func isIdentifierInDir(fset *token.FileSet, ident *ast.Ident, dirAbs string) bool {
 	pos := fset.PositionFor(ident.Pos(), false)
+	if pos.Filename == "" {
+		return false
+	}
+	if !pathWithinAbs(dirAbs, pos.Filename) {
+		return false
+	}
+	return strings.HasSuffix(pos.Filename, "_test.go")
+}
+
+func isSelectorInDir(fset *token.FileSet, sel *ast.SelectorExpr, dirAbs string) bool {
+	if sel == nil {
+		return false
+	}
+	pos := fset.PositionFor(sel.Sel.Pos(), false)
 	if pos.Filename == "" {
 		return false
 	}
@@ -448,6 +481,31 @@ func getReceiverTypeObj(t types.Type) *types.TypeName {
 		return tt.Obj()
 	}
 	return nil
+}
+
+func markSelectionUsage(used map[string]bool, sel *types.Selection, targetPkg string) {
+	obj := sel.Obj()
+	if obj == nil {
+		return
+	}
+	recvName := typeNameFromType(sel.Recv(), targetPkg)
+	if recvName == "" {
+		return
+	}
+	used[recvName] = true
+	used[fmt.Sprintf("%s.%s", recvName, obj.Name())] = true
+}
+
+func typeNameFromType(t types.Type, targetPkg string) string {
+	switch tt := t.(type) {
+	case *types.Pointer:
+		return typeNameFromType(tt.Elem(), targetPkg)
+	case *types.Named:
+		if tt.Obj() != nil && tt.Obj().Pkg() != nil && tt.Obj().Pkg().Path() == targetPkg {
+			return tt.Obj().Name()
+		}
+	}
+	return ""
 }
 
 func receiverFromType(t types.Type, targetPkg string) string {
