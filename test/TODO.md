@@ -170,7 +170,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 ### Runtime & System
 
-- ⬜ `runtime` — 0/?
+- 🟡 `runtime` — 62/62 (2 tests fail: TestTypeAssertionError, TestCleanup - runtime implementation incomplete)
 - 🟡 `runtime/debug` — 18/18 (timeout with llgo - skipped for llgo)
 - 🟡 `runtime/pprof` — 15/15 (timeout with llgo - skipped for llgo)
 - 🟡 `runtime/trace` — 10/10 (timeout with llgo - skipped for llgo)

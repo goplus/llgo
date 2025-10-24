@@ -3,12 +3,38 @@ package runtime
 import (
 	"internal/goarch"
 	"internal/goos"
+	"unsafe"
 )
 
 type Error interface {
 	error
 	RuntimeError()
 }
+
+// PanicNilError is returned by recover when the argument to panic is nil.
+type PanicNilError struct{}
+
+func (e *PanicNilError) Error() string {
+	panic("todo")
+}
+
+func (e *PanicNilError) RuntimeError() {}
+
+// A TypeAssertionError explains a failed type assertion.
+type TypeAssertionError struct {
+	_interface    *_type
+	concrete      *_type
+	asserted      *_type
+	missingMethod string
+}
+
+type _type struct{}
+
+func (e *TypeAssertionError) Error() string {
+	panic("todo")
+}
+
+func (e *TypeAssertionError) RuntimeError() {}
 
 func Goexit() {
 	panic("todo")
@@ -63,6 +89,14 @@ type Func struct {
 }
 
 func (f *Func) Name() string {
+	panic("todo")
+}
+
+func (f *Func) FileLine(pc uintptr) (file string, line int) {
+	panic("todo")
+}
+
+func (f *Func) Entry() uintptr {
 	panic("todo")
 }
 
@@ -440,6 +474,10 @@ func (r *MemProfileRecord) InUseObjects() int64 {
 	return r.AllocObjects - r.FreeObjects
 }
 
+func (r *MemProfileRecord) Stack() []uintptr {
+	panic("todo")
+}
+
 var MemProfileRate int = 512 * 1024
 
 func MemProfile(p []MemProfileRecord, inuseZero bool) (n int, ok bool) {
@@ -478,11 +516,43 @@ type StackRecord struct {
 	Stack0 [32]uintptr // stack trace for this record; ends at first 0 entry
 }
 
+func (r *StackRecord) Stack() []uintptr {
+	panic("todo")
+}
+
 func ThreadCreateProfile(p []StackRecord) (n int, ok bool) {
 	panic("todo")
 }
 
 func NumGoroutine() int {
+	panic("todo")
+}
+
+func GoroutineProfile(p []StackRecord) (n int, ok bool) {
+	panic("todo")
+}
+
+func NumCPU() int {
+	panic("todo")
+}
+
+func Gosched() {
+	panic("todo")
+}
+
+func NumCgoCall() int64 {
+	panic("todo")
+}
+
+func Breakpoint() {
+	panic("todo")
+}
+
+func SetCgoTraceback(version int, traceback, context, symbolizer unsafe.Pointer) {
+	panic("todo")
+}
+
+func CPUProfile() []byte {
 	panic("todo")
 }
 
@@ -501,5 +571,29 @@ func BlockProfile(p []BlockProfileRecord) (n int, ok bool) {
 }
 
 func MutexProfile(p []BlockProfileRecord) (n int, ok bool) {
+	panic("todo")
+}
+
+// A Pinner is a set of pinned Go objects.
+type Pinner struct{}
+
+func (p *Pinner) Pin(pointer any) {
+	panic("todo")
+}
+
+func (p *Pinner) Unpin() {
+	panic("todo")
+}
+
+// Cleanup is a handle to a cleanup call for a specific object.
+type Cleanup struct {
+	fn uintptr
+}
+
+func (c Cleanup) Stop() {
+	panic("todo")
+}
+
+func AddCleanup[T, S any](ptr *T, cleanup func(S), arg S) Cleanup {
 	panic("todo")
 }
