@@ -162,7 +162,7 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 - ⬜ `go/doc` — 0/?
 - ⬜ `go/doc/comment` — 0/?
 - ⬜ `go/importer` — 0/?
-- ⬜ `go/parser` — 0/?
+- 🟡 `go/parser` — 5/5 (hang up)
 - ✅ `go/scanner` — 18/18
 - 🟡 `go/token` — 45/45 blocked (undefined symbol: reflect.Indirect see #1355)
 - ⬜ `go/types` — 0/?
