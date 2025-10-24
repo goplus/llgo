@@ -169,6 +169,15 @@ func collectMissing(symbols []symbol, used map[string]bool, pkgPath string, verb
 	}
 	for _, sym := range symbols {
 		key := symbolKey(sym)
+
+		// Skip intrinsic symbols that are compiled away
+		if shouldSkipSymbol(pkgPath, key) {
+			if verbose {
+				fmt.Printf("  SKIP %s (intrinsic)\n", key)
+			}
+			continue
+		}
+
 		if used[key] {
 			if verbose {
 				fmt.Printf("  OK   %s\n", key)
@@ -184,6 +193,23 @@ func collectMissing(symbols []symbol, used map[string]bool, pkgPath string, verb
 		fmt.Println()
 	}
 	return missing
+}
+
+func shouldSkipSymbol(pkgPath, symbolName string) bool {
+	// unsafe package has special intrinsic symbols that are compiled away
+	if pkgPath == "unsafe" {
+		intrinsics := map[string]bool{
+			"Alignof":       true,
+			"ArbitraryType": true,
+			"IntegerType":   true,
+			"Offsetof":      true,
+			"Sizeof":        true,
+			"String":        true,
+			"StringData":    true,
+		}
+		return intrinsics[symbolName]
+	}
+	return false
 }
 
 func exportedSymbols(pkgPath string) ([]symbol, error) {
