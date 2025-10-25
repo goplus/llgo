@@ -25,14 +25,16 @@ import (
 	"runtime"
 
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/ssa/abi"
 	llvm "github.com/goplus/llvm"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
 
 func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (Package, error) {
+	pkgPath := abi.PathOf(pkg.Types)
 	prog := ctx.prog
-	mainPkg := prog.NewPackage("", pkg.PkgPath+".main")
+	mainPkg := prog.NewPackage("", pkgPath+".main")
 
 	argcVar := mainPkg.NewVarEx("__llgo_argc", prog.Pointer(prog.Int32()))
 	argcVar.Init(prog.Zero(prog.Int32()))
@@ -44,11 +46,11 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 
 	exportFile := pkg.ExportFile
 	if exportFile == "" {
-		exportFile = pkg.PkgPath
+		exportFile = pkgPath
 	}
 	mainAPkg := &aPackage{
 		Package: &packages.Package{
-			PkgPath:    pkg.PkgPath + ".main",
+			PkgPath:    "main",
 			ExportFile: exportFile + "-main",
 		},
 		LPkg: mainPkg,
@@ -71,8 +73,8 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
-	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
-	mainMain := declareNoArgFunc(mainPkg, pkg.PkgPath+".main")
+	mainInit := declareNoArgFunc(mainPkg, pkgPath+".init")
+	mainMain := declareNoArgFunc(mainPkg, pkgPath+".main")
 
 	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, mainInit, mainMain, pyInit, rtInit)
 

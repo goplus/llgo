@@ -4,6 +4,7 @@
 package build
 
 import (
+	"go/types"
 	"strings"
 	"testing"
 
@@ -28,7 +29,11 @@ func TestGenMainModuleExecutable(t *testing.T) {
 			Goarch:    "amd64",
 		},
 	}
-	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
+	pkg := &packages.Package{
+		Types:      types.NewPackage("example.com/foo", "main"),
+		PkgPath:    "example.com/foo",
+		ExportFile: "foo.a",
+	}
 	mod, err := genMainModule(ctx, llssa.PkgRuntime, pkg, true, true)
 	if err != nil {
 		t.Fatalf("genMainModule() error = %v", err)
@@ -40,7 +45,8 @@ func TestGenMainModuleExecutable(t *testing.T) {
 	checks := []string{
 		"define i32 @main(",
 		"call void @Py_Initialize()",
-		"call void @\"example.com/foo.init\"()",
+		"call void @main.init()",
+		"call void @main.main()",
 		"define weak void @_start()",
 	}
 	for _, want := range checks {
