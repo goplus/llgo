@@ -171,8 +171,9 @@ int main() {
         {9, 10, 11, 12}
     };
     int32_t matrix_sum = ProcessMatrix2D(test_matrix);
-    assert(matrix_sum == 78);  // Sum of 1+2+3+...+12 = 78
     printf("Matrix2D sum: %d\n", matrix_sum);
+    fflush(stdout);
+    assert(matrix_sum == 78);  // Sum of 1+2+3+...+12 = 78
 
     // Create a test 3D cube [2][3][4]uint8
     uint8_t test_cube[2][3][4];
