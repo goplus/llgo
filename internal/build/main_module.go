@@ -21,17 +21,16 @@ package build
 
 import (
 	"go/token"
-
-	"github.com/goplus/llgo/internal/packages"
 	"go/types"
 	"runtime"
 
+	"github.com/goplus/llgo/internal/packages"
 	llvm "github.com/goplus/llvm"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
 
-func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (llssa.Package, error) {
+func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (Package, error) {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.PkgPath+".main")
 
@@ -43,8 +42,20 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	argvVar := mainPkg.NewVarEx("__llgo_argv", prog.Pointer(argvValueType))
 	argvVar.InitNil()
 
+	exportFile := pkg.ExportFile
+	if exportFile == "" {
+		exportFile = pkg.PkgPath
+	}
+	mainAPkg := &aPackage{
+		Package: &packages.Package{
+			PkgPath:    pkg.PkgPath + ".main",
+			ExportFile: exportFile + "-main",
+		},
+		LPkg: mainPkg,
+	}
+
 	if ctx.buildConf.BuildMode != BuildModeExe {
-		return mainPkg, nil
+		return mainAPkg, nil
 	}
 
 	runtimeStub := defineWeakNoArgStub(mainPkg, "runtime.init")
@@ -69,7 +80,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 		defineStart(mainPkg, entryFn, argvValueType)
 	}
 
-	return mainPkg, nil
+	return mainAPkg, nil
 }
 
 func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit llssa.Function) llssa.Function {

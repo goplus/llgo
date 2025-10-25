@@ -33,7 +33,10 @@ func TestGenMainModuleExecutable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("genMainModule() error = %v", err)
 	}
-	ir := mod.String()
+	if mod.ExportFile != "foo.a-main" {
+		t.Fatalf("unexpected export file: %s", mod.ExportFile)
+	}
+	ir := mod.LPkg.String()
 	checks := []string{
 		"define i32 @main(",
 		"call void @Py_Initialize()",
@@ -63,7 +66,7 @@ func TestGenMainModuleLibrary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("genMainModule() error = %v", err)
 	}
-	ir := mod.String()
+	ir := mod.LPkg.String()
 	if strings.Contains(ir, "define i32 @main") {
 		t.Fatalf("library mode should not emit main function:\n%s", ir)
 	}

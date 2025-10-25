@@ -784,10 +784,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 	if err != nil {
 		return err
 	}
-	entryObjFile, err := exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(entryPkg.String()))
+	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
+	entryPkg.ExportFile = entryObjFile
 	objFiles = append(objFiles, entryObjFile)
 
 	// Compile extra files from target configuration
