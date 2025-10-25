@@ -727,7 +727,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	allPkgs := []*packages.Package{pkg}
 	for _, v := range pkgs {
 		pkgsMap[v.Package] = v
-		allPkgs = append(allPkgs, v.Package)
+		// TODO(lijie): need more efficient way to collect all deps
+		if v.Package.Name != "main" {
+			allPkgs = append(allPkgs, v.Package)
+		}
 	}
 	var objFiles []string
 	var linkArgs []string
