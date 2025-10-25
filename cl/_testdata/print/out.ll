@@ -1,14 +1,14 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testdata/print'
-source_filename = "github.com/goplus/llgo/cl/_testdata/print"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
-%"github.com/goplus/llgo/cl/_testdata/print.stringStruct" = type { ptr, i64 }
-%"github.com/goplus/llgo/cl/_testdata/print.slice" = type { ptr, i64, i64 }
+%main.stringStruct = type { ptr, i64 }
+%main.slice = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
-@"github.com/goplus/llgo/cl/_testdata/print.init$guard" = global i1 false, align 1
-@"github.com/goplus/llgo/cl/_testdata/print.minhexdigits" = global i64 0, align 8
+@"main.init$guard" = global i1 false, align 1
+@main.minhexdigits = global i64 0, align 8
 @0 = private unnamed_addr constant [3 x i8] c"%c\00", align 1
 @1 = private unnamed_addr constant [4 x i8] c"llgo", align 1
 @_llgo_float32 = linkonce global ptr null, align 8
@@ -42,29 +42,29 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/print"
 @13 = private unnamed_addr constant [1 x i8] c" ", align 1
 @14 = private unnamed_addr constant [1 x i8] c"\0A", align 1
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testdata/print.bytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @main.bytes(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, ptr %1, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %3 = call ptr @"github.com/goplus/llgo/cl/_testdata/print.stringStructOf"(ptr %1)
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/print.stringStruct", ptr %3, i32 0, i32 0
+  %3 = call ptr @main.stringStructOf(ptr %1)
+  %4 = getelementptr inbounds %main.stringStruct, ptr %3, i32 0, i32 0
   %5 = load ptr, ptr %4, align 8
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/print.slice", ptr %2, i32 0, i32 0
+  %6 = getelementptr inbounds %main.slice, ptr %2, i32 0, i32 0
   store ptr %5, ptr %6, align 8
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/print.stringStruct", ptr %3, i32 0, i32 1
+  %7 = getelementptr inbounds %main.stringStruct, ptr %3, i32 0, i32 1
   %8 = load i64, ptr %7, align 4
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/print.slice", ptr %2, i32 0, i32 1
+  %9 = getelementptr inbounds %main.slice, ptr %2, i32 0, i32 1
   store i64 %8, ptr %9, align 4
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/print.stringStruct", ptr %3, i32 0, i32 1
+  %10 = getelementptr inbounds %main.stringStruct, ptr %3, i32 0, i32 1
   %11 = load i64, ptr %10, align 4
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/print.slice", ptr %2, i32 0, i32 2
+  %12 = getelementptr inbounds %main.slice, ptr %2, i32 0, i32 2
   store i64 %11, ptr %12, align 4
   %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %2, align 8
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+define void @main.gwrite(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   %2 = icmp eq i64 %1, 0
@@ -99,47 +99,47 @@ _llgo_5:                                          ; preds = %_llgo_3
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/print.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/print.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testdata/print.init$after"()
-  store i64 0, ptr @"github.com/goplus/llgo/cl/_testdata/print.minhexdigits", align 4
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
+  store i64 0, ptr @main.minhexdigits, align 4
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.main"() {
+define void @main.main() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 })
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 1024)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printhex"(i64 305441743)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
-  call void @"github.com/goplus/llgo/cl/_testdata/print.prinxor"(i64 1)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
-  call void @"github.com/goplus/llgo/cl/_testdata/print.prinsub"(i64 100)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
-  call void @"github.com/goplus/llgo/cl/_testdata/print.prinusub"(i64 -1)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
-  call void @"github.com/goplus/llgo/cl/_testdata/print.prinfsub"(double 1.001000e+02)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 })
+  call void @main.printnl()
+  call void @main.printuint(i64 1024)
+  call void @main.printnl()
+  call void @main.printhex(i64 305441743)
+  call void @main.printnl()
+  call void @main.prinxor(i64 1)
+  call void @main.printnl()
+  call void @main.prinsub(i64 100)
+  call void @main.printnl()
+  call void @main.prinusub(i64 -1)
+  call void @main.printnl()
+  call void @main.prinfsub(double 1.001000e+02)
+  call void @main.printnl()
   %0 = load ptr, ptr @_llgo_float32, align 8
   %1 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %0, 0
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, ptr inttoptr (i32 1315859240 to ptr), 1
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printany"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
+  call void @main.printany(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
+  call void @main.printnl()
   %3 = load ptr, ptr @_llgo_float64, align 8
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %3, 0
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %4, ptr inttoptr (i64 4746175415993761792 to ptr), 1
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printany"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %5)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
+  call void @main.printany(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %5)
+  call void @main.printnl()
   br i1 true, label %_llgo_3, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -159,7 +159,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %6, 0
   %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %16, i64 2, 1
   %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, i64 2, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.println"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
+  call void @main.println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_3, %_llgo_0
@@ -184,7 +184,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_3, 
   %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %19, 0
   %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %33, i64 3, 1
   %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %34, i64 3, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.println"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35)
+  call void @main.println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35)
   %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 256)
   %37 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %36, i64 0
   %38 = load ptr, ptr @_llgo_bool, align 8
@@ -271,7 +271,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_3, 
   %102 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %36, 0
   %103 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %102, i64 16, 1
   %104 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %103, i64 16, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.println"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %104)
+  call void @main.println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %104)
   %105 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %106 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %105, i64 0
   %107 = load ptr, ptr @_llgo_complex128, align 8
@@ -283,28 +283,28 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_3, 
   %111 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %105, 0
   %112 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %111, i64 1, 1
   %113 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %112, i64 1, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.println"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %113)
+  call void @main.println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %113)
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
   br i1 true, label %_llgo_1, label %_llgo_2
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.prinfsub"(double %0) {
+define void @main.prinfsub(double %0) {
 _llgo_0:
   %1 = fneg double %0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %1)
+  call void @main.printfloat(double %1)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.prinsub"(i64 %0) {
+define void @main.prinsub(i64 %0) {
 _llgo_0:
   %1 = sub i64 0, %0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %1)
+  call void @main.printint(i64 %1)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printany"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define void @main.printany(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = load ptr, ptr @_llgo_bool, align 8
@@ -315,7 +315,7 @@ _llgo_1:                                          ; preds = %_llgo_34, %_llgo_85
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_37
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printbool"(i1 %71)
+  call void @main.printbool(i1 %71)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_37
@@ -325,7 +325,7 @@ _llgo_3:                                          ; preds = %_llgo_37
   br i1 %6, label %_llgo_38, label %_llgo_39
 
 _llgo_4:                                          ; preds = %_llgo_40
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %78)
+  call void @main.printint(i64 %78)
   br label %_llgo_1
 
 _llgo_5:                                          ; preds = %_llgo_40
@@ -336,7 +336,7 @@ _llgo_5:                                          ; preds = %_llgo_40
 
 _llgo_6:                                          ; preds = %_llgo_43
   %10 = sext i8 %86 to i64
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %10)
+  call void @main.printint(i64 %10)
   br label %_llgo_1
 
 _llgo_7:                                          ; preds = %_llgo_43
@@ -347,7 +347,7 @@ _llgo_7:                                          ; preds = %_llgo_43
 
 _llgo_8:                                          ; preds = %_llgo_46
   %14 = sext i16 %94 to i64
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %14)
+  call void @main.printint(i64 %14)
   br label %_llgo_1
 
 _llgo_9:                                          ; preds = %_llgo_46
@@ -358,7 +358,7 @@ _llgo_9:                                          ; preds = %_llgo_46
 
 _llgo_10:                                         ; preds = %_llgo_49
   %18 = sext i32 %102 to i64
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %18)
+  call void @main.printint(i64 %18)
   br label %_llgo_1
 
 _llgo_11:                                         ; preds = %_llgo_49
@@ -368,7 +368,7 @@ _llgo_11:                                         ; preds = %_llgo_49
   br i1 %21, label %_llgo_50, label %_llgo_51
 
 _llgo_12:                                         ; preds = %_llgo_52
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %109)
+  call void @main.printint(i64 %109)
   br label %_llgo_1
 
 _llgo_13:                                         ; preds = %_llgo_52
@@ -378,7 +378,7 @@ _llgo_13:                                         ; preds = %_llgo_52
   br i1 %24, label %_llgo_53, label %_llgo_54
 
 _llgo_14:                                         ; preds = %_llgo_55
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %116)
+  call void @main.printuint(i64 %116)
   br label %_llgo_1
 
 _llgo_15:                                         ; preds = %_llgo_55
@@ -389,7 +389,7 @@ _llgo_15:                                         ; preds = %_llgo_55
 
 _llgo_16:                                         ; preds = %_llgo_58
   %28 = zext i8 %124 to i64
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %28)
+  call void @main.printuint(i64 %28)
   br label %_llgo_1
 
 _llgo_17:                                         ; preds = %_llgo_58
@@ -400,7 +400,7 @@ _llgo_17:                                         ; preds = %_llgo_58
 
 _llgo_18:                                         ; preds = %_llgo_61
   %32 = zext i16 %132 to i64
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %32)
+  call void @main.printuint(i64 %32)
   br label %_llgo_1
 
 _llgo_19:                                         ; preds = %_llgo_61
@@ -411,7 +411,7 @@ _llgo_19:                                         ; preds = %_llgo_61
 
 _llgo_20:                                         ; preds = %_llgo_64
   %36 = zext i32 %140 to i64
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %36)
+  call void @main.printuint(i64 %36)
   br label %_llgo_1
 
 _llgo_21:                                         ; preds = %_llgo_64
@@ -421,7 +421,7 @@ _llgo_21:                                         ; preds = %_llgo_64
   br i1 %39, label %_llgo_65, label %_llgo_66
 
 _llgo_22:                                         ; preds = %_llgo_67
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %147)
+  call void @main.printuint(i64 %147)
   br label %_llgo_1
 
 _llgo_23:                                         ; preds = %_llgo_67
@@ -431,7 +431,7 @@ _llgo_23:                                         ; preds = %_llgo_67
   br i1 %42, label %_llgo_68, label %_llgo_69
 
 _llgo_24:                                         ; preds = %_llgo_70
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %154)
+  call void @main.printuint(i64 %154)
   br label %_llgo_1
 
 _llgo_25:                                         ; preds = %_llgo_70
@@ -442,7 +442,7 @@ _llgo_25:                                         ; preds = %_llgo_70
 
 _llgo_26:                                         ; preds = %_llgo_73
   %46 = fpext float %163 to double
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %46)
+  call void @main.printfloat(double %46)
   br label %_llgo_1
 
 _llgo_27:                                         ; preds = %_llgo_73
@@ -452,7 +452,7 @@ _llgo_27:                                         ; preds = %_llgo_73
   br i1 %49, label %_llgo_74, label %_llgo_75
 
 _llgo_28:                                         ; preds = %_llgo_76
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %171)
+  call void @main.printfloat(double %171)
   br label %_llgo_1
 
 _llgo_29:                                         ; preds = %_llgo_76
@@ -462,14 +462,14 @@ _llgo_29:                                         ; preds = %_llgo_76
   br i1 %52, label %_llgo_77, label %_llgo_78
 
 _llgo_30:                                         ; preds = %_llgo_79
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 1 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 1 })
   %53 = extractvalue { float, float } %178, 0
   %54 = fpext float %53 to double
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %54)
+  call void @main.printfloat(double %54)
   %55 = extractvalue { float, float } %178, 1
   %56 = fpext float %55 to double
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %56)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 2 })
+  call void @main.printfloat(double %56)
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 2 })
   br label %_llgo_1
 
 _llgo_31:                                         ; preds = %_llgo_79
@@ -479,12 +479,12 @@ _llgo_31:                                         ; preds = %_llgo_79
   br i1 %59, label %_llgo_80, label %_llgo_81
 
 _llgo_32:                                         ; preds = %_llgo_82
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 1 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 1 })
   %60 = extractvalue { double, double } %185, 0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %60)
+  call void @main.printfloat(double %60)
   %61 = extractvalue { double, double } %185, 1
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %61)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 2 })
+  call void @main.printfloat(double %61)
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 2 })
   br label %_llgo_1
 
 _llgo_33:                                         ; preds = %_llgo_82
@@ -494,7 +494,7 @@ _llgo_33:                                         ; preds = %_llgo_82
   br i1 %64, label %_llgo_83, label %_llgo_84
 
 _llgo_34:                                         ; preds = %_llgo_85
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %192)
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" %192)
   br label %_llgo_1
 
 _llgo_35:                                         ; preds = %_llgo_0
@@ -780,33 +780,33 @@ _llgo_85:                                         ; preds = %_llgo_84, %_llgo_83
   br i1 %193, label %_llgo_34, label %_llgo_1
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printbool"(i1 %0) {
+define void @main.printbool(i1 %0) {
 _llgo_0:
   br i1 %0, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 })
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 5 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 5 })
   br label %_llgo_2
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printfloat"(double %0) {
+define void @main.printfloat(double %0) {
 _llgo_0:
   %1 = fcmp une double %0, %0
   br i1 %1, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 3 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 3 })
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_7
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 })
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
@@ -815,7 +815,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %3, label %_llgo_6, label %_llgo_7
 
 _llgo_4:                                          ; preds = %_llgo_10
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 4 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 4 })
   ret void
 
 _llgo_5:                                          ; preds = %_llgo_7
@@ -981,11 +981,11 @@ _llgo_29:                                         ; preds = %_llgo_28, %_llgo_27
   %78 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %8, 0
   %79 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %78, i64 14, 1
   %80 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %79, i64 14, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %80)
+  call void @main.gwrite(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %80)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printhex"(i64 %0) {
+define void @main.printhex(i64 %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 100)
   br label %_llgo_3
@@ -1021,7 +1021,7 @@ _llgo_2:                                          ; preds = %_llgo_5, %_llgo_3
   %20 = getelementptr inbounds i8, ptr %1, i64 %16
   store i8 48, ptr %20, align 1
   %21 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %1, i64 1, i64 100, i64 %16, i64 100, i64 100)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %21)
+  call void @main.gwrite(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %21)
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_4, %_llgo_0
@@ -1037,28 +1037,28 @@ _llgo_4:                                          ; preds = %_llgo_5, %_llgo_1
 
 _llgo_5:                                          ; preds = %_llgo_1
   %27 = sub i64 100, %23
-  %28 = load i64, ptr @"github.com/goplus/llgo/cl/_testdata/print.minhexdigits", align 4
+  %28 = load i64, ptr @main.minhexdigits, align 4
   %29 = icmp sge i64 %27, %28
   br i1 %29, label %_llgo_2, label %_llgo_4
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %0) {
+define void @main.printint(i64 %0) {
 _llgo_0:
   %1 = icmp slt i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 1 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 1 })
   %2 = sub i64 0, %0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   %3 = phi i64 [ %0, %_llgo_0 ], [ %2, %_llgo_1 ]
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %3)
+  call void @main.printuint(i64 %3)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.println"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+define void @main.println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
@@ -1082,38 +1082,38 @@ _llgo_2:                                          ; preds = %_llgo_1
   br i1 %12, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_1
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printnl"()
+  call void @main.printnl()
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 1 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 1 })
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printany"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %11)
+  call void @main.printany(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %11)
   br label %_llgo_1
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printnl"() {
+define void @main.printnl() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 1 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 1 })
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printsp"() {
+define void @main.printsp() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 1 })
+  call void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 1 })
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printstring"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+define void @main.printstring(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testdata/print.bytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @main.bytes(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
+  call void @main.gwrite(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %0) {
+define void @main.printuint(i64 %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 100)
   br label %_llgo_3
@@ -1133,7 +1133,7 @@ _llgo_1:                                          ; preds = %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_3
   %10 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %1, i64 1, i64 100, i64 %12, i64 100, i64 100)
-  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10)
+  call void @main.gwrite(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10)
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_4, %_llgo_0
@@ -1148,21 +1148,21 @@ _llgo_4:                                          ; preds = %_llgo_1
   br label %_llgo_3
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.prinusub"(i64 %0) {
+define void @main.prinusub(i64 %0) {
 _llgo_0:
   %1 = sub i64 0, %0
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printuint"(i64 %1)
+  call void @main.printuint(i64 %1)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.prinxor"(i64 %0) {
+define void @main.prinxor(i64 %0) {
 _llgo_0:
   %1 = xor i64 %0, -1
-  call void @"github.com/goplus/llgo/cl/_testdata/print.printint"(i64 %1)
+  call void @main.printint(i64 %1)
   ret void
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testdata/print.stringStructOf"(ptr %0) {
+define ptr @main.stringStructOf(ptr %0) {
 _llgo_0:
   ret ptr %0
 }
@@ -1173,7 +1173,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"
 
 declare i32 @printf(ptr, ...)
 
-define void @"github.com/goplus/llgo/cl/_testdata/print.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_float32, align 8
   %1 = icmp eq ptr %0, null

@@ -1,25 +1,25 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/sum'
-source_filename = "github.com/goplus/llgo/cl/_testrt/sum"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
-@"github.com/goplus/llgo/cl/_testrt/sum.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [10 x i8] c"Hello %d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/sum.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/sum.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/sum.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/sum.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -33,12 +33,12 @@ _llgo_0:
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, i64 4, 1
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, i64 4, 2
-  %8 = call i64 @"github.com/goplus/llgo/cl/_testrt/sum.sum"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7)
+  %8 = call i64 @main.sum(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7)
   %9 = call i32 (ptr, ...) @printf(ptr @0, i64 %8)
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/sum.sum"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+define i64 @main.sum(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1

@@ -1,21 +1,21 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testlibgo/atomic'
-source_filename = "github.com/goplus/llgo/cl/_testlibgo/atomic"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"github.com/goplus/llgo/cl/_testlibgo/atomic.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [6 x i8] c"store:", align 1
 @1 = private unnamed_addr constant [4 x i8] c"ret:", align 1
 @2 = private unnamed_addr constant [2 x i8] c"v:", align 1
 @3 = private unnamed_addr constant [4 x i8] c"swp:", align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/atomic.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/atomic.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testlibgo/atomic.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   call void @"sync/atomic.init"()
   br label %_llgo_2
 
@@ -23,7 +23,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/atomic.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store atomic i64 100, ptr %0 seq_cst, align 4

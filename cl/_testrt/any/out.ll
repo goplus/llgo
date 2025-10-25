@@ -1,10 +1,10 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/any'
-source_filename = "github.com/goplus/llgo/cl/_testrt/any"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"github.com/goplus/llgo/cl/_testrt/any.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @_llgo_int8 = linkonce global ptr null, align 8
 @"*_llgo_int8" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [58 x i8] c"type assertion any -> *github.com/goplus/lib/c.Char failed", align 1
@@ -14,7 +14,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/any"
 @2 = private unnamed_addr constant [7 x i8] c"%s %d\0A\00", align 1
 @3 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/any.hi"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define ptr @main.hi(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = load ptr, ptr @_llgo_int8, align 8
@@ -36,7 +36,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/any.incVal"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define i64 @main.incVal(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = load ptr, ptr @_llgo_int, align 8
@@ -59,35 +59,35 @@ _llgo_2:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/any.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/any.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/any.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testrt/any.init$after"()
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/any.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = load ptr, ptr @"*_llgo_int8", align 8
   %1 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %0, 0
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, ptr @3, 1
-  %3 = call ptr @"github.com/goplus/llgo/cl/_testrt/any.hi"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
+  %3 = call ptr @main.hi(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   %4 = load ptr, ptr @_llgo_int, align 8
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, ptr inttoptr (i64 100 to ptr), 1
-  %7 = call i64 @"github.com/goplus/llgo/cl/_testrt/any.incVal"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
+  %7 = call i64 @main.incVal(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
   %8 = call i32 (ptr, ...) @printf(ptr @2, ptr %3, i64 %7)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/any.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int8, align 8
   %1 = icmp eq ptr %0, null

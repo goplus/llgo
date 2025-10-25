@@ -1,12 +1,12 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testgo/selects'
-source_filename = "github.com/goplus/llgo/cl/_testgo/selects"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" = type { ptr, ptr, i32, i1 }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
-@"github.com/goplus/llgo/cl/_testgo/selects.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [4 x i8] c"c1<-", align 1
 @1 = private unnamed_addr constant [4 x i8] c"<-c2", align 1
 @2 = private unnamed_addr constant [4 x i8] c"<-c4", align 1
@@ -16,21 +16,21 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/selects"
 @5 = private unnamed_addr constant [4 x i8] c"c2<-", align 1
 @6 = private unnamed_addr constant [4 x i8] c"<-c3", align 1
 
-define void @"github.com/goplus/llgo/cl/_testgo/selects.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/selects.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/selects.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testgo/selects.init$after"()
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/selects.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewChan"(i64 0, i64 1)
@@ -49,12 +49,12 @@ _llgo_0:
   store ptr %2, ptr %9, align 8
   %10 = getelementptr inbounds { ptr, ptr, ptr }, ptr %7, i32 0, i32 2
   store ptr %4, ptr %10, align 8
-  %11 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/selects.main$1", ptr undef }, ptr %7, 1
+  %11 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %7, 1
   %12 = call ptr @malloc(i64 16)
   %13 = getelementptr inbounds { { ptr, ptr } }, ptr %12, i32 0, i32 0
   store { ptr, ptr } %11, ptr %13, align 8
   %14 = alloca i8, i64 8, align 1
-  %15 = call i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr %14, ptr null, ptr @"github.com/goplus/llgo/cl/_testgo/selects._llgo_routine$1", ptr %12)
+  %15 = call i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr %14, ptr null, ptr @"main._llgo_routine$1", ptr %12)
   %16 = load ptr, ptr %0, align 8
   %17 = alloca {}, align 8
   call void @llvm.memset(ptr %17, i8 0, i64 0, i1 false)
@@ -125,7 +125,7 @@ _llgo_5:                                          ; preds = %_llgo_3
   unreachable
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/selects.main$1"(ptr %0) {
+define void @"main.main$1"(ptr %0) {
 _llgo_0:
   %1 = load { ptr, ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr, ptr } %1, 0
@@ -208,7 +208,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare ptr @malloc(i64)
 
-define ptr @"github.com/goplus/llgo/cl/_testgo/selects._llgo_routine$1"(ptr %0) {
+define ptr @"main._llgo_routine$1"(ptr %0) {
 _llgo_0:
   %1 = load { { ptr, ptr } }, ptr %0, align 8
   %2 = extractvalue { { ptr, ptr } } %1, 0
@@ -234,7 +234,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare { i64, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.Select"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
-define void @"github.com/goplus/llgo/cl/_testgo/selects.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null

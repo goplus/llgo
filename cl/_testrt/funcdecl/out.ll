@@ -1,40 +1,40 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/funcdecl'
-source_filename = "github.com/goplus/llgo/cl/_testrt/funcdecl"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
-%"github.com/goplus/llgo/cl/_testrt/funcdecl.rtype" = type { ptr, ptr }
+%main.rtype = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/abi.StructField" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1 }
 
-@"github.com/goplus/llgo/cl/_testrt/funcdecl.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac" = linkonce global ptr null, align 8
 @_llgo_Pointer = linkonce global ptr null, align 8
-@"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8" = linkonce global ptr null, align 8
+@"main.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [2 x i8] c"$f", align 1
 @1 = private unnamed_addr constant [5 x i8] c"$data", align 1
-@2 = private unnamed_addr constant [42 x i8] c"github.com/goplus/llgo/cl/_testrt/funcdecl", align 1
+@2 = private unnamed_addr constant [4 x i8] c"main", align 1
 @3 = private unnamed_addr constant [68 x i8] c"type assertion any -> struct{$f func(); $data unsafe.Pointer} failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @4 = private unnamed_addr constant [4 x i8] c"demo", align 1
 @5 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/funcdecl.check"({ ptr, ptr } %0) {
+define void @main.check({ ptr, ptr } %0) {
 _llgo_0:
   %1 = load ptr, ptr @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", align 8
   %2 = load ptr, ptr @_llgo_Pointer, align 8
-  %3 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
+  %3 = load ptr, ptr @"main.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null }, ptr %4, align 8
+  store { ptr, ptr } { ptr @__llgo_stub.main.demo, ptr null }, ptr %4, align 8
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %3, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, ptr %4, 1
-  %7 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
+  %7 = load ptr, ptr @"main.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store { ptr, ptr } %0, ptr %8, align 8
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
   %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, ptr %8, 1
   %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, 0
-  %12 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
+  %12 = load ptr, ptr @"main.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %13 = icmp eq ptr %11, %12
   br i1 %13, label %_llgo_1, label %_llgo_2
 
@@ -42,7 +42,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, 1
   %15 = load { ptr, ptr }, ptr %14, align 8
   %16 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %10, 0
-  %17 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
+  %17 = load ptr, ptr @"main.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %18 = icmp eq ptr %16, %17
   br i1 %18, label %_llgo_3, label %_llgo_4
 
@@ -71,10 +71,10 @@ _llgo_3:                                          ; preds = %_llgo_1
   %27 = extractvalue { ptr, ptr } %24, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %27)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.demo")
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @main.demo)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %28 = call ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.closurePtr"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
-  %29 = call ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.closurePtr"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %10)
+  %28 = call ptr @main.closurePtr(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
+  %29 = call ptr @main.closurePtr(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %10)
   %30 = icmp eq ptr %28, %29
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %30)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
@@ -90,53 +90,53 @@ _llgo_4:                                          ; preds = %_llgo_1
   unreachable
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.closurePtr"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define ptr @main.closurePtr(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, ptr %1, align 8
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/funcdecl.rtype", ptr %1, i32 0, i32 1
+  %2 = getelementptr inbounds %main.rtype, ptr %1, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
   %4 = getelementptr inbounds { ptr, ptr }, ptr %3, i32 0, i32 0
   %5 = load ptr, ptr %4, align 8
   ret ptr %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/funcdecl.demo"() {
+define void @main.demo() {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/funcdecl.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testrt/funcdecl.init$after"()
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/funcdecl.main"() {
+define void @main.main() {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 5 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/cl/_testrt/funcdecl.check"({ ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null })
+  call void @main.check({ ptr, ptr } { ptr @__llgo_stub.main.demo, ptr null })
   ret void
 }
 
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo"(ptr %0) {
+define linkonce void @__llgo_stub.main.demo(ptr %0) {
 _llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/funcdecl.demo"()
+  tail call void @main.demo()
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/funcdecl.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", align 8
   %1 = icmp eq ptr %0, null
@@ -188,8 +188,8 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %26, 0
   %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %29, i64 2, 1
   %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30, i64 2, 2
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 42 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31)
-  store ptr %32, ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 4 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31)
+  store ptr %32, ptr @"main.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %33 = load ptr, ptr @_llgo_string, align 8
   %34 = icmp eq ptr %33, null
   br i1 %34, label %_llgo_5, label %_llgo_6

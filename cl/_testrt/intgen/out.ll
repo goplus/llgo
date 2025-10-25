@@ -1,15 +1,15 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/intgen'
-source_filename = "github.com/goplus/llgo/cl/_testrt/intgen"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
-%"github.com/goplus/llgo/cl/_testrt/intgen.generator" = type { i32 }
+%main.generator = type { i32 }
 
-@"github.com/goplus/llgo/cl/_testrt/intgen.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @2 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 %0, { ptr, ptr } %1) {
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @main.genInts(i64 %0, { ptr, ptr } %1) {
 _llgo_0:
   %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 4)
   %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %2, 1
@@ -39,34 +39,34 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %2
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next"(ptr %0) {
+define i32 @"main.(*generator).next"(ptr %0) {
 _llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
+  %1 = getelementptr inbounds %main.generator, ptr %0, i32 0, i32 0
   %2 = load i32, ptr %1, align 4
   %3 = add i32 %2, 1
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
+  %4 = getelementptr inbounds %main.generator, ptr %0, i32 0, i32 0
   store i32 %3, ptr %4, align 4
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
+  %5 = getelementptr inbounds %main.generator, ptr %0, i32 0, i32 0
   %6 = load i32, ptr %5, align 4
   ret i32 %6
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/intgen.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/intgen.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/intgen.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/intgen.main"() {
+define void @main.main() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } { ptr @__llgo_stub.rand, ptr null })
+  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } { ptr @__llgo_stub.rand, ptr null })
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
 
@@ -94,8 +94,8 @@ _llgo_3:                                          ; preds = %_llgo_1
   %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %15 = getelementptr inbounds { ptr }, ptr %14, i32 0, i32 0
   store ptr %13, ptr %15, align 8
-  %16 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.main$1", ptr undef }, ptr %14, 1
-  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %16)
+  %16 = insertvalue { ptr, ptr } { ptr @"main.main$1", ptr undef }, ptr %14, 1
+  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %16)
   %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, 1
   br label %_llgo_4
 
@@ -119,13 +119,13 @@ _llgo_5:                                          ; preds = %_llgo_4
 
 _llgo_6:                                          ; preds = %_llgo_4
   %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 4)
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %30, i32 0, i32 0
+  %31 = getelementptr inbounds %main.generator, ptr %30, i32 0, i32 0
   store i32 1, ptr %31, align 4
   %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %33 = getelementptr inbounds { ptr }, ptr %32, i32 0, i32 0
   store ptr %30, ptr %33, align 8
-  %34 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound", ptr undef }, ptr %32, 1
-  %35 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %34)
+  %34 = insertvalue { ptr, ptr } { ptr @"main.(*generator).next$bound", ptr undef }, ptr %32, 1
+  %35 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @main.genInts(i64 5, { ptr, ptr } %34)
   %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
   br label %_llgo_7
 
@@ -151,7 +151,7 @@ _llgo_9:                                          ; preds = %_llgo_7
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.main$1"(ptr %0) {
+define i32 @"main.main$1"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
@@ -182,10 +182,10 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound"(ptr %0) {
+define i32 @"main.(*generator).next$bound"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
-  %3 = call i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next"(ptr %2)
+  %3 = call i32 @"main.(*generator).next"(ptr %2)
   ret i32 %3
 }

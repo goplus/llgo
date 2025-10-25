@@ -1,23 +1,23 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/qsort'
-source_filename = "github.com/goplus/llgo/cl/_testrt/qsort"
+; ModuleID = 'main'
+source_filename = "main"
 
-@"github.com/goplus/llgo/cl/_testrt/qsort.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsort.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/qsort.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/qsort.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsort.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -31,7 +31,7 @@ _llgo_0:
   store i64 2, ptr %4, align 4
   store i64 7, ptr %5, align 4
   %6 = getelementptr inbounds i64, ptr %0, i64 0
-  call void @qsort(ptr %6, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsort.main$1")
+  call void @qsort(ptr %6, i64 5, i64 8, ptr @"main.main$1")
   %7 = load [5 x i64], ptr %0, align 4
   br label %_llgo_1
 
@@ -55,7 +55,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsort.main$1"(ptr %0, ptr %1) {
+define i32 @"main.main$1"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4

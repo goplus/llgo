@@ -1,7 +1,7 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testpy/callpy'
-source_filename = "github.com/goplus/llgo/cl/_testpy/callpy"
+; ModuleID = 'main'
+source_filename = "main"
 
-@"github.com/goplus/llgo/cl/_testpy/callpy.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @__llgo_py.math.sqrt = linkonce global ptr null, align 8
 @__llgo_py.os.getcwd = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [14 x i8] c"sqrt(2) = %f\0A\00", align 1
@@ -14,13 +14,13 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/callpy"
 @__llgo_py.os = external global ptr, align 8
 @4 = private unnamed_addr constant [7 x i8] c"getcwd\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/callpy.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/callpy.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/callpy.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   call void @"github.com/goplus/lib/py/math.init"()
   call void @"github.com/goplus/lib/py/os.init"()
   call void @"github.com/goplus/lib/py/std.init"()
@@ -36,7 +36,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/callpy.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
   %1 = load ptr, ptr @__llgo_py.math.sqrt, align 8
