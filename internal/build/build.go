@@ -50,7 +50,7 @@ import (
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
-	"github.com/goplus/llgo/xtool/env/llvm"
+	llvmenv "github.com/goplus/llgo/xtool/env/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -322,7 +322,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	env := llvm.New("")
+	env := llvmenv.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
@@ -488,7 +488,7 @@ const (
 )
 
 type context struct {
-	env     *llvm.Env
+	env     *llvmenv.Env
 	conf    *packages.Config
 	progSSA *ssa.Program
 	prog    llssa.Program
@@ -780,11 +780,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 	// Generate main module file (needed for global variables even in library modes)
-	entryObjFile, err := genMainModuleFile(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
+	entryPkg, err := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	if err != nil {
 		return err
 	}
-	// defer os.Remove(entryLLFile)
+	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	if err != nil {
+		return err
+	}
+	entryPkg.ExportFile = entryObjFile
 	objFiles = append(objFiles, entryObjFile)
 
 	// Compile extra files from target configuration
@@ -914,118 +918,6 @@ func needStart(ctx *context) bool {
 	}
 }
 
-func genMainModuleFile(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (path string, err error) {
-	var (
-		pyInitDecl string
-		pyInit     string
-		rtInitDecl string
-		rtInit     string
-	)
-	mainPkgPath := pkg.PkgPath
-	if needRuntime {
-		rtInit = "call void @\"" + rtPkgPath + ".init\"()"
-		rtInitDecl = "declare void @\"" + rtPkgPath + ".init\"()"
-	}
-	if needPyInit {
-		pyInit = "call void @Py_Initialize()"
-		pyInitDecl = "declare void @Py_Initialize()"
-	}
-	declSizeT := "%size_t = type i64"
-	if is32Bits(ctx.buildConf.Goarch) {
-		declSizeT = "%size_t = type i32"
-	}
-	stdioDecl := ""
-	stdioNobuf := ""
-	if IsStdioNobuf() {
-		stdioDecl = `
-@stdout = external global ptr
-@stderr = external global ptr
-@__stdout = external global ptr
-@__stderr = external global ptr
-declare i32 @setvbuf(ptr, ptr, i32, %size_t)
-	`
-		stdioNobuf = `
-; Set stdout with no buffer
-%stdout_is_null = icmp eq ptr @stdout, null
-%stdout_ptr = select i1 %stdout_is_null, ptr @__stdout, ptr @stdout
-call i32 @setvbuf(ptr %stdout_ptr, ptr null, i32 2, %size_t 0)
-; Set stderr with no buffer
-%stderr_ptr = select i1 %stdout_is_null, ptr @__stderr, ptr @stderr
-call i32 @setvbuf(ptr %stderr_ptr, ptr null, i32 2, %size_t 0)
-	`
-	}
-	// TODO(lijie): workaround for libc-free
-	// Remove main/_start when -buildmode and libc are ready
-	startDefine := `
-define weak void @_start() {
-  ; argc = 0
-  %argc = add i32 0, 0
-  ; argv = null
-  %argv = inttoptr i64 0 to i8**
-  call i32 @main(i32 %argc, i8** %argv)
-  ret void
-}
-`
-	mainDefine := "define i32 @main(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
-	if !needStart(ctx) && isWasmTarget(ctx.buildConf.Goos) {
-		mainDefine = "define hidden noundef i32 @__main_argc_argv(i32 noundef %0, ptr nocapture noundef readnone %1) local_unnamed_addr"
-	}
-	if !needStart(ctx) {
-		startDefine = ""
-	}
-
-	var mainCode string
-	// For library modes (c-archive, c-shared), only generate global variables
-	if ctx.buildConf.BuildMode != BuildModeExe {
-		mainCode = `; ModuleID = 'main'
-source_filename = "main"
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
-`
-	} else {
-		// For executable mode, generate full main function
-		mainCode = fmt.Sprintf(`; ModuleID = 'main'
-source_filename = "main"
-%s
-@__llgo_argc = global i32 0, align 4
-@__llgo_argv = global ptr null, align 8
-%s
-%s
-%s
-declare void @"%s.init"()
-declare void @"%s.main"()
-define weak void @runtime.init() {
-  ret void
-}
-
-; TODO(lijie): workaround for syscall patch
-define weak void @"syscall.init"() {
-  ret void
-}
-
-%s
-
-%s {
-_llgo_0:
-  store i32 %%0, ptr @__llgo_argc, align 4
-  store ptr %%1, ptr @__llgo_argv, align 8
-  %s
-  %s
-  %s
-  call void @runtime.init()
-  call void @"%s.init"()
-  call void @"%s.main"()
-  ret i32 0
-}
-`, declSizeT, stdioDecl,
-			pyInitDecl, rtInitDecl, mainPkgPath, mainPkgPath,
-			startDefine, mainDefine, stdioNobuf,
-			pyInit, rtInit, mainPkgPath, mainPkgPath)
-	}
-
-	return exportObject(ctx, pkg.PkgPath+".main", pkg.ExportFile+"-main", []byte(mainCode))
-}
-
 func is32Bits(goarch string) bool {
 	return goarch == "386" || goarch == "arm" || goarch == "mips" || goarch == "wasm"
 }
@@ -1120,7 +1012,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	return exportFile, cmd.Compile(args...)
 }
 
-func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
+func llcCheck(env *llvmenv.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
