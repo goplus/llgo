@@ -351,8 +351,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
 		output:       output,
-		needRt:       make(map[*packages.Package]bool),
-		needPyInit:   make(map[*packages.Package]bool),
 		buildConf:    conf,
 		crossCompile: export,
 		cTransformer: cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
@@ -478,14 +476,14 @@ func needLink(pkg *packages.Package, mode Mode) bool {
 	return pkg.Name == "main"
 }
 
-func setNeedRuntimeOrPyInit(ctx *context, pkg *packages.Package, needRuntime, needPyInit bool) {
-	ctx.needRt[pkg] = needRuntime
-	ctx.needPyInit[pkg] = needPyInit
+func (p Package) setNeedRuntimeOrPyInit(needRuntime, needPyInit bool) {
+	p.NeedRt = needRuntime
+	p.NeedPyInit = needPyInit
 }
 
-func isNeedRuntimeOrPyInit(ctx *context, pkg *packages.Package) (needRuntime, needPyInit bool) {
-	needRuntime = ctx.needRt[pkg]
-	needPyInit = ctx.needPyInit[pkg]
+func (p Package) isNeedRuntimeOrPyInit() (needRuntime, needPyInit bool) {
+	needRuntime = p.NeedRt
+	needPyInit = p.NeedPyInit
 	return
 }
 
@@ -505,9 +503,6 @@ type context struct {
 	mode    Mode
 	nLibdir int
 	output  bool
-
-	needRt     map[*packages.Package]bool
-	needPyInit map[*packages.Package]bool
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
@@ -625,7 +620,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			if err != nil {
 				return nil, err
 			}
-			setNeedRuntimeOrPyInit(ctx, pkg, aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
+			aPkg.setNeedRuntimeOrPyInit(aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
 		}
 	}
 	return
@@ -776,13 +771,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
-			need1, need2 := isNeedRuntimeOrPyInit(ctx, p)
-			if !needRuntime {
-				needRuntime = need1
-			}
-			if !needPyInit {
-				needPyInit = need2
-			}
+			objFiles = append(objFiles, aPkg.ExportFile)
+			need1, need2 := aPkg.isNeedRuntimeOrPyInit()
+			needRuntime = needRuntime || need1
+			needPyInit = needPyInit || need2
 		}
 	})
 	// Generate main module file (needed for global variables even in library modes)
@@ -1066,6 +1058,9 @@ type aPackage struct {
 	AltPkg *packages.Cached
 	LPkg   llssa.Package
 
+	NeedRt     bool
+	NeedPyInit bool
+
 	LinkArgs    []string
 	LLFiles     []string
 	rewriteVars map[string]string
@@ -1090,7 +1085,17 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				}
 			}
 			rewrites := collectRewriteVars(ctx, pkgPath)
-			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil, nil, rewrites})
+			all = append(all, &aPackage{
+				Package:     p,
+				SSA:         ssaPkg,
+				AltPkg:      altPkg,
+				LPkg:        nil,
+				NeedRt:      false,
+				NeedPyInit:  false,
+				LinkArgs:    nil,
+				LLFiles:     nil,
+				rewriteVars: rewrites,
+			})
 		} else {
 			errs = append(errs, p)
 		}
