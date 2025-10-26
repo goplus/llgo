@@ -968,24 +968,24 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		objFiles = compiledObjFiles
 	}
 
-	objFiles = expandArchiveArgs(ctx, objFiles)
+	cmd := ctx.linker()
+	directLinker := isDirectLinker(cmd.App())
+	objFiles = expandArchiveArgs(ctx.buildConf.Goos, objFiles, directLinker)
 
 	buildArgs = append(buildArgs, objFiles...)
 
-	cmd := ctx.linker()
 	cmd.Verbose = verbose
 	return cmd.Link(buildArgs...)
 }
 
-func expandArchiveArgs(ctx *context, objFiles []string) []string {
+func expandArchiveArgs(goos string, objFiles []string, directLinker bool) []string {
 	if len(objFiles) == 0 {
 		return objFiles
 	}
-	goos := ctx.buildConf.Goos
 	expanded := make([]string, 0, len(objFiles)*2)
 	for _, file := range objFiles {
 		if strings.HasSuffix(file, ".a") {
-			expanded = append(expanded, archiveForceLoadArgs(goos, file)...)
+			expanded = append(expanded, archiveForceLoadArgs(goos, file, directLinker)...)
 			continue
 		}
 		expanded = append(expanded, file)
@@ -993,15 +993,33 @@ func expandArchiveArgs(ctx *context, objFiles []string) []string {
 	return expanded
 }
 
-func archiveForceLoadArgs(goos, archive string) []string {
+func archiveForceLoadArgs(goos, archive string, directLinker bool) []string {
 	switch goos {
 	case "darwin", "ios", "tvos":
+		if directLinker {
+			return []string{"-force_load", archive}
+		}
 		return []string{"-Wl,-force_load," + archive, archive}
 	case "windows":
+		if directLinker {
+			return []string{"/WHOLEARCHIVE:" + archive}
+		}
 		return []string{"-Wl,/WHOLEARCHIVE:" + archive}
 	default:
+		if directLinker {
+			return []string{"--whole-archive", archive, "--no-whole-archive"}
+		}
 		return []string{"-Wl,--whole-archive", archive, "-Wl,--no-whole-archive"}
 	}
+}
+
+func isDirectLinker(app string) bool {
+	base := filepath.Base(app)
+	if base == "" {
+		return false
+	}
+	base = strings.ToLower(base)
+	return strings.Contains(base, "ld") && !strings.Contains(base, "clang")
 }
 
 func createStaticArchive(ctx *context, archivePath string, objFiles []string, verbose bool) error {

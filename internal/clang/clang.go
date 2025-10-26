@@ -58,6 +58,11 @@ type Cmd struct {
 	Stderr  io.Writer
 }
 
+// App returns the underlying executable name used for this command.
+func (c *Cmd) App() string {
+	return c.app
+}
+
 // New creates a new clang command with configuration.
 func New(app string, config Config) *Cmd {
 	if app == "" {
