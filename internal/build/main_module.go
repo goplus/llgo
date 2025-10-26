@@ -22,7 +22,10 @@ package build
 import (
 	"go/token"
 	"go/types"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/ssa/abi"
@@ -46,7 +49,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 
 	exportFile := pkg.ExportFile
 	if exportFile == "" {
-		exportFile = pkgPath
+		exportFile = tempExportBase("llgo-export-", pkgPath)
 	}
 	mainAPkg := &aPackage{
 		Package: &packages.Package{
@@ -136,6 +139,22 @@ func defineWeakNoArgStub(pkg llssa.Package, name string) llssa.Function {
 	b := fn.MakeBody(1)
 	b.Return()
 	return fn
+}
+
+func tempExportBase(prefix, pkgPath string) string {
+	file, err := os.CreateTemp("", prefix)
+	if err != nil {
+		return filepath.Join(os.TempDir(), sanitizePath(pkgPath))
+	}
+	name := file.Name()
+	file.Close()
+	_ = os.Remove(name)
+	return name
+}
+
+func sanitizePath(path string) string {
+	replacer := strings.NewReplacer("/", "_", "\\", "_", ":", "_")
+	return replacer.Replace(path)
 }
 
 func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goarch string) {
