@@ -1,4 +1,4 @@
-package geometry
+package geometry1370
 
 type Shape interface {
 	Area() float64
@@ -20,7 +20,6 @@ func NewRectangle(width, height float64) *Rectangle {
 	return &Rectangle{Width: width, Height: height}
 }
 
-func RegisterShape(s Shape, id int) error {
+func RegisterShape(s Shape, id int) {
 	s.setID(id)
-	return nil
 }
