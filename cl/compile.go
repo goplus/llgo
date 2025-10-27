@@ -149,16 +149,64 @@ func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
+	if named, ok := typ.(*types.Named); ok {
+		if tp := named.TypeParams(); tp != nil && tp.Len() > 0 {
+			if ta := named.TypeArgs(); ta == nil || ta.Len() == 0 {
+				return
+			}
+		}
+	}
 	p.compileMethods(pkg, typ)
 	p.compileMethods(pkg, types.NewPointer(typ))
 }
 
+func hasGenericTypeParam(typ types.Type) bool {
+	switch t := typ.(type) {
+	case *types.TypeParam:
+		return true
+	case *types.Named:
+		if tp := t.TypeParams(); tp != nil && tp.Len() > 0 {
+			if ta := t.TypeArgs(); ta == nil || ta.Len() == 0 {
+				return true
+			}
+		}
+		if ta := t.TypeArgs(); ta != nil {
+			for i := 0; i < ta.Len(); i++ {
+				if hasGenericTypeParam(ta.At(i)) {
+					return true
+				}
+			}
+		}
+		return hasGenericTypeParam(t.Underlying())
+	case *types.Pointer:
+		return hasGenericTypeParam(t.Elem())
+	}
+	return false
+}
+
 func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
+	if hasGenericTypeParam(typ) {
+		return
+	}
+	var typPkg *types.Package
+	if named, ok := typ.(*types.Named); ok {
+		typPkg = named.Obj().Pkg()
+	} else if ptr, ok := typ.(*types.Pointer); ok {
+		if named, ok := ptr.Elem().(*types.Named); ok {
+			typPkg = named.Obj().Pkg()
+		}
+	}
+	if typPkg != nil && typPkg != p.goTyps {
+		return
+	}
 	prog := p.goProg
 	mthds := prog.MethodSets.MethodSet(typ)
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
+			if ssaMthd.TypeParams() != nil || ssaMthd.TypeArgs() != nil {
+				continue
+			}
 			p.compileFuncDecl(pkg, ssaMthd)
 		}
 	}
