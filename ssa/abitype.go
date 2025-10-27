@@ -194,7 +194,7 @@ func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 			if !token.IsExported(mName) {
 				if pkgPath == "" {
 					if mPkg := m.Pkg(); mPkg != nil {
-						pkgPath = mPkg.Path()
+						pkgPath = abi.PathOf(mPkg)
 					}
 				}
 				mName = abi.FullName(m.Pkg(), mName)
