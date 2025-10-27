@@ -191,12 +191,12 @@ func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 		for i := 0; i < n; i++ {
 			m := t.Method(i)
 			mName := m.Name()
-			if pkgPath == "" {
-				if mPkg := m.Pkg(); mPkg != nil {
-					pkgPath = mPkg.Path()
-				}
-			}
 			if !token.IsExported(mName) {
+				if pkgPath == "" {
+					if mPkg := m.Pkg(); mPkg != nil {
+						pkgPath = mPkg.Path()
+					}
+				}
 				mName = abi.FullName(m.Pkg(), mName)
 			}
 			methods[i] = b.abiImethodOf(mName, typs[i])
