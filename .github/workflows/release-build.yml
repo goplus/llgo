@@ -158,7 +158,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Download Platform Artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: llgo-${{ matrix.goos }}-${{ matrix.goarch }}
           path: .
