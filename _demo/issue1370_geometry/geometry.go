@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/goplus/llgo/_cmptest/issue1370_geometry/geometry"
+	"github.com/goplus/llgo/_demo/issue1370_geometry/geometry"
 )
 
 func main() {
