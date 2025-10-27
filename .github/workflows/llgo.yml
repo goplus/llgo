@@ -27,7 +27,7 @@ jobs:
           wget -P ./_demo/c/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
 
       - name: Upload model as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: llama2-model
           path: ./_demo/c/llama2-c/stories15M.bin
