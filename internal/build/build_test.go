@@ -8,51 +8,36 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/mockable"
 )
 
 func mockRun(args []string, cfg *Config) {
-	const maxAttempts = 3
-	var lastErr error
-	var lastPanic interface{}
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		mockable.EnableMock()
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					if r != "exit" {
-						lastPanic = r
-					} else {
-						exitCode := mockable.ExitCode()
-						if (exitCode != 0) != false {
-							lastPanic = fmt.Errorf("got exit code %d", exitCode)
-						}
-					}
+	mockable.EnableMock()
+	defer func() {
+		if r := recover(); r != nil {
+			if r != "exit" {
+				panic(r)
+			} else {
+				exitCode := mockable.ExitCode()
+				if (exitCode != 0) != false {
+					panic(fmt.Errorf("got exit code %d", exitCode))
 				}
-			}()
-			file, _ := os.CreateTemp("", "llgo-*")
-			cfg.OutFile = file.Name()
-			file.Close()
-			defer os.Remove(cfg.OutFile)
-			_, err := Do(args, cfg)
-			if err == nil {
-				return // Success, return immediately from the inner function
 			}
-			lastErr = err
-		}()
-
-		if lastPanic == nil && lastErr == nil {
-			return // Success, return from mockRun
 		}
-		// Continue to next attempt if this one failed
+	}()
+	file, _ := os.CreateTemp("", "llgo-*")
+	cfg.OutFile = file.Name()
+	file.Close()
+	os.Remove(cfg.OutFile)
+	_, err := Do(args, cfg)
+	if err != nil {
+		panic(err)
 	}
-	// If we get here, all attempts failed
-	if lastPanic != nil {
-		panic(lastPanic)
-	}
-	panic(fmt.Errorf("all %d attempts failed, last error: %v", maxAttempts, lastErr))
 }
 
 func TestRun(t *testing.T) {
@@ -92,6 +77,36 @@ func TestExtest(t *testing.T) {
 
 func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
+}
+
+func TestBuildWithXFlag(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration-style test in short mode")
+	}
+
+	helloDir := filepath.Join("..", "..", "cl", "_testgo", "hellox")
+	info, err := os.Stat(helloDir)
+	if err != nil || !info.IsDir() {
+		t.Skipf("hello test module not found: %v", err)
+	}
+
+	cfg := &Config{Mode: ModeBuild, Verbose: true}
+	overrideValue := "hello-from-test"
+	addGlobalString(cfg, "main.Hello="+overrideValue, nil)
+	fmt.Printf("global names in test: %v\n", cfg.GlobalNames)
+	mockRun([]string{helloDir}, cfg)
+
+	cmd := exec.Command(cfg.OutFile)
+	cmd.Dir = helloDir
+	cmd.Env = append(os.Environ(), "LLGO_SKIP_LLC=1")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("running built binary failed: %v\n%s", err, out)
+	}
+
+	if !strings.Contains(string(out), overrideValue) {
+		t.Fatalf("expected output to contain overridden value, got: %s", out)
+	}
 }
 
 // TestGenerateOutputFilenames removed - functionality moved to filename_test.go

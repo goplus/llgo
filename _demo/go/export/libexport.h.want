@@ -274,7 +274,7 @@ GoString
 TwoParams(intptr_t a, GoString b);
 
 void
-github_com_goplus_llgo__demo_go_export_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/_demo/go/export.init")
+main_init(void) GO_SYMBOL_RENAME("main.init")
 
 void
 github_com_goplus_llgo_runtime_abi_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/abi.init")

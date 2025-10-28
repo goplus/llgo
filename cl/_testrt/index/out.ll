@@ -1,54 +1,54 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/index'
-source_filename = "github.com/goplus/llgo/cl/_testrt/index"
+; ModuleID = 'main'
+source_filename = "main"
 
-%"github.com/goplus/llgo/cl/_testrt/index.point" = type { i64, i64 }
+%main.point = type { i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
-@"github.com/goplus/llgo/cl/_testrt/index.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [6 x i8] c"123456", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/index.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/index.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/index.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/index.main"() {
+define void @main.main() {
 _llgo_0:
-  %0 = alloca %"github.com/goplus/llgo/cl/_testrt/index.point", align 8
+  %0 = alloca %main.point, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
-  %1 = alloca [3 x %"github.com/goplus/llgo/cl/_testrt/index.point"], align 8
+  %1 = alloca [3 x %main.point], align 8
   call void @llvm.memset(ptr %1, i8 0, i64 48, i1 false)
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %1, i64 0
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %2, i32 0, i32 0
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %2, i32 0, i32 1
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %1, i64 1
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %5, i32 0, i32 0
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %5, i32 0, i32 1
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %1, i64 2
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %8, i32 0, i32 0
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %8, i32 0, i32 1
+  %2 = getelementptr inbounds %main.point, ptr %1, i64 0
+  %3 = getelementptr inbounds %main.point, ptr %2, i32 0, i32 0
+  %4 = getelementptr inbounds %main.point, ptr %2, i32 0, i32 1
+  %5 = getelementptr inbounds %main.point, ptr %1, i64 1
+  %6 = getelementptr inbounds %main.point, ptr %5, i32 0, i32 0
+  %7 = getelementptr inbounds %main.point, ptr %5, i32 0, i32 1
+  %8 = getelementptr inbounds %main.point, ptr %1, i64 2
+  %9 = getelementptr inbounds %main.point, ptr %8, i32 0, i32 0
+  %10 = getelementptr inbounds %main.point, ptr %8, i32 0, i32 1
   store i64 1, ptr %3, align 4
   store i64 2, ptr %4, align 4
   store i64 3, ptr %6, align 4
   store i64 4, ptr %7, align 4
   store i64 5, ptr %9, align 4
   store i64 6, ptr %10, align 4
-  %11 = load [3 x %"github.com/goplus/llgo/cl/_testrt/index.point"], ptr %1, align 4
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %1, i64 2
-  %13 = load %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %12, align 4
-  store %"github.com/goplus/llgo/cl/_testrt/index.point" %13, ptr %0, align 4
-  %14 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %0, i32 0, i32 0
+  %11 = load [3 x %main.point], ptr %1, align 4
+  %12 = getelementptr inbounds %main.point, ptr %1, i64 2
+  %13 = load %main.point, ptr %12, align 4
+  store %main.point %13, ptr %0, align 4
+  %14 = getelementptr inbounds %main.point, ptr %0, i32 0, i32 0
   %15 = load i64, ptr %14, align 4
-  %16 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/index.point", ptr %0, i32 0, i32 1
+  %16 = getelementptr inbounds %main.point, ptr %0, i32 0, i32 1
   %17 = load i64, ptr %16, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)

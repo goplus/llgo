@@ -1,14 +1,14 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/builtin'
-source_filename = "github.com/goplus/llgo/cl/_testrt/builtin"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
-@"github.com/goplus/llgo/cl/_testrt/builtin.a" = global i64 0, align 8
-@"github.com/goplus/llgo/cl/_testrt/builtin.b" = global i64 0, align 8
-@"github.com/goplus/llgo/cl/_testrt/builtin.init$guard" = global i1 false, align 1
-@"github.com/goplus/llgo/cl/_testrt/builtin.n" = global i64 0, align 8
+@main.a = global i64 0, align 8
+@main.b = global i64 0, align 8
+@"main.init$guard" = global i1 false, align 1
+@main.n = global i64 0, align 8
 @0 = private unnamed_addr constant [5 x i8] c"hello", align 1
 @1 = private unnamed_addr constant [3 x i8] c"def", align 1
 @_llgo_int = linkonce global ptr null, align 8
@@ -18,7 +18,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/builtin"
 @5 = private unnamed_addr constant [3 x i8] c"abd", align 1
 @6 = private unnamed_addr constant [2 x i8] c"fn", align 1
 
-define double @"github.com/goplus/llgo/cl/_testrt/builtin.Float64frombits"(i64 %0) {
+define double @main.Float64frombits(i64 %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 %0, ptr %1, align 4
@@ -26,7 +26,7 @@ _llgo_0:
   ret double %2
 }
 
-define double @"github.com/goplus/llgo/cl/_testrt/builtin.Inf"(i64 %0) {
+define double @main.Inf(i64 %0) {
 _llgo_0:
   %1 = icmp sge i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -36,48 +36,48 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_3, %_llgo_1
   %2 = phi i64 [ 9218868437227405312, %_llgo_1 ], [ -4503599627370496, %_llgo_3 ]
-  %3 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.Float64frombits"(i64 %2)
+  %3 = call double @main.Float64frombits(i64 %2)
   ret double %3
 
 _llgo_3:                                          ; preds = %_llgo_0
   br label %_llgo_2
 }
 
-define i1 @"github.com/goplus/llgo/cl/_testrt/builtin.IsNaN"(double %0) {
+define i1 @main.IsNaN(double %0) {
 _llgo_0:
   %1 = fcmp une double %0, %0
   ret i1 %1
 }
 
-define double @"github.com/goplus/llgo/cl/_testrt/builtin.NaN"() {
+define double @main.NaN() {
 _llgo_0:
-  %0 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.Float64frombits"(i64 9221120237041090561)
+  %0 = call double @main.Float64frombits(i64 9221120237041090561)
   ret double %0
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.demo"() {
+define void @main.demo() {
 _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/builtin.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/builtin.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testrt/builtin.init$after"()
-  store i64 9223372036854775807, ptr @"github.com/goplus/llgo/cl/_testrt/builtin.a", align 4
-  store i64 -9223372036854775808, ptr @"github.com/goplus/llgo/cl/_testrt/builtin.b", align 4
-  store i64 -1, ptr @"github.com/goplus/llgo/cl/_testrt/builtin.n", align 4
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
+  store i64 9223372036854775807, ptr @main.a, align 4
+  store i64 -9223372036854775808, ptr @main.b, align 4
+  store i64 -1, ptr @main.n, align 4
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -253,7 +253,7 @@ _llgo_0:
   %92 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %91, i64 0, 2
   %93 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %94 = getelementptr inbounds { ptr, ptr }, ptr %93, i64 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/builtin.main$1", ptr null }, ptr %94, align 8
+  store { ptr, ptr } { ptr @"__llgo_stub.main.main$1", ptr null }, ptr %94, align 8
   %95 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %93, 0
   %96 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %95, i64 1, 1
   %97 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %96, i64 1, 2
@@ -342,12 +342,12 @@ _llgo_0:
   %137 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %138 = getelementptr inbounds { ptr }, ptr %137, i32 0, i32 0
   store ptr %108, ptr %138, align 8
-  %139 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/builtin.main$3", ptr undef }, ptr %137, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/cl/_testrt/builtin.demo")
+  %139 = insertvalue { ptr, ptr } { ptr @"main.main$3", ptr undef }, ptr %137, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @main.demo)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/cl/_testrt/builtin.demo")
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @main.demo)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"github.com/goplus/llgo/cl/_testrt/builtin.main$2")
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr @"main.main$2")
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   %140 = extractvalue { ptr, ptr } %139, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %140)
@@ -371,12 +371,12 @@ _llgo_2:                                          ; preds = %_llgo_1
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %147 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.Inf"(i64 1)
-  %148 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.Inf"(i64 -1)
-  %149 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.NaN"()
-  %150 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.NaN"()
-  %151 = call i1 @"github.com/goplus/llgo/cl/_testrt/builtin.IsNaN"(double %150)
-  %152 = call i1 @"github.com/goplus/llgo/cl/_testrt/builtin.IsNaN"(double 1.000000e+00)
+  %147 = call double @main.Inf(i64 1)
+  %148 = call double @main.Inf(i64 -1)
+  %149 = call double @main.NaN()
+  %150 = call double @main.NaN()
+  %151 = call i1 @main.IsNaN(double %150)
+  %152 = call i1 @main.IsNaN(double 1.000000e+00)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %147)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %148)
@@ -445,19 +445,19 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$1"() {
+define void @"main.main$1"() {
 _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$2"() {
+define void @"main.main$2"() {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 2 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$3"(ptr %0) {
+define void @"main.main$3"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
@@ -483,13 +483,13 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64)
 
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/builtin.main$1"(ptr %0) {
+define linkonce void @"__llgo_stub.main.main$1"(ptr %0) {
 _llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/builtin.main$1"()
+  tail call void @"main.main$1"()
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int, align 8
   %1 = icmp eq ptr %0, null
