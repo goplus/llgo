@@ -22,10 +22,26 @@ func testPos() {
 	pos1 := token.Pos(100)
 	pos2 := token.Pos(200)
 	
+	if pos1 != 100 {
+		panic(fmt.Sprintf("Expected pos1 to be 100, got %d", pos1))
+	}
+	if pos2 != 200 {
+		panic(fmt.Sprintf("Expected pos2 to be 200, got %d", pos2))
+	}
 	fmt.Printf("Pos1: %d, Pos2: %d\n", pos1, pos2)
+	
+	if !pos1.IsValid() {
+		panic("Expected pos1.IsValid() to be true")
+	}
 	fmt.Printf("Pos1.IsValid(): %v\n", pos1.IsValid())
 	
 	noPos := token.NoPos
+	if noPos != 0 {
+		panic(fmt.Sprintf("Expected NoPos to be 0, got %d", noPos))
+	}
+	if noPos.IsValid() {
+		panic("Expected NoPos.IsValid() to be false")
+	}
 	fmt.Printf("NoPos: %d, IsValid: %v\n", noPos, noPos.IsValid())
 	
 	fmt.Println("SUCCESS: Pos operations work correctly\n")
@@ -33,6 +49,23 @@ func testPos() {
 
 func testToken() {
 	fmt.Println("\n=== Test Token Types ===")
+	
+	expectedStrings := map[token.Token]string{
+		token.ADD:    "+",
+		token.SUB:    "-",
+		token.MUL:    "*",
+		token.QUO:    "/",
+		token.LPAREN: "(",
+		token.RPAREN: ")",
+		token.EQL:    "==",
+		token.NEQ:    "!=",
+	}
+	
+	for tok, expected := range expectedStrings {
+		if tok.String() != expected {
+			panic(fmt.Sprintf("Expected %v.String() to be %q, got %q", tok, expected, tok.String()))
+		}
+	}
 	
 	tokens := []token.Token{
 		token.ILLEGAL,
@@ -132,7 +165,17 @@ func testTokenKeywords() {
 	}
 	
 	for _, kw := range keywords {
+		if !kw.IsKeyword() {
+			panic(fmt.Sprintf("Expected %s to be a keyword", kw))
+		}
 		fmt.Printf("Keyword: %s, IsKeyword: %v\n", kw, kw.IsKeyword())
+	}
+	
+	if token.ADD.IsKeyword() {
+		panic("Expected ADD operator to not be a keyword")
+	}
+	if token.IDENT.IsKeyword() {
+		panic("Expected IDENT token to not be a keyword")
 	}
 	
 	fmt.Println("SUCCESS: Keyword checks work correctly\n")
@@ -140,6 +183,19 @@ func testTokenKeywords() {
 
 func testTokenPrecedence() {
 	fmt.Println("\n=== Test Token Precedence ===")
+	
+	if token.MUL.Precedence() <= token.ADD.Precedence() {
+		panic("Expected MUL to have higher precedence than ADD")
+	}
+	if token.LAND.Precedence() <= token.LOR.Precedence() {
+		panic("Expected LAND to have higher precedence than LOR")
+	}
+	if token.MUL.Precedence() != token.QUO.Precedence() {
+		panic("Expected MUL and QUO to have same precedence")
+	}
+	if token.ADD.Precedence() != token.SUB.Precedence() {
+		panic("Expected ADD and SUB to have same precedence")
+	}
 	
 	operators := []token.Token{
 		token.ADD,
@@ -190,9 +246,20 @@ func testFile() {
 	fset := token.NewFileSet()
 	file := fset.AddFile("test.go", -1, 1000)
 	
+	if file.Name() != "test.go" {
+		panic(fmt.Sprintf("Expected file name to be 'test.go', got %q", file.Name()))
+	}
+	if file.Size() != 1000 {
+		panic(fmt.Sprintf("Expected file size to be 1000, got %d", file.Size()))
+	}
+	
 	file.AddLine(0)
 	file.AddLine(50)
 	file.AddLine(100)
+	
+	if file.LineCount() != 3 {
+		panic(fmt.Sprintf("Expected line count to be 3, got %d", file.LineCount()))
+	}
 	
 	fmt.Printf("File name: %s\n", file.Name())
 	fmt.Printf("File base: %d\n", file.Base())
@@ -203,9 +270,15 @@ func testFile() {
 	fmt.Printf("Pos at offset 50: %d\n", pos)
 	
 	offset := file.Offset(pos)
+	if offset != 50 {
+		panic(fmt.Sprintf("Expected offset to be 50, got %d", offset))
+	}
 	fmt.Printf("Offset of pos: %d\n", offset)
 	
 	line := file.Line(pos)
+	if line != 2 {
+		panic(fmt.Sprintf("Expected line to be 2, got %d", line))
+	}
 	fmt.Printf("Line number at pos: %d\n", line)
 	
 	lineStart := file.LineStart(2)
@@ -227,12 +300,28 @@ func testPosition() {
 		Column:   10,
 	}
 	
+	if !pos.IsValid() {
+		panic("Expected valid position to be valid")
+	}
+	if pos.Filename != "test.go" {
+		panic(fmt.Sprintf("Expected filename to be 'test.go', got %q", pos.Filename))
+	}
+	if pos.Line != 5 {
+		panic(fmt.Sprintf("Expected line to be 5, got %d", pos.Line))
+	}
+	if pos.Column != 10 {
+		panic(fmt.Sprintf("Expected column to be 10, got %d", pos.Column))
+	}
+	
 	fmt.Printf("Position: %s\n", pos.String())
 	fmt.Printf("Filename: %s, Line: %d, Column: %d, Offset: %d\n", 
 		pos.Filename, pos.Line, pos.Column, pos.Offset)
 	fmt.Printf("IsValid: %v\n", pos.IsValid())
 	
 	invalidPos := token.Position{}
+	if invalidPos.IsValid() {
+		panic("Expected empty position to be invalid")
+	}
 	fmt.Printf("Invalid position IsValid: %v\n", invalidPos.IsValid())
 	
 	fmt.Println("SUCCESS: Position operations work correctly\n")

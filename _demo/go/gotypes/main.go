@@ -33,15 +33,27 @@ func testBasicTypes() {
 
 	intType := types.Typ[types.Int]
 	fmt.Printf("Int type: %v, Kind: %v\n", intType, intType.Kind())
+	if intType.Kind() != types.Int {
+		panic(fmt.Sprintf("Int type kind mismatch: expected %v, got %v", types.Int, intType.Kind()))
+	}
 
 	stringType := types.Typ[types.String]
 	fmt.Printf("String type: %v, Kind: %v\n", stringType, stringType.Kind())
+	if stringType.Kind() != types.String {
+		panic(fmt.Sprintf("String type kind mismatch: expected %v, got %v", types.String, stringType.Kind()))
+	}
 
 	boolType := types.Typ[types.Bool]
 	fmt.Printf("Bool type: %v, Kind: %v\n", boolType, boolType.Kind())
+	if boolType.Kind() != types.Bool {
+		panic(fmt.Sprintf("Bool type kind mismatch: expected %v, got %v", types.Bool, boolType.Kind()))
+	}
 
 	float64Type := types.Typ[types.Float64]
 	fmt.Printf("Float64 type: %v, Kind: %v\n", float64Type, float64Type.Kind())
+	if float64Type.Kind() != types.Float64 {
+		panic(fmt.Sprintf("Float64 type kind mismatch: expected %v, got %v", types.Float64, float64Type.Kind()))
+	}
 
 	fmt.Println("SUCCESS: Basic types work correctly\n")
 }
@@ -51,16 +63,34 @@ func testObjects() {
 
 	varObj := types.NewVar(token.NoPos, nil, "x", types.Typ[types.Int])
 	fmt.Printf("Var: Name=%s, Type=%v\n", varObj.Name(), varObj.Type())
+	if varObj.Name() != "x" {
+		panic(fmt.Sprintf("Var name mismatch: expected x, got %s", varObj.Name()))
+	}
+	if varObj.Type() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Var type mismatch: expected int, got %v", varObj.Type()))
+	}
 
 	constObj := types.NewConst(token.NoPos, nil, "pi", types.Typ[types.Float64], nil)
 	fmt.Printf("Const: Name=%s, Type=%v\n", constObj.Name(), constObj.Type())
+	if constObj.Name() != "pi" {
+		panic(fmt.Sprintf("Const name mismatch: expected pi, got %s", constObj.Name()))
+	}
+	if constObj.Type() != types.Typ[types.Float64] {
+		panic(fmt.Sprintf("Const type mismatch: expected float64, got %v", constObj.Type()))
+	}
 
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	funcObj := types.NewFunc(token.NoPos, nil, "foo", sig)
 	fmt.Printf("Func: Name=%s, Type=%v\n", funcObj.Name(), funcObj.Type())
+	if funcObj.Name() != "foo" {
+		panic(fmt.Sprintf("Func name mismatch: expected foo, got %s", funcObj.Name()))
+	}
 
 	typeObj := types.NewTypeName(token.NoPos, nil, "MyInt", types.Typ[types.Int])
 	fmt.Printf("TypeName: Name=%s, Type=%v\n", typeObj.Name(), typeObj.Type())
+	if typeObj.Name() != "MyInt" {
+		panic(fmt.Sprintf("TypeName name mismatch: expected MyInt, got %s", typeObj.Name()))
+	}
 
 	var obj types.Object = varObj
 	if obj.Name() != "x" {
@@ -100,6 +130,12 @@ func testPackage() {
 
 	pkg := types.NewPackage("example.com/test", "test")
 	fmt.Printf("Package: Path=%s, Name=%s\n", pkg.Path(), pkg.Name())
+	if pkg.Path() != "example.com/test" {
+		panic(fmt.Sprintf("Package path mismatch: expected example.com/test, got %s", pkg.Path()))
+	}
+	if pkg.Name() != "test" {
+		panic(fmt.Sprintf("Package name mismatch: expected test, got %s", pkg.Name()))
+	}
 
 	scope := pkg.Scope()
 	if scope == nil {
@@ -146,9 +182,15 @@ func testInterface() {
 	iface.Complete()
 
 	fmt.Printf("Interface with %d methods\n", iface.NumMethods())
+	if iface.NumMethods() != 2 {
+		panic(fmt.Sprintf("Interface method count mismatch: expected 2, got %d", iface.NumMethods()))
+	}
 
 	method := iface.Method(0)
 	fmt.Printf("Method 0: %s\n", method.Name())
+	if method.Name() != "End" && method.Name() != "Pos" {
+		panic(fmt.Sprintf("Unexpected method name: %s", method.Name()))
+	}
 
 	fmt.Println("SUCCESS: Interface operations work correctly\n")
 }
@@ -163,9 +205,18 @@ func testStruct() {
 
 	structType := types.NewStruct(fields, nil)
 	fmt.Printf("Struct with %d fields\n", structType.NumFields())
+	if structType.NumFields() != 2 {
+		panic(fmt.Sprintf("Struct field count mismatch: expected 2, got %d", structType.NumFields()))
+	}
 
 	field0 := structType.Field(0)
 	fmt.Printf("Field 0: Name=%s, Type=%v\n", field0.Name(), field0.Type())
+	if field0.Name() != "X" {
+		panic(fmt.Sprintf("Field 0 name mismatch: expected X, got %s", field0.Name()))
+	}
+	if field0.Type() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Field 0 type mismatch: expected int, got %v", field0.Type()))
+	}
 
 	fmt.Println("SUCCESS: Struct operations work correctly\n")
 }
@@ -185,9 +236,21 @@ func testSignature() {
 	sig := types.NewSignatureType(nil, nil, nil, params, results, false)
 
 	fmt.Printf("Signature: %d params, %d results\n", sig.Params().Len(), sig.Results().Len())
+	if sig.Params().Len() != 2 {
+		panic(fmt.Sprintf("Signature param count mismatch: expected 2, got %d", sig.Params().Len()))
+	}
+	if sig.Results().Len() != 1 {
+		panic(fmt.Sprintf("Signature result count mismatch: expected 1, got %d", sig.Results().Len()))
+	}
 
 	param0 := sig.Params().At(0)
 	fmt.Printf("Param 0: Name=%s, Type=%v\n", param0.Name(), param0.Type())
+	if param0.Name() != "x" {
+		panic(fmt.Sprintf("Param 0 name mismatch: expected x, got %s", param0.Name()))
+	}
+	if param0.Type() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Param 0 type mismatch: expected int, got %v", param0.Type()))
+	}
 
 	fmt.Println("SUCCESS: Signature operations work correctly\n")
 }
@@ -201,9 +264,18 @@ func testTuple() {
 	)
 
 	fmt.Printf("Tuple length: %d\n", tuple.Len())
+	if tuple.Len() != 2 {
+		panic(fmt.Sprintf("Tuple length mismatch: expected 2, got %d", tuple.Len()))
+	}
 
 	var0 := tuple.At(0)
 	fmt.Printf("Element 0: Name=%s, Type=%v\n", var0.Name(), var0.Type())
+	if var0.Name() != "a" {
+		panic(fmt.Sprintf("Tuple element 0 name mismatch: expected a, got %s", var0.Name()))
+	}
+	if var0.Type() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Tuple element 0 type mismatch: expected int, got %v", var0.Type()))
+	}
 
 	fmt.Println("SUCCESS: Tuple operations work correctly\n")
 }
@@ -213,6 +285,12 @@ func testArray() {
 
 	arrayType := types.NewArray(types.Typ[types.Int], 10)
 	fmt.Printf("Array type: %v, Elem: %v, Len: %d\n", arrayType, arrayType.Elem(), arrayType.Len())
+	if arrayType.Len() != 10 {
+		panic(fmt.Sprintf("Array length mismatch: expected 10, got %d", arrayType.Len()))
+	}
+	if arrayType.Elem() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Array element type mismatch: expected int, got %v", arrayType.Elem()))
+	}
 
 	fmt.Println("SUCCESS: Array operations work correctly\n")
 }
@@ -222,6 +300,9 @@ func testSlice() {
 
 	sliceType := types.NewSlice(types.Typ[types.String])
 	fmt.Printf("Slice type: %v, Elem: %v\n", sliceType, sliceType.Elem())
+	if sliceType.Elem() != types.Typ[types.String] {
+		panic(fmt.Sprintf("Slice element type mismatch: expected string, got %v", sliceType.Elem()))
+	}
 
 	fmt.Println("SUCCESS: Slice operations work correctly\n")
 }
@@ -231,6 +312,9 @@ func testPointer() {
 
 	ptrType := types.NewPointer(types.Typ[types.Int])
 	fmt.Printf("Pointer type: %v, Elem: %v\n", ptrType, ptrType.Elem())
+	if ptrType.Elem() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Pointer element type mismatch: expected int, got %v", ptrType.Elem()))
+	}
 
 	fmt.Println("SUCCESS: Pointer operations work correctly\n")
 }
@@ -240,6 +324,12 @@ func testMap() {
 
 	mapType := types.NewMap(types.Typ[types.String], types.Typ[types.Int])
 	fmt.Printf("Map type: %v, Key: %v, Elem: %v\n", mapType, mapType.Key(), mapType.Elem())
+	if mapType.Key() != types.Typ[types.String] {
+		panic(fmt.Sprintf("Map key type mismatch: expected string, got %v", mapType.Key()))
+	}
+	if mapType.Elem() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Map element type mismatch: expected int, got %v", mapType.Elem()))
+	}
 
 	fmt.Println("SUCCESS: Map operations work correctly\n")
 }
@@ -249,12 +339,24 @@ func testChan() {
 
 	chanType := types.NewChan(types.SendRecv, types.Typ[types.Int])
 	fmt.Printf("Chan type: %v, Dir: %v, Elem: %v\n", chanType, chanType.Dir(), chanType.Elem())
+	if chanType.Dir() != types.SendRecv {
+		panic(fmt.Sprintf("Chan direction mismatch: expected SendRecv, got %v", chanType.Dir()))
+	}
+	if chanType.Elem() != types.Typ[types.Int] {
+		panic(fmt.Sprintf("Chan element type mismatch: expected int, got %v", chanType.Elem()))
+	}
 
 	sendChan := types.NewChan(types.SendOnly, types.Typ[types.String])
 	fmt.Printf("SendOnly chan: %v, Dir: %v\n", sendChan, sendChan.Dir())
+	if sendChan.Dir() != types.SendOnly {
+		panic(fmt.Sprintf("SendOnly chan direction mismatch: expected SendOnly, got %v", sendChan.Dir()))
+	}
 
 	recvChan := types.NewChan(types.RecvOnly, types.Typ[types.Bool])
 	fmt.Printf("RecvOnly chan: %v, Dir: %v\n", recvChan, recvChan.Dir())
+	if recvChan.Dir() != types.RecvOnly {
+		panic(fmt.Sprintf("RecvOnly chan direction mismatch: expected RecvOnly, got %v", recvChan.Dir()))
+	}
 
 	fmt.Println("SUCCESS: Chan operations work correctly\n")
 }
