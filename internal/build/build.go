@@ -350,6 +350,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	output := conf.OutFile != ""
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
+		pkgs:         map[*packages.Package]Package{},
 		output:       output,
 		buildConf:    conf,
 		crossCompile: export,
@@ -500,6 +501,7 @@ type context struct {
 	patches cl.Patches
 	built   map[string]none
 	initial []*packages.Package
+	pkgs    map[*packages.Package]Package // cache for lookup
 	mode    Mode
 	nLibdir int
 	output  bool
@@ -755,19 +757,16 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 }
 
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
-
 	needRuntime := false
 	needPyInit := false
-	pkgsMap := make(map[*packages.Package]*aPackage, len(pkgs))
 	allPkgs := []*packages.Package{pkg}
 	for _, v := range pkgs {
-		pkgsMap[v.Package] = v
 		allPkgs = append(allPkgs, v.Package)
 	}
 	var objFiles []string
 	var linkArgs []string
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
-		aPkg := pkgsMap[p]
+		aPkg := ctx.pkgs[p]
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
@@ -1085,7 +1084,7 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				}
 			}
 			rewrites := collectRewriteVars(ctx, pkgPath)
-			all = append(all, &aPackage{
+			aPkg := &aPackage{
 				Package:     p,
 				SSA:         ssaPkg,
 				AltPkg:      altPkg,
@@ -1095,7 +1094,9 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				LinkArgs:    nil,
 				LLFiles:     nil,
 				rewriteVars: rewrites,
-			})
+			}
+			ctx.pkgs[p] = aPkg
+			all = append(all, aPkg)
 		} else {
 			errs = append(errs, p)
 		}
