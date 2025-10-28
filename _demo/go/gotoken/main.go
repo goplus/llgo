@@ -6,8 +6,6 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Comprehensive go/token Package Demo ===\n")
-	
 	testPos()
 	testToken()
 	testFileSet()
@@ -15,8 +13,6 @@ func main() {
 	testPosition()
 	testTokenPrecedence()
 	testTokenKeywords()
-	
-	fmt.Println("\n=== All go/token tests completed successfully! ===")
 }
 
 func testPos() {
@@ -35,7 +31,7 @@ func testPos() {
 }
 
 func testToken() {
-	fmt.Println("=== Test Token Types ===")
+	fmt.Println("\n=== Test Token Types ===")
 	
 	tokens := []token.Token{
 		token.ILLEGAL,
@@ -104,7 +100,7 @@ func testToken() {
 }
 
 func testTokenKeywords() {
-	fmt.Println("=== Test Keywords ===")
+	fmt.Println("\n=== Test Keywords ===")
 	
 	keywords := []token.Token{
 		token.BREAK,
@@ -142,7 +138,7 @@ func testTokenKeywords() {
 }
 
 func testTokenPrecedence() {
-	fmt.Println("=== Test Token Precedence ===")
+	fmt.Println("\n=== Test Token Precedence ===")
 	
 	operators := []token.Token{
 		token.ADD,
@@ -165,7 +161,7 @@ func testTokenPrecedence() {
 }
 
 func testFileSet() {
-	fmt.Println("=== Test FileSet ===")
+	fmt.Println("\n=== Test FileSet ===")
 	
 	fset := token.NewFileSet()
 	
@@ -188,7 +184,7 @@ func testFileSet() {
 }
 
 func testFile() {
-	fmt.Println("=== Test File ===")
+	fmt.Println("\n=== Test File ===")
 	
 	fset := token.NewFileSet()
 	file := fset.AddFile("test.go", -1, 1000)
@@ -221,7 +217,7 @@ func testFile() {
 }
 
 func testPosition() {
-	fmt.Println("=== Test Position ===")
+	fmt.Println("\n=== Test Position ===" )
 	
 	pos := token.Position{
 		Filename: "test.go",

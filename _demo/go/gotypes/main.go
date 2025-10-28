@@ -7,8 +7,6 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Comprehensive go/types Package Demo ===\n")
-
 	testBasicTypes()
 	testObjects()
 	testScope()
@@ -23,8 +21,6 @@ func main() {
 	testPointer()
 	testMap()
 	testChan()
-
-	fmt.Println("\n=== All go/types tests completed successfully! ===")
 }
 
 func testBasicTypes() {
@@ -46,7 +42,7 @@ func testBasicTypes() {
 }
 
 func testObjects() {
-	fmt.Println("=== Test Objects (Var, Const, Func, TypeName) ===")
+	fmt.Println("\n=== Test Objects (Var, Const, Func, TypeName) ===")
 
 	varObj := types.NewVar(token.NoPos, nil, "x", types.Typ[types.Int])
 	fmt.Printf("Var: Name=%s, Type=%v\n", varObj.Name(), varObj.Type())
@@ -69,7 +65,7 @@ func testObjects() {
 }
 
 func testScope() {
-	fmt.Println("=== Test Scope ===")
+	fmt.Println("\n=== Test Scope ===")
 
 	scope := types.NewScope(nil, 0, 0, "test")
 	obj := types.NewVar(0, nil, "x", types.Typ[types.Int])
@@ -95,7 +91,7 @@ func testScope() {
 }
 
 func testPackage() {
-	fmt.Println("=== Test Package ===")
+	fmt.Println("\n=== Test Package ===")
 
 	pkg := types.NewPackage("example.com/test", "test")
 	fmt.Printf("Package: Path=%s, Name=%s\n", pkg.Path(), pkg.Name())
@@ -117,7 +113,7 @@ func testPackage() {
 }
 
 func testNamed() {
-	fmt.Println("=== Test Named Types ===")
+	fmt.Println("\n=== Test Named Types ===")
 
 	pkg := types.NewPackage("example.com/test", "test")
 	typeName := types.NewTypeName(token.NoPos, pkg, "MyInt", nil)
@@ -133,7 +129,7 @@ func testNamed() {
 }
 
 func testInterface() {
-	fmt.Println("=== Test Interface ===")
+	fmt.Println("\n=== Test Interface ===")
 
 	pkg := types.NewPackage("example.com/test", "test")
 
@@ -153,7 +149,7 @@ func testInterface() {
 }
 
 func testStruct() {
-	fmt.Println("=== Test Struct ===")
+	fmt.Println("\n=== Test Struct ===")
 
 	fields := []*types.Var{
 		types.NewField(token.NoPos, nil, "X", types.Typ[types.Int], false),
@@ -170,7 +166,7 @@ func testStruct() {
 }
 
 func testSignature() {
-	fmt.Println("=== Test Signature ===")
+	fmt.Println("\n=== Test Signature ===")
 
 	params := types.NewTuple(
 		types.NewVar(token.NoPos, nil, "x", types.Typ[types.Int]),
@@ -192,7 +188,7 @@ func testSignature() {
 }
 
 func testTuple() {
-	fmt.Println("=== Test Tuple ===")
+	fmt.Println("\n=== Test Tuple ===")
 
 	tuple := types.NewTuple(
 		types.NewVar(token.NoPos, nil, "a", types.Typ[types.Int]),
@@ -208,7 +204,7 @@ func testTuple() {
 }
 
 func testArray() {
-	fmt.Println("=== Test Array ===")
+	fmt.Println("\n=== Test Array ===")
 
 	arrayType := types.NewArray(types.Typ[types.Int], 10)
 	fmt.Printf("Array type: %v, Elem: %v, Len: %d\n", arrayType, arrayType.Elem(), arrayType.Len())
@@ -217,7 +213,7 @@ func testArray() {
 }
 
 func testSlice() {
-	fmt.Println("=== Test Slice ===")
+	fmt.Println("\n=== Test Slice ===")
 
 	sliceType := types.NewSlice(types.Typ[types.String])
 	fmt.Printf("Slice type: %v, Elem: %v\n", sliceType, sliceType.Elem())
@@ -226,7 +222,7 @@ func testSlice() {
 }
 
 func testPointer() {
-	fmt.Println("=== Test Pointer ===")
+	fmt.Println("\n=== Test Pointer ===")
 
 	ptrType := types.NewPointer(types.Typ[types.Int])
 	fmt.Printf("Pointer type: %v, Elem: %v\n", ptrType, ptrType.Elem())
@@ -235,7 +231,7 @@ func testPointer() {
 }
 
 func testMap() {
-	fmt.Println("=== Test Map ===")
+	fmt.Println("\n=== Test Map ===")
 
 	mapType := types.NewMap(types.Typ[types.String], types.Typ[types.Int])
 	fmt.Printf("Map type: %v, Key: %v, Elem: %v\n", mapType, mapType.Key(), mapType.Elem())
@@ -244,7 +240,7 @@ func testMap() {
 }
 
 func testChan() {
-	fmt.Println("=== Test Chan ===")
+	fmt.Println("\n=== Test Chan ===" )
 
 	chanType := types.NewChan(types.SendRecv, types.Typ[types.Int])
 	fmt.Printf("Chan type: %v, Dir: %v, Elem: %v\n", chanType, chanType.Dir(), chanType.Elem())
