@@ -13,6 +13,7 @@ func main() {
 	testPosition()
 	testTokenPrecedence()
 	testTokenKeywords()
+	testUtilityFunctions()
 }
 
 func testPos() {
@@ -235,4 +236,32 @@ func testPosition() {
 	fmt.Printf("Invalid position IsValid: %v\n", invalidPos.IsValid())
 	
 	fmt.Println("SUCCESS: Position operations work correctly\n")
+}
+
+func testUtilityFunctions() {
+	fmt.Println("\n=== Test Utility Functions ===")
+
+	fmt.Printf("IsExported(\"Foo\"): %v\n", token.IsExported("Foo"))
+	fmt.Printf("IsExported(\"foo\"): %v\n", token.IsExported("foo"))
+	fmt.Printf("IsExported(\"_foo\"): %v\n", token.IsExported("_foo"))
+
+	fmt.Printf("IsIdentifier(\"foo\"): %v\n", token.IsIdentifier("foo"))
+	fmt.Printf("IsIdentifier(\"foo123\"): %v\n", token.IsIdentifier("foo123"))
+	fmt.Printf("IsIdentifier(\"123foo\"): %v\n", token.IsIdentifier("123foo"))
+	fmt.Printf("IsIdentifier(\"foo-bar\"): %v\n", token.IsIdentifier("foo-bar"))
+
+	fmt.Printf("IsKeyword(\"func\"): %v\n", token.IsKeyword("func"))
+	fmt.Printf("IsKeyword(\"if\"): %v\n", token.IsKeyword("if"))
+	fmt.Printf("IsKeyword(\"foo\"): %v\n", token.IsKeyword("foo"))
+
+	lookupFunc := token.Lookup("func")
+	fmt.Printf("Lookup(\"func\"): %s\n", lookupFunc)
+
+	lookupIdent := token.Lookup("myVar")
+	fmt.Printf("Lookup(\"myVar\"): %s\n", lookupIdent)
+
+	lookupFor := token.Lookup("for")
+	fmt.Printf("Lookup(\"for\"): %s\n", lookupFor)
+
+	fmt.Println("SUCCESS: Utility functions work correctly\n")
 }
