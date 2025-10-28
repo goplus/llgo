@@ -311,9 +311,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
 
-	noRt := 1
 	prog.SetRuntime(func() *types.Package {
-		noRt = 0
 		return altPkgs[0].Types
 	})
 	prog.SetPython(func() *types.Package {
@@ -349,20 +347,24 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	// default runtime globals must be registered before packages are built
 	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
 	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
-	pkgs, err := buildAllPkgs(ctx, initial, verbose)
+	pkgs, err := buildSSAPkgs(ctx, initial, verbose)
 	check(err)
+	depPkgs, err := buildSSAPkgs(ctx, altPkgs, verbose)
+	check(err)
+
+	allPkgs := append([]*aPackage{}, pkgs...)
+	allPkgs = append(allPkgs, depPkgs...)
+	allPkgs, err = buildAllPkgs(ctx, allPkgs, verbose)
+	check(err)
+
 	if mode == ModeGen {
-		for _, pkg := range pkgs {
+		for _, pkg := range allPkgs {
 			if pkg.Package == initial[0] {
 				return []*aPackage{pkg}, nil
 			}
 		}
 		return nil, fmt.Errorf("initial package not found")
 	}
-	dpkg, err := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
-	check(err)
-	allPkgs := append([]*aPackage{}, pkgs...)
-	allPkgs = append(allPkgs, dpkg...)
 
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
@@ -451,7 +453,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		mockable.Exit(1)
 	}
 
-	return dpkg, nil
+	return allPkgs, nil
 }
 
 func clearRuntime(overlay map[string][]byte, runtimePath string) {
@@ -541,17 +543,7 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
-func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs []*aPackage, err error) {
-	pkgs, errPkgs := allPkgs(ctx, initial, verbose)
-	for _, errPkg := range errPkgs {
-		for _, err := range errPkg.Errors {
-			fmt.Fprintln(os.Stderr, err)
-		}
-		fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
-	}
-	if len(errPkgs) > 0 {
-		return nil, fmt.Errorf("cannot build SSA for packages")
-	}
+func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
 	built := ctx.built
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
@@ -626,7 +618,7 @@ func buildAllPkgs(ctx *context, initial []*packages.Package, verbose bool) (pkgs
 			aPkg.setNeedRuntimeOrPyInit(aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
 		}
 	}
-	return
+	return pkgs, nil
 }
 
 var (
@@ -771,7 +763,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
-			objFiles = append(objFiles, aPkg.ExportFile)
 			need1, need2 := aPkg.isNeedRuntimeOrPyInit()
 			needRuntime = needRuntime || need1
 			needPyInit = needPyInit || need2
@@ -1068,9 +1059,11 @@ type aPackage struct {
 
 type Package = *aPackage
 
-func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aPackage, errs []*packages.Package) {
+func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*aPackage, error) {
 	prog := ctx.progSSA
 	built := ctx.built
+	var all []*aPackage
+	var errs []*packages.Package
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
@@ -1102,7 +1095,16 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 			errs = append(errs, p)
 		}
 	})
-	return
+	if len(errs) > 0 {
+		for _, errPkg := range errs {
+			for _, err := range errPkg.Errors {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
+		}
+		return nil, fmt.Errorf("cannot build SSA for packages")
+	}
+	return all, nil
 }
 
 func collectRewriteVars(ctx *context, pkgPath string) map[string]string {
