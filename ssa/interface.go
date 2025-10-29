@@ -43,16 +43,11 @@ func (b Builder) newItab(tintf, typ Expr) Expr {
 	return b.Call(b.Pkg.rtFunc("NewItab"), tintf, typ)
 }
 
-func (b Builder) unsafeInterface(rawIntf *types.Interface, namedIntf types.Type, t Expr, data llvm.Value) llvm.Value {
+func (b Builder) unsafeInterface(rawIntf *types.Interface, originType types.Type, t Expr, data llvm.Value) llvm.Value {
 	if rawIntf.Empty() {
 		return b.unsafeEface(t.impl, data)
 	}
-	var tintf Expr
-	if namedIntf != nil {
-		tintf = b.abiType(namedIntf)
-	} else {
-		tintf = b.abiType(rawIntf)
-	}
+	tintf := b.abiType(originType)
 	itab := b.newItab(tintf, t)
 	return b.unsafeIface(itab.impl, data)
 }
