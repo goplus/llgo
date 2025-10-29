@@ -34,7 +34,6 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/vamethod"
 @"*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt" = linkonce global ptr null, align 8
 @"_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.IFmt" = linkonce global ptr null, align 8
 @9 = private unnamed_addr constant [4 x i8] c"IFmt", align 1
-@"_llgo_iface$a85zs5wWQQoPIERm_en8plssh4spdIeeXZPC-E0TDh0" = linkonce global ptr null, align 8
 @10 = private unnamed_addr constant [12 x i8] c"%s (%d,%d)\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"ifmt\00", align 1
 @12 = private unnamed_addr constant [5 x i8] c"error", align 1
@@ -133,7 +132,7 @@ _llgo_2:                                          ; preds = %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_0
   %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %11, 1
-  %37 = load ptr, ptr @"_llgo_iface$a85zs5wWQQoPIERm_en8plssh4spdIeeXZPC-E0TDh0", align 8
+  %37 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.IFmt", align 8
   %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %37, ptr %12)
   %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %38, 0
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %39, ptr %36, 1
@@ -420,38 +419,16 @@ _llgo_29:                                         ; preds = %_llgo_28
   br label %_llgo_30
 
 _llgo_30:                                         ; preds = %_llgo_29, %_llgo_28
-  %137 = load ptr, ptr @"_llgo_func$sSO5Bw-E3E7TeJqIJF_OmmojTYyqWBhYrUwNYJNw7Bs", align 8
-  %138 = load ptr, ptr @"_llgo_func$vAfTC3ZLX0_lZI-ZNliu0_DkE266FSmKXxj_cqKPPkA", align 8
-  %139 = load ptr, ptr @"_llgo_iface$a85zs5wWQQoPIERm_en8plssh4spdIeeXZPC-E0TDh0", align 8
-  %140 = icmp eq ptr %139, null
-  br i1 %140, label %_llgo_31, label %_llgo_32
+  %137 = load ptr, ptr @_llgo_string, align 8
+  %138 = icmp eq ptr %137, null
+  br i1 %138, label %_llgo_31, label %_llgo_32
 
 _llgo_31:                                         ; preds = %_llgo_30
-  %141 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 6 }, ptr undef }, ptr %137, 1
-  %142 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 9 }, ptr undef }, ptr %138, 1
-  %143 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
-  %144 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %143, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %141, ptr %144, align 8
-  %145 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %143, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %142, ptr %145, align 8
-  %146 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %143, 0
-  %147 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %146, i64 2, 1
-  %148 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %147, i64 2, 2
-  %149 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 42 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %148)
-  store ptr %149, ptr @"_llgo_iface$a85zs5wWQQoPIERm_en8plssh4spdIeeXZPC-E0TDh0", align 8
+  %139 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
+  store ptr %139, ptr @_llgo_string, align 8
   br label %_llgo_32
 
 _llgo_32:                                         ; preds = %_llgo_31, %_llgo_30
-  %150 = load ptr, ptr @_llgo_string, align 8
-  %151 = icmp eq ptr %150, null
-  br i1 %151, label %_llgo_33, label %_llgo_34
-
-_llgo_33:                                         ; preds = %_llgo_32
-  %152 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  store ptr %152, ptr @_llgo_string, align 8
-  br label %_llgo_34
-
-_llgo_34:                                         ; preds = %_llgo_33, %_llgo_32
   ret void
 }
 
