@@ -31,7 +31,6 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/interface"
 @"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2" = linkonce global ptr null, align 8
 @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer" = linkonce global ptr null, align 8
 @9 = private unnamed_addr constant [5 x i8] c"Gamer", align 1
-@"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg" = linkonce global ptr null, align 8
 @10 = private unnamed_addr constant [2 x i8] c"OK", align 1
 @11 = private unnamed_addr constant [4 x i8] c"FAIL", align 1
 
@@ -133,7 +132,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_0
   %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, 1
-  %27 = load ptr, ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", align 8
+  %27 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", align 8
   %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %27, ptr %12)
   %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %28, 0
   %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, ptr %26, 1
@@ -158,7 +157,7 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
 
 _llgo_6:                                          ; preds = %_llgo_2
   %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %11, 1
-  %37 = load ptr, ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", align 8
+  %37 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", align 8
   %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %37, ptr %23)
   %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %38, 0
   %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %39, ptr %36, 1
@@ -405,20 +404,6 @@ _llgo_23:                                         ; preds = %_llgo_22
   br label %_llgo_24
 
 _llgo_24:                                         ; preds = %_llgo_23, %_llgo_22
-  %109 = load ptr, ptr @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", align 8
-  %110 = load ptr, ptr @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", align 8
-  %111 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 4 }, ptr undef }, ptr %109, 1
-  %112 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 48 }, ptr undef }, ptr %110, 1
-  %113 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
-  %114 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %113, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %111, ptr %114, align 8
-  %115 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %113, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %112, ptr %115, align 8
-  %116 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %113, 0
-  %117 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %116, i64 2, 1
-  %118 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %117, i64 2, 2
-  %119 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 43 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %118)
-  store ptr %119, ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", align 8
   ret void
 }
 
@@ -443,8 +428,6 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, ptr)
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
