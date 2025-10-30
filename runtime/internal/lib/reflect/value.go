@@ -1759,16 +1759,6 @@ func ValueOf(i any) Value {
 	return unpackEface(i)
 }
 
-// Indirect returns the value that v points to.
-// If v is a nil pointer, Indirect returns a zero Value.
-// If v is not a pointer, Indirect returns v.
-func Indirect(v Value) Value {
-	if v.Kind() != Pointer {
-		return v
-	}
-	return v.Elem()
-}
-
 // arrayAt returns the i-th element of p,
 // an array whose elements are eltSize bytes wide.
 // The array pointed at by p must have at least i+1 elements:

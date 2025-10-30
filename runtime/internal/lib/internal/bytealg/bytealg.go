@@ -23,7 +23,7 @@ import (
 	"github.com/goplus/llgo/runtime/internal/runtime"
 )
 
-// llgo:skip init
+// llgo:skip init CompareString
 type _bytealg struct{}
 
 func IndexByte(b []byte, ch byte) int {
