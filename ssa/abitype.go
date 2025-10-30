@@ -186,7 +186,6 @@ func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 	}
 	return func() Expr {
 		prog := b.Prog
-		pkg := b.Pkg
 		methods := make([]Expr, n)
 		for i := 0; i < n; i++ {
 			m := t.Method(i)
@@ -196,6 +195,7 @@ func (b Builder) abiInterfaceOf(t *types.Interface) func() Expr {
 			}
 			methods[i] = b.abiImethodOf(mName, typs[i])
 		}
+		pkg := b.Pkg
 		fn := pkg.rtFunc("Interface")
 		tSlice := lastParamType(prog, fn)
 		methodSlice := b.SliceLit(tSlice, methods...)
