@@ -43,11 +43,11 @@ func (b Builder) newItab(tintf, typ Expr) Expr {
 	return b.Call(b.Pkg.rtFunc("NewItab"), tintf, typ)
 }
 
-func (b Builder) unsafeInterface(rawIntf *types.Interface, originType types.Type, t Expr, data llvm.Value) llvm.Value {
+func (b Builder) unsafeInterface(rawIntf *types.Interface, t Expr, data llvm.Value) llvm.Value {
 	if rawIntf.Empty() {
 		return b.unsafeEface(t.impl, data)
 	}
-	tintf := b.abiType(originType)
+	tintf := b.abiType(rawIntf)
 	itab := b.newItab(tintf, t)
 	return b.unsafeIface(itab.impl, data)
 }
@@ -112,7 +112,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	case abi.Indirect:
 		vptr := b.AllocU(typ)
 		b.Store(vptr, x)
-		return Expr{b.unsafeInterface(rawIntf, tinter.raw.Type, tabi, vptr.impl), tinter}
+		return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
 	}
 	ximpl := x.impl
 	if lvl > 0 {
@@ -121,7 +121,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	var u llvm.Value
 	switch kind {
 	case abi.Pointer:
-		return Expr{b.unsafeInterface(rawIntf, tinter.raw.Type, tabi, ximpl), tinter}
+		return Expr{b.unsafeInterface(rawIntf, tabi, ximpl), tinter}
 	case abi.Integer:
 		tu := prog.Uintptr()
 		u = llvm.CreateIntCast(b.impl, ximpl, tu.ll)
@@ -136,7 +136,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 		panic("todo")
 	}
 	data := llvm.CreateIntToPtr(b.impl, u, prog.tyVoidPtr())
-	return Expr{b.unsafeInterface(rawIntf, tinter.raw.Type, tabi, data), tinter}
+	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
 
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
@@ -250,7 +250,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 		if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
 			eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
 			val = func() Expr {
-				return Expr{b.unsafeInterface(rawIntf, assertedTyp.raw.Type, tx, b.faceData(x.impl)), assertedTyp}
+				return Expr{b.unsafeInterface(rawIntf, tx, b.faceData(x.impl)), assertedTyp}
 			}
 		} else {
 			eq = b.BinOp(token.EQL, tx, tabi)
@@ -307,7 +307,7 @@ func (b Builder) ChangeInterface(typ Type, x Expr) (ret Expr) {
 	rawIntf := typ.raw.Type.Underlying().(*types.Interface)
 	tabi := b.faceAbiType(x)
 	data := b.faceData(x.impl)
-	return Expr{b.unsafeInterface(rawIntf, typ.raw.Type, tabi, data), typ}
+	return Expr{b.unsafeInterface(rawIntf, tabi, data), typ}
 }
 
 // -----------------------------------------------------------------------------
