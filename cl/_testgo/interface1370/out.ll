@@ -31,9 +31,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/interface1370"
 @_llgo_bool = linkonce global ptr null, align 8
 @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk" = linkonce global ptr null, align 8
 @"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle" = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape" = linkonce global ptr null, align 8
-@12 = private unnamed_addr constant [5 x i8] c"Shape", align 1
-@13 = private unnamed_addr constant [3 x i8] c"ID:", align 1
+@"github.com/goplus/llgo/cl/_testgo/interface1370.iface$OopIVfjRcxQr1gmJyGi5G7hHt__vH05AREEM7PthH9o" = linkonce global ptr null, align 8
+@12 = private unnamed_addr constant [3 x i8] c"ID:", align 1
 
 define void @"github.com/goplus/llgo/cl/_testgo/interface1370.init"() {
 _llgo_0:
@@ -55,15 +54,18 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testdata/geometry1370.NewRectangle"(double 5.000000e+00, double 3.000000e+00)
   %1 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", align 8
   %2 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", align 8
-  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", align 8
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %3, ptr %2)
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %4, 0
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5, ptr %0, 1
-  call void @"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, i64 42)
-  %7 = call i64 @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).GetID"(ptr %0)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 3 })
+  %3 = load ptr, ptr @"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8", align 8
+  %4 = load ptr, ptr @"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA", align 8
+  %5 = load ptr, ptr @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk", align 8
+  %6 = load ptr, ptr @"github.com/goplus/llgo/cl/_testgo/interface1370.iface$OopIVfjRcxQr1gmJyGi5G7hHt__vH05AREEM7PthH9o", align 8
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %6, ptr %2)
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %7, 0
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, ptr %0, 1
+  call void @"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, i64 42)
+  %10 = call i64 @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).GetID"(ptr %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 3 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -273,39 +275,24 @@ _llgo_19:                                         ; preds = %_llgo_8
   br label %_llgo_20
 
 _llgo_20:                                         ; preds = %_llgo_19, %_llgo_8
-  %110 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 48 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 5 })
-  %111 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", align 8
-  %112 = icmp eq ptr %111, null
-  br i1 %112, label %_llgo_21, label %_llgo_22
-
-_llgo_21:                                         ; preds = %_llgo_20
-  store ptr %110, ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", align 8
-  br label %_llgo_22
-
-_llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
-  %113 = load ptr, ptr @"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8", align 8
-  %114 = load ptr, ptr @"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA", align 8
-  %115 = load ptr, ptr @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk", align 8
-  br i1 %112, label %_llgo_23, label %_llgo_24
-
-_llgo_23:                                         ; preds = %_llgo_22
-  %116 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr undef }, ptr %113, 1
-  %117 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 54 }, ptr undef }, ptr %114, 1
-  %118 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 57 }, ptr undef }, ptr %115, 1
-  %119 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 72)
-  %120 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %119, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %116, ptr %120, align 8
-  %121 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %119, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %117, ptr %121, align 8
-  %122 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %119, i64 2
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %118, ptr %122, align 8
-  %123 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %119, 0
-  %124 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %123, i64 3, 1
-  %125 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %124, i64 3, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr %110, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %125)
-  br label %_llgo_24
-
-_llgo_24:                                         ; preds = %_llgo_23, %_llgo_22
+  %110 = load ptr, ptr @"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8", align 8
+  %111 = load ptr, ptr @"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA", align 8
+  %112 = load ptr, ptr @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk", align 8
+  %113 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr undef }, ptr %110, 1
+  %114 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 54 }, ptr undef }, ptr %111, 1
+  %115 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 57 }, ptr undef }, ptr %112, 1
+  %116 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 72)
+  %117 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %116, i64 0
+  store %"github.com/goplus/llgo/runtime/abi.Imethod" %113, ptr %117, align 8
+  %118 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %116, i64 1
+  store %"github.com/goplus/llgo/runtime/abi.Imethod" %114, ptr %118, align 8
+  %119 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %116, i64 2
+  store %"github.com/goplus/llgo/runtime/abi.Imethod" %115, ptr %119, align 8
+  %120 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %116, 0
+  %121 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %120, i64 3, 1
+  %122 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %121, i64 3, 2
+  %123 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %122)
+  store ptr %123, ptr @"github.com/goplus/llgo/cl/_testgo/interface1370.iface$OopIVfjRcxQr1gmJyGi5G7hHt__vH05AREEM7PthH9o", align 8
   ret void
 }
 
@@ -335,9 +322,7 @@ declare i1 @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).valid
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr)
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
