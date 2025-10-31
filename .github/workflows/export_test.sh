@@ -6,9 +6,8 @@
 
 set -e  # Exit on any error
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# Use current working directory (workflow already cd's to the test directory)
+WORK_DIR="$(pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -38,7 +37,7 @@ if [[ -z "$LLGO_ROOT" ]]; then
 fi
 
 print_status "Starting export symbol name test..."
-print_status "Working directory: $SCRIPT_DIR"
+print_status "Working directory: $WORK_DIR"
 print_status "LLGO_ROOT: $LLGO_ROOT"
 
 echo ""
