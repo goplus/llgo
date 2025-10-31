@@ -96,7 +96,7 @@ The `out.ll` files under the `cl/` directory are comparison IR files that serve 
 
 #### Why this matters
 
-Failing to update out.ll files after modifying IR generation will cause test failures in `TestFromTestgo` and `TestFromTestrt`. This process ensures that:
+This process ensures that:
 - The test suite reflects the current compiler behavior
 - Changes to IR generation are properly documented and reviewed
 - Future regressions can be detected by comparing against the reference output
