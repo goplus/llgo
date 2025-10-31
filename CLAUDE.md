@@ -64,17 +64,27 @@ The `out.ll` files under the `cl/` directory are comparison IR files that serve 
 
 #### Required steps after modifying IR generation logic
 
-1. **Reinstall llgen** to apply your compiler changes:
+1. **Reinstall the tools** to apply your compiler changes:
    ```bash
+   go install -v ./chore/gentests
    go install -v ./chore/llgen
    ```
 
-2. **Regenerate all out.ll files** under the `cl/` directory:
+2. **Regenerate out.ll files**:
+   
+   **For batch updates (recommended)** - Use `gentests` to regenerate all test files:
    ```bash
-   # llgen automatically finds and updates all test cases
-   llgen
+   gentests
    ```
-   Or you can regenerate specific test directories:
+   This will automatically regenerate all out.ll files in these directories:
+   - `cl/_testlibc`
+   - `cl/_testlibgo`
+   - `cl/_testrt`
+   - `cl/_testgo`
+   - `cl/_testpy`
+   - `cl/_testdata`
+   
+   **For individual test inspection** - Use `llgen` to regenerate specific test directories:
    ```bash
    llgen cl/_testgo/interface
    llgen cl/_testrt/tpmethod
