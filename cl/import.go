@@ -278,7 +278,8 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
 			ret := p.initLinkname(line, func(name string) (_ string, _, ok bool) {
-				return fullName, isVar, name == inPkgName
+				// support empty name for //export directive
+				return fullName, isVar, name == inPkgName || name == ""
 			})
 			if ret != unknownDirective {
 				return ret == hasLinkname
@@ -312,10 +313,26 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 		p.initLink(line, len(llgolink), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, export) {
-		// rewrite //export FuncName to //export FuncName FuncName
-		funcName := strings.TrimSpace(line[len(export):])
-		line = line + " " + funcName
-		p.initLink(line, len(export), true, f)
+		// support //export ExportName
+		// format: //export ExportName or //export FuncName ExportName
+		exportName := strings.TrimSpace(line[len(export):])
+		var inPkgName string
+		if idx := strings.IndexByte(exportName, ' '); idx > 0 {
+			// format: //export FuncName ExportName (go-style)
+			inPkgName = exportName[:idx]
+			exportName = strings.TrimLeft(exportName[idx+1:], " ")
+		} else {
+			// format: //export ExportName (tinygo-style)
+			// use empty string to match any function
+			inPkgName = ""
+		}
+		if fullName, _, ok := f(inPkgName); ok {
+			p.prog.SetLinkname(fullName, exportName)
+			p.pkg.SetExport(fullName, exportName)
+		} else {
+			fmt.Fprintln(os.Stderr, "==>", line)
+			fmt.Fprintf(os.Stderr, "llgo: export %s not found and ignored\n", inPkgName)
+		}
 		return hasLinkname
 	} else if strings.HasPrefix(line, directive) {
 		// skip unknown annotation but continue to parse the next annotation
