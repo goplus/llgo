@@ -101,8 +101,6 @@ Failing to update out.ll files after modifying IR generation will cause test fai
 - Changes to IR generation are properly documented and reviewed
 - Future regressions can be detected by comparing against the reference output
 
-**Pro tip:** Always check if your changes affect IR generation. If you're unsure, run the tests first - they will fail if out.ll files need updating.
-
 ## Code Quality
 
 Before submitting any code updates, you must run the following formatting and validation commands:
