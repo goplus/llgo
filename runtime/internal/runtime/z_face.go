@@ -396,7 +396,7 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 }
 
 func methods(u *abi.UncommonType, from string) []abi.Method {
-	if u.PkgPath_ == from {
+	if from == "" || u.PkgPath_ == from {
 		return u.Methods()
 	}
 	return u.ExportedMethods()
