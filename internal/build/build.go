@@ -222,6 +222,13 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if len(export.BuildTags) > 0 {
 		tags += "," + strings.Join(export.BuildTags, ",")
+		// Set environment variable if building for baremetal target
+		for _, tag := range export.BuildTags {
+			if tag == "baremetal" {
+				os.Setenv("LLGO_TARGET_BAREMETAL", "1")
+				break
+			}
+		}
 	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,

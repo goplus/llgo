@@ -317,14 +317,20 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 		// format: //export ExportName or //export FuncName ExportName
 		exportName := strings.TrimSpace(line[len(export):])
 		var inPkgName string
+		isBaremetal := os.Getenv("LLGO_TARGET_BAREMETAL") == "1"
 		if idx := strings.IndexByte(exportName, ' '); idx > 0 {
 			// format: //export FuncName ExportName (go-style)
 			inPkgName = exportName[:idx]
 			exportName = strings.TrimLeft(exportName[idx+1:], " ")
 		} else {
-			// format: //export ExportName (tinygo-style)
-			// use empty string to match any function
-			inPkgName = ""
+			// format: //export ExportName (tinygo-style, only for baremetal targets)
+			if !isBaremetal {
+				// For non-baremetal targets, treat as function name (standard Go behavior)
+				inPkgName = exportName
+			} else {
+				// For baremetal targets, use empty string to match any function
+				inPkgName = ""
+			}
 		}
 		if fullName, _, ok := f(inPkgName); ok {
 			p.prog.SetLinkname(fullName, exportName)
