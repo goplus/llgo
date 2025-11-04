@@ -30,8 +30,6 @@ const (
 var buildVersion string
 
 // Version returns the version of the running LLGo binary.
-//
-//export LLGoVersion
 func Version() string {
 	if buildVersion != "" {
 		return buildVersion
