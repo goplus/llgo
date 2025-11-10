@@ -214,6 +214,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		conf.Goarch = export.GOARCH
 	}
 
+	// Enable different export names for TinyGo compatibility when using -target
+	if conf.Target != "" {
+		cl.EnableExportRename(true)
+	}
+
 	verbose := conf.Verbose
 	patterns := args
 	tags := "llgo,math_big_pure_go"
