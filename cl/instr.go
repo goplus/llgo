@@ -425,7 +425,8 @@ var llgoInstrs = map[string]int{
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
 
-	"asm": llgoAsm,
+	"asm":       llgoAsm,
+	"stackSave": llgoStackSave,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -601,6 +602,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.sigsetjmp(b, args)
 		case llgoSiglongjmp:
 			p.siglongjmp(b, args)
+		case llgoStackSave:
+			ret = b.StackSave()
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer
