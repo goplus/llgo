@@ -151,7 +151,7 @@ func testModule(t *testing.T, ctx context, td llvm.TargetData, m llvm.Module, c 
 		// check c linkname
 		testFunc(t, ctx, td, m.NamedFunction(fn.Name()), fn)
 		// check go
-		testFunc(t, ctx, td, m.NamedFunction("command-line-arguments."+fn.Name()), fn)
+		testFunc(t, ctx, td, m.NamedFunction("main."+fn.Name()), fn)
 	}
 }
 

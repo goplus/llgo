@@ -1,7 +1,7 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testpy/max'
-source_filename = "github.com/goplus/llgo/cl/_testpy/max"
+; ModuleID = 'main'
+source_filename = "main"
 
-@"github.com/goplus/llgo/cl/_testpy/max.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @__llgo_py.builtins.max = linkonce global ptr null, align 8
 @__llgo_py.builtins.print = linkonce global ptr null, align 8
 @__llgo_py.builtins.iter = linkonce global ptr null, align 8
@@ -10,13 +10,13 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/max"
 @1 = private unnamed_addr constant [4 x i8] c"max\00", align 1
 @2 = private unnamed_addr constant [6 x i8] c"print\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/max.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   call void @"github.com/goplus/lib/py/std.init"()
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @0, ptr @__llgo_py.builtins.iter, ptr @1, ptr @__llgo_py.builtins.max, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
@@ -26,7 +26,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/max.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @PyFloat_FromDouble(double 3.000000e+00)
   %1 = call ptr @PyFloat_FromDouble(double 9.000000e+00)

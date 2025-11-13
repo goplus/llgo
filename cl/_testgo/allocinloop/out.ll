@@ -1,18 +1,18 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testgo/allocinloop'
-source_filename = "github.com/goplus/llgo/cl/_testgo/allocinloop"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+define i64 @main.Foo(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, 1
   ret i64 %1
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"() {
+define void @main.Test() {
 _llgo_0:
   br label %_llgo_1
 
@@ -23,7 +23,7 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %2, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
+  %3 = call i64 @main.Foo(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
   %4 = add i64 %0, %3
   %5 = add i64 %1, 1
   br label %_llgo_1
@@ -34,22 +34,22 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard", align 1
+  store i1 true, ptr @"main.init$guard", align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.main"() {
+define void @main.main() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"()
+  call void @main.Test()
   ret void
 }
 

@@ -126,14 +126,17 @@ if $LLGO_SCRIPT build -buildmode c-shared -o export .; then
             if LINK_TYPE=shared make run; then
                 print_status "C demo execution succeeded with shared library"
             else
-                print_warning "C demo execution failed with shared library"
+                print_error "C demo execution failed with shared library"
+                exit 1
             fi
         else
-            print_warning "C demo build failed with shared library"
+            print_error "C demo build failed with shared library"
+            exit 1
         fi
         cd ..
     else
         print_error "Failed to enter use directory"
+        exit 1
     fi
 
     # Cleanup
@@ -164,14 +167,17 @@ if $LLGO_SCRIPT build -buildmode c-archive -o export .; then
             if make run; then
                 print_status "C demo execution succeeded with static library"
             else
-                print_warning "C demo execution failed with static library"
+                print_error "C demo execution failed with static library"
+                exit 1
             fi
         else
-            print_warning "C demo build failed with static library"
+            print_error "C demo build failed with static library"
+            exit 1
         fi
         cd ..
     else
         print_error "Failed to enter use directory"
+        exit 1
     fi
 
     # # Cleanup

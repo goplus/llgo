@@ -1,31 +1,31 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/unsafe'
-source_filename = "github.com/goplus/llgo/cl/_testrt/unsafe"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
-@"github.com/goplus/llgo/cl/_testrt/unsafe.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"error", align 1
 @_llgo_string = linkonce global ptr null, align 8
 @1 = private unnamed_addr constant [4 x i8] c"abc\00", align 1
 @2 = private unnamed_addr constant [3 x i8] c"abc", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/unsafe.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/unsafe.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/unsafe.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testrt/unsafe.init$after"()
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/unsafe.main"() {
+define void @main.main() {
 _llgo_0:
   br i1 false, label %_llgo_1, label %_llgo_2
 
@@ -254,7 +254,7 @@ _llgo_33:                                         ; preds = %_llgo_31
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/unsafe.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null

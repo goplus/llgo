@@ -226,6 +226,9 @@ func PathOf(pkg *types.Package) string {
 	if pkg == nil {
 		return ""
 	}
+	if pkg.Name() == "main" && !strings.HasSuffix(pkg.Path(), ".test") {
+		return "main"
+	}
 	return strings.TrimPrefix(pkg.Path(), PatchPathPrefix)
 }
 

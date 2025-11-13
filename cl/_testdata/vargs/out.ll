@@ -1,31 +1,31 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testdata/vargs'
-source_filename = "github.com/goplus/llgo/cl/_testdata/vargs"
+; ModuleID = 'main'
+source_filename = "main"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"github.com/goplus/llgo/cl/_testdata/vargs.init$guard" = global i1 false, align 1
+@"main.init$guard" = global i1 false, align 1
 @_llgo_int = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @1 = private unnamed_addr constant [32 x i8] c"type assertion any -> int failed", align 1
 @_llgo_string = linkonce global ptr null, align 8
 
-define void @"github.com/goplus/llgo/cl/_testdata/vargs.init"() {
+define void @main.init() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/vargs.init$guard", align 1
+  %0 = load i1, ptr @"main.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/vargs.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testdata/vargs.init$after"()
+  store i1 true, ptr @"main.init$guard", align 1
+  call void @"main.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/vargs.main"() {
+define void @main.main() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 0
@@ -46,11 +46,11 @@ _llgo_0:
   %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
   %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 3, 1
   %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14, i64 3, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/vargs.test"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %15)
+  call void @main.test(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %15)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/vargs.test"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+define void @main.test(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
@@ -96,7 +96,7 @@ _llgo_5:                                          ; preds = %_llgo_2
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-define void @"github.com/goplus/llgo/cl/_testdata/vargs.init$after"() {
+define void @"main.init$after"() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int, align 8
   %1 = icmp eq ptr %0, null
