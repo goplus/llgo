@@ -276,8 +276,6 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 		// nothing to do
 	case DeferInLoop:
 		// Loop defers rely on a dedicated drain loop inserted below.
-	default:
-		panic("unknown defer kind")
 	}
 	typ := b.saveDeferArgs(self, fn, args)
 	self.stmts = append(self.stmts, func(bits Expr) {
@@ -313,8 +311,6 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 			b.Jump(condBlk)
 
 			b.SetBlockEx(exitBlk, AtEnd, true)
-		default:
-			panic("unknown defer kind")
 		}
 	})
 }
