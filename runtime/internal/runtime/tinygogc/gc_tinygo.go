@@ -16,6 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// Package tinygogc implements a conservative mark-and-sweep garbage collector
+// for baremetal environments where the standard Go runtime and bdwgc are unavailable.
+//
+// This implementation is based on TinyGo's GC and is designed for resource-constrained
+// embedded systems. It uses a block-based allocator with conservative pointer scanning.
+//
+// Build tags:
+//   - baremetal: Enables this GC for baremetal targets
+//   - testGC: Enables testing mode with mock implementations
+//
+// Memory Layout:
+// The heap is divided into fixed-size blocks (32 bytes on 64-bit). Metadata is stored
+// at the end of the heap, using 2 bits per block to track state (free/head/tail/mark).
 package tinygogc
 
 import (

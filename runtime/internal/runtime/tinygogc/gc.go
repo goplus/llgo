@@ -4,6 +4,9 @@ package tinygogc
 
 import "unsafe"
 
+// LLGoPackage instructs the LLGo linker to wrap C standard library memory allocation
+// functions (malloc, realloc, calloc) so they use the tinygogc allocator instead.
+// This ensures all memory allocations go through the GC, including C library calls.
 const LLGoPackage = "link: --wrap=malloc --wrap=realloc --wrap=calloc"
 
 //export __wrap_malloc
@@ -12,8 +15,13 @@ func __wrap_malloc(size uintptr) unsafe.Pointer {
 }
 
 //export __wrap_calloc
-func __wrap_calloc(size uintptr) unsafe.Pointer {
-	return Alloc(size)
+func __wrap_calloc(nmemb, size uintptr) unsafe.Pointer {
+	totalSize := nmemb * size
+	// Check for multiplication overflow
+	if nmemb != 0 && totalSize/nmemb != size {
+		return nil // Overflow
+	}
+	return Alloc(totalSize)
 }
 
 //export __wrap_realloc
