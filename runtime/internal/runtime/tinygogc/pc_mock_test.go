@@ -19,8 +19,8 @@ type testObject struct {
 	data [4]uintptr
 }
 
-// mockMemoryLayout simulates the memory layout of an embedded system
-type mockMemoryLayout struct {
+// mockGCEnv provides a controlled root environment for GC testing
+type mockGCEnv struct {
 	memory       []byte
 	heapStart    uintptr
 	heapEnd      uintptr
@@ -28,15 +28,29 @@ type mockMemoryLayout struct {
 	globalsEnd   uintptr
 	stackStart   uintptr
 	stackEnd     uintptr
+	// Controlled root sets for testing
+	rootObjects []unsafe.Pointer
+	// Original GC state to restore
+	originalHeapStart     uintptr
+	originalHeapEnd       uintptr
+	originalGlobalsStart  uintptr
+	originalGlobalsEnd    uintptr
+	originalStackTop      uintptr
+	originalEndBlock      uintptr
+	originalMetadataStart unsafe.Pointer
+	originalNextAlloc     uintptr
+	originalIsGCInit      bool
+	// Mock mode flag
+	mockMode bool
 }
 
-// createMockMemoryLayout creates a simulated 128KB memory environment
-func createMockMemoryLayout() *mockMemoryLayout {
+// createMockGCEnv creates a completely isolated GC environment
+func createMockGCEnv() *mockGCEnv {
 	totalMemory := mockHeapSize + mockGlobalsSize + mockStackSize
 	memory := make([]byte, totalMemory)
 	baseAddr := uintptr(unsafe.Pointer(&memory[0]))
 
-	layout := &mockMemoryLayout{
+	env := &mockGCEnv{
 		memory:       memory,
 		globalsStart: baseAddr,
 		globalsEnd:   baseAddr + mockGlobalsSize,
@@ -44,42 +58,123 @@ func createMockMemoryLayout() *mockMemoryLayout {
 		heapEnd:      baseAddr + mockGlobalsSize + mockHeapSize,
 		stackStart:   baseAddr + mockGlobalsSize + mockHeapSize,
 		stackEnd:     baseAddr + uintptr(totalMemory),
+		rootObjects:  make([]unsafe.Pointer, 0),
+		mockMode:     false,
 	}
 
-	return layout
+	return env
 }
 
-// setupMockGC initializes the GC with mock memory layout
-func (m *mockMemoryLayout) setupMockGC() {
-	// Set mock values
-	heapStart = m.heapStart
-	heapEnd = m.heapEnd
-	globalsStart = m.globalsStart
-	globalsEnd = m.globalsEnd
-	stackTop = m.stackEnd
+// setupMockGC initializes the GC with mock memory layout using initGC's logic
+func (env *mockGCEnv) setupMockGC() {
+	// Save original GC state
+	env.originalHeapStart = heapStart
+	env.originalHeapEnd = heapEnd
+	env.originalGlobalsStart = globalsStart
+	env.originalGlobalsEnd = globalsEnd
+	env.originalStackTop = stackTop
+	env.originalEndBlock = endBlock
+	env.originalMetadataStart = metadataStart
+	env.originalNextAlloc = nextAlloc
+	env.originalIsGCInit = isGCInit
 
-	// Set currentStack to the start of the mock stack
-	currentStack = m.stackStart
+	// Set currentStack for getsp()
+	currentStack = env.stackStart
 
-	// Calculate metadata layout
+	// Apply initGC's logic with our mock memory layout
+	// This is the same logic as initGC() but with our mock addresses
+	heapStart = env.heapStart + 2048 // reserve 2K blocks like initGC does
+	heapEnd = env.heapEnd
+	globalsStart = env.globalsStart
+	globalsEnd = env.globalsEnd
+	stackTop = env.stackEnd
+
 	totalSize := heapEnd - heapStart
 	metadataSize := (totalSize + blocksPerStateByte*bytesPerBlock) / (1 + blocksPerStateByte*bytesPerBlock)
 	metadataStart = unsafe.Pointer(heapEnd - metadataSize)
 	endBlock = (uintptr(metadataStart) - heapStart) / bytesPerBlock
 
-	// Clear metadata
-	metadataBytes := (*[1024]byte)(metadataStart)[:metadataSize:metadataSize]
-	for i := range metadataBytes {
-		metadataBytes[i] = 0
-	}
+	// Clear metadata using memset like initGC does
+	memset(metadataStart, 0, metadataSize)
 
-	// Reset allocator state
+	// Reset allocator state (initGC doesn't reset these, but we need to)
 	nextAlloc = 0
 	isGCInit = true
 }
 
+// restoreOriginalGC restores the original GC state
+func (env *mockGCEnv) restoreOriginalGC() {
+	heapStart = env.originalHeapStart
+	heapEnd = env.originalHeapEnd
+	globalsStart = env.originalGlobalsStart
+	globalsEnd = env.originalGlobalsEnd
+	stackTop = env.originalStackTop
+	endBlock = env.originalEndBlock
+	metadataStart = env.originalMetadataStart
+	nextAlloc = env.originalNextAlloc
+	isGCInit = env.originalIsGCInit
+}
+
+// enableMockMode enables mock root scanning mode
+func (env *mockGCEnv) enableMockMode() {
+	env.mockMode = true
+}
+
+// disableMockMode disables mock root scanning mode
+func (env *mockGCEnv) disableMockMode() {
+	env.mockMode = false
+}
+
+// addRoot adds an object to the controlled root set
+func (env *mockGCEnv) addRoot(ptr unsafe.Pointer) {
+	env.rootObjects = append(env.rootObjects, ptr)
+}
+
+// clearRoots removes all objects from the controlled root set
+func (env *mockGCEnv) clearRoots() {
+	env.rootObjects = env.rootObjects[:0]
+}
+
+// mockMarkReachable replaces gcMarkReachable when in mock mode
+func (env *mockGCEnv) mockMarkReachable() {
+	if !env.mockMode {
+		// Use original logic
+		markRoots(uintptr(getsp()), stackTop)
+		markRoots(globalsStart, globalsEnd)
+		return
+	}
+
+	// Mock mode: only scan our controlled roots
+	for _, root := range env.rootObjects {
+		addr := uintptr(root)
+		markRoot(addr, addr)
+	}
+}
+
+// runMockGC runs standard GC but with controlled root scanning
+func (env *mockGCEnv) runMockGC() uintptr {
+	lock(&gcMutex)
+	defer unlock(&gcMutex)
+
+	lazyInit()
+
+	if gcDebug {
+		println("running mock collection cycle...")
+	}
+
+	// Mark phase: use our mock root scanning
+	env.mockMarkReachable()
+	finishMark()
+
+	// Resume world (no-op in single threaded)
+	gcResumeWorld()
+
+	// Sweep phase: use standard sweep logic
+	return sweep()
+}
+
 // createTestObjects creates a network of objects for testing reachability
-func createTestObjects(layout *mockMemoryLayout) []*testObject {
+func createTestObjects(env *mockGCEnv) []*testObject {
 	// Allocate several test objects
 	objects := make([]*testObject, 0, 10)
 
@@ -119,20 +214,10 @@ func createTestObjects(layout *mockMemoryLayout) []*testObject {
 	return objects
 }
 
-// mockStackScan simulates scanning stack for root pointers
-func mockStackScan(roots []*testObject) {
-	// Simulate stack by creating local variables pointing to roots
-
-	for _, root := range roots[:2] { // Only first 2 are actually roots
-		addr := uintptr(unsafe.Pointer(&root))
-		ptr := uintptr(unsafe.Pointer(root))
-		markRoot(addr, ptr)
-	}
-}
-
 func TestMockGCBasicAllocation(t *testing.T) {
-	layout := createMockMemoryLayout()
-	layout.setupMockGC()
+	env := createMockGCEnv()
+	env.setupMockGC()
+	defer env.restoreOriginalGC()
 
 	// Test basic allocation
 	ptr1 := Alloc(32)
@@ -162,18 +247,23 @@ func TestMockGCBasicAllocation(t *testing.T) {
 }
 
 func TestMockGCReachabilityAndSweep(t *testing.T) {
-	layout := createMockMemoryLayout()
-	layout.setupMockGC()
+	env := createMockGCEnv()
+	env.setupMockGC()
+	defer env.restoreOriginalGC()
 
 	// Track initial stats
 	initialMallocs := gcMallocs
 	initialFrees := gcFrees
 
 	// Create test object network
-	objects := createTestObjects(layout)
-	roots := objects[:2] // First 2 are roots
+	objects := createTestObjects(env)
 
-	t.Logf("Created %d objects, %d are roots", len(objects), len(roots))
+	// Add first 2 objects as roots using mock control
+	env.enableMockMode()
+	env.addRoot(unsafe.Pointer(objects[0])) // root1
+	env.addRoot(unsafe.Pointer(objects[1])) // root2
+
+	t.Logf("Created %d objects, 2 are roots", len(objects))
 	t.Logf("Mallocs: %d", gcMallocs-initialMallocs)
 
 	// Verify all objects are initially allocated
@@ -186,13 +276,8 @@ func TestMockGCReachabilityAndSweep(t *testing.T) {
 		}
 	}
 
-	// Perform GC with manual root scanning
-	// Mark reachable objects first
-	mockStackScan(roots)
-	finishMark()
-
-	// Then sweep unreachable objects
-	freedBytes := sweep()
+	// Perform GC with controlled root scanning
+	freedBytes := env.runMockGC()
 	t.Logf("Freed %d bytes during GC", freedBytes)
 	t.Logf("Frees: %d (delta: %d)", gcFrees, gcFrees-initialFrees)
 
@@ -238,36 +323,32 @@ func TestMockGCReachabilityAndSweep(t *testing.T) {
 		t.Error("Expected some objects to be freed, but free count didn't change")
 	}
 
-	// clear ref for grandchild
-	objects[2].data[0] = 0
-	objects[3].data[0] = 0
+	// Clear refs to make grandchild1 unreachable
+	objects[2].data[0] = 0 // child1 -> grandchild1
+	objects[3].data[0] = 0 // child2 -> grandchild1
 
-	// Perform GC with manual root scanning
-	// Mark reachable objects first
-	mockStackScan(roots)
-	finishMark()
+	// Run GC again with same roots
+	freedBytes = env.runMockGC()
 
-	// Then sweep unreachable objects
-	freedBytes = sweep()
-
+	// child2 should still be reachable (through root1)
 	blockAddr := blockFromAddr(uintptr(unsafe.Pointer(objects[3])))
-
 	state := gcStateOf(blockAddr)
 	if state != blockStateHead {
-		t.Errorf("Unreachable object %d at %x has state %d, expected %d (HEAD)", 3, blockAddr, state, blockStateHead)
+		t.Errorf("Object child2 at %x has state %d, expected %d (HEAD)", blockAddr, state, blockStateHead)
 	}
 
+	// grandchild1 should now be unreachable and freed
 	blockAddr = blockFromAddr(uintptr(unsafe.Pointer(objects[4])))
-
 	state = gcStateOf(blockAddr)
 	if state != blockStateFree {
-		t.Errorf("Reachable object %d at %x has state %d, expected %d (HEAD)", 4, blockAddr, state, blockStateHead)
+		t.Errorf("Object grandchild1 at %x has state %d, expected %d (FREE)", blockAddr, state, blockStateFree)
 	}
 }
 
 func TestMockGCMemoryPressure(t *testing.T) {
-	layout := createMockMemoryLayout()
-	layout.setupMockGC()
+	env := createMockGCEnv()
+	env.setupMockGC()
+	defer env.restoreOriginalGC()
 
 	// Calculate available heap space
 	heapSize := uintptr(metadataStart) - heapStart
@@ -295,12 +376,17 @@ func TestMockGCMemoryPressure(t *testing.T) {
 	initialMallocs := gcMallocs
 	t.Logf("Allocated %d objects (%d mallocs total)", len(allocations), initialMallocs)
 
-	// Clear references to half the allocations (make them garbage)
-	garbageCount := len(allocations) / 2
-	allocations = allocations[garbageCount:]
+	// Enable mock mode and keep only half the allocations as roots
+	env.enableMockMode()
+	keepCount := len(allocations) / 2
+	for i := 0; i < keepCount; i++ {
+		env.addRoot(allocations[i])
+	}
 
-	// Force GC
-	freeBytes := GC()
+	t.Logf("Keeping %d objects as roots, %d should be freed", keepCount, len(allocations)-keepCount)
+
+	// Force GC with controlled roots
+	freeBytes := env.runMockGC()
 
 	t.Logf("GC freed %d bytes", freeBytes)
 	t.Logf("Objects freed: %d", gcFrees)
@@ -317,8 +403,9 @@ func TestMockGCMemoryPressure(t *testing.T) {
 }
 
 func TestMockGCCircularReferences(t *testing.T) {
-	layout := createMockMemoryLayout()
-	layout.setupMockGC()
+	env := createMockGCEnv()
+	env.setupMockGC()
+	defer env.restoreOriginalGC()
 
 	type Node struct {
 		data [3]uintptr
@@ -350,23 +437,45 @@ func TestMockGCCircularReferences(t *testing.T) {
 		}
 	}
 
-	// Clear references (make entire circle unreachable)
-	// for i := range nodes {
-	// 	nodes[zi] = nil
-	// }
+	// Test 1: With root references - objects should NOT be freed
+	env.enableMockMode()
+	// Add the first node as root (keeps entire circle reachable)
+	env.addRoot(unsafe.Pointer(nodes[0]))
 
-	// Force GC without roots
-	freeBytes := GC()
+	freeBytes := env.runMockGC()
+	t.Logf("GC with root reference freed %d bytes", freeBytes)
 
-	t.Logf("GC freed %d bytes", freeBytes)
+	// All nodes should still be allocated since they're reachable through the root
+	for i, node := range nodes {
+		addr := uintptr(unsafe.Pointer(node))
+		block := blockFromAddr(addr)
+		state := gcStateOf(block)
+		if state != blockStateHead {
+			t.Errorf("Node %d at %x should still be allocated, but has state %d", i, addr, state)
+		}
+	}
 
-	// All nodes should now be freed since they're not reachable
-	// Note: We can't check the specific nodes since we cleared the references,
-	// but we can verify that significant memory was freed
+	// Test 2: Without root references - all circular objects should be freed
+	env.clearRoots() // Remove all root references
+
+	freeBytes = env.runMockGC()
+	t.Logf("GC without roots freed %d bytes", freeBytes)
+
+	// All nodes should now be freed since they're not reachable from any roots
 	expectedFreed := uintptr(len(nodes)) * ((unsafe.Sizeof(Node{}) + bytesPerBlock - 1) / bytesPerBlock) * bytesPerBlock
 
 	if freeBytes < expectedFreed {
 		t.Errorf("Expected at least %d bytes freed, got %d", expectedFreed, freeBytes)
+	}
+
+	// Verify all nodes are actually freed
+	for i, node := range nodes {
+		addr := uintptr(unsafe.Pointer(node))
+		block := blockFromAddr(addr)
+		state := gcStateOf(block)
+		if state != blockStateFree {
+			t.Errorf("Node %d at %x should be freed, but has state %d", i, addr, state)
+		}
 	}
 
 	// Verify we can allocate new objects in the freed space
