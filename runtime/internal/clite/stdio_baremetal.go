@@ -25,16 +25,3 @@ import (
 var Stdin FilePtr = Fopen(Str("/dev/stdin"), Str("r"))
 var Stdout FilePtr = Fopen(Str("/dev/stdout"), Str("w"))
 var Stderr FilePtr = Stdout
-
-//go:linkname setvbuf C.setvbuf
-func setvbuf(fp FilePtr, buf *Char, typ Int, size SizeT)
-
-const (
-	_IONBF = 2 // No buffering - immediate output
-)
-
-func init() {
-	// Disable buffering for baremetal targets to ensure immediate output
-	setvbuf(Stdout, nil, _IONBF, 0)
-	setvbuf(Stdin, nil, _IONBF, 0)
-}
