@@ -20,6 +20,8 @@ package tinygogc
 
 import (
 	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
 const gcDebug = false
@@ -102,11 +104,16 @@ func lazyInit() {
 	}
 }
 
+func gcPanic(s *c.Char) {
+	c.Printf(c.Str("%s"), s)
+	c.Exit(2)
+}
+
 // blockFromAddr returns a block given an address somewhere in the heap (which
 // might not be heap-aligned).
 func blockFromAddr(addr uintptr) uintptr {
 	if addr < heapStart || addr >= uintptr(metadataStart) {
-		println("gc: trying to get block from invalid address")
+		gcPanic(c.Str("gc: trying to get block from invalid address"))
 	}
 	return (addr - heapStart) / bytesPerBlock
 }
@@ -120,7 +127,7 @@ func gcPointerOf(blockAddr uintptr) unsafe.Pointer {
 func gcAddressOf(blockAddr uintptr) uintptr {
 	addr := heapStart + blockAddr*bytesPerBlock
 	if addr > uintptr(metadataStart) {
-		println("gc: block pointing inside metadata")
+		gcPanic(c.Str("gc: block pointing inside metadata"))
 	}
 	return addr
 }
@@ -151,7 +158,7 @@ func gcFindHead(blockAddr uintptr) uintptr {
 		blockAddr--
 	}
 	if gcStateOf(blockAddr) != blockStateHead && gcStateOf(blockAddr) != blockStateMark {
-		println("gc: found tail without head")
+		gcPanic(c.Str("gc: found tail without head"))
 	}
 	return blockAddr
 }
@@ -190,7 +197,7 @@ func gcSetState(blockAddr uintptr, newState uint8) {
 	stateBytePtr := (*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr |= uint8(newState << ((blockAddr % blocksPerStateByte) * stateBits))
 	if gcStateOf(blockAddr) != newState {
-		println("gc: setState() was not successful")
+		gcPanic(c.Str("gc: setState() was not successful"))
 	}
 }
 
@@ -199,7 +206,7 @@ func gcMarkFree(blockAddr uintptr) {
 	stateBytePtr := (*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr &^= uint8(blockStateMask << ((blockAddr % blocksPerStateByte) * stateBits))
 	if gcStateOf(blockAddr) != blockStateFree {
-		println("gc: markFree() was not successful")
+		gcPanic(c.Str("gc: markFree() was not successful"))
 	}
 	*(*[wordsPerBlock]uintptr)(unsafe.Pointer(gcAddressOf(blockAddr))) = [wordsPerBlock]uintptr{}
 }
@@ -208,13 +215,13 @@ func gcMarkFree(blockAddr uintptr) {
 // before calling this function.
 func gcUnmark(blockAddr uintptr) {
 	if gcStateOf(blockAddr) != blockStateMark {
-		println("gc: unmark() on a block that is not marked")
+		gcPanic(c.Str("gc: unmark() on a block that is not marked"))
 	}
 	clearMask := blockStateMask ^ blockStateHead // the bits to clear from the state
 	stateBytePtr := (*uint8)(unsafe.Add(metadataStart, blockAddr/blocksPerStateByte))
 	*stateBytePtr &^= uint8(clearMask << ((blockAddr % blocksPerStateByte) * stateBits))
 	if gcStateOf(blockAddr) != blockStateHead {
-		println("gc: unmark() was not successful")
+		gcPanic(c.Str("gc: unmark() was not successful"))
 	}
 }
 
@@ -276,7 +283,7 @@ func Alloc(size uintptr) unsafe.Pointer {
 					// Unfortunately the heap could not be increased. This
 					// happens on baremetal systems for example (where all
 					// available RAM has already been dedicated to the heap).
-					println("out of memory")
+					gcPanic(c.Str("out of memory"))
 				}
 			}
 		}
@@ -391,7 +398,7 @@ func gc() (freeBytes uintptr) {
 // must be aligned.
 func markRoots(start, end uintptr) {
 	if start >= end {
-		println("gc: unexpected range to mark")
+		gcPanic(c.Str("gc: unexpected range to mark"))
 	}
 	// Reduce the end bound to avoid reading too far on platforms where pointer alignment is smaller than pointer size.
 	// If the size of the range is 0, then end will be slightly below start after this.

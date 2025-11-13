@@ -10,8 +10,7 @@ import (
 //go:linkname getsp llgo.stackSave
 func getsp() unsafe.Pointer
 
-// when executing initGC(), we must ensure there's no any allocations.
-// use linking here to avoid import clite
+// link here for testing
 //
 //go:linkname memset C.memset
 func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
