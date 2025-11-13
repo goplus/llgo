@@ -753,6 +753,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 }
 
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, outputPath string, verbose bool) error {
+
 	needRuntime := false
 	needPyInit := false
 	pkgsMap := make(map[*packages.Package]*aPackage, len(pkgs))
