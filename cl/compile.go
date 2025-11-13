@@ -98,18 +98,19 @@ type pkgInfo struct {
 type none = struct{}
 
 type context struct {
-	prog   llssa.Program
-	pkg    llssa.Package
-	fn     llssa.Function
-	fset   *token.FileSet
-	goProg *ssa.Program
-	goTyps *types.Package
-	goPkg  *ssa.Package
-	pyMod  string
-	skips  map[string]none
-	loaded map[*types.Package]*pkgInfo // loaded packages
-	bvals  map[ssa.Value]llssa.Expr    // block values
-	vargs  map[*ssa.Alloc][]llssa.Expr // varargs
+	prog        llssa.Program
+	pkg         llssa.Package
+	fn          llssa.Function
+	fset        *token.FileSet
+	goProg      *ssa.Program
+	goTyps      *types.Package
+	goPkg       *ssa.Package
+	pyMod       string
+	skips       map[string]none
+	loaded      map[*types.Package]*pkgInfo // loaded packages
+	bvals       map[ssa.Value]llssa.Expr    // block values
+	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
+	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
 	blkInfos []blocks.Info
@@ -263,6 +264,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		if f.Recover != nil { // set recover block
 			fn.SetRecover(fn.Block(f.Recover.Index))
 		}
+		dbgEnabled := enableDbg && (f == nil || f.Origin() == nil)
+		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
 		p.inits = append(p.inits, func() {
 			p.fn = fn
 			p.state = state // restore pkgState when compiling funcBody
@@ -270,6 +273,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				p.fn = nil
 			}()
 			p.phis = nil
+			if dbgSymsEnabled {
+				p.paramDIVars = make(map[*types.Var]llssa.DIVar)
+			} else {
+				p.paramDIVars = nil
+			}
 			if debugGoSSA {
 				f.WriteTo(os.Stderr)
 			}
@@ -277,7 +285,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
-			if enableDbg {
+			if dbgEnabled {
 				pos := p.goProg.Fset.Position(f.Pos())
 				bodyPos := p.getFuncBodyPos(f)
 				b.DebugFunction(fn, pos, bodyPos)
@@ -371,6 +379,9 @@ func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 		ty := param.Type()
 		argNo := i + 1
 		div := b.DIVarParam(p.fn, pos, param.Name(), p.type_(ty, llssa.InGo), argNo)
+		if p.paramDIVars != nil {
+			p.paramDIVars[variable] = div
+		}
 		b.DIParam(variable, v, div, p.fn, pos, p.fn.Block(0))
 	}
 }
@@ -388,7 +399,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		b.Printf("call " + fn.Name() + "\n\x00")
 	}
 	// place here to avoid wrong current-block
-	if enableDbgSyms && block.Index == 0 {
+	if enableDbgSyms && block.Parent().Origin() == nil && block.Index == 0 {
 		p.debugParams(b, block.Parent())
 	}
 	if doModInit {
@@ -783,7 +794,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		p.compileInstrOrValue(b, iv, false)
 		return
 	}
-	if enableDbg {
+	if enableDbg && instr.Parent().Origin() == nil {
 		scope := p.getDebugLocScope(instr.Parent(), instr.Pos())
 		if scope != nil {
 			diScope := b.DIScope(p.fn, scope)
@@ -846,7 +857,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
-		if enableDbgSyms {
+		if enableDbgSyms && v.Parent().Origin() == nil {
 			p.debugRef(b, v)
 		}
 	default:
@@ -855,14 +866,13 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 }
 
 func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {
-	pos := p.fset.Position(v.Pos())
-	t := p.type_(v.Type(), llssa.InGo)
-	for i, param := range fn.Params {
-		if param.Object().(*types.Var) == v {
-			argNo := i + 1
-			return b.DIVarParam(p.fn, pos, v.Name(), t, argNo)
+	if p.paramDIVars != nil {
+		if div, ok := p.paramDIVars[v]; ok {
+			return div
 		}
 	}
+	pos := p.fset.Position(v.Pos())
+	t := p.type_(v.Type(), llssa.InGo)
 	scope := b.DIScope(p.fn, v.Parent())
 	return b.DIVarAuto(scope, pos, v.Name(), t)
 }

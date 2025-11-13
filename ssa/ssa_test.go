@@ -60,6 +60,42 @@ func TestUnsafeString(t *testing.T) {
 	b.Return()
 }
 
+func TestTooManyConditionalDefers(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Chdir("../../runtime")
+	defer os.Chdir(wd)
+
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+
+	pkg := prog.NewPackage("foo", "foo")
+	target := pkg.NewFunc("f", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("main", NoArgsNoRet, InGo)
+	fn.SetRecover(fn.MakeBlock())
+	b := fn.MakeBody(1)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic: too many conditional defers")
+		} else if r != "too many conditional defers" {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	b.Return()
+	for i := 0; i < 65; i++ {
+		b.Defer(DeferInCond, target.Expr)
+	}
+}
+
 func TestPointerSize(t *testing.T) {
 	expected := unsafe.Sizeof(uintptr(0))
 	if size := NewProgram(nil).PointerSize(); size != int(expected) {
