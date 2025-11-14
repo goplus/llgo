@@ -1062,7 +1062,8 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 }
 
 func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
-	f, err := os.CreateTemp("", "llgo-*.ll")
+	base := filepath.Base(exportFile)
+	f, err := os.CreateTemp("", base+"-*.ll")
 	if err != nil {
 		return "", err
 	}
@@ -1084,13 +1085,17 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		}
 		return exportFile, os.Rename(f.Name(), exportFile)
 	}
-	exportFile += ".o"
-	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
+	objFile, err := os.CreateTemp("", base+"-*.o")
+	if err != nil {
+		return "", err
+	}
+	objFile.Close()
+	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
-	return exportFile, cmd.Compile(args...)
+	return objFile.Name(), cmd.Compile(args...)
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
