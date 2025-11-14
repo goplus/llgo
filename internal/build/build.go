@@ -750,7 +750,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
-			objFiles = append(objFiles, aPkg.ExportFile)
 			need1, need2 := isNeedRuntimeOrPyInit(ctx, p)
 			if !needRuntime {
 				needRuntime = need1
@@ -1050,10 +1049,11 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
-		pkg.ExportFile, err = exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
+		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
+		aPkg.LLFiles = append(aPkg.LLFiles, exportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
