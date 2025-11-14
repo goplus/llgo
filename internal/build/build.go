@@ -631,6 +631,8 @@ var (
 	errXflags = errors.New("-X flag requires argument of the form importpath.name=value")
 )
 
+// maxRewriteValueLength limits the size of rewrite values to prevent
+// excessive memory usage and potential resource exhaustion during compilation.
 const maxRewriteValueLength = 1 << 20 // 1 MiB cap per rewrite value
 
 func addGlobalString(conf *Config, arg string, mainPkgs []string) {
@@ -1087,7 +1089,10 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	if err != nil {
 		return "", err
 	}
-	f.Write(data)
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return "", err
+	}
 	err = f.Close()
 	if err != nil {
 		return exportFile, err

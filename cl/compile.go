@@ -235,8 +235,15 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
-	if value, ok := p.rewriteValue(name); ok && p.isStringType(typ) {
-		g.Init(pkg.ConstString(value))
+	if value, ok := p.rewriteValue(name); ok {
+		if p.isStringType(typ) {
+			g.Init(pkg.ConstString(value))
+		} else {
+			log.Printf("warning: ignoring rewrite for non-string variable %s (type: %v)", name, typ)
+			if define {
+				g.InitNil()
+			}
+		}
 	} else if define {
 		g.InitNil()
 	}
