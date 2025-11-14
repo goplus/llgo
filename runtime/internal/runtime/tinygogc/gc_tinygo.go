@@ -108,7 +108,7 @@ func initGC() {
 	endBlock = (uintptr(metadataStart) - heapStart) / bytesPerBlock
 	stackTop = uintptr(unsafe.Pointer(&_stackStart))
 
-	memset(metadataStart, 0, metadataSize)
+	c.Memset(metadataStart, 0, metadataSize)
 }
 
 func lazyInit() {
@@ -339,7 +339,7 @@ func Alloc(size uintptr) unsafe.Pointer {
 			}
 			unlock(&gcMutex)
 			// Return a pointer to this allocation.
-			return memset(gcPointerOf(thisAlloc), 0, size)
+			return c.Memset(gcPointerOf(thisAlloc), 0, size)
 		}
 	}
 }
@@ -363,7 +363,7 @@ func Realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
 	}
 
 	newAlloc := Alloc(size)
-	memcpy(newAlloc, ptr, oldSize)
+	c.Memcpy(newAlloc, ptr, oldSize)
 	free(ptr)
 
 	return newAlloc

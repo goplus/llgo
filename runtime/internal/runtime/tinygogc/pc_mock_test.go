@@ -5,6 +5,8 @@ package tinygogc
 import (
 	"testing"
 	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
 const (
@@ -95,7 +97,7 @@ func (env *mockGCEnv) setupMockGC() {
 	endBlock = (uintptr(metadataStart) - heapStart) / bytesPerBlock
 
 	// Clear metadata using memset like initGC does
-	memset(metadataStart, 0, metadataSize)
+	c.Memset(metadataStart, 0, metadataSize)
 
 	// Reset allocator state (initGC doesn't reset these, but we need to)
 	nextAlloc = 0

@@ -10,14 +10,6 @@ import (
 //go:linkname getsp llgo.stackSave
 func getsp() unsafe.Pointer
 
-// link here for testing
-//
-//go:linkname memset C.memset
-func memset(unsafe.Pointer, int, uintptr) unsafe.Pointer
-
-//go:linkname memcpy C.memcpy
-func memcpy(unsafe.Pointer, unsafe.Pointer, uintptr)
-
 //go:linkname _heapStart _heapStart
 var _heapStart [0]byte
 
