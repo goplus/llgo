@@ -130,12 +130,14 @@ type context struct {
 	rewrites   map[string]string
 }
 
+const maxStringTypeDepth = 64
+
 func (p *context) rewriteValue(name string) (string, bool) {
 	if p.rewrites == nil {
 		return "", false
 	}
 	dot := strings.LastIndex(name, ".")
-	if dot < 0 {
+	if dot < 0 || dot == len(name)-1 {
 		return "", false
 	}
 	varName := name[dot+1:]
@@ -144,7 +146,9 @@ func (p *context) rewriteValue(name string) (string, bool) {
 }
 
 func (p *context) isStringType(typ types.Type) bool {
-	for typ != nil {
+	depth := 0
+	for typ != nil && depth < maxStringTypeDepth {
+		depth++
 		switch t := typ.Underlying().(type) {
 		case *types.Basic:
 			return t.Kind() == types.String
@@ -164,15 +168,21 @@ func (p *context) globalFullName(g *ssa.Global) string {
 }
 
 func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, bool) {
+	if p.rewrites == nil {
+		return "", false
+	}
 	fn := store.Block().Parent()
 	if fn == nil || fn.Synthetic != "package initializer" {
 		return "", false
 	}
-	value, ok := p.rewriteValue(p.globalFullName(g))
-	if !ok || !p.isStringType(g.Type()) {
+	if _, ok := store.Val.(*ssa.Const); !ok {
 		return "", false
 	}
-	if _, ok := store.Val.(*ssa.Const); !ok {
+	if !p.isStringType(g.Type()) {
+		return "", false
+	}
+	value, ok := p.rewriteValue(p.globalFullName(g))
+	if !ok {
 		return "", false
 	}
 	return value, true
@@ -867,9 +877,11 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				return
 			}
 		}
-		if g, ok := va.(*ssa.Global); ok {
-			if _, ok := p.rewriteInitStore(v, g); ok {
-				return
+		if p.rewrites != nil {
+			if g, ok := va.(*ssa.Global); ok {
+				if _, ok := p.rewriteInitStore(v, g); ok {
+					return
+				}
 			}
 		}
 		ptr := p.compileValue(b, va)
@@ -1041,6 +1053,16 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
+//
+// Parameters:
+//   - prog: target LLVM SSA program context
+//   - patches: optional package patches applied during compilation
+//   - rewrites: per-package string initializers rewritten at compile time
+//   - pkg: SSA package to compile
+//   - files: parsed AST files that belong to the package
+//
+// The rewrites map uses short variable names (without package qualifier) and
+// only affects string-typed globals defined in the current package.
 func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg

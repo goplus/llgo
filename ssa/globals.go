@@ -31,7 +31,10 @@ func (pkg Package) AddGlobalString(name string, value string) {
 	pkg.NewVarEx(name, prog.Pointer(styp)).Init(Expr{cv, styp})
 }
 
-// ConstString returns an SSA string constant expression within this package.
+// ConstString creates an SSA expression representing a Go string literal. The
+// returned value is backed by an anonymous global constant and can be used to
+// initialize package-level variables or other constant contexts that expect a
+// Go string value.
 func (pkg Package) ConstString(value string) Expr {
 	prog := pkg.Prog
 	styp := prog.String()

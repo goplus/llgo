@@ -90,6 +90,9 @@ func TestRewriteValueNoDot(t *testing.T) {
 	if _, ok := ctx.rewriteValue("VarInit"); ok {
 		t.Fatalf("rewriteValue should skip names without package prefix")
 	}
+	if _, ok := ctx.rewriteValue("pkg."); ok {
+		t.Fatalf("rewriteValue should skip trailing dot names")
+	}
 }
 
 func TestIsStringTypeDefault(t *testing.T) {

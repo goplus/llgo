@@ -111,28 +111,33 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos           string
-	Goarch         string
-	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath        string
-	AppExt         string  // ".exe" on Windows, empty on Unix
-	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts        OutFmts // Output format specifications (only for Target != "")
-	Emulator       bool    // run in emulator mode
-	Port           string  // target port for flashing
-	BaudRate       int     // baudrate for serial communication
-	RunArgs        []string
-	Mode           Mode
-	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode        AbiMode
-	GenExpect      bool // only valid for ModeCmpTest
-	Verbose        bool
-	GenLL          bool // generate pkg .ll files
-	CheckLLFiles   bool // check .ll files valid
-	CheckLinkArgs  bool // check linkargs valid
-	ForceEspClang  bool // force to use esp-clang
-	Tags           string
-	GlobalRewrites map[string]Rewrites // pkg => var => value
+	Goos          string
+	Goarch        string
+	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath       string
+	AppExt        string  // ".exe" on Windows, empty on Unix
+	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts       OutFmts // Output format specifications (only for Target != "")
+	Emulator      bool    // run in emulator mode
+	Port          string  // target port for flashing
+	BaudRate      int     // baudrate for serial communication
+	RunArgs       []string
+	Mode          Mode
+	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode       AbiMode
+	GenExpect     bool // only valid for ModeCmpTest
+	Verbose       bool
+	GenLL         bool // generate pkg .ll files
+	CheckLLFiles  bool // check .ll files valid
+	CheckLinkArgs bool // check linkargs valid
+	ForceEspClang bool // force to use esp-clang
+	Tags          string
+	// GlobalRewrites specifies compile-time overrides for global string variables.
+	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
+	// Each Rewrites entry maps variable names to replacement string values. Only
+	// string-typed globals are supported and "main" applies to all root main
+	// packages in the current build.
+	GlobalRewrites map[string]Rewrites
 }
 
 type Rewrites map[string]string
@@ -626,6 +631,8 @@ var (
 	errXflags = errors.New("-X flag requires argument of the form importpath.name=value")
 )
 
+const maxRewriteValueLength = 1 << 20 // 1 MiB cap per rewrite value
+
 func addGlobalString(conf *Config, arg string, mainPkgs []string) {
 	addGlobalStringWith(conf, arg, mainPkgs, true)
 }
@@ -637,6 +644,9 @@ func addGlobalStringWith(conf *Config, arg string, mainPkgs []string, skipIfExis
 		panic(errXflags)
 	}
 	pkg := arg[:dot]
+	varName := arg[dot+1 : eq]
+	value := arg[eq+1:]
+	validateRewriteInput(pkg, varName, value)
 	pkgs := []string{pkg}
 	if pkg == "main" {
 		pkgs = mainPkgs
@@ -647,8 +657,6 @@ func addGlobalStringWith(conf *Config, arg string, mainPkgs []string, skipIfExis
 	if conf.GlobalRewrites == nil {
 		conf.GlobalRewrites = make(map[string]Rewrites)
 	}
-	varName := arg[dot+1 : eq]
-	value := arg[eq+1:]
 	for _, realPkg := range pkgs {
 		vars := conf.GlobalRewrites[realPkg]
 		if vars == nil {
@@ -661,6 +669,18 @@ func addGlobalStringWith(conf *Config, arg string, mainPkgs []string, skipIfExis
 			}
 		}
 		vars[varName] = value
+	}
+}
+
+func validateRewriteInput(pkg, varName, value string) {
+	if pkg == "" || strings.ContainsAny(pkg, " \t\r\n") {
+		panic(fmt.Errorf("invalid package path for rewrite: %q", pkg))
+	}
+	if !token.IsIdentifier(varName) {
+		panic(fmt.Errorf("invalid variable name for rewrite: %q", varName))
+	}
+	if len(value) > maxRewriteValueLength {
+		panic(fmt.Errorf("rewrite value too large: %d bytes", len(value)))
 	}
 }
 
@@ -1182,23 +1202,29 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 }
 
 func collectRewriteVars(ctx *context, pkgPath string) map[string]string {
-	var rewrites map[string]string
-	basePath := strings.TrimPrefix(pkgPath, altPkgPathPrefix)
-	if data := ctx.buildConf.GlobalRewrites; len(data) != 0 {
-		for pkg, vars := range data {
-			trimmed := strings.TrimPrefix(pkg, altPkgPathPrefix)
-			if trimmed != basePath {
-				continue
-			}
-			for name, value := range vars {
-				if rewrites == nil {
-					rewrites = make(map[string]string)
-				}
-				rewrites[name] = value
-			}
-		}
+	data := ctx.buildConf.GlobalRewrites
+	if len(data) == 0 {
+		return nil
 	}
-	return rewrites
+	basePath := strings.TrimPrefix(pkgPath, altPkgPathPrefix)
+	if vars := data[basePath]; vars != nil {
+		return cloneRewrites(vars)
+	}
+	if vars := data[pkgPath]; vars != nil {
+		return cloneRewrites(vars)
+	}
+	return nil
+}
+
+func cloneRewrites(src Rewrites) map[string]string {
+	if len(src) == 0 {
+		return nil
+	}
+	dup := make(map[string]string, len(src))
+	for k, v := range src {
+		dup[k] = v
+	}
+	return dup
 }
 
 func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
