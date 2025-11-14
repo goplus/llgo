@@ -91,11 +91,27 @@ func (p Program) tySiglongjmp() *types.Signature {
 	return p.sigljmpTy
 }
 
+// func() unsafe.Pointer
+func (p Program) tyStacksave() *types.Signature {
+	if p.stackSaveTy == nil {
+		paramPtr := types.NewParam(token.NoPos, nil, "", p.VoidPtr().raw.Type)
+		params := types.NewTuple(paramPtr)
+		p.stackSaveTy = types.NewSignatureType(nil, nil, nil, nil, params, false)
+	}
+	return p.stackSaveTy
+}
+
 func (b Builder) AllocaSigjmpBuf() Expr {
 	prog := b.Prog
 	n := unsafe.Sizeof(sigjmpbuf{})
 	size := prog.IntVal(uint64(n), prog.Uintptr())
 	return b.Alloca(size)
+}
+
+// declare ptr @llvm.stacksave.p0()
+func (b Builder) StackSave() Expr {
+	fn := b.Pkg.cFunc("llvm.stacksave", b.Prog.tyStacksave())
+	return b.InlineCall(fn)
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
@@ -260,8 +276,6 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 		// nothing to do
 	case DeferInLoop:
 		// Loop defers rely on a dedicated drain loop inserted below.
-	default:
-		panic("unknown defer kind")
 	}
 	typ := b.saveDeferArgs(self, fn, args)
 	self.stmts = append(self.stmts, func(bits Expr) {
@@ -297,8 +311,6 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 			b.Jump(condBlk)
 
 			b.SetBlockEx(exitBlk, AtEnd, true)
-		default:
-			panic("unknown defer kind")
 		}
 	})
 }

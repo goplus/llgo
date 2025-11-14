@@ -365,7 +365,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 		ret.fun[0] = 0
 	} else {
 		data := (*uintptr)(c.Advance(ptr, int(itabHdrSize)))
-		mthds := methods(u, inter.PkgPath_)
+		mthds := u.Methods()
 		for i, m := range inter.Methods {
 			fn := findMethod(mthds, m)
 			if fn == nil {
@@ -393,13 +393,6 @@ func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
 		}
 	}
 	return nil
-}
-
-func methods(u *abi.UncommonType, from string) []abi.Method {
-	if u.PkgPath_ == from {
-		return u.Methods()
-	}
-	return u.ExportedMethods()
 }
 
 func IfaceType(i iface) *abi.Type {

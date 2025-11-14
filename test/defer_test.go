@@ -1,5 +1,3 @@
-//go:build llgo
-
 /*
  * Copyright (c) 2025 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -129,5 +127,200 @@ func TestNestedDeferLoops(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected nested order: got %v, want %v", got, want)
+	}
+}
+
+func runNestedConditionalDeferWithRecover() (order []string, recovered any) {
+	defer func() { recovered = recover() }()
+	nestedCondOuter(&order)
+	return
+}
+
+func nestedCondOuter(order *[]string) {
+	for i := 0; i < 3; i++ {
+		v := i
+		label := "outer:" + strconv.Itoa(v)
+		if v%2 == 0 {
+			defer func(label string) {
+				*order = append(*order, label)
+			}(label)
+		}
+		nestedCondMiddle(order, v)
+	}
+}
+
+func nestedCondMiddle(order *[]string, v int) {
+	for j := 0; j < 3; j++ {
+		u := j
+		label := "middle:" + strconv.Itoa(u)
+		if u < 2 {
+			defer func(label string) {
+				*order = append(*order, label)
+			}(label)
+		}
+		nestedCondInner(order)
+	}
+	if v == 1 {
+		panic("nested-conditional-boom")
+	}
+}
+
+func nestedCondInner(order *[]string) {
+	for k := 0; k < 2; k++ {
+		w := k
+		label := "inner:" + strconv.Itoa(w)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+	}
+}
+
+func TestNestedConditionalDeferWithRecover(t *testing.T) {
+	gotOrder, gotRecovered := runNestedConditionalDeferWithRecover()
+	wantRecovered := "nested-conditional-boom"
+	if s, ok := gotRecovered.(string); !ok || s != wantRecovered {
+		t.Fatalf("unexpected recover value: got %v, want %q", gotRecovered, wantRecovered)
+	}
+	wantOrder := []string{
+		"inner:1", "inner:0",
+		"inner:1", "inner:0",
+		"inner:1", "inner:0",
+		"middle:1", "middle:0",
+		"inner:1", "inner:0",
+		"inner:1", "inner:0",
+		"inner:1", "inner:0",
+		"middle:1", "middle:0",
+		"outer:0",
+	}
+	if !reflect.DeepEqual(gotOrder, wantOrder) {
+		t.Fatalf("unexpected nested conditional order: got %v, want %v", gotOrder, wantOrder)
+	}
+}
+
+func callWithRecover(fn func()) (recovered any) {
+	defer func() { recovered = recover() }()
+	fn()
+	return
+}
+
+func loopBranchEven(order *[]string, i int) {
+	label := "even:" + strconv.Itoa(i)
+	defer func() { *order = append(*order, label) }()
+}
+
+func loopBranchOddNoRecover(order *[]string, i int) {
+	label := "odd-wrap:" + strconv.Itoa(i)
+	defer func() { *order = append(*order, label) }()
+	panic("odd-no-recover")
+}
+
+func loopBranchOddLocalRecover(order *[]string, i int) {
+	label := "odd-local:" + strconv.Itoa(i)
+	defer func() { *order = append(*order, label) }()
+	defer func() { _ = recover() }()
+	panic("odd-local-recover")
+}
+
+func runLoopBranchRecoverMixed(n int) (order []string, recoveredVals []any) {
+	for i := 0; i < n; i++ {
+		if i%2 == 0 {
+			loopBranchEven(&order, i)
+		} else if i%4 == 3 {
+			rec := callWithRecover(func() { loopBranchOddNoRecover(&order, i) })
+			recoveredVals = append(recoveredVals, rec)
+		} else {
+			loopBranchOddLocalRecover(&order, i)
+		}
+	}
+	return
+}
+
+func TestLoopBranchRecoverMixed(t *testing.T) {
+	order, recovered := runLoopBranchRecoverMixed(6)
+	wantOrder := []string{
+		"even:0",
+		"odd-local:1",
+		"even:2",
+		"odd-wrap:3",
+		"even:4",
+		"odd-local:5",
+	}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("unexpected loop/branch order: got %v, want %v", order, wantOrder)
+	}
+	if len(recovered) != 1 {
+		t.Fatalf("unexpected recovered count: got %d, want %d", len(recovered), 1)
+	}
+	if s, ok := recovered[0].(string); !ok || s != "odd-no-recover" {
+		t.Fatalf("unexpected recovered value: got %v, want %q", recovered[0], "odd-no-recover")
+	}
+}
+
+func deepInner(order *[]string) {
+	for i := 0; i < 2; i++ {
+		idx := i
+		label := "inner:" + strconv.Itoa(idx)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+		if idx == 0 {
+			continue
+		}
+		panic("deep-boom")
+	}
+}
+
+func deepMiddle(order *[]string) {
+	for i := 0; i < 2; i++ {
+		idx := i
+		label := "middle:" + strconv.Itoa(idx)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+		if idx == 0 {
+			continue
+		}
+		defer func() {
+			if rec := recover(); rec != nil {
+				panic(rec)
+			}
+		}()
+		deepInner(order)
+	}
+}
+
+func deepOuter(order *[]string) (recovered any) {
+	for i := 0; i < 2; i++ {
+		idx := i
+		label := "outer:" + strconv.Itoa(idx)
+		defer func(label string) {
+			*order = append(*order, label)
+		}(label)
+		if idx == 0 {
+			continue
+		}
+		defer func() {
+			if rec := recover(); rec != nil {
+				recovered = rec
+			}
+		}()
+		deepMiddle(order)
+	}
+	return
+}
+
+func TestPanicCrossTwoFunctionsRecover(t *testing.T) {
+	var order []string
+	recovered := deepOuter(&order)
+	if s, ok := recovered.(string); !ok || s != "deep-boom" {
+		t.Fatalf("unexpected recovered value: got %v, want %q", recovered, "deep-boom")
+	}
+	wantOrder := []string{
+		"inner:1", "inner:0",
+		"middle:1", "middle:0",
+		"outer:1", "outer:0",
+	}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("unexpected cross-function defer order: got %v, want %v", order, wantOrder)
 	}
 }

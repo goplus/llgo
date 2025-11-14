@@ -141,8 +141,7 @@ type Func struct {
 }
 
 func (f *Func) Name() string {
-	// TODO: implement using debug info
-	return ""
+	panic("todo")
 }
 
 // moduledata records information about the layout of the executable
