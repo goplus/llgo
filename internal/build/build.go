@@ -132,8 +132,10 @@ type Config struct {
 	CheckLinkArgs  bool // check linkargs valid
 	ForceEspClang  bool // force to use esp-clang
 	Tags           string
-	GlobalRewrites map[string]string // pkg.name => data
+	GlobalRewrites map[string]Rewrites // pkg => var => value
 }
+
+type Rewrites map[string]string
 
 func NewDefaultConf(mode Mode) *Config {
 	bin := os.Getenv("GOBIN")
@@ -336,8 +338,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	// default runtime globals must be registered before packages are built
-	addDefaultGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
-	addDefaultGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
+	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
+	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -626,10 +628,6 @@ var (
 )
 
 func addGlobalString(conf *Config, arg string, mainPkgs []string) {
-	addGlobalStringWith(conf, arg, mainPkgs, false)
-}
-
-func addDefaultGlobalString(conf *Config, arg string, mainPkgs []string) {
 	addGlobalStringWith(conf, arg, mainPkgs, true)
 }
 
@@ -648,18 +646,22 @@ func addGlobalStringWith(conf *Config, arg string, mainPkgs []string, skipIfExis
 		return
 	}
 	if conf.GlobalRewrites == nil {
-		conf.GlobalRewrites = make(map[string]string)
+		conf.GlobalRewrites = make(map[string]Rewrites)
 	}
-	suffix := arg[dot:eq]
+	varName := arg[dot+1 : eq]
 	value := arg[eq+1:]
 	for _, realPkg := range pkgs {
-		name := realPkg + suffix
+		vars := conf.GlobalRewrites[realPkg]
+		if vars == nil {
+			vars = make(Rewrites)
+			conf.GlobalRewrites[realPkg] = vars
+		}
 		if skipIfExists {
-			if _, exists := conf.GlobalRewrites[name]; exists {
+			if _, exists := vars[varName]; exists {
 				continue
 			}
 		}
-		conf.GlobalRewrites[name] = value
+		vars[varName] = value
 	}
 }
 
@@ -1177,18 +1179,18 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 
 func collectRewriteVars(ctx *context, pkgPath string) map[string]string {
 	var rewrites map[string]string
-	add := func(name, value string) {
-		if rewrites == nil {
-			rewrites = make(map[string]string)
-		}
-		rewrites[name] = value
-	}
+	basePath := strings.TrimPrefix(pkgPath, altPkgPathPrefix)
 	if data := ctx.buildConf.GlobalRewrites; len(data) != 0 {
-		prefix := pkgPath + "."
-		for name, value := range data {
-			if strings.HasPrefix(name, prefix) {
-				add(name, value)
-				delete(data, name)
+		for pkg, vars := range data {
+			trimmed := strings.TrimPrefix(pkg, altPkgPathPrefix)
+			if trimmed != basePath {
+				continue
+			}
+			for name, value := range vars {
+				if rewrites == nil {
+					rewrites = make(map[string]string)
+				}
+				rewrites[pkgPath+"."+name] = value
 			}
 		}
 	}
