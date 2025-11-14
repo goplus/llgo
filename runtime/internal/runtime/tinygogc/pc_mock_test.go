@@ -99,9 +99,17 @@ func (env *mockGCEnv) setupMockGC() {
 	// Clear metadata using memset like initGC does
 	c.Memset(metadataStart, 0, metadataSize)
 
-	// Reset allocator state (initGC doesn't reset these, but we need to)
+	// Reset allocator state and all GC statistics for clean test environment
 	nextAlloc = 0
 	isGCInit = true
+
+	// Reset all GC statistics to start from clean state
+	gcTotalAlloc = 0
+	gcTotalBlocks = 0
+	gcMallocs = 0
+	gcFrees = 0
+	gcFreedBlocks = 0
+	markStackOverflow = false
 }
 
 // restoreOriginalGC restores the original GC state
@@ -114,7 +122,7 @@ func (env *mockGCEnv) restoreOriginalGC() {
 	endBlock = env.originalEndBlock
 	metadataStart = env.originalMetadataStart
 	nextAlloc = env.originalNextAlloc
-	isGCInit = env.originalIsGCInit
+	isGCInit = false
 }
 
 // enableMockMode enables mock root scanning mode
@@ -402,6 +410,114 @@ func TestMockGCMemoryPressure(t *testing.T) {
 	}
 
 	t.Log("Successfully allocated more objects after GC")
+}
+
+func TestMockGCStats(t *testing.T) {
+	env := createMockGCEnv()
+	env.setupMockGC()
+	defer env.restoreOriginalGC()
+
+	// Get initial stats
+	initialStats := ReadGCStats()
+	t.Logf("Initial stats - Mallocs: %d, Frees: %d, TotalAlloc: %d, Alloc: %d",
+		initialStats.Mallocs, initialStats.Frees, initialStats.TotalAlloc, initialStats.Alloc)
+
+	// Verify basic system stats
+	expectedSys := uint64(env.heapEnd - env.heapStart - 2048)
+	if initialStats.Sys != expectedSys {
+		t.Errorf("Expected Sys %d, got %d", expectedSys, initialStats.Sys)
+	}
+
+	expectedGCSys := uint64(env.heapEnd - uintptr(metadataStart))
+	if initialStats.GCSys != expectedGCSys {
+		t.Errorf("Expected GCSys %d, got %d", expectedGCSys, initialStats.GCSys)
+	}
+
+	// Allocate some objects
+	var allocations []unsafe.Pointer
+	allocSize := uintptr(64)
+	numAllocs := 10
+
+	for i := 0; i < numAllocs; i++ {
+		ptr := Alloc(allocSize)
+		if ptr == nil {
+			t.Fatalf("Failed to allocate at iteration %d", i)
+		}
+		allocations = append(allocations, ptr)
+	}
+
+	// Check stats after allocation
+	afterAllocStats := ReadGCStats()
+	t.Logf("After allocation - Mallocs: %d, Frees: %d, TotalAlloc: %d, Alloc: %d",
+		afterAllocStats.Mallocs, afterAllocStats.Frees, afterAllocStats.TotalAlloc, afterAllocStats.Alloc)
+
+	// Verify allocation stats increased
+	if afterAllocStats.Mallocs <= initialStats.Mallocs {
+		t.Errorf("Expected Mallocs to increase from %d, got %d", initialStats.Mallocs, afterAllocStats.Mallocs)
+	}
+
+	if afterAllocStats.TotalAlloc <= initialStats.TotalAlloc {
+		t.Errorf("Expected TotalAlloc to increase from %d, got %d", initialStats.TotalAlloc, afterAllocStats.TotalAlloc)
+	}
+
+	if afterAllocStats.Alloc <= initialStats.Alloc {
+		t.Errorf("Expected Alloc to increase from %d, got %d", initialStats.Alloc, afterAllocStats.Alloc)
+	}
+
+	// Verify Alloc and HeapAlloc are the same
+	if afterAllocStats.Alloc != afterAllocStats.HeapAlloc {
+		t.Errorf("Expected Alloc (%d) to equal HeapAlloc (%d)", afterAllocStats.Alloc, afterAllocStats.HeapAlloc)
+	}
+
+	// Perform GC with controlled roots - keep only half the allocations
+	env.enableMockMode()
+	keepCount := len(allocations) / 2
+	for i := 0; i < keepCount; i++ {
+		env.addRoot(allocations[i])
+	}
+
+	freedBytes := env.runMockGC()
+	t.Logf("GC freed %d bytes", freedBytes)
+
+	// Check stats after GC
+	afterGCStats := ReadGCStats()
+	t.Logf("After GC - Mallocs: %d, Frees: %d, TotalAlloc: %d, Alloc: %d",
+		afterGCStats.Mallocs, afterGCStats.Frees, afterGCStats.TotalAlloc, afterGCStats.Alloc)
+
+	// Verify GC stats
+	if afterGCStats.Frees <= afterAllocStats.Frees {
+		t.Errorf("Expected Frees to increase from %d, got %d", afterAllocStats.Frees, afterGCStats.Frees)
+	}
+
+	// TotalAlloc should not decrease (cumulative)
+	if afterGCStats.TotalAlloc != afterAllocStats.TotalAlloc {
+		t.Errorf("Expected TotalAlloc to remain %d after GC, got %d", afterAllocStats.TotalAlloc, afterGCStats.TotalAlloc)
+	}
+
+	// Alloc should decrease (freed objects)
+	if afterGCStats.Alloc >= afterAllocStats.Alloc {
+		t.Errorf("Expected Alloc to decrease from %d after GC, got %d", afterAllocStats.Alloc, afterGCStats.Alloc)
+	}
+
+	// Verify heap statistics consistency
+	if afterGCStats.HeapSys != afterGCStats.HeapInuse+afterGCStats.HeapIdle {
+		t.Errorf("Expected HeapSys (%d) to equal HeapInuse (%d) + HeapIdle (%d)",
+			afterGCStats.HeapSys, afterGCStats.HeapInuse, afterGCStats.HeapIdle)
+	}
+
+	// Verify live objects calculation
+	expectedLiveObjects := afterGCStats.Mallocs - afterGCStats.Frees
+	t.Logf("Live objects: %d (Mallocs: %d - Frees: %d)", expectedLiveObjects, afterGCStats.Mallocs, afterGCStats.Frees)
+
+	// The number of live objects should be reasonable (we kept half the allocations plus some overhead)
+	if expectedLiveObjects < uint64(keepCount) {
+		t.Errorf("Expected at least %d live objects, got %d", keepCount, expectedLiveObjects)
+	}
+
+	// Test stack statistics
+	if afterGCStats.StackInuse > afterGCStats.StackSys {
+		t.Errorf("StackInuse (%d) should not exceed StackSys (%d)", afterGCStats.StackInuse, afterGCStats.StackSys)
+	}
 }
 
 func TestMockGCCircularReferences(t *testing.T) {

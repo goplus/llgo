@@ -57,7 +57,6 @@ const blockStateByteAllTails = 0 |
 	uint8(blockStateTail<<(stateBits*1)) |
 	uint8(blockStateTail<<(stateBits*0))
 
-// since we don't have an init() function, these should be initalized by initHeap(), which is called by <main> entry
 var (
 	heapStart     uintptr        // start address of heap area
 	heapEnd       uintptr        // end address of heap area

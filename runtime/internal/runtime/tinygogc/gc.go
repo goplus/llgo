@@ -1,33 +1,8 @@
-//go:build baremetal && !testGC
+//go:build baremetal || testGC
 
 package tinygogc
 
 import "unsafe"
-
-// LLGoPackage instructs the LLGo linker to wrap C standard library memory allocation
-// functions (malloc, realloc, calloc) so they use the tinygogc allocator instead.
-// This ensures all memory allocations go through the GC, including C library calls.
-const LLGoPackage = "link: --wrap=malloc --wrap=realloc --wrap=calloc"
-
-//export __wrap_malloc
-func __wrap_malloc(size uintptr) unsafe.Pointer {
-	return Alloc(size)
-}
-
-//export __wrap_calloc
-func __wrap_calloc(nmemb, size uintptr) unsafe.Pointer {
-	totalSize := nmemb * size
-	// Check for multiplication overflow
-	if nmemb != 0 && totalSize/nmemb != size {
-		return nil // Overflow
-	}
-	return Alloc(totalSize)
-}
-
-//export __wrap_realloc
-func __wrap_realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
-	return Realloc(ptr, size)
-}
 
 type GCStats struct {
 	// General statistics.
@@ -189,16 +164,18 @@ func ReadGCStats() GCStats {
 	stackSys := stackTop - stackEnd
 
 	stats := GCStats{
-		StackInuse: uint64(stackTop - uintptr(getsp())),
-		StackSys:   uint64(stackSys),
-		HeapSys:    heapInuse + heapIdle,
-		GCSys:      uint64(heapEnd - uintptr(metadataStart)),
+		Alloc:      (gcTotalBlocks - gcFreedBlocks) * uint64(bytesPerBlock),
 		TotalAlloc: gcTotalAlloc,
+		Sys:        uint64(heapEnd - heapStart),
 		Mallocs:    gcMallocs,
 		Frees:      gcFrees,
-		Sys:        uint64(heapEnd - heapStart),
 		HeapAlloc:  (gcTotalBlocks - gcFreedBlocks) * uint64(bytesPerBlock),
-		Alloc:      (gcTotalBlocks - gcFreedBlocks) * uint64(bytesPerBlock),
+		HeapSys:    heapInuse + heapIdle,
+		HeapIdle:   heapIdle,
+		HeapInuse:  heapInuse,
+		StackInuse: uint64(stackTop - uintptr(getsp())),
+		StackSys:   uint64(stackSys),
+		GCSys:      uint64(heapEnd - uintptr(metadataStart)),
 	}
 
 	unlock(&gcMutex)

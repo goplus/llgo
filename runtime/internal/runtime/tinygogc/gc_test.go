@@ -18,6 +18,8 @@ var _heapEnd [0]byte
 
 var _stackStart [0]byte
 
+var _stackEnd [0]byte
+
 var _globals_start [0]byte
 
 var _globals_end [0]byte
