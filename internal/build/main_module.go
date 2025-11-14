@@ -30,7 +30,7 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 )
 
-func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) (Package, error) {
+func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) Package {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.PkgPath+".main")
 
@@ -55,7 +55,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	if ctx.buildConf.BuildMode != BuildModeExe {
-		return mainAPkg, nil
+		return mainAPkg
 	}
 
 	runtimeStub := defineWeakNoArgStub(mainPkg, "runtime.init")
@@ -80,7 +80,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 		defineStart(mainPkg, entryFn, argvValueType)
 	}
 
-	return mainAPkg, nil
+	return mainAPkg
 }
 
 func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit llssa.Function) llssa.Function {

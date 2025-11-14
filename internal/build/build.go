@@ -780,10 +780,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		}
 	})
 	// Generate main module file (needed for global variables even in library modes)
-	entryPkg, err := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
-	if err != nil {
-		return err
-	}
+	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
