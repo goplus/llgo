@@ -29,10 +29,7 @@ func TestGenMainModuleExecutable(t *testing.T) {
 		},
 	}
 	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
-	mod, err := genMainModule(ctx, llssa.PkgRuntime, pkg, true, true)
-	if err != nil {
-		t.Fatalf("genMainModule() error = %v", err)
-	}
+	mod := genMainModule(ctx, llssa.PkgRuntime, pkg, true, true)
 	if mod.ExportFile != "foo.a-main" {
 		t.Fatalf("unexpected export file: %s", mod.ExportFile)
 	}
@@ -62,10 +59,7 @@ func TestGenMainModuleLibrary(t *testing.T) {
 		},
 	}
 	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
-	mod, err := genMainModule(ctx, llssa.PkgRuntime, pkg, false, false)
-	if err != nil {
-		t.Fatalf("genMainModule() error = %v", err)
-	}
+	mod := genMainModule(ctx, llssa.PkgRuntime, pkg, false, false)
 	ir := mod.LPkg.String()
 	if strings.Contains(ir, "define i32 @main") {
 		t.Fatalf("library mode should not emit main function:\n%s", ir)
