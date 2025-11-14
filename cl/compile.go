@@ -151,7 +151,7 @@ func (p *context) isStringPtrType(typ types.Type) bool {
 	if !ok {
 		return false
 	}
-	basic, ok := ptr.Elem().Underlying().(*types.Basic)
+	basic, ok := ptr.Elem().(*types.Basic)
 	return ok && basic.Kind() == types.String
 }
 

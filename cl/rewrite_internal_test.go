@@ -153,3 +153,17 @@ var VarStruct = wrapper{v: 1}
 		t.Fatalf("non-string variables must not be rewritten:\n%s", ir)
 	}
 }
+
+func TestRewriteIgnoresStringAlias(t *testing.T) {
+	const src = `package rewritepkg
+type T string
+var VarAlias T = "original_value"
+`
+	ir := compileWithRewrites(t, src, map[string]string{"VarAlias": "rewrite_alias"})
+	if strings.Contains(ir, `c"rewrite_alias"`) {
+		t.Fatalf("string alias types must not be rewritten:\n%s", ir)
+	}
+	if !strings.Contains(ir, `c"original_value"`) {
+		t.Fatalf("original value should remain for alias type:\n%s", ir)
+	}
+}
