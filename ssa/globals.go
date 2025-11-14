@@ -31,6 +31,16 @@ func (pkg Package) AddGlobalString(name string, value string) {
 	pkg.NewVarEx(name, prog.Pointer(styp)).Init(Expr{cv, styp})
 }
 
+// ConstString returns an SSA string constant expression within this package.
+func (pkg Package) ConstString(value string) Expr {
+	prog := pkg.Prog
+	styp := prog.String()
+	data := pkg.createGlobalStr(value)
+	length := prog.IntVal(uint64(len(value)), prog.Uintptr())
+	cv := llvm.ConstNamedStruct(styp.ll, []llvm.Value{data, length.impl})
+	return Expr{cv, styp}
+}
+
 // Undefined global string var by names
 func (pkg Package) Undefined(names ...string) error {
 	prog := pkg.Prog

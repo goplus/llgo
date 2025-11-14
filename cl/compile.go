@@ -127,6 +127,50 @@ type context struct {
 	cgoArgs    []llssa.Expr
 	cgoRet     llssa.Expr
 	cgoSymbols []string
+	rewrites   map[string]string
+}
+
+func (p *context) rewriteValue(name string) (string, bool) {
+	if p.rewrites == nil {
+		return "", false
+	}
+	val, ok := p.rewrites[name]
+	return val, ok
+}
+
+func (p *context) isStringType(typ types.Type) bool {
+	for typ != nil {
+		switch t := typ.Underlying().(type) {
+		case *types.Basic:
+			return t.Kind() == types.String
+		case *types.Pointer:
+			typ = t.Elem()
+			continue
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+func (p *context) globalFullName(g *ssa.Global) string {
+	name, _, _ := p.varName(g.Pkg.Pkg, g)
+	return name
+}
+
+func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, bool) {
+	fn := store.Block().Parent()
+	if fn == nil || fn.Synthetic != "package initializer" {
+		return "", false
+	}
+	value, ok := p.rewriteValue(p.globalFullName(g))
+	if !ok || !p.isStringType(g.Type()) {
+		return "", false
+	}
+	if _, ok := store.Val.(*ssa.Const); !ok {
+		return "", false
+	}
+	return value, true
 }
 
 type pkgState byte
@@ -176,7 +220,9 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
-	if define {
+	if value, ok := p.rewriteValue(name); ok && p.isStringType(typ) {
+		g.Init(pkg.ConstString(value))
+	} else if define {
 		g.InitNil()
 	}
 }
@@ -816,6 +862,11 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				return
 			}
 		}
+		if g, ok := va.(*ssa.Global); ok {
+			if _, ok := p.rewriteInitStore(v, g); ok {
+				return
+			}
+		}
 		ptr := p.compileValue(b, va)
 		val := p.compileValue(b, v.Val)
 		b.Store(ptr, val)
@@ -980,12 +1031,12 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	ret, _, err = NewPackageEx(prog, nil, pkg, files)
+	ret, _, err = NewPackageEx(prog, nil, nil, pkg, files)
 	return
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
+func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -1018,6 +1069,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 		cgoSymbols: make([]string, 0, 128),
+		rewrites:   rewrites,
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")
