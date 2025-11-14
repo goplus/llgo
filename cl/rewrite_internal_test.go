@@ -101,3 +101,52 @@ func TestIsStringTypeDefault(t *testing.T) {
 		t.Fatalf("expected non-string pointer to return false")
 	}
 }
+
+func TestIsStringTypeBranches(t *testing.T) {
+	ctx := &context{}
+	if ctx.isStringType(types.NewSlice(types.Typ[types.String])) {
+		t.Fatalf("slice should trigger default branch and return false")
+	}
+	if ctx.isStringType(nil) {
+		t.Fatalf("nil type should return false")
+	}
+}
+
+func TestRewriteIgnoredInNonInitStore(t *testing.T) {
+	const src = `package rewritepkg
+var VarInit = "original_value"
+func Override() { VarInit = "override_value" }
+`
+	ir := compileWithRewrites(t, src, map[string]string{"VarInit": "rewrite_init"})
+	if !strings.Contains(ir, `c"override_value"`) {
+		t.Fatalf("override store should retain original literal:\n%s", ir)
+	}
+	if !strings.Contains(ir, `c"rewrite_init"`) {
+		t.Fatalf("global initializer should still be rewritten:\n%s", ir)
+	}
+}
+
+func TestRewriteMissingEntry(t *testing.T) {
+	const src = `package rewritepkg
+var VarInit = "original_value"
+var VarOther = "other_value"
+`
+	ir := compileWithRewrites(t, src, map[string]string{"VarInit": "rewrite_init"})
+	if !strings.Contains(ir, `c"other_value"`) {
+		t.Fatalf("VarOther should keep original initializer:\n%s", ir)
+	}
+	if !strings.Contains(ir, `c"rewrite_init"`) {
+		t.Fatalf("VarInit should still be rewritten:\n%s", ir)
+	}
+}
+
+func TestRewriteIgnoresNonStringVar(t *testing.T) {
+	const src = `package rewritepkg
+type wrapper struct{ v int }
+var VarStruct = wrapper{v: 1}
+`
+	ir := compileWithRewrites(t, src, map[string]string{"VarStruct": "rewrite_struct"})
+	if strings.Contains(ir, `c"rewrite_struct"`) {
+		t.Fatalf("non-string variables must not be rewritten:\n%s", ir)
+	}
+}
