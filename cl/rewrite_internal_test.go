@@ -95,20 +95,23 @@ func TestRewriteValueNoDot(t *testing.T) {
 	}
 }
 
-func TestIsStringTypeDefault(t *testing.T) {
+func TestIsStringPtrTypeDefault(t *testing.T) {
 	ctx := &context{}
-	if ctx.isStringType(types.NewPointer(types.Typ[types.Int])) {
+	if ctx.isStringPtrType(types.NewPointer(types.Typ[types.Int])) {
 		t.Fatalf("expected non-string pointer to return false")
 	}
 }
 
-func TestIsStringTypeBranches(t *testing.T) {
+func TestIsStringPtrTypeBranches(t *testing.T) {
 	ctx := &context{}
-	if ctx.isStringType(types.NewSlice(types.Typ[types.String])) {
+	if ctx.isStringPtrType(types.NewSlice(types.Typ[types.String])) {
 		t.Fatalf("slice should trigger default branch and return false")
 	}
-	if ctx.isStringType(nil) {
+	if ctx.isStringPtrType(nil) {
 		t.Fatalf("nil type should return false")
+	}
+	if !ctx.isStringPtrType(types.NewPointer(types.Typ[types.String])) {
+		t.Fatalf("*string should return true")
 	}
 }
 
