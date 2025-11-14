@@ -350,7 +350,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 		return nil, fmt.Errorf("initial package not found")
 	}
-
 	dpkg, err := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
 	check(err)
 	allPkgs := append([]*aPackage{}, pkgs...)
@@ -1190,7 +1189,7 @@ func collectRewriteVars(ctx *context, pkgPath string) map[string]string {
 				if rewrites == nil {
 					rewrites = make(map[string]string)
 				}
-				rewrites[pkgPath+"."+name] = value
+				rewrites[name] = value
 			}
 		}
 	}

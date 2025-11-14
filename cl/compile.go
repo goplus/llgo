@@ -134,7 +134,12 @@ func (p *context) rewriteValue(name string) (string, bool) {
 	if p.rewrites == nil {
 		return "", false
 	}
-	val, ok := p.rewrites[name]
+	dot := strings.LastIndex(name, ".")
+	if dot < 0 {
+		return "", false
+	}
+	varName := name[dot+1:]
+	val, ok := p.rewrites[varName]
 	return val, ok
 }
 
