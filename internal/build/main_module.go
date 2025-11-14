@@ -150,14 +150,18 @@ func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goarch string) {
 
 	stdoutSlot := b.AllocaT(streamPtrType)
 	b.Store(stdoutSlot, stdout)
-	stderrSlot := b.AllocaT(streamPtrType)
-	b.Store(stderrSlot, stderr)
-	cond := b.BinOp(token.EQL, stdout, prog.Nil(streamPtrType))
-	b.IfThen(cond, func() {
+	condOut := b.BinOp(token.EQL, stdout, prog.Nil(streamPtrType))
+	b.IfThen(condOut, func() {
 		b.Store(stdoutSlot, stdoutAlt)
-		b.Store(stderrSlot, stderrAlt)
 	})
 	stdoutPtr := b.Load(stdoutSlot)
+
+	stderrSlot := b.AllocaT(streamPtrType)
+	b.Store(stderrSlot, stderr)
+	condErr := b.BinOp(token.EQL, stderr, prog.Nil(streamPtrType))
+	b.IfThen(condErr, func() {
+		b.Store(stderrSlot, stderrAlt)
+	})
 	stderrPtr := b.Load(stderrSlot)
 
 	mode := prog.IntVal(2, prog.Int32())
