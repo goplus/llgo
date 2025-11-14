@@ -127,6 +127,58 @@ type context struct {
 	cgoArgs    []llssa.Expr
 	cgoRet     llssa.Expr
 	cgoSymbols []string
+	rewrites   map[string]string
+}
+
+func (p *context) rewriteValue(name string) (string, bool) {
+	if p.rewrites == nil {
+		return "", false
+	}
+	dot := strings.LastIndex(name, ".")
+	if dot < 0 || dot == len(name)-1 {
+		return "", false
+	}
+	varName := name[dot+1:]
+	val, ok := p.rewrites[varName]
+	return val, ok
+}
+
+// isStringPtrType checks if typ is a pointer to the basic string type (*string).
+// This is used to validate that -ldflags -X can only rewrite variables of type *string,
+// not derived string types like "type T string".
+func (p *context) isStringPtrType(typ types.Type) bool {
+	ptr, ok := typ.(*types.Pointer)
+	if !ok {
+		return false
+	}
+	basic, ok := ptr.Elem().(*types.Basic)
+	return ok && basic.Kind() == types.String
+}
+
+func (p *context) globalFullName(g *ssa.Global) string {
+	name, _, _ := p.varName(g.Pkg.Pkg, g)
+	return name
+}
+
+func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, bool) {
+	if p.rewrites == nil {
+		return "", false
+	}
+	fn := store.Block().Parent()
+	if fn == nil || fn.Synthetic != "package initializer" {
+		return "", false
+	}
+	if _, ok := store.Val.(*ssa.Const); !ok {
+		return "", false
+	}
+	if !p.isStringPtrType(g.Type()) {
+		return "", false
+	}
+	value, ok := p.rewriteValue(p.globalFullName(g))
+	if !ok {
+		return "", false
+	}
+	return value, true
 }
 
 type pkgState byte
@@ -176,7 +228,16 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
-	if define {
+	if value, ok := p.rewriteValue(name); ok {
+		if p.isStringPtrType(gbl.Type()) {
+			g.Init(pkg.ConstString(value))
+		} else {
+			log.Printf("warning: ignoring rewrite for non-string variable %s (type: %v)", name, gbl.Type())
+			if define {
+				g.InitNil()
+			}
+		}
+	} else if define {
 		g.InitNil()
 	}
 }
@@ -816,6 +877,13 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				return
 			}
 		}
+		if p.rewrites != nil {
+			if g, ok := va.(*ssa.Global); ok {
+				if _, ok := p.rewriteInitStore(v, g); ok {
+					return
+				}
+			}
+		}
 		ptr := p.compileValue(b, va)
 		val := p.compileValue(b, v.Val)
 		b.Store(ptr, val)
@@ -980,12 +1048,22 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	ret, _, err = NewPackageEx(prog, nil, pkg, files)
+	ret, _, err = NewPackageEx(prog, nil, nil, pkg, files)
 	return
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
+//
+// Parameters:
+//   - prog: target LLVM SSA program context
+//   - patches: optional package patches applied during compilation
+//   - rewrites: per-package string initializers rewritten at compile time
+//   - pkg: SSA package to compile
+//   - files: parsed AST files that belong to the package
+//
+// The rewrites map uses short variable names (without package qualifier) and
+// only affects string-typed globals defined in the current package.
+func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -1018,6 +1096,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 		cgoSymbols: make([]string, 0, 128),
+		rewrites:   rewrites,
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")

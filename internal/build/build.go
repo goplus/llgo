@@ -132,9 +132,15 @@ type Config struct {
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
 	Tags          string
-	GlobalNames   map[string][]string // pkg => names
-	GlobalDatas   map[string]string   // pkg.name => data
+	// GlobalRewrites specifies compile-time overrides for global string variables.
+	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
+	// Each Rewrites entry maps variable names to replacement string values. Only
+	// string-typed globals are supported and "main" applies to all root main
+	// packages in the current build.
+	GlobalRewrites map[string]Rewrites
 }
+
+type Rewrites map[string]string
 
 func NewDefaultConf(mode Mode) *Config {
 	bin := os.Getenv("GOBIN")
@@ -335,6 +341,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		crossCompile: export,
 		cTransformer: cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
 	}
+
+	// default runtime globals must be registered before packages are built
+	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
+	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
 	pkgs, err := buildAllPkgs(ctx, initial, verbose)
 	check(err)
 	if mode == ModeGen {
@@ -345,18 +355,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 		return nil, fmt.Errorf("initial package not found")
 	}
-
 	dpkg, err := buildAllPkgs(ctx, altPkgs[noRt:], verbose)
 	check(err)
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, dpkg...)
-
-	// update globals importpath.name=value
-	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
-	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
-
-	global, err := createGlobals(ctx, ctx.prog, pkgs)
-	check(err)
 
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
@@ -369,7 +371,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			}
 
 			// Link main package using the output path from buildOutFmts
-			err = linkMainPkg(ctx, pkg, allPkgs, global, outFmts.Out, verbose)
+			err = linkMainPkg(ctx, pkg, allPkgs, outFmts.Out, verbose)
 			if err != nil {
 				return nil, err
 			}
@@ -629,58 +631,59 @@ var (
 	errXflags = errors.New("-X flag requires argument of the form importpath.name=value")
 )
 
+// maxRewriteValueLength limits the size of rewrite values to prevent
+// excessive memory usage and potential resource exhaustion during compilation.
+const maxRewriteValueLength = 1 << 20 // 1 MiB cap per rewrite value
+
 func addGlobalString(conf *Config, arg string, mainPkgs []string) {
+	addGlobalStringWith(conf, arg, mainPkgs, true)
+}
+
+func addGlobalStringWith(conf *Config, arg string, mainPkgs []string, skipIfExists bool) {
 	eq := strings.Index(arg, "=")
 	dot := strings.LastIndex(arg[:eq+1], ".")
 	if eq < 0 || dot < 0 {
 		panic(errXflags)
 	}
 	pkg := arg[:dot]
+	varName := arg[dot+1 : eq]
+	value := arg[eq+1:]
+	validateRewriteInput(pkg, varName, value)
 	pkgs := []string{pkg}
 	if pkg == "main" {
 		pkgs = mainPkgs
 	}
-	if conf.GlobalNames == nil {
-		conf.GlobalNames = make(map[string][]string)
+	if len(pkgs) == 0 {
+		return
 	}
-	if conf.GlobalDatas == nil {
-		conf.GlobalDatas = make(map[string]string)
+	if conf.GlobalRewrites == nil {
+		conf.GlobalRewrites = make(map[string]Rewrites)
 	}
-	for _, pkg := range pkgs {
-		name := pkg + arg[dot:eq]
-		value := arg[eq+1:]
-		if _, ok := conf.GlobalDatas[name]; !ok {
-			conf.GlobalNames[pkg] = append(conf.GlobalNames[pkg], name)
+	for _, realPkg := range pkgs {
+		vars := conf.GlobalRewrites[realPkg]
+		if vars == nil {
+			vars = make(Rewrites)
+			conf.GlobalRewrites[realPkg] = vars
 		}
-		conf.GlobalDatas[name] = value
+		if skipIfExists {
+			if _, exists := vars[varName]; exists {
+				continue
+			}
+		}
+		vars[varName] = value
 	}
 }
 
-func createGlobals(ctx *context, prog llssa.Program, pkgs []*aPackage) (llssa.Package, error) {
-	if len(ctx.buildConf.GlobalDatas) == 0 {
-		return nil, nil
+func validateRewriteInput(pkg, varName, value string) {
+	if pkg == "" || strings.ContainsAny(pkg, " \t\r\n") {
+		panic(fmt.Errorf("invalid package path for rewrite: %q", pkg))
 	}
-	for _, pkg := range pkgs {
-		if pkg.ExportFile == "" {
-			continue
-		}
-		if names, ok := ctx.buildConf.GlobalNames[pkg.PkgPath]; ok {
-			err := pkg.LPkg.Undefined(names...)
-			if err != nil {
-				return nil, err
-			}
-			pkg.ExportFile += "-global"
-			pkg.ExportFile, err = exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile, []byte(pkg.LPkg.String()))
-			if err != nil {
-				return nil, err
-			}
-		}
+	if !token.IsIdentifier(varName) {
+		panic(fmt.Errorf("invalid variable name for rewrite: %q", varName))
 	}
-	global := prog.NewPackage("", "global")
-	for name, value := range ctx.buildConf.GlobalDatas {
-		global.AddGlobalString(name, value)
+	if len(value) > maxRewriteValueLength {
+		panic(fmt.Errorf("rewrite value too large: %d bytes", len(value)))
 	}
-	return global, nil
 }
 
 // compileExtraFiles compiles extra files (.s/.c) from target configuration and returns object files
@@ -752,7 +755,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 	return objFiles, nil
 }
 
-func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global llssa.Package, outputPath string, verbose bool) error {
+func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
 
 	needRuntime := false
 	needPyInit := false
@@ -769,7 +772,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
-			objFiles = append(objFiles, aPkg.ExportFile)
 			need1, need2 := isNeedRuntimeOrPyInit(ctx, p)
 			if !needRuntime {
 				needRuntime = need1
@@ -793,14 +795,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, global l
 		return err
 	}
 	objFiles = append(objFiles, extraObjFiles...)
-
-	if global != nil {
-		export, err := exportObject(ctx, pkg.PkgPath+".global", pkg.ExportFile+"-global", []byte(global.String()))
-		if err != nil {
-			return err
-		}
-		objFiles = append(objFiles, export)
-	}
 
 	if IsFullRpathEnabled() {
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
@@ -1050,7 +1044,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		cl.SetDebug(cl.DbgFlagAll)
 	}
 
-	ret, externs, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.SSA, syntax)
+	ret, externs, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.rewriteVars, aPkg.SSA, syntax)
 	if showDetail {
 		llssa.SetDebug(0)
 		cl.SetDebug(0)
@@ -1077,10 +1071,11 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
-		pkg.ExportFile, err = exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
+		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
+		aPkg.LLFiles = append(aPkg.LLFiles, exportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
@@ -1089,11 +1084,15 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 }
 
 func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
-	f, err := os.CreateTemp("", "llgo-*.ll")
+	base := filepath.Base(exportFile)
+	f, err := os.CreateTemp("", base+"-*.ll")
 	if err != nil {
 		return "", err
 	}
-	f.Write(data)
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return "", err
+	}
 	err = f.Close()
 	if err != nil {
 		return exportFile, err
@@ -1111,13 +1110,17 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		}
 		return exportFile, os.Rename(f.Name(), exportFile)
 	}
-	exportFile += ".o"
-	args := []string{"-o", exportFile, "-c", f.Name(), "-Wno-override-module"}
+	objFile, err := os.CreateTemp("", base+"-*.o")
+	if err != nil {
+		return "", err
+	}
+	objFile.Close()
+	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
-	return exportFile, cmd.Compile(args...)
+	return objFile.Name(), cmd.Compile(args...)
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
@@ -1171,8 +1174,9 @@ type aPackage struct {
 	AltPkg *packages.Cached
 	LPkg   llssa.Package
 
-	LinkArgs []string
-	LLFiles  []string
+	LinkArgs    []string
+	LLFiles     []string
+	rewriteVars map[string]string
 }
 
 type Package = *aPackage
@@ -1193,12 +1197,39 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 					return
 				}
 			}
-			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil, nil})
+			rewrites := collectRewriteVars(ctx, pkgPath)
+			all = append(all, &aPackage{p, ssaPkg, altPkg, nil, nil, nil, rewrites})
 		} else {
 			errs = append(errs, p)
 		}
 	})
 	return
+}
+
+func collectRewriteVars(ctx *context, pkgPath string) map[string]string {
+	data := ctx.buildConf.GlobalRewrites
+	if len(data) == 0 {
+		return nil
+	}
+	basePath := strings.TrimPrefix(pkgPath, altPkgPathPrefix)
+	if vars := data[basePath]; vars != nil {
+		return cloneRewrites(vars)
+	}
+	if vars := data[pkgPath]; vars != nil {
+		return cloneRewrites(vars)
+	}
+	return nil
+}
+
+func cloneRewrites(src Rewrites) map[string]string {
+	if len(src) == 0 {
+		return nil
+	}
+	dup := make(map[string]string, len(src))
+	for k, v := range src {
+		dup[k] = v
+	}
+	return dup
 }
 
 func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
