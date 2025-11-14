@@ -10,16 +10,18 @@ import (
 
 func ReadMemStats(m *runtime.MemStats) {
 	stats := tinygogc.ReadGCStats()
-	m.StackInuse = stats.StackInuse
-	m.StackSys = stats.StackSys
-	m.HeapSys = stats.HeapSys
-	m.GCSys = stats.GCSys
+	m.Alloc = stats.Alloc
 	m.TotalAlloc = stats.TotalAlloc
+	m.Sys = stats.Sys
 	m.Mallocs = stats.Mallocs
 	m.Frees = stats.Frees
-	m.Sys = stats.Sys
 	m.HeapAlloc = stats.HeapAlloc
-	m.Alloc = stats.Alloc
+	m.HeapSys = stats.HeapSys
+	m.HeapIdle = stats.HeapIdle
+	m.HeapInuse = stats.HeapInuse
+	m.StackInuse = stats.StackInuse
+	m.StackSys = stats.StackSys
+	m.GCSys = stats.GCSys
 }
 
 func GC() {
