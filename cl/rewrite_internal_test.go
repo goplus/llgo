@@ -65,3 +65,36 @@ func Use() string { return VarInit + VarPlain }
 		}
 	}
 }
+
+func TestRewriteSkipsNonConstStores(t *testing.T) {
+	const src = `package rewritepkg
+import "strings"
+var VarInit = strings.ToUpper("original_value")
+var VarPlain string
+func Use() string { return VarInit + VarPlain }
+`
+	ir := compileWithRewrites(t, src, map[string]string{
+		"VarInit":  "rewrite_init",
+		"VarPlain": "rewrite_plain",
+	})
+	if !strings.Contains(ir, `c"rewrite_init"`) {
+		t.Fatalf("expected rewrite_init constant to remain:\n%s", ir)
+	}
+	if !strings.Contains(ir, "strings.ToUpper") {
+		t.Fatalf("expected call to strings.ToUpper in IR:\n%s", ir)
+	}
+}
+
+func TestRewriteValueNoDot(t *testing.T) {
+	ctx := &context{rewrites: map[string]string{"VarInit": "rewrite_init"}}
+	if _, ok := ctx.rewriteValue("VarInit"); ok {
+		t.Fatalf("rewriteValue should skip names without package prefix")
+	}
+}
+
+func TestIsStringTypeDefault(t *testing.T) {
+	ctx := &context{}
+	if ctx.isStringType(types.NewPointer(types.Typ[types.Int])) {
+		t.Fatalf("expected non-string pointer to return false")
+	}
+}
