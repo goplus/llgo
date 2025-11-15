@@ -61,7 +61,7 @@ jobs:
           if ${{ startsWith(matrix.os, 'macos') }}; then
             DEMO_PKG="cargs_darwin_arm64.zip"
           else
-            DEMO_PKG="cargs_linux_amd64.zip"  
+            DEMO_PKG="cargs_linux_amd64.zip"
           fi
 
           mkdir -p ./_demo/c/cargs/libs
@@ -186,10 +186,14 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{matrix.go}}
-
+      - name: Test Baremetal GC
+        if: ${{!startsWith(matrix.os, 'macos')}}
+        working-directory: runtime/internal/runtime/tinygogc
+        run: llgo test -tags testGC .
       - name: run llgo test
         run: |
           llgo test ./...
+
 
   hello:
     continue-on-error: true
