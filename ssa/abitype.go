@@ -403,6 +403,34 @@ func (p Package) patchType(t types.Type) types.Type {
 	return p.patch(t)
 }
 
+// abiTypeInitInline performs inline type initialization without conditional blocks
+// This is used inside the lazy loader function
+func (p Package) abiTypeInitInline(b Builder, g Global, t types.Type, pub bool) {
+	if p.patch != nil {
+		t = p.patchType(t)
+	}
+	tabi := b.abiTypeOf(t)
+	expr := g.Expr
+
+	// Phase1: create type object
+	vexpr := tabi()
+	prog := p.Prog
+	if kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); kind == abi.Pointer {
+		b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
+	}
+	b.Store(expr, vexpr)
+
+	// Phase2: initialize Named type methods (if applicable)
+	if named, ok := t.(*types.Named); ok {
+		if iface, ok := named.Underlying().(*types.Interface); ok {
+			tabi = b.abiInitNamedInterface(vexpr, iface)
+		} else {
+			tabi = b.abiInitNamed(vexpr, named)
+		}
+		tabi()
+	}
+}
+
 func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	b := p.afterBuilder()
 	if p.patch != nil {
@@ -480,8 +508,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			b.checkAbi(t.Results().At(i).Type())
 		}
 	}
-	g := b.loadType(t)
-	return b.Load(g.Expr)
+	return b.loadType(t)
 }
 
 func (b Builder) checkAbi(t types.Type) {
@@ -491,7 +518,85 @@ func (b Builder) checkAbi(t types.Type) {
 	b.abiType(t)
 }
 
-func (b Builder) loadType(t types.Type) Global {
+// typeLoaderName returns the name of the lazy loader function for the type
+func (pkg Package) typeLoaderName(t types.Type) string {
+	name, _ := pkg.abi.TypeName(t)
+	return "__llgo_load_" + name
+}
+
+// createTypeLoader creates a lazy loader function for the given type
+// The loader function checks if the type is null and initializes it if needed
+func (pkg Package) createTypeLoader(g Global, t types.Type, pub bool) Function {
+	loaderName := pkg.typeLoaderName(t)
+
+	// Check if loader already exists
+	if fn := pkg.FuncOf(loaderName); fn != nil {
+		return fn
+	}
+
+	// Create loader function signature: func() *Type
+	prog := pkg.Prog
+	sig := types.NewSignatureType(
+		nil, nil, nil,
+		types.NewTuple(),
+		types.NewTuple(types.NewVar(0, nil, "", prog.AbiTypePtrPtr().raw.Type)),
+		false,
+	)
+
+	// Create loader function
+	fn := pkg.NewFunc(loaderName, sig, InGo)
+	fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+
+	// Build loader function body
+	b := fn.MakeBody(3) // entry, init, done
+	entry := fn.Block(0)
+	initBlk := fn.Block(1)
+	doneBlk := fn.Block(2)
+
+	// entry: check if type is null
+	b.SetBlock(entry)
+	loaded := b.Load(g.Expr)
+	eq := b.BinOp(token.EQL, loaded, prog.Nil(g.Type))
+	b.If(eq, initBlk, doneBlk)
+
+	// init: initialize the type
+	b.SetBlock(initBlk)
+
+	// Perform type initialization inline (without conditional blocks)
+	if pkg.patch != nil {
+		t = pkg.patchType(t)
+	}
+	tabi := b.abiTypeOf(t)
+	expr := g.Expr
+
+	// Phase1: create type object
+	vexpr := tabi()
+	if kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); kind == abi.Pointer {
+		b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
+	}
+	b.Store(expr, vexpr)
+
+	// Phase2: initialize Named type methods (if applicable)
+	if named, ok := t.(*types.Named); ok {
+		if iface, ok := named.Underlying().(*types.Interface); ok {
+			tabi = b.abiInitNamedInterface(vexpr, iface)
+		} else {
+			tabi = b.abiInitNamed(vexpr, named)
+		}
+		tabi()
+	}
+
+	b.Jump(doneBlk)
+
+	// done: load and return
+	b.SetBlock(doneBlk)
+	result := b.Load(g.Expr)
+	b.Return(result)
+
+	return fn
+}
+
+func (b Builder) loadType(t types.Type) Expr {
 	b.Pkg.chkabi[t] = true
 	pkg := b.Pkg
 	name, pub := pkg.abi.TypeName(t)
@@ -501,9 +606,13 @@ func (b Builder) loadType(t types.Type) Global {
 		g = pkg.doNewVar(name, prog.AbiTypePtrPtr())
 		g.InitNil()
 		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		pkg.abiTypeInit(g, t, pub)
+		// Create lazy loader function
+		pkg.createTypeLoader(g, t, pub)
 	}
-	return g
+	// Call the lazy loader function instead of directly loading the global
+	loaderName := pkg.typeLoaderName(t)
+	loader := pkg.FuncOf(loaderName)
+	return b.Call(loader.Expr)
 }
 
 // -----------------------------------------------------------------------------
