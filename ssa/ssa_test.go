@@ -619,3 +619,162 @@ source_filename = "global"
 @"foo/bar.b" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, align 8
 `)
 }
+
+// TestSetBlockExDemo demonstrates the difference between SetBlock and SetBlockEx.
+// This shows how setBlk parameter affects which block subsequent instructions go to.
+func TestSetBlockExDemo(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	fn := pkg.NewFunc("demo", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+
+	// Create two extra blocks
+	blks := fn.MakeBlocks(2)
+	block1 := blks[0] // Block 1
+	block2 := blks[1] // Block 2
+
+	// Currently in Block 0
+	// Jump to Block 1
+	b.Jump(block1)
+
+	// === Scenario 1: SetBlockEx with setBlk=false (temporary switch) ===
+	b.SetBlockEx(block1, AtEnd, false) // Switch to Block 1 temporarily
+	// b.blk is still Block 0! Only the LLVM insert point changed
+
+	// Insert a Jump instruction (goes into Block 1)
+	b.Jump(block2)
+
+	// === Scenario 2: SetBlock (permanent switch) ===
+	b.SetBlock(block2) // Same as SetBlockEx(block2, AtEnd, true)
+	// b.blk is now Block 2
+
+	// Insert a Return instruction (goes into Block 2)
+	b.Return()
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @demo() {
+_llgo_0:
+  br label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1
+  ret void
+}
+`)
+}
+
+// TestSetBlockExComparison compares setBlk=true vs setBlk=false
+// to show why abitype.go uses setBlk=false for temporary switches.
+func TestSetBlockExComparison(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	// Create function with 3 blocks
+	fn := pkg.NewFunc("example", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+
+	// Create conditional blocks
+	blks := fn.MakeBlocks(2)
+	initBlock := blks[0]  // Block 1 - initialization block
+	mergeBlock := blks[1] // Block 2 - merge point
+
+	// In Block 0: Jump to initBlock
+	b.Jump(initBlock)
+
+	// === Key Pattern: Temporarily switch to initBlock ===
+	// This is what abitype.go does!
+	b.SetBlockEx(initBlock, AtEnd, false) // setBlk=false: temporary!
+	// After this: LLVM insert point → initBlock
+	//             but b.blk still → Block 0
+
+	// Do some work in initBlock
+	// (In abitype.go, this would be calling InitNamed)
+	b.Jump(mergeBlock)
+
+	// Now switch to mergeBlock permanently
+	b.SetBlockEx(mergeBlock, AtEnd, false) // Still temporary
+
+	// Restore b.blk to match current position
+	b.blk.last = mergeBlock.last // This is what abitype.go:430 does
+
+	// Final return
+	b.Return()
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @example() {
+_llgo_0:
+  br label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1
+  ret void
+}
+`)
+}
+
+// TestLLVMInsertPointPermanent demonstrates that SetBlockEx permanently changes
+// the LLVM builder's insert point, regardless of setBlk parameter.
+func TestLLVMInsertPointPermanent(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("test", sig, InGo)
+	b := fn.MakeBody(1)
+
+	blks := fn.MakeBlocks(3)
+	block1 := blks[0]
+	block2 := blks[1]
+	block3 := blks[2]
+
+	// Start in Block 0
+	cond := b.BinOp(token.GTR, fn.Param(0), prog.Val(0))
+	b.If(cond, block1, block2)
+
+	// Switch to Block 1 with setBlk=false
+	b.SetBlockEx(block1, AtEnd, false)
+	// LLVM insert point is NOW in Block 1 (permanent!)
+	// b.blk is still Block 0
+
+	// Add instruction - goes to Block 1
+	b.Jump(block3)
+
+	// Switch to Block 2 with setBlk=false
+	b.SetBlockEx(block2, AtEnd, false)
+	// LLVM insert point is NOW in Block 2 (overwrites previous!)
+	// This proves the switch is permanent - we had to explicitly move again
+
+	b.Jump(block3)
+
+	// Switch to Block 3
+	b.SetBlockEx(block3, AtEnd, true)
+	b.Return(prog.Val(42))
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @test(i64 %0) {
+_llgo_0:
+  %1 = icmp sgt i64 %0, 0
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  br label %_llgo_3
+
+_llgo_2:                                          ; preds = %_llgo_0
+  br label %_llgo_3
+
+_llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
+  ret i64 42
+}
+`)
+}
