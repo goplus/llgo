@@ -17,6 +17,13 @@
  * limitations under the License.
  */
 
+// Package build contains the llgo compiler build orchestration logic.
+//
+// The main_module.go file generates the entry point module for llgo programs,
+// which contains the main() function, initialization sequence, and global
+// variables like argc/argv. This module is generated differently depending on
+// BuildMode (exe, c-archive, c-shared).
+
 package build
 
 import (
@@ -29,6 +36,11 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 )
 
+// genMainModule generates the main entry module for an llgo program.
+//
+// The module contains argc/argv globals and, for executable build modes,
+// the entry function that wires initialization and main. For C archive or
+// shared library modes, only the globals are emitted.
 func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) Package {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.ID+".main")
@@ -82,6 +94,13 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	return mainAPkg
 }
 
+// defineEntryFunction creates the program's entry function. The name is
+// "main" for standard targets, or "__main_argc_argv" with hidden visibility
+// for WASM targets that don't require _start.
+//
+// The entry stores argc/argv, optionally disables stdio buffering, runs
+// initialization hooks (Python, runtime, package init), and finally calls
+// main.main before returning 0.
 func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit llssa.Function) llssa.Function {
 	prog := pkg.Prog
 	entryName := "main"
@@ -136,6 +155,9 @@ func defineWeakNoArgStub(pkg llssa.Package, name string) llssa.Function {
 }
 
 func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goarch string) {
+// emitStdioNobuf generates code to disable buffering on stdout and stderr
+// when the LLGO_STDIO_NOBUF environment variable is set. Each stream is
+// checked independently so missing stdio symbols are handled gracefully.
 	prog := pkg.Prog
 	streamType := prog.VoidPtr()
 	streamPtrType := prog.Pointer(streamType)
