@@ -133,6 +133,20 @@ jobs:
           chmod +x test.sh
           ./test.sh
 
+      - name: Test export symbol names for embedded targets
+        run: |
+          echo "Testing //export with different symbol names for embedded development..."
+          chmod +x .github/workflows/export_test.sh
+          cd _demo/embed/export
+          bash ../../../.github/workflows/export_test.sh
+
+      - name: Test export symbol names for normal targets
+        run: |
+          echo "Testing //export behavior for normal (non-embedded) targets..."
+          chmod +x .github/workflows/export_test_normal.sh
+          cd _demo/normal/export
+          bash ../../../.github/workflows/export_test_normal.sh
+
       - name: _xtool build tests
         run: |
           cd _xtool
