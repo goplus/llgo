@@ -22,7 +22,6 @@ package build
 import (
 	"go/token"
 	"go/types"
-	"runtime"
 
 	"github.com/goplus/llgo/internal/packages"
 	llvm "github.com/goplus/llvm"
@@ -32,7 +31,7 @@ import (
 
 func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) Package {
 	prog := ctx.prog
-	mainPkg := prog.NewPackage("", pkg.PkgPath+".main")
+	mainPkg := prog.NewPackage("", pkg.ID+".main")
 
 	argcVar := mainPkg.NewVarEx("__llgo_argc", prog.Pointer(prog.Int32()))
 	argcVar.Init(prog.Zero(prog.Int32()))
@@ -59,6 +58,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	runtimeStub := defineWeakNoArgStub(mainPkg, "runtime.init")
+	// Define syscall.init as a weak stub to allow linking even when syscall package is not imported
 	defineWeakNoArgStub(mainPkg, "syscall.init")
 
 	var pyInit llssa.Function
@@ -215,11 +215,5 @@ func newEntrySignature(argvType types.Type) *types.Signature {
 }
 
 func sizeTypeForArch(prog llssa.Program, arch string) llssa.Type {
-	if arch == "" {
-		arch = runtime.GOARCH
-	}
-	if is32Bits(arch) {
-		return prog.Uint32()
-	}
-	return prog.Uint64()
+	return prog.Uintptr()
 }
