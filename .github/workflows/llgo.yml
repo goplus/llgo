@@ -133,6 +133,13 @@ jobs:
           chmod +x test.sh
           ./test.sh
 
+      - name: Test export with different symbol names on embedded targets
+        run: |
+          echo "Testing //export with different symbol names on embedded targets..."
+          cd _demo/embed/export
+          chmod +x verify_export.sh
+          ./verify_export.sh
+
       - name: _xtool build tests
         run: |
           cd _xtool

@@ -53,6 +53,11 @@ var (
 	enableDbg         bool
 	enableDbgSyms     bool
 	disableInline     bool
+
+	// enableExportRename enables //export to use different C symbol names than Go function names.
+	// This is for TinyGo compatibility when using -target flag for embedded targets.
+	// Currently, using -target implies TinyGo embedded target mode.
+	enableExportRename bool
 )
 
 // SetDebug sets debug flags.
@@ -71,6 +76,12 @@ func EnableDbgSyms(b bool) {
 
 func EnableTrace(b bool) {
 	enableCallTracing = b
+}
+
+// EnableExportRename enables or disables //export with different C symbol names.
+// This is enabled when using -target flag for TinyGo compatibility.
+func EnableExportRename(b bool) {
+	enableExportRename = b
 }
 
 // -----------------------------------------------------------------------------

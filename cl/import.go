@@ -73,7 +73,7 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 		lines := bytes.Split(b, sep)
 		for _, line := range lines {
 			if bytes.HasPrefix(line, commentPrefix) {
-				ctx.initLinkname(string(line), func(inPkgName string) (fullName string, isVar, ok bool) {
+				ctx.initLinkname(string(line), func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 					if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
 						return sym.fullName, sym.isVar, true
 					}
@@ -277,8 +277,8 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 	if doc != nil {
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
-			ret := p.initLinkname(line, func(name string) (_ string, _, ok bool) {
-				return fullName, isVar, name == inPkgName
+			ret := p.initLinkname(line, func(name string, isExport bool) (_ string, _, ok bool) {
+				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
 			})
 			if ret != unknownDirective {
 				return ret == hasLinkname
@@ -294,7 +294,7 @@ const (
 	unknownDirective = -1
 )
 
-func (p *context) initLinkname(line string, f func(inPkgName string) (fullName string, isVar, ok bool)) int {
+func (p *context) initLinkname(line string, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
@@ -324,17 +324,24 @@ func (p *context) initLinkname(line string, f func(inPkgName string) (fullName s
 	return noDirective
 }
 
-func (p *context) initLink(line string, prefix int, export bool, f func(inPkgName string) (fullName string, isVar, ok bool)) {
+func (p *context) initLink(line string, prefix int, export bool, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
 		inPkgName := text[:idx]
-		if fullName, _, ok := f(inPkgName); ok {
+		if fullName, _, ok := f(inPkgName, export); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
 			p.prog.SetLinkname(fullName, link)
 			if export {
 				p.pkg.SetExport(fullName, link)
 			}
 		} else {
+			// Export with different names already processed by initLinknameByDoc
+			if export && enableExportRename {
+				return
+			}
+			if export {
+				panic(fmt.Sprintf("export comment has wrong name %q", inPkgName))
+			}
 			fmt.Fprintln(os.Stderr, "==>", line)
 			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
 		}
