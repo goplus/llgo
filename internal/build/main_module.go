@@ -57,7 +57,6 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	runtimeStub := defineWeakNoArgStub(mainPkg, "runtime.init")
-	// TODO(lijie): workaround for syscall patch
 	// Define syscall.init as a weak stub to allow linking even when syscall package is not imported
 	defineWeakNoArgStub(mainPkg, "syscall.init")
 
