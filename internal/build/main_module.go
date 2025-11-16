@@ -36,8 +36,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	argcVar := mainPkg.NewVarEx("__llgo_argc", prog.Pointer(prog.Int32()))
 	argcVar.Init(prog.Zero(prog.Int32()))
 
-	charPtrType := prog.Pointer(prog.Byte())
-	argvValueType := prog.Pointer(charPtrType)
+	argvValueType := prog.Pointer(prog.CStr())
 	argvVar := mainPkg.NewVarEx("__llgo_argv", prog.Pointer(argvValueType))
 	argvVar.InitNil()
 
@@ -58,6 +57,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	runtimeStub := defineWeakNoArgStub(mainPkg, "runtime.init")
+	// TODO(lijie): workaround for syscall patch
 	// Define syscall.init as a weak stub to allow linking even when syscall package is not imported
 	defineWeakNoArgStub(mainPkg, "syscall.init")
 
@@ -144,9 +144,8 @@ func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goarch string) {
 	stderr := declareExternalPtrGlobal(pkg, "stderr", streamType)
 	stdoutAlt := declareExternalPtrGlobal(pkg, "__stdout", streamType)
 	stderrAlt := declareExternalPtrGlobal(pkg, "__stderr", streamType)
-	sizeType := sizeTypeForArch(prog, goarch)
-	charPtrType := prog.Pointer(prog.Byte())
-	setvbuf := declareSetvbuf(pkg, streamPtrType, charPtrType, prog.Int32(), sizeType)
+	sizeType := prog.Uintptr()
+	setvbuf := declareSetvbuf(pkg, streamPtrType, prog.CStr(), prog.Int32(), sizeType)
 
 	stdoutSlot := b.AllocaT(streamPtrType)
 	b.Store(stdoutSlot, stdout)
@@ -166,7 +165,7 @@ func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goarch string) {
 
 	mode := prog.IntVal(2, prog.Int32())
 	zeroSize := prog.Zero(sizeType)
-	nullBuf := prog.Nil(charPtrType)
+	nullBuf := prog.Nil(prog.CStr())
 
 	b.Call(setvbuf.Expr, stdoutPtr, nullBuf, mode, zeroSize)
 	b.Call(setvbuf.Expr, stderrPtr, nullBuf, mode, zeroSize)
@@ -212,8 +211,4 @@ func newEntrySignature(argvType types.Type) *types.Signature {
 		[]types.Type{types.Typ[types.Int32], argvType},
 		[]types.Type{types.Typ[types.Int32]},
 	)
-}
-
-func sizeTypeForArch(prog llssa.Program, arch string) llssa.Type {
-	return prog.Uintptr()
 }
