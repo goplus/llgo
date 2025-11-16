@@ -154,6 +154,11 @@ func defineWeakNoArgStub(pkg llssa.Package, name string) llssa.Function {
 	return fn
 }
 
+const (
+	// ioNoBuf represents the _IONBF flag for setvbuf (no buffering)
+	ioNoBuf = 2
+)
+
 // emitStdioNobuf generates code to disable buffering on stdout and stderr
 // when the LLGO_STDIO_NOBUF environment variable is set. Each stream is
 // checked independently so missing stdio symbols are handled gracefully.
@@ -177,7 +182,7 @@ func emitStdioNobuf(b llssa.Builder, pkg llssa.Package) {
 	stdoutPtr := selectStream(stdout, stdoutAlt)
 	stderrPtr := selectStream(stderr, stderrAlt)
 
-	noBufMode := prog.IntVal(2, prog.Int32())
+	noBufMode := prog.IntVal(ioNoBuf, prog.Int32())
 	zeroSize := prog.Zero(sizeType)
 	nullBuf := prog.Nil(prog.CStr())
 
