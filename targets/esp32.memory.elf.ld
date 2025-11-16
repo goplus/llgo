@@ -19,8 +19,8 @@ MEMORY
 /* 64k at the end of DRAM, after ROM bootloader stack
  * or entire DRAM (for QEMU only)
  */
-  dram_seg (RW) : org = 0x3FFF0000 ,
-                  len = 0x10000
+  dram_seg (RW) : org = 0x3ffae000 ,
+                  len = 0x52000
 }
 
 INCLUDE "targets/esp32.app.elf.ld";

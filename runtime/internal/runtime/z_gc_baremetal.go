@@ -1,7 +1,7 @@
-//go:build nogc || baremetal
+//go:build !nogc && baremetal
 
 /*
- * Copyright (c) 2025 The GoPlus Authors (goplus.org). All rights reserved.
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,15 @@ package runtime
 import (
 	"unsafe"
 
-	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/runtime/tinygogc"
 )
 
-// FreeDeferNode releases the defer node when GC integration is disabled.
-func FreeDeferNode(ptr unsafe.Pointer) {
-	if ptr != nil {
-		c.Free(ptr)
-	}
+// AllocU allocates uninitialized memory.
+func AllocU(size uintptr) unsafe.Pointer {
+	return tinygogc.Alloc(size)
+}
+
+// AllocZ allocates zero-initialized memory.
+func AllocZ(size uintptr) unsafe.Pointer {
+	return tinygogc.Alloc(size)
 }

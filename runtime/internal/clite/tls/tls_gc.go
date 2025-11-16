@@ -1,4 +1,4 @@
-//go:build llgo && !nogc
+//go:build llgo && !baremetal && !nogc
 
 /*
  * Copyright (c) 2025 The GoPlus Authors (goplus.org). All rights reserved.
