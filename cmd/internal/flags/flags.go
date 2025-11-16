@@ -36,6 +36,7 @@ var CheckLinkArgs bool
 var CheckLLFiles bool
 var GenLLFiles bool
 var ForceEspClang bool
+var Size string
 
 func AddCommonFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose output")
@@ -44,6 +45,7 @@ func AddCommonFlags(fs *flag.FlagSet) {
 func AddBuildFlags(fs *flag.FlagSet) {
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
+	fs.StringVar(&Size, "size", "", "Print size usage (short, full)")
 	if buildenv.Dev {
 		fs.IntVar(&AbiMode, "abi", 2, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
 		fs.BoolVar(&CheckLinkArgs, "check-linkargs", false, "check link args valid")
@@ -117,6 +119,7 @@ func UpdateBuildConfig(conf *build.Config) error {
 		return err
 	}
 	conf.BuildMode = build.BuildMode(BuildMode)
+	conf.Size = Size
 
 	return nil
 }

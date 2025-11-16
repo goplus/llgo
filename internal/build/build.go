@@ -47,6 +47,7 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/size"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
@@ -132,6 +133,7 @@ type Config struct {
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
 	Tags          string
+	Size          string // size reporting mode: "", "short", "full"
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -406,7 +408,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 			switch mode {
 			case ModeBuild:
-				// Do nothing
+				// Report size if requested
+				if conf.Size != "" {
+					if err := size.Analyze(ctx.env, outFmts.Out, conf.Size); err != nil {
+						return nil, fmt.Errorf("size analysis failed: %w", err)
+					}
+				}
 
 			case ModeInstall:
 				// Native already installed in linkMainPkg
