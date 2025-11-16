@@ -48,6 +48,17 @@ type SizeReport struct {
 
 // Analyze analyzes the binary size using llvm-readelf
 func Analyze(env *llvm.Env, binaryPath string, mode string) error {
+	// Normalize mode: empty or paths default to "short"
+	// This handles cases like `llgo build -size .` where "." gets parsed as the mode value
+	if mode == "" || mode == "." || mode == ".." || (len(mode) > 0 && (mode[0] == '/' || (len(mode) > 1 && mode[:2] == "./"))) {
+		mode = "short"
+	}
+
+	// Validate mode
+	if mode != "short" && mode != "full" {
+		return fmt.Errorf("invalid size mode %q, must be one of: short, full", mode)
+	}
+
 	// Find llvm-readelf
 	readelfBin := filepath.Join(env.BinDir(), "llvm-readelf")
 
@@ -71,14 +82,12 @@ func Analyze(env *llvm.Env, binaryPath string, mode string) error {
 
 	// Print based on mode
 	switch mode {
-	case "short", "":
+	case "short":
 		printShortReport(report)
 	case "full":
 		printShortReport(report)
 		fmt.Println("\n=== Full llvm-readelf output ===")
 		fmt.Println(output)
-	default:
-		return fmt.Errorf("invalid size mode %q, must be one of: short, full", mode)
 	}
 
 	return nil

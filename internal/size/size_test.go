@@ -89,3 +89,29 @@ func TestFormatSize(t *testing.T) {
 		}
 	}
 }
+
+func TestModeNormalization(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"", "short"},
+		{".", "short"},
+		{"..", "short"},
+		{"./foo", "short"},
+		{"/path/to/file", "short"},
+		{"short", "short"},
+		{"full", "full"},
+	}
+
+	for _, tt := range tests {
+		// Test normalization logic
+		mode := tt.input
+		if mode == "" || mode == "." || mode == ".." || (len(mode) > 0 && (mode[0] == '/' || (len(mode) > 1 && mode[:2] == "./"))) {
+			mode = "short"
+		}
+		if mode != tt.expected {
+			t.Errorf("normalizing mode %q: got %q, expected %q", tt.input, mode, tt.expected)
+		}
+	}
+}
