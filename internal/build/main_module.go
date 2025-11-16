@@ -118,7 +118,7 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	b.Store(argcVar.Expr, fn.Param(0))
 	b.Store(argvVar.Expr, fn.Param(1))
 	if IsStdioNobuf() {
-		emitStdioNobuf(b, pkg, ctx.buildConf.Goarch)
+		emitStdioNobuf(b, pkg, ctx.buildConf.Goos)
 	}
 	if pyInit != nil {
 		b.Call(pyInit.Expr)
@@ -154,47 +154,43 @@ func defineWeakNoArgStub(pkg llssa.Package, name string) llssa.Function {
 	return fn
 }
 
-func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goarch string) {
+const (
+	// ioNoBuf represents the _IONBF flag for setvbuf (no buffering)
+	ioNoBuf = 2
+)
+
 // emitStdioNobuf generates code to disable buffering on stdout and stderr
-// when the LLGO_STDIO_NOBUF environment variable is set. Each stream is
-// checked independently so missing stdio symbols are handled gracefully.
+// when the LLGO_STDIO_NOBUF environment variable is set. Only Darwin uses
+// the alternate `__stdoutp`/`__stderrp` symbols; other targets rely on the
+// standard `stdout`/`stderr` globals.
+func emitStdioNobuf(b llssa.Builder, pkg llssa.Package, goos string) {
 	prog := pkg.Prog
 	streamType := prog.VoidPtr()
 	streamPtrType := prog.Pointer(streamType)
-	stdout := declareExternalPtrGlobal(pkg, "stdout", streamType)
-	stderr := declareExternalPtrGlobal(pkg, "stderr", streamType)
-	stdoutAlt := declareExternalPtrGlobal(pkg, "__stdout", streamType)
-	stderrAlt := declareExternalPtrGlobal(pkg, "__stderr", streamType)
+
+	stdoutName := "stdout"
+	stderrName := "stderr"
+	if goos == "darwin" {
+		stdoutName = "__stdoutp"
+		stderrName = "__stderrp"
+	}
+	stdout := declareExternalPtrGlobal(pkg, stdoutName, streamPtrType)
+	stderr := declareExternalPtrGlobal(pkg, stderrName, streamPtrType)
+	stdoutPtr := b.Load(stdout)
+	stderrPtr := b.Load(stderr)
 	sizeType := prog.Uintptr()
 	setvbuf := declareSetvbuf(pkg, streamPtrType, prog.CStr(), prog.Int32(), sizeType)
 
-	stdoutSlot := b.AllocaT(streamPtrType)
-	b.Store(stdoutSlot, stdout)
-	condOut := b.BinOp(token.EQL, stdout, prog.Nil(streamPtrType))
-	b.IfThen(condOut, func() {
-		b.Store(stdoutSlot, stdoutAlt)
-	})
-	stdoutPtr := b.Load(stdoutSlot)
-
-	stderrSlot := b.AllocaT(streamPtrType)
-	b.Store(stderrSlot, stderr)
-	condErr := b.BinOp(token.EQL, stderr, prog.Nil(streamPtrType))
-	b.IfThen(condErr, func() {
-		b.Store(stderrSlot, stderrAlt)
-	})
-	stderrPtr := b.Load(stderrSlot)
-
-	mode := prog.IntVal(2, prog.Int32())
+	noBufMode := prog.IntVal(ioNoBuf, prog.Int32())
 	zeroSize := prog.Zero(sizeType)
 	nullBuf := prog.Nil(prog.CStr())
 
-	b.Call(setvbuf.Expr, stdoutPtr, nullBuf, mode, zeroSize)
-	b.Call(setvbuf.Expr, stderrPtr, nullBuf, mode, zeroSize)
+	b.Call(setvbuf.Expr, stdoutPtr, nullBuf, noBufMode, zeroSize)
+	b.Call(setvbuf.Expr, stderrPtr, nullBuf, noBufMode, zeroSize)
 }
 
 func declareExternalPtrGlobal(pkg llssa.Package, name string, valueType llssa.Type) llssa.Expr {
-	ptrType := pkg.Prog.Pointer(valueType)
-	global := pkg.NewVarEx(name, ptrType)
+	global := pkg.NewVarEx(name, valueType)
 	pkg.Module().NamedGlobal(name).SetLinkage(llvm.ExternalLinkage)
 	return global.Expr
 }

@@ -159,3 +159,8 @@ func runBinary(t *testing.T, path string, args ...string) string {
 	}
 	return string(output)
 }
+
+func TestRunPrintfWithStdioNobuf(t *testing.T) {
+	t.Setenv(llgoStdioNobuf, "1")
+	mockRun([]string{"../../cl/_testdata/printf"}, &Config{Mode: ModeRun})
+}
