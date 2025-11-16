@@ -674,6 +674,15 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 	panic("todo")
 }
 
+// CreateSelect emits an LLVM select instruction that chooses between onTrue and
+// onFalse based on cond. The cond must be a boolean expression. onTrue and
+// onFalse must have the same type; the caller is responsible for ensuring type
+// compatibility. Returns an expression with the same type as onTrue/onFalse.
+func (b Builder) CreateSelect(cond, onTrue, onFalse Expr) Expr {
+	ret := llvm.CreateSelect(b.impl, cond.impl, onTrue.impl, onFalse.impl)
+	return Expr{ret, onTrue.Type}
+}
+
 // The UnOp instruction yields the result of (op x).
 // ARROW is channel receive.
 // MUL is pointer indirection (load).
