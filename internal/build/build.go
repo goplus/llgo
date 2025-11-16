@@ -133,7 +133,8 @@ type Config struct {
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
 	Tags          string
-	Size          string // size reporting mode: "", "short", "full"
+	SizeEnabled   bool   // enable size output
+	SizeFormat    string // size output format: "", "json"
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -409,12 +410,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			switch mode {
 			case ModeBuild:
 				// Report size if requested
-				if conf.Size != "" {
-					// Validate size mode
-					if conf.Size != "short" && conf.Size != "full" {
-						return nil, fmt.Errorf("invalid -size value %q, must be one of: short, full", conf.Size)
+				if conf.SizeEnabled {
+					// Validate size format if specified
+					if conf.SizeFormat != "" && conf.SizeFormat != "json" {
+						return nil, fmt.Errorf("invalid -size:format value %q, must be: json", conf.SizeFormat)
 					}
-					if err := size.Analyze(ctx.env, outFmts.Out, conf.Size); err != nil {
+					if err := size.Analyze(ctx.env, outFmts.Out, conf.SizeFormat); err != nil {
 						return nil, fmt.Errorf("size analysis failed: %w", err)
 					}
 				}

@@ -19,7 +19,9 @@ package size
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -47,10 +49,10 @@ type SizeReport struct {
 }
 
 // Analyze analyzes the binary size using llvm-readelf
-func Analyze(env *llvm.Env, binaryPath string, mode string) error {
-	// Validate mode - validation should be done by caller, but double-check here
-	if mode != "short" && mode != "full" {
-		return fmt.Errorf("invalid size mode %q, must be one of: short, full", mode)
+func Analyze(env *llvm.Env, binaryPath string, format string) error {
+	// Validate format - validation should be done by caller, but double-check here
+	if format != "" && format != "json" {
+		return fmt.Errorf("invalid size format %q, must be: json", format)
 	}
 
 	// Find llvm-readelf
@@ -74,14 +76,15 @@ func Analyze(env *llvm.Env, binaryPath string, mode string) error {
 		return err
 	}
 
-	// Print based on mode
-	switch mode {
-	case "short":
-		printShortReport(report)
-	case "full":
-		printShortReport(report)
-		fmt.Println("\n=== Full llvm-readelf output ===")
-		fmt.Println(output)
+	// Print based on format
+	switch format {
+	case "":
+		// Default: text format
+		printTextReport(report)
+	case "json":
+		if err := printJSONReport(report); err != nil {
+			return fmt.Errorf("failed to print JSON report: %w", err)
+		}
 	}
 
 	return nil
@@ -141,8 +144,8 @@ func parseReadelfOutput(output string) (*SizeReport, error) {
 	return report, nil
 }
 
-// printShortReport prints a summary table of size usage
-func printShortReport(report *SizeReport) {
+// printTextReport prints a summary table of size usage in text format
+func printTextReport(report *SizeReport) {
 	fmt.Println("=== Binary Size Analysis ===")
 	fmt.Printf("%-20s %10s\n", "Section", "Size")
 	fmt.Println(strings.Repeat("-", 32))
@@ -162,6 +165,22 @@ func printShortReport(report *SizeReport) {
 
 	fmt.Println(strings.Repeat("-", 32))
 	fmt.Printf("%-20s %10s\n", "Total", formatSize(report.Total))
+}
+
+// printJSONReport prints the size report in JSON format
+func printJSONReport(report *SizeReport) error {
+	// Create a JSON-friendly structure
+	output := map[string]interface{}{
+		"text":   report.Text,
+		"rodata": report.Rodata,
+		"data":   report.Data,
+		"bss":    report.Bss,
+		"total":  report.Total,
+	}
+
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(output)
 }
 
 // formatSize formats a size in bytes to a human-readable string
