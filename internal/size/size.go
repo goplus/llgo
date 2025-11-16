@@ -48,13 +48,7 @@ type SizeReport struct {
 
 // Analyze analyzes the binary size using llvm-readelf
 func Analyze(env *llvm.Env, binaryPath string, mode string) error {
-	// Normalize mode: empty or paths default to "short"
-	// This handles cases like `llgo build -size .` where "." gets parsed as the mode value
-	if mode == "" || mode == "." || mode == ".." || (len(mode) > 0 && (mode[0] == '/' || (len(mode) > 1 && mode[:2] == "./"))) {
-		mode = "short"
-	}
-
-	// Validate mode
+	// Validate mode - validation should be done by caller, but double-check here
 	if mode != "short" && mode != "full" {
 		return fmt.Errorf("invalid size mode %q, must be one of: short, full", mode)
 	}

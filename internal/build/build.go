@@ -410,6 +410,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			case ModeBuild:
 				// Report size if requested
 				if conf.Size != "" {
+					// Validate size mode
+					if conf.Size != "short" && conf.Size != "full" {
+						return nil, fmt.Errorf("invalid -size value %q, must be one of: short, full", conf.Size)
+					}
 					if err := size.Analyze(ctx.env, outFmts.Out, conf.Size); err != nil {
 						return nil, fmt.Errorf("size analysis failed: %w", err)
 					}
