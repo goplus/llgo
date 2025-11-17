@@ -16,7 +16,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/tprecur.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testgo/tprecur.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -36,7 +35,7 @@ _llgo_0:
   br i1 %1, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %2 = load ptr, ptr @_llgo_string, align 8
+  %2 = call ptr @__llgo_load__llgo_string()
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %3, align 8
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %2, 0
@@ -67,7 +66,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %5, label %_llgo_1, label %_llgo_2
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/tprecur.init$after"() {
+define linkonce ptr @__llgo_load__llgo_string() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null
@@ -79,7 +78,8 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  ret void
+  %3 = load ptr, ptr @_llgo_string, align 8
+  ret ptr %3
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)

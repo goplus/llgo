@@ -16,12 +16,12 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/float2any"
 define void @"github.com/goplus/llgo/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %2 = load ptr, ptr @_llgo_float32, align 8
+  %2 = call ptr @__llgo_load__llgo_float32()
   %3 = icmp eq ptr %1, %2
   br i1 %3, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %4 = load ptr, ptr @_llgo_string, align 8
+  %4 = call ptr @__llgo_load__llgo_string()
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 9 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
@@ -41,7 +41,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %12, label %_llgo_1, label %_llgo_2
 
 _llgo_4:                                          ; preds = %_llgo_0
-  %13 = load ptr, ptr @_llgo_string, align 8
+  %13 = call ptr @__llgo_load__llgo_string()
   %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 36 }, ptr %14, align 8
   %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %13, 0
@@ -53,12 +53,12 @@ _llgo_4:                                          ; preds = %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/float2any.check64"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %2 = load ptr, ptr @_llgo_float64, align 8
+  %2 = call ptr @__llgo_load__llgo_float64()
   %3 = icmp eq ptr %1, %2
   br i1 %3, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %4 = load ptr, ptr @_llgo_string, align 8
+  %4 = call ptr @__llgo_load__llgo_string()
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 9 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %4, 0
@@ -77,7 +77,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %11, label %_llgo_1, label %_llgo_2
 
 _llgo_4:                                          ; preds = %_llgo_0
-  %12 = load ptr, ptr @_llgo_string, align 8
+  %12 = call ptr @__llgo_load__llgo_string()
   %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 36 }, ptr %13, align 8
   %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %12, 0
@@ -103,7 +103,6 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/float2any.init$guard", align 1
-  call void @"github.com/goplus/llgo/cl/_testrt/float2any.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -113,14 +112,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/float2any.main"() {
 _llgo_0:
   %0 = call float @"github.com/goplus/llgo/cl/_testrt/float2any.f32"()
-  %1 = load ptr, ptr @_llgo_float32, align 8
+  %1 = call ptr @__llgo_load__llgo_float32()
   %2 = bitcast float %0 to i32
   %3 = inttoptr i32 %2 to ptr
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %1, 0
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %4, ptr %3, 1
   call void @"github.com/goplus/llgo/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %5)
   %6 = call double @"github.com/goplus/llgo/cl/_testrt/float2any.f64"()
-  %7 = load ptr, ptr @_llgo_float64, align 8
+  %7 = call ptr @__llgo_load__llgo_float64()
   %8 = bitcast double %6 to i64
   %9 = inttoptr i64 %8 to ptr
   %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
@@ -129,7 +128,7 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/float2any.init$after"() {
+define linkonce ptr @__llgo_load__llgo_float32() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_float32, align 8
   %1 = icmp eq ptr %0, null
@@ -141,31 +140,44 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %3 = load ptr, ptr @_llgo_string, align 8
-  %4 = icmp eq ptr %3, null
-  br i1 %4, label %_llgo_3, label %_llgo_4
-
-_llgo_3:                                          ; preds = %_llgo_2
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  store ptr %5, ptr @_llgo_string, align 8
-  br label %_llgo_4
-
-_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
-  %6 = load ptr, ptr @_llgo_float64, align 8
-  %7 = icmp eq ptr %6, null
-  br i1 %7, label %_llgo_5, label %_llgo_6
-
-_llgo_5:                                          ; preds = %_llgo_4
-  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 46)
-  store ptr %8, ptr @_llgo_float64, align 8
-  br label %_llgo_6
-
-_llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  ret void
+  %3 = load ptr, ptr @_llgo_float32, align 8
+  ret ptr %3
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
 
+define linkonce ptr @__llgo_load__llgo_string() {
+_llgo_0:
+  %0 = load ptr, ptr @_llgo_string, align 8
+  %1 = icmp eq ptr %0, null
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
+  store ptr %2, ptr @_llgo_string, align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %3 = load ptr, ptr @_llgo_string, align 8
+  ret ptr %3
+}
+
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+define linkonce ptr @__llgo_load__llgo_float64() {
+_llgo_0:
+  %0 = load ptr, ptr @_llgo_float64, align 8
+  %1 = icmp eq ptr %0, null
+  br i1 %1, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 46)
+  store ptr %2, ptr @_llgo_float64, align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  %3 = load ptr, ptr @_llgo_float64, align 8
+  ret ptr %3
+}
