@@ -206,6 +206,11 @@ func parseReadelfOutput(r io.Reader) (*readelfData, error) {
 		symbols:  make(map[int][]symbolInfo),
 	}
 
+	// readelf outputs section references differently:
+	//   - Mach-O: section numbers are 1-based in symbol references
+	//   - ELF: section numbers in symbol references match the Index directly
+	secIndexBase := 1 // default to Mach-O behavior; switch to 0 for ELF once detected
+
 	var currentSection *sectionInfo
 	var currentSymbol *symbolInfo
 
@@ -214,6 +219,16 @@ func parseReadelfOutput(r io.Reader) (*readelfData, error) {
 		trimmed := strings.TrimSpace(raw)
 		if trimmed == "" {
 			continue
+		}
+
+		// Detect object format early to adjust section index base
+		if strings.HasPrefix(trimmed, "Format:") {
+			lower := strings.ToLower(trimmed)
+			if strings.Contains(lower, "mach-o") {
+				secIndexBase = 1
+			} else if strings.Contains(lower, "elf") {
+				secIndexBase = 0
+			}
 		}
 		indent := countLeadingSpaces(raw)
 		top := current()
@@ -282,7 +297,7 @@ func parseReadelfOutput(r io.Reader) (*readelfData, error) {
 			case strings.HasPrefix(trimmed, "Name: "):
 				currentSymbol.Name = parseNameField(trimmed[len("Name: "):])
 			case strings.HasPrefix(trimmed, "Section: "):
-				name, idx := parseSectionRef(trimmed[len("Section: "):])
+				name, idx := parseSectionRef(trimmed[len("Section: "):], secIndexBase)
 				currentSymbol.SectionIndex = idx
 				if currentSymbol.Name == "" {
 					currentSymbol.Name = name
@@ -531,7 +546,7 @@ func parseNameField(field string) string {
 	return val
 }
 
-func parseSectionRef(field string) (string, int) {
+func parseSectionRef(field string, indexBase int) (string, int) {
 	name := parseNameField(field)
 	idx := strings.Index(field, "(")
 	if idx < 0 {
@@ -550,11 +565,21 @@ func parseSectionRef(field string) (string, int) {
 	if err != nil {
 		return name, -1
 	}
-	// Check for valid section index (1-based in readelf output)
-	if num == 0 || num > math.MaxInt {
+	if num == 0 {
 		return name, -1
 	}
-	return name, int(num - 1)
+	if indexBase == 0 && num >= 0xFFF0 {
+		// Special ELF indices such as SHN_ABS/SHN_COMMON.
+		return name, -1
+	}
+	if num > math.MaxInt {
+		return name, -1
+	}
+	res := int(num) - indexBase
+	if res < 0 {
+		return name, -1
+	}
+	return name, res
 }
 
 func parseUintField(field string) (uint64, error) {
