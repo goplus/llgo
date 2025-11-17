@@ -6,7 +6,7 @@ document captures the parsing strategy and new aggregation controls.
 
 ## Parsing Strategy
 
-- We invoke `llvm-readelf --all <binary>` and parse the textual output with an
+- We invoke `llvm-readelf --elf-output-style=LLVM --all <binary>` and parse the textual output with an
   indentation-sensitive state machine (no JSON). Only the `Sections` and
   `Symbols` blocks are inspected.
 - Section metadata records the index, address, size, name, and segment. Each
@@ -24,11 +24,11 @@ document captures the parsing strategy and new aggregation controls.
 | Level     | Behavior                                                                 |
 |-----------|---------------------------------------------------------------------------|
 | `full`    | Keeps the raw owner from the symbol name (previous behavior).             |
-| `package` | Uses the list of packages built in `build.Do` and groups by `pkg.ID`.     |
-| `module`* | Default. Groups by `pkg.Module.Path` (or `pkg.ID` if the module is nil).   |
+| `package` | Uses the list of packages built in `build.Do` and groups by `pkg.PkgPath`. |
+| `module`* | Default. Groups by `pkg.Module.Path` (or `pkg.PkgPath` if the module is nil). |
 
 Matching is performed by checking whether the demangled symbol name begins with
-`pkg.ID + "."`. Symbols that do not match any package and contain `llgo` are
+`pkg.PkgPath + "."`. Symbols that do not match any package and contain `llgo` are
 bucketed into `llgo-stubs`; other unmatched entries keep their original owner
 names so we can inspect them later.
 

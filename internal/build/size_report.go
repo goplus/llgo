@@ -37,6 +37,15 @@ const (
 	readelfMaxBuffer = 4 * 1024 * 1024
 )
 
+// ELF special section indices (from ELF specification)
+const (
+	SHN_UNDEF     = 0x0000 // Undefined section
+	SHN_LORESERVE = 0xFF00 // Start of reserved indices
+	SHN_ABS       = 0xFFF1 // Absolute values
+	SHN_COMMON    = 0xFFF2 // Common symbols
+	SHN_XINDEX    = 0xFFFF // Escape value for extended section indices
+)
+
 type sectionInfo struct {
 	Index   int
 	Name    string
@@ -148,17 +157,14 @@ func collectBinarySize(path string, pkgs []Package, level string) (*sizeReport, 
 	parsed, parseErr := parseReadelfOutput(stdout)
 	closeErr := stdout.Close()
 	waitErr := cmd.Wait()
-	if parseErr != nil {
-		if waitErr != nil {
-			return nil, fmt.Errorf("llvm-readelf failed: %w\n%s", waitErr, stderr.String())
-		}
-		return nil, parseErr
-	}
-	if closeErr != nil {
-		return nil, closeErr
-	}
 	if waitErr != nil {
 		return nil, fmt.Errorf("llvm-readelf failed: %w\n%s", waitErr, stderr.String())
+	}
+	if parseErr != nil {
+		return nil, fmt.Errorf("parsing llvm-readelf output failed: %w", parseErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("closing llvm-readelf stdout pipe failed: %w", closeErr)
 	}
 	report := buildSizeReport(path, parsed, pkgs, level)
 	if report == nil || len(report.Modules) == 0 {
@@ -399,10 +405,16 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 			// Find the next symbol address to calculate this symbol's size.
 			// Symbols at the same address are handled by taking the next different address.
 			next := end
-			for j := i + 1; j < len(syms); j++ {
-				if syms[j].Address > addr {
-					next = syms[j].Address
-					break
+			// Optimize: check next symbol first before scanning
+			if i+1 < len(syms) && syms[i+1].Address > addr {
+				next = syms[i+1].Address
+			} else {
+				// Only search if next symbol is at same address
+				for j := i + 1; j < len(syms); j++ {
+					if syms[j].Address > addr {
+						next = syms[j].Address
+						break
+					}
 				}
 			}
 			if next > end {
@@ -568,8 +580,8 @@ func parseSectionRef(field string, indexBase int) (string, int) {
 	if num == 0 {
 		return name, -1
 	}
-	if indexBase == 0 && num >= 0xFFF0 {
-		// Special ELF indices such as SHN_ABS/SHN_COMMON.
+	if indexBase == 0 && num >= SHN_LORESERVE {
+		// Special ELF section indices (SHN_ABS, SHN_COMMON, etc.)
 		return name, -1
 	}
 	if num > math.MaxInt {
