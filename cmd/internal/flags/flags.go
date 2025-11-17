@@ -55,9 +55,9 @@ func AddBuildFlags(fs *flag.FlagSet) {
 		fs.BoolVar(&ForceEspClang, "force-espclang", false, "force to use esp-clang")
 	}
 
-	fs.BoolVar(&SizeReport, "size", false, "Print size report after build")
-	fs.StringVar(&SizeFormat, "size:format", "", "Size report format (text,json)")
-	fs.StringVar(&SizeLevel, "size:level", "", "Size report aggregation level (full,module,package)")
+	fs.BoolVar(&SizeReport, "size", false, "Print size report after build (default format=text, level=module)")
+	fs.StringVar(&SizeFormat, "size-format", "", "Size report format (text,json). Default text.")
+	fs.StringVar(&SizeLevel, "size-level", "", "Size report aggregation level (full,module,package). Default module.")
 }
 
 func AddBuildModeFlags(fs *flag.FlagSet) {

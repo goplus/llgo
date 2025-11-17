@@ -133,8 +133,8 @@ type Config struct {
 	ForceEspClang bool // force to use esp-clang
 	Tags          string
 	SizeReport    bool   // print size report after successful build
-	SizeFormat    string // size report format: text,json
-	SizeLevel     string // size aggregation level: full,module,package
+	SizeFormat    string // size report format: text,json (default text)
+	SizeLevel     string // size aggregation level: full,module,package (default module)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only

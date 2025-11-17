@@ -19,7 +19,7 @@ document captures the parsing strategy and new aggregation controls.
 
 ## Aggregation Levels
 
-`-size:level` controls how symbol names are grouped prior to reporting:
+`-size-level` controls how symbol names are grouped prior to reporting:
 
 | Level     | Behavior                                                                 |
 |-----------|---------------------------------------------------------------------------|
@@ -32,13 +32,19 @@ Matching is performed by checking whether the demangled symbol name begins with
 bucketed into `llgo-stubs`; other unmatched entries keep their original owner
 names so we can inspect them later.
 
+Defaults:
+
+- `-size` alone enables the report with `-size-format=text` and `-size-level=module`.
+- `-size-format` accepts `text` (table output) or `json`; omitting the flag uses `text`.
+- `-size-level` defaults to `module`, with `package` and `full` as the other options.
+
 Examples:
 
 ```sh
 llgo build -size .                     # module-level aggregation (default)
-llgo build -size -size:level=package . # collapse by package ID
-llgo build -size -size:level=full .    # show raw symbol owners
-llgo build -size -size:format=json .   # JSON output (works with all levels)
+llgo build -size -size-level=package . # collapse by package ID
+llgo build -size -size-level=full .    # show raw symbol owners
+llgo build -size -size-format=json .   # JSON output (works with all levels)
 ```
 
 ## Validation
@@ -51,7 +57,7 @@ llgo build -size -size:format=json .   # JSON output (works with all levels)
    LLGO_SIZE_REPORT_BIN=$(pwd)/rewrite \
      go test ./internal/build -run TestParseReadelfRealBinary -count=1
    ```
-3. Manual smoke test: `../../../llgo.sh build -size -size:level=module .` (or
+3. Manual smoke test: `../../../llgo.sh build -size -size-level=module .` (or
    `package`/`full` as desired).
 
 The parser works across Mach-O and ELF targets as long as `llvm-readelf` is in
