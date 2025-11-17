@@ -4,16 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/goplus/llgo/xtool/env/llvm"
 )
 
 type sectionKind int
@@ -132,7 +132,10 @@ func reportBinarySize(path, format, level string, pkgs []Package) error {
 }
 
 func collectBinarySize(path string, pkgs []Package, level string) (*sizeReport, error) {
-	cmd := exec.Command("llvm-readelf", "--all", path)
+	cmd, err := llvm.New("").Readelf("--elf-output-style=LLVM", "--all", path)
+	if err != nil {
+		return nil, fmt.Errorf("llvm-readelf: %w", err)
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	stdout, err := cmd.StdoutPipe()
@@ -574,8 +577,14 @@ func ensureSizeReporting(conf *Config) error {
 	default:
 		return fmt.Errorf("invalid size level %q (valid: full,module,package)", conf.SizeLevel)
 	}
-	if _, err := exec.LookPath("llvm-readelf"); err != nil {
-		return errors.New("llvm-readelf not found in PATH")
+	cmd, err := llvm.New("").Readelf("--version")
+	if err != nil {
+		return fmt.Errorf("llvm-readelf not available: %w", err)
+	}
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("llvm-readelf not available: %w", err)
 	}
 	return nil
 }
